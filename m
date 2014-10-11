@@ -1,72 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271AbaJKNZv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 09:25:51 -0400
-Received: from mx1.polytechnique.org ([129.104.30.34]:57692 "EHLO
-	mx1.polytechnique.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752071AbaJKNZu (ORCPT
+	id S1752337AbaJKNcd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 09:32:33 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:58902 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751270AbaJKNcb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 09:25:50 -0400
-Message-ID: <54392FE8.8060904@m4x.org>
-Date: Sat, 11 Oct 2014 15:26:00 +0200
-From: Nicolas Iooss <nicolas.iooss_linux@m4x.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>, Jeff Dike <jdike@addtoit.com>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        user-mode-linux-user@lists.sourceforge.net
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] um: always use the same type for __syscall_stub_start
-References: <1413026981-9667-1-git-send-email-nicolas.iooss_linux@m4x.org> <54391792.40508@nod.at> <54391F7C.1050001@m4x.org> <54392181.8050707@nod.at>
-In-Reply-To: <54392181.8050707@nod.at>
-Content-Type: text/plain; charset=iso-8859-15
-Content-Transfer-Encoding: 8bit
-X-AV-Checked: ClamAV using ClamSMTP at svoboda.polytechnique.org (Sat Oct 11 15:25:48 2014 +0200 (CEST))
-X-Spam-Flag: No, tests=bogofilter, spamicity=0.012447, queueID=5238B1408EFA3
+	Sat, 11 Oct 2014 09:32:31 -0400
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: WARNING at fs/nfs/write.c:743 nfs_inode_remove_request with -rc6
+From: Weston Andros Adamson <dros@primarydata.com>
+In-Reply-To: <78B8153D-59B7-4DBE-8472-D83338F04338@primarydata.com>
+Date: Sat, 11 Oct 2014 09:32:29 -0400
+Cc: Peng Tao <tao.peng@primarydata.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        linux-nfs list <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <6111EECC-C8C1-4605-98AD-0AF0E1B6DA59@primarydata.com>
+References: <20140923130352.GK26472@arm.com> <2A327753-3E60-46AC-8220-3FF0FF61F08F@primarydata.com> <20140923135938.GB28608@arm.com> <20140923145356.GD28608@arm.com> <5294BEB2-F20F-4E3E-BFB2-E41806A4F85A@primarydata.com> <FA11FBE3-42E7-46B9-B9DA-FAE368DCE96B@primarydata.com> <F632C770-3E3D-4FC5-BBF3-69BB1CCA8F0D@primarydata.com> <20140923152558.GG28608@arm.com> <20140925171545.GR20043@arm.com> <78B8153D-59B7-4DBE-8472-D83338F04338@primarydata.com>
+To: Will Deacon <will.deacon@arm.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 11/10/2014 14:24, Richard Weinberger a écrit :
-> Am 11.10.2014 um 14:15 schrieb Nicolas Iooss:
->> 2014-10-11 13:42 GMT+02:00 Richard Weinberger:
->>> Am 11.10.2014 um 13:29 schrieb Nicolas Iooss:
->>>> syscall_stub_start is declared with different types in C files:
->>>>
->>>>   arch/um/kernel/physmem.c: extern int __syscall_stub_start;
->>>>   arch/um/kernel/skas/mmu.c: extern int __syscall_stub_start;
->>>>   arch/um/os-Linux/skas/mem.c: extern unsigned long __syscall_stub_start;
->>>>   arch/um/os-Linux/skas/process.c: extern int __syscall_stub_start;
->>>>
->>>> Fix this inconsistency by always using unsigned long.  This does not
->>>> change anything in the compiled code because only the address of
->>>> __syscall_stub_start is used, but it makes the static checker I use
->>>> stop complaining about incompatible declarations.
->>>
->>> While we're here, can you put these declarations into a single header
->> file?
->>
->> Sure.  Do you have a specific header file in mind or shall I create
->> arch/um/include/asm/sections.h with declarations for
->> __syscall_stub_start, __syscall_stub_end and __binary_start (used in
->> arch/um/kernel/um_arch.c)?
+Hey Will,
+
+I’ve been very busy, but I haven’t forgotten about your bug report!
+
+I think the WARN_ON_ONCE is just wrong, there are cases where the PG_INODE_REF
+flag is legitimately not set. The flag is set so that sub requests can mimmic the parent
+request’s reference count.
+
+Could you please run the reproducer again, unmount, then check the contents of
+/proc/fs/nfsfs/servers?
+
+If it’s empty like example output below, then we know that requests are being properly
+dereferenced.
+
+# cat /proc/fs/nfsfs/servers 
+NV SERVER   PORT USE HOSTNAME  
+#
+
+If there are any servers still listed (I’m assuming this is the only mount on your client for
+the test), then we have a problem.
+
+-dros
+
+
+
+On Sep 25, 2014, at 1:27 PM, Weston Andros Adamson <dros@primarydata.com> wrote:
+
+> On Sep 25, 2014, at 1:15 PM, Will Deacon <will.deacon@arm.com> wrote:
 > 
-> Not really. Maybe you can find a common header for all.
-> But I fear where is a reason why these declarations are not in a
-> common header. They are used in the kernel- and userspace part of
-> UML.
-> Anyway, please give it a try. :)
-
-Ok.  I'll at least try to add a kernel header and send a new patch after
-some tests.
-
-By the way, most variables in include/asm-generic/sections.h are
-declared "char[]" and used without operator, contrary to
-__syscall_stub_start, declared "int" or "unsigned long" and only used
-with "&" operator.  Is there any reason why there are in the kernel two
-ways of declaring/accessing code addresses defined in linker files?  If
-not, I can send a patch which makes __syscall_stub_start "char[]"
-instead of "unsigned long" to make the code a little bit clearer.
-
-Nicolas
+>> Hi Andros,
+>> 
+>> On Tue, Sep 23, 2014 at 04:25:58PM +0100, Will Deacon wrote:
+>>> On Tue, Sep 23, 2014 at 04:08:36PM +0100, Weston Andros Adamson wrote:
+>>>> On Sep 23, 2014, at 11:02 AM, Weston Andros Adamson <dros@primarydata.com> wrote:
+>>>>> Wait a second - the whole point of this extra reference (that the
+>>>>> WARN_ON_ONCE is related to) is to handle the pass off to commit lists.
+>>>>> 
+>>>>> Maybe I’m just doing the wrong thing here with NFSv2!
+>>>>> 
+>>>>> More soon.
+>>>> 
+>>>> Actually, can you see if this is reproducible with NFSv3?
+>>> 
+>>> Just tried that, and I'm unable to trigger the problem with NFSv3.
+>> 
+>> Any more ideas? I can run with NFSv3 instead, but it's a shame to leave
+>> v2 broken.
+> 
+> Hi Will,
+> 
+> I do plan on looking at this more very soon, but since it’s v2 only and just warning
+> (and not crashing anything) it didn’t jump to the top of my list. It is only printing the
+> warnings, right? That’s no reason to switch things up ;)
+> 
+> It might be interesting to get some rpcdebug output around the time of the warning,
+> but I’m not sure it will be useful.
+> 
+> Since I cannot reproduce this, my next step is to inspect the code with an NFSv2
+> with 64k pages setup in mind.
+> 
+> -dros
 
