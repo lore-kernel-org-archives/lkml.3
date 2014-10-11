@@ -1,68 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752304AbaJKUAi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 16:00:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23265 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751075AbaJKUAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 16:00:37 -0400
-From: Paul Moore <pmoore@redhat.com>
-To: Steve Grubb <sgrubb@redhat.com>
-Cc: Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
-        linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, serge@hallyn.com, keescook@chromium.org
-Subject: Re: [RFC][PATCH] audit: log join and part events to the read-only multicast log socket
-Date: Sat, 11 Oct 2014 16:00:30 -0400
-Message-ID: <2723550.rc9Q06SjKl@sifl>
-Organization: Red Hat
-User-Agent: KMail/4.14.1 (Linux/3.16.1-gentoo; KDE/4.14.1; x86_64; ; )
-In-Reply-To: <20141011114206.44963cb3@ivy-bridge>
-References: <30ef5c1ba42b52953e5684a0322975c3f0fadc77.1412706089.git.rgb@redhat.com> <3117997.iSq2b2nm2S@sifl> <20141011114206.44963cb3@ivy-bridge>
+	id S1752646AbaJKUCe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 16:02:34 -0400
+Received: from mail-by2on0117.outbound.protection.outlook.com ([207.46.100.117]:21429
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751006AbaJKUCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Oct 2014 16:02:31 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Christoph Hellwig <hch@infradead.org>
+CC: Sitsofe Wheeler <sitsofe@gmail.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>, Christoph Hellwig <hch@lst.de>,
+        Hannes Reinecke <hare@suse.de>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: RE: [PATCH 0/3] scsi: Add Hyper-V logical block provisioning quirks
+Thread-Topic: [PATCH 0/3] scsi: Add Hyper-V logical block provisioning quirks
+Thread-Index: AQHP5F6vAKuuUZSVZE66AaSXedI4EpwrK8AAgAAAzICAACKA4A==
+Date: Sat, 11 Oct 2014 19:48:10 +0000
+Message-ID: <b0069f11bbe64ebc8c9981ea90429014@BY2PR0301MB0711.namprd03.prod.outlook.com>
+References: <20141010074901.GA32028@sucs.org>
+	 <20141011173902.GA1946@infradead.org> <1413049313.2068.48.camel@jarvis.lan>
+In-Reply-To: <1413049313.2068.48.camel@jarvis.lan>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [2601:8:9b00:fd:350e:59dd:eb8b:ea6f]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0711;UriScan:;
+x-forefront-prvs: 0361212EA8
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(51704005)(13464003)(199003)(377454003)(377424004)(189002)(24454002)(50986999)(54356999)(101416001)(31966008)(76176999)(19580395003)(20776003)(40100003)(19580405001)(64706001)(21056001)(122556002)(85852003)(4396001)(87936001)(2656002)(74316001)(95666004)(99286002)(97736003)(80022003)(105586002)(106116001)(76576001)(106356001)(33646002)(85306004)(46102003)(99396003)(108616004)(77096002)(76482002)(86362001)(107046002)(86612001)(92566001)(120916001)(3826002)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0711;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0645;
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9BK2dln011187
 
-On Saturday, October 11, 2014 11:42:06 AM Steve Grubb wrote:
-> On Tue, 07 Oct 2014 18:06:51 -0400
+
+
+> -----Original Message-----
+> From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
+> Sent: Saturday, October 11, 2014 10:42 AM
+> To: Christoph Hellwig
+> Cc: Sitsofe Wheeler; KY Srinivasan; Haiyang Zhang; Christoph Hellwig; Hannes
+> Reinecke; linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org
+> Subject: Re: [PATCH 0/3] scsi: Add Hyper-V logical block provisioning quirks
 > 
-> Paul Moore <pmoore@redhat.com> wrote:
-> > On Tuesday, October 07, 2014 03:39:51 PM Richard Guy Briggs wrote:
-> > > I also thought of moving audit_log_task() from auditsc.c to audit.c
-> > > and using that.  For that matter, both audit_log_task() and
-> > > audit_log_task_info() could use audit_log_session_info(), but they
-> > > are in slightly different order of keywords which will upset
-> > > sgrubb's parser.
-> > 
-> > A bit of an aside from the patch, but in my opinion the parser should
-> > be made a bit more robust so that it can handle fields in any
-> > particular order.  I agree that having fields in a "canonical
-> > ordering" is helpful, both for tools and people, but the tools
-> > shouldn't require it in my opinion.
-> > 
-> > Steve, why exactly can't the userspace parser handle fields in any
-> > order?  How difficult would it be to fix?
+> On Sat, 2014-10-11 at 10:39 -0700, Christoph Hellwig wrote:
+> > On Fri, Oct 10, 2014 at 08:49:01AM +0100, Sitsofe Wheeler wrote:
+> > > Microsoft Hyper-V virtual disks currently only claim SPC-2
+> > > compliance even though they implement post SPC-2 features (such as
+> > > thin
+> > > provisioning) which means the Linux kernel does not go on to test
+> > > for those features even though they are advertised.
+> > >
+> > > A previous patch attempted to add a quirk to workaround this but the
+> > > quirk was only enabled after the features had been scanned for,
+> > > wouldn't work for "small" disks and would quirk on  all Hyper-V SCSI
+> > > devices (e.g. passthrough disks).
+> > >
+> > > The new patches partially revert the previous effort, add the quirk
+> > > in a more traditional manner to only Hyper-V virtual disks and work
+> > > on small virtual disks.
+> >
+> > This seems like might want a quirk to simply "force" a SPC3 compliance
+> > level?
 > 
-> The issue is that people that really use audit, really get vast
-> quanities of logs. The tools expect things in a specific order so that
-> it can pick things out of events as quickly as possible. IOW, it
-> knows when it can discard the line because its grabbed everything it
-> needs. A casual audit user would never see this. I'm really optimizing
-> for the people whose use ausearch and it takes 10 minutes to run.
+> This was initially suggested, but rejected by Microsoft because of other
+> problems advertising SPC-3 compliance brings.  Perhaps the hyper-v
+> emulator has matured sufficiently that it will now work OK?
 
-I understand you are catering to the "power user" here, but I don't see that 
-as an excuse for not being able to parse well formed name/value audit record 
-string if the order isn't exactly what you expect.  I believe this will only 
-become more and more of a problem as things move forward.  I think this is 
-something we need to fix soon.
+James,
 
-Steve, would you be willing to fix the audit userspace parser so it can handle 
-fields in an arbitrary order?  If not, would you be willing to accept patches 
-for the userspace that would accomplish this?
+On the current release of Windows (windows 10), we are advertising SPC3 compliance.
+We are ok with declaring compliance to SPC3 in our drivers. 
 
--- 
-paul moore
-security and virtualization @ redhat
+Regards,
 
+K. Y
+
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
