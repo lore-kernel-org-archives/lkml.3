@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752492AbaJKRTm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 13:19:42 -0400
-Received: from galahad.ideasonboard.com ([185.26.127.97]:60239 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751785AbaJKRTk (ORCPT
+	id S1752155AbaJKRYC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 13:24:02 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:38596 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751006AbaJKRYA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 13:19:40 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: dmaengine@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 05/12] mtd: sh_flctl: use dmaengine_terminate_all() API
-Date: Sat, 11 Oct 2014 20:19:50 +0300
-Message-ID: <4775968.otKQDIzYx4@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.14.14-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <1413042040-28222-5-git-send-email-vinod.koul@intel.com>
-References: <1413041973-28146-1-git-send-email-vinod.koul@intel.com> <1413042040-28222-5-git-send-email-vinod.koul@intel.com>
+	Sat, 11 Oct 2014 13:24:00 -0400
+Message-ID: <543967AC.6070507@gmail.com>
+Date: Sat, 11 Oct 2014 19:23:56 +0200
+From: Rasmus Wriedt Larsen <rasmuswriedtlarsen@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Joe Perches <joe@perches.com>
+CC: pdeschrijver@nvidia.com, rmk+kernel@arm.linux.org.uk, swarren@nvidia.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] init: calibrate: fix style issues
+References: <1413045075-10416-1-git-send-email-rasmuswriedtlarsen@gmail.com> <1413045605.16385.25.camel@joe-AO725>
+In-Reply-To: <1413045605.16385.25.camel@joe-AO725>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 11 October 2014 21:10:33 Vinod Koul wrote:
-> The drivers should use dmaengine_terminate_all() API instead of
-> accessing the device_control which will be deprecated soon
+On 11/10/14 18:40, Joe Perches wrote:
+> On Sat, 2014-10-11 at 18:31 +0200, Rasmus Wriedt Larsen wrote:
+>> * fix multiple quoted string split across lines style issues
+>> * change printk(KERN_NOTICE to pr_notice
+>> * insert spaces after , in function call
+> []
+>> diff --git a/init/calibrate.c b/init/calibrate.c
+> []
+>> @@ -160,9 +158,7 @@ static unsigned long calibrate_delay_direct(void)
+>>  
+>>  	}
+>>  
+>> -	printk(KERN_NOTICE "calibrate_delay_direct() failed to get a good "
+>> -	       "estimate for loops_per_jiffy.\nProbably due to long platform "
+>> -		"interrupts. Consider using \"lpj=\" boot option.\n");
+>> +	pr_notice("calibrate_delay_direct() failed to get a good estimate for loops_per_jiffy.\nProbably due to long platform interrupts. Consider using \"lpj=\" boot option.\n");
 > 
-> Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+> This would be better on 2 lines:
+> 	pr_notice("calibrate_delay_direct() failed to get a good estimate for loops_per_jiffy.\n"
+> 		  "Probably due to long platform interrupts. Consider using \"lpj=\" boot option.\n");
 
-Acked-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Yes, indeed it would. (will fix in upcoming patch)
 
-> ---
->  drivers/mtd/nand/sh_flctl.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/mtd/nand/sh_flctl.c b/drivers/mtd/nand/sh_flctl.c
-> index c067023..0ed7c60 100644
-> --- a/drivers/mtd/nand/sh_flctl.c
-> +++ b/drivers/mtd/nand/sh_flctl.c
-> @@ -395,7 +395,7 @@ static int flctl_dma_fifo0_transfer(struct sh_flctl
-> *flctl, unsigned long *buf, msecs_to_jiffies(3000));
-> 
->  	if (ret <= 0) {
-> -		chan->device->device_control(chan, DMA_TERMINATE_ALL, 0);
-> +		dmaengine_terminate_all(chan);
->  		dev_err(&flctl->pdev->dev, "wait_for_completion_timeout\n");
->  	}
+> The grammar is poor though and this
+> could be better phrased.
 
--- 
-Regards,
-
-Laurent Pinchart
-
+Any suggestions? I don't see anything in particular (but English is not my
+native language either)
