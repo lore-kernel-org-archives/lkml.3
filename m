@@ -1,149 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620AbaJKPls (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 11:41:48 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:35879 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818AbaJKPlW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 11:41:22 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] phy: berlin-sata: Move PHY_BASE into private data struct
-Date: Sat, 11 Oct 2014 17:41:09 +0200
-Message-Id: <1413042073-14253-2-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1413042073-14253-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1413042073-14253-1-git-send-email-sebastian.hesselbarth@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1752662AbaJKPmP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 11:42:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64393 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752529AbaJKPmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Oct 2014 11:42:12 -0400
+Date: Sat, 11 Oct 2014 11:42:06 -0400
+From: Steve Grubb <sgrubb@redhat.com>
+To: Paul Moore <pmoore@redhat.com>
+Cc: Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
+        linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, serge@hallyn.com, keescook@chromium.org
+Subject: Re: [RFC][PATCH] audit: log join and part events to the read-only
+ multicast log socket
+Message-ID: <20141011114206.44963cb3@ivy-bridge>
+In-Reply-To: <3117997.iSq2b2nm2S@sifl>
+References: <30ef5c1ba42b52953e5684a0322975c3f0fadc77.1412706089.git.rgb@redhat.com>
+	<1412708594.3333.94.camel@localhost>
+	<20141007193951.GZ1992@madcap2.tricolour.ca>
+	<3117997.iSq2b2nm2S@sifl>
+Organization: Red Hat
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, Berlin SATA PHY driver assumes PHY_BASE address being
-constant. While this PHY_BASE is correct for BG2Q, older BG2 PHY_BASE
-is different. Prepare the driver for BG2 support by moving the phy_base
-into private driver data.
+On Tue, 07 Oct 2014 18:06:51 -0400
+Paul Moore <pmoore@redhat.com> wrote:
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Cc: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: "Antoine Ténart" <antoine.tenart@free-electrons.com>
-Cc: devicetree@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/phy/phy-berlin-sata.c | 42 ++++++++++++++++++++++++++++--------------
- 1 file changed, 28 insertions(+), 14 deletions(-)
+> On Tuesday, October 07, 2014 03:39:51 PM Richard Guy Briggs wrote:
+> > I also thought of moving audit_log_task() from auditsc.c to audit.c
+> > and using that.  For that matter, both audit_log_task() and
+> > audit_log_task_info() could use audit_log_session_info(), but they
+> > are in slightly different order of keywords which will upset
+> > sgrubb's parser.
+> 
+> A bit of an aside from the patch, but in my opinion the parser should
+> be made a bit more robust so that it can handle fields in any
+> particular order.  I agree that having fields in a "canonical
+> ordering" is helpful, both for tools and people, but the tools
+> shouldn't require it in my opinion.
+> 
+> Steve, why exactly can't the userspace parser handle fields in any
+> order?  How difficult would it be to fix?
 
-diff --git a/drivers/phy/phy-berlin-sata.c b/drivers/phy/phy-berlin-sata.c
-index 69ced52d72aa..9682b0f66177 100644
---- a/drivers/phy/phy-berlin-sata.c
-+++ b/drivers/phy/phy-berlin-sata.c
-@@ -30,7 +30,7 @@
- #define MBUS_WRITE_REQUEST_SIZE_128	(BIT(2) << 16)
- #define MBUS_READ_REQUEST_SIZE_128	(BIT(2) << 19)
- 
--#define PHY_BASE		0x200
-+#define BG2Q_PHY_BASE		0x200
- 
- /* register 0x01 */
- #define REF_FREF_SEL_25		BIT(0)
-@@ -61,15 +61,16 @@ struct phy_berlin_priv {
- 	struct clk		*clk;
- 	struct phy_berlin_desc	**phys;
- 	unsigned		nphys;
-+	u32			phy_base;
- };
- 
--static inline void phy_berlin_sata_reg_setbits(void __iomem *ctrl_reg, u32 reg,
--					       u32 mask, u32 val)
-+static inline void phy_berlin_sata_reg_setbits(void __iomem *ctrl_reg,
-+			       u32 phy_base, u32 reg, u32 mask, u32 val)
- {
- 	u32 regval;
- 
- 	/* select register */
--	writel(PHY_BASE + reg, ctrl_reg + PORT_VSR_ADDR);
-+	writel(phy_base + reg, ctrl_reg + PORT_VSR_ADDR);
- 
- 	/* set bits */
- 	regval = readl(ctrl_reg + PORT_VSR_DATA);
-@@ -103,17 +104,20 @@ static int phy_berlin_sata_power_on(struct phy *phy)
- 	writel(regval, priv->base + HOST_VSA_DATA);
- 
- 	/* set PHY mode and ref freq to 25 MHz */
--	phy_berlin_sata_reg_setbits(ctrl_reg, 0x1, 0xff,
--				    REF_FREF_SEL_25 | PHY_MODE_SATA);
-+	phy_berlin_sata_reg_setbits(ctrl_reg, priv->phy_base, 0x01,
-+				    0x00ff, REF_FREF_SEL_25 | PHY_MODE_SATA);
- 
- 	/* set PHY up to 6 Gbps */
--	phy_berlin_sata_reg_setbits(ctrl_reg, 0x25, 0xc00, PHY_GEN_MAX_6_0);
-+	phy_berlin_sata_reg_setbits(ctrl_reg, priv->phy_base, 0x25,
-+				    0x0c00, PHY_GEN_MAX_6_0);
- 
- 	/* set 40 bits width */
--	phy_berlin_sata_reg_setbits(ctrl_reg, 0x23,  0xc00, DATA_BIT_WIDTH_40);
-+	phy_berlin_sata_reg_setbits(ctrl_reg, priv->phy_base, 0x23,
-+				    0x0c00, DATA_BIT_WIDTH_40);
- 
- 	/* use max pll rate */
--	phy_berlin_sata_reg_setbits(ctrl_reg, 0x2, 0x0, USE_MAX_PLL_RATE);
-+	phy_berlin_sata_reg_setbits(ctrl_reg, priv->phy_base, 0x02,
-+				    0x0000, USE_MAX_PLL_RATE);
- 
- 	/* set Gen3 controller speed */
- 	regval = readl(ctrl_reg + PORT_SCR_CTL);
-@@ -182,9 +186,22 @@ static u32 phy_berlin_power_down_bits[] = {
- 	POWER_DOWN_PHY1,
- };
- 
-+static u32 bg2q_sata_phy_base = BG2Q_PHY_BASE;
-+
-+static const struct of_device_id phy_berlin_sata_of_match[] = {
-+	{
-+		.compatible = "marvell,berlin2q-sata-phy",
-+		.data = &bg2q_sata_phy_base,
-+	},
-+	{ },
-+};
-+
- static int phy_berlin_sata_probe(struct platform_device *pdev)
- {
- 	struct device *dev = &pdev->dev;
-+	const struct of_device_id *match =
-+		of_match_node(phy_berlin_sata_of_match, dev->of_node);
-+	const u32 *phy_base = match->data;
- 	struct device_node *child;
- 	struct phy *phy;
- 	struct phy_provider *phy_provider;
-@@ -218,6 +235,8 @@ static int phy_berlin_sata_probe(struct platform_device *pdev)
- 	if (!priv->phys)
- 		return -ENOMEM;
- 
-+	priv->phy_base = *phy_base;
-+
- 	dev_set_drvdata(dev, priv);
- 	spin_lock_init(&priv->lock);
- 
-@@ -264,11 +283,6 @@ static int phy_berlin_sata_probe(struct platform_device *pdev)
- 	return 0;
- }
- 
--static const struct of_device_id phy_berlin_sata_of_match[] = {
--	{ .compatible = "marvell,berlin2q-sata-phy" },
--	{ },
--};
--
- static struct platform_driver phy_berlin_sata_driver = {
- 	.probe	= phy_berlin_sata_probe,
- 	.driver	= {
--- 
-2.1.1
+The issue is that people that really use audit, really get vast
+quanities of logs. The tools expect things in a specific order so that
+it can pick things out of events as quickly as possible. IOW, it
+knows when it can discard the line because its grabbed everything it
+needs. A casual audit user would never see this. I'm really optimizing
+for the people whose use ausearch and it takes 10 minutes to run.
 
+-Steve
