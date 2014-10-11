@@ -1,122 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752049AbaJKH3p (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 03:29:45 -0400
-Received: from regular1.263xmail.com ([211.150.99.132]:37251 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751724AbaJKH3l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 03:29:41 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: wxt@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: wxt@rock-chips.com
-X-UNIQUE-TAG: <cdf7a7877f294e6c7e0cd53ee6f89b42>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Caesar Wang <caesar.wang@rock-chips.com>
-To: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com, arnd@arndb.de
-Cc: zyf@rock-chips.com, dianders@chromium.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        cf@rock-chips.com, dmitry.torokhov@gmail.com, dbasehore@chromium.org,
-        huangtao@rock-chips.com, cjf@rock-chips.com, zhengsq@rock-chips.com,
-        Caesar Wang <caesar.wang@rock-chips.com>
-Subject: [PATCH v9 0/5] Rockchip soc thermal driver
-Date: Sat, 11 Oct 2014 15:29:18 +0800
-Message-Id: <1413012563-7690-1-git-send-email-caesar.wang@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
+	id S1751952AbaJKH4Y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 03:56:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5546 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751270AbaJKH4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Oct 2014 03:56:22 -0400
+Message-ID: <1413014178.4202.15.camel@ul30vt.home>
+Subject: [GIT PULL] VFIO updates for 3.18-rc1
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>
+Date: Sat, 11 Oct 2014 01:56:18 -0600
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series patchs tested on rk3288 SDK board and pinky-v1,v2 board.
-I believe the driver can be used on the rk3288-evb board.
+Hi Linus,
 
-Add this driver, The system can reset the entire chip when
-the thermal temperture over 120C, In case of rising over 125C
-when tha hardware shorting,The sodftware will shutdown via "critical".
+The following changes since commit fe82dcec644244676d55a1384c958d5f67979adb:
 
-Changes in v9:
-	* address comments from Dmitry Torokhov.
-	- fix some style be defined
-	- remove some unused code.
-	- clk_disable_unprepare->clk_disable in suspend()
+  Linux 3.17-rc7 (2014-09-28 14:29:07 -0700)
 
-Changes in v8:
-	* address comments from Dmitry Torokhov and Doug Anderson.
-	- add three Teperture Sensors.
-	- support CRU and GPIO reset chip.
-	- rename rk3xxx-cpu-thermal.dtsi as rk3288-thermal.dtsi
-	- alarm-temp via set_trips() callback
-	- remove "reset-gpios"
+are available in the git repository at:
 
-Changes in v7:
-	- fix get data->clk=0 when in probe() function.
-	- fix some style code.
-	- modify dts,main add rk3xxx-cpu-thermal.dtsi
+  git://github.com/awilliam/linux-vfio.git tags/vfio-v3.18-rc1
 
-Changes in v6:
-	* address comments from Tomeu Vizoso.
-	- use thermal's generic framework.
+for you to fetch changes up to 93899a679fd6b2534b5c297d9316bae039ebcbe1:
 
-Changes in v5:
-	* address comments from Eduardo Valentin,rui.zhang and Heiko Stubner:
-	- with BIT() macro
-	- manage clocks in suspend/resume.
-	- license is fixed as GPLv2.
-	- #include "thermal_core.h"->#include <linux/thermal.h>
-	- use the generic trip-points.the hw-shut-temp isn't generic trip-points.
-	- The method of binding and unbinding be fixed.
-	- The pin-name tsadc->otp_out
+  vfio-pci: Fix remove path locking (2014-09-29 17:18:39 -0600)
 
-Changes in v4:
-	* address comments from Jonathan Cameron,huangtao and zhaoyifeng:
-	- this series thermal driver still be put in driver/thermal/
-	- modify the thermal driver description.
+----------------------------------------------------------------
+VFIO updates for v3.18-rc1
+ - Nested IOMMU extension to type1 (Will Deacon)
+ - Restore MSIx message before enabling (Gavin Shan)
+ - Fix remove path locking (Alex Williamson)
 
-Changes in v3:(add dts configure)
-	* address comments from Dmitry Torokhov and Arnd Bergmann:
-	- fix clock-names in rockchip-thermal.txt
-	- remove rockchip_thermal_control() in rockchip_set_mode()
-	- fix some code style.
-	- add dts configure.
+----------------------------------------------------------------
+Alex Williamson (1):
+      vfio-pci: Fix remove path locking
 
-Changes in v2:
-	* address comments from Heiko Stubner:
-	- fix dt-bindings in rockchip-thermal.txt
-	- remove Author mark
-	- rename TSADC_XXX->TSADCV2_XXX,it eill ready to merge compatible other SoCs.
-	- fix a identation
-	- remove clk_set_rate(),it's no necessary.
-	- fix the SIMPLE_DEV_PM_OPS() function  style.
+Gavin Shan (3):
+      PCI: Export MSI message relevant functions
+      vfio/pci: Restore MSIx message prior to enabling
+      drivers/vfio: Export vfio_spapr_iommu_eeh_ioctl() with GPL
 
-Caesar Wang (5):
-  thermal: rockchip: add driver for thermal
-  dt-bindings: document Rockchip thermal
-  ARM: dts: add RK3288 Thermal data
-  ARM: dts: add main Thermal info to rk3288
-  ARM: dts: enable Thermal on rk3288-evb board
+Will Deacon (2):
+      iommu: introduce domain attribute for nesting IOMMUs
+      vfio/iommu_type1: add new VFIO_TYPE1_NESTING_IOMMU IOMMU type
 
- .../bindings/thermal/rockchip-thermal.txt          |  45 ++
- arch/arm/boot/dts/rk3288-evb.dtsi                  |   5 +
- arch/arm/boot/dts/rk3288-thermal.dtsi              |  58 ++
- arch/arm/boot/dts/rk3288.dtsi                      |  23 +
- drivers/thermal/Kconfig                            |   9 +
- drivers/thermal/Makefile                           |   1 +
- drivers/thermal/rockchip_thermal.c                 | 628 +++++++++++++++++++++
- 7 files changed, 769 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
- create mode 100644 arch/arm/boot/dts/rk3288-thermal.dtsi
- create mode 100644 drivers/thermal/rockchip_thermal.c
-
--- 
-1.9.1
-
+ drivers/pci/msi.c                 |   2 +
+ drivers/vfio/pci/vfio_pci.c       | 136 ++++++++++++++++----------------------
+ drivers/vfio/pci/vfio_pci_intrs.c |  15 +++++
+ drivers/vfio/vfio_iommu_type1.c   |  30 +++++++--
+ drivers/vfio/vfio_spapr_eeh.c     |   2 +-
+ include/linux/iommu.h             |   1 +
+ include/uapi/linux/vfio.h         |   3 +
+ 7 files changed, 104 insertions(+), 85 deletions(-)
 
