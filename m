@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662AbaJKPmP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 11:42:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64393 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752529AbaJKPmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 11:42:12 -0400
-Date: Sat, 11 Oct 2014 11:42:06 -0400
-From: Steve Grubb <sgrubb@redhat.com>
-To: Paul Moore <pmoore@redhat.com>
-Cc: Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
-        linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, serge@hallyn.com, keescook@chromium.org
-Subject: Re: [RFC][PATCH] audit: log join and part events to the read-only
- multicast log socket
-Message-ID: <20141011114206.44963cb3@ivy-bridge>
-In-Reply-To: <3117997.iSq2b2nm2S@sifl>
-References: <30ef5c1ba42b52953e5684a0322975c3f0fadc77.1412706089.git.rgb@redhat.com>
-	<1412708594.3333.94.camel@localhost>
-	<20141007193951.GZ1992@madcap2.tricolour.ca>
-	<3117997.iSq2b2nm2S@sifl>
-Organization: Red Hat
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752605AbaJKPlr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 11:41:47 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:55118 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751907AbaJKPlW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Oct 2014 11:41:22 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/5] phy: berlin-sata: Add support for BG2 SATA PHY
+Date: Sat, 11 Oct 2014 17:41:10 +0200
+Message-Id: <1413042073-14253-3-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1413042073-14253-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1413042073-14253-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 07 Oct 2014 18:06:51 -0400
-Paul Moore <pmoore@redhat.com> wrote:
+Berlin BG2 also has a SATA PHY compatible with the current driver
+except different PHY_BASE. Add a new compatible to the driver
+reflecting the different PHY_BASE.
 
-> On Tuesday, October 07, 2014 03:39:51 PM Richard Guy Briggs wrote:
-> > I also thought of moving audit_log_task() from auditsc.c to audit.c
-> > and using that.  For that matter, both audit_log_task() and
-> > audit_log_task_info() could use audit_log_session_info(), but they
-> > are in slightly different order of keywords which will upset
-> > sgrubb's parser.
-> 
-> A bit of an aside from the patch, but in my opinion the parser should
-> be made a bit more robust so that it can handle fields in any
-> particular order.  I agree that having fields in a "canonical
-> ordering" is helpful, both for tools and people, but the tools
-> shouldn't require it in my opinion.
-> 
-> Steve, why exactly can't the userspace parser handle fields in any
-> order?  How difficult would it be to fix?
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Cc: Kishon Vijay Abraham I <kishon@ti.com> 
+Cc: "Antoine Ténart" <antoine.tenart@free-electrons.com>
+Cc: devicetree@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org 
+---
+ drivers/phy/phy-berlin-sata.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-The issue is that people that really use audit, really get vast
-quanities of logs. The tools expect things in a specific order so that
-it can pick things out of events as quickly as possible. IOW, it
-knows when it can discard the line because its grabbed everything it
-needs. A casual audit user would never see this. I'm really optimizing
-for the people whose use ausearch and it takes 10 minutes to run.
+diff --git a/drivers/phy/phy-berlin-sata.c b/drivers/phy/phy-berlin-sata.c
+index 9682b0f66177..71568f5444ac 100644
+--- a/drivers/phy/phy-berlin-sata.c
++++ b/drivers/phy/phy-berlin-sata.c
+@@ -30,6 +30,7 @@
+ #define MBUS_WRITE_REQUEST_SIZE_128	(BIT(2) << 16)
+ #define MBUS_READ_REQUEST_SIZE_128	(BIT(2) << 19)
+ 
++#define BG2_PHY_BASE		0x080
+ #define BG2Q_PHY_BASE		0x200
+ 
+ /* register 0x01 */
+@@ -186,10 +187,15 @@ static u32 phy_berlin_power_down_bits[] = {
+ 	POWER_DOWN_PHY1,
+ };
+ 
++static u32 bg2_sata_phy_base = BG2_PHY_BASE;
+ static u32 bg2q_sata_phy_base = BG2Q_PHY_BASE;
+ 
+ static const struct of_device_id phy_berlin_sata_of_match[] = {
+ 	{
++		.compatible = "marvell,berlin2-sata-phy",
++		.data = &bg2_sata_phy_base,
++	},
++	{
+ 		.compatible = "marvell,berlin2q-sata-phy",
+ 		.data = &bg2q_sata_phy_base,
+ 	},
+-- 
+2.1.1
 
--Steve
