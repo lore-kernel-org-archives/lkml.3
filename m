@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193AbaJKJUj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 05:20:39 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:43063 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751816AbaJKJUI (ORCPT
+	id S1752162AbaJKJlL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 05:41:11 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:48774 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751628AbaJKJlI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 05:20:08 -0400
-Date: Fri, 10 Oct 2014 20:30:13 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Andreas =?iso-8859-1?Q?F=E4rber?= <afaerber@suse.de>
-Cc: Chen-Yu Tsai <wens@csie.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Shuge <shuge@allwinnertech.com>, Meng Zhang <kevin@allwinnertech.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 0/5] ARM: sunxi: Add basic support for Allwinner A80
- SoC
-Message-ID: <20141010183013.GQ19438@lukather>
-References: <1412773376-25212-1-git-send-email-wens@csie.org>
- <5435F8EB.2040407@suse.de>
+	Sat, 11 Oct 2014 05:41:08 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Sat, 11 Oct 2014 11:38:19 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Johan Hovold <johan@kernel.org>, Alessandro Zummo <a.zummo@towertech.it>,
+        Tony Lindgren <tony@atomide.com>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lokesh Vutla <lokeshvutla@ti.com>, Guenter Roeck <linux@roeck-us.net>,
+        Colin Foe-Parker <colin.foeparker@logicpd.com>, nsekhar@ti.com,
+        t-kristo@ti.com, j-keerthy@ti.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/12] rtc: omap: fixes and power-off feature
+Message-ID: <20141011093819.GA18988@localhost>
+References: <1412881594-25678-1-git-send-email-johan@kernel.org>
+ <20141010175409.GL31348@saruman>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EguBBKnZWdUQS9Kz"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5435F8EB.2040407@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141010175409.GL31348@saruman>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Oct 10, 2014 at 12:54:22PM -0500, Felipe Balbi wrote:
+> HI,
+> 
+> On Thu, Oct 09, 2014 at 09:06:22PM +0200, Johan Hovold wrote:
+> > This series fixes a few issues with the omap rtc-driver, cleans up a bit
+> > and finally adds support for the PMIC control feature found in some
+> > revisions of this RTC IP block.
+> > 
+> > Ultimately, this allows for powering off the Beaglebone and waking it up
+> > again on RTC alarms.
+> > 
+> > I noticed yesterday that Lokesh Vutla recently posted some patches to
+> > add regulator support to this driver. [1] While that series has some
+> > issues that needs to be addressed, I still think it could be a good idea
+> > to rebase my pmic_power_en patch on top of it as it adds some long
+> > overdue device abstraction. That would be needed anyway in order to
+> > support the new power-off infrastructure that's in the pipe in a clean
+> > way. [2]
+> 
+> is this power-off feature "RTC-only mode" ?
 
---EguBBKnZWdUQS9Kz
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes, I believe so, at least as long as RTC power is maintained. The
+pmic_power_en pin can otherwise still be used to power off. 
 
-Hi,
+On the BeagleBone the PMIC can be configured to enter OFF or SLEEP mode
+on power off, where the latter (and default) mode keeps the RTC power
+supply enabled.
 
-On Thu, Oct 09, 2014 at 04:54:35AM +0200, Andreas F=E4rber wrote:
-> Hi,
->=20
-> Am 08.10.2014 um 15:02 schrieb Chen-Yu Tsai:
-> > This is v3 of the initial Allwinner A80 support series.
-> > This patch series adds very basic support for Allwinner's A80 SoC,
-> > a big.LITTLE architecture with 4 Cortex-A7s and 4 Cortex-A15s.
-> >=20
-> > Development is done on the A80 Optimus Board, the defacto development
-> > board for the A80, with the accompanying SDK as a reference.=20
-> >=20
-> > So far I've been unable to get the board to boot from MMC, or
-> > using Android fastboot. I'm using Allwinner's FEL mode to load
-> > the bootloader and kernel+dtb image over USB. Notes on my attempts
-> > can be found here: http://linux-sunxi.org/User:Wens#A80_Optimus
->=20
-> Tested-by: Andreas F=E4rber <afaerber@suse.de>
->=20
-> With this patch set on top of Maxime's sunxi-next branch, I get as far
-> as searching for the rootfs.
->=20
-> CPUs 1-7 fail to boot with -38, which I guess is due to the vendor
-> U-Boot not yet supporting PSCI.
+Thanks for the fast review, Felipe.
 
-That, and Linux not having some SMP bringup code either.
-
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---EguBBKnZWdUQS9Kz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUOCW1AAoJEBx+YmzsjxAgwQgQAKDRqEl3NsG6VU4+p3LrU5E9
-xOfQh4+1zM5qClotka/kaOu31CHyz3MqnI+Uer//SgbZLwS/cli4NuDD0QLYdwM1
-z8GAiBZZGvVQPsoPBQJxTk0P4MDBRQg97L0MzgVASemU1kpZ9O0cv/CGX9d8KBpu
-KCNRO1JLDBxviEvrSaL0vmiqcD98yxYZ///MAbpFqm+K5VSvWDJcjAPx2Ve6jZki
-fVzcK25hoG1FFlg9TUf/BtnNrEGsmA6kl9B6fLc3GWZ6kepYkpfxqZNuiftYcMlB
-2Q6hP22k6U3bip05/sT9zziS9J48eyObHx5KoAMYrPz8f80s8IyqKrExR2eg9eV8
-3ze5J7a9lemQsvmDyXzqqWsbgBfPhT09CSPGNmywSqwwdLMD93A3lHdPBRZPFzxl
-LAXcXVvyVGbqLJW9WZMsoA5E9F8Me1rq9lfJxBoCeoo00lxIsnpw0wqZMi81260R
-wObu1Kwe6zUIvQc26JQOKYfZnhePMpkDWwDfe5TQ12fJjhDH2//8gXq4lB/3cnaT
-LaLbshftv2g43aiVv55siGZDgXCzcZCJqnMymSnAKMezwoucViXQH0PWGn0MkYeE
-knOt4oZr0UIYNmrYlBYWvb8bK3pHohx/Lyk4y/1INs8YHr+MyJdA051RrZvXeWOD
-wfqsNNMMvVdXZBszprs2
-=qV4M
------END PGP SIGNATURE-----
-
---EguBBKnZWdUQS9Kz--
+Johan
