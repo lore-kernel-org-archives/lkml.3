@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752050AbaJKIeJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 04:34:09 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:63043 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751570AbaJKIeH (ORCPT
+	id S1752146AbaJKIgf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 04:36:35 -0400
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:45155 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752040AbaJKIgc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 04:34:07 -0400
-From: hansechang@gmail.com
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xen.org
-Cc: Ian.Campbell@eu.citrix.com, dgdegra@tycho.nsa.gov,
-        jinsong.liu@alibaba-inc.com,
-        Chang Huaixin <huaixin.chx@alibaba-inc.com>
-Subject: [PATCH] Input: xen-kbdfront - free grant table entry in xenkbd_disconnect_backend
-Date: Sat, 11 Oct 2014 16:33:32 +0800
-Message-Id: <1413016412-17890-1-git-send-email-hansechang@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sat, 11 Oct 2014 04:36:32 -0400
+Date: Sat, 11 Oct 2014 10:36:27 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Thomas Graf <tgraf@suug.ch>, Nikolay Aleksandrov <nikolay@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ursula Braun <braunu@de.ibm.com>
+Subject: [bisected] e341694e3eb5 netlink_lookup() rcu conversion causes
+ latencies
+Message-ID: <20141011083627.GB5074@osiris>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14101108-0017-0000-0000-00000168AA3F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chang Huaixin <huaixin.chx@alibaba-inc.com>
+Hi all,
 
-xenkbd_disconnect_backend doesn't free grant table entry.
-This bug affects live migration.
+it just came to my attention that commit e341694e3eb5
+"netlink: Convert netlink_lookup() to use RCU protected hash table"
+causes network latencies for me on s390.
 
-xenkbd_disconnect_backend uses gnttab_end_foreign_access_ref
-to handle grant table entry which doesn't really free an entry.
+The testcase is quite simple and 100% reproducible on s390:
 
-Thus every time we do xenkbd_resume, grant table entry increses
-by one. As an grant table entry occupies 8 bytes, an grant table
-page has at most 512 entries. Every 512 times we do xenkdb_resume,
-grant table pages increses by one.
+Simply login via ssh to a remote system which has the above mentioned
+patch applied. Any action like pressing return now has significant
+latencies. Or in other words, working via such a connection becomes
+a pain ;)
 
-After around 3500 times of live migration, grant table pages
-will increase by 7, causing too many pages to populate and hitting
-max_pages limit when assigning pages.Thus assign_pages will fail,
-so will live migration.
+I haven't debugged it, however I assume the problem is that a) the
+commit introduces a synchronize_net() call und b) s390 kernels
+usually get compiled with CONFIG_HZ_100 while most other architectures
+use CONFIG_HZ_1000.
+If I change the kernel config to CONFIG_HZ_1000 the problem goes away,
+however I don't consider this a fix...
 
-Signed-off-by: Chang Huaixin <huaixin.chx@alibaba-inc.com>
----
- drivers/input/misc/xen-kbdfront.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/input/misc/xen-kbdfront.c b/drivers/input/misc/xen-kbdfront.c
-index fbfdc10..e2ecfc6 100644
---- a/drivers/input/misc/xen-kbdfront.c
-+++ b/drivers/input/misc/xen-kbdfront.c
-@@ -285,7 +285,7 @@ static int xenkbd_connect_backend(struct xenbus_device *dev,
-  error_evtchan:
- 	xenbus_free_evtchn(dev, evtchn);
-  error_grant:
--	gnttab_end_foreign_access_ref(info->gref, 0);
-+	gnttab_end_foreign_access(info->gref, 0, 0UL);
- 	info->gref = -1;
- 	return ret;
- }
-@@ -296,7 +296,7 @@ static void xenkbd_disconnect_backend(struct xenkbd_info *info)
- 		unbind_from_irqhandler(info->irq, info);
- 	info->irq = -1;
- 	if (info->gref >= 0)
--		gnttab_end_foreign_access_ref(info->gref, 0);
-+		gnttab_end_foreign_access(info->gref, 0, 0UL);
- 	info->gref = -1;
- }
- 
--- 
-1.9.1
+Another reason why this hasn't been observed on x86 may or may not be
+that we haven't implemented CONFIG_HAVE_CONTEXT_TRACKING on s390 (yet).
+But that's just guessing...
 
