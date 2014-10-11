@@ -1,69 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751785AbaJKU4d (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 16:56:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58008 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918AbaJKU4c (ORCPT
+	id S1751826AbaJKVO1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 17:14:27 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:45344 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918AbaJKVOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 16:56:32 -0400
-Date: Sat, 11 Oct 2014 13:55:27 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-        cocci@systeme.lip6.fr
-Subject: Re: [RFC] drop owner assignment from platform_drivers
-Message-ID: <20141011205527.GA30877@kroah.com>
-References: <20141010072439.GA1741@katana>
- <20141010083627.GL5182@n2100.arm.linux.org.uk>
- <20141010182604.GC6075@katana>
- <2769473.KEN6DZKnT7@wuerfel>
- <20141011165650.GA1263@katana>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141011165650.GA1263@katana>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 11 Oct 2014 17:14:25 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-kernel@vger.kernel.org
+Cc: linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [RFC PATCH 0/2] kernel: Drop pm_poweroff_prepare
+Date: Sat, 11 Oct 2014 14:14:15 -0700
+Message-Id: <1413062057-11657-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 11, 2014 at 06:56:51PM +0200, Wolfram Sang wrote:
-> 
-> > > You got me wondering, though, that it could not be correct to call
-> > > platform_driver_register() from the platform core instead of module
-> > > init. I will check tomorrow. Still, this would be a bug independent of
-> > > my series. Although I'd need to respin it if platform_driver_probe()
-> > > needed a fix.
-> > 
-> > Right, this seems to be a preexisting bug. platform_create_bundle 
-> > and platform_driver_probe will both overwrite the .owner field with
-> > NULL since they live in builtin code. They need to be replaced with
-> > __platform_driver_probe and __platform_driver_register that both
-> > take an extra owner argument passed down from the caller in the driver
-> > module.
-> 
-> Yeah, that would be one solution. However, my personal favourite would
-> meanwhile be to revert the commit that Russell mentioned. I think it is
-> cleaner to have the owner explicitly set in the module rather than
-> hidden away by a function call. However, grepping through include/linux,
-> there are a few subsystems hiding it this way. So, it is a pattern
-> somewhow. Oh well...
+While working on the poweroff handler implementation, I also started looking
+into pm_power_off_prepare. Ultimately, I concluded that it is not really
+necessary, and that it would be easy to remove.
 
-The pattern is to not have to manually set MODULE_OWNER, and have the
-pre-processor do it for you, otherwise you will forget or get it wrong.
+The first patch in this series converts acpi to use a syscore callback
+instead of setting pm_power_off_prepare. Since acpi is the only user of
+pm_power_off_prepare, it is no longer used and removed with the second
+patch.
 
-That is why I accepted this patch to the platform driver interface, as
-it is in line with many other bus driver apis (pci, usb, etc.).
+Removing pm_power_off_prepare streamlines poweroff handling and makes it
+more uniform, so I think its removal would be worthwhile to consider.
 
-I missed the one code path you pointed out, and that should be fixed,
-but that doesn't mean that the original patch should be reverted, as it
-is the way we want things to be, let's just fix up the bug and move on.
+I am sending the series as RFC since I am not sure if I may be missing
+something. Compile tested only at this time; I'll do more testing if this
+sounds like a reasonable thing to do.
 
-And again, may I just say how much I hate the platform driver code, one
-of these days I'm going to lock myself in a room for a week and figure
-out a way to just delete that stuff...
-
-greg k-h
+On a side note, I don't see any callers of acpi_suspend(). I actually
+removed it as an experiment, and at least x86_64:allmodconfig still
+compiles. Can it be removed ?
