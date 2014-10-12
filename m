@@ -1,64 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752535AbaJLQB2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 12:01:28 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:45156 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833AbaJLQB0 (ORCPT
+	id S1752510AbaJLQU3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 12:20:29 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:39874 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751626AbaJLQUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 12:01:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFwwB1uUnUKdQq28T-3AgVcwPSJR27HnTDnrCyD4xowUOQ@mail.gmail.com>
-References: <alpine.LRH.2.11.1410101913460.13164@namei.org>
-	<CA+55aFwGpnBgSeyjKQuwKwSpccTHvQwPJGEXfw2wx9LJ-kafTg@mail.gmail.com>
-	<18599898.QtEUVscf6i@sifl>
-	<CA+55aFwwB1uUnUKdQq28T-3AgVcwPSJR27HnTDnrCyD4xowUOQ@mail.gmail.com>
-Date: Sun, 12 Oct 2014 12:01:25 -0400
-X-Google-Sender-Auth: 3g7Bkua4KFHgvAUKLWjcLJaFJIE
-Message-ID: <CA+55aFxtxBe8SaEYD6vAQME_YE+eD6mhU8F6Q850k-XBfzz4QQ@mail.gmail.com>
-Subject: Re: [GIT] Security subsystem upate for 3.18
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Paul Moore <pmoore@redhat.com>
-Cc: James Morris <jmorris@namei.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 12 Oct 2014 12:20:23 -0400
+From: Eric Biggers <ebiggers3@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: ebiggers3@gmail.com
+Subject: [PATCH] kernel/groups.c: Code simplifications
+Date: Sun, 12 Oct 2014 11:20:10 -0500
+Message-Id: <1413130810-28144-1-git-send-email-ebiggers3@gmail.com>
+X-Mailer: git-send-email 2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One more comment on this..
+Reduce nesting and simplify the control flow, remove redundant
+'gidsetsize < 0' check in sys_getgroups(), and inline groups_to_user().
 
-On Sun, Oct 12, 2014 at 11:50 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
->
->  - you actively need infrastructure from newer versions, so you need
-> to merge an upstream kernel for further development.
->
->    Even this is often questionable, but it's one of the best reasons
-> to do back-merges. However, if so, that back-merge should very much
-> spell out the exact reason why the merge was needed (not just "needed
-> upstream features" in general, but what particular features were
-> needed etc).
+This patch reduces the length of kernel/groups.c by 27 lines.
 
-Btw, rather than merge from upstream, a better way is often to simply
-start a new development branch. If you need a particular new feature,
-you're *likely* to start doing new development rather than continuing
-on some previous development, so it's often a good time to simply
-create a new feature branch. I don't know how James feels about
-merging multiple separate feature branches, but I know that *I* tend
-to appreciate it when I get multiple well-defined pull requests rather
-than one big one that does many different things.
+Signed-off-by: Eric Biggers <ebiggers3@gmail.com>
+---
+ kernel/groups.c | 69 ++++++++++++++++++---------------------------------------
+ 1 file changed, 21 insertions(+), 48 deletions(-)
 
-And even if you then want to send just one pull-request, what you can
-do if you have (say) three different feature branches is to create a
-combined branch to be sent upstream, by just starting from one of the
-feature branches and then merging the two other ones into that
-combined one.  Some submaintainers do this quite a lot, and use
-"octopus merges" to combine their different feature branches into one
-final "please pull" branch. See for example Mark Brown's ASoC merge
-for upstreaming (to Takashi Iwai, and then to me): commit bdf20b4291e.
+diff --git a/kernel/groups.c b/kernel/groups.c
+index 451698f..fae9d11 100644
+--- a/kernel/groups.c
++++ b/kernel/groups.c
+@@ -62,23 +62,6 @@ void groups_free(struct group_info *group_info)
+ 
+ EXPORT_SYMBOL(groups_free);
+ 
+-/* export the group_info to a user-space array */
+-static int groups_to_user(gid_t __user *grouplist,
+-			  const struct group_info *group_info)
+-{
+-	struct user_namespace *user_ns = current_user_ns();
+-	int i;
+-	unsigned int count = group_info->ngroups;
+-
+-	for (i = 0; i < count; i++) {
+-		gid_t gid;
+-		gid = from_kgid_munged(user_ns, GROUP_AT(group_info, i));
+-		if (put_user(gid, grouplist+i))
+-			return -EFAULT;
+-	}
+-	return 0;
+-}
+-
+ /* fill a group_info from a user-space array - it must be allocated already */
+ static int groups_from_user(struct group_info *group_info,
+     gid_t __user *grouplist)
+@@ -191,26 +174,23 @@ EXPORT_SYMBOL(set_current_groups);
+ 
+ SYSCALL_DEFINE2(getgroups, int, gidsetsize, gid_t __user *, grouplist)
+ {
+-	const struct cred *cred = current_cred();
++	/* no need to grab task_lock here; our group_info cannot change */
++	const struct group_info *group_info = current_cred()->group_info;
++	int ngroups = group_info->ngroups;
++	struct user_namespace *user_ns = current_user_ns();
+ 	int i;
++	gid_t gid;
+ 
+-	if (gidsetsize < 0)
++	if (!gidsetsize)
++		return ngroups;
++	if (gidsetsize < ngroups)
+ 		return -EINVAL;
+-
+-	/* no need to grab task_lock here; it cannot change */
+-	i = cred->group_info->ngroups;
+-	if (gidsetsize) {
+-		if (i > gidsetsize) {
+-			i = -EINVAL;
+-			goto out;
+-		}
+-		if (groups_to_user(grouplist, cred->group_info)) {
+-			i = -EFAULT;
+-			goto out;
+-		}
++	for (i = 0; i < ngroups; i++) {
++		gid = from_kgid_munged(user_ns, GROUP_AT(group_info, i));
++		if (put_user(gid, grouplist + i))
++			return -EFAULT;
+ 	}
+-out:
+-	return i;
++	return ngroups;
+ }
+ 
+ /*
+@@ -232,14 +212,9 @@ SYSCALL_DEFINE2(setgroups, int, gidsetsize, gid_t __user *, grouplist)
+ 	if (!group_info)
+ 		return -ENOMEM;
+ 	retval = groups_from_user(group_info, grouplist);
+-	if (retval) {
+-		put_group_info(group_info);
+-		return retval;
+-	}
+-
+-	retval = set_current_groups(group_info);
++	if (!retval)
++		retval = set_current_groups(group_info);
+ 	put_group_info(group_info);
+-
+ 	return retval;
+ }
+ 
+@@ -249,11 +224,10 @@ SYSCALL_DEFINE2(setgroups, int, gidsetsize, gid_t __user *, grouplist)
+ int in_group_p(kgid_t grp)
+ {
+ 	const struct cred *cred = current_cred();
+-	int retval = 1;
+ 
+-	if (!gid_eq(grp, cred->fsgid))
+-		retval = groups_search(cred->group_info, grp);
+-	return retval;
++	if (gid_eq(grp, cred->fsgid))
++		return 1;
++	return groups_search(cred->group_info, grp);
+ }
+ 
+ EXPORT_SYMBOL(in_group_p);
+@@ -261,11 +235,10 @@ EXPORT_SYMBOL(in_group_p);
+ int in_egroup_p(kgid_t grp)
+ {
+ 	const struct cred *cred = current_cred();
+-	int retval = 1;
+ 
+-	if (!gid_eq(grp, cred->egid))
+-		retval = groups_search(cred->group_info, grp);
+-	return retval;
++	if (gid_eq(grp, cred->egid))
++		return 1;
++	return groups_search(cred->group_info, grp);
+ }
+ 
+ EXPORT_SYMBOL(in_egroup_p);
+-- 
+2.1.2
 
-             Linus
