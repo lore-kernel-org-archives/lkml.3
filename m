@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828AbaJLS4d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 14:56:33 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:62835 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752427AbaJLS4a (ORCPT
+	id S1752849AbaJLTJf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 15:09:35 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:44669 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752458AbaJLTJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 14:56:30 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Sun, 12 Oct 2014 20:58:45 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Nix <nix@esperi.org.uk>
-Cc: Paul Martin <pm@debian.org>, Oliver Neukum <oliver@neukum.org>,
-        Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [3.16.1 BISECTED REGRESSION]: Simtec Entropy Key (cdc-acm)
- broken in 3.16
-Message-ID: <20141012185845.GB2786@localhost>
-References: <878um4tg09.fsf@spindle.srvr.nix>
- <1409569752.24385.12.camel@linux-fkkt.site>
- <874mwnosz1.fsf@spindle.srvr.nix>
- <871tqe2zqt.fsf_-_@spindle.srvr.nix>
- <20141011195108.GA8275@thinkpad.nowster.org.uk>
- <87y4smz1l0.fsf@spindle.srvr.nix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87y4smz1l0.fsf@spindle.srvr.nix>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Sun, 12 Oct 2014 15:09:33 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Jason Wessel <jason.wessel@windriver.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@suse.de>, Kees Cook <keescook@chromium.org>,
+        kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCH] kernel: debug: kdb: kdb_main.c:  Replacing strncat with strlcat to avoid overwrite size
+Date: Sun, 12 Oct 2014 21:11:40 +0200
+Message-Id: <1413141100-21315-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 11, 2014 at 11:24:59PM +0100, Nix wrote:
-> On 11 Oct 2014, Paul Martin spake thusly:
-> 
-> > Having been privy to the firmware of the eKey, it is very simplisting,
-> > with no implementation whatsoever of any flow control.
-> 
-> That's what I thought. (Why would something that just provides data at a
-> constant rate way below that of even the slowest USB bus *need* flow
-> control?)
-> 
-> One presumes therefore that the kernel suddenly trying to do flow
-> control on shutdown would fubar the firmware's internal state, leading
-> to the symptoms I see.
+Changed from using strncat with strlcat to avoid overwrite the max size
 
-The cdc-acm driver was dropping DTR/RTS on shutdown (close) also before
-the commit you refer to. One thing it did change however is that this is
-now only done if HUPCL is set. Might setting that flag be enough to
-prevent the device firmware from crashing?
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ kernel/debug/kdb/kdb_main.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Johan
+diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+index 379650b..eb8b6c4 100644
+--- a/kernel/debug/kdb/kdb_main.c
++++ b/kernel/debug/kdb/kdb_main.c
+@@ -1254,7 +1254,7 @@ do_full_getstr:
+ 		snprintf(kdb_prompt_str, CMD_BUFLEN, kdbgetenv("PROMPT"));
+ #endif
+ 		if (defcmd_in_progress)
+-			strncat(kdb_prompt_str, "[defcmd]", CMD_BUFLEN);
++			strlcat(kdb_prompt_str, "[defcmd]", CMD_BUFLEN);
+ 
+ 		/*
+ 		 * Fetch command from keyboard
+-- 
+1.7.10.4
+
