@@ -1,48 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751088AbaJLEhk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 00:37:40 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:34511 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772AbaJLEhi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 00:37:38 -0400
-Date: Sun, 12 Oct 2014 05:37:37 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Eric Biggers <ebiggers3@gmail.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: fs/namei.c: Misuse of sequence counts?
-Message-ID: <20141012043737.GO7996@ZenIV.linux.org.uk>
-References: <20141011225808.GA20777@zzz>
- <20141012001259.GM7996@ZenIV.linux.org.uk>
- <20141012040142.GB24463@zzz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141012040142.GB24463@zzz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751183AbaJLEvc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 00:51:32 -0400
+Received: from mga11.intel.com ([192.55.52.93]:18556 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750724AbaJLEv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Oct 2014 00:51:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,703,1406617200"; 
+   d="scan'208";a="604027236"
+From: Qiaowei Ren <qiaowei.ren@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Dave Hansen <dave.hansen@intel.com>
+Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-ia64@vger.kernel.org, linux-mips@linux-mips.org,
+        Qiaowei Ren <qiaowei.ren@intel.com>
+Subject: [PATCH v9 00/12] Intel MPX support
+Date: Sun, 12 Oct 2014 12:41:43 +0800
+Message-Id: <1413088915-13428-1-git-send-email-qiaowei.ren@intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 11, 2014 at 11:01:42PM -0500, Eric Biggers wrote:
-> On Sun, Oct 12, 2014 at 01:12:59AM +0100, Al Viro wrote:
-> > 
-> > Huh?  What's to guarantee that dentry hasn't become negative since the
-> > moment we'd fetched the seqcount?  _That_ is the problem we are dealing
-> > with here - link_path_walk() relies on nd->inode being non-NULL.
-> 
-> Hmm, I guess that makes sense.  So the code is actually verifying that the inode
-> is still the inode that was referenced from the current or root directory when
-> nd->path was set.  But couldn't the problem also be solved by setting nd->inode
-> directly in the fs->seq retry loops?
+This patch set adds support for the Memory Protection eXtensions
+(MPX) feature found in future Intel processors. MPX is used in
+conjunction with compiler changes to check memory references, and
+can be used to catch buffer overflow or underflow.
 
-Gets clumsy in set_root_rcu() - you do *not* want it to bugger nd->inode
-when done by follow_dotdot_rcu(), so we'd need either some indication which
-caller it is, or something like struct inode **inode in argument list,
-with NULL passed from follow_dotdot_rcu(), while path_init() would give
-it &nd->inode...
+For MPX to work, changes are required in the kernel, binutils and
+compiler. No source changes are required for applications, just a
+recompile.
 
-Doable, but unpleasant.  And the price of that check is trivial - after all,
-in case we *don't* bugger off immediately, we have that ->d_seq in cache -
-we'd fetched it just before.
+There are a lot of moving parts of this to all work right:
+
+===== Example Compiler / Application / Kernel Interaction =====
+
+1. Application developer compiles with -fmpx.  The compiler will add the
+   instrumentation as well as some setup code called early after the app
+   starts. New instruction prefixes are noops for old CPUs.
+2. That setup code allocates (virtual) space for the "bounds directory",
+   points the "bndcfgu" register to the directory and notifies the
+   kernel (via the new prctl(PR_MPX_ENABLE_MANAGEMENT)) that the app will
+   be using MPX.
+3. The kernel detects that the CPU has MPX, allows the new prctl() to
+   succeed, and notes the location of the bounds directory. Userspace is
+   expected to keep the bounds directory at that location. We note it
+   instead of reading it each time because the 'xsave' operation needed
+   to access the bounds directory register is an expensive operation.
+4. If the application needs to spill bounds out of the 4 registers, it
+   issues a bndstx instruction.  Since the bounds directory is empty at
+   this point, a bounds fault (#BR) is raised, the kernel allocates a
+   bounds table (in the user address space) and makes the relevant
+   entry in the bounds directory point to the new table. [1]
+5. If the application violates the bounds specified in the bounds
+   registers, a separate kind of #BR is raised which will deliver a
+   signal with information about the violation in the 'struct siginfo'.
+6. Whenever memory is freed, we know that it can no longer contain
+   valid pointers, and we attempt to free the associated space in the
+   bounds tables. If an entire table becomes unused, we will attempt
+   to free the table and remove the entry in the directory.
+
+To summarize, there are essentially three things interacting here:
+
+GCC with -fmpx:
+ * enables annotation of code with MPX instructions and prefixes
+ * inserts code early in the application to call in to the "gcc runtime"
+GCC MPX Runtime:
+ * Checks for hardware MPX support in cpuid leaf
+ * allocates virtual space for the bounds directory (malloc()
+   essentially)
+ * points the hardware BNDCFGU register at the directory
+ * calls a new prctl() to notify the kernel to start managing the
+   bounds directories
+Kernel MPX Code:
+ * Checks for hardware MPX support in cpuid leaf
+ * Handles #BR exceptions and sends SIGSEGV to the app when it violates
+   bounds, like during a buffer overflow.
+ * When bounds are spilled in to an unallocated bounds table, the kernel
+   notices in the #BR exception, allocates the virtual space, then
+   updates the bounds directory to point to the new table. It keeps
+   special track of the memory with a specific ->vm_ops for MPX.
+ * Frees unused bounds tables at the time that the memory they described
+   is unmapped. (See "cleanup unused bound tables")
+
+===== Testing =====
+
+This patchset has been tested on real internal hardware platform at Intel.
+We have some simple unit tests in user space, which directly call MPX
+instructions to produce #BR to let kernel allocate bounds tables and cause
+bounds violations. We also compiled several benchmarks with an MPX-enabled
+compiler and ran them with this patch set. We found a number of bugs in this
+code in these tests.
+
+1. For more info on why the kernel does these allocations, see the patch
+"on-demand kernel allocation of bounds tables"
+
+Future TODO items:
+1) support 32-bit binaries on 64-bit kernels.
+
+Changes since v1:
+  * check to see if #BR occurred in userspace or kernel space.
+  * use generic structure and macro as much as possible when
+    decode mpx instructions.
+
+Changes since v2:
+  * fix some compile warnings.
+  * update documentation.
+
+Changes since v3:
+  * correct some syntax errors at documentation, and document
+    extended struct siginfo.
+  * for kill the process when the error code of BNDSTATUS is 3.
+  * add some comments.
+  * remove new prctl() commands.
+  * fix some compile warnings for 32-bit.
+
+Changes since v4:
+  * raise SIGBUS if the allocations of the bound tables fail.
+
+Changes since v5:
+  * hook unmap() path to cleanup unused bounds tables, and use
+    new prctl() command to register bounds directory address to
+    struct mm_struct to check whether one process is MPX enabled
+    during unmap().
+  * in order track precisely MPX memory usage, add MPX specific
+    mmap interface and one VM_MPX flag to check whether a VMA
+    is MPX bounds table.
+  * add macro cpu_has_mpx to do performance optimization.
+  * sync struct figinfo for mips with general version to avoid
+    build issue.
+
+Changes since v6:
+  * because arch_vma_name is removed, this patchset have toset MPX
+    specific ->vm_ops to do the same thing.
+  * fix warnings for 32 bit arch.
+  * add more description into these patches.
+
+Changes since v7:
+  * introduce VM_ARCH_2 flag. 
+  * remove all of the pr_debug()s.
+  * fix prctl numbers in documentation.
+  * fix some bugs on bounds tables freeing.
+
+Changes since v8:
+  * add new patch to rename cfg_reg_u and status_reg.
+  * add new patch to use disabled features from Dave's patches.
+  * add new patch to sync struct siginfo for IA64.
+  * rename two new prctl() commands to PR_MPX_ENABLE_MANAGEMENT and
+    PR_MPX_DISABLE_MANAGEMENT, check whether the management of bounds
+    tables in kernel is enabled at #BR fault time, and add locking to
+    protect the access to 'bd_addr'.
+  * update the documentation file to add more content about on-demand
+    allocation of bounds tables, etc..
+
+Qiaowei Ren (12):
+  mm: distinguish VMAs with different vm_ops
+  x86, mpx: rename cfg_reg_u and status_reg
+  x86, mpx: add MPX specific mmap interface
+  x86, mpx: add MPX to disaabled features
+  x86, mpx: on-demand kernel allocation of bounds tables
+  mpx: extend siginfo structure to include bound violation information
+  mips: sync struct siginfo with general version
+  ia64: sync struct siginfo with general version
+  x86, mpx: decode MPX instruction to get bound violation information
+  x86, mpx: add prctl commands PR_MPX_ENABLE_MANAGEMENT,
+    PR_MPX_DISABLE_MANAGEMENT
+  x86, mpx: cleanup unused bound tables
+  x86, mpx: add documentation on Intel MPX
+
+
+Qiaowei Ren (12):
+  x86, mpx: introduce VM_MPX to indicate that a VMA is MPX specific
+  x86, mpx: rename cfg_reg_u and status_reg
+  x86, mpx: add MPX specific mmap interface
+  x86, mpx: add MPX to disaabled features
+  x86, mpx: on-demand kernel allocation of bounds tables
+  mpx: extend siginfo structure to include bound violation information
+  mips: sync struct siginfo with general version
+  ia64: sync struct siginfo with general version
+  x86, mpx: decode MPX instruction to get bound violation information
+  x86, mpx: add prctl commands PR_MPX_ENABLE_MANAGEMENT,
+    PR_MPX_DISABLE_MANAGEMENT
+  x86, mpx: cleanup unused bound tables
+  x86, mpx: add documentation on Intel MPX
+
+ Documentation/x86/intel_mpx.txt          |  245 +++++++++++++++
+ arch/ia64/include/uapi/asm/siginfo.h     |    8 +-
+ arch/mips/include/uapi/asm/siginfo.h     |    4 +
+ arch/x86/Kconfig                         |    4 +
+ arch/x86/include/asm/disabled-features.h |    8 +-
+ arch/x86/include/asm/mmu_context.h       |   25 ++
+ arch/x86/include/asm/mpx.h               |  101 ++++++
+ arch/x86/include/asm/processor.h         |   22 ++-
+ arch/x86/kernel/Makefile                 |    1 +
+ arch/x86/kernel/mpx.c                    |  488 ++++++++++++++++++++++++++++++
+ arch/x86/kernel/setup.c                  |    8 +
+ arch/x86/kernel/traps.c                  |   86 ++++++-
+ arch/x86/mm/Makefile                     |    2 +
+ arch/x86/mm/mpx.c                        |  385 +++++++++++++++++++++++
+ fs/exec.c                                |    2 +
+ fs/proc/task_mmu.c                       |    1 +
+ include/asm-generic/mmu_context.h        |   11 +
+ include/linux/mm.h                       |    6 +
+ include/linux/mm_types.h                 |    3 +
+ include/uapi/asm-generic/siginfo.h       |    9 +-
+ include/uapi/linux/prctl.h               |    6 +
+ kernel/signal.c                          |    4 +
+ kernel/sys.c                             |   12 +
+ mm/mmap.c                                |    2 +
+ 24 files changed, 1436 insertions(+), 7 deletions(-)
+ create mode 100644 Documentation/x86/intel_mpx.txt
+ create mode 100644 arch/x86/include/asm/mpx.h
+ create mode 100644 arch/x86/kernel/mpx.c
+ create mode 100644 arch/x86/mm/mpx.c
+
