@@ -1,99 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751227AbaJLHbq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 03:31:46 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:33176 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772AbaJLHbp (ORCPT
+	id S1751259AbaJLHoP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 03:44:15 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:41254 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772AbaJLHoN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 03:31:45 -0400
-Date: Sun, 12 Oct 2014 00:31:47 -0700
-From: Darren Hart <dvhart@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] platform-drivers-x86 for v3.18
-Message-ID: <20141012073145.GA15039@vmdeb7>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sun, 12 Oct 2014 03:44:13 -0400
+From: Akshay Sarode <akshaysarode21@gmail.com>
+To: devel@driverdev.osuosl.org
+Cc: linux-kernel@vger.kernel.org, Akshay Sarode <akshaysarode21@gmail.com>
+Subject: [PATCH 1/1] Octeon: Staging Driver: Remove coding warnings
+Date: Sun, 12 Oct 2014 13:13:51 +0530
+Message-Id: <1413099831-5127-1-git-send-email-akshaysarode21@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Checkpatch coding warnings of 'Missing a blank line after declaration'
 
-The following have all spent at least a few days in linux-next, most for more
-than a week. These are mostly cleanups and error handling improvements with a
-few updates to extend existing support to newer hardware.
+Signed-off-by: Akshay Sarode <akshaysarode21@gmail.com>
+---
+ drivers/staging/octeon/ethernet-tx.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-Thanks,
+diff --git a/drivers/staging/octeon/ethernet-tx.c b/drivers/staging/octeon/ethernet-tx.c
+index 4e54d85..b7a7854 100644
+--- a/drivers/staging/octeon/ethernet-tx.c
++++ b/drivers/staging/octeon/ethernet-tx.c
+@@ -77,6 +77,7 @@ static DECLARE_TASKLET(cvm_oct_tx_cleanup_tasklet, cvm_oct_tx_do_cleanup, 0);
+ static inline int32_t cvm_oct_adjust_skb_to_free(int32_t skb_to_free, int fau)
+ {
+	int32_t undo;
++
+	undo = skb_to_free > 0 ? MAX_SKB_TO_FREE : skb_to_free +
+						   MAX_SKB_TO_FREE;
+	if (undo > 0)
+@@ -89,6 +90,7 @@ static inline int32_t cvm_oct_adjust_skb_to_free(int32_t skb_to_free, int fau)
+ static void cvm_oct_kick_tx_poll_watchdog(void)
+ {
+	union cvmx_ciu_timx ciu_timx;
++
+	ciu_timx.u64 = 0;
+	ciu_timx.s.one_shot = 1;
+	ciu_timx.s.len = cvm_oct_tx_poll_interval;
+@@ -118,9 +120,11 @@ static void cvm_oct_free_tx_skbs(struct net_device *dev)
+		total_freed += skb_to_free;
+		if (skb_to_free > 0) {
+			struct sk_buff *to_free_list = NULL;
++
+			spin_lock_irqsave(&priv->tx_free_list[qos].lock, flags);
+			while (skb_to_free > 0) {
+				struct sk_buff *t;
++
+				t = __skb_dequeue(&priv->tx_free_list[qos]);
+				t->next = to_free_list;
+				to_free_list = t;
+@@ -131,6 +135,7 @@ static void cvm_oct_free_tx_skbs(struct net_device *dev)
+			/* Do the actual freeing outside of the lock. */
+			while (to_free_list) {
+				struct sk_buff *t = to_free_list;
++
+				to_free_list = to_free_list->next;
+				dev_kfree_skb_any(t);
+			}
+@@ -258,6 +263,7 @@ int cvm_oct_xmit(struct sk_buff *skb, struct net_device *dev)
+			    cvmx_read_csr(CVMX_GMXX_PRTX_CFG(index, interface));
+			if (gmx_prt_cfg.s.duplex == 0) {
+				int add_bytes = 64 - skb->len;
++
+				if ((skb_tail_pointer(skb) + add_bytes) <=
+				    skb_end_pointer(skb))
+					memset(__skb_put(skb, add_bytes), 0,
+@@ -289,6 +295,7 @@ int cvm_oct_xmit(struct sk_buff *skb, struct net_device *dev)
+		CVM_OCT_SKB_CB(skb)[0] = hw_buffer.u64;
+		for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
+			struct skb_frag_struct *fs = skb_shinfo(skb)->frags + i;
++
+			hw_buffer.s.addr = XKPHYS_TO_PHYS(
+				(u64)(page_address(fs->page.p) +
+				fs->page_offset));
+@@ -495,6 +502,7 @@ skip_xmit:
 
-Darren Hart
-Intel Open Source Technology Center
+	while (skb_to_free > 0) {
+		struct sk_buff *t = __skb_dequeue(&priv->tx_free_list[qos]);
++
+		t->next = to_free_list;
+		to_free_list = t;
+		skb_to_free--;
+@@ -505,6 +513,7 @@ skip_xmit:
+	/* Do the actual freeing outside of the lock. */
+	while (to_free_list) {
+		struct sk_buff *t = to_free_list;
++
+		to_free_list = to_free_list->next;
+		dev_kfree_skb_any(t);
+	}
+@@ -550,6 +559,7 @@ int cvm_oct_xmit_pow(struct sk_buff *skb, struct net_device *dev)
 
-The following changes since commit 9e82bf014195d6f0054982c463575cdce24292be:
-
-  Linux 3.17-rc5 (2014-09-14 17:50:12 -0700)
-
-are available in the git repository at:
-
-  git://git.infradead.org/users/dvhart/linux-platform-drivers-x86.git tags/platform-drivers-x86-v3.18-1
-
-for you to fetch changes up to eabde0fa967052df12bdd8e8a72f0af799e1e704:
-
-  toshiba_acpi: Adapt kbd_bl_timeout_store to the new kbd type (2014-10-06 17:44:42 -0700)
-
-----------------------------------------------------------------
-platform-drivers-x86 for 3.18
-
-dell-wmi: Fix access out of memory
-eeepc-laptop: Cleanups, refactoring, sysfs perms, and improved error handling
-intel-rst: ACPI and error handling cleanups
-thinkpad-acpi: Whitespace cleanup
-toshiba_acpi: HCI/SCI interface update, keyboard backlight type 2 support,
-              new scancodes, cleanups
-
-----------------------------------------------------------------
-Azael Avalos (8):
-      toshiba_acpi: Additional hotkey scancodes
-      toshiba_acpi: Fix illumination not available on certain models
-      toshiba_acpi: Change touchpad store to check for invalid values
-      toshiba_acpi: Support new keyboard backlight type
-      toshiba_acpi: Rename hci_raw to tci_raw
-      toshiba_acpi: Unify return codes prefix from HCI/SCI to TOS
-      toshiba_acpi: Change HCI/SCI functions return code type
-      toshiba_acpi: Adapt kbd_bl_timeout_store to the new kbd type
-
-Frans Klaver (10):
-      eeepc-laptop: clean up coding style
-      eeepc-laptop: change sysfs function names to API expectations
-      eeepc-laptop: use DEVICE_ATTR* to instantiate device_attributes
-      eeepc-laptop: pull out ACPI_STORE_FUNC and ACPI_SHOW_FUNC macros
-      eeepc-laptop: tell sysfs that the disp attribute is write-only
-      eeepc-laptop: pull out SENSOR_STORE_FUNC and SENSOR_SHOW_FUNC macros
-      eeepc-laptop: make fan1_input really read-only
-      eeepc-laptop: check proper return values in get_cpufv
-      eeepc-laptop: store_cpufv: return error if set_acpi fails
-      eeepc-laptop: clean up control flow in *_rfkill_notifier
-
-Jan van den Berg (1):
-      x86: thinkpad_acpi.c: fixed spacing coding style issue
-
-Pali Rohár (1):
-      dell-wmi: Fix access out of memory
-
-Paul Bolle (1):
-      eeepc-laptop: simplify parse_arg()
-
-Peter Ujfalusi (2):
-      intel-rst: Use ACPI_FAILURE() macro instead !ACPI_SUCCESS() for error checking
-      intel-rst: Clean up ACPI add function
-
- drivers/platform/x86/dell-wmi.c      |  12 +-
- drivers/platform/x86/eeepc-laptop.c  | 206 ++++++------
- drivers/platform/x86/intel-rst.c     |  23 +-
- drivers/platform/x86/thinkpad_acpi.c |  44 +--
- drivers/platform/x86/toshiba_acpi.c  | 606 ++++++++++++++++++++++-------------
- 5 files changed, 522 insertions(+), 369 deletions(-)
+	/* Get a work queue entry */
+	cvmx_wqe_t *work = cvmx_fpa_alloc(CVMX_FPA_WQE_POOL);
++
+	if (unlikely(work == NULL)) {
+		printk_ratelimited("%s: Failed to allocate a work queue entry\n",
+				   dev->name);
+@@ -713,6 +723,7 @@ static void cvm_oct_tx_do_cleanup(unsigned long arg)
+	for (port = 0; port < TOTAL_NUMBER_OF_PORTS; port++) {
+		if (cvm_oct_device[port]) {
+			struct net_device *dev = cvm_oct_device[port];
++
+			cvm_oct_free_tx_skbs(dev);
+		}
+	}
+--
+1.9.1
