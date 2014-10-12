@@ -1,60 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753428AbaJLLtc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 07:49:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11374 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752960AbaJLLod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 07:44:33 -0400
-Date: Sun, 12 Oct 2014 14:47:45 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, linux-scsi@vger.kernel.org,
-        linux-s390@vger.kernel.org, v9fs-developer@lists.sourceforge.net,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        Amit Shah <amit.shah@redhat.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH v3 15/25] virtio_net: fix use after free on allocation failure
-Message-ID: <1413114332-626-16-git-send-email-mst@redhat.com>
-References: <1413114332-626-1-git-send-email-mst@redhat.com>
+	id S1753456AbaJLLuW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 07:50:22 -0400
+Received: from fep14.mx.upcmail.net ([62.179.121.34]:56818 "EHLO
+	fep14.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753265AbaJLLuP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Oct 2014 07:50:15 -0400
+X-SourceIP: 77.56.27.120
+X-Authenticated-Sender: odi.ch@hispeed.ch
+Message-ID: <543A6AF3.8020702@odi.ch>
+Date: Sun, 12 Oct 2014 13:50:11 +0200
+From: =?UTF-8?B?T3J0d2luIEdsw7xjaw==?= <odi@odi.ch>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413114332-626-1-git-send-email-mst@redhat.com>
-X-Mutt-Fcc: =sent
+To: Alexei Starovoitov <ast@plumgrid.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 net] x86: bpf_jit: fix two bugs in eBPF JIT compiler
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the extremely unlikely event that driver initialization fails after
-RX buffers are added, virtio net frees RX buffers while VQs are
-still active, potentially causing device to use a freed buffer.
+ > Fixes: 622582786c9e ("net: filter: x86: internal BPF JIT")
 
-To fix, reset device first - same as we do on device removal.
+Hi, I confirm that this fixes my kernel panic when using nmap as root on 3.17.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
----
- drivers/net/virtio_net.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 430f3ae..3551417 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1830,6 +1830,8 @@ static int virtnet_probe(struct virtio_device *vdev)
- 	return 0;
- 
- free_recv_bufs:
-+	vi->vdev->config->reset(vdev);
-+
- 	free_receive_bufs(vi);
- 	unregister_netdev(dev);
- free_vqs:
--- 
-MST
-
+Ortwin
