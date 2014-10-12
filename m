@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753039AbaJLUEh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 16:04:37 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:47204 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752839AbaJLUET (ORCPT
+	id S1753096AbaJLUEz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 16:04:55 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:41032 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752575AbaJLUEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 16:04:19 -0400
+	Sun, 12 Oct 2014 16:04:16 -0400
 From: Beniamino Galvani <b.galvani@gmail.com>
 To: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -17,9 +17,9 @@ Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
         Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
         Victor Wan <victor.wan@amlogic.com>,
         Beniamino Galvani <b.galvani@gmail.com>
-Subject: [PATCH 3/3] ARM: dts: meson: add dts nodes for IR receiver
-Date: Sun, 12 Oct 2014 22:01:55 +0200
-Message-Id: <1413144115-23188-4-git-send-email-b.galvani@gmail.com>
+Subject: [PATCH 2/3] media: rc: meson: document device tree bindings
+Date: Sun, 12 Oct 2014 22:01:54 +0200
+Message-Id: <1413144115-23188-3-git-send-email-b.galvani@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1413144115-23188-1-git-send-email-b.galvani@gmail.com>
 References: <1413144115-23188-1-git-send-email-b.galvani@gmail.com>
@@ -27,62 +27,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This adds binding documentation for the infrared remote control
+receiver available in Amlogic Meson SoCs.
+
 Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
 ---
- arch/arm/boot/dts/meson.dtsi           | 7 +++++++
- arch/arm/boot/dts/meson8-vega-s89e.dts | 6 ++++++
- arch/arm/boot/dts/meson8.dtsi          | 7 +++++++
- 3 files changed, 20 insertions(+)
+ Documentation/devicetree/bindings/media/meson-ir.txt | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/media/meson-ir.txt
 
-diff --git a/arch/arm/boot/dts/meson.dtsi b/arch/arm/boot/dts/meson.dtsi
-index 7d27f12..a14461c 100644
---- a/arch/arm/boot/dts/meson.dtsi
-+++ b/arch/arm/boot/dts/meson.dtsi
-@@ -108,5 +108,12 @@
- 			clocks = <&clk81>;
- 			status = "disabled";
- 		};
+diff --git a/Documentation/devicetree/bindings/media/meson-ir.txt b/Documentation/devicetree/bindings/media/meson-ir.txt
+new file mode 100644
+index 0000000..407848e
+--- /dev/null
++++ b/Documentation/devicetree/bindings/media/meson-ir.txt
+@@ -0,0 +1,14 @@
++* Amlogic Meson IR remote control receiver
 +
-+		ir_receiver: ir-receiver@c8100480 {
-+			compatible= "amlogic,meson6-ir";
-+			reg = <0xc8100480 0x20>;
-+			interrupts = <0 15 1>;
-+			status = "disabled";
-+		};
- 	};
- }; /* end of / */
-diff --git a/arch/arm/boot/dts/meson8-vega-s89e.dts b/arch/arm/boot/dts/meson8-vega-s89e.dts
-index 70a05c1..5ea54c8 100644
---- a/arch/arm/boot/dts/meson8-vega-s89e.dts
-+++ b/arch/arm/boot/dts/meson8-vega-s89e.dts
-@@ -77,3 +77,9 @@
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&uart_ao_a>;
- };
++Required properties:
++ - compatible	: should be "amlogic,meson6-ir"
++ - reg		: physical base address and length of the device registers
++ - interrupts	: a single specifier for the interrupt from the device
 +
-+&ir_receiver {
-+	status = "okay";
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&ir_pins>;
-+};
-diff --git a/arch/arm/boot/dts/meson8.dtsi b/arch/arm/boot/dts/meson8.dtsi
-index 59c3af0..ea98ed3 100644
---- a/arch/arm/boot/dts/meson8.dtsi
-+++ b/arch/arm/boot/dts/meson8.dtsi
-@@ -122,6 +122,13 @@
- 				function = "uart_ao";
- 			};
- 		};
++Example:
 +
-+		ir_pins: ir_pins {
-+			ir_pins {
-+				pins = "remote_input";
-+				function = "remote";
-+			};
-+		};
- 	};
- 
- }; /* end of / */
++	ir-receiver@c8100480 {
++		compatible= "amlogic,meson6-ir";
++		reg = <0xc8100480 0x20>;
++		interrupts = <0 15 1>;
++	};
 -- 
 1.9.1
 
