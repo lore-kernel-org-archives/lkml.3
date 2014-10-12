@@ -1,262 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751514AbaJLMLX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 08:11:23 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:62879 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834AbaJLMLV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 08:11:21 -0400
-From: Max Schwarz <max.schwarz@online.de>
-To: Addy Ke <addy.ke@rock-chips.com>
-Cc: wsa@the-dreams.de, heiko@sntech.de, olof@lixom.net, dianders@chromium.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, cf@rock-chips.com,
-        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
-        yzq@rock-chips.com, hj@rock-chips.com, kever.yang@rock-chips.com,
-        hl@rock-chips.com, caesar.wang@rock-chips.com, zhengsq@rock-chips.com
-Subject: Re: [PATCH v4] i2c: rk3x: adjust the LOW divison based on characteristics of SCL
-Date: Sun, 12 Oct 2014 14:10:50 +0200
-Message-ID: <5700320.9GSb6erCFz@typ>
-User-Agent: KMail/4.14.1 (Linux/3.15.7-031507-generic; KDE/4.14.1; x86_64; ; )
-In-Reply-To: <1412837235-4202-1-git-send-email-addy.ke@rock-chips.com>
-References: <1412837235-4202-1-git-send-email-addy.ke@rock-chips.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:axTURIz1f04hqb8bQ62/QNk9aGtvh7IUI4VQ48drhP6
- kK/VvCm2WGF5j1OIYv4mrlB745pkaGgUkXnJ0zYeSMOwWQjaCi
- qDYTXD/tUeZnXLjVwD99SHesZ5oGSVEDAFWODXM95gxzHHM/va
- RrrEZZgmeKC8s4DN05Ii7l1EJZFp42pKwBbaHOfngdzgSpyLyp
- lFgwEnr+bR9ev5+7p6wufIFLoILnnpH+v8UyRUX5TA4m7ssGm2
- zb1WaSeraw1O4hRBU8KbPl0hIiwD9mcn8YVgka+dikzkgRC5f2
- +B6UM8PlEduVlkB5v10x1hN7UfU3awmhB9Db9i6PBvYVd64OQ=
- =
-X-UI-Out-Filterresults: notjunk:1;
+	id S1751626AbaJLMU5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 08:20:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63958 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751115AbaJLMUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Oct 2014 08:20:55 -0400
+Message-ID: <1413116386.6042.13.camel@localhost.localdomain>
+Subject: Re: [PATCH] PCI: add kernel parameter to override devid<->driver
+ mapping.
+From: Marcel Apfelbaum <marcel.a@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-pci@vger.kernel.org, bhelgaas@google.com,
+        linux-kernel@vger.kernel.org, marcel@redhat.com, mst@redhat.com
+Date: Sun, 12 Oct 2014 15:19:46 +0300
+In-Reply-To: <1412189309.7360.238.camel@ul30vt.home>
+References: <1412095115-28982-1-git-send-email-marcel.a@redhat.com>
+	 <1412189309.7360.238.camel@ul30vt.home>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Addy,
-
-sorry for the long delay, I finally had time to look at your work.
-
-On Thursday 09 October 2014 at 14:47:15, Addy Ke wrote:
-> As show in I2C specification:
-> - Standard-mode: the minimum HIGH period of the scl clock is 4.0us
->                  the minimum LOW period of the scl clock is 4.7us
-> - Fast-mode: the minimum HIGH period of the scl clock is 0.6us
->              the minimum LOW period of the scl clock is 1.3us
+On Wed, 2014-10-01 at 12:48 -0600, Alex Williamson wrote:
+> On Tue, 2014-09-30 at 19:38 +0300, Marcel Apfelbaum wrote:
+> > Scanning a lot of devices during boot requires a lot of time.
+> > On other scenarios there is a need to bind a driver to a specific slot.
+> > 
+> > Binding devices to pci-stub driver does not work,
+> > as it will not differentiate between devices of the
+> > same type. Using some start scripts is error prone.
+> > 
+> > The solution leverages driver_override functionality introduced by
+> > 
+> > 	commit: 782a985d7af26db39e86070d28f987cad21313c0
+> > 	Author: Alex Williamson <alex.williamson@redhat.com>
+> > 	Date:   Tue May 20 08:53:21 2014 -0600
+> > 
+> >     	PCI: Introduce new device binding path using pci_dev.driver_override
+> > 
+> > In order to bind PCI slot 0001:02:03.4 to pci-stub use:
+> > 	driver[0001:02:03.4]=pci-stub
 > 
-> I have measured i2c SCL waveforms in fast-mode by oscilloscope
-> on rk3288-pinky board. the LOW period of the scl clock is 1.3us.
-> It is so critical that we must adjust LOW division to increase
-> the LOW period of the scl clock.
+> So the option is actually:
 > 
-> Thanks Doug for the suggestion about division formulas.
+> pci=driver=[...]=foo,driver=[...]=bar
 > 
-> Reviewed-by: Doug Anderson <dianders@chromium.org>
-> Tested-by: Doug Anderson <dianders@chromium.org>
-> Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
-> ---
-> Changes in v2:
-> - remove Fast-mode plus and HS-mode
-> - use new formulas suggested by Doug
-> Changes in V3:
-> - use new formulas (sep 30) suggested by Doug
-> Changes in V3:
-> - fix some wrong style
-> - WARN_ONCE if min_low_div > max_low_div
+> That's not very clear from the commit log.
 > 
->  drivers/i2c/busses/i2c-rk3x.c | 140
-> +++++++++++++++++++++++++++++++++++++++--- 1 file changed, 133
-> insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-rk3x.c b/drivers/i2c/busses/i2c-rk3x.c
-> index b41d979..f17f7a2 100644
-> --- a/drivers/i2c/busses/i2c-rk3x.c
-> +++ b/drivers/i2c/busses/i2c-rk3x.c
-> @@ -24,6 +24,7 @@
->  #include <linux/wait.h>
->  #include <linux/mfd/syscon.h>
->  #include <linux/regmap.h>
-> +#include <linux/math64.h>
-> 
-> 
->  /* Register Map */
-> @@ -428,18 +429,143 @@ out:
->  	return IRQ_HANDLED;
->  }
-> 
-> +static void rk3x_i2c_calc_divs(unsigned long i2c_rate, unsigned long
-> scl_rate, +			       unsigned long *div_low, unsigned long *div_high)
-> +{
-> +	unsigned long min_low_ns, min_high_ns;
-> +	unsigned long max_data_hold_ns;
-> +	unsigned long data_hold_buffer_ns;
-> +	unsigned long max_low_ns, min_total_ns;
-> +
-> +	unsigned long i2c_rate_khz, scl_rate_khz;
-> +
-> +	unsigned long min_low_div, min_high_div;
-> +	unsigned long max_low_div;
-> +
-> +	unsigned long min_div_for_hold, min_total_div;
-> +	unsigned long extra_div, extra_low_div, ideal_low_div;
-> +
-> +	/* Only support standard-mode and fast-mode */
-> +	WARN_ON(scl_rate > 400000);
-> +
-> +	/*
-> +	 * min_low_ns:  The minimum number of ns we need to hold low
-> +	 *		to meet i2c spec
-> +	 * min_high_ns: The minimum number of ns we need to hold high
-> +	 *		to meet i2c spec
-> +	 * max_low_ns:  The maximum number of ns we can hold low
-> +	 *		to meet i2c spec
-> +	 *
-> +	 * Note: max_low_ns should be (max data hold time * 2 - buffer)
-> +	 *	 This is because the i2c host on Rockchip holds the data line
-> +	 *	 for half the low time.
-> +	 */
-> +	if (scl_rate <= 100000) {
-> +		min_low_ns = 4700;
-> +		min_high_ns = 4000;
-> +		max_data_hold_ns = 3450;
-> +		data_hold_buffer_ns = 50;
-> +	} else {
-> +		min_low_ns = 1300;
-> +		min_high_ns = 600;
-> +		max_data_hold_ns = 900;
-> +		data_hold_buffer_ns = 50;
-> +	}
-> +	max_low_ns = max_data_hold_ns * 2 - data_hold_buffer_ns;
-> +	min_total_ns = min_low_ns + min_high_ns;
-> +
-> +	/* Adjust to avoid overflow */
-> +	i2c_rate_khz = DIV_ROUND_UP(i2c_rate, 1000);
-> +	scl_rate_khz = DIV_ROUND_UP(scl_rate, 1000);
 
-I'm not really comfortable with using DIV_ROUND_UP on the last line, since 
-this may violate the user's set SCL rate. Rounding up 1.1kHz SCL rate to 2kHz 
-is not good.
+[...]
+Hi Alex,
+I am sorry, but I missed the bellow comments, I am going to
+fix them for the next version.
 
-I suggest using scl_rate / 1000 and placing a
-
-if(WARN_ON(scl_rate < 1000))
-  scl_rate = 1000;
-
-somewhere to prevent scl_rate_khz from becoming 0.
-
-> +
-> +	/*
-> +	 * We need the total div to be >= this number
-> +	 * so we don't clock too fast.
-> +	 */
-> +	min_total_div = DIV_ROUND_UP(i2c_rate_khz, scl_rate_khz * 8);
-> +
-> +	/* These are the min dividers needed for min hold times. */
-> +	min_low_div = DIV_ROUND_UP(i2c_rate_khz * min_low_ns, 8 * 1000000);
-> +	min_high_div = DIV_ROUND_UP(i2c_rate_khz * min_high_ns, 8 * 1000000);
-> +	min_div_for_hold = (min_low_div + min_high_div);
-> +
-> +	/*
-> +	 * This is the maximum divider so we don't go over the max.
-> +	 * We don't round up here (we round down) since this is a max.
-> +	 */
-> +	max_low_div = i2c_rate_khz * max_low_ns / (8 * 1000000);
-> +
-> +	if (min_low_div > max_low_div) {
-> +		WARN_ONCE(true,
-> +			  "Conflicting, min_low_div %lu, max_low_div %lu\n",
-> +			  min_low_div, max_low_div);
-> +		max_low_div = min_low_div;
-> +	}
-> +
-> +	if (min_div_for_hold > min_total_div) {
-> +		/*
-> +		 * Time needed to meet hold requirements is important.
-> +		 * Just use that.
-> +		 */
-> +		*div_low = min_low_div;
-> +		*div_high = min_high_div;
-> +	} else {
-> +		/*
-> +		 * We've got to distribute some time among the low and high
-> +		 * so we don't run too fast.
-> +		 */
-> +		extra_div = min_total_div - min_div_for_hold;
-> +
-> +		/*
-> +		 * We'll try to split things up perfectly evenly,
-> +		 * biasing slightly towards having a higher div
-> +		 * for low (spend more time low).
-> +		 */
-> +		ideal_low_div = DIV_ROUND_UP(i2c_rate_khz * min_low_ns,
-> +					     scl_rate_khz * 8 * min_total_ns);
-> +
-> +		/* Don't allow it to go over the max */
-> +		if (ideal_low_div > max_low_div)
-> +			ideal_low_div = max_low_div;
-> +
-> +		/*
-> +		 * Handle when the ideal low div is going to take up
-> +		 * more than we have.
-> +		 */
-> +		if (ideal_low_div > min_low_div + extra_div)
-> +			ideal_low_div = min_low_div + extra_div;
-> +
-> +		/* Give low the "ideal" and give high whatever extra is left */
-> +		extra_low_div = ideal_low_div - min_low_div;
-> +		*div_low = ideal_low_div;
-> +		*div_high = min_high_div + (extra_div - extra_low_div);
-> +	}
-> +
-> +	/*
-> +	* Adjust to the fact that the hardware has an implicit "+1".
-> +	* NOTE: Above calculations always produce div_low > 0 and  div_high > 0.
-> +	*/
-> +	*div_low = *div_low - 1;
-> +	*div_high = *div_high - 1;
-
-I know the old code didn't have it either, but can we add overflow protection 
-here? I.e. check for *div_low > 0xFFFF || *div_high > 0xFFFF and return
--EINVAL from rk3x_i2c_calc_divs?
-
-My WIP dynamic clock rate change patch also needs to detect this condition to 
-reject too fast input clock rates, so I'm in favor of returning an error code 
-instead of limiting silently or using WARN_ON.
-
-> +}
-> +
->  static void rk3x_i2c_set_scl_rate(struct rk3x_i2c *i2c, unsigned long
-> scl_rate) {
->  	unsigned long i2c_rate = clk_get_rate(i2c->clk);
-> -	unsigned int div;
-> +	unsigned long div_low, div_high;
-> +	u64 t_low_ns, t_high_ns;
+> > +
+> > +struct driver_override_entry {
+> > +	unsigned int domain;
 > 
-> -	/* set DIV = DIVH = DIVL
-> -	 * SCL rate = (clk rate) / (8 * (DIVH + 1 + DIVL + 1))
-> -	 *          = (clk rate) / (16 * (DIV + 1))
-> -	 */
-> -	div = DIV_ROUND_UP(i2c_rate, scl_rate * 16) - 1;
-> +	rk3x_i2c_calc_divs(i2c_rate, scl_rate, &div_low, &div_high);
-> +
-> +	i2c_writel(i2c, (div_high << 16) | (div_low & 0xffff), REG_CLKDIV);
+> u16
+Sure
 > 
-> -	i2c_writel(i2c, (div << 16) | (div & 0xffff), REG_CLKDIV);
-> +	t_low_ns = div_u64(((u64)div_low + 1) * 8 * 1000000000, i2c_rate);
-> +	t_high_ns = div_u64(((u64)div_high + 1) * 8 * 1000000000, i2c_rate);
-> +	dev_dbg(i2c->dev,
-> +		"CLK %lukhz, Req %luns, Act low %lluns high %lluns\n",
-> +		i2c_rate / 1000,
-> +		1000000000 / scl_rate,
-> +		t_low_ns, t_high_ns);
->  }
+> > +	unsigned char bus;
 > 
->  /**
+> u8
+Sure
+> 
+> > +	unsigned int devfn;
+> 
+> u8
+Sure
+> 
+> > +	char driver_name[DRIVER_OVERRIDE_NAME_LENGTH];
+I'll allocate it dynamically
 
-Cheers,
-  Max
+> > +};
+> > +
+> > +static struct driver_override_entry __initdata
+> > +	driver_override_map[DRIVER_OVERRIDE_MAP_SIZE];
+> > +static int driver_override_num_entries __initdata;
+> > +
+> > +void pci_device_setup_driver_override(struct pci_dev *dev)
+> > +{
+> > +	int i;
+> > +
+> > +	for (i = 0; i < driver_override_num_entries; i++) {
+> > +		if (pci_domain_nr(dev->bus) != driver_override_map[i].domain ||
+> > +		    dev->bus->number != driver_override_map[i].bus ||
+> > +		    dev->devfn != driver_override_map[i].devfn)
+> > +			continue;
+> > +
+> > +		dev->driver_override = kstrndup(driver_override_map[i].driver_name,
+> > +						DRIVER_OVERRIDE_NAME_LENGTH,
+> > +						GFP_KERNEL);
+> > +		break;
+> > +	}
+> > +}
+> > +
+> > +static void __init pci_parse_driver_override(char *str)
+> > +{
+> > +	unsigned int domain, bus, dev, fn;
+> > +	char driver_name[DRIVER_OVERRIDE_NAME_LENGTH];
+> > +	int ret, next_entry;
+> > +	char format[] = "[%4x:%2x:%2x.%2x]=%%%ds";
+> > +
+> > +	sprintf(format + 18, "%%%ds", DRIVER_OVERRIDE_NAME_LENGTH);
+> 
+> There must be a less confusing way to do this.
+I'll try it, and also I'll get rid of DRIVER_OVERRIDE_NAME_LENGTH
+restriction.
+
+> 
+> > +	ret = sscanf(str, format, &domain, &bus, &dev, &fn, driver_name);
+> > +
+> > +	if (ret != 5) {
+> > +		pr_err("PCI: Invalid command line: driver%s\n", str);
+> > +		return;
+> > +	}
+> > +
+> > +	if (driver_override_num_entries == DRIVER_OVERRIDE_MAP_SIZE) {
+> > +		pr_err("PCI: Driver map overflow - ignoring driver%s\n", str);
+> > +		return;
+> > +	}
+> > +
+> > +	next_entry = driver_override_num_entries++;
+> > +	driver_override_map[next_entry].domain = domain;
+> > +	driver_override_map[next_entry].bus = bus && 0xff;
+> 
+> How could it not be given our format?
+Right, I'll remove the check.
+> 
+> > +	driver_override_map[next_entry].devfn = ((dev & 0x1f) << 3) | (fn & 0x7);
+> 
+> PCI_DEVFN(dev, fn)
+Sure,
+
+Thank you for the review,
+Marcel
+
+> 
+> > +	memcpy(driver_override_map[next_entry].driver_name,
+> > +	       driver_name, sizeof(driver_name));
+> > +}
+> > +
+> >  static int __init pci_setup(char *str)
+> >  {
+> >  	while (str) {
+> > @@ -4468,6 +4527,8 @@ static int __init pci_setup(char *str)
+> >  				pcie_bus_config = PCIE_BUS_PEER2PEER;
+> >  			} else if (!strncmp(str, "pcie_scan_all", 13)) {
+> >  				pci_add_flags(PCI_SCAN_ALL_PCIE_DEVS);
+> > +			} else if (!strncmp(str, "driver", 6)) {
+> > +				pci_parse_driver_override(str + 6);
+> >  			} else {
+> >  				printk(KERN_ERR "PCI: Unknown option `%s'\n",
+> >  						str);
+> > diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
+> > index 0601890..023d78b 100644
+> > --- a/drivers/pci/pci.h
+> > +++ b/drivers/pci/pci.h
+> > @@ -197,6 +197,7 @@ enum pci_bar_type {
+> >  bool pci_bus_read_dev_vendor_id(struct pci_bus *bus, int devfn, u32 *pl,
+> >  				int crs_timeout);
+> >  int pci_setup_device(struct pci_dev *dev);
+> > +void pci_device_setup_driver_override(struct pci_dev *dev);
+> >  int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
+> >  		    struct resource *res, unsigned int reg);
+> >  int pci_resource_bar(struct pci_dev *dev, int resno, enum pci_bar_type *type);
+> 
+> 
+> 
+
+
+
