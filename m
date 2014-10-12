@@ -1,50 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564AbaJLM5P (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 08:57:15 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52774 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752510AbaJLM5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 08:57:10 -0400
+	id S1751954AbaJLNRU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 09:17:20 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56535 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159AbaJLNRT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Oct 2014 09:17:19 -0400
+Date: Sun, 12 Oct 2014 15:17:14 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: riel@redhat.com
+Cc: linux-kernel@vger.kernel.org, mgorman@suse.de, chegu_vinod@hp.com,
+        mingo@kernel.org, efault@gmx.de, vincent.guittot@linaro.org
+Subject: Re: [PATCH RFC 1/5] sched,numa: build table of node hop distance
+Message-ID: <20141012131714.GE3015@worktop>
+References: <1412797050-8903-1-git-send-email-riel@redhat.com>
+ <1412797050-8903-2-git-send-email-riel@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <542DA4D4.4070202@ti.com>
-References: <1412001499-19369-1-git-send-email-grygorii.strashko@ti.com>
-	<1412001499-19369-3-git-send-email-grygorii.strashko@ti.com>
-	<542DA4D4.4070202@ti.com>
-Date: Sun, 12 Oct 2014 05:57:05 -0700
-Message-ID: <CAMAWPa96Kqg8r3GqJQoiSTspFnHo3gnWxzBtCpei7-nCXN+Dzw@mail.gmail.com>
-Subject: Re: [PATCH v1 2/4] ARM: keystone: pm: switch to use generic pm domains
-From: Kevin Hilman <khilman@kernel.org>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kevin Hilman <khilman@linaro.org>
-Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, grant.likely@secretlab.ca,
-        ulf.hansson@linaro.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>, devicetree@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412797050-8903-2-git-send-email-riel@redhat.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/2/14 12:17 PM, Santosh Shilimkar wrote:
-> On Monday 29 September 2014 10:38 AM, Grygorii Strashko wrote:
->> This patch switches Keystone 2 PM code to use Generic PM domains
->> instead of PM clock domains because of the lack of DT support
->> for the last.
->>
->> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
->> ---
+On Wed, Oct 08, 2014 at 03:37:26PM -0400, riel@redhat.com wrote:
+> +	sched_domains_numa_hops = kzalloc(sizeof(int) * nr_node_ids * nr_node_ids, GFP_KERNEL);
+> +	if (!sched_domains_numa_hops)
+> +		return;
 
-[...]
-
->> Other than that patch looks fine to me. If Kevin is happy
->> with overall approach then we can proceed with this.
-
-Looks good to me:
-
-Reviewed-by: Kevin Hilman <khilman@linaro.org>
+That's potentially a _BIG_ table (1M for a 512 node system).
+The node_distance has magic allocations and is of u8 size, is there any
+way we can re-use node_distance and avoid a second O(n^2) allocation?
