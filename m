@@ -1,53 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751301AbaJLINb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 04:13:31 -0400
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:12856 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772AbaJLIN1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 04:13:27 -0400
-X-IronPort-AV: E=Sophos;i="5.04,703,1406617200"; 
-   d="scan'208";a="48240590"
-Message-ID: <543A382F.5060608@broadcom.com>
-Date: Sun, 12 Oct 2014 10:13:35 +0200
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1751878AbaJLIap (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 04:30:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34866 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750826AbaJLIag (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Oct 2014 04:30:36 -0400
+Date: Sun, 12 Oct 2014 11:34:00 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, kvm@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-api@vger.kernel.org
+Subject: [PATCH] kvm: drop unsupported capabilities, fix documentation
+Message-ID: <1413102816-9289-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] debugfs: add helper function to create device related
- seq_file
-References: <1413043315-22332-1-git-send-email-arend@broadcom.com> <20141011201723.GA29439@kroah.com>
-In-Reply-To: <20141011201723.GA29439@kroah.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-10-14 22:17, Greg Kroah-Hartman wrote:
-> On Sat, Oct 11, 2014 at 06:01:55PM +0200, Arend van Spriel wrote:
->> This patch adds a helper function that simplifies adding a
->> sequence file for device drivers. The calling device driver
->> needs to provide a read function and a device pointer. The
->> field struct seq_file::private will reference the device
->> pointer upon call to the read function so the driver can
->> obtain his data from it and do its seq_printf() calls.
->>
->> Signed-off-by: Arend van Spriel <arend@broadcom.com>
->> ---
->>  fs/debugfs/file.c       | 54 +++++++++++++++++++++++++++++++++++++++++++++++++
->>  include/linux/debugfs.h | 16 ++++++++++++++-
->>  2 files changed, 69 insertions(+), 1 deletion(-)
-> 
-> Do you have some kernel code pending that needs this change?  Or can
-> existing users be moved to it, saving them code?
+No kernel ever reported KVM_CAP_DEVICE_MSIX, KVM_CAP_DEVICE_MSI,
+KVM_CAP_DEVICE_ASSIGNMENT, KVM_CAP_DEVICE_DEASSIGNMENT.
 
-Yes and maybe. I made a similar change in our brcm80211 drivers, but
-figured it may be useful for other device drivers. So when this gets in
-the kernel I want to align the brcm80211 drivers. I will also have a
-quick look at the wireless drivers and get some metrics about code savings.
+This makes the documentation wrong, and no application ever
+written to use these capabilities has a chance to work correctly.
+The only way to detect support is to try, and test errno for ENOTTY.
+That's unfortunate, but we can't fix the past.
 
-Regards,
-Arend
+Document the actual semantics, and drop the definitions from
+the exported header to make it easier for application
+developers to note and fix the bug.
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ include/uapi/linux/kvm.h          |  8 --------
+ Documentation/virtual/kvm/api.txt | 40 ++++++++++++++++++++++++++++++++-------
+ 2 files changed, 33 insertions(+), 15 deletions(-)
+
+diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
+index cf3a2ff..98d72f7 100644
+--- a/include/uapi/linux/kvm.h
++++ b/include/uapi/linux/kvm.h
+@@ -647,11 +647,7 @@ struct kvm_ppc_smmu_info {
+ #define KVM_CAP_MP_STATE 14
+ #define KVM_CAP_COALESCED_MMIO 15
+ #define KVM_CAP_SYNC_MMU 16  /* Changes to host mmap are reflected in guest */
+-#define KVM_CAP_DEVICE_ASSIGNMENT 17
+ #define KVM_CAP_IOMMU 18
+-#ifdef __KVM_HAVE_MSI
+-#define KVM_CAP_DEVICE_MSI 20
+-#endif
+ /* Bug in KVM_SET_USER_MEMORY_REGION fixed: */
+ #define KVM_CAP_DESTROY_MEMORY_REGION_WORKS 21
+ #ifdef __KVM_HAVE_USER_NMI
+@@ -665,10 +661,6 @@ struct kvm_ppc_smmu_info {
+ #endif
+ #define KVM_CAP_IRQ_ROUTING 25
+ #define KVM_CAP_IRQ_INJECT_STATUS 26
+-#define KVM_CAP_DEVICE_DEASSIGNMENT 27
+-#ifdef __KVM_HAVE_MSIX
+-#define KVM_CAP_DEVICE_MSIX 28
+-#endif
+ #define KVM_CAP_ASSIGN_DEV_IRQ 29
+ /* Another bug in KVM_SET_USER_MEMORY_REGION fixed: */
+ #define KVM_CAP_JOIN_MEMORY_REGIONS_WORKS 30
+diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+index beae3fd..0fe195c 100644
+--- a/Documentation/virtual/kvm/api.txt
++++ b/Documentation/virtual/kvm/api.txt
+@@ -68,9 +68,12 @@ description:
+ 
+   Capability: which KVM extension provides this ioctl.  Can be 'basic',
+       which means that is will be provided by any kernel that supports
+-      API version 12 (see section 4.1), or a KVM_CAP_xyz constant, which
++      API version 12 (see section 4.1), a KVM_CAP_xyz constant, which
+       means availability needs to be checked with KVM_CHECK_EXTENSION
+-      (see section 4.4).
++      (see section 4.4), or 'none' which means that while not all kernels
++      support this ioctl, there's no capability bit to check its
++      availability: for kernels that don't support the ioctl,
++      the ioctl returns -ENOTTY.
+ 
+   Architectures: which instruction set architectures provide this ioctl.
+       x86 includes both i386 and x86_64.
+@@ -1257,7 +1260,7 @@ The flags bitmap is defined as:
+ 
+ 4.48 KVM_ASSIGN_PCI_DEVICE
+ 
+-Capability: KVM_CAP_DEVICE_ASSIGNMENT
++Capability: none
+ Architectures: x86 ia64
+ Type: vm ioctl
+ Parameters: struct kvm_assigned_pci_dev (in)
+@@ -1298,10 +1301,16 @@ Only PCI header type 0 devices with PCI BAR resources are supported by
+ device assignment.  The user requesting this ioctl must have read/write
+ access to the PCI sysfs resource files associated with the device.
+ 
++Errors:
++  ENOTTY: kernel does not support this ioctl
++
++  Other error conditions may be defined by individual device types or
++  have their standard meanings.
++
+ 
+ 4.49 KVM_DEASSIGN_PCI_DEVICE
+ 
+-Capability: KVM_CAP_DEVICE_DEASSIGNMENT
++Capability: none
+ Architectures: x86 ia64
+ Type: vm ioctl
+ Parameters: struct kvm_assigned_pci_dev (in)
+@@ -1309,9 +1318,14 @@ Returns: 0 on success, -1 on error
+ 
+ Ends PCI device assignment, releasing all associated resources.
+ 
+-See KVM_CAP_DEVICE_ASSIGNMENT for the data structure. Only assigned_dev_id is
++See KVM_ASSIGN_PCI_DEVICE for the data structure. Only assigned_dev_id is
+ used in kvm_assigned_pci_dev to identify the device.
+ 
++Errors:
++  ENOTTY: kernel does not support this ioctl
++
++  Other error conditions may be defined by individual device types or
++  have their standard meanings.
+ 
+ 4.50 KVM_ASSIGN_DEV_IRQ
+ 
+@@ -1346,6 +1360,12 @@ The following flags are defined:
+ It is not valid to specify multiple types per host or guest IRQ. However, the
+ IRQ type of host and guest can differ or can even be null.
+ 
++Errors:
++  ENOTTY: kernel does not support this ioctl
++
++  Other error conditions may be defined by individual device types or
++  have their standard meanings.
++
+ 
+ 4.51 KVM_DEASSIGN_DEV_IRQ
+ 
+@@ -1423,7 +1443,7 @@ struct kvm_irq_routing_s390_adapter {
+ 
+ 4.53 KVM_ASSIGN_SET_MSIX_NR
+ 
+-Capability: KVM_CAP_DEVICE_MSIX
++Capability: none
+ Architectures: x86 ia64
+ Type: vm ioctl
+ Parameters: struct kvm_assigned_msix_nr (in)
+@@ -1445,7 +1465,7 @@ struct kvm_assigned_msix_nr {
+ 
+ 4.54 KVM_ASSIGN_SET_MSIX_ENTRY
+ 
+-Capability: KVM_CAP_DEVICE_MSIX
++Capability: none
+ Architectures: x86 ia64
+ Type: vm ioctl
+ Parameters: struct kvm_assigned_msix_entry (in)
+@@ -1461,6 +1481,12 @@ struct kvm_assigned_msix_entry {
+ 	__u16 padding[3];
+ };
+ 
++Errors:
++  ENOTTY: kernel does not support this ioctl
++
++  Other error conditions may be defined by individual device types or
++  have their standard meanings.
++
+ 
+ 4.55 KVM_SET_TSC_KHZ
+ 
+-- 
+MST
