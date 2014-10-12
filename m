@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752675AbaJLObG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 10:31:06 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56762 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751774AbaJLObC (ORCPT
+	id S1752712AbaJLOcG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 10:32:06 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:42242 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751774AbaJLOcD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 10:31:02 -0400
-Date: Sun, 12 Oct 2014 16:30:56 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: riel@redhat.com
-Cc: linux-kernel@vger.kernel.org, mgorman@suse.de, chegu_vinod@hp.com,
-        mingo@kernel.org, efault@gmx.de, vincent.guittot@linaro.org
-Subject: Re: [PATCH RFC 2/5] sched,numa: classify the NUMA topology of a
- system
-Message-ID: <20141012143056.GF3015@worktop>
-References: <1412797050-8903-1-git-send-email-riel@redhat.com>
- <1412797050-8903-3-git-send-email-riel@redhat.com>
+	Sun, 12 Oct 2014 10:32:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412797050-8903-3-git-send-email-riel@redhat.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <CA+55aFwGpnBgSeyjKQuwKwSpccTHvQwPJGEXfw2wx9LJ-kafTg@mail.gmail.com>
+References: <alpine.LRH.2.11.1410101913460.13164@namei.org>
+	<CA+55aFwGpnBgSeyjKQuwKwSpccTHvQwPJGEXfw2wx9LJ-kafTg@mail.gmail.com>
+Date: Sun, 12 Oct 2014 10:32:01 -0400
+X-Google-Sender-Auth: xQdKOPeEeH9waNVINZcoNL55sAg
+Message-ID: <CA+55aFxdQZup2rF+zoKj+xzTwZ2jZGewc18SGVihRXprUFsgSw@mail.gmail.com>
+Subject: Re: [GIT] Security subsystem upate for 3.18
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: James Morris <jmorris@namei.org>, Paul Moore <pmoore@redhat.com>
+Cc: LSM List <linux-security-module@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 03:37:27PM -0400, riel@redhat.com wrote:
-> +static void init_numa_topology_type(void)
-> +{
-> +	int a, b, c, n;
-> +
-> +	n = sched_domains_numa_levels;
-> +
-> +	if (n <= 1)
-> +		sched_numa_topology_type = NUMA_DIRECT;
-> +
-> +	for_each_online_node(a) {
-> +		for_each_online_node(b) {
-> +			/* Find two nodes furthest removed from each other. */
-> +			if (node_hops(a, b) < n)
-> +				continue;
-> +
-> +			/* Is there an intermediary node between a and b? */
-> +			for_each_online_node(c) {
-> +				if (node_hops(a, c) < n &&
-> +				    node_hops(b, c) < n) {
-> +					sched_numa_topology_type =
-> +							NUMA_GLUELESS_MESH;
-> +					return;
-> +				}
-> +			}
-> +
-> +			sched_numa_topology_type = NUMA_BACKPLANE;
-> +			return;
-> +		}
-> +	}
-> +}
+On Sun, Oct 12, 2014 at 10:12 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Give me a synopsis of what has changed and why I should pull.
 
-We can find max_distance nodes in sched_init_numa(), right? Could we not
-avoid this second iteration?
+Side note: this is not just for me personally (so that I have a better
+overview of what is going on during the merge window), but also so
+that I can make sure that my merge messages are informative and tell
+people what I merged and why.
+
+In a perfect world, people could just read my merge messages and get a
+good overview of everything that has changed. But that depends on
+maintainers giving me those nice summaries of what the big important
+changes have been for that merge. I can, and occasionally do, try to
+write something up myself, but quite frankly, subsystem maintainers
+are just *so* much better positioned to give a good summary of what
+has been going on, that I really want that.
+
+Of course, sometimes the summary might just be "a few trivial fixes"
+and then people who really want the details can just look at the
+individual commits. At other times, maybe you'd want to go into more
+detail about some subtle change. There's no fixed format, but it's
+supposed to be a human-readable quick high-level overview of what the
+merge brings in.
+
+You can just do "git log --author=Torvalds --merges" to see examples
+of what people send me. Some people explain more, some explain less, I
+really don't have any hard requirements. But I do want to get *some*
+overview.
+
+                 Linus
