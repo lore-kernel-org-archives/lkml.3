@@ -1,37 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564AbaJLRau (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 13:30:50 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:51061 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413AbaJLRat (ORCPT
+	id S1752657AbaJLRgj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 13:36:39 -0400
+Received: from rrcs-76-79-27-186.west.biz.rr.com ([76.79.27.186]:17452 "EHLO
+	rrcs-76-79-27-186.west.biz.rr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752435AbaJLRgi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 13:30:49 -0400
-Date: Sun, 12 Oct 2014 13:30:47 -0400 (EDT)
-Message-Id: <20141012.133047.427141450441745027.davem@davemloft.net>
-To: js1304@gmail.com
-Cc: linux-kernel@vger.kernel.org, cl@linux.com, penberg@kernel.org,
-        rientjes@google.com, iamjoonsoo.kim@lge.com, akpm@linux-foundation.org,
-        linux-mm@kvack.org
-Subject: Re: unaligned accesses in SLAB etc.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CAAmzW4Nrzp8TKurmevqmAV5kVRP2af1wZKqYcYH9RXroTZavpw@mail.gmail.com>
-References: <20141011.221510.1574777235900788349.davem@davemloft.net>
-	<CAAmzW4Nrzp8TKurmevqmAV5kVRP2af1wZKqYcYH9RXroTZavpw@mail.gmail.com>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 12 Oct 2014 10:30:49 -0700 (PDT)
+	Sun, 12 Oct 2014 13:36:38 -0400
+X-Greylist: delayed 2173 seconds by postgrey-1.27 at vger.kernel.org; Sun, 12 Oct 2014 13:36:38 EDT
+Date: Sun, 12 Oct 2014 12:00:03 -0500
+From: Jeff Epler <jepler@unpythonic.net>
+To: Chuck Ebbert <cebbert.lkml@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Clean up stack access code in irq_32.c
+Message-ID: <20141012170003.GA96036@unpythonic.net>
+References: <20141012114353.4aa73c00@as>
+ <17ED2609-CA12-4842-8ECE-A1F08693FC01@zytor.com>
+ <20141012115332.5ec3db90@as>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141012115332.5ec3db90@as>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joonsoo Kim <js1304@gmail.com>
-Date: Mon, 13 Oct 2014 02:22:15 +0900
+It looks like the proposed variant still miscompiles in clang 3.4 and 3.5, the
+two versions I had handy to test.
 
-> Could you test below patch?
-> If it fixes your problem, I will send it with proper description.
+I extracted your code to a simple standalone C translation unit and
+inspected various compilers' results via objdump.
 
-It works, I just tested using ARCH_KMALLOC_MINALIGN which would be
-better.
+// cut here for cso.c
+struct thread_info { long l[32]; }; // who knows
+
+#define STACK_WARN (1024)
+#define PAGE_SIZE (4096)
+
+#define THREAD_SIZE_ORDER      2
+#define THREAD_SIZE            (PAGE_SIZE << THREAD_SIZE_ORDER)
+#define THREAD_SIZE_MASK       (THREAD_SIZE - 1)
+#define CURRENT_MASK           (~THREAD_SIZE_MASK)
+
+/* how to get the current stack pointer from C */
+#define current_stack_pointer ({               \
+       register unsigned long sp asm("esp");   \
+       sp;                                     \
+})
+
+int check_stack_overflow0(void)
+{
+       long sp;
+
+       __asm__ __volatile__("andl %%esp,%0" :
+                            "=r" (sp) : "0" (THREAD_SIZE - 1));
+
+       return sp < (sizeof(struct thread_info) + STACK_WARN);
+}
+
+int check_stack_overflow1(void)
+{
+       return (current_stack_pointer & THREAD_SIZE_MASK)
+              < sizeof(struct thread_info) + STACK_WARN;
+}
+// end cso.c
+
+Typical compiler invocation:
+        clang-3.5 -m32 -Os -c cso.c
+
+Both clang-3.4 and clang-3.5 as packaged for debian jessie seem to get
+check_stack_overflow1 wrong, yielding a function which always returns true:
+
+    00000000 <check_stack_overflow1>:
+       0:   b8 01 00 00 00          mov    $0x1,%eax
+       5:   c3                      ret    
+
+Jeff
