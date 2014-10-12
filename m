@@ -1,41 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752481AbaJLN2v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 09:28:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19637 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751115AbaJLN2u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 09:28:50 -0400
-Message-ID: <543A81E4.4090504@redhat.com>
-Date: Sun, 12 Oct 2014 09:28:04 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1751774AbaJLOMe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 10:12:34 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:55761 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751115AbaJLOM3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Oct 2014 10:12:29 -0400
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: linux-kernel@vger.kernel.org, mgorman@suse.de, chegu_vinod@hp.com,
-        mingo@kernel.org, efault@gmx.de, vincent.guittot@linaro.org
-Subject: Re: [PATCH RFC 1/5] sched,numa: build table of node hop distance
-References: <1412797050-8903-1-git-send-email-riel@redhat.com> <1412797050-8903-2-git-send-email-riel@redhat.com> <20141012131714.GE3015@worktop>
-In-Reply-To: <20141012131714.GE3015@worktop>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.LRH.2.11.1410101913460.13164@namei.org>
+References: <alpine.LRH.2.11.1410101913460.13164@namei.org>
+Date: Sun, 12 Oct 2014 10:12:28 -0400
+X-Google-Sender-Auth: KE6LCGLQpBjs5J4K-fPbiA9IQt4
+Message-ID: <CA+55aFwGpnBgSeyjKQuwKwSpccTHvQwPJGEXfw2wx9LJ-kafTg@mail.gmail.com>
+Subject: Re: [GIT] Security subsystem upate for 3.18
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: James Morris <jmorris@namei.org>, Paul Moore <pmoore@redhat.com>
+Cc: LSM List <linux-security-module@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/2014 09:17 AM, Peter Zijlstra wrote:
-> On Wed, Oct 08, 2014 at 03:37:26PM -0400, riel@redhat.com wrote:
->> +	sched_domains_numa_hops = kzalloc(sizeof(int) * nr_node_ids * nr_node_ids, GFP_KERNEL);
->> +	if (!sched_domains_numa_hops)
->> +		return;
+On Fri, Oct 10, 2014 at 4:23 AM, James Morris <jmorris@namei.org> wrote:
 >
-> That's potentially a _BIG_ table (1M for a 512 node system).
-> The node_distance has magic allocations and is of u8 size, is there any
-> way we can re-use node_distance and avoid a second O(n^2) allocation?
+> One of these is from merging with your v3.16, and the other from a merge
+> of the keys tree.  That's about all I understand of it.
 
-You are right, this should be a u8 at the least.
+Please don't do back-merges. What was the reason for that v3.16 merge?
+It only caused problems, and the merge message is this worthless
+oneliner:
 
-Beyond that, I am not convinced that merging things into
-the same array is worthwhile, since (IIRC) nr_node_ids
-should be set to the actual number of nodes on the system
-by then.
+  "Merge commit 'v3.16' into next"
+
+that's it. No reason why, and there doesn't seem to be any merge
+conflicts fixed up either, so why was that merge done? The commit
+message sure as hell doesn't explain it.
+
+There's another one, by Paul Moore:
+
+   "Merge tag 'v3.16' into next
+
+    Linux 3.16"
+
+and please tell me what that (now two-line) merge message adds to the
+world, and why those merges were done at all?
+
+People, stop doing these back-merges. You are doing them wrong, and
+they cause problems. Just stop it. And if you have some seriously good
+reason for why you are doing them, you should damn well *document*
+that reason, rather than say "Merge v3.16" and leave it at that. If
+you *don't* have a good reason for doing them, don't do them!
+
+Also, James, *please* give a short description of what I'm merging,
+and include both "git" and "pull" in the pull request. As it is, I see
+the shortlog and the (completely incorrect, due to the back-merge)
+diffstat, but I don't see *why* I should merge it at all. Give me a
+synopsis of what has changed and why I should pull.
+
+And finally - I didn't even find the pull request at all with my
+normal "look for git pull requests" search that - not completely
+randomly - looks for "in:inbox git pull". If I don't find a pull
+request with that, it easily gets overlooked. So change your scripts
+to add "Please pull" into the body of the message, or make the subject
+line be "[GIT PULL]" or something.
+
+These are all things I've ranted about many times before.  Please.
+
+                   Linus
