@@ -1,39 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766AbaJLVHR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 17:07:17 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:36040 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752432AbaJLVHP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 17:07:15 -0400
-Date: Sun, 12 Oct 2014 22:07:13 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Eric Biggers <ebiggers3@gmail.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] fs/anon_inodes.c: Simplify control flow in
- anon_inode_getfd()
-Message-ID: <20141012210712.GT7996@ZenIV.linux.org.uk>
-References: <1413146562-18147-1-git-send-email-ebiggers3@gmail.com>
- <1413146562-18147-2-git-send-email-ebiggers3@gmail.com>
+	id S1752634AbaJLVRU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 17:17:20 -0400
+Received: from mout.gmx.net ([212.227.15.19]:54439 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751107AbaJLVRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Oct 2014 17:17:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413146562-18147-2-git-send-email-ebiggers3@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-ID: <trinity-a39c399d-cb0d-4c21-9832-85c3e26ba984-1413148618336@3capp-gmx-bs11>
+From: "Peter Huewe" <PeterHuewe@gmx.de>
+To: "Jarkko Sakkinen" <jarkko.sakkinen@linux.intel.com>
+Cc: "Andy Lutomirski" <luto@amacapital.net>, keyrings@linux-nfs.org,
+        jarkko.sakkinnen@linux.intel.com,
+        "ksummit-discuss@lists.linuxfoundation.org" 
+	<ksummit-discuss@lists.linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "LSM List" <linux-security-module@vger.kernel.org>,
+        tpmdd-devel@lists.sourceforge.net,
+        "James Morris" <james.l.morris@oracle.com>,
+        linux-ima-devel@lists.sourceforge.net,
+        trousers-tech@lists.sourceforge.net
+Subject: Aw: Re: [tpmdd-devel] [Ksummit-discuss] TPM MiniSummit @ LinuxCon
+ Europe
+Content-Type: text/plain; charset=UTF-8
+Date: Sun, 12 Oct 2014 23:16:58 +0200
+Importance: normal
+Sensitivity: Normal
+In-Reply-To: <20141012181721.GB5495@intel.com>
+References: <trinity-2d36367c-59c5-44af-8737-fb503e10af38-1411376491498@3capp-gmx-bs07>
+ <CALCETrWdPmSCUkb-neH5ssNmxzsqY0rioQq5qMc2ne7J0JxVLg@mail.gmail.com>,
+ <20141012181721.GB5495@intel.com>
+X-UI-Message-Type: mail
+X-Priority: 3
+X-Provags-ID: V03:K0:lxLvyxtsd2l55BHZA8bMvPBgG/EC1ssIw6o/3Z5tXP7
+ pnoRnKB6aFPicXwQQeI8l95dOPfiRA4mMNSMbm+W0N4WQA8YDO
+ qYbiPyh91ArgeHLJPDVE2mWOaZLl1Z/UHCZW320EmWZAFrEtjO
+ /SR6s4ZP5pfTaDpPzITohzojg/a11N9GTtJ0NuNn0AvtzL4UbI
+ i08mtdqOYDM+zdjH3mU2wAkE44+KNCgTSXtDOIPNGfF5Ipvhl1
+ MkeVBh6v4bdrtL9+Ctl3KTn4Sn39ZOlol3/ga4GshBQdUPtlxI 7EboTE=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 12, 2014 at 03:42:39PM -0500, Eric Biggers wrote:
+Hi 
+> apologies for top-posting but which day/time/place is this going to be held?
+I'd suggest that we either meet tomorrow (Monday) during the other BoF Sessions @ 5:30pm or afterwards.
+Does one of the attendees have a conflict with the BOFs or the VIP Reception?
+Personally, I think it's most important that you Jarkko can join the meetup since you're developing the most on TPM2.0.
 
->  	file = anon_inode_getfile(name, fops, priv, flags);
->  	if (IS_ERR(file)) {
-> -		error = PTR_ERR(file);
-> -		goto err_put_unused_fd;
-> +		put_unused_fd(fd);
-> +		return PTR_ERR(file);
->  	}
->  	fd_install(fd, file);
 
-at least slap unlikely() on that if (IS_ERR(...))...
+Since I don't have a special room booked, I'd suggest that we meet in the "Lobby" and then head out for a beer - since I haven't prepared any slides I would organize the meeting as a BOF.
+
+Thanks,
+Peter
