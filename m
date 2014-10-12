@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752523AbaJLOam (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 10:30:42 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38318 "EHLO
+	id S1752613AbaJLOas (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 10:30:48 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38326 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159AbaJLOag (ORCPT
+	with ESMTP id S1752494AbaJLOam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 10:30:36 -0400
-Date: Sun, 12 Oct 2014 16:30:33 +0200
-From: Pavel Machek <pavel@denx.de>
-To: dinguyen@opensource.altera.com
-Cc: p.zabel@pengutronix.de, dinh.linux@gmail.com, s.trumtrar@pengutronix.de,
-        grant.likely@linaro.org, robh+dt@kernel.org,
-        atull@opensource.altera.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] reset: socfpga: use arch_initcall for early
- initialization
-Message-ID: <20141012143033.GB378@amd>
-References: <1412822646-11257-1-git-send-email-dinguyen@opensource.altera.com>
+	Sun, 12 Oct 2014 10:30:42 -0400
+Date: Sun, 12 Oct 2014 16:30:39 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Vojtech Pavlik <vojtech@suse.cz>, Hans de Goede <hdegoede@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: i8042 - disable active multiplexing by default
+Message-ID: <20141012143039.GC378@amd>
+References: <20141010205131.GA3271@dtor-ws>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1412822646-11257-1-git-send-email-dinguyen@opensource.altera.com>
+In-Reply-To: <20141010205131.GA3271@dtor-ws>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> From: Dinh Nguyen <dinguyen@opensource.altera.com>
+On Fri 2014-10-10 13:51:31, Dmitry Torokhov wrote:
+> Active multiplexing is a nice feature as it allows several pointing devices
+> (such as touchpad and external mouse) use their native protocols at the
+> same time. Unfortunately many manufacturers do not implement the feature
+> properly even though they advertise it. The problematic implementations are
+> never fixed, since Windows by default does not use this mode, and move from
+> one BIOS/model of laptop to another. When active multiplexing is broken
+> turning it on usually results in touchpad, keyboard, or both unresponsive.
 > 
-> There are certain drivers that are required to get loaded very early using
-> arch_initcall. An example of such a driver is the SOCFPGA's FPGA bridge driver.
-> This driver has to get loaded early because it needs to enable FPGA components
-> that are connected to the bridge.
+> With PS/2 usage on decline (most of PS/2 devices in use nowadays are
+> internal laptop touchpads), I expect number of users who have laptops with
+> working MUX implementation, docking stations with external PS/2 ports, and
+> who are still using external PS/2 mice, to be rather small. Let's flip the
+> default to be OFF and allow activating it through i8042.nomux=0 kernel
+> option.  We'll also keep DMI table where we can record known good models.
 > 
-> This FPGA bridge driver will using the reset controller API to toggle it's
-> reset bits, thus, it needs the reset driver to be loaded as early as possible
-> in order for it to get used properly.
-> 
-> Signed-off-by: Dinh Nguyen <dinguyen@opensource.altera.com>
+> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-> +static int __init socfpga_reset_init(void)
-> +{
-> +	return platform_driver_probe(&socfpga_reset_driver,
-> +					socfpga_reset_probe);
-> +}
-> +
-> +static void __exit socfpga_reset_exit(void)
-> +{
-> +	platform_driver_unregister(&socfpga_reset_driver);
-> +}
-> +
-> +arch_initcall(socfpga_reset_init);
-> +module_exit(socfpga_reset_exit);
+Could we keep the old default / blacklist for the old laptops? We did
+something like that for ACPI, based on year of the bios.
 
-That is quite a strange combination. Driver can be module but needs to
-be initialized early? Should we make it always built in?
+Old laptops are not being made any more, so blacklist will not grow
+too fast...
 
->  MODULE_AUTHOR("Steffen Trumtrar <s.trumtrar@pengutronix.de");
->  MODULE_DESCRIPTION("Socfpga Reset Controller Driver");
+								Pavel
 
 -- 
 (english) http://www.livejournal.com/~pavelmachek
