@@ -1,50 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793AbaJLRn6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 13:43:58 -0400
-Received: from mail-oi0-f42.google.com ([209.85.218.42]:56163 "EHLO
-	mail-oi0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752427AbaJLRn5 (ORCPT
+	id S1752634AbaJLRxy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 13:53:54 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:58569 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752458AbaJLRxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 13:43:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141012.133047.427141450441745027.davem@davemloft.net>
-References: <20141011.221510.1574777235900788349.davem@davemloft.net>
-	<CAAmzW4Nrzp8TKurmevqmAV5kVRP2af1wZKqYcYH9RXroTZavpw@mail.gmail.com>
-	<20141012.133047.427141450441745027.davem@davemloft.net>
-Date: Mon, 13 Oct 2014 02:43:57 +0900
-Message-ID: <CAAmzW4Pc=i9zHh5133Zc1rDRM1vaot18xXYwoMk8tTGtttwFgw@mail.gmail.com>
-Subject: Re: unaligned accesses in SLAB etc.
-From: Joonsoo Kim <js1304@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Memory Management List <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 12 Oct 2014 13:53:51 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Sagi Grimberg <sagig@mellanox.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Andy Grover <agrover@redhat.com>,
+        Thomas Glanzmann <thomas@glanzmann.de>,
+        Christophe Vu-Brugier <cvubrugier@yahoo.fr>,
+        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] target: iscsi: iscsi_target_tpg.c:  Cleaning up possible size overwriting in conjunction with sprintf
+Date: Sun, 12 Oct 2014 19:55:58 +0200
+Message-Id: <1413136558-20790-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-10-13 2:30 GMT+09:00 David Miller <davem@davemloft.net>:
-> From: Joonsoo Kim <js1304@gmail.com>
-> Date: Mon, 13 Oct 2014 02:22:15 +0900
->
->> Could you test below patch?
->> If it fixes your problem, I will send it with proper description.
->
-> It works, I just tested using ARCH_KMALLOC_MINALIGN which would be
-> better.
+Changed same snprintf and sprintf to strlcpy and strlcat.
+This will guarantee that the string size is not overwritten,
+and they are significantly faster than sprintf also.
 
-Oops. resend with whole Cc list.
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/target/iscsi/iscsi_target_tpg.c |   16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
 
-Thanks for testing.
-ARCH_KMALLOC_MINALIGN is for object alignment,
-but, current problem is caused by alignment of cpu cache array.
-I think that my fix is more proper in this situation.
-I will send fix tomorrow,
-because I'd like to test more and it's 2:42 am. :)
+diff --git a/drivers/target/iscsi/iscsi_target_tpg.c b/drivers/target/iscsi/iscsi_target_tpg.c
+index c3cb5c1..6fc8bfe 100644
+--- a/drivers/target/iscsi/iscsi_target_tpg.c
++++ b/drivers/target/iscsi/iscsi_target_tpg.c
+@@ -608,7 +608,6 @@ int iscsit_tpg_set_initiator_node_queue_depth(
+ int iscsit_ta_authentication(struct iscsi_portal_group *tpg, u32 authentication)
+ {
+ 	unsigned char buf1[256], buf2[256], *none = NULL;
+-	int len;
+ 	struct iscsi_param *param;
+ 	struct iscsi_tpg_attrib *a = &tpg->tpg_attrib;
+ 
+@@ -626,34 +625,33 @@ int iscsit_ta_authentication(struct iscsi_portal_group *tpg, u32 authentication)
+ 		return -EINVAL;
+ 
+ 	if (authentication) {
+-		snprintf(buf1, sizeof(buf1), "%s", param->value);
++		strlcpy(buf1, param->value, sizeof(buf1));
+ 		none = strstr(buf1, NONE);
+ 		if (!none)
+ 			goto out;
+ 		if (!strncmp(none + 4, ",", 1)) {
+ 			if (!strcmp(buf1, none))
+-				sprintf(buf2, "%s", none+5);
++				strlcpy(buf2, none+5, sizeof(buf2));
+ 			else {
+ 				none--;
+ 				*none = '\0';
+-				len = sprintf(buf2, "%s", buf1);
++				strlcpy(buf2, buf1, sizeof(buf2));
+ 				none += 5;
+-				sprintf(buf2 + len, "%s", none);
++				strlcat(buf2, none, sizeof(buf2));
+ 			}
+ 		} else {
+ 			none--;
+ 			*none = '\0';
+-			sprintf(buf2, "%s", buf1);
++			strlcpy(buf2, buf1, sizeof(buf2));
+ 		}
+ 		if (iscsi_update_param_value(param, buf2) < 0)
+ 			return -EINVAL;
+ 	} else {
+-		snprintf(buf1, sizeof(buf1), "%s", param->value);
++		strlcpy(buf1, param->value, sizeof(buf1));
+ 		none = strstr(buf1, NONE);
+ 		if (none)
+ 			goto out;
+-		strncat(buf1, ",", strlen(","));
+-		strncat(buf1, NONE, strlen(NONE));
++		strlcat(buf1, ","  NONE , sizeof(buf1));
+ 		if (iscsi_update_param_value(param, buf1) < 0)
+ 			return -EINVAL;
+ 	}
+-- 
+1.7.10.4
 
-Thanks.
