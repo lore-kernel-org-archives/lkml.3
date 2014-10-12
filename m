@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230AbaJLLpT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 07:45:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34623 "EHLO mx1.redhat.com"
+	id S1753316AbaJLLq2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 07:46:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53987 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753168AbaJLLpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 07:45:09 -0400
-Date: Sun, 12 Oct 2014 14:48:22 +0300
+	id S1751159AbaJLLqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Oct 2014 07:46:22 -0400
+Date: Sun, 12 Oct 2014 14:48:38 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Rusty Russell <rusty@rustcorp.com.au>,
@@ -17,10 +17,11 @@ Cc: Rusty Russell <rusty@rustcorp.com.au>,
         Cornelia Huck <cornelia.huck@de.ibm.com>,
         Christian Borntraeger <borntraeger@de.ibm.com>,
         "David S. Miller" <davem@davemloft.net>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: [PATCH v3 22/25] virtio_scsi: fix race on device removal
-Message-ID: <1413114332-626-23-git-send-email-mst@redhat.com>
+        Paolo Bonzini <pbonzini@redhat.com>, Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>, Amos Kong <akong@redhat.com>,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH v3 25/25] virtio-rng: refactor probe error handling
+Message-ID: <1413114332-626-26-git-send-email-mst@redhat.com>
 References: <1413114332-626-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -31,56 +32,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We cancel event work on device removal, but an interrupt
-could trigger immediately after this, and queue it
-again.
+Code like
+	vi->vq = NULL;
+	kfree(vi)
+does not make sense.
 
-To fix, set a flag.
+Clean it up, use goto error labels for cleanup.
 
-Loosely based on patch by Paolo Bonzini
-
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/scsi/virtio_scsi.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ drivers/char/hw_random/virtio-rng.c | 15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index 501838d..327eba0 100644
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -110,6 +110,9 @@ struct virtio_scsi {
- 	/* CPU hotplug notifier */
- 	struct notifier_block nb;
+diff --git a/drivers/char/hw_random/virtio-rng.c b/drivers/char/hw_random/virtio-rng.c
+index 132c9cc..72295ea 100644
+--- a/drivers/char/hw_random/virtio-rng.c
++++ b/drivers/char/hw_random/virtio-rng.c
+@@ -109,8 +109,8 @@ static int probe_common(struct virtio_device *vdev)
  
-+	/* Protected by event_vq lock */
-+	bool stop_events;
+ 	vi->index = index = ida_simple_get(&rng_index_ida, 0, 0, GFP_KERNEL);
+ 	if (index < 0) {
+-		kfree(vi);
+-		return index;
++		err = index;
++		goto err_ida;
+ 	}
+ 	sprintf(vi->name, "virtio_rng.%d", index);
+ 	init_completion(&vi->have_data);
+@@ -128,13 +128,16 @@ static int probe_common(struct virtio_device *vdev)
+ 	vi->vq = virtio_find_single_vq(vdev, random_recv_done, "input");
+ 	if (IS_ERR(vi->vq)) {
+ 		err = PTR_ERR(vi->vq);
+-		vi->vq = NULL;
+-		kfree(vi);
+-		ida_simple_remove(&rng_index_ida, index);
+-		return err;
++		goto err_find;
+ 	}
+ 
+ 	return 0;
 +
- 	struct virtio_scsi_vq ctrl_vq;
- 	struct virtio_scsi_vq event_vq;
- 	struct virtio_scsi_vq req_vqs[];
-@@ -303,6 +306,11 @@ static void virtscsi_cancel_event_work(struct virtio_scsi *vscsi)
- {
- 	int i;
- 
-+	/* Stop scheduling work before calling cancel_work_sync.  */
-+	spin_lock_irq(&vscsi->event_vq.vq_lock);
-+	vscsi->stop_events = true;
-+	spin_unlock_irq(&vscsi->event_vq.vq_lock);
-+
- 	for (i = 0; i < VIRTIO_SCSI_EVENT_LEN; i++)
- 		cancel_work_sync(&vscsi->event_list[i].work);
- }
-@@ -390,7 +398,8 @@ static void virtscsi_complete_event(struct virtio_scsi *vscsi, void *buf)
- {
- 	struct virtio_scsi_event_node *event_node = buf;
- 
--	queue_work(system_freezable_wq, &event_node->work);
-+	if (!vscsi->stop_events)
-+		queue_work(system_freezable_wq, &event_node->work);
++err_find:
++	ida_simple_remove(&rng_index_ida, index);
++err_ida:
++	kfree(vi);
++	return err;
  }
  
- static void virtscsi_event_done(struct virtqueue *vq)
+ static void remove_common(struct virtio_device *vdev)
 -- 
 MST
 
