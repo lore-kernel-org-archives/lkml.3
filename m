@@ -1,103 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780AbaJLVTk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 17:19:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11866 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751107AbaJLVTf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 17:19:35 -0400
-From: Paul Moore <pmoore@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: James Morris <jmorris@namei.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [GIT] Security subsystem upate for 3.18
-Date: Sun, 12 Oct 2014 17:19:24 -0400
-Message-ID: <1585069.kQpl3ZVDtr@sifl>
-Organization: Red Hat
-User-Agent: KMail/4.14.1 (Linux/3.16.1-gentoo; KDE/4.14.1; x86_64; ; )
-In-Reply-To: <CA+55aFwwB1uUnUKdQq28T-3AgVcwPSJR27HnTDnrCyD4xowUOQ@mail.gmail.com>
-References: <alpine.LRH.2.11.1410101913460.13164@namei.org> <18599898.QtEUVscf6i@sifl> <CA+55aFwwB1uUnUKdQq28T-3AgVcwPSJR27HnTDnrCyD4xowUOQ@mail.gmail.com>
+	id S1752839AbaJLVTo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 17:19:44 -0400
+Received: from mail-1.atlantis.sk ([80.94.52.57]:60602 "EHLO
+	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752757AbaJLVTl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Oct 2014 17:19:41 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Takashi Iwai <tiwai@suse.de>
+Subject: Re: Workable vintage driver support mechanism? (Re: [alsa-devel] [PATCH v3] ES938 support for ES18xx driver)
+Date: Sun, 12 Oct 2014 23:19:04 +0200
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: Andreas Mohr <andi@lisas.de>, alsa-devel@alsa-project.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+References: <1412027079-15876-1-git-send-email-linux@rainbow-software.org> <20141006184150.GA2465@rhlx01.hs-esslingen.de> <s5hr3ykla1p.wl-tiwai@suse.de>
+In-Reply-To: <s5hr3ykla1p.wl-tiwai@suse.de>
+X-KMail-QuotePrefix: > 
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201410122319.05127.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, October 12, 2014 11:50:41 AM Linus Torvalds wrote:
-> 
-> Examples of *good* reasons to do a back-merge:
-> 
->  - the code was developed on a really ancient tree, and is *so*
-> out-of-date that not only are there conflicts, they are complicated
-> and might be more than simple data conflicts - semantic changes etc
-> that you as a submaintainer might be better off handlng the merge of,
-> since you presumably know the code you are merging intimately.
-> 
->    Note: you may know your code intimately, but maybe you don't know
-> the other changes intimately, and maybe the top-level maintainer is
-> actually better at merging (possibly because that maintainer does 10+
-> merges a day at times). So "a few conflicts" is not necessarily a good
-> reason in itself, but there are certainly cases where things just get
-> so ugly that "break the rules" is a very valid approach.
-> 
->  - you actively need infrastructure from newer versions, so you need
-> to merge an upstream kernel for further development.
-> 
->    Even this is often questionable, but it's one of the best reasons
-> to do back-merges. However, if so, that back-merge should very much
-> spell out the exact reason why the merge was needed (not just "needed
-> upstream features" in general, but what particular features were
-> needed etc).
-> 
->  - and hey, as with so many (all) kernel development rules, I don't
-> actually want people to think that the rules are completely hard.
-> Mistakes happen, shit happens, things go wrong, whatever.
 
-Okay, understood.  I suppose I was hoping to see something a little less 
-subjective (?), if for no other reason than to avoid the "what the hell?!" 
-moments.  However, like you said, development is messy, and it's probably 
-naive to try and force too rigid a process.
 
-I'll stop back merging each new release without a valid reason.  I suspect 
-there will be disagreements at points in the future about if the merge was 
-truly warranted, but at least that is a step in the right direction.
+On Tuesday 07 October 2014 07:32:18 Takashi Iwai wrote:
+> At Mon, 6 Oct 2014 20:41:50 +0200,
+>
+> Andreas Mohr wrote:
+> > On Mon, Oct 06, 2014 at 04:13:12PM +0200, Takashi Iwai wrote:
+> > > At Mon, 6 Oct 2014 15:55:18 +0200,
+> > >
+> > > Ondrej Zary wrote:
+> > > > ES938 does not depend on ES18xx and can be connected to any device
+> > > > with MIDI interface. Maybe there are some other cards with this chip.
+> > >
+> > > Please prove it :)
+> > >
+> > :(
+> > :
+> > > That said, I'm not willing to merge the patch in the current form.
+> > > One of the reason is that this can be implemented pretty easily in
+> > > user-space.  Another is that it's a deadly old device, and likely only
+> > > handful boards are still running in the world, thus no much motivation
+> > > to bloat the kernel code for that.  We're even discussing to get rid
+> > > of ISA codes from the kernel tree nowadays.
+> > >
+> > > Sorry, the patch was submitted 10 years too late.
+> > >
+> > :((
+> >
+> > Given that I hate the forces that are increasingly coming into play here
+> > (but of course I do see the bigger picture, namely of kernel tree bloat),
+> > I think I have an idea which might be useful to accept:
+> > for every piece of sufficiently "vintage" submission,
+> > people would be tasked with offering (or somehow ensuring)
+> > a sufficiently closely time-related cleanup in other places.
+> >
+> > Thus, given a "diffstat penalty" (lines added minus lines removed)
+> > of the vintage support patch:
+> >
+> > Additionally offer a cleanup patch
+> > which gets rid of redundantly implemented kernel tree functionality:
+> > - for 15 year old devices: 0.5 * diffstat_penalty
+> > - for 20 year old devices: 1.0 * diffstat_penalty
+> > - for 25 year old devices: 1.5 * diffstat_penalty
+> > - for 30 year old devices: whaaa?
+>
+> The kernel bloat is one side, and your proposal would help to keep
+> figure.  But another side is the maintenance, as Clemens pointed.
+> It's obviously more difficult for exotic hardware devices.  So, it's
+> really case-by-case.
+>
+> Speaking of this particular patch, however, the reason for NAK isn't
+> (only) the vintage.  There are other concerns as I raised, especially
+> the ugliness of the interface it uses, and this doesn't have to be a
+> kernel stuff at all.  You could implement it as a user-space alsa-lib
+> plugin as well.
 
-Regardless, sorry for the problems this time around, hopefully things will be 
-smoother in the future.
+So do I understand correctly that there is no (right) way for a kernel driver 
+to issue MIDI commands?
 
-On Sunday, October 12, 2014 12:01:25 PM Linus Torvalds wrote:
-> One more comment on this..
-> 
-> On Sun, Oct 12, 2014 at 11:50 AM, Linus Torvalds
-> 
-> <torvalds@linux-foundation.org> wrote:
-> >  - you actively need infrastructure from newer versions, so you need
-> > to merge an upstream kernel for further development.
-> > 
-> >    Even this is often questionable, but it's one of the best reasons
-> > to do back-merges. However, if so, that back-merge should very much
-> > spell out the exact reason why the merge was needed (not just "needed
-> > upstream features" in general, but what particular features were
-> > needed etc).
-> 
-> Btw, rather than merge from upstream, a better way is often to simply
-> start a new development branch. If you need a particular new feature,
-> you're *likely* to start doing new development rather than continuing
-> on some previous development, so it's often a good time to simply
-> create a new feature branch.
-
-Aside from my own patches/work, I've tried to keep a single, continuous 
-development branch (next) that can be used by others for SELinux development, 
-in the linux-next tree, and by James via pull requests.  Unless this becomes 
-to difficult to manage without regular back-merges (and I don't think this 
-would be the case), I'd just assume keep this approach.
-
--Paul
+Is it possible for an alsa-lib plugin to automatically load when an ES18xx 
+sound card is present to check for ES938 (without repeating the detection on 
+each application launch)?
 
 -- 
-paul moore
-security and virtualization @ redhat
-
+Ondrej Zary
