@@ -1,177 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751878AbaJLIap (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 04:30:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34866 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750826AbaJLIag (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 04:30:36 -0400
-Date: Sun, 12 Oct 2014 11:34:00 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, kvm@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-api@vger.kernel.org
-Subject: [PATCH] kvm: drop unsupported capabilities, fix documentation
-Message-ID: <1413102816-9289-1-git-send-email-mst@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Mutt-Fcc: =sent
+	id S1751840AbaJLJH1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 05:07:27 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:52655 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751088AbaJLJHY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Oct 2014 05:07:24 -0400
+From: Anh Le <anhlq2110@gmail.com>
+To: oleg.drokin@intel.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        sudipm.mukherjee@gmail.com
+Subject: [PATCH v2] Staging: lustre: llite: fix some sparse warnings about userspace pointer
+Date: Sun, 12 Oct 2014 16:07:10 +0700
+Message-Id: <1413104830-5287-1-git-send-email-anhlq2110@gmail.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1413009077-10158-1-git-send-email-anhlq2110@gmail.com>
+References: <1413009077-10158-1-git-send-email-anhlq2110@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No kernel ever reported KVM_CAP_DEVICE_MSIX, KVM_CAP_DEVICE_MSI,
-KVM_CAP_DEVICE_ASSIGNMENT, KVM_CAP_DEVICE_DEASSIGNMENT.
+Add __user macro to the function declarations that accept userspace pointers as
+arguments.
 
-This makes the documentation wrong, and no application ever
-written to use these capabilities has a chance to work correctly.
-The only way to detect support is to try, and test errno for ENOTTY.
-That's unfortunate, but we can't fix the past.
-
-Document the actual semantics, and drop the definitions from
-the exported header to make it easier for application
-developers to note and fix the bug.
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Anh Le <anhlq2110@gmail.com>
 ---
- include/uapi/linux/kvm.h          |  8 --------
- Documentation/virtual/kvm/api.txt | 40 ++++++++++++++++++++++++++++++++-------
- 2 files changed, 33 insertions(+), 15 deletions(-)
+v2: Fixed checkpatch's parenthesis alignment warnings, noted by Sudip Mukherjee <sudipm.mukherjee@gmail.com>.
 
-diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
-index cf3a2ff..98d72f7 100644
---- a/include/uapi/linux/kvm.h
-+++ b/include/uapi/linux/kvm.h
-@@ -647,11 +647,7 @@ struct kvm_ppc_smmu_info {
- #define KVM_CAP_MP_STATE 14
- #define KVM_CAP_COALESCED_MMIO 15
- #define KVM_CAP_SYNC_MMU 16  /* Changes to host mmap are reflected in guest */
--#define KVM_CAP_DEVICE_ASSIGNMENT 17
- #define KVM_CAP_IOMMU 18
--#ifdef __KVM_HAVE_MSI
--#define KVM_CAP_DEVICE_MSI 20
--#endif
- /* Bug in KVM_SET_USER_MEMORY_REGION fixed: */
- #define KVM_CAP_DESTROY_MEMORY_REGION_WORKS 21
- #ifdef __KVM_HAVE_USER_NMI
-@@ -665,10 +661,6 @@ struct kvm_ppc_smmu_info {
- #endif
- #define KVM_CAP_IRQ_ROUTING 25
- #define KVM_CAP_IRQ_INJECT_STATUS 26
--#define KVM_CAP_DEVICE_DEASSIGNMENT 27
--#ifdef __KVM_HAVE_MSIX
--#define KVM_CAP_DEVICE_MSIX 28
--#endif
- #define KVM_CAP_ASSIGN_DEV_IRQ 29
- /* Another bug in KVM_SET_USER_MEMORY_REGION fixed: */
- #define KVM_CAP_JOIN_MEMORY_REGIONS_WORKS 30
-diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-index beae3fd..0fe195c 100644
---- a/Documentation/virtual/kvm/api.txt
-+++ b/Documentation/virtual/kvm/api.txt
-@@ -68,9 +68,12 @@ description:
+ .../staging/lustre/lustre/include/lprocfs_status.h |  6 +--
+ drivers/staging/lustre/lustre/llite/lproc_llite.c  | 56 +++++++++++++---------
+ .../lustre/lustre/obdclass/lprocfs_status.c        |  4 +-
+ 3 files changed, 38 insertions(+), 28 deletions(-)
+
+diff --git a/drivers/staging/lustre/lustre/include/lprocfs_status.h b/drivers/staging/lustre/lustre/include/lprocfs_status.h
+index ccb6cd4..54c5226 100644
+--- a/drivers/staging/lustre/lustre/include/lprocfs_status.h
++++ b/drivers/staging/lustre/lustre/include/lprocfs_status.h
+@@ -374,8 +374,8 @@ static inline void s2dhms(struct dhms *ts, time_t secs)
+ #define JOBSTATS_PROCNAME_UID		"procname_uid"
+ #define JOBSTATS_NODELOCAL		"nodelocal"
  
-   Capability: which KVM extension provides this ioctl.  Can be 'basic',
-       which means that is will be provided by any kernel that supports
--      API version 12 (see section 4.1), or a KVM_CAP_xyz constant, which
-+      API version 12 (see section 4.1), a KVM_CAP_xyz constant, which
-       means availability needs to be checked with KVM_CHECK_EXTENSION
--      (see section 4.4).
-+      (see section 4.4), or 'none' which means that while not all kernels
-+      support this ioctl, there's no capability bit to check its
-+      availability: for kernels that don't support the ioctl,
-+      the ioctl returns -ENOTTY.
+-extern int lprocfs_write_frac_helper(const char *buffer, unsigned long count,
+-				     int *val, int mult);
++extern int lprocfs_write_frac_helper(const char __user *buffer,
++				     unsigned long count, int *val, int mult);
+ extern int lprocfs_read_frac_helper(char *buffer, unsigned long count,
+ 				    long val, int mult);
+ #if defined (CONFIG_PROC_FS)
+@@ -647,7 +647,7 @@ extern int lprocfs_rd_kbytesavail(struct seq_file *m, void *data);
+ extern int lprocfs_rd_filestotal(struct seq_file *m, void *data);
+ extern int lprocfs_rd_filesfree(struct seq_file *m, void *data);
  
-   Architectures: which instruction set architectures provide this ioctl.
-       x86 includes both i386 and x86_64.
-@@ -1257,7 +1260,7 @@ The flags bitmap is defined as:
+-extern int lprocfs_write_helper(const char *buffer, unsigned long count,
++extern int lprocfs_write_helper(const char __user *buffer, unsigned long count,
+ 				int *val);
+ extern int lprocfs_seq_read_frac_helper(struct seq_file *m, long val, int mult);
+ extern int lprocfs_write_u64_helper(const char *buffer, unsigned long count,
+diff --git a/drivers/staging/lustre/lustre/llite/lproc_llite.c b/drivers/staging/lustre/lustre/llite/lproc_llite.c
+index 3b3df9f..dd52b81 100644
+--- a/drivers/staging/lustre/lustre/llite/lproc_llite.c
++++ b/drivers/staging/lustre/lustre/llite/lproc_llite.c
+@@ -227,8 +227,9 @@ static int ll_max_readahead_mb_seq_show(struct seq_file *m, void *v)
+ 	return lprocfs_seq_read_frac_helper(m, pages_number, mult);
+ }
  
- 4.48 KVM_ASSIGN_PCI_DEVICE
+-static ssize_t ll_max_readahead_mb_seq_write(struct file *file, const char *buffer,
+-					 size_t count, loff_t *off)
++static ssize_t ll_max_readahead_mb_seq_write(struct file *file,
++					     const char __user *buffer,
++					     size_t count, loff_t *off)
+ {
+ 	struct super_block *sb = ((struct seq_file *)file->private_data)->private;
+ 	struct ll_sb_info *sbi = ll_s2sbi(sb);
+@@ -269,7 +270,7 @@ static int ll_max_readahead_per_file_mb_seq_show(struct seq_file *m, void *v)
+ }
  
--Capability: KVM_CAP_DEVICE_ASSIGNMENT
-+Capability: none
- Architectures: x86 ia64
- Type: vm ioctl
- Parameters: struct kvm_assigned_pci_dev (in)
-@@ -1298,10 +1301,16 @@ Only PCI header type 0 devices with PCI BAR resources are supported by
- device assignment.  The user requesting this ioctl must have read/write
- access to the PCI sysfs resource files associated with the device.
+ static ssize_t ll_max_readahead_per_file_mb_seq_write(struct file *file,
+-						  const char *buffer,
++						  const char __user *buffer,
+ 						  size_t count, loff_t *off)
+ {
+ 	struct super_block *sb = ((struct seq_file *)file->private_data)->private;
+@@ -313,7 +314,7 @@ static int ll_max_read_ahead_whole_mb_seq_show(struct seq_file *m, void *unused)
+ }
  
-+Errors:
-+  ENOTTY: kernel does not support this ioctl
-+
-+  Other error conditions may be defined by individual device types or
-+  have their standard meanings.
-+
+ static ssize_t ll_max_read_ahead_whole_mb_seq_write(struct file *file,
+-						const char *buffer,
++						const char __user *buffer,
+ 						size_t count, loff_t *off)
+ {
+ 	struct super_block *sb = ((struct seq_file *)file->private_data)->private;
+@@ -469,8 +470,9 @@ static int ll_checksum_seq_show(struct seq_file *m, void *v)
+ 	return seq_printf(m, "%u\n", (sbi->ll_flags & LL_SBI_CHECKSUM) ? 1 : 0);
+ }
  
- 4.49 KVM_DEASSIGN_PCI_DEVICE
+-static ssize_t ll_checksum_seq_write(struct file *file, const char *buffer,
+-				 size_t count, loff_t *off)
++static ssize_t ll_checksum_seq_write(struct file *file,
++				     const char __user *buffer,
++				     size_t count, loff_t *off)
+ {
+ 	struct super_block *sb = ((struct seq_file *)file->private_data)->private;
+ 	struct ll_sb_info *sbi = ll_s2sbi(sb);
+@@ -504,8 +506,9 @@ static int ll_max_rw_chunk_seq_show(struct seq_file *m, void *v)
+ 	return seq_printf(m, "%lu\n", ll_s2sbi(sb)->ll_max_rw_chunk);
+ }
  
--Capability: KVM_CAP_DEVICE_DEASSIGNMENT
-+Capability: none
- Architectures: x86 ia64
- Type: vm ioctl
- Parameters: struct kvm_assigned_pci_dev (in)
-@@ -1309,9 +1318,14 @@ Returns: 0 on success, -1 on error
+-static ssize_t ll_max_rw_chunk_seq_write(struct file *file, const char *buffer,
+-				     size_t count, loff_t *off)
++static ssize_t ll_max_rw_chunk_seq_write(struct file *file,
++					 const char __user *buffer,
++					 size_t count, loff_t *off)
+ {
+ 	struct super_block *sb = ((struct seq_file *)file->private_data)->private;
+ 	int rc, val;
+@@ -533,8 +536,8 @@ static int ll_rd_track_id(struct seq_file *m, enum stats_track_type type)
+ 	}
+ }
  
- Ends PCI device assignment, releasing all associated resources.
+-static int ll_wr_track_id(const char *buffer, unsigned long count, void *data,
+-			  enum stats_track_type type)
++static int ll_wr_track_id(const char __user *buffer, unsigned long count,
++			  void *data, enum stats_track_type type)
+ {
+ 	struct super_block *sb = data;
+ 	int rc, pid;
+@@ -556,8 +559,9 @@ static int ll_track_pid_seq_show(struct seq_file *m, void *v)
+ 	return ll_rd_track_id(m, STATS_TRACK_PID);
+ }
  
--See KVM_CAP_DEVICE_ASSIGNMENT for the data structure. Only assigned_dev_id is
-+See KVM_ASSIGN_PCI_DEVICE for the data structure. Only assigned_dev_id is
- used in kvm_assigned_pci_dev to identify the device.
+-static ssize_t ll_track_pid_seq_write(struct file *file, const char *buffer,
+-				  size_t count, loff_t *off)
++static ssize_t ll_track_pid_seq_write(struct file *file,
++				      const char __user *buffer,
++				      size_t count, loff_t *off)
+ {
+ 	struct seq_file *seq = file->private_data;
+ 	return ll_wr_track_id(buffer, count, seq->private, STATS_TRACK_PID);
+@@ -569,8 +573,9 @@ static int ll_track_ppid_seq_show(struct seq_file *m, void *v)
+ 	return ll_rd_track_id(m, STATS_TRACK_PPID);
+ }
  
-+Errors:
-+  ENOTTY: kernel does not support this ioctl
-+
-+  Other error conditions may be defined by individual device types or
-+  have their standard meanings.
+-static ssize_t ll_track_ppid_seq_write(struct file *file, const char *buffer,
+-				   size_t count, loff_t *off)
++static ssize_t ll_track_ppid_seq_write(struct file *file,
++				       const char __user *buffer,
++				       size_t count, loff_t *off)
+ {
+ 	struct seq_file *seq = file->private_data;
+ 	return ll_wr_track_id(buffer, count, seq->private, STATS_TRACK_PPID);
+@@ -582,8 +587,9 @@ static int ll_track_gid_seq_show(struct seq_file *m, void *v)
+ 	return ll_rd_track_id(m, STATS_TRACK_GID);
+ }
  
- 4.50 KVM_ASSIGN_DEV_IRQ
+-static ssize_t ll_track_gid_seq_write(struct file *file, const char *buffer,
+-				  size_t count, loff_t *off)
++static ssize_t ll_track_gid_seq_write(struct file *file,
++				      const char __user *buffer,
++				      size_t count, loff_t *off)
+ {
+ 	struct seq_file *seq = file->private_data;
+ 	return ll_wr_track_id(buffer, count, seq->private, STATS_TRACK_GID);
+@@ -598,8 +604,9 @@ static int ll_statahead_max_seq_show(struct seq_file *m, void *v)
+ 	return seq_printf(m, "%u\n", sbi->ll_sa_max);
+ }
  
-@@ -1346,6 +1360,12 @@ The following flags are defined:
- It is not valid to specify multiple types per host or guest IRQ. However, the
- IRQ type of host and guest can differ or can even be null.
+-static ssize_t ll_statahead_max_seq_write(struct file *file, const char *buffer,
+-				      size_t count, loff_t *off)
++static ssize_t ll_statahead_max_seq_write(struct file *file,
++					  const char __user *buffer,
++					  size_t count, loff_t *off)
+ {
+ 	struct super_block *sb = ((struct seq_file *)file->private_data)->private;
+ 	struct ll_sb_info *sbi = ll_s2sbi(sb);
+@@ -628,8 +635,9 @@ static int ll_statahead_agl_seq_show(struct seq_file *m, void *v)
+ 			sbi->ll_flags & LL_SBI_AGL_ENABLED ? 1 : 0);
+ }
  
-+Errors:
-+  ENOTTY: kernel does not support this ioctl
-+
-+  Other error conditions may be defined by individual device types or
-+  have their standard meanings.
-+
+-static ssize_t ll_statahead_agl_seq_write(struct file *file, const char *buffer,
+-				      size_t count, loff_t *off)
++static ssize_t ll_statahead_agl_seq_write(struct file *file,
++					  const char __user *buffer,
++					  size_t count, loff_t *off)
+ {
+ 	struct super_block *sb = ((struct seq_file *)file->private_data)->private;
+ 	struct ll_sb_info *sbi = ll_s2sbi(sb);
+@@ -672,8 +680,9 @@ static int ll_lazystatfs_seq_show(struct seq_file *m, void *v)
+ 			(sbi->ll_flags & LL_SBI_LAZYSTATFS) ? 1 : 0);
+ }
  
- 4.51 KVM_DEASSIGN_DEV_IRQ
+-static ssize_t ll_lazystatfs_seq_write(struct file *file, const char *buffer,
+-				   size_t count, loff_t *off)
++static ssize_t ll_lazystatfs_seq_write(struct file *file,
++				       const char __user *buffer,
++				       size_t count, loff_t *off)
+ {
+ 	struct super_block *sb = ((struct seq_file *)file->private_data)->private;
+ 	struct ll_sb_info *sbi = ll_s2sbi(sb);
+@@ -787,7 +796,8 @@ static int ll_xattr_cache_seq_show(struct seq_file *m, void *v)
+ 	return rc;
+ }
  
-@@ -1423,7 +1443,7 @@ struct kvm_irq_routing_s390_adapter {
+-static ssize_t ll_xattr_cache_seq_write(struct file *file, const char *buffer,
++static ssize_t ll_xattr_cache_seq_write(struct file *file,
++					const char __user *buffer,
+ 					size_t count, loff_t *off)
+ {
+ 	struct seq_file *seq = file->private_data;
+diff --git a/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c b/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
+index 61e04af..686bc18 100644
+--- a/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
++++ b/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
+@@ -177,7 +177,7 @@ int lprocfs_read_frac_helper(char *buffer, unsigned long count, long val,
+ }
+ EXPORT_SYMBOL(lprocfs_read_frac_helper);
  
- 4.53 KVM_ASSIGN_SET_MSIX_NR
+-int lprocfs_write_frac_helper(const char *buffer, unsigned long count,
++int lprocfs_write_frac_helper(const char __user *buffer, unsigned long count,
+ 			      int *val, int mult)
+ {
+ 	char kernbuf[20], *end, *pbuf;
+@@ -1819,7 +1819,7 @@ __s64 lprocfs_read_helper(struct lprocfs_counter *lc,
+ }
+ EXPORT_SYMBOL(lprocfs_read_helper);
  
--Capability: KVM_CAP_DEVICE_MSIX
-+Capability: none
- Architectures: x86 ia64
- Type: vm ioctl
- Parameters: struct kvm_assigned_msix_nr (in)
-@@ -1445,7 +1465,7 @@ struct kvm_assigned_msix_nr {
- 
- 4.54 KVM_ASSIGN_SET_MSIX_ENTRY
- 
--Capability: KVM_CAP_DEVICE_MSIX
-+Capability: none
- Architectures: x86 ia64
- Type: vm ioctl
- Parameters: struct kvm_assigned_msix_entry (in)
-@@ -1461,6 +1481,12 @@ struct kvm_assigned_msix_entry {
- 	__u16 padding[3];
- };
- 
-+Errors:
-+  ENOTTY: kernel does not support this ioctl
-+
-+  Other error conditions may be defined by individual device types or
-+  have their standard meanings.
-+
- 
- 4.55 KVM_SET_TSC_KHZ
- 
+-int lprocfs_write_helper(const char *buffer, unsigned long count,
++int lprocfs_write_helper(const char __user *buffer, unsigned long count,
+ 			 int *val)
+ {
+ 	return lprocfs_write_frac_helper(buffer, count, val, 1);
 -- 
-MST
+1.9.1
+
