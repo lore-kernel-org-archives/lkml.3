@@ -1,104 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752549AbaJLOwA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 10:52:00 -0400
-Received: from pindarots.xs4all.nl ([82.161.210.87]:37804 "EHLO
-	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751115AbaJLOv5 (ORCPT
+	id S1752661AbaJLOwO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 10:52:14 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:59648 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751716AbaJLOwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 10:51:57 -0400
-X-Greylist: delayed 3238 seconds by postgrey-1.27 at vger.kernel.org; Sun, 12 Oct 2014 10:51:57 EDT
-Message-ID: <543A88E4.4060707@xs4all.nl>
-Date: Sun, 12 Oct 2014 15:57:56 +0200
-From: Udo van den Heuvel <udovdh@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Sun, 12 Oct 2014 10:52:12 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Subject: Re: [PATCH] Route keyboard LEDs through the generic LEDs layer.
+Date: Sun, 12 Oct 2014 16:52:08 +0200
+User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.14.1; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Pavel Machek <pavel@ucw.cz>, David Herrmann <dh.herrmann@gmail.com>,
+        jslaby@suse.cz, Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
+        linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Peter Korsgaard <jacmet@sunsite.dk>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Matt Sealey <matt@genesi-usa.com>, Rob Clark <robdclark@gmail.com>,
+        Niels de Vos <devos@fedoraproject.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Steev Klimaszewski <steev@genesi-usa.com>, blogic@openwrt.org
+References: <20140331122323.GC6044@type.bordeaux.inria.fr> <20141001114257.f0f6a94508bdd7df83602eda@linux-foundation.org> <20141001212910.GE9598@type.youpi.perso.aquilenet.fr>
+In-Reply-To: <20141001212910.GE9598@type.youpi.perso.aquilenet.fr>
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: CRASH during boot 3.16.3+
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed;
+  boundary="nextPart2597082.xZZqKonejT";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
+Message-Id: <201410121652.08919@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--nextPart2597082.xZZqKonejT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
 Hello,
 
-3.16.2 boots and works fine.
-Kernels 3.16.3 and newer crash very early during boot. (did not yet try
-3.17)
+I would like to ask if something was changed and if this patch=20
+(in any way) is going to mainline kernel.
 
-The problem:
-During the first few seconds of bootup the kernel gets into some sort of
-loop and rapidly prints loads of register-like things and then a load of
-rubbish.
-I did `make clean` and then a rebuild etc but this did not help.
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-How can I capture the logging to find the point where things go wrong?
-How can I find out what is wrong?
-How can this problem be fixed?
+--nextPart2597082.xZZqKonejT
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-Please post your insights.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Kind regards,
-Udo
+iEYEABECAAYFAlQ6lZgACgkQi/DJPQPkQ1KnlACffnaGVw9o7IMoPDtA81c1cPkG
+r7kAn0iW0smZ89q9RKLhc4xzYbFwh3fi
+=++rF
+-----END PGP SIGNATURE-----
 
-Base Board Information
-        Manufacturer: Gigabyte Technology Co., Ltd.
-        Product Name: F2A85X-UP4
-
-# lspci
-00:00.0 Host bridge: Advanced Micro Devices, Inc. [AMD] Family 15h
-(Models 10h-1fh) Processor Root Complex
-00:00.2 IOMMU: Advanced Micro Devices, Inc. [AMD] Family 15h (Models
-10h-1fh) I/O Memory Management Unit
-00:01.0 VGA compatible controller: Advanced Micro Devices, Inc.
-[AMD/ATI] Trinity [Radeon HD 7660D]
-00:01.1 Audio device: Advanced Micro Devices, Inc. [AMD/ATI] Trinity
-HDMI Audio Controller
-00:04.0 PCI bridge: Advanced Micro Devices, Inc. [AMD] Family 15h
-(Models 10h-1fh) Processor Root Port
-00:07.0 PCI bridge: Advanced Micro Devices, Inc. [AMD] Family 15h
-(Models 10h-1fh) Processor Root Port
-00:10.0 USB controller: Advanced Micro Devices, Inc. [AMD] FCH USB XHCI
-Controller (rev 03)
-00:10.1 USB controller: Advanced Micro Devices, Inc. [AMD] FCH USB XHCI
-Controller (rev 03)
-00:11.0 SATA controller: Advanced Micro Devices, Inc. [AMD] FCH SATA
-Controller [AHCI mode] (rev 40)
-00:12.0 USB controller: Advanced Micro Devices, Inc. [AMD] FCH USB OHCI
-Controller (rev 11)
-00:12.2 USB controller: Advanced Micro Devices, Inc. [AMD] FCH USB EHCI
-Controller (rev 11)
-00:13.0 USB controller: Advanced Micro Devices, Inc. [AMD] FCH USB OHCI
-Controller (rev 11)
-00:13.2 USB controller: Advanced Micro Devices, Inc. [AMD] FCH USB EHCI
-Controller (rev 11)
-00:14.0 SMBus: Advanced Micro Devices, Inc. [AMD] FCH SMBus Controller
-(rev 14)
-00:14.2 Audio device: Advanced Micro Devices, Inc. [AMD] FCH Azalia
-Controller (rev 01)
-00:14.3 ISA bridge: Advanced Micro Devices, Inc. [AMD] FCH LPC Bridge
-(rev 11)
-00:14.4 PCI bridge: Advanced Micro Devices, Inc. [AMD] FCH PCI Bridge
-(rev 40)
-00:14.5 USB controller: Advanced Micro Devices, Inc. [AMD] FCH USB OHCI
-Controller (rev 11)
-00:18.0 Host bridge: Advanced Micro Devices, Inc. [AMD] Family 15h
-(Models 10h-1fh) Processor Function 0
-00:18.1 Host bridge: Advanced Micro Devices, Inc. [AMD] Family 15h
-(Models 10h-1fh) Processor Function 1
-00:18.2 Host bridge: Advanced Micro Devices, Inc. [AMD] Family 15h
-(Models 10h-1fh) Processor Function 2
-00:18.3 Host bridge: Advanced Micro Devices, Inc. [AMD] Family 15h
-(Models 10h-1fh) Processor Function 3
-00:18.4 Host bridge: Advanced Micro Devices, Inc. [AMD] Family 15h
-(Models 10h-1fh) Processor Function 4
-00:18.5 Host bridge: Advanced Micro Devices, Inc. [AMD] Family 15h
-(Models 10h-1fh) Processor Function 5
-01:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd.
-RTL8111/8168/8411 PCI Express Gigabit Ethernet Controller (rev 06)
-02:00.0 USB controller: Etron Technology, Inc. EJ168 USB 3.0 Host
-Controller (rev 01)
-03:06.0 Serial controller: MosChip Semiconductor Technology Ltd. PCI
-9835 Multi-I/O Controller (rev 01)
-
+--nextPart2597082.xZZqKonejT--
