@@ -1,61 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752334AbaJLBCT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 21:02:19 -0400
-Received: from smtprelay0181.hostedemail.com ([216.40.44.181]:37050 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751700AbaJLBCR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 21:02:17 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3871:3872:3873:3874:4250:4321:5007:6119:7652:8531:10004:10400:10848:11026:11232:11473:11658:11914:12043:12438:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: side42_6ab2a005a6437
-X-Filterd-Recvd-Size: 2043
-Message-ID: <1413075731.22149.12.camel@joe-AO725>
-Subject: Re: [PATCH] usb: serial: Fix indentation style issue
-From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Philip Munksgaard <pmunksgaard@gmail.com>, johan@kernel.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sat, 11 Oct 2014 18:02:11 -0700
-In-Reply-To: <20141011201901.GD29439@kroah.com>
-References: <1413035383-3981-1-git-send-email-pmunksgaard@gmail.com>
-	 <20141011142049.GA11456@kroah.com> <1413041793.16385.22.camel@joe-AO725>
-	 <20141011201901.GD29439@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752858AbaJLBVK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 21:21:10 -0400
+Received: from mail-bl2on0113.outbound.protection.outlook.com ([65.55.169.113]:26058
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752103AbaJLBVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Oct 2014 21:21:08 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Jeff Leung <jleung@v10networks.ca>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Christoph Hellwig <hch@infradead.org>
+CC: Sitsofe Wheeler <sitsofe@gmail.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>, Christoph Hellwig <hch@lst.de>,
+        Hannes Reinecke <hare@suse.de>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: RE: [PATCH 0/3] scsi: Add Hyper-V logical block provisioning quirks
+Thread-Topic: [PATCH 0/3] scsi: Add Hyper-V logical block provisioning quirks
+Thread-Index: AQHP5F6vAKuuUZSVZE66AaSXedI4EpwrK8AAgAAAzICAACKA4IAAB8PAgABTMeA=
+Date: Sun, 12 Oct 2014 01:21:01 +0000
+Message-ID: <da5106ddc725481784ed12bccb594980@BY2PR0301MB0711.namprd03.prod.outlook.com>
+References: <20141010074901.GA32028@sucs.org>
+ <20141011173902.GA1946@infradead.org> <1413049313.2068.48.camel@jarvis.lan>
+ <b0069f11bbe64ebc8c9981ea90429014@BY2PR0301MB0711.namprd03.prod.outlook.com>
+ <A70AC0C1B7E7FD478A6BF19705461AA01109B3@IMBER.smb.curriegrad2004.ca>
+In-Reply-To: <A70AC0C1B7E7FD478A6BF19705461AA01109B3@IMBER.smb.curriegrad2004.ca>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [131.107.159.166]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0710;
+x-o365ent-eop-header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+x-forefront-prvs: 0362BF9FDB
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(979002)(6009001)(199003)(377454003)(189002)(13464003)(51704005)(19580395003)(105586002)(76576001)(46102003)(107046002)(99286002)(108616004)(33646002)(92566001)(19580405001)(106116001)(50986999)(80022003)(86362001)(106356001)(4396001)(122556002)(54356999)(85306004)(76176999)(77096002)(101416001)(95666004)(93886004)(20776003)(87936001)(76482002)(2656002)(21056001)(99396003)(31966008)(120916001)(86612001)(97736003)(85852003)(66066001)(74316001)(64706001)(40100003)(24736002)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0710;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;MLV:ovrnspm;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9C1LXFP011686
 
-On Sat, 2014-10-11 at 13:19 -0700, Greg KH wrote:
-> On Sat, Oct 11, 2014 at 08:36:33AM -0700, Joe Perches wrote:
-> > On Sat, 2014-10-11 at 07:20 -0700, Greg KH wrote:
-> > > On Sat, Oct 11, 2014 at 03:49:43PM +0200, Philip Munksgaard wrote:
-> > > > Fix a style issue
-> > []
-> > > > diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-> > []
-> > > > @@ -1616,7 +1616,7 @@ static const struct usb_device_id option_ids[] = {
-> > > >  	{ USB_DEVICE(TLAYTECH_VENDOR_ID, TLAYTECH_PRODUCT_TEU800) },
-> > > >  	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
-> > > >    	  .driver_info = (kernel_ulong_t)&four_g_w14_blacklist
-> > > > -  	},
-> > > > +	},
-> > > 
-> > > Why not fix the same 'space' issue on the line before this at the same
-> > > time?
-> > 
-> > I think there is no space issue on the previous line.
-> > What do you see Greg?
+
+
+> -----Original Message-----
+> From: Jeff Leung [mailto:jleung@v10networks.ca]
+> Sent: Saturday, October 11, 2014 1:22 PM
+> To: KY Srinivasan; James Bottomley; Christoph Hellwig
+> Cc: Sitsofe Wheeler; Haiyang Zhang; Christoph Hellwig; Hannes Reinecke;
+> linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org
+> Subject: RE: [PATCH 0/3] scsi: Add Hyper-V logical block provisioning quirks
 > 
-> I see 'space space tab', just like this line that is being changed.
+> > On the current release of Windows (windows 10), we are advertising SPC3
+> compliance.
+> > We are ok with declaring compliance to SPC3 in our drivers.
+> If you are going to declare SPC3 compliance in the drivers, are you going to
+> put in checks to ensure that SPC-3 compliance doesn't get accidentally
+> enabled for hypervisors below Win10?
+> 
+> I do know for a fact that Ubuntu's kernels already force SPC3 compliance to
+> enable specific features such as TRIM on earlier versions of Hyper-V (Namely
+> Hyper-V 2012 and 2012 R2).
 
-Right, silly evolution previewer can't differentiate space/tab
+You are right; Ubuntu has been carrying a patch  that was doing just this and this has been
+working without any issues on many earlier versions of Windows. (2012 and 2012 R2).
+On windows 10 we don't need any changes in the Linux driver as the host itself is
+advertising SPC3 compliance. Based on the testing we have done with Ubuntu, we are
+comfortable picking up that patch.
 
-> /me hands Joe a real editor.
+Regards,
 
-Well, where is it? ;)
-
+K. Y    
+> 
+> --Jeff
+> 
+> > Regards,
+> >
+> > K. Y
+> >
+> >
+> > Nryÿ≤Xvÿñ){n«â{zX}zj:v zZzf~zw⁄¢)jyA
+> >
+> > i
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
