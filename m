@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753466AbaJLLvr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 07:51:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53867 "EHLO mx1.redhat.com"
+	id S1753486AbaJLLvv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 07:51:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29055 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751536AbaJLLnw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 07:43:52 -0400
-Date: Sun, 12 Oct 2014 14:47:07 +0300
+	id S1752738AbaJLLnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Oct 2014 07:43:42 -0400
+Date: Sun, 12 Oct 2014 14:46:57 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Rusty Russell <rusty@rustcorp.com.au>,
@@ -18,8 +18,8 @@ Cc: Rusty Russell <rusty@rustcorp.com.au>,
         Christian Borntraeger <borntraeger@de.ibm.com>,
         "David S. Miller" <davem@davemloft.net>,
         Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH v3 08/25] virtio-net: drop config_mutex
-Message-ID: <1413114332-626-9-git-send-email-mst@redhat.com>
+Subject: [PATCH v3 06/25] virtio-blk: drop config_mutex
+Message-ID: <1413114332-626-7-git-send-email-mst@redhat.com>
 References: <1413114332-626-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -43,48 +43,49 @@ Get rid of the unnecessary lock.
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 ---
- drivers/net/virtio_net.c | 7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+ drivers/block/virtio_blk.c | 8 --------
+ 1 file changed, 8 deletions(-)
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 743fb04..23e4a69 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -132,9 +132,6 @@ struct virtnet_info {
- 	/* Work struct for config space updates */
+diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+index 91272f1a..89ba8d6 100644
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -41,9 +41,6 @@ struct virtio_blk
+ 	/* Process context for config space updates */
  	struct work_struct config_work;
  
 -	/* Lock for config space updates */
 -	struct mutex config_lock;
 -
- 	/* Does the affinity hint is set for virtqueues? */
- 	bool affinity_hint_set;
+ 	/* What host tells us, plus 2 for header & tailer. */
+ 	unsigned int sg_elems;
  
-@@ -1404,7 +1401,6 @@ static void virtnet_config_changed_work(struct work_struct *work)
- 		container_of(work, struct virtnet_info, config_work);
- 	u16 v;
+@@ -344,8 +341,6 @@ static void virtblk_config_changed_work(struct work_struct *work)
+ 	char *envp[] = { "RESIZE=1", NULL };
+ 	u64 capacity, size;
  
--	mutex_lock(&vi->config_lock);
- 	if (virtio_cread_feature(vi->vdev, VIRTIO_NET_F_STATUS,
- 				 struct virtio_net_config, status, &v) < 0)
- 		goto done;
-@@ -1430,7 +1426,7 @@ static void virtnet_config_changed_work(struct work_struct *work)
- 		netif_tx_stop_all_queues(vi->dev);
- 	}
- done:
--	mutex_unlock(&vi->config_lock);
-+	return;
+-	mutex_lock(&vblk->config_lock);
+-
+ 	/* Host must always specify the capacity. */
+ 	virtio_cread(vdev, struct virtio_blk_config, capacity, &capacity);
+ 
+@@ -369,8 +364,6 @@ static void virtblk_config_changed_work(struct work_struct *work)
+ 	set_capacity(vblk->disk, capacity);
+ 	revalidate_disk(vblk->disk);
+ 	kobject_uevent_env(&disk_to_dev(vblk->disk)->kobj, KOBJ_CHANGE, envp);
+-
+-	mutex_unlock(&vblk->config_lock);
  }
  
- static void virtnet_config_changed(struct virtio_device *vdev)
-@@ -1751,7 +1747,6 @@ static int virtnet_probe(struct virtio_device *vdev)
- 		u64_stats_init(&virtnet_stats->rx_syncp);
- 	}
+ static void virtblk_config_changed(struct virtio_device *vdev)
+@@ -601,7 +594,6 @@ static int virtblk_probe(struct virtio_device *vdev)
  
--	mutex_init(&vi->config_lock);
- 	INIT_WORK(&vi->config_work, virtnet_config_changed_work);
+ 	vblk->vdev = vdev;
+ 	vblk->sg_elems = sg_elems;
+-	mutex_init(&vblk->config_lock);
  
- 	/* If we can receive ANY GSO packets, we must allocate large ones. */
+ 	INIT_WORK(&vblk->config_work, virtblk_config_changed_work);
+ 
 -- 
 MST
 
