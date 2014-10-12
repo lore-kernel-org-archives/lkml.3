@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751388AbaJLKrZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 06:47:25 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:63978 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751032AbaJLKrY (ORCPT
+	id S1751590AbaJLLGH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 07:06:07 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:47493 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751025AbaJLLGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 06:47:24 -0400
+	Sun, 12 Oct 2014 07:06:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <543A36A0.8090300@broadcom.com>
+References: <1413071551-15372-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <543A36A0.8090300@broadcom.com>
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Torsten Duwe <duwe@lst.de>, "Theodore Ts'o" <tytso@mit.edu>,
-        Jason Cooper <jason@lakedaemon.net>, Amit Shah <amit.shah@redhat.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Kees Cook <keescook@chromium.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] char: hw_random: core.c:  Changed from using strncat to strlcat
-Date: Sun, 12 Oct 2014 12:49:31 +0200
-Message-Id: <1413110971-17392-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+Date: Sun, 12 Oct 2014 13:05:40 +0200
+Message-ID: <CAFo99gY9dyzhuJe4LwiJKgRwLRU+uVKzLpscFrZw_xZDhVKEWA@mail.gmail.com>
+Subject: Re: [PATCH] net: wireless: brcm80211: brcmfmac: dhd_sdio.c: Cleaning
+ up missing null-terminate in conjunction with strncpy
+To: Arend van Spriel <arend@broadcom.com>
+Cc: Brett Rudley <brudley@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
+        Daniel Kim <dekim@broadcom.com>, linux-wireless@vger.kernel.org,
+        brcm80211-dev-list@broadcom.com,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changed from using strncat to strlcat to simplify the code
+2014-10-12 10:06 GMT+02:00 Arend van Spriel <arend@broadcom.com>:
+> On 12-10-14 01:52, Rickard Strandqvist wrote:
+>> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
+>> And changed from using strncpy to strlcpy to simplify code.
+>
+> Looks good to me. Just two small process related remarks:
+>
+> - It is sufficient to prefix the patch with brcmfmac (skip net:...).
+> - Send the patch to the wireless maintainer, ie. John Linville.
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/char/hw_random/core.c |   12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
+Hi
 
-diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
-index aa30a25..1500cfd 100644
---- a/drivers/char/hw_random/core.c
-+++ b/drivers/char/hw_random/core.c
-@@ -281,7 +281,6 @@ static ssize_t hwrng_attr_available_show(struct device *dev,
- 					 char *buf)
- {
- 	int err;
--	ssize_t ret = 0;
- 	struct hwrng *rng;
- 
- 	err = mutex_lock_interruptible(&rng_mutex);
-@@ -289,16 +288,13 @@ static ssize_t hwrng_attr_available_show(struct device *dev,
- 		return -ERESTARTSYS;
- 	buf[0] = '\0';
- 	list_for_each_entry(rng, &rng_list, list) {
--		strncat(buf, rng->name, PAGE_SIZE - ret - 1);
--		ret += strlen(rng->name);
--		strncat(buf, " ", PAGE_SIZE - ret - 1);
--		ret++;
-+		strlcat(buf, rng->name, PAGE_SIZE);
-+		strlcat(buf, " ", PAGE_SIZE);
- 	}
--	strncat(buf, "\n", PAGE_SIZE - ret - 1);
--	ret++;
-+	strlcat(buf, "\n", PAGE_SIZE);
- 	mutex_unlock(&rng_mutex);
- 
--	return ret;
-+	return strlen(buf);
- }
- 
- static DEVICE_ATTR(rng_current, S_IRUGO | S_IWUSR,
--- 
-1.7.10.4
+Sure, no problem.
+Sending a new patch in a moment...
 
+Kind regards
+Rickard Strandqvist
