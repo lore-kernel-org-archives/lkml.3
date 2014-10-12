@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966AbaJLLzr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 07:55:47 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:33174 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751017AbaJLLzo (ORCPT
+	id S1752413AbaJLL7r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 07:59:47 -0400
+Received: from CPE-121-211-193.123.hhui7.cht.bigpond.net.au ([121.211.193.123]:40829
+	"EHLO smtp.alterapraxis.com" rhost-flags-OK-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751124AbaJLL7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 07:55:44 -0400
-Message-ID: <543A6C3A.4070408@gmail.com>
-Date: Sun, 12 Oct 2014 22:25:38 +1030
-From: Daniel Cotton <danielcotton.mailinglists@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Sun, 12 Oct 2014 07:59:45 -0400
+X-Greylist: delayed 339 seconds by postgrey-1.27 at vger.kernel.org; Sun, 12 Oct 2014 07:59:45 EDT
+Date: Sun, 12 Oct 2014 22:53:43 +1100
+From: "Edward O'Callaghan" <eocallaghan@alterapraxis.com>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] arch/x86/kernel/rtc.c: Overzealous usage of 'const' keyword
+Message-ID: <20141012225343.0bb95e1c.eocallaghan@alterapraxis.com>
+Organization: Altera Praxis Pty Ltd
 MIME-Version: 1.0
-To: axboe@fb.com
-CC: linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND] drivers/block/mtip32xx: Fix incorrect warning
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed; boundary="MP_/ne7vKi+ncwnDWqhQrXgTf51"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prevent mtip32xx block driver from showing a warning at load time 
-("Error creating debugfs parent") when debugfs is not included in
-the kernel. If debugfs is included, show the error code. Fixes bug
-55831 in the Bugzilla.
+--MP_/ne7vKi+ncwnDWqhQrXgTf51
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
 
-Signed-off-by: Daniel Cotton <danielcotton.patches@gmail.com>
+Please merge.
+
+
+-- 
+______________________________________________________________________
+
+Edward O'Callaghan, Director and Principal consultant.
+
+https://www.alterapraxis.com | eocallaghan@alterapraxis.com
+
+Altera Praxis Pty Ltd,  // Discretions in cybersecurity
+ACN 165 424 064.       // reconnaissance and adversary mitigation.
+______________________________________________________________________
+
+--MP_/ne7vKi+ncwnDWqhQrXgTf51
+Content-Type: text/x-patch
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: attachment;
+ filename=0001-arch-x86-kernel-rtc.c-Overzealous-usage-of-const-key.patch
+
+=46rom f8847c4eb8f7550c43e2dbc9efaff91434a54fe7 Mon Sep 17 00:00:00 2001
+From: Edward O'Callaghan <eocallaghan@alterapraxis.com>
+Date: Sun, 12 Oct 2014 22:25:40 +1100
+Subject: [PATCH] arch/x86/kernel/rtc.c: Overzealous usage of 'const' keyword
+Organization: Altera Praxis Pty Ltd.
+To: linux-kernel@vger.kernel.org
+
+No need to qualify with 'const' no less than three times over.
+
+Signed-off-by: Edward O'Callaghan <eocallaghan@alterapraxis.com>
 ---
-  drivers/block/mtip32xx/mtip32xx.c | 11 +++++++----
-  1 file changed, 7 insertions(+), 4 deletions(-)
+ arch/x86/kernel/rtc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/block/mtip32xx/mtip32xx.c 
-b/drivers/block/mtip32xx/mtip32xx.c
-index 5c8e7fe..1124c61 100644
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -4686,16 +4686,19 @@ static int __init mtip_init(void)
-  	mtip_major = error;
+diff --git a/arch/x86/kernel/rtc.c b/arch/x86/kernel/rtc.c
+index ca9622a..75cf16a 100644
+--- a/arch/x86/kernel/rtc.c
++++ b/arch/x86/kernel/rtc.c
+@@ -170,7 +170,7 @@ static struct platform_device rtc_device =3D {
+ static __init int add_rtc_cmos(void)
+ {
+ #ifdef CONFIG_PNP
+-	static const char * const  const ids[] __initconst =3D
++	static const char * ids[] __initconst =3D
+ 	    { "PNP0b00", "PNP0b01", "PNP0b02", };
+ 	struct pnp_dev *dev;
+ 	struct pnp_id *id;
+--=20
+2.1.2
 
-  	dfs_parent = debugfs_create_dir("rssd", NULL);
--	if (IS_ERR_OR_NULL(dfs_parent)) {
--		pr_warn("Error creating debugfs parent\n");
-+	if (IS_ERR_OR_NULL(dfs_parent) && PTR_ERR(dfs_parent) != -ENODEV) {
-+		pr_warn("Error creating debugfs parent, error code: %ld\n",
-+			PTR_ERR(dfs_parent));
-  		dfs_parent = NULL;
-  	}
-  	if (dfs_parent) {
-  		dfs_device_status = debugfs_create_file("device_status",
-  					S_IRUGO, dfs_parent, NULL,
-  					&mtip_device_status_fops);
--		if (IS_ERR_OR_NULL(dfs_device_status)) {
--			pr_err("Error creating device_status node\n");
-+		if (IS_ERR_OR_NULL(dfs_device_status) &&
-+		    PTR_ERR(dfs_device_status) != -ENODEV) {
-+			pr_err("Error creating device_status node, error code: %ld\n",
-+				PTR_ERR(dfs_device_status));
-  			dfs_device_status = NULL;
-  		}
-  	}
+
+--MP_/ne7vKi+ncwnDWqhQrXgTf51--
