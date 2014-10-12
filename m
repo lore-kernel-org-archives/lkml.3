@@ -1,73 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752266AbaJLAqD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 20:46:03 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:55762 "EHLO bear.ext.ti.com"
+	id S1752432AbaJLAtf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 20:49:35 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:50070 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751582AbaJLAqA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 20:46:00 -0400
-Date: Sat, 11 Oct 2014 19:45:54 -0500
+	id S1751700AbaJLAte (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Oct 2014 20:49:34 -0400
+Date: Sat, 11 Oct 2014 19:47:58 -0500
 From: Felipe Balbi <balbi@ti.com>
-To: Vinod Koul <vinod.koul@intel.com>
-CC: <dmaengine@vger.kernel.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 10/12] usb: musb: ux500_dma: use dmaengine_xxx() APIs
-Message-ID: <20141012004554.GA21128@saruman>
+To: Johan Hovold <johan@kernel.org>
+CC: Felipe Balbi <balbi@ti.com>, Alessandro Zummo <a.zummo@towertech.it>,
+        Tony Lindgren <tony@atomide.com>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lokesh Vutla <lokeshvutla@ti.com>, Guenter Roeck <linux@roeck-us.net>,
+        Colin Foe-Parker <colin.foeparker@logicpd.com>, <nsekhar@ti.com>,
+        <t-kristo@ti.com>, <j-keerthy@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        <rtc-linux@googlegroups.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 08/12] rtc: omap: restore irq state after reading TC
+ registers
+Message-ID: <20141012004758.GB21128@saruman>
 Reply-To: <balbi@ti.com>
-References: <1413041973-28146-1-git-send-email-vinod.koul@intel.com>
- <1413042040-28222-10-git-send-email-vinod.koul@intel.com>
+References: <1412881594-25678-1-git-send-email-johan@kernel.org>
+ <1412881594-25678-9-git-send-email-johan@kernel.org>
+ <20141010180225.GT31348@saruman>
+ <20141011101201.GC18988@localhost>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Qxx1br4bt0+wmkIi"
+	protocol="application/pgp-signature"; boundary="GRPZ8SYKNexpdSJ7"
 Content-Disposition: inline
-In-Reply-To: <1413042040-28222-10-git-send-email-vinod.koul@intel.com>
+In-Reply-To: <20141011101201.GC18988@localhost>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Qxx1br4bt0+wmkIi
+--GRPZ8SYKNexpdSJ7
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi,
-
-On Sat, Oct 11, 2014 at 09:10:38PM +0530, Vinod Koul wrote:
-> The drivers should use dmaengine_terminate_all() or dmaengine_slave_confi=
-g()
-> API instead of accessing the device_control which will be deprecated soon
+On Sat, Oct 11, 2014 at 12:12:01PM +0200, Johan Hovold wrote:
+> On Fri, Oct 10, 2014 at 01:02:31PM -0500, Felipe Balbi wrote:
+> > Hi,
+> >=20
+> > On Thu, Oct 09, 2014 at 09:06:30PM +0200, Johan Hovold wrote:
+> > > Make sure to restore local irq state when reading the timer/calendar
+> > > (TC) registers, so that omap_rtc_read_time() can be called with
+> > > interrupts disabled.
+> > >=20
+> > > Signed-off-by: Johan Hovold <johan@kernel.org>
+> > > ---
+> > >  drivers/rtc/rtc-omap.c | 6 ++++--
+> > >  1 file changed, 4 insertions(+), 2 deletions(-)
+> > >=20
+> > > diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
+> > > index 0ef016553a97..62e2e9a9887a 100644
+> > > --- a/drivers/rtc/rtc-omap.c
+> > > +++ b/drivers/rtc/rtc-omap.c
+> > > @@ -239,8 +239,10 @@ static void bcd2tm(struct rtc_time *tm)
+> > > =20
+> > >  static int omap_rtc_read_time(struct device *dev, struct rtc_time *t=
+m)
+> > >  {
+> > > +	unsigned long flags;
+> > > +
+> > >  	/* we don't report wday/yday/isdst ... */
+> > > -	local_irq_disable();
+> > > +	local_irq_save(flags);
+> >=20
+> > you should really convert these to a real spin_lock_irq*(), that's
+> > because local_irq* do not get re-written with RT patchset, so this
+> > pretty much "breaks" RT.
 >=20
-> Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+> The driver uses local_irq* throughout to guarantee registers are not
+> read or written during an update event.
+>=20
+> In fact, at least on AM33xx, this is not even necessary when reading (as
+> opposed to writing) the TC registers, but I did not dare change that
+> without knowing how the legacy platforms work in this respect.
+>=20
+> Do you suggest doing this conversion as part of, or on top of, this
+> series?
 
-awesome. It looks like it doesn't have a direct dependency with the rest
-of the series, so I'll take this through my tree with Greg's ack, unless
-you shout ;-)
+probably on top of is. Safer that way.
 
 --=20
 balbi
 
---Qxx1br4bt0+wmkIi
+--GRPZ8SYKNexpdSJ7
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJUOc9CAAoJEIaOsuA1yqRE7VQQAI1KG0FoDFd1c/9wwO9P5LUh
-mC9UA9czKICHwprzKYDOC/lnH/CBm+mcna6HfKuzi5f/jikBGMF618sClDKLDkj0
-uDWuoFlZnnXYJra3ip5TpLoskHoUJCFPQBk1mMeZhEexkqypKgHHowtBZUyqF9HJ
-nGb78o3MJA3wHcWHA/Jy0ceypEKl6gYGTGchpFLBf2StItSnPuh2Ew965LEoetjX
-1NYvAUrbqPAaHtUnnC2tiHXTUGiRy+eVc3i75Gzfsjn85Xfhfvprnxc/EW8O34il
-fdDHSD7wy4VBIUDPE8ojhLz107v1uXinFPP0ak07FimwTO4Fg5Vy9eJWeqBrmTlk
-GyPo6z40K5x/gBDlTRXZSXxMH62QQNuFSbxR/b+ZHFbrNIPEos0DGN+uM4wgL3bP
-WtxmMZs2DbqSAFudObqVDwAjPKFjEgdzzYHGT9nxXrbqUmLPEKYvOTTIj3UkxwBY
-aXC1MJeqYFxXGptlstMBLbwD22Wmeu4X2bmPBf0XKLIHA/PD2pw5NiSHMCLpPFS8
-bMN766h6c6kwUFHjrPJmC4RmGftJbmBqKY9ByQ1IhO2u54gqqavQSU2FkRHhB+sL
-u5bl3VmNp1/AUM/ytLEnz6d7lNXN4cvQqKjLtbCPbkrOzObenI4/ukS4tBs0Y1yj
-SAUJzmPrCfTnd/dhLfYS
-=P1Aj
+iQIcBAEBAgAGBQJUOc++AAoJEIaOsuA1yqREjg4P/3+Lk5jKZx74l3U9ZvXHugE9
+ADO+nDrgcesXoyGVp+bQVRNFkLbQdWCSHCyqkjC4Hx2Nxw832W74R+YqrJavfI7S
+5+p4BFSTKEyDFuAKWtdLHLaAHgH2mAqPeMVb2XahX3jMeWH+ntBMf6cdPyf/f3Kb
+GeTM+snI5ccSi7EnROIKMqIsdJLAiMwSkaarjyD9bUTNfievcvIXhf4WFc09sGCd
+5ipRJm8fCWEPYcC7ORlEsUg7yZVyiMr5nbCV/1mO33igEu2f+Ic1XR+KchYmC6CO
+cLK/5pDmg2oU4hWAbhOrup1sTAPKqErtCyFiu0nG0oQYrkE4INYs8VbHwJGg63v2
+06U/WZDMGlICCRxWQ6L0HaEWAijuIrBE+gpHqZ+8vvaiSdVahIY2cwZVo12JJNXr
+wjOQYwVIWh5U/LSnprfzWKQGsR5rfsrlcWRZznQfLI9JtjXvhz+7sgz4THQNC6Tl
+DvC0KpUg046RBz7+om+qJC9RkUPIYoSGVemM2R5i5xrEMKDiubcvKkU39in2OUZ+
+md4z5OGYZkfuYiliJeuet+LFwud7SGzhIsIF7swo5sZoxR9TkRiMdsEome21XRFt
+XkB2O7DYr+DK/tb0UOku9KTiHOE2oU6fxcxrMfzoamP8yZ8jtQ6BGskdJhtyTJ5U
+24ltYEf7YAsPSvB3ZQWR
+=pRpA
 -----END PGP SIGNATURE-----
 
---Qxx1br4bt0+wmkIi--
+--GRPZ8SYKNexpdSJ7--
