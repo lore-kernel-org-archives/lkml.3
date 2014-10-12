@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752675AbaJLPx1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 11:53:27 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:53042 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514AbaJLPx0 (ORCPT
+	id S1752535AbaJLQB2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 12:01:28 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:45156 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751833AbaJLQB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 11:53:26 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Oleg Drokin <oleg.drokin@intel.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        Andriy Skulysh <Andriy_Skulysh@xyratex.com>,
-        Liang Zhen <liang.zhen@intel.com>,
-        Denis Pithon <denis.pithon@gmail.com>,
-        Chen Gang <gang.chen.5i5j@gmail.com>, Patrick Farrell <paf@cray.com>,
-        Masanari Iida <standby24x7@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: lustre: lustre: ptlrpc: sec.c:  Replacing strncat with strlcat to avoid overwrite size
-Date: Sun, 12 Oct 2014 17:55:33 +0200
-Message-Id: <1413129333-19863-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 12 Oct 2014 12:01:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFwwB1uUnUKdQq28T-3AgVcwPSJR27HnTDnrCyD4xowUOQ@mail.gmail.com>
+References: <alpine.LRH.2.11.1410101913460.13164@namei.org>
+	<CA+55aFwGpnBgSeyjKQuwKwSpccTHvQwPJGEXfw2wx9LJ-kafTg@mail.gmail.com>
+	<18599898.QtEUVscf6i@sifl>
+	<CA+55aFwwB1uUnUKdQq28T-3AgVcwPSJR27HnTDnrCyD4xowUOQ@mail.gmail.com>
+Date: Sun, 12 Oct 2014 12:01:25 -0400
+X-Google-Sender-Auth: 3g7Bkua4KFHgvAUKLWjcLJaFJIE
+Message-ID: <CA+55aFxtxBe8SaEYD6vAQME_YE+eD6mhU8F6Q850k-XBfzz4QQ@mail.gmail.com>
+Subject: Re: [GIT] Security subsystem upate for 3.18
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Paul Moore <pmoore@redhat.com>
+Cc: James Morris <jmorris@namei.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changed from using strncat with strlcat to avoid overwrite the max size.
-Take the opportunity to change a snprint to strlcpy.
+One more comment on this..
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/staging/lustre/lustre/ptlrpc/sec.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+On Sun, Oct 12, 2014 at 11:50 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+>
+>  - you actively need infrastructure from newer versions, so you need
+> to merge an upstream kernel for further development.
+>
+>    Even this is often questionable, but it's one of the best reasons
+> to do back-merges. However, if so, that back-merge should very much
+> spell out the exact reason why the merge was needed (not just "needed
+> upstream features" in general, but what particular features were
+> needed etc).
 
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/sec.c b/drivers/staging/lustre/lustre/ptlrpc/sec.c
-index 5cff7ee..d276e98 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/sec.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/sec.c
-@@ -209,7 +209,7 @@ EXPORT_SYMBOL(sptlrpc_flavor2name_bulk);
- 
- char *sptlrpc_flavor2name(struct sptlrpc_flavor *sf, char *buf, int bufsize)
- {
--	snprintf(buf, bufsize, "%s", sptlrpc_flavor2name_base(sf->sf_rpc));
-+	strlcpy(buf, sptlrpc_flavor2name_base(sf->sf_rpc), bufsize);
- 
- 	/*
- 	 * currently we don't support customized bulk specification for
-@@ -220,10 +220,9 @@ char *sptlrpc_flavor2name(struct sptlrpc_flavor *sf, char *buf, int bufsize)
- 
- 		bspec[0] = '-';
- 		sptlrpc_flavor2name_bulk(sf, &bspec[1], sizeof(bspec) - 1);
--		strncat(buf, bspec, bufsize);
-+		strlcat(buf, bspec, bufsize);
- 	}
- 
--	buf[bufsize - 1] = '\0';
- 	return buf;
- }
- EXPORT_SYMBOL(sptlrpc_flavor2name);
--- 
-1.7.10.4
+Btw, rather than merge from upstream, a better way is often to simply
+start a new development branch. If you need a particular new feature,
+you're *likely* to start doing new development rather than continuing
+on some previous development, so it's often a good time to simply
+create a new feature branch. I don't know how James feels about
+merging multiple separate feature branches, but I know that *I* tend
+to appreciate it when I get multiple well-defined pull requests rather
+than one big one that does many different things.
 
+And even if you then want to send just one pull-request, what you can
+do if you have (say) three different feature branches is to create a
+combined branch to be sent upstream, by just starting from one of the
+feature branches and then merging the two other ones into that
+combined one.  Some submaintainers do this quite a lot, and use
+"octopus merges" to combine their different feature branches into one
+final "please pull" branch. See for example Mark Brown's ASoC merge
+for upstreaming (to Takashi Iwai, and then to me): commit bdf20b4291e.
+
+             Linus
