@@ -1,89 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752481AbaJLPt2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 11:49:28 -0400
-Received: from roy.gaast.net ([80.101.33.21]:40264 "EHLO mail.gaast.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751514AbaJLPtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 11:49:24 -0400
-Message-ID: <543AA2FE.20105@gaast.net>
-Date: Sun, 12 Oct 2014 16:49:18 +0100
-From: Wilmer van der Gaast <wilmer@gaast.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130112 Icedove/17.0.2
+	id S1752568AbaJLPur (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 11:50:47 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:52111 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751514AbaJLPum (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Oct 2014 11:50:42 -0400
 MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org
-Subject: Re: Machine crashes right *after* ~successful resume
-References: <54347520.3050109@gaast.net> <20141012143025.GA378@amd>
-In-Reply-To: <20141012143025.GA378@amd>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <18599898.QtEUVscf6i@sifl>
+References: <alpine.LRH.2.11.1410101913460.13164@namei.org>
+	<CA+55aFwGpnBgSeyjKQuwKwSpccTHvQwPJGEXfw2wx9LJ-kafTg@mail.gmail.com>
+	<18599898.QtEUVscf6i@sifl>
+Date: Sun, 12 Oct 2014 11:50:41 -0400
+X-Google-Sender-Auth: IouBJE7GKEP-xY9aQ21foGBMqTE
+Message-ID: <CA+55aFwwB1uUnUKdQq28T-3AgVcwPSJR27HnTDnrCyD4xowUOQ@mail.gmail.com>
+Subject: Re: [GIT] Security subsystem upate for 3.18
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Paul Moore <pmoore@redhat.com>
+Cc: James Morris <jmorris@namei.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-Many thanks for your response!
-
-On 12-10-14 15:30, Pavel Machek wrote:
+On Sun, Oct 12, 2014 at 11:04 AM, Paul Moore <pmoore@redhat.com> wrote:
 >
-> Has it ever worked ok? ...aha, in 3.10, ok.
->
-Correct. And I've tried a few more kernels now, compiled on my own. 3.17 
-still has this issue, 3.10 is completely fine all the way up to 3.10.57 
-(I've tested just under 50 cycles last night). 3.11 I tried but it seems 
-to have other suspend-resume stability issues not present anymore in 
-later kernels, I've mostly not used those results.
+> Nothing other than that a merge was done.  To be honest I wasn't sure any
+> additional comment was needed since it was a clean merge without any conflict;
+> my process has only been to add commentary when there were conflicts that
+> needed to be resolved by hand.
 
-git bisect: I've finally succeeded! I've tried automating it completely, 
-but sadly Gigabyte couldn't be bothered wiring up the motherboard to 
-make the watchdog work. :-(
+So in general, any merge should always have a reason for the merge, or
+a summary of what the merge does.
 
-The culprit appears to be this one: 2e8b5f621dbe29425906852c6079afb6b28720cb
+Now, some reasons are pretty much "implicit" in the merge - when a
+maintainer merges a downstream maintainer tree, the "reason" for the
+merge is pretty obvious - the maintainer is obviously merging code.
+Then, the merge doesn't need an explicit reason, but a summary of the
+code being merged, so that the history shows at a glance what is going
+on.
 
-Merge: 07f2daa fed2451
-Author: Bjorn Helgaas <bhelgaas@google.com>
-Date:   Wed Aug 28 20:55:41 2013 -0600
+Now, "back-merges" - ie a submaintainer merging a tree from a
+top-level maintainer - causes various problems. The most obvious is
+that there is now no longer a single starting point for the
+development branch - there's both the original point you started
+developing, and there's the newly merged point. And because there is
+no clear-cut starting point, you can't get a sane "diff" of the
+developer tree.
 
-     Merge branch 'pci/misc' into next
+(Well, you can, but it involves more than diffing two points - you
+basically have to do another merge, and then looking at the result of
+*that* merge, because "git merge" understands multiple base trees and
+does some clever recursive merging to make it all DTRT automatically).
 
-     * pci/misc:
-       PCI: Remove pcie_cap_has_devctl()
-       PCI: Support PCIe Capability Slot registers only for ports with slots
-       PCI: Remove PCIe Capability version checks
-       PCI: Allow PCIe Capability link-related register access for switches
-       PCI: Add offsets of PCIe capability registers
-       PCI: Tidy bitmasks and spacing of PCIe capability definitions
-       PCI: Remove obsolete comment reference to pci_pcie_cap2()
-       PCI: Clarify PCI_EXP_TYPE_PCI_BRIDGE comment
-       PCI: Rename PCIe capability definitions to follow convention
-       PCI: Disable decoding for BAR sizing only when it was actually 
-enabled
-       PCI: Add comment about needing pci_msi_off() even when 
-CONFIG_PCI_MSI=n
-       PCI: Add pcibios_pm_ops for optional arch-specific hibernate 
-functionality
+The end result of that is that the basic assumption should always be
+that merges only go one way: a maintainer merges the submaintainer
+tree. Anything else causes problems.
 
-I've then tried to narrow down which of the merged changes is my issue 
-but with no luck, possibly because there's a problem with a combination 
-of one of these changes, and a change that was not in the pci/misc 
-branch at the time. I could do a manual test instead.
+Now, that said, there *are* valid reasons for a submaintainer doing a
+back merge and merging upstream.  But they should be seen as being
+exceptional events, and they really should be explained in the merge
+commit message. If you don't have a good explanation for it, you
+shouldn't do it. It's really that simple.
 
->> I've already tried to skip the NVidia + VMware modules at boot time (as you
->> can see from the logs they're not loaded at any point), but it didn't help.
->> I could try omitting more modules.
-> Yes, try with minimal modules (and no s2ram) would be nice.
-> 									
-I've tried unloading a bunch of modules (sound and NIC IIRC), same 
-results. I can try this again with an even more minimal set. If this 
-improves the situation, I'll post again.
+Examples of *good* reasons to do a back-merge:
 
+ - the code was developed on a really ancient tree, and is *so*
+out-of-date that not only are there conflicts, they are complicated
+and might be more than simple data conflicts - semantic changes etc
+that you as a submaintainer might be better off handlng the merge of,
+since you presumably know the code you are merging intimately.
 
-Wilmer van der Gaast.
+   Note: you may know your code intimately, but maybe you don't know
+the other changes intimately, and maybe the top-level maintainer is
+actually better at merging (possibly because that maintainer does 10+
+merges a day at times). So "a few conflicts" is not necessarily a good
+reason in itself, but there are certainly cases where things just get
+so ugly that "break the rules" is a very valid approach.
 
--- 
-+-------- .''`.     - -- ---+  +        - -- --- ---- ----- ------+
-| wilmer : :'  :  gaast.net |  | OSS Programmer   www.bitlbee.org |
-| lintux `. `~'  debian.org |  | Full-time geek  wilmer.gaast.net |
-+--- -- -  ` ---------------+  +------ ----- ---- --- -- -        +
+ - you actively need infrastructure from newer versions, so you need
+to merge an upstream kernel for further development.
+
+   Even this is often questionable, but it's one of the best reasons
+to do back-merges. However, if so, that back-merge should very much
+spell out the exact reason why the merge was needed (not just "needed
+upstream features" in general, but what particular features were
+needed etc).
+
+ - and hey, as with so many (all) kernel development rules, I don't
+actually want people to think that the rules are completely hard.
+Mistakes happen, shit happens, things go wrong, whatever.
+
+So the reason I spoke out was that there were not only two unnecessary
+merges in there, they actually did cause problems. Not *huge*
+problems, but the diffstat that James had doesn't match what I get
+after the merge, and it's annoying when I cannot do the full
+verification of "I got what the maintainer clearly meant to send" by
+comparing diffstats etc.
+
+And as mentioned, the fact that a plain "git diff" doesn't work can be
+worked around - some submaintainers do a full test-merge,. generate
+the diff from that (and tell me about any conflicts they encountered)
+and then just ask me to pull (and do the merge again). And I certainly
+don't mind it at all when submaintainers do that, but with clean
+workflows that simply isn't even *needed*.
+
+So it's not a disaster, and pulled and pushed out already, and
+occasional back-merges are fine. But I definitely would want to
+minimize them, and just on principle, I think all merges should have
+descriptive commit messages, the same way regular code changes should
+have them (in fact, it can arguably be *more* important for a merge
+commit, because if bisection ends up pointing to a merge, you don't
+have the same kind of obvious "this is the code that changed" that you
+have for a regular commit - so I think having good merge explanations
+just makes life less frustrating when things go wrong).
+
+                     Linus
