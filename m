@@ -1,58 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712AbaJLOcG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 10:32:06 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:42242 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751774AbaJLOcD (ORCPT
+	id S1752762AbaJLOcq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 10:32:46 -0400
+Received: from host3.smn.gob.ar ([200.16.116.3]:2444 "EHLO mail.smn.gov.ar"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751324AbaJLOco convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 10:32:03 -0400
+	Sun, 12 Oct 2014 10:32:44 -0400
+X-Greylist: delayed 396 seconds by postgrey-1.27 at vger.kernel.org; Sun, 12 Oct 2014 10:32:43 EDT
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFwGpnBgSeyjKQuwKwSpccTHvQwPJGEXfw2wx9LJ-kafTg@mail.gmail.com>
-References: <alpine.LRH.2.11.1410101913460.13164@namei.org>
-	<CA+55aFwGpnBgSeyjKQuwKwSpccTHvQwPJGEXfw2wx9LJ-kafTg@mail.gmail.com>
-Date: Sun, 12 Oct 2014 10:32:01 -0400
-X-Google-Sender-Auth: xQdKOPeEeH9waNVINZcoNL55sAg
-Message-ID: <CA+55aFxdQZup2rF+zoKj+xzTwZ2jZGewc18SGVihRXprUFsgSw@mail.gmail.com>
-Subject: Re: [GIT] Security subsystem upate for 3.18
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: James Morris <jmorris@namei.org>, Paul Moore <pmoore@redhat.com>
-Cc: LSM List <linux-security-module@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: Persoenlichen Brief:   /
+To: Recipients <no-reply@mx2.4shared.com>
+From: "Herr Juan Morato" <no-reply@mx2.4shared.com>
+Date: Sun, 12 Oct 2014 17:25:48 +0200
+Reply-To: juan_morato@yahoo.es
+Message-Id: <20141012142558.C463A11F40C@mail.smn.gov.ar>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 12, 2014 at 10:12 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> Give me a synopsis of what has changed and why I should pull.
+Guten Tag, 
 
-Side note: this is not just for me personally (so that I have a better
-overview of what is going on during the merge window), but also so
-that I can make sure that my merge messages are informative and tell
-people what I merged and why.
+Ich bin Herr Juan Morato, der Auditor General von Unicaja Bank Madrid. Im Zuge meiner Abschlusspruefung, entdeckte ich eine schwimmende Fonds auf einem Konto, das 1990 bei der Cam Bank eroeffnet wurde, bevor der Besitz von Unicaja Gruppe gekauft wurde,  ich bin der Abschlusspruefer der einem toten Auslaender Herr Kenny, der im Jahr 2004 starb, zugeteilt wurde. Jede Anstrengung , ein Mitglied seiner Familie oder einen naechsten Angehoerigen zu Ermitteln sind gescheitert .Bei meinen Ermittlungen habe ich festgestellt , dass Sie zu den  naechsten Angehoerigen gehoeren , da Sie den gleichen Nachnamen tragen. Er verstarb ohne Nachkommen oder einen Testament .
 
-In a perfect world, people could just read my merge messages and get a
-good overview of everything that has changed. But that depends on
-maintainers giving me those nice summaries of what the big important
-changes have been for that merge. I can, and occasionally do, try to
-write something up myself, but quite frankly, subsystem maintainers
-are just *so* much better positioned to give a good summary of what
-has been going on, that I really want that.
+Meine Absicht ist es, diese Summe von 5,5 Mio. von den oben genannten Konto auf ein sicheres Konto  zu ueberweisen. Ich schlage daher vor, dass ich Sie als stillen Teilhaber eintrage und Sie mir ein Konto zur Verfuegung stellen, oder ein neues Konto eroeffnen um dieses Geld dorthin zu ueberweisen. Fuer Ihre Unterstützung bei diesem Vorhaben, bin ich bereit, mit einem guten Prozentsatz des gesamten Fonds zu trennen. Beim durchsehen der Aufzeichnungen und Akten der verstorbenen Person, entdeckte ich dass 
 
-Of course, sometimes the summary might just be "a few trivial fixes"
-and then people who really want the details can just look at the
-individual commits. At other times, maybe you'd want to go into more
-detail about some subtle change. There's no fixed format, but it's
-supposed to be a human-readable quick high-level overview of what the
-merge brings in.
+(1) Niemand dieses Konto seit 2004 betrieben hat
+(2) Er starb ohne Erben, daher das Geld weiter floss.
+(3) Keine andere Person über dieses Konto bescheid weiss und auch kein Empfaenger eingetragen ist 
 
-You can just do "git log --author=Torvalds --merges" to see examples
-of what people send me. Some people explain more, some explain less, I
-really don't have any hard requirements. But I do want to get *some*
-overview.
+Wenn ich mich nicht schnellstens dieser Angelegenheit annehme, wird dieses Geld verfallen und anschliessend in Gesellschaftsmitteln fliessen, von denen nur die Regisseure meiner Firma profitieren werden. Ich kann Ihnen dieses Geld rechtlich zukommen lassen, wenn Sie einige notwendigen Genehmigungen, die auf Ihren Namen zugelassen sind ausfuellen, wobei ich Ihnen selbstverstaendlich behilflich sein werde.
 
-                 Linus
+Bitte geben Sie mir eine Antwort auf meine private E-Mail juan.morato1@1email.eu oder Fax 00 34 917 692 656, so dass ich Ihnen detaillierte Informationen ueber die Modalitäten meines Vorschlages zu senden kann. Ich bitte Sie eingehend dieses Schreiben absolut vertraulich zu behandeln. Bitte senden Sie mir Ihre Telefonnummer auf der sie leicht zu erreichen sind. Ich freue mich auf Ihre baldige Antwort.
+
+Mit freundlichen Gruessen
+Herr Juan Morato
