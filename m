@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850AbaJLLoE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 07:44:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62098 "EHLO mx1.redhat.com"
+	id S1751124AbaJLLoN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 07:44:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63048 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751175AbaJLLn5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 07:43:57 -0400
-Date: Sun, 12 Oct 2014 14:47:12 +0300
+	id S1751175AbaJLLoH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Oct 2014 07:44:07 -0400
+Date: Sun, 12 Oct 2014 14:47:22 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Rusty Russell <rusty@rustcorp.com.au>,
@@ -18,8 +18,8 @@ Cc: Rusty Russell <rusty@rustcorp.com.au>,
         Christian Borntraeger <borntraeger@de.ibm.com>,
         "David S. Miller" <davem@davemloft.net>,
         Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH v3 09/25] virtio_net: minor cleanup
-Message-ID: <1413114332-626-10-git-send-email-mst@redhat.com>
+Subject: [PATCH v3 11/25] virtio_net: enable VQs early
+Message-ID: <1413114332-626-12-git-send-email-mst@redhat.com>
 References: <1413114332-626-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -30,49 +30,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	goto done;
-done:
-	return;
-is ugly, it was put there to make diff review easier.
-replace by open-coded return.
+virtio spec requires drivers to set DRIVER_OK before using VQs.
+This is set automatically after probe returns, virtio net violated this
+rule by using receive VQs within probe.
+
+To fix, call virtio_enable_vqs_early before using VQs.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 ---
- drivers/net/virtio_net.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/net/virtio_net.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
 diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 23e4a69..ef04d23 100644
+index ef04d23..430f3ae 100644
 --- a/drivers/net/virtio_net.c
 +++ b/drivers/net/virtio_net.c
-@@ -1403,7 +1403,7 @@ static void virtnet_config_changed_work(struct work_struct *work)
- 
- 	if (virtio_cread_feature(vi->vdev, VIRTIO_NET_F_STATUS,
- 				 struct virtio_net_config, status, &v) < 0)
--		goto done;
-+		return;
- 
- 	if (v & VIRTIO_NET_S_ANNOUNCE) {
- 		netdev_notify_peers(vi->dev);
-@@ -1414,7 +1414,7 @@ static void virtnet_config_changed_work(struct work_struct *work)
- 	v &= VIRTIO_NET_S_LINK_UP;
- 
- 	if (vi->status == v)
--		goto done;
-+		return;
- 
- 	vi->status = v;
- 
-@@ -1425,8 +1425,6 @@ static void virtnet_config_changed_work(struct work_struct *work)
- 		netif_carrier_off(vi->dev);
- 		netif_tx_stop_all_queues(vi->dev);
+@@ -1792,6 +1792,8 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 		goto free_vqs;
  	}
--done:
--	return;
- }
  
- static void virtnet_config_changed(struct virtio_device *vdev)
++	virtio_enable_vqs_early(vdev);
++
+ 	/* Last of all, set up some receive buffers. */
+ 	for (i = 0; i < vi->curr_queue_pairs; i++) {
+ 		try_fill_recv(&vi->rq[i], GFP_KERNEL);
 -- 
 MST
 
