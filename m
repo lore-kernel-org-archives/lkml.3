@@ -1,151 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751272AbaJLGSI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 02:18:08 -0400
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:45688 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750802AbaJLGSF (ORCPT
+	id S1751227AbaJLHbq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 03:31:46 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:33176 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772AbaJLHbp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 02:18:05 -0400
-Message-ID: <543A1D1A.8090808@vmware.com>
-Date: Sat, 11 Oct 2014 23:18:02 -0700
-From: Petr Vandrovec <petr@vmware.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Sun, 12 Oct 2014 03:31:45 -0400
+Date: Sun, 12 Oct 2014 00:31:47 -0700
+From: Darren Hart <dvhart@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] platform-drivers-x86 for v3.18
+Message-ID: <20141012073145.GA15039@vmdeb7>
 MIME-Version: 1.0
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-CC: Jens Axboe <axboe@kernel.dk>, Arvind Kumar <arvindkumar@vmware.com>,
-        Chris J Arges <chris.j.arges@canonical.com>,
-        Christoph Hellwig <hch@lst.de>, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Do not silently discard WRITE_SAME requests
-References: <20141011063053.GB18215@petr-dev3.eng.vmware.com> <yq1lhomahwt.fsf@sermon.lab.mkp.net>
-In-Reply-To: <yq1lhomahwt.fsf@sermon.lab.mkp.net>
-Content-Type: multipart/mixed;
- boundary="------------070109080706090206050800"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------070109080706090206050800
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Hi Linus,
 
-On 10/11/2014 5:51 AM, Martin K. Petersen wrote:
->>>>>> "Petr" == Petr Vandrovec <petr@vmware.com> writes:
->
-> Petr> After investigating, problem seems to be in a way completion
-> Petr> handler for WRITE_SAME handles EOPNOTSUPP error, causing
-> Petr> all-but-first WRITE_SAME request on the LVM device to be silently
-> Petr> ignored - command is never issued, but success is returned to
-> Petr> higher layers.
->
-> Commit 7eee4ae2dbb2 was meant to address this issue. Does it still
-> happen with that in place?
+The following have all spent at least a few days in linux-next, most for more
+than a week. These are mostly cleanups and error handling improvements with a
+few updates to extend existing support to newer hardware.
 
-Hi,
-   that commit alleviates need for change to blk-lib.c.  But I believe 
-that change to blk-core.c that changes return value from EOPNOTSUPP to 
-EREMOTEIO is still necessary - unless I'm missing some locking 
-somewhere, there is a race in blkdev_issue_write_same() wrt. updating 
-max_write_same_sectors:
+Thanks,
 
-blkdev_issue_write_same() checks whether max_write_same_sectors is 
-non-zero at the beginning, and if it is non-zero it proceeds with 
-generating BIOs.  While it generates them, other thread seems to be able 
-to complete previously issued write_same, find it is not supported, and 
-clear max_write_same_sectors.  Which means that BIOs that are now being 
-generated will fast-fail in blk-core.c with EOPNOTSUPP, and 
-blkdev_issue_write_same() will then return success, rather than failure.
+Darren Hart
+Intel Open Source Technology Center
 
-It is true that now WRITE_SAME is failing only if second WRITE_SAME is 
-issued to the device while first ever issued WRITE_SAME on the device is 
-being completed, but I see no reason why to not close this race.
+The following changes since commit 9e82bf014195d6f0054982c463575cdce24292be:
 
-Logic (from 2011, commit 8af1954d172a46a63e5e79dae523a6d74715e458) says 
-that EOPNOTSUPP is returned when DISCARD request failed, as discarding 
-is optional, and failures can be safely ignored.  That is definitely not 
-true for WRITE_SAME failures, and so unsupported WRITE_SAME should 
-return different error code than unsupported DISCARD.
+  Linux 3.17-rc5 (2014-09-14 17:50:12 -0700)
 
-Which is what patch does.  I've removed part that propagates disabling 
-WRITE_SAME from the diff, keeping only EOPNOTSUPP => EREMOTEIO change, 
-and revert of blacklisting VMware's LSI (if anything, blacklist should 
-be for current firmware version of 'VMware Virtual SCSI Disk', as f.e. 
-passed-through (RDM) SCSI disks do support WRITE_SAME under VMware) -- 
-see attached updated diff.
-					Petr Vandrovec
+are available in the git repository at:
 
+  git://git.infradead.org/users/dvhart/linux-platform-drivers-x86.git tags/platform-drivers-x86-v3.18-1
 
---------------070109080706090206050800
-Content-Type: text/plain; charset=windows-1252;
- name="0001-Do-not-silently-discard-WRITE_SAME-requests.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-Do-not-silently-discard-WRITE_SAME-requests.patch"
+for you to fetch changes up to eabde0fa967052df12bdd8e8a72f0af799e1e704:
 
->From 975c1f8be719bb297de4bbf704cc5a58edee62b6 Mon Sep 17 00:00:00 2001
-From: Petr Vandrovec <petr@vandrovec.name>
-Date: Fri, 10 Oct 2014 23:10:25 -0700
-Subject: [PATCH] Do not silently discard WRITE_SAME requests
+  toshiba_acpi: Adapt kbd_bl_timeout_store to the new kbd type (2014-10-06 17:44:42 -0700)
 
-When device does not support WRITE_SAME, after first failure
-block layer starts throwing away WRITE_SAME requests without
-warning anybody, leading to the data corruption.
+----------------------------------------------------------------
+platform-drivers-x86 for 3.18
 
-Let's do something about it - do not use EOPNOTSUPP error,
-as that error code is special, reserved for DISCARD, and
-return EREMOTEIO, AKA target failure, like when request
-hits hardware..
+dell-wmi: Fix access out of memory
+eeepc-laptop: Cleanups, refactoring, sysfs perms, and improved error handling
+intel-rst: ACPI and error handling cleanups
+thinkpad-acpi: Whitespace cleanup
+toshiba_acpi: HCI/SCI interface update, keyboard backlight type 2 support,
+              new scancodes, cleanups
 
-It also reverts 4089b71cc820a426d601283c92fcd4ffeb5139c2, as
-there is nothing wrong with VMware's WRITE_SAME emulation.
-Only problem was that block layer did not issue WRITE_SAME
-request at all, but reported success, and it affected all
-disks that do not support WRITE_SAME.
+----------------------------------------------------------------
+Azael Avalos (8):
+      toshiba_acpi: Additional hotkey scancodes
+      toshiba_acpi: Fix illumination not available on certain models
+      toshiba_acpi: Change touchpad store to check for invalid values
+      toshiba_acpi: Support new keyboard backlight type
+      toshiba_acpi: Rename hci_raw to tci_raw
+      toshiba_acpi: Unify return codes prefix from HCI/SCI to TOS
+      toshiba_acpi: Change HCI/SCI functions return code type
+      toshiba_acpi: Adapt kbd_bl_timeout_store to the new kbd type
 
-Signed-off-by: Petr Vandrovec <petr@vmware.com>
-Cc: Arvind Kumar <arvindkumar@vmware.com>
-Cc: Chris J Arges <chris.j.arges@canonical.com>
-Cc: Martin K. Petersen <martin.petersen@oracle.com>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: stable@vger.kernel.org
----
- block/blk-core.c                | 2 +-
- drivers/message/fusion/mptspi.c | 5 -----
- 2 files changed, 1 insertion(+), 6 deletions(-)
+Frans Klaver (10):
+      eeepc-laptop: clean up coding style
+      eeepc-laptop: change sysfs function names to API expectations
+      eeepc-laptop: use DEVICE_ATTR* to instantiate device_attributes
+      eeepc-laptop: pull out ACPI_STORE_FUNC and ACPI_SHOW_FUNC macros
+      eeepc-laptop: tell sysfs that the disp attribute is write-only
+      eeepc-laptop: pull out SENSOR_STORE_FUNC and SENSOR_SHOW_FUNC macros
+      eeepc-laptop: make fan1_input really read-only
+      eeepc-laptop: check proper return values in get_cpufv
+      eeepc-laptop: store_cpufv: return error if set_acpi fails
+      eeepc-laptop: clean up control flow in *_rfkill_notifier
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 9c888bd..b070782 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -1822,7 +1822,7 @@ generic_make_request_checks(struct bio *bio)
- 	}
- 
- 	if (bio->bi_rw & REQ_WRITE_SAME && !bdev_write_same(bio->bi_bdev)) {
--		err = -EOPNOTSUPP;
-+		err = -EREMOTEIO;
- 		goto end_io;
- 	}
- 
-diff --git a/drivers/message/fusion/mptspi.c b/drivers/message/fusion/mptspi.c
-index 613231c..787933d 100644
---- a/drivers/message/fusion/mptspi.c
-+++ b/drivers/message/fusion/mptspi.c
-@@ -1419,11 +1419,6 @@ mptspi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 		goto out_mptspi_probe;
-         }
- 
--	/* VMWare emulation doesn't properly implement WRITE_SAME
--	 */
--	if (pdev->subsystem_vendor == 0x15AD)
--		sh->no_write_same = 1;
--
- 	spin_lock_irqsave(&ioc->FreeQlock, flags);
- 
- 	/* Attach the SCSI Host to the IOC structure
--- 
-2.1.1
+Jan van den Berg (1):
+      x86: thinkpad_acpi.c: fixed spacing coding style issue
 
+Pali Rohár (1):
+      dell-wmi: Fix access out of memory
 
---------------070109080706090206050800--
+Paul Bolle (1):
+      eeepc-laptop: simplify parse_arg()
+
+Peter Ujfalusi (2):
+      intel-rst: Use ACPI_FAILURE() macro instead !ACPI_SUCCESS() for error checking
+      intel-rst: Clean up ACPI add function
+
+ drivers/platform/x86/dell-wmi.c      |  12 +-
+ drivers/platform/x86/eeepc-laptop.c  | 206 ++++++------
+ drivers/platform/x86/intel-rst.c     |  23 +-
+ drivers/platform/x86/thinkpad_acpi.c |  44 +--
+ drivers/platform/x86/toshiba_acpi.c  | 606 ++++++++++++++++++++++-------------
+ 5 files changed, 522 insertions(+), 369 deletions(-)
