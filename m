@@ -1,198 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757AbaJLXYA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 19:24:00 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:36169 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752348AbaJLXX4 (ORCPT
+	id S1752701AbaJLXoJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 19:44:09 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:51263 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751478AbaJLXoD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 19:23:56 -0400
-Date: Mon, 13 Oct 2014 00:23:54 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [git pull] vfs.git pile 1
-Message-ID: <20141012232353.GV7996@ZenIV.linux.org.uk>
+	Sun, 12 Oct 2014 19:44:03 -0400
+From: "S. Gilles" <sgilles@terpmail.umd.edu>
+X-Google-Original-From: "S. Gilles" <sgilles@umd.edu>
+Date: Sun, 12 Oct 2014 19:43:54 -0400
+To: linux-kernel@vger.kernel.org
+Subject: [Regression] rtlwifi boot failure with 3.17
+Message-ID: <20141012234354.GA22088@number18>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The big thing in this pile is Eric's unmount-on-rmdir series; we finally 
-have everything we need for that.  The final piece of prereqs is delayed
-mntput() - now filesystem shutdown always happens on shallow stack.
-Other than that, we have several new primitives for iov_iter (Matt Wilcox,
-culled from his XIP-related series) pushing the conversion to ->read_iter()/
-->write_iter() a bit more, a bunch of fs/dcache.c cleanups and fixes
-(including the external name refcounting, which gives consistent behaviour
-of d_move() wrt procfs symlinks for long and short names alike) and
-assorted cleanups and fixes all over the place.
+I have a boot failure (consistent) since about 3.17-rc7, which I have
+bisected to
 
-This is just the first pile; there's a lot of stuff from various people that
-ought to go in this window.  Starting with unionmount/overlayfs mess... ;-/
+38506ecefab911785d5e1aa5889f6eeb462e0954 is the first bad commit
+commit 38506ecefab911785d5e1aa5889f6eeb462e0954
+Author: Larry Finger <Larry.Finger@lwfinger.net>
+Date:   Mon Sep 22 09:39:19 2014 -0500
 
-Please, pull from the usual place:
-git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
+    rtlwifi: rtl_pci: Start modification for new drivers
+    
+    Future patches will move the drivers for RTL8192EE and RTL8821AE
+    from staging to the regular wireless tree. Here, the necessary features
+    are added to the PCI driver. Other files are touched due to changes
+    in the various data structs.
+    
+    Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+    Signed-off-by: John W. Linville <linville@tuxdriver.com>
 
-Shortlog:
-Al Viro (38):
-      missing data dependency barrier in prepend_name()
-      Allow sharing external names after __d_move()
-      delayed mntput
-      d_prune_alias(): just lock the parent and call __dentry_kill()
-      dcache.c: call ->d_prune() regardless of d_unhashed()
-      handle suicide on late failure exits in execve() in search_binary_handler()
-      constify file_inode()
-      [jffs2] kill wbuf_queued/wbuf_dwork_lock
-      cifs: switch to use of %p[dD]
-      9p: switch to %p[dD]
-      ashmem: use vfs_llseek()
-      vme: don't open-code fixed_size_llseek()
-      cachefiles_write_page(): switch to __kernel_write()
-      carma-fpga: switch to fixed_size_llseek()
-      carma-fpga: switch to simple_read_from_buffer()
-      rsxx debugfs inanity
-      dma-buf: don't open-code atomic_long_read()
-      switch /dev/zero and /dev/full to ->read_iter()
-      switch hci_vhci to ->write_iter()
-      switch logger to ->write_iter()
-      switch /dev/kmsg to ->write_iter()
-      saner perf_atoll()
-      missing annotation in fs/file.c
-      nouveau: __iomem misannotations
-      android: ->f_op is never NULL
-      ecryptfs: ->f_op is never NULL
-      [s390] remove pointless assignment of ->f_op in vmlogrdr ->open()
-      jfs: don't hash direct inode
-      f_fs: saner API for ffs_sb_create_file()
-      gadgetfs: saner API for gadgetfs_create_file()
-      [infiniband] remove pointless assignments
-      gfs2_atomic_open(): skip lookups on hashed dentry
-      ncpfs: use list_for_each_entry() for d_subdirs walk
-      fix misuses of f_count() in ppp and netlink
-      let path_init() failures treated the same way as subsequent link_path_walk()
-      take dname_external() into fs/dcache.c
-      don't need that forward declaration of struct nameidata in dcache.h anymore
-      reiserfs: remove pointless forward declaration of struct nameidata
+The trace (as much of it as I can capture by hand, though I think I've
+checked it for typos):
 
-Daeseok Youn (1):
-      dcache: Fix no spaces at the start of a line in dcache.c
+R10: ffffffff825f2d80 R11: 0000000000000000 R12: ffff8800b4f107c0
+R13: ffff8800b4f124b8 R14: 0000000000001000 R15: ffff8800b4c7a000
+FS:  000007fc66c938700(0000) GS:ffff88013e200000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000000000 CR3: 00000000b5438000 CR4: 00000000000407f0
+Stack:
+ ffffffffa01e20d6 ffff8800b4f12420 ffff8800b4f107c0 ffff880137d7fcd0
+ ffffffffa01c97b5 ffff8800b4f107c0 ffff8800b4c7a8d0 0000000000000000
+ ffff880137d7fd30 ffffffff81577304 0000000000000000 ffff8800b4c7a8c0
+Call Trace:
+ [<ffffffffa01e20d6>] ? rtl_pci_start+0x2b/0x15f [rtl_pci]
+ [<ffffffffa01c97b5>] rtl_op_start+0x45/0x64 [rtlwifi]
+ [<ffffffff81577304>] ieee80211_do_open+0x152/0xb4b
+ [<ffffffff815b52bc>] ? mutex_unlock+0x9/0xb
+ [<ffffffff81577d4a>] ieee80211_open+0x4d/0x57
+ [<ffffffff8147df7f>] __dev_open+0x8b/0xcb
+ [<ffffffff8147e1e1>] __dev_change_flags+0xa4/0x13a
+ [<ffffffff8147e297>] dev_change_flags+0x20/0x53
+ [<ffffffff814d0204>] devinet_ioctl+0x269/0x568
+ [<ffffffff814d19b4>] inet_ioctl+0x81/0x9e
+ [<ffffffff814654e6>] sock_do_ioctl+0x20/0x3d
+ [<ffffffff81465a56>] sock_ioctl+0x20e/0x21a
+ [<ffffffff81136242>] do_vfs_ioctl+0x39e/0x467
+ [<ffffffff815b7277>] ? sysret_check+0x1b/0x56
+ [<ffffffff810965fe>] ? trace_hardirqs_on_caller+0x16e/0x18a
+ [<ffffffff81136343>] SyS_ioctl+0x38/0x5f
+ [<ffffffff815b7252>] system_call_fastpath+0x16/0x1b
+Code:  Bad RIP value.
+RIP  [<          (null)>]           (null)
+ RSP <ffff880137d7fc90>
+CR2: 0000000000000000
+---[ end trace 7307d2524c1e640b ]---
 
-Eric Biggers (2):
-      vfs: Deduplicate code shared by xattr system calls operating on paths
-      fs/file_table.c: Update alloc_file() comment
+My card is
 
-Eric W. Biederman (12):
-      vfs: Document the effect of d_revalidate on d_find_alias
-      vfs: More precise tests in d_invalidate
-      vfs: Don't allow overwriting mounts in the current mount namespace
-      vfs: Keep a list of mounts on a mount point
-      vfs: factor out lookup_mountpoint from new_mountpoint
-      vfs: Add a function to lazily unmount all mounts from any dentry.
-      vfs: Lazily remove mounts on unlinked files and directories.
-      vfs: Remove unnecessary calls of check_submounts_and_drop
-      vfs: Merge check_submounts_and_drop and d_invalidate
-      vfs: Make d_invalidate return void
-      vfs: Remove d_drop calls from d_revalidate implementations
-      proc: Update proc_flush_task_mnt to use d_invalidate
+$ lspci -nn | grep RTL
+03:00.0 Network controller [0280]: Realtek Semiconductor Co., Ltd. RTL8188CE 802.11b/g/n WiFi Adapter [10ec:8176] (rev 01)
 
-Ian Kent (1):
-      autofs - remove obsolete d_invalidate() from expire
+The portions of my config that I think are relevant follow, if the
+entire .config is requested I can provide it.
 
-Kirill Smelkov (1):
-      vfs: fix typo in s_op->alloc_inode() documentation
+CONFIG_WLAN=y
+CONFIG_RTL_CARDS=y
+CONFIG_RTL8192CE=m
+# CONFIG_RTL8192SE is not set
+# CONFIG_RTL8192DE is not set
+# CONFIG_RTL8723AE is not set
+# CONFIG_RTL8723BE is not set
+# CONFIG_RTL8188EE is not set
+# CONFIG_RTL8192CU is not set
+CONFIG_RTLWIFI=m
+CONFIG_RTLWIFI_PCI=m
+CONFIG_RTLWIFI_DEBUG=y
+CONFIG_RTL8192C_COMMON=m
 
-Matthew Wilcox (1):
-      Add copy_to_iter(), copy_from_iter() and iov_iter_zero()
+Please let me know if there's more information I can provide or tests
+I can perform.
 
-Mikulas Patocka (1):
-      fs: make cont_expand_zero interruptible
-
-Seunghun Lee (1):
-      vfs: move getname() from callers to do_mount()
-
-Tetsuo Handa (1):
-      fs: Fix theoretical division by 0 in super_cache_scan().
-
-Tim Gardner (1):
-      fs: namespace: suppress 'may be used uninitialized' warnings
-
-Diffstat:
- Documentation/filesystems/vfs.txt        |    2 +-
- arch/alpha/kernel/osf_sys.c              |   23 ++-
- arch/x86/ia32/ia32_aout.c                |   21 +--
- drivers/block/rsxx/core.c                |   81 ++--------
- drivers/bluetooth/hci_vhci.c             |   22 +--
- drivers/char/mem.c                       |   56 ++-----
- drivers/dma-buf/dma-buf.c                |    2 +-
- drivers/gpu/drm/nouveau/nouveau_nvif.c   |    4 +-
- drivers/gpu/drm/nouveau/nvif/driver.h    |    4 +-
- drivers/gpu/drm/nouveau/nvif/object.h    |    6 +-
- drivers/infiniband/hw/ipath/ipath_fs.c   |    1 -
- drivers/infiniband/hw/qib/qib_fs.c       |    1 -
- drivers/misc/carma/carma-fpga-program.c  |   30 +---
- drivers/net/ppp/ppp_generic.c            |    2 +-
- drivers/s390/char/vmlogrdr.c             |    1 -
- drivers/staging/android/ashmem.c         |    2 +-
- drivers/staging/android/ion/compat_ion.c |    2 +-
- drivers/staging/android/logger.c         |  103 +++---------
- drivers/staging/vme/devices/vme_user.c   |   28 +---
- drivers/usb/gadget/function/f_fs.c       |   24 ++-
- drivers/usb/gadget/legacy/inode.c        |   26 ++-
- fs/9p/fid.c                              |    4 +-
- fs/9p/vfs_addr.c                         |    4 +-
- fs/9p/vfs_dentry.c                       |    8 +-
- fs/9p/vfs_dir.c                          |    4 +-
- fs/9p/vfs_file.c                         |    8 +-
- fs/9p/vfs_inode.c                        |   32 ++--
- fs/9p/vfs_inode_dotl.c                   |    8 +-
- fs/afs/dir.c                             |    5 -
- fs/autofs4/expire.c                      |    6 -
- fs/binfmt_aout.c                         |   25 +--
- fs/binfmt_elf.c                          |   25 +--
- fs/binfmt_elf_fdpic.c                    |   24 +--
- fs/btrfs/ioctl.c                         |    5 +-
- fs/buffer.c                              |    5 +
- fs/cachefiles/rdwr.c                     |   48 +++---
- fs/ceph/dir.c                            |    1 -
- fs/cifs/dir.c                            |   14 +-
- fs/cifs/file.c                           |   12 +-
- fs/cifs/inode.c                          |   12 +-
- fs/cifs/readdir.c                        |    6 +-
- fs/compat.c                              |   28 ++--
- fs/dcache.c                              |  259 +++++++++++++++---------------
- fs/ecryptfs/file.c                       |    2 +-
- fs/exec.c                                |   17 +-
- fs/file.c                                |    1 +
- fs/file_table.c                          |   12 +-
- fs/fuse/dir.c                            |    7 +-
- fs/gfs2/dentry.c                         |    3 -
- fs/gfs2/inode.c                          |    5 +
- fs/internal.h                            |    2 +-
- fs/jffs2/jffs2_fs_sb.h                   |    2 -
- fs/jffs2/wbuf.c                          |   17 +-
- fs/jfs/super.c                           |    2 +-
- fs/kernfs/dir.c                          |   11 --
- fs/mount.h                               |   25 ++-
- fs/namei.c                               |   27 ++--
- fs/namespace.c                           |  203 ++++++++++++++++-------
- fs/ncpfs/dir.c                           |    6 +-
- fs/ncpfs/ncplib_kernel.h                 |   14 +-
- fs/nfs/dir.c                             |    7 +-
- fs/proc/base.c                           |   10 +-
- fs/proc/fd.c                             |    2 -
- fs/read_write.c                          |    2 +
- fs/reiserfs/xattr.h                      |    1 -
- fs/super.c                               |    2 +
- fs/xattr.c                               |  116 +++++--------
- include/linux/dcache.h                   |    9 +-
- include/linux/fs.h                       |    5 +-
- include/linux/uio.h                      |    3 +
- kernel/printk/printk.c                   |   20 +--
- mm/iov_iter.c                            |  240 +++++++++++++++++++++++++--
- net/netlink/af_netlink.c                 |    2 +-
- tools/perf/util/string.c                 |   90 ++++-------
- 74 files changed, 889 insertions(+), 960 deletions(-)
+--
+S. Gilles
