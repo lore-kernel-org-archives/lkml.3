@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473AbaJLCPO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 22:15:14 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:42001 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752305AbaJLCPM (ORCPT
+	id S1752331AbaJLCZZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 22:25:25 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:37411 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751907AbaJLCZX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 22:15:12 -0400
-Date: Sat, 11 Oct 2014 22:15:10 -0400 (EDT)
-Message-Id: <20141011.221510.1574777235900788349.davem@davemloft.net>
-To: linux-kernel@vger.kernel.org
-CC: cl@linux.com, penberg@kernel.org, rientjes@google.com,
-        iamjoonsoo.kim@lge.com, akpm@linux-foundation.org, linux-mm@kvack.org
-Subject: unaligned accesses in SLAB etc.
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sat, 11 Oct 2014 19:15:11 -0700 (PDT)
+	Sat, 11 Oct 2014 22:25:23 -0400
+Date: Sat, 11 Oct 2014 19:25:18 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Mark D Rustad <mrustad@gmail.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>, Torsten Duwe <duwe@lst.de>,
+        "Theodore Ts'o" <tytso@mit.edu>, Jason Cooper <jason@lakedaemon.net>,
+        Amit Shah <amit.shah@redhat.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Kees Cook <keescook@chromium.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] char: hw_random: core.c:  Changed from using strncpy to
+ strlcpy
+Message-ID: <20141012022518.GA29109@roeck-us.net>
+References: <1413067004-10925-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <09FC08CC-027E-443A-83C3-CC4C1D978743@gmail.com>
+ <20141012021122.GA10822@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141012021122.GA10822@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Oct 11, 2014 at 07:11:22PM -0700, Guenter Roeck wrote:
+> On Sat, Oct 11, 2014 at 05:27:41PM -0700, Mark D Rustad wrote:
+> > On Oct 11, 2014, at 3:36 PM, Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se> wrote:
+> > 
+> > > Changed from using strncpy to strlcpy to simplify the code
+> > 
+> > Actually you changed from using strncat to strlcat.
+> > 
+> ... and changed the length parameter along the way, making the length check
+> overall quite worthless and introducing a _real_ problem.
+> 
+Me talking nonsense; ignore this noise.
 
-I'm getting tons of the following on sparc64:
-
-[603965.383447] Kernel unaligned access at TPC[546b58] free_block+0x98/0x1a0
-[603965.396987] Kernel unaligned access at TPC[546b60] free_block+0xa0/0x1a0
-[603965.410523] Kernel unaligned access at TPC[546b58] free_block+0x98/0x1a0
-[603965.424061] Kernel unaligned access at TPC[546b60] free_block+0xa0/0x1a0
-[603965.437617] Kernel unaligned access at TPC[546b58] free_block+0x98/0x1a0
-[603970.554394] log_unaligned: 333 callbacks suppressed
-[603970.564041] Kernel unaligned access at TPC[546b58] free_block+0x98/0x1a0
-[603970.577576] Kernel unaligned access at TPC[546b60] free_block+0xa0/0x1a0
-[603970.591122] Kernel unaligned access at TPC[546b58] free_block+0x98/0x1a0
-[603970.604669] Kernel unaligned access at TPC[546b60] free_block+0xa0/0x1a0
-[603970.618216] Kernel unaligned access at TPC[546b58] free_block+0x98/0x1a0
-[603976.515633] log_unaligned: 31 callbacks suppressed
-[603976.525092] Kernel unaligned access at TPC[548080] cache_alloc_refill+0x180/0x3a0
-[603976.540196] Kernel unaligned access at TPC[548080] cache_alloc_refill+0x180/0x3a0
-[603976.555308] Kernel unaligned access at TPC[548080] cache_alloc_refill+0x180/0x3a0
-[603976.570411] Kernel unaligned access at TPC[548080] cache_alloc_refill+0x180/0x3a0
-[603976.585526] Kernel unaligned access at TPC[548080] cache_alloc_refill+0x180/0x3a0
-[603982.476424] log_unaligned: 43 callbacks suppressed
-[603982.485881] Kernel unaligned access at TPC[549378] kmem_cache_alloc+0xd8/0x1e0
-[603982.501590] Kernel unaligned access at TPC[5470a8] kmem_cache_free+0xc8/0x200
-[603982.501605] Kernel unaligned access at TPC[549378] kmem_cache_alloc+0xd8/0x1e0
-[603982.530382] Kernel unaligned access at TPC[5470a8] kmem_cache_free+0xc8/0x200
-[603982.544820] Kernel unaligned access at TPC[549378] kmem_cache_alloc+0xd8/0x1e0
-[603987.567130] log_unaligned: 11 callbacks suppressed
-[603987.576582] Kernel unaligned access at TPC[548080] cache_alloc_refill+0x180/0x3a0
-[603987.591696] Kernel unaligned access at TPC[548080] cache_alloc_refill+0x180/0x3a0
-[603987.606811] Kernel unaligned access at TPC[548080] cache_alloc_refill+0x180/0x3a0
-[603987.621904] Kernel unaligned access at TPC[548080] cache_alloc_refill+0x180/0x3a0
-[603987.637017] Kernel unaligned access at TPC[548080] cache_alloc_refill+0x180/0x3a0
+Guenter
