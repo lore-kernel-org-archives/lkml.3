@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367AbaJLLsF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 07:48:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14231 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753071AbaJLLor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753065AbaJLLor (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 12 Oct 2014 07:44:47 -0400
-Date: Sun, 12 Oct 2014 14:48:01 +0300
+Received: from mx1.redhat.com ([209.132.183.28]:49453 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753031AbaJLLom (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Oct 2014 07:44:42 -0400
+Date: Sun, 12 Oct 2014 14:47:50 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Rusty Russell <rusty@rustcorp.com.au>,
@@ -19,8 +19,8 @@ Cc: Rusty Russell <rusty@rustcorp.com.au>,
         "David S. Miller" <davem@davemloft.net>,
         Paolo Bonzini <pbonzini@redhat.com>,
         "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: [PATCH v3 18/25] virtio_scsi: enable VQs early on restore
-Message-ID: <1413114332-626-19-git-send-email-mst@redhat.com>
+Subject: [PATCH v3 16/25] virtio_scsi: move kick event out from virtscsi_init
+Message-ID: <1413114332-626-17-git-send-email-mst@redhat.com>
 References: <1413114332-626-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -31,30 +31,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-virtio spec requires drivers to set DRIVER_OK before using VQs.
-This is set automatically after restore returns, virtio scsi violated
-this rule on restore by kicking event vq within restore.
+We currently kick event within virtscsi_init,
+before host is fully initialized.
 
-To fix, call virtio_enable_vqs_early before using event queue.
+This can in theory confuse guest if device
+consumes the buffers immediately.
+
+To fix,  move virtscsi_kick_event_all out to scan/restore.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/scsi/virtio_scsi.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/scsi/virtio_scsi.c | 16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index 0642ce3..2b565b3 100644
+index eee1bc0..0642ce3 100644
 --- a/drivers/scsi/virtio_scsi.c
 +++ b/drivers/scsi/virtio_scsi.c
-@@ -1054,6 +1054,8 @@ static int virtscsi_restore(struct virtio_device *vdev)
- 		return err;
- 	}
+@@ -853,7 +853,11 @@ static void virtscsi_init_vq(struct virtio_scsi_vq *virtscsi_vq,
  
-+	virtio_enable_vqs_early(vdev);
+ static void virtscsi_scan(struct virtio_device *vdev)
+ {
+-	struct Scsi_Host *shost = (struct Scsi_Host *)vdev->priv;
++	struct Scsi_Host *shost = virtio_scsi_host(vdev);
++	struct virtio_scsi *vscsi = shost_priv(shost);
 +
- 	if (virtio_has_feature(vdev, VIRTIO_SCSI_F_HOTPLUG))
- 		virtscsi_kick_event_all(vscsi);
++	if (virtio_has_feature(vdev, VIRTIO_SCSI_F_HOTPLUG))
++		virtscsi_kick_event_all(vscsi);
  
+ 	scsi_scan_host(shost);
+ }
+@@ -916,9 +920,6 @@ static int virtscsi_init(struct virtio_device *vdev,
+ 	virtscsi_config_set(vdev, cdb_size, VIRTIO_SCSI_CDB_SIZE);
+ 	virtscsi_config_set(vdev, sense_size, VIRTIO_SCSI_SENSE_SIZE);
+ 
+-	if (virtio_has_feature(vdev, VIRTIO_SCSI_F_HOTPLUG))
+-		virtscsi_kick_event_all(vscsi);
+-
+ 	err = 0;
+ 
+ out:
+@@ -1048,8 +1049,13 @@ static int virtscsi_restore(struct virtio_device *vdev)
+ 		return err;
+ 
+ 	err = register_hotcpu_notifier(&vscsi->nb);
+-	if (err)
++	if (err) {
+ 		vdev->config->del_vqs(vdev);
++		return err;
++	}
++
++	if (virtio_has_feature(vdev, VIRTIO_SCSI_F_HOTPLUG))
++		virtscsi_kick_event_all(vscsi);
+ 
+ 	return err;
+ }
 -- 
 MST
 
