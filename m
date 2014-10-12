@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744AbaJLSSt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 14:18:49 -0400
-Received: from smtprelay0129.hostedemail.com ([216.40.44.129]:50170 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752545AbaJLSSr (ORCPT
+	id S1752634AbaJLSk3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 14:40:29 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:49471 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752427AbaJLSk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 14:18:47 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:968:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:3874:4321:5007:6119:7652:8603:10004:10400:10471:10848:11026:11232:11658:11914:12043:12438:12517:12519:12555:12740:13069:13161:13229:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: bulb52_86862c181aa48
-X-Filterd-Recvd-Size: 2341
-Message-ID: <1413137923.22149.27.camel@joe-AO725>
-Subject: Re: [PATCH] target: iscsi: iscsi_target_tpg.c:  Cleaning up
- possible size overwriting in conjunction with sprintf
-From: Joe Perches <joe@perches.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Sagi Grimberg <sagig@mellanox.com>, Andy Grover <agrover@redhat.com>,
-        Thomas Glanzmann <thomas@glanzmann.de>,
-        Christophe Vu-Brugier <cvubrugier@yahoo.fr>,
-        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
+	Sun, 12 Oct 2014 14:40:26 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Sun, 12 Oct 2014 20:42:40 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Johan Hovold <johan@kernel.org>, Alessandro Zummo <a.zummo@towertech.it>,
+        Tony Lindgren <tony@atomide.com>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lokesh Vutla <lokeshvutla@ti.com>, Guenter Roeck <linux@roeck-us.net>,
+        nsekhar@ti.com, t-kristo@ti.com, j-keerthy@ti.com,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, rtc-linux@googlegroups.com,
         linux-kernel@vger.kernel.org
-Date: Sun, 12 Oct 2014 11:18:43 -0700
-In-Reply-To: <1413136558-20790-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1413136558-20790-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 07/12] rtc: omap: silence bogus power-up reset message at
+ probe
+Message-ID: <20141012184240.GA2786@localhost>
+References: <1412881594-25678-1-git-send-email-johan@kernel.org>
+ <1412881594-25678-8-git-send-email-johan@kernel.org>
+ <20141010180054.GS31348@saruman>
+ <20141010180256.GU31348@saruman>
+ <20141011102004.GD18988@localhost>
+ <20141012005007.GC21128@saruman>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141012005007.GC21128@saruman>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-10-12 at 19:55 +0200, Rickard Strandqvist wrote:
-> Changed same snprintf and sprintf to strlcpy and strlcat.
-> This will guarantee that the string size is not overwritten,
-> and they are significantly faster than sprintf also.
+On Sat, Oct 11, 2014 at 07:50:07PM -0500, Felipe Balbi wrote:
+> Hi,
+> 
+> On Sat, Oct 11, 2014 at 12:20:04PM +0200, Johan Hovold wrote:
+> > On Fri, Oct 10, 2014 at 01:02:56PM -0500, Felipe Balbi wrote:
+> > > On Fri, Oct 10, 2014 at 01:00:54PM -0500, Felipe Balbi wrote:
+> > > > On Thu, Oct 09, 2014 at 09:06:29PM +0200, Johan Hovold wrote:
+> > > > > Some legacy RTC IP revisions has a power-up reset flag in the status
+> > > > > register that later revisions lack.
+> > > > > 
+> > > > > As this flag is always read back as set on later revisions (or is
+> > > > > overloaded with a different flag), make sure to only clear the flag and
+> > > > > print the info message on legacy platforms.
+> > > > > 
+> > > > > Signed-off-by: Johan Hovold <johan@kernel.org>
+> > > > 
+> > > > Reviewed-by: Felipe Balbi <balbi@ti.com>
+> > > 
+> > > oh, btw. This should be done for DT probes too.
+> > 
+> > What do you mean? This is for DT probes (of "ti,da830-rtc" and
+> > "ti,am3352-rtc"). DT probing of legacy RTC IPs is currently not
+> > supported.
+> > 
+> > Are you suggesting I should add a new compatible string for that?
+> 
+> it seemed to me that you're only passing the new flag through
+> platform_device_id table, not DT table. Did I miss something ?
 
-I don't disagree with the change, but I think the changelog is
-misleading.
+Ah, that's just the way the driver currently encodes the IP revision
+differences. The platform_device_id entries are references from
+of_device_id data. Should probably clean that up as well.
 
-strlcpy(ptr, ...) then strlcat(ptr, ...) does not use the known
-length of the first copied string and is generally not faster than
-ptr += snprintf(ptr, ...) then sprintf(ptr,...)
+Thanks again for the review. I'll post a new version when I'm back from
+Düsseldorf and ELC-E/Plumbers.
 
-And a couple slightly unrelated bits:
-
-> diff --git a/drivers/target/iscsi/iscsi_target_tpg.c b/drivers/target/iscsi/iscsi_target_tpg.c
-> index c3cb5c1..6fc8bfe 100644
-> --- a/drivers/target/iscsi/iscsi_target_tpg.c
-> +++ b/drivers/target/iscsi/iscsi_target_tpg.c
-> @@ -608,7 +608,6 @@ int iscsit_tpg_set_initiator_node_queue_depth(
->  int iscsit_ta_authentication(struct iscsi_portal_group *tpg, u32 authentication)
-
-This function could be made static and the prototype removed from
-the .h file if it is moved above its one caller in this file.
-
->  {
->  	unsigned char buf1[256], buf2[256], *none = NULL;
-
-Moderately large stack use here.
-
-
+Johan
