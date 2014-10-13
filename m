@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753643AbaJMC07 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:26:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45716 "EHLO
+	id S1753721AbaJMC1M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:27:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45754 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753579AbaJMC0s (ORCPT
+	with ESMTP id S1753650AbaJMC1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:26:48 -0400
+	Sun, 12 Oct 2014 22:27:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Neerav Parikh <neerav.parikh@intel.com>,
-        Catherine Sullivan <catherine.sullivan@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [PATCH 3.14 05/37] i40e: Dont stop driver probe when querying DCB config fails
-Date: Mon, 13 Oct 2014 04:24:02 +0200
-Message-Id: <20141013022400.517640856@linuxfoundation.org>
+        Andreas Bomholtz <andreas@seluxit.com>,
+        Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.14 34/37] USB: cp210x: add support for Seluxit USB dongle
+Date: Mon, 13 Oct 2014 04:24:31 +0200
+Message-Id: <20141013022401.701409644@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022400.286360067@linuxfoundation.org>
 References: <20141013022400.286360067@linuxfoundation.org>
@@ -30,60 +29,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neerav Parikh <neerav.parikh@intel.com>
+From: Andreas Bomholtz <andreas@seluxit.com>
 
-Commit id: 014269ff376f552363ecdab78d3d947fbe2237d9 in Linus's tree
-should be queued up for stable 3.14 & 3.15 since the i40e driver will
-not load when DCB is enabled, unless this patch is applied.
+commit dee80ad12d2b1b304286a707fde7ab05d1fc7bab upstream.
 
-In case of any AQ command to query port's DCB configuration fails
-during driver's probe time; the probe fails and returns an error.
+Added the Seluxit ApS USB Serial Dongle to cp210x driver.
 
-This patch prevents this issue by continuing the driver probe even
-when an error is returned.
-
-Also, added an error message to dump the AQ error status to show what
-error caused the failure to get the DCB configuration from firmware.
-
-Change-ID: Ifd5663512588bca684069bb7d4fb586dd72221af
-Signed-off-by: Neerav Parikh <neerav.parikh@intel.com>
-Signed-off-by: Catherine Sullivan <catherine.sullivan@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: Andreas Bomholtz <andreas@seluxit.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/intel/i40e/i40e_main.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/net/ethernet/intel/i40e/i40e_main.c
-+++ b/drivers/net/ethernet/intel/i40e/i40e_main.c
-@@ -4024,6 +4024,9 @@ static int i40e_init_pf_dcb(struct i40e_
- 				       DCB_CAP_DCBX_VER_IEEE;
- 			pf->flags |= I40E_FLAG_DCB_ENABLED;
- 		}
-+	} else {
-+		dev_info(&pf->pdev->dev, "AQ Querying DCB configuration failed: %d\n",
-+			 pf->hw.aq.asq_last_status);
- 	}
- 
- out:
-@@ -8003,7 +8006,7 @@ static int i40e_probe(struct pci_dev *pd
- 	if (err) {
- 		dev_info(&pdev->dev, "init_pf_dcb failed: %d\n", err);
- 		pf->flags &= ~I40E_FLAG_DCB_ENABLED;
--		goto err_init_dcb;
-+		/* Continue without DCB enabled */
- 	}
- #endif /* CONFIG_I40E_DCB */
- 
-@@ -8119,9 +8122,6 @@ err_vsis:
- err_switch_setup:
- 	i40e_reset_interrupt_capability(pf);
- 	del_timer_sync(&pf->service_timer);
--#ifdef CONFIG_I40E_DCB
--err_init_dcb:
--#endif /* CONFIG_I40E_DCB */
- err_mac_addr:
- err_configure_lan_hmc:
- 	(void)i40e_shutdown_lan_hmc(hw);
+---
+ drivers/usb/serial/cp210x.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -156,6 +156,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
+ 	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
+ 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
++	{ USB_DEVICE(0x1D6F, 0x0010) }, /* Seluxit ApS RF Dongle */
+ 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
+ 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
+ 	{ USB_DEVICE(0x1FB9, 0x0100) }, /* Lake Shore Model 121 Current Source */
 
 
