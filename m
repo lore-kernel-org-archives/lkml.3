@@ -1,219 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754721AbaJMSwO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 14:52:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51036 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753797AbaJMSwM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 14:52:12 -0400
-Date: Mon, 13 Oct 2014 14:51:56 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm@kvack.org, Sasha Levin <sasha.levin@oracle.com>
-Subject: Re: [PATCH] mm, debug: mm-introduce-vm_bug_on_mm-fix-fix.patch
-Message-ID: <20141013185156.GA1959@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Michal Hocko <mhocko@suse.cz>,
-	Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-	Sasha Levin <sasha.levin@oracle.com>
-References: <5420b8b0.9HdYLyyuTikszzH8%akpm@linux-foundation.org>
- <1411464279-20158-1-git-send-email-mhocko@suse.cz>
- <20140923112848.GA10046@dhcp22.suse.cz>
- <20140923201204.GB4252@redhat.com>
+	id S1754638AbaJMTDW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 15:03:22 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:64466 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753797AbaJMTDU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 15:03:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140923201204.GB4252@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141013145229.4849f07a@alan.etchedpixels.co.uk>
+References: <1412948280-30993-1-git-send-email-ricardo.ribalda@gmail.com> <20141013145229.4849f07a@alan.etchedpixels.co.uk>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Mon, 13 Oct 2014 21:02:57 +0200
+Message-ID: <CAPybu_316A6DZ7MOFm=6vHw2vfS+6_CnZD5J4wVJkbRa1Ycnuw@mail.gmail.com>
+Subject: Re: [PATCH] tty/serial_core: Introduce lock mechanism for RS485
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-serial@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 04:12:04PM -0400, Dave Jones wrote:
- > On Tue, Sep 23, 2014 at 01:28:48PM +0200, Michal Hocko wrote:
- >  > And there is another one hitting during randconfig. The patch makes my
- >  > eyes bleed but I don't know about other way without breaking out the
- >  > thing into separate parts sounds worse because we can mix with other
- >  > messages then.
- > 
- > how about something along the lines of..
- > 
- >  bufptr = buffer = kmalloc()
- > 
- >  #if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
- > 	bufptr += sprintf(bufptr, "tlb_flush_pending %d\n",
- > 			mm->tlb_flush_pending);
- >  #endif
- > 
- >  #ifdef CONFIG_MMU
- > 	bufptr += sprintf(bufptr, "...
- >  #endif
- > 
- >  ...
- > 
- >  printk(KERN_EMERG "%s", buffer);
- > 
- >  free(buffer);
- > 
- > Still ugly, but looks less like a trainwreck, and keeps the variables
- > with the associated text.
- > 
- > It does introduce an allocation though, which may be problematic
- > in this situation. Depending how big this gets, perhaps make it static
- > instead?
+Hello Alan
 
-Now that this landed in Linus tree, I took another stab at it.
-Something like this ? (Untested beyond compiling).
+>> +     spin_unlock_irqrestore(&port->lock, flags);
+>
+> Looks good apart from this bit.. The copy needs to go to a temporary
+> before the lock is taken otherwise we may sleep on a pagefault with irqs
+> off
+>
+> Alan
 
-(The diff doesn't really do it justice, it looks a lot easier to read
- imo after applying).
+Good catch
 
-There's still some checkpatch style nits, but this should be a lot
-more maintainable assuming it works.
+I will fix it as you suggest.
 
-My one open question is do we care that this isn't reentrant ?
-Do we expect parallel calls to dump_mm from multiple cpus ever ?
+I will give a give a couple of days for comments about the serie
+"[PATCH 00/12] Handle TIOC[GS]RS485
+iocts on serial_core"  Then I will resend the series including this
+patch (of course, fixed)
 
-	Dave
 
-diff --git a/mm/debug.c b/mm/debug.c
-index 5ce45c9a29b5..e04e2ae902a1 100644
---- a/mm/debug.c
-+++ b/mm/debug.c
-@@ -164,74 +164,85 @@ void dump_vma(const struct vm_area_struct *vma)
- }
- EXPORT_SYMBOL(dump_vma);
- 
-+static char dumpmm_buffer[4096];
-+
- void dump_mm(const struct mm_struct *mm)
- {
--	pr_emerg("mm %p mmap %p seqnum %d task_size %lu\n"
--#ifdef CONFIG_MMU
--		"get_unmapped_area %p\n"
--#endif
--		"mmap_base %lu mmap_legacy_base %lu highest_vm_end %lu\n"
--		"pgd %p mm_users %d mm_count %d nr_ptes %lu map_count %d\n"
--		"hiwater_rss %lx hiwater_vm %lx total_vm %lx locked_vm %lx\n"
--		"pinned_vm %lx shared_vm %lx exec_vm %lx stack_vm %lx\n"
--		"start_code %lx end_code %lx start_data %lx end_data %lx\n"
--		"start_brk %lx brk %lx start_stack %lx\n"
--		"arg_start %lx arg_end %lx env_start %lx env_end %lx\n"
--		"binfmt %p flags %lx core_state %p\n"
--#ifdef CONFIG_AIO
--		"ioctx_table %p\n"
--#endif
--#ifdef CONFIG_MEMCG
--		"owner %p "
--#endif
--		"exe_file %p\n"
--#ifdef CONFIG_MMU_NOTIFIER
--		"mmu_notifier_mm %p\n"
--#endif
--#ifdef CONFIG_NUMA_BALANCING
--		"numa_next_scan %lu numa_scan_offset %lu numa_scan_seq %d\n"
--#endif
--#if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
--		"tlb_flush_pending %d\n"
--#endif
--		"%s",	/* This is here to hold the comma */
-+	char *p = dumpmm_buffer;
-+
-+	memset(dumpmm_buffer, 0, 4096);
-+
-+	p += sprintf(p, "mm %p mmap %p seqnum %d task_size %lu\n",
-+		mm, mm->mmap, mm->vmacache_seqnum, mm->task_size);
- 
--		mm, mm->mmap, mm->vmacache_seqnum, mm->task_size,
- #ifdef CONFIG_MMU
--		mm->get_unmapped_area,
-+	p += sprintf(p, "get_unmapped_area %p\n",
-+		mm->get_unmapped_area);
- #endif
--		mm->mmap_base, mm->mmap_legacy_base, mm->highest_vm_end,
-+	p += sprintf(p,
-+		"mmap_base %lu mmap_legacy_base %lu highest_vm_end %lu\n",
-+		mm->mmap_base, mm->mmap_legacy_base, mm->highest_vm_end);
-+
-+	p += sprintf(p,
-+		"pgd %p mm_users %d mm_count %d nr_ptes %lu map_count %d\n",
- 		mm->pgd, atomic_read(&mm->mm_users),
- 		atomic_read(&mm->mm_count),
- 		atomic_long_read((atomic_long_t *)&mm->nr_ptes),
--		mm->map_count,
--		mm->hiwater_rss, mm->hiwater_vm, mm->total_vm, mm->locked_vm,
--		mm->pinned_vm, mm->shared_vm, mm->exec_vm, mm->stack_vm,
--		mm->start_code, mm->end_code, mm->start_data, mm->end_data,
--		mm->start_brk, mm->brk, mm->start_stack,
--		mm->arg_start, mm->arg_end, mm->env_start, mm->env_end,
--		mm->binfmt, mm->flags, mm->core_state,
-+		mm->map_count);
-+
-+	p += sprintf(p,
-+		"hiwater_rss %lx hiwater_vm %lx total_vm %lx locked_vm %lx\n",
-+		mm->hiwater_rss, mm->hiwater_vm, mm->total_vm, mm->locked_vm);
-+
-+	p += sprintf(p,
-+		"pinned_vm %lx shared_vm %lx exec_vm %lx stack_vm %lx\n",
-+		mm->pinned_vm, mm->shared_vm, mm->exec_vm, mm->stack_vm);
-+
-+	p += sprintf(p,
-+		"start_code %lx end_code %lx start_data %lx end_data %lx\n",
-+		mm->start_code, mm->end_code, mm->start_data, mm->end_data);
-+
-+	p += sprintf(p,
-+		"start_brk %lx brk %lx start_stack %lx\n",
-+		mm->start_brk, mm->brk, mm->start_stack);
-+
-+	p += sprintf(p,
-+		"arg_start %lx arg_end %lx env_start %lx env_end %lx\n",
-+		mm->arg_start, mm->arg_end, mm->env_start, mm->env_end);
-+
-+	p += sprintf(p,
-+		"binfmt %p flags %lx core_state %p\n",
-+		mm->binfmt, mm->flags, mm->core_state);
-+
- #ifdef CONFIG_AIO
--		mm->ioctx_table,
-+	p += sprintf(p, "ioctx_table %p\n", mm->ioctx_table);
- #endif
-+
- #ifdef CONFIG_MEMCG
--		mm->owner,
-+	p += sprintf(p, "owner %p ", mm->owner);
- #endif
--		mm->exe_file,
-+
-+	p += sprintf(p, "exe_file %p\n", mm->exe_file);
-+
- #ifdef CONFIG_MMU_NOTIFIER
--		mm->mmu_notifier_mm,
-+	p += sprintf(p,	"mmu_notifier_mm %p\n", mm->mmu_notifier_mm);
- #endif
-+
- #ifdef CONFIG_NUMA_BALANCING
--		mm->numa_next_scan, mm->numa_scan_offset, mm->numa_scan_seq,
-+	p += sprintf(p,
-+		"numa_next_scan %lu numa_scan_offset %lu numa_scan_seq %d\n",
-+		mm->numa_next_scan, mm->numa_scan_offset, mm->numa_scan_seq);
- #endif
-+
- #if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
--		mm->tlb_flush_pending,
-+	p += sprintf(p, "tlb_flush_pending %d\n",
-+		mm->tlb_flush_pending);
- #endif
--		""		/* This is here to not have a comma! */
--		);
- 
--		dump_flags(mm->def_flags, vmaflags_names,
--				ARRAY_SIZE(vmaflags_names));
-+	pr_emerg("%s", dumpmm_buffer);
-+
-+	dump_flags(mm->def_flags, vmaflags_names,
-+			ARRAY_SIZE(vmaflags_names));
- }
- 
- #endif		/* CONFIG_DEBUG_VM */
+Thanks!
+
+
+-- 
+Ricardo Ribalda
