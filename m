@@ -1,189 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755150AbaJMCd0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:33:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46227 "EHLO
+	id S1755166AbaJMCdo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:33:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46223 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754817AbaJMCal (ORCPT
+	with ESMTP id S1754807AbaJMCaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:30:41 -0400
+	Sun, 12 Oct 2014 22:30:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: [PATCH 3.17 00/25] 3.17.1-stable review
-Date: Mon, 13 Oct 2014 04:24:53 +0200
-Message-Id: <20141013022454.289398272@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Catalin Iacob <iacobcatalin@gmail.com>, Dave Jones <davej@redhat.com>,
+        "Peter Zijlstra (Intel)" <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 3.17 09/25] irq_work: Force raised irq work to run on irq work interrupt
+Date: Mon, 13 Oct 2014 04:25:02 +0200
+Message-Id: <20141013022454.682378940@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141013022454.289398272@linuxfoundation.org>
+References: <20141013022454.289398272@linuxfoundation.org>
 User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.17.1 release.
-There are 25 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Wed Oct 15 02:24:45 UTC 2014.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.17.1-rc1.gz
-and the diffstat can be found below.
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-thanks,
+commit 76a33061b9323b7fdb220ae5fa116c10833ec22e upstream.
 
-greg k-h
+The nohz full kick, which restarts the tick when any resource depend
+on it, can't be executed anywhere given the operation it does on timers.
+If it is called from the scheduler or timers code, chances are that
+we run into a deadlock.
 
--------------
-Pseudo-Shortlog of commits:
+This is why we run the nohz full kick from an irq work. That way we make
+sure that the kick runs on a virgin context.
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.17.1-rc1
+However if that's the case when irq work runs in its own dedicated
+self-ipi, things are different for the big bunch of archs that don't
+support the self triggered way. In order to support them, irq works are
+also handled by the timer interrupt as fallback.
 
-Bryan O'Donoghue <pure.logic@nexus-software.ie>
-    serial: 8250: Add Quark X1000 to 8250_pci.c
+Now when irq works run on the timer interrupt, the context isn't blank.
+More precisely, they can run in the context of the hrtimer that runs the
+tick. But the nohz kick cancels and restarts this hrtimer and cancelling
+an hrtimer from itself isn't allowed. This is why we run in an endless
+loop:
 
-Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-    driver/base/node: remove unnecessary kfree of node struct from unregister_one_node
+	Kernel panic - not syncing: Watchdog detected hard LOCKUP on cpu 2
+	CPU: 2 PID: 7538 Comm: kworker/u8:8 Not tainted 3.16.0+ #34
+	Workqueue: btrfs-endio-write normal_work_helper [btrfs]
+	 ffff880244c06c88 000000001b486fe1 ffff880244c06bf0 ffffffff8a7f1e37
+	 ffffffff8ac52a18 ffff880244c06c78 ffffffff8a7ef928 0000000000000010
+	 ffff880244c06c88 ffff880244c06c20 000000001b486fe1 0000000000000000
+	Call Trace:
+	 <NMI[<ffffffff8a7f1e37>] dump_stack+0x4e/0x7a
+	 [<ffffffff8a7ef928>] panic+0xd4/0x207
+	 [<ffffffff8a1450e8>] watchdog_overflow_callback+0x118/0x120
+	 [<ffffffff8a186b0e>] __perf_event_overflow+0xae/0x350
+	 [<ffffffff8a184f80>] ? perf_event_task_disable+0xa0/0xa0
+	 [<ffffffff8a01a4cf>] ? x86_perf_event_set_period+0xbf/0x150
+	 [<ffffffff8a187934>] perf_event_overflow+0x14/0x20
+	 [<ffffffff8a020386>] intel_pmu_handle_irq+0x206/0x410
+	 [<ffffffff8a01937b>] perf_event_nmi_handler+0x2b/0x50
+	 [<ffffffff8a007b72>] nmi_handle+0xd2/0x390
+	 [<ffffffff8a007aa5>] ? nmi_handle+0x5/0x390
+	 [<ffffffff8a0cb7f8>] ? match_held_lock+0x8/0x1b0
+	 [<ffffffff8a008062>] default_do_nmi+0x72/0x1c0
+	 [<ffffffff8a008268>] do_nmi+0xb8/0x100
+	 [<ffffffff8a7ff66a>] end_repeat_nmi+0x1e/0x2e
+	 [<ffffffff8a0cb7f8>] ? match_held_lock+0x8/0x1b0
+	 [<ffffffff8a0cb7f8>] ? match_held_lock+0x8/0x1b0
+	 [<ffffffff8a0cb7f8>] ? match_held_lock+0x8/0x1b0
+	 <<EOE><IRQ[<ffffffff8a0ccd2f>] lock_acquired+0xaf/0x450
+	 [<ffffffff8a0f74c5>] ? lock_hrtimer_base.isra.20+0x25/0x50
+	 [<ffffffff8a7fc678>] _raw_spin_lock_irqsave+0x78/0x90
+	 [<ffffffff8a0f74c5>] ? lock_hrtimer_base.isra.20+0x25/0x50
+	 [<ffffffff8a0f74c5>] lock_hrtimer_base.isra.20+0x25/0x50
+	 [<ffffffff8a0f7723>] hrtimer_try_to_cancel+0x33/0x1e0
+	 [<ffffffff8a0f78ea>] hrtimer_cancel+0x1a/0x30
+	 [<ffffffff8a109237>] tick_nohz_restart+0x17/0x90
+	 [<ffffffff8a10a213>] __tick_nohz_full_check+0xc3/0x100
+	 [<ffffffff8a10a25e>] nohz_full_kick_work_func+0xe/0x10
+	 [<ffffffff8a17c884>] irq_work_run_list+0x44/0x70
+	 [<ffffffff8a17c8da>] irq_work_run+0x2a/0x50
+	 [<ffffffff8a0f700b>] update_process_times+0x5b/0x70
+	 [<ffffffff8a109005>] tick_sched_handle.isra.21+0x25/0x60
+	 [<ffffffff8a109b81>] tick_sched_timer+0x41/0x60
+	 [<ffffffff8a0f7aa2>] __run_hrtimer+0x72/0x470
+	 [<ffffffff8a109b40>] ? tick_sched_do_timer+0xb0/0xb0
+	 [<ffffffff8a0f8707>] hrtimer_interrupt+0x117/0x270
+	 [<ffffffff8a034357>] local_apic_timer_interrupt+0x37/0x60
+	 [<ffffffff8a80010f>] smp_apic_timer_interrupt+0x3f/0x50
+	 [<ffffffff8a7fe52f>] apic_timer_interrupt+0x6f/0x80
 
-Cristian Stoica <cristian.stoica@freescale.com>
-    crypto: caam - fix addressing of struct member
+To fix this we force non-lazy irq works to run on irq work self-IPIs
+when available. That ability of the arch to trigger irq work self IPIs
+is available with arch_irq_work_has_interrupt().
 
-Lu Baolu <baolu.lu@linux.intel.com>
-    USB: Add device quirk for ASUS T100 Base Station keyboard
+Reported-by: Catalin Iacob <iacobcatalin@gmail.com>
+Reported-by: Dave Jones <davej@redhat.com>
+Acked-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Felipe Balbi <balbi@ti.com>
-    usb: musb: dsps: kill OTG timer on suspend
+---
+ include/linux/irq_work.h |    1 +
+ kernel/irq_work.c        |   15 +++++++++++++--
+ kernel/time/timer.c      |    2 +-
+ 3 files changed, 15 insertions(+), 3 deletions(-)
 
-Andreas Bomholtz <andreas@seluxit.com>
-    USB: cp210x: add support for Seluxit USB dongle
-
-Joe Savage <joe.savage@goketra.com>
-    USB: serial: cp210x: added Ketra N1 wireless interface support
-
-Felipe Balbi <balbi@ti.com>
-    Revert "usb: gadget: composite: dequeue cdev->req before free it in composite_dev_cleanup"
-
-Dan Carpenter <dan.carpenter@oracle.com>
-    usb: gadget: f_fs: signedness bug in __ffs_func_bind_do_descs()
-
-Hans de Goede <hdegoede@redhat.com>
-    uas: Add another ASM1051 usb-id to the uas blacklist
-
-Hans de Goede <hdegoede@redhat.com>
-    uas: Add US_FL_NO_ATA_1X quirk for Seagate (0bc2:ab20) drives
-
-Hans de Goede <hdegoede@redhat.com>
-    uas: Add no-report-opcodes quirk
-
-Hans de Goede <hdegoede@redhat.com>
-    uas: Add a quirk for rejecting ATA_12 and ATA_16 commands
-
-Yinghai Lu <yinghai@kernel.org>
-    PCI: pciehp: Fix wait time in timeout message
-
-Frederic Weisbecker <fweisbec@gmail.com>
-    arm: Tell irq work about self IPI support
-
-Frederic Weisbecker <fweisbec@gmail.com>
-    x86: Tell irq work about self IPI support
-
-Frederic Weisbecker <fweisbec@gmail.com>
-    irq_work: Force raised irq work to run on irq work interrupt
-
-Peter Zijlstra <peterz@infradead.org>
-    irq_work: Introduce arch_irq_work_has_interrupt()
-
-WANG Cong <xiyou.wangcong@gmail.com>
-    net_sched: copy exts->type in tcf_exts_change()
-
-Sylvain \\\"ythier\\\" Hitier <sylvain.hitier@gmail.com>
-    3c59x: fix bad split of cpu_to_le32(pci_map_single())
-
-Vlad Yasevich <vyasevich@gmail.com>
-    sctp: handle association restarts when the socket is closed.
-
-KY Srinivasan <kys@microsoft.com>
-    hyperv: Fix a bug in netvsc_send()
-
-Joe Lawrence <Joe.Lawrence@stratus.com>
-    team: avoid race condition in scheduling delayed work
-
-Florian Fainelli <f.fainelli@gmail.com>
-    net: systemport: fix bcm_sysport_insert_tsb()
-
-Nicolas Dichtel <nicolas.dichtel@6wind.com>
-    ip6_gre: fix flowi6_proto value in xmit path
-
-
--------------
-
-Diffstat:
-
- Documentation/kernel-parameters.txt        |  4 +++
- Makefile                                   |  4 +--
- arch/alpha/include/asm/Kbuild              |  1 +
- arch/arc/include/asm/Kbuild                |  1 +
- arch/arm/include/asm/irq_work.h            | 11 ++++++++
- arch/arm/kernel/smp.c                      |  2 +-
- arch/arm64/include/asm/Kbuild              |  3 +-
- arch/avr32/include/asm/Kbuild              |  1 +
- arch/blackfin/include/asm/Kbuild           |  1 +
- arch/c6x/include/asm/Kbuild                |  1 +
- arch/cris/include/asm/Kbuild               |  1 +
- arch/frv/include/asm/Kbuild                |  1 +
- arch/hexagon/include/asm/Kbuild            |  1 +
- arch/ia64/include/asm/Kbuild               |  1 +
- arch/m32r/include/asm/Kbuild               |  1 +
- arch/m68k/include/asm/Kbuild               |  1 +
- arch/metag/include/asm/Kbuild              |  1 +
- arch/microblaze/include/asm/Kbuild         |  1 +
- arch/mips/include/asm/Kbuild               |  1 +
- arch/mn10300/include/asm/Kbuild            |  1 +
- arch/openrisc/include/asm/Kbuild           |  1 +
- arch/parisc/include/asm/Kbuild             |  1 +
- arch/powerpc/include/asm/Kbuild            |  1 +
- arch/s390/include/asm/Kbuild               |  1 +
- arch/score/include/asm/Kbuild              |  1 +
- arch/sh/include/asm/Kbuild                 |  1 +
- arch/sparc/include/asm/Kbuild              |  1 +
- arch/tile/include/asm/Kbuild               |  1 +
- arch/um/include/asm/Kbuild                 |  1 +
- arch/unicore32/include/asm/Kbuild          |  1 +
- arch/x86/include/asm/irq_work.h            | 11 ++++++++
- arch/x86/kernel/irq_work.c                 |  2 +-
- arch/xtensa/include/asm/Kbuild             |  1 +
- drivers/base/node.c                        |  1 -
- drivers/crypto/caam/caamhash.c             |  6 ++--
- drivers/net/ethernet/3com/3c59x.c          |  2 +-
- drivers/net/ethernet/broadcom/bcmsysport.c | 13 +++++----
- drivers/net/hyperv/netvsc.c                | 15 +++++-----
- drivers/net/team/team.c                    |  4 +--
- drivers/pci/hotplug/pciehp_hpc.c           |  2 +-
- drivers/tty/serial/8250/8250_pci.c         | 21 ++++++++++++++
- drivers/usb/core/hub.c                     |  6 ++--
- drivers/usb/core/quirks.c                  |  4 +++
- drivers/usb/gadget/composite.c             |  1 -
- drivers/usb/gadget/function/f_fs.c         |  3 +-
- drivers/usb/musb/musb_dsps.c               |  2 ++
- drivers/usb/serial/cp210x.c                |  2 ++
- drivers/usb/storage/uas.c                  | 17 +++++++++++
- drivers/usb/storage/unusual_uas.h          | 45 +++++++++++++++++++++++-------
- drivers/usb/storage/usb.c                  |  9 +++++-
- include/asm-generic/irq_work.h             | 10 +++++++
- include/linux/irq_work.h                   |  3 ++
- include/linux/usb/quirks.h                 |  3 ++
- include/linux/usb_usual.h                  |  4 +++
- include/net/sctp/command.h                 |  2 +-
- kernel/irq_work.c                          | 15 ++++++++--
- kernel/time/timer.c                        |  2 +-
- net/ipv6/ip6_gre.c                         |  4 +--
- net/sched/cls_api.c                        |  1 +
- net/sctp/sm_statefuns.c                    | 19 +++++++++++--
- 60 files changed, 229 insertions(+), 50 deletions(-)
+--- a/include/linux/irq_work.h
++++ b/include/linux/irq_work.h
+@@ -39,6 +39,7 @@ bool irq_work_queue_on(struct irq_work *
+ #endif
+ 
+ void irq_work_run(void);
++void irq_work_tick(void);
+ void irq_work_sync(struct irq_work *work);
+ 
+ #ifdef CONFIG_IRQ_WORK
+--- a/kernel/irq_work.c
++++ b/kernel/irq_work.c
+@@ -115,8 +115,10 @@ bool irq_work_needs_cpu(void)
+ 
+ 	raised = &__get_cpu_var(raised_list);
+ 	lazy = &__get_cpu_var(lazy_list);
+-	if (llist_empty(raised) && llist_empty(lazy))
+-		return false;
++
++	if (llist_empty(raised) || arch_irq_work_has_interrupt())
++		if (llist_empty(lazy))
++			return false;
+ 
+ 	/* All work should have been flushed before going offline */
+ 	WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
+@@ -171,6 +173,15 @@ void irq_work_run(void)
+ }
+ EXPORT_SYMBOL_GPL(irq_work_run);
+ 
++void irq_work_tick(void)
++{
++	struct llist_head *raised = &__get_cpu_var(raised_list);
++
++	if (!llist_empty(raised) && !arch_irq_work_has_interrupt())
++		irq_work_run_list(raised);
++	irq_work_run_list(&__get_cpu_var(lazy_list));
++}
++
+ /*
+  * Synchronize against the irq_work @entry, ensures the entry is not
+  * currently in use.
+--- a/kernel/time/timer.c
++++ b/kernel/time/timer.c
+@@ -1385,7 +1385,7 @@ void update_process_times(int user_tick)
+ 	rcu_check_callbacks(cpu, user_tick);
+ #ifdef CONFIG_IRQ_WORK
+ 	if (in_irq())
+-		irq_work_run();
++		irq_work_tick();
+ #endif
+ 	scheduler_tick();
+ 	run_posix_cpu_timers(p);
 
 
