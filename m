@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692AbaJMMJs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 08:09:48 -0400
-Received: from fm1nodo1.polito.it ([130.192.180.11]:53440 "EHLO
-	antispam.polito.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753301AbaJMMJr (ORCPT
+	id S1753799AbaJMMJy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 08:09:54 -0400
+Received: from fm2nodo1.polito.it ([130.192.180.12]:57594 "EHLO
+	fm2nodo1.polito.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753730AbaJMMJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 08:09:47 -0400
+	Mon, 13 Oct 2014 08:09:52 -0400
 X-AttachExt: p7s
 X-ExtScanner: Niversoft's FindAttachments (free)
 From: Roberto Sassu <roberto.sassu@polito.it>
 To: linux-security-module@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-ima-devel@lists.sourceforge.net,
         zohar@us.ibm.com, d.kasatkin@samsung.com, jmorris@namei.org,
-        Roberto Sassu <roberto.sassu@polito.it>
-Subject: [PATCH-v4 0/5] ima: add support for custom template formats
-Date: Mon, 13 Oct 2014 14:08:37 +0200
-Message-Id: <1413202125-7062-1-git-send-email-roberto.sassu@polito.it>
+        Roberto Sassu <roberto.sassu@polito.it>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: [PATCH-v4 1/5] ima: added error messages to template-related functions
+Date: Mon, 13 Oct 2014 14:08:38 +0200
+Message-Id: <1413202125-7062-2-git-send-email-roberto.sassu@polito.it>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1413202125-7062-1-git-send-email-roberto.sassu@polito.it>
+References: <1413202125-7062-1-git-send-email-roberto.sassu@polito.it>
 MIME-Version: 1.0
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----1AFDCB2422DD9313C3B6E5E2C7298A75"
+Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----884690C5B65D152D3A2689A3A486CA74"
 X-FEAS-SYSTEM-WL: 130.192.180.41
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,87 +30,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is an S/MIME signed message
 
-------1AFDCB2422DD9313C3B6E5E2C7298A75
+------884690C5B65D152D3A2689A3A486CA74
 
-Hi everyone
-
-currently accepted patches for the new template management mechanism allow to
-choose among a list of supported templates, statically defined in the code.
-This functionality is not flexible enough, as users may want to include
-in their measurements list only information needed and not use predefined
-combinations.
-
-For this reason, this patch set introduces the new kernel command line parameter
-'ima_template_fmt' to specify a custom template format at boot time,
-i.e. a string of template fields identifiers concatenated with the '|'
-separator character. The complete list of defined template fields can be
-found in Documentation/security/IMA-templates.txt.
-
-The format string is checked at the very beginning in the setup function
-ima_template_fmt_setup() so that, if it is wrong, IMA can go back to the
-default template, selected through a kernel configuration option.
-
-To allow userspace tools parse a measurements list with a custom format, IMA
-provides as template name the same format string provided by users at boot
-time, so that tools know which information are included in a entry and extract
-those information if they can handle listed template fields.
+This patch adds some error messages to inform users about the following
+events: template descriptor not found, invalid template descriptor,
+template field not found and template initialization failed.
 
 Changelog:
- - v3 (sent to ima-devel mailing list only):
-   - patch 2/5: check the first byte of 'e->template_desc->name' instead of
-     using strlen() in ima_fs.c (suggested by Mimi Zohar)
-   - patch 3/5: added 'goto out' in template_desc_init_fields() to free
-     allocated memory if a template field length is not valid (suggested by
-     Mimi Zohar)
-   - patch 4/5: do not check in this patch if 'fields' and 'num_fields' are NULL
-     (suggested by Mimi Zohar)
-   - patch 5/5: added check for 'fields' and 'num_fields' in
-     template_desc_init_fields() (suggested by Mimi Zohar)
-
  - v2:
-   - patch 1/5: display an error message if the format string contains too many
+   - display an error message if the format string contains too many
      fields (Roberto Sassu)
-   - patch 2/5: print the template format in ima_init_template(), if the
-     selected template is custom (Roberto Sassu)
-   - patch 3/5: new
-   - patch 4/5: new
-   - patch 5/5: using template_desc_init_fields() to validate a format string
-     (Roberto Sassu)
-   - patch 5/5: updated documentation by stating that only the chosen template
-     descriptor is initialized (Roberto Sassu)
 
- - v1:
-   - patch 2/3: fixed patch description (Roberto Sassu, suggested by Mimi Zohar)
-   - patch 3/3: set 'template_name' variable in ima_fs.c only once
-     (Roberto Sassu, suggested by Mimi Zohar)
-   - patch 3/3: simplified code of ima_template_fmt_setup()
-     (Roberto Sassu, suggested by Mimi Zohar)
-   - the patch 'ima: make a copy of template_fmt in template_desc_init_fields()'
-     has been removed from this version of the patch set since it has been
-     already merged in the mainline kernel (commit: dbc335d2d + fix: af91706d5)
+Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+---
+ security/integrity/ima/ima_template.c | 22 +++++++++++++++++-----
+ 1 file changed, 17 insertions(+), 5 deletions(-)
 
-
-Roberto Sassu (5):
-  ima: added error messages to template-related functions
-  ima: display template format in meas. list if template name length is
-    zero
-  ima: don't allocate a copy of template_fmt in
-    template_desc_init_fields()
-  ima: allocate field pointers array on demand in
-    template_desc_init_fields()
-  ima: added support for new kernel cmdline parameter ima_template_fmt
-
- Documentation/kernel-parameters.txt      |   4 ++
- Documentation/security/IMA-templates.txt |  29 +++++----
- security/integrity/ima/ima_fs.c          |  16 +++--
- security/integrity/ima/ima_template.c    | 103 +++++++++++++++++++++----------
- 4 files changed, 101 insertions(+), 51 deletions(-)
-
+diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
+index e854862..1310afc 100644
+--- a/security/integrity/ima/ima_template.c
++++ b/security/integrity/ima/ima_template.c
+@@ -52,8 +52,11 @@ static int __init ima_template_setup(char *str)
+ 	 * If not, use CONFIG_IMA_DEFAULT_TEMPLATE.
+ 	 */
+ 	template_desc = lookup_template_desc(str);
+-	if (!template_desc)
++	if (!template_desc) {
++		pr_err("template %s not found, using %s\n",
++		       str, CONFIG_IMA_DEFAULT_TEMPLATE);
+ 		return 1;
++	}
+ 
+ 	/*
+ 	 * Verify whether the current hash algorithm is supported
+@@ -117,8 +120,11 @@ static int template_desc_init_fields(const char *template_fmt,
+ 	int template_num_fields = template_fmt_size(template_fmt);
+ 	int i, result = 0;
+ 
+-	if (template_num_fields > IMA_TEMPLATE_NUM_FIELDS_MAX)
++	if (template_num_fields > IMA_TEMPLATE_NUM_FIELDS_MAX) {
++		pr_err("format string '%s' contains too many fields\n",
++		       template_fmt);
+ 		return -EINVAL;
++	}
+ 
+ 	/* copying is needed as strsep() modifies the original buffer */
+ 	template_fmt_copy = kstrdup(template_fmt, GFP_KERNEL);
+@@ -137,6 +143,7 @@ static int template_desc_init_fields(const char *template_fmt,
+ 		struct ima_template_field *f = lookup_template_field(c);
+ 
+ 		if (!f) {
++			pr_err("field '%s' not found\n", c);
+ 			result = -ENOENT;
+ 			goto out;
+ 		}
+@@ -163,8 +170,13 @@ struct ima_template_desc *ima_template_desc_current(void)
+ int __init ima_init_template(void)
+ {
+ 	struct ima_template_desc *template = ima_template_desc_current();
++	int result;
+ 
+-	return template_desc_init_fields(template->fmt,
+-					 &(template->fields),
+-					 &(template->num_fields));
++	result = template_desc_init_fields(template->fmt,
++					   &(template->fields),
++					   &(template->num_fields));
++	if (result < 0)
++		pr_err("template %s init failed, result: %d\n", template->name);
++
++	return result;
+ }
 -- 
 1.9.3
 
 
-------1AFDCB2422DD9313C3B6E5E2C7298A75
+------884690C5B65D152D3A2689A3A486CA74
 Content-Type: application/x-pkcs7-signature; name="smime.p7s"
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="smime.p7s"
@@ -145,17 +144,17 @@ YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
 MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
 aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
 Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
-CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xNDEwMTMxMjA4NDVaMCMGCSqG
-SIb3DQEJBDEWBBTI87rdD8BHs9jgR30MHCKEO7AB8DB5BgkqhkiG9w0BCQ8xbDBq
+CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xNDEwMTMxMjA5MjdaMCMGCSqG
+SIb3DQEJBDEWBBTKDMmbcm5sPKe3jyJ/bN3JsSjWwjB5BgkqhkiG9w0BCQ8xbDBq
 MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
 DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
-hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQCXDcxdLK89BgRQhPBOS3PkENot
-PVXs8ayNF3Awp1N9UG42j0Ipc/4PKzOkYEdc0EUG50Np7wHqcHe015ODkflYH6Yf
-YJL99vDdIW5TuBP2ZDCVkwygRtXe1X6IQ23BIE8gfBexzMKKfYLM52Ocy/y60RGT
-Yk9hZO6b9yquKGh3YbXqio0QfLXcx/1ISJEvdMkYsnOUHVsdSFDNmDOBRkTaWZUJ
-l/XQqJ29cFXSbcukUxyVDijYMaDOtcZ7TrSEMrMkfTH+LLbQ5681S2Mk+HgVS3o5
-mauBA4sJoqra6oFrC4lXmD2DMlnrCDYweQKWD9yppck3KUxcnXY0F+QkTadt
+hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQDDJuYa3H4nmalk8foBKg2W0mkq
+Q8pAdWHS7mdpKmuQuz5+p0mErlSvkCxz1PcSIEckGOj82xmrFTEAJKJxdJrmvWpz
+kNBKDgNCwKEtRgZZJWCLuXt9xz/qoQpGZaS4l2WTXEKiKVfYEXJakGVHDak5xxgi
+ZpNiaWZumz8R0Wy5Xun32V11Ag+ehUcJRDOad/tvxVq+slw7XN7b79/CLQ3OiFrR
+PlNGtRTwf3iCADex7hvo6KEfx7eeRXS7cuu33FoNFeiDW9qNEblcFtFdWBM382ih
+6sD/AHtNPZOY6q63o6MXNAqLv0A+NFzOp0LFO34a9DikIiaucNGt7cPTJwuH
 
-------1AFDCB2422DD9313C3B6E5E2C7298A75--
+------884690C5B65D152D3A2689A3A486CA74--
 
 
