@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754356AbaJMCeV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:34:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46194 "EHLO
+	id S1754743AbaJMCa0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:30:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46160 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754746AbaJMCa2 (ORCPT
+	with ESMTP id S1754690AbaJMCaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:30:28 -0400
+	Sun, 12 Oct 2014 22:30:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Laight <David.Laight@aculab.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 05/25] sctp: handle association restarts when the socket is closed.
-Date: Mon, 13 Oct 2014 04:24:58 +0200
-Message-Id: <20141013022454.512413879@linuxfoundation.org>
+        Hans de Goede <hdegoede@redhat.com>
+Subject: [PATCH 3.17 16/25] uas: Add another ASM1051 usb-id to the uas blacklist
+Date: Mon, 13 Oct 2014 04:25:09 +0200
+Message-Id: <20141013022454.985859333@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022454.289398272@linuxfoundation.org>
 References: <20141013022454.289398272@linuxfoundation.org>
@@ -30,79 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevich@gmail.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-[ Upstream commit bdf6fa52f01b941d4a80372d56de465bdbbd1d23 ]
+commit 710f1bf16ab1b1558f099b62c5011c4cbba6a7bb upstream.
 
-Currently association restarts do not take into consideration the
-state of the socket.  When a restart happens, the current assocation
-simply transitions into established state.  This creates a condition
-where a remote system, through a the restart procedure, may create a
-local association that is no way reachable by user.  The conditions
-to trigger this are as follows:
-  1) Remote does not acknoledge some data causing data to remain
-     outstanding.
-  2) Local application calls close() on the socket.  Since data
-     is still outstanding, the association is placed in SHUTDOWN_PENDING
-     state.  However, the socket is closed.
-  3) The remote tries to create a new association, triggering a restart
-     on the local system.  The association moves from SHUTDOWN_PENDING
-     to ESTABLISHED.  At this point, it is no longer reachable by
-     any socket on the local system.
+As most ASM1051 based devices, this one has unfixable issues with uas too.
 
-This patch addresses the above situation by moving the newly ESTABLISHED
-association into SHUTDOWN-SENT state and bundling a SHUTDOWN after
-the COOKIE-ACK chunk.  This way, the restarted associate immidiately
-enters the shutdown procedure and forces the termination of the
-unreachable association.
-
-Reported-by: David Laight <David.Laight@aculab.com>
-Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/net/sctp/command.h |    2 +-
- net/sctp/sm_statefuns.c    |   19 ++++++++++++++++---
- 2 files changed, 17 insertions(+), 4 deletions(-)
 
---- a/include/net/sctp/command.h
-+++ b/include/net/sctp/command.h
-@@ -115,7 +115,7 @@ typedef enum {
-  * analysis of the state functions, but in reality just taken from
-  * thin air in the hopes othat we don't trigger a kernel panic.
-  */
--#define SCTP_MAX_NUM_COMMANDS 14
-+#define SCTP_MAX_NUM_COMMANDS 20
- 
- typedef union {
- 	void *zero_all;	/* Set to NULL to clear the entire union */
---- a/net/sctp/sm_statefuns.c
-+++ b/net/sctp/sm_statefuns.c
-@@ -1775,9 +1775,22 @@ static sctp_disposition_t sctp_sf_do_dup
- 	/* Update the content of current association. */
- 	sctp_add_cmd_sf(commands, SCTP_CMD_UPDATE_ASSOC, SCTP_ASOC(new_asoc));
- 	sctp_add_cmd_sf(commands, SCTP_CMD_EVENT_ULP, SCTP_ULPEVENT(ev));
--	sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
--			SCTP_STATE(SCTP_STATE_ESTABLISHED));
--	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
-+	if (sctp_state(asoc, SHUTDOWN_PENDING) &&
-+	    (sctp_sstate(asoc->base.sk, CLOSING) ||
-+	     sock_flag(asoc->base.sk, SOCK_DEAD))) {
-+		/* if were currently in SHUTDOWN_PENDING, but the socket
-+		 * has been closed by user, don't transition to ESTABLISHED.
-+		 * Instead trigger SHUTDOWN bundled with COOKIE_ACK.
-+		 */
-+		sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
-+		return sctp_sf_do_9_2_start_shutdown(net, ep, asoc,
-+						     SCTP_ST_CHUNK(0), NULL,
-+						     commands);
-+	} else {
-+		sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
-+				SCTP_STATE(SCTP_STATE_ESTABLISHED));
-+		sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
-+	}
- 	return SCTP_DISPOSITION_CONSUME;
- 
- nomem_ev:
+---
+ drivers/usb/storage/unusual_uas.h |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+--- a/drivers/usb/storage/unusual_uas.h
++++ b/drivers/usb/storage/unusual_uas.h
+@@ -67,3 +67,11 @@ UNUSUAL_DEV(0x152d, 0x0567, 0x0000, 0x99
+ 		"JMS567",
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_NO_REPORT_OPCODES),
++
++/* Most ASM1051 based devices have issues with uas, blacklist them all */
++/* Reported-by: Hans de Goede <hdegoede@redhat.com> */
++UNUSUAL_DEV(0x174c, 0x5106, 0x0000, 0x9999,
++		"ASMedia",
++		"ASM1051",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_IGNORE_UAS),
 
 
