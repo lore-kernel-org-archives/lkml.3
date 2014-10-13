@@ -1,206 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748AbaJMRfR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 13:35:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48198 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753797AbaJMRfP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 13:35:15 -0400
-Date: Mon, 13 Oct 2014 13:35:04 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: paulmck@linux.vnet.ibm.com, htejun@gmail.com
-Subject: rcu_preempt detected stalls.
-Message-ID: <20141013173504.GA27955@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	paulmck@linux.vnet.ibm.com, htejun@gmail.com
+	id S1754556AbaJMRga (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 13:36:30 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:20792 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752453AbaJMRg2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 13:36:28 -0400
+Date: Mon, 13 Oct 2014 10:36:05 -0700
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 net] x86: bpf_jit: fix two bugs in eBPF JIT compiler
+Message-ID: <20141013173605.GB30018@birch.djwong.org>
+References: <1412998223-3805-1-git-send-email-ast@plumgrid.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1412998223-3805-1-git-send-email-ast@plumgrid.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today in "rcu stall while fuzzing" news:
+On Fri, Oct 10, 2014 at 08:30:23PM -0700, Alexei Starovoitov wrote:
+> 1.
+> JIT compiler using multi-pass approach to converge to final image size,
+> since x86 instructions are variable length. It starts with large
+> gaps between instructions (so some jumps may use imm32 instead of imm8)
+> and iterates until total program size is the same as in previous pass.
+> This algorithm works only if program size is strictly decreasing.
+> Programs that use LD_ABS insn need additional code in prologue, but it
+> was not emitted during 1st pass, so there was a chance that 2nd pass would
+> adjust imm32->imm8 jump offsets to the same number of bytes as increase in
+> prologue, which may cause algorithm to erroneously decide that size converged.
+> Fix it by always emitting largest prologue in the first pass which
+> is detected by oldproglen==0 check.
+> Also change error check condition 'proglen != oldproglen' to fail gracefully.
+> 
+> 2.
+> while staring at the code realized that 64-byte buffer may not be enough
+> when 1st insn is large, so increase it to 128 to avoid buffer overflow
+> (theoretical maximum size of prologue+div is 109) and add runtime check.
+> 
+> Fixes: 622582786c9e ("net: filter: x86: internal BPF JIT")
+> Reported-by: Darrick J. Wong <darrick.wong@oracle.com>
+> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 
-INFO: rcu_preempt detected stalls on CPUs/tasks:
-	Tasks blocked on level-0 rcu_node (CPUs 0-3): P766 P646
-	Tasks blocked on level-0 rcu_node (CPUs 0-3): P766 P646
-	(detected by 0, t=6502 jiffies, g=75434, c=75433, q=0)
-trinity-c342    R  running task    13384   766  32295 0x00000000
- ffff880068943d58 0000000000000002 0000000000000002 ffff880193c8c680
- 00000000001d4100 0000000000000000 ffff880068943fd8 00000000001d4100
- ffff88024302c680 ffff880193c8c680 ffff880068943fd8 0000000000000000
-Call Trace:
- [<ffffffff888368e2>] preempt_schedule_irq+0x52/0xb0
- [<ffffffff8883df10>] retint_kernel+0x20/0x30
- [<ffffffff880d9424>] ? lock_acquire+0xd4/0x2b0
- [<ffffffff8808d495>] ? kill_pid_info+0x5/0x130
- [<ffffffff8808d4d5>] kill_pid_info+0x45/0x130
- [<ffffffff8808d495>] ? kill_pid_info+0x5/0x130
- [<ffffffff8808d6d2>] SYSC_kill+0xf2/0x2f0
- [<ffffffff8808d67b>] ? SYSC_kill+0x9b/0x2f0
- [<ffffffff8819c2b7>] ? context_tracking_user_exit+0x57/0x280
- [<ffffffff880136bd>] ? syscall_trace_enter+0x13d/0x310
- [<ffffffff8808fd9e>] SyS_kill+0xe/0x10
- [<ffffffff8883d3a4>] tracesys+0xdd/0xe2
-trinity-c225    R  running task    13448   646  32295 0x00000000
- ffff880161ccfb28 0000000000000002 ffff880161ccfe10 ffff88000bf85e00
- 00000000001d4100 0000000000000003 ffff880161ccffd8 00000000001d4100
- ffff880030124680 ffff88000bf85e00 ffff880161ccffd8 0000000000000000
-Call Trace:
- [<ffffffff888368e2>] preempt_schedule_irq+0x52/0xb0
- [<ffffffff8883df10>] retint_kernel+0x20/0x30
- [<ffffffff88233d41>] ? __d_lookup_rcu+0xd1/0x1e0
- [<ffffffff88233dd6>] ? __d_lookup_rcu+0x166/0x1e0
- [<ffffffff88222f9f>] lookup_fast+0x4f/0x3d0
- [<ffffffff88224857>] link_path_walk+0x1a7/0x8a0
- [<ffffffff88224f95>] ? path_lookupat+0x45/0x7b0
- [<ffffffff88224fb7>] path_lookupat+0x67/0x7b0
- [<ffffffff880d385d>] ? trace_hardirqs_off+0xd/0x10
- [<ffffffff8883dda4>] ? retint_restore_args+0xe/0xe
- [<ffffffff8822572b>] filename_lookup+0x2b/0xc0
- [<ffffffff88229c77>] user_path_at_empty+0x67/0xc0
- [<ffffffff880d3dbe>] ? put_lock_stats.isra.27+0xe/0x30
- [<ffffffff880d42a6>] ? lock_release_holdtime.part.28+0xe6/0x160
- [<ffffffff880b15ad>] ? get_parent_ip+0xd/0x50
- [<ffffffff88229ce1>] user_path_at+0x11/0x20
- [<ffffffff8824fac1>] do_utimes+0xd1/0x180
- [<ffffffff8824fbef>] SyS_utime+0x7f/0xc0
- [<ffffffff8883d345>] ? tracesys+0x7e/0xe2
- [<ffffffff8883d3a4>] tracesys+0xdd/0xe2
-trinity-c342    R  running task    13384   766  32295 0x00000000
- ffff880068943d58 0000000000000002 0000000000000002 ffff880193c8c680
- 00000000001d4100 0000000000000000 ffff880068943fd8 00000000001d4100
- ffff88024302c680 ffff880193c8c680 ffff880068943fd8 0000000000000000
-Call Trace:
- [<ffffffff888368e2>] preempt_schedule_irq+0x52/0xb0
- [<ffffffff8883df10>] retint_kernel+0x20/0x30
- [<ffffffff880d9424>] ? lock_acquire+0xd4/0x2b0
- [<ffffffff8808d495>] ? kill_pid_info+0x5/0x130
- [<ffffffff8808d4d5>] kill_pid_info+0x45/0x130
- [<ffffffff8808d495>] ? kill_pid_info+0x5/0x130
- [<ffffffff8808d6d2>] SYSC_kill+0xf2/0x2f0
- [<ffffffff8808d67b>] ? SYSC_kill+0x9b/0x2f0
- [<ffffffff8819c2b7>] ? context_tracking_user_exit+0x57/0x280
- [<ffffffff880136bd>] ? syscall_trace_enter+0x13d/0x310
- [<ffffffff8808fd9e>] SyS_kill+0xe/0x10
- [<ffffffff8883d3a4>] tracesys+0xdd/0xe2
-trinity-c225    R  running task    13448   646  32295 0x00000000
- ffff880161ccfb28 0000000000000002 ffff880161ccfe10 ffff88000bf85e00
- 00000000001d4100 0000000000000003 ffff880161ccffd8 00000000001d4100
- ffff880030124680 ffff88000bf85e00 ffff880161ccffd8 0000000000000000
-Call Trace:
- [<ffffffff888368e2>] preempt_schedule_irq+0x52/0xb0
- [<ffffffff8883df10>] retint_kernel+0x20/0x30
- [<ffffffff88233d41>] ? __d_lookup_rcu+0xd1/0x1e0
- [<ffffffff88233dd6>] ? __d_lookup_rcu+0x166/0x1e0
- [<ffffffff88222f9f>] lookup_fast+0x4f/0x3d0
- [<ffffffff88224857>] link_path_walk+0x1a7/0x8a0
- [<ffffffff88224f95>] ? path_lookupat+0x45/0x7b0
- [<ffffffff88224fb7>] path_lookupat+0x67/0x7b0
- [<ffffffff880d385d>] ? trace_hardirqs_off+0xd/0x10
- [<ffffffff8883dda4>] ? retint_restore_args+0xe/0xe
- [<ffffffff8822572b>] filename_lookup+0x2b/0xc0
- [<ffffffff88229c77>] user_path_at_empty+0x67/0xc0
- [<ffffffff880d3dbe>] ? put_lock_stats.isra.27+0xe/0x30
- [<ffffffff880d42a6>] ? lock_release_holdtime.part.28+0xe6/0x160
- [<ffffffff880b15ad>] ? get_parent_ip+0xd/0x50
- [<ffffffff88229ce1>] user_path_at+0x11/0x20
- [<ffffffff8824fac1>] do_utimes+0xd1/0x180
- [<ffffffff8824fbef>] SyS_utime+0x7f/0xc0
- [<ffffffff8883d345>] ? tracesys+0x7e/0xe2
- [<ffffffff8883d3a4>] tracesys+0xdd/0xe2
-INFO: rcu_preempt detected stalls on CPUs/tasks:
-	Tasks blocked on level-0 rcu_node (CPUs 0-3): P766 P646
-	Tasks blocked on level-0 rcu_node (CPUs 0-3): P766 P646
-	(detected by 3, t=26007 jiffies, g=75434, c=75433, q=0)
-trinity-c342    R  running task    13384   766  32295 0x00000000
- ffff880068943d98 0000000000000002 0000000000000000 ffff880193c8c680
- 00000000001d4100 0000000000000000 ffff880068943fd8 00000000001d4100
- ffff88000188af00 ffff880193c8c680 ffff880068943fd8 0000000000000000
-Call Trace:
- [<ffffffff888368e2>] preempt_schedule_irq+0x52/0xb0
- [<ffffffff8883df10>] retint_kernel+0x20/0x30
- [<ffffffff8809f767>] ? pid_task+0x47/0xa0
- [<ffffffff8809f73d>] ? pid_task+0x1d/0xa0
- [<ffffffff8808d4f1>] kill_pid_info+0x61/0x130
- [<ffffffff8808d495>] ? kill_pid_info+0x5/0x130
- [<ffffffff8808d6d2>] SYSC_kill+0xf2/0x2f0
- [<ffffffff8808d67b>] ? SYSC_kill+0x9b/0x2f0
- [<ffffffff8819c2b7>] ? context_tracking_user_exit+0x57/0x280
- [<ffffffff880136bd>] ? syscall_trace_enter+0x13d/0x310
- [<ffffffff8808fd9e>] SyS_kill+0xe/0x10
- [<ffffffff8883d3a4>] tracesys+0xdd/0xe2
-trinity-c225    R  running task    13448   646  32295 0x00000000
- ffff880161ccfb78 0000000000000002 ffffffff88c993ed ffff88000bf85e00
- 00000000001d4100 0000000000000003 ffff880161ccffd8 00000000001d4100
- ffff88005ea89780 ffff88000bf85e00 ffff880161ccffd8 0000000000000000
-Call Trace:
- [<ffffffff888368e2>] preempt_schedule_irq+0x52/0xb0
- [<ffffffff8883df10>] retint_kernel+0x20/0x30
- [<ffffffff8822303a>] ? lookup_fast+0xea/0x3d0
- [<ffffffff88223025>] ? lookup_fast+0xd5/0x3d0
- [<ffffffff88224857>] link_path_walk+0x1a7/0x8a0
- [<ffffffff88224f95>] ? path_lookupat+0x45/0x7b0
- [<ffffffff88224fb7>] path_lookupat+0x67/0x7b0
- [<ffffffff880d385d>] ? trace_hardirqs_off+0xd/0x10
- [<ffffffff8883dda4>] ? retint_restore_args+0xe/0xe
- [<ffffffff8822572b>] filename_lookup+0x2b/0xc0
- [<ffffffff88229c77>] user_path_at_empty+0x67/0xc0
- [<ffffffff880d3dbe>] ? put_lock_stats.isra.27+0xe/0x30
- [<ffffffff880d42a6>] ? lock_release_holdtime.part.28+0xe6/0x160
- [<ffffffff880b15ad>] ? get_parent_ip+0xd/0x50
- [<ffffffff88229ce1>] user_path_at+0x11/0x20
- [<ffffffff8824fac1>] do_utimes+0xd1/0x180
- [<ffffffff8824fbef>] SyS_utime+0x7f/0xc0
- [<ffffffff8883d345>] ? tracesys+0x7e/0xe2
- [<ffffffff8883d3a4>] tracesys+0xdd/0xe2
-trinity-c342    R  running task    13384   766  32295 0x00000000
- ffff880068943d98 0000000000000002 0000000000000000 ffff880193c8c680
- 00000000001d4100 0000000000000000 ffff880068943fd8 00000000001d4100
- ffff88000188af00 ffff880193c8c680 ffff880068943fd8 0000000000000000
-Call Trace:
- [<ffffffff888368e2>] preempt_schedule_irq+0x52/0xb0
- [<ffffffff8883df10>] retint_kernel+0x20/0x30
- [<ffffffff8809f767>] ? pid_task+0x47/0xa0
- [<ffffffff8809f73d>] ? pid_task+0x1d/0xa0
- [<ffffffff8808d4f1>] kill_pid_info+0x61/0x130
- [<ffffffff8808d495>] ? kill_pid_info+0x5/0x130
- [<ffffffff8808d6d2>] SYSC_kill+0xf2/0x2f0
- [<ffffffff8808d67b>] ? SYSC_kill+0x9b/0x2f0
- [<ffffffff8819c2b7>] ? context_tracking_user_exit+0x57/0x280
- [<ffffffff880136bd>] ? syscall_trace_enter+0x13d/0x310
- [<ffffffff8808fd9e>] SyS_kill+0xe/0x10
- [<ffffffff8883d3a4>] tracesys+0xdd/0xe2
-trinity-c225    R  running task    13448   646  32295 0x00000000
- ffff880161ccfb78 0000000000000002 ffffffff88c993ed ffff88000bf85e00
- 00000000001d4100 0000000000000003 ffff880161ccffd8 00000000001d4100
- ffff88005ea89780 ffff88000bf85e00 ffff880161ccffd8 0000000000000000
-Call Trace:
- [<ffffffff888368e2>] preempt_schedule_irq+0x52/0xb0
- [<ffffffff8883df10>] retint_kernel+0x20/0x30
- [<ffffffff8822303a>] ? lookup_fast+0xea/0x3d0
- [<ffffffff88223025>] ? lookup_fast+0xd5/0x3d0
- [<ffffffff88224857>] link_path_walk+0x1a7/0x8a0
- [<ffffffff88224f95>] ? path_lookupat+0x45/0x7b0
- [<ffffffff88224fb7>] path_lookupat+0x67/0x7b0
- [<ffffffff880d385d>] ? trace_hardirqs_off+0xd/0x10
- [<ffffffff8883dda4>] ? retint_restore_args+0xe/0xe
- [<ffffffff8822572b>] filename_lookup+0x2b/0xc0
- [<ffffffff88229c77>] user_path_at_empty+0x67/0xc0
- [<ffffffff880d3dbe>] ? put_lock_stats.isra.27+0xe/0x30
- [<ffffffff880d42a6>] ? lock_release_holdtime.part.28+0xe6/0x160
- [<ffffffff880b15ad>] ? get_parent_ip+0xd/0x50
- [<ffffffff88229ce1>] user_path_at+0x11/0x20
- [<ffffffff8824fac1>] do_utimes+0xd1/0x180
- [<ffffffff8824fbef>] SyS_utime+0x7f/0xc0
- [<ffffffff8883d345>] ? tracesys+0x7e/0xe2
- [<ffffffff8883d3a4>] tracesys+0xdd/0xe2
+This fixes the crash, thank you!
 
-This is on Linus' current tree, with the new CONFIG_TASKS_RCU unset.
+Tested-by: Darrick J. Wong <darrick.wong@oracle.com>
 
-	Dave
+--D
 
+> ---
+> v1->v2: reduce chances of stack corruption in case of future bugs (suggested by Eric)
+> 
+> note in classic BPF programs 1st insn is always short move, but native eBPF
+> programs may trigger buffer overflow. I couldn't force the crash with overflow,
+> since there are no further calls while this part of stack is used.
+> Both are ugly bugs regardless.
+> When net-next opens I will add narrowed down testcase from 'nmap' to testsuite.
+> 
+>  arch/x86/net/bpf_jit_comp.c |   25 +++++++++++++++++++------
+>  1 file changed, 19 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
+> index d56cd1f..3f62734 100644
+> --- a/arch/x86/net/bpf_jit_comp.c
+> +++ b/arch/x86/net/bpf_jit_comp.c
+> @@ -182,12 +182,17 @@ struct jit_context {
+>  	bool seen_ld_abs;
+>  };
+>  
+> +/* maximum number of bytes emitted while JITing one eBPF insn */
+> +#define BPF_MAX_INSN_SIZE	128
+> +#define BPF_INSN_SAFETY		64
+> +
+>  static int do_jit(struct bpf_prog *bpf_prog, int *addrs, u8 *image,
+>  		  int oldproglen, struct jit_context *ctx)
+>  {
+>  	struct bpf_insn *insn = bpf_prog->insnsi;
+>  	int insn_cnt = bpf_prog->len;
+> -	u8 temp[64];
+> +	bool seen_ld_abs = ctx->seen_ld_abs | (oldproglen == 0);
+> +	u8 temp[BPF_MAX_INSN_SIZE + BPF_INSN_SAFETY];
+>  	int i;
+>  	int proglen = 0;
+>  	u8 *prog = temp;
+> @@ -225,7 +230,7 @@ static int do_jit(struct bpf_prog *bpf_prog, int *addrs, u8 *image,
+>  	EMIT2(0x31, 0xc0); /* xor eax, eax */
+>  	EMIT3(0x4D, 0x31, 0xED); /* xor r13, r13 */
+>  
+> -	if (ctx->seen_ld_abs) {
+> +	if (seen_ld_abs) {
+>  		/* r9d : skb->len - skb->data_len (headlen)
+>  		 * r10 : skb->data
+>  		 */
+> @@ -685,7 +690,7 @@ xadd:			if (is_imm8(insn->off))
+>  		case BPF_JMP | BPF_CALL:
+>  			func = (u8 *) __bpf_call_base + imm32;
+>  			jmp_offset = func - (image + addrs[i]);
+> -			if (ctx->seen_ld_abs) {
+> +			if (seen_ld_abs) {
+>  				EMIT2(0x41, 0x52); /* push %r10 */
+>  				EMIT2(0x41, 0x51); /* push %r9 */
+>  				/* need to adjust jmp offset, since
+> @@ -699,7 +704,7 @@ xadd:			if (is_imm8(insn->off))
+>  				return -EINVAL;
+>  			}
+>  			EMIT1_off32(0xE8, jmp_offset);
+> -			if (ctx->seen_ld_abs) {
+> +			if (seen_ld_abs) {
+>  				EMIT2(0x41, 0x59); /* pop %r9 */
+>  				EMIT2(0x41, 0x5A); /* pop %r10 */
+>  			}
+> @@ -804,7 +809,8 @@ emit_jmp:
+>  			goto common_load;
+>  		case BPF_LD | BPF_ABS | BPF_W:
+>  			func = CHOOSE_LOAD_FUNC(imm32, sk_load_word);
+> -common_load:		ctx->seen_ld_abs = true;
+> +common_load:
+> +			ctx->seen_ld_abs = seen_ld_abs = true;
+>  			jmp_offset = func - (image + addrs[i]);
+>  			if (!func || !is_simm32(jmp_offset)) {
+>  				pr_err("unsupported bpf func %d addr %p image %p\n",
+> @@ -878,6 +884,11 @@ common_load:		ctx->seen_ld_abs = true;
+>  		}
+>  
+>  		ilen = prog - temp;
+> +		if (ilen > BPF_MAX_INSN_SIZE) {
+> +			pr_err("bpf_jit_compile fatal insn size error\n");
+> +			return -EFAULT;
+> +		}
+> +
+>  		if (image) {
+>  			if (unlikely(proglen + ilen > oldproglen)) {
+>  				pr_err("bpf_jit_compile fatal error\n");
+> @@ -934,9 +945,11 @@ void bpf_int_jit_compile(struct bpf_prog *prog)
+>  			goto out;
+>  		}
+>  		if (image) {
+> -			if (proglen != oldproglen)
+> +			if (proglen != oldproglen) {
+>  				pr_err("bpf_jit: proglen=%d != oldproglen=%d\n",
+>  				       proglen, oldproglen);
+> +				goto out;
+> +			}
+>  			break;
+>  		}
+>  		if (proglen == oldproglen) {
+> -- 
+> 1.7.9.5
+> 
