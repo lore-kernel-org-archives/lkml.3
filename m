@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754425AbaJMC31 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:29:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46010 "EHLO
+	id S1755270AbaJMClB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:41:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46003 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754385AbaJMC3W (ORCPT
+	with ESMTP id S1753132AbaJMC3R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:29:22 -0400
+	Sun, 12 Oct 2014 22:29:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jason Wang <jasowang@redhat.com>,
-        Vladislav Yasevich <vyasevic@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 32/55] macvtap: Fix race between device delete and open.
-Date: Mon, 13 Oct 2014 04:24:46 +0200
-Message-Id: <20141013022445.143717016@linuxfoundation.org>
+        Konstantinos Kolelis <k.kolelis@sirrix.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>
+Subject: [PATCH 3.16 30/55] xfrm: Generate queueing routes only from route lookup functions
+Date: Mon, 13 Oct 2014 04:24:44 +0200
+Message-Id: <20141013022445.060261787@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
 References: <20141013022443.729870634@linuxfoundation.org>
@@ -31,95 +29,149 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevich@gmail.com>
+From: Steffen Klassert <steffen.klassert@secunet.com>
 
-[ Upstream commit 40b8fe45d1f094e3babe7b2dc2b71557ab71401d ]
+[ Upstream commit b8c203b2d2fc961bafd53b41d5396bbcdec55998 ]
 
-In macvtap device delete and open calls can race and
-this causes a list curruption of the vlan queue_list.
+Currently we genarate a queueing route if we have matching policies
+but can not resolve the states and the sysctl xfrm_larval_drop is
+disabled. Here we assume that dst_output() is called to kill the
+queued packets. Unfortunately this assumption is not true in all
+cases, so it is possible that these packets leave the system unwanted.
 
-The race intself is triggered by the idr accessors
-that located the vlan device.  The device is stored
-into and removed from the idr under both an rtnl and
-a mutex.  However, when attempting to locate the device
-in idr, only a mutex is taken.  As a result, once cpu
-perfoming a delete may take an rtnl and wait for the mutex,
-while another cput doing an open() will take the idr
-mutex first to fetch the device pointer and later take
-an rtnl to add a queue for the device which may have
-just gotten deleted.
+We fix this by generating queueing routes only from the
+route lookup functions, here we can guarantee a call to
+dst_output() afterwards.
 
-With this patch, we now hold the rtnl for the duration
-of the macvtap_open() call thus making sure that
-open will not race with delete.
-
-CC: Michael S. Tsirkin <mst@redhat.com>
-CC: Jason Wang <jasowang@redhat.com>
-Signed-off-by: Vladislav Yasevich <vyasevic@redhat.com>
-Acked-by: Jason Wang <jasowang@redhat.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fixes: a0073fe18e71 ("xfrm: Add a state resolution packet queue")
+Reported-by: Konstantinos Kolelis <k.kolelis@sirrix.com>
+Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/macvtap.c |   18 ++++++++----------
- 1 file changed, 8 insertions(+), 10 deletions(-)
+ include/net/dst.h      |    1 +
+ net/xfrm/xfrm_policy.c |   32 ++++++++++++++++++++++++--------
+ 2 files changed, 25 insertions(+), 8 deletions(-)
 
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -112,17 +112,15 @@ out:
- 	return err;
+--- a/include/net/dst.h
++++ b/include/net/dst.h
+@@ -480,6 +480,7 @@ void dst_init(void);
+ /* Flags for xfrm_lookup flags argument. */
+ enum {
+ 	XFRM_LOOKUP_ICMP = 1 << 0,
++	XFRM_LOOKUP_QUEUE = 1 << 1,
+ };
+ 
+ struct flowi;
+--- a/net/xfrm/xfrm_policy.c
++++ b/net/xfrm/xfrm_policy.c
+@@ -39,6 +39,11 @@
+ #define XFRM_QUEUE_TMO_MAX ((unsigned)(60*HZ))
+ #define XFRM_MAX_QUEUE_LEN	100
+ 
++struct xfrm_flo {
++	struct dst_entry *dst_orig;
++	u8 flags;
++};
++
+ static DEFINE_SPINLOCK(xfrm_policy_afinfo_lock);
+ static struct xfrm_policy_afinfo __rcu *xfrm_policy_afinfo[NPROTO]
+ 						__read_mostly;
+@@ -1877,13 +1882,14 @@ static int xdst_queue_output(struct sock
  }
  
-+/* Requires RTNL */
- static int macvtap_set_queue(struct net_device *dev, struct file *file,
- 			     struct macvtap_queue *q)
+ static struct xfrm_dst *xfrm_create_dummy_bundle(struct net *net,
+-						 struct dst_entry *dst,
++						 struct xfrm_flo *xflo,
+ 						 const struct flowi *fl,
+ 						 int num_xfrms,
+ 						 u16 family)
  {
- 	struct macvlan_dev *vlan = netdev_priv(dev);
--	int err = -EBUSY;
+ 	int err;
+ 	struct net_device *dev;
++	struct dst_entry *dst;
+ 	struct dst_entry *dst1;
+ 	struct xfrm_dst *xdst;
  
--	rtnl_lock();
- 	if (vlan->numqueues == MAX_MACVTAP_QUEUES)
--		goto out;
-+		return -EBUSY;
+@@ -1891,9 +1897,12 @@ static struct xfrm_dst *xfrm_create_dumm
+ 	if (IS_ERR(xdst))
+ 		return xdst;
  
--	err = 0;
- 	rcu_assign_pointer(q->vlan, vlan);
- 	rcu_assign_pointer(vlan->taps[vlan->numvtaps], q);
- 	sock_hold(&q->sk);
-@@ -136,9 +134,7 @@ static int macvtap_set_queue(struct net_
- 	vlan->numvtaps++;
- 	vlan->numqueues++;
+-	if (net->xfrm.sysctl_larval_drop || num_xfrms <= 0)
++	if (!(xflo->flags & XFRM_LOOKUP_QUEUE) ||
++	    net->xfrm.sysctl_larval_drop ||
++	    num_xfrms <= 0)
+ 		return xdst;
  
--out:
--	rtnl_unlock();
--	return err;
-+	return 0;
- }
- 
- static int macvtap_disable_queue(struct macvtap_queue *q)
-@@ -454,11 +450,12 @@ static void macvtap_sock_destruct(struct
- static int macvtap_open(struct inode *inode, struct file *file)
++	dst = xflo->dst_orig;
+ 	dst1 = &xdst->u.dst;
+ 	dst_hold(dst);
+ 	xdst->route = dst;
+@@ -1935,7 +1944,7 @@ static struct flow_cache_object *
+ xfrm_bundle_lookup(struct net *net, const struct flowi *fl, u16 family, u8 dir,
+ 		   struct flow_cache_object *oldflo, void *ctx)
  {
- 	struct net *net = current->nsproxy->net_ns;
--	struct net_device *dev = dev_get_by_macvtap_minor(iminor(inode));
-+	struct net_device *dev;
- 	struct macvtap_queue *q;
--	int err;
-+	int err = -ENODEV;
+-	struct dst_entry *dst_orig = (struct dst_entry *)ctx;
++	struct xfrm_flo *xflo = (struct xfrm_flo *)ctx;
+ 	struct xfrm_policy *pols[XFRM_POLICY_TYPE_MAX];
+ 	struct xfrm_dst *xdst, *new_xdst;
+ 	int num_pols = 0, num_xfrms = 0, i, err, pol_dead;
+@@ -1976,7 +1985,8 @@ xfrm_bundle_lookup(struct net *net, cons
+ 			goto make_dummy_bundle;
+ 	}
  
--	err = -ENODEV;
-+	rtnl_lock();
-+	dev = dev_get_by_macvtap_minor(iminor(inode));
- 	if (!dev)
- 		goto out;
+-	new_xdst = xfrm_resolve_and_create_bundle(pols, num_pols, fl, family, dst_orig);
++	new_xdst = xfrm_resolve_and_create_bundle(pols, num_pols, fl, family,
++						  xflo->dst_orig);
+ 	if (IS_ERR(new_xdst)) {
+ 		err = PTR_ERR(new_xdst);
+ 		if (err != -EAGAIN)
+@@ -2010,7 +2020,7 @@ make_dummy_bundle:
+ 	/* We found policies, but there's no bundles to instantiate:
+ 	 * either because the policy blocks, has no transformations or
+ 	 * we could not build template (no xfrm_states).*/
+-	xdst = xfrm_create_dummy_bundle(net, dst_orig, fl, num_xfrms, family);
++	xdst = xfrm_create_dummy_bundle(net, xflo, fl, num_xfrms, family);
+ 	if (IS_ERR(xdst)) {
+ 		xfrm_pols_put(pols, num_pols);
+ 		return ERR_CAST(xdst);
+@@ -2104,13 +2114,18 @@ struct dst_entry *xfrm_lookup(struct net
+ 	}
  
-@@ -498,6 +495,7 @@ out:
- 	if (dev)
- 		dev_put(dev);
+ 	if (xdst == NULL) {
++		struct xfrm_flo xflo;
++
++		xflo.dst_orig = dst_orig;
++		xflo.flags = flags;
++
+ 		/* To accelerate a bit...  */
+ 		if ((dst_orig->flags & DST_NOXFRM) ||
+ 		    !net->xfrm.policy_count[XFRM_POLICY_OUT])
+ 			goto nopol;
  
-+	rtnl_unlock();
- 	return err;
- }
+ 		flo = flow_cache_lookup(net, fl, family, dir,
+-					xfrm_bundle_lookup, dst_orig);
++					xfrm_bundle_lookup, &xflo);
+ 		if (flo == NULL)
+ 			goto nopol;
+ 		if (IS_ERR(flo)) {
+@@ -2202,7 +2217,8 @@ struct dst_entry *xfrm_lookup_route(stru
+ 				    const struct flowi *fl,
+ 				    struct sock *sk, int flags)
+ {
+-	struct dst_entry *dst = xfrm_lookup(net, dst_orig, fl, sk, flags);
++	struct dst_entry *dst = xfrm_lookup(net, dst_orig, fl, sk,
++					    flags | XFRM_LOOKUP_QUEUE);
  
+ 	if (IS_ERR(dst) && PTR_ERR(dst) == -EREMOTE)
+ 		return make_blackhole(net, dst_orig->ops->family, dst_orig);
+@@ -2476,7 +2492,7 @@ int __xfrm_route_forward(struct sk_buff
+ 
+ 	skb_dst_force(skb);
+ 
+-	dst = xfrm_lookup(net, skb_dst(skb), &fl, NULL, 0);
++	dst = xfrm_lookup(net, skb_dst(skb), &fl, NULL, XFRM_LOOKUP_QUEUE);
+ 	if (IS_ERR(dst)) {
+ 		res = 0;
+ 		dst = NULL;
 
 
