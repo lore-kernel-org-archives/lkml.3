@@ -1,128 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753192AbaJMIsT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 04:48:19 -0400
-Received: from mail-bn1bbn0109.outbound.protection.outlook.com ([157.56.111.109]:1984
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752501AbaJMIsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 04:48:16 -0400
-Date: Mon, 13 Oct 2014 16:47:59 +0800
-From: Peter Chen <peter.chen@freescale.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        Antoine Tenart <antoine.tenart@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <sebastian.hesselbarth@gmail.com>, <p.zabel@pengutronix.de>,
-        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
-        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <alexandre.belloni@free-electrons.com>,
-        <jszhang@marvell.com>
-Subject: Re: [PATCH v6 07/12] usb: chipidea: add a usb2 driver for ci13xxx
-Message-ID: <20141013084758.GB3314@peterchendt>
-References: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com>
- <2923729.dtX0WmHSV0@wuerfel> <20140924112902.GA23331@peterchendt>
- <2786668.t3YLqX5enD@wuerfel> <20140925141553.GC28045@saruman>
- <20140925233932.GA3026@peterchendt> <20140926003750.GA12770@saruman>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140926003750.GA12770@saruman>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(51704005)(189002)(199003)(24454002)(92566001)(92726001)(46102003)(80022003)(104016003)(33656002)(46406003)(97736003)(102836001)(4396001)(64706001)(87936001)(85852003)(83506001)(50466002)(86362001)(33716001)(97756001)(26826002)(31966008)(20776003)(57986006)(47776003)(76176999)(54356999)(50986999)(95666004)(120916001)(76482002)(21056001)(110136001)(99396003)(19580405001)(23726002)(44976005)(6806004)(84676001)(19580395003)(69596002)(68736004)(105606002)(107046002)(85306004)(93886004)(81156004)(106466001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0629;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0629;
-X-Forefront-PRVS: 03630A6A4A
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Peter.Chen@freescale.com; 
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0679;
-X-OriginatorOrg: freescale.com
+	id S1753259AbaJMIup (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 04:50:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27134 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752827AbaJMIum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 04:50:42 -0400
+Message-ID: <1413190208.4202.34.camel@ul30vt.home>
+Subject: Re: [PATCH] vfio/pci: make MSI handling optional
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: kvm@vger.kernel.org, Gavin Shan <gwshan@linux.vnet.ibm.com>,
+        Wen Xiong <wenxiong@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Date: Mon, 13 Oct 2014 02:50:08 -0600
+In-Reply-To: <6188781.C8VgeYvZpD@wuerfel>
+References: <6188781.C8VgeYvZpD@wuerfel>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 07:37:50PM -0500, Felipe Balbi wrote:
-> HI,
+On Thu, 2014-10-09 at 10:40 +0200, Arnd Bergmann wrote:
+> A recent bug fix to the MSIx handling in vfio added references
+> to functions that may not be defined if MSI is disabled in the kernel,
+> resulting in this link error:
 > 
-> On Fri, Sep 26, 2014 at 07:39:34AM +0800, Peter Chen wrote:
-> > On Thu, Sep 25, 2014 at 09:15:53AM -0500, Felipe Balbi wrote:
-> > > On Wed, Sep 24, 2014 at 02:23:38PM +0200, Arnd Bergmann wrote:
-> > > > On Wednesday 24 September 2014 19:29:05 Peter Chen wrote:
-> > > > > 
-> > > > > So, it is IP CORE LIB (you suggest) vs IP CORE Platform Driver
-> > > > > (dwc3, musb, chipidea) you are talking about, right? Except for
-> > > > > creating another platform driver as well as related DT node (optional),
-> > > > > are there any advantages compared to current IP core driver structure?
-> > > > 
-> > > > Having a library module usually requires less code, and is more
-> > > > consistent with other drivers, which helps new developers understand
-> > > > what the driver is doing.
-> > > 
-> > > I beg to differ. You end-up having to pass function pointers through
-> > > platform_data to handle differences which could be handled by the core
-> > > IP.
-> > > 
-> > > > The most important aspect though is the DT binding: once the structure
-> > > > with separate kernel drivers leaks out into the DT format, you can't
-> > > > easily change the driver any more, e.g. to make a property that was
-> > > > introduced for one glue driver more general so it can get handled by
-> > > > the common part. Having a single node lets us convert to the library
-> > > > model later, so that would be a strong reason to keep the DT binding
-> > > > simple, without child nodes.
-> > > > 
-> > > > Following that logic, it turns into another reason for using the library
-> > > > model to start with, because otherwise the child device does not have
-> > > > any DT properties itself and has to rely on the parent device properties,
-> > > > which somewhat complicates the driver structure.
-> > > 
-> > > this is bullcrap. Take a look at
-> > > Documentation/devicetree/bindings/usb/dwc3.txt:
-> > > 
-> > > synopsys DWC3 CORE
-> > > 
-> > > DWC3- USB3 CONTROLLER
-> > > 
-> > > Required properties:
-> > >  - compatible: must be "snps,dwc3"
-> > >  - reg : Address and length of the register set for the device
-> > >  - interrupts: Interrupts used by the dwc3 controller.
-> > > 
-> > > Optional properties:
-> > >  - usb-phy : array of phandle for the PHY device.  The first element
-> > >    in the array is expected to be a handle to the USB2/HS PHY and
-> > >    the second element is expected to be a handle to the USB3/SS PHY
-> > >  - phys: from the *Generic PHY* bindings
-> > >  - phy-names: from the *Generic PHY* bindings
-> > >  - tx-fifo-resize: determines if the FIFO *has* to be reallocated.
-> > > 
-> > > This is usually a subnode to DWC3 glue to which it is connected.
-> > > 
-> > > dwc3@4a030000 {
-> > > 	compatible = "snps,dwc3";
-> > > 	reg = <0x4a030000 0xcfff>;
-> > > 	interrupts = <0 92 4>
-> > > 	usb-phy = <&usb2_phy>, <&usb3,phy>;
-> > > 	tx-fifo-resize;
-> > > };
-> > > 
+> drivers/built-in.o: In function `vfio_msi_set_vector_signal':
+> :(.text+0x450808): undefined reference to `get_cached_msi_msg'
+> :(.text+0x45080c): undefined reference to `write_msi_msg'
 > 
-> > Is it possible that the glue layer needs to access core register
-> > (eg, portsc.phcd during suspend)? The wrapper IP may wait some signals
-> > at core IP to change.
+> From what I can tell, all the MSI specific ioctl handling can
+> be made optional in this case, which also reduces the code size
+> for the vfo driver. This patches does so using a build-time
+> IS_ENABLED() check, which leaves all the build coverage testing
+> present but avoids the link error.
 > 
-> why would a glue layer need to access registers from the core ? That
-> sounds very odd. I haven't seen that and will, definitely, NACK such a
-> patch :-)
+> A side-effect of this is that the driver now returns -ENOTTY instead
+> of -EINVAL if user space calls VFIO_PCI_MSI_IRQ_INDEX on a kernel
+> without MSI support, which seems to be the best behavior, but
+> the approach could easily be changed if we want to preserve the
+> existing behavior for compatibility reasons.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Fixes: b8f02af096b1 ("vfio/pci: Restore MSIx message prior to enabling")
+> ---
+
+Why wouldn't we handle this with stubs for `get_cached_msi_msg' and
+`write_msi_msg'?  We're really not talking about much code that might
+get removed by the compiler with this static branch and and it seems
+like a rather non-standard mechanism.  The count of MSI/X IRQs
+advertised to the user should be zero without CONFIG_MSI and later range
+checks would prevent calls to
+these functions for invalid indexes, so it's a bit of a random test in
+the code flow.  Thanks,
+
+Alex
+
+> Found using randconfig build testing on ARM.
+> 
+> diff --git a/drivers/vfio/pci/vfio_pci_intrs.c b/drivers/vfio/pci/vfio_pci_intrs.c
+> index 553212f037c3..1117f96b8556 100644
+> --- a/drivers/vfio/pci/vfio_pci_intrs.c
+> +++ b/drivers/vfio/pci/vfio_pci_intrs.c
+> @@ -827,6 +827,9 @@ int vfio_pci_set_irqs_ioctl(struct vfio_pci_device *vdev, uint32_t flags,
+>  		break;
+>  	case VFIO_PCI_MSI_IRQ_INDEX:
+>  	case VFIO_PCI_MSIX_IRQ_INDEX:
+> +		if (!IS_ENABLED(CONFIG_PCI_MSI))
+> +			break;
+> +
+>  		switch (flags & VFIO_IRQ_SET_ACTION_TYPE_MASK) {
+>  		case VFIO_IRQ_SET_ACTION_MASK:
+>  		case VFIO_IRQ_SET_ACTION_UNMASK:
 > 
 
-Just have a case for glue layer needs to know core layer's status.
-The controller's wakeup logic is usually at glue layer, but we
-may need to enable different wakeup for roles. Eg, if the current
-role is host (controller is otg capable), we can't enable id wakeup,
-otherwise, the user will complain plug out Micro-AB cable wakes up
-system which is not expected.
 
--- 
-Best Regards,
-Peter Chen
+
