@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753721AbaJMC1M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:27:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45754 "EHLO
+	id S1753829AbaJMC1a (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:27:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45783 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753650AbaJMC1I (ORCPT
+	with ESMTP id S1753802AbaJMC1Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:27:08 -0400
+	Sun, 12 Oct 2014 22:27:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andreas Bomholtz <andreas@seluxit.com>,
-        Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.14 34/37] USB: cp210x: add support for Seluxit USB dongle
-Date: Mon, 13 Oct 2014 04:24:31 +0200
-Message-Id: <20141013022401.701409644@linuxfoundation.org>
+        Matthieu Ternisien dOuville <matthieu.tdo@6wind.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 28/37] ip6_gre: fix flowi6_proto value in xmit path
+Date: Mon, 13 Oct 2014 04:24:25 +0200
+Message-Id: <20141013022401.460609607@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022400.286360067@linuxfoundation.org>
 References: <20141013022400.286360067@linuxfoundation.org>
@@ -29,29 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Bomholtz <andreas@seluxit.com>
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
-commit dee80ad12d2b1b304286a707fde7ab05d1fc7bab upstream.
+[ Upstream commit 3be07244b7337760a3269d56b2f4a63e72218648 ]
 
-Added the Seluxit ApS USB Serial Dongle to cp210x driver.
+In xmit path, we build a flowi6 which will be used for the output route lookup.
+We are sending a GRE packet, neither IPv4 nor IPv6 encapsulated packet, thus the
+protocol should be IPPROTO_GRE.
 
-Signed-off-by: Andreas Bomholtz <andreas@seluxit.com>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Fixes: c12b395a4664 ("gre: Support GRE over IPv6")
+Reported-by: Matthieu Ternisien d'Ouville <matthieu.tdo@6wind.com>
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/serial/cp210x.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/ipv6/ip6_gre.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -156,6 +156,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
- 	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
- 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
-+	{ USB_DEVICE(0x1D6F, 0x0010) }, /* Seluxit ApS RF Dongle */
- 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
- 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
- 	{ USB_DEVICE(0x1FB9, 0x0100) }, /* Lake Shore Model 121 Current Source */
+--- a/net/ipv6/ip6_gre.c
++++ b/net/ipv6/ip6_gre.c
+@@ -787,7 +787,7 @@ static inline int ip6gre_xmit_ipv4(struc
+ 		encap_limit = t->parms.encap_limit;
+ 
+ 	memcpy(&fl6, &t->fl.u.ip6, sizeof(fl6));
+-	fl6.flowi6_proto = IPPROTO_IPIP;
++	fl6.flowi6_proto = IPPROTO_GRE;
+ 
+ 	dsfield = ipv4_get_dsfield(iph);
+ 
+@@ -837,7 +837,7 @@ static inline int ip6gre_xmit_ipv6(struc
+ 		encap_limit = t->parms.encap_limit;
+ 
+ 	memcpy(&fl6, &t->fl.u.ip6, sizeof(fl6));
+-	fl6.flowi6_proto = IPPROTO_IPV6;
++	fl6.flowi6_proto = IPPROTO_GRE;
+ 
+ 	dsfield = ipv6_get_dsfield(ipv6h);
+ 	if (t->parms.flags & IP6_TNL_F_USE_ORIG_TCLASS)
 
 
