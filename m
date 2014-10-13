@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748AbaJMC74 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:59:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45610 "EHLO
+	id S1754661AbaJMC7y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:59:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45596 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753046AbaJMCZx (ORCPT
+	with ESMTP id S1753138AbaJMCZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:25:53 -0400
+	Sun, 12 Oct 2014 22:25:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sabrina Dubroca <sd@queasysnail.net>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Weilong Chen <chenweilong@huawei.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>, Long Li <longli@microsoft.com>,
+        Sitsofe Wheeler <sitsofe@yahoo.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 13/16] ipv6: reallocate addrconf router for ipv6 address when lo device up
-Date: Mon, 13 Oct 2014 04:24:10 +0200
-Message-Id: <20141013022341.968364824@linuxfoundation.org>
+Subject: [PATCH 3.10 09/16] hyperv: Fix a bug in netvsc_start_xmit()
+Date: Mon, 13 Oct 2014 04:24:06 +0200
+Message-Id: <20141013022341.793972022@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022341.386913672@linuxfoundation.org>
 References: <20141013022341.386913672@linuxfoundation.org>
@@ -32,62 +30,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gao feng <gaofeng@cn.fujitsu.com>
+From: KY Srinivasan <kys@microsoft.com>
 
-[ Upstream commit 33d99113b1102c2d2f8603b9ba72d89d915c13f5 ]
+[ Upstream commit dedb845ded56ded1c62f5398a94ffa8615d4592d ]
 
-commit 25fb6ca4ed9cad72f14f61629b68dc03c0d9713f
-"net IPv6 : Fix broken IPv6 routing table after loopback down-up"
-allocates addrconf router for ipv6 address when lo device up.
-but commit a881ae1f625c599b460cc8f8a7fcb1c438f699ad
-"ipv6:don't call addrconf_dst_alloc again when enable lo" breaks
-this behavior.
+After the packet is successfully sent, we should not touch the skb
+as it may have been freed. This patch is based on the work done by
+Long Li <longli@microsoft.com>.
 
-Since the addrconf router is moved to the garbage list when
-lo device down, we should release this router and rellocate
-a new one for ipv6 address when lo device up.
+In this version of the patch I have fixed issues pointed out by David.
+David, please queue this up for stable.
 
-This patch solves bug 67951 on bugzilla
-https://bugzilla.kernel.org/show_bug.cgi?id=67951
-
-change from v1:
-use ip6_rt_put to repleace ip6_del_rt, thanks Hannes!
-change code style, suggested by Sergei.
-
-CC: Sabrina Dubroca <sd@queasysnail.net>
-CC: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Reported-by: Weilong Chen <chenweilong@huawei.com>
-Signed-off-by: Weilong Chen <chenweilong@huawei.com>
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Tested-by: Long Li <longli@microsoft.com>
+Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/addrconf.c |   14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ drivers/net/hyperv/netvsc_drv.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -2691,8 +2691,18 @@ static void init_loopback(struct net_dev
- 			if (sp_ifa->flags & (IFA_F_DADFAILED | IFA_F_TENTATIVE))
- 				continue;
+--- a/drivers/net/hyperv/netvsc_drv.c
++++ b/drivers/net/hyperv/netvsc_drv.c
+@@ -138,6 +138,7 @@ static int netvsc_start_xmit(struct sk_b
+ 	struct hv_netvsc_packet *packet;
+ 	int ret;
+ 	unsigned int i, num_pages, npg_data;
++	u32 skb_length = skb->len;
  
--			if (sp_ifa->rt)
--				continue;
-+			if (sp_ifa->rt) {
-+				/* This dst has been added to garbage list when
-+				 * lo device down, release this obsolete dst and
-+				 * reallocate a new router for ifa.
-+				 */
-+				if (sp_ifa->rt->dst.obsolete > 0) {
-+					ip6_rt_put(sp_ifa->rt);
-+					sp_ifa->rt = NULL;
-+				} else {
-+					continue;
-+				}
-+			}
- 
- 			sp_rt = addrconf_dst_alloc(idev, &sp_ifa->addr, 0);
- 
+ 	/* Add multipages for skb->data and additional 2 for RNDIS */
+ 	npg_data = (((unsigned long)skb->data + skb_headlen(skb) - 1)
+@@ -208,7 +209,7 @@ static int netvsc_start_xmit(struct sk_b
+ 	ret = rndis_filter_send(net_device_ctx->device_ctx,
+ 				  packet);
+ 	if (ret == 0) {
+-		net->stats.tx_bytes += skb->len;
++		net->stats.tx_bytes += skb_length;
+ 		net->stats.tx_packets++;
+ 	} else {
+ 		kfree(packet);
 
 
