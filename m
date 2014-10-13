@@ -1,82 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884AbaJMDma (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 23:42:30 -0400
-Received: from mga03.intel.com ([134.134.136.65]:14090 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752701AbaJMDm0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 23:42:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,707,1406617200"; 
-   d="scan'208";a="587777237"
-From: "Chang, Rebecca Swee Fun" <rebecca.swee.fun.chang@intel.com>
-To: "'Alexandre Courbot'" <gnurou@gmail.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        "Westerberg, Mika" <mika.westerberg@intel.com>,
-        GPIO Subsystem Mailing List <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCHv2 0/3] Enable Quark X1000 support in gpio-sch
-Thread-Topic: [PATCHv2 0/3] Enable Quark X1000 support in gpio-sch
-Thread-Index: AQHP44pWVRk3kQCRw02pfI6GgtmFRJwtZvWw
-Date: Mon, 13 Oct 2014 03:41:06 +0000
-Message-ID: <50B33AC5ED75F74F991980326F1C438D0FBECEA6@PGSMSX108.gar.corp.intel.com>
-References: <1411726047-3224-1-git-send-email-rebecca.swee.fun.chang@intel.com>
- <CAAVeFuKcK_Ave41S6gVBE1ZQda22WPDgDxpCatkmccn3uNmyEQ@mail.gmail.com>
-In-Reply-To: <CAAVeFuKcK_Ave41S6gVBE1ZQda22WPDgDxpCatkmccn3uNmyEQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.20.206]
-Content-Type: text/plain; charset="utf-8"
+	id S1752959AbaJMDqI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 23:46:08 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:34075 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752813AbaJMDqE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Oct 2014 23:46:04 -0400
 MIME-Version: 1.0
+In-Reply-To: <20141010152044.GG31348@saruman>
+References: <1412673344-25443-1-git-send-email-kiran.kumar@linaro.org>
+	<20141007142554.GE24720@saruman>
+	<CA+RfmHaNpQRpEJmZLUHrYPfizS0w+bbeG+SVsFXOA-5jbXS_Wg@mail.gmail.com>
+	<20141010152044.GG31348@saruman>
+Date: Mon, 13 Oct 2014 09:16:02 +0530
+Message-ID: <CA+RfmHboDB4UwezfEP8X_7OfF2QfhfSKLmipXLRanpZY5YWSXw@mail.gmail.com>
+Subject: Re: [RFC v4] usb: phy: Hold wakeupsource when USB is enumerated in
+ peripheral mode
+From: Kiran Raparthy <kiran.kumar@linaro.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Todd Poynor <toddpoynor@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        =?UTF-8?B?QXJ2ZSBIau+/vW5uZXbvv71n?= <arve@android.com>,
+        Benoit Goby <benoit@android.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9D3gq61016743
 
-
-
-> -----Original Message-----
-> From: Alexandre Courbot [mailto:gnurou@gmail.com]
-> Sent: 09 October, 2014 2:29 PM
-> To: Chang, Rebecca Swee Fun
-> Cc: Linus Walleij; Westerberg, Mika; GPIO Subsystem Mailing List; Linux Kernel
-> Mailing List
-> Subject: Re: [PATCHv2 0/3] Enable Quark X1000 support in gpio-sch
-> 
-> On Fri, Sep 26, 2014 at 7:07 PM, Chang Rebecca Swee Fun
-> <rebecca.swee.fun.chang@intel.com> wrote:
-> > Hi,
-> >
-> > This is a revised version for gpio-sch.
-> >
-> > Change log for V2:
-> > Patch 1:
-> > - Move sch_gpio_get() and sch_gpio_set() to avoid forward declaration.
-> > - Changed sch_gpio_enable()/sch_gpio_disable() to sch_gpio_register_set()/
-> >   sch_gpio_register_clear().
-> >
-> > Patch 3:
-> > - Changed all sch_gpio_enable()/sch_gpio_disable() to
-> sch_gpio_register_set()/
-> >   sch_gpio_register_clear().
-> >
-> > Version 1:
-> > This patch series is about enabling legacy GPIO support for Quark X1000.
-> > The patches were developed on top of Mika Westerberg's commit on
-> > consolidating core and resume banks. Please refer to the link below
-> > for more information about his commit.
-> > https://lkml.org/lkml/2014/8/17/13
-> 
-> Sorry for the late review. I tried to apply the patch you mentioned above before
-> your series, and even Mika's patch won't apply on Linus'
-> devel branch or today's -next. This make it difficult to make a good review.
-> Could you rebase and resend this series once all its dependencies have been
-> merge by Linus W. ?
-
-Hi, I've noticed that Mika had sent a V2series on his work. Referring to his submission in: https://lkml.org/lkml/2014/9/16/213, this patch was able to patch on today's kernel tree. The patches on my series are able to patch in too. Do I need to resend since there is no changes on my side?
-
-Rebecca
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+On 10 October 2014 20:50, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
+>
+> On Fri, Oct 10, 2014 at 11:37:31AM +0530, Kiran Raparthy wrote:
+>> Hi Felipe,
+>> Thank you very much for taking time in reviewing the patch.
+>> I will try to improve the patch as per your suggestions.
+>> however,i have few queries which i wanted to understand from you.
+>
+> sure thing.
+>
+>> On 7 October 2014 19:55, Felipe Balbi <balbi@ti.com> wrote:
+>> >> +static int otg_wakeupsource_init(void)
+>> >> +{
+>> >> +     int ret_usb2;
+>> >> +     int ret_usb3;
+>> >> +     char wsource_name_usb2[40];
+>> >> +     char wsource_name_usb3[40];
+>> >> +     static struct usb_phy *otgws_xceiv_usb2;
+>> >> +     static struct usb_phy *otgws_xceiv_usb3;
+>> >> +
+>> >> +     otgws_xceiv_usb2 = usb_get_phy(USB_PHY_TYPE_USB2);
+>> >> +     otgws_xceiv_usb3 = usb_get_phy(USB_PHY_TYPE_USB3);
+>> >> +
+>> >> +     if (IS_ERR(otgws_xceiv_usb2) && IS_ERR(otgws_xceiv_usb3)) {
+>> >> +             pr_err("%s: No OTG transceiver found\n", __func__);
+>> >> +             return PTR_ERR(otgws_xceiv_usb2);
+>> >> +     }
+>> >> +
+>> >> +     spin_lock_init(&otgws_xceiv_usb2->otgws_slock);
+>> >> +     spin_lock_init(&otgws_xceiv_usb3->otgws_slock);
+>> >> +
+>> >> +     snprintf(wsource_name_usb2, sizeof(wsource_name_usb2), "vbus-%s",
+>> >> +             dev_name(otgws_xceiv_usb2->dev));
+>> >> +     wakeup_source_init(&otgws_xceiv_usb2->wsource, wsource_name_usb2);
+>> >> +
+>> >> +     snprintf(wsource_name_usb3, sizeof(wsource_name_usb3), "vbus-%s",
+>> >> +             dev_name(otgws_xceiv_usb3->dev));
+>> >> +     wakeup_source_init(&otgws_xceiv_usb3->wsource, wsource_name_usb3);
+>> >> +
+>> >> +     otgws_xceiv_usb2->otgws_nb.notifier_call = otgws_otg_usb2_notifications;
+>> >> +     ret_usb2 = usb_register_notifier(otgws_xceiv_usb2,
+>> >> +                                     &otgws_xceiv_usb2->otgws_nb);
+>> >> +
+>> >> +     otgws_xceiv_usb3->otgws_nb.notifier_call = otgws_otg_usb3_notifications;
+>> >> +     ret_usb3 = usb_register_notifier(otgws_xceiv_usb3,
+>> >> +                                     &otgws_xceiv_usb3->otgws_nb);
+>> >> +
+>> >> +     if (ret_usb2 && ret_usb3) {
+>> >> +             pr_err("%s: usb_register_notifier on transceiver failed\n",
+>> >> +                      __func__);
+>> >> +             wakeup_source_trash(&otgws_xceiv_usb2->wsource);
+>> >> +             wakeup_source_trash(&otgws_xceiv_usb3->wsource);
+>> >> +             otgws_xceiv_usb2 = NULL;
+>> >> +             otgws_xceiv_usb3 = NULL;
+>> >> +             return ret_usb2 | ret_usb3;
+>> >> +     }
+>> >> +
+>> >> +     return 0;
+>> >> +}
+>> >> +
+>> >> +late_initcall(otg_wakeupsource_init);
+>> >
+>> > you guys are really not getting what I mean. I asked for this to be
+>> > built into the core itself. This means that you shouldn't need to use
+>> > notifications nor should you need to call usb_get_phy(). You're part of
+>> > the PHY framework.
+>> >
+>> > All this late_initcall() nonsense should go.
+>> >
+>> > This code won't even work if we have more than one phy of the same type
+>> > (AM437x SoC, for example, has up to 4 instances of dwc3, so that's 4
+>> > USB2 PHYs), because you can't grab the PHY you want.
+>>
+>> Apologies,I am new to usb sub system,so i missed this point before i
+>> posted my patch,Thanks for the information.
+>
+> np.
+>
+>> > What you need is to:
+>> >
+>> > 1) make PHY notifiers generic (move all of that phy-core.c)
+>> From the above points,you mentioned that "if we built it into core,we
+>> shouldn't need to use notifications"
+>> and your first point here says that make phy notifiers generic in phy-core.c
+>> can you help me understanding it better so that there wont be any
+>> understanding gap.
+>
+> yeah, notifiers should go but if you really must use them, then at least
+> make all of that generic ;-)
+>
+>> > 2) introduce usb_phy_set_event(phy, event) (which just sets the even to a
+>> >         phy->event member for now)
+>> > 3) make all PHY drivers use usb_phy_set_event()
+>> > 4) add the following to usb_phy_set_event()
+>> >
+>> >         switch (event) {
+>> >         case USB_EVENT_ENUMERATED:
+>> >                 pm_stay_awake(&otgws_xceiv->wsource);
+>> >                 break;
+>> >
+>> >         case USB_EVENT_NONE:
+>> >         case USB_EVENT_VBUS:
+>> >         case USB_EVENT_ID:
+>> >         case USB_EVENT_CHARGER:
+>> >                 pm_wakeup_event(&otgws_xceiv->wsource,
+>> >                                 msecs_to_jiffies(TEMPORARY_HOLD_TIME));
+>> >                 break;
+>> >
+>> >         default:
+>> >                 break;
+>> >         }
+>> >
+>> Once the phy drivers receives per-PHY event notification(if we use
+>> notifier,else "for any event") we can call usb_phy_set_event from phy
+>> driver to hold the wakeup source.
+>> Please correct me if my understanding is incorrect.
+>
+> yeah. In fact, you can call usb_phy_set_event() directly from PHY's IRQ
+> handler.
+>
+>> I have gone through some phy drivers in drivers/phy,since the each
+>> driver implementation is different from others, i didn't get the best
+>> place in  PHY driver
+>> where we can trigger(use phy-core functionality) per-PHY notifier
+>> registration. any pointers here?
+>
+> registration ? probe(), they all have probe() functions. Now to figure
+> out where to call usb_phy_set_event(). That's something completely
+> different, and that's where the core of this change is :-)
+>
+> For PHYs which have IRQ lines, easy: just call usb_phy_set_event() from
+> IRQ handler. For those who don't, then it's a little more difficult and
+> will require your investigation.
+Thanks for your inputs.
+Regards,
+Kiran
+>
+> --
+> balbi
