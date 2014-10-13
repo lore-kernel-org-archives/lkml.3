@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820AbaJMCtC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:49:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45848 "EHLO
+	id S1754227AbaJMCto (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:49:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45830 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753958AbaJMC2A (ORCPT
+	with ESMTP id S1753899AbaJMC1u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:28:00 -0400
+	Sun, 12 Oct 2014 22:27:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Kubecek <mkubecek@suse.cz>,
+        Yuval Mintz <Yuval.Mintz@qlogic.com>,
+        Ariel Elior <Ariel.Elior@qlogic.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 17/55] net: fix checksum features handling in netif_skb_features()
-Date: Mon, 13 Oct 2014 04:24:31 +0200
-Message-Id: <20141013022444.468386141@linuxfoundation.org>
+Subject: [PATCH 3.16 13/55] bnx2x: Revert UNDI flushing mechanism
+Date: Mon, 13 Oct 2014 04:24:27 +0200
+Message-Id: <20141013022444.303364417@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
 References: <20141013022443.729870634@linuxfoundation.org>
@@ -29,54 +30,170 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Michal=20Kube=C4=8Dek?= <mkubecek@suse.cz>
+From: Yuval Mintz <Yuval.Mintz@qlogic.com>
 
-[ Upstream commit db115037bb57cdfe97078b13da762213f7980e81 ]
+[ Upstream commit 7c3afd85dc1610bb2fc049644cd1b52c7af96f98 ]
 
-This is follow-up to
+Commit 91ebb929b6f8 ("bnx2x: Add support for Multi-Function UNDI") [which was
+later supposedly fixed by de682941eef3 ("bnx2x: Fix UNDI driver unload")]
+introduced a bug in which in some [yet-to-be-determined] scenarios the
+alternative flushing mechanism which was to guarantee the Rx buffers are
+empty before resetting them during device probe will fail.
+If this happens, when device will be loaded once more a fatal attention will
+occur; Since this most likely happens in boot from SAN scenarios, the machine
+will fail to load.
 
-  da08143b8520 ("vlan: more careful checksum features handling")
+Notice this may occur not only in the 'Multi-Function' scenario but in the
+regular scenario as well, i.e., this introduced a regression in the driver's
+ability to perform boot from SAN.
 
-which introduced more careful feature intersection in vlan code,
-taking into account that HW_CSUM should be considered superset
-of IP_CSUM/IPV6_CSUM. The same is needed in netif_skb_features()
-in order to avoid offloading mismatch warning when vlan is
-created on top of a bond consisting of slaves supporting IP/IPv6
-checksumming but not vlan Tx offloading.
+The patch reverts the mechanism and applies the old scheme to multi-function
+devices as well as to single-function devices.
 
-Signed-off-by: Michal Kubecek <mkubecek@suse.cz>
+Signed-off-by: Yuval Mintz <Yuval.Mintz@qlogic.com>
+Signed-off-by: Ariel Elior <Ariel.Elior@qlogic.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/dev.c |   16 +++++++++++-----
- 1 file changed, 11 insertions(+), 5 deletions(-)
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c |   92 ++++-------------------
+ 1 file changed, 17 insertions(+), 75 deletions(-)
 
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2576,13 +2576,19 @@ netdev_features_t netif_skb_features(str
- 		return harmonize_features(skb, features);
- 	}
- 
--	features &= (skb->dev->vlan_features | NETIF_F_HW_VLAN_CTAG_TX |
--					       NETIF_F_HW_VLAN_STAG_TX);
-+	features = netdev_intersect_features(features,
-+					     skb->dev->vlan_features |
-+					     NETIF_F_HW_VLAN_CTAG_TX |
-+					     NETIF_F_HW_VLAN_STAG_TX);
- 
- 	if (protocol == htons(ETH_P_8021Q) || protocol == htons(ETH_P_8021AD))
--		features &= NETIF_F_SG | NETIF_F_HIGHDMA | NETIF_F_FRAGLIST |
--				NETIF_F_GEN_CSUM | NETIF_F_HW_VLAN_CTAG_TX |
--				NETIF_F_HW_VLAN_STAG_TX;
-+		features = netdev_intersect_features(features,
-+						     NETIF_F_SG |
-+						     NETIF_F_HIGHDMA |
-+						     NETIF_F_FRAGLIST |
-+						     NETIF_F_GEN_CSUM |
-+						     NETIF_F_HW_VLAN_CTAG_TX |
-+						     NETIF_F_HW_VLAN_STAG_TX);
- 
- 	return harmonize_features(skb, features);
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
+@@ -10044,6 +10044,8 @@ static void bnx2x_prev_unload_close_mac(
  }
+ 
+ #define BNX2X_PREV_UNDI_PROD_ADDR(p) (BAR_TSTRORM_INTMEM + 0x1508 + ((p) << 4))
++#define BNX2X_PREV_UNDI_PROD_ADDR_H(f) (BAR_TSTRORM_INTMEM + \
++					0x1848 + ((f) << 4))
+ #define BNX2X_PREV_UNDI_RCQ(val)	((val) & 0xffff)
+ #define BNX2X_PREV_UNDI_BD(val)		((val) >> 16 & 0xffff)
+ #define BNX2X_PREV_UNDI_PROD(rcq, bd)	((bd) << 16 | (rcq))
+@@ -10051,8 +10053,6 @@ static void bnx2x_prev_unload_close_mac(
+ #define BCM_5710_UNDI_FW_MF_MAJOR	(0x07)
+ #define BCM_5710_UNDI_FW_MF_MINOR	(0x08)
+ #define BCM_5710_UNDI_FW_MF_VERS	(0x05)
+-#define BNX2X_PREV_UNDI_MF_PORT(p) (BAR_TSTRORM_INTMEM + 0x150c + ((p) << 4))
+-#define BNX2X_PREV_UNDI_MF_FUNC(f) (BAR_TSTRORM_INTMEM + 0x184c + ((f) << 4))
+ 
+ static bool bnx2x_prev_is_after_undi(struct bnx2x *bp)
+ {
+@@ -10071,72 +10071,25 @@ static bool bnx2x_prev_is_after_undi(str
+ 	return false;
+ }
+ 
+-static bool bnx2x_prev_unload_undi_fw_supports_mf(struct bnx2x *bp)
+-{
+-	u8 major, minor, version;
+-	u32 fw;
+-
+-	/* Must check that FW is loaded */
+-	if (!(REG_RD(bp, MISC_REG_RESET_REG_1) &
+-	     MISC_REGISTERS_RESET_REG_1_RST_XSEM)) {
+-		BNX2X_DEV_INFO("XSEM is reset - UNDI MF FW is not loaded\n");
+-		return false;
+-	}
+-
+-	/* Read Currently loaded FW version */
+-	fw = REG_RD(bp, XSEM_REG_PRAM);
+-	major = fw & 0xff;
+-	minor = (fw >> 0x8) & 0xff;
+-	version = (fw >> 0x10) & 0xff;
+-	BNX2X_DEV_INFO("Loaded FW: 0x%08x: Major 0x%02x Minor 0x%02x Version 0x%02x\n",
+-		       fw, major, minor, version);
+-
+-	if (major > BCM_5710_UNDI_FW_MF_MAJOR)
+-		return true;
+-
+-	if ((major == BCM_5710_UNDI_FW_MF_MAJOR) &&
+-	    (minor > BCM_5710_UNDI_FW_MF_MINOR))
+-		return true;
+-
+-	if ((major == BCM_5710_UNDI_FW_MF_MAJOR) &&
+-	    (minor == BCM_5710_UNDI_FW_MF_MINOR) &&
+-	    (version >= BCM_5710_UNDI_FW_MF_VERS))
+-		return true;
+-
+-	return false;
+-}
+-
+-static void bnx2x_prev_unload_undi_mf(struct bnx2x *bp)
+-{
+-	int i;
+-
+-	/* Due to legacy (FW) code, the first function on each engine has a
+-	 * different offset macro from the rest of the functions.
+-	 * Setting this for all 8 functions is harmless regardless of whether
+-	 * this is actually a multi-function device.
+-	 */
+-	for (i = 0; i < 2; i++)
+-		REG_WR(bp, BNX2X_PREV_UNDI_MF_PORT(i), 1);
+-
+-	for (i = 2; i < 8; i++)
+-		REG_WR(bp, BNX2X_PREV_UNDI_MF_FUNC(i - 2), 1);
+-
+-	BNX2X_DEV_INFO("UNDI FW (MF) set to discard\n");
+-}
+-
+-static void bnx2x_prev_unload_undi_inc(struct bnx2x *bp, u8 port, u8 inc)
++static void bnx2x_prev_unload_undi_inc(struct bnx2x *bp, u8 inc)
+ {
+ 	u16 rcq, bd;
+-	u32 tmp_reg = REG_RD(bp, BNX2X_PREV_UNDI_PROD_ADDR(port));
++	u32 addr, tmp_reg;
++
++	if (BP_FUNC(bp) < 2)
++		addr = BNX2X_PREV_UNDI_PROD_ADDR(BP_PORT(bp));
++	else
++		addr = BNX2X_PREV_UNDI_PROD_ADDR_H(BP_FUNC(bp) - 2);
+ 
++	tmp_reg = REG_RD(bp, addr);
+ 	rcq = BNX2X_PREV_UNDI_RCQ(tmp_reg) + inc;
+ 	bd = BNX2X_PREV_UNDI_BD(tmp_reg) + inc;
+ 
+ 	tmp_reg = BNX2X_PREV_UNDI_PROD(rcq, bd);
+-	REG_WR(bp, BNX2X_PREV_UNDI_PROD_ADDR(port), tmp_reg);
++	REG_WR(bp, addr, tmp_reg);
+ 
+-	BNX2X_DEV_INFO("UNDI producer [%d] rings bd -> 0x%04x, rcq -> 0x%04x\n",
+-		       port, bd, rcq);
++	BNX2X_DEV_INFO("UNDI producer [%d/%d][%08x] rings bd -> 0x%04x, rcq -> 0x%04x\n",
++		       BP_PORT(bp), BP_FUNC(bp), addr, bd, rcq);
+ }
+ 
+ static int bnx2x_prev_mcp_done(struct bnx2x *bp)
+@@ -10375,7 +10328,6 @@ static int bnx2x_prev_unload_common(stru
+ 	/* Reset should be performed after BRB is emptied */
+ 	if (reset_reg & MISC_REGISTERS_RESET_REG_1_RST_BRB1) {
+ 		u32 timer_count = 1000;
+-		bool need_write = true;
+ 
+ 		/* Close the MAC Rx to prevent BRB from filling up */
+ 		bnx2x_prev_unload_close_mac(bp, &mac_vals);
+@@ -10412,20 +10364,10 @@ static int bnx2x_prev_unload_common(stru
+ 			else
+ 				timer_count--;
+ 
+-			/* New UNDI FW supports MF and contains better
+-			 * cleaning methods - might be redundant but harmless.
+-			 */
+-			if (bnx2x_prev_unload_undi_fw_supports_mf(bp)) {
+-				if (need_write) {
+-					bnx2x_prev_unload_undi_mf(bp);
+-					need_write = false;
+-				}
+-			} else if (prev_undi) {
+-				/* If UNDI resides in memory,
+-				 * manually increment it
+-				 */
+-				bnx2x_prev_unload_undi_inc(bp, BP_PORT(bp), 1);
+-			}
++			/* If UNDI resides in memory, manually increment it */
++			if (prev_undi)
++				bnx2x_prev_unload_undi_inc(bp, 1);
++
+ 			udelay(10);
+ 		}
+ 
 
 
