@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754257AbaJMPnT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 11:43:19 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:39242 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753994AbaJMPnS (ORCPT
+	id S1754350AbaJMPnj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 11:43:39 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:35167 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753855AbaJMPnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 11:43:18 -0400
+	Mon, 13 Oct 2014 11:43:37 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 162.217.72.251
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19TAdbb3+9XM9jjYEpGGHXW
+Date: Mon, 13 Oct 2014 08:42:19 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: He YunLei <heyunlei@huawei.com>
+Cc: linux-kernel@vger.kernel.org, grant.likely@linaro.org, robh+dt@kernel.org,
+        wangbintian@huawei.com, liguozhu@hisilicon.com,
+        kong.kongxinwei@hisilicon.com, linux-omap@vger.kernel.org
+Subject: Re: [RFC PATCH] pinctrl: pinctrl-single.c:  init pinctrl single at
+ arch_initcall time
+Message-ID: <20141013154218.GA5192@atomide.com>
+References: <542934F4.10303@huawei.com>
+ <20140929175427.GE3122@atomide.com>
+ <54349671.6090008@huawei.com>
+ <20141008181027.GE10014@atomide.com>
+ <5438F1F6.4080300@huawei.com>
 MIME-Version: 1.0
-In-Reply-To: <20141013095310.GZ14343@console-pimps.org>
-References: <CAGBcZGfHX57jwCfw7CnvLgOJ58kd0KVJULOvhAsfi=3YBp5WsQ@mail.gmail.com>
-	<20141013095310.GZ14343@console-pimps.org>
-Date: Mon, 13 Oct 2014 18:43:16 +0300
-Message-ID: <CAGBcZGe=HszCxQyx8bBDUEQcF4g+gcMyLfGiM4dVz4=TfxvLpg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] efi: Capsule update support
-From: Sam Protsenko <semen.protsenko@linaro.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Matt Fleming <matt.fleming@intel.com>,
-        Leif Lindholm <leif.lindholm@linaro.org>, hock.leong.kweh@intel.com,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5438F1F6.4080300@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> When I originally wrote this patch in 2013 arm64 support didn't exist,
-> and ia64 isn't going to be using capsule support. I can separate that
-> out into a separate patch though, no problem.
+* He YunLei <heyunlei@huawei.com> [141011 02:03]:
+> On 2014/10/9 2:10, Tony Lindgren wrote:
+> >* He YunLei <heyunlei@huawei.com> [141007 18:43]:
+> >>
+> >>Thanks for your review and I am really appreciated it, but in our arm
+> >>platform, we haven't custom initcall levels for other drivers. Although
+> >>deferred probe helps other drivers to register well, we are also confused
+> >>for the issues of lots of pin request errors debug output while booting the
+> >>kernel. Besides, if the number is bigger than the limited number, whether
+> >>deferred probe can solve this problem.
+> >
+> >OK. Care to provide some examples where this happens on your
+> >platform?
+> >
+> >Note that we already have pinctrl very early in drivers/Makefile.
+> >What are the early users for pinctrl-single in your setup?
+> >
+> >Regards,
+> >
+> >Tony
+> >
+> >.
+> >
+> In our platform we use subsys_initcall in I2C, and fs_initcall in PMIC, Both
+> of them are early than pinctrl-single. Although they register well
+> with the aid of deferred probe, it's really confused us that pins request
+> deferred. Why can't we setup pinctrl-single earlier to reduce these
+> messages.
 
-For me it's just the matter of good VCS practices. In this case I call
-this "patch atomicity" (one patch per feature). It's not about your
-patch particularly, it's just policy. In the end it boils down to next
-two things:
- 1. Separating common code from platform code makes it easier to use
-"git bisect" in case of regressions.
- 2. This way if we want to revert patch, we can revert only stuff we
-want, not touching another part (e.g. you want to revert platform
-code, you can keep common code in place).
+How about make the I2C controller just regular module_init?
 
-> Next time, could you please quote the part of the patch you're
-> commenting on inline? That would have saved me searching through the
-> original email.
+We're planning to do that for omaps as soon as we have made omap3
+DT only as we still have some board-*.c files.
 
-Sure, my bad. I know it's general approach in mailing lists to review
-patch, just forgot it.
+Presumably your PMIC is also on I2C and you need the PMIC for
+regulators?
 
+In that case you can just make the PMICinit normal module_init too.
 
-On 13 October 2014 12:53, Matt Fleming <matt@console-pimps.org> wrote:
-> On Fri, 10 Oct, at 06:55:49PM, Sam Protsenko wrote:
->> Hi Matt,
->>
->> 1. Why x86 code isn't separated to another patch?
->
-> When I originally wrote this patch in 2013 arm64 support didn't exist,
-> and ia64 isn't going to be using capsule support. I can separate that
-> out into a separate patch though, no problem.
->
->> 2. drivers/firmware/efi/reboot.c: efi_reboot():
->>     One shouldn't use "printk()" with no KERN_* stuff passed into it.
->> I'd recommend to use "pr_info()" macro or something like that.
->
-> Oops, I missed that, good catch.
->
-> Next time, could you please quote the part of the patch you're
-> commenting on inline? That would have saved me searching through the
-> original email.
->
-> --
-> Matt Fleming, Intel Open Source Technology Center
+Regards,
+
+Tony
