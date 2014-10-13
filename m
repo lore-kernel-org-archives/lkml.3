@@ -1,82 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443AbaJMLOD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 07:14:03 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:40934 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752204AbaJMLOA (ORCPT
+	id S1753587AbaJMLO4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 07:14:56 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:51321 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753287AbaJMLOz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 07:14:00 -0400
-Message-ID: <543BB3CD.7040001@ti.com>
-Date: Mon, 13 Oct 2014 14:13:17 +0300
-From: Grygorii Strashko <grygorii.strashko@ti.com>
+	Mon, 13 Oct 2014 07:14:55 -0400
+Message-ID: <543BB42B.30505@6wind.com>
+Date: Mon, 13 Oct 2014 13:14:51 +0200
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Reply-To: nicolas.dichtel@6wind.com
+Organization: 6WIND
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-To: Kevin Hilman <khilman@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kevin Hilman <khilman@linaro.org>
-CC: Geert Uytterhoeven <geert+renesas@glider.be>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, <grant.likely@secretlab.ca>,
-        <ulf.hansson@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v1 2/4] ARM: keystone: pm: switch to use generic pm domains
-References: <1412001499-19369-1-git-send-email-grygorii.strashko@ti.com>	<1412001499-19369-3-git-send-email-grygorii.strashko@ti.com> <CAMAWPa-sKGu_o0CDLCk_uKofxwOjXiiFBedjEP=OhQFmo+ehCA@mail.gmail.com>
-In-Reply-To: <CAMAWPa-sKGu_o0CDLCk_uKofxwOjXiiFBedjEP=OhQFmo+ehCA@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+CC: davem@davemloft.net, ebiederm@xmission.com, akpm@linux-foundation.org,
+        adobriyan@gmail.com, rui.xiang@huawei.com, viro@zeniv.linux.org.uk,
+        oleg@redhat.com, gorcunov@openvz.org, kirill.shutemov@linux.intel.com,
+        grant.likely@secretlab.ca, tytso@mit.edu,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH linux v3 1/1] fs/proc: use a rb tree for the directory
+ entries
+References: <20141006.181448.1696747135961247651.davem@davemloft.net> <1412672559-5256-1-git-send-email-nicolas.dichtel@6wind.com> <1412672559-5256-2-git-send-email-nicolas.dichtel@6wind.com>
+In-Reply-To: <1412672559-5256-2-git-send-email-nicolas.dichtel@6wind.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/2014 03:56 PM, Kevin Hilman wrote:
-> Hi Grygorii,
+Le 07/10/2014 11:02, Nicolas Dichtel a écrit :
+> The current implementation for the directories in /proc is using a single
+> linked list. This is slow when handling directories with large numbers of
+> entries (eg netdevice-related entries when lots of tunnels are opened).
 >
-> On 9/29/14 7:38 AM, Grygorii Strashko wrote:
->> This patch switches Keystone 2 PM code to use Generic PM domains
->> instead of PM clock domains because of the lack of DT support
->> for the last.
->>
->> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> This patch replaces this linked list by a red-black tree.
 >
-> IMO, this approach is much better.
+> Here are some numbers:
 >
-> One minor nit below...
+> dummy30000.batch contains 30 000 times 'link add type dummy'.
 >
->> diff --git a/arch/arm/mach-keystone/pm_domain.c b/arch/arm/mach-keystone/pm_domain.c
->> index ca79dda..3eb5257 100644
->> --- a/arch/arm/mach-keystone/pm_domain.c
->> +++ b/arch/arm/mach-keystone/pm_domain.c
->> @@ -12,69 +12,110 @@
->>    * version 2, as published by the Free Software Foundation.
->>    */
->>
->> +#include <linux/clk.h>
->>   #include <linux/init.h>
->> -#include <linux/pm_runtime.h>
->>   #include <linux/pm_clock.h>
->> +#include <linux/pm_domain.h>
->>   #include <linux/platform_device.h>
->> -#include <linux/clk-provider.h>
->>   #include <linux/of.h>
->>
->> -#ifdef CONFIG_PM_RUNTIME
->> -static int keystone_pm_runtime_suspend(struct device *dev)
->> +#ifdef CONFIG_PM_GENERIC_DOMAINS
->> +
->> +struct keystone_domain {
->> + struct generic_pm_domain base;
->> + struct device *dev;
->> +};
+> Before the patch:
+> $ time ip -b dummy30000.batch
+> real	2m31.950s
+> user	0m0.440s
+> sys	2m21.440s
+> $ time rmmod dummy
+> real	1m35.764s
+> user	0m0.000s
+> sys	1m24.088s
 >
-> I think the name 'base' for this field leads to confusion later in the
-> code, since base usually means something else in drivers.  How about
-> 'genpd'?
+> After the patch:
+> $ time ip -b dummy30000.batch
+> real	2m0.874s
+> user	0m0.448s
+> sys	1m49.720s
+> $ time rmmod dummy
+> real	1m13.988s
+> user	0m0.000s
+> sys	1m1.008s
+>
+> The idea of improving this part was suggested by
+> Thierry Herbelot <thierry.herbelot@6wind.com>.
+>
+> Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+> Acked-by: David S. Miller <davem@davemloft.net>
+> ---
 
-Agree. I'll change it.
+I'm not sure who is in charge of taking this patch. Should I resend it to
+someone else or is it already included in a tree?
 
-Thanks for your comments.
 
-Regards,
--grygorii
+Thank you,
+Nicolas
