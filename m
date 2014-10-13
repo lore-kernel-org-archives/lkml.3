@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754906AbaJMCax (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:30:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46243 "EHLO
+	id S1753418AbaJMCbA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:31:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46250 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754794AbaJMCau (ORCPT
+	with ESMTP id S1754909AbaJMCaz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:30:50 -0400
+	Sun, 12 Oct 2014 22:30:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Gerlach <d-gerlach@ti.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.17 21/25] usb: musb: dsps: kill OTG timer on suspend
-Date: Mon, 13 Oct 2014 04:25:14 +0200
-Message-Id: <20141013022455.193561947@linuxfoundation.org>
+        Cristian Stoica <cristian.stoica@freescale.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.17 23/25] crypto: caam - fix addressing of struct member
+Date: Mon, 13 Oct 2014 04:25:16 +0200
+Message-Id: <20141013022455.273569465@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022454.289398272@linuxfoundation.org>
 References: <20141013022454.289398272@linuxfoundation.org>
@@ -28,44 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Balbi <balbi@ti.com>
+From: Cristian Stoica <cristian.stoica@freescale.com>
 
-commit 468bcc2a2ca071f652009d2d20d97f2437630cae upstream.
+commit 4451d494b1910bf7b7f8381a637d0fe6d2142467 upstream.
 
-if we don't make sure to kill the timer, it could
-expire after we have already gated our clocks.
+buf_0 and buf_1 in caam_hash_state are not next to each other.
+Accessing buf_1 is incorrect from &buf_0 with an offset of only
+size_of(buf_0). The same issue is also with buflen_0 and buflen_1
 
-That will trigger a Data Abort exception because
-we would try to access register while clock is gated.
-
-Fix that bug.
-
-Fixes 869c597 (usb: musb: dsps: add support for suspend and resume)
-Tested-by: Dave Gerlach <d-gerlach@ti.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Cristian Stoica <cristian.stoica@freescale.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/musb/musb_dsps.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/crypto/caam/caamhash.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/musb/musb_dsps.c
-+++ b/drivers/usb/musb/musb_dsps.c
-@@ -870,6 +870,7 @@ static int dsps_suspend(struct device *d
- 	struct musb *musb = platform_get_drvdata(glue->musb);
- 	void __iomem *mbase = musb->ctrl_base;
- 
-+	del_timer_sync(&glue->timer);
- 	glue->context.control = dsps_readl(mbase, wrp->control);
- 	glue->context.epintr = dsps_readl(mbase, wrp->epintr_set);
- 	glue->context.coreintr = dsps_readl(mbase, wrp->coreintr_set);
-@@ -895,6 +896,7 @@ static int dsps_resume(struct device *de
- 	dsps_writel(mbase, wrp->mode, glue->context.mode);
- 	dsps_writel(mbase, wrp->tx_mode, glue->context.tx_mode);
- 	dsps_writel(mbase, wrp->rx_mode, glue->context.rx_mode);
-+	setup_timer(&glue->timer, otg_timer, (unsigned long) musb);
- 
- 	return 0;
- }
+--- a/drivers/crypto/caam/caamhash.c
++++ b/drivers/crypto/caam/caamhash.c
+@@ -1413,9 +1413,9 @@ static int ahash_update_first(struct aha
+ 	struct device *jrdev = ctx->jrdev;
+ 	gfp_t flags = (req->base.flags & (CRYPTO_TFM_REQ_MAY_BACKLOG |
+ 		       CRYPTO_TFM_REQ_MAY_SLEEP)) ? GFP_KERNEL : GFP_ATOMIC;
+-	u8 *next_buf = state->buf_0 + state->current_buf *
+-		       CAAM_MAX_HASH_BLOCK_SIZE;
+-	int *next_buflen = &state->buflen_0 + state->current_buf;
++	u8 *next_buf = state->current_buf ? state->buf_1 : state->buf_0;
++	int *next_buflen = state->current_buf ?
++		&state->buflen_1 : &state->buflen_0;
+ 	int to_hash;
+ 	u32 *sh_desc = ctx->sh_desc_update_first, *desc;
+ 	dma_addr_t ptr = ctx->sh_desc_update_first_dma;
 
 
