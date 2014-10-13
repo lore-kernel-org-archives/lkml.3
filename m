@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755411AbaJMCyb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:54:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45732 "EHLO
+	id S1755417AbaJMCyz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:54:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45726 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753618AbaJMC0z (ORCPT
+	with ESMTP id S1752884AbaJMC0x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:26:55 -0400
+	Sun, 12 Oct 2014 22:26:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Neal Cardwell <ncardwell@google.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Shmulik Ladkani <shmulik.ladkani@gmail.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 08/37] tcp: fix tcp_release_cb() to dispatch via address family for mtu_reduced()
-Date: Mon, 13 Oct 2014 04:24:05 +0200
-Message-Id: <20141013022400.648720081@linuxfoundation.org>
+Subject: [PATCH 3.14 07/37] sit: Fix ipip6_tunnel_lookup device matching criteria
+Date: Mon, 13 Oct 2014 04:24:04 +0200
+Message-Id: <20141013022400.604067609@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022400.286360067@linuxfoundation.org>
 References: <20141013022400.286360067@linuxfoundation.org>
@@ -31,134 +30,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neal Cardwell <ncardwell@google.com>
+From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
 
-[ Upstream commit 4fab9071950c2021d846e18351e0f46a1cffd67b ]
+[ Upstream commit bc8fc7b8f825ef17a0fb9e68c18ce94fa66ab337 ]
 
-Make sure we use the correct address-family-specific function for
-handling MTU reductions from within tcp_release_cb().
+As of 4fddbf5d78 ("sit: strictly restrict incoming traffic to tunnel link device"),
+when looking up a tunnel, tunnel's underlying interface (t->parms.link)
+is verified to match incoming traffic's ingress device.
 
-Previously AF_INET6 sockets were incorrectly always using the IPv6
-code path when sometimes they were handling IPv4 traffic and thus had
-an IPv4 dst.
+However the comparison was incorrectly based on skb->dev->iflink.
 
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Diagnosed-by: Willem de Bruijn <willemb@google.com>
-Fixes: 563d34d057862 ("tcp: dont drop MTU reduction indications")
-Reviewed-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Instead, dev->ifindex should be used, which correctly represents the
+interface from which the IP stack hands the ipip6 packets.
+
+This allows setting up sit tunnels bound to vlan interfaces (otherwise
+incoming ipip6 traffic on the vlan interface was dropped due to
+ipip6_tunnel_lookup match failure).
+
+Signed-off-by: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+Acked-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/inet_connection_sock.h |    1 +
- include/net/sock.h                 |    1 -
- include/net/tcp.h                  |    1 +
- net/ipv4/tcp_ipv4.c                |    5 +++--
- net/ipv4/tcp_output.c              |    2 +-
- net/ipv6/tcp_ipv6.c                |    3 ++-
- 6 files changed, 8 insertions(+), 5 deletions(-)
+ net/ipv6/sit.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/include/net/inet_connection_sock.h
-+++ b/include/net/inet_connection_sock.h
-@@ -62,6 +62,7 @@ struct inet_connection_sock_af_ops {
- 	void	    (*addr2sockaddr)(struct sock *sk, struct sockaddr *);
- 	int	    (*bind_conflict)(const struct sock *sk,
- 				     const struct inet_bind_bucket *tb, bool relax);
-+	void	    (*mtu_reduced)(struct sock *sk);
- };
- 
- /** inet_connection_sock - INET connection oriented sock
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -969,7 +969,6 @@ struct proto {
- 						struct sk_buff *skb);
- 
- 	void		(*release_cb)(struct sock *sk);
--	void		(*mtu_reduced)(struct sock *sk);
- 
- 	/* Keeping track of sk's, looking them up, and port selection methods. */
- 	void			(*hash)(struct sock *sk);
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -453,6 +453,7 @@ const u8 *tcp_parse_md5sig_option(const
-  */
- 
- void tcp_v4_send_check(struct sock *sk, struct sk_buff *skb);
-+void tcp_v4_mtu_reduced(struct sock *sk);
- int tcp_v4_conn_request(struct sock *sk, struct sk_buff *skb);
- struct sock *tcp_create_openreq_child(struct sock *sk,
- 				      struct request_sock *req,
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -269,7 +269,7 @@ EXPORT_SYMBOL(tcp_v4_connect);
-  * It can be called through tcp_release_cb() if socket was owned by user
-  * at the time tcp_v4_err() was called to handle ICMP message.
-  */
--static void tcp_v4_mtu_reduced(struct sock *sk)
-+void tcp_v4_mtu_reduced(struct sock *sk)
- {
- 	struct dst_entry *dst;
- 	struct inet_sock *inet = inet_sk(sk);
-@@ -300,6 +300,7 @@ static void tcp_v4_mtu_reduced(struct so
- 		tcp_simple_retransmit(sk);
- 	} /* else let the usual retransmit timer handle it */
- }
-+EXPORT_SYMBOL(tcp_v4_mtu_reduced);
- 
- static void do_redirect(struct sk_buff *skb, struct sock *sk)
- {
-@@ -2117,6 +2118,7 @@ const struct inet_connection_sock_af_ops
- 	.compat_setsockopt = compat_ip_setsockopt,
- 	.compat_getsockopt = compat_ip_getsockopt,
- #endif
-+	.mtu_reduced	   = tcp_v4_mtu_reduced,
- };
- EXPORT_SYMBOL(ipv4_specific);
- 
-@@ -2736,7 +2738,6 @@ struct proto tcp_prot = {
- 	.sendpage		= tcp_sendpage,
- 	.backlog_rcv		= tcp_v4_do_rcv,
- 	.release_cb		= tcp_release_cb,
--	.mtu_reduced		= tcp_v4_mtu_reduced,
- 	.hash			= inet_hash,
- 	.unhash			= inet_unhash,
- 	.get_port		= inet_csk_get_port,
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -787,7 +787,7 @@ void tcp_release_cb(struct sock *sk)
- 		__sock_put(sk);
+--- a/net/ipv6/sit.c
++++ b/net/ipv6/sit.c
+@@ -101,19 +101,19 @@ static struct ip_tunnel *ipip6_tunnel_lo
+ 	for_each_ip_tunnel_rcu(t, sitn->tunnels_r_l[h0 ^ h1]) {
+ 		if (local == t->parms.iph.saddr &&
+ 		    remote == t->parms.iph.daddr &&
+-		    (!dev || !t->parms.link || dev->iflink == t->parms.link) &&
++		    (!dev || !t->parms.link || dev->ifindex == t->parms.link) &&
+ 		    (t->dev->flags & IFF_UP))
+ 			return t;
  	}
- 	if (flags & (1UL << TCP_MTU_REDUCED_DEFERRED)) {
--		sk->sk_prot->mtu_reduced(sk);
-+		inet_csk(sk)->icsk_af_ops->mtu_reduced(sk);
- 		__sock_put(sk);
+ 	for_each_ip_tunnel_rcu(t, sitn->tunnels_r[h0]) {
+ 		if (remote == t->parms.iph.daddr &&
+-		    (!dev || !t->parms.link || dev->iflink == t->parms.link) &&
++		    (!dev || !t->parms.link || dev->ifindex == t->parms.link) &&
+ 		    (t->dev->flags & IFF_UP))
+ 			return t;
  	}
- }
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -1668,6 +1668,7 @@ static const struct inet_connection_sock
- 	.compat_setsockopt = compat_ipv6_setsockopt,
- 	.compat_getsockopt = compat_ipv6_getsockopt,
- #endif
-+	.mtu_reduced	   = tcp_v6_mtu_reduced,
- };
- 
- #ifdef CONFIG_TCP_MD5SIG
-@@ -1699,6 +1700,7 @@ static const struct inet_connection_sock
- 	.compat_setsockopt = compat_ipv6_setsockopt,
- 	.compat_getsockopt = compat_ipv6_getsockopt,
- #endif
-+	.mtu_reduced	   = tcp_v4_mtu_reduced,
- };
- 
- #ifdef CONFIG_TCP_MD5SIG
-@@ -1935,7 +1937,6 @@ struct proto tcpv6_prot = {
- 	.sendpage		= tcp_sendpage,
- 	.backlog_rcv		= tcp_v6_do_rcv,
- 	.release_cb		= tcp_release_cb,
--	.mtu_reduced		= tcp_v6_mtu_reduced,
- 	.hash			= tcp_v6_hash,
- 	.unhash			= inet_unhash,
- 	.get_port		= inet_csk_get_port,
+ 	for_each_ip_tunnel_rcu(t, sitn->tunnels_l[h1]) {
+ 		if (local == t->parms.iph.saddr &&
+-		    (!dev || !t->parms.link || dev->iflink == t->parms.link) &&
++		    (!dev || !t->parms.link || dev->ifindex == t->parms.link) &&
+ 		    (t->dev->flags & IFF_UP))
+ 			return t;
+ 	}
 
 
