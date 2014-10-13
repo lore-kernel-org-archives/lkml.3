@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754889AbaJMCiY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:38:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46050 "EHLO
+	id S1754927AbaJMCir (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:38:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46046 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754560AbaJMC3r (ORCPT
+	with ESMTP id S1754521AbaJMC3p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:29:47 -0400
+	Sun, 12 Oct 2014 22:29:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lu Baolu <baolu.lu@linux.intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 3.16 49/55] USB: Add device quirk for ASUS T100 Base Station keyboard
-Date: Mon, 13 Oct 2014 04:25:03 +0200
-Message-Id: <20141013022446.069482797@linuxfoundation.org>
+        Hans de Goede <hdegoede@redhat.com>
+Subject: [PATCH 3.16 48/55] uas: Add another ASM1051 usb-id to the uas blacklist
+Date: Mon, 13 Oct 2014 04:25:02 +0200
+Message-Id: <20141013022445.989734854@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
 References: <20141013022443.729870634@linuxfoundation.org>
@@ -29,68 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lu Baolu <baolu.lu@linux.intel.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit ddbe1fca0bcb87ca8c199ea873a456ca8a948567 upstream.
+commit 710f1bf16ab1b1558f099b62c5011c4cbba6a7bb upstream.
 
-This full-speed USB device generates spurious remote wakeup event
-as soon as USB_DEVICE_REMOTE_WAKEUP feature is set. As the result,
-Linux can't enter system suspend and S0ix power saving modes once
-this keyboard is used.
+As most ASM1051 based devices, this one has unfixable issues with uas too.
 
-This patch tries to introduce USB_QUIRK_IGNORE_REMOTE_WAKEUP quirk.
-With this quirk set, wakeup capability will be ignored during
-device configure.
-
-This patch could be back-ported to kernels as old as 2.6.39.
-
-Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c     |    6 ++++--
- drivers/usb/core/quirks.c  |    4 ++++
- include/linux/usb/quirks.h |    3 +++
- 3 files changed, 11 insertions(+), 2 deletions(-)
+ drivers/usb/storage/unusual_uas.h |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1983,8 +1983,10 @@ void usb_set_device_state(struct usb_dev
- 					|| new_state == USB_STATE_SUSPENDED)
- 				;	/* No change to wakeup settings */
- 			else if (new_state == USB_STATE_CONFIGURED)
--				wakeup = udev->actconfig->desc.bmAttributes
--					 & USB_CONFIG_ATT_WAKEUP;
-+				wakeup = (udev->quirks &
-+					USB_QUIRK_IGNORE_REMOTE_WAKEUP) ? 0 :
-+					udev->actconfig->desc.bmAttributes &
-+					USB_CONFIG_ATT_WAKEUP;
- 			else
- 				wakeup = 0;
- 		}
---- a/drivers/usb/core/quirks.c
-+++ b/drivers/usb/core/quirks.c
-@@ -160,6 +160,10 @@ static const struct usb_device_id usb_in
- 	{ USB_VENDOR_AND_INTERFACE_INFO(0x046d, USB_CLASS_VIDEO, 1, 0),
- 	  .driver_info = USB_QUIRK_RESET_RESUME },
- 
-+	/* ASUS Base Station(T100) */
-+	{ USB_DEVICE(0x0b05, 0x17e0), .driver_info =
-+			USB_QUIRK_IGNORE_REMOTE_WAKEUP },
+--- a/drivers/usb/storage/unusual_uas.h
++++ b/drivers/usb/storage/unusual_uas.h
+@@ -67,3 +67,11 @@ UNUSUAL_DEV(0x152d, 0x0567, 0x0000, 0x99
+ 		"JMS567",
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_NO_REPORT_OPCODES),
 +
- 	{ }  /* terminating entry must be last */
- };
- 
---- a/include/linux/usb/quirks.h
-+++ b/include/linux/usb/quirks.h
-@@ -30,4 +30,7 @@
-    descriptor */
- #define USB_QUIRK_DELAY_INIT		0x00000040
- 
-+/* device generates spurious wakeup, ignore remote wakeup capability */
-+#define USB_QUIRK_IGNORE_REMOTE_WAKEUP	0x00000200
-+
- #endif /* __LINUX_USB_QUIRKS_H */
++/* Most ASM1051 based devices have issues with uas, blacklist them all */
++/* Reported-by: Hans de Goede <hdegoede@redhat.com> */
++UNUSUAL_DEV(0x174c, 0x5106, 0x0000, 0x9999,
++		"ASMedia",
++		"ASM1051",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_IGNORE_UAS),
 
 
