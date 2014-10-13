@@ -1,70 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754177AbaJMNK2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 09:10:28 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50669 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754083AbaJMNJi (ORCPT
+	id S1754216AbaJMNLD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 09:11:03 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:37765 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753823AbaJMNLA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 09:09:38 -0400
-Date: Mon, 13 Oct 2014 15:09:18 +0200
-From: Mark Brown <broonie@kernel.org>
-To: Kiran Padwal <kiran.padwal@smartplayin.com>
-Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Message-ID: <20141013130918.GY27755@sirena.org.uk>
-References: <1412840528-31508-1-git-send-email-kiran.padwal@smartplayin.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4ds4tGy7aNC8MgBu"
-Content-Disposition: inline
-In-Reply-To: <1412840528-31508-1-git-send-email-kiran.padwal@smartplayin.com>
-X-Cookie: You are magnetic in your bearing.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 62.156.150.204
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 3/3] spi: qup: Remove .owner field for driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 13 Oct 2014 09:11:00 -0400
+From: Antonios Motakis <a.motakis@virtualopensystems.com>
+To: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
+        alex.williamson@redhat.com
+Cc: will.deacon@arm.com, tech@virtualopensystems.com,
+        christoffer.dall@linaro.org, eric.auger@linaro.org,
+        kim.phillips@freescale.com, marc.zyngier@arm.com,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        linux-kernel@vger.kernel.org (open list),
+        kvm@vger.kernel.org (open list:VFIO DRIVER)
+Subject: [PATCH v8 01/18] vfio/platform: initial skeleton of VFIO support for platform devices
+Date: Mon, 13 Oct 2014 15:10:08 +0200
+Message-Id: <1413205825-6370-2-git-send-email-a.motakis@virtualopensystems.com>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1413205825-6370-1-git-send-email-a.motakis@virtualopensystems.com>
+References: <1413205825-6370-1-git-send-email-a.motakis@virtualopensystems.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch forms the common skeleton code for platform devices support
+with VFIO. This will include the core functionality of VFIO_PLATFORM,
+however binding to the device and discovering the device resources will
+be done with the help of a separate file where any Linux platform bus
+specific code will reside.
 
---4ds4tGy7aNC8MgBu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This will allow us to implement support for also discovering AMBA devices
+and their resources, but still reuse a large part of the VFIO_PLATFORM
+implementation.
 
-On Thu, Oct 09, 2014 at 01:12:08PM +0530, Kiran Padwal wrote:
-> There is no need to init .owner field.
->=20
-> Based on the patch from Peter Griffin <peter.griffin@linaro.org>
-> "mmc: remove .owner field for drivers using module_platform_driver"
->=20
-> This patch removes the superfluous .owner field for drivers which
-> use the module_platform_driver API, as this is overridden in
-> platform_driver_register anyway."
+Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+---
+ drivers/vfio/platform/vfio_platform_common.c  | 129 ++++++++++++++++++++++++++
+ drivers/vfio/platform/vfio_platform_private.h |  35 +++++++
+ 2 files changed, 164 insertions(+)
+ create mode 100644 drivers/vfio/platform/vfio_platform_common.c
+ create mode 100644 drivers/vfio/platform/vfio_platform_private.h
 
-Two problems:
- - I'm missing patches 1 and 2.
- - This only changes one driver but essentially every SPI driver
-   initializes .owner - why is only thi sone driver being changed?
+diff --git a/drivers/vfio/platform/vfio_platform_common.c b/drivers/vfio/platform/vfio_platform_common.c
+new file mode 100644
+index 0000000..13808d0
+--- /dev/null
++++ b/drivers/vfio/platform/vfio_platform_common.c
+@@ -0,0 +1,129 @@
++/*
++ * Copyright (C) 2013 - Virtual Open Systems
++ * Author: Antonios Motakis <a.motakis@virtualopensystems.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License, version 2, as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/device.h>
++#include <linux/interrupt.h>
++#include <linux/iommu.h>
++#include <linux/module.h>
++#include <linux/mutex.h>
++#include <linux/notifier.h>
++#include <linux/pm_runtime.h>
++#include <linux/slab.h>
++#include <linux/types.h>
++#include <linux/uaccess.h>
++#include <linux/vfio.h>
++#include <linux/io.h>
++
++#include "vfio_platform_private.h"
++
++static void vfio_platform_release(void *device_data)
++{
++	module_put(THIS_MODULE);
++}
++
++static int vfio_platform_open(void *device_data)
++{
++	if (!try_module_get(THIS_MODULE))
++		return -ENODEV;
++
++	return 0;
++}
++
++static long vfio_platform_ioctl(void *device_data,
++			   unsigned int cmd, unsigned long arg)
++{
++	if (cmd == VFIO_DEVICE_GET_INFO)
++		return -EINVAL;
++
++	else if (cmd == VFIO_DEVICE_GET_REGION_INFO)
++		return -EINVAL;
++
++	else if (cmd == VFIO_DEVICE_GET_IRQ_INFO)
++		return -EINVAL;
++
++	else if (cmd == VFIO_DEVICE_SET_IRQS)
++		return -EINVAL;
++
++	else if (cmd == VFIO_DEVICE_RESET)
++		return -EINVAL;
++
++	return -ENOTTY;
++}
++
++static ssize_t vfio_platform_read(void *device_data, char __user *buf,
++				  size_t count, loff_t *ppos)
++{
++	return -EINVAL;
++}
++
++static ssize_t vfio_platform_write(void *device_data, const char __user *buf,
++				   size_t count, loff_t *ppos)
++{
++	return -EINVAL;
++}
++
++static int vfio_platform_mmap(void *device_data, struct vm_area_struct *vma)
++{
++	return -EINVAL;
++}
++
++static const struct vfio_device_ops vfio_platform_ops = {
++	.name		= "vfio-platform",
++	.open		= vfio_platform_open,
++	.release	= vfio_platform_release,
++	.ioctl		= vfio_platform_ioctl,
++	.read		= vfio_platform_read,
++	.write		= vfio_platform_write,
++	.mmap		= vfio_platform_mmap,
++};
++
++int vfio_platform_probe_common(struct vfio_platform_device *vdev,
++			       struct device *dev)
++{
++	struct iommu_group *group;
++	int ret;
++
++	if (!vdev)
++		return -EINVAL;
++
++	group = iommu_group_get(dev);
++	if (!group) {
++		pr_err("VFIO: No IOMMU group for device %s\n", vdev->name);
++		return -EINVAL;
++	}
++
++	ret = vfio_add_group_dev(dev, &vfio_platform_ops, vdev);
++	if (ret) {
++		iommu_group_put(group);
++		return ret;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(vfio_platform_probe_common);
++
++int vfio_platform_remove_common(struct device *dev)
++{
++	struct vfio_platform_device *vdev;
++
++	vdev = vfio_del_group_dev(dev);
++	if (!vdev)
++		return -EINVAL;
++
++	iommu_group_put(dev->iommu_group);
++	kfree(vdev);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(vfio_platform_remove_common);
+diff --git a/drivers/vfio/platform/vfio_platform_private.h b/drivers/vfio/platform/vfio_platform_private.h
+new file mode 100644
+index 0000000..ef76737
+--- /dev/null
++++ b/drivers/vfio/platform/vfio_platform_private.h
+@@ -0,0 +1,35 @@
++/*
++ * Copyright (C) 2013 - Virtual Open Systems
++ * Author: Antonios Motakis <a.motakis@virtualopensystems.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License, version 2, as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef VFIO_PLATFORM_PRIVATE_H
++#define VFIO_PLATFORM_PRIVATE_H
++
++struct vfio_platform_device {
++	/*
++	 * These fields should be filled by the bus driver at binding time
++	 */
++	void		*opaque;
++	const char	*name;
++	uint32_t	flags;
++	/* callbacks to discover device resources */
++	struct resource*
++		(*get_resource)(struct vfio_platform_device *vdev, int i);
++	int	(*get_irq)(struct vfio_platform_device *vdev, int i);
++};
++
++extern int vfio_platform_probe_common(struct vfio_platform_device *vdev,
++				      struct device *dev);
++extern int vfio_platform_remove_common(struct device *dev);
++
++#endif /* VFIO_PLATFORM_PRIVATE_H */
+-- 
+2.1.1
 
---4ds4tGy7aNC8MgBu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUO87+AAoJECTWi3JdVIfQY/0H/ipMeDskAN3b1Vu78Cz3GC+3
-Xk87d/mOAOT7o3ogH4PYH5aY6SxWXX0kGFHL5NGM4JZXV/CtkaxnOzR5pc1M/Nbk
-Q6hqFd3+qRmkxhBFaQ0K3oekJtUKWST4jQq/d3fkiHcJ1bM7zs3NG/hxsZJvEHW4
-rml1x/aQ3WyGADy4GghfjkYTPVBSPeAzpCqWqzvN7s3DmqH66ezdeJO0i9yEM5a+
-6/LjQ0+Ljca2XfcTrF10QHyLBMWIq+egq8QA7NTDQrMLfMi7PJlyP0ek2//mevvB
-fFvK9VbbzOpSd2oihLm4rpZAGM1v6AO5JVGtvtPIvkYWAqgrMngLO4HGbv5r5SA=
-=HnE7
------END PGP SIGNATURE-----
-
---4ds4tGy7aNC8MgBu--
