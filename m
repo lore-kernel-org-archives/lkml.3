@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754964AbaJMCbG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:31:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46258 "EHLO
+	id S1753705AbaJMCbY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:31:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46262 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754909AbaJMCbA (ORCPT
+	with ESMTP id S1754942AbaJMCbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:31:00 -0400
+	Sun, 12 Oct 2014 22:31:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bryan ODonoghue <pure.logic@nexus-software.ie>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Subject: [PATCH 3.17 25/25] serial: 8250: Add Quark X1000 to 8250_pci.c
-Date: Mon, 13 Oct 2014 04:25:18 +0200
-Message-Id: <20141013022455.360514958@linuxfoundation.org>
+        Michal Nazarewicz <mina86@mina86.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.17 17/25] usb: gadget: f_fs: signedness bug in __ffs_func_bind_do_descs()
+Date: Mon, 13 Oct 2014 04:25:10 +0200
+Message-Id: <20141013022455.024319688@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022454.289398272@linuxfoundation.org>
 References: <20141013022454.289398272@linuxfoundation.org>
@@ -29,85 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 1ede7dcca3c4fa15a518ab0473126f9c3e621e4c upstream.
+commit 85b06f5e53d17c15844ef3cd45d0c7107f0ae45c upstream.
 
-Quark X1000 contains two designware derived 8250 serial ports.
-Each port has a unique PCI configuration space consisting of
-BAR0:UART BAR1:DMA respectively.
+We need "idx" to be signed for the error handling to work.
 
-Unlike the standard 8250 the register width is 32 bits for RHR,IER etc
-The Quark UART has a fundamental clock @ 44.2368 MHz allowing for a
-bitrate of up to about 2.76 megabits per second.
-
-This patch enables standard 8250 mode
-
-Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
-Reviewed-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Fixes: 6d5c1c77bbf9 ('usb: gadget: f_fs: fix the redundant ep files problem')
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/8250/8250_pci.c |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+ drivers/usb/gadget/function/f_fs.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/tty/serial/8250/8250_pci.c
-+++ b/drivers/tty/serial/8250/8250_pci.c
-@@ -1788,6 +1788,7 @@ pci_wch_ch353_setup(struct serial_privat
- #define PCI_DEVICE_ID_COMMTECH_4222PCIE	0x0022
- #define PCI_DEVICE_ID_BROADCOM_TRUMANAGE 0x160a
- #define PCI_DEVICE_ID_AMCC_ADDIDATA_APCI7800 0x818e
-+#define PCI_DEVICE_ID_INTEL_QRK_UART	0x0936
+--- a/drivers/usb/gadget/function/f_fs.c
++++ b/drivers/usb/gadget/function/f_fs.c
+@@ -2393,7 +2393,8 @@ static int __ffs_func_bind_do_descs(enum
+ 	struct usb_endpoint_descriptor *ds = (void *)desc;
+ 	struct ffs_function *func = priv;
+ 	struct ffs_ep *ffs_ep;
+-	unsigned ep_desc_id, idx;
++	unsigned ep_desc_id;
++	int idx;
+ 	static const char *speed_names[] = { "full", "high", "super" };
  
- #define PCI_VENDOR_ID_SUNIX		0x1fd4
- #define PCI_DEVICE_ID_SUNIX_1999	0x1999
-@@ -1898,6 +1899,13 @@ static struct pci_serial_quirk pci_seria
- 		.subdevice	= PCI_ANY_ID,
- 		.setup		= byt_serial_setup,
- 	},
-+	{
-+		.vendor		= PCI_VENDOR_ID_INTEL,
-+		.device		= PCI_DEVICE_ID_INTEL_QRK_UART,
-+		.subvendor	= PCI_ANY_ID,
-+		.subdevice	= PCI_ANY_ID,
-+		.setup		= pci_default_setup,
-+	},
- 	/*
- 	 * ITE
- 	 */
-@@ -2740,6 +2748,7 @@ enum pci_board_num_t {
- 	pbn_ADDIDATA_PCIe_8_3906250,
- 	pbn_ce4100_1_115200,
- 	pbn_byt,
-+	pbn_qrk,
- 	pbn_omegapci,
- 	pbn_NETMOS9900_2s_115200,
- 	pbn_brcm_trumanage,
-@@ -3490,6 +3499,12 @@ static struct pciserial_board pci_boards
- 		.uart_offset	= 0x80,
- 		.reg_shift      = 2,
- 	},
-+	[pbn_qrk] = {
-+		.flags		= FL_BASE0,
-+		.num_ports	= 1,
-+		.base_baud	= 2764800,
-+		.reg_shift	= 2,
-+	},
- 	[pbn_omegapci] = {
- 		.flags		= FL_BASE0,
- 		.num_ports	= 8,
-@@ -5192,6 +5207,12 @@ static struct pci_device_id serial_pci_t
- 		pbn_byt },
- 
- 	/*
-+	 * Intel Quark x1000
-+	 */
-+	{	PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_QRK_UART,
-+		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
-+		pbn_qrk },
-+	/*
- 	 * Cronyx Omega PCI
- 	 */
- 	{	PCI_VENDOR_ID_PLX, PCI_DEVICE_ID_PLX_CRONYX_OMEGA,
+ 	if (type != FFS_DESCRIPTOR)
 
 
