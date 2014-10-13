@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754829AbaJMCal (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:30:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46204 "EHLO
+	id S1754769AbaJMCa3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:30:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46188 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754771AbaJMCad (ORCPT
+	with ESMTP id S1754727AbaJMCaZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:30:33 -0400
+	Sun, 12 Oct 2014 22:30:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jamal Hadi Salim <jhs@mojatatu.com>,
-        John Fastabend <john.fastabend@gmail.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Sitsofe Wheeler <sitsofe@yahoo.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 07/25] net_sched: copy exts->type in tcf_exts_change()
-Date: Mon, 13 Oct 2014 04:25:00 +0200
-Message-Id: <20141013022454.596466026@linuxfoundation.org>
+Subject: [PATCH 3.17 04/25] hyperv: Fix a bug in netvsc_send()
+Date: Mon, 13 Oct 2014 04:24:57 +0200
+Message-Id: <20141013022454.468467885@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022454.289398272@linuxfoundation.org>
 References: <20141013022454.289398272@linuxfoundation.org>
@@ -31,35 +30,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: WANG Cong <xiyou.wangcong@gmail.com>
+From: KY Srinivasan <kys@microsoft.com>
 
-[ Upstream commit 5301e3e117d88ef0967ce278912e54757f1a31a2 ]
+[ Upstream commit 3a67c9ccad926a168d8b7891537a452018368a5b ]
 
-We need to copy exts->type when committing the change, otherwise
-it would be always 0. This is a quick fix for -net and -stable,
-for net-next tcf_exts will be removed.
+After the packet is successfully sent, we should not touch the packet
+as it may have been freed. This patch is based on the work done by
+Long Li <longli@microsoft.com>.
 
-Fixes: commit 33be627159913b094bb578e83 ("net_sched: act: use standard struct list_head")
-Reported-by: Jamal Hadi Salim <jhs@mojatatu.com>
-Cc: Jamal Hadi Salim <jhs@mojatatu.com>
-Cc: John Fastabend <john.fastabend@gmail.com>
-Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
-Acked-by: Jamal Hadi Salim <jhs@mojatatu.com>
+David, please queue this up for stable.
+
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reported-by: Sitsofe Wheeler <sitsofe@yahoo.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sched/cls_api.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/hyperv/netvsc.c |   15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
---- a/net/sched/cls_api.c
-+++ b/net/sched/cls_api.c
-@@ -549,6 +549,7 @@ void tcf_exts_change(struct tcf_proto *t
- 	tcf_tree_lock(tp);
- 	list_splice_init(&dst->actions, &tmp);
- 	list_splice(&src->actions, &dst->actions);
-+	dst->type = src->type;
- 	tcf_tree_unlock(tp);
- 	tcf_action_destroy(&tmp, TCA_ACT_UNBIND);
- #endif
+--- a/drivers/net/hyperv/netvsc.c
++++ b/drivers/net/hyperv/netvsc.c
+@@ -705,6 +705,7 @@ int netvsc_send(struct hv_device *device
+ 	unsigned int section_index = NETVSC_INVALID_INDEX;
+ 	u32 msg_size = 0;
+ 	struct sk_buff *skb;
++	u16 q_idx = packet->q_idx;
+ 
+ 
+ 	net_device = get_outbound_net_device(device);
+@@ -769,24 +770,24 @@ int netvsc_send(struct hv_device *device
+ 
+ 	if (ret == 0) {
+ 		atomic_inc(&net_device->num_outstanding_sends);
+-		atomic_inc(&net_device->queue_sends[packet->q_idx]);
++		atomic_inc(&net_device->queue_sends[q_idx]);
+ 
+ 		if (hv_ringbuf_avail_percent(&out_channel->outbound) <
+ 			RING_AVAIL_PERCENT_LOWATER) {
+ 			netif_tx_stop_queue(netdev_get_tx_queue(
+-					    ndev, packet->q_idx));
++					    ndev, q_idx));
+ 
+ 			if (atomic_read(&net_device->
+-				queue_sends[packet->q_idx]) < 1)
++				queue_sends[q_idx]) < 1)
+ 				netif_tx_wake_queue(netdev_get_tx_queue(
+-						    ndev, packet->q_idx));
++						    ndev, q_idx));
+ 		}
+ 	} else if (ret == -EAGAIN) {
+ 		netif_tx_stop_queue(netdev_get_tx_queue(
+-				    ndev, packet->q_idx));
+-		if (atomic_read(&net_device->queue_sends[packet->q_idx]) < 1) {
++				    ndev, q_idx));
++		if (atomic_read(&net_device->queue_sends[q_idx]) < 1) {
+ 			netif_tx_wake_queue(netdev_get_tx_queue(
+-					    ndev, packet->q_idx));
++					    ndev, q_idx));
+ 			ret = -ENOSPC;
+ 		}
+ 	} else {
 
 
