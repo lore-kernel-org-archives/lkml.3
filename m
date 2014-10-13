@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489AbaJMC0i (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:26:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45682 "EHLO
+	id S1753456AbaJMC0e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:26:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45678 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753431AbaJMC0a (ORCPT
+	with ESMTP id S1753378AbaJMC02 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:26:30 -0400
+	Sun, 12 Oct 2014 22:26:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Francesco Ruggeri <fruggeri@arista.com>,
-        Cong Wang <cwang@twopensource.com>,
+        Toshiaki Makita <toshiaki.makita1@gmail.com>,
+        Vladislav Yasevich <vyasevic@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 19/37] net: allow macvlans to move to net namespace
-Date: Mon, 13 Oct 2014 04:24:16 +0200
-Message-Id: <20141013022401.098488323@linuxfoundation.org>
+Subject: [PATCH 3.14 18/37] bridge: Fix br_should_learn to check vlan_enabled
+Date: Mon, 13 Oct 2014 04:24:15 +0200
+Message-Id: <20141013022401.059100620@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022400.286360067@linuxfoundation.org>
 References: <20141013022400.286360067@linuxfoundation.org>
@@ -30,46 +30,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Francesco Ruggeri <fruggeri@arista.com>
+From: Vlad Yasevich <vyasevich@gmail.com>
 
-[ Upstream commit 0d0162e7a33d3710b9604e7c68c0f31f5c457428 ]
+[ Upstream commit c095f248e63ada504dd90c90baae673ae10ee3fe ]
 
-I cannot move a macvlan interface created on top of a bonding interface
-to a different namespace:
+As Toshiaki Makita pointed out, the BRIDGE_INPUT_SKB_CB will
+not be initialized in br_should_learn() as that function
+is called only from br_handle_local_finish().  That is
+an input handler for link-local ethernet traffic so it perfectly
+correct to check br->vlan_enabled here.
 
-% ip netns add dummy0
-% ip link add link bond0 mac0 type macvlan
-% ip link set mac0 netns dummy0
-RTNETLINK answers: Invalid argument
-%
-
-The problem seems to be that commit f9399814927a ("bonding: Don't allow
-bond devices to change network namespaces.") sets NETIF_F_NETNS_LOCAL
-on bonding interfaces, and commit 797f87f83b60 ("macvlan: fix netdev
-feature propagation from lower device") causes macvlan interfaces
-to inherit its features from the lower device.
-
-NETIF_F_NETNS_LOCAL should not be inherited from the lower device
-by a macvlan.
-Patch tested on 3.16.
-
-Signed-off-by: Francesco Ruggeri <fruggeri@arista.com>
-Acked-by: Cong Wang <cwang@twopensource.com>
+Reported-by: Toshiaki Makita<toshiaki.makita1@gmail.com>
+Fixes: 20adfa1 bridge: Check if vlan filtering is enabled only once.
+Signed-off-by: Vladislav Yasevich <vyasevic@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/macvlan.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/bridge/br_vlan.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -709,6 +709,7 @@ static netdev_features_t macvlan_fix_fea
- 					     features,
- 					     mask);
- 	features |= ALWAYS_ON_FEATURES;
-+	features &= ~NETIF_F_NETNS_LOCAL;
+--- a/net/bridge/br_vlan.c
++++ b/net/bridge/br_vlan.c
+@@ -254,7 +254,7 @@ bool br_should_learn(struct net_bridge_p
+ 	struct net_port_vlans *v;
  
- 	return features;
- }
+ 	/* If filtering was disabled at input, let it pass. */
+-	if (!BR_INPUT_SKB_CB(skb)->vlan_filtered)
++	if (!br->vlan_enabled)
+ 		return true;
+ 
+ 	v = rcu_dereference(p->vlan_info);
 
 
