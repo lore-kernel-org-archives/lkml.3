@@ -1,81 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562AbaJMRbL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 13:31:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52954 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753797AbaJMRbJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 13:31:09 -0400
-Message-ID: <1413221463.11421.30.camel@fourier>
-Subject: Re: [PATCH 3.13 163/163] lzo: check for length overrun in variable
- length encoding.
-From: Kamal Mostafa <kamal@canonical.com>
-To: Willy Tarreau <w@1wt.eu>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Mon, 13 Oct 2014 10:31:03 -0700
-In-Reply-To: <20141010053048.GD3594@1wt.eu>
-References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
-	 <1412888588-26755-164-git-send-email-kamal@canonical.com>
-	 <20141010053048.GD3594@1wt.eu>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754677AbaJMRbW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 13:31:22 -0400
+Received: from mail-bn1on0119.outbound.protection.outlook.com ([157.56.110.119]:24800
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754585AbaJMRbT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 13:31:19 -0400
+X-Greylist: delayed 3942 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Oct 2014 13:31:19 EDT
+X-WSS-ID: 0NDE8O0-08-889-02
+X-M-MSG: 
+From: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+To: Henning Schild <henning@hennsch.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+Subject: RE: [PATCH] drm/radeon: remove code that can never get executed
+Thread-Topic: [PATCH] drm/radeon: remove code that can never get executed
+Thread-Index: AQHP5VIUaFaOpezjEUmURsXUUFNglJwuMRBQgABROwD//8lt4A==
+Date: Mon, 13 Oct 2014 17:31:12 +0000
+Message-ID: <A3397C8B8B789E45844E7EC5DEAD89D05993B523@satlexdag05.amd.com>
+References: <1413031067-26961-1-git-send-email-henning@hennsch.de>
+ <1413031875-28053-1-git-send-email-henning@hennsch.de>
+ <A3397C8B8B789E45844E7EC5DEAD89D05993B4D5@satlexdag05.amd.com>
+ <819514162.3896.1413218662504.open-xchange@app06.ox.hosteurope.de>
+In-Reply-To: <819514162.3896.1413218662504.open-xchange@app06.ox.hosteurope.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.180.168.240]
+Content-Type: multipart/mixed;
+	boundary="_003_A3397C8B8B789E45844E7EC5DEAD89D05993B523satlexdag05amdc_"
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(51704005)(377454003)(51694002)(24454002)(13464003)(199003)(189002)(106116001)(4396001)(105586002)(71186001)(53416004)(80022003)(55846006)(50986999)(54356999)(76176999)(99936001)(120916001)(106466001)(84676001)(68736004)(568964001)(19580395003)(95666004)(77096002)(33656002)(85852003)(76482002)(31966008)(19580405001)(2656002)(87936001)(46102003)(101416001)(97736003)(92726001)(20776003)(92566001)(512874002)(44976005)(85306004)(21056001)(86362001)(93886004)(64706001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR02MB199;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB199;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 03630A6A4A
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Alexander.Deucher@amd.com; 
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB102;
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-10-10 at 07:30 +0200, Willy Tarreau wrote:
-> Hi Kamal,
-> 
-> [ removed Don Bailey from the CC who's certainly not interested in this ]
-> 
-> On Thu, Oct 09, 2014 at 02:03:08PM -0700, Kamal Mostafa wrote:
-> > 3.13.11.9 -stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Willy Tarreau <w@1wt.eu>
-> > 
-> > commit 72cf90124e87d975d0b2114d930808c58b4c05e4 upstream.
-> 
-> (...)
+--_003_A3397C8B8B789E45844E7EC5DEAD89D05993B523satlexdag05amdc_
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: base64
 
-Hi Willy-
+PiAtLS0tLU9yaWdpbmFsIE1lc3NhZ2UtLS0tLQ0KPiBGcm9tOiBIZW5uaW5nIFNjaGlsZCBbbWFp
+bHRvOmhlbm5pbmdAaGVubnNjaC5kZV0NCj4gU2VudDogTW9uZGF5LCBPY3RvYmVyIDEzLCAyMDE0
+IDEyOjQ0IFBNDQo+IFRvOiBEZXVjaGVyLCBBbGV4YW5kZXI7IGxpbnV4LWtlcm5lbEB2Z2VyLmtl
+cm5lbC5vcmcNCj4gQ2M6IFJhZmHFgiBNacWCZWNraQ0KPiBTdWJqZWN0OiBSRTogW1BBVENIXSBk
+cm0vcmFkZW9uOiByZW1vdmUgY29kZSB0aGF0IGNhbiBuZXZlciBnZXQgZXhlY3V0ZWQNCj4gDQo+
+IFdlbGwgaSBhbSBub3Qgc3VyZSB3aGF0IHRoZSBjb2RlIGFjdHVhbGx5IGlzIHN1cHBvc2VkIHRv
+IGRvLiBUaGF0IGlzIHVwIHRvIHlvdQ0KPiBiZWNhdXNlIHlvdSBrbm93IHRoZSBoYXJkd2FyZS4g
+SSBqdXN0IHdhbnRlZCB0byBwb2ludCBvdXQgdGhhdCByaWdodCBub3cNCj4gc29tZQ0KPiBjb2Rl
+IGNhbiBuZXZlciBiZSByZWFjaGVkLg0KPiANCj4gSSByYW4gaW50byB0aGUgd2hvbGUgdGhpbmcg
+YmVjYXVzZSB0aGUgcG9pbnRlciAoc2FkcCkgdGhhdCBnZXRzIGtmcmVlZCB3YXMNCj4gbmV2ZXIN
+Cj4gaW5pdGlhbGl6ZWQgKGluIG9uZSBvZiB0aGUgdGhyZWUgY2FzZXMpLiBNeSBmaXJzdCBmaXgg
+d2FzIHRvIGluaXRpYWxpemUgaXQgdG8NCj4gTlVMTCwgdGhhdCB3YXkgdGhlIGtmcmVlIGRpZCBu
+b3QgZmFpbCBldmVuIGlmIHRoZSBhbGxvY2F0aW9uIGRpZCBub3QgZG8NCj4gYW55dGhpbmcuIFRo
+ZW4gaSBmb3VuZCB0aGUgb3RoZXIgdHdvIGNvcGllcyBhbmQgZGVjaWRlZCB0byBmb2xsb3cgdGhl
+aXINCj4gc2NoZW1lLg0KPiANCj4gSW4geW91ciBwYXRjaCB5b3UgaGF2ZSB0byBtYWtlIGtmcmVl
+IGRlcGVuZCBvbiAoc2FkX2NvdW50ID4gMCkgb3Igc2FkcA0KPiBuZWVkcyB0bw0KPiBiZSBpbml0
+aWFsaXplZCB3aXRoIE5VTEwuIE90aGVyd2lzZSB5b3Ugd2lsbCBnZXQgdGhlIGRhbmdsaW5nIHBv
+aW50ZXIga2ZyZWUNCj4gdGhhdA0KPiBsZWFkIG1lIHRvIHJlYWQgdGhpcyBjb2RlLg0KPiANCg0K
+QWgsIG9rLiAgVGhlIGF0dGFjaGVkIHBhdGNoZXMgc2hvdWxkIGRvIHRoZSB0cmljayB0aGVuLg0K
+DQpBbGV4DQoNCj4gSGVubmluZw0KPiANCj4gPiBPbiBPY3RvYmVyIDEzLCAyMDE0IGF0IDY6MDgg
+UE0gIkRldWNoZXIsIEFsZXhhbmRlciINCj4gPiA8QWxleGFuZGVyLkRldWNoZXJAYW1kLmNvbT4g
+d3JvdGU6DQo+ID4NCj4gPiA+IC0tLS0tT3JpZ2luYWwgTWVzc2FnZS0tLS0tDQo+ID4gPiBGcm9t
+OiBIZW5uaW5nIFNjaGlsZCBbbWFpbHRvOmhlbm5pbmdAaGVubnNjaC5kZV0NCj4gPiA+IFNlbnQ6
+IFNhdHVyZGF5LCBPY3RvYmVyIDExLCAyMDE0IDg6NTEgQU0NCj4gPiA+IFRvOiBsaW51eC1rZXJu
+ZWxAdmdlci5rZXJuZWwub3JnDQo+ID4gPiBDYzogSGVubmluZyBTY2hpbGQ7IERldWNoZXIsIEFs
+ZXhhbmRlcjsgUmFmYcWCIE1pxYJlY2tpDQo+ID4gPiBTdWJqZWN0OiBbUEFUQ0hdIGRybS9yYWRl
+b246IHJlbW92ZSBjb2RlIHRoYXQgY2FuIG5ldmVyIGdldCBleGVjdXRlZA0KPiA+ID4NCj4gPiA+
+IFJlbW92aW5nIGEgY29kZS1wYXRoIHRoYXQgY2FuIG5ldmVyIGJlIGV4ZWN1dGVkIC4uLiBhbmQg
+aXRzIGNvcGllcy4gSWYNCj4gPiA+IGRybV9lZGlkX3RvX3NwZWFrZXJfYWxsb2NhdGlvbiByZXR1
+cm5zIDAgdGhlIGNhbGxlcnMgcmV0dXJuLiBUaGVyZSBpcyBubw0KPiA+ID4gbmVlZCB0byBjaGVj
+ayB0aGF0IGNvbmRpdGlvbiBhZ2Fpbi4NCj4gPg0KPiA+IEkgdGhpbmsgd2UgYWN0dWFsbHkgd2Fu
+dCB0byBzZXQgdGhlIHNwZWFrZXIgYWxsb2NhdGlvbiBzZXR1cCB0byBzdGVyZW8gaWYgdGhlDQo+
+ID4gc3BlYWtlciBhbGxvY2F0aW9uIGJsb2NrIGlzIG5vdCBwcmVzZW50IHNvIEkgdGhpbmsgdGhl
+IGF0dGFjaGVkIHBhdGNoIGlzDQo+ID4gcHJvYmFibHkgdGhlIHByb3BlciBmaXguDQo+ID4NCj4g
+PiBBbGV4DQo+ID4NCj4gPiA+DQo+ID4gPiBTaWduZWQtb2ZmLWJ5OiBIZW5uaW5nIFNjaGlsZCA8
+aGVubmluZ0BoZW5uc2NoLmRlPg0KPiA+ID4gLS0tDQo+ID4gPiBkcml2ZXJzL2dwdS9kcm0vcmFk
+ZW9uL2RjZTNfMV9hZm10LmMgfCA1ICstLS0tDQo+ID4gPiBkcml2ZXJzL2dwdS9kcm0vcmFkZW9u
+L2RjZTZfYWZtdC5jIHwgNSArLS0tLQ0KPiA+ID4gZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9ldmVy
+Z3JlZW5faGRtaS5jIHwgNSArLS0tLQ0KPiA+ID4gMyBmaWxlcyBjaGFuZ2VkLCAzIGluc2VydGlv
+bnMoKyksIDEyIGRlbGV0aW9ucygtKQ0KPiA+ID4NCj4gPiA+IGRpZmYgLS1naXQgYS9kcml2ZXJz
+L2dwdS9kcm0vcmFkZW9uL2RjZTNfMV9hZm10LmMNCj4gPiA+IGIvZHJpdmVycy9ncHUvZHJtL3Jh
+ZGVvbi9kY2UzXzFfYWZtdC5jDQo+ID4gPiBpbmRleCBjYjc2MDc0Li42ZDMxZWQ4IDEwMDY0NA0K
+PiA+ID4gLS0tIGEvZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9kY2UzXzFfYWZtdC5jDQo+ID4gPiAr
+KysgYi9kcml2ZXJzL2dwdS9kcm0vcmFkZW9uL2RjZTNfMV9hZm10LmMNCj4gPiA+IEBAIC01OCwx
+MCArNTgsNyBAQCBzdGF0aWMgdm9pZA0KPiA+ID4gZGNlM18yX2FmbXRfd3JpdGVfc3BlYWtlcl9h
+bGxvY2F0aW9uKHN0cnVjdCBkcm1fZW5jb2RlciAqZW5jb2RlcikNCj4gPiA+IHRtcCAmPSB+KERQ
+X0NPTk5FQ1RJT04gfCBTUEVBS0VSX0FMTE9DQVRJT05fTUFTSyk7DQo+ID4gPiAvKiBzZXQgSERN
+SSBtb2RlICovDQo+ID4gPiB0bXAgfD0gSERNSV9DT05ORUNUSU9OOw0KPiA+ID4gLSBpZiAoc2Fk
+X2NvdW50KQ0KPiA+ID4gLSB0bXAgfD0gU1BFQUtFUl9BTExPQ0FUSU9OKHNhZGJbMF0pOw0KPiA+
+ID4gLSBlbHNlDQo+ID4gPiAtIHRtcCB8PSBTUEVBS0VSX0FMTE9DQVRJT04oNSk7IC8qIHN0ZXJl
+byAqLw0KPiA+ID4gKyB0bXAgfD0gU1BFQUtFUl9BTExPQ0FUSU9OKHNhZGJbMF0pOw0KPiA+ID4g
+V1JFRzMyKEFaX0YwX0NPREVDX1BJTjBfQ09OVFJPTF9DSEFOTkVMX1NQRUFLRVIsIHRtcCk7DQo+
+ID4gPg0KPiA+ID4ga2ZyZWUoc2FkYik7DQo+ID4gPiBkaWZmIC0tZ2l0IGEvZHJpdmVycy9ncHUv
+ZHJtL3JhZGVvbi9kY2U2X2FmbXQuYw0KPiA+ID4gYi9kcml2ZXJzL2dwdS9kcm0vcmFkZW9uL2Rj
+ZTZfYWZtdC5jDQo+ID4gPiBpbmRleCBhYjI5Zjk1Li5lNmIyNzUwIDEwMDY0NA0KPiA+ID4gLS0t
+IGEvZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9kY2U2X2FmbXQuYw0KPiA+ID4gKysrIGIvZHJpdmVy
+cy9ncHUvZHJtL3JhZGVvbi9kY2U2X2FmbXQuYw0KPiA+ID4gQEAgLTE4NiwxMCArMTg2LDcgQEAg
+dm9pZCBkY2U2X2FmbXRfd3JpdGVfc3BlYWtlcl9hbGxvY2F0aW9uKHN0cnVjdA0KPiA+ID4gZHJt
+X2VuY29kZXIgKmVuY29kZXIpDQo+ID4gPiB0bXAgJj0gfihEUF9DT05ORUNUSU9OIHwgU1BFQUtF
+Ul9BTExPQ0FUSU9OX01BU0spOw0KPiA+ID4gLyogc2V0IEhETUkgbW9kZSAqLw0KPiA+ID4gdG1w
+IHw9IEhETUlfQ09OTkVDVElPTjsNCj4gPiA+IC0gaWYgKHNhZF9jb3VudCkNCj4gPiA+IC0gdG1w
+IHw9IFNQRUFLRVJfQUxMT0NBVElPTihzYWRiWzBdKTsNCj4gPiA+IC0gZWxzZQ0KPiA+ID4gLSB0
+bXAgfD0gU1BFQUtFUl9BTExPQ0FUSU9OKDUpOyAvKiBzdGVyZW8gKi8NCj4gPiA+ICsgdG1wIHw9
+IFNQRUFLRVJfQUxMT0NBVElPTihzYWRiWzBdKTsNCj4gPiA+IFdSRUczMl9FTkRQT0lOVChvZmZz
+ZXQsDQo+ID4gPiBBWl9GMF9DT0RFQ19QSU5fQ09OVFJPTF9DSEFOTkVMX1NQRUFLRVIsIHRtcCk7
+DQo+ID4gPg0KPiA+ID4ga2ZyZWUoc2FkYik7DQo+ID4gPiBkaWZmIC0tZ2l0IGEvZHJpdmVycy9n
+cHUvZHJtL3JhZGVvbi9ldmVyZ3JlZW5faGRtaS5jDQo+ID4gPiBiL2RyaXZlcnMvZ3B1L2RybS9y
+YWRlb24vZXZlcmdyZWVuX2hkbWkuYw0KPiA+ID4gaW5kZXggMjc4YzdhMS4uMTFhNmI2NSAxMDA2
+NDQNCj4gPiA+IC0tLSBhL2RyaXZlcnMvZ3B1L2RybS9yYWRlb24vZXZlcmdyZWVuX2hkbWkuYw0K
+PiA+ID4gKysrIGIvZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9ldmVyZ3JlZW5faGRtaS5jDQo+ID4g
+PiBAQCAtMTI4LDEwICsxMjgsNyBAQCBzdGF0aWMgdm9pZA0KPiA+ID4gZGNlNF9hZm10X3dyaXRl
+X3NwZWFrZXJfYWxsb2NhdGlvbihzdHJ1Y3QgZHJtX2VuY29kZXIgKmVuY29kZXIpDQo+ID4gPiB0
+bXAgJj0gfihEUF9DT05ORUNUSU9OIHwgU1BFQUtFUl9BTExPQ0FUSU9OX01BU0spOw0KPiA+ID4g
+Lyogc2V0IEhETUkgbW9kZSAqLw0KPiA+ID4gdG1wIHw9IEhETUlfQ09OTkVDVElPTjsNCj4gPiA+
+IC0gaWYgKHNhZF9jb3VudCkNCj4gPiA+IC0gdG1wIHw9IFNQRUFLRVJfQUxMT0NBVElPTihzYWRi
+WzBdKTsNCj4gPiA+IC0gZWxzZQ0KPiA+ID4gLSB0bXAgfD0gU1BFQUtFUl9BTExPQ0FUSU9OKDUp
+OyAvKiBzdGVyZW8gKi8NCj4gPiA+ICsgdG1wIHw9IFNQRUFLRVJfQUxMT0NBVElPTihzYWRiWzBd
+KTsNCj4gPiA+IFdSRUczMihBWl9GMF9DT0RFQ19QSU4wX0NPTlRST0xfQ0hBTk5FTF9TUEVBS0VS
+LCB0bXApOw0KPiA+ID4NCj4gPiA+IGtmcmVlKHNhZGIpOw0KPiA+ID4gLS0NCj4gPiA+IDIuMC40
+DQo+IA0KPiA+DQo=
 
-Thanks very much for reviewing this.
+--_003_A3397C8B8B789E45844E7EC5DEAD89D05993B523satlexdag05amdc_
+Content-Type: application/octet-stream;
+	name="0001-drm-radeon-initialize-sadb-to-NULL-in-the-audio-code.patch"
+Content-Description: 0001-drm-radeon-initialize-sadb-to-NULL-in-the-audio-code.patch
+Content-Disposition: attachment;
+	filename="0001-drm-radeon-initialize-sadb-to-NULL-in-the-audio-code.patch";
+	size=2113; creation-date="Mon, 13 Oct 2014 17:30:11 GMT";
+	modification-date="Mon, 13 Oct 2014 17:28:44 GMT"
+Content-Transfer-Encoding: base64
 
-> This one (and the accompanying revert) are still not present in more
-> recent stable kernels, so I find it surprizing that you're proposing
-> to integrate them now.
+RnJvbSA0MzJhZWZlYTdjZjQ4ZDMxZWE2NjVjYWMxM2RlNzFhZjgwMzZiYjU1IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBBbGV4IERldWNoZXIgPGFsZXhhbmRlci5kZXVjaGVyQGFtZC5j
+b20+CkRhdGU6IE1vbiwgMTMgT2N0IDIwMTQgMTM6MjM6NDggLTA0MDAKU3ViamVjdDogW1BBVENI
+IDEvMl0gZHJtL3JhZGVvbjogaW5pdGlhbGl6ZSBzYWRiIHRvIE5VTEwgaW4gdGhlIGF1ZGlvIGNv
+ZGUKCkZpeGVzIGtmcmVlIG9mIHRoZSBzYWRiIGJ1ZmZlciB3aGVuIGl0J3MgTlVMTC4KClNpZ25l
+ZC1vZmYtYnk6IEFsZXggRGV1Y2hlciA8YWxleGFuZGVyLmRldWNoZXJAYW1kLmNvbT4KLS0tCiBk
+cml2ZXJzL2dwdS9kcm0vcmFkZW9uL2RjZTNfMV9hZm10LmMgICAgfCAyICstCiBkcml2ZXJzL2dw
+dS9kcm0vcmFkZW9uL2RjZTZfYWZtdC5jICAgICAgfCAyICstCiBkcml2ZXJzL2dwdS9kcm0vcmFk
+ZW9uL2V2ZXJncmVlbl9oZG1pLmMgfCAyICstCiAzIGZpbGVzIGNoYW5nZWQsIDMgaW5zZXJ0aW9u
+cygrKSwgMyBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9kcml2ZXJzL2dwdS9kcm0vcmFkZW9u
+L2RjZTNfMV9hZm10LmMgYi9kcml2ZXJzL2dwdS9kcm0vcmFkZW9uL2RjZTNfMV9hZm10LmMKaW5k
+ZXggOTUwYWYxNS4uNmIxZGJlYyAxMDA2NDQKLS0tIGEvZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9k
+Y2UzXzFfYWZtdC5jCisrKyBiL2RyaXZlcnMvZ3B1L2RybS9yYWRlb24vZGNlM18xX2FmbXQuYwpA
+QCAtMzIsNyArMzIsNyBAQCBzdGF0aWMgdm9pZCBkY2UzXzJfYWZtdF93cml0ZV9zcGVha2VyX2Fs
+bG9jYXRpb24oc3RydWN0IGRybV9lbmNvZGVyICplbmNvZGVyKQogCXN0cnVjdCBkcm1fY29ubmVj
+dG9yICpjb25uZWN0b3I7CiAJc3RydWN0IHJhZGVvbl9jb25uZWN0b3IgKnJhZGVvbl9jb25uZWN0
+b3IgPSBOVUxMOwogCXUzMiB0bXA7Ci0JdTggKnNhZGI7CisJdTggKnNhZGIgPSBOVUxMOwogCWlu
+dCBzYWRfY291bnQ7CiAKIAlsaXN0X2Zvcl9lYWNoX2VudHJ5KGNvbm5lY3RvciwgJmVuY29kZXIt
+PmRldi0+bW9kZV9jb25maWcuY29ubmVjdG9yX2xpc3QsIGhlYWQpIHsKZGlmZiAtLWdpdCBhL2Ry
+aXZlcnMvZ3B1L2RybS9yYWRlb24vZGNlNl9hZm10LmMgYi9kcml2ZXJzL2dwdS9kcm0vcmFkZW9u
+L2RjZTZfYWZtdC5jCmluZGV4IGMwYmJmNjguLjk2MGE1ZjAgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMv
+Z3B1L2RybS9yYWRlb24vZGNlNl9hZm10LmMKKysrIGIvZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9k
+Y2U2X2FmbXQuYwpAQCAtMTU1LDcgKzE1NSw3IEBAIHZvaWQgZGNlNl9hZm10X3dyaXRlX3NwZWFr
+ZXJfYWxsb2NhdGlvbihzdHJ1Y3QgZHJtX2VuY29kZXIgKmVuY29kZXIpCiAJc3RydWN0IGRybV9j
+b25uZWN0b3IgKmNvbm5lY3RvcjsKIAlzdHJ1Y3QgcmFkZW9uX2Nvbm5lY3RvciAqcmFkZW9uX2Nv
+bm5lY3RvciA9IE5VTEw7CiAJdTMyIG9mZnNldCwgdG1wOwotCXU4ICpzYWRiOworCXU4ICpzYWRi
+ID0gTlVMTDsKIAlpbnQgc2FkX2NvdW50OwogCiAJaWYgKCFkaWcgfHwgIWRpZy0+YWZtdCB8fCAh
+ZGlnLT5hZm10LT5waW4pCmRpZmYgLS1naXQgYS9kcml2ZXJzL2dwdS9kcm0vcmFkZW9uL2V2ZXJn
+cmVlbl9oZG1pLmMgYi9kcml2ZXJzL2dwdS9kcm0vcmFkZW9uL2V2ZXJncmVlbl9oZG1pLmMKaW5k
+ZXggMjUxNGQ2NS4uZjZhNWMzMCAxMDA2NDQKLS0tIGEvZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9l
+dmVyZ3JlZW5faGRtaS5jCisrKyBiL2RyaXZlcnMvZ3B1L2RybS9yYWRlb24vZXZlcmdyZWVuX2hk
+bWkuYwpAQCAtMTMzLDcgKzEzMyw3IEBAIHN0YXRpYyB2b2lkIGRjZTRfYWZtdF93cml0ZV9zcGVh
+a2VyX2FsbG9jYXRpb24oc3RydWN0IGRybV9lbmNvZGVyICplbmNvZGVyKQogCXN0cnVjdCBkcm1f
+Y29ubmVjdG9yICpjb25uZWN0b3I7CiAJc3RydWN0IHJhZGVvbl9jb25uZWN0b3IgKnJhZGVvbl9j
+b25uZWN0b3IgPSBOVUxMOwogCXUzMiB0bXA7Ci0JdTggKnNhZGI7CisJdTggKnNhZGIgPSBOVUxM
+OwogCWludCBzYWRfY291bnQ7CiAKIAlsaXN0X2Zvcl9lYWNoX2VudHJ5KGNvbm5lY3RvciwgJmVu
+Y29kZXItPmRldi0+bW9kZV9jb25maWcuY29ubmVjdG9yX2xpc3QsIGhlYWQpIHsKLS0gCjEuOC4z
+LjEKCg==
 
-I can hold out those lzo fixes until the next 3.13-stable if you prefer.
-But fwiw...
+--_003_A3397C8B8B789E45844E7EC5DEAD89D05993B523satlexdag05amdc_
+Content-Type: application/octet-stream;
+	name="0002-drm-radeon-fix-speaker-allocation-setup.patch"
+Content-Description: 0002-drm-radeon-fix-speaker-allocation-setup.patch
+Content-Disposition: attachment;
+	filename="0002-drm-radeon-fix-speaker-allocation-setup.patch"; size=2640;
+	creation-date="Mon, 13 Oct 2014 17:30:11 GMT";
+	modification-date="Mon, 13 Oct 2014 17:28:44 GMT"
+Content-Transfer-Encoding: base64
 
->  If someone upgrades from 3.13.11.9 to 3.14.21
-> or 3.16.5, they'd expect to keep all fixes but will lose this one, so
-> this is a bit confusing.
+RnJvbSAzNDEyZWZhYWYwMWVhYjIwZDU1NzBmNWI0ODE4ZGI5Mjg2NDRmMGRiIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBBbGV4IERldWNoZXIgPGFsZXhhbmRlci5kZXVjaGVyQGFtZC5j
+b20+CkRhdGU6IE1vbiwgMTMgT2N0IDIwMTQgMTE6NTE6NTAgLTA0MDAKU3ViamVjdDogW1BBVENI
+IDIvMl0gZHJtL3JhZGVvbjogZml4IHNwZWFrZXIgYWxsb2NhdGlvbiBzZXR1cAoKSWYgdGhlIHNh
+ZF9jb3VudCBpcyAwLCBzZXQgdGhlIGh3IHRvIHN0ZXJlbyBhbmQgY2hhbmdlCnRoZSBlcnJvciBt
+ZXNzYWdlIHRvIGEgd2Fybi4gIEEgbG90IG9mIG1vbml0b3JzIGRvbid0CnNldCB0aGUgc3BlYWtl
+ciBhbGxvY2F0aW9uIGJsb2NrLgoKU2lnbmVkLW9mZi1ieTogQWxleCBEZXVjaGVyIDxhbGV4YW5k
+ZXIuZGV1Y2hlckBhbWQuY29tPgpDYzogc3RhYmxlQHZnZXIua2VybmVsLm9yZwotLS0KIGRyaXZl
+cnMvZ3B1L2RybS9yYWRlb24vZGNlM18xX2FmbXQuYyAgICB8IDQgKystLQogZHJpdmVycy9ncHUv
+ZHJtL3JhZGVvbi9kY2U2X2FmbXQuYyAgICAgIHwgNiArKystLS0KIGRyaXZlcnMvZ3B1L2RybS9y
+YWRlb24vZXZlcmdyZWVuX2hkbWkuYyB8IDYgKysrLS0tCiAzIGZpbGVzIGNoYW5nZWQsIDggaW5z
+ZXJ0aW9ucygrKSwgOCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9kcml2ZXJzL2dwdS9kcm0v
+cmFkZW9uL2RjZTNfMV9hZm10LmMgYi9kcml2ZXJzL2dwdS9kcm0vcmFkZW9uL2RjZTNfMV9hZm10
+LmMKaW5kZXggNmIxZGJlYy4uMmZlOGNmYyAxMDA2NDQKLS0tIGEvZHJpdmVycy9ncHUvZHJtL3Jh
+ZGVvbi9kY2UzXzFfYWZtdC5jCisrKyBiL2RyaXZlcnMvZ3B1L2RybS9yYWRlb24vZGNlM18xX2Fm
+bXQuYwpAQCAtNDksOCArNDksOCBAQCBzdGF0aWMgdm9pZCBkY2UzXzJfYWZtdF93cml0ZV9zcGVh
+a2VyX2FsbG9jYXRpb24oc3RydWN0IGRybV9lbmNvZGVyICplbmNvZGVyKQogCiAJc2FkX2NvdW50
+ID0gZHJtX2VkaWRfdG9fc3BlYWtlcl9hbGxvY2F0aW9uKHJhZGVvbl9jb25uZWN0b3ItPmVkaWQs
+ICZzYWRiKTsKIAlpZiAoc2FkX2NvdW50IDwgMCkgewotCQlEUk1fRVJST1IoIkNvdWxkbid0IHJl
+YWQgU3BlYWtlciBBbGxvY2F0aW9uIERhdGEgQmxvY2s6ICVkXG4iLCBzYWRfY291bnQpOwotCQly
+ZXR1cm47CisJCURSTV9ERUJVRygiQ291bGRuJ3QgcmVhZCBTcGVha2VyIEFsbG9jYXRpb24gRGF0
+YSBCbG9jazogJWRcbiIsIHNhZF9jb3VudCk7CisJCXNhZF9jb3VudCA9IDA7CiAJfQogCiAJLyog
+cHJvZ3JhbSB0aGUgc3BlYWtlciBhbGxvY2F0aW9uICovCmRpZmYgLS1naXQgYS9kcml2ZXJzL2dw
+dS9kcm0vcmFkZW9uL2RjZTZfYWZtdC5jIGIvZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9kY2U2X2Fm
+bXQuYwppbmRleCA5NjBhNWYwLi5mMzEyZWRmIDEwMDY0NAotLS0gYS9kcml2ZXJzL2dwdS9kcm0v
+cmFkZW9uL2RjZTZfYWZtdC5jCisrKyBiL2RyaXZlcnMvZ3B1L2RybS9yYWRlb24vZGNlNl9hZm10
+LmMKQEAgLTE3Niw5ICsxNzYsOSBAQCB2b2lkIGRjZTZfYWZtdF93cml0ZV9zcGVha2VyX2FsbG9j
+YXRpb24oc3RydWN0IGRybV9lbmNvZGVyICplbmNvZGVyKQogCX0KIAogCXNhZF9jb3VudCA9IGRy
+bV9lZGlkX3RvX3NwZWFrZXJfYWxsb2NhdGlvbihyYWRlb25fY29ubmVjdG9yX2VkaWQoY29ubmVj
+dG9yKSwgJnNhZGIpOwotCWlmIChzYWRfY291bnQgPD0gMCkgewotCQlEUk1fRVJST1IoIkNvdWxk
+bid0IHJlYWQgU3BlYWtlciBBbGxvY2F0aW9uIERhdGEgQmxvY2s6ICVkXG4iLCBzYWRfY291bnQp
+OwotCQlyZXR1cm47CisJaWYgKHNhZF9jb3VudCA8IDApIHsKKwkJRFJNX0RFQlVHKCJDb3VsZG4n
+dCByZWFkIFNwZWFrZXIgQWxsb2NhdGlvbiBEYXRhIEJsb2NrOiAlZFxuIiwgc2FkX2NvdW50KTsK
+KwkJc2FkX2NvdW50ID0gMDsKIAl9CiAKIAkvKiBwcm9ncmFtIHRoZSBzcGVha2VyIGFsbG9jYXRp
+b24gKi8KZGlmZiAtLWdpdCBhL2RyaXZlcnMvZ3B1L2RybS9yYWRlb24vZXZlcmdyZWVuX2hkbWku
+YyBiL2RyaXZlcnMvZ3B1L2RybS9yYWRlb24vZXZlcmdyZWVuX2hkbWkuYwppbmRleCBmNmE1YzMw
+Li41M2FiZDliIDEwMDY0NAotLS0gYS9kcml2ZXJzL2dwdS9kcm0vcmFkZW9uL2V2ZXJncmVlbl9o
+ZG1pLmMKKysrIGIvZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9ldmVyZ3JlZW5faGRtaS5jCkBAIC0x
+NDksOSArMTQ5LDkgQEAgc3RhdGljIHZvaWQgZGNlNF9hZm10X3dyaXRlX3NwZWFrZXJfYWxsb2Nh
+dGlvbihzdHJ1Y3QgZHJtX2VuY29kZXIgKmVuY29kZXIpCiAJfQogCiAJc2FkX2NvdW50ID0gZHJt
+X2VkaWRfdG9fc3BlYWtlcl9hbGxvY2F0aW9uKHJhZGVvbl9jb25uZWN0b3JfZWRpZChjb25uZWN0
+b3IpLCAmc2FkYik7Ci0JaWYgKHNhZF9jb3VudCA8PSAwKSB7Ci0JCURSTV9FUlJPUigiQ291bGRu
+J3QgcmVhZCBTcGVha2VyIEFsbG9jYXRpb24gRGF0YSBCbG9jazogJWRcbiIsIHNhZF9jb3VudCk7
+Ci0JCXJldHVybjsKKwlpZiAoc2FkX2NvdW50IDwgMCkgeworCQlEUk1fREVCVUcoIkNvdWxkbid0
+IHJlYWQgU3BlYWtlciBBbGxvY2F0aW9uIERhdGEgQmxvY2s6ICVkXG4iLCBzYWRfY291bnQpOwor
+CQlzYWRfY291bnQgPSAwOwogCX0KIAogCS8qIHByb2dyYW0gdGhlIHNwZWFrZXIgYWxsb2NhdGlv
+biAqLwotLSAKMS44LjMuMQoK
 
-I think those sorts of scheduling mismatches and discrepancies between
-stable versions are pretty common.  Examples:  The top 11 commits in
-v3.12.30 have not yet been applied[0] to any of the newer stable
-branches;  Many of the commits in v3.10.57 have not yet been applied[1]
-to linux-3.12.y but have been released in other newer stables.
-
->  Is there any reason you're not tracking fixes
-> from more recent versions like Jiri, Li, Ben and I are doing ?
-
-We (the Canonical stable maintainers) have always tracked the "cc:
-stable" fixes directly from mainline, not from the more-recent-version
-branches.  Given the examples above, it seems that the kernel.org
-maintainers are doing that too, yes?
-
- -Kamal
-
-[0] linux-3.12.y  1d08848..99ed1bd  (part of the big mm patch set)
-[1] linux-3.10.y  07d209b..7dd3111  (various "cc: stable" patches)
-
-
+--_003_A3397C8B8B789E45844E7EC5DEAD89D05993B523satlexdag05amdc_--
