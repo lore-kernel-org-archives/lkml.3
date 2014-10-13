@@ -1,205 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753904AbaJMMKt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 08:10:49 -0400
-Received: from fm2nodo1.polito.it ([130.192.180.12]:57625 "EHLO
-	fm2nodo1.polito.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753312AbaJMMKr (ORCPT
+	id S1753935AbaJMMKw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 08:10:52 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:37229 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753907AbaJMMKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 08:10:47 -0400
-X-AttachExt: p7s
-X-ExtScanner: Niversoft's FindAttachments (free)
-From: Roberto Sassu <roberto.sassu@polito.it>
-To: linux-security-module@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-ima-devel@lists.sourceforge.net,
-        zohar@us.ibm.com, d.kasatkin@samsung.com, jmorris@namei.org,
-        Roberto Sassu <roberto.sassu@polito.it>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>
-Subject: [PATCH-v4 2/5] ima: display template format in meas. list if template name length is zero
-Date: Mon, 13 Oct 2014 14:08:39 +0200
-Message-Id: <1413202125-7062-3-git-send-email-roberto.sassu@polito.it>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1413202125-7062-1-git-send-email-roberto.sassu@polito.it>
-References: <1413202125-7062-1-git-send-email-roberto.sassu@polito.it>
+	Mon, 13 Oct 2014 08:10:50 -0400
+Message-ID: <543BC138.3010109@arm.com>
+Date: Mon, 13 Oct 2014 13:10:32 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----316D94A49C24F74C4962BF5431BFDBD1"
-X-FEAS-SYSTEM-WL: 130.192.180.41
+To: "Joe.C" <yingjoe.chen@mediatek.com>
+CC: Mark Rutland <Mark.Rutland@arm.com>, "arm@kernel.org" <arm@kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "srv_heupstream@mediatek.com" <srv_heupstream@mediatek.com>,
+        "yingjoe.chen@gmail.com" <yingjoe.chen@gmail.com>,
+        "hc.yen@mediatek.com" <hc.yen@mediatek.com>,
+        "eddie.huang@mediatek.com" <eddie.huang@mediatek.com>,
+        "nathan.chung@mediatek.com" <nathan.chung@mediatek.com>,
+        "yh.chen@mediatek.com" <yh.chen@mediatek.com>,
+        Sascha Hauer <kernel@pengutronix.de>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <Pawel.Moll@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Matt Porter <mporter@linaro.org>, Marc Carino <marc.ceeeee@gmail.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Sricharan R <r.sricharan@ti.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 3/7] irqchip: gic: Support hierarchy irq domain.
+References: <1412864980-20273-1-git-send-email-yingjoe.chen@mediatek.com>  <1412864980-20273-4-git-send-email-yingjoe.chen@mediatek.com>  <5436BF0C.1030508@arm.com> <1413196996.23455.9.camel@mtksdaap41>
+In-Reply-To: <1413196996.23455.9.camel@mtksdaap41>
+X-Enigmail-Version: 1.4.6
+X-OriginalArrivalTime: 13 Oct 2014 12:10:34.0265 (UTC) FILETIME=[B0EF8890:01CFE6DE]
+X-MC-Unique: 114101313103401001
+Content-Type: multipart/mixed;
+ boundary="------------030407050101090003060102"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an S/MIME signed message
+This is a multi-part message in MIME format.
+--------------030407050101090003060102
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-------316D94A49C24F74C4962BF5431BFDBD1
+On 13/10/14 11:43, Joe.C wrote:
+> On Thu, 2014-10-09 at 17:59 +0100, Marc Zyngier wrote:
+>> On 09/10/14 15:29, Joe.C wrote
+>>> @@ -952,7 +988,11 @@ void __init gic_init_bases(unsigned int gic_nr, in=
+t irq_start,
+>>> =20
+>>>  =09gic_irqs -=3D hwirq_base; /* calculate # of irqs to allocate */
+>>> =20
+>>> -=09if (of_property_read_u32(node, "arm,routable-irqs",
+>>> +=09if (IS_ENABLED(CONFIG_IRQ_DOMAIN_HIERARCHY) &&
+>>> +=09=09of_find_property(node, "arm,irq-domain-hierarchy", NULL))
+>>> +=09=09gic->domain =3D irq_domain_add_linear(node, gic_irqs,
+>>> +=09=09=09=09=09&gic_irq_domain_hierarchy_ops, gic);
+>>
+>> I really think that looking for a property is the wrong thing to do. If
+>> "node" is non-NULL, then we're pretty sure that we're initializing from
+>> DT, and that a pure linear domain should be the right thing, leaving the
+>> legacy stuff for the few non-DT platforms that are still around.
+>>
+>> Thanks,
+>>
+>> =09M.
+>=20
+> The only reason I introduce "arm,irq-domain-hierarchy" property is
+> trying to keep original behavior when hierarchy irq domain is not used.
+> Without this, when a board init GIC with DT, all driver will have to use
+> devicetree. I'm not sure we want to break things like this.
 
-With the introduction of the 'ima_template_fmt' kernel cmdline parameter,
-a user can define a new template descriptor with custom format. However,
-in this case, userspace tools will be unable to parse the measurements
-list because the new template is unknown. For this reason, this patch
-modifies the current IMA behavior to display in the list the template
-format instead of the name (only if the length of the latter is zero)
-so that a tool can extract needed information if it can handle listed
-fields.
+I don't think we want to support a "middle of the road" setup, where the
+GIC is probed by DT, but some devices have hardcoded interrupts.
 
-This patch also correctly displays the error log message in
-ima_init_template() if the selected template cannot be initialized.
+> I will remove this and just use linear for all DT in my next version.
 
-Changelog:
- - v3:
-   - check the first byte of 'e->template_desc->name' instead of using
-     strlen() in ima_fs.c (suggested by Mimi Zohar)
+I came up with the attached patch, which allows me to boot my test
+platform (together with the other fix I posted earlier).
 
- - v2:
-   - print the template format in ima_init_template(), if the selected
-     template is custom (Roberto Sassu)
+Thanks,
 
- - v1:
-   - fixed patch description (Roberto Sassu, suggested by Mimi Zohar)
-   - set 'template_name' variable in ima_fs.c only once
-     (Roberto Sassu, suggested by Mimi Zohar)
+=09M.
+--=20
+Jazz is not dead. It just smells funny...
+--------------030407050101090003060102
+Content-Type: text/x-diff; 
+	name=0001-fixup-irqchip-gic-Support-hierarchy-irq-domain.patch
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: inline;
+ filename*0="0001-fixup-irqchip-gic-Support-hierarchy-irq-domain.patch"
 
-Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+>From 97d4ea1f0922fb47dd1b09cd2694b7fa5b519db9 Mon Sep 17 00:00:00 2001
+From: Marc Zyngier <marc.zyngier@arm.com>
+Date: Mon, 13 Oct 2014 10:57:28 +0100
+Subject: [PATCH] fixup! irqchip: gic: Support hierarchy irq domain.
+
 ---
- security/integrity/ima/ima_fs.c       | 16 ++++++++++++----
- security/integrity/ima/ima_template.c |  4 +++-
- 2 files changed, 15 insertions(+), 5 deletions(-)
+ drivers/irqchip/Kconfig   |  1 +
+ drivers/irqchip/irq-gic.c | 53 ++++++++++++++++++++++---------------------=
+----
+ 2 files changed, 26 insertions(+), 28 deletions(-)
 
-diff --git a/security/integrity/ima/ima_fs.c b/security/integrity/ima/ima_fs.c
-index da92fcc..fd637ad 100644
---- a/security/integrity/ima/ima_fs.c
-+++ b/security/integrity/ima/ima_fs.c
-@@ -118,6 +118,7 @@ static int ima_measurements_show(struct seq_file *m, void *v)
- 	/* the list never shrinks, so we don't need a lock here */
- 	struct ima_queue_entry *qe = v;
- 	struct ima_template_entry *e;
-+	char *template_name;
- 	int namelen;
- 	u32 pcr = CONFIG_IMA_MEASURE_PCR_IDX;
- 	bool is_ima_template = false;
-@@ -128,6 +129,9 @@ static int ima_measurements_show(struct seq_file *m, void *v)
- 	if (e == NULL)
- 		return -1;
- 
-+	template_name = (e->template_desc->name[0] != '\0') ?
-+	    e->template_desc->name : e->template_desc->fmt;
+diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
+index b8632bf..2a48e0a 100644
+--- a/drivers/irqchip/Kconfig
++++ b/drivers/irqchip/Kconfig
+@@ -5,6 +5,7 @@ config IRQCHIP
+ config ARM_GIC
+ =09bool
+ =09select IRQ_DOMAIN
++=09select IRQ_DOMAIN_HIERARCHY
+ =09select MULTI_IRQ_HANDLER
+=20
+ config GIC_NON_BANKED
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index 17f5aa6..a99c211 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -835,8 +835,6 @@ static struct notifier_block gic_cpu_notifier =3D {
+ };
+ #endif
+=20
+-
+-#ifdef CONFIG_IRQ_DOMAIN_HIERARCHY
+ static int gic_irq_domain_alloc(struct irq_domain *domain, unsigned int vi=
+rq,
+ =09=09=09=09unsigned int nr_irqs, void *arg)
+ {
+@@ -870,10 +868,8 @@ static void gic_irq_domain_free(struct irq_domain *dom=
+ain, unsigned int virq,
+ static const struct irq_domain_ops gic_irq_domain_hierarchy_ops =3D {
+ =09.alloc =3D gic_irq_domain_alloc,
+ =09.free =3D gic_irq_domain_free,
++=09.xlate =3D gic_irq_domain_xlate,
+ };
+-#else
+-#define gic_irq_domain_hierarchy_ops 0
+-#endif /* CONFIG_IRQ_DOMAIN_HIERARCHY */
+=20
+ static const struct irq_domain_ops gic_irq_domain_ops =3D {
+ =09.map =3D gic_irq_domain_map,
+@@ -965,18 +961,6 @@ void __init gic_init_bases(unsigned int gic_nr, int ir=
+q_start,
+ =09=09gic_cpu_map[i] =3D 0xff;
+=20
+ =09/*
+-=09 * For primary GICs, skip over SGIs.
+-=09 * For secondary GICs, skip over PPIs, too.
+-=09 */
+-=09if (gic_nr =3D=3D 0 && (irq_start & 31) > 0) {
+-=09=09hwirq_base =3D 16;
+-=09=09if (irq_start !=3D -1)
+-=09=09=09irq_start =3D (irq_start & ~31) + 16;
+-=09} else {
+-=09=09hwirq_base =3D 32;
+-=09}
+-
+-=09/*
+ =09 * Find out how many interrupts are supported.
+ =09 * The GIC only supports up to 1020 interrupt sources.
+ =09 */
+@@ -986,14 +970,31 @@ void __init gic_init_bases(unsigned int gic_nr, int i=
+rq_start,
+ =09=09gic_irqs =3D 1020;
+ =09gic->gic_irqs =3D gic_irqs;
+=20
+-=09gic_irqs -=3D hwirq_base; /* calculate # of irqs to allocate */
++=09if (node) {=09=09/* DT case */
++=09=09const struct irq_domain_ops *ops =3D &gic_irq_domain_hierarchy_ops;
 +
- 	/*
- 	 * 1st: PCRIndex
- 	 * PCR used is always the same (config option) in
-@@ -139,14 +143,14 @@ static int ima_measurements_show(struct seq_file *m, void *v)
- 	ima_putc(m, e->digest, TPM_DIGEST_SIZE);
- 
- 	/* 3rd: template name size */
--	namelen = strlen(e->template_desc->name);
-+	namelen = strlen(template_name);
- 	ima_putc(m, &namelen, sizeof(namelen));
- 
- 	/* 4th:  template name */
--	ima_putc(m, e->template_desc->name, namelen);
-+	ima_putc(m, template_name, namelen);
- 
- 	/* 5th:  template length (except for 'ima' template) */
--	if (strcmp(e->template_desc->name, IMA_TEMPLATE_IMA_NAME) == 0)
-+	if (strcmp(template_name, IMA_TEMPLATE_IMA_NAME) == 0)
- 		is_ima_template = true;
- 
- 	if (!is_ima_template)
-@@ -200,6 +204,7 @@ static int ima_ascii_measurements_show(struct seq_file *m, void *v)
- 	/* the list never shrinks, so we don't need a lock here */
- 	struct ima_queue_entry *qe = v;
- 	struct ima_template_entry *e;
-+	char *template_name;
- 	int i;
- 
- 	/* get entry */
-@@ -207,6 +212,9 @@ static int ima_ascii_measurements_show(struct seq_file *m, void *v)
- 	if (e == NULL)
- 		return -1;
- 
-+	template_name = (e->template_desc->name[0] != '\0') ?
-+	    e->template_desc->name : e->template_desc->fmt;
++=09=09if (!of_property_read_u32(node, "arm,routable-irqs",
++=09=09=09=09=09  &nr_routable_irqs)) {
++=09=09=09ops =3D &gic_irq_domain_ops;
++=09=09=09gic_irqs =3D nr_routable_irqs;
++=09=09}
 +
- 	/* 1st: PCR used (config option) */
- 	seq_printf(m, "%2d ", CONFIG_IMA_MEASURE_PCR_IDX);
- 
-@@ -214,7 +222,7 @@ static int ima_ascii_measurements_show(struct seq_file *m, void *v)
- 	ima_print_digest(m, e->digest, TPM_DIGEST_SIZE);
- 
- 	/* 3th:  template name */
--	seq_printf(m, " %s", e->template_desc->name);
-+	seq_printf(m, " %s", template_name);
- 
- 	/* 4th:  template specific data */
- 	for (i = 0; i < e->template_desc->num_fields; i++) {
-diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
-index 1310afc..b7b359c 100644
---- a/security/integrity/ima/ima_template.c
-+++ b/security/integrity/ima/ima_template.c
-@@ -176,7 +176,9 @@ int __init ima_init_template(void)
- 					   &(template->fields),
- 					   &(template->num_fields));
- 	if (result < 0)
--		pr_err("template %s init failed, result: %d\n", template->name);
-+		pr_err("template %s init failed, result: %d\n",
-+		       (strlen(template->name) ?
-+		       template->name : template->fmt), result);
- 
- 	return result;
- }
--- 
-1.9.3
++=09=09gic->domain =3D irq_domain_add_linear(node, gic_irqs, ops, gic);
++=09} else {=09=09/* Non-DT case */
++=09=09/*
++=09=09 * For primary GICs, skip over SGIs.
++=09=09 * For secondary GICs, skip over PPIs, too.
++=09=09 */
++=09=09if (gic_nr =3D=3D 0 && (irq_start & 31) > 0) {
++=09=09=09hwirq_base =3D 16;
++=09=09=09if (irq_start !=3D -1)
++=09=09=09=09irq_start =3D (irq_start & ~31) + 16;
++=09=09} else {
++=09=09=09hwirq_base =3D 32;
++=09=09}
++
++=09=09gic_irqs -=3D hwirq_base; /* calculate # of irqs to allocate */
+=20
+-=09if (IS_ENABLED(CONFIG_IRQ_DOMAIN_HIERARCHY) &&
+-=09=09of_find_property(node, "arm,irq-domain-hierarchy", NULL))
+-=09=09gic->domain =3D irq_domain_add_linear(node, gic_irqs,
+-=09=09=09=09=09&gic_irq_domain_hierarchy_ops, gic);
+-=09else if (of_property_read_u32(node, "arm,routable-irqs",
+-=09=09=09=09 &nr_routable_irqs)) {
+ =09=09irq_base =3D irq_alloc_descs(irq_start, 16, gic_irqs,
+ =09=09=09=09=09   numa_node_id());
+ =09=09if (IS_ERR_VALUE(irq_base)) {
+@@ -1004,10 +1005,6 @@ void __init gic_init_bases(unsigned int gic_nr, int =
+irq_start,
+=20
+ =09=09gic->domain =3D irq_domain_add_legacy(node, gic_irqs, irq_base,
+ =09=09=09=09=09hwirq_base, &gic_irq_domain_ops, gic);
+-=09} else {
+-=09=09gic->domain =3D irq_domain_add_linear(node, nr_routable_irqs,
+-=09=09=09=09=09=09    &gic_irq_domain_ops,
+-=09=09=09=09=09=09    gic);
+ =09}
+=20
+ =09if (WARN_ON(!gic->domain))
+--=20
+2.0.4
 
-
-------316D94A49C24F74C4962BF5431BFDBD1
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-
-MIIICQYJKoZIhvcNAQcCoIIH+jCCB/YCAQExCzAJBgUrDgMCGgUAMAsGCSqGSIb3
-DQEHAaCCBWQwggVgMIIESKADAgECAgICuzANBgkqhkiG9w0BAQUFADBlMQswCQYD
-VQQGEwJJVDEeMBwGA1UEChMVUG9saXRlY25pY28gZGkgVG9yaW5vMTYwNAYDVQQD
-Ey1Qb2xpdGVjbmljbyBkaSBUb3Jpbm8gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkw
-HhcNMTAxMjIwMTExOTU0WhcNMTUxMjMxMjM1OTU5WjBfMQswCQYDVQQGEwJJVDEe
-MBwGA1UEChMVUG9saXRlY25pY28gZGkgVG9yaW5vMRcwFQYDVQQDEw5Sb2JlcnRv
-ICBTYXNzdTEXMBUGCgmSJomT8ixkAQETB2QwMjEzMDUwggEiMA0GCSqGSIb3DQEB
-AQUAA4IBDwAwggEKAoIBAQDS6p4SaJdmmJHJu9On9ZohhBFE2GgYiY7YtRnhhQJA
-NfOtHEhSbpUMaSOfq/Pna6ipR5nAFrlM8cOGcSHZdxrPcgzeJU7F2v1fl2ThvFOc
-TIkcC1aAJGQUuCaCXDlQt+KFecJWTrRZnalMHZueO+J6cgHcvR1CQz5e88dSzo3Q
-XZy0w/hxGL9Ht9velqsl48ohBk2rs/svAOCp6GfqT1Yxwx1p87d3ViTrmuZB4/X+
-da39nJqmo6AZ/y3Zg+r91BgNcfsHVqFT0JTcG6qRIaeqTtqVYpYl+rH1rZzYCakD
-yQyys66sBvaXyaiMr0M+SpyH+LaGz5bDn5Odq16FYEq7AgMBAAGjggIeMIICGjAO
-BgNVHQ8BAf8EBAMCA/gwJwYDVR0lBCAwHgYIKwYBBQUHAwIGCCsGAQUFBwMDBggr
-BgEFBQcDBDAiBgNVHREEGzAZgRdyb2JlcnRvLnNhc3N1QHBvbGl0by5pdDAMBgNV
-HRMBAf8EAjAAMB0GA1UdDgQWBBQgKbXSXn+j769x0tsZQ9pSOzIIdDAfBgNVHSME
-GDAWgBTNm1tbnup2IcQQaOjSLTfbHy/I5DCBywYDVR0gBIHDMIHAMD4GCisGAQQB
-qQcBAQIwMDAuBggrBgEFBQcCARYiaHR0cDovL3d3dy5ldXJvcGtpLm9yZy9jYS9j
-cHMvMS4yLzBEBgorBgEEAakHAgECMDYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
-aXRhbHkuZXVyb3BraS5vcmcvY2EvY3BzLzEuMi8wOAYKKwYBBAGVYgECAjAqMCgG
-CCsGAQUFBwIBFhxodHRwOi8vY2EucG9saXRvLml0L2Nwcy8yLjIvMGYGCCsGAQUF
-BwEBBFowWDAhBggrBgEFBQcwAYYVaHR0cDovL29jc3AucG9saXRvLml0MDMGCCsG
-AQUFBzAChidodHRwOi8vY2EucG9saXRvLml0L2NlcnRzL3BvbGl0b19jYS5jZXIw
-NwYDVR0fBDAwLjAsoCqgKIYmaHR0cDovL2NhLnBvbGl0by5pdC9jcmwvcG9saXRv
-X2NybC5jcmwwDQYJKoZIhvcNAQEFBQADggEBADMe0aHcBJXV6pMJPVVSt1Vazd8Y
-LuTLO45Igs9Sb2LuaO6pvcDGvq9dEJnBhP1B+zBAK6WEA1PWb66xC4QXaJnlGZTX
-S3XeBivHWm6BNOH2kNeU0HBeGZCV/n5r70TPxkEAcc7u8YY2i6CiMM428YhZK8Zj
-oN9D3QNIRf4HZgh0FTbf8eL/XvBbK/oPC+Rew+Qql6M3DHnaS1q2SKUwwO/4VXA4
-JsOdatFI68AMXH0Xx9UIcjRi+kvsyvwHlc0Z8AoAtfRMoIl4zFF4Qaowec2UunBK
-YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
-MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
-aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
-Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
-CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xNDEwMTMxMjA5MzJaMCMGCSqG
-SIb3DQEJBDEWBBTZ9LLbVhtPAscNTg+ppqERV3HSEzB5BgkqhkiG9w0BCQ8xbDBq
-MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
-DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
-hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQCWUc6iN76jrrdUSmVVNvuCW1rm
-JxKZeSDNGSqUWXoo2Fs60znNHNv8G1Ysu1dra+5taTq3wp3UwgbbHjLKOnTwVbE/
-EPRQwDgrjHKkY5MbFd0VJamYIeEY6UN0oDCE863F95JWAJ5SuHHPb3kdfxMb7HCA
-rgqhdV6KUQsetrQzNdedSvSA35Q/kwvgl+ZDCjTvsDZEmuyBWa6qFqIB+qepkupj
-+Nq5OBI4UMy/wnzR598yEjBZFSZoKOCiVg+yeW+MJHsNjCqdE003zDvTzKio2Cxm
-XPYXI+GPvEsYPFaAYZdS7TJ4w5tTkU4oe9W6+iMC3ZoqXRYXa+SKtqPpWInO
-
-------316D94A49C24F74C4962BF5431BFDBD1--
-
+--------------030407050101090003060102--
 
