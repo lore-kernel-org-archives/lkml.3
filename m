@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754356AbaJMC6M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:58:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45646 "EHLO
+	id S1753343AbaJMC0L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:26:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45638 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753275AbaJMC0M (ORCPT
+	with ESMTP id S1753275AbaJMC0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:26:12 -0400
+	Sun, 12 Oct 2014 22:26:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gerhard Stenzel <gerhard.stenzel@de.ibm.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 12/37] vxlan: fix incorrect initializer in union vxlan_addr
-Date: Mon, 13 Oct 2014 04:24:09 +0200
-Message-Id: <20141013022400.814990201@linuxfoundation.org>
+Subject: [PATCH 3.14 10/37] packet: handle too big packets for PACKET_V3
+Date: Mon, 13 Oct 2014 04:24:07 +0200
+Message-Id: <20141013022400.730393819@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022400.286360067@linuxfoundation.org>
 References: <20141013022400.286360067@linuxfoundation.org>
@@ -29,74 +31,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gerhard Stenzel <gstenzel@linux.vnet.ibm.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit a45e92a599e77ee6a850eabdd0141633fde03915 ]
+[ Upstream commit dc808110bb62b64a448696ecac3938902c92e1ab ]
 
-The first initializer in the following
+af_packet can currently overwrite kernel memory by out of bound
+accesses, because it assumed a [new] block can always hold one frame.
 
-        union vxlan_addr ipa = {
-            .sin.sin_addr.s_addr = tip,
-            .sa.sa_family = AF_INET,
-        };
+This is not generally the case, even if most existing tools do it right.
 
-is optimised away by the compiler, due to the second initializer,
-therefore initialising .sin.sin_addr.s_addr always to 0.
-This results in netlink messages indicating a L3 miss never contain the
-missed IP address. This was observed with GCC 4.8 and 4.9. I do not know about previous versions.
-The problem affects user space programs relying on an IP address being
-sent as part of a netlink message indicating a L3 miss.
+This patch clamps too long frames as API permits, and issue a one time
+error on syslog.
 
-Changing
-            .sa.sa_family = AF_INET,
-to
-            .sin.sin_family = AF_INET,
-fixes the problem.
+[  394.357639] tpacket_rcv: packet too big, clamped from 5042 to 3966. macoff=82
 
-Signed-off-by: Gerhard Stenzel <gerhard.stenzel@de.ibm.com>
+In this example, packet header tp_snaplen was set to 3966,
+and tp_len was set to 5042 (skb->len)
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Fixes: f6fb8f100b80 ("af-packet: TPACKET_V3 flexible buffer implementation.")
+Acked-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/vxlan.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ net/packet/af_packet.c |   17 +++++++++++++++++
+ net/packet/internal.h  |    1 +
+ 2 files changed, 18 insertions(+)
 
---- a/drivers/net/vxlan.c
-+++ b/drivers/net/vxlan.c
-@@ -1334,7 +1334,7 @@ static int arp_reduce(struct net_device
- 	} else if (vxlan->flags & VXLAN_F_L3MISS) {
- 		union vxlan_addr ipa = {
- 			.sin.sin_addr.s_addr = tip,
--			.sa.sa_family = AF_INET,
-+			.sin.sin_family = AF_INET,
- 		};
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -635,6 +635,7 @@ static void init_prb_bdqc(struct packet_
+ 	p1->tov_in_jiffies = msecs_to_jiffies(p1->retire_blk_tov);
+ 	p1->blk_sizeof_priv = req_u->req3.tp_sizeof_priv;
  
- 		vxlan_ip_miss(dev, &ipa);
-@@ -1495,7 +1495,7 @@ static int neigh_reduce(struct net_devic
- 	} else if (vxlan->flags & VXLAN_F_L3MISS) {
- 		union vxlan_addr ipa = {
- 			.sin6.sin6_addr = msg->target,
--			.sa.sa_family = AF_INET6,
-+			.sin6.sin6_family = AF_INET6,
- 		};
- 
- 		vxlan_ip_miss(dev, &ipa);
-@@ -1528,7 +1528,7 @@ static bool route_shortcircuit(struct ne
- 		if (!n && (vxlan->flags & VXLAN_F_L3MISS)) {
- 			union vxlan_addr ipa = {
- 				.sin.sin_addr.s_addr = pip->daddr,
--				.sa.sa_family = AF_INET,
-+				.sin.sin_family = AF_INET,
- 			};
- 
- 			vxlan_ip_miss(dev, &ipa);
-@@ -1549,7 +1549,7 @@ static bool route_shortcircuit(struct ne
- 		if (!n && (vxlan->flags & VXLAN_F_L3MISS)) {
- 			union vxlan_addr ipa = {
- 				.sin6.sin6_addr = pip6->daddr,
--				.sa.sa_family = AF_INET6,
-+				.sin6.sin6_family = AF_INET6,
- 			};
- 
- 			vxlan_ip_miss(dev, &ipa);
++	p1->max_frame_len = p1->kblk_size - BLK_PLUS_PRIV(p1->blk_sizeof_priv);
+ 	prb_init_ft_ops(p1, req_u);
+ 	prb_setup_retire_blk_timer(po, tx_ring);
+ 	prb_open_block(p1, pbd);
+@@ -1946,6 +1947,18 @@ static int tpacket_rcv(struct sk_buff *s
+ 			if ((int)snaplen < 0)
+ 				snaplen = 0;
+ 		}
++	} else if (unlikely(macoff + snaplen >
++			    GET_PBDQC_FROM_RB(&po->rx_ring)->max_frame_len)) {
++		u32 nval;
++
++		nval = GET_PBDQC_FROM_RB(&po->rx_ring)->max_frame_len - macoff;
++		pr_err_once("tpacket_rcv: packet too big, clamped from %u to %u. macoff=%u\n",
++			    snaplen, nval, macoff);
++		snaplen = nval;
++		if (unlikely((int)snaplen < 0)) {
++			snaplen = 0;
++			macoff = GET_PBDQC_FROM_RB(&po->rx_ring)->max_frame_len;
++		}
+ 	}
+ 	spin_lock(&sk->sk_receive_queue.lock);
+ 	h.raw = packet_current_rx_frame(po, skb,
+@@ -3779,6 +3792,10 @@ static int packet_set_ring(struct sock *
+ 			goto out;
+ 		if (unlikely(req->tp_block_size & (PAGE_SIZE - 1)))
+ 			goto out;
++		if (po->tp_version >= TPACKET_V3 &&
++		    (int)(req->tp_block_size -
++			  BLK_PLUS_PRIV(req_u->req3.tp_sizeof_priv)) <= 0)
++			goto out;
+ 		if (unlikely(req->tp_frame_size < po->tp_hdrlen +
+ 					po->tp_reserve))
+ 			goto out;
+--- a/net/packet/internal.h
++++ b/net/packet/internal.h
+@@ -29,6 +29,7 @@ struct tpacket_kbdq_core {
+ 	char		*pkblk_start;
+ 	char		*pkblk_end;
+ 	int		kblk_size;
++	unsigned int	max_frame_len;
+ 	unsigned int	knum_blocks;
+ 	uint64_t	knxt_seq_num;
+ 	char		*prev;
 
 
