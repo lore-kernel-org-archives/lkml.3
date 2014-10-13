@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962AbaJMHsP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 03:48:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35508 "EHLO mx1.redhat.com"
+	id S1754000AbaJMHsX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 03:48:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5572 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753866AbaJMHsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 03:48:10 -0400
-Date: Mon, 13 Oct 2014 10:51:24 +0300
+	id S1753958AbaJMHsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 03:48:15 -0400
+Date: Mon, 13 Oct 2014 10:51:29 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Rusty Russell <rusty@rustcorp.com.au>,
@@ -17,9 +17,10 @@ Cc: Rusty Russell <rusty@rustcorp.com.au>,
         Cornelia Huck <cornelia.huck@de.ibm.com>,
         Christian Borntraeger <borntraeger@de.ibm.com>,
         "David S. Miller" <davem@davemloft.net>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH v4 20/25] virtio_net: enable VQs early on restore
-Message-ID: <1413114332-626-21-git-send-email-mst-v4@redhat.com>
+        Paolo Bonzini <pbonzini@redhat.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Subject: [PATCH v4 21/25] virito_scsi: use freezable WQ for events
+Message-ID: <1413114332-626-22-git-send-email-mst-v4@redhat.com>
 References: <1413114332-626-1-git-send-email-mst-v4@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -30,31 +31,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-virtio spec requires drivers to set DRIVER_OK before using VQs.
-This is set automatically after restore returns, virtio net violated this
-rule by using receive VQs within restore.
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-To fix, call virtio_device_ready before using VQs.
+Michael S. Tsirkin noticed a race condition:
+we reset device on freeze, but system WQ is still
+running so it might try adding bufs to a VQ meanwhile.
 
+To fix, switch to handling events from the freezable WQ.
+
+Reported-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 ---
- drivers/net/virtio_net.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/scsi/virtio_scsi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 3551417..6b6e136 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1912,6 +1912,8 @@ static int virtnet_restore(struct virtio_device *vdev)
- 	if (err)
- 		return err;
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index 2b565b3..501838d 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -390,7 +390,7 @@ static void virtscsi_complete_event(struct virtio_scsi *vscsi, void *buf)
+ {
+ 	struct virtio_scsi_event_node *event_node = buf;
  
-+	virtio_device_ready(vdev);
-+
- 	if (netif_running(vi->dev)) {
- 		for (i = 0; i < vi->curr_queue_pairs; i++)
- 			if (!try_fill_recv(&vi->rq[i], GFP_KERNEL))
+-	schedule_work(&event_node->work);
++	queue_work(system_freezable_wq, &event_node->work);
+ }
+ 
+ static void virtscsi_event_done(struct virtqueue *vq)
 -- 
 MST
 
