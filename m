@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753642AbaJMKcc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 06:32:32 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:44476 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753614AbaJMKca (ORCPT
+	id S1753712AbaJMKcy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 06:32:54 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50120 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752909AbaJMKcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 06:32:30 -0400
+	Mon, 13 Oct 2014 06:32:53 -0400
+Date: Mon, 13 Oct 2014 12:32:33 +0200
+From: Mark Brown <broonie@kernel.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: dmaengine@vger.kernel.org, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20141013103233.GI27755@sirena.org.uk>
+References: <1413041973-28146-1-git-send-email-vinod.koul@intel.com>
+ <1413042040-28222-8-git-send-email-vinod.koul@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20141012170637.GA12591@roeck-us.net>
-References: <1412885235-14026-1-git-send-email-octavian.purdila@intel.com>
-	<1412885235-14026-4-git-send-email-octavian.purdila@intel.com>
-	<CAJjB1qKQ0ND2CeF=Npahn0r19WjdTwc7D3Th7PLnn0FJxHa_KQ@mail.gmail.com>
-	<CAE1zotL4Pb5etHzakCxeDLvZR112XGGaHomZ_dbh=AQVc0wvPg@mail.gmail.com>
-	<20141012170637.GA12591@roeck-us.net>
-Date: Mon, 13 Oct 2014 13:32:28 +0300
-Message-ID: <CAE1zotLf15Prv=uYwL1wnsANj8k8RFhtBZCNJLkqOO+vxqW5CA@mail.gmail.com>
-Subject: Re: [RFC PATCH 3/3] i2c: show and change bus frequency via sysfs
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Mark Roszko <mark.roszko@gmail.com>, linux-i2c <linux-i2c@vger.kernel.org>,
-        linux-api@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Johan Hovold <johan@kernel.org>, Wolfram Sang <wsa@the-dreams.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4MTjg8yAiOaLjoFv"
+Content-Disposition: inline
+In-Reply-To: <1413042040-28222-8-git-send-email-vinod.koul@intel.com>
+X-Cookie: You are magnetic in your bearing.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 62.156.150.204
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 08/12] spi/spi-dw-mid.c: use dmaengine_slave_config() API
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 12, 2014 at 8:06 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> On Sun, Oct 12, 2014 at 12:32:56PM +0300, Octavian Purdila wrote:
->> On Sat, Oct 11, 2014 at 11:14 PM, Mark Roszko <mark.roszko@gmail.com> wrote:
->>
->> > This seems limiting to arches with peripherals that can support a range of
->> > frequencies rather than fixed numbers.
->> > Also it creates some portability quirkiness between platforms when all the
->> > i2c bus drivers have different supported freq lists and you have to match
->> > exactly the right frequency. I.e. one guy does 60khz but another only has
->> > 80khz.
->>
->> Sorry, I don't understand your points here. If this limitations exists
->> they are not introduced by this patch. This patch just exposes the
->> frequency so that it can be read or changed in userspace.
->>
->> > Another issue is in systems where you have i2c devices on the same bus as
->> > the sysfs user space driver. User space could set a bus frequency that
->> > prevents operation with a system i2c device.
->>
->> Changing the frequency is limited to root. Also, bus drivers do not
->> have to implement set_freq if it is thought not to be safe.
->>
->> On a different not, I have noticed that a fixed set of frequencies
->> might not be the best API, since multiple drivers rather support a
->> rather large set of frequencies in a range. A better API might be to
->> expose a min-max range and let the bus driver adjust the requested
->> frequency. I will follow up with a second version that does that.
->
-> As two separate sysfs attributes, maybe ? sysfs is supposed to provide
-> one value per attribute.
->
 
-Yes, I was thinking of using three attributes: bus_frequency,
-bus_min_frequency and bus_max_frequency.
+--4MTjg8yAiOaLjoFv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> For the patch itself, I would find it better if you used is_visible to
-> determine if the new attributes should be visible (and/or writable) instead
-> of returning -EOPNOTSUPP.
->
+On Sat, Oct 11, 2014 at 09:10:36PM +0530, Vinod Koul wrote:
+> The drivers should use dmaengine_slave_config() API instead of
+> accessing the device_control which will be deprecated soon
 
-OK, that sounds better. I will switch to that model in v2.
+Applied, thanks.
+
+--4MTjg8yAiOaLjoFv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUO6pAAAoJECTWi3JdVIfQpOUH/iilgElY6zXJ4FSI9jORpB9n
+NjePb/AJrafy39bQmCApCphpMtwQKrTqJVQTW1dT2eQ7wkNezUkQGWrvKJ1SRh2P
+/xo4fsMnBYFjjKF/hpTABcHE9aJ0XdC2XDNHCe4JiBJ+d6FBH/v369X/+15MCUpr
+1e7JPC1lo8co1nEOqZSPr/PzRCkh/5ghz70wDffaHzb+Nb3hp2K+NGk+8EJseSoX
+/Whkqea8Yrie/W9tKyafIG04Hcf3f6H0IW1JDC+NMHY5UPMHXg8Lzl3pcs0r2LP1
+0/VSPWzbRpDalRxLT6aLCKQj34V7rOHbxk8rbSwhgiqs2aVTitfAP1tZ5WDP87A=
+=PPSK
+-----END PGP SIGNATURE-----
+
+--4MTjg8yAiOaLjoFv--
