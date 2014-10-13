@@ -1,68 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746AbaJMNVH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 09:21:07 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50762 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753850AbaJMNVF (ORCPT
+	id S1753993AbaJMNW4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 09:22:56 -0400
+Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:40779
+	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753464AbaJMNWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 09:21:05 -0400
-Date: Mon, 13 Oct 2014 15:20:43 +0200
-From: Mark Brown <broonie@kernel.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: lgirdwood@gmail.com, grant.likely@linaro.org, robh+dt@kernel.org,
-        kyungmin.park@samsung.com, javier@dowhile0.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>
-Message-ID: <20141013132043.GE27755@sirena.org.uk>
-References: <1412940935-14721-1-git-send-email-cw00.choi@samsung.com>
- <1412940935-14721-4-git-send-email-cw00.choi@samsung.com>
+	Mon, 13 Oct 2014 09:22:55 -0400
+Date: Mon, 13 Oct 2014 15:22:53 +0200
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, eparis@redhat.com,
+        sgrubb@redhat.com, aviro@redhat.com, pmoore@redhat.com,
+        arozansk@redhat.com, ebiederm@xmission.com, serge@hallyn.com
+Subject: Re: [PATCH V5 10/13] audit: log on switching namespace (setns)
+Message-ID: <20141013132253.GI24703@mail.hallyn.com>
+References: <cover.1412543112.git.rgb@redhat.com>
+ <5df56a7fa372cf86ca7d5f3807178710097b4c27.1412543112.git.rgb@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oHs6GRo50UrIH54O"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1412940935-14721-4-git-send-email-cw00.choi@samsung.com>
-X-Cookie: You are magnetic in your bearing.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 62.156.150.204
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCHv5 3/3] ARM: dts: Add sleep mode of regulator for
- exynos3250-rinato board
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <5df56a7fa372cf86ca7d5f3807178710097b4c27.1412543112.git.rgb@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Quoting Richard Guy Briggs (rgb@redhat.com):
+> Added six new audit message types, AUDIT_NS_SET_* and function
+> audit_log_ns_set() to log a switch of namespace.
+> 
+> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> ---
+>  include/linux/audit.h      |    4 +++
+>  include/uapi/linux/audit.h |    6 +++++
+>  kernel/audit.c             |   46 ++++++++++++++++++++++++++++++++++++++++++++
+>  kernel/nsproxy.c           |    3 ++
+>  4 files changed, 59 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/audit.h b/include/linux/audit.h
+> index 1474334..9de9b25 100644
+> --- a/include/linux/audit.h
+> +++ b/include/linux/audit.h
+> @@ -26,6 +26,7 @@
+>  #include <linux/sched.h>
+>  #include <linux/ptrace.h>
+>  #include <uapi/linux/audit.h>
+> +#include <linux/proc_ns.h>
+>  
+>  struct audit_sig_info {
+>  	uid_t		uid;
+> @@ -484,6 +485,7 @@ static inline void	    audit_log_ns_info(struct task_struct *tsk)
+>  extern int		    audit_log_ns_init(int type, long long old_snum,
+>  					      long long snum);
+>  extern int		    audit_log_ns_del(int type, long long snum);
+> +extern void		    audit_log_ns_set(const struct proc_ns_operations *ops, void *ns);
+>  
+>  extern int		    audit_update_lsm_rules(void);
+>  
+> @@ -547,6 +549,8 @@ static inline int audit_log_ns_init(int type, long long old_snum,
+>  { }
+>  static inline int audit_log_ns_del(int type, long long snum)
+>  { }
+> +static inline void audit_log_ns_set(const struct proc_ns_operations *ops, void *ns)
+> +{ }
+>  #define audit_enabled 0
+>  #endif /* CONFIG_AUDIT */
+>  static inline void audit_log_string(struct audit_buffer *ab, const char *buf)
+> diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+> index 1acfea7..7ec7209 100644
+> --- a/include/uapi/linux/audit.h
+> +++ b/include/uapi/linux/audit.h
+> @@ -123,6 +123,12 @@
+>  #define AUDIT_NS_DEL_USER	1339	/* Record USER namespace instance deletion */
+>  #define AUDIT_NS_DEL_PID	1340	/* Record PID namespace instance deletion */
+>  #define AUDIT_NS_DEL_NET	1341	/* Record NET namespace instance deletion */
+> +#define AUDIT_NS_SET_MNT	1342	/* Record mount namespace instance deletion */
+> +#define AUDIT_NS_SET_UTS	1343	/* Record UTS namespace instance deletion */
+> +#define AUDIT_NS_SET_IPC	1344	/* Record IPC namespace instance deletion */
+> +#define AUDIT_NS_SET_USER	1345	/* Record USER namespace instance deletion */
+> +#define AUDIT_NS_SET_PID	1346	/* Record PID namespace instance deletion */
+> +#define AUDIT_NS_SET_NET	1347	/* Record NET namespace instance deletion */
+>  
+>  #define AUDIT_AVC		1400	/* SE Linux avc denial or grant */
+>  #define AUDIT_SELINUX_ERR	1401	/* Internal SE Linux Errors */
+> diff --git a/kernel/audit.c b/kernel/audit.c
+> index cc63445..84590d1 100644
+> --- a/kernel/audit.c
+> +++ b/kernel/audit.c
+> @@ -2021,6 +2021,52 @@ int audit_log_ns_del(int type, long long snum)
+>  	audit_log_end(ab);
+>  	return 0;
+>  }
+> +
+> +/**
+> + * audit_log_ns_set - report a namespace set change
+> + * @ops: the ops structure for the namespace to be changed
+> + * @ns: the new namespace
+> + */
+> +void audit_log_ns_set(const struct proc_ns_operations *ops, void *ns)
+> +{
+> +	struct audit_buffer *ab;
+> +	void *old_ns;
+> +	int msg_type;
+> +
+> +	switch (ops->type) {
+> +	case CLONE_NEWNS:
+> +		msg_type = AUDIT_NS_SET_MNT;
+> +		break;
+> +	case CLONE_NEWUTS:
+> +		msg_type = AUDIT_NS_SET_UTS;
+> +		break;
+> +	case CLONE_NEWIPC:
+> +		msg_type = AUDIT_NS_SET_IPC;
+> +		break;
+> +	case CLONE_NEWUSER:
+> +		msg_type = AUDIT_NS_SET_USER;
+> +		break;
+> +	case CLONE_NEWPID:
+> +		msg_type = AUDIT_NS_SET_PID;
+> +		break;
+> +	case CLONE_NEWNET:
+> +		msg_type = AUDIT_NS_SET_NET;
+> +		break;
+> +	default:
+> +		return;
+> +	}
+> +	//ab = audit_log_start(tsk->audit_context, GFP_KERNEL, msg_type);
+> +	//audit_log_format(ab, " pid=%d", current->pid);
 
---oHs6GRo50UrIH54O
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Are these commented lines an accident, a 'TODO', or something else?
 
-On Fri, Oct 10, 2014 at 08:35:35PM +0900, Chanwoo Choi wrote:
-> This patch add sleep mode of regulator for exynos3250-rinato board to opt=
-imize
-> power-consumption in sleep state.
->=20
-> The power-consumption in suspend state is 0.6mA after applied this patch.
-
-Reviwed-by: Mark Brown <broonie@kernel.org>
-
---oHs6GRo50UrIH54O
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUO9GqAAoJECTWi3JdVIfQj0QH/1HApca+q4KA4+ZB+gz3pYX2
-asyLFNRi40Vj8xmglEBFL4uqBgz8g4RZnXTWqpN7Qvn3ud0pB1K7xAyJUJYYKrfB
-6TjS91JQx9BAnq+IzuckxhQulNes6yDGk7TCk2GIZsME0u5wX3/xjIg0k1KZWcTg
-ht7pzIAeCahf09XdEIx1G/pcLQMfwV8VKkgQfBX28hXrSBETixHJfiYW6n8fqL6n
-Csa32gX+d0H1m3QucMYE4VBDlajd9P/OA6/1PZVOep2fgMUAcangr6XP+GMZ5goW
-SYCXnd1GjZ2x0zGNFJfw+VJU41rGgaUqSoG62+1PBA9+S7xBZPl/oMivnFdjx3I=
-=4MhF
------END PGP SIGNATURE-----
-
---oHs6GRo50UrIH54O--
+> +	audit_log_common_recv_msg(&ab, ops->type);
+> +	if (!ab)
+> +		return;
+> + 	old_ns = ops->get(current);
+> +	audit_log_format(ab, " old-%ssn=%llx %ssn=%llx",
+> +			 ops->name, ops->snum(old_ns),
+> +			 ops->name, ops->snum(ns));
+> +	ops->put(old_ns);
+> +	audit_log_end(ab);
+> +}
+>  #endif /* CONFIG_NAMESPACES */
+>  
+>  /**
+> diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+> index 2cdc16b..e37409a 100644
+> --- a/kernel/nsproxy.c
+> +++ b/kernel/nsproxy.c
+> @@ -275,6 +275,9 @@ SYSCALL_DEFINE2(setns, int, fd, int, nstype)
+>  		goto out;
+>  	}
+>  	switch_task_namespaces(tsk, new_nsproxy);
+> +
+> +	audit_log_ns_set(ops, ei->ns);
+> +
+>  out:
+>  	fput(file);
+>  	return err;
+> -- 
+> 1.7.1
