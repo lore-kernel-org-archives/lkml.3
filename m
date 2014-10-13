@@ -1,57 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577AbaJMQok (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 12:44:40 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:14350 "EHLO mailhub1.si.c-s.fr"
+	id S1754512AbaJMQz0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 12:55:26 -0400
+Received: from mga01.intel.com ([192.55.52.88]:37742 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753895AbaJMQoj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 12:44:39 -0400
-Message-ID: <543C0176.5050706@c-s.fr>
-Date: Mon, 13 Oct 2014 18:44:38 +0200
-From: leroy christophe <christophe.leroy@c-s.fr>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754041AbaJMQzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 12:55:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="399518302"
+Date: Mon, 13 Oct 2014 09:55:56 -0700
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: gregkh@linuxfoundation.org, mina86@mina86.com, r.baldyga@samsung.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, Qiuxu Zhuo <qiuxu.zhuo@intel.com>
+Subject: Re: [PATCH v2] usb: ffs: fix regression when
+ quirk_ep_out_aligned_size flag is set
+Message-ID: <20141013165556.GA4034@psi-dev26.jf.intel.com>
+References: <1412727486-479-1-git-send-email-david.a.cohen@linux.intel.com>
+ <1412802738-28839-1-git-send-email-david.a.cohen@linux.intel.com>
+ <20141013153212.GE21709@saruman>
 MIME-Version: 1.0
-To: Scott Wood <scottwood@freescale.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Subject: Re: [PATCH v3 00/21] powerpc/8xx: Optimise MMU TLB handling and add
- support of 16k pages
-References: <20140917163656.E09D81AB026@localhost.localdomain>	 <1410972043.24184.532.camel@snotra.buserror.net> <5419F017.8010603@c-s.fr> <1410986079.24184.534.camel@snotra.buserror.net>
-In-Reply-To: <1410986079.24184.534.camel@snotra.buserror.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141013153212.GE21709@saruman>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Oct 13, 2014 at 10:32:12AM -0500, Felipe Balbi wrote:
+> On Wed, Oct 08, 2014 at 02:12:18PM -0700, David Cohen wrote:
+> > The commit '2e4c7553cd usb: gadget: f_fs: add aio support' broke the
+> > quirk implemented to align buffer size to maxpacketsize on out endpoint.
+> > As result, functionfs does not work on Intel platforms using dwc3 driver
+> > (i.e. Bay Trail and Merrifield). This patch fixes the issue.
+> > 
+> > This code is based on a previous Qiuxu's patch.
+> > 
+> > Fixes: 2e4c7553cd (usb: gadget: f_fs: add aio support)
+> > Cc: <stable@vger.kernel.org> # v3.16+
+> > Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+> > Signed-off-by: Qiuxu Zhuo <qiuxu.zhuo@intel.com>
+> > Acked-by: Michal Nazarewicz <mina86@mina86.com>
+> > ---
+> > 
+> > Hi,
+> > 
+> > Since this is a feature that worked in past, this is meant for stable
+> > versions >= 3.16 too.
+> > 
+> > v1 to v2: just added Fixes, Cc and Acked-by lines on patch description.
+> 
+> this adds a build warning for use of maybe unitialized data_len. Plese
+> fix.
 
-Le 17/09/2014 22:34, Scott Wood a écrit :
-> On Wed, 2014-09-17 at 22:33 +0200, christophe leroy wrote:
->> Le 17/09/2014 18:40, Scott Wood a écrit :
->>> On Wed, 2014-09-17 at 18:36 +0200, Christophe Leroy wrote:
->>>> This patchset:
->>>> 1) provides several MMU TLB handling optimisation on MPC8xx.
->>>> 2) adds support of 16k pages on MPC8xx.
->>>> All changes have been successfully tested on a custom board equipped with MPC885
->>>>
->>>> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
->>>> Tested-by: Christophe Leroy <christophe.leroy@c-s.fr>
->>> I've already applied patches 1, 2, 4, 5, 6, 9, and 10 from the previous
->>> patchset -- have they changed?
->>>
->>> -Scott
->>>
->> No, only 3, 7, 17 are changed, and 20,21 are new.
->> I didn't notice you already applied some. How should I then proceed now
->> for the remaining ones ? Submit a new set ?
->>
-> No, I'll just skip the ones I've already applied.
->
->
-I think I took into account all Joakim's and your's comments in v4.
-Since I submitted v4, I think I didn't get any new comment.
-What's the way forward to get the remaining ones applied ?
+It's a false-positive warning. data_len is only initialized if halt != 0
+and it's only used if halt != 0 too.
 
-Christophe
+Do you prefer to initialize it to 0 during the declaration to silent the
+compiler?
+
+BR, David
+
+> 
+> -- 
+> balbi
+
+
