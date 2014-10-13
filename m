@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290AbaJMCmA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:42:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45984 "EHLO
+	id S1754261AbaJMC3D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:29:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45963 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754295AbaJMC3H (ORCPT
+	with ESMTP id S1754183AbaJMC25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:29:07 -0400
+	Sun, 12 Oct 2014 22:28:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Thibaut Collet <thibaut.collet@6wind.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 26/55] macvlan: allow to enqueue broadcast pkt on virtual device
-Date: Mon, 13 Oct 2014 04:24:40 +0200
-Message-Id: <20141013022444.879115350@linuxfoundation.org>
+Subject: [PATCH 3.16 40/55] net: systemport: fix bcm_sysport_insert_tsb()
+Date: Mon, 13 Oct 2014 04:24:54 +0200
+Message-Id: <20141013022445.568652563@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
 References: <20141013022443.729870634@linuxfoundation.org>
@@ -31,47 +29,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+From: Florian Fainelli <f.fainelli@gmail.com>
 
-[ Upstream commit 07d92d5cc977a7fe1e683e1d4a6f723f7f2778cb ]
+[ Upstream commit e87474a6e697857df21cff0707a2472abceca8b3 ]
 
-Since commit 412ca1550cbe ("macvlan: Move broadcasts into a work queue"), the
-driver uses tx_queue_len of the master device as the limit of packets enqueuing.
-Problem is that virtual drivers have this value set to 0, thus all broadcast
-packets were rejected.
-Because tx_queue_len was arbitrarily chosen, I replace it with a static limit
-of 1000 (also arbitrarily chosen).
+Similar to commit bc23333ba11fb7f959b7e87e121122f5a0fbbca8 ("net:
+bcmgenet: fix bcmgenet_put_tx_csum()"), we need to return the skb
+pointer in case we had to reallocate the SKB headroom.
 
-CC: Herbert Xu <herbert@gondor.apana.org.au>
-Reported-by: Thibaut Collet <thibaut.collet@6wind.com>
-Suggested-by: Thibaut Collet <thibaut.collet@6wind.com>
-Tested-by: Thibaut Collet <thibaut.collet@6wind.com>
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
+Fixes: 80105befdb4b8 ("net: systemport: add Broadcom SYSTEMPORT Ethernet MAC driver")
+Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/macvlan.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/broadcom/bcmsysport.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -36,6 +36,7 @@
- #include <linux/netpoll.h>
+--- a/drivers/net/ethernet/broadcom/bcmsysport.c
++++ b/drivers/net/ethernet/broadcom/bcmsysport.c
+@@ -757,7 +757,8 @@ static irqreturn_t bcm_sysport_tx_isr(in
+ 	return IRQ_HANDLED;
+ }
  
- #define MACVLAN_HASH_SIZE	(1 << BITS_PER_BYTE)
-+#define MACVLAN_BC_QUEUE_LEN	1000
- 
- struct macvlan_port {
- 	struct net_device	*dev;
-@@ -248,7 +249,7 @@ static void macvlan_broadcast_enqueue(st
- 		goto err;
- 
- 	spin_lock(&port->bc_queue.lock);
--	if (skb_queue_len(&port->bc_queue) < skb->dev->tx_queue_len) {
-+	if (skb_queue_len(&port->bc_queue) < MACVLAN_BC_QUEUE_LEN) {
- 		__skb_queue_tail(&port->bc_queue, nskb);
- 		err = 0;
+-static int bcm_sysport_insert_tsb(struct sk_buff *skb, struct net_device *dev)
++static struct sk_buff *bcm_sysport_insert_tsb(struct sk_buff *skb,
++					      struct net_device *dev)
+ {
+ 	struct sk_buff *nskb;
+ 	struct bcm_tsb *tsb;
+@@ -773,7 +774,7 @@ static int bcm_sysport_insert_tsb(struct
+ 		if (!nskb) {
+ 			dev->stats.tx_errors++;
+ 			dev->stats.tx_dropped++;
+-			return -ENOMEM;
++			return NULL;
+ 		}
+ 		skb = nskb;
  	}
+@@ -792,7 +793,7 @@ static int bcm_sysport_insert_tsb(struct
+ 			ip_proto = ipv6_hdr(skb)->nexthdr;
+ 			break;
+ 		default:
+-			return 0;
++			return skb;
+ 		}
+ 
+ 		/* Get the checksum offset and the L4 (transport) offset */
+@@ -810,7 +811,7 @@ static int bcm_sysport_insert_tsb(struct
+ 		tsb->l4_ptr_dest_map = csum_info;
+ 	}
+ 
+-	return 0;
++	return skb;
+ }
+ 
+ static netdev_tx_t bcm_sysport_xmit(struct sk_buff *skb,
+@@ -844,8 +845,8 @@ static netdev_tx_t bcm_sysport_xmit(stru
+ 
+ 	/* Insert TSB and checksum infos */
+ 	if (priv->tsb_en) {
+-		ret = bcm_sysport_insert_tsb(skb, dev);
+-		if (ret) {
++		skb = bcm_sysport_insert_tsb(skb, dev);
++		if (!skb) {
+ 			ret = NETDEV_TX_OK;
+ 			goto out;
+ 		}
 
 
