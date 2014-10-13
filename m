@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751805AbaJMEzJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 00:55:09 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:28185 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889AbaJMEzC (ORCPT
+	id S1751937AbaJMFCf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 01:02:35 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:26647 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750808AbaJMFCb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 00:55:02 -0400
-X-AuditID: cbfee691-f79b86d000004a5a-dd-543b5b234667
+	Mon, 13 Oct 2014 01:02:31 -0400
+X-AuditID: cbfee68d-f79296d000004278-ef-543b5ce400f3
 From: Anton Tikhomirov <av.tikhomirov@samsung.com>
 To: "'Vivek Gautam'" <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org
 Cc: linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
@@ -16,45 +16,45 @@ Cc: linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
         mark.rutland@arm.com, pawel.moll@arm.com, robh+dt@kernel.org,
         kishon@ti.com
 References: <1412677176-3850-1-git-send-email-gautam.vivek@samsung.com>
- <1412677176-3850-2-git-send-email-gautam.vivek@samsung.com>
-In-reply-to: <1412677176-3850-2-git-send-email-gautam.vivek@samsung.com>
-Subject: RE: [PATCH v2 1/4] dwc3: exynos: Add support for SCLK present on
- Exynos7
-Date: Mon, 13 Oct 2014 13:54:59 +0900
-Message-id: <00f101cfe6a1$d772c5a0$865850e0$%tikhomirov@samsung.com>
+ <1412677176-3850-3-git-send-email-gautam.vivek@samsung.com>
+In-reply-to: <1412677176-3850-3-git-send-email-gautam.vivek@samsung.com>
+Subject: RE: [PATCH v2 2/4] phy: exynos5-usbdrd: Add pipe-clk and utmi-clk
+ support
+Date: Mon, 13 Oct 2014 14:02:27 +0900
+Message-id: <00f201cfe6a2$e2e829b0$a8b87d10$%tikhomirov@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=ks_c_5601-1987
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac/iGHNjpMmHE+GbT1qjmK1Xm3ylNwEh0/yg
+Thread-index: Ac/iGHePpvlUOOFsQTiepu8izdFQsQEiWrnA
 Content-language: en-us
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJIsWRmVeSWpSXmKPExsVy+t8zI13laOsQg3X7jC0O3q+3mH/kHKtF
-	25WD7BbNi9ezWfQuuMpmceFpD5vF5V1z2CxmL+lnsZhxfh+TxaJlrcwWS69fZLKYMH0ti0Xr
-	3iPsDrwea+atYfTYtKqTzWP/3DXsHn1bVjF6HL+xncnj8ya5ALYoLpuU1JzMstQifbsErowv
-	1x6zF7wSrdhwOaWBcZ9gFyMnh4SAicSfs//ZIGwxiQv31oPZQgLLGCXurbCAq1l0l7mLkQso
-	vohRYuPlpSwQzj9GiRcL17ODVLEJGEm8PLiRGcQWEfCQuHtsOTtIEbNAP5PE5d1LmCA6Whkl
-	3rTNAuvgBKrqO/8ebJ+wQLDElc6lYN0sAqoSN589ZwSxeQVcJG5v6WKBsAUlfky+B2YzCxhI
-	vJ/Vxwphy0tsXvMWqJcD6FZ1iUd/dSGOMJI4f+8mVLm4xKQHD8EOkhCYySHR8vMt1C4BiW+T
-	D7FA9MpKbDrADPGypMTBFTdYJjBKzEKyeRaSzbOQbJ6FZMUCRpZVjKKpBckFxUnpRaZ6xYm5
-	xaV56XrJ+bmbGCEpYOIOxvsHrA8xCnAwKvHwWvyxChFiTSwrrsw9xGgKdNFEZinR5Hxgoskr
-	iTc0NjOyMDUxNTYytzRTEufVkf4ZLCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoGR5SFTqWHf
-	RfZoR5ed3loizNYM5itnSD0ISnXdIn9JS+XCqVmu9euUhE3jj9/1ujYl3v1r+91dZ5T7J8cs
-	WFEX6RSzaN/FjT1++4wEZpx1CuAo83r6zP7uAsMqZrFOS3ZBkbTpNUYNnXa3JXnXHeRYJvrs
-	U9q7m9oSr9Rln7x43JfFJXbp+RclluKMREMt5qLiRAA0J5Kt/AIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsVy+t9jAV3laOsQg7WPdS0O3q+3mH/kHKtF
-	25WD7BbNi9ezWfQuuMpmceFpD5vF5V1z2CxmL+lnsZhxfh+TxaJlrcwWS69fZLKYMH0ti0Xr
-	3iPsDrwea+atYfTYtKqTzWP/3DXsHn1bVjF6HL+xncnj8ya5ALaoBkabjNTElNQihdS85PyU
-	zLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKBLlRTKEnNKgUIBicXFSvp2mCaE
-	hrjpWsA0Ruj6hgTB9RgZoIGEdYwZX649Zi94JVqx4XJKA+M+wS5GTg4JAROJP4vuMkPYYhIX
-	7q1n62Lk4hASWMQosfHyUhYI5x+jxIuF69lBqtgEjCReHtwI1iEi4CFx99hydpAiZoF+JonL
-	u5cwQXS0Mkq8aZsF1sEJVNV3/j0biC0sECxxpXMpWDeLgKrEzWfPGUFsXgEXidtbulggbEGJ
-	H5PvgdnMAgYS72f1sULY8hKb17wF6uUAulVd4tFfXYgjjCTO37sJVS4uMenBQ/YJjEKzkEya
-	hWTSLCSTZiFpWcDIsopRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjOMU8k97BuKrB4hCjAAej
-	Eg+vxR+rECHWxLLiytxDjBIczEoivG9trEOEeFMSK6tSi/Lji0pzUosPMZoCPTqRWUo0OR+Y
-	/vJK4g2NTcyMLI3MLIxMzM2VxHkPtloHCgmkJ5akZqemFqQWwfQxcXBKNTA6qM5wermVt/YV
-	34Hu1Jg/DzRszy5fIruWzdOVmYnreLRH1BatIO3C814T26Z1V7ztmCXatV70yOlpt2Sv209a
-	/WTi5QPulr+rdDcJmr78/1RVZefxa4XXT/V25m3S/rFI6m3pxRkrE0qERL+9ODmDbfrqMKn5
-	l/qi5Ov78oK37X63ZoP3j8R4JZbijERDLeai4kQAa9z9k0cDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJIsWRmVeSWpSXmKPExsVy+t8zY90nMdYhBhsnqVscvF9vMf/IOVaL
+	tisH2S2aF69ns+hdcJXN4sLTHjaLy7vmsFnMXtLPYjHj/D4mi0XLWpktll6/yGQxYfpaFovW
+	vUfYHXg91sxbw+ixaVUnm8f+uWvYPfq2rGL0OH5jO5PH501yAWxRXDYpqTmZZalF+nYJXBkv
+	XxxlKZiiVHF9zi3GBsZN0l2MnBwSAiYSW/5sZ4ewxSQu3FvP1sXIxSEksIxR4uGBwywwRacn
+	LWAEsYUEpjNKLH0YBlH0j1Fi8++ZbCAJNgEjiZcHNzKD2CICHhJ3jy1nByliFuhnkri8ewkT
+	REcro0TD7qlgYzmBqg5O3MraxcjBISwQIvH4nRVImEVAVWJq10qwQbwCLhLrl9xggbAFJX5M
+	vgdmMwsYSLyf1ccKYctLbF7zlhlkjISAusSjv7oQNxhJXLrxjhGiRFxi0oOHYPdICMzlkLh/
+	6gYrxC4BiW+TD7FA9MpKbDrADPGwpMTBFTdYJjBKzEKyeRaSzbOQbJ6FZMUCRpZVjKKpBckF
+	xUnpRYZ6xYm5xaV56XrJ+bmbGCEpoHcH4+0D1ocYBTgYlXh4Lf5YhQixJpYVV+YeYjQFumgi
+	s5Rocj4w0eSVxBsamxlZmJqYGhuZW5opifMqSv0MFhJITyxJzU5NLUgtii8qzUktPsTIxMEp
+	1cAYyFMf9eTJUp7jezOjdAzatm1++OZ17M3MU28buM7sufHww2GNx5puJ16+TFP4diHRZK6Z
+	1CQJrrnHaqri//Xdcl3X9LZrybp24YviBh+mChREnL4o9lJAYs9DJ+GXTSL8h7ve3PYpuOa8
+	TMVx69JHM2a22q5f677iUfm5YzKLtid+mOp1LPV5mBJLcUaioRZzUXEiABouxpP8AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMKsWRmVeSWpSXmKPExsVy+t9jQd0nMdYhBv+eK1ocvF9vMf/IOVaL
+	tisH2S2aF69ns+hdcJXN4sLTHjaLy7vmsFnMXtLPYjHj/D4mi0XLWpktll6/yGQxYfpaFovW
+	vUfYHXg91sxbw+ixaVUnm8f+uWvYPfq2rGL0OH5jO5PH501yAWxRDYw2GamJKalFCql5yfkp
+	mXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUCXKimUJeaUAoUCEouLlfTtME0I
+	DXHTtYBpjND1DQmC6zEyQAMJ6xgzXr44ylIwRani+pxbjA2Mm6S7GDk5JARMJE5PWsAIYYtJ
+	XLi3ng3EFhKYziix9GFYFyMXkP2PUWLz75lgCTYBI4mXBzcyg9giAh4Sd48tZwcpYhboZ5K4
+	vHsJE0RHK6NEw+6pLCBVnEBVByduZe1i5OAQFgiRePzOCiTMIqAqMbVrJdggXgEXifVLbrBA
+	2IISPybfA7OZBQwk3s/qY4Ww5SU2r3nLDDJGQkBd4tFfXYgbjCQu3XjHCFEiLjHpwUP2CYxC
+	s5BMmoVk0iwkk2YhaVnAyLKKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzjBPJPewbiqweIQ
+	owAHoxIPr8UfqxAh1sSy4srcQ4wSHMxKIrxvbaxDhHhTEiurUovy44tKc1KLDzGaAj06kVlK
+	NDkfmPzySuINjU3MjCyNzCyMTMzNlcR5D7ZaBwoJpCeWpGanphakFsH0MXFwSjUwbt4iKH7/
+	22G9YP7lF2abyhw7oPbWnc+kZfu7b4lWl3MehmwNt5s163t4f0aY2q4jp2TWzLepYkrTlz+T
+	rijVcanw/hbRfTwXT2p2iefEFLxe0bZb6lN+57fZ22TaNVW1daw/5/WJHONm67gyKcSZwe9J
+	SEzN//wZgrHXeF3eC2yN+Zi15egfJZbijERDLeai4kQAr1mvTUYDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -64,91 +64,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Vivek,
 
-> Exynos7 also has a separate special gate clock going to the IP
-> apart from the usual AHB clock. So add support for the same.
+> Exynos7 SoC has now separate gate control for 125MHz pipe3 phy
+> clock, as well as 60MHz utmi phy clock.
+> So get the same and control in the phy-exynos5-usbdrd driver.
 
-As we discussed before, Exynos7 SoCs have 7 clocks to be controlled
-by the driver. Adding only sclk is not enough. 
+In case of the PHY the situation is pretty much the same as with
+DWC3 core. Here we should control 6 clocks to make Exynos7 USB DRD
+PHY working.
+
+By the way, the driver name phy-exynos5-usbdrd.c doesn't imply it
+supports Exynos7 :)
 
 > 
 > Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
 > ---
->  drivers/usb/dwc3/dwc3-exynos.c |   16 ++++++++++++++++
->  1 file changed, 16 insertions(+)
+>  .../devicetree/bindings/phy/samsung-phy.txt        |    4 ++++
+>  drivers/phy/phy-exynos5-usbdrd.c                   |   22
+> ++++++++++++++++++++
+>  2 files changed, 26 insertions(+)
 > 
-> diff --git a/drivers/usb/dwc3/dwc3-exynos.c b/drivers/usb/dwc3/dwc3-
-> exynos.c
-> index 3951a65..7dc6a98 100644
-> --- a/drivers/usb/dwc3/dwc3-exynos.c
-> +++ b/drivers/usb/dwc3/dwc3-exynos.c
-> @@ -35,6 +35,7 @@ struct dwc3_exynos {
->  	struct device		*dev;
+> diff --git a/Documentation/devicetree/bindings/phy/samsung-phy.txt
+> b/Documentation/devicetree/bindings/phy/samsung-phy.txt
+> index 15e0f2c..c2bc9dc 100644
+> --- a/Documentation/devicetree/bindings/phy/samsung-phy.txt
+> +++ b/Documentation/devicetree/bindings/phy/samsung-phy.txt
+> @@ -138,6 +138,10 @@ Required properties:
+>  	       PHY operations, associated by phy name. It is used to
+>  	       determine bit values for clock settings register.
+>  	       For Exynos5420 this is given as 'sclk_usbphy30' in CMU.
+> +	- optional clocks: Exynos7 SoC has now following additional
+> +			   gate clocks available:
+> +			   - phy_pipe: for PIPE3 phy
+> +			   - phy_utmi: for UTMI+ phy
+>  - samsung,pmu-syscon: phandle for PMU system controller interface,
+> used to
+>  		      control pmu registers for power isolation.
+>  - #phy-cells : from the generic PHY bindings, must be 1;
+> diff --git a/drivers/phy/phy-exynos5-usbdrd.c b/drivers/phy/phy-
+> exynos5-usbdrd.c
+> index f756aca..013ee84 100644
+> --- a/drivers/phy/phy-exynos5-usbdrd.c
+> +++ b/drivers/phy/phy-exynos5-usbdrd.c
+> @@ -148,6 +148,8 @@ struct exynos5_usbdrd_phy_drvdata {
+>   * @dev: pointer to device instance of this platform device
+>   * @reg_phy: usb phy controller register memory base
+>   * @clk: phy clock for register access
+> + * @pipeclk: clock for pipe3 phy
+> + * @utmiclk: clock for utmi+ phy
+>   * @drv_data: pointer to SoC level driver data structure
+>   * @phys[]: array for 'EXYNOS5_DRDPHYS_NUM' number of PHY
+>   *	    instances each with its 'phy' and 'phy_cfg'.
+> @@ -161,6 +163,8 @@ struct exynos5_usbdrd_phy {
+>  	struct device *dev;
+>  	void __iomem *reg_phy;
+>  	struct clk *clk;
+> +	struct clk *pipeclk;
+> +	struct clk *utmiclk;
+>  	const struct exynos5_usbdrd_phy_drvdata *drv_data;
+>  	struct phy_usb_instance {
+>  		struct phy *phy;
+> @@ -446,6 +450,8 @@ static int exynos5_usbdrd_phy_power_on(struct phy
+> *phy)
 > 
->  	struct clk		*clk;
-
-The clock "clk" in Exynos5 just gated all that above 7 clocks, which
-we should control separately now in Exynos7.
-
-> +	struct clk		*sclk;
->  	struct regulator	*vdd33;
->  	struct regulator	*vdd10;
->  };
-> @@ -139,10 +140,21 @@ static int dwc3_exynos_probe(struct
-> platform_device *pdev)
->  		return -EINVAL;
->  	}
+>  	dev_dbg(phy_drd->dev, "Request to power_on usbdrd_phy phy\n");
 > 
-> +	/*
-> +	 * Exynos7 has a special gate clock going to this IP,
-> +	 * which in earlier SoCs was probably concealed.
-> +	 */
-> +	exynos->sclk = devm_clk_get(dev, "usbdrd30_sclk");
-> +	if (IS_ERR(exynos->sclk)) {
-> +		dev_info(dev, "no sclk specified\n");
-> +		exynos->sclk = NULL;
-> +	}
-> +
->  	exynos->dev	= dev;
->  	exynos->clk	= clk;
+> +	clk_prepare_enable(phy_drd->utmiclk);
+> +	clk_prepare_enable(phy_drd->pipeclk);
+>  	clk_prepare_enable(phy_drd->ref_clk);
 > 
->  	clk_prepare_enable(exynos->clk);
-> +	clk_prepare_enable(exynos->sclk);
+>  	/* Enable VBUS supply */
+> @@ -464,6 +470,8 @@ static int exynos5_usbdrd_phy_power_on(struct phy
+> *phy)
 > 
->  	exynos->vdd33 = devm_regulator_get(dev, "vdd33");
->  	if (IS_ERR(exynos->vdd33)) {
-> @@ -185,6 +197,7 @@ err4:
->  err3:
->  	regulator_disable(exynos->vdd33);
->  err2:
-> +	clk_disable_unprepare(exynos->sclk);
->  	clk_disable_unprepare(clk);
+>  fail_vbus:
+>  	clk_disable_unprepare(phy_drd->ref_clk);
+> +	clk_disable_unprepare(phy_drd->pipeclk);
+> +	clk_disable_unprepare(phy_drd->utmiclk);
+> 
 >  	return ret;
 >  }
-> @@ -197,6 +210,7 @@ static int dwc3_exynos_remove(struct
+> @@ -483,6 +491,8 @@ static int exynos5_usbdrd_phy_power_off(struct phy
+> *phy)
+>  		regulator_disable(phy_drd->vbus);
+> 
+>  	clk_disable_unprepare(phy_drd->ref_clk);
+> +	clk_disable_unprepare(phy_drd->pipeclk);
+> +	clk_disable_unprepare(phy_drd->utmiclk);
+> 
+>  	return 0;
+>  }
+> @@ -582,6 +592,18 @@ static int exynos5_usbdrd_phy_probe(struct
 > platform_device *pdev)
->  	platform_device_unregister(exynos->usb2_phy);
->  	platform_device_unregister(exynos->usb3_phy);
-> 
-> +	clk_disable_unprepare(exynos->sclk);
->  	clk_disable_unprepare(exynos->clk);
-> 
->  	regulator_disable(exynos->vdd33);
-> @@ -218,6 +232,7 @@ static int dwc3_exynos_suspend(struct device *dev)
->  {
->  	struct dwc3_exynos *exynos = dev_get_drvdata(dev);
-> 
-> +	clk_disable(exynos->sclk);
->  	clk_disable(exynos->clk);
-> 
->  	regulator_disable(exynos->vdd33);
-> @@ -243,6 +258,7 @@ static int dwc3_exynos_resume(struct device *dev)
+>  		return PTR_ERR(phy_drd->clk);
 >  	}
 > 
->  	clk_enable(exynos->clk);
-> +	clk_enable(exynos->sclk);
-> 
->  	/* runtime set active to reflect active state. */
->  	pm_runtime_disable(dev);
+> +	phy_drd->pipeclk = devm_clk_get(dev, "phy_pipe");
+> +	if (IS_ERR(phy_drd->pipeclk)) {
+> +		dev_info(dev, "PIPE3 phy operational clock not
+> specified\n");
+> +		phy_drd->pipeclk = NULL;
+> +	}
+> +
+> +	phy_drd->utmiclk = devm_clk_get(dev, "phy_utmi");
+> +	if (IS_ERR(phy_drd->utmiclk)) {
+> +		dev_info(dev, "UTMI phy operational clock not specified\n");
+> +		phy_drd->utmiclk = NULL;
+> +	}
+> +
+>  	phy_drd->ref_clk = devm_clk_get(dev, "ref");
+>  	if (IS_ERR(phy_drd->ref_clk)) {
+>  		dev_err(dev, "Failed to get reference clock of usbdrd
+> phy\n");
 > --
 > 1.7.10.4
 > 
