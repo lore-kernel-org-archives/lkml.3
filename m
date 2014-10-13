@@ -1,76 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754434AbaJMQnp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 12:43:45 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:42349 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754055AbaJMQnm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 12:43:42 -0400
-Date: Mon, 13 Oct 2014 09:43:38 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: linux-input@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Vojtech Pavlik <vojtech@suse.cz>, Hans de Goede <hdegoede@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: i8042 - disable active multiplexing by default
-Message-ID: <20141013164338.GA35440@dtor-ws>
-References: <20141010205131.GA3271@dtor-ws>
- <20141012143039.GC378@amd>
+	id S1754534AbaJMQoZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 12:44:25 -0400
+Received: from wp038.webpack.hosteurope.de ([80.237.132.45]:50922 "EHLO
+	wp038.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754214AbaJMQoY convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 12:44:24 -0400
+Date: Mon, 13 Oct 2014 18:44:22 +0200 (CEST)
+From: Henning Schild <henning@hennsch.de>
+Reply-To: Henning Schild <henning@hennsch.de>
+To: "Deucher, Alexander" <alexander.deucher@amd.com>,
+        linux-kernel@vger.kernel.org
+Cc: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
+Message-ID: <819514162.3896.1413218662504.open-xchange@app06.ox.hosteurope.de>
+In-Reply-To: <A3397C8B8B789E45844E7EC5DEAD89D05993B4D5@satlexdag05.amd.com>
+References: <1413031067-26961-1-git-send-email-henning@hennsch.de> <1413031875-28053-1-git-send-email-henning@hennsch.de> <A3397C8B8B789E45844E7EC5DEAD89D05993B4D5@satlexdag05.amd.com>
+Subject: RE: [PATCH] drm/radeon: remove code that can never get executed
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141012143039.GC378@amd>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Priority: 3
+Importance: Medium
+X-Mailer: Open-Xchange Mailer v7.4.2-Rev36
+X-bounce-key: webpack.hosteurope.de;henning@hennsch.de;1413218664;e37276b4;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel,
+Well i am not sure what the code actually is supposed to do. That is up to you
+because you know the hardware. I just wanted to point out that right now some
+code can never be reached.
 
-On Sun, Oct 12, 2014 at 04:30:39PM +0200, Pavel Machek wrote:
-> On Fri 2014-10-10 13:51:31, Dmitry Torokhov wrote:
-> > Active multiplexing is a nice feature as it allows several pointing devices
-> > (such as touchpad and external mouse) use their native protocols at the
-> > same time. Unfortunately many manufacturers do not implement the feature
-> > properly even though they advertise it. The problematic implementations are
-> > never fixed, since Windows by default does not use this mode, and move from
-> > one BIOS/model of laptop to another. When active multiplexing is broken
-> > turning it on usually results in touchpad, keyboard, or both unresponsive.
-> > 
-> > With PS/2 usage on decline (most of PS/2 devices in use nowadays are
-> > internal laptop touchpads), I expect number of users who have laptops with
-> > working MUX implementation, docking stations with external PS/2 ports, and
-> > who are still using external PS/2 mice, to be rather small. Let's flip the
-> > default to be OFF and allow activating it through i8042.nomux=0 kernel
-> > option.  We'll also keep DMI table where we can record known good models.
-> > 
-> > Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+I ran into the whole thing because the pointer (sadp) that gets kfreed was never
+initialized (in one of the three cases). My first fix was to initialize it to
+NULL, that way the kfree did not fail even if the allocation did not do
+anything. Then i found the other two copies and decided to follow their scheme.
+
+In your patch you have to make kfree depend on (sad_count > 0) or sadp needs to
+be initialized with NULL. Otherwise you will get the dangling pointer kfree that
+lead me to read this code.
+
+Henning
+
+> On October 13, 2014 at 6:08 PM "Deucher, Alexander"
+> <Alexander.Deucher@amd.com> wrote:
 > 
-> Could we keep the old default / blacklist for the old laptops? We did
-> something like that for ACPI, based on year of the bios.
+> > -----Original Message-----
+> > From: Henning Schild [mailto:henning@hennsch.de]
+> > Sent: Saturday, October 11, 2014 8:51 AM
+> > To: linux-kernel@vger.kernel.org
+> > Cc: Henning Schild; Deucher, Alexander; Rafał Miłecki
+> > Subject: [PATCH] drm/radeon: remove code that can never get executed
+> > 
+> > Removing a code-path that can never be executed ... and its copies. If
+> > drm_edid_to_speaker_allocation returns 0 the callers return. There is no
+> > need to check that condition again.
 > 
+> I think we actually want to set the speaker allocation setup to stereo if the
+> speaker allocation block is not present so I think the attached patch is
+> probably the proper fix.
+> 
+> Alex
+> 
+> > 
+> > Signed-off-by: Henning Schild <henning@hennsch.de>
+> > ---
+> > drivers/gpu/drm/radeon/dce3_1_afmt.c | 5 +----
+> > drivers/gpu/drm/radeon/dce6_afmt.c | 5 +----
+> > drivers/gpu/drm/radeon/evergreen_hdmi.c | 5 +----
+> > 3 files changed, 3 insertions(+), 12 deletions(-)
+> > 
+> > diff --git a/drivers/gpu/drm/radeon/dce3_1_afmt.c
+> > b/drivers/gpu/drm/radeon/dce3_1_afmt.c
+> > index cb76074..6d31ed8 100644
+> > --- a/drivers/gpu/drm/radeon/dce3_1_afmt.c
+> > +++ b/drivers/gpu/drm/radeon/dce3_1_afmt.c
+> > @@ -58,10 +58,7 @@ static void
+> > dce3_2_afmt_write_speaker_allocation(struct drm_encoder *encoder)
+> > tmp &= ~(DP_CONNECTION | SPEAKER_ALLOCATION_MASK);
+> > /* set HDMI mode */
+> > tmp |= HDMI_CONNECTION;
+> > - if (sad_count)
+> > - tmp |= SPEAKER_ALLOCATION(sadb[0]);
+> > - else
+> > - tmp |= SPEAKER_ALLOCATION(5); /* stereo */
+> > + tmp |= SPEAKER_ALLOCATION(sadb[0]);
+> > WREG32(AZ_F0_CODEC_PIN0_CONTROL_CHANNEL_SPEAKER, tmp);
+> > 
+> > kfree(sadb);
+> > diff --git a/drivers/gpu/drm/radeon/dce6_afmt.c
+> > b/drivers/gpu/drm/radeon/dce6_afmt.c
+> > index ab29f95..e6b2750 100644
+> > --- a/drivers/gpu/drm/radeon/dce6_afmt.c
+> > +++ b/drivers/gpu/drm/radeon/dce6_afmt.c
+> > @@ -186,10 +186,7 @@ void dce6_afmt_write_speaker_allocation(struct
+> > drm_encoder *encoder)
+> > tmp &= ~(DP_CONNECTION | SPEAKER_ALLOCATION_MASK);
+> > /* set HDMI mode */
+> > tmp |= HDMI_CONNECTION;
+> > - if (sad_count)
+> > - tmp |= SPEAKER_ALLOCATION(sadb[0]);
+> > - else
+> > - tmp |= SPEAKER_ALLOCATION(5); /* stereo */
+> > + tmp |= SPEAKER_ALLOCATION(sadb[0]);
+> > WREG32_ENDPOINT(offset,
+> > AZ_F0_CODEC_PIN_CONTROL_CHANNEL_SPEAKER, tmp);
+> > 
+> > kfree(sadb);
+> > diff --git a/drivers/gpu/drm/radeon/evergreen_hdmi.c
+> > b/drivers/gpu/drm/radeon/evergreen_hdmi.c
+> > index 278c7a1..11a6b65 100644
+> > --- a/drivers/gpu/drm/radeon/evergreen_hdmi.c
+> > +++ b/drivers/gpu/drm/radeon/evergreen_hdmi.c
+> > @@ -128,10 +128,7 @@ static void
+> > dce4_afmt_write_speaker_allocation(struct drm_encoder *encoder)
+> > tmp &= ~(DP_CONNECTION | SPEAKER_ALLOCATION_MASK);
+> > /* set HDMI mode */
+> > tmp |= HDMI_CONNECTION;
+> > - if (sad_count)
+> > - tmp |= SPEAKER_ALLOCATION(sadb[0]);
+> > - else
+> > - tmp |= SPEAKER_ALLOCATION(5); /* stereo */
+> > + tmp |= SPEAKER_ALLOCATION(sadb[0]);
+> > WREG32(AZ_F0_CODEC_PIN0_CONTROL_CHANNEL_SPEAKER, tmp);
+> > 
+> > kfree(sadb);
+> > --
+> > 2.0.4
 
-I would prefer not to. Unlike ACPI we do not see any improvement or
-decline in quality of MUX implementation over time. The implementations
-were buggy 10 years ago, 5 years go and they are buggy now. So there is
-not a point in time to draw a line at.
-
-> Old laptops are not being made any more, so blacklist will not grow
-> too fast...
-
-It is already quite big and I do not believe we've gotten nearly all of
-them. I guess in many cases people would try Linux, find that
-keyboard/mouse do not work at all and they are done and not bother
-filing bugs/reaching out on LKML, etc.
-
-Again, the only people would might be negatively affected are people who
-have proper implementation of active MUX, who use both touchpad and
-external mouse at the same time and want touchpad in native mode, and who
-use PS/2 external mice.
-
-Thanks.
-
--- 
-Dmitry
+>
