@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299AbaJMHpJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 03:45:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41271 "EHLO mx1.redhat.com"
+	id S1753441AbaJMHp3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 03:45:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32828 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752052AbaJMHpB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 03:45:01 -0400
-Date: Mon, 13 Oct 2014 10:48:14 +0300
+	id S1753078AbaJMHpX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 03:45:23 -0400
+Date: Mon, 13 Oct 2014 10:48:19 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Rusty Russell <rusty@rustcorp.com.au>,
@@ -17,9 +17,19 @@ Cc: Rusty Russell <rusty@rustcorp.com.au>,
         Cornelia Huck <cornelia.huck@de.ibm.com>,
         Christian Borntraeger <borntraeger@de.ibm.com>,
         "David S. Miller" <davem@davemloft.net>,
-        Paolo Bonzini <pbonzini@redhat.com>, stable@vger.kernel.org
-Subject: [PATCH v4 01/25] virtio_pci: fix virtio spec compliance on restore
-Message-ID: <1413114332-626-2-git-send-email-mst-v4@redhat.com>
+        Paolo Bonzini <pbonzini@redhat.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Sudeep Dutt <sudeep.dutt@intel.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nikhil Rao <nikhil.rao@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Siva Yerramreddy <yshivakrishna@gmail.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Heinz Graalfs <graalfs@linux.vnet.ibm.com>
+Subject: [PATCH v4 02/25] virtio: unify config_changed handling
+Message-ID: <1413114332-626-3-git-send-email-mst-v4@redhat.com>
 References: <1413114332-626-1-git-send-email-mst-v4@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -30,85 +40,167 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On restore, virtio pci does the following:
-+ set features
-+ init vqs etc - device can be used at this point!
-+ set ACKNOWLEDGE,DRIVER and DRIVER_OK status bits
+Replace duplicated code in all transports with a single wrapper in
+virtio.c.
 
-This is in violation of the virtio spec, which
-requires the following order:
-- ACKNOWLEDGE
-- DRIVER
-- init vqs
-- DRIVER_OK
+The only functional change is in virtio_mmio.c: if a buggy device sends
+us an interrupt before driver is set, we previously returned IRQ_NONE,
+now we return IRQ_HANDLED.
 
-This behaviour will break with hypervisors that assume spec compliant
-behaviour.  It seems like a good idea to have this patch applied to
-stable branches to reduce the support butden for the hypervisors.
+As this must not happen in practice, this does not look like a big deal.
 
-Cc: stable@vger.kernel.org
-Cc: Amit Shah <amit.shah@redhat.com>
+See also commit 3fff0179e33cd7d0a688dab65700c46ad089e934
+	virtio-pci: do not oops on config change if driver not loaded.
+for the original motivation behind the driver check.
+
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 ---
- drivers/virtio/virtio_pci.c | 33 ++++++++++++++++++++++++++++++---
- 1 file changed, 30 insertions(+), 3 deletions(-)
+ include/linux/virtio.h             | 2 ++
+ drivers/misc/mic/card/mic_virtio.c | 6 +-----
+ drivers/s390/kvm/kvm_virtio.c      | 9 +--------
+ drivers/s390/kvm/virtio_ccw.c      | 6 +-----
+ drivers/virtio/virtio.c            | 9 +++++++++
+ drivers/virtio/virtio_mmio.c       | 7 ++-----
+ drivers/virtio/virtio_pci.c        | 6 +-----
+ 7 files changed, 17 insertions(+), 28 deletions(-)
 
+diff --git a/include/linux/virtio.h b/include/linux/virtio.h
+index b46671e..3c19bd3 100644
+--- a/include/linux/virtio.h
++++ b/include/linux/virtio.h
+@@ -108,6 +108,8 @@ void unregister_virtio_device(struct virtio_device *dev);
+ 
+ void virtio_break_device(struct virtio_device *dev);
+ 
++void virtio_config_changed(struct virtio_device *dev);
++
+ /**
+  * virtio_driver - operations for a virtio I/O driver
+  * @driver: underlying device driver (populate name and owner).
+diff --git a/drivers/misc/mic/card/mic_virtio.c b/drivers/misc/mic/card/mic_virtio.c
+index f14b600..e647947 100644
+--- a/drivers/misc/mic/card/mic_virtio.c
++++ b/drivers/misc/mic/card/mic_virtio.c
+@@ -462,16 +462,12 @@ static void mic_handle_config_change(struct mic_device_desc __iomem *d,
+ 	struct mic_device_ctrl __iomem *dc
+ 		= (void __iomem *)d + mic_aligned_desc_size(d);
+ 	struct mic_vdev *mvdev = (struct mic_vdev *)ioread64(&dc->vdev);
+-	struct virtio_driver *drv;
+ 
+ 	if (ioread8(&dc->config_change) != MIC_VIRTIO_PARAM_CONFIG_CHANGED)
+ 		return;
+ 
+ 	dev_dbg(mdrv->dev, "%s %d\n", __func__, __LINE__);
+-	drv = container_of(mvdev->vdev.dev.driver,
+-				struct virtio_driver, driver);
+-	if (drv->config_changed)
+-		drv->config_changed(&mvdev->vdev);
++	virtio_config_changed(&mvdev->vdev);
+ 	iowrite8(1, &dc->guest_ack);
+ }
+ 
+diff --git a/drivers/s390/kvm/kvm_virtio.c b/drivers/s390/kvm/kvm_virtio.c
+index a134965..6431290 100644
+--- a/drivers/s390/kvm/kvm_virtio.c
++++ b/drivers/s390/kvm/kvm_virtio.c
+@@ -406,15 +406,8 @@ static void kvm_extint_handler(struct ext_code ext_code,
+ 
+ 	switch (param) {
+ 	case VIRTIO_PARAM_CONFIG_CHANGED:
+-	{
+-		struct virtio_driver *drv;
+-		drv = container_of(vq->vdev->dev.driver,
+-				   struct virtio_driver, driver);
+-		if (drv->config_changed)
+-			drv->config_changed(vq->vdev);
+-
++		virtio_config_changed(vq->vdev);
+ 		break;
+-	}
+ 	case VIRTIO_PARAM_DEV_ADD:
+ 		schedule_work(&hotplug_work);
+ 		break;
+diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
+index d2c0b44..6cbe6ef 100644
+--- a/drivers/s390/kvm/virtio_ccw.c
++++ b/drivers/s390/kvm/virtio_ccw.c
+@@ -940,11 +940,7 @@ static void virtio_ccw_int_handler(struct ccw_device *cdev,
+ 		vring_interrupt(0, vq);
+ 	}
+ 	if (test_bit(0, &vcdev->indicators2)) {
+-		drv = container_of(vcdev->vdev.dev.driver,
+-				   struct virtio_driver, driver);
+-
+-		if (drv && drv->config_changed)
+-			drv->config_changed(&vcdev->vdev);
++		virtio_config_changed(&vcdev->vdev);
+ 		clear_bit(0, &vcdev->indicators2);
+ 	}
+ }
+diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
+index fed0ce1..3980687 100644
+--- a/drivers/virtio/virtio.c
++++ b/drivers/virtio/virtio.c
+@@ -239,6 +239,15 @@ void unregister_virtio_device(struct virtio_device *dev)
+ }
+ EXPORT_SYMBOL_GPL(unregister_virtio_device);
+ 
++void virtio_config_changed(struct virtio_device *dev)
++{
++	struct virtio_driver *drv = drv_to_virtio(dev->dev.driver);
++
++	if (drv && drv->config_changed)
++		drv->config_changed(dev);
++}
++EXPORT_SYMBOL_GPL(virtio_config_changed);
++
+ static int virtio_init(void)
+ {
+ 	if (bus_register(&virtio_bus) != 0)
+diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
+index c600ccf..ef9a165 100644
+--- a/drivers/virtio/virtio_mmio.c
++++ b/drivers/virtio/virtio_mmio.c
+@@ -234,8 +234,6 @@ static irqreturn_t vm_interrupt(int irq, void *opaque)
+ {
+ 	struct virtio_mmio_device *vm_dev = opaque;
+ 	struct virtio_mmio_vq_info *info;
+-	struct virtio_driver *vdrv = container_of(vm_dev->vdev.dev.driver,
+-			struct virtio_driver, driver);
+ 	unsigned long status;
+ 	unsigned long flags;
+ 	irqreturn_t ret = IRQ_NONE;
+@@ -244,9 +242,8 @@ static irqreturn_t vm_interrupt(int irq, void *opaque)
+ 	status = readl(vm_dev->base + VIRTIO_MMIO_INTERRUPT_STATUS);
+ 	writel(status, vm_dev->base + VIRTIO_MMIO_INTERRUPT_ACK);
+ 
+-	if (unlikely(status & VIRTIO_MMIO_INT_CONFIG)
+-			&& vdrv && vdrv->config_changed) {
+-		vdrv->config_changed(&vm_dev->vdev);
++	if (unlikely(status & VIRTIO_MMIO_INT_CONFIG)) {
++		virtio_config_changed(&vm_dev->vdev);
+ 		ret = IRQ_HANDLED;
+ 	}
+ 
 diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-index 3d1463c..add40d0 100644
+index add40d0..f39f4e7 100644
 --- a/drivers/virtio/virtio_pci.c
 +++ b/drivers/virtio/virtio_pci.c
-@@ -789,6 +789,7 @@ static int virtio_pci_restore(struct device *dev)
- 	struct pci_dev *pci_dev = to_pci_dev(dev);
- 	struct virtio_pci_device *vp_dev = pci_get_drvdata(pci_dev);
- 	struct virtio_driver *drv;
-+	unsigned status = 0;
- 	int ret;
+@@ -211,12 +211,8 @@ static bool vp_notify(struct virtqueue *vq)
+ static irqreturn_t vp_config_changed(int irq, void *opaque)
+ {
+ 	struct virtio_pci_device *vp_dev = opaque;
+-	struct virtio_driver *drv;
+-	drv = container_of(vp_dev->vdev.dev.driver,
+-			   struct virtio_driver, driver);
  
- 	drv = container_of(vp_dev->vdev.dev.driver,
-@@ -799,14 +800,40 @@ static int virtio_pci_restore(struct device *dev)
- 		return ret;
- 
- 	pci_set_master(pci_dev);
-+	/* We always start by resetting the device, in case a previous
-+	 * driver messed it up. */
-+	vp_reset(&vp_dev->vdev);
-+
-+	/* Acknowledge that we've seen the device. */
-+	status |= VIRTIO_CONFIG_S_ACKNOWLEDGE;
-+	vp_set_status(&vp_dev->vdev, status);
-+
-+	/* Maybe driver failed before freeze.
-+	 * Restore the failed status, for debugging. */
-+	status |= vp_dev->saved_status & VIRTIO_CONFIG_S_FAILED;
-+	vp_set_status(&vp_dev->vdev, status);
-+
-+	if (!drv)
-+		return 0;
-+
-+	/* We have a driver! */
-+	status |= VIRTIO_CONFIG_S_DRIVER;
-+	vp_set_status(&vp_dev->vdev, status);
-+
- 	vp_finalize_features(&vp_dev->vdev);
- 
--	if (drv && drv->restore)
-+	if (drv->restore) {
- 		ret = drv->restore(&vp_dev->vdev);
-+		if (ret) {
-+			status |= VIRTIO_CONFIG_S_FAILED;
-+			vp_set_status(&vp_dev->vdev, status);
-+			return ret;
-+		}
-+	}
- 
- 	/* Finally, tell the device we're all set */
--	if (!ret)
--		vp_set_status(&vp_dev->vdev, vp_dev->saved_status);
-+	status |= VIRTIO_CONFIG_S_DRIVER_OK;
-+	vp_set_status(&vp_dev->vdev, status);
- 
- 	return ret;
+-	if (drv && drv->config_changed)
+-		drv->config_changed(&vp_dev->vdev);
++	virtio_config_changed(&vp_dev->vdev);
+ 	return IRQ_HANDLED;
  }
+ 
 -- 
 MST
 
