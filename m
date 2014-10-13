@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431AbaJMVt4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 17:49:56 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:48829 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860AbaJMVty (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 17:49:54 -0400
+	id S1753340AbaJMVyG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 17:54:06 -0400
+Received: from ozlabs.org ([103.22.144.67]:35859 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751429AbaJMVyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 17:54:04 -0400
+Date: Tue, 14 Oct 2014 08:53:55 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: status of the signal-cleanup tree
+Message-ID: <20141014085355.0a710a94@canb.auug.org.au>
+In-Reply-To: <543BE3EC.9010601@nod.at>
+References: <20141013173301.0664c8ac@canb.auug.org.au>
+	<543BE3EC.9010601@nod.at>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <543C0A2D.5040908@redhat.com>
-References: <1409714246-31054-1-git-send-email-ast@plumgrid.com>
-	<1409714246-31054-3-git-send-email-ast@plumgrid.com>
-	<540737DF.1010801@redhat.com>
-	<543C0A2D.5040908@redhat.com>
-Date: Mon, 13 Oct 2014 14:49:53 -0700
-Message-ID: <CAMEtUuw-iAGiYqmcN0AOkku0+Wto7810JJo9HEQvQN-2F=baTA@mail.gmail.com>
-Subject: Re: [PATCH v9 net-next 2/4] net: filter: split filter.h and expose
- eBPF to user space
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/ydw6uk3BRDe3hNtzMBVbkTs"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 13, 2014 at 10:21 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
-> On 09/03/2014 05:46 PM, Daniel Borkmann wrote:
-> ...
->>
->> Ok, given you post the remaining two RFCs later on this window as
->> you indicate, I have no objections:
->>
->> Acked-by: Daniel Borkmann <dborkman@redhat.com>
->
->
-> Ping, Alexei, are you still sending the patch for bpf_common.h or
-> do you want me to take care of this?
+--Sig_/ydw6uk3BRDe3hNtzMBVbkTs
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-It's not forgotten.
-I'm not sending it only because net-next is closed
-and it seems to be -next material.
+Hi Richard,
+
+On Mon, 13 Oct 2014 16:38:36 +0200 Richard Weinberger <richard@nod.at> wrot=
+e:
+>
+> Just remove it. The "feature" was merged.
+
+OK, thanks.  Gone now.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/ydw6uk3BRDe3hNtzMBVbkTs
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUPEn4AAoJEMDTa8Ir7ZwV0usP+wa+M0p9YMTwZX1Xk5mO2fr5
+vy360azbPltNUphxqHEnaHwMpZ71zUHZ40KEYwKMf7KUMZqZ9VKMOzQFMJA3gRUC
+NlzdkPJFeR5WMzrdWHAbJ3ZBpLZ+HHd28pmgNkpvQ6+3jB8EdzPRqShsdpWw65+k
+wRQU+E1prGkyGut/jErBXiCeys9MLDmQmpndnXqp+pASeYBwxzNdiBN+vqRl4wH2
+QMF2OK+NXukP89rF/mUZe0TvPvcwVHgdrL71mQl6atUyj3PzhYrYHBbyH46nUGlP
+2HHuzlt0B/kEKf8MzDzjzvVHswW9z76V0Ot6tlCL4dT836CmkKcbF4OBzJWqyDun
+FJO13Tb3LCPtXCj7NcTUxeRsSXKWXJ3Hd5nRNmrvQCs2LC8c/y/91SUYi4FIYbFV
+y25dhUo7rHzBfhrPd4nFT3/vt4zEIqTO5dNxLcvmcAHG+f5o0IB753GlN6ljTtTY
+AIllkILKh9MpXz0C42PuYTRymmQS9SAKZKBLKITSnoK3gja4U/+100nSSTkq5GSv
+2T2OLJMIJigBKUOEm8O08+CiRv+m1yjZdwxw8XRX1q9C59yWiBwD7xurlMqT/shi
+F9mupijQi+L/8zjGEHcMFp3gCVkS64/BeeKlWToWOeCVzk8DozFUvOtKR2sGU/FI
+gshliJ5NzJNyQPX77PpN
+=a/oi
+-----END PGP SIGNATURE-----
+
+--Sig_/ydw6uk3BRDe3hNtzMBVbkTs--
