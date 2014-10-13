@@ -1,126 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753514AbaJMVaf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 17:30:35 -0400
-Received: from mail-yk0-f201.google.com ([209.85.160.201]:60154 "EHLO
-	mail-yk0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750940AbaJMVae (ORCPT
+	id S1753654AbaJMVao (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 17:30:44 -0400
+Received: from mail-qg0-f74.google.com ([209.85.192.74]:60765 "EHLO
+	mail-qg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750940AbaJMVam convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 17:30:34 -0400
+	Mon, 13 Oct 2014 17:30:42 -0400
+X-Greylist: delayed 391 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Oct 2014 17:30:41 EDT
 From: Aditya Kali <adityakali@google.com>
 To: tj@kernel.org, lizefan@huawei.com, serge.hallyn@ubuntu.com,
         luto@amacapital.net, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
         mingo@redhat.com
-Cc: containers@lists.linux-foundation.org, jnagal@google.com,
-        Aditya Kali <adityakali@google.com>
-Subject: [PATCHv1 6/8] cgroup: restrict cgroup operations within task's cgroupns
-Date: Mon, 13 Oct 2014 14:23:48 -0700
-Message-Id: <1413235430-22944-7-git-send-email-adityakali@google.com>
+Cc: containers@lists.linux-foundation.org, jnagal@google.com
+Subject: [PATCHv1 0/8] CGroup Namespaces
+Date: Mon, 13 Oct 2014 14:23:42 -0700
+Message-Id: <1413235430-22944-1-git-send-email-adityakali@google.com>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1413235430-22944-1-git-send-email-adityakali@google.com>
+In-Reply-To: <adityakali-cgroupns>
 References: <adityakali-cgroupns>
- <1413235430-22944-1-git-send-email-adityakali@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Restrict following operations within the calling tasks:
-* cgroup_mkdir & cgroup_rmdir
-* cgroup_attach_task
-* writes to cgroup files outside of task's cgroupns-root
+Second take at the Cgroup Namespace patch-set.
 
-Also, read of /proc/<pid>/cgroup file is now restricted only
-to tasks under same cgroupns-root. If a task tries to look
-at cgroup of another task outside of its cgroupns-root, then
-it won't be able to see anything for the default hierarchy.
-This is same as if the cgroups are not mounted.
+Major changes form RFC (V0):
+1. setns support for cgroupns
+2. 'mount -t cgroup cgroup <mntpt>' from inside a cgroupns now
+   mounts the cgroup hierarcy with cgroupns-root as the filesystem root.
+3. writes to cgroup files outside of cgroupns-root are not allowed
+4. visibility of /proc/<pid>/cgroup is further restricted by not showing
+   anything if the <pid> is in a sibling cgroupns and its cgroup falls outside
+   your cgroupns-root.
 
-Signed-off-by: Aditya Kali <adityakali@google.com>
+More details in the writeup below.
+
+Background
+  Cgroups and Namespaces are used together to create “virtual”
+  containers that isolates the host environment from the processes
+  running in container. But since cgroups themselves are not
+  “virtualized”, the task is always able to see global cgroups view
+  through cgroupfs mount and via /proc/self/cgroup file.
+
+  $ cat /proc/self/cgroup 
+  0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/c_job_id1
+
+  This exposure of cgroup names to the processes running inside a
+  container results in some problems:
+  (1) The container names are typically host-container-management-agent
+      (systemd, docker/libcontainer, etc.) data and leaking its name (or
+      leaking the hierarchy) reveals too much information about the host
+      system.
+  (2) It makes the container migration across machines (CRIU) more
+      difficult as the container names need to be unique across the
+      machines in the migration domain.
+  (3) It makes it difficult to run container management tools (like
+      docker/libcontainer, lmctfy, etc.) within virtual containers
+      without adding dependency on some state/agent present outside the
+      container.
+
+  Note that the feature proposed here is completely different than the
+  “ns cgroup” feature which existed in the linux kernel until recently.
+  The ns cgroup also attempted to connect cgroups and namespaces by
+  creating a new cgroup every time a new namespace was created. It did
+  not solve any of the above mentioned problems and was later dropped
+  from the kernel. Incidentally though, it used the same config option
+  name CONFIG_CGROUP_NS as used in my prototype!
+
+Introducing CGroup Namespaces
+  With unified cgroup hierarchy
+  (Documentation/cgroups/unified-hierarchy.txt), the containers can now
+  have a much more coherent cgroup view and its easy to associate a
+  container with a single cgroup. This also allows us to virtualize the
+  cgroup view for tasks inside the container.
+
+  The new CGroup Namespace allows a process to “unshare” its cgroup
+  hierarchy starting from the cgroup its currently in.
+  For Ex:
+  $ cat /proc/self/cgroup
+  0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/c_job_id1
+  $ ls -l /proc/self/ns/cgroup
+  lrwxrwxrwx 1 root root 0 2014-07-15 10:37 /proc/self/ns/cgroup -> cgroup:[4026531835]
+  $ ~/unshare -c  # calls unshare(CLONE_NEWCGROUP) and exec’s /bin/bash
+  [ns]$ ls -l /proc/self/ns/cgroup
+  lrwxrwxrwx 1 root root 0 2014-07-15 10:35 /proc/self/ns/cgroup ->
+  cgroup:[4026532183]
+  # From within new cgroupns, process sees that its in the root cgroup
+  [ns]$ cat /proc/self/cgroup
+  0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/
+
+  # From global cgroupns:
+  $ cat /proc/<pid>/cgroup
+  0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/c_job_id1
+
+  # Unshare cgroupns along with userns and mountns
+  # Following calls unshare(CLONE_NEWCGROUP|CLONE_NEWUSER|CLONE_NEWNS), then
+  # sets up uid/gid map and exec’s /bin/bash
+  $ ~/unshare -c -u -m
+
+  # Originally, we were in /batchjobs/c_job_id1 cgroup. Mount our own cgroup
+  # hierarchy.
+  [ns]$ mount -t cgroup cgroup /tmp/cgroup
+  [ns]$ ls -l /tmp/cgroup
+  total 0
+  -r--r--r-- 1 root root 0 2014-10-13 09:32 cgroup.controllers
+  -r--r--r-- 1 root root 0 2014-10-13 09:32 cgroup.populated
+  -rw-r--r-- 1 root root 0 2014-10-13 09:25 cgroup.procs
+  -rw-r--r-- 1 root root 0 2014-10-13 09:32 cgroup.subtree_control
+
+  The cgroupns-root (/batchjobs/c_job_id1 in above example) becomes the
+  filesystem root for the namespace specific cgroupfs mount.
+
+  The virtualization of /proc/self/cgroup file combined with restricting
+  the view of cgroup hierarchy by namespace-private cgroupfs mount
+  should provide a completely isolated cgroup view inside the container.
+
+  In its current form, the cgroup namespaces patcheset provides following
+  behavior:
+
+  (1) The “root” cgroup for a cgroup namespace is the cgroup in which
+      the process calling unshare is running.
+      For ex. if a process in /batchjobs/c_job_id1 cgroup calls unshare,
+      cgroup /batchjobs/c_job_id1 becomes the cgroupns-root.
+      For the init_cgroup_ns, this is the real root (“/”) cgroup
+      (identified in code as cgrp_dfl_root.cgrp).
+
+  (2) The cgroupns-root cgroup does not change even if the namespace
+      creator process later moves to a different cgroup.
+      $ ~/unshare -c # unshare cgroupns in some cgroup
+      [ns]$ cat /proc/self/cgroup 
+      0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/ 
+      [ns]$ mkdir sub_cgrp_1
+      [ns]$ echo 0 > sub_cgrp_1/cgroup.procs
+      [ns]$ cat /proc/self/cgroup 
+      0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/sub_cgrp_1
+
+  (3) Each process gets its CGROUPNS specific view of
+      /proc/<pid>/cgroup.
+  (a) Processes running inside the cgroup namespace will be able to see
+      cgroup paths (in /proc/self/cgroup) only inside their root cgroup
+      [ns]$ sleep 100000 &  # From within unshared cgroupns
+      [1] 7353
+      [ns]$ echo 7353 > sub_cgrp_1/cgroup.procs
+      [ns]$ cat /proc/7353/cgroup
+      0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/sub_cgrp_1
+
+  (b) From global cgroupns, the real cgroup path will be visible:
+      $ cat /proc/7353/cgroup
+      0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/c_job_id1/sub_cgrp_1
+
+  (c) From a sibling cgroupns (cgroupns root-ed at a sibling cgroup), no cgroup
+      path will be visible:
+      # ns2's cgroupns-root is at '/batchjobs/c_job_id2'
+      [ns2]$ cat /proc/7353/cgroup
+      [ns2]$
+      This is same as when cgroup hierarchy is not mounted at all.
+      (In correct container setup though, it should not be possible to
+       access PIDs in another container in the first place.)
+
+  (4) Processes inside a cgroupns are not allowed to move out of the
+      cgroupns-root. This is true even if a privileged process in global
+      cgroupns tries to move the process out of its cgroupns-root.
+
+      # From global cgroupns
+      $ cat /proc/7353/cgroup
+      0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/c_job_id1/sub_cgrp_1
+      # cgroupns-root for 7353 is /batchjobs/c_job_id1
+      $ echo 7353 > batchjobs/c_job_id2/cgroup.procs
+      -bash: echo: write error: Operation not permitted
+
+  (5) Setns to another cgroup namespace is allowed only when:
+      (a) process has CAP_SYS_ADMIN in its current userns
+      (b) process has CAP_SYS_ADMIN in the target cgroupns' userns
+      (c) the process's current cgroup is a descendant cgroupns-root of the
+          target namespace.
+      (d) the target cgroupns-root is descendant of current cgroupns-root..
+      The last check (d) prevents processes from escaping their cgroupns-root by
+      attaching to parent cgroupns. Thus, setns is allowed only when the process
+      is trying to restrict itself to a deeper cgroup hierarchy.
+
+  (6) When some thread from a multi-threaded process unshares its
+      cgroup-namespace, the new cgroupns gets applied to the entire
+      process (all the threads). This should be OK since
+      unified-hierarchy only allows process-level containerization. So
+      all the threads in the process will have the same cgroup. And both
+      - changing cgroups and unsharing namespaces - are protected under
+      threadgroup_lock(task).
+
+  (7) The cgroup namespace is alive as long as there is atleast 1
+      process inside it. When the last process exits, the cgroup
+      namespace is destroyed. The cgroupns-root and the actual cgroups
+      remain though.
+
+  (8) 'mount -t cgroup cgroup <mntpt>' when called from within cgroupns mounts
+      the unified cgroup hierarchy with cgroupns-root as the filesystem root.
+      The process needs CAP_SYS_ADMIN in its userns and mntns. This allows the
+      container management tools to be run inside the containers transparently.
+
+Implementation
+  The current patch-set is based on top of Tejun Heo's cgroup tree (for-next
+  branch). Its fairly non-intrusive and provides above mentioned
+  features.
+
+Possible extensions of CGROUPNS:
+  (1) The Documentation/cgroups/unified-hierarchy.txt mentions use of
+      capabilities to restrict cgroups to administrative users. CGroup
+      namespaces could be of help here. With cgroup namespaces, it might
+      be possible to delegate administration of sub-cgroups under a
+      cgroupns-root to the cgroupns owner.
+
+
 ---
- kernel/cgroup.c | 34 +++++++++++++++++++++++++++++++++-
- 1 file changed, 33 insertions(+), 1 deletion(-)
+ fs/kernfs/dir.c                  |  53 +++++++++---
+ fs/kernfs/mount.c                |  48 +++++++++++
+ fs/proc/namespaces.c             |   3 +
+ include/linux/cgroup.h           |  41 +++++++++-
+ include/linux/cgroup_namespace.h |  62 +++++++++++++++
+ include/linux/kernfs.h           |   5 ++
+ include/linux/nsproxy.h          |   2 +
+ include/linux/proc_ns.h          |   4 +
+ include/uapi/linux/sched.h       |   3 +-
+ init/Kconfig                     |   9 +++
+ kernel/Makefile                  |   1 +
+ kernel/cgroup.c                  | 139 ++++++++++++++++++++++++++------
+ kernel/cgroup_namespace.c        | 168 +++++++++++++++++++++++++++++++++++++++
+ kernel/fork.c                    |   2 +-
+ kernel/nsproxy.c                 |  19 ++++-
+ 15 files changed, 518 insertions(+), 41 deletions(-)
+ create mode 100644 include/linux/cgroup_namespace.h
+ create mode 100644 kernel/cgroup_namespace.c
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index f8099b4..2fc0dfa 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -2318,6 +2318,12 @@ static int cgroup_attach_task(struct cgroup *dst_cgrp,
- 	struct task_struct *task;
- 	int ret;
- 
-+	/* Only allow changing cgroups accessible within task's cgroup
-+	 * namespace. i.e. 'dst_cgrp' should be a descendant of task's
-+	 * cgroupns->root_cgrp. */
-+	if (!cgroup_is_descendant(dst_cgrp, task_cgroupns_root(leader)))
-+		return -EPERM;
-+
- 	/* look up all src csets */
- 	down_read(&css_set_rwsem);
- 	rcu_read_lock();
-@@ -2882,6 +2888,10 @@ static ssize_t cgroup_file_write(struct kernfs_open_file *of, char *buf,
- 	struct cgroup_subsys_state *css;
- 	int ret;
- 
-+	/* Reject writes to cgroup files outside of task's cgroupns-root. */
-+	if (!cgroup_is_descendant(cgrp, task_cgroupns_root(current)))
-+		return -EINVAL;
-+
- 	if (cft->write)
- 		return cft->write(of, buf, nbytes, off);
- 
-@@ -4560,6 +4570,13 @@ static int cgroup_mkdir(struct kernfs_node *parent_kn, const char *name,
- 	parent = cgroup_kn_lock_live(parent_kn);
- 	if (!parent)
- 		return -ENODEV;
-+
-+	/* Allow mkdir only within process's cgroup namespace root. */
-+	if (!cgroup_is_descendant(parent, task_cgroupns_root(current))) {
-+		ret = -EPERM;
-+		goto out_unlock;
-+	}
-+
- 	root = parent->root;
- 
- 	/* allocate the cgroup and its ID, 0 is reserved for the root */
-@@ -4822,6 +4839,13 @@ static int cgroup_rmdir(struct kernfs_node *kn)
- 	if (!cgrp)
- 		return 0;
- 
-+	/* Allow rmdir only within process's cgroup namespace root.
-+	 * The process can't delete its own root anyways. */
-+	if (!cgroup_is_descendant(cgrp, task_cgroupns_root(current))) {
-+		cgroup_kn_unlock(kn);
-+		return -EPERM;
-+	}
-+
- 	ret = cgroup_destroy_locked(cgrp);
- 
- 	cgroup_kn_unlock(kn);
-@@ -5051,6 +5075,15 @@ int proc_cgroup_show(struct seq_file *m, struct pid_namespace *ns,
- 		if (root == &cgrp_dfl_root && !cgrp_dfl_root_visible)
- 			continue;
- 
-+		cgrp = task_cgroup_from_root(tsk, root);
-+
-+		/* The cgroup path on default hierarchy is shown only if it
-+		 * falls under current task's cgroupns-root.
-+		 */
-+		if (root == &cgrp_dfl_root &&
-+		    !cgroup_is_descendant(cgrp, task_cgroupns_root(current)))
-+			continue;
-+
- 		seq_printf(m, "%d:", root->hierarchy_id);
- 		for_each_subsys(ss, ssid)
- 			if (root->subsys_mask & (1 << ssid))
-@@ -5059,7 +5092,6 @@ int proc_cgroup_show(struct seq_file *m, struct pid_namespace *ns,
- 			seq_printf(m, "%sname=%s", count ? "," : "",
- 				   root->name);
- 		seq_putc(m, ':');
--		cgrp = task_cgroup_from_root(tsk, root);
- 		path = cgroup_path(cgrp, buf, PATH_MAX);
- 		if (!path) {
- 			retval = -ENAMETOOLONG;
--- 
-2.1.0.rc2.206.gedb03e5
-
+[PATCHv1 1/8] kernfs: Add API to generate relative kernfs path
+[PATCHv1 2/8] sched: new clone flag CLONE_NEWCGROUP for cgroup
+[PATCHv1 3/8] cgroup: add function to get task's cgroup on default
+[PATCHv1 4/8] cgroup: export cgroup_get() and cgroup_put()
+[PATCHv1 5/8] cgroup: introduce cgroup namespaces
+[PATCHv1 6/8] cgroup: restrict cgroup operations within task's cgroupns
+[PATCHv1 7/8] cgroup: cgroup namespace setns support
+[PATCHv1 8/8] cgroup: mount cgroupns-root when inside non-init cgroupns
