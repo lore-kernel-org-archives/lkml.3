@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755166AbaJMCdo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:33:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46223 "EHLO
+	id S1754356AbaJMCeV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:34:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46194 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754807AbaJMCaj (ORCPT
+	with ESMTP id S1754746AbaJMCa2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:30:39 -0400
+	Sun, 12 Oct 2014 22:30:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Catalin Iacob <iacobcatalin@gmail.com>, Dave Jones <davej@redhat.com>,
-        "Peter Zijlstra (Intel)" <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 3.17 09/25] irq_work: Force raised irq work to run on irq work interrupt
-Date: Mon, 13 Oct 2014 04:25:02 +0200
-Message-Id: <20141013022454.682378940@linuxfoundation.org>
+        David Laight <David.Laight@aculab.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.17 05/25] sctp: handle association restarts when the socket is closed.
+Date: Mon, 13 Oct 2014 04:24:58 +0200
+Message-Id: <20141013022454.512413879@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022454.289398272@linuxfoundation.org>
 References: <20141013022454.289398272@linuxfoundation.org>
@@ -33,147 +30,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+From: Vlad Yasevich <vyasevich@gmail.com>
 
-commit 76a33061b9323b7fdb220ae5fa116c10833ec22e upstream.
+[ Upstream commit bdf6fa52f01b941d4a80372d56de465bdbbd1d23 ]
 
-The nohz full kick, which restarts the tick when any resource depend
-on it, can't be executed anywhere given the operation it does on timers.
-If it is called from the scheduler or timers code, chances are that
-we run into a deadlock.
+Currently association restarts do not take into consideration the
+state of the socket.  When a restart happens, the current assocation
+simply transitions into established state.  This creates a condition
+where a remote system, through a the restart procedure, may create a
+local association that is no way reachable by user.  The conditions
+to trigger this are as follows:
+  1) Remote does not acknoledge some data causing data to remain
+     outstanding.
+  2) Local application calls close() on the socket.  Since data
+     is still outstanding, the association is placed in SHUTDOWN_PENDING
+     state.  However, the socket is closed.
+  3) The remote tries to create a new association, triggering a restart
+     on the local system.  The association moves from SHUTDOWN_PENDING
+     to ESTABLISHED.  At this point, it is no longer reachable by
+     any socket on the local system.
 
-This is why we run the nohz full kick from an irq work. That way we make
-sure that the kick runs on a virgin context.
+This patch addresses the above situation by moving the newly ESTABLISHED
+association into SHUTDOWN-SENT state and bundling a SHUTDOWN after
+the COOKIE-ACK chunk.  This way, the restarted associate immidiately
+enters the shutdown procedure and forces the termination of the
+unreachable association.
 
-However if that's the case when irq work runs in its own dedicated
-self-ipi, things are different for the big bunch of archs that don't
-support the self triggered way. In order to support them, irq works are
-also handled by the timer interrupt as fallback.
-
-Now when irq works run on the timer interrupt, the context isn't blank.
-More precisely, they can run in the context of the hrtimer that runs the
-tick. But the nohz kick cancels and restarts this hrtimer and cancelling
-an hrtimer from itself isn't allowed. This is why we run in an endless
-loop:
-
-	Kernel panic - not syncing: Watchdog detected hard LOCKUP on cpu 2
-	CPU: 2 PID: 7538 Comm: kworker/u8:8 Not tainted 3.16.0+ #34
-	Workqueue: btrfs-endio-write normal_work_helper [btrfs]
-	 ffff880244c06c88 000000001b486fe1 ffff880244c06bf0 ffffffff8a7f1e37
-	 ffffffff8ac52a18 ffff880244c06c78 ffffffff8a7ef928 0000000000000010
-	 ffff880244c06c88 ffff880244c06c20 000000001b486fe1 0000000000000000
-	Call Trace:
-	 <NMI[<ffffffff8a7f1e37>] dump_stack+0x4e/0x7a
-	 [<ffffffff8a7ef928>] panic+0xd4/0x207
-	 [<ffffffff8a1450e8>] watchdog_overflow_callback+0x118/0x120
-	 [<ffffffff8a186b0e>] __perf_event_overflow+0xae/0x350
-	 [<ffffffff8a184f80>] ? perf_event_task_disable+0xa0/0xa0
-	 [<ffffffff8a01a4cf>] ? x86_perf_event_set_period+0xbf/0x150
-	 [<ffffffff8a187934>] perf_event_overflow+0x14/0x20
-	 [<ffffffff8a020386>] intel_pmu_handle_irq+0x206/0x410
-	 [<ffffffff8a01937b>] perf_event_nmi_handler+0x2b/0x50
-	 [<ffffffff8a007b72>] nmi_handle+0xd2/0x390
-	 [<ffffffff8a007aa5>] ? nmi_handle+0x5/0x390
-	 [<ffffffff8a0cb7f8>] ? match_held_lock+0x8/0x1b0
-	 [<ffffffff8a008062>] default_do_nmi+0x72/0x1c0
-	 [<ffffffff8a008268>] do_nmi+0xb8/0x100
-	 [<ffffffff8a7ff66a>] end_repeat_nmi+0x1e/0x2e
-	 [<ffffffff8a0cb7f8>] ? match_held_lock+0x8/0x1b0
-	 [<ffffffff8a0cb7f8>] ? match_held_lock+0x8/0x1b0
-	 [<ffffffff8a0cb7f8>] ? match_held_lock+0x8/0x1b0
-	 <<EOE><IRQ[<ffffffff8a0ccd2f>] lock_acquired+0xaf/0x450
-	 [<ffffffff8a0f74c5>] ? lock_hrtimer_base.isra.20+0x25/0x50
-	 [<ffffffff8a7fc678>] _raw_spin_lock_irqsave+0x78/0x90
-	 [<ffffffff8a0f74c5>] ? lock_hrtimer_base.isra.20+0x25/0x50
-	 [<ffffffff8a0f74c5>] lock_hrtimer_base.isra.20+0x25/0x50
-	 [<ffffffff8a0f7723>] hrtimer_try_to_cancel+0x33/0x1e0
-	 [<ffffffff8a0f78ea>] hrtimer_cancel+0x1a/0x30
-	 [<ffffffff8a109237>] tick_nohz_restart+0x17/0x90
-	 [<ffffffff8a10a213>] __tick_nohz_full_check+0xc3/0x100
-	 [<ffffffff8a10a25e>] nohz_full_kick_work_func+0xe/0x10
-	 [<ffffffff8a17c884>] irq_work_run_list+0x44/0x70
-	 [<ffffffff8a17c8da>] irq_work_run+0x2a/0x50
-	 [<ffffffff8a0f700b>] update_process_times+0x5b/0x70
-	 [<ffffffff8a109005>] tick_sched_handle.isra.21+0x25/0x60
-	 [<ffffffff8a109b81>] tick_sched_timer+0x41/0x60
-	 [<ffffffff8a0f7aa2>] __run_hrtimer+0x72/0x470
-	 [<ffffffff8a109b40>] ? tick_sched_do_timer+0xb0/0xb0
-	 [<ffffffff8a0f8707>] hrtimer_interrupt+0x117/0x270
-	 [<ffffffff8a034357>] local_apic_timer_interrupt+0x37/0x60
-	 [<ffffffff8a80010f>] smp_apic_timer_interrupt+0x3f/0x50
-	 [<ffffffff8a7fe52f>] apic_timer_interrupt+0x6f/0x80
-
-To fix this we force non-lazy irq works to run on irq work self-IPIs
-when available. That ability of the arch to trigger irq work self IPIs
-is available with arch_irq_work_has_interrupt().
-
-Reported-by: Catalin Iacob <iacobcatalin@gmail.com>
-Reported-by: Dave Jones <davej@redhat.com>
-Acked-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Reported-by: David Laight <David.Laight@aculab.com>
+Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- include/linux/irq_work.h |    1 +
- kernel/irq_work.c        |   15 +++++++++++++--
- kernel/time/timer.c      |    2 +-
- 3 files changed, 15 insertions(+), 3 deletions(-)
+ include/net/sctp/command.h |    2 +-
+ net/sctp/sm_statefuns.c    |   19 ++++++++++++++++---
+ 2 files changed, 17 insertions(+), 4 deletions(-)
 
---- a/include/linux/irq_work.h
-+++ b/include/linux/irq_work.h
-@@ -39,6 +39,7 @@ bool irq_work_queue_on(struct irq_work *
- #endif
+--- a/include/net/sctp/command.h
++++ b/include/net/sctp/command.h
+@@ -115,7 +115,7 @@ typedef enum {
+  * analysis of the state functions, but in reality just taken from
+  * thin air in the hopes othat we don't trigger a kernel panic.
+  */
+-#define SCTP_MAX_NUM_COMMANDS 14
++#define SCTP_MAX_NUM_COMMANDS 20
  
- void irq_work_run(void);
-+void irq_work_tick(void);
- void irq_work_sync(struct irq_work *work);
+ typedef union {
+ 	void *zero_all;	/* Set to NULL to clear the entire union */
+--- a/net/sctp/sm_statefuns.c
++++ b/net/sctp/sm_statefuns.c
+@@ -1775,9 +1775,22 @@ static sctp_disposition_t sctp_sf_do_dup
+ 	/* Update the content of current association. */
+ 	sctp_add_cmd_sf(commands, SCTP_CMD_UPDATE_ASSOC, SCTP_ASOC(new_asoc));
+ 	sctp_add_cmd_sf(commands, SCTP_CMD_EVENT_ULP, SCTP_ULPEVENT(ev));
+-	sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
+-			SCTP_STATE(SCTP_STATE_ESTABLISHED));
+-	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
++	if (sctp_state(asoc, SHUTDOWN_PENDING) &&
++	    (sctp_sstate(asoc->base.sk, CLOSING) ||
++	     sock_flag(asoc->base.sk, SOCK_DEAD))) {
++		/* if were currently in SHUTDOWN_PENDING, but the socket
++		 * has been closed by user, don't transition to ESTABLISHED.
++		 * Instead trigger SHUTDOWN bundled with COOKIE_ACK.
++		 */
++		sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
++		return sctp_sf_do_9_2_start_shutdown(net, ep, asoc,
++						     SCTP_ST_CHUNK(0), NULL,
++						     commands);
++	} else {
++		sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
++				SCTP_STATE(SCTP_STATE_ESTABLISHED));
++		sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
++	}
+ 	return SCTP_DISPOSITION_CONSUME;
  
- #ifdef CONFIG_IRQ_WORK
---- a/kernel/irq_work.c
-+++ b/kernel/irq_work.c
-@@ -115,8 +115,10 @@ bool irq_work_needs_cpu(void)
- 
- 	raised = &__get_cpu_var(raised_list);
- 	lazy = &__get_cpu_var(lazy_list);
--	if (llist_empty(raised) && llist_empty(lazy))
--		return false;
-+
-+	if (llist_empty(raised) || arch_irq_work_has_interrupt())
-+		if (llist_empty(lazy))
-+			return false;
- 
- 	/* All work should have been flushed before going offline */
- 	WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
-@@ -171,6 +173,15 @@ void irq_work_run(void)
- }
- EXPORT_SYMBOL_GPL(irq_work_run);
- 
-+void irq_work_tick(void)
-+{
-+	struct llist_head *raised = &__get_cpu_var(raised_list);
-+
-+	if (!llist_empty(raised) && !arch_irq_work_has_interrupt())
-+		irq_work_run_list(raised);
-+	irq_work_run_list(&__get_cpu_var(lazy_list));
-+}
-+
- /*
-  * Synchronize against the irq_work @entry, ensures the entry is not
-  * currently in use.
---- a/kernel/time/timer.c
-+++ b/kernel/time/timer.c
-@@ -1385,7 +1385,7 @@ void update_process_times(int user_tick)
- 	rcu_check_callbacks(cpu, user_tick);
- #ifdef CONFIG_IRQ_WORK
- 	if (in_irq())
--		irq_work_run();
-+		irq_work_tick();
- #endif
- 	scheduler_tick();
- 	run_posix_cpu_timers(p);
+ nomem_ev:
 
 
