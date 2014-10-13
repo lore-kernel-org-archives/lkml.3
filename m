@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627AbaJMC7V (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:59:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45620 "EHLO
+	id S1754748AbaJMC74 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:59:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45610 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753230AbaJMC0A (ORCPT
+	with ESMTP id S1753046AbaJMCZx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:26:00 -0400
+	Sun, 12 Oct 2014 22:25:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andreas Bomholtz <andreas@seluxit.com>,
-        Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.10 16/16] USB: cp210x: add support for Seluxit USB dongle
-Date: Mon, 13 Oct 2014 04:24:13 +0200
-Message-Id: <20141013022342.099986828@linuxfoundation.org>
+        Sabrina Dubroca <sd@queasysnail.net>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Weilong Chen <chenweilong@huawei.com>,
+        Gao feng <gaofeng@cn.fujitsu.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 13/16] ipv6: reallocate addrconf router for ipv6 address when lo device up
+Date: Mon, 13 Oct 2014 04:24:10 +0200
+Message-Id: <20141013022341.968364824@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022341.386913672@linuxfoundation.org>
 References: <20141013022341.386913672@linuxfoundation.org>
@@ -29,29 +32,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Bomholtz <andreas@seluxit.com>
+From: Gao feng <gaofeng@cn.fujitsu.com>
 
-commit dee80ad12d2b1b304286a707fde7ab05d1fc7bab upstream.
+[ Upstream commit 33d99113b1102c2d2f8603b9ba72d89d915c13f5 ]
 
-Added the Seluxit ApS USB Serial Dongle to cp210x driver.
+commit 25fb6ca4ed9cad72f14f61629b68dc03c0d9713f
+"net IPv6 : Fix broken IPv6 routing table after loopback down-up"
+allocates addrconf router for ipv6 address when lo device up.
+but commit a881ae1f625c599b460cc8f8a7fcb1c438f699ad
+"ipv6:don't call addrconf_dst_alloc again when enable lo" breaks
+this behavior.
 
-Signed-off-by: Andreas Bomholtz <andreas@seluxit.com>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Since the addrconf router is moved to the garbage list when
+lo device down, we should release this router and rellocate
+a new one for ipv6 address when lo device up.
+
+This patch solves bug 67951 on bugzilla
+https://bugzilla.kernel.org/show_bug.cgi?id=67951
+
+change from v1:
+use ip6_rt_put to repleace ip6_del_rt, thanks Hannes!
+change code style, suggested by Sergei.
+
+CC: Sabrina Dubroca <sd@queasysnail.net>
+CC: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Reported-by: Weilong Chen <chenweilong@huawei.com>
+Signed-off-by: Weilong Chen <chenweilong@huawei.com>
+Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/serial/cp210x.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/ipv6/addrconf.c |   14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -156,6 +156,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
- 	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
- 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
-+	{ USB_DEVICE(0x1D6F, 0x0010) }, /* Seluxit ApS RF Dongle */
- 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
- 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
- 	{ USB_DEVICE(0x1FB9, 0x0100) }, /* Lake Shore Model 121 Current Source */
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -2691,8 +2691,18 @@ static void init_loopback(struct net_dev
+ 			if (sp_ifa->flags & (IFA_F_DADFAILED | IFA_F_TENTATIVE))
+ 				continue;
+ 
+-			if (sp_ifa->rt)
+-				continue;
++			if (sp_ifa->rt) {
++				/* This dst has been added to garbage list when
++				 * lo device down, release this obsolete dst and
++				 * reallocate a new router for ifa.
++				 */
++				if (sp_ifa->rt->dst.obsolete > 0) {
++					ip6_rt_put(sp_ifa->rt);
++					sp_ifa->rt = NULL;
++				} else {
++					continue;
++				}
++			}
+ 
+ 			sp_rt = addrconf_dst_alloc(idev, &sp_ifa->addr, 0);
+ 
 
 
