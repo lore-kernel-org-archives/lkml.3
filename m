@@ -1,97 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752800AbaJMBNo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 21:13:44 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:3272 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752340AbaJMBNk (ORCPT
+	id S1752828AbaJMBeB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 21:34:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45147 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752634AbaJMBd4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 21:13:40 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArkaAK8mO1R5LODnPGdsb2JhbABbgw6BK4I2hQewCAaVGYVqBAICgQoXAQYBAQEBODuEAwEBBCcTHCMQCAMOCgklDwUlAwcaE4g9wywBAQEBBgIBHxiGCIolB4MtgR4FnUqBL4ZzkXspL4JKAQEB
-Date: Mon, 13 Oct 2014 12:13:15 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Matthew Wilcox <willy@linux.intel.com>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v1 5/7] dax: Add huge page fault support
-Message-ID: <20141013011315.GB4503@dastard>
-References: <1412774729-23956-1-git-send-email-matthew.r.wilcox@intel.com>
- <1412774729-23956-6-git-send-email-matthew.r.wilcox@intel.com>
- <20141008201100.GB9232@node.dhcp.inet.fi>
- <20141009204716.GQ5098@wil.cx>
+	Sun, 12 Oct 2014 21:33:56 -0400
+Date: Mon, 13 Oct 2014 03:32:53 +0200
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jonas Brunsgaard <jonas.brunsgaard@gmail.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] usb: atm: fix style issues
+Message-ID: <20141013013253.GC12633@kroah.com>
+References: <1413043368-24548-1-git-send-email-jonas.brunsgaard@gmail.com>
+ <1413063654-35070-1-git-send-email-jonas.brunsgaard@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141009204716.GQ5098@wil.cx>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1413063654-35070-1-git-send-email-jonas.brunsgaard@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 09, 2014 at 04:47:16PM -0400, Matthew Wilcox wrote:
-> On Wed, Oct 08, 2014 at 11:11:00PM +0300, Kirill A. Shutemov wrote:
-> > On Wed, Oct 08, 2014 at 09:25:27AM -0400, Matthew Wilcox wrote:
-> > > +	pgoff = ((address - vma->vm_start) >> PAGE_SHIFT) + vma->vm_pgoff;
-> > > +	size = (i_size_read(inode) + PAGE_SIZE - 1) >> PAGE_SHIFT;
-> > > +	if (pgoff >= size)
-> > > +		return VM_FAULT_SIGBUS;
-> > > +	/* If the PMD would cover blocks out of the file */
-> > > +	if ((pgoff | PG_PMD_COLOUR) >= size)
-> > > +		return VM_FAULT_FALLBACK;
-> > 
-> > IIUC, zero pading would work too.
-> 
-> The blocks after this file might be allocated to another file already.
-> I suppose we could ask the filesystem if it wants to allocate them to
-> this file.
-> 
-> Dave, Jan, is it acceptable to call get_block() for blocks that extend
-> beyond the current i_size?
+On Sat, Oct 11, 2014 at 11:40:54PM +0200, Jonas Brunsgaard wrote:
+> Signed-off-by: Jonas Brunsgaard <jonas.brunsgaard@gmail.com>
 
-In what context? XFS basically does nothing for certain cases (e.g.
-read mapping for direct IO) where zeroes are always going to be
-returned, so essentially filesystems right now may actually just
-return a "hole" for any read mapping request beyond EOF.
+_what_ "style" issues did you fix?
 
-If "create" is set, then we'll either create or map existing blocks
-beyond EOF because the we have to reserve space or allocate blocks
-before the EOF gets extended when the write succeeds fully...
+How did you fix them?
 
-> > > +	if (length < PMD_SIZE)
-> > > +		goto fallback;
-> > > +	if (pfn & PG_PMD_COLOUR)
-> > > +		goto fallback;	/* not aligned */
-> > 
-> > So, are you rely on pure luck to make get_block() allocate 2M aligned pfn?
-> > Not really productive. You would need assistance from fs and
-> > arch_get_unmapped_area() sides.
-> 
-> Certainly ext4 and XFS will align their allocations; if you ask it for a
-> 2MB block, it will try to allocate a 2MB block aligned on a 2MB boundary.
+Why did you fix them?
 
-As a sweeping generalisation, that's wrong. Empty filesystems might
-behave that way, but we don't *guarantee* that this sort of
-alignment will occur.
+Please, you have to provide something in the changelog here, it can't
+just be blank.
 
-XFS has several different extent alignment strategies and
-none of them will always work that way. Many of them are dependent
-on mkfs parameters, and even then are used only as *guidelines*.
-Further, alignment is dependent on the size of the write being done
-- on some filesystem configs a 2MB write might be aligned, but on
-others it won't be. More complex still is that mount options can
-change alignment behaviour, as can per-file extent size hints, as
-can truncation that removes post-eof blocks...
+Also, make sure you aren't doing more than one thing in a single patch.
+And no, you can't just claim "fix all style issues" is one thing, when
+you do different types of style fixes.
 
-IOWs, if you want the filesystem to guarantee alignment to the
-underlying hardware in this way for DAX, we're going to need to make
-some modifications to the allocator alignment strategy.
+care to try this again?
 
-Cheers,
+thanks,
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+greg k-h
