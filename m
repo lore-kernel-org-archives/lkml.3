@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245AbaJMC0A (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:26:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45614 "EHLO
+	id S1754627AbaJMC7V (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:59:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45620 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752826AbaJMCZz (ORCPT
+	with ESMTP id S1753230AbaJMC0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:25:55 -0400
+	Sun, 12 Oct 2014 22:26:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lu Baolu <baolu.lu@linux.intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 3.10 14/16] USB: Add device quirk for ASUS T100 Base Station keyboard
-Date: Mon, 13 Oct 2014 04:24:11 +0200
-Message-Id: <20141013022342.009374597@linuxfoundation.org>
+        Andreas Bomholtz <andreas@seluxit.com>,
+        Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.10 16/16] USB: cp210x: add support for Seluxit USB dongle
+Date: Mon, 13 Oct 2014 04:24:13 +0200
+Message-Id: <20141013022342.099986828@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022341.386913672@linuxfoundation.org>
 References: <20141013022341.386913672@linuxfoundation.org>
@@ -29,68 +29,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lu Baolu <baolu.lu@linux.intel.com>
+From: Andreas Bomholtz <andreas@seluxit.com>
 
-commit ddbe1fca0bcb87ca8c199ea873a456ca8a948567 upstream.
+commit dee80ad12d2b1b304286a707fde7ab05d1fc7bab upstream.
 
-This full-speed USB device generates spurious remote wakeup event
-as soon as USB_DEVICE_REMOTE_WAKEUP feature is set. As the result,
-Linux can't enter system suspend and S0ix power saving modes once
-this keyboard is used.
+Added the Seluxit ApS USB Serial Dongle to cp210x driver.
 
-This patch tries to introduce USB_QUIRK_IGNORE_REMOTE_WAKEUP quirk.
-With this quirk set, wakeup capability will be ignored during
-device configure.
-
-This patch could be back-ported to kernels as old as 2.6.39.
-
-Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Andreas Bomholtz <andreas@seluxit.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c     |    6 ++++--
- drivers/usb/core/quirks.c  |    4 ++++
- include/linux/usb/quirks.h |    3 +++
- 3 files changed, 11 insertions(+), 2 deletions(-)
+ drivers/usb/serial/cp210x.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1951,8 +1951,10 @@ void usb_set_device_state(struct usb_dev
- 					|| new_state == USB_STATE_SUSPENDED)
- 				;	/* No change to wakeup settings */
- 			else if (new_state == USB_STATE_CONFIGURED)
--				wakeup = udev->actconfig->desc.bmAttributes
--					 & USB_CONFIG_ATT_WAKEUP;
-+				wakeup = (udev->quirks &
-+					USB_QUIRK_IGNORE_REMOTE_WAKEUP) ? 0 :
-+					udev->actconfig->desc.bmAttributes &
-+					USB_CONFIG_ATT_WAKEUP;
- 			else
- 				wakeup = 0;
- 		}
---- a/drivers/usb/core/quirks.c
-+++ b/drivers/usb/core/quirks.c
-@@ -162,6 +162,10 @@ static const struct usb_device_id usb_in
- 	{ USB_VENDOR_AND_INTERFACE_INFO(0x046d, USB_CLASS_VIDEO, 1, 0),
- 	  .driver_info = USB_QUIRK_RESET_RESUME },
- 
-+	/* ASUS Base Station(T100) */
-+	{ USB_DEVICE(0x0b05, 0x17e0), .driver_info =
-+			USB_QUIRK_IGNORE_REMOTE_WAKEUP },
-+
- 	{ }  /* terminating entry must be last */
- };
- 
---- a/include/linux/usb/quirks.h
-+++ b/include/linux/usb/quirks.h
-@@ -30,4 +30,7 @@
-    descriptor */
- #define USB_QUIRK_DELAY_INIT		0x00000040
- 
-+/* device generates spurious wakeup, ignore remote wakeup capability */
-+#define USB_QUIRK_IGNORE_REMOTE_WAKEUP	0x00000200
-+
- #endif /* __LINUX_USB_QUIRKS_H */
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -156,6 +156,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
+ 	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
+ 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
++	{ USB_DEVICE(0x1D6F, 0x0010) }, /* Seluxit ApS RF Dongle */
+ 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
+ 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
+ 	{ USB_DEVICE(0x1FB9, 0x0100) }, /* Lake Shore Model 121 Current Source */
 
 
