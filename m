@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932068AbaJMCvY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:51:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45787 "EHLO
+	id S1753804AbaJMC1Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:27:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45775 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753815AbaJMC11 (ORCPT
+	with ESMTP id S1753730AbaJMC1U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:27:27 -0400
+	Sun, 12 Oct 2014 22:27:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Lawrence <joe.lawrence@stratus.com>, Jiri Pirko <jiri@resnulli.us>,
+        Eric Dumazet <edumazet@google.com>, Erez Shitrit <erezsh@mellanox.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 29/37] team: avoid race condition in scheduling delayed work
-Date: Mon, 13 Oct 2014 04:24:26 +0200
-Message-Id: <20141013022401.506954467@linuxfoundation.org>
+Subject: [PATCH 3.14 26/37] gro: fix aggregation for skb using frag_list
+Date: Mon, 13 Oct 2014 04:24:23 +0200
+Message-Id: <20141013022401.373896263@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022400.286360067@linuxfoundation.org>
 References: <20141013022400.286360067@linuxfoundation.org>
@@ -29,68 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Lawrence <Joe.Lawrence@stratus.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 47549650abd13d873fd2e5fc218db19e21031074 ]
+[ Upstream commit 73d3fe6d1c6d840763ceafa9afae0aaafa18c4b5 ]
 
-When team_notify_peers and team_mcast_rejoin are called, they both reset
-their respective .count_pending atomic variable. Then when the actual
-worker function is executed, the variable is atomically decremented.
-This pattern introduces a potential race condition where the
-.count_pending rolls over and the worker function keeps rescheduling
-until .count_pending decrements to zero again:
+In commit 8a29111c7ca6 ("net: gro: allow to build full sized skb")
+I added a regression for linear skb that traditionally force GRO
+to use the frag_list fallback.
 
-THREAD 1                           THREAD 2
+Erez Shitrit found that at most two segments were aggregated and
+the "if (skb_gro_len(p) != pinfo->gso_size)" test was failing.
 
-========                           ========
-team_notify_peers(teamX)
-  atomic_set count_pending = 1
-  schedule_delayed_work
-                                   team_notify_peers(teamX)
-                                   atomic_set count_pending = 1
-team_notify_peers_work
-  atomic_dec_and_test
-    count_pending = 0
-  (return)
-                                   schedule_delayed_work
-                                   team_notify_peers_work
-                                   atomic_dec_and_test
-                                     count_pending = -1
-                                   schedule_delayed_work
-                                   (repeat until count_pending = 0)
+This is because pinfo at this spot still points to the last skb in the
+chain, instead of the first one, where we find the correct gso_size
+information.
 
-Instead of assigning a new value to .count_pending, use atomic_add to
-tack-on the additional desired worker function invocations.
-
-Signed-off-by: Joe Lawrence <joe.lawrence@stratus.com>
-Acked-by: Jiri Pirko <jiri@resnulli.us>
-Fixes: fc423ff00df3a19554414ee ("team: add peer notification")
-Fixes: 492b200efdd20b8fcfdac87 ("team: add support for sending multicast rejoins")
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Fixes: 8a29111c7ca6 ("net: gro: allow to build full sized skb")
+Reported-by: Erez Shitrit <erezsh@mellanox.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/team/team.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/core/skbuff.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/net/team/team.c
-+++ b/drivers/net/team/team.c
-@@ -647,7 +647,7 @@ static void team_notify_peers(struct tea
- {
- 	if (!team->notify_peers.count || !netif_running(team->dev))
- 		return;
--	atomic_set(&team->notify_peers.count_pending, team->notify_peers.count);
-+	atomic_add(team->notify_peers.count, &team->notify_peers.count_pending);
- 	schedule_delayed_work(&team->notify_peers.dw, 0);
- }
- 
-@@ -687,7 +687,7 @@ static void team_mcast_rejoin(struct tea
- {
- 	if (!team->mcast_rejoin.count || !netif_running(team->dev))
- 		return;
--	atomic_set(&team->mcast_rejoin.count_pending, team->mcast_rejoin.count);
-+	atomic_add(team->mcast_rejoin.count, &team->mcast_rejoin.count_pending);
- 	schedule_delayed_work(&team->mcast_rejoin.dw, 0);
- }
- 
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -3140,6 +3140,9 @@ int skb_gro_receive(struct sk_buff **hea
+ 		NAPI_GRO_CB(skb)->free = NAPI_GRO_FREE_STOLEN_HEAD;
+ 		goto done;
+ 	}
++	/* switch back to head shinfo */
++	pinfo = skb_shinfo(p);
++
+ 	if (pinfo->frag_list)
+ 		goto merge;
+ 	if (skb_gro_len(p) != pinfo->gso_size)
 
 
