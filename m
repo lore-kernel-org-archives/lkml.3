@@ -1,87 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753010AbaJMGsp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 02:48:45 -0400
-Received: from orange.myspectrum.nl ([149.210.134.247]:33574 "EHLO
-	orange.myspectrum.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751505AbaJMGsm (ORCPT
+	id S1753146AbaJMGuf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 02:50:35 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:57219 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751937AbaJMGud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 02:48:42 -0400
-Message-ID: <543B75C7.60105@myspectrum.nl>
-Date: Mon, 13 Oct 2014 08:48:39 +0200
-From: Jeroen Hofstee <jeroen@myspectrum.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Mon, 13 Oct 2014 02:50:33 -0400
 MIME-Version: 1.0
-To: Simon Glass <sjg@chromium.org>, Jeroen Hofstee <jeroen@myspectrum.nl>
-CC: linux-kbuild@vger.kernel.org, "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        lk <linux-kernel@vger.kernel.org>,
-        U-Boot Mailing List <u-boot@lists.denx.de>
-Subject: Re: [U-Boot] [PATCH resend] kconfig: Fix compiler warning in menu.c
-References: <1413109527-10718-1-git-send-email-hdegoede@redhat.com>	<543AA8BF.7090809@myspectrum.nl> <CAPnjgZ1KvytMYp3RHkMiuW8x6_x4uf=GUUUMoL9RAGsgP_cXrQ@mail.gmail.com>
-In-Reply-To: <CAPnjgZ1KvytMYp3RHkMiuW8x6_x4uf=GUUUMoL9RAGsgP_cXrQ@mail.gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Mon, 13 Oct 2014 14:50:32 +0800
+Message-ID: <CAL8JtxAqDhOXooLtOebSBHtKxwE=sLFqW8B-VgtCzsr-M4OD7g@mail.gmail.com>
+Subject: [PATCH] netfilter: release skbuf when nlmsg put fail
+From: Houcheng Lin <houcheng@gmail.com>
+To: pablo@netfilter.org, kaber@trash.net, kadlec@blackhole.kfki.hu,
+        davem@davemloft.net, netfilter-devel@vger.kernel.org
+Cc: coreteam@netfilter.org, netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Simon,
+When system is under heavy loading, the __nfulnl_send() may may failed
+to put nlmsg into skbuf of nfulnl_instance. If not clear the skbuff on failed,
+the __nfulnl_send() will still try to put next nlmsg onto this half-full skbuf
+and cause the user program can never receive packet.
 
-On 13-10-14 07:14, Simon Glass wrote:
-> Hi Jeroen,
->
-> On 12 October 2014 10:13, Jeroen Hofstee <jeroen@myspectrum.nl> wrote:
->
->> Hello Hans,
->>
->> On 12-10-14 12:25, Hans de Goede wrote:
->>
->>> Hi,
->>>
->>> This one seems to have fallen through the cracks.
->>>
->>> Regards,
->>>
->>> Hans
->>>
->>>   (for U-boot)
->> nope, you replace an innocent warning (_might_ be) with
->> bad code, without any comment it is just because gcc failed
->> to recognize it is fine. Nor did you respond to the suggestion
->> if it helps gcc to recognize that if the two booleans are merged
->> into a single one. [or even split it in an if () if ()]. With this patch
->> you prevent any serious warning in case the variable is actually
->> used but not initialized, which is even worse if you ask me.
->>
-> That is a pretty acerbic tone to take on the U-Boot list at least. Are you
-> two drinking buddies or something?
+This patch fix this issue by releasing skbuf immediately after nlmst put
+failed.
 
-no, it is because we have discussed this patch before and resending
-it won't address the issue raised. But you are right, it is likely done with
-less evil intends then I took it for, so let me explain my concern again
-in a politer way. The problem is that gcc 4.9 starts warning in the
-following case:
+Signed-off-by: Houcheng Lin <houcheng@gmail.com>
 
-int *ptr;
+---
+ net/netfilter/nfnetlink_log.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-if (a)
-     ptr = something;
+diff --git a/net/netfilter/nfnetlink_log.c b/net/netfilter/nfnetlink_log.c
+index a11c5ff..0cb9ede 100644
+--- a/net/netfilter/nfnetlink_log.c
++++ b/net/netfilter/nfnetlink_log.c
+@@ -358,10 +358,9 @@ __nfulnl_send(struct nfulnl_instance *inst)
+     }
+     status = nfnetlink_unicast(inst->skb, inst->net, inst->peer_portid,
+                    MSG_DONTWAIT);
+-
++out:
+     inst->qlen = 0;
+     inst->skb = NULL;
+-out:
+     return status;
+ }
 
-if (a && b)
-     ptr->bla = value;
-else
-    do_something_else();
-
-
-it will warn that ptr _might_ be used uninitialized (but it always is).
-This is fixed in this patch by assigning NULL to ptr, and while that makes
-the warning go away it actually prevents the valid warning, ptr _is_ used
-uninitialized if you start using it in the else case. Hence my request if we
-can't find a better solution for this.
-
-Does anyone know a better solution for this or should we consider
-disabling the might be unused warning?
-
-Regards,
-Jeroen
-
+-- 
+1.7.9.5
