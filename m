@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312AbaJMC0G (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:26:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45624 "EHLO
+	id S1753201AbaJMCZy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:25:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45601 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753275AbaJMC0C (ORCPT
+	with ESMTP id S1752826AbaJMCZu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:26:02 -0400
+	Sun, 12 Oct 2014 22:25:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Laight <David.Laight@aculab.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
+        Per Hurtig <per.hurtig@kau.se>, Eric Dumazet <edumazet@google.com>,
+        Nandita Dukkipati <nanditad@google.com>,
+        Neal Cardwell <ncardwell@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 11/16] sctp: handle association restarts when the socket is closed.
-Date: Mon, 13 Oct 2014 04:24:08 +0200
-Message-Id: <20141013022341.883828221@linuxfoundation.org>
+Subject: [PATCH 3.10 12/16] tcp: fixing TLPs FIN recovery
+Date: Mon, 13 Oct 2014 04:24:09 +0200
+Message-Id: <20141013022341.922200866@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022341.386913672@linuxfoundation.org>
 References: <20141013022341.386913672@linuxfoundation.org>
@@ -30,79 +31,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevich@gmail.com>
+From: Per Hurtig <per.hurtig@kau.se>
 
-[ Upstream commit bdf6fa52f01b941d4a80372d56de465bdbbd1d23 ]
+[ Upstream commit bef1909ee3ed1ca39231b260a8d3b4544ecd0c8f ]
 
-Currently association restarts do not take into consideration the
-state of the socket.  When a restart happens, the current assocation
-simply transitions into established state.  This creates a condition
-where a remote system, through a the restart procedure, may create a
-local association that is no way reachable by user.  The conditions
-to trigger this are as follows:
-  1) Remote does not acknoledge some data causing data to remain
-     outstanding.
-  2) Local application calls close() on the socket.  Since data
-     is still outstanding, the association is placed in SHUTDOWN_PENDING
-     state.  However, the socket is closed.
-  3) The remote tries to create a new association, triggering a restart
-     on the local system.  The association moves from SHUTDOWN_PENDING
-     to ESTABLISHED.  At this point, it is no longer reachable by
-     any socket on the local system.
+Fix to a problem observed when losing a FIN segment that does not
+contain data.  In such situations, TLP is unable to recover from
+*any* tail loss and instead adds at least PTO ms to the
+retransmission process, i.e., RTO = RTO + PTO.
 
-This patch addresses the above situation by moving the newly ESTABLISHED
-association into SHUTDOWN-SENT state and bundling a SHUTDOWN after
-the COOKIE-ACK chunk.  This way, the restarted associate immidiately
-enters the shutdown procedure and forces the termination of the
-unreachable association.
-
-Reported-by: David Laight <David.Laight@aculab.com>
-Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: Per Hurtig <per.hurtig@kau.se>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Acked-by: Nandita Dukkipati <nanditad@google.com>
+Acked-by: Neal Cardwell <ncardwell@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/sctp/command.h |    2 +-
- net/sctp/sm_statefuns.c    |   19 ++++++++++++++++---
- 2 files changed, 17 insertions(+), 4 deletions(-)
+ net/ipv4/tcp_output.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/include/net/sctp/command.h
-+++ b/include/net/sctp/command.h
-@@ -118,7 +118,7 @@ typedef enum {
-  * analysis of the state functions, but in reality just taken from
-  * thin air in the hopes othat we don't trigger a kernel panic.
-  */
--#define SCTP_MAX_NUM_COMMANDS 14
-+#define SCTP_MAX_NUM_COMMANDS 20
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -2036,9 +2036,7 @@ void tcp_send_loss_probe(struct sock *sk
+ 	if (WARN_ON(!skb || !tcp_skb_pcount(skb)))
+ 		goto rearm_timer;
  
- typedef union {
- 	__s32 i32;
---- a/net/sctp/sm_statefuns.c
-+++ b/net/sctp/sm_statefuns.c
-@@ -1782,9 +1782,22 @@ static sctp_disposition_t sctp_sf_do_dup
- 	/* Update the content of current association. */
- 	sctp_add_cmd_sf(commands, SCTP_CMD_UPDATE_ASSOC, SCTP_ASOC(new_asoc));
- 	sctp_add_cmd_sf(commands, SCTP_CMD_EVENT_ULP, SCTP_ULPEVENT(ev));
--	sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
--			SCTP_STATE(SCTP_STATE_ESTABLISHED));
--	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
-+	if (sctp_state(asoc, SHUTDOWN_PENDING) &&
-+	    (sctp_sstate(asoc->base.sk, CLOSING) ||
-+	     sock_flag(asoc->base.sk, SOCK_DEAD))) {
-+		/* if were currently in SHUTDOWN_PENDING, but the socket
-+		 * has been closed by user, don't transition to ESTABLISHED.
-+		 * Instead trigger SHUTDOWN bundled with COOKIE_ACK.
-+		 */
-+		sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
-+		return sctp_sf_do_9_2_start_shutdown(net, ep, asoc,
-+						     SCTP_ST_CHUNK(0), NULL,
-+						     commands);
-+	} else {
-+		sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
-+				SCTP_STATE(SCTP_STATE_ESTABLISHED));
-+		sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
-+	}
- 	return SCTP_DISPOSITION_CONSUME;
+-	/* Probe with zero data doesn't trigger fast recovery. */
+-	if (skb->len > 0)
+-		err = __tcp_retransmit_skb(sk, skb);
++	err = __tcp_retransmit_skb(sk, skb);
  
- nomem_ev:
+ 	/* Record snd_nxt for loss detection. */
+ 	if (likely(!err))
 
 
