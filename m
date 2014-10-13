@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920AbaJMC1v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:27:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45825 "EHLO
+	id S1753946AbaJMC14 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:27:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45836 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753827AbaJMC1r (ORCPT
+	with ESMTP id S1753827AbaJMC1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:27:47 -0400
+	Sun, 12 Oct 2014 22:27:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
+        Benjamin Block <bebl@mageta.org>, David Rientjes <rientjes@google.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 12/55] packet: handle too big packets for PACKET_V3
-Date: Mon, 13 Oct 2014 04:24:26 +0200
-Message-Id: <20141013022444.257863458@linuxfoundation.org>
+Subject: [PATCH 3.16 14/55] net: ipv6: fib: dont sleep inside atomic lock
+Date: Mon, 13 Oct 2014 04:24:28 +0200
+Message-Id: <20141013022444.342661973@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
 References: <20141013022443.729870634@linuxfoundation.org>
@@ -31,83 +30,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Benjamin Block <bebl@mageta.org>
 
-[ Upstream commit dc808110bb62b64a448696ecac3938902c92e1ab ]
+[ Upstream commit 793c3b4000a1ef611ae7e5c89bd2a9c6b776cb5e ]
 
-af_packet can currently overwrite kernel memory by out of bound
-accesses, because it assumed a [new] block can always hold one frame.
+The function fib6_commit_metrics() allocates a piece of memory in mode
+GFP_KERNEL while holding an atomic lock from higher up in the stack, in
+the function __ip6_ins_rt(). This produces the following BUG:
 
-This is not generally the case, even if most existing tools do it right.
+> BUG: sleeping function called from invalid context at mm/slub.c:1250
+> in_atomic(): 1, irqs_disabled(): 0, pid: 2909, name: dhcpcd
+> 2 locks held by dhcpcd/2909:
+>  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff81978e67>] rtnl_lock+0x17/0x20
+>  #1:  (&tb->tb6_lock){++--+.}, at: [<ffffffff81a6951a>] ip6_route_add+0x65a/0x800
+> CPU: 1 PID: 2909 Comm: dhcpcd Not tainted 3.17.0-rc1 #1
+> Hardware name: ASUS All Series/Q87T, BIOS 0216 10/16/2013
+>  0000000000000008 ffff8800c8f13858 ffffffff81af135a 0000000000000000
+>  ffff880212202430 ffff8800c8f13878 ffffffff810f8d3a ffff880212202c98
+>  0000000000000010 ffff8800c8f138c8 ffffffff8121ad0e 0000000000000001
+> Call Trace:
+>  [<ffffffff81af135a>] dump_stack+0x4e/0x68
+>  [<ffffffff810f8d3a>] __might_sleep+0x10a/0x120
+>  [<ffffffff8121ad0e>] kmem_cache_alloc_trace+0x4e/0x190
+>  [<ffffffff81a6bcd6>] ? fib6_commit_metrics+0x66/0x110
+>  [<ffffffff81a6bcd6>] fib6_commit_metrics+0x66/0x110
+>  [<ffffffff81a6cbf3>] fib6_add+0x883/0xa80
+>  [<ffffffff81a6951a>] ? ip6_route_add+0x65a/0x800
+>  [<ffffffff81a69535>] ip6_route_add+0x675/0x800
+>  [<ffffffff81a68f2a>] ? ip6_route_add+0x6a/0x800
+>  [<ffffffff81a6990c>] inet6_rtm_newroute+0x5c/0x80
+>  [<ffffffff8197cf01>] rtnetlink_rcv_msg+0x211/0x260
+>  [<ffffffff81978e67>] ? rtnl_lock+0x17/0x20
+>  [<ffffffff81119708>] ? lock_release_holdtime+0x28/0x180
+>  [<ffffffff81978e67>] ? rtnl_lock+0x17/0x20
+>  [<ffffffff8197ccf0>] ? __rtnl_unlock+0x20/0x20
+>  [<ffffffff819a989e>] netlink_rcv_skb+0x6e/0xd0
+>  [<ffffffff81978ee5>] rtnetlink_rcv+0x25/0x40
+>  [<ffffffff819a8e59>] netlink_unicast+0xd9/0x180
+>  [<ffffffff819a9600>] netlink_sendmsg+0x700/0x770
+>  [<ffffffff81103735>] ? local_clock+0x25/0x30
+>  [<ffffffff8194e83c>] sock_sendmsg+0x6c/0x90
+>  [<ffffffff811f98e3>] ? might_fault+0xa3/0xb0
+>  [<ffffffff8195ca6d>] ? verify_iovec+0x7d/0xf0
+>  [<ffffffff8194ec3e>] ___sys_sendmsg+0x37e/0x3b0
+>  [<ffffffff8111ef15>] ? trace_hardirqs_on_caller+0x185/0x220
+>  [<ffffffff81af979e>] ? mutex_unlock+0xe/0x10
+>  [<ffffffff819a55ec>] ? netlink_insert+0xbc/0xe0
+>  [<ffffffff819a65e5>] ? netlink_autobind.isra.30+0x125/0x150
+>  [<ffffffff819a6520>] ? netlink_autobind.isra.30+0x60/0x150
+>  [<ffffffff819a84f9>] ? netlink_bind+0x159/0x230
+>  [<ffffffff811f989a>] ? might_fault+0x5a/0xb0
+>  [<ffffffff8194f25e>] ? SYSC_bind+0x7e/0xd0
+>  [<ffffffff8194f8cd>] __sys_sendmsg+0x4d/0x80
+>  [<ffffffff8194f912>] SyS_sendmsg+0x12/0x20
+>  [<ffffffff81afc692>] system_call_fastpath+0x16/0x1b
 
-This patch clamps too long frames as API permits, and issue a one time
-error on syslog.
+Fixing this by replacing the mode GFP_KERNEL with GFP_ATOMIC.
 
-[  394.357639] tpacket_rcv: packet too big, clamped from 5042 to 3966. macoff=82
-
-In this example, packet header tp_snaplen was set to 3966,
-and tp_len was set to 5042 (skb->len)
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Fixes: f6fb8f100b80 ("af-packet: TPACKET_V3 flexible buffer implementation.")
-Acked-by: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: Benjamin Block <bebl@mageta.org>
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/packet/af_packet.c |   17 +++++++++++++++++
- net/packet/internal.h  |    1 +
- 2 files changed, 18 insertions(+)
+ net/ipv6/ip6_fib.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -636,6 +636,7 @@ static void init_prb_bdqc(struct packet_
- 	p1->tov_in_jiffies = msecs_to_jiffies(p1->retire_blk_tov);
- 	p1->blk_sizeof_priv = req_u->req3.tp_sizeof_priv;
- 
-+	p1->max_frame_len = p1->kblk_size - BLK_PLUS_PRIV(p1->blk_sizeof_priv);
- 	prb_init_ft_ops(p1, req_u);
- 	prb_setup_retire_blk_timer(po, tx_ring);
- 	prb_open_block(p1, pbd);
-@@ -1946,6 +1947,18 @@ static int tpacket_rcv(struct sk_buff *s
- 			if ((int)snaplen < 0)
- 				snaplen = 0;
- 		}
-+	} else if (unlikely(macoff + snaplen >
-+			    GET_PBDQC_FROM_RB(&po->rx_ring)->max_frame_len)) {
-+		u32 nval;
-+
-+		nval = GET_PBDQC_FROM_RB(&po->rx_ring)->max_frame_len - macoff;
-+		pr_err_once("tpacket_rcv: packet too big, clamped from %u to %u. macoff=%u\n",
-+			    snaplen, nval, macoff);
-+		snaplen = nval;
-+		if (unlikely((int)snaplen < 0)) {
-+			snaplen = 0;
-+			macoff = GET_PBDQC_FROM_RB(&po->rx_ring)->max_frame_len;
-+		}
- 	}
- 	spin_lock(&sk->sk_receive_queue.lock);
- 	h.raw = packet_current_rx_frame(po, skb,
-@@ -3789,6 +3802,10 @@ static int packet_set_ring(struct sock *
- 			goto out;
- 		if (unlikely(req->tp_block_size & (PAGE_SIZE - 1)))
- 			goto out;
-+		if (po->tp_version >= TPACKET_V3 &&
-+		    (int)(req->tp_block_size -
-+			  BLK_PLUS_PRIV(req_u->req3.tp_sizeof_priv)) <= 0)
-+			goto out;
- 		if (unlikely(req->tp_frame_size < po->tp_hdrlen +
- 					po->tp_reserve))
- 			goto out;
---- a/net/packet/internal.h
-+++ b/net/packet/internal.h
-@@ -29,6 +29,7 @@ struct tpacket_kbdq_core {
- 	char		*pkblk_start;
- 	char		*pkblk_end;
- 	int		kblk_size;
-+	unsigned int	max_frame_len;
- 	unsigned int	knum_blocks;
- 	uint64_t	knxt_seq_num;
- 	char		*prev;
+--- a/net/ipv6/ip6_fib.c
++++ b/net/ipv6/ip6_fib.c
+@@ -643,7 +643,7 @@ static int fib6_commit_metrics(struct ds
+ 	if (dst->flags & DST_HOST) {
+ 		mp = dst_metrics_write_ptr(dst);
+ 	} else {
+-		mp = kzalloc(sizeof(u32) * RTAX_MAX, GFP_KERNEL);
++		mp = kzalloc(sizeof(u32) * RTAX_MAX, GFP_ATOMIC);
+ 		if (!mp)
+ 			return -ENOMEM;
+ 		dst_init_metrics(dst, mp, 0);
 
 
