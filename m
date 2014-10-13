@@ -1,94 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091AbaJMHM4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 03:12:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55548 "EHLO mx1.redhat.com"
+	id S1753254AbaJMHNQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 03:13:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57309 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752382AbaJMHMx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 03:12:53 -0400
-Date: Mon, 13 Oct 2014 10:16:19 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH net-next RFC 1/3] virtio: support for urgent descriptors
-Message-ID: <20141013071619.GA10178@redhat.com>
-References: <1413011806-3813-1-git-send-email-jasowang@redhat.com>
- <1413011806-3813-2-git-send-email-jasowang@redhat.com>
- <20141012092744.GA9567@redhat.com>
- <543B6F94.2090107@redhat.com>
+	id S1753192AbaJMHNN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 03:13:13 -0400
+Message-ID: <543B7B5F.4030708@redhat.com>
+Date: Mon, 13 Oct 2014 03:12:31 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <543B6F94.2090107@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-kernel@vger.kernel.org, mgorman@suse.de, chegu_vinod@hp.com,
+        mingo@kernel.org, efault@gmx.de, vincent.guittot@linaro.org
+Subject: Re: [PATCH RFC 2/5] sched,numa: classify the NUMA topology of a system
+References: <1412797050-8903-1-git-send-email-riel@redhat.com> <1412797050-8903-3-git-send-email-riel@redhat.com> <20141012143056.GF3015@worktop>
+In-Reply-To: <20141012143056.GF3015@worktop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 13, 2014 at 02:22:12PM +0800, Jason Wang wrote:
-> On 10/12/2014 05:27 PM, Michael S. Tsirkin wrote:
-> > On Sat, Oct 11, 2014 at 03:16:44PM +0800, Jason Wang wrote:
-> >> Below should be useful for some experiments Jason is doing.
-> >> I thought I'd send it out for early review/feedback.
-> >>
-> >> event idx feature allows us to defer interrupts until
-> >> a specific # of descriptors were used.
-> >> Sometimes it might be useful to get an interrupt after
-> >> a specific descriptor, regardless.
-> >> This adds a descriptor flag for this, and an API
-> >> to create an urgent output descriptor.
-> >> This is still an RFC:
-> >> we'll need a feature bit for drivers to detect this,
-> >> but we've run out of feature bits for virtio 0.X.
-> >> For experimentation purposes, drivers can assume
-> >> this is set, or add a driver-specific feature bit.
-> >>
-> >> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> >> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> > I see that as compared to my original patch, you have
-> > added a new flag: VRING_AVAIL_F_NO_URGENT_INTERRUPT
-> > I don't think it's necessary, see below.
-> >
-> > As such, I think this patch should be split:
-> > - original patch adding support for urgent descriptors
-> > - a patch adding virtqueue_enable/disable_cb_urgent(_prepare)?
-> 
-> Not sure this is a good idea, since the api of first patch is in-completed.
-> >
-> >> ---
-> >>  drivers/virtio/virtio_ring.c     | 75 +++++++++++++++++++++++++++++++++++++---
-> >>  include/linux/virtio.h           | 14 ++++++++
-> >>  include/uapi/linux/virtio_ring.h |  5 ++-
-> >>  3 files changed, 89 insertions(+), 5 deletions(-)
-> >>
-> [...]
-> >>  
-> >> +unsigned virtqueue_enable_cb_prepare_urgent(struct virtqueue *_vq)
-> >> +{
-> >> +	struct vring_virtqueue *vq = to_vvq(_vq);
-> >> +	u16 last_used_idx;
-> >> +
-> >> +	START_USE(vq);
-> >> +	vq->vring.avail->flags &= ~VRING_AVAIL_F_NO_URGENT_INTERRUPT;
-> >> +	last_used_idx = vq->last_used_idx;
-> >> +	END_USE(vq);
-> >> +	return last_used_idx;
-> >> +}
-> >> +EXPORT_SYMBOL_GPL(virtqueue_enable_cb_prepare_urgent);
-> >> +
-> > You can implement virtqueue_enable_cb_prepare_urgent
-> > simply by clearing ~VRING_AVAIL_F_NO_INTERRUPT.
-> >
-> > The effect is same: host sends interrupts only if there
-> > is an urgent descriptor.
-> 
-> Seems not, consider the case when event index was disabled. This will
-> turn on all interrupts.
+On 10/12/2014 10:30 AM, Peter Zijlstra wrote:
+> On Wed, Oct 08, 2014 at 03:37:27PM -0400, riel@redhat.com wrote:
+>> +static void init_numa_topology_type(void)
+>> +{
+>> +	int a, b, c, n;
+>> +
+>> +	n = sched_domains_numa_levels;
+>> +
+>> +	if (n <= 1)
+>> +		sched_numa_topology_type = NUMA_DIRECT;
+>> +
+>> +	for_each_online_node(a) {
+>> +		for_each_online_node(b) {
+>> +			/* Find two nodes furthest removed from each other. */
+>> +			if (node_hops(a, b) < n)
+>> +				continue;
+>> +
+>> +			/* Is there an intermediary node between a and b? */
+>> +			for_each_online_node(c) {
+>> +				if (node_hops(a, c) < n &&
+>> +				    node_hops(b, c) < n) {
+>> +					sched_numa_topology_type =
+>> +							NUMA_GLUELESS_MESH;
+>> +					return;
+>> +				}
+>> +			}
+>> +
+>> +			sched_numa_topology_type = NUMA_BACKPLANE;
+>> +			return;
+>> +		}
+>> +	}
+>> +}
+>
+> We can find max_distance nodes in sched_init_numa(), right? Could we not
+> avoid this second iteration?
+>
+It's not about finding the max distance, but about finding
+two nodes that are at the maximum distance from each other,
+in order to see whether there are intermediate nodes
+between the two.
 
-This means that a legacy device without event index support
-will get more interrupts.
-Sounds reasonable.
+I suppose we could just directly access the node_hops
+tables to get two nodes that are the furthest away from
+each other, but I suspect that searching that table
+directly will not make a significant difference compared
+with using the macros above.
 
--- 
-MST
+Especially since this code is only ever run once at system
+bootup.
