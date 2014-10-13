@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754525AbaJMC3h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:29:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46032 "EHLO
+	id S1754548AbaJMC3m (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:29:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46036 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754415AbaJMC3e (ORCPT
+	with ESMTP id S1754521AbaJMC3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:29:34 -0400
+	Sun, 12 Oct 2014 22:29:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bryan ODonoghue <pure.logic@nexus-software.ie>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Subject: [PATCH 3.16 55/55] serial: 8250: Add Quark X1000 to 8250_pci.c
-Date: Mon, 13 Oct 2014 04:25:09 +0200
-Message-Id: <20141013022446.370396304@linuxfoundation.org>
+        Hans de Goede <hdegoede@redhat.com>
+Subject: [PATCH 3.16 45/55] uas: Add a quirk for rejecting ATA_12 and ATA_16 commands
+Date: Mon, 13 Oct 2014 04:24:59 +0200
+Message-Id: <20141013022445.836213077@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
 References: <20141013022443.729870634@linuxfoundation.org>
@@ -29,85 +28,145 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 1ede7dcca3c4fa15a518ab0473126f9c3e621e4c upstream.
+commit 593078525c8b234a35a36ff551b8716464e86481 upstream.
 
-Quark X1000 contains two designware derived 8250 serial ports.
-Each port has a unique PCI configuration space consisting of
-BAR0:UART BAR1:DMA respectively.
+And set this quirk for the Seagate Expansion Desk (0bc2:2312), as that one
+seems to hang upon receiving an ATA_12 or ATA_16 command.
 
-Unlike the standard 8250 the register width is 32 bits for RHR,IER etc
-The Quark UART has a fundamental clock @ 44.2368 MHz allowing for a
-bitrate of up to about 2.76 megabits per second.
+https://bugzilla.kernel.org/show_bug.cgi?id=79511
+https://bbs.archlinux.org/viewtopic.php?id=183190
 
-This patch enables standard 8250 mode
+While at it also add missing documentation for the u value for usb-storage
+quirks.
 
-Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
-Reviewed-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/8250/8250_pci.c |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+ Documentation/kernel-parameters.txt |    2 ++
+ drivers/usb/storage/uas.c           |   13 +++++++++++++
+ drivers/usb/storage/unusual_uas.h   |   23 +++++++++++++----------
+ drivers/usb/storage/usb.c           |    6 +++++-
+ include/linux/usb_usual.h           |    2 ++
+ 5 files changed, 35 insertions(+), 11 deletions(-)
 
---- a/drivers/tty/serial/8250/8250_pci.c
-+++ b/drivers/tty/serial/8250/8250_pci.c
-@@ -1790,6 +1790,7 @@ pci_wch_ch353_setup(struct serial_privat
- #define PCI_DEVICE_ID_COMMTECH_4222PCIE	0x0022
- #define PCI_DEVICE_ID_BROADCOM_TRUMANAGE 0x160a
- #define PCI_DEVICE_ID_AMCC_ADDIDATA_APCI7800 0x818e
-+#define PCI_DEVICE_ID_INTEL_QRK_UART	0x0936
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -3478,6 +3478,8 @@ bytes respectively. Such letter suffixes
+ 					bogus residue values);
+ 				s = SINGLE_LUN (the device has only one
+ 					Logical Unit);
++				t = NO_ATA_1X (don't allow ATA(12) and ATA(16)
++					commands, uas only);
+ 				u = IGNORE_UAS (don't bind to the uas driver);
+ 				w = NO_WP_DETECT (don't test whether the
+ 					medium is write-protected).
+--- a/drivers/usb/storage/uas.c
++++ b/drivers/usb/storage/uas.c
+@@ -28,6 +28,7 @@
+ #include <scsi/scsi_tcq.h>
  
- #define PCI_VENDOR_ID_SUNIX		0x1fd4
- #define PCI_DEVICE_ID_SUNIX_1999	0x1999
-@@ -1900,6 +1901,13 @@ static struct pci_serial_quirk pci_seria
- 		.subdevice	= PCI_ANY_ID,
- 		.setup		= byt_serial_setup,
- 	},
-+	{
-+		.vendor		= PCI_VENDOR_ID_INTEL,
-+		.device		= PCI_DEVICE_ID_INTEL_QRK_UART,
-+		.subvendor	= PCI_ANY_ID,
-+		.subdevice	= PCI_ANY_ID,
-+		.setup		= pci_default_setup,
-+	},
- 	/*
- 	 * ITE
- 	 */
-@@ -2742,6 +2750,7 @@ enum pci_board_num_t {
- 	pbn_ADDIDATA_PCIe_8_3906250,
- 	pbn_ce4100_1_115200,
- 	pbn_byt,
-+	pbn_qrk,
- 	pbn_omegapci,
- 	pbn_NETMOS9900_2s_115200,
- 	pbn_brcm_trumanage,
-@@ -3492,6 +3501,12 @@ static struct pciserial_board pci_boards
- 		.uart_offset	= 0x80,
- 		.reg_shift      = 2,
- 	},
-+	[pbn_qrk] = {
-+		.flags		= FL_BASE0,
-+		.num_ports	= 1,
-+		.base_baud	= 2764800,
-+		.reg_shift	= 2,
-+	},
- 	[pbn_omegapci] = {
- 		.flags		= FL_BASE0,
- 		.num_ports	= 8,
-@@ -5194,6 +5209,12 @@ static struct pci_device_id serial_pci_t
- 		pbn_byt },
+ #include "uas-detect.h"
++#include "scsiglue.h"
  
- 	/*
-+	 * Intel Quark x1000
-+	 */
-+	{	PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_QRK_UART,
-+		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
-+		pbn_qrk },
-+	/*
- 	 * Cronyx Omega PCI
- 	 */
- 	{	PCI_VENDOR_ID_PLX, PCI_DEVICE_ID_PLX_CRONYX_OMEGA,
+ /*
+  * The r00-r01c specs define this version of the SENSE IU data structure.
+@@ -49,6 +50,7 @@ struct uas_dev_info {
+ 	struct usb_anchor cmd_urbs;
+ 	struct usb_anchor sense_urbs;
+ 	struct usb_anchor data_urbs;
++	unsigned long flags;
+ 	int qdepth, resetting;
+ 	struct response_iu response;
+ 	unsigned cmd_pipe, status_pipe, data_in_pipe, data_out_pipe;
+@@ -714,6 +716,15 @@ static int uas_queuecommand_lck(struct s
+ 
+ 	BUILD_BUG_ON(sizeof(struct uas_cmd_info) > sizeof(struct scsi_pointer));
+ 
++	if ((devinfo->flags & US_FL_NO_ATA_1X) &&
++			(cmnd->cmnd[0] == ATA_12 || cmnd->cmnd[0] == ATA_16)) {
++		memcpy(cmnd->sense_buffer, usb_stor_sense_invalidCDB,
++		       sizeof(usb_stor_sense_invalidCDB));
++		cmnd->result = SAM_STAT_CHECK_CONDITION;
++		cmnd->scsi_done(cmnd);
++		return 0;
++	}
++
+ 	spin_lock_irqsave(&devinfo->lock, flags);
+ 
+ 	if (devinfo->resetting) {
+@@ -1080,6 +1091,8 @@ static int uas_probe(struct usb_interfac
+ 	devinfo->resetting = 0;
+ 	devinfo->running_task = 0;
+ 	devinfo->shutdown = 0;
++	devinfo->flags = id->driver_info;
++	usb_stor_adjust_quirks(udev, &devinfo->flags);
+ 	init_usb_anchor(&devinfo->cmd_urbs);
+ 	init_usb_anchor(&devinfo->sense_urbs);
+ 	init_usb_anchor(&devinfo->data_urbs);
+--- a/drivers/usb/storage/unusual_uas.h
++++ b/drivers/usb/storage/unusual_uas.h
+@@ -40,13 +40,16 @@
+  * and don't forget to CC: the USB development list <linux-usb@vger.kernel.org>
+  */
+ 
+-/*
+- * This is an example entry for the US_FL_IGNORE_UAS flag. Once we have an
+- * actual entry using US_FL_IGNORE_UAS this entry should be removed.
+- *
+- * UNUSUAL_DEV(  0xabcd, 0x1234, 0x0100, 0x0100,
+- *		"Example",
+- *		"Storage with broken UAS",
+- *		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+- *		US_FL_IGNORE_UAS),
+- */
++/* https://bugzilla.kernel.org/show_bug.cgi?id=79511 */
++UNUSUAL_DEV(0x0bc2, 0x2312, 0x0000, 0x9999,
++		"Seagate",
++		"Expansion Desk",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_NO_ATA_1X),
++
++/* https://bbs.archlinux.org/viewtopic.php?id=183190 */
++UNUSUAL_DEV(0x0bc2, 0x3312, 0x0000, 0x9999,
++		"Seagate",
++		"Expansion Desk",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_NO_ATA_1X),
+--- a/drivers/usb/storage/usb.c
++++ b/drivers/usb/storage/usb.c
+@@ -476,7 +476,8 @@ void usb_stor_adjust_quirks(struct usb_d
+ 			US_FL_CAPACITY_OK | US_FL_IGNORE_RESIDUE |
+ 			US_FL_SINGLE_LUN | US_FL_NO_WP_DETECT |
+ 			US_FL_NO_READ_DISC_INFO | US_FL_NO_READ_CAPACITY_16 |
+-			US_FL_INITIAL_READ10 | US_FL_WRITE_CACHE);
++			US_FL_INITIAL_READ10 | US_FL_WRITE_CACHE |
++			US_FL_NO_ATA_1X);
+ 
+ 	p = quirks;
+ 	while (*p) {
+@@ -541,6 +542,9 @@ void usb_stor_adjust_quirks(struct usb_d
+ 		case 's':
+ 			f |= US_FL_SINGLE_LUN;
+ 			break;
++		case 't':
++			f |= US_FL_NO_ATA_1X;
++			break;
+ 		case 'u':
+ 			f |= US_FL_IGNORE_UAS;
+ 			break;
+--- a/include/linux/usb_usual.h
++++ b/include/linux/usb_usual.h
+@@ -73,6 +73,8 @@
+ 		/* Device advertises UAS but it is broken */	\
+ 	US_FLAG(BROKEN_FUA,	0x01000000)			\
+ 		/* Cannot handle FUA in WRITE or READ CDBs */	\
++	US_FLAG(NO_ATA_1X,	0x02000000)			\
++		/* Cannot handle ATA_12 or ATA_16 CDBs */	\
+ 
+ #define US_FLAG(name, value)	US_FL_##name = value ,
+ enum { US_DO_ALL_FLAGS };
 
 
