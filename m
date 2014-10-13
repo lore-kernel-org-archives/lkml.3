@@ -1,214 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754295AbaJMUNj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 16:13:39 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:34753 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752003AbaJMUMI (ORCPT
+	id S1754435AbaJMUOb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 16:14:31 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:33959 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753858AbaJMUO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 16:12:08 -0400
-From: Kever Yang <kever.yang@rock-chips.com>
-To: heiko@sntech.de
-Cc: dianders@chromium.org, sonnyrao@chromium.org, addy.ke@rock-chips.com,
-        cf@rock-chips.com, xjq@rock-chips.com, hj@rock-chips.com,
-        huangtao@rock-chips.com, linux-rockchip@lists.infradead.org,
-        Kever Yang <kever.yang@rock-chips.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v4 1/6] ARM: rockchip: convert to regmap and use pmu syscon if available
-Date: Mon, 13 Oct 2014 13:11:57 -0700
-Message-Id: <1413231122-1770-2-git-send-email-kever.yang@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1413231122-1770-1-git-send-email-kever.yang@rock-chips.com>
-References: <1413231122-1770-1-git-send-email-kever.yang@rock-chips.com>
+	Mon, 13 Oct 2014 16:14:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D174C992F@AcuExch.aculab.com>
+References: <1413071551-15372-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <063D6719AE5E284EB5DD2968C1650D6D174C992F@AcuExch.aculab.com>
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Date: Mon, 13 Oct 2014 22:14:07 +0200
+Message-ID: <CAFo99gZxFcTcXQnutcYt7o8aCXNRQT-aBQ6C=V4ZsK=7aUiX=w@mail.gmail.com>
+Subject: Re: [PATCH] net: wireless: brcm80211: brcmfmac: dhd_sdio.c: Cleaning
+ up missing null-terminate in conjunction with strncpy
+To: David Laight <David.Laight@aculab.com>
+Cc: Brett Rudley <brudley@broadcom.com>, Arend van Spriel <arend@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
+        Daniel Kim <dekim@broadcom.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "brcm80211-dev-list@broadcom.com" <brcm80211-dev-list@broadcom.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heiko Stuebner <heiko@sntech.de>
+2014-10-13 10:55 GMT+02:00 David Laight <David.Laight@aculab.com>:
+> From: Rickard Strandqvist
+>> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
+>> And changed from using strncpy to strlcpy to simplify code.
+>
+> I think you should return an error if the strings get truncated.
+> Silent truncation is going to lead to issues at some point in the future
+> (in some places).
+>
+>> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+>> ---
+>>  drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c |   25 ++++++++++----------
+>>  1 file changed, 12 insertions(+), 13 deletions(-)
+>>
+>> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
+>> b/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
+>> index f55f625..d20d4e6 100644
+>> --- a/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
+>> +++ b/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
+>> @@ -670,7 +670,6 @@ static int brcmf_sdio_get_fwnames(struct brcmf_chip *ci,
+>>                                 struct brcmf_sdio_dev *sdiodev)
+>>  {
+>>       int i;
+>> -     uint fw_len, nv_len;
+>>       char end;
+>>
+>>       for (i = 0; i < ARRAY_SIZE(brcmf_fwname_data); i++) {
+>> @@ -684,25 +683,25 @@ static int brcmf_sdio_get_fwnames(struct brcmf_chip *ci,
+>>               return -ENODEV;
+>>       }
+>>
+>> -     fw_len = sizeof(sdiodev->fw_name) - 1;
+>> -     nv_len = sizeof(sdiodev->nvram_name) - 1;
+>>       /* check if firmware path is provided by module parameter */
+>>       if (brcmf_firmware_path[0] != '\0') {
+>> -             strncpy(sdiodev->fw_name, brcmf_firmware_path, fw_len);
+>> -             strncpy(sdiodev->nvram_name, brcmf_firmware_path, nv_len);
+>> -             fw_len -= strlen(sdiodev->fw_name);
+>> -             nv_len -= strlen(sdiodev->nvram_name);
+>> +             strlcpy(sdiodev->fw_name, brcmf_firmware_path,
+>> +                     sizeof(sdiodev->fw_name));
+>> +             strlcpy(sdiodev->nvram_name, brcmf_firmware_path,
+>> +                     sizeof(sdiodev->nvram_name));
+>>
+>>               end = brcmf_firmware_path[strlen(brcmf_firmware_path) - 1];
+>
+> If you are doing a strlen() here, you could use the length for the copy
+> and/or use it to avoid the strcat().
+>
+>>               if (end != '/') {
+>> -                     strncat(sdiodev->fw_name, "/", fw_len);
+>> -                     strncat(sdiodev->nvram_name, "/", nv_len);
+>> -                     fw_len--;
+>> -                     nv_len--;
+>> +                     strlcat(sdiodev->fw_name, "/",
+>> +                             sizeof(sdiodev->fw_name));
+>> +                     strlcat(sdiodev->nvram_name, "/",
+>> +                             sizeof(sdiodev->nvram_name));
+>>               }
+>>       }
+>> -     strncat(sdiodev->fw_name, brcmf_fwname_data[i].bin, fw_len);
+>> -     strncat(sdiodev->nvram_name, brcmf_fwname_data[i].nv, nv_len);
+>> +     strlcat(sdiodev->fw_name, brcmf_fwname_data[i].bin,
+>> +             sizeof(sdiodev->fw_name));
+>> +     strlcat(sdiodev->nvram_name, brcmf_fwname_data[i].nv,
+>> +             sizeof(sdiodev->nvram_name));
+>
+> I assume something ensures that fw_name[0] == 0 here.
+>
+>         David
 
-The pmu register space is - like the GRF - shared by quite some peripherals.
-On the rk3188 and rk3288 even parts of the pinctrl are living there.
-Therefore we normally shouldn't map it a second time when the syscon
-does this already.
 
-Therefore convert the cpu power-domain handling to access the pmu via a
-regmap and at first try to get it via the syscon interface.
-Getting this syscon will only fail if the pmu node does not have the
-"syscon" compatible and thus does not get shared with other drivers.
+Hi David
 
-In this case we map it like before and create the necessary regmap on
-top of it.
 
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
----
+What do you mean you would use the strlen, can you give some example
+code instead?
 
-Changes in v4: None
-Changes in v3:
-- add this patch in version 3
 
-Changes in v2: None
+Arend van Spriel wanted me to change the title before.
+So this should really continue the conversation in that new mail. And
+then you can also see my other comments.
+And I have the same type of objection to the:
+brcmf_firmware_path[0] == '\0'
 
- arch/arm/mach-rockchip/platsmp.c | 104 +++++++++++++++++++++++++++++----------
- 1 file changed, 78 insertions(+), 26 deletions(-)
+Se:
+https://lkml.org/lkml/2014/10/12/42
 
-diff --git a/arch/arm/mach-rockchip/platsmp.c b/arch/arm/mach-rockchip/platsmp.c
-index 189684f..4c36fbf 100644
---- a/arch/arm/mach-rockchip/platsmp.c
-+++ b/arch/arm/mach-rockchip/platsmp.c
-@@ -19,6 +19,8 @@
- #include <linux/io.h>
- #include <linux/of.h>
- #include <linux/of_address.h>
-+#include <linux/regmap.h>
-+#include <linux/mfd/syscon.h>
- 
- #include <asm/cacheflush.h>
- #include <asm/cp15.h>
-@@ -37,23 +39,42 @@ static int ncores;
- 
- #define PMU_PWRDN_SCU		4
- 
--static void __iomem *pmu_base_addr;
-+static struct regmap *pmu;
- 
--static inline bool pmu_power_domain_is_on(int pd)
-+static int pmu_power_domain_is_on(int pd)
- {
--	return !(readl_relaxed(pmu_base_addr + PMU_PWRDN_ST) & BIT(pd));
-+	u32 val;
-+	int ret;
-+
-+	ret = regmap_read(pmu, PMU_PWRDN_ST, &val);
-+	if (ret < 0)
-+		return ret;
-+
-+	return !(val & BIT(pd));
- }
- 
--static void pmu_set_power_domain(int pd, bool on)
-+static int pmu_set_power_domain(int pd, bool on)
- {
--	u32 val = readl_relaxed(pmu_base_addr + PMU_PWRDN_CON);
--	if (on)
--		val &= ~BIT(pd);
--	else
--		val |=  BIT(pd);
--	writel(val, pmu_base_addr + PMU_PWRDN_CON);
--
--	while (pmu_power_domain_is_on(pd) != on) { }
-+	u32 val = (on) ? 0 : BIT(pd);
-+	int ret;
-+
-+	ret = regmap_update_bits(pmu, PMU_PWRDN_CON, BIT(pd), val);
-+	if (ret < 0) {
-+		pr_err("%s: could not update power domain\n", __func__);
-+		return ret;
-+	}
-+
-+	ret = -1;
-+	while (ret != on) {
-+		ret = pmu_power_domain_is_on(pd);
-+		if (ret < 0) {
-+			pr_err("%s: could not read power domain state\n",
-+				 __func__);
-+			return ret;
-+		}
-+	}
-+
-+	return 0;
- }
- 
- /*
-@@ -63,7 +84,7 @@ static void pmu_set_power_domain(int pd, bool on)
- static int __cpuinit rockchip_boot_secondary(unsigned int cpu,
- 					     struct task_struct *idle)
- {
--	if (!sram_base_addr || !pmu_base_addr) {
-+	if (!sram_base_addr || !pmu) {
- 		pr_err("%s: sram or pmu missing for cpu boot\n", __func__);
- 		return -ENXIO;
- 	}
-@@ -75,9 +96,7 @@ static int __cpuinit rockchip_boot_secondary(unsigned int cpu,
- 	}
- 
- 	/* start the core */
--	pmu_set_power_domain(0 + cpu, true);
--
--	return 0;
-+	return pmu_set_power_domain(0 + cpu, true);
- }
- 
- /**
-@@ -125,6 +144,48 @@ static int __init rockchip_smp_prepare_sram(struct device_node *node)
- 	return 0;
- }
- 
-+static struct regmap_config rockchip_pmu_regmap_config = {
-+	.reg_bits = 32,
-+	.val_bits = 32,
-+	.reg_stride = 4,
-+};
-+
-+static int __init rockchip_smp_prepare_pmu(void)
-+{
-+	struct device_node *node;
-+	void __iomem *pmu_base;
-+
-+	pmu = syscon_regmap_lookup_by_compatible("rockchip,rk3066-pmu");
-+	if (!IS_ERR(pmu))
-+		return 0;
-+
-+	/* fallback, create our own regmap for the pmu area */
-+	pmu = NULL;
-+	node = of_find_compatible_node(NULL, NULL, "rockchip,rk3066-pmu");
-+	if (!node) {
-+		pr_err("%s: could not find pmu dt node\n", __func__);
-+		return -ENODEV;
-+	}
-+
-+	pmu_base = of_iomap(node, 0);
-+	if (!pmu_base) {
-+		pr_err("%s: could not map pmu registers\n", __func__);
-+		return -ENOMEM;
-+	}
-+
-+	pmu = regmap_init_mmio(NULL, pmu_base, &rockchip_pmu_regmap_config);
-+	if (IS_ERR(pmu)) {
-+		int ret = PTR_ERR(pmu);
-+
-+		iounmap(pmu_base);
-+		pmu = NULL;
-+		pr_err("%s: regmap init failed\n", __func__);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
- static void __init rockchip_smp_prepare_cpus(unsigned int max_cpus)
- {
- 	struct device_node *node;
-@@ -151,17 +212,8 @@ static void __init rockchip_smp_prepare_cpus(unsigned int max_cpus)
- 	if (rockchip_smp_prepare_sram(node))
- 		return;
- 
--	node = of_find_compatible_node(NULL, NULL, "rockchip,rk3066-pmu");
--	if (!node) {
--		pr_err("%s: could not find pmu dt node\n", __func__);
-+	if (rockchip_smp_prepare_pmu())
- 		return;
--	}
--
--	pmu_base_addr = of_iomap(node, 0);
--	if (!pmu_base_addr) {
--		pr_err("%s: could not map pmu registers\n", __func__);
--		return;
--	}
- 
- 	/* enable the SCU power domain */
- 	pmu_set_power_domain(PMU_PWRDN_SCU, true);
--- 
-1.9.1
-
+Kind regards
+Rickard Strandqvist
