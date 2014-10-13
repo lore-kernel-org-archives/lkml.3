@@ -1,95 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754697AbaJMSRF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 14:17:05 -0400
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:47392 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754294AbaJMSRE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 14:17:04 -0400
-From: Santosh Shilimkar <santosh.shilimkar@gmail.com>
-X-Google-Original-From: Santosh Shilimkar <ssantosh@kernel.org>
-To: arm@kernel.org
-Cc: olof@lixom.net, arnd@arndb.de, linux-arm-kernel@lists.infradead.org,
-        robh+dt@kernel.org, gregkh@linuxfoundation.org,
-        linus.walleij@linaro.org, khilman@linaro.org, tony@atomide.com,
-        daniel.lezcano@linaro.org, mturquette@linaro.org,
-        linux@arm.linux.org.uk, paul@pwsan.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Santosh Shilimkar <ssantosh@kernel.org>
-Subject: [PATCH] MAINTAINERS: Update Santosh Shilimkar's email id
-Date: Mon, 13 Oct 2014 14:16:28 -0400
-Message-Id: <1413224188-3855-1-git-send-email-ssantosh@kernel.org>
-X-Mailer: git-send-email 1.9.1
+	id S1754590AbaJMSXu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 14:23:50 -0400
+Received: from mga03.intel.com ([134.134.136.65]:19007 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753989AbaJMSXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 14:23:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,712,1406617200"; 
+   d="scan'208";a="588182831"
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: linus.walleij@linaro.org
+Cc: linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
+        David Cohen <david.a.cohen@linux.intel.com>, <stable@vger.kernel.org>
+Subject: [PATCH] pinctrl: baytrail: show output gpio state correctly on Intel Baytrail
+Date: Mon, 13 Oct 2014 11:23:59 -0700
+Message-Id: <1413224639-21552-1-git-send-email-david.a.cohen@linux.intel.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1412355319-18946-1-git-send-email-david.a.cohen@linux.intel.com>
+References: <1412355319-18946-1-git-send-email-david.a.cohen@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Santosh Shilimkar <ssantosh@kernel.org>
----
- MAINTAINERS | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+Even if a gpio pin is set to output, we still need to set INPUT_EN bit
+to be able to read its value. Without this change, we'll always read low
+level state.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index e599d41..e534131 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -1088,33 +1088,33 @@ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
- S:	Maintained
+Cc: <stable@vger.kernel.org> # v3.14+
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+---
+
+Hi,
+
+I'm resending same v1 patch but now copying linux stable and linux gpio.
+This patch is meant for all linux stable trees >= v3.14.
+
+Br, David
+---
+
+ drivers/pinctrl/pinctrl-baytrail.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
+index e12e5b07f6d7..c23d8ded936d 100644
+--- a/drivers/pinctrl/pinctrl-baytrail.c
++++ b/drivers/pinctrl/pinctrl-baytrail.c
+@@ -318,7 +318,7 @@ static int byt_gpio_direction_output(struct gpio_chip *chip,
+ 		"Potential Error: Setting GPIO with direct_irq_en to output");
  
- ARM/TEXAS INSTRUMENT KEYSTONE ARCHITECTURE
--M:	Santosh Shilimkar <santosh.shilimkar@ti.com>
-+M:	Santosh Shilimkar <ssantosh@kernel.org>
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
- S:	Maintained
- F:	arch/arm/mach-keystone/
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/ssantosh/linux-keystone.git
+ 	reg_val = readl(reg) | BYT_DIR_MASK;
+-	reg_val &= ~BYT_OUTPUT_EN;
++	reg_val &= ~(BYT_OUTPUT_EN | BYT_INPUT_EN);
  
- ARM/TEXAS INSTRUMENT KEYSTONE CLOCK FRAMEWORK
--M:	Santosh Shilimkar <santosh.shilimkar@ti.com>
-+M:	Santosh Shilimkar <ssantosh@kernel.org>
- L:	linux-kernel@vger.kernel.org
- S:	Maintained
- F:	drivers/clk/keystone/
- 
- ARM/TEXAS INSTRUMENT KEYSTONE ClOCKSOURCE
--M:	Santosh Shilimkar <santosh.shilimkar@ti.com>
-+M:	Santosh Shilimkar <ssantosh@kernel.org>
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
- L:	linux-kernel@vger.kernel.org
- S:	Maintained
- F:	drivers/clocksource/timer-keystone.c
- 
- ARM/TEXAS INSTRUMENT KEYSTONE RESET DRIVER
--M:	Santosh Shilimkar <santosh.shilimkar@ti.com>
-+M:	Santosh Shilimkar <ssantosh@kernel.org>
- L:	linux-kernel@vger.kernel.org
- S:	Maintained
- F:	drivers/power/reset/keystone-reset.c
- 
- ARM/TEXAS INSTRUMENT AEMIF/EMIF DRIVERS
--M:	Santosh Shilimkar <santosh.shilimkar@ti.com>
-+M:	Santosh Shilimkar <ssantosh@kernel.org>
- L:	linux-kernel@vger.kernel.org
- S:	Maintained
- F:	drivers/memory/*emif*
-@@ -6668,7 +6668,7 @@ F:	arch/arm/*omap*/usb*
- 
- OMAP GPIO DRIVER
- M:	Javier Martinez Canillas <javier@dowhile0.org>
--M:	Santosh Shilimkar <santosh.shilimkar@ti.com>
-+M:	Santosh Shilimkar <ssantosh@kernel.org>
- M:	Kevin Hilman <khilman@deeprootsystems.com>
- L:	linux-omap@vger.kernel.org
- S:	Maintained
-@@ -9254,7 +9254,7 @@ F:	drivers/mmc/host/tifm_sd.c
- F:	include/linux/tifm.h
- 
- TI KEYSTONE MULTICORE NAVIGATOR DRIVERS
--M:	Santosh Shilimkar <santosh.shilimkar@ti.com>
-+M:	Santosh Shilimkar <ssantosh@kernel.org>
- L:	linux-kernel@vger.kernel.org
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
- S:	Maintained
+ 	if (value)
+ 		writel(reg_val | BYT_LEVEL, reg);
 -- 
-1.9.1
+2.1.0
 
