@@ -1,78 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994AbaJMG7K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 02:59:10 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:62653 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808AbaJMG7G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 02:59:06 -0400
-Date: Mon, 13 Oct 2014 08:59:00 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] perf/watchdog changes for v3.18
-Message-ID: <20141013065900.GA12989@gmail.com>
+	id S1753091AbaJMHM4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 03:12:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55548 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752382AbaJMHMx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 03:12:53 -0400
+Date: Mon, 13 Oct 2014 10:16:19 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH net-next RFC 1/3] virtio: support for urgent descriptors
+Message-ID: <20141013071619.GA10178@redhat.com>
+References: <1413011806-3813-1-git-send-email-jasowang@redhat.com>
+ <1413011806-3813-2-git-send-email-jasowang@redhat.com>
+ <20141012092744.GA9567@redhat.com>
+ <543B6F94.2090107@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <543B6F94.2090107@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Mon, Oct 13, 2014 at 02:22:12PM +0800, Jason Wang wrote:
+> On 10/12/2014 05:27 PM, Michael S. Tsirkin wrote:
+> > On Sat, Oct 11, 2014 at 03:16:44PM +0800, Jason Wang wrote:
+> >> Below should be useful for some experiments Jason is doing.
+> >> I thought I'd send it out for early review/feedback.
+> >>
+> >> event idx feature allows us to defer interrupts until
+> >> a specific # of descriptors were used.
+> >> Sometimes it might be useful to get an interrupt after
+> >> a specific descriptor, regardless.
+> >> This adds a descriptor flag for this, and an API
+> >> to create an urgent output descriptor.
+> >> This is still an RFC:
+> >> we'll need a feature bit for drivers to detect this,
+> >> but we've run out of feature bits for virtio 0.X.
+> >> For experimentation purposes, drivers can assume
+> >> this is set, or add a driver-specific feature bit.
+> >>
+> >> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> >> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> > I see that as compared to my original patch, you have
+> > added a new flag: VRING_AVAIL_F_NO_URGENT_INTERRUPT
+> > I don't think it's necessary, see below.
+> >
+> > As such, I think this patch should be split:
+> > - original patch adding support for urgent descriptors
+> > - a patch adding virtqueue_enable/disable_cb_urgent(_prepare)?
+> 
+> Not sure this is a good idea, since the api of first patch is in-completed.
+> >
+> >> ---
+> >>  drivers/virtio/virtio_ring.c     | 75 +++++++++++++++++++++++++++++++++++++---
+> >>  include/linux/virtio.h           | 14 ++++++++
+> >>  include/uapi/linux/virtio_ring.h |  5 ++-
+> >>  3 files changed, 89 insertions(+), 5 deletions(-)
+> >>
+> [...]
+> >>  
+> >> +unsigned virtqueue_enable_cb_prepare_urgent(struct virtqueue *_vq)
+> >> +{
+> >> +	struct vring_virtqueue *vq = to_vvq(_vq);
+> >> +	u16 last_used_idx;
+> >> +
+> >> +	START_USE(vq);
+> >> +	vq->vring.avail->flags &= ~VRING_AVAIL_F_NO_URGENT_INTERRUPT;
+> >> +	last_used_idx = vq->last_used_idx;
+> >> +	END_USE(vq);
+> >> +	return last_used_idx;
+> >> +}
+> >> +EXPORT_SYMBOL_GPL(virtqueue_enable_cb_prepare_urgent);
+> >> +
+> > You can implement virtqueue_enable_cb_prepare_urgent
+> > simply by clearing ~VRING_AVAIL_F_NO_INTERRUPT.
+> >
+> > The effect is same: host sends interrupts only if there
+> > is an urgent descriptor.
+> 
+> Seems not, consider the case when event index was disabled. This will
+> turn on all interrupts.
 
-Please pull the latest perf-watchdog-for-linus git tree from:
+This means that a legacy device without event index support
+will get more interrupts.
+Sounds reasonable.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-watchdog-for-linus
-
-   # HEAD: df577149594cefacd62740e86de080c6336d699e watchdog: Fix print-once on enable
-
-Two small watchdog subsystem fixes.
-
- Thanks,
-
-	Ingo
-
------------------->
-Ulrich Obergfell (1):
-      watchdog: Fix print-once on enable
-
-chai wen (1):
-      watchdog: Remove unnecessary header files
-
-
- kernel/watchdog.c | 10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index c3319bd1b040..df5494edf694 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -15,11 +15,6 @@
- #include <linux/cpu.h>
- #include <linux/nmi.h>
- #include <linux/init.h>
--#include <linux/delay.h>
--#include <linux/freezer.h>
--#include <linux/kthread.h>
--#include <linux/lockdep.h>
--#include <linux/notifier.h>
- #include <linux/module.h>
- #include <linux/sysctl.h>
- #include <linux/smpboot.h>
-@@ -511,7 +506,10 @@ static void watchdog_nmi_disable(unsigned int cpu)
- 		/* should be in cleanup, but blocks oprofile */
- 		perf_event_release_kernel(event);
- 	}
--	return;
-+	if (cpu == 0) {
-+		/* watchdog_nmi_enable() expects this to be zero initially. */
-+		cpu0_err = 0;
-+	}
- }
- #else
- static int watchdog_nmi_enable(unsigned int cpu) { return 0; }
+-- 
+MST
