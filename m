@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753875AbaJMM0i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 08:26:38 -0400
-Received: from mail-oi0-f51.google.com ([209.85.218.51]:38700 "EHLO
-	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753741AbaJMM0g (ORCPT
+	id S1753707AbaJMMaE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 08:30:04 -0400
+Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:39613
+	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752979AbaJMMaC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 08:26:36 -0400
-Date: Mon, 13 Oct 2014 07:26:32 -0500
-From: Chuck Ebbert <cebbert.lkml@gmail.com>
-To: Udo van den Heuvel <udovdh@xs4all.nl>
-Cc: Peter Hurley <peter@hurleysoftware.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: CRASH during boot 3.16.3+
-Message-ID: <20141013072632.07b8fa64@as>
-In-Reply-To: <543BA610.8010001@xs4all.nl>
-References: <543A88E4.4060707@xs4all.nl>
-	<543ABD7D.5010308@hurleysoftware.com>
-	<543BA610.8010001@xs4all.nl>
+	Mon, 13 Oct 2014 08:30:02 -0400
+Date: Mon, 13 Oct 2014 14:30:01 +0200
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, eparis@redhat.com,
+        sgrubb@redhat.com, aviro@redhat.com, pmoore@redhat.com,
+        arozansk@redhat.com, ebiederm@xmission.com, serge@hallyn.com
+Subject: Re: [PATCH V5 07/13] audit: dump namespace IDs for pid on receipt of
+ AUDIT_NS_INFO
+Message-ID: <20141013123001.GE24703@mail.hallyn.com>
+References: <cover.1412543112.git.rgb@redhat.com>
+ <2503a41768e92791f9901e8ee7c132634821a2db.1412543112.git.rgb@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2503a41768e92791f9901e8ee7c132634821a2db.1412543112.git.rgb@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Oct 2014 12:14:40 +0200
-Udo van den Heuvel <udovdh@xs4all.nl> wrote:
+Quoting Richard Guy Briggs (rgb@redhat.com):
+> When a task with CAP_AUDIT_CONTROL sends a NETLINK_AUDIT message of type
+> AUDIT_NS_INFO with a PID of interest, dump the namespace IDs of that task to
+> the audit log.
+> ---
 
-> On 2014-10-12 19:42, Peter Hurley wrote:
-> > On 10/12/2014 09:57 AM, Udo van den Heuvel wrote:
-> >> The problem:
-> >> During the first few seconds of bootup the kernel gets into some sort of
-> >> loop and rapidly prints loads of register-like things and then a load of
-> >> rubbish.
-> >> I did `make clean` and then a rebuild etc but this did not help.
-> >>
-> >> How can I capture the logging to find the point where things go wrong?
-> >> How can I find out what is wrong?
-> > 
-> > Start with git bisect between good=3.16.2 and bad=3.16.3.
-> > And dmesg from 3.16.2.
-> 
-> Incomplete dmesg attached for 3.16.2.
-> 
-> > What happens after the 'then a load of rubbish.'?
-> 
-> I press reset as this is unexpected and looks like it will not result in
-> a succesfull boot.
-> 
-> > And rubbish is not
-> very descriptive. Please include a sample, if you can't catch all the
-> console prints.
-> 
-> How can I capture the output easily?
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 
-Add "boot_delay=3000" to the kernel command line. This will add a 3
-second delay between each line. Then take pictures of the screen
-while it boots. And try to time the shots so you take them during the
-delays.
+>  kernel/audit.c |   14 ++++++++++++++
+>  1 files changed, 14 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/audit.c b/kernel/audit.c
+> index a17a09f..cc63445 100644
+> --- a/kernel/audit.c
+> +++ b/kernel/audit.c
+> @@ -671,6 +671,7 @@ static int audit_netlink_ok(struct sk_buff *skb, u16 msg_type)
+>  	case AUDIT_TTY_SET:
+>  	case AUDIT_TRIM:
+>  	case AUDIT_MAKE_EQUIV:
+> +	case AUDIT_NS_INFO:
+>  		/* Only support auditd and auditctl in initial pid namespace
+>  		 * for now. */
+>  		if ((task_active_pid_ns(current) != &init_pid_ns))
+> @@ -1068,6 +1069,19 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+>  		audit_log_end(ab);
+>  		break;
+>  	}
+> +	case AUDIT_NS_INFO:
+> +#ifdef CONFIG_NAMESPACES
+> +	{
+> +		struct task_struct *tsk;
+> +
+> +		rcu_read_lock();
+> +		tsk = find_task_by_vpid(*(pid_t *)data);
+> +		rcu_read_unlock();
+> +		audit_log_ns_info(tsk);
+> +	}
+> +#else /* CONFIG_NAMESPACES */
+> +		err = -EOPNOTSUPP;
+> +#endif /* CONFIG_NAMESPACES */
+>  	default:
+>  		err = -EINVAL;
+>  		break;
+> -- 
+> 1.7.1
