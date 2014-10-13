@@ -1,77 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754278AbaJMPTP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 11:19:15 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:55729 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753083AbaJMPTO (ORCPT
+	id S1754366AbaJMPTg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 11:19:36 -0400
+Received: from mx-rz-3.rrze.uni-erlangen.de ([131.188.11.22]:58841 "EHLO
+	mx-rz-3.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754302AbaJMPTe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 11:19:14 -0400
-Message-ID: <543BED66.6@roeck-us.net>
-Date: Mon, 13 Oct 2014 08:19:02 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Mon, 13 Oct 2014 11:19:34 -0400
+X-Greylist: delayed 527 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Oct 2014 11:19:33 EDT
+X-RRZE-Submit-IP: 131.188.11.52
+Message-ID: <72dd38ce80e5b71673cb4ee20149ccb2.squirrel@faumail.uni-erlangen.de>
+Date: Mon, 13 Oct 2014 17:10:41 +0200
+Subject: [ANNOUNCE] undertaker 1.6
+From: stefan.hengelein@fau.de
+To: linux-kernel@vger.kernel.org
+Cc: cados-dev@lists.cs.fau.de
+User-Agent: SquirrelMail/1.4.23 [SVN]
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.16 00/55] 3.16.6-stable review
-References: <20141013022443.729870634@linuxfoundation.org>
-In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020209.543BED71.01FE,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 21
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain;charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/2014 07:24 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.16.6 release.
-> There are 55 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Wed Oct 15 02:24:32 UTC 2014.
-> Anything received after that time might be too late.
->
+The CADOS team is pleased to announce the release of the undertaker tool
+version 1.6. The tool is a result of the VAMOS[1] and CADOS[2] research
+projects and
+available for download at https://vamos.informatik.uni-erlangen.de/files/
+
+Please visit our project site at:
+https://undertaker.cs.fau.de
 
 
-Build results:
-	total: 137 pass: 137 fail: 0
+= What is undertaker? =
 
-Qemu test results:
-	total: 30 pass: 30 fail: 0
+The undertaker is a tool for static code analysis for code with C
+preprocessor directives, which can be used in various modes. The most
+prominent one checks every single preprocessor block within the file
+whether it can be selected or deselected, which in many cases is a great
+asset for code maintenance.
+Some preprocessor blocks are only seemingly conditional. In many cases, it
+turns out that additional constraints from the project's
+configuration model causes such conditional blocks to be in fact
+unconditionally selected or unselected. We call such block "dead" and
+"undead" conditional blocks or more general, a defect.
 
-Details are available at http://server.roeck-us.net:8010/builders.
+Undertaker provides tools to extract the configuration model from the
+Linux configuration tooling Kconfig and to perform this check on whole
+source trees.
 
-Guenter
+Please see https://undertaker.cs.fau.de for a quick tour.
+
+
+= What undertaker is not? =
+
+It isn't an automatic patch generator. Because of peculiarities in the
+Kconfig semantics, (ignored) coding guidelines and simply engineering
+issues, some defects are not caught by the undertaker. Note that our
+philosophy is that we prefer false negatives over false positives, i.e.,
+we prefer to miss reports than reports that are no issue at all.
+
+= What is new in undertaker 1.6 =
+
+ * New tool: undertaker-checkpatch: checks patch files for defects and
+helps to analyze them
+
+ * New tool: flipper: provides a lean method for kernel tracing as
+extension for the tailor
+
+ * undertaker: now has a new mode `-u` to minimize defect formulas (thanks
+to the PicoMUS-Tool, which is part of PicoSAT)
+
+ * Further improvements in performance and bug fixes in our tools
+
+= What is golem =
+
+Golem is a tool for build system analysis. It exploits the "dancing
+makefiles" pattern found in Kbuild to induce dependency constraints from
+build rules. The resulting inferences significantly improve the results of
+undertaker. The tool `undertaker-kconfigdump` has learned the option `-i`
+to automatically add inferences to the models.
+
+A basic primitive of golem is to learn what files would get compiled with
+the current configuration. This is accessibly with `golem -l`.
+
+= What is vampyr =
+
+Vampyr is a configurability-aware driver for static-analysis (compile
+testing) on a single file or a list of files (batchmode `-b`).
+
+With the `-C` option it is possible to run static analysis with a compiler
+like gcc / clang or the sparse tool.
+
+A complete analysis of the variability can be done with the `-a` directive
+and additionally the coverage strategy can be chosen with `vampyr -A
+{simple, min, simple_decision, min_decision}`
+
+= What is undertaker-checkpatch =
+
+This new tool analyzes patch files and accordingly reports changes to
+defects such as newly introduced or fixed defects. Defects can also be
+correlated to changes in Kconfig and vice versa.
+
+Additionally, undertaker-checkpatch ships the functionality to further
+analyze the causes of defects, displaying contradictory Kconfig items, a
+block's precondition or the defect causing formula.
+
+= What is undertaker-tailor =
+
+If the intended use of a system is known at kernel compilation time, an
+effective approach to reduce the kernel's attack surface is to conﬁgure
+the kernel to not compile unneeded functionality.
+However, finding a fitting conﬁguration requires extensive technical
+expertise about currently more than 14.000 Linux conﬁguration options, and
+needs to be repeated at each kernel update.
+Therefore, maintaining such a custom-conﬁgured kernel entails considerable
+maintenance and engineering costs.
+
+undertaker-tailor[3] automatically determines a kernel conﬁguration that
+enables only kernel functionalities that are actually necessary in a given
+scenario. The approach exhibits promising security improvements by simply
+not compiling unnecessary files and code.
+
+With the release of version 1.6, undertaker-tailor received a new tool
+called flipper[4]. While ftrace was employed for kernel function tracing
+earlier, its usage caused quite a lot of overhead during the observation
+of the kernel. Flipper however relies on small bit-setting instructions
+patched into the kernel to collect tracing data and delivers more accurate
+results with less run time overhead.
+
+= Links =
+
+[1] https://vamos.cs.fau.de
+
+[2] https://cados.cs.fau.de
+
+[3] http://vamos.cs.fau.de/trac/undertaker/wiki/UndertakerTailor
+
+[4] http://vamos.cs.fau.de/trac/undertaker/wiki/UndertakerTailorFlipper
+
+
+= CADOS at the Linux Plumbers Conference http://www.linuxplumbersconf.org =
+
+There will be two talks at the 'development tools' microconference at the
+Linux Plumbers Conference.
+Valentin Rothberg will show the functionality of the new
+undertaker-checkpatch tool (
+http://www.linuxplumbersconf.org/2014/ocw/sessions/1863 ).
+
+Stefan Hengelein will explain the vampyr tool for configurability-aware
+compile testing of source code (
+http://www.linuxplumbersconf.org/2014/ocw/sessions/2313 ).
+
+
 
