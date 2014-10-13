@@ -1,59 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754378AbaJMU0A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 16:26:00 -0400
-Received: from mail-bn1on0060.outbound.protection.outlook.com ([157.56.110.60]:17120
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754249AbaJMUZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 16:25:56 -0400
-Date: Mon, 13 Oct 2014 13:24:53 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Michal Simek <michal.simek@xilinx.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <monstr@monstr.eu>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Rob Herring <robherring2@gmail.com>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        Russell King <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] ARM: zynq: Move common.h to generic location
-References: <565908c2d70764e281d6a9b28d9599cea87823a3.1412595859.git.michal.simek@xilinx.com>
+	id S1754501AbaJMU0W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 16:26:22 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:55993 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751860AbaJMU0U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 16:26:20 -0400
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: Jens Axboe <axboe@fb.com>, linux-kernel@vger.kernel.org
+Cc: keith.busch@intel.com
+Subject: Re: [PATCH] block: update locking context for blk_free_devt
+In-Reply-To: <543C33B1.2010700@fb.com>
+References: <1413225357-18981-1-git-send-email-dmonakhov@openvz.org> <543C33B1.2010700@fb.com>
+User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-redhat-linux-gnu)
+Date: Tue, 14 Oct 2014 00:26:10 +0400
+Message-ID: <8738arra1p.fsf@openvz.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <565908c2d70764e281d6a9b28d9599cea87823a3.1412595859.git.michal.simek@xilinx.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21018.004
-X-TM-AS-User-Approved-Sender: Yes;Yes
-Message-ID: <072b20fe15464ebfb94ecbeba79afdd8@BY2FFO11FD022.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(24454002)(189002)(51704005)(199003)(377424004)(19580395003)(76176999)(76482002)(80022003)(6806004)(83506001)(85202003)(120916001)(85306004)(110136001)(74316001)(44976005)(46102003)(21056001)(92566001)(86362001)(20776003)(104016003)(19580405001)(47776003)(64706001)(50466002)(53416004)(77096002)(106466001)(102836001)(107046002)(85852003)(85182001)(50986999)(31966008)(108616004)(4396001)(54356999)(95666004)(23676002)(87936001)(41533002)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2FFO11HUB015;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB015;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 03630A6A4A
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
-X-OriginatorOrg: xilinx.com
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-10-06 at 01:44PM +0200, Michal Simek wrote:
-> include/soc/zynq/ is the right location for this header
-> to be able to share information from this header with other
-> drivers which require it.
-> 
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-> ---
-> 
->  arch/arm/mach-zynq/common.c                       | 2 +-
->  arch/arm/mach-zynq/hotplug.c                      | 2 +-
->  arch/arm/mach-zynq/platsmp.c                      | 2 +-
->  arch/arm/mach-zynq/slcr.c                         | 2 +-
+--=-=-=
+Content-Type: text/plain
+Content-Transfer-Encoding: quoted-printable
 
-In the 3.18 merge window arch/arm/mach-zynq/pm.c had been added which is
-not covered in this version of the patch.
+Jens Axboe <axboe@fb.com> writes:
 
-	Sören
+> On 2014-10-13 12:35, Dmitry Monakhov wrote:
+>> After 2da78092 this function will not longer sleepy
+>>
+>> Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+>> ---
+>>   block/genhd.c |    4 +---
+>>   1 files changed, 1 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/block/genhd.c b/block/genhd.c
+>> index 09da5e4..ae9aaa5 100644
+>> --- a/block/genhd.c
+>> +++ b/block/genhd.c
+>> @@ -441,12 +441,10 @@ int blk_alloc_devt(struct hd_struct *part, dev_t *=
+devt)
+>>    * Free @devt which was allocated using blk_alloc_devt().
+>>    *
+>>    * CONTEXT:
+>> - * Might sleep.
+>> + * Don't care.
+>>    */
+>>   void blk_free_devt(dev_t devt)
+>>   {
+>> -	might_sleep();
+>> -
+>>   	if (devt =3D=3D MKDEV(0, 0))
+>>   		return;
+>
+> What's this against? The might_sleep() was killed about a month ago by=20
+> commit 46f341ffcfb5. The comment wasn't updated though, it should be.
+Against 764f612c6c3c23  linux-block/for-next.
+I've found this during development other blockdev related feature.
+can you please point what is your development branch.
+>
+> --=20
+> Jens Axboe
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUPDViAAoJEFzOBSYIXfveoQkP/RXFQuoCDjsXcFOsantTslbl
+8U33wO6KvruBmFdEkTBlgbBbD1ios6Z5NO5kGM7dgeAHDWB5+55P41AdWZZEtI2w
+VKOt4JbO9ETVhdyOGGIu4kHGq4OaWppIl3QIAyKoNPtWY98f9Rd02Kie6iL7aVKJ
+RgCD3swq7pKl7ty+rzoFC0/YNiDObctVTDFTNNBf5DSBU2vrqPYcMeDtITULGBHs
+cM7SrcutkGD6UrPvgGiis1d7zo5bHz5bjld7Yz9iTE653wusbprjbiMxs/37OdqW
+185I9FzZfcHTfARV/ZxOuWlC544G+OpqtiiQMHrZdgaghIjAgUOa7bExobDtW3x/
+N87+Q9oKYpkF03F2ZznUGsGxx8lR8zoZAJPb6KdwkXqwAL/LCoe6li/si6/6hfvy
+tUumCZGjEMGscSPRguUSNtrtCXAONqoph8l8XIybs9THNRIJXh51glwF01ZPZeS2
+Kqlp3HcPtoggZGCVBiyS/QffHEC9FQCy0VkK6Y5DGvAcwYIoauPn7h6cFl6SFKf9
+TR5GmCSh5C1xg2dqTHDlb3io/6hrs12BrxOhFOZsWXcASUGp+kipvSaiSxhVE2Oe
+lzwagUF0EwJ7NCpkmrSjd6jSQyRKP4BqAMtyCwccYZDYej+1pys4ptKRR8Y+wDwV
+sZ9MRAWWkB1OXT5tpsmC
+=VByx
+-----END PGP SIGNATURE-----
+--=-=-=--
