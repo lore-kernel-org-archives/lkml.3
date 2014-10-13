@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754698AbaJMCaT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:30:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46144 "EHLO
+	id S1754798AbaJMCag (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:30:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46199 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753291AbaJMCaM (ORCPT
+	with ESMTP id S1754727AbaJMCaa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:30:12 -0400
+	Sun, 12 Oct 2014 22:30:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>
-Subject: [PATCH 3.17 14/25] uas: Add no-report-opcodes quirk
-Date: Mon, 13 Oct 2014 04:25:07 +0200
-Message-Id: <20141013022454.907248186@linuxfoundation.org>
+        Neil Horman <nhorman@tuxdriver.com>,
+        "=?UTF-8?q?Sylvain=20 \"ythier\" =20Hitier?=" 
+	<sylvain.hitier@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.17 06/25] 3c59x: fix bad split of cpu_to_le32(pci_map_single())
+Date: Mon, 13 Oct 2014 04:24:59 +0200
+Message-Id: <20141013022454.557344773@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022454.289398272@linuxfoundation.org>
 References: <20141013022454.289398272@linuxfoundation.org>
@@ -28,99 +31,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: "Sylvain \\\"ythier\\\" Hitier" <sylvain.hitier@gmail.com>
 
-commit 734016b00b50a3c6a0e1fc1b7b217e783f5123a1 upstream.
+[ Upstream commit 88b09a6d958af6c458acf055ee2eb5bc9564efda ]
 
-Besides the ASM1051 (*) needing sdev->no_report_opcodes = 1, it turns out that
-the JMicron JMS567 also needs it to work properly with uas (usb-storage always
-sets it). Since some of the scsi devs were not to keen on the idea to
-outrightly set sdev->no_report_opcodes = 1 for all uas devices, so add a quirk
-for this, and set it for the JMS567.
+In commit 6f2b6a3005b2c34c39f207a87667564f64f2f91a,
+  # 3c59x: Add dma error checking and recovery
+the intent is to split out the mapping from the byte-swapping in order to
+insert a dma_mapping_error() check.
 
-*) Which has become a non-issue since we've completely blacklisted uas on
-the ASM1051 for other reasons
+Kinda this semantic patch:
 
-Reported-and-tested-by: Claudio Bizzarri <claudio.bizzarri@gmail.com>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+    // See http://coccinelle.lip6.fr/
+    //
+    // Beware, grouik-and-dirty!
+    @@
+    expression DEV, X, Y, Z;
+    @@
+    -   cpu_to_le32(pci_map_single(DEV, X, Y, Z))
+    +   dma_addr_t addr = pci_map_single(DEV, X, Y, Z);
+    +   if (dma_mapping_error(&DEV->dev, addr))
+    +       /* snip */;
+    +   cpu_to_le32(addr)
+
+However, the #else part (of the #if DO_ZEROCOPY test) is changed this way:
+
+    -   cpu_to_le32(pci_map_single(DEV, X, Y, Z))
+    +   dma_addr_t addr = cpu_to_le32(pci_map_single(DEV, X, Y, Z));
+    //                    ^^^^^^^^^^^
+    //                    That mismatches the 3 other changes!
+    +   if (dma_mapping_error(&DEV->dev, addr))
+    +       /* snip */;
+    +   cpu_to_le32(addr)
+
+Let's remove the leftover cpu_to_le32() for coherency.
+
+v2: Better changelog.
+v3: Add Acked-by
+
+Fixes: 6f2b6a3005b2c34c39f207a87667564f64f2f91a
+  # 3c59x: Add dma error checking and recovery
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: Sylvain "ythier" Hitier <sylvain.hitier@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- Documentation/kernel-parameters.txt |    2 ++
- drivers/usb/storage/uas.c           |    4 ++++
- drivers/usb/storage/unusual_uas.h   |    7 +++++++
- drivers/usb/storage/usb.c           |    5 ++++-
- include/linux/usb_usual.h           |    2 ++
- 5 files changed, 19 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/3com/3c59x.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -3522,6 +3522,8 @@ bytes respectively. Such letter suffixes
- 					READ_DISC_INFO command);
- 				e = NO_READ_CAPACITY_16 (don't use
- 					READ_CAPACITY_16 command);
-+				f = NO_REPORT_OPCODES (don't use report opcodes
-+					command, uas only);
- 				h = CAPACITY_HEURISTICS (decrease the
- 					reported device capacity by one
- 					sector if the number is odd);
---- a/drivers/usb/storage/uas.c
-+++ b/drivers/usb/storage/uas.c
-@@ -961,6 +961,10 @@ static int uas_slave_alloc(struct scsi_d
- static int uas_slave_configure(struct scsi_device *sdev)
- {
- 	struct uas_dev_info *devinfo = sdev->hostdata;
-+
-+	if (devinfo->flags & US_FL_NO_REPORT_OPCODES)
-+		sdev->no_report_opcodes = 1;
-+
- 	scsi_set_tag_type(sdev, MSG_ORDERED_TAG);
- 	scsi_activate_tcq(sdev, devinfo->qdepth - 2);
- 	return 0;
---- a/drivers/usb/storage/unusual_uas.h
-+++ b/drivers/usb/storage/unusual_uas.h
-@@ -53,3 +53,10 @@ UNUSUAL_DEV(0x0bc2, 0x3312, 0x0000, 0x99
- 		"Expansion Desk",
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_NO_ATA_1X),
-+
-+/* Reported-by: Claudio Bizzarri <claudio.bizzarri@gmail.com> */
-+UNUSUAL_DEV(0x152d, 0x0567, 0x0000, 0x9999,
-+		"JMicron",
-+		"JMS567",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_NO_REPORT_OPCODES),
---- a/drivers/usb/storage/usb.c
-+++ b/drivers/usb/storage/usb.c
-@@ -479,7 +479,7 @@ void usb_stor_adjust_quirks(struct usb_d
- 			US_FL_SINGLE_LUN | US_FL_NO_WP_DETECT |
- 			US_FL_NO_READ_DISC_INFO | US_FL_NO_READ_CAPACITY_16 |
- 			US_FL_INITIAL_READ10 | US_FL_WRITE_CACHE |
--			US_FL_NO_ATA_1X);
-+			US_FL_NO_ATA_1X | US_FL_NO_REPORT_OPCODES);
- 
- 	p = quirks;
- 	while (*p) {
-@@ -517,6 +517,9 @@ void usb_stor_adjust_quirks(struct usb_d
- 		case 'e':
- 			f |= US_FL_NO_READ_CAPACITY_16;
- 			break;
-+		case 'f':
-+			f |= US_FL_NO_REPORT_OPCODES;
-+			break;
- 		case 'h':
- 			f |= US_FL_CAPACITY_HEURISTICS;
- 			break;
---- a/include/linux/usb_usual.h
-+++ b/include/linux/usb_usual.h
-@@ -75,6 +75,8 @@
- 		/* Cannot handle FUA in WRITE or READ CDBs */	\
- 	US_FLAG(NO_ATA_1X,	0x02000000)			\
- 		/* Cannot handle ATA_12 or ATA_16 CDBs */	\
-+	US_FLAG(NO_REPORT_OPCODES,	0x04000000)		\
-+		/* Cannot handle MI_REPORT_SUPPORTED_OPERATION_CODES */	\
- 
- #define US_FLAG(name, value)	US_FL_##name = value ,
- enum { US_DO_ALL_FLAGS };
+--- a/drivers/net/ethernet/3com/3c59x.c
++++ b/drivers/net/ethernet/3com/3c59x.c
+@@ -2214,7 +2214,7 @@ boomerang_start_xmit(struct sk_buff *skb
+ 		}
+ 	}
+ #else
+-	dma_addr = cpu_to_le32(pci_map_single(VORTEX_PCI(vp), skb->data, skb->len, PCI_DMA_TODEVICE));
++	dma_addr = pci_map_single(VORTEX_PCI(vp), skb->data, skb->len, PCI_DMA_TODEVICE);
+ 	if (dma_mapping_error(&VORTEX_PCI(vp)->dev, dma_addr))
+ 		goto out_dma_err;
+ 	vp->tx_ring[entry].addr = cpu_to_le32(dma_addr);
 
 
