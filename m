@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006AbaJMU4q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 16:56:46 -0400
-Received: from mail-oi0-f44.google.com ([209.85.218.44]:43281 "EHLO
-	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751188AbaJMU4p (ORCPT
+	id S1753662AbaJMU5F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 16:57:05 -0400
+Received: from smtprelay0054.hostedemail.com ([216.40.44.54]:49139 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753399AbaJMU47 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 16:56:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <543B97F0.6040603@huawei.com>
-References: <5434FA02.8070608@huawei.com>
-	<543ADBA3.5030305@mellanox.com>
-	<543B97F0.6040603@huawei.com>
-Date: Mon, 13 Oct 2014 22:56:44 +0200
-Message-ID: <CAJ3xEMiRFEzR0PGDvGty280E97raHzMwE9jVruLzxHaFXqqYYg@mail.gmail.com>
-Subject: Re: vxlan gro problem ?
-From: Or Gerlitz <gerlitz.or@gmail.com>
-To: yinpeijun <yinpeijun@huawei.com>
-Cc: Or Gerlitz <ogerlitz@mellanox.com>, qinchuanyu@huawei.com,
-        Linux Netdev List <netdev@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, lichunhe@huawei.com,
-        wangfakai@huawei.com, liuyongan@huawei.com
-Content-Type: text/plain; charset=UTF-8
+	Mon, 13 Oct 2014 16:56:59 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2110:2393:2559:2562:2828:2898:3138:3139:3140:3141:3142:3351:3622:3865:3866:3867:3868:3870:3871:3872:4321:5007:7652:7903:7904:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: boat93_76b0b0b82fd0b
+X-Filterd-Recvd-Size: 1529
+Message-ID: <1413233814.1287.30.camel@joe-AO725>
+Subject: Re: [PATCH] Crypto: gf128mul : fixed a parentheses coding style
+ issue
+From: Joe Perches <joe@perches.com>
+To: Michael Roocroft <mike.linux@btinternet.com>
+Cc: herbert@gondor.apana.org.au, davem@davemloft.net,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 13 Oct 2014 13:56:54 -0700
+In-Reply-To: <543C3BA8.2060709@btinternet.com>
+References: <1413146950-932-1-git-send-email-mike.linux@btinternet.com>
+	 <1413154885.22149.49.camel@joe-AO725> <543C3229.2090205@btinternet.com>
+	 <1413231356.1287.18.camel@joe-AO725> <543C3BA8.2060709@btinternet.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 13, 2014 at 11:14 AM, yinpeijun <yinpeijun@huawei.com> wrote:
-> On 2014/10/13 3:50, Or Gerlitz wrote:
-> my test environment use mellanox ConnectX-3 Pro nic ,  as I know the nic support Rx  checksum offload.  but I am not confirm if should  I  do some special configure?
-> or the nic driver or firmware need update  ?  also , I have used redhat7.0 ovs vxlan to test with the similar configure as before, but there is also no improvement .
+On Mon, 2014-10-13 at 21:52 +0100, Michael Roocroft wrote:
+> I fully intend to making more meaningful contributions
+> when my confidence in writing C is better than it is at the moment. I'll concentrate
+> on making any changes to staging whilst I learn and get to grips with git, and
+> continue to look through the rest of the kernel tree as a learning exercise.
 
-The NIC (HW model and firmware) look just fine. As it seems now, this
-boils down to get the RHEL7 inbox mlx4 driver to work properly on your
-setup, something which goes a bit beyond the interest of the upstream
-mailing lists...
+Sounds like a good plan to me.  welcome btw.
 
-Or.
+> by looking and not doing anything i'll never learn anything.
 
->
-> the nic infomation:
->
-> 04:00.0 Ethernet controller: Mellanox Technologies MT27520 Family [ConnectX-3 Pro]
->
-> root@localhost:~# ethtool -i eth4
-> driver: mlx4_en
-> version: 2.0(Dec 2011)
-> firmware-version:  2.31.5050
-> bus-info: 0000:04:00.0
-> supports-statistics: yes
-> supports-test: yes
-> supports-eeprom-access: no
-> supports-register-dump: no
-> supports-priv-flags: yes
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+True words... 
+
+cheers, Joe
+
