@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754582AbaJMCt6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:49:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45820 "EHLO
+	id S1754788AbaJMCuX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:50:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45817 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753890AbaJMC1p (ORCPT
+	with ESMTP id S1753844AbaJMC1n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:27:45 -0400
+	Sun, 12 Oct 2014 22:27:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Erik Hugne <erik.hugne@ericsson.com>,
+        Yulong Pei <ypei@redhat.com>, Jiri Benc <jbenc@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 11/55] tipc: fix message importance range check
-Date: Mon, 13 Oct 2014 04:24:25 +0200
-Message-Id: <20141013022444.218748642@linuxfoundation.org>
+Subject: [PATCH 3.16 02/55] rtnetlink: fix VF info size
+Date: Mon, 13 Oct 2014 04:24:16 +0200
+Message-Id: <20141013022443.826378089@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
 References: <20141013022443.729870634@linuxfoundation.org>
@@ -29,50 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Erik Hugne <erik.hugne@ericsson.com>
+From: Jiri Benc <jbenc@redhat.com>
 
-[ Upstream commit ac32c7f705692b92fe12dcbe88fe87136fdfff6f ]
+[ Upstream commit 945a36761fd7877660f630bbdeb4ff9ff80d1935 ]
 
-Commit 3b4f302d8578 ("tipc: eliminate
-redundant locking") introduced a bug by removing the sanity check
-for message importance, allowing programs to assign any value to
-the msg_user field. This will mess up the packet reception logic
-and may cause random link resets.
+Commit 1d8faf48c74b8 ("net/core: Add VF link state control") added new
+attribute to IFLA_VF_INFO group in rtnl_fill_ifinfo but did not adjust size
+of the allocated memory in if_nlmsg_size/rtnl_vfinfo_size. As the result, we
+may trigger warnings in rtnl_getlink and similar functions when many VF
+links are enabled, as the information does not fit into the allocated skb.
 
-Signed-off-by: Erik Hugne <erik.hugne@ericsson.com>
+Fixes: 1d8faf48c74b8 ("net/core: Add VF link state control")
+Reported-by: Yulong Pei <ypei@redhat.com>
+Signed-off-by: Jiri Benc <jbenc@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/tipc/port.h   |    5 ++++-
- net/tipc/socket.c |    2 +-
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ net/core/rtnetlink.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/tipc/port.h
-+++ b/net/tipc/port.h
-@@ -229,9 +229,12 @@ static inline int tipc_port_importance(s
- 	return msg_importance(&port->phdr);
- }
- 
--static inline void tipc_port_set_importance(struct tipc_port *port, int imp)
-+static inline int tipc_port_set_importance(struct tipc_port *port, int imp)
- {
-+	if (imp > TIPC_CRITICAL_IMPORTANCE)
-+		return -EINVAL;
- 	msg_set_importance(&port->phdr, (u32)imp);
-+	return 0;
- }
- 
- #endif
---- a/net/tipc/socket.c
-+++ b/net/tipc/socket.c
-@@ -1841,7 +1841,7 @@ static int tipc_setsockopt(struct socket
- 
- 	switch (opt) {
- 	case TIPC_IMPORTANCE:
--		tipc_port_set_importance(port, value);
-+		res = tipc_port_set_importance(port, value);
- 		break;
- 	case TIPC_SRC_DROPPABLE:
- 		if (sock->type != SOCK_STREAM)
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -799,7 +799,8 @@ static inline int rtnl_vfinfo_size(const
+ 			(nla_total_size(sizeof(struct ifla_vf_mac)) +
+ 			 nla_total_size(sizeof(struct ifla_vf_vlan)) +
+ 			 nla_total_size(sizeof(struct ifla_vf_spoofchk)) +
+-			 nla_total_size(sizeof(struct ifla_vf_rate)));
++			 nla_total_size(sizeof(struct ifla_vf_rate)) +
++			 nla_total_size(sizeof(struct ifla_vf_link_state)));
+ 		return size;
+ 	} else
+ 		return 0;
 
 
