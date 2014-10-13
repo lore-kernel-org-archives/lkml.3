@@ -1,216 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753701AbaJMC1J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:27:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45742 "EHLO
+	id S1753681AbaJMC1H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:27:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45747 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753646AbaJMC1A (ORCPT
+	with ESMTP id S1753650AbaJMC1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:27:00 -0400
+	Sun, 12 Oct 2014 22:27:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: [PATCH 3.14 00/37] 3.14.22-stable review
-Date: Mon, 13 Oct 2014 04:23:57 +0200
-Message-Id: <20141013022400.286360067@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jason Wang <jasowang@redhat.com>,
+        Vladislav Yasevich <vyasevic@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 24/37] macvtap: Fix race between device delete and open.
+Date: Mon, 13 Oct 2014 04:24:21 +0200
+Message-Id: <20141013022401.295243068@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141013022400.286360067@linuxfoundation.org>
+References: <20141013022400.286360067@linuxfoundation.org>
 User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.14.22 release.
-There are 37 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Wed Oct 15 02:23:50 UTC 2014.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.14.22-rc1.gz
-and the diffstat can be found below.
+From: Vlad Yasevich <vyasevich@gmail.com>
 
-thanks,
+[ Upstream commit 40b8fe45d1f094e3babe7b2dc2b71557ab71401d ]
 
-greg k-h
+In macvtap device delete and open calls can race and
+this causes a list curruption of the vlan queue_list.
 
--------------
-Pseudo-Shortlog of commits:
+The race intself is triggered by the idr accessors
+that located the vlan device.  The device is stored
+into and removed from the idr under both an rtnl and
+a mutex.  However, when attempting to locate the device
+in idr, only a mutex is taken.  As a result, once cpu
+perfoming a delete may take an rtnl and wait for the mutex,
+while another cput doing an open() will take the idr
+mutex first to fetch the device pointer and later take
+an rtnl to add a queue for the device which may have
+just gotten deleted.
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.14.22-rc1
+With this patch, we now hold the rtnl for the duration
+of the macvtap_open() call thus making sure that
+open will not race with delete.
 
-Bryan O'Donoghue <pure.logic@nexus-software.ie>
-    serial: 8250: Add Quark X1000 to 8250_pci.c
+CC: Michael S. Tsirkin <mst@redhat.com>
+CC: Jason Wang <jasowang@redhat.com>
+Signed-off-by: Vladislav Yasevich <vyasevic@redhat.com>
+Acked-by: Jason Wang <jasowang@redhat.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/net/macvtap.c |   18 ++++++++----------
+ 1 file changed, 8 insertions(+), 10 deletions(-)
 
-Cristian Stoica <cristian.stoica@freescale.com>
-    crypto: caam - fix addressing of struct member
-
-Felipe Balbi <balbi@ti.com>
-    usb: musb: dsps: kill OTG timer on suspend
-
-Andreas Bomholtz <andreas@seluxit.com>
-    USB: cp210x: add support for Seluxit USB dongle
-
-Joe Savage <joe.savage@goketra.com>
-    USB: serial: cp210x: added Ketra N1 wireless interface support
-
-Lu Baolu <baolu.lu@linux.intel.com>
-    USB: Add device quirk for ASUS T100 Base Station keyboard
-
-Per Hurtig <per.hurtig@kau.se>
-    tcp: fixing TLP's FIN recovery
-
-Vlad Yasevich <vyasevich@gmail.com>
-    sctp: handle association restarts when the socket is closed.
-
-Joe Lawrence <Joe.Lawrence@stratus.com>
-    team: avoid race condition in scheduling delayed work
-
-Nicolas Dichtel <nicolas.dichtel@6wind.com>
-    ip6_gre: fix flowi6_proto value in xmit path
-
-KY Srinivasan <kys@microsoft.com>
-    hyperv: Fix a bug in netvsc_start_xmit()
-
-Eric Dumazet <edumazet@google.com>
-    gro: fix aggregation for skb using frag_list
-
-Soren Brinkmann <soren.brinkmann@xilinx.com>
-    Revert "net/macb: add pinctrl consumer support"
-
-Vlad Yasevich <vyasevich@gmail.com>
-    macvtap: Fix race between device delete and open.
-
-Steffen Klassert <steffen.klassert@secunet.com>
-    xfrm: Generate queueing routes only from route lookup functions
-
-Steffen Klassert <steffen.klassert@secunet.com>
-    xfrm: Generate blackhole routes only from route lookup functions
-
-Vlad Yasevich <vyasevich@gmail.com>
-    tg3: Allow for recieve of full-size 8021AD frames
-
-Vlad Yasevich <vyasevich@gmail.com>
-    tg3: Work around HW/FW limitations with vlan encapsulated frames
-
-Francesco Ruggeri <fruggeri@arista.com>
-    net: allow macvlans to move to net namespace
-
-Vlad Yasevich <vyasevich@gmail.com>
-    bridge: Fix br_should_learn to check vlan_enabled
-
-Vlad Yasevich <vyasevich@gmail.com>
-    bridge: Check if vlan filtering is enabled only once.
-
-WANG Cong <xiyou.wangcong@gmail.com>
-    ipv6: restore the behavior of ipv6_sock_ac_drop()
-
-Nikolay Aleksandrov <nikolay@redhat.com>
-    bonding: fix div by zero while enslaving and transmitting
-
-Sabrina Dubroca <sd@queasysnail.net>
-    ipv6: fix rtnl locking in setsockopt for anycast and multicast
-
-Guillaume Nault <g.nault@alphalink.fr>
-    l2tp: fix race while getting PMTU on PPP pseudo-wire
-
-Gerhard Stenzel <gstenzel@linux.vnet.ibm.com>
-    vxlan: fix incorrect initializer in union vxlan_addr
-
-Jiri Benc <jbenc@redhat.com>
-    openvswitch: fix panic with multiple vlan headers
-
-Eric Dumazet <edumazet@google.com>
-    packet: handle too big packets for PACKET_V3
-
-Neal Cardwell <ncardwell@google.com>
-    tcp: fix ssthresh and undo for consecutive short FRTO episodes
-
-Neal Cardwell <ncardwell@google.com>
-    tcp: fix tcp_release_cb() to dispatch via address family for mtu_reduced()
-
-Shmulik Ladkani <shmulik.ladkani@gmail.com>
-    sit: Fix ipip6_tunnel_lookup device matching criteria
-
-Andrey Vagin <avagin@openvz.org>
-    tcp: don't use timestamp from repaired skb-s to calculate RTT (v2)
-
-Neerav Parikh <neerav.parikh@intel.com>
-    i40e: Don't stop driver probe when querying DCB config fails
-
-Stanislaw Gruszka <sgruszka@redhat.com>
-    myri10ge: check for DMA mapping errors
-
-Vlad Yasevich <vyasevic@redhat.com>
-    net: Always untag vlan-tagged traffic on input.
-
-Jiri Benc <jbenc@redhat.com>
-    rtnetlink: fix VF info size
-
-Daniel Borkmann <dborkman@redhat.com>
-    netlink: reset network header before passing to taps
-
-
--------------
-
-Diffstat:
-
- Makefile                                         |  4 +-
- drivers/crypto/caam/caamhash.c                   |  6 +-
- drivers/net/bonding/bond_main.c                  | 17 ++++-
- drivers/net/ethernet/broadcom/tg3.c              | 23 ++++++-
- drivers/net/ethernet/cadence/macb.c              | 11 ---
- drivers/net/ethernet/intel/i40e/i40e_main.c      |  8 +--
- drivers/net/ethernet/myricom/myri10ge/myri10ge.c | 88 ++++++++++++++++--------
- drivers/net/hyperv/netvsc_drv.c                  |  3 +-
- drivers/net/macvlan.c                            |  1 +
- drivers/net/macvtap.c                            | 18 +++--
- drivers/net/team/team.c                          |  4 +-
- drivers/net/vxlan.c                              |  8 +--
- drivers/tty/serial/8250/8250_pci.c               | 21 ++++++
- drivers/usb/core/hub.c                           |  6 +-
- drivers/usb/core/quirks.c                        |  4 ++
- drivers/usb/musb/musb_dsps.c                     |  2 +
- drivers/usb/serial/cp210x.c                      |  2 +
- include/linux/if_vlan.h                          |  6 --
- include/linux/skbuff.h                           |  1 +
- include/linux/usb/quirks.h                       |  3 +
- include/net/dst.h                                | 16 ++++-
- include/net/inet_connection_sock.h               |  1 +
- include/net/sctp/command.h                       |  2 +-
- include/net/sock.h                               |  1 -
- include/net/tcp.h                                |  5 +-
- net/8021q/vlan_core.c                            | 53 --------------
- net/bridge/br_private.h                          |  3 +
- net/bridge/br_vlan.c                             | 15 ++--
- net/core/dev.c                                   |  2 +-
- net/core/netpoll.c                               |  2 +-
- net/core/rtnetlink.c                             |  3 +-
- net/core/skbuff.c                                | 56 +++++++++++++++
- net/ipv4/route.c                                 |  6 +-
- net/ipv4/tcp.c                                   | 14 ++--
- net/ipv4/tcp_input.c                             |  8 +--
- net/ipv4/tcp_ipv4.c                              |  5 +-
- net/ipv4/tcp_output.c                            | 11 +--
- net/ipv6/addrconf.c                              | 15 ++--
- net/ipv6/anycast.c                               | 10 +++
- net/ipv6/ip6_gre.c                               |  4 +-
- net/ipv6/ip6_output.c                            |  4 +-
- net/ipv6/mcast.c                                 | 14 ++++
- net/ipv6/sit.c                                   |  6 +-
- net/ipv6/tcp_ipv6.c                              |  3 +-
- net/l2tp/l2tp_ppp.c                              |  3 +-
- net/netlink/af_netlink.c                         |  2 +-
- net/openvswitch/actions.c                        |  5 ++
- net/packet/af_packet.c                           | 17 +++++
- net/packet/internal.h                            |  1 +
- net/sctp/sm_statefuns.c                          | 19 ++++-
- net/xfrm/xfrm_policy.c                           | 48 ++++++++++---
- 51 files changed, 392 insertions(+), 198 deletions(-)
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -112,17 +112,15 @@ out:
+ 	return err;
+ }
+ 
++/* Requires RTNL */
+ static int macvtap_set_queue(struct net_device *dev, struct file *file,
+ 			     struct macvtap_queue *q)
+ {
+ 	struct macvlan_dev *vlan = netdev_priv(dev);
+-	int err = -EBUSY;
+ 
+-	rtnl_lock();
+ 	if (vlan->numqueues == MAX_MACVTAP_QUEUES)
+-		goto out;
++		return -EBUSY;
+ 
+-	err = 0;
+ 	rcu_assign_pointer(q->vlan, vlan);
+ 	rcu_assign_pointer(vlan->taps[vlan->numvtaps], q);
+ 	sock_hold(&q->sk);
+@@ -136,9 +134,7 @@ static int macvtap_set_queue(struct net_
+ 	vlan->numvtaps++;
+ 	vlan->numqueues++;
+ 
+-out:
+-	rtnl_unlock();
+-	return err;
++	return 0;
+ }
+ 
+ static int macvtap_disable_queue(struct macvtap_queue *q)
+@@ -454,11 +450,12 @@ static void macvtap_sock_destruct(struct
+ static int macvtap_open(struct inode *inode, struct file *file)
+ {
+ 	struct net *net = current->nsproxy->net_ns;
+-	struct net_device *dev = dev_get_by_macvtap_minor(iminor(inode));
++	struct net_device *dev;
+ 	struct macvtap_queue *q;
+-	int err;
++	int err = -ENODEV;
+ 
+-	err = -ENODEV;
++	rtnl_lock();
++	dev = dev_get_by_macvtap_minor(iminor(inode));
+ 	if (!dev)
+ 		goto out;
+ 
+@@ -498,6 +495,7 @@ out:
+ 	if (dev)
+ 		dev_put(dev);
+ 
++	rtnl_unlock();
+ 	return err;
+ }
+ 
 
 
