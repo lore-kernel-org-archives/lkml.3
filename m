@@ -1,63 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361AbaJMIVt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 04:21:49 -0400
-Received: from mxu02.htp-tel.de ([81.14.242.9]:57418 "EHLO mxuout02.htp-tel.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752372AbaJMIVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 04:21:47 -0400
-X-Greylist: delayed 937 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Oct 2014 04:21:46 EDT
-Message-ID: <543B87DB.8090104@esd.eu>
-Date: Mon, 13 Oct 2014 10:05:47 +0200
-From: Matthias Fuchs <matthias.fuchs@esd.eu>
-Organization: esd GmbH
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1753333AbaJMIXT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 04:23:19 -0400
+Received: from mail-bl2on0127.outbound.protection.outlook.com ([65.55.169.127]:30359
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751937AbaJMIXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 04:23:16 -0400
+From: Jingchang Lu <jingchang.lu@freescale.com>
+To: <gregkh@linuxfoundation.org>
+CC: <peter@hurleysoftware.com>, <arnd@arndb.de>,
+        <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        Jingchang Lu <jingchang.lu@freescale.com>
+Subject: [PATCHv2] serial: of-serial: fix up PM ops on no_console_suspend and port type
+Date: Mon, 13 Oct 2014 15:37:00 +0800
+Message-ID: <1413185820-5920-1-git-send-email-jingchang.lu@freescale.com>
+X-Mailer: git-send-email 1.8.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(20776003)(47776003)(80022003)(46102003)(31966008)(4396001)(86362001)(84676001)(50226001)(64706001)(92726001)(93916002)(21056001)(50986999)(26826002)(50466002)(102836001)(48376002)(62966002)(6806004)(68736004)(19580405001)(99396003)(44976005)(77156001)(19580395003)(97736003)(36756003)(69596002)(120916001)(85306004)(76482002)(95666004)(110136001)(106466001)(105606002)(92566001)(107046002)(81156004)(104016003)(33646002)(229853001)(89996001)(2351001)(87936001)(88136002)(87286001)(85852003)(104166001);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR03MB477;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-CC: "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ldv-project@linuxtesting.org" <ldv-project@linuxtesting.org>
-Subject: Re: [PATCH] net: can: esd_usb2: fix memory leak on disconnect
-References: <1412973067-29707-1-git-send-email-khoroshilov@ispras.ru>
-In-Reply-To: <1412973067-29707-1-git-send-email-khoroshilov@ispras.ru>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB477;
+X-Forefront-PRVS: 03630A6A4A
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=jingchang.lu@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexey,
+This patch fixes commit 2dea53bf57783f243c892e99c10c6921e956aa7e,
+"serial: of-serial: add PM suspend/resume support", which disables
+the uart clock on suspend, but also causes a hardware hang on register
+access if no_console_suspend command line option is used.
 
-On 10/10/2014 10:31 PM, Alexey Khoroshilov wrote:
-> It seems struct esd_usb2 dev is not deallocated on disconnect.
-> 
-> The patch adds the deallocation.
-> 
-> Found by Linux Driver Verification project (linuxtesting.org).
-> 
-> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-> ---
->  drivers/net/can/usb/esd_usb2.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/net/can/usb/esd_usb2.c b/drivers/net/can/usb/esd_usb2.c
-> index b7c9e8b11460..7a90075529c3 100644
-> --- a/drivers/net/can/usb/esd_usb2.c
-> +++ b/drivers/net/can/usb/esd_usb2.c
-> @@ -1143,6 +1143,7 @@ static void esd_usb2_disconnect(struct usb_interface *intf)
->  			}
->  		}
->  		unlink_all_urbs(dev);
-> +		kfree(dev);
->  	}
->  }
->  
-> 
-thanks for pointing this out. Marc, can you please catch this up.
+Also, not every of_serial device is an 8250 port, so the serial8250
+suspend/resume functions should only be applied to a real 8250 port.
 
-Matthias
+Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
+---
+changes in v2:
+ add switch selection on uart type.
 
-Acked-by: Matthias Fuchs <matthias.fuchs@esd.eu>
+ drivers/tty/serial/of_serial.c | 42 ++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 36 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c
+index 8bc2563..b525383 100644
+--- a/drivers/tty/serial/of_serial.c
++++ b/drivers/tty/serial/of_serial.c
+@@ -245,9 +245,24 @@ static int of_serial_suspend(struct device *dev)
+ {
+ 	struct of_serial_info *info = dev_get_drvdata(dev);
+ 
+-	serial8250_suspend_port(info->line);
+-	if (info->clk)
+-		clk_disable_unprepare(info->clk);
++	switch(info->type) {
++#ifdef CONFIG_SERIAL_8250
++	case PORT_8250 ... PORT_MAX_8250:
++	{
++		struct uart_8250_port port8250;
++		port8250 = serial8250_get_port(info->line);
++
++		serial8250_suspend_port(info->line);
++		if (info->clk &&
++		    (!uart_console(port8250) ||
++		     (uart_console(port8250) && console_suspend_enabled)))
++			clk_disable_unprepare(info->clk);
++		break;
++	}
++#endif
++	default:
++		break;
++	}
+ 
+ 	return 0;
+ }
+@@ -256,10 +271,25 @@ static int of_serial_resume(struct device *dev)
+ {
+ 	struct of_serial_info *info = dev_get_drvdata(dev);
+ 
+-	if (info->clk)
+-		clk_prepare_enable(info->clk);
++	switch(info->type) {
++#ifdef CONFIG_SERIAL_8250
++	case PORT_8250 ... PORT_MAX_8250:
++	{
++		struct uart_8250_port port8250;
++		port8250 = serial8250_get_port(info->line);
++
++		if (info->clk &&
++		    (!uart_console(port8250) ||
++		     (uart_console(port8250) && console_suspend_enabled)))
++			clk_prepare_enable(info->clk);
+ 
+-	serial8250_resume_port(info->line);
++		serial8250_resume_port(info->line);
++		break;
++	}
++#endif
++	default:
++		break;
++	}
+ 
+ 	return 0;
+ }
+-- 
+1.8.0
+
