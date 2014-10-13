@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754992AbaJMDBW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 23:01:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45577 "EHLO
+	id S1755214AbaJMDB6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 23:01:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45557 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753055AbaJMCZh (ORCPT
+	with ESMTP id S1752931AbaJMCZ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:25:37 -0400
+	Sun, 12 Oct 2014 22:25:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yulong Pei <ypei@redhat.com>, Jiri Benc <jbenc@redhat.com>,
+        Matthieu Ternisien dOuville <matthieu.tdo@6wind.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 05/16] openvswitch: fix panic with multiple vlan headers
-Date: Mon, 13 Oct 2014 04:24:02 +0200
-Message-Id: <20141013022341.612897120@linuxfoundation.org>
+Subject: [PATCH 3.10 10/16] ip6_gre: fix flowi6_proto value in xmit path
+Date: Mon, 13 Oct 2014 04:24:07 +0200
+Message-Id: <20141013022341.835931831@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022341.386913672@linuxfoundation.org>
 References: <20141013022341.386913672@linuxfoundation.org>
@@ -29,55 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Benc <jbenc@redhat.com>
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
-[ Upstream commit 2ba5af42a7b59ef01f9081234d8855140738defd ]
+[ Upstream commit 3be07244b7337760a3269d56b2f4a63e72218648 ]
 
-When there are multiple vlan headers present in a received frame, the first
-one is put into vlan_tci and protocol is set to ETH_P_8021Q. Anything in the
-skb beyond the VLAN TPID may be still non-linear, including the inner TCI
-and ethertype. While ovs_flow_extract takes care of IP and IPv6 headers, it
-does nothing with ETH_P_8021Q. Later, if OVS_ACTION_ATTR_POP_VLAN is
-executed, __pop_vlan_tci pulls the next vlan header into vlan_tci.
+In xmit path, we build a flowi6 which will be used for the output route lookup.
+We are sending a GRE packet, neither IPv4 nor IPv6 encapsulated packet, thus the
+protocol should be IPPROTO_GRE.
 
-This leads to two things:
-
-1. Part of the resulting ethernet header is in the non-linear part of the
-   skb. When eth_type_trans is called later as the result of
-   OVS_ACTION_ATTR_OUTPUT, kernel BUGs in __skb_pull. Also, __pop_vlan_tci
-   is in fact accessing random data when it reads past the TPID.
-
-2. network_header points into the ethernet header instead of behind it.
-   mac_len is set to a wrong value (10), too.
-
-Reported-by: Yulong Pei <ypei@redhat.com>
-Signed-off-by: Jiri Benc <jbenc@redhat.com>
+Fixes: c12b395a4664 ("gre: Support GRE over IPv6")
+Reported-by: Matthieu Ternisien d'Ouville <matthieu.tdo@6wind.com>
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/openvswitch/actions.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ net/ipv6/ip6_gre.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/openvswitch/actions.c
-+++ b/net/openvswitch/actions.c
-@@ -40,6 +40,9 @@ static int do_execute_actions(struct dat
+--- a/net/ipv6/ip6_gre.c
++++ b/net/ipv6/ip6_gre.c
+@@ -787,7 +787,7 @@ static inline int ip6gre_xmit_ipv4(struc
+ 		encap_limit = t->parms.encap_limit;
  
- static int make_writable(struct sk_buff *skb, int write_len)
- {
-+	if (!pskb_may_pull(skb, write_len))
-+		return -ENOMEM;
-+
- 	if (!skb_cloned(skb) || skb_clone_writable(skb, write_len))
- 		return 0;
+ 	memcpy(&fl6, &t->fl.u.ip6, sizeof(fl6));
+-	fl6.flowi6_proto = IPPROTO_IPIP;
++	fl6.flowi6_proto = IPPROTO_GRE;
  
-@@ -68,6 +71,8 @@ static int __pop_vlan_tci(struct sk_buff
+ 	dsfield = ipv4_get_dsfield(iph);
  
- 	vlan_set_encap_proto(skb, vhdr);
- 	skb->mac_header += VLAN_HLEN;
-+	if (skb_network_offset(skb) < ETH_HLEN)
-+		skb_set_network_header(skb, ETH_HLEN);
- 	skb_reset_mac_len(skb);
+@@ -837,7 +837,7 @@ static inline int ip6gre_xmit_ipv6(struc
+ 		encap_limit = t->parms.encap_limit;
  
- 	return 0;
+ 	memcpy(&fl6, &t->fl.u.ip6, sizeof(fl6));
+-	fl6.flowi6_proto = IPPROTO_IPV6;
++	fl6.flowi6_proto = IPPROTO_GRE;
+ 
+ 	dsfield = ipv6_get_dsfield(ipv6h);
+ 	if (t->parms.flags & IP6_TNL_F_USE_ORIG_TCLASS)
 
 
