@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754927AbaJMCir (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:38:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46046 "EHLO
+	id S1755098AbaJMCjJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:39:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46039 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754521AbaJMC3p (ORCPT
+	with ESMTP id S1754415AbaJMC3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:29:45 -0400
+	Sun, 12 Oct 2014 22:29:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Hans de Goede <hdegoede@redhat.com>
-Subject: [PATCH 3.16 48/55] uas: Add another ASM1051 usb-id to the uas blacklist
-Date: Mon, 13 Oct 2014 04:25:02 +0200
-Message-Id: <20141013022445.989734854@linuxfoundation.org>
+Subject: [PATCH 3.16 46/55] uas: Add no-report-opcodes quirk
+Date: Mon, 13 Oct 2014 04:25:00 +0200
+Message-Id: <20141013022445.891500845@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
 References: <20141013022443.729870634@linuxfoundation.org>
@@ -30,30 +30,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Hans de Goede <hdegoede@redhat.com>
 
-commit 710f1bf16ab1b1558f099b62c5011c4cbba6a7bb upstream.
+commit 734016b00b50a3c6a0e1fc1b7b217e783f5123a1 upstream.
 
-As most ASM1051 based devices, this one has unfixable issues with uas too.
+Besides the ASM1051 (*) needing sdev->no_report_opcodes = 1, it turns out that
+the JMicron JMS567 also needs it to work properly with uas (usb-storage always
+sets it). Since some of the scsi devs were not to keen on the idea to
+outrightly set sdev->no_report_opcodes = 1 for all uas devices, so add a quirk
+for this, and set it for the JMS567.
 
+*) Which has become a non-issue since we've completely blacklisted uas on
+the ASM1051 for other reasons
+
+Reported-and-tested-by: Claudio Bizzarri <claudio.bizzarri@gmail.com>
 Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/unusual_uas.h |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ Documentation/kernel-parameters.txt |    2 ++
+ drivers/usb/storage/uas.c           |    4 ++++
+ drivers/usb/storage/unusual_uas.h   |    7 +++++++
+ drivers/usb/storage/usb.c           |    5 ++++-
+ include/linux/usb_usual.h           |    2 ++
+ 5 files changed, 19 insertions(+), 1 deletion(-)
 
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -3459,6 +3459,8 @@ bytes respectively. Such letter suffixes
+ 					READ_DISC_INFO command);
+ 				e = NO_READ_CAPACITY_16 (don't use
+ 					READ_CAPACITY_16 command);
++				f = NO_REPORT_OPCODES (don't use report opcodes
++					command, uas only);
+ 				h = CAPACITY_HEURISTICS (decrease the
+ 					reported device capacity by one
+ 					sector if the number is odd);
+--- a/drivers/usb/storage/uas.c
++++ b/drivers/usb/storage/uas.c
+@@ -961,6 +961,10 @@ static int uas_slave_alloc(struct scsi_d
+ static int uas_slave_configure(struct scsi_device *sdev)
+ {
+ 	struct uas_dev_info *devinfo = sdev->hostdata;
++
++	if (devinfo->flags & US_FL_NO_REPORT_OPCODES)
++		sdev->no_report_opcodes = 1;
++
+ 	scsi_set_tag_type(sdev, MSG_ORDERED_TAG);
+ 	scsi_activate_tcq(sdev, devinfo->qdepth - 2);
+ 	return 0;
 --- a/drivers/usb/storage/unusual_uas.h
 +++ b/drivers/usb/storage/unusual_uas.h
-@@ -67,3 +67,11 @@ UNUSUAL_DEV(0x152d, 0x0567, 0x0000, 0x99
- 		"JMS567",
+@@ -53,3 +53,10 @@ UNUSUAL_DEV(0x0bc2, 0x3312, 0x0000, 0x99
+ 		"Expansion Desk",
  		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_NO_REPORT_OPCODES),
+ 		US_FL_NO_ATA_1X),
 +
-+/* Most ASM1051 based devices have issues with uas, blacklist them all */
-+/* Reported-by: Hans de Goede <hdegoede@redhat.com> */
-+UNUSUAL_DEV(0x174c, 0x5106, 0x0000, 0x9999,
-+		"ASMedia",
-+		"ASM1051",
++/* Reported-by: Claudio Bizzarri <claudio.bizzarri@gmail.com> */
++UNUSUAL_DEV(0x152d, 0x0567, 0x0000, 0x9999,
++		"JMicron",
++		"JMS567",
 +		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_IGNORE_UAS),
++		US_FL_NO_REPORT_OPCODES),
+--- a/drivers/usb/storage/usb.c
++++ b/drivers/usb/storage/usb.c
+@@ -477,7 +477,7 @@ void usb_stor_adjust_quirks(struct usb_d
+ 			US_FL_SINGLE_LUN | US_FL_NO_WP_DETECT |
+ 			US_FL_NO_READ_DISC_INFO | US_FL_NO_READ_CAPACITY_16 |
+ 			US_FL_INITIAL_READ10 | US_FL_WRITE_CACHE |
+-			US_FL_NO_ATA_1X);
++			US_FL_NO_ATA_1X | US_FL_NO_REPORT_OPCODES);
+ 
+ 	p = quirks;
+ 	while (*p) {
+@@ -515,6 +515,9 @@ void usb_stor_adjust_quirks(struct usb_d
+ 		case 'e':
+ 			f |= US_FL_NO_READ_CAPACITY_16;
+ 			break;
++		case 'f':
++			f |= US_FL_NO_REPORT_OPCODES;
++			break;
+ 		case 'h':
+ 			f |= US_FL_CAPACITY_HEURISTICS;
+ 			break;
+--- a/include/linux/usb_usual.h
++++ b/include/linux/usb_usual.h
+@@ -75,6 +75,8 @@
+ 		/* Cannot handle FUA in WRITE or READ CDBs */	\
+ 	US_FLAG(NO_ATA_1X,	0x02000000)			\
+ 		/* Cannot handle ATA_12 or ATA_16 CDBs */	\
++	US_FLAG(NO_REPORT_OPCODES,	0x04000000)		\
++		/* Cannot handle MI_REPORT_SUPPORTED_OPERATION_CODES */	\
+ 
+ #define US_FLAG(name, value)	US_FL_##name = value ,
+ enum { US_DO_ALL_FLAGS };
 
 
