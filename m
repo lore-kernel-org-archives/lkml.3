@@ -1,49 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511AbaJMLnI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 07:43:08 -0400
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:58481 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752979AbaJMLnG (ORCPT
+	id S1753669AbaJMLnl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 07:43:41 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:33205 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753103AbaJMLnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 07:43:06 -0400
-Date: Mon, 13 Oct 2014 13:42:56 +0200
-From: Florian Westphal <fw@strlen.de>
-To: Houcheng Lin <houcheng@gmail.com>
-Cc: pablo@netfilter.org, kaber@trash.net, kadlec@blackhole.kfki.hu,
-        davem@davemloft.net, netfilter-devel@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] netfilter: release skbuf when nlmsg put fail
-Message-ID: <20141013114256.GB6560@breakpoint.cc>
-References: <CAL8JtxAqDhOXooLtOebSBHtKxwE=sLFqW8B-VgtCzsr-M4OD7g@mail.gmail.com>
+	Mon, 13 Oct 2014 07:43:39 -0400
+Date: Mon, 13 Oct 2014 12:43:07 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: "'Nathan Lynch'" <Nathan_Lynch@mentor.com>, Felipe Balbi <balbi@ti.com>,
+        Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "josh@joshtriplett.org" <josh@joshtriplett.org>,
+        Rabin Vincent <rabin@rab.in>, Alan Stern <stern@rowland.harvard.edu>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: RCU bug with v3.17-rc3 ?
+Message-ID: <20141013114307.GO12379@n2100.arm.linux.org.uk>
+References: <20141008212938.GP22688@saruman> <20141009160138.GA2396@cmpxchg.org> <20141009162656.GE16002@saruman> <20141009204101.GA25955@debian> <20141009204637.GE25729@saruman> <20141009210715.GH25729@saruman> <20141010135743.GB31348@saruman> <20141010162531.GL12379@n2100.arm.linux.org.uk> <54388B81.5020306@mentor.com> <063D6719AE5E284EB5DD2968C1650D6D174C996E@AcuExch.aculab.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAL8JtxAqDhOXooLtOebSBHtKxwE=sLFqW8B-VgtCzsr-M4OD7g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D174C996E@AcuExch.aculab.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Houcheng Lin <houcheng@gmail.com> wrote:
-> When system is under heavy loading, the __nfulnl_send() may may failed
-> to put nlmsg into skbuf of nfulnl_instance. If not clear the skbuff on failed,
-> the __nfulnl_send() will still try to put next nlmsg onto this half-full skbuf
-> and cause the user program can never receive packet.
+On Mon, Oct 13, 2014 at 09:11:34AM +0000, David Laight wrote:
+> From: Nathan Lynch
+> > On 10/10/2014 11:25 AM, Russell King - ARM Linux wrote:
+> > >
+> > > Right, so GCC 4.8.{1,2} are totally unsuitable for kernel building (and
+> > > it seems that this has been known about for some time.)
+> > 
+> > Looking at http://gcc.gnu.org/PR58854 it seems that all 4.8.x for x < 3
+> > are affected, as well as 4.9.0.
+> > 
+> > > We can blacklist these GCC versions quite easily.  We already have GCC
+> > > 3.3 blacklisted, and it's trivial to add others.  I would want to include
+> > > some proper details about the bug, just like the other existing entries
+> > > we already have in asm-offsets.c, where we name the functions that the
+> > > compiler is known to break where appropriate.
+> > 
+> > Before blacklisting anything, it's worth considering that simple version
+> > checks would break existing pre-4.8.3 compilers that have been patched
+> > for PR58854.  It looks like Yocto and Buildroot issued releases with
+> > patched 4.8.2 compilers well before the (fixed) 4.8.3 release.  I think
+> > the most we can reasonably do without breaking some correctly-behaving
+> > toolchains is to emit a warning.
 > 
-> This patch fix this issue by releasing skbuf immediately after nlmst put
-> failed.
+> Is it possible to compile a small code fragment and check the generated
+> code for the bug?
+> Possibly predicated on the broken version number to avoid false positives.
 
-Did you observe such problem or is this based on code reading?
-I ask because nflog should make sure we always have enough room left in
-skb to append a done message, see nfulnl_log_packet():
+I don't see how - it looks like it requires an interrupt to occur at an
+opportune moment to provoke the function to fail.  The alternative would
+be to parse the assembly generated by the compiler to determine how it
+is dealing with the stack.
 
-if (inst->skb &&
-    size > skb_tailroom(inst->skb) - sizeof(struct nfgenmsg)) {
-	/* flush skb */
+I think the only viable solution here is that:
 
-Your patch fixes such 'can never send' skb condition by leaking the
-skb.  So at the very least you would need to call kfree_skb(), and
-perhaps also add WARN_ON() so we catch this and can fix up the size
-accounting?
+1. We blacklist the bad compiler versions outright in the kernel.
+2. We /consider/ a testing a preprocessor symbol which when present
+   indicates that these versions are fixed and should not be blacklisted.
+
+The argument for (2) is that /if/ distros want to patch their compilers
+to fix the problem, they /also/ have the ability to patch their compilers
+to make them identifyable, and that is a far more reliable solution than
+trying to parse the assembly output from multiple different GCC versions.
+
+Remember, it's the distro's choice to fix these buggy compilers, so the
+onus is on _them_ to deal with the mess they've created by doing so.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
