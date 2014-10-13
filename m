@@ -1,40 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209AbaJMUZr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 16:25:47 -0400
-Received: from smtprelay0108.hostedemail.com ([216.40.44.108]:49099 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751342AbaJMUZp (ORCPT
+	id S1754313AbaJMUZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 16:25:56 -0400
+Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:63015 "EHLO
+	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751342AbaJMUZy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 16:25:45 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1560:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3867:3872:3874:4321:4362:5007:7652:10004:10400:10848:11232:11658:11914:12517:12519:12555:12740:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: cent43_894c47ce3ab59
-X-Filterd-Recvd-Size: 1109
-Message-ID: <1413231942.1287.20.camel@joe-AO725>
-Subject: Re: [PATCH 1/1 linux-next] scripts/checkpatch.pl: fix k[mz]alloc
- with multiplies check
-From: Joe Perches <joe@perches.com>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Date: Mon, 13 Oct 2014 13:25:42 -0700
-In-Reply-To: <1413230802-5507-1-git-send-email-fabf@skynet.be>
-References: <1413230802-5507-1-git-send-email-fabf@skynet.be>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Oct 2014 16:25:54 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApwSAAA0PFRbtA5F/2dsb2JhbABbgw6BK7d1BQFzmhAEAoEgFwF9hF8jgRo3iEIBti2PDoYgiiUdhDUFnUuMXIk1gUcBgjE7L4JKAQEB
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        Dmitry Tarnyagin <dmitry.tarnyagin@lockless.no>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: [PATCH 1/1 net-next] caif_usb: remove redundant memory message
+Date: Mon, 13 Oct 2014 22:25:46 +0200
+Message-Id: <1413231946-9914-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-10-13 at 22:06 +0200, Fabian Frederick wrote:
-> checkpatch doesn't seem to detect any case since 
-> Commit e367455a9f25
-> ("checkpatch: emit fewer kmalloc_array/kcalloc conversion warnings")
+Let MM subsystem display out of memory messages.
 
-It seems that worked too well.
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ net/caif/caif_usb.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-Thanks, I'll look at it.
-
+diff --git a/net/caif/caif_usb.c b/net/caif/caif_usb.c
+index ba02db0..0e487b0 100644
+--- a/net/caif/caif_usb.c
++++ b/net/caif/caif_usb.c
+@@ -87,10 +87,9 @@ static struct cflayer *cfusbl_create(int phyid, u8 ethaddr[ETH_ALEN],
+ {
+ 	struct cfusbl *this = kmalloc(sizeof(struct cfusbl), GFP_ATOMIC);
+ 
+-	if (!this) {
+-		pr_warn("Out of memory\n");
++	if (!this)
+ 		return NULL;
+-	}
++
+ 	caif_assert(offsetof(struct cfusbl, layer) == 0);
+ 
+ 	memset(this, 0, sizeof(struct cflayer));
+-- 
+1.9.3
 
