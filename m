@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033AbaJMHs2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 03:48:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34644 "EHLO mx1.redhat.com"
+	id S1754070AbaJMHsg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 03:48:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45412 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753958AbaJMHsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 03:48:24 -0400
-Date: Mon, 13 Oct 2014 10:51:39 +0300
+	id S1753958AbaJMHsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 03:48:30 -0400
+Date: Mon, 13 Oct 2014 10:51:44 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Rusty Russell <rusty@rustcorp.com.au>,
@@ -17,9 +17,10 @@ Cc: Rusty Russell <rusty@rustcorp.com.au>,
         Cornelia Huck <cornelia.huck@de.ibm.com>,
         Christian Borntraeger <borntraeger@de.ibm.com>,
         "David S. Miller" <davem@davemloft.net>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH v4 23/25] virtio_balloon: enable VQs early on restore
-Message-ID: <1413114332-626-24-git-send-email-mst-v4@redhat.com>
+        Paolo Bonzini <pbonzini@redhat.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Subject: [PATCH v4 24/25] virtio_scsi: drop scan callback
+Message-ID: <1413114332-626-25-git-send-email-mst-v4@redhat.com>
 References: <1413114332-626-1-git-send-email-mst-v4@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -30,31 +31,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-virtio spec requires drivers to set DRIVER_OK before using VQs.
-This is set automatically after resume returns, virtio balloon
-violated this rule by adding bufs, which causes the VQ to be used
-directly within restore.
-
-To fix, call virtio_device_ready before using VQ.
+Enable VQs early like we do for restore.
+This makes it possible to drop the scan callback,
+moving scanning into the probe function, and making
+code simpler.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/virtio/virtio_balloon.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/scsi/virtio_scsi.c | 23 +++++++----------------
+ 1 file changed, 7 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-index 25ebe8e..9629fad 100644
---- a/drivers/virtio/virtio_balloon.c
-+++ b/drivers/virtio/virtio_balloon.c
-@@ -538,6 +538,8 @@ static int virtballoon_restore(struct virtio_device *vdev)
- 	if (ret)
- 		return ret;
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index 327eba0..5f022ff 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -860,17 +860,6 @@ static void virtscsi_init_vq(struct virtio_scsi_vq *virtscsi_vq,
+ 	virtscsi_vq->vq = vq;
+ }
  
+-static void virtscsi_scan(struct virtio_device *vdev)
+-{
+-	struct Scsi_Host *shost = virtio_scsi_host(vdev);
+-	struct virtio_scsi *vscsi = shost_priv(shost);
+-
+-	if (virtio_has_feature(vdev, VIRTIO_SCSI_F_HOTPLUG))
+-		virtscsi_kick_event_all(vscsi);
+-
+-	scsi_scan_host(shost);
+-}
+-
+ static void virtscsi_remove_vqs(struct virtio_device *vdev)
+ {
+ 	struct Scsi_Host *sh = virtio_scsi_host(vdev);
+@@ -1007,10 +996,13 @@ static int virtscsi_probe(struct virtio_device *vdev)
+ 	err = scsi_add_host(shost, &vdev->dev);
+ 	if (err)
+ 		goto scsi_add_host_failed;
+-	/*
+-	 * scsi_scan_host() happens in virtscsi_scan() via virtio_driver->scan()
+-	 * after VIRTIO_CONFIG_S_DRIVER_OK has been set..
+-	 */
++
 +	virtio_device_ready(vdev);
 +
- 	fill_balloon(vb, towards_target(vb));
- 	update_balloon_size(vb);
++	if (virtio_has_feature(vdev, VIRTIO_SCSI_F_HOTPLUG))
++		virtscsi_kick_event_all(vscsi);
++
++	scsi_scan_host(shost);
  	return 0;
+ 
+ scsi_add_host_failed:
+@@ -1090,7 +1082,6 @@ static struct virtio_driver virtio_scsi_driver = {
+ 	.driver.owner = THIS_MODULE,
+ 	.id_table = id_table,
+ 	.probe = virtscsi_probe,
+-	.scan = virtscsi_scan,
+ #ifdef CONFIG_PM_SLEEP
+ 	.freeze = virtscsi_freeze,
+ 	.restore = virtscsi_restore,
 -- 
 MST
 
