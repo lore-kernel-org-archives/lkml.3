@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753780AbaJMC1V (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:27:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45761 "EHLO
+	id S1753755AbaJMC1T (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:27:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45765 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753724AbaJMC1N (ORCPT
+	with ESMTP id S1753730AbaJMC1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:27:13 -0400
+	Sun, 12 Oct 2014 22:27:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Cristian Stoica <cristian.stoica@freescale.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: [PATCH 3.14 36/37] crypto: caam - fix addressing of struct member
-Date: Mon, 13 Oct 2014 04:24:33 +0200
-Message-Id: <20141013022401.796709337@linuxfoundation.org>
+        Bryan ODonoghue <pure.logic@nexus-software.ie>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Subject: [PATCH 3.14 37/37] serial: 8250: Add Quark X1000 to 8250_pci.c
+Date: Mon, 13 Oct 2014 04:24:34 +0200
+Message-Id: <20141013022401.843137955@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022400.286360067@linuxfoundation.org>
 References: <20141013022400.286360067@linuxfoundation.org>
@@ -29,36 +29,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cristian Stoica <cristian.stoica@freescale.com>
+From: Bryan O'Donoghue <pure.logic@nexus-software.ie>
 
-commit 4451d494b1910bf7b7f8381a637d0fe6d2142467 upstream.
+commit 1ede7dcca3c4fa15a518ab0473126f9c3e621e4c upstream.
 
-buf_0 and buf_1 in caam_hash_state are not next to each other.
-Accessing buf_1 is incorrect from &buf_0 with an offset of only
-size_of(buf_0). The same issue is also with buflen_0 and buflen_1
+Quark X1000 contains two designware derived 8250 serial ports.
+Each port has a unique PCI configuration space consisting of
+BAR0:UART BAR1:DMA respectively.
 
-Signed-off-by: Cristian Stoica <cristian.stoica@freescale.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Unlike the standard 8250 the register width is 32 bits for RHR,IER etc
+The Quark UART has a fundamental clock @ 44.2368 MHz allowing for a
+bitrate of up to about 2.76 megabits per second.
+
+This patch enables standard 8250 mode
+
+Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+Reviewed-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/crypto/caam/caamhash.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/tty/serial/8250/8250_pci.c |   21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
---- a/drivers/crypto/caam/caamhash.c
-+++ b/drivers/crypto/caam/caamhash.c
-@@ -1348,9 +1348,9 @@ static int ahash_update_first(struct aha
- 	struct device *jrdev = ctx->jrdev;
- 	gfp_t flags = (req->base.flags & (CRYPTO_TFM_REQ_MAY_BACKLOG |
- 		       CRYPTO_TFM_REQ_MAY_SLEEP)) ? GFP_KERNEL : GFP_ATOMIC;
--	u8 *next_buf = state->buf_0 + state->current_buf *
--		       CAAM_MAX_HASH_BLOCK_SIZE;
--	int *next_buflen = &state->buflen_0 + state->current_buf;
-+	u8 *next_buf = state->current_buf ? state->buf_1 : state->buf_0;
-+	int *next_buflen = state->current_buf ?
-+		&state->buflen_1 : &state->buflen_0;
- 	int to_hash;
- 	u32 *sh_desc = ctx->sh_desc_update_first, *desc;
- 	dma_addr_t ptr = ctx->sh_desc_update_first_dma;
+--- a/drivers/tty/serial/8250/8250_pci.c
++++ b/drivers/tty/serial/8250/8250_pci.c
+@@ -1766,6 +1766,7 @@ pci_wch_ch353_setup(struct serial_privat
+ #define PCI_DEVICE_ID_COMMTECH_4222PCIE	0x0022
+ #define PCI_DEVICE_ID_BROADCOM_TRUMANAGE 0x160a
+ #define PCI_DEVICE_ID_AMCC_ADDIDATA_APCI7800 0x818e
++#define PCI_DEVICE_ID_INTEL_QRK_UART	0x0936
+ 
+ #define PCI_VENDOR_ID_SUNIX		0x1fd4
+ #define PCI_DEVICE_ID_SUNIX_1999	0x1999
+@@ -1876,6 +1877,13 @@ static struct pci_serial_quirk pci_seria
+ 		.subdevice	= PCI_ANY_ID,
+ 		.setup		= byt_serial_setup,
+ 	},
++	{
++		.vendor		= PCI_VENDOR_ID_INTEL,
++		.device		= PCI_DEVICE_ID_INTEL_QRK_UART,
++		.subvendor	= PCI_ANY_ID,
++		.subdevice	= PCI_ANY_ID,
++		.setup		= pci_default_setup,
++	},
+ 	/*
+ 	 * ITE
+ 	 */
+@@ -2710,6 +2718,7 @@ enum pci_board_num_t {
+ 	pbn_ADDIDATA_PCIe_8_3906250,
+ 	pbn_ce4100_1_115200,
+ 	pbn_byt,
++	pbn_qrk,
+ 	pbn_omegapci,
+ 	pbn_NETMOS9900_2s_115200,
+ 	pbn_brcm_trumanage,
+@@ -3456,6 +3465,12 @@ static struct pciserial_board pci_boards
+ 		.uart_offset	= 0x80,
+ 		.reg_shift      = 2,
+ 	},
++	[pbn_qrk] = {
++		.flags		= FL_BASE0,
++		.num_ports	= 1,
++		.base_baud	= 2764800,
++		.reg_shift	= 2,
++	},
+ 	[pbn_omegapci] = {
+ 		.flags		= FL_BASE0,
+ 		.num_ports	= 8,
+@@ -5150,6 +5165,12 @@ static struct pci_device_id serial_pci_t
+ 		pbn_byt },
+ 
+ 	/*
++	 * Intel Quark x1000
++	 */
++	{	PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_QRK_UART,
++		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
++		pbn_qrk },
++	/*
+ 	 * Cronyx Omega PCI
+ 	 */
+ 	{	PCI_VENDOR_ID_PLX, PCI_DEVICE_ID_PLX_CRONYX_OMEGA,
 
 
