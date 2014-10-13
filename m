@@ -1,184 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754883AbaJMCrD (ORCPT <rfc822;w@1wt.eu>);
+	id S1755230AbaJMCrH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:47:07 -0400
+Received: from ozlabs.org ([103.22.144.67]:35688 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754881AbaJMCrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 12 Oct 2014 22:47:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45876 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754021AbaJMC2N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:28:13 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Andy Gospodarek <andy@greyhouse.net>,
-        Jay Vosburgh <j.vosburgh@gmail.com>,
-        Veaceslav Falico <vfalico@gmail.com>,
-        Nikolay Aleksandrov <nikolay@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 21/55] bonding: fix div by zero while enslaving and transmitting
-Date: Mon, 13 Oct 2014 04:24:35 +0200
-Message-Id: <20141013022444.631607043@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
-References: <20141013022443.729870634@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+Date: Mon, 13 Oct 2014 13:46:55 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Bryan Wu <cooloney@gmail.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Xiubo Li <Li.Xiubo@freescale.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: linux-next: manual merge of the leds tree with the pm tree
+Message-ID: <20141013134655.2407e8c5@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/LDtErMbhm8MvBZgUv4lLyOp"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+--Sig_/LDtErMbhm8MvBZgUv4lLyOp
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+Hi Bryan,
 
-From: Nikolay Aleksandrov <nikolay@redhat.com>
+Today's linux-next merge of the leds tree got a conflict in
+drivers/leds/leds-gpio.c between commits 8b0d4dc3d449 ("leds:
+leds-gpio: Add support for GPIO descriptors") and c108837ca096 ("leds:
+leds-gpio: Make use of device property API") from the pm tree and
+commits 4cc72346f05e ("led: gpio: Sort include headers alphabetically")
+and a4c84e6aafda ("leds: gpio: cleanup the leds-gpio driver") from the
+leds tree.
 
-[ Upstream commit 9a72c2da690d78e93cff24b9f616412508678dd5 ]
+I fixed it up (see below - sorry I put one of the include in the wrong
+place :-() and can carry the fix as necessary (no action is required).
 
-The problem is that the slave is first linked and slave_cnt is
-incremented afterwards leading to a div by zero in the modes that use it
-as a modulus. What happens is that in bond_start_xmit()
-bond_has_slaves() is used to evaluate further transmission and it becomes
-true after the slave is linked in, but when slave_cnt is used in the xmit
-path it is still 0, so fetch it once and transmit based on that. Since
-it is used only in round-robin and XOR modes, the fix is only for them.
-Thanks to Eric Dumazet for pointing out the fault in my first try to fix
-this.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Call trace (took it out of net-next kernel, but it's the same with net):
-[46934.330038] divide error: 0000 [#1] SMP
-[46934.330041] Modules linked in: bonding(O) 9p fscache
-snd_hda_codec_generic crct10dif_pclmul
-[46934.330041] bond0: Enslaving eth1 as an active interface with an up
-link
-[46934.330051]  ppdev joydev crc32_pclmul crc32c_intel 9pnet_virtio
-ghash_clmulni_intel snd_hda_intel 9pnet snd_hda_controller parport_pc
-serio_raw pcspkr snd_hda_codec parport virtio_balloon virtio_console
-snd_hwdep snd_pcm pvpanic i2c_piix4 snd_timer i2ccore snd soundcore
-virtio_blk virtio_net virtio_pci virtio_ring virtio ata_generic
-pata_acpi floppy [last unloaded: bonding]
-[46934.330053] CPU: 1 PID: 3382 Comm: ping Tainted: G           O
-3.17.0-rc4+ #27
-[46934.330053] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[46934.330054] task: ffff88005aebf2c0 ti: ffff88005b728000 task.ti:
-ffff88005b728000
-[46934.330059] RIP: 0010:[<ffffffffa0198c33>]  [<ffffffffa0198c33>]
-bond_start_xmit+0x1c3/0x450 [bonding]
-[46934.330060] RSP: 0018:ffff88005b72b7f8  EFLAGS: 00010246
-[46934.330060] RAX: 0000000000000679 RBX: ffff88004b077000 RCX:
-000000000000002a
-[46934.330061] RDX: 0000000000000000 RSI: ffff88004b3f0500 RDI:
-ffff88004b077940
-[46934.330061] RBP: ffff88005b72b830 R08: 00000000000000c0 R09:
-ffff88004a83e000
-[46934.330062] R10: 000000000000ffff R11: ffff88004b1f12c0 R12:
-ffff88004b3f0500
-[46934.330062] R13: ffff88004b3f0500 R14: 000000000000002a R15:
-ffff88004b077940
-[46934.330063] FS:  00007fbd91a4c740(0000) GS:ffff88005f080000(0000)
-knlGS:0000000000000000
-[46934.330064] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[46934.330064] CR2: 00007f803a8bb000 CR3: 000000004b2c9000 CR4:
-00000000000406e0
-[46934.330069] Stack:
-[46934.330071]  ffffffff811e6169 00000000e772fa05 ffff88004b077000
-ffff88004b3f0500
-[46934.330072]  ffffffff81d17d18 000000000000002a 0000000000000000
-ffff88005b72b8a0
-[46934.330073]  ffffffff81620108 ffffffff8161fe0e ffff88005b72b8c4
-ffff88005b302000
-[46934.330073] Call Trace:
-[46934.330077]  [<ffffffff811e6169>] ?
-__kmalloc_node_track_caller+0x119/0x300
-[46934.330084]  [<ffffffff81620108>] dev_hard_start_xmit+0x188/0x410
-[46934.330086]  [<ffffffff8161fe0e>] ? harmonize_features+0x2e/0x90
-[46934.330088]  [<ffffffff81620b06>] __dev_queue_xmit+0x456/0x590
-[46934.330089]  [<ffffffff81620c50>] dev_queue_xmit+0x10/0x20
-[46934.330090]  [<ffffffff8168f022>] arp_xmit+0x22/0x60
-[46934.330091]  [<ffffffff8168f090>] arp_send.part.16+0x30/0x40
-[46934.330092]  [<ffffffff8168f1e5>] arp_solicit+0x115/0x2b0
-[46934.330094]  [<ffffffff8160b5d7>] ? copy_skb_header+0x17/0xa0
-[46934.330096]  [<ffffffff8162875a>] neigh_probe+0x4a/0x70
-[46934.330097]  [<ffffffff8162979c>] __neigh_event_send+0xac/0x230
-[46934.330098]  [<ffffffff8162a00b>] neigh_resolve_output+0x13b/0x220
-[46934.330100]  [<ffffffff8165f120>] ? ip_forward_options+0x1c0/0x1c0
-[46934.330101]  [<ffffffff81660478>] ip_finish_output+0x1f8/0x860
-[46934.330102]  [<ffffffff81661f08>] ip_output+0x58/0x90
-[46934.330103]  [<ffffffff81661602>] ? __ip_local_out+0xa2/0xb0
-[46934.330104]  [<ffffffff81661640>] ip_local_out_sk+0x30/0x40
-[46934.330105]  [<ffffffff81662a66>] ip_send_skb+0x16/0x50
-[46934.330106]  [<ffffffff81662ad3>] ip_push_pending_frames+0x33/0x40
-[46934.330107]  [<ffffffff8168854c>] raw_sendmsg+0x88c/0xa30
-[46934.330110]  [<ffffffff81612b31>] ? skb_recv_datagram+0x41/0x60
-[46934.330111]  [<ffffffff816875a9>] ? raw_recvmsg+0xa9/0x1f0
-[46934.330113]  [<ffffffff816978d4>] inet_sendmsg+0x74/0xc0
-[46934.330114]  [<ffffffff81697a9b>] ? inet_recvmsg+0x8b/0xb0
-[46934.330115] bond0: Adding slave eth2
-[46934.330116]  [<ffffffff8160357c>] sock_sendmsg+0x9c/0xe0
-[46934.330118]  [<ffffffff81603248>] ?
-move_addr_to_kernel.part.20+0x28/0x80
-[46934.330121]  [<ffffffff811b4477>] ? might_fault+0x47/0x50
-[46934.330122]  [<ffffffff816039b9>] ___sys_sendmsg+0x3a9/0x3c0
-[46934.330125]  [<ffffffff8144a14a>] ? n_tty_write+0x3aa/0x530
-[46934.330127]  [<ffffffff810d1ae4>] ? __wake_up+0x44/0x50
-[46934.330129]  [<ffffffff81242b38>] ? fsnotify+0x238/0x310
-[46934.330130]  [<ffffffff816048a1>] __sys_sendmsg+0x51/0x90
-[46934.330131]  [<ffffffff816048f2>] SyS_sendmsg+0x12/0x20
-[46934.330134]  [<ffffffff81738b29>] system_call_fastpath+0x16/0x1b
-[46934.330144] Code: 48 8b 10 4c 89 ee 4c 89 ff e8 aa bc ff ff 31 c0 e9
-1a ff ff ff 0f 1f 00 4c 89 ee 4c 89 ff e8 65 fb ff ff 31 d2 4c 89 ee 4c
-89 ff <f7> b3 64 09 00 00 e8 02 bd ff ff 31 c0 e9 f2 fe ff ff 0f 1f 00
-[46934.330146] RIP  [<ffffffffa0198c33>] bond_start_xmit+0x1c3/0x450
-[bonding]
-[46934.330146]  RSP <ffff88005b72b7f8>
+diff --cc drivers/leds/leds-gpio.c
+index 112c2a11c46d,b4518c8751c8..000000000000
+--- a/drivers/leds/leds-gpio.c
++++ b/drivers/leds/leds-gpio.c
+@@@ -10,16 -10,17 +10,16 @@@
+   * published by the Free Software Foundation.
+   *
+   */
+- #include <linux/kernel.h>
+- #include <linux/platform_device.h>
++ #include <linux/err.h>
+  #include <linux/gpio.h>
+- #include <linux/gpio/consumer.h>
++ #include <linux/kernel.h>
+  #include <linux/leds.h>
+- #include <linux/slab.h>
+- #include <linux/workqueue.h>
+  #include <linux/module.h>
+- #include <linux/err.h>
+ -#include <linux/of.h>
+ -#include <linux/of_gpio.h>
+ -#include <linux/of_platform.h>
+++#include <linux/gpio/consumer.h>
++ #include <linux/platform_device.h>
+ +#include <linux/property.h>
++ #include <linux/slab.h>
++ #include <linux/workqueue.h>
+ =20
+  struct gpio_led_data {
+  	struct led_classdev cdev;
 
-CC: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Andy Gospodarek <andy@greyhouse.net>
-CC: Jay Vosburgh <j.vosburgh@gmail.com>
-CC: Veaceslav Falico <vfalico@gmail.com>
-Fixes: 278b208375 ("bonding: initial RCU conversion")
-Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/bonding/bond_main.c |   17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+--Sig_/LDtErMbhm8MvBZgUv4lLyOp
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -3667,8 +3667,14 @@ static int bond_xmit_roundrobin(struct s
- 		else
- 			bond_xmit_slave_id(bond, skb, 0);
- 	} else {
--		slave_id = bond_rr_gen_slave_id(bond);
--		bond_xmit_slave_id(bond, skb, slave_id % bond->slave_cnt);
-+		int slave_cnt = ACCESS_ONCE(bond->slave_cnt);
-+
-+		if (likely(slave_cnt)) {
-+			slave_id = bond_rr_gen_slave_id(bond);
-+			bond_xmit_slave_id(bond, skb, slave_id % slave_cnt);
-+		} else {
-+			dev_kfree_skb_any(skb);
-+		}
- 	}
- 
- 	return NETDEV_TX_OK;
-@@ -3699,8 +3705,13 @@ static int bond_xmit_activebackup(struct
- static int bond_xmit_xor(struct sk_buff *skb, struct net_device *bond_dev)
- {
- 	struct bonding *bond = netdev_priv(bond_dev);
-+	int slave_cnt = ACCESS_ONCE(bond->slave_cnt);
- 
--	bond_xmit_slave_id(bond, skb, bond_xmit_hash(bond, skb) % bond->slave_cnt);
-+	if (likely(slave_cnt))
-+		bond_xmit_slave_id(bond, skb,
-+				   bond_xmit_hash(bond, skb) % slave_cnt);
-+	else
-+		dev_kfree_skb_any(skb);
- 
- 	return NETDEV_TX_OK;
- }
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQIcBAEBCAAGBQJUOz0jAAoJEMDTa8Ir7ZwVtosP/3fO010El1KQzDU2XukP+zZd
+ZTtTwMWO8aytnwKeyJ113CS97Er9zkc/c1i4QLZK5MUhicJA6Sike7CiDFgVh1Mb
+JBCkVtDJ+BBjnCf0cXhlbQwIJXZBQyhWFZwqxA3oyxucDqiKctGc2qDmAyBuf9lc
+N4QfqVDZboy8oKB4/Vh6wWlA1wLgmh6TEb23BCcl2OrEkrEF84MveGp+felgDXi6
+WhPPmBIc80nKYSqay8gxQi1Nr+2uu74taCjqD24e4Nh2RtoVX7BG9E+d7A7RRBlB
+pb4t4qqD1TMbOVTmlpMcA9TZxS/YGVvor+/CBIHl0hEtX9gq10hGFgVNOpwcO6UM
+7zd7/NqOxjY8UEJe5Is8FBus4S1w3GBj74JbDIxdMTsouFVOUoJ0Y8q+zVytm/IC
+LFMUFLAI9H7tX8j2XdtWYJFkh4C8K3lGds9AXY1rNnFJ+lOJpS0uRRO7zJlyYsvH
+Kzi3aGmxnTWCwTojzMBk3+9eJ9gt23uc/ElI0/vFf1ggMKG0Fdi0woa1n0xGa//l
+K54MUqhQk7a2Wa4IdxlLiDOggQoZqdkOlMxWjd8RjMGQnpJNaTEtF5l4G+LP5u7s
+9YEGqbIq2lgMjKcrxWSFyekr1hx5jBONIC0zwmry+Ql8k+qO3xz0LdcmBIZxGcH3
+zxxbwdybt/zMzGa9TsEZ
+=9K0h
+-----END PGP SIGNATURE-----
 
+--Sig_/LDtErMbhm8MvBZgUv4lLyOp--
