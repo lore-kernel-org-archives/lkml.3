@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752980AbaJMCZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:25:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45552 "EHLO
+	id S1753075AbaJMCZi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:25:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45566 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752917AbaJMCZZ (ORCPT
+	with ESMTP id S1752985AbaJMCZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:25:25 -0400
+	Sun, 12 Oct 2014 22:25:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Neal Cardwell <ncardwell@google.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 01/16] myri10ge: check for DMA mapping errors
-Date: Mon, 13 Oct 2014 04:23:58 +0200
-Message-Id: <20141013022341.443067517@linuxfoundation.org>
+Subject: [PATCH 3.10 03/16] tcp: fix tcp_release_cb() to dispatch via address family for mtu_reduced()
+Date: Mon, 13 Oct 2014 04:24:00 +0200
+Message-Id: <20141013022341.529214410@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022341.386913672@linuxfoundation.org>
 References: <20141013022341.386913672@linuxfoundation.org>
@@ -29,175 +31,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Neal Cardwell <ncardwell@google.com>
 
-[ Upstream commit 10545937e866ccdbb7ab583031dbdcc6b14e4eb4 ]
+[ Upstream commit 4fab9071950c2021d846e18351e0f46a1cffd67b ]
 
-On IOMMU systems DMA mapping can fail, we need to check for
-that possibility.
+Make sure we use the correct address-family-specific function for
+handling MTU reductions from within tcp_release_cb().
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Previously AF_INET6 sockets were incorrectly always using the IPv6
+code path when sometimes they were handling IPv4 traffic and thus had
+an IPv4 dst.
+
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Diagnosed-by: Willem de Bruijn <willemb@google.com>
+Fixes: 563d34d057862 ("tcp: dont drop MTU reduction indications")
+Reviewed-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/myricom/myri10ge/myri10ge.c |   88 +++++++++++++++--------
- 1 file changed, 58 insertions(+), 30 deletions(-)
+ include/net/inet_connection_sock.h |    1 +
+ include/net/sock.h                 |    1 -
+ include/net/tcp.h                  |    1 +
+ net/ipv4/tcp_ipv4.c                |    5 +++--
+ net/ipv4/tcp_output.c              |    2 +-
+ net/ipv6/tcp_ipv6.c                |    3 ++-
+ 6 files changed, 8 insertions(+), 5 deletions(-)
 
---- a/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
-+++ b/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
-@@ -856,6 +856,10 @@ static int myri10ge_dma_test(struct myri
- 		return -ENOMEM;
- 	dmatest_bus = pci_map_page(mgp->pdev, dmatest_page, 0, PAGE_SIZE,
- 				   DMA_BIDIRECTIONAL);
-+	if (unlikely(pci_dma_mapping_error(mgp->pdev, dmatest_bus))) {
-+		__free_page(dmatest_page);
-+		return -ENOMEM;
-+	}
+--- a/include/net/inet_connection_sock.h
++++ b/include/net/inet_connection_sock.h
+@@ -62,6 +62,7 @@ struct inet_connection_sock_af_ops {
+ 	void	    (*addr2sockaddr)(struct sock *sk, struct sockaddr *);
+ 	int	    (*bind_conflict)(const struct sock *sk,
+ 				     const struct inet_bind_bucket *tb, bool relax);
++	void	    (*mtu_reduced)(struct sock *sk);
+ };
  
- 	/* Run a small DMA test.
- 	 * The magic multipliers to the length tell the firmware
-@@ -1191,6 +1195,7 @@ myri10ge_alloc_rx_pages(struct myri10ge_
- 			int bytes, int watchdog)
+ /** inet_connection_sock - INET connection oriented sock
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -932,7 +932,6 @@ struct proto {
+ 						struct sk_buff *skb);
+ 
+ 	void		(*release_cb)(struct sock *sk);
+-	void		(*mtu_reduced)(struct sock *sk);
+ 
+ 	/* Keeping track of sk's, looking them up, and port selection methods. */
+ 	void			(*hash)(struct sock *sk);
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -460,6 +460,7 @@ extern const u8 *tcp_parse_md5sig_option
+  */
+ 
+ extern void tcp_v4_send_check(struct sock *sk, struct sk_buff *skb);
++void tcp_v4_mtu_reduced(struct sock *sk);
+ extern int tcp_v4_conn_request(struct sock *sk, struct sk_buff *skb);
+ extern struct sock * tcp_create_openreq_child(struct sock *sk,
+ 					      struct request_sock *req,
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -268,7 +268,7 @@ EXPORT_SYMBOL(tcp_v4_connect);
+  * It can be called through tcp_release_cb() if socket was owned by user
+  * at the time tcp_v4_err() was called to handle ICMP message.
+  */
+-static void tcp_v4_mtu_reduced(struct sock *sk)
++void tcp_v4_mtu_reduced(struct sock *sk)
  {
- 	struct page *page;
-+	dma_addr_t bus;
- 	int idx;
- #if MYRI10GE_ALLOC_SIZE > 4096
- 	int end_offset;
-@@ -1215,11 +1220,21 @@ myri10ge_alloc_rx_pages(struct myri10ge_
- 					rx->watchdog_needed = 1;
- 				return;
- 			}
-+
-+			bus = pci_map_page(mgp->pdev, page, 0,
-+					   MYRI10GE_ALLOC_SIZE,
-+					   PCI_DMA_FROMDEVICE);
-+			if (unlikely(pci_dma_mapping_error(mgp->pdev, bus))) {
-+				__free_pages(page, MYRI10GE_ALLOC_ORDER);
-+				if (rx->fill_cnt - rx->cnt < 16)
-+					rx->watchdog_needed = 1;
-+				return;
-+			}
-+
- 			rx->page = page;
- 			rx->page_offset = 0;
--			rx->bus = pci_map_page(mgp->pdev, page, 0,
--					       MYRI10GE_ALLOC_SIZE,
--					       PCI_DMA_FROMDEVICE);
-+			rx->bus = bus;
-+
- 		}
- 		rx->info[idx].page = rx->page;
- 		rx->info[idx].page_offset = rx->page_offset;
-@@ -2576,6 +2591,35 @@ myri10ge_submit_req(struct myri10ge_tx_b
- 	mb();
+ 	struct dst_entry *dst;
+ 	struct inet_sock *inet = inet_sk(sk);
+@@ -298,6 +298,7 @@ static void tcp_v4_mtu_reduced(struct so
+ 		tcp_simple_retransmit(sk);
+ 	} /* else let the usual retransmit timer handle it */
  }
++EXPORT_SYMBOL(tcp_v4_mtu_reduced);
  
-+static void myri10ge_unmap_tx_dma(struct myri10ge_priv *mgp,
-+				  struct myri10ge_tx_buf *tx, int idx)
-+{
-+	unsigned int len;
-+	int last_idx;
-+
-+	/* Free any DMA resources we've alloced and clear out the skb slot */
-+	last_idx = (idx + 1) & tx->mask;
-+	idx = tx->req & tx->mask;
-+	do {
-+		len = dma_unmap_len(&tx->info[idx], len);
-+		if (len) {
-+			if (tx->info[idx].skb != NULL)
-+				pci_unmap_single(mgp->pdev,
-+						 dma_unmap_addr(&tx->info[idx],
-+								bus), len,
-+						 PCI_DMA_TODEVICE);
-+			else
-+				pci_unmap_page(mgp->pdev,
-+					       dma_unmap_addr(&tx->info[idx],
-+							      bus), len,
-+					       PCI_DMA_TODEVICE);
-+			dma_unmap_len_set(&tx->info[idx], len, 0);
-+			tx->info[idx].skb = NULL;
-+		}
-+		idx = (idx + 1) & tx->mask;
-+	} while (idx != last_idx);
-+}
-+
- /*
-  * Transmit a packet.  We need to split the packet so that a single
-  * segment does not cross myri10ge->tx_boundary, so this makes segment
-@@ -2599,7 +2643,7 @@ static netdev_tx_t myri10ge_xmit(struct
- 	u32 low;
- 	__be32 high_swapped;
- 	unsigned int len;
--	int idx, last_idx, avail, frag_cnt, frag_idx, count, mss, max_segments;
-+	int idx, avail, frag_cnt, frag_idx, count, mss, max_segments;
- 	u16 pseudo_hdr_offset, cksum_offset, queue;
- 	int cum_len, seglen, boundary, rdma_count;
- 	u8 flags, odd_flag;
-@@ -2696,9 +2740,12 @@ again:
+ static void do_redirect(struct sk_buff *skb, struct sock *sk)
+ {
+@@ -2142,6 +2143,7 @@ const struct inet_connection_sock_af_ops
+ 	.compat_setsockopt = compat_ip_setsockopt,
+ 	.compat_getsockopt = compat_ip_getsockopt,
+ #endif
++	.mtu_reduced	   = tcp_v4_mtu_reduced,
+ };
+ EXPORT_SYMBOL(ipv4_specific);
  
- 	/* map the skb for DMA */
- 	len = skb_headlen(skb);
-+	bus = pci_map_single(mgp->pdev, skb->data, len, PCI_DMA_TODEVICE);
-+	if (unlikely(pci_dma_mapping_error(mgp->pdev, bus)))
-+		goto drop;
-+
- 	idx = tx->req & tx->mask;
- 	tx->info[idx].skb = skb;
--	bus = pci_map_single(mgp->pdev, skb->data, len, PCI_DMA_TODEVICE);
- 	dma_unmap_addr_set(&tx->info[idx], bus, bus);
- 	dma_unmap_len_set(&tx->info[idx], len, len);
- 
-@@ -2797,12 +2844,16 @@ again:
- 			break;
- 
- 		/* map next fragment for DMA */
--		idx = (count + tx->req) & tx->mask;
- 		frag = &skb_shinfo(skb)->frags[frag_idx];
- 		frag_idx++;
- 		len = skb_frag_size(frag);
- 		bus = skb_frag_dma_map(&mgp->pdev->dev, frag, 0, len,
- 				       DMA_TO_DEVICE);
-+		if (unlikely(pci_dma_mapping_error(mgp->pdev, bus))) {
-+			myri10ge_unmap_tx_dma(mgp, tx, idx);
-+			goto drop;
-+		}
-+		idx = (count + tx->req) & tx->mask;
- 		dma_unmap_addr_set(&tx->info[idx], bus, bus);
- 		dma_unmap_len_set(&tx->info[idx], len, len);
+@@ -2867,7 +2869,6 @@ struct proto tcp_prot = {
+ 	.sendpage		= tcp_sendpage,
+ 	.backlog_rcv		= tcp_v4_do_rcv,
+ 	.release_cb		= tcp_release_cb,
+-	.mtu_reduced		= tcp_v4_mtu_reduced,
+ 	.hash			= inet_hash,
+ 	.unhash			= inet_unhash,
+ 	.get_port		= inet_csk_get_port,
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -775,7 +775,7 @@ void tcp_release_cb(struct sock *sk)
+ 		__sock_put(sk);
  	}
-@@ -2833,31 +2884,8 @@ again:
- 	return NETDEV_TX_OK;
+ 	if (flags & (1UL << TCP_MTU_REDUCED_DEFERRED)) {
+-		sk->sk_prot->mtu_reduced(sk);
++		inet_csk(sk)->icsk_af_ops->mtu_reduced(sk);
+ 		__sock_put(sk);
+ 	}
+ }
+--- a/net/ipv6/tcp_ipv6.c
++++ b/net/ipv6/tcp_ipv6.c
+@@ -1651,6 +1651,7 @@ static const struct inet_connection_sock
+ 	.compat_setsockopt = compat_ipv6_setsockopt,
+ 	.compat_getsockopt = compat_ipv6_getsockopt,
+ #endif
++	.mtu_reduced	   = tcp_v6_mtu_reduced,
+ };
  
- abort_linearize:
--	/* Free any DMA resources we've alloced and clear out the skb
--	 * slot so as to not trip up assertions, and to avoid a
--	 * double-free if linearizing fails */
-+	myri10ge_unmap_tx_dma(mgp, tx, idx);
+ #ifdef CONFIG_TCP_MD5SIG
+@@ -1682,6 +1683,7 @@ static const struct inet_connection_sock
+ 	.compat_setsockopt = compat_ipv6_setsockopt,
+ 	.compat_getsockopt = compat_ipv6_getsockopt,
+ #endif
++	.mtu_reduced	   = tcp_v4_mtu_reduced,
+ };
  
--	last_idx = (idx + 1) & tx->mask;
--	idx = tx->req & tx->mask;
--	tx->info[idx].skb = NULL;
--	do {
--		len = dma_unmap_len(&tx->info[idx], len);
--		if (len) {
--			if (tx->info[idx].skb != NULL)
--				pci_unmap_single(mgp->pdev,
--						 dma_unmap_addr(&tx->info[idx],
--								bus), len,
--						 PCI_DMA_TODEVICE);
--			else
--				pci_unmap_page(mgp->pdev,
--					       dma_unmap_addr(&tx->info[idx],
--							      bus), len,
--					       PCI_DMA_TODEVICE);
--			dma_unmap_len_set(&tx->info[idx], len, 0);
--			tx->info[idx].skb = NULL;
--		}
--		idx = (idx + 1) & tx->mask;
--	} while (idx != last_idx);
- 	if (skb_is_gso(skb)) {
- 		netdev_err(mgp->dev, "TSO but wanted to linearize?!?!?\n");
- 		goto drop;
+ #ifdef CONFIG_TCP_MD5SIG
+@@ -1919,7 +1921,6 @@ struct proto tcpv6_prot = {
+ 	.sendpage		= tcp_sendpage,
+ 	.backlog_rcv		= tcp_v6_do_rcv,
+ 	.release_cb		= tcp_release_cb,
+-	.mtu_reduced		= tcp_v6_mtu_reduced,
+ 	.hash			= tcp_v6_hash,
+ 	.unhash			= inet_unhash,
+ 	.get_port		= inet_csk_get_port,
 
 
