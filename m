@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448AbaJMC3a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:29:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46014 "EHLO
+	id S1754959AbaJMCj7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:39:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46022 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754396AbaJMC3Y (ORCPT
+	with ESMTP id S1754446AbaJMC3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:29:24 -0400
+	Sun, 12 Oct 2014 22:29:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vladislav Yasevich <vyasevic@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 23/55] bridge: Check if vlan filtering is enabled only once.
-Date: Mon, 13 Oct 2014 04:24:37 +0200
-Message-Id: <20141013022444.725815439@linuxfoundation.org>
+        Cristian Stoica <cristian.stoica@freescale.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.16 53/55] crypto: caam - fix addressing of struct member
+Date: Mon, 13 Oct 2014 04:25:07 +0200
+Message-Id: <20141013022446.283337922@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
 References: <20141013022443.729870634@linuxfoundation.org>
@@ -29,94 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevich@gmail.com>
+From: Cristian Stoica <cristian.stoica@freescale.com>
 
-[ Upstream commit 20adfa1a81af00bf2027644507ad4fa9cd2849cf ]
+commit 4451d494b1910bf7b7f8381a637d0fe6d2142467 upstream.
 
-The bridge code checks if vlan filtering is enabled on both
-ingress and egress.   When the state flip happens, it
-is possible for the bridge to currently be forwarding packets
-and forwarding behavior becomes non-deterministic.  Bridge
-may drop packets on some interfaces, but not others.
+buf_0 and buf_1 in caam_hash_state are not next to each other.
+Accessing buf_1 is incorrect from &buf_0 with an offset of only
+size_of(buf_0). The same issue is also with buflen_0 and buflen_1
 
-This patch solves this by caching the filtered state of the
-packet into skb_cb on ingress.  The skb_cb is guaranteed to
-not be over-written between the time packet entres bridge
-forwarding path and the time it leaves it.  On egress, we
-can then check the cached state to see if we need to
-apply filtering information.
-
-Signed-off-by: Vladislav Yasevich <vyasevic@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Cristian Stoica <cristian.stoica@freescale.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/bridge/br_private.h |    3 +++
- net/bridge/br_vlan.c    |   14 ++++++++++----
- 2 files changed, 13 insertions(+), 4 deletions(-)
 
---- a/net/bridge/br_private.h
-+++ b/net/bridge/br_private.h
-@@ -309,6 +309,9 @@ struct br_input_skb_cb {
- 	int igmp;
- 	int mrouters_only;
- #endif
-+#ifdef CONFIG_BRIDGE_VLAN_FILTERING
-+	bool vlan_filtered;
-+#endif
- };
- 
- #define BR_INPUT_SKB_CB(__skb)	((struct br_input_skb_cb *)(__skb)->cb)
---- a/net/bridge/br_vlan.c
-+++ b/net/bridge/br_vlan.c
-@@ -127,7 +127,8 @@ struct sk_buff *br_handle_vlan(struct ne
- {
- 	u16 vid;
- 
--	if (!br->vlan_enabled)
-+	/* If this packet was not filtered at input, let it pass */
-+	if (!BR_INPUT_SKB_CB(skb)->vlan_filtered)
- 		goto out;
- 
- 	/* Vlan filter table must be configured at this point.  The
-@@ -166,8 +167,10 @@ bool br_allowed_ingress(struct net_bridg
- 	/* If VLAN filtering is disabled on the bridge, all packets are
- 	 * permitted.
- 	 */
--	if (!br->vlan_enabled)
-+	if (!br->vlan_enabled) {
-+		BR_INPUT_SKB_CB(skb)->vlan_filtered = false;
- 		return true;
-+	}
- 
- 	/* If there are no vlan in the permitted list, all packets are
- 	 * rejected.
-@@ -175,6 +178,7 @@ bool br_allowed_ingress(struct net_bridg
- 	if (!v)
- 		goto drop;
- 
-+	BR_INPUT_SKB_CB(skb)->vlan_filtered = true;
- 	proto = br->vlan_proto;
- 
- 	/* If vlan tx offload is disabled on bridge device and frame was
-@@ -253,7 +257,8 @@ bool br_allowed_egress(struct net_bridge
- {
- 	u16 vid;
- 
--	if (!br->vlan_enabled)
-+	/* If this packet was not filtered at input, let it pass */
-+	if (!BR_INPUT_SKB_CB(skb)->vlan_filtered)
- 		return true;
- 
- 	if (!v)
-@@ -272,7 +277,8 @@ bool br_should_learn(struct net_bridge_p
- 	struct net_bridge *br = p->br;
- 	struct net_port_vlans *v;
- 
--	if (!br->vlan_enabled)
-+	/* If filtering was disabled at input, let it pass. */
-+	if (!BR_INPUT_SKB_CB(skb)->vlan_filtered)
- 		return true;
- 
- 	v = rcu_dereference(p->vlan_info);
+---
+ drivers/crypto/caam/caamhash.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+--- a/drivers/crypto/caam/caamhash.c
++++ b/drivers/crypto/caam/caamhash.c
+@@ -1338,9 +1338,9 @@ static int ahash_update_first(struct aha
+ 	struct device *jrdev = ctx->jrdev;
+ 	gfp_t flags = (req->base.flags & (CRYPTO_TFM_REQ_MAY_BACKLOG |
+ 		       CRYPTO_TFM_REQ_MAY_SLEEP)) ? GFP_KERNEL : GFP_ATOMIC;
+-	u8 *next_buf = state->buf_0 + state->current_buf *
+-		       CAAM_MAX_HASH_BLOCK_SIZE;
+-	int *next_buflen = &state->buflen_0 + state->current_buf;
++	u8 *next_buf = state->current_buf ? state->buf_1 : state->buf_0;
++	int *next_buflen = state->current_buf ?
++		&state->buflen_1 : &state->buflen_0;
+ 	int to_hash;
+ 	u32 *sh_desc = ctx->sh_desc_update_first, *desc;
+ 	dma_addr_t ptr = ctx->sh_desc_update_first_dma;
 
 
