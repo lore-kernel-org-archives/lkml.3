@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669AbaJMLnl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 07:43:41 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:33205 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753103AbaJMLnj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 07:43:39 -0400
-Date: Mon, 13 Oct 2014 12:43:07 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: "'Nathan Lynch'" <Nathan_Lynch@mentor.com>, Felipe Balbi <balbi@ti.com>,
-        Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "josh@joshtriplett.org" <josh@joshtriplett.org>,
-        Rabin Vincent <rabin@rab.in>, Alan Stern <stern@rowland.harvard.edu>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: RCU bug with v3.17-rc3 ?
-Message-ID: <20141013114307.GO12379@n2100.arm.linux.org.uk>
-References: <20141008212938.GP22688@saruman> <20141009160138.GA2396@cmpxchg.org> <20141009162656.GE16002@saruman> <20141009204101.GA25955@debian> <20141009204637.GE25729@saruman> <20141009210715.GH25729@saruman> <20141010135743.GB31348@saruman> <20141010162531.GL12379@n2100.arm.linux.org.uk> <54388B81.5020306@mentor.com> <063D6719AE5E284EB5DD2968C1650D6D174C996E@AcuExch.aculab.com>
+	id S1753483AbaJMLwS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 07:52:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14012 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752204AbaJMLwQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 07:52:16 -0400
+Message-ID: <543BBCEA.4080202@redhat.com>
+Date: Mon, 13 Oct 2014 07:52:10 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D174C996E@AcuExch.aculab.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: Stephen Boyd <sboyd@codeaurora.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lenny Szubowicz <lszubowi@redhat.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem
+ to be held for duration of changing governors [v2]
+References: <1406634362-811-1-git-send-email-prarit@redhat.com> <2066166.pXm4lKLOID@vostro.rjw.lan> <53DA8389.80804@redhat.com> <1917362.abr2Y4p7vh@vostro.rjw.lan> <53DA8A41.2030601@redhat.com> <53DAA60B.6040802@codeaurora.org> <53DAA749.5080506@redhat.com> <53DAA95B.2040505@codeaurora.org> <53DAB038.3050007@redhat.com> <53DABFA6.6090503@codeaurora.org> <53DACA26.1000908@redhat.com> <53DAE592.2030909@codeaurora.org> <53DB6B81.6050400@redhat.com> <53DBCBE8.6010809@codeaurora.org> <CAKohpomk0GNJcGKxLX3HuaMBgPiSNzFp5BniyNgRbtoLqPm6bQ@mail.gmail.com>
+In-Reply-To: <CAKohpomk0GNJcGKxLX3HuaMBgPiSNzFp5BniyNgRbtoLqPm6bQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 13, 2014 at 09:11:34AM +0000, David Laight wrote:
-> From: Nathan Lynch
-> > On 10/10/2014 11:25 AM, Russell King - ARM Linux wrote:
-> > >
-> > > Right, so GCC 4.8.{1,2} are totally unsuitable for kernel building (and
-> > > it seems that this has been known about for some time.)
-> > 
-> > Looking at http://gcc.gnu.org/PR58854 it seems that all 4.8.x for x < 3
-> > are affected, as well as 4.9.0.
-> > 
-> > > We can blacklist these GCC versions quite easily.  We already have GCC
-> > > 3.3 blacklisted, and it's trivial to add others.  I would want to include
-> > > some proper details about the bug, just like the other existing entries
-> > > we already have in asm-offsets.c, where we name the functions that the
-> > > compiler is known to break where appropriate.
-> > 
-> > Before blacklisting anything, it's worth considering that simple version
-> > checks would break existing pre-4.8.3 compilers that have been patched
-> > for PR58854.  It looks like Yocto and Buildroot issued releases with
-> > patched 4.8.2 compilers well before the (fixed) 4.8.3 release.  I think
-> > the most we can reasonably do without breaking some correctly-behaving
-> > toolchains is to emit a warning.
+
+
+On 10/13/2014 06:43 AM, Viresh Kumar wrote:
+> On 1 August 2014 22:48, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>> On 08/01/14 03:27, Prarit Bhargava wrote:
+>>>
+>>> Can you send me the test and the trace of the deadlock?  I'm not creating it with:
+>>>
+>>
+>> This was with conservative as the default, and switching to ondemand
+>>
+>> # cd /sys/devices/system/cpu/cpu2/cpufreq
+>> # ls
+>> affected_cpus                  scaling_available_governors
+>> conservative                   scaling_cur_freq
+>> cpuinfo_cur_freq               scaling_driver
+>> cpuinfo_max_freq               scaling_governor
+>> cpuinfo_min_freq               scaling_max_freq
+>> cpuinfo_transition_latency     scaling_min_freq
+>> related_cpus                   scaling_setspeed
+>> scaling_available_frequencies  stats
+>> # cat conservative/down_threshold
+>> 20
+>> # echo ondemand > scaling_governor
+>>
+>>  ======================================================
+>>  [ INFO: possible circular locking dependency detected ]
+>>  3.16.0-rc3-00039-ge1e38f124d87 #47 Not tainted
+>>  -------------------------------------------------------
+>>  sh/75 is trying to acquire lock:
+>>   (s_active#9){++++..}, at: [<c0358a94>] kernfs_remove_by_name_ns+0x3c/0x84
 > 
-> Is it possible to compile a small code fragment and check the generated
-> code for the bug?
-> Possibly predicated on the broken version number to avoid false positives.
+> Can you please retry this on mainline? I wasn't able to reproduce it
+> now over 3.17.
+> I am trying this on Exynos b.L implementation..
 
-I don't see how - it looks like it requires an interrupt to occur at an
-opportune moment to provoke the function to fail.  The alternative would
-be to parse the assembly generated by the compiler to determine how it
-is dealing with the stack.
+I have 100% reproducibility on latest mainline.
 
-I think the only viable solution here is that:
+Viresh, please see my next post on the locking issues in cpufreq.
 
-1. We blacklist the bad compiler versions outright in the kernel.
-2. We /consider/ a testing a preprocessor symbol which when present
-   indicates that these versions are fixed and should not be blacklisted.
+P.
 
-The argument for (2) is that /if/ distros want to patch their compilers
-to fix the problem, they /also/ have the ability to patch their compilers
-to make them identifyable, and that is a far more reliable solution than
-trying to parse the assembly output from multiple different GCC versions.
-
-Remember, it's the distro's choice to fix these buggy compilers, so the
-onus is on _them_ to deal with the mess they've created by doing so.
-
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+> 
