@@ -1,68 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411AbaJMJOo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 05:14:44 -0400
-Received: from smtp73.iad3a.emailsrvr.com ([173.203.187.73]:49570 "EHLO
-	smtp73.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753328AbaJMJOl (ORCPT
+	id S1753469AbaJMJO5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 05:14:57 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:26987 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753340AbaJMJOn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 05:14:41 -0400
-X-Sender-Id: abbotti@mev.co.uk
-Message-ID: <543B97FA.8050207@mev.co.uk>
-Date: Mon, 13 Oct 2014 10:14:34 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Mon, 13 Oct 2014 05:14:43 -0400
+Message-ID: <543B97F0.6040603@huawei.com>
+Date: Mon, 13 Oct 2014 17:14:24 +0800
+From: yinpeijun <yinpeijun@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Chase Southwood <chase.southwood@yahoo.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: comedi: drivers: comedi_bond.c:  Changed from
- using strncat to strlcat
-References: <1413116604-18554-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-In-Reply-To: <1413116604-18554-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Or Gerlitz <ogerlitz@mellanox.com>, <qinchuanyu@huawei.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <lichunhe@huawei.com>, <wangfakai@huawei.com>, <liuyongan@huawei.com>
+Subject: Re: vxlan gro problem ?
+References: <5434FA02.8070608@huawei.com> <543ADBA3.5030305@mellanox.com>
+In-Reply-To: <543ADBA3.5030305@mellanox.com>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.19.133]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/14 13:23, Rickard Strandqvist wrote:
-> Changed from using strncat to strlcat to simplify the code
+On 2014/10/13 3:50, Or Gerlitz wrote:
+> On 10/8/2014 10:46 AM, yinpeijun wrote:
+>> Hi all,
+>>          recently Linux 3.14 has been released and I find the networking has added udp gro and vxlan gro funtion, then I use the redhat 7.0(there is also add this funtion)
+>> to test, I use kernel vxlan module and  create a vxlan device then attach the device to  ovs  bridge , the configure as follow:
+>>         root@25:~$ ip link
+>>          15: vxlan0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1450 qdisc noqueue master ovs-system state UNKNOWN mode DEFAULT
+>>              link/ether be:e1:ae:3d:8b:f2 brd ff:ff:ff:ff:ff:ff
+>>          16: vnet0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc mq master ovs-system state UNKNOWN mode DEFAULT qlen 5000
+>>                 root@25:~$ ovs-vsctl show
+>>          aa1294f3-9952-4393-b2b5-54e9a6eb76ee
+>>          Bridge ovs-vx
+>>              Port ovs-vx
+>>                  Interface ovs-vx
+>>                      type: internal
+>>              Port "vnet0"
+>>                  Interface "vnet0"
+>>              Port "vxlan0"
+>>                  Interface "vxlan0"
+>>          ovs_version: "2.0.2"
+>>
+>> vnet0 is a vm backend device,  and the end is the same configuration. then I use netperf to test throughput  in vm (netperf -H **** -t TCP_STREAM -l 10 -- -m 1460),
+>> the result is 3-4 Gbit/sec, the  improvement  is not obvious,   and I also confused there is no aggregation  packets (length > mtu) in the end vm.   so I want to know what
+>> wrong ?   or how to test the function ?
+>>
 >
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->   drivers/staging/comedi/drivers/comedi_bond.c |    6 ++----
->   1 file changed, 2 insertions(+), 4 deletions(-)
+> As things are set in 3.14 and AFAIK also in RHEL 7.0, for GRO/VXLAN to come into play you need to run over a NIC which supports RX checksum offload too, is this the case?
 >
-> diff --git a/drivers/staging/comedi/drivers/comedi_bond.c b/drivers/staging/comedi/drivers/comedi_bond.c
-> index 8450c99..5d19861 100644
-> --- a/drivers/staging/comedi/drivers/comedi_bond.c
-> +++ b/drivers/staging/comedi/drivers/comedi_bond.c
-> @@ -262,12 +262,10 @@ static int do_dev_config(struct comedi_device *dev, struct comedi_devconfig *it)
->   			{
->   				/* Append dev:subdev to devpriv->name */
->   				char buf[20];
-> -				int left =
-> -				    MAX_BOARD_NAME - strlen(devpriv->name) - 1;
->   				snprintf(buf, sizeof(buf), "%u:%u ",
->   					 bdev->minor, bdev->subdev);
-> -				buf[sizeof(buf) - 1] = 0;
-> -				strncat(devpriv->name, buf, left);
-> +				strlcat(devpriv->name, buf,
-> +					sizeof(devpriv->name));
->   			}
+> Also, the configuration you run with isn't the typical play of VXLAN with OVS... I didn't try it out and this week being out to LPC.
 >
->   		}
+> Did you try the usual track of running OVS VXLAN port?e.g as explained in the Example section of [1]
 >
+> Or.
+>
+> [1] http://community.mellanox.com/docs/DOC-1446
+>
+> Or.
+>
+>
+>
+> .
+>
+thank you for your reply, Gerlitz .
 
-Looks good.  Additionally, the #define MAX_BOARD_NAME could be 
-eliminated as now it is only used to to set the length of the 'name' 
-member in 'struct comedi_bond_private'.
+my test environment use mellanox ConnectX-3 Pro nic ,  as I know the nic support Rx  checksum offload.  but I am not confirm if should  I  do some special configure?
+or the nic driver or firmware need update  ?  also , I have used redhat7.0 ovs vxlan to test with the similar configure as before, but there is also no improvement . 
 
-Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+the nic infomation:
 
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
--=(                          Web: http://www.mev.co.uk/  )=-
+04:00.0 Ethernet controller: Mellanox Technologies MT27520 Family [ConnectX-3 Pro]
+
+root@localhost:~# ethtool -i eth4
+driver: mlx4_en
+version: 2.0(Dec 2011)
+firmware-version:  2.31.5050
+bus-info: 0000:04:00.0
+supports-statistics: yes
+supports-test: yes
+supports-eeprom-access: no
+supports-register-dump: no
+supports-priv-flags: yes
+
+
+
