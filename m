@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343AbaJMC0L (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:26:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45638 "EHLO
+	id S1754650AbaJMC6q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:58:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45632 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753275AbaJMC0H (ORCPT
+	with ESMTP id S1753285AbaJMC0F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:26:07 -0400
+	Sun, 12 Oct 2014 22:26:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
         Daniel Borkmann <dborkman@redhat.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 10/37] packet: handle too big packets for PACKET_V3
-Date: Mon, 13 Oct 2014 04:24:07 +0200
-Message-Id: <20141013022400.730393819@linuxfoundation.org>
+Subject: [PATCH 3.14 01/37] netlink: reset network header before passing to taps
+Date: Mon, 13 Oct 2014 04:23:58 +0200
+Message-Id: <20141013022400.342657247@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022400.286360067@linuxfoundation.org>
 References: <20141013022400.286360067@linuxfoundation.org>
@@ -31,83 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit dc808110bb62b64a448696ecac3938902c92e1ab ]
+[ Upstream commit 4e48ed883c72e78c5a910f8831ffe90c9b18f0ec ]
 
-af_packet can currently overwrite kernel memory by out of bound
-accesses, because it assumed a [new] block can always hold one frame.
+netlink doesn't set any network header offset thus when the skb is
+being passed to tap devices via dev_queue_xmit_nit(), it emits klog
+false positives due to it being unset like:
 
-This is not generally the case, even if most existing tools do it right.
+  ...
+  [  124.990397] protocol 0000 is buggy, dev nlmon0
+  [  124.990411] protocol 0000 is buggy, dev nlmon0
+  ...
 
-This patch clamps too long frames as API permits, and issue a one time
-error on syslog.
+So just reset the network header before passing to the device; for
+packet sockets that just means nothing will change - mac and net
+offset hold the same value just as before.
 
-[  394.357639] tpacket_rcv: packet too big, clamped from 5042 to 3966. macoff=82
-
-In this example, packet header tp_snaplen was set to 3966,
-and tp_len was set to 5042 (skb->len)
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Fixes: f6fb8f100b80 ("af-packet: TPACKET_V3 flexible buffer implementation.")
-Acked-by: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Reported-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/packet/af_packet.c |   17 +++++++++++++++++
- net/packet/internal.h  |    1 +
- 2 files changed, 18 insertions(+)
+ net/netlink/af_netlink.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -635,6 +635,7 @@ static void init_prb_bdqc(struct packet_
- 	p1->tov_in_jiffies = msecs_to_jiffies(p1->retire_blk_tov);
- 	p1->blk_sizeof_priv = req_u->req3.tp_sizeof_priv;
- 
-+	p1->max_frame_len = p1->kblk_size - BLK_PLUS_PRIV(p1->blk_sizeof_priv);
- 	prb_init_ft_ops(p1, req_u);
- 	prb_setup_retire_blk_timer(po, tx_ring);
- 	prb_open_block(p1, pbd);
-@@ -1946,6 +1947,18 @@ static int tpacket_rcv(struct sk_buff *s
- 			if ((int)snaplen < 0)
- 				snaplen = 0;
- 		}
-+	} else if (unlikely(macoff + snaplen >
-+			    GET_PBDQC_FROM_RB(&po->rx_ring)->max_frame_len)) {
-+		u32 nval;
-+
-+		nval = GET_PBDQC_FROM_RB(&po->rx_ring)->max_frame_len - macoff;
-+		pr_err_once("tpacket_rcv: packet too big, clamped from %u to %u. macoff=%u\n",
-+			    snaplen, nval, macoff);
-+		snaplen = nval;
-+		if (unlikely((int)snaplen < 0)) {
-+			snaplen = 0;
-+			macoff = GET_PBDQC_FROM_RB(&po->rx_ring)->max_frame_len;
-+		}
- 	}
- 	spin_lock(&sk->sk_receive_queue.lock);
- 	h.raw = packet_current_rx_frame(po, skb,
-@@ -3779,6 +3792,10 @@ static int packet_set_ring(struct sock *
- 			goto out;
- 		if (unlikely(req->tp_block_size & (PAGE_SIZE - 1)))
- 			goto out;
-+		if (po->tp_version >= TPACKET_V3 &&
-+		    (int)(req->tp_block_size -
-+			  BLK_PLUS_PRIV(req_u->req3.tp_sizeof_priv)) <= 0)
-+			goto out;
- 		if (unlikely(req->tp_frame_size < po->tp_hdrlen +
- 					po->tp_reserve))
- 			goto out;
---- a/net/packet/internal.h
-+++ b/net/packet/internal.h
-@@ -29,6 +29,7 @@ struct tpacket_kbdq_core {
- 	char		*pkblk_start;
- 	char		*pkblk_end;
- 	int		kblk_size;
-+	unsigned int	max_frame_len;
- 	unsigned int	knum_blocks;
- 	uint64_t	knxt_seq_num;
- 	char		*prev;
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -205,7 +205,7 @@ static int __netlink_deliver_tap_skb(str
+ 		nskb->protocol = htons((u16) sk->sk_protocol);
+ 		nskb->pkt_type = netlink_is_kernel(sk) ?
+ 				 PACKET_KERNEL : PACKET_USER;
+-
++		skb_reset_network_header(nskb);
+ 		ret = dev_queue_xmit(nskb);
+ 		if (unlikely(ret > 0))
+ 			ret = net_xmit_errno(ret);
 
 
