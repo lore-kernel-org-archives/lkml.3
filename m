@@ -1,67 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213AbaJMHRm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 03:17:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7056 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752382AbaJMHRk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 03:17:40 -0400
-Message-ID: <543B7C6C.3030309@redhat.com>
-Date: Mon, 13 Oct 2014 03:17:00 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1753329AbaJMHTI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 03:19:08 -0400
+Received: from nat-warsl417-01.aon.at ([195.3.96.119]:58856 "EHLO email.aon.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752846AbaJMHTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 03:19:04 -0400
+X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Oct 2014 03:19:04 EDT
+X-A1Mail-Track-Id: 1413184331:26684:smarthub76:80.123.2.102:1
+Message-ID: <543B7B4A.6060004@a1.net>
+Date: Mon, 13 Oct 2014 09:12:10 +0200
+From: Johann Klammer <klammerj@a1.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: linux-kernel@vger.kernel.org, mgorman@suse.de, chegu_vinod@hp.com,
-        mingo@kernel.org, efault@gmx.de, vincent.guittot@linaro.org
-Subject: Re: [PATCH RFC 5/5] sched,numa: find the preferred nid with complex
- NUMA topology
-References: <1412797050-8903-1-git-send-email-riel@redhat.com> <1412797050-8903-6-git-send-email-riel@redhat.com> <20141012145623.GI3015@worktop>
-In-Reply-To: <20141012145623.GI3015@worktop>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: hverkuil@xs4all.nl
+CC: m.chehab@samsung.com, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: [PATCH] Turn bothersome error into a debug message
+References: <542AE6A6.9000504@a1.net>
+In-Reply-To: <542AE6A6.9000504@a1.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/2014 10:56 AM, Peter Zijlstra wrote:
-> On Wed, Oct 08, 2014 at 03:37:30PM -0400, riel@redhat.com wrote:
->> +static int preferred_group_nid(struct task_struct *p, int nid)
->> +{
->> +	nodemask_t nodes;
->> +	int hops;
->> +
->> +	/* Direct connections between all NUMA nodes. */
->> +	if (sched_numa_topology_type == NUMA_DIRECT)
->> +		return nid;
->> +
->> +	/*
->> +	 * On a system with glueless mesh NUMA topology, group_weight
->> +	 * scores nodes according to the number of NUMA hinting faults on
->> +	 * both the node itself, and on nearby nodes.
->> +	 */
->> +	if (sched_numa_topology_type == NUMA_GLUELESS_MESH) {
->> +		unsigned long score, max_score = 0;
->> +		int node, max_node = nid;
->> +
->> +		hops = sched_domains_numa_levels;
->> +
->> +		for_each_online_node(node) {
->> +			score = group_weight(p, node, hops);
->> +			if (score > max_score) {
->> +				max_score = score;
->> +				max_node = node;
->> +			}
->> +		}
->> +		return max_node;
->> +	}
->
-> This too is O(nr_nodes^2), right?
->
-It is, but I suspect the glueless mesh topologies are
-never larger than on the order of a dozen nodes or so.
+Once again...
 
-Would you prefer me to make the optimization I proposed
-in the other email, or should I just add in a comment
-stating that that optimization could be made if it turns
-out to be necessary?
+On 09/30/2014 07:21 PM, Johann Klammer wrote:
+> Hello,
+> 
+> After updating the kernel to 3.14.15 I am seeing these messages:
+> 
+> [273684.964081] saa7146: saa7146 (0): saa7146_wait_for_debi_done_sleep
+> timed out while waiting for registers getting programmed
+> [273690.020061] saa7146: saa7146 (0): saa7146_wait_for_debi_done_sleep
+> timed out while waiting for registers getting programmed
+> [273695.076082] saa7146: saa7146 (0): saa7146_wait_for_debi_done_sleep
+> timed out while waiting for registers getting programmed
+> [273700.132077] saa7146: saa7146 (0): saa7146_wait_for_debi_done_sleep
+> timed out while waiting for registers getting programmed
+> [273705.188070] saa7146: saa7146 (0): saa7146_wait_for_debi_done_sleep
+> timed out while waiting for registers getting programmed
+> [273710.244066] saa7146: saa7146 (0): saa7146_wait_for_debi_done_sleep
+> timed out while waiting for registers getting programmed
+> [273715.300187] saa7146: saa7146 (0): saa7146_wait_for_debi_done_sleep
+> timed out while waiting for registers getting programmed
+> [273720.356068] saa7146: saa7146 (0): saa7146_wait_for_debi_done_sleep
+> timed out while waiting for registers getting programmed
+> [273725.412188] saa7146: saa7146 (0): saa7146_wait_for_debi_done_sleep
+> timed out while waiting for registers getting programmed
+> [273730.468094] saa7146: saa7146 (0): saa7146_wait_for_debi_done_sleep
+> timed out while waiting for registers getting programmed
+> [273735.524070] saa7146: saa7146 (0): saa7146_wait_for_debi_done_sleep
+> timed out while waiting for registers getting programmed
+> [273740.580176] saa7146: saa7146 (0): saa7146_wait_for_debi_done_sleep
+> timed out while waiting for registers getting programmed
+> 
+> filling up the logs(one about every 5 seconds).
+> 
+> The TV card is a Terratec Cinergy 1200 DVBS (I believe.. it's rather old).
+> 
+> I can not observe any erratic behavior, just those pesky messages...
+> 
+> I see there was an earlier post here in 2008 about a similar
+> problem...(Cinergy 1200 DVB-C... a coincidence?)
+> 
+> What does it mean?
+> Do I need to be worried?
+> 
+> I am using a debian testing on a 32 bit box.
+> The previous kernel was linux-image-3.12-1-486.
+> It did not show those messages, but maybe due to some configure
+> options... I built this one from linux-source-3.14...
+> 
+Answering my own question:
+Other posts suggests that it is not actually an error on cards without a
+CI interface. Here's a patch that turns it into a debug message, so it
+does not clobber the logs.
+
+--- linux-source-3.14/drivers/media/common/saa7146/saa7146_core.c.orig
+2014-07-31 23:51:43.000000000 +0200
++++ linux-source-3.14/drivers/media/common/saa7146/saa7146_core.c
+2014-10-06 18:57:54.000000000 +0200
+@@ -71,7 +71,7 @@ static inline int saa7146_wait_for_debi_
+    if (saa7146_read(dev, MC2) & 2)
+      break;
+    if (err) {
+-     pr_err("%s: %s timed out while waiting for registers getting
+programmed\n",
++     pr_debug("%s: %s timed out while waiting for registers getting
+programmed\n",
+             dev->name, __func__);
+      return -ETIMEDOUT;
+    }
+
