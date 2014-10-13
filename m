@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672AbaJMNtz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 09:49:55 -0400
+	id S1754476AbaJMNsJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 09:48:09 -0400
 Received: from mga01.intel.com ([192.55.52.88]:63833 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754436AbaJMNsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 09:48:10 -0400
+	id S1754433AbaJMNsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 09:48:06 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,710,1406617200"; 
-   d="scan'208";a="613639210"
+   d="scan'208";a="604522086"
 From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
@@ -18,9 +18,9 @@ Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
         Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
         kan.liang@intel.com, adrian.hunter@intel.com, acme@infradead.org,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [PATCH v5 14/20] perf: add ITRACE_START record to indicate that tracing has started
-Date: Mon, 13 Oct 2014 16:45:42 +0300
-Message-Id: <1413207948-28202-15-git-send-email-alexander.shishkin@linux.intel.com>
+Subject: [PATCH v5 06/20] perf: Add AUX record
+Date: Mon, 13 Oct 2014 16:45:34 +0300
+Message-Id: <1413207948-28202-7-git-send-email-alexander.shishkin@linux.intel.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1413207948-28202-1-git-send-email-alexander.shishkin@linux.intel.com>
 References: <1413207948-28202-1-git-send-email-alexander.shishkin@linux.intel.com>
@@ -28,127 +28,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For counters that generate AUX data that is bound to the context of a
-running task, such as instruction tracing, the decoder needs to know
-exactly which task is running when the event is first scheduled in,
-before the first sched_switch. The decoder's need to know this stems
-from the fact that instruction flow trace decoding will almost always
-require program's object code in order to reconstruct said flow and
-for that we need at least its pid/tid in the perf stream.
-
-To single out such instruction tracing pmus, this patch introduces
-ITRACE PMU capability. The reason this is not part of RECORD_AUX
-record is that not all pmus capable of generating AUX data need this,
-and the opposite is *probably* also true.
-
-While sched_switch covers for most cases, there are two problems with it:
-the consumer will need to process events out of order (that is, having
-found RECORD_AUX, it will have to skip forward to the nearest sched_switch
-to figure out which task it was, then go back to the actual trace to
-decode it) and it completely misses the case when the tracing is enabled
-and disabled before sched_switch, for example, via PERF_EVENT_IOC_DISABLE.
+When there's new data in the AUX space, output a record indicating its
+offset and size and a set of flags, such as PERF_AUX_FLAG_TRUNCATED, to
+mean the described data was truncated to fit in the ring buffer.
 
 Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
 ---
- include/linux/perf_event.h      |  4 ++++
- include/uapi/linux/perf_event.h | 11 +++++++++++
- kernel/events/core.c            | 41 +++++++++++++++++++++++++++++++++++++++++
+ include/uapi/linux/perf_event.h | 19 +++++++++++++++++++
+ kernel/events/core.c            | 34 ++++++++++++++++++++++++++++++++++
+ kernel/events/internal.h        |  3 +++
  3 files changed, 56 insertions(+)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index f126eb89e6..282721b2df 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -127,6 +127,9 @@ struct hw_perf_event {
- 			/* for tp_event->class */
- 			struct list_head	tp_list;
- 		};
-+		struct { /* itrace */
-+			int			itrace_started;
-+		};
- #ifdef CONFIG_HAVE_HW_BREAKPOINT
- 		struct { /* breakpoint */
- 			/*
-@@ -174,6 +177,7 @@ struct perf_event;
- #define PERF_PMU_CAP_AUX_NO_SG			0x02
- #define PERF_PMU_CAP_AUX_SW_DOUBLEBUF		0x04
- #define PERF_PMU_CAP_EXCLUSIVE			0x08
-+#define PERF_PMU_CAP_ITRACE			0x10
- 
- /**
-  * struct pmu - generic performance monitoring unit
 diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index c20aaa5af7..a0cafbdc1c 100644
+index 7e0967c0f5..1a46627699 100644
 --- a/include/uapi/linux/perf_event.h
 +++ b/include/uapi/linux/perf_event.h
-@@ -750,6 +750,17 @@ enum perf_event_type {
+@@ -733,6 +733,20 @@ enum perf_event_type {
  	 */
- 	PERF_RECORD_AUX				= 11,
+ 	PERF_RECORD_MMAP2			= 10,
  
 +	/*
-+	 * Indicates that instruction trace has started
++	 * Records that new data landed in the AUX buffer part.
 +	 *
 +	 * struct {
-+	 *	struct perf_event_header	header;
-+	 *	u32				pid;
-+	 *	u32				tid;
++	 * 	struct perf_event_header	header;
++	 *
++	 * 	u64				aux_offset;
++	 * 	u64				aux_size;
++	 *	u64				flags;
++	 * 	struct sample_id		sample_id;
 +	 * };
 +	 */
-+	PERF_RECORD_ITRACE_START		= 12,
++	PERF_RECORD_AUX				= 11,
 +
  	PERF_RECORD_MAX,			/* non-ABI */
  };
  
+@@ -750,6 +764,11 @@ enum perf_callchain_context {
+ 	PERF_CONTEXT_MAX		= (__u64)-4095,
+ };
+ 
++/**
++ * PERF_RECORD_AUX::flags bits
++ */
++#define PERF_AUX_FLAG_TRUNCATED		0x01	/* record was truncated to fit */
++
+ #define PERF_FLAG_FD_NO_GROUP		(1UL << 0)
+ #define PERF_FLAG_FD_OUTPUT		(1UL << 1)
+ #define PERF_FLAG_PID_CGROUP		(1UL << 2) /* pid=cgroup id, per-cpu mode only */
 diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 908dc3e63b..d4057dff27 100644
+index ced9b0819f..46a6217bbe 100644
 --- a/kernel/events/core.c
 +++ b/kernel/events/core.c
-@@ -1723,6 +1723,7 @@ static void perf_set_shadow_time(struct perf_event *event,
- #define MAX_INTERRUPTS (~0ULL)
- 
- static void perf_log_throttle(struct perf_event *event, int enable);
-+static void perf_log_itrace_start(struct perf_event *event);
- 
- static int
- event_sched_in(struct perf_event *event,
-@@ -1757,6 +1758,8 @@ event_sched_in(struct perf_event *event,
- 
- 	perf_pmu_disable(event->pmu);
- 
-+	perf_log_itrace_start(event);
-+
- 	if (event->pmu->add(event, PERF_EF_START)) {
- 		event->state = PERF_EVENT_STATE_INACTIVE;
- 		event->oncpu = -1;
-@@ -5656,6 +5659,44 @@ static void perf_log_throttle(struct perf_event *event, int enable)
- 	perf_output_end(&handle);
+@@ -5581,6 +5581,40 @@ void perf_event_mmap(struct vm_area_struct *vma)
+ 	perf_event_mmap_event(&mmap_event);
  }
  
-+static void perf_log_itrace_start(struct perf_event *event)
++void perf_event_aux_event(struct perf_event *event, unsigned long head,
++			  unsigned long size, u64 flags)
 +{
 +	struct perf_output_handle handle;
 +	struct perf_sample_data sample;
 +	struct perf_aux_event {
-+		struct perf_event_header        header;
-+		u32				pid;
-+		u32				tid;
-+	} rec;
++		struct perf_event_header	header;
++		u64				offset;
++		u64				size;
++		u64				flags;
++	} rec = {
++		.header = {
++			.type = PERF_RECORD_AUX,
++			.misc = 0,
++			.size = sizeof(rec),
++		},
++		.offset		= head,
++		.size		= size,
++		.flags		= flags,
++	};
 +	int ret;
-+
-+	if (event->parent)
-+		event = event->parent;
-+
-+	if (!(event->pmu->capabilities & PERF_PMU_CAP_ITRACE) ||
-+	    event->hw.itrace_started)
-+		return;
-+
-+	event->hw.itrace_started = 1;
-+
-+	rec.header.type	= PERF_RECORD_ITRACE_START;
-+	rec.header.misc	= 0;
-+	rec.header.size	= sizeof(rec);
-+	rec.pid	= perf_event_pid(event, current);
-+	rec.tid	= perf_event_tid(event, current);
 +
 +	perf_event_header__init_id(&rec.header, &sample, event);
 +	ret = perf_output_begin(&handle, event, rec.header.size);
@@ -163,8 +120,22 @@ index 908dc3e63b..d4057dff27 100644
 +}
 +
  /*
-  * Generic event overflow handling, sampling.
+  * IRQ throttle logging
   */
+diff --git a/kernel/events/internal.h b/kernel/events/internal.h
+index 1e476d2f29..e0013084c5 100644
+--- a/kernel/events/internal.h
++++ b/kernel/events/internal.h
+@@ -62,6 +62,9 @@ static inline bool rb_has_aux(struct ring_buffer *rb)
+ 	return !!rb->aux_nr_pages;
+ }
+ 
++void perf_event_aux_event(struct perf_event *event, unsigned long head,
++			  unsigned long size, u64 flags);
++
+ extern void
+ perf_event_header__init_id(struct perf_event_header *header,
+ 			   struct perf_sample_data *data,
 -- 
 2.1.0
 
