@@ -1,112 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600AbaJMVU7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 17:20:59 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:35021 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877AbaJMVU6 (ORCPT
+	id S1753251AbaJMVYR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 17:24:17 -0400
+Received: from mail-oi0-f74.google.com ([209.85.218.74]:54036 "EHLO
+	mail-oi0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752876AbaJMVYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 17:20:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141012192209.GC14147@titan.lakedaemon.net>
-References: <1413110971-17392-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <20141012192209.GC14147@titan.lakedaemon.net>
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Date: Mon, 13 Oct 2014 23:20:35 +0200
-Message-ID: <CAFo99gamwyykRnV0nwQpjp41fJSETKik1e2CVwnHX0DXzOdhzA@mail.gmail.com>
-Subject: Re: [PATCH v2] char: hw_random: core.c: Changed from using strncat to strlcat
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.apana.org.au>,
-        Torsten Duwe <duwe@lst.de>, "Theodore Ts'o" <tytso@mit.edu>,
-        Amit Shah <amit.shah@redhat.com>, Stephen Boyd <sboyd@codeaurora.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Kees Cook <keescook@chromium.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 13 Oct 2014 17:24:13 -0400
+From: Aditya Kali <adityakali@google.com>
+To: tj@kernel.org, lizefan@huawei.com, serge.hallyn@ubuntu.com,
+        luto@amacapital.net, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        mingo@redhat.com
+Cc: containers@lists.linux-foundation.org, jnagal@google.com,
+        Aditya Kali <adityakali@google.com>
+Subject: [PATCHv1 1/8] kernfs: Add API to generate relative kernfs path
+Date: Mon, 13 Oct 2014 14:23:43 -0700
+Message-Id: <1413235430-22944-2-git-send-email-adityakali@google.com>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1413235430-22944-1-git-send-email-adityakali@google.com>
+References: <adityakali-cgroupns>
+ <1413235430-22944-1-git-send-email-adityakali@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-10-12 21:22 GMT+02:00 Jason Cooper <jason@lakedaemon.net>:
-> Rickard,
->
-> On Sun, Oct 12, 2014 at 12:49:31PM +0200, Rickard Strandqvist wrote:
->> Changed from using strncat to strlcat to simplify the code
->
-> I'd like to see a little more explicit discussion here.  As Guenter got
-> caught up in the mis-understanding, I doubt he'd be the only one.  I
-> think it's worth spelling out that the old code prevents overflowing the
-> buffer 'buf' of size PAGE_SIZE.  And that strlcat() does that internally
-> allowing this code to be more readable.
->
-> It should also be mentioned that the final strlen(buf) is safe because
-> every operation on buf will insert a NULL terminator within the
-> buffers limit.
->
-> thx,
->
-> Jason.
->
->> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
->> ---
->>  drivers/char/hw_random/core.c |   12 ++++--------
->>  1 file changed, 4 insertions(+), 8 deletions(-)
->>
->> diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
->> index aa30a25..1500cfd 100644
->> --- a/drivers/char/hw_random/core.c
->> +++ b/drivers/char/hw_random/core.c
->> @@ -281,7 +281,6 @@ static ssize_t hwrng_attr_available_show(struct device *dev,
->>                                        char *buf)
->>  {
->>       int err;
->> -     ssize_t ret = 0;
->>       struct hwrng *rng;
->>
->>       err = mutex_lock_interruptible(&rng_mutex);
->> @@ -289,16 +288,13 @@ static ssize_t hwrng_attr_available_show(struct device *dev,
->>               return -ERESTARTSYS;
->>       buf[0] = '\0';
->>       list_for_each_entry(rng, &rng_list, list) {
->> -             strncat(buf, rng->name, PAGE_SIZE - ret - 1);
->> -             ret += strlen(rng->name);
->> -             strncat(buf, " ", PAGE_SIZE - ret - 1);
->> -             ret++;
->> +             strlcat(buf, rng->name, PAGE_SIZE);
->> +             strlcat(buf, " ", PAGE_SIZE);
->>       }
->> -     strncat(buf, "\n", PAGE_SIZE - ret - 1);
->> -     ret++;
->> +     strlcat(buf, "\n", PAGE_SIZE);
->>       mutex_unlock(&rng_mutex);
->>
->> -     return ret;
->> +     return strlen(buf);
->>  }
->>
->>  static DEVICE_ATTR(rng_current, S_IRUGO | S_IWUSR,
->> --
->> 1.7.10.4
+The new function kernfs_path_from_node() generates and returns
+kernfs path of a given kernfs_node relative to a given parent
+kernfs_node.
 
+Signed-off-by: Aditya Kali <adityakali@google.com>
+---
+ fs/kernfs/dir.c        | 53 ++++++++++++++++++++++++++++++++++++++++----------
+ include/linux/kernfs.h |  3 +++
+ 2 files changed, 46 insertions(+), 10 deletions(-)
 
-Hi
+diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
+index a693f5b..8655485 100644
+--- a/fs/kernfs/dir.c
++++ b/fs/kernfs/dir.c
+@@ -44,14 +44,24 @@ static int kernfs_name_locked(struct kernfs_node *kn, char *buf, size_t buflen)
+ 	return strlcpy(buf, kn->parent ? kn->name : "/", buflen);
+ }
+ 
+-static char * __must_check kernfs_path_locked(struct kernfs_node *kn, char *buf,
+-					      size_t buflen)
++static char * __must_check kernfs_path_from_node_locked(
++	struct kernfs_node *kn_root,
++	struct kernfs_node *kn,
++	char *buf,
++	size_t buflen)
+ {
+ 	char *p = buf + buflen;
+ 	int len;
+ 
++	BUG_ON(!buflen);
++
+ 	*--p = '\0';
+ 
++	if (kn == kn_root) {
++		*--p = '/';
++		return p;
++	}
++
+ 	do {
+ 		len = strlen(kn->name);
+ 		if (p - buf < len + 1) {
+@@ -63,6 +73,8 @@ static char * __must_check kernfs_path_locked(struct kernfs_node *kn, char *buf,
+ 		memcpy(p, kn->name, len);
+ 		*--p = '/';
+ 		kn = kn->parent;
++		if (kn == kn_root)
++			break;
+ 	} while (kn && kn->parent);
+ 
+ 	return p;
+@@ -92,26 +104,47 @@ int kernfs_name(struct kernfs_node *kn, char *buf, size_t buflen)
+ }
+ 
+ /**
+- * kernfs_path - build full path of a given node
++ * kernfs_path_from_node - build path of node @kn relative to @kn_root.
++ * @kn_root: parent kernfs_node relative to which we need to build the path
+  * @kn: kernfs_node of interest
+- * @buf: buffer to copy @kn's name into
++ * @buf: buffer to copy @kn's path into
+  * @buflen: size of @buf
+  *
+- * Builds and returns the full path of @kn in @buf of @buflen bytes.  The
+- * path is built from the end of @buf so the returned pointer usually
++ * Builds and returns @kn's path relative to @kn_root. @kn_root is expected to
++ * be parent of @kn at some level. If this is not true or if @kn_root is NULL,
++ * then full path of @kn is returned.
++ * The path is built from the end of @buf so the returned pointer usually
+  * doesn't match @buf.  If @buf isn't long enough, @buf is nul terminated
+  * and %NULL is returned.
+  */
+-char *kernfs_path(struct kernfs_node *kn, char *buf, size_t buflen)
++char *kernfs_path_from_node(struct kernfs_node *kn_root, struct kernfs_node *kn,
++			    char *buf, size_t buflen)
+ {
+ 	unsigned long flags;
+ 	char *p;
+ 
+ 	spin_lock_irqsave(&kernfs_rename_lock, flags);
+-	p = kernfs_path_locked(kn, buf, buflen);
++	p = kernfs_path_from_node_locked(kn_root, kn, buf, buflen);
+ 	spin_unlock_irqrestore(&kernfs_rename_lock, flags);
+ 	return p;
+ }
++EXPORT_SYMBOL_GPL(kernfs_path_from_node);
++
++/**
++ * kernfs_path - build full path of a given node
++ * @kn: kernfs_node of interest
++ * @buf: buffer to copy @kn's name into
++ * @buflen: size of @buf
++ *
++ * Builds and returns the full path of @kn in @buf of @buflen bytes.  The
++ * path is built from the end of @buf so the returned pointer usually
++ * doesn't match @buf.  If @buf isn't long enough, @buf is nul terminated
++ * and %NULL is returned.
++ */
++char *kernfs_path(struct kernfs_node *kn, char *buf, size_t buflen)
++{
++	return kernfs_path_from_node(NULL, kn, buf, buflen);
++}
+ EXPORT_SYMBOL_GPL(kernfs_path);
+ 
+ /**
+@@ -145,8 +178,8 @@ void pr_cont_kernfs_path(struct kernfs_node *kn)
+ 
+ 	spin_lock_irqsave(&kernfs_rename_lock, flags);
+ 
+-	p = kernfs_path_locked(kn, kernfs_pr_cont_buf,
+-			       sizeof(kernfs_pr_cont_buf));
++	p = kernfs_path_from_node_locked(NULL, kn, kernfs_pr_cont_buf,
++					 sizeof(kernfs_pr_cont_buf));
+ 	if (p)
+ 		pr_cont("%s", p);
+ 	else
+diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
+index 30faf79..3c2be75 100644
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -258,6 +258,9 @@ static inline bool kernfs_ns_enabled(struct kernfs_node *kn)
+ }
+ 
+ int kernfs_name(struct kernfs_node *kn, char *buf, size_t buflen);
++char * __must_check kernfs_path_from_node(struct kernfs_node *root_kn,
++					  struct kernfs_node *kn, char *buf,
++					  size_t buflen);
+ char * __must_check kernfs_path(struct kernfs_node *kn, char *buf,
+ 				size_t buflen);
+ void pr_cont_kernfs_name(struct kernfs_node *kn);
+-- 
+2.1.0.rc2.206.gedb03e5
 
-Do not know if I understand this right, you want to explain strlcat
-function better then ..?
-
-All these features are more or less stupid really.
-You can also read what Linus thinks about this here.
-
-https://plus.google.com/111049168280159033135/posts/1amLbuhWbh5
-
-
-But while I think this is something you have to learn, rather than
-typing it in git comment.
-
-But sure, it's just what i think :-)
-Come with a suggestion what you want I add it...
-
-
-Kind regards
-Rickard Strandqvist
