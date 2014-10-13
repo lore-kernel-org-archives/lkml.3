@@ -1,171 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755042AbaJMNxl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 09:53:41 -0400
-Received: from mga03.intel.com ([134.134.136.65]:20734 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753356AbaJMNrS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 09:47:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,710,1406617200"; 
-   d="scan'208";a="588023999"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com, adrian.hunter@intel.com, acme@infradead.org,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [PATCH v5 08/20] perf: Support overwrite mode for AUX area
-Date: Mon, 13 Oct 2014 16:45:36 +0300
-Message-Id: <1413207948-28202-9-git-send-email-alexander.shishkin@linux.intel.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1413207948-28202-1-git-send-email-alexander.shishkin@linux.intel.com>
-References: <1413207948-28202-1-git-send-email-alexander.shishkin@linux.intel.com>
+	id S1754022AbaJMNrF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 09:47:05 -0400
+Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:41226
+	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753872AbaJMNrA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 09:47:00 -0400
+Date: Mon, 13 Oct 2014 15:46:59 +0200
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, eparis@redhat.com,
+        sgrubb@redhat.com, aviro@redhat.com, pmoore@redhat.com,
+        arozansk@redhat.com, ebiederm@xmission.com, serge@hallyn.com
+Subject: Re: [PATCH V5 13/13] Documentation: add a section for /proc/<pid>/ns/
+Message-ID: <20141013134659.GL24703@mail.hallyn.com>
+References: <cover.1412543112.git.rgb@redhat.com>
+ <982503bc4e4c24cbdebd111b27191ed5bee75572.1412543112.git.rgb@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <982503bc4e4c24cbdebd111b27191ed5bee75572.1412543112.git.rgb@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds support for overwrite mode in the AUX area, which means "keep
-collecting data till you're stopped", turning AUX area into a circular
-buffer, where new data overwrites old data. It does not depend on data
-buffer's overwrite mode, so that it doesn't lose sideband data that is
-instrumental for processing AUX data.
+Quoting Richard Guy Briggs (rgb@redhat.com):
+> ---
 
-Overwrite mode is enabled at mapping AUX area read only. Even though
-aux_tail in the buffer's user page might be user writable, it will be
-ignored in this mode.
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 
-A PERF_RECORD_AUX with PERF_AUX_FLAG_OVERWRITE set is written to the perf
-data stream every time an event writes new data to the AUX area. The pmu
-driver might not be able to infer the exact beginning of the new data in
-each snapshot, some drivers will only provide the tail, which is
-aux_offset + aux_size in the AUX record. Consumer has to be able to tell
-the new data from the old one, for example, by means of time stamps if
-such are provided in the trace.
+(some nitpicking below)
 
-Consumer is also responsible for disabling any events that might write
-to the AUX area (thus potentially racing with the consumer) before
-collecting the data.
+Thanks, Richard.  IMO this patchset is great at the moment.  Now if I
+checkpoint a container, migrate it to another machine, and restart it
+there, the serial numbers will no longer match, but as the creations are
+all logged, userspace can track the changed snum, so I don't believe
+that is a problem.  (Pretty sure we've discussed that before, mostly
+mentioning it here to think through it myself)
 
-Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
----
- include/uapi/linux/perf_event.h |  1 +
- kernel/events/internal.h        |  1 +
- kernel/events/ring_buffer.c     | 48 ++++++++++++++++++++++++++++-------------
- 3 files changed, 35 insertions(+), 15 deletions(-)
+>  Documentation/filesystems/proc.txt |   16 ++++++++++++++++
+>  1 files changed, 16 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
+> index ddc531a..c4bfd6f 100644
+> --- a/Documentation/filesystems/proc.txt
+> +++ b/Documentation/filesystems/proc.txt
+> @@ -42,6 +42,7 @@ Table of Contents
+>    3.6	/proc/<pid>/comm  & /proc/<pid>/task/<tid>/comm
+>    3.7   /proc/<pid>/task/<tid>/children - Information about task children
+>    3.8   /proc/<pid>/fdinfo/<fd> - Information about opened file
+> +  3.9   /proc/<pid>/ns/<ns>{,_snum} - Information about process namespaces
+>  
+>    4	Configuring procfs
+>    4.1	Mount options
+> @@ -1744,6 +1745,21 @@ pair provide additional information particular to the objects they represent.
+>  	optional and may be omitted if no marks created yet.
+>  
+>  
+> +3.9	/proc/<pid>/ns/<nstype>{,_snum} - Information about process namespaces
+> +--------------------------------------------------------------------------
+> +These files provides information about the namespaces within which the process
 
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 1a46627699..a6bd31f5e0 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -768,6 +768,7 @@ enum perf_callchain_context {
-  * PERF_RECORD_AUX::flags bits
-  */
- #define PERF_AUX_FLAG_TRUNCATED		0x01	/* record was truncated to fit */
-+#define PERF_AUX_FLAG_OVERWRITE		0x02	/* snapshot from overwrite mode */
- 
- #define PERF_FLAG_FD_NO_GROUP		(1UL << 0)
- #define PERF_FLAG_FD_OUTPUT		(1UL << 1)
-diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-index 68bbf86d8f..b1ed80f87d 100644
---- a/kernel/events/internal.h
-+++ b/kernel/events/internal.h
-@@ -40,6 +40,7 @@ struct ring_buffer {
- 	local_t				aux_nest;
- 	unsigned long			aux_pgoff;
- 	int				aux_nr_pages;
-+	int				aux_overwrite;
- 	atomic_t			aux_mmap_count;
- 	unsigned long			aux_mmap_locked;
- 	void				(*free_aux)(void *);
-diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
-index f686df9d1d..d0373c6d30 100644
---- a/kernel/events/ring_buffer.c
-+++ b/kernel/events/ring_buffer.c
-@@ -282,26 +282,33 @@ void *perf_aux_output_begin(struct perf_output_handle *handle,
- 		goto err_put;
- 
- 	aux_head = local_read(&rb->aux_head);
--	aux_tail = ACCESS_ONCE(rb->user_page->aux_tail);
- 
- 	handle->rb = rb;
- 	handle->event = event;
- 	handle->head = aux_head;
--	if (aux_head - aux_tail < perf_aux_size(rb))
--		handle->size = CIRC_SPACE(aux_head, aux_tail, perf_aux_size(rb));
--	else
--		handle->size = 0;
-+	handle->size = 0;
- 
- 	/*
--	 * handle->size computation depends on aux_tail load; this forms a
--	 * control dependency barrier separating aux_tail load from aux data
--	 * store that will be enabled on successful return
-+	 * In overwrite mode, AUX data stores do not depend on aux_tail,
-+	 * therefore (A) control dependency barrier does not exist. The
-+	 * (B) <-> (C) ordering is still observed by the pmu driver.
- 	 */
--	if (!handle->size) { /* A, matches D */
--		event->pending_disable = 1;
--		perf_output_wakeup(handle);
--		local_set(&rb->aux_nest, 0);
--		goto err_put;
-+	if (!rb->aux_overwrite) {
-+		aux_tail = ACCESS_ONCE(rb->user_page->aux_tail);
-+		if (aux_head - aux_tail < perf_aux_size(rb))
-+			handle->size = CIRC_SPACE(aux_head, aux_tail, perf_aux_size(rb));
-+
-+		/*
-+		 * handle->size computation depends on aux_tail load; this forms a
-+		 * control dependency barrier separating aux_tail load from aux data
-+		 * store that will be enabled on successful return
-+		 */
-+		if (!handle->size) { /* A, matches D */
-+			event->pending_disable = 1;
-+			perf_output_wakeup(handle);
-+			local_set(&rb->aux_nest, 0);
-+			goto err_put;
-+		}
- 	}
- 
- 	return handle->rb->aux_priv;
-@@ -326,13 +333,22 @@ void perf_aux_output_end(struct perf_output_handle *handle, unsigned long size,
- 			 bool truncated)
- {
- 	struct ring_buffer *rb = handle->rb;
--	unsigned long aux_head = local_read(&rb->aux_head);
-+	unsigned long aux_head;
- 	u64 flags = 0;
- 
- 	if (truncated)
- 		flags |= PERF_AUX_FLAG_TRUNCATED;
- 
--	local_add(size, &rb->aux_head);
-+	/* in overwrite mode, driver provides aux_head via handle */
-+	if (rb->aux_overwrite) {
-+		flags |= PERF_AUX_FLAG_OVERWRITE;
-+
-+		aux_head = handle->head;
-+		local_set(&rb->aux_head, aux_head);
-+	} else {
-+		aux_head = local_read(&rb->aux_head);
-+		local_add(size, &rb->aux_head);
-+	}
- 
- 	if (size || flags) {
- 		/*
-@@ -474,6 +490,8 @@ int rb_alloc_aux(struct ring_buffer *rb, struct perf_event *event,
- 	 */
- 	kref_init(&rb->aux_refcount);
- 
-+	rb->aux_overwrite = overwrite;
-+
- out:
- 	if (!ret)
- 		rb->aux_pgoff = pgoff;
--- 
-2.1.0
+s/provides/provide/
 
+> +is contained.  The files named only with the namespace type <nstype> contain a
+> +link that lists the containing namespace' inode number in its proc filesystem.
+
+s/'/'s/
+
+... Maybe add "And which can be used with setns(2)."
+
+> +The files with suffix _snum contain a link that lists the containing
+> +namespace' instance serial number, unique per kernel since boot.  The
+
+s/'/'s/
+
+> +namespace types are self-describing.
+> +
+> +The output format of the inode links is:
+> +	<nstype>:[<inode_number>]
+> +The output format of the serial number links is:
+> +	<nstype>_snum:[<serial_number>]
+> +
+> +
+>  ------------------------------------------------------------------------------
+>  Configuring procfs
+>  ------------------------------------------------------------------------------
+> -- 
+> 1.7.1
