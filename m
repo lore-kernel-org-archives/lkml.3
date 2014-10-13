@@ -1,56 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753959AbaJMMm2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 08:42:28 -0400
-Received: from smtp97.iad3a.emailsrvr.com ([173.203.187.97]:39739 "EHLO
-	smtp97.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753828AbaJMMlr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 08:41:47 -0400
-X-Sender-Id: abbotti@mev.co.uk
-From: Ian Abbott <abbotti@mev.co.uk>
-To: <driverdev-devel@linuxdriverproject.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/3] staging: comedi: cb_pcimdas: update driver comment
-Date: Mon, 13 Oct 2014 13:41:21 +0100
-Message-Id: <1413204082-14757-3-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1413204082-14757-1-git-send-email-abbotti@mev.co.uk>
-References: <1413204082-14757-1-git-send-email-abbotti@mev.co.uk>
+	id S1753983AbaJMMoT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 08:44:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54151 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753464AbaJMMoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 08:44:18 -0400
+Date: Mon, 13 Oct 2014 14:44:02 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Don Zickus <dzickus@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tools: perf: util: sort.c:  Changed from using strncat
+ to strlcat
+Message-ID: <20141013124401.GA5888@krava.redhat.com>
+References: <1413146435-22202-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1413146435-22202-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Comedi driver comment mentions a couple of manual configuration
-options, but manual configuration via the COMEDI_DEVCONFIG ioctl and
-comedi "attach" handler is no longer supported by this driver.  Update
-the comment appropriately.
+On Sun, Oct 12, 2014 at 10:40:35PM +0200, Rickard Strandqvist wrote:
+> Changed from using strncat to strlcat to simplify the code
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  tools/perf/util/sort.c |   12 ++++--------
+>  1 file changed, 4 insertions(+), 8 deletions(-)
+> 
+> diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+> index 14e5a03..6e242f0 100644
+> --- a/tools/perf/util/sort.c
+> +++ b/tools/perf/util/sort.c
+> @@ -759,8 +759,7 @@ static int hist_entry__snoop_snprintf(struct hist_entry *he, char *bf,
+>  				    size_t size, unsigned int width)
+>  {
+>  	char out[64];
+> -	size_t sz = sizeof(out) - 1; /* -1 for null termination */
+> -	size_t i, l = 0;
+> +	size_t i;
+>  	u64 m = PERF_MEM_SNOOP_NA;
+>  
+>  	out[0] = '\0';
+> @@ -771,12 +770,9 @@ static int hist_entry__snoop_snprintf(struct hist_entry *he, char *bf,
+>  	for (i = 0; m && i < NUM_SNOOP_ACCESS; i++, m >>= 1) {
+>  		if (!(m & 0x1))
+>  			continue;
+> -		if (l) {
+> -			strcat(out, " or ");
+> -			l += 4;
+> -		}
+> -		strncat(out, snoop_access[i], sz - l);
+> -		l += strlen(snoop_access[i]);
+> +		if (*out != '\0')
+> +			strlcat(out, " or ", sizeof(out));
+> +		strlcat(out, snoop_access[i], sizeof(out));
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
----
- drivers/staging/comedi/drivers/cb_pcimdas.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+I've got compile error..
 
-diff --git a/drivers/staging/comedi/drivers/cb_pcimdas.c b/drivers/staging/comedi/drivers/cb_pcimdas.c
-index 804b3c3..433941a 100644
---- a/drivers/staging/comedi/drivers/cb_pcimdas.c
-+++ b/drivers/staging/comedi/drivers/cb_pcimdas.c
-@@ -27,8 +27,10 @@
-  * Written to support the PCIM-DAS1602/16 on a 2.4 series kernel.
-  *
-  * Configuration Options:
-- *     [0] - PCI bus number
-- *     [1] - PCI slot number
-+ *   none
-+ *
-+ * Manual configuration of PCI cards is not supported; they are configured
-+ * automatically.
-  *
-  * Developed from cb_pcidas and skel by Richard Bytheway (mocelet@sucs.org).
-  * Only supports DIO, AO and simple AI in it's present form.
--- 
-2.1.1
+[jolsa@krava perf]$ make JOBS=1
+  BUILD:   Doing 'make -j1' parallel build
+  CC       perf.o
+  CC       builtin-annotate.o
+  CC       builtin-bench.o
+  CC       bench/sched-messaging.o
+  CC       bench/sched-pipe.o
+  CC       util/sort.o
+util/sort.c: In function ‘hist_entry__snoop_snprintf’:
+util/sort.c:778:4: error: implicit declaration of function ‘strlcat’ [-Werror=implicit-function-declaration]
+    strlcat(out, " or ", sizeof(out));
+    ^
+util/sort.c:778:4: error: nested extern declaration of ‘strlcat’ [-Werror=nested-externs]
+cc1: all warnings being treated as errors
+make[1]: *** [util/sort.o] Error 1
+make: *** [all] Error 2
 
+jirka
