@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146AbaJMFtO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 01:49:14 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:52464 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753075AbaJMFtL (ORCPT
+	id S1753192AbaJMFtV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 01:49:21 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:49682 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753075AbaJMFtR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 01:49:11 -0400
+	Mon, 13 Oct 2014 01:49:17 -0400
 From: Gyungoh Yoo <gyungoh@gmail.com>
 X-Google-Original-From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
 To: sameo@linux.intel.com, lee.jones@linaro.org, jg1.han@samsung.com,
@@ -19,9 +19,9 @@ Cc: jack.yoo@skyworksinc.com, linux-kernel@vger.kernel.org,
         shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
         trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
         jic23@kernel.org
-Subject: [RESUBMIT PATCH v4 4/8] devicetree: backlight: Add new SKY81452 backlight binding
-Date: Mon, 13 Oct 2014 14:47:38 +0900
-Message-Id: <1413179262-27636-5-git-send-email-jack.yoo@skyworksinc.com>
+Subject: [RESUBMIT PATCH v4 5/8] devicetree: Add vendor prefix for Skyworks Solutions, Inc.
+Date: Mon, 13 Oct 2014 14:47:39 +0900
+Message-Id: <1413179262-27636-6-git-send-email-jack.yoo@skyworksinc.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1413179262-27636-1-git-send-email-jack.yoo@skyworksinc.com>
 References: <1412657745-7812-1-git-send-email-jack.yoo@skyworksinc.com>
@@ -39,42 +39,23 @@ Changes v3:
 Nothing
 
 Changes v2:
-Added reg attribute for I2C slave address
+Added vendor prefix for Skyworks Solutions, Inc.
 
- .../video/backlight/sky81452-backlight.txt         | 24 ++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
+ Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt b/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
-new file mode 100644
-index 0000000..2c2d947
---- /dev/null
-+++ b/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
-@@ -0,0 +1,24 @@
-+SKY81452-backlight bindings
-+
-+Required properties:
-+- compatible		: Must be "skyworks,sky81452-backlight"
-+
-+Optional properties:
-+- name			: Name of backlight device. Default is 'lcd-backlight'.
-+- gpio-enable		: GPIO to use to EN pin.
-+- enable		: Enable mask for current sink channel 1 to 6.
-+- ignore-pwm		: Ignore both PWM input
-+- dpwm-mode		: Enable DPWM dimming mode, otherwise Analog dimming mode
-+- phase-shift		: Enable phase shift mode
-+- ovp-level		: Over-voltage protection level. Should be between 14 or 28V.
-+- short-detection-threshold	: It should be one of 4, 5, 6 and 7V.
-+- boost-current-limit	: It should be one of 800, 1100 and 1500mA.
-+
-+Example:
-+
-+	backlight {
-+		compatible = "skyworks,sky81452-backlight";
-+		name = "pwm-backlight";
-+		enable = <0x3F>;
-+		ignore-pwm;
-+	};
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index f67e3f8..534a583 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -136,6 +136,7 @@ sii	Seiko Instruments, Inc.
+ silergy	Silergy Corp.
+ sirf	SiRF Technology, Inc.
+ sitronix	Sitronix Technology Corporation
++skyworks	Skyworks Solutions, Inc.
+ smsc	Standard Microsystems Corporation
+ snps 	Synopsys, Inc.
+ solidrun	SolidRun
 -- 
 1.9.1
 
