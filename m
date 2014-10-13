@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754990AbaJMCgO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:36:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46125 "EHLO
+	id S1755218AbaJMCgQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:36:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46088 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754651AbaJMCaI (ORCPT
+	with ESMTP id S1754639AbaJMCaC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:30:08 -0400
+	Sun, 12 Oct 2014 22:30:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 3.17 12/25] PCI: pciehp: Fix wait time in timeout message
-Date: Mon, 13 Oct 2014 04:25:05 +0200
-Message-Id: <20141013022454.819586920@linuxfoundation.org>
+        "Peter Zijlstra (Intel)" <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 3.17 10/25] x86: Tell irq work about self IPI support
+Date: Mon, 13 Oct 2014 04:25:03 +0200
+Message-Id: <20141013022454.727690492@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022454.289398272@linuxfoundation.org>
 References: <20141013022454.289398272@linuxfoundation.org>
@@ -28,52 +32,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-commit d433889cd5a0933fbd90f1e65bff5a8d7963cc52 upstream.
+commit 3010279f0fc36f0388872203e63ca49912f648fd upstream.
 
-When we warned about a timeout on a hotplug command, we previously printed
-the time between calls to pcie_write_cmd(), without accounting for any time
-spent actually waiting.  Consider this sequence:
+x86 supports irq work self-IPIs when local apic is available. This is
+partly known on runtime so lets implement arch_irq_work_has_interrupt()
+accordingly.
 
-  pcie_write_cmd
-    write SLTCTL
-    cmd_started = jiffies          # T1
+This should be safely called after setup_arch().
 
-  pcie_write_cmd
-    pcie_wait_cmd
-      now = jiffies                # T2
-      wait_event_timeout           # we may wait here
-      if (timeout)
-        ctrl_info("Timeout on command issued %u msec ago",
-                  jiffies_to_msecs(now - cmd_started))
-
-We previously printed (T2 - T1), but that doesn't include the time spent in
-wait_event_timeout().
-
-Fix this by using the current jiffies value, not the one cached before
-calling wait_event_timeout().
-
-[bhelgaas: changelog, use current jiffies instead of adding timeout]
-Fixes: 40b960831cfa ("PCI: pciehp: Compute timeout from hotplug command start time")
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/hotplug/pciehp_hpc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/include/asm/Kbuild     |    1 -
+ arch/x86/include/asm/irq_work.h |   11 +++++++++++
+ arch/x86/kernel/irq_work.c      |    2 +-
+ 3 files changed, 12 insertions(+), 2 deletions(-)
 
---- a/drivers/pci/hotplug/pciehp_hpc.c
-+++ b/drivers/pci/hotplug/pciehp_hpc.c
-@@ -173,7 +173,7 @@ static void pcie_wait_cmd(struct control
- 	if (!rc)
- 		ctrl_info(ctrl, "Timeout on hotplug command %#010x (issued %u msec ago)\n",
- 			  ctrl->slot_ctrl,
--			  jiffies_to_msecs(now - ctrl->cmd_started));
-+			  jiffies_to_msecs(jiffies - ctrl->cmd_started));
- }
+--- a/arch/x86/include/asm/Kbuild
++++ b/arch/x86/include/asm/Kbuild
+@@ -7,6 +7,5 @@ genhdr-y += unistd_x32.h
+ generic-y += clkdev.h
+ generic-y += cputime.h
+ generic-y += early_ioremap.h
+-generic-y += irq_work.h
+ generic-y += mcs_spinlock.h
+ generic-y += scatterlist.h
+--- /dev/null
++++ b/arch/x86/include/asm/irq_work.h
+@@ -0,0 +1,11 @@
++#ifndef _ASM_IRQ_WORK_H
++#define _ASM_IRQ_WORK_H
++
++#include <asm/processor.h>
++
++static inline bool arch_irq_work_has_interrupt(void)
++{
++	return cpu_has_apic;
++}
++
++#endif /* _ASM_IRQ_WORK_H */
+--- a/arch/x86/kernel/irq_work.c
++++ b/arch/x86/kernel/irq_work.c
+@@ -41,7 +41,7 @@ __visible void smp_trace_irq_work_interr
+ void arch_irq_work_raise(void)
+ {
+ #ifdef CONFIG_X86_LOCAL_APIC
+-	if (!cpu_has_apic)
++	if (!arch_irq_work_has_interrupt())
+ 		return;
  
- /**
+ 	apic->send_IPI_self(IRQ_WORK_VECTOR);
 
 
