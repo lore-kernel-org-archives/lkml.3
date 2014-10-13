@@ -1,105 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752659AbaJMTkY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 15:40:24 -0400
-Received: from forward1h.mail.yandex.net ([84.201.187.146]:33669 "EHLO
-	forward1h.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751170AbaJMTkP (ORCPT
+	id S1752580AbaJMTvs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 15:51:48 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:52121 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751058AbaJMTvq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 15:40:15 -0400
-X-Greylist: delayed 464 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Oct 2014 15:40:15 EDT
-From: Erich Cordoba <erich.cordoba@yandex.com>
-Envelope-From: erich-cordoba@yandex.com
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
-In-Reply-To: <20141013032708.GB26646@kroah.com>
-References: <1413167372-5568-1-git-send-email-erich.cordoba@yandex.com> <20141013032708.GB26646@kroah.com>
-Subject: Re: [PATCH] staging: wlan-ng: Renamed prism2_fragmenthreshold in prism2mib.c
+	Mon, 13 Oct 2014 15:51:46 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: "Joe.C" <yingjoe.chen@mediatek.com>, Mark Rutland <Mark.Rutland@arm.com>,
+        "arm@kernel.org" <arm@kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "srv_heupstream@mediatek.com" <srv_heupstream@mediatek.com>,
+        "yingjoe.chen@gmail.com" <yingjoe.chen@gmail.com>,
+        "hc.yen@mediatek.com" <hc.yen@mediatek.com>,
+        "eddie.huang@mediatek.com" <eddie.huang@mediatek.com>,
+        "nathan.chung@mediatek.com" <nathan.chung@mediatek.com>,
+        "yh.chen@mediatek.com" <yh.chen@mediatek.com>,
+        Sascha Hauer <kernel@pengutronix.de>, Olof Johansson <olof@lixom.net>,
+        Pawel Moll <Pawel.Moll@arm.com>, Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Matt Porter <mporter@linaro.org>, Marc Carino <marc.ceeeee@gmail.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Sricharan R <r.sricharan@ti.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 3/7] irqchip: gic: Support hierarchy irq domain.
+Date: Mon, 13 Oct 2014 21:51:18 +0200
+Message-ID: <4904191.xcTM1nFGH7@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <543BC138.3010109@arm.com>
+References: <1412864980-20273-1-git-send-email-yingjoe.chen@mediatek.com> <1413196996.23455.9.camel@mtksdaap41> <543BC138.3010109@arm.com>
 MIME-Version: 1.0
-Message-Id: <527621413228747@web17h.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Mon, 13 Oct 2014 13:32:27 -0600
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:jAzGNtAHrm6/GpV/A74LccG4E77avsFkZ+FXkESKGnx
+ XK4hchTxjiOK+vbAQqZz0yty3y1AJK8K0qIPspvxzSPuv9dIhT
+ JDe843a2YqvuQfU+iuSen5PPy368B4bVrjw6Ez0yDOsLDB4Hcs
+ wiE5eM3Vu44x1P9Zu00mMlc8M3Hds4EvATld6d+ngEMIAHyG99
+ zQEV1X7oUdBQt57cr3ixGtH6NZfjy/sFwZ+amH5Wdkx5IF+m1w
+ TLGRvE3fWkWqHj6lp8avdNKBwaQ66EZiosJivfvGfSfSq7DhXN
+ c7hnLM9L00rjQ7W3M5djA7OnBYIy7nAx4Xkj6XCFcxuz9g/z1p
+ /j0/aUazxscrDrN/QL9w=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The idea was to reduce the length of the line (to 80 characters) by renaming this function. 
-But, now reviewing the result I can see that the name of the function has lost meaning. 
-Please ignore this patch. 
+On Monday 13 October 2014 13:10:32 Marc Zyngier wrote:
+> On 13/10/14 11:43, Joe.C wrote:
+> > On Thu, 2014-10-09 at 17:59 +0100, Marc Zyngier wrote:
+> >> On 09/10/14 15:29, Joe.C wrote
+> >>> @@ -952,7 +988,11 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
+> >>>  
+> >>>     gic_irqs -= hwirq_base; /* calculate # of irqs to allocate */
+> >>>  
+> >>> -   if (of_property_read_u32(node, "arm,routable-irqs",
+> >>> +   if (IS_ENABLED(CONFIG_IRQ_DOMAIN_HIERARCHY) &&
+> >>> +           of_find_property(node, "arm,irq-domain-hierarchy", NULL))
+> >>> +           gic->domain = irq_domain_add_linear(node, gic_irqs,
+> >>> +                                   &gic_irq_domain_hierarchy_ops, gic);
+> >>
+> >> I really think that looking for a property is the wrong thing to do. If
+> >> "node" is non-NULL, then we're pretty sure that we're initializing from
+> >> DT, and that a pure linear domain should be the right thing, leaving the
+> >> legacy stuff for the few non-DT platforms that are still around.
+> >>
+> >> Thanks,
+> >>
+> >>      M.
+> > 
+> > The only reason I introduce "arm,irq-domain-hierarchy" property is
+> > trying to keep original behavior when hierarchy irq domain is not used.
+> > Without this, when a board init GIC with DT, all driver will have to use
+> > devicetree. I'm not sure we want to break things like this.
+> 
+> I don't think we want to support a "middle of the road" setup, where the
+> GIC is probed by DT, but some devices have hardcoded interrupts.
 
--Erich
+Agreed. We should work on making GIC DT-only by converting the few remaining
+users instead, and certainly should not add any new board files that
+might use the domain hierarchy code.
 
-12.10.2014, 21:28, "Greg KH" <gregkh@linuxfoundation.org>:
-> On Sun, Oct 12, 2014 at 09:29:32PM -0500, Erich Cordoba Malibran wrote:
->> šFrom: Erich Cordoba Malibran <erich.cordoba@yandex.com>
->>
->> šRenamed function to fix style issues.
->
-> Why is changing a name, to a misspelled one, a "style issue fix"?
->> šSigned-off-by: Erich Cordoba Malibran <erich.cordoba@yandex.com>
->> š---
->> ššdrivers/staging/wlan-ng/prism2mib.c | 26 +++++++++++++-------------
->> šš1 file changed, 13 insertions(+), 13 deletions(-)
->>
->> šdiff --git a/drivers/staging/wlan-ng/prism2mib.c b/drivers/staging/wlan-ng/prism2mib.c
->> šindex 0163e06..30d224f 100644
->> š--- a/drivers/staging/wlan-ng/prism2mib.c
->> š+++ b/drivers/staging/wlan-ng/prism2mib.c
->> š@@ -132,12 +132,12 @@ static int prism2mib_excludeunencrypted(struct mibrec *mib,
->> ššššššššššššššššššššššššššššššššššššššššššstruct p80211msg_dot11req_mibset *msg,
->> ššššššššššššššššššššššššššššššššššššššššššvoid *data);
->>
->> š-static int prism2mib_fragmentationthreshold(struct mibrec *mib,
->> š- šššint isget,
->> š- šššwlandevice_t *wlandev,
->> š- šššhfa384x_t *hw,
->> š- šššstruct p80211msg_dot11req_mibset *msg,
->> š- šššvoid *data);
->> š+static int prism2mib_fragmenthreshold(struct mibrec *mib,
->> š+ šššššint isget,
->> š+ šššššwlandevice_t *wlandev,
->> š+ šššššhfa384x_t *hw,
->> š+ šššššstruct p80211msg_dot11req_mibset *msg,
->> š+ šššššvoid *data);
->>
->> ššstatic int prism2mib_priv(struct mibrec *mib,
->> ššššššššššššššššššššššššššššint isget,
->> š@@ -198,7 +198,7 @@ static struct mibrec mibtab[] = {
->> šššššššššš{DIDmib_dot11mac_dot11OperationTable_dot11FragmentationThreshold,
->> šššššššššššF_STA | F_READ | F_WRITE,
->> šššššššššššHFA384x_RID_FRAGTHRESH, 0, 0,
->> š- prism2mib_fragmentationthreshold},
->> š+ prism2mib_fragmenthreshold},
->> šššššššššš{DIDmib_dot11mac_dot11OperationTable_dot11MaxTransmitMSDULifetime,
->> šššššššššššF_STA | F_READ,
->> šššššššššššHFA384x_RID_MAXTXLIFETIME, 0, 0,
->> š@@ -660,12 +660,12 @@ static int prism2mib_excludeunencrypted(struct mibrec *mib,
->> šš*
->> šš----------------------------------------------------------------*/
->>
->> š-static int prism2mib_fragmentationthreshold(struct mibrec *mib,
->> š- šššint isget,
->> š- šššwlandevice_t *wlandev,
->> š- šššhfa384x_t *hw,
->> š- šššstruct p80211msg_dot11req_mibset *msg,
->> š- šššvoid *data)
->> š+static int prism2mib_fragmenthreshold(struct mibrec *mib,
->> š+ šššššint isget,
->> š+ šššššwlandevice_t *wlandev,
->> š+ šššššhfa384x_t *hw,
->> š+ šššššstruct p80211msg_dot11req_mibset *msg,
->> š+ šššššvoid *data)
->> šš{
->> ššššššššššint result;
->> ššššššššššu32 *uint32 = (u32 *) data;
->> š--
->> š2.1.2
->
-> I don't understand the problem you are trying to solve here, what is it?
->
-> confused,
->
-> greg k-h
+	Arnd
