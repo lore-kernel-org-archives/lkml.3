@@ -1,145 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975AbaJMXvo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 19:51:44 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:56153 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752554AbaJMXvn (ORCPT
+	id S1754129AbaJMXv4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 19:51:56 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51516 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754022AbaJMXvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 19:51:43 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Alexandre Courbot <gnurou@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-gpio@vger.kernel.org,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH v2] gpio: lib-sysfs: Add 'wakeup' attribute
-Date: Mon, 13 Oct 2014 16:50:55 -0700
-Message-Id: <1413244255-3880-1-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 2.1.2.1.g5e69ed6
+	Mon, 13 Oct 2014 19:51:54 -0400
+X-Original-SENDERIP: 10.177.222.213
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Tue, 14 Oct 2014 08:52:19 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: mroos@linux.ee
+Cc: David Miller <davem@davemloft.net>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>, cl@linux.com,
+        penberg@kernel.org, rientjes@google.com, akpm@linux-foundation.org,
+        linux-mm@kvack.org, sparclinux@vger.kernel.org
+Subject: Re: unaligned accesses in SLAB etc.
+Message-ID: <20141013235219.GA11191@js1304-P5Q-DELUXE>
+References: <20141011.221510.1574777235900788349.davem@davemloft.net>
+ <20141012.132012.254712930139255731.davem@davemloft.net>
+ <alpine.LRH.2.11.1410132320110.9586@adalberg.ut.ee>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.11.1410132320110.9586@adalberg.ut.ee>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add an attribute 'wakeup' to the GPIO sysfs interface which allows
-marking/unmarking a GPIO as wake IRQ.
-The file 'wakeup' is created in each exported GPIOs directory, if an IRQ
-is associated with that GPIO and the irqchip implements set_wake().
-Writing 'enabled' to that file will enable wake for that GPIO, while
-writing 'disabled' will disable wake.
-Reading that file will return either 'disabled' or 'enabled' depening on
-the currently set flag for the GPIO's IRQ.
+On Mon, Oct 13, 2014 at 11:22:37PM +0300, mroos@linux.ee wrote:
+> > From: David Miller <davem@davemloft.net>
+> > Date: Sat, 11 Oct 2014 22:15:10 -0400 (EDT)
+> > 
+> > > 
+> > > I'm getting tons of the following on sparc64:
+> > > 
+> > > [603965.383447] Kernel unaligned access at TPC[546b58] free_block+0x98/0x1a0
+> > > [603965.396987] Kernel unaligned access at TPC[546b60] free_block+0xa0/0x1a0
+> > > [603965.410523] Kernel unaligned access at TPC[546b58] free_block+0x98/0x1a0
+> 
+> > In all of the cases, the address is 4-byte aligned but not 8-byte
+> > aligned.  And they are vmalloc addresses.
+> > 
+> > Which made me suspect the percpu commit:
+> > 
+> > ====================
+> > commit bf0dea23a9c094ae869a88bb694fbe966671bf6d
+> > Author: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> > Date:   Thu Oct 9 15:26:27 2014 -0700
+> > 
+> >     mm/slab: use percpu allocator for cpu cache
+> > ====================
+> > 
+> > And indeed, reverting this commit fixes the problem.
+> 
+> I tested Joonsoo Kim's fix and it gets rid of the kernel unaligned 
+> access messages, yes.
+> 
+> But the instability on UltraSparc II era machines still remains - 
+> occassional Bus Errors during kernel compilation, messages like this:
+> 
+> sh[11771]: segfault at ffd6a4d1 ip 00000000f7cc5714 (rpc 00000000f7cc562c) sp 00000000ffd69d90 error 30002 in libc-2.19.so[f7c44000+16a000]
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
----
-v2:
- - fix error path to unlock mutex before return
----
- drivers/gpio/gpiolib-sysfs.c | 77 ++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 71 insertions(+), 6 deletions(-)
+Hello, Meelis.
 
-diff --git a/drivers/gpio/gpiolib-sysfs.c b/drivers/gpio/gpiolib-sysfs.c
-index 5f2150b619a7..7588b6d5ba94 100644
---- a/drivers/gpio/gpiolib-sysfs.c
-+++ b/drivers/gpio/gpiolib-sysfs.c
-@@ -286,6 +286,58 @@ found:
- 
- static DEVICE_ATTR(edge, 0644, gpio_edge_show, gpio_edge_store);
- 
-+static ssize_t gpio_wakeup_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	ssize_t			status;
-+	const struct gpio_desc	*desc = dev_get_drvdata(dev);
-+	int			irq = gpiod_to_irq(desc);
-+	struct irq_desc		*irq_desc = irq_to_desc(irq);
-+
-+	mutex_lock(&sysfs_lock);
-+
-+	if (irqd_is_wakeup_set(&irq_desc->irq_data))
-+		status = sprintf(buf, "enabled\n");
-+	else
-+		status = sprintf(buf, "disabled\n");
-+
-+	mutex_unlock(&sysfs_lock);
-+
-+	return status;
-+}
-+
-+static ssize_t gpio_wakeup_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t size)
-+{
-+	int			ret;
-+	unsigned int		on;
-+	struct gpio_desc	*desc = dev_get_drvdata(dev);
-+	int			irq = gpiod_to_irq(desc);
-+
-+	mutex_lock(&sysfs_lock);
-+
-+	if (sysfs_streq("enabled", buf)) {
-+		on = true;
-+	} else if (sysfs_streq("disabled", buf)) {
-+		on = false;
-+	} else {
-+		mutex_unlock(&sysfs_lock);
-+		return -EINVAL;
-+	}
-+
-+	ret = irq_set_irq_wake(irq, on);
-+
-+	mutex_unlock(&sysfs_lock);
-+
-+	if (ret)
-+		pr_warn("%s: failed to %s wake\n", __func__,
-+				on ? "enable" : "disable");
-+
-+	return size;
-+}
-+
-+static DEVICE_ATTR(wakeup, 0644, gpio_wakeup_show, gpio_wakeup_store);
-+
- static int sysfs_set_active_low(struct gpio_desc *desc, struct device *dev,
- 				int value)
- {
-@@ -526,7 +578,7 @@ static struct class gpio_class = {
- int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
- {
- 	unsigned long		flags;
--	int			status;
-+	int			status, irq;
- 	const char		*ioname = NULL;
- 	struct device		*dev;
- 	int			offset;
-@@ -582,11 +634,24 @@ int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
- 			goto fail_unregister_device;
- 	}
- 
--	if (gpiod_to_irq(desc) >= 0 && (direction_may_change ||
--				       !test_bit(FLAG_IS_OUT, &desc->flags))) {
--		status = device_create_file(dev, &dev_attr_edge);
--		if (status)
--			goto fail_unregister_device;
-+	irq = gpiod_to_irq(desc);
-+	if (irq >= 0) {
-+		struct irq_desc *irq_desc = irq_to_desc(irq);
-+		struct irq_chip	*irqchip = irq_desc_get_chip(irq_desc);
-+
-+		if (direction_may_change ||
-+				!test_bit(FLAG_IS_OUT, &desc->flags)) {
-+			status = device_create_file(dev, &dev_attr_edge);
-+			if (status)
-+				goto fail_unregister_device;
-+		}
-+
-+		if (irqchip->flags & IRQCHIP_SKIP_SET_WAKE ||
-+				irqchip->irq_set_wake) {
-+			status = device_create_file(dev, &dev_attr_wakeup);
-+			if (status)
-+				goto fail_unregister_device;
-+		}
- 	}
- 
- 	set_bit(FLAG_EXPORT, &desc->flags);
--- 
-2.1.2.1.g5e69ed6
+Thanks for testing.
 
+I'd like to know that your another problem is related to commit
+bf0dea23a9c0 ("mm/slab: use percpu allocator for cpu cache").
+So, if the commit is reverted, your another problem is also gone completely?
+
+Thanks.
