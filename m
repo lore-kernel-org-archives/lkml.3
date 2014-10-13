@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754036AbaJMNJc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 09:09:32 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:42533 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753858AbaJMNJb (ORCPT
+	id S1754123AbaJMNJm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 09:09:42 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:36429 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754037AbaJMNJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 09:09:31 -0400
+	Mon, 13 Oct 2014 09:09:37 -0400
 From: Antonios Motakis <a.motakis@virtualopensystems.com>
 To: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
         alex.williamson@redhat.com
@@ -16,9 +16,9 @@ Cc: will.deacon@arm.com, tech@virtualopensystems.com,
         Antonios Motakis <a.motakis@virtualopensystems.com>,
         kvm@vger.kernel.org (open list:VFIO DRIVER),
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 1/5] vfio/iommu_type1: support for platform bus devices on ARM
-Date: Mon, 13 Oct 2014 15:09:04 +0200
-Message-Id: <1413205748-6300-2-git-send-email-a.motakis@virtualopensystems.com>
+Subject: [PATCH 4/5] vfio: type1: replace vfio_domains_have_iommu_cache with generic function
+Date: Mon, 13 Oct 2014 15:09:07 +0200
+Message-Id: <1413205748-6300-5-git-send-email-a.motakis@virtualopensystems.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1413205748-6300-1-git-send-email-a.motakis@virtualopensystems.com>
 References: <1413205748-6300-1-git-send-email-a.motakis@virtualopensystems.com>
@@ -26,28 +26,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows to make use of the VFIO_IOMMU_TYPE1 driver with platform
-devices on ARM. The driver can then be used with an Exynos SMMU, or
-ARM SMMU driver.
+Replace the function vfio_domains_have_iommu_cache() with a more generic
+function vfio_domains_have_iommu_cap() which allows to check all domains
+of an vfio_iommu structure for a given cached capability.
 
 Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
 ---
- drivers/vfio/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/vfio/vfio_iommu_type1.c | 37 +++++++++++++++++++------------------
+ 1 file changed, 19 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/vfio/Kconfig b/drivers/vfio/Kconfig
-index d8c5763..a0abe04 100644
---- a/drivers/vfio/Kconfig
-+++ b/drivers/vfio/Kconfig
-@@ -16,7 +16,7 @@ config VFIO_SPAPR_EEH
- menuconfig VFIO
- 	tristate "VFIO Non-Privileged userspace driver framework"
- 	depends on IOMMU_API
--	select VFIO_IOMMU_TYPE1 if X86
-+	select VFIO_IOMMU_TYPE1 if X86 || ARM
- 	select VFIO_IOMMU_SPAPR_TCE if (PPC_POWERNV || PPC_PSERIES)
- 	select VFIO_SPAPR_EEH if (PPC_POWERNV || PPC_PSERIES)
- 	select ANON_INODES
+diff --git a/drivers/vfio/vfio_iommu_type1.c b/drivers/vfio/vfio_iommu_type1.c
+index 62a8b4d..8b4202a 100644
+--- a/drivers/vfio/vfio_iommu_type1.c
++++ b/drivers/vfio/vfio_iommu_type1.c
+@@ -80,6 +80,23 @@ struct vfio_group {
+ 	struct list_head	next;
+ };
+ 
++static int vfio_domains_have_iommu_cap(struct vfio_iommu *iommu, int cap)
++{
++	struct vfio_domain *domain;
++	int ret = 1;
++
++	mutex_lock(&iommu->lock);
++	list_for_each_entry(domain, &iommu->domain_list, next) {
++		if (!(domain->caps & cap)) {
++			ret = 0;
++			break;
++		}
++	}
++	mutex_unlock(&iommu->lock);
++
++	return ret;
++}
++
+ /*
+  * This code handles mapping and unmapping of user data buffers
+  * into DMA'ble space using the IOMMU
+@@ -867,23 +884,6 @@ static void vfio_iommu_type1_release(void *iommu_data)
+ 	kfree(iommu);
+ }
+ 
+-static int vfio_domains_have_iommu_cache(struct vfio_iommu *iommu)
+-{
+-	struct vfio_domain *domain;
+-	int ret = 1;
+-
+-	mutex_lock(&iommu->lock);
+-	list_for_each_entry(domain, &iommu->domain_list, next) {
+-		if (!(domain->caps & IOMMU_CAP_CACHE_COHERENCY)) {
+-			ret = 0;
+-			break;
+-		}
+-	}
+-	mutex_unlock(&iommu->lock);
+-
+-	return ret;
+-}
+-
+ static long vfio_iommu_type1_ioctl(void *iommu_data,
+ 				   unsigned int cmd, unsigned long arg)
+ {
+@@ -898,7 +898,8 @@ static long vfio_iommu_type1_ioctl(void *iommu_data,
+ 		case VFIO_DMA_CC_IOMMU:
+ 			if (!iommu)
+ 				return 0;
+-			return vfio_domains_have_iommu_cache(iommu);
++			return vfio_domains_have_iommu_cap(iommu,
++						  IOMMU_CAP_CACHE_COHERENCY);
+ 		default:
+ 			return 0;
+ 		}
 -- 
 2.1.1
 
