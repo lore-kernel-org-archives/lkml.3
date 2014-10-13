@@ -1,154 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753720AbaJMUSn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 16:18:43 -0400
-Received: from mga11.intel.com ([192.55.52.93]:60629 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751170AbaJMUSl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 16:18:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,713,1406617200"; 
-   d="scan'208";a="604708369"
-Date: Mon, 13 Oct 2014 13:19:15 -0700
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
-        linux-gpio@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] pinctrl: baytrail: show output gpio state correctly on
- Intel Baytrail
-Message-ID: <20141013201915.GD4034@psi-dev26.jf.intel.com>
-References: <1412355319-18946-1-git-send-email-david.a.cohen@linux.intel.com>
- <1413224639-21552-1-git-send-email-david.a.cohen@linux.intel.com>
- <20141013191405.GB29810@saruman>
- <20141013192404.GB4034@psi-dev26.jf.intel.com>
- <20141013192632.GC29810@saruman>
- <20141013193618.GD29810@saruman>
+	id S1753939AbaJMUTF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 16:19:05 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:32223 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753695AbaJMUTD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 16:19:03 -0400
+Message-ID: <543C33B1.2010700@fb.com>
+Date: Mon, 13 Oct 2014 14:18:57 -0600
+From: Jens Axboe <axboe@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141013193618.GD29810@saruman>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Dmitry Monakhov <dmonakhov@openvz.org>, <linux-kernel@vger.kernel.org>
+CC: <keith.busch@intel.com>
+Subject: Re: [PATCH] block: update locking context for blk_free_devt
+References: <1413225357-18981-1-git-send-email-dmonakhov@openvz.org>
+In-Reply-To: <1413225357-18981-1-git-send-email-dmonakhov@openvz.org>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-10-13_03:2014-10-13,2014-10-13,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=1.14817400032052e-09 kscore.compositescore=0
+ circleOfTrustscore=16.8481097386542 compositescore=0.99797067526462
+ urlsuspect_oldscore=0.99797067526462 suspectscore=2
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=62764
+ rbsscore=0.99797067526462 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1410130205
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 13, 2014 at 02:36:18PM -0500, Felipe Balbi wrote:
-> On Mon, Oct 13, 2014 at 02:26:32PM -0500, Felipe Balbi wrote:
-> > Hi,
-> > 
-> > On Mon, Oct 13, 2014 at 12:24:04PM -0700, David Cohen wrote:
-> > > On Mon, Oct 13, 2014 at 02:14:05PM -0500, Felipe Balbi wrote:
-> > > > On Mon, Oct 13, 2014 at 11:23:59AM -0700, David Cohen wrote:
-> > > > > Even if a gpio pin is set to output, we still need to set INPUT_EN bit
-> > > > 
-> > > > here you say you're setting that bit.
-> > > > 
-> > > > > to be able to read its value. Without this change, we'll always read low
-> > > > > level state.
-> > > > > 
-> > > > > Cc: <stable@vger.kernel.org> # v3.14+
-> > > > > Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-> > > > > ---
-> > > > > 
-> > > > > Hi,
-> > > > > 
-> > > > > I'm resending same v1 patch but now copying linux stable and linux gpio.
-> > > > > This patch is meant for all linux stable trees >= v3.14.
-> > > > > 
-> > > > > Br, David
-> > > > > ---
-> > > > > 
-> > > > >  drivers/pinctrl/pinctrl-baytrail.c | 2 +-
-> > > > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > > > 
-> > > > > diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
-> > > > > index e12e5b07f6d7..c23d8ded936d 100644
-> > > > > --- a/drivers/pinctrl/pinctrl-baytrail.c
-> > > > > +++ b/drivers/pinctrl/pinctrl-baytrail.c
-> > > > > @@ -318,7 +318,7 @@ static int byt_gpio_direction_output(struct gpio_chip *chip,
-> > > > >  		"Potential Error: Setting GPIO with direct_irq_en to output");
-> > > > >  
-> > > > >  	reg_val = readl(reg) | BYT_DIR_MASK;
-> > > > > -	reg_val &= ~BYT_OUTPUT_EN;
-> > > > > +	reg_val &= ~(BYT_OUTPUT_EN | BYT_INPUT_EN);
-> > > > 
-> > > > but code is clearing it. Also, you're not patching byt_gpio_get(), so
-> > > > you can't be 'reading its value' either. Quite frankly, this looks very
-> > > > fishy to me. Comments on BYT_OUTPUT_EN and BYT_INPUT_EN states that
-> > > > those bits are active low, meaning that clearing them enables that
-> > > > particular feature.
-> > > > 
-> > > > How can you enable a pin to be both OUTPUT and INPUT ? Look like what
-> > > > you really want is:
-> > > > 
-> > > > diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
-> > > > index e12e5b0..69f882d 100644
-> > > > --- a/drivers/pinctrl/pinctrl-baytrail.c
-> > > > +++ b/drivers/pinctrl/pinctrl-baytrail.c
-> > > > @@ -290,6 +290,7 @@ static int byt_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
-> > > >  
-> > > >  	value = readl(reg) | BYT_DIR_MASK;
-> > > >  	value &= ~BYT_INPUT_EN;		/* active low */
-> > > > +	value |= BYT_OUTPUT_EN;		/* disable output */
-> > > >  	writel(value, reg);
-> > > >  
-> > > >  	spin_unlock_irqrestore(&vg->lock, flags);
-> > > > @@ -319,6 +320,7 @@ static int byt_gpio_direction_output(struct gpio_chip *chip,
-> > > >  
-> > > >  	reg_val = readl(reg) | BYT_DIR_MASK;
-> > > >  	reg_val &= ~BYT_OUTPUT_EN;
-> > > > +	value |= BYT_INPUT_EN;		/* disable input */
-> > > >  
-> > > >  	if (value)
-> > > >  		writel(reg_val | BYT_LEVEL, reg);
-> > > > 
-> > > > completely untested however. Care to further explain why clearing both
-> > > > bits - thus enabling both INPUT and OUTPUT - is correct ?
-> > > 
-> > > Actually I really meant what I sent, but perhaps I misspoke during
-> > > explanation. We need to clear the bit to enable the functionality.
-> > > 
-> > > !BYT_INPUT_EN allows us to read the value. !BYT_OUTPUT_EN allows us to
-> > > set a value. If we want to set a value (acting as output) and still be
-> > > able to read via sysfs, we need to set both functionality (i.e. clear
-> > > both bits).
-> > > 
-> > > I'll resend the patch with a better comment.
-> > 
-> > Alright, just make sure that exposing a pin through sysfs and making it
-> > output high, then later switching it to input works. It looks like
-> > byt_gpio_direction_input() still needs to make sure OUTPUT is set.
-> 
-> I also noticed that this is missing:
-> 
-> diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
-> index e12e5b0..7db5ab9 100644
-> --- a/drivers/pinctrl/pinctrl-baytrail.c
-> +++ b/drivers/pinctrl/pinctrl-baytrail.c
-> @@ -614,3 +614,9 @@ static int __init byt_gpio_init(void)
->  }
->  
->  subsys_initcall(byt_gpio_init);
-> +
-> +static void __exit byt_gpio_exit(void)
-> +{
-> +	platform_driver_unregister(&byt_gpio_driver);
-> +}
-> +module_exit(byt_gpio_exit);
-> 
-> (also untested)
+On 2014-10-13 12:35, Dmitry Monakhov wrote:
+> After 2da78092 this function will not longer sleepy
+>
+> Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+> ---
+>   block/genhd.c |    4 +---
+>   1 files changed, 1 insertions(+), 3 deletions(-)
+>
+> diff --git a/block/genhd.c b/block/genhd.c
+> index 09da5e4..ae9aaa5 100644
+> --- a/block/genhd.c
+> +++ b/block/genhd.c
+> @@ -441,12 +441,10 @@ int blk_alloc_devt(struct hd_struct *part, dev_t *devt)
+>    * Free @devt which was allocated using blk_alloc_devt().
+>    *
+>    * CONTEXT:
+> - * Might sleep.
+> + * Don't care.
+>    */
+>   void blk_free_devt(dev_t devt)
+>   {
+> -	might_sleep();
+> -
+>   	if (devt == MKDEV(0, 0))
+>   		return;
 
-It sure does. Want to send a formal patch and I Ack?
+What's this against? The might_sleep() was killed about a month ago by 
+commit 46f341ffcfb5. The comment wasn't updated though, it should be.
 
-> 
-> ps: is BayTrail documentation available publicly ?
-
-Check Minnowboard Max :) It's baytrail.
-
-BR, David
-
-> 
-> -- 
-> balbi
-
+-- 
+Jens Axboe
 
