@@ -1,104 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029AbaJMPYe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 11:24:34 -0400
-Received: from mga03.intel.com ([134.134.136.65]:32881 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753100AbaJMPYd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 11:24:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,711,1406617200"; 
-   d="scan'208";a="617784327"
-Message-ID: <1413213803.7906.45.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 3/4] UBI: Fastmap: Care about the protection queue
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Mon, 13 Oct 2014 18:23:23 +0300
-In-Reply-To: <543BE21F.5020504@nod.at>
-References: <1412029248-22454-1-git-send-email-richard@nod.at>
-			 <1412029248-22454-4-git-send-email-richard@nod.at>
-		 <1412346676.3795.62.camel@sauron.fi.intel.com> <542EF3BF.1070401@nod.at>
-	 <1413206263.7906.18.camel@sauron.fi.intel.com> <543BE21F.5020504@nod.at>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754167AbaJMPZR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 11:25:17 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:53710 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753060AbaJMPZP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 11:25:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <20141013112834.GA10826@khazad-dum.debian.net>
+References: <20141013022454.289398272@linuxfoundation.org>
+	<20141013112834.GA10826@khazad-dum.debian.net>
+Date: Mon, 13 Oct 2014 17:25:14 +0200
+X-Google-Sender-Auth: 1AQpT2vODub9JoDjMGvL8m8_Mlo
+Message-ID: <CA+55aFy=Ck5pmYpWL5t8zHCUHG2eNGQ_E3G-gXhQSV77pbZ-XA@mail.gmail.com>
+Subject: Re: [PATCH 3.17 00/25] 3.17.1-stable review
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-10-13 at 16:30 +0200, Richard Weinberger wrote:
-> Am 13.10.2014 um 15:17 schrieb Artem Bityutskiy:
-> > On Fri, 2014-10-03 at 21:06 +0200, Richard Weinberger wrote:
-> >> Fastmap needs basically access to all internal state of UBI, which
-> >> lives mostly
-> >> within wl.c
-> > 
-> > Sounds like a very strong assertion, smells a bit fishy, need the
-> > details.
-> 
-> Fastmap need to know the exact state of each PEB.
-> I.e. is it free, used, scheduled for erase, etc...
-> 
-> >> It needs to iterate over the used, free, erase, scrub RB-trees, the
-> >> protection queue, etc. to
-> >> collect the exact state of all PEBs.
-> > 
-> > When? In 'ubi_write_fastmap()' when forming the FM pool data structures?
-> 
-> Yes.
-> 
-> > I think you can just add a function like this to wl.c:
-> > 
-> > int ubi_wl_get_peb_info(int pnum, struct ubi_wl_peb_info *pebinfo)
-> > 
-> > Yoy will give it the PEB number you are interested in, it will return
-> > you the information you need in 'pebinfo'. The information will contain
-> > the EC, the state (used, free, etc).
-> > 
-> > If you need just the EC, then you do not even need the ubi_wl_peb_info
-> > data structure.
-> > 
-> > Then you just iterate over all PEBs and fill the FM pool data
-> > structures.
-> > 
-> > Would something like this work?
-> 
-> The interface would work but some work in wl.c is needed.
-> For example if I want to find out in which state PEB 1 is wl.c would have to
-> look int free free, used free, protection queue, etc.. to tell me the state. This is slow.
+On Mon, Oct 13, 2014 at 1:28 PM, Henrique de Moraes Holschuh
+<hmh@hmh.eng.br> wrote:
+>
+> I am not complaining that the patch hasn't made it to 3.17.1 (or even
+> mainline) yet.
 
-Well, used and free are RB-trees, looking them up is slow.
+Hmm. It's been in mainline.since last Friday, afaik.
 
-If what you need is to go through all used and free PEBs, then you can
-introduce some kind of
-
-struct ubi_wl_entry *ubi_wl_get_next_used(struct ubi_wl_entry *prev)
-
-function, and similar functions for the free.
-
-I would return you the next entry (or NULL would indicate the end), and
-it would take the previous entry as the input, or NULL for the first
-call.
-
-We'd need to take the locks before calling this function. This is
-cleaner than what we do now, right?
-
-> But we could add the state information to struct ubi_wl_entry by adding a single integer attribute called "state" or "flags".
-
-But there is a price - memory consumption. We do not want to pay it just
-for making the inter-subsystems boundaries better, there ought to be a
-better reason.
-
-Say, for an (imaginary) 8GiB NAND chip with 128KiB PEB size this would
-cost 256KiB of RAM.
-
-Squeezing the state into the last 2 bits a memory reference would be
-another possibility, BTW. Not elegant, though...
-
-> Would this make you happy? :)
-
-Not very, I'd save this for the last resort solution.
-
+              Linus
