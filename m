@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077AbaJMUZG (ORCPT <rfc822;w@1wt.eu>);
+	id S1754171AbaJMUZV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 16:25:21 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:37999 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753835AbaJMUZG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Oct 2014 16:25:06 -0400
-Received: from mout.gmx.net ([212.227.15.19]:62378 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751949AbaJMUZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 16:25:04 -0400
-Message-ID: <543C3515.9090000@gmx.de>
-Date: Mon, 13 Oct 2014 22:24:53 +0200
-From: Helge Deller <deller@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        John David Anglin <dave.anglin@bell.net>,
-        "Carlos O'Donell" <carlos@systemhalted.org>
-Subject: Re: [GIT PULL] parisc architecture patch for v3.18
-References: <20141012100837.GA1553@p100.box> <20141013144143.475ca9f9@alan.etchedpixels.co.uk>
-In-Reply-To: <20141013144143.475ca9f9@alan.etchedpixels.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:fCDT32VFaSjAo3J0X4dYGvWY3PHU+T0XtiOI9avrG9px+vUvr80
- blwghf8STTRDwNvGVjH3iM+3peR5exY7sJ4C7nyxon7F0BNVG5Oq+3vwXCOUOYDW1d50lem
- bIVcenhP35FH8vEHpyCDscf7L+NzoUCAPC+xJIZQDsOznBPjVYAwKqO+N+utHA5+OkVS2on
- 12Ji8SiAlvQkJ6Vxvy8mg==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <1413230486.11421.47.camel@fourier>
+References: <1413217740-9859-1-git-send-email-bobby.prani@gmail.com> <1413230486.11421.47.camel@fourier>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Mon, 13 Oct 2014 16:24:35 -0400
+Message-ID: <CAJhHMCAKQTNysJPkSQKCejPMC8Wus=mWa43oP-DAwAUyUMDvbw@mail.gmail.com>
+Subject: Re: [PATCH 3.13, 3.14, 3.16, 3.17] rcu: Reduce rcu kthread wakeups
+To: Kamal Mostafa <kamal@canonical.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        stable <stable@vger.kernel.org>,
+        kernel-team <kernel-team@lists.ubuntu.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/13/2014 03:41 PM, One Thousand Gnomes wrote:
-> On Sun, 12 Oct 2014 12:08:37 +0200
-> Helge Deller <deller@gmx.de> wrote:
+On Mon, Oct 13, 2014 at 4:01 PM, Kamal Mostafa <kamal@canonical.com> wrote:
+> On Mon, 2014-10-13 at 12:29 -0400, Pranith Kumar wrote:
+>> Backport 2aa792e and parts of 48a7639 to 3.13 which is Ubuntu LTS kernel.
+>>
+>> This commit reduces the number of rcu kthread wakeups. Tested for over a week on
+>> my desktop 14.04 system.
+>>
+>> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+>> CC: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 >
->> Hi Linus,
->>
->> please pull one patch for the parisc architecture for kernel 3.18 from
->>    git://git.kernel.org/pub/scm/linux/kernel/git/deller/parisc-linux.git parisc-3.18-1
->>
->> This patch intentionally breaks the ABI on PARISC Linux!
->>
->> It assigns new numbers to SIGSTKFLT, SIGXCPU, SIGXFSZ and SIGSYS so that
->> those are below 32 and thus leaves us with 32 RT signals like other
->> Linux architectures (SIGRTMIN now becomes 32 instead of 37).
->>
->> Even if it breaks the ABI, it doesn't seem to have any visible impact on
->> existing userspace applications.
 >
-> I somehow doubt your kill command magically corrects its signal numbering
-> table. Likewise what does gdb do given a core dump that died from one of
-> those signals, and what does your shell report if you kill one that way.
-> It seems to me your minimal set of binaries to swap to get it right is
-> non-zero but not problematic (libc, kill, shells, top, gdb) ?
+> Hi Pranith and Paul-
+>
+> This looks good, but how about lets split it back into two commits (the
+> second a clean cherry-pick) and submit it for 3.{14,16,17}-stable also:
+>
+> 3.13 and 3.14 could apply the attached 48a7639 mini-backport (just
+> supplying rcu_gp_kthread_wake), and then cherry-pick 2aa792e.
+>
+> 3.16 and 3.17 carry 48a7639 already, so could just cherry-pick 2aa792e.
+>
 
-My patch of course just marks the start of a transition phase, in which
-some few applications need to be rebuilt (libc as the most important one).
-But after all it makes a somewhat smooth transition possible, and as I
-wrote in the commit message this is the best solution (out of 3) with the
-least impact which we have.
-  
-> I can however really only think of one app that actually *used* SIGXCPU,
-> and that was to respawn itself to avoid annoying sysadmin set CPU limits
-> anyway.
+The patch looks good. The commit message can be trimmed to just the last para:
 
-:-)
+Add a new rcu_gp_kthread_wake() which wakes up the gp kthread when it
+is necessary and safe to do so: No self-wakes, no wake-ups if the
+->gp_flags field indicates there is no need (as in someone else did
+the wake-up before we got around to it),  and no wake-ups before the
+grace-period kthread has been created.
 
-Helge
+Thanks!
+-- 
+Pranith
