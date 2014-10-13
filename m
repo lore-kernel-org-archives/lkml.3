@@ -1,69 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903AbaJMCPI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:15:08 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:36323 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752626AbaJMCPB (ORCPT
+	id S1752949AbaJMCQA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:16:00 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:25683 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752836AbaJMCP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:15:01 -0400
-Date: Mon, 13 Oct 2014 03:14:59 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Anton Altaparmakov <aia21@cam.ac.uk>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: WTF is d_add_ci() doing with negative dentries?
-Message-ID: <20141013021459.GW7996@ZenIV.linux.org.uk>
-References: <20141012221817.GU7996@ZenIV.linux.org.uk>
- <318CCEE2-9EBE-4696-8DE9-7297CDCE207D@cam.ac.uk>
+	Sun, 12 Oct 2014 22:15:59 -0400
+Message-ID: <543B35D3.6050509@oracle.com>
+Date: Sun, 12 Oct 2014 22:15:47 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <318CCEE2-9EBE-4696-8DE9-7297CDCE207D@cam.ac.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chris Mason <clm@fb.com>, jbacik@fb.com
+CC: linux-btrfs@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: btrfs: kernel BUG at fs/btrfs/extent_io.c:676!
+References: <532F89B7.3030104@oracle.com>
+In-Reply-To: <532F89B7.3030104@oracle.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 13, 2014 at 12:56:11AM +0100, Anton Altaparmakov wrote:
+Ping?
 
-> I am just wondering whether there might be error conditions in which we might end up with a (perhaps invalid) negative dentry in memory which could be found here?  Probably not a problem especially now that d_invalidate() cannot fail any more.
+This BUG_ON()ing due to GFP_ATOMIC allocation failure is really silly :(
 
-Huh?  Failing d_invalidate() on _negative_ dentry is flat-out impossible;
-it would be dropped just fine, and we wouldn't have found it in the first
-place.  Check what it used to do all way back to 2.2.0:
-        if (dentry->d_count) {
-                if (dentry->d_inode && S_ISDIR(dentry->d_inode->i_mode))
-                        return -EBUSY;
-        }
+On 03/23/2014 09:26 PM, Sasha Levin wrote:
+> Hi all,
+> 
+> While fuzzing with trinity inside KVM tools guest running latest -next kernel
+> I've stumbled on the following spew.
+> 
+> This is a result of a failed allocation in alloc_extent_state_atomic() which
+> triggers a BUG_ON when the return value is NULL. It's a bit weird that it
+> BUGs on failed allocations, since it's obviously not a critical failure.
+> 
+> [  447.705167] kernel BUG at fs/btrfs/extent_io.c:676!
+> [  447.706201] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [  447.707732] Dumping ftrace buffer:
+> [  447.708473]    (ftrace buffer empty)
+> [  447.709684] Modules linked in:
+> [  447.710246] CPU: 17 PID: 4195 Comm: kswapd17 Tainted: G        W     3.14.0-rc7-next-20140321-sasha-00018-g0516fe6-dirty #265
+> [  447.710253] task: ffff88066be9b000 ti: ffff88066be82000 task.ti: ffff88066be82000
+> [  447.710253] RIP:  clear_extent_bit (fs/btrfs/extent_io.c:676)
+> [  447.710253] RSP: 0000:ffff88066be83768  EFLAGS: 00010246
+> [  447.710253] RAX: 0000000000000000 RBX: 0000000000d00fff RCX: 0000000000000006
+> [  447.710253] RDX: 00000000000058e0 RSI: ffff88066be9bd60 RDI: 0000000000000286
+> [  447.710253] RBP: ffff88066be837e8 R08: 0000000000000000 R09: 0000000000000000
+> [  447.710253] R10: 0000000000000001 R11: 454a4e495f544c55 R12: 0000000001ffffff
+> [  447.710253] R13: 0000000000000000 R14: ffff88007b89fd08 R15: 0000000000d00000
+> [  447.710253] FS:  0000000000000000(0000) GS:ffff8804acc00000(0000) knlGS:0000000000000000
+> [  447.710253] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [  447.710253] CR2: 0000000002aec968 CR3: 0000000005e29000 CR4: 00000000000006a0
+> [  447.710253] DR0: 0000000000698000 DR1: 0000000000698000 DR2: 0000000000000000
+> [  447.710253] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+> [  447.710253] Stack:
+> [  447.710253]  ffff88066be83788 ffffffff844fc4d5 0000000000000000 ffff8804ab4800e8
+> [  447.710253]  0000000000000000 0000000000000001 ffff8804ab4800c8 fffffffffffffbf7
+> [  447.710253]  ffff88066be837c8 0000000000000000 0000000000000006 ffffea0007aaf340
+> [  447.710253] Call Trace:
+> [  447.710253]  ? _raw_spin_unlock (arch/x86/include/asm/preempt.h:98 include/linux/spinlock_api_smp.h:152 kernel/locking/spinlock.c:183)
+> [  447.710253]  try_release_extent_mapping (fs/btrfs/extent_io.c:3998 fs/btrfs/extent_io.c:4058)
+> [  447.710253]  __btrfs_releasepage (fs/btrfs/inode.c:7521)
+> [  447.710253]  btrfs_releasepage (fs/btrfs/inode.c:7534)
+> [  447.710253]  try_to_release_page (mm/filemap.c:2984)
+> [  447.710253]  invalidate_inode_page (mm/truncate.c:165 mm/truncate.c:215)
+> [  447.710253]  invalidate_mapping_pages (mm/truncate.c:517)
+> [  447.710253]  inode_lru_isolate (arch/x86/include/asm/current.h:14 include/linux/swap.h:33 fs/inode.c:724)
+> [  447.710253]  ? insert_inode_locked (fs/inode.c:687)
+> [  447.710253]  list_lru_walk_node (mm/list_lru.c:89)
+> [  447.710253]  prune_icache_sb (fs/inode.c:759)
+> [  447.710253]  super_cache_scan (fs/super.c:96)
+> [  447.710253]  shrink_slab_node (mm/vmscan.c:306)
+> [  447.710253]  shrink_slab (mm/vmscan.c:381)
+> [  447.710253]  kswapd_shrink_zone (mm/vmscan.c:2909)
+> [  447.710253]  kswapd (mm/vmscan.c:3090 mm/vmscan.c:3296)
+> [  447.710253]  ? mem_cgroup_shrink_node_zone (mm/vmscan.c:3213)
+> [  447.710253]  kthread (kernel/kthread.c:219)
+> [  447.710253]  ? __tick_nohz_task_switch (arch/x86/include/asm/paravirt.h:809 kernel/time/tick-sched.c:272)
+> [  447.710253]  ? kthread_create_on_node (kernel/kthread.c:185)
+> [  447.710253]  ret_from_fork (arch/x86/kernel/entry_64.S:555)
+> [  447.710253]  ? kthread_create_on_node (kernel/kthread.c:185)
+> [  447.710253] Code: e9 a9 00 00 00 0f 1f 00 48 39 c3 0f 82 87 00 00 00 4c 39 e3 0f 83 7e 00 00 00 48 8b 7d a0 e8 45 ef ff ff 48 85 c0 49 89 c5 75 05 <0f> 0b 0f 1f 00 48 8b 7d b0 48 8d 4b 01 48 89 c2 4c 89 f6 e8 c5
+> [  447.710253] RIP  clear_extent_bit (fs/btrfs/extent_io.c:676)
+> [  447.710253]  RSP <ffff88066be83768>
+> 
+> 
+> Thanks,
+> Sasha
 
-So unless you care about 2.1.something (2.0 didn't have dcache at all),
-this scenario isn't possible.
-
-In any case, d_add_ci() users that might have negative dentries become
-positive cannot afford hashed negative dentries at all - at the very
-least they need to treat them as invalid in ->d_revalidate() in such
-situations.  Exactly because having a hashed valid negative dentry for
-FuBaR after e.g.  mkdir fubar will really hurt - mkdir won't have any way
-to know that old dentry was there; there was no variant of fubar in directory
-prior to that mkdir (FuBaR _was_ negative) and there's nothing to suggest
-looking for it.  So it won't be noticed and it'll bloody well stay negative
-and hashed.  I.e. stat FuBaR; mkdir fubar; stat FuBaR will have the second
-stat find dentry still hashed and valid negative.
-
-You can get away with that if you store something like timestamp[1] of
-the parent directory in those negative dentries and check that in
-->d_revalidate().  But that will work just fine, since d_add_ci() is
-serialized by ->i_mutex held on parent and whatever it was that added your
-"exact spelling" into directory has made all preexisting negative dentries
-invalid...
-
-[1] for arbitrary values of time - e.g.
-	on positive lookup set ->d_time to 0
-	on negative lookup set ->d_time to that of parent dentry
-	on mkdir set ->d_time to 0
-	on unlink, rmdir and rename victim copy ->d_time from parent dentry
-	on any directory modification bump its ->d_time
-	on d_revalidate of negative dentry compare ->d_time with that of parent
-	dentry and declare invalid on mismatch
-will do just fine.
