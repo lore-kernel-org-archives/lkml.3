@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337AbaJMGzY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 02:55:24 -0400
-Received: from ozlabs.org ([103.22.144.67]:52927 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752985AbaJMGyr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 02:54:47 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org
-Cc: virtualization@lists.linux-foundation.org, linux-scsi@vger.kernel.org,
-        linux-s390@vger.kernel.org, v9fs-developer@lists.sourceforge.net,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        Amit Shah <amit.shah@redhat.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [PATCH v3 10/25] virtio: add API to enable VQs early
-In-Reply-To: <1413114332-626-11-git-send-email-mst@redhat.com>
-References: <1413114332-626-1-git-send-email-mst@redhat.com> <1413114332-626-11-git-send-email-mst@redhat.com>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 13 Oct 2014 17:22:39 +1030
-Message-ID: <8738asea14.fsf@rustcorp.com.au>
+	id S1753367AbaJMGzo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 02:55:44 -0400
+Received: from smtprelay05.ispgateway.de ([80.67.31.97]:53981 "EHLO
+	smtprelay05.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753319AbaJMGzk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 02:55:40 -0400
+Message-ID: <543B7765.6050004@ladisch.de>
+Date: Mon, 13 Oct 2014 08:55:33 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Gene Heskett <gheskett@wdtv.com>, linux-kernel@vger.kernel.org
+Subject: Re: reboot housekeeping, lack thereof, is messing with me
+References: <201410121321.26582.gheskett@wdtv.com>
+In-Reply-To: <201410121321.26582.gheskett@wdtv.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: bGludXgta2VybmVsQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Michael S. Tsirkin" <mst@redhat.com> writes:
-> virtio spec 0.9.X requires DRIVER_OK to be set before
-> VQs are used, but some drivers use VQs before probe
-> function returns.
-> Since DRIVER_OK is set after probe, this violates the spec.
->
-> Even though under virtio 1.0 transitional devices support this
-> behaviour, we want to make it possible for those early callers to become
-> spec compliant and eventually support non-transitional devices.
->
-> Add API for drivers to call before using VQs.
->
-> Sets DRIVER_OK internally.
->
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+Gene Heskett wrote:
+> To whomever is in charge of the supposedly volatile LCK.. files in
+> /var/lock:
 
-OK, this all looks good, but I think we should do two things:
+Whoever that may be, it's not the kernel.
 
-1) rename virtio_enable_vqs_early() to virtio_device_ready().
-2) Add a BUG_ON in the virtio_ring code to make sure device is ready
-   before any ops are called.
+> Its my understanding that these files should be volatile when they
+> represent a USB usage, because a USB device can be unplugged instantly and
+> at any time.  The device nicely and dutifully disappears from an 'ls /dev'
+> listing when a device is unplugged.
+>
+> Why is it then that the /var/lock/LCK..ttyUSB1 file is always left behind,
+> so it screws up any possibility of doing a nice clean reboot and restart
+> of the program that uses it?
 
-Cheers,
-Rusty.
+What program leaves this file behind?  (The pid in there is no longer
+helpful, unless it got logged due to a segfault, but what was the last
+program used for serial stuff?)
+
+Anyway, it appears some programs automatically delete this file when the
+pid is not valid.
+
+
+Regards,
+Clemens
