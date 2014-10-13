@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296AbaJMFtm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 01:49:42 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:36998 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751412AbaJMFtg (ORCPT
+	id S1752600AbaJMFyA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 01:54:00 -0400
+Received: from mailout.micron.com ([137.201.242.129]:22789 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354AbaJMFx7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 01:49:36 -0400
-From: Gyungoh Yoo <gyungoh@gmail.com>
-X-Google-Original-From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
-To: sameo@linux.intel.com, lee.jones@linaro.org, jg1.han@samsung.com,
-        cooloney@gmail.com, broonie@kernel.org, lgirdwood@gmail.com
-Cc: jack.yoo@skyworksinc.com, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, grant.likely@linaro.org,
-        robh+dt@kernel.org, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
-        shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
-        trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
-        jic23@kernel.org
-Subject: [RESUBMIT PATCH v4 8/8] devicetree: regulator: sky81452: Add compatible string for device binding
-Date: Mon, 13 Oct 2014 14:47:42 +0900
-Message-Id: <1413179262-27636-9-git-send-email-jack.yoo@skyworksinc.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1413179262-27636-1-git-send-email-jack.yoo@skyworksinc.com>
-References: <1412657745-7812-1-git-send-email-jack.yoo@skyworksinc.com>
- <1413179262-27636-1-git-send-email-jack.yoo@skyworksinc.com>
+	Mon, 13 Oct 2014 01:53:59 -0400
+From: bpqw <bpqw@micron.com>
+To: Marek Vasut <marex@denx.de>, "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>
+CC: "shijie8@gmail.com" <shijie8@gmail.com>,
+        "geert+renesas@glider.be" <geert+renesas@glider.be>,
+        "grmoore@altera.com" <grmoore@altera.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/1] driver:mtd:spi-nor:fix spi_nor_scan overwrite platform
+ ID point
+Thread-Topic: [PATCH 1/1] driver:mtd:spi-nor:fix spi_nor_scan overwrite
+ platform ID point
+Thread-Index: Ac/mqfhUCcgRvGRwTVWYPE12HvMUJw==
+Date: Mon, 13 Oct 2014 05:53:11 +0000
+Message-ID: <A765B125120D1346A63912DDE6D8B6315E6272@NTXXIAMBX02.xacn.micron.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.84.5]
+x-tm-as-product-ver: SMEX-10.0.0.4152-7.000.1014-21018.004
+x-tm-as-result: No--36.992500-0.000000-31
+x-tm-as-user-approved-sender: Yes
+x-tm-as-user-blocked-sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+This patch used to modify the method of spi_nor_scan overwrite platform Id.
+
+If type of platform data match with the name of spi_nor_ids set,
+and JEDEC ID also match with INFO ID of spi_nor_ids set,spi device
+ID point(this is before probed according to device name) shouldn't be
+overwrote.Otherwise,this point will be overwrote by new spi_nor_ids
+set point that probed according to JEDEC ID.
+
+Signed-off-by: bean huo <beanhuo@micron.com>
 ---
-Changes v4:
-Nothing
+ drivers/mtd/spi-nor/spi-nor.c |   19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
-Changes v3:
-Nothing
-
-Changes v2:
-Added 'compatible' attribute in the driver
-
- Documentation/devicetree/bindings/regulator/sky81452-regulator.txt | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/Documentation/devicetree/bindings/regulator/sky81452-regulator.txt b/Documentation/devicetree/bindings/regulator/sky81452-regulator.txt
-index 882455e..7b9ff18 100644
---- a/Documentation/devicetree/bindings/regulator/sky81452-regulator.txt
-+++ b/Documentation/devicetree/bindings/regulator/sky81452-regulator.txt
-@@ -1,6 +1,7 @@
- SKY81452 voltage regulator
+diff --git a/drivers/mtd/spi-nor/spi-nor.c b/drivers/mtd/spi-nor/spi-nor.c
+index b5ad6be..3675503 100644
+--- a/drivers/mtd/spi-nor/spi-nor.c
++++ b/drivers/mtd/spi-nor/spi-nor.c
+@@ -963,16 +963,21 @@ int spi_nor_scan(struct spi_nor *nor, const struct spi_device_id *id,
+ 			return PTR_ERR(jid);
+ 		} else if (jid != id) {
+ 			/*
+-			 * JEDEC knows better, so overwrite platform ID. We
+-			 * can't trust partitions any longer, but we'll let
+-			 * mtd apply them anyway, since some partitions may be
+-			 * marked read-only, and we don't want to lose that
+-			 * information, even if it's not 100% accurate.
++			 * If type of platform data match with the name of
++			 * spi_nor_ids set,and JEDEC ID also match with
++			 * INFO ID of spi_nor_ids set,shouldn't overwrite
++			 * spi device info point.Otherwise,will overwrite
++			 * it.
+ 			 */
+-			dev_warn(dev, "found %s, expected %s\n",
+-				 jid->name, id->name);
++			struct flash_info *tmpinfo;
++
++			tmpinfo = (void *)jid->driver_data;
++			if (tmpinfo->jedec_id != info->jedec_id) {
++				dev_warn(dev, "found %s, expected %s\n",
++						jid->name, id->name);
+ 			id = jid;
+ 			info = (void *)jid->driver_data;
++			}
+ 		}
+ 	}
  
- Required properties:
-+- compatible	: Must be "skyworks,sky81452-regulator"
- - any required generic properties defined in regulator.txt
- 
- Optional properties:
-@@ -9,6 +10,7 @@ Optional properties:
- Example:
- 
- 	regulator {
-+		compatible = "skyworks,sky81452-regulator";
- 		/* generic regulator properties */
- 		regulator-name = "touch_en";
- 		regulator-min-microvolt = <4500000>;
 -- 
-1.9.1
-
+1.7.9.5
