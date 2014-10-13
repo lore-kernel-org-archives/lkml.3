@@ -1,65 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340AbaJMVyG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 17:54:06 -0400
-Received: from ozlabs.org ([103.22.144.67]:35859 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751429AbaJMVyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 17:54:04 -0400
-Date: Tue, 14 Oct 2014 08:53:55 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: status of the signal-cleanup tree
-Message-ID: <20141014085355.0a710a94@canb.auug.org.au>
-In-Reply-To: <543BE3EC.9010601@nod.at>
-References: <20141013173301.0664c8ac@canb.auug.org.au>
-	<543BE3EC.9010601@nod.at>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1753609AbaJMV4B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 17:56:01 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:29789 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751188AbaJMV4A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 17:56:00 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlkuAABKPFR5LODnPGdsb2JhbABbgw6BK4I2hQewOgaVGYVqAgIBAQKBHhcBBgEBAQE4O4QCAQEBAwE6HCMFCwgDGAkMGQ8FJQMHGhOINgfFGgEBAQcCAR8YhgiKJQcKgyOBHgWdSoEvkGWICSkvgkoBAQE
+Date: Tue, 14 Oct 2014 08:55:31 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        xfs@oss.sgi.com
+Subject: Re: [GIT PULL] xfs: updates for 3.18-rc1
+Message-ID: <20141013215531.GD17506@dastard>
+References: <20141013013715.GD4503@dastard>
+ <CA+55aFwcE=OX7FvckrsZRopCAxw0QnEu5iQUEM5JBoDVzg7uEA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/ydw6uk3BRDe3hNtzMBVbkTs"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwcE=OX7FvckrsZRopCAxw0QnEu5iQUEM5JBoDVzg7uEA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/ydw6uk3BRDe3hNtzMBVbkTs
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, Oct 13, 2014 at 05:48:18AM -0400, Linus Torvalds wrote:
+> On Sun, Oct 12, 2014 at 9:37 PM, Dave Chinner <david@fromorbit.com> wrote:
+> >
+> > i.e. I have generated this pull-req from the base tree I've been working
+> > on (3.17-rc2) but there have already been commits merged into a more
+> > recent upstream tree (3.17-rc4) in this tree. When I generate the
+> > pull request from the underlying 3.17-rc2 branch, it includes all
+> > those commits, both in the summary and the diffstat. If I base the
+> > pull request off 3.17, the base commit is the last one that was
+> > merged into your tree, and the diffstat and commit list reflect
+> > that.
+> 
+> That's fine, and works for me too. This is normal and expected for
+> stuff that has gotten into my tree other ways (ie bugfixes that were
+> cherrypicked to be backported from development trees etc).  I'm used
+> to it, and while I hope people minimize it (not only because of
+> multiple commits showing up with the same patch, but because it can
+> easily cause stupid merge conflicts because the development tree then
+> made further changes on top of the same patch), it's also very much
+> considered "normal development".
+> 
+> That said, when there are actual *common* commits as in your case (as
+> opposed to cherrypicked commits that generate duplicate commits with
+> the same patch), I would generally suggest you just let "git
+> merge-base" figure it all out from my latest tree. That way it takes
+> into account the stuff that you sent earlier on its own.
 
-Hi Richard,
+Ok, that seems easy enough to check. I wasn't aware of git
+merge-base, so thanks for letting me know about it.
 
-On Mon, 13 Oct 2014 16:38:36 +0200 Richard Weinberger <richard@nod.at> wrot=
-e:
->
-> Just remove it. The "feature" was merged.
+> But this is not a big deal.
+> 
+> > So my question is this: Which tree should I generate the pull
+> > request from? I flipped a coin an generated this one from 3.17-rc2,
+> > but if you'd prefer to see just the commits/diffstat that aren't in
+> > your tree, let me know and I'll do it differently next time....
+> 
+> Normally, I'd suggest the easiest way to handle things is to have a
+> "linus" branch that tracks my upstream, and then just generate the
+> pull request off that. Git will figure out the latest merge base and
+> just do the right thing, and you don't need to really think about
+> where you forked things off, and which parts you have already sent to
+> me.
 
-OK, thanks.  Gone now.
+OK, that's exactly what I would have done if the coin flip landed
+the other way.  I'll use that method in future.
 
---=20
+> As mentioned, even then the diffstat doesn't always end up being
+> exactly right, because the history with partially merged branches, and
+> with potential cherry-picked commits. So I am not surprised or upset
+> if the diffstat doesn't always match, it happens quite commonly. I go
+> on a rant when that i sdue to bad development practices, but I don't
+> see anything like that in your tree.
+
+That's good to know - I'm trying to keep the topic branches as
+stable as possible so you can see when they were first pushed into
+the tree, if/when fixes are appended to them and the dependencies
+between them so bisects won't break. If you do see something wrong
+or dodgy, just yell. ;)
+
+> Some people avoid this by actually generating a test-merge (to warn me
+> about upcoming conflicts etc), and then generate the diffstat from
+> that test merge instead of just using the plain "git diff" in the
+> git-pull-request helper scripts. Whatever works. This is not a huge
+> deal, exactly because it's "normal development" (unlike the
+> back-merges issue).
+
+*nod*
+
+Definitely "normal development" - I do that "test merge" as part of
+my day-to-day workflow. My test tree (i.e. what I point overnight
+xfstests runs at) is your TOT + the current XFS for-next + any patch
+sets I'm reviewing, testing and/or developing....
+
+Thanks for the info, Linus.
+
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Sig_/ydw6uk3BRDe3hNtzMBVbkTs
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUPEn4AAoJEMDTa8Ir7ZwV0usP+wa+M0p9YMTwZX1Xk5mO2fr5
-vy360azbPltNUphxqHEnaHwMpZ71zUHZ40KEYwKMf7KUMZqZ9VKMOzQFMJA3gRUC
-NlzdkPJFeR5WMzrdWHAbJ3ZBpLZ+HHd28pmgNkpvQ6+3jB8EdzPRqShsdpWw65+k
-wRQU+E1prGkyGut/jErBXiCeys9MLDmQmpndnXqp+pASeYBwxzNdiBN+vqRl4wH2
-QMF2OK+NXukP89rF/mUZe0TvPvcwVHgdrL71mQl6atUyj3PzhYrYHBbyH46nUGlP
-2HHuzlt0B/kEKf8MzDzjzvVHswW9z76V0Ot6tlCL4dT836CmkKcbF4OBzJWqyDun
-FJO13Tb3LCPtXCj7NcTUxeRsSXKWXJ3Hd5nRNmrvQCs2LC8c/y/91SUYi4FIYbFV
-y25dhUo7rHzBfhrPd4nFT3/vt4zEIqTO5dNxLcvmcAHG+f5o0IB753GlN6ljTtTY
-AIllkILKh9MpXz0C42PuYTRymmQS9SAKZKBLKITSnoK3gja4U/+100nSSTkq5GSv
-2T2OLJMIJigBKUOEm8O08+CiRv+m1yjZdwxw8XRX1q9C59yWiBwD7xurlMqT/shi
-F9mupijQi+L/8zjGEHcMFp3gCVkS64/BeeKlWToWOeCVzk8DozFUvOtKR2sGU/FI
-gshliJ5NzJNyQPX77PpN
-=a/oi
------END PGP SIGNATURE-----
-
---Sig_/ydw6uk3BRDe3hNtzMBVbkTs--
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
