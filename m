@@ -1,207 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558AbaJMKcF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 06:32:05 -0400
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:37928
-	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753296AbaJMKcD (ORCPT
+	id S1753642AbaJMKcc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 06:32:32 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:44476 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753614AbaJMKca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 06:32:03 -0400
-Date: Mon, 13 Oct 2014 12:32:02 +0200
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, eparis@redhat.com,
-        sgrubb@redhat.com, aviro@redhat.com, pmoore@redhat.com,
-        arozansk@redhat.com, ebiederm@xmission.com, serge@hallyn.com
-Subject: Re: [PATCH V5 02/13] namespaces: expose namespace instance serial
- number in proc_ns_operations
-Message-ID: <20141013103202.GB24703@mail.hallyn.com>
-References: <cover.1412543112.git.rgb@redhat.com>
- <ebec33a351a8af7822a24d9bed81178c786a0b1a.1412543112.git.rgb@redhat.com>
+	Mon, 13 Oct 2014 06:32:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ebec33a351a8af7822a24d9bed81178c786a0b1a.1412543112.git.rgb@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141012170637.GA12591@roeck-us.net>
+References: <1412885235-14026-1-git-send-email-octavian.purdila@intel.com>
+	<1412885235-14026-4-git-send-email-octavian.purdila@intel.com>
+	<CAJjB1qKQ0ND2CeF=Npahn0r19WjdTwc7D3Th7PLnn0FJxHa_KQ@mail.gmail.com>
+	<CAE1zotL4Pb5etHzakCxeDLvZR112XGGaHomZ_dbh=AQVc0wvPg@mail.gmail.com>
+	<20141012170637.GA12591@roeck-us.net>
+Date: Mon, 13 Oct 2014 13:32:28 +0300
+Message-ID: <CAE1zotLf15Prv=uYwL1wnsANj8k8RFhtBZCNJLkqOO+vxqW5CA@mail.gmail.com>
+Subject: Re: [RFC PATCH 3/3] i2c: show and change bus frequency via sysfs
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Mark Roszko <mark.roszko@gmail.com>, linux-i2c <linux-i2c@vger.kernel.org>,
+        linux-api@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Johan Hovold <johan@kernel.org>, Wolfram Sang <wsa@the-dreams.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Richard Guy Briggs (rgb@redhat.com):
-> Expose the namespace instance serial number for each namespace type in the proc
-> namespace operations structure to make it available for the proc filesystem.
-> 
-> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+On Sun, Oct 12, 2014 at 8:06 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On Sun, Oct 12, 2014 at 12:32:56PM +0300, Octavian Purdila wrote:
+>> On Sat, Oct 11, 2014 at 11:14 PM, Mark Roszko <mark.roszko@gmail.com> wrote:
+>>
+>> > This seems limiting to arches with peripherals that can support a range of
+>> > frequencies rather than fixed numbers.
+>> > Also it creates some portability quirkiness between platforms when all the
+>> > i2c bus drivers have different supported freq lists and you have to match
+>> > exactly the right frequency. I.e. one guy does 60khz but another only has
+>> > 80khz.
+>>
+>> Sorry, I don't understand your points here. If this limitations exists
+>> they are not introduced by this patch. This patch just exposes the
+>> frequency so that it can be read or changed in userspace.
+>>
+>> > Another issue is in systems where you have i2c devices on the same bus as
+>> > the sysfs user space driver. User space could set a bus frequency that
+>> > prevents operation with a system i2c device.
+>>
+>> Changing the frequency is limited to root. Also, bus drivers do not
+>> have to implement set_freq if it is thought not to be safe.
+>>
+>> On a different not, I have noticed that a fixed set of frequencies
+>> might not be the best API, since multiple drivers rather support a
+>> rather large set of frequencies in a range. A better API might be to
+>> expose a min-max range and let the bus driver adjust the requested
+>> frequency. I will follow up with a second version that does that.
+>
+> As two separate sysfs attributes, maybe ? sysfs is supposed to provide
+> one value per attribute.
+>
 
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Yes, I was thinking of using three attributes: bus_frequency,
+bus_min_frequency and bus_max_frequency.
 
-> ---
->  fs/namespace.c           |    7 +++++++
->  include/linux/proc_ns.h  |    1 +
->  ipc/namespace.c          |    8 ++++++++
->  kernel/pid_namespace.c   |    7 +++++++
->  kernel/user_namespace.c  |    7 +++++++
->  kernel/utsname.c         |    8 ++++++++
->  net/core/net_namespace.c |    7 +++++++
->  7 files changed, 45 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/namespace.c b/fs/namespace.c
-> index 9af49ff..f433f21 100644
-> --- a/fs/namespace.c
-> +++ b/fs/namespace.c
-> @@ -3028,6 +3028,12 @@ static unsigned int mntns_inum(void *ns)
->  	return mnt_ns->proc_inum;
->  }
->  
-> +static long long mntns_snum(void *ns)
-> +{
-> +	struct mnt_namespace *mnt_ns = ns;
-> +	return mnt_ns->serial_num;
-> +}
-> +
->  const struct proc_ns_operations mntns_operations = {
->  	.name		= "mnt",
->  	.type		= CLONE_NEWNS,
-> @@ -3035,4 +3041,5 @@ const struct proc_ns_operations mntns_operations = {
->  	.put		= mntns_put,
->  	.install	= mntns_install,
->  	.inum		= mntns_inum,
-> +	.snum		= mntns_snum,
->  };
-> diff --git a/include/linux/proc_ns.h b/include/linux/proc_ns.h
-> index 34a1e10..aaafe3e 100644
-> --- a/include/linux/proc_ns.h
-> +++ b/include/linux/proc_ns.h
-> @@ -14,6 +14,7 @@ struct proc_ns_operations {
->  	void (*put)(void *ns);
->  	int (*install)(struct nsproxy *nsproxy, void *ns);
->  	unsigned int (*inum)(void *ns);
-> +	long long (*snum)(void *ns);
->  };
->  
->  struct proc_ns {
-> diff --git a/ipc/namespace.c b/ipc/namespace.c
-> index 76dac5c..36ce7ff 100644
-> --- a/ipc/namespace.c
-> +++ b/ipc/namespace.c
-> @@ -191,6 +191,13 @@ static unsigned int ipcns_inum(void *vp)
->  	return ns->proc_inum;
->  }
->  
-> +static long long ipcns_snum(void *vp)
-> +{
-> +	struct ipc_namespace *ns = vp;
-> +
-> +	return ns->serial_num;
-> +}
-> +
->  const struct proc_ns_operations ipcns_operations = {
->  	.name		= "ipc",
->  	.type		= CLONE_NEWIPC,
-> @@ -198,4 +205,5 @@ const struct proc_ns_operations ipcns_operations = {
->  	.put		= ipcns_put,
->  	.install	= ipcns_install,
->  	.inum		= ipcns_inum,
-> +	.snum		= ipcns_snum,
->  };
-> diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
-> index 40a8b36..059b330 100644
-> --- a/kernel/pid_namespace.c
-> +++ b/kernel/pid_namespace.c
-> @@ -370,6 +370,12 @@ static unsigned int pidns_inum(void *ns)
->  	return pid_ns->proc_inum;
->  }
->  
-> +static long long pidns_snum(void *ns)
-> +{
-> +	struct pid_namespace *pid_ns = ns;
-> +	return pid_ns->serial_num;
-> +}
-> +
->  const struct proc_ns_operations pidns_operations = {
->  	.name		= "pid",
->  	.type		= CLONE_NEWPID,
-> @@ -377,6 +383,7 @@ const struct proc_ns_operations pidns_operations = {
->  	.put		= pidns_put,
->  	.install	= pidns_install,
->  	.inum		= pidns_inum,
-> +	.snum		= pidns_snum,
->  };
->  
->  static __init int pid_namespaces_init(void)
-> diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-> index 5c5c399..3f04df5 100644
-> --- a/kernel/user_namespace.c
-> +++ b/kernel/user_namespace.c
-> @@ -896,6 +896,12 @@ static unsigned int userns_inum(void *ns)
->  	return user_ns->proc_inum;
->  }
->  
-> +static long long userns_snum(void *ns)
-> +{
-> +	struct user_namespace *user_ns = ns;
-> +	return user_ns->serial_num;
-> +}
-> +
->  const struct proc_ns_operations userns_operations = {
->  	.name		= "user",
->  	.type		= CLONE_NEWUSER,
-> @@ -903,6 +909,7 @@ const struct proc_ns_operations userns_operations = {
->  	.put		= userns_put,
->  	.install	= userns_install,
->  	.inum		= userns_inum,
-> +	.snum		= userns_snum,
->  };
->  
->  static __init int user_namespaces_init(void)
-> diff --git a/kernel/utsname.c b/kernel/utsname.c
-> index d0cf7b5..ffeac1b 100644
-> --- a/kernel/utsname.c
-> +++ b/kernel/utsname.c
-> @@ -132,6 +132,13 @@ static unsigned int utsns_inum(void *vp)
->  	return ns->proc_inum;
->  }
->  
-> +static long long utsns_snum(void *vp)
-> +{
-> +	struct uts_namespace *ns = vp;
-> +
-> +	return ns->serial_num;
-> +}
-> +
->  const struct proc_ns_operations utsns_operations = {
->  	.name		= "uts",
->  	.type		= CLONE_NEWUTS,
-> @@ -139,4 +146,5 @@ const struct proc_ns_operations utsns_operations = {
->  	.put		= utsns_put,
->  	.install	= utsns_install,
->  	.inum		= utsns_inum,
-> +	.snum		= utsns_snum,
->  };
-> diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
-> index 3b5cfdb..c402eea 100644
-> --- a/net/core/net_namespace.c
-> +++ b/net/core/net_namespace.c
-> @@ -671,6 +671,12 @@ static unsigned int netns_inum(void *ns)
->  	return net->proc_inum;
->  }
->  
-> +static long long netns_snum(void *ns)
-> +{
-> +	struct net *net = ns;
-> +	return net->serial_num;
-> +}
-> +
->  const struct proc_ns_operations netns_operations = {
->  	.name		= "net",
->  	.type		= CLONE_NEWNET,
-> @@ -678,5 +684,6 @@ const struct proc_ns_operations netns_operations = {
->  	.put		= netns_put,
->  	.install	= netns_install,
->  	.inum		= netns_inum,
-> +	.snum		= netns_snum,
->  };
->  #endif
-> -- 
-> 1.7.1
+> For the patch itself, I would find it better if you used is_visible to
+> determine if the new attributes should be visible (and/or writable) instead
+> of returning -EOPNOTSUPP.
+>
+
+OK, that sounds better. I will switch to that model in v2.
