@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755038AbaJMCpa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:45:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45910 "EHLO
+	id S1753459AbaJMCpy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:45:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45904 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754106AbaJMC2a (ORCPT
+	with ESMTP id S1754091AbaJMC20 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:28:30 -0400
+	Sun, 12 Oct 2014 22:28:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Neal Cardwell <ncardwell@google.com>,
-        Yuchung Cheng <ycheng@google.com>,
+        Shmulik Ladkani <shmulik.ladkani@gmail.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 09/55] tcp: fix ssthresh and undo for consecutive short FRTO episodes
-Date: Mon, 13 Oct 2014 04:24:23 +0200
-Message-Id: <20141013022444.133351969@linuxfoundation.org>
+Subject: [PATCH 3.16 07/55] sit: Fix ipip6_tunnel_lookup device matching criteria
+Date: Mon, 13 Oct 2014 04:24:21 +0200
+Message-Id: <20141013022444.042748674@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
 References: <20141013022443.729870634@linuxfoundation.org>
@@ -30,81 +30,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neal Cardwell <ncardwell@google.com>
+From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
 
-[ Upstream commit 0c9ab09223fe9922baeb22546c9a90d774a4bde6 ]
+[ Upstream commit bc8fc7b8f825ef17a0fb9e68c18ce94fa66ab337 ]
 
-Fix TCP FRTO logic so that it always notices when snd_una advances,
-indicating that any RTO after that point will be a new and distinct
-loss episode.
+As of 4fddbf5d78 ("sit: strictly restrict incoming traffic to tunnel link device"),
+when looking up a tunnel, tunnel's underlying interface (t->parms.link)
+is verified to match incoming traffic's ingress device.
 
-Previously there was a very specific sequence that could cause FRTO to
-fail to notice a new loss episode had started:
+However the comparison was incorrectly based on skb->dev->iflink.
 
-(1) RTO timer fires, enter FRTO and retransmit packet 1 in write queue
-(2) receiver ACKs packet 1
-(3) FRTO sends 2 more packets
-(4) RTO timer fires again (should start a new loss episode)
+Instead, dev->ifindex should be used, which correctly represents the
+interface from which the IP stack hands the ipip6 packets.
 
-The problem was in step (3) above, where tcp_process_loss() returned
-early (in the spot marked "Step 2.b"), so that it never got to the
-logic to clear icsk_retransmits. Thus icsk_retransmits stayed
-non-zero. Thus in step (4) tcp_enter_loss() would see the non-zero
-icsk_retransmits, decide that this RTO is not a new episode, and
-decide not to cut ssthresh and remember the current cwnd and ssthresh
-for undo.
+This allows setting up sit tunnels bound to vlan interfaces (otherwise
+incoming ipip6 traffic on the vlan interface was dropped due to
+ipip6_tunnel_lookup match failure).
 
-There were two main consequences to the bug that we have
-observed. First, ssthresh was not decreased in step (4). Second, when
-there was a series of such FRTO (1-4) sequences that happened to be
-followed by an FRTO undo, we would restore the cwnd and ssthresh from
-before the entire series started (instead of the cwnd and ssthresh
-from before the most recent RTO). This could result in cwnd and
-ssthresh being restored to values much bigger than the proper values.
-
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Signed-off-by: Yuchung Cheng <ycheng@google.com>
-Fixes: e33099f96d99c ("tcp: implement RFC5682 F-RTO")
+Signed-off-by: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+Acked-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_input.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ net/ipv6/sit.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -2680,7 +2680,6 @@ static void tcp_enter_recovery(struct so
-  */
- static void tcp_process_loss(struct sock *sk, int flag, bool is_dupack)
- {
--	struct inet_connection_sock *icsk = inet_csk(sk);
- 	struct tcp_sock *tp = tcp_sk(sk);
- 	bool recovered = !before(tp->snd_una, tp->high_seq);
- 
-@@ -2706,12 +2705,9 @@ static void tcp_process_loss(struct sock
- 
- 	if (recovered) {
- 		/* F-RTO RFC5682 sec 3.1 step 2.a and 1st part of step 3.a */
--		icsk->icsk_retransmits = 0;
- 		tcp_try_undo_recovery(sk);
- 		return;
+--- a/net/ipv6/sit.c
++++ b/net/ipv6/sit.c
+@@ -101,19 +101,19 @@ static struct ip_tunnel *ipip6_tunnel_lo
+ 	for_each_ip_tunnel_rcu(t, sitn->tunnels_r_l[h0 ^ h1]) {
+ 		if (local == t->parms.iph.saddr &&
+ 		    remote == t->parms.iph.daddr &&
+-		    (!dev || !t->parms.link || dev->iflink == t->parms.link) &&
++		    (!dev || !t->parms.link || dev->ifindex == t->parms.link) &&
+ 		    (t->dev->flags & IFF_UP))
+ 			return t;
  	}
--	if (flag & FLAG_DATA_ACKED)
--		icsk->icsk_retransmits = 0;
- 	if (tcp_is_reno(tp)) {
- 		/* A Reno DUPACK means new data in F-RTO step 2.b above are
- 		 * delivered. Lower inflight to clock out (re)tranmissions.
-@@ -3393,8 +3389,10 @@ static int tcp_ack(struct sock *sk, cons
- 	    icsk->icsk_pending == ICSK_TIME_LOSS_PROBE)
- 		tcp_rearm_rto(sk);
- 
--	if (after(ack, prior_snd_una))
-+	if (after(ack, prior_snd_una)) {
- 		flag |= FLAG_SND_UNA_ADVANCED;
-+		icsk->icsk_retransmits = 0;
-+	}
- 
- 	prior_fackets = tp->fackets_out;
- 
+ 	for_each_ip_tunnel_rcu(t, sitn->tunnels_r[h0]) {
+ 		if (remote == t->parms.iph.daddr &&
+-		    (!dev || !t->parms.link || dev->iflink == t->parms.link) &&
++		    (!dev || !t->parms.link || dev->ifindex == t->parms.link) &&
+ 		    (t->dev->flags & IFF_UP))
+ 			return t;
+ 	}
+ 	for_each_ip_tunnel_rcu(t, sitn->tunnels_l[h1]) {
+ 		if (local == t->parms.iph.saddr &&
+-		    (!dev || !t->parms.link || dev->iflink == t->parms.link) &&
++		    (!dev || !t->parms.link || dev->ifindex == t->parms.link) &&
+ 		    (t->dev->flags & IFF_UP))
+ 			return t;
+ 	}
 
 
