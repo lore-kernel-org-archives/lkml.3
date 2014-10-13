@@ -1,96 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754468AbaJMPzv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 11:55:51 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:11473 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753286AbaJMPzt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 11:55:49 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18IKfCfeQgGUj5HFirEKweq2wM2tdcjpnE=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 663985FCDEF
-Date: Sun, 12 Oct 2014 15:22:09 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.apana.org.au>,
-        Torsten Duwe <duwe@lst.de>, "Theodore Ts'o" <tytso@mit.edu>,
-        Amit Shah <amit.shah@redhat.com>, Stephen Boyd <sboyd@codeaurora.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Kees Cook <keescook@chromium.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] char: hw_random: core.c:  Changed from using
- strncat to strlcat
-Message-ID: <20141012192209.GC14147@titan.lakedaemon.net>
-References: <1413110971-17392-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	id S1754551AbaJMP5t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 11:57:49 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:37517 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753972AbaJMP5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 11:57:46 -0400
+Date: Mon, 13 Oct 2014 10:56:35 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Johan Hovold <johan@kernel.org>
+CC: Felipe Balbi <balbi@ti.com>, Alessandro Zummo <a.zummo@towertech.it>,
+        Tony Lindgren <tony@atomide.com>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lokesh Vutla <lokeshvutla@ti.com>, Guenter Roeck <linux@roeck-us.net>,
+        <nsekhar@ti.com>, <t-kristo@ti.com>, <j-keerthy@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree@vger.kernel.org>, <rtc-linux@googlegroups.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 07/12] rtc: omap: silence bogus power-up reset message at
+ probe
+Message-ID: <20141013155635.GG21709@saruman>
+Reply-To: <balbi@ti.com>
+References: <1412881594-25678-1-git-send-email-johan@kernel.org>
+ <1412881594-25678-8-git-send-email-johan@kernel.org>
+ <20141010180054.GS31348@saruman>
+ <20141010180256.GU31348@saruman>
+ <20141011102004.GD18988@localhost>
+ <20141012005007.GC21128@saruman>
+ <20141012184240.GA2786@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wayzTnRSUXKNfBqd"
 Content-Disposition: inline
-In-Reply-To: <1413110971-17392-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20141012184240.GA2786@localhost>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rickard,
+--wayzTnRSUXKNfBqd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Sun, Oct 12, 2014 at 12:49:31PM +0200, Rickard Strandqvist wrote:
-> Changed from using strncat to strlcat to simplify the code
+Hi,
 
-I'd like to see a little more explicit discussion here.  As Guenter got
-caught up in the mis-understanding, I doubt he'd be the only one.  I
-think it's worth spelling out that the old code prevents overflowing the
-buffer 'buf' of size PAGE_SIZE.  And that strlcat() does that internally
-allowing this code to be more readable.
+On Sun, Oct 12, 2014 at 08:42:40PM +0200, Johan Hovold wrote:
+> On Sat, Oct 11, 2014 at 07:50:07PM -0500, Felipe Balbi wrote:
+> > Hi,
+> >=20
+> > On Sat, Oct 11, 2014 at 12:20:04PM +0200, Johan Hovold wrote:
+> > > On Fri, Oct 10, 2014 at 01:02:56PM -0500, Felipe Balbi wrote:
+> > > > On Fri, Oct 10, 2014 at 01:00:54PM -0500, Felipe Balbi wrote:
+> > > > > On Thu, Oct 09, 2014 at 09:06:29PM +0200, Johan Hovold wrote:
+> > > > > > Some legacy RTC IP revisions has a power-up reset flag in the s=
+tatus
+> > > > > > register that later revisions lack.
+> > > > > >=20
+> > > > > > As this flag is always read back as set on later revisions (or =
+is
+> > > > > > overloaded with a different flag), make sure to only clear the =
+flag and
+> > > > > > print the info message on legacy platforms.
+> > > > > >=20
+> > > > > > Signed-off-by: Johan Hovold <johan@kernel.org>
+> > > > >=20
+> > > > > Reviewed-by: Felipe Balbi <balbi@ti.com>
+> > > >=20
+> > > > oh, btw. This should be done for DT probes too.
+> > >=20
+> > > What do you mean? This is for DT probes (of "ti,da830-rtc" and
+> > > "ti,am3352-rtc"). DT probing of legacy RTC IPs is currently not
+> > > supported.
+> > >=20
+> > > Are you suggesting I should add a new compatible string for that?
+> >=20
+> > it seemed to me that you're only passing the new flag through
+> > platform_device_id table, not DT table. Did I miss something ?
+>=20
+> Ah, that's just the way the driver currently encodes the IP revision
+> differences. The platform_device_id entries are references from
+> of_device_id data. Should probably clean that up as well.
 
-It should also be mentioned that the final strlen(buf) is safe because
-every operation on buf will insert a NULL terminator within the
-buffers limit.
+oh, alright :-)
 
-thx,
+> Thanks again for the review. I'll post a new version when I'm back from
 
-Jason.
+no problem.
 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->  drivers/char/hw_random/core.c |   12 ++++--------
->  1 file changed, 4 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
-> index aa30a25..1500cfd 100644
-> --- a/drivers/char/hw_random/core.c
-> +++ b/drivers/char/hw_random/core.c
-> @@ -281,7 +281,6 @@ static ssize_t hwrng_attr_available_show(struct device *dev,
->  					 char *buf)
->  {
->  	int err;
-> -	ssize_t ret = 0;
->  	struct hwrng *rng;
->  
->  	err = mutex_lock_interruptible(&rng_mutex);
-> @@ -289,16 +288,13 @@ static ssize_t hwrng_attr_available_show(struct device *dev,
->  		return -ERESTARTSYS;
->  	buf[0] = '\0';
->  	list_for_each_entry(rng, &rng_list, list) {
-> -		strncat(buf, rng->name, PAGE_SIZE - ret - 1);
-> -		ret += strlen(rng->name);
-> -		strncat(buf, " ", PAGE_SIZE - ret - 1);
-> -		ret++;
-> +		strlcat(buf, rng->name, PAGE_SIZE);
-> +		strlcat(buf, " ", PAGE_SIZE);
->  	}
-> -	strncat(buf, "\n", PAGE_SIZE - ret - 1);
-> -	ret++;
-> +	strlcat(buf, "\n", PAGE_SIZE);
->  	mutex_unlock(&rng_mutex);
->  
-> -	return ret;
-> +	return strlen(buf);
->  }
->  
->  static DEVICE_ATTR(rng_current, S_IRUGO | S_IWUSR,
-> -- 
-> 1.7.10.4
-> 
+--=20
+balbi
+
+--wayzTnRSUXKNfBqd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUO/YzAAoJEIaOsuA1yqREP0AQAIkLWaDOJJTpFvhKcAdhb30P
+zrErSKM6Igf2zCVwk4n9is58jsKi1HW2mQwk8DVCAId4vMLg+V3ADYugQqZpvPg1
+ztYe24OoVe4VHZZ4/RJbJBCi3JRcq9LlutiGsTryjOfYwAqH+GdQ6fCf1VRgE251
+ADcH99wB5rRfBSlTKAQuku7UjtYF5AA2CArG+z/433XoZUS8NuCwfkHns5MTxFDE
+JJDNpPnH8d+tS3fq0hQXrrnjFYjBB++CfYbPNLMpkrhUhpnPne7OJfh/3kJ7dKcb
+OQcpHpeia6VvZkdJBQPDYNev/8vxvtIG6ym4ZiY3SkUR5pELv5QnnUjmrLQWkA4y
++YTpXj9gFhT1I+KcSL1fKBoCc7y0YFqJk0DuEFWTxVuGyOcJIr0uCpeMF7jBQkrD
+Ezm7AWmJvblkuxoujUQF2elGYd2GHrl8JicXuE/klXm04LEpXrOnGDVvFUyX2NMj
+DwROaiNIt03B6976O/vweWgA3IiNG2O+gUOim7C+Kl686mVQySidw65F67NB1Tff
+t1wS1Jwt7NN5LVj5+9LJXrZGb0hydzO+kxeT2VciQWj5+kuWFraLcTVhlik1U1C/
+7a3DpU+xla1plmqJnLIOQXBZ4lcfp29tiFintXL9dRexF1oZxDWFLn8RJ/m8Ea7X
+xYoEskPxphUWdLNNoly4
+=yAIG
+-----END PGP SIGNATURE-----
+
+--wayzTnRSUXKNfBqd--
