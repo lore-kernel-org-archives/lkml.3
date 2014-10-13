@@ -1,60 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754171AbaJMUZV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 16:25:21 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:37999 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753835AbaJMUZG (ORCPT
+	id S1754209AbaJMUZr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 16:25:47 -0400
+Received: from smtprelay0108.hostedemail.com ([216.40.44.108]:49099 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751342AbaJMUZp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 16:25:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <1413230486.11421.47.camel@fourier>
-References: <1413217740-9859-1-git-send-email-bobby.prani@gmail.com> <1413230486.11421.47.camel@fourier>
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Mon, 13 Oct 2014 16:24:35 -0400
-Message-ID: <CAJhHMCAKQTNysJPkSQKCejPMC8Wus=mWa43oP-DAwAUyUMDvbw@mail.gmail.com>
-Subject: Re: [PATCH 3.13, 3.14, 3.16, 3.17] rcu: Reduce rcu kthread wakeups
-To: Kamal Mostafa <kamal@canonical.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        stable <stable@vger.kernel.org>,
-        kernel-team <kernel-team@lists.ubuntu.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 13 Oct 2014 16:25:45 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1560:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3867:3872:3874:4321:4362:5007:7652:10004:10400:10848:11232:11658:11914:12517:12519:12555:12740:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: cent43_894c47ce3ab59
+X-Filterd-Recvd-Size: 1109
+Message-ID: <1413231942.1287.20.camel@joe-AO725>
+Subject: Re: [PATCH 1/1 linux-next] scripts/checkpatch.pl: fix k[mz]alloc
+ with multiplies check
+From: Joe Perches <joe@perches.com>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Date: Mon, 13 Oct 2014 13:25:42 -0700
+In-Reply-To: <1413230802-5507-1-git-send-email-fabf@skynet.be>
+References: <1413230802-5507-1-git-send-email-fabf@skynet.be>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 13, 2014 at 4:01 PM, Kamal Mostafa <kamal@canonical.com> wrote:
-> On Mon, 2014-10-13 at 12:29 -0400, Pranith Kumar wrote:
->> Backport 2aa792e and parts of 48a7639 to 3.13 which is Ubuntu LTS kernel.
->>
->> This commit reduces the number of rcu kthread wakeups. Tested for over a week on
->> my desktop 14.04 system.
->>
->> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
->> CC: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->
->
-> Hi Pranith and Paul-
->
-> This looks good, but how about lets split it back into two commits (the
-> second a clean cherry-pick) and submit it for 3.{14,16,17}-stable also:
->
-> 3.13 and 3.14 could apply the attached 48a7639 mini-backport (just
-> supplying rcu_gp_kthread_wake), and then cherry-pick 2aa792e.
->
-> 3.16 and 3.17 carry 48a7639 already, so could just cherry-pick 2aa792e.
->
+On Mon, 2014-10-13 at 22:06 +0200, Fabian Frederick wrote:
+> checkpatch doesn't seem to detect any case since 
+> Commit e367455a9f25
+> ("checkpatch: emit fewer kmalloc_array/kcalloc conversion warnings")
 
-The patch looks good. The commit message can be trimmed to just the last para:
+It seems that worked too well.
 
-Add a new rcu_gp_kthread_wake() which wakes up the gp kthread when it
-is necessary and safe to do so: No self-wakes, no wake-ups if the
-->gp_flags field indicates there is no need (as in someone else did
-the wake-up before we got around to it),  and no wake-ups before the
-grace-period kthread has been created.
+Thanks, I'll look at it.
 
-Thanks!
--- 
-Pranith
+
