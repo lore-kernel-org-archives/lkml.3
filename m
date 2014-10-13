@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754497AbaJMC3f (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:29:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46026 "EHLO
+	id S1754476AbaJMC3e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:29:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46018 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754454AbaJMC3c (ORCPT
+	with ESMTP id S1754415AbaJMC31 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:29:32 -0400
+	Sun, 12 Oct 2014 22:29:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Xishi Qiu <qiuxishi@huawei.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 3.16 54/55] driver/base/node: remove unnecessary kfree of node struct from unregister_one_node
-Date: Mon, 13 Oct 2014 04:25:08 +0200
-Message-Id: <20141013022446.316047719@linuxfoundation.org>
+        Jamal Hadi Salim <jhs@mojatatu.com>,
+        John Fastabend <john.fastabend@gmail.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.16 44/55] net_sched: copy exts->type in tcf_exts_change()
+Date: Mon, 13 Oct 2014 04:24:58 +0200
+Message-Id: <20141013022445.782526978@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
 References: <20141013022443.729870634@linuxfoundation.org>
@@ -30,59 +31,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+From: WANG Cong <xiyou.wangcong@gmail.com>
 
-commit 33ead538f642a33b1d658782a5d14a40b5014d1f upstream.
+[ Upstream commit 5301e3e117d88ef0967ce278912e54757f1a31a2 ]
 
-Commit 92d585ef067d ("numa: fix NULL pointer access and memory
-leak in unregister_one_node()") added kfree() of node struct in
-unregister_one_node(). But node struct is freed by node_device_release()
-which is called in  unregister_node(). So by adding the kfree(),
-node struct is freed two times.
+We need to copy exts->type when committing the change, otherwise
+it would be always 0. This is a quick fix for -net and -stable,
+for net-next tcf_exts will be removed.
 
-While hot removing memory, the commit leads the following BUG_ON():
-
-  kernel BUG at mm/slub.c:3346!
-  invalid opcode: 0000 [#1] SMP
-  [...]
-  Call Trace:
-   [...] unregister_one_node
-   [...] try_offline_node
-   [...] remove_memory
-   [...] acpi_memory_device_remove
-   [...] acpi_bus_trim
-   [...] acpi_bus_trim
-   [...] acpi_device_hotplug
-   [...] acpi_hotplug_work_fn
-   [...] process_one_work
-   [...] worker_thread
-   [...] ? rescuer_thread
-   [...] kthread
-   [...] ? kthread_create_on_node
-   [...] ret_from_fork
-   [...] ? kthread_create_on_node
-
-This patch removes unnecessary kfree() from unregister_one_node().
-
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: Xishi Qiu <qiuxishi@huawei.com>
-Fixes: 92d585ef067d "numa: fix NULL pointer access and memory leak in unregister_one_node()"
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Fixes: commit 33be627159913b094bb578e83 ("net_sched: act: use standard struct list_head")
+Reported-by: Jamal Hadi Salim <jhs@mojatatu.com>
+Cc: Jamal Hadi Salim <jhs@mojatatu.com>
+Cc: John Fastabend <john.fastabend@gmail.com>
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+Acked-by: Jamal Hadi Salim <jhs@mojatatu.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/base/node.c |    1 -
- 1 file changed, 1 deletion(-)
+ net/sched/cls_api.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/base/node.c
-+++ b/drivers/base/node.c
-@@ -603,7 +603,6 @@ void unregister_one_node(int nid)
- 		return;
- 
- 	unregister_node(node_devices[nid]);
--	kfree(node_devices[nid]);
- 	node_devices[nid] = NULL;
- }
- 
+--- a/net/sched/cls_api.c
++++ b/net/sched/cls_api.c
+@@ -549,6 +549,7 @@ void tcf_exts_change(struct tcf_proto *t
+ 	tcf_tree_lock(tp);
+ 	list_splice_init(&dst->actions, &tmp);
+ 	list_splice(&src->actions, &dst->actions);
++	dst->type = src->type;
+ 	tcf_tree_unlock(tp);
+ 	tcf_action_destroy(&tmp, TCA_ACT_UNBIND);
+ #endif
 
 
