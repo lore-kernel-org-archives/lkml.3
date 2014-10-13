@@ -1,71 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755235AbaJMChH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:37:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46074 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753192AbaJMC37 (ORCPT
+	id S1754068AbaJMCh3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:37:29 -0400
+Received: from forward19.mail.yandex.net ([95.108.253.144]:50484 "EHLO
+	forward19.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753312AbaJMChZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:29:59 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthieu Ternisien dOuville <matthieu.tdo@6wind.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 01/25] ip6_gre: fix flowi6_proto value in xmit path
-Date: Mon, 13 Oct 2014 04:24:54 +0200
-Message-Id: <20141013022454.347775565@linuxfoundation.org>
+	Sun, 12 Oct 2014 22:37:25 -0400
+X-Greylist: delayed 445 seconds by postgrey-1.27 at vger.kernel.org; Sun, 12 Oct 2014 22:37:25 EDT
+X-Yandex-Uniq: da5dca21-b708-4f2d-96a2-5f753c5b5895
+Authentication-Results: smtp19.mail.yandex.net; dkim=pass header.i=@yandex.com
+From: Erich Cordoba Malibran <erich.cordoba@yandex.com>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Erich Cordoba Malibran <erich.cordoba@yandex.com>
+Subject: [PATCH] staging: wlan-ng: Renamed prism2_fragmenthreshold in prism2mib.c
+Date: Sun, 12 Oct 2014 21:29:32 -0500
+Message-Id: <1413167372-5568-1-git-send-email-erich.cordoba@yandex.com>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141013022454.289398272@linuxfoundation.org>
-References: <20141013022454.289398272@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.17-stable review patch.  If anyone has any objections, please let me know.
+From: Erich Cordoba Malibran <erich.cordoba@yandex.com>
 
-------------------
+Renamed function to fix style issues.
 
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-
-[ Upstream commit 3be07244b7337760a3269d56b2f4a63e72218648 ]
-
-In xmit path, we build a flowi6 which will be used for the output route lookup.
-We are sending a GRE packet, neither IPv4 nor IPv6 encapsulated packet, thus the
-protocol should be IPPROTO_GRE.
-
-Fixes: c12b395a4664 ("gre: Support GRE over IPv6")
-Reported-by: Matthieu Ternisien d'Ouville <matthieu.tdo@6wind.com>
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Erich Cordoba Malibran <erich.cordoba@yandex.com>
 ---
- net/ipv6/ip6_gre.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/wlan-ng/prism2mib.c | 26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
---- a/net/ipv6/ip6_gre.c
-+++ b/net/ipv6/ip6_gre.c
-@@ -782,7 +782,7 @@ static inline int ip6gre_xmit_ipv4(struc
- 		encap_limit = t->parms.encap_limit;
+diff --git a/drivers/staging/wlan-ng/prism2mib.c b/drivers/staging/wlan-ng/prism2mib.c
+index 0163e06..30d224f 100644
+--- a/drivers/staging/wlan-ng/prism2mib.c
++++ b/drivers/staging/wlan-ng/prism2mib.c
+@@ -132,12 +132,12 @@ static int prism2mib_excludeunencrypted(struct mibrec *mib,
+ 					struct p80211msg_dot11req_mibset *msg,
+ 					void *data);
  
- 	memcpy(&fl6, &t->fl.u.ip6, sizeof(fl6));
--	fl6.flowi6_proto = IPPROTO_IPIP;
-+	fl6.flowi6_proto = IPPROTO_GRE;
+-static int prism2mib_fragmentationthreshold(struct mibrec *mib,
+-					    int isget,
+-					    wlandevice_t *wlandev,
+-					    hfa384x_t *hw,
+-					    struct p80211msg_dot11req_mibset *msg,
+-					    void *data);
++static int prism2mib_fragmenthreshold(struct mibrec *mib,
++				      int isget,
++				      wlandevice_t *wlandev,
++				      hfa384x_t *hw,
++				      struct p80211msg_dot11req_mibset *msg,
++				      void *data);
  
- 	dsfield = ipv4_get_dsfield(iph);
+ static int prism2mib_priv(struct mibrec *mib,
+ 			  int isget,
+@@ -198,7 +198,7 @@ static struct mibrec mibtab[] = {
+ 	{DIDmib_dot11mac_dot11OperationTable_dot11FragmentationThreshold,
+ 	 F_STA | F_READ | F_WRITE,
+ 	 HFA384x_RID_FRAGTHRESH, 0, 0,
+-	 prism2mib_fragmentationthreshold},
++	 prism2mib_fragmenthreshold},
+ 	{DIDmib_dot11mac_dot11OperationTable_dot11MaxTransmitMSDULifetime,
+ 	 F_STA | F_READ,
+ 	 HFA384x_RID_MAXTXLIFETIME, 0, 0,
+@@ -660,12 +660,12 @@ static int prism2mib_excludeunencrypted(struct mibrec *mib,
+ *
+ ----------------------------------------------------------------*/
  
-@@ -832,7 +832,7 @@ static inline int ip6gre_xmit_ipv6(struc
- 		encap_limit = t->parms.encap_limit;
- 
- 	memcpy(&fl6, &t->fl.u.ip6, sizeof(fl6));
--	fl6.flowi6_proto = IPPROTO_IPV6;
-+	fl6.flowi6_proto = IPPROTO_GRE;
- 
- 	dsfield = ipv6_get_dsfield(ipv6h);
- 	if (t->parms.flags & IP6_TNL_F_USE_ORIG_TCLASS)
-
+-static int prism2mib_fragmentationthreshold(struct mibrec *mib,
+-					    int isget,
+-					    wlandevice_t *wlandev,
+-					    hfa384x_t *hw,
+-					    struct p80211msg_dot11req_mibset *msg,
+-					    void *data)
++static int prism2mib_fragmenthreshold(struct mibrec *mib,
++				      int isget,
++				      wlandevice_t *wlandev,
++				      hfa384x_t *hw,
++				      struct p80211msg_dot11req_mibset *msg,
++				      void *data)
+ {
+ 	int result;
+ 	u32 *uint32 = (u32 *) data;
+-- 
+2.1.2
 
