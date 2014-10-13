@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754288AbaJMC3G (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:29:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45972 "EHLO
+	id S1754314AbaJMC3J (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:29:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45978 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754255AbaJMC3C (ORCPT
+	with ESMTP id S1754265AbaJMC3F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:29:02 -0400
+	Sun, 12 Oct 2014 22:29:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Sitsofe Wheeler <sitsofe@yahoo.com>,
+        Francesco Ruggeri <fruggeri@arista.com>,
+        Cong Wang <cwang@twopensource.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 42/55] hyperv: Fix a bug in netvsc_send()
-Date: Mon, 13 Oct 2014 04:24:56 +0200
-Message-Id: <20141013022445.680101312@linuxfoundation.org>
+Subject: [PATCH 3.16 25/55] net: allow macvlans to move to net namespace
+Date: Mon, 13 Oct 2014 04:24:39 +0200
+Message-Id: <20141013022444.829344509@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
 References: <20141013022443.729870634@linuxfoundation.org>
@@ -30,65 +30,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KY Srinivasan <kys@microsoft.com>
+From: Francesco Ruggeri <fruggeri@arista.com>
 
-[ Upstream commit 3a67c9ccad926a168d8b7891537a452018368a5b ]
+[ Upstream commit 0d0162e7a33d3710b9604e7c68c0f31f5c457428 ]
 
-After the packet is successfully sent, we should not touch the packet
-as it may have been freed. This patch is based on the work done by
-Long Li <longli@microsoft.com>.
+I cannot move a macvlan interface created on top of a bonding interface
+to a different namespace:
 
-David, please queue this up for stable.
+% ip netns add dummy0
+% ip link add link bond0 mac0 type macvlan
+% ip link set mac0 netns dummy0
+RTNETLINK answers: Invalid argument
+%
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reported-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+The problem seems to be that commit f9399814927a ("bonding: Don't allow
+bond devices to change network namespaces.") sets NETIF_F_NETNS_LOCAL
+on bonding interfaces, and commit 797f87f83b60 ("macvlan: fix netdev
+feature propagation from lower device") causes macvlan interfaces
+to inherit its features from the lower device.
+
+NETIF_F_NETNS_LOCAL should not be inherited from the lower device
+by a macvlan.
+Patch tested on 3.16.
+
+Signed-off-by: Francesco Ruggeri <fruggeri@arista.com>
+Acked-by: Cong Wang <cwang@twopensource.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/hyperv/netvsc.c |   15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+ drivers/net/macvlan.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/hyperv/netvsc.c
-+++ b/drivers/net/hyperv/netvsc.c
-@@ -708,6 +708,7 @@ int netvsc_send(struct hv_device *device
- 	unsigned int section_index = NETVSC_INVALID_INDEX;
- 	u32 msg_size = 0;
- 	struct sk_buff *skb;
-+	u16 q_idx = packet->q_idx;
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -800,6 +800,7 @@ static netdev_features_t macvlan_fix_fea
+ 					     features,
+ 					     mask);
+ 	features |= ALWAYS_ON_FEATURES;
++	features &= ~NETIF_F_NETNS_LOCAL;
  
- 
- 	net_device = get_outbound_net_device(device);
-@@ -772,24 +773,24 @@ int netvsc_send(struct hv_device *device
- 
- 	if (ret == 0) {
- 		atomic_inc(&net_device->num_outstanding_sends);
--		atomic_inc(&net_device->queue_sends[packet->q_idx]);
-+		atomic_inc(&net_device->queue_sends[q_idx]);
- 
- 		if (hv_ringbuf_avail_percent(&out_channel->outbound) <
- 			RING_AVAIL_PERCENT_LOWATER) {
- 			netif_tx_stop_queue(netdev_get_tx_queue(
--					    ndev, packet->q_idx));
-+					    ndev, q_idx));
- 
- 			if (atomic_read(&net_device->
--				queue_sends[packet->q_idx]) < 1)
-+				queue_sends[q_idx]) < 1)
- 				netif_tx_wake_queue(netdev_get_tx_queue(
--						    ndev, packet->q_idx));
-+						    ndev, q_idx));
- 		}
- 	} else if (ret == -EAGAIN) {
- 		netif_tx_stop_queue(netdev_get_tx_queue(
--				    ndev, packet->q_idx));
--		if (atomic_read(&net_device->queue_sends[packet->q_idx]) < 1) {
-+				    ndev, q_idx));
-+		if (atomic_read(&net_device->queue_sends[q_idx]) < 1) {
- 			netif_tx_wake_queue(netdev_get_tx_queue(
--					    ndev, packet->q_idx));
-+					    ndev, q_idx));
- 			ret = -ENOSPC;
- 		}
- 	} else {
+ 	return features;
+ }
 
 
