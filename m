@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753678AbaJMLJM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 07:09:12 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50333 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753136AbaJMLJK (ORCPT
+	id S1753443AbaJMLOD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 07:14:03 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:40934 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752204AbaJMLOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 07:09:10 -0400
-Date: Mon, 13 Oct 2014 13:08:51 +0200
-From: Mark Brown <broonie@kernel.org>
-To: Ray Jui <rjui@broadcom.com>
-Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20141013110851.GU27755@sirena.org.uk>
-References: <rjui@broadcom.com>
- <1412880294-9860-1-git-send-email-rjui@broadcom.com>
+	Mon, 13 Oct 2014 07:14:00 -0400
+Message-ID: <543BB3CD.7040001@ti.com>
+Date: Mon, 13 Oct 2014 14:13:17 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="J9FDM06y/La6Wdcu"
-Content-Disposition: inline
-In-Reply-To: <1412880294-9860-1-git-send-email-rjui@broadcom.com>
-X-Cookie: You are magnetic in your bearing.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 62.156.150.204
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi: pl022: Fix incorrect dma_unmap_sg
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Kevin Hilman <khilman@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kevin Hilman <khilman@linaro.org>
+CC: Geert Uytterhoeven <geert+renesas@glider.be>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, <grant.likely@secretlab.ca>,
+        <ulf.hansson@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v1 2/4] ARM: keystone: pm: switch to use generic pm domains
+References: <1412001499-19369-1-git-send-email-grygorii.strashko@ti.com>	<1412001499-19369-3-git-send-email-grygorii.strashko@ti.com> <CAMAWPa-sKGu_o0CDLCk_uKofxwOjXiiFBedjEP=OhQFmo+ehCA@mail.gmail.com>
+In-Reply-To: <CAMAWPa-sKGu_o0CDLCk_uKofxwOjXiiFBedjEP=OhQFmo+ehCA@mail.gmail.com>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/12/2014 03:56 PM, Kevin Hilman wrote:
+> Hi Grygorii,
+>
+> On 9/29/14 7:38 AM, Grygorii Strashko wrote:
+>> This patch switches Keystone 2 PM code to use Generic PM domains
+>> instead of PM clock domains because of the lack of DT support
+>> for the last.
+>>
+>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+>
+> IMO, this approach is much better.
+>
+> One minor nit below...
+>
+>> diff --git a/arch/arm/mach-keystone/pm_domain.c b/arch/arm/mach-keystone/pm_domain.c
+>> index ca79dda..3eb5257 100644
+>> --- a/arch/arm/mach-keystone/pm_domain.c
+>> +++ b/arch/arm/mach-keystone/pm_domain.c
+>> @@ -12,69 +12,110 @@
+>>    * version 2, as published by the Free Software Foundation.
+>>    */
+>>
+>> +#include <linux/clk.h>
+>>   #include <linux/init.h>
+>> -#include <linux/pm_runtime.h>
+>>   #include <linux/pm_clock.h>
+>> +#include <linux/pm_domain.h>
+>>   #include <linux/platform_device.h>
+>> -#include <linux/clk-provider.h>
+>>   #include <linux/of.h>
+>>
+>> -#ifdef CONFIG_PM_RUNTIME
+>> -static int keystone_pm_runtime_suspend(struct device *dev)
+>> +#ifdef CONFIG_PM_GENERIC_DOMAINS
+>> +
+>> +struct keystone_domain {
+>> + struct generic_pm_domain base;
+>> + struct device *dev;
+>> +};
+>
+> I think the name 'base' for this field leads to confusion later in the
+> code, since base usually means something else in drivers.  How about
+> 'genpd'?
 
---J9FDM06y/La6Wdcu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Agree. I'll change it.
 
-On Thu, Oct 09, 2014 at 11:44:54AM -0700, Ray Jui wrote:
-> When mapped RX DMA entries are unmapped in an error condition when DMA
-> is firstly configured in the driver, the number of TX DMA entries was
-> passed in, which is incorrect
+Thanks for your comments.
 
-Applied, thanks.
-
---J9FDM06y/La6Wdcu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUO7LCAAoJECTWi3JdVIfQxuwH/jgj0dqO8NNfa17Bxm9iBxOv
-IAyvpMdcJCBYoRwyplx08xwSZjDRNJZhPnl3VZ3mm8KzCDsRya1eV+QKrb5peQRP
-fQLbKpUwA+f4XEf8CeLP/nxQaej+KlS1oAxfkRGnaTZL1xqXqSrax5mLlK3R1a49
-ZXzqWXMZUF7ksBwATX4BsiY0lR/2yyNLyCoekcMD5yqAwpVsmtGJ5jB3dW9E3o5D
-B7TOD2otj+Qd6cuCiYs/MplWEtHYMty6PjbaxW9zfMXY0lMDzx9WjOeVXOnkCyPF
-RHspo7diIKz7VirFFZM8lWSMF3PesHUXMFwzaBO+BAqmx1GxAu/p2s7b0iuf7dg=
-=2Ypm
------END PGP SIGNATURE-----
-
---J9FDM06y/La6Wdcu--
+Regards,
+-grygorii
