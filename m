@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755202AbaJMCft (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:35:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46152 "EHLO
+	id S1754990AbaJMCgO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:36:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46125 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754599AbaJMCaP (ORCPT
+	with ESMTP id S1754651AbaJMCaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:30:15 -0400
+	Sun, 12 Oct 2014 22:30:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>
-Subject: [PATCH 3.17 15/25] uas: Add US_FL_NO_ATA_1X quirk for Seagate (0bc2:ab20) drives
-Date: Mon, 13 Oct 2014 04:25:08 +0200
-Message-Id: <20141013022454.948023904@linuxfoundation.org>
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 3.17 12/25] PCI: pciehp: Fix wait time in timeout message
+Date: Mon, 13 Oct 2014 04:25:05 +0200
+Message-Id: <20141013022454.819586920@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022454.289398272@linuxfoundation.org>
 References: <20141013022454.289398272@linuxfoundation.org>
@@ -28,34 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Yinghai Lu <yinghai@kernel.org>
 
-commit f9554a6b199360c2f888173fd600e1eb7ff165ef upstream.
+commit d433889cd5a0933fbd90f1e65bff5a8d7963cc52 upstream.
 
-https://bbs.archlinux.org/viewtopic.php?pid=1457492
+When we warned about a timeout on a hotplug command, we previously printed
+the time between calls to pcie_write_cmd(), without accounting for any time
+spent actually waiting.  Consider this sequence:
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+  pcie_write_cmd
+    write SLTCTL
+    cmd_started = jiffies          # T1
+
+  pcie_write_cmd
+    pcie_wait_cmd
+      now = jiffies                # T2
+      wait_event_timeout           # we may wait here
+      if (timeout)
+        ctrl_info("Timeout on command issued %u msec ago",
+                  jiffies_to_msecs(now - cmd_started))
+
+We previously printed (T2 - T1), but that doesn't include the time spent in
+wait_event_timeout().
+
+Fix this by using the current jiffies value, not the one cached before
+calling wait_event_timeout().
+
+[bhelgaas: changelog, use current jiffies instead of adding timeout]
+Fixes: 40b960831cfa ("PCI: pciehp: Compute timeout from hotplug command start time")
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/unusual_uas.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/pci/hotplug/pciehp_hpc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/storage/unusual_uas.h
-+++ b/drivers/usb/storage/unusual_uas.h
-@@ -54,6 +54,13 @@ UNUSUAL_DEV(0x0bc2, 0x3312, 0x0000, 0x99
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_NO_ATA_1X),
+--- a/drivers/pci/hotplug/pciehp_hpc.c
++++ b/drivers/pci/hotplug/pciehp_hpc.c
+@@ -173,7 +173,7 @@ static void pcie_wait_cmd(struct control
+ 	if (!rc)
+ 		ctrl_info(ctrl, "Timeout on hotplug command %#010x (issued %u msec ago)\n",
+ 			  ctrl->slot_ctrl,
+-			  jiffies_to_msecs(now - ctrl->cmd_started));
++			  jiffies_to_msecs(jiffies - ctrl->cmd_started));
+ }
  
-+/* https://bbs.archlinux.org/viewtopic.php?id=183190 */
-+UNUSUAL_DEV(0x0bc2, 0xab20, 0x0000, 0x9999,
-+		"Seagate",
-+		"Backup+ BK",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_NO_ATA_1X),
-+
- /* Reported-by: Claudio Bizzarri <claudio.bizzarri@gmail.com> */
- UNUSUAL_DEV(0x152d, 0x0567, 0x0000, 0x9999,
- 		"JMicron",
+ /**
 
 
