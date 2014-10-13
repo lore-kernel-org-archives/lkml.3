@@ -1,51 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966AbaJMNIG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 09:08:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36563 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753914AbaJMNIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 09:08:01 -0400
-From: Paul Moore <pmoore@redhat.com>
-To: James Morris <jmorris@namei.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [GIT] Security subsystem upate for 3.18
-Date: Mon, 13 Oct 2014 09:07:53 -0400
-Message-ID: <6097685.yy4GYjPioe@sifl>
-Organization: Red Hat
-User-Agent: KMail/4.14.1 (Linux/3.16.1-gentoo; KDE/4.14.1; x86_64; ; )
-In-Reply-To: <alpine.LRH.2.11.1410131502510.6957@namei.org>
-References: <alpine.LRH.2.11.1410101913460.13164@namei.org> <CA+55aFxtxBe8SaEYD6vAQME_YE+eD6mhU8F6Q850k-XBfzz4QQ@mail.gmail.com> <alpine.LRH.2.11.1410131502510.6957@namei.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1754007AbaJMNI0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 09:08:26 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:59409 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753411AbaJMNIX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 09:08:23 -0400
+From: Antonios Motakis <a.motakis@virtualopensystems.com>
+To: Russell King <linux@arm.linux.org.uk>,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        linux-api@vger.kernel.org (open list:ABI/API),
+        linux-kernel@vger.kernel.org (open list)
+Cc: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
+        alex.williamson@redhat.com, tech@virtualopensystems.com,
+        christoffer.dall@linaro.org, eric.auger@linaro.org,
+        kim.phillips@freescale.com, marc.zyngier@arm.com
+Subject: [PATCH] driver core: amba: add device binding path 'driver_override'
+Date: Mon, 13 Oct 2014 15:07:34 +0200
+Message-Id: <1413205672-6236-1-git-send-email-a.motakis@virtualopensystems.com>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, October 13, 2014 03:06:34 PM James Morris wrote:
-> On Sun, 12 Oct 2014, Linus Torvalds wrote:
-> > on some previous development, so it's often a good time to simply
-> > create a new feature branch. I don't know how James feels about
-> > merging multiple separate feature branches, but I know that *I* tend
-> > to appreciate it when I get multiple well-defined pull requests rather
-> > than one big one that does many different things.
-> 
-> It's fine with me.
-> 
-> This is the first time I saw (or noticed) that Paul had back merged ahead
-> of me, but it seemed to merge into my tree ok so I didn't query it at the
-> time.
+As already demonstrated with PCI [1] and the platform bus [2], a
+driver_override property in sysfs can be used to bypass the id matching
+of a device to a AMBA driver. This can be used by VFIO to bind to any AMBA
+device requested by the user.
 
-The management of the linux-security tree, the approach I was taking with the 
-SELinux tree, and the approach that the other LSM maintainers use has been 
-discussed many times on the LSM list.  I'm also fairly certain that you were 
-on the To/CC line for many, if not all, of those threads.
+[1] http://lists-archives.com/linux-kernel/28030441-pci-introduce-new-device-binding-path-using-pci_dev-driver_override.html
+[2] https://www.redhat.com/archives/libvir-list/2014-April/msg00382.html
 
+Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+---
+ Documentation/ABI/testing/sysfs-bus-amba | 20 ++++++++++++++
+ drivers/amba/bus.c                       | 47 ++++++++++++++++++++++++++++++++
+ include/linux/amba/bus.h                 |  1 +
+ 3 files changed, 68 insertions(+)
+ create mode 100644 Documentation/ABI/testing/sysfs-bus-amba
+
+diff --git a/Documentation/ABI/testing/sysfs-bus-amba b/Documentation/ABI/testing/sysfs-bus-amba
+new file mode 100644
+index 0000000..e7b5467
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-bus-amba
+@@ -0,0 +1,20 @@
++What:		/sys/bus/amba/devices/.../driver_override
++Date:		September 2014
++Contact:	Antonios Motakis <a.motakis@virtualopensystems.com>
++Description:
++		This file allows the driver for a device to be specified which
++		will override standard OF, ACPI, ID table, and name matching.
++		When specified, only a driver with a name matching the value
++		written to driver_override will have an opportunity to bind to
++		the device. The override is specified by writing a string to the
++		driver_override file (echo vfio-amba > driver_override)	and may
++		be cleared with an empty string (echo > driver_override).
++		This returns the device to standard matching rules binding.
++		Writing to driver_override does not automatically unbind the
++		device from its current driver or make any attempt to
++		automatically load the specified driver. If no driver with a
++		matching name is currently loaded in the kernel, the device will
++		not bind to any driver. This also allows devices to opt-out of
++		driver binding using a driver_override name such as "none".
++		Only a single driver may be specified in the override, there is
++		no support for parsing delimiters.
+diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
+index 3cf61a1..c7aa448 100644
+--- a/drivers/amba/bus.c
++++ b/drivers/amba/bus.c
+@@ -17,6 +17,7 @@
+ #include <linux/pm_runtime.h>
+ #include <linux/amba/bus.h>
+ #include <linux/sizes.h>
++#include <linux/limits.h>
+ 
+ #include <asm/irq.h>
+ 
+@@ -42,6 +43,10 @@ static int amba_match(struct device *dev, struct device_driver *drv)
+ 	struct amba_device *pcdev = to_amba_device(dev);
+ 	struct amba_driver *pcdrv = to_amba_driver(drv);
+ 
++	/* When driver_override is set, only bind to the matching driver */
++	if (pcdev->driver_override)
++		return !strcmp(pcdev->driver_override, drv->name);
++
+ 	return amba_lookup(pcdrv->id_table, pcdev) != NULL;
+ }
+ 
+@@ -58,6 +63,47 @@ static int amba_uevent(struct device *dev, struct kobj_uevent_env *env)
+ 	return retval;
+ }
+ 
++static ssize_t driver_override_show(struct device *_dev,
++				    struct device_attribute *attr, char *buf)
++{
++	struct amba_device *dev = to_amba_device(_dev);
++
++	if (!dev->driver_override)
++		return 0;
++
++	return sprintf(buf, "%s\n", dev->driver_override);
++}
++
++static ssize_t driver_override_store(struct device *_dev,
++				     struct device_attribute *attr,
++				     const char *buf, size_t count)
++{
++	struct amba_device *dev = to_amba_device(_dev);
++	char *driver_override, *old = dev->driver_override, *cp;
++
++	if (count > PATH_MAX)
++		return -EINVAL;
++
++	driver_override = kstrndup(buf, count, GFP_KERNEL);
++	if (!driver_override)
++		return -ENOMEM;
++
++	cp = strchr(driver_override, '\n');
++	if (cp)
++		*cp = '\0';
++
++	if (strlen(driver_override)) {
++		dev->driver_override = driver_override;
++	} else {
++	       kfree(driver_override);
++	       dev->driver_override = NULL;
++	}
++
++	kfree(old);
++
++	return count;
++}
++
+ #define amba_attr_func(name,fmt,arg...)					\
+ static ssize_t name##_show(struct device *_dev,				\
+ 			   struct device_attribute *attr, char *buf)	\
+@@ -80,6 +126,7 @@ amba_attr_func(resource, "\t%016llx\t%016llx\t%016lx\n",
+ static struct device_attribute amba_dev_attrs[] = {
+ 	__ATTR_RO(id),
+ 	__ATTR_RO(resource),
++	__ATTR_RW(driver_override),
+ 	__ATTR_NULL,
+ };
+ 
+diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
+index fdd7e1b..7c011e7 100644
+--- a/include/linux/amba/bus.h
++++ b/include/linux/amba/bus.h
+@@ -32,6 +32,7 @@ struct amba_device {
+ 	struct clk		*pclk;
+ 	unsigned int		periphid;
+ 	unsigned int		irq[AMBA_NR_IRQS];
++	char			*driver_override;
+ };
+ 
+ struct amba_driver {
 -- 
-paul moore
-security and virtualization @ redhat
+2.1.1
 
