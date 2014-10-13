@@ -1,76 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754453AbaJMPUK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 11:20:10 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:55822 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754425AbaJMPUI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 11:20:08 -0400
-Message-ID: <543BED9C.20404@roeck-us.net>
-Date: Mon, 13 Oct 2014 08:19:56 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1754524AbaJMPUd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 11:20:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24182 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754485AbaJMPUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 11:20:31 -0400
+Date: Mon, 13 Oct 2014 11:19:55 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Baoquan He <bhe@redhat.com>, Kees Cook <keescook@chromium.org>,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        x86@kernel.org, ak@linux.intel.com, ebiederm@xmission.com,
+        kexec@lists.infradead.org, whissi@whissi.de,
+        kumagai-atsushi@mxc.nes.nec.co.jp, stable@vger.kernel.org
+Subject: Re: [resend Patch v3 1/2] kaslr: check if kernel location is changed
+Message-ID: <20141013151955.GA9777@redhat.com>
+References: <1412060896-1902-1-git-send-email-bhe@redhat.com>
+ <542B1EC1.8090502@zytor.com>
+ <20141001135237.GA13689@redhat.com>
+ <543553C7.9010906@zytor.com>
+ <20141008192728.GA26517@redhat.com>
+ <20141011031452.GB11560@dhcp-16-116.nay.redhat.com>
+ <543907B5.7060001@zytor.com>
+ <20141013125257.GB6466@redhat.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.17 00/25] 3.17.1-stable review
-References: <20141013022454.289398272@linuxfoundation.org>
-In-Reply-To: <20141013022454.289398272@linuxfoundation.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020203.543BEDA8.0098,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 27
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141013125257.GB6466@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/2014 07:24 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.17.1 release.
-> There are 25 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Wed Oct 15 02:24:45 UTC 2014.
-> Anything received after that time might be too late.
->
+On Mon, Oct 13, 2014 at 08:52:57AM -0400, Vivek Goyal wrote:
+> On Sat, Oct 11, 2014 at 03:34:29AM -0700, H. Peter Anvin wrote:
+> > On 10/10/2014 08:14 PM, Baoquan He wrote:
+> > >On 10/08/14 at 03:27pm, Vivek Goyal wrote:
+> > >>On Wed, Oct 08, 2014 at 08:09:59AM -0700, H. Peter Anvin wrote:
+> > >
+> > >>>Sorry... this makes no sense.
+> > >>>
+> > >>>For x86-64, there is no direct connection between the physical and
+> > >>>virtual address spaces that the kernel runs in...
+> > >>
+> > >>I am sorry I did not understand this one. I thought that initial
+> > >>relocatable kernel implementaion did not have any direct connection
+> > >>between virtual and physical address. One could load kernel anywhere
+> > >>and kernel virtual address will not change and we will just adjust
+> > >>page tables to map virtual address to right physical address.
+> > >>
+> > >>Now handle_relocation() stuff seems to introduce a close coupling
+> > >>between physical and virtual address. So if kernel shifts by 16MB
+> > >>in physical address space, then it will shift by equal amount
+> > >>in virtual address space. So there seems to be a direct connection
+> > >>between virtual and physical address space in this case.
+> > >
+> > >Yeah, it's exactly as Vivek said.
+> > >
+> > >Before kaslr was introduced, x86_64 kernel can be put anywhere, and
+> > >always _text is 0xffffffff81000000. Meanwhile phys_base contains the
+> > >offset between the compiled addr (namely 0x1000000) and kernel loaded
+> > >addr. After kaslr implementation was added, as long as kernel loaded
+> > >addr is different 0x1000000, it will call handle_relocations(). The
+> > >offset now is added onto each symbols including _text and phys_base
+> > >becomes 0.
+> > >
+> > >It's clearly showing that by checking /proc/kallsyms and value of
+> > >phys_base.
+> > >
+> > 
+> > This really shouldn't have happened this way on x86-64.  It has to happen
+> > this way on i386, but I worry that this may be a serious misdesign in kaslr
+> > on x86-64.  I'm also wondering if there is any other fallout of this?
+> 
+> I agree. On x86_64, we should stick to previous design and this new
+> logic of performing relocations does not sound very clean and makes
+> things very confusing.
+> 
+> I am wondering that why couldn't we simply adjust page tables in case of
+> kaslr on x86_64, instead of performing relocations.
 
-Build results:
-	total: 134 pass: 134 fail: 0
+Well, IIUC, if virtual addresses are shifted w.r.t what virtual address
+kernel was compiled for, then relocation will have to be done.
 
-Qemu test results:
-	total: 30 pass: 30 fail: 0
+So question will be if physical address shift is enough for kaslr or
+virtual address shift is necessary.
 
-Details are available at http://server.roeck-us.net:8010/builders.
-
-Guenter
-
+Thanks
+Vivek
