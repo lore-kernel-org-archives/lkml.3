@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755098AbaJMCjJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:39:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46039 "EHLO
+	id S1754497AbaJMC3f (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:29:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46026 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754415AbaJMC3j (ORCPT
+	with ESMTP id S1754454AbaJMC3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:29:39 -0400
+	Sun, 12 Oct 2014 22:29:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>
-Subject: [PATCH 3.16 46/55] uas: Add no-report-opcodes quirk
-Date: Mon, 13 Oct 2014 04:25:00 +0200
-Message-Id: <20141013022445.891500845@linuxfoundation.org>
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Xishi Qiu <qiuxishi@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 3.16 54/55] driver/base/node: remove unnecessary kfree of node struct from unregister_one_node
+Date: Mon, 13 Oct 2014 04:25:08 +0200
+Message-Id: <20141013022446.316047719@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
 References: <20141013022443.729870634@linuxfoundation.org>
@@ -28,99 +30,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-commit 734016b00b50a3c6a0e1fc1b7b217e783f5123a1 upstream.
+commit 33ead538f642a33b1d658782a5d14a40b5014d1f upstream.
 
-Besides the ASM1051 (*) needing sdev->no_report_opcodes = 1, it turns out that
-the JMicron JMS567 also needs it to work properly with uas (usb-storage always
-sets it). Since some of the scsi devs were not to keen on the idea to
-outrightly set sdev->no_report_opcodes = 1 for all uas devices, so add a quirk
-for this, and set it for the JMS567.
+Commit 92d585ef067d ("numa: fix NULL pointer access and memory
+leak in unregister_one_node()") added kfree() of node struct in
+unregister_one_node(). But node struct is freed by node_device_release()
+which is called in  unregister_node(). So by adding the kfree(),
+node struct is freed two times.
 
-*) Which has become a non-issue since we've completely blacklisted uas on
-the ASM1051 for other reasons
+While hot removing memory, the commit leads the following BUG_ON():
 
-Reported-and-tested-by: Claudio Bizzarri <claudio.bizzarri@gmail.com>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+  kernel BUG at mm/slub.c:3346!
+  invalid opcode: 0000 [#1] SMP
+  [...]
+  Call Trace:
+   [...] unregister_one_node
+   [...] try_offline_node
+   [...] remove_memory
+   [...] acpi_memory_device_remove
+   [...] acpi_bus_trim
+   [...] acpi_bus_trim
+   [...] acpi_device_hotplug
+   [...] acpi_hotplug_work_fn
+   [...] process_one_work
+   [...] worker_thread
+   [...] ? rescuer_thread
+   [...] kthread
+   [...] ? kthread_create_on_node
+   [...] ret_from_fork
+   [...] ? kthread_create_on_node
+
+This patch removes unnecessary kfree() from unregister_one_node().
+
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Xishi Qiu <qiuxishi@huawei.com>
+Fixes: 92d585ef067d "numa: fix NULL pointer access and memory leak in unregister_one_node()"
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/kernel-parameters.txt |    2 ++
- drivers/usb/storage/uas.c           |    4 ++++
- drivers/usb/storage/unusual_uas.h   |    7 +++++++
- drivers/usb/storage/usb.c           |    5 ++++-
- include/linux/usb_usual.h           |    2 ++
- 5 files changed, 19 insertions(+), 1 deletion(-)
+ drivers/base/node.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -3459,6 +3459,8 @@ bytes respectively. Such letter suffixes
- 					READ_DISC_INFO command);
- 				e = NO_READ_CAPACITY_16 (don't use
- 					READ_CAPACITY_16 command);
-+				f = NO_REPORT_OPCODES (don't use report opcodes
-+					command, uas only);
- 				h = CAPACITY_HEURISTICS (decrease the
- 					reported device capacity by one
- 					sector if the number is odd);
---- a/drivers/usb/storage/uas.c
-+++ b/drivers/usb/storage/uas.c
-@@ -961,6 +961,10 @@ static int uas_slave_alloc(struct scsi_d
- static int uas_slave_configure(struct scsi_device *sdev)
- {
- 	struct uas_dev_info *devinfo = sdev->hostdata;
-+
-+	if (devinfo->flags & US_FL_NO_REPORT_OPCODES)
-+		sdev->no_report_opcodes = 1;
-+
- 	scsi_set_tag_type(sdev, MSG_ORDERED_TAG);
- 	scsi_activate_tcq(sdev, devinfo->qdepth - 2);
- 	return 0;
---- a/drivers/usb/storage/unusual_uas.h
-+++ b/drivers/usb/storage/unusual_uas.h
-@@ -53,3 +53,10 @@ UNUSUAL_DEV(0x0bc2, 0x3312, 0x0000, 0x99
- 		"Expansion Desk",
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_NO_ATA_1X),
-+
-+/* Reported-by: Claudio Bizzarri <claudio.bizzarri@gmail.com> */
-+UNUSUAL_DEV(0x152d, 0x0567, 0x0000, 0x9999,
-+		"JMicron",
-+		"JMS567",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_NO_REPORT_OPCODES),
---- a/drivers/usb/storage/usb.c
-+++ b/drivers/usb/storage/usb.c
-@@ -477,7 +477,7 @@ void usb_stor_adjust_quirks(struct usb_d
- 			US_FL_SINGLE_LUN | US_FL_NO_WP_DETECT |
- 			US_FL_NO_READ_DISC_INFO | US_FL_NO_READ_CAPACITY_16 |
- 			US_FL_INITIAL_READ10 | US_FL_WRITE_CACHE |
--			US_FL_NO_ATA_1X);
-+			US_FL_NO_ATA_1X | US_FL_NO_REPORT_OPCODES);
+--- a/drivers/base/node.c
++++ b/drivers/base/node.c
+@@ -603,7 +603,6 @@ void unregister_one_node(int nid)
+ 		return;
  
- 	p = quirks;
- 	while (*p) {
-@@ -515,6 +515,9 @@ void usb_stor_adjust_quirks(struct usb_d
- 		case 'e':
- 			f |= US_FL_NO_READ_CAPACITY_16;
- 			break;
-+		case 'f':
-+			f |= US_FL_NO_REPORT_OPCODES;
-+			break;
- 		case 'h':
- 			f |= US_FL_CAPACITY_HEURISTICS;
- 			break;
---- a/include/linux/usb_usual.h
-+++ b/include/linux/usb_usual.h
-@@ -75,6 +75,8 @@
- 		/* Cannot handle FUA in WRITE or READ CDBs */	\
- 	US_FLAG(NO_ATA_1X,	0x02000000)			\
- 		/* Cannot handle ATA_12 or ATA_16 CDBs */	\
-+	US_FLAG(NO_REPORT_OPCODES,	0x04000000)		\
-+		/* Cannot handle MI_REPORT_SUPPORTED_OPERATION_CODES */	\
+ 	unregister_node(node_devices[nid]);
+-	kfree(node_devices[nid]);
+ 	node_devices[nid] = NULL;
+ }
  
- #define US_FLAG(name, value)	US_FL_##name = value ,
- enum { US_DO_ALL_FLAGS };
 
 
