@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331AbaJMCnc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:43:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45949 "EHLO
+	id S1754190AbaJMC2s (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:28:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45930 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754193AbaJMC2u (ORCPT
+	with ESMTP id S1754147AbaJMC2k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:28:50 -0400
+	Sun, 12 Oct 2014 22:28:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        YOSHIFUJI Hideaki <hideaki@yoshifuji.org>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>, Martin Lau <kafai@fb.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 37/55] ipv6: remove rt6i_genid
-Date: Mon, 13 Oct 2014 04:24:51 +0200
-Message-Id: <20141013022445.394526081@linuxfoundation.org>
+Subject: [PATCH 3.16 33/55] Revert "net/macb: add pinctrl consumer support"
+Date: Mon, 13 Oct 2014 04:24:47 +0200
+Message-Id: <20141013022445.192422510@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
 References: <20141013022443.729870634@linuxfoundation.org>
@@ -33,180 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
 
-[ Upstream commit 705f1c869d577c8055736dd02501f26a2507dd5b ]
+[ Upstream commit 9026968abe7ad102f4ac5c6d96d733643f75399c ]
 
-Eric Dumazet noticed that all no-nonexthop or no-gateway routes which
-are already marked DST_HOST (e.g. input routes routes) will always be
-invalidated during sk_dst_check. Thus per-socket dst caching absolutely
-had no effect and early demuxing had no effect.
+This reverts commit 8ef29f8aae524bd51298fb10ac6a5ce6c4c5a3d8.
+The driver core already calls pinctrl_get() and claims the default
+state. There is no need to replicate this in the driver.
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-Thus this patch removes rt6i_genid: fn_sernum already gets modified during
-add operations, so we only must ensure we mutate fn_sernum during ipv6
-address remove operations. This is a fairly cost extensive operations,
-but address removal should not happen that often. Also our mtu update
-functions do the same and we heard no complains so far. xfrm policy
-changes also cause a call into fib6_flush_trees. Also plug a hole in
-rt6_info (no cacheline changes).
-
-I verified via tracing that this change has effect.
-
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: YOSHIFUJI Hideaki <hideaki@yoshifuji.org>
-Cc: Vlad Yasevich <vyasevich@gmail.com>
-Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Cc: Martin Lau <kafai@fb.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/ip6_fib.h       |    5 +----
- include/net/net_namespace.h |   20 +++-----------------
- net/ipv6/addrconf.c         |    3 ++-
- net/ipv6/addrconf_core.c    |    7 +++++++
- net/ipv6/ip6_fib.c          |   20 ++++++++++++++++++++
- net/ipv6/route.c            |    4 ----
- 6 files changed, 33 insertions(+), 26 deletions(-)
+ drivers/net/ethernet/cadence/macb.c |   11 -----------
+ 1 file changed, 11 deletions(-)
 
---- a/include/net/ip6_fib.h
-+++ b/include/net/ip6_fib.h
-@@ -114,16 +114,13 @@ struct rt6_info {
- 	u32				rt6i_flags;
- 	struct rt6key			rt6i_src;
- 	struct rt6key			rt6i_prefsrc;
--	u32				rt6i_metric;
+--- a/drivers/net/ethernet/cadence/macb.c
++++ b/drivers/net/ethernet/cadence/macb.c
+@@ -30,7 +30,6 @@
+ #include <linux/of_device.h>
+ #include <linux/of_mdio.h>
+ #include <linux/of_net.h>
+-#include <linux/pinctrl/consumer.h>
  
- 	struct inet6_dev		*rt6i_idev;
- 	unsigned long			_rt6i_peer;
+ #include "macb.h"
  
--	u32				rt6i_genid;
--
-+	u32				rt6i_metric;
- 	/* more non-fragment space at head required */
- 	unsigned short			rt6i_nfheader_len;
--
- 	u8				rt6i_protocol;
- };
+@@ -1803,7 +1802,6 @@ static int __init macb_probe(struct plat
+ 	struct phy_device *phydev;
+ 	u32 config;
+ 	int err = -ENXIO;
+-	struct pinctrl *pinctrl;
+ 	const char *mac;
  
---- a/include/net/net_namespace.h
-+++ b/include/net/net_namespace.h
-@@ -352,26 +352,12 @@ static inline void rt_genid_bump_ipv4(st
- 	atomic_inc(&net->ipv4.rt_genid);
- }
- 
--#if IS_ENABLED(CONFIG_IPV6)
--static inline int rt_genid_ipv6(struct net *net)
--{
--	return atomic_read(&net->ipv6.rt_genid);
--}
--
--static inline void rt_genid_bump_ipv6(struct net *net)
--{
--	atomic_inc(&net->ipv6.rt_genid);
--}
--#else
--static inline int rt_genid_ipv6(struct net *net)
--{
--	return 0;
--}
--
-+extern void (*__fib6_flush_trees)(struct net *net);
- static inline void rt_genid_bump_ipv6(struct net *net)
- {
-+	if (__fib6_flush_trees)
-+		__fib6_flush_trees(net);
- }
--#endif
- 
- #if IS_ENABLED(CONFIG_IEEE802154_6LOWPAN)
- static inline struct netns_ieee802154_lowpan *
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -4746,10 +4746,11 @@ static void __ipv6_ifa_notify(int event,
- 
- 		if (ip6_del_rt(ifp->rt))
- 			dst_free(&ifp->rt->dst);
-+
-+		rt_genid_bump_ipv6(net);
- 		break;
+ 	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+@@ -1812,15 +1810,6 @@ static int __init macb_probe(struct plat
+ 		goto err_out;
  	}
- 	atomic_inc(&net->ipv6.dev_addr_genid);
--	rt_genid_bump_ipv6(net);
- }
  
- static void ipv6_ifa_notify(int event, struct inet6_ifaddr *ifp)
---- a/net/ipv6/addrconf_core.c
-+++ b/net/ipv6/addrconf_core.c
-@@ -8,6 +8,13 @@
- #include <net/addrconf.h>
- #include <net/ip.h>
- 
-+/* if ipv6 module registers this function is used by xfrm to force all
-+ * sockets to relookup their nodes - this is fairly expensive, be
-+ * careful
-+ */
-+void (*__fib6_flush_trees)(struct net *);
-+EXPORT_SYMBOL(__fib6_flush_trees);
-+
- #define IPV6_ADDR_SCOPE_TYPE(scope)	((scope) << 16)
- 
- static inline unsigned int ipv6_addr_scope2type(unsigned int scope)
---- a/net/ipv6/ip6_fib.c
-+++ b/net/ipv6/ip6_fib.c
-@@ -1605,6 +1605,24 @@ static void fib6_prune_clones(struct net
- 	fib6_clean_tree(net, fn, fib6_prune_clone, 1, NULL);
- }
- 
-+static int fib6_update_sernum(struct rt6_info *rt, void *arg)
-+{
-+	__u32 sernum = *(__u32 *)arg;
-+
-+	if (rt->rt6i_node &&
-+	    rt->rt6i_node->fn_sernum != sernum)
-+		rt->rt6i_node->fn_sernum = sernum;
-+
-+	return 0;
-+}
-+
-+static void fib6_flush_trees(struct net *net)
-+{
-+	__u32 new_sernum = fib6_new_sernum();
-+
-+	fib6_clean_all(net, fib6_update_sernum, &new_sernum);
-+}
-+
- /*
-  *	Garbage collection
-  */
-@@ -1788,6 +1806,8 @@ int __init fib6_init(void)
- 			      NULL);
- 	if (ret)
- 		goto out_unregister_subsys;
-+
-+	__fib6_flush_trees = fib6_flush_trees;
- out:
- 	return ret;
- 
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -314,7 +314,6 @@ static inline struct rt6_info *ip6_dst_a
- 
- 		memset(dst + 1, 0, sizeof(*rt) - sizeof(*dst));
- 		rt6_init_peer(rt, table ? &table->tb6_peers : net->ipv6.peers);
--		rt->rt6i_genid = rt_genid_ipv6(net);
- 		INIT_LIST_HEAD(&rt->rt6i_siblings);
- 	}
- 	return rt;
-@@ -1098,9 +1097,6 @@ static struct dst_entry *ip6_dst_check(s
- 	 * DST_OBSOLETE_FORCE_CHK which forces validation calls down
- 	 * into this function always.
- 	 */
--	if (rt->rt6i_genid != rt_genid_ipv6(dev_net(rt->dst.dev)))
--		return NULL;
+-	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+-	if (IS_ERR(pinctrl)) {
+-		err = PTR_ERR(pinctrl);
+-		if (err == -EPROBE_DEFER)
+-			goto err_out;
 -
- 	if (!rt->rt6i_node || (rt->rt6i_node->fn_sernum != cookie))
- 		return NULL;
- 
+-		dev_warn(&pdev->dev, "No pinctrl provided\n");
+-	}
+-
+ 	err = -ENOMEM;
+ 	dev = alloc_etherdev(sizeof(*bp));
+ 	if (!dev)
 
 
