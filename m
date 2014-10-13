@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753650AbaJMCsO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:48:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45871 "EHLO
+	id S1753975AbaJMC2B (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:28:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45844 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754000AbaJMC2K (ORCPT
+	with ESMTP id S1753951AbaJMC15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:28:10 -0400
+	Sun, 12 Oct 2014 22:27:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Patrick McHardy <kaber@trash.net>,
-        Nithin Nayak Sujir <nsujir@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>, Jiri Pirko <jiri@resnulli.us>,
-        Vladislav Yasevich <vyasevic@redhat.com>,
+        Gerhard Stenzel <gerhard.stenzel@de.ibm.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 03/55] net: Always untag vlan-tagged traffic on input.
-Date: Mon, 13 Oct 2014 04:24:17 +0200
-Message-Id: <20141013022443.870604371@linuxfoundation.org>
+Subject: [PATCH 3.16 16/55] vxlan: fix incorrect initializer in union vxlan_addr
+Date: Mon, 13 Oct 2014 04:24:30 +0200
+Message-Id: <20141013022444.429145330@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
 References: <20141013022443.729870634@linuxfoundation.org>
@@ -32,254 +29,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: Gerhard Stenzel <gstenzel@linux.vnet.ibm.com>
 
-[ Upstream commit 0d5501c1c828fb97d02af50aa9d2b1a5498b94e4 ]
+[ Upstream commit a45e92a599e77ee6a850eabdd0141633fde03915 ]
 
-Currently the functionality to untag traffic on input resides
-as part of the vlan module and is build only when VLAN support
-is enabled in the kernel.  When VLAN is disabled, the function
-vlan_untag() turns into a stub and doesn't really untag the
-packets.  This seems to create an interesting interaction
-between VMs supporting checksum offloading and some network drivers.
+The first initializer in the following
 
-There are some drivers that do not allow the user to change
-tx-vlan-offload feature of the driver.  These drivers also seem
-to assume that any VLAN-tagged traffic they transmit will
-have the vlan information in the vlan_tci and not in the vlan
-header already in the skb.  When transmitting skbs that already
-have tagged data with partial checksum set, the checksum doesn't
-appear to be updated correctly by the card thus resulting in a
-failure to establish TCP connections.
+        union vxlan_addr ipa = {
+            .sin.sin_addr.s_addr = tip,
+            .sa.sa_family = AF_INET,
+        };
 
-The following is a packet trace taken on the receiver where a
-sender is a VM with a VLAN configued.  The host VM is running on
-doest not have VLAN support and the outging interface on the
-host is tg3:
-10:12:43.503055 52:54:00:ae:42:3f > 28:d2:44:7d:c2:de, ethertype 802.1Q
-(0x8100), length 78: vlan 100, p 0, ethertype IPv4, (tos 0x0, ttl 64, id 27243,
-offset 0, flags [DF], proto TCP (6), length 60)
-    10.0.100.1.58545 > 10.0.100.10.ircu-2: Flags [S], cksum 0xdc39 (incorrect
--> 0x48d9), seq 1069378582, win 29200, options [mss 1460,sackOK,TS val
-4294837885 ecr 0,nop,wscale 7], length 0
-10:12:44.505556 52:54:00:ae:42:3f > 28:d2:44:7d:c2:de, ethertype 802.1Q
-(0x8100), length 78: vlan 100, p 0, ethertype IPv4, (tos 0x0, ttl 64, id 27244,
-offset 0, flags [DF], proto TCP (6), length 60)
-    10.0.100.1.58545 > 10.0.100.10.ircu-2: Flags [S], cksum 0xdc39 (incorrect
--> 0x44ee), seq 1069378582, win 29200, options [mss 1460,sackOK,TS val
-4294838888 ecr 0,nop,wscale 7], length 0
+is optimised away by the compiler, due to the second initializer,
+therefore initialising .sin.sin_addr.s_addr always to 0.
+This results in netlink messages indicating a L3 miss never contain the
+missed IP address. This was observed with GCC 4.8 and 4.9. I do not know about previous versions.
+The problem affects user space programs relying on an IP address being
+sent as part of a netlink message indicating a L3 miss.
 
-This connection finally times out.
+Changing
+            .sa.sa_family = AF_INET,
+to
+            .sin.sin_family = AF_INET,
+fixes the problem.
 
-I've only access to the TG3 hardware in this configuration thus have
-only tested this with TG3 driver.  There are a lot of other drivers
-that do not permit user changes to vlan acceleration features, and
-I don't know if they all suffere from a similar issue.
-
-The patch attempt to fix this another way.  It moves the vlan header
-stipping code out of the vlan module and always builds it into the
-kernel network core.  This way, even if vlan is not supported on
-a virtualizatoin host, the virtual machines running on top of such
-host will still work with VLANs enabled.
-
-CC: Patrick McHardy <kaber@trash.net>
-CC: Nithin Nayak Sujir <nsujir@broadcom.com>
-CC: Michael Chan <mchan@broadcom.com>
-CC: Jiri Pirko <jiri@resnulli.us>
-Signed-off-by: Vladislav Yasevich <vyasevic@redhat.com>
-Acked-by: Jiri Pirko <jiri@resnulli.us>
+Signed-off-by: Gerhard Stenzel <gerhard.stenzel@de.ibm.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/linux/if_vlan.h |    6 -----
- include/linux/skbuff.h  |    1 
- net/8021q/vlan_core.c   |   53 ------------------------------------------------
- net/bridge/br_vlan.c    |    2 -
- net/core/dev.c          |    2 -
- net/core/skbuff.c       |   53 ++++++++++++++++++++++++++++++++++++++++++++++++
- 6 files changed, 56 insertions(+), 61 deletions(-)
+ drivers/net/vxlan.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/include/linux/if_vlan.h
-+++ b/include/linux/if_vlan.h
-@@ -187,7 +187,6 @@ vlan_dev_get_egress_qos_mask(struct net_
- }
+--- a/drivers/net/vxlan.c
++++ b/drivers/net/vxlan.c
+@@ -1325,7 +1325,7 @@ static int arp_reduce(struct net_device
+ 	} else if (vxlan->flags & VXLAN_F_L3MISS) {
+ 		union vxlan_addr ipa = {
+ 			.sin.sin_addr.s_addr = tip,
+-			.sa.sa_family = AF_INET,
++			.sin.sin_family = AF_INET,
+ 		};
  
- extern bool vlan_do_receive(struct sk_buff **skb);
--extern struct sk_buff *vlan_untag(struct sk_buff *skb);
+ 		vxlan_ip_miss(dev, &ipa);
+@@ -1486,7 +1486,7 @@ static int neigh_reduce(struct net_devic
+ 	} else if (vxlan->flags & VXLAN_F_L3MISS) {
+ 		union vxlan_addr ipa = {
+ 			.sin6.sin6_addr = msg->target,
+-			.sa.sa_family = AF_INET6,
++			.sin6.sin6_family = AF_INET6,
+ 		};
  
- extern int vlan_vid_add(struct net_device *dev, __be16 proto, u16 vid);
- extern void vlan_vid_del(struct net_device *dev, __be16 proto, u16 vid);
-@@ -241,11 +240,6 @@ static inline bool vlan_do_receive(struc
- 	return false;
- }
+ 		vxlan_ip_miss(dev, &ipa);
+@@ -1519,7 +1519,7 @@ static bool route_shortcircuit(struct ne
+ 		if (!n && (vxlan->flags & VXLAN_F_L3MISS)) {
+ 			union vxlan_addr ipa = {
+ 				.sin.sin_addr.s_addr = pip->daddr,
+-				.sa.sa_family = AF_INET,
++				.sin.sin_family = AF_INET,
+ 			};
  
--static inline struct sk_buff *vlan_untag(struct sk_buff *skb)
--{
--	return skb;
--}
--
- static inline int vlan_vid_add(struct net_device *dev, __be16 proto, u16 vid)
- {
- 	return 0;
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -2549,6 +2549,7 @@ int skb_shift(struct sk_buff *tgt, struc
- void skb_scrub_packet(struct sk_buff *skb, bool xnet);
- unsigned int skb_gso_transport_seglen(const struct sk_buff *skb);
- struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features);
-+struct sk_buff *skb_vlan_untag(struct sk_buff *skb);
+ 			vxlan_ip_miss(dev, &ipa);
+@@ -1540,7 +1540,7 @@ static bool route_shortcircuit(struct ne
+ 		if (!n && (vxlan->flags & VXLAN_F_L3MISS)) {
+ 			union vxlan_addr ipa = {
+ 				.sin6.sin6_addr = pip6->daddr,
+-				.sa.sa_family = AF_INET6,
++				.sin6.sin6_family = AF_INET6,
+ 			};
  
- struct skb_checksum_ops {
- 	__wsum (*update)(const void *mem, int len, __wsum wsum);
---- a/net/8021q/vlan_core.c
-+++ b/net/8021q/vlan_core.c
-@@ -112,59 +112,6 @@ __be16 vlan_dev_vlan_proto(const struct
- }
- EXPORT_SYMBOL(vlan_dev_vlan_proto);
- 
--static struct sk_buff *vlan_reorder_header(struct sk_buff *skb)
--{
--	if (skb_cow(skb, skb_headroom(skb)) < 0) {
--		kfree_skb(skb);
--		return NULL;
--	}
--
--	memmove(skb->data - ETH_HLEN, skb->data - VLAN_ETH_HLEN, 2 * ETH_ALEN);
--	skb->mac_header += VLAN_HLEN;
--	return skb;
--}
--
--struct sk_buff *vlan_untag(struct sk_buff *skb)
--{
--	struct vlan_hdr *vhdr;
--	u16 vlan_tci;
--
--	if (unlikely(vlan_tx_tag_present(skb))) {
--		/* vlan_tci is already set-up so leave this for another time */
--		return skb;
--	}
--
--	skb = skb_share_check(skb, GFP_ATOMIC);
--	if (unlikely(!skb))
--		goto err_free;
--
--	if (unlikely(!pskb_may_pull(skb, VLAN_HLEN)))
--		goto err_free;
--
--	vhdr = (struct vlan_hdr *) skb->data;
--	vlan_tci = ntohs(vhdr->h_vlan_TCI);
--	__vlan_hwaccel_put_tag(skb, skb->protocol, vlan_tci);
--
--	skb_pull_rcsum(skb, VLAN_HLEN);
--	vlan_set_encap_proto(skb, vhdr);
--
--	skb = vlan_reorder_header(skb);
--	if (unlikely(!skb))
--		goto err_free;
--
--	skb_reset_network_header(skb);
--	skb_reset_transport_header(skb);
--	skb_reset_mac_len(skb);
--
--	return skb;
--
--err_free:
--	kfree_skb(skb);
--	return NULL;
--}
--EXPORT_SYMBOL(vlan_untag);
--
--
- /*
-  * vlan info and vid list
-  */
---- a/net/bridge/br_vlan.c
-+++ b/net/bridge/br_vlan.c
-@@ -183,7 +183,7 @@ bool br_allowed_ingress(struct net_bridg
- 	 */
- 	if (unlikely(!vlan_tx_tag_present(skb) &&
- 		     skb->protocol == proto)) {
--		skb = vlan_untag(skb);
-+		skb = skb_vlan_untag(skb);
- 		if (unlikely(!skb))
- 			return false;
- 	}
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -3588,7 +3588,7 @@ another_round:
- 
- 	if (skb->protocol == cpu_to_be16(ETH_P_8021Q) ||
- 	    skb->protocol == cpu_to_be16(ETH_P_8021AD)) {
--		skb = vlan_untag(skb);
-+		skb = skb_vlan_untag(skb);
- 		if (unlikely(!skb))
- 			goto unlock;
- 	}
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -62,6 +62,7 @@
- #include <linux/scatterlist.h>
- #include <linux/errqueue.h>
- #include <linux/prefetch.h>
-+#include <linux/if_vlan.h>
- 
- #include <net/protocol.h>
- #include <net/dst.h>
-@@ -3959,3 +3960,55 @@ unsigned int skb_gso_transport_seglen(co
- 	return shinfo->gso_size;
- }
- EXPORT_SYMBOL_GPL(skb_gso_transport_seglen);
-+
-+static struct sk_buff *skb_reorder_vlan_header(struct sk_buff *skb)
-+{
-+	if (skb_cow(skb, skb_headroom(skb)) < 0) {
-+		kfree_skb(skb);
-+		return NULL;
-+	}
-+
-+	memmove(skb->data - ETH_HLEN, skb->data - VLAN_ETH_HLEN, 2 * ETH_ALEN);
-+	skb->mac_header += VLAN_HLEN;
-+	return skb;
-+}
-+
-+struct sk_buff *skb_vlan_untag(struct sk_buff *skb)
-+{
-+	struct vlan_hdr *vhdr;
-+	u16 vlan_tci;
-+
-+	if (unlikely(vlan_tx_tag_present(skb))) {
-+		/* vlan_tci is already set-up so leave this for another time */
-+		return skb;
-+	}
-+
-+	skb = skb_share_check(skb, GFP_ATOMIC);
-+	if (unlikely(!skb))
-+		goto err_free;
-+
-+	if (unlikely(!pskb_may_pull(skb, VLAN_HLEN)))
-+		goto err_free;
-+
-+	vhdr = (struct vlan_hdr *)skb->data;
-+	vlan_tci = ntohs(vhdr->h_vlan_TCI);
-+	__vlan_hwaccel_put_tag(skb, skb->protocol, vlan_tci);
-+
-+	skb_pull_rcsum(skb, VLAN_HLEN);
-+	vlan_set_encap_proto(skb, vhdr);
-+
-+	skb = skb_reorder_vlan_header(skb);
-+	if (unlikely(!skb))
-+		goto err_free;
-+
-+	skb_reset_network_header(skb);
-+	skb_reset_transport_header(skb);
-+	skb_reset_mac_len(skb);
-+
-+	return skb;
-+
-+err_free:
-+	kfree_skb(skb);
-+	return NULL;
-+}
-+EXPORT_SYMBOL(skb_vlan_untag);
+ 			vxlan_ip_miss(dev, &ipa);
 
 
