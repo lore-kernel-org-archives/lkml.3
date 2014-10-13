@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534AbaJMMW5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 08:22:57 -0400
-Received: from pindarots.xs4all.nl ([82.161.210.87]:49154 "EHLO
-	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753301AbaJMMWy (ORCPT
+	id S1753743AbaJMMXT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 08:23:19 -0400
+Received: from mail.cubiware.com ([54.247.175.210]:35694 "EHLO
+	mail.cubiware.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753560AbaJMMXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 08:22:54 -0400
-Message-ID: <543BC419.2030209@xs4all.nl>
-Date: Mon, 13 Oct 2014 14:22:49 +0200
-From: Udo van den Heuvel <udovdh@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: CRASH during boot 3.16.3+
-References: <543A88E4.4060707@xs4all.nl> <543ABD7D.5010308@hurleysoftware.com> <543BA610.8010001@xs4all.nl> <543BC242.7020304@hurleysoftware.com>
-In-Reply-To: <543BC242.7020304@hurleysoftware.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Oct 2014 08:23:07 -0400
+X-Greylist: delayed 1334 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Oct 2014 08:23:07 EDT
+From: Adam Iwaniuk <adami@cubiware.com>
+To: linux-sh@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Adam Iwaniuk <adami@cubiware.com>
+Subject: [PATCH] sh: fix mmap_sem deadlock in sys_cacheflush
+Date: Mon, 13 Oct 2014 13:59:12 +0200
+Message-Id: <1413201552-2730-1-git-send-email-adami@cubiware.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-10-13 14:14, Peter Hurley wrote:
->> Incomplete dmesg attached for 3.16.2.
-> 
-> Why incomplete? No kernel command line, no version stamp, no CPU info,
-> no memory map, no IRQ routing info, etc.
+From: Adam Iwaniuk <adami@cubiware.com>
 
-Because the buffer is filled with other stuff and scrolls out.
+We can't be holding the mmap_sem while calling __flush_XXX_region/flush_icache_range
+because the flush can fault. If we fault on a user address, the page fault handler
+will try to take mmap_sem again. Since both places acquire the read lock, most of the
+time it succeeds. However, if another thread tries to acquire the write lock on the
+mmap_sem (e.g. mmap) in between the call to __flush_XXX_region/flush_icache_range and
+the fault, the down_read in do_page_fault will deadlock.
 
->>> And rubbish is not
->> very descriptive. Please include a sample, if you can't catch all the
->> console prints.
+Signed-off-by: Adam Iwaniuk <adami@cubiware.com>
+---
+ arch/sh/kernel/sys_sh.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-It all scrolls quickly.
-When things start to go wrong:
-First I see some register dumps that look like normal console output.
-After that the stream of text changes into stuff not intended for human
-consumption.
+diff --git a/arch/sh/kernel/sys_sh.c b/arch/sh/kernel/sys_sh.c
+index 8c6a350..4aa294c 100644
+--- a/arch/sh/kernel/sys_sh.c
++++ b/arch/sh/kernel/sys_sh.c
+@@ -74,6 +74,7 @@ asmlinkage int sys_cacheflush(unsigned long addr, unsigned long len, int op)
+ 		up_read(&current->mm->mmap_sem);
+ 		return -EFAULT;
+ 	}
++	up_read(&current->mm->mmap_sem);
+ 
+ 	switch (op & CACHEFLUSH_D_PURGE) {
+ 		case CACHEFLUSH_D_INVAL:
+@@ -90,6 +91,5 @@ asmlinkage int sys_cacheflush(unsigned long addr, unsigned long len, int op)
+ 	if (op & CACHEFLUSH_I)
+ 		flush_icache_range(addr, addr+len);
+ 
+-	up_read(&current->mm->mmap_sem);
+ 	return 0;
+ }
+-- 
+1.7.9.5
 
-
-Udo
