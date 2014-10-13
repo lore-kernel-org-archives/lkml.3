@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753705AbaJMCbY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:31:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46262 "EHLO
+	id S1755050AbaJMCbs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:31:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46254 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754942AbaJMCbE (ORCPT
+	with ESMTP id S1754913AbaJMCa6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:31:04 -0400
+	Sun, 12 Oct 2014 22:30:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.17 17/25] usb: gadget: f_fs: signedness bug in __ffs_func_bind_do_descs()
-Date: Mon, 13 Oct 2014 04:25:10 +0200
-Message-Id: <20141013022455.024319688@linuxfoundation.org>
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Xishi Qiu <qiuxishi@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 3.17 24/25] driver/base/node: remove unnecessary kfree of node struct from unregister_one_node
+Date: Mon, 13 Oct 2014 04:25:17 +0200
+Message-Id: <20141013022455.319783474@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022454.289398272@linuxfoundation.org>
 References: <20141013022454.289398272@linuxfoundation.org>
@@ -29,33 +30,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-commit 85b06f5e53d17c15844ef3cd45d0c7107f0ae45c upstream.
+commit 33ead538f642a33b1d658782a5d14a40b5014d1f upstream.
 
-We need "idx" to be signed for the error handling to work.
+Commit 92d585ef067d ("numa: fix NULL pointer access and memory
+leak in unregister_one_node()") added kfree() of node struct in
+unregister_one_node(). But node struct is freed by node_device_release()
+which is called in  unregister_node(). So by adding the kfree(),
+node struct is freed two times.
 
-Fixes: 6d5c1c77bbf9 ('usb: gadget: f_fs: fix the redundant ep files problem')
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+While hot removing memory, the commit leads the following BUG_ON():
+
+  kernel BUG at mm/slub.c:3346!
+  invalid opcode: 0000 [#1] SMP
+  [...]
+  Call Trace:
+   [...] unregister_one_node
+   [...] try_offline_node
+   [...] remove_memory
+   [...] acpi_memory_device_remove
+   [...] acpi_bus_trim
+   [...] acpi_bus_trim
+   [...] acpi_device_hotplug
+   [...] acpi_hotplug_work_fn
+   [...] process_one_work
+   [...] worker_thread
+   [...] ? rescuer_thread
+   [...] kthread
+   [...] ? kthread_create_on_node
+   [...] ret_from_fork
+   [...] ? kthread_create_on_node
+
+This patch removes unnecessary kfree() from unregister_one_node().
+
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Xishi Qiu <qiuxishi@huawei.com>
+Fixes: 92d585ef067d "numa: fix NULL pointer access and memory leak in unregister_one_node()"
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/function/f_fs.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/base/node.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/usb/gadget/function/f_fs.c
-+++ b/drivers/usb/gadget/function/f_fs.c
-@@ -2393,7 +2393,8 @@ static int __ffs_func_bind_do_descs(enum
- 	struct usb_endpoint_descriptor *ds = (void *)desc;
- 	struct ffs_function *func = priv;
- 	struct ffs_ep *ffs_ep;
--	unsigned ep_desc_id, idx;
-+	unsigned ep_desc_id;
-+	int idx;
- 	static const char *speed_names[] = { "full", "high", "super" };
+--- a/drivers/base/node.c
++++ b/drivers/base/node.c
+@@ -603,7 +603,6 @@ void unregister_one_node(int nid)
+ 		return;
  
- 	if (type != FFS_DESCRIPTOR)
+ 	unregister_node(node_devices[nid]);
+-	kfree(node_devices[nid]);
+ 	node_devices[nid] = NULL;
+ }
+ 
 
 
