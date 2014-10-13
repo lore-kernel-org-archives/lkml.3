@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754959AbaJMCj7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:39:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46022 "EHLO
+	id S1754425AbaJMC31 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:29:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46010 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754446AbaJMC3a (ORCPT
+	with ESMTP id S1754385AbaJMC3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:29:30 -0400
+	Sun, 12 Oct 2014 22:29:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Cristian Stoica <cristian.stoica@freescale.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: [PATCH 3.16 53/55] crypto: caam - fix addressing of struct member
-Date: Mon, 13 Oct 2014 04:25:07 +0200
-Message-Id: <20141013022446.283337922@linuxfoundation.org>
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jason Wang <jasowang@redhat.com>,
+        Vladislav Yasevich <vyasevic@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.16 32/55] macvtap: Fix race between device delete and open.
+Date: Mon, 13 Oct 2014 04:24:46 +0200
+Message-Id: <20141013022445.143717016@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
 References: <20141013022443.729870634@linuxfoundation.org>
@@ -29,36 +31,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cristian Stoica <cristian.stoica@freescale.com>
+From: Vlad Yasevich <vyasevich@gmail.com>
 
-commit 4451d494b1910bf7b7f8381a637d0fe6d2142467 upstream.
+[ Upstream commit 40b8fe45d1f094e3babe7b2dc2b71557ab71401d ]
 
-buf_0 and buf_1 in caam_hash_state are not next to each other.
-Accessing buf_1 is incorrect from &buf_0 with an offset of only
-size_of(buf_0). The same issue is also with buflen_0 and buflen_1
+In macvtap device delete and open calls can race and
+this causes a list curruption of the vlan queue_list.
 
-Signed-off-by: Cristian Stoica <cristian.stoica@freescale.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+The race intself is triggered by the idr accessors
+that located the vlan device.  The device is stored
+into and removed from the idr under both an rtnl and
+a mutex.  However, when attempting to locate the device
+in idr, only a mutex is taken.  As a result, once cpu
+perfoming a delete may take an rtnl and wait for the mutex,
+while another cput doing an open() will take the idr
+mutex first to fetch the device pointer and later take
+an rtnl to add a queue for the device which may have
+just gotten deleted.
+
+With this patch, we now hold the rtnl for the duration
+of the macvtap_open() call thus making sure that
+open will not race with delete.
+
+CC: Michael S. Tsirkin <mst@redhat.com>
+CC: Jason Wang <jasowang@redhat.com>
+Signed-off-by: Vladislav Yasevich <vyasevic@redhat.com>
+Acked-by: Jason Wang <jasowang@redhat.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/crypto/caam/caamhash.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/macvtap.c |   18 ++++++++----------
+ 1 file changed, 8 insertions(+), 10 deletions(-)
 
---- a/drivers/crypto/caam/caamhash.c
-+++ b/drivers/crypto/caam/caamhash.c
-@@ -1338,9 +1338,9 @@ static int ahash_update_first(struct aha
- 	struct device *jrdev = ctx->jrdev;
- 	gfp_t flags = (req->base.flags & (CRYPTO_TFM_REQ_MAY_BACKLOG |
- 		       CRYPTO_TFM_REQ_MAY_SLEEP)) ? GFP_KERNEL : GFP_ATOMIC;
--	u8 *next_buf = state->buf_0 + state->current_buf *
--		       CAAM_MAX_HASH_BLOCK_SIZE;
--	int *next_buflen = &state->buflen_0 + state->current_buf;
-+	u8 *next_buf = state->current_buf ? state->buf_1 : state->buf_0;
-+	int *next_buflen = state->current_buf ?
-+		&state->buflen_1 : &state->buflen_0;
- 	int to_hash;
- 	u32 *sh_desc = ctx->sh_desc_update_first, *desc;
- 	dma_addr_t ptr = ctx->sh_desc_update_first_dma;
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -112,17 +112,15 @@ out:
+ 	return err;
+ }
+ 
++/* Requires RTNL */
+ static int macvtap_set_queue(struct net_device *dev, struct file *file,
+ 			     struct macvtap_queue *q)
+ {
+ 	struct macvlan_dev *vlan = netdev_priv(dev);
+-	int err = -EBUSY;
+ 
+-	rtnl_lock();
+ 	if (vlan->numqueues == MAX_MACVTAP_QUEUES)
+-		goto out;
++		return -EBUSY;
+ 
+-	err = 0;
+ 	rcu_assign_pointer(q->vlan, vlan);
+ 	rcu_assign_pointer(vlan->taps[vlan->numvtaps], q);
+ 	sock_hold(&q->sk);
+@@ -136,9 +134,7 @@ static int macvtap_set_queue(struct net_
+ 	vlan->numvtaps++;
+ 	vlan->numqueues++;
+ 
+-out:
+-	rtnl_unlock();
+-	return err;
++	return 0;
+ }
+ 
+ static int macvtap_disable_queue(struct macvtap_queue *q)
+@@ -454,11 +450,12 @@ static void macvtap_sock_destruct(struct
+ static int macvtap_open(struct inode *inode, struct file *file)
+ {
+ 	struct net *net = current->nsproxy->net_ns;
+-	struct net_device *dev = dev_get_by_macvtap_minor(iminor(inode));
++	struct net_device *dev;
+ 	struct macvtap_queue *q;
+-	int err;
++	int err = -ENODEV;
+ 
+-	err = -ENODEV;
++	rtnl_lock();
++	dev = dev_get_by_macvtap_minor(iminor(inode));
+ 	if (!dev)
+ 		goto out;
+ 
+@@ -498,6 +495,7 @@ out:
+ 	if (dev)
+ 		dev_put(dev);
+ 
++	rtnl_unlock();
+ 	return err;
+ }
+ 
 
 
