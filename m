@@ -1,128 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828AbaJMNlI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 09:41:08 -0400
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:41063
-	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752734AbaJMNlG (ORCPT
+	id S1753892AbaJMNmH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 09:42:07 -0400
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:55559 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752693AbaJMNmF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 09:41:06 -0400
-Date: Mon, 13 Oct 2014 15:41:03 +0200
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, eparis@redhat.com,
-        sgrubb@redhat.com, aviro@redhat.com, pmoore@redhat.com,
-        arozansk@redhat.com, ebiederm@xmission.com, serge@hallyn.com
-Subject: Re: [PATCH V5 12/13] namespaces: expose ns instance serial numbers
- in proc
-Message-ID: <20141013134103.GK24703@mail.hallyn.com>
-References: <cover.1412543112.git.rgb@redhat.com>
- <53b81e89f7179ef8569409293f990b3ac7deac61.1412543112.git.rgb@redhat.com>
+	Mon, 13 Oct 2014 09:42:05 -0400
+Date: Mon, 13 Oct 2014 14:41:43 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Helge Deller <deller@gmx.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        John David Anglin <dave.anglin@bell.net>,
+        "Carlos O'Donell" <carlos@systemhalted.org>
+Subject: Re: [GIT PULL] parisc architecture patch for v3.18
+Message-ID: <20141013144143.475ca9f9@alan.etchedpixels.co.uk>
+In-Reply-To: <20141012100837.GA1553@p100.box>
+References: <20141012100837.GA1553@p100.box>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53b81e89f7179ef8569409293f990b3ac7deac61.1412543112.git.rgb@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Richard Guy Briggs (rgb@redhat.com):
-> Expose the namespace instace serial numbers in the proc filesystem at
+On Sun, 12 Oct 2014 12:08:37 +0200
+Helge Deller <deller@gmx.de> wrote:
 
-(s/stac/stanc/)
-
-> /proc/<pid>/ns/<ns>_snum.  The link text gives the serial number in hex.
+> Hi Linus,
 > 
-> "snum" was chosen instead of "seq" for consistency with inum and there are a
-> number of other uses of "seq" in the namespace code.
+> please pull one patch for the parisc architecture for kernel 3.18 from 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/deller/parisc-linux.git parisc-3.18-1
 > 
-> Suggested-by: Serge E. Hallyn <serge@hallyn.com>
-
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-
-> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-> ---
->  fs/proc/namespaces.c |   33 +++++++++++++++++++++++++--------
->  1 files changed, 25 insertions(+), 8 deletions(-)
+> This patch intentionally breaks the ABI on PARISC Linux!
 > 
-> diff --git a/fs/proc/namespaces.c b/fs/proc/namespaces.c
-> index 310da74..29c3909 100644
-> --- a/fs/proc/namespaces.c
-> +++ b/fs/proc/namespaces.c
-> @@ -47,12 +47,15 @@ static char *ns_dname(struct dentry *dentry, char *buffer, int buflen)
->  	struct inode *inode = dentry->d_inode;
->  	const struct proc_ns_operations *ns_ops = PROC_I(inode)->ns.ns_ops;
->  
-> -	return dynamic_dname(dentry, buffer, buflen, "%s:[%lu]",
-> -		ns_ops->name, inode->i_ino);
-> +	if (strstr(dentry->d_iname, "_snum"))
-> +		return dynamic_dname(dentry, buffer, buflen, "%s_snum:[%llx]",
-> +			ns_ops->name, ns_ops->snum(PROC_I(inode)->ns.ns));
-> +	else
-> +		return dynamic_dname(dentry, buffer, buflen, "%s:[%lu]",
-> +			ns_ops->name, inode->i_ino);
->  }
->  
-> -const struct dentry_operations ns_dentry_operations =
-> -{
-> +const struct dentry_operations ns_dentry_operations = {
->  	.d_delete	= always_delete_dentry,
->  	.d_dname	= ns_dname,
->  };
-> @@ -160,7 +163,10 @@ static int proc_ns_readlink(struct dentry *dentry, char __user *buffer, int bufl
->  	if (!ns)
->  		goto out_put_task;
->  
-> -	snprintf(name, sizeof(name), "%s:[%u]", ns_ops->name, ns_ops->inum(ns));
-> +	if (strstr(dentry->d_iname, "_snum"))
-> +		snprintf(name, sizeof(name), "%s_snum:[%llx]", ns_ops->name, ns_ops->snum(ns));
-> +	else
-> +		snprintf(name, sizeof(name), "%s:[%u]", ns_ops->name, ns_ops->inum(ns));
->  	res = readlink_copy(buffer, buflen, name);
->  	ns_ops->put(ns);
->  out_put_task:
-> @@ -210,16 +216,23 @@ static int proc_ns_dir_readdir(struct file *file, struct dir_context *ctx)
->  
->  	if (!dir_emit_dots(file, ctx))
->  		goto out;
-> -	if (ctx->pos >= 2 + ARRAY_SIZE(ns_entries))
-> +	if (ctx->pos >= 2 + 2 * ARRAY_SIZE(ns_entries))
->  		goto out;
->  	entry = ns_entries + (ctx->pos - 2);
->  	last = &ns_entries[ARRAY_SIZE(ns_entries) - 1];
->  	while (entry <= last) {
->  		const struct proc_ns_operations *ops = *entry;
-> +		char name[50];
-> +
->  		if (!proc_fill_cache(file, ctx, ops->name, strlen(ops->name),
->  				     proc_ns_instantiate, task, ops))
->  			break;
->  		ctx->pos++;
-> +		snprintf(name, sizeof(name), "%s_snum", ops->name);
-> +		if (!proc_fill_cache(file, ctx, name, strlen(name),
-> +				     proc_ns_instantiate, task, ops))
-> +			break;
-> +		ctx->pos++;
->  		entry++;
->  	}
->  out:
-> @@ -247,9 +260,13 @@ static struct dentry *proc_ns_dir_lookup(struct inode *dir,
->  
->  	last = &ns_entries[ARRAY_SIZE(ns_entries)];
->  	for (entry = ns_entries; entry < last; entry++) {
-> -		if (strlen((*entry)->name) != len)
-> +		char name[50];
-> +
-> +		snprintf(name, sizeof(name), "%s_snum", (*entry)->name);
-> +		if (strlen((*entry)->name) != len && strlen(name) != len)
->  			continue;
-> -		if (!memcmp(dentry->d_name.name, (*entry)->name, len))
-> +		if (!memcmp(dentry->d_name.name, (*entry)->name, len)
-> +		    || !memcmp(dentry->d_name.name, name, len))
->  			break;
->  	}
->  	if (entry == last)
-> -- 
-> 1.7.1
+> It assigns new numbers to SIGSTKFLT, SIGXCPU, SIGXFSZ and SIGSYS so that
+> those are below 32 and thus leaves us with 32 RT signals like other
+> Linux architectures (SIGRTMIN now becomes 32 instead of 37).
+> 
+> Even if it breaks the ABI, it doesn't seem to have any visible impact on
+> existing userspace applications.
+
+I somehow doubt your kill command magically corrects its signal numbering
+table. Likewise what does gdb do given a core dump that died from one of
+those signals, and what does your shell report if you kill one that way.
+It seems to me your minimal set of binaries to swap to get it right is
+non-zero but not problematic (libc, kill, shells, top, gdb) ?
+
+I can however really only think of one app that actually *used* SIGXCPU,
+and that was to respawn itself to avoid annoying sysadmin set CPU limits
+anyway.
+
+Alan
