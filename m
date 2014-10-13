@@ -1,73 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753601AbaJMOit (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 10:38:49 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752584AbaJMOis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 10:38:48 -0400
-Message-ID: <543BE3EC.9010601@nod.at>
-Date: Mon, 13 Oct 2014 16:38:36 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1753874AbaJMOlk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 10:41:40 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:41379 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752656AbaJMOlj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 10:41:39 -0400
+Message-ID: <543BE49E.2010007@fb.com>
+Date: Mon, 13 Oct 2014 08:41:34 -0600
+From: Jens Axboe <axboe@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: status of the signal-cleanup tree
-References: <20141013173301.0664c8ac@canb.auug.org.au>
-In-Reply-To: <20141013173301.0664c8ac@canb.auug.org.au>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="n7lMnmHlkOMmSOrvO9JUF5WXVAo3mJ78E"
+To: Daniel Cotton <danielcotton.mailinglists@gmail.com>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND] drivers/block/mtip32xx: Fix incorrect warning
+References: <543A6C3A.4070408@gmail.com>
+In-Reply-To: <543A6C3A.4070408@gmail.com>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-10-13_02:2014-10-13,2014-10-13,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=3.39728245535298e-13 kscore.compositescore=0
+ circleOfTrustscore=2831.56432933599 compositescore=0.533125042697551
+ urlsuspect_oldscore=0.533125042697551 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=1996008
+ rbsscore=0.533125042697551 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1410130152
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---n7lMnmHlkOMmSOrvO9JUF5WXVAo3mJ78E
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+On 2014-10-12 05:55, Daniel Cotton wrote:
+> Prevent mtip32xx block driver from showing a warning at load time
+> ("Error creating debugfs parent") when debugfs is not included in
+> the kernel. If debugfs is included, show the error code. Fixes bug
+> 55831 in the Bugzilla.
 
-Am 13.10.2014 um 08:33 schrieb Stephen Rothwell:
-> Hi Richard,
->=20
-> The signal-cleanup tree
-> (git://git.kernel.org/pub/scm/linux/kernel/git/rw/misc.git#signal_v4)
-> has not bee touched since July and when merged into Linus' tree,
-> produces no changes (same patches different commits :-().  So all it is=
+What is the patch against? It doesn't apply to for-3.18/drivers or even 
+master.
 
-> doing at the moment is producing unnecessary conflicts :-(
->=20
-> Can you clean it up, please?  Or should I just remove it
-> from linux-next completely.
+-- 
+Jens Axboe
 
-Just remove it. The "feature" was merged.
-
-Thanks,
-//richard
-
-
---n7lMnmHlkOMmSOrvO9JUF5WXVAo3mJ78E
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJUO+PzAAoJEPmeIjfg4UaadN4QAIgk8ejiOYQqZh7LjJy7A1d7
-1xanFzrieQJXNQUofE1lF2rp41zd5N7DNWdoFYXhGpfDCS9fASgpntVV5ZzFDBWx
-pQmzCcHWMuEUnSI/go26GVVlMGyVnekEboQdHqADo6EaptZ0AOBB4Rat4qo+HoJJ
-D4h3KT+VR8lrytChm/O+B2tqrkFiJZWAUClsFCGJvQOsA+nx2OxEfym0X1LaFCSl
-3YTLox+WiE20cW0qvAkDxkSxdcFFcuXgjGxdUkEe+HYCs+dg7l0K4TJYNDQ/zKMc
-JtuOOaHpF5Y+ITCMyBF8UPBSBYvBjxBcvpIF7igTKzrJKO6EOGHX12VR94Xw2AFC
-+qOclvFPpZc+YsC5x3LdjARujF9gDuZjNPvKbmjCTQ3UHKO1YaQmypcmwiEoPUP8
-rPOy65sfHHJ0R8Ac/jN9HpdDhT5IkbJ+XWd6yrr3CWV+GuZP7iEygwetM64dG2+H
-BpCa1fkNhGfNA3zbt6wIvQSSPH3VVyFVNzJIsDwJE97nBi45EULVN7rCSuB5jBTs
-/+nWKWBEk6LW+I3w0q2+7kzC5QtXcMg5lz2lz9aHenPNxo/qSA4ZFnaxsHiIWrI3
-8sawbs+rXCdvrd2B0FEFQpkeneB9FASQWJL3jjLLyHagip1zkVAWD4X7BrqdLWoG
-LkYGinm2MDATANvyl5L+
-=eSor
------END PGP SIGNATURE-----
-
---n7lMnmHlkOMmSOrvO9JUF5WXVAo3mJ78E--
