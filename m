@@ -1,90 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679AbaJMStA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 14:49:00 -0400
-Received: from 1wt.eu ([62.212.114.60]:30493 "EHLO 1wt.eu"
+	id S1754721AbaJMSwO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 14:52:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51036 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754432AbaJMSs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 14:48:58 -0400
-Date: Mon, 13 Oct 2014 20:48:53 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Kamal Mostafa <kamal@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 3.13 163/163] lzo: check for length overrun in variable length encoding.
-Message-ID: <20141013184853.GD30087@1wt.eu>
-References: <1412888588-26755-1-git-send-email-kamal@canonical.com> <1412888588-26755-164-git-send-email-kamal@canonical.com> <20141010053048.GD3594@1wt.eu> <1413221463.11421.30.camel@fourier>
-Mime-Version: 1.0
+	id S1753797AbaJMSwM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 14:52:12 -0400
+Date: Mon, 13 Oct 2014 14:51:56 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm@kvack.org, Sasha Levin <sasha.levin@oracle.com>
+Subject: Re: [PATCH] mm, debug: mm-introduce-vm_bug_on_mm-fix-fix.patch
+Message-ID: <20141013185156.GA1959@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Michal Hocko <mhocko@suse.cz>,
+	Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+	Sasha Levin <sasha.levin@oracle.com>
+References: <5420b8b0.9HdYLyyuTikszzH8%akpm@linux-foundation.org>
+ <1411464279-20158-1-git-send-email-mhocko@suse.cz>
+ <20140923112848.GA10046@dhcp22.suse.cz>
+ <20140923201204.GB4252@redhat.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1413221463.11421.30.camel@fourier>
-User-Agent: Mutt/1.4.2.3i
+In-Reply-To: <20140923201204.GB4252@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kamal,
+On Tue, Sep 23, 2014 at 04:12:04PM -0400, Dave Jones wrote:
+ > On Tue, Sep 23, 2014 at 01:28:48PM +0200, Michal Hocko wrote:
+ >  > And there is another one hitting during randconfig. The patch makes my
+ >  > eyes bleed but I don't know about other way without breaking out the
+ >  > thing into separate parts sounds worse because we can mix with other
+ >  > messages then.
+ > 
+ > how about something along the lines of..
+ > 
+ >  bufptr = buffer = kmalloc()
+ > 
+ >  #if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
+ > 	bufptr += sprintf(bufptr, "tlb_flush_pending %d\n",
+ > 			mm->tlb_flush_pending);
+ >  #endif
+ > 
+ >  #ifdef CONFIG_MMU
+ > 	bufptr += sprintf(bufptr, "...
+ >  #endif
+ > 
+ >  ...
+ > 
+ >  printk(KERN_EMERG "%s", buffer);
+ > 
+ >  free(buffer);
+ > 
+ > Still ugly, but looks less like a trainwreck, and keeps the variables
+ > with the associated text.
+ > 
+ > It does introduce an allocation though, which may be problematic
+ > in this situation. Depending how big this gets, perhaps make it static
+ > instead?
 
-On Mon, Oct 13, 2014 at 10:31:03AM -0700, Kamal Mostafa wrote:
-> > This one (and the accompanying revert) are still not present in more
-> > recent stable kernels, so I find it surprizing that you're proposing
-> > to integrate them now.
-> 
-> I can hold out those lzo fixes until the next 3.13-stable if you prefer.
+Now that this landed in Linus tree, I took another stab at it.
+Something like this ? (Untested beyond compiling).
 
-It would be better in my opinion.
+(The diff doesn't really do it justice, it looks a lot easier to read
+ imo after applying).
 
-> But fwiw...
-> 
-> >  If someone upgrades from 3.13.11.9 to 3.14.21
-> > or 3.16.5, they'd expect to keep all fixes but will lose this one, so
-> > this is a bit confusing.
-> 
-> I think those sorts of scheduling mismatches and discrepancies between
-> stable versions are pretty common.
+There's still some checkpatch style nits, but this should be a lot
+more maintainable assuming it works.
 
-I don't think so. In my opinion when this happens it's mostly a mistake.
+My one open question is do we care that this isn't reentrant ?
+Do we expect parallel calls to dump_mm from multiple cpus ever ?
 
-> Examples:  The top 11 commits in
-> v3.12.30 have not yet been applied[0] to any of the newer stable
-> branches;
+	Dave
 
-I think this doesn't happen often and probably it's just a matter of
-reporting it when it happens so that maintainers double-check on their
-side.
-
-> Many of the commits in v3.10.57 have not yet been applied[1]
-> to linux-3.12.y but have been released in other newer stables.
-
-In Jiri's defense, he's in the middle of two versions managed by Greg,
-so when Greg sends a batch of 3.10+3.14 releases, there is a small
-window where 3.12 can be lagging a bit. But I think that this is
-different from having patches that are not in the most recent
-versions because users are much less likely to upgrade from one of
-Greg's maintained kernels to any of ours than the opposite.
-
-> >  Is there any reason you're not tracking fixes
-> > from more recent versions like Jiri, Li, Ben and I are doing ?
-> 
-> We (the Canonical stable maintainers) have always tracked the "cc:
-> stable" fixes directly from mainline, not from the more-recent-version
-> branches.  Given the examples above, it seems that the kernel.org
-> maintainers are doing that too, yes?
-
-Possible, I don't know for others though I know that Greg tends to
-be picky about mistakes like this not to happen too often, so I
-suspect there's a bit of care there. I'm personally in a special
-situation considering that I'm on the tail so the amount of changes
-to apply to certain patches to backport them suggests that I more
-often pick them from 3.2 or 3.4 than mainline (except for the ones
-that I receive directly).
-
-I can't speak for Greg but I think that sometimes if you notice that
-you're merging a patch which is missing in most recent -stable branches,
-it would be nice to send a reminder about it, as it's certainly possible
-that one slips through from time to time.
+diff --git a/mm/debug.c b/mm/debug.c
+index 5ce45c9a29b5..e04e2ae902a1 100644
+--- a/mm/debug.c
++++ b/mm/debug.c
+@@ -164,74 +164,85 @@ void dump_vma(const struct vm_area_struct *vma)
+ }
+ EXPORT_SYMBOL(dump_vma);
  
-Thanks,
-Willy
-
++static char dumpmm_buffer[4096];
++
+ void dump_mm(const struct mm_struct *mm)
+ {
+-	pr_emerg("mm %p mmap %p seqnum %d task_size %lu\n"
+-#ifdef CONFIG_MMU
+-		"get_unmapped_area %p\n"
+-#endif
+-		"mmap_base %lu mmap_legacy_base %lu highest_vm_end %lu\n"
+-		"pgd %p mm_users %d mm_count %d nr_ptes %lu map_count %d\n"
+-		"hiwater_rss %lx hiwater_vm %lx total_vm %lx locked_vm %lx\n"
+-		"pinned_vm %lx shared_vm %lx exec_vm %lx stack_vm %lx\n"
+-		"start_code %lx end_code %lx start_data %lx end_data %lx\n"
+-		"start_brk %lx brk %lx start_stack %lx\n"
+-		"arg_start %lx arg_end %lx env_start %lx env_end %lx\n"
+-		"binfmt %p flags %lx core_state %p\n"
+-#ifdef CONFIG_AIO
+-		"ioctx_table %p\n"
+-#endif
+-#ifdef CONFIG_MEMCG
+-		"owner %p "
+-#endif
+-		"exe_file %p\n"
+-#ifdef CONFIG_MMU_NOTIFIER
+-		"mmu_notifier_mm %p\n"
+-#endif
+-#ifdef CONFIG_NUMA_BALANCING
+-		"numa_next_scan %lu numa_scan_offset %lu numa_scan_seq %d\n"
+-#endif
+-#if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
+-		"tlb_flush_pending %d\n"
+-#endif
+-		"%s",	/* This is here to hold the comma */
++	char *p = dumpmm_buffer;
++
++	memset(dumpmm_buffer, 0, 4096);
++
++	p += sprintf(p, "mm %p mmap %p seqnum %d task_size %lu\n",
++		mm, mm->mmap, mm->vmacache_seqnum, mm->task_size);
+ 
+-		mm, mm->mmap, mm->vmacache_seqnum, mm->task_size,
+ #ifdef CONFIG_MMU
+-		mm->get_unmapped_area,
++	p += sprintf(p, "get_unmapped_area %p\n",
++		mm->get_unmapped_area);
+ #endif
+-		mm->mmap_base, mm->mmap_legacy_base, mm->highest_vm_end,
++	p += sprintf(p,
++		"mmap_base %lu mmap_legacy_base %lu highest_vm_end %lu\n",
++		mm->mmap_base, mm->mmap_legacy_base, mm->highest_vm_end);
++
++	p += sprintf(p,
++		"pgd %p mm_users %d mm_count %d nr_ptes %lu map_count %d\n",
+ 		mm->pgd, atomic_read(&mm->mm_users),
+ 		atomic_read(&mm->mm_count),
+ 		atomic_long_read((atomic_long_t *)&mm->nr_ptes),
+-		mm->map_count,
+-		mm->hiwater_rss, mm->hiwater_vm, mm->total_vm, mm->locked_vm,
+-		mm->pinned_vm, mm->shared_vm, mm->exec_vm, mm->stack_vm,
+-		mm->start_code, mm->end_code, mm->start_data, mm->end_data,
+-		mm->start_brk, mm->brk, mm->start_stack,
+-		mm->arg_start, mm->arg_end, mm->env_start, mm->env_end,
+-		mm->binfmt, mm->flags, mm->core_state,
++		mm->map_count);
++
++	p += sprintf(p,
++		"hiwater_rss %lx hiwater_vm %lx total_vm %lx locked_vm %lx\n",
++		mm->hiwater_rss, mm->hiwater_vm, mm->total_vm, mm->locked_vm);
++
++	p += sprintf(p,
++		"pinned_vm %lx shared_vm %lx exec_vm %lx stack_vm %lx\n",
++		mm->pinned_vm, mm->shared_vm, mm->exec_vm, mm->stack_vm);
++
++	p += sprintf(p,
++		"start_code %lx end_code %lx start_data %lx end_data %lx\n",
++		mm->start_code, mm->end_code, mm->start_data, mm->end_data);
++
++	p += sprintf(p,
++		"start_brk %lx brk %lx start_stack %lx\n",
++		mm->start_brk, mm->brk, mm->start_stack);
++
++	p += sprintf(p,
++		"arg_start %lx arg_end %lx env_start %lx env_end %lx\n",
++		mm->arg_start, mm->arg_end, mm->env_start, mm->env_end);
++
++	p += sprintf(p,
++		"binfmt %p flags %lx core_state %p\n",
++		mm->binfmt, mm->flags, mm->core_state);
++
+ #ifdef CONFIG_AIO
+-		mm->ioctx_table,
++	p += sprintf(p, "ioctx_table %p\n", mm->ioctx_table);
+ #endif
++
+ #ifdef CONFIG_MEMCG
+-		mm->owner,
++	p += sprintf(p, "owner %p ", mm->owner);
+ #endif
+-		mm->exe_file,
++
++	p += sprintf(p, "exe_file %p\n", mm->exe_file);
++
+ #ifdef CONFIG_MMU_NOTIFIER
+-		mm->mmu_notifier_mm,
++	p += sprintf(p,	"mmu_notifier_mm %p\n", mm->mmu_notifier_mm);
+ #endif
++
+ #ifdef CONFIG_NUMA_BALANCING
+-		mm->numa_next_scan, mm->numa_scan_offset, mm->numa_scan_seq,
++	p += sprintf(p,
++		"numa_next_scan %lu numa_scan_offset %lu numa_scan_seq %d\n",
++		mm->numa_next_scan, mm->numa_scan_offset, mm->numa_scan_seq);
+ #endif
++
+ #if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
+-		mm->tlb_flush_pending,
++	p += sprintf(p, "tlb_flush_pending %d\n",
++		mm->tlb_flush_pending);
+ #endif
+-		""		/* This is here to not have a comma! */
+-		);
+ 
+-		dump_flags(mm->def_flags, vmaflags_names,
+-				ARRAY_SIZE(vmaflags_names));
++	pr_emerg("%s", dumpmm_buffer);
++
++	dump_flags(mm->def_flags, vmaflags_names,
++			ARRAY_SIZE(vmaflags_names));
+ }
+ 
+ #endif		/* CONFIG_DEBUG_VM */
