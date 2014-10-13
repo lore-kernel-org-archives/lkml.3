@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753038AbaJMCZf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:25:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45561 "EHLO
+	id S1753158AbaJMCZs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:25:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45586 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752917AbaJMCZa (ORCPT
+	with ESMTP id S1753046AbaJMCZm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:25:30 -0400
+	Sun, 12 Oct 2014 22:25:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shmulik Ladkani <shmulik.ladkani@gmail.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Prashant Sreedharan <prashant@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>,
+        Vladislav Yasevich <vyasevic@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 02/16] sit: Fix ipip6_tunnel_lookup device matching criteria
-Date: Mon, 13 Oct 2014 04:23:59 +0200
-Message-Id: <20141013022341.481828124@linuxfoundation.org>
+Subject: [PATCH 3.10 07/16] tg3: Work around HW/FW limitations with vlan encapsulated frames
+Date: Mon, 13 Oct 2014 04:24:04 +0200
+Message-Id: <20141013022341.689548453@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022341.386913672@linuxfoundation.org>
 References: <20141013022341.386913672@linuxfoundation.org>
@@ -30,55 +31,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+From: Vlad Yasevich <vyasevich@gmail.com>
 
-[ Upstream commit bc8fc7b8f825ef17a0fb9e68c18ce94fa66ab337 ]
+[ Upstream commit 476c18850c6cbaa3f2bb661ae9710645081563b9 ]
 
-As of 4fddbf5d78 ("sit: strictly restrict incoming traffic to tunnel link device"),
-when looking up a tunnel, tunnel's underlying interface (t->parms.link)
-is verified to match incoming traffic's ingress device.
+TG3 appears to have an issue performing TSO and checksum offloading
+correclty when the frame has been vlan encapsulated (non-accelrated).
+In these cases, tcp checksum is not correctly updated.
 
-However the comparison was incorrectly based on skb->dev->iflink.
+This patch attempts to work around this issue.  After the patch,
+802.1ad vlans start working correctly over tg3 devices.
 
-Instead, dev->ifindex should be used, which correctly represents the
-interface from which the IP stack hands the ipip6 packets.
-
-This allows setting up sit tunnels bound to vlan interfaces (otherwise
-incoming ipip6 traffic on the vlan interface was dropped due to
-ipip6_tunnel_lookup match failure).
-
-Signed-off-by: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-Acked-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+CC: Prashant Sreedharan <prashant@broadcom.com>
+CC: Michael Chan <mchan@broadcom.com>
+Signed-off-by: Vladislav Yasevich <vyasevic@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/sit.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/broadcom/tg3.c |   20 ++++++++++++++++++--
+ 1 file changed, 18 insertions(+), 2 deletions(-)
 
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@ -101,19 +101,19 @@ static struct ip_tunnel *ipip6_tunnel_lo
- 	for_each_ip_tunnel_rcu(t, sitn->tunnels_r_l[h0 ^ h1]) {
- 		if (local == t->parms.iph.saddr &&
- 		    remote == t->parms.iph.daddr &&
--		    (!dev || !t->parms.link || dev->iflink == t->parms.link) &&
-+		    (!dev || !t->parms.link || dev->ifindex == t->parms.link) &&
- 		    (t->dev->flags & IFF_UP))
- 			return t;
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -7759,8 +7759,6 @@ static netdev_tx_t tg3_start_xmit(struct
+ 
+ 	entry = tnapi->tx_prod;
+ 	base_flags = 0;
+-	if (skb->ip_summed == CHECKSUM_PARTIAL)
+-		base_flags |= TXD_FLAG_TCPUDP_CSUM;
+ 
+ 	mss = skb_shinfo(skb)->gso_size;
+ 	if (mss) {
+@@ -7776,6 +7774,13 @@ static netdev_tx_t tg3_start_xmit(struct
+ 
+ 		hdr_len = skb_transport_offset(skb) + tcp_hdrlen(skb) - ETH_HLEN;
+ 
++		/* HW/FW can not correctly segment packets that have been
++		 * vlan encapsulated.
++		 */
++		if (skb->protocol == htons(ETH_P_8021Q) ||
++		    skb->protocol == htons(ETH_P_8021AD))
++			return tg3_tso_bug(tp, skb);
++
+ 		if (!skb_is_gso_v6(skb)) {
+ 			iph->check = 0;
+ 			iph->tot_len = htons(mss + hdr_len);
+@@ -7822,6 +7827,17 @@ static netdev_tx_t tg3_start_xmit(struct
+ 				base_flags |= tsflags << 12;
+ 			}
+ 		}
++	} else if (skb->ip_summed == CHECKSUM_PARTIAL) {
++		/* HW/FW can not correctly checksum packets that have been
++		 * vlan encapsulated.
++		 */
++		if (skb->protocol == htons(ETH_P_8021Q) ||
++		    skb->protocol == htons(ETH_P_8021AD)) {
++			if (skb_checksum_help(skb))
++				goto drop;
++		} else  {
++			base_flags |= TXD_FLAG_TCPUDP_CSUM;
++		}
  	}
- 	for_each_ip_tunnel_rcu(t, sitn->tunnels_r[h0]) {
- 		if (remote == t->parms.iph.daddr &&
--		    (!dev || !t->parms.link || dev->iflink == t->parms.link) &&
-+		    (!dev || !t->parms.link || dev->ifindex == t->parms.link) &&
- 		    (t->dev->flags & IFF_UP))
- 			return t;
- 	}
- 	for_each_ip_tunnel_rcu(t, sitn->tunnels_l[h1]) {
- 		if (local == t->parms.iph.saddr &&
--		    (!dev || !t->parms.link || dev->iflink == t->parms.link) &&
-+		    (!dev || !t->parms.link || dev->ifindex == t->parms.link) &&
- 		    (t->dev->flags & IFF_UP))
- 			return t;
- 	}
+ 
+ 	if (tg3_flag(tp, USE_JUMBO_BDFLAG) &&
 
 
