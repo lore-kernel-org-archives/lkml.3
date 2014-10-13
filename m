@@ -1,88 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468AbaJMIPJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 04:15:09 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:37593 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752234AbaJMIPD (ORCPT
+	id S1753602AbaJMIQL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 04:16:11 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:54125 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753551AbaJMIQI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 04:15:03 -0400
-Message-ID: <543B8A02.5050106@codeaurora.org>
-Date: Mon, 13 Oct 2014 01:14:58 -0700
-From: Laura Abbott <lauraa@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Mon, 13 Oct 2014 04:16:08 -0400
 MIME-Version: 1.0
-To: Sumit Semwal <sumit.semwal@linaro.org>, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
-        linux-media@vger.kernel.org
-Subject: Re: [Linaro-mm-sig] [RFC 1/4] dma-buf: Add constraints sharing information
-References: <1412971678-4457-1-git-send-email-sumit.semwal@linaro.org> <1412971678-4457-2-git-send-email-sumit.semwal@linaro.org> <20141011185502.GH26941@phenom.ffwll.local>
-In-Reply-To: <20141011185502.GH26941@phenom.ffwll.local>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <15685.1412018368@turing-police.cc.vt.edu>
+References: <1411721657-9924-1-git-send-email-gabriel.fernandez@linaro.org>
+	<1411721657-9924-7-git-send-email-gabriel.fernandez@linaro.org>
+	<15685.1412018368@turing-police.cc.vt.edu>
+Date: Mon, 13 Oct 2014 10:16:06 +0200
+Message-ID: <CAG374jBJcX00S4nSugWXaUxAQV3Bwp+OxY0c2GJ-+rskzDzpGw@mail.gmail.com>
+Subject: Re: [PATCH v3 6/8] phy: miphy28lp: Add SSC support for PCIE
+From: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+To: Valdis.Kletnieks@vt.edu
+Cc: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kernel@stlinux.com" <kernel@stlinux.com>,
+        Lee Jones <lee.jones@linaro.org>, Harsh Gupta <harsh.gupta@st.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2014 11:55 AM, Daniel Vetter wrote:
-> On Sat, Oct 11, 2014 at 01:37:55AM +0530, Sumit Semwal wrote:
->> At present, struct device lacks a mechanism of exposing memory
->> access constraints for the device.
->>
->> Consequently, there is also no mechanism to share these constraints
->> while sharing buffers using dma-buf.
->>
->> If we add support for sharing such constraints, we could use that
->> to try to collect requirements of different buffer-sharing devices
->> to allocate buffers from a pool that satisfies requirements of all
->> such devices.
->>
->> This is an attempt to add this support; at the moment, only a bitmask
->> is added, but if post discussion, we realise we need more information,
->> we could always extend the definition of constraint.
->>
->> A new dma-buf op is also added, to allow exporters to interpret or decide
->> on constraint-masks on their own. A default implementation is provided to
->> just AND (&) all the constraint-masks.
->>
->> What constitutes a constraint-mask could be left for interpretation on a
->> per-platform basis, while defining some common masks.
->>
->> Signed-off-by: Sumit Semwal <sumit.semwal@linaro.org>
->> Cc: linux-kernel@vger.kernel.org
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> Cc: linux-media@vger.kernel.org
->> Cc: dri-devel@lists.freedesktop.org
->> Cc: linaro-mm-sig@lists.linaro.org
->
-> Just a few high-level comments, I'm between conference travel but
-> hopefully I can discuss this a bit at plumbers next week.
->
-> - I agree that for the insane specific cases we need something opaque like
->    the access constraints mask you propose here. But for the normal case I
->    think the existing dma constraints in dma_params would go a long way,
->    and I think we should look at Rob's RFC from aeons ago to solve those:
->
->    https://lkml.org/lkml/2012/7/19/285
->
->    With this we should be able to cover the allocation constraints of 90%
->    of all cases hopefully.
->
-> - I'm not sure whether an opaque bitmask is good enough really, I suspect
->    that we also need various priorities between different allocators. With
->    the option that some allocators are flat-out incompatible.
->
+Hi Valdis,
+Thanks for your remark.
 
- From my experience with Ion, the bitmask is okay if you have only a few
-types but as soon as there are multiple regions it gets complicated and
-when you start adding in priority via id it really gets unwieldy.
+Concerning multiple writing in MIPHY_PLL_SBR_1, the writing of the
+first 0 it's to be sure there is no previous request.
+Then we take account new setting by writing 0x02.
+And then we make it 0 to make sure there is no other pending requests.
 
-Thanks,
-Laura
+I added comments and macro to be more clear (see the code below).
 
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Hi Kishon,
+
+Do you want a new patch set (v4),  or i wait other remarks from you ?
+
+
+    for (val = 0; val < 2; val++) {
+        writeb_relaxed(val, miphy_phy->base + MIPHY_CONF);
+
+        /* Validate Step component */
+        writeb_relaxed(0x69, miphy_phy->base + MIPHY_PLL_SBR_3);
+        writeb_relaxed(0x21, miphy_phy->base + MIPHY_PLL_SBR_4);
+
+        /* Validate Period component */
+        writeb_relaxed(0x3c, miphy_phy->base + MIPHY_PLL_SBR_2);
+        writeb_relaxed(0x21, miphy_phy->base + MIPHY_PLL_SBR_4);
+
+        /* Clear any previous request */
+        writeb_relaxed(0x00, miphy_phy->base + MIPHY_PLL_SBR_1);
+
+        /* requests the PLL to take in account new parameters */
+        writeb_relaxed(SET_NEW_CHANGE, base + MIPHY_PLL_SBR_1);
+
+        /* To be sure there is no other pending requests */
+        writeb_relaxed(0x00, miphy_phy->base + MIPHY_PLL_SBR_1);
+    }
+
+
+Best regards
+
+Gabriel.
+
+
+On 29 September 2014 21:19,  <Valdis.Kletnieks@vt.edu> wrote:
+> On Fri, 26 Sep 2014 10:54:15 +0200, Gabriel FERNANDEZ said:
+>> SSC is the technique of modulating the operating frequency of a signal
+>> slightly to spread its radiated emissions over a range of frequencies.
+>> This reduction in the maximum emission for a given frequency helps meet
+>> radiated emission requirements.
+>> These settings are applicable for PCIE with Internal clock.
+>
+>> +             writeb_relaxed(0x69, miphy_phy->base + MIPHY_PLL_SBR_3);
+>> +             writeb_relaxed(0x21, miphy_phy->base + MIPHY_PLL_SBR_4);
+>> +             writeb_relaxed(0x3c, miphy_phy->base + MIPHY_PLL_SBR_2);
+>> +             writeb_relaxed(0x21, miphy_phy->base + MIPHY_PLL_SBR_4);
+>> +             writeb_relaxed(0x00, miphy_phy->base + MIPHY_PLL_SBR_1);
+>> +             writeb_relaxed(0x02, miphy_phy->base + MIPHY_PLL_SBR_1);
+>> +             writeb_relaxed(0x00, miphy_phy->base + MIPHY_PLL_SBR_1);
+>
+> I'd feel a lot better about all these magic numbers (and the triple write
+> to SBR_1) if the Changelog or something referenced where they came from....
