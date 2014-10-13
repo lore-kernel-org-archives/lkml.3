@@ -1,163 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993AbaJMNW4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 09:22:56 -0400
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:40779
-	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753464AbaJMNWz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 09:22:55 -0400
-Date: Mon, 13 Oct 2014 15:22:53 +0200
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, eparis@redhat.com,
-        sgrubb@redhat.com, aviro@redhat.com, pmoore@redhat.com,
-        arozansk@redhat.com, ebiederm@xmission.com, serge@hallyn.com
-Subject: Re: [PATCH V5 10/13] audit: log on switching namespace (setns)
-Message-ID: <20141013132253.GI24703@mail.hallyn.com>
-References: <cover.1412543112.git.rgb@redhat.com>
- <5df56a7fa372cf86ca7d5f3807178710097b4c27.1412543112.git.rgb@redhat.com>
+	id S1754472AbaJMNXF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 09:23:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46258 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753842AbaJMNXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 09:23:02 -0400
+Message-ID: <543BD229.4020207@redhat.com>
+Date: Mon, 13 Oct 2014 09:22:49 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5df56a7fa372cf86ca7d5f3807178710097b4c27.1412543112.git.rgb@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        =?ISO-8859-1?Q?Robert_Sch?= =?ISO-8859-1?Q?=F6ne?= 
+	<robert.schoene@tu-dresden.de>
+Subject: Re: Locking issues with cpufreq and sysfs
+References: <543BCF9A.1060603@redhat.com>
+In-Reply-To: <543BCF9A.1060603@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Richard Guy Briggs (rgb@redhat.com):
-> Added six new audit message types, AUDIT_NS_SET_* and function
-> audit_log_ns_set() to log a switch of namespace.
-> 
-> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-> ---
->  include/linux/audit.h      |    4 +++
->  include/uapi/linux/audit.h |    6 +++++
->  kernel/audit.c             |   46 ++++++++++++++++++++++++++++++++++++++++++++
->  kernel/nsproxy.c           |    3 ++
->  4 files changed, 59 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/audit.h b/include/linux/audit.h
-> index 1474334..9de9b25 100644
-> --- a/include/linux/audit.h
-> +++ b/include/linux/audit.h
-> @@ -26,6 +26,7 @@
->  #include <linux/sched.h>
->  #include <linux/ptrace.h>
->  #include <uapi/linux/audit.h>
-> +#include <linux/proc_ns.h>
->  
->  struct audit_sig_info {
->  	uid_t		uid;
-> @@ -484,6 +485,7 @@ static inline void	    audit_log_ns_info(struct task_struct *tsk)
->  extern int		    audit_log_ns_init(int type, long long old_snum,
->  					      long long snum);
->  extern int		    audit_log_ns_del(int type, long long snum);
-> +extern void		    audit_log_ns_set(const struct proc_ns_operations *ops, void *ns);
->  
->  extern int		    audit_update_lsm_rules(void);
->  
-> @@ -547,6 +549,8 @@ static inline int audit_log_ns_init(int type, long long old_snum,
->  { }
->  static inline int audit_log_ns_del(int type, long long snum)
->  { }
-> +static inline void audit_log_ns_set(const struct proc_ns_operations *ops, void *ns)
-> +{ }
->  #define audit_enabled 0
->  #endif /* CONFIG_AUDIT */
->  static inline void audit_log_string(struct audit_buffer *ab, const char *buf)
-> diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
-> index 1acfea7..7ec7209 100644
-> --- a/include/uapi/linux/audit.h
-> +++ b/include/uapi/linux/audit.h
-> @@ -123,6 +123,12 @@
->  #define AUDIT_NS_DEL_USER	1339	/* Record USER namespace instance deletion */
->  #define AUDIT_NS_DEL_PID	1340	/* Record PID namespace instance deletion */
->  #define AUDIT_NS_DEL_NET	1341	/* Record NET namespace instance deletion */
-> +#define AUDIT_NS_SET_MNT	1342	/* Record mount namespace instance deletion */
-> +#define AUDIT_NS_SET_UTS	1343	/* Record UTS namespace instance deletion */
-> +#define AUDIT_NS_SET_IPC	1344	/* Record IPC namespace instance deletion */
-> +#define AUDIT_NS_SET_USER	1345	/* Record USER namespace instance deletion */
-> +#define AUDIT_NS_SET_PID	1346	/* Record PID namespace instance deletion */
-> +#define AUDIT_NS_SET_NET	1347	/* Record NET namespace instance deletion */
->  
->  #define AUDIT_AVC		1400	/* SE Linux avc denial or grant */
->  #define AUDIT_SELINUX_ERR	1401	/* Internal SE Linux Errors */
-> diff --git a/kernel/audit.c b/kernel/audit.c
-> index cc63445..84590d1 100644
-> --- a/kernel/audit.c
-> +++ b/kernel/audit.c
-> @@ -2021,6 +2021,52 @@ int audit_log_ns_del(int type, long long snum)
->  	audit_log_end(ab);
->  	return 0;
->  }
-> +
-> +/**
-> + * audit_log_ns_set - report a namespace set change
-> + * @ops: the ops structure for the namespace to be changed
-> + * @ns: the new namespace
-> + */
-> +void audit_log_ns_set(const struct proc_ns_operations *ops, void *ns)
-> +{
-> +	struct audit_buffer *ab;
-> +	void *old_ns;
-> +	int msg_type;
-> +
-> +	switch (ops->type) {
-> +	case CLONE_NEWNS:
-> +		msg_type = AUDIT_NS_SET_MNT;
-> +		break;
-> +	case CLONE_NEWUTS:
-> +		msg_type = AUDIT_NS_SET_UTS;
-> +		break;
-> +	case CLONE_NEWIPC:
-> +		msg_type = AUDIT_NS_SET_IPC;
-> +		break;
-> +	case CLONE_NEWUSER:
-> +		msg_type = AUDIT_NS_SET_USER;
-> +		break;
-> +	case CLONE_NEWPID:
-> +		msg_type = AUDIT_NS_SET_PID;
-> +		break;
-> +	case CLONE_NEWNET:
-> +		msg_type = AUDIT_NS_SET_NET;
-> +		break;
-> +	default:
-> +		return;
-> +	}
-> +	//ab = audit_log_start(tsk->audit_context, GFP_KERNEL, msg_type);
-> +	//audit_log_format(ab, " pid=%d", current->pid);
 
-Are these commented lines an accident, a 'TODO', or something else?
 
-> +	audit_log_common_recv_msg(&ab, ops->type);
-> +	if (!ab)
-> +		return;
-> + 	old_ns = ops->get(current);
-> +	audit_log_format(ab, " old-%ssn=%llx %ssn=%llx",
-> +			 ops->name, ops->snum(old_ns),
-> +			 ops->name, ops->snum(ns));
-> +	ops->put(old_ns);
-> +	audit_log_end(ab);
-> +}
->  #endif /* CONFIG_NAMESPACES */
->  
->  /**
-> diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-> index 2cdc16b..e37409a 100644
-> --- a/kernel/nsproxy.c
-> +++ b/kernel/nsproxy.c
-> @@ -275,6 +275,9 @@ SYSCALL_DEFINE2(setns, int, fd, int, nstype)
->  		goto out;
->  	}
->  	switch_task_namespaces(tsk, new_nsproxy);
-> +
-> +	audit_log_ns_set(ops, ei->ns);
-> +
->  out:
->  	fput(file);
->  	return err;
-> -- 
-> 1.7.1
+On 10/13/2014 09:11 AM, Prarit Bhargava wrote:
+> There are several issues with the current locking design of cpufreq.  Most
+> notably is the panic reported here:
+> 
+> http://marc.info/?l=linux-kernel&m=140622451625236&w=2
+> 
+> which was introduced by commit 955ef4833574636819cd269cfbae12f79cbde63a,
+> cpufreq: Drop rwsem lock around CPUFREQ_GOV_POLICY_EXIT, which introduces
+> a race in the changing of the cpufreq policy.  This change was introduced
+> because of a lockdep deadlock warning that can be reproduced (on x86 with
+> the acpi_cpufreq driver) via the following debug patch:
+> 
+> iff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
+> index b0c18ed..366cfb7 100644
+> --- a/drivers/cpufreq/acpi-cpufreq.c
+> +++ b/drivers/cpufreq/acpi-cpufreq.c
+> @@ -885,6 +885,7 @@ static struct freq_attr *acpi_cpufreq_attr[] = {
+> 
+>  static struct cpufreq_driver acpi_cpufreq_driver = {
+>         .verify         = cpufreq_generic_frequency_table_verify,
+> +       .flags          = CPUFREQ_HAVE_GOVERNOR_PER_POLICY,
+>         .target_index   = acpi_cpufreq_target,
+>         .bios_limit     = acpi_processor_get_bios_limit,
+>         .init           = acpi_cpufreq_cpu_init,
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 61190f6..4cb488a 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -2195,9 +2195,7 @@ static int cpufreq_set_policy(struct cpufreq_policy *polic
+>         /* end old governor */
+>         if (old_gov) {
+>                 __cpufreq_governor(policy, CPUFREQ_GOV_STOP);
+> -               up_write(&policy->rwsem);
+>                 __cpufreq_governor(policy, CPUFREQ_GOV_POLICY_EXIT);
+> -               down_write(&policy->rwsem);
+>         }
+> 
+>         /* start new governor */
+> @@ -2206,9 +2204,7 @@ static int cpufreq_set_policy(struct cpufreq_policy *polic
+>                 if (!__cpufreq_governor(policy, CPUFREQ_GOV_START))
+>                         goto out;
+> 
+> -               up_write(&policy->rwsem);
+>                 __cpufreq_governor(policy, CPUFREQ_GOV_POLICY_EXIT);
+> -               down_write(&policy->rwsem);
+>         }
+> 
+>         /* new governor failed, so re-start old one */
+> 
+> (which causes the acpi-cpufreq driver to emulate the behaviour of the arm
+> cpufreq driver), and by doing
+> 
+> echo ondemand > /sys/devices/system/cpu/cpu5/cpufreq/scaling_governor
+> cat /sys/devices/system/cpu/cpu5/cpufreq/ondemand/*
+> echo conservative > /sys/devices/system/cpu/cpu5/cpufreq/scaling_governor
+> exit 0
+> 
+> [Question: was the original reported deadlock "real"?  Did it really happen or
+> did lockdep only report it (I may have asked this question previously and
+> forgot the answer)?  The reason I ask is that this situation is very similar to
+> USB's device removal in which the sysfs attributes are removed for a device but
+> not the device it was called for.  I actually think that's part of the problem
+> here.]
+> 
+> The above, obviously, is a complete hack of the code but in a sense does
+> mimic a proper locking fix.  However, even with this fix we are still left
+> with a race in accessing the sysfs files.  Consider the following example,
+> 
+> CPU 1: accesses scaling_setspeed to set cpu speed
+> 
+> simultaneously,
+> 
+> CPU 2: accesses scaling_governor to set governor to ondemand
+> 
+> CPU 1 & 2 race ... and this can result in different critical situations.
+> The first is that CPU 1 holds the scalling_setspeed open while CPU attempts
+> to change the governor.  This results in a syfs warning about creating a
+> file with an existing file name which in some cases can lead to additional
+> corruption and a panic.  The second case is that CPU 1's setting of the speed
+> is now done on the new governor -- which may or may not be correct.  In any
+> case an argument could be made that the userspace program doing this type
+> of action should be "smart" enough to confirm simultaneous changes... but
+> in any case the kernel should not panic or corrupt data.
+> 
+> The locking is insufficient here, Viresh.  I no longer believe that fixes
+> to this locking scheme are the right way to move forward here.  I'm wondering
+> if we can look at other alternatives such as maintaining a refcount or
+> perhaps using a queuing mechanism for governor and policy related changes.
+> 
+
+Uh ... I meant this as "I'm willing to modify the code to do this but I'd like
+to know what everyone else thinks before I do anything" ;)
+
+P.
+
+> P.
+> 
