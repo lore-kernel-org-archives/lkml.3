@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723AbaJMCaX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:30:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46134 "EHLO
+	id S1754829AbaJMCal (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:30:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46204 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754662AbaJMCaJ (ORCPT
+	with ESMTP id S1754771AbaJMCad (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:30:09 -0400
+	Sun, 12 Oct 2014 22:30:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>
-Subject: [PATCH 3.17 13/25] uas: Add a quirk for rejecting ATA_12 and ATA_16 commands
-Date: Mon, 13 Oct 2014 04:25:06 +0200
-Message-Id: <20141013022454.859373037@linuxfoundation.org>
+        Jamal Hadi Salim <jhs@mojatatu.com>,
+        John Fastabend <john.fastabend@gmail.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.17 07/25] net_sched: copy exts->type in tcf_exts_change()
+Date: Mon, 13 Oct 2014 04:25:00 +0200
+Message-Id: <20141013022454.596466026@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022454.289398272@linuxfoundation.org>
 References: <20141013022454.289398272@linuxfoundation.org>
@@ -28,145 +31,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: WANG Cong <xiyou.wangcong@gmail.com>
 
-commit 593078525c8b234a35a36ff551b8716464e86481 upstream.
+[ Upstream commit 5301e3e117d88ef0967ce278912e54757f1a31a2 ]
 
-And set this quirk for the Seagate Expansion Desk (0bc2:2312), as that one
-seems to hang upon receiving an ATA_12 or ATA_16 command.
+We need to copy exts->type when committing the change, otherwise
+it would be always 0. This is a quick fix for -net and -stable,
+for net-next tcf_exts will be removed.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=79511
-https://bbs.archlinux.org/viewtopic.php?id=183190
-
-While at it also add missing documentation for the u value for usb-storage
-quirks.
-
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Fixes: commit 33be627159913b094bb578e83 ("net_sched: act: use standard struct list_head")
+Reported-by: Jamal Hadi Salim <jhs@mojatatu.com>
+Cc: Jamal Hadi Salim <jhs@mojatatu.com>
+Cc: John Fastabend <john.fastabend@gmail.com>
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+Acked-by: Jamal Hadi Salim <jhs@mojatatu.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- Documentation/kernel-parameters.txt |    2 ++
- drivers/usb/storage/uas.c           |   13 +++++++++++++
- drivers/usb/storage/unusual_uas.h   |   23 +++++++++++++----------
- drivers/usb/storage/usb.c           |    6 +++++-
- include/linux/usb_usual.h           |    2 ++
- 5 files changed, 35 insertions(+), 11 deletions(-)
+ net/sched/cls_api.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -3541,6 +3541,8 @@ bytes respectively. Such letter suffixes
- 					bogus residue values);
- 				s = SINGLE_LUN (the device has only one
- 					Logical Unit);
-+				t = NO_ATA_1X (don't allow ATA(12) and ATA(16)
-+					commands, uas only);
- 				u = IGNORE_UAS (don't bind to the uas driver);
- 				w = NO_WP_DETECT (don't test whether the
- 					medium is write-protected).
---- a/drivers/usb/storage/uas.c
-+++ b/drivers/usb/storage/uas.c
-@@ -28,6 +28,7 @@
- #include <scsi/scsi_tcq.h>
- 
- #include "uas-detect.h"
-+#include "scsiglue.h"
- 
- /*
-  * The r00-r01c specs define this version of the SENSE IU data structure.
-@@ -49,6 +50,7 @@ struct uas_dev_info {
- 	struct usb_anchor cmd_urbs;
- 	struct usb_anchor sense_urbs;
- 	struct usb_anchor data_urbs;
-+	unsigned long flags;
- 	int qdepth, resetting;
- 	struct response_iu response;
- 	unsigned cmd_pipe, status_pipe, data_in_pipe, data_out_pipe;
-@@ -714,6 +716,15 @@ static int uas_queuecommand_lck(struct s
- 
- 	BUILD_BUG_ON(sizeof(struct uas_cmd_info) > sizeof(struct scsi_pointer));
- 
-+	if ((devinfo->flags & US_FL_NO_ATA_1X) &&
-+			(cmnd->cmnd[0] == ATA_12 || cmnd->cmnd[0] == ATA_16)) {
-+		memcpy(cmnd->sense_buffer, usb_stor_sense_invalidCDB,
-+		       sizeof(usb_stor_sense_invalidCDB));
-+		cmnd->result = SAM_STAT_CHECK_CONDITION;
-+		cmnd->scsi_done(cmnd);
-+		return 0;
-+	}
-+
- 	spin_lock_irqsave(&devinfo->lock, flags);
- 
- 	if (devinfo->resetting) {
-@@ -1087,6 +1098,8 @@ static int uas_probe(struct usb_interfac
- 	devinfo->resetting = 0;
- 	devinfo->running_task = 0;
- 	devinfo->shutdown = 0;
-+	devinfo->flags = id->driver_info;
-+	usb_stor_adjust_quirks(udev, &devinfo->flags);
- 	init_usb_anchor(&devinfo->cmd_urbs);
- 	init_usb_anchor(&devinfo->sense_urbs);
- 	init_usb_anchor(&devinfo->data_urbs);
---- a/drivers/usb/storage/unusual_uas.h
-+++ b/drivers/usb/storage/unusual_uas.h
-@@ -40,13 +40,16 @@
-  * and don't forget to CC: the USB development list <linux-usb@vger.kernel.org>
-  */
- 
--/*
-- * This is an example entry for the US_FL_IGNORE_UAS flag. Once we have an
-- * actual entry using US_FL_IGNORE_UAS this entry should be removed.
-- *
-- * UNUSUAL_DEV(  0xabcd, 0x1234, 0x0100, 0x0100,
-- *		"Example",
-- *		"Storage with broken UAS",
-- *		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-- *		US_FL_IGNORE_UAS),
-- */
-+/* https://bugzilla.kernel.org/show_bug.cgi?id=79511 */
-+UNUSUAL_DEV(0x0bc2, 0x2312, 0x0000, 0x9999,
-+		"Seagate",
-+		"Expansion Desk",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_NO_ATA_1X),
-+
-+/* https://bbs.archlinux.org/viewtopic.php?id=183190 */
-+UNUSUAL_DEV(0x0bc2, 0x3312, 0x0000, 0x9999,
-+		"Seagate",
-+		"Expansion Desk",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_NO_ATA_1X),
---- a/drivers/usb/storage/usb.c
-+++ b/drivers/usb/storage/usb.c
-@@ -478,7 +478,8 @@ void usb_stor_adjust_quirks(struct usb_d
- 			US_FL_CAPACITY_OK | US_FL_IGNORE_RESIDUE |
- 			US_FL_SINGLE_LUN | US_FL_NO_WP_DETECT |
- 			US_FL_NO_READ_DISC_INFO | US_FL_NO_READ_CAPACITY_16 |
--			US_FL_INITIAL_READ10 | US_FL_WRITE_CACHE);
-+			US_FL_INITIAL_READ10 | US_FL_WRITE_CACHE |
-+			US_FL_NO_ATA_1X);
- 
- 	p = quirks;
- 	while (*p) {
-@@ -543,6 +544,9 @@ void usb_stor_adjust_quirks(struct usb_d
- 		case 's':
- 			f |= US_FL_SINGLE_LUN;
- 			break;
-+		case 't':
-+			f |= US_FL_NO_ATA_1X;
-+			break;
- 		case 'u':
- 			f |= US_FL_IGNORE_UAS;
- 			break;
---- a/include/linux/usb_usual.h
-+++ b/include/linux/usb_usual.h
-@@ -73,6 +73,8 @@
- 		/* Device advertises UAS but it is broken */	\
- 	US_FLAG(BROKEN_FUA,	0x01000000)			\
- 		/* Cannot handle FUA in WRITE or READ CDBs */	\
-+	US_FLAG(NO_ATA_1X,	0x02000000)			\
-+		/* Cannot handle ATA_12 or ATA_16 CDBs */	\
- 
- #define US_FLAG(name, value)	US_FL_##name = value ,
- enum { US_DO_ALL_FLAGS };
+--- a/net/sched/cls_api.c
++++ b/net/sched/cls_api.c
+@@ -549,6 +549,7 @@ void tcf_exts_change(struct tcf_proto *t
+ 	tcf_tree_lock(tp);
+ 	list_splice_init(&dst->actions, &tmp);
+ 	list_splice(&src->actions, &dst->actions);
++	dst->type = src->type;
+ 	tcf_tree_unlock(tp);
+ 	tcf_action_destroy(&tmp, TCA_ACT_UNBIND);
+ #endif
 
 
