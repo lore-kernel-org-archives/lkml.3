@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975AbaJMC2B (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:28:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45844 "EHLO
+	id S1754541AbaJMCsj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:48:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45853 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753951AbaJMC15 (ORCPT
+	with ESMTP id S1753967AbaJMC2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:27:57 -0400
+	Sun, 12 Oct 2014 22:28:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gerhard Stenzel <gerhard.stenzel@de.ibm.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Sabrina Dubroca <sd@queasysnail.net>,
+        Tommi Rantala <tt.rantala@gmail.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 16/55] vxlan: fix incorrect initializer in union vxlan_addr
-Date: Mon, 13 Oct 2014 04:24:30 +0200
-Message-Id: <20141013022444.429145330@linuxfoundation.org>
+Subject: [PATCH 3.16 18/55] ipv6: fix rtnl locking in setsockopt for anycast and multicast
+Date: Mon, 13 Oct 2014 04:24:32 +0200
+Message-Id: <20141013022444.508054835@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
 References: <20141013022443.729870634@linuxfoundation.org>
@@ -29,74 +32,254 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gerhard Stenzel <gstenzel@linux.vnet.ibm.com>
+From: Sabrina Dubroca <sd@queasysnail.net>
 
-[ Upstream commit a45e92a599e77ee6a850eabdd0141633fde03915 ]
+[ Upstream commit a9ed4a2986e13011fcf4ed2d1a1647c53112f55b ]
 
-The first initializer in the following
+Calling setsockopt with IPV6_JOIN_ANYCAST or IPV6_LEAVE_ANYCAST
+triggers the assertion in addrconf_join_solict()/addrconf_leave_solict()
 
-        union vxlan_addr ipa = {
-            .sin.sin_addr.s_addr = tip,
-            .sa.sa_family = AF_INET,
-        };
+ipv6_sock_ac_join(), ipv6_sock_ac_drop(), ipv6_sock_ac_close() need to
+take RTNL before calling ipv6_dev_ac_inc/dec. Same thing with
+ipv6_sock_mc_join(), ipv6_sock_mc_drop(), ipv6_sock_mc_close() before
+calling ipv6_dev_mc_inc/dec.
 
-is optimised away by the compiler, due to the second initializer,
-therefore initialising .sin.sin_addr.s_addr always to 0.
-This results in netlink messages indicating a L3 miss never contain the
-missed IP address. This was observed with GCC 4.8 and 4.9. I do not know about previous versions.
-The problem affects user space programs relying on an IP address being
-sent as part of a netlink message indicating a L3 miss.
+This patch moves ASSERT_RTNL() up a level in the call stack.
 
-Changing
-            .sa.sa_family = AF_INET,
-to
-            .sin.sin_family = AF_INET,
-fixes the problem.
-
-Signed-off-by: Gerhard Stenzel <gerhard.stenzel@de.ibm.com>
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+Signed-off-by: Sabrina Dubroca <sd@queasysnail.net>
+Reported-by: Tommi Rantala <tt.rantala@gmail.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/vxlan.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ net/ipv6/addrconf.c |   15 +++++----------
+ net/ipv6/anycast.c  |   12 ++++++++++++
+ net/ipv6/mcast.c    |   14 ++++++++++++++
+ 3 files changed, 31 insertions(+), 10 deletions(-)
 
---- a/drivers/net/vxlan.c
-+++ b/drivers/net/vxlan.c
-@@ -1325,7 +1325,7 @@ static int arp_reduce(struct net_device
- 	} else if (vxlan->flags & VXLAN_F_L3MISS) {
- 		union vxlan_addr ipa = {
- 			.sin.sin_addr.s_addr = tip,
--			.sa.sa_family = AF_INET,
-+			.sin.sin_family = AF_INET,
- 		};
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -1679,14 +1679,12 @@ void addrconf_dad_failure(struct inet6_i
+ 	addrconf_mod_dad_work(ifp, 0);
+ }
  
- 		vxlan_ip_miss(dev, &ipa);
-@@ -1486,7 +1486,7 @@ static int neigh_reduce(struct net_devic
- 	} else if (vxlan->flags & VXLAN_F_L3MISS) {
- 		union vxlan_addr ipa = {
- 			.sin6.sin6_addr = msg->target,
--			.sa.sa_family = AF_INET6,
-+			.sin6.sin6_family = AF_INET6,
- 		};
+-/* Join to solicited addr multicast group. */
+-
++/* Join to solicited addr multicast group.
++ * caller must hold RTNL */
+ void addrconf_join_solict(struct net_device *dev, const struct in6_addr *addr)
+ {
+ 	struct in6_addr maddr;
  
- 		vxlan_ip_miss(dev, &ipa);
-@@ -1519,7 +1519,7 @@ static bool route_shortcircuit(struct ne
- 		if (!n && (vxlan->flags & VXLAN_F_L3MISS)) {
- 			union vxlan_addr ipa = {
- 				.sin.sin_addr.s_addr = pip->daddr,
--				.sa.sa_family = AF_INET,
-+				.sin.sin_family = AF_INET,
- 			};
+-	ASSERT_RTNL();
+-
+ 	if (dev->flags&(IFF_LOOPBACK|IFF_NOARP))
+ 		return;
  
- 			vxlan_ip_miss(dev, &ipa);
-@@ -1540,7 +1540,7 @@ static bool route_shortcircuit(struct ne
- 		if (!n && (vxlan->flags & VXLAN_F_L3MISS)) {
- 			union vxlan_addr ipa = {
- 				.sin6.sin6_addr = pip6->daddr,
--				.sa.sa_family = AF_INET6,
-+				.sin6.sin6_family = AF_INET6,
- 			};
+@@ -1694,12 +1692,11 @@ void addrconf_join_solict(struct net_dev
+ 	ipv6_dev_mc_inc(dev, &maddr);
+ }
  
- 			vxlan_ip_miss(dev, &ipa);
++/* caller must hold RTNL */
+ void addrconf_leave_solict(struct inet6_dev *idev, const struct in6_addr *addr)
+ {
+ 	struct in6_addr maddr;
+ 
+-	ASSERT_RTNL();
+-
+ 	if (idev->dev->flags&(IFF_LOOPBACK|IFF_NOARP))
+ 		return;
+ 
+@@ -1707,12 +1704,11 @@ void addrconf_leave_solict(struct inet6_
+ 	__ipv6_dev_mc_dec(idev, &maddr);
+ }
+ 
++/* caller must hold RTNL */
+ static void addrconf_join_anycast(struct inet6_ifaddr *ifp)
+ {
+ 	struct in6_addr addr;
+ 
+-	ASSERT_RTNL();
+-
+ 	if (ifp->prefix_len >= 127) /* RFC 6164 */
+ 		return;
+ 	ipv6_addr_prefix(&addr, &ifp->addr, ifp->prefix_len);
+@@ -1721,12 +1717,11 @@ static void addrconf_join_anycast(struct
+ 	ipv6_dev_ac_inc(ifp->idev->dev, &addr);
+ }
+ 
++/* caller must hold RTNL */
+ static void addrconf_leave_anycast(struct inet6_ifaddr *ifp)
+ {
+ 	struct in6_addr addr;
+ 
+-	ASSERT_RTNL();
+-
+ 	if (ifp->prefix_len >= 127) /* RFC 6164 */
+ 		return;
+ 	ipv6_addr_prefix(&addr, &ifp->addr, ifp->prefix_len);
+--- a/net/ipv6/anycast.c
++++ b/net/ipv6/anycast.c
+@@ -77,6 +77,7 @@ int ipv6_sock_ac_join(struct sock *sk, i
+ 	pac->acl_next = NULL;
+ 	pac->acl_addr = *addr;
+ 
++	rtnl_lock();
+ 	rcu_read_lock();
+ 	if (ifindex == 0) {
+ 		struct rt6_info *rt;
+@@ -137,6 +138,7 @@ int ipv6_sock_ac_join(struct sock *sk, i
+ 
+ error:
+ 	rcu_read_unlock();
++	rtnl_unlock();
+ 	if (pac)
+ 		sock_kfree_s(sk, pac, sizeof(*pac));
+ 	return err;
+@@ -171,13 +173,17 @@ int ipv6_sock_ac_drop(struct sock *sk, i
+ 
+ 	spin_unlock_bh(&ipv6_sk_ac_lock);
+ 
++	rtnl_lock();
+ 	rcu_read_lock();
+ 	dev = dev_get_by_index_rcu(net, pac->acl_ifindex);
+ 	if (dev)
+ 		ipv6_dev_ac_dec(dev, &pac->acl_addr);
+ 	rcu_read_unlock();
++	rtnl_unlock();
+ 
+ 	sock_kfree_s(sk, pac, sizeof(*pac));
++	if (!dev)
++		return -ENODEV;
+ 	return 0;
+ }
+ 
+@@ -198,6 +204,7 @@ void ipv6_sock_ac_close(struct sock *sk)
+ 	spin_unlock_bh(&ipv6_sk_ac_lock);
+ 
+ 	prev_index = 0;
++	rtnl_lock();
+ 	rcu_read_lock();
+ 	while (pac) {
+ 		struct ipv6_ac_socklist *next = pac->acl_next;
+@@ -212,6 +219,7 @@ void ipv6_sock_ac_close(struct sock *sk)
+ 		pac = next;
+ 	}
+ 	rcu_read_unlock();
++	rtnl_unlock();
+ }
+ 
+ static void aca_put(struct ifacaddr6 *ac)
+@@ -233,6 +241,8 @@ int ipv6_dev_ac_inc(struct net_device *d
+ 	struct rt6_info *rt;
+ 	int err;
+ 
++	ASSERT_RTNL();
++
+ 	idev = in6_dev_get(dev);
+ 
+ 	if (idev == NULL)
+@@ -302,6 +312,8 @@ int __ipv6_dev_ac_dec(struct inet6_dev *
+ {
+ 	struct ifacaddr6 *aca, *prev_aca;
+ 
++	ASSERT_RTNL();
++
+ 	write_lock_bh(&idev->lock);
+ 	prev_aca = NULL;
+ 	for (aca = idev->ac_list; aca; aca = aca->aca_next) {
+--- a/net/ipv6/mcast.c
++++ b/net/ipv6/mcast.c
+@@ -172,6 +172,7 @@ int ipv6_sock_mc_join(struct sock *sk, i
+ 	mc_lst->next = NULL;
+ 	mc_lst->addr = *addr;
+ 
++	rtnl_lock();
+ 	rcu_read_lock();
+ 	if (ifindex == 0) {
+ 		struct rt6_info *rt;
+@@ -185,6 +186,7 @@ int ipv6_sock_mc_join(struct sock *sk, i
+ 
+ 	if (dev == NULL) {
+ 		rcu_read_unlock();
++		rtnl_unlock();
+ 		sock_kfree_s(sk, mc_lst, sizeof(*mc_lst));
+ 		return -ENODEV;
+ 	}
+@@ -202,6 +204,7 @@ int ipv6_sock_mc_join(struct sock *sk, i
+ 
+ 	if (err) {
+ 		rcu_read_unlock();
++		rtnl_unlock();
+ 		sock_kfree_s(sk, mc_lst, sizeof(*mc_lst));
+ 		return err;
+ 	}
+@@ -212,6 +215,7 @@ int ipv6_sock_mc_join(struct sock *sk, i
+ 	spin_unlock(&ipv6_sk_mc_lock);
+ 
+ 	rcu_read_unlock();
++	rtnl_unlock();
+ 
+ 	return 0;
+ }
+@@ -229,6 +233,7 @@ int ipv6_sock_mc_drop(struct sock *sk, i
+ 	if (!ipv6_addr_is_multicast(addr))
+ 		return -EINVAL;
+ 
++	rtnl_lock();
+ 	spin_lock(&ipv6_sk_mc_lock);
+ 	for (lnk = &np->ipv6_mc_list;
+ 	     (mc_lst = rcu_dereference_protected(*lnk,
+@@ -252,12 +257,15 @@ int ipv6_sock_mc_drop(struct sock *sk, i
+ 			} else
+ 				(void) ip6_mc_leave_src(sk, mc_lst, NULL);
+ 			rcu_read_unlock();
++			rtnl_unlock();
++
+ 			atomic_sub(sizeof(*mc_lst), &sk->sk_omem_alloc);
+ 			kfree_rcu(mc_lst, rcu);
+ 			return 0;
+ 		}
+ 	}
+ 	spin_unlock(&ipv6_sk_mc_lock);
++	rtnl_unlock();
+ 
+ 	return -EADDRNOTAVAIL;
+ }
+@@ -302,6 +310,7 @@ void ipv6_sock_mc_close(struct sock *sk)
+ 	if (!rcu_access_pointer(np->ipv6_mc_list))
+ 		return;
+ 
++	rtnl_lock();
+ 	spin_lock(&ipv6_sk_mc_lock);
+ 	while ((mc_lst = rcu_dereference_protected(np->ipv6_mc_list,
+ 				lockdep_is_held(&ipv6_sk_mc_lock))) != NULL) {
+@@ -328,6 +337,7 @@ void ipv6_sock_mc_close(struct sock *sk)
+ 		spin_lock(&ipv6_sk_mc_lock);
+ 	}
+ 	spin_unlock(&ipv6_sk_mc_lock);
++	rtnl_unlock();
+ }
+ 
+ int ip6_mc_source(int add, int omode, struct sock *sk,
+@@ -845,6 +855,8 @@ int ipv6_dev_mc_inc(struct net_device *d
+ 	struct ifmcaddr6 *mc;
+ 	struct inet6_dev *idev;
+ 
++	ASSERT_RTNL();
++
+ 	/* we need to take a reference on idev */
+ 	idev = in6_dev_get(dev);
+ 
+@@ -916,6 +928,8 @@ int __ipv6_dev_mc_dec(struct inet6_dev *
+ {
+ 	struct ifmcaddr6 *ma, **map;
+ 
++	ASSERT_RTNL();
++
+ 	write_lock_bh(&idev->lock);
+ 	for (map = &idev->mc_list; (ma=*map) != NULL; map = &ma->next) {
+ 		if (ipv6_addr_equal(&ma->mca_addr, addr)) {
 
 
