@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754097AbaJMC21 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:28:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45897 "EHLO
+	id S1754127AbaJMC2b (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:28:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45907 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754070AbaJMC2W (ORCPT
+	with ESMTP id S1754099AbaJMC21 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:28:22 -0400
+	Sun, 12 Oct 2014 22:28:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Neal Cardwell <ncardwell@google.com>,
         Eric Dumazet <edumazet@google.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrey Vagin <avagin@openvz.org>
-Subject: [PATCH 3.16 06/55] tcp: dont use timestamp from repaired skb-s to calculate RTT (v2)
-Date: Mon, 13 Oct 2014 04:24:20 +0200
-Message-Id: <20141013022443.997286627@linuxfoundation.org>
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.16 08/55] tcp: fix tcp_release_cb() to dispatch via address family for mtu_reduced()
+Date: Mon, 13 Oct 2014 04:24:22 +0200
+Message-Id: <20141013022444.088029439@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
 References: <20141013022443.729870634@linuxfoundation.org>
@@ -31,116 +31,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Vagin <avagin@openvz.org>
+From: Neal Cardwell <ncardwell@google.com>
 
-[ Upstream commit 9d186cac7ffb1831e9f34cb4a3a8b22abb9dd9d4 ]
+[ Upstream commit 4fab9071950c2021d846e18351e0f46a1cffd67b ]
 
-We don't know right timestamp for repaired skb-s. Wrong RTT estimations
-isn't good, because some congestion modules heavily depends on it.
+Make sure we use the correct address-family-specific function for
+handling MTU reductions from within tcp_release_cb().
 
-This patch adds the TCPCB_REPAIRED flag, which is included in
-TCPCB_RETRANS.
+Previously AF_INET6 sockets were incorrectly always using the IPv6
+code path when sometimes they were handling IPv4 traffic and thus had
+an IPv4 dst.
 
-Thanks to Eric for the advice how to fix this issue.
-
-This patch fixes the warning:
-[  879.562947] WARNING: CPU: 0 PID: 2825 at net/ipv4/tcp_input.c:3078 tcp_ack+0x11f5/0x1380()
-[  879.567253] CPU: 0 PID: 2825 Comm: socket-tcpbuf-l Not tainted 3.16.0-next-20140811 #1
-[  879.567829] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[  879.568177]  0000000000000000 00000000c532680c ffff880039643d00 ffffffff817aa2d2
-[  879.568776]  0000000000000000 ffff880039643d38 ffffffff8109afbd ffff880039d6ba80
-[  879.569386]  ffff88003a449800 000000002983d6bd 0000000000000000 000000002983d6bc
-[  879.569982] Call Trace:
-[  879.570264]  [<ffffffff817aa2d2>] dump_stack+0x4d/0x66
-[  879.570599]  [<ffffffff8109afbd>] warn_slowpath_common+0x7d/0xa0
-[  879.570935]  [<ffffffff8109b0ea>] warn_slowpath_null+0x1a/0x20
-[  879.571292]  [<ffffffff816d0a05>] tcp_ack+0x11f5/0x1380
-[  879.571614]  [<ffffffff816d10bd>] tcp_rcv_established+0x1ed/0x710
-[  879.571958]  [<ffffffff816dc9da>] tcp_v4_do_rcv+0x10a/0x370
-[  879.572315]  [<ffffffff81657459>] release_sock+0x89/0x1d0
-[  879.572642]  [<ffffffff816c81a0>] do_tcp_setsockopt.isra.36+0x120/0x860
-[  879.573000]  [<ffffffff8110a52e>] ? rcu_read_lock_held+0x6e/0x80
-[  879.573352]  [<ffffffff816c8912>] tcp_setsockopt+0x32/0x40
-[  879.573678]  [<ffffffff81654ac4>] sock_common_setsockopt+0x14/0x20
-[  879.574031]  [<ffffffff816537b0>] SyS_setsockopt+0x80/0xf0
-[  879.574393]  [<ffffffff817b40a9>] system_call_fastpath+0x16/0x1b
-[  879.574730] ---[ end trace a17cbc38eb8c5c00 ]---
-
-v2: moving setting of skb->when for repaired skb-s in tcp_write_xmit,
-    where it's set for other skb-s.
-
-Fixes: 431a91242d8d ("tcp: timestamp SYN+DATA messages")
-Fixes: 740b0f1841f6 ("tcp: switch rtt estimations to usec resolution")
-Cc: Eric Dumazet <edumazet@google.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Diagnosed-by: Willem de Bruijn <willemb@google.com>
+Fixes: 563d34d057862 ("tcp: dont drop MTU reduction indications")
+Reviewed-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/tcp.h     |    4 +++-
- net/ipv4/tcp.c        |   14 +++++++-------
- net/ipv4/tcp_output.c |    5 ++++-
- 3 files changed, 14 insertions(+), 9 deletions(-)
+ include/net/inet_connection_sock.h |    1 +
+ include/net/sock.h                 |    1 -
+ include/net/tcp.h                  |    1 +
+ net/ipv4/tcp_ipv4.c                |    5 +++--
+ net/ipv4/tcp_output.c              |    2 +-
+ net/ipv6/tcp_ipv6.c                |    3 ++-
+ 6 files changed, 8 insertions(+), 5 deletions(-)
 
+--- a/include/net/inet_connection_sock.h
++++ b/include/net/inet_connection_sock.h
+@@ -62,6 +62,7 @@ struct inet_connection_sock_af_ops {
+ 	void	    (*addr2sockaddr)(struct sock *sk, struct sockaddr *);
+ 	int	    (*bind_conflict)(const struct sock *sk,
+ 				     const struct inet_bind_bucket *tb, bool relax);
++	void	    (*mtu_reduced)(struct sock *sk);
+ };
+ 
+ /** inet_connection_sock - INET connection oriented sock
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -971,7 +971,6 @@ struct proto {
+ 						struct sk_buff *skb);
+ 
+ 	void		(*release_cb)(struct sock *sk);
+-	void		(*mtu_reduced)(struct sock *sk);
+ 
+ 	/* Keeping track of sk's, looking them up, and port selection methods. */
+ 	void			(*hash)(struct sock *sk);
 --- a/include/net/tcp.h
 +++ b/include/net/tcp.h
-@@ -718,8 +718,10 @@ struct tcp_skb_cb {
- #define TCPCB_SACKED_RETRANS	0x02	/* SKB retransmitted		*/
- #define TCPCB_LOST		0x04	/* SKB is lost			*/
- #define TCPCB_TAGBITS		0x07	/* All tag bits			*/
-+#define TCPCB_REPAIRED		0x10	/* SKB repaired (no skb_mstamp)	*/
- #define TCPCB_EVER_RETRANS	0x80	/* Ever retransmitted frame	*/
--#define TCPCB_RETRANS		(TCPCB_SACKED_RETRANS|TCPCB_EVER_RETRANS)
-+#define TCPCB_RETRANS		(TCPCB_SACKED_RETRANS|TCPCB_EVER_RETRANS| \
-+				TCPCB_REPAIRED)
+@@ -448,6 +448,7 @@ const u8 *tcp_parse_md5sig_option(const
+  */
  
- 	__u8		ip_dsfield;	/* IPv4 tos or IPv6 dsfield	*/
- 	/* 1 byte hole */
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -1175,13 +1175,6 @@ new_segment:
- 					goto wait_for_memory;
+ void tcp_v4_send_check(struct sock *sk, struct sk_buff *skb);
++void tcp_v4_mtu_reduced(struct sock *sk);
+ int tcp_v4_conn_request(struct sock *sk, struct sk_buff *skb);
+ struct sock *tcp_create_openreq_child(struct sock *sk,
+ 				      struct request_sock *req,
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -269,7 +269,7 @@ EXPORT_SYMBOL(tcp_v4_connect);
+  * It can be called through tcp_release_cb() if socket was owned by user
+  * at the time tcp_v4_err() was called to handle ICMP message.
+  */
+-static void tcp_v4_mtu_reduced(struct sock *sk)
++void tcp_v4_mtu_reduced(struct sock *sk)
+ {
+ 	struct dst_entry *dst;
+ 	struct inet_sock *inet = inet_sk(sk);
+@@ -300,6 +300,7 @@ static void tcp_v4_mtu_reduced(struct so
+ 		tcp_simple_retransmit(sk);
+ 	} /* else let the usual retransmit timer handle it */
+ }
++EXPORT_SYMBOL(tcp_v4_mtu_reduced);
  
- 				/*
--				 * All packets are restored as if they have
--				 * already been sent.
--				 */
--				if (tp->repair)
--					TCP_SKB_CB(skb)->when = tcp_time_stamp;
--
--				/*
- 				 * Check whether we can use HW checksum.
- 				 */
- 				if (sk->sk_route_caps & NETIF_F_ALL_CSUM)
-@@ -1190,6 +1183,13 @@ new_segment:
- 				skb_entail(sk, skb);
- 				copy = size_goal;
- 				max = size_goal;
-+
-+				/* All packets are restored as if they have
-+				 * already been sent. skb_mstamp isn't set to
-+				 * avoid wrong rtt estimation.
-+				 */
-+				if (tp->repair)
-+					TCP_SKB_CB(skb)->sacked |= TCPCB_REPAIRED;
- 			}
+ static void do_redirect(struct sk_buff *skb, struct sock *sk)
+ {
+@@ -1880,6 +1881,7 @@ const struct inet_connection_sock_af_ops
+ 	.compat_setsockopt = compat_ip_setsockopt,
+ 	.compat_getsockopt = compat_ip_getsockopt,
+ #endif
++	.mtu_reduced	   = tcp_v4_mtu_reduced,
+ };
+ EXPORT_SYMBOL(ipv4_specific);
  
- 			/* Try to append data to the end of skb. */
+@@ -2499,7 +2501,6 @@ struct proto tcp_prot = {
+ 	.sendpage		= tcp_sendpage,
+ 	.backlog_rcv		= tcp_v4_do_rcv,
+ 	.release_cb		= tcp_release_cb,
+-	.mtu_reduced		= tcp_v4_mtu_reduced,
+ 	.hash			= inet_hash,
+ 	.unhash			= inet_unhash,
+ 	.get_port		= inet_csk_get_port,
 --- a/net/ipv4/tcp_output.c
 +++ b/net/ipv4/tcp_output.c
-@@ -1916,8 +1916,11 @@ static bool tcp_write_xmit(struct sock *
- 		tso_segs = tcp_init_tso_segs(sk, skb, mss_now);
- 		BUG_ON(!tso_segs);
+@@ -800,7 +800,7 @@ void tcp_release_cb(struct sock *sk)
+ 		__sock_put(sk);
+ 	}
+ 	if (flags & (1UL << TCP_MTU_REDUCED_DEFERRED)) {
+-		sk->sk_prot->mtu_reduced(sk);
++		inet_csk(sk)->icsk_af_ops->mtu_reduced(sk);
+ 		__sock_put(sk);
+ 	}
+ }
+--- a/net/ipv6/tcp_ipv6.c
++++ b/net/ipv6/tcp_ipv6.c
+@@ -1681,6 +1681,7 @@ static const struct inet_connection_sock
+ 	.compat_setsockopt = compat_ipv6_setsockopt,
+ 	.compat_getsockopt = compat_ipv6_getsockopt,
+ #endif
++	.mtu_reduced	   = tcp_v6_mtu_reduced,
+ };
  
--		if (unlikely(tp->repair) && tp->repair_queue == TCP_SEND_QUEUE)
-+		if (unlikely(tp->repair) && tp->repair_queue == TCP_SEND_QUEUE) {
-+			/* "when" is used as a start point for the retransmit timer */
-+			TCP_SKB_CB(skb)->when = tcp_time_stamp;
- 			goto repair; /* Skip network transmission */
-+		}
+ #ifdef CONFIG_TCP_MD5SIG
+@@ -1711,6 +1712,7 @@ static const struct inet_connection_sock
+ 	.compat_setsockopt = compat_ipv6_setsockopt,
+ 	.compat_getsockopt = compat_ipv6_getsockopt,
+ #endif
++	.mtu_reduced	   = tcp_v4_mtu_reduced,
+ };
  
- 		cwnd_quota = tcp_cwnd_test(tp, skb);
- 		if (!cwnd_quota) {
+ #ifdef CONFIG_TCP_MD5SIG
+@@ -1950,7 +1952,6 @@ struct proto tcpv6_prot = {
+ 	.sendpage		= tcp_sendpage,
+ 	.backlog_rcv		= tcp_v6_do_rcv,
+ 	.release_cb		= tcp_release_cb,
+-	.mtu_reduced		= tcp_v6_mtu_reduced,
+ 	.hash			= tcp_v6_hash,
+ 	.unhash			= inet_unhash,
+ 	.get_port		= inet_csk_get_port,
 
 
