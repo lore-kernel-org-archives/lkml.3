@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712AbaJMKcy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 06:32:54 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50120 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752909AbaJMKcx (ORCPT
+	id S1753762AbaJMKdj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 06:33:39 -0400
+Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:37978
+	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753739AbaJMKdi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 06:32:53 -0400
-Date: Mon, 13 Oct 2014 12:32:33 +0200
-From: Mark Brown <broonie@kernel.org>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: dmaengine@vger.kernel.org, linux-spi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20141013103233.GI27755@sirena.org.uk>
-References: <1413041973-28146-1-git-send-email-vinod.koul@intel.com>
- <1413042040-28222-8-git-send-email-vinod.koul@intel.com>
+	Mon, 13 Oct 2014 06:33:38 -0400
+Date: Mon, 13 Oct 2014 12:33:37 +0200
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, eparis@redhat.com,
+        sgrubb@redhat.com, aviro@redhat.com, pmoore@redhat.com,
+        arozansk@redhat.com, ebiederm@xmission.com, serge@hallyn.com
+Subject: Re: [PATCH V5 03/13] namespaces: expose ns_entries
+Message-ID: <20141013103337.GC24703@mail.hallyn.com>
+References: <cover.1412543112.git.rgb@redhat.com>
+ <3ff967555ff72bf7efdf665a7209b55e4bd7f027.1412543112.git.rgb@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4MTjg8yAiOaLjoFv"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1413042040-28222-8-git-send-email-vinod.koul@intel.com>
-X-Cookie: You are magnetic in your bearing.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 62.156.150.204
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 08/12] spi/spi-dw-mid.c: use dmaengine_slave_config() API
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <3ff967555ff72bf7efdf665a7209b55e4bd7f027.1412543112.git.rgb@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Quoting Richard Guy Briggs (rgb@redhat.com):
+> Expose ns_entries so subsystems other than proc can use this set of namespace
+> operations.
+> 
+> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
 
---4MTjg8yAiOaLjoFv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 
-On Sat, Oct 11, 2014 at 09:10:36PM +0530, Vinod Koul wrote:
-> The drivers should use dmaengine_slave_config() API instead of
-> accessing the device_control which will be deprecated soon
-
-Applied, thanks.
-
---4MTjg8yAiOaLjoFv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUO6pAAAoJECTWi3JdVIfQpOUH/iilgElY6zXJ4FSI9jORpB9n
-NjePb/AJrafy39bQmCApCphpMtwQKrTqJVQTW1dT2eQ7wkNezUkQGWrvKJ1SRh2P
-/xo4fsMnBYFjjKF/hpTABcHE9aJ0XdC2XDNHCe4JiBJ+d6FBH/v369X/+15MCUpr
-1e7JPC1lo8co1nEOqZSPr/PzRCkh/5ghz70wDffaHzb+Nb3hp2K+NGk+8EJseSoX
-/Whkqea8Yrie/W9tKyafIG04Hcf3f6H0IW1JDC+NMHY5UPMHXg8Lzl3pcs0r2LP1
-0/VSPWzbRpDalRxLT6aLCKQj34V7rOHbxk8rbSwhgiqs2aVTitfAP1tZ5WDP87A=
-=PPSK
------END PGP SIGNATURE-----
-
---4MTjg8yAiOaLjoFv--
+> ---
+>  fs/proc/namespaces.c    |    2 +-
+>  include/linux/proc_ns.h |    1 +
+>  2 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/proc/namespaces.c b/fs/proc/namespaces.c
+> index 8902609..310da74 100644
+> --- a/fs/proc/namespaces.c
+> +++ b/fs/proc/namespaces.c
+> @@ -15,7 +15,7 @@
+>  #include "internal.h"
+>  
+>  
+> -static const struct proc_ns_operations *ns_entries[] = {
+> +const struct proc_ns_operations *ns_entries[] = {
+>  #ifdef CONFIG_NET_NS
+>  	&netns_operations,
+>  #endif
+> diff --git a/include/linux/proc_ns.h b/include/linux/proc_ns.h
+> index aaafe3e..f4563db 100644
+> --- a/include/linux/proc_ns.h
+> +++ b/include/linux/proc_ns.h
+> @@ -28,6 +28,7 @@ extern const struct proc_ns_operations ipcns_operations;
+>  extern const struct proc_ns_operations pidns_operations;
+>  extern const struct proc_ns_operations userns_operations;
+>  extern const struct proc_ns_operations mntns_operations;
+> +extern const struct proc_ns_operations *ns_entries[];
+>  
+>  /*
+>   * We always define these enumerators
+> -- 
+> 1.7.1
