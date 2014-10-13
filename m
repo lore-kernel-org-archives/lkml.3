@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909AbaJMWPy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 18:15:54 -0400
-Received: from [43.248.8.119] ([43.248.8.119]:44887 "EHLO a.vifigame.com"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750877AbaJMWPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 18:15:53 -0400
-Date: Tue, 14 Oct 2014 06:12:12 +0800
-From: "Nick" <by1@a.vifigame.com>
-Reply-To: perlong.hk@gmail.com
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: NON-CONTACT INFRARED THERMOMETER ANTI EBOLA VIRUS USD 16 PER ONE
-Message-ID: <201410140612129406025@a.vifigame.com>
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
+	id S1753431AbaJMWRB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 18:17:01 -0400
+Received: from mga09.intel.com ([134.134.136.24]:18167 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750877AbaJMWQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 18:16:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,714,1406617200"; 
+   d="scan'208";a="618001512"
+From: James Ralston <james.d.ralston@intel.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: James Ralston <james.d.ralston@intel.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/4] ahci: Add Device IDs for Intel Sunrise Point PCH
+Date: Mon, 13 Oct 2014 15:16:38 -0700
+Message-Id: <1413238598-5425-1-git-send-email-james.d.ralston@intel.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9DMG5mk022035
 
-Dear All
+This patch adds the AHCI-mode SATA Device IDs for the Intel Sunrise Point PCH.
 
+Signed-off-by: James Ralston <james.d.ralston@intel.com>
+---
+ drivers/ata/ahci.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-NON-CONTACT INFRARED THERMOMETER ANTI EBOLA VIRUS 
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index a0cc0ed..efa08f4 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -313,6 +313,11 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+ 	{ PCI_VDEVICE(INTEL, 0x8c87), board_ahci }, /* 9 Series RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x8c8e), board_ahci }, /* 9 Series RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x8c8f), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0xa103), board_ahci }, /* Sunrise Point-H AHCI */
++	{ PCI_VDEVICE(INTEL, 0xa103), board_ahci }, /* Sunrise Point-H RAID */
++	{ PCI_VDEVICE(INTEL, 0xa105), board_ahci }, /* Sunrise Point-H RAID */
++	{ PCI_VDEVICE(INTEL, 0xa107), board_ahci }, /* Sunrise Point-H RAID */
++	{ PCI_VDEVICE(INTEL, 0xa10f), board_ahci }, /* Sunrise Point-H RAID */
+ 
+ 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
+ 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
+-- 
+1.8.3.1
 
-Pls find attached the Products catalogue. 
-8806 model: 0-500 pcs USD 16 per one.  501-1000 pcs USD 15 per one. 
-8808 model: 0-500 pcs USD 17 per one,  501-1000 pcs USD 16 per one.
-
-
-Now this product is very hot, Any question please do not hesitate to contact me. 
-
-
-Nick 
-Marketing Director
-
-----------------------------------------------------------------------
-PERLONG MEDICAL EQUIPMENT HONGKONG LIMITED. 
-
-ADDRESS: FLAT/RM 1401 14/F WORLD COMMERCE CENTRE HARBOUR CITY 7-11 CANTON RD 
-TSIMSHATSUIKL HONGKONG
-
-Tel:+86-25-85553599
-Fax:+86-25-83650868
-M.P.: +86-13951618193
-Website: www.perlong.hk 
-EMAIL:perlong.hk@gmail.com
-MSN:perlong.hk@hotmail.com 
-Yahoo:nick20070601@yahoo.comˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
