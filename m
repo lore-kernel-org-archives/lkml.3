@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743AbaJMCa0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:30:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46160 "EHLO
+	id S1755189AbaJMCew (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:34:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46183 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754690AbaJMCaS (ORCPT
+	with ESMTP id S1754722AbaJMCaW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:30:18 -0400
+	Sun, 12 Oct 2014 22:30:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>
-Subject: [PATCH 3.17 16/25] uas: Add another ASM1051 usb-id to the uas blacklist
-Date: Mon, 13 Oct 2014 04:25:09 +0200
-Message-Id: <20141013022454.985859333@linuxfoundation.org>
+        Joe Lawrence <joe.lawrence@stratus.com>, Jiri Pirko <jiri@resnulli.us>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.17 03/25] team: avoid race condition in scheduling delayed work
+Date: Mon, 13 Oct 2014 04:24:56 +0200
+Message-Id: <20141013022454.429780782@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022454.289398272@linuxfoundation.org>
 References: <20141013022454.289398272@linuxfoundation.org>
@@ -28,32 +29,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Joe Lawrence <Joe.Lawrence@stratus.com>
 
-commit 710f1bf16ab1b1558f099b62c5011c4cbba6a7bb upstream.
+[ Upstream commit 47549650abd13d873fd2e5fc218db19e21031074 ]
 
-As most ASM1051 based devices, this one has unfixable issues with uas too.
+When team_notify_peers and team_mcast_rejoin are called, they both reset
+their respective .count_pending atomic variable. Then when the actual
+worker function is executed, the variable is atomically decremented.
+This pattern introduces a potential race condition where the
+.count_pending rolls over and the worker function keeps rescheduling
+until .count_pending decrements to zero again:
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+THREAD 1                           THREAD 2
+
+========                           ========
+team_notify_peers(teamX)
+  atomic_set count_pending = 1
+  schedule_delayed_work
+                                   team_notify_peers(teamX)
+                                   atomic_set count_pending = 1
+team_notify_peers_work
+  atomic_dec_and_test
+    count_pending = 0
+  (return)
+                                   schedule_delayed_work
+                                   team_notify_peers_work
+                                   atomic_dec_and_test
+                                     count_pending = -1
+                                   schedule_delayed_work
+                                   (repeat until count_pending = 0)
+
+Instead of assigning a new value to .count_pending, use atomic_add to
+tack-on the additional desired worker function invocations.
+
+Signed-off-by: Joe Lawrence <joe.lawrence@stratus.com>
+Acked-by: Jiri Pirko <jiri@resnulli.us>
+Fixes: fc423ff00df3a19554414ee ("team: add peer notification")
+Fixes: 492b200efdd20b8fcfdac87 ("team: add support for sending multicast rejoins")
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/storage/unusual_uas.h |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/net/team/team.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/storage/unusual_uas.h
-+++ b/drivers/usb/storage/unusual_uas.h
-@@ -67,3 +67,11 @@ UNUSUAL_DEV(0x152d, 0x0567, 0x0000, 0x99
- 		"JMS567",
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_NO_REPORT_OPCODES),
-+
-+/* Most ASM1051 based devices have issues with uas, blacklist them all */
-+/* Reported-by: Hans de Goede <hdegoede@redhat.com> */
-+UNUSUAL_DEV(0x174c, 0x5106, 0x0000, 0x9999,
-+		"ASMedia",
-+		"ASM1051",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_IGNORE_UAS),
+--- a/drivers/net/team/team.c
++++ b/drivers/net/team/team.c
+@@ -647,7 +647,7 @@ static void team_notify_peers(struct tea
+ {
+ 	if (!team->notify_peers.count || !netif_running(team->dev))
+ 		return;
+-	atomic_set(&team->notify_peers.count_pending, team->notify_peers.count);
++	atomic_add(team->notify_peers.count, &team->notify_peers.count_pending);
+ 	schedule_delayed_work(&team->notify_peers.dw, 0);
+ }
+ 
+@@ -687,7 +687,7 @@ static void team_mcast_rejoin(struct tea
+ {
+ 	if (!team->mcast_rejoin.count || !netif_running(team->dev))
+ 		return;
+-	atomic_set(&team->mcast_rejoin.count_pending, team->mcast_rejoin.count);
++	atomic_add(team->mcast_rejoin.count, &team->mcast_rejoin.count_pending);
+ 	schedule_delayed_work(&team->mcast_rejoin.dw, 0);
+ }
+ 
 
 
