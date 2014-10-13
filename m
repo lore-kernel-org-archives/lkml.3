@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932080AbaJMNNg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 09:13:36 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50684 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753940AbaJMNNc (ORCPT
+	id S1754000AbaJMNO6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 09:14:58 -0400
+Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:40593
+	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753642AbaJMNO4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 09:13:32 -0400
-Date: Mon, 13 Oct 2014 15:12:40 +0200
-From: Mark Brown <broonie@kernel.org>
-To: Romain Perier <romain.perier@gmail.com>
-Cc: devicetree@vger.kernel.org, lgirdwood@gmail.com,
-        linux-kernel@vger.kernel.org, heiko@sntech.de, sameo@linux.intel.com,
-        lee.jones@linaro.org, grant.likely@linaro.org, robh@kernel.org,
-        sre@kernel.org, dbaryshkov@gmail.com, dwmw2@infradead.org,
-        anton@enomsg.org, ldewangan@nvidia.com, linux-omap@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Message-ID: <20141013131240.GZ27755@sirena.org.uk>
-References: <1412711104-15902-1-git-send-email-romain.perier@gmail.com>
+	Mon, 13 Oct 2014 09:14:56 -0400
+Date: Mon, 13 Oct 2014 15:14:54 +0200
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, eparis@redhat.com,
+        sgrubb@redhat.com, aviro@redhat.com, pmoore@redhat.com,
+        arozansk@redhat.com, ebiederm@xmission.com, serge@hallyn.com
+Subject: Re: [PATCH V5 09/13] fork: audit on creation of new namespace(s)
+Message-ID: <20141013131454.GG24703@mail.hallyn.com>
+References: <cover.1412543112.git.rgb@redhat.com>
+ <b9607ab778a84381b4a82cf0110d031f19b17525.1412543112.git.rgb@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TLkgL7PLGfOLXnur"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1412711104-15902-1-git-send-email-romain.perier@gmail.com>
-X-Cookie: You are magnetic in your bearing.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 62.156.150.204
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC PATCH v2 1/4] regulator: Add helper function to get
- "poweroff-source" property
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <b9607ab778a84381b4a82cf0110d031f19b17525.1412543112.git.rgb@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Quoting Richard Guy Briggs (rgb@redhat.com):
+> When clone(2) is called to fork a new process creating one or more namespaces,
+> audit the event to tie the new pid with the namespace IDs.
+> 
+> Signed-off-by: Richard Guy Briggs
 
---TLkgL7PLGfOLXnur
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 
-On Tue, Oct 07, 2014 at 07:45:01PM +0000, Romain Perier wrote:
-> Several drivers create their own devicetree property when they register
-> poweroff capabilities. This is for example the case for mfd, regulator
-
-This seems fine from a code point of view but as discussed it's probably
-better placed outside of the regulator API.  Making it a static inline
-doesn't seem like a bad idea either.
-
---TLkgL7PLGfOLXnur
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUO8/IAAoJECTWi3JdVIfQmWwH/16Ow8sIBNQiRAw9ZnnUPFZY
-Jiyl3de1Jmu+PpI94ECMbKpzX1IvrNAqGl70vHLaXv7yVrJFXaKPmdNKanL7NO2S
-L6G3dTSxUwfYbeT1tBQrmgkfvLphagJgMRTrJhEwS7Fv4AZzMM74mcG9/Ev78mMq
-4miYsujyFYa4aW+Xd1OdYFKaMlU1T4aPDwB3vvEJ12exXVUgjqdt8K+o/MtgRfeY
-tVwk8mRu0J55kcpDW4LWHHSXitAafwgjXFmziG6QNXPCWX4Qa0z2cEg/zZ486XM+
-5+JXWCn/suF54lHgGv4xpdysyRekfGofFnRC5uvRhp4ZwUp8jUPSswJI2EctEn8=
-=TFS7
------END PGP SIGNATURE-----
-
---TLkgL7PLGfOLXnur--
+> ---
+>  kernel/fork.c    |    3 +++
+>  kernel/nsproxy.c |    1 +
+>  2 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/fork.c b/kernel/fork.c
+> index 6a13c46..a7fe4d5 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -1624,6 +1624,9 @@ long do_fork(unsigned long clone_flags,
+>  			get_task_struct(p);
+>  		}
+>  
+> +		if (unlikely(clone_flags & CLONE_NEW_MASK)) {
+> +			audit_log_ns_info(p);
+> +		}
+>  		wake_up_new_task(p);
+>  
+>  		/* forking complete and child started to run, tell ptracer */
+> diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+> index 0c2f25e..2cdc16b 100644
+> --- a/kernel/nsproxy.c
+> +++ b/kernel/nsproxy.c
+> @@ -25,6 +25,7 @@
+>  #include <linux/proc_ns.h>
+>  #include <linux/file.h>
+>  #include <linux/syscalls.h>
+> +#include <linux/audit.h>
+>  
+>  static struct kmem_cache *nsproxy_cachep;
+>  
+> -- 
+> 1.7.1
