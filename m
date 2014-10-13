@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829AbaJMC1a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:27:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45783 "EHLO
+	id S1753851AbaJMC1f (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:27:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45793 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753802AbaJMC1Z (ORCPT
+	with ESMTP id S1753827AbaJMC1a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:27:25 -0400
+	Sun, 12 Oct 2014 22:27:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthieu Ternisien dOuville <matthieu.tdo@6wind.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        David Laight <David.Laight@aculab.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 28/37] ip6_gre: fix flowi6_proto value in xmit path
-Date: Mon, 13 Oct 2014 04:24:25 +0200
-Message-Id: <20141013022401.460609607@linuxfoundation.org>
+Subject: [PATCH 3.14 30/37] sctp: handle association restarts when the socket is closed.
+Date: Mon, 13 Oct 2014 04:24:27 +0200
+Message-Id: <20141013022401.546007084@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022400.286360067@linuxfoundation.org>
 References: <20141013022400.286360067@linuxfoundation.org>
@@ -30,42 +30,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+From: Vlad Yasevich <vyasevich@gmail.com>
 
-[ Upstream commit 3be07244b7337760a3269d56b2f4a63e72218648 ]
+[ Upstream commit bdf6fa52f01b941d4a80372d56de465bdbbd1d23 ]
 
-In xmit path, we build a flowi6 which will be used for the output route lookup.
-We are sending a GRE packet, neither IPv4 nor IPv6 encapsulated packet, thus the
-protocol should be IPPROTO_GRE.
+Currently association restarts do not take into consideration the
+state of the socket.  When a restart happens, the current assocation
+simply transitions into established state.  This creates a condition
+where a remote system, through a the restart procedure, may create a
+local association that is no way reachable by user.  The conditions
+to trigger this are as follows:
+  1) Remote does not acknoledge some data causing data to remain
+     outstanding.
+  2) Local application calls close() on the socket.  Since data
+     is still outstanding, the association is placed in SHUTDOWN_PENDING
+     state.  However, the socket is closed.
+  3) The remote tries to create a new association, triggering a restart
+     on the local system.  The association moves from SHUTDOWN_PENDING
+     to ESTABLISHED.  At this point, it is no longer reachable by
+     any socket on the local system.
 
-Fixes: c12b395a4664 ("gre: Support GRE over IPv6")
-Reported-by: Matthieu Ternisien d'Ouville <matthieu.tdo@6wind.com>
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+This patch addresses the above situation by moving the newly ESTABLISHED
+association into SHUTDOWN-SENT state and bundling a SHUTDOWN after
+the COOKIE-ACK chunk.  This way, the restarted associate immidiately
+enters the shutdown procedure and forces the termination of the
+unreachable association.
+
+Reported-by: David Laight <David.Laight@aculab.com>
+Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/ip6_gre.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/net/sctp/command.h |    2 +-
+ net/sctp/sm_statefuns.c    |   19 ++++++++++++++++---
+ 2 files changed, 17 insertions(+), 4 deletions(-)
 
---- a/net/ipv6/ip6_gre.c
-+++ b/net/ipv6/ip6_gre.c
-@@ -787,7 +787,7 @@ static inline int ip6gre_xmit_ipv4(struc
- 		encap_limit = t->parms.encap_limit;
+--- a/include/net/sctp/command.h
++++ b/include/net/sctp/command.h
+@@ -115,7 +115,7 @@ typedef enum {
+  * analysis of the state functions, but in reality just taken from
+  * thin air in the hopes othat we don't trigger a kernel panic.
+  */
+-#define SCTP_MAX_NUM_COMMANDS 14
++#define SCTP_MAX_NUM_COMMANDS 20
  
- 	memcpy(&fl6, &t->fl.u.ip6, sizeof(fl6));
--	fl6.flowi6_proto = IPPROTO_IPIP;
-+	fl6.flowi6_proto = IPPROTO_GRE;
+ typedef union {
+ 	__s32 i32;
+--- a/net/sctp/sm_statefuns.c
++++ b/net/sctp/sm_statefuns.c
+@@ -1775,9 +1775,22 @@ static sctp_disposition_t sctp_sf_do_dup
+ 	/* Update the content of current association. */
+ 	sctp_add_cmd_sf(commands, SCTP_CMD_UPDATE_ASSOC, SCTP_ASOC(new_asoc));
+ 	sctp_add_cmd_sf(commands, SCTP_CMD_EVENT_ULP, SCTP_ULPEVENT(ev));
+-	sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
+-			SCTP_STATE(SCTP_STATE_ESTABLISHED));
+-	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
++	if (sctp_state(asoc, SHUTDOWN_PENDING) &&
++	    (sctp_sstate(asoc->base.sk, CLOSING) ||
++	     sock_flag(asoc->base.sk, SOCK_DEAD))) {
++		/* if were currently in SHUTDOWN_PENDING, but the socket
++		 * has been closed by user, don't transition to ESTABLISHED.
++		 * Instead trigger SHUTDOWN bundled with COOKIE_ACK.
++		 */
++		sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
++		return sctp_sf_do_9_2_start_shutdown(net, ep, asoc,
++						     SCTP_ST_CHUNK(0), NULL,
++						     commands);
++	} else {
++		sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
++				SCTP_STATE(SCTP_STATE_ESTABLISHED));
++		sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
++	}
+ 	return SCTP_DISPOSITION_CONSUME;
  
- 	dsfield = ipv4_get_dsfield(iph);
- 
-@@ -837,7 +837,7 @@ static inline int ip6gre_xmit_ipv6(struc
- 		encap_limit = t->parms.encap_limit;
- 
- 	memcpy(&fl6, &t->fl.u.ip6, sizeof(fl6));
--	fl6.flowi6_proto = IPPROTO_IPV6;
-+	fl6.flowi6_proto = IPPROTO_GRE;
- 
- 	dsfield = ipv6_get_dsfield(ipv6h);
- 	if (t->parms.flags & IP6_TNL_F_USE_ORIG_TCLASS)
+ nomem_ev:
 
 
