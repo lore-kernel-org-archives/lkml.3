@@ -1,919 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451AbaJMKI1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 06:08:27 -0400
-Received: from mail-oi0-f51.google.com ([209.85.218.51]:53251 "EHLO
-	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752909AbaJMKIZ (ORCPT
+	id S1753479AbaJMKM7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 06:12:59 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:60077 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752937AbaJMKM5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 06:08:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <1412942083-28231-2-git-send-email-k.wrona@samsung.com>
-References: <1412942083-28231-1-git-send-email-k.wrona@samsung.com>
-	<1412942083-28231-2-git-send-email-k.wrona@samsung.com>
-Date: Mon, 13 Oct 2014 18:08:24 +0800
-Message-ID: <CAAj6DX0J5HVA=wqUhWL7Av+wyqDGBXtG=5yPzxcW75-vBsJC0w@mail.gmail.com>
-Subject: Re: [PATCH v2 1/1] misc: st32boot: Add stm32 upgrade protocol handling
-From: Antonio Borneo <borneo.antonio@gmail.com>
-To: Karol Wrona <k.wrona@samsung.com>
-Cc: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 13 Oct 2014 06:12:57 -0400
+From: Rasmus Wriedt Larsen <rasmuswriedtlarsen@gmail.com>
+To: joe@perches.com
+Cc: pdeschrijver@nvidia.com, rmk+kernel@arm.linux.org.uk, swarren@nvidia.com,
+        linux-kernel@vger.kernel.org,
+        Rasmus Wriedt Larsen <rasmuswriedtlarsen@gmail.com>
+Subject: [PATCH v2] init: calibrate: fix style issues
+Date: Mon, 13 Oct 2014 12:12:35 +0200
+Message-Id: <1413195155-8111-1-git-send-email-rasmuswriedtlarsen@gmail.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1413048976.16385.37.camel@joe-AO725>
+References: <1413048976.16385.37.camel@joe-AO725>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 10, 2014 at 7:54 PM, Karol Wrona <k.wrona@samsung.com> wrote:
-> Adds stm32 bootloader protocol handling.
->
-> SPI transfers are done using DMA safe buffer which is allocated once per
-> spi upgrade life cycle. Now it supports only SPI bus but it looks that UART
-> or I2C are quite similar and it can be used as start platform for implementing
-> their handling.
->
-> It was tested on STM32F401 MCU.
+* fix multiple quoted string split across lines style issues
+* change printk(KERN_NOTICE to pr_notice
+* insert spaces after , in function call
+* change two line pr_notice msg to one line (credit: Joe Perches)
 
-Hi Karol,
+Signed-off-by: Rasmus Wriedt Larsen <rasmuswriedtlarsen@gmail.com>
+---
+ init/calibrate.c | 35 ++++++++++++++---------------------
+ 1 file changed, 14 insertions(+), 21 deletions(-)
 
-I'm working at a similar driver but for the I2C version of STM32
-bootloader. I was thinking to implement and test SPI too before
-publishing the whole.
-My plan is for a more generic STM32 support, while your driver is
-quite specific for device STM32F401.
-Anyway, I believe I can adapt my driver on top of your work.
+diff --git a/init/calibrate.c b/init/calibrate.c
+index ce635dc..d9c8810 100644
+--- a/init/calibrate.c
++++ b/init/calibrate.c
+@@ -15,7 +15,7 @@ unsigned long lpj_fine;
+ unsigned long preset_lpj;
+ static int __init lpj_setup(char *str)
+ {
+-	preset_lpj = simple_strtoul(str,NULL,0);
++	preset_lpj = simple_strtoul(str, NULL, 0);
+ 	return 1;
+ }
 
-While writing the kernel driver for I2C, I have enhanced the userspace
-tool stm32flash [1] (originally for UART only) to supports I2C.
-With stm32flash it's easy to verify the protocol of STM32 bootloader
-before working in kernel space.
-I would extend it to SPI while working at SPI driver.
+@@ -40,11 +40,13 @@ static unsigned long calibrate_delay_direct(void)
+ 	unsigned long good_timer_sum = 0;
+ 	unsigned long good_timer_count = 0;
+ 	unsigned long measured_times[MAX_DIRECT_CALIBRATION_RETRIES];
+-	int max = -1; /* index of measured_times with max/min values or not set */
++
++	/* index of measured_times with max/min values or not set */
++	int max = -1;
+ 	int min = -1;
+ 	int i;
 
-[1] https://code.google.com/p/stm32flash/
+-	if (read_current_timer(&pre_start) < 0 )
++	if (read_current_timer(&pre_start) < 0)
+ 		return 0;
 
-With this review I'm not going deeply in the SPI version of STM32
-bootloader (I'm still studying it).
-Also, I cannot easily run the code in this patch; I miss the proper HW
-and this patch cannot run stand-alone since intended as "library" for
-your sensor hub driver.
+ 	/*
+@@ -95,9 +97,7 @@ static unsigned long calibrate_delay_direct(void)
+ 		 * >= 12.5% apart, redo calibration.
+ 		 */
+ 		if (start >= post_end)
+-			printk(KERN_NOTICE "calibrate_delay_direct() ignoring "
+-					"timer_rate as we had a TSC wrap around"
+-					" start=%lu >=post_end=%lu\n",
++			pr_notice("calibrate_delay_direct() ignoring timer_rate as we had a TSC wrap around start=%lu >=post_end=%lu\n",
+ 				start, post_end);
+ 		if (start < post_end && pre_start != 0 && pre_end != 0 &&
+ 		    (timer_rate_max - timer_rate_min) < (timer_rate_max >> 3)) {
+@@ -134,14 +134,12 @@ static unsigned long calibrate_delay_direct(void)
+ 		good_timer_count = 0;
+ 		if ((measured_times[max] - estimate) <
+ 				(estimate - measured_times[min])) {
+-			printk(KERN_NOTICE "calibrate_delay_direct() dropping "
+-					"min bogoMips estimate %d = %lu\n",
++			pr_notice("calibrate_delay_direct() dropping min bogoMips estimate %d = %lu\n",
+ 				min, measured_times[min]);
+ 			measured_times[min] = 0;
+ 			min = max;
+ 		} else {
+-			printk(KERN_NOTICE "calibrate_delay_direct() dropping "
+-					"max bogoMips estimate %d = %lu\n",
++			pr_notice("calibrate_delay_direct() dropping max bogoMips estimate %d = %lu\n",
+ 				max, measured_times[max]);
+ 			measured_times[max] = 0;
+ 			max = min;
+@@ -160,9 +158,8 @@ static unsigned long calibrate_delay_direct(void)
 
->
-> Change-Id: I5e5b441310c897ff822e65041531d80ea0e7426c
-> Signed-off-by: Karol Wrona <k.wrona@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  drivers/misc/Kconfig                |    1 +
->  drivers/misc/Makefile               |    1 +
->  drivers/misc/stm32boot/Kconfig      |    6 +
->  drivers/misc/stm32boot/Makefile     |    3 +
->  drivers/misc/stm32boot/stm32_core.c |  412 +++++++++++++++++++++++++++++++++++
->  drivers/misc/stm32boot/stm32_core.h |   81 +++++++
->  drivers/misc/stm32boot/stm32_spi.c  |  108 +++++++++
->  include/linux/stm32fwu.h            |   47 ++++
+ 	}
 
-Only personal preference but, instead of "stm32boot", what about
-"stm32bootloader" or "stm32fwu" ?
+-	printk(KERN_NOTICE "calibrate_delay_direct() failed to get a good "
+-	       "estimate for loops_per_jiffy.\nProbably due to long platform "
+-		"interrupts. Consider using \"lpj=\" boot option.\n");
++	pr_notice("%s: failed to reasonably estimate loops_per_jiffy (long platform interrupts?) - perhaps use boot option 'lpj='\n",
++		  __func__);
+ 	return 0;
+ }
+ #else
+@@ -280,23 +277,19 @@ void calibrate_delay(void)
+ 	if (per_cpu(cpu_loops_per_jiffy, this_cpu)) {
+ 		lpj = per_cpu(cpu_loops_per_jiffy, this_cpu);
+ 		if (!printed)
+-			pr_info("Calibrating delay loop (skipped) "
+-				"already calibrated this CPU");
++			pr_info("Calibrating delay loop (skipped) already calibrated this CPU");
+ 	} else if (preset_lpj) {
+ 		lpj = preset_lpj;
+ 		if (!printed)
+-			pr_info("Calibrating delay loop (skipped) "
+-				"preset value.. ");
++			pr_info("Calibrating delay loop (skipped) preset value.. ");
+ 	} else if ((!printed) && lpj_fine) {
+ 		lpj = lpj_fine;
+-		pr_info("Calibrating delay loop (skipped), "
+-			"value calculated using timer frequency.. ");
++		pr_info("Calibrating delay loop (skipped), value calculated using timer frequency.. ");
+ 	} else if ((lpj = calibrate_delay_is_known())) {
+ 		;
+ 	} else if ((lpj = calibrate_delay_direct()) != 0) {
+ 		if (!printed)
+-			pr_info("Calibrating delay using timer "
+-				"specific routine.. ");
++			pr_info("Calibrating delay using timer specific routine.. ");
+ 	} else {
+ 		if (!printed)
+ 			pr_info("Calibrating delay loop... ");
+--
+1.9.1
 
->  8 files changed, 659 insertions(+)
->  create mode 100644 drivers/misc/stm32boot/Kconfig
->  create mode 100644 drivers/misc/stm32boot/Makefile
->  create mode 100644 drivers/misc/stm32boot/stm32_core.c
->  create mode 100644 drivers/misc/stm32boot/stm32_core.h
->  create mode 100644 drivers/misc/stm32boot/stm32_spi.c
->  create mode 100644 include/linux/stm32fwu.h
->
-> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-> index bbeb451..1eaed30 100644
-> --- a/drivers/misc/Kconfig
-> +++ b/drivers/misc/Kconfig
-> @@ -528,4 +528,5 @@ source "drivers/misc/mic/Kconfig"
->  source "drivers/misc/genwqe/Kconfig"
->  source "drivers/misc/echo/Kconfig"
->  source "drivers/misc/cxl/Kconfig"
-> +source "drivers/misc/stm32boot/Kconfig"
->  endmenu
-> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-> index 7d5c4cd..80d1524 100644
-> --- a/drivers/misc/Makefile
-> +++ b/drivers/misc/Makefile
-> @@ -56,3 +56,4 @@ obj-$(CONFIG_GENWQE)          += genwqe/
->  obj-$(CONFIG_ECHO)             += echo/
->  obj-$(CONFIG_VEXPRESS_SYSCFG)  += vexpress-syscfg.o
->  obj-$(CONFIG_CXL_BASE)         += cxl/
-> +obj-$(CONFIG_STM32_UPGRADE_PROTOCOL)   += stm32boot/
-> diff --git a/drivers/misc/stm32boot/Kconfig b/drivers/misc/stm32boot/Kconfig
-> new file mode 100644
-> index 0000000..1484441
-> --- /dev/null
-> +++ b/drivers/misc/stm32boot/Kconfig
-> @@ -0,0 +1,6 @@
-> +config STM32_UPGRADE_PROTOCOL
-> +       tristate "STM32 upgrade protocol support"
-> +       depends on SPI
-> +       help
-> +         STM32 microcontroller bootloader upgrade protocol.
-> +         Say Y if you want to use it.
-> diff --git a/drivers/misc/stm32boot/Makefile b/drivers/misc/stm32boot/Makefile
-> new file mode 100644
-> index 0000000..9d5935b
-> --- /dev/null
-> +++ b/drivers/misc/stm32boot/Makefile
-> @@ -0,0 +1,3 @@
-> +#EXTRA_CFLAGS+= -O0
-> +
-> +obj-$(CONFIG_STM32_UPGRADE_PROTOCOL) += stm32_core.o stm32_spi.o
-> diff --git a/drivers/misc/stm32boot/stm32_core.c b/drivers/misc/stm32boot/stm32_core.c
-> new file mode 100644
-> index 0000000..bd68598
-> --- /dev/null
-> +++ b/drivers/misc/stm32boot/stm32_core.c
-> @@ -0,0 +1,412 @@
-> +/*
-> + *  Copyright (C) 2014, Samsung Electronics Co. Ltd. All Rights Reserved.
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License as published by
-> + *  the Free Software Foundation; either version 2 of the License, or
-> + *  (at your option) any later version.
-> + *
-> + *  This program is distributed in the hope that it will be useful,
-> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + *  GNU General Public License for more details.
-> + *
-
-You can remove line above
-
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/slab.h>
-> +#include <linux/stm32fwu.h>
-> +#include <linux/delay.h>
-> +#include <linux/device.h>
-
-Include files in alphabetic order
-
-> +#include "stm32_core.h"
-> +
-> +static inline int stm32fwu_wait_for_ack(struct stm32fwu_fw *fw, int retries)
-> +{
-> +       return fw->wait_for_ack(fw, retries);
-> +}
-> +
-> +static inline int stm32fwu_send_cmd(struct stm32fwu_fw *fw,
-> +                                   struct stm32fwu_cmd *cmd)
-> +{
-> +       return fw->send_cmd(fw, cmd);
-> +}
-> +
-> +static inline int stm32fwu_write(struct stm32fwu_fw *fw, const u8 *buf, int len)
-> +{
-> +       return fw->write(fw, buf, len);
-> +}
-> +
-> +static inline int stm32fwu_read(struct stm32fwu_fw *fw, u8 *buf, int len)
-> +{
-> +       return fw->read(fw, buf, len);
-> +}
-> +
-> +static int send_addr(struct stm32fwu_fw *fw, u32 addr)
-> +{
-> +       int ret;
-> +       u8 *buffer = fw->buffer;
-> +
-> +       buffer[0] = (addr >> 24) & 0xFF;
-> +       buffer[1] = (addr >> 16) & 0xFF;
-> +       buffer[2] = (addr >> 8) & 0xFF;
-> +       buffer[3] = addr & 0xFF;
-> +       buffer[4] = buffer[0] ^ buffer[1] ^ buffer[2] ^ buffer[3];
-> +
-> +       ret = stm32fwu_write(fw, buffer, STM32FWU_ADDR_LEN);
-> +       if (ret < 0)
-> +               return ret;
-> +
-> +       return stm32fwu_wait_for_ack(fw, STM32FWU_COMMON_COUNT);
-> +}
-> +
-> +static int fwu_write(struct stm32fwu_fw *fw, u32 addr, const u8 *buffer,
-> +                    int len)
-> +{
-> +       int ret, i;
-> +       u8 *sbuf = fw->buffer;
-> +       u8 xor = 0;
-> +       struct stm32fwu_cmd cmd = {
-> +               .cmd = STM32FWU_WRITE_MEM_CMD,
-> +               .neg_cmd = ~STM32FWU_WRITE_MEM_CMD,
-
-Every command requires this "neg_cmd = ~cmd".
-You can move this operation inside stm32fwu_spi_send_cmd() and remove
-the field neg_cmd.
-
-Then, you can directly pass as function parameter cmd and timeout. No
-need to build the struct for just two values.
-
-> +               .timeout = STM32FWU_CMD_COUNT,
-> +       };
-> +
-> +       if (len > STM32FWU_MAX_TRANSFER_SIZE) {
-> +               dev_err(fw->dev, "More than 256 bytes per transfer\n");
-> +               return -EINVAL;
-> +       }
-> +
-> +       ret = stm32fwu_send_cmd(fw, &cmd);
-> +       if (ret < 0)
-> +               return ret;
-> +
-> +       ret = send_addr(fw, addr);
-> +       if (ret < 0)
-> +               return ret;
-> +
-> +       /* the same buffer is used for commands and data so the order really
-> +        * matters here */
-> +       memcpy(&sbuf[1], buffer, len);
-> +
-> +       /* just in case - check if smaller chunks are 16-bit aligned */
-
-Interesting!
-The ST application note AN2606 about bootloader in general reports
-that all "write operations using bootloader must only be Word-aligned
-(the address should be multiple of 4). The number of data to be
-written must also be a multiple of 4 bytes".
-Anyhow, I checked the specific AN4268 for SPI version, and it mentions
-16 bits alignment and data multiple of two bytes.
-
-I will cross check with ST.
-Did you tried to write in chunks of 2 bytes?
-
-> +       if (len  < STM32FWU_MAX_TRANSFER_SIZE) {
-
-Remove extra space between "len" and "<".
-Also the {} can be removed.
-
-> +               if (len & 0x1)
-> +                       sbuf[++len] = 0xFF;
-> +       }
-
-For application note, extending the data in sbuf with one byte 0xFF is
-mandatory if len is not multiple of two.
-Since you need to guarantee the buffer is long enough, the check
-"len<STM32FWU_MAX_TRANSFER_SIZE" could be skipped.
-
-> +
-> +       sbuf[0] = len - 1;
-> +
-> +       /* compute checksum */
-> +       for (i = 0; i < len + 1; ++i)
-> +               xor ^= sbuf[i];
-> +       sbuf[len + 1] = xor;
-> +
-> +       /* NOTE AN4286
-> +        * in some conditions the master has to wait 1 ms here */
-> +       usleep_range(1000, 1100);
-> +
-> +       ret = stm32fwu_write(fw, sbuf, len + 2);
-> +       if (ret < 0)
-> +               return ret;
-> +
-> +       return stm32fwu_wait_for_ack(fw, STM32FWU_COMMON_COUNT);
-> +}
-> +
-> +static int fwu_erase(struct stm32fwu_fw *fw)
-> +{
-> +       int ret;
-> +       u8 *sbuf = fw->buffer;
-> +       struct stm32fwu_cmd cmd = {
-> +               .cmd = STM32FWU_ERASE_CMD,
-> +               .neg_cmd = ~STM32FWU_ERASE_CMD,
-
-ditto
-
-> +               .timeout = STM32FWU_CMD_COUNT,
-> +       };
-> +
-> +       ret = stm32fwu_send_cmd(fw, &cmd);
-> +       if (ret < 0)
-> +               return ret;
-> +
-> +       /* global erase */
-> +       sbuf[0] = 0xFF;
-> +       sbuf[1] = 0xFF;
-> +       sbuf[2] = 0x00;
-> +
-> +       ret = stm32fwu_write(fw, sbuf, STM32FWU_ERASE_CMD_LEN);
-> +       if (ret < 0)
-> +               return ret;
-> +
-> +       return stm32fwu_wait_for_ack(fw, STM32FWU_ERASE_COUNT);
-
-See my comments below about the macro STM32FWU_ERASE_COUNT
-
-> +}
-> +
-> +/**
-> + * stm32fwu_get() - gets bootloader information frame
-> + * @fw:                fw object.
-> + *
-> + * Read bootloader information:
-> + *
-> + * Byte  1 bootloader version (0 < version < 255), example: 0x10 = version 1.0.
-> + *
-> + * Byte  2 0x00 (Get command)
-> + *
-> + * Byte  3 0x01 (Get Version)
-> + *
-> + * Byte  4 0x02 (Get ID)
-> + *
-> + * Byte  5 0x11 (Read Memory command)
-> + *
-> + * Byte  6 0x21 (Go command)
-> + *
-> + * Byte  7 0x31 (Write Memory command)
-> + *
-> + * Byte  8 0x44 (Erase command)
-> + *
-> + * Byte  9 0x63 (Write Protect command)
-> + *
-> + * Byte 10 0x73 (Write Unprotect command)
-> + *
-> + * Byte 11 0x82 (Readout Protect command)
-> + *
-> + * Byte 12 0x92 (Readout Unprotect command)
-
-In general case, we should read at run-time from bootloader the list
-of supported commands and use only what is supported; not all versions
-of STM32 bootloader use the commands you hardcoded in this driver.
-But it's clear that you are focusing at the STM32F401 chip on your
-system; I cannot ask you to implement what you cannot test. Further
-patches should extend the picture.
-
-> + *
-> + * Return:     read byte count or error code.
-> + */
-> +int stm32fwu_get(struct stm32fwu_fw *fw)
-> +{
-> +       int ret, count = 0;
-> +
-> +       struct stm32fwu_cmd cmd = {
-> +               .cmd = STM32FWU_GET_CMD,
-> +               .neg_cmd = ~STM32FWU_GET_CMD,
-
-ditto
-
-> +               .timeout = STM32FWU_CMD_COUNT,
-> +       };
-> +
-> +       ret = stm32fwu_send_cmd(fw, &cmd);
-> +       if (ret < 0)
-> +               return ret;
-> +
-> +       ret = stm32fwu_read(fw, &fw->buffer[STM32FWU_MAX_BUFFER_SIZE], 1);
-> +       if (ret < 0)
-> +               return ret;
-> +
-> +       count = fw->buffer[STM32FWU_MAX_BUFFER_SIZE];
-> +       if (count >= STM32FWU_MAX_TRANSFER_SIZE)
-> +               return -EINVAL;
-> +
-> +       ret = stm32fwu_read(fw, &fw->buffer[STM32FWU_MAX_BUFFER_SIZE], count);
-> +       if (ret < 0)
-> +               return ret;
-> +
-> +       ret = stm32fwu_wait_for_ack(fw, STM32FWU_COMMON_COUNT);
-> +       if (ret < 0)
-> +               return ret;
-> +
-> +       return count;
-> +}
-> +EXPORT_SYMBOL(stm32fwu_get);
-> +
-> +/**
-> + * stm32fwu_get() - gets bootloader information frame
-> + * @fw:                fw object.
-> + *
-> + * Return: < 0 - error code, any positive value means success.
-> + */
-> +int stm32fwu_get_version(struct stm32fwu_fw *fw)
-> +{
-> +       int ret;
-> +
-> +       struct stm32fwu_cmd cmd = {
-> +               .cmd = STM32FWU_GET_VERSION_CMD,
-> +               .neg_cmd = ~STM32FWU_GET_VERSION_CMD,
-
-ditto
-
-> +               .timeout = STM32FWU_CMD_COUNT,
-> +       };
-> +
-> +       ret = stm32fwu_send_cmd(fw, &cmd);
-> +       if (ret < 0)
-> +               return ret;
-> +
-> +       ret = stm32fwu_read(fw, &fw->buffer[STM32FWU_MAX_BUFFER_SIZE], 1);
-> +       if (ret < 0)
-> +               return ret;
-> +
-> +       ret = stm32fwu_wait_for_ack(fw, STM32FWU_COMMON_COUNT);
-> +       if (ret < 0)
-> +               return ret;
-> +
-> +       return fw->buffer[STM32FWU_MAX_BUFFER_SIZE];
-> +}
-> +EXPORT_SYMBOL(stm32fwu_get_version);
-> +
-> +/**
-> + * stm32fwu_send_sync() - sends bootloader synchronization frame
-> + * @fw:        fw object.
-> + *
-> + * It is used during SPI upgrade.
-> + *
-> + * Return:     if succeed the number of ack waiting cycles or error code.
-> + */
-> +int stm32fwu_send_sync(struct stm32fwu_fw *fw)
-> +{
-> +       int ret;
-> +
-> +       dev_info(fw->dev, "send sync byte for upgrade\n");
-> +
-> +       fw->buffer[0] = STM32FWU_SPI_SOF;
-> +
-> +       ret = stm32fwu_write(fw, fw->buffer, 1);
-> +       if (ret < 0)
-> +               return ret;
-> +
-> +       return  stm32fwu_wait_for_ack(fw, STM32FWU_CMD_COUNT);
-
-Remove extra space after "return"
-
-> +}
-> +EXPORT_SYMBOL(stm32fwu_send_sync);
-> +
-> +/**
-> + * stm32fwu_update() - runs all firmware update work
-> + * @fw:                fw object.
-> + *
-> + * Return:     status code < 0 if error.
-> + */
-> +int stm32fwu_update(struct stm32fwu_fw *fw)
-> +{
-> +       int ret = 0, remaining;
-> +       u32 pos = 0;
-> +       u32 fw_addr = STM32FWU_APP_ADDR;
-> +       int block = STM32FWU_MAX_TRANSFER_SIZE;
-> +       int count = 0, err_count = 0, retry_count = 0;
-> +
-> +       struct stm32fwu_cmd cmd = {
-> +               .cmd = STM32FWU_GO_ADDR_CMD,
-> +               .neg_cmd = ~STM32FWU_GO_ADDR_CMD,
-
-ditto
-
-> +               .timeout = 1000,
-
-Why you need such long timeout here?
-If no reason, then keep it coherent with the rest of the code and put
-    .timeout = STM32FWU_CMD_COUNT,
-
-> +       };
-> +
-> +       dev_info(fw->dev, "%s start\n", __func__);
-> +
-> +       ret = fwu_erase(fw);
-> +       if (ret < 0) {
-> +               dev_err(fw->dev, "%s, fw_erase_stm failed %d\n", __func__, ret);
-> +               return ret;
-> +       }
-> +
-> +       remaining = fw->fw_len;
-> +
-> +       while (remaining > 0) {
-> +               if (block > remaining)
-> +                       block = remaining;
-> +
-> +               while (retry_count < 3) {
-> +                       ret = fwu_write(fw, fw_addr, fw->fw_data + pos, block);
-> +                       if (ret < 0) {
-> +                               dev_err(fw->dev,
-> +                                       "Returned %d writing to addr 0x%08X\n",
-> +                                       ret, fw_addr);
-> +                               retry_count++;
-> +                               err_count++;
-> +                               continue;
-> +                       }
-> +                       retry_count = 0;
-> +                       break;
-> +               }
-> +
-> +               if (ret  < 0) {
-
-Extra space after "ret"
-
-> +                       dev_err(fw->dev,
-> +                               "Writing MEM failed: %d, retry cont: %d\n",
-> +                               ret, err_count);
-> +                       return ret;
-> +               }
-> +
-> +               remaining -= block;
-> +               pos += block;
-> +               fw_addr += block;
-> +               if (count++ == 20) {
-> +                       dev_info(fw->dev, "Updated %u bytes / %u bytes\n",
-> +                                pos, fw->fw_len);
-> +                       count = 0;
-> +               }
-> +       }
-> +
-> +       dev_info(fw->dev,
-> +                "Firmware download success.(%d bytes, retry %d)\n", pos,
-> +                err_count);
-> +
-> +       /* STM : GO USER ADDR */
-> +       ret = stm32fwu_send_cmd(fw, &cmd);
-> +       if (ret < 0)
-> +               return ret;
-> +
-> +       return send_addr(fw,  STM32FWU_APP_ADDR);
-
-Extra space after ","
-
-> +}
-> +EXPORT_SYMBOL(stm32fwu_update);
-> +
-> +/**
-> + * stm32fwu_init() - creates firmware upgrade instance
-> + * @dev:       Pointer to device.
-> + * @iface:     Interface type.
-> + * @data:      Pointer to firmware data.
-> + * @len:       Length of firmware data in bytes.
-> + *
-> + * It allocates the place for fwu structure and transfer buffer so it should be
-> + * deinitialized by stm32fw_destroy(). Firmware upgrade is simple operation
-> + * and it was assumed that it will be called form one context so there is no
-> + * locking for fwu functions.
-> + *
-> + * Return:     Pointer to firmware upgrade structure.
-> + */
-> +struct stm32fwu_fw *stm32fwu_init(struct device *dev,
-> +                                 enum stm32fwu_iface iface, const u8 *data,
-> +                                 int len)
-> +{
-> +       struct stm32fwu_fw *fw;
-> +
-> +       if (iface >= STM32_MAX || iface < 0) {
-> +               dev_err(dev, "wrong iface type\n");
-> +               return NULL;
-> +       }
-> +
-> +       fw = devm_kzalloc(dev, sizeof(*fw), GFP_KERNEL);
-
-This buffer and next one below are allocated with devm_kzalloc() but
-later on in this function you free them with kfree() and in next
-function with devm_kfree().
-Please double check.
-
-> +       if (fw == NULL)
-> +               return NULL;
-> +
-> +       /* 2 times for tx and rx buffer */
-> +       fw->buffer = devm_kzalloc(dev, 2 * STM32FWU_MAX_BUFFER_SIZE,
-> +                            GFP_KERNEL | GFP_DMA);
-> +       if (fw->buffer == NULL) {
-> +               kfree(fw);
-> +               return NULL;
-> +       }
-> +
-> +       fw->dev = dev;
-> +       fw->fw_len = len;
-> +       fw->fw_data = data;
-> +
-> +       switch (iface) {
-> +       case STM32_SPI:
-> +               stm32fwu_spi_init(fw);
-> +               break;
-> +       default:
-> +               pr_err("wrong interface\n");
-> +               goto _err;
-> +       }
-> +
-> +       return fw;
-> +_err:
-> +       kfree(fw->buffer);
-> +       kfree(fw);
-> +       return NULL;
-> +}
-> +EXPORT_SYMBOL(stm32fwu_init);
-> +
-> +/**
-> + * stm32fwu_destroy() - cleans up fwu structure and buffer.
-> + * @fw:                Pointer to fwu structure.
-> + */
-> +void stm32fwu_destroy(struct stm32fwu_fw *fw)
-> +{
-> +       devm_kfree(fw->dev, fw->buffer);
-> +       devm_kfree(fw->dev, fw);
-> +}
-> +EXPORT_SYMBOL(stm32fwu_destroy);
-> +
-> +MODULE_AUTHOR("Karol Wrona <k.wrona@samsung.com>");
-> +MODULE_DESCRIPTION("STM32 upgrade protocol");
-> +MODULE_LICENSE("GPL");
-> diff --git a/drivers/misc/stm32boot/stm32_core.h b/drivers/misc/stm32boot/stm32_core.h
-> new file mode 100644
-> index 0000000..8d89a6d
-> --- /dev/null
-> +++ b/drivers/misc/stm32boot/stm32_core.h
-> @@ -0,0 +1,81 @@
-> +/*
-> + *  Copyright (C) 2014, Samsung Electronics Co. Ltd. All Rights Reserved.
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License as published by
-> + *  the Free Software Foundation; either version 2 of the License, or
-> + *  (at your option) any later version.
-> + *
-> + *  This program is distributed in the hope that it will be useful,
-> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + *  GNU General Public License for more details.
-> + *
-
-Remove line above
-
-> + */
-> +
-> +#ifndef _STM32_CORE_H_
-> +#define _STM32_CORE_H_
-> +
-> +#define STM32FWU_ADDR_LEN              5
-> +#define STM32FWU_ERASE_CMD_LEN         3
-> +
-> +/* Protocol */
-> +#define STM32FWU_SPI_SOF               0x5A
-> +#define STM32FWU_ACK                   0x79
-> +#define STM32FWU_ACK2                  0xF9
-> +#define STM32FWU_NACK                  0x1F
-> +
-> +#define STM32FWU_MAX_TRANSFER_SIZE     256
-> +#define STM32FWU_MAX_BUFFER_SIZE       260
-> +
-> +#define STM32FWU_APP_ADDR              0x08000000
-> +
-> +/* Retries counts */
-> +#define STM32FWU_ERASE_COUNT           7000
-
-Hummm, not enough! This value means 7.0 ~ 7.7 seconds.
-There are two flash size for STM32F401 (the model you support in this driver).
-Datasheets [3] and [4] report the worst case delay for mass erase. It
-is 8 seconds for 256K of flash, 16 seconds for 512K of flash.
-
-[3] http://www.st.com/web/en/resource/technical/document/datasheet/DM00086815.pdf
-[4] http://www.st.com/web/en/resource/technical/document/datasheet/DM00102166.pdf
-
-Other STM32 devices requires even longer delay.
-At least correct it with the right value for your device.
-
-In my driver I'm considering to replace mass erase with a loop on
-sector erase. It would requires more code in kernel, but uses shorter
-timeout for each operation. At least I can track what's happening
-halfway.
-
-> +#define STM32FWU_CMD_COUNT             30
-> +#define STM32FWU_COMMON_COUNT          20
-> +
-> +/* Commands */
-> +#define STM32FWU_WRITE_MEM_CMD         0x31
-> +#define STM32FWU_GO_ADDR_CMD           0x21
-> +#define STM32FWU_ERASE_CMD             0x44
-> +#define STM32FWU_GET_CMD               0x00
-> +#define STM32FWU_GET_VERSION_CMD       0x01
-> +
-> +/**
-> + * struct stm32fwu_cmd - Upgrade command
-> + * @cmd:       Fwu command.
-> + * @neg_cmd:   Bit negation of Fwu command used xor'ed in STM.
-> + * @timeout:   Number of retries.
-> + */
-> +struct stm32fwu_cmd {
-> +       u8 cmd;
-> +       u8 neg_cmd;
-> +       int timeout;
-> +};
-> +
-> +/**
-> + * struct stm32fwu_fw - Generic representation for STM32 fw upgrade
-> + * @dev:               Pointer to device.
-> + * @wait_for_ack:      ACK callback.
-> + * @send_cmd:          Command callback.
-> + * @write:             Write callback.
-> + * @read:              Read callback.
-> + * @fw_data:           Pointer to firmware binary.
-> + * @fw_len:            The length of fw bin.
-> + * @buffer:            Pointer to SPI buffer: should be DMA safe
-> + */
-> +struct stm32fwu_fw {
-> +       int (*wait_for_ack)(struct stm32fwu_fw *fw, int retries);
-> +       int (*send_cmd)(struct stm32fwu_fw *fw, struct stm32fwu_cmd *cmd);
-> +       int (*write)(struct stm32fwu_fw *fw, const u8 *buf, int len);
-> +       int (*read)(struct stm32fwu_fw *fw, u8 *buf, int len);
-> +       const u8 *fw_data;
-> +       int fw_len;
-> +       u8 *buffer;
-> +       struct device *dev;
-> +};
-> +
-> +void stm32fwu_spi_init(struct stm32fwu_fw *fw);
-> +
-> +#endif /*_STM32_CORE_H_ */
-> diff --git a/drivers/misc/stm32boot/stm32_spi.c b/drivers/misc/stm32boot/stm32_spi.c
-> new file mode 100644
-> index 0000000..ee9f39e
-> --- /dev/null
-> +++ b/drivers/misc/stm32boot/stm32_spi.c
-> @@ -0,0 +1,108 @@
-> +/*
-> + *  Copyright (C) 2014, Samsung Electronics Co. Ltd. All Rights Reserved.
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License as published by
-> + *  the Free Software Foundation; either version 2 of the License, or
-> + *  (at your option) any later version.
-> + *
-> + *  This program is distributed in the hope that it will be useful,
-> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + *  GNU General Public License for more details.
-> + *
-
-Remove line above
-
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/stm32fwu.h>
-> +#include <linux/spi/spi.h>
-> +#include <linux/delay.h>
-
-Includes in alphabetic order
-
-> +#include "stm32_core.h"
-> +
-> +static int stm32fwu_spi_write(struct stm32fwu_fw *fw, const u8 *buf, int len)
-> +{
-> +       struct spi_device *sdev = to_spi_device(fw->dev);
-> +
-> +       struct spi_message m;
-> +       struct spi_transfer t = {
-> +               .len = len,
-> +               .tx_buf = buf,
-> +               .bits_per_word = 8,
-> +       };
-> +
-> +       spi_message_init(&m);
-> +       spi_message_add_tail(&t, &m);
-> +       return spi_sync(sdev, &m);
-> +}
-> +
-> +static int stm32fwu_spi_read(struct stm32fwu_fw *fw, u8 *buf, int len)
-> +{
-> +       struct spi_device *sdev = to_spi_device(fw->dev);
-> +
-> +       struct spi_message m;
-> +       struct spi_transfer t = {
-> +               .len = len,
-> +               .rx_buf = buf,
-> +               .bits_per_word = 8,
-> +       };
-> +
-> +       spi_message_init(&m);
-> +       spi_message_add_tail(&t, &m);
-> +       return spi_sync(sdev, &m);
-> +}
-> +
-> +static int stm32fwu_spi_wait_for_ack(struct stm32fwu_fw *fw, int retires)
-> +{
-> +       int ret, i = 0;
-> +       u8 *buf = &fw->buffer[STM32FWU_MAX_BUFFER_SIZE];
-> +
-> +       while (i < retires) {
-> +               ret = stm32fwu_spi_read(fw, buf, 1);
-> +               if (ret < 0) {
-> +                       dev_err(fw->dev,
-> +                               "firmware upgread wait for ack fail\n");
-
-s/upgread/upgrade/
-
-> +                       return ret;
-> +               }
-> +
-> +               if (fw->buffer[STM32FWU_MAX_BUFFER_SIZE] == STM32FWU_ACK ||
-> +                   fw->buffer[STM32FWU_MAX_BUFFER_SIZE] == STM32FWU_ACK2) {
-> +                       return i;
-> +               }
-> +
-> +               if (fw->buffer[STM32FWU_MAX_BUFFER_SIZE] == STM32FWU_NACK)
-> +                       return -EPROTO;
-> +
-> +               usleep_range(1000, 1100);
-> +               i++;
-> +       }
-> +
-> +       dev_err(fw->dev, "fw ack timeout\n");
-> +
-> +       return -ETIMEDOUT;
-> +}
-> +
-> +static int stm32fwu_spi_send_cmd(struct stm32fwu_fw *fw,
-> +                                struct stm32fwu_cmd *cmd)
-> +{
-> +       int ret;
-> +
-> +       fw->buffer[0] = STM32FWU_SPI_SOF;
-> +       fw->buffer[1] = cmd->cmd;
-> +       fw->buffer[2] = cmd->neg_cmd;
-> +
-> +       ret = stm32fwu_spi_write(fw, fw->buffer, 3);
-> +       if (ret < 0) {
-> +               dev_err(fw->dev, "fw cmd write fail\n");
-> +               return ret;
-> +       }
-> +
-> +       return stm32fwu_spi_wait_for_ack(fw, cmd->timeout);
-> +}
-> +
-> +void stm32fwu_spi_init(struct stm32fwu_fw *fw)
-> +{
-> +       fw->write = stm32fwu_spi_write;
-> +       fw->read = stm32fwu_spi_read;
-> +       fw->wait_for_ack = stm32fwu_spi_wait_for_ack;
-> +       fw->send_cmd = stm32fwu_spi_send_cmd;
-> +}
-> diff --git a/include/linux/stm32fwu.h b/include/linux/stm32fwu.h
-> new file mode 100644
-> index 0000000..aa830d6
-> --- /dev/null
-> +++ b/include/linux/stm32fwu.h
-> @@ -0,0 +1,47 @@
-> +/*
-> + *  Copyright (C) 2014, Samsung Electronics Co. Ltd. All Rights Reserved.
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License as published by
-> + *  the Free Software Foundation; either version 2 of the License, or
-> + *  (at your option) any later version.
-> + *
-> + *  This program is distributed in the hope that it will be useful,
-> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + *  GNU General Public License for more details.
-> + *
-
-Remove line above
-
-Best Regards,
-Antonio
-
-> + */
-> +
-> +#ifndef _STM32FWU_H_
-> +#define _STM32FWU_H_
-> +
-> +/**
-> + * enum stm32fwu_iface - upgrade interfaces for STM32 MCU's
-> + * @STM32_SPI:         SPI interface.
-> + * @STM32_MAX:         terminator.
-> + */
-> +enum stm32fwu_iface {
-> +       STM32_SPI,
-> +       /* Generally for future use, i.e. UART upgrade algorithm looks pretty
-> +        * similar. */
-> +       STM32_MAX
-> +};
-> +
-> +struct stm32fwu_fw;
-> +
-> +struct stm32fwu_fw *stm32fwu_init(struct device *dev,
-> +                                 enum stm32fwu_iface iface, const u8 *data,
-> +                                 int len);
-> +
-> +void stm32fwu_destroy(struct stm32fwu_fw *fw);
-> +
-> +int stm32fwu_send_sync(struct stm32fwu_fw *fw);
-> +
-> +int stm32fwu_update(struct stm32fwu_fw *fw);
-> +
-> +int stm32fwu_get(struct stm32fwu_fw *fw);
-> +
-> +int stm32fwu_get_version(struct stm32fwu_fw *fw);
-> +
-> +#endif /* _STM32FWU_H_ */
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
