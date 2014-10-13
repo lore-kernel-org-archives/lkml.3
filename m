@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753851AbaJMC1f (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:27:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45793 "EHLO
+	id S1753875AbaJMC1l (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:27:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45803 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753827AbaJMC1a (ORCPT
+	with ESMTP id S1753844AbaJMC1f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:27:30 -0400
+	Sun, 12 Oct 2014 22:27:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Laight <David.Laight@aculab.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 30/37] sctp: handle association restarts when the socket is closed.
-Date: Mon, 13 Oct 2014 04:24:27 +0200
-Message-Id: <20141013022401.546007084@linuxfoundation.org>
+        Lu Baolu <baolu.lu@linux.intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH 3.14 32/37] USB: Add device quirk for ASUS T100 Base Station keyboard
+Date: Mon, 13 Oct 2014 04:24:29 +0200
+Message-Id: <20141013022401.625083625@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022400.286360067@linuxfoundation.org>
 References: <20141013022400.286360067@linuxfoundation.org>
@@ -30,79 +29,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevich@gmail.com>
+From: Lu Baolu <baolu.lu@linux.intel.com>
 
-[ Upstream commit bdf6fa52f01b941d4a80372d56de465bdbbd1d23 ]
+commit ddbe1fca0bcb87ca8c199ea873a456ca8a948567 upstream.
 
-Currently association restarts do not take into consideration the
-state of the socket.  When a restart happens, the current assocation
-simply transitions into established state.  This creates a condition
-where a remote system, through a the restart procedure, may create a
-local association that is no way reachable by user.  The conditions
-to trigger this are as follows:
-  1) Remote does not acknoledge some data causing data to remain
-     outstanding.
-  2) Local application calls close() on the socket.  Since data
-     is still outstanding, the association is placed in SHUTDOWN_PENDING
-     state.  However, the socket is closed.
-  3) The remote tries to create a new association, triggering a restart
-     on the local system.  The association moves from SHUTDOWN_PENDING
-     to ESTABLISHED.  At this point, it is no longer reachable by
-     any socket on the local system.
+This full-speed USB device generates spurious remote wakeup event
+as soon as USB_DEVICE_REMOTE_WAKEUP feature is set. As the result,
+Linux can't enter system suspend and S0ix power saving modes once
+this keyboard is used.
 
-This patch addresses the above situation by moving the newly ESTABLISHED
-association into SHUTDOWN-SENT state and bundling a SHUTDOWN after
-the COOKIE-ACK chunk.  This way, the restarted associate immidiately
-enters the shutdown procedure and forces the termination of the
-unreachable association.
+This patch tries to introduce USB_QUIRK_IGNORE_REMOTE_WAKEUP quirk.
+With this quirk set, wakeup capability will be ignored during
+device configure.
 
-Reported-by: David Laight <David.Laight@aculab.com>
-Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This patch could be back-ported to kernels as old as 2.6.39.
+
+Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/net/sctp/command.h |    2 +-
- net/sctp/sm_statefuns.c    |   19 ++++++++++++++++---
- 2 files changed, 17 insertions(+), 4 deletions(-)
 
---- a/include/net/sctp/command.h
-+++ b/include/net/sctp/command.h
-@@ -115,7 +115,7 @@ typedef enum {
-  * analysis of the state functions, but in reality just taken from
-  * thin air in the hopes othat we don't trigger a kernel panic.
-  */
--#define SCTP_MAX_NUM_COMMANDS 14
-+#define SCTP_MAX_NUM_COMMANDS 20
+---
+ drivers/usb/core/hub.c     |    6 ++++--
+ drivers/usb/core/quirks.c  |    4 ++++
+ include/linux/usb/quirks.h |    3 +++
+ 3 files changed, 11 insertions(+), 2 deletions(-)
+
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -1948,8 +1948,10 @@ void usb_set_device_state(struct usb_dev
+ 					|| new_state == USB_STATE_SUSPENDED)
+ 				;	/* No change to wakeup settings */
+ 			else if (new_state == USB_STATE_CONFIGURED)
+-				wakeup = udev->actconfig->desc.bmAttributes
+-					 & USB_CONFIG_ATT_WAKEUP;
++				wakeup = (udev->quirks &
++					USB_QUIRK_IGNORE_REMOTE_WAKEUP) ? 0 :
++					udev->actconfig->desc.bmAttributes &
++					USB_CONFIG_ATT_WAKEUP;
+ 			else
+ 				wakeup = 0;
+ 		}
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -160,6 +160,10 @@ static const struct usb_device_id usb_in
+ 	{ USB_VENDOR_AND_INTERFACE_INFO(0x046d, USB_CLASS_VIDEO, 1, 0),
+ 	  .driver_info = USB_QUIRK_RESET_RESUME },
  
- typedef union {
- 	__s32 i32;
---- a/net/sctp/sm_statefuns.c
-+++ b/net/sctp/sm_statefuns.c
-@@ -1775,9 +1775,22 @@ static sctp_disposition_t sctp_sf_do_dup
- 	/* Update the content of current association. */
- 	sctp_add_cmd_sf(commands, SCTP_CMD_UPDATE_ASSOC, SCTP_ASOC(new_asoc));
- 	sctp_add_cmd_sf(commands, SCTP_CMD_EVENT_ULP, SCTP_ULPEVENT(ev));
--	sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
--			SCTP_STATE(SCTP_STATE_ESTABLISHED));
--	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
-+	if (sctp_state(asoc, SHUTDOWN_PENDING) &&
-+	    (sctp_sstate(asoc->base.sk, CLOSING) ||
-+	     sock_flag(asoc->base.sk, SOCK_DEAD))) {
-+		/* if were currently in SHUTDOWN_PENDING, but the socket
-+		 * has been closed by user, don't transition to ESTABLISHED.
-+		 * Instead trigger SHUTDOWN bundled with COOKIE_ACK.
-+		 */
-+		sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
-+		return sctp_sf_do_9_2_start_shutdown(net, ep, asoc,
-+						     SCTP_ST_CHUNK(0), NULL,
-+						     commands);
-+	} else {
-+		sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
-+				SCTP_STATE(SCTP_STATE_ESTABLISHED));
-+		sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
-+	}
- 	return SCTP_DISPOSITION_CONSUME;
++	/* ASUS Base Station(T100) */
++	{ USB_DEVICE(0x0b05, 0x17e0), .driver_info =
++			USB_QUIRK_IGNORE_REMOTE_WAKEUP },
++
+ 	{ }  /* terminating entry must be last */
+ };
  
- nomem_ev:
+--- a/include/linux/usb/quirks.h
++++ b/include/linux/usb/quirks.h
+@@ -30,4 +30,7 @@
+    descriptor */
+ #define USB_QUIRK_DELAY_INIT		0x00000040
+ 
++/* device generates spurious wakeup, ignore remote wakeup capability */
++#define USB_QUIRK_IGNORE_REMOTE_WAKEUP	0x00000200
++
+ #endif /* __LINUX_USB_QUIRKS_H */
 
 
