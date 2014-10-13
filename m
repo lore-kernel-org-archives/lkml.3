@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754227AbaJMCto (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:49:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45830 "EHLO
+	id S1754582AbaJMCt6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:49:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45820 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753899AbaJMC1u (ORCPT
+	with ESMTP id S1753890AbaJMC1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:27:50 -0400
+	Sun, 12 Oct 2014 22:27:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yuval Mintz <Yuval.Mintz@qlogic.com>,
-        Ariel Elior <Ariel.Elior@qlogic.com>,
+        Erik Hugne <erik.hugne@ericsson.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 13/55] bnx2x: Revert UNDI flushing mechanism
-Date: Mon, 13 Oct 2014 04:24:27 +0200
-Message-Id: <20141013022444.303364417@linuxfoundation.org>
+Subject: [PATCH 3.16 11/55] tipc: fix message importance range check
+Date: Mon, 13 Oct 2014 04:24:25 +0200
+Message-Id: <20141013022444.218748642@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
 References: <20141013022443.729870634@linuxfoundation.org>
@@ -30,170 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yuval Mintz <Yuval.Mintz@qlogic.com>
+From: Erik Hugne <erik.hugne@ericsson.com>
 
-[ Upstream commit 7c3afd85dc1610bb2fc049644cd1b52c7af96f98 ]
+[ Upstream commit ac32c7f705692b92fe12dcbe88fe87136fdfff6f ]
 
-Commit 91ebb929b6f8 ("bnx2x: Add support for Multi-Function UNDI") [which was
-later supposedly fixed by de682941eef3 ("bnx2x: Fix UNDI driver unload")]
-introduced a bug in which in some [yet-to-be-determined] scenarios the
-alternative flushing mechanism which was to guarantee the Rx buffers are
-empty before resetting them during device probe will fail.
-If this happens, when device will be loaded once more a fatal attention will
-occur; Since this most likely happens in boot from SAN scenarios, the machine
-will fail to load.
+Commit 3b4f302d8578 ("tipc: eliminate
+redundant locking") introduced a bug by removing the sanity check
+for message importance, allowing programs to assign any value to
+the msg_user field. This will mess up the packet reception logic
+and may cause random link resets.
 
-Notice this may occur not only in the 'Multi-Function' scenario but in the
-regular scenario as well, i.e., this introduced a regression in the driver's
-ability to perform boot from SAN.
-
-The patch reverts the mechanism and applies the old scheme to multi-function
-devices as well as to single-function devices.
-
-Signed-off-by: Yuval Mintz <Yuval.Mintz@qlogic.com>
-Signed-off-by: Ariel Elior <Ariel.Elior@qlogic.com>
+Signed-off-by: Erik Hugne <erik.hugne@ericsson.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c |   92 ++++-------------------
- 1 file changed, 17 insertions(+), 75 deletions(-)
+ net/tipc/port.h   |    5 ++++-
+ net/tipc/socket.c |    2 +-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-@@ -10044,6 +10044,8 @@ static void bnx2x_prev_unload_close_mac(
+--- a/net/tipc/port.h
++++ b/net/tipc/port.h
+@@ -229,9 +229,12 @@ static inline int tipc_port_importance(s
+ 	return msg_importance(&port->phdr);
  }
  
- #define BNX2X_PREV_UNDI_PROD_ADDR(p) (BAR_TSTRORM_INTMEM + 0x1508 + ((p) << 4))
-+#define BNX2X_PREV_UNDI_PROD_ADDR_H(f) (BAR_TSTRORM_INTMEM + \
-+					0x1848 + ((f) << 4))
- #define BNX2X_PREV_UNDI_RCQ(val)	((val) & 0xffff)
- #define BNX2X_PREV_UNDI_BD(val)		((val) >> 16 & 0xffff)
- #define BNX2X_PREV_UNDI_PROD(rcq, bd)	((bd) << 16 | (rcq))
-@@ -10051,8 +10053,6 @@ static void bnx2x_prev_unload_close_mac(
- #define BCM_5710_UNDI_FW_MF_MAJOR	(0x07)
- #define BCM_5710_UNDI_FW_MF_MINOR	(0x08)
- #define BCM_5710_UNDI_FW_MF_VERS	(0x05)
--#define BNX2X_PREV_UNDI_MF_PORT(p) (BAR_TSTRORM_INTMEM + 0x150c + ((p) << 4))
--#define BNX2X_PREV_UNDI_MF_FUNC(f) (BAR_TSTRORM_INTMEM + 0x184c + ((f) << 4))
- 
- static bool bnx2x_prev_is_after_undi(struct bnx2x *bp)
+-static inline void tipc_port_set_importance(struct tipc_port *port, int imp)
++static inline int tipc_port_set_importance(struct tipc_port *port, int imp)
  {
-@@ -10071,72 +10071,25 @@ static bool bnx2x_prev_is_after_undi(str
- 	return false;
++	if (imp > TIPC_CRITICAL_IMPORTANCE)
++		return -EINVAL;
+ 	msg_set_importance(&port->phdr, (u32)imp);
++	return 0;
  }
  
--static bool bnx2x_prev_unload_undi_fw_supports_mf(struct bnx2x *bp)
--{
--	u8 major, minor, version;
--	u32 fw;
--
--	/* Must check that FW is loaded */
--	if (!(REG_RD(bp, MISC_REG_RESET_REG_1) &
--	     MISC_REGISTERS_RESET_REG_1_RST_XSEM)) {
--		BNX2X_DEV_INFO("XSEM is reset - UNDI MF FW is not loaded\n");
--		return false;
--	}
--
--	/* Read Currently loaded FW version */
--	fw = REG_RD(bp, XSEM_REG_PRAM);
--	major = fw & 0xff;
--	minor = (fw >> 0x8) & 0xff;
--	version = (fw >> 0x10) & 0xff;
--	BNX2X_DEV_INFO("Loaded FW: 0x%08x: Major 0x%02x Minor 0x%02x Version 0x%02x\n",
--		       fw, major, minor, version);
--
--	if (major > BCM_5710_UNDI_FW_MF_MAJOR)
--		return true;
--
--	if ((major == BCM_5710_UNDI_FW_MF_MAJOR) &&
--	    (minor > BCM_5710_UNDI_FW_MF_MINOR))
--		return true;
--
--	if ((major == BCM_5710_UNDI_FW_MF_MAJOR) &&
--	    (minor == BCM_5710_UNDI_FW_MF_MINOR) &&
--	    (version >= BCM_5710_UNDI_FW_MF_VERS))
--		return true;
--
--	return false;
--}
--
--static void bnx2x_prev_unload_undi_mf(struct bnx2x *bp)
--{
--	int i;
--
--	/* Due to legacy (FW) code, the first function on each engine has a
--	 * different offset macro from the rest of the functions.
--	 * Setting this for all 8 functions is harmless regardless of whether
--	 * this is actually a multi-function device.
--	 */
--	for (i = 0; i < 2; i++)
--		REG_WR(bp, BNX2X_PREV_UNDI_MF_PORT(i), 1);
--
--	for (i = 2; i < 8; i++)
--		REG_WR(bp, BNX2X_PREV_UNDI_MF_FUNC(i - 2), 1);
--
--	BNX2X_DEV_INFO("UNDI FW (MF) set to discard\n");
--}
--
--static void bnx2x_prev_unload_undi_inc(struct bnx2x *bp, u8 port, u8 inc)
-+static void bnx2x_prev_unload_undi_inc(struct bnx2x *bp, u8 inc)
- {
- 	u16 rcq, bd;
--	u32 tmp_reg = REG_RD(bp, BNX2X_PREV_UNDI_PROD_ADDR(port));
-+	u32 addr, tmp_reg;
-+
-+	if (BP_FUNC(bp) < 2)
-+		addr = BNX2X_PREV_UNDI_PROD_ADDR(BP_PORT(bp));
-+	else
-+		addr = BNX2X_PREV_UNDI_PROD_ADDR_H(BP_FUNC(bp) - 2);
+ #endif
+--- a/net/tipc/socket.c
++++ b/net/tipc/socket.c
+@@ -1841,7 +1841,7 @@ static int tipc_setsockopt(struct socket
  
-+	tmp_reg = REG_RD(bp, addr);
- 	rcq = BNX2X_PREV_UNDI_RCQ(tmp_reg) + inc;
- 	bd = BNX2X_PREV_UNDI_BD(tmp_reg) + inc;
- 
- 	tmp_reg = BNX2X_PREV_UNDI_PROD(rcq, bd);
--	REG_WR(bp, BNX2X_PREV_UNDI_PROD_ADDR(port), tmp_reg);
-+	REG_WR(bp, addr, tmp_reg);
- 
--	BNX2X_DEV_INFO("UNDI producer [%d] rings bd -> 0x%04x, rcq -> 0x%04x\n",
--		       port, bd, rcq);
-+	BNX2X_DEV_INFO("UNDI producer [%d/%d][%08x] rings bd -> 0x%04x, rcq -> 0x%04x\n",
-+		       BP_PORT(bp), BP_FUNC(bp), addr, bd, rcq);
- }
- 
- static int bnx2x_prev_mcp_done(struct bnx2x *bp)
-@@ -10375,7 +10328,6 @@ static int bnx2x_prev_unload_common(stru
- 	/* Reset should be performed after BRB is emptied */
- 	if (reset_reg & MISC_REGISTERS_RESET_REG_1_RST_BRB1) {
- 		u32 timer_count = 1000;
--		bool need_write = true;
- 
- 		/* Close the MAC Rx to prevent BRB from filling up */
- 		bnx2x_prev_unload_close_mac(bp, &mac_vals);
-@@ -10412,20 +10364,10 @@ static int bnx2x_prev_unload_common(stru
- 			else
- 				timer_count--;
- 
--			/* New UNDI FW supports MF and contains better
--			 * cleaning methods - might be redundant but harmless.
--			 */
--			if (bnx2x_prev_unload_undi_fw_supports_mf(bp)) {
--				if (need_write) {
--					bnx2x_prev_unload_undi_mf(bp);
--					need_write = false;
--				}
--			} else if (prev_undi) {
--				/* If UNDI resides in memory,
--				 * manually increment it
--				 */
--				bnx2x_prev_unload_undi_inc(bp, BP_PORT(bp), 1);
--			}
-+			/* If UNDI resides in memory, manually increment it */
-+			if (prev_undi)
-+				bnx2x_prev_unload_undi_inc(bp, 1);
-+
- 			udelay(10);
- 		}
- 
+ 	switch (opt) {
+ 	case TIPC_IMPORTANCE:
+-		tipc_port_set_importance(port, value);
++		res = tipc_port_set_importance(port, value);
+ 		break;
+ 	case TIPC_SRC_DROPPABLE:
+ 		if (sock->type != SOCK_STREAM)
 
 
