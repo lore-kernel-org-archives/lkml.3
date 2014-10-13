@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754674AbaJMCaK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:30:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46109 "EHLO
+	id S1754648AbaJMCaD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:30:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46070 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754599AbaJMCaE (ORCPT
+	with ESMTP id S1754599AbaJMC35 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:30:04 -0400
+	Sun, 12 Oct 2014 22:29:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Peter Zijlstra (Intel)" <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 3.17 11/25] arm: Tell irq work about self IPI support
-Date: Mon, 13 Oct 2014 04:25:04 +0200
-Message-Id: <20141013022454.776799372@linuxfoundation.org>
+        David Laight <David.Laight@aculab.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.16 43/55] sctp: handle association restarts when the socket is closed.
+Date: Mon, 13 Oct 2014 04:24:57 +0200
+Message-Id: <20141013022445.750966145@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141013022454.289398272@linuxfoundation.org>
-References: <20141013022454.289398272@linuxfoundation.org>
+In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
+References: <20141013022443.729870634@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -29,67 +26,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.17-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+From: Vlad Yasevich <vyasevich@gmail.com>
 
-commit 09f6edd424218eb69078551b2ecfada1f2d098eb upstream.
+[ Upstream commit bdf6fa52f01b941d4a80372d56de465bdbbd1d23 ]
 
-ARM irq work IPI support depends on SMP support. That information is
-partly known at early boottime. Lets implement
-arch_irq_work_has_interrupt() accordingly.
+Currently association restarts do not take into consideration the
+state of the socket.  When a restart happens, the current assocation
+simply transitions into established state.  This creates a condition
+where a remote system, through a the restart procedure, may create a
+local association that is no way reachable by user.  The conditions
+to trigger this are as follows:
+  1) Remote does not acknoledge some data causing data to remain
+     outstanding.
+  2) Local application calls close() on the socket.  Since data
+     is still outstanding, the association is placed in SHUTDOWN_PENDING
+     state.  However, the socket is closed.
+  3) The remote tries to create a new association, triggering a restart
+     on the local system.  The association moves from SHUTDOWN_PENDING
+     to ESTABLISHED.  At this point, it is no longer reachable by
+     any socket on the local system.
 
-Acked-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+This patch addresses the above situation by moving the newly ESTABLISHED
+association into SHUTDOWN-SENT state and bundling a SHUTDOWN after
+the COOKIE-ACK chunk.  This way, the restarted associate immidiately
+enters the shutdown procedure and forces the termination of the
+unreachable association.
+
+Reported-by: David Laight <David.Laight@aculab.com>
+Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/arm/include/asm/Kbuild     |    1 -
- arch/arm/include/asm/irq_work.h |   11 +++++++++++
- arch/arm/kernel/smp.c           |    2 +-
- 3 files changed, 12 insertions(+), 2 deletions(-)
+ include/net/sctp/command.h |    2 +-
+ net/sctp/sm_statefuns.c    |   19 ++++++++++++++++---
+ 2 files changed, 17 insertions(+), 4 deletions(-)
 
---- a/arch/arm/include/asm/Kbuild
-+++ b/arch/arm/include/asm/Kbuild
-@@ -11,7 +11,6 @@ generic-y += hash.h
- generic-y += ioctl.h
- generic-y += ipcbuf.h
- generic-y += irq_regs.h
--generic-y += irq_work.h
- generic-y += kdebug.h
- generic-y += local.h
- generic-y += local64.h
---- /dev/null
-+++ b/arch/arm/include/asm/irq_work.h
-@@ -0,0 +1,11 @@
-+#ifndef __ASM_ARM_IRQ_WORK_H
-+#define __ASM_ARM_IRQ_WORK_H
-+
-+#include <asm/smp_plat.h>
-+
-+static inline bool arch_irq_work_has_interrupt(void)
-+{
-+	return is_smp();
-+}
-+
-+#endif /* _ASM_ARM_IRQ_WORK_H */
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -503,7 +503,7 @@ void arch_send_call_function_single_ipi(
- #ifdef CONFIG_IRQ_WORK
- void arch_irq_work_raise(void)
- {
--	if (is_smp())
-+	if (arch_irq_work_has_interrupt())
- 		smp_cross_call(cpumask_of(smp_processor_id()), IPI_IRQ_WORK);
- }
- #endif
+--- a/include/net/sctp/command.h
++++ b/include/net/sctp/command.h
+@@ -115,7 +115,7 @@ typedef enum {
+  * analysis of the state functions, but in reality just taken from
+  * thin air in the hopes othat we don't trigger a kernel panic.
+  */
+-#define SCTP_MAX_NUM_COMMANDS 14
++#define SCTP_MAX_NUM_COMMANDS 20
+ 
+ typedef union {
+ 	__s32 i32;
+--- a/net/sctp/sm_statefuns.c
++++ b/net/sctp/sm_statefuns.c
+@@ -1775,9 +1775,22 @@ static sctp_disposition_t sctp_sf_do_dup
+ 	/* Update the content of current association. */
+ 	sctp_add_cmd_sf(commands, SCTP_CMD_UPDATE_ASSOC, SCTP_ASOC(new_asoc));
+ 	sctp_add_cmd_sf(commands, SCTP_CMD_EVENT_ULP, SCTP_ULPEVENT(ev));
+-	sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
+-			SCTP_STATE(SCTP_STATE_ESTABLISHED));
+-	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
++	if (sctp_state(asoc, SHUTDOWN_PENDING) &&
++	    (sctp_sstate(asoc->base.sk, CLOSING) ||
++	     sock_flag(asoc->base.sk, SOCK_DEAD))) {
++		/* if were currently in SHUTDOWN_PENDING, but the socket
++		 * has been closed by user, don't transition to ESTABLISHED.
++		 * Instead trigger SHUTDOWN bundled with COOKIE_ACK.
++		 */
++		sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
++		return sctp_sf_do_9_2_start_shutdown(net, ep, asoc,
++						     SCTP_ST_CHUNK(0), NULL,
++						     commands);
++	} else {
++		sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
++				SCTP_STATE(SCTP_STATE_ESTABLISHED));
++		sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
++	}
+ 	return SCTP_DISPOSITION_CONSUME;
+ 
+ nomem_ev:
 
 
