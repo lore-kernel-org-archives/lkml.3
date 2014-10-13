@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753643AbaJMHvC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 03:51:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54967 "EHLO mx1.redhat.com"
+	id S1753898AbaJMHsE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 03:48:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55070 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753408AbaJMHsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 03:48:12 -0400
-Date: Mon, 13 Oct 2014 10:51:19 +0300
+	id S1753818AbaJMHrz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 03:47:55 -0400
+Date: Mon, 13 Oct 2014 10:51:09 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Rusty Russell <rusty@rustcorp.com.au>,
@@ -17,10 +17,9 @@ Cc: Rusty Russell <rusty@rustcorp.com.au>,
         Cornelia Huck <cornelia.huck@de.ibm.com>,
         Christian Borntraeger <borntraeger@de.ibm.com>,
         "David S. Miller" <davem@davemloft.net>,
-        Paolo Bonzini <pbonzini@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH v4 19/25] virtio_console: enable VQs early on restore
-Message-ID: <1413114332-626-20-git-send-email-mst-v4@redhat.com>
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH v4 17/25] virtio_blk: enable VQs early on restore
+Message-ID: <1413114332-626-18-git-send-email-mst-v4@redhat.com>
 References: <1413114332-626-1-git-send-email-mst-v4@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -32,29 +31,37 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 virtio spec requires drivers to set DRIVER_OK before using VQs.
-This is set automatically after resume returns, virtio console violated this
-rule by adding inbufs, which causes the VQ to be used directly within
-restore.
+This is set automatically after restore returns, virtio block violated
+this rule on restore by restarting queues, which might in theory
+cause the VQ to be used directly within restore.
 
-To fix, call virtio_device_ready before using VQs.
+To fix, call virtio_device_ready before using starting queues.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/char/virtio_console.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/block/virtio_blk.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-index 6ebe8f6..2ae843f 100644
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -2184,6 +2184,8 @@ static int virtcons_restore(struct virtio_device *vdev)
- 	if (ret)
- 		return ret;
+diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+index 46b04bf..1c95af5 100644
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -804,10 +804,13 @@ static int virtblk_restore(struct virtio_device *vdev)
+ 	int ret;
  
-+	virtio_device_ready(portdev->vdev);
+ 	ret = init_vq(vdev->priv);
+-	if (!ret)
+-		blk_mq_start_stopped_hw_queues(vblk->disk->queue, true);
++	if (ret)
++		return ret;
 +
- 	if (use_multiport(portdev))
- 		fill_queue(portdev->c_ivq, &portdev->c_ivq_lock);
++	virtio_device_ready(vdev);
+ 
+-	return ret;
++	blk_mq_start_stopped_hw_queues(vblk->disk->queue, true);
++	return 0;
+ }
+ #endif
  
 -- 
 MST
