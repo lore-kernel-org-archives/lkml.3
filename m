@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322AbaJMCmj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:42:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45968 "EHLO
+	id S1755327AbaJMCnB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:43:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45960 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754237AbaJMC3A (ORCPT
+	with ESMTP id S1754214AbaJMC2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:29:00 -0400
+	Sun, 12 Oct 2014 22:28:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Lawrence <joe.lawrence@stratus.com>, Jiri Pirko <jiri@resnulli.us>,
+        Matthieu Ternisien dOuville <matthieu.tdo@6wind.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 41/55] team: avoid race condition in scheduling delayed work
-Date: Mon, 13 Oct 2014 04:24:55 +0200
-Message-Id: <20141013022445.616481479@linuxfoundation.org>
+Subject: [PATCH 3.16 39/55] ip6_gre: fix flowi6_proto value in xmit path
+Date: Mon, 13 Oct 2014 04:24:53 +0200
+Message-Id: <20141013022445.492625512@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
 References: <20141013022443.729870634@linuxfoundation.org>
@@ -29,68 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Lawrence <Joe.Lawrence@stratus.com>
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
-[ Upstream commit 47549650abd13d873fd2e5fc218db19e21031074 ]
+[ Upstream commit 3be07244b7337760a3269d56b2f4a63e72218648 ]
 
-When team_notify_peers and team_mcast_rejoin are called, they both reset
-their respective .count_pending atomic variable. Then when the actual
-worker function is executed, the variable is atomically decremented.
-This pattern introduces a potential race condition where the
-.count_pending rolls over and the worker function keeps rescheduling
-until .count_pending decrements to zero again:
+In xmit path, we build a flowi6 which will be used for the output route lookup.
+We are sending a GRE packet, neither IPv4 nor IPv6 encapsulated packet, thus the
+protocol should be IPPROTO_GRE.
 
-THREAD 1                           THREAD 2
-
-========                           ========
-team_notify_peers(teamX)
-  atomic_set count_pending = 1
-  schedule_delayed_work
-                                   team_notify_peers(teamX)
-                                   atomic_set count_pending = 1
-team_notify_peers_work
-  atomic_dec_and_test
-    count_pending = 0
-  (return)
-                                   schedule_delayed_work
-                                   team_notify_peers_work
-                                   atomic_dec_and_test
-                                     count_pending = -1
-                                   schedule_delayed_work
-                                   (repeat until count_pending = 0)
-
-Instead of assigning a new value to .count_pending, use atomic_add to
-tack-on the additional desired worker function invocations.
-
-Signed-off-by: Joe Lawrence <joe.lawrence@stratus.com>
-Acked-by: Jiri Pirko <jiri@resnulli.us>
-Fixes: fc423ff00df3a19554414ee ("team: add peer notification")
-Fixes: 492b200efdd20b8fcfdac87 ("team: add support for sending multicast rejoins")
+Fixes: c12b395a4664 ("gre: Support GRE over IPv6")
+Reported-by: Matthieu Ternisien d'Ouville <matthieu.tdo@6wind.com>
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/team/team.c |    4 ++--
+ net/ipv6/ip6_gre.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/team/team.c
-+++ b/drivers/net/team/team.c
-@@ -647,7 +647,7 @@ static void team_notify_peers(struct tea
- {
- 	if (!team->notify_peers.count || !netif_running(team->dev))
- 		return;
--	atomic_set(&team->notify_peers.count_pending, team->notify_peers.count);
-+	atomic_add(team->notify_peers.count, &team->notify_peers.count_pending);
- 	schedule_delayed_work(&team->notify_peers.dw, 0);
- }
+--- a/net/ipv6/ip6_gre.c
++++ b/net/ipv6/ip6_gre.c
+@@ -778,7 +778,7 @@ static inline int ip6gre_xmit_ipv4(struc
+ 		encap_limit = t->parms.encap_limit;
  
-@@ -687,7 +687,7 @@ static void team_mcast_rejoin(struct tea
- {
- 	if (!team->mcast_rejoin.count || !netif_running(team->dev))
- 		return;
--	atomic_set(&team->mcast_rejoin.count_pending, team->mcast_rejoin.count);
-+	atomic_add(team->mcast_rejoin.count, &team->mcast_rejoin.count_pending);
- 	schedule_delayed_work(&team->mcast_rejoin.dw, 0);
- }
+ 	memcpy(&fl6, &t->fl.u.ip6, sizeof(fl6));
+-	fl6.flowi6_proto = IPPROTO_IPIP;
++	fl6.flowi6_proto = IPPROTO_GRE;
  
+ 	dsfield = ipv4_get_dsfield(iph);
+ 
+@@ -828,7 +828,7 @@ static inline int ip6gre_xmit_ipv6(struc
+ 		encap_limit = t->parms.encap_limit;
+ 
+ 	memcpy(&fl6, &t->fl.u.ip6, sizeof(fl6));
+-	fl6.flowi6_proto = IPPROTO_IPV6;
++	fl6.flowi6_proto = IPPROTO_GRE;
+ 
+ 	dsfield = ipv6_get_dsfield(ipv6h);
+ 	if (t->parms.flags & IP6_TNL_F_USE_ORIG_TCLASS)
 
 
