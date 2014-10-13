@@ -1,75 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752789AbaJLX4j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 19:56:39 -0400
-Received: from ppsw-40.csi.cam.ac.uk ([131.111.8.140]:54309 "EHLO
-	ppsw-40.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751681AbaJLX4h convert rfc822-to-8bit (ORCPT
+	id S1752809AbaJMADh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 20:03:37 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:58764 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751681AbaJMADc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 19:56:37 -0400
-X-Cam-AntiVirus: found ScamNailer.Phish.viro_AT_zeniv.linux.org.uk
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Subject: Re: WTF is d_add_ci() doing with negative dentries?
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Content-Type: text/plain; charset=us-ascii
-From: Anton Altaparmakov <aia21@cam.ac.uk>
-In-Reply-To: <20141012221817.GU7996@ZenIV.linux.org.uk>
-Date: Mon, 13 Oct 2014 00:56:11 +0100
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <318CCEE2-9EBE-4696-8DE9-7297CDCE207D@cam.ac.uk>
-References: <20141012221817.GU7996@ZenIV.linux.org.uk>
-To: Al Viro <viro@zeniv.linux.org.uk>
-X-Mailer: Apple Mail (2.1878.6)
+	Sun, 12 Oct 2014 20:03:32 -0400
+Message-ID: <1413158605.14699.46.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [tpmdd-devel] [TrouSerS-tech] [Ksummit-discuss] TPM MiniSummit
+ @ LinuxCon Europe
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Stefan Berger <stefanb@linux.vnet.ibm.com>, keyrings@linux-nfs.org,
+        jarkko.sakkinnen@linux.intel.com,
+        "ksummit-discuss@lists.linuxfoundation.org" 
+	<ksummit-discuss@lists.linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        tpmdd-devel@lists.sourceforge.net,
+        James Morris <james.l.morris@oracle.com>,
+        linux-ima-devel@lists.sourceforge.net,
+        trousers-tech@lists.sourceforge.net, Peter Huewe <PeterHuewe@gmx.de>
+Date: Sun, 12 Oct 2014 20:03:25 -0400
+In-Reply-To: <CALCETrVVSd_pTBP3ghn=oroNqrxPYRev-xcQ+KnF8kcZZiwB7A@mail.gmail.com>
+References: <trinity-2d36367c-59c5-44af-8737-fb503e10af38-1411376491498@3capp-gmx-bs07>
+	 <CALCETrWdPmSCUkb-neH5ssNmxzsqY0rioQq5qMc2ne7J0JxVLg@mail.gmail.com>
+	 <543428E1.7050702@linux.vnet.ibm.com>
+	 <20141007180209.GD10432@obsidianresearch.com>
+	 <5434352A.6080403@linux.vnet.ibm.com>
+	 <CALCETrVVSd_pTBP3ghn=oroNqrxPYRev-xcQ+KnF8kcZZiwB7A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14101300-0009-0000-0000-0000058D18DC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Al,
+On Tue, 2014-10-07 at 11:59 -0700, Andy Lutomirski wrote: 
+> On Tue, Oct 7, 2014 at 11:47 AM, Stefan Berger
+> <stefanb@linux.vnet.ibm.com> wrote:
+> > On 10/07/2014 02:02 PM, Jason Gunthorpe wrote:
+> >>
+> >> On Tue, Oct 07, 2014 at 01:54:41PM -0400, Stefan Berger wrote:
+> >>
+> >>> Why add the complexity of swapping of authenticated sessions and keys
+> >>> into the kernel if you can handle this in userspace? You need a library
+> >>> that is aware of the number of key slots and slots for sessions in the
+> >>> TPM and swaps them in at out when applications need them. Trousers is
+> >>> such a library that was designed to cope with the limitations of the
+> >>> device and make its functionality available to all applications that
+> >>> want to access it.
+> >>
+> >> How does trousers work with the kernel when the kernel is also using
+> >> TPM key slots for IMA/keyring/whatever?
+> >
+> >
+> > IIRC it only uses a single key slot and swaps all keys in and out of that
+> > one. If the kernel was to fill up all key (and sessions) slots, TSS would
+> > probably not work anymore.
+> >
+> > Another argument for the TSS is that you also wouldn't want applications to
+> > swap out each others keys and sessions and leave them out or assume that
+> > they would always cleanup if they do not currently need them.
+> 
+> That argument seems backwards.  If you're worried about applications
+> (or trousers itself!) failing to clean up, then shouldn't the kernel
+> driver clean up orphaned key slots itself?
 
-On 12 Oct 2014, at 23:18, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> 	AFAICS, if d_add_ci() ever finds a negative hashed dentry for
-> exact name, it's already buggered.  Because right *before* that
-> d_add_ci() lookup for exact name would've turned valid negative.
+As I understand it, this isn't an issue of "cleaning up", but of
+mediating the limited resources, by "swapping" keys in and out as
+needed.
 
-Christoph copied d_add_ci() from code I wrote for NTFS so you can blame me for it.  (-;
+Mimi
 
-Do you mean that given the exact name exists on disk, there cannot be a negative dentry for it in memory, i.e. there would either be no dentry in memory or it would be a positive dentry in memory?
-
-If so then that makes sense, yes.
-
-I am just wondering whether there might be error conditions in which we might end up with a (perhaps invalid) negative dentry in memory which could be found here?  Probably not a problem especially now that d_invalidate() cannot fail any more.
-
-Is it worth adding a BUG_ON(!found->d_inode); to ensure sanity/catch bugs?
-
-> IOW, the whole thing ought to be
->        found = d_hash_and_lookup(dentry->d_parent, name);
-> 	if (found) {
-> 		iput(inode);
-> 		return found;
-> 	}
-> 	new = d_alloc(dentry->d_parent, name);
-> 	if (!new) {
-> 		iput(inode);
-> 		return ERR_PTR(-ENOMEM);
-> 	}
-> 	found = d_splice_alias(inode, new);
-> 	if (found) {
-> 		dput(new);
-> 		return found;
-> 	}
-> 	return new;
-> Moreover, it might very well be better to pass dentry->d_parent instead
-> of dentry...  Objections?
-
-Yes, that bit makes perfect sense given we only ever use dentry->d_parent.
-
-Best regards,
-
-	Anton
--- 
-Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
-University of Cambridge Information Services, Roger Needham Building
-7 JJ Thomson Avenue, Cambridge, CB3 0RB, UK
+> Also, what protects the kernel from having slot 0 get stomped on or,
+> worse, inappropriately used by a misbehaving or malicious user
+> program?  Is the authorization session mechanism really secure against
+> intentional abuse by users of the same machine?
+> 
+> --Andy
 
