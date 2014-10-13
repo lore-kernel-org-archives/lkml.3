@@ -1,64 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753135AbaJMGdN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 02:33:13 -0400
-Received: from ozlabs.org ([103.22.144.67]:60422 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751603AbaJMGdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 02:33:11 -0400
-Date: Mon, 13 Oct 2014 17:33:01 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: status of the signal-cleanup tree
-Message-ID: <20141013173301.0664c8ac@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1752876AbaJMGqQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 02:46:16 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:41838 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751434AbaJMGqP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 02:46:15 -0400
+Message-ID: <543B74EC.4020301@huawei.com>
+Date: Mon, 13 Oct 2014 14:45:00 +0800
+From: Weng Meiling <wengmeiling.weng@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/SBmHiDWyvlq=Zett1HN5S_J"; protocol="application/pgp-signature"
+To: Greg KH <gregkh@linuxfoundation.org>, <tom.leiming@gmail.com>,
+        <tj@kernel.org>
+CC: <tt.rantala@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Huang Qiang <h.huangqiang@huawei.com>, "Li Zefan" <lizefan@huawei.com>,
+        Jens Axboe <axboe@kernel.dk>, Xiang Rui <rui.xiang@huawei.com>
+Subject: Re: kernel BUG at fs/sysfs/group.c:65! (CC Jens )
+References: <54368308.90202@huawei.com> <543683FE.10005@huawei.com> <54389D3F.90804@huawei.com>
+In-Reply-To: <54389D3F.90804@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.24.66]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/SBmHiDWyvlq=Zett1HN5S_J
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 2014/10/11 11:00, Weng Meiling wrote:
+> ping ...
+> 
+> On 2014/10/9 20:47, Weng Meiling wrote:
+>> On 2014/10/9 20:43, Weng Meiling wrote:
+>>> Hi guys,
+>>>
+>>> I see the mails you discussed the BUG at fs/sysfs/group.c:65! triggered by duplicated sysfs link.
+>>>
+>>> the detail mail:
+>>>
+>>> https://lkml.org/lkml/2013/3/8/370
+>>>
+>>> but it seems the problems has no conclusion. In our environment, we triggered the bug too, but for error ENOENT:
+>>>
+>>> we use 3.4 kernel, and do virtual disk device create / remove for many times. Before remove we can see the devices:
+>>>
+>>> #ll /sys/devices/virtual/block/
+>>> drwxr-xr-x 7 root root 0 Oct  6 09:17 sd-1a
+>>> drwxr-xr-x 7 root root 0 Oct  6 09:17 sd-2a
+>>>
+>>> when the two virtual devices were removed, the directory block/ was delete too.
+>>>
+>>> after many times create / remove, the kernel trigger the bug (just the main call trace):
+>>>
+>>> [ 3965.441713] WARNING: at /usr/src/packages/BUILD/linux-3.4/lib/kobject.c:202 kobject_add_internal+0x11f/0x280()
+>>> [ 3965.441716] Hardware name: Romley
+>>> [ 3965.441718] kobject_add_internal failed for sd-1a (error: -2 parent: block)
+>>>
+>>> [ 3965.441817] Call Trace:
+>>> [ 3965.441820]  [<ffffffff8103717a>] warn_slowpath_common+0x7a/0xb0
+>>> [ 3965.441823]  [<ffffffff81037251>] warn_slowpath_fmt+0x41/0x50
+>>> [ 3965.441826]  [<ffffffff81215e0f>] kobject_add_internal+0x11f/0x280
+>>> [ 3965.441830]  [<ffffffff81216267>] kobject_add+0x67/0xc0
+>>> [ 3965.441833]  [<ffffffff812d2305>] device_add+0x105/0x6d0
+>>> [ 3965.441836]  [<ffffffff812d0dbc>] ? dev_set_name+0x3c/0x40
+>>> [ 3965.441839]  [<ffffffff812030ac>] add_disk+0x1bc/0x490
+>>>
+>>> [ 3965.441912] kernel BUG at /usr/src/packages/BUILD/linux-3.4/fs/sysfs/group.c:65!
+>>> [ 3965.441915] invalid opcode: 0000 [#1] SMP
+>>> [ 3965.686738] Call Trace:
+>>> [ 3965.686743]  [<ffffffff811a677e>] sysfs_create_group+0xe/0x10
+>>> [ 3965.686748]  [<ffffffff810cfb04>] blk_trace_init_sysfs+0x14/0x20
+>>> [ 3965.686753]  [<ffffffff811fcabb>] blk_register_queue+0x3b/0x120
+>>> [ 3965.686756]  [<ffffffff812030bc>] add_disk+0x1cc/0x490
+>>>
+>>> from the error "kobject_add_internal failed for sd-1a (error: -2 parent: block)", we found that the first
+>>> warning was caused by the disk device's parent_sd was null when it was added into sysfs:
+>>>
+>>> int sysfs_create_dir(struct kobject * kobj)
+>>> {
+>>>     ...
+>>>     if (kobj->parent)
+>>>         parent_sd = kobj->parent->sd;
+>>>     else
+>>>         parent_sd = &sysfs_root;
+>>>
+>>>     if (!parent_sd)
+>>>         return -ENOENT;
+>>>     ...
+>>> }
+>>>
+>>> The virtual disk device was not added into sysfs because of the above failure, and the kobj->sd was
+>>> not set, then trigger the bug when creating attribute group under the device's directory:
+>>>
+>>> static int internal_create_group(struct kobject *kobj, int update,
+>>>                  const struct attribute_group *grp)
+>>> {
+>>>     ...
+>>>     BUG_ON(!kobj || (!update && !kobj->sd));
+>>>     ...
+>>> }
+>>>
+>>> Walk the code, it seems there maybe a race between block/ remove and virtual disk devices' register:
+>>>
+>>> when the two virtual devices were removed, the block/ directory's refcount became 0, will into:
+>>>
+>>> path0(remove the block/)                                             path1(register virtual device sd-1a)
+>>>
+>>> kobject_del(){                                                       get_device_parent(){
+>>> ...                                                                  ...
+>>>    sysfs_remove_dir(kobj);  //kobj->sd=0                                 spin_lock(&dev->class->p->glue_dirs.list_lock);
+>>
+>> this should be kobj->sd = NULL
+>>> ...                                                      <=========      list_for_each_entry(k, &dev->class->p->glue_dirs.list, entry)  //get parent kobject from kset list
+>>>    kobj_kset_leave(kobj);   //remove kobj from kset list             ...
+>>> }                                                                    }
+>>>
+>>> If getting parent object between " kobj->sd=0 " and "remove_kset_leave(kobj)", the sysfs_create_dir() will return ENOENT and trigger the BUG later.
+>>>
+>> this should be kobj->sd = NULL
+>>
+>>> The lastest kernel seems to be the same. But I am not familiar with block device, I am not sure whether the analysis is right or I am missing something.
+>>> what do you think about this situation? Any suggestion is appreciative. Thanks!
+>>>
+>>>
+>>
+>>
+> 
 
-Hi Richard,
 
-The signal-cleanup tree
-(git://git.kernel.org/pub/scm/linux/kernel/git/rw/misc.git#signal_v4)
-has not bee touched since July and when merged into Linus' tree,
-produces no changes (same patches different commits :-().  So all it is
-doing at the moment is producing unnecessary conflicts :-(
-
-Can you clean it up, please?  Or should I just remove it
-from linux-next completely.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/SBmHiDWyvlq=Zett1HN5S_J
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUO3IiAAoJEMDTa8Ir7ZwVCc8P/R6wytPJi7OZcecOA9091qNg
-hXkLuqrsPMIe3i1f0d/9EnrIXxBdq/CqbpU+8miQ/XtONI+ZtBT4V11QV9GjpPix
-sYUYbwP/1DE5odOT1829+LvUvSpRbrCOFPVWIUvCyc5Cub+kegR96LmP1eWeQiWo
-5iPYiP46PaTTBIkE2BzPz79J70GaYverFlM/Kk7u8S81674gL/vTgyJ5yu6v18K/
-i/qrEfbLAYHHP15jpOhJ2jZ4HeGsvDdZyH7RVihJmsKHVMPR9+tL8MEHs+MYpOmL
-/YW8IO2DNqyUcqO3mVV+rNTMSZxXs1UW04n7cF3fuCtmA6Jk5YURFhhJkn0UVEXG
-IvD94+7OqyHf7EYqMusksjsgdOgfMpSd0WBT8bpkyksQF8LF3jwVm2W4/ZVJxt5g
-ye5cbnbbkTuQA6/aK2wOBcVokCLCPrt5SWngdMJmc39FdlPjljcTu0fBI571P4yT
-gdUGzpFTcvshW+DBwr1bMeRLW4Dy7geTxEMJpPVLYy4jGYD6Ijm45848clJMajSp
-Q+YZxYQsysXTS7tBkaJK8Stj31CXnkk3dhnh3Ffx4f8qpTuB35/7XYylt5YSEP6D
-i9QQm6HGy6ZgD5NoT8YCdXKVUuzCxoEIkZVuX+bFUlERlAgbKOyaMfnE/L6sSg/C
-zxRo43nUsaHpIMzHj8uQ
-=74xi
------END PGP SIGNATURE-----
-
---Sig_/SBmHiDWyvlq=Zett1HN5S_J--
