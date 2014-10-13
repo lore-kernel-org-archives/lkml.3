@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532AbaJMKnw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 06:43:52 -0400
-Received: from mail-oi0-f50.google.com ([209.85.218.50]:41999 "EHLO
-	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753041AbaJMKnu (ORCPT
+	id S1753201AbaJMKrp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 06:47:45 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50200 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752204AbaJMKro (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 06:43:50 -0400
+	Mon, 13 Oct 2014 06:47:44 -0400
+Date: Mon, 13 Oct 2014 12:47:20 +0200
+From: Mark Brown <broonie@kernel.org>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: linux-kernel@vger.kernel.org, dp@opensource.wolfsonmicro.com
+Message-ID: <20141013104720.GM27755@sirena.org.uk>
+References: <1412845377-17134-1-git-send-email-Li.Xiubo@freescale.com>
+ <1412845377-17134-3-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-In-Reply-To: <53DBCBE8.6010809@codeaurora.org>
-References: <1406634362-811-1-git-send-email-prarit@redhat.com>
-	<2066166.pXm4lKLOID@vostro.rjw.lan>
-	<53DA8389.80804@redhat.com>
-	<1917362.abr2Y4p7vh@vostro.rjw.lan>
-	<53DA8A41.2030601@redhat.com>
-	<53DAA60B.6040802@codeaurora.org>
-	<53DAA749.5080506@redhat.com>
-	<53DAA95B.2040505@codeaurora.org>
-	<53DAB038.3050007@redhat.com>
-	<53DABFA6.6090503@codeaurora.org>
-	<53DACA26.1000908@redhat.com>
-	<53DAE592.2030909@codeaurora.org>
-	<53DB6B81.6050400@redhat.com>
-	<53DBCBE8.6010809@codeaurora.org>
-Date: Mon, 13 Oct 2014 16:13:50 +0530
-Message-ID: <CAKohpomk0GNJcGKxLX3HuaMBgPiSNzFp5BniyNgRbtoLqPm6bQ@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem to
- be held for duration of changing governors [v2]
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Prarit Bhargava <prarit@redhat.com>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lenny Szubowicz <lszubowi@redhat.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pUZZFPb0jMmCBBeO"
+Content-Disposition: inline
+In-Reply-To: <1412845377-17134-3-git-send-email-Li.Xiubo@freescale.com>
+X-Cookie: You are magnetic in your bearing.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 62.156.150.204
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/6] regmap: cache: cleanup regcache_hw_init().
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1 August 2014 22:48, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> On 08/01/14 03:27, Prarit Bhargava wrote:
->>
->> Can you send me the test and the trace of the deadlock?  I'm not creating it with:
->>
->
-> This was with conservative as the default, and switching to ondemand
->
-> # cd /sys/devices/system/cpu/cpu2/cpufreq
-> # ls
-> affected_cpus                  scaling_available_governors
-> conservative                   scaling_cur_freq
-> cpuinfo_cur_freq               scaling_driver
-> cpuinfo_max_freq               scaling_governor
-> cpuinfo_min_freq               scaling_max_freq
-> cpuinfo_transition_latency     scaling_min_freq
-> related_cpus                   scaling_setspeed
-> scaling_available_frequencies  stats
-> # cat conservative/down_threshold
-> 20
-> # echo ondemand > scaling_governor
->
->  ======================================================
->  [ INFO: possible circular locking dependency detected ]
->  3.16.0-rc3-00039-ge1e38f124d87 #47 Not tainted
->  -------------------------------------------------------
->  sh/75 is trying to acquire lock:
->   (s_active#9){++++..}, at: [<c0358a94>] kernfs_remove_by_name_ns+0x3c/0x84
 
-Can you please retry this on mainline? I wasn't able to reproduce it
-now over 3.17.
-I am trying this on Exynos b.L implementation..
+--pUZZFPb0jMmCBBeO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Thu, Oct 09, 2014 at 05:02:53PM +0800, Xiubo Li wrote:
+> Remove the redundant code for regmap cache.
+
+Applied, thanks.  With changes like this it is much better if the
+changelog explains why the code is redundant - say in words that the
+value used is never referenced and looking up the value has no side
+effects.
+
+--pUZZFPb0jMmCBBeO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUO623AAoJECTWi3JdVIfQKC8H/A3ussDWzIO51ko5KPIOBcvW
+v4gLHUK1XTx3CL0QiEm/WDzc+AaQnOK8HiTWlNDkx5KkP2/VR+poU3xLungJr0aZ
+67zGKghqLMDOa4yGNmLQ8ErPXVlMEAbcwLVI82CPjzeG/WgdqNKAeEIJFo4u1s/q
+sr46sHHpGb9egAOek3ojj1VXEJnLOCzBNz3g9m0/7A0qc9FqGZLcYBJWTNNgO4YL
+jbGL4/Vcyj98FCNEk/5bj1S/t8kHXgwe4lWCGm4INMm+FR7ZLcB3oGPY9tWNygwG
+3+AWXJDqn0hTN5yb9ulxuGFV9xfeTpAPyRWAGmNbHUI0QBCrqR5wMk4Vf5YRhGk=
+=VKP/
+-----END PGP SIGNATURE-----
+
+--pUZZFPb0jMmCBBeO--
