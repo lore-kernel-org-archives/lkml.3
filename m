@@ -1,57 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753103AbaJMF6S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 01:58:18 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:34947 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751496AbaJMF6Q (ORCPT
+	id S1753245AbaJMF6b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 01:58:31 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58996 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753187AbaJMF61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 01:58:16 -0400
-Date: Mon, 13 Oct 2014 13:58:10 +0800
-From: WANG Chao <wangchao19890207@gmail.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Oleg Drokin <oleg.drokin@intel.com>,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Masaru Nomura <massa.nomura@gmail.com>, Peng Tao <bergwolf@gmail.com>,
-        Chi Pham <fempsci@gmail.com>,
-        Fredrick John Berchmans <fredrickprashanth@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "open list:STAGING SUBSYSTEM" <devel@driverdev.osuosl.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH resend] staging, lustre: fix a sparse error
-Message-ID: <20141013055810.GB2013@dhcp-17-37.nay.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141012191702.GS7996@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 13 Oct 2014 01:58:27 -0400
+X-Original-SENDERIP: 10.177.222.213
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        mroos@linux.ee, sparclinux@vger.kernel.org,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH for v3.18-rc1] mm/slab: fix unaligned access on sparc64
+Date: Mon, 13 Oct 2014 14:58:47 +0900
+Message-Id: <1413179927-10533-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/14 at 08:17pm, Al Viro wrote:
-> On Fri, Oct 10, 2014 at 11:21:16AM +0800, WANG Chao wrote:
-> 
-> > I think __user annotation is for no dereferencing in kernel space. In
-> > this case, I think it's fine to override this error by __force. Because
-> > they're pointers with identical target types.
-> 
-> Umm...  The real question seems to be whether iovec is the right type in
-> the first place.  Does ->tx_iov ever contain a vector with _userland_
-> pointers?  If not, it ought to be struct kvec * instead.
+commit bf0dea23a9c0 ("mm/slab: use percpu allocator for cpu cache") changes
+allocation method for cpu cache array from slab allocator to percpu allocator.
+Alignment should be provided for aligned memory in percpu allocator case, but,
+that commit mistakenly set this alignment to 0. So, percpu allocator returns
+unaligned memory address. It doesn't cause any problem on x86 which permits
+unaligned access, but, it causes the problem on sparc64 which needs strong
+guarantee of alignment.
 
-I'm afraid I'm not familiar with lustre.
+Following bug report is reported from David Miller.
 
-[CCing lustre maintainers]
+  I'm getting tons of the following on sparc64:
 
-Oleg and Andreas:
+  [603965.383447] Kernel unaligned access at TPC[546b58] free_block+0x98/0x1a0
+  [603965.396987] Kernel unaligned access at TPC[546b60] free_block+0xa0/0x1a0
+  [603965.410523] Kernel unaligned access at TPC[546b58] free_block+0x98/0x1a0
+  [603965.424061] Kernel unaligned access at TPC[546b60] free_block+0xa0/0x1a0
+  [603965.437617] Kernel unaligned access at TPC[546b58] free_block+0x98/0x1a0
+  [603970.554394] log_unaligned: 333 callbacks suppressed
+  [603970.564041] Kernel unaligned access at TPC[546b58] free_block+0x98/0x1a0
+  [603970.577576] Kernel unaligned access at TPC[546b60] free_block+0xa0/0x1a0
+  [603970.591122] Kernel unaligned access at TPC[546b58] free_block+0x98/0x1a0
+  [603970.604669] Kernel unaligned access at TPC[546b60] free_block+0xa0/0x1a0
+  [603970.618216] Kernel unaligned access at TPC[546b58] free_block+0x98/0x1a0
+  [603976.515633] log_unaligned: 31 callbacks suppressed
+  snip...
 
-Could you answer the Al's question?
+This patch provides proper alignment parameter when allocating cpu cache to
+fix this unaligned memory access problem on sparc64.
 
-For your information, my original post was here:
-https://lkml.org/lkml/2014/10/9/135
+Reported-by: David Miller <davem@davemloft.net>
+Tested-by: David Miller <davem@davemloft.net>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+---
+ mm/slab.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks
-WANG Chao
+diff --git a/mm/slab.c b/mm/slab.c
+index 154aac8..eb2b2ea 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -1992,7 +1992,7 @@ static struct array_cache __percpu *alloc_kmem_cache_cpus(
+ 	struct array_cache __percpu *cpu_cache;
+ 
+ 	size = sizeof(void *) * entries + sizeof(struct array_cache);
+-	cpu_cache = __alloc_percpu(size, 0);
++	cpu_cache = __alloc_percpu(size, sizeof(void *));
+ 
+ 	if (!cpu_cache)
+ 		return NULL;
+-- 
+1.7.9.5
+
