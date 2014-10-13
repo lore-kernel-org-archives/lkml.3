@@ -1,127 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573AbaJMPoH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 11:44:07 -0400
-Received: from mga09.intel.com ([134.134.136.24]:41008 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753141AbaJMPoD convert rfc822-to-8bit (ORCPT
+	id S1754273AbaJMPq5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 11:46:57 -0400
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:39843 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753103AbaJMPqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 11:44:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,711,1406617200"; 
-   d="scan'208";a="617796402"
-From: "Liang, Kan" <kan.liang@intel.com>
-To: "jolsa@redhat.com" <jolsa@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "acme@kernel.org" <acme@kernel.org>
-Subject: RE: [PATCH V8 0/4] perf tools: pmu event new style format fix
-Thread-Topic: [PATCH V8 0/4] perf tools: pmu event new style format fix
-Thread-Index: AQHP4kGaW0NYPLd3iU6YrYxX+h3A0pwuMiQg
-Date: Mon, 13 Oct 2014 15:43:18 +0000
-Message-ID: <37D7C6CF3E00A74B8858931C1DB2F077016237E7@SHSMSX103.ccr.corp.intel.com>
-References: <1412694532-23391-1-git-send-email-kan.liang@intel.com>
-In-Reply-To: <1412694532-23391-1-git-send-email-kan.liang@intel.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 13 Oct 2014 11:46:55 -0400
 MIME-Version: 1.0
+In-Reply-To: <1413090537.22149.16.camel@joe-AO725>
+References: <1411403411.2952.36.camel@joe-AO725>
+	<87lhpa5w5f.fsf@intel.com>
+	<20140923135256.GG15734@phenom.ffwll.local>
+	<1413090537.22149.16.camel@joe-AO725>
+Date: Mon, 13 Oct 2014 17:46:54 +0200
+Message-ID: <CANq1E4Rz9REGPj=Wga61h13yMfgUdB4K3UTmLFYWnRpYf+iTSA@mail.gmail.com>
+Subject: Re: [PATCH] drm: drm_err: Remove unnecessary __func__ argument
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Joe Perches <joe@perches.com>, Dave Airlie <airlied@gmail.com>
+Cc: Daniel Vetter <daniel@ffwll.ch>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jolsa,
+Hi
 
-Does the new patch set work on your machine?
-I tested the V8 patch set on haswell, ivybridge and Romley platform,
-I cannot reproduce the issue you mentioned.
-Could you please try the latest V8 patch? 
+On Sun, Oct 12, 2014 at 7:08 AM, Joe Perches <joe@perches.com> wrote:
+> Removing the unnecessary drm_err __func__ argument by using
+> the equivalent %pf and __builtin_return_address(0) makes the
+> code smaller for every use of the DRM_ERROR macro.
+>
+> For instance: (allmodconfig)
+>
+> $ size drivers/gpu/drm/i915/i915.o*
+>    text    data     bss     dec     hex filename
+>  922447  193257  296736 1412440  158d58 drivers/gpu/drm/i915/i915.o.new
+>  928111  193257  296736 1418104  15a378 drivers/gpu/drm/i915/i915.o.old
 
-Thanks,
-Kan
+You might want to mention that this requires a binary-search through
+kallsyms on each call. I guess that's the reason you didn't use it for
+drm_ut_debug_printk()? I'm fine with doing this on drm_err(). Looks
+good.
 
-> From: Kan Liang <kan.liang@intel.com>
-> 
-> There are two types of pmu event stytle formats, "pmu_event_name"
-> or "cpu/pmu_event_name/". However, there is a bug on supporting these
-> two formats, especially when they mixed with other perf events.
-> The patch set intends to fix this issue.
-> 
-> The patch set has been tested by perf automated test "./perf test parse -v"
-> on haswell, ivybridge and Romley platform.
-> The patch set also has been tested on haswell by the following script.
-> (Note: please make sure that your test system support TSX and L1-dcache-
-> loads events. Otherwise, you may want to change the events to other pmu
-> events.)
-> 
-> [lk@localhost ~]$ cat perf_style_test.sh #hardware events + kernel pmu
-> event with different style perf stat -x, -e cycles,mem-stores,tx-start sleep 2
-> perf stat -x, -e cpu-cycles,cycles-ct,cycles-t sleep 2 perf stat -x, -e
-> cycles,cpu/cycles-ct/,cpu/cycles-t/ sleep 2 perf stat -x, -e instructions,cpu/tx-
-> start/ sleep 2 perf stat -x, -e '{cycles,tx-start}' sleep 2 perf stat -x, -e
-> '{cycles,cpu/tx-start/}' sleep 2
-> 
-> #HW Cache event + kernel pmu event with different style perf stat -x, -e L1-
-> dcache-loads,cpu/mem-stores/,tx-start sleep 2 perf stat -x, -e L1-dcache-
-> loads,mem-stores,cpu/tx-start/ sleep 2 perf stat -x, -e '{L1-dcache-
-> loads,mem-stores}' sleep 2 perf stat -x, -e '{L1-dcache-loads,cpu/tx-start/}'
-> sleep 2
-> 
-> #Raw event + kernel pmu event with different style:
-> perf stat -x, -e cpu/event=0xc0,umask=0x00/,mem-loads,cpu/mem-stores/
-> sleep 2 perf stat -x, -e cpu/event=0xc0,umask=0x00/,tx-start,cpu/el-start/
-> sleep 2 perf stat -x, -e '{cpu/event=0xc0,umask=0x00/,tx-start}' sleep 2
-> 
-> Changes since V1:
-> Read kernel PMU events from sysfs at runtime
-> 
-> Changes since V2:
-> Use strlcpy to replace strncpy
-> 
-> Changes since V3:
-> rebase to git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/core
-> 
-> Changes since V4:
-> scan kernel pmu events from sysfs only needed rename the
-> init/check/clenup functions and related struct.
-> allocate each symbol string separatelly
-> Use ALLOC_LIST
-> 
-> Changes since V5:
-> Using perf_pmu__find to instead of perf_pmu__scan Don't scan all the time
-> if the system doesn't support kernel pmu events
-> 
-> Changes since V6:
-> Add test case in automated tests suite
-> Use strdup and macro to refine the code
-> Add sep_dc for PMU event to support PE_MODIFIER_EVENT Some minor
-> changes for code style
-> 
-> Changes since V7:
-> Add allocation failure check
-> 
-> Kan Liang (4):
->   Revert "perf tools: Default to cpu// for events v5"
->   perf tools: parse the pmu event prefix and suffix
->   perf tools: Add support to new style format of kernel PMU event
->   perf tools: Add test case for pmu event new style format
-> 
->  tools/perf/tests/parse-events.c        |  36 +++++++++
->  tools/perf/util/include/linux/string.h |   1 -
->  tools/perf/util/parse-events.c         | 133 +++++++++++++++++++++++++++-
-> -----
->  tools/perf/util/parse-events.h         |  14 ++++
->  tools/perf/util/parse-events.l         |  30 +++++++-
->  tools/perf/util/parse-events.y         |  40 ++++++++++
->  tools/perf/util/pmu.c                  |  10 ---
->  tools/perf/util/pmu.h                  |  10 +++
->  tools/perf/util/string.c               |  24 ------
->  9 files changed, 240 insertions(+), 58 deletions(-)
-> 
-> --
-> 1.8.3.2
+Thanks
+David
 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  drivers/gpu/drm/drm_drv.c | 5 +++--
+>  include/drm/drmP.h        | 8 ++++----
+>  2 files changed, 7 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/drm_drv.c b/drivers/gpu/drm/drm_drv.c
+> index 9f0e1b9..e9263d9 100644
+> --- a/drivers/gpu/drm/drm_drv.c
+> +++ b/drivers/gpu/drm/drm_drv.c
+> @@ -68,7 +68,7 @@ static struct idr drm_minors_idr;
+>  struct class *drm_class;
+>  static struct dentry *drm_debugfs_root;
+>
+> -void drm_err(const char *func, const char *format, ...)
+> +void drm_err(const char *format, ...)
+>  {
+>         struct va_format vaf;
+>         va_list args;
+> @@ -78,7 +78,8 @@ void drm_err(const char *func, const char *format, ...)
+>         vaf.fmt = format;
+>         vaf.va = &args;
+>
+> -       printk(KERN_ERR "[" DRM_NAME ":%s] *ERROR* %pV", func, &vaf);
+> +       printk(KERN_ERR "[" DRM_NAME ":%pf] *ERROR* %pV",
+> +              __builtin_return_address(0), &vaf);
+>
+>         va_end(args);
+>  }
+> diff --git a/include/drm/drmP.h b/include/drm/drmP.h
+> index ca374ac..5e9ff52 100644
+> --- a/include/drm/drmP.h
+> +++ b/include/drm/drmP.h
+> @@ -125,8 +125,8 @@ struct reservation_object;
+>  extern __printf(2, 3)
+>  void drm_ut_debug_printk(const char *function_name,
+>                          const char *format, ...);
+> -extern __printf(2, 3)
+> -void drm_err(const char *func, const char *format, ...);
+> +extern __printf(1, 2)
+> +void drm_err(const char *format, ...);
+>
+>  /***********************************************************************/
+>  /** \name DRM template customization defaults */
+> @@ -168,7 +168,7 @@ void drm_err(const char *func, const char *format, ...);
+>   * \param arg arguments
+>   */
+>  #define DRM_ERROR(fmt, ...)                            \
+> -       drm_err(__func__, fmt, ##__VA_ARGS__)
+> +       drm_err(fmt, ##__VA_ARGS__)
+>
+>  /**
+>   * Rate limited error output.  Like DRM_ERROR() but won't flood the log.
+> @@ -183,7 +183,7 @@ void drm_err(const char *func, const char *format, ...);
+>                                       DEFAULT_RATELIMIT_BURST);         \
+>                                                                         \
+>         if (__ratelimit(&_rs))                                          \
+> -               drm_err(__func__, fmt, ##__VA_ARGS__);                  \
+> +               drm_err(fmt, ##__VA_ARGS__);                            \
+>  })
+>
+>  #define DRM_INFO(fmt, ...)                             \
+>
+>
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
