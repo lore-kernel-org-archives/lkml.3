@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754295AbaJMQOJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 12:14:09 -0400
-Received: from omr1.cc.vt.edu ([198.82.141.52]:42538 "EHLO omr1.cc.vt.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753272AbaJMQOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 12:14:07 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
-To: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Cc: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kernel@stlinux.com" <kernel@stlinux.com>,
-        Lee Jones <lee.jones@linaro.org>, Harsh Gupta <harsh.gupta@st.com>
-Subject: Re: [PATCH v3 6/8] phy: miphy28lp: Add SSC support for PCIE
-In-Reply-To: Your message of "Mon, 13 Oct 2014 10:16:06 +0200."
-             <CAG374jBJcX00S4nSugWXaUxAQV3Bwp+OxY0c2GJ-+rskzDzpGw@mail.gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1411721657-9924-1-git-send-email-gabriel.fernandez@linaro.org> <1411721657-9924-7-git-send-email-gabriel.fernandez@linaro.org> <15685.1412018368@turing-police.cc.vt.edu>
-            <CAG374jBJcX00S4nSugWXaUxAQV3Bwp+OxY0c2GJ-+rskzDzpGw@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1413216738_2444P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Mon, 13 Oct 2014 12:12:18 -0400
-Message-ID: <4723.1413216738@turing-police.cc.vt.edu>
+	id S1754248AbaJMQQO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 12:16:14 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:33907 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753468AbaJMQQM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 12:16:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <1412234489-1330-1-git-send-email-thierry.reding@gmail.com>
+References: <1412234489-1330-1-git-send-email-thierry.reding@gmail.com>
+Date: Mon, 13 Oct 2014 18:16:10 +0200
+X-Google-Sender-Auth: mFJGKHfAyV1wa3MnXzMpiKFJWC4
+Message-ID: <CAMuHMdXG1pD1-O2m1NXp6gr4aVqyqV=-x-nPoWQJMWr_0XF42w@mail.gmail.com>
+Subject: Re: [PATCH] [media] s5p-jpeg: Only build suspend/resume for PM
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1413216738_2444P
-Content-Type: text/plain; charset=us-ascii
-
-On Mon, 13 Oct 2014 10:16:06 +0200, Gabriel Fernandez said:
-
-> Concerning multiple writing in MIPHY_PLL_SBR_1, the writing of the
-> first 0 it's to be sure there is no previous request.
-> Then we take account new setting by writing 0x02.
-> And then we make it 0 to make sure there is no other pending requests.
+On Thu, Oct 2, 2014 at 9:21 AM, Thierry Reding <thierry.reding@gmail.com> wrote:
+> From: Thierry Reding <treding@nvidia.com>
 >
-> I added comments and macro to be more clear (see the code below).
+> If power management is disabled these function become unused, so there
+> is no reason to build them. This fixes a couple of build warnings when
+> PM(_SLEEP,_RUNTIME) is not enabled.
 
-Thanks, that will be a lot clearer to some poor soul down the road who
-has to delve in here (possibly to figure out if a new part can use the
-same driver and/or what changes need to be made).
+Thanks!
 
+Despite the availability of your patch, this build warning has
+migrated to mainline.
 
---==_Exmh_1413216738_2444P
-Content-Type: application/pgp-signature
+> Signed-off-by: Thierry Reding <treding@nvidia.com>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-iQIVAwUBVDv54gdmEQWDXROgAQJvuw//XcxedjbPlakvTdPWSdt9TgYwN8Xb7BCl
-easIfbuN0h3Q2D+NmIiDTbVAcx1c3c4/NJjSXm/Z5ka95IO+maQJvXRXEVroLiAH
-eVm+m2NKIqMcI8ib3OA01t1zPOAYwGXDu27fwnox86WqAtVyxWz2XyBjNhFPaCmg
-SIGYCDY+aYAFeQBSskl/KtazuzmKAEJBxgt9hLoRXagu4sCkNcVUa86wGIdgLNxe
-rLn7mkuo1ehhwpIOVokJw4IPoUNYHa0rHvyEFXyqQleEUoJTamzXJxi5aO8fb24S
-4B0vEgTBbw1PFxKAk8wP9Etzwwsr0rHRkKXG931w9grZshA7jNQ9suOWigt8Q8lM
-rOfO/XMapxcsqlISMpWrd/V9yigYOcKSwvF4DSKy6a8f2Eb3mzm7/2/fBZioFxIW
-jbE1mAhSMlrcf/ZozuZ1cTYggv81oG+Qs0B+ZJmccQ4bpXDRtN3zNMbHSv5XMUyG
-qJkwu6ZkLqN6uxCBjSTS/lC8xE2ok1xRs+CrsmSOdRiHkXmaFL/bVRRbp9N0OP5c
-6Nbl/xUHlH7VvVV2DZXHb3B1diw+QCCbt/l+8O1hOFO9yR3kugJ+GFK2aBAmdxEY
-KOFyMg63EZbsxjg7BRjXjH8vn5nurHLnTYl7eDpBdf5Pldt7S09o74N+xSyDmB8G
-3Mqum6FrvZM=
-=TXuC
------END PGP SIGNATURE-----
+> --- a/drivers/media/platform/s5p-jpeg/jpeg-core.c
+> +++ b/drivers/media/platform/s5p-jpeg/jpeg-core.c
 
---==_Exmh_1413216738_2444P--
+> @@ -2681,7 +2682,9 @@ static int s5p_jpeg_runtime_resume(struct device *dev)
+>
+>         return 0;
+>  }
+> +#endif
+
+I'd add a comment "/* CONFIG_PM_RUNTIME || CONFIG_PM_SLEEP */" here,
+as above is a big block of code.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
