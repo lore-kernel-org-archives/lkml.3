@@ -1,91 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754524AbaJMPUd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 11:20:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24182 "EHLO mx1.redhat.com"
+	id S1754029AbaJMPYe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 11:24:34 -0400
+Received: from mga03.intel.com ([134.134.136.65]:32881 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754485AbaJMPUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 11:20:31 -0400
-Date: Mon, 13 Oct 2014 11:19:55 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Baoquan He <bhe@redhat.com>, Kees Cook <keescook@chromium.org>,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        x86@kernel.org, ak@linux.intel.com, ebiederm@xmission.com,
-        kexec@lists.infradead.org, whissi@whissi.de,
-        kumagai-atsushi@mxc.nes.nec.co.jp, stable@vger.kernel.org
-Subject: Re: [resend Patch v3 1/2] kaslr: check if kernel location is changed
-Message-ID: <20141013151955.GA9777@redhat.com>
-References: <1412060896-1902-1-git-send-email-bhe@redhat.com>
- <542B1EC1.8090502@zytor.com>
- <20141001135237.GA13689@redhat.com>
- <543553C7.9010906@zytor.com>
- <20141008192728.GA26517@redhat.com>
- <20141011031452.GB11560@dhcp-16-116.nay.redhat.com>
- <543907B5.7060001@zytor.com>
- <20141013125257.GB6466@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141013125257.GB6466@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753100AbaJMPYd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 11:24:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,711,1406617200"; 
+   d="scan'208";a="617784327"
+Message-ID: <1413213803.7906.45.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 3/4] UBI: Fastmap: Care about the protection queue
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Mon, 13 Oct 2014 18:23:23 +0300
+In-Reply-To: <543BE21F.5020504@nod.at>
+References: <1412029248-22454-1-git-send-email-richard@nod.at>
+			 <1412029248-22454-4-git-send-email-richard@nod.at>
+		 <1412346676.3795.62.camel@sauron.fi.intel.com> <542EF3BF.1070401@nod.at>
+	 <1413206263.7906.18.camel@sauron.fi.intel.com> <543BE21F.5020504@nod.at>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 13, 2014 at 08:52:57AM -0400, Vivek Goyal wrote:
-> On Sat, Oct 11, 2014 at 03:34:29AM -0700, H. Peter Anvin wrote:
-> > On 10/10/2014 08:14 PM, Baoquan He wrote:
-> > >On 10/08/14 at 03:27pm, Vivek Goyal wrote:
-> > >>On Wed, Oct 08, 2014 at 08:09:59AM -0700, H. Peter Anvin wrote:
-> > >
-> > >>>Sorry... this makes no sense.
-> > >>>
-> > >>>For x86-64, there is no direct connection between the physical and
-> > >>>virtual address spaces that the kernel runs in...
-> > >>
-> > >>I am sorry I did not understand this one. I thought that initial
-> > >>relocatable kernel implementaion did not have any direct connection
-> > >>between virtual and physical address. One could load kernel anywhere
-> > >>and kernel virtual address will not change and we will just adjust
-> > >>page tables to map virtual address to right physical address.
-> > >>
-> > >>Now handle_relocation() stuff seems to introduce a close coupling
-> > >>between physical and virtual address. So if kernel shifts by 16MB
-> > >>in physical address space, then it will shift by equal amount
-> > >>in virtual address space. So there seems to be a direct connection
-> > >>between virtual and physical address space in this case.
-> > >
-> > >Yeah, it's exactly as Vivek said.
-> > >
-> > >Before kaslr was introduced, x86_64 kernel can be put anywhere, and
-> > >always _text is 0xffffffff81000000. Meanwhile phys_base contains the
-> > >offset between the compiled addr (namely 0x1000000) and kernel loaded
-> > >addr. After kaslr implementation was added, as long as kernel loaded
-> > >addr is different 0x1000000, it will call handle_relocations(). The
-> > >offset now is added onto each symbols including _text and phys_base
-> > >becomes 0.
-> > >
-> > >It's clearly showing that by checking /proc/kallsyms and value of
-> > >phys_base.
-> > >
+On Mon, 2014-10-13 at 16:30 +0200, Richard Weinberger wrote:
+> Am 13.10.2014 um 15:17 schrieb Artem Bityutskiy:
+> > On Fri, 2014-10-03 at 21:06 +0200, Richard Weinberger wrote:
+> >> Fastmap needs basically access to all internal state of UBI, which
+> >> lives mostly
+> >> within wl.c
 > > 
-> > This really shouldn't have happened this way on x86-64.  It has to happen
-> > this way on i386, but I worry that this may be a serious misdesign in kaslr
-> > on x86-64.  I'm also wondering if there is any other fallout of this?
+> > Sounds like a very strong assertion, smells a bit fishy, need the
+> > details.
 > 
-> I agree. On x86_64, we should stick to previous design and this new
-> logic of performing relocations does not sound very clean and makes
-> things very confusing.
+> Fastmap need to know the exact state of each PEB.
+> I.e. is it free, used, scheduled for erase, etc...
 > 
-> I am wondering that why couldn't we simply adjust page tables in case of
-> kaslr on x86_64, instead of performing relocations.
+> >> It needs to iterate over the used, free, erase, scrub RB-trees, the
+> >> protection queue, etc. to
+> >> collect the exact state of all PEBs.
+> > 
+> > When? In 'ubi_write_fastmap()' when forming the FM pool data structures?
+> 
+> Yes.
+> 
+> > I think you can just add a function like this to wl.c:
+> > 
+> > int ubi_wl_get_peb_info(int pnum, struct ubi_wl_peb_info *pebinfo)
+> > 
+> > Yoy will give it the PEB number you are interested in, it will return
+> > you the information you need in 'pebinfo'. The information will contain
+> > the EC, the state (used, free, etc).
+> > 
+> > If you need just the EC, then you do not even need the ubi_wl_peb_info
+> > data structure.
+> > 
+> > Then you just iterate over all PEBs and fill the FM pool data
+> > structures.
+> > 
+> > Would something like this work?
+> 
+> The interface would work but some work in wl.c is needed.
+> For example if I want to find out in which state PEB 1 is wl.c would have to
+> look int free free, used free, protection queue, etc.. to tell me the state. This is slow.
 
-Well, IIUC, if virtual addresses are shifted w.r.t what virtual address
-kernel was compiled for, then relocation will have to be done.
+Well, used and free are RB-trees, looking them up is slow.
 
-So question will be if physical address shift is enough for kaslr or
-virtual address shift is necessary.
+If what you need is to go through all used and free PEBs, then you can
+introduce some kind of
 
-Thanks
-Vivek
+struct ubi_wl_entry *ubi_wl_get_next_used(struct ubi_wl_entry *prev)
+
+function, and similar functions for the free.
+
+I would return you the next entry (or NULL would indicate the end), and
+it would take the previous entry as the input, or NULL for the first
+call.
+
+We'd need to take the locks before calling this function. This is
+cleaner than what we do now, right?
+
+> But we could add the state information to struct ubi_wl_entry by adding a single integer attribute called "state" or "flags".
+
+But there is a price - memory consumption. We do not want to pay it just
+for making the inter-subsystems boundaries better, there ought to be a
+better reason.
+
+Say, for an (imaginary) 8GiB NAND chip with 128KiB PEB size this would
+cost 256KiB of RAM.
+
+Squeezing the state into the last 2 bits a memory reference would be
+another possibility, BTW. Not elegant, though...
+
+> Would this make you happy? :)
+
+Not very, I'd save this for the last resort solution.
+
