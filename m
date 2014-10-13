@@ -1,132 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754534AbaJMQoZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 12:44:25 -0400
-Received: from wp038.webpack.hosteurope.de ([80.237.132.45]:50922 "EHLO
-	wp038.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754214AbaJMQoY convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 12:44:24 -0400
-Date: Mon, 13 Oct 2014 18:44:22 +0200 (CEST)
-From: Henning Schild <henning@hennsch.de>
-Reply-To: Henning Schild <henning@hennsch.de>
-To: "Deucher, Alexander" <alexander.deucher@amd.com>,
-        linux-kernel@vger.kernel.org
-Cc: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
-Message-ID: <819514162.3896.1413218662504.open-xchange@app06.ox.hosteurope.de>
-In-Reply-To: <A3397C8B8B789E45844E7EC5DEAD89D05993B4D5@satlexdag05.amd.com>
-References: <1413031067-26961-1-git-send-email-henning@hennsch.de> <1413031875-28053-1-git-send-email-henning@hennsch.de> <A3397C8B8B789E45844E7EC5DEAD89D05993B4D5@satlexdag05.amd.com>
-Subject: RE: [PATCH] drm/radeon: remove code that can never get executed
+	id S1754577AbaJMQok (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 12:44:40 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:14350 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753895AbaJMQoj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 12:44:39 -0400
+Message-ID: <543C0176.5050706@c-s.fr>
+Date: Mon, 13 Oct 2014 18:44:38 +0200
+From: leroy christophe <christophe.leroy@c-s.fr>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Priority: 3
-Importance: Medium
-X-Mailer: Open-Xchange Mailer v7.4.2-Rev36
-X-bounce-key: webpack.hosteurope.de;henning@hennsch.de;1413218664;e37276b4;
+To: Scott Wood <scottwood@freescale.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org,
+        Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Subject: Re: [PATCH v3 00/21] powerpc/8xx: Optimise MMU TLB handling and add
+ support of 16k pages
+References: <20140917163656.E09D81AB026@localhost.localdomain>	 <1410972043.24184.532.camel@snotra.buserror.net> <5419F017.8010603@c-s.fr> <1410986079.24184.534.camel@snotra.buserror.net>
+In-Reply-To: <1410986079.24184.534.camel@snotra.buserror.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Well i am not sure what the code actually is supposed to do. That is up to you
-because you know the hardware. I just wanted to point out that right now some
-code can never be reached.
 
-I ran into the whole thing because the pointer (sadp) that gets kfreed was never
-initialized (in one of the three cases). My first fix was to initialize it to
-NULL, that way the kfree did not fail even if the allocation did not do
-anything. Then i found the other two copies and decided to follow their scheme.
-
-In your patch you have to make kfree depend on (sad_count > 0) or sadp needs to
-be initialized with NULL. Otherwise you will get the dangling pointer kfree that
-lead me to read this code.
-
-Henning
-
-> On October 13, 2014 at 6:08 PM "Deucher, Alexander"
-> <Alexander.Deucher@amd.com> wrote:
-> 
-> > -----Original Message-----
-> > From: Henning Schild [mailto:henning@hennsch.de]
-> > Sent: Saturday, October 11, 2014 8:51 AM
-> > To: linux-kernel@vger.kernel.org
-> > Cc: Henning Schild; Deucher, Alexander; Rafał Miłecki
-> > Subject: [PATCH] drm/radeon: remove code that can never get executed
-> > 
-> > Removing a code-path that can never be executed ... and its copies. If
-> > drm_edid_to_speaker_allocation returns 0 the callers return. There is no
-> > need to check that condition again.
-> 
-> I think we actually want to set the speaker allocation setup to stereo if the
-> speaker allocation block is not present so I think the attached patch is
-> probably the proper fix.
-> 
-> Alex
-> 
-> > 
-> > Signed-off-by: Henning Schild <henning@hennsch.de>
-> > ---
-> > drivers/gpu/drm/radeon/dce3_1_afmt.c | 5 +----
-> > drivers/gpu/drm/radeon/dce6_afmt.c | 5 +----
-> > drivers/gpu/drm/radeon/evergreen_hdmi.c | 5 +----
-> > 3 files changed, 3 insertions(+), 12 deletions(-)
-> > 
-> > diff --git a/drivers/gpu/drm/radeon/dce3_1_afmt.c
-> > b/drivers/gpu/drm/radeon/dce3_1_afmt.c
-> > index cb76074..6d31ed8 100644
-> > --- a/drivers/gpu/drm/radeon/dce3_1_afmt.c
-> > +++ b/drivers/gpu/drm/radeon/dce3_1_afmt.c
-> > @@ -58,10 +58,7 @@ static void
-> > dce3_2_afmt_write_speaker_allocation(struct drm_encoder *encoder)
-> > tmp &= ~(DP_CONNECTION | SPEAKER_ALLOCATION_MASK);
-> > /* set HDMI mode */
-> > tmp |= HDMI_CONNECTION;
-> > - if (sad_count)
-> > - tmp |= SPEAKER_ALLOCATION(sadb[0]);
-> > - else
-> > - tmp |= SPEAKER_ALLOCATION(5); /* stereo */
-> > + tmp |= SPEAKER_ALLOCATION(sadb[0]);
-> > WREG32(AZ_F0_CODEC_PIN0_CONTROL_CHANNEL_SPEAKER, tmp);
-> > 
-> > kfree(sadb);
-> > diff --git a/drivers/gpu/drm/radeon/dce6_afmt.c
-> > b/drivers/gpu/drm/radeon/dce6_afmt.c
-> > index ab29f95..e6b2750 100644
-> > --- a/drivers/gpu/drm/radeon/dce6_afmt.c
-> > +++ b/drivers/gpu/drm/radeon/dce6_afmt.c
-> > @@ -186,10 +186,7 @@ void dce6_afmt_write_speaker_allocation(struct
-> > drm_encoder *encoder)
-> > tmp &= ~(DP_CONNECTION | SPEAKER_ALLOCATION_MASK);
-> > /* set HDMI mode */
-> > tmp |= HDMI_CONNECTION;
-> > - if (sad_count)
-> > - tmp |= SPEAKER_ALLOCATION(sadb[0]);
-> > - else
-> > - tmp |= SPEAKER_ALLOCATION(5); /* stereo */
-> > + tmp |= SPEAKER_ALLOCATION(sadb[0]);
-> > WREG32_ENDPOINT(offset,
-> > AZ_F0_CODEC_PIN_CONTROL_CHANNEL_SPEAKER, tmp);
-> > 
-> > kfree(sadb);
-> > diff --git a/drivers/gpu/drm/radeon/evergreen_hdmi.c
-> > b/drivers/gpu/drm/radeon/evergreen_hdmi.c
-> > index 278c7a1..11a6b65 100644
-> > --- a/drivers/gpu/drm/radeon/evergreen_hdmi.c
-> > +++ b/drivers/gpu/drm/radeon/evergreen_hdmi.c
-> > @@ -128,10 +128,7 @@ static void
-> > dce4_afmt_write_speaker_allocation(struct drm_encoder *encoder)
-> > tmp &= ~(DP_CONNECTION | SPEAKER_ALLOCATION_MASK);
-> > /* set HDMI mode */
-> > tmp |= HDMI_CONNECTION;
-> > - if (sad_count)
-> > - tmp |= SPEAKER_ALLOCATION(sadb[0]);
-> > - else
-> > - tmp |= SPEAKER_ALLOCATION(5); /* stereo */
-> > + tmp |= SPEAKER_ALLOCATION(sadb[0]);
-> > WREG32(AZ_F0_CODEC_PIN0_CONTROL_CHANNEL_SPEAKER, tmp);
-> > 
-> > kfree(sadb);
-> > --
-> > 2.0.4
-
+Le 17/09/2014 22:34, Scott Wood a écrit :
+> On Wed, 2014-09-17 at 22:33 +0200, christophe leroy wrote:
+>> Le 17/09/2014 18:40, Scott Wood a écrit :
+>>> On Wed, 2014-09-17 at 18:36 +0200, Christophe Leroy wrote:
+>>>> This patchset:
+>>>> 1) provides several MMU TLB handling optimisation on MPC8xx.
+>>>> 2) adds support of 16k pages on MPC8xx.
+>>>> All changes have been successfully tested on a custom board equipped with MPC885
+>>>>
+>>>> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+>>>> Tested-by: Christophe Leroy <christophe.leroy@c-s.fr>
+>>> I've already applied patches 1, 2, 4, 5, 6, 9, and 10 from the previous
+>>> patchset -- have they changed?
+>>>
+>>> -Scott
+>>>
+>> No, only 3, 7, 17 are changed, and 20,21 are new.
+>> I didn't notice you already applied some. How should I then proceed now
+>> for the remaining ones ? Submit a new set ?
+>>
+> No, I'll just skip the ones I've already applied.
 >
+>
+I think I took into account all Joakim's and your's comments in v4.
+Since I submitted v4, I think I didn't get any new comment.
+What's the way forward to get the remaining ones applied ?
+
+Christophe
