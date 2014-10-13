@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573AbaJMC3r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:29:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46042 "EHLO
+	id S1754596AbaJMC3x (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:29:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46052 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754544AbaJMC3m (ORCPT
+	with ESMTP id S1754544AbaJMC3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:29:42 -0400
+	Sun, 12 Oct 2014 22:29:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>
-Subject: [PATCH 3.16 47/55] uas: Add US_FL_NO_ATA_1X quirk for Seagate (0bc2:ab20) drives
-Date: Mon, 13 Oct 2014 04:25:01 +0200
-Message-Id: <20141013022445.944597660@linuxfoundation.org>
+        Joe Savage <joe.savage@goketra.com>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.16 50/55] USB: serial: cp210x: added Ketra N1 wireless interface support
+Date: Mon, 13 Oct 2014 04:25:04 +0200
+Message-Id: <20141013022446.106533476@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
 References: <20141013022443.729870634@linuxfoundation.org>
@@ -28,34 +28,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Joe Savage <joe.savage@goketra.com>
 
-commit f9554a6b199360c2f888173fd600e1eb7ff165ef upstream.
+commit bfc2d7dfdd761ae3beccdb26abebe03cef042f46 upstream.
 
-https://bbs.archlinux.org/viewtopic.php?pid=1457492
+Added support for Ketra N1 wireless interface, which uses the
+Silicon Labs' CP2104 USB to UART bridge with customized PID 8946.
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Joe Savage <joe.savage@goketra.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/unusual_uas.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/usb/serial/cp210x.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/storage/unusual_uas.h
-+++ b/drivers/usb/storage/unusual_uas.h
-@@ -54,6 +54,13 @@ UNUSUAL_DEV(0x0bc2, 0x3312, 0x0000, 0x99
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_NO_ATA_1X),
- 
-+/* https://bbs.archlinux.org/viewtopic.php?id=183190 */
-+UNUSUAL_DEV(0x0bc2, 0xab20, 0x0000, 0x9999,
-+		"Seagate",
-+		"Backup+ BK",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_NO_ATA_1X),
-+
- /* Reported-by: Claudio Bizzarri <claudio.bizzarri@gmail.com> */
- UNUSUAL_DEV(0x152d, 0x0567, 0x0000, 0x9999,
- 		"JMicron",
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -122,6 +122,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
+ 	{ USB_DEVICE(0x10C4, 0x88A4) }, /* MMB Networks ZigBee USB Device */
+ 	{ USB_DEVICE(0x10C4, 0x88A5) }, /* Planet Innovation Ingeni ZigBee USB Device */
++	{ USB_DEVICE(0x10C4, 0x8946) }, /* Ketra N1 Wireless Interface */
+ 	{ USB_DEVICE(0x10C4, 0xEA60) }, /* Silicon Labs factory default */
+ 	{ USB_DEVICE(0x10C4, 0xEA61) }, /* Silicon Labs factory default */
+ 	{ USB_DEVICE(0x10C4, 0xEA70) }, /* Silicon Labs factory default */
 
 
