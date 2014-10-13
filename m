@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754476AbaJMC3e (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:29:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46018 "EHLO
+	id S1754448AbaJMC3a (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:29:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46014 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754415AbaJMC31 (ORCPT
+	with ESMTP id S1754396AbaJMC3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:29:27 -0400
+	Sun, 12 Oct 2014 22:29:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jamal Hadi Salim <jhs@mojatatu.com>,
-        John Fastabend <john.fastabend@gmail.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
+        Vladislav Yasevich <vyasevic@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 44/55] net_sched: copy exts->type in tcf_exts_change()
-Date: Mon, 13 Oct 2014 04:24:58 +0200
-Message-Id: <20141013022445.782526978@linuxfoundation.org>
+Subject: [PATCH 3.16 23/55] bridge: Check if vlan filtering is enabled only once.
+Date: Mon, 13 Oct 2014 04:24:37 +0200
+Message-Id: <20141013022444.725815439@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
 References: <20141013022443.729870634@linuxfoundation.org>
@@ -31,35 +29,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: WANG Cong <xiyou.wangcong@gmail.com>
+From: Vlad Yasevich <vyasevich@gmail.com>
 
-[ Upstream commit 5301e3e117d88ef0967ce278912e54757f1a31a2 ]
+[ Upstream commit 20adfa1a81af00bf2027644507ad4fa9cd2849cf ]
 
-We need to copy exts->type when committing the change, otherwise
-it would be always 0. This is a quick fix for -net and -stable,
-for net-next tcf_exts will be removed.
+The bridge code checks if vlan filtering is enabled on both
+ingress and egress.   When the state flip happens, it
+is possible for the bridge to currently be forwarding packets
+and forwarding behavior becomes non-deterministic.  Bridge
+may drop packets on some interfaces, but not others.
 
-Fixes: commit 33be627159913b094bb578e83 ("net_sched: act: use standard struct list_head")
-Reported-by: Jamal Hadi Salim <jhs@mojatatu.com>
-Cc: Jamal Hadi Salim <jhs@mojatatu.com>
-Cc: John Fastabend <john.fastabend@gmail.com>
-Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
-Acked-by: Jamal Hadi Salim <jhs@mojatatu.com>
+This patch solves this by caching the filtered state of the
+packet into skb_cb on ingress.  The skb_cb is guaranteed to
+not be over-written between the time packet entres bridge
+forwarding path and the time it leaves it.  On egress, we
+can then check the cached state to see if we need to
+apply filtering information.
+
+Signed-off-by: Vladislav Yasevich <vyasevic@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sched/cls_api.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/bridge/br_private.h |    3 +++
+ net/bridge/br_vlan.c    |   14 ++++++++++----
+ 2 files changed, 13 insertions(+), 4 deletions(-)
 
---- a/net/sched/cls_api.c
-+++ b/net/sched/cls_api.c
-@@ -549,6 +549,7 @@ void tcf_exts_change(struct tcf_proto *t
- 	tcf_tree_lock(tp);
- 	list_splice_init(&dst->actions, &tmp);
- 	list_splice(&src->actions, &dst->actions);
-+	dst->type = src->type;
- 	tcf_tree_unlock(tp);
- 	tcf_action_destroy(&tmp, TCA_ACT_UNBIND);
+--- a/net/bridge/br_private.h
++++ b/net/bridge/br_private.h
+@@ -309,6 +309,9 @@ struct br_input_skb_cb {
+ 	int igmp;
+ 	int mrouters_only;
  #endif
++#ifdef CONFIG_BRIDGE_VLAN_FILTERING
++	bool vlan_filtered;
++#endif
+ };
+ 
+ #define BR_INPUT_SKB_CB(__skb)	((struct br_input_skb_cb *)(__skb)->cb)
+--- a/net/bridge/br_vlan.c
++++ b/net/bridge/br_vlan.c
+@@ -127,7 +127,8 @@ struct sk_buff *br_handle_vlan(struct ne
+ {
+ 	u16 vid;
+ 
+-	if (!br->vlan_enabled)
++	/* If this packet was not filtered at input, let it pass */
++	if (!BR_INPUT_SKB_CB(skb)->vlan_filtered)
+ 		goto out;
+ 
+ 	/* Vlan filter table must be configured at this point.  The
+@@ -166,8 +167,10 @@ bool br_allowed_ingress(struct net_bridg
+ 	/* If VLAN filtering is disabled on the bridge, all packets are
+ 	 * permitted.
+ 	 */
+-	if (!br->vlan_enabled)
++	if (!br->vlan_enabled) {
++		BR_INPUT_SKB_CB(skb)->vlan_filtered = false;
+ 		return true;
++	}
+ 
+ 	/* If there are no vlan in the permitted list, all packets are
+ 	 * rejected.
+@@ -175,6 +178,7 @@ bool br_allowed_ingress(struct net_bridg
+ 	if (!v)
+ 		goto drop;
+ 
++	BR_INPUT_SKB_CB(skb)->vlan_filtered = true;
+ 	proto = br->vlan_proto;
+ 
+ 	/* If vlan tx offload is disabled on bridge device and frame was
+@@ -253,7 +257,8 @@ bool br_allowed_egress(struct net_bridge
+ {
+ 	u16 vid;
+ 
+-	if (!br->vlan_enabled)
++	/* If this packet was not filtered at input, let it pass */
++	if (!BR_INPUT_SKB_CB(skb)->vlan_filtered)
+ 		return true;
+ 
+ 	if (!v)
+@@ -272,7 +277,8 @@ bool br_should_learn(struct net_bridge_p
+ 	struct net_bridge *br = p->br;
+ 	struct net_port_vlans *v;
+ 
+-	if (!br->vlan_enabled)
++	/* If filtering was disabled at input, let it pass. */
++	if (!BR_INPUT_SKB_CB(skb)->vlan_filtered)
+ 		return true;
+ 
+ 	v = rcu_dereference(p->vlan_info);
 
 
