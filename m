@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417AbaJMCyz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:54:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45726 "EHLO
+	id S1755422AbaJMCz2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:55:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45713 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752884AbaJMC0x (ORCPT
+	with ESMTP id S1753559AbaJMC0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:26:53 -0400
+	Sun, 12 Oct 2014 22:26:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shmulik Ladkani <shmulik.ladkani@gmail.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 07/37] sit: Fix ipip6_tunnel_lookup device matching criteria
-Date: Mon, 13 Oct 2014 04:24:04 +0200
-Message-Id: <20141013022400.604067609@linuxfoundation.org>
+Subject: [PATCH 3.14 04/37] myri10ge: check for DMA mapping errors
+Date: Mon, 13 Oct 2014 04:24:01 +0200
+Message-Id: <20141013022400.478431672@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022400.286360067@linuxfoundation.org>
 References: <20141013022400.286360067@linuxfoundation.org>
@@ -30,55 +29,175 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-[ Upstream commit bc8fc7b8f825ef17a0fb9e68c18ce94fa66ab337 ]
+[ Upstream commit 10545937e866ccdbb7ab583031dbdcc6b14e4eb4 ]
 
-As of 4fddbf5d78 ("sit: strictly restrict incoming traffic to tunnel link device"),
-when looking up a tunnel, tunnel's underlying interface (t->parms.link)
-is verified to match incoming traffic's ingress device.
+On IOMMU systems DMA mapping can fail, we need to check for
+that possibility.
 
-However the comparison was incorrectly based on skb->dev->iflink.
-
-Instead, dev->ifindex should be used, which correctly represents the
-interface from which the IP stack hands the ipip6 packets.
-
-This allows setting up sit tunnels bound to vlan interfaces (otherwise
-incoming ipip6 traffic on the vlan interface was dropped due to
-ipip6_tunnel_lookup match failure).
-
-Signed-off-by: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-Acked-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/sit.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/myricom/myri10ge/myri10ge.c |   88 +++++++++++++++--------
+ 1 file changed, 58 insertions(+), 30 deletions(-)
 
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@ -101,19 +101,19 @@ static struct ip_tunnel *ipip6_tunnel_lo
- 	for_each_ip_tunnel_rcu(t, sitn->tunnels_r_l[h0 ^ h1]) {
- 		if (local == t->parms.iph.saddr &&
- 		    remote == t->parms.iph.daddr &&
--		    (!dev || !t->parms.link || dev->iflink == t->parms.link) &&
-+		    (!dev || !t->parms.link || dev->ifindex == t->parms.link) &&
- 		    (t->dev->flags & IFF_UP))
- 			return t;
+--- a/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
++++ b/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
+@@ -872,6 +872,10 @@ static int myri10ge_dma_test(struct myri
+ 		return -ENOMEM;
+ 	dmatest_bus = pci_map_page(mgp->pdev, dmatest_page, 0, PAGE_SIZE,
+ 				   DMA_BIDIRECTIONAL);
++	if (unlikely(pci_dma_mapping_error(mgp->pdev, dmatest_bus))) {
++		__free_page(dmatest_page);
++		return -ENOMEM;
++	}
+ 
+ 	/* Run a small DMA test.
+ 	 * The magic multipliers to the length tell the firmware
+@@ -1293,6 +1297,7 @@ myri10ge_alloc_rx_pages(struct myri10ge_
+ 			int bytes, int watchdog)
+ {
+ 	struct page *page;
++	dma_addr_t bus;
+ 	int idx;
+ #if MYRI10GE_ALLOC_SIZE > 4096
+ 	int end_offset;
+@@ -1317,11 +1322,21 @@ myri10ge_alloc_rx_pages(struct myri10ge_
+ 					rx->watchdog_needed = 1;
+ 				return;
+ 			}
++
++			bus = pci_map_page(mgp->pdev, page, 0,
++					   MYRI10GE_ALLOC_SIZE,
++					   PCI_DMA_FROMDEVICE);
++			if (unlikely(pci_dma_mapping_error(mgp->pdev, bus))) {
++				__free_pages(page, MYRI10GE_ALLOC_ORDER);
++				if (rx->fill_cnt - rx->cnt < 16)
++					rx->watchdog_needed = 1;
++				return;
++			}
++
+ 			rx->page = page;
+ 			rx->page_offset = 0;
+-			rx->bus = pci_map_page(mgp->pdev, page, 0,
+-					       MYRI10GE_ALLOC_SIZE,
+-					       PCI_DMA_FROMDEVICE);
++			rx->bus = bus;
++
+ 		}
+ 		rx->info[idx].page = rx->page;
+ 		rx->info[idx].page_offset = rx->page_offset;
+@@ -2765,6 +2780,35 @@ myri10ge_submit_req(struct myri10ge_tx_b
+ 	mb();
+ }
+ 
++static void myri10ge_unmap_tx_dma(struct myri10ge_priv *mgp,
++				  struct myri10ge_tx_buf *tx, int idx)
++{
++	unsigned int len;
++	int last_idx;
++
++	/* Free any DMA resources we've alloced and clear out the skb slot */
++	last_idx = (idx + 1) & tx->mask;
++	idx = tx->req & tx->mask;
++	do {
++		len = dma_unmap_len(&tx->info[idx], len);
++		if (len) {
++			if (tx->info[idx].skb != NULL)
++				pci_unmap_single(mgp->pdev,
++						 dma_unmap_addr(&tx->info[idx],
++								bus), len,
++						 PCI_DMA_TODEVICE);
++			else
++				pci_unmap_page(mgp->pdev,
++					       dma_unmap_addr(&tx->info[idx],
++							      bus), len,
++					       PCI_DMA_TODEVICE);
++			dma_unmap_len_set(&tx->info[idx], len, 0);
++			tx->info[idx].skb = NULL;
++		}
++		idx = (idx + 1) & tx->mask;
++	} while (idx != last_idx);
++}
++
+ /*
+  * Transmit a packet.  We need to split the packet so that a single
+  * segment does not cross myri10ge->tx_boundary, so this makes segment
+@@ -2788,7 +2832,7 @@ static netdev_tx_t myri10ge_xmit(struct
+ 	u32 low;
+ 	__be32 high_swapped;
+ 	unsigned int len;
+-	int idx, last_idx, avail, frag_cnt, frag_idx, count, mss, max_segments;
++	int idx, avail, frag_cnt, frag_idx, count, mss, max_segments;
+ 	u16 pseudo_hdr_offset, cksum_offset, queue;
+ 	int cum_len, seglen, boundary, rdma_count;
+ 	u8 flags, odd_flag;
+@@ -2885,9 +2929,12 @@ again:
+ 
+ 	/* map the skb for DMA */
+ 	len = skb_headlen(skb);
++	bus = pci_map_single(mgp->pdev, skb->data, len, PCI_DMA_TODEVICE);
++	if (unlikely(pci_dma_mapping_error(mgp->pdev, bus)))
++		goto drop;
++
+ 	idx = tx->req & tx->mask;
+ 	tx->info[idx].skb = skb;
+-	bus = pci_map_single(mgp->pdev, skb->data, len, PCI_DMA_TODEVICE);
+ 	dma_unmap_addr_set(&tx->info[idx], bus, bus);
+ 	dma_unmap_len_set(&tx->info[idx], len, len);
+ 
+@@ -2986,12 +3033,16 @@ again:
+ 			break;
+ 
+ 		/* map next fragment for DMA */
+-		idx = (count + tx->req) & tx->mask;
+ 		frag = &skb_shinfo(skb)->frags[frag_idx];
+ 		frag_idx++;
+ 		len = skb_frag_size(frag);
+ 		bus = skb_frag_dma_map(&mgp->pdev->dev, frag, 0, len,
+ 				       DMA_TO_DEVICE);
++		if (unlikely(pci_dma_mapping_error(mgp->pdev, bus))) {
++			myri10ge_unmap_tx_dma(mgp, tx, idx);
++			goto drop;
++		}
++		idx = (count + tx->req) & tx->mask;
+ 		dma_unmap_addr_set(&tx->info[idx], bus, bus);
+ 		dma_unmap_len_set(&tx->info[idx], len, len);
  	}
- 	for_each_ip_tunnel_rcu(t, sitn->tunnels_r[h0]) {
- 		if (remote == t->parms.iph.daddr &&
--		    (!dev || !t->parms.link || dev->iflink == t->parms.link) &&
-+		    (!dev || !t->parms.link || dev->ifindex == t->parms.link) &&
- 		    (t->dev->flags & IFF_UP))
- 			return t;
- 	}
- 	for_each_ip_tunnel_rcu(t, sitn->tunnels_l[h1]) {
- 		if (local == t->parms.iph.saddr &&
--		    (!dev || !t->parms.link || dev->iflink == t->parms.link) &&
-+		    (!dev || !t->parms.link || dev->ifindex == t->parms.link) &&
- 		    (t->dev->flags & IFF_UP))
- 			return t;
- 	}
+@@ -3022,31 +3073,8 @@ again:
+ 	return NETDEV_TX_OK;
+ 
+ abort_linearize:
+-	/* Free any DMA resources we've alloced and clear out the skb
+-	 * slot so as to not trip up assertions, and to avoid a
+-	 * double-free if linearizing fails */
++	myri10ge_unmap_tx_dma(mgp, tx, idx);
+ 
+-	last_idx = (idx + 1) & tx->mask;
+-	idx = tx->req & tx->mask;
+-	tx->info[idx].skb = NULL;
+-	do {
+-		len = dma_unmap_len(&tx->info[idx], len);
+-		if (len) {
+-			if (tx->info[idx].skb != NULL)
+-				pci_unmap_single(mgp->pdev,
+-						 dma_unmap_addr(&tx->info[idx],
+-								bus), len,
+-						 PCI_DMA_TODEVICE);
+-			else
+-				pci_unmap_page(mgp->pdev,
+-					       dma_unmap_addr(&tx->info[idx],
+-							      bus), len,
+-					       PCI_DMA_TODEVICE);
+-			dma_unmap_len_set(&tx->info[idx], len, 0);
+-			tx->info[idx].skb = NULL;
+-		}
+-		idx = (idx + 1) & tx->mask;
+-	} while (idx != last_idx);
+ 	if (skb_is_gso(skb)) {
+ 		netdev_err(mgp->dev, "TSO but wanted to linearize?!?!?\n");
+ 		goto drop;
 
 
