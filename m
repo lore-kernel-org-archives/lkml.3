@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753755AbaJMC1T (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:27:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45765 "EHLO
+	id S1755068AbaJMCwn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:52:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45769 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753730AbaJMC1P (ORCPT
+	with ESMTP id S1752973AbaJMC1S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:27:15 -0400
+	Sun, 12 Oct 2014 22:27:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bryan ODonoghue <pure.logic@nexus-software.ie>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Subject: [PATCH 3.14 37/37] serial: 8250: Add Quark X1000 to 8250_pci.c
-Date: Mon, 13 Oct 2014 04:24:34 +0200
-Message-Id: <20141013022401.843137955@linuxfoundation.org>
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 25/37] Revert "net/macb: add pinctrl consumer support"
+Date: Mon, 13 Oct 2014 04:24:22 +0200
+Message-Id: <20141013022401.336584963@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022400.286360067@linuxfoundation.org>
 References: <20141013022400.286360067@linuxfoundation.org>
@@ -29,85 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
 
-commit 1ede7dcca3c4fa15a518ab0473126f9c3e621e4c upstream.
+[ Upstream commit 9026968abe7ad102f4ac5c6d96d733643f75399c ]
 
-Quark X1000 contains two designware derived 8250 serial ports.
-Each port has a unique PCI configuration space consisting of
-BAR0:UART BAR1:DMA respectively.
+This reverts commit 8ef29f8aae524bd51298fb10ac6a5ce6c4c5a3d8.
+The driver core already calls pinctrl_get() and claims the default
+state. There is no need to replicate this in the driver.
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-Unlike the standard 8250 the register width is 32 bits for RHR,IER etc
-The Quark UART has a fundamental clock @ 44.2368 MHz allowing for a
-bitrate of up to about 2.76 megabits per second.
-
-This patch enables standard 8250 mode
-
-Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
-Reviewed-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/tty/serial/8250/8250_pci.c |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+ drivers/net/ethernet/cadence/macb.c |   11 -----------
+ 1 file changed, 11 deletions(-)
 
---- a/drivers/tty/serial/8250/8250_pci.c
-+++ b/drivers/tty/serial/8250/8250_pci.c
-@@ -1766,6 +1766,7 @@ pci_wch_ch353_setup(struct serial_privat
- #define PCI_DEVICE_ID_COMMTECH_4222PCIE	0x0022
- #define PCI_DEVICE_ID_BROADCOM_TRUMANAGE 0x160a
- #define PCI_DEVICE_ID_AMCC_ADDIDATA_APCI7800 0x818e
-+#define PCI_DEVICE_ID_INTEL_QRK_UART	0x0936
+--- a/drivers/net/ethernet/cadence/macb.c
++++ b/drivers/net/ethernet/cadence/macb.c
+@@ -30,7 +30,6 @@
+ #include <linux/of_device.h>
+ #include <linux/of_mdio.h>
+ #include <linux/of_net.h>
+-#include <linux/pinctrl/consumer.h>
  
- #define PCI_VENDOR_ID_SUNIX		0x1fd4
- #define PCI_DEVICE_ID_SUNIX_1999	0x1999
-@@ -1876,6 +1877,13 @@ static struct pci_serial_quirk pci_seria
- 		.subdevice	= PCI_ANY_ID,
- 		.setup		= byt_serial_setup,
- 	},
-+	{
-+		.vendor		= PCI_VENDOR_ID_INTEL,
-+		.device		= PCI_DEVICE_ID_INTEL_QRK_UART,
-+		.subvendor	= PCI_ANY_ID,
-+		.subdevice	= PCI_ANY_ID,
-+		.setup		= pci_default_setup,
-+	},
- 	/*
- 	 * ITE
- 	 */
-@@ -2710,6 +2718,7 @@ enum pci_board_num_t {
- 	pbn_ADDIDATA_PCIe_8_3906250,
- 	pbn_ce4100_1_115200,
- 	pbn_byt,
-+	pbn_qrk,
- 	pbn_omegapci,
- 	pbn_NETMOS9900_2s_115200,
- 	pbn_brcm_trumanage,
-@@ -3456,6 +3465,12 @@ static struct pciserial_board pci_boards
- 		.uart_offset	= 0x80,
- 		.reg_shift      = 2,
- 	},
-+	[pbn_qrk] = {
-+		.flags		= FL_BASE0,
-+		.num_ports	= 1,
-+		.base_baud	= 2764800,
-+		.reg_shift	= 2,
-+	},
- 	[pbn_omegapci] = {
- 		.flags		= FL_BASE0,
- 		.num_ports	= 8,
-@@ -5150,6 +5165,12 @@ static struct pci_device_id serial_pci_t
- 		pbn_byt },
+ #include "macb.h"
  
- 	/*
-+	 * Intel Quark x1000
-+	 */
-+	{	PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_QRK_UART,
-+		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
-+		pbn_qrk },
-+	/*
- 	 * Cronyx Omega PCI
- 	 */
- 	{	PCI_VENDOR_ID_PLX, PCI_DEVICE_ID_PLX_CRONYX_OMEGA,
+@@ -1810,7 +1809,6 @@ static int __init macb_probe(struct plat
+ 	struct phy_device *phydev;
+ 	u32 config;
+ 	int err = -ENXIO;
+-	struct pinctrl *pinctrl;
+ 	const char *mac;
+ 
+ 	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+@@ -1819,15 +1817,6 @@ static int __init macb_probe(struct plat
+ 		goto err_out;
+ 	}
+ 
+-	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+-	if (IS_ERR(pinctrl)) {
+-		err = PTR_ERR(pinctrl);
+-		if (err == -EPROBE_DEFER)
+-			goto err_out;
+-
+-		dev_warn(&pdev->dev, "No pinctrl provided\n");
+-	}
+-
+ 	err = -ENOMEM;
+ 	dev = alloc_etherdev(sizeof(*bp));
+ 	if (!dev)
 
 
