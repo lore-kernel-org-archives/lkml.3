@@ -1,110 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240AbaJMH3H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 03:29:07 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:53036 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751603AbaJMH3E (ORCPT
+	id S1753312AbaJMH37 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 03:29:59 -0400
+Received: from mail-yk0-f180.google.com ([209.85.160.180]:43847 "EHLO
+	mail-yk0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753085AbaJMH36 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 03:29:04 -0400
-Date: Mon, 13 Oct 2014 09:28:59 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/cpu tree change for v3.18
-Message-ID: <20141013072859.GA14391@gmail.com>
+	Mon, 13 Oct 2014 03:29:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141010204432.GD13017@pd.tnic>
+References: <CAFrcx1kufO2yj7--UiL841Yp5Es5=WqjL__Yzg=-+nPV5XoohA@mail.gmail.com>
+	<20141006212606.GF14113@kernel.org>
+	<CAFrcx1=swP-3E_pxWEcozFJhL+5YaUBPavQX=OfMtc8h4e=bDg@mail.gmail.com>
+	<20141007133236.GG14113@kernel.org>
+	<20141007140433.GG30146@pd.tnic>
+	<20141010200708.GB18775@kernel.org>
+	<20141010202854.GC13017@pd.tnic>
+	<20141010204158.GA13834@kernel.org>
+	<20141010204432.GD13017@pd.tnic>
+Date: Mon, 13 Oct 2014 09:29:57 +0200
+Message-ID: <CAFrcx1nm4pqWPsUtj1h5qQqo6dghiafRM60-9asaYXx7NLqAEQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] rasd: Use perf_evlist__open() instead of open coded
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Borislav Petkov <bp@alien8.de>, Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Fu Wei <fu.wei@linaro.org>, Robert Richter <rric@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Hi Arnaldo, Borislav,
 
-Please pull the latest x86-cpu-for-linus git tree from:
+On 10 October 2014 22:44, Borislav Petkov <bp@alien8.de> wrote:
+> On Fri, Oct 10, 2014 at 05:41:58PM -0300, Arnaldo Carvalho de Melo wrote:
+>> Right, stoopid me, no need for some specific tracepoint, just to see
+>> that whatever tp it is, it will show up in "rasd"'s event loop. Ok, I'll
+>> try that later.
+>>
+>> Next stuff I probably will do is to move the bare minimum used by rasd
+>> to tools/lib/api/perf/, i.e. there will be:
+>>
+>> tools/lib/api/perf/evsel.c
+>> tools/perf/util/evsel.c
+>>
+>> Both will share the perf_evsel__ namespace (which I thought at some
+>> point to make just: evsel__<METHOD_NAME>, wdyt?).
+Makes perfectly sense
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-cpu-for-linus
+>>
+>> That way we just make public the bare minimum that already proved to be
+>> useful outside tools/perf/ and over time we move stuff from
+>> tools/perf/util/evsel.c (and from other tools in or out perf's repo)
+>> into the lib.
+That is great!
 
-   # HEAD: 2ed53c0d6cc99fc712f7c037e41d9ec4eb8d6b08 x86/smpboot: Speed up suspend/resume by avoiding 100ms sleep for CPU offline during S3
+About rasd usage, there are some details at
+https://wiki.linaro.org/LEG/Engineering/Kernel/perfAndRAS#rasd_implementation.
 
-This tree includes a single commit that speeds up x86 
-suspend/resume by replacing a naive 100msec sleep based
-polling loop with proper completion notification.
+Thx,
+Jean
 
-This gives some real suspend/resume benefit on servers
-with larger core counts.
-
- Thanks,
-
-	Ingo
-
------------------->
-Lan Tianyu (1):
-      x86/smpboot: Speed up suspend/resume by avoiding 100ms sleep for CPU offline during S3
-
-
- arch/x86/kernel/smpboot.c | 23 ++++++++++++-----------
- 1 file changed, 12 insertions(+), 11 deletions(-)
-
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 2d872e08fab9..fdbc5fce8b97 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -102,6 +102,8 @@ DEFINE_PER_CPU_READ_MOSTLY(cpumask_var_t, cpu_llc_shared_map);
- DEFINE_PER_CPU_SHARED_ALIGNED(struct cpuinfo_x86, cpu_info);
- EXPORT_PER_CPU_SYMBOL(cpu_info);
- 
-+static DEFINE_PER_CPU(struct completion, die_complete);
-+
- atomic_t init_deasserted;
- 
- /*
-@@ -1323,26 +1325,24 @@ int native_cpu_disable(void)
- 		return ret;
- 
- 	clear_local_APIC();
--
-+	init_completion(&per_cpu(die_complete, smp_processor_id()));
- 	cpu_disable_common();
-+
- 	return 0;
- }
- 
- void native_cpu_die(unsigned int cpu)
- {
- 	/* We don't do anything here: idle task is faking death itself. */
--	unsigned int i;
-+	wait_for_completion_timeout(&per_cpu(die_complete, cpu), HZ);
- 
--	for (i = 0; i < 10; i++) {
--		/* They ack this in play_dead by setting CPU_DEAD */
--		if (per_cpu(cpu_state, cpu) == CPU_DEAD) {
--			if (system_state == SYSTEM_RUNNING)
--				pr_info("CPU %u is now offline\n", cpu);
--			return;
--		}
--		msleep(100);
-+	/* They ack this in play_dead() by setting CPU_DEAD */
-+	if (per_cpu(cpu_state, cpu) == CPU_DEAD) {
-+		if (system_state == SYSTEM_RUNNING)
-+			pr_info("CPU %u is now offline\n", cpu);
-+	} else {
-+		pr_err("CPU %u didn't die...\n", cpu);
- 	}
--	pr_err("CPU %u didn't die...\n", cpu);
- }
- 
- void play_dead_common(void)
-@@ -1354,6 +1354,7 @@ void play_dead_common(void)
- 	mb();
- 	/* Ack it */
- 	__this_cpu_write(cpu_state, CPU_DEAD);
-+	complete(&per_cpu(die_complete, smp_processor_id()));
- 
- 	/*
- 	 * With physical CPU hotplug, we should halt the cpu
+>
+> Abso-f*cking-lutely!
+>
+> :-D
+>
+>> Np, had to be done at some point :)
+>
+> Yeah, cool. Let me know what I should do to help out.
+>
+> Thanks.
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
