@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997AbaJMC2F (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:28:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45841 "EHLO
+	id S1754022AbaJMC2N (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:28:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45865 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753939AbaJMC1z (ORCPT
+	with ESMTP id S1753939AbaJMC2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:27:55 -0400
+	Sun, 12 Oct 2014 22:28:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yulong Pei <ypei@redhat.com>, Jiri Benc <jbenc@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 15/55] openvswitch: fix panic with multiple vlan headers
-Date: Mon, 13 Oct 2014 04:24:29 +0200
-Message-Id: <20141013022444.383381131@linuxfoundation.org>
+        Sabrina Dubroca <sd@queasysnail.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>
+Subject: [PATCH 3.16 20/55] ipv6: restore the behavior of ipv6_sock_ac_drop()
+Date: Mon, 13 Oct 2014 04:24:34 +0200
+Message-Id: <20141013022444.586003834@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
 References: <20141013022443.729870634@linuxfoundation.org>
@@ -29,55 +31,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Benc <jbenc@redhat.com>
+From: WANG Cong <xiyou.wangcong@gmail.com>
 
-[ Upstream commit 2ba5af42a7b59ef01f9081234d8855140738defd ]
+[ Upstream commit de185ab46cb02df9738b0d898b0c3a89181c5526 ]
 
-When there are multiple vlan headers present in a received frame, the first
-one is put into vlan_tci and protocol is set to ETH_P_8021Q. Anything in the
-skb beyond the VLAN TPID may be still non-linear, including the inner TCI
-and ethertype. While ovs_flow_extract takes care of IP and IPv6 headers, it
-does nothing with ETH_P_8021Q. Later, if OVS_ACTION_ATTR_POP_VLAN is
-executed, __pop_vlan_tci pulls the next vlan header into vlan_tci.
+It is possible that the interface is already gone after joining
+the list of anycast on this interface as we don't hold a refcount
+for the device, in this case we are safe to ignore the error.
 
-This leads to two things:
+What's more important, for API compatibility we should not
+change this behavior for applications even if it were correct.
 
-1. Part of the resulting ethernet header is in the non-linear part of the
-   skb. When eth_type_trans is called later as the result of
-   OVS_ACTION_ATTR_OUTPUT, kernel BUGs in __skb_pull. Also, __pop_vlan_tci
-   is in fact accessing random data when it reads past the TPID.
-
-2. network_header points into the ethernet header instead of behind it.
-   mac_len is set to a wrong value (10), too.
-
-Reported-by: Yulong Pei <ypei@redhat.com>
-Signed-off-by: Jiri Benc <jbenc@redhat.com>
+Fixes: commit a9ed4a2986e13011 ("ipv6: fix rtnl locking in setsockopt for anycast and multicast")
+Cc: Sabrina Dubroca <sd@queasysnail.net>
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/openvswitch/actions.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ net/ipv6/anycast.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/net/openvswitch/actions.c
-+++ b/net/openvswitch/actions.c
-@@ -42,6 +42,9 @@ static int do_execute_actions(struct dat
+--- a/net/ipv6/anycast.c
++++ b/net/ipv6/anycast.c
+@@ -182,8 +182,6 @@ int ipv6_sock_ac_drop(struct sock *sk, i
+ 	rtnl_unlock();
  
- static int make_writable(struct sk_buff *skb, int write_len)
- {
-+	if (!pskb_may_pull(skb, write_len))
-+		return -ENOMEM;
-+
- 	if (!skb_cloned(skb) || skb_clone_writable(skb, write_len))
- 		return 0;
- 
-@@ -70,6 +73,8 @@ static int __pop_vlan_tci(struct sk_buff
- 
- 	vlan_set_encap_proto(skb, vhdr);
- 	skb->mac_header += VLAN_HLEN;
-+	if (skb_network_offset(skb) < ETH_HLEN)
-+		skb_set_network_header(skb, ETH_HLEN);
- 	skb_reset_mac_len(skb);
- 
+ 	sock_kfree_s(sk, pac, sizeof(*pac));
+-	if (!dev)
+-		return -ENODEV;
  	return 0;
+ }
+ 
 
 
