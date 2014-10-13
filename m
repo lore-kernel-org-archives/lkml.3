@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753105AbaJMCZl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:25:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45573 "EHLO
+	id S1753312AbaJMC0G (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:26:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45624 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753041AbaJMCZf (ORCPT
+	with ESMTP id S1753275AbaJMC0C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:25:35 -0400
+	Sun, 12 Oct 2014 22:26:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
+        David Laight <David.Laight@aculab.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 04/16] packet: handle too big packets for PACKET_V3
-Date: Mon, 13 Oct 2014 04:24:01 +0200
-Message-Id: <20141013022341.566276006@linuxfoundation.org>
+Subject: [PATCH 3.10 11/16] sctp: handle association restarts when the socket is closed.
+Date: Mon, 13 Oct 2014 04:24:08 +0200
+Message-Id: <20141013022341.883828221@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022341.386913672@linuxfoundation.org>
 References: <20141013022341.386913672@linuxfoundation.org>
@@ -31,83 +30,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Vlad Yasevich <vyasevich@gmail.com>
 
-[ Upstream commit dc808110bb62b64a448696ecac3938902c92e1ab ]
+[ Upstream commit bdf6fa52f01b941d4a80372d56de465bdbbd1d23 ]
 
-af_packet can currently overwrite kernel memory by out of bound
-accesses, because it assumed a [new] block can always hold one frame.
+Currently association restarts do not take into consideration the
+state of the socket.  When a restart happens, the current assocation
+simply transitions into established state.  This creates a condition
+where a remote system, through a the restart procedure, may create a
+local association that is no way reachable by user.  The conditions
+to trigger this are as follows:
+  1) Remote does not acknoledge some data causing data to remain
+     outstanding.
+  2) Local application calls close() on the socket.  Since data
+     is still outstanding, the association is placed in SHUTDOWN_PENDING
+     state.  However, the socket is closed.
+  3) The remote tries to create a new association, triggering a restart
+     on the local system.  The association moves from SHUTDOWN_PENDING
+     to ESTABLISHED.  At this point, it is no longer reachable by
+     any socket on the local system.
 
-This is not generally the case, even if most existing tools do it right.
+This patch addresses the above situation by moving the newly ESTABLISHED
+association into SHUTDOWN-SENT state and bundling a SHUTDOWN after
+the COOKIE-ACK chunk.  This way, the restarted associate immidiately
+enters the shutdown procedure and forces the termination of the
+unreachable association.
 
-This patch clamps too long frames as API permits, and issue a one time
-error on syslog.
-
-[  394.357639] tpacket_rcv: packet too big, clamped from 5042 to 3966. macoff=82
-
-In this example, packet header tp_snaplen was set to 3966,
-and tp_len was set to 5042 (skb->len)
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Fixes: f6fb8f100b80 ("af-packet: TPACKET_V3 flexible buffer implementation.")
-Acked-by: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Reported-by: David Laight <David.Laight@aculab.com>
+Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/packet/af_packet.c |   17 +++++++++++++++++
- net/packet/internal.h  |    1 +
- 2 files changed, 18 insertions(+)
+ include/net/sctp/command.h |    2 +-
+ net/sctp/sm_statefuns.c    |   19 ++++++++++++++++---
+ 2 files changed, 17 insertions(+), 4 deletions(-)
 
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -565,6 +565,7 @@ static void init_prb_bdqc(struct packet_
- 	p1->tov_in_jiffies = msecs_to_jiffies(p1->retire_blk_tov);
- 	p1->blk_sizeof_priv = req_u->req3.tp_sizeof_priv;
+--- a/include/net/sctp/command.h
++++ b/include/net/sctp/command.h
+@@ -118,7 +118,7 @@ typedef enum {
+  * analysis of the state functions, but in reality just taken from
+  * thin air in the hopes othat we don't trigger a kernel panic.
+  */
+-#define SCTP_MAX_NUM_COMMANDS 14
++#define SCTP_MAX_NUM_COMMANDS 20
  
-+	p1->max_frame_len = p1->kblk_size - BLK_PLUS_PRIV(p1->blk_sizeof_priv);
- 	prb_init_ft_ops(p1, req_u);
- 	prb_setup_retire_blk_timer(po, tx_ring);
- 	prb_open_block(p1, pbd);
-@@ -1803,6 +1804,18 @@ static int tpacket_rcv(struct sk_buff *s
- 			if ((int)snaplen < 0)
- 				snaplen = 0;
- 		}
-+	} else if (unlikely(macoff + snaplen >
-+			    GET_PBDQC_FROM_RB(&po->rx_ring)->max_frame_len)) {
-+		u32 nval;
-+
-+		nval = GET_PBDQC_FROM_RB(&po->rx_ring)->max_frame_len - macoff;
-+		pr_err_once("tpacket_rcv: packet too big, clamped from %u to %u. macoff=%u\n",
-+			    snaplen, nval, macoff);
-+		snaplen = nval;
-+		if (unlikely((int)snaplen < 0)) {
-+			snaplen = 0;
-+			macoff = GET_PBDQC_FROM_RB(&po->rx_ring)->max_frame_len;
-+		}
- 	}
- 	spin_lock(&sk->sk_receive_queue.lock);
- 	h.raw = packet_current_rx_frame(po, skb,
-@@ -3642,6 +3655,10 @@ static int packet_set_ring(struct sock *
- 			goto out;
- 		if (unlikely(req->tp_block_size & (PAGE_SIZE - 1)))
- 			goto out;
-+		if (po->tp_version >= TPACKET_V3 &&
-+		    (int)(req->tp_block_size -
-+			  BLK_PLUS_PRIV(req_u->req3.tp_sizeof_priv)) <= 0)
-+			goto out;
- 		if (unlikely(req->tp_frame_size < po->tp_hdrlen +
- 					po->tp_reserve))
- 			goto out;
---- a/net/packet/internal.h
-+++ b/net/packet/internal.h
-@@ -29,6 +29,7 @@ struct tpacket_kbdq_core {
- 	char		*pkblk_start;
- 	char		*pkblk_end;
- 	int		kblk_size;
-+	unsigned int	max_frame_len;
- 	unsigned int	knum_blocks;
- 	uint64_t	knxt_seq_num;
- 	char		*prev;
+ typedef union {
+ 	__s32 i32;
+--- a/net/sctp/sm_statefuns.c
++++ b/net/sctp/sm_statefuns.c
+@@ -1782,9 +1782,22 @@ static sctp_disposition_t sctp_sf_do_dup
+ 	/* Update the content of current association. */
+ 	sctp_add_cmd_sf(commands, SCTP_CMD_UPDATE_ASSOC, SCTP_ASOC(new_asoc));
+ 	sctp_add_cmd_sf(commands, SCTP_CMD_EVENT_ULP, SCTP_ULPEVENT(ev));
+-	sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
+-			SCTP_STATE(SCTP_STATE_ESTABLISHED));
+-	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
++	if (sctp_state(asoc, SHUTDOWN_PENDING) &&
++	    (sctp_sstate(asoc->base.sk, CLOSING) ||
++	     sock_flag(asoc->base.sk, SOCK_DEAD))) {
++		/* if were currently in SHUTDOWN_PENDING, but the socket
++		 * has been closed by user, don't transition to ESTABLISHED.
++		 * Instead trigger SHUTDOWN bundled with COOKIE_ACK.
++		 */
++		sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
++		return sctp_sf_do_9_2_start_shutdown(net, ep, asoc,
++						     SCTP_ST_CHUNK(0), NULL,
++						     commands);
++	} else {
++		sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
++				SCTP_STATE(SCTP_STATE_ESTABLISHED));
++		sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
++	}
+ 	return SCTP_DISPOSITION_CONSUME;
+ 
+ nomem_ev:
 
 
