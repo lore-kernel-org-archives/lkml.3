@@ -1,136 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743AbaJMRdk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 13:33:40 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:45441 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753945AbaJMRdi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 13:33:38 -0400
-Message-ID: <1413221607.13530.19.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH v3 6/6] VFS: refactor vfs_read()
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: viro <viro@zeniv.linux.org.uk>
-Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>, akpm@linux-foundation.org,
-        linux-security-module@vger.kernel.org,
-        linux-ima-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        dmitry.kasatkin@gmail.com
-Date: Mon, 13 Oct 2014 13:33:27 -0400
-In-Reply-To: <a375f4a82ebe59912e81ae0704121c8d503adb55.1412950047.git.d.kasatkin@samsung.com>
-References: <cover.1412950047.git.d.kasatkin@samsung.com>
-	 <a375f4a82ebe59912e81ae0704121c8d503adb55.1412950047.git.d.kasatkin@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14101317-8236-0000-0000-0000061DEE38
+	id S1754748AbaJMRfR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 13:35:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48198 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753797AbaJMRfP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 13:35:15 -0400
+Date: Mon, 13 Oct 2014 13:35:04 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: paulmck@linux.vnet.ibm.com, htejun@gmail.com
+Subject: rcu_preempt detected stalls.
+Message-ID: <20141013173504.GA27955@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	paulmck@linux.vnet.ibm.com, htejun@gmail.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-10-10 at 17:09 +0300, Dmitry Kasatkin wrote: 
-> integrity_kernel_read() duplicates the file read operations code
-> in vfs_read(). This patch refactors vfs_read() code creating a
-> helper function __vfs_read(). It is used by both vfs_read() and
-> integrity_kernel_read().
-> 
-> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Today in "rcu stall while fuzzing" news:
 
-Al, can we get an ack on this?
+INFO: rcu_preempt detected stalls on CPUs/tasks:
+	Tasks blocked on level-0 rcu_node (CPUs 0-3): P766 P646
+	Tasks blocked on level-0 rcu_node (CPUs 0-3): P766 P646
+	(detected by 0, t=6502 jiffies, g=75434, c=75433, q=0)
+trinity-c342    R  running task    13384   766  32295 0x00000000
+ ffff880068943d58 0000000000000002 0000000000000002 ffff880193c8c680
+ 00000000001d4100 0000000000000000 ffff880068943fd8 00000000001d4100
+ ffff88024302c680 ffff880193c8c680 ffff880068943fd8 0000000000000000
+Call Trace:
+ [<ffffffff888368e2>] preempt_schedule_irq+0x52/0xb0
+ [<ffffffff8883df10>] retint_kernel+0x20/0x30
+ [<ffffffff880d9424>] ? lock_acquire+0xd4/0x2b0
+ [<ffffffff8808d495>] ? kill_pid_info+0x5/0x130
+ [<ffffffff8808d4d5>] kill_pid_info+0x45/0x130
+ [<ffffffff8808d495>] ? kill_pid_info+0x5/0x130
+ [<ffffffff8808d6d2>] SYSC_kill+0xf2/0x2f0
+ [<ffffffff8808d67b>] ? SYSC_kill+0x9b/0x2f0
+ [<ffffffff8819c2b7>] ? context_tracking_user_exit+0x57/0x280
+ [<ffffffff880136bd>] ? syscall_trace_enter+0x13d/0x310
+ [<ffffffff8808fd9e>] SyS_kill+0xe/0x10
+ [<ffffffff8883d3a4>] tracesys+0xdd/0xe2
+trinity-c225    R  running task    13448   646  32295 0x00000000
+ ffff880161ccfb28 0000000000000002 ffff880161ccfe10 ffff88000bf85e00
+ 00000000001d4100 0000000000000003 ffff880161ccffd8 00000000001d4100
+ ffff880030124680 ffff88000bf85e00 ffff880161ccffd8 0000000000000000
+Call Trace:
+ [<ffffffff888368e2>] preempt_schedule_irq+0x52/0xb0
+ [<ffffffff8883df10>] retint_kernel+0x20/0x30
+ [<ffffffff88233d41>] ? __d_lookup_rcu+0xd1/0x1e0
+ [<ffffffff88233dd6>] ? __d_lookup_rcu+0x166/0x1e0
+ [<ffffffff88222f9f>] lookup_fast+0x4f/0x3d0
+ [<ffffffff88224857>] link_path_walk+0x1a7/0x8a0
+ [<ffffffff88224f95>] ? path_lookupat+0x45/0x7b0
+ [<ffffffff88224fb7>] path_lookupat+0x67/0x7b0
+ [<ffffffff880d385d>] ? trace_hardirqs_off+0xd/0x10
+ [<ffffffff8883dda4>] ? retint_restore_args+0xe/0xe
+ [<ffffffff8822572b>] filename_lookup+0x2b/0xc0
+ [<ffffffff88229c77>] user_path_at_empty+0x67/0xc0
+ [<ffffffff880d3dbe>] ? put_lock_stats.isra.27+0xe/0x30
+ [<ffffffff880d42a6>] ? lock_release_holdtime.part.28+0xe6/0x160
+ [<ffffffff880b15ad>] ? get_parent_ip+0xd/0x50
+ [<ffffffff88229ce1>] user_path_at+0x11/0x20
+ [<ffffffff8824fac1>] do_utimes+0xd1/0x180
+ [<ffffffff8824fbef>] SyS_utime+0x7f/0xc0
+ [<ffffffff8883d345>] ? tracesys+0x7e/0xe2
+ [<ffffffff8883d3a4>] tracesys+0xdd/0xe2
+trinity-c342    R  running task    13384   766  32295 0x00000000
+ ffff880068943d58 0000000000000002 0000000000000002 ffff880193c8c680
+ 00000000001d4100 0000000000000000 ffff880068943fd8 00000000001d4100
+ ffff88024302c680 ffff880193c8c680 ffff880068943fd8 0000000000000000
+Call Trace:
+ [<ffffffff888368e2>] preempt_schedule_irq+0x52/0xb0
+ [<ffffffff8883df10>] retint_kernel+0x20/0x30
+ [<ffffffff880d9424>] ? lock_acquire+0xd4/0x2b0
+ [<ffffffff8808d495>] ? kill_pid_info+0x5/0x130
+ [<ffffffff8808d4d5>] kill_pid_info+0x45/0x130
+ [<ffffffff8808d495>] ? kill_pid_info+0x5/0x130
+ [<ffffffff8808d6d2>] SYSC_kill+0xf2/0x2f0
+ [<ffffffff8808d67b>] ? SYSC_kill+0x9b/0x2f0
+ [<ffffffff8819c2b7>] ? context_tracking_user_exit+0x57/0x280
+ [<ffffffff880136bd>] ? syscall_trace_enter+0x13d/0x310
+ [<ffffffff8808fd9e>] SyS_kill+0xe/0x10
+ [<ffffffff8883d3a4>] tracesys+0xdd/0xe2
+trinity-c225    R  running task    13448   646  32295 0x00000000
+ ffff880161ccfb28 0000000000000002 ffff880161ccfe10 ffff88000bf85e00
+ 00000000001d4100 0000000000000003 ffff880161ccffd8 00000000001d4100
+ ffff880030124680 ffff88000bf85e00 ffff880161ccffd8 0000000000000000
+Call Trace:
+ [<ffffffff888368e2>] preempt_schedule_irq+0x52/0xb0
+ [<ffffffff8883df10>] retint_kernel+0x20/0x30
+ [<ffffffff88233d41>] ? __d_lookup_rcu+0xd1/0x1e0
+ [<ffffffff88233dd6>] ? __d_lookup_rcu+0x166/0x1e0
+ [<ffffffff88222f9f>] lookup_fast+0x4f/0x3d0
+ [<ffffffff88224857>] link_path_walk+0x1a7/0x8a0
+ [<ffffffff88224f95>] ? path_lookupat+0x45/0x7b0
+ [<ffffffff88224fb7>] path_lookupat+0x67/0x7b0
+ [<ffffffff880d385d>] ? trace_hardirqs_off+0xd/0x10
+ [<ffffffff8883dda4>] ? retint_restore_args+0xe/0xe
+ [<ffffffff8822572b>] filename_lookup+0x2b/0xc0
+ [<ffffffff88229c77>] user_path_at_empty+0x67/0xc0
+ [<ffffffff880d3dbe>] ? put_lock_stats.isra.27+0xe/0x30
+ [<ffffffff880d42a6>] ? lock_release_holdtime.part.28+0xe6/0x160
+ [<ffffffff880b15ad>] ? get_parent_ip+0xd/0x50
+ [<ffffffff88229ce1>] user_path_at+0x11/0x20
+ [<ffffffff8824fac1>] do_utimes+0xd1/0x180
+ [<ffffffff8824fbef>] SyS_utime+0x7f/0xc0
+ [<ffffffff8883d345>] ? tracesys+0x7e/0xe2
+ [<ffffffff8883d3a4>] tracesys+0xdd/0xe2
+INFO: rcu_preempt detected stalls on CPUs/tasks:
+	Tasks blocked on level-0 rcu_node (CPUs 0-3): P766 P646
+	Tasks blocked on level-0 rcu_node (CPUs 0-3): P766 P646
+	(detected by 3, t=26007 jiffies, g=75434, c=75433, q=0)
+trinity-c342    R  running task    13384   766  32295 0x00000000
+ ffff880068943d98 0000000000000002 0000000000000000 ffff880193c8c680
+ 00000000001d4100 0000000000000000 ffff880068943fd8 00000000001d4100
+ ffff88000188af00 ffff880193c8c680 ffff880068943fd8 0000000000000000
+Call Trace:
+ [<ffffffff888368e2>] preempt_schedule_irq+0x52/0xb0
+ [<ffffffff8883df10>] retint_kernel+0x20/0x30
+ [<ffffffff8809f767>] ? pid_task+0x47/0xa0
+ [<ffffffff8809f73d>] ? pid_task+0x1d/0xa0
+ [<ffffffff8808d4f1>] kill_pid_info+0x61/0x130
+ [<ffffffff8808d495>] ? kill_pid_info+0x5/0x130
+ [<ffffffff8808d6d2>] SYSC_kill+0xf2/0x2f0
+ [<ffffffff8808d67b>] ? SYSC_kill+0x9b/0x2f0
+ [<ffffffff8819c2b7>] ? context_tracking_user_exit+0x57/0x280
+ [<ffffffff880136bd>] ? syscall_trace_enter+0x13d/0x310
+ [<ffffffff8808fd9e>] SyS_kill+0xe/0x10
+ [<ffffffff8883d3a4>] tracesys+0xdd/0xe2
+trinity-c225    R  running task    13448   646  32295 0x00000000
+ ffff880161ccfb78 0000000000000002 ffffffff88c993ed ffff88000bf85e00
+ 00000000001d4100 0000000000000003 ffff880161ccffd8 00000000001d4100
+ ffff88005ea89780 ffff88000bf85e00 ffff880161ccffd8 0000000000000000
+Call Trace:
+ [<ffffffff888368e2>] preempt_schedule_irq+0x52/0xb0
+ [<ffffffff8883df10>] retint_kernel+0x20/0x30
+ [<ffffffff8822303a>] ? lookup_fast+0xea/0x3d0
+ [<ffffffff88223025>] ? lookup_fast+0xd5/0x3d0
+ [<ffffffff88224857>] link_path_walk+0x1a7/0x8a0
+ [<ffffffff88224f95>] ? path_lookupat+0x45/0x7b0
+ [<ffffffff88224fb7>] path_lookupat+0x67/0x7b0
+ [<ffffffff880d385d>] ? trace_hardirqs_off+0xd/0x10
+ [<ffffffff8883dda4>] ? retint_restore_args+0xe/0xe
+ [<ffffffff8822572b>] filename_lookup+0x2b/0xc0
+ [<ffffffff88229c77>] user_path_at_empty+0x67/0xc0
+ [<ffffffff880d3dbe>] ? put_lock_stats.isra.27+0xe/0x30
+ [<ffffffff880d42a6>] ? lock_release_holdtime.part.28+0xe6/0x160
+ [<ffffffff880b15ad>] ? get_parent_ip+0xd/0x50
+ [<ffffffff88229ce1>] user_path_at+0x11/0x20
+ [<ffffffff8824fac1>] do_utimes+0xd1/0x180
+ [<ffffffff8824fbef>] SyS_utime+0x7f/0xc0
+ [<ffffffff8883d345>] ? tracesys+0x7e/0xe2
+ [<ffffffff8883d3a4>] tracesys+0xdd/0xe2
+trinity-c342    R  running task    13384   766  32295 0x00000000
+ ffff880068943d98 0000000000000002 0000000000000000 ffff880193c8c680
+ 00000000001d4100 0000000000000000 ffff880068943fd8 00000000001d4100
+ ffff88000188af00 ffff880193c8c680 ffff880068943fd8 0000000000000000
+Call Trace:
+ [<ffffffff888368e2>] preempt_schedule_irq+0x52/0xb0
+ [<ffffffff8883df10>] retint_kernel+0x20/0x30
+ [<ffffffff8809f767>] ? pid_task+0x47/0xa0
+ [<ffffffff8809f73d>] ? pid_task+0x1d/0xa0
+ [<ffffffff8808d4f1>] kill_pid_info+0x61/0x130
+ [<ffffffff8808d495>] ? kill_pid_info+0x5/0x130
+ [<ffffffff8808d6d2>] SYSC_kill+0xf2/0x2f0
+ [<ffffffff8808d67b>] ? SYSC_kill+0x9b/0x2f0
+ [<ffffffff8819c2b7>] ? context_tracking_user_exit+0x57/0x280
+ [<ffffffff880136bd>] ? syscall_trace_enter+0x13d/0x310
+ [<ffffffff8808fd9e>] SyS_kill+0xe/0x10
+ [<ffffffff8883d3a4>] tracesys+0xdd/0xe2
+trinity-c225    R  running task    13448   646  32295 0x00000000
+ ffff880161ccfb78 0000000000000002 ffffffff88c993ed ffff88000bf85e00
+ 00000000001d4100 0000000000000003 ffff880161ccffd8 00000000001d4100
+ ffff88005ea89780 ffff88000bf85e00 ffff880161ccffd8 0000000000000000
+Call Trace:
+ [<ffffffff888368e2>] preempt_schedule_irq+0x52/0xb0
+ [<ffffffff8883df10>] retint_kernel+0x20/0x30
+ [<ffffffff8822303a>] ? lookup_fast+0xea/0x3d0
+ [<ffffffff88223025>] ? lookup_fast+0xd5/0x3d0
+ [<ffffffff88224857>] link_path_walk+0x1a7/0x8a0
+ [<ffffffff88224f95>] ? path_lookupat+0x45/0x7b0
+ [<ffffffff88224fb7>] path_lookupat+0x67/0x7b0
+ [<ffffffff880d385d>] ? trace_hardirqs_off+0xd/0x10
+ [<ffffffff8883dda4>] ? retint_restore_args+0xe/0xe
+ [<ffffffff8822572b>] filename_lookup+0x2b/0xc0
+ [<ffffffff88229c77>] user_path_at_empty+0x67/0xc0
+ [<ffffffff880d3dbe>] ? put_lock_stats.isra.27+0xe/0x30
+ [<ffffffff880d42a6>] ? lock_release_holdtime.part.28+0xe6/0x160
+ [<ffffffff880b15ad>] ? get_parent_ip+0xd/0x50
+ [<ffffffff88229ce1>] user_path_at+0x11/0x20
+ [<ffffffff8824fac1>] do_utimes+0xd1/0x180
+ [<ffffffff8824fbef>] SyS_utime+0x7f/0xc0
+ [<ffffffff8883d345>] ? tracesys+0x7e/0xe2
+ [<ffffffff8883d3a4>] tracesys+0xdd/0xe2
 
-thanks,
+This is on Linus' current tree, with the new CONFIG_TASKS_RCU unset.
 
-Mimi
-
-> ---
->  fs/read_write.c           | 24 ++++++++++++++++++------
->  include/linux/fs.h        |  1 +
->  security/integrity/iint.c | 10 +++-------
->  3 files changed, 22 insertions(+), 13 deletions(-)
-> 
-> diff --git a/fs/read_write.c b/fs/read_write.c
-> index 009d854..f45b2ae 100644
-> --- a/fs/read_write.c
-> +++ b/fs/read_write.c
-> @@ -412,6 +412,23 @@ ssize_t new_sync_read(struct file *filp, char __user *buf, size_t len, loff_t *p
-> 
->  EXPORT_SYMBOL(new_sync_read);
-> 
-> +ssize_t __vfs_read(struct file *file, char __user *buf, size_t count,
-> +		   loff_t *pos)
-> +{
-> +	ssize_t ret;
-> +
-> +	if (file->f_op->read)
-> +		ret = file->f_op->read(file, buf, count, pos);
-> +	else if (file->f_op->aio_read)
-> +		ret = do_sync_read(file, buf, count, pos);
-> +	else if (file->f_op->read_iter)
-> +		ret = new_sync_read(file, buf, count, pos);
-> +	else
-> +		ret = -EINVAL;
-> +
-> +	return ret;
-> +}
-> +
->  ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
->  {
->  	ssize_t ret;
-> @@ -426,12 +443,7 @@ ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
->  	ret = rw_verify_area(READ, file, pos, count);
->  	if (ret >= 0) {
->  		count = ret;
-> -		if (file->f_op->read)
-> -			ret = file->f_op->read(file, buf, count, pos);
-> -		else if (file->f_op->aio_read)
-> -			ret = do_sync_read(file, buf, count, pos);
-> -		else
-> -			ret = new_sync_read(file, buf, count, pos);
-> +		ret = __vfs_read(file, buf, count, pos);
->  		if (ret > 0) {
->  			fsnotify_access(file);
->  			add_rchar(current, ret);
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index e11d60c..ac3a36e 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -1527,6 +1527,7 @@ ssize_t rw_copy_check_uvector(int type, const struct iovec __user * uvector,
->  			      struct iovec *fast_pointer,
->  			      struct iovec **ret_pointer);
-> 
-> +extern ssize_t __vfs_read(struct file *, char __user *, size_t, loff_t *);
->  extern ssize_t vfs_read(struct file *, char __user *, size_t, loff_t *);
->  extern ssize_t vfs_write(struct file *, const char __user *, size_t, loff_t *);
->  extern ssize_t vfs_readv(struct file *, const struct iovec __user *,
-> diff --git a/security/integrity/iint.c b/security/integrity/iint.c
-> index a1f5cd1..e359477 100644
-> --- a/security/integrity/iint.c
-> +++ b/security/integrity/iint.c
-> @@ -184,20 +184,16 @@ int integrity_kernel_read(struct file *file, loff_t offset,
->  {
->  	mm_segment_t old_fs;
->  	char __user *buf = addr;
-> -	ssize_t ret = -EINVAL;
-> +	ssize_t ret;
-> 
->  	if (!(file->f_mode & FMODE_READ))
->  		return -EBADF;
-> 
->  	old_fs = get_fs();
->  	set_fs(get_ds());
-> -	if (file->f_op->read)
-> -		ret = file->f_op->read(file, buf, count, &offset);
-> -	else if (file->f_op->aio_read)
-> -		ret = do_sync_read(file, buf, count, &offset);
-> -	else if (file->f_op->read_iter)
-> -		ret = new_sync_read(file, buf, count, &offset);
-> +	ret = __vfs_read(file, buf, count, &offset);
->  	set_fs(old_fs);
-> +
->  	return ret;
->  }
-> 
-
+	Dave
 
