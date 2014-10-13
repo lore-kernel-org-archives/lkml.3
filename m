@@ -1,205 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612AbaJMOKP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 10:10:15 -0400
-Received: from 19.mo6.mail-out.ovh.net ([188.165.56.177]:41666 "EHLO
-	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752779AbaJMOKN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 10:10:13 -0400
-X-Greylist: delayed 604 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Oct 2014 10:10:13 EDT
-From: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
-To: Heiko Stuebner <heiko@sntech.de>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org (moderated list:ARM/Rockchip
-	SoC...),
-        linux-rockchip@lists.infradead.org (open list:ARM/Rockchip SoC...),
-        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
-        linux-kernel@vger.kernel.org (open list)
-Cc: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
-Subject: [PATCH] ARM: dts: rockchip: add I2S controllers for rk3066 and rk3188
-Date: Mon, 13 Oct 2014 15:51:04 +0200
-Message-Id: <1413208265-20372-1-git-send-email-julien.chauveau@neo-technologies.fr>
-X-Mailer: git-send-email 1.9.1
-X-Ovh-Tracer-Id: 15631712833288274145
-X-Ovh-Remote: 193.248.240.88 (laubervilliers-656-01-116-88.w193-248.abo.wanadoo.fr)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejgedrleefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejgedrleefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	id S1754003AbaJMONp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 10:13:45 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:33811 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753227AbaJMONo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 10:13:44 -0400
+Message-ID: <543BDDF3.6010306@ti.com>
+Date: Mon, 13 Oct 2014 10:13:07 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: keystone: add bus notifier to set dma_pfn_offset
+ for pci devices
+References: <1412954137-4567-1-git-send-email-m-karicheri2@ti.com> <54385187.6030002@ti.com> <54387429.2030605@ti.com> <7696162.dApA5zbMp7@wuerfel>
+In-Reply-To: <7696162.dApA5zbMp7@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the I2S/PCM controller nodes and pin controls for rk3066 and rk3188.
+On 10/11/2014 04:37 PM, Arnd Bergmann wrote:
+> On Friday 10 October 2014 20:04:57 Santosh Shilimkar wrote:
+>> On 10/10/14 5:37 PM, Murali Karicheri wrote:
+>>> Based on this, dma configuration parameters get set for the device which
+>>> is probed through DT.
+>>>
+>>> As PCI devices are attached to the PCI bus during scan, and we don't
+>>> have DT nodes, we could use similar mechanism to pass the dma-range info
+>>> from parent host platform device to the PCI devices by adding an
+>>> of_pci_dma_configure() API and hook it to the PCI probe path some where?
+>>> Please comment on this so that I can work on the right solution to
+>>> address this issue for Keystone.
+>>>
+>> Adding the DT node parsing code in PCI bus probe path is the right way
+>> to go about it. You could re-use some of the helpers from dma parsing
+>> code.
+>>
+>> I let Arnd comment if he disagrees, otherwise I suggest to create an
+>> RFC patch and post it on the list. We can take it from there.
+>
+> Yes, I think that is the correct way forward, we need this anyway to
+> handle IOMMUs correctly, following the patches that Will Deacon did
+> for platform device IOMMU configuration.
+Arnd,
 
-Signed-off-by: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
----
- arch/arm/boot/dts/rk3066a.dtsi | 51 ++++++++++++++++++++++++++++++++++++++++++
- arch/arm/boot/dts/rk3188.dtsi  | 16 +++++++++++++
- arch/arm/boot/dts/rk3xxx.dtsi  | 39 ++++++++++++++++++++++++++++++++
- 3 files changed, 106 insertions(+)
+Could you point me to a thread/link for Will Deacon's IOMMU work? Is it 
+part of the kernel already?
 
-diff --git a/arch/arm/boot/dts/rk3066a.dtsi b/arch/arm/boot/dts/rk3066a.dtsi
-index ad9c2db..7c4cd86 100644
---- a/arch/arm/boot/dts/rk3066a.dtsi
-+++ b/arch/arm/boot/dts/rk3066a.dtsi
-@@ -405,6 +405,42 @@
- 						<RK_GPIO3 20 RK_FUNC_1 &pcfg_pull_default>;
- 			};
- 		};
-+
-+		i2s0 {
-+			i2s0_bus: i2s0-bus {
-+				rockchip,pins = <RK_GPIO0 7 RK_FUNC_1 &pcfg_pull_default>,
-+						<RK_GPIO0 8 RK_FUNC_1 &pcfg_pull_default>,
-+						<RK_GPIO0 9 RK_FUNC_1 &pcfg_pull_default>,
-+						<RK_GPIO0 10 RK_FUNC_1 &pcfg_pull_default>,
-+						<RK_GPIO0 11 RK_FUNC_1 &pcfg_pull_default>,
-+						<RK_GPIO0 12 RK_FUNC_1 &pcfg_pull_default>,
-+						<RK_GPIO0 13 RK_FUNC_1 &pcfg_pull_default>,
-+						<RK_GPIO0 14 RK_FUNC_1 &pcfg_pull_default>,
-+						<RK_GPIO0 15 RK_FUNC_1 &pcfg_pull_default>;
-+			};
-+		};
-+
-+		i2s1 {
-+			i2s1_bus: i2s1-bus {
-+				rockchip,pins = <RK_GPIO0 16 RK_FUNC_1 &pcfg_pull_default>,
-+						<RK_GPIO0 17 RK_FUNC_1 &pcfg_pull_default>,
-+						<RK_GPIO0 18 RK_FUNC_1 &pcfg_pull_default>,
-+						<RK_GPIO0 19 RK_FUNC_1 &pcfg_pull_default>,
-+						<RK_GPIO0 20 RK_FUNC_1 &pcfg_pull_default>,
-+						<RK_GPIO0 21 RK_FUNC_1 &pcfg_pull_default>;
-+			};
-+		};
-+
-+		i2s2 {
-+			i2s2_bus: i2s2-bus {
-+				rockchip,pins = <RK_GPIO0 24 RK_FUNC_1 &pcfg_pull_default>,
-+						<RK_GPIO0 25 RK_FUNC_1 &pcfg_pull_default>,
-+						<RK_GPIO0 26 RK_FUNC_1 &pcfg_pull_default>,
-+						<RK_GPIO0 27 RK_FUNC_1 &pcfg_pull_default>,
-+						<RK_GPIO0 28 RK_FUNC_1 &pcfg_pull_default>,
-+						<RK_GPIO0 29 RK_FUNC_1 &pcfg_pull_default>;
-+			};
-+		};
- 	};
- };
- 
-@@ -473,6 +509,21 @@
- 	pinctrl-0 = <&spi1_clk &spi1_tx &spi1_rx &spi1_cs0>;
- };
- 
-+&i2s0 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&i2s0_bus>;
-+};
-+
-+&i2s1 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&i2s1_bus>;
-+};
-+
-+&i2s2 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&i2s2_bus>;
-+};
-+
- &uart0 {
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&uart0_xfer>;
-diff --git a/arch/arm/boot/dts/rk3188.dtsi b/arch/arm/boot/dts/rk3188.dtsi
-index ddaada7..04ef487 100644
---- a/arch/arm/boot/dts/rk3188.dtsi
-+++ b/arch/arm/boot/dts/rk3188.dtsi
-@@ -395,6 +395,17 @@
- 						<RK_GPIO3 20 RK_FUNC_1 &pcfg_pull_none>;
- 			};
- 		};
-+
-+		i2s1 {
-+			i2s1_bus: i2s1-bus {
-+				rockchip,pins = <RK_GPIO1 16 RK_FUNC_1 &pcfg_pull_none>,
-+						<RK_GPIO1 17 RK_FUNC_1 &pcfg_pull_none>,
-+						<RK_GPIO1 18 RK_FUNC_1 &pcfg_pull_none>,
-+						<RK_GPIO1 19 RK_FUNC_1 &pcfg_pull_none>,
-+						<RK_GPIO1 20 RK_FUNC_1 &pcfg_pull_none>,
-+						<RK_GPIO1 21 RK_FUNC_1 &pcfg_pull_none>;
-+			};
-+		};
- 	};
- };
- 
-@@ -472,6 +483,11 @@
- 	pinctrl-0 = <&spi1_clk &spi1_tx &spi1_rx &spi1_cs0>;
- };
- 
-+&i2s1 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&i2s1_bus>;
-+};
-+
- &uart0 {
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&uart0_xfer>;
-diff --git a/arch/arm/boot/dts/rk3xxx.dtsi b/arch/arm/boot/dts/rk3xxx.dtsi
-index 499468d..75b7982 100644
---- a/arch/arm/boot/dts/rk3xxx.dtsi
-+++ b/arch/arm/boot/dts/rk3xxx.dtsi
-@@ -112,6 +112,45 @@
- 		      <0x1013c100 0x0100>;
- 	};
- 
-+	i2s0: i2s@10118000 {
-+		compatible = "rockchip,rk3066-i2s";
-+		reg = <0x10118000 0x2000>;
-+		interrupts = <GIC_SPI 31 IRQ_TYPE_LEVEL_HIGH>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		dmas = <&dmac1_s 4>, <&dmac1_s 5>;
-+		dma-names = "tx", "rx";
-+		clock-names = "i2s_hclk", "i2s_clk";
-+		clocks = <&cru HCLK_I2S0>, <&cru SCLK_I2S0>;
-+		status = "disabled";
-+	};
-+
-+	i2s1: i2s@1011a000 {
-+		compatible = "rockchip,rk3066-i2s";
-+		reg = <0x1011a000 0x2000>;
-+		interrupts = <GIC_SPI 32 IRQ_TYPE_LEVEL_HIGH>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		dmas = <&dmac1_s 6>, <&dmac1_s 7>;
-+		dma-names = "tx", "rx";
-+		clock-names = "i2s_hclk", "i2s_clk";
-+		clocks = <&cru HCLK_I2S1>, <&cru SCLK_I2S1>;
-+		status = "disabled";
-+	};
-+
-+	i2s2: i2s@1011c000 {
-+		compatible = "rockchip,rk3066-i2s";
-+		reg = <0x1011c000 0x2000>;
-+		interrupts = <GIC_SPI 20 IRQ_TYPE_LEVEL_HIGH>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		dmas = <&dmac1_s 9>, <&dmac1_s 10>;
-+		dma-names = "tx", "rx";
-+		clock-names = "i2s_hclk", "i2s_clk";
-+		clocks = <&cru HCLK_I2S2>, <&cru SCLK_I2S2>;
-+		status = "disabled";
-+	};
-+
- 	uart0: serial@10124000 {
- 		compatible = "snps,dw-apb-uart";
- 		reg = <0x10124000 0x400>;
+Murali
+>
+>> That also reminded me xhci host code issue with dma-ranges since the
+>> devices are manually created there. I will review that thread as
+>> well after this merge window.
+>
+> Right, manually created devices are always problematic, you should
+> try to avoid those.
+>
+> 	Arnd
+
+
 -- 
-1.9.1
-
+Murali Karicheri
+Linux Kernel, Texas Instruments
