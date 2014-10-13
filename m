@@ -1,123 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754435AbaJMUOb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 16:14:31 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:33959 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753858AbaJMUO3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 16:14:29 -0400
+	id S1754513AbaJMUPk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 16:15:40 -0400
+Received: from mga11.intel.com ([192.55.52.93]:32052 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753642AbaJMUPj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 16:15:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="399614075"
+Date: Mon, 13 Oct 2014 13:16:01 -0700
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
+        linux-gpio@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] pinctrl: baytrail: show output gpio state correctly on
+ Intel Baytrail
+Message-ID: <20141013201601.GC4034@psi-dev26.jf.intel.com>
+References: <1412355319-18946-1-git-send-email-david.a.cohen@linux.intel.com>
+ <1413224639-21552-1-git-send-email-david.a.cohen@linux.intel.com>
+ <20141013191405.GB29810@saruman>
+ <20141013192404.GB4034@psi-dev26.jf.intel.com>
+ <20141013192632.GC29810@saruman>
 MIME-Version: 1.0
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D174C992F@AcuExch.aculab.com>
-References: <1413071551-15372-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <063D6719AE5E284EB5DD2968C1650D6D174C992F@AcuExch.aculab.com>
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Date: Mon, 13 Oct 2014 22:14:07 +0200
-Message-ID: <CAFo99gZxFcTcXQnutcYt7o8aCXNRQT-aBQ6C=V4ZsK=7aUiX=w@mail.gmail.com>
-Subject: Re: [PATCH] net: wireless: brcm80211: brcmfmac: dhd_sdio.c: Cleaning
- up missing null-terminate in conjunction with strncpy
-To: David Laight <David.Laight@aculab.com>
-Cc: Brett Rudley <brudley@broadcom.com>, Arend van Spriel <arend@broadcom.com>,
-        Hante Meuleman <meuleman@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
-        Daniel Kim <dekim@broadcom.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "brcm80211-dev-list@broadcom.com" <brcm80211-dev-list@broadcom.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141013192632.GC29810@saruman>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-10-13 10:55 GMT+02:00 David Laight <David.Laight@aculab.com>:
-> From: Rickard Strandqvist
->> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
->> And changed from using strncpy to strlcpy to simplify code.
->
-> I think you should return an error if the strings get truncated.
-> Silent truncation is going to lead to issues at some point in the future
-> (in some places).
->
->> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
->> ---
->>  drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c |   25 ++++++++++----------
->>  1 file changed, 12 insertions(+), 13 deletions(-)
->>
->> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
->> b/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
->> index f55f625..d20d4e6 100644
->> --- a/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
->> +++ b/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
->> @@ -670,7 +670,6 @@ static int brcmf_sdio_get_fwnames(struct brcmf_chip *ci,
->>                                 struct brcmf_sdio_dev *sdiodev)
->>  {
->>       int i;
->> -     uint fw_len, nv_len;
->>       char end;
->>
->>       for (i = 0; i < ARRAY_SIZE(brcmf_fwname_data); i++) {
->> @@ -684,25 +683,25 @@ static int brcmf_sdio_get_fwnames(struct brcmf_chip *ci,
->>               return -ENODEV;
->>       }
->>
->> -     fw_len = sizeof(sdiodev->fw_name) - 1;
->> -     nv_len = sizeof(sdiodev->nvram_name) - 1;
->>       /* check if firmware path is provided by module parameter */
->>       if (brcmf_firmware_path[0] != '\0') {
->> -             strncpy(sdiodev->fw_name, brcmf_firmware_path, fw_len);
->> -             strncpy(sdiodev->nvram_name, brcmf_firmware_path, nv_len);
->> -             fw_len -= strlen(sdiodev->fw_name);
->> -             nv_len -= strlen(sdiodev->nvram_name);
->> +             strlcpy(sdiodev->fw_name, brcmf_firmware_path,
->> +                     sizeof(sdiodev->fw_name));
->> +             strlcpy(sdiodev->nvram_name, brcmf_firmware_path,
->> +                     sizeof(sdiodev->nvram_name));
->>
->>               end = brcmf_firmware_path[strlen(brcmf_firmware_path) - 1];
->
-> If you are doing a strlen() here, you could use the length for the copy
-> and/or use it to avoid the strcat().
->
->>               if (end != '/') {
->> -                     strncat(sdiodev->fw_name, "/", fw_len);
->> -                     strncat(sdiodev->nvram_name, "/", nv_len);
->> -                     fw_len--;
->> -                     nv_len--;
->> +                     strlcat(sdiodev->fw_name, "/",
->> +                             sizeof(sdiodev->fw_name));
->> +                     strlcat(sdiodev->nvram_name, "/",
->> +                             sizeof(sdiodev->nvram_name));
->>               }
->>       }
->> -     strncat(sdiodev->fw_name, brcmf_fwname_data[i].bin, fw_len);
->> -     strncat(sdiodev->nvram_name, brcmf_fwname_data[i].nv, nv_len);
->> +     strlcat(sdiodev->fw_name, brcmf_fwname_data[i].bin,
->> +             sizeof(sdiodev->fw_name));
->> +     strlcat(sdiodev->nvram_name, brcmf_fwname_data[i].nv,
->> +             sizeof(sdiodev->nvram_name));
->
-> I assume something ensures that fw_name[0] == 0 here.
->
->         David
+On Mon, Oct 13, 2014 at 02:26:32PM -0500, Felipe Balbi wrote:
+> Hi,
+> 
+> On Mon, Oct 13, 2014 at 12:24:04PM -0700, David Cohen wrote:
+> > On Mon, Oct 13, 2014 at 02:14:05PM -0500, Felipe Balbi wrote:
+> > > On Mon, Oct 13, 2014 at 11:23:59AM -0700, David Cohen wrote:
+> > > > Even if a gpio pin is set to output, we still need to set INPUT_EN bit
+> > > 
+> > > here you say you're setting that bit.
+> > > 
+> > > > to be able to read its value. Without this change, we'll always read low
+> > > > level state.
+> > > > 
+> > > > Cc: <stable@vger.kernel.org> # v3.14+
+> > > > Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+> > > > ---
+> > > > 
+> > > > Hi,
+> > > > 
+> > > > I'm resending same v1 patch but now copying linux stable and linux gpio.
+> > > > This patch is meant for all linux stable trees >= v3.14.
+> > > > 
+> > > > Br, David
+> > > > ---
+> > > > 
+> > > >  drivers/pinctrl/pinctrl-baytrail.c | 2 +-
+> > > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > > 
+> > > > diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
+> > > > index e12e5b07f6d7..c23d8ded936d 100644
+> > > > --- a/drivers/pinctrl/pinctrl-baytrail.c
+> > > > +++ b/drivers/pinctrl/pinctrl-baytrail.c
+> > > > @@ -318,7 +318,7 @@ static int byt_gpio_direction_output(struct gpio_chip *chip,
+> > > >  		"Potential Error: Setting GPIO with direct_irq_en to output");
+> > > >  
+> > > >  	reg_val = readl(reg) | BYT_DIR_MASK;
+> > > > -	reg_val &= ~BYT_OUTPUT_EN;
+> > > > +	reg_val &= ~(BYT_OUTPUT_EN | BYT_INPUT_EN);
+> > > 
+> > > but code is clearing it. Also, you're not patching byt_gpio_get(), so
+> > > you can't be 'reading its value' either. Quite frankly, this looks very
+> > > fishy to me. Comments on BYT_OUTPUT_EN and BYT_INPUT_EN states that
+> > > those bits are active low, meaning that clearing them enables that
+> > > particular feature.
+> > > 
+> > > How can you enable a pin to be both OUTPUT and INPUT ? Look like what
+> > > you really want is:
+> > > 
+> > > diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
+> > > index e12e5b0..69f882d 100644
+> > > --- a/drivers/pinctrl/pinctrl-baytrail.c
+> > > +++ b/drivers/pinctrl/pinctrl-baytrail.c
+> > > @@ -290,6 +290,7 @@ static int byt_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
+> > >  
+> > >  	value = readl(reg) | BYT_DIR_MASK;
+> > >  	value &= ~BYT_INPUT_EN;		/* active low */
+> > > +	value |= BYT_OUTPUT_EN;		/* disable output */
+> > >  	writel(value, reg);
+> > >  
+> > >  	spin_unlock_irqrestore(&vg->lock, flags);
+> > > @@ -319,6 +320,7 @@ static int byt_gpio_direction_output(struct gpio_chip *chip,
+> > >  
+> > >  	reg_val = readl(reg) | BYT_DIR_MASK;
+> > >  	reg_val &= ~BYT_OUTPUT_EN;
+> > > +	value |= BYT_INPUT_EN;		/* disable input */
+> > >  
+> > >  	if (value)
+> > >  		writel(reg_val | BYT_LEVEL, reg);
+> > > 
+> > > completely untested however. Care to further explain why clearing both
+> > > bits - thus enabling both INPUT and OUTPUT - is correct ?
+> > 
+> > Actually I really meant what I sent, but perhaps I misspoke during
+> > explanation. We need to clear the bit to enable the functionality.
+> > 
+> > !BYT_INPUT_EN allows us to read the value. !BYT_OUTPUT_EN allows us to
+> > set a value. If we want to set a value (acting as output) and still be
+> > able to read via sysfs, we need to set both functionality (i.e. clear
+> > both bits).
+> > 
+> > I'll resend the patch with a better comment.
+> 
+> Alright, just make sure that exposing a pin through sysfs and making it
+> output high, then later switching it to input works. It looks like
 
+It does. I'm sending this patch based on internal fix I did to read the
+value via sysfs. It's already tested and validated :)
 
-Hi David
+> byt_gpio_direction_input() still needs to make sure OUTPUT is set.
 
+That's handled by BYT_DIR_MASK here:
 
-What do you mean you would use the strlen, can you give some example
-code instead?
+        value = readl(reg) | BYT_DIR_MASK;
+        value &= ~BYT_INPUT_EN;         /* active low */
 
-
-Arend van Spriel wanted me to change the title before.
-So this should really continue the conversation in that new mail. And
-then you can also see my other comments.
-And I have the same type of objection to the:
-brcmf_firmware_path[0] == '\0'
-
-Se:
-https://lkml.org/lkml/2014/10/12/42
-
-Kind regards
-Rickard Strandqvist
+Br, David
