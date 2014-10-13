@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648AbaJMCaD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:30:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46070 "EHLO
+	id S1754698AbaJMCaT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:30:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46144 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754599AbaJMC35 (ORCPT
+	with ESMTP id S1753291AbaJMCaM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:29:57 -0400
+	Sun, 12 Oct 2014 22:30:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Laight <David.Laight@aculab.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 43/55] sctp: handle association restarts when the socket is closed.
-Date: Mon, 13 Oct 2014 04:24:57 +0200
-Message-Id: <20141013022445.750966145@linuxfoundation.org>
+        Hans de Goede <hdegoede@redhat.com>
+Subject: [PATCH 3.17 14/25] uas: Add no-report-opcodes quirk
+Date: Mon, 13 Oct 2014 04:25:07 +0200
+Message-Id: <20141013022454.907248186@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
-References: <20141013022443.729870634@linuxfoundation.org>
+In-Reply-To: <20141013022454.289398272@linuxfoundation.org>
+References: <20141013022454.289398272@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,83 +24,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Vlad Yasevich <vyasevich@gmail.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-[ Upstream commit bdf6fa52f01b941d4a80372d56de465bdbbd1d23 ]
+commit 734016b00b50a3c6a0e1fc1b7b217e783f5123a1 upstream.
 
-Currently association restarts do not take into consideration the
-state of the socket.  When a restart happens, the current assocation
-simply transitions into established state.  This creates a condition
-where a remote system, through a the restart procedure, may create a
-local association that is no way reachable by user.  The conditions
-to trigger this are as follows:
-  1) Remote does not acknoledge some data causing data to remain
-     outstanding.
-  2) Local application calls close() on the socket.  Since data
-     is still outstanding, the association is placed in SHUTDOWN_PENDING
-     state.  However, the socket is closed.
-  3) The remote tries to create a new association, triggering a restart
-     on the local system.  The association moves from SHUTDOWN_PENDING
-     to ESTABLISHED.  At this point, it is no longer reachable by
-     any socket on the local system.
+Besides the ASM1051 (*) needing sdev->no_report_opcodes = 1, it turns out that
+the JMicron JMS567 also needs it to work properly with uas (usb-storage always
+sets it). Since some of the scsi devs were not to keen on the idea to
+outrightly set sdev->no_report_opcodes = 1 for all uas devices, so add a quirk
+for this, and set it for the JMS567.
 
-This patch addresses the above situation by moving the newly ESTABLISHED
-association into SHUTDOWN-SENT state and bundling a SHUTDOWN after
-the COOKIE-ACK chunk.  This way, the restarted associate immidiately
-enters the shutdown procedure and forces the termination of the
-unreachable association.
+*) Which has become a non-issue since we've completely blacklisted uas on
+the ASM1051 for other reasons
 
-Reported-by: David Laight <David.Laight@aculab.com>
-Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-and-tested-by: Claudio Bizzarri <claudio.bizzarri@gmail.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/net/sctp/command.h |    2 +-
- net/sctp/sm_statefuns.c    |   19 ++++++++++++++++---
- 2 files changed, 17 insertions(+), 4 deletions(-)
 
---- a/include/net/sctp/command.h
-+++ b/include/net/sctp/command.h
-@@ -115,7 +115,7 @@ typedef enum {
-  * analysis of the state functions, but in reality just taken from
-  * thin air in the hopes othat we don't trigger a kernel panic.
-  */
--#define SCTP_MAX_NUM_COMMANDS 14
-+#define SCTP_MAX_NUM_COMMANDS 20
+---
+ Documentation/kernel-parameters.txt |    2 ++
+ drivers/usb/storage/uas.c           |    4 ++++
+ drivers/usb/storage/unusual_uas.h   |    7 +++++++
+ drivers/usb/storage/usb.c           |    5 ++++-
+ include/linux/usb_usual.h           |    2 ++
+ 5 files changed, 19 insertions(+), 1 deletion(-)
+
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -3522,6 +3522,8 @@ bytes respectively. Such letter suffixes
+ 					READ_DISC_INFO command);
+ 				e = NO_READ_CAPACITY_16 (don't use
+ 					READ_CAPACITY_16 command);
++				f = NO_REPORT_OPCODES (don't use report opcodes
++					command, uas only);
+ 				h = CAPACITY_HEURISTICS (decrease the
+ 					reported device capacity by one
+ 					sector if the number is odd);
+--- a/drivers/usb/storage/uas.c
++++ b/drivers/usb/storage/uas.c
+@@ -961,6 +961,10 @@ static int uas_slave_alloc(struct scsi_d
+ static int uas_slave_configure(struct scsi_device *sdev)
+ {
+ 	struct uas_dev_info *devinfo = sdev->hostdata;
++
++	if (devinfo->flags & US_FL_NO_REPORT_OPCODES)
++		sdev->no_report_opcodes = 1;
++
+ 	scsi_set_tag_type(sdev, MSG_ORDERED_TAG);
+ 	scsi_activate_tcq(sdev, devinfo->qdepth - 2);
+ 	return 0;
+--- a/drivers/usb/storage/unusual_uas.h
++++ b/drivers/usb/storage/unusual_uas.h
+@@ -53,3 +53,10 @@ UNUSUAL_DEV(0x0bc2, 0x3312, 0x0000, 0x99
+ 		"Expansion Desk",
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_NO_ATA_1X),
++
++/* Reported-by: Claudio Bizzarri <claudio.bizzarri@gmail.com> */
++UNUSUAL_DEV(0x152d, 0x0567, 0x0000, 0x9999,
++		"JMicron",
++		"JMS567",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_NO_REPORT_OPCODES),
+--- a/drivers/usb/storage/usb.c
++++ b/drivers/usb/storage/usb.c
+@@ -479,7 +479,7 @@ void usb_stor_adjust_quirks(struct usb_d
+ 			US_FL_SINGLE_LUN | US_FL_NO_WP_DETECT |
+ 			US_FL_NO_READ_DISC_INFO | US_FL_NO_READ_CAPACITY_16 |
+ 			US_FL_INITIAL_READ10 | US_FL_WRITE_CACHE |
+-			US_FL_NO_ATA_1X);
++			US_FL_NO_ATA_1X | US_FL_NO_REPORT_OPCODES);
  
- typedef union {
- 	__s32 i32;
---- a/net/sctp/sm_statefuns.c
-+++ b/net/sctp/sm_statefuns.c
-@@ -1775,9 +1775,22 @@ static sctp_disposition_t sctp_sf_do_dup
- 	/* Update the content of current association. */
- 	sctp_add_cmd_sf(commands, SCTP_CMD_UPDATE_ASSOC, SCTP_ASOC(new_asoc));
- 	sctp_add_cmd_sf(commands, SCTP_CMD_EVENT_ULP, SCTP_ULPEVENT(ev));
--	sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
--			SCTP_STATE(SCTP_STATE_ESTABLISHED));
--	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
-+	if (sctp_state(asoc, SHUTDOWN_PENDING) &&
-+	    (sctp_sstate(asoc->base.sk, CLOSING) ||
-+	     sock_flag(asoc->base.sk, SOCK_DEAD))) {
-+		/* if were currently in SHUTDOWN_PENDING, but the socket
-+		 * has been closed by user, don't transition to ESTABLISHED.
-+		 * Instead trigger SHUTDOWN bundled with COOKIE_ACK.
-+		 */
-+		sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
-+		return sctp_sf_do_9_2_start_shutdown(net, ep, asoc,
-+						     SCTP_ST_CHUNK(0), NULL,
-+						     commands);
-+	} else {
-+		sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
-+				SCTP_STATE(SCTP_STATE_ESTABLISHED));
-+		sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
-+	}
- 	return SCTP_DISPOSITION_CONSUME;
+ 	p = quirks;
+ 	while (*p) {
+@@ -517,6 +517,9 @@ void usb_stor_adjust_quirks(struct usb_d
+ 		case 'e':
+ 			f |= US_FL_NO_READ_CAPACITY_16;
+ 			break;
++		case 'f':
++			f |= US_FL_NO_REPORT_OPCODES;
++			break;
+ 		case 'h':
+ 			f |= US_FL_CAPACITY_HEURISTICS;
+ 			break;
+--- a/include/linux/usb_usual.h
++++ b/include/linux/usb_usual.h
+@@ -75,6 +75,8 @@
+ 		/* Cannot handle FUA in WRITE or READ CDBs */	\
+ 	US_FLAG(NO_ATA_1X,	0x02000000)			\
+ 		/* Cannot handle ATA_12 or ATA_16 CDBs */	\
++	US_FLAG(NO_REPORT_OPCODES,	0x04000000)		\
++		/* Cannot handle MI_REPORT_SUPPORTED_OPERATION_CODES */	\
  
- nomem_ev:
+ #define US_FLAG(name, value)	US_FL_##name = value ,
+ enum { US_DO_ALL_FLAGS };
 
 
