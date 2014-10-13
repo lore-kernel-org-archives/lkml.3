@@ -1,47 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045AbaJMPOk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 11:14:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58320 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753952AbaJMPOi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 11:14:38 -0400
-Date: Mon, 13 Oct 2014 17:14:35 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        David Rientjes <rientjes@google.com>, Tejun Heo <tj@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH 0/3] OOM vs. freezer interaction fixes
-Message-ID: <20141013151435.GB15129@dhcp22.suse.cz>
-References: <1412777266-8251-1-git-send-email-mhocko@suse.cz>
- <2107592.sy6uXko7kW@vostro.rjw.lan>
+	id S1754109AbaJMPR2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 11:17:28 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:55516 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752656AbaJMPR1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 11:17:27 -0400
+Message-ID: <543BECF4.3030700@roeck-us.net>
+Date: Mon, 13 Oct 2014 08:17:08 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2107592.sy6uXko7kW@vostro.rjw.lan>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.10 00/16] 3.10.58-stable review
+References: <20141013022341.386913672@linuxfoundation.org>
+In-Reply-To: <20141013022341.386913672@linuxfoundation.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020203.543BED07.000D,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: 
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 7
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 09-10-14 00:11:33, Rafael J. Wysocki wrote:
-> On Wednesday, October 08, 2014 04:07:43 PM Michal Hocko wrote:
-> > Hi Andrew, Rafael,
-> > 
-> > this has been originally discussed here [1] but didn't lead anywhere AFAICS
-> > so I would like to resurrect them.
-> 
-> OK
-> 
-> So any chance to CC linux-pm too next time?  There are people on that list
-> who may be interested as well and are not in the CC directly either.
+On 10/12/2014 07:23 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.10.58 release.
+> There are 16 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Wed Oct 15 02:23:28 UTC 2014.
+> Anything received after that time might be too late.
+>
 
-Sure, sorry about that! I've simply used the same CC list as the
-previous post without realizing PM list was missing.
+Build results:
+	total: 137 pass: 137 fail: 0
 
--- 
-Michal Hocko
-SUSE Labs
+Qemu test results:
+	total: 27 pass: 27 fail: 0
+
+Details are available at http://server.roeck-us.net:8010/builders.
+
+Guenter
+
