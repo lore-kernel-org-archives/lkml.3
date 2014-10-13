@@ -1,39 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754613AbaJMRFj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 13:05:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19169 "EHLO mx1.redhat.com"
+	id S1754670AbaJMRGY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 13:06:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35669 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754179AbaJMRFi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 13:05:38 -0400
-Date: Mon, 13 Oct 2014 19:05:31 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: "Liang, Kan" <kan.liang@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "acme@kernel.org" <acme@kernel.org>
-Subject: Re: [PATCH V8 0/4] perf tools: pmu event new style format fix
-Message-ID: <20141013170531.GA27047@krava.redhat.com>
-References: <1412694532-23391-1-git-send-email-kan.liang@intel.com>
- <37D7C6CF3E00A74B8858931C1DB2F077016237E7@SHSMSX103.ccr.corp.intel.com>
+	id S1754041AbaJMRGW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 13:06:22 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+To: torvalds@linux-foundation.org
+cc: dhowells@redhat.com, rob.jones@codethink.co.uk, manuel.schoelling@gmx.de,
+        linux-cachefs@redhat.com, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org
+Subject: [GIT PULL] FS-Cache: Two fixes and a cleanup
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <37D7C6CF3E00A74B8858931C1DB2F077016237E7@SHSMSX103.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <24209.1413219967.1@warthog.procyon.org.uk>
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 13 Oct 2014 18:06:07 +0100
+Message-ID: <24210.1413219967@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 13, 2014 at 03:43:18PM +0000, Liang, Kan wrote:
-> Hi Jolsa,
-> 
-> Does the new patch set work on your machine?
-> I tested the V8 patch set on haswell, ivybridge and Romley platform,
-> I cannot reproduce the issue you mentioned.
-> Could you please try the latest V8 patch? 
-hi,
-sry for delay.. I was on vacation last week.
-I should get to this soon.
+Hi Linus,
 
-jirka
+Can you pull this please?  There are three commits: two fixes for bugs in
+CacheFiles and a cleanup in FS-Cache.
+
+David
+---
+The following changes since commit fe82dcec644244676d55a1384c958d5f67979adb:
+
+  Linux 3.17-rc7 (2014-09-28 14:29:07 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/fscache-fixes-20141013
+
+for you to fetch changes up to d5d962265d99088ce96480db3e61358d7170e24c:
+
+  fs/fscache/object-list.c: use __seq_open_private() (2014-10-13 17:52:21 +0100)
+
+----------------------------------------------------------------
+FS-Cache fixes
+
+----------------------------------------------------------------
+David Howells (2):
+      CacheFiles: Handle object being killed before being set up
+      CacheFiles: Fix incorrect test for in-memory object collision
+
+Rob Jones (1):
+      fs/fscache/object-list.c: use __seq_open_private()
+
+ fs/cachefiles/interface.c | 33 ++++++++++++++++++++-------------
+ fs/cachefiles/namei.c     |  2 +-
+ fs/fscache/object-list.c  | 16 ++--------------
+ 3 files changed, 23 insertions(+), 28 deletions(-)
