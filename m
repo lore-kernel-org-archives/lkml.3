@@ -1,87 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068AbaJMCh3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:37:29 -0400
-Received: from forward19.mail.yandex.net ([95.108.253.144]:50484 "EHLO
-	forward19.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753312AbaJMChZ (ORCPT
+	id S1754323AbaJMCiG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:38:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46057 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754576AbaJMC3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:37:25 -0400
-X-Greylist: delayed 445 seconds by postgrey-1.27 at vger.kernel.org; Sun, 12 Oct 2014 22:37:25 EDT
-X-Yandex-Uniq: da5dca21-b708-4f2d-96a2-5f753c5b5895
-Authentication-Results: smtp19.mail.yandex.net; dkim=pass header.i=@yandex.com
-From: Erich Cordoba Malibran <erich.cordoba@yandex.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Erich Cordoba Malibran <erich.cordoba@yandex.com>
-Subject: [PATCH] staging: wlan-ng: Renamed prism2_fragmenthreshold in prism2mib.c
-Date: Sun, 12 Oct 2014 21:29:32 -0500
-Message-Id: <1413167372-5568-1-git-send-email-erich.cordoba@yandex.com>
+	Sun, 12 Oct 2014 22:29:52 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Andreas Bomholtz <andreas@seluxit.com>,
+        Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.16 51/55] USB: cp210x: add support for Seluxit USB dongle
+Date: Mon, 13 Oct 2014 04:25:05 +0200
+Message-Id: <20141013022446.157623452@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
+References: <20141013022443.729870634@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Erich Cordoba Malibran <erich.cordoba@yandex.com>
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
-Renamed function to fix style issues.
+------------------
 
-Signed-off-by: Erich Cordoba Malibran <erich.cordoba@yandex.com>
+From: Andreas Bomholtz <andreas@seluxit.com>
+
+commit dee80ad12d2b1b304286a707fde7ab05d1fc7bab upstream.
+
+Added the Seluxit ApS USB Serial Dongle to cp210x driver.
+
+Signed-off-by: Andreas Bomholtz <andreas@seluxit.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/staging/wlan-ng/prism2mib.c | 26 +++++++++++++-------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
+ drivers/usb/serial/cp210x.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/staging/wlan-ng/prism2mib.c b/drivers/staging/wlan-ng/prism2mib.c
-index 0163e06..30d224f 100644
---- a/drivers/staging/wlan-ng/prism2mib.c
-+++ b/drivers/staging/wlan-ng/prism2mib.c
-@@ -132,12 +132,12 @@ static int prism2mib_excludeunencrypted(struct mibrec *mib,
- 					struct p80211msg_dot11req_mibset *msg,
- 					void *data);
- 
--static int prism2mib_fragmentationthreshold(struct mibrec *mib,
--					    int isget,
--					    wlandevice_t *wlandev,
--					    hfa384x_t *hw,
--					    struct p80211msg_dot11req_mibset *msg,
--					    void *data);
-+static int prism2mib_fragmenthreshold(struct mibrec *mib,
-+				      int isget,
-+				      wlandevice_t *wlandev,
-+				      hfa384x_t *hw,
-+				      struct p80211msg_dot11req_mibset *msg,
-+				      void *data);
- 
- static int prism2mib_priv(struct mibrec *mib,
- 			  int isget,
-@@ -198,7 +198,7 @@ static struct mibrec mibtab[] = {
- 	{DIDmib_dot11mac_dot11OperationTable_dot11FragmentationThreshold,
- 	 F_STA | F_READ | F_WRITE,
- 	 HFA384x_RID_FRAGTHRESH, 0, 0,
--	 prism2mib_fragmentationthreshold},
-+	 prism2mib_fragmenthreshold},
- 	{DIDmib_dot11mac_dot11OperationTable_dot11MaxTransmitMSDULifetime,
- 	 F_STA | F_READ,
- 	 HFA384x_RID_MAXTXLIFETIME, 0, 0,
-@@ -660,12 +660,12 @@ static int prism2mib_excludeunencrypted(struct mibrec *mib,
- *
- ----------------------------------------------------------------*/
- 
--static int prism2mib_fragmentationthreshold(struct mibrec *mib,
--					    int isget,
--					    wlandevice_t *wlandev,
--					    hfa384x_t *hw,
--					    struct p80211msg_dot11req_mibset *msg,
--					    void *data)
-+static int prism2mib_fragmenthreshold(struct mibrec *mib,
-+				      int isget,
-+				      wlandevice_t *wlandev,
-+				      hfa384x_t *hw,
-+				      struct p80211msg_dot11req_mibset *msg,
-+				      void *data)
- {
- 	int result;
- 	u32 *uint32 = (u32 *) data;
--- 
-2.1.2
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -156,6 +156,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
+ 	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
+ 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
++	{ USB_DEVICE(0x1D6F, 0x0010) }, /* Seluxit ApS RF Dongle */
+ 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
+ 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
+ 	{ USB_DEVICE(0x1FB9, 0x0100) }, /* Lake Shore Model 121 Current Source */
+
 
