@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753895AbaJMC1q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:27:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45807 "EHLO
+	id S1753920AbaJMC1v (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:27:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45825 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753827AbaJMC1h (ORCPT
+	with ESMTP id S1753827AbaJMC1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:27:37 -0400
+	Sun, 12 Oct 2014 22:27:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Konstantinos Kolelis <k.kolelis@sirrix.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>
-Subject: [PATCH 3.14 23/37] xfrm: Generate queueing routes only from route lookup functions
-Date: Mon, 13 Oct 2014 04:24:20 +0200
-Message-Id: <20141013022401.256638435@linuxfoundation.org>
+        Eric Dumazet <edumazet@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.16 12/55] packet: handle too big packets for PACKET_V3
+Date: Mon, 13 Oct 2014 04:24:26 +0200
+Message-Id: <20141013022444.257863458@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141013022400.286360067@linuxfoundation.org>
-References: <20141013022400.286360067@linuxfoundation.org>
+In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
+References: <20141013022443.729870634@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,153 +27,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Steffen Klassert <steffen.klassert@secunet.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit b8c203b2d2fc961bafd53b41d5396bbcdec55998 ]
+[ Upstream commit dc808110bb62b64a448696ecac3938902c92e1ab ]
 
-Currently we genarate a queueing route if we have matching policies
-but can not resolve the states and the sysctl xfrm_larval_drop is
-disabled. Here we assume that dst_output() is called to kill the
-queued packets. Unfortunately this assumption is not true in all
-cases, so it is possible that these packets leave the system unwanted.
+af_packet can currently overwrite kernel memory by out of bound
+accesses, because it assumed a [new] block can always hold one frame.
 
-We fix this by generating queueing routes only from the
-route lookup functions, here we can guarantee a call to
-dst_output() afterwards.
+This is not generally the case, even if most existing tools do it right.
 
-Fixes: a0073fe18e71 ("xfrm: Add a state resolution packet queue")
-Reported-by: Konstantinos Kolelis <k.kolelis@sirrix.com>
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+This patch clamps too long frames as API permits, and issue a one time
+error on syslog.
+
+[  394.357639] tpacket_rcv: packet too big, clamped from 5042 to 3966. macoff=82
+
+In this example, packet header tp_snaplen was set to 3966,
+and tp_len was set to 5042 (skb->len)
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Fixes: f6fb8f100b80 ("af-packet: TPACKET_V3 flexible buffer implementation.")
+Acked-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/dst.h      |    1 +
- net/xfrm/xfrm_policy.c |   32 ++++++++++++++++++++++++--------
- 2 files changed, 25 insertions(+), 8 deletions(-)
+ net/packet/af_packet.c |   17 +++++++++++++++++
+ net/packet/internal.h  |    1 +
+ 2 files changed, 18 insertions(+)
 
---- a/include/net/dst.h
-+++ b/include/net/dst.h
-@@ -466,6 +466,7 @@ void dst_init(void);
- /* Flags for xfrm_lookup flags argument. */
- enum {
- 	XFRM_LOOKUP_ICMP = 1 << 0,
-+	XFRM_LOOKUP_QUEUE = 1 << 1,
- };
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -636,6 +636,7 @@ static void init_prb_bdqc(struct packet_
+ 	p1->tov_in_jiffies = msecs_to_jiffies(p1->retire_blk_tov);
+ 	p1->blk_sizeof_priv = req_u->req3.tp_sizeof_priv;
  
- struct flowi;
---- a/net/xfrm/xfrm_policy.c
-+++ b/net/xfrm/xfrm_policy.c
-@@ -41,6 +41,11 @@
- 
- static struct dst_entry *xfrm_policy_sk_bundles;
- 
-+struct xfrm_flo {
-+	struct dst_entry *dst_orig;
-+	u8 flags;
-+};
++	p1->max_frame_len = p1->kblk_size - BLK_PLUS_PRIV(p1->blk_sizeof_priv);
+ 	prb_init_ft_ops(p1, req_u);
+ 	prb_setup_retire_blk_timer(po, tx_ring);
+ 	prb_open_block(p1, pbd);
+@@ -1946,6 +1947,18 @@ static int tpacket_rcv(struct sk_buff *s
+ 			if ((int)snaplen < 0)
+ 				snaplen = 0;
+ 		}
++	} else if (unlikely(macoff + snaplen >
++			    GET_PBDQC_FROM_RB(&po->rx_ring)->max_frame_len)) {
++		u32 nval;
 +
- static DEFINE_SPINLOCK(xfrm_policy_afinfo_lock);
- static struct xfrm_policy_afinfo __rcu *xfrm_policy_afinfo[NPROTO]
- 						__read_mostly;
-@@ -1889,13 +1894,14 @@ static int xdst_queue_output(struct sk_b
- }
- 
- static struct xfrm_dst *xfrm_create_dummy_bundle(struct net *net,
--						 struct dst_entry *dst,
-+						 struct xfrm_flo *xflo,
- 						 const struct flowi *fl,
- 						 int num_xfrms,
- 						 u16 family)
- {
- 	int err;
- 	struct net_device *dev;
-+	struct dst_entry *dst;
- 	struct dst_entry *dst1;
- 	struct xfrm_dst *xdst;
- 
-@@ -1903,9 +1909,12 @@ static struct xfrm_dst *xfrm_create_dumm
- 	if (IS_ERR(xdst))
- 		return xdst;
- 
--	if (net->xfrm.sysctl_larval_drop || num_xfrms <= 0)
-+	if (!(xflo->flags & XFRM_LOOKUP_QUEUE) ||
-+	    net->xfrm.sysctl_larval_drop ||
-+	    num_xfrms <= 0)
- 		return xdst;
- 
-+	dst = xflo->dst_orig;
- 	dst1 = &xdst->u.dst;
- 	dst_hold(dst);
- 	xdst->route = dst;
-@@ -1947,7 +1956,7 @@ static struct flow_cache_object *
- xfrm_bundle_lookup(struct net *net, const struct flowi *fl, u16 family, u8 dir,
- 		   struct flow_cache_object *oldflo, void *ctx)
- {
--	struct dst_entry *dst_orig = (struct dst_entry *)ctx;
-+	struct xfrm_flo *xflo = (struct xfrm_flo *)ctx;
- 	struct xfrm_policy *pols[XFRM_POLICY_TYPE_MAX];
- 	struct xfrm_dst *xdst, *new_xdst;
- 	int num_pols = 0, num_xfrms = 0, i, err, pol_dead;
-@@ -1988,7 +1997,8 @@ xfrm_bundle_lookup(struct net *net, cons
- 			goto make_dummy_bundle;
++		nval = GET_PBDQC_FROM_RB(&po->rx_ring)->max_frame_len - macoff;
++		pr_err_once("tpacket_rcv: packet too big, clamped from %u to %u. macoff=%u\n",
++			    snaplen, nval, macoff);
++		snaplen = nval;
++		if (unlikely((int)snaplen < 0)) {
++			snaplen = 0;
++			macoff = GET_PBDQC_FROM_RB(&po->rx_ring)->max_frame_len;
++		}
  	}
- 
--	new_xdst = xfrm_resolve_and_create_bundle(pols, num_pols, fl, family, dst_orig);
-+	new_xdst = xfrm_resolve_and_create_bundle(pols, num_pols, fl, family,
-+						  xflo->dst_orig);
- 	if (IS_ERR(new_xdst)) {
- 		err = PTR_ERR(new_xdst);
- 		if (err != -EAGAIN)
-@@ -2022,7 +2032,7 @@ make_dummy_bundle:
- 	/* We found policies, but there's no bundles to instantiate:
- 	 * either because the policy blocks, has no transformations or
- 	 * we could not build template (no xfrm_states).*/
--	xdst = xfrm_create_dummy_bundle(net, dst_orig, fl, num_xfrms, family);
-+	xdst = xfrm_create_dummy_bundle(net, xflo, fl, num_xfrms, family);
- 	if (IS_ERR(xdst)) {
- 		xfrm_pols_put(pols, num_pols);
- 		return ERR_CAST(xdst);
-@@ -2121,13 +2131,18 @@ struct dst_entry *xfrm_lookup(struct net
- 	}
- 
- 	if (xdst == NULL) {
-+		struct xfrm_flo xflo;
-+
-+		xflo.dst_orig = dst_orig;
-+		xflo.flags = flags;
-+
- 		/* To accelerate a bit...  */
- 		if ((dst_orig->flags & DST_NOXFRM) ||
- 		    !net->xfrm.policy_count[XFRM_POLICY_OUT])
- 			goto nopol;
- 
- 		flo = flow_cache_lookup(net, fl, family, dir,
--					xfrm_bundle_lookup, dst_orig);
-+					xfrm_bundle_lookup, &xflo);
- 		if (flo == NULL)
- 			goto nopol;
- 		if (IS_ERR(flo)) {
-@@ -2219,7 +2234,8 @@ struct dst_entry *xfrm_lookup_route(stru
- 				    const struct flowi *fl,
- 				    struct sock *sk, int flags)
- {
--	struct dst_entry *dst = xfrm_lookup(net, dst_orig, fl, sk, flags);
-+	struct dst_entry *dst = xfrm_lookup(net, dst_orig, fl, sk,
-+					    flags | XFRM_LOOKUP_QUEUE);
- 
- 	if (IS_ERR(dst) && PTR_ERR(dst) == -EREMOTE)
- 		return make_blackhole(net, dst_orig->ops->family, dst_orig);
-@@ -2493,7 +2509,7 @@ int __xfrm_route_forward(struct sk_buff
- 
- 	skb_dst_force(skb);
- 
--	dst = xfrm_lookup(net, skb_dst(skb), &fl, NULL, 0);
-+	dst = xfrm_lookup(net, skb_dst(skb), &fl, NULL, XFRM_LOOKUP_QUEUE);
- 	if (IS_ERR(dst)) {
- 		res = 0;
- 		dst = NULL;
+ 	spin_lock(&sk->sk_receive_queue.lock);
+ 	h.raw = packet_current_rx_frame(po, skb,
+@@ -3789,6 +3802,10 @@ static int packet_set_ring(struct sock *
+ 			goto out;
+ 		if (unlikely(req->tp_block_size & (PAGE_SIZE - 1)))
+ 			goto out;
++		if (po->tp_version >= TPACKET_V3 &&
++		    (int)(req->tp_block_size -
++			  BLK_PLUS_PRIV(req_u->req3.tp_sizeof_priv)) <= 0)
++			goto out;
+ 		if (unlikely(req->tp_frame_size < po->tp_hdrlen +
+ 					po->tp_reserve))
+ 			goto out;
+--- a/net/packet/internal.h
++++ b/net/packet/internal.h
+@@ -29,6 +29,7 @@ struct tpacket_kbdq_core {
+ 	char		*pkblk_start;
+ 	char		*pkblk_end;
+ 	int		kblk_size;
++	unsigned int	max_frame_len;
+ 	unsigned int	knum_blocks;
+ 	uint64_t	knxt_seq_num;
+ 	char		*prev;
 
 
