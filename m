@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127AbaJMC2b (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:28:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45907 "EHLO
+	id S1754145AbaJMC2g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:28:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45916 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754099AbaJMC21 (ORCPT
+	with ESMTP id S1753370AbaJMC2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:28:27 -0400
+	Sun, 12 Oct 2014 22:28:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Neal Cardwell <ncardwell@google.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Gwenhael Goavec-Merou <gwenhael.goavec-merou@armadeus.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 08/55] tcp: fix tcp_release_cb() to dispatch via address family for mtu_reduced()
-Date: Mon, 13 Oct 2014 04:24:22 +0200
-Message-Id: <20141013022444.088029439@linuxfoundation.org>
+Subject: [PATCH 3.16 10/55] net: phy: smsc: move smsc_phy_config_init reset part in a soft_reset function
+Date: Mon, 13 Oct 2014 04:24:24 +0200
+Message-Id: <20141013022444.173187131@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
 References: <20141013022443.729870634@linuxfoundation.org>
@@ -31,134 +30,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neal Cardwell <ncardwell@google.com>
+From: Gwenhael Goavec-Merou <gwenhael.goavec-merou@armadeus.com>
 
-[ Upstream commit 4fab9071950c2021d846e18351e0f46a1cffd67b ]
+[ Upstream commit 21009686662fd21412ca35def7cb3cc8346e1c3d ]
 
-Make sure we use the correct address-family-specific function for
-handling MTU reductions from within tcp_release_cb().
+On the one hand, phy_device.c provides a generic reset function if the phy
+driver does not provide a soft_reset pointer. This generic reset does not take
+into account the state of the phy, with a potential failure if the phy is in
+powerdown mode. On the other hand, smsc driver provides a function with both
+correct reset behaviour and configuration.
 
-Previously AF_INET6 sockets were incorrectly always using the IPv6
-code path when sometimes they were handling IPv4 traffic and thus had
-an IPv4 dst.
+This patch moves the reset part into a new smsc_phy_reset function and provides
+the soft_reset pointer to have a correct reset behaviour by default.
 
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Diagnosed-by: Willem de Bruijn <willemb@google.com>
-Fixes: 563d34d057862 ("tcp: dont drop MTU reduction indications")
-Reviewed-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Gwenhael Goavec-Merou <gwenhael.goavec-merou@armadeus.com>
+Reviewed-by: Florian Fainelli <f.fainelli@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/inet_connection_sock.h |    1 +
- include/net/sock.h                 |    1 -
- include/net/tcp.h                  |    1 +
- net/ipv4/tcp_ipv4.c                |    5 +++--
- net/ipv4/tcp_output.c              |    2 +-
- net/ipv6/tcp_ipv6.c                |    3 ++-
- 6 files changed, 8 insertions(+), 5 deletions(-)
+ drivers/net/phy/smsc.c |   33 +++++++++++++++++++++------------
+ 1 file changed, 21 insertions(+), 12 deletions(-)
 
---- a/include/net/inet_connection_sock.h
-+++ b/include/net/inet_connection_sock.h
-@@ -62,6 +62,7 @@ struct inet_connection_sock_af_ops {
- 	void	    (*addr2sockaddr)(struct sock *sk, struct sockaddr *);
- 	int	    (*bind_conflict)(const struct sock *sk,
- 				     const struct inet_bind_bucket *tb, bool relax);
-+	void	    (*mtu_reduced)(struct sock *sk);
- };
+--- a/drivers/net/phy/smsc.c
++++ b/drivers/net/phy/smsc.c
+@@ -43,6 +43,22 @@ static int smsc_phy_ack_interrupt(struct
  
- /** inet_connection_sock - INET connection oriented sock
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -971,7 +971,6 @@ struct proto {
- 						struct sk_buff *skb);
- 
- 	void		(*release_cb)(struct sock *sk);
--	void		(*mtu_reduced)(struct sock *sk);
- 
- 	/* Keeping track of sk's, looking them up, and port selection methods. */
- 	void			(*hash)(struct sock *sk);
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -448,6 +448,7 @@ const u8 *tcp_parse_md5sig_option(const
-  */
- 
- void tcp_v4_send_check(struct sock *sk, struct sk_buff *skb);
-+void tcp_v4_mtu_reduced(struct sock *sk);
- int tcp_v4_conn_request(struct sock *sk, struct sk_buff *skb);
- struct sock *tcp_create_openreq_child(struct sock *sk,
- 				      struct request_sock *req,
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -269,7 +269,7 @@ EXPORT_SYMBOL(tcp_v4_connect);
-  * It can be called through tcp_release_cb() if socket was owned by user
-  * at the time tcp_v4_err() was called to handle ICMP message.
-  */
--static void tcp_v4_mtu_reduced(struct sock *sk)
-+void tcp_v4_mtu_reduced(struct sock *sk)
+ static int smsc_phy_config_init(struct phy_device *phydev)
  {
- 	struct dst_entry *dst;
- 	struct inet_sock *inet = inet_sk(sk);
-@@ -300,6 +300,7 @@ static void tcp_v4_mtu_reduced(struct so
- 		tcp_simple_retransmit(sk);
- 	} /* else let the usual retransmit timer handle it */
- }
-+EXPORT_SYMBOL(tcp_v4_mtu_reduced);
- 
- static void do_redirect(struct sk_buff *skb, struct sock *sk)
- {
-@@ -1880,6 +1881,7 @@ const struct inet_connection_sock_af_ops
- 	.compat_setsockopt = compat_ip_setsockopt,
- 	.compat_getsockopt = compat_ip_getsockopt,
- #endif
-+	.mtu_reduced	   = tcp_v4_mtu_reduced,
- };
- EXPORT_SYMBOL(ipv4_specific);
- 
-@@ -2499,7 +2501,6 @@ struct proto tcp_prot = {
- 	.sendpage		= tcp_sendpage,
- 	.backlog_rcv		= tcp_v4_do_rcv,
- 	.release_cb		= tcp_release_cb,
--	.mtu_reduced		= tcp_v4_mtu_reduced,
- 	.hash			= inet_hash,
- 	.unhash			= inet_unhash,
- 	.get_port		= inet_csk_get_port,
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -800,7 +800,7 @@ void tcp_release_cb(struct sock *sk)
- 		__sock_put(sk);
++	int rc = phy_read(phydev, MII_LAN83C185_CTRL_STATUS);
++
++	if (rc < 0)
++		return rc;
++
++	/* Enable energy detect mode for this SMSC Transceivers */
++	rc = phy_write(phydev, MII_LAN83C185_CTRL_STATUS,
++		       rc | MII_LAN83C185_EDPWRDOWN);
++	if (rc < 0)
++		return rc;
++
++	return smsc_phy_ack_interrupt(phydev);
++}
++
++static int smsc_phy_reset(struct phy_device *phydev)
++{
+ 	int rc = phy_read(phydev, MII_LAN83C185_SPECIAL_MODES);
+ 	if (rc < 0)
+ 		return rc;
+@@ -66,18 +82,7 @@ static int smsc_phy_config_init(struct p
+ 			rc = phy_read(phydev, MII_BMCR);
+ 		} while (rc & BMCR_RESET);
  	}
- 	if (flags & (1UL << TCP_MTU_REDUCED_DEFERRED)) {
--		sk->sk_prot->mtu_reduced(sk);
-+		inet_csk(sk)->icsk_af_ops->mtu_reduced(sk);
- 		__sock_put(sk);
- 	}
+-
+-	rc = phy_read(phydev, MII_LAN83C185_CTRL_STATUS);
+-	if (rc < 0)
+-		return rc;
+-
+-	/* Enable energy detect mode for this SMSC Transceivers */
+-	rc = phy_write(phydev, MII_LAN83C185_CTRL_STATUS,
+-		       rc | MII_LAN83C185_EDPWRDOWN);
+-	if (rc < 0)
+-		return rc;
+-
+-	return smsc_phy_ack_interrupt (phydev);
++	return 0;
  }
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -1681,6 +1681,7 @@ static const struct inet_connection_sock
- 	.compat_setsockopt = compat_ipv6_setsockopt,
- 	.compat_getsockopt = compat_ipv6_getsockopt,
- #endif
-+	.mtu_reduced	   = tcp_v6_mtu_reduced,
- };
  
- #ifdef CONFIG_TCP_MD5SIG
-@@ -1711,6 +1712,7 @@ static const struct inet_connection_sock
- 	.compat_setsockopt = compat_ipv6_setsockopt,
- 	.compat_getsockopt = compat_ipv6_getsockopt,
- #endif
-+	.mtu_reduced	   = tcp_v4_mtu_reduced,
- };
+ static int lan911x_config_init(struct phy_device *phydev)
+@@ -142,6 +147,7 @@ static struct phy_driver smsc_phy_driver
+ 	.config_aneg	= genphy_config_aneg,
+ 	.read_status	= genphy_read_status,
+ 	.config_init	= smsc_phy_config_init,
++	.soft_reset	= smsc_phy_reset,
  
- #ifdef CONFIG_TCP_MD5SIG
-@@ -1950,7 +1952,6 @@ struct proto tcpv6_prot = {
- 	.sendpage		= tcp_sendpage,
- 	.backlog_rcv		= tcp_v6_do_rcv,
- 	.release_cb		= tcp_release_cb,
--	.mtu_reduced		= tcp_v6_mtu_reduced,
- 	.hash			= tcp_v6_hash,
- 	.unhash			= inet_unhash,
- 	.get_port		= inet_csk_get_port,
+ 	/* IRQ related */
+ 	.ack_interrupt	= smsc_phy_ack_interrupt,
+@@ -164,6 +170,7 @@ static struct phy_driver smsc_phy_driver
+ 	.config_aneg	= genphy_config_aneg,
+ 	.read_status	= genphy_read_status,
+ 	.config_init	= smsc_phy_config_init,
++	.soft_reset	= smsc_phy_reset,
+ 
+ 	/* IRQ related */
+ 	.ack_interrupt	= smsc_phy_ack_interrupt,
+@@ -186,6 +193,7 @@ static struct phy_driver smsc_phy_driver
+ 	.config_aneg	= genphy_config_aneg,
+ 	.read_status	= genphy_read_status,
+ 	.config_init	= smsc_phy_config_init,
++	.soft_reset	= smsc_phy_reset,
+ 
+ 	/* IRQ related */
+ 	.ack_interrupt	= smsc_phy_ack_interrupt,
+@@ -230,6 +238,7 @@ static struct phy_driver smsc_phy_driver
+ 	.config_aneg	= genphy_config_aneg,
+ 	.read_status	= lan87xx_read_status,
+ 	.config_init	= smsc_phy_config_init,
++	.soft_reset	= smsc_phy_reset,
+ 
+ 	/* IRQ related */
+ 	.ack_interrupt	= smsc_phy_ack_interrupt,
 
 
