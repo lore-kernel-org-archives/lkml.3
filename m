@@ -1,114 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494AbaJMI5l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 04:57:41 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:50322 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753446AbaJMI5j convert rfc822-to-8bit (ORCPT
+	id S1753520AbaJMI6L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 04:58:11 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:42208 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752827AbaJMI6G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 04:57:39 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Rickard Strandqvist'" <rickard_strandqvist@spectrumdigital.se>,
-        "Brett Rudley" <brudley@broadcom.com>,
-        Arend van Spriel <arend@broadcom.com>
-CC: Hante Meuleman <meuleman@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
-        Daniel Kim <dekim@broadcom.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "brcm80211-dev-list@broadcom.com" <brcm80211-dev-list@broadcom.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] net: wireless: brcm80211: brcmfmac: dhd_sdio.c:
-  Cleaning up missing null-terminate in conjunction with strncpy
-Thread-Topic: [PATCH] net: wireless: brcm80211: brcmfmac: dhd_sdio.c:
-  Cleaning up missing null-terminate in conjunction with strncpy
-Thread-Index: AQHP5a3tGePXTMffF0+SQML57ylq5Jwtt/mg
-Date: Mon, 13 Oct 2014 08:55:46 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D174C992F@AcuExch.aculab.com>
-References: <1413071551-15372-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-In-Reply-To: <1413071551-15372-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 13 Oct 2014 04:58:06 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-bc-543b941a731c
+Message-id: <1413190681.3829.7.camel@AMDC1943>
+Subject: Re: [PATCH v2 2/2] power: charger-manager: Avoid recursive thermal
+ get_temp call
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: myungjoo.ham@samsung.com
+Cc: Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Anton Vorontsov <anton@enomsg.org>,
+        =?UTF-8?Q?=EC=9D=B4=EC=A2=85=ED=99=94?= <jonghwa3.lee@samsung.com>,
+        =?UTF-8?Q?=EC=B5=9C=EC=B0=AC=EC=9A=B0?= <cw00.choi@samsung.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?UTF-8?Q?=EB=B0=95=EA=B2=BD=EB=AF=BC?= <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Date: Mon, 13 Oct 2014 10:58:01 +0200
+In-reply-to: <326901692.426181413180076268.JavaMail.weblogic@epmlwas05a>
+References: <326901692.426181413180076268.JavaMail.weblogic@epmlwas05a>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.10.4-0ubuntu2
+MIME-version: 1.0
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOLMWRmVeSWpSXmKPExsVy+t/xq7pSU6xDDD6f1bE4uFXTYuOM9awW
+	1788Z7WY9OQ9s8XElZOZLTrPPmG2ONv0ht3i8q45bBafe48wWqw9cpfd4nbjCjaL07tLHHg8
+	JvR/YvTYOesuu8fmFVoem1Z1snn0bVnF6PF5k1wAWxSXTUpqTmZZapG+XQJXxpN/t1gLJktW
+	3Pq8iqWB8b5wFyMnh4SAicTJGdNYIWwxiQv31rOB2EICSxklOhuKuxi5gOzPjBKrWrcwgSR4
+	BfQkdq1pACri4BAWiJa4sNsQJMwmYCyxefkSsF4RARmJqxu3s4D0MgtcY5E4tGYDWC+LgKrE
+	v8MtjCA2p4CHxPXvcxghlrlLTLsEEWcWUJeYNG8RM8h8CQFlicZ+N4i1ghI/Jt9jgSiRl9i8
+	5i3zBEaBWUg6ZiEpm4WkbAEj8ypG0dTS5ILipPRcI73ixNzi0rx0veT83E2MkMj4uoNx6TGr
+	Q4wCHIxKPLwWf6xChFgTy4orcw8xSnAwK4nwnu21DhHiTUmsrEotyo8vKs1JLT7EyMTBKdXA
+	mN/F6fZ0+8nH2kxGkp9DtzrsWNmyaG5TTM7aHM4J3yTT5k27JCO2YMLDwBUxfgvlPUTFT0+z
+	XPZP45EkN3+Sjljkyp/fis5onNijcfW/esnvP6cWBsy5n/ny28rp7/T3vrDItnpm2fdM6+5V
+	hRWPAnwsHVJ/h/Z/iM4Q9mtkjkg/sPfVOdX+D0osxRmJhlrMRcWJADNJ9f9qAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rickard Strandqvist
-> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
-> And changed from using strncpy to strlcpy to simplify code.
-
-I think you should return an error if the strings get truncated.
-Silent truncation is going to lead to issues at some point in the future
-(in some places).
-
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->  drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c |   25 ++++++++++----------
->  1 file changed, 12 insertions(+), 13 deletions(-)
+On pon, 2014-10-13 at 06:01 +0000, MyungJoo Ham wrote:
+> >   
+> >  Add a 'no_thermal' property to the power supply class. If true then
+> > thermal zone won't be created for this power supply in
+> > power_supply_register().
+> > 
+> > Power supply drivers may want to set it if they support
+> > POWER_SUPPLY_PROP_TEMP and they are forwarding this get property call to
+> > other thermal zone.
+> > 
+> > If they won't set it lockdep may report false positive deadlock for
+> > thermal zone's mutex because of nested calls to thermal_zone_get_temp().
+> > First is the call to thermal_zone_get_temp() of the driver's thermal
+> > zone. Thermal core gets POWER_SUPPLY_PROP_TEMP property from this
+> > driver. The driver then calls other thermal zone thermal_zone_get_temp()
+> > and returns result.
+> > 
+> > Example of such driver is charger manager.
+> > 
+> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 > 
-> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
-> b/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
-> index f55f625..d20d4e6 100644
-> --- a/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
-> +++ b/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
-> @@ -670,7 +670,6 @@ static int brcmf_sdio_get_fwnames(struct brcmf_chip *ci,
->  				  struct brcmf_sdio_dev *sdiodev)
->  {
->  	int i;
-> -	uint fw_len, nv_len;
->  	char end;
+> Do we really need to add another variable in the psy struct?
+> In the previous thread, I thought that wasn't needed, though.
+
+I considered the idea mentioned by  Jonghwa Lee:
+
+static int psy_register_thermal(struct power_supply *psy)
+{
+...
++       if (psy->tzd)
++               return 0; 
+
+but there would be problem in determining the ownership of the thermal
+zone - who should unregister that thermal zone? Charger manager's power
+supply or fuel gauge's power supply?
+
+We could NULL-ify it manually from charger's remove function before
+calling power_supply_unregister... but it is really accessing a private
+field of power_supply structure. 
+
+I think this should be done in API-level.
+
+Best regards,
+Krzysztof
+
 > 
->  	for (i = 0; i < ARRAY_SIZE(brcmf_fwname_data); i++) {
-> @@ -684,25 +683,25 @@ static int brcmf_sdio_get_fwnames(struct brcmf_chip *ci,
->  		return -ENODEV;
->  	}
 > 
-> -	fw_len = sizeof(sdiodev->fw_name) - 1;
-> -	nv_len = sizeof(sdiodev->nvram_name) - 1;
->  	/* check if firmware path is provided by module parameter */
->  	if (brcmf_firmware_path[0] != '\0') {
-> -		strncpy(sdiodev->fw_name, brcmf_firmware_path, fw_len);
-> -		strncpy(sdiodev->nvram_name, brcmf_firmware_path, nv_len);
-> -		fw_len -= strlen(sdiodev->fw_name);
-> -		nv_len -= strlen(sdiodev->nvram_name);
-> +		strlcpy(sdiodev->fw_name, brcmf_firmware_path,
-> +			sizeof(sdiodev->fw_name));
-> +		strlcpy(sdiodev->nvram_name, brcmf_firmware_path,
-> +			sizeof(sdiodev->nvram_name));
+> Cheers,
+> MyungJoo
 > 
->  		end = brcmf_firmware_path[strlen(brcmf_firmware_path) - 1];
-
-If you are doing a strlen() here, you could use the length for the copy
-and/or use it to avoid the strcat().
-
->  		if (end != '/') {
-> -			strncat(sdiodev->fw_name, "/", fw_len);
-> -			strncat(sdiodev->nvram_name, "/", nv_len);
-> -			fw_len--;
-> -			nv_len--;
-> +			strlcat(sdiodev->fw_name, "/",
-> +				sizeof(sdiodev->fw_name));
-> +			strlcat(sdiodev->nvram_name, "/",
-> +				sizeof(sdiodev->nvram_name));
->  		}
->  	}
-> -	strncat(sdiodev->fw_name, brcmf_fwname_data[i].bin, fw_len);
-> -	strncat(sdiodev->nvram_name, brcmf_fwname_data[i].nv, nv_len);
-> +	strlcat(sdiodev->fw_name, brcmf_fwname_data[i].bin,
-> +		sizeof(sdiodev->fw_name));
-> +	strlcat(sdiodev->nvram_name, brcmf_fwname_data[i].nv,
-> +		sizeof(sdiodev->nvram_name));
-
-I assume something ensures that fw_name[0] == 0 here.
-
-	David
-
-
+> > 
+> > ---
+> > 
+> > Changes since v1:
+> > 1. New patch (new idea).
+> > ---
+> >  drivers/power/power_supply_core.c | 3 +++
+> >  include/linux/power_supply.h      | 6 ++++++
+> >  2 files changed, 9 insertions(+)
+> > 
+> > diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
+> > index 6cb7fe5c022d..694e8cddd5c1 100644
+> > --- a/drivers/power/power_supply_core.c
+> > +++ b/drivers/power/power_supply_core.c
+> > @@ -417,6 +417,9 @@ static int psy_register_thermal(struct power_supply *psy)
+> >  {
+> >  	int i;
+> >  
+> > +	if (psy->no_thermal)
+> > +		return 0;
+> > +
+> >  	/* Register battery zone device psy reports temperature */
+> >  	for (i = 0; i < psy->num_properties; i++) {
+> >  		if (psy->properties[i] == POWER_SUPPLY_PROP_TEMP) {
+> > diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
+> > index 3ed049673022..096dbced02ac 100644
+> > --- a/include/linux/power_supply.h
+> > +++ b/include/linux/power_supply.h
+> > @@ -200,6 +200,12 @@ struct power_supply {
+> >  	void (*external_power_changed)(struct power_supply *psy);
+> >  	void (*set_charged)(struct power_supply *psy);
+> >  
+> > +	/*
+> > +	 * Set if thermal zone should not be created for this power supply.
+> > +	 * For example for virtual supplies forwarding calls to actual
+> > +	 * sensors or other supplies.
+> > +	 */
+> > +	bool no_thermal;
+> >  	/* For APM emulation, think legacy userspace. */
+> >  	int use_for_apm;
+> >  
+> > -- 
+> > 1.9.1
+> > 
 
