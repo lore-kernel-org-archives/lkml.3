@@ -1,93 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580AbaJMTvs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 15:51:48 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:52121 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751058AbaJMTvq (ORCPT
+	id S1753254AbaJMTx3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 15:53:29 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:50593 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188AbaJMTx2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 15:51:46 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: "Joe.C" <yingjoe.chen@mediatek.com>, Mark Rutland <Mark.Rutland@arm.com>,
-        "arm@kernel.org" <arm@kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "srv_heupstream@mediatek.com" <srv_heupstream@mediatek.com>,
-        "yingjoe.chen@gmail.com" <yingjoe.chen@gmail.com>,
-        "hc.yen@mediatek.com" <hc.yen@mediatek.com>,
-        "eddie.huang@mediatek.com" <eddie.huang@mediatek.com>,
-        "nathan.chung@mediatek.com" <nathan.chung@mediatek.com>,
-        "yh.chen@mediatek.com" <yh.chen@mediatek.com>,
-        Sascha Hauer <kernel@pengutronix.de>, Olof Johansson <olof@lixom.net>,
-        Pawel Moll <Pawel.Moll@arm.com>, Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Matt Porter <mporter@linaro.org>, Marc Carino <marc.ceeeee@gmail.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Sricharan R <r.sricharan@ti.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 3/7] irqchip: gic: Support hierarchy irq domain.
-Date: Mon, 13 Oct 2014 21:51:18 +0200
-Message-ID: <4904191.xcTM1nFGH7@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <543BC138.3010109@arm.com>
-References: <1412864980-20273-1-git-send-email-yingjoe.chen@mediatek.com> <1413196996.23455.9.camel@mtksdaap41> <543BC138.3010109@arm.com>
+	Mon, 13 Oct 2014 15:53:28 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:jAzGNtAHrm6/GpV/A74LccG4E77avsFkZ+FXkESKGnx
- XK4hchTxjiOK+vbAQqZz0yty3y1AJK8K0qIPspvxzSPuv9dIhT
- JDe843a2YqvuQfU+iuSen5PPy368B4bVrjw6Ez0yDOsLDB4Hcs
- wiE5eM3Vu44x1P9Zu00mMlc8M3Hds4EvATld6d+ngEMIAHyG99
- zQEV1X7oUdBQt57cr3ixGtH6NZfjy/sFwZ+amH5Wdkx5IF+m1w
- TLGRvE3fWkWqHj6lp8avdNKBwaQ66EZiosJivfvGfSfSq7DhXN
- c7hnLM9L00rjQ7W3M5djA7OnBYIy7nAx4Xkj6XCFcxuz9g/z1p
- /j0/aUazxscrDrN/QL9w=
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <20141013182423.39feb60f.m.chehab@samsung.com>
+References: <1412234489-1330-1-git-send-email-thierry.reding@gmail.com>
+	<CAMuHMdXG1pD1-O2m1NXp6gr4aVqyqV=-x-nPoWQJMWr_0XF42w@mail.gmail.com>
+	<20141013182423.39feb60f.m.chehab@samsung.com>
+Date: Mon, 13 Oct 2014 21:53:26 +0200
+X-Google-Sender-Auth: sTB-MLexwiLtI8MRjKrEoBmdGCE
+Message-ID: <CAMuHMdUwPhr7J8Zh2eNFJa4DmJ8005qGvJWhu7Sv8X6Q4po5aA@mail.gmail.com>
+Subject: Re: [PATCH] [media] s5p-jpeg: Only build suspend/resume for PM
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 13 October 2014 13:10:32 Marc Zyngier wrote:
-> On 13/10/14 11:43, Joe.C wrote:
-> > On Thu, 2014-10-09 at 17:59 +0100, Marc Zyngier wrote:
-> >> On 09/10/14 15:29, Joe.C wrote
-> >>> @@ -952,7 +988,11 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
-> >>>  
-> >>>     gic_irqs -= hwirq_base; /* calculate # of irqs to allocate */
-> >>>  
-> >>> -   if (of_property_read_u32(node, "arm,routable-irqs",
-> >>> +   if (IS_ENABLED(CONFIG_IRQ_DOMAIN_HIERARCHY) &&
-> >>> +           of_find_property(node, "arm,irq-domain-hierarchy", NULL))
-> >>> +           gic->domain = irq_domain_add_linear(node, gic_irqs,
-> >>> +                                   &gic_irq_domain_hierarchy_ops, gic);
-> >>
-> >> I really think that looking for a property is the wrong thing to do. If
-> >> "node" is non-NULL, then we're pretty sure that we're initializing from
-> >> DT, and that a pure linear domain should be the right thing, leaving the
-> >> legacy stuff for the few non-DT platforms that are still around.
-> >>
-> >> Thanks,
-> >>
-> >>      M.
-> > 
-> > The only reason I introduce "arm,irq-domain-hierarchy" property is
-> > trying to keep original behavior when hierarchy irq domain is not used.
-> > Without this, when a board init GIC with DT, all driver will have to use
-> > devicetree. I'm not sure we want to break things like this.
-> 
-> I don't think we want to support a "middle of the road" setup, where the
-> GIC is probed by DT, but some devices have hardcoded interrupts.
+Hi Mauro,
 
-Agreed. We should work on making GIC DT-only by converting the few remaining
-users instead, and certainly should not add any new board files that
-might use the domain hierarchy code.
+On Mon, Oct 13, 2014 at 6:24 PM, Mauro Carvalho Chehab
+<m.chehab@samsung.com> wrote:
+> Em Mon, 13 Oct 2014 18:16:10 +0200
+> Geert Uytterhoeven <geert@linux-m68k.org> escreveu:
+>> On Thu, Oct 2, 2014 at 9:21 AM, Thierry Reding <thierry.reding@gmail.com> wrote:
+>> > From: Thierry Reding <treding@nvidia.com>
+>> >
+>> > If power management is disabled these function become unused, so there
+>> > is no reason to build them. This fixes a couple of build warnings when
+>> > PM(_SLEEP,_RUNTIME) is not enabled.
+>>
+>> Thanks!
+>>
+>> Despite the availability of your patch, this build warning has
+>> migrated to mainline.
+>
+> That's because I didn't have any time yet to backport the fixes for
+> 3.18 and send those to -next. Also, while warnings are annoying,
+> a warning like that is not really an urgent matter, as gcc should
+> remove the dead code anyway.
 
-	Arnd
+Understood.
+
+> I should be handling fixes next week, after my return from LinuxCon EU,
+> gstreamer conf, audio mini-summit and media summit. This will be a too
+> busy week.
+
+I hope you'll enjoy the busy conference week. We're all hamsters in the same
+threadmill, CU ;-)
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
