@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754236AbaJMCv7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:51:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45778 "EHLO
+	id S1753780AbaJMC1V (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:27:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45761 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753784AbaJMC1W (ORCPT
+	with ESMTP id S1753724AbaJMC1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:27:22 -0400
+	Sun, 12 Oct 2014 22:27:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>, Long Li <longli@microsoft.com>,
-        Sitsofe Wheeler <sitsofe@yahoo.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 27/37] hyperv: Fix a bug in netvsc_start_xmit()
-Date: Mon, 13 Oct 2014 04:24:24 +0200
-Message-Id: <20141013022401.414753080@linuxfoundation.org>
+        Cristian Stoica <cristian.stoica@freescale.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.14 36/37] crypto: caam - fix addressing of struct member
+Date: Mon, 13 Oct 2014 04:24:33 +0200
+Message-Id: <20141013022401.796709337@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022400.286360067@linuxfoundation.org>
 References: <20141013022400.286360067@linuxfoundation.org>
@@ -30,44 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KY Srinivasan <kys@microsoft.com>
+From: Cristian Stoica <cristian.stoica@freescale.com>
 
-[ Upstream commit dedb845ded56ded1c62f5398a94ffa8615d4592d ]
+commit 4451d494b1910bf7b7f8381a637d0fe6d2142467 upstream.
 
-After the packet is successfully sent, we should not touch the skb
-as it may have been freed. This patch is based on the work done by
-Long Li <longli@microsoft.com>.
+buf_0 and buf_1 in caam_hash_state are not next to each other.
+Accessing buf_1 is incorrect from &buf_0 with an offset of only
+size_of(buf_0). The same issue is also with buflen_0 and buflen_1
 
-In this version of the patch I have fixed issues pointed out by David.
-David, please queue this up for stable.
-
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Tested-by: Long Li <longli@microsoft.com>
-Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Cristian Stoica <cristian.stoica@freescale.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/hyperv/netvsc_drv.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -146,6 +146,7 @@ static int netvsc_start_xmit(struct sk_b
- 	struct hv_netvsc_packet *packet;
- 	int ret;
- 	unsigned int i, num_pages, npg_data;
-+	u32 skb_length = skb->len;
- 
- 	/* Add multipages for skb->data and additional 2 for RNDIS */
- 	npg_data = (((unsigned long)skb->data + skb_headlen(skb) - 1)
-@@ -216,7 +217,7 @@ static int netvsc_start_xmit(struct sk_b
- 	ret = rndis_filter_send(net_device_ctx->device_ctx,
- 				  packet);
- 	if (ret == 0) {
--		net->stats.tx_bytes += skb->len;
-+		net->stats.tx_bytes += skb_length;
- 		net->stats.tx_packets++;
- 	} else {
- 		kfree(packet);
+---
+ drivers/crypto/caam/caamhash.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+--- a/drivers/crypto/caam/caamhash.c
++++ b/drivers/crypto/caam/caamhash.c
+@@ -1348,9 +1348,9 @@ static int ahash_update_first(struct aha
+ 	struct device *jrdev = ctx->jrdev;
+ 	gfp_t flags = (req->base.flags & (CRYPTO_TFM_REQ_MAY_BACKLOG |
+ 		       CRYPTO_TFM_REQ_MAY_SLEEP)) ? GFP_KERNEL : GFP_ATOMIC;
+-	u8 *next_buf = state->buf_0 + state->current_buf *
+-		       CAAM_MAX_HASH_BLOCK_SIZE;
+-	int *next_buflen = &state->buflen_0 + state->current_buf;
++	u8 *next_buf = state->current_buf ? state->buf_1 : state->buf_0;
++	int *next_buflen = state->current_buf ?
++		&state->buflen_1 : &state->buflen_0;
+ 	int to_hash;
+ 	u32 *sh_desc = ctx->sh_desc_update_first, *desc;
+ 	dma_addr_t ptr = ctx->sh_desc_update_first_dma;
 
 
