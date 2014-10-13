@@ -1,81 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753287AbaJMI4G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 04:56:06 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44414 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752947AbaJMI4D (ORCPT
+	id S1753494AbaJMI5l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 04:57:41 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:50322 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753446AbaJMI5j convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 04:56:03 -0400
-X-Original-SENDERIP: 10.177.226.38
-X-Original-MAILFROM: karam.lee@lge.com
-From: karam.lee@lge.com
-To: minchan@kernel.org, ngupta@vflare.org, linux-kernel@vger.kernel.org
-Cc: matthew.r.wilcox@intel.com, jmarchan@redhat.com, seungho1.park@lge.com,
-        "karam.lee" <karam.lee@lge.com>
-Subject: [PATCH v2 2/3] zram: change parameter from vaild_io_request()
-Date: Mon, 13 Oct 2014 17:55:41 +0900
-Message-Id: <1413190542-23960-3-git-send-email-karam.lee@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1413190542-23960-1-git-send-email-karam.lee@lge.com>
-References: <1413190542-23960-1-git-send-email-karam.lee@lge.com>
+	Mon, 13 Oct 2014 04:57:39 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Rickard Strandqvist'" <rickard_strandqvist@spectrumdigital.se>,
+        "Brett Rudley" <brudley@broadcom.com>,
+        Arend van Spriel <arend@broadcom.com>
+CC: Hante Meuleman <meuleman@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
+        Daniel Kim <dekim@broadcom.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "brcm80211-dev-list@broadcom.com" <brcm80211-dev-list@broadcom.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] net: wireless: brcm80211: brcmfmac: dhd_sdio.c:
+  Cleaning up missing null-terminate in conjunction with strncpy
+Thread-Topic: [PATCH] net: wireless: brcm80211: brcmfmac: dhd_sdio.c:
+  Cleaning up missing null-terminate in conjunction with strncpy
+Thread-Index: AQHP5a3tGePXTMffF0+SQML57ylq5Jwtt/mg
+Date: Mon, 13 Oct 2014 08:55:46 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D174C992F@AcuExch.aculab.com>
+References: <1413071551-15372-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1413071551-15372-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "karam.lee" <karam.lee@lge.com>
+From: Rickard Strandqvist
+> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
+> And changed from using strncpy to strlcpy to simplify code.
 
-This patch changes parameter of valid_io_request for common usage.
-The purpose of valid_io_request() is to determine if bio request is
-valid or not.
-This patch use  I/O start address and size instead of a BIO parameter
-for common usage.
+I think you should return an error if the strings get truncated.
+Silent truncation is going to lead to issues at some point in the future
+(in some places).
 
-Signed-off-by: karam.lee <karam.lee@lge.com>
----
- drivers/block/zram/zram_drv.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c |   25 ++++++++++----------
+>  1 file changed, 12 insertions(+), 13 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
+> b/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
+> index f55f625..d20d4e6 100644
+> --- a/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
+> +++ b/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
+> @@ -670,7 +670,6 @@ static int brcmf_sdio_get_fwnames(struct brcmf_chip *ci,
+>  				  struct brcmf_sdio_dev *sdiodev)
+>  {
+>  	int i;
+> -	uint fw_len, nv_len;
+>  	char end;
+> 
+>  	for (i = 0; i < ARRAY_SIZE(brcmf_fwname_data); i++) {
+> @@ -684,25 +683,25 @@ static int brcmf_sdio_get_fwnames(struct brcmf_chip *ci,
+>  		return -ENODEV;
+>  	}
+> 
+> -	fw_len = sizeof(sdiodev->fw_name) - 1;
+> -	nv_len = sizeof(sdiodev->nvram_name) - 1;
+>  	/* check if firmware path is provided by module parameter */
+>  	if (brcmf_firmware_path[0] != '\0') {
+> -		strncpy(sdiodev->fw_name, brcmf_firmware_path, fw_len);
+> -		strncpy(sdiodev->nvram_name, brcmf_firmware_path, nv_len);
+> -		fw_len -= strlen(sdiodev->fw_name);
+> -		nv_len -= strlen(sdiodev->nvram_name);
+> +		strlcpy(sdiodev->fw_name, brcmf_firmware_path,
+> +			sizeof(sdiodev->fw_name));
+> +		strlcpy(sdiodev->nvram_name, brcmf_firmware_path,
+> +			sizeof(sdiodev->nvram_name));
+> 
+>  		end = brcmf_firmware_path[strlen(brcmf_firmware_path) - 1];
 
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index 54da18a..b0c3a20 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -206,19 +206,18 @@ static inline int is_partial_io(struct bio_vec *bvec)
- /*
-  * Check if request is within bounds and aligned on zram logical blocks.
-  */
--static inline int valid_io_request(struct zram *zram, struct bio *bio)
-+static inline int valid_io_request(struct zram *zram,
-+		sector_t start, unsigned int size)
- {
--	u64 start, end, bound;
-+	u64 end, bound;
- 
- 	/* unaligned request */
--	if (unlikely(bio->bi_iter.bi_sector &
--		     (ZRAM_SECTOR_PER_LOGICAL_BLOCK - 1)))
-+	if (unlikely(start & (ZRAM_SECTOR_PER_LOGICAL_BLOCK - 1)))
- 		return 0;
--	if (unlikely(bio->bi_iter.bi_size & (ZRAM_LOGICAL_BLOCK_SIZE - 1)))
-+	if (unlikely(size & (ZRAM_LOGICAL_BLOCK_SIZE - 1)))
- 		return 0;
- 
--	start = bio->bi_iter.bi_sector;
--	end = start + (bio->bi_iter.bi_size >> SECTOR_SHIFT);
-+	end = start + (size >> SECTOR_SHIFT);
- 	bound = zram->disksize >> SECTOR_SHIFT;
- 	/* out of range range */
- 	if (unlikely(start >= bound || end > bound || start > end))
-@@ -780,7 +779,8 @@ static void zram_make_request(struct request_queue *queue, struct bio *bio)
- 	if (unlikely(!init_done(zram)))
- 		goto error;
- 
--	if (!valid_io_request(zram, bio)) {
-+	if (valid_io_request(zram, bio->bi_iter.bi_sector,
-+					bio->bi_iter.bi_size)) {
- 		atomic64_inc(&zram->stats.invalid_io);
- 		goto error;
- 	}
--- 
-1.7.9.5
+If you are doing a strlen() here, you could use the length for the copy
+and/or use it to avoid the strcat().
+
+>  		if (end != '/') {
+> -			strncat(sdiodev->fw_name, "/", fw_len);
+> -			strncat(sdiodev->nvram_name, "/", nv_len);
+> -			fw_len--;
+> -			nv_len--;
+> +			strlcat(sdiodev->fw_name, "/",
+> +				sizeof(sdiodev->fw_name));
+> +			strlcat(sdiodev->nvram_name, "/",
+> +				sizeof(sdiodev->nvram_name));
+>  		}
+>  	}
+> -	strncat(sdiodev->fw_name, brcmf_fwname_data[i].bin, fw_len);
+> -	strncat(sdiodev->nvram_name, brcmf_fwname_data[i].nv, nv_len);
+> +	strlcat(sdiodev->fw_name, brcmf_fwname_data[i].bin,
+> +		sizeof(sdiodev->fw_name));
+> +	strlcat(sdiodev->nvram_name, brcmf_fwname_data[i].nv,
+> +		sizeof(sdiodev->nvram_name));
+
+I assume something ensures that fw_name[0] == 0 here.
+
+	David
+
+
 
