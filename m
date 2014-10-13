@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754353AbaJMNrs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 09:47:48 -0400
-Received: from mga01.intel.com ([192.55.52.88]:20096 "EHLO mga01.intel.com"
+	id S1754419AbaJMNr7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 09:47:59 -0400
+Received: from mga11.intel.com ([192.55.52.93]:59827 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754266AbaJMNrm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 09:47:42 -0400
+	id S1754379AbaJMNr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 09:47:57 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,710,1406617200"; 
-   d="scan'208";a="613638835"
-Message-ID: <1413208012.7906.23.camel@sauron.fi.intel.com>
-Subject: [GIT PULL] UBI/UBIFS fixes for 3.18-rc1
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-mtd <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 13 Oct 2014 16:46:52 +0300
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="399419866"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com, adrian.hunter@intel.com, acme@infradead.org,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Subject: [PATCH v5 16/20] perf: Add a helper for looking up pmus by type
+Date: Mon, 13 Oct 2014 16:45:44 +0300
+Message-Id: <1413207948-28202-17-git-send-email-alexander.shishkin@linux.intel.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1413207948-28202-1-git-send-email-alexander.shishkin@linux.intel.com>
+References: <1413207948-28202-1-git-send-email-alexander.shishkin@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+This patch adds a helper for looking up a registered pmu by its type.
 
-please pull UBI/UBIFS changes.
+Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+---
+ kernel/events/core.c | 16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
-The following changes since commit 2ce7598c9a453e0acd0e07be7be3f5eb39608ebd:
-
-  Linux 3.17-rc4 (2014-09-07 16:09:43 -0700)
-
-are available in the git repository at:
-
-  git://git.infradead.org/linux-ubifs.git tags/upstream-3.18-rc1
-
-for you to fetch changes up to fda322a1b3b9e8ee231913c500f73c6988b1aff5:
-
-  UBI: Dispatch update notification if the volume is updated (2014-09-16 19:02:05 +0300)
-
-----------------------------------------------------------------
-* Fix for a theoretical race condition which could lead to a situation when
-  UBIFS is unable to mount a file-system (Hujianyang)
-* Few fixes for the ubiblock sybsystem and an error path fix
-* The ubiblock subsystem has had the volume size change handling improved
-
-----------------------------------------------------------------
-Artem Bityutskiy (2):
-      UBIFS: fix a race condition
-      UBIFS: fix free log space calculation
-
-Colin Ian King (1):
-      UBI: block: fix dereference on uninitialized dev
-
-Ezequiel Garcia (3):
-      UBI: block: Fix block device size setting
-      UBI: block: Add support for the UBI_VOLUME_UPDATED notification
-      UBI: Dispatch update notification if the volume is updated
-
-Richard Genoud (1):
-      UBI: add missing kmem_cache_free() in process_pool_aeb error path
-
- drivers/mtd/ubi/block.c   | 36 +++++++++++++++++++++++++-----------
- drivers/mtd/ubi/cdev.c    |  4 +++-
- drivers/mtd/ubi/fastmap.c |  1 +
- fs/ubifs/commit.c         |  8 +++-----
- fs/ubifs/log.c            | 19 ++++++++++++++-----
- 5 files changed, 46 insertions(+), 22 deletions(-)
-
---
-Artem
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index d4057dff27..92da1aecc7 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6963,6 +6963,18 @@ void perf_pmu_unregister(struct pmu *pmu)
+ }
+ EXPORT_SYMBOL_GPL(perf_pmu_unregister);
+ 
++/* call under pmus_srcu */
++static struct pmu *__perf_find_pmu(u32 type)
++{
++	struct pmu *pmu;
++
++	rcu_read_lock();
++	pmu = idr_find(&pmu_idr, type);
++	rcu_read_unlock();
++
++	return pmu;
++}
++
+ struct pmu *perf_init_event(struct perf_event *event)
+ {
+ 	struct pmu *pmu = NULL;
+@@ -6971,9 +6983,7 @@ struct pmu *perf_init_event(struct perf_event *event)
+ 
+ 	idx = srcu_read_lock(&pmus_srcu);
+ 
+-	rcu_read_lock();
+-	pmu = idr_find(&pmu_idr, event->attr.type);
+-	rcu_read_unlock();
++	pmu = __perf_find_pmu(event->attr.type);
+ 	if (pmu) {
+ 		if (!try_module_get(pmu->module)) {
+ 			pmu = ERR_PTR(-ENODEV);
+-- 
+2.1.0
 
