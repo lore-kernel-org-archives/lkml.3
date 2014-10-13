@@ -1,128 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754472AbaJMNXF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 09:23:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46258 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753842AbaJMNXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 09:23:02 -0400
-Message-ID: <543BD229.4020207@redhat.com>
-Date: Mon, 13 Oct 2014 09:22:49 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
+	id S1754560AbaJMNX2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 09:23:28 -0400
+Received: from mail-oi0-f49.google.com ([209.85.218.49]:64443 "EHLO
+	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754161AbaJMNXY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 09:23:24 -0400
+Date: Mon, 13 Oct 2014 08:23:19 -0500
+From: Chuck Ebbert <cebbert.lkml@gmail.com>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: [PATCH 3.17 00/25] 3.17.1-stable review
+Message-ID: <20141013082319.175d90bb@as>
+In-Reply-To: <20141013112834.GA10826@khazad-dum.debian.net>
+References: <20141013022454.289398272@linuxfoundation.org>
+	<20141013112834.GA10826@khazad-dum.debian.net>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        =?ISO-8859-1?Q?Robert_Sch?= =?ISO-8859-1?Q?=F6ne?= 
-	<robert.schoene@tu-dresden.de>
-Subject: Re: Locking issues with cpufreq and sysfs
-References: <543BCF9A.1060603@redhat.com>
-In-Reply-To: <543BCF9A.1060603@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 13 Oct 2014 08:28:35 -0300
+Henrique de Moraes Holschuh <hmh@hmh.eng.br> wrote:
 
-
-On 10/13/2014 09:11 AM, Prarit Bhargava wrote:
-> There are several issues with the current locking design of cpufreq.  Most
-> notably is the panic reported here:
+> On Mon, 13 Oct 2014, Greg Kroah-Hartman wrote:
+> > This is the start of the stable review cycle for the 3.17.1
+> > release. There are 25 patches in this series, all will be posted
+> > as a response to this one.  If anyone has any issues with these
+> > being applied, please let me know.
 > 
-> http://marc.info/?l=linux-kernel&m=140622451625236&w=2
+> Actually, 3.17 is a filesystem killer for some unlucky users due to
+> the libata blacklist being disabled by a bug.
 > 
-> which was introduced by commit 955ef4833574636819cd269cfbae12f79cbde63a,
-> cpufreq: Drop rwsem lock around CPUFREQ_GOV_POLICY_EXIT, which introduces
-> a race in the changing of the cpufreq policy.  This change was introduced
-> because of a lockdep deadlock warning that can be reproduced (on x86 with
-> the acpi_cpufreq driver) via the following debug patch:
-> 
-> iff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
-> index b0c18ed..366cfb7 100644
-> --- a/drivers/cpufreq/acpi-cpufreq.c
-> +++ b/drivers/cpufreq/acpi-cpufreq.c
-> @@ -885,6 +885,7 @@ static struct freq_attr *acpi_cpufreq_attr[] = {
-> 
->  static struct cpufreq_driver acpi_cpufreq_driver = {
->         .verify         = cpufreq_generic_frequency_table_verify,
-> +       .flags          = CPUFREQ_HAVE_GOVERNOR_PER_POLICY,
->         .target_index   = acpi_cpufreq_target,
->         .bios_limit     = acpi_processor_get_bios_limit,
->         .init           = acpi_cpufreq_cpu_init,
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 61190f6..4cb488a 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -2195,9 +2195,7 @@ static int cpufreq_set_policy(struct cpufreq_policy *polic
->         /* end old governor */
->         if (old_gov) {
->                 __cpufreq_governor(policy, CPUFREQ_GOV_STOP);
-> -               up_write(&policy->rwsem);
->                 __cpufreq_governor(policy, CPUFREQ_GOV_POLICY_EXIT);
-> -               down_write(&policy->rwsem);
->         }
-> 
->         /* start new governor */
-> @@ -2206,9 +2204,7 @@ static int cpufreq_set_policy(struct cpufreq_policy *polic
->                 if (!__cpufreq_governor(policy, CPUFREQ_GOV_START))
->                         goto out;
-> 
-> -               up_write(&policy->rwsem);
->                 __cpufreq_governor(policy, CPUFREQ_GOV_POLICY_EXIT);
-> -               down_write(&policy->rwsem);
->         }
-> 
->         /* new governor failed, so re-start old one */
-> 
-> (which causes the acpi-cpufreq driver to emulate the behaviour of the arm
-> cpufreq driver), and by doing
-> 
-> echo ondemand > /sys/devices/system/cpu/cpu5/cpufreq/scaling_governor
-> cat /sys/devices/system/cpu/cpu5/cpufreq/ondemand/*
-> echo conservative > /sys/devices/system/cpu/cpu5/cpufreq/scaling_governor
-> exit 0
-> 
-> [Question: was the original reported deadlock "real"?  Did it really happen or
-> did lockdep only report it (I may have asked this question previously and
-> forgot the answer)?  The reason I ask is that this situation is very similar to
-> USB's device removal in which the sysfs attributes are removed for a device but
-> not the device it was called for.  I actually think that's part of the problem
-> here.]
-> 
-> The above, obviously, is a complete hack of the code but in a sense does
-> mimic a proper locking fix.  However, even with this fix we are still left
-> with a race in accessing the sysfs files.  Consider the following example,
-> 
-> CPU 1: accesses scaling_setspeed to set cpu speed
-> 
-> simultaneously,
-> 
-> CPU 2: accesses scaling_governor to set governor to ondemand
-> 
-> CPU 1 & 2 race ... and this can result in different critical situations.
-> The first is that CPU 1 holds the scalling_setspeed open while CPU attempts
-> to change the governor.  This results in a syfs warning about creating a
-> file with an existing file name which in some cases can lead to additional
-> corruption and a panic.  The second case is that CPU 1's setting of the speed
-> is now done on the new governor -- which may or may not be correct.  In any
-> case an argument could be made that the userspace program doing this type
-> of action should be "smart" enough to confirm simultaneous changes... but
-> in any case the kernel should not panic or corrupt data.
-> 
-> The locking is insufficient here, Viresh.  I no longer believe that fixes
-> to this locking scheme are the right way to move forward here.  I'm wondering
-> if we can look at other alternatives such as maintaining a refcount or
-> perhaps using a queuing mechanism for governor and policy related changes.
+> Patch:
+> https://git.kernel.org/cgit/linux/kernel/git/tj/libata.git/patch/?id=1c40279960bcd7d52dbdf1d466b20d24b99176c8
+> 1c40279960bcd7d52dbdf1d466b20d24b99176c8 (libata: Un-break ATA
+> blacklist)
 > 
 
-Uh ... I meant this as "I'm willing to modify the code to do this but I'd like
-to know what everyone else thinks before I do anything" ;)
+There are some more bugs too:
 
-P.
 
-> P.
-> 
+RCU stalls, fix has been in rcu/urgent for 7 days:
+https://git.kernel.org/cgit/linux/kernel/git/paulmck/linux-rcu.git/commit/?h=rcu/urgent&id=789cbbeca4eb7141cbd748ee93772471101b507b
+
+
+blk-mq bio merging (still no good fix available):
+https://lkml.org/lkml/2014/10/9/729
+(The fix sitting in the block tree:
+https://git.kernel.org/cgit/linux/kernel/git/axboe/linux-block.git/commit/?h=for-3.18/core&id=764f612c6c3c231b9c12cfae7c328ccc9c453258
+is wrong according to that message.)
+
+
+Stalls when using nohz, requires series of six patches to fix that
+didn't make 3.17 and weren't marked for -stable:
+
+>From a80e49e2cc3145af014a8ae44f575829cc236192 Mon Sep 17 00:00:00 2001
+From: Frederic Weisbecker <fweisbec@gmail.com>
+Subject: nohz: Move nohz full init call to tick init
+
+>From c5c38ef3d70377dc504a6a3f611a3ec814bc757b Mon Sep 17 00:00:00 2001
+From: Peter Zijlstra <peterz@infradead.org>
+Subject: irq_work: Introduce arch_irq_work_has_interrupt()
+
+>From 76a33061b9323b7fdb220ae5fa116c10833ec22e Mon Sep 17 00:00:00 2001
+From: Frederic Weisbecker <fweisbec@gmail.com>
+Subject: irq_work: Force raised irq work to run on irq work interrupt
+
+>From 3010279f0fc36f0388872203e63ca49912f648fd Mon Sep 17 00:00:00 2001
+From: Frederic Weisbecker <fweisbec@gmail.com>
+Subject: x86: Tell irq work about self IPI support
+
+>From 09f6edd424218eb69078551b2ecfada1f2d098eb Mon Sep 17 00:00:00 2001
+From: Frederic Weisbecker <fweisbec@gmail.com>
+Subject: arm: Tell irq work about self IPI support
+
+>From 3631073659d0aafeaa52227bb61a100efaf901dc Mon Sep 17 00:00:00 2001
+From: Frederic Weisbecker <fweisbec@gmail.com>
+Subject: arm64: Tell irq work about self IPI support
