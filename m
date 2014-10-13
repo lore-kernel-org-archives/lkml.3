@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754020AbaJMNet (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 09:34:49 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:22255 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753887AbaJMNen (ORCPT
+	id S1754060AbaJMNfW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 09:35:22 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:44896 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753874AbaJMNem (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 09:34:43 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-d6-543bd4f09635
+	Mon, 13 Oct 2014 09:34:42 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-59-543bd4efe554
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Sebastian Reichel <sre@kernel.org>,
         Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
@@ -22,232 +22,360 @@ Cc: Chanwoo Choi <cw00.choi@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         stable@vger.kernel.org
-Subject: [PATCH 2/2] power: charger-manager: Fix accessing invalidated power
- supply after charger unbind
-Date: Mon, 13 Oct 2014 15:34:31 +0200
-Message-id: <1413207271-23836-3-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH 1/2] power: charger-manager: Fix accessing invalidated power
+ supply after fuel gauge unbind
+Date: Mon, 13 Oct 2014 15:34:30 +0200
+Message-id: <1413207271-23836-2-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1413207271-23836-1-git-send-email-k.kozlowski@samsung.com>
 References: <1413207271-23836-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNLMWRmVeSWpSXmKPExsVy+t/xy7ofrliHGNyaJ29xcKumxcYZ61kt
-	rn95zmox6cl7ZouJKyczW3SefcJs8fqFocXZpjfsFpd3zWGz+Nx7hNFi7ZG77Ba3G1ewWZze
-	XWKxYOMjRgc+jwn9nxg9ds66y+6xeYWWx6ZVnWwefVtWMXp83iQXwBbFZZOSmpNZllqkb5fA
-	lXH6gE/BeveKOU8+szcw7rDqYuTkkBAwkfg5axU7hC0mceHeerYuRi4OIYGljBInlpxjgnD6
-	mCQWPH3JClLFJmAssXn5ErAqEYGnTBKdZxoZQRxmgSuMEk+/vwarEhbIklj2fSkziM0ioCpx
-	7dx7MJtXwF3i2Jp2qH1yEiePTQar5xTwkNg5ZzFYjRBQzfZn+5knMPIuYGRYxSiaWppcUJyU
-	nmukV5yYW1yal66XnJ+7iRESoF93MC49ZnWIUYCDUYmH1+KPVYgQa2JZcWXuIUYJDmYlEV7R
-	S9YhQrwpiZVVqUX58UWlOanFhxiZODilGhjtBRpS5++Z8H6Caov66Re96Rw/8hbqysSJfY9r
-	lJ43a8OhT6pzdbdWfzT5oZHvcTr/U5LHn1v7mndYnbBZetOpt55x44L9nM0sjDKnY84ePRXa
-	cX7hXQerp1offVfqLHkk7OvBFRLq85ktuKX7x7qHHidm3r9xofme6MOELosYhmlzdGw0VpUr
-	sRRnJBpqMRcVJwIAq5Tjbi4CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNLMWRmVeSWpSXmKPExsVy+t/xy7rvr1iHGLRvM7A4uFXTYuOM9awW
+	1788Z7WY9OQ9s8XElZOZLTrPPmG2eP3C0OJs0xt2i8u75rBZfO49wmix9shddovbjSvYLE7v
+	LrFYsPERowOfx4T+T4weO2fdZffYvELLY9OqTjaPvi2rGD0+b5ILYIvisklJzcksSy3St0vg
+	yngwo4+t4GFyxbWV01gbGD8HdTFyckgImEjM6z/PAmGLSVy4t56ti5GLQ0hgKaPEyo617BBO
+	H5PE8nUb2ECq2ASMJTYvXwJWJSLwlEmi80wjI4jDLHCFUeLp99esXYwcHMICuRJLT9WCNLAI
+	qErceHEPbAWvgLvE5WXnmCDWyUmcPDaZFcTmFPCQ2DlnMTOILQRUs/3ZfuYJjLwLGBlWMYqm
+	liYXFCel5xrqFSfmFpfmpesl5+duYoQE6JcdjIuPWR1iFOBgVOLhtfhjFSLEmlhWXJl7iFGC
+	g1lJhFf0knWIEG9KYmVValF+fFFpTmrxIUYmDk6pBkbDdWzVi+5tKZLtUHBzUnDdVPq4ui95
+	nkdpYsK/qncMc2db78+fdtDx2R3RJPUv2Z1ztRV/7uTQW8m5gePlu/1mp2LUp34LXRjSx8ct
+	c4Tv5IktSYn1B58duH/NvoTL5fGeHaz628xUDnAr9rv3lE/7u7h+v1rANNkcq7AVEVd6zr1h
+	caxLmqTEUpyRaKjFXFScCAAf6BmzLgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The charger manager obtained in probe references to power supplies for
-all chargers with power_supply_get_by_name() for later usage. However
-if such charger driver was removed then this reference would point to
-old power supply (from driver which was removed).
+The charger manager obtained reference to fuel gauge power supply in probe
+with power_supply_get_by_name() for later usage. However if fuel gauge
+driver was removed and re-added then this reference would point to old
+power supply (from driver which was removed).
 
-This lead to accessing invalid memory which could be observed with:
-$ echo "max77693-charger" > /sys/bus/platform/drivers/max77693-charger/unbind
-$ grep . /sys/devices/virtual/power_supply/battery/charger.0/*
-$ grep . /sys/devices/virtual/power_supply/battery/*
-[   15.339817] Unable to handle kernel paging request at virtual address 0001c12c
-[   15.346187] pgd = edd08000
-[   15.348814] [0001c12c] *pgd=6dce2831, *pte=00000000, *ppte=00000000
-[   15.355075] Internal error: Oops: 80000007 [#1] PREEMPT SMP ARM
-[   15.360967] Modules linked in:
-[   15.364010] CPU: 2 PID: 1388 Comm: grep Not tainted 3.17.0-next-20141007-00027-ga95e761db1b0 #245
-[   15.372859] task: ee03ad00 ti: edcf6000 task.ti: edcf6000
-[   15.378241] PC is at 0x1c12c
-[   15.381113] LR is at is_ext_pwr_online+0x30/0x6c
-[   15.385706] pc : [<0001c12c>]    lr : [<c0339fc4>]    psr: a0000013
-[   15.385706] sp : edcf7e88  ip : 00000000  fp : 00000000
-[   15.397161] r10: eeb02c08  r9 : c04b1f84  r8 : eeb02c00
-[   15.402369] r7 : edc69a10  r6 : eea6ac10  r5 : eea6ac10  r4 : 00000004
-[   15.408878] r3 : 0001c12c  r2 : edcf7e8c  r1 : 00000004  r0 : ee914418
-[   15.415390] Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-[   15.422506] Control: 10c5387d  Table: 6dd0804a  DAC: 00000015
-[   15.428236] Process grep (pid: 1388, stack limit = 0xedcf6240)
-[   15.434050] Stack: (0xedcf7e88 to 0xedcf8000)
-[   15.438395] 7e80:                   ee03ad00 00000000 edcf7f80 eea6aca8 edcf7ec4 c033b7b0
-[   15.446554] 7ea0: 00000001 ee1cc3f0 00000004 c06e1e44 eebdc000 c06e1e44 eeb02c00 c0337144
-[   15.454713] 7ec0: ee2dac68 c005cffc ee1cc3c0 c06e1e44 00000fff 00001000 eebdc000 c0278ca8
-[   15.462872] 7ee0: c0278c8c ee1cc3c0 eeb7ce00 c014422c edcf7f20 00008000 ee1cc3c0 ee9a48c0
-[   15.471030] 7f00: 00000001 00000001 edcf7f80 c0142d94 c0142d70 c01060f4 00021000 ee1cc3f0
-[   15.479190] 7f20: 00000000 00000000 c06a2150 eebdc000 2e7ec000 ee9a48c0 00008000 00021000
-[   15.487349] 7f40: edcf7f80 00008000 edcf6000 00021000 00021000 c00e39a4 00000000 ee9a48c0
-[   15.495508] 7f60: 00004000 00000000 00000000 ee9a48c0 ee9a48c0 00008000 00021000 c00e3aa0
-[   15.503668] 7f80: 00000000 00000000 0001f2e0 0001f2e0 00021000 00001000 00000003 c000f364
-[   15.511826] 7fa0: 00000000 c000f1a0 0001f2e0 00021000 00000003 00021000 00008000 00000000
-[   15.519986] 7fc0: 0001f2e0 00021000 00001000 00000003 00000001 000205e8 00000000 00021000
-[   15.528145] 7fe0: 00008000 bebbe910 0000a7ad b6edc49c 60000010 00000003 aaaaaaaa aaaaaaaa
-[   15.536320] [<c0339fc4>] (is_ext_pwr_online) from [<c033b7b0>] (charger_get_property+0x170/0x314)
-[   15.545164] [<c033b7b0>] (charger_get_property) from [<c0337144>] (power_supply_show_property+0x48/0x20c)
-[   15.554719] [<c0337144>] (power_supply_show_property) from [<c0278ca8>] (dev_attr_show+0x1c/0x48)
-[   15.563577] [<c0278ca8>] (dev_attr_show) from [<c014422c>] (sysfs_kf_seq_show+0x84/0x104)
-[   15.571725] [<c014422c>] (sysfs_kf_seq_show) from [<c0142d94>] (kernfs_seq_show+0x24/0x28)
-[   15.579973] [<c0142d94>] (kernfs_seq_show) from [<c01060f4>] (seq_read+0x1b0/0x484)
-[   15.587614] [<c01060f4>] (seq_read) from [<c00e39a4>] (vfs_read+0x88/0x144)
-[   15.594552] [<c00e39a4>] (vfs_read) from [<c00e3aa0>] (SyS_read+0x40/0x8c)
-[   15.601417] [<c00e3aa0>] (SyS_read) from [<c000f1a0>] (ret_fast_syscall+0x0/0x48)
-[   15.608877] Code: bad PC value
-[   15.611991] ---[ end trace a88fcc95208db283 ]---
+This lead to accessing old (and probably invalid) memory which could be
+observed with:
+$ echo "12-0036" > /sys/bus/i2c/drivers/max17042/unbind
+$ echo "12-0036" > /sys/bus/i2c/drivers/max17042/bind
+$ cat /sys/devices/virtual/power_supply/battery/capacity
+[  240.480084] INFO: task cat:1393 blocked for more than 120 seconds.
+[  240.484799]       Not tainted 3.17.0-next-20141007-00028-ge60b6dd79570 #203
+[  240.491782] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[  240.499589] cat             D c0469530     0  1393      1 0x00000000
+[  240.505947] [<c0469530>] (__schedule) from [<c0469d3c>] (schedule_preempt_disabled+0x14/0x20)
+[  240.514449] [<c0469d3c>] (schedule_preempt_disabled) from [<c046af08>] (mutex_lock_nested+0x1bc/0x458)
+[  240.523736] [<c046af08>] (mutex_lock_nested) from [<c0287a98>] (regmap_read+0x30/0x60)
+[  240.531647] [<c0287a98>] (regmap_read) from [<c032238c>] (max17042_get_property+0x2e8/0x350)
+[  240.540055] [<c032238c>] (max17042_get_property) from [<c03247d8>] (charger_get_property+0x264/0x348)
+[  240.549252] [<c03247d8>] (charger_get_property) from [<c0320764>] (power_supply_show_property+0x48/0x1e0)
+[  240.558808] [<c0320764>] (power_supply_show_property) from [<c027308c>] (dev_attr_show+0x1c/0x48)
+[  240.567664] [<c027308c>] (dev_attr_show) from [<c0141fb0>] (sysfs_kf_seq_show+0x84/0x104)
+[  240.575814] [<c0141fb0>] (sysfs_kf_seq_show) from [<c0140b18>] (kernfs_seq_show+0x24/0x28)
+[  240.584061] [<c0140b18>] (kernfs_seq_show) from [<c0104574>] (seq_read+0x1b0/0x484)
+[  240.591702] [<c0104574>] (seq_read) from [<c00e1e24>] (vfs_read+0x88/0x144)
+[  240.598640] [<c00e1e24>] (vfs_read) from [<c00e1f20>] (SyS_read+0x40/0x8c)
+[  240.605507] [<c00e1f20>] (SyS_read) from [<c000e760>] (ret_fast_syscall+0x0/0x48)
+[  240.612952] 4 locks held by cat/1393:
+[  240.616589]  #0:  (&p->lock){+.+.+.}, at: [<c01043f4>] seq_read+0x30/0x484
+[  240.623414]  #1:  (&of->mutex){+.+.+.}, at: [<c01417dc>] kernfs_seq_start+0x1c/0x8c
+[  240.631086]  #2:  (s_active#31){++++.+}, at: [<c01417e4>] kernfs_seq_start+0x24/0x8c
+[  240.638777]  #3:  (&map->mutex){+.+...}, at: [<c0287a98>] regmap_read+0x30/0x60
 
-The charger-manager should get reference to charger power supply on
-each use of get_property callback.
+The charger-manager should get reference to fuel gauge power supply on
+each use of get_property callback. The thermal zone 'tzd' field of
+power supply should not be used because of the same reason.
+
+Additionally this change solves also the issue with nested
+thermal_zone_get_temp() calls and related false lockdep positive for
+deadlock for thermal zone's mutex [1]. When fuel gauge is used as source of
+temperature then the charger manager forwards its get_temp calls to fuel
+gauge thermal zone. So actually different mutexes are used (one for
+charger manager thermal zone and second for fuel gauge thermal zone) but
+for lockdep this is one class of mutex.
+
+The recursion is removed by retrieving temperature through power
+supply's get_property().
+
+In case external thermal zone is used ('cm-thermal-zone' property is
+present in DTS) the recursion does not exist. Charger manager simply
+exports POWER_SUPPLY_PROP_TEMP_AMBIENT property (instead of
+POWER_SUPPLY_PROP_TEMP) thus no thermal zone is created for this power
+supply.
+
+[1] https://lkml.org/lkml/2014/10/6/309
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Cc: <stable@vger.kernel.org>
 Fixes: 3bb3dbbd56ea ("power_supply: Add initial Charger-Manager driver")
 ---
- drivers/power/charger-manager.c       | 64 +++++++++++++++++++++--------------
- include/linux/power/charger-manager.h |  2 --
- 2 files changed, 39 insertions(+), 27 deletions(-)
+ drivers/power/charger-manager.c       | 99 +++++++++++++++++++++++++----------
+ include/linux/power/charger-manager.h |  1 -
+ 2 files changed, 71 insertions(+), 29 deletions(-)
 
 diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
-index c37409a2bcb7..b5d272cb7c4a 100644
+index 7098a1ce2d3c..c37409a2bcb7 100644
 --- a/drivers/power/charger-manager.c
 +++ b/drivers/power/charger-manager.c
-@@ -118,10 +118,17 @@ static bool is_batt_present(struct charger_manager *cm)
- 			present = true;
+@@ -97,6 +97,7 @@ static struct charger_global_desc *g_desc; /* init with setup_charger_manager */
+ static bool is_batt_present(struct charger_manager *cm)
+ {
+ 	union power_supply_propval val;
++	struct power_supply *psy;
+ 	bool present = false;
+ 	int i, ret;
+ 
+@@ -107,7 +108,11 @@ static bool is_batt_present(struct charger_manager *cm)
+ 	case CM_NO_BATTERY:
  		break;
- 	case CM_CHARGER_STAT:
--		for (i = 0; cm->charger_stat[i]; i++) {
--			ret = cm->charger_stat[i]->get_property(
--					cm->charger_stat[i],
--					POWER_SUPPLY_PROP_PRESENT, &val);
-+		for (i = 0; cm->desc->psy_charger_stat[i]; i++) {
-+			psy = power_supply_get_by_name(
-+					cm->desc->psy_charger_stat[i]);
-+			if (!psy) {
-+				dev_err(cm->dev, "Cannot find power supply \"%s\"\n",
-+					cm->desc->psy_charger_stat[i]);
-+				continue;
-+			}
+ 	case CM_FUEL_GAUGE:
+-		ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
++		psy = power_supply_get_by_name(cm->desc->psy_fuel_gauge);
++		if (!psy)
++			break;
 +
-+			ret = psy->get_property(psy, POWER_SUPPLY_PROP_PRESENT,
-+					&val);
- 			if (ret == 0 && val.intval) {
- 				present = true;
- 				break;
-@@ -144,14 +151,20 @@ static bool is_batt_present(struct charger_manager *cm)
- static bool is_ext_pwr_online(struct charger_manager *cm)
++		ret = psy->get_property(psy,
+ 				POWER_SUPPLY_PROP_PRESENT, &val);
+ 		if (ret == 0 && val.intval)
+ 			present = true;
+@@ -167,12 +172,14 @@ static bool is_ext_pwr_online(struct charger_manager *cm)
+ static int get_batt_uV(struct charger_manager *cm, int *uV)
  {
  	union power_supply_propval val;
-+	struct power_supply *psy;
- 	bool online = false;
- 	int i, ret;
++	struct power_supply *fuel_gauge;
+ 	int ret;
  
- 	/* If at least one of them has one, it's yes. */
--	for (i = 0; cm->charger_stat[i]; i++) {
--		ret = cm->charger_stat[i]->get_property(
--				cm->charger_stat[i],
--				POWER_SUPPLY_PROP_ONLINE, &val);
-+	for (i = 0; cm->desc->psy_charger_stat[i]; i++) {
-+		psy = power_supply_get_by_name(cm->desc->psy_charger_stat[i]);
-+		if (!psy) {
-+			dev_err(cm->dev, "Cannot find power supply \"%s\"\n",
-+					cm->desc->psy_charger_stat[i]);
-+			continue;
-+		}
-+
-+		ret = psy->get_property(psy, POWER_SUPPLY_PROP_ONLINE, &val);
- 		if (ret == 0 && val.intval) {
- 			online = true;
- 			break;
-@@ -196,6 +209,7 @@ static bool is_charging(struct charger_manager *cm)
+-	if (!cm->fuel_gauge)
++	fuel_gauge = power_supply_get_by_name(cm->desc->psy_fuel_gauge);
++	if (!fuel_gauge)
+ 		return -ENODEV;
+ 
+-	ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
++	ret = fuel_gauge->get_property(fuel_gauge,
+ 				POWER_SUPPLY_PROP_VOLTAGE_NOW, &val);
+ 	if (ret)
+ 		return ret;
+@@ -248,6 +255,7 @@ static bool is_full_charged(struct charger_manager *cm)
  {
- 	int i, ret;
- 	bool charging = false;
-+	struct power_supply *psy;
+ 	struct charger_desc *desc = cm->desc;
  	union power_supply_propval val;
++	struct power_supply *fuel_gauge;
+ 	int ret = 0;
+ 	int uV;
  
- 	/* If there is no battery, it cannot be charged */
-@@ -203,17 +217,22 @@ static bool is_charging(struct charger_manager *cm)
+@@ -255,11 +263,15 @@ static bool is_full_charged(struct charger_manager *cm)
+ 	if (!is_batt_present(cm))
  		return false;
  
- 	/* If at least one of the charger is charging, return yes */
--	for (i = 0; cm->charger_stat[i]; i++) {
-+	for (i = 0; cm->desc->psy_charger_stat[i]; i++) {
- 		/* 1. The charger sholuld not be DISABLED */
- 		if (cm->emergency_stop)
- 			continue;
- 		if (!cm->charger_enabled)
- 			continue;
+-	if (cm->fuel_gauge && desc->fullbatt_full_capacity > 0) {
++	fuel_gauge = power_supply_get_by_name(cm->desc->psy_fuel_gauge);
++	if (!fuel_gauge)
++		return false;
++
++	if (desc->fullbatt_full_capacity > 0) {
+ 		val.intval = 0;
  
-+		psy = power_supply_get_by_name(cm->desc->psy_charger_stat[i]);
-+		if (!psy) {
-+			dev_err(cm->dev, "Cannot find power supply \"%s\"\n",
-+					cm->desc->psy_charger_stat[i]);
-+			continue;
+ 		/* Not full if capacity of fuel gauge isn't full */
+-		ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
++		ret = fuel_gauge->get_property(fuel_gauge,
+ 				POWER_SUPPLY_PROP_CHARGE_FULL, &val);
+ 		if (!ret && val.intval > desc->fullbatt_full_capacity)
+ 			return true;
+@@ -273,10 +285,10 @@ static bool is_full_charged(struct charger_manager *cm)
+ 	}
+ 
+ 	/* Full, if the capacity is more than fullbatt_soc */
+-	if (cm->fuel_gauge && desc->fullbatt_soc > 0) {
++	if (desc->fullbatt_soc > 0) {
+ 		val.intval = 0;
+ 
+-		ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
++		ret = fuel_gauge->get_property(fuel_gauge,
+ 				POWER_SUPPLY_PROP_CAPACITY, &val);
+ 		if (!ret && val.intval >= desc->fullbatt_soc)
+ 			return true;
+@@ -551,6 +563,20 @@ static int check_charging_duration(struct charger_manager *cm)
+ 	return ret;
+ }
+ 
++static int cm_get_battery_temperature_by_psy(struct charger_manager *cm,
++					int *temp)
++{
++	struct power_supply *fuel_gauge;
++
++	fuel_gauge = power_supply_get_by_name(cm->desc->psy_fuel_gauge);
++	if (!fuel_gauge)
++		return -ENODEV;
++
++	return fuel_gauge->get_property(fuel_gauge,
++				POWER_SUPPLY_PROP_TEMP,
++				(union power_supply_propval *)temp);
++}
++
+ static int cm_get_battery_temperature(struct charger_manager *cm,
+ 					int *temp)
+ {
+@@ -560,15 +586,18 @@ static int cm_get_battery_temperature(struct charger_manager *cm,
+ 		return -ENODEV;
+ 
+ #ifdef CONFIG_THERMAL
+-	ret = thermal_zone_get_temp(cm->tzd_batt, (unsigned long *)temp);
+-	if (!ret)
+-		/* Calibrate temperature unit */
+-		*temp /= 100;
+-#else
+-	ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
+-				POWER_SUPPLY_PROP_TEMP,
+-				(union power_supply_propval *)temp);
++	if (cm->tzd_batt) {
++		ret = thermal_zone_get_temp(cm->tzd_batt, (unsigned long *)temp);
++		if (!ret)
++			/* Calibrate temperature unit */
++			*temp /= 100;
++	} else
+ #endif
++	{
++		/* if-else continued from CONFIG_THERMAL */
++		ret = cm_get_battery_temperature_by_psy(cm, temp);
++	}
++
+ 	return ret;
+ }
+ 
+@@ -827,6 +856,7 @@ static int charger_get_property(struct power_supply *psy,
+ 	struct charger_manager *cm = container_of(psy,
+ 			struct charger_manager, charger_psy);
+ 	struct charger_desc *desc = cm->desc;
++	struct power_supply *fuel_gauge;
+ 	int ret = 0;
+ 	int uV;
+ 
+@@ -857,14 +887,20 @@ static int charger_get_property(struct power_supply *psy,
+ 		ret = get_batt_uV(cm, &val->intval);
+ 		break;
+ 	case POWER_SUPPLY_PROP_CURRENT_NOW:
+-		ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
++		fuel_gauge = power_supply_get_by_name(cm->desc->psy_fuel_gauge);
++		if (!fuel_gauge) {
++			ret = -ENODEV;
++			break;
 +		}
-+
- 		/* 2. The charger should be online (ext-power) */
--		ret = cm->charger_stat[i]->get_property(
--				cm->charger_stat[i],
--				POWER_SUPPLY_PROP_ONLINE, &val);
-+		ret = psy->get_property(psy, POWER_SUPPLY_PROP_ONLINE, &val);
- 		if (ret) {
- 			dev_warn(cm->dev, "Cannot read ONLINE value from %s\n",
- 				 cm->desc->psy_charger_stat[i]);
-@@ -226,9 +245,7 @@ static bool is_charging(struct charger_manager *cm)
- 		 * 3. The charger should not be FULL, DISCHARGING,
- 		 * or NOT_CHARGING.
- 		 */
--		ret = cm->charger_stat[i]->get_property(
--				cm->charger_stat[i],
--				POWER_SUPPLY_PROP_STATUS, &val);
-+		ret = psy->get_property(psy, POWER_SUPPLY_PROP_STATUS, &val);
- 		if (ret) {
- 			dev_warn(cm->dev, "Cannot read STATUS value from %s\n",
- 				 cm->desc->psy_charger_stat[i]);
-@@ -1772,15 +1789,12 @@ static int charger_manager_probe(struct platform_device *pdev)
- 	while (desc->psy_charger_stat[i])
- 		i++;
- 
--	cm->charger_stat = devm_kzalloc(&pdev->dev,
--				sizeof(struct power_supply *) * i, GFP_KERNEL);
--	if (!cm->charger_stat)
--		return -ENOMEM;
--
-+	/* Check if charger's supplies are present at probe */
- 	for (i = 0; desc->psy_charger_stat[i]; i++) {
--		cm->charger_stat[i] = power_supply_get_by_name(
--					desc->psy_charger_stat[i]);
--		if (!cm->charger_stat[i]) {
-+		struct power_supply *psy;
-+
-+		psy = power_supply_get_by_name(desc->psy_charger_stat[i]);
-+		if (!psy) {
- 			dev_err(&pdev->dev, "Cannot find power supply \"%s\"\n",
- 				desc->psy_charger_stat[i]);
- 			return -ENODEV;
-@@ -2109,8 +2123,8 @@ static bool find_power_supply(struct charger_manager *cm,
- 	int i;
- 	bool found = false;
- 
--	for (i = 0; cm->charger_stat[i]; i++) {
--		if (psy == cm->charger_stat[i]) {
-+	for (i = 0; cm->desc->psy_charger_stat[i]; i++) {
-+		if (!strcmp(psy->name, cm->desc->psy_charger_stat[i])) {
- 			found = true;
++		ret = fuel_gauge->get_property(fuel_gauge,
+ 				POWER_SUPPLY_PROP_CURRENT_NOW, val);
+ 		break;
+ 	case POWER_SUPPLY_PROP_TEMP:
+ 	case POWER_SUPPLY_PROP_TEMP_AMBIENT:
+ 		return cm_get_battery_temperature(cm, &val->intval);
+ 	case POWER_SUPPLY_PROP_CAPACITY:
+-		if (!cm->fuel_gauge) {
++		fuel_gauge = power_supply_get_by_name(cm->desc->psy_fuel_gauge);
++		if (!fuel_gauge) {
+ 			ret = -ENODEV;
  			break;
  		}
+@@ -875,7 +911,7 @@ static int charger_get_property(struct power_supply *psy,
+ 			break;
+ 		}
+ 
+-		ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
++		ret = fuel_gauge->get_property(fuel_gauge,
+ 					POWER_SUPPLY_PROP_CAPACITY, val);
+ 		if (ret)
+ 			break;
+@@ -924,7 +960,14 @@ static int charger_get_property(struct power_supply *psy,
+ 		break;
+ 	case POWER_SUPPLY_PROP_CHARGE_NOW:
+ 		if (is_charging(cm)) {
+-			ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
++			fuel_gauge = power_supply_get_by_name(
++					cm->desc->psy_fuel_gauge);
++			if (!fuel_gauge) {
++				ret = -ENODEV;
++				break;
++			}
++
++			ret = fuel_gauge->get_property(fuel_gauge,
+ 						POWER_SUPPLY_PROP_CHARGE_NOW,
+ 						val);
+ 			if (ret) {
+@@ -1485,14 +1528,15 @@ err:
+ 	return ret;
+ }
+ 
+-static int cm_init_thermal_data(struct charger_manager *cm)
++static int cm_init_thermal_data(struct charger_manager *cm,
++		struct power_supply *fuel_gauge)
+ {
+ 	struct charger_desc *desc = cm->desc;
+ 	union power_supply_propval val;
+ 	int ret;
+ 
+ 	/* Verify whether fuel gauge provides battery temperature */
+-	ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
++	ret = fuel_gauge->get_property(fuel_gauge,
+ 					POWER_SUPPLY_PROP_TEMP, &val);
+ 
+ 	if (!ret) {
+@@ -1502,8 +1546,6 @@ static int cm_init_thermal_data(struct charger_manager *cm)
+ 		cm->desc->measure_battery_temp = true;
+ 	}
+ #ifdef CONFIG_THERMAL
+-	cm->tzd_batt = cm->fuel_gauge->tzd;
+-
+ 	if (ret && desc->thermal_zone) {
+ 		cm->tzd_batt =
+ 			thermal_zone_get_zone_by_name(desc->thermal_zone);
+@@ -1666,6 +1708,7 @@ static int charger_manager_probe(struct platform_device *pdev)
+ 	int ret = 0, i = 0;
+ 	int j = 0;
+ 	union power_supply_propval val;
++	struct power_supply *fuel_gauge;
+ 
+ 	if (g_desc && !rtc_dev && g_desc->rtc_name) {
+ 		rtc_dev = rtc_class_open(g_desc->rtc_name);
+@@ -1744,8 +1787,8 @@ static int charger_manager_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
+-	cm->fuel_gauge = power_supply_get_by_name(desc->psy_fuel_gauge);
+-	if (!cm->fuel_gauge) {
++	fuel_gauge = power_supply_get_by_name(desc->psy_fuel_gauge);
++	if (!fuel_gauge) {
+ 		dev_err(&pdev->dev, "Cannot find power supply \"%s\"\n",
+ 			desc->psy_fuel_gauge);
+ 		return -ENODEV;
+@@ -1788,13 +1831,13 @@ static int charger_manager_probe(struct platform_device *pdev)
+ 	cm->charger_psy.num_properties = psy_default.num_properties;
+ 
+ 	/* Find which optional psy-properties are available */
+-	if (!cm->fuel_gauge->get_property(cm->fuel_gauge,
++	if (!fuel_gauge->get_property(fuel_gauge,
+ 					  POWER_SUPPLY_PROP_CHARGE_NOW, &val)) {
+ 		cm->charger_psy.properties[cm->charger_psy.num_properties] =
+ 				POWER_SUPPLY_PROP_CHARGE_NOW;
+ 		cm->charger_psy.num_properties++;
+ 	}
+-	if (!cm->fuel_gauge->get_property(cm->fuel_gauge,
++	if (!fuel_gauge->get_property(fuel_gauge,
+ 					  POWER_SUPPLY_PROP_CURRENT_NOW,
+ 					  &val)) {
+ 		cm->charger_psy.properties[cm->charger_psy.num_properties] =
+@@ -1802,7 +1845,7 @@ static int charger_manager_probe(struct platform_device *pdev)
+ 		cm->charger_psy.num_properties++;
+ 	}
+ 
+-	ret = cm_init_thermal_data(cm);
++	ret = cm_init_thermal_data(cm, fuel_gauge);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "Failed to initialize thermal data\n");
+ 		cm->desc->measure_battery_temp = false;
 diff --git a/include/linux/power/charger-manager.h b/include/linux/power/charger-manager.h
-index 5d90d329e0ba..e97fc656a058 100644
+index 07e7945a1ff2..5d90d329e0ba 100644
 --- a/include/linux/power/charger-manager.h
 +++ b/include/linux/power/charger-manager.h
-@@ -253,8 +253,6 @@ struct charger_manager {
+@@ -253,7 +253,6 @@ struct charger_manager {
  	struct device *dev;
  	struct charger_desc *desc;
  
--	struct power_supply **charger_stat;
--
+-	struct power_supply *fuel_gauge;
+ 	struct power_supply **charger_stat;
+ 
  #ifdef CONFIG_THERMAL
- 	struct thermal_zone_device *tzd_batt;
- #endif
 -- 
 1.9.1
 
