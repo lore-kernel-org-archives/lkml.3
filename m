@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068AbaJMC2W (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:28:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45887 "EHLO
+	id S1754097AbaJMC21 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:28:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45897 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753985AbaJMC2R (ORCPT
+	with ESMTP id S1754070AbaJMC2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:28:17 -0400
+	Sun, 12 Oct 2014 22:28:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 04/55] myri10ge: check for DMA mapping errors
-Date: Mon, 13 Oct 2014 04:24:18 +0200
-Message-Id: <20141013022443.911848663@linuxfoundation.org>
+        Eric Dumazet <edumazet@google.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrey Vagin <avagin@openvz.org>
+Subject: [PATCH 3.16 06/55] tcp: dont use timestamp from repaired skb-s to calculate RTT (v2)
+Date: Mon, 13 Oct 2014 04:24:20 +0200
+Message-Id: <20141013022443.997286627@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
 References: <20141013022443.729870634@linuxfoundation.org>
@@ -29,175 +31,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Andrey Vagin <avagin@openvz.org>
 
-[ Upstream commit 10545937e866ccdbb7ab583031dbdcc6b14e4eb4 ]
+[ Upstream commit 9d186cac7ffb1831e9f34cb4a3a8b22abb9dd9d4 ]
 
-On IOMMU systems DMA mapping can fail, we need to check for
-that possibility.
+We don't know right timestamp for repaired skb-s. Wrong RTT estimations
+isn't good, because some congestion modules heavily depends on it.
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+This patch adds the TCPCB_REPAIRED flag, which is included in
+TCPCB_RETRANS.
+
+Thanks to Eric for the advice how to fix this issue.
+
+This patch fixes the warning:
+[  879.562947] WARNING: CPU: 0 PID: 2825 at net/ipv4/tcp_input.c:3078 tcp_ack+0x11f5/0x1380()
+[  879.567253] CPU: 0 PID: 2825 Comm: socket-tcpbuf-l Not tainted 3.16.0-next-20140811 #1
+[  879.567829] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[  879.568177]  0000000000000000 00000000c532680c ffff880039643d00 ffffffff817aa2d2
+[  879.568776]  0000000000000000 ffff880039643d38 ffffffff8109afbd ffff880039d6ba80
+[  879.569386]  ffff88003a449800 000000002983d6bd 0000000000000000 000000002983d6bc
+[  879.569982] Call Trace:
+[  879.570264]  [<ffffffff817aa2d2>] dump_stack+0x4d/0x66
+[  879.570599]  [<ffffffff8109afbd>] warn_slowpath_common+0x7d/0xa0
+[  879.570935]  [<ffffffff8109b0ea>] warn_slowpath_null+0x1a/0x20
+[  879.571292]  [<ffffffff816d0a05>] tcp_ack+0x11f5/0x1380
+[  879.571614]  [<ffffffff816d10bd>] tcp_rcv_established+0x1ed/0x710
+[  879.571958]  [<ffffffff816dc9da>] tcp_v4_do_rcv+0x10a/0x370
+[  879.572315]  [<ffffffff81657459>] release_sock+0x89/0x1d0
+[  879.572642]  [<ffffffff816c81a0>] do_tcp_setsockopt.isra.36+0x120/0x860
+[  879.573000]  [<ffffffff8110a52e>] ? rcu_read_lock_held+0x6e/0x80
+[  879.573352]  [<ffffffff816c8912>] tcp_setsockopt+0x32/0x40
+[  879.573678]  [<ffffffff81654ac4>] sock_common_setsockopt+0x14/0x20
+[  879.574031]  [<ffffffff816537b0>] SyS_setsockopt+0x80/0xf0
+[  879.574393]  [<ffffffff817b40a9>] system_call_fastpath+0x16/0x1b
+[  879.574730] ---[ end trace a17cbc38eb8c5c00 ]---
+
+v2: moving setting of skb->when for repaired skb-s in tcp_write_xmit,
+    where it's set for other skb-s.
+
+Fixes: 431a91242d8d ("tcp: timestamp SYN+DATA messages")
+Fixes: 740b0f1841f6 ("tcp: switch rtt estimations to usec resolution")
+Cc: Eric Dumazet <edumazet@google.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/myricom/myri10ge/myri10ge.c |   88 +++++++++++++++--------
- 1 file changed, 58 insertions(+), 30 deletions(-)
+ include/net/tcp.h     |    4 +++-
+ net/ipv4/tcp.c        |   14 +++++++-------
+ net/ipv4/tcp_output.c |    5 ++++-
+ 3 files changed, 14 insertions(+), 9 deletions(-)
 
---- a/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
-+++ b/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
-@@ -872,6 +872,10 @@ static int myri10ge_dma_test(struct myri
- 		return -ENOMEM;
- 	dmatest_bus = pci_map_page(mgp->pdev, dmatest_page, 0, PAGE_SIZE,
- 				   DMA_BIDIRECTIONAL);
-+	if (unlikely(pci_dma_mapping_error(mgp->pdev, dmatest_bus))) {
-+		__free_page(dmatest_page);
-+		return -ENOMEM;
-+	}
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -718,8 +718,10 @@ struct tcp_skb_cb {
+ #define TCPCB_SACKED_RETRANS	0x02	/* SKB retransmitted		*/
+ #define TCPCB_LOST		0x04	/* SKB is lost			*/
+ #define TCPCB_TAGBITS		0x07	/* All tag bits			*/
++#define TCPCB_REPAIRED		0x10	/* SKB repaired (no skb_mstamp)	*/
+ #define TCPCB_EVER_RETRANS	0x80	/* Ever retransmitted frame	*/
+-#define TCPCB_RETRANS		(TCPCB_SACKED_RETRANS|TCPCB_EVER_RETRANS)
++#define TCPCB_RETRANS		(TCPCB_SACKED_RETRANS|TCPCB_EVER_RETRANS| \
++				TCPCB_REPAIRED)
  
- 	/* Run a small DMA test.
- 	 * The magic multipliers to the length tell the firmware
-@@ -1293,6 +1297,7 @@ myri10ge_alloc_rx_pages(struct myri10ge_
- 			int bytes, int watchdog)
- {
- 	struct page *page;
-+	dma_addr_t bus;
- 	int idx;
- #if MYRI10GE_ALLOC_SIZE > 4096
- 	int end_offset;
-@@ -1317,11 +1322,21 @@ myri10ge_alloc_rx_pages(struct myri10ge_
- 					rx->watchdog_needed = 1;
- 				return;
+ 	__u8		ip_dsfield;	/* IPv4 tos or IPv6 dsfield	*/
+ 	/* 1 byte hole */
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -1175,13 +1175,6 @@ new_segment:
+ 					goto wait_for_memory;
+ 
+ 				/*
+-				 * All packets are restored as if they have
+-				 * already been sent.
+-				 */
+-				if (tp->repair)
+-					TCP_SKB_CB(skb)->when = tcp_time_stamp;
+-
+-				/*
+ 				 * Check whether we can use HW checksum.
+ 				 */
+ 				if (sk->sk_route_caps & NETIF_F_ALL_CSUM)
+@@ -1190,6 +1183,13 @@ new_segment:
+ 				skb_entail(sk, skb);
+ 				copy = size_goal;
+ 				max = size_goal;
++
++				/* All packets are restored as if they have
++				 * already been sent. skb_mstamp isn't set to
++				 * avoid wrong rtt estimation.
++				 */
++				if (tp->repair)
++					TCP_SKB_CB(skb)->sacked |= TCPCB_REPAIRED;
  			}
-+
-+			bus = pci_map_page(mgp->pdev, page, 0,
-+					   MYRI10GE_ALLOC_SIZE,
-+					   PCI_DMA_FROMDEVICE);
-+			if (unlikely(pci_dma_mapping_error(mgp->pdev, bus))) {
-+				__free_pages(page, MYRI10GE_ALLOC_ORDER);
-+				if (rx->fill_cnt - rx->cnt < 16)
-+					rx->watchdog_needed = 1;
-+				return;
-+			}
-+
- 			rx->page = page;
- 			rx->page_offset = 0;
--			rx->bus = pci_map_page(mgp->pdev, page, 0,
--					       MYRI10GE_ALLOC_SIZE,
--					       PCI_DMA_FROMDEVICE);
-+			rx->bus = bus;
-+
- 		}
- 		rx->info[idx].page = rx->page;
- 		rx->info[idx].page_offset = rx->page_offset;
-@@ -2763,6 +2778,35 @@ myri10ge_submit_req(struct myri10ge_tx_b
- 	mb();
- }
  
-+static void myri10ge_unmap_tx_dma(struct myri10ge_priv *mgp,
-+				  struct myri10ge_tx_buf *tx, int idx)
-+{
-+	unsigned int len;
-+	int last_idx;
-+
-+	/* Free any DMA resources we've alloced and clear out the skb slot */
-+	last_idx = (idx + 1) & tx->mask;
-+	idx = tx->req & tx->mask;
-+	do {
-+		len = dma_unmap_len(&tx->info[idx], len);
-+		if (len) {
-+			if (tx->info[idx].skb != NULL)
-+				pci_unmap_single(mgp->pdev,
-+						 dma_unmap_addr(&tx->info[idx],
-+								bus), len,
-+						 PCI_DMA_TODEVICE);
-+			else
-+				pci_unmap_page(mgp->pdev,
-+					       dma_unmap_addr(&tx->info[idx],
-+							      bus), len,
-+					       PCI_DMA_TODEVICE);
-+			dma_unmap_len_set(&tx->info[idx], len, 0);
-+			tx->info[idx].skb = NULL;
+ 			/* Try to append data to the end of skb. */
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -1916,8 +1916,11 @@ static bool tcp_write_xmit(struct sock *
+ 		tso_segs = tcp_init_tso_segs(sk, skb, mss_now);
+ 		BUG_ON(!tso_segs);
+ 
+-		if (unlikely(tp->repair) && tp->repair_queue == TCP_SEND_QUEUE)
++		if (unlikely(tp->repair) && tp->repair_queue == TCP_SEND_QUEUE) {
++			/* "when" is used as a start point for the retransmit timer */
++			TCP_SKB_CB(skb)->when = tcp_time_stamp;
+ 			goto repair; /* Skip network transmission */
 +		}
-+		idx = (idx + 1) & tx->mask;
-+	} while (idx != last_idx);
-+}
-+
- /*
-  * Transmit a packet.  We need to split the packet so that a single
-  * segment does not cross myri10ge->tx_boundary, so this makes segment
-@@ -2786,7 +2830,7 @@ static netdev_tx_t myri10ge_xmit(struct
- 	u32 low;
- 	__be32 high_swapped;
- 	unsigned int len;
--	int idx, last_idx, avail, frag_cnt, frag_idx, count, mss, max_segments;
-+	int idx, avail, frag_cnt, frag_idx, count, mss, max_segments;
- 	u16 pseudo_hdr_offset, cksum_offset, queue;
- 	int cum_len, seglen, boundary, rdma_count;
- 	u8 flags, odd_flag;
-@@ -2883,9 +2927,12 @@ again:
  
- 	/* map the skb for DMA */
- 	len = skb_headlen(skb);
-+	bus = pci_map_single(mgp->pdev, skb->data, len, PCI_DMA_TODEVICE);
-+	if (unlikely(pci_dma_mapping_error(mgp->pdev, bus)))
-+		goto drop;
-+
- 	idx = tx->req & tx->mask;
- 	tx->info[idx].skb = skb;
--	bus = pci_map_single(mgp->pdev, skb->data, len, PCI_DMA_TODEVICE);
- 	dma_unmap_addr_set(&tx->info[idx], bus, bus);
- 	dma_unmap_len_set(&tx->info[idx], len, len);
- 
-@@ -2984,12 +3031,16 @@ again:
- 			break;
- 
- 		/* map next fragment for DMA */
--		idx = (count + tx->req) & tx->mask;
- 		frag = &skb_shinfo(skb)->frags[frag_idx];
- 		frag_idx++;
- 		len = skb_frag_size(frag);
- 		bus = skb_frag_dma_map(&mgp->pdev->dev, frag, 0, len,
- 				       DMA_TO_DEVICE);
-+		if (unlikely(pci_dma_mapping_error(mgp->pdev, bus))) {
-+			myri10ge_unmap_tx_dma(mgp, tx, idx);
-+			goto drop;
-+		}
-+		idx = (count + tx->req) & tx->mask;
- 		dma_unmap_addr_set(&tx->info[idx], bus, bus);
- 		dma_unmap_len_set(&tx->info[idx], len, len);
- 	}
-@@ -3020,31 +3071,8 @@ again:
- 	return NETDEV_TX_OK;
- 
- abort_linearize:
--	/* Free any DMA resources we've alloced and clear out the skb
--	 * slot so as to not trip up assertions, and to avoid a
--	 * double-free if linearizing fails */
-+	myri10ge_unmap_tx_dma(mgp, tx, idx);
- 
--	last_idx = (idx + 1) & tx->mask;
--	idx = tx->req & tx->mask;
--	tx->info[idx].skb = NULL;
--	do {
--		len = dma_unmap_len(&tx->info[idx], len);
--		if (len) {
--			if (tx->info[idx].skb != NULL)
--				pci_unmap_single(mgp->pdev,
--						 dma_unmap_addr(&tx->info[idx],
--								bus), len,
--						 PCI_DMA_TODEVICE);
--			else
--				pci_unmap_page(mgp->pdev,
--					       dma_unmap_addr(&tx->info[idx],
--							      bus), len,
--					       PCI_DMA_TODEVICE);
--			dma_unmap_len_set(&tx->info[idx], len, 0);
--			tx->info[idx].skb = NULL;
--		}
--		idx = (idx + 1) & tx->mask;
--	} while (idx != last_idx);
- 	if (skb_is_gso(skb)) {
- 		netdev_err(mgp->dev, "TSO but wanted to linearize?!?!?\n");
- 		goto drop;
+ 		cwnd_quota = tcp_cwnd_test(tp, skb);
+ 		if (!cwnd_quota) {
 
 
