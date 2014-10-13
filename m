@@ -1,136 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201AbaJMNK3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 09:10:29 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:45023 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754039AbaJMNJf (ORCPT
+	id S1754177AbaJMNK2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 09:10:28 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50669 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754083AbaJMNJi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 09:09:35 -0400
-From: Antonios Motakis <a.motakis@virtualopensystems.com>
-To: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
-        alex.williamson@redhat.com
-Cc: will.deacon@arm.com, tech@virtualopensystems.com,
-        christoffer.dall@linaro.org, eric.auger@linaro.org,
-        kim.phillips@freescale.com, marc.zyngier@arm.com,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        kvm@vger.kernel.org (open list:VFIO DRIVER),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 3/5] vfio: type1: replace domain wide protection flags with supported capabilities
-Date: Mon, 13 Oct 2014 15:09:06 +0200
-Message-Id: <1413205748-6300-4-git-send-email-a.motakis@virtualopensystems.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1413205748-6300-1-git-send-email-a.motakis@virtualopensystems.com>
-References: <1413205748-6300-1-git-send-email-a.motakis@virtualopensystems.com>
+	Mon, 13 Oct 2014 09:09:38 -0400
+Date: Mon, 13 Oct 2014 15:09:18 +0200
+From: Mark Brown <broonie@kernel.org>
+To: Kiran Padwal <kiran.padwal@smartplayin.com>
+Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Message-ID: <20141013130918.GY27755@sirena.org.uk>
+References: <1412840528-31508-1-git-send-email-kiran.padwal@smartplayin.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4ds4tGy7aNC8MgBu"
+Content-Disposition: inline
+In-Reply-To: <1412840528-31508-1-git-send-email-kiran.padwal@smartplayin.com>
+X-Cookie: You are magnetic in your bearing.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 62.156.150.204
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3/3] spi: qup: Remove .owner field for driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-VFIO_IOMMU_TYPE1 keeps track for each domain it knows a list of protection
-flags it always applies to all mappings in the domain. This is used for
-domains that support IOMMU_CAP_CACHE_COHERENCY.
 
-Refactor this slightly, by keeping track instead that a given domain
-supports the capability, and applying the IOMMU_CACHE protection flag when
-doing the actual DMA mappings.
+--4ds4tGy7aNC8MgBu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This will allow us to reuse the behavior for IOMMU_CAP_NOEXEC, which we
-also want to keep track of, but without applying it to all domains that
-support it unless the user explicitly requests it.
+On Thu, Oct 09, 2014 at 01:12:08PM +0530, Kiran Padwal wrote:
+> There is no need to init .owner field.
+>=20
+> Based on the patch from Peter Griffin <peter.griffin@linaro.org>
+> "mmc: remove .owner field for drivers using module_platform_driver"
+>=20
+> This patch removes the superfluous .owner field for drivers which
+> use the module_platform_driver API, as this is overridden in
+> platform_driver_register anyway."
 
-Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
----
- drivers/vfio/vfio_iommu_type1.c | 25 +++++++++++++++++--------
- 1 file changed, 17 insertions(+), 8 deletions(-)
+Two problems:
+ - I'm missing patches 1 and 2.
+ - This only changes one driver but essentially every SPI driver
+   initializes .owner - why is only thi sone driver being changed?
 
-diff --git a/drivers/vfio/vfio_iommu_type1.c b/drivers/vfio/vfio_iommu_type1.c
-index 562f686..62a8b4d 100644
---- a/drivers/vfio/vfio_iommu_type1.c
-+++ b/drivers/vfio/vfio_iommu_type1.c
-@@ -64,7 +64,7 @@ struct vfio_domain {
- 	struct iommu_domain	*domain;
- 	struct list_head	next;
- 	struct list_head	group_list;
--	int			prot;		/* IOMMU_CACHE */
-+	int			caps;
- };
- 
- struct vfio_dma {
-@@ -485,7 +485,7 @@ static int map_try_harder(struct vfio_domain *domain, dma_addr_t iova,
- 	for (i = 0; i < npage; i++, pfn++, iova += PAGE_SIZE) {
- 		ret = iommu_map(domain->domain, iova,
- 				(phys_addr_t)pfn << PAGE_SHIFT,
--				PAGE_SIZE, prot | domain->prot);
-+				PAGE_SIZE, prot);
- 		if (ret)
- 			break;
- 	}
-@@ -503,11 +503,16 @@ static int vfio_iommu_map(struct vfio_iommu *iommu, dma_addr_t iova,
- 	int ret;
- 
- 	list_for_each_entry(d, &iommu->domain_list, next) {
-+		int dprot = prot;
-+
-+		if (d->caps | IOMMU_CAP_CACHE_COHERENCY)
-+			dprot |= IOMMU_CACHE;
-+
- 		ret = iommu_map(d->domain, iova, (phys_addr_t)pfn << PAGE_SHIFT,
--				npage << PAGE_SHIFT, prot | d->prot);
-+				npage << PAGE_SHIFT, dprot);
- 		if (ret) {
- 			if (ret != -EBUSY ||
--			    map_try_harder(d, iova, pfn, npage, prot))
-+			    map_try_harder(d, iova, pfn, npage, dprot))
- 				goto unwind;
- 		}
- 	}
-@@ -620,6 +625,10 @@ static int vfio_iommu_replay(struct vfio_iommu *iommu,
- 	struct vfio_domain *d;
- 	struct rb_node *n;
- 	int ret;
-+	int dprot = 0;
-+
-+	if (domain->caps | IOMMU_CAP_CACHE_COHERENCY)
-+		dprot |= IOMMU_CACHE;
- 
- 	/* Arbitrarily pick the first domain in the list for lookups */
- 	d = list_first_entry(&iommu->domain_list, struct vfio_domain, next);
-@@ -653,7 +662,7 @@ static int vfio_iommu_replay(struct vfio_iommu *iommu,
- 				size += PAGE_SIZE;
- 
- 			ret = iommu_map(domain->domain, iova, phys,
--					size, dma->prot | domain->prot);
-+					size, dma->prot | dprot);
- 			if (ret)
- 				return ret;
- 
-@@ -721,7 +730,7 @@ static int vfio_iommu_type1_attach_group(void *iommu_data,
- 	}
- 
- 	if (iommu_capable(bus, IOMMU_CAP_CACHE_COHERENCY))
--		domain->prot |= IOMMU_CACHE;
-+		domain->caps |= IOMMU_CAP_CACHE_COHERENCY;
- 
- 	/*
- 	 * Try to match an existing compatible domain.  We don't want to
-@@ -732,7 +741,7 @@ static int vfio_iommu_type1_attach_group(void *iommu_data,
- 	 */
- 	list_for_each_entry(d, &iommu->domain_list, next) {
- 		if (d->domain->ops == domain->domain->ops &&
--		    d->prot == domain->prot) {
-+		    d->caps == domain->caps) {
- 			iommu_detach_group(domain->domain, iommu_group);
- 			if (!iommu_attach_group(d->domain, iommu_group)) {
- 				list_add(&group->next, &d->group_list);
-@@ -865,7 +874,7 @@ static int vfio_domains_have_iommu_cache(struct vfio_iommu *iommu)
- 
- 	mutex_lock(&iommu->lock);
- 	list_for_each_entry(domain, &iommu->domain_list, next) {
--		if (!(domain->prot & IOMMU_CACHE)) {
-+		if (!(domain->caps & IOMMU_CAP_CACHE_COHERENCY)) {
- 			ret = 0;
- 			break;
- 		}
--- 
-2.1.1
+--4ds4tGy7aNC8MgBu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUO87+AAoJECTWi3JdVIfQY/0H/ipMeDskAN3b1Vu78Cz3GC+3
+Xk87d/mOAOT7o3ogH4PYH5aY6SxWXX0kGFHL5NGM4JZXV/CtkaxnOzR5pc1M/Nbk
+Q6hqFd3+qRmkxhBFaQ0K3oekJtUKWST4jQq/d3fkiHcJ1bM7zs3NG/hxsZJvEHW4
+rml1x/aQ3WyGADy4GghfjkYTPVBSPeAzpCqWqzvN7s3DmqH66ezdeJO0i9yEM5a+
+6/LjQ0+Ljca2XfcTrF10QHyLBMWIq+egq8QA7NTDQrMLfMi7PJlyP0ek2//mevvB
+fFvK9VbbzOpSd2oihLm4rpZAGM1v6AO5JVGtvtPIvkYWAqgrMngLO4HGbv5r5SA=
+=HnE7
+-----END PGP SIGNATURE-----
+
+--4ds4tGy7aNC8MgBu--
