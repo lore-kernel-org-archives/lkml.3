@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545AbaJMKSz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 06:18:55 -0400
-Received: from mga01.intel.com ([192.55.52.88]:26282 "EHLO mga01.intel.com"
+	id S1753654AbaJMKWM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 06:22:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49553 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753080AbaJMKSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 06:18:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,709,1406617200"; 
-   d="scan'208";a="613554421"
-Date: Mon, 13 Oct 2014 13:18:50 +0300
-From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>
-Subject: Re: [drm/i915] 5ba60fc3d71:
- dmesg.WARNING:at_drivers/gpu/drm/i915/intel_pm.c:sandybridge_pcode_write_i915()
-Message-ID: <20141013101850.GA4284@intel.com>
-References: <20141011052935.GE21803@wfg-t540p.sh.intel.com>
+	id S1753620AbaJMKWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 06:22:11 -0400
+Date: Mon, 13 Oct 2014 21:21:57 +1100
+From: NeilBrown <neilb@suse.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: Re: [PATCH 0/2 V3] Allow access to sysfs attributes without mem
+ allocations.
+Message-ID: <20141013212157.4e68147c@notabene.brown>
+In-Reply-To: <20141013083512.GA29706@kroah.com>
+References: <20141013053733.19481.43981.stgit@notabene.brown>
+	<20141013083512.GA29706@kroah.com>
+X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.23; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141011052935.GE21803@wfg-t540p.sh.intel.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/O8tZFzoXByhCUoVKw.OIGeB"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 11, 2014 at 01:29:35PM +0800, Fengguang Wu wrote:
-> FYI, we noticed the below changes on
-> 
-> git://gitorious.org/vsyrjala/linux cdclk_3
-> commit 5ba60fc3d719988a404d35a3e46f109bea643fef ("drm/i915: BDW cdclk change support")
-> 
-> 
-<snip>
-> [   13.959092] WARNING: CPU: 0 PID: 75 at drivers/gpu/drm/i915/intel_pm.c:6231 sandybridge_pcode_write+0x171/0x190 [i915]()
-> [   13.959112] Modules linked in: snd_hda_intel i915 snd_hda_controller snd_hda_codec snd_hwdep snd_pcm drm_kms_helper snd_timer snd winbond_cir drm soundcore ahci libahci rc_core pcspkr i2c_i801 libata parport_pc parport i2c_hid sdhci_acpi sdhci mmc_core video dw_dmac dw_dmac_core acpi_pad
-> [   13.959115] CPU: 0 PID: 75 Comm: kworker/u16:1 Not tainted 3.17.0-rc7-g5ba60fc #1
-> [   13.959116] Hardware name: Intel Corporation Broadwell Client platform/WhiteTip Mountain 1, BIOS BDW-E1R1.86C.0079.R00.1406020127 06/02/2014
-> [   13.959122] Workqueue: events_unbound async_run_entry_fn
-> [   13.959126]  0000000000000009 ffff880092cbb850 ffffffff818570a6 0000000000000000
-> [   13.959129]  ffff880092cbb888 ffffffff8106ef1d ffff88014d380000 0000000000000000
-> [   13.959131]  0000000000000018 ffff88014dc862f0 ffff88014d380000 ffff880092cbb898
-> [   13.959132] Call Trace:
-> [   13.959137]  [<ffffffff818570a6>] dump_stack+0x4d/0x66
-> [   13.959142]  [<ffffffff8106ef1d>] warn_slowpath_common+0x7d/0xa0
-> [   13.959145]  [<ffffffff8106effa>] warn_slowpath_null+0x1a/0x20
-> [   13.959173]  [<ffffffffa0213a51>] sandybridge_pcode_write+0x171/0x190 [i915]
-> [   13.959212]  [<ffffffffa0267926>] haswell_modeset_global_resources+0x196/0x4a0 [i915]
+--Sig_/O8tZFzoXByhCUoVKw.OIGeB
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for the report. Seems I forgot to grab the relevant lock here.
-Fixed patches pushed to cdclk_4 branch.
+On Mon, 13 Oct 2014 10:35:12 +0200 Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
 
--- 
-Ville Syrjälä
-Intel OTC
+> On Mon, Oct 13, 2014 at 04:41:28PM +1100, NeilBrown wrote:
+> > Hi Greg,
+> >  please consider these two patches for a future release.
+> >  They now have
+> >    Reviewed-by: Tejun Heo <tj@kernel.org>
+> >  and I've addressed Tejun's final nits.
+> >=20
+> >  Thanks Tejun for your review and comments.
+> >=20
+> >  As soon as they appear in an -rc1, I'll submit updates to md to use
+> >  the new functionality for the -rc2.
+>=20
+> It will have to wait until 3.19-rc1, I'll queue it up in my tree after
+> 3.18-rc1 is out.  You can merge from my driver-core tree into yours if
+> you want to build off of it, as my tree will not be rebased.
+>=20
+
+All fine with me - thanks a lot.
+
+NeilBrown
+
+--Sig_/O8tZFzoXByhCUoVKw.OIGeB
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIVAwUBVDunxTnsnt1WYoG5AQIXWBAApbTktSxfMMxuQeZ6tfnP7IFInbxzlP8l
+ulGpQBrlbz/G1p2+62FQ/o4pwBnY96OI5g0KVwrPP6r9l8sgSmYZwatTF8jp5EIp
+QdZao7Q2eDRVL2zR9k47yUHUO9qkt9ODHShQWbOwl87jilSOue3/WxC0mYKdHEZ3
+zwtSRJm/0Q/0ScqUfZq+i0KLec24kKRgEafXoP6OHsE2TnhrtNaSEDrfAdOzdDt2
+Ub2XYPNXUvtTLZSpsONH5IeHADYn6yRl0tkr3wnqz1p+2fuQSYV6wX3POpbfev1i
+TegjqUSiIXXeLIAKQ5IdWNm2BTllLWIiSo0TeBmKmYFS0D9NYGnZjCNatJH+VWd4
+qDfvC1xNUM7tywRKW7kvm1bb1CR682OE2DXWHmHIxzSLR/nzAaaJT0SJWK6FwKdc
+HSZpaZZfgY5USWT02mHKqZ/n20nq9LzieY7cueLmPpSokPrPWryv5PVId6fcu4PQ
+xjHRCXbO9kBwF8KtVU3wjzOjOcdvdc81Uk1+8rf7kMcD6Oar7Ck1+DjJ69VhN4P1
+RhEYkuZYuS+yd1OXlhO0kNHKTkLZg0xRjgqjt8i8gXqQzbMniJiWZZP5lGwCTZd4
+xablo0Tx1mDg9kqIE8ZReNpCjfALYtGzVopagU1zqL/0G8+5ak7h9htIciQ9yI/z
+c0RFCahTOQE=
+=DU1y
+-----END PGP SIGNATURE-----
+
+--Sig_/O8tZFzoXByhCUoVKw.OIGeB--
