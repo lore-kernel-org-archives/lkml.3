@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201AbaJMCZy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:25:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45601 "EHLO
+	id S1753375AbaJMC0Q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:26:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45642 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752826AbaJMCZu (ORCPT
+	with ESMTP id S1753324AbaJMC0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:25:50 -0400
+	Sun, 12 Oct 2014 22:26:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Per Hurtig <per.hurtig@kau.se>, Eric Dumazet <edumazet@google.com>,
-        Nandita Dukkipati <nanditad@google.com>,
-        Neal Cardwell <ncardwell@google.com>,
+        Yulong Pei <ypei@redhat.com>, Jiri Benc <jbenc@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 12/16] tcp: fixing TLPs FIN recovery
-Date: Mon, 13 Oct 2014 04:24:09 +0200
-Message-Id: <20141013022341.922200866@linuxfoundation.org>
+Subject: [PATCH 3.14 11/37] openvswitch: fix panic with multiple vlan headers
+Date: Mon, 13 Oct 2014 04:24:08 +0200
+Message-Id: <20141013022400.770743473@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141013022341.386913672@linuxfoundation.org>
-References: <20141013022341.386913672@linuxfoundation.org>
+In-Reply-To: <20141013022400.286360067@linuxfoundation.org>
+References: <20141013022400.286360067@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -27,41 +25,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Per Hurtig <per.hurtig@kau.se>
+From: Jiri Benc <jbenc@redhat.com>
 
-[ Upstream commit bef1909ee3ed1ca39231b260a8d3b4544ecd0c8f ]
+[ Upstream commit 2ba5af42a7b59ef01f9081234d8855140738defd ]
 
-Fix to a problem observed when losing a FIN segment that does not
-contain data.  In such situations, TLP is unable to recover from
-*any* tail loss and instead adds at least PTO ms to the
-retransmission process, i.e., RTO = RTO + PTO.
+When there are multiple vlan headers present in a received frame, the first
+one is put into vlan_tci and protocol is set to ETH_P_8021Q. Anything in the
+skb beyond the VLAN TPID may be still non-linear, including the inner TCI
+and ethertype. While ovs_flow_extract takes care of IP and IPv6 headers, it
+does nothing with ETH_P_8021Q. Later, if OVS_ACTION_ATTR_POP_VLAN is
+executed, __pop_vlan_tci pulls the next vlan header into vlan_tci.
 
-Signed-off-by: Per Hurtig <per.hurtig@kau.se>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Acked-by: Nandita Dukkipati <nanditad@google.com>
-Acked-by: Neal Cardwell <ncardwell@google.com>
+This leads to two things:
+
+1. Part of the resulting ethernet header is in the non-linear part of the
+   skb. When eth_type_trans is called later as the result of
+   OVS_ACTION_ATTR_OUTPUT, kernel BUGs in __skb_pull. Also, __pop_vlan_tci
+   is in fact accessing random data when it reads past the TPID.
+
+2. network_header points into the ethernet header instead of behind it.
+   mac_len is set to a wrong value (10), too.
+
+Reported-by: Yulong Pei <ypei@redhat.com>
+Signed-off-by: Jiri Benc <jbenc@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_output.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ net/openvswitch/actions.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -2036,9 +2036,7 @@ void tcp_send_loss_probe(struct sock *sk
- 	if (WARN_ON(!skb || !tcp_skb_pcount(skb)))
- 		goto rearm_timer;
+--- a/net/openvswitch/actions.c
++++ b/net/openvswitch/actions.c
+@@ -42,6 +42,9 @@ static int do_execute_actions(struct dat
  
--	/* Probe with zero data doesn't trigger fast recovery. */
--	if (skb->len > 0)
--		err = __tcp_retransmit_skb(sk, skb);
-+	err = __tcp_retransmit_skb(sk, skb);
+ static int make_writable(struct sk_buff *skb, int write_len)
+ {
++	if (!pskb_may_pull(skb, write_len))
++		return -ENOMEM;
++
+ 	if (!skb_cloned(skb) || skb_clone_writable(skb, write_len))
+ 		return 0;
  
- 	/* Record snd_nxt for loss detection. */
- 	if (likely(!err))
+@@ -70,6 +73,8 @@ static int __pop_vlan_tci(struct sk_buff
+ 
+ 	vlan_set_encap_proto(skb, vhdr);
+ 	skb->mac_header += VLAN_HLEN;
++	if (skb_network_offset(skb) < ETH_HLEN)
++		skb_set_network_header(skb, ETH_HLEN);
+ 	skb_reset_mac_len(skb);
+ 
+ 	return 0;
 
 
