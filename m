@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753875AbaJMC1l (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:27:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45803 "EHLO
+	id S1753895AbaJMC1q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:27:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45807 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753844AbaJMC1f (ORCPT
+	with ESMTP id S1753827AbaJMC1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:27:35 -0400
+	Sun, 12 Oct 2014 22:27:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lu Baolu <baolu.lu@linux.intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 3.14 32/37] USB: Add device quirk for ASUS T100 Base Station keyboard
-Date: Mon, 13 Oct 2014 04:24:29 +0200
-Message-Id: <20141013022401.625083625@linuxfoundation.org>
+        Konstantinos Kolelis <k.kolelis@sirrix.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>
+Subject: [PATCH 3.14 23/37] xfrm: Generate queueing routes only from route lookup functions
+Date: Mon, 13 Oct 2014 04:24:20 +0200
+Message-Id: <20141013022401.256638435@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022400.286360067@linuxfoundation.org>
 References: <20141013022400.286360067@linuxfoundation.org>
@@ -29,68 +29,149 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lu Baolu <baolu.lu@linux.intel.com>
+From: Steffen Klassert <steffen.klassert@secunet.com>
 
-commit ddbe1fca0bcb87ca8c199ea873a456ca8a948567 upstream.
+[ Upstream commit b8c203b2d2fc961bafd53b41d5396bbcdec55998 ]
 
-This full-speed USB device generates spurious remote wakeup event
-as soon as USB_DEVICE_REMOTE_WAKEUP feature is set. As the result,
-Linux can't enter system suspend and S0ix power saving modes once
-this keyboard is used.
+Currently we genarate a queueing route if we have matching policies
+but can not resolve the states and the sysctl xfrm_larval_drop is
+disabled. Here we assume that dst_output() is called to kill the
+queued packets. Unfortunately this assumption is not true in all
+cases, so it is possible that these packets leave the system unwanted.
 
-This patch tries to introduce USB_QUIRK_IGNORE_REMOTE_WAKEUP quirk.
-With this quirk set, wakeup capability will be ignored during
-device configure.
+We fix this by generating queueing routes only from the
+route lookup functions, here we can guarantee a call to
+dst_output() afterwards.
 
-This patch could be back-ported to kernels as old as 2.6.39.
-
-Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Fixes: a0073fe18e71 ("xfrm: Add a state resolution packet queue")
+Reported-by: Konstantinos Kolelis <k.kolelis@sirrix.com>
+Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/core/hub.c     |    6 ++++--
- drivers/usb/core/quirks.c  |    4 ++++
- include/linux/usb/quirks.h |    3 +++
- 3 files changed, 11 insertions(+), 2 deletions(-)
+ include/net/dst.h      |    1 +
+ net/xfrm/xfrm_policy.c |   32 ++++++++++++++++++++++++--------
+ 2 files changed, 25 insertions(+), 8 deletions(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1948,8 +1948,10 @@ void usb_set_device_state(struct usb_dev
- 					|| new_state == USB_STATE_SUSPENDED)
- 				;	/* No change to wakeup settings */
- 			else if (new_state == USB_STATE_CONFIGURED)
--				wakeup = udev->actconfig->desc.bmAttributes
--					 & USB_CONFIG_ATT_WAKEUP;
-+				wakeup = (udev->quirks &
-+					USB_QUIRK_IGNORE_REMOTE_WAKEUP) ? 0 :
-+					udev->actconfig->desc.bmAttributes &
-+					USB_CONFIG_ATT_WAKEUP;
- 			else
- 				wakeup = 0;
- 		}
---- a/drivers/usb/core/quirks.c
-+++ b/drivers/usb/core/quirks.c
-@@ -160,6 +160,10 @@ static const struct usb_device_id usb_in
- 	{ USB_VENDOR_AND_INTERFACE_INFO(0x046d, USB_CLASS_VIDEO, 1, 0),
- 	  .driver_info = USB_QUIRK_RESET_RESUME },
- 
-+	/* ASUS Base Station(T100) */
-+	{ USB_DEVICE(0x0b05, 0x17e0), .driver_info =
-+			USB_QUIRK_IGNORE_REMOTE_WAKEUP },
-+
- 	{ }  /* terminating entry must be last */
+--- a/include/net/dst.h
++++ b/include/net/dst.h
+@@ -466,6 +466,7 @@ void dst_init(void);
+ /* Flags for xfrm_lookup flags argument. */
+ enum {
+ 	XFRM_LOOKUP_ICMP = 1 << 0,
++	XFRM_LOOKUP_QUEUE = 1 << 1,
  };
  
---- a/include/linux/usb/quirks.h
-+++ b/include/linux/usb/quirks.h
-@@ -30,4 +30,7 @@
-    descriptor */
- #define USB_QUIRK_DELAY_INIT		0x00000040
+ struct flowi;
+--- a/net/xfrm/xfrm_policy.c
++++ b/net/xfrm/xfrm_policy.c
+@@ -41,6 +41,11 @@
  
-+/* device generates spurious wakeup, ignore remote wakeup capability */
-+#define USB_QUIRK_IGNORE_REMOTE_WAKEUP	0x00000200
+ static struct dst_entry *xfrm_policy_sk_bundles;
+ 
++struct xfrm_flo {
++	struct dst_entry *dst_orig;
++	u8 flags;
++};
 +
- #endif /* __LINUX_USB_QUIRKS_H */
+ static DEFINE_SPINLOCK(xfrm_policy_afinfo_lock);
+ static struct xfrm_policy_afinfo __rcu *xfrm_policy_afinfo[NPROTO]
+ 						__read_mostly;
+@@ -1889,13 +1894,14 @@ static int xdst_queue_output(struct sk_b
+ }
+ 
+ static struct xfrm_dst *xfrm_create_dummy_bundle(struct net *net,
+-						 struct dst_entry *dst,
++						 struct xfrm_flo *xflo,
+ 						 const struct flowi *fl,
+ 						 int num_xfrms,
+ 						 u16 family)
+ {
+ 	int err;
+ 	struct net_device *dev;
++	struct dst_entry *dst;
+ 	struct dst_entry *dst1;
+ 	struct xfrm_dst *xdst;
+ 
+@@ -1903,9 +1909,12 @@ static struct xfrm_dst *xfrm_create_dumm
+ 	if (IS_ERR(xdst))
+ 		return xdst;
+ 
+-	if (net->xfrm.sysctl_larval_drop || num_xfrms <= 0)
++	if (!(xflo->flags & XFRM_LOOKUP_QUEUE) ||
++	    net->xfrm.sysctl_larval_drop ||
++	    num_xfrms <= 0)
+ 		return xdst;
+ 
++	dst = xflo->dst_orig;
+ 	dst1 = &xdst->u.dst;
+ 	dst_hold(dst);
+ 	xdst->route = dst;
+@@ -1947,7 +1956,7 @@ static struct flow_cache_object *
+ xfrm_bundle_lookup(struct net *net, const struct flowi *fl, u16 family, u8 dir,
+ 		   struct flow_cache_object *oldflo, void *ctx)
+ {
+-	struct dst_entry *dst_orig = (struct dst_entry *)ctx;
++	struct xfrm_flo *xflo = (struct xfrm_flo *)ctx;
+ 	struct xfrm_policy *pols[XFRM_POLICY_TYPE_MAX];
+ 	struct xfrm_dst *xdst, *new_xdst;
+ 	int num_pols = 0, num_xfrms = 0, i, err, pol_dead;
+@@ -1988,7 +1997,8 @@ xfrm_bundle_lookup(struct net *net, cons
+ 			goto make_dummy_bundle;
+ 	}
+ 
+-	new_xdst = xfrm_resolve_and_create_bundle(pols, num_pols, fl, family, dst_orig);
++	new_xdst = xfrm_resolve_and_create_bundle(pols, num_pols, fl, family,
++						  xflo->dst_orig);
+ 	if (IS_ERR(new_xdst)) {
+ 		err = PTR_ERR(new_xdst);
+ 		if (err != -EAGAIN)
+@@ -2022,7 +2032,7 @@ make_dummy_bundle:
+ 	/* We found policies, but there's no bundles to instantiate:
+ 	 * either because the policy blocks, has no transformations or
+ 	 * we could not build template (no xfrm_states).*/
+-	xdst = xfrm_create_dummy_bundle(net, dst_orig, fl, num_xfrms, family);
++	xdst = xfrm_create_dummy_bundle(net, xflo, fl, num_xfrms, family);
+ 	if (IS_ERR(xdst)) {
+ 		xfrm_pols_put(pols, num_pols);
+ 		return ERR_CAST(xdst);
+@@ -2121,13 +2131,18 @@ struct dst_entry *xfrm_lookup(struct net
+ 	}
+ 
+ 	if (xdst == NULL) {
++		struct xfrm_flo xflo;
++
++		xflo.dst_orig = dst_orig;
++		xflo.flags = flags;
++
+ 		/* To accelerate a bit...  */
+ 		if ((dst_orig->flags & DST_NOXFRM) ||
+ 		    !net->xfrm.policy_count[XFRM_POLICY_OUT])
+ 			goto nopol;
+ 
+ 		flo = flow_cache_lookup(net, fl, family, dir,
+-					xfrm_bundle_lookup, dst_orig);
++					xfrm_bundle_lookup, &xflo);
+ 		if (flo == NULL)
+ 			goto nopol;
+ 		if (IS_ERR(flo)) {
+@@ -2219,7 +2234,8 @@ struct dst_entry *xfrm_lookup_route(stru
+ 				    const struct flowi *fl,
+ 				    struct sock *sk, int flags)
+ {
+-	struct dst_entry *dst = xfrm_lookup(net, dst_orig, fl, sk, flags);
++	struct dst_entry *dst = xfrm_lookup(net, dst_orig, fl, sk,
++					    flags | XFRM_LOOKUP_QUEUE);
+ 
+ 	if (IS_ERR(dst) && PTR_ERR(dst) == -EREMOTE)
+ 		return make_blackhole(net, dst_orig->ops->family, dst_orig);
+@@ -2493,7 +2509,7 @@ int __xfrm_route_forward(struct sk_buff
+ 
+ 	skb_dst_force(skb);
+ 
+-	dst = xfrm_lookup(net, skb_dst(skb), &fl, NULL, 0);
++	dst = xfrm_lookup(net, skb_dst(skb), &fl, NULL, XFRM_LOOKUP_QUEUE);
+ 	if (IS_ERR(dst)) {
+ 		res = 0;
+ 		dst = NULL;
 
 
