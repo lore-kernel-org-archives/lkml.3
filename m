@@ -1,88 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668AbaJMLyP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 07:54:15 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:43976 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753476AbaJMLyN (ORCPT
+	id S1753621AbaJMMBQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 08:01:16 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:49319 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753341AbaJMMBO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 07:54:13 -0400
-Date: Mon, 13 Oct 2014 13:54:10 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] of: Add vendor prefix for Sharp Microelectronics
-Message-ID: <20141013115409.GB16186@ulmo>
-References: <1406901044-32654-1-git-send-email-thierry.reding@gmail.com>
+	Mon, 13 Oct 2014 08:01:14 -0400
+Message-ID: <543BBF02.20302@hurleysoftware.com>
+Date: Mon, 13 Oct 2014 08:01:06 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ADZbWkCsHQ7r3kzd"
-Content-Disposition: inline
-In-Reply-To: <1406901044-32654-1-git-send-email-thierry.reding@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jingchang Lu <jingchang.lu@freescale.com>, gregkh@linuxfoundation.org
+CC: josephl@nvidia.com, arnd@arndb.de, linux-serial@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3] serial: of-serial: fix up PM ops on no_console_suspend
+ and port type
+References: <1413191667-10949-1-git-send-email-jingchang.lu@freescale.com>
+In-Reply-To: <1413191667-10949-1-git-send-email-jingchang.lu@freescale.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---ADZbWkCsHQ7r3kzd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Fri, Aug 01, 2014 at 03:50:44PM +0200, Thierry Reding wrote:
-> From: Thierry Reding <treding@nvidia.com>
->=20
-> Use "sharp" as the vendor prefix for Sharp Microelectronics in device
-> tree compatible strings.
->=20
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
+On 10/13/2014 05:14 AM, Jingchang Lu wrote:
+> This patch fixes commit 2dea53bf57783f243c892e99c10c6921e956aa7e,
+> "serial: of-serial: add PM suspend/resume support", which disables
+> the uart clock on suspend, but also causes a hardware hang on register
+> access if no_console_suspend command line option is used.
+> 
+> Also, not every of_serial device is an 8250 port, so the serial8250
+> suspend/resume functions should only be applied to a real 8250 port.
+> 
+> Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
 > ---
->  Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
->  1 file changed, 1 insertion(+)
+> changes in v3:
+>  fix up point reference and deference.
+> 
+> changes in v2:
+>  add switch selection on uart type.
+> 
+>  drivers/tty/serial/of_serial.c | 42 ++++++++++++++++++++++++++++++++++++------
+>  1 file changed, 36 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c
+> index 8bc2563..9d747a7 100644
+> --- a/drivers/tty/serial/of_serial.c
+> +++ b/drivers/tty/serial/of_serial.c
+> @@ -245,9 +245,24 @@ static int of_serial_suspend(struct device *dev)
+>  {
+>  	struct of_serial_info *info = dev_get_drvdata(dev);
+>  
+> -	serial8250_suspend_port(info->line);
+> -	if (info->clk)
+> -		clk_disable_unprepare(info->clk);
+> +	switch(info->type) {
+> +#ifdef CONFIG_SERIAL_8250
+> +	case PORT_8250 ... PORT_MAX_8250:
+> +	{
+> +		struct uart_8250_port *port8250;
+> +		port8250 = serial8250_get_port(info->line);
+> +
+> +		serial8250_suspend_port(info->line);
+> +		if (info->clk &&
+> +		    (!uart_console(&port8250->port) ||
+> +		    (uart_console(&port8250->port) && console_suspend_enabled)))
 
-Ping?
+This conditional is the same as
 
->=20
-> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Docu=
-mentation/devicetree/bindings/vendor-prefixes.txt
-> index 81cc5bb8c821..b833b10da988 100644
-> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> @@ -121,6 +121,7 @@ samsung	Samsung Semiconductor
->  sbs	Smart Battery System
->  schindler	Schindler
->  seagate	Seagate Technology PLC
-> +sharp	Sharp Microelectronics
->  sil	Silicon Image
->  silabs	Silicon Laboratories
->  simtek
-> --=20
-> 2.0.3
->=20
+		if (info->clk && (!uart_console(&port8250->port) || console_suspend_enabled))
 
---ADZbWkCsHQ7r3kzd
-Content-Type: application/pgp-signature
+> +			clk_disable_unprepare(info->clk);
+> +		break;
+> +	}
+> +#endif
+> +	default:
+> +		break;
+> +	}
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+I suggest you separate this into a separate function like:
 
-iQIcBAEBAgAGBQJUO71hAAoJEN0jrNd/PrOh37kQAIUCZRo8EtG2yVeylPlEoeCJ
-BWoftxkDSH3O5KPIOB6jcE9KSAueOR7VbkATWp2HolfKEkT+NS5Ef9Vae5aX43Nc
-Q+3xAbAvtVUoVRssh0CFRx/pQn+pg/6upMZU9d0dunDUkoRblqf+czlSiSG8VCU0
-g3JcaVIcVFzjkuSxtpIJR0q4+RAcs5WfEGbqSWBZhtzliDocaBL7X4Zp+lm7DYMN
-p0Yh2fTlYBLe54RYhyYNQMu5qhIGrXXcg9ATQiWrID5tSwOdfR+2Ug6fnarVyK05
-SJPWMfEmv00eMfS7wwidcbPdBsyXEFjw4FcujFxbxBAWe93RgTNUWPW2aoGp5g6B
-7s0qUKdGXR6Do5j8qIReQwCDwdoKe4NzTNXaqHwXeLSiJn1vd+zbn7kgZjE0btQV
-HQTV9Fjy23ImVWipCzz3cR3MHfnZdqgDC8Sh8l/iiwDU3yqwKP84+hBjbtSqXydW
-Se7QmygpO6610NersmAzunLFRJHqCnENtzyaprdfsRxQJoTm3HjL4gubSY9te/63
-cgjku10ow/qIvqPAb+WDEX7WGt1ghrWro5pTWUfpKKe2iIluzpGint1xCNVTY1tI
-iRFwhKUfk3gvF7DfKc5zJpAVWGbFIIFEiKSMqJsJirKx7ZqaqQSAMgizPm/x5oh3
-IZhA1lYLd5H03PA+M8sH
-=UIHB
------END PGP SIGNATURE-----
+#ifdef CONFIG_SERIAL_8250
+static void of_serial_suspend_8250(struct of_serial_info *info)
+{
+	struct uart_8250_port *uart = serial_8250_get_port(info->line);
+	struct uart_port *port = &uart->port;
 
---ADZbWkCsHQ7r3kzd--
+	serial8250_suspend_port(info->line);
+	if (info->clk && (!uart_console(port) || console_suspend_enabled))
+		clk_disable_unprepare(info->clk);
+}
+#else
+static inline void of_serial_suspend_8250(struct of_serial_info *info)
+{ }
+#endif
+
+and call it like:
+
+static int of_serial_suspend(struct device *dev)
+{
+	struct of_serial_info *info = dev_get_drvdata(dev);
+
+	switch (info->type) {
+	case PORT_8250 ... PORT_MAX_8250:
+		of_serial_suspend_8250(info);
+		break;
+	}
+
+	return 0;
+}
+
+I did not build-test this, so you should.
+
+Regards,
+Peter Hurley
+
+>  
+>  	return 0;
+>  }
+> @@ -256,10 +271,25 @@ static int of_serial_resume(struct device *dev)
+>  {
+>  	struct of_serial_info *info = dev_get_drvdata(dev);
+>  
+> -	if (info->clk)
+> -		clk_prepare_enable(info->clk);
+> +	switch(info->type) {
+> +#ifdef CONFIG_SERIAL_8250
+> +	case PORT_8250 ... PORT_MAX_8250:
+> +	{
+> +		struct uart_8250_port *port8250;
+> +		port8250 = serial8250_get_port(info->line);
+> +
+> +		if (info->clk &&
+> +		    (!uart_console(&port8250->port) ||
+> +		    (uart_console(&port8250->port) && console_suspend_enabled)))
+> +			clk_prepare_enable(info->clk);
+>  
+> -	serial8250_resume_port(info->line);
+> +		serial8250_resume_port(info->line);
+> +		break;
+> +	}
+> +#endif
+> +	default:
+> +		break;
+> +	}
+>  
+>  	return 0;
+>  }
+> 
+
