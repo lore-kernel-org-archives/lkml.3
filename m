@@ -1,70 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936AbaJMVsN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 17:48:13 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:47672 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751188AbaJMVsL (ORCPT
+	id S1753431AbaJMVt4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 17:49:56 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:48829 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751860AbaJMVty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 17:48:11 -0400
-Message-ID: <543C4895.4000902@atmel.com>
-Date: Mon, 13 Oct 2014 23:48:05 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 13 Oct 2014 17:49:54 -0400
 MIME-Version: 1.0
-To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        "One Thousand Gnomes" <gnomes@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH] tty/serial_core: Introduce lock mechanism for RS485
-References: <1412948280-30993-1-git-send-email-ricardo.ribalda@gmail.com> <543A1055.9080801@atmel.com> <CAPybu_1kwSRfe33H9cFO_DgstP8VW=z_AcqZhhs0iQX89Mmbag@mail.gmail.com>
-In-Reply-To: <CAPybu_1kwSRfe33H9cFO_DgstP8VW=z_AcqZhhs0iQX89Mmbag@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+In-Reply-To: <543C0A2D.5040908@redhat.com>
+References: <1409714246-31054-1-git-send-email-ast@plumgrid.com>
+	<1409714246-31054-3-git-send-email-ast@plumgrid.com>
+	<540737DF.1010801@redhat.com>
+	<543C0A2D.5040908@redhat.com>
+Date: Mon, 13 Oct 2014 14:49:53 -0700
+Message-ID: <CAMEtUuw-iAGiYqmcN0AOkku0+Wto7810JJo9HEQvQN-2F=baTA@mail.gmail.com>
+Subject: Re: [PATCH v9 net-next 2/4] net: filter: split filter.h and expose
+ eBPF to user space
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/10/2014 21:03, Ricardo Ribalda Delgado :
-> Hello Nicolas
-> 
+On Mon, Oct 13, 2014 at 10:21 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
+> On 09/03/2014 05:46 PM, Daniel Borkmann wrote:
+> ...
 >>
->> I have the feeling that moving the code chunk that uses this new
->> variable (rs485_enabled) here ...
+>> Ok, given you post the remaining two RFCs later on this window as
+>> you indicate, I have no objections:
 >>
->>>       ret = uart_add_one_port(&atmel_uart, &port->uart);
->>>       if (ret)
->>>               goto err_add_port;
->>> @@ -2574,7 +2572,7 @@ static int atmel_serial_probe(struct platform_device *pdev)
->>>       device_init_wakeup(&pdev->dev, 1);
->>>       platform_set_drvdata(pdev, port);
->>>
->>> -     if (port->uart.rs485.flags & SER_RS485_ENABLED) {
->>> +     if (rs485_enabled) {
->>>               UART_PUT_MR(&port->uart, ATMEL_US_USMODE_NORMAL);
->>>               UART_PUT_CR(&port->uart, ATMEL_US_RTSEN);
->>>       }
->>
->> ... (this one ^^^) up where you can test the SER_RS485_ENABLED, can be
->> even simpler.
->>
->> otherwise, it seems good so you can add my:
->>
->> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->>
->> Thanks.
-> 
-> I supposed that the code needs to be initialized with rs485 disabled
-> and then enable it. Also I did not want to change the behaviour a
-> driver in a patch that involves 3 other drivers. If you don't mind I
-> prefer that this is added to a separated patch.
+>> Acked-by: Daniel Borkmann <dborkman@redhat.com>
+>
+>
+> Ping, Alexei, are you still sending the patch for bpf_common.h or
+> do you want me to take care of this?
 
-Fair enough, I can do it later on.
-
-Thanks, bye,
--- 
-Nicolas Ferre
+It's not forgotten.
+I'm not sending it only because net-next is closed
+and it seems to be -next material.
