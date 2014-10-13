@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832AbaJMMJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 08:09:59 -0400
-Received: from fm1nodo5.polito.it ([130.192.180.13]:37200 "EHLO
-	fm1nodo5.polito.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753741AbaJMMJ4 (ORCPT
+	id S1753856AbaJMMKD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 08:10:03 -0400
+Received: from fm1nodo1.polito.it ([130.192.180.11]:53447 "EHLO
+	antispam.polito.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753741AbaJMMKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 08:09:56 -0400
+	Mon, 13 Oct 2014 08:10:00 -0400
 X-AttachExt: p7s
 X-ExtScanner: Niversoft's FindAttachments (free)
 From: Roberto Sassu <roberto.sassu@polito.it>
@@ -14,14 +14,14 @@ To: linux-security-module@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-ima-devel@lists.sourceforge.net,
         zohar@us.ibm.com, d.kasatkin@samsung.com, jmorris@namei.org,
         Roberto Sassu <roberto.sassu@polito.it>
-Subject: [PATCH-v4 3/5] ima: don't allocate a copy of template_fmt in template_desc_init_fields()
-Date: Mon, 13 Oct 2014 14:08:40 +0200
-Message-Id: <1413202125-7062-4-git-send-email-roberto.sassu@polito.it>
+Subject: [PATCH-v4 4/5] ima: allocate field pointers array on demand in template_desc_init_fields()
+Date: Mon, 13 Oct 2014 14:08:41 +0200
+Message-Id: <1413202125-7062-5-git-send-email-roberto.sassu@polito.it>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1413202125-7062-1-git-send-email-roberto.sassu@polito.it>
 References: <1413202125-7062-1-git-send-email-roberto.sassu@polito.it>
 MIME-Version: 1.0
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----FE574AE16BE66E2A7F5D420E5D195329"
+Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----BFE7051D03129C819E02136D33B8B8A3"
 X-FEAS-SYSTEM-WL: 130.192.180.41
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,100 +29,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is an S/MIME signed message
 
-------FE574AE16BE66E2A7F5D420E5D195329
+------BFE7051D03129C819E02136D33B8B8A3
 
-This patch removes the allocation of a copy of 'template_fmt', needed for
-iterating over all fields in the passed template format string. The removal
-was possible by replacing strcspn(), which modifies the passed string,
-with strchrnul(). The currently processed template field is copied in
-a temporary variable.
-
-The purpose of this change is use template_desc_init_fields() in two ways:
-for just validating a template format string (the function should work
-if called by a setup function, when memory cannot be allocated), and for
-actually initializing a template descriptor. The implementation of this
-feature will be complete with the next patch.
+The allocation of a field pointers array is moved at the end of
+template_desc_init_fields() and done only if the value of the 'fields'
+and 'num_fields' parameters is not NULL. For just validating a template
+format string, retrieved template field pointers are placed in a temporary
+array.
 
 Changelog:
  - v3:
-   - added 'goto out' in template_desc_init_fields() to free allocated
-     memory if a template field length is not valid (suggested by
-     Mimi Zohar)
+   - do not check in this patch if 'fields' and 'num_fields' are NULL
+     (suggested by Mimi Zohar)
 
 Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
 ---
- security/integrity/ima/ima_template.c | 30 +++++++++++++++++-------------
- 1 file changed, 17 insertions(+), 13 deletions(-)
+ security/integrity/ima/ima_template.c | 34 +++++++++++++---------------------
+ 1 file changed, 13 insertions(+), 21 deletions(-)
 
 diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
-index b7b359c..d93a58e 100644
+index d93a58e..65117ba 100644
 --- a/security/integrity/ima/ima_template.c
 +++ b/security/integrity/ima/ima_template.c
-@@ -116,9 +116,9 @@ static int template_desc_init_fields(const char *template_fmt,
- 				     struct ima_template_field ***fields,
+@@ -117,8 +117,9 @@ static int template_desc_init_fields(const char *template_fmt,
  				     int *num_fields)
  {
--	char *c, *template_fmt_copy, *template_fmt_ptr;
-+	const char *template_fmt_ptr;
+ 	const char *template_fmt_ptr;
++	struct ima_template_field *found_fields[IMA_TEMPLATE_NUM_FIELDS_MAX];
  	int template_num_fields = template_fmt_size(template_fmt);
--	int i, result = 0;
-+	int i, len, result = 0;
+-	int i, len, result = 0;
++	int i, len;
  
  	if (template_num_fields > IMA_TEMPLATE_NUM_FIELDS_MAX) {
  		pr_err("format string '%s' contains too many fields\n",
-@@ -126,24 +126,29 @@ static int template_desc_init_fields(const char *template_fmt,
+@@ -126,41 +127,32 @@ static int template_desc_init_fields(const char *template_fmt,
  		return -EINVAL;
  	}
  
--	/* copying is needed as strsep() modifies the original buffer */
--	template_fmt_copy = kstrdup(template_fmt, GFP_KERNEL);
--	if (template_fmt_copy == NULL)
--		return -ENOMEM;
+-	*fields = kzalloc(template_num_fields * sizeof(*fields), GFP_KERNEL);
+-	if (*fields == NULL) {
+-		result = -ENOMEM;
+-		goto out;
+-	}
 -
- 	*fields = kzalloc(template_num_fields * sizeof(*fields), GFP_KERNEL);
- 	if (*fields == NULL) {
- 		result = -ENOMEM;
- 		goto out;
- 	}
+ 	for (i = 0, template_fmt_ptr = template_fmt; i < template_num_fields;
+ 	     i++, template_fmt_ptr += len + 1) {
+ 		char tmp_field_id[IMA_TEMPLATE_FIELD_ID_MAX_LEN + 1];
+-		struct ima_template_field *f;
  
--	template_fmt_ptr = template_fmt_copy;
--	for (i = 0; (c = strsep(&template_fmt_ptr, "|")) != NULL &&
--	     i < template_num_fields; i++) {
--		struct ima_template_field *f = lookup_template_field(c);
-+	for (i = 0, template_fmt_ptr = template_fmt; i < template_num_fields;
-+	     i++, template_fmt_ptr += len + 1) {
-+		char tmp_field_id[IMA_TEMPLATE_FIELD_ID_MAX_LEN + 1];
-+		struct ima_template_field *f;
-+
-+		len = strchrnul(template_fmt_ptr, '|') - template_fmt_ptr;
-+		if (len == 0 || len > IMA_TEMPLATE_FIELD_ID_MAX_LEN) {
-+			pr_err("Invalid field with length %d\n", len);
-+			result = -EINVAL;
-+			goto out;
-+		}
- 
-+		memcpy(tmp_field_id, template_fmt_ptr, len);
-+		tmp_field_id[len] = '\0';
-+		f = lookup_template_field(tmp_field_id);
- 		if (!f) {
--			pr_err("field '%s' not found\n", c);
-+			pr_err("field '%s' not found\n", tmp_field_id);
- 			result = -ENOENT;
- 			goto out;
+ 		len = strchrnul(template_fmt_ptr, '|') - template_fmt_ptr;
+ 		if (len == 0 || len > IMA_TEMPLATE_FIELD_ID_MAX_LEN) {
+ 			pr_err("Invalid field with length %d\n", len);
+-			result = -EINVAL;
+-			goto out;
++			return -EINVAL;
  		}
-@@ -155,7 +160,6 @@ out:
- 		kfree(*fields);
- 		*fields = NULL;
+ 
+ 		memcpy(tmp_field_id, template_fmt_ptr, len);
+ 		tmp_field_id[len] = '\0';
+-		f = lookup_template_field(tmp_field_id);
+-		if (!f) {
++		found_fields[i] = lookup_template_field(tmp_field_id);
++		if (!found_fields[i]) {
+ 			pr_err("field '%s' not found\n", tmp_field_id);
+-			result = -ENOENT;
+-			goto out;
++			return -ENOENT;
+ 		}
+-		(*fields)[i] = f;
  	}
--	kfree(template_fmt_copy);
- 	return result;
++
++	*fields = kmalloc_array(i, sizeof(*fields), GFP_KERNEL);
++	if (*fields == NULL)
++		return -ENOMEM;
++
++	memcpy(*fields, found_fields, i * sizeof(*fields));
+ 	*num_fields = i;
+-out:
+-	if (result < 0) {
+-		kfree(*fields);
+-		*fields = NULL;
+-	}
+-	return result;
++	return 0;
  }
  
+ struct ima_template_desc *ima_template_desc_current(void)
 -- 
 1.9.3
 
 
-------FE574AE16BE66E2A7F5D420E5D195329
+------BFE7051D03129C819E02136D33B8B8A3
 Content-Type: application/x-pkcs7-signature; name="smime.p7s"
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="smime.p7s"
@@ -160,17 +157,17 @@ YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
 MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
 aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
 Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
-CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xNDEwMTMxMjA5MzVaMCMGCSqG
-SIb3DQEJBDEWBBRkY1Pd/UhKZupaDNPyBemxiu4mJjB5BgkqhkiG9w0BCQ8xbDBq
+CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xNDEwMTMxMjA5NDBaMCMGCSqG
+SIb3DQEJBDEWBBSFkgBQwEUpGq4pP5+EXwT8JVZkVTB5BgkqhkiG9w0BCQ8xbDBq
 MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
 DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
-hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQAVM+JSsgZRb1YLMG2DxhscJuhO
-yifzHS/yTZ5pg086q7As/hhaIhroj12q+UA4VnvepRkOddVcay2Eqf5DFR29eS2y
-tVG3ju07vpFqO8/xUKGKe+AejtkYXDP5/r41sW3AS3VxiktfS1r0B1rjpJ6AjR50
-4qUixYrgTZB0glBnuDNi5LDZqtQgiVkczfA2fF1NclWCP2Cjw5Ra7vDyHKMyN53U
-eJg1NnXyBvgKT8R7qbqWszpP6NQuFWg2eajPy22KiHsHD98GyF7qPVsC7Jpy9J/E
-c2XrG3Qz5egQ+jdA28DwTynwhVQI+DEnqBa9NCue2TGY2mouNDf9/5vAEsd8
+hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQB6d02pqQf9I88LpADf0cu+lyGZ
+uoWv7lfwM0q3MlL60Rf8SbVEqRJe1Ftk2ysUcaXJkfyBRVO5GXtFuofMfznFI+Xx
+gb7keroW4QFZmuZLfJlwotOuuXkK167FRj/bjD3U5VfSQAUfnmO/Gwls3NidUdlV
+J+qMUixWQ3smN4XpXCXgCcMofZCBm4VNnSWGtvDkB1jB04kqOpZU3rfmXaUcGApd
+8f++YTumwvNQUfAoYr3QeMN/4ZTEehUQXDu91BRwBYAuxZOyMKpOxlPyzMe8gnuf
+9rG/AlUxI6pKFxVLUvmcARP0mJI2odXVCWsHAhgztOkhKqPafaxWnKeEAmQz
 
-------FE574AE16BE66E2A7F5D420E5D195329--
+------BFE7051D03129C819E02136D33B8B8A3--
 
 
