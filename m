@@ -1,38 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753662AbaJMIFg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 04:05:36 -0400
-Received: from filter1.ibarracuda.nl ([83.247.7.10]:60843 "EHLO
+	id S1753804AbaJMIFy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 04:05:54 -0400
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:60916 "EHLO
 	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752987AbaJMIF3 (ORCPT
+	with ESMTP id S1753518AbaJMIFe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 04:05:29 -0400
-X-ASG-Debug-ID: 1413187525-0759e7482868d810002-xx1T2L
+	Mon, 13 Oct 2014 04:05:34 -0400
+X-ASG-Debug-ID: 1413187531-0759e7482868d8a0002-xx1T2L
 X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
 X-Barracuda-AUTH-User: xsenscom
 X-Barracuda-Apparent-Source-IP: 87.249.116.215
 From: Frans Klaver <frans.klaver@xsens.com>
 To: Sebastian Reichel <sre@kernel.org>
-CC: Frans Klaver <frans.klaver@xsens.com>,
+CC: =?UTF-8?q?Ren=C3=A9=20Moll?= <linux@r-moll.nl>,
+        Tjerk Hofmeijer <tjerk.hofmeijer@xsens.com>,
+        Frans Klaver <frans.klaver@xsens.com>,
         Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
         David Woodhouse <dwmw2@infradead.org>,
         Grant Likely <grant.likely@linaro.org>,
         Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        =?UTF-8?q?Ren=C3=A9=20Moll?= <linux@r-moll.nl>,
-        Tjerk Hofmeijer <tjerk.hofmeijer@xsens.com>,
         Guenter Roeck <linux@roeck-us.net>, <linux-kernel@vger.kernel.org>,
         <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>
-Subject: [PATCH v5 0/2] Add support for ltc2952 poweroff
-Date: Mon, 13 Oct 2014 10:05:11 +0200
-X-ASG-Orig-Subj: [PATCH v5 0/2] Add support for ltc2952 poweroff
-Message-ID: <1413187513-11178-1-git-send-email-frans.klaver@xsens.com>
+Subject: [PATCH v5 2/2] power: reset: document LTC2952 poweroff support
+Date: Mon, 13 Oct 2014 10:05:13 +0200
+X-ASG-Orig-Subj: [PATCH v5 2/2] power: reset: document LTC2952 poweroff support
+Message-ID: <1413187513-11178-3-git-send-email-frans.klaver@xsens.com>
 X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1413187513-11178-1-git-send-email-frans.klaver@xsens.com>
+References: <1413187513-11178-1-git-send-email-frans.klaver@xsens.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8bit
 X-Originating-IP: [172.16.11.125]
 X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
-X-Barracuda-Start-Time: 1413187525
+X-Barracuda-Start-Time: 1413187531
 X-Barracuda-Encrypted: AES128-SHA
 X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
 X-Barracuda-BRTS-Status: 1
@@ -46,59 +48,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is version 5 of the series that adds support for the ltc2952 powerpath chip.
+From: René Moll <linux@r-moll.nl>
 
-I haven't gotten any further comments on the previous run, so here's a small update.
-
-This series adds a driver for the LTC2952, an external power control chip, which
-signals the OS to shut down. Additionally this driver lets the kernel power
-down the board.
-
-This driver was tested with:
-  - kernel version 3.15.8, 3.17
-  - ARM based processor (TI AM335x series)
-
-v4..v5
-  - Remove some unused headers
-  - Rephrase documentation to something platform independent
-  - Revert some doc changes from v4 (chips -> chip's, must be -> should contain) 
-  - Ensure utf8 encoding in ltc2952-poweroff.c
-
-v3..v4:
-  - Rename *kill to *poweroff
-  - Use managed resources (devm_*) where possible
-  - Handle irq failures on trigger gpio as if no trigger input was defined
-  - Drop no-op suspend/resume functions
-  - Check value before starting timer - it may be possible that the timer fails
-    to start on first pass, but starts on second pass. While this is unlikely,
-    it will throw off the entire system. Just check the actual gpio value to be
-    sure. 
-  - Reduce, almost eliminate, use of globals (I dislike them)
-  - Fix some style issues
-  - Now also tested on v3.17
-
-v2..v3:
-  - Allow absence of button input pin (and document that)
-  - Fix some whitespace issues
-  - Straighten out control flow here and there
-  - Get rid of gpio array. This was only used in setup/cleanup cases. It never mattered elsewhere
-  - Add some explanation to the commit message that introduces the driver
-  - Add other contributors
-  - Update René's e-mail; his Xsens e-mail is no longer valid
-  - Now also tested on v3.17-rc7
-
-René Moll (2):
-  power: reset: add LTC2952 poweroff support
-  power: reset: document LTC2952 poweroff support
-
- .../bindings/power/reset/ltc2952-poweroff.txt      |  30 ++
- drivers/power/reset/Kconfig                        |  10 +
- drivers/power/reset/Makefile                       |   1 +
- drivers/power/reset/ltc2952-poweroff.c             | 324 +++++++++++++++++++++
- 4 files changed, 365 insertions(+)
+Signed-off-by: René Moll <linux@r-moll.nl>
+Signed-off-by: Tjerk Hofmeijer <tjerk.hofmeijer@xsens.com>
+Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
+---
+ .../bindings/power/reset/ltc2952-poweroff.txt      | 30 ++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/power/reset/ltc2952-poweroff.txt
- create mode 100644 drivers/power/reset/ltc2952-poweroff.c
 
+diff --git a/Documentation/devicetree/bindings/power/reset/ltc2952-poweroff.txt b/Documentation/devicetree/bindings/power/reset/ltc2952-poweroff.txt
+new file mode 100644
+index 0000000..80e58cd
+--- /dev/null
++++ b/Documentation/devicetree/bindings/power/reset/ltc2952-poweroff.txt
+@@ -0,0 +1,30 @@
++Binding for the LTC2952 PowerPath controller
++
++This chip is used to externally trigger a system shut down. Once the trigger
++has been sent, the chip's watchdog has to be reset to gracefully shut down.
++A full power down can be triggered via the poweroff signal.
++
++Required properties:
++
++- compatible:		Should contain: "lltc,ltc2952"
++- watchdog-gpios:	phandle + gpio-specifier for the GPIO connected to the
++			chip's watchdog line
++- poweroff-gpios:	phandle + gpio-specifier for the GPIO connected to the
++			chip's kill line
++
++Optional properties:
++
++- trigger-gpios:	phandle + gpio-specifier for the GPIO connected to the
++			chip's trigger line. If this property is not set, the
++			trigger function is ignored and the chip is kept alive
++			until an explicit kill signal is received
++
++Example:
++
++ltc2952 {
++	compatible = "lltc,ltc2952";
++
++	trigger-gpios = <&gpio0 1 GPIO_ACTIVE_LOW>;
++	watchdog-gpios = <&gpio1 2 GPIO_ACTIVE_HIGH>;
++	poweroff-gpios = <&gpio0 2 GPIO_ACTIVE_LOW>;
++};
 -- 
 2.1.0
 
