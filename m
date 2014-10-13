@@ -1,117 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757AbaJMAZq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 20:25:46 -0400
-Received: from ozlabs.org ([103.22.144.67]:48744 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751494AbaJMAZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 20:25:44 -0400
-Date: Mon, 13 Oct 2014 11:25:33 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zheng Liu <wenqing.lz@taobao.com>
-Subject: Re: linux-next: manual merge of the percpu tree with the ext4 tree
-Message-ID: <20141013112533.120fd6e6@canb.auug.org.au>
-In-Reply-To: <20140908164114.262bb178@canb.auug.org.au>
-References: <20140908164114.262bb178@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1752813AbaJMAdB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 20:33:01 -0400
+Received: from regular1.263xmail.com ([211.150.99.138]:57268 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752626AbaJMAdA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Oct 2014 20:33:00 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: xjq@rock-chips.com
+X-FST-TO: cf@rock-chips.com
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: xjq@rock-chips.com
+X-UNIQUE-TAG: <4dc46581f5704b76110a7d05c3949d1f>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <543B1DB2.6070300@rock-chips.com>
+Date: Mon, 13 Oct 2014 08:32:50 +0800
+From: Jianqun <xjq@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/.VPFbVHQ1KNZ=.UUNc1E/bT"; protocol="application/pgp-signature"
+To: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>,
+        Jianqun <jay.xu@rock-chips.com>
+CC: mturquette@linaro.org, dianders@chromium.org, kever.yang@rock-chips.com,
+        dbasehore@chromium.org, mark.yao@rock-chips.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        huangtao@rock-chips.com, cf@rock-chips.com
+Subject: Re: [PATCH] clk: rockchip: rk3288: i2s_frac adds flag to set parent's
+ rate
+References: <1412046724-28069-1-git-send-email-jay.xu@rock-chips.com> <1489993.9j1G9iMIhJ@phil>
+In-Reply-To: <1489993.9j1G9iMIhJ@phil>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/.VPFbVHQ1KNZ=.UUNc1E/bT
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
 
-Hi Ted,
-
-On Mon, 8 Sep 2014 16:41:14 +1000 Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
+在 10/12/2014 02:54 AM, Heiko Stübner 写道:
+> Hi Jianqun,
 >
-> Today's linux-next merge of the percpu tree got a conflict in
-> fs/ext4/super.c between commit eb68d0e2fc5a ("ext4: track extent status
-> tree shrinker delay statictics") from the ext4 tree and commit
-> 908c7f1949cb ("percpu_counter: add @gfp to percpu_counter_init()") from
-> the percpu tree.
->=20
-> I fixed it up (the former removed a reference to percpu_counter_init)
-> and can carry the fix as necessary (no action is required).
->=20
-> That commit also added two references in fs/ext4/extents_status.c (thus
-> proving that modifying a little used API causes it to be used
-> more :-)), so I added the following merge fix patch:
+> Am Dienstag, 30. September 2014, 11:12:04 schrieb Jianqun:
+>> The relation of i2s nodes as follows:
+>>           i2s_src               0           0            594000000  0
+>>              i2s_frac           0           0            11289600   0
+>>                 i2s_pre         0           0            11289600   0
+>>                    sclk_i2s0    0           0            11289600   0
+>>                    i2s0_clkout  0           0            11289600   0
+>>                       hclk_i2s0 1           1            99000000   0
+>>
+>> sclk_i2s0 is the master clock, when to set rate of sclk_i2s0, should
+>> allow to set its parent's rate, by add flag CLK_SET_RATE_PARENT for
+>> "i2s_frac", "i2s_pre", "i2s0_clkout" and "sclk_i2s0".
+>>
+>> Tested on rk3288 board using max98090, with command "aplay <music.wav>"
+>>
+>> Change-Id: I12faad082566532b65a7de8c0a6845e1c17870e6
+> Please no "Change-Id"s in upstream patches.
+ok
+>
+>
+>> Signed-off-by: Jianqun <jay.xu@rock-chips.com>
+>> ---
+>>  drivers/clk/rockchip/clk-rk3288.c | 8 ++++----
+>>  1 file changed, 4 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/clk/rockchip/clk-rk3288.c
+>> b/drivers/clk/rockchip/clk-rk3288.c index c770de0..baf19b4 100644
+>> --- a/drivers/clk/rockchip/clk-rk3288.c
+>> +++ b/drivers/clk/rockchip/clk-rk3288.c
+>> @@ -301,15 +301,15 @@ static struct rockchip_clk_branch
+>> rk3288_clk_branches[] __initdata = { COMPOSITE(0, "i2s_src",
+>> mux_pll_src_cpll_gpll_p, 0,
+>>  			RK3288_CLKSEL_CON(4), 15, 1, MFLAGS, 0, 7, DFLAGS,
+>>  			RK3288_CLKGATE_CON(4), 1, GFLAGS),
+>> -	COMPOSITE_FRAC(0, "i2s_frac", "i2s_src", 0,
+>> +	COMPOSITE_FRAC(0, "i2s_frac", "i2s_src", CLK_SET_RATE_PARENT,
+>>  			RK3288_CLKSEL_CON(8), 0,
+>>  			RK3288_CLKGATE_CON(4), 2, GFLAGS),
+>> -	MUX(0, "i2s_pre", mux_i2s_pre_p, 0,
+>> +	MUX(0, "i2s_pre", mux_i2s_pre_p, CLK_SET_RATE_PARENT,
+>>  			RK3288_CLKSEL_CON(4), 8, 2, MFLAGS),
+>> -	COMPOSITE_NODIV(0, "i2s0_clkout", mux_i2s_clkout_p, 0,
+>> +	COMPOSITE_NODIV(0, "i2s0_clkout", mux_i2s_clkout_p, CLK_SET_RATE_PARENT,
+> are you sure it is correct that i2s0_clkout should also be able to set the 
+> core i2s clock?
+>
+> I.e. as it is now, the i2s controller could set one frequency through 
+> sclk_i2s0 and whatever uses i2s0_clkout would be able to set it to something 
+> completely different, which may call for trouble.
+>
+> So in my mind, it might be better to limit i2s0_clkout to select between its 
+> two parent without being able influence the core i2s clock?
+ok, you are right, here is the new clock tree with your suggestion, when play music
+          i2s_src               1           1            594000000  0                                                                                                                                     
+             i2s_frac           1           1            11289600   0                                                                                                                                     
+                i2s_pre         1           1            11289600   0                                                                                                                                     
+                   sclk_i2s0    1           1            11289600   0                                                                                                                                     
+                   i2s0_clkout  0           0            11289600   0                                                                                                                                     
+                      hclk_i2s0 1           1            148500000  0
 
-This patch is now needed when I merge the ext4 tree with Linus'
-tree ... so please let Linus know when you send your pull request.
+I'll make an patch v2 soon
+>
+> Heiko
+>
+>
+>>  			RK3288_CLKSEL_CON(4), 12, 1, MFLAGS,
+>>  			RK3288_CLKGATE_CON(4), 0, GFLAGS),
+>> -	GATE(SCLK_I2S0, "sclk_i2s0", "i2s_pre", 0,
+>> +	GATE(SCLK_I2S0, "sclk_i2s0", "i2s_pre", CLK_SET_RATE_PARENT,
+>>  			RK3288_CLKGATE_CON(4), 3, GFLAGS),
+>>
+>>  	MUX(0, "spdif_src", mux_pll_src_cpll_gpll_p, 0,
+>
+>
+>
 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Mon, 8 Sep 2014 16:25:46 +1000
-> Subject: [PATCH] percpu_counter: fix for ext4 updates
->=20
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  fs/ext4/extents_status.c | 5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
->=20
-> diff --git a/fs/ext4/extents_status.c b/fs/ext4/extents_status.c
-> index 09fd57667262..3777f7eda5cf 100644
-> --- a/fs/ext4/extents_status.c
-> +++ b/fs/ext4/extents_status.c
-> @@ -13,6 +13,7 @@
->  #include <linux/list_sort.h>
->  #include <linux/proc_fs.h>
->  #include <linux/seq_file.h>
-> +#include <linux/gfp.h>
->  #include "ext4.h"
->  #include "extents_status.h"
-> =20
-> @@ -1189,10 +1190,10 @@ int ext4_es_register_shrinker(struct ext4_sb_info=
- *sbi)
->  	sbi->s_es_stats.es_stats_cache_misses =3D 0;
->  	sbi->s_es_stats.es_stats_scan_time =3D 0;
->  	sbi->s_es_stats.es_stats_max_scan_time =3D 0;
-> -	err =3D percpu_counter_init(&sbi->s_es_stats.es_stats_all_cnt, 0);
-> +	err =3D percpu_counter_init(&sbi->s_es_stats.es_stats_all_cnt, 0, GFP_K=
-ERNEL);
->  	if (err)
->  		return err;
-> -	err =3D percpu_counter_init(&sbi->s_es_stats.es_stats_lru_cnt, 0);
-> +	err =3D percpu_counter_init(&sbi->s_es_stats.es_stats_lru_cnt, 0, GFP_K=
-ERNEL);
->  	if (err)
->  		goto err1;
-> =20
+-- 
+Jianqun Xu
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+****************************************************************************
+*IMPORTANT NOTICE:*This email is from Fuzhou Rockchip Electronics Co.,
+Ltd .The contents of this email and any attachments may contain
+information that is privileged, confidential and/or exempt from
+disclosure under applicable law and relevant NDA. If you are not the
+intended recipient, you are hereby notified that any disclosure,
+copying, distribution, or use of the information is STRICTLY PROHIBITED.
+Please immediately contact the sender as soon as possible and destroy
+the material in its entirety in any format. Thank you.
+****************************************************************************
 
---Sig_/.VPFbVHQ1KNZ=.UUNc1E/bT
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUOxwCAAoJEMDTa8Ir7ZwVhyEQAIa7qPctp/aBAkRNX2A9DfDm
-1C+JbOPwGZ28TswECoI1BHUtBO7sZxPNU2EbB4I7BWiCwmk6MTUMZyt49pdTjoJX
-v6lCpREenzBPPcpuM4vlLQVToIrW2lB7ILG8fJOPCjDTJC/gIwA87chUiVMf0sQu
-krR/NsYbff7v68LIWrsUXj2KpQCoaVG947MfdvqmbXa2CLdpUP3kZ9CiiqvMwMzx
-UT3iQHle3lmmdtI6zvVpANIjFhXeA+ygeHwwKG5tEthhKZXuBtLkGSeGv29vJH7r
-i1OgNCSwxG6acUf0gOxpS28zHdQY6rYIYuFqriEh1XK33sKUgTwDA8HcuXFjasAQ
-hQwVXp3LzCpb0nw8iF8XwRbaFz6VEiemaRuotOjvgSo34Qeba5fgxrUeS4bZaKEM
-VSkAMU6+7njU6w5j8rFPOt3XsXXiAWBDnLqKFOqGcTxk74cvHv4d2qRdvrV1U0GU
-rdfJwT04KNmUN1IhsXoFHW2xPZR5UM0BJA+7qUugp5jVvDpsfSafFvdJkLWTxxZ9
-/kwyfL1Y/0kmP5LC+wIcwano9NgIXk1d65mak4cWvqb80UVqVoZGr6I6RFZvS6l2
-uUd8AWv4fOMEcrad1afdSDtpACWzbxEkHQZjm5+vTSk0h9Hj2QRCzhDCfHArPGjT
-/zQPKhPjc3OvcbE9gbI6
-=BOmq
------END PGP SIGNATURE-----
-
---Sig_/.VPFbVHQ1KNZ=.UUNc1E/bT--
