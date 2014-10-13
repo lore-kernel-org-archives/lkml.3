@@ -1,92 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753786AbaJMIC5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 04:02:57 -0400
-Received: from mga01.intel.com ([192.55.52.88]:51156 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752944AbaJMICu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 04:02:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,708,1406617200"; 
-   d="scan'208";a="613502425"
-From: Jani Nikula <jani.nikula@linux.intel.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-Cc: linux-kernel@vger.kernel.org,
-        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Subject: Re: [PATCH v2] gpu: drm: drm_dp_mst_topology.c: Fix improper use of strncat
-In-Reply-To: <1413064952-10466-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <1413064952-10466-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-User-Agent: Notmuch/0.18.1+110~gd9ec63c (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Mon, 13 Oct 2014 11:02:40 +0300
-Message-ID: <87y4skgzxb.fsf@intel.com>
+	id S1753547AbaJMIEe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 04:04:34 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:47330 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751989AbaJMIEa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 04:04:30 -0400
+Date: Mon, 13 Oct 2014 10:04:25 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86/vdso tree change for v3.18
+Message-ID: <20141013080425.GA16716@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 12 Oct 2014, Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se> wrote:
-> Fixed wrong usage of strncat, switched to strlcpy.
-> While sending the string size to function to reduce
-> the potential for misuse in future.
->
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Linus,
 
-Reviewed-by: Jani Nikula <jani.nikula@intel.com>
+Please pull the latest x86-vdso-for-linus git tree from:
 
-> ---
->  drivers/gpu/drm/drm_dp_mst_topology.c |   15 ++++++++-------
->  1 file changed, 8 insertions(+), 7 deletions(-)
->
-> diff --git a/drivers/gpu/drm/drm_dp_mst_topology.c b/drivers/gpu/drm/drm_dp_mst_topology.c
-> index ac3c273..2a146d1 100644
-> --- a/drivers/gpu/drm/drm_dp_mst_topology.c
-> +++ b/drivers/gpu/drm/drm_dp_mst_topology.c
-> @@ -995,19 +995,20 @@ static void drm_dp_check_port_guid(struct drm_dp_mst_branch *mstb,
->  
->  static void build_mst_prop_path(struct drm_dp_mst_port *port,
->  				struct drm_dp_mst_branch *mstb,
-> -				char *proppath)
-> +				char *proppath,
-> +				size_t proppath_size)
->  {
->  	int i;
->  	char temp[8];
-> -	snprintf(proppath, 255, "mst:%d", mstb->mgr->conn_base_id);
-> +	snprintf(proppath, proppath_size, "mst:%d", mstb->mgr->conn_base_id);
->  	for (i = 0; i < (mstb->lct - 1); i++) {
->  		int shift = (i % 2) ? 0 : 4;
->  		int port_num = mstb->rad[i / 2] >> shift;
-> -		snprintf(temp, 8, "-%d", port_num);
-> -		strncat(proppath, temp, 255);
-> +		snprintf(temp, sizeof(temp), "-%d", port_num);
-> +		strlcat(proppath, temp, proppath_size);
->  	}
-> -	snprintf(temp, 8, "-%d", port->port_num);
-> -	strncat(proppath, temp, 255);
-> +	snprintf(temp, sizeof(temp), "-%d", port->port_num);
-> +	strlcat(proppath, temp, proppath_size);
->  }
->  
->  static void drm_dp_add_port(struct drm_dp_mst_branch *mstb,
-> @@ -1078,7 +1079,7 @@ static void drm_dp_add_port(struct drm_dp_mst_branch *mstb,
->  
->  	if (created && !port->input) {
->  		char proppath[255];
-> -		build_mst_prop_path(port, mstb, proppath);
-> +		build_mst_prop_path(port, mstb, proppath, sizeof(proppath));
->  		port->connector = (*mstb->mgr->cbs->add_connector)(mstb->mgr, port, proppath);
->  	}
->  
-> -- 
-> 1.7.10.4
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-vdso-for-linus
 
--- 
-Jani Nikula, Intel Open Source Technology Center
+   # HEAD: f12c1f9002d27374fd205f6e692891116ca22272 x86/vdso: Fix vdso2c's special_pages[] error checking
+
+Includes a single fix to vdso error checking.
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Andy Lutomirski (1):
+      x86/vdso: Fix vdso2c's special_pages[] error checking
+
+
+ arch/x86/vdso/vdso2c.h | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/vdso/vdso2c.h b/arch/x86/vdso/vdso2c.h
+index fd57829b30d8..0224987556ce 100644
+--- a/arch/x86/vdso/vdso2c.h
++++ b/arch/x86/vdso/vdso2c.h
+@@ -109,16 +109,18 @@ static void BITSFUNC(go)(void *raw_addr, size_t raw_len,
+ 
+ 	/* Validate mapping addresses. */
+ 	for (i = 0; i < sizeof(special_pages) / sizeof(special_pages[0]); i++) {
+-		if (!syms[i])
++		INT_BITS symval = syms[special_pages[i]];
++
++		if (!symval)
+ 			continue;  /* The mapping isn't used; ignore it. */
+ 
+-		if (syms[i] % 4096)
++		if (symval % 4096)
+ 			fail("%s must be a multiple of 4096\n",
+ 			     required_syms[i].name);
+-		if (syms[sym_vvar_start] > syms[i] + 4096)
+-			fail("%s underruns begin_vvar\n",
++		if (symval + 4096 < syms[sym_vvar_start])
++			fail("%s underruns vvar_start\n",
+ 			     required_syms[i].name);
+-		if (syms[i] + 4096 > 0)
++		if (symval + 4096 > 0)
+ 			fail("%s is on the wrong side of the vdso text\n",
+ 			     required_syms[i].name);
+ 	}
