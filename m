@@ -1,71 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754653AbaJMRXV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 13:23:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3513 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754041AbaJMRXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 13:23:19 -0400
-Date: Mon, 13 Oct 2014 13:22:42 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Baoquan He <bhe@redhat.com>, Kees Cook <keescook@chromium.org>,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        x86@kernel.org, ak@linux.intel.com, ebiederm@xmission.com,
-        kexec@lists.infradead.org, whissi@whissi.de,
-        kumagai-atsushi@mxc.nes.nec.co.jp, stable@vger.kernel.org
-Subject: Re: [resend Patch v3 1/2] kaslr: check if kernel location is changed
-Message-ID: <20141013172242.GB9777@redhat.com>
-References: <1412060896-1902-1-git-send-email-bhe@redhat.com>
- <542B1EC1.8090502@zytor.com>
- <20141001135237.GA13689@redhat.com>
- <543553C7.9010906@zytor.com>
- <20141008192728.GA26517@redhat.com>
- <20141011031452.GB11560@dhcp-16-116.nay.redhat.com>
- <543907B5.7060001@zytor.com>
- <20141013125257.GB6466@redhat.com>
- <20141013151955.GA9777@redhat.com>
- <543BF304.9090708@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <543BF304.9090708@zytor.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754562AbaJMRbL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 13:31:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52954 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753797AbaJMRbJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 13:31:09 -0400
+Message-ID: <1413221463.11421.30.camel@fourier>
+Subject: Re: [PATCH 3.13 163/163] lzo: check for length overrun in variable
+ length encoding.
+From: Kamal Mostafa <kamal@canonical.com>
+To: Willy Tarreau <w@1wt.eu>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Mon, 13 Oct 2014 10:31:03 -0700
+In-Reply-To: <20141010053048.GD3594@1wt.eu>
+References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
+	 <1412888588-26755-164-git-send-email-kamal@canonical.com>
+	 <20141010053048.GD3594@1wt.eu>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 13, 2014 at 08:43:00AM -0700, H. Peter Anvin wrote:
-> On 10/13/2014 08:19 AM, Vivek Goyal wrote:
-> >>>
-> >>> This really shouldn't have happened this way on x86-64.  It has to happen
-> >>> this way on i386, but I worry that this may be a serious misdesign in kaslr
-> >>> on x86-64.  I'm also wondering if there is any other fallout of this?
-> >>
-> >> I agree. On x86_64, we should stick to previous design and this new
-> >> logic of performing relocations does not sound very clean and makes
-> >> things very confusing.
-> >>
-> >> I am wondering that why couldn't we simply adjust page tables in case of
-> >> kaslr on x86_64, instead of performing relocations.
-> > 
-> > Well, IIUC, if virtual addresses are shifted w.r.t what virtual address
-> > kernel was compiled for, then relocation will have to be done.
-> > 
-> > So question will be if physical address shift is enough for kaslr or
-> > virtual address shift is necessary.
-> > 
+On Fri, 2014-10-10 at 07:30 +0200, Willy Tarreau wrote:
+> Hi Kamal,
 > 
-> I would assume that without a virtual address shift kaslr is pretty darn
-> pointless.  Without the physical address shift the 1:1 map can be used,
-> and again, kaslr becomes pointless.  However, there is absolutely no
-> reason why they should be coupled.  They can, in fact, be independently
-> randomized.
+> [ removed Don Bailey from the CC who's certainly not interested in this ]
+> 
+> On Thu, Oct 09, 2014 at 02:03:08PM -0700, Kamal Mostafa wrote:
+> > 3.13.11.9 -stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Willy Tarreau <w@1wt.eu>
+> > 
+> > commit 72cf90124e87d975d0b2114d930808c58b4c05e4 upstream.
+> 
+> (...)
 
-Agreed. On x86_64, we should be able to randomize virtual address space
-and physical address space independently. And in that case whole of
-the physical memory should be available for a possible location for
-kernel. (As opposed to a small limit (I guess 1GB) now)
+Hi Willy-
 
-Thanks
-Vivek
+Thanks very much for reviewing this.
+
+> This one (and the accompanying revert) are still not present in more
+> recent stable kernels, so I find it surprizing that you're proposing
+> to integrate them now.
+
+I can hold out those lzo fixes until the next 3.13-stable if you prefer.
+But fwiw...
+
+>  If someone upgrades from 3.13.11.9 to 3.14.21
+> or 3.16.5, they'd expect to keep all fixes but will lose this one, so
+> this is a bit confusing.
+
+I think those sorts of scheduling mismatches and discrepancies between
+stable versions are pretty common.  Examples:  The top 11 commits in
+v3.12.30 have not yet been applied[0] to any of the newer stable
+branches;  Many of the commits in v3.10.57 have not yet been applied[1]
+to linux-3.12.y but have been released in other newer stables.
+
+>  Is there any reason you're not tracking fixes
+> from more recent versions like Jiri, Li, Ben and I are doing ?
+
+We (the Canonical stable maintainers) have always tracked the "cc:
+stable" fixes directly from mainline, not from the more-recent-version
+branches.  Given the examples above, it seems that the kernel.org
+maintainers are doing that too, yes?
+
+ -Kamal
+
+[0] linux-3.12.y  1d08848..99ed1bd  (part of the big mm patch set)
+[1] linux-3.10.y  07d209b..7dd3111  (various "cc: stable" patches)
+
+
