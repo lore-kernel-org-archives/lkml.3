@@ -1,95 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754347AbaJMQYb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 12:24:31 -0400
-Received: from mailout4.w2.samsung.com ([211.189.100.14]:9906 "EHLO
-	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754141AbaJMQY3 (ORCPT
+	id S1754422AbaJMQ21 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 12:28:27 -0400
+Received: from merkurneu.hrz.uni-giessen.de ([134.176.2.3]:36822 "EHLO
+	merkurneu.hrz.uni-giessen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752584AbaJMQ2Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 12:24:29 -0400
-X-AuditID: cbfec372-b7f2f6d0000052b3-05-543bfcbbf44e
-Date: Mon, 13 Oct 2014 18:24:23 +0200
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] [media] s5p-jpeg: Only build suspend/resume for PM
-Message-id: <20141013182423.39feb60f.m.chehab@samsung.com>
-In-reply-to: <CAMuHMdXG1pD1-O2m1NXp6gr4aVqyqV=-x-nPoWQJMWr_0XF42w@mail.gmail.com>
-References: <1412234489-1330-1-git-send-email-thierry.reding@gmail.com>
- <CAMuHMdXG1pD1-O2m1NXp6gr4aVqyqV=-x-nPoWQJMWr_0XF42w@mail.gmail.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCLMWRmVeSWpSXmKPExsVy+t/hEN3df6xDDC6vsrB4dmsvk8XlXXPY
-	LHo2bGW1+LlrHosDi8fOWXfZPQ4d7mD0+LxJLoA5issmJTUnsyy1SN8ugSvjxNmvTAU9fBUt
-	y/eyNjC+4epi5OSQEDCReH/9JSuELSZx4d56ti5GLg4hgSWMEm/3/GKHcJqZJHYvusQCUsUi
-	oCrR3n4GrINNwEjiVWMLkM3BISKgKzHnJxNIPbPACkaJtmVf2EFqhAXcJSZ/W8MMYvMKWEls
-	WvyCEcTmFAiW2DtjLROILSTQxyhxa7MryBwJAWeJ+Z+zIcoFJX5Mvge2lllAS2LztiZWCFte
-	YvOat8wTGAVmISmbhaRsFpKyBYzMqxhFS4uTC4qT0nMN9YoTc4tL89L1kvNzNzFCQrZoB+Oz
-	DVaHGAU4GJV4eC3+WIUIsSaWFVfmHmKU4GBWEuEVeWYdIsSbklhZlVqUH19UmpNafIiRiYNT
-	qoGR/8rzKKF7TfFMi/ZLy1z+9vGGSErilkyrD7r+F//YXEuxrgxOt+pmmttzc7VGe+EVbcf9
-	qxLDTXdtlwoQSVDoNFLZb2fhvHx14PyklMknir7d9Dyfc/Pi5XvfVvFomM/zFT5Vb5rubqJ1
-	VSHCdp/w8q0Nl2eYWP2ctUKw4pO01otpxx96Gz1SYinOSDTUYi4qTgQAuReneTcCAAA=
+	Mon, 13 Oct 2014 12:28:25 -0400
+X-Greylist: delayed 995 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Oct 2014 12:28:24 EDT
+From: Thomas Gessler <Thomas.Gessler@exp2.physik.uni-giessen.de>
+To: wsa@the-dreams.de
+Cc: michal.simek@xilinx.com, appana.durga.rao@xilinx.com, khali@linux-fr.org,
+        sachin.kamat@linaro.org, paul.gortmaker@windriver.com,
+        Thomas.Gessler@exp2.physik.uni-giessen.de, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] i2c: i2c-xiic: Fix big-endian register access
+Date: Mon, 13 Oct 2014 18:08:47 +0200
+Message-Id: <1413216527-11933-1-git-send-email-Thomas.Gessler@exp2.physik.uni-giessen.de>
+X-Mailer: git-send-email 2.1.2
+X-HRZ-JLUG-MailScanner-Information: Passed JLUG virus check
+X-HRZ-JLUG-MailScanner: No virus found
+X-Envelope-From: thomas.gessler@exp2.physik.uni-giessen.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, 13 Oct 2014 18:16:10 +0200
-Geert Uytterhoeven <geert@linux-m68k.org> escreveu:
+The driver tried to access device registers with the (little-endian)
+iowrite/ioread functions. While this worked on little-endian machines
+(e.g. Microblaze with AXI bus), it made the driver unusable on
+big-endian machines (e.g. PPC405 with PLB).
 
-> On Thu, Oct 2, 2014 at 9:21 AM, Thierry Reding <thierry.reding@gmail.com> wrote:
-> > From: Thierry Reding <treding@nvidia.com>
-> >
-> > If power management is disabled these function become unused, so there
-> > is no reason to build them. This fixes a couple of build warnings when
-> > PM(_SLEEP,_RUNTIME) is not enabled.
-> 
-> Thanks!
-> 
-> Despite the availability of your patch, this build warning has
-> migrated to mainline.
+During the probe function, the driver tried to write a 32-bit reset mask
+into the reset register. This caused an error interrupt on big-endian
+systems, because the device detected an invalid (byte-swapped) reset
+mask. The result was an Oops.
 
-That's because I didn't have any time yet to backport the fixes for
-3.18 and send those to -next. Also, while warnings are annoying,
-a warning like that is not really an urgent matter, as gcc should
-remove the dead code anyway.
+The patch implements an endianness detection similar to the one used in
+other Xilinx drivers like drivers/spi/spi-xilinx.c. It was tested on a
+PPC405/PLB system.
 
-I should be handling fixes next week, after my return from LinuxCon EU,
-gstreamer conf, audio mini-summit and media summit. This will be a too
-busy week.
+Signed-off-by: Thomas Gessler <Thomas.Gessler@exp2.physik.uni-giessen.de>
+---
+ drivers/i2c/busses/i2c-xiic.c | 58 +++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 53 insertions(+), 5 deletions(-)
 
-> > Signed-off-by: Thierry Reding <treding@nvidia.com>
-> 
-> Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> 
-> > --- a/drivers/media/platform/s5p-jpeg/jpeg-core.c
-> > +++ b/drivers/media/platform/s5p-jpeg/jpeg-core.c
-> 
-> > @@ -2681,7 +2682,9 @@ static int s5p_jpeg_runtime_resume(struct device *dev)
-> >
-> >         return 0;
-> >  }
-> > +#endif
-> 
-> I'd add a comment "/* CONFIG_PM_RUNTIME || CONFIG_PM_SLEEP */" here,
-> as above is a big block of code.
-> 
-> Gr{oetje,eeting}s,
-> 
->                         Geert
-> 
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-> 
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                 -- Linus Torvalds
-
-
+diff --git a/drivers/i2c/busses/i2c-xiic.c b/drivers/i2c/busses/i2c-xiic.c
+index ade9223..9842660 100644
+--- a/drivers/i2c/busses/i2c-xiic.c
++++ b/drivers/i2c/busses/i2c-xiic.c
+@@ -50,6 +50,11 @@ enum xilinx_i2c_state {
+ 	STATE_START
+ };
+ 
++enum xiic_endian {
++	LITTLE,
++	BIG
++};
++
+ /**
+  * struct xiic_i2c - Internal representation of the XIIC I2C bus
+  * @base:	Memory base of the HW registers
+@@ -74,6 +79,7 @@ struct xiic_i2c {
+ 	enum xilinx_i2c_state	state;
+ 	struct i2c_msg		*rx_msg;
+ 	int			rx_pos;
++	enum xiic_endian	endianness;
+ };
+ 
+ 
+@@ -174,29 +180,58 @@ struct xiic_i2c {
+ static void xiic_start_xfer(struct xiic_i2c *i2c);
+ static void __xiic_start_xfer(struct xiic_i2c *i2c);
+ 
++/*
++ * For the register read and write functions, a little-endian and big-endian
++ * version are necessary. Endianness is detected during the probe function.
++ * Only the least significant byte [doublet] of the register are ever
++ * accessed. This requires an offset of 3 [2] from the base address for
++ * big-endian systems.
++ */
++
+ static inline void xiic_setreg8(struct xiic_i2c *i2c, int reg, u8 value)
+ {
+-	iowrite8(value, i2c->base + reg);
++	if (i2c->endianness == LITTLE)
++		iowrite8(value, i2c->base + reg);
++	else
++		iowrite8(value, i2c->base + reg + 3);
+ }
+ 
+ static inline u8 xiic_getreg8(struct xiic_i2c *i2c, int reg)
+ {
+-	return ioread8(i2c->base + reg);
++	u8 ret;
++
++	if (i2c->endianness == LITTLE)
++		ret = ioread8(i2c->base + reg);
++	else
++		ret = ioread8(i2c->base + reg + 3);
++	return ret;
+ }
+ 
+ static inline void xiic_setreg16(struct xiic_i2c *i2c, int reg, u16 value)
+ {
+-	iowrite16(value, i2c->base + reg);
++	if (i2c->endianness == LITTLE)
++		iowrite16(value, i2c->base + reg);
++	else
++		iowrite16be(value, i2c->base + reg + 2);
+ }
+ 
+ static inline void xiic_setreg32(struct xiic_i2c *i2c, int reg, int value)
+ {
+-	iowrite32(value, i2c->base + reg);
++	if (i2c->endianness == LITTLE)
++		iowrite32(value, i2c->base + reg);
++	else
++		iowrite32be(value, i2c->base + reg);
+ }
+ 
+ static inline int xiic_getreg32(struct xiic_i2c *i2c, int reg)
+ {
+-	return ioread32(i2c->base + reg);
++	u32 ret;
++
++	if (i2c->endianness == LITTLE)
++		ret = ioread32(i2c->base + reg);
++	else
++		ret = ioread32be(i2c->base + reg);
++	return ret;
+ }
+ 
+ static inline void xiic_irq_dis(struct xiic_i2c *i2c, u32 mask)
+@@ -696,6 +731,7 @@ static int xiic_i2c_probe(struct platform_device *pdev)
+ 	struct resource *res;
+ 	int ret, irq;
+ 	u8 i;
++	u32 sr;
+ 
+ 	i2c = devm_kzalloc(&pdev->dev, sizeof(*i2c), GFP_KERNEL);
+ 	if (!i2c)
+@@ -728,6 +764,18 @@ static int xiic_i2c_probe(struct platform_device *pdev)
+ 		return ret;
+ 	}
+ 
++	/*
++	 * Detect endianness
++	 * Try to reset the TX FIFO. Then check the EMPTY flag. If it is not
++	 * set, assume that the endianness was wrong and swap.
++	 */
++	i2c->endianness = LITTLE;
++	xiic_setreg32(i2c, XIIC_CR_REG_OFFSET, XIIC_CR_TX_FIFO_RESET_MASK);
++	/* Reset is cleared in xiic_reinit */
++	sr = xiic_getreg32(i2c, XIIC_SR_REG_OFFSET);
++	if (!(sr & XIIC_SR_TX_FIFO_EMPTY_MASK))
++		i2c->endianness = BIG;
++
+ 	xiic_reinit(i2c);
+ 
+ 	/* add i2c adapter to i2c tree */
 -- 
+2.1.2
 
-Cheers,
-Mauro
