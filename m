@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754392AbaJMC3W (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Oct 2014 22:29:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46006 "EHLO
+	id S1754525AbaJMC3h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Oct 2014 22:29:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46032 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754362AbaJMC3T (ORCPT
+	with ESMTP id S1754415AbaJMC3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Oct 2014 22:29:19 -0400
+	Sun, 12 Oct 2014 22:29:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 31/55] ip_tunnel: Dont allow to add the same tunnel multiple times.
-Date: Mon, 13 Oct 2014 04:24:45 +0200
-Message-Id: <20141013022445.098993474@linuxfoundation.org>
+        Bryan ODonoghue <pure.logic@nexus-software.ie>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Subject: [PATCH 3.16 55/55] serial: 8250: Add Quark X1000 to 8250_pci.c
+Date: Mon, 13 Oct 2014 04:25:09 +0200
+Message-Id: <20141013022446.370396304@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141013022443.729870634@linuxfoundation.org>
 References: <20141013022443.729870634@linuxfoundation.org>
@@ -29,45 +29,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Klassert <steffen.klassert@secunet.com>
+From: Bryan O'Donoghue <pure.logic@nexus-software.ie>
 
-[ Upstream commit d61746b2e71bf612fb397b00242de5df5ba7f29a ]
+commit 1ede7dcca3c4fa15a518ab0473126f9c3e621e4c upstream.
 
-When we try to add an already existing tunnel, we don't return
-an error. Instead we continue and call ip_tunnel_update().
-This means that we can change existing tunnels by adding
-the same tunnel multiple times. It is even possible to change
-the tunnel endpoints of the fallback device.
+Quark X1000 contains two designware derived 8250 serial ports.
+Each port has a unique PCI configuration space consisting of
+BAR0:UART BAR1:DMA respectively.
 
-We fix this by returning an error if we try to add an existing
-tunnel.
+Unlike the standard 8250 the register width is 32 bits for RHR,IER etc
+The Quark UART has a fundamental clock @ 44.2368 MHz allowing for a
+bitrate of up to about 2.76 megabits per second.
 
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This patch enables standard 8250 mode
+
+Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+Reviewed-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/ip_tunnel.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
 
---- a/net/ipv4/ip_tunnel.c
-+++ b/net/ipv4/ip_tunnel.c
-@@ -764,9 +764,14 @@ int ip_tunnel_ioctl(struct net_device *d
+---
+ drivers/tty/serial/8250/8250_pci.c |   21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+--- a/drivers/tty/serial/8250/8250_pci.c
++++ b/drivers/tty/serial/8250/8250_pci.c
+@@ -1790,6 +1790,7 @@ pci_wch_ch353_setup(struct serial_privat
+ #define PCI_DEVICE_ID_COMMTECH_4222PCIE	0x0022
+ #define PCI_DEVICE_ID_BROADCOM_TRUMANAGE 0x160a
+ #define PCI_DEVICE_ID_AMCC_ADDIDATA_APCI7800 0x818e
++#define PCI_DEVICE_ID_INTEL_QRK_UART	0x0936
  
- 		t = ip_tunnel_find(itn, p, itn->fb_tunnel_dev->type);
+ #define PCI_VENDOR_ID_SUNIX		0x1fd4
+ #define PCI_DEVICE_ID_SUNIX_1999	0x1999
+@@ -1900,6 +1901,13 @@ static struct pci_serial_quirk pci_seria
+ 		.subdevice	= PCI_ANY_ID,
+ 		.setup		= byt_serial_setup,
+ 	},
++	{
++		.vendor		= PCI_VENDOR_ID_INTEL,
++		.device		= PCI_DEVICE_ID_INTEL_QRK_UART,
++		.subvendor	= PCI_ANY_ID,
++		.subdevice	= PCI_ANY_ID,
++		.setup		= pci_default_setup,
++	},
+ 	/*
+ 	 * ITE
+ 	 */
+@@ -2742,6 +2750,7 @@ enum pci_board_num_t {
+ 	pbn_ADDIDATA_PCIe_8_3906250,
+ 	pbn_ce4100_1_115200,
+ 	pbn_byt,
++	pbn_qrk,
+ 	pbn_omegapci,
+ 	pbn_NETMOS9900_2s_115200,
+ 	pbn_brcm_trumanage,
+@@ -3492,6 +3501,12 @@ static struct pciserial_board pci_boards
+ 		.uart_offset	= 0x80,
+ 		.reg_shift      = 2,
+ 	},
++	[pbn_qrk] = {
++		.flags		= FL_BASE0,
++		.num_ports	= 1,
++		.base_baud	= 2764800,
++		.reg_shift	= 2,
++	},
+ 	[pbn_omegapci] = {
+ 		.flags		= FL_BASE0,
+ 		.num_ports	= 8,
+@@ -5194,6 +5209,12 @@ static struct pci_device_id serial_pci_t
+ 		pbn_byt },
  
--		if (!t && (cmd == SIOCADDTUNNEL)) {
--			t = ip_tunnel_create(net, itn, p);
--			err = PTR_ERR_OR_ZERO(t);
-+		if (cmd == SIOCADDTUNNEL) {
-+			if (!t) {
-+				t = ip_tunnel_create(net, itn, p);
-+				err = PTR_ERR_OR_ZERO(t);
-+				break;
-+			}
-+
-+			err = -EEXIST;
- 			break;
- 		}
- 		if (dev != itn->fb_tunnel_dev && cmd == SIOCCHGTUNNEL) {
+ 	/*
++	 * Intel Quark x1000
++	 */
++	{	PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_QRK_UART,
++		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
++		pbn_qrk },
++	/*
+ 	 * Cronyx Omega PCI
+ 	 */
+ 	{	PCI_VENDOR_ID_PLX, PCI_DEVICE_ID_PLX_CRONYX_OMEGA,
 
 
