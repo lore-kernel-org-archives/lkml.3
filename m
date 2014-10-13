@@ -1,38 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361AbaJMUvS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 16:51:18 -0400
-Received: from smtprelay0247.hostedemail.com ([216.40.44.247]:50568 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751429AbaJMUvR (ORCPT
+	id S1753446AbaJMUyA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 16:54:00 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:47929 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750940AbaJMUx7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 16:51:17 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:967:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1536:1559:1593:1594:1711:1714:1730:1747:1777:1792:2393:2525:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3622:3865:3868:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:7652:8784:8957:8985:9025:10004:10400:10848:11232:11658:11914:12043:12517:12519:12740:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: pear85_44658908a8101
-X-Filterd-Recvd-Size: 1026
-Message-ID: <1413233468.1287.27.camel@joe-AO725>
-Subject: Re: [PATCH 1/1 linux-next] fs/affs/amigaffs.c: use va_format
- instead of buffer/vnsprintf
-From: Joe Perches <joe@perches.com>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Date: Mon, 13 Oct 2014 13:51:08 -0700
-In-Reply-To: <1413232777-11062-1-git-send-email-fabf@skynet.be>
-References: <1413232777-11062-1-git-send-email-fabf@skynet.be>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Oct 2014 16:53:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <20141013124401.GA5888@krava.redhat.com>
+References: <1413146435-22202-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <20141013124401.GA5888@krava.redhat.com>
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Date: Mon, 13 Oct 2014 22:53:37 +0200
+Message-ID: <CAFo99gbCnjBN2zDyLNaQzrTzoQdsYMjqrGOL3gyj3MT4EOAywQ@mail.gmail.com>
+Subject: Re: [PATCH] tools: perf: util: sort.c: Changed from using strncat to strlcat
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Don Zickus <dzickus@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-10-13 at 22:39 +0200, Fabian Frederick wrote:
-> Remove ErrorBuffer and use %pV
+2014-10-13 14:44 GMT+02:00 Jiri Olsa <jolsa@redhat.com>:
+> On Sun, Oct 12, 2014 at 10:40:35PM +0200, Rickard Strandqvist wrote:
+>> Changed from using strncat to strlcat to simplify the code
+>>
+>> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+>> ---
+>>  tools/perf/util/sort.c |   12 ++++--------
+>>  1 file changed, 4 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+>> index 14e5a03..6e242f0 100644
+>> --- a/tools/perf/util/sort.c
+>> +++ b/tools/perf/util/sort.c
+>> @@ -759,8 +759,7 @@ static int hist_entry__snoop_snprintf(struct hist_entry *he, char *bf,
+>>                                   size_t size, unsigned int width)
+>>  {
+>>       char out[64];
+>> -     size_t sz = sizeof(out) - 1; /* -1 for null termination */
+>> -     size_t i, l = 0;
+>> +     size_t i;
+>>       u64 m = PERF_MEM_SNOOP_NA;
+>>
+>>       out[0] = '\0';
+>> @@ -771,12 +770,9 @@ static int hist_entry__snoop_snprintf(struct hist_entry *he, char *bf,
+>>       for (i = 0; m && i < NUM_SNOOP_ACCESS; i++, m >>= 1) {
+>>               if (!(m & 0x1))
+>>                       continue;
+>> -             if (l) {
+>> -                     strcat(out, " or ");
+>> -                     l += 4;
+>> -             }
+>> -             strncat(out, snoop_access[i], sz - l);
+>> -             l += strlen(snoop_access[i]);
+>> +             if (*out != '\0')
+>> +                     strlcat(out, " or ", sizeof(out));
+>> +             strlcat(out, snoop_access[i], sizeof(out));
+>
+> I've got compile error..
+>
+> [jolsa@krava perf]$ make JOBS=1
+>   BUILD:   Doing 'make -j1' parallel build
+>   CC       perf.o
+>   CC       builtin-annotate.o
+>   CC       builtin-bench.o
+>   CC       bench/sched-messaging.o
+>   CC       bench/sched-pipe.o
+>   CC       util/sort.o
+> util/sort.c: In function ‘hist_entry__snoop_snprintf’:
+> util/sort.c:778:4: error: implicit declaration of function ‘strlcat’ [-Werror=implicit-function-declaration]
+>     strlcat(out, " or ", sizeof(out));
+>     ^
+> util/sort.c:778:4: error: nested extern declaration of ‘strlcat’ [-Werror=nested-externs]
+> cc1: all warnings being treated as errors
+> make[1]: *** [util/sort.o] Error 1
+> make: *** [all] Error 2
 
-Maybe fix the format/argument mismatches too.
 
-https://lkml.org/lkml/2010/11/10/544
+Hi
+
+Sorry, I saw an improvement without thinking about that tools/ does
+not have access to those functions :-(
 
 
+Kind regards
+Rickard Strandqvist
