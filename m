@@ -1,102 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753602AbaJMIQL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 04:16:11 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:54125 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753551AbaJMIQI (ORCPT
+	id S1753201AbaJMIUu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 04:20:50 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:37793 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752944AbaJMIUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 04:16:08 -0400
+	Mon, 13 Oct 2014 04:20:47 -0400
+Message-ID: <543B8B57.80108@gmail.com>
+Date: Mon, 13 Oct 2014 16:20:39 +0800
+From: zhuyj <zyjzyj2000@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <15685.1412018368@turing-police.cc.vt.edu>
-References: <1411721657-9924-1-git-send-email-gabriel.fernandez@linaro.org>
-	<1411721657-9924-7-git-send-email-gabriel.fernandez@linaro.org>
-	<15685.1412018368@turing-police.cc.vt.edu>
-Date: Mon, 13 Oct 2014 10:16:06 +0200
-Message-ID: <CAG374jBJcX00S4nSugWXaUxAQV3Bwp+OxY0c2GJ-+rskzDzpGw@mail.gmail.com>
-Subject: Re: [PATCH v3 6/8] phy: miphy28lp: Add SSC support for PCIE
-From: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-To: Valdis.Kletnieks@vt.edu
-Cc: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kernel@stlinux.com" <kernel@stlinux.com>,
-        Lee Jones <lee.jones@linaro.org>, Harsh Gupta <harsh.gupta@st.com>
-Content-Type: text/plain; charset=UTF-8
+To: Cong Wang <cwang@twopensource.com>
+CC: "David S. Miller" <davem@davemloft.net>, Hong Zhiguo <honkiko@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        "Tao, Yue" <Yue.Tao@windriver.com>,
+        Alexandre Dietsch <alexandre.dietsch@windriver.com>,
+        zhuyj <zyjzyj2000@gmail.com>
+Subject: Re: ipv4: net namespace does not inherit network configurations
+References: <53D7697C.6020103@gmail.com> <CAHA+R7MC2gKeSWqR8pDDX26D-Th4BG1AveM+HseMMPjLBJuWDw@mail.gmail.com>
+In-Reply-To: <CAHA+R7MC2gKeSWqR8pDDX26D-Th4BG1AveM+HseMMPjLBJuWDw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Valdis,
-Thanks for your remark.
+Hi, Miller && Cong
 
-Concerning multiple writing in MIPHY_PLL_SBR_1, the writing of the
-first 0 it's to be sure there is no previous request.
-Then we take account new setting by writing 0x02.
-And then we make it 0 to make sure there is no other pending requests.
+Can we merge this patch into kernel mainline? since the independence
+between ipv4 and ipv6 is inconsistent even in the latest linux 
+kernel(3.17-rc7),
+that is, the net namespace is independent in ipv6 while it is not in ipv4.
 
-I added comments and macro to be more clear (see the code below).
+Thanks a lot.
+Zhu Yanjun
 
-
-Hi Kishon,
-
-Do you want a new patch set (v4),  or i wait other remarks from you ?
-
-
-    for (val = 0; val < 2; val++) {
-        writeb_relaxed(val, miphy_phy->base + MIPHY_CONF);
-
-        /* Validate Step component */
-        writeb_relaxed(0x69, miphy_phy->base + MIPHY_PLL_SBR_3);
-        writeb_relaxed(0x21, miphy_phy->base + MIPHY_PLL_SBR_4);
-
-        /* Validate Period component */
-        writeb_relaxed(0x3c, miphy_phy->base + MIPHY_PLL_SBR_2);
-        writeb_relaxed(0x21, miphy_phy->base + MIPHY_PLL_SBR_4);
-
-        /* Clear any previous request */
-        writeb_relaxed(0x00, miphy_phy->base + MIPHY_PLL_SBR_1);
-
-        /* requests the PLL to take in account new parameters */
-        writeb_relaxed(SET_NEW_CHANGE, base + MIPHY_PLL_SBR_1);
-
-        /* To be sure there is no other pending requests */
-        writeb_relaxed(0x00, miphy_phy->base + MIPHY_PLL_SBR_1);
-    }
-
-
-Best regards
-
-Gabriel.
-
-
-On 29 September 2014 21:19,  <Valdis.Kletnieks@vt.edu> wrote:
-> On Fri, 26 Sep 2014 10:54:15 +0200, Gabriel FERNANDEZ said:
->> SSC is the technique of modulating the operating frequency of a signal
->> slightly to spread its radiated emissions over a range of frequencies.
->> This reduction in the maximum emission for a given frequency helps meet
->> radiated emission requirements.
->> These settings are applicable for PCIE with Internal clock.
+On 07/30/2014 01:48 AM, Cong Wang wrote:
+> On Tue, Jul 29, 2014 at 2:29 AM, zhuyj <zyjzyj2000@gmail.com> wrote:
+>> Hi,all
+>>
+>> I did a test on kernel3.16 rc6:
+>>
+>> root@qemu1:~# echo 1 > /proc/sys/net/ipv6/conf/all/forwarding
+>> root@qemu1:~# echo 1 > /proc/sys/net/ipv4/conf/all/forwarding
+>> root@qemu1:~# ip netns list
+>> root@qemu1:~# ip netns add fib1
+>> root@qemu1:~# ip netns exec fib1 bash
+>> root@qemu1:~# cat /proc/sys/net/ipv6/conf/all/forwarding
+>> 0
+>> root@qemu1:~# cat /proc/sys/net/ipv4/conf/all/forwarding
+>> 1
+>>
+>> The behavior of ipv4 and ipv6 is very inconsistent. I checked
+>> the kernel source code. I found that from this patch
+>> [ipv6: fix bad free of addrconf_init_net], the above difference
+>> appeared.
+>>
+>> Since a net namespace is independent to another. That is, there
+>> is no any relationship between the net namespaces. So the behavior
+>> of ipv4 is not correct.
+>>
+> Well, they are already independent, not shared, just that the initial
+> value is duplicated from init_net for IPv4.
 >
->> +             writeb_relaxed(0x69, miphy_phy->base + MIPHY_PLL_SBR_3);
->> +             writeb_relaxed(0x21, miphy_phy->base + MIPHY_PLL_SBR_4);
->> +             writeb_relaxed(0x3c, miphy_phy->base + MIPHY_PLL_SBR_2);
->> +             writeb_relaxed(0x21, miphy_phy->base + MIPHY_PLL_SBR_4);
->> +             writeb_relaxed(0x00, miphy_phy->base + MIPHY_PLL_SBR_1);
->> +             writeb_relaxed(0x02, miphy_phy->base + MIPHY_PLL_SBR_1);
->> +             writeb_relaxed(0x00, miphy_phy->base + MIPHY_PLL_SBR_1);
+> This change might break existing applications which rely on this
+> behavior, but given IPv6 change is almost the same, I think it's ok.
 >
-> I'd feel a lot better about all these magic numbers (and the triple write
-> to SBR_1) if the Changelog or something referenced where they came from....
+> BTW, you need to submit a patch as normal, instead of as an attachment.
+>
+
