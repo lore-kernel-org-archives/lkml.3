@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755705AbaJNVEx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 17:04:53 -0400
-Received: from mail.kernel.org ([198.145.19.201]:44427 "EHLO mail.kernel.org"
+	id S1755724AbaJNVE5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 17:04:57 -0400
+Received: from mail.kernel.org ([198.145.19.201]:44466 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755687AbaJNVEv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 17:04:51 -0400
+	id S1755687AbaJNVEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 17:04:55 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 01/24] perf kvm stat live: Fix perf_evlist__add_pollfd error handling
-Date: Tue, 14 Oct 2014 18:04:10 -0300
-Message-Id: <1413320673-5784-2-git-send-email-acme@kernel.org>
+Subject: [PATCH 02/24] perf kvm stat live: Use perf_evlist__add_pollfd return fd position
+Date: Tue, 14 Oct 2014 18:04:11 -0300
+Message-Id: <1413320673-5784-3-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1413320673-5784-1-git-send-email-acme@kernel.org>
 References: <1413320673-5784-1-git-send-email-acme@kernel.org>
@@ -36,7 +36,8 @@ With the interface changed in following commit:
 the perf_evlist__add_pollfd function now returns the fd position in the
 pollfd array.
 
-We need to change this function's error check condition.
+Hence we no longer need to count the fd position, because we get it as
+the return value.
 
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
@@ -48,31 +49,29 @@ Cc: Milian Wolff <mail@milianw.de>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1412179229-19466-3-git-send-email-jolsa@kernel.org
+Link: http://lkml.kernel.org/r/1412179229-19466-4-git-send-email-jolsa@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
  tools/perf/builtin-kvm.c | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index d8bf2271f4ea..663d6eda0822 100644
+index 663d6eda0822..dc7d704735bd 100644
 --- a/tools/perf/builtin-kvm.c
 +++ b/tools/perf/builtin-kvm.c
-@@ -928,12 +928,12 @@ static int kvm_events_live_report(struct perf_kvm_stat *kvm)
- 		goto out;
- 	}
- 
--	if (perf_evlist__add_pollfd(kvm->evlist, kvm->timerfd))
-+	if (perf_evlist__add_pollfd(kvm->evlist, kvm->timerfd) < 0)
- 		goto out;
+@@ -933,10 +933,10 @@ static int kvm_events_live_report(struct perf_kvm_stat *kvm)
  
  	nr_fds++;
  
--	if (perf_evlist__add_pollfd(kvm->evlist, fileno(stdin)))
-+	if (perf_evlist__add_pollfd(kvm->evlist, fileno(stdin)) < 0)
+-	if (perf_evlist__add_pollfd(kvm->evlist, fileno(stdin)) < 0)
++	nr_stdin = perf_evlist__add_pollfd(kvm->evlist, fileno(stdin));
++	if (nr_stdin < 0)
  		goto out;
  
- 	nr_stdin = nr_fds;
+-	nr_stdin = nr_fds;
+ 	nr_fds++;
+ 	if (fd_set_nonblock(fileno(stdin)) != 0)
+ 		goto out;
 -- 
 1.9.3
 
