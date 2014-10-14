@@ -1,43 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932440AbaJNOtI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 10:49:08 -0400
-Received: from mga01.intel.com ([192.55.52.88]:9508 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932145AbaJNOtF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 10:49:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,717,1406617200"; 
-   d="scan'208";a="614288451"
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: wsa@the-dreams.de
-Cc: linux@roeck-us.net, johan@kernel.org, linux-i2c@vger.kernel.org,
-        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Octavian Purdila <octavian.purdila@intel.com>
-Subject: [RFC PATCH v2 0/3] i2c: show and change bus frequency via sysfs
-Date: Tue, 14 Oct 2014 17:48:11 +0300
-Message-Id: <1413298094-9276-1-git-send-email-octavian.purdila@intel.com>
-X-Mailer: git-send-email 1.9.1
+	id S932437AbaJNOvf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 10:51:35 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:53325 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932121AbaJNOvd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 10:51:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <20141014104923.GA30916@breakpoint.cc>
+References: <CAL8JtxD=Vopo7fvKEnfKgOa3T=WyVH=mb_YqX9mES+n-6dJbrQ@mail.gmail.com>
+	<20141014104923.GA30916@breakpoint.cc>
+Date: Tue, 14 Oct 2014 22:51:32 +0800
+Message-ID: <CAL8JtxARGy6V1=m_4RJmeS5O0D0PD75cv+q2NrbmBr7ZGKeE4w@mail.gmail.com>
+Subject: Re: [PATCH v2] netfilter: release skbuf when nlmsg put fail
+From: Houcheng Lin <houcheng@gmail.com>
+To: Florian Westphal <fw@strlen.de>
+Cc: pablo@netfilter.org, Patrick McHardy <kaber@trash.net>,
+        kadlec@blackhole.kfki.hu, davem@davemloft.net,
+        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This second version gets rid of the frequency table and introduces a
-min and max range. It also changes the ABI to allow the driver to
-round the given frequency to one that is supported, since many drivers
-seems to work this way (i2c-stu300, i2c-s3c2410, i2c-kempld).
-
-Octavian Purdila (3):
-  i2c: document the existing i2c sysfs ABI
-  i2c: document struct i2c_adapter
-  i2c: show and change bus frequency via sysfs
-
- Documentation/ABI/testing/sysfs-bus-i2c | 75 ++++++++++++++++++++++++++
- drivers/i2c/i2c-core.c                  | 94 +++++++++++++++++++++++++++++++++
- include/linux/i2c.h                     | 32 +++++++++--
- 3 files changed, 198 insertions(+), 3 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-bus-i2c
+2014-10-14 18:49 GMT+08:00 Florian Westphal <fw@strlen.de>:
+> Houcheng Lin <houcheng@gmail.com> wrote:
+>> When system is under heavy loading, the __nfulnl_send() may may failed
+>> to put nlmsg into skbuf of nfulnl_instance. If not clear the skbuff on failed,
+>> the __nfulnl_send() will still try to put next nlmsg onto this half-full skbuf
+>> and cause the user program can never receive packet.
+>>
+>> This patch fix this issue by releasing skbuf immediately after nlmst put
+>> failed.
+>
+> Could you please try this patch on top of this one and see if the
+> WARN_ON goes away?
+>
+> Thanks
+>
+> diff --git a/net/netfilter/nfnetlink_log.c b/net/netfilter/nfnetlink_log.c
+> --- a/net/netfilter/nfnetlink_log.c
+> +++ b/net/netfilter/nfnetlink_log.c
+> @@ -649,7 +649,8 @@ nfulnl_log_packet(struct net *net,
+>                 + nla_total_size(sizeof(u_int32_t))     /* gid */
+>                 + nla_total_size(plen)                  /* prefix */
+>                 + nla_total_size(sizeof(struct nfulnl_msg_packet_hw))
+> -               + nla_total_size(sizeof(struct nfulnl_msg_packet_timestamp));
+> +               + nla_total_size(sizeof(struct nfulnl_msg_packet_timestamp))
+> +               + nla_total_size(sizeof(struct nfgenmsg));      /* NLMSG_DONE */
+>
+>         if (in && skb_mac_header_was_set(skb)) {
+>                 size +=   nla_total_size(skb->dev->hard_header_len)
+> @@ -692,8 +693,7 @@ nfulnl_log_packet(struct net *net,
+>                 goto unlock_and_release;
+>         }
+>
+> -       if (inst->skb &&
+> -           size > skb_tailroom(inst->skb) - sizeof(struct nfgenmsg)) {
+> +       if (inst->skb && size > skb_tailroom(inst->skb)) {
+>                 /* either the queue len is too high or we don't have
+>                  * enough room in the skb left. flush to userspace. */
+>                 __nfulnl_flush(inst);
+Hi Florian,
+The modified code seems won't affect the program flow: Size is add a
+extra value,
+sizeof(struct nfgenmsg), during initialization. comparison size with tailroom
+space, the right-side value also add the same value. Is there anything
+I miss or
+not understand ?
 
 -- 
-1.9.1
-
+Best regards,
+Houcheng Lin
