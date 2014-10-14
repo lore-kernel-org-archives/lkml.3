@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932504AbaJNO0Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 10:26:24 -0400
-Received: from mail-oi0-f52.google.com ([209.85.218.52]:63690 "EHLO
-	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932474AbaJNO0U (ORCPT
+	id S932525AbaJNO0x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 10:26:53 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:48986 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932362AbaJNO0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 10:26:20 -0400
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org,
-        Seth Forshee <seth.forshee@canonical.com>,
+	Tue, 14 Oct 2014 10:26:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFyAg6pmceWJdhxPoHZp-qZc+nTYaPKDAuC0zAeu8MM=6A@mail.gmail.com>
+References: <a1480dcc3c706e309a88884723446f2e84fedd5b.1412796914.git.luto@amacapital.net>
+ <CALCETrVRhm1u6LEFSwtjNj_y=u9SbWoOP9t82C0Yq1zeAmRLpg@mail.gmail.com>
+ <CALCETrWaMircwfJGWY4dyF647dz1VXyknRTond2r7H+NPScgLw@mail.gmail.com> <CA+55aFyAg6pmceWJdhxPoHZp-qZc+nTYaPKDAuC0zAeu8MM=6A@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 14 Oct 2014 07:26:28 -0700
+Message-ID: <CALCETrXoWUHXXugc9VTa79r1akp_opDibdCUeKRiFs45NZu6gA@mail.gmail.com>
+Subject: Re: [PATCH] fs: Add a missing permission check to do_umount
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>
-Subject: [PATCH v4 5/5] fuse: Allow user namespace mounts
-Date: Tue, 14 Oct 2014 16:25:56 +0200
-Message-Id: <1413296756-25071-6-git-send-email-seth.forshee@canonical.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1413296756-25071-1-git-send-email-seth.forshee@canonical.com>
-References: <1413296756-25071-1-git-send-email-seth.forshee@canonical.com>
+        "security@kernel.org" <security@kernel.org>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        stable <stable@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Serge H. Hallyn <serge.hallyn@ubuntu.com>
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
----
- fs/fuse/inode.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+On Mon, Oct 13, 2014 at 11:53 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Tue, Oct 14, 2014 at 7:33 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>
+>> Linus, can you pull this?
+>
+> Pulled. You didn't mark the commit for stable. Oversight?
 
-diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
-index 5e00a6a76049..6522926b14e4 100644
---- a/fs/fuse/inode.c
-+++ b/fs/fuse/inode.c
-@@ -1212,7 +1212,7 @@ static void fuse_kill_sb_anon(struct super_block *sb)
- static struct file_system_type fuse_fs_type = {
- 	.owner		= THIS_MODULE,
- 	.name		= "fuse",
--	.fs_flags	= FS_HAS_SUBTYPE,
-+	.fs_flags	= FS_HAS_SUBTYPE | FS_USERNS_MOUNT,
- 	.mount		= fuse_mount,
- 	.kill_sb	= fuse_kill_sb_anon,
- };
-@@ -1244,7 +1244,7 @@ static struct file_system_type fuseblk_fs_type = {
- 	.name		= "fuseblk",
- 	.mount		= fuse_mount_blk,
- 	.kill_sb	= fuse_kill_sb_blk,
--	.fs_flags	= FS_REQUIRES_DEV | FS_HAS_SUBTYPE,
-+	.fs_flags	= FS_REQUIRES_DEV | FS_HAS_SUBTYPE | FS_USERNS_MOUNT,
- };
- MODULE_ALIAS_FS("fuseblk");
- 
+Yeah.  I'll email.
+
+>
+>        Linus
+
+
+
 -- 
-2.1.0
-
+Andy Lutomirski
+AMA Capital Management, LLC
