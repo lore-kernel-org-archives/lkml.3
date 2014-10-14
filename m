@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802AbaJNCa5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 22:30:57 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:55256 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754626AbaJNCaz (ORCPT
+	id S1754612AbaJNCkP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 22:40:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36421 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754375AbaJNCkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 22:30:55 -0400
-From: Martin Kelly <martin@martingkelly.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
-        x86@kernel.org
-Cc: david.vrabel@citrix.com, boris.ostrovsky@oracle.com,
-        konrad.wilk@oracle.com, hpa@zytor.com, tglx@linutronix.de,
-        mingo@redhat.com, Martin Kelly <martin@martingkelly.com>,
-        Martin Kelly <martkell@amazon.com>
-Subject: [PATCH 2/2] xen/setup: warn on bad Xen-supplied memory map
-Date: Mon, 13 Oct 2014 19:30:17 -0700
-Message-Id: <1413253817-6943-2-git-send-email-martin@martingkelly.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1413253817-6943-1-git-send-email-martin@martingkelly.com>
-References: <1413253817-6943-1-git-send-email-martin@martingkelly.com>
+	Mon, 13 Oct 2014 22:40:14 -0400
+Date: Tue, 14 Oct 2014 04:39:11 +0200
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
+        shuah.kh@samsung.com, stable@vger.kernel.org
+Subject: Re: [PATCH 3.17 00/25] 3.17.1-stable review
+Message-ID: <20141014023911.GB27498@kroah.com>
+References: <20141013022454.289398272@linuxfoundation.org>
+ <543BED9C.20404@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <543BED9C.20404@roeck-us.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, we don't check the return code of sanitize_e820_map. However,
-if the Xen-supplied memory map is invalid, then sanitize_e820_map will
-return without doing anything, potentially leading to errors later on.
-Add a WARN_ON in case sanitize_e820_map detects an invalid memory map.
+On Mon, Oct 13, 2014 at 08:19:56AM -0700, Guenter Roeck wrote:
+> On 10/12/2014 07:24 PM, Greg Kroah-Hartman wrote:
+> >This is the start of the stable review cycle for the 3.17.1 release.
+> >There are 25 patches in this series, all will be posted as a response
+> >to this one.  If anyone has any issues with these being applied, please
+> >let me know.
+> >
+> >Responses should be made by Wed Oct 15 02:24:45 UTC 2014.
+> >Anything received after that time might be too late.
+> >
+> 
+> Build results:
+> 	total: 134 pass: 134 fail: 0
+> 
+> Qemu test results:
+> 	total: 30 pass: 30 fail: 0
+> 
+> Details are available at http://server.roeck-us.net:8010/builders.
 
-Signed-off-by: Martin Kelly <martkell@amazon.com>
----
- arch/x86/xen/setup.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Thanks for testing all 3 of these and letting me know.
 
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index af72161..48c7072 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -608,7 +608,8 @@ char * __init xen_memory_setup(void)
- 		xen_ignore_unusable(map, memmap.nr_entries);
- 
- 	/* Make sure the Xen-supplied memory map is well-ordered. */
--	sanitize_e820_map(map, memmap.nr_entries, &memmap.nr_entries);
-+	rc = sanitize_e820_map(map, memmap.nr_entries, &memmap.nr_entries);
-+	WARN_ON(rc == E820_RC_BAD_MAP);
- 
- 	max_pages = xen_get_max_pages();
- 	if (max_pages > max_pfn)
--- 
-2.1.1
-
+greg k-h
