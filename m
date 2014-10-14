@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755893AbaJNXed (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 19:34:33 -0400
-Received: from mga01.intel.com ([192.55.52.88]:21022 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755437AbaJNXec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 19:34:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="400330272"
-Date: Tue, 14 Oct 2014 16:35:06 -0700
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Yu Zhao <yuzhao@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Hugh Dickins <hughd@google.com>,
-        Bob Liu <lliubbo@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        David Rientjes <rientjes@google.com>, Vlastimil Babka <vbabka@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] mm: verify compound order when freeing a page
-Message-ID: <20141014233506.GB2889@psi-dev26.jf.intel.com>
-References: <1413317800-25450-1-git-send-email-yuzhao@google.com>
- <1413317800-25450-2-git-send-email-yuzhao@google.com>
- <20141014202955.GA2889@psi-dev26.jf.intel.com>
- <543DACFB.2060405@oracle.com>
+	id S1755709AbaJNXg1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 19:36:27 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:34428 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753707AbaJNXg0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 19:36:26 -0400
+Date: Wed, 15 Oct 2014 00:36:04 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+Cc: Doug Anderson <dianders@chromium.org>,
+        Kever Yang <kever.yang@rock-chips.com>,
+        Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
+        han jiang <hj@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        linux-rockchip@lists.infradead.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 4/6] ARM: rockchip: add basic smp support for rk3288
+Message-ID: <20141014233604.GG27405@n2100.arm.linux.org.uk>
+References: <1413231122-1770-1-git-send-email-kever.yang@rock-chips.com>
+ <1413231122-1770-5-git-send-email-kever.yang@rock-chips.com>
+ <CAD=FV=WGnE3fBfzLGN_x8dFqq4RV=OnVAyUgRQheMiyG4U7TkQ@mail.gmail.com>
+ <1453932.GC4UXrUPRz@phil>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <543DACFB.2060405@oracle.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1453932.GC4UXrUPRz@phil>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 14, 2014 at 07:08:43PM -0400, Sasha Levin wrote:
-> On 10/14/2014 04:29 PM, David Cohen wrote:
-> >> +	VM_BUG_ON(PageTail(page));
-> >> > +	VM_BUG_ON(PageHead(page) && compound_order(page) != order);
-> > It may be too severe. AFAIU we're not talking about a fatal error.
-> > How about VM_WARN_ON()?
+On Tue, Oct 14, 2014 at 11:23:40PM +0200, Heiko Stübner wrote:
+> Am Dienstag, 14. Oktober 2014, 13:24:03 schrieb Doug Anderson:
+> > Kever,
+> > 
+> > On Mon, Oct 13, 2014 at 1:12 PM, Kever Yang <kever.yang@rock-chips.com> 
+> wrote:
+> > > +       /*
+> > > +        * We need to soft reset the cpu when we turn off the cpu power
+> > > domain, +        * or else the active processors might be stalled when
+> > > the individual +        * processor is powered down.
+> > > +        */
+> > > +       if (read_cpuid_part_number() != ARM_CPU_PART_CORTEX_A9) {
+> > 
+> > I haven't done a full review of this patch, but it seems unlikely that
+> > your uses of read_cpuid_part_number() and read_cpuid_part() in this
+> > patch are correct.  You use both functions and in both cases compare
+> > the results to ARM_CPU_PART_CORTEX_A9.
 > 
-> VM_BUG_ON() should catch anything which is not "supposed" to happen,
-> and not just the severe stuff. Unlike BUG_ON, VM_BUG_ON only gets
-> hit with mm debugging enabled.
-
-Thanks for pointing that out :)
-VM_WARN_ON*() is recent, so there isn't much examples when to use it.
-I considered the below case similar to this patch. But your point does
-make sense anyway.
-
-commit 82f71ae4a2b829a25971bdf54b4d0d3d69d3c8b7
-Author: Konstantin Khlebnikov <koct9i@gmail.com>
-Date:   Wed Aug 6 16:06:36 2014 -0700
-
-    mm: catch memory commitment underflow
-    
-    Print a warning (if CONFIG_DEBUG_VM=y) when memory commitment becomes
-    too negative.
-    
-    This shouldn't happen any more - the previous two patches fixed the
-    committed_as underflow issues.
-
-    [akpm@linux-foundation.org: use VM_WARN_ONCE, per Dave]
-
-
-Br, David
-
+> I think read_cpuid_part() would be the correct one, as it does
 > 
+> 	read_cpuid_id() & ARM_CPU_PART_MASK
 > 
-> Thanks,
-> Sasha
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> which in turn should mask the correct parts of the cpuid to match against 
+> ARM_CPU_PART_CORTEX_A9 [0].
+
+The clue is the deprecated message.  Clearly the original author did not
+even build test their code, or if they did, they ignored the warnings.
+Either way, that's a fairly worrying issue which raises the question:
+how well was this code tested in the first place?
+
+Note that the above quoted if() evaluates to always-false.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
