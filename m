@@ -1,75 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932300AbaJNMVO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 08:21:14 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:14505 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932257AbaJNMVJ (ORCPT
+	id S932318AbaJNMVb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 08:21:31 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:32893 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932227AbaJNMV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 08:21:09 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-bd-543d1531c8ff
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Cc: Anton Vorontsov <anton@enomsg.org>, Guenter Roeck <linux@roeck-us.net>,
-        Pavel Machek <pavel@ucw.cz>, Myungjoo Ham <myungjoo.ham@samsung.com>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 7/8] power: bq2415x_charger: Use power_supply_*() API for
- accessing function attrs
-Date: Tue, 14 Oct 2014 14:20:45 +0200
-Message-id: <1413289246-31650-8-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1413289246-31650-1-git-send-email-k.kozlowski@samsung.com>
-References: <1413289246-31650-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGLMWRmVeSWpSXmKPExsVy+t/xq7qGorYhBqcXalkc3KppsXHGelaL
-	SU/eM1tMXDmZ2aLz7BNmi9cvDC3ONr1ht7j/9SijxZQ/y5ksNj2+xmpxedccNovPvUcYLZ4s
-	PMNksfbIXXaL240r2CzunjrKZnG6m9Xi9O4SByGPCf2fGD12zrrL7rF5hZbHplWdbB53ru1h
-	85h3MtBj85J6j53fG9g9+rasYvRYsfo7u8fnTXIB3FFcNimpOZllqUX6dglcGSc3PmEr2Mpe
-	8X7af7YGxmVsXYycHBICJhK3+y8wQ9hiEhfurQeKc3EICSxllHj2fSILhNPHJHH9zX4mkCo2
-	AWOJzcuXgFWJCFxnkuhcMQGsilmgkVniXUMzWJWwQIrEn8nrGEFsFgFViddHV4Ht4BVwl3jR
-	dRNqn5zEyWOTWUFsTgEPiZWLjrCA2EJANe0nb7NNYORdwMiwilE0tTS5oDgpPddIrzgxt7g0
-	L10vOT93EyMk7L/uYFx6zOoQowAHoxIPb0GkTYgQa2JZcWXuIUYJDmYlEV4FDtsQId6UxMqq
-	1KL8+KLSnNTiQ4xMHJxSDYxME3Yot+Z/6y42/CF14djun0dSPkQLL3uzcYte8+NVdq/3u/yf
-	6NkVJbY6sH1ab3dG2or+2Nvi75csT27SvrGn7VvtWh6e+Q0L6uaYzTisF8hia/2MYbXnisUC
-	Vs2mQYtKmnpEvGIP2/3y8nkqtILzeBnj/H6xndzXfGJFcjWPKtQsTt1xOlyJpTgj0VCLuag4
-	EQBzxjWPWQIAAA==
+	Tue, 14 Oct 2014 08:21:29 -0400
+Message-ID: <543D1545.8090209@codeaurora.org>
+Date: Tue, 14 Oct 2014 15:21:25 +0300
+From: Tanya Brokhman <tlinder@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+MIME-Version: 1.0
+To: dedekind1@gmail.com, Richard Weinberger <richard@nod.at>
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] UBI: Fastmap: Care about the protection queue
+References: <1412029248-22454-1-git-send-email-richard@nod.at> <1412029248-22454-4-git-send-email-richard@nod.at> <1412346676.3795.62.camel@sauron.fi.intel.com> <542EF3BF.1070401@nod.at> <1413206263.7906.18.camel@sauron.fi.intel.com> <543BE21F.5020504@nod.at> <1413213803.7906.45.camel@sauron.fi.intel.com> <543C3E60.4080507@nod.at> <1413282203.7906.72.camel@sauron.fi.intel.com>
+In-Reply-To: <1413282203.7906.72.camel@sauron.fi.intel.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace direct calls to power supply function attributes with wrappers.
-Wrappers provide safe access access in case of unregistering the power
-supply (.e.g by removing the driver). Replace:
- - get_property -> power_supply_get_property
+On 10/14/2014 1:23 PM, Artem Bityutskiy wrote:
+> On Mon, 2014-10-13 at 23:04 +0200, Richard Weinberger wrote:
+>> Am 13.10.2014 um 17:23 schrieb Artem Bityutskiy:
+>>> Well, used and free are RB-trees, looking them up is slow.
+>>
+>> This is true but we'd have to look it up in multiple trees and the protection queue...
+>
+> Right. 2 RB-trees, and one list. The list is empty most of the time, or
+> contains one element.
+>
+> So we'd look-up 2 RB-trees most of the time. Very rarely we'd need to
+> look at the list containing very few elements.
+>
+> Not that bad, I think.
+>
+>> ubi_update_fastmap() takes ubi->wl_lock anyway to block any changes in the free, used, etc. trees
+>> to make sure that the to be taken state snapshot is consistent.
+>
+> I think this is fine.
+>
+>>> But there is a price - memory consumption. We do not want to pay it just
+>>> for making the inter-subsystems boundaries better, there ought to be a
+>>> better reason.
+>>>
+>>> Say, for an (imaginary) 8GiB NAND chip with 128KiB PEB size this would
+>>> cost 256KiB of RAM.
+>>
+>> Is 128KiB PEB size still realistic on modern NANDs?
+>> Even if, 256KiB are not much and the kernel consumes this additionally with
+>> every new release.
+>
+> Right, but the point is that bigger systems use eMMC and wouldn't bother
+> with raw flash. Raw flash trending down the smaller systems, where a
+> hundred of kilobytes matters.
+>
+>> But I can understand your concerns.
+>
+> Thanks, yes, my point is to be careful about the RAM we consume, and try
+> to avoid growing this data structure, an only do it if we have to.
+>
+>> Okay, I'll try harder to make you happy.
+>
+> Well, making me happy is not the point of course :-)
+>
+> Thanks!
+>
+> --
+> Artem
+>
+>
+> ______________________________________________________
+> Linux MTD discussion mailing list
+> http://lists.infradead.org/mailman/listinfo/linux-mtd/
+>
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- drivers/power/bq2415x_charger.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Hi Artem/Richard
 
-diff --git a/drivers/power/bq2415x_charger.c b/drivers/power/bq2415x_charger.c
-index d9c457217b6a..81a3a78b92d8 100644
---- a/drivers/power/bq2415x_charger.c
-+++ b/drivers/power/bq2415x_charger.c
-@@ -816,7 +816,8 @@ static int bq2415x_notifier_call(struct notifier_block *nb,
- 
- 	dev_dbg(bq->dev, "notifier call was called\n");
- 
--	ret = psy->get_property(psy, POWER_SUPPLY_PROP_CURRENT_MAX, &prop);
-+	ret = power_supply_get_property(psy, POWER_SUPPLY_PROP_CURRENT_MAX,
-+			&prop);
- 	if (ret != 0)
- 		return NOTIFY_OK;
- 
+I think your discussion here stopped being relevant to this specific 
+patch but went on to the fastmap feature design in general :)
+This patch fixes a real bug in the current implementation of the 
+feature. What you're discussing requires a re-writing and re-design of 
+the feature. Perhaps this one can be merged and will be "fixed" later on 
+when you agree on how you would like FM to access WL data structures in 
+general?
+
+Thanks,
+Tanya Brokhman
 -- 
-1.9.1
-
+Qualcomm Israel, on behalf of Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
