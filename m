@@ -1,90 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932338AbaJNOCW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 10:02:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31192 "EHLO mx1.redhat.com"
+	id S932399AbaJNOCb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 10:02:31 -0400
+Received: from mail.kernel.org ([198.145.19.201]:57634 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755288AbaJNOCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 10:02:21 -0400
-Date: Tue, 14 Oct 2014 16:02:04 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: "Liang, Kan" <kan.liang@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "acme@kernel.org" <acme@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH] perf tools: Do not call pevent_free_format when deleting
- tracepoint
-Message-ID: <20141014140204.GA1639@krava.redhat.com>
-References: <1412694532-23391-1-git-send-email-kan.liang@intel.com>
- <37D7C6CF3E00A74B8858931C1DB2F077016237E7@SHSMSX103.ccr.corp.intel.com>
+	id S932375AbaJNOCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 10:02:30 -0400
+Date: Tue, 14 Oct 2014 11:02:23 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Jean Pihet <jean.pihet@linaro.org>, Borislav Petkov <bp@alien8.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Fu Wei <fu.wei@linaro.org>, Robert Richter <rric@kernel.org>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 1/1] rasd: Use perf_evlist__open() instead of open coded
+Message-ID: <20141014140223.GC3198@kernel.org>
+References: <20141006212606.GF14113@kernel.org>
+ <CAFrcx1=swP-3E_pxWEcozFJhL+5YaUBPavQX=OfMtc8h4e=bDg@mail.gmail.com>
+ <20141007133236.GG14113@kernel.org>
+ <20141007140433.GG30146@pd.tnic>
+ <20141010200708.GB18775@kernel.org>
+ <20141010202854.GC13017@pd.tnic>
+ <20141010204158.GA13834@kernel.org>
+ <20141010204432.GD13017@pd.tnic>
+ <CAFrcx1nm4pqWPsUtj1h5qQqo6dghiafRM60-9asaYXx7NLqAEQ@mail.gmail.com>
+ <20141014135631.GA32308@krava.fdxtended.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <37D7C6CF3E00A74B8858931C1DB2F077016237E7@SHSMSX103.ccr.corp.intel.com>
+In-Reply-To: <20141014135631.GA32308@krava.fdxtended.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 13, 2014 at 03:43:18PM +0000, Liang, Kan wrote:
-> Hi Jolsa,
-> 
-> Does the new patch set work on your machine?
-> I tested the V8 patch set on haswell, ivybridge and Romley platform,
-> I cannot reproduce the issue you mentioned.
-> Could you please try the latest V8 patch? 
+Em Tue, Oct 14, 2014 at 03:56:31PM +0200, Jiri Olsa escreveu:
+> On Mon, Oct 13, 2014 at 09:29:57AM +0200, Jean Pihet wrote:
+> > On 10 October 2014 22:44, Borislav Petkov <bp@alien8.de> wrote:
+> > > On Fri, Oct 10, 2014 at 05:41:58PM -0300, Arnaldo Carvalho de Melo wrote:
+> > >> That way we just make public the bare minimum that already proved to be
+> > >> useful outside tools/perf/ and over time we move stuff from
+> > >> tools/perf/util/evsel.c (and from other tools in or out perf's repo)
+> > >> into the lib.
+> > That is great!
 
-actually it still does, but it looks like another issue,
-I think we need patch below.. I'll now check rest of your
-patches.
+> > About rasd usage, there are some details at
+> > https://wiki.linaro.org/LEG/Engineering/Kernel/perfAndRAS#rasd_implementation.
+ 
+> sorry for late reply.. I was on vacation last week..
+ 
+> I read the rasd sources and realized we could poke this
+> from another angle..  AFAIU the work the rasd does is following:
+>    - reads config file and opens configured tracepoints
+>    - reads samples comming from those tracepoints and displays/writes
+>      this data to the console/file
+>    - is there more?
+ 
+> If I'm not missing anything, this is quite usefull/common usage
+> pattern which would deserve new perf command.
+ 
+> I can see the analogy with ftrace debugfs interface
+>   - choose/enable tracepoints
+>   - cat .../tracing/trace-pipe
+ 
+> and there could be '-d' for the command to act as daemon.
 
-Steven,
-does the patch below make sense to you? I dont think we want
-to allow freeing of the event_format that pevent keeps in
-the array.
+Right, this is to be integrated into 'trace', i.e. to be able to ask for
+more events, some with callchains, some without, etc.
 
-jirka
+We may even have something really bare bones that does what rasd.c does
+right now, to show how one can write a tool using the exported
+interfaces in tools/lib/api/, but I think that what rasd is _right now_,
+is just an attempt to use the libraries using as few as possible apis,
+right? I.e. more "meat" will be added there, no?
 
+Anyway, its beeing an interesting exercise and will result in a lot of
+untanglement, which is good in any case.
 
----
-The libtraceevent library's main handle 'struct pevent' holds
-pointers of every event that was added to it via functions:
-  pevent_parse_format
-  pevent_parse_event
-
-All added events are released within the handle cleanup
-in pevent_free.
-
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/evsel.c | 2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index e0868a901c4a..f5cc101428be 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -824,8 +824,6 @@ void perf_evsel__delete(struct perf_evsel *evsel)
- 	perf_evsel__exit(evsel);
- 	close_cgroup(evsel->cgrp);
- 	zfree(&evsel->group_name);
--	if (evsel->tp_format)
--		pevent_free_format(evsel->tp_format);
- 	zfree(&evsel->name);
- 	free(evsel);
- }
--- 
-1.9.3
-
-
+- Arnaldo
