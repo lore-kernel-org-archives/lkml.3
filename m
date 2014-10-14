@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932516AbaJNPK2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 11:10:28 -0400
-Received: from mga09.intel.com ([134.134.136.24]:48814 "EHLO mga09.intel.com"
+	id S932349AbaJNPRY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 11:17:24 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:57515 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932185AbaJNPK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 11:10:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,717,1406617200"; 
-   d="scan'208";a="618452223"
-Message-ID: <1413299343.7906.103.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH v4] mtd: ubi: Extend UBI layer debug/messaging
- capabilities
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: Tanya Brokhman <tlinder@codeaurora.org>, linux-mtd@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Richard Weinberger <richard@nod.at>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Tue, 14 Oct 2014 18:09:03 +0300
-In-Reply-To: <20141014143902.GA9768@arch.hh.imgtec.org>
-References: <1413296037-22346-1-git-send-email-tlinder@codeaurora.org>
-	 <20141014143902.GA9768@arch.hh.imgtec.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932145AbaJNPRX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 11:17:23 -0400
+Date: Tue, 14 Oct 2014 17:17:23 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Jean Pihet <jean.pihet@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Fu Wei <fu.wei@linaro.org>, Robert Richter <rric@kernel.org>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 1/1] rasd: Use perf_evlist__open() instead of open coded
+Message-ID: <20141014151723.GB19895@nazgul.tnic>
+References: <20141007133236.GG14113@kernel.org>
+ <20141007140433.GG30146@pd.tnic>
+ <20141010200708.GB18775@kernel.org>
+ <20141010202854.GC13017@pd.tnic>
+ <20141010204158.GA13834@kernel.org>
+ <20141010204432.GD13017@pd.tnic>
+ <CAFrcx1nm4pqWPsUtj1h5qQqo6dghiafRM60-9asaYXx7NLqAEQ@mail.gmail.com>
+ <20141014135631.GA32308@krava.fdxtended.com>
+ <20141014140223.GC3198@kernel.org>
+ <20141014142213.GB32308@krava.fdxtended.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141014142213.GB32308@krava.fdxtended.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-10-14 at 11:39 -0300, Ezequiel Garcia wrote:
-> Please use some pr_fmt for this. Something like this before the headers
-> should be enough:
+On Tue, Oct 14, 2014 at 04:22:13PM +0200, Jiri Olsa wrote:
+> right.. is there more planned for RAS daemon to do? because at this
+> point it looks to me more like new perf functionality (in trace or
+> some other new command)
 > 
-> #define pr_fmt(fmt) "UBI: block:" fmt
+> > 
+> > Anyway, its beeing an interesting exercise and will result in a lot of
+> > untanglement, which is good in any case.
+> 
+> yea, I dont mind untangling the interface.. I noticed in the thread
+> people want this anyway - simple 'events open' interface.. I often
+> need something simple for test programs
 
-Sinc ubiblock is a device, there should be a 'struct device' somewhere,
-so probably dev_printk() and other dev_*() printing functions would be a
-better choice?
+Right, we simply need a way to get the tracepoint data into userspace.
+Nothing else. And right now I cannot think about needing any other perf
+tool functionality. But who knows.., if we need more, we'll untangle
+more.
 
+:-)
+
+-- 
+Regards/Gruss,
+    Boris.
 --
-Artem
-
