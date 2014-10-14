@@ -1,77 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932437AbaJNOvf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 10:51:35 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:53325 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932121AbaJNOvd (ORCPT
+	id S932438AbaJNOzI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 10:55:08 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:43752 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932147AbaJNOzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 10:51:33 -0400
+	Tue, 14 Oct 2014 10:55:07 -0400
+Date: Tue, 14 Oct 2014 16:54:35 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Alex Thorlton <athorlton@sgi.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, Bob Liu <lliubbo@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org
+Subject: Re: [BUG] mm, thp: khugepaged can't allocate on requested node when
+ confined to a cpuset
+Message-ID: <20141014145435.GA7369@worktop.fdxtended.com>
+References: <20141008191050.GK3778@sgi.com>
+ <20141014114828.GA6524@node.dhcp.inet.fi>
 MIME-Version: 1.0
-In-Reply-To: <20141014104923.GA30916@breakpoint.cc>
-References: <CAL8JtxD=Vopo7fvKEnfKgOa3T=WyVH=mb_YqX9mES+n-6dJbrQ@mail.gmail.com>
-	<20141014104923.GA30916@breakpoint.cc>
-Date: Tue, 14 Oct 2014 22:51:32 +0800
-Message-ID: <CAL8JtxARGy6V1=m_4RJmeS5O0D0PD75cv+q2NrbmBr7ZGKeE4w@mail.gmail.com>
-Subject: Re: [PATCH v2] netfilter: release skbuf when nlmsg put fail
-From: Houcheng Lin <houcheng@gmail.com>
-To: Florian Westphal <fw@strlen.de>
-Cc: pablo@netfilter.org, Patrick McHardy <kaber@trash.net>,
-        kadlec@blackhole.kfki.hu, davem@davemloft.net,
-        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
-        netdev@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141014114828.GA6524@node.dhcp.inet.fi>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-10-14 18:49 GMT+08:00 Florian Westphal <fw@strlen.de>:
-> Houcheng Lin <houcheng@gmail.com> wrote:
->> When system is under heavy loading, the __nfulnl_send() may may failed
->> to put nlmsg into skbuf of nfulnl_instance. If not clear the skbuff on failed,
->> the __nfulnl_send() will still try to put next nlmsg onto this half-full skbuf
->> and cause the user program can never receive packet.
->>
->> This patch fix this issue by releasing skbuf immediately after nlmst put
->> failed.
->
-> Could you please try this patch on top of this one and see if the
-> WARN_ON goes away?
->
-> Thanks
->
-> diff --git a/net/netfilter/nfnetlink_log.c b/net/netfilter/nfnetlink_log.c
-> --- a/net/netfilter/nfnetlink_log.c
-> +++ b/net/netfilter/nfnetlink_log.c
-> @@ -649,7 +649,8 @@ nfulnl_log_packet(struct net *net,
->                 + nla_total_size(sizeof(u_int32_t))     /* gid */
->                 + nla_total_size(plen)                  /* prefix */
->                 + nla_total_size(sizeof(struct nfulnl_msg_packet_hw))
-> -               + nla_total_size(sizeof(struct nfulnl_msg_packet_timestamp));
-> +               + nla_total_size(sizeof(struct nfulnl_msg_packet_timestamp))
-> +               + nla_total_size(sizeof(struct nfgenmsg));      /* NLMSG_DONE */
->
->         if (in && skb_mac_header_was_set(skb)) {
->                 size +=   nla_total_size(skb->dev->hard_header_len)
-> @@ -692,8 +693,7 @@ nfulnl_log_packet(struct net *net,
->                 goto unlock_and_release;
->         }
->
-> -       if (inst->skb &&
-> -           size > skb_tailroom(inst->skb) - sizeof(struct nfgenmsg)) {
-> +       if (inst->skb && size > skb_tailroom(inst->skb)) {
->                 /* either the queue len is too high or we don't have
->                  * enough room in the skb left. flush to userspace. */
->                 __nfulnl_flush(inst);
-Hi Florian,
-The modified code seems won't affect the program flow: Size is add a
-extra value,
-sizeof(struct nfgenmsg), during initialization. comparison size with tailroom
-space, the right-side value also add the same value. Is there anything
-I miss or
-not understand ?
+On Tue, Oct 14, 2014 at 02:48:28PM +0300, Kirill A. Shutemov wrote:
 
--- 
-Best regards,
-Houcheng Lin
+> Why whould you want to pin khugpeaged? Is there a valid use-case?
+> Looks like userspace shoots to its leg.
+
+Its just bad design to put so much work in another context. But the
+use-case is isolating other cpus.
+
+> Is there a reason why we should respect cpuset limitation for kernel
+> threads?
+
+Yes, because we want to allow isolating CPUs from 'random' activity.
+
+> Should we bypass cpuset for PF_KTHREAD completely?
+
+No. That'll break stuff.
