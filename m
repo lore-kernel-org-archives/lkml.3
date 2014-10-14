@@ -1,88 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540AbaJNU6X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 16:58:23 -0400
-Received: from smtprelay.synopsys.com ([198.182.44.111]:36809 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750984AbaJNU6W convert rfc822-to-8bit (ORCPT
+	id S1755546AbaJNVAD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 17:00:03 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:40499 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162AbaJNVAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 16:58:22 -0400
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "balbi@ti.com" <balbi@ti.com>
-Subject: RE: [PATCH] usb: dwc2: gadget: sparse warning of context imbalance
-Thread-Topic: [PATCH] usb: dwc2: gadget: sparse warning of context imbalance
-Thread-Index: AQHP5It6FLj+ET7LSEu1+TkR/GU3RJwwFWWQ
-Date: Tue, 14 Oct 2014 20:55:55 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844E225E@US01WEMBX2.internal.synopsys.com>
-References: <1412946579-6805-1-git-send-email-sudipm.mukherjee@gmail.com>
-In-Reply-To: <1412946579-6805-1-git-send-email-sudipm.mukherjee@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.241]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 14 Oct 2014 17:00:00 -0400
+Date: Tue, 14 Oct 2014 22:59:55 +0200
+From: Seth Forshee <seth.forshee@canonical.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Michael j Theall <mtheall@us.ibm.com>
+Cc: fuse-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Miklos Szeredi <miklos@szeredi.hu>,
+        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>
+Subject: Re: [fuse-devel] [PATCH v4 4/5] fuse: Support privileged xattrs only
+ with a mount option
+Message-ID: <20141014205955.GA10908@ubuntu-mba51>
+Mail-Followup-To: "Eric W. Biederman" <ebiederm@xmission.com>,
+	Michael j Theall <mtheall@us.ibm.com>,
+	fuse-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+	linux-kernel@vger.kernel.org, Miklos Szeredi <miklos@szeredi.hu>,
+	"Serge H. Hallyn" <serge.hallyn@ubuntu.com>
+References: <1413296756-25071-1-git-send-email-seth.forshee@canonical.com>
+ <1413296756-25071-5-git-send-email-seth.forshee@canonical.com>
+ <OFD40DA8DF.F78EA39D-ON86257D71.0057C4DC-86257D71.0064055D@us.ibm.com>
+ <878ukis9oh.fsf@x220.int.ebiederm.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <878ukis9oh.fsf@x220.int.ebiederm.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Sudip Mukherjee [mailto:sudipm.mukherjee@gmail.com]
-> Sent: Friday, October 10, 2014 6:10 AM
+On Tue, Oct 14, 2014 at 01:01:02PM -0700, Eric W. Biederman wrote:
+> Michael j Theall <mtheall@us.ibm.com> writes:
 > 
-> sparse was giving the following warning:
-> 	warning: context imbalance in 's3c_hsotg_ep_enable'
-> 	- different lock contexts for basic block
+> > Seth Forshee <seth.forshee@canonical.com> wrote on 10/14/2014 09:25:55 AM:
+> >
+> >> From: Seth Forshee <seth.forshee@canonical.com>
+> >> To: Miklos Szeredi <miklos@szeredi.hu>
+> >> Cc: fuse-devel@lists.sourceforge.net, "Serge H. Hallyn" 
+> >> <serge.hallyn@ubuntu.com>, linux-kernel@vger.kernel.org, Seth 
+> >> Forshee <seth.forshee@canonical.com>, "Eric W. Biederman" 
+> >> <ebiederm@xmission.com>, linux-fsdevel@vger.kernel.org
+> >> Date: 10/14/2014 09:27 AM
+> >> Subject: [fuse-devel] [PATCH v4 4/5] fuse: Support privileged xattrs
+> >> only with a mount option
+> >> 
+> >> Allowing unprivileged users to provide arbitrary xattrs via fuse
+> >> mounts bypasses the normal restrictions on setting xattrs. Such
+> >> mounts should be restricted to reading and writing xattrs in the
+> >> user.* namespace.
+> >> 
+> >
+> > Can you explain how the normal restrictions on setting xattrs are 
+> > bypassed?
 > 
-> we were returning ENOMEM while still holding the spinlock.
-> The sparse warning was fixed by releasing the spinlock before return.
-> 
-> Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> ---
->  drivers/usb/dwc2/gadget.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
-> index 7b5856f..046e90d 100644
-> --- a/drivers/usb/dwc2/gadget.c
-> +++ b/drivers/usb/dwc2/gadget.c
-> @@ -2561,8 +2561,10 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
->  			hs_ep->fifo_size = val;
->  			break;
->  		}
-> -		if (i == 8)
-> +		if (i == 8) {
-> +			spin_unlock_irqrestore(&hsotg->lock, flags);
->  			return -ENOMEM;
-> +		}
->  	}
-> 
->  	/* for non control endpoints, set PID to D0 */
+> If the fuse server is not run by root.  Which is a large part of the
+> point of fuse.
 
-For a long function like this, I'd rather keep a single return point at
-the end. Something like this:
+So the server could for example return trusted.* xattrs which were not
+set by a privileged user.
 
- 		}
--		if (i == 8)
--			return -ENOMEM;
-+		if (i == 8) {
-+			ret = -ENOMEM;
-+			goto out;
-+		}
- 	}
-...
- 
-+out:
- 	spin_unlock_irqrestore(&hsotg->lock, flags);
- 	return ret;
- }
+> > My filesystem still needs security.* and system.*, and it looks like
+> > xattr_permission already prevents non-privileged users from accessing
+> > trusted.*
+> 
+> If the filesystem is mounted with nosuid (typical of a non-privileged
+> mount of fuse) then the security.* attributes are ignored.
 
-Care to respin the patch like that?
+That I wasn't aware of. In fact I still haven't found where this
+restriction is implemented.
 
--- 
-Paul
+Nonetheless, a userns mount could be done without nosuid (though that
+mount will also be unaccessible outside of that namespace).
+
+> >> It's difficult though to tell whether a mount is being performed
+> >> on behalf of an unprivileged user since fuse mounts are ususally
+> >> done via a suid root helper. Thus a new mount option,
+> >> privileged_xattrs, is added to indicated that xattrs from other
+> >> namespaces are allowed. This option can only be supplied by
+> >> system-wide root; supplying the option as an unprivileged user
+> >> will cause the mount to fail.
+> >
+> > I can't say I'm convinced that this is the right direction to head.
+> 
+> With respect to defaults we could keep the current default if you
+> have the global CAP_SYS_ADMIN privilege when the mount takes place
+> and then avoid breaking anything.
+
+Except that unprivileged mounts are normally done by a suid root helper,
+which is why I've required both global CAP_SYS_ADMIN and a mount option
+to get the current default behavior.
+
+Thanks,
+Seth
 
