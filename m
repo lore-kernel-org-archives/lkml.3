@@ -1,63 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932387AbaJNMZs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 08:25:48 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:37209 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932196AbaJNMZr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 08:25:47 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f4-b7f156d0000063c7-ff-543d16496c4e
-Content-transfer-encoding: 8BIT
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH] mfd: max77693: Fix a truncate warning
-Date: Tue, 14 Oct 2014 14:25:37 +0200
-Message-id: <1413289537-10951-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmluLIzCtJLcpLzFFi42I5/e/4ZV1PMdsQg1NLmCxevzC0uP/1KKPF
-	5V1z2CxOd7M6sHjcubaHzWPeyUCPvi2rGD0+b5ILYInisklJzcksSy3St0vgyrjYaFnwgL1i
-	79xVLA2Mu9m6GDk5JARMJH7O2ssCYYtJXLi3HijOxSEksJRRomvZCbAEr4CgxI/J94BsDg5m
-	AXmJI5eyQcLMAuoSk+YtYoao72OSuHxlPytIgk3AWGLz8iVgC0QEsiR+TFvNAtFgKPHz3R92
-	EFtYwEzizPMZYDaLgKrEhl+NTCDzeQXcJR59FIK4R07i5LHJrBMY+WYhuWIWwhWzkFyxgJF5
-	FaNoamlyQXFSeq6hXnFibnFpXrpecn7uJkZIAH7Zwbj4mNUhRgEORiUe3oJImxAh1sSy4src
-	Q4wSHMxKIrwKHLYhQrwpiZVVqUX58UWlOanFhxiZODilGhh5vWe9XJHMunuT/4Rnor2dFy99
-	WcmiJM70snFpxE0Hz/eGsux3jX71qE/f4HH5przlES71j3H7X5YtYIus/KKVFn5LouuYMkP+
-	xZoHf0Vfbv29aGLc1909x+ZMSW4/9lZUnUXDicOHLY1Dz/Dm0bWPeWs7F3x4wrtj+bvNCjuW
-	1KywF7tou7NBiaU4I9FQi7moOBEAj3MuJB4CAAA=
+	id S932306AbaJNM0c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 08:26:32 -0400
+Received: from mga02.intel.com ([134.134.136.20]:64470 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932146AbaJNM0a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 08:26:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,717,1406617200"; 
+   d="scan'208";a="588657173"
+Date: Tue, 14 Oct 2014 17:21:18 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [RESEND PATCH v2 1/4] dmaengine: pl330: Remove non-NULL check
+ for pl330_submit_req parameters
+Message-ID: <20141014115118.GG1638@intel.com>
+References: <1411994541-31494-1-git-send-email-k.kozlowski@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411994541-31494-1-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix warning on x86_64, make allyesconfig:
+On Mon, Sep 29, 2014 at 02:42:18PM +0200, Krzysztof Kozlowski wrote:
+> The pl330_submit_req() checked supplied 'struct pl330_thread thrd' and
+> 'struct dma_pl330_desc desc' parameters for non-NULL. However these
+> checks are useless because supplied arguments won't be NULL.
+even if we have some error or bug?
 
-drivers/mfd/max77693.c: In function ‘max77693_i2c_probe’:
-drivers/mfd/max77693.c:259:5: warning: large integer implicitly truncated to unsigned type [-Woverflow]
-     SRC_IRQ_ALL, ~SRC_IRQ_ALL);
-     ^
+I would like this to be checked and complained loudly so we know something
+is going wrong rather than assuming it will be correct always.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- drivers/mfd/max77693.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
-index 4e4e6a1a6301..0c9ec6bae022 100644
---- a/drivers/mfd/max77693.c
-+++ b/drivers/mfd/max77693.c
-@@ -256,7 +256,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
- 	/* Unmask interrupts from all blocks in interrupt source register */
- 	ret = regmap_update_bits(max77693->regmap,
- 				MAX77693_PMIC_REG_INTSRC_MASK,
--				SRC_IRQ_ALL, ~SRC_IRQ_ALL);
-+				SRC_IRQ_ALL, (unsigned int)~SRC_IRQ_ALL);
- 	if (ret < 0) {
- 		dev_err(max77693->dev,
- 			"Could not unmask interrupts in INTSRC: %d\n",
 -- 
-1.9.1
+~Vinod
+> 
+> The pl330_submit_req() is called in only one place and:
+> 1. 'desc' is already dereferenced in fill_queue() before calling
+>    pl330_submit_req().
+> 2. 'thrd' is always dereferenced after calling
+>    fill_queue()->pl330_submit_req().
+> 
+> Removing the checks for non-NULL values fixes following warning:
+> drivers/dma/pl330.c:1376 pl330_submit_req() warn: variable dereferenced before check 'thrd' (see line 1367)
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> 
+> ---
+> 
+> Changes since v1:
+> =================
+> 1. Remove the checks for non-NULL completely instead of moving them
+>    before dereference. Suggested by Lars-Peter Clausen.
+> ---
+>  drivers/dma/pl330.c | 4 ----
+>  1 file changed, 4 deletions(-)
+> 
+> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+> index d5149aacd2fe..57049f84d0c0 100644
+> --- a/drivers/dma/pl330.c
+> +++ b/drivers/dma/pl330.c
+> @@ -1372,10 +1372,6 @@ static int pl330_submit_req(struct pl330_thread *thrd,
+>  	u32 ccr;
+>  	int ret = 0;
+>  
+> -	/* No Req or Unacquired Channel or DMAC */
+> -	if (!desc || !thrd || thrd->free)
+> -		return -EINVAL;
+> -
+>  	regs = thrd->dmac->base;
+>  
+>  	if (pl330->state == DYING
+> -- 
+> 1.9.1
+> 
 
+-- 
