@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679AbaJNCXE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 22:23:04 -0400
-Received: from mga03.intel.com ([134.134.136.65]:12722 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754530AbaJNCXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 22:23:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,714,1406617200"; 
-   d="scan'208";a="588396426"
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>
-Subject: [PATCH 2/2] sched/deadline: don't need to balance during wakeup if wakee is pinned
-Date: Tue, 14 Oct 2014 10:22:40 +0800
-Message-Id: <1413253360-5318-2-git-send-email-wanpeng.li@linux.intel.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1413253360-5318-1-git-send-email-wanpeng.li@linux.intel.com>
-References: <1413253360-5318-1-git-send-email-wanpeng.li@linux.intel.com>
+	id S1754731AbaJNC0G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 22:26:06 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:52731 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754037AbaJNC0E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Oct 2014 22:26:04 -0400
+X-Original-SENDERIP: 10.177.222.213
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Vlastimil Babka <vbabka@suse.cz>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH] mm/compaction: avoid premature range skip in isolate_migratepages_range
+Date: Tue, 14 Oct 2014 11:26:28 +0900
+Message-Id: <1413253588-26457-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use nr_cpus_allowed to bail from select_task_rq() when only one cpu 
-can be used, and saves some cycles for pinned tasks.
+commit edc2ca612496 ("mm, compaction: move pageblock checks up from
+isolate_migratepages_range()") commonizes isolate_migratepages variants
+and make them use isolate_migratepages_block().
+isolate_migratepages_block() could stop the execution when enough pages
+are isolated, but, there is no code in isolate_migratepages_range()
+to handle this case. In the result, even if isolate_migratepages_block()
+returns prematurely without checking all pages in the range,
+isolate_migratepages_block() is called repeately on the following
+pageblock and some pages in the previous range are skipped to check.
+Then, CMA is failed frequently due to this fact.
 
-Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+To fix this problem, this patch let isolate_migratepages_range() know
+the situation that enough pages are isolated and stop the isolation
+in that case.
+
+Note that isolate_migratepages() has no such problem, because, it always
+stops the isolation after just one call of isolate_migratepages_block().
+
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 ---
- kernel/sched/deadline.c | 3 +++
+ mm/compaction.c |    3 +++
  1 file changed, 3 insertions(+)
 
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index f46b7f1..5874bf8 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -914,6 +914,9 @@ select_task_rq_dl(struct task_struct *p, int cpu, int sd_flag, int flags)
- 	struct task_struct *curr;
- 	struct rq *rq;
- 
-+	if (p->nr_cpus_allowed == 1)
-+		goto out;
+diff --git a/mm/compaction.c b/mm/compaction.c
+index edba18a..ec74cf0 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -784,6 +784,9 @@ isolate_migratepages_range(struct compact_control *cc, unsigned long start_pfn,
+ 			cc->nr_migratepages = 0;
+ 			break;
+ 		}
 +
- 	if (sd_flag != SD_BALANCE_WAKE)
- 		goto out;
++		if (cc->nr_migratepages == COMPACT_CLUSTER_MAX)
++			break;
+ 	}
+ 	acct_isolated(cc->zone, cc);
  
 -- 
-1.9.1
+1.7.9.5
 
