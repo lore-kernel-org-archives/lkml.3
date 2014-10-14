@@ -1,105 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755558AbaJNRMR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 13:12:17 -0400
-Received: from regular1.263xmail.com ([211.150.99.138]:51069 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753837AbaJNRK0 (ORCPT
+	id S1755570AbaJNRNo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 13:13:44 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:42840 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751076AbaJNRNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 13:10:26 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: wxt@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: wxt@rock-chips.com
-X-UNIQUE-TAG: <1d9bf356804bfd572c1e8ae3a18f0da8>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Caesar Wang <caesar.wang@rock-chips.com>
-To: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com, arnd@arndb.de
-Cc: zyf@rock-chips.com, dianders@chromium.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        cf@rock-chips.com, dmitry.torokhov@gmail.com, dbasehore@chromium.org,
-        huangtao@rock-chips.com, cjf@rock-chips.com, zhengsq@rock-chips.com,
-        Caesar Wang <caesar.wang@rock-chips.com>
-Subject: [PATCH v10 2/5] dt-bindings: document Rockchip thermal
-Date: Wed, 15 Oct 2014 01:10:05 +0800
-Message-Id: <1413306608-11498-3-git-send-email-caesar.wang@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1413306608-11498-1-git-send-email-caesar.wang@rock-chips.com>
-References: <1413306608-11498-1-git-send-email-caesar.wang@rock-chips.com>
+	Tue, 14 Oct 2014 13:13:43 -0400
+Date: Tue, 14 Oct 2014 13:13:38 -0400 (EDT)
+Message-Id: <20141014.131338.1924789014148410781.davem@davemloft.net>
+To: ast@plumgrid.com
+Cc: darrick.wong@oracle.com, edumazet@google.com, dborkman@redhat.com,
+        hpa@zytor.com, tglx@linutronix.de, mingo@kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 net] x86: bpf_jit: fix two bugs in eBPF JIT compiler
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1412998223-3805-1-git-send-email-ast@plumgrid.com>
+References: <1412998223-3805-1-git-send-email-ast@plumgrid.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 14 Oct 2014 10:13:42 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This add the necessary binding documentation for the thermal
-found on Rockchip SoCs
+From: Alexei Starovoitov <ast@plumgrid.com>
+Date: Fri, 10 Oct 2014 20:30:23 -0700
 
-Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
-Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
----
- .../bindings/thermal/rockchip-thermal.txt          | 45 ++++++++++++++++++++++
- 1 file changed, 45 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+> 1.
+> JIT compiler using multi-pass approach to converge to final image size,
+> since x86 instructions are variable length. It starts with large
+> gaps between instructions (so some jumps may use imm32 instead of imm8)
+> and iterates until total program size is the same as in previous pass.
+> This algorithm works only if program size is strictly decreasing.
+> Programs that use LD_ABS insn need additional code in prologue, but it
+> was not emitted during 1st pass, so there was a chance that 2nd pass would
+> adjust imm32->imm8 jump offsets to the same number of bytes as increase in
+> prologue, which may cause algorithm to erroneously decide that size converged.
+> Fix it by always emitting largest prologue in the first pass which
+> is detected by oldproglen==0 check.
+> Also change error check condition 'proglen != oldproglen' to fail gracefully.
+> 
+> 2.
+> while staring at the code realized that 64-byte buffer may not be enough
+> when 1st insn is large, so increase it to 128 to avoid buffer overflow
+> (theoretical maximum size of prologue+div is 109) and add runtime check.
+> 
+> Fixes: 622582786c9e ("net: filter: x86: internal BPF JIT")
+> Reported-by: Darrick J. Wong <darrick.wong@oracle.com>
+> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+> ---
+> v1->v2: reduce chances of stack corruption in case of future bugs (suggested by Eric)
+> 
+> note in classic BPF programs 1st insn is always short move, but native eBPF
+> programs may trigger buffer overflow. I couldn't force the crash with overflow,
+> since there are no further calls while this part of stack is used.
+> Both are ugly bugs regardless.
+> When net-next opens I will add narrowed down testcase from 'nmap' to testsuite.
 
-diff --git a/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
-new file mode 100644
-index 0000000..d5ff410
---- /dev/null
-+++ b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
-@@ -0,0 +1,45 @@
-+* Temperature Sensor ADC (TSADC) on rockchip SoCs
-+
-+Required properties:
-+- compatible: "rockchip,rk3288-tsadc"
-+- reg: physical base address of the controller and length of memory mapped
-+       region.
-+- interrupts: The interrupt number to the cpu. The interrupt specifier format
-+	      depends on the interrupt controller.
-+- clocks: Must contain an entry for each entry in clock-names.
-+- clock-names: Shall be "tsadc" for the converter-clock, and "apb_pclk" for
-+	       the peripheral clock.
-+- #thermal-sensor-cells: Should be 1. See ./thermal.txt for a description.
-+
-+Exiample:
-+tsadc: tsadc@ff280000 {
-+	compatible = "rockchip,rk3288-tsadc";
-+	reg = <0xff280000 0x100>;
-+	interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
-+	clocks = <&cru SCLK_TSADC>, <&cru PCLK_TSADC>;
-+	clock-names = "tsadc", "apb_pclk";
-+};
-+
-+Example: referring to thermal sensors:
-+thermal-zones {
-+       cpu_thermal: cpu_thermal {
-+	        polling-delay-passive = <500>; /* milliseconds */
-+	        polling-delay = <1000>; /* milliseconds */
-+
-+			        /* sensor	ID */
-+	        thermal-sensors = <&tsadc	1>;
-+
-+	        trips {
-+		        cpu_alert0: cpu_alert {
-+			        temperature = <80000>; /* millicelsius */
-+			        hysteresis = <2000>; /* millicelsius */
-+			        type = "passive";
-+		        };
-+		        cpu_crit: cpu_crit {
-+			        temperature = <125000>; /* millicelsius */
-+			        hysteresis = <2000>; /* millicelsius */
-+			    type = "critical";
-+		        };
-+	        };
-+       };
-+};
--- 
-1.9.1
-
-
+Applied, thanks Alexei.
