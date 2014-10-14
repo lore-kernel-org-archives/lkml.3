@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755464AbaJNSJI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 14:09:08 -0400
-Received: from canardo.mork.no ([148.122.252.1]:45864 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755384AbaJNSJG convert rfc822-to-8bit (ORCPT
+	id S1755461AbaJNSMh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 14:12:37 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:51940 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753601AbaJNSMg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 14:09:06 -0400
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Joe Perches <joe@perches.com>
-Cc: Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 1/1 linux-next] zd1201: replace kmalloc/memset by kzalloc
-Organization: m
-References: <1413304831-7203-1-git-send-email-fabf@skynet.be>
-	<1413306955.3269.30.camel@joe-AO725>
-Date: Tue, 14 Oct 2014 20:08:34 +0200
-In-Reply-To: <1413306955.3269.30.camel@joe-AO725> (Joe Perches's message of
-	"Tue, 14 Oct 2014 10:15:55 -0700")
-Message-ID: <87iojm8qxp.fsf@nemi.mork.no>
-User-Agent: Gnus/5.130011 (Ma Gnus v0.11) Emacs/24.3 (gnu/linux)
+	Tue, 14 Oct 2014 14:12:36 -0400
+In-Reply-To: <1413296756-25071-5-git-send-email-seth.forshee@canonical.com>
+References: <1413296756-25071-1-git-send-email-seth.forshee@canonical.com> <1413296756-25071-5-git-send-email-seth.forshee@canonical.com>
+To: Seth Forshee <seth.forshee@canonical.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        fuse-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Miklos Szeredi <miklos@szeredi.hu>,
+        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.3.9 (canardo.mork.no [IPv6:2001:4641::1]); Tue, 14 Oct 2014 20:08:38 +0200 (CEST)
+Subject: Re: [fuse-devel] [PATCH v4 4/5] fuse: Support privileged xattrs only	with a
+ mount option
+X-KeepSent: D40DA8DF:F78EA39D-86257D71:0057C4DC;
+ type=4; name=$KeepSent
+X-Mailer: IBM Notes Release 9.0.1 October 14, 2013
+From: Michael j Theall <mtheall@us.ibm.com>
+Message-ID: <OFD40DA8DF.F78EA39D-ON86257D71.0057C4DC-86257D71.0064055D@us.ibm.com>
+Date: Tue, 14 Oct 2014 13:12:26 -0500
+X-MIMETrack: Serialize by Router on D03NM132/03/M/IBM(Release 9.0.1FP1|April  03, 2014) at
+ 10/14/2014 12:12:28,
+	Serialize complete at 10/14/2014 12:12:28
+Content-Type: text/plain; charset="US-ASCII"
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14101418-0029-0000-0000-000004E7F423
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches <joe@perches.com> writes:
+Seth Forshee <seth.forshee@canonical.com> wrote on 10/14/2014 09:25:55 AM:
 
-> And does this really need to be alloc'd?
+> From: Seth Forshee <seth.forshee@canonical.com>
+> To: Miklos Szeredi <miklos@szeredi.hu>
+> Cc: fuse-devel@lists.sourceforge.net, "Serge H. Hallyn" 
+> <serge.hallyn@ubuntu.com>, linux-kernel@vger.kernel.org, Seth 
+> Forshee <seth.forshee@canonical.com>, "Eric W. Biederman" 
+> <ebiederm@xmission.com>, linux-fsdevel@vger.kernel.org
+> Date: 10/14/2014 09:27 AM
+> Subject: [fuse-devel] [PATCH v4 4/5] fuse: Support privileged xattrs
+> only with a mount option
+> 
+> Allowing unprivileged users to provide arbitrary xattrs via fuse
+> mounts bypasses the normal restrictions on setting xattrs. Such
+> mounts should be restricted to reading and writing xattrs in the
+> user.* namespace.
+> 
 
-Yes, it does. It is used as a transfer_buffer in usb_fill_bulk_urb() and
-must be "suitable for DMA".  From include/linux/usb.h:
+Can you explain how the normal restrictions on setting xattrs are 
+bypassed?
+My filesystem still needs security.* and system.*, and it looks like
+xattr_permission already prevents non-privileged users from accessing
+trusted.*
 
-/**
- * struct urb - USB Request Block
-..
- * @transfer_buffer:  This identifies the buffer to (or from) which the I/O
- *      request will be performed unless URB_NO_TRANSFER_DMA_MAP is set
- *      (however, do not leave garbage in transfer_buffer even then).
- *      This buffer must be suitable for DMA; allocate it with
- *      kmalloc() or equivalent.  For transfers to "in" endpoints, contents
- *      of this buffer will be modified.  This buffer is used for the data
- *      stage of control transfers.
+> It's difficult though to tell whether a mount is being performed
+> on behalf of an unprivileged user since fuse mounts are ususally
+> done via a suid root helper. Thus a new mount option,
+> privileged_xattrs, is added to indicated that xattrs from other
+> namespaces are allowed. This option can only be supplied by
+> system-wide root; supplying the option as an unprivileged user
+> will cause the mount to fail.
 
+I can't say I'm convinced that this is the right direction to head.
 
+Regards,
+Michael Theall
 
-Bjørn
