@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755909AbaJNVGZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 17:06:25 -0400
-Received: from mail.kernel.org ([198.145.19.201]:44915 "EHLO mail.kernel.org"
+	id S1755922AbaJNVGb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 17:06:31 -0400
+Received: from mail.kernel.org ([198.145.19.201]:45010 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932633AbaJNVGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 17:06:16 -0400
+	id S1755911AbaJNVG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 17:06:27 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 17/24] perf evlist: Default to syswide target when no thread/cpu maps set
-Date: Tue, 14 Oct 2014 18:04:26 -0300
-Message-Id: <1413320673-5784-18-git-send-email-acme@kernel.org>
+Subject: [PATCH 19/24] perf evsel: Make some exit routines static
+Date: Tue, 14 Oct 2014 18:04:28 -0300
+Message-Id: <1413320673-5784-20-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1413320673-5784-1-git-send-email-acme@kernel.org>
 References: <1413320673-5784-1-git-send-email-acme@kernel.org>
@@ -29,10 +29,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-If all a tool wants is to do system wide event monitoring, there is no
-more the need to setup thread_map and cpu_map objects, just call
-perf_evlist__open() and it will do create one fd per CPU monitoring all
-threads.
+Since they are automatically called by other methods used by tools.
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: Borislav Petkov <bp@suse.de>
@@ -46,68 +43,59 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-poovolkigu72brx4783uq4cf@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-ne3g4any7q6ty5d6yv8t1wws@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evlist.c | 40 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
+ tools/perf/util/evsel.c | 6 +++---
+ tools/perf/util/evsel.h | 3 ---
+ 2 files changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 5fc7bd42c803..b4b54d84e9b0 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -1175,11 +1175,51 @@ void perf_evlist__close(struct perf_evlist *evlist)
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 7a3c4c47ceda..d1ecde0fd56c 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -725,7 +725,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
  	}
  }
  
-+static int perf_evlist__create_syswide_maps(struct perf_evlist *evlist)
-+{
-+	int err = -ENOMEM;
-+
-+	/*
-+	 * Try reading /sys/devices/system/cpu/online to get
-+	 * an all cpus map.
-+	 *
-+	 * FIXME: -ENOMEM is the best we can do here, the cpu_map
-+	 * code needs an overhaul to properly forward the
-+	 * error, and we may not want to do that fallback to a
-+	 * default cpu identity map :-\
-+	 */
-+	evlist->cpus = cpu_map__new(NULL);
-+	if (evlist->cpus == NULL)
-+		goto out;
-+
-+	evlist->threads = thread_map__new_dummy();
-+	if (evlist->threads == NULL)
-+		goto out_free_cpus;
-+
-+	err = 0;
-+out:
-+	return err;
-+out_free_cpus:
-+	cpu_map__delete(evlist->cpus);
-+	evlist->cpus = NULL;
-+	goto out;
-+}
-+
- int perf_evlist__open(struct perf_evlist *evlist)
+-int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads)
++static int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads)
  {
- 	struct perf_evsel *evsel;
- 	int err;
+ 	int cpu, thread;
  
-+	/*
-+	 * Default: one fd per CPU, all threads, aka systemwide
-+	 * as sys_perf_event_open(cpu = -1, thread = -1) is EINVAL
-+	 */
-+	if (evlist->threads == NULL && evlist->cpus == NULL) {
-+		err = perf_evlist__create_syswide_maps(evlist);
-+		if (err < 0)
-+			goto out_err;
-+	}
-+
- 	perf_evlist__update_id_pos(evlist);
+@@ -813,13 +813,13 @@ int perf_evsel__alloc_counts(struct perf_evsel *evsel, int ncpus)
+ 	return evsel->counts != NULL ? 0 : -ENOMEM;
+ }
  
- 	evlist__for_each(evlist, evsel) {
+-void perf_evsel__free_fd(struct perf_evsel *evsel)
++static void perf_evsel__free_fd(struct perf_evsel *evsel)
+ {
+ 	xyarray__delete(evsel->fd);
+ 	evsel->fd = NULL;
+ }
+ 
+-void perf_evsel__free_id(struct perf_evsel *evsel)
++static void perf_evsel__free_id(struct perf_evsel *evsel)
+ {
+ 	xyarray__delete(evsel->sample_id);
+ 	evsel->sample_id = NULL;
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 5c80cf037e50..1d5c754aebc4 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -154,12 +154,9 @@ const char *perf_evsel__name(struct perf_evsel *evsel);
+ const char *perf_evsel__group_name(struct perf_evsel *evsel);
+ int perf_evsel__group_desc(struct perf_evsel *evsel, char *buf, size_t size);
+ 
+-int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
+ int perf_evsel__alloc_id(struct perf_evsel *evsel, int ncpus, int nthreads);
+ int perf_evsel__alloc_counts(struct perf_evsel *evsel, int ncpus);
+ void perf_evsel__reset_counts(struct perf_evsel *evsel, int ncpus);
+-void perf_evsel__free_fd(struct perf_evsel *evsel);
+-void perf_evsel__free_id(struct perf_evsel *evsel);
+ void perf_evsel__free_counts(struct perf_evsel *evsel);
+ void perf_evsel__close_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
+ 
 -- 
 1.9.3
 
