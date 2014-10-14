@@ -1,73 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755461AbaJNSMh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 14:12:37 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:51940 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753601AbaJNSMg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 14:12:36 -0400
-In-Reply-To: <1413296756-25071-5-git-send-email-seth.forshee@canonical.com>
-References: <1413296756-25071-1-git-send-email-seth.forshee@canonical.com> <1413296756-25071-5-git-send-email-seth.forshee@canonical.com>
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        fuse-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Miklos Szeredi <miklos@szeredi.hu>,
-        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>
+	id S1755445AbaJNSTR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 14:19:17 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:49199 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755375AbaJNSTO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 14:19:14 -0400
+Date: Tue, 14 Oct 2014 13:19:01 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: David Cohen <david.a.cohen@linux.intel.com>
+CC: <linus.walleij@linaro.org>, <linux-gpio@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <balbi@ti.com>,
+        <stable@vger.kernel.org>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: Re: [PATCH v2] pinctrl: baytrail: show output gpio state correctly
+ on Intel Baytrail
+Message-ID: <20141014181901.GD18747@saruman>
+Reply-To: <balbi@ti.com>
+References: <1413224639-21552-1-git-send-email-david.a.cohen@linux.intel.com>
+ <1413309277-32485-1-git-send-email-david.a.cohen@linux.intel.com>
 MIME-Version: 1.0
-Subject: Re: [fuse-devel] [PATCH v4 4/5] fuse: Support privileged xattrs only	with a
- mount option
-X-KeepSent: D40DA8DF:F78EA39D-86257D71:0057C4DC;
- type=4; name=$KeepSent
-X-Mailer: IBM Notes Release 9.0.1 October 14, 2013
-From: Michael j Theall <mtheall@us.ibm.com>
-Message-ID: <OFD40DA8DF.F78EA39D-ON86257D71.0057C4DC-86257D71.0064055D@us.ibm.com>
-Date: Tue, 14 Oct 2014 13:12:26 -0500
-X-MIMETrack: Serialize by Router on D03NM132/03/M/IBM(Release 9.0.1FP1|April  03, 2014) at
- 10/14/2014 12:12:28,
-	Serialize complete at 10/14/2014 12:12:28
-Content-Type: text/plain; charset="US-ASCII"
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14101418-0029-0000-0000-000004E7F423
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="g7w8+K/95kPelPD2"
+Content-Disposition: inline
+In-Reply-To: <1413309277-32485-1-git-send-email-david.a.cohen@linux.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seth Forshee <seth.forshee@canonical.com> wrote on 10/14/2014 09:25:55 AM:
+--g7w8+K/95kPelPD2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> From: Seth Forshee <seth.forshee@canonical.com>
-> To: Miklos Szeredi <miklos@szeredi.hu>
-> Cc: fuse-devel@lists.sourceforge.net, "Serge H. Hallyn" 
-> <serge.hallyn@ubuntu.com>, linux-kernel@vger.kernel.org, Seth 
-> Forshee <seth.forshee@canonical.com>, "Eric W. Biederman" 
-> <ebiederm@xmission.com>, linux-fsdevel@vger.kernel.org
-> Date: 10/14/2014 09:27 AM
-> Subject: [fuse-devel] [PATCH v4 4/5] fuse: Support privileged xattrs
-> only with a mount option
-> 
-> Allowing unprivileged users to provide arbitrary xattrs via fuse
-> mounts bypasses the normal restrictions on setting xattrs. Such
-> mounts should be restricted to reading and writing xattrs in the
-> user.* namespace.
-> 
+On Tue, Oct 14, 2014 at 10:54:37AM -0700, David Cohen wrote:
+> Even if a gpio pin is set to output, we still need to set INPUT_EN
+> functionality (by clearing INPUT_EN bit) to be able to read the pin's
+> level.
+>=20
+> E.g. without this change, we'll always read low level state from sysfs.
+>=20
+> Cc: <stable@vger.kernel.org> # v3.14+
+> Cc: Mathias Nyman <mathias.nyman@linux.intel.com>
+> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
 
-Can you explain how the normal restrictions on setting xattrs are 
-bypassed?
-My filesystem still needs security.* and system.*, and it looks like
-xattr_permission already prevents non-privileged users from accessing
-trusted.*
+Reviewed-by: Felipe Balbi <balbi@ti.com>
 
-> It's difficult though to tell whether a mount is being performed
-> on behalf of an unprivileged user since fuse mounts are ususally
-> done via a suid root helper. Thus a new mount option,
-> privileged_xattrs, is added to indicated that xattrs from other
-> namespaces are allowed. This option can only be supplied by
-> system-wide root; supplying the option as an unprivileged user
-> will cause the mount to fail.
+> ---
+>=20
+> v1 to v2: improved patch's body description as requested by Felipe Balbi
+> ---
+>=20
+>  drivers/pinctrl/pinctrl-baytrail.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl=
+-baytrail.c
+> index e12e5b07f6d7..c23d8ded936d 100644
+> --- a/drivers/pinctrl/pinctrl-baytrail.c
+> +++ b/drivers/pinctrl/pinctrl-baytrail.c
+> @@ -318,7 +318,7 @@ static int byt_gpio_direction_output(struct gpio_chip=
+ *chip,
+>  		"Potential Error: Setting GPIO with direct_irq_en to output");
+> =20
+>  	reg_val =3D readl(reg) | BYT_DIR_MASK;
+> -	reg_val &=3D ~BYT_OUTPUT_EN;
+> +	reg_val &=3D ~(BYT_OUTPUT_EN | BYT_INPUT_EN);
+> =20
+>  	if (value)
+>  		writel(reg_val | BYT_LEVEL, reg);
+> --=20
+> 2.1.0
+>=20
 
-I can't say I'm convinced that this is the right direction to head.
+--=20
+balbi
 
-Regards,
-Michael Theall
+--g7w8+K/95kPelPD2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUPWkVAAoJEIaOsuA1yqREX/gP/2ZVnuFrAXQ+MankSxtZ8/uB
+AeiuUBN9DG0JqQ1FNQ0/5Ve4iYEx8o2CRdsco7zxWXfYhiUD01ghORFyvDbfRH3D
+0GirFxWsJHvpBayL8qBm7CBgxMGVjzO9SFpq8zP38MT84wRZAc5ZOzxDESZEw0rf
+vR8MDpucsoLjZerjcegpTFqRf/fW+lHSHOyN0TimQbeLAJP0iDjkEChalecaCY9p
+ibXeby7V9YA/wVUviBdGJx3btMPBu2m51nxjN4kbzcthQdHL29j0A103hu3Zrom1
+a+tMDjYa/fhPNMfRsf1ZpDWnk3ntdjFkaw4E+jHP3S0suCjKktZfcCep2F+KOeNG
+EiikqOu6Z5toxF1y72rhF5aWhYb47PziwlkGaCNOuqstUD8XaX6JqqfKOb1iSWp1
+Ayi4r8NJ8hNOrLZtj5eb6UB1b7EqK45nUDQuIMgtPpyMXd+WL5v8r4zLqsWdZ6WO
+n53x/S5gc0V2uUcQpdeXd/RBeQtOH+kB0Un9qqdrgSp3QaOjNigg8CmIA+K3h3uh
+5iTd2ZEzsD3TU5QM/5ZZE1drUmHn81V56EV0kVIBXj6rma9IzoFHzWU0FXinZOdR
+qym0/Y//osM4ctPDeKKbdRManwFki05MHbYlH6g990Oc+IXfEK/99mcBP7lvSo41
+Ozoqida1T5T2TU+z3jr9
+=4zHm
+-----END PGP SIGNATURE-----
+
+--g7w8+K/95kPelPD2--
