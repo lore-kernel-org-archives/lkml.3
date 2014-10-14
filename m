@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707AbaJNHfH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 03:35:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2573 "EHLO mx1.redhat.com"
+	id S1754912AbaJNHfd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 03:35:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44154 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752941AbaJNHfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 03:35:04 -0400
-Message-ID: <543CD206.709@redhat.com>
-Date: Tue, 14 Oct 2014 09:34:30 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752941AbaJNHf2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 03:35:28 -0400
+Date: Tue, 14 Oct 2014 09:35:24 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Frans Klaver <frans.klaver@xsens.com>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] gadget_configfs.txt: fix spelling of 'function'
+In-Reply-To: <20141014070012.GC25389@ci00147.xsens-tech.local>
+Message-ID: <alpine.LNX.2.00.1410140934080.31343@pobox.suse.cz>
+References: <1412170231-30936-1-git-send-email-frans.klaver@xsens.com> <20141014070012.GC25389@ci00147.xsens-tech.local>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Alexei Starovoitov <ast@plumgrid.com>
-CC: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v9 net-next 2/4] net: filter: split filter.h and expose
- eBPF to user space
-References: <1409714246-31054-1-git-send-email-ast@plumgrid.com> <1409714246-31054-3-git-send-email-ast@plumgrid.com> <540737DF.1010801@redhat.com> <543C0A2D.5040908@redhat.com> <CAMEtUuw-iAGiYqmcN0AOkku0+Wto7810JJo9HEQvQN-2F=baTA@mail.gmail.com>
-In-Reply-To: <CAMEtUuw-iAGiYqmcN0AOkku0+Wto7810JJo9HEQvQN-2F=baTA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/13/2014 11:49 PM, Alexei Starovoitov wrote:
-> On Mon, Oct 13, 2014 at 10:21 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
->> On 09/03/2014 05:46 PM, Daniel Borkmann wrote:
->> ...
->>>
->>> Ok, given you post the remaining two RFCs later on this window as
->>> you indicate, I have no objections:
->>>
->>> Acked-by: Daniel Borkmann <dborkman@redhat.com>
->>
->> Ping, Alexei, are you still sending the patch for bpf_common.h or
->> do you want me to take care of this?
->
-> It's not forgotten.
-> I'm not sending it only because net-next is closed
-> and it seems to be -next material.
+On Tue, 14 Oct 2014, Frans Klaver wrote:
 
-Well, the point was since it's UAPI you're modifying, that it needs
-to be shipped before it first gets exposed to user land ...
+> > Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
+> > ---
+> >  Documentation/usb/gadget_configfs.txt | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/Documentation/usb/gadget_configfs.txt b/Documentation/usb/gadget_configfs.txt
+> > index 4cf53e4..635e574 100644
+> > --- a/Documentation/usb/gadget_configfs.txt
+> > +++ b/Documentation/usb/gadget_configfs.txt
+> > @@ -376,7 +376,7 @@ functions and binds them. This way the whole gadget is bound.
+> >  configured, so config_groups for particular functions are defined
+> >  in the functions implementation files drivers/usb/gadget/f_*.c.
+> >  
+> > -5. Funciton's code is written in such a way that it uses
+> > +5. Function's code is written in such a way that it uses
+> >  
+> >  usb_get_function_instance(), which, in turn, calls request_module.
+> >  So, provided that modprobe works, modules for particular functions
+> > -- 
+> > 2.1.0
+> > 
+> 
+> Ping
 
-I think that should be reason enough ... there's no point in doing
-this at a later point in time.
+Frans,
+
+your patch hasn't been lost, it's in my 'to-process' queue. It's merge 
+window now, plus this is a super-low priority patch. Please be patient, it 
+will eventually be processed.
+
+-- 
+Jiri Kosina
+SUSE Labs
