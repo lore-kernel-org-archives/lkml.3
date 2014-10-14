@@ -1,59 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932610AbaJNVYE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 17:24:04 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:55576 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932569AbaJNVYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 17:24:00 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Kever Yang <kever.yang@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>,
-        Addy Ke <addy.ke@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        Jianqun Xu <xjq@rock-chips.com>, han jiang <hj@rock-chips.com>,
-        Tao Huang <huangtao@rock-chips.com>,
-        linux-rockchip@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 4/6] ARM: rockchip: add basic smp support for rk3288
-Date: Tue, 14 Oct 2014 23:23:40 +0200
-Message-ID: <1453932.GC4UXrUPRz@phil>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <CAD=FV=WGnE3fBfzLGN_x8dFqq4RV=OnVAyUgRQheMiyG4U7TkQ@mail.gmail.com>
-References: <1413231122-1770-1-git-send-email-kever.yang@rock-chips.com> <1413231122-1770-5-git-send-email-kever.yang@rock-chips.com> <CAD=FV=WGnE3fBfzLGN_x8dFqq4RV=OnVAyUgRQheMiyG4U7TkQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1755661AbaJNVXs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 17:23:48 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:44692 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755567AbaJNVXo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 17:23:44 -0400
+From: Beniamino Galvani <b.galvani@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Carlo Caione <carlo@caione.org>, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
+        Victor Wan <victor.wan@amlogic.com>,
+        Beniamino Galvani <b.galvani@gmail.com>
+Subject: [PATCH v2 2/3] pinctrl: meson: add device tree bindings documentation
+Date: Tue, 14 Oct 2014 23:21:53 +0200
+Message-Id: <1413321714-25931-3-git-send-email-b.galvani@gmail.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1413321714-25931-1-git-send-email-b.galvani@gmail.com>
+References: <1413321714-25931-1-git-send-email-b.galvani@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 14. Oktober 2014, 13:24:03 schrieb Doug Anderson:
-> Kever,
-> 
-> On Mon, Oct 13, 2014 at 1:12 PM, Kever Yang <kever.yang@rock-chips.com> 
-wrote:
-> > +       /*
-> > +        * We need to soft reset the cpu when we turn off the cpu power
-> > domain, +        * or else the active processors might be stalled when
-> > the individual +        * processor is powered down.
-> > +        */
-> > +       if (read_cpuid_part_number() != ARM_CPU_PART_CORTEX_A9) {
-> 
-> I haven't done a full review of this patch, but it seems unlikely that
-> your uses of read_cpuid_part_number() and read_cpuid_part() in this
-> patch are correct.  You use both functions and in both cases compare
-> the results to ARM_CPU_PART_CORTEX_A9.
+Add device tree bindings documentation for Amlogic Meson pinmux and
+GPIO controller.
 
-I think read_cpuid_part() would be the correct one, as it does
+Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
+---
+ .../devicetree/bindings/pinctrl/meson,pinctrl.txt  | 79 ++++++++++++++++++++++
+ 1 file changed, 79 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/meson,pinctrl.txt
 
-	read_cpuid_id() & ARM_CPU_PART_MASK
+diff --git a/Documentation/devicetree/bindings/pinctrl/meson,pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/meson,pinctrl.txt
+new file mode 100644
+index 0000000..6645fa6
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pinctrl/meson,pinctrl.txt
+@@ -0,0 +1,79 @@
++* Amlogic Meson pinmux controller
++
++Pins are organized in banks; all banks except AO are controlled by the
++same set of registers, while the AO bank uses a dedicated register
++range. The device tree uses sub-nodes to represent set of banks which
++share the same address space.
++
++Required properties for the root node:
++ - compatible: "amlogic,meson8-pinctrl"
++ - reg: address and size of the common registers controlling gpio irq
++   functionality
++
++Required properties for gpio sub-nodes:
++ - reg: should contain address and size for mux, pull-enable, pull and
++   gpio register sets
++ - reg-names: an array of strings describing the "reg" entries. Must
++   contain "mux", "pull" and "gpio". "pull-enable" is optional and
++   when it is missing the "pull" registers are used instead
++ - gpio-controller: identifies the node as a gpio controller
++ - #gpio-cells: must be 2
++
++Valid gpio sub-nodes name are:
++ - "banks" for the standard banks
++ - "ao-bank" for the AO bank which belong to the special always-on
++   power domain
++
++Required properties for configuration nodes:
++ - pins: the name of a pin group. The list of all available groups can
++   be found in driver sources.
++ - function: the name of a function to activate for the specified set
++   of groups. The list of all available functions can be found in
++   driver sources.
++
++Example:
++
++	pinctrl: pinctrl@c1109880 {
++		compatible = "amlogic,meson8-pinctrl";
++		reg = <0xc1109880 0x10>;
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++
++		gpio: banks@c11080b0 {
++			reg = <0xc11080b0 0x28>,
++			      <0xc11080e4 0x18>,
++			      <0xc1108120 0x18>,
++			      <0xc1108030 0x30>;
++			reg-names = "mux", "pull-enable", "pull", "gpio";
++			gpio-controller;
++			#gpio-cells = <2>;
++               };
++
++		gpio_ao: ao-bank@c1108030 {
++			reg = <0xc8100014 0x4>,
++			      <0xc810002c 0x4>,
++			      <0xc8100024 0x8>;
++			reg-names = "mux", "pull", "gpio";
++			gpio-controller;
++			#gpio-cells = <2>;
++		};
++
++		nand {
++			nand {
++				pins = "nand_io", "nand_io_ce0", "nand_io_ce1",
++				       "nand_io_rb0", "nand_ale", "nand_cle",
++				       "nand_wen_clk", "nand_ren_clk", "nand_dqs",
++				       "nand_ce2", "nand_ce3";
++				function = "nand";
++			};
++		};
++
++		uart_ao_a: uart_ao_a {
++			uart_ao_a {
++				pins = "uart_tx_ao_a", "uart_rx_ao_a";
++				       "uart_cts_ao_a", "uart_rts_ao_a";
++				function = "uart_ao";
++			};
++		};
++	};
+-- 
+1.9.1
 
-which in turn should mask the correct parts of the cpuid to match against 
-ARM_CPU_PART_CORTEX_A9 [0].
-
-
-
-[0] http://lxr.free-electrons.com/source/arch/arm/include/asm/cputype.h#L77
