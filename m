@@ -1,121 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754919AbaJNIz6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 04:55:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19385 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751343AbaJNIzz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 04:55:55 -0400
-Date: Tue, 14 Oct 2014 11:59:08 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        linux-scsi@vger.kernel.org, linux-s390@vger.kernel.org,
-        v9fs-developer@lists.sourceforge.net, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, Amit Shah <amit.shah@redhat.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Heinz Graalfs <graalfs@linux.vnet.ibm.com>
-Subject: Re: [PATCH v4 04/25] virtio: defer config changed notifications
-Message-ID: <20141014085908.GA6016@redhat.com>
-References: <1413114332-626-1-git-send-email-mst-v4@redhat.com>
- <1413114332-626-5-git-send-email-mst-v4@redhat.com>
- <87lhojcx0v.fsf@rustcorp.com.au>
+	id S1754996AbaJNI6q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 04:58:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56576 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753156AbaJNI6o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 04:58:44 -0400
+Date: Tue, 14 Oct 2014 10:58:41 +0200
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Kamal Mostafa <kamal@canonical.com>, kernel-team@lists.ubuntu.com,
+        Willy Tarreau <w@1wt.eu>, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3.13 163/163] lzo: check for length overrun in variable
+ length encoding.
+Message-ID: <20141014085841.GA7710@hercules>
+References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
+ <1412888588-26755-164-git-send-email-kamal@canonical.com>
+ <20141010053048.GD3594@1wt.eu>
+ <1413221463.11421.30.camel@fourier>
+ <20141014015233.GA24799@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <87lhojcx0v.fsf@rustcorp.com.au>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141014015233.GA24799@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 14, 2014 at 11:01:12AM +1030, Rusty Russell wrote:
-> "Michael S. Tsirkin" <mst@redhat.com> writes:
-> > Defer config changed notifications that arrive during
-> > probe/scan/freeze/restore.
-> >
-> > This will allow drivers to set DRIVER_OK earlier, without worrying about
-> > racing with config change interrupts.
-> >
-> > This change will also benefit old hypervisors (before 2009)
-> > that send interrupts without checking DRIVER_OK: previously,
-> > the callback could race with driver-specific initialization.
-> >
-> > This will also help simplify drivers.
+On Tue, Oct 14, 2014 at 03:52:33AM +0200, Greg Kroah-Hartman wrote:
+> On Mon, Oct 13, 2014 at 10:31:03AM -0700, Kamal Mostafa wrote:
+> > On Fri, 2014-10-10 at 07:30 +0200, Willy Tarreau wrote:
+> > > Hi Kamal,
+> > > 
+> > > [ removed Don Bailey from the CC who's certainly not interested in this ]
+> > > 
+> > > On Thu, Oct 09, 2014 at 02:03:08PM -0700, Kamal Mostafa wrote:
+> > > > 3.13.11.9 -stable review patch.  If anyone has any objections, please let me know.
+> > > > 
+> > > > ------------------
+> > > > 
+> > > > From: Willy Tarreau <w@1wt.eu>
+> > > > 
+> > > > commit 72cf90124e87d975d0b2114d930808c58b4c05e4 upstream.
+> > > 
+> > > (...)
+> > 
+> > Hi Willy-
+> > 
+> > Thanks very much for reviewing this.
+> > 
+> > > This one (and the accompanying revert) are still not present in more
+> > > recent stable kernels, so I find it surprizing that you're proposing
+> > > to integrate them now.
+> > 
+> > I can hold out those lzo fixes until the next 3.13-stable if you prefer.
 > 
-> But AFAICT you never *read* dev->config_changed.
+> Please do so.
 > 
-> You unconditionally trigger a config_changed event in
-> virtio_config_enable().  That's a bit weird, but probably OK.
+> > But fwiw...
+> > 
+> > >  If someone upgrades from 3.13.11.9 to 3.14.21
+> > > or 3.16.5, they'd expect to keep all fixes but will lose this one, so
+> > > this is a bit confusing.
+> > 
+> > I think those sorts of scheduling mismatches and discrepancies between
+> > stable versions are pretty common.  Examples:  The top 11 commits in
+> > v3.12.30 have not yet been applied[0] to any of the newer stable
+> > branches;
 > 
-> How about the following change (on top of your patch).  I
-> think the renaming is clearer, and note the added if() test in
-> virtio_config_enable().
+> Those -mm patches from Mel are "special", I'm taking it slow in merging
+> them, doing lots of local testing and code review, and not all of them
+> even are relevant for 3.14, so don't take the acceptance /
+> non-acceptance of them as any kind of "proof" of anything at all.
 > 
-> If you approve, I'll fold it in.
+> > Many of the commits in v3.10.57 have not yet been applied[1]
+> > to linux-3.12.y but have been released in other newer stables.
 > 
-> Cheers,
-> Rusty.
+> That's because I am ahead of Jiri, which will almost always happen due
+> to our different workflows and time available to spend on stable
+> kernels.
+> 
+> > >  Is there any reason you're not tracking fixes
+> > > from more recent versions like Jiri, Li, Ben and I are doing ?
+> > 
+> > We (the Canonical stable maintainers) have always tracked the "cc:
+> > stable" fixes directly from mainline, not from the more-recent-version
+> > branches.  Given the examples above, it seems that the kernel.org
+> > maintainers are doing that too, yes?
+> 
+> You have included patches in your release that are not in _any_ public
+> release on kernel.org yet.  Which is fine, you are allowed to do
+> whatever you want, but that goes against the existing rules of stable
+> patches that we have been following for well over the past year for when
+> it is acceptable to add a patch to a stable release.
+> 
 
-Hi Rusty,
-I'm okay with both changes.
-You can fold it in if you prefer, or just make it a patch on top.
+Could you please provide us with examples of commits in one of our
+extended stable trees that is not on any other public release at
+kernel.org?  We really try hard to follow the process defined for the
+official stable kernels, so if this has happen in the past it was
+definitely a mistake from our side, and we would love to get your
+feedback during the review cycles.
 
-> diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
-> index 2536701b098b..df598dd8c5c8 100644
-> --- a/drivers/virtio/virtio.c
-> +++ b/drivers/virtio/virtio.c
-> @@ -122,7 +122,7 @@ static void __virtio_config_changed(struct virtio_device *dev)
->  	struct virtio_driver *drv = drv_to_virtio(dev->dev.driver);
->  
->  	if (!dev->config_enabled)
-> -		dev->config_changed = true;
-> +		dev->config_change_pending = true;
->  	else if (drv && drv->config_changed)
->  		drv->config_changed(dev);
->  }
-> @@ -148,8 +148,9 @@ static void virtio_config_enable(struct virtio_device *dev)
->  {
->  	spin_lock_irq(&dev->config_lock);
->  	dev->config_enabled = true;
-> -	__virtio_config_changed(dev);
-> -	dev->config_changed = false;
-> +	if (dev->config_change_pending)
-> +		__virtio_config_changed(dev);
-> +	dev->config_change_pending = false;
->  	spin_unlock_irq(&dev->config_lock);
->  }
->  
-> @@ -253,7 +254,7 @@ int register_virtio_device(struct virtio_device *dev)
->  
->  	spin_lock_init(&dev->config_lock);
->  	dev->config_enabled = false;
-> -	dev->config_changed = false;
-> +	dev->config_change_pending = false;
->  
->  	/* We always start by resetting the device, in case a previous
->  	 * driver messed it up.  This also tests that code path a little. */
-> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
-> index 5636b119dc25..65261a7244fc 100644
-> --- a/include/linux/virtio.h
-> +++ b/include/linux/virtio.h
-> @@ -80,7 +80,7 @@ bool virtqueue_is_broken(struct virtqueue *vq);
->   * @index: unique position on the virtio bus
->   * @failed: saved value for CONFIG_S_FAILED bit (for restore)
->   * @config_enabled: configuration change reporting enabled
-> - * @config_changed: configuration change reported while disabled
-> + * @config_change_pending: configuration change reported while disabled
->   * @config_lock: protects configuration change reporting
->   * @dev: underlying device.
->   * @id: the device type identification (used to match it with a driver).
-> @@ -94,7 +94,7 @@ struct virtio_device {
->  	int index;
->  	bool failed;
->  	bool config_enabled;
-> -	bool config_changed;
-> +	bool config_change_pending;
->  	spinlock_t config_lock;
->  	struct device dev;
->  	struct virtio_device_id id;
+My understanding is that Kamal queued this specific patch because its
+related with a security issue (CVE-2014-4608): the original fix is
+being reverted upstream and he is queuing this revert and the
+alternative fix.  Anyway, since Willy objected, its likely Kamal will
+postpone including these patches in the 3.13 kernel.
+
+Cheers,
+--
+Luís
+
+> Yet another reason I _strongly_ urge you to mark your kernels with some
+> type of "name" to help reduce the confusion of others that your kernels
+> might be somehow associated with kernel.org releases.
+> 
+> greg k-h
+> 
+> -- 
+> kernel-team mailing list
+> kernel-team@lists.ubuntu.com
+> https://lists.ubuntu.com/mailman/listinfo/kernel-team
