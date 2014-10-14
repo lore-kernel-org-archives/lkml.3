@@ -1,94 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755723AbaJNVvx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 17:51:53 -0400
-Received: from mga03.intel.com ([134.134.136.65]:29469 "EHLO mga03.intel.com"
+	id S1755817AbaJNVxI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 17:53:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62356 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751503AbaJNVvv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 17:51:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,719,1406617200"; 
-   d="scan'208";a="589012460"
-From: Jim Kukunas <james.t.kukunas@linux.intel.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] lib/deflate: Replace UNALIGNED_OK w/ HAVE_EFFICIENT_UNALIGNED_ACCESS
-Date: Tue, 14 Oct 2014 14:51:43 -0700
-Message-Id: <1413323503-26033-1-git-send-email-james.t.kukunas@linux.intel.com>
-X-Mailer: git-send-email 1.7.1
+	id S1754512AbaJNVxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 17:53:06 -0400
+Date: Tue, 14 Oct 2014 17:52:53 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: WANG Chao <chaowang@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Baoquan He <bhe@redhat.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "open list:X86 ARCHITECTURE..." <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch/x86/purgatory/Makefile: supress kexec-purgatory.c
+ is up to date message
+Message-ID: <20141014215253.GM5127@redhat.com>
+References: <1413262019-3759-1-git-send-email-chaowang@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413262019-3759-1-git-send-email-chaowang@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zlib implements a byte-by-byte and a word-by-word longest_match() string
-comparision function. This implementation defaults to the slower byte-by-byte
-version unless the preprocessor macro UNALIGNED_OK is defined.
-Currently, nothing is hooked up to define this macro, but we do have
-CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS, which serves the same purpose.
+On Tue, Oct 14, 2014 at 12:46:58PM +0800, WANG Chao wrote:
+> Supress this unnecessary message during kernel re-build
+> (CONFIG_KEXEC_FILE=y):
+> 
+> make[1]: `arch/x86/purgatory/kexec-purgatory.c' is up to date.
+> 
+> Signed-off-by: WANG Chao <chaowang@redhat.com>
+> ---
+>  arch/x86/purgatory/Makefile | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/x86/purgatory/Makefile b/arch/x86/purgatory/Makefile
+> index f52e033..2c835e3 100644
+> --- a/arch/x86/purgatory/Makefile
+> +++ b/arch/x86/purgatory/Makefile
+> @@ -24,6 +24,7 @@ quiet_cmd_bin2c = BIN2C   $@
+>  
+>  $(obj)/kexec-purgatory.c: $(obj)/purgatory.ro FORCE
+>  	$(call if_changed,bin2c)
+> +	@:
 
-The exact performance improvement of the word-by-word implementation is data
-dependant, but on x86 it is typically in the range of a 5-10% cycle reduction.
+Where can I find the description of "@:" and how does it work?
 
-The code is already there, might as well use it ...
-
-Signed-off-by: Jim Kukunas <james.t.kukunas@linux.intel.com>
----
- lib/zlib_deflate/deflate.c |   15 ++++++++-------
- 1 files changed, 8 insertions(+), 7 deletions(-)
-
-diff --git a/lib/zlib_deflate/deflate.c b/lib/zlib_deflate/deflate.c
-index d20ef45..4920e51 100644
---- a/lib/zlib_deflate/deflate.c
-+++ b/lib/zlib_deflate/deflate.c
-@@ -570,9 +570,9 @@ static uInt longest_match(
-     Pos *prev = s->prev;
-     uInt wmask = s->w_mask;
- 
--#ifdef UNALIGNED_OK
-+#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
-     /* Compare two bytes at a time. Note: this is not always beneficial.
--     * Try with and without -DUNALIGNED_OK to check.
-+     * Try with and without -DCONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS to check.
-      */
-     register Byte *strend = s->window + s->strstart + MAX_MATCH - 1;
-     register ush scan_start = *(ush*)scan;
-@@ -606,9 +606,10 @@ static uInt longest_match(
-         /* Skip to next match if the match length cannot increase
-          * or if the match length is less than 2:
-          */
--#if (defined(UNALIGNED_OK) && MAX_MATCH == 258)
-+#if (defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS) && MAX_MATCH == 258)
-         /* This code assumes sizeof(unsigned short) == 2. Do not use
--         * UNALIGNED_OK if your compiler uses a different size.
-+	 * CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS if your compiler uses a
-+	 * different size.
-          */
-         if (*(ush*)(match+best_len-1) != scan_end ||
-             *(ush*)match != scan_start) continue;
-@@ -639,7 +640,7 @@ static uInt longest_match(
-         len = (MAX_MATCH - 1) - (int)(strend-scan);
-         scan = strend - (MAX_MATCH-1);
- 
--#else /* UNALIGNED_OK */
-+#else /* CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS */
- 
-         if (match[best_len]   != scan_end  ||
-             match[best_len-1] != scan_end1 ||
-@@ -670,13 +671,13 @@ static uInt longest_match(
-         len = MAX_MATCH - (int)(strend - scan);
-         scan = strend - MAX_MATCH;
- 
--#endif /* UNALIGNED_OK */
-+#endif /* CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS */
- 
-         if (len > best_len) {
-             s->match_start = cur_match;
-             best_len = len;
-             if (len >= nice_match) break;
--#ifdef UNALIGNED_OK
-+#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
-             scan_end = *(ush*)(scan+best_len-1);
- #else
-             scan_end1  = scan[best_len-1];
--- 
-1.7.1
-
+Thanks
+Vivek
