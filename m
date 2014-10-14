@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755344AbaJNRj0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 13:39:26 -0400
-Received: from mta-out1.inet.fi ([62.71.2.197]:49811 "EHLO kirsi1.inet.fi"
+	id S1755349AbaJNRpn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 13:45:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62676 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752580AbaJNRjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 13:39:25 -0400
-Date: Tue, 14 Oct 2014 20:38:37 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Alex Thorlton <athorlton@sgi.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, Bob Liu <lliubbo@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org
-Subject: Re: [BUG] mm, thp: khugepaged can't allocate on requested node when
- confined to a cpuset
-Message-ID: <20141014173837.GA8919@node.dhcp.inet.fi>
-References: <20141008191050.GK3778@sgi.com>
- <20141014114828.GA6524@node.dhcp.inet.fi>
- <20141014145435.GA7369@worktop.fdxtended.com>
+	id S1753866AbaJNRpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 13:45:41 -0400
+Date: Tue, 14 Oct 2014 19:42:29 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Chen, Hanxiao" <chenhanxiao@cn.fujitsu.com>
+Cc: "containers@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        David Howells <dhowells@redhat.com>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segooon@gmail.com>, Mateusz Guzik <mguzik@redhat.com>
+Subject: Re: [PATCHv4] procfs: show hierarchy of pid namespace
+Message-ID: <20141014174229.GA31533@redhat.com>
+References: <1412762198-21825-1-git-send-email-chenhanxiao@cn.fujitsu.com> <20141008151328.GB4835@redhat.com> <5871495633F38949900D2BF2DC04883E5E1649@G08CNEXMBPEKD02.g08.fujitsu.local> <20141009213414.GA10705@redhat.com> <5871495633F38949900D2BF2DC04883E5E864C@G08CNEXMBPEKD02.g08.fujitsu.local>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141014145435.GA7369@worktop.fdxtended.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <5871495633F38949900D2BF2DC04883E5E864C@G08CNEXMBPEKD02.g08.fujitsu.local>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 14, 2014 at 04:54:35PM +0200, Peter Zijlstra wrote:
-> > Is there a reason why we should respect cpuset limitation for kernel
-> > threads?
-> 
-> Yes, because we want to allow isolating CPUs from 'random' activity.
+On 10/13, Chen, Hanxiao wrote:
+>
+> > At the same time, for_each_process() in the global namespace can be
+> > faster if there are a lot of sub-threads.
+> >
+> > > Perhaps that's not a good way.
+> >
+> > OK, I won't insist.
+> >
+> > although it would be nice to know why do you think this is bad.
+> >
+> I worried about it may slower in global namespace.
+> But it will provide a great convenient way when query pid hierarchy
+> when not in init_pid_ns.
 
-Okay, it makes sense for cpus_allowed. But we're talking about
-mems_allowed, right?
- 
-> 
-> > Should we bypass cpuset for PF_KTHREAD completely?
-> 
-> No. That'll break stuff.
+Yes, it is not clear what is actually better, so ...
 
-Like what?
+> I'll post a new patch using find_ge_pid + get_pid
 
--- 
- Kirill A. Shutemov
+Only if you think this makes more sense. I do not have a strong opinion.
+
+And we can change the implementation at any time. The real problem is
+the API this patch adds. I leave this to you and other reviewers who
+understand the problem space better ;) Just I think that the changelog
+could say a bit more, to explain why do we need this patch. IOW, explain
+the problem and how/why this patch helps.
+
+Oleg.
+
