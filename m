@@ -1,122 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755644AbaJNWLV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 18:11:21 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:57460 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753866AbaJNWLU (ORCPT
+	id S1755797AbaJNWL4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 18:11:56 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:45467 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755754AbaJNWLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 18:11:20 -0400
+	Tue, 14 Oct 2014 18:11:55 -0400
 MIME-Version: 1.0
-In-Reply-To: <87tx36l3gp.fsf@x220.int.ebiederm.org>
-References: <d4c63d6c350d26ffc985d061d213bd778055ca5b.1413322603.git.luto@amacapital.net>
- <87tx36l3gp.fsf@x220.int.ebiederm.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 14 Oct 2014 15:07:59 -0700
-Message-ID: <CALCETrXNbrLd6BbCPUPXiPc57JDzfwWTjOrU9cx_nWoORPeyCQ@mail.gmail.com>
-Subject: Re: [PATCH] fs: Treat non-ancestor-namespace mounts as MNT_NOSUID
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael j Theall <mtheall@us.ibm.com>,
-        fuse-devel@lists.sourceforge.net, Miklos Szeredi <miklos@szeredi.hu>,
-        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
-        Seth Forshee <seth.forshee@canonical.com>
+In-Reply-To: <20140915.165620.1169777676117933052.davem@davemloft.net>
+References: <20140914190557.690183d2@urahara> <20140915.130721.589682835868904320.davem@davemloft.net>
+ <20140915135339.0659f618@urahara> <20140915.165620.1169777676117933052.davem@davemloft.net>
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Date: Wed, 15 Oct 2014 00:11:33 +0200
+Message-ID: <CAFo99gY7s_6V0LNU81P1z0=W4=OdOLXsjGe4tbRNSXPbnXGfyg@mail.gmail.com>
+Subject: Re: [PATCH] net: ethernet: marvell: sky2.c: Cleaning up missing
+ null-terminate in conjunction with strncpy
+To: David Miller <davem@davemloft.net>
+Cc: Stephen Hemminger <stephen@networkplumber.org>,
+        Mirko Lindner <mlindner@marvell.com>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 14, 2014 at 2:57 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> Andy Lutomirski <luto@amacapital.net> writes:
+2014-09-15 22:56 GMT+02:00 David Miller <davem@davemloft.net>:
+> From: Stephen Hemminger <stephen@networkplumber.org>
+> Date: Mon, 15 Sep 2014 13:53:39 -0700
 >
->> If a process gets access to a mount from a descendent or unrelated
->> user namespace, that process should not be able to take advantage of
->> setuid files or selinux entrypoints from that filesystem.
+>> On Mon, 15 Sep 2014 13:07:21 -0400 (EDT)
+>> David Miller <davem@davemloft.net> wrote:
 >>
->> This will make it safer to allow more complex filesystems to be
->> mounted in non-root user namespaces.
+>>> From: Stephen Hemminger <stephen@networkplumber.org>
+>>> Date: Sun, 14 Sep 2014 19:05:57 -0700
+>>>
+>>> > On Sun, 14 Sep 2014 19:33:43 +0200
+>>> > Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se> wrote:
+>>> >
+>>> >> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
+>>> >>
+>>> >> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+>>> >> ---
+>>> >>  drivers/net/ethernet/marvell/sky2.c |    2 +-
+>>> >>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>> >>
+>>> >> diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
+>>> >> index dba48a5c..7053d38 100644
+>>> >> --- a/drivers/net/ethernet/marvell/sky2.c
+>>> >> +++ b/drivers/net/ethernet/marvell/sky2.c
+>>> >> @@ -4907,7 +4907,7 @@ static const char *sky2_name(u8 chipid, char *buf, int sz)
+>>> >>   };
+>>> >>
+>>> >>   if (chipid >= CHIP_ID_YUKON_XL && chipid <= CHIP_ID_YUKON_OP_2)
+>>> >> -         strncpy(buf, name[chipid - CHIP_ID_YUKON_XL], sz);
+>>> >> +         strlcpy(buf, name[chipid - CHIP_ID_YUKON_XL], sz);
+>>> >>   else
+>>> >>           snprintf(buf, sz, "(chip %#x)", chipid);
+>>> >>   return buf;
+>>> >
+>>> > Useless and unnecessary since the list of names is right there.
+>>> > Why not avoid the copy all together?
+>>> >
+>>> > Subject: sky2: avoid strncpy
+>>> >
+>>> > Don't use strncpy() since security thought police think it is bad.
+>>> >
+>>> > Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
+>>>
+>>> I think providing the buffer on the stack of the thread executing the
+>>> probe is superior because it will allow enabling parallel probing
+>>> in the future.
+>>>
+>>> I don't think you have to change that aspect to achieve your goal
+>>> of returning the const char * string when possible.
 >>
->> This does not remove the need for MNT_LOCK_NOSUID.  The setuid,
->> setgid, and file capability bits can no longer be abused if code in
->> a user namespace were to clear nosuid on an untrusted filesystem,
->> but this patch, by itself, is insufficient to protect the system
->> from abuse of files that, when execed, would increase MAC privilege.
+>> What is benefit of s/strncpy/strlcpy/ for known safe code?
+>> Seems like more of the checkpatch police state.
 >>
->> As a more concrete explanation, any task that can manipulate a
->> vfsmount associated with a given user namespace already has
->> capabilities in that namespace and all of its descendents.  If they
->> can cause a malicious setuid, setgid, or file-caps executable to
->> appear in that mount, then that executable will only allow them to
->> elevate privileges in exactly the set of namespaces in which they
->> are already privileges.
->>
->> On the other hand, if they can cause a malicious executable to
->> appear with a dangerous MAC label, running it could change the
->> caller's security context in a way that should not have been
->> possible, even inside the namespace in which the task is confined.
 >
-> As presented this is complete and total nonsense.  Mount propgation
-> strongly weakens if not completely breaks the assumptions you are making
-> in this code.
-
-Huh?  Please elaborate.
-
+> Stephen, read my reply again.
 >
-> To write any generic code that knows anything we need to capture a user
-> namespace on struct super.
-
-I disagree, actually.  If global root mounts FUSE (somewhere
-invisible) and then propagates it into a userns-owned mountns, then I
-think that root does *not* want the global userns to trust that mount,
-even though the super belongs to the init userns.
-
-In general, the ability to elevate your privileges by following a
-/proc symlink into a different userns's mounts (or using fchdir) and
-executing a setuid program is, I think, a mistake.  I've already
-written one root exploit that depends on that ability, and I can't see
-any legitimate reason to allow it.
-
+> I didn't say to go back to the strlcpy change.
 >
-> Further I think all we really want is to filter out security labels from
-> unprivileged mounts.   uids/gids and the like should be completely fine
-> because of the uid mappings.
-
-Why?  As you mentioned, unprivileged userns mounts are just like
-regular nosuid removable media mounts in that respect, except that
-they probably won't have the nosuid flag set.  This patch completely
-closes the issue of security labels taking effect in the wrong
-namespace as long as LSMs handle nosuid correctly, and LSMs MUST
-handle nosuid correctly in order to avoid being bypassed by regular
-FUSE or by removable media.
-
+> I said to use your patch, but keep the buf[] parameter allocated on
+> the caller's stack.
 >
-> Having been down the route of comparing uids as userns uid tuples I am
-> convinced that anything requires us to take the user namespace into
-> account on a routine basis in the core will simply be broken for someone
-> forgetting somewhere.  This looks like a design that has that kind of
-> susceptibility.
+> Thanks.
 
-A smatch rule would fix that, as would moving MNT_NOSUID into an
-internal header.
 
->
->> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->> ---
->>
->> Seth, this should address a problem that's related to yours.  If a
->> userns creates and untrusted fs (by any means, although admittedly fuse
->> and user namespaces don't work all that well together right now), then
->> this prevents shenanigans that could happen when the userns passes an fd
->> pointing at the filesystem out to the root ns.
->
-> Andy for now I really think we are best not even reading those
-> capabilities into the vfs from unprivileged mounts.
+Hi
 
-But won't we want to support letting userns containers create setuid
-files and security labels using FUSE and related things for their own
-benefit someday?  This lets us do that without compromising the init
-namespace.
+Has not happened anything here ...
 
---Andy
+Stephen, how can this be "." Then you might as well use strcpy,
+because the use here does not guarantee that the string will be null
+terminated, anyway.
+
+
+And David, as I understand you want to use code like this:
+
+static const char *sky2_name(u8 chipid, char *buf, int sz)
+{
+....
+
+    if (chipid >= CHIP_ID_YUKON_XL && chipid <= CHIP_ID_YUKON_OP_2)
+        return name[chipid - CHIP_ID_YUKON_XL];
+
+    snprintf(buf, sz, "(chip %#x)", chipid);
+
+    return buf;
+}
+
+Or?
+
+
+And we can all easily see how the code is used here.
+
+So Stephen statement as true, sz = 16.
+And David, since we only use the return value.
+
+But is it really such we should assume always is true?
+
+What if someone uses it like this:
+
+char tmp[8];
+...
+sky2_name(id, tmp, sizeof(tmp));
+printf("The chip: %s\n", tmp);
+
+
+
+Kind regards
+Rickard Strandqvist
