@@ -1,37 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932570AbaJNUGJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 16:06:09 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:44289 "EHLO
+	id S1755631AbaJNUHO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 16:07:14 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:44299 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755593AbaJNUGE (ORCPT
+	with ESMTP id S1755440AbaJNUHM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 16:06:04 -0400
-Date: Tue, 14 Oct 2014 16:06:02 -0400 (EDT)
-Message-Id: <20141014.160602.1746747507486023769.davem@davemloft.net>
-To: fabf@skynet.be
-Cc: linux-kernel@vger.kernel.org, joe@perches.com,
-        dmitry.tarnyagin@lockless.no, netdev@vger.kernel.org
-Subject: Re: [PATCH V2 2/2 net-next] caif_usb: use target structure member
- in memset
+	Tue, 14 Oct 2014 16:07:12 -0400
+Date: Tue, 14 Oct 2014 16:07:07 -0400 (EDT)
+Message-Id: <20141014.160707.30937593503083649.davem@davemloft.net>
+To: ast@plumgrid.com
+Cc: mingo@kernel.org, torvalds@linux-foundation.org, luto@amacapital.net,
+        rostedt@goodmis.org, dborkman@redhat.com, hannes@stressinduktion.org,
+        chema@google.com, edumazet@google.com, a.p.zijlstra@chello.nl,
+        hpa@zytor.com, akpm@linux-foundation.org, keescook@chromium.org,
+        linux-api@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net] net: filter: move common defines into bpf_common.h
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1413306074-8401-1-git-send-email-fabf@skynet.be>
-References: <1413306074-8401-1-git-send-email-fabf@skynet.be>
+In-Reply-To: <1413277734-13053-1-git-send-email-ast@plumgrid.com>
+References: <1413277734-13053-1-git-send-email-ast@plumgrid.com>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 14 Oct 2014 13:06:04 -0700 (PDT)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 14 Oct 2014 13:07:11 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabian Frederick <fabf@skynet.be>
-Date: Tue, 14 Oct 2014 19:01:14 +0200
+From: Alexei Starovoitov <ast@plumgrid.com>
+Date: Tue, 14 Oct 2014 02:08:54 -0700
 
-> parent cfusbl was used instead of first structure member 'layer'
+> userspace programs that use eBPF instruction macros need to include two files:
+> uapi/linux/filter.h and uapi/linux/bpf.h
+> Move common macro definitions that are shared between classic BPF and eBPF
+> into uapi/linux/bpf_common.h, so that user app can include only one bpf.h file
 > 
-> Suggested-by: Joe Perches <joe@perches.com>
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> Cc: Daniel Borkmann <dborkman@redhat.com>
+> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+> ---
+> 
+> Daniel believes that this patch has to be done for this merge window.
+> I think it can wait till next, but it won't hurt now either.
 
-Applied.
+Applied, thanks everyone.
