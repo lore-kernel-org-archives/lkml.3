@@ -1,116 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932576AbaJNPFY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 11:05:24 -0400
-Received: from tundra.namei.org ([65.99.196.166]:50428 "EHLO namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932409AbaJNPFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 11:05:22 -0400
-Date: Wed, 15 Oct 2014 02:05:17 +1100 (AEDT)
-From: James Morris <jmorris@namei.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Moore <paul@paul-moore.com>
-Subject: [GIT PULL] SELinux list corruption fix for 3.18
-Message-ID: <alpine.LRH.2.11.1410150158010.29573@namei.org>
-User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
+	id S932558AbaJNPGe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 11:06:34 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:45038 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932145AbaJNPGd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 11:06:33 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1413223622.5146.68.camel@marge.simpson.net>
+References: <1413008458.5939.4.camel@localhost.localdomain>
+	<1413187299.5232.44.camel@marge.simpson.net>
+	<CADZ9YHiqyGGMRJFvghbkDO7iP=7niEnpOt_Cp8sMwLn+iA8ivA@mail.gmail.com>
+	<1413223622.5146.68.camel@marge.simpson.net>
+Date: Tue, 14 Oct 2014 21:06:31 +0600
+Message-ID: <CADZ9YHj2RAgZttgBXk6CEYGqe4h0QUwtw3Veuu2-Or1H-Sbe5Q@mail.gmail.com>
+Subject: Re: [ANNOUNCE] BLD-3.17 release.
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a fix for list corruption in the SELinux code.
+On 10/14/14, Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
+> On Mon, 2014-10-13 at 21:14 +0600, Rakib Mullick wrote:
+>
+>> Okay. From the numbers above it's apparent that BLD isn't doing good,
+>> atleast for the
+>> kind of system that you have been using. I didn't had a chance to ran
+>> it on any kind of
+>> NUMA systems, for that reason on Kconfig, I've marked it as "Not
+>> suitable for NUMA", yet.
+>
+> (yeah, a NUMA box would rip itself to shreds)
+>
+>> Part of the reason is, I didn't manage to try it out myself and other
+>> reason is, it's easy to
+>> get things wrong if schedule domains are build improperly. I'm not
+>> sure what was the
+>> sched configuration in your case. BLD assumes (or kindof bliendly
+>> believes systems
+>> default sched domain topology) on wakeup tasks are cache hot and so
+>> don't put those
+>> task's on other sched domains, but if that isn't the case then perhaps
+>> it'll miss out on
+>> balancing oppourtunity, in that case CPU utilization will be improper.
+>
+> Even when you have only one socket with a big L3, you don't really want
+> to bounce fast/light tasks around too frequently, L2 misses still hurt.
+>
+>> Can you please share the perf stat of netperf runs? So, far I have
+>> seen reduced context
+>> switch numbers with -BLD with a drawback of huge increase of CPU
+>> migration numbers.
+>
+> No need, it's L2 misses.  Q6600 has no L3 to mitigate the miss pain.
+>
+I see.
 
-Note that the git-log output is still broken due to the back-merge issue 
-previously discussed.  The fix is in commit 
-7c66bdc72bc3d792886c42bbab4b214c1fe536e0
+>> But, the kind of systems I ran so far, it deemed too much CPU movement
+>> didn't cost much.
+>> But, it could be wrong for NUMA systems.
+>
+> You can most definitely move even very fast/light tasks too much within
+> an L3, L2 misses can demolish throughput.  We had that problem.
+>
+So, L2 misses is the key here. So far I haven't tried to utilize
+various sched domain flags, like. SD_SHARE_PKG_RESOURCE/_CPUPOWER etc.
+Probably, integrating those might help? I'll take a look at those and
+will try to see what happens, although testing will be problematic.
 
-Please pull.
-
--- 
-
-The following changes since commit 2d65a9f48fcdf7866aab6457bc707ca233e0c791:
-
-  Merge branch 'drm-next' of git://people.freedesktop.org/~airlied/linux (2014-10-14 09:39:08 +0200)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
-
-James Morris (1):
-      Merge branch 'stable-3.18' of git://git.infradead.org/users/pcmoore/selinux into for-linus
-
-Jiri Pirko (1):
-      selinux: register nf hooks with single nf_register_hooks call
-
-Paul Moore (2):
-      selinux: fix a problem with IPv6 traffic denials in selinux_ip_postroute()
-      selinux: make the netif cache namespace aware
-
-Richard Guy Briggs (2):
-      selinux: cleanup error reporting in selinux_nlmsg_perm()
-      selinux: normalize audit log formatting
-
-Stephen Smalley (2):
-      selinux: Permit bounded transitions under NO_NEW_PRIVS or NOSUID.
-      selinux: fix inode security list corruption
-
- security/selinux/hooks.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-
-commit 7c66bdc72bc3d792886c42bbab4b214c1fe536e0
-Author: Stephen Smalley <sds@tycho.nsa.gov>
-Date:   Mon Oct 6 16:32:52 2014 -0400
-
-    selinux: fix inode security list corruption
-    
-    sb_finish_set_opts() can race with inode_free_security()
-    when initializing inode security structures for inodes
-    created prior to initial policy load or by the filesystem
-    during ->mount().   This appears to have always been
-    a possible race, but commit 3dc91d4 ("SELinux:  Fix possible
-    NULL pointer dereference in selinux_inode_permission()")
-    made it more evident by immediately reusing the unioned
-    list/rcu element  of the inode security structure for call_rcu()
-    upon an inode_free_security().  But the underlying issue
-    was already present before that commit as a possible use-after-free
-    of isec.
-    
-    Shivnandan Kumar reported the list corruption and proposed
-    a patch to split the list and rcu elements out of the union
-    as separate fields of the inode_security_struct so that setting
-    the rcu element would not affect the list element.  However,
-    this would merely hide the issue and not truly fix the code.
-    
-    This patch instead moves up the deletion of the list entry
-    prior to dropping the sbsec->isec_lock initially.  Then,
-    if the inode is dropped subsequently, there will be no further
-    references to the isec.
-    
-    Reported-by: Shivnandan Kumar <shivnandan.k@samsung.com>
-    Signed-off-by: Stephen Smalley <sds@tycho.nsa.gov>
-    Cc: stable@vger.kernel.org
-    Signed-off-by: Paul Moore <pmoore@redhat.com>
-
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 29e64d4..2478976 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -481,6 +481,7 @@ next_inode:
- 				list_entry(sbsec->isec_head.next,
- 					   struct inode_security_struct, list);
- 		struct inode *inode = isec->inode;
-+		list_del_init(&isec->list);
- 		spin_unlock(&sbsec->isec_lock);
- 		inode = igrab(inode);
- 		if (inode) {
-@@ -489,7 +490,6 @@ next_inode:
- 			iput(inode);
- 		}
- 		spin_lock(&sbsec->isec_lock);
--		list_del_init(&isec->list);
- 		goto next_inode;
- 	}
- 	spin_unlock(&sbsec->isec_lock);
+Thanks,
+Rakib.
