@@ -1,505 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754857AbaJNH5o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 03:57:44 -0400
-Received: from mail-by2on0114.outbound.protection.outlook.com ([207.46.100.114]:24288
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753725AbaJNH5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 03:57:41 -0400
-X-Greylist: delayed 1136 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Oct 2014 03:57:41 EDT
-From: Chao Fu <b44548@freescale.com>
-To: <shijie.huang@intel.com>, <geert+renesas@glider.be>,
-        <ryazanov.s.a@gmail.com>, <marex@denx.de>,
-        <computersforpeace@gmail.com>
-CC: <zajec5@gmail.com>, <dwmw2@infradead.org>, <linux-mtd@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, Chao Fu <B44548@freescale.com>
-Subject: [PATCH] spi-nor:fsl-quadspi:Add LS1021 support for fsl_quadspi
-Date: Tue, 14 Oct 2014 14:36:21 +0800
-Message-ID: <1413268581-9106-1-git-send-email-b44548@freescale.com>
-X-Mailer: git-send-email 1.8.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(377424004)(479174003)(189002)(199003)(102836001)(15975445006)(120916001)(104016003)(26826002)(97736003)(31966008)(36756003)(77156001)(33646002)(4396001)(104166001)(50226001)(20776003)(62966002)(46102003)(44976005)(50986999)(47776003)(15202345003)(80022003)(19580395003)(19580405001)(21056001)(50466002)(64706001)(48376002)(6806004)(68736004)(69596002)(92726001)(86362001)(575784001)(93916002)(81156004)(76482002)(107046002)(106466001)(229853001)(87286001)(84676001)(92566001)(2201001)(85852003)(88136002)(87936001)(89996001)(95666004)(85306004)(99396003)(105606002);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB166;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:;
+	id S1754860AbaJNIBA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 04:01:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36442 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751160AbaJNIA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 04:00:58 -0400
+Date: Tue, 14 Oct 2014 16:00:50 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: stuck at mutex_lock_killable in interate_dir
+Message-ID: <20141014080050.GA9165@dhcp-16-198.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB166;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 03648EFF89
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=B44548@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chao Fu <B44548@freescale.com>
+Hi,
 
-FSL Quadspi module register bitwise is big-endian, but on ohter paltform
-is little endian.
-Add functions for Quadspi register read/write for bitwise:
-qspi_readl
-qpsi_writel
-Add devtype for LS1021:
-struct fsl_qspi_devtype_data ls1_data
+[sent an same email on the calprit machine, but I did not receive it,
+thus resend it, sorry for duplicate if you got the original one]
 
-Signed-off-by: Chao Fu <B44548@freescale.com>
----
-The patch is depend on pending patches:
-http://patchwork.ozlabs.org/patch/353244/
+I got a 'D' state mutt process, it's killable though.
+I think kernel stuck at below code:
 
- drivers/mtd/spi-nor/fsl-quadspi.c | 177 +++++++++++++++++++++++---------------
- 1 file changed, 108 insertions(+), 69 deletions(-)
+linux/fs/readdir.c:
+iterate_dir() -> mutex_lock_killable(&inode->i_mutex);
 
-diff --git a/drivers/mtd/spi-nor/fsl-quadspi.c b/drivers/mtd/spi-nor/fsl-quadspi.c
-index edef8f1..2dd29c3 100644
---- a/drivers/mtd/spi-nor/fsl-quadspi.c
-+++ b/drivers/mtd/spi-nor/fsl-quadspi.c
-@@ -192,9 +192,11 @@
- #define SEQID_EN4B		10
- #define SEQID_BRWR		11
- 
-+
- enum fsl_qspi_devtype {
- 	FSL_QUADSPI_VYBRID,
- 	FSL_QUADSPI_IMX6SX,
-+	FSL_QUADSPI_LS1,
- };
- 
- struct fsl_qspi_devtype_data {
-@@ -215,6 +217,12 @@ static struct fsl_qspi_devtype_data imx6sx_data = {
- 	.txfifo = 512
- };
- 
-+static struct fsl_qspi_devtype_data ls1_data = {
-+	.devtype = FSL_QUADSPI_LS1,
-+	.rxfifo = 128,
-+	.txfifo = 64
-+};
-+
- #define FSL_QSPI_MAX_CHIP	4
- struct fsl_qspi {
- 	struct mtd_info mtd[FSL_QSPI_MAX_CHIP];
-@@ -242,6 +250,23 @@ static inline int is_imx6sx_qspi(struct fsl_qspi *q)
- 	return q->devtype_data->devtype == FSL_QUADSPI_IMX6SX;
- }
- 
-+static inline int is_ls1_qspi(struct fsl_qspi *q)
-+{
-+	return q->devtype_data->devtype == FSL_QUADSPI_LS1;
-+}
-+
-+static inline void qspi_writel(struct fsl_qspi *q, u32 val, void __iomem *addr)
-+{
-+	is_ls1_qspi(q) ? __raw_writel(cpu_to_be32(val), addr) :
-+			__raw_writel(cpu_to_le32(val), addr);
-+}
-+
-+static inline u32 qspi_readl(struct fsl_qspi *q, void __iomem *addr)
-+{
-+	return is_ls1_qspi(q) ? cpu_to_be32((__force u32) __raw_readl(addr)) :
-+				cpu_to_le32((__force u32) __raw_readl(addr));
-+}
-+
- /*
-  * An IC bug makes us to re-arrange the 32-bit data.
-  * The following chips, such as IMX6SLX, have fixed this bug.
-@@ -253,14 +278,14 @@ static inline u32 fsl_qspi_endian_xchg(struct fsl_qspi *q, u32 a)
- 
- static inline void fsl_qspi_unlock_lut(struct fsl_qspi *q)
- {
--	writel(QUADSPI_LUTKEY_VALUE, q->iobase + QUADSPI_LUTKEY);
--	writel(QUADSPI_LCKER_UNLOCK, q->iobase + QUADSPI_LCKCR);
-+	qspi_writel(q, QUADSPI_LUTKEY_VALUE, q->iobase + QUADSPI_LUTKEY);
-+	qspi_writel(q, QUADSPI_LCKER_UNLOCK, q->iobase + QUADSPI_LCKCR);
- }
- 
- static inline void fsl_qspi_lock_lut(struct fsl_qspi *q)
- {
--	writel(QUADSPI_LUTKEY_VALUE, q->iobase + QUADSPI_LUTKEY);
--	writel(QUADSPI_LCKER_LOCK, q->iobase + QUADSPI_LCKCR);
-+	qspi_writel(q, QUADSPI_LUTKEY_VALUE, q->iobase + QUADSPI_LUTKEY);
-+	qspi_writel(q, QUADSPI_LCKER_LOCK, q->iobase + QUADSPI_LCKCR);
- }
- 
- static irqreturn_t fsl_qspi_irq_handler(int irq, void *dev_id)
-@@ -269,8 +294,8 @@ static irqreturn_t fsl_qspi_irq_handler(int irq, void *dev_id)
- 	u32 reg;
- 
- 	/* clear interrupt */
--	reg = readl(q->iobase + QUADSPI_FR);
--	writel(reg, q->iobase + QUADSPI_FR);
-+	reg = qspi_readl(q, q->iobase + QUADSPI_FR);
-+	qspi_writel(q, reg, q->iobase + QUADSPI_FR);
- 
- 	if (reg & QUADSPI_FR_TFF_MASK)
- 		complete(&q->c);
-@@ -281,7 +306,7 @@ static irqreturn_t fsl_qspi_irq_handler(int irq, void *dev_id)
- 
- static void fsl_qspi_init_lut(struct fsl_qspi *q)
- {
--	void *__iomem base = q->iobase;
-+	void __iomem *base = q->iobase;
- 	int rxfifo = q->devtype_data->rxfifo;
- 	struct spi_nor *nor = &q->nor[0];
- 	u8 addrlen = (nor->addr_width == 3) ? ADDR24BIT : ADDR32BIT;
-@@ -293,7 +318,7 @@ static void fsl_qspi_init_lut(struct fsl_qspi *q)
- 
- 	/* Clear all the LUT table */
- 	for (i = 0; i < QUADSPI_LUT_NUM; i++)
--		writel(0, base + QUADSPI_LUT_BASE + i * 4);
-+		qspi_writel(q, 0, base + QUADSPI_LUT_BASE + i * 4);
- 
- 	/* Quad Read and DDR Quad Read*/
- 	lut_base = SEQID_QUAD_READ * 4;
-@@ -302,10 +327,13 @@ static void fsl_qspi_init_lut(struct fsl_qspi *q)
- 	if (nor->flash_read == SPI_NOR_QUAD) {
- 		if (op == SPINOR_OP_READ_1_1_4 || op == SPINOR_OP_READ4_1_1_4) {
- 			/* read mode : 1-1-4 */
--			writel(LUT0(CMD, PAD1, op) | LUT1(ADDR, PAD1, addrlen),
-+			qspi_writel(q,
-+				LUT0(CMD, PAD1, op) | LUT1(ADDR, PAD1, addrlen),
- 				base + QUADSPI_LUT(lut_base));
- 
--			writel(LUT0(DUMMY, PAD1, dm) | LUT1(READ, PAD4, rxfifo),
-+			qspi_writel(q,
-+				LUT0(DUMMY, PAD1, dm)
-+				| LUT1(READ, PAD4, rxfifo),
- 				base + QUADSPI_LUT(lut_base + 1));
- 		} else {
- 			dev_err(nor->dev, "Unsupported opcode : 0x%.2x\n", op);
-@@ -314,28 +342,28 @@ static void fsl_qspi_init_lut(struct fsl_qspi *q)
- 		if (op == SPINOR_OP_READ_1_4_4_D ||
- 			 op == SPINOR_OP_READ4_1_4_4_D) {
- 			/* read mode : 1-4-4, such as Spansion s25fl128s. */
--			writel(LUT0(CMD, PAD1, op)
-+			qspi_writel(q, LUT0(CMD, PAD1, op)
- 				| LUT1(ADDR_DDR, PAD4, addrlen),
- 				base + QUADSPI_LUT(lut_base));
- 
--			writel(LUT0(MODE_DDR, PAD4, 0xff)
-+			qspi_writel(q, LUT0(MODE_DDR, PAD4, 0xff)
- 				| LUT1(DUMMY, PAD1, dm),
- 				base + QUADSPI_LUT(lut_base + 1));
- 
--			writel(LUT0(READ_DDR, PAD4, rxfifo)
-+			qspi_writel(q, LUT0(READ_DDR, PAD4, rxfifo)
- 				| LUT1(JMP_ON_CS, PAD1, 0),
- 				base + QUADSPI_LUT(lut_base + 2));
- 		} else if (op == SPINOR_OP_READ_1_1_4_D) {
- 			/* read mode : 1-1-4, such as Micron N25Q256A. */
--			writel(LUT0(CMD, PAD1, op)
-+			qspi_writel(q, LUT0(CMD, PAD1, op)
- 				| LUT1(ADDR_DDR, PAD1, addrlen),
- 				base + QUADSPI_LUT(lut_base));
- 
--			writel(LUT0(DUMMY, PAD1, dm)
-+			qspi_writel(q, LUT0(DUMMY, PAD1, dm)
- 				| LUT1(READ_DDR, PAD4, rxfifo),
- 				base + QUADSPI_LUT(lut_base + 1));
- 
--			writel(LUT0(JMP_ON_CS, PAD1, 0),
-+			qspi_writel(q, LUT0(JMP_ON_CS, PAD1, 0),
- 				base + QUADSPI_LUT(lut_base + 2));
- 		} else {
- 			dev_err(nor->dev, "Unsupported opcode : 0x%.2x\n", op);
-@@ -344,55 +372,62 @@ static void fsl_qspi_init_lut(struct fsl_qspi *q)
- 
- 	/* Write enable */
- 	lut_base = SEQID_WREN * 4;
--	writel(LUT0(CMD, PAD1, SPINOR_OP_WREN), base + QUADSPI_LUT(lut_base));
-+	qspi_writel(q, LUT0(CMD, PAD1, SPINOR_OP_WREN),
-+			base + QUADSPI_LUT(lut_base));
- 
- 	/* Page Program */
- 	lut_base = SEQID_PP * 4;
--	writel(LUT0(CMD, PAD1, nor->program_opcode) | LUT1(ADDR, PAD1, addrlen),
-+	qspi_writel(q, LUT0(CMD, PAD1,
-+			nor->program_opcode) | LUT1(ADDR, PAD1, addrlen),
- 			base + QUADSPI_LUT(lut_base));
--	writel(LUT0(WRITE, PAD1, 0), base + QUADSPI_LUT(lut_base + 1));
-+	qspi_writel(q, LUT0(WRITE, PAD1, 0), base + QUADSPI_LUT(lut_base + 1));
- 
- 	/* Read Status */
- 	lut_base = SEQID_RDSR * 4;
--	writel(LUT0(CMD, PAD1, SPINOR_OP_RDSR) | LUT1(READ, PAD1, 0x1),
-+	qspi_writel(q, LUT0(CMD, PAD1,
-+			SPINOR_OP_RDSR) | LUT1(READ, PAD1, 0x1),
- 			base + QUADSPI_LUT(lut_base));
- 
- 	/* Erase a sector */
- 	lut_base = SEQID_SE * 4;
--	writel(LUT0(CMD, PAD1, nor->erase_opcode) | LUT1(ADDR, PAD1, addrlen),
-+	qspi_writel(q, LUT0(CMD, PAD1,
-+			nor->erase_opcode) | LUT1(ADDR, PAD1, addrlen),
- 			base + QUADSPI_LUT(lut_base));
- 
- 	/* Erase the whole chip */
- 	lut_base = SEQID_CHIP_ERASE * 4;
--	writel(LUT0(CMD, PAD1, SPINOR_OP_CHIP_ERASE),
-+	qspi_writel(q, LUT0(CMD, PAD1, SPINOR_OP_CHIP_ERASE),
- 			base + QUADSPI_LUT(lut_base));
- 
- 	/* READ ID */
- 	lut_base = SEQID_RDID * 4;
--	writel(LUT0(CMD, PAD1, SPINOR_OP_RDID) | LUT1(READ, PAD1, 0x8),
-+	qspi_writel(q, LUT0(CMD, PAD1, SPINOR_OP_RDID) | LUT1(READ, PAD1, 0x8),
- 			base + QUADSPI_LUT(lut_base));
- 
- 	/* Write Register */
- 	lut_base = SEQID_WRSR * 4;
--	writel(LUT0(CMD, PAD1, SPINOR_OP_WRSR) | LUT1(WRITE, PAD1, 0x2),
-+	qspi_writel(q, LUT0(CMD, PAD1, SPINOR_OP_WRSR) | LUT1(WRITE, PAD1, 0x2),
- 			base + QUADSPI_LUT(lut_base));
- 
- 	/* Read Configuration Register */
- 	lut_base = SEQID_RDCR * 4;
--	writel(LUT0(CMD, PAD1, SPINOR_OP_RDCR) | LUT1(READ, PAD1, 0x1),
-+	qspi_writel(q, LUT0(CMD, PAD1, SPINOR_OP_RDCR) | LUT1(READ, PAD1, 0x1),
- 			base + QUADSPI_LUT(lut_base));
- 
- 	/* Write disable */
- 	lut_base = SEQID_WRDI * 4;
--	writel(LUT0(CMD, PAD1, SPINOR_OP_WRDI), base + QUADSPI_LUT(lut_base));
-+	qspi_writel(q, LUT0(CMD, PAD1, SPINOR_OP_WRDI),
-+			base + QUADSPI_LUT(lut_base));
- 
- 	/* Enter 4 Byte Mode (Micron) */
- 	lut_base = SEQID_EN4B * 4;
--	writel(LUT0(CMD, PAD1, SPINOR_OP_EN4B), base + QUADSPI_LUT(lut_base));
-+	qspi_writel(q, LUT0(CMD, PAD1, SPINOR_OP_EN4B),
-+			base + QUADSPI_LUT(lut_base));
- 
- 	/* Enter 4 Byte Mode (Spansion) */
- 	lut_base = SEQID_BRWR * 4;
--	writel(LUT0(CMD, PAD1, SPINOR_OP_BRWR), base + QUADSPI_LUT(lut_base));
-+	qspi_writel(q, LUT0(CMD, PAD1, SPINOR_OP_BRWR),
-+			base + QUADSPI_LUT(lut_base));
- 
- 	fsl_qspi_lock_lut(q);
- }
-@@ -440,7 +475,7 @@ static int fsl_qspi_get_seqid(struct fsl_qspi *q, u8 cmd)
- static int
- fsl_qspi_runcmd(struct fsl_qspi *q, u8 cmd, unsigned int addr, int len)
- {
--	void *__iomem base = q->iobase;
-+	void __iomem *base = q->iobase;
- 	int seqid;
- 	u32 reg, reg2;
- 	int err;
-@@ -450,15 +485,16 @@ fsl_qspi_runcmd(struct fsl_qspi *q, u8 cmd, unsigned int addr, int len)
- 			q->chip_base_addr, addr, len, cmd);
- 
- 	/* save the reg */
--	reg = readl(base + QUADSPI_MCR);
-+	reg = qspi_readl(q, base + QUADSPI_MCR);
- 
--	writel(q->memmap_phy + q->chip_base_addr + addr, base + QUADSPI_SFAR);
--	writel(QUADSPI_RBCT_WMRK_MASK | QUADSPI_RBCT_RXBRD_USEIPS,
-+	qspi_writel(q, q->memmap_phy + q->chip_base_addr + addr,
-+			base + QUADSPI_SFAR);
-+	qspi_writel(q, QUADSPI_RBCT_WMRK_MASK | QUADSPI_RBCT_RXBRD_USEIPS,
- 			base + QUADSPI_RBCT);
--	writel(reg | QUADSPI_MCR_CLR_RXF_MASK, base + QUADSPI_MCR);
-+	qspi_writel(q, reg | QUADSPI_MCR_CLR_RXF_MASK, base + QUADSPI_MCR);
- 
- 	do {
--		reg2 = readl(base + QUADSPI_SR);
-+		reg2 = qspi_readl(q, base + QUADSPI_SR);
- 		if (reg2 & (QUADSPI_SR_IP_ACC_MASK | QUADSPI_SR_AHB_ACC_MASK)) {
- 			udelay(1);
- 			dev_dbg(q->dev, "The controller is busy, 0x%x\n", reg2);
-@@ -469,22 +505,23 @@ fsl_qspi_runcmd(struct fsl_qspi *q, u8 cmd, unsigned int addr, int len)
- 
- 	/* trigger the LUT now */
- 	seqid = fsl_qspi_get_seqid(q, cmd);
--	writel((seqid << QUADSPI_IPCR_SEQID_SHIFT) | len, base + QUADSPI_IPCR);
-+	qspi_writel(q, (seqid << QUADSPI_IPCR_SEQID_SHIFT) | len,
-+			base + QUADSPI_IPCR);
- 
- 	/* Wait for the interrupt. */
- 	err = wait_for_completion_timeout(&q->c, msecs_to_jiffies(1000));
- 	if (!err) {
- 		dev_err(q->dev,
- 			"cmd 0x%.2x timeout, addr@%.8x, FR:0x%.8x, SR:0x%.8x\n",
--			cmd, addr, readl(base + QUADSPI_FR),
--			readl(base + QUADSPI_SR));
-+			cmd, addr, qspi_readl(q, base + QUADSPI_FR),
-+			qspi_readl(q, base + QUADSPI_SR));
- 		err = -ETIMEDOUT;
- 	} else {
- 		err = 0;
- 	}
- 
- 	/* restore the MCR */
--	writel(reg, base + QUADSPI_MCR);
-+	qspi_writel(q, reg, base + QUADSPI_MCR);
- 
- 	return err;
- }
-@@ -496,7 +533,7 @@ static void fsl_qspi_read_data(struct fsl_qspi *q, int len, u8 *rxbuf)
- 	int i = 0;
- 
- 	while (len > 0) {
--		tmp = readl(q->iobase + QUADSPI_RBDR + i * 4);
-+		tmp = qspi_readl(q, q->iobase + QUADSPI_RBDR + i * 4);
- 		tmp = fsl_qspi_endian_xchg(q, tmp);
- 		dev_dbg(q->dev, "chip addr:0x%.8x, rcv:0x%.8x\n",
- 				q->chip_base_addr, tmp);
-@@ -524,9 +561,9 @@ static inline void fsl_qspi_invalid(struct fsl_qspi *q)
- {
- 	u32 reg;
- 
--	reg = readl(q->iobase + QUADSPI_MCR);
-+	reg = qspi_readl(q, q->iobase + QUADSPI_MCR);
- 	reg |= QUADSPI_MCR_SWRSTHD_MASK | QUADSPI_MCR_SWRSTSD_MASK;
--	writel(reg, q->iobase + QUADSPI_MCR);
-+	qspi_writel(q, reg, q->iobase + QUADSPI_MCR);
- 
- 	/*
- 	 * The minimum delay : 1 AHB + 2 SFCK clocks.
-@@ -535,7 +572,7 @@ static inline void fsl_qspi_invalid(struct fsl_qspi *q)
- 	udelay(1);
- 
- 	reg &= ~(QUADSPI_MCR_SWRSTHD_MASK | QUADSPI_MCR_SWRSTSD_MASK);
--	writel(reg, q->iobase + QUADSPI_MCR);
-+	qspi_writel(q, reg, q->iobase + QUADSPI_MCR);
- }
- 
- static int fsl_qspi_nor_write(struct fsl_qspi *q, struct spi_nor *nor,
-@@ -549,13 +586,13 @@ static int fsl_qspi_nor_write(struct fsl_qspi *q, struct spi_nor *nor,
- 		q->chip_base_addr, to, count);
- 
- 	/* clear the TX FIFO. */
--	tmp = readl(q->iobase + QUADSPI_MCR);
--	writel(tmp | QUADSPI_MCR_CLR_RXF_MASK, q->iobase + QUADSPI_MCR);
-+	tmp = qspi_readl(q, q->iobase + QUADSPI_MCR);
-+	qspi_writel(q, tmp | QUADSPI_MCR_CLR_RXF_MASK, q->iobase + QUADSPI_MCR);
- 
- 	/* fill the TX data to the FIFO */
- 	for (j = 0, i = ((count + 3) / 4); j < i; j++) {
- 		tmp = fsl_qspi_endian_xchg(q, *txbuf);
--		writel(tmp, q->iobase + QUADSPI_TBDR);
-+		qspi_writel(q, tmp, q->iobase + QUADSPI_TBDR);
- 		txbuf++;
- 	}
- 
-@@ -573,10 +610,10 @@ static void fsl_qspi_set_map_addr(struct fsl_qspi *q)
- 	int nor_size = q->nor_size;
- 	void __iomem *base = q->iobase;
- 
--	writel(nor_size + q->memmap_phy, base + QUADSPI_SFA1AD);
--	writel(nor_size * 2 + q->memmap_phy, base + QUADSPI_SFA2AD);
--	writel(nor_size * 3 + q->memmap_phy, base + QUADSPI_SFB1AD);
--	writel(nor_size * 4 + q->memmap_phy, base + QUADSPI_SFB2AD);
-+	qspi_writel(q, nor_size + q->memmap_phy, base + QUADSPI_SFA1AD);
-+	qspi_writel(q, nor_size * 2 + q->memmap_phy, base + QUADSPI_SFA2AD);
-+	qspi_writel(q, nor_size * 3 + q->memmap_phy, base + QUADSPI_SFB1AD);
-+	qspi_writel(q, nor_size * 4 + q->memmap_phy, base + QUADSPI_SFB2AD);
- }
- 
- /*
-@@ -600,40 +637,41 @@ static void fsl_qspi_init_abh_read(struct fsl_qspi *q)
- 	int seqid;
- 
- 	/* AHB configuration for access buffer 0/1/2 .*/
--	writel(QUADSPI_BUFXCR_INVALID_MSTRID, base + QUADSPI_BUF0CR);
--	writel(QUADSPI_BUFXCR_INVALID_MSTRID, base + QUADSPI_BUF1CR);
--	writel(QUADSPI_BUFXCR_INVALID_MSTRID, base + QUADSPI_BUF2CR);
--	writel(QUADSPI_BUF3CR_ALLMST, base + QUADSPI_BUF3CR);
-+	qspi_writel(q, QUADSPI_BUFXCR_INVALID_MSTRID, base + QUADSPI_BUF0CR);
-+	qspi_writel(q, QUADSPI_BUFXCR_INVALID_MSTRID, base + QUADSPI_BUF1CR);
-+	qspi_writel(q, QUADSPI_BUFXCR_INVALID_MSTRID, base + QUADSPI_BUF2CR);
-+	qspi_writel(q, QUADSPI_BUF3CR_ALLMST, base + QUADSPI_BUF3CR);
- 
- 	/* We only use the buffer3 */
--	writel(0, base + QUADSPI_BUF0IND);
--	writel(0, base + QUADSPI_BUF1IND);
--	writel(0, base + QUADSPI_BUF2IND);
-+	qspi_writel(q, 0, base + QUADSPI_BUF0IND);
-+	qspi_writel(q, 0, base + QUADSPI_BUF1IND);
-+	qspi_writel(q, 0, base + QUADSPI_BUF2IND);
- 
- 	/* Set the default lut sequence for AHB Read. */
- 	seqid = fsl_qspi_get_seqid(q, nor->read_opcode);
--	writel(seqid << QUADSPI_BFGENCR_SEQID_SHIFT,
-+	qspi_writel(q, seqid << QUADSPI_BFGENCR_SEQID_SHIFT,
- 		q->iobase + QUADSPI_BFGENCR);
- 
- 	/* enable the DDR quad read */
- 	if (nor->flash_read == SPI_NOR_DDR_QUAD) {
--		reg = readl(q->iobase + QUADSPI_MCR);
-+		reg = qspi_readl(q, q->iobase + QUADSPI_MCR);
- 
- 		/* Firstly, disable the module */
--		writel(reg | QUADSPI_MCR_MDIS_MASK, q->iobase + QUADSPI_MCR);
-+		qspi_writel(q, reg | QUADSPI_MCR_MDIS_MASK, q->iobase
-+								+ QUADSPI_MCR);
- 
- 		/* Set the Sampling Register for DDR */
--		reg2 = readl(q->iobase + QUADSPI_SMPR);
-+		reg2 = qspi_readl(q, q->iobase + QUADSPI_SMPR);
- 		reg2 &= ~QUADSPI_SMPR_DDRSMP_MASK;
- 		reg2 |= (2 << QUADSPI_SMPR_DDRSMP_SHIFT);
--		writel(reg2, q->iobase + QUADSPI_SMPR);
-+		qspi_writel(q, reg2, q->iobase + QUADSPI_SMPR);
- 
- 		/* Enable the module again (enable the DDR too) */
- 		reg |= QUADSPI_MCR_DDR_EN_MASK;
- 		if (is_imx6sx_qspi(q))
- 			reg |= MX6SX_QUADSPI_MCR_TX_DDR_DELAY_EN_MASK;
- 
--		writel(reg, q->iobase + QUADSPI_MCR);
-+		qspi_writel(q, reg, q->iobase + QUADSPI_MCR);
- 	}
- }
- 
-@@ -653,21 +691,21 @@ static int fsl_qspi_nor_setup(struct fsl_qspi *q)
- 	fsl_qspi_init_lut(q);
- 
- 	/* Disable the module */
--	writel(QUADSPI_MCR_MDIS_MASK | QUADSPI_MCR_RESERVED_MASK,
-+	qspi_writel(q, QUADSPI_MCR_MDIS_MASK | QUADSPI_MCR_RESERVED_MASK,
- 			base + QUADSPI_MCR);
- 
--	reg = readl(base + QUADSPI_SMPR);
--	writel(reg & ~(QUADSPI_SMPR_FSDLY_MASK
-+	reg = qspi_readl(q, base + QUADSPI_SMPR);
-+	qspi_writel(q, reg & ~(QUADSPI_SMPR_FSDLY_MASK
- 			| QUADSPI_SMPR_FSPHS_MASK
- 			| QUADSPI_SMPR_HSENA_MASK
- 			| QUADSPI_SMPR_DDRSMP_MASK), base + QUADSPI_SMPR);
- 
- 	/* Enable the module */
--	writel(QUADSPI_MCR_RESERVED_MASK | QUADSPI_MCR_END_CFG_MASK,
-+	qspi_writel(q, QUADSPI_MCR_RESERVED_MASK | QUADSPI_MCR_END_CFG_MASK,
- 			base + QUADSPI_MCR);
- 
- 	/* enable the interrupt */
--	writel(QUADSPI_RSER_TFIE, q->iobase + QUADSPI_RSER);
-+	qspi_writel(q, QUADSPI_RSER_TFIE, q->iobase + QUADSPI_RSER);
- 
- 	return 0;
- }
-@@ -696,6 +734,7 @@ static int fsl_qspi_nor_setup_last(struct fsl_qspi *q)
- static struct of_device_id fsl_qspi_dt_ids[] = {
- 	{ .compatible = "fsl,vf610-qspi", .data = (void *)&vybrid_data, },
- 	{ .compatible = "fsl,imx6sx-qspi", .data = (void *)&imx6sx_data, },
-+	{ .compatible = "fsl,ls1-qspi", .data = (void *)&ls1_data, },
- 	{ /* sentinel */ }
- };
- MODULE_DEVICE_TABLE(of, fsl_qspi_dt_ids);
-@@ -1034,8 +1073,8 @@ static int fsl_qspi_remove(struct platform_device *pdev)
- 		mtd_device_unregister(&q->mtd[i]);
- 
- 	/* disable the hardware */
--	writel(QUADSPI_MCR_MDIS_MASK, q->iobase + QUADSPI_MCR);
--	writel(0x0, q->iobase + QUADSPI_RSER);
-+	qspi_writel(q, QUADSPI_MCR_MDIS_MASK, q->iobase + QUADSPI_MCR);
-+	qspi_writel(q, 0x0, q->iobase + QUADSPI_RSER);
- 
- 	clk_unprepare(q->clk);
- 	clk_unprepare(q->clk_en);
--- 
-1.8.4
+Any idea about this? known issue?
 
+BTW, I can keep the laptop on for testing about 1 day. I'm not sure I can
+reproduce it after rebooting.
+
+[20522.102611] ------------[ cut here ]------------
+[20522.102636] WARNING: CPU: 3 PID: 4201 at kernel/watchdog.c:267 watchdog_overflow_callback+0xf1/0x109()
+[20522.102641] Watchdog detected hard LOCKUP on cpu 3
+[20522.102645] Modules linked in: macvtap macvlan kvm_intel ext3 jbd pl2303 usbserial iwldvm i915 snd_hda_codec_hdmi mac80211 e1000e snd_hda_codec_conexant snd_hda_codec_generic iwlwifi btusb bluetooth sdhci_pci snd_hda_intel sdhci mmc_core cfg80211 i2c_algo_bit snd_hda_controller ptp snd_hda_codec snd_hwdep snd_pcm drm_kms_helper drm efivars snd_timer lpc_ich pps_core wmi thinkpad_acpi rfkill video loop
+[20522.102744] CPU: 3 PID: 4201 Comm: mutt Not tainted 3.17.0-rc6+ #24
+[20522.102750] Hardware name: LENOVO 4236NUC/4236NUC, BIOS 83ET76WW (1.46 ) 07/05/2013
+[20522.102755]  0000000000000000 ffff88021e2c6c28 ffffffff8149af7b ffff88021e2c6c70
+[20522.102767]  ffff88021e2c6c60 ffffffff810638c9 ffffffff810d8719 0000000000000003
+[20522.102777]  0000000000000000 ffff88021e2c6d98 ffff88021e2c6ef8 ffff88021e2c6cc0
+[20522.102788] Call Trace:
+[20522.102793]  <NMI>  [<ffffffff8149af7b>] dump_stack+0x4e/0x7a
+[20522.102817]  [<ffffffff810638c9>] warn_slowpath_common+0x75/0x8e
+[20522.102826]  [<ffffffff810d8719>] ? watchdog_overflow_callback+0xf1/0x109
+[20522.102836]  [<ffffffff81063929>] warn_slowpath_fmt+0x47/0x49
+[20522.102847]  [<ffffffff810e1ed6>] ? perf_event_task_disable+0x7f/0x7f
+[20522.102856]  [<ffffffff810d8719>] watchdog_overflow_callback+0xf1/0x109
+[20522.102865]  [<ffffffff810e43ee>] __perf_event_overflow+0x131/0x22a
+[20522.102873]  [<ffffffff810e1ed6>] ? perf_event_task_disable+0x7f/0x7f
+[20522.102885]  [<ffffffff810399ef>] ? x86_perf_event_set_period+0x101/0x111
+[20522.102894]  [<ffffffff810e4959>] perf_event_overflow+0x14/0x16
+[20522.102903]  [<ffffffff8103e576>] intel_pmu_handle_irq+0x33f/0x3c8
+[20522.102914]  [<ffffffff81038cb0>] perf_event_nmi_handler+0x25/0x3e
+[20522.102925]  [<ffffffff8102c264>] nmi_handle.isra.2+0x7a/0xdb
+[20522.102933]  [<ffffffff8102c1ea>] ? local_touch_nmi+0x1f/0x1f
+[20522.102946]  [<ffffffff81090920>] ? validate_chain.isra.27+0x4/0x9ae
+[20522.102954]  [<ffffffff8102c39d>] do_nmi+0xd8/0x34c
+[20522.102964]  [<ffffffff814a4d11>] end_repeat_nmi+0x1e/0x2e
+[20522.102975]  [<ffffffff8123dab1>] ? __this_cpu_preempt_check+0x13/0x16
+[20522.102985]  [<ffffffff81090920>] ? validate_chain.isra.27+0x4/0x9ae
+[20522.102995]  [<ffffffff81090920>] ? validate_chain.isra.27+0x4/0x9ae
+[20522.103004]  [<ffffffff81090920>] ? validate_chain.isra.27+0x4/0x9ae
+[20522.103008]  <<EOE>>  <IRQ>  [<ffffffff810937e0>] __lock_acquire+0x6ed/0xb24
+[20522.103031]  [<ffffffff8123022e>] ? sha_transform+0x246/0x1068
+[20522.103041]  [<ffffffff810940ee>] lock_acquire+0xa4/0xc4
+[20522.103051]  [<ffffffff810ad830>] ? lock_hrtimer_base.isra.26+0x20/0x43
+[20522.103062]  [<ffffffff814a2206>] _raw_spin_lock_irqsave+0x4b/0x5c
+[20522.103070]  [<ffffffff810ad830>] ? lock_hrtimer_base.isra.26+0x20/0x43
+[20522.103079]  [<ffffffff810ad830>] lock_hrtimer_base.isra.26+0x20/0x43
+[20522.103087]  [<ffffffff810ad870>] hrtimer_try_to_cancel+0x1d/0x8d
+[20522.103095]  [<ffffffff810ad8f0>] hrtimer_cancel+0x10/0x1b
+[20522.103106]  [<ffffffff810b999e>] tick_nohz_restart+0x12/0x7d
+[20522.103116]  [<ffffffff810ba394>] __tick_nohz_full_check+0xa1/0xa6
+[20522.103126]  [<ffffffff810ba3a2>] nohz_full_kick_work_func+0x9/0xb
+[20522.103135]  [<ffffffff810dc4fc>] irq_work_run_list+0x4a/0x68
+[20522.103145]  [<ffffffff810b9e9c>] ? tick_sched_handle+0x47/0x47
+[20522.103153]  [<ffffffff810dc544>] irq_work_run+0x2a/0x4a
+[20522.103162]  [<ffffffff810ad433>] update_process_times+0x4c/0x60
+[20522.103171]  [<ffffffff810b9e97>] tick_sched_handle+0x42/0x47
+[20522.103180]  [<ffffffff810b9ed1>] tick_sched_timer+0x35/0x53
+[20522.103188]  [<ffffffff810ad992>] __run_hrtimer.isra.28+0x57/0xb0
+[20522.103197]  [<ffffffff810adee7>] hrtimer_interrupt+0xeb/0x1d2
+[20522.103211]  [<ffffffff811ac980>] ? ext4_follow_link+0x1c/0x1c
+[20522.103220]  [<ffffffff8104dc2a>] local_apic_timer_interrupt+0x4e/0x51
+[20522.103228]  [<ffffffff8104e041>] smp_apic_timer_interrupt+0x3a/0x4b
+[20522.103236]  [<ffffffff814a4002>] apic_timer_interrupt+0x72/0x80
+[20522.103240]  <EOI>  [<ffffffff811ac9af>] ? str2hashbuf_signed+0x2f/0x80
+[20522.103257]  [<ffffffff811acba2>] ext4fs_dirhash+0x122/0x218
+[20522.103266]  [<ffffffff81121548>] ? __kmalloc+0x82/0xfe
+[20522.103276]  [<ffffffff811a0e7d>] htree_dirblock_to_tree+0xd2/0x135
+[20522.103285]  [<ffffffff811a1b13>] ext4_htree_fill_tree+0x173/0x21d
+[20522.103294]  [<ffffffff8123da9c>] ? debug_smp_processor_id+0x17/0x19
+[20522.103306]  [<ffffffff8119471c>] ext4_readdir+0x27e/0x73f
+[20522.103316]  [<ffffffff8149f1ab>] ? mutex_lock_killable_nested+0x33d/0x59a
+[20522.103325]  [<ffffffff81137910>] ? iterate_dir+0x38/0xff
+[20522.103332]  [<ffffffff81137910>] ? iterate_dir+0x38/0xff
+[20522.103341]  [<ffffffff81137948>] iterate_dir+0x70/0xff
+[20522.103349]  [<ffffffff81137d91>] SyS_getdents+0x7a/0xda
+[20522.103356]  [<ffffffff81137aa6>] ? fillonedir+0xcf/0xcf
+[20522.103364]  [<ffffffff814a30d8>] tracesys+0xe1/0xe6
+[20522.103371] ---[ end trace 949cb4fa0993f833 ]---
+[20553.806845] INFO: rcu_preempt detected stalls on CPUs/tasks: { 3} (detected by 0, t=18002 jiffies, g=181109, c=181108, q=0)
+[20553.806872] Task dump for CPU 3:
+[20553.806879] mutt            R  running task    12768  4201   1825 0x00080008
+[20553.806897]  ffff8802133ae000 0000000000000006 0000000000000007 ffffea000849f540
+[20553.806909]  0000000000000046 ffff8802133ae000 ffffffff81498748 ffff8802150019c0
+[20553.806921]  ffff880206707ba8 ffffffff8123dab1 ffff880206707bc8 ffffffff81091ce9
+[20553.806933] Call Trace:
+[20553.806953]  [<ffffffff81498748>] ? __slab_alloc.isra.63.constprop.70+0x3c7/0x3e5
+[20553.806964]  [<ffffffff8123dab1>] ? __this_cpu_preempt_check+0x13/0x16
+[20553.806977]  [<ffffffff81091ce9>] ? trace_hardirqs_on_caller+0x1b7/0x1d7
+[20553.806986]  [<ffffffff81091d16>] ? trace_hardirqs_on+0xd/0xf
+[20553.806999]  [<ffffffff81194c3e>] ? ext4_htree_store_dirent+0x2d/0xeb
+[20553.807011]  [<ffffffff81150084>] ? __getblk+0x1f/0x2a6
+[20553.807024]  [<ffffffff811ac9af>] ? str2hashbuf_signed+0x2f/0x80
+[20553.807032]  [<ffffffff811acba2>] ? ext4fs_dirhash+0x122/0x218
+[20553.807041]  [<ffffffff81121548>] ? __kmalloc+0x82/0xfe
+[20553.807051]  [<ffffffff811a0e7d>] ? htree_dirblock_to_tree+0xd2/0x135
+[20553.807061]  [<ffffffff811a1b13>] ? ext4_htree_fill_tree+0x173/0x21d
+[20553.807069]  [<ffffffff8123da9c>] ? debug_smp_processor_id+0x17/0x19
+[20553.807080]  [<ffffffff8119471c>] ? ext4_readdir+0x27e/0x73f
+[20553.807092]  [<ffffffff8149f1ab>] ? mutex_lock_killable_nested+0x33d/0x59a
+[20553.807101]  [<ffffffff81137910>] ? iterate_dir+0x38/0xff
+[20553.807108]  [<ffffffff81137910>] ? iterate_dir+0x38/0xff
+[20553.807116]  [<ffffffff81137948>] ? iterate_dir+0x70/0xff
+[20553.807125]  [<ffffffff81137d91>] ? SyS_getdents+0x7a/0xda
+[20553.807132]  [<ffffffff81137aa6>] ? fillonedir+0xcf/0xcf
+[20553.807141]  [<ffffffff814a30d8>] ? tracesys+0xe1/0xe6
+
+Thanks
+Dave
