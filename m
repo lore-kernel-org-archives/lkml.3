@@ -1,90 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755588AbaJNT6o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 15:58:44 -0400
-Received: from mail-yk0-f175.google.com ([209.85.160.175]:47987 "EHLO
-	mail-yk0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755499AbaJNT6m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 15:58:42 -0400
+	id S1755619AbaJNUAj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 16:00:39 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:38646 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755339AbaJNUAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 16:00:37 -0400
+Date: Tue, 14 Oct 2014 21:59:58 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andrew Lunn <andrew@lunn.ch>
+Subject: Re: [PATCH] dsa: mv88e6171: Fix tag_protocol check
+Message-ID: <20141014195958.GB5331@lunn.ch>
+References: <1413310864-16830-1-git-send-email-linux@roeck-us.net>
 MIME-Version: 1.0
-In-Reply-To: <CAD=FV=W57417Jdp8d-=yZgjUdTJyMKnzSvwg6YuXz3eTvTZZuQ@mail.gmail.com>
-References: <1412618020-22278-1-git-send-email-sonnyrao@chromium.org>
- <CAGOxZ53bviLbuA27=1QjNUgxA_WMMP-6siV=DajuN8iSqsasMg@mail.gmail.com>
- <CAO3aYcqi0g=eJta33s5oM-tAAmAhe86VvHd43p5RJ7qMPZzfrg@mail.gmail.com>
- <CAGOxZ520EXdS9FoCVW7GPvheNSZu=xqc2makJY5D0c3zjVBkDw@mail.gmail.com>
- <CAD=FV=VQe-9c+QOYEmsuHwY+9qF1tkTgiakdSUWhUoWw6zuHSA@mail.gmail.com> <CAD=FV=W57417Jdp8d-=yZgjUdTJyMKnzSvwg6YuXz3eTvTZZuQ@mail.gmail.com>
-From: Alim Akhtar <alim.akhtar@gmail.com>
-Date: Wed, 15 Oct 2014 01:28:01 +0530
-Message-ID: <CAGOxZ52an-GUiHadN9Xp29L_WvPH4pS2LSz7BbsQrm7qLXjzQw@mail.gmail.com>
-Subject: Re: [PATCH] mmc: dw_mmc: Reset DMA before enabling IDMAC
-To: Doug Anderson <dianders@chromium.org>
-Cc: =?UTF-8?B?RWRkaWUgQ2FpKOiUoeaeqyk=?= <eddie.cai@rock-chips.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Heiko Stuebner <heiko@sntech.de>, Sonny Rao <sonnyrao@chromium.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Addy Ke <addy.ke@rock-chips.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413310864-16830-1-git-send-email-linux@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Doug,
+On Tue, Oct 14, 2014 at 11:21:04AM -0700, Guenter Roeck wrote:
+> tag_protocol is now an enum, so drivers have to check against it.
+> 
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 
-On Tue, Oct 14, 2014 at 10:21 PM, Doug Anderson <dianders@chromium.org> wrote:
-> Hi,
->
-> On Thu, Oct 9, 2014 at 5:36 PM, Doug Anderson <dianders@chromium.org> wrote:
->> Alim,
->>
->> On Thu, Oct 9, 2014 at 3:19 PM, Alim Akhtar <alim.akhtar@gmail.com> wrote:
->>> Thats fine, I think every vendor (most of them) has a custom
->>> implementation of dw_mmc, but they do have VERID register to check the
->>> dw_mmc version.
->>> The reason why I asked is, I have seen inconsistency in card
->>> enumeration on few controller version, and this patch alone does not
->>> help, and adding a call to dw_mci_idmac_reset() after DMA reset is
->>> needed. And this is what is recommended in the synopsys's data book
->>> also.
->>> Do you see any issue/side effect after adding dw_mci_idmac_reset()?
->>
->> A quick test shows no problem with adding this to Sonny's patch:
->>
->> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
->> index 66dc8fe..588b5b8 100644
->> --- a/drivers/mmc/host/dw_mmc.c
->> +++ b/drivers/mmc/host/dw_mmc.c
->> @@ -481,6 +481,7 @@ static void dw_mci_idmac_start_dma(struct dw_mci
->> *host, unsigned int sg_len)
->>
->>         /* Make sure to reset DMA in case we did PIO before this */
->>         dw_mci_ctrl_reset(host, SDMMC_CTRL_DMA_RESET);
->> +       dw_mci_idmac_reset(host);
->>
->>         /* Select IDMAC interface */
->>         temp = mci_readl(host, CTRL);
->>
->> I'll start reboot tests now to see how it behaves...  I think Sonny is
->> out of the office for a few days so we might need to wait for a spin,
->> but I'll run with that change in the meantime and see how it behaves
->> for me.
->>
->> Thanks!
->
-> Just FYI that I've been running with Alim's proposed change for
-> several days and it seems solid.  I think Sonny may be able to spin
-> his patch this week.  :)
->
-Sounds great. Thanks for testing.
-> -Doug
+Acked-by: Andrew Lunn <andrew@lunn.ch>
 
+Thanks for fixing this.
 
+       Andrew
 
--- 
-Regards,
-Alim
+> ---
+>  drivers/net/dsa/mv88e6171.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/net/dsa/mv88e6171.c b/drivers/net/dsa/mv88e6171.c
+> index 6365e30..1020a7a 100644
+> --- a/drivers/net/dsa/mv88e6171.c
+> +++ b/drivers/net/dsa/mv88e6171.c
+> @@ -206,7 +206,7 @@ static int mv88e6171_setup_port(struct dsa_switch *ds, int p)
+>  	 */
+>  	val = 0x0433;
+>  	if (dsa_is_cpu_port(ds, p)) {
+> -		if (ds->dst->tag_protocol == htons(ETH_P_EDSA))
+> +		if (ds->dst->tag_protocol == DSA_TAG_PROTO_EDSA)
+>  			val |= 0x3300;
+>  		else
+>  			val |= 0x0100;
+> -- 
+> 1.9.1
+> 
