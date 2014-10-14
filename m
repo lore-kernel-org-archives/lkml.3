@@ -1,116 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755874AbaJNWpz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 18:45:55 -0400
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:38670
-	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753059AbaJNWpx (ORCPT
+	id S1755735AbaJNWsA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 18:48:00 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:52526 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751303AbaJNWr7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 18:45:53 -0400
-Date: Wed, 15 Oct 2014 00:45:50 +0200
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael j Theall <mtheall@us.ibm.com>,
-        fuse-devel@lists.sourceforge.net, Miklos Szeredi <miklos@szeredi.hu>,
-        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
-        Seth Forshee <seth.forshee@canonical.com>
-Subject: Re: [PATCH] fs: Treat non-ancestor-namespace mounts as MNT_NOSUID
-Message-ID: <20141014224550.GA12714@mail.hallyn.com>
-References: <d4c63d6c350d26ffc985d061d213bd778055ca5b.1413322603.git.luto@amacapital.net>
- <87tx36l3gp.fsf@x220.int.ebiederm.org>
- <20141014221219.GA12338@mail.hallyn.com>
- <20141014221447.GB12338@mail.hallyn.com>
- <CALCETrXLHcc++qkjV6uKz6kTG9aSKkZFr8qBAHnWLxfGQYe9VQ@mail.gmail.com>
+	Tue, 14 Oct 2014 18:47:59 -0400
+X-Auth-Info: BcZun30QEKeooSqEAgw8GpsRCNoTDH5jvBVyMC3u8SU=
+From: Marek Vasut <marex@denx.de>
+To: "Bean Huo =?utf-8?q?=E9=9C=8D=E6=96=8C=E6=96=8C?= (beanhuo)" 
+	<beanhuo@micron.com>
+Subject: Re: [PATCH 1/1 v2] driver:mtd:spi-nor:fix spi_nor_scan overwrite platform ID point
+Date: Wed, 15 Oct 2014 00:45:53 +0200
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
+Cc: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        "shijie8@gmail.com" <shijie8@gmail.com>,
+        "geert+renesas@glider.be" <geert+renesas@glider.be>,
+        "grmoore@altera.com" <grmoore@altera.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <A765B125120D1346A63912DDE6D8B6315E62CB@NTXXIAMBX02.xacn.micron.com>
+In-Reply-To: <A765B125120D1346A63912DDE6D8B6315E62CB@NTXXIAMBX02.xacn.micron.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrXLHcc++qkjV6uKz6kTG9aSKkZFr8qBAHnWLxfGQYe9VQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201410150045.53976.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Andy Lutomirski (luto@amacapital.net):
-> On Tue, Oct 14, 2014 at 3:14 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
-> > Quoting Serge E. Hallyn (serge@hallyn.com):
-> >> Quoting Eric W. Biederman (ebiederm@xmission.com):
-> >> > Andy Lutomirski <luto@amacapital.net> writes:
-> >> >
-> >> > > If a process gets access to a mount from a descendent or unrelated
-> >> > > user namespace, that process should not be able to take advantage of
-> >> > > setuid files or selinux entrypoints from that filesystem.
-> >> > >
-> >> > > This will make it safer to allow more complex filesystems to be
-> >> > > mounted in non-root user namespaces.
-> >> > >
-> >> > > This does not remove the need for MNT_LOCK_NOSUID.  The setuid,
-> >> > > setgid, and file capability bits can no longer be abused if code in
-> >> > > a user namespace were to clear nosuid on an untrusted filesystem,
-> >> > > but this patch, by itself, is insufficient to protect the system
-> >> > > from abuse of files that, when execed, would increase MAC privilege.
-> >> > >
-> >> > > As a more concrete explanation, any task that can manipulate a
-> >> > > vfsmount associated with a given user namespace already has
-> >> > > capabilities in that namespace and all of its descendents.  If they
-> >> > > can cause a malicious setuid, setgid, or file-caps executable to
-> >> > > appear in that mount, then that executable will only allow them to
-> >> > > elevate privileges in exactly the set of namespaces in which they
-> >> > > are already privileges.
-> >> > >
-> >> > > On the other hand, if they can cause a malicious executable to
-> >> > > appear with a dangerous MAC label, running it could change the
-> >> > > caller's security context in a way that should not have been
-> >> > > possible, even inside the namespace in which the task is confined.
-> >> >
-> >> > As presented this is complete and total nonsense.  Mount propgation
-> >> > strongly weakens if not completely breaks the assumptions you are making
-> >> > in this code.
-> >> >
-> >> > To write any generic code that knows anything we need to capture a user
-> >> > namespace on struct super.
-> >> >
-> >> > Further I think all we really want is to filter out security labels from
-> >> > unprivileged mounts.   uids/gids and the like should be completely fine
-> >> > because of the uid mappings.
-> >> >
-> >> > Having been down the route of comparing uids as userns uid tuples I am
-> >> > convinced that anything requires us to take the user namespace into
-> >> > account on a routine basis in the core will simply be broken for someone
-> >> > forgetting somewhere.  This looks like a design that has that kind of
-> >> > susceptibility.
-> >>
-> >> The above paragraph is very compelling.  However Andy's patch is a step
-> >> in the right direction from what we've got.  I think given what you say
-> >> below and given Andy's rationale above, simply tweaking his patch to
-> >> ignore the parent-userns loop, and return false if current_user_ns() !=
-> >> mount_userns, should be right?  It'll prevent a child userns from
-> >> setting a selinux/apparmor entrypoint or POSIX file capabilities on a
-> >> file and having the parent userns trip over those.
-> >
-> > Ok, Andy's fn does the opposite, which will protect the parent userns,
-> > which is good.
-> >
-> > I suspect simply insisting that the user_ns's be equal is still better.
-> > It fits better with the idea that POSIX caps (and LSM entrypoints) are
-> > orthogonal to DAC.  Kinda.
-> 
-> We could tighten it even further if we compared *mount* namespaces
-> instead of user namespaces.  That would benefit Docker, non-userns-lxc
-> and such, too (sigh).
-> 
-> Actually, I see to good reason to insist on userns equality but not on
-> mountns equality.  If we're not going to trust executables in foreign
-> namespaces, let's go all the way to distrust executables in all
-> foreign namespaces, at least unless someone thinks of a reason this
-> would break existing userspace.
+On Tuesday, October 14, 2014 at 03:26:49 AM, Bean Huo 霍斌斌 (beanhuo) wrote:
+[...]
 
-I have no doubt there is code out there in production which ends up
-executing /proc/pid/root/sbin/ifconfig etc.  Cause, you know, you really
-wanna execute whatever garbage is there...  Breaking that might be a
-good thing.
+> -			dev_warn(dev, "found %s, expected %s\n",
+> -				 jid->name, id->name);
+> -			id = jid;
+> -			info = (void *)jid->driver_data;
+> +			struct flash_info *tmpinfo;
+> +
+> +			tmpinfo = (void *)jid->driver_data;
+> +			if (tmpinfo->jedec_id != info->jedec_id ||
+> +					(info->ext_id != 0 &&
+> +					 tmpinfo->ext_id != info->ext_id)) {
+> +				dev_warn(dev, "found %s, expected %s\n",
+> +						jid->name, id->name);
+> +				id = jid;
+> +				info = (void *)jid->driver_data;
+> +			}
 
--serge
+Won't $info contain an undefined value in case the newly added condition isn't 
+met ? The old code initialized $info to a certain value always, the new code 
+does not do that.
+
+Best regards,
+Marek Vasut
