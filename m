@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755922AbaJNVGb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 17:06:31 -0400
-Received: from mail.kernel.org ([198.145.19.201]:45010 "EHLO mail.kernel.org"
+	id S1755939AbaJNVGf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 17:06:35 -0400
+Received: from mail.kernel.org ([198.145.19.201]:45038 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755911AbaJNVG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 17:06:27 -0400
+	id S1755911AbaJNVGb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 17:06:31 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>, Borislav Petkov <bp@suse.de>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Don Zickus <dzickus@redhat.com>, Douglas Hatch <doug.hatch@hp.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@kernel.org>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 19/24] perf evsel: Make some exit routines static
-Date: Tue, 14 Oct 2014 18:04:28 -0300
-Message-Id: <1413320673-5784-20-git-send-email-acme@kernel.org>
+        Scott J Norton <scott.norton@hp.com>, Waiman Long <Waiman.Long@hp.com>
+Subject: [PATCH 20/24] perf machine: Add missing dsos->root rbtree root initialization
+Date: Tue, 14 Oct 2014 18:04:29 -0300
+Message-Id: <1413320673-5784-21-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1413320673-5784-1-git-send-email-acme@kernel.org>
 References: <1413320673-5784-1-git-send-email-acme@kernel.org>
@@ -29,73 +27,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Since they are automatically called by other methods used by tools.
+A segfault happens on 'perf test hists_link' because we end up using a
+struct machines on the stack, and then machines__init() was not
+initializing the newly introduced rb_root, just the existing list_head.
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: David Ahern <dsahern@gmail.com>
+When we introduced struct dsos, to group the two ways to store dsos,
+i.e. the linked list and the rbtree, we didn't turned the initialization
+done in:
+
+	machines__init(machines->host) ->
+		machine__init() ->
+			INIT_LIST_HEAD
+
+into a dsos__init() to keep on initializing the list_head but _as well_
+initializing the rb_root, oops.
+
+All worked because outside perf-test we probably zalloc the whole thing
+which ends up initializing it in to NULL.
+
+So the problem looks contained to 'perf test' that uses it on stack,
+etc.
+
+Reported-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Waiman Long <Waiman.Long@hp.com>,
+Cc: Adrian Hunter <adrian.hunter@intel.com>,
 Cc: Don Zickus <dzickus@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
+Cc: Douglas Hatch <doug.hatch@hp.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@kernel.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-ne3g4any7q6ty5d6yv8t1wws@git.kernel.org
+Cc: Scott J Norton <scott.norton@hp.com>
+Cc: Waiman Long <Waiman.Long@hp.com>,
+Link: http://lkml.kernel.org/r/20141014180353.GF3198@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evsel.c | 6 +++---
- tools/perf/util/evsel.h | 3 ---
- 2 files changed, 3 insertions(+), 6 deletions(-)
+ tools/perf/util/machine.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 7a3c4c47ceda..d1ecde0fd56c 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -725,7 +725,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
- 	}
- }
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index b7d477fbda02..34fc7c8672e4 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -13,12 +13,18 @@
+ #include <symbol/kallsyms.h>
+ #include "unwind.h"
  
--int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads)
-+static int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads)
++static void dsos__init(struct dsos *dsos)
++{
++	INIT_LIST_HEAD(&dsos->head);
++	dsos->root = RB_ROOT;
++}
++
+ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
  {
- 	int cpu, thread;
+ 	map_groups__init(&machine->kmaps);
+ 	RB_CLEAR_NODE(&machine->rb_node);
+-	INIT_LIST_HEAD(&machine->user_dsos.head);
+-	INIT_LIST_HEAD(&machine->kernel_dsos.head);
++	dsos__init(&machine->user_dsos);
++	dsos__init(&machine->kernel_dsos);
  
-@@ -813,13 +813,13 @@ int perf_evsel__alloc_counts(struct perf_evsel *evsel, int ncpus)
- 	return evsel->counts != NULL ? 0 : -ENOMEM;
- }
- 
--void perf_evsel__free_fd(struct perf_evsel *evsel)
-+static void perf_evsel__free_fd(struct perf_evsel *evsel)
- {
- 	xyarray__delete(evsel->fd);
- 	evsel->fd = NULL;
- }
- 
--void perf_evsel__free_id(struct perf_evsel *evsel)
-+static void perf_evsel__free_id(struct perf_evsel *evsel)
- {
- 	xyarray__delete(evsel->sample_id);
- 	evsel->sample_id = NULL;
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 5c80cf037e50..1d5c754aebc4 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -154,12 +154,9 @@ const char *perf_evsel__name(struct perf_evsel *evsel);
- const char *perf_evsel__group_name(struct perf_evsel *evsel);
- int perf_evsel__group_desc(struct perf_evsel *evsel, char *buf, size_t size);
- 
--int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
- int perf_evsel__alloc_id(struct perf_evsel *evsel, int ncpus, int nthreads);
- int perf_evsel__alloc_counts(struct perf_evsel *evsel, int ncpus);
- void perf_evsel__reset_counts(struct perf_evsel *evsel, int ncpus);
--void perf_evsel__free_fd(struct perf_evsel *evsel);
--void perf_evsel__free_id(struct perf_evsel *evsel);
- void perf_evsel__free_counts(struct perf_evsel *evsel);
- void perf_evsel__close_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
- 
+ 	machine->threads = RB_ROOT;
+ 	INIT_LIST_HEAD(&machine->dead_threads);
 -- 
 1.9.3
 
