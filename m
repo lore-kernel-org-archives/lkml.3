@@ -1,54 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755202AbaJNItW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 04:49:22 -0400
-Received: from mail-by2on0107.outbound.protection.outlook.com ([207.46.100.107]:28000
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754304AbaJNItC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 04:49:02 -0400
-Message-ID: <543CE374.9080008@freescale.com>
-Date: Tue, 14 Oct 2014 11:48:52 +0300
-From: Cristian Stoica <cristian.stoica@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754919AbaJNIz6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 04:55:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19385 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751343AbaJNIzz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 04:55:55 -0400
+Date: Tue, 14 Oct 2014 11:59:08 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        linux-scsi@vger.kernel.org, linux-s390@vger.kernel.org,
+        v9fs-developer@lists.sourceforge.net, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, Amit Shah <amit.shah@redhat.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Heinz Graalfs <graalfs@linux.vnet.ibm.com>
+Subject: Re: [PATCH v4 04/25] virtio: defer config changed notifications
+Message-ID: <20141014085908.GA6016@redhat.com>
+References: <1413114332-626-1-git-send-email-mst-v4@redhat.com>
+ <1413114332-626-5-git-send-email-mst-v4@redhat.com>
+ <87lhojcx0v.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: Re: [PATCH 3.14 36/37] crypto: caam - fix addressing of struct member
-References: <20141013022400.286360067@linuxfoundation.org>
- <20141013022401.796709337@linuxfoundation.org>
- <543CDF7C.4080209@freescale.com> <20141014083854.GB3141@kroah.com>
-In-Reply-To: <20141014083854.GB3141@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(51704005)(199003)(24454002)(164054003)(189002)(377454003)(479174003)(6806004)(64706001)(44976005)(65806001)(80316001)(65956001)(80022003)(84676001)(47776003)(68736004)(92566001)(64126003)(85306004)(23756003)(93886004)(20776003)(83506001)(87936001)(102836001)(33656002)(54356999)(26826002)(76176999)(65816999)(85852003)(87266999)(92726001)(46102003)(50986999)(31966008)(110136001)(105606002)(106466001)(76482002)(36756003)(95666004)(97736003)(50466002)(21056001)(59896002)(4396001)(104016003)(120916001)(99396003)(107046002);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0634;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0634;
-X-Forefront-PRVS: 03648EFF89
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=B18196@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87lhojcx0v.fsf@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I mean whatever is currently stable, maintained and more recent than 3.13.
-
-Thanks,
-Cristian S.
-
-
-On 10/14/2014 11:38 AM, Greg Kroah-Hartman wrote:
-> On Tue, Oct 14, 2014 at 11:31:56AM +0300, Cristian Stoica wrote:
->> Hi Greg,
->>
->> You can cherry-pick 307fd543f3d23f8f56850eca1b27b1be2fe71017 on stable
->> 3.13+ as well. The original 'cc stable 3.13+' line was deleted by
->> mistake during commit.
+On Tue, Oct 14, 2014 at 11:01:12AM +1030, Rusty Russell wrote:
+> "Michael S. Tsirkin" <mst@redhat.com> writes:
+> > Defer config changed notifications that arrive during
+> > probe/scan/freeze/restore.
+> >
+> > This will allow drivers to set DRIVER_OK earlier, without worrying about
+> > racing with config change interrupts.
+> >
+> > This change will also benefit old hypervisors (before 2009)
+> > that send interrupts without checking DRIVER_OK: previously,
+> > the callback could race with driver-specific initialization.
+> >
+> > This will also help simplify drivers.
 > 
-> 3.13-stable is long dead and not being maintained by me anymore, sorry.
+> But AFAICT you never *read* dev->config_changed.
 > 
-> greg k-h
+> You unconditionally trigger a config_changed event in
+> virtio_config_enable().  That's a bit weird, but probably OK.
 > 
+> How about the following change (on top of your patch).  I
+> think the renaming is clearer, and note the added if() test in
+> virtio_config_enable().
+> 
+> If you approve, I'll fold it in.
+> 
+> Cheers,
+> Rusty.
+
+Hi Rusty,
+I'm okay with both changes.
+You can fold it in if you prefer, or just make it a patch on top.
+
+> diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
+> index 2536701b098b..df598dd8c5c8 100644
+> --- a/drivers/virtio/virtio.c
+> +++ b/drivers/virtio/virtio.c
+> @@ -122,7 +122,7 @@ static void __virtio_config_changed(struct virtio_device *dev)
+>  	struct virtio_driver *drv = drv_to_virtio(dev->dev.driver);
+>  
+>  	if (!dev->config_enabled)
+> -		dev->config_changed = true;
+> +		dev->config_change_pending = true;
+>  	else if (drv && drv->config_changed)
+>  		drv->config_changed(dev);
+>  }
+> @@ -148,8 +148,9 @@ static void virtio_config_enable(struct virtio_device *dev)
+>  {
+>  	spin_lock_irq(&dev->config_lock);
+>  	dev->config_enabled = true;
+> -	__virtio_config_changed(dev);
+> -	dev->config_changed = false;
+> +	if (dev->config_change_pending)
+> +		__virtio_config_changed(dev);
+> +	dev->config_change_pending = false;
+>  	spin_unlock_irq(&dev->config_lock);
+>  }
+>  
+> @@ -253,7 +254,7 @@ int register_virtio_device(struct virtio_device *dev)
+>  
+>  	spin_lock_init(&dev->config_lock);
+>  	dev->config_enabled = false;
+> -	dev->config_changed = false;
+> +	dev->config_change_pending = false;
+>  
+>  	/* We always start by resetting the device, in case a previous
+>  	 * driver messed it up.  This also tests that code path a little. */
+> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
+> index 5636b119dc25..65261a7244fc 100644
+> --- a/include/linux/virtio.h
+> +++ b/include/linux/virtio.h
+> @@ -80,7 +80,7 @@ bool virtqueue_is_broken(struct virtqueue *vq);
+>   * @index: unique position on the virtio bus
+>   * @failed: saved value for CONFIG_S_FAILED bit (for restore)
+>   * @config_enabled: configuration change reporting enabled
+> - * @config_changed: configuration change reported while disabled
+> + * @config_change_pending: configuration change reported while disabled
+>   * @config_lock: protects configuration change reporting
+>   * @dev: underlying device.
+>   * @id: the device type identification (used to match it with a driver).
+> @@ -94,7 +94,7 @@ struct virtio_device {
+>  	int index;
+>  	bool failed;
+>  	bool config_enabled;
+> -	bool config_changed;
+> +	bool config_change_pending;
+>  	spinlock_t config_lock;
+>  	struct device dev;
+>  	struct virtio_device_id id;
