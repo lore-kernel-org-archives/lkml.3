@@ -1,55 +1,319 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932309AbaJNNoA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 09:44:00 -0400
-Received: from smtprelay0129.hostedemail.com ([216.40.44.129]:58537 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755275AbaJNNn7 (ORCPT
+	id S1755313AbaJNNoM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 09:44:12 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:43335 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755293AbaJNNoI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 09:43:59 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:599:960:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3870:3873:3876:4321:5007:6238:7652:10004:10400:10848:11026:11232:11473:11658:11914:12296:12517:12519:12555:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: joke93_22779361bc648
-X-Filterd-Recvd-Size: 1639
-Message-ID: <1413294235.3269.4.camel@joe-AO725>
-Subject: Re: [PATCH 2/2] hyperv: Implement Time Synchronization using host
- time sample
-From: Joe Perches <joe@perches.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Thomas Shao <huishao@microsoft.com>, tglx@linutronix.de,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com, kys@microsoft.com
-Date: Tue, 14 Oct 2014 06:43:55 -0700
-In-Reply-To: <20141014111915.GV23154@mwanda>
-References: <1413285078-7027-1-git-send-email-huishao@microsoft.com>
-	 <20141014111915.GV23154@mwanda>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 14 Oct 2014 09:44:08 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH 06/13] gpio / ACPI: Add support for _DSD device
+ properties
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>, devicetree@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Mark Rutland <mark.rutland@arm.com>
+In-Reply-To: <1651636.CsIdshL7Av@vostro.rjw.lan>
+References: <2660541.BycO7TFnA2@vostro.rjw.lan>
+	<1651636.CsIdshL7Av@vostro.rjw.lan>
+Date: Tue, 14 Oct 2014 15:44:03 +0200
+Message-Id: <20141014134403.66480C408A6@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-10-14 at 14:19 +0300, Dan Carpenter wrote:
-> I had a couple small style nits.
+On Tue, 07 Oct 2014 02:15:18 +0200
+, "Rafael J. Wysocki" <rjw@rjwysocki.net>
+ wrote:
+> From: Mika Westerberg <mika.westerberg@linux.intel.com>
 > 
-> On Tue, Oct 14, 2014 at 04:11:18AM -0700, Thomas Shao wrote:
-> > diff --git a/drivers/hv/hv_util.c b/drivers/hv/hv_util.c
-> > index 3b9c9ef..1d8390c 100644
-> > --- a/drivers/hv/hv_util.c
-> > +++ b/drivers/hv/hv_util.c
-> > @@ -51,11 +51,30 @@
-> >  #define HB_WS2008_MAJOR	1
-> >  #define HB_WS2008_VERSION	(HB_WS2008_MAJOR << 16 | HB_MINOR)
-> >  
-> > +#define  TIMESAMPLE_INTERVAL 5000000000L  /* 5s in nanosecond */
+> With release of ACPI 5.1 and _DSD method we can finally name GPIOs (and
+> other things as well) returned by _CRS. Previously we were only able to
+> use integer index to find the corresponding GPIO, which is pretty error
+> prone if the order changes.
 > 
-> If you wanted you could say:
+> With _DSD we can now query GPIOs using name instead of an integer index,
+> like the below example shows:
 > 
-> #define  TIMESAMPLE_INTERVAL  (5 * NSEC_PER_SEC)
+>   // Bluetooth device with reset and shutdown GPIOs
+>   Device (BTH)
+>   {
+>       Name (_HID, ...)
+> 
+>       Name (_CRS, ResourceTemplate ()
+>       {
+>           GpioIo (Exclusive, PullUp, 0, 0, IoRestrictionInputOnly,
+>                   "\\_SB.GPO0", 0, ResourceConsumer) {15}
+>           GpioIo (Exclusive, PullUp, 0, 0, IoRestrictionInputOnly,
+>                   "\\_SB.GPO0", 0, ResourceConsumer) {27, 31}
+>       })
+> 
+>       Name (_DSD, Package ()
+>       {
+>           ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
+>           Package ()
+> 	  {
+>               Package () {"reset-gpio", Package() {^BTH, 1, 1, 0 }},
+>               Package () {"shutdown-gpio", Package() {^BTH, 0, 0, 0 }},
+>           }
+>       })
+>   }
+> 
+> The format of the supported GPIO property is:
+> 
+>   Package () { "name", Package () { ref, index, pin, active_low }}
+> 
+>   ref - The device that has _CRS containing GpioIo()/GpioInt() resources,
+>         typically this is the device itself (BTH in our case).
+>   index - Index of the GpioIo()/GpioInt() resource in _CRS starting from zero.
+>   pin - Pin in the GpioIo()/GpioInt() resource. Typically this is zero.
+>   active_low - If 1 the GPIO is marked as active_low.
+> 
+> Since ACPI GpioIo() resource does not have field saying whether it is
+> active low or high, the "active_low" argument can be used here. Setting
+> it to 1 marks the GPIO as active low.
+> 
+> In our Bluetooth example the "reset-gpio" refers to the second GpioIo()
+> resource, second pin in that resource with the GPIO number of 31.
+> 
+> This patch implements necessary support to gpiolib for extracting GPIOs
+> using _DSD device properties.
 
-ULL
+Patch looks good, but please put the above description into
+/Documentation until we've got a better place to document extra bindings.
 
+g.
+
+> 
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>  drivers/gpio/gpiolib-acpi.c | 78 +++++++++++++++++++++++++++++++++++++--------
+>  drivers/gpio/gpiolib.c      | 30 ++++++++++++++---
+>  drivers/gpio/gpiolib.h      |  7 ++--
+>  3 files changed, 94 insertions(+), 21 deletions(-)
+> 
+> diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
+> index 687476f..b14c045 100644
+> --- a/drivers/gpio/gpiolib-acpi.c
+> +++ b/drivers/gpio/gpiolib-acpi.c
+> @@ -293,6 +293,7 @@ void acpi_gpiochip_free_interrupts(struct gpio_chip *chip)
+>  struct acpi_gpio_lookup {
+>  	struct acpi_gpio_info info;
+>  	int index;
+> +	int pin_index;
+>  	struct gpio_desc *desc;
+>  	int n;
+>  };
+> @@ -306,13 +307,24 @@ static int acpi_find_gpio(struct acpi_resource *ares, void *data)
+>  
+>  	if (lookup->n++ == lookup->index && !lookup->desc) {
+>  		const struct acpi_resource_gpio *agpio = &ares->data.gpio;
+> +		int pin_index = lookup->pin_index;
+> +
+> +		if (pin_index >= agpio->pin_table_length)
+> +			return 1;
+>  
+>  		lookup->desc = acpi_get_gpiod(agpio->resource_source.string_ptr,
+> -					      agpio->pin_table[0]);
+> +					      agpio->pin_table[pin_index]);
+>  		lookup->info.gpioint =
+>  			agpio->connection_type == ACPI_RESOURCE_GPIO_TYPE_INT;
+> -		lookup->info.active_low =
+> -			agpio->polarity == ACPI_ACTIVE_LOW;
+> +
+> +		/*
+> +		 * ActiveLow is only specified for GpioInt resource. If
+> +		 * GpioIo is used then the only way to set the flag is
+> +		 * to use _DSD "gpios" property.
+> +		 */
+> +		if (lookup->info.gpioint)
+> +			lookup->info.active_low =
+> +				agpio->polarity == ACPI_ACTIVE_LOW;
+>  	}
+>  
+>  	return 1;
+> @@ -320,40 +332,75 @@ static int acpi_find_gpio(struct acpi_resource *ares, void *data)
+>  
+>  /**
+>   * acpi_get_gpiod_by_index() - get a GPIO descriptor from device resources
+> - * @dev: pointer to a device to get GPIO from
+> + * @adev: pointer to a ACPI device to get GPIO from
+> + * @propname: Property name of the GPIO (optional)
+>   * @index: index of GpioIo/GpioInt resource (starting from %0)
+>   * @info: info pointer to fill in (optional)
+>   *
+> - * Function goes through ACPI resources for @dev and based on @index looks
+> + * Function goes through ACPI resources for @adev and based on @index looks
+>   * up a GpioIo/GpioInt resource, translates it to the Linux GPIO descriptor,
+>   * and returns it. @index matches GpioIo/GpioInt resources only so if there
+>   * are total %3 GPIO resources, the index goes from %0 to %2.
+>   *
+> + * If @propname is specified the GPIO is looked using device property. In
+> + * that case @index is used to select the GPIO entry in the property value
+> + * (in case of multiple).
+> + *
+>   * If the GPIO cannot be translated or there is an error an ERR_PTR is
+>   * returned.
+>   *
+>   * Note: if the GPIO resource has multiple entries in the pin list, this
+>   * function only returns the first.
+>   */
+> -struct gpio_desc *acpi_get_gpiod_by_index(struct device *dev, int index,
+> +struct gpio_desc *acpi_get_gpiod_by_index(struct acpi_device *adev,
+> +					  const char *propname, int index,
+>  					  struct acpi_gpio_info *info)
+>  {
+>  	struct acpi_gpio_lookup lookup;
+>  	struct list_head resource_list;
+> -	struct acpi_device *adev;
+> -	acpi_handle handle;
+> +	bool active_low = false;
+>  	int ret;
+>  
+> -	if (!dev)
+> -		return ERR_PTR(-EINVAL);
+> -
+> -	handle = ACPI_HANDLE(dev);
+> -	if (!handle || acpi_bus_get_device(handle, &adev))
+> +	if (!adev)
+>  		return ERR_PTR(-ENODEV);
+>  
+>  	memset(&lookup, 0, sizeof(lookup));
+>  	lookup.index = index;
+>  
+> +	if (propname) {
+> +		struct acpi_reference_args args;
+> +
+> +		dev_dbg(&adev->dev, "GPIO: looking up %s\n", propname);
+> +
+> +		memset(&args, 0, sizeof(args));
+> +		ret = acpi_dev_get_property_reference(adev, propname, NULL,
+> +						      index, &args);
+> +		if (ret)
+> +			return ERR_PTR(ret);
+> +
+> +		/*
+> +		 * The property was found and resolved so need to
+> +		 * lookup the GPIO based on returned args instead.
+> +		 */
+> +		adev = args.adev;
+> +		if (args.nargs >= 2) {
+> +			lookup.index = args.args[0];
+> +			lookup.pin_index = args.args[1];
+> +			/*
+> +			 * 3rd argument, if present is used to
+> +			 * specify active_low.
+> +			 */
+> +			if (args.nargs >= 3)
+> +				active_low = !!args.args[2];
+> +		}
+> +
+> +		dev_dbg(&adev->dev, "GPIO: _DSD returned %s %zd %llu %llu %llu\n",
+> +			dev_name(&adev->dev), args.nargs,
+> +			args.args[0], args.args[1], args.args[2]);
+> +	} else {
+> +		dev_dbg(&adev->dev, "GPIO: looking up %d in _CRS\n", index);
+> +	}
+> +
+>  	INIT_LIST_HEAD(&resource_list);
+>  	ret = acpi_dev_get_resources(adev, &resource_list, acpi_find_gpio,
+>  				     &lookup);
+> @@ -362,8 +409,11 @@ struct gpio_desc *acpi_get_gpiod_by_index(struct device *dev, int index,
+>  
+>  	acpi_dev_free_resource_list(&resource_list);
+>  
+> -	if (lookup.desc && info)
+> +	if (lookup.desc && info) {
+>  		*info = lookup.info;
+> +		if (active_low)
+> +			info->active_low = active_low;
+> +	}
+>  
+>  	return lookup.desc ? lookup.desc : ERR_PTR(-ENOENT);
+>  }
+> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+> index c68d037..4c86601 100644
+> --- a/drivers/gpio/gpiolib.c
+> +++ b/drivers/gpio/gpiolib.c
+> @@ -1487,14 +1487,36 @@ static struct gpio_desc *acpi_find_gpio(struct device *dev, const char *con_id,
+>  					unsigned int idx,
+>  					enum gpio_lookup_flags *flags)
+>  {
+> +	static const char * const suffixes[] = { "gpios", "gpio" };
+> +	struct acpi_device *adev = ACPI_COMPANION(dev);
+>  	struct acpi_gpio_info info;
+>  	struct gpio_desc *desc;
+> +	char propname[32];
+> +	int i;
+>  
+> -	desc = acpi_get_gpiod_by_index(dev, idx, &info);
+> -	if (IS_ERR(desc))
+> -		return desc;
+> +	/* Try first from _DSD */
+> +	for (i = 0; i < ARRAY_SIZE(suffixes); i++) {
+> +		if (con_id && strcmp(con_id, "gpios")) {
+> +			snprintf(propname, sizeof(propname), "%s-%s",
+> +				 con_id, suffixes[i]);
+> +		} else {
+> +			snprintf(propname, sizeof(propname), "%s",
+> +				 suffixes[i]);
+> +		}
+> +
+> +		desc = acpi_get_gpiod_by_index(adev, propname, 0, &info);
+> +		if (!IS_ERR(desc) || (PTR_ERR(desc) == -EPROBE_DEFER))
+> +			break;
+> +	}
+> +
+> +	/* Then from plain _CRS GPIOs */
+> +	if (IS_ERR(desc)) {
+> +		desc = acpi_get_gpiod_by_index(adev, NULL, idx, &info);
+> +		if (IS_ERR(desc))
+> +			return desc;
+> +	}
+>  
+> -	if (info.gpioint && info.active_low)
+> +	if (info.active_low)
+>  		*flags |= GPIO_ACTIVE_LOW;
+>  
+>  	return desc;
+> diff --git a/drivers/gpio/gpiolib.h b/drivers/gpio/gpiolib.h
+> index 9db2b6a..e3a5211 100644
+> --- a/drivers/gpio/gpiolib.h
+> +++ b/drivers/gpio/gpiolib.h
+> @@ -34,7 +34,8 @@ void acpi_gpiochip_remove(struct gpio_chip *chip);
+>  void acpi_gpiochip_request_interrupts(struct gpio_chip *chip);
+>  void acpi_gpiochip_free_interrupts(struct gpio_chip *chip);
+>  
+> -struct gpio_desc *acpi_get_gpiod_by_index(struct device *dev, int index,
+> +struct gpio_desc *acpi_get_gpiod_by_index(struct acpi_device *adev,
+> +					  const char *propname, int index,
+>  					  struct acpi_gpio_info *info);
+>  #else
+>  static inline void acpi_gpiochip_add(struct gpio_chip *chip) { }
+> @@ -47,8 +48,8 @@ static inline void
+>  acpi_gpiochip_free_interrupts(struct gpio_chip *chip) { }
+>  
+>  static inline struct gpio_desc *
+> -acpi_get_gpiod_by_index(struct device *dev, int index,
+> -			struct acpi_gpio_info *info)
+> +acpi_get_gpiod_by_index(struct acpi_device *adev, const char *propname,
+> +			int index, struct acpi_gpio_info *info)
+>  {
+>  	return ERR_PTR(-ENOSYS);
+>  }
+> -- 
+> 1.9.3
+> 
+> 
 
