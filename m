@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754287AbaJNBbJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 21:31:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36023 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754142AbaJNBbI (ORCPT
+	id S1754236AbaJNBoT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 21:44:19 -0400
+Received: from mga11.intel.com ([192.55.52.93]:5449 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753839AbaJNBoS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 21:31:08 -0400
-Date: Tue, 14 Oct 2014 03:30:05 +0200
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Chuck Ebbert <cebbert.lkml@gmail.com>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>, linux-kernel@vger.kernel.org,
-        stable@kernel.org
-Subject: Re: [PATCH 3.17 00/25] 3.17.1-stable review
-Message-ID: <20141014013005.GC17932@kroah.com>
-References: <20141013022454.289398272@linuxfoundation.org>
- <20141013112834.GA10826@khazad-dum.debian.net>
- <20141013082319.175d90bb@as>
+	Mon, 13 Oct 2014 21:44:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,714,1406617200"; 
+   d="scan'208";a="604831468"
+From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
+To: "Hansen, Dave" <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: RE: [PATCH v7 08/10] x86, mpx: add prctl commands PR_MPX_REGISTER,
+ PR_MPX_UNREGISTER
+Thread-Topic: [PATCH v7 08/10] x86, mpx: add prctl commands PR_MPX_REGISTER,
+ PR_MPX_UNREGISTER
+Thread-Index: AQHP5w0XlSa4Yh1zTEmV5IhMByRIY5wu0fGw
+Date: Tue, 14 Oct 2014 01:44:16 +0000
+Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE017EB405@shsmsx102.ccr.corp.intel.com>
+References: <1405921124-4230-1-git-send-email-qiaowei.ren@intel.com>
+	<1405921124-4230-9-git-send-email-qiaowei.ren@intel.com>
+ <87lhrn2qfu.fsf@tassilo.jf.intel.com> <543C0EBE.3060702@intel.com>
+In-Reply-To: <543C0EBE.3060702@intel.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141013082319.175d90bb@as>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 13, 2014 at 08:23:19AM -0500, Chuck Ebbert wrote:
-> Stalls when using nohz, requires series of six patches to fix that
-> didn't make 3.17 and weren't marked for -stable:
-> 
-> From a80e49e2cc3145af014a8ae44f575829cc236192 Mon Sep 17 00:00:00 2001
-> From: Frederic Weisbecker <fweisbec@gmail.com>
-> Subject: nohz: Move nohz full init call to tick init
-> 
-> From c5c38ef3d70377dc504a6a3f611a3ec814bc757b Mon Sep 17 00:00:00 2001
-> From: Peter Zijlstra <peterz@infradead.org>
-> Subject: irq_work: Introduce arch_irq_work_has_interrupt()
-> 
-> From 76a33061b9323b7fdb220ae5fa116c10833ec22e Mon Sep 17 00:00:00 2001
-> From: Frederic Weisbecker <fweisbec@gmail.com>
-> Subject: irq_work: Force raised irq work to run on irq work interrupt
-> 
-> From 3010279f0fc36f0388872203e63ca49912f648fd Mon Sep 17 00:00:00 2001
-> From: Frederic Weisbecker <fweisbec@gmail.com>
-> Subject: x86: Tell irq work about self IPI support
-> 
-> From 09f6edd424218eb69078551b2ecfada1f2d098eb Mon Sep 17 00:00:00 2001
-> From: Frederic Weisbecker <fweisbec@gmail.com>
-> Subject: arm: Tell irq work about self IPI support
 
-I have all of these in 3.17.1-rc1.
 
-> From 3631073659d0aafeaa52227bb61a100efaf901dc Mon Sep 17 00:00:00 2001
-> From: Frederic Weisbecker <fweisbec@gmail.com>
-> Subject: arm64: Tell irq work about self IPI support
+On 2014-10-14, Hansen, Dave wrote:
+> On 07/20/2014 11:09 PM, Andi Kleen wrote:
+>> Qiaowei Ren <qiaowei.ren@intel.com> writes:
+>>> This patch adds the PR_MPX_REGISTER and PR_MPX_UNREGISTER prctl()
+>>> commands. These commands can be used to register and unregister MPX
+>>> related resource on the x86 platform.
+>> 
+>> Please provide a manpage for the API. This is needed for proper
+>> review. Your description is far too vague.
+> 
+> Qiaowei, have you written this manpage yet?  I see the new patches,
+> but no manpage yet.
 
-This one I missed, probably because no one actually has a arm64 machine
-that is "public" :)
+It will be added into subsequent version or another mainline patchset.
 
-I'll go queue that one up now, thanks.
+Thanks,
+Qiaowei
 
-greg k-h
