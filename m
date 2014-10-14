@@ -1,80 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754946AbaJNKX1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 06:23:27 -0400
-Received: from mga01.intel.com ([192.55.52.88]:44856 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754273AbaJNKX0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 06:23:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="399930735"
-Message-ID: <1413282203.7906.72.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 3/4] UBI: Fastmap: Care about the protection queue
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Tue, 14 Oct 2014 13:23:23 +0300
-In-Reply-To: <543C3E60.4080507@nod.at>
-References: <1412029248-22454-1-git-send-email-richard@nod.at>
-				 <1412029248-22454-4-git-send-email-richard@nod.at>
-			 <1412346676.3795.62.camel@sauron.fi.intel.com> <542EF3BF.1070401@nod.at>
-		 <1413206263.7906.18.camel@sauron.fi.intel.com> <543BE21F.5020504@nod.at>
-	 <1413213803.7906.45.camel@sauron.fi.intel.com> <543C3E60.4080507@nod.at>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	id S1755071AbaJNK2e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 06:28:34 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:34481 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754606AbaJNK2c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 06:28:32 -0400
+Message-ID: <543CFAA8.90608@hurleysoftware.com>
+Date: Tue, 14 Oct 2014 06:27:52 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: David Laight <David.Laight@ACULAB.COM>,
+        "'Nathan Lynch'" <Nathan_Lynch@mentor.com>,
+        Felipe Balbi <balbi@ti.com>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "josh@joshtriplett.org" <josh@joshtriplett.org>,
+        Rabin Vincent <rabin@rab.in>, Alan Stern <stern@rowland.harvard.edu>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: RCU bug with v3.17-rc3 ?
+References: <20141009160138.GA2396@cmpxchg.org> <20141009162656.GE16002@saruman> <20141009204101.GA25955@debian> <20141009204637.GE25729@saruman> <20141009210715.GH25729@saruman> <20141010135743.GB31348@saruman> <20141010162531.GL12379@n2100.arm.linux.org.uk> <54388B81.5020306@mentor.com> <063D6719AE5E284EB5DD2968C1650D6D174C996E@AcuExch.aculab.com> <20141013114307.GO12379@n2100.arm.linux.org.uk> <20141014020640.GB25433@kroah.com>
+In-Reply-To: <20141014020640.GB25433@kroah.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-10-13 at 23:04 +0200, Richard Weinberger wrote:
-> Am 13.10.2014 um 17:23 schrieb Artem Bityutskiy:
-> > Well, used and free are RB-trees, looking them up is slow.
+On 10/13/2014 10:06 PM, Greg KH wrote:
+> On Mon, Oct 13, 2014 at 12:43:07PM +0100, Russell King - ARM Linux wrote:
+>> On Mon, Oct 13, 2014 at 09:11:34AM +0000, David Laight wrote:
+>>> From: Nathan Lynch
+>>>> On 10/10/2014 11:25 AM, Russell King - ARM Linux wrote:
+>>>>>
+>>>>> Right, so GCC 4.8.{1,2} are totally unsuitable for kernel building (and
+>>>>> it seems that this has been known about for some time.)
+>>>>
+>>>> Looking at http://gcc.gnu.org/PR58854 it seems that all 4.8.x for x < 3
+>>>> are affected, as well as 4.9.0.
+>>>>
+>>>>> We can blacklist these GCC versions quite easily.  We already have GCC
+>>>>> 3.3 blacklisted, and it's trivial to add others.  I would want to include
+>>>>> some proper details about the bug, just like the other existing entries
+>>>>> we already have in asm-offsets.c, where we name the functions that the
+>>>>> compiler is known to break where appropriate.
+>>>>
+>>>> Before blacklisting anything, it's worth considering that simple version
+>>>> checks would break existing pre-4.8.3 compilers that have been patched
+>>>> for PR58854.  It looks like Yocto and Buildroot issued releases with
+>>>> patched 4.8.2 compilers well before the (fixed) 4.8.3 release.  I think
+>>>> the most we can reasonably do without breaking some correctly-behaving
+>>>> toolchains is to emit a warning.
+>>>
+>>> Is it possible to compile a small code fragment and check the generated
+>>> code for the bug?
+>>> Possibly predicated on the broken version number to avoid false positives.
+>>
+>> I don't see how - it looks like it requires an interrupt to occur at an
+>> opportune moment to provoke the function to fail.  The alternative would
+>> be to parse the assembly generated by the compiler to determine how it
+>> is dealing with the stack.
+>>
+>> I think the only viable solution here is that:
+>>
+>> 1. We blacklist the bad compiler versions outright in the kernel.
 > 
-> This is true but we'd have to look it up in multiple trees and the protection queue...
-
-Right. 2 RB-trees, and one list. The list is empty most of the time, or
-contains one element. 
-
-So we'd look-up 2 RB-trees most of the time. Very rarely we'd need to
-look at the list containing very few elements.
-
-Not that bad, I think.
-
-> ubi_update_fastmap() takes ubi->wl_lock anyway to block any changes in the free, used, etc. trees
-> to make sure that the to be taken state snapshot is consistent.
-
-I think this is fine.
-
-> > But there is a price - memory consumption. We do not want to pay it just
-> > for making the inter-subsystems boundaries better, there ought to be a
-> > better reason.
-> > 
-> > Say, for an (imaginary) 8GiB NAND chip with 128KiB PEB size this would
-> > cost 256KiB of RAM.
+> Yes, please do this, it's what we have done for other buggy compiler
+> versions, no need to do something different here.
 > 
-> Is 128KiB PEB size still realistic on modern NANDs?
-> Even if, 256KiB are not much and the kernel consumes this additionally with
-> every new release.
+>> Remember, it's the distro's choice to fix these buggy compilers, so the
+>> onus is on _them_ to deal with the mess they've created by doing so.
+> 
+> I totally agree.
+> 
+> Is someone going to send this patch, or do I have to write it myself?
 
-Right, but the point is that bigger systems use eMMC and wouldn't bother
-with raw flash. Raw flash trending down the smaller systems, where a
-hundred of kilobytes matters.
+I did on Friday (arm: Blacklist gcc 4.8.[012] ...) but Russell said he
+was doing it himself.
 
-> But I can understand your concerns.
-
-Thanks, yes, my point is to be careful about the RAM we consume, and try
-to avoid growing this data structure, an only do it if we have to.
-
-> Okay, I'll try harder to make you happy.
-
-Well, making me happy is not the point of course :-)
-
-Thanks!
-
---
-Artem
+Regards,
+Peter Hurley
 
