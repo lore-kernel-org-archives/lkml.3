@@ -1,79 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755173AbaJNLKx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 07:10:53 -0400
-Received: from mail-oi0-f45.google.com ([209.85.218.45]:56334 "EHLO
-	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754881AbaJNLKw (ORCPT
+	id S932140AbaJNLT5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 07:19:57 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:38516 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755061AbaJNLT4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 07:10:52 -0400
+	Tue, 14 Oct 2014 07:19:56 -0400
+Date: Tue, 14 Oct 2014 14:19:15 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Thomas Shao <huishao@microsoft.com>
+Cc: tglx@linutronix.de, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
+        kys@microsoft.com
+Subject: Re: [PATCH 2/2] hyperv: Implement Time Synchronization using host
+ time sample
+Message-ID: <20141014111915.GV23154@mwanda>
+References: <1413285078-7027-1-git-send-email-huishao@microsoft.com>
 MIME-Version: 1.0
-In-Reply-To: <1413253178.3269.2.camel@joe-AO725>
-References: <20141013023425.GA15452@devel>
-	<20141013032544.GA26646@kroah.com>
-	<CAHb8M2A5e2akETQoWS6WfNJjUqhyu4ptfTMs9HLYgbw8XRR-Ww@mail.gmail.com>
-	<1413212198.1287.9.camel@joe-AO725>
-	<20141014020433.GA25433@kroah.com>
-	<1413253178.3269.2.camel@joe-AO725>
-Date: Tue, 14 Oct 2014 20:10:51 +0900
-Message-ID: <CAHb8M2CmtA8NGACCqNBeXWfVhLSBmu6sCoJ0tt_pcpHrvujS8Q@mail.gmail.com>
-Subject: Re: [PATCH] staging: dgap: re-arrange functions for removing forward declarations.
-From: DaeSeok Youn <daeseok.youn@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, devel <devel@driverdev.osuosl.org>,
-        driverdev-devel@linuxdriverproject.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Lidza Louina <lidza.louina@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413285078-7027-1-git-send-email-huishao@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+I had a couple small style nits.
 
-2014-10-14 11:19 GMT+09:00 Joe Perches <joe@perches.com>:
-> On Tue, 2014-10-14 at 04:04 +0200, Greg KH wrote:
->> On Mon, Oct 13, 2014 at 07:56:38AM -0700, Joe Perches wrote:
->> > On Mon, 2014-10-13 at 17:01 +0900, DaeSeok Youn wrote:
->> > > 2014-10-13 12:25 GMT+09:00 Greg KH <gregkh@linuxfoundation.org>:
->> > > > On Mon, Oct 13, 2014 at 11:34:25AM +0900, Daeseok Youn wrote:
->> > > >> Re-arrange the functions for removing forward declarations.
-> []
->> > > >> This patch has too many changes for re-arranging the functions.
->> > > >> So I wonder that I should break this up into smaller patches.
->> > > > Are the .o files identical before and after this patch?  If so, it's
->> > > > fine.
->> > > Ok. I will check for that.
->> > The .o files shouldn't be identical after function reordering.
->>
->> Hm, they might be the same size, but I can see how on some
->> architectures (like ppc) how that would not be the case, you are right.
->>
->> Isn't there an "objdiff" program or something like that which might help
->> in validating that nothing "changed" in the source for type of patch
->> that just moves functions around in a file.
->
-> There is a scripts/objdiff, but that is basically for whitespace
-> only changes.
->
-> I don't know of a way to compare objects when functions are
-> rearranged in the source file.
->
-> Anyone else?
->
-I was just trying to sort "objdump -d" output by function name with
-someone's python script.
-The script was on github. url : https://gist.github.com/fritschy/1183292
+On Tue, Oct 14, 2014 at 04:11:18AM -0700, Thomas Shao wrote:
+> diff --git a/drivers/hv/hv_util.c b/drivers/hv/hv_util.c
+> index 3b9c9ef..1d8390c 100644
+> --- a/drivers/hv/hv_util.c
+> +++ b/drivers/hv/hv_util.c
+> @@ -51,11 +51,30 @@
+>  #define HB_WS2008_MAJOR	1
+>  #define HB_WS2008_VERSION	(HB_WS2008_MAJOR << 16 | HB_MINOR)
+>  
+> +#define  TIMESAMPLE_INTERVAL 5000000000L  /* 5s in nanosecond */
 
-And I got two results, one is before applying this patch, another is
-after doing that.
-These are possible to compare but it has difference of base address...
+If you wanted you could say:
 
-I'm not sure what should I do for applying this patch. :-(
-If anyone knows how to compare, let me know.
+#define  TIMESAMPLE_INTERVAL  (5 * NSEC_PER_SEC)
 
-Thanks.
+> +
+> +/*host sends time sample for every 5s.So the max polling interval
+> + *is 128*5 = 640s.
+> +*/
 
-Regards,
-Daeseok Youn.
+The comment still has problems throughout.  Read
+Documentation/CodingStyle.
+
+> +#define  TIME_ADJ_MAX_INTERVAL 128 /*Max polling interval */
+> +
+>  static int sd_srv_version;
+>  static int ts_srv_version;
+>  static int hb_srv_version;
+>  static int util_fw_version;
+>  
+> +/*host sends time sample for every 5s.So the initial polling interval
+> + *is 5s.
+> +*/
+> +static s32 adj_interval = 1;
+
+Prefer mundane types instead there is a reason.  This should be int
+because it's not specified in a hardware spec.  I know you are being
+consistent with the surrounding code, but the surrounding code is bad so
+don't emulate it.
+
+> +
+> +/*The host_time_sync module parameter is used to control the time
+> +  sync between host and guest.
+> +*/
+> +static bool host_time_sync;
+> +module_param(host_time_sync, bool, (S_IRUGO | S_IWUSR));
+> +MODULE_PARM_DESC(host_time_sync, "If the guest sync time with host");
+
+Maybe say: "Synchronize time with the host"?
+
+> +
+>  static void shutdown_onchannelcallback(void *context);
+>  static struct hv_util_service util_shutdown = {
+>  	.util_cb = shutdown_onchannelcallback,
+> @@ -163,15 +182,61 @@ static void shutdown_onchannelcallback(void *context)
+>  /*
+>   * Set guest time to host UTC time.
+>   */
+> -static inline void do_adj_guesttime(u64 hosttime)
+> +static inline void do_adj_guesttime(u64 hosttime, bool forceSync)
+
+I'm surprise checkpatch.pl does't complain about this CamelCase.
+
+regards,
+dan carpenter
+
