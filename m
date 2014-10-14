@@ -1,39 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753768AbaJNGxh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 02:53:37 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:62929 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750746AbaJNGxf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 02:53:35 -0400
+	id S1754660AbaJNGyB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 02:54:01 -0400
+Received: from ozlabs.org ([103.22.144.67]:44502 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754161AbaJNGxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 02:53:54 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: Chuck Ebbert <cebbert.lkml@gmail.com>, Rob Landley <rob@landley.net>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Shuah Khan <shuah.kh@samsung.com>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: Re: [PATCH v5] init: Disable defaults if init= fails
+In-Reply-To: <5c6381879bea68aebb13530442f1cf8a052be97f.1411958379.git.luto@amacapital.net>
+References: <5c6381879bea68aebb13530442f1cf8a052be97f.1411958379.git.luto@amacapital.net>
+User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Tue, 14 Oct 2014 11:17:09 +1030
+Message-ID: <87fvercwaa.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <CALCETrWaMircwfJGWY4dyF647dz1VXyknRTond2r7H+NPScgLw@mail.gmail.com>
-References: <a1480dcc3c706e309a88884723446f2e84fedd5b.1412796914.git.luto@amacapital.net>
-	<CALCETrVRhm1u6LEFSwtjNj_y=u9SbWoOP9t82C0Yq1zeAmRLpg@mail.gmail.com>
-	<CALCETrWaMircwfJGWY4dyF647dz1VXyknRTond2r7H+NPScgLw@mail.gmail.com>
-Date: Tue, 14 Oct 2014 08:53:33 +0200
-X-Google-Sender-Auth: iOE7211EANzqns_sYMxg33o9ptY
-Message-ID: <CA+55aFyAg6pmceWJdhxPoHZp-qZc+nTYaPKDAuC0zAeu8MM=6A@mail.gmail.com>
-Subject: Re: [PATCH] fs: Add a missing permission check to do_umount
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "security@kernel.org" <security@kernel.org>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        stable <stable@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 14, 2014 at 7:33 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+Andy Lutomirski <luto@amacapital.net> writes:
+> If a user puts init=/whatever on the command line and /whatever
+> can't be run, then the kernel will try a few default options before
+> giving up.  If init=/whatever came from a bootloader prompt, then
+> this is unexpected but probably harmless.  On the other hand, if it
+> comes from a script (e.g. a tool like virtme or perhaps a future
+> kselftest script), then the fallbacks are likely to exist, but
+> they'll do the wrong thing.  For example, they might unexpectedly
+> invoke systemd.
 >
-> Linus, can you pull this?
+> This makes a failure to run the specified init= process be fatal.
+>
+> As a temporary measure, users can set CONFIG_INIT_FALLBACK=y to
+> preserve the old behavior.  If no one speaks up, we can remove that
+> option entirely after a release or two.
+>
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 
-Pulled. You didn't mark the commit for stable. Oversight?
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
 
-       Linus
+Andrew, please apply.
+
+Thanks,
+Rusty.
