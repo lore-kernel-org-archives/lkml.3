@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755318AbaJNQ2h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 12:28:37 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:48055 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754846AbaJNQ2g (ORCPT
+	id S1755351AbaJNQbC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 12:31:02 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:35714 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753635AbaJNQbA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 12:28:36 -0400
+	Tue, 14 Oct 2014 12:31:00 -0400
+Date: Tue, 14 Oct 2014 18:30:53 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Mike Surcouf <mps.surcouf.lkml@gmail.com>
+Cc: Thomas Shao <huishao@microsoft.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        KY Srinivasan <kys@microsoft.com>
+Subject: Re: [PATCH 2/2] hyperv: Implement Time Synchronization using host
+ time sample
+Message-ID: <20141014163053.GA7473@localhost.localdomain>
+References: <1413285078-7027-1-git-send-email-huishao@microsoft.com>
+ <20141014115412.GC4019@localhost.localdomain>
+ <CD2CABCB2C0A0D4682C5F8AD840141540BFD41@HKXPRD3002MB006.064d.mgd.msft.net>
+ <20141014132551.GB5994@localhost.localdomain>
+ <CAL7Bo8EHOgBFtE87ecC9PSwUy2=M5Q31ka6BX2Eut-eqXSbang@mail.gmail.com>
+ <20141014143346.GC6469@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <543D4AC7.7040409@citrix.com>
-References: <1413249548-26415-1-git-send-email-martin@martingkelly.com>
-	<543CEB56.3080009@citrix.com>
-	<543D2D66.7040000@martingkelly.com>
-	<543D4AC7.7040409@citrix.com>
-Date: Tue, 14 Oct 2014 09:28:34 -0700
-Message-ID: <CAN8CM3zPphjm24LZKKFaGy3-6-u6Tu7bi_um_upC6W+4Oxe2DA@mail.gmail.com>
-Subject: Re: [PATCH] xen/setup: add paranoid index check and warning
-From: Martin Kelly <martin@martingkelly.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: xen-devel@lists.xenproject.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, konrad.wilk@oracle.com,
-        boris.ostrovsky@oracle.com, tglx@linutronix.de, mingo@redhat.com,
-        Martin Kelly <martkell@amazon.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141014143346.GC6469@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 14, 2014 at 9:09 AM, David Vrabel <david.vrabel@citrix.com> wrote:
-> On 14/10/14 15:04, Martin Kelly wrote:
->> On 10/14/2014 02:22 AM, David Vrabel wrote:
->>> On 14/10/14 02:19, Martin Kelly wrote:
->>>> In a call to set_phys_range_identity, i-1 is used without checking that
->>>> i is non-zero. Although unlikely, a bug in the code before it could
->>>> cause the value to be 0, leading to erroneous behavior. This patch adds
->>>> a check against 0 value and a corresponding warning.
->>>
->>> This can only happen if the toolstack supplies a memory map with zero
->>> entries.  I could see justification for adding a panic at the top of
->>> this function in this case, but I can't see the usefulness of this warning.
->>>
->>
->> Yes, a panic is probably appropriate. What do you think about the
->> relative merits of panicing in the callers vs. in the
->> sanitize_e820_map function itself (thus to avoid a bunch of similar
->> error checks in the callers)?
->
-> For Xen, it should panic immediately after getting the memory map.
->
-> You will note that there is fallback code for the case when no memory
-> map is provided.  But I do not think this should be used in the case
-> where the toolstack provided an empty memory map.
->
-> David
+On Tue, Oct 14, 2014 at 04:33:46PM +0200, Richard Cochran wrote:
+> 
+> IMHO, you should let the guest steer its own clock. That gives the end
+> user the most flexibility. Just provide the offset information, and
+> let a dedicated service (like ntpd or linuxptp's phc2sys) do the rest.
 
-Sounds like the flow should be as follows:
-1) Ask Xen for the memory map.
-2) If no memory map is provided, use fallback code.
-3) If the memory map has 0 entries, panic.
-
-I will revise the patch to do that.
+So if it really about the convenience of not having to run a service
+on the guests, then why not expose the guest clock to the host as a
+dynamic posix clock? Then you could use phc2sys to tune the guest
+without writing even a line of servo code...
+ 
+Thanks,
+Richard
