@@ -1,105 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755788AbaJNWUE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 18:20:04 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:39410 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303AbaJNWUB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 18:20:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141014221447.GB12338@mail.hallyn.com>
-References: <d4c63d6c350d26ffc985d061d213bd778055ca5b.1413322603.git.luto@amacapital.net>
- <87tx36l3gp.fsf@x220.int.ebiederm.org> <20141014221219.GA12338@mail.hallyn.com>
- <20141014221447.GB12338@mail.hallyn.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 14 Oct 2014 15:19:39 -0700
-Message-ID: <CALCETrXLHcc++qkjV6uKz6kTG9aSKkZFr8qBAHnWLxfGQYe9VQ@mail.gmail.com>
-Subject: Re: [PATCH] fs: Treat non-ancestor-namespace mounts as MNT_NOSUID
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+	id S1755833AbaJNWVK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 18:21:10 -0400
+Received: from na01-by1-obe.ptr.o365filtering.com ([64.4.22.92]:11460 "EHLO
+	na01-by1-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755536AbaJNWVG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 18:21:06 -0400
+X-Greylist: delayed 1106 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Oct 2014 18:21:05 EDT
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: David Miller <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael j Theall <mtheall@us.ibm.com>,
-        fuse-devel@lists.sourceforge.net, Miklos Szeredi <miklos@szeredi.hu>,
-        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
-        Seth Forshee <seth.forshee@canonical.com>
-Content-Type: text/plain; charset=UTF-8
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+Subject: RE: [PATCH net-next,v2] hyperv: Add handling of IP header with option
+ field in netvsc_set_hash()
+Thread-Topic: [PATCH net-next,v2] hyperv: Add handling of IP header with
+ option field in netvsc_set_hash()
+Thread-Index: AQHP5/M7qLpafzYgIkqP3nQ3CZfSI5wwk3+A//+NOkA=
+Date: Tue, 14 Oct 2014 21:47:33 +0000
+Message-ID: <e660408eec9a48f088ae8a99036e223e@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+References: <1413324988-8863-1-git-send-email-haiyangz@microsoft.com>
+ <20141014.173717.1412701736631211553.davem@davemloft.net>
+In-Reply-To: <20141014.173717.1412701736631211553.davem@davemloft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [157.54.51.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.159.99;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(377454003)(199003)(13464003)(189002)(51704005)(85306004)(80022003)(76482002)(50986999)(77096999)(106116001)(54356999)(2009001)(97756001)(108616004)(107046002)(99396003)(46406003)(64706001)(33646002)(97736003)(19580405001)(584604001)(76176999)(46102003)(110136001)(120916001)(47776003)(106466001)(44976005)(20776003)(4396001)(2656002)(6806004)(19580395003)(23726002)(50466002)(92566001)(85852003)(86612001)(68736004)(84676001)(31966008)(66066001)(87936001)(21056001)(142933001)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:CH1SR01MB599;H:hybrid.exchange.microsoft.com;FPR:;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CH1SR01MB599;
+X-Forefront-PRVS: 03648EFF89
+X-OriginatorOrg: msft.ccsctp.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 14, 2014 at 3:14 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
-> Quoting Serge E. Hallyn (serge@hallyn.com):
->> Quoting Eric W. Biederman (ebiederm@xmission.com):
->> > Andy Lutomirski <luto@amacapital.net> writes:
->> >
->> > > If a process gets access to a mount from a descendent or unrelated
->> > > user namespace, that process should not be able to take advantage of
->> > > setuid files or selinux entrypoints from that filesystem.
->> > >
->> > > This will make it safer to allow more complex filesystems to be
->> > > mounted in non-root user namespaces.
->> > >
->> > > This does not remove the need for MNT_LOCK_NOSUID.  The setuid,
->> > > setgid, and file capability bits can no longer be abused if code in
->> > > a user namespace were to clear nosuid on an untrusted filesystem,
->> > > but this patch, by itself, is insufficient to protect the system
->> > > from abuse of files that, when execed, would increase MAC privilege.
->> > >
->> > > As a more concrete explanation, any task that can manipulate a
->> > > vfsmount associated with a given user namespace already has
->> > > capabilities in that namespace and all of its descendents.  If they
->> > > can cause a malicious setuid, setgid, or file-caps executable to
->> > > appear in that mount, then that executable will only allow them to
->> > > elevate privileges in exactly the set of namespaces in which they
->> > > are already privileges.
->> > >
->> > > On the other hand, if they can cause a malicious executable to
->> > > appear with a dangerous MAC label, running it could change the
->> > > caller's security context in a way that should not have been
->> > > possible, even inside the namespace in which the task is confined.
->> >
->> > As presented this is complete and total nonsense.  Mount propgation
->> > strongly weakens if not completely breaks the assumptions you are making
->> > in this code.
->> >
->> > To write any generic code that knows anything we need to capture a user
->> > namespace on struct super.
->> >
->> > Further I think all we really want is to filter out security labels from
->> > unprivileged mounts.   uids/gids and the like should be completely fine
->> > because of the uid mappings.
->> >
->> > Having been down the route of comparing uids as userns uid tuples I am
->> > convinced that anything requires us to take the user namespace into
->> > account on a routine basis in the core will simply be broken for someone
->> > forgetting somewhere.  This looks like a design that has that kind of
->> > susceptibility.
->>
->> The above paragraph is very compelling.  However Andy's patch is a step
->> in the right direction from what we've got.  I think given what you say
->> below and given Andy's rationale above, simply tweaking his patch to
->> ignore the parent-userns loop, and return false if current_user_ns() !=
->> mount_userns, should be right?  It'll prevent a child userns from
->> setting a selinux/apparmor entrypoint or POSIX file capabilities on a
->> file and having the parent userns trip over those.
->
-> Ok, Andy's fn does the opposite, which will protect the parent userns,
-> which is good.
->
-> I suspect simply insisting that the user_ns's be equal is still better.
-> It fits better with the idea that POSIX caps (and LSM entrypoints) are
-> orthogonal to DAC.  Kinda.
 
-We could tighten it even further if we compared *mount* namespaces
-instead of user namespaces.  That would benefit Docker, non-userns-lxc
-and such, too (sigh).
 
-Actually, I see to good reason to insist on userns equality but not on
-mountns equality.  If we're not going to trust executables in foreign
-namespaces, let's go all the way to distrust executables in all
-foreign namespaces, at least unless someone thinks of a reason this
-would break existing userspace.
+> -----Original Message-----
+> From: David Miller [mailto:davem@davemloft.net]
+> Sent: Tuesday, October 14, 2014 5:37 PM
+> To: Haiyang Zhang
+> Cc: netdev@vger.kernel.org; KY Srinivasan; olaf@aepfle.de;
+> jasowang@redhat.com; linux-kernel@vger.kernel.org; driverdev-
+> devel@linuxdriverproject.org
+> Subject: Re: [PATCH net-next,v2] hyperv: Add handling of IP header with option
+> field in netvsc_set_hash()
+> 
+> From: Haiyang Zhang <haiyangz@microsoft.com>
+> Date: Tue, 14 Oct 2014 15:16:28 -0700
+> 
+> > In case that the IP header has optional field at the end, this patch
+> > will get the port numbers after that field, and compute the hash.
+> >
+> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+> 
+> Instead of adding hack after hack after hack to your internal header parser, just
+> use the generic flow dissector we already have in the kernel to fetch out the
+> values you need.
+> 
+> __skb_flow_get_ports() etc.
 
---Andy
+Thanks. I will update the patch.
+
+- Haiyang
+
