@@ -1,90 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932487AbaJNPlD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 11:41:03 -0400
-Received: from mail-oi0-f48.google.com ([209.85.218.48]:58022 "EHLO
-	mail-oi0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932229AbaJNPlB (ORCPT
+	id S932541AbaJNPl6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 11:41:58 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:35815 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932229AbaJNPl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 11:41:01 -0400
+	Tue, 14 Oct 2014 11:41:57 -0400
+Date: Tue, 14 Oct 2014 08:41:51 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Octavian Purdila <octavian.purdila@intel.com>
+Cc: wsa@the-dreams.de, johan@kernel.org, linux-i2c@vger.kernel.org,
+        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v2 3/3] i2c: show and change bus frequency via sysfs
+Message-ID: <20141014154151.GB10067@roeck-us.net>
+References: <1413298094-9276-1-git-send-email-octavian.purdila@intel.com>
+ <1413298094-9276-4-git-send-email-octavian.purdila@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <15420.1413169748@turing-police.cc.vt.edu>
-References: <15420.1413169748@turing-police.cc.vt.edu>
-Date: Tue, 14 Oct 2014 08:41:00 -0700
-X-Google-Sender-Auth: eOqt29eXq3URPj7WIBAjjlKO-9Q
-Message-ID: <CAGXu5jLOZ6pR-CTJBsQXR=62RsctB0dxDJRxDOUCiHTb=p+Nfg@mail.gmail.com>
-Subject: Re: [PATCH[ fix duplicate console-efi entries in pstore
-From: Kees Cook <keescook@chromium.org>
-To: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Cc: Anton Vorontsov <anton@enomsg.org>, Colin Cross <ccross@android.com>,
-        Tony Luck <tony.luck@intel.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413298094-9276-4-git-send-email-octavian.purdila@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 12, 2014 at 8:09 PM, Valdis Kletnieks
-<Valdis.Kletnieks@vt.edu> wrote:
-> The pstore filesystem still creates duplicate filename/inode pairs for
-> some pstore types.  Add the id to the filename to prevent that.
+On Tue, Oct 14, 2014 at 05:48:14PM +0300, Octavian Purdila wrote:
+> This patch adds three new sysfs files: bus_frequency,
+> bus_min_frequency and bus_max_frequency which allows the user to view
+> or change the bus frequency on a per bus level.
+> 
+> This is required for the case where multiple busses have the same
+> adapter driver and where a module parameter does not allow controlling
+> the bus speed individually (e.g. USB I2C adapters).
+> 
+> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
+> ---
+>  Documentation/ABI/testing/sysfs-bus-i2c | 30 +++++++++++
+>  drivers/i2c/i2c-core.c                  | 94 +++++++++++++++++++++++++++++++++
+>  include/linux/i2c.h                     | 16 ++++++
+>  3 files changed, 140 insertions(+)
+> 
+> diff --git a/Documentation/ABI/testing/sysfs-bus-i2c b/Documentation/ABI/testing/sysfs-bus-i2c
+> index 8075585..4a7f8e7 100644
+> --- a/Documentation/ABI/testing/sysfs-bus-i2c
+> +++ b/Documentation/ABI/testing/sysfs-bus-i2c
+> @@ -43,3 +43,33 @@ Contact:	linux-i2c@vger.kernel.org
+>  Description:
+>  		An i2c device attached to bus X that is enumerated via
+>  		ACPI. Y is the ACPI device name and its format is "%s".
+> +
+> +What:		/sys/bus/i2c/devices/i2c-X/bus_frequency
+> +KernelVersion:	3.19
+> +Contact:	linux-i2c@vger.kernel.org
+> +Description:
+> +		The current bus frequency for bus X. Can be updated if
+> +		the bus supports it. The unit is HZ and format is
+> +		"%d\n".
+> +		If the bus does not support changing the frequency
+> +		then this entry will be read-only.
+> +		If the bus does not support showing the frequency than
+> +		this entry will not be visible.
+> +		When updating the bus frequency that value must be in
+> +		the range defined by bus_frequency_min and
+> +		bus_frequency_max otherwise writing to this entry will
+> +		fail with -EINVAL.
+> +		The bus may not support all of the frequencies in the
+> +		min-max range and may round the frequency to the
+> +		closest supported one. The user must read the entry
+> +		after writing it to retrieve the actual set frequency.
+> +
+> +What:		/sys/bus/i2c/devices/i2c-X/bus_min_frequency
+> +What:		/sys/bus/i2c/devices/i2c-X/bus_max_frequency
+> +KernelVersion:	3.19
+> +Contact:	linux-i2c@vger.kernel.org
+> +Description:
+> +		Minimum and maximum frequencies for bus X. The unit is
+> +		HZ and format is "%d\n".
+> +		If the bus does not support changing the frequency
+> +		these entries will not be visible.
+> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+> index 632057a..ab77f7f 100644
+> --- a/drivers/i2c/i2c-core.c
+> +++ b/drivers/i2c/i2c-core.c
+> @@ -940,15 +940,101 @@ static DEVICE_ATTR(new_device, S_IWUSR, NULL, i2c_sysfs_new_device);
+>  static DEVICE_ATTR_IGNORE_LOCKDEP(delete_device, S_IWUSR, NULL,
+>  				   i2c_sysfs_delete_device);
+>  
+> +static ssize_t
+> +i2c_sysfs_freq_show(struct device *dev, struct device_attribute *attr,
+> +		    char *buf)
+> +{
+> +	struct i2c_adapter *adap = to_i2c_adapter(dev);
+> +
+> +	return snprintf(buf, PAGE_SIZE, "%d\n", adap->freq);
+> +}
+> +
+> +static ssize_t
+> +i2c_sysfs_freq_store(struct device *dev, struct device_attribute *attr,
+> +		     const char *buf, size_t count)
+> +{
+> +	struct i2c_adapter *adap = to_i2c_adapter(dev);
+> +	unsigned int freq;
+> +	int ret;
+> +
+> +	if (kstrtouint(buf, 0, &freq) || freq < adap->min_freq ||
+> +	    freq > adap->max_freq)
+> +		return -EINVAL;
+> +
+> +	i2c_lock_adapter(adap);
+> +	ret = adap->set_freq(adap, &freq);
+> +	i2c_unlock_adapter(adap);
+> +
+> +	if (ret)
+> +		return ret;
+> +
+> +	adap->freq = freq;
+> +
+> +	return count;
+> +}
+> +
+> +static DEVICE_ATTR(bus_frequency, S_IRUGO, i2c_sysfs_freq_show,
+> +		   i2c_sysfs_freq_store);
 
-Looks good to me, thanks!
+Consider using DEVICE_ATTR_RO here. Also, extra empty line.
 
-Acked-by: Kees Cook <keescook@chromium.org>
+> +
+> +
+> +static ssize_t
+> +i2c_sysfs_min_freq_show(struct device *dev, struct device_attribute *attr,
+> +			  char *buf)
+> +{
+> +	struct i2c_adapter *adap = to_i2c_adapter(dev);
+> +
+> +	return snprintf(buf, PAGE_SIZE, "%d\n", adap->min_freq);
+> +}
+> +
+> +static DEVICE_ATTR(bus_min_frequency, S_IRUGO, i2c_sysfs_min_freq_show, NULL);
+> +
 
--Kees
+Consider using DEVICE_ATTR_RO.
 
->
-> Before patch:
->
-> [/sys/fs/pstore] ls -li
-> total 0
-> 1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
-> 1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
-> 1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
-> 1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
-> 1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
-> 1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
-> 1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
-> 1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
-> 1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
->
->
-> After:
->
-> [/sys/fs/pstore] ls -li
-> total 0
-> 1232 -r--r--r--. 1 root root 148 Sep 29 17:09 console-efi-141202499100000
-> 1231 -r--r--r--. 1 root root  67 Sep 29 17:09 console-efi-141202499200000
-> 1230 -r--r--r--. 1 root root 148 Sep 29 17:44 console-efi-141202705400000
-> 1229 -r--r--r--. 1 root root  67 Sep 29 17:44 console-efi-141202705500000
-> 1228 -r--r--r--. 1 root root  67 Sep 29 20:42 console-efi-141203772600000
-> 1227 -r--r--r--. 1 root root 148 Sep 29 23:42 console-efi-141204854900000
-> 1226 -r--r--r--. 1 root root  67 Sep 29 23:42 console-efi-141204855000000
-> 1225 -r--r--r--. 1 root root 148 Sep 29 23:59 console-efi-141204954200000
-> 1224 -r--r--r--. 1 root root  67 Sep 29 23:59 console-efi-141204954400000
->
-> Signed-off-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
->
-> --- linux-next/fs/pstore/inode.c.orig   2014-10-03 23:58:00.440386528 -0400
-> +++ linux-next/fs/pstore/inode.c        2014-10-09 17:50:50.613829841 -0400
-> @@ -320,10 +320,10 @@ int pstore_mkfile(enum pstore_type_id ty
->                                                 compressed ? ".enc.z" : "");
->                 break;
->         case PSTORE_TYPE_CONSOLE:
-> -               sprintf(name, "console-%s", psname);
-> +               sprintf(name, "console-%s-%lld", psname, id);
->                 break;
->         case PSTORE_TYPE_FTRACE:
-> -               sprintf(name, "ftrace-%s", psname);
-> +               sprintf(name, "ftrace-%s-%lld", psname, id);
->                 break;
->         case PSTORE_TYPE_MCE:
->                 sprintf(name, "mce-%s-%lld", psname, id);
->
+> +static ssize_t
+> +i2c_sysfs_max_freq_show(struct device *dev, struct device_attribute *attr,
+> +			  char *buf)
+> +{
+> +	struct i2c_adapter *adap = to_i2c_adapter(dev);
+> +
+> +	return snprintf(buf, PAGE_SIZE, "%d\n", adap->max_freq);
+> +}
+> +
+> +static DEVICE_ATTR(bus_max_frequency, S_IRUGO, i2c_sysfs_max_freq_show, NULL);
+> +
+Consider using DEVICE_ATTR_RO.
 
+Overall, it seems to me that the bus_ in front of the attrribute names
+is really not necessary. The attributes are attached to the adapter, so it
+should be obvious that the attributes describe the adapter (=bus) frequency and
+not some other frequency.
 
+> +umode_t i2c_adapter_visible_attr(struct kobject *kobj,
+> +				 struct attribute *attr, int idx)
 
--- 
-Kees Cook
-Chrome OS Security
+static umode_t
+
+> +{
+> +	struct device *dev = container_of(kobj, struct device, kobj);
+> +	struct i2c_adapter *adap = to_i2c_adapter(dev);
+> +	umode_t mode = attr->mode;
+> +
+> +	if (attr == &dev_attr_bus_min_frequency.attr)
+> +		return adap->min_freq ? mode : 0;
+> +
+> +	if (attr == &dev_attr_bus_max_frequency.attr)
+> +		return adap->max_freq ? mode : 0;
+> +
+> +	if (attr == &dev_attr_bus_frequency.attr) {
+> +		if (adap->set_freq)
+> +			mode |= S_IWUSR;
+> +		return adap->freq ? mode : 0;
+
+Personally, I would make all those attributes only visible if the adapter
+supports setting the frquency, and not bother with other conditions,
+to keep things simple. Not a strong call, though.
+
+> +	}
+> +
+> +	return mode;
+> +}
+> +
+> +
+extra empty line
+
+>  static struct attribute *i2c_adapter_attrs[] = {
+>  	&dev_attr_name.attr,
+>  	&dev_attr_new_device.attr,
+>  	&dev_attr_delete_device.attr,
+> +	&dev_attr_bus_frequency.attr,
+> +	&dev_attr_bus_min_frequency.attr,
+> +	&dev_attr_bus_max_frequency.attr,
+>  	NULL
+>  };
+>  
+>  static struct attribute_group i2c_adapter_attr_group = {
+>  	.attrs		= i2c_adapter_attrs,
+> +	.is_visible	= i2c_adapter_visible_attr,
+>  };
+>  
+>  static const struct attribute_group *i2c_adapter_attr_groups[] = {
+> @@ -1262,6 +1348,14 @@ int i2c_add_adapter(struct i2c_adapter *adapter)
+>  	struct device *dev = &adapter->dev;
+>  	int id;
+>  
+> +	if (adapter->set_freq) {
+> +		if (!adapter->freq || !adapter->min_freq || !adapter->max_freq)
+> +			return -EINVAL;
+> +	} else {
+> +		if (adapter->min_freq || adapter->max_freq)
+> +			return -EINVAL;
+> +	}
+> +
+>  	if (dev->of_node) {
+>  		id = of_alias_get_id(dev->of_node, "i2c");
+>  		if (id >= 0) {
+> diff --git a/include/linux/i2c.h b/include/linux/i2c.h
+> index 36041e2..3482b09 100644
+> --- a/include/linux/i2c.h
+> +++ b/include/linux/i2c.h
+> @@ -431,6 +431,17 @@ int i2c_generic_scl_recovery(struct i2c_adapter *adap);
+>   *	usb->interface->dev, platform_device->dev etc.)
+>   * @name: name of this i2c bus
+>   * @bus_recovery_info: see struct i2c_bus_recovery_info. Optional.
+> + * @set_freq: set the bus frequency (in HZ) and returns the actual set
+> + * 	value. Since not all the freqeuncies in the min - max interval
+> + * 	may be valid the driver may round the frequency to the closest
+> + * 	supported one. Optional but must be set if min_freq or
+> + * 	max_freq is set.
+> + * @min_freq: minimum bus frequency. Optional but must be set if
+> + *	set_freq is set.
+> + * @max_freq: maximum bus frequency. Optional but must be set if
+> + *	set_freq is set.
+> + * @freq: initial bus frequency. Optional but must be set if set_freq
+> + *	is set.
+>   */
+>  struct i2c_adapter {
+>  	struct module *owner;
+> @@ -438,6 +449,11 @@ struct i2c_adapter {
+>  	const struct i2c_algorithm *algo; /* the algorithm to access the bus */
+>  	void *algo_data;
+>  
+> +	unsigned int freq;
+> +	unsigned int min_freq;
+> +	unsigned int max_freq;
+> +	int (*set_freq)(struct i2c_adapter *a, unsigned int *freq);
+> +
+>  	/* data fields that are valid for all devices	*/
+>  	struct rt_mutex bus_lock;
+>  
+> -- 
+> 1.9.1
+> 
