@@ -1,119 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754582AbaJNCaK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 22:30:10 -0400
-Received: from mail-by2on0131.outbound.protection.outlook.com ([207.46.100.131]:9475
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754275AbaJNCaH convert rfc822-to-8bit (ORCPT
+	id S1754746AbaJNCar (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 22:30:47 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:63345 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754626AbaJNCaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 22:30:07 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] mfd: syscon: binding: Add syscon endianness support.
-Thread-Topic: [PATCH] mfd: syscon: binding: Add syscon endianness support.
-Thread-Index: AQHP0xINjD22MhFkwkuN+h/5uZLojZwvAi+A
-Date: Tue, 14 Oct 2014 02:30:04 +0000
-Message-ID: <a6a3c9cf91444ac9a50f85b8ee2d4635@BY2PR0301MB0613.namprd03.prod.outlook.com>
-References: <1411025249-34333-1-git-send-email-Li.Xiubo@freescale.com>
-In-Reply-To: <1411025249-34333-1-git-send-email-Li.Xiubo@freescale.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [123.151.195.49]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0613;
-x-forefront-prvs: 03648EFF89
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(377454003)(199003)(189002)(13464003)(51704005)(66066001)(64706001)(20776003)(92566001)(74316001)(97736003)(2501002)(40100003)(76576001)(105586002)(107046002)(106356001)(95666004)(86362001)(99286002)(99396003)(54356999)(106116001)(80022003)(76176999)(50986999)(46102003)(19580405001)(19580395003)(21056001)(77096002)(120916001)(101416001)(4396001)(108616004)(76482002)(85852003)(33646002)(85306004)(122556002)(87936001)(31966008)(2656002)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0613;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	Mon, 13 Oct 2014 22:30:46 -0400
+From: Martin Kelly <martin@martingkelly.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
+        x86@kernel.org
+Cc: david.vrabel@citrix.com, boris.ostrovsky@oracle.com,
+        konrad.wilk@oracle.com, hpa@zytor.com, tglx@linutronix.de,
+        mingo@redhat.com, Martin Kelly <martin@martingkelly.com>,
+        Martin Kelly <martkell@amazon.com>
+Subject: [PATCH 1/2] x86: separate out sanitize_e820_map return codes
+Date: Mon, 13 Oct 2014 19:30:16 -0700
+Message-Id: <1413253817-6943-1-git-send-email-martin@martingkelly.com>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi DT guys,
+Previously, sanitize_e820_map returned -1 in all cases in which it did
+nothing. However, sanitize_e820_map can do nothing either because the
+input map has size 1 (this is ok) or because the input map passed in is
+invalid (likely an issue). It is nice for the caller to be able to
+distinguish the two cases and treat them separately.
 
-Could someone help me review or ack this patch?
+Signed-off-by: Martin Kelly <martkell@amazon.com>
+---
+ arch/x86/include/asm/e820.h |  5 +++++
+ arch/x86/kernel/e820.c      | 18 +++++++++++-------
+ 2 files changed, 16 insertions(+), 7 deletions(-)
 
-Thanks very much.
-
-BRs
-Xiubo
-
-
-
-> -----Original Message-----
-> From: Xiubo Li [mailto:Li.Xiubo@freescale.com]
-> Sent: Thursday, September 18, 2014 3:27 PM
-> To: Dong Aisheng-B29396; pankaj.dubey@samsung.com; robh+dt@kernel.org;
-> pawel.moll@arm.com; mark.rutland@arm.com; ijc+devicetree@hellion.org.uk;
-> galak@codeaurora.org; sameo@linux.intel.com; lee.jones@linaro.org;
-> devicetree@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org; Xiubo Li-B47053
-> Subject: [PATCH] mfd: syscon: binding: Add syscon endianness support.
-> 
-> For many drivers which will support rich endianness of Devices
-> need define DT properties by itself with the binding support.
-> 
-> The regmap core has already support endianness of the following
-> case:
-> Index      Device     DT properties needed
-> ------------------------------------------
-> 1          BE         'big-endian'
-> 2          LE         'little-endian'
-> 
-> Please see the regmap binding for more detail information of
-> the endianness support.
-> 
-> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-> ---
-> 
-> 
-> This patch hasn't any dependency with Pankaj Dubey's:
->     mfd: syscon: Decouple syscon interface from platform devices
-> 
-> 
-> 
->  Documentation/devicetree/bindings/mfd/syscon.txt | 17 ++++++++++++++---
->  1 file changed, 14 insertions(+), 3 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/mfd/syscon.txt
-> b/Documentation/devicetree/bindings/mfd/syscon.txt
-> index fe8150b..7c33178 100644
-> --- a/Documentation/devicetree/bindings/mfd/syscon.txt
-> +++ b/Documentation/devicetree/bindings/mfd/syscon.txt
-> @@ -10,11 +10,22 @@ OS driver) to determine the location of the registers, and
-> access the
->  registers directly.
-> 
->  Required properties:
-> -- compatible: Should contain "syscon".
-> -- reg: the register region can be accessed from syscon
-> +- compatible:		Should contain "syscon".
-> +- reg:			The register region can be accessed from syscon
-> 
-> -Examples:
-> +Optional property:
-> +- {big,little}-endian:	Boolean property. Please see ../regmap/regmap.txt
-> +			for more information.
-> +
-> +Example 1:
->  gpr: iomuxc-gpr@020e0000 {
->  	compatible = "fsl,imx6q-iomuxc-gpr", "syscon";
->  	reg = <0x020e0000 0x38>;
->  };
-> +
-> +Example 2:
-> +dcfg: dcfg@1ee0000 {
-> +	compatible = "fsl,ls1021a-dcfg", "syscon";
-> +	reg = <0x0 0x1ee0000 0x0 0x10000>;
-> +	big-endian;
-> +};
-> --
-> 2.1.0.27.g96db324
+diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
+index 779c2ef..96377df 100644
+--- a/arch/x86/include/asm/e820.h
++++ b/arch/x86/include/asm/e820.h
+@@ -12,6 +12,11 @@
+ /* see comment in arch/x86/kernel/e820.c */
+ extern struct e820map e820;
+ extern struct e820map e820_saved;
++/* sanitize_e820_map return codes */
++#define E820_RC_ONLY_ONE (-1)  /* return code when there's only one memory
++				  region in the map */
++#define E820_RC_BAD_MAP (-2)   /* return code when passed a map containing an
++				  invalid memory region */
+ 
+ extern unsigned long pci_mem_start;
+ extern int e820_any_mapped(u64 start, u64 end, unsigned type);
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index 49f8864..3e1fd63 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -189,11 +189,15 @@ void __init e820_print_map(char *who)
+  * (something no more than max_nr_map.)
+  *
+  * The return value from sanitize_e820_map() is zero if it
+- * successfully 'sanitized' the map entries passed in, and is -1
+- * if it did nothing, which can happen if either of (1) it was
+- * only passed one map entry, or (2) any of the input map entries
+- * were invalid (start + size < start, meaning that the size was
+- * so big the described memory range wrapped around through zero.)
++ * successfully 'sanitized' the map entries passed in and negative if it did
++ * nothing. There are two cases in which sanitize_e820_map() does nothing:
++ * (1) it was passed only one map entry, so nothing needs to be done. In this
++ *     case, it returns E820_RC_ONLY_ONE.
++ * (2) any of the input map entries * were invalid (start + size < start)
++ *     meaning that the size was so big the described memory range wrapped
++ *     around through zero. In this case, it returns E820_RC_BAD_MAP.
++ * Since (1) is sometimes an expected case and (2) indicates an error, the
++ * distinct return codes allow callers to handle the two cases separately.
+  *
+  *	Visually we're performing the following
+  *	(1,2,3,4 = memory types)...
+@@ -269,7 +273,7 @@ int __init sanitize_e820_map(struct e820entry *biosmap, int max_nr_map,
+ 
+ 	/* if there's only one memory region, don't bother */
+ 	if (*pnr_map < 2)
+-		return -1;
++		return E820_RC_ONLY_ONE;
+ 
+ 	old_nr = *pnr_map;
+ 	BUG_ON(old_nr > max_nr_map);
+@@ -277,7 +281,7 @@ int __init sanitize_e820_map(struct e820entry *biosmap, int max_nr_map,
+ 	/* bail out if we find any unreasonable addresses in bios map */
+ 	for (i = 0; i < old_nr; i++)
+ 		if (biosmap[i].addr + biosmap[i].size < biosmap[i].addr)
+-			return -1;
++			return E820_RC_BAD_MAP;
+ 
+ 	/* create pointers for initial change-point information (for sorting) */
+ 	for (i = 0; i < 2 * old_nr; i++)
+-- 
+2.1.1
 
