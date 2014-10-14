@@ -1,78 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755477AbaJNRBb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 13:01:31 -0400
-Received: from lists.s-osg.org ([54.187.51.154]:40658 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755370AbaJNRB3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 13:01:29 -0400
-Message-ID: <543D56DB.1090108@osg.samsung.com>
-Date: Tue, 14 Oct 2014 11:01:15 -0600
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1755374AbaJNRFW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 13:05:22 -0400
+Received: from p3plex2out01.prod.phx3.secureserver.net ([184.168.131.12]:35518
+	"EHLO p3plex2out01.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754278AbaJNRFU convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 13:05:20 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Ian Abbott <abbotti@mev.co.uk>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 0/3] staging: comedi: cb_pcimdas: support PCIe-DAS1602/16
+Thread-Topic: [PATCH 0/3] staging: comedi: cb_pcimdas: support
+ PCIe-DAS1602/16
+Thread-Index: AQHP5uMLcBVLK+MV10i86iliAid28Jwv1AIQ
+Date: Tue, 14 Oct 2014 17:05:14 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825FE6212@P3PWEX4MB008.ex4.secureserver.net>
+References: <1413204082-14757-1-git-send-email-abbotti@mev.co.uk>
+In-Reply-To: <1413204082-14757-1-git-send-email-abbotti@mev.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: linus Torvalds <torvalds@linux-foundation.org>
-CC: gregkh@linuxfoundation.org, akpm@linux-foundation.org,
-        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shuah Khan <shuahkh@osg.samsung.com>
-Subject: [GIT PULL] kselftest 3.18-updates-2
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Monday, October 13, 2014 5:41 AM, Ian Abbott wrote:
+> Fix up the block comment style and add support for the PCIe-DAS1602/16.
+> This is the PCI-Express version of the PCIM-DAS1602/16 and is software
+> compatible with it, apart from a different PCI device ID.
+>
+> 1) staging: comedi: cb_pcimdas: use preferred block comment style
+> 2) staging: comedi: cb_pcimdas: update driver comment
+> 3) staging: comedi: cb_pcimdas: add support for PCIe-DAS1602/16
+>
+>  drivers/staging/comedi/Kconfig              |  4 +-
+>  drivers/staging/comedi/drivers/cb_pcimdas.c | 82 ++++++++++++++++-------------
+>  2 files changed, 46 insertions(+), 40 deletions(-)
 
-Here are the second round updates for kselftest for 3.18. Please
-see details in the signed tag.
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-
-The following changes since commit 69e273c0b0a3c337a521d083374c918dc52c666f:
-
-  Linux 3.17-rc3 (2014-08-31 18:23:04 -0700)
-
-are available in the git repository at:
-
-
-git@gitolite.kernel.org:/pub/scm/linux/kernel/git/shuah/linux-kselftest
-tags/kselftest-3.18-updates-2
-
-for you to fetch changes up to 49296470830aa12027f4aa43ec54f19375be095b:
-
-  selftests/timers: change test to use ksft framework (2014-10-06
-08:29:20 -0600)
-
-----------------------------------------------------------------
-3.18 Kselftest updates-2:
-
-This update adds a light weight kselftest framework that
-provides a set of interfaces for tests to use to report
-results. In addition, several tests are updated to use the
-framework.
-
-----------------------------------------------------------------
-Shuah Khan (5):
-      selftests: add kselftest framework for uniform test reporting
-      selftests/breakpoints: change test to use ksft framework
-      selftests/ipc: change test to use ksft framework
-      selftests/kcmp: change test to use ksft framework
-      selftests/timers: change test to use ksft framework
-
- .../selftests/breakpoints/breakpoint_test.c        | 10 ++--
- tools/testing/selftests/ipc/msgque.c               | 26 ++++-----
- tools/testing/selftests/kcmp/kcmp_test.c           | 27 +++++++---
- tools/testing/selftests/kselftest.h                | 62
-++++++++++++++++++++++
- tools/testing/selftests/timers/posix_timers.c      | 14 ++---
- 5 files changed, 110 insertions(+), 29 deletions(-)
- create mode 100644 tools/testing/selftests/kselftest.h
-
-thanks,
--- Shuah
--- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
