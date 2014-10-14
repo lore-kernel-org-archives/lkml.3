@@ -1,90 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932683AbaJNQYk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 12:24:40 -0400
-Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:27058 "EHLO
-	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932236AbaJNQYj (ORCPT
+	id S1754725AbaJNQ11 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 12:27:27 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:45709 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753373AbaJNQ10 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 12:24:39 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AskNAHRNPVRbtAZ+/2dsb2JhbABbgw6BK7h2BQFzmhaBFhcBfYQwLyOBGjeIQgG3V49HhiCKJR2ENQWGLYski3qBLoZzjXCBRwGCMTsvgkoBAQE
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 1/1 linux-next] fs/affs/file.c: forward declaration clean-up
-Date: Tue, 14 Oct 2014 18:24:31 +0200
-Message-Id: <1413303871-6353-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.3
+	Tue, 14 Oct 2014 12:27:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAGOxZ51vPf7wR8FccbCjv=08Zjs_mNCj7CiWBE_j6qr7ZHSD9Q@mail.gmail.com>
+References: <1413000976-2038-1-git-send-email-dianders@chromium.org>
+	<CAGOxZ51vPf7wR8FccbCjv=08Zjs_mNCj7CiWBE_j6qr7ZHSD9Q@mail.gmail.com>
+Date: Tue, 14 Oct 2014 09:27:24 -0700
+X-Google-Sender-Auth: T0Lg58KTivdqDIwq0WbImVZM-fA
+Message-ID: <CAD=FV=Vr422LByF2crb+vvHkhvt5LSxq3oFF8BXVMBBEZYFZTg@mail.gmail.com>
+Subject: Re: [PATCH] mmc: dw_mmc: Change signal voltage error to dev_dbg()
+From: Doug Anderson <dianders@chromium.org>
+To: Alim Akhtar <alim.akhtar@gmail.com>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>, Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Addy Ke <addy.ke@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>, Chris Ball <chris@printf.net>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--Move file_operations to avoid forward declarations.
--Remove unused declarations.
+Alim,
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/affs/file.c | 38 ++++++++++++++++----------------------
- 1 file changed, 16 insertions(+), 22 deletions(-)
+On Tue, Oct 14, 2014 at 5:02 AM, Alim Akhtar <alim.akhtar@gmail.com> wrote:
+>> --- a/drivers/mmc/host/dw_mmc.c
+>> +++ b/drivers/mmc/host/dw_mmc.c
+>> @@ -1075,7 +1075,7 @@ static int dw_mci_switch_voltage(struct mmc_host *mmc, struct mmc_ios *ios)
+>>                 ret = regulator_set_voltage(mmc->supply.vqmmc, min_uv, max_uv);
+>>
+>>                 if (ret) {
+>> -                       dev_err(&mmc->class_dev,
+>> +                       dev_dbg(&mmc->class_dev,
+>>                                          "Regulator set error %d: %d - %d\n",
+>>                                          ret, min_uv, max_uv);
+>>                         return ret;
+> Well, I am ok with this but this info is very useful, what if PMIC
+> failed to actually set the voltage? may be because of some PMIC driver
+> bug or i2c driver bug? Ofcourse this can be found by turning MMC_DEBUG
+> ON, but is that worth in this case. Or is there a way to print that,
+> this failure is because of a regulator re-try?
+> your thoughts?
 
-diff --git a/fs/affs/file.c b/fs/affs/file.c
-index 1ed590a..8e2e60e 100644
---- a/fs/affs/file.c
-+++ b/fs/affs/file.c
-@@ -18,29 +18,7 @@
- #error PAGE_SIZE must be at least 4096
- #endif
- 
--static int affs_grow_extcache(struct inode *inode, u32 lc_idx);
--static struct buffer_head *affs_alloc_extblock(struct inode *inode, struct buffer_head *bh, u32 ext);
--static inline struct buffer_head *affs_get_extblock(struct inode *inode, u32 ext);
- static struct buffer_head *affs_get_extblock_slow(struct inode *inode, u32 ext);
--static int affs_file_open(struct inode *inode, struct file *filp);
--static int affs_file_release(struct inode *inode, struct file *filp);
--
--const struct file_operations affs_file_operations = {
--	.llseek		= generic_file_llseek,
--	.read		= new_sync_read,
--	.read_iter	= generic_file_read_iter,
--	.write		= new_sync_write,
--	.write_iter	= generic_file_write_iter,
--	.mmap		= generic_file_mmap,
--	.open		= affs_file_open,
--	.release	= affs_file_release,
--	.fsync		= affs_file_fsync,
--	.splice_read	= generic_file_splice_read,
--};
--
--const struct inode_operations affs_file_inode_operations = {
--	.setattr	= affs_notify_change,
--};
- 
- static int
- affs_file_open(struct inode *inode, struct file *filp)
-@@ -961,3 +939,19 @@ int affs_file_fsync(struct file *filp, loff_t start, loff_t end, int datasync)
- 	mutex_unlock(&inode->i_mutex);
- 	return ret;
- }
-+const struct file_operations affs_file_operations = {
-+	.llseek		= generic_file_llseek,
-+	.read		= new_sync_read,
-+	.read_iter	= generic_file_read_iter,
-+	.write		= new_sync_write,
-+	.write_iter	= generic_file_write_iter,
-+	.mmap		= generic_file_mmap,
-+	.open		= affs_file_open,
-+	.release	= affs_file_release,
-+	.fsync		= affs_file_fsync,
-+	.splice_read	= generic_file_splice_read,
-+};
-+
-+const struct inode_operations affs_file_inode_operations = {
-+	.setattr	= affs_notify_change,
-+};
--- 
-1.9.3
+I think that the regulator framework and the i2c framework are
+supposed to be reliable.  If they aren't reliable there will be lots
+of places that will have problems.  I think that you _could_:
 
+* In your regulator driver print an error when an i2c transfer fails.
+
+* In your regulator driver print an error if some unexpected event
+happens (like a regulator reports that the voltage didn't actually
+change).
+
+That would get you want you want, right?  ...but an error here doesn't
+belong and that's pretty much determined by (28f92b5 mmc: core: Try
+other signal levels during power up).  That patch wants to be able to
+try several different voltage levels and if we print an error in that
+case then it's going to be very confusing to the user.
+
+-Doug
