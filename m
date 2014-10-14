@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755349AbaJNRpn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 13:45:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62676 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753866AbaJNRpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 13:45:41 -0400
-Date: Tue, 14 Oct 2014 19:42:29 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Chen, Hanxiao" <chenhanxiao@cn.fujitsu.com>
-Cc: "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Howells <dhowells@redhat.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segooon@gmail.com>, Mateusz Guzik <mguzik@redhat.com>
-Subject: Re: [PATCHv4] procfs: show hierarchy of pid namespace
-Message-ID: <20141014174229.GA31533@redhat.com>
-References: <1412762198-21825-1-git-send-email-chenhanxiao@cn.fujitsu.com> <20141008151328.GB4835@redhat.com> <5871495633F38949900D2BF2DC04883E5E1649@G08CNEXMBPEKD02.g08.fujitsu.local> <20141009213414.GA10705@redhat.com> <5871495633F38949900D2BF2DC04883E5E864C@G08CNEXMBPEKD02.g08.fujitsu.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5871495633F38949900D2BF2DC04883E5E864C@G08CNEXMBPEKD02.g08.fujitsu.local>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755406AbaJNRqX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 13:46:23 -0400
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:35550 "EHLO
+	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755369AbaJNRqW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 13:46:22 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AskNAHZgPVRbtAZ+/2dsb2JhbABbgw6BK7h2BQFzmhaBFhcBfYQwLyOBGjeIQgG3Z48bLIYgiiUdhDUFmH2EToxciTWBRwGCMTsvgkoBAQE
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Chris Mason <clm@fb.com>,
+        Josef Bacik <jbacik@fb.com>, linux-btrfs@vger.kernel.org
+Subject: [RFC 1/1 linux-next] btrfs: don't opencode zero_user_segment
+Date: Tue, 14 Oct 2014 19:46:14 +0200
+Message-Id: <1413308774-9985-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/13, Chen, Hanxiao wrote:
->
-> > At the same time, for_each_process() in the global namespace can be
-> > faster if there are a lot of sub-threads.
-> >
-> > > Perhaps that's not a good way.
-> >
-> > OK, I won't insist.
-> >
-> > although it would be nice to know why do you think this is bad.
-> >
-> I worried about it may slower in global namespace.
-> But it will provide a great convenient way when query pid hierarchy
-> when not in init_pid_ns.
+use function defined in include/linux/highmem.h
+Note that this reverts 2 last function call order
 
-Yes, it is not clear what is actually better, so ...
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/btrfs/scrub.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-> I'll post a new patch using find_ge_pid + get_pid
-
-Only if you think this makes more sense. I do not have a strong opinion.
-
-And we can change the implementation at any time. The real problem is
-the API this patch adds. I leave this to you and other reviewers who
-understand the problem space better ;) Just I think that the changelog
-could say a bit more, to explain why do we need this patch. IOW, explain
-the problem and how/why this patch helps.
-
-Oleg.
+diff --git a/fs/btrfs/scrub.c b/fs/btrfs/scrub.c
+index efa0831..fa063cd 100644
+--- a/fs/btrfs/scrub.c
++++ b/fs/btrfs/scrub.c
+@@ -1503,13 +1503,9 @@ static int scrub_write_page_to_dev_replace(struct scrub_block *sblock,
+ 	struct scrub_page *spage = sblock->pagev[page_num];
+ 
+ 	BUG_ON(spage->page == NULL);
+-	if (spage->io_error) {
+-		void *mapped_buffer = kmap_atomic(spage->page);
++	if (spage->io_error)
++		zero_user_segment(spage->page, 0, PAGE_CACHE_SIZE);
+ 
+-		memset(mapped_buffer, 0, PAGE_CACHE_SIZE);
+-		flush_dcache_page(spage->page);
+-		kunmap_atomic(mapped_buffer);
+-	}
+ 	return scrub_add_page_to_wr_bio(sblock->sctx, spage);
+ }
+ 
+-- 
+1.9.3
 
