@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754195AbaJNBLZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 21:11:25 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:34698 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753961AbaJNBLX (ORCPT
+	id S1754180AbaJNBT2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 21:19:28 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:37800 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753946AbaJNBT1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 21:11:23 -0400
-Date: Tue, 14 Oct 2014 10:11:12 +0900
-From: Gyungoh Yoo <gyungoh@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: sameo@linux.intel.com, lee.jones@linaro.org, jg1.han@samsung.com,
-        cooloney@gmail.com, lgirdwood@gmail.com, jack.yoo@skyworksinc.com,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        grant.likely@linaro.org, robh+dt@kernel.org, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
-        shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
-        trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
-        jic23@kernel.org
-Subject: Re: [RESUBMIT PATCH v4 7/8] regulator: sky81452: Add compatible
- string for device binding
-Message-ID: <20141014011112.GB2751@jack-ThinkPad-T520>
-References: <1412657745-7812-1-git-send-email-jack.yoo@skyworksinc.com>
- <1413179262-27636-1-git-send-email-jack.yoo@skyworksinc.com>
- <1413179262-27636-8-git-send-email-jack.yoo@skyworksinc.com>
- <20141013103512.GJ27755@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20141013103512.GJ27755@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 13 Oct 2014 21:19:27 -0400
+From: Martin Kelly <martin@martingkelly.com>
+To: xen-devel@lists.xenproject.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, tglx@linutronix.de, mingo@redhat.com,
+        Martin Kelly <martin@martingkelly.com>,
+        Martin Kelly <martkell@amazon.com>
+Subject: [PATCH] xen/setup: add paranoid index check and warning
+Date: Mon, 13 Oct 2014 18:19:08 -0700
+Message-Id: <1413249548-26415-1-git-send-email-martin@martingkelly.com>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 13, 2014 at 12:35:12PM +0200, Mark Brown wrote:
-> On Mon, Oct 13, 2014 at 02:47:41PM +0900, Gyungoh Yoo wrote:
-> 
-> > -	np = of_get_child_by_name(dev->parent->of_node, "regulator");
-> > -	if (unlikely(!np)) {
-> > +	if (!np) {
-> >  		dev_err(dev, "regulator node not found");
-> > -		return NULL;
-> > +		return ERR_PTR(-ENODATA);
-> >  	}
-> 
-> If you're doing anything here you should convert the code to use the
-> simplified interface for parsing regulator data based on putting the
-> subnode name and regualtor name in the regulator descriptor.
+In a call to set_phys_range_identity, i-1 is used without checking that
+i is non-zero. Although unlikely, a bug in the code before it could
+cause the value to be 0, leading to erroneous behavior. This patch adds
+a check against 0 value and a corresponding warning.
 
-Thank you for the review.
+Signed-off-by: Martin Kelly <martkell@amazon.com>
+---
+ arch/x86/xen/setup.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-The driver has of_device_id.
+diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+index af72161..26e39af 100644
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -671,7 +671,10 @@ char * __init xen_memory_setup(void)
+ 	 * PFNs above MAX_P2M_PFN are considered identity mapped as
+ 	 * well.
+ 	 */
+-	set_phys_range_identity(map[i-1].addr / PAGE_SIZE, ~0ul);
++	if (i > 0)
++		set_phys_range_identity(map[i-1].addr / PAGE_SIZE, ~0ul);
++	else
++		WARN(1, "Something went wrong clamping memory to a factor of EXTRA_MEM_RATIO!");
+ 
+ 	/*
+ 	 * In domU, the ISA region is normal, usable memory, but we
+-- 
+2.1.1
 
-static const struct of_device_id sky81452_reg_of_match[] = {
-        { .compatible = "skyworks,sky81452-regulator", },
-        { }
-};
-
-And the MFD adds the driver with of_compatible="skyworks,sky81452-regulator".
-MFD core maps the device node and the regulator driver does
-not need to parse the subnode name.
-
-Thanks.
