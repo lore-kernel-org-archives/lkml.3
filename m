@@ -1,53 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932532AbaJNTeA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 15:34:00 -0400
-Received: from smtprelay0083.hostedemail.com ([216.40.44.83]:33393 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754278AbaJNTd6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 15:33:58 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3350:3622:3865:3866:3870:3871:3872:4321:5007:7652:10004:10400:10848:11232:11658:11914:12296:12517:12519:12740:13069:13095:13311:13357:14040:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: flame16_225e45378d856
-X-Filterd-Recvd-Size: 1763
-Message-ID: <1413315062.10221.1.camel@joe-AO725>
-Subject: Re: [PATCH v4] mtd: ubi: Extend UBI layer debug/messaging
- capabilities
-From: Joe Perches <joe@perches.com>
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>,
-        Tanya Brokhman <tlinder@codeaurora.org>, linux-mtd@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Richard Weinberger <richard@nod.at>,
-        open list <linux-kernel@vger.kernel.org>
-In-Reply-To: <20141014191815.GB12662@arch.hh.imgtec.org>
-References: <1413296037-22346-1-git-send-email-tlinder@codeaurora.org>
-	 <20141014143902.GA9768@arch.hh.imgtec.org>
-	 <1413299343.7906.103.camel@sauron.fi.intel.com>
-	 <20141014184702.GA12662@arch.hh.imgtec.org>
-	 <1413314020.26864.7.camel@joe-AO725>
-	 <20141014191815.GB12662@arch.hh.imgtec.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Tue, 14 Oct 2014 12:31:02 -0700
-Mime-Version: 1.0
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Content-Transfer-Encoding: 7bit
+	id S932240AbaJNTkM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 15:40:12 -0400
+Received: from mail-bn1on0093.outbound.protection.outlook.com ([157.56.110.93]:39168
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755357AbaJNTkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 15:40:09 -0400
+From: <atull@opensource.altera.com>
+To: <dinguyen@opensource.altera.com>, <linux@arm.linux.org.uk>
+CC: <pavel@denx.de>, <arnd@arndb.de>, <s.trumtrar@pengutronix.de>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <delicious.quinoa@gmail.com>, <yvanderv@opensource.altera.com>,
+        Alan Tull <atull@opensource.altera.com>
+Subject: [PATCH v3 1/2] socfpga: hotplug: put cpu1 in wfi
+Date: Tue, 14 Oct 2014 14:33:38 -0500
+Message-ID: <1413315219-28885-2-git-send-email-atull@opensource.altera.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1413315219-28885-1-git-send-email-atull@opensource.altera.com>
+References: <1413315219-28885-1-git-send-email-atull@opensource.altera.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: CY1PR09CA0021.namprd09.prod.outlook.com (25.160.223.31) To
+ BL2PR03MB307.namprd03.prod.outlook.com (10.141.68.21)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB307;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 03648EFF89
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(199003)(46102003)(80022003)(42186005)(33646002)(87976001)(89996001)(81156004)(106356001)(48376002)(95666004)(122386002)(77096002)(50466002)(229853001)(77156001)(19580395003)(40100003)(97736003)(105586002)(107046002)(19580405001)(50986999)(99396003)(101416001)(85852003)(53416004)(20776003)(64706001)(47776003)(92726001)(86152002)(92566001)(86362001)(93916002)(31966008)(87286001)(62966002)(66066001)(85306004)(76176999)(69596002)(104166001)(21056001)(76482002)(4396001)(50226001)(120916001);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB307;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-10-14 at 16:18 -0300, Ezequiel Garcia wrote:
-> On 14 Oct 12:13 PM, Joe Perches wrote:
-> > On Tue, 2014-10-14 at 15:47 -0300, Ezequiel Garcia wrote:
-[]
-> > > When the gendisk is not available, a simple pr_{} would work.
-> > 
-> > Or maybe combine these in the ubi_<level> calls passing
-> > NULL when there is no struct ubi_device *
-[]
-> Isn't this excessive obfuscation? What's the benefit of it?
+From: Alan Tull <atull@opensource.altera.com>
 
-Single error message type.
+Use WFI when putting CPU1 to sleep.  Don't hold CPU1 in reset
+since that results in increased power consumption.
+
+Reset CPU1 briefly during CPU1 bootup.
+
+This has been tested for hotplug and suspend/resume and results
+in no increased power consumption.
+
+Signed-off-by: Alan Tull <atull@opensource.altera.com>
+Cc: Pavel Machek <pavel@denx.de>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Dinh Nguyen <dinguyen@opensource.altera.com>
+---
+v2: no need to flush the caches
+    clean up spacing in comments
+    replace a register offset with a macro
+v3: Use writel, not __raw_writel
+---
+ arch/arm/mach-socfpga/core.h    |    3 +++
+ arch/arm/mach-socfpga/platsmp.c |   19 +++++++++++--------
+ 2 files changed, 14 insertions(+), 8 deletions(-)
+
+diff --git a/arch/arm/mach-socfpga/core.h b/arch/arm/mach-socfpga/core.h
+index 572b8f7..953a9c0 100644
+--- a/arch/arm/mach-socfpga/core.h
++++ b/arch/arm/mach-socfpga/core.h
+@@ -21,6 +21,7 @@
+ #define __MACH_CORE_H
+ 
+ #define SOCFPGA_RSTMGR_CTRL	0x04
++#define SOCFPGA_RSTMGR_MODMPURST	0x10
+ #define SOCFPGA_RSTMGR_MODPERRST	0x14
+ #define SOCFPGA_RSTMGR_BRGMODRST	0x1c
+ 
+@@ -28,6 +29,8 @@
+ #define RSTMGR_CTRL_SWCOLDRSTREQ	0x1	/* Cold Reset */
+ #define RSTMGR_CTRL_SWWARMRSTREQ	0x2	/* Warm Reset */
+ 
++#define RSTMGR_MPUMODRST_CPU1		0x2     /* CPU1 Reset */
++
+ extern void socfpga_secondary_startup(void);
+ extern void __iomem *socfpga_scu_base_addr;
+ 
+diff --git a/arch/arm/mach-socfpga/platsmp.c b/arch/arm/mach-socfpga/platsmp.c
+index 5356a72..9166dd4 100644
+--- a/arch/arm/mach-socfpga/platsmp.c
++++ b/arch/arm/mach-socfpga/platsmp.c
+@@ -34,17 +34,21 @@ static int socfpga_boot_secondary(unsigned int cpu, struct task_struct *idle)
+ 	int trampoline_size = &secondary_trampoline_end - &secondary_trampoline;
+ 
+ 	if (cpu1start_addr) {
++		/* This will put CPU #1 into reset. */
++		writel(RSTMGR_MPUMODRST_CPU1,
++		       rst_manager_base_addr + SOCFPGA_RSTMGR_MODMPURST);
++
+ 		memcpy(phys_to_virt(0), &secondary_trampoline, trampoline_size);
+ 
+-		__raw_writel(virt_to_phys(socfpga_secondary_startup),
+-			(sys_manager_base_addr + (cpu1start_addr & 0x000000ff)));
++		writel(virt_to_phys(socfpga_secondary_startup),
++		       sys_manager_base_addr + (cpu1start_addr & 0x000000ff));
+ 
+ 		flush_cache_all();
+ 		smp_wmb();
+ 		outer_clean_range(0, trampoline_size);
+ 
+-		/* This will release CPU #1 out of reset.*/
+-		__raw_writel(0, rst_manager_base_addr + 0x10);
++		/* This will release CPU #1 out of reset. */
++		writel(0, rst_manager_base_addr + SOCFPGA_RSTMGR_MODMPURST);
+ 	}
+ 
+ 	return 0;
+@@ -86,10 +90,9 @@ static void __init socfpga_smp_prepare_cpus(unsigned int max_cpus)
+  */
+ static void socfpga_cpu_die(unsigned int cpu)
+ {
+-	cpu_do_idle();
+-
+-	/* We should have never returned from idle */
+-	panic("cpu %d unexpectedly exit from shutdown\n", cpu);
++	/* Do WFI. If we wake up early, go back into WFI */
++	while (1)
++		cpu_do_idle();
+ }
+ 
+ struct smp_operations socfpga_smp_ops __initdata = {
+-- 
+1.7.9.5
 
