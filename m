@@ -1,220 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932533AbaJNPWz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 11:22:55 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:48604 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932199AbaJNPWx (ORCPT
+	id S932409AbaJNPa0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 11:30:26 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:34867 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932199AbaJNPaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 11:22:53 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-35-543d3fcabd20
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, Felipe Balbi <balbi@ti.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Sangjung Woo <sangjung.woo@samsung.com>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jingoo Han <jg1.han@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        stable@vger.kernel.org
-Subject: [PATCH v2] extcon: Fix sleeping in atomic context after connecting USB
- cable
-Date: Tue, 14 Oct 2014 17:22:43 +0200
-Message-id: <1413300163-22794-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrIJMWRmVeSWpSXmKPExsVy+t/xa7qn7G1DDJqmy1tsnLGe1eLg/XqL
-	61+es1o0L17PZnF54SVWi9cvDC3ONr1ht7i8aw6bxdojd9ktbjeuYLNYsKfEYsHGR4wOPB77
-	565h9+jbsorR4/iN7UwenzfJBbBEcdmkpOZklqUW6dslcGVcevOWrWCOTcX8/g2MDYzHjboY
-	OTkkBEwk9i7awAphi0lcuLeerYuRi0NIYCmjxJt375ghnD4mif2/T4NVsQkYS2xevgSsSkTg
-	IJPE4VPnWEAcZoE1jBLbf05nB6kSFgiXaOhYAGazCKhKNGw8xgxi8wq4S8w6vpoZYp+cxMlj
-	k1knMHIvYGRYxSiaWppcUJyUnmuoV5yYW1yal66XnJ+7iRESTF92MC4+ZnWIUYCDUYmHtyDS
-	JkSINbGsuDL3EKMEB7OSCK8Ch22IEG9KYmVValF+fFFpTmrxIUYmDk6pBsZZF67mXJpdcTck
-	vEhBsNJAzNJ7TqTKejkmP0ul93/WzF/Nk1JsFJF4QuK92c6iy6qbLvWzr3334Ftr3n89vk37
-	52tUvn2+o7c65/028b9Lv0l767dtksyUjFvufH7vNabJ1Vu3JTyc96rd/FK/p9W2OXOMNPbl
-	Zv/xLvF2isu7YXDkve8kN3klluKMREMt5qLiRACxVvuxBAIAAA==
+	Tue, 14 Oct 2014 11:30:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAGBcZGe=HszCxQyx8bBDUEQcF4g+gcMyLfGiM4dVz4=TfxvLpg@mail.gmail.com>
+References: <CAGBcZGfHX57jwCfw7CnvLgOJ58kd0KVJULOvhAsfi=3YBp5WsQ@mail.gmail.com>
+	<20141013095310.GZ14343@console-pimps.org>
+	<CAGBcZGe=HszCxQyx8bBDUEQcF4g+gcMyLfGiM4dVz4=TfxvLpg@mail.gmail.com>
+Date: Tue, 14 Oct 2014 18:30:22 +0300
+Message-ID: <CAGBcZGfSdYa2yXW68RbywzCiC7mTxjAdGjUnwnhjWAwXZ0uqiQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] efi: Capsule update support
+From: Sam Protsenko <semen.protsenko@linaro.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Matt Fleming <matt.fleming@intel.com>,
+        Leif Lindholm <leif.lindholm@linaro.org>, hock.leong.kweh@intel.com,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sleeping in atomic context happens because:
-1. Extcon is notifying with raw notifier chain under spin lock.
-2. Notified charger-manager calls sleeping functions.
+Matt,
 
-Solve the problem in a generic way (not charger-manager specific)
-because the extcon is exporting as API its raw notifier chain with
-extcon_register_notifier().
+I tried to play with your code and now I have some extra notes about this patch:
 
-Notify on cable change not directly in extcon_update_state(), but from
-scheduled work on ordered workqueue.
+1. As it was proposed earlier, I support thought that it would be nice to
+   rename function names in next way:
 
-Details on issue:
-=================
-Kernel built with extcon and charger-manager. After connecting the USB
-cable:
-[    6.534930] max77693-muic max77693-muic: external connector is attached(chg_type:0x1, prev_chg_type:0x1)
-[    6.544043] max77693-muic max77693-muic: CONTROL1 : 0x09, CONTROL2 : 0x04, state : attached
-[    6.551539] BUG: sleeping function called from invalid context at kernel/locking/mutex.c:615
-[    6.559691] in_atomic(): 1, irqs_disabled(): 128, pid: 1248, name: kworker/2:1
-[    6.566892] 4 locks held by kworker/2:1/1248:
-[    6.571229]  #0:  ("events"){.+.+.+}, at: [<c0039648>] process_one_work+0x114/0x3f4
-[    6.578867]  #1:  ((&info->irq_work)){+.+...}, at: [<c0039648>] process_one_work+0x114/0x3f4
-[    6.587287]  #2:  (&info->mutex){+.+...}, at: [<c038e56c>] max77693_muic_irq_work+0x28/0x120
-[    6.595706]  #3:  (&(&edev->lock)->rlock){......}, at: [<c038c3b8>] extcon_update_state+0x20/0x204
-[    6.604648] irq event stamp: 3944
-[    6.607945] hardirqs last  enabled at (3943): [<c0068fb4>] vprintk_emit+0x1dc/0x5c0
-[    6.615584] hardirqs last disabled at (3944): [<c048b5ac>] _raw_spin_lock_irqsave+0x1c/0x5c
-[    6.623917] softirqs last  enabled at (0): [<c0020c7c>] copy_process.part.54+0x3f4/0x1520
-[    6.632076] softirqs last disabled at (0): [<  (null)>]   (null)
-[    6.638065] Preemption disabled at:[<  (null)>]   (null)
-[    6.643359]
-[    6.644843] CPU: 2 PID: 1248 Comm: kworker/2:1 Not tainted 3.17.0-next-20141007-00047-g1b95596dfa88 #302
-[    6.654307] Workqueue: events max77693_muic_irq_work
-[    6.659277] [<c0014d2c>] (unwind_backtrace) from [<c0011c98>] (show_stack+0x10/0x14)
-[    6.666986] [<c0011c98>] (show_stack) from [<c0484d18>] (dump_stack+0x70/0xbc)
-[    6.674186] [<c0484d18>] (dump_stack) from [<c0487b38>] (mutex_lock_nested+0x24/0x458)
-[    6.682087] [<c0487b38>] (mutex_lock_nested) from [<c028ef6c>] (regmap_read+0x30/0x60)
-[    6.689990] [<c028ef6c>] (regmap_read) from [<c033d830>] (max77693_charger_get_property+0x20c/0x244)
-[    6.699113] [<c033d830>] (max77693_charger_get_property) from [<c03365f8>] (power_supply_get_property+0x20/0x2c)
-[    6.709255] [<c03365f8>] (power_supply_get_property) from [<c033a0a4>] (is_ext_pwr_online+0x30/0xb8)
-[    6.718364] [<c033a0a4>] (is_ext_pwr_online) from [<c033b6ac>] (charger_extcon_notifier+0x40/0x70)
-[    6.727306] [<c033b6ac>] (charger_extcon_notifier) from [<c038bf4c>] (_call_per_cable+0x40/0x4c)
-[    6.736080] [<c038bf4c>] (_call_per_cable) from [<c00402b4>] (notifier_call_chain+0x64/0xd4)
-[    6.744492] [<c00402b4>] (notifier_call_chain) from [<c0040340>] (raw_notifier_call_chain+0x18/0x20)
-[    6.753607] [<c0040340>] (raw_notifier_call_chain) from [<c038c440>] (extcon_update_state+0xa8/0x204)
-[    6.762807] [<c038c440>] (extcon_update_state) from [<c038de44>] (max77693_muic_chg_handler+0x1f4/0x25c)
-[    6.772267] [<c038de44>] (max77693_muic_chg_handler) from [<c038e650>] (max77693_muic_irq_work+0x10c/0x120)
-[    6.781992] [<c038e650>] (max77693_muic_irq_work) from [<c00396b4>] (process_one_work+0x180/0x3f4)
-[    6.790930] [<c00396b4>] (process_one_work) from [<c003998c>] (worker_thread+0x30/0x458)
-[    6.799000] [<c003998c>] (worker_thread) from [<c003f374>] (kthread+0xd8/0xf4)
-[    6.806209] [<c003f374>] (kthread) from [<c000f268>] (ret_from_fork+0x14/0x2c)
+     efi_update_capsule -> __efi_update_capsule
+     efi_capsule_update -> efi_update_capsule
 
-The first sleeping function is is_ext_pwr_online()
-(drivers/power/charger-manager.c). The atomic context initiating the
-flow is set up in extcon_update_state() (drivers/extcon/extcon-class.c).
+   because it's quite confusing to have both efi_update_capsule() and
+   efi_capsule_update(). Besides, EFI function called UpdateCapsule, so it's
+   good idea to stick to this name in kernel API (I mean exporting
+   efi_update_capsule() instead of efi_capsule_update()).
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: <stable@vger.kernel.org>
-Fixes: 0ea625037826 ("Extcon: renamed files to comply with the standard naming.")
+2. UEFI's UpdateCapsule() runtime service supports passing more than one
+   capsule to it (we can pass CapsuleCount argument to it for this purpose).
+   But your particular kernel implementation allows us only to provide one
+   capsule at a time. Is that was done for a reason? Can it be consider as
+   shortcoming?
 
----
+3. I noticed that you dropped efi_capsule_build() in this patch (w.r.t.
+   https://git.kernel.org/cgit/linux/kernel/git/mfleming/efi.git/
+   implementation). BTW, it should be declared in header there.
+   Anyway, how do we suppose to build capsule to pass to efi_capsule_update()?
+   I mean, it can take a quite large code to build a capsule (allocating pages
+   etc). Wouldn't it be easier to user to use your API if it has something
+   ready to use? Anyway, if it should be done like this, it would be nice
+   to have a decent example code (use-case) how to use this API (maybe in
+   Documentation/, idk), because it looks quite non-intuitive (for me at least).
 
-Changes since v1:
-1. Re-work after discussions MyungJoo Ham. Don't change spin locks into
-   mutexes but completely move raw_notifier_call_chain out of atomic
-   context.
-2. Mark cc-stable.
----
- drivers/extcon/extcon-class.c | 47 ++++++++++++++++++++++++++++++++++++++++++-
- include/linux/extcon.h        |  1 +
- 2 files changed, 47 insertions(+), 1 deletion(-)
+4. Tedious stuff: I checked your patch with "checkpatch.pl" and it shows
+    some warnings, please fix them if possible.
 
-diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
-index 4c2f2c543bb7..e3aaa02954bb 100644
---- a/drivers/extcon/extcon-class.c
-+++ b/drivers/extcon/extcon-class.c
-@@ -34,6 +34,16 @@
- #include <linux/of.h>
- 
- /*
-+ * Not part of API.
-+ * Work item for notifing on update state.
-+ */
-+struct notifier_work {
-+	struct extcon_dev *edev;
-+	u32 old_state;
-+	struct work_struct work;
-+};
-+
-+/*
-  * extcon_cable_name suggests the standard cable names for commonly used
-  * cable types.
-  *
-@@ -187,6 +197,32 @@ static ssize_t cable_state_show(struct device *dev,
- 					       cable->cable_index));
- }
- 
-+static void update_state_notifier_worker(struct work_struct *_work)
-+{
-+	struct notifier_work *work = container_of(_work, struct notifier_work,
-+			work);
-+
-+	raw_notifier_call_chain(&work->edev->nh, work->old_state, work->edev);
-+	kfree(work);
-+}
-+
-+static int queue_update_state_notifier(struct extcon_dev *edev, u32 old_state)
-+{
-+	struct notifier_work *work;
-+
-+	work = kzalloc(sizeof(*work), GFP_NOWAIT);
-+	if (!work)
-+		return -ENOMEM;
-+
-+	work->edev = edev;
-+	work->old_state = old_state;
-+	INIT_WORK(&work->work, update_state_notifier_worker);
-+
-+	queue_work(edev->noti_workqueue, &work->work);
-+
-+	return 0;
-+}
-+
- /**
-  * extcon_update_state() - Update the cable attach states of the extcon device
-  *			   only for the masked bits.
-@@ -216,6 +252,7 @@ int extcon_update_state(struct extcon_dev *edev, u32 mask, u32 state)
- 
- 	if (edev->state != ((edev->state & ~mask) | (state & mask))) {
- 		u32 old_state = edev->state;
-+		int ret;
- 
- 		if (check_mutually_exclusive(edev, (edev->state & ~mask) |
- 						   (state & mask))) {
-@@ -226,7 +263,12 @@ int extcon_update_state(struct extcon_dev *edev, u32 mask, u32 state)
- 		edev->state &= ~mask;
- 		edev->state |= state & mask;
- 
--		raw_notifier_call_chain(&edev->nh, old_state, edev);
-+		ret = queue_update_state_notifier(edev, old_state);
-+		if (ret) {
-+			spin_unlock_irqrestore(&edev->lock, flags);
-+			return ret;
-+		}
-+
- 		/* This could be in interrupt handler */
- 		prop_buf = (char *)get_zeroed_page(GFP_ATOMIC);
- 		if (prop_buf) {
-@@ -588,6 +630,8 @@ struct extcon_dev *extcon_dev_allocate(const char **supported_cable)
- 	edev->max_supported = 0;
- 	edev->supported_cable = supported_cable;
- 
-+	edev->noti_workqueue = create_singlethread_workqueue("extcon");
-+
- 	return edev;
- }
- 
-@@ -597,6 +641,7 @@ struct extcon_dev *extcon_dev_allocate(const char **supported_cable)
-  */
- void extcon_dev_free(struct extcon_dev *edev)
- {
-+	destroy_workqueue(edev->noti_workqueue);
- 	kfree(edev);
- }
- EXPORT_SYMBOL_GPL(extcon_dev_free);
-diff --git a/include/linux/extcon.h b/include/linux/extcon.h
-index 36f49c405dfb..327bf5d85920 100644
---- a/include/linux/extcon.h
-+++ b/include/linux/extcon.h
-@@ -123,6 +123,7 @@ struct extcon_dev {
- 	/* Internal data. Please do not set. */
- 	struct device dev;
- 	struct raw_notifier_head nh;
-+	struct workqueue_struct *noti_workqueue;
- 	struct list_head entry;
- 	int max_supported;
- 	spinlock_t lock;	/* could be called by irq handler */
--- 
-1.9.1
+I will try to test and verify this patch further, will notify you if
+notice any issues.
 
+
+On 13 October 2014 18:43, Sam Protsenko <semen.protsenko@linaro.org> wrote:
+>> When I originally wrote this patch in 2013 arm64 support didn't exist,
+>> and ia64 isn't going to be using capsule support. I can separate that
+>> out into a separate patch though, no problem.
+>
+> For me it's just the matter of good VCS practices. In this case I call
+> this "patch atomicity" (one patch per feature). It's not about your
+> patch particularly, it's just policy. In the end it boils down to next
+> two things:
+>  1. Separating common code from platform code makes it easier to use
+> "git bisect" in case of regressions.
+>  2. This way if we want to revert patch, we can revert only stuff we
+> want, not touching another part (e.g. you want to revert platform
+> code, you can keep common code in place).
+>
+>> Next time, could you please quote the part of the patch you're
+>> commenting on inline? That would have saved me searching through the
+>> original email.
+>
+> Sure, my bad. I know it's general approach in mailing lists to review
+> patch, just forgot it.
+>
+>
+> On 13 October 2014 12:53, Matt Fleming <matt@console-pimps.org> wrote:
+>> On Fri, 10 Oct, at 06:55:49PM, Sam Protsenko wrote:
+>>> Hi Matt,
+>>>
+>>> 1. Why x86 code isn't separated to another patch?
+>>
+>> When I originally wrote this patch in 2013 arm64 support didn't exist,
+>> and ia64 isn't going to be using capsule support. I can separate that
+>> out into a separate patch though, no problem.
+>>
+>>> 2. drivers/firmware/efi/reboot.c: efi_reboot():
+>>>     One shouldn't use "printk()" with no KERN_* stuff passed into it.
+>>> I'd recommend to use "pr_info()" macro or something like that.
+>>
+>> Oops, I missed that, good catch.
+>>
+>> Next time, could you please quote the part of the patch you're
+>> commenting on inline? That would have saved me searching through the
+>> original email.
+>>
+>> --
+>> Matt Fleming, Intel Open Source Technology Center
