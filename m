@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755593AbaJNURM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 16:17:12 -0400
-Received: from mail-oi0-f74.google.com ([209.85.218.74]:38472 "EHLO
-	mail-oi0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755422AbaJNUQy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 16:16:54 -0400
-From: Yu Zhao <yuzhao@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Hugh Dickins <hughd@google.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Bob Liu <lliubbo@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        David Rientjes <rientjes@google.com>, Vlastimil Babka <vbabka@suse.cz>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Yu Zhao <yuzhao@google.com>
-Subject: [PATCH 2/2] mm: verify compound order when freeing a page
-Date: Tue, 14 Oct 2014 13:16:40 -0700
-Message-Id: <1413317800-25450-2-git-send-email-yuzhao@google.com>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1413317800-25450-1-git-send-email-yuzhao@google.com>
-References: <1413317800-25450-1-git-send-email-yuzhao@google.com>
+	id S1755647AbaJNUSN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 16:18:13 -0400
+Received: from mailsec102.isp.belgacom.be ([195.238.20.98]:44154 "EHLO
+	mailsec102.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755470AbaJNUSL convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 16:18:11 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=xmGiAQlKtCF5+ra7FDB8hpYjXxwBLBdzsqYiSFHyMzI= c=1 sm=2
+ a=IkcTkHD0fZMA:10 a=Yvs7EeInAAAA:8 a=cOu4thG3uavfUlSrHS4A:9
+ a=QEXdDO2ut3YA:10 a=myC0mAPUGvMA:10
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Al8fANeDPVTD7hTS/2dsb2JhbABbgw6BK4MGtXIGmwkCgRYWAX0EMwEBg0kBAQEDASNWBQsFBg4KAgIYDgICVwYTEYglDLF8hn+OKgEBAQcCAR+BLIR0iiUHgneBVAWYfZEqiTWDeTsvgkoBAQE
+Date: Tue, 14 Oct 2014 22:18:09 +0200 (CEST)
+From: Fabian Frederick <fabf@skynet.be>
+Reply-To: Fabian Frederick <fabf@skynet.be>
+To: Zach Brown <zab@zabbo.net>
+Cc: Josef Bacik <jbacik@fb.com>, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, Chris Mason <clm@fb.com>
+Message-ID: <468850260.110326.1413317889395.open-xchange@webmail.nmp.skynet.be>
+In-Reply-To: <20141014191542.GB6838@lenny.home.zabbo.net>
+References: <1413308774-9985-1-git-send-email-fabf@skynet.be> <20141014191542.GB6838@lenny.home.zabbo.net>
+Subject: Re: [RFC 1/1 linux-next] btrfs: don't opencode zero_user_segment
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Priority: 3
+Importance: Medium
+X-Mailer: Open-Xchange Mailer v7.2.2-Rev27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows us to easily catch the bug fixed in previous patch.
 
-Here we also verify whether a page is tail page or not -- tail
-pages are supposed to be freed along with their head, not by
-themselves.
 
-Signed-off-by: Yu Zhao <yuzhao@google.com>
----
- mm/page_alloc.c | 3 +++
- 1 file changed, 3 insertions(+)
+> On 14 October 2014 at 21:15 Zach Brown <zab@zabbo.net> wrote:
+>
+>
+> On Tue, Oct 14, 2014 at 07:46:14PM +0200, Fabian Frederick wrote:
+> > use function defined in include/linux/highmem.h
+> > Note that this reverts 2 last function call order
+>
+> And adds a BUG_ON(PAGE_CACHE_SIZE > PAGE_SIZE).  We can take bets on
+> whether that will ever trigger.
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 736d8e1..2bcc770 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -750,6 +750,9 @@ static bool free_pages_prepare(struct page *page, unsigned int order)
- 	int i;
- 	int bad = 0;
- 
-+	VM_BUG_ON(PageTail(page));
-+	VM_BUG_ON(PageHead(page) && compound_order(page) != order);
-+
- 	trace_mm_page_free(page, order);
- 	kmemcheck_free_shadow(page, order);
- 
--- 
-2.1.0.rc2.206.gedb03e5
+There are 36 zero_user_segment with PAGE_CACHE_SIZE callsites.
+Maybe we could add some specific function to avoid BUG_ON tests ?
 
+Fabian
+>
+> - z
