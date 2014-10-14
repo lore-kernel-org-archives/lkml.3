@@ -1,43 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755188AbaJNKju (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 06:39:50 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46899 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754775AbaJNKjt (ORCPT
+	id S1755081AbaJNKtG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 06:49:06 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:47622 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752778AbaJNKtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 06:39:49 -0400
-Date: Tue, 14 Oct 2014 11:39:45 +0100
-From: Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH v6] ASoC: dapm: add code to configure dai link
-	parameters
-Message-ID: <20141014103945.GA25013@opensource.wolfsonmicro.com>
-References: <1412957836-2186-1-git-send-email-nikesh@opensource.wolfsonmicro.com> <20141010164959.GG18557@sirena.org.uk>
+	Tue, 14 Oct 2014 06:49:05 -0400
+Date: Tue, 14 Oct 2014 18:48:55 +0800
+From: Real Name <enjoymindful@gmail.com>
+To: linux@roeck-us.net
+Cc: tj@kernel.org, starvik@axis.com, jesper.nilsson@axis.com,
+        linux-cris-kernel@axis.com, linux-kernel@vger.kernel.org
+Subject: why commit 3189eddbcafc cause crisv32 panic
+Message-ID: <20141014104855.GA1813@name>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/mixed; boundary="G4iJoqBmSsgzjUCe"
 Content-Disposition: inline
-In-Reply-To: <20141010164959.GG18557@sirena.org.uk>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 10, 2014 at 05:49:59PM +0100, Mark Brown wrote:
-> On Fri, Oct 10, 2014 at 05:17:15PM +0100, Nikesh Oswal wrote:
-> > dai-link params for codec-codec links were fixed. The fixed
-> > link between codec and another chip which may be another codec,
-> > baseband, bluetooth codec etc may require run time configuaration
-> > changes. This change provides an optional alsa control to select
-> > one of the params from a list of params.
-> 
-> Has anything changed since the previous version?  I've postponed
-> reviewing that until after the merge window given the way you were
-> ignoring feedback and the approach of the merge window, is this a new
-> version or just a reposting.
 
->>> Since it was not merged or reviewed since long, I just did a  reposting 
-of previous version of the patch
+--G4iJoqBmSsgzjUCe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+hi, Guenter
+ 
+http://www.gossamer-threads.com/lists/linux/kernel/2011061
+
+>[PATCH] Revert "percpu: free percpu allocation info for uniprocessor system"
+>
+> The commit causes a hang with a crisv32 image. This may be an architecture
+> problem, but at least for now the revert is necessary to be able to boot a
+> crisv32 image. 
+
+Yes, it is a crisv32 specific issue. The crisv32 was paniced on the BUG() macro
+in function mark_bootmem. The call path is :
+
+pcpu_free_alloc_info
+	-> memblock_free_early
+		-> free_bootmem
+			-> mark_bootmem
+				-> BUG()
+
+The root source is that arch/cris/kernel/setup.c:setup_arch compute start_pfn
+and max_pfn from *virtual* address.
+
+|---------- arch/cris/kernel/setup.c:setup_arch -----------------------
+|	start_pfn = PFN_UP(memory_start);  /* usually c0000000 + kernel + romfs */
+|	max_pfn =   PFN_DOWN((unsigned long)high_memory); /* usually c0000000 + dram size */
+|---------- arch/cris/kernel/setup.c:setup_arch -----------------------
+
+So, when memblock_free_early pass the *physical* address of ai to mark_bootmem.
+The first if statement of mark_bootmem become ture. And then hit the BUG() macro.
+
+After applied the attached patch, pcpu_free_alloc_info works as expect. It had
+been test with your toolchain and patches you provided to me.
+http://server.roeck-us.net/qemu/crisv32/
+
+cc'ed Mikael and Jesper, as they are Axis staff.
+
+thanks
+
+--G4iJoqBmSsgzjUCe
+Content-Type: text/x-diff; charset=us-ascii
+Content-Disposition: attachment; filename="why_3189eddbcafc_cause_crisv32_panic.patch"
+
+diff --git a/mm/percpu.c b/mm/percpu.c
+index 2139e30..cbbc946 100644
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -1097,7 +1097,12 @@ struct pcpu_alloc_info * __init pcpu_alloc_alloc_info(int nr_groups,
+  */
+ void __init pcpu_free_alloc_info(struct pcpu_alloc_info *ai)
+ {
+-	memblock_free_early(__pa(ai), ai->__ai_size);
++	/* This patch is unacceptable, as it broken other arch.
++	* It was created to explain why commit 3189eddbcafc ("percpu:
++	* free percpu allocation info for uniprocessor system") cause
++	* crisv32 panic. PLEASE DO NOT APPLY THIS PATCH.
++	*/
++	memblock_free_early((unsigned long)(ai), ai->__ai_size);
+ }
+ 
+ /**
+@@ -1932,6 +1937,8 @@ void __init setup_per_cpu_areas(void)
+ 
+ 	if (pcpu_setup_first_chunk(ai, fc) < 0)
+ 		panic("Failed to initialize percpu areas.");
++
++	pcpu_free_alloc_info(ai);
+ }
+ 
+ #endif	/* CONFIG_SMP */
+
+--G4iJoqBmSsgzjUCe--
