@@ -1,58 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932131AbaJNVfB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 17:35:01 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:39752 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971AbaJNVe7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 17:34:59 -0400
+	id S932522AbaJNVgI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 17:36:08 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:38675 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751162AbaJNVgH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 17:36:07 -0400
+Date: Tue, 14 Oct 2014 23:35:03 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Cc: dwmw2@infradead.org, computersforpeace@gmail.com, jg1.han@samsung.com,
+        andrew@lunn.ch, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mtd: orion_nand: fix error code path in probe
+Message-ID: <20141014213503.GD5331@lunn.ch>
+References: <1413296198-29486-1-git-send-email-michael.opdenacker@free-electrons.com>
 MIME-Version: 1.0
-In-Reply-To: <20140918223909.GO17875@mwanda>
-References: <1410710597-14520-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <20140915082346.GB17875@mwanda> <CAFo99gZUiSB2cgSAAj7EBjZJTs7QxvCDZr6Wms3ud5qQvBWQMw@mail.gmail.com>
- <20140918085105.GB16827@mwanda> <CAFo99gbNPLiEFSmeQOpeNwD=cSkXs79tfu2BJqZfmiX8dEsYWA@mail.gmail.com>
- <20140918223909.GO17875@mwanda>
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Date: Tue, 14 Oct 2014 23:34:37 +0200
-Message-ID: <CAFo99gYFjr_Kdz9_orYdNwJ191h5ikV8SdovQxAdagjSA=2Q4w@mail.gmail.com>
-Subject: Re: [PATCH] staging: lustre: lustre: libcfs: debug.c: Cleaning up
- unnecessary use of memset in conjunction with strncpy
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peng Tao <bergwolf@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413296198-29486-1-git-send-email-michael.opdenacker@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-09-19 0:39 GMT+02:00 Dan Carpenter <dan.carpenter@oracle.com>:
-> On Thu, Sep 18, 2014 at 09:57:17PM +0200, Rickard Strandqvist wrote:
->>
->> Should I add this as a patch in lib/string.c or email him first.. What
->> is customary in these situations?
->>
->
-> Just write up a normal patch and try to merge it through the normal
-> methods.
->
-> It's not that controversial to do:
->
->         strncpy(dest, src, n);
->         dest[n] = '\0';
->
-> That's what we have been open coding all over the place anyway already.
+On Tue, Oct 14, 2014 at 04:16:38PM +0200, Michael Opdenacker wrote:
+> This replaces kzalloc() and ioremap() calls by
+> the corresponding devm_ functions in the probe() routine,
+> which automatically release the corresponding resources
+> when probe() fails or when the device is removed.
+> 
+> This simplifies the error management code and
+> fixes a bug reported by "make coccicheck":
+> 
+> if "board = devm_kzalloc()" fails, the probe()
+> function jumps incorrectly to label "no_res" and
+> therefore returns without running "iounmap()"
+> 
+> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+> ---
+>  drivers/mtd/nand/orion_nand.c | 28 +++++++++-------------------
+>  1 file changed, 9 insertions(+), 19 deletions(-)
+> 
+> diff --git a/drivers/mtd/nand/orion_nand.c b/drivers/mtd/nand/orion_nand.c
+> index 471b4df3a5ac..a9c2bde16c25 100644
+> --- a/drivers/mtd/nand/orion_nand.c
+> +++ b/drivers/mtd/nand/orion_nand.c
+> @@ -19,7 +19,7 @@
+>  #include <linux/mtd/partitions.h>
+>  #include <linux/clk.h>
+>  #include <linux/err.h>
+> -#include <asm/io.h>
+> +#include <linux/io.h>
+>  #include <asm/sizes.h>
+>  #include <linux/platform_data/mtd-orion_nand.h>
+>  
+> @@ -85,32 +85,30 @@ static int __init orion_nand_probe(struct platform_device *pdev)
+>  	int ret = 0;
+>  	u32 val = 0;
+>  
+> -	nc = kzalloc(sizeof(struct nand_chip) + sizeof(struct mtd_info), GFP_KERNEL);
+> +	nc = devm_kzalloc(&pdev->dev,
+> +			sizeof(struct nand_chip) + sizeof(struct mtd_info),
+> +			GFP_KERNEL);
+>  	if (!nc) {
+> -		ret = -ENOMEM;
+> -		goto no_res;
+> +		return -ENOMEM;
+>  	}
+>  	mtd = (struct mtd_info *)(nc + 1);
+>  
+>  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>  	if (!res) {
+> -		ret = -ENODEV;
+> -		goto no_res;
+> +		return -ENODEV;
+>  	}
+>  
+> -	io_base = ioremap(res->start, resource_size(res));
+> +	io_base = devm_ioremap(&pdev->dev, res->start, resource_size(res));
+>  	if (!io_base) {
+>  		dev_err(&pdev->dev, "ioremap failed\n");
+> -		ret = -EIO;
+> -		goto no_res;
+> +		return -EIO;
+>  	}
 
+Hi Michael
 
-Hi Dan!
+It is quite a common pattern to use:
 
-I have tried the function strzcpy that we talk about, but it has not
-happened anything:-(
+        res = platform_get_resource(dev, IORESOURCE_MEM, 0);
+        c->membase = devm_ioremap_resource(&dev->dev, res);
+        if (IS_ERR(c->membase))
+	   return PTR_ERR(c->membase)
 
-Is there anything else I can do?
+which is more compact.
 
+>  
+>  	if (pdev->dev.of_node) {
+>  		board = devm_kzalloc(&pdev->dev, sizeof(struct orion_nand_data),
+>  					GFP_KERNEL);
+>  		if (!board) {
+> -			ret = -ENOMEM;
+> -			goto no_res;
+> +			return -ENOMEM;
+>  		}
 
-Kind regards
-Rickard Strandqvist
+Doesn't this now break the coding style? No need to have the {} since
+it is a single statement.
+
+   Andrew
