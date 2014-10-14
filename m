@@ -1,76 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755812AbaJNXbs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 19:31:48 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:34409 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755763AbaJNXbk (ORCPT
+	id S1755873AbaJNXdf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 19:33:35 -0400
+Received: from mail-oi0-f43.google.com ([209.85.218.43]:38236 "EHLO
+	mail-oi0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755562AbaJNXdc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 19:31:40 -0400
-Date: Wed, 15 Oct 2014 00:31:26 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Daniel Drake <drake@endlessm.com>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        linaro-kernel@lists.linaro.org, patches@linaro.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 3.17-rc4 v7 0/6] arm: Implement
- arch_trigger_all_cpu_backtrace
-Message-ID: <20141014233126.GF27405@n2100.arm.linux.org.uk>
-References: <1410970218-28847-1-git-send-email-daniel.thompson@linaro.org>
- <CAD8Lp44gPOBh_q1zDy3y1GkrRVAvix5YaNr-+E92+g8Q7fLKJA@mail.gmail.com>
+	Tue, 14 Oct 2014 19:33:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAD8Lp44gPOBh_q1zDy3y1GkrRVAvix5YaNr-+E92+g8Q7fLKJA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CALCETrVnjrBt3odufhAirf45_REq-S9T=HpoEWqmFef2M6PucA@mail.gmail.com>
+References: <1413235430-22944-1-git-send-email-adityakali@google.com> <CALCETrVnjrBt3odufhAirf45_REq-S9T=HpoEWqmFef2M6PucA@mail.gmail.com>
+From: Aditya Kali <adityakali@google.com>
+Date: Tue, 14 Oct 2014 16:33:11 -0700
+Message-ID: <CAGr1F2HOhX-GQgi_Aep8kvyrLpKb60foDx7wkkfT5cG=hOKdig@mail.gmail.com>
+Subject: Re: [PATCHv1 0/8] CGroup Namespaces
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>, cgroups@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Rohit Jnagal <jnagal@google.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 14, 2014 at 04:37:51PM -0600, Daniel Drake wrote:
-> Hi,
-> 
-> Thanks a lot for working on this!
-> 
-> On Wed, Sep 17, 2014 at 10:10 AM, Daniel Thompson
-> <daniel.thompson@linaro.org> wrote:
-> > Changes *before* v1:
-> >
-> > * This patchset is a hugely cut-down successor to "[PATCH v11 00/19]
-> >   arm: KGDB NMI/FIQ support". Thanks to Thomas Gleixner for suggesting
-> >   the new structure. For historic details see:
-> >         https://lkml.org/lkml/2014/9/2/227
-> 
-> What's the right way to extend your work in order to get a NMI-like
-> watchdog hard lockup detector similar to the one on x86?
-> 
-> I'm testing your patches on Exynos4412 and I guess in their current
-> state they don't go quite this deep, as the only callers of
-> trigger_all_cpu_backtrace() are sysrq, hung_task and spinlock debug
-> code - none of which seem as fail-safe as a trigger like a
-> pre-programmed watchdog NMI interrupt would be.
-> 
-> Do I need to find a way to get CONFIG_FIQ available on this platform
-> first? and/or CONFIG_HARDLOCKUP_DETECTOR?
+On Tue, Oct 14, 2014 at 3:42 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Mon, Oct 13, 2014 at 2:23 PM, Aditya Kali <adityakali@google.com> wrote:
+>> Second take at the Cgroup Namespace patch-set.
+>>
+>> Major changes form RFC (V0):
+>> 1. setns support for cgroupns
+>> 2. 'mount -t cgroup cgroup <mntpt>' from inside a cgroupns now
+>>    mounts the cgroup hierarcy with cgroupns-root as the filesystem root.
+>> 3. writes to cgroup files outside of cgroupns-root are not allowed
+>> 4. visibility of /proc/<pid>/cgroup is further restricted by not showing
+>>    anything if the <pid> is in a sibling cgroupns and its cgroup falls outside
+>>    your cgroupns-root.
+>>
+>> More details in the writeup below.
+>>
+>> Background
+>>   Cgroups and Namespaces are used together to create “virtual”
+>>   containers that isolates the host environment from the processes
+>>   running in container. But since cgroups themselves are not
+>>   “virtualized”, the task is always able to see global cgroups view
+>>   through cgroupfs mount and via /proc/self/cgroup file.
+>>
+>>   $ cat /proc/self/cgroup
+>>   0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/c_job_id1
+>>
+>>   This exposure of cgroup names to the processes running inside a
+>>   container results in some problems:
+>>   (1) The container names are typically host-container-management-agent
+>>       (systemd, docker/libcontainer, etc.) data and leaking its name (or
+>>       leaking the hierarchy) reveals too much information about the host
+>>       system.
+>>   (2) It makes the container migration across machines (CRIU) more
+>>       difficult as the container names need to be unique across the
+>>       machines in the migration domain.
+>>   (3) It makes it difficult to run container management tools (like
+>>       docker/libcontainer, lmctfy, etc.) within virtual containers
+>>       without adding dependency on some state/agent present outside the
+>>       container.
+>>
+>>   Note that the feature proposed here is completely different than the
+>>   “ns cgroup” feature which existed in the linux kernel until recently.
+>>   The ns cgroup also attempted to connect cgroups and namespaces by
+>>   creating a new cgroup every time a new namespace was created. It did
+>>   not solve any of the above mentioned problems and was later dropped
+>>   from the kernel. Incidentally though, it used the same config option
+>>   name CONFIG_CGROUP_NS as used in my prototype!
+>>
+>> Introducing CGroup Namespaces
+>>   With unified cgroup hierarchy
+>>   (Documentation/cgroups/unified-hierarchy.txt), the containers can now
+>>   have a much more coherent cgroup view and its easy to associate a
+>>   container with a single cgroup. This also allows us to virtualize the
+>>   cgroup view for tasks inside the container.
+>>
+>>   The new CGroup Namespace allows a process to “unshare” its cgroup
+>>   hierarchy starting from the cgroup its currently in.
+>>   For Ex:
+>>   $ cat /proc/self/cgroup
+>>   0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/c_job_id1
+>>   $ ls -l /proc/self/ns/cgroup
+>>   lrwxrwxrwx 1 root root 0 2014-07-15 10:37 /proc/self/ns/cgroup -> cgroup:[4026531835]
+>>   $ ~/unshare -c  # calls unshare(CLONE_NEWCGROUP) and exec’s /bin/bash
+>>   [ns]$ ls -l /proc/self/ns/cgroup
+>>   lrwxrwxrwx 1 root root 0 2014-07-15 10:35 /proc/self/ns/cgroup ->
+>>   cgroup:[4026532183]
+>>   # From within new cgroupns, process sees that its in the root cgroup
+>>   [ns]$ cat /proc/self/cgroup
+>>   0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/
+>>
+>>   # From global cgroupns:
+>>   $ cat /proc/<pid>/cgroup
+>>   0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/c_job_id1
+>>
+>>   # Unshare cgroupns along with userns and mountns
+>>   # Following calls unshare(CLONE_NEWCGROUP|CLONE_NEWUSER|CLONE_NEWNS), then
+>>   # sets up uid/gid map and exec’s /bin/bash
+>>   $ ~/unshare -c -u -m
+>>
+>>   # Originally, we were in /batchjobs/c_job_id1 cgroup. Mount our own cgroup
+>>   # hierarchy.
+>>   [ns]$ mount -t cgroup cgroup /tmp/cgroup
+>>   [ns]$ ls -l /tmp/cgroup
+>>   total 0
+>>   -r--r--r-- 1 root root 0 2014-10-13 09:32 cgroup.controllers
+>>   -r--r--r-- 1 root root 0 2014-10-13 09:32 cgroup.populated
+>>   -rw-r--r-- 1 root root 0 2014-10-13 09:25 cgroup.procs
+>>   -rw-r--r-- 1 root root 0 2014-10-13 09:32 cgroup.subtree_control
+>>
+>>   The cgroupns-root (/batchjobs/c_job_id1 in above example) becomes the
+>>   filesystem root for the namespace specific cgroupfs mount.
+>>
+>>   The virtualization of /proc/self/cgroup file combined with restricting
+>>   the view of cgroup hierarchy by namespace-private cgroupfs mount
+>>   should provide a completely isolated cgroup view inside the container.
+>>
+>>   In its current form, the cgroup namespaces patcheset provides following
+>>   behavior:
+>>
+>>   (1) The “root” cgroup for a cgroup namespace is the cgroup in which
+>>       the process calling unshare is running.
+>>       For ex. if a process in /batchjobs/c_job_id1 cgroup calls unshare,
+>>       cgroup /batchjobs/c_job_id1 becomes the cgroupns-root.
+>>       For the init_cgroup_ns, this is the real root (“/”) cgroup
+>>       (identified in code as cgrp_dfl_root.cgrp).
+>>
+>>   (2) The cgroupns-root cgroup does not change even if the namespace
+>>       creator process later moves to a different cgroup.
+>>       $ ~/unshare -c # unshare cgroupns in some cgroup
+>>       [ns]$ cat /proc/self/cgroup
+>>       0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/
+>>       [ns]$ mkdir sub_cgrp_1
+>>       [ns]$ echo 0 > sub_cgrp_1/cgroup.procs
+>>       [ns]$ cat /proc/self/cgroup
+>>       0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/sub_cgrp_1
+>>
+>>   (3) Each process gets its CGROUPNS specific view of
+>>       /proc/<pid>/cgroup.
+>>   (a) Processes running inside the cgroup namespace will be able to see
+>>       cgroup paths (in /proc/self/cgroup) only inside their root cgroup
+>>       [ns]$ sleep 100000 &  # From within unshared cgroupns
+>>       [1] 7353
+>>       [ns]$ echo 7353 > sub_cgrp_1/cgroup.procs
+>>       [ns]$ cat /proc/7353/cgroup
+>>       0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/sub_cgrp_1
+>>
+>>   (b) From global cgroupns, the real cgroup path will be visible:
+>>       $ cat /proc/7353/cgroup
+>>       0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/c_job_id1/sub_cgrp_1
+>
+> This is a little weird.  Not sure it's a problem.
+>
+>>
+>>   (c) From a sibling cgroupns (cgroupns root-ed at a sibling cgroup), no cgroup
+>>       path will be visible:
+>>       # ns2's cgroupns-root is at '/batchjobs/c_job_id2'
+>>       [ns2]$ cat /proc/7353/cgroup
+>>       [ns2]$
+>>       This is same as when cgroup hierarchy is not mounted at all.
+>>       (In correct container setup though, it should not be possible to
+>>        access PIDs in another container in the first place.)
+>>
+>>   (4) Processes inside a cgroupns are not allowed to move out of the
+>>       cgroupns-root. This is true even if a privileged process in global
+>>       cgroupns tries to move the process out of its cgroupns-root.
+>>
+>>       # From global cgroupns
+>>       $ cat /proc/7353/cgroup
+>>       0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/c_job_id1/sub_cgrp_1
+>>       # cgroupns-root for 7353 is /batchjobs/c_job_id1
+>>       $ echo 7353 > batchjobs/c_job_id2/cgroup.procs
+>>       -bash: echo: write error: Operation not permitted
+>>
+>
+>>
+>>   (6) When some thread from a multi-threaded process unshares its
+>>       cgroup-namespace, the new cgroupns gets applied to the entire
+>>       process (all the threads). This should be OK since
+>>       unified-hierarchy only allows process-level containerization. So
+>>       all the threads in the process will have the same cgroup. And both
+>>       - changing cgroups and unsharing namespaces - are protected under
+>>       threadgroup_lock(task).
+>
+> This seems odd to me.  Does unsharing the cgroupns unshare for all
+> tasks in the process?  If not, then I think that it shouldn't change
+> the cgroup either.
+>
 
-The blocker on this work right now is the annoying Versatile Express
-platform, which pretty much means that we currently can't push the
-code into the GIC to support FIQs.  As long as adding FIQ support to
-the GIC results in the Versatile Express becoming non-bootable, the
-idea of using FIQs is a total non-starter.
+Unsharing cgorupns unshares for all tasks in the process, yes.
 
-Or we decide that we dump the platform completely (which will upset
-a number of developers.)
+The cgroup changes are protected by threadgroup_lock. So it made sense
+to protect cgroupns changes (unshare or setns) by the same lock as we
+don't want task's cgroup to change underneath while we are changing
+its cgroup-namespace. No cgroup change happens during the
+unshare/setns call.
 
-I have patches I'm using for trigger_all_cpu_backtrace() which I'm
-maintaining privately in my tree until we can get the FIQ situation
-sorted.
+> What did you end up doing to grant permission to unshare the cgroup ns?
+>
 
+Currently the only requirement is ns_capable(cgroupns->user_ns,
+CAP_SYS_ADMIN). Its possible to refine this further, but for now I
+just kept it simpler. I am looking into the explicit permission check
+discussed previously (https://lkml.org/lkml/2014/7/29/402), but wanted
+to get this out sooner.
+
+> --Andy
+
+Thanks,
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Aditya
