@@ -1,129 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755527AbaJNT4x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 15:56:53 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:48242 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754278AbaJNT4v convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 15:56:51 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: nicolas.dichtel@6wind.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
-        akpm@linux-foundation.org, adobriyan@gmail.com, rui.xiang@huawei.com,
-        viro@zeniv.linux.org.uk, oleg@redhat.com, gorcunov@openvz.org,
-        kirill.shutemov@linux.intel.com, grant.likely@secretlab.ca,
-        tytso@mit.edu, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <20141006.181448.1696747135961247651.davem@davemloft.net>
-	<1412672559-5256-1-git-send-email-nicolas.dichtel@6wind.com>
-	<1412672559-5256-2-git-send-email-nicolas.dichtel@6wind.com>
-	<543BB42B.30505@6wind.com>
-Date: Tue, 14 Oct 2014 12:56:11 -0700
-In-Reply-To: <543BB42B.30505@6wind.com> (Nicolas Dichtel's message of "Mon, 13
-	Oct 2014 13:14:51 +0200")
-Message-ID: <87y4sis9wk.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1755565AbaJNT6Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 15:58:25 -0400
+Received: from mail.eperm.de ([89.247.134.16]:54060 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754705AbaJNT6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 15:58:24 -0400
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] crypto: drbg - use crypto_inc
+Date: Tue, 14 Oct 2014 21:50:13 +0200
+Message-ID: <1838543.MpsGos9GAS@myon.chronox.de>
+User-Agent: KMail/4.14.1 (Linux/3.16.4-200.fc20.x86_64; KDE/4.14.1; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-XM-AID: U2FsdGVkX1/RoAOuvmeJYafEUC0CajCg5uCXKnYbuto=
-X-SA-Exim-Connect-IP: 98.234.51.111
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4998]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.2 T_XMDrugObfuBody_14 obfuscated drug references
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;nicolas.dichtel@6wind.com
-X-Spam-Relay-Country: 
-X-Spam-Timing: total 463 ms - load_scoreonly_sql: 0.15 (0.0%),
-	signal_user_changed: 4.7 (1.0%), b_tie_ro: 3.2 (0.7%), parse: 1.48 (0.3%),
-	extract_message_metadata: 25 (5.4%), get_uri_detail_list: 2.8 (0.6%),
-	tests_pri_-1000: 11 (2.4%), tests_pri_-950: 1.56 (0.3%), tests_pri_-900: 1.29
-	(0.3%), tests_pri_-400: 35 (7.5%), check_bayes: 33 (7.2%), b_tokenize: 10
-	(2.2%), b_tok_get_all: 14 (3.0%), b_comp_prob: 3.4 (0.7%), b_tok_touch_all:
-	2.4 (0.5%), b_finish: 0.74 (0.2%), tests_pri_0: 373 (80.6%), tests_pri_500: 6
-	(1.2%), rewrite_mail: 0.00 (0.0%)
-Subject: Re: [PATCH linux v3 1/1] fs/proc: use a rb tree for the directory entries
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nicolas Dichtel <nicolas.dichtel@6wind.com> writes:
+The DRBG internal buffer addition function is replaced with crypto_inc when
+a buffer is to be incremented by one.
 
-> Le 07/10/2014 11:02, Nicolas Dichtel a écrit :
->> The current implementation for the directories in /proc is using a single
->> linked list. This is slow when handling directories with large numbers of
->> entries (eg netdevice-related entries when lots of tunnels are opened).
->>
->> This patch replaces this linked list by a red-black tree.
->>
->> Here are some numbers:
->>
->> dummy30000.batch contains 30 000 times 'link add type dummy'.
->>
->> Before the patch:
->> $ time ip -b dummy30000.batch
->> real	2m31.950s
->> user	0m0.440s
->> sys	2m21.440s
->> $ time rmmod dummy
->> real	1m35.764s
->> user	0m0.000s
->> sys	1m24.088s
->>
->> After the patch:
->> $ time ip -b dummy30000.batch
->> real	2m0.874s
->> user	0m0.448s
->> sys	1m49.720s
->> $ time rmmod dummy
->> real	1m13.988s
->> user	0m0.000s
->> sys	1m1.008s
->>
->> The idea of improving this part was suggested by
->> Thierry Herbelot <thierry.herbelot@6wind.com>.
->>
->> Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
->> Acked-by: David S. Miller <davem@davemloft.net>
-Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
->> ---
->
-> I'm not sure who is in charge of taking this patch. Should I resend it to
-> someone else or is it already included in a tree?
+The function drbg_add_buf is moved to the CONFIG_CRYPTO_DRBG_HASH ifdef
+area as it is now only needed for the Hash DRBG.
 
-There are a couple of things going on here.
+Signed-off-by: Stephan Mueller <smueller@chronox.de>
+---
+ crypto/drbg.c | 79 ++++++++++++++++++++++++++++-------------------------------
+ 1 file changed, 38 insertions(+), 41 deletions(-)
 
-This patch came out at the beginning of the merge window which is a time
-when everything that was ready and well tested ahead of time gets
-merged.
+diff --git a/crypto/drbg.c b/crypto/drbg.c
+index 54cfd48..8c0a742 100644
+--- a/crypto/drbg.c
++++ b/crypto/drbg.c
+@@ -283,38 +283,6 @@ static inline void drbg_cpu_to_be32(__u32 val, unsigned char *buf)
+ 
+ 	conversion->conv = cpu_to_be32(val);
+ }
+-
+-/*
+- * Increment buffer
+- *
+- * @dst buffer to increment
+- * @add value to add
+- */
+-static inline void drbg_add_buf(unsigned char *dst, size_t dstlen,
+-				const unsigned char *add, size_t addlen)
+-{
+-	/* implied: dstlen > addlen */
+-	unsigned char *dstptr;
+-	const unsigned char *addptr;
+-	unsigned int remainder = 0;
+-	size_t len = addlen;
+-
+-	dstptr = dst + (dstlen-1);
+-	addptr = add + (addlen-1);
+-	while (len) {
+-		remainder += *dstptr + *addptr;
+-		*dstptr = remainder & 0xff;
+-		remainder >>= 8;
+-		len--; dstptr--; addptr--;
+-	}
+-	len = dstlen - addlen;
+-	while (len && remainder > 0) {
+-		remainder = *dstptr + 1;
+-		*dstptr = remainder & 0xff;
+-		remainder >>= 8;
+-		len--; dstptr--;
+-	}
+-}
+ #endif /* defined(CONFIG_CRYPTO_DRBG_HASH) || defined(CONFIG_CRYPTO_DRBG_CTR) */
+ 
+ /******************************************************************
+@@ -554,7 +522,6 @@ static int drbg_ctr_update(struct drbg_state *drbg, struct list_head *seed,
+ 	unsigned char *temp_p, *df_data_p; /* pointer to iterate over buffers */
+ 	unsigned int len = 0;
+ 	struct drbg_string cipherin;
+-	unsigned char prefix = DRBG_PREFIX1;
+ 
+ 	memset(temp, 0, drbg_statelen(drbg) + drbg_blocklen(drbg));
+ 	if (3 > reseed)
+@@ -574,7 +541,7 @@ static int drbg_ctr_update(struct drbg_state *drbg, struct list_head *seed,
+ 	 */
+ 	while (len < (drbg_statelen(drbg))) {
+ 		/* 10.2.1.2 step 2.1 */
+-		drbg_add_buf(drbg->V, drbg_blocklen(drbg), &prefix, 1);
++		crypto_inc(drbg->V, drbg_blocklen(drbg));
+ 		/*
+ 		 * 10.2.1.2 step 2.2 */
+ 		ret = drbg_kcapi_sym(drbg, drbg->C, temp + len, &cipherin);
+@@ -617,7 +584,6 @@ static int drbg_ctr_generate(struct drbg_state *drbg,
+ 	int len = 0;
+ 	int ret = 0;
+ 	struct drbg_string data;
+-	unsigned char prefix = DRBG_PREFIX1;
+ 
+ 	memset(drbg->scratchpad, 0, drbg_blocklen(drbg));
+ 
+@@ -629,7 +595,7 @@ static int drbg_ctr_generate(struct drbg_state *drbg,
+ 	}
+ 
+ 	/* 10.2.1.5.2 step 4.1 */
+-	drbg_add_buf(drbg->V, drbg_blocklen(drbg), &prefix, 1);
++	crypto_inc(drbg->V, drbg_blocklen(drbg));
+ 	drbg_string_fill(&data, drbg->V, drbg_blocklen(drbg));
+ 	while (len < buflen) {
+ 		int outlen = 0;
+@@ -643,7 +609,7 @@ static int drbg_ctr_generate(struct drbg_state *drbg,
+ 			  drbg_blocklen(drbg) : (buflen - len);
+ 		if (!drbg_fips_continuous_test(drbg, drbg->scratchpad)) {
+ 			/* 10.2.1.5.2 step 6 */
+-			drbg_add_buf(drbg->V, drbg_blocklen(drbg), &prefix, 1);
++			crypto_inc(drbg->V, drbg_blocklen(drbg));
+ 			continue;
+ 		}
+ 		/* 10.2.1.5.2 step 4.3 */
+@@ -651,7 +617,7 @@ static int drbg_ctr_generate(struct drbg_state *drbg,
+ 		len += outlen;
+ 		/* 10.2.1.5.2 step 6 */
+ 		if (len < buflen)
+-			drbg_add_buf(drbg->V, drbg_blocklen(drbg), &prefix, 1);
++			crypto_inc(drbg->V, drbg_blocklen(drbg));
+ 	}
+ 
+ 	/* 10.2.1.5.2 step 6 */
+@@ -797,6 +763,38 @@ static struct drbg_state_ops drbg_hmac_ops = {
+ #ifdef CONFIG_CRYPTO_DRBG_HASH
+ #define CRYPTO_DRBG_HASH_STRING "HASH "
+ /*
++ * Increment buffer
++ *
++ * @dst buffer to increment
++ * @add value to add
++ */
++static inline void drbg_add_buf(unsigned char *dst, size_t dstlen,
++				const unsigned char *add, size_t addlen)
++{
++	/* implied: dstlen > addlen */
++	unsigned char *dstptr;
++	const unsigned char *addptr;
++	unsigned int remainder = 0;
++	size_t len = addlen;
++
++	dstptr = dst + (dstlen-1);
++	addptr = add + (addlen-1);
++	while (len) {
++		remainder += *dstptr + *addptr;
++		*dstptr = remainder & 0xff;
++		remainder >>= 8;
++		len--; dstptr--; addptr--;
++	}
++	len = dstlen - addlen;
++	while (len && remainder > 0) {
++		remainder = *dstptr + 1;
++		*dstptr = remainder & 0xff;
++		remainder >>= 8;
++		len--; dstptr--;
++	}
++}
++
++/*
+  * scratchpad usage: as drbg_hash_update and drbg_hash_df are used
+  * interlinked, the scratchpad is used as follows:
+  * drbg_hash_update
+@@ -942,7 +940,6 @@ static int drbg_hash_hashgen(struct drbg_state *drbg,
+ 	unsigned char *dst = drbg->scratchpad + drbg_statelen(drbg);
+ 	struct drbg_string data;
+ 	LIST_HEAD(datalist);
+-	unsigned char prefix = DRBG_PREFIX1;
+ 
+ 	memset(src, 0, drbg_statelen(drbg));
+ 	memset(dst, 0, drbg_blocklen(drbg));
+@@ -963,7 +960,7 @@ static int drbg_hash_hashgen(struct drbg_state *drbg,
+ 		outlen = (drbg_blocklen(drbg) < (buflen - len)) ?
+ 			  drbg_blocklen(drbg) : (buflen - len);
+ 		if (!drbg_fips_continuous_test(drbg, dst)) {
+-			drbg_add_buf(src, drbg_statelen(drbg), &prefix, 1);
++			crypto_inc(src, drbg_statelen(drbg));
+ 			continue;
+ 		}
+ 		/* 10.1.1.4 step hashgen 4.2 */
+@@ -971,7 +968,7 @@ static int drbg_hash_hashgen(struct drbg_state *drbg,
+ 		len += outlen;
+ 		/* 10.1.1.4 hashgen step 4.3 */
+ 		if (len < buflen)
+-			drbg_add_buf(src, drbg_statelen(drbg), &prefix, 1);
++			crypto_inc(src, drbg_statelen(drbg));
+ 	}
+ 
+ out:
+-- 
+1.9.3
 
-Your numbers don't look too bad, so I expect this code is ready to go
-(although I am a smidge disappointed in the small size of the
-performance improvement), my quick read through earlier did not show
-anything scary.   Do you have any idea why going from O(N^2) algorithm
-to a O(NlogN) algorithm showed such a small performance improvement with
-30,000 entries?
 
-Normally proc is looked at by a group of folks me, Alexey Dobriyan, and
-Al Viro all sort of tag team taking care of the proc infrastructure with
-(except for Al) Andrew Morton typically taking the patches and merging
-them.
-
-I am currently in the middle of a move so I don't have the time to carry
-this change or do much of anything until I am settled again.
-
-What I would recommend is verifying your patch works against v3.18-rc1
-at the begginning of next week and sending the code to Andrew Morton.
-
-Eric
