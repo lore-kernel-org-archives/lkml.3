@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932113AbaJNIEh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 04:04:37 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:35071 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754803AbaJNIDN (ORCPT
+	id S932122AbaJNIFY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 04:05:24 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:47672 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753695AbaJNIDB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 04:03:13 -0400
-X-AuditID: cbfee68f-f791c6d000004834-d4-543cd8bff47a
-From: Thomas Abraham <thomas.ab@samsung.com>
-To: lee.jones@linaro.org, devicetree-discuss@lists.ozlabs.org
-Cc: kgene.kim@samsung.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/2] mfd: sec: add S2MPS15 PMIC support
-Date: Tue, 14 Oct 2014 13:44:26 +0530
-Message-id: <1413274468-8765-1-git-send-email-thomas.ab@samsung.com>
-X-Mailer: git-send-email 1.6.6.rc2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLLMWRmVeSWpSXmKPExsWyRsSkTnf/DZsQg/P/eCwOzH7IatG74Cqb
-	xf2vRxktLu+aw+bA4nHn2h42j/MzFjJ69G1ZxejxeZNcAEsUl01Kak5mWWqRvl0CV8aLDY2M
-	BS/ZKj7OvMnUwLiYtYuRk0NCwETizNzHzBC2mMSFe+vZuhi5OIQEljJKfO78zd7FyAFW9KAl
-	A6RGSGA6o8T9XaYQNW1MEpMurQMbxCagI3HjzW9GEFtEwFZi2mUIm1nAXOL/jD4WEFsYyP71
-	8Q0TyEwWAVWJX3cUQMK8Ai4SJ+buZoK4QUliQ+9RJpD5EgL32SSWXLkMNp9FQEDi2+RDLBD3
-	yEpsOgB1s6TEwRU3WCYwCi5gZFjFKJpakFxQnJReZKxXnJhbXJqXrpecn7uJERiKp/8969/B
-	ePeA9SFGAQ5GJR7egkibECHWxLLiytxDjKZAGyYyS4km5wMDPq8k3tDYzMjC1MTU2Mjc0kxJ
-	nHeh1M9gIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYyR0784rn1puz7R1ILxWenuT9UKaadu
-	ul7MVvOa0/+3TTp9ziqnDoGYlkWsT8K3/rBpfCFx0OW09a27JbtbHKernpsyV8JUMfPnxDLF
-	jrbwl5M0g+xf8E5eWXYpPkIxtaGc5cvaylexs8+xer8JbJBR2f0uotjS3//Zo7ZWPdMoD438
-	KSu3qCuxFGckGmoxFxUnAgAsOZcWQAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOLMWRmVeSWpSXmKPExsVy+t9jQd39N2xCDD5+ZrE4MPshq0Xvgqts
-	Fve/HmW0uLxrDpsDi8eda3vYPM7PWMjo0bdlFaPH501yASxRDYw2GamJKalFCql5yfkpmXnp
-	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA7lRTKEnNKgUIBicXFSvp2mCaEhrjp
-	WsA0Ruj6hgTB9RgZoIGENYwZLzY0Mha8ZKv4OPMmUwPjYtYuRg4OCQETiQctGV2MnECmmMSF
-	e+vZQGwhgemMEvd3mXYxcgHZbUwSky6tYwVJsAnoSNx485sRxBYRsJWYdhnCZhYwl/g/o48F
-	xBYGsn99fMMEMp9FQFXi1x0FkDCvgIvEibm7mSB2KUls6D3KNIGRewEjwypG0dSC5ILipPRc
-	I73ixNzi0rx0veT83E2M4EB/Jr2DcVWDxSFGAQ5GJR7egkibECHWxLLiytxDjBIczEoivMYL
-	gUK8KYmVValF+fFFpTmpxYcYTYGWT2SWEk3OB0ZhXkm8obGJuamxqaWJhYmZpZI478FW60Ah
-	gfTEktTs1NSC1CKYPiYOTqkGxtD1sxnyl23vrJ38aVm0xMyOmANLH1h80rDrWHS9Wfc316eP
-	/H487cnzrnBsTytdfXfydu/0K9fkN9YoOl95f+15qGC97JJtC7MnqmtwfHpm9KO69sj+9l2L
-	89RKeFK+zpkqrmk1bWJL7acucZV5Abxyez7b7IlSmnvGsX1+dU9aZ0Jr/azMU0osxRmJhlrM
-	RcWJANTfgGSKAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 14 Oct 2014 04:03:01 -0400
+From: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Grant Grundler <grundler@chromium.org>,
+        =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>,
+        Daniel Kurtz <djkurtz@chromium.org>, Simon Xue <xxm@rock-chips.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH v5 2/3] dt-bindings: iommu: Add documentation for rockchip iommu
+Date: Tue, 14 Oct 2014 16:02:41 +0800
+Message-Id: <1413273762-32489-3-git-send-email-djkurtz@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1413273762-32489-1-git-send-email-djkurtz@chromium.org>
+References: <1413273762-32489-1-git-send-email-djkurtz@chromium.org>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Samsung's S2MPS15 PMIC is targetted to be used with Samsung's Exynos7 SoC.
-The S2MPS15 PMIC is similar in functionality to S2MPS11/14 PMIC. It contains
-27 LDO and 10 Buck regulators, RTC, three 32.768 KHz clock outputs and allows
-programming these blocks via a I2C interface. This patch series adds initial
-support for LDO/Buck regulators of S2MPS15 PMIC.
+Add binding documentation for Rockchip IOMMU.
 
-Thomas Abraham (2):
-  dt-bindings: mfd: s2mps11: add documentation for s2mps15 PMIC
-  mfd: sec: Add support for S2MPS15 PMIC
+Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+Signed-off-by: Simon Xue <xxm@rock-chips.com>
+---
+ .../devicetree/bindings/iommu/rockchip,iommu.txt   | 26 ++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/iommu/rockchip,iommu.txt
 
- Documentation/devicetree/bindings/mfd/s2mps11.txt |   11 +-
- drivers/mfd/sec-core.c                            |   26 ++++
- include/linux/mfd/samsung/core.h                  |    1 +
- include/linux/mfd/samsung/s2mps15.h               |  161 +++++++++++++++++++++
- 4 files changed, 196 insertions(+), 3 deletions(-)
- create mode 100644 include/linux/mfd/samsung/s2mps15.h
+diff --git a/Documentation/devicetree/bindings/iommu/rockchip,iommu.txt b/Documentation/devicetree/bindings/iommu/rockchip,iommu.txt
+new file mode 100644
+index 0000000..9a55ac3
+--- /dev/null
++++ b/Documentation/devicetree/bindings/iommu/rockchip,iommu.txt
+@@ -0,0 +1,26 @@
++Rockchip IOMMU
++==============
++
++A Rockchip DRM iommu translates io virtual addresses to physical addresses for
++its master device.  Each slave device is bound to a single master device, and
++shares its clocks, power domain and irq.
++
++Required properties:
++- compatible      : Should be "rockchip,iommu"
++- reg             : Address space for the configuration registers
++- interrupts      : Interrupt specifier for the IOMMU instance
++- interrupt-names : Interrupt name for the IOMMU instance
++- #iommu-cells    : Should be <0>.  This indicates the iommu is a
++                    "single-master" device, and needs no additional information
++                    to associate with its master device.  See:
++                    Documentation/devicetree/bindings/iommu/iommu.txt
++
++Example:
++
++	vopl_mmu: iommu@ff940300 {
++		compatible = "rockchip,iommu";
++		reg = <0xff940300 0x100>;
++		interrupts = <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>;
++		interrupt-names = "vopl_mmu";
++		#iommu-cells = <0>;
++	};
+-- 
+2.1.0.rc2.206.gedb03e5
 
