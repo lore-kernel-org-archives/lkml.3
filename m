@@ -1,61 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932499AbaJNOFc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 10:05:32 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:62387 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755286AbaJNOFb (ORCPT
+	id S932368AbaJNOIb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 10:08:31 -0400
+Received: from mail-by2on0133.outbound.protection.outlook.com ([207.46.100.133]:39847
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932176AbaJNOIa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 10:05:31 -0400
-Message-ID: <543D2DA8.7030600@martingkelly.com>
-Date: Tue, 14 Oct 2014 07:05:28 -0700
-From: Martin Kelly <martin@martingkelly.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Tue, 14 Oct 2014 10:08:30 -0400
+From: Thomas Shao <huishao@microsoft.com>
+To: Richard Cochran <richardcochran@gmail.com>
+CC: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        KY Srinivasan <kys@microsoft.com>
+Subject: RE: [PATCH 2/2] hyperv: Implement Time Synchronization using host
+ time sample
+Thread-Topic: [PATCH 2/2] hyperv: Implement Time Synchronization using host
+ time sample
+Thread-Index: AQHP55ZRTp/VO8CmfEuTJogFjyVUzJwve/cAgAAPyNCAAAgTgIAAC/vA
+Date: Tue, 14 Oct 2014 14:08:06 +0000
+Message-ID: <CD2CABCB2C0A0D4682C5F8AD840141540BFEEF@HKXPRD3002MB006.064d.mgd.msft.net>
+References: <1413285078-7027-1-git-send-email-huishao@microsoft.com>
+ <20141014115412.GC4019@localhost.localdomain>
+ <CD2CABCB2C0A0D4682C5F8AD840141540BFD41@HKXPRD3002MB006.064d.mgd.msft.net>
+ <20141014131935.GA5994@localhost.localdomain>
+In-Reply-To: <20141014131935.GA5994@localhost.localdomain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [61.173.50.55]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xenproject.org, x86@kernel.org
-CC: mingo@redhat.com, Martin Kelly <martkell@amazon.com>, hpa@zytor.com,
-        boris.ostrovsky@oracle.com, tglx@linutronix.de
-Subject: Re: [Xen-devel] [PATCH 1/2] x86: separate out sanitize_e820_map return
- codes
-References: <1413253817-6943-1-git-send-email-martin@martingkelly.com> <543CEDFD.6020501@citrix.com>
-In-Reply-To: <543CEDFD.6020501@citrix.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(438002)(13464003)(51704005)(24454002)(377454003)(189002)(199003)(164054003)(54356999)(76176999)(86612001)(80022003)(92726001)(46406003)(120916001)(86146001)(20776003)(87936001)(2656002)(33656002)(85852003)(4396001)(97736003)(64706001)(66066001)(76482002)(110136001)(99396003)(81156004)(46102003)(26826002)(107046002)(50986999)(92566001)(106116001)(19580405001)(19580395003)(44976005)(6806004)(50466002)(68736004)(106466001)(23726002)(21056001)(69596002)(84676001)(77096002)(93886004)(85306004)(1411001)(86362001)(47776003)(97756001)(95666004)(31966008)(55846006)(16796002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB1214;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB1214;
+X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+X-Forefront-PRVS: 03648EFF89
+Authentication-Results: spf=pass (sender IP is 131.107.125.37)
+ smtp.mailfrom=huishao@microsoft.com; 
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2014 02:33 AM, David Vrabel wrote:
-> On 14/10/14 03:30, Martin Kelly wrote:
->> Previously, sanitize_e820_map returned -1 in all cases in which it did
->> nothing. However, sanitize_e820_map can do nothing either because the
->> input map has size 1 (this is ok) or because the input map passed in is
->> invalid (likely an issue). It is nice for the caller to be able to
->> distinguish the two cases and treat them separately.
+
+> -----Original Message-----
+> From: Richard Cochran [mailto:richardcochran@gmail.com]
+> Sent: Tuesday, October 14, 2014 9:20 PM
+> To: Thomas Shao
+> Cc: tglx@linutronix.de; gregkh@linuxfoundation.org; linux-
+> kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
+> apw@canonical.com; jasowang@redhat.com; KY Srinivasan
+> Subject: Re: [PATCH 2/2] hyperv: Implement Time Synchronization using host
+> time sample
 > 
-> Wouldn't it be more sensible to return 0 (success) in the case of a
-> single entry map?  IMO, a 1 entry map is by definition sanitized.
+> On Tue, Oct 14, 2014 at 01:04:35PM +0000, Thomas Shao wrote:
+> > > > +		/*
+> > > > +		* Use the Hyper-V time sample to adjust the guest time. The
+> > > > +		* algorithm is: If the sample offsets exceeds 1 second, we
+> > > > +		* directly set the clock to the server time. If the offset is
+> > >
+> > > So the guests will experience random time jumps in the kernel,
+> > > without any rhyme or reason?
+> >
+> > This behavior is designed for some extreme cases. Like manually
+> > setting guest time to some value. Or the host resumes from a hibernate
+> > state. Normally, we should not run into this.
 > 
-> David
+> But when it *does* happen, the guest software will have no way of knowing
+> what happened. That stinks.
+> 
+> Taking your example, when the guest sets its time, the time will suddenly
+> jump somewhere else, and for no apparent reason.
+> 
+> From the guest's point of view, this is really not acceptable.
 > 
 
-I had that thought as I writing the patch, but I was worried about breaking callers. Luckily, it appears there are only 11 callers in the kernel, and all except one either:
-(1) Don't check the return value of sanitize_e820_map or
-(2) Check against 0 rather than < 0
+If the user chooses  to sync guest time with host, that's the expected behavior, right?
 
-One caller is checking for < 0: arch/x86/kernel/e820.c:finish_e820_parsing :
-        if (userdef) {
-                u32 nr = e820.nr_map;
-
-                if (sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr) < 0)
-                        early_panic("Invalid user supplied memory map");
-                e820.nr_map = nr;
-
-                printk(KERN_INFO "e820: user-defined physical RAM map:\n");
-                e820_print_map("user");
-        }
-
-This seems like a bug, as if the user-defined memory map is size 1, there will be an erroneous panic.
-
-I will issue a new revision to change the return values to 0 or -1, with 0 including the size 1 case. In addition, I will add a patch to either change all the callers to actually check this value or to panic in the error case of sanitize_e820_map itself. Which do you think is a cleaner approach?
+> Thanks,
+> Richard
