@@ -1,221 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797AbaJNF5k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 01:57:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42880 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754597AbaJNF5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 01:57:39 -0400
-Date: Tue, 14 Oct 2014 16:57:26 +1100
-From: NeilBrown <neilb@suse.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Subject: [PATCH 2/2 - revised] sysfs/kernfs: make read requests on pre-alloc
- files use the buffer.
-Message-ID: <20141014165726.3afed8dd@notabene.brown>
-In-Reply-To: <20141013054128.19481.21008.stgit@notabene.brown>
-References: <20141013053733.19481.43981.stgit@notabene.brown>
-	<20141013054128.19481.21008.stgit@notabene.brown>
-X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.23; x86_64-suse-linux-gnu)
+	id S1754693AbaJNGEy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 02:04:54 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:40773 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753672AbaJNGEw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 02:04:52 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/CxpoI62v1CncTMZ6JhoZ0g3"; protocol="application/pgp-signature"
+In-Reply-To: <6c5c08b2a2924366ac79837e89d3a0ed@BL2FFO11FD056.protection.gbl>
+References: <1409853506-26279-1-git-send-email-soren.brinkmann@xilinx.com>
+ <CAAVeFuJdCd9Wx+Fq3_9okcnyva70zhZJ5njOho8pmPfgWG3+nA@mail.gmail.com> <6c5c08b2a2924366ac79837e89d3a0ed@BL2FFO11FD056.protection.gbl>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Tue, 14 Oct 2014 15:04:31 +0900
+Message-ID: <CAAVeFuJJ8TGNDKA-MQa1_5sigvWXfOeBDsujmZ4GDBpkHDe+dw@mail.gmail.com>
+Subject: Re: [PATCH RESEND] gpio: lib-sysfs: Add 'wakeup' attribute
+To: =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/CxpoI62v1CncTMZ6JhoZ0g3
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, Oct 14, 2014 at 8:47 AM, Sören Brinkmann
+<soren.brinkmann@xilinx.com> wrote:
+> Hi Alexandre,
+>
+> On Sat, 2014-10-11 at 01:54PM +0900, Alexandre Courbot wrote:
+>> On Fri, Sep 5, 2014 at 2:58 AM, Soren Brinkmann
+>> <soren.brinkmann@xilinx.com> wrote:
+>> > Add an attribute 'wakeup' to the GPIO sysfs interface which allows
+>> > marking/unmarking a GPIO as wake IRQ.
+>> > The file 'wakeup' is created in each exported GPIOs directory, if an IRQ
+>> > is associated with that GPIO and the irqchip implements set_wake().
+>> > Writing 'enabled' to that file will enable wake for that GPIO, while
+>> > writing 'disabled' will disable wake.
+>> > Reading that file will return either 'disabled' or 'enabled' depening on
+>> > the currently set flag for the GPIO's IRQ.
+>> >
+>> > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+>> > ---
+>> > Hi all,
+>> >
+>> > I originally submitted this patch with a few fixes for Zynq's GPIO driver
+>> > (https://lkml.org/lkml/2014/8/29/391). Since this change is not just
+>> > Zynq-related and has broader impact, Linus asked me to post this again, separate
+>> > from the Zynq series.
+>> >
+>> > Let me just quote myself from the original submission:
+>> > "I'm still not fully convinced that the gpio_keys are the best
+>> > replacement for the sysfs interface when it comes to inputs. For that
+>> > reason and to have a way to do some quick wake testing, I'd like to
+>> > propose adding the ability to control wake through the sysfs interface
+>> > (patch 3)."
+>>
+>> I'm really sorry that I did not provide feedback sooner.  This is the
+>> kind of area (IRQ) where I am not too confident and typically like to
+>> hear what Linus has to say first. But I also have a few questions that
+>> you could maybe answer for my own education. :)
+>>
+>> >
+>> >         Thanks,
+>> >         Sören
+>> >
+>> >  drivers/gpio/gpiolib-sysfs.c | 75 ++++++++++++++++++++++++++++++++++++++++----
+>> >  1 file changed, 69 insertions(+), 6 deletions(-)
+>> >
+>> > diff --git a/drivers/gpio/gpiolib-sysfs.c b/drivers/gpio/gpiolib-sysfs.c
+>> > index 5f2150b619a7..aaf021eaaff5 100644
+>> > --- a/drivers/gpio/gpiolib-sysfs.c
+>> > +++ b/drivers/gpio/gpiolib-sysfs.c
+>> > @@ -286,6 +286,56 @@ found:
+>> >
+>> >  static DEVICE_ATTR(edge, 0644, gpio_edge_show, gpio_edge_store);
+>> >
+>> > +static ssize_t gpio_wakeup_show(struct device *dev,
+>> > +               struct device_attribute *attr, char *buf)
+>> > +{
+>> > +       ssize_t                 status;
+>> > +       const struct gpio_desc  *desc = dev_get_drvdata(dev);
+>> > +       int                     irq = gpiod_to_irq(desc);
+>> > +       struct irq_desc         *irq_desc = irq_to_desc(irq);
+>> > +
+>> > +       mutex_lock(&sysfs_lock);
+>> > +
+>> > +       if (irqd_is_wakeup_set(&irq_desc->irq_data))
+>> > +               status = sprintf(buf, "enabled\n");
+>> > +       else
+>> > +               status = sprintf(buf, "disabled\n");
+>> > +
+>> > +       mutex_unlock(&sysfs_lock);
+>> > +
+>> > +       return status;
+>> > +}
+>> > +
+>> > +static ssize_t gpio_wakeup_store(struct device *dev,
+>> > +               struct device_attribute *attr, const char *buf, size_t size)
+>> > +{
+>> > +       int                     ret;
+>> > +       unsigned int            on;
+>> > +       struct gpio_desc        *desc = dev_get_drvdata(dev);
+>> > +       int                     irq = gpiod_to_irq(desc);
+>> > +
+>> > +       mutex_lock(&sysfs_lock);
+>> > +
+>> > +       if (sysfs_streq("enabled", buf))
+>> > +               on = true;
+>> > +       else if (sysfs_streq("disabled", buf))
+>> > +               on = false;
+>> > +       else
+>> > +               return -EINVAL;
+>>
+>> You forgot to release sysfs_lock before returning here.
+>
+> Right, I will fix this and send a v2. Good catch.
+>
+>>
+>> > +
+>> > +       ret = irq_set_irq_wake(irq, on);
+>>
+>> Just wondering: is it always safe to set the wake property of an IRQ
+>> even if the direction of its associated GPIO is output? Does it make
+>> sense at all to have the "wakeup" attribute file visible if the GPIO
+>> is an output one?
+>>
+>> > +
+>> > +       mutex_unlock(&sysfs_lock);
+>> > +
+>> > +       if (ret)
+>> > +               pr_warn("%s: failed to %s wake\n", __func__,
+>> > +                               on ? "enable" : "disable");
+>> > +
+>> > +       return size;
+>> > +}
+>> > +
+>> > +static DEVICE_ATTR(wakeup, 0644, gpio_wakeup_show, gpio_wakeup_store);
+>> > +
+>> >  static int sysfs_set_active_low(struct gpio_desc *desc, struct device *dev,
+>> >                                 int value)
+>> >  {
+>> > @@ -526,7 +576,7 @@ static struct class gpio_class = {
+>> >  int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
+>> >  {
+>> >         unsigned long           flags;
+>> > -       int                     status;
+>> > +       int                     status, irq;
+>> >         const char              *ioname = NULL;
+>> >         struct device           *dev;
+>> >         int                     offset;
+>> > @@ -582,11 +632,24 @@ int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
+>> >                         goto fail_unregister_device;
+>> >         }
+>> >
+>> > -       if (gpiod_to_irq(desc) >= 0 && (direction_may_change ||
+>> > -                                      !test_bit(FLAG_IS_OUT, &desc->flags))) {
+>> > -               status = device_create_file(dev, &dev_attr_edge);
+>> > -               if (status)
+>> > -                       goto fail_unregister_device;
+>> > +       irq = gpiod_to_irq(desc);
+>> > +       if (irq >= 0) {
+>> > +               struct irq_desc *irq_desc = irq_to_desc(irq);
+>> > +               struct irq_chip *irqchip = irq_desc_get_chip(irq_desc);
+>> > +
+>> > +               if (direction_may_change ||
+>> > +                               !test_bit(FLAG_IS_OUT, &desc->flags)) {
+>> > +                       status = device_create_file(dev, &dev_attr_edge);
+>> > +                       if (status)
+>> > +                               goto fail_unregister_device;
+>> > +               }
+>> > +
+>> > +               if (irqchip->flags & IRQCHIP_SKIP_SET_WAKE ||
+>> > +                               irqchip->irq_set_wake) {
+>> > +                       status = device_create_file(dev, &dev_attr_wakeup);
+>> > +                       if (status)
+>> > +                               goto fail_unregister_device;
+>> > +               }
+>>
+>> Ok, I guess that answers my question. The edge property is always
+>> visible so it probably doesn't hurt if the wakeup property also is.
+>
+> Right, it is probably not optimal, but serves the purpose. Users still
+> might have to turn on their brain. But in general, setting those
+> properties should be safe, IMHO.
+> I think being able to mess with GPIO's direction and value is a much
+> bigger risk since they might be used for something more critical than
+> just LEDs :)
+> So, this does not really add a lot of more potential to break things :)
 
+Good point.
 
+>
+>>
+>> The only thing that bothers me a little bit is that both "edge" and
+>> "wakeup" are not very explicit names, but I guess it can't be helped.
+>
+> I guess edge is ABI and that ship has sailed. For 'wakeup' we can still
+> discuss the name. But wakeup is the standard property that is exposed in
+> sysfs for other devices that support wake and choose to expose
+> user-space control for it. So, I thought 'wakeup' would be appropriate
+> here as well.
 
-To match the previous patch which used the pre-alloc buffer for
-writes, this patch causes reads to use the same buffer.
-This is not strictly necessary as the current seq_read() will allocate
-on first read, so user-space can trigger the required pre-alloc.  But
-consistency is valuable.
+... and another good point.
 
-The read function is somewhat simpler than seq_read() and, for example,
-does not support reading from an offset into the file: reads must be
-at the start of the file.
+Let's see what Linus thinks about this, but as far as I'm concerned
+your v2 looks ok.
 
-As seq_read() does not use the prealloc buffer, ->seq_show is
-incompatible with ->prealloc and caused an EINVAL return from open().
-sysfs code which calls into kernfs always chooses the correct function.
-
-As the buffer is shared with writes and other reads, the mutex is
-extended to cover the copy_to_user.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
-Reviewed-by: Tejun Heo <tj@kernel.org>
-
----
-
-Please use this version instead.  Original had a last minute change which
-lead to a compile error - sorry.
-
-NeilBrown
-
-
-diff --git a/fs/kernfs/file.c b/fs/kernfs/file.c
-index 70186e2e692a..697390ea47b8 100644
---- a/fs/kernfs/file.c
-+++ b/fs/kernfs/file.c
-@@ -189,13 +189,16 @@ static ssize_t kernfs_file_direct_read(struct kernfs_=
-open_file *of,
- 	const struct kernfs_ops *ops;
- 	char *buf;
-=20
--	buf =3D kmalloc(len, GFP_KERNEL);
-+	buf =3D of->prealloc_buf;
-+	if (!buf)
-+		buf =3D kmalloc(len, GFP_KERNEL);
- 	if (!buf)
- 		return -ENOMEM;
-=20
- 	/*
--	 * @of->mutex nests outside active ref and is primarily to ensure that
--	 * the ops aren't called concurrently for the same open file.
-+	 * @of->mutex nests outside active ref and is used both to ensure that
-+	 * the ops aren't called concurrently for the same open file, and
-+	 * to provide exclusive access to ->prealloc_buf (when that exists).
- 	 */
- 	mutex_lock(&of->mutex);
- 	if (!kernfs_get_active(of->kn)) {
-@@ -210,21 +213,22 @@ static ssize_t kernfs_file_direct_read(struct kernfs_=
-open_file *of,
- 	else
- 		len =3D -EINVAL;
-=20
--	kernfs_put_active(of->kn);
--	mutex_unlock(&of->mutex);
--
- 	if (len < 0)
--		goto out_free;
-+		goto out_unlock;
-=20
- 	if (copy_to_user(user_buf, buf, len)) {
- 		len =3D -EFAULT;
--		goto out_free;
-+		goto out_unlock;
- 	}
-=20
- 	*ppos +=3D len;
-=20
-+ out_unlock:
-+	kernfs_put_active(of->kn);
-+	mutex_unlock(&of->mutex);
-  out_free:
--	kfree(buf);
-+	if (buf !=3D of->prealloc_buf)
-+		kfree(buf);
- 	return len;
- }
-=20
-@@ -690,6 +694,14 @@ static int kernfs_fop_open(struct inode *inode, struct=
- file *file)
- 	 */
- 	of->atomic_write_len =3D ops->atomic_write_len;
-=20
-+	error =3D -EINVAL;
-+	/*
-+	 * ->seq_show is incompatible with ->prealloc,
-+	 * as seq_read does its own allocation.
-+	 * ->read must be used instead.
-+	 */
-+	if (ops->prealloc && ops->seq_show)
-+		goto err_free;
- 	if (ops->prealloc) {
- 		int len =3D of->atomic_write_len ?: PAGE_SIZE;
- 		of->prealloc_buf =3D kmalloc(len + 1, GFP_KERNEL);
-diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index 4a959d231b43..29a7c6f9dd9c 100644
---- a/fs/sysfs/file.c
-+++ b/fs/sysfs/file.c
-@@ -102,6 +102,22 @@ static ssize_t sysfs_kf_bin_read(struct kernfs_open_fi=
-le *of, char *buf,
- 	return battr->read(of->file, kobj, battr, buf, pos, count);
- }
-=20
-+/* kernfs read callback for regular sysfs files with pre-alloc */
-+static ssize_t sysfs_kf_read(struct kernfs_open_file *of, char *buf,
-+			     size_t count, loff_t pos)
-+{
-+	const struct sysfs_ops *ops =3D sysfs_file_ops(of->kn);
-+	struct kobject *kobj =3D of->kn->parent->priv;
-+
-+	/*
-+	 * If buf !=3D of->prealloc_buf, we don't know how
-+	 * large it is, so cannot safely pass it to ->show
-+	 */
-+	if (pos || WARN_ON_ONCE(buf !=3D of->prealloc_buf))
-+		return 0;
-+	return ops->show(kobj, of->kn->priv, buf);
-+}
-+
- /* kernfs write callback for regular sysfs files */
- static ssize_t sysfs_kf_write(struct kernfs_open_file *of, char *buf,
- 			      size_t count, loff_t pos)
-@@ -184,13 +200,18 @@ static const struct kernfs_ops sysfs_file_kfops_rw =
-=3D {
- 	.write		=3D sysfs_kf_write,
- };
-=20
-+static const struct kernfs_ops sysfs_prealloc_kfops_ro =3D {
-+	.read		=3D sysfs_kf_read,
-+	.prealloc	=3D true,
-+};
-+
- static const struct kernfs_ops sysfs_prealloc_kfops_wo =3D {
- 	.write		=3D sysfs_kf_write,
- 	.prealloc	=3D true,
- };
-=20
- static const struct kernfs_ops sysfs_prealloc_kfops_rw =3D {
--	.seq_show	=3D sysfs_kf_seq_show,
-+	.read		=3D sysfs_kf_read,
- 	.write		=3D sysfs_kf_write,
- 	.prealloc	=3D true,
- };
-@@ -238,9 +259,12 @@ int sysfs_add_file_mode_ns(struct kernfs_node *parent,
- 				ops =3D &sysfs_prealloc_kfops_rw;
- 			else
- 				ops =3D &sysfs_file_kfops_rw;
--		} else if (sysfs_ops->show)
--			ops =3D &sysfs_file_kfops_ro;
--		else if (sysfs_ops->store) {
-+		} else if (sysfs_ops->show) {
-+			if (mode & SYSFS_PREALLOC)
-+				ops =3D &sysfs_prealloc_kfops_ro;
-+			else
-+				ops =3D &sysfs_file_kfops_ro;
-+		} else if (sysfs_ops->store) {
- 			if (mode & SYSFS_PREALLOC)
- 				ops =3D &sysfs_prealloc_kfops_wo;
- 			else
-
---Sig_/CxpoI62v1CncTMZ6JhoZ0g3
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBVDy7Rjnsnt1WYoG5AQKsIxAAl5kuhcFch19zdNwoRqCgRZDpAdBqa5fu
-UljTkkrMQY3cLcsDDH4IC51fjuz2XwBID8tcOg27b00CkOX7QpftNerzI4sp62bX
-GWEUhB/vIprJ1b5gr+ZQKw3cCYHcxbTo2QA3YNCNdhAOJwiV/DeVGiy3oarEFVla
-SGDpzKspU+qdksl+Mmy+fPDcG3IpNgO+hAwQ62jTXieGRILeykUa2TnlEhu68gO+
-hef3kxaTwBkaVbdes9rdVAx1CkjHjP9+AT1xgzA8hKDOR5Ulafcsc9N8tCgmSdRf
-61h4mD6jTt5Zk/+VsnvIUT2eGCL37zlyoAD3nfh2bVNw8Hr2KrBUtk2kRNHLxnk5
-/H9PZek+TDgaGRVlUmthRmVRXJWbJ4a0KiENiET7TrlIb920kmiVN27vD3zrGNQL
-++RUwvE0RhkE3lwgrBiLlKTqhirSj20bAjRuSL4zjtueDaCTzQt36I8OpLLvVGce
-jHarb/ApezNdweZ5W33VPYAchWIVIdCNUptxg6hcOZzYpOsSMGTmwEW5QUlTitUy
-Ne4v9V5RXz3x0XnAY5mTIh09cy06EKP4DuV1JtHjFN208+gtcHcQBM6D/I35RBVW
-FBRF536XYEw02a8rGivjK6InSpeblNEMe14slEC3+1pB7P9ijEvKdOUjQ0e5U4jQ
-W7zlCDIALhw=
-=okRi
------END PGP SIGNATURE-----
-
---Sig_/CxpoI62v1CncTMZ6JhoZ0g3--
+Cheers,
+Alex.
