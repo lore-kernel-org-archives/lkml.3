@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932108AbaJNG3E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 02:29:04 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:47684 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753763AbaJNG2U (ORCPT
+	id S1754957AbaJNGcG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 02:32:06 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:6559 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754038AbaJNGcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 02:28:20 -0400
-From: Romain Perier <romain.perier@gmail.com>
-To: devicetree@vger.kernel.org
-Cc: broonie@kernel.org, lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
-        heiko@sntech.de, grant.likely@linaro.org, robh@kernel.org,
-        mark.rutland@arm.com
-Subject: [RFC PATCH v3 3/5] ARM: dts: rockchip: Enable power off in pmic for Radxa Rock
-Date: Tue, 14 Oct 2014 06:31:11 +0000
-Message-Id: <1413268273-15151-3-git-send-email-romain.perier@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1413268273-15151-1-git-send-email-romain.perier@gmail.com>
-References: <1413268273-15151-1-git-send-email-romain.perier@gmail.com>
+	Tue, 14 Oct 2014 02:32:04 -0400
+Date: Tue, 14 Oct 2014 02:31:52 -0400
+From: Chris Mason <clm@fb.com>
+Subject: Re: btrfs: kernel BUG at fs/btrfs/extent_io.c:676!
+To: Sasha Levin <sasha.levin@oracle.com>
+CC: <jbacik@fb.com>, <linux-btrfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Message-ID: <1413268312.2971.1@mail.thefacebook.com>
+In-Reply-To: <543B35D3.6050509@oracle.com>
+References: <543B35D3.6050509@oracle.com>
+X-Mailer: geary/0.8.0
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"; format=flowed
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-10-14_03:2014-10-13,2014-10-14,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=3.73440955603321e-07 kscore.compositescore=0
+ circleOfTrustscore=178.203688093279 compositescore=0.9989857498195
+ urlsuspect_oldscore=0.9989857498195 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=62764
+ rbsscore=0.9989857498195 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1410140072
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add "poweroff-source" property to act8846 node.
-shutdown/poweroff commands are now handled for this board.
+On Sun, Oct 12, 2014 at 10:15 PM, Sasha Levin <sasha.levin@oracle.com> 
+wrote:
+> Ping?
+> 
+> This BUG_ON()ing due to GFP_ATOMIC allocation failure is really silly 
+> :(
 
-Signed-off-by: Romain Perier <romain.perier@gmail.com>
----
- arch/arm/boot/dts/rk3188-radxarock.dts | 2 ++
- 1 file changed, 2 insertions(+)
+Agreed, I have a patch for this in testing.  It didn't make my first 
+pull but I'll get it fixed up.
 
-diff --git a/arch/arm/boot/dts/rk3188-radxarock.dts b/arch/arm/boot/dts/rk3188-radxarock.dts
-index 15910c9..2affff0 100644
---- a/arch/arm/boot/dts/rk3188-radxarock.dts
-+++ b/arch/arm/boot/dts/rk3188-radxarock.dts
-@@ -141,6 +141,8 @@
- 		pinctrl-names = "default";
- 		pinctrl-0 = <&act8846_dvs0_ctl>;
- 
-+		poweroff-source;
-+
- 		regulators {
- 			vcc_ddr: REG1 {
- 				regulator-name = "VCC_DDR";
--- 
-1.9.1
+-chris
+
 
