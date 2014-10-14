@@ -1,319 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313AbaJNNoM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 09:44:12 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:43335 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755293AbaJNNoI (ORCPT
+	id S932355AbaJNNqQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 09:46:16 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:52447 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755282AbaJNNqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 09:44:08 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH 06/13] gpio / ACPI: Add support for _DSD device
- properties
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>, devicetree@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Mark Rutland <mark.rutland@arm.com>
-In-Reply-To: <1651636.CsIdshL7Av@vostro.rjw.lan>
-References: <2660541.BycO7TFnA2@vostro.rjw.lan>
-	<1651636.CsIdshL7Av@vostro.rjw.lan>
-Date: Tue, 14 Oct 2014 15:44:03 +0200
-Message-Id: <20141014134403.66480C408A6@trevor.secretlab.ca>
+	Tue, 14 Oct 2014 09:46:13 -0400
+Date: Tue, 14 Oct 2014 15:46:09 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Stephen Warren <swarren@nvidia.com>, Rhyland Klein <rklein@nvidia.com>,
+        Thierry Reding <treding@nvidia.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 04/10] of: Add Tegra124 EMC bindings
+Message-ID: <20141014134604.GB2217@ulmo>
+References: <1412945262-6068-1-git-send-email-tomeu.vizoso@collabora.com>
+ <1412945262-6068-5-git-send-email-tomeu.vizoso@collabora.com>
+ <20141010131417.GA6004@leverpostej>
+ <543D26ED.6040201@kapsi.fi>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MfFXiAuoTsnnDAfZ"
+Content-Disposition: inline
+In-Reply-To: <543D26ED.6040201@kapsi.fi>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 07 Oct 2014 02:15:18 +0200
-, "Rafael J. Wysocki" <rjw@rjwysocki.net>
- wrote:
-> From: Mika Westerberg <mika.westerberg@linux.intel.com>
-> 
-> With release of ACPI 5.1 and _DSD method we can finally name GPIOs (and
-> other things as well) returned by _CRS. Previously we were only able to
-> use integer index to find the corresponding GPIO, which is pretty error
-> prone if the order changes.
-> 
-> With _DSD we can now query GPIOs using name instead of an integer index,
-> like the below example shows:
-> 
->   // Bluetooth device with reset and shutdown GPIOs
->   Device (BTH)
->   {
->       Name (_HID, ...)
-> 
->       Name (_CRS, ResourceTemplate ()
->       {
->           GpioIo (Exclusive, PullUp, 0, 0, IoRestrictionInputOnly,
->                   "\\_SB.GPO0", 0, ResourceConsumer) {15}
->           GpioIo (Exclusive, PullUp, 0, 0, IoRestrictionInputOnly,
->                   "\\_SB.GPO0", 0, ResourceConsumer) {27, 31}
->       })
-> 
->       Name (_DSD, Package ()
->       {
->           ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
->           Package ()
-> 	  {
->               Package () {"reset-gpio", Package() {^BTH, 1, 1, 0 }},
->               Package () {"shutdown-gpio", Package() {^BTH, 0, 0, 0 }},
->           }
->       })
->   }
-> 
-> The format of the supported GPIO property is:
-> 
->   Package () { "name", Package () { ref, index, pin, active_low }}
-> 
->   ref - The device that has _CRS containing GpioIo()/GpioInt() resources,
->         typically this is the device itself (BTH in our case).
->   index - Index of the GpioIo()/GpioInt() resource in _CRS starting from zero.
->   pin - Pin in the GpioIo()/GpioInt() resource. Typically this is zero.
->   active_low - If 1 the GPIO is marked as active_low.
-> 
-> Since ACPI GpioIo() resource does not have field saying whether it is
-> active low or high, the "active_low" argument can be used here. Setting
-> it to 1 marks the GPIO as active low.
-> 
-> In our Bluetooth example the "reset-gpio" refers to the second GpioIo()
-> resource, second pin in that resource with the GPIO number of 31.
-> 
-> This patch implements necessary support to gpiolib for extracting GPIOs
-> using _DSD device properties.
 
-Patch looks good, but please put the above description into
-/Documentation until we've got a better place to document extra bindings.
+--MfFXiAuoTsnnDAfZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-g.
+On Tue, Oct 14, 2014 at 04:36:45PM +0300, Mikko Perttunen wrote:
+> On 10/10/2014 04:14 PM, Mark Rutland wrote:
+> >On Fri, Oct 10, 2014 at 01:46:55PM +0100, Tomeu Vizoso wrote:
+> >>From: Mikko Perttunen <mperttunen@nvidia.com>
+> >>
+> >>Add binding documentation for the nvidia,tegra124-emc device tree node.
+> >>
+> >>Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+> >>Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+> >>---
+> >>  .../bindings/memory-controllers/tegra-emc.txt      | 41 +++++++++++++=
++++++++++
+> >>  1 file changed, 41 insertions(+)
+> >>  create mode 100644 Documentation/devicetree/bindings/memory-controlle=
+rs/tegra-emc.txt
+> >>
+> >>diff --git a/Documentation/devicetree/bindings/memory-controllers/tegra=
+-emc.txt b/Documentation/devicetree/bindings/memory-controllers/tegra-emc.t=
+xt
+> >>new file mode 100644
+> >>index 0000000..6282c6b
+> >>--- /dev/null
+> >>+++ b/Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt
+> >>@@ -0,0 +1,41 @@
+> >>+Tegra124 SoC EMC controller
+> >>+
+> >>+Required properties :
+> >>+- compatible : "nvidia,tegra124-emc".
+> >>+- reg : Should contain 1 entry:
+> >>+  - EMC register set
+> >>+
+> >>+The node should contain a "timings@i" subnode for each supported RAM t=
+ype
+> >>+  (see field RAM_CODE in register PMC_STRAPPING_OPT_A)
+> >>+Required properties for "timings@i" nodes :
+> >>+- nvidia,ram-code : Should contain the value of RAM_CODE this timing s=
+et
+> >>+  is used for.
+> >>+
+> >>+Each "timings@i" node should contain "timing@j" subnodes. One "timing@=
+j"
+> >>+  node should exist for each supported EMC clock rate.
+> >
+> >What do the i and j correspond to?
+>=20
+> Arbitrary integers, preferably starting from 0 and increasing, similar as
+> with regulator@i etc. Each set of `j's is independent. (Actually, these
+> values are never used anywhere for anything).
 
-> 
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->  drivers/gpio/gpiolib-acpi.c | 78 +++++++++++++++++++++++++++++++++++++--------
->  drivers/gpio/gpiolib.c      | 30 ++++++++++++++---
->  drivers/gpio/gpiolib.h      |  7 ++--
->  3 files changed, 94 insertions(+), 21 deletions(-)
-> 
-> diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
-> index 687476f..b14c045 100644
-> --- a/drivers/gpio/gpiolib-acpi.c
-> +++ b/drivers/gpio/gpiolib-acpi.c
-> @@ -293,6 +293,7 @@ void acpi_gpiochip_free_interrupts(struct gpio_chip *chip)
->  struct acpi_gpio_lookup {
->  	struct acpi_gpio_info info;
->  	int index;
-> +	int pin_index;
->  	struct gpio_desc *desc;
->  	int n;
->  };
-> @@ -306,13 +307,24 @@ static int acpi_find_gpio(struct acpi_resource *ares, void *data)
->  
->  	if (lookup->n++ == lookup->index && !lookup->desc) {
->  		const struct acpi_resource_gpio *agpio = &ares->data.gpio;
-> +		int pin_index = lookup->pin_index;
-> +
-> +		if (pin_index >= agpio->pin_table_length)
-> +			return 1;
->  
->  		lookup->desc = acpi_get_gpiod(agpio->resource_source.string_ptr,
-> -					      agpio->pin_table[0]);
-> +					      agpio->pin_table[pin_index]);
->  		lookup->info.gpioint =
->  			agpio->connection_type == ACPI_RESOURCE_GPIO_TYPE_INT;
-> -		lookup->info.active_low =
-> -			agpio->polarity == ACPI_ACTIVE_LOW;
-> +
-> +		/*
-> +		 * ActiveLow is only specified for GpioInt resource. If
-> +		 * GpioIo is used then the only way to set the flag is
-> +		 * to use _DSD "gpios" property.
-> +		 */
-> +		if (lookup->info.gpioint)
-> +			lookup->info.active_low =
-> +				agpio->polarity == ACPI_ACTIVE_LOW;
->  	}
->  
->  	return 1;
-> @@ -320,40 +332,75 @@ static int acpi_find_gpio(struct acpi_resource *ares, void *data)
->  
->  /**
->   * acpi_get_gpiod_by_index() - get a GPIO descriptor from device resources
-> - * @dev: pointer to a device to get GPIO from
-> + * @adev: pointer to a ACPI device to get GPIO from
-> + * @propname: Property name of the GPIO (optional)
->   * @index: index of GpioIo/GpioInt resource (starting from %0)
->   * @info: info pointer to fill in (optional)
->   *
-> - * Function goes through ACPI resources for @dev and based on @index looks
-> + * Function goes through ACPI resources for @adev and based on @index looks
->   * up a GpioIo/GpioInt resource, translates it to the Linux GPIO descriptor,
->   * and returns it. @index matches GpioIo/GpioInt resources only so if there
->   * are total %3 GPIO resources, the index goes from %0 to %2.
->   *
-> + * If @propname is specified the GPIO is looked using device property. In
-> + * that case @index is used to select the GPIO entry in the property value
-> + * (in case of multiple).
-> + *
->   * If the GPIO cannot be translated or there is an error an ERR_PTR is
->   * returned.
->   *
->   * Note: if the GPIO resource has multiple entries in the pin list, this
->   * function only returns the first.
->   */
-> -struct gpio_desc *acpi_get_gpiod_by_index(struct device *dev, int index,
-> +struct gpio_desc *acpi_get_gpiod_by_index(struct acpi_device *adev,
-> +					  const char *propname, int index,
->  					  struct acpi_gpio_info *info)
->  {
->  	struct acpi_gpio_lookup lookup;
->  	struct list_head resource_list;
-> -	struct acpi_device *adev;
-> -	acpi_handle handle;
-> +	bool active_low = false;
->  	int ret;
->  
-> -	if (!dev)
-> -		return ERR_PTR(-EINVAL);
-> -
-> -	handle = ACPI_HANDLE(dev);
-> -	if (!handle || acpi_bus_get_device(handle, &adev))
-> +	if (!adev)
->  		return ERR_PTR(-ENODEV);
->  
->  	memset(&lookup, 0, sizeof(lookup));
->  	lookup.index = index;
->  
-> +	if (propname) {
-> +		struct acpi_reference_args args;
-> +
-> +		dev_dbg(&adev->dev, "GPIO: looking up %s\n", propname);
-> +
-> +		memset(&args, 0, sizeof(args));
-> +		ret = acpi_dev_get_property_reference(adev, propname, NULL,
-> +						      index, &args);
-> +		if (ret)
-> +			return ERR_PTR(ret);
-> +
-> +		/*
-> +		 * The property was found and resolved so need to
-> +		 * lookup the GPIO based on returned args instead.
-> +		 */
-> +		adev = args.adev;
-> +		if (args.nargs >= 2) {
-> +			lookup.index = args.args[0];
-> +			lookup.pin_index = args.args[1];
-> +			/*
-> +			 * 3rd argument, if present is used to
-> +			 * specify active_low.
-> +			 */
-> +			if (args.nargs >= 3)
-> +				active_low = !!args.args[2];
-> +		}
-> +
-> +		dev_dbg(&adev->dev, "GPIO: _DSD returned %s %zd %llu %llu %llu\n",
-> +			dev_name(&adev->dev), args.nargs,
-> +			args.args[0], args.args[1], args.args[2]);
-> +	} else {
-> +		dev_dbg(&adev->dev, "GPIO: looking up %d in _CRS\n", index);
-> +	}
-> +
->  	INIT_LIST_HEAD(&resource_list);
->  	ret = acpi_dev_get_resources(adev, &resource_list, acpi_find_gpio,
->  				     &lookup);
-> @@ -362,8 +409,11 @@ struct gpio_desc *acpi_get_gpiod_by_index(struct device *dev, int index,
->  
->  	acpi_dev_free_resource_list(&resource_list);
->  
-> -	if (lookup.desc && info)
-> +	if (lookup.desc && info) {
->  		*info = lookup.info;
-> +		if (active_low)
-> +			info->active_low = active_low;
-> +	}
->  
->  	return lookup.desc ? lookup.desc : ERR_PTR(-ENOENT);
->  }
-> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-> index c68d037..4c86601 100644
-> --- a/drivers/gpio/gpiolib.c
-> +++ b/drivers/gpio/gpiolib.c
-> @@ -1487,14 +1487,36 @@ static struct gpio_desc *acpi_find_gpio(struct device *dev, const char *con_id,
->  					unsigned int idx,
->  					enum gpio_lookup_flags *flags)
->  {
-> +	static const char * const suffixes[] = { "gpios", "gpio" };
-> +	struct acpi_device *adev = ACPI_COMPANION(dev);
->  	struct acpi_gpio_info info;
->  	struct gpio_desc *desc;
-> +	char propname[32];
-> +	int i;
->  
-> -	desc = acpi_get_gpiod_by_index(dev, idx, &info);
-> -	if (IS_ERR(desc))
-> -		return desc;
-> +	/* Try first from _DSD */
-> +	for (i = 0; i < ARRAY_SIZE(suffixes); i++) {
-> +		if (con_id && strcmp(con_id, "gpios")) {
-> +			snprintf(propname, sizeof(propname), "%s-%s",
-> +				 con_id, suffixes[i]);
-> +		} else {
-> +			snprintf(propname, sizeof(propname), "%s",
-> +				 suffixes[i]);
-> +		}
-> +
-> +		desc = acpi_get_gpiod_by_index(adev, propname, 0, &info);
-> +		if (!IS_ERR(desc) || (PTR_ERR(desc) == -EPROBE_DEFER))
-> +			break;
-> +	}
-> +
-> +	/* Then from plain _CRS GPIOs */
-> +	if (IS_ERR(desc)) {
-> +		desc = acpi_get_gpiod_by_index(adev, NULL, idx, &info);
-> +		if (IS_ERR(desc))
-> +			return desc;
-> +	}
->  
-> -	if (info.gpioint && info.active_low)
-> +	if (info.active_low)
->  		*flags |= GPIO_ACTIVE_LOW;
->  
->  	return desc;
-> diff --git a/drivers/gpio/gpiolib.h b/drivers/gpio/gpiolib.h
-> index 9db2b6a..e3a5211 100644
-> --- a/drivers/gpio/gpiolib.h
-> +++ b/drivers/gpio/gpiolib.h
-> @@ -34,7 +34,8 @@ void acpi_gpiochip_remove(struct gpio_chip *chip);
->  void acpi_gpiochip_request_interrupts(struct gpio_chip *chip);
->  void acpi_gpiochip_free_interrupts(struct gpio_chip *chip);
->  
-> -struct gpio_desc *acpi_get_gpiod_by_index(struct device *dev, int index,
-> +struct gpio_desc *acpi_get_gpiod_by_index(struct acpi_device *adev,
-> +					  const char *propname, int index,
->  					  struct acpi_gpio_info *info);
->  #else
->  static inline void acpi_gpiochip_add(struct gpio_chip *chip) { }
-> @@ -47,8 +48,8 @@ static inline void
->  acpi_gpiochip_free_interrupts(struct gpio_chip *chip) { }
->  
->  static inline struct gpio_desc *
-> -acpi_get_gpiod_by_index(struct device *dev, int index,
-> -			struct acpi_gpio_info *info)
-> +acpi_get_gpiod_by_index(struct acpi_device *adev, const char *propname,
-> +			int index, struct acpi_gpio_info *info)
->  {
->  	return ERR_PTR(-ENOSYS);
->  }
-> -- 
-> 1.9.3
-> 
-> 
+Perhaps they should be used, then? Typically the unit-address matches
+the (first) value of the reg property. Perhaps in this case it would
+make sense to make it match the value in clock-frequency for j, and i
+could correspond to the value of the nvidia,ram-code property.
 
+Thierry
+
+--MfFXiAuoTsnnDAfZ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUPSkcAAoJEN0jrNd/PrOhchUP/0GRScxnQVDlu+awFc+UP35C
+zSVTvjO0LfvE+k5gZsP5sJH98wCIEgAV/4G+pvnkoBuXnh3dqsZSHs8P/5wUwdS0
+C3xeQvEgfwUTuwMwl+ln+TzQvfvfEzhNhEvcowkY6KpRDETxDWQ50ZKpuJtarOK6
+8NeQmheTTjtsFYk57eteYGL3ENOrD8ey8LT3RBajipJ+5dffXppSXtEFcd/M2kFu
+JYVs/8HBGVLFWfmtwaqzD7O2iOEXgNAxJMrtAtW5kG5I9beGMqkC81ZYAG0yIq/j
+y9noS5dvFv/ZCP0D/9v1AenHuEso1on+VBvfl5vjJsAozv1HYv9NDRnI6B0vtawn
+nWyXd8n3ltiuBPoaLBenz4VyzRgNkmZSFP6FR61yqGrhTh5wLB/lVwcALnOvj1ty
+i4xcLSl3gOSL7KvnEUTJMu5i4traqwynJhdR/POToEMu14pa9CSnOfprhlZarVBW
+8z9vYN75RQzapMtRQYhalpK1I63JIcpFr/KRGkEO351Qfs+neHqQk9MHXGom9q4P
+fonhBj86I/i99N6Ju0VR7uWlqyCNKQ4HtOH5QYQOKM1z5cDriaYfjxdZ3WbiZXbq
+tiyJBceIQPtZEH7xBPVdLPrL8Izj4SuPahNfh/QQWR3d8GW1fL+nYcQohFbkT92h
+MXlyhdbUuEyxCTNN0srh
+=puy9
+-----END PGP SIGNATURE-----
+
+--MfFXiAuoTsnnDAfZ--
