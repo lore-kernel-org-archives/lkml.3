@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755220AbaJNKdi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 06:33:38 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:53345
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
+	id S932105AbaJNKgm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 06:36:42 -0400
+Received: from mga11.intel.com ([192.55.52.93]:10512 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754683AbaJNKdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 06:33:36 -0400
-x-originating-ip: 72.167.245.219
-From: Thomas Shao <huishao@microsoft.com>
-To: tglx@linutronix.de, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
-        kys@microsoft.com
-Cc: Thomas Shao <huishao@microsoft.com>
-Subject: [PATCH 1/2] timekeeping: add EXPORT_SYMBOL_GPL for do_adjtimex()
-Date: Tue, 14 Oct 2014 04:10:19 -0700
-Message-Id: <1413285019-6987-1-git-send-email-huishao@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1754690AbaJNKgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 06:36:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="399935057"
+Message-ID: <543CFC7F.2070607@linux.intel.com>
+Date: Tue, 14 Oct 2014 13:35:43 +0300
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: David Cohen <david.a.cohen@linux.intel.com>, linus.walleij@linaro.org,
+        gnurou@gmail.com
+CC: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: Re: [RFC/PATCH] gpio/pinctrl: baytrail: move gpio driver from pinctrl
+ to gpio directory
+References: <1413227857-555-1-git-send-email-david.a.cohen@linux.intel.com>
+In-Reply-To: <1413227857-555-1-git-send-email-david.a.cohen@linux.intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Export do_adjtimex function for hyper-v Time Synchronization component
+On 13.10.2014 22:17, David Cohen wrote:
+> Even though GPIO module on Intel Bay Trail is able to control pin
+> functionality, it's unlikely Linux kernel driver will ever support it
+> since BIOS should handle all pin muxing itself.
+> 
+> Currently this driver does not register any pinctrl interface and
+> doesn't call any pinctrl interface. It just uses on internal functions
+> the 'struct pinctrl_gpio_range', which is a weak justification to not be
+> under gpio directory.
+> 
 
-Signed-off-by: Thomas Shao <huishao@microsoft.com>
----
- kernel/time/timekeeping.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+This discussion was held when gpio-baytrail was first submitted.
+These threads explain the gpio/pinctrl-baytrail history:
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index ec1791f..205a4b3 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1786,6 +1786,7 @@ int do_adjtimex(struct timex *txc)
- 
- 	return ret;
- }
-+EXPORT_SYMBOL_GPL(do_adjtimex);
- 
- #ifdef CONFIG_NTP_PPS
- /**
--- 
-1.7.1
+http://marc.info/?l=linux-kernel&m=136981432427668&w=2
+http://marc.info/?l=linux-kernel&m=137113578604763&w=2
+http://marc.info/?l=linux-kernel&m=137155497023054&w=2
+
+A proper pinctrl driver for baytrail is still not yet ruled out
+
+-Mathias 
 
