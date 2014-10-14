@@ -1,101 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755546AbaJNVAD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 17:00:03 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:40499 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751162AbaJNVAA (ORCPT
+	id S1755601AbaJNVAy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 17:00:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45559 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752928AbaJNVAx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 17:00:00 -0400
-Date: Tue, 14 Oct 2014 22:59:55 +0200
-From: Seth Forshee <seth.forshee@canonical.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Michael j Theall <mtheall@us.ibm.com>
-Cc: fuse-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Miklos Szeredi <miklos@szeredi.hu>,
-        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>
-Subject: Re: [fuse-devel] [PATCH v4 4/5] fuse: Support privileged xattrs only
- with a mount option
-Message-ID: <20141014205955.GA10908@ubuntu-mba51>
-Mail-Followup-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-	Michael j Theall <mtheall@us.ibm.com>,
-	fuse-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-	linux-kernel@vger.kernel.org, Miklos Szeredi <miklos@szeredi.hu>,
-	"Serge H. Hallyn" <serge.hallyn@ubuntu.com>
-References: <1413296756-25071-1-git-send-email-seth.forshee@canonical.com>
- <1413296756-25071-5-git-send-email-seth.forshee@canonical.com>
- <OFD40DA8DF.F78EA39D-ON86257D71.0057C4DC-86257D71.0064055D@us.ibm.com>
- <878ukis9oh.fsf@x220.int.ebiederm.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <878ukis9oh.fsf@x220.int.ebiederm.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 14 Oct 2014 17:00:53 -0400
+Date: Tue, 14 Oct 2014 14:00:52 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Josh Triplett <josh@joshtriplett.org>, Rob Landley <rob@landley.net>,
+        frowand.list@gmail.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chuck Ebbert <cebbert.lkml@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH v5] init: Disable defaults if init= fails
+Message-Id: <20141014140052.2f114c158ffe6cd953020f1c@linux-foundation.org>
+In-Reply-To: <CALCETrUK07j8+iQ8oSW70sgePxg_GJY3ASBBS+U9fvp_f2Rz5w@mail.gmail.com>
+References: <5c6381879bea68aebb13530442f1cf8a052be97f.1411958379.git.luto@amacapital.net>
+	<542B4DA3.5080105@gmail.com>
+	<542B519B.6010001@landley.net>
+	<542B5E44.40303@gmail.com>
+	<542B7200.6030902@landley.net>
+	<CALCETrWr--A26UEv_7DeZa-Te1fTBDQgCdZt24n5LWkAnOa6jQ@mail.gmail.com>
+	<20141001180510.GA28540@cloud>
+	<CALCETrUK07j8+iQ8oSW70sgePxg_GJY3ASBBS+U9fvp_f2Rz5w@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 14, 2014 at 01:01:02PM -0700, Eric W. Biederman wrote:
-> Michael j Theall <mtheall@us.ibm.com> writes:
-> 
-> > Seth Forshee <seth.forshee@canonical.com> wrote on 10/14/2014 09:25:55 AM:
+On Wed, 1 Oct 2014 11:13:14 -0700 Andy Lutomirski <luto@amacapital.net> wrote:
+
+> On Wed, Oct 1, 2014 at 11:05 AM,  <josh@joshtriplett.org> wrote:
+> > On Tue, Sep 30, 2014 at 09:53:56PM -0700, Andy Lutomirski wrote:
+> >> I significantly prefer default N.  Scripts that play with init= really
+> >> don't want the fallback, and I can imagine contexts in which it could
+> >> be a security problem.
 > >
-> >> From: Seth Forshee <seth.forshee@canonical.com>
-> >> To: Miklos Szeredi <miklos@szeredi.hu>
-> >> Cc: fuse-devel@lists.sourceforge.net, "Serge H. Hallyn" 
-> >> <serge.hallyn@ubuntu.com>, linux-kernel@vger.kernel.org, Seth 
-> >> Forshee <seth.forshee@canonical.com>, "Eric W. Biederman" 
-> >> <ebiederm@xmission.com>, linux-fsdevel@vger.kernel.org
-> >> Date: 10/14/2014 09:27 AM
-> >> Subject: [fuse-devel] [PATCH v4 4/5] fuse: Support privileged xattrs
-> >> only with a mount option
-> >> 
-> >> Allowing unprivileged users to provide arbitrary xattrs via fuse
-> >> mounts bypasses the normal restrictions on setting xattrs. Such
-> >> mounts should be restricted to reading and writing xattrs in the
-> >> user.* namespace.
-> >> 
+> > While I certainly would prefer the non-fallback behavior for init as
+> > well, standard kernel practice has typically been to use "default y" for
+> > previously built-in features that become configurable.  And I'd
+> > certainly prefer a compile-time configuration option like this (even
+> > with default y) over a "strictinit" kernel command-line option.
 > >
-> > Can you explain how the normal restrictions on setting xattrs are 
-> > bypassed?
 > 
-> If the fuse server is not run by root.  Which is a large part of the
-> point of fuse.
-
-So the server could for example return trusted.* xattrs which were not
-set by a privileged user.
-
-> > My filesystem still needs security.* and system.*, and it looks like
-> > xattr_permission already prevents non-privileged users from accessing
-> > trusted.*
+> Fair enough.
 > 
-> If the filesystem is mounted with nosuid (typical of a non-privileged
-> mount of fuse) then the security.* attributes are ignored.
-
-That I wasn't aware of. In fact I still haven't found where this
-restriction is implemented.
-
-Nonetheless, a userns mount could be done without nosuid (though that
-mount will also be unaccessible outside of that namespace).
-
-> >> It's difficult though to tell whether a mount is being performed
-> >> on behalf of an unprivileged user since fuse mounts are ususally
-> >> done via a suid root helper. Thus a new mount option,
-> >> privileged_xattrs, is added to indicated that xattrs from other
-> >> namespaces are allowed. This option can only be supplied by
-> >> system-wide root; supplying the option as an unprivileged user
-> >> will cause the mount to fail.
-> >
-> > I can't say I'm convinced that this is the right direction to head.
+> So: "default y" for a release or two, then switch the default?  Having
+> default y will annoy virtme, though it's not the end of the world.
+> Virtme is intended to work with more-or-less-normal kernels.
 > 
-> With respect to defaults we could keep the current default if you
-> have the global CAP_SYS_ADMIN privilege when the mount takes place
-> and then avoid breaking anything.
 
-Except that unprivileged mounts are normally done by a suid root helper,
-which is why I've required both global CAP_SYS_ADMIN and a mount option
-to get the current default behavior.
-
-Thanks,
-Seth
-
+Adding another Kconfig option is tiresome.  What was wrong with strictinit=?
