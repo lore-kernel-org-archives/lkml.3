@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932312AbaJNMBq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 08:01:46 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:39534 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755248AbaJNL7y (ORCPT
+	id S932298AbaJNMBo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 08:01:44 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:41866 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932172AbaJNL76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 07:59:54 -0400
-X-AuditID: cbfee68d-f79296d000004278-d9-543d103847b1
+	Tue, 14 Oct 2014 07:59:58 -0400
+X-AuditID: cbfee68e-f79b46d000002b74-dd-543d10395250
 From: Heesub Shin <heesub.shin@samsung.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Seth Jennings <sjennings@variantweb.net>
@@ -15,37 +15,37 @@ Cc: Nitin Gupta <ngupta@vflare.org>, Dan Streetman <ddstreet@ieee.org>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Sunae Seo <sunae.seo@samsung.com>,
         Heesub Shin <heesub.shin@samsung.com>
-Subject: [RFC PATCH 1/9] mm/zbud: tidy up a bit
-Date: Tue, 14 Oct 2014 20:59:20 +0900
-Message-id: <1413287968-13940-2-git-send-email-heesub.shin@samsung.com>
+Subject: [RFC PATCH 7/9] mm/zbud: drop zbud_header
+Date: Tue, 14 Oct 2014 20:59:26 +0900
+Message-id: <1413287968-13940-8-git-send-email-heesub.shin@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1413287968-13940-1-git-send-email-heesub.shin@samsung.com>
 References: <1413287968-13940-1-git-send-email-heesub.shin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLLMWRmVeSWpSXmKPExsVy+t8zTV0LAdsQg11dPBZz1q9hs3h5SNPi
-	QttuFouDs5cwWVzeNYfN4t6a/6wWG1pmsVt8OvqIzaJx9zs2B06PpxMOMnls+jSJ3ePEjN8s
-	Hn1bVjF6XP9W5LHz02ZWj8+b5ALYo7hsUlJzMstSi/TtErgypvYuZy64KFbR/HwRWwPjN8Eu
-	Rk4OCQETiRufDjNC2GISF+6tZwOxhQSWMUr09ibA1Fz89Jq9i5ELKL6IUeLvhw5mCKedSaLh
-	7xsgh4ODTUBb4tC2YJAGEYFIie0PP7KA1DALHGOU2HbvGStIQlhAX+Lq236wbSwCqhLHTi1h
-	BrF5BdwlLu+dxAaxTU7i5LHJYPWcAh4SS2bvYIG4yF3i/Ox+JpChEgK72CUmLVjMBjFIQOLb
-	5EMsIEdICMhKbDrADDFHUuLgihssExiFFzAyrGIUTS1ILihOSi8y1CtOzC0uzUvXS87P3cQI
-	iYXeHYy3D1gfYhTgYFTi4S2ItAkRYk0sK67MPcRoCrRhIrOUaHI+MOLySuINjc2MLExNTI2N
-	zC3NlMR5FaV+BgsJpCeWpGanphakFsUXleakFh9iZOLglGpgPLf8j2b3y6NL1Lf2bYjj719R
-	x3vrZ+jx19tmHfqpy78oWV83nrtgy9F9T/dsu7hVxCE7+avC3G/Jh/MfH8ycNVHrON+GDxmZ
-	pSEiO570LFZbe1ZbKbB6xy2d5U8EufUm6dq/uOJ0bPcPvhsGJ9a0X06bcG3uRrF7C2qvfEv7
-	NTVv647fxlEM0nFKLMUZiYZazEXFiQDbRC3vgAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBIsWRmVeSWpSXmKPExsVy+t9jAV0LAdsQg1ln2S3mrF/DZvHykKbF
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDLMWRmVeSWpSXmKPExsVy+t8zLV1LAdsQg1U3BCzmrF/DZvHykKbF
+	hbbdLBYHZy9hsri8aw6bxb01/1ktNrTMYrf4dPQRm0Xj7ndsDpweTyccZPLY9GkSu8eJGb9Z
+	PPq2rGL0uP6tyGPnp82sHp83yQWwR3HZpKTmZJalFunbJXBlbHmxnK2g26Tiy6cJTA2M1zW7
+	GDk5JARMJDrb17JD2GISF+6tZ+ti5OIQEljGKPFz0QEmmKJF354yg9hCAosYJVaukYew25kk
+	9q8N6mLk4GAT0JY4tC0YJCwiECmx/eFHFpA5zALHGCW23XvGCpIQFjCS+P2gDWwmi4CqRGfL
+	dbDFvALuEn13TzBD7JKTOHlsMlg9p4CHxJLZO1ggdrlLnJ/dzwQyVEJgG7vE8dWLWCEGCUh8
+	m3yIBeQICQFZiU0HoOZIShxccYNlAqPwAkaGVYyiqQXJBcVJ6UVGesWJucWleel6yfm5mxgh
+	kdC3g/HmAetDjAIcjEo8vBLhNiFCrIllxZW5hxhNgTZMZJYSTc4HxlteSbyhsZmRhamJqbGR
+	uaWZkjhvgtTPYCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2McU7zYpnmHz6fcLGF7X74l73B
+	24QvVO7LijG4xTZN68isX98zE0R/uDze+/2e+K2Nd385cfQr7JkeZTG7MCyT/WfiqhtJl3Yp
+	d388vmruQUeOJzJOL2ZH2W8PXsnRGLpurd3WQ6ZfjZSmzFt8/o69xL6b/QK8vp6z//uzuLmU
+	XPn5rrnrvoJklxJLcUaioRZzUXEiAGc/4Pd/AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGIsWRmVeSWpSXmKPExsVy+t9jAV1LAdsQg3tvuS3mrF/DZvHykKbF
 	hbbdLBYHZy9hsri8aw6bxb01/1ktNrTMYrf4dPQRm0Xj7ndsDpweTyccZPLY9GkSu8eJGb9Z
 	PPq2rGL0uP6tyGPnp82sHp83yQWwRzUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY6hpa
 	WpgrKeQl5qbaKrn4BOi6ZeYAXaakUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7HyAAN
-	JKxjzJjau5y54KJYRfPzRWwNjN8Euxg5OSQETCQufnrNDmGLSVy4t56ti5GLQ0hgEaPE3w8d
-	zBBOO5NEw983QA4HB5uAtsShbcEgDSICkRLbH35kAalhFjjGKLHt3jNWkISwgL7E1bf9jCA2
-	i4CqxLFTS5hBbF4Bd4nLeyexQWyTkzh5bDJYPaeAh8SS2TtYQGwhoJrzs/uZJjDyLmBkWMUo
-	mlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHGvPpHcwrmqwOMQowMGoxMNbEGkTIsSaWFZcmXuI
-	UYKDWUmEV4HDNkSINyWxsiq1KD++qDQntfgQoynQVROZpUST84FpIK8k3tDYxMzI0sjM2MTc
-	2FhJnPdgq3WgkEB6YklqdmpqQWoRTB8TB6dUAyPbOYfHfgsLvd7UrQ6ZEL2DcfHkJ9v83/lJ
-	XAh/fMpL3yJVbMrEpRtS7oXtXpok97RufaKvo8rlF0KLC1P32j1/yv1u/xzn/qwN/8t4l9wq
-	viIrNyN6Y4bMpbeHQta/C7/XqNafnDFD7EWA6cM5h2fnLdLe1H/8zHnPafZrYlaU3vt6UrBB
-	um2FEktxRqKhFnNRcSIAj2yZMssCAAA=
+	JKxjzNjyYjlbQbdJxZdPE5gaGK9rdjFyckgImEgs+vaUGcIWk7hwbz0biC0ksIhRYuUaeQi7
+	nUli/9qgLkYODjYBbYlD24JBwiICkRLbH35k6WLk4mAWOMYose3eM1aQhLCAkcTvB21MIDaL
+	gKpEZ8t1dhCbV8Bdou/uCahdchInj00Gq+cU8JBYMnsHC8Qud4nzs/uZJjDyLmBkWMUomlqQ
+	XFCclJ5rpFecmFtcmpeul5yfu4kRHGfPpHcwrmqwOMQowMGoxMNbEGkTIsSaWFZcmXuIUYKD
+	WUmEV4HDNkSINyWxsiq1KD++qDQntfgQoynQVROZpUST84EpIK8k3tDYxMzI0sjM2MTc2FhJ
+	nPdgq3WgkEB6YklqdmpqQWoRTB8TB6dUA+N0P5vY6O+CM9nu6odtqWj7L+uhZijcVzO98+PE
+	Xdl+WwKm6zeJr9i8h8NbtdDXKyTx/M3ZE1++YxJs0v9Q+ezw471MfPnfG5q+v0+rnufvfbzY
+	ad6ppw+mRveqxv20jS7qvKnl+tnUhPFnnPWJ9Z8DPzdNlBQqPiY6e4XlxoK/07m+e3qe7lJi
+	Kc5INNRiLipOBACGPiifyQIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -53,98 +53,206 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For aesthetics, add a blank line between functions, remove useless
-initialization statements, and simplify codes a bit. No functional
-differences are introduced.
+Now that the only field in zbud_header is .under_reclaim, get it out of
+the struct and let PG_reclaim bit in page->flags take over. As a result
+of this change, we can finally eliminate the struct zbud_header, and
+hence all the internal data structures of zbud live in struct page.
 
 Signed-off-by: Heesub Shin <heesub.shin@samsung.com>
 ---
- mm/zbud.c | 21 ++++++++++-----------
- 1 file changed, 10 insertions(+), 11 deletions(-)
+ mm/zbud.c | 66 +++++++++++++++++----------------------------------------------
+ 1 file changed, 18 insertions(+), 48 deletions(-)
 
 diff --git a/mm/zbud.c b/mm/zbud.c
-index ecf1dbe..6f36394 100644
+index 8a6dd6b..5a392f3 100644
 --- a/mm/zbud.c
 +++ b/mm/zbud.c
-@@ -145,6 +145,7 @@ static int zbud_zpool_malloc(void *pool, size_t size, gfp_t gfp,
- {
- 	return zbud_alloc(pool, size, gfp, handle);
- }
-+
- static void zbud_zpool_free(void *pool, unsigned long handle)
- {
- 	zbud_free(pool, handle);
-@@ -174,6 +175,7 @@ static void *zbud_zpool_map(void *pool, unsigned long handle,
- {
- 	return zbud_map(pool, handle);
- }
-+
- static void zbud_zpool_unmap(void *pool, unsigned long handle)
- {
- 	zbud_unmap(pool, handle);
-@@ -350,16 +352,11 @@ int zbud_alloc(struct zbud_pool *pool, size_t size, gfp_t gfp,
- 	spin_lock(&pool->lock);
+@@ -60,17 +60,15 @@
+  * NCHUNKS_ORDER determines the internal allocation granularity, effectively
+  * adjusting internal fragmentation.  It also determines the number of
+  * freelists maintained in each pool. NCHUNKS_ORDER of 6 means that the
+- * allocation granularity will be in chunks of size PAGE_SIZE/64. As one chunk
+- * in allocated page is occupied by zbud header, NCHUNKS will be calculated to
+- * 63 which shows the max number of free chunks in zbud page, also there will be
+- * 63 freelists per pool.
++ * allocation granularity will be in chunks of size PAGE_SIZE/64.
++ * NCHUNKS will be calculated to 64 which shows the max number of free
++ * chunks in zbud page, also there will be 64 freelists per pool.
+  */
+ #define NCHUNKS_ORDER	6
  
- 	/* First, try to find an unbuddied zbud page. */
--	zhdr = NULL;
- 	for_each_unbuddied_list(i, chunks) {
- 		if (!list_empty(&pool->unbuddied[i])) {
- 			zhdr = list_first_entry(&pool->unbuddied[i],
- 					struct zbud_header, buddy);
- 			list_del(&zhdr->buddy);
--			if (zhdr->first_chunks == 0)
--				bud = FIRST;
--			else
--				bud = LAST;
- 			goto found;
- 		}
- 	}
-@@ -372,13 +369,15 @@ int zbud_alloc(struct zbud_pool *pool, size_t size, gfp_t gfp,
- 	spin_lock(&pool->lock);
- 	pool->pages_nr++;
- 	zhdr = init_zbud_page(page);
--	bud = FIRST;
+ #define CHUNK_SHIFT	(PAGE_SHIFT - NCHUNKS_ORDER)
+ #define CHUNK_SIZE	(1 << CHUNK_SHIFT)
+-#define ZHDR_SIZE_ALIGNED CHUNK_SIZE
+-#define NCHUNKS		((PAGE_SIZE - ZHDR_SIZE_ALIGNED) >> CHUNK_SHIFT)
++#define NCHUNKS		(PAGE_SIZE >> CHUNK_SHIFT)
  
- found:
--	if (bud == FIRST)
-+	if (zhdr->first_chunks == 0) {
- 		zhdr->first_chunks = chunks;
+ /**
+  * struct zbud_pool - stores metadata for each zbud pool
+@@ -96,14 +94,6 @@ struct zbud_pool {
+ 	struct zbud_ops *ops;
+ };
+ 
+-/*
+- * struct zbud_header - zbud page metadata occupying the first chunk of each
+- *			zbud page.
+- */
+-struct zbud_header {
+-	bool under_reclaim;
+-};
+-
+ /*****************
+  * zpool
+  ****************/
+@@ -220,22 +210,19 @@ static size_t get_num_chunks(struct page *page, enum buddy bud)
+ #define for_each_unbuddied_list(_iter, _begin) \
+ 	for ((_iter) = (_begin); (_iter) < NCHUNKS; (_iter)++)
+ 
+-/* Initializes the zbud header of a newly allocated zbud page */
++/* Initializes a newly allocated zbud page */
+ static void init_zbud_page(struct page *page)
+ {
+-	struct zbud_header *zhdr = page_address(page);
+ 	set_num_chunks(page, FIRST, 0);
+ 	set_num_chunks(page, LAST, 0);
+ 	INIT_LIST_HEAD((struct list_head *) &page->index);
+ 	INIT_LIST_HEAD(&page->lru);
+-	zhdr->under_reclaim = 0;
++	ClearPageReclaim(page);
+ }
+ 
+ /* Resets the struct page fields and frees the page */
+-static void free_zbud_page(struct zbud_header *zhdr)
++static void free_zbud_page(struct page *page)
+ {
+-	struct page *page = virt_to_page(zhdr);
+-
+ 	init_page_count(page);
+ 	page_mapcount_reset(page);
+ 	__free_page(page);
+@@ -261,14 +248,6 @@ static struct page *handle_to_zbud_page(unsigned long handle)
+ 	return (struct page *) (handle & ~LAST);
+ }
+ 
+-/* Returns the zbud page where a given handle is stored */
+-static struct zbud_header *handle_to_zbud_header(unsigned long handle)
+-{
+-	struct page *page = handle_to_zbud_page(handle);
+-
+-	return page_address(page);
+-}
+-
+ /* Returns the number of free chunks in a zbud page */
+ static int num_free_chunks(struct page *page)
+ {
+@@ -347,7 +326,7 @@ int zbud_alloc(struct zbud_pool *pool, size_t size, gfp_t gfp,
+ 
+ 	if (!size || (gfp & __GFP_HIGHMEM))
+ 		return -EINVAL;
+-	if (size > PAGE_SIZE - ZHDR_SIZE_ALIGNED - CHUNK_SIZE)
++	if (size > PAGE_SIZE - CHUNK_SIZE)
+ 		return -ENOSPC;
+ 	chunks = size_to_chunks(size);
+ 	spin_lock(&pool->lock);
+@@ -410,21 +389,18 @@ found:
+  */
+ void zbud_free(struct zbud_pool *pool, unsigned long handle)
+ {
+-	struct zbud_header *zhdr;
+ 	struct page *page;
+ 	int freechunks;
+ 
+ 	spin_lock(&pool->lock);
+-	zhdr = handle_to_zbud_header(handle);
+-	page = virt_to_page(zhdr);
++	page = handle_to_zbud_page(handle);
+ 
+-	/* If first buddy, handle will be page aligned */
+-	if ((handle - ZHDR_SIZE_ALIGNED) & ~PAGE_MASK)
+-		set_num_chunks(page, LAST, 0);
 -	else
-+		bud = FIRST;
-+	} else {
- 		zhdr->last_chunks = chunks;
-+		bud = LAST;
-+	}
++	if (!is_last_chunk(handle))
+ 		set_num_chunks(page, FIRST, 0);
++	else
++		set_num_chunks(page, LAST, 0);
  
- 	if (zhdr->first_chunks == 0 || zhdr->last_chunks == 0) {
- 		/* Add to unbuddied list */
-@@ -433,7 +432,7 @@ void zbud_free(struct zbud_pool *pool, unsigned long handle)
- 	/* Remove from existing buddy list */
- 	list_del(&zhdr->buddy);
- 
--	if (zhdr->first_chunks == 0 && zhdr->last_chunks == 0) {
-+	if (num_free_chunks(zhdr) == NCHUNKS) {
+-	if (zhdr->under_reclaim) {
++	if (PageReclaim(page)) {
+ 		/* zbud page is under reclaim, reclaim will free */
+ 		spin_unlock(&pool->lock);
+ 		return;
+@@ -436,7 +412,7 @@ void zbud_free(struct zbud_pool *pool, unsigned long handle)
+ 		list_del((struct list_head *) &page->index);
  		/* zbud page is empty, free */
- 		list_del(&zhdr->lru);
- 		free_zbud_page(zhdr);
-@@ -489,7 +488,7 @@ int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
+ 		list_del(&page->lru);
+-		free_zbud_page(zhdr);
++		free_zbud_page(page);
+ 		pool->pages_nr--;
+ 	} else {
+ 		/* Add to unbuddied list */
+@@ -489,7 +465,6 @@ int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
  {
  	int i, ret, freechunks;
- 	struct zbud_header *zhdr;
--	unsigned long first_handle = 0, last_handle = 0;
-+	unsigned long first_handle, last_handle;
+ 	struct page *page;
+-	struct zbud_header *zhdr;
+ 	unsigned long first_handle, last_handle;
  
  	spin_lock(&pool->lock);
- 	if (!pool->ops || !pool->ops->evict || list_empty(&pool->lru) ||
-@@ -529,7 +528,7 @@ int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
+@@ -500,11 +475,10 @@ int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
+ 	}
+ 	for (i = 0; i < retries; i++) {
+ 		page = list_tail_entry(&pool->lru, struct page, lru);
+-		zhdr = page_address(page);
+ 		list_del(&page->lru);
+ 		list_del((struct list_head *) &page->index);
+ 		/* Protect zbud page against free */
+-		zhdr->under_reclaim = true;
++		SetPageReclaim(page);
+ 		/*
+ 		 * We need encode the handles before unlocking, since we can
+ 		 * race with free that will set (first|last)_chunks to 0
+@@ -530,14 +504,14 @@ int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
+ 		}
  next:
  		spin_lock(&pool->lock);
- 		zhdr->under_reclaim = false;
--		if (zhdr->first_chunks == 0 && zhdr->last_chunks == 0) {
-+		if (num_free_chunks(zhdr) == NCHUNKS) {
+-		zhdr->under_reclaim = false;
++		ClearPageReclaim(page);
+ 		freechunks = num_free_chunks(page);
+ 		if (freechunks == NCHUNKS) {
  			/*
  			 * Both buddies are now free, free the zbud page and
  			 * return success.
+ 			 */
+-			free_zbud_page(zhdr);
++			free_zbud_page(page);
+ 			pool->pages_nr--;
+ 			spin_unlock(&pool->lock);
+ 			return 0;
+@@ -569,14 +543,12 @@ next:
+  */
+ void *zbud_map(struct zbud_pool *pool, unsigned long handle)
+ {
+-	size_t offset;
++	size_t offset = 0;
+ 	struct page *page = handle_to_zbud_page(handle);
+ 
+ 	if (is_last_chunk(handle))
+ 		offset = PAGE_SIZE -
+ 				(get_num_chunks(page, LAST) << CHUNK_SHIFT);
+-	else
+-		offset = ZHDR_SIZE_ALIGNED;
+ 
+ 	return (unsigned char *) page_address(page) + offset;
+ }
+@@ -604,8 +576,6 @@ u64 zbud_get_pool_size(struct zbud_pool *pool)
+ 
+ static int __init init_zbud(void)
+ {
+-	/* Make sure the zbud header will fit in one chunk */
+-	BUILD_BUG_ON(sizeof(struct zbud_header) > ZHDR_SIZE_ALIGNED);
+ 	pr_info("loaded\n");
+ 
+ #ifdef CONFIG_ZPOOL
 -- 
 1.9.1
 
