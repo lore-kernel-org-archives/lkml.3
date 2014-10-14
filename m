@@ -1,74 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932195AbaJNNfz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 09:35:55 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:39347 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755248AbaJNNfy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 09:35:54 -0400
-Message-ID: <543D26B6.9020506@codeaurora.org>
-Date: Tue, 14 Oct 2014 16:35:50 +0300
-From: Tanya Brokhman <tlinder@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S932279AbaJNNgz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 09:36:55 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:57114 "EHLO mail.kapsi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755240AbaJNNgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 09:36:52 -0400
+Message-ID: <543D26ED.6040201@kapsi.fi>
+Date: Tue, 14 Oct 2014 16:36:45 +0300
+From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-To: dedekind1@gmail.com
-CC: Richard Weinberger <richard@nod.at>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] UBI: Fastmap: Care about the protection queue
-References: <1412029248-22454-1-git-send-email-richard@nod.at>	 <1412029248-22454-4-git-send-email-richard@nod.at>	 <1412346676.3795.62.camel@sauron.fi.intel.com> <542EF3BF.1070401@nod.at>	 <1413206263.7906.18.camel@sauron.fi.intel.com> <543BE21F.5020504@nod.at>	 <1413213803.7906.45.camel@sauron.fi.intel.com> <543C3E60.4080507@nod.at>	 <1413282203.7906.72.camel@sauron.fi.intel.com>	 <543D1545.8090209@codeaurora.org> <1413291739.7906.88.camel@sauron.fi.intel.com>
-In-Reply-To: <1413291739.7906.88.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
+To: Mark Rutland <mark.rutland@arm.com>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>
+CC: Stephen Warren <swarren@nvidia.com>, Rhyland Klein <rklein@nvidia.com>,
+        Thierry Reding <treding@nvidia.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 04/10] of: Add Tegra124 EMC bindings
+References: <1412945262-6068-1-git-send-email-tomeu.vizoso@collabora.com> <1412945262-6068-5-git-send-email-tomeu.vizoso@collabora.com> <20141010131417.GA6004@leverpostej>
+In-Reply-To: <20141010131417.GA6004@leverpostej>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
+X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2014 4:02 PM, Artem Bityutskiy wrote:
-> On Tue, 2014-10-14 at 15:21 +0300, Tanya Brokhman wrote:
->> Hi Artem/Richard
+On 10/10/2014 04:14 PM, Mark Rutland wrote:
+> On Fri, Oct 10, 2014 at 01:46:55PM +0100, Tomeu Vizoso wrote:
+>> From: Mikko Perttunen <mperttunen@nvidia.com>
 >>
->> I think your discussion here stopped being relevant to this specific
->> patch but went on to the fastmap feature design in general :)
->> This patch fixes a real bug in the current implementation of the
->> feature. What you're discussing requires a re-writing and re-design of
->> the feature. Perhaps this one can be merged and will be "fixed" later on
->> when you agree on how you would like FM to access WL data structures in
->> general?
+>> Add binding documentation for the nvidia,tegra124-emc device tree node.
+>>
+>> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+>> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+>> ---
+>>   .../bindings/memory-controllers/tegra-emc.txt      | 41 ++++++++++++++++++++++
+>>   1 file changed, 41 insertions(+)
+>>   create mode 100644 Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt b/Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt
+>> new file mode 100644
+>> index 0000000..6282c6b
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt
+>> @@ -0,0 +1,41 @@
+>> +Tegra124 SoC EMC controller
+>> +
+>> +Required properties :
+>> +- compatible : "nvidia,tegra124-emc".
+>> +- reg : Should contain 1 entry:
+>> +  - EMC register set
+>> +
+>> +The node should contain a "timings@i" subnode for each supported RAM type
+>> +  (see field RAM_CODE in register PMC_STRAPPING_OPT_A)
+>> +Required properties for "timings@i" nodes :
+>> +- nvidia,ram-code : Should contain the value of RAM_CODE this timing set
+>> +  is used for.
+>> +
+>> +Each "timings@i" node should contain "timing@j" subnodes. One "timing@j"
+>> +  node should exist for each supported EMC clock rate.
 >
-> First of all, "re-writing and re-design of the feature" is an
-> overstatement. So far this is on the "cleaning things up" side of the
-> spectrum, closer to the "re-factoring" area.
+> What do the i and j correspond to?
+
+Arbitrary integers, preferably starting from 0 and increasing, similar 
+as with regulator@i etc. Each set of `j's is independent. (Actually, 
+these values are never used anywhere for anything).
+
 >
-> WRT "merge the fix now and improve later" - this is a good argument for
-> an "inside a company" discussion, where the primary TTM is the driving
-> factor.
+>> +Required properties for "timing@j" nodes :
+>> +- clock-frequency : Should contain the memory clock rate.
+>> +- nvidia,parent-clock-frequency : Should contain the rate of the EMC
+>> +  clock's parent clock.
 >
-> For the community TTM is a good thing, but quality comes first.
+> Why are both of these properties necessary?
 >
-> Now, if this was about a regression, one could apply time pressure on
-> the maintainer. But we are talking about a problem which was there from
-> day 0.
+> What is the relationship between the two?
+
+There is a certain set of memory timings specified by the hardware 
+manufacturer for each board type. Each memory timing contains the memory 
+rate, parent clock and parent clock frequency and many other values 
+which you mention later.
+
 >
-> It is completely normal for the maintainer to push back various
-> hot-fixes for the problem and request some reasonable re-factoring
-> first. This is what I do. This is very very usual thing in the Linux
-> community.
+>> +- clocks : Must contain an entry for each entry in clock-names.
+>> +  See ../clocks/clock-bindings.txt for details.
+>> +- clock-names : Must include the following entries:
+>> +  - emc-parent : EMC's parent clock.
 >
-> So far I did not ask anything huge and unreasonable, I think. Just
-> cleaner inter-subsystem APIs, less of the "fastmap uses the other
-> subsystems' internals" kind of things.
+> Surely the clocks are a property of the EMC, and not the individual
+> timings?
+
+The required parent for each timing is specified by the manufacturer.
+
 >
-> --
-> Artem.
+>> +- The following properties contain EMC timing characterization values:
+>> +  - nvidia,emc-zcal-cnt-long
+>> +  - nvidia,emc-auto-cal-interval
+>> +  - nvidia,emc-ctt-term-ctrl
+>> +  - nvidia,emc-cfg
+>> +  - nvidia,emc-cfg-2
+>> +  - nvidia,emc-sel-dpd-ctrl
+>> +  - nvidia,emc-cfg-dig-dll
+>> +  - nvidia,emc-bgbias-ctl0
+>> +  - nvidia,emc-auto-cal-config
+>> +  - nvidia,emc-auto-cal-config2
+>> +  - nvidia,emc-auto-cal-config3
+>> +  - nvidia,emc-mode-reset
+>> +  - nvidia,emc-mode-1
+>> +  - nvidia,emc-mode-2
+>> +  - nvidia,emc-mode-4
+>> +- nvidia,emc-configuration : EMC timing characterization data written to
+>> +                             EMC registers.
+>
+> I have no idea what any of these are. Perhaps these make sense, but I
+> cannot tell.
+
+Magic values specified by the manufacturer. There is some sparse 
+documentation in the Tegra TRM.
+
+TL;DR: The whole EMC sequence is rather magical and complicated so we 
+stick to manufacturer-specified values rather than trying guess on our 
+own. (Although this patch already calculates some stuff that's safe to 
+calculate and that is manually specified by the downstream NVIDIA kernel.)
+
+>
+> Mark.
 >
 
-Ok, accepted. It was just a suggestion. I'm all for quality coming 
-first, even if you were asking for something "huge".
-
-Thanks,
-Tanya Brokhman
--- 
-Qualcomm Israel, on behalf of Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-a Linux Foundation Collaborative Project
