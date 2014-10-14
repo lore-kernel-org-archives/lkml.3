@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932253AbaJNMoP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 08:44:15 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:12847 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932075AbaJNMoO (ORCPT
+	id S932286AbaJNMpp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 08:45:45 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53720 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754977AbaJNMpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 08:44:14 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-f2-543d1a9b728b
-Message-id: <1413290650.13192.3.camel@AMDC1943>
-Subject: Re: [RESEND PATCH v2 1/4] dmaengine: pl330: Remove non-NULL check for
- pl330_submit_req parameters
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Date: Tue, 14 Oct 2014 14:44:10 +0200
-In-reply-to: <20141014115118.GG1638@intel.com>
-References: <1411994541-31494-1-git-send-email-k.kozlowski@samsung.com>
- <20141014115118.GG1638@intel.com>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu2
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPLMWRmVeSWpSXmKPExsVy+t/xK7qzpWxDDCZ1W1lsnLGe1eL1v+ks
-	FtOnXmC0WD31L6vF2aY37BZLJs9ntbi8aw6bxdojd9kt3r2MsHjZt5/Fgctj8Z6XTB5L3hxi
-	9fj49BaLR9+WVYwenzfJeez9/JslgC2KyyYlNSezLLVI3y6BK+P5irXMBZvZKo5uuMzewDiN
-	tYuRk0NCwERi7ae1zBC2mMSFe+vZuhi5OIQEljJK/O9cAuV8ZpRYf2g5UxcjBwevgL7Ey8We
-	IA3CAjkSmxf+ZwSx2QSMJTYvB6nn5BARUJXY8rODEaSXWeAbk8S9aa/AEixAiVn9z8AaOAX0
-	JH4v/Qk2U0ggW2LW9UiQMLOAusSkeYuYQcISAsoSjf1uIGFeAUGJH5PvsUCUyEtsXvOWeQKj
-	wCwkHbOQlM1CUraAkXkVo2hqaXJBcVJ6rpFecWJucWleul5yfu4mRkgkfN3BuPSY1SFGAQ5G
-	JR7egkibECHWxLLiytxDjBIczEoivAoctiFCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGB0kghKW
-	5ZzV4Dqw24N5XpKoRfu7BbK778X7Lo81SqjQjUx5wXtAIWHa14X7hNuKWc+Kc3085NJ89oOY
-	/5/tHEofvFYJ5Zsr+mczZ95ZVZO/w+gRt/eivoBFucz1T5ssli7IfMLhs3VtxtvKzg+zMy92
-	87Upfb8i4l96T1VfaU1f48JZKRVXlViKMxINtZiLihMBOERCD2ICAAA=
+	Tue, 14 Oct 2014 08:45:44 -0400
+Date: Tue, 14 Oct 2014 14:45:22 +0200
+From: Mark Brown <broonie@kernel.org>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: dianders@chromium.org, heiko@sntech.de, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lgirdwood@gmail.com>
+Message-ID: <20141014124522.GU27755@sirena.org.uk>
+References: <1412980506-546-1-git-send-email-zyw@rock-chips.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+bwwFJPg6t3ya3US"
+Content-Disposition: inline
+In-Reply-To: <1412980506-546-1-git-send-email-zyw@rock-chips.com>
+X-Cookie: You are magnetic in your bearing.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 62.156.150.204
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2] regulator: rk808: Add support setting suspend voltage
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On wto, 2014-10-14 at 17:21 +0530, Vinod Koul wrote:
-> On Mon, Sep 29, 2014 at 02:42:18PM +0200, Krzysztof Kozlowski wrote:
-> > The pl330_submit_req() checked supplied 'struct pl330_thread thrd' and
-> > 'struct dma_pl330_desc desc' parameters for non-NULL. However these
-> > checks are useless because supplied arguments won't be NULL.
-> even if we have some error or bug?
-> 
-> I would like this to be checked and complained loudly so we know something
-> is going wrong rather than assuming it will be correct always.
 
-Currently the driver would fail before or after, regardless of this
-check. However I do not insist on this approach.
+--+bwwFJPg6t3ya3US
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The first version of patch was little different:
-https://lkml.org/lkml/2014/9/5/390
+On Fri, Oct 10, 2014 at 03:35:06PM -0700, Chris Zhong wrote:
+> support setting suspend voltage and disable regulator in suspend.
+>=20
+> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+> Reviewed-by: Doug Anderson <dianders@chromium.org>
 
-Do you think that 1st version is worth resending?
+Applied, thanks.
 
-Best regards,
-Krzysztof
+--+bwwFJPg6t3ya3US
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUPRrhAAoJECTWi3JdVIfQNeUH/2M2FFabe+CCn7x1ouMrvR6h
+vXsAUI1ABIj0gPIMH/YH0+jhLpqX4NFciJDqzJloa4hjPkdmnZPvH9PzkffOGSvw
+cO60Y9PHvpyTBUAcOmo8w0g4qB/3B8VMnQ1CNjRE7Be4SP7tT9pxhiwul7yJGkEh
+pDr9S7E6JEv/ZcM9r+wFnYPDl6XxA/JeQWho71wqniDWIh6AblqnHFC8qXhPvQFB
+3aR5Q2/j2HQ8kf7gn5KH0XPGKopEZkvZ4aUl2MlSn3dG6Hsx4A7EiSSeC1fzIv/C
+np5XOipSwXfxiBnoN33IZqttXhwNL9e2z4YM0rkxewrqFows/HuP5VADDF7tYd4=
+=xhHc
+-----END PGP SIGNATURE-----
+
+--+bwwFJPg6t3ya3US--
