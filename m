@@ -1,124 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755737AbaJNWH0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 18:07:26 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:38789 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753913AbaJNWHZ (ORCPT
+	id S1755644AbaJNWLV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 18:11:21 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:57460 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753866AbaJNWLU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 18:07:25 -0400
-Date: Tue, 14 Oct 2014 15:07:24 -0700 (PDT)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: torvalds@linux-foundation.org
-cc: linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
-Subject: [GIT PULL] Ceph updates for 3.18-rc1
-Message-ID: <alpine.DEB.2.00.1410141502460.6466@cobra.newdream.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 14 Oct 2014 18:11:20 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <87tx36l3gp.fsf@x220.int.ebiederm.org>
+References: <d4c63d6c350d26ffc985d061d213bd778055ca5b.1413322603.git.luto@amacapital.net>
+ <87tx36l3gp.fsf@x220.int.ebiederm.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 14 Oct 2014 15:07:59 -0700
+Message-ID: <CALCETrXNbrLd6BbCPUPXiPc57JDzfwWTjOrU9cx_nWoORPeyCQ@mail.gmail.com>
+Subject: Re: [PATCH] fs: Treat non-ancestor-namespace mounts as MNT_NOSUID
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael j Theall <mtheall@us.ibm.com>,
+        fuse-devel@lists.sourceforge.net, Miklos Szeredi <miklos@szeredi.hu>,
+        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
+        Seth Forshee <seth.forshee@canonical.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, Oct 14, 2014 at 2:57 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> Andy Lutomirski <luto@amacapital.net> writes:
+>
+>> If a process gets access to a mount from a descendent or unrelated
+>> user namespace, that process should not be able to take advantage of
+>> setuid files or selinux entrypoints from that filesystem.
+>>
+>> This will make it safer to allow more complex filesystems to be
+>> mounted in non-root user namespaces.
+>>
+>> This does not remove the need for MNT_LOCK_NOSUID.  The setuid,
+>> setgid, and file capability bits can no longer be abused if code in
+>> a user namespace were to clear nosuid on an untrusted filesystem,
+>> but this patch, by itself, is insufficient to protect the system
+>> from abuse of files that, when execed, would increase MAC privilege.
+>>
+>> As a more concrete explanation, any task that can manipulate a
+>> vfsmount associated with a given user namespace already has
+>> capabilities in that namespace and all of its descendents.  If they
+>> can cause a malicious setuid, setgid, or file-caps executable to
+>> appear in that mount, then that executable will only allow them to
+>> elevate privileges in exactly the set of namespaces in which they
+>> are already privileges.
+>>
+>> On the other hand, if they can cause a malicious executable to
+>> appear with a dangerous MAC label, running it could change the
+>> caller's security context in a way that should not have been
+>> possible, even inside the namespace in which the task is confined.
+>
+> As presented this is complete and total nonsense.  Mount propgation
+> strongly weakens if not completely breaks the assumptions you are making
+> in this code.
 
-Please pull the following Ceph updates from
+Huh?  Please elaborate.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
+>
+> To write any generic code that knows anything we need to capture a user
+> namespace on struct super.
 
-There is the long-awaited discard support for RBD (Guangliang Zhao, Josh 
-Durgin), a pile of RBD bug fixes that didn't belong in late -rc's (Ilya 
-Dryomov, Li RongQing), a pile of fs/ceph bug fixes and performance and 
-debugging improvements (Yan, Zheng, John Spray), and a smattering of 
-cleanups (Chao Yu, Fabian Frederick, Joe Perches).
+I disagree, actually.  If global root mounts FUSE (somewhere
+invisible) and then propagates it into a userns-owned mountns, then I
+think that root does *not* want the global userns to trust that mount,
+even though the super belongs to the init userns.
 
-Thanks!
-sage
+In general, the ability to elevate your privileges by following a
+/proc symlink into a different userns's mounts (or using fchdir) and
+executing a setuid program is, I think, a mistake.  I've already
+written one root exploit that depends on that ability, and I can't see
+any legitimate reason to allow it.
 
+>
+> Further I think all we really want is to filter out security labels from
+> unprivileged mounts.   uids/gids and the like should be completely fine
+> because of the uid mappings.
 
-----------------------------------------------------------------
-Chao Yu (1):
-      ceph: remove redundant code for max file size verification
+Why?  As you mentioned, unprivileged userns mounts are just like
+regular nosuid removable media mounts in that respect, except that
+they probably won't have the nosuid flag set.  This patch completely
+closes the issue of security labels taking effect in the wrong
+namespace as long as LSMs handle nosuid correctly, and LSMs MUST
+handle nosuid correctly in order to avoid being bypassed by regular
+FUSE or by removable media.
 
-Fabian Frederick (2):
-      libceph: remove redundant declaration
-      ceph: fix bool assignments
+>
+> Having been down the route of comparing uids as userns uid tuples I am
+> convinced that anything requires us to take the user namespace into
+> account on a routine basis in the core will simply be broken for someone
+> forgetting somewhere.  This looks like a design that has that kind of
+> susceptibility.
 
-Guangliang Zhao (3):
-      rbd: skip the copyup when an entire object writing
-      rbd: extend the operation type
-      rbd: initial discard bits from Guangliang Zhao
+A smatch rule would fix that, as would moving MNT_NOSUID into an
+internal header.
 
-Ilya Dryomov (10):
-      libceph: abstract out ceph_osd_request enqueue logic
-      libceph: resend lingering requests with a new tid
-      libceph: select CRYPTO_CBC in addition to CRYPTO_AES
-      libceph: don't try checking queue_work() return value
-      rbd: do not return -ERANGE on auth failures
-      rbd: add img_obj_request_simple() helper
-      libceph: sync osd op definitions in rados.h
-      libceph: separate multiple ops with commas in debugfs output
-      libceph: ceph-msgr workqueue needs a resque worker
-      rbd: rbd workqueues need a resque worker
+>
+>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>> ---
+>>
+>> Seth, this should address a problem that's related to yours.  If a
+>> userns creates and untrusted fs (by any means, although admittedly fuse
+>> and user namespaces don't work all that well together right now), then
+>> this prevents shenanigans that could happen when the userns passes an fd
+>> pointing at the filesystem out to the root ns.
+>
+> Andy for now I really think we are best not even reading those
+> capabilities into the vfs from unprivileged mounts.
 
-Joe Perches (1):
-      libceph: Convert pr_warning to pr_warn
+But won't we want to support letting userns containers create setuid
+files and security labels using FUSE and related things for their own
+benefit someday?  This lets us do that without compromising the init
+namespace.
 
-John Spray (3):
-      ceph: send client metadata to MDS
-      ceph: export ceph_session_state_name function
-      ceph: additional debugfs output
-
-Josh Durgin (8):
-      rbd: access snapshot context and mapping size safely
-      rbd: read image size for discard check safely
-      rbd: fix snapshot context reference count for discards
-      rbd: tolerate -ENOENT for discard operations
-      rbd: make discard trigger copy-on-write
-      rbd: extract a method for adding object operations
-      rbd: use helpers to handle discard for layered images correctly
-      rbd: set the remaining discard properties to enable support
-
-Li RongQing (1):
-      libceph: fix a use after free issue in osdmap_set_max_osd
-
-Yan, Zheng (11):
-      ceph: trim unused inodes before reconnecting to recovering MDS
-      ceph: protect kick_requests() with mdsc->mutex
-      ceph: make sure request isn't in any waiting list when kicking request.
-      ceph: request xattrs if xattr_version is zero
-      ceph: move ceph_find_inode() outside the s_mutex
-      ceph: remove redundant io_iter_advance()
-      ceph: fix llistxattr on symlink
-      libceph: reference counting pagelist
-      ceph: use pagelist to present MDS request data
-      ceph: include the initial ACL in create/mkdir/mknod MDS requests
-      ceph: fix divide-by-zero in __validate_layout()
-
- drivers/block/rbd.c           | 396 +++++++++++++++++++++++++++++-------------
- fs/ceph/acl.c                 | 125 ++++++++++---
- fs/ceph/addr.c                |   9 -
- fs/ceph/caps.c                |  37 ++--
- fs/ceph/debugfs.c             |  46 +++++
- fs/ceph/dir.c                 |  41 +++--
- fs/ceph/file.c                |  33 ++--
- fs/ceph/inode.c               |  16 +-
- fs/ceph/ioctl.c               |   6 +-
- fs/ceph/mds_client.c          | 136 +++++++++++----
- fs/ceph/mds_client.h          |   6 +-
- fs/ceph/super.h               |  27 ++-
- fs/ceph/xattr.c               |  81 ++++-----
- include/linux/ceph/libceph.h  |   1 -
- include/linux/ceph/pagelist.h |   5 +-
- include/linux/ceph/rados.h    | 225 ++++++++++++++----------
- net/ceph/Kconfig              |   1 +
- net/ceph/ceph_common.c        |  15 +-
- net/ceph/ceph_strings.c       |  75 +-------
- net/ceph/debugfs.c            |   3 +-
- net/ceph/messenger.c          |  28 +--
- net/ceph/mon_client.c         |   8 +-
- net/ceph/osd_client.c         | 192 +++++++++-----------
- net/ceph/osdmap.c             |  52 +++---
- net/ceph/pagelist.c           |   7 +-
- 25 files changed, 948 insertions(+), 623 deletions(-)
+--Andy
