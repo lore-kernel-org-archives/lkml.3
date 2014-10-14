@@ -1,309 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817AbaJNFQP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 01:16:15 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:42375 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754723AbaJNFQO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 01:16:14 -0400
-X-Original-SENDERIP: 10.177.222.213
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>
-Cc: Nitin Gupta <ngupta@vflare.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Dan Streetman <ddstreet@ieee.org>,
-        Luigi Semenzato <semenzato@google.com>, juno.choi@lge.com,
-        "seungho1.park" <seungho1.park@lge.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v5] zsmalloc: merge size_class to reduce fragmentation
-Date: Tue, 14 Oct 2014 14:16:39 +0900
-Message-Id: <1413263799-23206-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1754556AbaJNF21 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 01:28:27 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:35451 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752444AbaJNF2Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 01:28:24 -0400
+Message-ID: <543CB46F.2040803@mm-sol.com>
+Date: Tue, 14 Oct 2014 08:28:15 +0300
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Hartmut Knaack <knaack.h@gmx.de>
+CC: Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Jonathan Cameron <jic23@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, devicetree@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Fugang Duan <B38611@freescale.com>,
+        Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Jean Delvare <jdelvare@suse.de>, Philippe Reynes <tremyfr@yahoo.fr>,
+        Lee Jones <lee.jones@linaro.org>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        David Collins <collinsd@codeaurora.org>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Subject: Re: [PATCH v3 2/2] DT: iio: vadc: document dt binding
+References: <1411563415-11933-1-git-send-email-svarbanov@mm-sol.com> <1411563415-11933-3-git-send-email-svarbanov@mm-sol.com> <5439B7A8.9030306@gmx.de>
+In-Reply-To: <5439B7A8.9030306@gmx.de>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-zsmalloc has many size_classes to reduce fragmentation and they are
-in 16 bytes unit, for example, 16, 32, 48, etc., if PAGE_SIZE is 4096.
-And, zsmalloc has constraint that each zspage has 4 pages at maximum.
+Thanks for the comments!
 
-In this situation, we can see interesting aspect.
-Let's think about size_class for 1488, 1472, ..., 1376.
-To prevent external fragmentation, they uses 4 pages per zspage and
-so all they can contain 11 objects at maximum.
+On 10/12/2014 02:05 AM, Hartmut Knaack wrote:
+> Hi,
+> two small issues inline.
+> Stanimir Varbanov schrieb am 24.09.2014 14:56:
+>> Document DT binding for Qualcomm SPMI PMIC voltage ADC
+>> driver.
+>>
+>> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+>> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+>> ---
+>>  .../devicetree/bindings/iio/adc/qcom,spmi-vadc.txt |  130 ++++++++++++++++++++
+>>  1 files changed, 130 insertions(+), 0 deletions(-)
+>>  create mode 100644 Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt b/Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt
+>> new file mode 100644
+>> index 0000000..fa30300
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt
+>> @@ -0,0 +1,130 @@
+>> +Qualcomm's SPMI PMIC voltage ADC
+>> +
+>> +SPMI PMIC voltage ADC (VADC) provides interface to clients to read
+>> +voltage. A 15 bit ADC is used for voltage measurements. There are multiple
+>> +peripherals to the VADC and the scope of the driver is to provide interface
+>> +for the USR peripheral of the VADC.
+>> +
+>> +VADC node:
+>> +
+>> +- compatible:
+>> +    Usage: required
+>> +    Value type: <string>
+>> +    Definition: Should contain "qcom,spmi-vadc".
+>> +
+>> +- reg:
+>> +    Usage: required
+>> +    Value type: <u32>
+>> +    Definition: Base address in the SPMI PMIC register map.
+>> +
+>> +- address-cells:
+>> +    Usage: required
+>> +    Value type: <u32>
+>> +    Definition: Must be one.
+>> +
+>> +- size-cells:
+>> +    Usage: required
+>> +    Value type: <u32>
+>> +    Definition: Must be zero.
+>> +
+>> +- interrupts:
+>> +    Usage: optional
+>> +    Value type: <prop-encoded-array>
+>> +    Definition: End of conversion interrupt number. If this property does
+>> +            not exist polling will be used instead.
+>> +
+>> +- interrupt-names:
+>> +    Usage: optional
+>> +    Value type: <string>
+>> +    Definition: Should contain the interrupt name "eoc" (end of conversion).
+>> +
+>> +Channel node properties:
+>> +
+>> +- reg:
+>> +    Usage: required
+>> +    Value type: <u32>
+>> +    Definition: AMUX channel number.
+>> +            See include/dt-bindings/iio/qcom,spmi-pmic-vadc.h
+>> +
+>> +- qcom,decimation:
+>> +    Usage: optional
+>> +    Value type: <u32>
+>> +    Definition: Sampling rate to use for the individual channel measurement.
+>> +            Quicker measurements can be made by reducing decimation ratio.
+>> +            Valid values are 512, 1024, 2048, 4096.
+>> +            If property is not found, default value of 512 will be used.
+>> +
+>> +- qcom,pre-scaling:
+>> +    Usage: optional
+>> +    Value type: <u32 array>
+>> +    Definition: Used for scaling the channel input signal before the signal is
+>> +            fed to VADC. The configuration for this node is to know the
+>> +            pre-determined ratio and use it for post scaling. Select one from
+>> +            the following options.
+>> +            <1 1>, <1 3>, <1 4>, <1 6>, <1 20>, <1 8>, <10 81>, <1 10>
+>> +            If property is not found default value depending of chip will be used.
+>> +
+>> +- qcom,ratiometric:
+>> +    Usage: optional
+>> +    Value type: <empty>
+>> +    Definition: Channel calibration type. If this property is specified
+>> +            VADC will use the VDD reference(1.8V) and GND for channel
+> Missing whitespace before opening parenthesis.
+>> +            calibration. If property is not found, channel will be
+>> +            calibrated with 625mV and 1.25V reference channels.
+> There is a slight majority in using V instead of mv (2 : 1), so why not express everything in V?
 
-16384 (4096 * 4) = 1488 * 11 + remains
-16384 (4096 * 4) = 1472 * 11 + remains
-16384 (4096 * 4) = ...
-16384 (4096 * 4) = 1376 * 11 + remains
+No worries, will correct.
 
-It means that they have same characteristics and classification between
-them isn't needed. If we use one size_class for them, we can reduce
-fragementation and save some memory since both the 1488 and 1472 sized
-classes can only fit 11 objects into 4 pages, and an object that's
-1472 bytes can fit into an object that's 1488 bytes, merging these
-classes to always use objects that are 1488 bytes will reduce the total
-number of size classes. And reducing the total number of size classes
-reduces overall fragmentation, because a wider range of compressed pages
-can fit into a single size class, leaving less unused objects in each
-size class.
-
-For this purpose, this patch implement size_class merging. If there is
-size_class that have same pages_per_zspage and same number of objects
-per zspage with previous size_class, we don't create new size_class.
-Instead, we use previous, same characteristic size_class. With this way,
-above example sizes (1488, 1472, ..., 1376) use just one size_class
-so we can get much more memory utilization.
-
-Below is result of my simple test.
-
-TEST ENV: EXT4 on zram, mount with discard option
-WORKLOAD: untar kernel source code, remove directory in descending order
-in size. (drivers arch fs sound include net Documentation firmware
-kernel tools)
-
-Each line represents orig_data_size, compr_data_size, mem_used_total,
-fragmentation overhead (mem_used - compr_data_size) and overhead ratio
-(overhead to compr_data_size), respectively, after untar and remove
-operation is executed.
-
-* untar-nomerge.out
-
-orig_size compr_size used_size overhead overhead_ratio
-525.88MB 199.16MB 210.23MB  11.08MB 5.56%
-288.32MB  97.43MB 105.63MB   8.20MB 8.41%
-177.32MB  61.12MB  69.40MB   8.28MB 13.55%
-146.47MB  47.32MB  56.10MB   8.78MB 18.55%
-124.16MB  38.85MB  48.41MB   9.55MB 24.58%
-103.93MB  31.68MB  40.93MB   9.25MB 29.21%
- 84.34MB  22.86MB  32.72MB   9.86MB 43.13%
- 66.87MB  14.83MB  23.83MB   9.00MB 60.70%
- 60.67MB  11.11MB  18.60MB   7.49MB 67.48%
- 55.86MB   8.83MB  16.61MB   7.77MB 88.03%
- 53.32MB   8.01MB  15.32MB   7.31MB 91.24%
-
-* untar-merge.out
-
-orig_size compr_size used_size overhead overhead_ratio
-526.23MB 199.18MB 209.81MB  10.64MB 5.34%
-288.68MB  97.45MB 104.08MB   6.63MB 6.80%
-177.68MB  61.14MB  66.93MB   5.79MB 9.47%
-146.83MB  47.34MB  52.79MB   5.45MB 11.51%
-124.52MB  38.87MB  44.30MB   5.43MB 13.96%
-104.29MB  31.70MB  36.83MB   5.13MB 16.19%
- 84.70MB  22.88MB  27.92MB   5.04MB 22.04%
- 67.11MB  14.83MB  19.26MB   4.43MB 29.86%
- 60.82MB  11.10MB  14.90MB   3.79MB 34.17%
- 55.90MB   8.82MB  12.61MB   3.79MB 42.97%
- 53.32MB   8.01MB  11.73MB   3.73MB 46.53%
-
-As you can see above result, merged one has better utilization (overhead
-ratio, 5th column) and uses less memory (mem_used_total, 3rd column).
-
-Changes from v1:
-- More commit description about what to do in this patch.
-- Remove nr_obj in size_class, because it isn't need after initialization.
-- Rename __size_class to size_class, size_class to merged_size_class.
-- Add code comment for merged_size_class of struct zs_pool.
-- Add code comment how merging works in zs_create_pool().
-
-Changes from v2:
-- Add more commit description (Dan)
-- dynamically allocate size_class structure (Dan)
-- rename objs_per_zspage to get_maxobj_per_zspage (Minchan)
-
-Changes from v3:
-- Add error handling logic in zs_create_pool (Dan)
-
-Changes from v4:
-- Remove reference count. Instead, use class->index to identify
-merged size_class (Minchan, Dan)
-
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
----
- mm/zsmalloc.c |   80 +++++++++++++++++++++++++++++++++++++++++++++++----------
- 1 file changed, 66 insertions(+), 14 deletions(-)
-
-diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-index c4a9157..058a243 100644
---- a/mm/zsmalloc.c
-+++ b/mm/zsmalloc.c
-@@ -214,7 +214,7 @@ struct link_free {
- };
- 
- struct zs_pool {
--	struct size_class size_class[ZS_SIZE_CLASSES];
-+	struct size_class *size_class[ZS_SIZE_CLASSES];
- 
- 	gfp_t flags;	/* allocation flags used when growing pool */
- 	atomic_long_t pages_allocated;
-@@ -468,7 +468,7 @@ static enum fullness_group fix_fullness_group(struct zs_pool *pool,
- 	if (newfg == currfg)
- 		goto out;
- 
--	class = &pool->size_class[class_idx];
-+	class = pool->size_class[class_idx];
- 	remove_zspage(page, class, currfg);
- 	insert_zspage(page, class, newfg);
- 	set_zspage_mapping(page, class_idx, newfg);
-@@ -929,6 +929,23 @@ fail:
- 	return notifier_to_errno(ret);
- }
- 
-+static unsigned int get_maxobj_per_zspage(int size, int pages_per_zspage)
-+{
-+	return pages_per_zspage * PAGE_SIZE / size;
-+}
-+
-+static bool can_merge(struct size_class *prev, int size, int pages_per_zspage)
-+{
-+	if (prev->pages_per_zspage != pages_per_zspage)
-+		return false;
-+
-+	if (get_maxobj_per_zspage(prev->size, prev->pages_per_zspage)
-+		!= get_maxobj_per_zspage(size, pages_per_zspage))
-+		return false;
-+
-+	return true;
-+}
-+
- /**
-  * zs_create_pool - Creates an allocation pool to work from.
-  * @flags: allocation flags used to allocate pool metadata
-@@ -949,25 +966,56 @@ struct zs_pool *zs_create_pool(gfp_t flags)
- 	if (!pool)
- 		return NULL;
- 
--	for (i = 0; i < ZS_SIZE_CLASSES; i++) {
-+	/*
-+	 * Iterate reversly, because, size of size_class that we want to use
-+	 * for merging should be larger or equal to current size.
-+	 */
-+	for (i = ZS_SIZE_CLASSES - 1; i >= 0; i--) {
- 		int size;
-+		int pages_per_zspage;
- 		struct size_class *class;
-+		struct size_class *prev_class;
- 
- 		size = ZS_MIN_ALLOC_SIZE + i * ZS_SIZE_CLASS_DELTA;
- 		if (size > ZS_MAX_ALLOC_SIZE)
- 			size = ZS_MAX_ALLOC_SIZE;
-+		pages_per_zspage = get_pages_per_zspage(size);
-+
-+		/*
-+		 * size_class is used for normal zsmalloc operation such
-+		 * as alloc/free for that size. Although it is natural that we
-+		 * have one size_class for each size, there is a chance that we
-+		 * can get more memory utilization if we use one size_class for
-+		 * many different sizes whose size_class have same
-+		 * characteristics. So, we makes size_class point to
-+		 * previous size_class if possible.
-+		 */
-+		if (i < ZS_SIZE_CLASSES - 1) {
-+			prev_class = pool->size_class[i + 1];
-+			if (can_merge(prev_class, size, pages_per_zspage)) {
-+				pool->size_class[i] = prev_class;
-+				continue;
-+			}
-+		}
-+
-+		class = kzalloc(sizeof(struct size_class), GFP_KERNEL);
-+		if (!class)
-+			goto err;
- 
--		class = &pool->size_class[i];
- 		class->size = size;
- 		class->index = i;
-+		class->pages_per_zspage = pages_per_zspage;
- 		spin_lock_init(&class->lock);
--		class->pages_per_zspage = get_pages_per_zspage(size);
--
-+		pool->size_class[i] = class;
- 	}
- 
- 	pool->flags = flags;
- 
- 	return pool;
-+
-+err:
-+	zs_destroy_pool(pool);
-+	return NULL;
- }
- EXPORT_SYMBOL_GPL(zs_create_pool);
- 
-@@ -977,7 +1025,13 @@ void zs_destroy_pool(struct zs_pool *pool)
- 
- 	for (i = 0; i < ZS_SIZE_CLASSES; i++) {
- 		int fg;
--		struct size_class *class = &pool->size_class[i];
-+		struct size_class *class = pool->size_class[i];
-+
-+		if (!class)
-+			continue;
-+
-+		if (class->index != i)
-+			continue;
- 
- 		for (fg = 0; fg < _ZS_NR_FULLNESS_GROUPS; fg++) {
- 			if (class->fullness_list[fg]) {
-@@ -985,6 +1039,7 @@ void zs_destroy_pool(struct zs_pool *pool)
- 					class->size, fg);
- 			}
- 		}
-+		kfree(class);
- 	}
- 	kfree(pool);
- }
-@@ -1003,7 +1058,6 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
- {
- 	unsigned long obj;
- 	struct link_free *link;
--	int class_idx;
- 	struct size_class *class;
- 
- 	struct page *first_page, *m_page;
-@@ -1012,9 +1066,7 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
- 	if (unlikely(!size || size > ZS_MAX_ALLOC_SIZE))
- 		return 0;
- 
--	class_idx = get_size_class_index(size);
--	class = &pool->size_class[class_idx];
--	BUG_ON(class_idx != class->index);
-+	class = pool->size_class[get_size_class_index(size)];
- 
- 	spin_lock(&class->lock);
- 	first_page = find_get_zspage(class);
-@@ -1067,7 +1119,7 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
- 	first_page = get_first_page(f_page);
- 
- 	get_zspage_mapping(first_page, &class_idx, &fullness);
--	class = &pool->size_class[class_idx];
-+	class = pool->size_class[class_idx];
- 	f_offset = obj_idx_to_offset(f_page, f_objidx, class->size);
- 
- 	spin_lock(&class->lock);
-@@ -1128,7 +1180,7 @@ void *zs_map_object(struct zs_pool *pool, unsigned long handle,
- 
- 	obj_handle_to_location(handle, &page, &obj_idx);
- 	get_zspage_mapping(get_first_page(page), &class_idx, &fg);
--	class = &pool->size_class[class_idx];
-+	class = pool->size_class[class_idx];
- 	off = obj_idx_to_offset(page, obj_idx, class->size);
- 
- 	area = &get_cpu_var(zs_map_area);
-@@ -1162,7 +1214,7 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
- 
- 	obj_handle_to_location(handle, &page, &obj_idx);
- 	get_zspage_mapping(get_first_page(page), &class_idx, &fg);
--	class = &pool->size_class[class_idx];
-+	class = pool->size_class[class_idx];
- 	off = obj_idx_to_offset(page, obj_idx, class->size);
- 
- 	area = this_cpu_ptr(&zs_map_area);
 -- 
-1.7.9.5
-
+regards,
+Stan
