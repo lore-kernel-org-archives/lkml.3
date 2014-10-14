@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932593AbaJNVGF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 17:06:05 -0400
-Received: from mail.kernel.org ([198.145.19.201]:44842 "EHLO mail.kernel.org"
+	id S932416AbaJNVGM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 17:06:12 -0400
+Received: from mail.kernel.org ([198.145.19.201]:44868 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932416AbaJNVGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 17:06:01 -0400
+	id S1750971AbaJNVGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 17:06:09 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 14/24] perf tools: Remove hists from evsel
-Date: Tue, 14 Oct 2014 18:04:23 -0300
-Message-Id: <1413320673-5784-15-git-send-email-acme@kernel.org>
+Subject: [PATCH 15/24] perf thread_map: Create dummy constructor out of open coded equivalent
+Date: Tue, 14 Oct 2014 18:04:24 -0300
+Message-Id: <1413320673-5784-16-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1413320673-5784-1-git-send-email-acme@kernel.org>
 References: <1413320673-5784-1-git-send-email-acme@kernel.org>
@@ -29,17 +29,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Now tools that deals want to have an hists per evsel need to call
-hists__init() before creating any evsels, which can be as early as when
-parsing the command line, so do it before calling parse_options().
+Create a dummy thread_map, one that has just one entry and it is -1,
+meaning 'all threads', as this ends up going down to perf_event_open().
 
-The current tools using hists/hist_entries are report, top and annotate,
-change them to request per evsel hists.
-
-This is in preparation for making evsels usable by 3rd party tools, that
-not necessarily live in perf's source code repository.
-
-Acked-by: Borislav Petkov <bp@suse.de>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: Borislav Petkov <bp@suse.de>
 Cc: David Ahern <dsahern@gmail.com>
@@ -52,250 +44,64 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-usjx2la743f10ippj7p1b20x@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-8av26cz8uxmbnihl5mmrygp9@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-annotate.c   |  5 ++++-
- tools/perf/builtin-report.c     |  5 ++++-
- tools/perf/builtin-top.c        |  5 ++++-
- tools/perf/tests/builtin-test.c |  5 +++++
- tools/perf/util/evsel.c         | 11 -----------
- tools/perf/util/evsel.h         | 11 -----------
- tools/perf/util/hist.c          | 28 ++++++++++++++++++++++++++++
- tools/perf/util/hist.h          | 20 ++++++++++++++++++++
- 8 files changed, 65 insertions(+), 25 deletions(-)
+ tools/perf/util/thread_map.c | 21 +++++++++++++--------
+ tools/perf/util/thread_map.h |  1 +
+ 2 files changed, 14 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index a5969fa64503..e7417fe97a97 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -326,7 +326,10 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
- 		    "Show event group information together"),
- 	OPT_END()
- 	};
--	int ret;
-+	int ret = hists__init();
-+
-+	if (ret < 0)
-+		return ret;
- 
- 	argc = parse_options(argc, argv, options, annotate_usage, 0);
- 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 8043b5a7240a..2cfc4b93991f 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -568,7 +568,6 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	struct stat st;
- 	bool has_br_stack = false;
- 	int branch_mode = -1;
--	int ret = -1;
- 	char callchain_default_opt[] = "fractal,0.5,callee";
- 	const char * const report_usage[] = {
- 		"perf report [<options>]",
-@@ -695,6 +694,10 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	struct perf_data_file file = {
- 		.mode  = PERF_DATA_MODE_READ,
- 	};
-+	int ret = hists__init();
-+
-+	if (ret < 0)
-+		return ret;
- 
- 	perf_config(report__config, &report);
- 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 8ab9716db593..0aa7747ff139 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1047,7 +1047,6 @@ parse_percent_limit(const struct option *opt, const char *arg,
- 
- int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- {
--	int status = -1;
- 	char errbuf[BUFSIZ];
- 	struct perf_top top = {
- 		.count_filter	     = 5,
-@@ -1165,6 +1164,10 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 		"perf top [<options>]",
- 		NULL
- 	};
-+	int status = hists__init();
-+
-+	if (status < 0)
-+		return status;
- 
- 	top.evlist = perf_evlist__new();
- 	if (top.evlist == NULL)
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index ac655b0700e7..162c978f1491 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -6,6 +6,7 @@
- #include <unistd.h>
- #include <string.h>
- #include "builtin.h"
-+#include "hist.h"
- #include "intlist.h"
- #include "tests.h"
- #include "debug.h"
-@@ -302,6 +303,10 @@ int cmd_test(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_END()
- 	};
- 	struct intlist *skiplist = NULL;
-+        int ret = hists__init();
-+
-+        if (ret < 0)
-+                return ret;
- 
- 	argc = parse_options(argc, argv, test_options, test_usage, 0);
- 	if (argc >= 1 && !strcmp(argv[0], "list"))
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index a08376427448..7a3c4c47ceda 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -159,16 +159,6 @@ void perf_evsel__calc_id_pos(struct perf_evsel *evsel)
- 	evsel->is_pos = __perf_evsel__calc_is_pos(evsel->attr.sample_type);
+diff --git a/tools/perf/util/thread_map.c b/tools/perf/util/thread_map.c
+index 5d3215912105..f93b9734735b 100644
+--- a/tools/perf/util/thread_map.c
++++ b/tools/perf/util/thread_map.c
+@@ -214,6 +214,17 @@ out_free_threads:
+ 	goto out;
  }
  
--void hists__init(struct hists *hists)
--{
--	memset(hists, 0, sizeof(*hists));
--	hists->entries_in_array[0] = hists->entries_in_array[1] = RB_ROOT;
--	hists->entries_in = &hists->entries_in_array[0];
--	hists->entries_collapsed = RB_ROOT;
--	hists->entries = RB_ROOT;
--	pthread_mutex_init(&hists->lock, NULL);
--}
--
- void __perf_evsel__set_sample_bit(struct perf_evsel *evsel,
- 				  enum perf_event_sample_format bit)
++struct thread_map *thread_map__new_dummy(void)
++{
++	struct thread_map *threads = malloc(sizeof(*threads) + sizeof(pid_t));
++
++	if (threads != NULL) {
++		threads->map[0]	= -1;
++		threads->nr	= 1;
++	}
++	return threads;
++}
++
+ static struct thread_map *thread_map__new_by_tid_str(const char *tid_str)
  {
-@@ -211,7 +201,6 @@ void perf_evsel__init(struct perf_evsel *evsel,
- 	evsel->unit	   = "";
- 	evsel->scale	   = 1.0;
- 	INIT_LIST_HEAD(&evsel->node);
--	hists__init(&evsel->hists);
- 	perf_evsel__object.init(evsel);
- 	evsel->sample_size = __perf_evsel__sample_size(attr->sample_type);
- 	perf_evsel__calc_id_pos(evsel);
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index d6325106c8fd..fee927404720 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -8,7 +8,6 @@
- #include <linux/types.h>
- #include "xyarray.h"
- #include "cgroup.h"
--#include "hist.h"
- #include "symbol.h"
+ 	struct thread_map *threads = NULL, *nt;
+@@ -224,14 +235,8 @@ static struct thread_map *thread_map__new_by_tid_str(const char *tid_str)
+ 	struct strlist *slist;
  
- struct perf_counts_values {
-@@ -66,7 +65,6 @@ struct perf_evsel {
- 	struct perf_counts	*prev_raw_counts;
- 	int			idx;
- 	u32			ids;
--	struct hists		hists;
- 	char			*name;
- 	double			scale;
- 	const char		*unit;
-@@ -100,13 +98,6 @@ union u64_swap {
- 	u32 val32[2];
+ 	/* perf-stat expects threads to be generated even if tid not given */
+-	if (!tid_str) {
+-		threads = malloc(sizeof(*threads) + sizeof(pid_t));
+-		if (threads != NULL) {
+-			threads->map[0] = -1;
+-			threads->nr	= 1;
+-		}
+-		return threads;
+-	}
++	if (!tid_str)
++		return thread_map__new_dummy();
+ 
+ 	slist = strlist__new(false, tid_str);
+ 	if (!slist)
+diff --git a/tools/perf/util/thread_map.h b/tools/perf/util/thread_map.h
+index 0cd8b3108084..95313f43cc0f 100644
+--- a/tools/perf/util/thread_map.h
++++ b/tools/perf/util/thread_map.h
+@@ -9,6 +9,7 @@ struct thread_map {
+ 	pid_t map[];
  };
  
--#define hists_to_evsel(h) container_of(h, struct perf_evsel, hists)
--
--static inline struct hists *evsel__hists(struct perf_evsel *evsel)
--{
--	return &evsel->hists;
--}
--
- struct cpu_map;
- struct thread_map;
- struct perf_evlist;
-@@ -290,8 +281,6 @@ static inline int perf_evsel__read_scaled(struct perf_evsel *evsel,
- 	return __perf_evsel__read(evsel, ncpus, nthreads, true);
- }
- 
--void hists__init(struct hists *hists);
--
- int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
- 			     struct perf_sample *sample);
- 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index b143e404e5b1..6e88b9e395df 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -1447,3 +1447,31 @@ int perf_hist_config(const char *var, const char *value)
- 
- 	return 0;
- }
-+
-+static int hists_evsel__init(struct perf_evsel *evsel)
-+{
-+	struct hists *hists = evsel__hists(evsel);
-+
-+	memset(hists, 0, sizeof(*hists));
-+	hists->entries_in_array[0] = hists->entries_in_array[1] = RB_ROOT;
-+	hists->entries_in = &hists->entries_in_array[0];
-+	hists->entries_collapsed = RB_ROOT;
-+	hists->entries = RB_ROOT;
-+	pthread_mutex_init(&hists->lock, NULL);
-+	return 0;
-+}
-+
-+/*
-+ * XXX We probably need a hists_evsel__exit() to free the hist_entries
-+ * stored in the rbtree...
-+ */
-+
-+int hists__init(void)
-+{
-+	int err = perf_evsel__object_config(sizeof(struct hists_evsel),
-+					    hists_evsel__init, NULL);
-+	if (err)
-+		fputs("FATAL ERROR: Couldn't setup hists class\n", stderr);
-+
-+	return err;
-+}
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index ebfc25886cac..d0ef9a19a744 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -4,6 +4,7 @@
- #include <linux/types.h>
- #include <pthread.h>
- #include "callchain.h"
-+#include "evsel.h"
- #include "header.h"
- #include "color.h"
- #include "ui/progress.h"
-@@ -158,6 +159,25 @@ void hists__calc_col_len(struct hists *hists, struct hist_entry *he);
- void hists__match(struct hists *leader, struct hists *other);
- int hists__link(struct hists *leader, struct hists *other);
- 
-+struct hists_evsel {
-+	struct perf_evsel evsel;
-+	struct hists	  hists;
-+};
-+
-+static inline struct perf_evsel *hists_to_evsel(struct hists *hists)
-+{
-+	struct hists_evsel *hevsel = container_of(hists, struct hists_evsel, hists);
-+	return &hevsel->evsel;
-+}
-+
-+static inline struct hists *evsel__hists(struct perf_evsel *evsel)
-+{
-+	struct hists_evsel *hevsel = (struct hists_evsel *)evsel;
-+	return &hevsel->hists;
-+}
-+
-+int hists__init(void);
-+
- struct perf_hpp {
- 	char *buf;
- 	size_t size;
++struct thread_map *thread_map__new_dummy(void);
+ struct thread_map *thread_map__new_by_pid(pid_t pid);
+ struct thread_map *thread_map__new_by_tid(pid_t tid);
+ struct thread_map *thread_map__new_by_uid(uid_t uid);
 -- 
 1.9.3
 
