@@ -1,60 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932393AbaJNQeD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 12:34:03 -0400
-Received: from gum.cmpxchg.org ([85.214.110.215]:41884 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754360AbaJNQeA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 12:34:00 -0400
-Date: Tue, 14 Oct 2014 12:33:54 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Vladimir Davydov <vdavydov@parallels.com>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/3] mm: memcontrol: lockless page counters
-Message-ID: <20141014163354.GA23911@phnom.home.cmpxchg.org>
-References: <1413251163-8517-1-git-send-email-hannes@cmpxchg.org>
- <1413251163-8517-2-git-send-email-hannes@cmpxchg.org>
- <20141014155647.GA6414@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141014155647.GA6414@dhcp22.suse.cz>
+	id S932524AbaJNQfo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 12:35:44 -0400
+Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:37924 "EHLO
+	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752906AbaJNQfm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 12:35:42 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: As8NAIJQPVRbtAZ+/2dsb2JhbABbgw5TWLh2BQFzkkGHVYEWFwF9hDAvI4EaN4hCAbdOjxsshiCJOWyEUgWGLYskhGqHEIEuhnOEO4k1gUdtgUU7L4EPgTsBAQE
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Joe Perches <joe@perches.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH V2 linux-next] fs/affs/amigaffs.c: use va_format instead of buffer/vnsprintf
+Date: Tue, 14 Oct 2014 18:35:34 +0200
+Message-Id: <1413304534-7000-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 14, 2014 at 05:56:47PM +0200, Michal Hocko wrote:
-> On Mon 13-10-14 21:46:01, Johannes Weiner wrote:
-> > Memory is internally accounted in bytes, using spinlock-protected
-> > 64-bit counters, even though the smallest accounting delta is a page.
-> > The counter interface is also convoluted and does too many things.
-> > 
-> > Introduce a new lockless word-sized page counter API, then change all
-> > memory accounting over to it.  The translation from and to bytes then
-> > only happens when interfacing with userspace.
-> > 
-> > The removed locking overhead is noticable when scaling beyond the
-> > per-cpu charge caches - on a 4-socket machine with 144-threads, the
-> > following test shows the performance differences of 288 memcgs
-> > concurrently running a page fault benchmark:
-> 
-> I assume you had root.use_hierarchy = 1, right? Processes wouldn't bounce
-> on the same lock otherwise.
+-Remove ErrorBuffer and use %pV
+-Add __printf to enable argument mistmatch warnings
 
-Yep.  That's already the default on most distros, and will be in the
-kernel in unified hierarchy.
+Original-patch-by: Joe Perches <joe@perches.com>
+Cc: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+V2: add __printf (suggested by Joe Perches)
 
-> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> 
-> You have only missed MAINTAINERS...
+ fs/affs/affs.h     |  2 ++
+ fs/affs/amigaffs.c | 28 +++++++++++++---------------
+ fs/affs/file.c     | 16 ++++++++++------
+ 3 files changed, 25 insertions(+), 21 deletions(-)
 
-Hm, we can add it, but then again scripts/get_maintainer.pl should
-already do the right thing.  I find myself using it with --git all the
-time to find the people that actually worked on the code recently, not
-just the ones listed in there - which might be stale information.
+diff --git a/fs/affs/affs.h b/fs/affs/affs.h
+index 9bca881..ff44ff3 100644
+--- a/fs/affs/affs.h
++++ b/fs/affs/affs.h
+@@ -135,8 +135,10 @@ extern void	affs_fix_checksum(struct super_block *sb, struct buffer_head *bh);
+ extern void	secs_to_datestamp(time_t secs, struct affs_date *ds);
+ extern umode_t	prot_to_mode(u32 prot);
+ extern void	mode_to_prot(struct inode *inode);
++__printf(3, 4)
+ extern void	affs_error(struct super_block *sb, const char *function,
+ 			   const char *fmt, ...);
++__printf(3, 4)
+ extern void	affs_warning(struct super_block *sb, const char *function,
+ 			     const char *fmt, ...);
+ extern bool	affs_nofilenametruncate(const struct dentry *dentry);
+diff --git a/fs/affs/amigaffs.c b/fs/affs/amigaffs.c
+index abc8539..9643bdd 100644
+--- a/fs/affs/amigaffs.c
++++ b/fs/affs/amigaffs.c
+@@ -10,8 +10,6 @@
+ 
+ #include "affs.h"
+ 
+-static char ErrorBuffer[256];
+-
+ /*
+  * Functions for accessing Amiga-FFS structures.
+  */
+@@ -444,30 +442,30 @@ mode_to_prot(struct inode *inode)
+ void
+ affs_error(struct super_block *sb, const char *function, const char *fmt, ...)
+ {
+-	va_list	 args;
+-
+-	va_start(args,fmt);
+-	vsnprintf(ErrorBuffer,sizeof(ErrorBuffer),fmt,args);
+-	va_end(args);
++	struct va_format vaf;
++	va_list args;
+ 
+-	pr_crit("error (device %s): %s(): %s\n", sb->s_id,
+-		function,ErrorBuffer);
++	va_start(args, fmt);
++	vaf.fmt = fmt;
++	vaf.va = &args;
++	pr_crit("error (device %s): %s(): %pV\n", sb->s_id, function, &vaf);
+ 	if (!(sb->s_flags & MS_RDONLY))
+ 		pr_warn("Remounting filesystem read-only\n");
+ 	sb->s_flags |= MS_RDONLY;
++	va_end(args);
+ }
+ 
+ void
+ affs_warning(struct super_block *sb, const char *function, const char *fmt, ...)
+ {
+-	va_list	 args;
++	struct va_format vaf;
++	va_list args;
+ 
+-	va_start(args,fmt);
+-	vsnprintf(ErrorBuffer,sizeof(ErrorBuffer),fmt,args);
++	va_start(args, fmt);
++	vaf.fmt = fmt;
++	vaf.va = &args;
++	pr_warn("(device %s): %s(): %pV\n", sb->s_id, function, &vaf);
+ 	va_end(args);
+-
+-	pr_warn("(device %s): %s(): %s\n", sb->s_id,
+-		function,ErrorBuffer);
+ }
+ 
+ bool
+diff --git a/fs/affs/file.c b/fs/affs/file.c
+index 1ed590a..cdc6a2b 100644
+--- a/fs/affs/file.c
++++ b/fs/affs/file.c
+@@ -355,7 +355,8 @@ affs_get_block(struct inode *inode, sector_t block, struct buffer_head *bh_resul
+ 
+ 		/* store new block */
+ 		if (bh_result->b_blocknr)
+-			affs_warning(sb, "get_block", "block already set (%x)", bh_result->b_blocknr);
++			affs_warning(sb, "get_block", "block already set (%lx)",
++				     (unsigned long)bh_result->b_blocknr);
+ 		AFFS_BLOCK(sb, ext_bh, block) = cpu_to_be32(blocknr);
+ 		AFFS_HEAD(ext_bh)->block_count = cpu_to_be32(block + 1);
+ 		affs_adjust_checksum(ext_bh, blocknr - bh_result->b_blocknr + 1);
+@@ -377,7 +378,8 @@ affs_get_block(struct inode *inode, sector_t block, struct buffer_head *bh_resul
+ 	return 0;
+ 
+ err_big:
+-	affs_error(inode->i_sb,"get_block","strange block request %d", block);
++	affs_error(inode->i_sb, "get_block", "strange block request %d",
++		   (int)block);
+ 	return -EIO;
+ err_ext:
+ 	// unlock cache
+@@ -867,8 +869,9 @@ affs_truncate(struct inode *inode)
+ 	// lock cache
+ 	ext_bh = affs_get_extblock(inode, ext);
+ 	if (IS_ERR(ext_bh)) {
+-		affs_warning(sb, "truncate", "unexpected read error for ext block %u (%d)",
+-			     ext, PTR_ERR(ext_bh));
++		affs_warning(sb, "truncate",
++			     "unexpected read error for ext block %u (%ld)",
++			     (unsigned int)ext, PTR_ERR(ext_bh));
+ 		return;
+ 	}
+ 	if (AFFS_I(inode)->i_lc) {
+@@ -914,8 +917,9 @@ affs_truncate(struct inode *inode)
+ 			struct buffer_head *bh = affs_bread_ino(inode, last_blk, 0);
+ 			u32 tmp;
+ 			if (IS_ERR(bh)) {
+-				affs_warning(sb, "truncate", "unexpected read error for last block %u (%d)",
+-					     ext, PTR_ERR(bh));
++				affs_warning(sb, "truncate",
++					     "unexpected read error for last block %u (%ld)",
++					     (unsigned int)ext, PTR_ERR(bh));
+ 				return;
+ 			}
+ 			tmp = be32_to_cpu(AFFS_DATA_HEAD(bh)->next);
+-- 
+1.9.3
 
-> Acked-by: Michal Hocko <mhocko@suse.cz>
-
-Thank you, Michal!
