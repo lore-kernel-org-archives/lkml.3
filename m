@@ -1,71 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932432AbaJNOdw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 10:33:52 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:34878 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932121AbaJNOdw (ORCPT
+	id S932305AbaJNOhz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 10:37:55 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:46171 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755286AbaJNOhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 10:33:52 -0400
-Date: Tue, 14 Oct 2014 16:33:46 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: Mike Surcouf <mps.surcouf.lkml@gmail.com>
-Cc: Thomas Shao <huishao@microsoft.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        KY Srinivasan <kys@microsoft.com>
-Subject: Re: [PATCH 2/2] hyperv: Implement Time Synchronization using host
- time sample
-Message-ID: <20141014143346.GC6469@localhost.localdomain>
-References: <1413285078-7027-1-git-send-email-huishao@microsoft.com>
- <20141014115412.GC4019@localhost.localdomain>
- <CD2CABCB2C0A0D4682C5F8AD840141540BFD41@HKXPRD3002MB006.064d.mgd.msft.net>
- <20141014132551.GB5994@localhost.localdomain>
- <CAL7Bo8EHOgBFtE87ecC9PSwUy2=M5Q31ka6BX2Eut-eqXSbang@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAL7Bo8EHOgBFtE87ecC9PSwUy2=M5Q31ka6BX2Eut-eqXSbang@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 14 Oct 2014 10:37:53 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-34-543d353e4557
+From: Karol Wrona <k.wrona@samsung.com>
+To: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Antonio Borneo <borneo.antonio@gmail.com>,
+        Karol Wrona <k.wrona@samsung.com>
+Subject: [PATCH v3 0/1] misc: st32fwu: Add stm32 upgrade protocol handling
+Date: Tue, 14 Oct 2014 16:37:44 +0200
+Message-id: <1413297465-11039-1-git-send-email-k.wrona@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAJMWRmVeSWpSXmKPExsVy+t/xy7p2prYhBpfum1r8nXSM3WLjjPWs
+	FgdXLmOyeNC0isni1LL9TBZnm96wW8w78o7F4vKuOWwOHB6/f01i9Ng56y67x6ZVnWwefVtW
+	MXp83iQXwBrFZZOSmpNZllqkb5fAlfFu5kzGgnf8FUe21jcw7uHpYuTkkBAwkZg/8SkThC0m
+	ceHeerYuRi4OIYGljBLHejazQzh9TBIz2+exgVSxCahLNO9YzAySEBFoZJS4ubgfLMEssJVR
+	Yus+2y5GDg5hAS+JvweSQMIsAqoSJz60s4CEeQWcJZa1iIOYEgIKEnMm2Uxg5F7AyLCKUTS1
+	NLmgOCk911CvODG3uDQvXS85P3cTIyRUvuxgXHzM6hCjAAejEg9vQaRNiBBrYllxZe4hRgkO
+	ZiURXgUO2xAh3pTEyqrUovz4otKc1OJDjEwcnFINjOVd4on64SnzszISs68YXDL9fHqCpNda
+	A9fDtgVL5efFRnFnbDt566F47vVHdjebD1+Wzoxe4FqaNbPydZCvWqrIqxnHK5ND252F2udv
+	Say6c63uqa35ixNTHKsv8DcJnmE6nGCeOnvGXtXAA3FGSr82PNQqeMadvM+D/bd1xa2nteqF
+	Ycv1lViKMxINtZiLihMBGbFsiPMBAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 14, 2014 at 03:14:21PM +0100, Mike Surcouf wrote:
-> Even with networking I think there are other senarios where this would
-> be useful such as no access to an NTP server  due to firewall rules or
-> no internal NTP or simply an admin without much knowledge of NTP.
+Hello,
 
-Perhaps, but ...
+This patch is needed by the sensorhub driver which uses STM32F4xx and Jonathan
+suggested to factor out these sources (mentioned in: 
+[RFC/PATCH 2/6] misc: sensorhub: Add sensorhub).
 
-> HyperV host very likely has good time from AD and it would be good if
-> the Linux VM just synced its time from the host after a vanilla
-> install  (just like windows VMs).
+I feel a bit ashamed because I know a bit STM32F4 controllers but I did not
+realize that it is generic ST protocol. It helped us a lot because this 
+code really needed some refactoring.
 
-Just cause windows does it, doesn't make it a good idea.
+So this patch contains SPI protocol used in the STM32 bootloader and is based
+on AN4286. Generally it can be used to implement handling of other interfaces
+like UART or I2C because the flow is quite similar and maybe adding proper
+hw access callbacks will do all work.
 
-> That would require no configuration and probably save a ton of support traffic.
-> However this patch requires a module parameter which really negates
-> the zero configuration argument.
-> Also please don't make this the default until the timesync component
-> is more comprehensive and provides a stable time of similar quality to
-> NTP.
+It supports:
+  - get info frame
+  - get version
+  - firmware write (write, read, write address, erase)
 
-We really don't want to go there.
+>From v2:
+  some typos fixes
+  kfree to devm_kfree in error handling
+  ...
+  generally things advised by Antonio Borneo for v2
 
-> VMware has put a lot of effort into host -> guest timesync so I think
-> there is a case for some form of host based time sync on HyperV.
+TODO (I will not have had time to touch it for few weeks):
+  erase command with sector mode
+  command checking and disabling unimplemented ones
 
-Again, that is fine for VMware, but it might not be the best way.
+Also some Antonio opinion is needed if we are able (or want) to use the same
+stm32_core layer for this.
 
-IMHO, you should let the guest steer its own clock. That gives the end
-user the most flexibility. Just provide the offset information, and
-let a dedicated service (like ntpd or linuxptp's phc2sys) do the rest.
+Karol Wrona (1):
+  misc: st32fwu: Add stm32 upgrade protocol handling
 
-Thanks,
-Richard
+ drivers/misc/Kconfig               |    1 +
+ drivers/misc/Makefile              |    1 +
+ drivers/misc/stm32fwu/Kconfig      |    6 +
+ drivers/misc/stm32fwu/Makefile     |    3 +
+ drivers/misc/stm32fwu/stm32_core.c |  399 ++++++++++++++++++++++++++++++++++++
+ drivers/misc/stm32fwu/stm32_core.h |   81 ++++++++
+ drivers/misc/stm32fwu/stm32_spi.c  |  108 ++++++++++
+ include/linux/stm32fwu.h           |   47 +++++
+ 8 files changed, 646 insertions(+)
+ create mode 100644 drivers/misc/stm32fwu/Kconfig
+ create mode 100644 drivers/misc/stm32fwu/Makefile
+ create mode 100644 drivers/misc/stm32fwu/stm32_core.c
+ create mode 100644 drivers/misc/stm32fwu/stm32_core.h
+ create mode 100644 drivers/misc/stm32fwu/stm32_spi.c
+ create mode 100644 include/linux/stm32fwu.h
+
+-- 
+1.7.9.5
+
