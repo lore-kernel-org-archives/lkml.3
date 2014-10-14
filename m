@@ -1,86 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932249AbaJNNyv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 09:54:51 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:33764 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755244AbaJNNyu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 09:54:50 -0400
-Date: Tue, 14 Oct 2014 15:54:47 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Bart Tanghe <bart.tanghe@thomasmore.be>
-Cc: matt.porter@linaro.org, linux-kernel@vger.kernel.org,
-        linux-pwm@vger.kernel.org, linux-rpi-kernel@lists.infradead.org
-Subject: Re: [PATCH v7]pwm: add BCM2835 PWM driver
-Message-ID: <20141014135445.GA26015@ulmo>
-References: <1412763272-24269-1-git-send-email-bart.tanghe@thomasmore.be>
+	id S932315AbaJNN46 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 09:56:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52609 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755268AbaJNN45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 09:56:57 -0400
+Date: Tue, 14 Oct 2014 15:56:31 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Jean Pihet <jean.pihet@linaro.org>
+Cc: Borislav Petkov <bp@alien8.de>, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Fu Wei <fu.wei@linaro.org>, Robert Richter <rric@kernel.org>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 1/1] rasd: Use perf_evlist__open() instead of open coded
+Message-ID: <20141014135631.GA32308@krava.fdxtended.com>
+References: <CAFrcx1kufO2yj7--UiL841Yp5Es5=WqjL__Yzg=-+nPV5XoohA@mail.gmail.com>
+ <20141006212606.GF14113@kernel.org>
+ <CAFrcx1=swP-3E_pxWEcozFJhL+5YaUBPavQX=OfMtc8h4e=bDg@mail.gmail.com>
+ <20141007133236.GG14113@kernel.org>
+ <20141007140433.GG30146@pd.tnic>
+ <20141010200708.GB18775@kernel.org>
+ <20141010202854.GC13017@pd.tnic>
+ <20141010204158.GA13834@kernel.org>
+ <20141010204432.GD13017@pd.tnic>
+ <CAFrcx1nm4pqWPsUtj1h5qQqo6dghiafRM60-9asaYXx7NLqAEQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3MwIy2ne0vdjdPXF"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1412763272-24269-1-git-send-email-bart.tanghe@thomasmore.be>
+In-Reply-To: <CAFrcx1nm4pqWPsUtj1h5qQqo6dghiafRM60-9asaYXx7NLqAEQ@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Oct 13, 2014 at 09:29:57AM +0200, Jean Pihet wrote:
+> Hi Arnaldo, Borislav,
+> 
+> On 10 October 2014 22:44, Borislav Petkov <bp@alien8.de> wrote:
+> > On Fri, Oct 10, 2014 at 05:41:58PM -0300, Arnaldo Carvalho de Melo wrote:
+> >> Right, stoopid me, no need for some specific tracepoint, just to see
+> >> that whatever tp it is, it will show up in "rasd"'s event loop. Ok, I'll
+> >> try that later.
+> >>
+> >> Next stuff I probably will do is to move the bare minimum used by rasd
+> >> to tools/lib/api/perf/, i.e. there will be:
+> >>
+> >> tools/lib/api/perf/evsel.c
+> >> tools/perf/util/evsel.c
+> >>
+> >> Both will share the perf_evsel__ namespace (which I thought at some
+> >> point to make just: evsel__<METHOD_NAME>, wdyt?).
+> Makes perfectly sense
+> 
+> >>
+> >> That way we just make public the bare minimum that already proved to be
+> >> useful outside tools/perf/ and over time we move stuff from
+> >> tools/perf/util/evsel.c (and from other tools in or out perf's repo)
+> >> into the lib.
+> That is great!
+> 
+> About rasd usage, there are some details at
+> https://wiki.linaro.org/LEG/Engineering/Kernel/perfAndRAS#rasd_implementation.
 
---3MwIy2ne0vdjdPXF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+heya,
+sorry for late reply.. I was on vacation last week..
 
-On Wed, Oct 08, 2014 at 12:14:32PM +0200, Bart Tanghe wrote:
-[...]
-> diff --git a/drivers/pwm/pwm-bcm2835.c b/drivers/pwm/pwm-bcm2835.c
-[...]
-> +static void bcm2835_pwm_free(struct pwm_chip *chip, struct pwm_device *pwm)
-> +{
-> +	struct bcm2835_pwm *pc = to_bcm2835_pwm(chip);
-> +	u32 value;
-> +
-> +	value = readl(pc->base);
-> +	value &= (~DEFAULT_PWM_MODE << (PWM_CONTROL_STRIDE * pwm->hwpwm));
+I read the rasd sources and realized we could poke this
+from another angle..  AFAIU the work the rasd does is following:
+   - reads config file and opens configured tracepoints
+   - reads samples comming from those tracepoints and displays/writes
+     this data to the console/file
+   - is there more?
 
-While applying I noticed this oddity. Is this meant to be:
+If I'm not missing anything, this is quite usefull/common usage
+pattern which would deserve new perf command.
 
-	value &= ~(DEFAULT_PWM_MODE << (PWM_CONTROL_STRIDE * pwm->hwpwm));
+I can see the analogy with ftrace debugfs interface
+  - choose/enable tracepoints
+  - cat .../tracing/trace-pipe
 
-? That would match what's in bcm2835_pwm_request(). If so, what's the
-difference between DEFAULT_PWM_MODE and PWM_CONTROL_MASK? Is the value
-of a channel's field 0xff or 0x00 in the default mode?
+and there could be '-d' for the command to act as daemon.
 
-The above indicates that it would be 0x00, in which case it might be
-better to just do...
+thoughts? ;-)
 
-	value &= ~(PWM_CONTROL_MASK << (PWM_CONTROL_STRIDE * pwm->hwpwm));
-
-... and get rid of DEFAULT_PWM_MODE.
-
-No need to respin, I can fix this up when applying. Just let me know if
-that's actually the right thing to do.
-
-Thierry
-
---3MwIy2ne0vdjdPXF
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUPSslAAoJEN0jrNd/PrOhoUsP/0wYidvmLWNAtO1GwOQpdVaE
-aR5EvCTeH+9tX8gf8g8X+7KkHihav4z1XSWct/ar07RccmVXGl33GVEAMZ31t4/X
-k+LgwwGHLWsOg+MLwM+ivSnQip3yeOv+/Dk1NLB416yZmRTB3OFRG7L0w1m+yONZ
-d7P796lhj0LfaxsPefaD0AcIh/kjnXLjIbJJ08A9uO93NnWj6YoQuGUTTXZe3Ksg
-svx65Kh8/xPO31As3JtIz0HeHjc8DXHnLSSLYw8C8ooR3ZP9/HJVrm2WlApMrTcw
-wjAtJfma8HvWJqQRXgdZWzLatFgu1p+i4ZxALGKr9XQZMs2QP/7+OHfaBOBDYeSV
-PVTp0dw94uoS6GwPnGdfPBz6JM626K5AGNsYsO0+HLAGqa3SqieN1Pm4nBtSuJSA
-cNlOl8E0ylizkj6iO7KQRpa5c17pm2L70iuRsmjdN+gkaYeZc6QxJw6SjjZYrXW4
-7P2jakrfJF8P5PiWLuMZb+ytJwxKpLE1hfyumxwfRnh4sbYKdKl1WFbG7J9Ej8Rs
-HYR3lVEamiT/tD0YKR7lIzMY3+wsCs/NoCTeo7vvOJcUBpB1SAKbmalkxnMdKInB
-ofOogQf0A+q41Gqa5Rz/k0Q7FM5OqYH1igsGkEiYfHnmmchAgvNrl0aXzGfA+mgr
-twG7/Pb25zIU6wGx5D8y
-=E/wR
------END PGP SIGNATURE-----
-
---3MwIy2ne0vdjdPXF--
+jirka
