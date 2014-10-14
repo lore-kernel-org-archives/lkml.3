@@ -1,110 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932241AbaJNNm0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 09:42:26 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:36306 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755274AbaJNNmZ (ORCPT
+	id S932309AbaJNNoA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 09:44:00 -0400
+Received: from smtprelay0129.hostedemail.com ([216.40.44.129]:58537 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755275AbaJNNn7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 09:42:25 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Steve Capper <steve.capper@linaro.org>
-Cc: linux-arch@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mm: Introduce a general RCU get_user_pages_fast.
-In-Reply-To: <20141014122922.GA763@linaro.org>
-References: <1413284274-13521-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20141014115854.GA32351@linaro.org> <8738aqonuc.fsf@linux.vnet.ibm.com> <20141014122922.GA763@linaro.org>
-User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
-Date: Tue, 14 Oct 2014 19:12:15 +0530
-Message-ID: <87zjcyn4y0.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14101413-1618-0000-0000-0000010A6736
+	Tue, 14 Oct 2014 09:43:59 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:599:960:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3870:3873:3876:4321:5007:6238:7652:10004:10400:10848:11026:11232:11473:11658:11914:12296:12517:12519:12555:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: joke93_22779361bc648
+X-Filterd-Recvd-Size: 1639
+Message-ID: <1413294235.3269.4.camel@joe-AO725>
+Subject: Re: [PATCH 2/2] hyperv: Implement Time Synchronization using host
+ time sample
+From: Joe Perches <joe@perches.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Thomas Shao <huishao@microsoft.com>, tglx@linutronix.de,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com, kys@microsoft.com
+Date: Tue, 14 Oct 2014 06:43:55 -0700
+In-Reply-To: <20141014111915.GV23154@mwanda>
+References: <1413285078-7027-1-git-send-email-huishao@microsoft.com>
+	 <20141014111915.GV23154@mwanda>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steve Capper <steve.capper@linaro.org> writes:
+On Tue, 2014-10-14 at 14:19 +0300, Dan Carpenter wrote:
+> I had a couple small style nits.
+> 
+> On Tue, Oct 14, 2014 at 04:11:18AM -0700, Thomas Shao wrote:
+> > diff --git a/drivers/hv/hv_util.c b/drivers/hv/hv_util.c
+> > index 3b9c9ef..1d8390c 100644
+> > --- a/drivers/hv/hv_util.c
+> > +++ b/drivers/hv/hv_util.c
+> > @@ -51,11 +51,30 @@
+> >  #define HB_WS2008_MAJOR	1
+> >  #define HB_WS2008_VERSION	(HB_WS2008_MAJOR << 16 | HB_MINOR)
+> >  
+> > +#define  TIMESAMPLE_INTERVAL 5000000000L  /* 5s in nanosecond */
+> 
+> If you wanted you could say:
+> 
+> #define  TIMESAMPLE_INTERVAL  (5 * NSEC_PER_SEC)
 
-> On Tue, Oct 14, 2014 at 05:38:43PM +0530, Aneesh Kumar K.V wrote:
->> Steve Capper <steve.capper@linaro.org> writes:
->> 
->> > On Tue, Oct 14, 2014 at 04:27:53PM +0530, Aneesh Kumar K.V wrote:
->> >> get_user_pages_fast attempts to pin user pages by walking the page
->> >> tables directly and avoids taking locks. Thus the walker needs to be
->> >> protected from page table pages being freed from under it, and needs
->> >> to block any THP splits.
->> >> 
->> >> One way to achieve this is to have the walker disable interrupts, and
->> >> rely on IPIs from the TLB flushing code blocking before the page table
->> >> pages are freed.
->> >> 
->> >> On some platforms we have hardware broadcast of TLB invalidations, thus
->> >> the TLB flushing code doesn't necessarily need to broadcast IPIs; and
->> >> spuriously broadcasting IPIs can hurt system performance if done too
->> >> often.
->> >> 
->> >> This problem has been solved on PowerPC and Sparc by batching up page
->> >> table pages belonging to more than one mm_user, then scheduling an
->> >> rcu_sched callback to free the pages. This RCU page table free logic
->> >> has been promoted to core code and is activated when one enables
->> >> HAVE_RCU_TABLE_FREE. Unfortunately, these architectures implement
->> >> their own get_user_pages_fast routines.
->> >> 
->> >> The RCU page table free logic coupled with a an IPI broadcast on THP
->> >> split (which is a rare event), allows one to protect a page table
->> >> walker by merely disabling the interrupts during the walk.
->> >> 
->> >> This patch provides a general RCU implementation of get_user_pages_fast
->> >> that can be used by architectures that perform hardware broadcast of
->> >> TLB invalidations.
->> >> 
->> >> It is based heavily on the PowerPC implementation.
->> >> 
->> >> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
->> >> ---
->> >> 
->> >> NOTE: I kept the description of patch as it is and also retained the documentation.
->> >> I also dropped the tested-by and other SOB, because i was not sure whether they want
->> >> to be blamed for the bugs here. Please feel free to update.
->> >
->> > Hi Aneesh,
->> > Thank you for coding this up.
->> >
->> > I've compiled and briefly tested this on arm (with and without LPAE),
->> > and arm64. I ran a custom futex on THP tail test, and this passed.
->> > I'll test this a little more aggressively with ltp.
->> >
->> > I think Linus has already pulled in the RCU gup I posted, could you
->> > please instead write a patch against?
->> 
->> Will do that. 
->> 
->> > 2667f50 mm: introduce a general RCU get_user_pages_fast()
->> 
->> In that patch don't you need to check the _PAGE_PRESENT details in case
->> of gup_huge_pmd ?
->> 
->
-> Before calling gup_huge_pmd we check for pmd_none. On ARM we have:
-> #define pmd_none(pmd)		(!pmd_val(pmd))
-> #define pmd_present(pmd)	(pmd_val(pmd))
->
-> So we know when we enter gup_huge_pmd that "orig" represents a pmd that
-> is present.
->
-> On PowerPC I see the definitions are a little different for
-> pgtable-ppc32.h:
-> #define pmd_present(pmd)	(pmd_val(pmd) & _PMD_PRESENT_MASK)
->
-> A pmd_present() could be added to the beginning of gup_huge_pmd safely
-> if this is needed for PowerPC.
->
+ULL
 
-for the huge pmd case, that is pte in pmd we may really want to check
-_PAGE_PRESENT bit right ?
-
--aneesh
 
