@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932438AbaJNOzI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 10:55:08 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:43752 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932147AbaJNOzH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 10:55:07 -0400
-Date: Tue, 14 Oct 2014 16:54:35 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Alex Thorlton <athorlton@sgi.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, Bob Liu <lliubbo@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org
-Subject: Re: [BUG] mm, thp: khugepaged can't allocate on requested node when
- confined to a cpuset
-Message-ID: <20141014145435.GA7369@worktop.fdxtended.com>
-References: <20141008191050.GK3778@sgi.com>
- <20141014114828.GA6524@node.dhcp.inet.fi>
+	id S932453AbaJNO4O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 10:56:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35881 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932119AbaJNO4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 10:56:13 -0400
+Date: Tue, 14 Oct 2014 10:56:12 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Ulrich Obergfell <uobergfe@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/1] watchdog: parameters to control hard and soft lockup
+ detector individually
+Message-ID: <20141014145612.GA135937@redhat.com>
+References: <1413210762-4532-1-git-send-email-uobergfe@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141014114828.GA6524@node.dhcp.inet.fi>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <1413210762-4532-1-git-send-email-uobergfe@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 14, 2014 at 02:48:28PM +0300, Kirill A. Shutemov wrote:
+On Mon, Oct 13, 2014 at 04:32:41PM +0200, Ulrich Obergfell wrote:
+> This post follows up to https://lkml.org/lkml/2014/8/11/329.
+> During the discussion of that patch, Ingo Molnar commented in
+> https://lkml.org/lkml/2014/8/18/577.
+> 
+>  "The softlockup and hardlockup detection control variables 
+>   should be in separate flags, inside and outside the kernel - 
+>   they (should) not relate to each other."
+> 
+> Please refer to [PATCH 1/1] for a description of the proposed
+> changes of the 'user interface' in /proc/sys/kernel and kernel
+> command line parameters.
 
-> Why whould you want to pin khugpeaged? Is there a valid use-case?
-> Looks like userspace shoots to its leg.
+Hi Uli,
 
-Its just bad design to put so much work in another context. But the
-use-case is isolating other cpus.
+Andrew just posted some of your other patches upstream for v3.18-rc1.
+Let's try to rebase these changes on top of those and see what it looks
+like.
 
-> Is there a reason why we should respect cpuset limitation for kernel
-> threads?
-
-Yes, because we want to allow isolating CPUs from 'random' activity.
-
-> Should we bypass cpuset for PF_KTHREAD completely?
-
-No. That'll break stuff.
+Cheers,
+Don
