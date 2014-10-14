@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234AbaJNKLX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 06:11:23 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:52785 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754570AbaJNKLV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 06:11:21 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] [media] s5p-fimc: Only build suspend/resume for PM
-Date: Tue, 14 Oct 2014 12:11:18 +0200
-Message-Id: <1413281478-2866-1-git-send-email-thierry.reding@gmail.com>
-X-Mailer: git-send-email 2.1.2
+	id S1755230AbaJNKLw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 06:11:52 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:55024
+	"EHLO p3plsmtps2ded02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754304AbaJNKLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 06:11:51 -0400
+x-originating-ip: 72.167.245.219
+From: Thomas Shao <huishao@microsoft.com>
+To: tglx@linutronix.de, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
+        kys@microsoft.com
+Cc: Thomas Shao <huishao@microsoft.com>
+Subject: [PATCH 1/2] timekeeping: add EXPORT_SYMBOL_GPL for do_adjtimex()
+Date: Tue, 14 Oct 2014 04:18:23 -0700
+Message-Id: <1413285503-7077-1-git-send-email-huishao@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
+Export do_adjtimex function for hyper-v Time Synchronization component
 
-If power management is disabled these functions become unused, so there
-is no reason to build them. This fixes a couple of build warnings when
-PM(_SLEEP,_RUNTIME) is not enabled.
-
-Signed-off-by: Thierry Reding <treding@nvidia.com>
+Signed-off-by: Thomas Shao <huishao@microsoft.com>
 ---
-Changes in v2:
-- add #endif comment for readability
+ kernel/time/timekeeping.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
- drivers/media/platform/exynos4-is/fimc-core.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/drivers/media/platform/exynos4-is/fimc-core.c b/drivers/media/platform/exynos4-is/fimc-core.c
-index b70fd996d794..aee92d908e49 100644
---- a/drivers/media/platform/exynos4-is/fimc-core.c
-+++ b/drivers/media/platform/exynos4-is/fimc-core.c
-@@ -832,6 +832,7 @@ err:
- 	return -ENXIO;
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index ec1791f..205a4b3 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -1786,6 +1786,7 @@ int do_adjtimex(struct timex *txc)
+ 
+ 	return ret;
  }
++EXPORT_SYMBOL_GPL(do_adjtimex);
  
-+#if defined(CONFIG_PM_RUNTIME) || defined(CONFIG_PM_SLEEP)
- static int fimc_m2m_suspend(struct fimc_dev *fimc)
- {
- 	unsigned long flags;
-@@ -870,6 +871,7 @@ static int fimc_m2m_resume(struct fimc_dev *fimc)
- 
- 	return 0;
- }
-+#endif /* CONFIG_PM_RUNTIME || CONFIG_PM_SLEEP */
- 
- static const struct of_device_id fimc_of_match[];
- 
+ #ifdef CONFIG_NTP_PPS
+ /**
 -- 
-2.1.2
+1.7.1
 
