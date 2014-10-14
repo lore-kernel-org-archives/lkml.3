@@ -1,102 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012AbaJNJeY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 05:34:24 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:4741 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751343AbaJNJeX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 05:34:23 -0400
-X-IronPort-AV: E=Sophos;i="5.04,716,1406592000"; 
-   d="scan'208";a="181047902"
-Message-ID: <543CEDFD.6020501@citrix.com>
-Date: Tue, 14 Oct 2014 10:33:49 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1755162AbaJNJe7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 05:34:59 -0400
+Received: from g9t1613g.houston.hp.com ([15.240.0.71]:44232 "EHLO
+	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755047AbaJNJe5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 05:34:57 -0400
+Message-ID: <543CEE32.50109@hp.com>
+Date: Tue, 14 Oct 2014 17:34:42 +0800
+From: "Li, ZhenHua" <zhen-hual@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Martin Kelly <martin@martingkelly.com>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xenproject.org>, <x86@kernel.org>
-CC: <mingo@redhat.com>, <david.vrabel@citrix.com>,
-        Martin Kelly <martkell@amazon.com>, <hpa@zytor.com>,
-        <boris.ostrovsky@oracle.com>, <tglx@linutronix.de>
-Subject: Re: [Xen-devel] [PATCH 1/2] x86: separate out sanitize_e820_map return
- codes
-References: <1413253817-6943-1-git-send-email-martin@martingkelly.com>
-In-Reply-To: <1413253817-6943-1-git-send-email-martin@martingkelly.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+CC: "Li, Zhen-Hua" <zhen-hual@hp.com>, linda.knippers@hp.com,
+        jerry.hoemann@hp.com, lisa.mitchell@hp.com, alexander.duyck@gmail.com,
+        Takao Indoh <indou.takao@jp.fujitsu.com>,
+        Randy Wright <rwright@hp.com>
+Subject: Re: [PATCH 1/1] pci: fix dmar fault for kdump kernel
+References: <1412925191-27970-1-git-send-email-zhen-hual@hp.com>
+In-Reply-To: <1412925191-27970-1-git-send-email-zhen-hual@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/10/14 03:30, Martin Kelly wrote:
-> Previously, sanitize_e820_map returned -1 in all cases in which it did
-> nothing. However, sanitize_e820_map can do nothing either because the
-> input map has size 1 (this is ok) or because the input map passed in is
-> invalid (likely an issue). It is nice for the caller to be able to
-> distinguish the two cases and treat them separately.
+I tested on the latest stable version 3.17, it works well.
 
-Wouldn't it be more sensible to return 0 (success) in the case of a
-single entry map?  IMO, a 1 entry map is by definition sanitized.
-
-David
-
-> --- a/arch/x86/include/asm/e820.h
-> +++ b/arch/x86/include/asm/e820.h
-> @@ -12,6 +12,11 @@
->  /* see comment in arch/x86/kernel/e820.c */
->  extern struct e820map e820;
->  extern struct e820map e820_saved;
-> +/* sanitize_e820_map return codes */
-> +#define E820_RC_ONLY_ONE (-1)  /* return code when there's only one memory
-> +				  region in the map */
-> +#define E820_RC_BAD_MAP (-2)   /* return code when passed a map containing an
-> +				  invalid memory region */
->  
->  extern unsigned long pci_mem_start;
->  extern int e820_any_mapped(u64 start, u64 end, unsigned type);
-> diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-> index 49f8864..3e1fd63 100644
-> --- a/arch/x86/kernel/e820.c
-> +++ b/arch/x86/kernel/e820.c
-> @@ -189,11 +189,15 @@ void __init e820_print_map(char *who)
->   * (something no more than max_nr_map.)
->   *
->   * The return value from sanitize_e820_map() is zero if it
-> - * successfully 'sanitized' the map entries passed in, and is -1
-> - * if it did nothing, which can happen if either of (1) it was
-> - * only passed one map entry, or (2) any of the input map entries
-> - * were invalid (start + size < start, meaning that the size was
-> - * so big the described memory range wrapped around through zero.)
-> + * successfully 'sanitized' the map entries passed in and negative if it did
-> + * nothing. There are two cases in which sanitize_e820_map() does nothing:
-> + * (1) it was passed only one map entry, so nothing needs to be done. In this
-> + *     case, it returns E820_RC_ONLY_ONE.
-> + * (2) any of the input map entries * were invalid (start + size < start)
-> + *     meaning that the size was so big the described memory range wrapped
-> + *     around through zero. In this case, it returns E820_RC_BAD_MAP.
-> + * Since (1) is sometimes an expected case and (2) indicates an error, the
-> + * distinct return codes allow callers to handle the two cases separately.
->   *
->   *	Visually we're performing the following
->   *	(1,2,3,4 = memory types)...
-> @@ -269,7 +273,7 @@ int __init sanitize_e820_map(struct e820entry *biosmap, int max_nr_map,
->  
->  	/* if there's only one memory region, don't bother */
->  	if (*pnr_map < 2)
-> -		return -1;
-> +		return E820_RC_ONLY_ONE;
->  
->  	old_nr = *pnr_map;
->  	BUG_ON(old_nr > max_nr_map);
-> @@ -277,7 +281,7 @@ int __init sanitize_e820_map(struct e820entry *biosmap, int max_nr_map,
->  	/* bail out if we find any unreasonable addresses in bios map */
->  	for (i = 0; i < old_nr; i++)
->  		if (biosmap[i].addr + biosmap[i].size < biosmap[i].addr)
-> -			return -1;
-> +			return E820_RC_BAD_MAP;
->  
->  	/* create pointers for initial change-point information (for sorting) */
->  	for (i = 0; i < 2 * old_nr; i++)
-> 
+On 10/10/2014 03:13 PM, Li, Zhen-Hua wrote:
+> On a HP system with Intel vt-d supported and many PCI devices on it,
+> when kernel crashed and the kdump kernel boots with intel_iommu=on,
+> there may be some unexpected DMA requests on this adapter, which will
+> cause DMA Remapping faults like:
+>      dmar: DRHD: handling fault status reg 102
+>      dmar: DMAR:[DMA Read] Request device [41:00.0] fault addr fff81000
+>      DMAR:[fault reason 01] Present bit in root entry is clear
+>
+> This bug may happen on *any* PCI device.
+> Analysis for this bug:
+>
+> The present bit is set in this function:
+>
+> static struct context_entry * device_to_context_entry(
+>                  struct intel_iommu *iommu, u8 bus, u8 devfn)
+> {
+>      ......
+>                  set_root_present(root);
+>      ......
+> }
+>
+> Calling tree:
+>      device driver
+>          intel_alloc_coherent
+>              __intel_map_single
+>                  domain_context_mapping
+>                      domain_context_mapping_one
+>                          device_to_context_entry
+>
+> This means, the present bit in root entry will not be set until the device
+> driver is loaded.
+>
+> But in the kdump kernel, hardware devices are not aware that control has
+> transferred to the second kernel, and those drivers must initialize again.
+> Consequently there may be unexpected DMA requests from devices activity
+> initiated in the first kernel leading to the DMA Remapping errors in the
+> second kernel.
+>
+> To fix this DMAR fault, we need to reset the bus that this device on. Reset
+> the device itself does not work.
+>
+> A patch for this bug that has been sent before:
+> https://lkml.org/lkml/2014/9/30/55
+> As in discussion, this bug may happen on *any* device, so we need to reset all
+> pci devices.
+>
+> There was an original version(Takao Indoh) that resets the pcie devices:
+> https://lkml.org/lkml/2013/5/14/9
+>
+> Update of this new version, comparing with Takao Indoh's version:
+>      Add support for legacy PCI devices.
+>      Use pci_try_reset_bus instead of do_downstream_device_reset in original version
+>
+> Randy Wright corrects some misunderstanding in this description.
+>
+> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+> Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
+> Signed-off-by: Randy Wright <rwright@hp.com>
+> ---
+>   drivers/pci/pci.c | 84 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>   1 file changed, 84 insertions(+)
+>
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index 2c9ac70..8cb146c 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -23,6 +23,7 @@
+>   #include <linux/device.h>
+>   #include <linux/pm_runtime.h>
+>   #include <linux/pci_hotplug.h>
+> +#include <linux/crash_dump.h>
+>   #include <asm-generic/pci-bridge.h>
+>   #include <asm/setup.h>
+>   #include "pci.h"
+> @@ -4423,6 +4424,89 @@ void __weak pci_fixup_cardbus(struct pci_bus *bus)
+>   }
+>   EXPORT_SYMBOL(pci_fixup_cardbus);
+>
+> +/*
+> + * Return true if dev is PCI root port or downstream port whose child is PCI
+> + * endpoint except VGA device.
+> + */
+> +static int __pci_dev_need_reset(struct pci_dev *dev)
+> +{
+> +	struct pci_bus *subordinate;
+> +	struct pci_dev *child;
+> +
+> +	if (dev->hdr_type != PCI_HEADER_TYPE_BRIDGE)
+> +		return 0;
+> +
+> +	if (pci_is_pcie(dev)) {
+> +		if ((pci_pcie_type(dev) != PCI_EXP_TYPE_ROOT_PORT) &&
+> +		    (pci_pcie_type(dev) != PCI_EXP_TYPE_DOWNSTREAM))
+> +			return 0;
+> +	}
+> +
+> +	subordinate = dev->subordinate;
+> +	list_for_each_entry(child, &subordinate->devices, bus_list) {
+> +		/* Don't reset switch, bridge, VGA device */
+> +		if ((child->hdr_type == PCI_HEADER_TYPE_BRIDGE) ||
+> +		    ((child->class >> 16) == PCI_BASE_CLASS_BRIDGE) ||
+> +		    ((child->class >> 16) == PCI_BASE_CLASS_DISPLAY))
+> +			return 0;
+> +
+> +		if (pci_is_pcie(child)) {
+> +			if ((pci_pcie_type(child) == PCI_EXP_TYPE_UPSTREAM) ||
+> +			    (pci_pcie_type(child) == PCI_EXP_TYPE_PCI_BRIDGE))
+> +				return 0;
+> +		}
+> +	}
+> +
+> +	return 1;
+> +}
+> +
+> +struct pci_dev_reset_entry {
+> +	struct list_head list;
+> +	struct pci_dev *dev;
+> +};
+> +int __init pci_reset_endpoints(void)
+> +{
+> +	struct pci_dev *dev = NULL;
+> +	struct pci_dev_reset_entry *pdev_entry, *tmp;
+> +	struct pci_bus *subordinate = NULL;
+> +	int has_it;
+> +
+> +	LIST_HEAD(pdev_list);
+> +
+> +	if (likely(!is_kdump_kernel()))
+> +		return 0;
+> +
+> +	for_each_pci_dev(dev) {
+> +		subordinate = dev->subordinate;
+> +		if (!subordinate || list_empty(&subordinate->devices))
+> +			continue;
+> +
+> +		has_it = 0;
+> +		list_for_each_entry(pdev_entry, &pdev_list, list) {
+> +			if (dev == pdev_entry->dev) {
+> +				has_it = 1;
+> +				break;
+> +			}
+> +		}
+> +		if (has_it)
+> +			continue;
+> +
+> +		if (__pci_dev_need_reset(dev)) {
+> +			pdev_entry = kmalloc(sizeof(*pdev_entry), GFP_KERNEL);
+> +			pdev_entry->dev = dev;
+> +			list_add(&pdev_entry->list, &pdev_list);
+> +		}
+> +	}
+> +
+> +	list_for_each_entry_safe(pdev_entry, tmp, &pdev_list, list) {
+> +		pci_try_reset_bus(pdev_entry->dev->subordinate);
+> +		kfree(pdev_entry);
+> +	}
+> +
+> +	return 0;
+> +}
+> +fs_initcall_sync(pci_reset_endpoints);
+> +
+>   static int __init pci_setup(char *str)
+>   {
+>   	while (str) {
+>
 
