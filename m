@@ -1,89 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932179AbaJNMI5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 08:08:57 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:52461 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754977AbaJNMI4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 08:08:56 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Steve Capper <steve.capper@linaro.org>
-Cc: linux-arch@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mm: Introduce a general RCU get_user_pages_fast.
-In-Reply-To: <20141014115854.GA32351@linaro.org>
-References: <1413284274-13521-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20141014115854.GA32351@linaro.org>
-User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
-Date: Tue, 14 Oct 2014 17:38:43 +0530
-Message-ID: <8738aqonuc.fsf@linux.vnet.ibm.com>
+	id S932186AbaJNMLz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 08:11:55 -0400
+Received: from admin.comprocs.com ([12.186.155.30]:64950 "HELO mx2.compro.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754977AbaJNMLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 08:11:54 -0400
+X-Greylist: delayed 628 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Oct 2014 08:11:54 EDT
+X-BYPSHEADER: 3184645
+X-SMScore: -200
+Message-ID: <543D1097.7010709@compro.net>
+Date: Tue, 14 Oct 2014 08:01:27 -0400
+From: Mark Hounschell <markh@compro.net>
+Reply-To: markh@compro.net
+Organization: Compro Computer Svcs.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14101412-0021-0000-0000-000001B095BD
+To: Greg KH <gregkh@linuxfoundation.org>, Joe Perches <joe@perches.com>
+CC: devel <devel@driverdev.osuosl.org>, Lidza Louina <lidza.louina@gmail.com>,
+        DaeSeok Youn <daeseok.youn@gmail.com>,
+        driverdev-devel@linuxdriverproject.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: [PATCH] staging: dgap: re-arrange functions for removing forward
+ declarations.
+References: <20141013023425.GA15452@devel> <20141013032544.GA26646@kroah.com> <CAHb8M2A5e2akETQoWS6WfNJjUqhyu4ptfTMs9HLYgbw8XRR-Ww@mail.gmail.com> <1413212198.1287.9.camel@joe-AO725> <1441864556.1190074.1413252337243.JavaMail.root@mx2.compro.net>
+In-Reply-To: <1441864556.1190074.1413252337243.JavaMail.root@mx2.compro.net>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steve Capper <steve.capper@linaro.org> writes:
-
-> On Tue, Oct 14, 2014 at 04:27:53PM +0530, Aneesh Kumar K.V wrote:
->> get_user_pages_fast attempts to pin user pages by walking the page
->> tables directly and avoids taking locks. Thus the walker needs to be
->> protected from page table pages being freed from under it, and needs
->> to block any THP splits.
->> 
->> One way to achieve this is to have the walker disable interrupts, and
->> rely on IPIs from the TLB flushing code blocking before the page table
->> pages are freed.
->> 
->> On some platforms we have hardware broadcast of TLB invalidations, thus
->> the TLB flushing code doesn't necessarily need to broadcast IPIs; and
->> spuriously broadcasting IPIs can hurt system performance if done too
->> often.
->> 
->> This problem has been solved on PowerPC and Sparc by batching up page
->> table pages belonging to more than one mm_user, then scheduling an
->> rcu_sched callback to free the pages. This RCU page table free logic
->> has been promoted to core code and is activated when one enables
->> HAVE_RCU_TABLE_FREE. Unfortunately, these architectures implement
->> their own get_user_pages_fast routines.
->> 
->> The RCU page table free logic coupled with a an IPI broadcast on THP
->> split (which is a rare event), allows one to protect a page table
->> walker by merely disabling the interrupts during the walk.
->> 
->> This patch provides a general RCU implementation of get_user_pages_fast
->> that can be used by architectures that perform hardware broadcast of
->> TLB invalidations.
->> 
->> It is based heavily on the PowerPC implementation.
->> 
->> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
->> ---
->> 
->> NOTE: I kept the description of patch as it is and also retained the documentation.
->> I also dropped the tested-by and other SOB, because i was not sure whether they want
->> to be blamed for the bugs here. Please feel free to update.
+On 10/13/2014 10:04 PM, Greg KH wrote:
+> On Mon, Oct 13, 2014 at 07:56:38AM -0700, Joe Perches wrote:
+>> On Mon, 2014-10-13 at 17:01 +0900, DaeSeok Youn wrote:
+>>> Hi,
+>>>
+>>> 2014-10-13 12:25 GMT+09:00 Greg KH <gregkh@linuxfoundation.org>:
+>>>> On Mon, Oct 13, 2014 at 11:34:25AM +0900, Daeseok Youn wrote:
+>>>>> Re-arrange the functions for removing forward declarations.
+>>>>>
+>>>>> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+>>>>> ---
+>>>>> This patch has too many changes for re-arranging the functions.
+>>>>> So I wonder that I should break this up into smaller patches.
+>>>>
+>>>> Are the .o files identical before and after this patch?  If so, it's
+>>>> fine.
+>>> Ok. I will check for that.
+>>
+>> The .o files shouldn't be identical after function reordering.
 >
-> Hi Aneesh,
-> Thank you for coding this up.
+> Hm, they might be the same size, but I can see how on some
+> architectures (like ppc) how that would not be the case, you are right.
 >
-> I've compiled and briefly tested this on arm (with and without LPAE),
-> and arm64. I ran a custom futex on THP tail test, and this passed.
-> I'll test this a little more aggressively with ltp.
+> Isn't there an "objdiff" program or something like that which might help
+> in validating that nothing "changed" in the source for type of patch
+> that just moves functions around in a file.
 >
-> I think Linus has already pulled in the RCU gup I posted, could you
-> please instead write a patch against?
+> thanks,
+>
 
-Will do that. 
+Greg,
 
-> 2667f50 mm: introduce a general RCU get_user_pages_fast()
+Would just testing the thing be of any help?
 
-In that patch don't you need to check the _PAGE_PRESENT details in case
-of gup_huge_pmd ?
-
-
--aneesh
+Regards
+Mark
 
