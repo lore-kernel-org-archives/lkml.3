@@ -1,98 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932140AbaJNLT5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 07:19:57 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:38516 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755061AbaJNLT4 (ORCPT
+	id S932160AbaJNL0G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 07:26:06 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:59557 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755061AbaJNL0E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 07:19:56 -0400
-Date: Tue, 14 Oct 2014 14:19:15 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Thomas Shao <huishao@microsoft.com>
-Cc: tglx@linutronix.de, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
-        kys@microsoft.com
-Subject: Re: [PATCH 2/2] hyperv: Implement Time Synchronization using host
- time sample
-Message-ID: <20141014111915.GV23154@mwanda>
-References: <1413285078-7027-1-git-send-email-huishao@microsoft.com>
+	Tue, 14 Oct 2014 07:26:04 -0400
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 4/4] ext4: Add fdatasync scalability optimization
+In-Reply-To: <20141014105729.GA19981@infradead.org>
+References: <1413281035-6483-1-git-send-email-dmonakhov@openvz.org> <1413281035-6483-5-git-send-email-dmonakhov@openvz.org> <20141014105729.GA19981@infradead.org>
+User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-redhat-linux-gnu)
+Date: Tue, 14 Oct 2014 15:25:54 +0400
+Message-ID: <87oateq4e5.fsf@openvz.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413285078-7027-1-git-send-email-huishao@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I had a couple small style nits.
+--=-=-=
+Content-Type: text/plain
 
-On Tue, Oct 14, 2014 at 04:11:18AM -0700, Thomas Shao wrote:
-> diff --git a/drivers/hv/hv_util.c b/drivers/hv/hv_util.c
-> index 3b9c9ef..1d8390c 100644
-> --- a/drivers/hv/hv_util.c
-> +++ b/drivers/hv/hv_util.c
-> @@ -51,11 +51,30 @@
->  #define HB_WS2008_MAJOR	1
->  #define HB_WS2008_VERSION	(HB_WS2008_MAJOR << 16 | HB_MINOR)
->  
-> +#define  TIMESAMPLE_INTERVAL 5000000000L  /* 5s in nanosecond */
+Christoph Hellwig <hch@infradead.org> writes:
 
-If you wanted you could say:
+> Much of the bookkeeping here seems generic and should be in common
+> code and not inside a filesystem.
+Yes. But this means that I need to store flush_id inside generic inode
+which likely will be accepted negatively because VFS people do not like
+inode bloating. But if you are OK then I'll prepare the patch.
 
-#define  TIMESAMPLE_INTERVAL  (5 * NSEC_PER_SEC)
+--=-=-=
+Content-Type: application/pgp-signature
 
-> +
-> +/*host sends time sample for every 5s.So the max polling interval
-> + *is 128*5 = 640s.
-> +*/
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-The comment still has problems throughout.  Read
-Documentation/CodingStyle.
-
-> +#define  TIME_ADJ_MAX_INTERVAL 128 /*Max polling interval */
-> +
->  static int sd_srv_version;
->  static int ts_srv_version;
->  static int hb_srv_version;
->  static int util_fw_version;
->  
-> +/*host sends time sample for every 5s.So the initial polling interval
-> + *is 5s.
-> +*/
-> +static s32 adj_interval = 1;
-
-Prefer mundane types instead there is a reason.  This should be int
-because it's not specified in a hardware spec.  I know you are being
-consistent with the surrounding code, but the surrounding code is bad so
-don't emulate it.
-
-> +
-> +/*The host_time_sync module parameter is used to control the time
-> +  sync between host and guest.
-> +*/
-> +static bool host_time_sync;
-> +module_param(host_time_sync, bool, (S_IRUGO | S_IWUSR));
-> +MODULE_PARM_DESC(host_time_sync, "If the guest sync time with host");
-
-Maybe say: "Synchronize time with the host"?
-
-> +
->  static void shutdown_onchannelcallback(void *context);
->  static struct hv_util_service util_shutdown = {
->  	.util_cb = shutdown_onchannelcallback,
-> @@ -163,15 +182,61 @@ static void shutdown_onchannelcallback(void *context)
->  /*
->   * Set guest time to host UTC time.
->   */
-> -static inline void do_adj_guesttime(u64 hosttime)
-> +static inline void do_adj_guesttime(u64 hosttime, bool forceSync)
-
-I'm surprise checkpatch.pl does't complain about this CamelCase.
-
-regards,
-dan carpenter
-
+iQIcBAEBAgAGBQJUPQhCAAoJEFzOBSYIXfve40gP+wfx5+x6c6NEMQ2n7LdBumCC
+0I5/G9gBV2SRFjf7tvbW7jW3U5qrfjUZizTOGBvcoX9zt35ClMKMUWvTqBHHaN2+
+Zix9kdXhFheKKvuKR0II4lwh2kYIAoosfqwYTOX6RWtdFbul66rPynU0+KTSEbay
+VZLrZZ38TQuDgIvrmAwbwnINX6/ZIs9KwQQS63OT6og4SWsqj5lo+tVEoAQdAeKV
+5pDVYo0sO6R2OqF9pi+BPBI+4jNXNV7RH17Swj3PUJLsjB0jOehrIPw9FS13vXdK
+JW+d7A9tv47lwrp+Z7BUPQx/u40DxIIiTpjbMVi+tutgNmT4VnXr9j4odFK1SbSO
+3BRB0BpgvL9YPBBiHKGarHkgvZ/MDkNEbufoSQhL6PFKF40tcBT4gnTbmB0f5EJM
+3LaHUIfonPpyJ8ziYNKAa+yFi+epAWOZnQUjfQhoek2s4l70TOZk+z+J9zr08VKg
+NCmLRPhMEULgdO6RkHnwNC/rhQMId3s6TKXxqXbKGN9vgtS1rLkb/cEgR5opIcg9
+9PpxdN0xhctclsAElk7LZUpK4KA7hzFr51IG3BnzACBd0x9h6DcJ+mYRAYYaEwBO
+SQy8Y9dy1VCcPrcwX3xWtwt3Su0OjVxSg42W71eg396cll1LZLgV24MAQFC89mBh
+YfplMyeM5u4b+A3i2DCt
+=j/Z9
+-----END PGP SIGNATURE-----
+--=-=-=--
