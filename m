@@ -1,72 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932345AbaJNMDi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 08:03:38 -0400
-Received: from mail-yh0-f53.google.com ([209.85.213.53]:43516 "EHLO
-	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932217AbaJNMDh (ORCPT
+	id S932179AbaJNMI5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 08:08:57 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:52461 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754977AbaJNMI4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 08:03:37 -0400
+	Tue, 14 Oct 2014 08:08:56 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Steve Capper <steve.capper@linaro.org>
+Cc: linux-arch@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] mm: Introduce a general RCU get_user_pages_fast.
+In-Reply-To: <20141014115854.GA32351@linaro.org>
+References: <1413284274-13521-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20141014115854.GA32351@linaro.org>
+User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
+Date: Tue, 14 Oct 2014 17:38:43 +0530
+Message-ID: <8738aqonuc.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1413000976-2038-1-git-send-email-dianders@chromium.org>
-References: <1413000976-2038-1-git-send-email-dianders@chromium.org>
-From: Alim Akhtar <alim.akhtar@gmail.com>
-Date: Tue, 14 Oct 2014 17:32:56 +0530
-Message-ID: <CAGOxZ51vPf7wR8FccbCjv=08Zjs_mNCj7CiWBE_j6qr7ZHSD9Q@mail.gmail.com>
-Subject: Re: [PATCH] mmc: dw_mmc: Change signal voltage error to dev_dbg()
-To: Doug Anderson <dianders@chromium.org>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>, Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Addy Ke <addy.ke@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>, Chris Ball <chris@printf.net>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14101412-0021-0000-0000-000001B095BD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Doug,
+Steve Capper <steve.capper@linaro.org> writes:
 
-On Sat, Oct 11, 2014 at 9:46 AM, Doug Anderson <dianders@chromium.org> wrote:
-> In (28f92b5 mmc: core: Try other signal levels during power up) we can
-> see that there are times when it's valid to try several signal
-> voltages.  Don't print an ugly error in the logs when that happens.
+> On Tue, Oct 14, 2014 at 04:27:53PM +0530, Aneesh Kumar K.V wrote:
+>> get_user_pages_fast attempts to pin user pages by walking the page
+>> tables directly and avoids taking locks. Thus the walker needs to be
+>> protected from page table pages being freed from under it, and needs
+>> to block any THP splits.
+>> 
+>> One way to achieve this is to have the walker disable interrupts, and
+>> rely on IPIs from the TLB flushing code blocking before the page table
+>> pages are freed.
+>> 
+>> On some platforms we have hardware broadcast of TLB invalidations, thus
+>> the TLB flushing code doesn't necessarily need to broadcast IPIs; and
+>> spuriously broadcasting IPIs can hurt system performance if done too
+>> often.
+>> 
+>> This problem has been solved on PowerPC and Sparc by batching up page
+>> table pages belonging to more than one mm_user, then scheduling an
+>> rcu_sched callback to free the pages. This RCU page table free logic
+>> has been promoted to core code and is activated when one enables
+>> HAVE_RCU_TABLE_FREE. Unfortunately, these architectures implement
+>> their own get_user_pages_fast routines.
+>> 
+>> The RCU page table free logic coupled with a an IPI broadcast on THP
+>> split (which is a rare event), allows one to protect a page table
+>> walker by merely disabling the interrupts during the walk.
+>> 
+>> This patch provides a general RCU implementation of get_user_pages_fast
+>> that can be used by architectures that perform hardware broadcast of
+>> TLB invalidations.
+>> 
+>> It is based heavily on the PowerPC implementation.
+>> 
+>> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+>> ---
+>> 
+>> NOTE: I kept the description of patch as it is and also retained the documentation.
+>> I also dropped the tested-by and other SOB, because i was not sure whether they want
+>> to be blamed for the bugs here. Please feel free to update.
 >
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
->  drivers/mmc/host/dw_mmc.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> Hi Aneesh,
+> Thank you for coding this up.
 >
-> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-> index 69f0cc6..c4afbdd 100644
-> --- a/drivers/mmc/host/dw_mmc.c
-> +++ b/drivers/mmc/host/dw_mmc.c
-> @@ -1075,7 +1075,7 @@ static int dw_mci_switch_voltage(struct mmc_host *mmc, struct mmc_ios *ios)
->                 ret = regulator_set_voltage(mmc->supply.vqmmc, min_uv, max_uv);
+> I've compiled and briefly tested this on arm (with and without LPAE),
+> and arm64. I ran a custom futex on THP tail test, and this passed.
+> I'll test this a little more aggressively with ltp.
 >
->                 if (ret) {
-> -                       dev_err(&mmc->class_dev,
-> +                       dev_dbg(&mmc->class_dev,
->                                          "Regulator set error %d: %d - %d\n",
->                                          ret, min_uv, max_uv);
->                         return ret;
-Well, I am ok with this but this info is very useful, what if PMIC
-failed to actually set the voltage? may be because of some PMIC driver
-bug or i2c driver bug? Ofcourse this can be found by turning MMC_DEBUG
-ON, but is that worth in this case. Or is there a way to print that,
-this failure is because of a regulator re-try?
-your thoughts?
-> --
-> 2.1.0.rc2.206.gedb03e5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> I think Linus has already pulled in the RCU gup I posted, could you
+> please instead write a patch against?
+
+Will do that. 
+
+> 2667f50 mm: introduce a general RCU get_user_pages_fast()
+
+In that patch don't you need to check the _PAGE_PRESENT details in case
+of gup_huge_pmd ?
 
 
+-aneesh
 
--- 
-Regards,
-Alim
