@@ -1,122 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932512AbaJNOox (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 10:44:53 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:45603 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932147AbaJNOov (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 10:44:51 -0400
-From: Nix <nix@esperi.org.uk>
-To: Johan Hovold <johan@kernel.org>
-Cc: Paul Martin <pm@debian.org>, Oliver Neukum <oliver@neukum.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [3.16.1 BISECTED REGRESSION]: Simtec Entropy Key (cdc-acm) broken in 3.16
-References: <878um4tg09.fsf@spindle.srvr.nix>
-	<1409569752.24385.12.camel@linux-fkkt.site>
-	<874mwnosz1.fsf@spindle.srvr.nix> <871tqe2zqt.fsf_-_@spindle.srvr.nix>
-	<20141011195108.GA8275@thinkpad.nowster.org.uk>
-	<87y4smz1l0.fsf@spindle.srvr.nix> <20141012185845.GB2786@localhost>
-	<878uklynq9.fsf@spindle.srvr.nix> <20141014083432.GB7958@localhost>
-Emacs: featuring the world's first municipal garbage collector!
-Date: Tue, 14 Oct 2014 15:44:40 +0100
-In-Reply-To: <20141014083432.GB7958@localhost> (Johan Hovold's message of
-	"Tue, 14 Oct 2014 10:34:32 +0200")
-Message-ID: <87eguayalj.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-dcc1-Metrics: spindle 1182; Body=5 Fuz1=5 Fuz2=5
+	id S932485AbaJNOtK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 10:49:10 -0400
+Received: from mga01.intel.com ([192.55.52.88]:9508 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932176AbaJNOtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 10:49:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,717,1406617200"; 
+   d="scan'208";a="614288459"
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: wsa@the-dreams.de
+Cc: linux@roeck-us.net, johan@kernel.org, linux-i2c@vger.kernel.org,
+        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Octavian Purdila <octavian.purdila@intel.com>
+Subject: [RFC PATCH v2 1/3] i2c: document the existing i2c sysfs ABI
+Date: Tue, 14 Oct 2014 17:48:12 +0300
+Message-Id: <1413298094-9276-2-git-send-email-octavian.purdila@intel.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1413298094-9276-1-git-send-email-octavian.purdila@intel.com>
+References: <1413298094-9276-1-git-send-email-octavian.purdila@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 Oct 2014, Johan Hovold spake thusly:
+This patch adds Documentation/ABI/testing/sysfs-bus-i2c which
+documents the existing i2c sysfs ABI.
 
-> On Sun, Oct 12, 2014 at 10:36:30PM +0100, Nix wrote:
->> On 12 Oct 2014, Johan Hovold verbalised:
->> 
->> > On Sat, Oct 11, 2014 at 11:24:59PM +0100, Nix wrote:
->> >> On 11 Oct 2014, Paul Martin spake thusly:
->> >> 
->> >> > Having been privy to the firmware of the eKey, it is very simplisting,
->> >> > with no implementation whatsoever of any flow control.
->> >> 
->> >> That's what I thought. (Why would something that just provides data at a
->> >> constant rate way below that of even the slowest USB bus *need* flow
->> >> control?)
->> >> 
->> >> One presumes therefore that the kernel suddenly trying to do flow
->> >> control on shutdown would fubar the firmware's internal state, leading
->> >> to the symptoms I see.
->> >
->> > The cdc-acm driver was dropping DTR/RTS on shutdown (close) also before
->> > the commit you refer to. One thing it did change however is that this is
->> > now only done if HUPCL is set. Might setting that flag be enough to
->> > prevent the device firmware from crashing?
->> 
->> If I read the ekeyd 1.1.5 source code correctly, this is already
->> happening:
->> 
->> ,----[ host/stream.c:estream_open() ]
->> |     } else if (S_ISCHR(sbuf.st_mode)) {
->> |         /* Open the file as a character device/tty */
->> |         fd = open(uri, O_RDWR | O_NOCTTY);
->> |         if ((fd != -1) && (isatty(fd))) {
->> |             if (tcgetattr(fd, &settings) == 0 ) {
->> |                 settings.c_cflag &= ~(CSIZE | CSTOPB | PARENB | CLOCAL |
->> |                                       CREAD | PARODD | CRTSCTS);
->> |                 settings.c_iflag &= ~(BRKINT | IGNPAR | PARMRK | INPCK |
->> |                                       ISTRIP | INLCR | IGNCR | ICRNL | IXON |
->> |                                       IXOFF  | IXANY | IMAXBEL);
->> |                 settings.c_iflag |= IGNBRK;
->> |                 settings.c_oflag &= ~(OPOST | OCRNL | ONOCR | ONLRET);
->> |                 settings.c_lflag &= ~(ISIG | ICANON | IEXTEN | ECHO |
->> |                                       ECHOE | ECHOK | ECHONL | NOFLSH |
->> |                                       TOSTOP | ECHOPRT | ECHOCTL | ECHOKE);
->> |                 settings.c_cflag |= CS8 | HUPCL | CREAD | CLOCAL;
->> | #ifdef EKEY_FULL_TERMIOS
->> |                 settings.c_cflag &= ~(CBAUD);
->> | 		  settings.c_iflag &= ~(IUTF8 | IUCLC);
->> |                 settings.c_oflag &= ~(OFILL | OFDEL | NLDLY | CRDLY | TABDLY |
->> |                                       BSDLY | VTDLY | FFDLY | OLCUC );
->> |                 settings.c_oflag |= NL0 | CR0 | TAB0 | BS0 | VT0 | FF0;
->> |                 settings.c_lflag &= ~(XCASE);
->> | #endif
->> |                 settings.c_cflag |= B115200;
->> |                 if (tcsetattr(fd, TCSANOW, &settings) < 0) {
->> `----
->> 
->> Note the HUPCL in there.
->> 
->> I have checked: this code is being executed against a symlink that
->> points to /dev/ttyACM0, and the tcsetattr() succeeds. (At least, it's
->> succeeding on the kernel I'm running now, but of course that's 3.16.5
->> with this commit reverted...)
->
-> You could verify that by enabling debugging in the cdc-acm driver and
-> making sure that the corresponding control messages are indeed sent on
-> close.
+Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
+---
+ Documentation/ABI/testing/sysfs-bus-i2c | 45 +++++++++++++++++++++++++++++++++
+ 1 file changed, 45 insertions(+)
+ create mode 100644 Documentation/ABI/testing/sysfs-bus-i2c
 
-Yeah, good idea -- in the specific context of the system rebooting, in
-particular (though I'll also see if just killing the daemon causes this
-problem, something I haven't tested). I was assuming it would be hard to
-see it before the reboot process cleared the screen -- but of course
-this machine has a serial console so that's not important.
-
-> But you haven't seen any fw crashes since you reverted the commit in
-> question?
-
-Not one.
-
-> Another thing you could try is to add back the 
->
-> 	acm_set_control(acm, 0);
->
-> just after the dev_info message in probe.
-
-I'll try that tonight.
-
+diff --git a/Documentation/ABI/testing/sysfs-bus-i2c b/Documentation/ABI/testing/sysfs-bus-i2c
+new file mode 100644
+index 0000000..8075585
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-bus-i2c
+@@ -0,0 +1,45 @@
++What:		/sys/bus/i2c/devices/i2c-X
++KernelVersion:	since at least 2.6.12
++Contact:	linux-i2c@vger.kernel.org
++Description:
++		This entry represents a registered i2c bus. X is the
++		bus number and its format is "%d".
++
++What:		/sys/bus/i2c/devices/i2c-X/Y
++What:		/sys/bus/i2c/devices/Y
++KernelVersion:	since at least 2.6.12
++Contact:	linux-i2c@vger.kernel.org
++Description:
++		An i2c device attached to bus X. Format of Y is
++		"%d-%04x" where the first number is the bus number (X)
++		and the second number is the device i2c address.
++
++What:		/sys/bus/i2c/devices/i2c-X/new_device
++KernelVersion:	2.6.31
++Contact:	linux-i2c@vger.kernel.org
++Description:
++		Write only entry that allows instantiating a
++		new i2c device on bus X. This is to be used when
++		enumeration mechanism such as ACPI or DT are not
++		present or not used for this device.
++		Format: "%s %hi\n" where the first argument is the
++		device name (no spaces allowed) and the second is the
++		i2c address of the device.
++
++What:		/sys/bus/i2c/devices/i2c-X/delete_device
++KernelVersion:	2.6.31
++Contact:	linux-i2c@vger.kernel.org
++Description:
++		Write only entry that allows the removal of an i2c
++		device from bus X.
++		Format: "%s %hi\n" where the first argument is the
++		device name (no spaces allowed) and the second is the
++		i2c address of the device.
++
++What:		/sys/bus/i2c/devices/i2c-X/i2c-Y
++What:		/sys/bus/i2c/devices/i2c-Y
++KernelVersion:	3.13
++Contact:	linux-i2c@vger.kernel.org
++Description:
++		An i2c device attached to bus X that is enumerated via
++		ACPI. Y is the ACPI device name and its format is "%s".
 -- 
-NULL && (void)
+1.9.1
+
