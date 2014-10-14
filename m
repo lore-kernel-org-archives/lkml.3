@@ -1,100 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755116AbaJNCHo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Oct 2014 22:07:44 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:34479 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754295AbaJNCHm (ORCPT
+	id S1754501AbaJNCQn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Oct 2014 22:16:43 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:35378 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754248AbaJNCQm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Oct 2014 22:07:42 -0400
-X-Sasl-enc: Qs58AHH7HtdxCBFmk3jEZtUEKs1zvUbLW8Q3WKwiTwMh 1413252461
-Date: Tue, 14 Oct 2014 04:06:40 +0200
-From: Greg KH <greg@kroah.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: David Laight <David.Laight@ACULAB.COM>,
-        "'Nathan Lynch'" <Nathan_Lynch@mentor.com>,
-        Felipe Balbi <balbi@ti.com>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "josh@joshtriplett.org" <josh@joshtriplett.org>,
-        Rabin Vincent <rabin@rab.in>, Alan Stern <stern@rowland.harvard.edu>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: RCU bug with v3.17-rc3 ?
-Message-ID: <20141014020640.GB25433@kroah.com>
-References: <20141009160138.GA2396@cmpxchg.org>
- <20141009162656.GE16002@saruman>
- <20141009204101.GA25955@debian>
- <20141009204637.GE25729@saruman>
- <20141009210715.GH25729@saruman>
- <20141010135743.GB31348@saruman>
- <20141010162531.GL12379@n2100.arm.linux.org.uk>
- <54388B81.5020306@mentor.com>
- <063D6719AE5E284EB5DD2968C1650D6D174C996E@AcuExch.aculab.com>
- <20141013114307.GO12379@n2100.arm.linux.org.uk>
+	Mon, 13 Oct 2014 22:16:42 -0400
+X-Original-SENDERIP: 10.186.123.76
+X-Original-MAILFROM: gioh.kim@lge.com
+Message-ID: <543C8787.7010003@lge.com>
+Date: Tue, 14 Oct 2014 11:16:39 +0900
+From: Gioh Kim <gioh.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141013114307.GO12379@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: How can I check creator of probe point?
+Content-Type: text/plain; charset=EUC-KR
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 13, 2014 at 12:43:07PM +0100, Russell King - ARM Linux wrote:
-> On Mon, Oct 13, 2014 at 09:11:34AM +0000, David Laight wrote:
-> > From: Nathan Lynch
-> > > On 10/10/2014 11:25 AM, Russell King - ARM Linux wrote:
-> > > >
-> > > > Right, so GCC 4.8.{1,2} are totally unsuitable for kernel building (and
-> > > > it seems that this has been known about for some time.)
-> > > 
-> > > Looking at http://gcc.gnu.org/PR58854 it seems that all 4.8.x for x < 3
-> > > are affected, as well as 4.9.0.
-> > > 
-> > > > We can blacklist these GCC versions quite easily.  We already have GCC
-> > > > 3.3 blacklisted, and it's trivial to add others.  I would want to include
-> > > > some proper details about the bug, just like the other existing entries
-> > > > we already have in asm-offsets.c, where we name the functions that the
-> > > > compiler is known to break where appropriate.
-> > > 
-> > > Before blacklisting anything, it's worth considering that simple version
-> > > checks would break existing pre-4.8.3 compilers that have been patched
-> > > for PR58854.  It looks like Yocto and Buildroot issued releases with
-> > > patched 4.8.2 compilers well before the (fixed) 4.8.3 release.  I think
-> > > the most we can reasonably do without breaking some correctly-behaving
-> > > toolchains is to emit a warning.
-> > 
-> > Is it possible to compile a small code fragment and check the generated
-> > code for the bug?
-> > Possibly predicated on the broken version number to avoid false positives.
-> 
-> I don't see how - it looks like it requires an interrupt to occur at an
-> opportune moment to provoke the function to fail.  The alternative would
-> be to parse the assembly generated by the compiler to determine how it
-> is dealing with the stack.
-> 
-> I think the only viable solution here is that:
-> 
-> 1. We blacklist the bad compiler versions outright in the kernel.
 
-Yes, please do this, it's what we have done for other buggy compiler
-versions, no need to do something different here.
+Hi,
 
-> Remember, it's the distro's choice to fix these buggy compilers, so the
-> onus is on _them_ to deal with the mess they've created by doing so.
+I am trying to find a way to make statistics for memory allocation of my device driver.
+I want to know how much memory it allocates and how many times it calls kmalloc().
 
-I totally agree.
+So I am considering to use kprobe but I think it doesn't provide a way to identify who makes the probe point.
+Can I distinguish kmalloc() calling only from my driver?
 
-Is someone going to send this patch, or do I have to write it myself?
+For example I think it could be like this:
 
-thanks,
+diff --git a/samples/kprobes/kretprobe_example.c b/samples/kprobes/kretprobe_example.c
+index 1041b67..5322e0a 100644
+--- a/samples/kprobes/kretprobe_example.c
++++ b/samples/kprobes/kretprobe_example.c
+@@ -32,6 +32,7 @@ MODULE_PARM_DESC(func, "Function to kretprobe; this module will report the"
 
-greg k-h
+ /* per-instance private data */
+ struct my_data {
++       unsigned long signature;
+        ktime_t entry_stamp;
+ };
+
+@@ -43,8 +44,10 @@ static int entry_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
+        if (!current->mm)
+                return 1;       /* Skip kernel threads */
+
+-       data = (struct my_data *)ri->data;
+-       data->entry_stamp = ktime_get();
++       if (signature == 0xabcdabcd) {
++               data = (struct my_data *)ri->data;
++               data->entry_stamp = ktime_get();
++       }
+        return 0;
+ }
+
+@@ -60,10 +63,12 @@ static int ret_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
+        s64 delta;
+        ktime_t now;
+
+-       now = ktime_get();
+-       delta = ktime_to_ns(ktime_sub(now, data->entry_stamp));
+-       printk(KERN_INFO "%s returned %d and took %lld ns to execute\n",
+-                       func_name, retval, (long long)delta);
++       if (signature == 0xabcdabcd) {
++               now = ktime_get();
++               delta = ktime_to_ns(ktime_sub(now, data->entry_stamp));
++               printk(KERN_INFO "%s returned %d and took %lld ns to execute\n",
++                      func_name, retval, (long long)delta);
++       }
+        return 0;
+ }
+
+
+-- 
+Thanks,
+Gioh Kim
