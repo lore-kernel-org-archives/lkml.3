@@ -1,97 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932460AbaJNTTg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 15:19:36 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:33959 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755122AbaJNTTe (ORCPT
+	id S932545AbaJNTUU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 15:20:20 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:56430 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754524AbaJNTUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 15:19:34 -0400
-From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-To: Prarit Bhargava <prarit@redhat.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-CC: Saravana Kannan <skannan@codeaurora.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        =?utf-8?B?Um9iZXJ0IFNjaMO2bmU=?= <robert.schoene@tu-dresden.de>
-Subject: RE: Locking issues with cpufreq and sysfs
-Thread-Topic: Locking issues with cpufreq and sysfs
-Thread-Index: AQHP534B8BshIiy1I0ya4B2pOpV0SJwv6TEAgAAMgbA=
-Date: Tue, 14 Oct 2014 19:18:25 +0000
-Message-ID: <94D0CD8314A33A4D9D801C0FE68B402958CF2E38@G4W3202.americas.hpqcorp.net>
-References: <543BCF9A.1060603@redhat.com>
- <CAKohpokBpQ9zhSU3bJQ9pVv68s6cFg8TNsqi+sJK8V1OQUTWzA@mail.gmail.com>
- <543D6A5C.1060809@redhat.com>
-In-Reply-To: <543D6A5C.1060809@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.37]
-Content-Type: text/plain; charset="utf-8"
+	Tue, 14 Oct 2014 15:20:19 -0400
+Date: Tue, 14 Oct 2014 16:18:15 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Joe Perches <joe@perches.com>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>,
+        Tanya Brokhman <tlinder@codeaurora.org>, linux-mtd@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Richard Weinberger <richard@nod.at>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] mtd: ubi: Extend UBI layer debug/messaging
+ capabilities
+Message-ID: <20141014191815.GB12662@arch.hh.imgtec.org>
+References: <1413296037-22346-1-git-send-email-tlinder@codeaurora.org>
+ <20141014143902.GA9768@arch.hh.imgtec.org>
+ <1413299343.7906.103.camel@sauron.fi.intel.com>
+ <20141014184702.GA12662@arch.hh.imgtec.org>
+ <1413314020.26864.7.camel@joe-AO725>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1413314020.26864.7.camel@joe-AO725>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9EJJfoZ026605
 
-
-
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> owner@vger.kernel.org] On Behalf Of Prarit Bhargava
-> Sent: Tuesday, 14 October, 2014 1:24 PM
-> To: Viresh Kumar
-> Cc: Saravana Kannan; Rafael J. Wysocki; linux-pm@vger.kernel.org; Linux
-> Kernel; Robert SchÃ¶ne
-> Subject: Re: Locking issues with cpufreq and sysfs
+On 14 Oct 12:13 PM, Joe Perches wrote:
+> On Tue, 2014-10-14 at 15:47 -0300, Ezequiel Garcia wrote:
+> > On 14 Oct 06:09 PM, Artem Bityutskiy wrote:
+> > > On Tue, 2014-10-14 at 11:39 -0300, Ezequiel Garcia wrote:
+> > > > Please use some pr_fmt for this. Something like this before the headers
+> > > > should be enough:
+> > > > 
+> > > > #define pr_fmt(fmt) "UBI: block:" fmt
+> > > 
+> > > Sinc ubiblock is a device, there should be a 'struct device' somewhere,
+> > > so probably dev_printk() and other dev_*() printing functions would be a
+> > > better choice?
+> > > 
+> > 
+> > A quick code dig shows you should get the struct device associated
+> > to the struct gendisk, with the disk_to_dev() macro.
+> > 
+> > In other words, something like this should work, provided 'dev' is defined
+> > in the scope as a struct ubiblock:
+> > 
+> >   #define ubiblock_err(x) dev_err(disk_to_dev(dev->gd), x)
+> > 
+> > When the gendisk is not available, a simple pr_{} would work.
 > 
-> On 10/14/2014 03:10 AM, Viresh Kumar wrote:
-> > On 13 October 2014 18:41, Prarit Bhargava <prarit@redhat.com> wrote:
-> >>
-> >> The locking is insufficient here, Viresh.  I no longer believe that fixes
-> >> to this locking scheme are the right way to move forward here.  I'm
-> wondering
-> >> if we can look at other alternatives such as maintaining a refcount or
-> >> perhaps using a queuing mechanism for governor and policy related changes.
-> >>
-...
-> So I'm proposing that we move to a single threaded read/write using, if
-> possible, a single policy lock for now.  We might transition this back to a
-> rwsem later on, however, for the first attempt at cleaning this up I think we
-> should just stick with a simple lock.  In doing that, IMO we remove
-> cpufreq_rwsem: protects the driver from being unloaded
-> cpufreq_governor_lock: protects the current governor
-> each policy has a rwsem (policy->rwsem): protects the cpufreq_policy struct
+> Or maybe combine these in the ubi_<level> calls passing
+> NULL when there is no struct ubi_device *
 > 
-> and potentially
-> cpufreq_driver_lock: protects the cpufreq_cpu_data array and cpufreq_driver-
-> >boost
+> void ubi_err(const struct ubi_device *ubi, fmt. ...)
+> {
+> 	struct va_format vaf;
+> 	va_list args;
 > 
-> After looking at the way the code would be structured, I'm wondering if
-> cpufreq_governor_mutex: protects the cpufreq_governor_list
-> is overkill.  The loading of a module should be atomic relative to the
-> cpufreq code, so this lock may not be required.  (Admittedly I haven't
-> tested that...)
+> 	va_start(args, fmt);
 > 
-> That would leave:
-> global_kobj_lock: protects the "cpufreq" kobject
-> each policy has a transition_lock (policy->transition): synchronizes
->                                                         frequency transitions
-> and a new lock, perhaps called policy->lock, to serialize all events.
+> 	vaf.fmt = fmt;
+> 	vaf.va = &args;
+> 
+> 	if (ubi && ubi->gd)
+> 		dev_err(disk_to_dev(dev->gd), "UBI-%d error: %pF %pV",
+> 			ubi->ubi_num, __builtin_return_address(0), &vaf);
+> 	else if (ubi)
+> 		printk(KERN_ERR "UBI-%d error: %pf: %pV",
+> 		       ubi->ubi_num, __builtin_return_address(0), &vaf);
+> 	else
+> 		printk(KERN_ERR "UBI: error: %pf: %pV",
+> 		       __builtin_return_address(0), &vaf);
+> 
+> 	va_end(args);
+> }
 > 
 
-Please keep performance in mind too.  cpufreq_governor_lock
-contention is a bit of an issue with heavy IO workloads
-as described in:
-	http://marc.info/?l=linux-pm&m=140924051503827&w=2
+Isn't this excessive obfuscation? What's the benefit of it?
 
-
----
-Rob Elliott    HP Server Storage
-
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
