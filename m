@@ -1,68 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495AbaJNRKi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 13:10:38 -0400
-Received: from p3plex2out02.prod.phx3.secureserver.net ([184.168.131.14]:39376
-	"EHLO p3plex2out02.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755468AbaJNRKg convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755473AbaJNRKg (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 14 Oct 2014 13:10:36 -0400
-From: Hartley Sweeten <HartleyS@visionengravers.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Ian Abbott <abbotti@mev.co.uk>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Chase Southwood <chase.southwood@yahoo.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] staging: comedi: drivers: comedi_bond.c:  Changed from
- using strncat to strlcat
-Thread-Topic: [PATCH] staging: comedi: drivers: comedi_bond.c:  Changed from
- using strncat to strlcat
-Thread-Index: AQHP5hcI+EKa/w0lKkC5AbwZ55brT5wv1vsw
-Date: Tue, 14 Oct 2014 17:10:35 +0000
-Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825FE6234@P3PWEX4MB008.ex4.secureserver.net>
-References: <1413116604-18554-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-In-Reply-To: <1413116604-18554-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [184.183.19.121]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Received: from regular1.263xmail.com ([211.150.99.139]:55543 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755445AbaJNRKb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 13:10:31 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: wxt@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: wxt@rock-chips.com
+X-UNIQUE-TAG: <d58f3ffee92f6e1222bfbc043cd1145f>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Caesar Wang <caesar.wang@rock-chips.com>
+To: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com, arnd@arndb.de
+Cc: zyf@rock-chips.com, dianders@chromium.org,
+        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        cf@rock-chips.com, dmitry.torokhov@gmail.com, dbasehore@chromium.org,
+        huangtao@rock-chips.com, cjf@rock-chips.com, zhengsq@rock-chips.com,
+        Caesar Wang <caesar.wang@rock-chips.com>
+Subject: [PATCH v10 4/5] ARM: dts: add main Thermal info to rk3288
+Date: Wed, 15 Oct 2014 01:10:07 +0800
+Message-Id: <1413306608-11498-5-git-send-email-caesar.wang@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1413306608-11498-1-git-send-email-caesar.wang@rock-chips.com>
+References: <1413306608-11498-1-git-send-email-caesar.wang@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, October 12, 2014 5:23 AM, Rickard Strandqvist wrote:
->
-> Changed from using strncat to strlcat to simplify the code
->
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->  drivers/staging/comedi/drivers/comedi_bond.c |    6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/staging/comedi/drivers/comedi_bond.c b/drivers/staging/comedi/drivers/comedi_bond.c
-> index 8450c99..5d19861 100644
-> --- a/drivers/staging/comedi/drivers/comedi_bond.c
-> +++ b/drivers/staging/comedi/drivers/comedi_bond.c
-> @@ -262,12 +262,10 @@ static int do_dev_config(struct comedi_device *dev, struct comedi_devconfig *it)
->  			{
->  				/* Append dev:subdev to devpriv->name */
->  				char buf[20];
-> -				int left =
-> -				    MAX_BOARD_NAME - strlen(devpriv->name) - 1;
->  				snprintf(buf, sizeof(buf), "%u:%u ",
->  					 bdev->minor, bdev->subdev);
-> -				buf[sizeof(buf) - 1] = 0;
->-				strncat(devpriv->name, buf, left);
-> +				strlcat(devpriv->name, buf,
-> +					sizeof(devpriv->name));
->  			}
->  
->  		}
+This patch is depend on rk3288-thermal.dtsi,or
+it will compile error.
 
-Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+If the temperature over a period of time High,over 120C
+the resulting TSHUT gave CRU module,let it reset
+the entire chip,or via GPIO give PMIC.
+
+Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
+---
+ arch/arm/boot/dts/rk3288.dtsi | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+index cb18bb4..bf34111 100644
+--- a/arch/arm/boot/dts/rk3288.dtsi
++++ b/arch/arm/boot/dts/rk3288.dtsi
+@@ -15,6 +15,7 @@
+ #include <dt-bindings/interrupt-controller/arm-gic.h>
+ #include <dt-bindings/pinctrl/rockchip.h>
+ #include <dt-bindings/clock/rk3288-cru.h>
++#include <dt-bindings/thermal/thermal.h>
+ #include "skeleton.dtsi"
+ 
+ / {
+@@ -346,6 +347,19 @@
+ 		status = "disabled";
+ 	};
+ 
++	tsadc: tsadc@ff280000 {
++		compatible = "rockchip,rk3288-tsadc";
++		reg = <0xff280000 0x100>;
++		interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&cru SCLK_TSADC>, <&cru PCLK_TSADC>;
++		clock-names = "tsadc", "apb_pclk";
++		pinctrl-names = "default";
++		pinctrl-0 = <&otp_out>;
++		#thermal-sensor-cells = <1>;
++		hw-shut-temp = <120000>;
++		status = "disabled"
++	};
++
+ 	usb_host0_ehci: usb@ff500000 {
+ 		compatible = "generic-ehci";
+ 		reg = <0xff500000 0x100>;
+@@ -965,6 +979,12 @@
+ 			};
+ 		};
+ 
++		tsadc {
++			otp_out: otp-out {
++				rockchip,pins = <0 10 RK_FUNC_1 &pcfg_pull_none>;
++			};
++		};
++
+ 		pwm0 {
+ 			pwm0_pin: pwm0-pin {
+ 				rockchip,pins = <7 0 RK_FUNC_1 &pcfg_pull_none>;
+-- 
+1.9.1
+
 
