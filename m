@@ -1,66 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755181AbaJNLCJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 07:02:09 -0400
-Received: from tundra.namei.org ([65.99.196.166]:50424 "EHLO namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754823AbaJNLCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 07:02:07 -0400
-Date: Tue, 14 Oct 2014 22:01:52 +1100 (AEDT)
-From: James Morris <jmorris@namei.org>
-To: Paul Moore <pmoore@redhat.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [GIT] Security subsystem upate for 3.18
-In-Reply-To: <6097685.yy4GYjPioe@sifl>
-Message-ID: <alpine.LRH.2.11.1410142155360.27774@namei.org>
-References: <alpine.LRH.2.11.1410101913460.13164@namei.org> <CA+55aFxtxBe8SaEYD6vAQME_YE+eD6mhU8F6Q850k-XBfzz4QQ@mail.gmail.com> <alpine.LRH.2.11.1410131502510.6957@namei.org> <6097685.yy4GYjPioe@sifl>
-User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
+	id S1755173AbaJNLKx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 07:10:53 -0400
+Received: from mail-oi0-f45.google.com ([209.85.218.45]:56334 "EHLO
+	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754881AbaJNLKw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 07:10:52 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1413253178.3269.2.camel@joe-AO725>
+References: <20141013023425.GA15452@devel>
+	<20141013032544.GA26646@kroah.com>
+	<CAHb8M2A5e2akETQoWS6WfNJjUqhyu4ptfTMs9HLYgbw8XRR-Ww@mail.gmail.com>
+	<1413212198.1287.9.camel@joe-AO725>
+	<20141014020433.GA25433@kroah.com>
+	<1413253178.3269.2.camel@joe-AO725>
+Date: Tue, 14 Oct 2014 20:10:51 +0900
+Message-ID: <CAHb8M2CmtA8NGACCqNBeXWfVhLSBmu6sCoJ0tt_pcpHrvujS8Q@mail.gmail.com>
+Subject: Re: [PATCH] staging: dgap: re-arrange functions for removing forward declarations.
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, devel <devel@driverdev.osuosl.org>,
+        driverdev-devel@linuxdriverproject.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Lidza Louina <lidza.louina@gmail.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Oct 2014, Paul Moore wrote:
+Hi,
 
-> On Monday, October 13, 2014 03:06:34 PM James Morris wrote:
-> > On Sun, 12 Oct 2014, Linus Torvalds wrote:
-> > > on some previous development, so it's often a good time to simply
-> > > create a new feature branch. I don't know how James feels about
-> > > merging multiple separate feature branches, but I know that *I* tend
-> > > to appreciate it when I get multiple well-defined pull requests rather
-> > > than one big one that does many different things.
-> > 
-> > It's fine with me.
-> > 
-> > This is the first time I saw (or noticed) that Paul had back merged ahead
-> > of me, but it seemed to merge into my tree ok so I didn't query it at the
-> > time.
-> 
-> The management of the linux-security tree, the approach I was taking with the 
-> SELinux tree, and the approach that the other LSM maintainers use has been 
-> discussed many times on the LSM list.  I'm also fairly certain that you were 
-> on the To/CC line for many, if not all, of those threads.
-> 
+2014-10-14 11:19 GMT+09:00 Joe Perches <joe@perches.com>:
+> On Tue, 2014-10-14 at 04:04 +0200, Greg KH wrote:
+>> On Mon, Oct 13, 2014 at 07:56:38AM -0700, Joe Perches wrote:
+>> > On Mon, 2014-10-13 at 17:01 +0900, DaeSeok Youn wrote:
+>> > > 2014-10-13 12:25 GMT+09:00 Greg KH <gregkh@linuxfoundation.org>:
+>> > > > On Mon, Oct 13, 2014 at 11:34:25AM +0900, Daeseok Youn wrote:
+>> > > >> Re-arrange the functions for removing forward declarations.
+> []
+>> > > >> This patch has too many changes for re-arranging the functions.
+>> > > >> So I wonder that I should break this up into smaller patches.
+>> > > > Are the .o files identical before and after this patch?  If so, it's
+>> > > > fine.
+>> > > Ok. I will check for that.
+>> > The .o files shouldn't be identical after function reordering.
+>>
+>> Hm, they might be the same size, but I can see how on some
+>> architectures (like ppc) how that would not be the case, you are right.
+>>
+>> Isn't there an "objdiff" program or something like that which might help
+>> in validating that nothing "changed" in the source for type of patch
+>> that just moves functions around in a file.
+>
+> There is a scripts/objdiff, but that is basically for whitespace
+> only changes.
+>
+> I don't know of a way to compare objects when functions are
+> rearranged in the source file.
+>
+> Anyone else?
+>
+I was just trying to sort "objdump -d" output by function name with
+someone's python script.
+The script was on github. url : https://gist.github.com/fritschy/1183292
 
-My expectation is that people develop against my next branch, per the 
-documentation here:
+And I got two results, one is before applying this patch, another is
+after doing that.
+These are possible to compare but it has difference of base address...
 
-http://kernsec.org/wiki/index.php/Kernel_Repository
+I'm not sure what should I do for applying this patch. :-(
+If anyone knows how to compare, let me know.
 
-What we agreed to recently is that I'll sync to Linus' releases, as 
-several devlopers need/want to work with more recent kernels.  I had been 
-only syncing to Linus as necessary (e.g. to get in sync with say the 
-mainline modules code for key subsystem updates).
+Thanks.
 
-It's possible I missed something in the threads and we have a 
-misunderstanding about this process.
-
-
--- 
-James Morris
-<jmorris@namei.org>
-
+Regards,
+Daeseok Youn.
