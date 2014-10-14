@@ -1,125 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932442AbaJNODQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 10:03:16 -0400
-Received: from regular1.263xmail.com ([211.150.99.134]:53213 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932180AbaJNODM (ORCPT
+	id S932457AbaJNODe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 10:03:34 -0400
+Received: from mail-oi0-f46.google.com ([209.85.218.46]:60048 "EHLO
+	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932165AbaJNODb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 10:03:12 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: caesar.wang@rock-chips.com
-X-FST-TO: zhengsq@rock-chips.com
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: caesar.wang@rock-chips.com
-X-UNIQUE-TAG: <225c76894833154c3ba531a8ea0efd1b>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <543D2D14.7000706@rock-chips.com>
-Date: Tue, 14 Oct 2014 22:03:00 +0800
-From: Caesar Wang <caesar.wang@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Tue, 14 Oct 2014 10:03:31 -0400
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <edubezval@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        zyf <zyf@rock-chips.com>, linux-rockchip@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Eddie Cai <cf@rock-chips.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Derek Basehore <dbasehore@chromium.org>,
-        Tao Huang <huangtao@rock-chips.com>,
-        =?UTF-8?B?6ZmI5riQ6aOe?= <cjf@rock-chips.com>,
-        Shunqian Zheng <zhengsq@rock-chips.com>
-Subject: Re: [PATCH v9 1/5] thermal: rockchip: add driver for thermal
-References: <1413012563-7690-1-git-send-email-caesar.wang@rock-chips.com>	<1413012563-7690-2-git-send-email-caesar.wang@rock-chips.com> <CAD=FV=XHe65wwf8Q9RA0ZDgb5oQLdyjuZDFy4mD01_t6G6WnHQ@mail.gmail.com>
-In-Reply-To: <CAD=FV=XHe65wwf8Q9RA0ZDgb5oQLdyjuZDFy4mD01_t6G6WnHQ@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141011184030.GG26941@phenom.ffwll.local>
+References: <1412971678-4457-1-git-send-email-sumit.semwal@linaro.org>
+ <1412971678-4457-3-git-send-email-sumit.semwal@linaro.org>
+ <20141010230900.GA5069@kroah.com> <20141011184030.GG26941@phenom.ffwll.local>
+From: Sumit Semwal <sumit.semwal@linaro.org>
+Date: Tue, 14 Oct 2014 19:33:10 +0530
+Message-ID: <CAO_48GFy4xD+mS_1YBfpQ5Q9eBBjBDz_VxZ+8hXKLwVPARY+ig@mail.gmail.com>
+Subject: Re: [RFC 2/4] cenalloc: Constraint-Enabled Allocation helpers for dma-buf
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Linaro MM SIG <linaro-mm-sig@lists.linaro.org>,
+        linaro-kernel@lists.linaro.org, LKML <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Doug,
+Hi Greg, Daniel!
 
-在 2014年10月14日 00:11, Doug Anderson 写道:
-> Caesar,
+On 12 October 2014 00:10, Daniel Vetter <daniel@ffwll.ch> wrote:
+> On Fri, Oct 10, 2014 at 04:09:00PM -0700, Greg Kroah-Hartman wrote:
+>> On Sat, Oct 11, 2014 at 01:37:56AM +0530, Sumit Semwal wrote:
+>> > Devices sharing buffers using dma-buf could benefit from sharing their
+>> > constraints via struct device, and dma-buf framework would manage the
+>> > common constraints for all attached devices per buffer.
+>> >
+>> > With that information, we could have a 'generic' allocator helper in
+>> > the form of a central dma-buf exporter, which can create dma-bufs, and
+>> > allocate backing storage at the time of first call to
+>> > dma_buf_map_attachment.
+>> >
+>> > This allocation would utilise the constraint-mask by matching it to
+>> > the right allocator from a pool of allocators, and then allocating
+>> > buffer backing storage from this allocator.
+>> >
+>> > The pool of allocators could be platform-dependent, allowing for
+>> > platforms to hide the specifics of these allocators from the devices
+>> > that access the dma-buf buffers.
+>> >
+>> > A sample sequence could be:
+>> > - get handle to cenalloc_device,
+>> > - create a dmabuf using cenalloc_buffer_create;
+>> > - use this dmabuf to attach each device, which has its constraints
+>> >    set in the constraints mask (dev->dma_params->access_constraints_mask)
+>> >   - at each dma_buf_attach() call, dma-buf will check to see if the constraint
+>> >     mask for the device requesting attachment is compatible with the constraints
+>> >     of devices already attached to the dma-buf; returns an error if it isn't.
+>> > - after all devices have attached, the first call to dma_buf_map_attachment()
+>> >   will allocate the backing storage for the buffer.
+>> > - follow the dma-buf api for map / unmap etc usage.
+>> > - detach all attachments,
+>> > - call cenalloc_buffer_free to free the buffer if refcount reaches zero;
+>> >
+>> > ** IMPORTANT**
+>> > This mechanism of delayed allocation based on constraint-enablement will work
+>> > *ONLY IF* the first map_attachment() call is made AFTER all attach() calls are
+>> > done.
+>> >
+>> > Signed-off-by: Sumit Semwal <sumit.semwal@linaro.org>
+>> > Cc: linux-kernel@vger.kernel.org
+>> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> > Cc: linux-media@vger.kernel.org
+>> > Cc: dri-devel@lists.freedesktop.org
+>> > Cc: linaro-mm-sig@lists.linaro.org
+>> > ---
+>> >  MAINTAINERS                      |   1 +
+>> >  drivers/cenalloc/cenalloc.c      | 597 +++++++++++++++++++++++++++++++++++++++
+>> >  drivers/cenalloc/cenalloc.h      |  99 +++++++
+>> >  drivers/cenalloc/cenalloc_priv.h | 188 ++++++++++++
+>> >  4 files changed, 885 insertions(+)
+>> >  create mode 100644 drivers/cenalloc/cenalloc.c
+>> >  create mode 100644 drivers/cenalloc/cenalloc.h
+>> >  create mode 100644 drivers/cenalloc/cenalloc_priv.h
+>> >
+>> > diff --git a/MAINTAINERS b/MAINTAINERS
+>> > index 40d4796..e88ac81 100644
+>> > --- a/MAINTAINERS
+>> > +++ b/MAINTAINERS
+>> > @@ -3039,6 +3039,7 @@ L:    linux-media@vger.kernel.org
+>> >  L: dri-devel@lists.freedesktop.org
+>> >  L: linaro-mm-sig@lists.linaro.org
+>> >  F: drivers/dma-buf/
+>> > +F: drivers/cenalloc/
+>> >  F: include/linux/dma-buf*
+>> >  F: include/linux/reservation.h
+>> >  F: include/linux/*fence.h
+>> > diff --git a/drivers/cenalloc/cenalloc.c b/drivers/cenalloc/cenalloc.c
+>> > new file mode 100644
+>> > index 0000000..f278056
+>> > --- /dev/null
+>> > +++ b/drivers/cenalloc/cenalloc.c
+>> > @@ -0,0 +1,597 @@
+>> > +/*
+>> > + * Allocator helper framework for constraints-aware dma-buf backing storage
+>> > + * allocation.
+>> > + * This allows constraint-sharing devices to deferred-allocate buffers shared
+>> > + * via dma-buf.
+>> > + *
+>> > + * Copyright(C) 2014 Linaro Limited. All rights reserved.
+>> > + * Author: Sumit Semwal <sumit.semwal@linaro.org>
+>> > + *
+>> > + * Structure for management of clients, buffers etc heavily derived from
+>> > + * Android's ION framework.
+>>
+>> Does that mean we can drop ION after this gets merged?
 >
-> On Sat, Oct 11, 2014 at 12:29 AM, Caesar Wang
-> <caesar.wang@rock-chips.com> wrote:
+> Yeah, I hope so. Not sure whetether this hope is shared by google android
+> people ...
+Apologies for the delay in response; was travelling for LPC and so
+couldn't respond.
+
+Yes, that is certainly the hope, but this is the first-step RFC which
+would need a few more things before ION can be replaced completely.
 >
->> +static void rk_tsadcv2_initialize(int reset_mode, int chn, void __iomem *regs,
->> +                                 unsigned long hw_shut_temp)
->> +{
->> +       u32 shutdown_value;
->> +
->> +       shutdown_value = rk_tsadcv2_temp_to_code(hw_shut_temp);
->> +
->> +       /* Enable measurements at ~ 10 Hz */
->> +       writel_relaxed(0 | TSADCV2_AUTO_TSHUT_POLARITY_HIGH, regs +
->> +                      TSADCV2_AUTO_CON);
->> +       writel_relaxed(TSADCV2_AUTO_PERIOD_TIME, regs + TSADCV2_AUTO_PERIOD);
->> +       writel_relaxed(TSADCV2_AUTO_PERIOD_HT_TIME, regs +
->> +                      TSADCV2_AUTO_PERIOD_HT);
->> +       writel_relaxed(shutdown_value, regs + TSADCV2_COMP_SHUT(chn));
->> +       writel_relaxed(TSADCV2_HIGHT_INT_DEBOUNCE_TIME, regs +
->> +                      TSADCV2_HIGHT_INT_DEBOUNCE);
->> +       writel_relaxed(TSADCV2_HIGHT_TSHUT_DEBOUNCE_TIME, regs +
->> +                      TSADCV2_HIGHT_TSHUT_DEBOUNCE);
->> +
->> +       if (reset_mode == GPIO)
->> +               writel_relaxed(TSADCV2_SHUT_2GPIO_SRC_EN(chn) |
->> +                              TSADCV2_INT_SRC_EN(chn), regs +
->> +                              TSADCV2_INT_EN);
->> +       else
->> +               writel_relaxed(TSADCV2_SHUT_2CRU_SRC_EN(chn) |
->> +                              TSADCV2_INT_SRC_EN(chn) , regs +
->> +                              TSADCV2_INT_EN);
->> +
->> +       writel_relaxed(TSADCV2_AUTO_SRC_EN(chn) | TSADCV2_AUTO_EN, regs +
->> +                      TSADCV2_AUTO_CON);
-> Aren't you clobbering the polarity here?
+>> /me dreams
 >
-> NOTE: I didn't do a full review of this driver, just noticed that
-> while looking at another patch and figure'd I'd respond here, too.
+> I guess we can collectively dream about this next week at plumbers ;-)
+> I'll try to squeeze in some light review of Sumit's patches between
+> conference travels ...
 >
-Fixed. Maybe I should fix as follows:
+> Cheers, Daniel
+> --
+> Daniel Vetter
+> Software Engineer, Intel Corporation
+> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
 
-/**
-  * rk_tsadcv2_get_tshut_polarity - get the tshut polarity
-  * the bit 8 is tshut polarity,default is low active.
-  * 0: low active, 1: high active
-  */
-static bool rk_tsadcv2_get_tshut_polarity(void __iomem *regs)
-{
-     u32 val;
-     bool tshut_polarity;
 
-     val = readl_relaxed(regs + TSADCV2_AUTO_CON);
-     tshut_polarity = (val & BIT(8))? 1 : 0;
-
-     return tshut_polarity;
-}
-...
-....
-
-writel_relaxed(TSADCV2_AUTO_SRC_EN(chn) & (tshut_polarity << 8) |
-		       TSADCV2_AUTO_EN, regs + TSADCV2_AUTO_CON);
-
->
 
 -- 
-Best regards,
-Caesar
+Thanks and regards,
 
-
+Sumit Semwal
+Kernel Team Lead - Linaro Mobile Group
+Linaro.org │ Open source software for ARM SoCs
