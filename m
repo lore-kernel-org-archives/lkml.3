@@ -1,109 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407AbaJNQw2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 12:52:28 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:37818 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754241AbaJNQw1 (ORCPT
+	id S1755521AbaJNQwn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 12:52:43 -0400
+Received: from smtprelay0214.hostedemail.com ([216.40.44.214]:45198 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754353AbaJNQwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 12:52:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <1411591537-31636-4-git-send-email-oded.gabbay@amd.com>
-References: <1411591537-31636-1-git-send-email-oded.gabbay@amd.com>
-	<1411591537-31636-4-git-send-email-oded.gabbay@amd.com>
-Date: Tue, 14 Oct 2014 12:52:26 -0400
-Message-ID: <CADnq5_NsmJigAimosC1Z8iGc-1nVSw9W7ROWaU5u_vR-BC5X_A@mail.gmail.com>
-Subject: Re: [PATCH v4 03/23] drm/radeon: Report doorbell configuration to amdkfd
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Oded Gabbay <oded.gabbay@amd.com>
-Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <j.glisse@gmail.com>,
-        Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Maling list - DRI developers 
-	<dri-devel@lists.freedesktop.org>,
-        =?UTF-8?Q?Christian_K=C3=B6nig?= <christian.koenig@amd.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 14 Oct 2014 12:52:41 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3350:3622:3865:3866:3867:3868:3872:4321:5007:7652:10004:10400:10848:11026:11232:11658:11914:12043:12438:12517:12519:12555:12740:13069:13101:13255:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: rate49_514dfe2875555
+X-Filterd-Recvd-Size: 1828
+Message-ID: <1413305557.3269.21.camel@joe-AO725>
+Subject: Re: [PATCH 1/1 linux-next] fs/jffs2/nodelist.h: remove unnecessary
+ __constant_ prefix
+From: Joe Perches <joe@perches.com>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org
+Date: Tue, 14 Oct 2014 09:52:37 -0700
+In-Reply-To: <1413305085-7318-1-git-send-email-fabf@skynet.be>
+References: <1413305085-7318-1-git-send-email-fabf@skynet.be>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 4:45 PM, Oded Gabbay <oded.gabbay@amd.com> wrote:
-> radeon and amdkfd share the doorbell aperture.
-> radeon sets it up, takes the doorbells required for its own rings
-> and reports the setup to amdkfd.
-> radeon reserved doorbells are at the start of the doorbell aperture.
->
-> Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+On Tue, 2014-10-14 at 18:44 +0200, Fabian Frederick wrote:
+> See commit fbdb8138cf0c
+> ("checkpatch: warn on uses of __constant_<foo> functions")
 
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+Perhaps it'd be better to use the same
+__builtin_constant_p test as swab.h and use
+just one pattern instead
 
-> ---
->  drivers/gpu/drm/radeon/radeon.h        |  4 ++++
->  drivers/gpu/drm/radeon/radeon_device.c | 31 +++++++++++++++++++++++++++++++
->  2 files changed, 35 insertions(+)
->
-> diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
-> index bb75e57..67d249a 100644
-> --- a/drivers/gpu/drm/radeon/radeon.h
-> +++ b/drivers/gpu/drm/radeon/radeon.h
-> @@ -697,6 +697,10 @@ struct radeon_doorbell {
->
->  int radeon_doorbell_get(struct radeon_device *rdev, u32 *page);
->  void radeon_doorbell_free(struct radeon_device *rdev, u32 doorbell);
-> +void radeon_doorbell_get_kfd_info(struct radeon_device *rdev,
-> +                                 phys_addr_t *aperture_base,
-> +                                 size_t *aperture_size,
-> +                                 size_t *start_offset);
->
->  /*
->   * IRQS.
-> diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
-> index e84a76e..da3035f 100644
-> --- a/drivers/gpu/drm/radeon/radeon_device.c
-> +++ b/drivers/gpu/drm/radeon/radeon_device.c
-> @@ -373,6 +373,37 @@ void radeon_doorbell_free(struct radeon_device *rdev, u32 doorbell)
->                 __clear_bit(doorbell, rdev->doorbell.used);
->  }
->
-> +/**
-> + * radeon_doorbell_get_kfd_info - Report doorbell configuration required to
-> + *                                setup KFD
-> + *
-> + * @rdev: radeon_device pointer
-> + * @aperture_base: output returning doorbell aperture base physical address
-> + * @aperture_size: output returning doorbell aperture size in bytes
-> + * @start_offset: output returning # of doorbell bytes reserved for radeon.
-> + *
-> + * Radeon and the KFD share the doorbell aperture. Radeon sets it up,
-> + * takes doorbells required for its own rings and reports the setup to KFD.
-> + * Radeon reserved doorbells are at the start of the doorbell aperture.
-> + */
-> +void radeon_doorbell_get_kfd_info(struct radeon_device *rdev,
-> +                                 phys_addr_t *aperture_base,
-> +                                 size_t *aperture_size,
-> +                                 size_t *start_offset)
-> +{
-> +       /* The first num_doorbells are used by radeon.
-> +        * KFD takes whatever's left in the aperture. */
-> +       if (rdev->doorbell.size > rdev->doorbell.num_doorbells * sizeof(u32)) {
-> +               *aperture_base = rdev->doorbell.base;
-> +               *aperture_size = rdev->doorbell.size;
-> +               *start_offset = rdev->doorbell.num_doorbells * sizeof(u32);
-> +       } else {
-> +               *aperture_base = 0;
-> +               *aperture_size = 0;
-> +               *start_offset = 0;
-> +       }
-> +}
-> +
->  /*
->   * radeon_wb_*()
->   * Writeback is the the method by which the the GPU updates special pages
-> --
-> 1.9.1
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+> diff --git a/fs/jffs2/nodelist.h b/fs/jffs2/nodelist.h
+> index fa35ff7..9f0d547 100644
+> --- a/fs/jffs2/nodelist.h
+> +++ b/fs/jffs2/nodelist.h
+> @@ -48,8 +48,8 @@
+>  #define cpu_to_je32(x) ((jint32_t){cpu_to_be32(x)})
+>  #define cpu_to_jemode(x) ((jmode_t){cpu_to_be32(os_to_jffs2_mode(x))})
+>  
+> -#define constant_cpu_to_je16(x) ((jint16_t){__constant_cpu_to_be16(x)})
+> -#define constant_cpu_to_je32(x) ((jint32_t){__constant_cpu_to_be32(x)})
+> +#define constant_cpu_to_je16(x) ((jint16_t){cpu_to_be16(x)})
+> +#define constant_cpu_to_je32(x) ((jint32_t){cpu_to_be32(x)})
+
+So none of these constant_<foo> things would be here
+at all.
+
+
