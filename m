@@ -1,71 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755777AbaJNXoX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 19:44:23 -0400
-Received: from ozlabs.org ([103.22.144.67]:58144 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753707AbaJNXoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 19:44:21 -0400
-Date: Wed, 15 Oct 2014 10:44:11 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-Subject: linux-next: build failure after merge of the net tree
-Message-ID: <20141015104411.306b138e@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/6dNYcMkOevjJGJJO7vt0dpZ"; protocol="application/pgp-signature"
+	id S932583AbaJNXyz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 19:54:55 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:39473 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755460AbaJNXyw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 19:54:52 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Cc: Michael j Theall <mtheall@us.ibm.com>, fuse-devel@lists.sourceforge.net,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH v3] fs: Treat foreign mounts as nosuid
+Date: Tue, 14 Oct 2014 16:54:47 -0700
+Message-Id: <252a4d87d99fc2b5fe4411c838f65b312c4e13cd.1413330857.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/6dNYcMkOevjJGJJO7vt0dpZ
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+If a process gets access to a mount from a different namespace user
+namespace, that process should not be able to take advantage of
+setuid files or selinux entrypoints from that filesystem.
+Technically, trusting mounts created by the same or ancestor user
+namespaces ought to be safe, but it's simpler to distrust all
+foreign mounts.
 
-Hi all,
+This will make it safer to allow more complex filesystems to be
+mounted in non-root user namespaces.
 
-After merging the net tree, today's linux-next build (arm
-multi_v7_defconfig) failed like this:
+This does not remove the need for MNT_LOCK_NOSUID.  The setuid,
+setgid, and file capability bits can no longer be abused if code in
+a user namespace were to clear nosuid on an untrusted filesystem,
+but this patch, by itself, is insufficient to protect the system
+from abuse of files that, when execed, would increase MAC privilege.
 
-drivers/built-in.o: In function `.LANCHOR0':
-:(.rodata+0x6b764): undefined reference to `sti_gmac_data'
-:(.rodata+0x6b828): undefined reference to `sti_gmac_data'
-:(.rodata+0x6b8ec): undefined reference to `sti_gmac_data'
-:(.rodata+0x6b9b0): undefined reference to `sti_gmac_data'
+As a more concrete explanation, any task that can manipulate a
+vfsmount associated with a given user namespace already has
+capabilities in that namespace and all of its descendents.  If they
+can cause a malicious setuid, setgid, or file-caps executable to
+appear in that mount, then that executable will only allow them to
+elevate privileges in exactly the set of namespaces in which they
+are already privileges.
 
-Caused by commit 53b26b9bc9a5 ("stmmac: dwmac-sti: review the
-glue-logic for STi4xx and STiD127 SoCs") which renamed sti_gmac_data to
-stih4xx_dwmac_data (or something) without updating all the references
-to it (including the one added in the previous commit ...).
+On the other hand, if they can cause a malicious executable to
+appear with a dangerous MAC label, running it could change the
+caller's security context in a way that should not have been
+possible, even inside the namespace in which the task is confined.
 
-I reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+As a hardening measure, this would have made CVE-2014-5207 much
+more difficult to exploit.
 
---Sig_/6dNYcMkOevjJGJJO7vt0dpZ
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Changes from v2:
+ - Fix comment typo.
 
-iQIcBAEBCAAGBQJUPbVRAAoJEMDTa8Ir7ZwVbsEQAIl2J3gpOAOUTw8NvszPayQa
-9DFdf6UwMqkjAQvWqPOhuhkfIdN7QI0glOEM17DjgdKKARVXIXj2fn6EeMTvATj9
-olgyPlWs43sbp8k/OVP4EnyqqCkpXBIEnKLi2//hojbwtHfB1SR2mgDF9rvmKtk3
-SuASRalp1P9LJPXmbFPH/dnQVteE+IOCbUg+Q8N3felyipUQvuiX7g6K+B+HCNTq
-jNjSD+ZbGozJrz5vtbBzPUcfBsapAY083/Yca0oZyK83NA8Z6K0xaBQ1Aj58+w0o
-GGnlFCIIAqDGpqkTwrCTQiNWrlF0+EJvV+CR5oHU/TlOR00otTe98DK8Fvljdwk3
-pRxEs3wpv1zu3L7Dp7NUst84K8+7n7SpTNitd9OnqsINhH+eBvVB3DekOmg+VnrJ
-ZKCOfZ3QXSgSe9S8BLKyP0qUppqjAKxDdkJalHAUFC8p9w/BuYZXpmH+HhQ6ugJs
-h/ekgD23Tpqq3mcC4GSZQ+ODFEK9B/+PfxWSgIp7j103djrSkG4jcTho9xqeRpQj
-B4kes+C32NWENvUZH9njEjjTqWHxT/4W1LPsHAUedrJWg8gVaIzGcgJrQzIkBHYm
-L1B7iT//ZWR1o1AiuUz5JzT3gzH2rqgWiH3TXIJ/bjA0eiejQrwC1w3FtPcz/BC0
-0Mr37AuPOfWOK+eYIsnn
-=6Xh4
------END PGP SIGNATURE-----
+Changes from v1:
+ - Treat all foreign mounts as nosuid, not just non-self-or-ancestor
+   userns mounts.
 
---Sig_/6dNYcMkOevjJGJJO7vt0dpZ--
+ fs/exec.c                |  2 +-
+ fs/namespace.c           | 13 +++++++++++++
+ include/linux/mount.h    |  1 +
+ security/commoncap.c     |  2 +-
+ security/selinux/hooks.c |  4 ++--
+ 5 files changed, 18 insertions(+), 4 deletions(-)
+
+diff --git a/fs/exec.c b/fs/exec.c
+index a2b42a98c743..ac0bb22aa3ed 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1267,7 +1267,7 @@ int prepare_binprm(struct linux_binprm *bprm)
+ 	bprm->cred->euid = current_euid();
+ 	bprm->cred->egid = current_egid();
+ 
+-	if (!(bprm->file->f_path.mnt->mnt_flags & MNT_NOSUID) &&
++	if (mnt_may_suid(bprm->file->f_path.mnt) &&
+ 	    !task_no_new_privs(current) &&
+ 	    kuid_has_mapping(bprm->cred->user_ns, inode->i_uid) &&
+ 	    kgid_has_mapping(bprm->cred->user_ns, inode->i_gid)) {
+diff --git a/fs/namespace.c b/fs/namespace.c
+index ef42d9bee212..4df0b393c29d 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -3019,6 +3019,19 @@ found:
+ 	return visible;
+ }
+ 
++bool mnt_may_suid(struct vfsmount *mnt)
++{
++	/*
++	 * Foreign mounts (accessed via fchdir or through /proc
++	 * symlinks) are always treated as if they are nosuid.  This
++	 * prevents namespaces from trusting potentially unsafe
++	 * suid/sgid bits, file caps, or security labels that originate
++	 * in other namespaces.
++	 */
++	return real_mount(mnt)->mnt_ns == current->nsproxy->mnt_ns &&
++		!(mnt->mnt_flags & MNT_NOSUID);
++}
++
+ static void *mntns_get(struct task_struct *task)
+ {
+ 	struct mnt_namespace *ns = NULL;
+diff --git a/include/linux/mount.h b/include/linux/mount.h
+index 9262e4bf0cc3..b7b84bafe09b 100644
+--- a/include/linux/mount.h
++++ b/include/linux/mount.h
+@@ -80,6 +80,7 @@ extern void mntput(struct vfsmount *mnt);
+ extern struct vfsmount *mntget(struct vfsmount *mnt);
+ extern struct vfsmount *mnt_clone_internal(struct path *path);
+ extern int __mnt_is_readonly(struct vfsmount *mnt);
++extern bool mnt_may_suid(struct vfsmount *mnt);
+ 
+ struct file_system_type;
+ extern struct vfsmount *vfs_kern_mount(struct file_system_type *type,
+diff --git a/security/commoncap.c b/security/commoncap.c
+index bab0611afc1e..52b3eed065e0 100644
+--- a/security/commoncap.c
++++ b/security/commoncap.c
+@@ -443,7 +443,7 @@ static int get_file_caps(struct linux_binprm *bprm, bool *effective, bool *has_c
+ 	if (!file_caps_enabled)
+ 		return 0;
+ 
+-	if (bprm->file->f_path.mnt->mnt_flags & MNT_NOSUID)
++	if (!mnt_may_suid(bprm->file->f_path.mnt))
+ 		return 0;
+ 
+ 	dentry = dget(bprm->file->f_dentry);
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index b0e940497e23..2089fd0d539e 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -2139,7 +2139,7 @@ static int selinux_bprm_set_creds(struct linux_binprm *bprm)
+ 		 */
+ 		if (bprm->unsafe & LSM_UNSAFE_NO_NEW_PRIVS)
+ 			return -EPERM;
+-		if (bprm->file->f_path.mnt->mnt_flags & MNT_NOSUID)
++		if (!mnt_may_suid(bprm->file->f_path.mnt))
+ 			return -EACCES;
+ 	} else {
+ 		/* Check for a default transition on this program. */
+@@ -2153,7 +2153,7 @@ static int selinux_bprm_set_creds(struct linux_binprm *bprm)
+ 	ad.type = LSM_AUDIT_DATA_PATH;
+ 	ad.u.path = bprm->file->f_path;
+ 
+-	if ((bprm->file->f_path.mnt->mnt_flags & MNT_NOSUID) ||
++	if (!mnt_may_suid(bprm->file->f_path.mnt) ||
+ 	    (bprm->unsafe & LSM_UNSAFE_NO_NEW_PRIVS))
+ 		new_tsec->sid = old_tsec->sid;
+ 
+-- 
+1.9.3
+
