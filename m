@@ -1,49 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755451AbaJNRBW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 13:01:22 -0400
-Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:62248 "EHLO
-	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755381AbaJNRBT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 13:01:19 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AskNAKhVPVRbtAZ+/2dsb2JhbABbgw6BK7h2BQFzmhaBFhcBfYQwLyOBGjeIQgG3Vo9FhiCJQWQdhDUFnUuMXIk1gUcBgjE7L4EGgUQBAQE
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Joe Perches <joe@perches.com>, Fabian Frederick <fabf@skynet.be>,
-        Dmitry Tarnyagin <dmitry.tarnyagin@lockless.no>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: [PATCH V2 2/2 net-next] caif_usb: use target structure member in memset
-Date: Tue, 14 Oct 2014 19:01:14 +0200
-Message-Id: <1413306074-8401-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.3
+	id S1755477AbaJNRBb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 13:01:31 -0400
+Received: from lists.s-osg.org ([54.187.51.154]:40658 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755370AbaJNRB3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 13:01:29 -0400
+Message-ID: <543D56DB.1090108@osg.samsung.com>
+Date: Tue, 14 Oct 2014 11:01:15 -0600
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+MIME-Version: 1.0
+To: linus Torvalds <torvalds@linux-foundation.org>
+CC: gregkh@linuxfoundation.org, akpm@linux-foundation.org,
+        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shuah Khan <shuahkh@osg.samsung.com>
+Subject: [GIT PULL] kselftest 3.18-updates-2
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-parent cfusbl was used instead of first structure member 'layer'
+Hi Linus,
 
-Suggested-by: Joe Perches <joe@perches.com>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- net/caif/caif_usb.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Here are the second round updates for kselftest for 3.18. Please
+see details in the signed tag.
 
-diff --git a/net/caif/caif_usb.c b/net/caif/caif_usb.c
-index 0e487b0..5cd44f0 100644
---- a/net/caif/caif_usb.c
-+++ b/net/caif/caif_usb.c
-@@ -92,7 +92,7 @@ static struct cflayer *cfusbl_create(int phyid, u8 ethaddr[ETH_ALEN],
- 
- 	caif_assert(offsetof(struct cfusbl, layer) == 0);
- 
--	memset(this, 0, sizeof(struct cflayer));
-+	memset(&this->layer, 0, sizeof(this->layer));
- 	this->layer.receive = cfusbl_receive;
- 	this->layer.transmit = cfusbl_transmit;
- 	this->layer.ctrlcmd = cfusbl_ctrlcmd;
+
+The following changes since commit 69e273c0b0a3c337a521d083374c918dc52c666f:
+
+  Linux 3.17-rc3 (2014-08-31 18:23:04 -0700)
+
+are available in the git repository at:
+
+
+git@gitolite.kernel.org:/pub/scm/linux/kernel/git/shuah/linux-kselftest
+tags/kselftest-3.18-updates-2
+
+for you to fetch changes up to 49296470830aa12027f4aa43ec54f19375be095b:
+
+  selftests/timers: change test to use ksft framework (2014-10-06
+08:29:20 -0600)
+
+----------------------------------------------------------------
+3.18 Kselftest updates-2:
+
+This update adds a light weight kselftest framework that
+provides a set of interfaces for tests to use to report
+results. In addition, several tests are updated to use the
+framework.
+
+----------------------------------------------------------------
+Shuah Khan (5):
+      selftests: add kselftest framework for uniform test reporting
+      selftests/breakpoints: change test to use ksft framework
+      selftests/ipc: change test to use ksft framework
+      selftests/kcmp: change test to use ksft framework
+      selftests/timers: change test to use ksft framework
+
+ .../selftests/breakpoints/breakpoint_test.c        | 10 ++--
+ tools/testing/selftests/ipc/msgque.c               | 26 ++++-----
+ tools/testing/selftests/kcmp/kcmp_test.c           | 27 +++++++---
+ tools/testing/selftests/kselftest.h                | 62
+++++++++++++++++++++++
+ tools/testing/selftests/timers/posix_timers.c      | 14 ++---
+ 5 files changed, 110 insertions(+), 29 deletions(-)
+ create mode 100644 tools/testing/selftests/kselftest.h
+
+thanks,
+-- Shuah
 -- 
-1.9.3
-
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
