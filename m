@@ -1,85 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755226AbaJNKEY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 06:04:24 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:45663 "EHLO relay.sw.ru"
+	id S1755251AbaJNKEs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 06:04:48 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:51047
+	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754944AbaJNKEV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 06:04:21 -0400
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: Dmitry Monakhov <dmonakhov@openvz.org>, Alasdair Kergon <agk@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com
-Subject: [PATCH 2/4] md: add flush_idx support for stacked devices
-Date: Tue, 14 Oct 2014 14:03:53 +0400
-Message-Id: <1413281035-6483-3-git-send-email-dmonakhov@openvz.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1413281035-6483-1-git-send-email-dmonakhov@openvz.org>
-References: <1413281035-6483-1-git-send-email-dmonakhov@openvz.org>
+	id S1754973AbaJNKEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 06:04:47 -0400
+x-originating-ip: 72.167.245.219
+From: Thomas Shao <huishao@microsoft.com>
+To: tglx@linutronix.de, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
+        kys@microsoft.com
+Cc: Thomas Shao <huishao@microsoft.com>
+Subject: [PATCH 2/2] hyperv: Implement Time Synchronization using host time sample
+Date: Tue, 14 Oct 2014 04:11:18 -0700
+Message-Id: <1413285078-7027-1-git-send-email-huishao@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For single device mapping it is safe to introduce get_flush_idx conception.
-This cover most common case linear mapping for a single dev.
+In current hyper-v time sync service,it only gets the initial clock time
+from the host. It didn't process the following time samples. This change
+introduced a module parameter called host_time_sync. If it is set to true,
+the guest will periodically sychronize it's time with the host clock using
+host time sample. By default it is disabled, because we still recommend
+user to configure NTP for time synchronization.
 
-CC: Alasdair Kergon <agk@redhat.com>
-CC: Mike Snitzer <snitzer@redhat.com>
-CC: dm-devel@redhat.com
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+Signed-off-by: Thomas Shao <huishao@microsoft.com>
+Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
 ---
- drivers/md/dm.c |   31 +++++++++++++++++++++++++++++++
- 1 files changed, 31 insertions(+), 0 deletions(-)
+ drivers/hv/hv_util.c |  114 ++++++++++++++++++++++++++++++++++++++++++++++----
+ 1 files changed, 106 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index 32b958d..042d172 100644
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -1843,6 +1843,36 @@ static int dm_any_congested(void *congested_data, int bdi_bits)
- 	return r;
+diff --git a/drivers/hv/hv_util.c b/drivers/hv/hv_util.c
+index 3b9c9ef..1d8390c 100644
+--- a/drivers/hv/hv_util.c
++++ b/drivers/hv/hv_util.c
+@@ -51,11 +51,30 @@
+ #define HB_WS2008_MAJOR	1
+ #define HB_WS2008_VERSION	(HB_WS2008_MAJOR << 16 | HB_MINOR)
+ 
++#define  TIMESAMPLE_INTERVAL 5000000000L  /* 5s in nanosecond */
++
++/*host sends time sample for every 5s.So the max polling interval
++ *is 128*5 = 640s.
++*/
++#define  TIME_ADJ_MAX_INTERVAL 128 /*Max polling interval */
++
+ static int sd_srv_version;
+ static int ts_srv_version;
+ static int hb_srv_version;
+ static int util_fw_version;
+ 
++/*host sends time sample for every 5s.So the initial polling interval
++ *is 5s.
++*/
++static s32 adj_interval = 1;
++
++/*The host_time_sync module parameter is used to control the time
++  sync between host and guest.
++*/
++static bool host_time_sync;
++module_param(host_time_sync, bool, (S_IRUGO | S_IWUSR));
++MODULE_PARM_DESC(host_time_sync, "If the guest sync time with host");
++
+ static void shutdown_onchannelcallback(void *context);
+ static struct hv_util_service util_shutdown = {
+ 	.util_cb = shutdown_onchannelcallback,
+@@ -163,15 +182,61 @@ static void shutdown_onchannelcallback(void *context)
+ /*
+  * Set guest time to host UTC time.
+  */
+-static inline void do_adj_guesttime(u64 hosttime)
++static inline void do_adj_guesttime(u64 hosttime, bool forceSync)
+ {
+-	s64 host_tns;
+-	struct timespec host_ts;
++	s64 host_tns, guest_tns, diff;
++	struct timespec host_ts, guest_ts;
++	struct timex txc;
++	s64 tickchg;
++	int diff_sign;
+ 
+ 	host_tns = (hosttime - WLTIMEDELTA) * 100;
+ 	host_ts = ns_to_timespec(host_tns);
+ 
+-	do_settimeofday(&host_ts);
++	if (forceSync) {
++		do_settimeofday(&host_ts);
++	} else {
++		guest_ts = CURRENT_TIME;
++		guest_tns = timespec_to_ns(&guest_ts);
++		diff = host_tns - guest_tns;
++		if (diff >= 0) {
++			diff_sign = 1;
++		} else {
++			diff_sign = -1;
++			diff = -diff;
++		}
++
++		/*1s in nanosecond */
++		if (diff > 1000000000 || diff < -1000000000) {
++			do_settimeofday(&host_ts);
++			return;
++		}
++
++		/*1ms in nanosecond */
++		if (diff > 1000000 || diff < -1000000) {
++			/* get the current tick value */
++			txc.modes = 0;
++			do_adjtimex(&txc);
++
++			tickchg = diff * TICK_USEC /
++					(TIMESAMPLE_INTERVAL * adj_interval);
++
++			if (tickchg > TICK_USEC/10)
++				tickchg = TICK_USEC/10;
++
++			if (txc.tick == TICK_USEC + diff_sign * tickchg)
++				return;
++
++			txc.modes = ADJ_TICK;
++			txc.tick = TICK_USEC + diff_sign * tickchg;
++
++			do_adjtimex(&txc);
++		} else {
++			/* double the polling interval*/
++			if (adj_interval < TIME_ADJ_MAX_INTERVAL)
++				adj_interval = adj_interval * 2;
++		}
++	}
  }
  
-+static int dm_iter_get_flush_idx(struct dm_target *ti,
-+				struct dm_dev *dev, sector_t start,
-+				sector_t len, void *data)
-+{
-+	struct block_device *bdev = dev->bdev;
-+	struct request_queue *q = bdev_get_queue(bdev);
-+
-+	return blk_get_flush_idx(q,  *((bool *)data));
-+}
-+
-+static unsigned dm_get_flush_idx(struct request_queue *q, bool queued)
-+{
-+	struct dm_target *ti;
-+	struct mapped_device *md = q->queuedata;
-+	struct dm_table *map = dm_get_live_table_fast(md);
-+	unsigned fid = 0;
-+
-+	if (unlikely(!map || dm_table_get_num_targets(map) != 1))
-+		goto out;
-+
-+	ti = dm_table_get_target(map, 0);
-+	if (unlikely(!ti || !ti->type->iterate_devices))
-+		goto out;
-+
-+	fid = ti->type->iterate_devices(ti, dm_iter_get_flush_idx, &queued);
-+out:
-+	dm_put_live_table_fast(md);
-+	return fid;
-+}
-+
- /*-----------------------------------------------------------------
-  * An IDR is used to keep track of allocated minor numbers.
-  *---------------------------------------------------------------*/
-@@ -1962,6 +1992,7 @@ static struct mapped_device *alloc_dev(int minor)
- 		goto bad_queue;
+ /*
+@@ -179,8 +244,9 @@ static inline void do_adj_guesttime(u64 hosttime)
+  */
  
- 	dm_init_md_queue(md);
-+	blk_queue_get_flush_idx(md->queue, dm_get_flush_idx);
+ struct adj_time_work {
+-	struct work_struct work;
++	struct	work_struct work;
+ 	u64	host_time;
++	bool	forceSync;
+ };
  
- 	md->disk = alloc_disk(1);
- 	if (!md->disk)
+ static void hv_set_host_time(struct work_struct *work)
+@@ -188,7 +254,7 @@ static void hv_set_host_time(struct work_struct *work)
+ 	struct adj_time_work	*wrk;
+ 
+ 	wrk = container_of(work, struct adj_time_work, work);
+-	do_adj_guesttime(wrk->host_time);
++	do_adj_guesttime(wrk->host_time, wrk->forceSync);
+ 	kfree(wrk);
+ }
+ 
+@@ -202,11 +268,14 @@ static void hv_set_host_time(struct work_struct *work)
+  * thing is, systime is automatically set to emulated hardware clock which may
+  * not be UTC time or in the same time zone. So, to override these effects, we
+  * use the first 50 time samples for initial system time setting.
++ * If the host_time_sync module parameter is set, we will use the host time
++ * samples to adjust guest time after the first 50 samples.
+  */
+ static inline void adj_guesttime(u64 hosttime, u8 flags)
+ {
+ 	struct adj_time_work    *wrk;
+ 	static s32 scnt = 50;
++	static s32 sample_count;
+ 
+ 	wrk = kmalloc(sizeof(struct adj_time_work), GFP_ATOMIC);
+ 	if (wrk == NULL)
+@@ -214,6 +283,7 @@ static inline void adj_guesttime(u64 hosttime, u8 flags)
+ 
+ 	wrk->host_time = hosttime;
+ 	if ((flags & ICTIMESYNCFLAG_SYNC) != 0) {
++		wrk->forceSync = true;
+ 		INIT_WORK(&wrk->work, hv_set_host_time);
+ 		schedule_work(&wrk->work);
+ 		return;
+@@ -221,10 +291,38 @@ static inline void adj_guesttime(u64 hosttime, u8 flags)
+ 
+ 	if ((flags & ICTIMESYNCFLAG_SAMPLE) != 0 && scnt > 0) {
+ 		scnt--;
++		wrk->forceSync = true;
+ 		INIT_WORK(&wrk->work, hv_set_host_time);
+ 		schedule_work(&wrk->work);
+-	} else
+-		kfree(wrk);
++		return;
++	}
++
++	if (host_time_sync) {
++		/*
++		* Use the Hyper-V time sample to adjust the guest time. The
++		* algorithm is: If the sample offsets exceeds 1 second, we
++		* directly set the clock to the server time. If the offset is
++		* less than 1ms, we ignore the time sample. Otherwise we adjust
++		* the clock.
++		*/
++
++		if ((flags & ICTIMESYNCFLAG_SAMPLE) != 0) {
++			if (sample_count < adj_interval) {
++				sample_count++;
++				goto cleanup;
++			}
++			/* reset the polling interval */
++			sample_count = 0;
++			wrk->forceSync = false;
++			INIT_WORK(&wrk->work, hv_set_host_time);
++			schedule_work(&wrk->work);
++			return;
++		}
++	}
++
++cleanup:
++	kfree(wrk);
++
+ }
+ 
+ /*
 -- 
 1.7.1
 
