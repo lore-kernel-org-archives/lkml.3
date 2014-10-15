@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751350AbaJOGzk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 02:55:40 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:38065 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751183AbaJOGzi (ORCPT
+	id S1751293AbaJOHFU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 03:05:20 -0400
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:55369 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750775AbaJOHFS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 02:55:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140926091805.GV1786@lahna.fi.intel.com>
-References: <1410943745-9354-1-git-send-email-rebecca.swee.fun.chang@intel.com>
-	<1410943745-9354-4-git-send-email-rebecca.swee.fun.chang@intel.com>
-	<20140918113122.GO10854@lahna.fi.intel.com>
-	<50B33AC5ED75F74F991980326F1C438D0FBE89AD@PGSMSX108.gar.corp.intel.com>
-	<20140926091805.GV1786@lahna.fi.intel.com>
-Date: Wed, 15 Oct 2014 08:55:37 +0200
-Message-ID: <CACRpkdaP_kRPLCyVATPN9LjnwNqBEf2-fDqHUqjxdS2aBt1Ljw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] gpio: sch: Enable IRQ support for Quark X1000
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: "Chang, Rebecca Swee Fun" <rebecca.swee.fun.chang@intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 15 Oct 2014 03:05:18 -0400
+Message-ID: <1413356714.27272.3.camel@x220>
+Subject: Re: [PATCH v4 03/25] virtio-pci: move freeze/restore to virtio core
+From: Paul Bolle <pebolle@tiscali.nl>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
+        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, linux-scsi@vger.kernel.org,
+        linux-s390@vger.kernel.org, v9fs-developer@lists.sourceforge.net,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
+        Amit Shah <amit.shah@redhat.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Heinz Graalfs <graalfs@linux.vnet.ibm.com>
+Date: Wed, 15 Oct 2014 09:05:14 +0200
+In-Reply-To: <1413114332-626-4-git-send-email-mst-v4@redhat.com>
+References: <1413114332-626-1-git-send-email-mst-v4@redhat.com>
+	 <1413114332-626-4-git-send-email-mst-v4@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 15 Oct 2014 07:05:14.0451 (UTC) FILETIME=[5E4D4230:01CFE846]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 11:18 AM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
-> On Fri, Sep 26, 2014 at 09:14:48AM +0000, Chang, Rebecca Swee Fun wrote:
+On Mon, 2014-10-13 at 10:48 +0300, Michael S. Tsirkin wrote:
+> This is in preparation to extending config changed event handling
+> in core.
+> Wrapping these in an API also seems to make for a cleaner code.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 
->> > > +
->> > > +         /* disable interrupts */
->> > > +         sch_gpio_irq_disable_all(sch, sch->chip.ngpio);
->> > > +
->> > > +         err = request_irq(sch->irq_num, sch_gpio_irq_handler,
->> > > +                           IRQF_SHARED, KBUILD_MODNAME, sch);
->> >
->> > This seems weird, typically irqchip drivers don't call request_irq() directly but
->> > instead irq_set_chained_handler() or similar. With
->> > gpiochip_irqchip_* stuff you don't need even that.
->> >
->> Regarding this, gpio-sch is actually using shared interrupts and the
->> IRQ resources are from ACPI SCI. As per my understanding, resources
->> from ACPI SCI might be shared for power management purposes. In this
->> case, irq_set_chained_handler() might not be able to use here. What do
->> you think?
->
-> I think you are right. And then you can't use gpiochip_irqchip_* helpers
-> either :-(
+This patch landed in today's linux-next (next-20141015).
 
-No since that implies that the gpiochip lives in its own irqdomain,
-and this driver uses a linear range of irqs provided from another
-domain, just allocates descriptors for them.
+>  include/linux/virtio.h      |  6 +++++
+>  drivers/virtio/virtio.c     | 54 +++++++++++++++++++++++++++++++++++++++++++++
+>  drivers/virtio/virtio_pci.c | 54 ++-------------------------------------------
+>  3 files changed, 62 insertions(+), 52 deletions(-)
+> 
+> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
+> index 3c19bd3..8df7ba8 100644
+> --- a/include/linux/virtio.h
+> +++ b/include/linux/virtio.h
+> @@ -78,6 +78,7 @@ bool virtqueue_is_broken(struct virtqueue *vq);
+>  /**
+>   * virtio_device - representation of a device using virtio
+>   * @index: unique position on the virtio bus
+> + * @failed: saved value for CONFIG_S_FAILED bit (for restore)
 
-I'll take a look at this and see if it's merge material now.
+s/CONFIG_S_FAILED/VIRTIO_CONFIG_S_FAILED/?
 
-Yours,
-Linus Walleij
+>   * @dev: underlying device.
+>   * @id: the device type identification (used to match it with a driver).
+>   * @config: the configuration ops for this device.
+
+
+Paul Bolle
+
