@@ -1,137 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752169AbaJOKTc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 06:19:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53014 "EHLO mx1.redhat.com"
+	id S1752151AbaJOKVz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 06:21:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40107 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752077AbaJOKT3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 06:19:29 -0400
-Message-ID: <543E4A23.7060903@redhat.com>
-Date: Wed, 15 Oct 2014 18:19:15 +0800
+	id S1751421AbaJOKVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 06:21:54 -0400
+Message-ID: <543E4AB8.6090005@redhat.com>
+Date: Wed, 15 Oct 2014 18:21:44 +0800
 From: Jason Wang <jasowang@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: rusty@rustcorp.com.au, mst@redhat.com,
+        virtualization@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        davem@davemloft.net, eric.dumazet@gmail.com
-Subject: Re: [RFC PATCH net-next 2/6] virtio: introduce virtio_enable_cb_avail()
-References: <1413357930-45302-1-git-send-email-jasowang@redhat.com> <1413357930-45302-3-git-send-email-jasowang@redhat.com> <20141015092849.GA25776@redhat.com>
-In-Reply-To: <20141015092849.GA25776@redhat.com>
-Content-Type: text/plain; charset=windows-1252
+        davem@davemloft.net
+Subject: Re: [RFC PATCH net-next 5/6] virtio-net: enable tx interrupt
+References: <1413357930-45302-1-git-send-email-jasowang@redhat.com>	 <1413357930-45302-6-git-send-email-jasowang@redhat.com> <1413365865.12304.55.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <1413365865.12304.55.camel@edumazet-glaptop2.roam.corp.google.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2014 05:28 PM, Michael S. Tsirkin wrote:
-> On Wed, Oct 15, 2014 at 03:25:26PM +0800, Jason Wang wrote:
->> This patch introduces virtio_enable_cb_avail() to publish avail idx
->> and used event. This could be used by batched buffer submitting to
->> reduce the number of tx interrupts.
->>
->> Cc: Rusty Russell <rusty@rustcorp.com.au>
->> Cc: Michael S. Tsirkin <mst@redhat.com>
->> Signed-off-by: Jason Wang <jasowang@redhat.com>
->> ---
->>  drivers/virtio/virtio_ring.c |   22 ++++++++++++++++++++--
->>  include/linux/virtio.h       |    2 ++
->>  2 files changed, 22 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
->> index 1b3929f..d67fbf8 100644
->> --- a/drivers/virtio/virtio_ring.c
->> +++ b/drivers/virtio/virtio_ring.c
->> @@ -567,14 +567,32 @@ unsigned virtqueue_enable_cb_prepare(struct virtqueue *_vq)
->>  	 * entry. Always do both to keep code simple. */
->>  	vq->vring.avail->flags &= ~VRING_AVAIL_F_NO_INTERRUPT;
->>  	/* Make sure used event never go backwards */
->> -	if (!vring_need_event(vring_used_event(&vq->vring),
->> -			      vq->vring.avail->idx, last_used_idx))
->> +	if (vq->vring.avail->idx != vring_used_event(&vq->vring) &&
->> +	    !vring_need_event(vring_used_event(&vq->vring),
->> +			      vq->vring.avail->idx, last_used_idx)) {
->>  		vring_used_event(&vq->vring) = last_used_idx;
->> +	}
->>  	END_USE(vq);
->>  	return last_used_idx;
->>  }
->>  EXPORT_SYMBOL_GPL(virtqueue_enable_cb_prepare);
->>
-> I see you are also changing virtqueue_enable_cb_prepare, why?
-
-This is also used to prevent it from moving the used event backwards.
-This may happens when we handle tx napi after we publish avail idx as
-used event (virtqueue_enable_cb_avail() was called).
+On 10/15/2014 05:37 PM, Eric Dumazet wrote:
+> On Wed, 2014-10-15 at 15:25 +0800, Jason Wang wrote:
 >
->> +bool virtqueue_enable_cb_avail(struct virtqueue *_vq)
+> ...
+>
+>> +static int free_old_xmit_skbs(struct send_queue *sq, int budget)
 >> +{
->> +	struct vring_virtqueue *vq = to_vvq(_vq);
->> +	bool ret;
+>> +	struct sk_buff *skb;
+>> +	unsigned int len;
+>> +	struct virtnet_info *vi = sq->vq->vdev->priv;
+>> +	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
+>> +	u64 tx_bytes = 0, tx_packets = 0;
 >> +
->> +	START_USE(vq);
->> +	vq->vring.avail->flags &= ~VRING_AVAIL_F_NO_INTERRUPT;
->> +	vring_used_event(&vq->vring) = vq->vring.avail->idx;
->> +	ret = vring_need_event(vq->vring.avail->idx,
->> +			       vq->last_used_idx, vq->vring.used->idx);
->> +	END_USE(vq);
+>> +	while (tx_packets < budget &&
+>> +	       (skb = virtqueue_get_buf(sq->vq, &len)) != NULL) {
+>> +		pr_debug("Sent skb %p\n", skb);
 >> +
->> +	return ret;
->> +}
->> +EXPORT_SYMBOL_GPL(virtqueue_enable_cb_avail);
+>> +		tx_bytes += skb->len;
+>> +		tx_packets++;
 >> +
->>  /**
->>   * virtqueue_poll - query pending used buffers
->>   * @vq: the struct virtqueue we're talking about.
-> Could not figure out what this does.
-> Please add documentation.
->
-
-Sure, does something like below explain what does this function do?
-
-/**                                                                            
-
- * virtqueue_enable_cb_avail - restart callbacks after
-disable_cb.           
- * @vq: the struct virtqueue we're talking
-about.                              
- *                                                                             
-
- * This re-enables callbacks but hints to the other side to
-delay              
- * interrupts all of the available buffers have been processed;         
- * it returns "false" if there are at least one pending buffer in the
-queue,          
- * to detect a possible race between the driver checking for more
-work,        
- * and enabling
-callbacks.                                                     
- *                                                                             
-
- * Caller must ensure we don't call this with other
-virtqueue                  
- * operations at the same time (except where
-noted).                           
- */
-
->> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
->> index b46671e..bfaf058 100644
->> --- a/include/linux/virtio.h
->> +++ b/include/linux/virtio.h
->> @@ -65,6 +65,8 @@ bool virtqueue_enable_cb(struct virtqueue *vq);
->>  
->>  unsigned virtqueue_enable_cb_prepare(struct virtqueue *vq);
->>  
->> +bool virtqueue_enable_cb_avail(struct virtqueue *vq);
+>> +		dev_kfree_skb_any(skb);
+>> +	}
 >> +
->>  bool virtqueue_poll(struct virtqueue *vq, unsigned);
->>  
->>  bool virtqueue_enable_cb_delayed(struct virtqueue *vq);
->> -- 
->> 1.7.1
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>> +	u64_stats_update_begin(&stats->tx_syncp);
+>> +	stats->tx_bytes += tx_bytes;
+>> +	stats->tx_packets =+ tx_packets;
+> 	
+> 	stats->tx_packets += tx_packets;
 
+My bad, will correct it in next version.
+
+Thanks
