@@ -1,85 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751520AbaJOW7P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 18:59:15 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:58612 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751173AbaJOW7G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 18:59:06 -0400
-Date: Thu, 16 Oct 2014 00:59:00 +0200
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, fuse-devel@lists.sourceforge.net,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
-        Seth Forshee <seth.forshee@canonical.com>
-Subject: Re: [PATCH v4 2/5] fuse: Support fuse filesystems outside of
- init_user_ns
-Message-ID: <20141015225900.GC988@ubuntu-mba51>
-Mail-Followup-To: Andy Lutomirski <luto@amacapital.net>,
-	Miklos Szeredi <miklos@szeredi.hu>,
-	fuse-devel@lists.sourceforge.net,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	"Serge H. Hallyn" <serge.hallyn@ubuntu.com>
-References: <1413296756-25071-1-git-send-email-seth.forshee@canonical.com>
- <1413296756-25071-3-git-send-email-seth.forshee@canonical.com>
- <543E8983.5090001@mit.edu>
- <20141015150512.GA22951@ubuntu-mba51>
- <CALCETrXtHGzBbxFjZ_S3Zb0KkN1y6Uqm6CNkYSY37BLLcocFGw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrXtHGzBbxFjZ_S3Zb0KkN1y6Uqm6CNkYSY37BLLcocFGw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751583AbaJOW7Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 18:59:24 -0400
+Received: from mga11.intel.com ([192.55.52.93]:52545 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750994AbaJOW7W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 18:59:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="asc'?scan'208";a="400939844"
+Message-ID: <1413413961.2412.40.camel@jtkirshe-mobl>
+Subject: Re: [PATCH v2] bcm/CmHost.c: Fix noisy compile warnings
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: Fabio Estevam <fabio.estevam@freescale.com>, linux-kernel@vger.kernel.org,
+        mail@beyermatthias.de, devel@driverdev.osuosl.org,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Joe Perches <joe@perches.com>
+Date: Wed, 15 Oct 2014 15:59:21 -0700
+In-Reply-To: <1413399701-4321-1-git-send-email-jeffrey.t.kirsher@intel.com>
+References: <1413399701-4321-1-git-send-email-jeffrey.t.kirsher@intel.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-niEHmbDkTaq35b0ZPtn6"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 10:05:46AM -0700, Andy Lutomirski wrote:
-> On Wed, Oct 15, 2014 at 8:05 AM, Seth Forshee
-> <seth.forshee@canonical.com> wrote:
-> > On Wed, Oct 15, 2014 at 07:49:39AM -0700, Andy Lutomirski wrote:
-> >> On 10/14/2014 07:25 AM, Seth Forshee wrote:
-> >> > Update fuse to translate uids and gids to/from the user namspace
-> >> > of the process servicing requests on /dev/fuse. Any ids which do
-> >> > not map into the namespace will result in errors. inodes will
-> >> > also be marked bad when unmappable ids are received from
-> >> > userspace.
-> >> >
-> >> > Due to security concerns the namespace used should be fixed,
-> >> > otherwise a user might be able to gain elevated privileges or
-> >> > influence processes that the user would otherwise be unable to
-> >> > manipulate. Thus the namespace of the mounting process is used
-> >> > for all translations, and this namespace is required to be the
-> >> > same as the one in use when /dev/fuse was opened.
-> >> >
-> >>
-> >> I'm not sure that this is necessary if my nosuid patch goes in, but I
-> >> also don't think it makes any sense to hold this up while we find a
-> >> perfect solution.
-> >>
-> >> Is there a decent way to extend this to different translation schemes in
-> >> the future (e.g. a flag at fs setup that could be used)?
-> >
-> > I think it would be possible to relax the translation scheme
-> > restrictions in the future, certainly that's easier than tightening down
-> > a looser restriction. I still favor picking one namespace to use for
-> > translation (surely that's how it would work with other filesystems
-> > anyway) rather than using the current namespace during /dev/fuse I/O. I
-> > did an implementation using the latter technique, and it's far more
-> > complex with no benefits that I can see.
-> 
-> Long term, I think we'll want more flexible translations for
-> filesystems on removable media, even when both the mounter and the
-> accessing process are in the init user namespace.  But this can wait.
 
-You've piqued my interest. What are you thinking of which would require
-this flexibility?
+--=-niEHmbDkTaq35b0ZPtn6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-Seth
+On Wed, 2014-10-15 at 12:01 -0700, Jeff Kirsher wrote:
+> From: Fabio Estevam <fabio.estevam@freescale.com>
+>=20
+> The Beceem WIMAX was generating compile warnings on 64bit machines,
+> which were:
+>=20
+> drivers/staging/bcm/CmHost.c: In function =E2=80=98StoreCmControlResponse=
+Message=E2=80=99:
+> drivers/staging/bcm/CmHost.c:1503:3: warning: cast to pointer from intege=
+r of different size [-Wint-to-pointer-cast]
+>    (struct bcm_connect_mgr_params *) ntohl(
+>    ^
+> drivers/staging/bcm/CmHost.c:1546:3: warning: cast to pointer from intege=
+r of different size [-Wint-to-pointer-cast]
+>    (struct bcm_connect_mgr_params *) ntohl(
+>    ^
+> drivers/staging/bcm/CmHost.c:1564:3: warning: cast to pointer from intege=
+r of different size [-Wint-to-pointer-cast]
+>    (struct bcm_connect_mgr_params *) ntohl(
+>=20
+> This resolves the issue by preventing the driver to compile if CONFIG_64B=
+IT
+> is enabled, since the driver is known to be broken for 64 bit arch's.
+>=20
+> CC: Dan Carpenter <dan.carpenter@oracle.com>
+> CC: Joe Perches <joe@perches.com>
+> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+> Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+
+Greg- I have also submitted a patch to remove this driver entirely.  So
+if you choose to apply the patch to remove the driver, then you can
+disregard this patch.
+
+> ---
+> v2: change fix from using typecast u64 in the code to altering Kconfig to
+>     prevent the driver from compiling on 64 bit arch's based on feedback
+>=20
+>  drivers/staging/bcm/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/staging/bcm/Kconfig b/drivers/staging/bcm/Kconfig
+> index 8acf4b2..273b328 100644
+> --- a/drivers/staging/bcm/Kconfig
+> +++ b/drivers/staging/bcm/Kconfig
+> @@ -1,6 +1,6 @@
+>  config BCM_WIMAX
+>         tristate "Beceem BCS200/BCS220-3 and BCSM250 wimax support"
+> -       depends on USB && NET
+> +       depends on USB && NET && !64BIT
+>         help
+>           This is an experimental driver for the Beceem WIMAX chipset use=
+d
+>  	 by Sprint 4G.
+
+
+
+--=-niEHmbDkTaq35b0ZPtn6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAABCgAGBQJUPvxJAAoJEOVv75VaS+3OT14P/3mAwK9G6IlN7bqspE+M7sRq
+KBG66SzADOBwO7C0L8ouDf2l5/jpDOGaSG/UFykEq1IIkFFbf5TRii/6QmQlWFul
+7zlZSVR01ddDwYCptUbvrg428th5sXC/rl8Wv4tm/dnhMnUHaE3HWD0JDYw6DqeA
+5326Ldw76u9H61XiZTCYxL7dWW85CDDmklYK+lAki27ap++2V6HPjP0V7jnXzoch
+E0QDQscLJhBOK+gwl97eb2+g/GY6eIUUOT3LOq8LW8rTUC4Ns49gF5csEs7Bebwt
+5pDsCo7sb2NVfVgq3AUBgqU0YAF0OKTZTBQ8O96/TpRx4MGJV+S1HU3H8iLTo8b2
+Z37NQOY8eP3UhRQBB6oyHIaICdd4UtnGREnM/dNMGjPuCIH+sU6qKT6drPjIG7cb
+kAris2pTi7XGvzMboGNzS+g0Cyv1W8RqCcv5uhEgbovC79Nd7RtcY3RQcMuoEMWU
+WVOu7nVf5d54vXqkPhXLHQUm8e3PguuhfWVI/7XHUnTs7AOyqGtPR/kTth45iFr3
+1j/J5ziJy/fu14lMmI4RR28cU/92GGuGlYQnNGEOHy7TM9dmJQN7ccVa97fFMSb+
+I+lxtFTDPRiyUsPGVhiZNgf/09aH1Cfwzyhby/6ZAjCnCoc3bDMWwQQg8M8Wk7N1
+7o79ecXgfL8Eosd9a1N3
+=O8Qz
+-----END PGP SIGNATURE-----
+
+--=-niEHmbDkTaq35b0ZPtn6--
+
