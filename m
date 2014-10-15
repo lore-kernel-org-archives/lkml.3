@@ -1,42 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751595AbaJOTZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 15:25:29 -0400
-Received: from [112.213.127.60] ([112.213.127.60]:48402 "EHLO a.playsand.org"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750870AbaJOTZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 15:25:28 -0400
-Date: Thu, 16 Oct 2014 03:25:24 +0800
-From: "Re:" <sales@xjftfood.com>
-Reply-To: sales@xjftfood.com
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: soybean oil
-Message-ID: <201410160325241958602@a.yunyinshua.net>
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
+	id S1751664AbaJOT1N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 15:27:13 -0400
+Received: from mail-qc0-f202.google.com ([209.85.216.202]:46718 "EHLO
+	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750870AbaJOT1M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 15:27:12 -0400
+From: Yu Zhao <yuzhao@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Hugh Dickins <hughd@google.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Bob Liu <lliubbo@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        David Rientjes <rientjes@google.com>, Vlastimil Babka <vbabka@suse.cz>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Yu Zhao <yuzhao@google.com>
+Subject: [PATCH v2 1/2] mm: free compound page with correct order
+Date: Wed, 15 Oct 2014 12:20:04 -0700
+Message-Id: <1413400805-15547-1-git-send-email-yuzhao@google.com>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9FJPXT4000952
 
-Hi,
+Compound page should be freed by put_page() or free_pages() with
+correct order. Not doing so will cause tail pages leaked.
+
+The compound order can be obtained by compound_order() or use
+HPAGE_PMD_ORDER in our case. Some people would argue the latter
+is faster but I prefer the former which is more general.
+
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Fixes: 97ae17497e99 ("thp: implement refcounting for huge zero page")
+Cc: stable@vger.kernel.org (v3.8+)
+Signed-off-by: Yu Zhao <yuzhao@google.com>
+---
+ mm/huge_memory.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 74c78aa..780d12c 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -200,7 +200,7 @@ retry:
+ 	preempt_disable();
+ 	if (cmpxchg(&huge_zero_page, NULL, zero_page)) {
+ 		preempt_enable();
+-		__free_page(zero_page);
++		__free_pages(zero_page, compound_order(zero_page));
+ 		goto retry;
+ 	}
  
-Have you got the update price of oil dated on Sep.22.
+@@ -232,7 +232,7 @@ static unsigned long shrink_huge_zero_page_scan(struct shrinker *shrink,
+ 	if (atomic_cmpxchg(&huge_zero_refcount, 1, 0) == 1) {
+ 		struct page *zero_page = xchg(&huge_zero_page, NULL);
+ 		BUG_ON(zero_page == NULL);
+-		__free_page(zero_page);
++		__free_pages(zero_page, compound_order(zero_page));
+ 		return HPAGE_PMD_NR;
+ 	}
  
-If not, kindly send us the concrete type you need. we will send mail to you ASAP!
- 
-Sunflower oil
-soybean oil
-Linseed oil
-Rapeseed oil
- 
- 
-Update news from your esteemed company will be appreciated.
- 
-Thanks!
- 
-Anna 
-XINJIANG FIRST FOOD CO.,LTDÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+2.1.0.rc2.206.gedb03e5
+
