@@ -1,162 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932583AbaJNXyz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 19:54:55 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:39473 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755460AbaJNXyw (ORCPT
+	id S1755699AbaJOAJR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 20:09:17 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:35073 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755437AbaJOAJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 19:54:52 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Cc: Michael j Theall <mtheall@us.ibm.com>, fuse-devel@lists.sourceforge.net,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v3] fs: Treat foreign mounts as nosuid
-Date: Tue, 14 Oct 2014 16:54:47 -0700
-Message-Id: <252a4d87d99fc2b5fe4411c838f65b312c4e13cd.1413330857.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.3
+	Tue, 14 Oct 2014 20:09:14 -0400
+Date: Tue, 14 Oct 2014 18:09:11 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+Cc: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, xen-devel@lists.xenproject.org,
+        linux-pci@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH next] xen: pcifront: Process failure for
+ pcifront_(re)scan_root()
+Message-ID: <20141015000911.GB15225@google.com>
+References: <543206CD.1040505@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <543206CD.1040505@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a process gets access to a mount from a different namespace user
-namespace, that process should not be able to take advantage of
-setuid files or selinux entrypoints from that filesystem.
-Technically, trusting mounts created by the same or ancestor user
-namespaces ought to be safe, but it's simpler to distrust all
-foreign mounts.
+On Mon, Oct 06, 2014 at 11:04:45AM +0800, Chen Gang wrote:
+> When pcifront_rescan_root() or pcifront_scan_root() fails, need return
+> error code, neither set XenbusStateConnected state, just like the other
+> areas have done.
+>
+> For pcifront_rescan_root(), it will return error code ("num_roots = 0;",
+> skip xenbus_switch_state return value).
+> 
+> For pcifront_scan_root(), it will return 0 ("num_roots = 0;", set 0 by
+> the return value of xenbus_switch_state, which always return 0, at
+> present).
 
-This will make it safer to allow more complex filesystems to be
-mounted in non-root user namespaces.
+The changelog is somewhat confusing because it talks about the patch hunks
+in reverse order (the pcifront_scan_root() change is first in the patch,
+but the changelog mentions pcifront_rescan_root() first).  I *think* this
+means:
 
-This does not remove the need for MNT_LOCK_NOSUID.  The setuid,
-setgid, and file capability bits can no longer be abused if code in
-a user namespace were to clear nosuid on an untrusted filesystem,
-but this patch, by itself, is insufficient to protect the system
-from abuse of files that, when execed, would increase MAC privilege.
+  When pcifront_try_connect() finds no PCI roots, it falls back to calling
+  pcifront_scan_root() for 0000:00.  If that fails, it used to switch to
+  XenbusStateConnected and return success (because xenbus_switch_state()
+  currently always succeeds).
 
-As a more concrete explanation, any task that can manipulate a
-vfsmount associated with a given user namespace already has
-capabilities in that namespace and all of its descendents.  If they
-can cause a malicious setuid, setgid, or file-caps executable to
-appear in that mount, then that executable will only allow them to
-elevate privileges in exactly the set of namespaces in which they
-are already privileges.
+  If pcifront_scan_root() fails, leave the XenbusState unchanged and
+  return an error code.
 
-On the other hand, if they can cause a malicious executable to
-appear with a dangerous MAC label, running it could change the
-caller's security context in a way that should not have been
-possible, even inside the namespace in which the task is confined.
+  Similarly, pcifront_attach_devices() falls back to calling
+  pcifront_rescan_root() for 0000:00.  If that fails, it used to 
+  switch to XenbusStateConnected and return an error code.
 
-As a hardening measure, this would have made CVE-2014-5207 much
-more difficult to exploit.
+  If pcifront_rescan_root() fails, leave the XenbusState unchanged and
+  return the error code.
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
+The "num_roots" part doesn't seem relevant to me.
 
-Changes from v2:
- - Fix comment typo.
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
 
-Changes from v1:
- - Treat all foreign mounts as nosuid, not just non-self-or-ancestor
-   userns mounts.
+Konrad, if you want to take this, feel free.  Otherwise, if you ack it and
+you think my changelog understanding makes sense, I can pick it up.
 
- fs/exec.c                |  2 +-
- fs/namespace.c           | 13 +++++++++++++
- include/linux/mount.h    |  1 +
- security/commoncap.c     |  2 +-
- security/selinux/hooks.c |  4 ++--
- 5 files changed, 18 insertions(+), 4 deletions(-)
+It does seem odd that pcifront_attach_devices() ignores the
+xenbus_switch_state() return value while pcifront_try_connect() does not.
+But many other callers also ignore the return value, so maybe that's OK.
 
-diff --git a/fs/exec.c b/fs/exec.c
-index a2b42a98c743..ac0bb22aa3ed 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1267,7 +1267,7 @@ int prepare_binprm(struct linux_binprm *bprm)
- 	bprm->cred->euid = current_euid();
- 	bprm->cred->egid = current_egid();
- 
--	if (!(bprm->file->f_path.mnt->mnt_flags & MNT_NOSUID) &&
-+	if (mnt_may_suid(bprm->file->f_path.mnt) &&
- 	    !task_no_new_privs(current) &&
- 	    kuid_has_mapping(bprm->cred->user_ns, inode->i_uid) &&
- 	    kgid_has_mapping(bprm->cred->user_ns, inode->i_gid)) {
-diff --git a/fs/namespace.c b/fs/namespace.c
-index ef42d9bee212..4df0b393c29d 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -3019,6 +3019,19 @@ found:
- 	return visible;
- }
- 
-+bool mnt_may_suid(struct vfsmount *mnt)
-+{
-+	/*
-+	 * Foreign mounts (accessed via fchdir or through /proc
-+	 * symlinks) are always treated as if they are nosuid.  This
-+	 * prevents namespaces from trusting potentially unsafe
-+	 * suid/sgid bits, file caps, or security labels that originate
-+	 * in other namespaces.
-+	 */
-+	return real_mount(mnt)->mnt_ns == current->nsproxy->mnt_ns &&
-+		!(mnt->mnt_flags & MNT_NOSUID);
-+}
-+
- static void *mntns_get(struct task_struct *task)
- {
- 	struct mnt_namespace *ns = NULL;
-diff --git a/include/linux/mount.h b/include/linux/mount.h
-index 9262e4bf0cc3..b7b84bafe09b 100644
---- a/include/linux/mount.h
-+++ b/include/linux/mount.h
-@@ -80,6 +80,7 @@ extern void mntput(struct vfsmount *mnt);
- extern struct vfsmount *mntget(struct vfsmount *mnt);
- extern struct vfsmount *mnt_clone_internal(struct path *path);
- extern int __mnt_is_readonly(struct vfsmount *mnt);
-+extern bool mnt_may_suid(struct vfsmount *mnt);
- 
- struct file_system_type;
- extern struct vfsmount *vfs_kern_mount(struct file_system_type *type,
-diff --git a/security/commoncap.c b/security/commoncap.c
-index bab0611afc1e..52b3eed065e0 100644
---- a/security/commoncap.c
-+++ b/security/commoncap.c
-@@ -443,7 +443,7 @@ static int get_file_caps(struct linux_binprm *bprm, bool *effective, bool *has_c
- 	if (!file_caps_enabled)
- 		return 0;
- 
--	if (bprm->file->f_path.mnt->mnt_flags & MNT_NOSUID)
-+	if (!mnt_may_suid(bprm->file->f_path.mnt))
- 		return 0;
- 
- 	dentry = dget(bprm->file->f_dentry);
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index b0e940497e23..2089fd0d539e 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -2139,7 +2139,7 @@ static int selinux_bprm_set_creds(struct linux_binprm *bprm)
- 		 */
- 		if (bprm->unsafe & LSM_UNSAFE_NO_NEW_PRIVS)
- 			return -EPERM;
--		if (bprm->file->f_path.mnt->mnt_flags & MNT_NOSUID)
-+		if (!mnt_may_suid(bprm->file->f_path.mnt))
- 			return -EACCES;
- 	} else {
- 		/* Check for a default transition on this program. */
-@@ -2153,7 +2153,7 @@ static int selinux_bprm_set_creds(struct linux_binprm *bprm)
- 	ad.type = LSM_AUDIT_DATA_PATH;
- 	ad.u.path = bprm->file->f_path;
- 
--	if ((bprm->file->f_path.mnt->mnt_flags & MNT_NOSUID) ||
-+	if (!mnt_may_suid(bprm->file->f_path.mnt) ||
- 	    (bprm->unsafe & LSM_UNSAFE_NO_NEW_PRIVS))
- 		new_tsec->sid = old_tsec->sid;
- 
--- 
-1.9.3
+Bjorn
 
+> ---
+>  drivers/pci/xen-pcifront.c | 10 ++++++++++
+>  1 file changed, 10 insertions(+)
+> 
+> diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
+> index 53df39a..d78d884 100644
+> --- a/drivers/pci/xen-pcifront.c
+> +++ b/drivers/pci/xen-pcifront.c
+> @@ -866,6 +866,11 @@ static int pcifront_try_connect(struct pcifront_device *pdev)
+>  		xenbus_dev_error(pdev->xdev, err,
+>  				 "No PCI Roots found, trying 0000:00");
+>  		err = pcifront_scan_root(pdev, 0, 0);
+> +		if (err) {
+> +			xenbus_dev_fatal(pdev->xdev, err,
+> +					 "Error scanning PCI root 0000:00");
+> +			goto out;
+> +		}
+>  		num_roots = 0;
+>  	} else if (err != 1) {
+>  		if (err == 0)
+> @@ -947,6 +952,11 @@ static int pcifront_attach_devices(struct pcifront_device *pdev)
+>  		xenbus_dev_error(pdev->xdev, err,
+>  				 "No PCI Roots found, trying 0000:00");
+>  		err = pcifront_rescan_root(pdev, 0, 0);
+> +		if (err) {
+> +			xenbus_dev_fatal(pdev->xdev, err,
+> +					 "Error scanning PCI root 0000:00");
+> +			goto out;
+> +		}
+>  		num_roots = 0;
+>  	} else if (err != 1) {
+>  		if (err == 0)
+> -- 
+> 1.9.3
