@@ -1,82 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873AbaJOJWy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 05:22:54 -0400
-Received: from mail-bl2on0130.outbound.protection.outlook.com ([65.55.169.130]:65024
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751468AbaJOJWx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 05:22:53 -0400
-From: Thomas Shao <huishao@microsoft.com>
-To: Richard Cochran <richardcochran@gmail.com>
-CC: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        KY Srinivasan <kys@microsoft.com>
-Subject: RE: [PATCH v2 2/2] hyperv: Implement Time Synchronization using
- host time sample
-Thread-Topic: [PATCH v2 2/2] hyperv: Implement Time Synchronization using
- host time sample
-Thread-Index: AQHP6EpV0yTtUPFvLUmVTRuWJYo4nZww4UkAgAAArUA=
-Date: Wed, 15 Oct 2014 09:21:33 +0000
-Message-ID: <CD2CABCB2C0A0D4682C5F8AD840141540C171E@HKXPRD3002MB006.064d.mgd.msft.net>
-References: <1413362404-16284-1-git-send-email-huishao@microsoft.com>
- <20141015091808.GB5300@localhost.localdomain>
-In-Reply-To: <20141015091808.GB5300@localhost.localdomain>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.94.23.55]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751925AbaJOJZY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 05:25:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30869 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751554AbaJOJZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 05:25:22 -0400
+Date: Wed, 15 Oct 2014 12:28:49 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        davem@davemloft.net, eric.dumazet@gmail.com
+Subject: Re: [RFC PATCH net-next 2/6] virtio: introduce
+ virtio_enable_cb_avail()
+Message-ID: <20141015092849.GA25776@redhat.com>
+References: <1413357930-45302-1-git-send-email-jasowang@redhat.com>
+ <1413357930-45302-3-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(438002)(199003)(13464003)(189002)(51704005)(377454003)(24454002)(164054003)(77096002)(106116001)(85306004)(97756001)(81156004)(120916001)(2656002)(86612001)(87936001)(6806004)(95666004)(106466001)(47776003)(64706001)(20776003)(92566001)(4396001)(23726002)(85852003)(107046002)(55846006)(84676001)(80022003)(50466002)(46102003)(110136001)(21056001)(92726001)(19580405001)(31966008)(19580395003)(54356999)(86146001)(50986999)(99396003)(68736004)(69596002)(76176999)(86362001)(44976005)(16796002)(46406003)(1411001)(97736003)(33656002)(76482002)(26826002);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB1211;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1211;
-X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
-X-Forefront-PRVS: 0365C0E14B
-Authentication-Results: spf=pass (sender IP is 131.107.125.37)
- smtp.mailfrom=huishao@microsoft.com; 
-X-OriginatorOrg: microsoft.onmicrosoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413357930-45302-3-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> -----Original Message-----
-> From: Richard Cochran [mailto:richardcochran@gmail.com]
-> Sent: Wednesday, October 15, 2014 5:18 PM
-> To: Thomas Shao
-> Cc: tglx@linutronix.de; gregkh@linuxfoundation.org; linux-
-> kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
-> apw@canonical.com; jasowang@redhat.com; KY Srinivasan
-> Subject: Re: [PATCH v2 2/2] hyperv: Implement Time Synchronization using
-> host time sample
+On Wed, Oct 15, 2014 at 03:25:26PM +0800, Jason Wang wrote:
+> This patch introduces virtio_enable_cb_avail() to publish avail idx
+> and used event. This could be used by batched buffer submitting to
+> reduce the number of tx interrupts.
 > 
-> On Wed, Oct 15, 2014 at 01:40:04AM -0700, Thomas Shao wrote:
-> > In current hyper-v time sync service,it only gets the initial clock
-> > time from the host. It didn't process the following time samples. This
-> > change introduced a module parameter called host_time_sync. If it is
-> > set to true, the guest will periodically sychronize it's time with the
-> > host clock using host time sample. By default it is disabled, because
-> > we still recommend user to configure NTP for time synchronization.
-> >
-> > Signed-off-by: Thomas Shao <huishao@microsoft.com>
-> > Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
-> > ---
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+>  drivers/virtio/virtio_ring.c |   22 ++++++++++++++++++++--
+>  include/linux/virtio.h       |    2 ++
+>  2 files changed, 22 insertions(+), 2 deletions(-)
 > 
-> Um, what changed in V2?
+> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+> index 1b3929f..d67fbf8 100644
+> --- a/drivers/virtio/virtio_ring.c
+> +++ b/drivers/virtio/virtio_ring.c
+> @@ -567,14 +567,32 @@ unsigned virtqueue_enable_cb_prepare(struct virtqueue *_vq)
+>  	 * entry. Always do both to keep code simple. */
+>  	vq->vring.avail->flags &= ~VRING_AVAIL_F_NO_INTERRUPT;
+>  	/* Make sure used event never go backwards */
+> -	if (!vring_need_event(vring_used_event(&vq->vring),
+> -			      vq->vring.avail->idx, last_used_idx))
+> +	if (vq->vring.avail->idx != vring_used_event(&vq->vring) &&
+> +	    !vring_need_event(vring_used_event(&vq->vring),
+> +			      vq->vring.avail->idx, last_used_idx)) {
+>  		vring_used_event(&vq->vring) = last_used_idx;
+> +	}
+>  	END_USE(vq);
+>  	return last_used_idx;
+>  }
+>  EXPORT_SYMBOL_GPL(virtqueue_enable_cb_prepare);
+>
 
-In V2, I address all the Dan's comments.
+I see you are also changing virtqueue_enable_cb_prepare, why?
 
-> 
-> Thanks,
-> Richard
+> +bool virtqueue_enable_cb_avail(struct virtqueue *_vq)
+> +{
+> +	struct vring_virtqueue *vq = to_vvq(_vq);
+> +	bool ret;
+> +
+> +	START_USE(vq);
+> +	vq->vring.avail->flags &= ~VRING_AVAIL_F_NO_INTERRUPT;
+> +	vring_used_event(&vq->vring) = vq->vring.avail->idx;
+> +	ret = vring_need_event(vq->vring.avail->idx,
+> +			       vq->last_used_idx, vq->vring.used->idx);
+> +	END_USE(vq);
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(virtqueue_enable_cb_avail);
+> +
+>  /**
+>   * virtqueue_poll - query pending used buffers
+>   * @vq: the struct virtqueue we're talking about.
+
+Could not figure out what this does.
+Please add documentation.
+
+> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
+> index b46671e..bfaf058 100644
+> --- a/include/linux/virtio.h
+> +++ b/include/linux/virtio.h
+> @@ -65,6 +65,8 @@ bool virtqueue_enable_cb(struct virtqueue *vq);
+>  
+>  unsigned virtqueue_enable_cb_prepare(struct virtqueue *vq);
+>  
+> +bool virtqueue_enable_cb_avail(struct virtqueue *vq);
+> +
+>  bool virtqueue_poll(struct virtqueue *vq, unsigned);
+>  
+>  bool virtqueue_enable_cb_delayed(struct virtqueue *vq);
+> -- 
+> 1.7.1
