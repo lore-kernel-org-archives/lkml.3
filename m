@@ -1,61 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751425AbaJOOJR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 10:09:17 -0400
-Received: from mail-bn1bon0073.outbound.protection.outlook.com ([157.56.111.73]:3681
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751202AbaJOOJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 10:09:16 -0400
-X-Greylist: delayed 940 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Oct 2014 10:09:15 EDT
-Message-ID: <543E7C56.3090508@opensource.altera.com>
-Date: Wed, 15 Oct 2014 08:53:26 -0500
-From: Dinh Nguyen <dinguyen@opensource.altera.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751451AbaJOOJw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 10:09:52 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:60841 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751191AbaJOOJu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 10:09:50 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "moderated list:ARM/Rockchip SoC..." 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] ARM: dts: rockchip: add I2S controllers for rk3066 and rk3188
+Date: Wed, 15 Oct 2014 16:07:55 +0200
+Message-ID: <5010451.G368NqnOYK@phil>
+User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <1413274597-15788-1-git-send-email-julien.chauveau@neo-technologies.fr>
+References: <1413274597-15788-1-git-send-email-julien.chauveau@neo-technologies.fr>
 MIME-Version: 1.0
-To: Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        atull <atull@opensource.altera.com>
-CC: Philipp Zabel <p.zabel@pengutronix.de>, <dinh.linux@gmail.com>,
-        <grant.likely@linaro.org>, <robh+dt@kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] reset: socfpga: use arch_initcall for early initialization
-References: <1412822646-11257-1-git-send-email-dinguyen@opensource.altera.com> <1412845410.6809.3.camel@pengutronix.de> <54368AA2.9000104@opensource.altera.com> <20141009132835.GI15799@pengutronix.de> <alpine.DEB.2.02.1410090950540.17462@atx-linux-37> <20141009151935.GK15799@pengutronix.de> <alpine.DEB.2.02.1410101123590.11270@atx-linux-37> <alpine.DEB.2.02.1410141322160.11888@atx-linux-37> <20141015100247.GB6255@pengutronix.de>
-In-Reply-To: <20141015100247.GB6255@pengutronix.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [99.103.66.154]
-X-ClientProxiedBy: BY2PR03CA042.namprd03.prod.outlook.com (10.141.249.15) To
- BN3PR0301MB1186.namprd03.prod.outlook.com (25.160.156.148)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1186;
-X-Forefront-PRVS: 0365C0E14B
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(24454002)(51704005)(199003)(479174003)(377454003)(40100003)(101416001)(80316001)(80022003)(102836001)(46102003)(122386002)(33656002)(76482002)(120916001)(64126003)(50986999)(87266999)(54356999)(76176999)(31966008)(93886004)(65816999)(83506001)(85306004)(23756003)(87976001)(95666004)(105586002)(4396001)(107046002)(106356001)(59896002)(21056001)(77096002)(65956001)(66066001)(65806001)(97736003)(92726001)(92566001)(86362001)(50466002)(20776003)(47776003)(42186005)(85852003)(64706001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN3PR0301MB1186;H:Dinhs-MacBook-Pro.local;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
-X-OriginatorOrg: opensource.altera.com
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Julien,
 
-
-On 10/15/14, 5:02 AM, Steffen Trumtrar wrote:
-> Hi!
+Am Dienstag, 14. Oktober 2014, 10:16:37 schrieb Julien CHAUVEAU:
+> Add the I2S/PCM controller nodes and pin controls for rk3066 and rk3188.
 > 
-> On Tue, Oct 14, 2014 at 01:45:29PM -0500, atull wrote:
->> The FPGA bridge driver that I submitted last year handled the following
->> things:
->>  * The bridges might have been brought out of reset in the bootloader. Some
->>    of the bridges have write-only registers (!) so this information had to
->>    be passed in DT
+> Signed-off-by: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
+
+I've added the patch to my wip dts branch on github - which will move to 
+kernel.org after -rc1
+
+> ---
+
+In the future for v2 and onwards patches, please provide a changelog in the 
+comment section (after the "---"), so people can see what changed, like:
+
+changes since v1:
+- declare i2s nodes separately on rk3066 and rk3188 as the controllers differ
+
+This doesn't get into the kernel itself, but is helpful for people reviewing 
+the patch.
+
+>  arch/arm/boot/dts/rk3066a.dtsi | 81
+> ++++++++++++++++++++++++++++++++++++++++++ arch/arm/boot/dts/rk3188.dtsi  |
+> 26 ++++++++++++++
+>  2 files changed, 107 insertions(+)
 > 
-> Regmap has infrastructure to handle this.
+> diff --git a/arch/arm/boot/dts/rk3066a.dtsi b/arch/arm/boot/dts/rk3066a.dtsi
+> index ad9c2db..d75b01a 100644
+> --- a/arch/arm/boot/dts/rk3066a.dtsi
+> +++ b/arch/arm/boot/dts/rk3066a.dtsi
+> @@ -53,6 +53,51 @@
+>  		};
+>  	};
 > 
-
-The current implementation of Alan's bridge driver is using regmap to
-toggle the reset manager bits. However, that required adding "syscon" to
-the reset manager's DTS node. By doing this, the reset driver was not
-able to load.
-
-So that's the story behind why I'm looking to convert Alan's bridge
-driver to use the reset driver.
-
-Dinh
+> +	i2s0: i2s@10118000 {
+> +		compatible = "rockchip,rk3066-i2s";
+> +		reg = <0x10118000 0x2000>;
+> +		interrupts = <GIC_SPI 31 IRQ_TYPE_LEVEL_HIGH>;
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		pinctrl-names = "default";
+> +		pinctrl-0 = <&i2s0_bus>;
+> +		dmas = <&dmac1_s 4>, <&dmac1_s 5>;
+> +		dma-names = "tx", "rx";
+> +		clock-names = "i2s_hclk", "i2s_clk";
+> +		clocks = <&cru HCLK_I2S0>, <&cru SCLK_I2S0>;
+> +		status = "disabled";
+> +	};
+> +
+> +	i2s1: i2s@1011a000 {
+> +		compatible = "rockchip,rk3066-i2s";
+> +		reg = <0x1011a000 0x2000>;
+> +		interrupts = <GIC_SPI 32 IRQ_TYPE_LEVEL_HIGH>;
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		pinctrl-names = "default";
+> +		pinctrl-0 = <&i2s1_bus>;
+> +		dmas = <&dmac1_s 6>, <&dmac1_s 7>;
+> +		dma-names = "tx", "rx";
+> +		clock-names = "i2s_hclk", "i2s_clk";
+> +		clocks = <&cru HCLK_I2S1>, <&cru SCLK_I2S1>;
+> +		status = "disabled";
+> +	};
+> +
+> +	i2s2: i2s@1011c000 {
+> +		compatible = "rockchip,rk3066-i2s";
+> +		reg = <0x1011c000 0x2000>;
+> +		interrupts = <GIC_SPI 20 IRQ_TYPE_LEVEL_HIGH>;
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		pinctrl-names = "default";
+> +		pinctrl-0 = <&i2s2_bus>;
+> +		dmas = <&dmac1_s 9>, <&dmac1_s 10>;
+> +		dma-names = "tx", "rx";
+> +		clock-names = "i2s_hclk", "i2s_clk";
+> +		clocks = <&cru HCLK_I2S2>, <&cru SCLK_I2S2>;
+> +		status = "disabled";
+> +	};
+> +
+>  	cru: clock-controller@20000000 {
+>  		compatible = "rockchip,rk3066a-cru";
+>  		reg = <0x20000000 0x1000>;
+> @@ -405,6 +450,42 @@
+>  						<RK_GPIO3 20 RK_FUNC_1 &pcfg_pull_default>;
+>  			};
+>  		};
+> +
+> +		i2s0 {
+> +			i2s0_bus: i2s0-bus {
+> +				rockchip,pins = <RK_GPIO0 7 RK_FUNC_1 &pcfg_pull_default>,
+> +						<RK_GPIO0 8 RK_FUNC_1 &pcfg_pull_default>,
+> +						<RK_GPIO0 9 RK_FUNC_1 &pcfg_pull_default>,
+> +						<RK_GPIO0 10 RK_FUNC_1 &pcfg_pull_default>,
+> +						<RK_GPIO0 11 RK_FUNC_1 &pcfg_pull_default>,
+> +						<RK_GPIO0 12 RK_FUNC_1 &pcfg_pull_default>,
+> +						<RK_GPIO0 13 RK_FUNC_1 &pcfg_pull_default>,
+> +						<RK_GPIO0 14 RK_FUNC_1 &pcfg_pull_default>,
+> +						<RK_GPIO0 15 RK_FUNC_1 &pcfg_pull_default>;
+> +			};
+> +		};
+> +
+> +		i2s1 {
+> +			i2s1_bus: i2s1-bus {
+> +				rockchip,pins = <RK_GPIO0 16 RK_FUNC_1 &pcfg_pull_default>,
+> +						<RK_GPIO0 17 RK_FUNC_1 &pcfg_pull_default>,
+> +						<RK_GPIO0 18 RK_FUNC_1 &pcfg_pull_default>,
+> +						<RK_GPIO0 19 RK_FUNC_1 &pcfg_pull_default>,
+> +						<RK_GPIO0 20 RK_FUNC_1 &pcfg_pull_default>,
+> +						<RK_GPIO0 21 RK_FUNC_1 &pcfg_pull_default>;
+> +			};
+> +		};
+> +
+> +		i2s2 {
+> +			i2s2_bus: i2s2-bus {
+> +				rockchip,pins = <RK_GPIO0 24 RK_FUNC_1 &pcfg_pull_default>,
+> +						<RK_GPIO0 25 RK_FUNC_1 &pcfg_pull_default>,
+> +						<RK_GPIO0 26 RK_FUNC_1 &pcfg_pull_default>,
+> +						<RK_GPIO0 27 RK_FUNC_1 &pcfg_pull_default>,
+> +						<RK_GPIO0 28 RK_FUNC_1 &pcfg_pull_default>,
+> +						<RK_GPIO0 29 RK_FUNC_1 &pcfg_pull_default>;
+> +			};
+> +		};
+>  	};
+>  };
+> 
+> diff --git a/arch/arm/boot/dts/rk3188.dtsi b/arch/arm/boot/dts/rk3188.dtsi
+> index ddaada7..fa3665a 100644
+> --- a/arch/arm/boot/dts/rk3188.dtsi
+> +++ b/arch/arm/boot/dts/rk3188.dtsi
+> @@ -65,6 +65,21 @@
+>  		};
+>  	};
+> 
+> +	i2s0: i2s@1011a000 {
+> +		compatible = "rockchip,rk3188-i2s", "rockchip,rk3066-i2s";
+> +		reg = <0x1011a000 0x2000>;
+> +		interrupts = <GIC_SPI 32 IRQ_TYPE_LEVEL_HIGH>;
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		pinctrl-names = "default";
+> +		pinctrl-0 = <&i2s0_bus>;
+> +		dmas = <&dmac1_s 6>, <&dmac1_s 7>;
+> +		dma-names = "tx", "rx";
+> +		clock-names = "i2s_hclk", "i2s_clk";
+> +		clocks = <&cru HCLK_I2S0>, <&cru SCLK_I2S0>;
+> +		status = "disabled";
+> +	};
+> +
+>  	cru: clock-controller@20000000 {
+>  		compatible = "rockchip,rk3188-cru";
+>  		reg = <0x20000000 0x1000>;
+> @@ -395,6 +410,17 @@
+>  						<RK_GPIO3 20 RK_FUNC_1 &pcfg_pull_none>;
+>  			};
+>  		};
+> +
+> +		i2s0 {
+> +			i2s0_bus: i2s0-bus {
+> +				rockchip,pins = <RK_GPIO1 16 RK_FUNC_1 &pcfg_pull_none>,
+> +						<RK_GPIO1 17 RK_FUNC_1 &pcfg_pull_none>,
+> +						<RK_GPIO1 18 RK_FUNC_1 &pcfg_pull_none>,
+> +						<RK_GPIO1 19 RK_FUNC_1 &pcfg_pull_none>,
+> +						<RK_GPIO1 20 RK_FUNC_1 &pcfg_pull_none>,
+> +						<RK_GPIO1 21 RK_FUNC_1 &pcfg_pull_none>;
+> +			};
+> +		};
+>  	};
+>  };
