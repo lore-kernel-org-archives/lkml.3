@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752519AbaJONFF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 09:05:05 -0400
-Received: from mga02.intel.com ([134.134.136.20]:12210 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752460AbaJONFD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 09:05:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,724,1406617200"; 
-   d="asc'?scan'208";a="589394662"
-Message-ID: <1413378213.2412.13.camel@jtkirshe-mobl>
-Subject: Re: [PATCH] bcm/CmHost.c: Fix noisy compile warnings
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 15 Oct 2014 06:03:33 -0700
-In-Reply-To: <20141015125934.GB23154@mwanda>
-References: <1413375999-10210-1-git-send-email-jeffrey.t.kirsher@intel.com>
-	 <20141015123431.GA23154@mwanda> <20141015125934.GB23154@mwanda>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-SYO2aaU8prczJEYBldqB"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	id S1751702AbaJONFu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 09:05:50 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:56003 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750870AbaJONFs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 09:05:48 -0400
+Date: Wed, 15 Oct 2014 15:04:52 +0200
+From: Mark Brown <broonie@kernel.org>
+To: Addy Ke <addy.ke@rock-chips.com>
+Cc: heiko@sntech.de, dianders@chromium.org, grant.likely@linaro.org,
+        robh+dt@kernel.org, amstan@google.com, sonnyrao@google.com,
+        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, devicetree@vger.kernel.org,
+        olof@lixom.net, hj@rock-chips.com, kever.yang@rock-chips.com,
+        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
+        yzq@rock-chips.com, zhenfu.fang@rock-chips.com, cf@rock-chips.com,
+        zhangqing@rock-chips.com, hl@rock-chips.com, wei.luo@rock-chips.com
+Message-ID: <20141015130452.GD27755@sirena.org.uk>
+References: <1413372311-4203-1-git-send-email-addy.ke@rock-chips.com>
+ <1413372349-4254-1-git-send-email-addy.ke@rock-chips.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lgDpGT5NbMPMciux"
+Content-Disposition: inline
+In-Reply-To: <1413372349-4254-1-git-send-email-addy.ke@rock-chips.com>
+X-Cookie: You are magnetic in your bearing.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 62.156.150.204
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] spi/rockchip: fix bug that case spi can't go as fast
+ as slave request
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-SYO2aaU8prczJEYBldqB
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+--lgDpGT5NbMPMciux
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On Wed, 2014-10-15 at 15:59 +0300, Dan Carpenter wrote:
-> Or we could fix it but add a multi-line comment with lots of capital
-> letters and exclamation marks.  I guess we would need to make a
-> function
-> since this cast is in several places.
->=20
-> void *silence_buggy_casting(u32 pointer)
-> {
->         /*
->          * DANGER! DANGER! DANGER! DANGER! DANGER! DANGER! DANGER!
->          * FIXME!!!  We know this cast is totally buggy.  The BCM
-> driver
->          * doesn't work on 64 bits.  But no one knows how to make this
->          * work.  Oh well.  Let's silence the GCC warning.
->          * DANGER! DANGER! DANGER! DANGER! DANGER! DANGER! DANGER!
->          *
->          */
->         return (void *)(long)pointer;
-> }
->=20
-> Something really ugly and gnarly like that would be hard to ignore.
+On Wed, Oct 15, 2014 at 07:25:49PM +0800, Addy Ke wrote:
 
-I thought I remember Greg saying something about getting rid of this
-driver anyway, but I could be wrong.  If Greg decides to keep this
-driver around, then I think we should something like your suggestion
-above.
+> +	if (WARN_ON(rs->speed > MAX_SCLK_OUT))
+> +		rs->speed = MAX_SCLK_OUT;
+> +
+> +	/* the minimum divsor is 2 */
+> +	if (rs->max_freq < 2 * rs->speed) {
+> +		clk_set_rate(rs->spiclk, 2 * rs->speed);
+> +		rs->max_freq = clk_get_rate(rs->spiclk);
+> +	}
 
---=-SYO2aaU8prczJEYBldqB
+I'll apply this but you should be checking the return code from
+clk_set_rate() here, please send a followup patch doing that.  It might
+also be worth consdering just setting the rate unconditionally here, it
+seems like it should make things simpler.
+
+--lgDpGT5NbMPMciux
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAABCgAGBQJUPnClAAoJEOVv75VaS+3OlPoQAJCZ7hR0NiiKkfAVdSSnmZDR
-Jb5GLoc2+mEnq8MFz8r61qsHcXs9cFpKQ+27EiJF6xXwBzsxjJhgXNsgrfYOdpnQ
-252u9obalgYFkshqkdF6yRGMCwiXi2nksXiAa9fhXy9Xl3sIGCDyDg9YF0K/H84/
-JUtL45lXgaG5Kv49N4LJz/RvwrvrIuY9pO3BGKvWokZ7NEDO3JOm6v6tW7KboQLd
-pzGlrtiiuKlPMjOoDJGAsnk2MHU8BHNHAkflI9bAYP6oO/7VG6PsUAmNeKCWfGr9
-PGTMy5v1a0Vq8me7+6LJyUM2LCD18p4dGawGeB+/vX5o7LNVevgN5fX1jjOIAomy
-naiE9vvzO+EnXlWZA7yHWvlSzorRwMwkCQwK+dIjcdXqjIwPqNfFcgt4oc4zY0GM
-DXVOYOp2NknTFlHj2Kn9++VkxnVcOaIU8MQRHcuIN4gkmfx57NXYYv8grtu2a8e4
-OQM9lR6qTkWxef9K9clOZPCtPT9UqM8U+bGghf1qp/KKPXYfU4poVYlaGUCEFyW3
-Mi9+pjudlPseZSSUGqZoH28wH0piWULEkxJLnoamuH50vBtCVCUon9v13RYjAcek
-AC6deYmK1Ucz6FyOxKXXrxZ/y4DGUcUL6mQRoBwI0YzSktSDORVaFrSe91Yd0o7z
-8KRGo2kZnFeaMbX0Jbte
-=KlSm
+iQEcBAEBAgAGBQJUPnDrAAoJECTWi3JdVIfQ0pgH/iXhsAmzVdGxVgj3YgqbUkfm
+iDL0qZLGWZ0NNl0bPPCb7i7Vb4hTQrj+o+SuK8q6DAmG/Tq7r1o54fPK6IpCyZNS
+OmeewytnwFqp5k3+wBbePL7QLuL7RSAXJ1gmwlg8K3F6b+hwN/iceaoUqpX7+ljv
+rG8Ma13ht7ukQ0HZQLy6s9T+Je+irhurajqn6a8cnPF/INSKMVkMayCsqoOnPCyw
+LQcyESiwBPdYcTSsnlGCpaWQXU9KLphYVEmMiJK1vz3K6Co7UTgEf15wRfITQH36
+bTSNQlbCPihGokjspDR0UMfSHAE+BKqr9qx35yL3g8S/iKPpguXVHJbWlPoDC/Q=
+=46Wt
 -----END PGP SIGNATURE-----
 
---=-SYO2aaU8prczJEYBldqB--
-
+--lgDpGT5NbMPMciux--
