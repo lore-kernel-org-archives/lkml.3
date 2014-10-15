@@ -1,98 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751394AbaJONms (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 09:42:48 -0400
-Received: from achernar.gro-tsen.net ([195.154.91.68]:60163 "EHLO
-	achernar.gro-tsen.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751094AbaJONmq (ORCPT
+	id S1751441AbaJONnQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 09:43:16 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:56207 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751094AbaJONnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 09:42:46 -0400
-X-Greylist: delayed 442 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Oct 2014 09:42:46 EDT
-Date: Wed, 15 Oct 2014 15:35:18 +0200
-From: David Madore <david+ml@madore.org>
-To: Linux Kernel mailing-list <linux-kernel@vger.kernel.org>
-Subject: feature suggestion: implement SO_PEERCRED on local AF_INET/AF_INET6
- sockets (allow uid-based identification on localhost)
-Message-ID: <20141015133518.GA7179@achernar.madore.org>
+	Wed, 15 Oct 2014 09:43:14 -0400
+Date: Wed, 15 Oct 2014 15:42:45 +0200
+From: Mark Brown <broonie@kernel.org>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Romain Perier <romain.perier@gmail.com>, devicetree@vger.kernel.org,
+        lgirdwood@gmail.com, linux-kernel@vger.kernel.org, heiko@sntech.de,
+        robh@kernel.org, mark.rutland@arm.com
+Message-ID: <20141015134245.GH27755@sirena.org.uk>
+References: <1413268273-15151-1-git-send-email-romain.perier@gmail.com>
+ <20141015124142.92D0EC40B00@trevor.secretlab.ca>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="CsAk07yibld3GWUQ"
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141015124142.92D0EC40B00@trevor.secretlab.ca>
+X-Cookie: You are magnetic in your bearing.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 62.156.150.204
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC v3 PATCH 1/5] of: Add standard property for poweroff
+ capability
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Given an AF_UNIX socket, the getsockopt(, SOL_SOCKET, SO_PEERCRED,,)
-call allows one endpoint to authenticate the other endpoint's pid, uid
-and gid.
 
-The call is valid on AF_INET and AF_INET6 sockets but returns no data
-(pid=0, uid=-1, gid=-1).  Obviously it is meaningless to try to get
-such credentials from a INET/INET6 socket in general, but there is one
-case where it would make sense: namely, when the endpoint is local
-(i.e., when the socket is a connection to the same machine, e.g., when
-connecting to 127.0.0.0/8 or ::1/32).
+--CsAk07yibld3GWUQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Being able to authenticate local INET/INET6 sockets would be immensely
-valuable for a number of programs, to provide some kind of access
-control to local sockets.  For example, ssh allows port forwarding
-using the -L and -D options: by default or by option (cf. the
-GatewayPorts option of ssh), these port-forwarding sockets can be
-restricted to localhost, but of course they cannot be restricted to
-the user running ssh, which makes them a huge security problem.  Many
-programs suffer from the same problem (they restrict some kind of
-connection to localhost, but they of course cannot make a restriction
-on which user will be able to connect).
+On Wed, Oct 15, 2014 at 02:41:42PM +0200, Grant Likely wrote:
+> , Romain Perier <romain.perier@gmail.com>
+>  wrote:
+> > Several drivers create their own devicetree property when they register
+> > poweroff capabilities. This is for example the case for mfd, regulator
+> > or power drivers which define "vendor,system-power-controller" property.
+> > This patch adds support for a standard property "poweroff-source"
+> > which marks the device as able to shutdown the system.
 
-One cannot simply retort "these programs should be using Unix-domain
-sockets instead": I don't think many browsers support using a SOCKS
-proxy or an HTTP proxy over a Unix-domain socket, and in the latter
-case I'm not even sure it would make sense (protocol-wise).
+> > Signed-off-by: Romain Perier <romain.perier@gmail.com>
 
-If I believe <URL:
-http://www.lehman.cuny.edu/cgi-bin/man-cgi?getpeerucred+3
- > ("The system currently supports both sides of connection end-points
-for local AF_UNIX, AF_INET, and AF_INET6 sockets"), Solaris, or at
-least some version thereof, support authentication of local AF_INET
-and AF_INET6 sockets.
+> Acked-by: Grant Likely <grant.likely@linaro.org>
 
-I think it would be wonderful if Linux had this.  I'm willing to work
-on the implementation if it is considered *a priori* acceptable for
-inclusion.
+> And same for the documentation patches.
 
-The data seems to be available, since it is exposed in /proc/net/tcp
-and /proc/net/tcp6 and whatnots (implementation details left aside, it
-is merely a question of matching a line with opposite endpoints to the
-current socket and returning it).
+I guess I should apply these (except the DTS update) since the first
+user that's being added is a regulator driver?
 
-[In principle, a userland program can parse /proc/net/tcp so it does
-not need the feature I am suggesting, but in practice parsing a text
-file to communicate with the kernel is yucky at best, and probably not
-very robust (e.g., /proc might not be mounted), and it would be very
-difficult to convince, say, the OpenSSH authors to include code that
-parses the Linux /proc/net/tcp format (or even link with a library
-which does this) in order to add access-control on ssh port-forwards:
-having this under a more standard getsockpot() interface is cleaner
-and opens at least some kind of hope that programs would agree to use
-it.]
+--CsAk07yibld3GWUQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Question number 1: If this feature were implemented, would it be
-considered acceptable for inclusion in the kernel?  (If there is some
-reason why it can't be accepted, I'd like to know in advance, to avoid
-working in vain.)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Question number 2: A priori, how difficult would it be to implement
-this?  (As mentioned above, it seems trivial in principle to merely go
-through the local endpoints to find a matching connection, but maybe
-there are locking issues that I don't understand that make it much
-more difficult than it would seem.)  Any guidelines on implementation?
-(I imagine one should try to fill sk->sk_peer_cred at connect time,
-but I don't really know how difficult this might turn out.)
+iQEcBAEBAgAGBQJUPnnQAAoJECTWi3JdVIfQ+w0H/3A/sjye4JqIOxvenRIDnuQZ
+jlt/izB74roth3m9ga3wYqURXSqH+V9Tr/lMtffwBK3BLDnegA/+XKI+xQRuevyg
+629j1b5koylFOm5foFS+jGXyff7nPw5Ia7rDrr3uGpglsgAAW9ouwLjg42TxD9IH
+JWXUiyKdxcrd4tfYVIg58MPqtmugo7laNcfuFW2kWtLGox+VZD4vEQRmZcHLPML7
+woWBWONI9aQdEvZD86YsF14Dbdeb+fM8ZRg7ek9E9l0nyvQynJTjaQljL3OxAzh0
+5r3QGetlBsm66uM5qLRz0hRSa+5PWJjcAD9x9NAoIgh2U+Od+WFIJpU/ny/RozM=
+=JrLv
+-----END PGP SIGNATURE-----
 
-Any comments on the matter are welcome.
-
-Happy hacking,
-
--- 
-     David A. Madore
-   ( http://www.madore.org/~david/ )
+--CsAk07yibld3GWUQ--
