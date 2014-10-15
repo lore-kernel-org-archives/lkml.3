@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932919AbaJOC2k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 22:28:40 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:40016 "EHLO
+	id S1755932AbaJOC0H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 22:26:07 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:39162 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932809AbaJOC0L (ORCPT
+	with ESMTP id S932666AbaJOCZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 22:26:11 -0400
+	Tue, 14 Oct 2014 22:25:47 -0400
 From: Yijing Wang <wangyijing@huawei.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
@@ -33,9 +33,9 @@ CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Thierry Reding <thierry.reding@gmail.com>,
         "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
         Liviu Dudau <liviu@dudau.co.uk>, Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH v3 23/27] arm/iop13xx/MSI: Use MSI chip framework to configure MSI/MSI-X irq
-Date: Wed, 15 Oct 2014 11:07:11 +0800
-Message-ID: <1413342435-7876-24-git-send-email-wangyijing@huawei.com>
+Subject: [PATCH v3 05/27] PCI: tegra: Save msi chip in pci_sys_data
+Date: Wed, 15 Oct 2014 11:06:53 +0800
+Message-ID: <1413342435-7876-6-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1413342435-7876-1-git-send-email-wangyijing@huawei.com>
 References: <1413342435-7876-1-git-send-email-wangyijing@huawei.com>
@@ -47,91 +47,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use MSI chip framework instead of arch MSI functions to configure
-MSI/MSI-X irq. So we can manage MSI/MSI-X irq in a unified framework.
+Save msi chip in pci_sys_data instead of assign
+msi chip to every pci bus in .add_bus().
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- arch/arm/mach-iop13xx/include/mach/pci.h |    4 ++++
- arch/arm/mach-iop13xx/iq81340mc.c        |    3 +++
- arch/arm/mach-iop13xx/iq81340sc.c        |    5 ++++-
- arch/arm/mach-iop13xx/msi.c              |   11 +++++++++--
- 4 files changed, 20 insertions(+), 3 deletions(-)
+ drivers/pci/host/pci-tegra.c |   13 +++----------
+ 1 files changed, 3 insertions(+), 10 deletions(-)
 
-diff --git a/arch/arm/mach-iop13xx/include/mach/pci.h b/arch/arm/mach-iop13xx/include/mach/pci.h
-index 59f42b5..c87ac3a 100644
---- a/arch/arm/mach-iop13xx/include/mach/pci.h
-+++ b/arch/arm/mach-iop13xx/include/mach/pci.h
-@@ -11,6 +11,10 @@ void iop13xx_atu_select(struct hw_pci *plat_pci);
- void iop13xx_pci_init(void);
- void iop13xx_map_pci_memory(void);
- 
-+#ifdef CONFIG_PCI_MSI
-+extern struct msi_chip iop13xx_msi_chip;
-+#endif
-+
- #define IOP_PCI_STATUS_ERROR (PCI_STATUS_PARITY |	     \
- 			       PCI_STATUS_SIG_TARGET_ABORT | \
- 			       PCI_STATUS_REC_TARGET_ABORT | \
-diff --git a/arch/arm/mach-iop13xx/iq81340mc.c b/arch/arm/mach-iop13xx/iq81340mc.c
-index 9cd07d3..1f499b6 100644
---- a/arch/arm/mach-iop13xx/iq81340mc.c
-+++ b/arch/arm/mach-iop13xx/iq81340mc.c
-@@ -59,6 +59,9 @@ static struct hw_pci iq81340mc_pci __initdata = {
- 	.map_irq	= iq81340mc_pcix_map_irq,
- 	.scan		= iop13xx_scan_bus,
- 	.preinit	= iop13xx_pci_init,
-+#ifdef CONFIG_PCI_MSI
-+	.msi_chip	= &iop13xx_msi_chip,
-+#endif
- };
- 
- static int __init iq81340mc_pci_init(void)
-diff --git a/arch/arm/mach-iop13xx/iq81340sc.c b/arch/arm/mach-iop13xx/iq81340sc.c
-index b3ec11c..8bdfdc5 100644
---- a/arch/arm/mach-iop13xx/iq81340sc.c
-+++ b/arch/arm/mach-iop13xx/iq81340sc.c
-@@ -60,7 +60,10 @@ static struct hw_pci iq81340sc_pci __initdata = {
- 	.setup		= iop13xx_pci_setup,
- 	.scan		= iop13xx_scan_bus,
- 	.map_irq	= iq81340sc_atux_map_irq,
--	.preinit	= iop13xx_pci_init
-+	.preinit	= iop13xx_pci_init,
-+#ifdef CONFIG_PCI_MSI
-+	.msi_chip	= &iop13xx_msi_chip,
-+#endif
- };
- 
- static int __init iq81340sc_pci_init(void)
-diff --git a/arch/arm/mach-iop13xx/msi.c b/arch/arm/mach-iop13xx/msi.c
-index e7730cf..3135a63 100644
---- a/arch/arm/mach-iop13xx/msi.c
-+++ b/arch/arm/mach-iop13xx/msi.c
-@@ -132,7 +132,8 @@ static struct irq_chip iop13xx_msi_chip = {
- 	.irq_unmask = unmask_msi_irq,
- };
- 
--int arch_setup_msi_irq(struct pci_dev *pdev, struct msi_desc *desc)
-+static int iop13xx_setup_msi_irq(struct msi_chip *chip,
-+		struct pci_dev *dev, struct msi_desc *desc)
- {
- 	int id, irq = irq_alloc_desc_from(IRQ_IOP13XX_MSI_0, -1);
- 	struct msi_msg msg;
-@@ -159,7 +160,13 @@ int arch_setup_msi_irq(struct pci_dev *pdev, struct msi_desc *desc)
- 	return 0;
+diff --git a/drivers/pci/host/pci-tegra.c b/drivers/pci/host/pci-tegra.c
+index 3d43874..5af0525 100644
+--- a/drivers/pci/host/pci-tegra.c
++++ b/drivers/pci/host/pci-tegra.c
+@@ -694,15 +694,6 @@ static int tegra_pcie_map_irq(const struct pci_dev *pdev, u8 slot, u8 pin)
+ 	return irq;
  }
  
--void arch_teardown_msi_irq(unsigned int irq)
-+static void iop13xx_teardown_msi_irq(struct msi_chip *chip,
-+		unsigned int irq)
+-static void tegra_pcie_add_bus(struct pci_bus *bus)
+-{
+-	if (IS_ENABLED(CONFIG_PCI_MSI)) {
+-		struct tegra_pcie *pcie = sys_to_pcie(bus->sysdata);
+-
+-		bus->msi = &pcie->msi.chip;
+-	}
+-}
+-
+ static struct pci_bus *tegra_pcie_scan_bus(int nr, struct pci_sys_data *sys)
  {
- 	irq_free_desc(irq);
- }
-+
-+struct msi_chip iop13xx_chip = {
-+	.setup_irq = iop13xx_setup_msi_irq,
-+	.teardown_irq = iop13xx_teardown_msi_irq,
-+};
+ 	struct tegra_pcie *pcie = sys_to_pcie(sys);
+@@ -1881,11 +1872,13 @@ static int tegra_pcie_enable(struct tegra_pcie *pcie)
+ 
+ 	memset(&hw, 0, sizeof(hw));
+ 
++#ifdef CONFIG_PCI_MSI
++	hw.msi_chip = &pcie->msi.chip;
++#endif
+ 	hw.nr_controllers = 1;
+ 	hw.private_data = (void **)&pcie;
+ 	hw.setup = tegra_pcie_setup;
+ 	hw.map_irq = tegra_pcie_map_irq;
+-	hw.add_bus = tegra_pcie_add_bus;
+ 	hw.scan = tegra_pcie_scan_bus;
+ 	hw.ops = &tegra_pcie_ops;
+ 
 -- 
 1.7.1
 
