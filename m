@@ -1,96 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999AbaJOXow (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 19:44:52 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:50144 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751911AbaJOXou (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 19:44:50 -0400
+	id S1751528AbaJOX4X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 19:56:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47563 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751232AbaJOX4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 19:56:21 -0400
+Date: Thu, 16 Oct 2014 07:55:37 +0800
+From: Baoquan He <bhe@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        x86@kernel.org, ak@linux.intel.com, ebiederm@xmission.com,
+        kexec@lists.infradead.org, whissi@whissi.de,
+        kumagai-atsushi@mxc.nes.nec.co.jp, stable@vger.kernel.org
+Subject: Re: [resend Patch v3 1/2] kaslr: check if kernel location is changed
+Message-ID: <20141015235537.GA1642@dhcp-17-102.nay.redhat.com>
+References: <20141008192728.GA26517@redhat.com>
+ <20141011031452.GB11560@dhcp-16-116.nay.redhat.com>
+ <543907B5.7060001@zytor.com>
+ <20141013125257.GB6466@redhat.com>
+ <20141013151955.GA9777@redhat.com>
+ <543BF304.9090708@zytor.com>
+ <20141013172242.GB9777@redhat.com>
+ <20141014124932.GC5127@redhat.com>
+ <20141015033701.GD16068@dhcp-16-116.nay.redhat.com>
+ <695BEC26-402D-4B1C-9266-137F2BCFE5B9@zytor.com>
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo7zzofNsoGHuzfgfSEODyfkRs2FmyU-r3GjGDnNUF_0gw@mail.gmail.com>
-References: <20141015165957.4063.66741.stgit@bhelgaas-glaptop2.roam.corp.google.com>
- <20141015170631.4063.50854.stgit@bhelgaas-glaptop2.roam.corp.google.com> <CAErSpo7zzofNsoGHuzfgfSEODyfkRs2FmyU-r3GjGDnNUF_0gw@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 15 Oct 2014 17:44:29 -0600
-Message-ID: <CAErSpo5f_HgiyKS3Ho1DHbdvBo200RSFokEw3wmQ7k-1FuNzkw@mail.gmail.com>
-Subject: Re: [PATCH v1 07/10] vmcore: Remove "weak" from function declarations
-To: Jason Wessel <jason.wessel@windriver.com>,
-        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@redhat.com>,
-        John Stultz <john.stultz@linaro.org>, Eric Paris <eparis@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <695BEC26-402D-4B1C-9266-137F2BCFE5B9@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Martin, Heiko, linux-s390, since s390 could see issues from this.
-Sorry for all the spam; I should have gotten this right the first
-time.]
+On 10/15/14 at 01:32pm, H. Peter Anvin wrote:
+> I don't see why we can't randomize anywhere in physical space.  We already handle the kernel above 4 GB and it wouldn't be hard to do the equivalent for the decompress/relocation code, using a #PF handler.  Not all CPUs support 1 GB pages.
+> 
 
-On Wed, Oct 15, 2014 at 5:31 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> [+cc Michael, Vivek; sorry, I botched my "stg mail" so you weren't
-> included the first time]
->
-> On Wed, Oct 15, 2014 at 11:06 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> For the following functions:
->>
->>   elfcorehdr_alloc()
->>   elfcorehdr_free()
->>   elfcorehdr_read()
->>   elfcorehdr_read_notes()
->>   remap_oldmem_pfn_range()
->>
->> fs/proc/vmcore.c provides default definitions explicitly marked "weak".
->> arch/s390 provides its own definitions intended to override the default
->> ones, but the "weak" attribute on the declarations applied to the s390
->> definitions as well, so the linker chose one based on link order (see
->> 10629d711ed7 ("PCI: Remove __weak annotation from pcibios_get_phb_of_node
->> decl")).
->>
->> Remove the "weak" attribute from the declarations so we always prefer a
->> non-weak definition over the weak one, independent of link order.
->>
->> Fixes: be8a8d069e50 ("vmcore: introduce ELF header in new memory feature")
->> Fixes: 9cb218131de1 ("vmcore: introduce remap_oldmem_pfn_range()")
->> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
->> CC: Michael Holzheu <holzheu@linux.vnet.ibm.com>
->> CC: Vivek Goyal <vgoyal@redhat.com>
->> ---
->>  include/linux/crash_dump.h |   15 +++++++--------
->>  1 file changed, 7 insertions(+), 8 deletions(-)
->>
->> diff --git a/include/linux/crash_dump.h b/include/linux/crash_dump.h
->> index 72ab536ad3de..3849fce7ecfe 100644
->> --- a/include/linux/crash_dump.h
->> +++ b/include/linux/crash_dump.h
->> @@ -14,14 +14,13 @@
->>  extern unsigned long long elfcorehdr_addr;
->>  extern unsigned long long elfcorehdr_size;
->>
->> -extern int __weak elfcorehdr_alloc(unsigned long long *addr,
->> -                                  unsigned long long *size);
->> -extern void __weak elfcorehdr_free(unsigned long long addr);
->> -extern ssize_t __weak elfcorehdr_read(char *buf, size_t count, u64 *ppos);
->> -extern ssize_t __weak elfcorehdr_read_notes(char *buf, size_t count, u64 *ppos);
->> -extern int __weak remap_oldmem_pfn_range(struct vm_area_struct *vma,
->> -                                        unsigned long from, unsigned long pfn,
->> -                                        unsigned long size, pgprot_t prot);
->> +extern int elfcorehdr_alloc(unsigned long long *addr, unsigned long long *size);
->> +extern void elfcorehdr_free(unsigned long long addr);
->> +extern ssize_t elfcorehdr_read(char *buf, size_t count, u64 *ppos);
->> +extern ssize_t elfcorehdr_read_notes(char *buf, size_t count, u64 *ppos);
->> +extern int remap_oldmem_pfn_range(struct vm_area_struct *vma,
->> +                                 unsigned long from, unsigned long pfn,
->> +                                 unsigned long size, pgprot_t prot);
->>
->>  extern ssize_t copy_oldmem_page(unsigned long, char *, size_t,
->>                                                 unsigned long, int);
->>
+Well, IIUC, in arch/x86/boot/compressed/head_64.S pgtable contains 6
+page frames and is used to build 4G identity mapping. Then this pgtable
+is loaded into cr3. Later jump into 64bit mode. decompress/relocation
+code should work in this region. Isn't it right?
+
+Currently kernel surely can be put anywhere, even above 4G. This have
+been done very often in kexec/kdump. However in kexec/kdump the identity
+mapping is built for all physical memory after jumping to startup_64
+directly from purgatory, that's why kexec/kdump kernel can be put
+anywhere.
+
+So for normal kernel, don't we need to extend the physical memory mappng
+to a larger region if we want to randomize anywhere in physical space?
+
+Thanks
+Baoquan
+
+
+> On October 14, 2014 8:37:01 PM PDT, Baoquan He <bhe@redhat.com> wrote:
+> >On 10/14/14 at 08:49am, Vivek Goyal wrote:
+> >> On Mon, Oct 13, 2014 at 01:22:42PM -0400, Vivek Goyal wrote:
+> >> > On Mon, Oct 13, 2014 at 08:43:00AM -0700, H. Peter Anvin wrote:
+> >> > > On 10/13/2014 08:19 AM, Vivek Goyal wrote:
+> >> > > >>>
+> >> > > >>> This really shouldn't have happened this way on x86-64.  It
+> >has to happen
+> >> > > >>> this way on i386, but I worry that this may be a serious
+> >misdesign in kaslr
+> >> > > >>> on x86-64.  I'm also wondering if there is any other fallout
+> >of this?
+> >> > > >>
+> >> > > >> I agree. On x86_64, we should stick to previous design and
+> >this new
+> >> > > >> logic of performing relocations does not sound very clean and
+> >makes
+> >> > > >> things very confusing.
+> >> > > >>
+> >> > > >> I am wondering that why couldn't we simply adjust page tables
+> >in case of
+> >> > > >> kaslr on x86_64, instead of performing relocations.
+> >> > > > 
+> >> > > > Well, IIUC, if virtual addresses are shifted w.r.t what virtual
+> >address
+> >> > > > kernel was compiled for, then relocation will have to be done.
+> >> > > > 
+> >> > > > So question will be if physical address shift is enough for
+> >kaslr or
+> >> > > > virtual address shift is necessary.
+> >> > > > 
+> >> > > 
+> >> > > I would assume that without a virtual address shift kaslr is
+> >pretty darn
+> >> > > pointless.  Without the physical address shift the 1:1 map can be
+> >used,
+> >> > > and again, kaslr becomes pointless.  However, there is absolutely
+> >no
+> >> > > reason why they should be coupled.  They can, in fact, be
+> >independently
+> >> > > randomized.
+> >> > 
+> >> > Agreed. On x86_64, we should be able to randomize virtual address
+> >space
+> >> > and physical address space independently. And in that case whole of
+> >> > the physical memory should be available for a possible location for
+> >> > kernel. (As opposed to a small limit (I guess 1GB) now)
+> >
+> >It can be done to randomize virtual address space and physical address
+> >space independently. But limited by the 2G of kernel text mapping and
+> >module mapping virtual address space, virtual address can be randomized
+> >in (0x1000000, 1G) range. While physical address can be randomized in
+> >(0x1000000, 4G) according to the identity mapping of normal kernel.
+> >Then
+> >phys_base still stores an relative value, a different offset than
+> >before.
+> >
+> >This can be easily implement. One thing is still there's a limit for
+> >physical addr randomization, only below 4G. So I am wondering if we can
+> >extend the identify mapping to complete mapping of 48 bit, using 1G
+> >page
+> >frame. This can make physical addr be randomized to anywhere.
+> >
+> >So now there may be 3 options:
+> >
+> >1) Fix this bug in current kaslr. Since when randomize the new kernel
+> >location in choose_kernel_location(), cmdline options has been checked
+> >strictly, e.g if nokaslr is specified, it's safe to do the kernel
+> >location randomization. Then in handle_relocations(), we only need to
+> >check if the kernel location is changed, comparing with kernel loaded
+> >addr. If changed, kaslr is done, let's do the relocation handling. If
+> >not changed, no kaslr id done, just skip the relocation handling like
+> >before.
+> >
+> >2) randomize the virtual addr space and physical addr space
+> >independently. But physical addr space must be below 4G.
+> >
+> >3) extend the identity mapping to 48bit of addr space. Then we can
+> >randomized the virtual addr space in (0x1000000, 1G) and physical addr
+> >space in (0x1000000, real physical memory end).
+> >
+> >If option 3 is doable, it's the best. If not, I think bug fix should be
+> >better.
+> >
+> >> 
+> >> Hi Peter,
+> >> 
+> >> So what do we do about this issue in short term to make kexec work.
+> >Even
+> >> if we go for above solution, to make kexec work we will have to pass
+> >> "nokaslr" as we don't want kernel to move around in physical address
+> >space
+> >> as it might stomp over ELF headers we have stored.
+> >
+> >kexec doesn't need ELF headers. Kdump may need it. But in current
+> >kexec-tools implementation, kernel/initrd and other stuffs are placed
+> >from top to down, current implementation won't do kaslr since it only
+> >happened between kernel loaded addr and 1G. So we don't need to worry
+> >about the stomping.
+> >
+> >> 
+> >> If you don't like current patch, should we just disable relocations
+> >in
+> >> x86_64 if "nokaslr" command line is passed. That way kernel will not
+> >> be moved in physical as well as virtual address space.
+> >> 
+> >> Thanks
+> >> Vivek
+> 
+> -- 
+> Sent from my mobile phone.  Please pardon brevity and lack of formatting.
