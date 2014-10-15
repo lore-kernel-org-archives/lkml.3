@@ -1,78 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751524AbaJOPnc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 11:43:32 -0400
-Received: from mga11.intel.com ([192.55.52.93]:63916 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751306AbaJOPna (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 11:43:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,725,1406617200"; 
-   d="scan'208";a="614963196"
-Message-ID: <543E9605.6020502@linux.intel.com>
-Date: Wed, 15 Oct 2014 17:43:01 +0200
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: David Woodhouse <dwmw2@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "dvhart@infradead.org" <dvhart@infradead.org>
-Subject: Re: [PATCH v4 00/13] Add ACPI _DSD and unified device properties
- support
-References: <2660541.BycO7TFnA2@vostro.rjw.lan> <1413378271.2762.77.camel@infradead.org> <20141015131551.GC20034@leverpostej> <1413379736.2762.79.camel@infradead.org> <20141015134209.GD20034@leverpostej> <db4038336b5e165b8b61eda064b10eeb.squirrel@twosheds.infradead.org> <543E88CF.5060504@linux.intel.com> <20141015151702.GG20034@leverpostej>
-In-Reply-To: <20141015151702.GG20034@leverpostej>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+	id S1751585AbaJOPq2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 11:46:28 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:48049 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262AbaJOPq0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 11:46:26 -0400
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>
+Cc: Vojtech Pavlik <vojtech@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
+        Jiri Slaby <jslaby@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [PATCH 0/2] s390 vs. kprobes on ftrace
+Date: Wed, 15 Oct 2014 17:46:16 +0200
+Message-Id: <1413387978-984-1-git-send-email-heiko.carstens@de.ibm.com>
+X-Mailer: git-send-email 1.8.5.5
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14101515-0029-0000-0000-00000135863F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi all,
 
+we would like to implement an architecture specific variant of "kprobes
+on ftrace" without using the current HAVE_KPROBES_ON_FTRACE infrastructure
+which is currently only used by x86.
 
-On 10/15/14 17:17, Mark Rutland wrote:
-> On Wed, Oct 15, 2014 at 03:46:39PM +0100, Darren Hart wrote:
+The rationale for these two patches is:
+- we want to patch the first instruction of the mcount code block to
+  reduce the overhead of the function tracer
+- we'd like to keep the ftrace_caller function as simple as possible and
+  not require it to generate a 100% valid pt_regs structure as required
+  by the combination of DYNAMIC_FTRACE_WITH_REGS and HAVE_KPROBES_ON_FTRACE.
+  This allows us to not generate the psw mask field in the pt_regs
+  structure on each function tracer enabled function, which otherwise would
+  be very expensive. Besides that program check generated pt_regs contents
+  are "more" accurate than program generated ones and don't require any
+  maintenance.
+  And also we can keep the ftrace and kprobes backends quite separated.
 
->> Mark, what would you propose we do differently to enable this driver to
->> be firmware-type agnostic?
-> 
-> For this particular driver, all I'm asking for is that the
-> "used-by-rtas" property is not moved over from of_find_property to
-> device_get_property. It is irrelevant for all ACPI systems. Evidently my
-> comment was unclear; I apologise for that.
+In order to make this work a small common code change is necessary which
+removes a check if kprobe is being placed on an ftrace location (see
+first patch).
 
-So my objection here is that by keeping the of_* terms in the driver we
-are required to include of, although it does safely convert to returning
-NULL if !CONFIG_OF I suppose.
+If possible, I'd like to have an ACK from at least one of the kprobes
+maintainers for the first patch and bring it upstream via the s390 tree.
 
-> We have status = "disabled" as a less specific mechanism for telling the
-> OS to ignore a node in DT. I was under the impression that ACPI already
-> had a mechanism for marking devices to be ignored, but perhaps I am
-> mistaken.
+Thanks,
+Heiko
 
-That is correct, in ACPI this would be properly implemented with the
-_STA reserved named method. In which case it wouldn't enumerate.
+Heiko Carstens (2):
+  kprobes: introduce ARCH_HANDLES_KPROBES_ON_FTRACE
+  s390/ftrace,kprobes: allow to patch first instruction
 
-> 
-> The concerns I mentioned at the end of my original reply were of a more
-> general nature than this particular device description.
-> 
-> Thanks,
-> Mark.
-> 
+ arch/Kconfig                    |   8 +++
+ arch/s390/Kconfig               |   1 +
+ arch/s390/include/asm/ftrace.h  |  52 ++++++++++++++--
+ arch/s390/include/asm/kprobes.h |   1 +
+ arch/s390/include/asm/lowcore.h |   4 +-
+ arch/s390/include/asm/pgtable.h |  12 ++++
+ arch/s390/kernel/asm-offsets.c  |   1 -
+ arch/s390/kernel/early.c        |   4 --
+ arch/s390/kernel/ftrace.c       | 132 +++++++++++++++++++++++++---------------
+ arch/s390/kernel/kprobes.c      |  87 ++++++++++++++++++--------
+ arch/s390/kernel/mcount.S       |   1 +
+ arch/s390/kernel/setup.c        |   2 -
+ arch/s390/kernel/smp.c          |   1 -
+ kernel/kprobes.c                |   3 +-
+ scripts/recordmcount.c          |   2 +-
+ scripts/recordmcount.pl         |   2 +-
+ 16 files changed, 220 insertions(+), 93 deletions(-)
 
 -- 
-Darren Hart
-Intel Open Source Technology Center
+1.8.5.5
+
