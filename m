@@ -1,89 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751736AbaJOH26 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 03:28:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45956 "EHLO mx1.redhat.com"
+	id S1751381AbaJOHc6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 03:32:58 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:36002
+	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750775AbaJOH25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 03:28:57 -0400
-Message-ID: <543E222B.40706@redhat.com>
-Date: Wed, 15 Oct 2014 15:28:43 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>, David Miller <davem@davemloft.net>
-CC: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH net-next RFC 0/3] virtio-net: Conditionally enable tx
- interrupt
-References: <1413011806-3813-1-git-send-email-jasowang@redhat.com> <20141014.145327.365091739350390288.davem@davemloft.net> <20141014230627.GA23715@redhat.com>
-In-Reply-To: <20141014230627.GA23715@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	id S1751239AbaJOHc5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 03:32:57 -0400
+x-originating-ip: 72.167.245.219
+From: Thomas Shao <huishao@microsoft.com>
+To: tglx@linutronix.de, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
+        kys@microsoft.com
+Cc: Thomas Shao <huishao@microsoft.com>
+Subject: [PATCH v2 1/2] timekeeping: add EXPORT_SYMBOL_GPL for do_adjtimex()
+Date: Wed, 15 Oct 2014 01:39:32 -0700
+Message-Id: <1413362372-16236-1-git-send-email-huishao@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2014 07:06 AM, Michael S. Tsirkin wrote:
-> On Tue, Oct 14, 2014 at 02:53:27PM -0400, David Miller wrote:
->> > From: Jason Wang <jasowang@redhat.com>
->> > Date: Sat, 11 Oct 2014 15:16:43 +0800
->> > 
->>> > > We free old transmitted packets in ndo_start_xmit() currently, so any
->>> > > packet must be orphaned also there. This was used to reduce the overhead of
->>> > > tx interrupt to achieve better performance. But this may not work for some
->>> > > protocols such as TCP stream. TCP depends on the value of sk_wmem_alloc to
->>> > > implement various optimization for small packets stream such as TCP small
->>> > > queue and auto corking. But orphaning packets early in ndo_start_xmit()
->>> > > disable such things more or less since sk_wmem_alloc was not accurate. This
->>> > > lead extra low throughput for TCP stream of small writes.
->>> > > 
->>> > > This series tries to solve this issue by enable tx interrupts for all TCP
->>> > > packets other than the ones with push bit or pure ACK. This is done through
->>> > > the support of urgent descriptor which can force an interrupt for a
->>> > > specified packet. If tx interrupt was enabled for a packet, there's no need
->>> > > to orphan it in ndo_start_xmit(), we can free it tx napi which is scheduled
->>> > > by tx interrupt. Then sk_wmem_alloc was more accurate than before and TCP
->>> > > can batch more for small write. More larger skb was produced by TCP in this
->>> > > case to improve both throughput and cpu utilization.
->>> > > 
->>> > > Test shows great improvements on small write tcp streams. For most of the
->>> > > other cases, the throughput and cpu utilization are the same in the
->>> > > past. Only few cases, more cpu utilization was noticed which needs more
->>> > > investigation.
->>> > > 
->>> > > Review and comments are welcomed.
->> > 
->> > I think proper accounting and queueing (at all levels, not just TCP
->> > sockets) is more important than trying to skim a bunch of cycles by
->> > avoiding TX interrupts.
->> > 
->> > Having an event to free the SKB is absolutely essential for the stack
->> > to operate correctly.
->> > 
->> > And with virtio-net you don't even have the excuse of "the HW
->> > unfortunately doesn't have an appropriate TX event."
->> > 
->> > So please don't play games, and instead use TX interrupts all the
->> > time.  You can mitigate them in various ways, but don't turn them on
->> > selectively based upon traffic type, that's terrible.
->> > 
->> > You can even use ->xmit_more to defer the TX interrupt indication to
->> > the final TX packet in the chain.
-> I guess we can just defer the kick, interrupt will naturally be
-> deferred as well.
-> This should solve the problem for old hosts as well.
+Export do_adjtimex function for hyper-v Time Synchronization component
 
-Interrupt were delayed but not reduced, to support this we need publish
-avail idx as used event. This should reduce the tx interrupt in the case
-of bulk dequeuing.
+Signed-off-by: Thomas Shao <huishao@microsoft.com>
+---
+ kernel/time/timekeeping.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-I will draft a new rfc series contain this.
->
-> We'll also need to implement bql for this.
-> Something like the below?
-> Completely untested - posting here to see if I figured the
-> API out correctly. Has to be applied on top of the previous patch.
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index ec1791f..205a4b3 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -1786,6 +1786,7 @@ int do_adjtimex(struct timex *txc)
+ 
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(do_adjtimex);
+ 
+ #ifdef CONFIG_NTP_PPS
+ /**
+-- 
+1.7.1
 
-Looks so. I believe better to have but not a must.
