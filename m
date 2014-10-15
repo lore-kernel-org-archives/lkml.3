@@ -1,85 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752035AbaJOVmA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 17:42:00 -0400
-Received: from libra.uberspace.de ([95.143.172.171]:56077 "EHLO
-	libra.uberspace.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887AbaJOVl6 (ORCPT
+	id S1751807AbaJOVqP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 17:46:15 -0400
+Received: from forward6l.mail.yandex.net ([84.201.143.139]:50720 "EHLO
+	forward6l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809AbaJOVqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 17:41:58 -0400
-Date: Wed, 15 Oct 2014 23:41:51 +0200
-From: Matthias Beyer <mail@beyermatthias.de>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] bcm/CmHost.c: Fix noisy compile warnings
-Message-ID: <20141015214151.GA20142@fu.3gs>
-Reply-To: Matthias Beyer <mail@beyermatthias.de>
-References: <1413375999-10210-1-git-send-email-jeffrey.t.kirsher@intel.com>
- <20141015123431.GA23154@mwanda>
- <20141015125934.GB23154@mwanda>
- <1413378213.2412.13.camel@jtkirshe-mobl>
+	Wed, 15 Oct 2014 17:46:13 -0400
+X-Yandex-Uniq: ff391e6f-6676-4308-b651-67743740e9ea
+Authentication-Results: smtp2o.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Message-ID: <543EEB1F.3040900@yandex.ru>
+Date: Thu, 16 Oct 2014 01:46:07 +0400
+From: Kirill Tkhai <tkhai@yandex.ru>
+Reply-To: tkhai@yandex.ru
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UugvWAfsgieZRqgk"
-Content-Disposition: inline
-In-Reply-To: <1413378213.2412.13.camel@jtkirshe-mobl>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Oleg Nesterov <oleg@redhat.com>, Kirill Tkhai <ktkhai@parallels.com>
+CC: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Vladimir Davydov <vdavydov@parallels.com>
+Subject: Re: [PATCH RFC] sched: Revert delayed_put_task_struct() and fix use
+ after free
+References: <1413376300.24793.55.camel@tkhai> <20141015150641.GA2755@redhat.com> <20141015194044.GA4557@redhat.com>
+In-Reply-To: <20141015194044.GA4557@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Yeah, you're sure about initial patch. Thanks for signal explanation.
 
---UugvWAfsgieZRqgk
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 15.10.2014 23:40, Oleg Nesterov wrote:
+> On 10/15, Oleg Nesterov wrote:
+>>
+>> On 10/15, Kirill Tkhai wrote:
+>>>
+>>> Regarding to scheduler this may be a reason of use-after-free.
+>>>
+>>>     task_numa_compare()                    schedule()
+>>>         rcu_read_lock()                        ...
+>>>         cur = ACCESS_ONCE(dst_rq->curr)        ...
+>>>             ...                                rq->curr = next;
+>>>             ...                                    context_switch()
+>>>             ...                                        finish_task_switch()
+>>>             ...                                            put_task_struct()
+>>>             ...                                                __put_task_struct()
+>>>             ...                                                    free_task_struct()
+>>>             task_numa_assign()                                     ...
+>>>                 get_task_struct()                                  ...
+>>
+>> Agreed. I don't understand this code (will try to take another look later),
+>> but at first glance this looks wrong.
+>>
+>> At least the code like
+>>
+>> 	rcu_read_lock();
+>> 	get_task_struct(foreign_rq->curr);
+>> 	rcu_read_unlock();
+>>
+>> is certainly wrong. And _probably_ the problem should be fixed here. Perhaps
+>> we can add try_to_get_task_struct() which does atomic_inc_not_zero() ...
+> 
+> Yes, but perhaps in this particular case another simple fix makes more
+> sense. The patch below needs a comment to explain that we check PF_EXITING
+> because:
+> 
+> 	1. It doesn't make sense to migrate the exiting task. Although perhaps
+> 	   we could check ->mm == NULL instead.
+> 
+> 	   But let me repeat that I do not understand this code, I am not sure
+> 	   we can equally treat is_idle_task() and PF_EXITING here...
+> 
+> 	2. If PF_EXITING is not set (or ->mm != NULL) then delayed_put_task_struct()
+> 	   won't be called until we drop rcu_read_lock(), and thus get_task_struct()
+> 	   is safe.
+> 
 
-On 15-10-2014 06:03:33, Jeff Kirsher wrote:
->=20
-> I thought I remember Greg saying something about getting rid of this
-> driver anyway, but I could be wrong.  If Greg decides to keep this
-> driver around, then I think we should something like your suggestion
-> above.
+Cool! Elegant fix. We set PF_EXITING in exit_signals(), which is earlier
+than release_task() is called.
 
-Let me throw in my comment here: Yes, Greg stated in several places
-that this whole driver should be removed. I was about to ask when this
-will happen, so let me add a suggestion:
+Shouldn't we use smp_rmb/smp_wmb here?
 
-    Lets delete this _now_!!1!1!
+> And. it seems that there is another problem? Can't task_h_load(cur) race
+> with itself if 2 CPU's call task_numa_migrate() and inspect the same rq
+> in parallel? Again, I don't understand this code, but update_cfs_rq_h_load()
+> doesn't look "atomic". In fact I am not even sure about task_h_load(env->p),
+> p == current but we do not disable preemption.
+> 
+> What do you think?
 
-If you care, I can search the statements where Greg stated that this
-should be removed, but I guess this some effort... I can barely
-remember that one time was on the linuxnewbies ML and one or two times
-here.
+We use it completely unlocked, so nothing good is here. Also we work
+with pointers.
 
---=20
-Mit freundlichen Gr=FC=DFen,
-Kind regards,
-Matthias Beyer
+As I understand in update_cfs_rq_h_load() we go from bottom to top,
+and then from top to bottom. We set cfs_rq::h_load_next to be able
+to do top-bottom passage (top is a root of "tree").
 
-Proudly sent with mutt.
-Happily signed with gnupg.
+Yeah, this "way" may be overwritten by competitor. Also, task may change
+its cfs_rq.
 
---UugvWAfsgieZRqgk
-Content-Type: application/pgp-signature
+> --- x/kernel/sched/fair.c
+> +++ x/kernel/sched/fair.c
+> @@ -1165,7 +1165,7 @@ static void task_numa_compare(struct tas
+>  
+>  	rcu_read_lock();
+>  	cur = ACCESS_ONCE(dst_rq->curr);
+> -	if (cur->pid == 0) /* idle */
+> +	if (is_idle_task(cur) || (curr->flags & PF_EXITING))
+>  		cur = NULL;
+>  
+>  	/*
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Looks like, we have to use the same fix for task_numa_group().
 
-iQIcBAEBAgAGBQJUPuofAAoJEJi+S08gyg+UfUcP/RPrwUOwDfkc0zNYNtJjw8x9
-3pOBKiRAqNaj+En2gD5ikthNmFPOuqLE7QuWDhRvPnN94piQSXOSM55wYQpuvYQO
-x0DMjulY/MvCV7og78A0DVZ3Q/CGmvyBRi5chDVW3zhtPCcHrDA4WC0oLI9f7nCB
-AXLZ6Eig/4IoLELpzrvHUA3TCPyvWaNeEJEJFJTMUTLbNe/rpbPo7nCJSt0U00ei
-6jg9RIfBZrqoGzoI9nbX4zyXy7B0N/7dHcH/4RBgcwCv4SP3XM1vDPBHKoM70qv0
-jKwI1cuYh2S6zl9sPW7VF2sO9P+owjzcXjwYyZdXdkkOPJfCLGqH62TDYLAhf17n
-A3vafSSm/eOnHaqyYjlcD8mdW6OaG8qX+cBXGcm3eq3MEuATt/9b7fE3jBYZ/rEx
-Vk5WDFwnpNSex8p/cFl6/znvO8c6e8jUFvfqbo+epGYBPSOB33LX6BJH8YK9bHqm
-FZyzNgeeHg2g0lKzWszSz8cj/JjTRNwWzRDM0ohkjJ+yTTxNAMpCmFGikmuHcK1I
-9usooag3IIG9xpmOU+GMYMqOtDbIxCzpPybpNfbvQK5DWKGMswty9tp+nFi3PKYI
-vSQspjgqOxn198kTnGk5J7wybXIdgWDFI8gQtJxV/G9WwCI44fyxJQuXGG7+Y5ed
-0Ofbld34GtHBlL1UVmHa
-=6XB7
------END PGP SIGNATURE-----
+grp = rcu_dereference(tsk->numa_group);
 
---UugvWAfsgieZRqgk--
+Below we dereference grp->nr_tasks.
+
+Also, the same in rt.c and deadline.c, but we do no take second
+reference there. Wrong pointer dereference is not possible there,
+not so bad.
+
+Kirill
