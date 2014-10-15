@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932626AbaJOCC5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 22:02:57 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:46451 "EHLO
+	id S1755947AbaJOCFI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 22:05:08 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:46481 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755536AbaJOCC4 (ORCPT
+	with ESMTP id S1755536AbaJOCFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 22:02:56 -0400
-Date: Tue, 14 Oct 2014 22:02:54 -0400 (EDT)
-Message-Id: <20141014.220254.144210672646232483.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, peppe.cavallaro@st.com
-Subject: Re: linux-next: build failure after merge of the net tree
+	Tue, 14 Oct 2014 22:05:07 -0400
+Date: Tue, 14 Oct 2014 22:05:05 -0400 (EDT)
+Message-Id: <20141014.220505.586366171329066629.davem@davemloft.net>
+To: haiyangz@microsoft.com
+Cc: netdev@vger.kernel.org, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org
+Subject: Re: [PATCH net-next,v2] hyperv: Add handling of IP header with
+ option field in netvsc_set_hash()
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20141015104411.306b138e@canb.auug.org.au>
-References: <20141015104411.306b138e@canb.auug.org.au>
+In-Reply-To: <1413317117-28678-1-git-send-email-haiyangz@microsoft.com>
+References: <1413317117-28678-1-git-send-email-haiyangz@microsoft.com>
 X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 14 Oct 2014 19:02:55 -0700 (PDT)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 14 Oct 2014 19:05:06 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 15 Oct 2014 10:44:11 +1100
+From: Haiyang Zhang <haiyangz@microsoft.com>
+Date: Tue, 14 Oct 2014 20:05:17 +0000
 
-> Hi all,
+> In case that the IP header has optional field at the end, this patch will
+> get the port numbers after that field, and compute the hash.
 > 
-> After merging the net tree, today's linux-next build (arm
-> multi_v7_defconfig) failed like this:
-> 
-> drivers/built-in.o: In function `.LANCHOR0':
-> :(.rodata+0x6b764): undefined reference to `sti_gmac_data'
-> :(.rodata+0x6b828): undefined reference to `sti_gmac_data'
-> :(.rodata+0x6b8ec): undefined reference to `sti_gmac_data'
-> :(.rodata+0x6b9b0): undefined reference to `sti_gmac_data'
-> 
-> Caused by commit 53b26b9bc9a5 ("stmmac: dwmac-sti: review the
-> glue-logic for STi4xx and STiD127 SoCs") which renamed sti_gmac_data to
-> stih4xx_dwmac_data (or something) without updating all the references
-> to it (including the one added in the previous commit ...).
-> 
-> I reverted that commit for today.
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
 
-Sigh, Giuseppe if I don't see a proper fix by tomorrow I'm
-reverting all of the stmmac changes I applied today.
+This isn't even close to what I asked for.
+
+I said to remove all of this by-hand header parsing code in the
+hyperv driver, and use the generic code networking facilities
+that exist already to do this.
