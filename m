@@ -1,102 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751528AbaJOOKi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 10:10:38 -0400
-Received: from mga02.intel.com ([134.134.136.20]:28876 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751191AbaJOOKf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 10:10:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,724,1406617200"; 
-   d="scan'208";a="589440586"
-Date: Wed, 15 Oct 2014 19:02:48 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Srikanth Thokala <sthokal@xilinx.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "michals@xilinx.com" <michals@xilinx.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "anirudh@xilinx.com" <anirudh@xilinx.com>,
-        "svemula@xilinx.com" <svemula@xilinx.com>,
-        "appanad@xilinx.com" <appanad@xilinx.com>
-Subject: Re: [PATCH v4] dma: Add Xilinx AXI Direct Memory Access Engine
- driver support
-Message-ID: <20141015133248.GQ1638@intel.com>
-References: <1413374436-14410-1-git-send-email-sthokal@xilinx.com>
- <20141015124527.GA20034@leverpostej>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141015124527.GA20034@leverpostej>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751400AbaJOOZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 10:25:26 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:37387 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751195AbaJOOZX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 10:25:23 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-97-543e83d03512
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>, stable@vger.kernel.org
+Subject: [PATCH v2 2/2] power: bq2415x_charger: Fix memory leak on DTS parsing
+ error
+Date: Wed, 15 Oct 2014 16:25:10 +0200
+Message-id: <1413383110-20310-2-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1413383110-20310-1-git-send-email-k.kozlowski@samsung.com>
+References: <1413383110-20310-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrIJMWRmVeSWpSXmKPExsVy+t/xq7oXmu1CDA4fU7CY9OQ9s8XElZOZ
+	LV6/MLS4vGsOm8Xn3iOMFqd3l1gs2PiI0YHdY+esu+wem1doeWxa1cnm0bdlFaPH501yAaxR
+	XDYpqTmZZalF+nYJXBkP+j4yFjzlq3j8uYGlgfEfdxcjJ4eEgInEzp597BC2mMSFe+vZQGwh
+	gaWMEhceZnQxcgHZfUwSreeuMoEk2ASMJTYvX8IGkhAR2M0oMWHqchaQBLOAp8S7vw+BJnFw
+	CAuESfycbg4SZhFQldhw5TBYCa+Au8S7J6tZIJbJSZw8NpkVxOYU8JA4sXIPK0irEFDN2g+M
+	Exh5FzAyrGIUTS1NLihOSs811CtOzC0uzUvXS87P3cQICaYvOxgXH7M6xCjAwajEw8txwDZE
+	iDWxrLgy9xCjBAezkgjv/AS7ECHelMTKqtSi/Pii0pzU4kOMTBycUg2MsY+NegOrmjI6kzZw
+	TeL63L7ktv21pGR+tdmxi50tBT9IqT46W3oqOuQkc7DhXZapOitFU8NqDByLYwL87jafeBLF
+	L1rYc/X31G13piR6mToHVJxc7mD50p5ZKnuhdfzLUw/OmCrfYOifesluyR9RzzDjjTz76o8z
+	6f0zFN91Ounl0zzH+TFKLMUZiYZazEXFiQCTqstBBAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 01:45:28PM +0100, Mark Rutland wrote:
-> Hi,
-> 
-> On Wed, Oct 15, 2014 at 01:00:36PM +0100, Srikanth Thokala wrote:
-> > This is the driver for the AXI Direct Memory Access (AXI DMA)
-> > core, which is a soft Xilinx IP core that provides high-
-> > bandwidth direct memory access between memory and AXI4-Stream
-> > type target peripherals.
-> > 
-> > This module works on Zynq (ARM Based SoC) and Microblaze platforms.
-> > 
-> > Signed-off-by: Srikanth Thokala <sthokal@xilinx.com>
-> > ---
-> > Changes in v4:
-> > - Add direction field to VDMA descriptor structure and removed from
-> >   channel structure to avoid duplication.
-> > - Check for DMA idle condition before changing the configuration.
-> > - Residue is being calculated in complete_descriptor() and is reported
-> >   to slave driver.
-> > 
-> > Changes in v3:
-> > - Rebased on 3.16-rc7
-> > 
-> > Changes in v2:
-> > - Simplified the logic to set SOP and APP words in prep_slave_sg().
-> > - Corrected function description comments to match the return type.
-> > - Fixed some minor comments as suggested by Andy, Thanks.
-> 
-> This patch has come without the necessary device tree binding document,
-> and I was not able to find an existing binding document upstream (I
-> searched for "xlnx,axi-dma-1.00.a" and "axi-dma").
-which tree did you grep. 
+Memory allocated for 'name' was leaking if required binding properties
+were not present.
 
-This is present in slave-dmaengine.git 
+The memory for 'name' was allocated early at probe with kasprintf(). It
+was freed in error paths executed before and after parsing DTS but not
+in that error path.
 
-commit ddc643630f5deb1995d191719086b64873c67a44
-Author: Srikanth Thokala <sthokal@xilinx.com>
-Date:   Mon Jul 28 17:47:48 2014 +0530
+Fix the error path for parsing device tree properties.
 
-    dma: Add Xilinx AXI DMA DT Binding Documentation
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Fixes: faffd234cf85 ("bq2415x_charger: Add DT support")
+Cc: <stable@vger.kernel.org>
 
-    Device-tree binding documentation of Xilinx DMA Engine
+---
 
-    Signed-off-by: Srikanth Thokala <sthokal@xilinx.com>
-    Acked-by: Arnd Bergmann <arnd@arndb.de>
-    Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+Changes since v1:
+1. None, new patch.
+---
+ drivers/power/bq2415x_charger.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
+diff --git a/drivers/power/bq2415x_charger.c b/drivers/power/bq2415x_charger.c
+index edf945a5260f..311be01480c8 100644
+--- a/drivers/power/bq2415x_charger.c
++++ b/drivers/power/bq2415x_charger.c
+@@ -1609,27 +1609,27 @@ static int bq2415x_probe(struct i2c_client *client,
+ 		ret = of_property_read_u32(np, "ti,current-limit",
+ 				&bq->init_data.current_limit);
+ 		if (ret)
+-			return ret;
++			goto error_2;
+ 		ret = of_property_read_u32(np, "ti,weak-battery-voltage",
+ 				&bq->init_data.weak_battery_voltage);
+ 		if (ret)
+-			return ret;
++			goto error_2;
+ 		ret = of_property_read_u32(np, "ti,battery-regulation-voltage",
+ 				&bq->init_data.battery_regulation_voltage);
+ 		if (ret)
+-			return ret;
++			goto error_2;
+ 		ret = of_property_read_u32(np, "ti,charge-current",
+ 				&bq->init_data.charge_current);
+ 		if (ret)
+-			return ret;
++			goto error_2;
+ 		ret = of_property_read_u32(np, "ti,termination-current",
+ 				&bq->init_data.termination_current);
+ 		if (ret)
+-			return ret;
++			goto error_2;
+ 		ret = of_property_read_u32(np, "ti,resistor-sense",
+ 				&bq->init_data.resistor_sense);
+ 		if (ret)
+-			return ret;
++			goto error_2;
+ 	} else {
+ 		memcpy(&bq->init_data, pdata, sizeof(bq->init_data));
+ 	}
 -- 
-~Vinod
+1.9.1
 
-> 
-> The driver expects a non-trivial set of properties, so a binding
-> document is essential for users. Additionally, checkpatch.pl should
-> scream regarding the undocumented comaptible string.
-> 
-> Please put together a binding document.
-> 
-> Thanks,
-> Mark.
-
--- 
