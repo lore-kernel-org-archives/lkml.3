@@ -1,62 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755822AbaJOAlc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 20:41:32 -0400
-Received: from na01-sn2-obe.ptr.o365filtering.com ([157.55.158.29]:54092 "EHLO
-	na01-sn2-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755517AbaJOAla convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 20:41:30 -0400
-X-Greylist: delayed 10429 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Oct 2014 20:41:30 EDT
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Haiyang Zhang <haiyangz@microsoft.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-CC: KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>
-Subject: RE: [PATCH net-next,v2] hyperv: Add handling of IP header with option
- field in netvsc_set_hash()
-Thread-Topic: [PATCH net-next,v2] hyperv: Add handling of IP header with
- option field in netvsc_set_hash()
-Thread-Index: AQHP6BB2vlLAj4MIqUq28P5iYFD9BZwwUP9A
-Date: Wed, 15 Oct 2014 00:41:19 +0000
-Message-ID: <1bacf9599d0148bf8517e2193f8f7e9c@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-References: <1413317117-28678-1-git-send-email-haiyangz@microsoft.com>
-In-Reply-To: <1413317117-28678-1-git-send-email-haiyangz@microsoft.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [157.54.51.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S932632AbaJOArI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 20:47:08 -0400
+Received: from ozlabs.org ([103.22.144.67]:54552 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932199AbaJOArH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 20:47:07 -0400
+Date: Wed, 15 Oct 2014 11:46:53 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Roland Dreier <roland@kernel.org>, linux-rdma@vger.kernel.org
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eli Cohen <eli@mellanox.com>, "David S. Miller" <davem@davemloft.net>
+Subject: linux-next: manual merge of the infiniband tree with Linus' tree
+Message-ID: <20141015114653.1a55081c@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.159.100;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(377454003)(189002)(13464003)(199003)(1511001)(85852003)(99396003)(120916001)(20776003)(85306004)(97756001)(47776003)(64706001)(84676001)(44976005)(76482002)(2201001)(108616004)(107046002)(66066001)(6806004)(68736004)(92566001)(23726002)(21056001)(31966008)(76176999)(87936001)(50466002)(2656002)(97736003)(106466001)(2501002)(86612001)(46102003)(80022003)(77096999)(54356999)(2421001)(2561002)(106116001)(4396001)(19580405001)(46406003)(2009001)(19580395003)(33646002)(50986999)(142933001)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2SR01MB597;H:hybrid.exchange.microsoft.com;FPR:;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2SR01MB597;
-X-Forefront-PRVS: 0365C0E14B
-X-OriginatorOrg: msft.ccsctp.net
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/0n3JkOwKLiY6iSmA=.YGLan"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Sig_/0n3JkOwKLiY6iSmA=.YGLan
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
+Hi all,
 
-> -----Original Message-----
-> From: Haiyang Zhang [mailto:haiyangz@microsoft.com]
-> Sent: Tuesday, October 14, 2014 4:05 PM
-> To: davem@davemloft.net; netdev@vger.kernel.org
-> Cc: Haiyang Zhang; KY Srinivasan; olaf@aepfle.de; jasowang@redhat.com;
-> linux-kernel@vger.kernel.org; driverdev-devel@linuxdriverproject.org
-> Subject: [PATCH net-next,v2] hyperv: Add handling of IP header with
-> option field in netvsc_set_hash()
-> 
+Today's linux-next merge of the infiniband tree got a conflict in
+drivers/infiniband/hw/mlx5/qp.c between commit c7a08ac7ee68
+("net/mlx5_core: Update device capabilities handling") from Linus' tree
+and commit f83b42636a91 ("IB/mlx5: Remove duplicate code from
+mlx5_set_path") from the infiniband tree.
 
-This is a duplicate of a patch submitted earlier today. Please ignore.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc drivers/infiniband/hw/mlx5/qp.c
+index dbfe498870c1,f1b49e024664..000000000000
+--- a/drivers/infiniband/hw/mlx5/qp.c
++++ b/drivers/infiniband/hw/mlx5/qp.c
+@@@ -1317,6 -1302,11 +1317,11 @@@ static int mlx5_set_path(struct mlx5_ib
+  	path->rlid	=3D cpu_to_be16(ah->dlid);
+ =20
+  	if (ah->ah_flags & IB_AH_GRH) {
+ -		if (ah->grh.sgid_index >=3D dev->mdev->caps.port[port - 1].gid_table_le=
+n) {
+++		if (ah->grh.sgid_index >=3D gen->port[port - 1].gid_table_len) {
++ 			pr_err(KERN_ERR "sgid_index (%u) too large. max is %d\n",
+ -			       ah->grh.sgid_index, dev->mdev->caps.port[port - 1].gid_table_le=
+n);
+++			       ah->grh.sgid_index, gen->port[port - 1].gid_table_len);
++ 			return -EINVAL;
++ 		}
+  		path->grh_mlid |=3D 1 << 7;
+  		path->mgid_index =3D ah->grh.sgid_index;
+  		path->hop_limit  =3D ah->grh.hop_limit;
+
+--Sig_/0n3JkOwKLiY6iSmA=.YGLan
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUPcQHAAoJEMDTa8Ir7ZwVc8YP/jVsDhMHsVrPby4qJyYYuTwB
+SYLu9Uq9FY2FshbcWhBJ6Afb8E3SzYqzapcdI9VWj9sPrM6yAVr4o7vdYYB0kXGJ
+jMn8jLFm40VoyNw2yLbsrwG9W1W/6CHfuZ0Rr/AXHEEbd4NTZwzmeLSf5mCe2w7K
+2h6IYDV7TchIz4ZARLmX1TH2E6CMS2mgBhDVcqIIhPi6X16aENRzkaQs6YhAugFt
+2ohXx2K2pRFMPEBgfCpTeK0TebvMKQMgICp4Izxfb0358Um7+LbIsjLie+MpTNkN
+WGGDeBXNCOfe3LUAwb0yHhHC+n30GwspheGU7klE4OhyuwlHk/686Q+clxQ4AvN6
+CvZe85xtH7oZK0xsyckUY1dcLlhePdGe5n7M2KpZRlJxpeU3s6cEdIqupwJxxBW3
+Nd17laCP2UnspnP60hcK3L8Vk50yNsaK12nU8/ecZyfxmwu4CDa5Trg1zaH+5jgb
+CnSRThjex81oX3rEB2thc5lDFT8QOiOSxCzzzQupMi6RCxlOAjpanFT2iK/Jjnnd
+4TJPbxCpNCDmSzt4K/6chbGgGe7eXoIGzzAmTote/Ty6cO9UQsaH3D3yQdsir1G3
+RXx3CTKyiyZqloGZHj21hOFCbBvw7ZjmDLb8Cox00JGvUAY4aUDRg94f2eoAqvhM
+Yv1oEX0LJX1WLG2/lDDm
+=nECD
+-----END PGP SIGNATURE-----
+
+--Sig_/0n3JkOwKLiY6iSmA=.YGLan--
