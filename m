@@ -1,88 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751646AbaJOIKZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 04:10:25 -0400
-Received: from g2t2354.austin.hp.com ([15.217.128.53]:3047 "EHLO
-	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305AbaJOIKW (ORCPT
+	id S1751713AbaJOIKo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 04:10:44 -0400
+Received: from resqmta-ch2-11v.sys.comcast.net ([69.252.207.43]:54505 "EHLO
+	resqmta-ch2-11v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751661AbaJOIKj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 04:10:22 -0400
-Message-ID: <543E2BDA.8030906@hp.com>
-Date: Wed, 15 Oct 2014 16:10:02 +0800
-From: "Li, ZhenHua" <zhen-hual@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>
-CC: Jerry.Hoemann@hp.com, indou.takao@jp.fujitsu.com, bhe@redhat.com,
-        linux-pci@vger.kernel.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
-        ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com, zhenhua@hp.com
-Subject: Re: [PATCH 0/8] iommu/vt-d: Fix crash dump failure caused by legacy
- DMA/IO
-References: <1398386198-19304-1-git-send-email-bill.sumner@hp.com> <1398854973.12733.23.camel@i7.infradead.org> <20140702133258.GN26537@8bytes.org> <20140711162745.GA8335@anatevka.fc.hp.com>
-In-Reply-To: <20140711162745.GA8335@anatevka.fc.hp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 15 Oct 2014 04:10:39 -0400
+Date: Wed, 15 Oct 2014 03:10:37 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Tejun Heo <htejun@gmail.com>
+cc: linux-kernel@vger.kernel.org
+Message-ID: <alpine.DEB.2.11.1410150308150.20152@gentwo.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David, Joerg,
-I plan to merge this patch set with 3.17 stable kernel, and split this 
-patch set into two :
-1. The core part, including the changed functions, like [Patch 4/8], 
-[Patch 8/8].
-2. For the formatting issues, like [Patch 1/8],[Patch 3/8],  including 
-the changes for code formations, creation of new files 
-intel-iommu-kdump.c, intel-iommu-private.h.
+Subject: Convert remaining __get_cpu_var uses
 
-I believe this will make the patch set more clear to read and understand.
+During the 3.18 merge period additional __get_cpu_var uses were
+added. The patch converts these to this_cpu_ptr().
 
-What are your suggestions?
+[This does not address the powerpc issue where the conversion
+patches were routed directly to the powerpc maintainers but were
+not applied in the merge period. Will have to be handled separately]
 
-Thanks
-Zhenhua
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
+Index: linux/arch/arm/xen/mm32.c
+===================================================================
+--- linux.orig/arch/arm/xen/mm32.c
++++ linux/arch/arm/xen/mm32.c
+@@ -56,7 +56,7 @@ static struct notifier_block xen_mm32_cp
+ static void* xen_mm32_remap_page(dma_addr_t handle)
+ {
+ 	unsigned long virt = get_cpu_var(xen_mm32_scratch_virt);
+-	pte_t *ptep = __get_cpu_var(xen_mm32_scratch_ptep);
++	pte_t *ptep = __this_cpu_read(xen_mm32_scratch_ptep);
 
-On 07/12/2014 12:27 AM, Jerry Hoemann wrote:
-> On Wed, Jul 02, 2014 at 03:32:59PM +0200, Joerg Roedel wrote:
->> Hi David,
->>
->> On Wed, Apr 30, 2014 at 11:49:33AM +0100, David Woodhouse wrote:
->>> There could be all kinds of existing mappings in the DMA page tables,
->>> and I'm not sure it's safe to preserve them. What prevents the crashdump
->>> kernel from trying to use any of the physical pages which are
->>> accessible, and which could thus be corrupted by stray DMA?
->>>
->>> In fact, the old kernel could even have set up 1:1 passthrough mappings
->>> for some devices, which would then be able to DMA *anywhere*. Surely we
->>> need to prevent that?
->>
->> Ideally we would prevent that, yes. But the problem is that a failed DMA
->> transaction might put the device into an unrecoverable state. Usually
->> any in-flight DMA transactions should only target buffers set up by the
->> previous kernel and not corrupt any data.
->>
->>> After the last round of this patchset, we discussed a potential
->>> improvement where you point every virtual bus address at the *same*
->>> physical scratch page.
->>
->> That is a solution to prevent the in-flight DMA failures. But what
->> happens when there is some in-flight DMA to a disk to write some inodes
->> or a new superblock. Then this scratch address-space may cause
->> filesystem corruption at worst.
->>
->> So with this in mind I would prefer initially taking over the
->> page-tables from the old kernel before the device drivers re-initialize
->> the devices.
->>
->>
->> 	Joerg
->
-> David, Joerg,
->
-> What do you think here?  Do you want me to update the patch set for 3.17?
->
-> Jerry
->
+ 	*ptep = pfn_pte(handle >> PAGE_SHIFT, PAGE_KERNEL);
+ 	local_flush_tlb_kernel_page(virt);
+Index: linux/arch/arm64/kernel/psci.c
+===================================================================
+--- linux.orig/arch/arm64/kernel/psci.c
++++ linux/arch/arm64/kernel/psci.c
+@@ -511,7 +511,7 @@ static int cpu_psci_cpu_kill(unsigned in
 
+ static int psci_suspend_finisher(unsigned long index)
+ {
+-	struct psci_power_state *state = __get_cpu_var(psci_power_state);
++	struct psci_power_state *state = __this_cpu_read(psci_power_state);
+
+ 	return psci_ops.cpu_suspend(state[index - 1],
+ 				    virt_to_phys(cpu_resume));
+@@ -520,7 +520,7 @@ static int psci_suspend_finisher(unsigne
+ static int __maybe_unused cpu_psci_cpu_suspend(unsigned long index)
+ {
+ 	int ret;
+-	struct psci_power_state *state = __get_cpu_var(psci_power_state);
++	struct psci_power_state *state = __this_cpu_read(psci_power_state);
+ 	/*
+ 	 * idle state index 0 corresponds to wfi, should never be called
+ 	 * from the cpu_suspend operations
+Index: linux/kernel/irq_work.c
+===================================================================
+--- linux.orig/kernel/irq_work.c
++++ linux/kernel/irq_work.c
+@@ -175,11 +175,11 @@ EXPORT_SYMBOL_GPL(irq_work_run);
+
+ void irq_work_tick(void)
+ {
+-	struct llist_head *raised = &__get_cpu_var(raised_list);
++	struct llist_head *raised = this_cpu_ptr(&raised_list);
+
+ 	if (!llist_empty(raised) && !arch_irq_work_has_interrupt())
+ 		irq_work_run_list(raised);
+-	irq_work_run_list(&__get_cpu_var(lazy_list));
++	irq_work_run_list(this_cpu_ptr(&lazy_list));
+ }
+
+ /*
+Index: linux/kernel/time/tick-sched.c
+===================================================================
+--- linux.orig/kernel/time/tick-sched.c
++++ linux/kernel/time/tick-sched.c
+@@ -235,7 +235,7 @@ void tick_nohz_full_kick(void)
+ 	if (!tick_nohz_full_cpu(smp_processor_id()))
+ 		return;
+
+-	irq_work_queue(&__get_cpu_var(nohz_full_kick_work));
++	irq_work_queue(this_cpu_ptr(&nohz_full_kick_work));
+ }
+
+ /*
