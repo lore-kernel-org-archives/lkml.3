@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752143AbaJOLGA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 07:06:00 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:41226 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751247AbaJOLF6 (ORCPT
+	id S1752191AbaJOLGS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 07:06:18 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:56065 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751938AbaJOLF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 07:05:58 -0400
+	Wed, 15 Oct 2014 07:05:59 -0400
 From: Tommi Rantala <tt.rantala@gmail.com>
 To: linux-input@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: linux-kernel@vger.kernel.org, Tommi Rantala <tt.rantala@gmail.com>
-Subject: [PATCH 1/2] Input: xpad - add USB ID for Thrustmaster Ferrari 458 Racing Wheel
-Date: Wed, 15 Oct 2014 14:04:35 +0300
-Message-Id: <1413371076-12390-1-git-send-email-tt.rantala@gmail.com>
+Subject: [PATCH 2/2] Input: xpad - add Thrustmaster as Xbox 360 controller vendor
+Date: Wed, 15 Oct 2014 14:04:36 +0300
+Message-Id: <1413371076-12390-2-git-send-email-tt.rantala@gmail.com>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1413371076-12390-1-git-send-email-tt.rantala@gmail.com>
+References: <1413371076-12390-1-git-send-email-tt.rantala@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the USB ID for the Xbox 360 Thrustmaster Ferrari 458 Racing Wheel.
+Add Thrustmaster as Xbox 360 controller vendor. This is required for
+example to make the GP XID (044f:b326) gamepad work.
 
 Signed-off-by: Tommi Rantala <tt.rantala@gmail.com>
 ---
@@ -26,17 +29,17 @@ Signed-off-by: Tommi Rantala <tt.rantala@gmail.com>
  1 file changed, 1 insertion(+)
 
 diff --git a/drivers/input/joystick/xpad.c b/drivers/input/joystick/xpad.c
-index cd13c82..cee4fe3 100644
+index cee4fe3..2ed7905 100644
 --- a/drivers/input/joystick/xpad.c
 +++ b/drivers/input/joystick/xpad.c
-@@ -209,6 +209,7 @@ static const struct xpad_device {
- 	{ 0x24c6, 0x5501, "Hori Real Arcade Pro VX-SA", 0, XTYPE_XBOX360 },
- 	{ 0x24c6, 0x5506, "Hori SOULCALIBUR V Stick", 0, XTYPE_XBOX360 },
- 	{ 0x24c6, 0x5b02, "Thrustmaster, Inc. GPX Controller", 0, XTYPE_XBOX360 },
-+	{ 0x24c6, 0x5b03, "Thrustmaster Ferrari 458 Racing Wheel", 0, XTYPE_XBOX360 },
- 	{ 0xffff, 0xffff, "Chinese-made Xbox Controller", 0, XTYPE_XBOX },
- 	{ 0x0000, 0x0000, "Generic X-Box pad", 0, XTYPE_UNKNOWN }
- };
+@@ -293,6 +293,7 @@ static const signed short xpad_abs_triggers[] = {
+ 
+ static struct usb_device_id xpad_table[] = {
+ 	{ USB_INTERFACE_INFO('X', 'B', 0) },	/* X-Box USB-IF not approved class */
++	XPAD_XBOX360_VENDOR(0x044f),		/* Thrustmaster X-Box 360 controllers */
+ 	XPAD_XBOX360_VENDOR(0x045e),		/* Microsoft X-Box 360 controllers */
+ 	XPAD_XBOXONE_VENDOR(0x045e),		/* Microsoft X-Box One controllers */
+ 	XPAD_XBOX360_VENDOR(0x046d),		/* Logitech X-Box 360 style controllers */
 -- 
 1.9.3
 
