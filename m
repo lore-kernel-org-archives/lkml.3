@@ -1,76 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144AbaJOX3L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 19:29:11 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:47746 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751481AbaJOX3J (ORCPT
+	id S1752179AbaJOX30 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 19:29:26 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:63625 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751240AbaJOX3Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 19:29:09 -0400
+	Wed, 15 Oct 2014 19:29:25 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH] Route keyboard LEDs through the generic LEDs layer.
+Date: Thu, 16 Oct 2014 01:29:21 +0200
+User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.14.1; x86_64; ; )
+Cc: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Pavel Machek <pavel@ucw.cz>,
+        David Herrmann <dh.herrmann@gmail.com>, jslaby@suse.cz,
+        Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
+        linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Peter Korsgaard <jacmet@sunsite.dk>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Matt Sealey <matt@genesi-usa.com>, Rob Clark <robdclark@gmail.com>,
+        Niels de Vos <devos@fedoraproject.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Steev Klimaszewski <steev@genesi-usa.com>, blogic@openwrt.org
+References: <20140331122323.GC6044@type.bordeaux.inria.fr> <201410121652.08919@pali> <20141015231545.GD3719@type.youpi.perso.aquilenet.fr>
+In-Reply-To: <20141015231545.GD3719@type.youpi.perso.aquilenet.fr>
 MIME-Version: 1.0
-In-Reply-To: <20141015170617.4063.2807.stgit@bhelgaas-glaptop2.roam.corp.google.com>
-References: <20141015165957.4063.66741.stgit@bhelgaas-glaptop2.roam.corp.google.com>
- <20141015170617.4063.2807.stgit@bhelgaas-glaptop2.roam.corp.google.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 15 Oct 2014 17:28:48 -0600
-Message-ID: <CAErSpo45JNAFM7gYM39hsAw=O+Pe2FLJYpj3WV0p2rDe-_t+xg@mail.gmail.com>
-Subject: Re: [PATCH v1 05/10] MIPS: MT: Move "weak" from vpe_run() declaration
- to definition
-To: Jason Wessel <jason.wessel@windriver.com>,
-        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@redhat.com>,
-        John Stultz <john.stultz@linaro.org>, Eric Paris <eparis@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed;
+  boundary="nextPart2685521.0DFAjChmI2";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201410160129.22012@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc linux-mips]
+--nextPart2685521.0DFAjChmI2
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Oct 15, 2014 at 11:06 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> When the "weak" attribute is on a declaration in a header file, every
-> definition where the header is included becomes weak, and the linker
-> chooses one definition based on link order (see 10629d711ed7 ("PCI: Remove
-> __weak annotation from pcibios_get_phb_of_node decl")).
->
-> Move the "weak" attribute from the declaration to the default definition so
-> we always prefer a non-weak definition over the weak one, independent of
-> link order.
->
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> CC: linux-mips@linux-mips.org
-> ---
->  arch/mips/include/asm/vpe.h |    2 +-
->  arch/mips/kernel/vpe-mt.c   |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/mips/include/asm/vpe.h b/arch/mips/include/asm/vpe.h
-> index 7849f3978fea..80e70dbd1f64 100644
-> --- a/arch/mips/include/asm/vpe.h
-> +++ b/arch/mips/include/asm/vpe.h
-> @@ -122,7 +122,7 @@ void release_vpe(struct vpe *v);
->  void *alloc_progmem(unsigned long len);
->  void release_progmem(void *ptr);
->
-> -int __weak vpe_run(struct vpe *v);
-> +int vpe_run(struct vpe *v);
->  void cleanup_tc(struct tc *tc);
->
->  int __init vpe_module_init(void);
-> diff --git a/arch/mips/kernel/vpe-mt.c b/arch/mips/kernel/vpe-mt.c
-> index 2e003b11a098..0e5899a2cd96 100644
-> --- a/arch/mips/kernel/vpe-mt.c
-> +++ b/arch/mips/kernel/vpe-mt.c
-> @@ -23,7 +23,7 @@ static int major;
->  static int hw_tcs, hw_vpes;
->
->  /* We are prepared so configure and start the VPE... */
-> -int vpe_run(struct vpe *v)
-> +int __weak vpe_run(struct vpe *v)
->  {
->         unsigned long flags, val, dmt_flag;
->         struct vpe_notifications *notifier;
->
+On Thursday 16 October 2014 01:15:45 Samuel Thibault wrote:
+> Pali Roh=C3=A1r, le Sun 12 Oct 2014 16:52:08 +0200, a =C3=A9crit :
+> > I would like to ask if something was changed and if this
+> > patch (in any way) is going to mainline kernel.
+>=20
+> Well, the latest news I got from Dmity was on 12 Apr 2014, to
+> which I answered, and never got more news since then.  I'm
+> indeed starting to wonder whether it'll ever get applied at
+> all, after the several years it has been waiting.  It's no
+> use trying to contribute to free software if
+> review/discussion etc. doesn't happen.
+>=20
+> Samuel
+
+Dmitry, ping!
+https://lkml.org/lkml/2014/4/16/725
+
+There are more people who would like to see this patch in=20
+mainline kernel and we are waiting for you.
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart2685521.0DFAjChmI2
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlQ/A1EACgkQi/DJPQPkQ1I+kACgoFsHUvruHTDkqTPkA0fYtcgk
+0NQAn37TqqU4aXJnfgqGMIyzMoGDcZo6
+=1GKj
+-----END PGP SIGNATURE-----
+
+--nextPart2685521.0DFAjChmI2--
