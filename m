@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751534AbaJOWgc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 18:36:32 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:35188 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750809AbaJOWgb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 18:36:31 -0400
-Date: Wed, 15 Oct 2014 23:36:17 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Kees Cook <keescook@chromium.org>
-Cc: Paolo Pisati <p.pisati@gmail.com>, Jason Baron <jbaron@redhat.com>,
-        David Miller <davem@davemloft.net>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: arm: JUMP_LABEL and DEBUG_SET_MODULE_RONX should be mutually
- exclusive?
-Message-ID: <20141015223617.GM27405@n2100.arm.linux.org.uk>
-References: <20141015122102.GB4427@stinkpad>
- <CAGXu5jLEAjR+X0KnnipGH2gp569_PFp5DYyfgXU=Szxgk5EcpA@mail.gmail.com>
- <20141015220943.GK27405@n2100.arm.linux.org.uk>
- <CAGXu5j+kxThAzwytKTv-033-jY5hTxT80PNiXp144mE=eay99Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5j+kxThAzwytKTv-033-jY5hTxT80PNiXp144mE=eay99Q@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751385AbaJOWmh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 18:42:37 -0400
+Received: from mga01.intel.com ([192.55.52.88]:43437 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750966AbaJOWmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 18:42:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,728,1406617200"; 
+   d="asc'?scan'208";a="606087816"
+Message-ID: <1413412874.2412.36.camel@jtkirshe-mobl>
+Subject: Re: [PATCH] bcm/CmHost.c: Fix noisy compile warnings
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: Matthias Beyer <mail@beyermatthias.de>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Date: Wed, 15 Oct 2014 15:41:14 -0700
+In-Reply-To: <20141015222447.GB20142@fu.3gs>
+References: <1413375999-10210-1-git-send-email-jeffrey.t.kirsher@intel.com>
+	 <20141015123431.GA23154@mwanda> <20141015125934.GB23154@mwanda>
+	 <1413378213.2412.13.camel@jtkirshe-mobl> <20141015214151.GA20142@fu.3gs>
+	 <1413411584.2412.35.camel@jtkirshe-mobl> <20141015222447.GB20142@fu.3gs>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-HmN2m52+kHWDYLrnkpBt"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 05:21:29PM -0500, Kees Cook wrote:
-> On Wed, Oct 15, 2014 at 5:09 PM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> > On Wed, Oct 15, 2014 at 08:34:17AM -0700, Kees Cook wrote:
-> >> On Wed, Oct 15, 2014 at 5:21 AM, Paolo Pisati <p.pisati@gmail.com> wrote:
-> >> > Hi,
-> >> >
-> >> > i keep hitting this with BRIDGE=m, JUMP_LABEL=y and DEBUG_SET_MODULE_RONX=y:
-> >>
-> >> I think my RO/NX patch series solves this. I sent a pull request, but
-> >> I haven't seen any movement on it. :(
-> >
-> > Sorry Kees.
-> >
-> > However, even if I had looked at it, I would /not/ have been able to
-> > pull it.  It does the absolutely fatal thing for any pull request:
-> >
-> > The following changes since commit cc31d8f887953e9824c4d9333b15c335ee7d1b65:
-> >
-> >   Merge branches 'fiq' (early part), 'fixes' and 'misc' into for-next (2014-09-2+6 14:40:19 +0100)
-> >
-> > That commit is on my "for-next" branch.  The clue is in the name. :)
-> > Just like trying to base commits onto the linux-next tree, trying to
-> > base commits on an aggregate branch intended for linux-next usage
-> > doesn't work for all the same reasons.
-> 
-> Ah! My mistake; I was trying to figure out which branch would be best
-> for you to pull from. What do you prefer I use as the base for the
-> pull request?
 
-I much prefer branches against one of Linus' release points than some
-point in someone elses tree - unless, of course, there are dependencies
-that need to be solved (which means there should be something in the
-pull request explaining that.)
+--=-HmN2m52+kHWDYLrnkpBt
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-If it conflicts with something I have in my tree, then that's generally
-not a problem unless the conflict is horrid, at which point it can be
-discussed.
+On Thu, 2014-10-16 at 00:24 +0200, Matthias Beyer wrote:
+> On 15-10-2014 15:19:44, Jeff Kirsher wrote:
+> > I will just go ahead and create a patch to remove the driver.  Greg
+> can
+> > then decide to either accept the patch to fix the Kconfig or accept
+> the
+> > patch to remove the driver.
+>=20
+> Don't forget the maintainers file :-)
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Yep, got it.  Thanks for the reminder.
+
+--=-HmN2m52+kHWDYLrnkpBt
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAABCgAGBQJUPvgKAAoJEOVv75VaS+3O1GQQAJNooBhApaywHnYYMXDU0uS5
+5bNBrBhfOiwiJiOskruD2qUnN1KJ+aBALxHfs2LhRO1vcRgs4dnLnpVchXIZr38w
+a1fUFdQOV7omf8EK0LG1JpVEV2mMcfuB3Ui1hsBQqDVqYCjx4uZrsYLJJKVksq6b
+NPYSehJRO2YaLf6O8I+le63KNUXZRc9glEak7CCq91sotFcMY+JRKN5IIOz2hdww
+Vt96RQZGKXoVPD4H9p86/TPDE6soPupw78YUMH0OtipqYBXu/hujPvshVFkWJhJ2
+EMzRP0ZsYdGZZQRnAH0KpRUto5rpBkxMNsImJwgmqtNghGbUmp14Ttb+lbMjKNVx
+dG9TsvBt4DJgfry36H3wCmPdjUT7FmVqN4rwtjetXDqxIEd4BZ3yukElWmX+7phX
+MQHe09uAozh6oQE3+KanV/0C8Z4qqBtFltuF4m6/fbgwKbnUsx7sJW4klXS7OLEu
+MurG6docbNjBz4MOd3flJ+Z2LCZI4N2ZiAsjcDE/mAnpZffqD0OL7QS/EJqRDQNZ
+IX+JXanf7KODB4qE1X14hRjhn/2+LMT6J5iT0fTZp/rJBhJCy27/Wk89Fy8qGdFV
+ltVEPgFxJZ5Qyn1RUC+Qz9XJtAWe6FsLV3qMj7EvfABEg3oKDpt0QxC3/wx9oF0z
+3Et4ukl6fHkEuQULGktp
+=YJm7
+-----END PGP SIGNATURE-----
+
+--=-HmN2m52+kHWDYLrnkpBt--
+
