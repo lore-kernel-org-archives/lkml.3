@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751373AbaJONQB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 09:16:01 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35164 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750931AbaJONP7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 09:15:59 -0400
-Date: Wed, 15 Oct 2014 14:15:51 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Darren Hart <dvhart@linux.intel.com>
-Subject: Re: [PATCH v4 00/13] Add ACPI _DSD and unified device properties
- support
-Message-ID: <20141015131551.GC20034@leverpostej>
-References: <2660541.BycO7TFnA2@vostro.rjw.lan>
- <1413378271.2762.77.camel@infradead.org>
+	id S1751249AbaJONUA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 09:20:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32380 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750721AbaJONT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 09:19:59 -0400
+Date: Wed, 15 Oct 2014 16:23:28 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        Jason Wang <jasowang@redhat.com>
+Subject: [PATCH] virtio_net: fix use after free
+Message-ID: <1413378878-28118-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1413378271.2762.77.camel@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 02:04:31PM +0100, David Woodhouse wrote:
-> Here's a completely untested patch to convert of_serial to be usable via
-> ACPI properties too. The properties themselves were fairly
-> straightforward; the interesting part is converting to
-> platform_get_irq() and platform_get_resource() — in the latter case
-> first trying IORESOURCE_MEM then IORESOURCE_IO if that fails.
-> 
-> Does this look sane? We'll probably want to think about renaming the
-> module and the config option too, but that can come after the basic
-> functionality.
+commit 0b725a2ca61bedc33a2a63d0451d528b268cf975
+    net: Remove ndo_xmit_flush netdev operation, use signalling instead.
 
-The majority of these properties look like they constrained to the
-device in question, so make sense for _DSD too.
+added code that looks at skb->xmit_more after the skb has
+been put in TX VQ. Since some paths process the ring and free the skb
+immediately, this can cause use after free.
 
-However...
+Fix by storing xmit_more in a local variable.
 
-> @@ -155,7 +168,7 @@ static int of_platform_serial_probe(struct platform_device *ofdev)
->  	if (!match)
->  		return -EINVAL;
->  
-> -	if (of_find_property(ofdev->dev.of_node, "used-by-rtas", NULL))
-> +	if (!device_get_property(&ofdev->dev, "used-by-rtas", NULL))
->  		return -EBUSY;
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
 
-This property should never be present on an ACPI system. RTAS is a
-completely different firmware interface on PowerPC.
+David, am I using the API correctly?
+Seems to work for me.
+You used __netif_subqueue_stopped but that seems to use
+a slightly more expensive test_bit internally.
+The reason I added a variable for the txq here is because it's handy for
+BQL patch later on.
 
-As a general note, I would hope that we're not going to blindly convert
-drivers and subsystems over to a common property interface without
-considering each property w.r.t. the particular FW interface. 
 
-Each addition to _DSD, especially if through a common accessor needs
-_more_ scrutiny than is applied to DT bindings, and we hardly manage to
-review DT bindings.
+ drivers/net/virtio_net.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-Mark.
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 3d0ce44..13d0a8b 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -920,6 +920,8 @@ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	int qnum = skb_get_queue_mapping(skb);
+ 	struct send_queue *sq = &vi->sq[qnum];
+ 	int err;
++	struct netdev_queue *txq = netdev_get_tx_queue(dev, qnum);
++	bool kick = !skb->xmit_more;
+ 
+ 	/* Free up any pending old buffers before queueing new ones. */
+ 	free_old_xmit_skbs(sq);
+@@ -956,7 +958,7 @@ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		}
+ 	}
+ 
+-	if (__netif_subqueue_stopped(dev, qnum) || !skb->xmit_more)
++	if (kick || netif_xmit_stopped(txq))
+ 		virtqueue_kick(sq->vq);
+ 
+ 	return NETDEV_TX_OK;
+-- 
+MST
