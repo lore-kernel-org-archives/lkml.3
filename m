@@ -1,27 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719AbaJOKHE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 06:07:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54549 "EHLO
+	id S1752055AbaJOKF1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 06:05:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54408 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073AbaJOKGx (ORCPT
+	with ESMTP id S1752048AbaJOKFT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 06:06:53 -0400
-Date: Wed, 15 Oct 2014 03:06:24 -0700
+	Wed, 15 Oct 2014 06:05:19 -0400
+Date: Wed, 15 Oct 2014 03:04:30 -0700
 From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-agomujr7tuqaq6lu7kr6z7h6@git.kernel.org>
-Cc: mingo@kernel.org, namhyung@kernel.org, acme@redhat.com, tglx@linutronix.de,
-        dsahern@gmail.com, hpa@zytor.com, peterz@infradead.org,
-        linux-kernel@vger.kernel.org, adrian.hunter@intel.com,
-        cebbert.lkml@gmail.com, jolsa@redhat.com, eranian@google.com
-Reply-To: peterz@infradead.org, cebbert.lkml@gmail.com,
-        adrian.hunter@intel.com, eranian@google.com, jolsa@redhat.com,
-        linux-kernel@vger.kernel.org, namhyung@kernel.org, mingo@kernel.org,
-        hpa@zytor.com, acme@redhat.com, tglx@linutronix.de, dsahern@gmail.com
+Message-ID: <tip-8av26cz8uxmbnihl5mmrygp9@git.kernel.org>
+Cc: adrian.hunter@intel.com, acme@redhat.com, eranian@google.com,
+        mingo@kernel.org, efault@gmx.de, hpa@zytor.com, peterz@infradead.org,
+        paulus@samba.org, jolsa@redhat.com, tglx@linutronix.de,
+        namhyung@kernel.org, dzickus@redhat.com, bp@suse.de,
+        jean.pihet@linaro.org, linux-kernel@vger.kernel.org, dsahern@gmail.com,
+        fweisbec@gmail.com
+Reply-To: peterz@infradead.org, paulus@samba.org, mingo@kernel.org,
+        hpa@zytor.com, efault@gmx.de, acme@redhat.com, eranian@google.com,
+        adrian.hunter@intel.com, dsahern@gmail.com, fweisbec@gmail.com,
+        jean.pihet@linaro.org, linux-kernel@vger.kernel.org,
+        namhyung@kernel.org, dzickus@redhat.com, bp@suse.de, jolsa@redhat.com,
+        tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf symbols: Make sym->
- end be the first address after the symbol range
-Git-Commit-ID: 2c241bd35e6f626ad6f867dcf9fefdc2315f125f
+Subject: [tip:perf/urgent] perf thread_map:
+  Create dummy constructor out of open coded equivalent
+Git-Commit-ID: 641556c98c821922a9a2121247b5fa25e4407d11
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,123 +38,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2c241bd35e6f626ad6f867dcf9fefdc2315f125f
-Gitweb:     http://git.kernel.org/tip/2c241bd35e6f626ad6f867dcf9fefdc2315f125f
+Commit-ID:  641556c98c821922a9a2121247b5fa25e4407d11
+Gitweb:     http://git.kernel.org/tip/641556c98c821922a9a2121247b5fa25e4407d11
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 14 Oct 2014 17:19:44 -0300
+AuthorDate: Fri, 10 Oct 2014 12:03:46 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 14 Oct 2014 17:50:58 -0300
+CommitDate: Tue, 14 Oct 2014 17:32:52 -0300
 
-perf symbols: Make sym->end be the first address after the symbol range
+perf thread_map: Create dummy constructor out of open coded equivalent
 
-To follow vm_area_struct->vm_end convention.
-
-By adhering to the convention that ->end is the first address outside
-the symbol's range we can do things like:
-
-	sym->end = start + len;
-	len = sym->end - sym->start;
-
-This is also now the convention used for struct map->end, fixing some
-off-by-one bugs.
+Create a dummy thread_map, one that has just one entry and it is -1,
+meaning 'all threads', as this ends up going down to perf_event_open().
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Chuck Ebbert <cebbert.lkml@gmail.com>
+Cc: Borislav Petkov <bp@suse.de>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jean Pihet <jean.pihet@linaro.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
 Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-agomujr7tuqaq6lu7kr6z7h6@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-8av26cz8uxmbnihl5mmrygp9@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/annotate.c | 8 ++++----
- tools/perf/util/symbol.c   | 6 +++---
- tools/perf/util/symbol.h   | 2 +-
- 3 files changed, 8 insertions(+), 8 deletions(-)
+ tools/perf/util/thread_map.c | 21 +++++++++++++--------
+ tools/perf/util/thread_map.h |  1 +
+ 2 files changed, 14 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 3643752..7dabde1 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -478,7 +478,7 @@ static int __symbol__inc_addr_samples(struct symbol *sym, struct map *map,
- 
- 	pr_debug3("%s: addr=%#" PRIx64 "\n", __func__, map->unmap_ip(map, addr));
- 
--	if (addr < sym->start || addr > sym->end)
-+	if (addr < sym->start || addr >= sym->end)
- 		return -ERANGE;
- 
- 	offset = addr - sym->start;
-@@ -836,7 +836,7 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
- 		    end = map__rip_2objdump(map, sym->end);
- 
- 		offset = line_ip - start;
--		if ((u64)line_ip < start || (u64)line_ip > end)
-+		if ((u64)line_ip < start || (u64)line_ip >= end)
- 			offset = -1;
- 		else
- 			parsed_line = tmp2 + 1;
-@@ -966,7 +966,7 @@ fallback:
- 		kce.kcore_filename = symfs_filename;
- 		kce.addr = map__rip_2objdump(map, sym->start);
- 		kce.offs = sym->start;
--		kce.len = sym->end + 1 - sym->start;
-+		kce.len = sym->end - sym->start;
- 		if (!kcore_extract__create(&kce)) {
- 			delete_extract = true;
- 			strlcpy(symfs_filename, kce.extract_filename,
-@@ -987,7 +987,7 @@ fallback:
- 		 disassembler_style ? "-M " : "",
- 		 disassembler_style ? disassembler_style : "",
- 		 map__rip_2objdump(map, sym->start),
--		 map__rip_2objdump(map, sym->end+1),
-+		 map__rip_2objdump(map, sym->end),
- 		 symbol_conf.annotate_asm_raw ? "" : "--no-show-raw",
- 		 symbol_conf.annotate_src ? "-S" : "",
- 		 symfs_filename, filename);
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index c787a43..0783311 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -186,7 +186,7 @@ void symbols__fixup_end(struct rb_root *symbols)
- 		curr = rb_entry(nd, struct symbol, rb_node);
- 
- 		if (prev->end == prev->start && prev->end != curr->start)
--			prev->end = curr->start - 1;
-+			prev->end = curr->start;
- 	}
- 
- 	/* Last entry */
-@@ -229,7 +229,7 @@ struct symbol *symbol__new(u64 start, u64 len, u8 binding, const char *name)
- 		sym = ((void *)sym) + symbol_conf.priv_size;
- 
- 	sym->start   = start;
--	sym->end     = len ? start + len - 1 : start;
-+	sym->end     = len ? start + len : start;
- 	sym->binding = binding;
- 	sym->namelen = namelen - 1;
- 
-@@ -325,7 +325,7 @@ static struct symbol *symbols__find(struct rb_root *symbols, u64 ip)
- 
- 		if (ip < s->start)
- 			n = n->rb_left;
--		else if (ip > s->end)
-+		else if (ip >= s->end)
- 			n = n->rb_right;
- 		else
- 			return s;
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index bec4b7b..eb2c19b 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -95,7 +95,7 @@ void symbols__delete(struct rb_root *symbols);
- 
- static inline size_t symbol__size(const struct symbol *sym)
- {
--	return sym->end - sym->start + 1;
-+	return sym->end - sym->start;
+diff --git a/tools/perf/util/thread_map.c b/tools/perf/util/thread_map.c
+index 5d32159..f93b973 100644
+--- a/tools/perf/util/thread_map.c
++++ b/tools/perf/util/thread_map.c
+@@ -214,6 +214,17 @@ out_free_threads:
+ 	goto out;
  }
  
- struct strlist;
++struct thread_map *thread_map__new_dummy(void)
++{
++	struct thread_map *threads = malloc(sizeof(*threads) + sizeof(pid_t));
++
++	if (threads != NULL) {
++		threads->map[0]	= -1;
++		threads->nr	= 1;
++	}
++	return threads;
++}
++
+ static struct thread_map *thread_map__new_by_tid_str(const char *tid_str)
+ {
+ 	struct thread_map *threads = NULL, *nt;
+@@ -224,14 +235,8 @@ static struct thread_map *thread_map__new_by_tid_str(const char *tid_str)
+ 	struct strlist *slist;
+ 
+ 	/* perf-stat expects threads to be generated even if tid not given */
+-	if (!tid_str) {
+-		threads = malloc(sizeof(*threads) + sizeof(pid_t));
+-		if (threads != NULL) {
+-			threads->map[0] = -1;
+-			threads->nr	= 1;
+-		}
+-		return threads;
+-	}
++	if (!tid_str)
++		return thread_map__new_dummy();
+ 
+ 	slist = strlist__new(false, tid_str);
+ 	if (!slist)
+diff --git a/tools/perf/util/thread_map.h b/tools/perf/util/thread_map.h
+index 0cd8b31..95313f4 100644
+--- a/tools/perf/util/thread_map.h
++++ b/tools/perf/util/thread_map.h
+@@ -9,6 +9,7 @@ struct thread_map {
+ 	pid_t map[];
+ };
+ 
++struct thread_map *thread_map__new_dummy(void);
+ struct thread_map *thread_map__new_by_pid(pid_t pid);
+ struct thread_map *thread_map__new_by_tid(pid_t tid);
+ struct thread_map *thread_map__new_by_uid(uid_t uid);
