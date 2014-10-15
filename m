@@ -1,168 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108AbaJOUGi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 16:06:38 -0400
-Received: from mail.kernel.org ([198.145.19.201]:33868 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751392AbaJOUGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 16:06:36 -0400
-Date: Wed, 15 Oct 2014 17:06:30 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCHSET 0/5] perf tools: Speed up dwarf callchain
- post-unwinding for libunwind (v4)
-Message-ID: <20141015200630.GT3198@kernel.org>
-References: <1412556363-26229-1-git-send-email-namhyung@kernel.org>
- <20141013181158.GA28191@krava.redhat.com>
- <20141015192441.GR3198@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141015192441.GR3198@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752141AbaJOUGo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 16:06:44 -0400
+Received: from mail-qg0-f73.google.com ([209.85.192.73]:35759 "EHLO
+	mail-qg0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751392AbaJOUGl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 16:06:41 -0400
+X-Greylist: delayed 440 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Oct 2014 16:06:41 EDT
+From: Jamie Liu <jamieliu@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>
+Cc: Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Jamie Liu <jamieliu@google.com>
+Subject: [PATCH] mm: vmscan: count only dirty pages as congested
+Date: Wed, 15 Oct 2014 12:58:35 -0700
+Message-Id: <1413403115-1551-1-git-send-email-jamieliu@google.com>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Oct 15, 2014 at 04:24:41PM -0300, Arnaldo Carvalho de Melo escreveu:
-> Em Mon, Oct 13, 2014 at 08:11:58PM +0200, Jiri Olsa escreveu:
-> > On Mon, Oct 06, 2014 at 09:45:58AM +0900, Namhyung Kim wrote:
-> > > Hello,
-> > > 
-> > > This is v4 for libunwind callchain post processing speed up.  It was
-> > > able to reduce 50% of processing time by using global cache provided
-> > > in libunwind.  In this version, I decided to use the existing
-> > > callchain_param.record_mode instead of adding a new field in the
-> > > symbol_conf.
-> > > 
-> > > The patch 4 and 5 are just cleanups so that we can easily find out
-> > > that which part of code uses the thread->priv.
-> > > 
-> > > You can also get it from 'perf/callchain-unwind-v4' branch on my tree:
-> > > 
-> > >   git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
-> > > 
-> > > Thanks,
-> > > Namhyung
-> > > 
-> > > 
-> > > Namhyung Kim (5):
-> > >   perf report: Set callchain_param.record_mode for future use
-> > >   perf callchain: Create an address space per thread
-> > >   perf callchain: Use global caching provided by libunwind
-> > >   perf kvm: Use thread_{,_set}_priv helpers
-> > >   perf trace: Use thread_{,_set}_priv helpers
-> > 
-> > Acked-by: Jiri Olsa <jolsa@kernel.org>
-> 
-> Thanks, applied.
+shrink_page_list() counts all pages with a mapping, including clean
+pages, toward nr_congested if they're on a write-congested BDI.
+shrink_inactive_list() then sets ZONE_CONGESTED if nr_dirty ==
+nr_congested. Fix this apples-to-oranges comparison by only counting
+pages for nr_congested if they count for nr_dirty.
 
-Next time please run: (I'm fixing this up this time)
+Signed-off-by: Jamie Liu <jamieliu@google.com>
+---
+ mm/vmscan.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-[acme@zoo linux]$ time make -C tools/perf build-test
-make: Entering directory `/home/git/linux/tools/perf'
-- make_pure: cd . && make -f Makefile DESTDIR=/tmp/tmp.RXWD6DlpLb 
-- make_clean_all: cd . && make -f Makefile DESTDIR=/tmp/tmp.Xb83Au0dtp
-  clean all
-- make_python_perf_so: cd . && make -f Makefile
-  DESTDIR=/tmp/tmp.JjiHtvNXGP python/perf.so
-- make_debug: cd . && make -f Makefile DESTDIR=/tmp/tmp.4mbBkoB1Jz
-  DEBUG=1
-- make_no_libperl: cd . && make -f Makefile DESTDIR=/tmp/tmp.2I0aglyOsB
-  NO_LIBPERL=1
-- make_no_libpython: cd . && make -f Makefile
-  DESTDIR=/tmp/tmp.NDG6pNk8J0 NO_LIBPYTHON=1
-- make_no_scripts: cd . && make -f Makefile DESTDIR=/tmp/tmp.00jcSmJ2uP
-  NO_LIBPYTHON=1 NO_LIBPERL=1
-- make_no_newt: cd . && make -f Makefile DESTDIR=/tmp/tmp.rpiHSaU8sm
-  NO_NEWT=1
-- make_no_slang: cd . && make -f Makefile DESTDIR=/tmp/tmp.eq62JNazPt
-  NO_SLANG=1
-- make_no_gtk2: cd . && make -f Makefile DESTDIR=/tmp/tmp.D3uwXogwqj
-  NO_GTK2=1
-- make_no_ui: cd . && make -f Makefile DESTDIR=/tmp/tmp.0Dw4cAw1RZ
-  NO_NEWT=1 NO_SLANG=1 NO_GTK2=1
-- make_no_demangle: cd . && make -f Makefile DESTDIR=/tmp/tmp.6kFBIeDeSB
-  NO_DEMANGLE=1
-- make_no_libelf: cd . && make -f Makefile DESTDIR=/tmp/tmp.KTyAsiNqK5
-  NO_LIBELF=1
-cd . && make -f Makefile DESTDIR=/tmp/tmp.KTyAsiNqK5 NO_LIBELF=1
-  BUILD:   Doing 'make -j4' parallel build
-config/Makefile:396: Disabling post unwind, no support found.
-
-Auto-detecting system features:
-...                         dwarf: [ on  ]
-...                         glibc: [ on  ]
-...                          gtk2: [ on  ]
-...                      libaudit: [ on  ]
-...                        libbfd: [ on  ]
-...                        libelf: [ on  ]
-...                       libnuma: [ on  ]
-...                       libperl: [ on  ]
-...                     libpython: [ on  ]
-...                      libslang: [ on  ]
-...                     libunwind: [ on  ]
-...            libdw-dwarf-unwind: [ on  ]
-
-  GEN      common-cmds.h
-  BISON    util/pmu-bison.c
-  FLAGS:   * new build flags or prefix
-  BISON    util/parse-events-bison.c
-  CC       util/path.o
-  CC       util/rbtree.o
-  CC       util/bitmap.o
-  CC       util/hweight.o
-  CC       util/run-command.o
-  CC       util/quote.o
-  CC       util/strbuf.o
-  CC       util/strlist.o
-  CC       util/string.o
-  CC       util/strfilter.o
-  CC       util/top.o
-  CC       util/usage.o
-  CC       util/wrapper.o
-  CC       util/sigchain.o
-  CC       util/dso.o
-  CC       util/symbol.o
-  CC       util/color.o
-  CC       util/pager.o
-  CC       util/header.o
-  CC       util/callchain.o
-  CC       util/values.o
-  CC       util/debug.o
-  CC       util/machine.o
-  PERF_VERSION = 3.17.ga3a146
-  CC       util/map.o
-In file included from util/machine.c:14:0:
-util/unwind.h: In function ‘unwind__prepare_access’:
-util/unwind.h:47:57: error: unused parameter ‘thread’
-[-Werror=unused-parameter]
- static inline int unwind__prepare_access(struct thread *thread)
-                                                         ^
-util/unwind.h: In function ‘unwind__finish_access’:
-util/unwind.h:52:57: error: unused parameter ‘thread’
-[-Werror=unused-parameter]
- static inline void unwind__finish_access(struct thread *thread) {}
-                                                         ^
-cc1: all warnings being treated as errors
-make[3]: *** [util/machine.o] Error 1
-make[3]: *** Waiting for unfinished jobs....
-make[2]: *** [all] Error 2
-  test: test -x ./perf
-make[1]: *** [make_no_libelf] Error 1
-make: *** [build-test] Error 2
-make: Leaving directory `/home/git/linux/tools/perf'
-
-real	4m40.869s
-user	8m57.124s
-sys	1m12.853s
-[acme@zoo linux]$ 
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index dcb4707..ad9cd9f 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -875,7 +875,8 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 		 * end of the LRU a second time.
+ 		 */
+ 		mapping = page_mapping(page);
+-		if ((mapping && bdi_write_congested(mapping->backing_dev_info)) ||
++		if (((dirty || writeback) && mapping &&
++		     bdi_write_congested(mapping->backing_dev_info)) ||
+ 		    (writeback && PageReclaim(page)))
+ 			nr_congested++;
+ 
+-- 
+2.1.0.rc2.206.gedb03e5
 
