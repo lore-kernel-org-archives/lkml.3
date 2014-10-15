@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756025AbaJOC3N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 22:29:13 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:40018 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932807AbaJOC0I (ORCPT
+	id S1756037AbaJOC3n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 22:29:43 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:56298 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932791AbaJOC0G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 22:26:08 -0400
+	Tue, 14 Oct 2014 22:26:06 -0400
 From: Yijing Wang <wangyijing@huawei.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
@@ -33,9 +33,9 @@ CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Thierry Reding <thierry.reding@gmail.com>,
         "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
         Liviu Dudau <liviu@dudau.co.uk>, Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH v3 21/27] Powerpc/MSI: Use MSI chip framework to configure MSI/MSI-X irq
-Date: Wed, 15 Oct 2014 11:07:09 +0800
-Message-ID: <1413342435-7876-22-git-send-email-wangyijing@huawei.com>
+Subject: [PATCH v3 18/27] MIPS/Xlp: Remove the dead function destroy_irq() to fix build error
+Date: Wed, 15 Oct 2014 11:07:06 +0800
+Message-ID: <1413342435-7876-19-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1413342435-7876-1-git-send-email-wangyijing@huawei.com>
 References: <1413342435-7876-1-git-send-email-wangyijing@huawei.com>
@@ -43,100 +43,48 @@ MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.175.100.166]
 X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020206.543DDB36.0181,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 2f02b8c0cbe2e526cbd60b8ad861fcf5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use MSI chip framework instead of arch MSI functions to configure
-MSI/MSI-X irq. So we can manage MSI/MSI-X irq in a unified framework.
+Commit 465665f78a7 ("mips: Kill pointless destroy_irq()") removed
+the destroy_irq(). So remove the leftover one in xlp_setup_msix()
+to fix build error.
+
+arch/mips/pci/msi-xlp.c: In function 'xlp_setup_msix':
+arch/mips/pci/msi-xlp.c:447:3: error: implicit declaration of function 'destroy_irq'..
+cc1: some warnings being treated as errors
+make[1]: *** [arch/mips/pci/msi-xlp.o] Error 1
+make: *** [arch/mips/pci/] Error 2
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
-Hi Michael,
-   I dropped the Acked-by , because this version has a
-lot changes compared to last. So, I guess you may want to check it again.
----
- arch/powerpc/include/asm/pci-bridge.h |   15 +++++++++++++++
- arch/powerpc/kernel/msi.c             |   12 ++++++++++--
- arch/powerpc/kernel/pci-common.c      |    3 +++
- 3 files changed, 28 insertions(+), 2 deletions(-)
+ arch/mips/pci/msi-xlp.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/pci-bridge.h b/arch/powerpc/include/asm/pci-bridge.h
-index 4ca90a3..233553e 100644
---- a/arch/powerpc/include/asm/pci-bridge.h
-+++ b/arch/powerpc/include/asm/pci-bridge.h
-@@ -32,6 +32,10 @@ struct pci_controller {
- 	int self_busno;
- 	struct resource busn;
+diff --git a/arch/mips/pci/msi-xlp.c b/arch/mips/pci/msi-xlp.c
+index fa374fe..e469dc7 100644
+--- a/arch/mips/pci/msi-xlp.c
++++ b/arch/mips/pci/msi-xlp.c
+@@ -443,10 +443,8 @@ static int xlp_setup_msix(uint64_t lnkbase, int node, int link,
+ 	msg.data = 0xc00 | msixvec;
  
-+#ifdef CONFIG_PCI_MSI
-+	struct msi_chip *msi_chip;
-+#endif
-+
- 	void __iomem *io_base_virt;
- #ifdef CONFIG_PPC64
- 	void *io_base_alloc;
-@@ -94,6 +98,17 @@ struct pci_controller {
- 	void *private_data;
- };
+ 	ret = irq_set_msi_desc(xirq, desc);
+-	if (ret < 0) {
+-		destroy_irq(xirq);
++	if (ret < 0)
+ 		return ret;
+-	}
  
-+#ifdef CONFIG_PCI_MSI
-+extern struct msi_chip ppc_msi_chip;
-+
-+static inline struct msi_chip *pci_msi_chip(struct pci_bus *bus)
-+{
-+	struct pci_controller *hose = bus->sysdata;
-+
-+	return hose->msi_chip;
-+}
-+#endif
-+
- /* These are used for config access before all the PCI probing
-    has been done. */
- extern int early_read_config_byte(struct pci_controller *hose, int bus,
-diff --git a/arch/powerpc/kernel/msi.c b/arch/powerpc/kernel/msi.c
-index 71bd161..f38b67c 100644
---- a/arch/powerpc/kernel/msi.c
-+++ b/arch/powerpc/kernel/msi.c
-@@ -13,7 +13,8 @@
- 
- #include <asm/machdep.h>
- 
--int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
-+static int ppc_setup_msi_irqs(struct msi_chip *chip,
-+		struct pci_dev *dev, int nvec, int type)
- {
- 	if (!ppc_md.setup_msi_irqs || !ppc_md.teardown_msi_irqs) {
- 		pr_debug("msi: Platform doesn't provide MSI callbacks.\n");
-@@ -27,7 +28,13 @@ int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
- 	return ppc_md.setup_msi_irqs(dev, nvec, type);
- }
- 
--void arch_teardown_msi_irqs(struct pci_dev *dev)
-+static void ppc_teardown_msi_irqs(struct msi_chip *chip,
-+		struct pci_dev *dev)
- {
- 	ppc_md.teardown_msi_irqs(dev);
- }
-+
-+struct msi_chip ppc_msi_chip = {
-+	.setup_irqs = ppc_setup_msi_irqs,
-+	.teardown_irqs = ppc_teardown_msi_irqs,
-+};
-diff --git a/arch/powerpc/kernel/pci-common.c b/arch/powerpc/kernel/pci-common.c
-index b2814e2..9f18b42 100644
---- a/arch/powerpc/kernel/pci-common.c
-+++ b/arch/powerpc/kernel/pci-common.c
-@@ -1594,6 +1594,9 @@ void pcibios_scan_phb(struct pci_controller *hose)
- 	/* Wire up PHB bus resources */
- 	pcibios_setup_phb_resources(hose, &resources);
- 
-+#ifdef CONFIG_PCI_MSI
-+	hose->msi_chip = &ppc_msi_chip;
-+#endif
- 	hose->busn.start = hose->first_busno;
- 	hose->busn.end	 = hose->last_busno;
- 	hose->busn.flags = IORESOURCE_BUS;
+ 	write_msi_msg(xirq, &msg);
+ 	return 0;
 -- 
 1.7.1
 
