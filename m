@@ -1,48 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751784AbaJOV5H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 17:57:07 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:49874 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751059AbaJOV5F (ORCPT
+	id S1751943AbaJOV5Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 17:57:24 -0400
+Received: from smtp81.iad3a.emailsrvr.com ([173.203.187.81]:38841 "EHLO
+	smtp81.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751480AbaJOV5H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 17:57:05 -0400
-Date: Wed, 15 Oct 2014 14:57:01 -0700
-From: Benjamin Poirier <benjamin.poirier@gmail.com>
-To: =?iso-8859-1?Q?Llu=EDs?= Batlle i Rossell <viric@viric.name>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Carles =?iso-8859-1?Q?Pag=E8s?= <page@cubata.homelinux.net>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Regarding tx-nocache-copy in the Sheevaplug
-Message-ID: <20141015215701.GA4109@f1.synalogic.ca>
-References: <20141013105246.GD1972@vicerveza.homeunix.net>
+	Wed, 15 Oct 2014 17:57:07 -0400
+X-Sender-Id: abbotti@mev.co.uk
+Message-ID: <543EEDAC.7050800@mev.co.uk>
+Date: Wed, 15 Oct 2014 22:57:00 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+To: David Cohen <david.a.cohen@linux.intel.com>, hsweeten@visionengravers.com,
+        gregkh@linuxfoundation.org
+CC: trivial@kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: comedi: ii_pci20kc: add CONFIG_HAS_IOMEM dependence
+References: <1413408339-12816-1-git-send-email-david.a.cohen@linux.intel.com>
+In-Reply-To: <1413408339-12816-1-git-send-email-david.a.cohen@linux.intel.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141013105246.GD1972@vicerveza.homeunix.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/10/13 12:52, Llu�s Batlle i Rossell wrote:
-> Hello,
-> 
-> on the 7th of January 2014 ths patch was applied:
-> https://lkml.org/lkml/2014/1/7/307
-> 
-> [PATCH v2] net: Do not enable tx-nocache-copy by default
->         
-> In the Sheevaplug (ARM Feroceon 88FR131 from Marvell) this made packets to be
-> sent corrupted. I think this machine has something special about the cache.
-> 
-> Enabling back this tx-nocache-copy (as it used to be before the patch) the
-> transfers work fine again. I think that most people, encountering this problem,
-> completely disable the tx offload instead of enabling back this setting.
-> 
-> Is this an ARM kernel problem regarding this platform?
+On 15/10/14 22:25, David Cohen wrote:
+> ii_pci20kc uses io memory which makes it not compilable on architectures
+> without HAS_IOMEM such as UML:
+>
+>    CC      drivers/net/wireless/ti/wl1251/main.o
+> drivers/staging/comedi/drivers/ii_pci20kc.c: In function ‘ii20k_attach’:
+> drivers/staging/comedi/drivers/ii_pci20kc.c:442:2: error: implicit
+> declaration of function ‘ioremap’
+> [-Werror=implicit-function-declaration]
+>    dev->mmio = ioremap(membase, II20K_SIZE);
+>    ^
+> drivers/staging/comedi/drivers/ii_pci20kc.c:442:12: warning: assignment
+> makes pointer from integer without a cast
+>    dev->mmio = ioremap(membase, II20K_SIZE);
+>              ^
+> drivers/staging/comedi/drivers/ii_pci20kc.c: In function ‘ii20k_detach’:
+> drivers/staging/comedi/drivers/ii_pci20kc.c:512:3: error: implicit
+> declaration of function ‘iounmap’
+> [-Werror=implicit-function-declaration]
+>     iounmap(dev->mmio);
+>     ^
+>
+> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+> ---
+>   drivers/staging/comedi/Kconfig | 1 +
+>   1 file changed, 1 insertion(+)
+>
+> diff --git a/drivers/staging/comedi/Kconfig b/drivers/staging/comedi/Kconfig
+> index a8bc2b567789..56be2112c731 100644
+> --- a/drivers/staging/comedi/Kconfig
+> +++ b/drivers/staging/comedi/Kconfig
+> @@ -425,6 +425,7 @@ config COMEDI_AIO_IIRO_16
+>   	  called aio_iiro_16.
+>
+>   config COMEDI_II_PCI20KC
+> +	depends on HAS_IOMEM
+>   	tristate "Intelligent Instruments PCI-20001C carrier support"
+>   	---help---
+>   	  Enable support for Intelligent Instruments PCI-20001C carrier
+>
 
-This is odd, only x86 defines ARCH_HAS_NOCACHE_UACCESS. On arm,
-skb_do_copy_data_nocache() should end up using __copy_from_user()
-regardless of tx-nocache-copy.
+The same fix was already submitted by Chen Gang:
+
+https://lkml.org/lkml/2014/10/2/318
+
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
+-=(                          Web: http://www.mev.co.uk/  )=-
