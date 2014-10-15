@@ -1,40 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751450AbaJOS3h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 14:29:37 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:53222 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033AbaJOS3f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 14:29:35 -0400
-Date: Wed, 15 Oct 2014 14:27:58 -0400 (EDT)
-Message-Id: <20141015.142758.1663495852272800188.davem@davemloft.net>
-To: himangi774@gmail.com
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        julia.lawall@lip6.fr
-Subject: Re: [PATCH] Drivers: ide: Remove typedef atiixp_ide_timing
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140814164430.GA4237@himangi-Dell>
-References: <20140814164430.GA4237@himangi-Dell>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 15 Oct 2014 11:29:35 -0700 (PDT)
+	id S1751431AbaJOSbx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 14:31:53 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:41969 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750721AbaJOSbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 14:31:52 -0400
+Date: Wed, 15 Oct 2014 14:31:37 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/5] mm: memcontrol: convert reclaim iterator to simple
+ css refcounting
+Message-ID: <20141015183137.GA6442@phnom.home.cmpxchg.org>
+References: <1413303637-23862-1-git-send-email-hannes@cmpxchg.org>
+ <1413303637-23862-2-git-send-email-hannes@cmpxchg.org>
+ <20141015150256.GF23547@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141015150256.GF23547@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Himangi Saraogi <himangi774@gmail.com>
-Date: Thu, 14 Aug 2014 22:14:30 +0530
-
-> The Linux kernel coding style guidelines suggest not using typedefs
-> for structure types. This patch gets rid of the typedef for
-> atiixp_ide_timing.
+On Wed, Oct 15, 2014 at 05:02:56PM +0200, Michal Hocko wrote:
+> On Tue 14-10-14 12:20:33, Johannes Weiner wrote:
+> > The memcg reclaim iterators use a complicated weak reference scheme to
+> > prevent pinning cgroups indefinitely in the absence of memory pressure.
+> > 
+> > However, during the ongoing cgroup core rework, css lifetime has been
+> > decoupled such that a pinned css no longer interferes with removal of
+> > the user-visible cgroup, and all this complexity is now unnecessary.
+> >
+> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> > ---
+> >  mm/memcontrol.c | 250 +++++++++++++++++---------------------------------------
+> >  1 file changed, 76 insertions(+), 174 deletions(-)
+> > 
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index b62972c80055..67dabe8b0aa6 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> [...]
+> > +		do {
+> > +			pos = ACCESS_ONCE(iter->position);
+> > +			/*
+> > +			 * A racing update may change the position and
+> > +			 * put the last reference, hence css_tryget(),
+> > +			 * or retry to see the updated position.
+> > +			 */
+> > +		} while (pos && !css_tryget(&pos->css));
+> > +	}
+> [...]
+> > +	if (reclaim) {
+> > +		if (cmpxchg(&iter->position, pos, memcg) == pos && memcg)
+> > +			css_get(&memcg->css);
+> > +
+> > +		if (pos)
+> > +			css_put(&pos->css);
 > 
-> The following Coccinelle semantic patch detects the case:
-  ...
-> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+> This looks like a reference leak. css_put pairs with the above
+> css_tryget but no css_put pairs with css_get for the cached one. We
+> need:
+> ---
+> From 2810937ec6c16afc0bf924e761ff8305bd478a42 Mon Sep 17 00:00:00 2001
+> From: Michal Hocko <mhocko@suse.cz>
+> Date: Wed, 15 Oct 2014 16:26:22 +0200
+> Subject: [PATCH] 
+>  mm-memcontrol-convert-reclaim-iterator-to-simple-css-refcounting-fix
+> 
+> Make sure that the cached reference is always released.
+> 
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
 
-Applied, thanks.
+You're right, thanks for catching that.
+
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
