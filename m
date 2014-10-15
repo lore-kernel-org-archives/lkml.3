@@ -1,101 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751925AbaJOJZY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 05:25:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30869 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751554AbaJOJZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 05:25:22 -0400
-Date: Wed, 15 Oct 2014 12:28:49 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        davem@davemloft.net, eric.dumazet@gmail.com
-Subject: Re: [RFC PATCH net-next 2/6] virtio: introduce
- virtio_enable_cb_avail()
-Message-ID: <20141015092849.GA25776@redhat.com>
-References: <1413357930-45302-1-git-send-email-jasowang@redhat.com>
- <1413357930-45302-3-git-send-email-jasowang@redhat.com>
+	id S1751596AbaJOJ3J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 05:29:09 -0400
+Received: from smtprelay4.synopsys.com ([198.182.44.111]:45166 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775AbaJOJ3G convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 05:29:06 -0400
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: "stable@vger.kernel.org" <stable@vger.kernel.org>
+CC: lkml <linux-kernel@vger.kernel.org>,
+        "arc-linux-dev@synopsys.com" <arc-linux-dev@synopsys.com>,
+        Igor Guryanov <Igor.Guryanov@synopsys.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+Subject: ARC backport for stable 3.14
+Thread-Topic: ARC backport for stable 3.14
+Thread-Index: Ac/oWii1pua5fC5tRwaTyL4nf1liCQ==
+Date: Wed, 15 Oct 2014 09:26:55 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA230753C5E6418@IN01WEMBXA.internal.synopsys.com>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.196.182]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413357930-45302-3-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 03:25:26PM +0800, Jason Wang wrote:
-> This patch introduces virtio_enable_cb_avail() to publish avail idx
-> and used event. This could be used by batched buffer submitting to
-> reduce the number of tx interrupts.
-> 
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
->  drivers/virtio/virtio_ring.c |   22 ++++++++++++++++++++--
->  include/linux/virtio.h       |    2 ++
->  2 files changed, 22 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-> index 1b3929f..d67fbf8 100644
-> --- a/drivers/virtio/virtio_ring.c
-> +++ b/drivers/virtio/virtio_ring.c
-> @@ -567,14 +567,32 @@ unsigned virtqueue_enable_cb_prepare(struct virtqueue *_vq)
->  	 * entry. Always do both to keep code simple. */
->  	vq->vring.avail->flags &= ~VRING_AVAIL_F_NO_INTERRUPT;
->  	/* Make sure used event never go backwards */
-> -	if (!vring_need_event(vring_used_event(&vq->vring),
-> -			      vq->vring.avail->idx, last_used_idx))
-> +	if (vq->vring.avail->idx != vring_used_event(&vq->vring) &&
-> +	    !vring_need_event(vring_used_event(&vq->vring),
-> +			      vq->vring.avail->idx, last_used_idx)) {
->  		vring_used_event(&vq->vring) = last_used_idx;
-> +	}
->  	END_USE(vq);
->  	return last_used_idx;
->  }
->  EXPORT_SYMBOL_GPL(virtqueue_enable_cb_prepare);
->
+Hi,
 
-I see you are also changing virtqueue_enable_cb_prepare, why?
+Can you please apply the following mainline commits to 3.14 stable (in the order below)
 
-> +bool virtqueue_enable_cb_avail(struct virtqueue *_vq)
-> +{
-> +	struct vring_virtqueue *vq = to_vvq(_vq);
-> +	bool ret;
-> +
-> +	START_USE(vq);
-> +	vq->vring.avail->flags &= ~VRING_AVAIL_F_NO_INTERRUPT;
-> +	vring_used_event(&vq->vring) = vq->vring.avail->idx;
-> +	ret = vring_need_event(vq->vring.avail->idx,
-> +			       vq->last_used_idx, vq->vring.used->idx);
-> +	END_USE(vq);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(virtqueue_enable_cb_avail);
-> +
->  /**
->   * virtqueue_poll - query pending used buffers
->   * @vq: the struct virtqueue we're talking about.
+c3441edd2dea ARC: [SMP] General Fixes
+d75386363ee6 ARC: fix mmuv2 warning
+ef680cdc2437 ARC: Disable caches in early boot if so configured
 
-Could not figure out what this does.
-Please add documentation.
+Build/run tested on 3.14
 
-> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
-> index b46671e..bfaf058 100644
-> --- a/include/linux/virtio.h
-> +++ b/include/linux/virtio.h
-> @@ -65,6 +65,8 @@ bool virtqueue_enable_cb(struct virtqueue *vq);
->  
->  unsigned virtqueue_enable_cb_prepare(struct virtqueue *vq);
->  
-> +bool virtqueue_enable_cb_avail(struct virtqueue *vq);
-> +
->  bool virtqueue_poll(struct virtqueue *vq, unsigned);
->  
->  bool virtqueue_enable_cb_delayed(struct virtqueue *vq);
-> -- 
-> 1.7.1
+Thx,
+-Vineet
