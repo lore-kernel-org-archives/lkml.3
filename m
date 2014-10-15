@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751505AbaJOGnZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 02:43:25 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:6123 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751183AbaJOGnY (ORCPT
+	id S1751561AbaJOGo1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 02:44:27 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:39425 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188AbaJOGoZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 02:43:24 -0400
-Message-ID: <543E1754.8040701@huawei.com>
-Date: Wed, 15 Oct 2014 14:42:28 +0800
-From: Weng Meiling <wengmeiling.weng@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Greg KH <gregkh@linuxfoundation.org>, <tj@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Xiang Rui <rui.xiang@huawei.com>,
-        Li Zefan <lizefan@huawei.com>, Huang Qiang <h.huangqiang@huawei.com>,
-        Zhao Hongjiang <zhaohongjiang@huawei.com>
-Subject: Subject: [PATCH] kobject: fix the race between kobject_del and get_device_parent
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.24.66]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020208.543E1780.00D5,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: b1f122a450a1ea4eb8b2f45c1b4debd0
+	Wed, 15 Oct 2014 02:44:25 -0400
+From: Sudhir Sreedharan <ssreedharan@mvista.com>
+To: peter@hurleysoftware.com, gregkh@linuxfoundation.org, khilman@kernel.org
+Cc: linux-serial@vger.kernel.org, jslaby@suse.cz, linux-kernel@vger.kernel.org,
+        olof@lixom.net, linux-arm-kernel@lists.infradead.org,
+        geert@linux-m68k.org, Sudhir Sreedharan <ssreedharan@mvista.com>
+Subject: [PATCH] tty: serial: 8250_core: restore the LCR register in set_sleep
+Date: Wed, 15 Oct 2014 12:13:15 +0530
+Message-Id: <1413355395-5871-1-git-send-email-ssreedharan@mvista.com>
+X-Mailer: git-send-email 1.7.0.1
+In-Reply-To: <54369F77.5000906@hurleysoftware.com>
+References: <54369F77.5000906@hurleysoftware.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the last child kobject was deleted, it's parent kobject will be deleted,
-when removing the parent kobject if the parent kobject's sd has been set NULL
-and still not been removed from it's kset's list, at the same time another one
-trigger an device adding event, the function get_parent_device() will get the
-parent object from the kset's list for kobject_add(), but this time parent
-kobject's sd has been NULL. This race will make the sysfs_create_dir() return
-ENOENT, the new kobject will be failed to added into sysfs and trigger BUG()
-when creating attribute group under the new device's directory. So move the
-kobject removal from kset's list before kobj->sd=NULL.
+In ST16650V2 based serial uarts, while initalizing the PM state,
+LCR registers are being initialized to 0 in serial8250_set_sleep().
+If console port is already initialized and being used, this will
+throws garbage in the console.
 
-The race situation:
-
-path0(remove parent kobj, e.g:/sys/devices/virtual/block/)   path1(register a new device)
-
-kobject_del(){                                               get_device_parent(){
-...                                                          ...
-sysfs_remove_dir(kobj);  //kobj->sd=NULL                     spin_lock(&dev->class->p->glue_dirs.list_lock);
-...                                                  <===    list_for_each_entry(k, &dev->class->p->glue_dirs.list, entry)
-kobj_kset_leave(kobj);   //remove kobj from kset list        ...
-}                                                           }
-
-
-We had triggered the bug, the detail message link:
-https://lkml.org/lkml/2014/10/13/40
-
-Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
+Signed-off-by: Sudhir Sreedharan <ssreedharan@mvista.com>
 ---
- lib/kobject.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/tty/serial/8250/8250_core.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/lib/kobject.c b/lib/kobject.c
-index 58751bb..af2b7bb 100644
---- a/lib/kobject.c
-+++ b/lib/kobject.c
-@@ -560,12 +560,13 @@ void kobject_del(struct kobject *kobj)
- 	if (!kobj)
- 		return;
-
-+	kobj_kset_leave(kobj);
-+
- 	sd = kobj->sd;
- 	sysfs_remove_dir(kobj);
- 	sysfs_put(sd);
-
- 	kobj->state_in_sysfs = 0;
--	kobj_kset_leave(kobj);
- 	kobject_put(kobj->parent);
- 	kobj->parent = NULL;
- }
+diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
+index ca5cfdc..e054482 100644
+--- a/drivers/tty/serial/8250/8250_core.c
++++ b/drivers/tty/serial/8250/8250_core.c
+@@ -595,6 +595,7 @@ static void serial8250_rpm_put_tx(struct uart_8250_port *p)
+  */
+ static void serial8250_set_sleep(struct uart_8250_port *p, int sleep)
+ {
++	unsigned char lcr, efr;
+ 	/*
+ 	 * Exar UARTs have a SLEEP register that enables or disables
+ 	 * each UART to enter sleep mode separately.  On the XR17V35x the
+@@ -611,6 +612,8 @@ static void serial8250_set_sleep(struct uart_8250_port *p, int sleep)
+ 
+ 	if (p->capabilities & UART_CAP_SLEEP) {
+ 		if (p->capabilities & UART_CAP_EFR) {
++			lcr = serial_in(p, UART_LCR);
++			efr = serial_in(p, UART_EFR);
+ 			serial_out(p, UART_LCR, UART_LCR_CONF_MODE_B);
+ 			serial_out(p, UART_EFR, UART_EFR_ECB);
+ 			serial_out(p, UART_LCR, 0);
+@@ -618,8 +621,8 @@ static void serial8250_set_sleep(struct uart_8250_port *p, int sleep)
+ 		serial_out(p, UART_IER, sleep ? UART_IERX_SLEEP : 0);
+ 		if (p->capabilities & UART_CAP_EFR) {
+ 			serial_out(p, UART_LCR, UART_LCR_CONF_MODE_B);
+-			serial_out(p, UART_EFR, 0);
+-			serial_out(p, UART_LCR, 0);
++			serial_out(p, UART_EFR, sleep ? 0 : efr);
++			serial_out(p, UART_LCR, sleep ? 0 : lcr);
+ 		}
+ 	}
+ out:
 -- 
-1.8.2.2
+1.7.0.1
 
