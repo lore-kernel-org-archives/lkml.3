@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751908AbaJOVZX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 17:25:23 -0400
-Received: from mga03.intel.com ([134.134.136.65]:17603 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751277AbaJOVZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 17:25:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,727,1406617200"; 
-   d="scan'208";a="589748685"
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        gregkh@linuxfoundation.org
-Cc: trivial@kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        David Cohen <david.a.cohen@linux.intel.com>
-Subject: [PATCH] staging: comedi: ii_pci20kc: add CONFIG_HAS_IOMEM dependence
-Date: Wed, 15 Oct 2014 14:25:39 -0700
-Message-Id: <1413408339-12816-1-git-send-email-david.a.cohen@linux.intel.com>
-X-Mailer: git-send-email 2.1.0
+	id S1751996AbaJOVZd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 17:25:33 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:35112 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751931AbaJOVZb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 17:25:31 -0400
+Date: Wed, 15 Oct 2014 22:25:13 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Greg KH <greg@kroah.com>
+Cc: David Laight <David.Laight@ACULAB.COM>,
+        "'Nathan Lynch'" <Nathan_Lynch@mentor.com>,
+        Felipe Balbi <balbi@ti.com>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "josh@joshtriplett.org" <josh@joshtriplett.org>,
+        Rabin Vincent <rabin@rab.in>, Alan Stern <stern@rowland.harvard.edu>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: RCU bug with v3.17-rc3 ?
+Message-ID: <20141015212513.GA3247@n2100.arm.linux.org.uk>
+References: <20141009204101.GA25955@debian>
+ <20141009204637.GE25729@saruman>
+ <20141009210715.GH25729@saruman>
+ <20141010135743.GB31348@saruman>
+ <20141010162531.GL12379@n2100.arm.linux.org.uk>
+ <54388B81.5020306@mentor.com>
+ <063D6719AE5E284EB5DD2968C1650D6D174C996E@AcuExch.aculab.com>
+ <20141013114307.GO12379@n2100.arm.linux.org.uk>
+ <20141014020640.GB25433@kroah.com>
+ <20141015212310.GP12379@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141015212310.GP12379@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ii_pci20kc uses io memory which makes it not compilable on architectures
-without HAS_IOMEM such as UML:
+On Wed, Oct 15, 2014 at 10:23:10PM +0100, Russell King - ARM Linux wrote:
+> As I said, I have a patch in progress, but it seems that there needed
+> to be some discussion about exactly which compiler versions are affected.
+> It seems that it's not as trivial as looking at the GCC bug entry.
 
-  CC      drivers/net/wireless/ti/wl1251/main.o
-drivers/staging/comedi/drivers/ii_pci20kc.c: In function ‘ii20k_attach’:
-drivers/staging/comedi/drivers/ii_pci20kc.c:442:2: error: implicit
-declaration of function ‘ioremap’
-[-Werror=implicit-function-declaration]
-  dev->mmio = ioremap(membase, II20K_SIZE);
-  ^
-drivers/staging/comedi/drivers/ii_pci20kc.c:442:12: warning: assignment
-makes pointer from integer without a cast
-  dev->mmio = ioremap(membase, II20K_SIZE);
-            ^
-drivers/staging/comedi/drivers/ii_pci20kc.c: In function ‘ii20k_detach’:
-drivers/staging/comedi/drivers/ii_pci20kc.c:512:3: error: implicit
-declaration of function ‘iounmap’
-[-Werror=implicit-function-declaration]
-   iounmap(dev->mmio);
-   ^
+... and in any case, it has been a known bug for well over a year now,
+and it seems that it doesn't affect _that_ many people.  So taking some
+extra time to get it properly correct is the _right_ thing to do.
 
-Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
----
- drivers/staging/comedi/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/staging/comedi/Kconfig b/drivers/staging/comedi/Kconfig
-index a8bc2b567789..56be2112c731 100644
---- a/drivers/staging/comedi/Kconfig
-+++ b/drivers/staging/comedi/Kconfig
-@@ -425,6 +425,7 @@ config COMEDI_AIO_IIRO_16
- 	  called aio_iiro_16.
- 
- config COMEDI_II_PCI20KC
-+	depends on HAS_IOMEM
- 	tristate "Intelligent Instruments PCI-20001C carrier support"
- 	---help---
- 	  Enable support for Intelligent Instruments PCI-20001C carrier
 -- 
-2.1.0
-
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
