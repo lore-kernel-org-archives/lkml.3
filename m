@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751383AbaJON6m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 09:58:42 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:64923 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866AbaJON6l (ORCPT
+	id S1751273AbaJOOEI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 10:04:08 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:56300 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751106AbaJOOEG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 09:58:41 -0400
+	Wed, 15 Oct 2014 10:04:06 -0400
+Date: Wed, 15 Oct 2014 16:03:37 +0200
+From: Mark Brown <broonie@kernel.org>
+To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Romain Perier <romain.perier@gmail.com>, devicetree@vger.kernel.org,
+        lgirdwood@gmail.com, linux-kernel@vger.kernel.org, robh@kernel.org,
+        mark.rutland@arm.com
+Message-ID: <20141015140337.GI27755@sirena.org.uk>
+References: <1413268273-15151-1-git-send-email-romain.perier@gmail.com>
+ <20141015124142.92D0EC40B00@trevor.secretlab.ca>
+ <20141015134245.GH27755@sirena.org.uk>
+ <40398493.mf2VbOGMuV@phil>
 MIME-Version: 1.0
-In-Reply-To: <20141015111641.GC7792@gaast.net>
-References: <54347520.3050109@gaast.net> <543AA2FE.20105@gaast.net>
- <20141012204032.GA11171@amd> <9751497.0fL0kvsyX7@vostro.rjw.lan> <20141015111641.GC7792@gaast.net>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 15 Oct 2014 07:58:20 -0600
-Message-ID: <CAErSpo5A+nHTu2Y6KrXowBBCBsNw_hO0SRsnc6YRdJChCUmO6w@mail.gmail.com>
-Subject: Re: Machine crashes right *after* ~successful resume
-To: Wilmer van der Gaast <wilmer@gaast.net>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Av0MaMCQQeg4b3so"
+Content-Disposition: inline
+In-Reply-To: <40398493.mf2VbOGMuV@phil>
+X-Cookie: You are magnetic in your bearing.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 62.156.150.204
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC v3 PATCH 1/5] of: Add standard property for poweroff
+ capability
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Yinghai, author of 928bea964827 ("PCI: Delay enabling bridges
-until they're needed")]
 
-On Wed, Oct 15, 2014 at 5:16 AM, Wilmer van der Gaast <wilmer@gaast.net> wrote:
-> Hello Rafael,
->
-> Rafael J. Wysocki (rjw@rjwysocki.net) wrote:
->> > Would it be feasible to revert 2e8b... to see if it fixes it on 3.17?
->> That's a merge, isn't it?
->>
-> Correct, it was, and I did try to figure out which of its parents was
-> the guilty one, but then I found out the real problem is
-> 928bea964827d7824b548c1f8e06eccbbc4d0d7d.
->
-> Not sure why 2e8b... was initially found guilty by git bisect, I fear
-> that my testing was not thorough enough. I've verified a couple of times
-> now that 928bea96... does cause crashes and the previous revision does not.
->
-> 928bea... seems to reshuffle PCI initialisation a little bit and has
-> caused more troubles, judging from a Google query for it. Some changes
-> were made already as a result, and this unfortunately makes a revert on
-> a later kernel tree (to see if that fixes the problem for me) much less
-> straight-forward. :-(
+--Av0MaMCQQeg4b3so
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-More details (from initial post) here: http://roy.gaast.net/~wilmer/.lkml/
+On Wed, Oct 15, 2014 at 03:56:03PM +0200, Heiko St=FCbner wrote:
+> Am Mittwoch, 15. Oktober 2014, 15:42:45 schrieb Mark Brown:
 
-Can you open a report at http://bugzilla.kernel.org, please?  Please
-also attach the complete "lspci -vv" output.
+> > I guess I should apply these (except the DTS update) since the first
+> > user that's being added is a regulator driver?
 
-Bjorn
+> I'd think so.
+> In any case, I'll take the "ARM: dts: ..." patch if you take the others.
+
+Sounds like a plan.  I just tried applying and got some conflicts but
+I'm guessing that this is due to changes that are landing in the merge
+window so I'll try again once -rc1 is out.
+
+--Av0MaMCQQeg4b3so
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUPn64AAoJECTWi3JdVIfQGQIH/A/b6j2HDLcddduEyBGASorE
+5o0VdPyRTSWto0Gg4Ki2C1rJyNvUFFS/AAnC49uZS1nFFdSw+9lw8M2YJjtbTd7F
+bwDQVavDbqzeiZN3ZuBvX81uhFzQfF18LN02JG7jvh8Amunq7xMtlX0VG447cje/
+FYf9KT1mEITTIxC2MxTMnbGNMzXcZHoVQmSKEuXqDmjNJ1XOUi00+aPB50PASuk/
+hLXXiRtS8x1iZwe0Vl+qXQBzwbsKQuVtyZwp/yphYx5qgA3WAJgCt5A/HbnqHZVg
+v/Xc7X0UOzTZnWrGMBW58Bb1KU/9b4s/qiUBdkGOFKAO1wBWnMhsyP982bUnPRU=
+=Cr1o
+-----END PGP SIGNATURE-----
+
+--Av0MaMCQQeg4b3so--
