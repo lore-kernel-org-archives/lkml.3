@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755961AbaJOC0L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 22:26:11 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:39154 "EHLO
+	id S932919AbaJOC2k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 22:28:40 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:40016 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932671AbaJOCZr (ORCPT
+	with ESMTP id S932809AbaJOC0L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 22:25:47 -0400
+	Tue, 14 Oct 2014 22:26:11 -0400
 From: Yijing Wang <wangyijing@huawei.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
@@ -33,9 +33,9 @@ CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Thierry Reding <thierry.reding@gmail.com>,
         "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
         Liviu Dudau <liviu@dudau.co.uk>, Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH v3 01/27] MSI: Remove the redundant irq_set_chip_data()
-Date: Wed, 15 Oct 2014 11:06:49 +0800
-Message-ID: <1413342435-7876-2-git-send-email-wangyijing@huawei.com>
+Subject: [PATCH v3 23/27] arm/iop13xx/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+Date: Wed, 15 Oct 2014 11:07:11 +0800
+Message-ID: <1413342435-7876-24-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1413342435-7876-1-git-send-email-wangyijing@huawei.com>
 References: <1413342435-7876-1-git-send-email-wangyijing@huawei.com>
@@ -47,39 +47,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, pcie-designware, pcie-rcar and pci-tegra drivers
-use irq chip_data to save the msi_chip pointer. They
-already call irq_set_chip_data() in their own MSI irq map
-functions. And chip_data is an opaque pointer, how to use
-it is arch dependent. It should not be placed in MSI core.
+Use MSI chip framework instead of arch MSI functions to configure
+MSI/MSI-X irq. So we can manage MSI/MSI-X irq in a unified framework.
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Reviewed-by: Thierry Reding <treding@nvidia.com>
 ---
- drivers/pci/msi.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+ arch/arm/mach-iop13xx/include/mach/pci.h |    4 ++++
+ arch/arm/mach-iop13xx/iq81340mc.c        |    3 +++
+ arch/arm/mach-iop13xx/iq81340sc.c        |    5 ++++-
+ arch/arm/mach-iop13xx/msi.c              |   11 +++++++++--
+ 4 files changed, 20 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index 2f7c92c..ecb92a5 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -41,14 +41,13 @@ int __weak arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
- 	if (err < 0)
- 		return err;
+diff --git a/arch/arm/mach-iop13xx/include/mach/pci.h b/arch/arm/mach-iop13xx/include/mach/pci.h
+index 59f42b5..c87ac3a 100644
+--- a/arch/arm/mach-iop13xx/include/mach/pci.h
++++ b/arch/arm/mach-iop13xx/include/mach/pci.h
+@@ -11,6 +11,10 @@ void iop13xx_atu_select(struct hw_pci *plat_pci);
+ void iop13xx_pci_init(void);
+ void iop13xx_map_pci_memory(void);
  
--	irq_set_chip_data(desc->irq, chip);
--
++#ifdef CONFIG_PCI_MSI
++extern struct msi_chip iop13xx_msi_chip;
++#endif
++
+ #define IOP_PCI_STATUS_ERROR (PCI_STATUS_PARITY |	     \
+ 			       PCI_STATUS_SIG_TARGET_ABORT | \
+ 			       PCI_STATUS_REC_TARGET_ABORT | \
+diff --git a/arch/arm/mach-iop13xx/iq81340mc.c b/arch/arm/mach-iop13xx/iq81340mc.c
+index 9cd07d3..1f499b6 100644
+--- a/arch/arm/mach-iop13xx/iq81340mc.c
++++ b/arch/arm/mach-iop13xx/iq81340mc.c
+@@ -59,6 +59,9 @@ static struct hw_pci iq81340mc_pci __initdata = {
+ 	.map_irq	= iq81340mc_pcix_map_irq,
+ 	.scan		= iop13xx_scan_bus,
+ 	.preinit	= iop13xx_pci_init,
++#ifdef CONFIG_PCI_MSI
++	.msi_chip	= &iop13xx_msi_chip,
++#endif
+ };
+ 
+ static int __init iq81340mc_pci_init(void)
+diff --git a/arch/arm/mach-iop13xx/iq81340sc.c b/arch/arm/mach-iop13xx/iq81340sc.c
+index b3ec11c..8bdfdc5 100644
+--- a/arch/arm/mach-iop13xx/iq81340sc.c
++++ b/arch/arm/mach-iop13xx/iq81340sc.c
+@@ -60,7 +60,10 @@ static struct hw_pci iq81340sc_pci __initdata = {
+ 	.setup		= iop13xx_pci_setup,
+ 	.scan		= iop13xx_scan_bus,
+ 	.map_irq	= iq81340sc_atux_map_irq,
+-	.preinit	= iop13xx_pci_init
++	.preinit	= iop13xx_pci_init,
++#ifdef CONFIG_PCI_MSI
++	.msi_chip	= &iop13xx_msi_chip,
++#endif
+ };
+ 
+ static int __init iq81340sc_pci_init(void)
+diff --git a/arch/arm/mach-iop13xx/msi.c b/arch/arm/mach-iop13xx/msi.c
+index e7730cf..3135a63 100644
+--- a/arch/arm/mach-iop13xx/msi.c
++++ b/arch/arm/mach-iop13xx/msi.c
+@@ -132,7 +132,8 @@ static struct irq_chip iop13xx_msi_chip = {
+ 	.irq_unmask = unmask_msi_irq,
+ };
+ 
+-int arch_setup_msi_irq(struct pci_dev *pdev, struct msi_desc *desc)
++static int iop13xx_setup_msi_irq(struct msi_chip *chip,
++		struct pci_dev *dev, struct msi_desc *desc)
+ {
+ 	int id, irq = irq_alloc_desc_from(IRQ_IOP13XX_MSI_0, -1);
+ 	struct msi_msg msg;
+@@ -159,7 +160,13 @@ int arch_setup_msi_irq(struct pci_dev *pdev, struct msi_desc *desc)
  	return 0;
  }
  
- void __weak arch_teardown_msi_irq(unsigned int irq)
+-void arch_teardown_msi_irq(unsigned int irq)
++static void iop13xx_teardown_msi_irq(struct msi_chip *chip,
++		unsigned int irq)
  {
--	struct msi_chip *chip = irq_get_chip_data(irq);
-+	struct msi_desc *entry = irq_get_msi_desc(irq);
-+	struct msi_chip *chip = entry->dev->bus->msi;
- 
- 	if (!chip || !chip->teardown_irq)
- 		return;
+ 	irq_free_desc(irq);
+ }
++
++struct msi_chip iop13xx_chip = {
++	.setup_irq = iop13xx_setup_msi_irq,
++	.teardown_irq = iop13xx_teardown_msi_irq,
++};
 -- 
 1.7.1
 
