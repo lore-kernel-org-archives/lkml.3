@@ -1,47 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751444AbaJOIaO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 04:30:14 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:51214 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257AbaJOIaL (ORCPT
+	id S1751697AbaJOIbp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 04:31:45 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:42571 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644AbaJOIbl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 04:30:11 -0400
-From: Michele Curti <michele.curti@gmail.com>
-To: davem@davemloft.net
-Cc: linux-kernel@vger.kernel.org, Michele Curti <michele.curti@gmail.com>
-Subject: [PATCH] kernel/jump_label.c: declare jump_label_module_nb as static
-Date: Wed, 15 Oct 2014 10:30:01 +0200
-Message-Id: <1413361801-17003-1-git-send-email-michele.curti@gmail.com>
-X-Mailer: git-send-email 2.1.2
+	Wed, 15 Oct 2014 04:31:41 -0400
+Message-ID: <543E30E0.3060203@hp.com>
+Date: Wed, 15 Oct 2014 16:31:28 +0800
+From: "Li, ZhenHua" <zhen-hual@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Takao Indoh <indou.takao@jp.fujitsu.com>
+CC: bhelgaas@google.com, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linda.knippers@hp.com,
+        jerry.hoemann@hp.com, lisa.mitchell@hp.com, alexander.duyck@gmail.com,
+        rwright@hp.com
+Subject: Re: [PATCH 1/1] pci: fix dmar fault for kdump kernel
+References: <1412925191-27970-1-git-send-email-zhen-hual@hp.com> <543CEE32.50109@hp.com> <543E2CD5.60708@jp.fujitsu.com>
+In-Reply-To: <543E2CD5.60708@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The structure jump_label_module_nb is used in jump_label.c only,
-so declare it as static
+I still think resetting the devices is necessary.  Reading your original
+mails ,  I think reason 2 you mentioned, resetting the devices in the
+first kernel,  may be a good solution.
 
-Signed-off-by: Michele Curti <michele.curti@gmail.com>
----
- kernel/jump_label.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Well, I am now working on Bill's patch that you mentioned. As it is not
+accepted yet, I will create a new version for latest stable kernel 3.17.
 
-diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-index 9019f15..d7ac148 100644
---- a/kernel/jump_label.c
-+++ b/kernel/jump_label.c
-@@ -399,7 +399,7 @@ jump_label_module_notify(struct notifier_block *self, unsigned long val,
- 	return notifier_from_errno(ret);
- }
- 
--struct notifier_block jump_label_module_nb = {
-+static struct notifier_block jump_label_module_nb = {
- 	.notifier_call = jump_label_module_notify,
- 	.priority = 1, /* higher than tracepoints */
- };
--- 
-2.1.2
+Thanks
+Zhenhua
 
-Regards,
-Michele
+
+On 10/15/2014 04:14 PM, Takao Indoh wrote:
+> (2014/10/14 18:34), Li, ZhenHua wrote:
+>> I tested on the latest stable version 3.17, it works well.
+>>
+>> On 10/10/2014 03:13 PM, Li, Zhen-Hua wrote:
+>>> On a HP system with Intel vt-d supported and many PCI devices on it,
+>>> when kernel crashed and the kdump kernel boots with intel_iommu=on,
+>>> there may be some unexpected DMA requests on this adapter, which will
+>>> cause DMA Remapping faults like:
+>>>       dmar: DRHD: handling fault status reg 102
+>>>       dmar: DMAR:[DMA Read] Request device [41:00.0] fault addr fff81000
+>>>       DMAR:[fault reason 01] Present bit in root entry is clear
+>>>
+>>> This bug may happen on *any* PCI device.
+>>> Analysis for this bug:
+>>>
+>>> The present bit is set in this function:
+>>>
+>>> static struct context_entry * device_to_context_entry(
+>>>                   struct intel_iommu *iommu, u8 bus, u8 devfn)
+>>> {
+>>>       ......
+>>>                   set_root_present(root);
+>>>       ......
+>>> }
+>>>
+>>> Calling tree:
+>>>       device driver
+>>>           intel_alloc_coherent
+>>>               __intel_map_single
+>>>                   domain_context_mapping
+>>>                       domain_context_mapping_one
+>>>                           device_to_context_entry
+>>>
+>>> This means, the present bit in root entry will not be set until the device
+>>> driver is loaded.
+>>>
+>>> But in the kdump kernel, hardware devices are not aware that control has
+>>> transferred to the second kernel, and those drivers must initialize again.
+>>> Consequently there may be unexpected DMA requests from devices activity
+>>> initiated in the first kernel leading to the DMA Remapping errors in the
+>>> second kernel.
+>>>
+>>> To fix this DMAR fault, we need to reset the bus that this device on. Reset
+>>> the device itself does not work.
+>>>
+>>> A patch for this bug that has been sent before:
+>>> https://lkml.org/lkml/2014/9/30/55
+>>> As in discussion, this bug may happen on *any* device, so we need to reset all
+>>> pci devices.
+>>>
+>>> There was an original version(Takao Indoh) that resets the pcie devices:
+>>> https://lkml.org/lkml/2013/5/14/9
+> 
+> As far as I can remember, the original patch was nacked by
+> the following reasons:
+> 
+> 1) On sparc, the IOMMU is initialized before PCI devices are enumerated,
+>     so there would still be a window where ongoing DMA could cause an
+>     IOMMU error.
+> 
+> 2) Basically Bjorn is thinking device reset should be done in the
+>     1st kernel before jumping into 2nd kernel.
+> 
+> And Bill Sumner proposed another idea.
+> http://comments.gmane.org/gmane.linux.kernel.iommu/4828
+> I don't know the current status of this patch, but I think Jerry Hoemann
+> is working on this.
+> 
+> Thanks,
+> Takao Indoh
+> 
+> 
+>>>
+>>> Update of this new version, comparing with Takao Indoh's version:
+>>>       Add support for legacy PCI devices.
+>>>       Use pci_try_reset_bus instead of do_downstream_device_reset in original version
+>>>
+>>> Randy Wright corrects some misunderstanding in this description.
+>>>
+>>> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+>>> Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
+>>> Signed-off-by: Randy Wright <rwright@hp.com>
+>>> ---
+>>>    drivers/pci/pci.c | 84 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>>>    1 file changed, 84 insertions(+)
+>>>
+>>> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+>>> index 2c9ac70..8cb146c 100644
+>>> --- a/drivers/pci/pci.c
+>>> +++ b/drivers/pci/pci.c
+>>> @@ -23,6 +23,7 @@
+>>>    #include <linux/device.h>
+>>>    #include <linux/pm_runtime.h>
+>>>    #include <linux/pci_hotplug.h>
+>>> +#include <linux/crash_dump.h>
+>>>    #include <asm-generic/pci-bridge.h>
+>>>    #include <asm/setup.h>
+>>>    #include "pci.h"
+>>> @@ -4423,6 +4424,89 @@ void __weak pci_fixup_cardbus(struct pci_bus *bus)
+>>>    }
+>>>    EXPORT_SYMBOL(pci_fixup_cardbus);
+>>>
+>>> +/*
+>>> + * Return true if dev is PCI root port or downstream port whose child is PCI
+>>> + * endpoint except VGA device.
+>>> + */
+>>> +static int __pci_dev_need_reset(struct pci_dev *dev)
+>>> +{
+>>> +    struct pci_bus *subordinate;
+>>> +    struct pci_dev *child;
+>>> +
+>>> +    if (dev->hdr_type != PCI_HEADER_TYPE_BRIDGE)
+>>> +        return 0;
+>>> +
+>>> +    if (pci_is_pcie(dev)) {
+>>> +        if ((pci_pcie_type(dev) != PCI_EXP_TYPE_ROOT_PORT) &&
+>>> +            (pci_pcie_type(dev) != PCI_EXP_TYPE_DOWNSTREAM))
+>>> +            return 0;
+>>> +    }
+>>> +
+>>> +    subordinate = dev->subordinate;
+>>> +    list_for_each_entry(child, &subordinate->devices, bus_list) {
+>>> +        /* Don't reset switch, bridge, VGA device */
+>>> +        if ((child->hdr_type == PCI_HEADER_TYPE_BRIDGE) ||
+>>> +            ((child->class >> 16) == PCI_BASE_CLASS_BRIDGE) ||
+>>> +            ((child->class >> 16) == PCI_BASE_CLASS_DISPLAY))
+>>> +            return 0;
+>>> +
+>>> +        if (pci_is_pcie(child)) {
+>>> +            if ((pci_pcie_type(child) == PCI_EXP_TYPE_UPSTREAM) ||
+>>> +                (pci_pcie_type(child) == PCI_EXP_TYPE_PCI_BRIDGE))
+>>> +                return 0;
+>>> +        }
+>>> +    }
+>>> +
+>>> +    return 1;
+>>> +}
+>>> +
+>>> +struct pci_dev_reset_entry {
+>>> +    struct list_head list;
+>>> +    struct pci_dev *dev;
+>>> +};
+>>> +int __init pci_reset_endpoints(void)
+>>> +{
+>>> +    struct pci_dev *dev = NULL;
+>>> +    struct pci_dev_reset_entry *pdev_entry, *tmp;
+>>> +    struct pci_bus *subordinate = NULL;
+>>> +    int has_it;
+>>> +
+>>> +    LIST_HEAD(pdev_list);
+>>> +
+>>> +    if (likely(!is_kdump_kernel()))
+>>> +        return 0;
+>>> +
+>>> +    for_each_pci_dev(dev) {
+>>> +        subordinate = dev->subordinate;
+>>> +        if (!subordinate || list_empty(&subordinate->devices))
+>>> +            continue;
+>>> +
+>>> +        has_it = 0;
+>>> +        list_for_each_entry(pdev_entry, &pdev_list, list) {
+>>> +            if (dev == pdev_entry->dev) {
+>>> +                has_it = 1;
+>>> +                break;
+>>> +            }
+>>> +        }
+>>> +        if (has_it)
+>>> +            continue;
+>>> +
+>>> +        if (__pci_dev_need_reset(dev)) {
+>>> +            pdev_entry = kmalloc(sizeof(*pdev_entry), GFP_KERNEL);
+>>> +            pdev_entry->dev = dev;
+>>> +            list_add(&pdev_entry->list, &pdev_list);
+>>> +        }
+>>> +    }
+>>> +
+>>> +    list_for_each_entry_safe(pdev_entry, tmp, &pdev_list, list) {
+>>> +        pci_try_reset_bus(pdev_entry->dev->subordinate);
+>>> +        kfree(pdev_entry);
+>>> +    }
+>>> +
+>>> +    return 0;
+>>> +}
+>>> +fs_initcall_sync(pci_reset_endpoints);
+>>> +
+>>>    static int __init pci_setup(char *str)
+>>>    {
+>>>        while (str) {
+>>>
+>>
+>>
+>>
+> 
+> 
 
