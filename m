@@ -1,67 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969AbaJOHqt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 03:46:49 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58857 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751228AbaJOHqr (ORCPT
+	id S1751548AbaJOHtE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 03:49:04 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:35090 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238AbaJOHtB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 03:46:47 -0400
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: chas@cmf.nrl.navy.mil
-Cc: linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] atm: simplify lanai.c by using module_pci_driver
-Date: Wed, 15 Oct 2014 09:45:50 +0200
-Message-Id: <1413359150-13552-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 15 Oct 2014 03:49:01 -0400
+Date: Wed, 15 Oct 2014 09:48:58 +0200
+From: Pavel Machek <pavel@denx.de>
+To: atull@opensource.altera.com
+Cc: dinguyen@opensource.altera.com, linux@arm.linux.org.uk, arnd@arndb.de,
+        s.trumtrar@pengutronix.de, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, delicious.quinoa@gmail.com,
+        yvanderv@opensource.altera.com
+Subject: Re: [PATCH v3 1/2] socfpga: hotplug: put cpu1 in wfi
+Message-ID: <20141015074858.GA10720@amd>
+References: <1413315219-28885-1-git-send-email-atull@opensource.altera.com>
+ <1413315219-28885-2-git-send-email-atull@opensource.altera.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413315219-28885-2-git-send-email-atull@opensource.altera.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This simplifies the lanai.c driver by using
-the module_pci_driver() macro, at the expense
-of losing only debugging messages.
+On Tue 2014-10-14 14:33:38, atull@opensource.altera.com wrote:
+> From: Alan Tull <atull@opensource.altera.com>
+> 
+> Use WFI when putting CPU1 to sleep.  Don't hold CPU1 in reset
+> since that results in increased power consumption.
+> 
+> Reset CPU1 briefly during CPU1 bootup.
+> 
+> This has been tested for hotplug and suspend/resume and results
+> in no increased power consumption.
+> 
+> Signed-off-by: Alan Tull <atull@opensource.altera.com>
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- drivers/atm/lanai.c | 22 +---------------------
- 1 file changed, 1 insertion(+), 21 deletions(-)
+Acked-by: Pavel Machek <pavel@denx.de>
 
-diff --git a/drivers/atm/lanai.c b/drivers/atm/lanai.c
-index fa7d701933ba..93eaf8d94492 100644
---- a/drivers/atm/lanai.c
-+++ b/drivers/atm/lanai.c
-@@ -2614,27 +2614,7 @@ static struct pci_driver lanai_driver = {
- 	.probe    = lanai_init_one,
- };
- 
--static int __init lanai_module_init(void)
--{
--	int x;
--
--	x = pci_register_driver(&lanai_driver);
--	if (x != 0)
--		printk(KERN_ERR DEV_LABEL ": no adapter found\n");
--	return x;
--}
--
--static void __exit lanai_module_exit(void)
--{
--	/* We'll only get called when all the interfaces are already
--	 * gone, so there isn't much to do
--	 */
--	DPRINTK("cleanup_module()\n");
--	pci_unregister_driver(&lanai_driver);
--}
--
--module_init(lanai_module_init);
--module_exit(lanai_module_exit);
-+module_pci_driver(lanai_driver);
- 
- MODULE_AUTHOR("Mitchell Blank Jr <mitch@sfgoth.com>");
- MODULE_DESCRIPTION("Efficient Networks Speedstream 3010 driver");
 -- 
-1.9.1
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
