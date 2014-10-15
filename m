@@ -1,88 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368AbaJOM2Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 08:28:16 -0400
-Received: from rrzmta1.uni-regensburg.de ([194.94.155.51]:42965 "EHLO
-	rrzmta1.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752243AbaJOM2P convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:1:1>);
-	Wed, 15 Oct 2014 08:28:15 -0400
-Message-Id: <543E847A020000A1000175B8@gwsmtp1.uni-regensburg.de>
-X-Mailer: Novell GroupWise Internet Agent 14.0.1 
-Date: Wed, 15 Oct 2014 14:28:10 +0200
-From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
+	id S1752445AbaJOMbr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 08:31:47 -0400
+Received: from relay.parallels.com ([195.214.232.42]:55692 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752073AbaJOMbp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 08:31:45 -0400
+Message-ID: <1413376300.24793.55.camel@tkhai>
+Subject: [PATCH RFC] sched: Revert delayed_put_task_struct() and fix use
+ after free
+From: Kirill Tkhai <ktkhai@parallels.com>
 To: <linux-kernel@vger.kernel.org>
-Subject: 3.16.3: misdetected nsc-ircc version 01 in VMware?
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+CC: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Kirill Tkhai <tkhai@yandex.ru>
+Date: Wed, 15 Oct 2014 16:31:40 +0400
+Organization: Parallels
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.26.172]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-a short note: Using the release candidate of openSUSE 13.2 (GNOME live medium), I see this when booting the kernel in VMware:
-Oct 15 12:07:00 linux kernel: nsc-ircc, Found chip at base=0x02e
-Oct 15 12:07:00 linux kernel: nsc-ircc, Wrong chip version 01
+This WARN_ON_ONCE() placed into __schedule() triggers warning:
 
+@@ -2852,6 +2852,7 @@ static void __sched __schedule(void)
 
-I doubt the VMware has an infrared chip emulated, so I guess the chip detection is wrong.
+ 	if (likely(prev != next)) {
+ 		rq->nr_switches++;
++		WARN_ON_ONCE(atomic_read(&prev->usage) == 1);
+ 		rq->curr = next;
+ 		++*switch_count;
 
-VMware BIOS is detected as:
-    Vendor: "Phoenix Technologies LTD"
-    Version: "6.00"
-    Date: "08/16/2013"
+	WARNING: CPU: 2 PID: 6497 at kernel/sched/core.c:2855 __schedule+0x656/0x8a0()
+	Modules linked in:
+	CPU: 2 PID: 6497 Comm: cat Not tainted 3.17.0+ #3
+	Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
+	 0000000000000009 ffff88022f50bdd8 ffffffff81518c78 0000000000000004
+	 0000000000000000 ffff88022f50be18 ffffffff8104b1ac ffff88022f50be18
+	 ffff880239912b40 ffff88022e5720d0 0000000000000002 0000000000000000
+	Call Trace:
+	 [<ffffffff81518c78>] dump_stack+0x4f/0x7c
+	 [<ffffffff8104b1ac>] warn_slowpath_common+0x7c/0xa0
+	 [<ffffffff8104b275>] warn_slowpath_null+0x15/0x20
+	 [<ffffffff8151bad6>] __schedule+0x656/0x8a0
+	 [<ffffffff8151bd44>] schedule+0x24/0x70
+	 [<ffffffff8104c7aa>] do_exit+0x72a/0xb40
+	 [<ffffffff81071b31>] ? get_parent_ip+0x11/0x50
+	 [<ffffffff8104da6a>] do_group_exit+0x3a/0xa0
+	 [<ffffffff8104dadf>] SyS_exit_group+0xf/0x10
+	 [<ffffffff8151fe92>] system_call_fastpath+0x12/0x17
+	---[ end trace d07155396c4faa0c ]---
 
-The PCI-hardware looks like this:
-00:00.0 Host bridge: Intel Corporation 440BX/ZX/DX - 82443BX/ZX/DX Host bridge (rev 01)
-00:01.0 PCI bridge: Intel Corporation 440BX/ZX/DX - 82443BX/ZX/DX AGP bridge (rev 01)
-00:07.0 ISA bridge: Intel Corporation 82371AB/EB/MB PIIX4 ISA (rev 08)
-00:07.1 IDE interface: Intel Corporation 82371AB/EB/MB PIIX4 IDE (rev 01)
-00:07.3 Bridge: Intel Corporation 82371AB/EB/MB PIIX4 ACPI (rev 08)
-00:07.7 System peripheral: VMware Virtual Machine Communication Interface (rev 10)
-00:0f.0 VGA compatible controller: VMware SVGA II Adapter
-00:10.0 SCSI storage controller: LSI Logic / Symbios Logic 53c1030 PCI-X Fusion-MPT Dual Ultra320 SCSI (rev 01)
-00:11.0 PCI bridge: VMware PCI bridge (rev 02)
-00:15.0 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:15.1 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:15.2 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:15.3 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:15.4 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:15.5 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:15.6 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:15.7 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:16.0 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:16.1 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:16.2 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:16.3 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:16.4 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:16.5 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:16.6 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:16.7 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:17.0 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:17.1 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:17.2 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:17.3 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:17.4 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:17.5 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:17.6 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:17.7 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:18.0 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:18.1 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:18.2 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:18.3 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:18.4 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:18.5 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:18.6 PCI bridge: VMware PCI Express Root Port (rev 01)
-00:18.7 PCI bridge: VMware PCI Express Root Port (rev 01)
-03:00.0 Ethernet controller: VMware VMXNET3 Ethernet Controller (rev 01)
+This means the final put_task_struct() happens against RCU rules.
+Regarding to scheduler this may be a reason of use-after-free.
 
-The Linxu kernel string is:
-Linux linux.site 3.16.3-1.gd2bbe7f-desktop #1 SMP PREEMPT Thu Sep 18 06:32:16 UTC 2014 (d2bbe7f) x86_64 x86_64 x86_64 GNU/Linux
+    task_numa_compare()                    schedule()
+        rcu_read_lock()                        ...
+        cur = ACCESS_ONCE(dst_rq->curr)        ...
+            ...                                rq->curr = next;
+            ...                                    context_switch()
+            ...                                        finish_task_switch()
+            ...                                            put_task_struct()
+            ...                                                __put_task_struct()
+            ...                                                    free_task_struct()
+            task_numa_assign()                                     ...
+                get_task_struct()                                  ...
 
-Regards,
-Ulrich
+If other subsystems have a similar link to task, then the problem is also possible
+there.
+
+Delayed put_task_struct() was introduced in 8c7904a00b06:
+"task: RCU protect task->usage" at "Fri Mar 31 02:31:37 2006".
+
+It looks like it was safe to use that way, but now it's not. Something has changed
+(preempt RCU?). Welcome to the analysis!
+
+Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+---
+ include/linux/sched.h |    3 ++-
+ kernel/exit.c         |    8 ++++----
+ kernel/fork.c         |    1 -
+ 3 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 5e344bb..6bfc041 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1854,11 +1854,12 @@ extern void free_task(struct task_struct *tsk);
+ #define get_task_struct(tsk) do { atomic_inc(&(tsk)->usage); } while(0)
+ 
+ extern void __put_task_struct(struct task_struct *t);
++extern void __put_task_struct_cb(struct rcu_head *rhp);
+ 
+ static inline void put_task_struct(struct task_struct *t)
+ {
+ 	if (atomic_dec_and_test(&t->usage))
+-		__put_task_struct(t);
++		call_rcu(&t->rcu, __put_task_struct_cb);
+ }
+ 
+ #ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 5d30019..326eae7 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -159,15 +159,15 @@ static void __exit_signal(struct task_struct *tsk)
+ 	}
+ }
+ 
+-static void delayed_put_task_struct(struct rcu_head *rhp)
++void __put_task_struct_cb(struct rcu_head *rhp)
+ {
+ 	struct task_struct *tsk = container_of(rhp, struct task_struct, rcu);
+ 
+ 	perf_event_delayed_put(tsk);
+ 	trace_sched_process_free(tsk);
+-	put_task_struct(tsk);
++	__put_task_struct(tsk);
+ }
+-
++EXPORT_SYMBOL_GPL(__put_task_struct_cb);
+ 
+ void release_task(struct task_struct *p)
+ {
+@@ -207,7 +207,7 @@ void release_task(struct task_struct *p)
+ 
+ 	write_unlock_irq(&tasklist_lock);
+ 	release_thread(p);
+-	call_rcu(&p->rcu, delayed_put_task_struct);
++	put_task_struct(p);
+ 
+ 	p = leader;
+ 	if (unlikely(zap_leader))
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 9b7d746..4d3ac3c 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -249,7 +249,6 @@ void __put_task_struct(struct task_struct *tsk)
+ 	if (!profile_handoff_task(tsk))
+ 		free_task(tsk);
+ }
+-EXPORT_SYMBOL_GPL(__put_task_struct);
+ 
+ void __init __weak arch_task_cache_init(void) { }
+ 
+
 
 
