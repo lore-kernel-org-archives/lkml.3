@@ -1,152 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751979AbaJOJEc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 05:04:32 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:10910 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751939AbaJOJE3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 05:04:29 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 15 Oct 2014 02:00:13 -0700
-Message-ID: <543E3834.7070308@nvidia.com>
-Date: Wed, 15 Oct 2014 17:02:44 +0800
-From: Joseph Lo <josephl@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1752000AbaJOJFX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 05:05:23 -0400
+Received: from mail.kernel.org ([198.145.19.201]:36598 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751347AbaJOJFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 05:05:21 -0400
+Date: Wed, 15 Oct 2014 11:05:12 +0200
+From: Sebastian Reichel <sre@kernel.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [RFT PATCH] power: bq2415x_charger: Properly handle ENODEV from
+ power_supply_get_by_phandle
+Message-ID: <20141015090512.GA26651@earth.universe>
+References: <1413275573-23014-1-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-To: Jingchang Lu <jingchang.lu@freescale.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "peter@hurleysoftware.com" <peter@hurleysoftware.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv5] serial: of-serial: fix up PM ops on no_console_suspend
- and port type
-References: <1413353967-27866-1-git-send-email-jingchang.lu@freescale.com>
-In-Reply-To: <1413353967-27866-1-git-send-email-jingchang.lu@freescale.com>
-X-Originating-IP: [10.19.108.115]
-X-ClientProxiedBy: DRBGMAIL101.nvidia.com (10.18.16.20) To
- DRBGMAIL102.nvidia.com (10.18.16.21)
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="ReaqsoxgOBHFXBhH"
+Content-Disposition: inline
+In-Reply-To: <1413275573-23014-1-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2014 02:19 PM, Jingchang Lu wrote:
-> This patch fixes commit 2dea53bf57783f243c892e99c10c6921e956aa7e,
-> "serial: of-serial: add PM suspend/resume support", which disables
-> the uart clock on suspend, but also causes a hardware hang on register
-> access if no_console_suspend command line option is used.
->
-> Also, not every of_serial device is an 8250 port, so the serial8250
-> suspend/resume functions should only be applied to a real 8250 port.
->
-> Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
+
+--ReaqsoxgOBHFXBhH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Krzysztof,
+
+On Tue, Oct 14, 2014 at 10:32:53AM +0200, Krzysztof Kozlowski wrote:
+> The power_supply_get_by_phandle() on error returns ENODEV or NULL.
+> The driver later expects obtained pointer to power supply to be
+> valid or NULL. If it is not NULL then it dereferences it in
+> bq2415x_notifier_call() which would lead to dereferencing ENODEV-value
+> pointer.
+>=20
+> Properly handle the power_supply_get_by_phandle() error case and abort pr=
+obe.
+>=20
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Fixes: faffd234cf85 ("bq2415x_charger: Add DT support")
+> Cc: <stable@vger.kernel.org>
+
+That looks valid, but I guess this should change one more thing:
+
 > ---
-> changes in v5:
->   add missing <linux/console.h> include.
->
-> changes in v4:
->   separate 8250 port suspend/resume from of_serial_suspend/resume.
->
-> changes in v3:
->   fix up point reference and deference.
->
-> changes in v2:
->   add switch selection on uart type.
->
-Hi Jingchang,
+>  drivers/power/bq2415x_charger.c | 7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/power/bq2415x_charger.c b/drivers/power/bq2415x_char=
+ger.c
+> index e384844a1ae1..d9c457217b6a 100644
+> --- a/drivers/power/bq2415x_charger.c
+> +++ b/drivers/power/bq2415x_charger.c
+> @@ -1579,8 +1579,13 @@ static int bq2415x_probe(struct i2c_client *client,
+>  	if (np) {
+>  		bq->notify_psy =3D power_supply_get_by_phandle(np, "ti,usb-charger-det=
+ection");
+> =20
+> -		if (!bq->notify_psy)
+> +		if (!bq->notify_psy) {
+>  			return -EPROBE_DEFER;
 
-Thanks for the fix. This patch
-Tested-by: Joseph Lo <josephl@nvidia.com>
+this also needs to goto error_2. I guess something as the following
+is needed:
 
->   drivers/tty/serial/of_serial.c | 53 ++++++++++++++++++++++++++++++++++++------
->   1 file changed, 46 insertions(+), 7 deletions(-)
->
-> diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c
-> index 8bc2563..9c64ad2 100644
-> --- a/drivers/tty/serial/of_serial.c
-> +++ b/drivers/tty/serial/of_serial.c
-> @@ -9,6 +9,7 @@
->    *  2 of the License, or (at your option) any later version.
->    *
->    */
-> +#include <linux/console.h>
->   #include <linux/module.h>
->   #include <linux/slab.h>
->   #include <linux/delay.h>
-> @@ -241,13 +242,48 @@ static int of_platform_serial_remove(struct platform_device *ofdev)
->   }
->
->   #ifdef CONFIG_PM_SLEEP
-> -static int of_serial_suspend(struct device *dev)
-> +#ifdef CONFIG_SERIAL_8250
-> +static void of_serial_suspend_8250(struct of_serial_info *info)
->   {
-> -	struct of_serial_info *info = dev_get_drvdata(dev);
-> +	struct uart_8250_port *port8250 = serial8250_get_port(info->line);
-> +	struct uart_port *port = &port8250->port;
->
->   	serial8250_suspend_port(info->line);
-> -	if (info->clk)
-> +	if (info->clk && (!uart_console(port) || console_suspend_enabled))
->   		clk_disable_unprepare(info->clk);
-> +}
-> +
-> +static void of_serial_resume_8250(struct of_serial_info *info)
-> +{
-> +	struct uart_8250_port *port8250 = serial8250_get_port(info->line);
-> +	struct uart_port *port = &port8250->port;
-> +
-> +	if (info->clk && (!uart_console(port) || console_suspend_enabled))
-> +		clk_prepare_enable(info->clk);
-> +
-> +	serial8250_resume_port(info->line);
-> +}
-> +#else
-> +static inline void of_serial_suspend_8250(struct of_serial_info *info)
-> +{
-> +}
-> +
-> +static inline void of_serial_resume_8250(struct of_serial_info *info)
-> +{
-> +}
-> +#endif
-> +
-> +static int of_serial_suspend(struct device *dev)
-> +{
-> +	struct of_serial_info *info = dev_get_drvdata(dev);
-> +
-> +	switch(info->type) {
-> +	case PORT_8250 ... PORT_MAX_8250:
-> +		of_serial_suspend_8250(info);
-> +		break;
-> +	default:
-> +		break;
-> +	}
->
->   	return 0;
->   }
-> @@ -256,10 +292,13 @@ static int of_serial_resume(struct device *dev)
->   {
->   	struct of_serial_info *info = dev_get_drvdata(dev);
->
-> -	if (info->clk)
-> -		clk_prepare_enable(info->clk);
-> -
-> -	serial8250_resume_port(info->line);
-> +	switch(info->type) {
-> +	case PORT_8250 ... PORT_MAX_8250:
-> +		of_serial_resume_8250(info);
-> +		break;
-> +	default:
-> +		break;
-> +	}
->
->   	return 0;
->   }
->
+if (IS_ERR_OR_NULL(bq->notify_psy)) {
+    if (bq->notify_psy)
+        dev_err(&client->dev, "no 'ti,usb-charger-detection' property\n");
+    ret =3D PTR_ERR(bq->notify_psy);
+    goto error_2;
+}
+
+> +		} else if (IS_ERR(bq->notify_psy)) {
+> +			dev_err(&client->dev, "no 'ti,usb-charger-detection' property\n");
+> +			ret =3D PTR_ERR(bq->notify_psy);
+> +			goto error_2;
+> +		}
+>  	}
+>  	else if (pdata->notify_device)
+>  		bq->notify_psy =3D power_supply_get_by_name(pdata->notify_device);
+
+-- Sebastian
+
+--ReaqsoxgOBHFXBhH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJUPjjIAAoJENju1/PIO/qawOQP/1CLSkz8hSvXboGRTrSka8/p
+qP/CxLpk4Eym5if7krKduqJcSIJxom2SU6uClCuccSZCZr/ea1ngrPfceC1zMun/
+K4XJsy+pIZFCgDBzN7QlZRosYv0C7s5iq3Of22IRNSCSncUMz10bbh1xOly3ic7a
+gBsxpmzymWF7snSnxaWDay5uGoVAXVcYkFJ9Jx6XObIPSzZA8TsjvJrblZBtOlYy
+6xb0eWOXm/zPzwcLTYu0caUA8jImxePnMNdWbPpu3H8Omup2Kwj76cAOQ9kviik9
+xJYhrAC3Fpmf3u1xaLecjj8+EZ8FFtJpwTa9L4KjC+P5Xxu2ckSfO5b70j65VChf
+l0HceNUjR8YF2ljyan74X3RibA8SlC7YfdgqJ8w8z+vdNtmmVwZyRDf0rx6f+Ahi
+jDkk7nH6dfTNeRqJxadlV28Qf1IOtpA4GAgscVbSZ+71Is35KAiTGMJz20iEVwjk
+aSLovT7LCG2lqjFHZJta12xJHHIKT71811Y+qHX+SP4DcAMxNNqYGjCNJBSnpaDN
+QrIde3lKra7Rj6n+3JIgaKlxswRcIsVy0uZnjGpArYSGT7h70zwPVOHpUMYIQ8q6
+aG9At2Tv/KYRXx0+O6DQtqJq31Hf0WheQkK/ljgo2oLoO4vzBrDIe0j7zEJrETpI
+o2ezf+HhVV+B+IQza7Fv
+=oQ2G
+-----END PGP SIGNATURE-----
+
+--ReaqsoxgOBHFXBhH--
