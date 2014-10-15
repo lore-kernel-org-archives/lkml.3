@@ -1,90 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751637AbaJORB5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 13:01:57 -0400
-Received: from mga11.intel.com ([192.55.52.93]:10605 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751160AbaJORB4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 13:01:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,725,1406617200"; 
-   d="scan'208";a="605897782"
-Date: Wed, 15 Oct 2014 10:01:45 -0700
-From: David Cohen <david.a.cohen@linux.intel.com>
+	id S1751870AbaJORET (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 13:04:19 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:37206 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745AbaJORER (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 13:04:17 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Wed, 15 Oct 2014 19:06:28 +0200
+From: Johan Hovold <johan@kernel.org>
 To: Felipe Balbi <balbi@ti.com>
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: dwc3: be more verbose on ERRATIC_ERROR interrupt
-Message-ID: <20141015170145.GC4529@psi-dev26.jf.intel.com>
-References: <1413317705-10194-1-git-send-email-david.a.cohen@linux.intel.com>
- <20141015050022.GA2378@saruman>
- <20141015165718.GB4529@psi-dev26.jf.intel.com>
+Cc: Johan Hovold <johan@kernel.org>, Alessandro Zummo <a.zummo@towertech.it>,
+        Tony Lindgren <tony@atomide.com>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lokesh Vutla <lokeshvutla@ti.com>, Guenter Roeck <linux@roeck-us.net>,
+        Colin Foe-Parker <colin.foeparker@logicpd.com>, nsekhar@ti.com,
+        t-kristo@ti.com, j-keerthy@ti.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/12] rtc: omap: fixes and power-off feature
+Message-ID: <20141015170628.GA13824@localhost>
+References: <1412881594-25678-1-git-send-email-johan@kernel.org>
+ <20141015165452.GB15770@saruman>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141015165718.GB4529@psi-dev26.jf.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141015165452.GB15770@saruman>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 09:57:18AM -0700, David Cohen wrote:
-> On Wed, Oct 15, 2014 at 12:00:22AM -0500, Felipe Balbi wrote:
-> > Hi,
-> > 
-> > On Tue, Oct 14, 2014 at 01:15:05PM -0700, David Cohen wrote:
-> > > ERRATIC_ERROR interrupt is an event that needs more attention from
-> > > developers than currently implemented, since this indicates a serious
-> > > stability issue. The only way to get warned about it is by selecting the
-> > > maximum driver's verbosity.
-> > > 
-> > > This patch increases a bit the error's verbosity.
-> > > 
-> > > Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-> > > ---
-> > >  drivers/usb/dwc3/gadget.c | 3 ++-
-> > >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > > 
-> > > diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-> > > index 3818b26bfc05..132e761d62e4 100644
-> > > --- a/drivers/usb/dwc3/gadget.c
-> > > +++ b/drivers/usb/dwc3/gadget.c
-> > > @@ -2484,7 +2484,8 @@ static void dwc3_gadget_interrupt(struct dwc3 *dwc,
-> > >  		dev_vdbg(dwc->dev, "Start of Periodic Frame\n");
-> > >  		break;
-> > >  	case DWC3_DEVICE_EVENT_ERRATIC_ERROR:
-> > > -		dev_vdbg(dwc->dev, "Erratic Error\n");
-> > > +		WARN_ON_ONCE(1);
-> > > +		dev_dbg(dwc->dev, "Erratic Error\n");
-> > 
-> > how about:
-> > 		WARN_ONCE(true, "Erratic Error\n");
-> > 
-> > instead ?
+On Wed, Oct 15, 2014 at 11:55:02AM -0500, Felipe Balbi wrote:
+> Hi,
 > 
-> When erratic error event happens, in my experience it is usually
-> followed but many of them in a row. It may end up too verbose.
+> On Thu, Oct 09, 2014 at 09:06:22PM +0200, Johan Hovold wrote:
+> > This series fixes a few issues with the omap rtc-driver, cleans up a bit
+> > and finally adds support for the PMIC control feature found in some
+> > revisions of this RTC IP block.
+> > 
+> > Ultimately, this allows for powering off the Beaglebone and waking it up
+> > again on RTC alarms.
+> > 
+> > I noticed yesterday that Lokesh Vutla recently posted some patches to
+> > add regulator support to this driver. [1] While that series has some
+> > issues that needs to be addressed, I still think it could be a good idea
+> > to rebase my pmic_power_en patch on top of it as it adds some long
+> > overdue device abstraction. That would be needed anyway in order to
+> > support the new power-off infrastructure that's in the pipe in a clean
+> > way. [2]
+> > 
+> > So my suggestion is to merge the first seven patches, rebase Lokesh
+> > series on top of that, and then I rebase my final five patches on top
+> > of that in turn. Hopefully, the new power-off handler call chain will
+> > have stabilised by then.
+> 
+> BTW, how do you test this series ?
 
-Oops, sorry for my confusion. I read WARN(), not WARN_ONCE() when I read
-for the first time :)
+Set a 30 second wakealarm using the sysfs attribute of the rtc class
+device and power off the BBB:
 
-I let the dev_dbg() because it may be useful to get all the occurrences
-in case debug is enabled. But WARN_ONCE() is fine too if you prefer.
+	echo +30 >wakealarm; poweroff
 
-Br, David
-
-> 
-> Br, David
-> 
-> > 
-> > >  		break;
-> > >  	case DWC3_DEVICE_EVENT_CMD_CMPL:
-> > >  		dev_vdbg(dwc->dev, "Command Complete\n");
-> > > -- 
-> > > 2.1.0
-> > > 
-> > 
-> > -- 
-> > balbi
-> 
-> 
+Johan
