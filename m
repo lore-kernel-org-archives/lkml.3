@@ -1,52 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889AbaJOTca (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 15:32:30 -0400
-Received: from smtprelay0189.hostedemail.com ([216.40.44.189]:52576 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751020AbaJOTc2 (ORCPT
+	id S1751923AbaJOTdl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 15:33:41 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:55159 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751106AbaJOTdk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 15:32:28 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1345:1359:1437:1534:1539:1568:1711:1714:1730:1747:1777:1792:2197:2199:2393:2559:2562:3138:3139:3140:3141:3142:3871:3872:3876:4321:5007:6261:10004:10848:11658:11914:12043:12517:12519:12555:13311:13357:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: stove83_4f8bfed25021b
-X-Filterd-Recvd-Size: 1517
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@canonical.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] checkpatch: Improve test for no space after cast
-Date: Wed, 15 Oct 2014 12:32:09 -0700
-Message-Id: <65d265a551e3c4aab1d967c3625dfec3f0af1eae.1413400022.git.joe@perches.com>
-X-Mailer: git-send-email 2.1.2.443.g670a3c1
-In-Reply-To: <cover.1413400022.git.joe@perches.com>
-References: <cover.1413400022.git.joe@perches.com>
+	Wed, 15 Oct 2014 15:33:40 -0400
+MIME-Version: 1.0
+X-Originating-IP: [67.83.175.92]
+In-Reply-To: <CA+C-WL8asc-Dw3vLH0ruvNLO-eCKBbFjC40rjuQDXudMvaP6Ow@mail.gmail.com>
+References: <1413380500-3914-1-git-send-email-patrick@parcs.ath.cx> <CA+C-WL8asc-Dw3vLH0ruvNLO-eCKBbFjC40rjuQDXudMvaP6Ow@mail.gmail.com>
+From: Patrick Palka <patrick@parcs.ath.cx>
+Date: Wed, 15 Oct 2014 15:33:18 -0400
+Message-ID: <CA+C-WL_wmRUfQMT_voJx4q+YBXLc_jX_g9Kayt8P10rvSeF1FA@mail.gmail.com>
+Subject: Re: [PATCH] ring-buffer: use atomic_[set|clear]_mask in place of a
+ cmpxchg loop
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Patrick Palka <patrick@parcs.ath.cx>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sizeof(foo) is not a cast, allow a space after it.
+On Wed, Oct 15, 2014 at 3:08 PM, Patrick Palka <patrick@parcs.ath.cx> wrote:
+> On Wed, Oct 15, 2014 at 9:41 AM, Patrick Palka <patrick@parcs.ath.cx> wrote:
+>> Instead of open-coding the equivalent cmpxchg loop we can just use
+>> atomic_set_mask and atomic_clear_mask to atomically OR or AND
+>> the value in &buffer->record_disabled.
+>>
+>> Cc: Steven Rostedt <rostedt@goodmis.org>
+>> Cc: Ingo Molnar <mingo@redhat.com>
+>> Signed-off-by: Patrick Palka <patrick@parcs.ath.cx>
+>> ---
+>>
+>> NB: I have only tested this patch on x86_64 by booting with
+>> CONFIG_RING_BUFFER_STARTUP_TEST=y.
+>>
+>>  kernel/trace/ring_buffer.c | 16 ++--------------
+>>  1 file changed, 2 insertions(+), 14 deletions(-)
+>>
+>> diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+>> index 2d75c94..e15ce2a 100644
+>> --- a/kernel/trace/ring_buffer.c
+>> +++ b/kernel/trace/ring_buffer.c
+>> @@ -3050,13 +3050,7 @@ EXPORT_SYMBOL_GPL(ring_buffer_record_enable);
+>>   */
+>>  void ring_buffer_record_off(struct ring_buffer *buffer)
+>>  {
+>> -       unsigned int rd;
+>> -       unsigned int new_rd;
+>> -
+>> -       do {
+>> -               rd = atomic_read(&buffer->record_disabled);
+>> -               new_rd = rd | RB_BUFFER_OFF;
+>> -       } while (atomic_cmpxchg(&buffer->record_disabled, rd, new_rd) != rd);
+>> +       atomic_set_mask(RB_BUFFER_OFF, &buffer->record_disabled);
+>>  }
+>>  EXPORT_SYMBOL_GPL(ring_buffer_record_off);
+>>
+>> @@ -3073,13 +3067,7 @@ EXPORT_SYMBOL_GPL(ring_buffer_record_off);
+>>   */
+>>  void ring_buffer_record_on(struct ring_buffer *buffer)
+>>  {
+>> -       unsigned int rd;
+>> -       unsigned int new_rd;
+>> -
+>> -       do {
+>> -               rd = atomic_read(&buffer->record_disabled);
+>> -               new_rd = rd & ~RB_BUFFER_OFF;
+>> -       } while (atomic_cmpxchg(&buffer->record_disabled, rd, new_rd) != rd);
+>> +       atomic_clear_mask(RB_BUFFER_OFF, &buffer->record_disabled);
+>>  }
+>>  EXPORT_SYMBOL_GPL(ring_buffer_record_on);
+>>
+>> --
+>> 2.1.2.443.g670a3c1
+>>
+>
+> It just occurred to me that atomic_clear_mask and atomic_set_mask
+> expect to take an int *, not an atomic_t *, so this patch is bogus...
+> Sorry for the noise.
 
-Signed-off-by: Joe Perches <joe@perches.com>
-Tested-by: Kalle Valo <kvalo@qca.qualcomm.com>
----
- scripts/checkpatch.pl | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 692fdb6..21dac46 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2515,7 +2515,8 @@ sub process {
- 			}
- 		}
- 
--		if ($line =~ /^\+.*\(\s*$Type\s*\)[ \t]+(?!$Assignment|$Arithmetic|{)/) {
-+		if ($line =~ /^\+.*(\w+\s*)?\(\s*$Type\s*\)[ \t]+(?!$Assignment|$Arithmetic|[,;\({\[\<\>])/ &&
-+		    (!defined($1) || $1 !~ /sizeof\s*/)) {
- 			if (CHK("SPACING",
- 				"No space is necessary after a cast\n" . $herecurr) &&
- 			    $fix) {
--- 
-2.1.0
-
+Uh, actually, the generic implementations of these functions (defined
+in include/asm-generic/atomic.h) _do_ take an atomic_t *. It's the
+specialized x86 definitions of these functions (defined in
+arch/x86/include/asm/atomic.h) that take (expect) an int *. So this
+patch is not bogus; the x86 specializations for atomic_clear_mask and
+atomic_set_mask are. I will try to fix this in a separate patch.
