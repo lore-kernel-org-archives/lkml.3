@@ -1,201 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751451AbaJOOJw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 10:09:52 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:60841 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751191AbaJOOJu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 10:09:50 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "moderated list:ARM/Rockchip SoC..." 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] ARM: dts: rockchip: add I2S controllers for rk3066 and rk3188
-Date: Wed, 15 Oct 2014 16:07:55 +0200
-Message-ID: <5010451.G368NqnOYK@phil>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1413274597-15788-1-git-send-email-julien.chauveau@neo-technologies.fr>
-References: <1413274597-15788-1-git-send-email-julien.chauveau@neo-technologies.fr>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1751491AbaJOOKF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 10:10:05 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:11107 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191AbaJOOKB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 10:10:01 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f4-b7f156d0000063c7-40-543e8037a018
+Content-transfer-encoding: 8BIT
+Message-id: <1413382197.9555.0.camel@AMDC1943>
+Subject: Re: [RFT PATCH] power: bq2415x_charger: Properly handle ENODEV from
+ power_supply_get_by_phandle
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Sebastian Reichel <sre@kernel.org>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Date: Wed, 15 Oct 2014 16:09:57 +0200
+In-reply-to: <20141015135806.GA5152@earth.universe>
+References: <1413275573-23014-1-git-send-email-k.kozlowski@samsung.com>
+ <20141015090512.GA26651@earth.universe> <1413371491.26771.15.camel@AMDC1943>
+ <20141015135806.GA5152@earth.universe>
+X-Mailer: Evolution 3.10.4-0ubuntu2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHLMWRmVeSWpSXmKPExsVy+t/xK7rmDXYhBv+aRS0mPXnPbDFx5WRm
+	i8u75rBZfO49wmhxeneJxYKNjxgd2Dx2zrrL7rF5hZbHplWdbB6fN8kFsERx2aSk5mSWpRbp
+	2yVwZaybKFswh6/i2YJNbA2MP7m6GDk5JARMJCZ1HmCDsMUkLtxbD2RzcQgJLGWUuDVxHhNI
+	gldAUOLH5HssXYwcHMwC8hJHLmWDhJkF1CUmzVvEDFH/mVFiXWcLWA2vgJ5ER0cmSI2wQJZE
+	9+9LzCA2m4CxxOblS8B2iQioSby/9JQFpJdZYC2jxP7vt5hBelkEVCWWLfYBqeEEqp+16T8L
+	xPz9jBLXnv8Dmy8hoCzR2O82gVFgFpLrZiFcNwvJdQsYmVcxiqaWJhcUJ6XnGuoVJ+YWl+al
+	6yXn525ihITxlx2Mi49ZHWIU4GBU4uHlOGAbIsSaWFZcmXuIUYKDWUmEd36CXYgQb0piZVVq
+	UX58UWlOavEhRiYOTqkGxgLO2K60uJJDW/+Xb9vtwn3VjKPwtrNkpmJCmuReZXOGy3orzv1W
+	EHsSVn9iYpiKFc88Bn3hG1w8fhYa69OX6urMOnydVVDcQu3hsYJvVlZbLnH48J1Van/enX6V
+	5/eni9Mmbn1zSqrf/OjWWIXO+SznJOMTLUUr/r+W3tEw69viF1svPdwVr8RSnJFoqMVcVJwI
+	AEZ28vJBAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Julien,
-
-Am Dienstag, 14. Oktober 2014, 10:16:37 schrieb Julien CHAUVEAU:
-> Add the I2S/PCM controller nodes and pin controls for rk3066 and rk3188.
+On śro, 2014-10-15 at 15:58 +0200, Sebastian Reichel wrote:
+> Hi,
 > 
-> Signed-off-by: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
-
-I've added the patch to my wip dts branch on github - which will move to 
-kernel.org after -rc1
-
-> ---
-
-In the future for v2 and onwards patches, please provide a changelog in the 
-comment section (after the "---"), so people can see what changed, like:
-
-changes since v1:
-- declare i2s nodes separately on rk3066 and rk3188 as the controllers differ
-
-This doesn't get into the kernel itself, but is helpful for people reviewing 
-the patch.
-
->  arch/arm/boot/dts/rk3066a.dtsi | 81
-> ++++++++++++++++++++++++++++++++++++++++++ arch/arm/boot/dts/rk3188.dtsi  |
-> 26 ++++++++++++++
->  2 files changed, 107 insertions(+)
+> On Wed, Oct 15, 2014 at 01:11:31PM +0200, Krzysztof Kozlowski wrote:
+> > > [...] I guess something as the following is needed:
+> > > 
+> > > if (IS_ERR_OR_NULL(bq->notify_psy)) {
+> > >     if (bq->notify_psy)
+> > >         dev_err(&client->dev, "no 'ti,usb-charger-detection' property\n");
+> > >     ret = PTR_ERR(bq->notify_psy);
+> > >     goto error_2;
+> > > }
+> > 
+> > So you do not want to defer the probe? What if notified charger will
+> > come online after this probe?
 > 
-> diff --git a/arch/arm/boot/dts/rk3066a.dtsi b/arch/arm/boot/dts/rk3066a.dtsi
-> index ad9c2db..d75b01a 100644
-> --- a/arch/arm/boot/dts/rk3066a.dtsi
-> +++ b/arch/arm/boot/dts/rk3066a.dtsi
-> @@ -53,6 +53,51 @@
->  		};
->  	};
+> No, but resources must be freed fore the EPROBE_DEFER case, too.
+> You are right, though, that my snipped does not setup the
+> EPROBE_DEFER return value correctly.
 > 
-> +	i2s0: i2s@10118000 {
-> +		compatible = "rockchip,rk3066-i2s";
-> +		reg = <0x10118000 0x2000>;
-> +		interrupts = <GIC_SPI 31 IRQ_TYPE_LEVEL_HIGH>;
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +		pinctrl-names = "default";
-> +		pinctrl-0 = <&i2s0_bus>;
-> +		dmas = <&dmac1_s 4>, <&dmac1_s 5>;
-> +		dma-names = "tx", "rx";
-> +		clock-names = "i2s_hclk", "i2s_clk";
-> +		clocks = <&cru HCLK_I2S0>, <&cru SCLK_I2S0>;
-> +		status = "disabled";
-> +	};
-> +
-> +	i2s1: i2s@1011a000 {
-> +		compatible = "rockchip,rk3066-i2s";
-> +		reg = <0x1011a000 0x2000>;
-> +		interrupts = <GIC_SPI 32 IRQ_TYPE_LEVEL_HIGH>;
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +		pinctrl-names = "default";
-> +		pinctrl-0 = <&i2s1_bus>;
-> +		dmas = <&dmac1_s 6>, <&dmac1_s 7>;
-> +		dma-names = "tx", "rx";
-> +		clock-names = "i2s_hclk", "i2s_clk";
-> +		clocks = <&cru HCLK_I2S1>, <&cru SCLK_I2S1>;
-> +		status = "disabled";
-> +	};
-> +
-> +	i2s2: i2s@1011c000 {
-> +		compatible = "rockchip,rk3066-i2s";
-> +		reg = <0x1011c000 0x2000>;
-> +		interrupts = <GIC_SPI 20 IRQ_TYPE_LEVEL_HIGH>;
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +		pinctrl-names = "default";
-> +		pinctrl-0 = <&i2s2_bus>;
-> +		dmas = <&dmac1_s 9>, <&dmac1_s 10>;
-> +		dma-names = "tx", "rx";
-> +		clock-names = "i2s_hclk", "i2s_clk";
-> +		clocks = <&cru HCLK_I2S2>, <&cru SCLK_I2S2>;
-> +		status = "disabled";
-> +	};
-> +
->  	cru: clock-controller@20000000 {
->  		compatible = "rockchip,rk3066a-cru";
->  		reg = <0x20000000 0x1000>;
-> @@ -405,6 +450,42 @@
->  						<RK_GPIO3 20 RK_FUNC_1 &pcfg_pull_default>;
->  			};
->  		};
-> +
-> +		i2s0 {
-> +			i2s0_bus: i2s0-bus {
-> +				rockchip,pins = <RK_GPIO0 7 RK_FUNC_1 &pcfg_pull_default>,
-> +						<RK_GPIO0 8 RK_FUNC_1 &pcfg_pull_default>,
-> +						<RK_GPIO0 9 RK_FUNC_1 &pcfg_pull_default>,
-> +						<RK_GPIO0 10 RK_FUNC_1 &pcfg_pull_default>,
-> +						<RK_GPIO0 11 RK_FUNC_1 &pcfg_pull_default>,
-> +						<RK_GPIO0 12 RK_FUNC_1 &pcfg_pull_default>,
-> +						<RK_GPIO0 13 RK_FUNC_1 &pcfg_pull_default>,
-> +						<RK_GPIO0 14 RK_FUNC_1 &pcfg_pull_default>,
-> +						<RK_GPIO0 15 RK_FUNC_1 &pcfg_pull_default>;
-> +			};
-> +		};
-> +
-> +		i2s1 {
-> +			i2s1_bus: i2s1-bus {
-> +				rockchip,pins = <RK_GPIO0 16 RK_FUNC_1 &pcfg_pull_default>,
-> +						<RK_GPIO0 17 RK_FUNC_1 &pcfg_pull_default>,
-> +						<RK_GPIO0 18 RK_FUNC_1 &pcfg_pull_default>,
-> +						<RK_GPIO0 19 RK_FUNC_1 &pcfg_pull_default>,
-> +						<RK_GPIO0 20 RK_FUNC_1 &pcfg_pull_default>,
-> +						<RK_GPIO0 21 RK_FUNC_1 &pcfg_pull_default>;
-> +			};
-> +		};
-> +
-> +		i2s2 {
-> +			i2s2_bus: i2s2-bus {
-> +				rockchip,pins = <RK_GPIO0 24 RK_FUNC_1 &pcfg_pull_default>,
-> +						<RK_GPIO0 25 RK_FUNC_1 &pcfg_pull_default>,
-> +						<RK_GPIO0 26 RK_FUNC_1 &pcfg_pull_default>,
-> +						<RK_GPIO0 27 RK_FUNC_1 &pcfg_pull_default>,
-> +						<RK_GPIO0 28 RK_FUNC_1 &pcfg_pull_default>,
-> +						<RK_GPIO0 29 RK_FUNC_1 &pcfg_pull_default>;
-> +			};
-> +		};
->  	};
->  };
+> > Second idea - now I think my change is not compatible with bindings
+> > (documentation) and could break booting of existing boards which do not
+> > provide the "ti,usb-charger-detection" property. For example
+> > arch/arm/boot/dts/omap3-n900.dts
+> >
+> > The "ti,usb-charger-detection" property is marked as optional but my
+> > patch actually makes it required.
+> > 
+> > It should be rather like this:
+> > 
+> > if (IS_ERR(bq->notify_psy)) {
+> >     bq->notify_psy = NULL;
+> >     dev_info(&client->dev, "no 'ti,usb-charger-detection' property \n");
+> > } else if (!bq->notify_psy) {
+> >     ret = -EPROBE_DEFER;
+> >     goto error_2;
+> > }
+> >
+> > What do you think?
 > 
-> diff --git a/arch/arm/boot/dts/rk3188.dtsi b/arch/arm/boot/dts/rk3188.dtsi
-> index ddaada7..fa3665a 100644
-> --- a/arch/arm/boot/dts/rk3188.dtsi
-> +++ b/arch/arm/boot/dts/rk3188.dtsi
-> @@ -65,6 +65,21 @@
->  		};
->  	};
+> I thing the dev_info call should include the error code returned,
+> since its not propagated further:
 > 
-> +	i2s0: i2s@1011a000 {
-> +		compatible = "rockchip,rk3188-i2s", "rockchip,rk3066-i2s";
-> +		reg = <0x1011a000 0x2000>;
-> +		interrupts = <GIC_SPI 32 IRQ_TYPE_LEVEL_HIGH>;
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +		pinctrl-names = "default";
-> +		pinctrl-0 = <&i2s0_bus>;
-> +		dmas = <&dmac1_s 6>, <&dmac1_s 7>;
-> +		dma-names = "tx", "rx";
-> +		clock-names = "i2s_hclk", "i2s_clk";
-> +		clocks = <&cru HCLK_I2S0>, <&cru SCLK_I2S0>;
-> +		status = "disabled";
-> +	};
-> +
->  	cru: clock-controller@20000000 {
->  		compatible = "rockchip,rk3188-cru";
->  		reg = <0x20000000 0x1000>;
-> @@ -395,6 +410,17 @@
->  						<RK_GPIO3 20 RK_FUNC_1 &pcfg_pull_none>;
->  			};
->  		};
-> +
-> +		i2s0 {
-> +			i2s0_bus: i2s0-bus {
-> +				rockchip,pins = <RK_GPIO1 16 RK_FUNC_1 &pcfg_pull_none>,
-> +						<RK_GPIO1 17 RK_FUNC_1 &pcfg_pull_none>,
-> +						<RK_GPIO1 18 RK_FUNC_1 &pcfg_pull_none>,
-> +						<RK_GPIO1 19 RK_FUNC_1 &pcfg_pull_none>,
-> +						<RK_GPIO1 20 RK_FUNC_1 &pcfg_pull_none>,
-> +						<RK_GPIO1 21 RK_FUNC_1 &pcfg_pull_none>;
-> +			};
-> +		};
->  	};
->  };
+> dev_info(&client->dev, "no 'ti,usb-charger-detection' property (err=%d)\n",
+>          PTR_ERR(by->notify_psy));
+> 
+> Apart from that it looks fine to me. Can you send a v2?
+
+Sure, I'll send fixed version.
+
+Best regards,
+Krzysztof
+> 
+> > [...]
+> 
+> -- Sebastian
+
