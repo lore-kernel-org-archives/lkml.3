@@ -1,166 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751845AbaJOTsF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 15:48:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48997 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751196AbaJOTsB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 15:48:01 -0400
-Message-ID: <543ECF6F.2030705@redhat.com>
-Date: Wed, 15 Oct 2014 15:47:59 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Myron Stowe <mstowe@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH] pci, add sysfs numa_node write function
-References: <1413399924-599-1-git-send-email-prarit@redhat.com> <CAErSpo6Oy1S1OECirp6=tz+pQWUtkFE6p1LTzNaYtzxoX73FWw@mail.gmail.com>
-In-Reply-To: <CAErSpo6Oy1S1OECirp6=tz+pQWUtkFE6p1LTzNaYtzxoX73FWw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1751610AbaJOTuC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 15:50:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36258 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750792AbaJOTuA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 15:50:00 -0400
+Date: Wed, 15 Oct 2014 12:50:00 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Joe Perches <joe@perches.com>
+Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] checkpatch: Add error on use of attribute((weak))
+ or __weak
+Message-Id: <20141015125000.44353284288395e216659953@linux-foundation.org>
+In-Reply-To: <1413402348.7484.8.camel@perches.com>
+References: <cover.1413400022.git.joe@perches.com>
+	<4391d882bb26278110d07b9a5e23ec44f5f8328a.1413400022.git.joe@perches.com>
+	<20141015124225.01a4cad19c4f3a198efc996e@linux-foundation.org>
+	<1413402348.7484.8.camel@perches.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2014 03:23 PM, Bjorn Helgaas wrote:
-> Hi Prarit,
-> 
-> On Wed, Oct 15, 2014 at 1:05 PM, Prarit Bhargava <prarit@redhat.com> wrote:
->> Consider a multi-node, multiple pci root bridge system which can be
->> configured into one large node or one node/socket.  When configuring the
->> system the numa_node value for each PCI root bridge is always set
->> incorrectly to -1, or NUMA_NO_NODE, rather than to the node value of each
->> socket.  Each PCI device inherits the numa value directly from it's parent
->> device, so that the NUMA_NO_NODE value is passed through the entire PCI
->> tree.
->>
->> Some new drivers, such as the Intel QAT driver, drivers/crypto/qat,
->> require that a specific node be assigned to the device in order to
->> achieve maximum performance for the device, and will fail to load if the
->> device has NUMA_NO_NODE.
-> 
-> It seems ... unfriendly for a driver to fail to load just because it
-> can't guarantee maximum performance.  Out of curiosity, where does
-> this actually happen?  I had a quick look for NUMA_NO_NODE and
-> module_init() functions in drivers/crypto/qat, and I didn't see the
-> spot.
+On Wed, 15 Oct 2014 12:45:48 -0700 Joe Perches <joe@perches.com> wrote:
 
-The whole point of the Intel QAT driver is to guarantee max performance.  If
-that is not possible the driver should not load (according to the thread
-mentioned below)
-
+> On Wed, 2014-10-15 at 12:42 -0700, Andrew Morton wrote:
+> > On Wed, 15 Oct 2014 12:32:08 -0700 Joe Perches <joe@perches.com> wrote:
+> > 
+> > > Using weak can have unintended link defects.
+> > > Emit an error on its use.
+> > 
+> > Well, we don't want a warning about use of __weak in function
+> > definitions.  Only in declarations.
 > 
->> The driver would load if the numa_node value
->> was equal to or greater than -1 and quickly hacking the driver results in
->> a functional QAT driver.
->>
->> Using lspci and numactl it is easy to determine what the numa value should
->> be.  The problem is that there is no way to set it.  This patch adds a
->> store function for the PCI device's numa_node value.
-> 
-> I'm not familiar with numactl.  It sounds like it can show you the
-> NUMA topology?  Where does that information come from?
+> Why is that?
 
-You can map at least what nodes are available (although I suppose you can get
-the same information from dmesg).  You have to do a bit of hunting through the
-PCI tree to determine the root PCI devices, but you can determine which root
-device is connected to which node.
+Because the problem we're trying to detect is when __weak is used on a
+declaration.
 
-> 
->> To use this, one can do
->>
->> echo 3 > /sys/devices/pci0000:ff/0000:ff:1f.3/numa_node
->>
->> to set the numa node for PCI device 0000:ff:1f.3.
-> 
-> It definitely seems wrong that we don't set the node number correctly.
-> pci_acpi_scan_root() sets the node number by looking for a _PXM method
-> that applies to the host bridge.  Why does that not work in this case?
->  Does the BIOS not supply _PXM?
+This is OK:
 
-Yeah ... unfortunately the BIOS is broken in this case.  And I know what you're
-thinking ;) -- why not get the BIOS fixed?  I'm through relying on BIOS fixes
-which can take six months to a year to appear in a production version... I've
-been bitten too many times by promises of BIOS fixes that never materialize.
+foo.h:
+extern int foo(void);
+foo.c:
+int __weak foo(void)
+{
+	...
+}
 
-We have systems that only have a support cycle of 3 years, and things like ACPI
-_PXM updates are at the bottom of the list :/.
+But this is not OK:
 
-FWIW, on this particular system I have a filed a bug with the vendor.
-
-> 
-> If there's information that numactl uses, maybe the kernel should use that, too?
-> 
-> A sysfs interface might be a useful workaround, but obviously it would
-> be far better if we could fix the BIOS and/or kernel so the workaround
-> isn't necessary in the first place.
-
-Yep ... but like I said, I don't think anyone wants to wait a year.  What if we
-never see a fix?
-
-Side issue:  While investigating this I noticed that plain kmalloc() is used in
-the setup code.  Is there a reason we don't use kmalloc_node() in
-pci_alloc_dev(), and other allocation functions?  It seems like we should be to
-optimize system performance.  OTOH ... I haven't done any measurements to see if
-it actually makes a difference :)
-
-P.
-
-> 
-> Bjorn
-> 
->> Cc: Myron Stowe <mstowe@redhat.com>
->> Cc: Bjorn Helgaas <bhelgaas@google.com>
->> Cc: linux-pci@vger.kernel.org
->> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
->> ---
->>  drivers/pci/pci-sysfs.c |   23 ++++++++++++++++++++++-
->>  1 file changed, 22 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
->> index 92b6d9a..c05ed30 100644
->> --- a/drivers/pci/pci-sysfs.c
->> +++ b/drivers/pci/pci-sysfs.c
->> @@ -221,12 +221,33 @@ static ssize_t enabled_show(struct device *dev, struct device_attribute *attr,
->>  static DEVICE_ATTR_RW(enabled);
->>
->>  #ifdef CONFIG_NUMA
->> +static ssize_t numa_node_store(struct device *dev,
->> +                              struct device_attribute *attr,
->> +                              const char *buf, size_t count)
->> +{
->> +       int node, ret;
->> +
->> +       if (!capable(CAP_SYS_ADMIN))
->> +               return -EPERM;
->> +
->> +       ret = kstrtoint(buf, 0, &node);
->> +       if (ret)
->> +               return ret;
->> +
->> +       if (!node_online(node))
->> +               return -EINVAL;
->> +
->> +       dev->numa_node = node;
->> +
->> +       return count;
->> +}
->> +
->>  static ssize_t numa_node_show(struct device *dev, struct device_attribute *attr,
->>                               char *buf)
->>  {
->>         return sprintf(buf, "%d\n", dev->numa_node);
->>  }
->> -static DEVICE_ATTR_RO(numa_node);
->> +static DEVICE_ATTR_RW(numa_node);
->>  #endif
->>
->>  static ssize_t dma_mask_bits_show(struct device *dev,
->> --
->> 1.7.9.3
->>
-> 
-> 
+foo.h:
+extern __weak int foo(void);
+foo.c:
+int __weak foo(void)
+{
+	...
+}
 
