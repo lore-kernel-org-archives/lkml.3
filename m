@@ -1,108 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751540AbaJOGhd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 02:37:33 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:42596 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751208AbaJOGhc (ORCPT
+	id S1751606AbaJOGiv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 02:38:51 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:49164 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268AbaJOGiu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 02:37:32 -0400
-Message-ID: <543E1628.4020808@gmail.com>
-Date: Tue, 14 Oct 2014 23:37:28 -0700
-From: Frank Rowand <frowand.list@gmail.com>
-Reply-To: frowand.list@gmail.com
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Wed, 15 Oct 2014 02:38:50 -0400
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>, Rob Landley <rob@landley.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chuck Ebbert <cebbert.lkml@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH v5] init: Disable defaults if init= fails
-References: <5c6381879bea68aebb13530442f1cf8a052be97f.1411958379.git.luto@amacapital.net> <542B4DA3.5080105@gmail.com> <542B519B.6010001@landley.net> <542B5E44.40303@gmail.com> <542B7200.6030902@landley.net> <CALCETrWr--A26UEv_7DeZa-Te1fTBDQgCdZt24n5LWkAnOa6jQ@mail.gmail.com> <20141001180510.GA28540@cloud> <CALCETrUK07j8+iQ8oSW70sgePxg_GJY3ASBBS+U9fvp_f2Rz5w@mail.gmail.com> <20141014140052.2f114c158ffe6cd953020f1c@linux-foundation.org> <CALCETrXB337oy2BcL3Y-U1CZDqR7TMPxsR9b9R=EatWvvc4zfg@mail.gmail.com> <543E0A25.80401@gmail.com> <CALCETrV5K15EPDiPvCFhxCHuZ6J4+S=KniOE-WkBgpiVkLLk4w@mail.gmail.com>
-In-Reply-To: <CALCETrV5K15EPDiPvCFhxCHuZ6J4+S=KniOE-WkBgpiVkLLk4w@mail.gmail.com>
+In-Reply-To: <20141015020811.7904E14011B@ozlabs.org>
+References: <1412919926-13123-1-git-send-email-vvijayan@mvista.com> <20141015020811.7904E14011B@ozlabs.org>
+From: Vineeth Vijayan <vvijayan@mvista.com>
+Date: Wed, 15 Oct 2014 12:08:29 +0530
+Message-ID: <CAOpNGcsgX0wVOgMN77+RuKVsb_iHQ7XQk8U_05-up__wC6zuZQ@mail.gmail.com>
+Subject: Re: powerpc: Fix Text randomization
+To: Michael Ellerman <mpe@ellerman.id.au>
+Cc: benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2014 10:56 PM, Andy Lutomirski wrote:
-> On Tue, Oct 14, 2014 at 10:46 PM, Frank Rowand <frowand.list@gmail.com> wrote:
->> On 10/14/2014 2:21 PM, Andy Lutomirski wrote:
->>> On Tue, Oct 14, 2014 at 2:00 PM, Andrew Morton
->>> <akpm@linux-foundation.org> wrote:
->>>> On Wed, 1 Oct 2014 11:13:14 -0700 Andy Lutomirski <luto@amacapital.net> wrote:
->>>>
->>>>> On Wed, Oct 1, 2014 at 11:05 AM,  <josh@joshtriplett.org> wrote:
->>>>>> On Tue, Sep 30, 2014 at 09:53:56PM -0700, Andy Lutomirski wrote:
->>>>>>> I significantly prefer default N.  Scripts that play with init= really
->>>>>>> don't want the fallback, and I can imagine contexts in which it could
->>>>>>> be a security problem.
->>>>>>
->>>>>> While I certainly would prefer the non-fallback behavior for init as
->>>>>> well, standard kernel practice has typically been to use "default y" for
->>>>>> previously built-in features that become configurable.  And I'd
->>>>>> certainly prefer a compile-time configuration option like this (even
->>>>>> with default y) over a "strictinit" kernel command-line option.
->>>>>>
->>>>>
->>>>> Fair enough.
->>>>>
->>>>> So: "default y" for a release or two, then switch the default?  Having
->>>>> default y will annoy virtme, though it's not the end of the world.
->>>>> Virtme is intended to work with more-or-less-normal kernels.
->>>>>
->>>>
->>>> Adding another Kconfig option is tiresome.  What was wrong with strictinit=?
->>>
->>> The consensus seems to be that adding a non-default option to get
->>
->>       ^^^^^^^^^  I do not think you know what the word consensus means. :-)
->>
->> I did not agree.
->>
->> I do agree with Andrew (but with no opinion on whether "strictinit=SOMETHING"
->> or just "strictinit".
->>
->>> sensible behavior would be unfortunate.  Also, I don't like
-> 
-> Even you're not disagreeing that it's ugly, though, FWIW.
+On Wed, Oct 15, 2014 at 7:38 AM, Michael Ellerman <mpe@ellerman.id.au> wrote:
+> On Fri, 2014-10-10 at 05:45:26 UTC, Vineeth Vijayan wrote:
+>> Right now there is no way to disable TEXT randomization on a PPC32
+>> machine. text randomization happens even in the case of "echo 0 >
+>> /proc/sys/kernel/randomize_va_space"
+>
+> Yeah it seems to happen on ppc64 too.
+>
+>> This happens due to the incorrect definition of ELF_ET_DYN_BASE at
+>> arch/powerpc/include/asm/elf.h
+>
+> What is incorrect about it? We are not the only arch that does that.
+>
 
-You are putting (lack of) words in my mouth.  I did not comment on
-"ugly" because it did not seem that big a deal to me.  I have no
-desire to bikeshed on ugly in this particular instance.
+I think we are one of the arch which does it.
+The same has been tested on x86 and arm, where ELF_ET_DYN_BASE doesn’t
+use randomize_et_dyn call, and it works properly as per the user-space
+definition of randomization;
 
-> 
->>   ^^^^^^^^^^^^^^^^^
->>   behavior that is useful in some or many contexts
-> 
-> Is there a context in which the current behavior is useful beyond
-> "whoops, I typoed my grub command line edit, and I still want my
-> system to boot into *something* even if it's the wrong thing"?  I'm
-> not personally that sympathetic to that particular use case, but maybe
-> there's another one.
+(i.e when at "echo 0 > /proc/sys/kernel/randomize_va_space", TEXT
+randomization should not happen.)
 
-We've been through this before.  I should have ignored your "sensible
-behavior" comment.  Sorry, again no need for me to bike shed on that.
-
-The question from Andrew was whether to use a config option or a command
-line option.  One could choose either behavior as default, whether
-controlled by command line or config option.
-
-
-> 
-> --Andy
-> 
->>
->>> strictinit=, since backwards-compatible setups will have to do
->>> init=foo strictinit=foo.  My original proposal was init=foo
->>> strictinit.
->>>
->>> TBH, my preference would be to make strict mode unconditional.
->>> http://xkcd.com/1172/
->>>
->>> --Andy
-
+> I'm not clear on what has changed to break this?
+>
+> cheers
