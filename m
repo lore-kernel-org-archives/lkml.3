@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751509AbaJOP44 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 11:56:56 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:19417 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751020AbaJOP4z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 11:56:55 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18Y80QydsKZVuU/zzQdHfUe9MNN6Y9IGP0=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 7653E5FF7D3
-Date: Wed, 15 Oct 2014 11:56:42 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Benoit Masson <benoitm@perenite.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Benoit Masson <yahoo@perenite.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/8] Armada XP pinctrl consolidation and ix4-300d fixes
-Message-ID: <20141015155642.GG17447@titan.lakedaemon.net>
-References: <542EBB93.108@gmail.com>
- <A9781A2E-F3CA-4E8A-833C-D167B456D9F7@perenite.com>
- <542EC3A3.1060605@gmail.com>
- <1ACB5318-863E-40D8-8B27-41F1C0D0A4B8@perenite.com>
- <5432BFB1.2060300@gmail.com>
- <CE7A9795-C2AF-451A-8018-3A0B8788BF60@perenite.com>
- <20141015144259.GB17447@titan.lakedaemon.net>
- <543E898D.10606@gmail.com>
- <20141015145539.GB18413@lunn.ch>
- <20141015153049.GE17447@titan.lakedaemon.net>
+	id S1751582AbaJOP5K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 11:57:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57253 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751160AbaJOP5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 11:57:08 -0400
+Message-ID: <543E994F.5030406@zytor.com>
+Date: Wed, 15 Oct 2014 08:57:03 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141015153049.GE17447@titan.lakedaemon.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org
+CC: x86@kernel.org
+Subject: Re: Lockdep warning with init_espfix_ap()
+References: <5436AB4A.1080900@redhat.com>
+In-Reply-To: <5436AB4A.1080900@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 11:30:49AM -0400, Jason Cooper wrote:
-> On Wed, Oct 15, 2014 at 04:55:39PM +0200, Andrew Lunn wrote:
-> > > >Do you have a link to an email thread or the patch Subject line?  I can
-> > > >confirm it's missing from mvebu/fixes...
-> > > 
-> > > http://lists.infradead.org/pipermail/linux-arm-kernel/2014-July/275487.html
-> > > 
-> > > But you and Andrew should check what Arnd suggested. IIRC, there
-> > > was also an appropriate follow-up patch discussion started by
-> > > Andrew.
-> > 
-> > There was a lot of back and forth with Arnd. In the end, he gave up
-> > arguing because too many voices did not like his solution. So my
-> > original version stands.
+On 10/09/2014 08:35 AM, Prarit Bhargava wrote:
 > 
-> Yes, this appears to have been a mistake on my part.  In the
-> conversation regarding patch #2 of V2, you said you were going to work
-> on implementing something and would report back.  I applied that to the
-> whole series instead of just to the second patch.  At any rate, applied
-> to mvebu/fixes now.
+> Non-fatal warning seen with latest kernel tree during kernel boot.
 > 
-> > However, the patch at the end of 
-> > 
-> > http://lists.infradead.org/pipermail/linux-arm-kernel/2014-July/275528.html
-> > 
-> > is useful, and it would be nice if it could be merged as well.
+>  WARNING: CPU: 64 PID: 0 at kernel/locking/lockdep.c:2744
+> lockdep_trace_alloc+0xdd/0xe0()
+>  DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags))
+>  Modules linked in:
 > 
-> I'll take a look.
+>  CPU: 64 PID: 0 Comm: swapper/64 Not tainted 3.17.0+ #10
+>  Hardware name: Intel Corporation BRICKLAND/BRICKLAND, BIOS
+> BIVTSDP1.86B.0049.R00.1403081207 03/08/2014
+>   0000000000000000 d27b9ea0e3821f35 ffff88084edc3ce0 ffffffff8171cbd8
+>   ffff88084edc3d28 ffff88084edc3d18 ffffffff8108424d 0000000000000046
+>   0000000000000000 00000000000000d0 0000000000000002 0000000000000000
+>  Call Trace:
+>   [<ffffffff8171cbd8>] dump_stack+0x4d/0x66
+>   [<ffffffff8108424d>] warn_slowpath_common+0x7d/0xa0
+>   [<ffffffff810842cc>] warn_slowpath_fmt+0x5c/0x80
+>   [<ffffffff810e3e2d>] lockdep_trace_alloc+0xdd/0xe0
+>   [<ffffffff811c0aaf>] __alloc_pages_nodemask+0x9f/0x4b0
+>   [<ffffffff81025365>] ? native_sched_clock+0x35/0xa0
+>   [<ffffffff810253d9>] ? sched_clock+0x9/0x10
+>   [<ffffffff8120981a>] alloc_page_interleave+0x3a/0x90
+>   [<ffffffff8120ae8d>] alloc_pages_current+0x17d/0x1f0
+>   [<ffffffff811bab24>] ? __get_free_pages+0x14/0x50
+>   [<ffffffff811bab24>] __get_free_pages+0x14/0x50
+>   [<ffffffff8102225d>] init_espfix_ap+0x17d/0x320
+>   [<ffffffff8105254e>] start_secondary+0x19e/0x350
+>  ---[ end trace 2b62d796aa7ae001 ]---
+> 
+>  Debugging ... but sorta hoping someone else may have already seen it ;)
+> 
 
-I'd still like to see that note captured in the binding doc.  Did I miss
-another patch somewhere?
+It is kind of a messy situation, because this code needs to allocate
+memory but is run before the secondary CPU is fully up.  As such, it is
+a false positive, at least in some ways.
 
-thx,
+	-hpa
 
-Jason.
+
