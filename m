@@ -1,95 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751788AbaJOKuH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 06:50:07 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:23704 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953AbaJOKuF (ORCPT
+	id S1751992AbaJOKxI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 06:53:08 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:40703 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751118AbaJOKxH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 06:50:05 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f4-b7f156d0000063c7-c3-543e51594afd
-Content-transfer-encoding: 8BIT
-Message-id: <1413370199.26771.4.camel@AMDC1943>
-Subject: Re: [PATCH 2/8] power_supply: sysfs: Use power_supply_*() API for
- accessing function attrs
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, Anton Vorontsov <anton@enomsg.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Date: Wed, 15 Oct 2014 12:49:59 +0200
-In-reply-to: <20141015103217.GB14266@amd>
-References: <1413289246-31650-1-git-send-email-k.kozlowski@samsung.com>
- <1413289246-31650-3-git-send-email-k.kozlowski@samsung.com>
- <20141015103217.GB14266@amd>
-X-Mailer: Evolution 3.10.4-0ubuntu2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjkeLIzCtJLcpLzFFi42I5/e/4Vd3IQLsQg+UtMhYHt2pabJyxntVi
-	0pP3zBYTV05mtug8+4TZ4mzTG3aL+1+PMlpM+bOcyWLT42usFpd3zWGz+Nx7hNHiycIzTBZr
-	j9xlt7jduILN4u6po2wWp7tZLU7vLnEQ9JjQ/4nRY+esu+wem1doeWxa1cnmcefaHjaPeScD
-	PTYvqffY+b2B3aNvyypGjxWrv7N7fN4kF8AdxWWTkpqTWZZapG+XwJXxbuZ05oI/3BUv379m
-	amC8wtnFyMkhIWAi0dB5nR3CFpO4cG89G4gtJLCUUWLmVD0Qm1dAUOLH5HssXYwcHMwC8hJH
-	LmWDhJkF1CUmzVvE3MXIBVT+mVGi4Ws3I0S9vsTMOYfB5ggLpEoc71/DAmKzCRhLbF6+BCwu
-	AjRna98KsGZmgS5WiZ1TloA1swioSjy/f5kZxOYU0JRY1AJyEMiGJYwSLxpmsINcISGgLNHY
-	7zaBUWAWkvtmIdw3C8l9CxiZVzGKppYmFxQnpeca6hUn5haX5qXrJefnbmKExN2XHYyLj1kd
-	YhTgYFTi4eU4YBsixJpYVlyZe4hRgoNZSYQ30d8uRIg3JbGyKrUoP76oNCe1+BAjEwenVANj
-	/KmH9woc9bmucpyOMJfYMOmAVaH8yl9/ZTpv5Sj6HfpSdrDR2+zNWoPu9ZLvwxU8HzcmzRXT
-	fXjNwLepfXnzxNBq/Yj18/ty3194nPLs3ZtI6aQl/57Oq7KzCrs2hT0+uMJnh9z+kDdubquW
-	Ll90WfF98dkf/ZYWn95Yqa3m4mqIUGVsWztdiaU4I9FQi7moOBEAiUR9Q5kCAAA=
+	Wed, 15 Oct 2014 06:53:07 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Michael S. Tsirkin'" <mst@redhat.com>
+CC: Jason Wang <jasowang@redhat.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>
+Subject: RE: [RFC PATCH net-next 3/6] virtio-net: small optimization on
+ free_old_xmit_skbs()
+Thread-Topic: [RFC PATCH net-next 3/6] virtio-net: small optimization on
+ free_old_xmit_skbs()
+Thread-Index: AQHP6FsCsmX5zz5fkUSOZUv7LBGEbpww6EfAgAABQACAABDmcA==
+Date: Wed, 15 Oct 2014 10:51:32 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1C9D7688@AcuExch.aculab.com>
+References: <1413357930-45302-1-git-send-email-jasowang@redhat.com>
+ <1413357930-45302-4-git-send-email-jasowang@redhat.com>
+ <20141015093739.GC25776@redhat.com>
+ <063D6719AE5E284EB5DD2968C1650D6D1C9D752A@AcuExch.aculab.com>
+ <20141015104806.GK25776@redhat.com>
+In-Reply-To: <20141015104806.GK25776@redhat.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On śro, 2014-10-15 at 12:32 +0200, Pavel Machek wrote:
-> On Tue 2014-10-14 14:20:40, Krzysztof Kozlowski wrote:
-> > Replace direct calls to power supply function attributes with wrappers.
-> > Wrappers provide safe access access in case of unregistering the power
-> > supply (.e.g by removing the driver). Replace:
-> >  - get_property -> power_supply_get_property
-> >  - set_property -> power_supply_set_property
-> >  - property_is_writeable -> power_supply_property_is_writeable
-> > 
-> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: Michael S. Tsirkin
+> On Wed, Oct 15, 2014 at 09:49:01AM +0000, David Laight wrote:
+> > From: Of Michael S. Tsirkin
+> > > On Wed, Oct 15, 2014 at 03:25:27PM +0800, Jason Wang wrote:
+> > > > Accumulate the sent packets and sent bytes in local variables and perform a
+> > > > single u64_stats_update_begin/end() after.
+> > > >
+> > > > Cc: Rusty Russell <rusty@rustcorp.com.au>
+> > > > Cc: Michael S. Tsirkin <mst@redhat.com>
+> > > > Signed-off-by: Jason Wang <jasowang@redhat.com>
+> > >
+> > > Not sure how much it's worth but since Eric suggested it ...
+> >
+> > Probably depends on the actual cost of u64_stats_update_begin/end
+> > against the likely extra saving of the tx_bytes and tx_packets
+> > values onto the stack across the call to dev_kfree_skb_any().
+> > (Which depends on the number of caller saved registers.)
 > 
-> Acked-by: Pavel Machek <pavel@ucw.cz>
+> Yea, some benchmark results would be nice to see.
 
-Thanks for looking at patches.
+I there are likely to be multiple skb on the queue the fastest
+code would probably do one 'virtqueue_get_all()' that returned
+a linked list of buffers, then follow the list to get the stats,
+and follow it again to free the skb.
 
+	David
 
-> > @@ -76,7 +76,7 @@ static ssize_t power_supply_show_property(struct device *dev,
-> >  	if (off == POWER_SUPPLY_PROP_TYPE) {
-> >  		value.intval = psy->type;
-> >  	} else {
-> > -		ret = psy->get_property(psy, off, &value);
-> > +		ret = power_supply_get_property(psy, off, &value);
-> >  
-> 
-> One thing.. Your power_supply_get_property (and friends) check for psy
-> == NULL. Is it neccessary / good idea? As far as I can tell, it should
-> not really be NULL...
-
-It is not necessary. I thought it would be a good behavior of such
-exported function. You're right that this shouldn't be NULL especially
-because previously it was dereferenced.
-
-Other existing power supply exported functions don't check this so maybe
-I shouldn't introduce inconsistency.
-
-I'll remove the check and re-spin. I'll found ugly typos in commit
-message anyway.
-
-Best regards,
-Krzysztof
+> > > Acked-by: Michael S. Tsirkin <mst@redhat.com>
+> > >
+> > > > ---
+> > > >  drivers/net/virtio_net.c |   12 ++++++++----
+> > > >  1 files changed, 8 insertions(+), 4 deletions(-)
+> > > >
+> > > > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> > > > index 3d0ce44..a4d56b8 100644
+> > > > --- a/drivers/net/virtio_net.c
+> > > > +++ b/drivers/net/virtio_net.c
+> > > > @@ -833,17 +833,21 @@ static void free_old_xmit_skbs(struct send_queue *sq)
+> > > >  	unsigned int len;
+> > > >  	struct virtnet_info *vi = sq->vq->vdev->priv;
+> > > >  	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
+> > > > +	u64 tx_bytes = 0, tx_packets = 0;
+> >
+> > tx_packets need only be 'unsigned int'.
+> > The same is almost certainly true of tx_bytes.
+> >
+> > 	David
+> >
+> > > >  	while ((skb = virtqueue_get_buf(sq->vq, &len)) != NULL) {
+> > > >  		pr_debug("Sent skb %p\n", skb);
+> > > >
+> > > > -		u64_stats_update_begin(&stats->tx_syncp);
+> > > > -		stats->tx_bytes += skb->len;
+> > > > -		stats->tx_packets++;
+> > > > -		u64_stats_update_end(&stats->tx_syncp);
+> > > > +		tx_bytes += skb->len;
+> > > > +		tx_packets++;
+> > > >
+> > > >  		dev_kfree_skb_any(skb);
+> > > >  	}
+> > > > +
+> > > > +	u64_stats_update_begin(&stats->tx_syncp);
+> > > > +	stats->tx_bytes += tx_bytes;
+> > > > +	stats->tx_packets =+ tx_packets;
+> > > > +	u64_stats_update_end(&stats->tx_syncp);
+> > > >  }
+> > > >
+> > > >  static int xmit_skb(struct send_queue *sq, struct sk_buff *skb)
+> > > > --
+> > > > 1.7.1
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe netdev" in
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >
 
 
