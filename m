@@ -1,107 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705AbaJOMxt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 08:53:49 -0400
-Received: from numascale.com ([213.162.240.84]:43949 "EHLO numascale.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752097AbaJOMx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 08:53:26 -0400
-From: Daniel J Blueman <daniel@numascale.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>
-Cc: Daniel J Blueman <daniel@numascale.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Steffen Persvold <sp@numascale.com>
-Subject: [PATCH 2/3] Numachip: drop unuseful code
-Date: Wed, 15 Oct 2014 20:53:07 +0800
-Message-Id: <1413377588-6985-2-git-send-email-daniel@numascale.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1413377588-6985-1-git-send-email-daniel@numascale.com>
-References: <1413377588-6985-1-git-send-email-daniel@numascale.com>
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cpanel21.proisp.no
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - numascale.com
-X-Get-Message-Sender-Via: cpanel21.proisp.no: authenticated_id: daniel@numascale.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1752156AbaJOM7u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 08:59:50 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:35118 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751106AbaJOM7t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 08:59:49 -0400
+Date: Wed, 15 Oct 2014 15:59:34 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] bcm/CmHost.c: Fix noisy compile warnings
+Message-ID: <20141015125934.GB23154@mwanda>
+References: <1413375999-10210-1-git-send-email-jeffrey.t.kirsher@intel.com>
+ <20141015123431.GA23154@mwanda>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141015123431.GA23154@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drop printing that serves no purpose, as it's printing fixed or
-known values, and mark constant structure appropriately.
+Or we could fix it but add a multi-line comment with lots of capital
+letters and exclamation marks.  I guess we would need to make a function
+since this cast is in several places.
 
-Signed-off-by: Daniel J Blueman <daniel@numascale.com>
-Reviewed-by: Steffen Persvold <sp@numascale.com>
----
- arch/x86/kernel/apic/apic_numachip.c | 22 +++-------------------
- arch/x86/pci/numachip.c              |  2 +-
- 2 files changed, 4 insertions(+), 20 deletions(-)
+void *silence_buggy_casting(u32 pointer)
+{
+	/*
+	 * DANGER! DANGER! DANGER! DANGER! DANGER! DANGER! DANGER!
+	 * FIXME!!!  We know this cast is totally buggy.  The BCM driver
+	 * doesn't work on 64 bits.  But no one knows how to make this
+	 * work.  Oh well.  Let's silence the GCC warning.
+	 * DANGER! DANGER! DANGER! DANGER! DANGER! DANGER! DANGER!
+	 *
+	 */
+	return (void *)(long)pointer;
+}
 
-diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
-index 4156470..ee2052d 100644
---- a/arch/x86/kernel/apic/apic_numachip.c
-+++ b/arch/x86/kernel/apic/apic_numachip.c
-@@ -157,20 +157,8 @@ static int __init numachip_probe(void)
- 	return apic == &apic_numachip;
- }
- 
--static void __init map_csrs(void)
--{
--	printk(KERN_INFO "NumaChip: Mapping local CSR space (%016llx - %016llx)\n",
--		NUMACHIP_LCSR_BASE, NUMACHIP_LCSR_BASE + NUMACHIP_LCSR_SIZE - 1);
--	init_extra_mapping_uc(NUMACHIP_LCSR_BASE, NUMACHIP_LCSR_SIZE);
--
--	printk(KERN_INFO "NumaChip: Mapping global CSR space (%016llx - %016llx)\n",
--		NUMACHIP_GCSR_BASE, NUMACHIP_GCSR_BASE + NUMACHIP_GCSR_SIZE - 1);
--	init_extra_mapping_uc(NUMACHIP_GCSR_BASE, NUMACHIP_GCSR_SIZE);
--}
--
- static void fixup_cpu_id(struct cpuinfo_x86 *c, int node)
- {
--
- 	if (c->phys_proc_id != node) {
- 		c->phys_proc_id = node;
- 		per_cpu(cpu_llc_id, smp_processor_id()) = node;
-@@ -179,19 +167,15 @@ static void fixup_cpu_id(struct cpuinfo_x86 *c, int node)
- 
- static int __init numachip_system_init(void)
- {
--	unsigned int val;
--
- 	if (!numachip_system)
- 		return 0;
- 
-+	init_extra_mapping_uc(NUMACHIP_LCSR_BASE, NUMACHIP_LCSR_SIZE);
-+	init_extra_mapping_uc(NUMACHIP_GCSR_BASE, NUMACHIP_GCSR_SIZE);
-+
- 	x86_cpuinit.fixup_cpu_id = fixup_cpu_id;
- 	x86_init.pci.arch_init = pci_numachip_init;
- 
--	map_csrs();
--
--	val = read_lcsr(CSR_G0_NODE_IDS);
--	printk(KERN_INFO "NumaChip: Local NodeID = %08x\n", val);
--
- 	return 0;
- }
- early_initcall(numachip_system_init);
-diff --git a/arch/x86/pci/numachip.c b/arch/x86/pci/numachip.c
-index 7307d9d..2e565e6 100644
---- a/arch/x86/pci/numachip.c
-+++ b/arch/x86/pci/numachip.c
-@@ -103,7 +103,7 @@ static int pci_mmcfg_write_numachip(unsigned int seg, unsigned int bus,
- 	return 0;
- }
- 
--const struct pci_raw_ops pci_mmcfg_numachip = {
-+static const struct pci_raw_ops pci_mmcfg_numachip = {
- 	.read = pci_mmcfg_read_numachip,
- 	.write = pci_mmcfg_write_numachip,
- };
--- 
-1.9.1
+Something really ugly and gnarly like that would be hard to ignore.
+
+regards,
+dan carpenter
 
