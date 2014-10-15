@@ -1,162 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751667AbaJOUkB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 16:40:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36902 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721AbaJOUkA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 16:40:00 -0400
-Date: Wed, 15 Oct 2014 13:39:59 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Michal Nazarewicz <mina86@mina86.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH] base: dma-coherent: fix device_init initialization
-Message-Id: <20141015133959.dd2814e196eaa3fc3bcb7b93@linux-foundation.org>
-In-Reply-To: <1413405140-17777-1-git-send-email-balbi@ti.com>
-References: <1413405140-17777-1-git-send-email-balbi@ti.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751806AbaJOUnG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 16:43:06 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58950 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751184AbaJOUnE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 16:43:04 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20141015033701.GD16068@dhcp-16-116.nay.redhat.com>
+References: <20141001135237.GA13689@redhat.com> <543553C7.9010906@zytor.com> <20141008192728.GA26517@redhat.com> <20141011031452.GB11560@dhcp-16-116.nay.redhat.com> <543907B5.7060001@zytor.com> <20141013125257.GB6466@redhat.com> <20141013151955.GA9777@redhat.com> <543BF304.9090708@zytor.com> <20141013172242.GB9777@redhat.com> <20141014124932.GC5127@redhat.com> <20141015033701.GD16068@dhcp-16-116.nay.redhat.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [resend Patch v3 1/2] kaslr: check if kernel location is changed
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 15 Oct 2014 13:32:24 -0700
+To: Baoquan He <bhe@redhat.com>, Vivek Goyal <vgoyal@redhat.com>
+CC: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        ak@linux.intel.com, ebiederm@xmission.com, kexec@lists.infradead.org,
+        whissi@whissi.de, kumagai-atsushi@mxc.nes.nec.co.jp,
+        stable@vger.kernel.org
+Message-ID: <695BEC26-402D-4B1C-9266-137F2BCFE5B9@zytor.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Oct 2014 15:32:20 -0500 Felipe Balbi <balbi@ti.com> wrote:
+I don't see why we can't randomize anywhere in physical space.  We already handle the kernel above 4 GB and it wouldn't be hard to do the equivalent for the decompress/relocation code, using a #PF handler.  Not all CPUs support 1 GB pages.
 
-> commit 7bfa5ab (drivers: dma-coherent: add initialization
-> from device tree) added support for dma coherent pool for
-> DeviceTree. Unfortunately that commit introduced a new
-> build warning because of a wrong type on the definition
-> of ->device_init(). This patch fixes it.
+On October 14, 2014 8:37:01 PM PDT, Baoquan He <bhe@redhat.com> wrote:
+>On 10/14/14 at 08:49am, Vivek Goyal wrote:
+>> On Mon, Oct 13, 2014 at 01:22:42PM -0400, Vivek Goyal wrote:
+>> > On Mon, Oct 13, 2014 at 08:43:00AM -0700, H. Peter Anvin wrote:
+>> > > On 10/13/2014 08:19 AM, Vivek Goyal wrote:
+>> > > >>>
+>> > > >>> This really shouldn't have happened this way on x86-64.  It
+>has to happen
+>> > > >>> this way on i386, but I worry that this may be a serious
+>misdesign in kaslr
+>> > > >>> on x86-64.  I'm also wondering if there is any other fallout
+>of this?
+>> > > >>
+>> > > >> I agree. On x86_64, we should stick to previous design and
+>this new
+>> > > >> logic of performing relocations does not sound very clean and
+>makes
+>> > > >> things very confusing.
+>> > > >>
+>> > > >> I am wondering that why couldn't we simply adjust page tables
+>in case of
+>> > > >> kaslr on x86_64, instead of performing relocations.
+>> > > > 
+>> > > > Well, IIUC, if virtual addresses are shifted w.r.t what virtual
+>address
+>> > > > kernel was compiled for, then relocation will have to be done.
+>> > > > 
+>> > > > So question will be if physical address shift is enough for
+>kaslr or
+>> > > > virtual address shift is necessary.
+>> > > > 
+>> > > 
+>> > > I would assume that without a virtual address shift kaslr is
+>pretty darn
+>> > > pointless.  Without the physical address shift the 1:1 map can be
+>used,
+>> > > and again, kaslr becomes pointless.  However, there is absolutely
+>no
+>> > > reason why they should be coupled.  They can, in fact, be
+>independently
+>> > > randomized.
+>> > 
+>> > Agreed. On x86_64, we should be able to randomize virtual address
+>space
+>> > and physical address space independently. And in that case whole of
+>> > the physical memory should be available for a possible location for
+>> > kernel. (As opposed to a small limit (I guess 1GB) now)
+>
+>It can be done to randomize virtual address space and physical address
+>space independently. But limited by the 2G of kernel text mapping and
+>module mapping virtual address space, virtual address can be randomized
+>in (0x1000000, 1G) range. While physical address can be randomized in
+>(0x1000000, 4G) according to the identity mapping of normal kernel.
+>Then
+>phys_base still stores an relative value, a different offset than
+>before.
+>
+>This can be easily implement. One thing is still there's a limit for
+>physical addr randomization, only below 4G. So I am wondering if we can
+>extend the identify mapping to complete mapping of 48 bit, using 1G
+>page
+>frame. This can make physical addr be randomized to anywhere.
+>
+>So now there may be 3 options:
+>
+>1) Fix this bug in current kaslr. Since when randomize the new kernel
+>location in choose_kernel_location(), cmdline options has been checked
+>strictly, e.g if nokaslr is specified, it's safe to do the kernel
+>location randomization. Then in handle_relocations(), we only need to
+>check if the kernel location is changed, comparing with kernel loaded
+>addr. If changed, kaslr is done, let's do the relocation handling. If
+>not changed, no kaslr id done, just skip the relocation handling like
+>before.
+>
+>2) randomize the virtual addr space and physical addr space
+>independently. But physical addr space must be below 4G.
+>
+>3) extend the identity mapping to 48bit of addr space. Then we can
+>randomized the virtual addr space in (0x1000000, 1G) and physical addr
+>space in (0x1000000, real physical memory end).
+>
+>If option 3 is doable, it's the best. If not, I think bug fix should be
+>better.
+>
+>> 
+>> Hi Peter,
+>> 
+>> So what do we do about this issue in short term to make kexec work.
+>Even
+>> if we go for above solution, to make kexec work we will have to pass
+>> "nokaslr" as we don't want kernel to move around in physical address
+>space
+>> as it might stomp over ELF headers we have stored.
+>
+>kexec doesn't need ELF headers. Kdump may need it. But in current
+>kexec-tools implementation, kernel/initrd and other stuffs are placed
+>from top to down, current implementation won't do kaslr since it only
+>happened between kernel loaded addr and 1G. So we don't need to worry
+>about the stomping.
+>
+>> 
+>> If you don't like current patch, should we just disable relocations
+>in
+>> x86_64 if "nokaslr" command line is passed. That way kernel will not
+>> be moved in physical as well as virtual address space.
+>> 
+>> Thanks
+>> Vivek
 
-Guys, when fixing a warning please always always always quote that
-warning in the changelog.
-
-Presumably your patch addresses the same mystery warning as did Marek's.
-
-
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: drivers: of: add return value to of_reserved_mem_device_init()
-
-Driver calling of_reserved_mem_device_init() might be interested if the
-initialization has been successful or not, so add support for returning
-error code.
-
-This fixes a build warining caused by 7bfa5ab6fa1b ("drivers:
-dma-coherent: add initialization from device tree"), which has been merged
-without this change and without fixing function return value.
-
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Laura Abbott <lauraa@codeaurora.org>
-Cc: Josh Cartwright <joshc@codeaurora.org>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- drivers/base/dma-contiguous.c   |    3 ++-
- drivers/of/of_reserved_mem.c    |   14 +++++++++-----
- include/linux/of_reserved_mem.h |    9 ++++++---
- 3 files changed, 17 insertions(+), 9 deletions(-)
-
-diff -puN drivers/base/dma-contiguous.c~drivers-of-add-return-value-to-of_reserved_mem_device_init drivers/base/dma-contiguous.c
---- a/drivers/base/dma-contiguous.c~drivers-of-add-return-value-to-of_reserved_mem_device_init
-+++ a/drivers/base/dma-contiguous.c
-@@ -223,9 +223,10 @@ bool dma_release_from_contiguous(struct
- #undef pr_fmt
- #define pr_fmt(fmt) fmt
- 
--static void rmem_cma_device_init(struct reserved_mem *rmem, struct device *dev)
-+static int rmem_cma_device_init(struct reserved_mem *rmem, struct device *dev)
- {
- 	dev_set_cma_area(dev, rmem->priv);
-+	return 0;
- }
- 
- static void rmem_cma_device_release(struct reserved_mem *rmem,
-diff -puN drivers/of/of_reserved_mem.c~drivers-of-add-return-value-to-of_reserved_mem_device_init drivers/of/of_reserved_mem.c
---- a/drivers/of/of_reserved_mem.c~drivers-of-add-return-value-to-of_reserved_mem_device_init
-+++ a/drivers/of/of_reserved_mem.c
-@@ -243,23 +243,27 @@ static inline struct reserved_mem *__fin
-  * This function assign memory region pointed by "memory-region" device tree
-  * property to the given device.
-  */
--void of_reserved_mem_device_init(struct device *dev)
-+int of_reserved_mem_device_init(struct device *dev)
- {
- 	struct reserved_mem *rmem;
- 	struct device_node *np;
-+	int ret;
- 
- 	np = of_parse_phandle(dev->of_node, "memory-region", 0);
- 	if (!np)
--		return;
-+		return -ENODEV;
- 
- 	rmem = __find_rmem(np);
- 	of_node_put(np);
- 
- 	if (!rmem || !rmem->ops || !rmem->ops->device_init)
--		return;
-+		return -EINVAL;
- 
--	rmem->ops->device_init(rmem, dev);
--	dev_info(dev, "assigned reserved memory node %s\n", rmem->name);
-+	ret = rmem->ops->device_init(rmem, dev);
-+	if (ret == 0)
-+		dev_info(dev, "assigned reserved memory node %s\n", rmem->name);
-+
-+	return ret;
- }
- 
- /**
-diff -puN include/linux/of_reserved_mem.h~drivers-of-add-return-value-to-of_reserved_mem_device_init include/linux/of_reserved_mem.h
---- a/include/linux/of_reserved_mem.h~drivers-of-add-return-value-to-of_reserved_mem_device_init
-+++ a/include/linux/of_reserved_mem.h
-@@ -16,7 +16,7 @@ struct reserved_mem {
- };
- 
- struct reserved_mem_ops {
--	void	(*device_init)(struct reserved_mem *rmem,
-+	int	(*device_init)(struct reserved_mem *rmem,
- 			       struct device *dev);
- 	void	(*device_release)(struct reserved_mem *rmem,
- 				  struct device *dev);
-@@ -28,14 +28,17 @@ typedef int (*reservedmem_of_init_fn)(st
- 	_OF_DECLARE(reservedmem, name, compat, init, reservedmem_of_init_fn)
- 
- #ifdef CONFIG_OF_RESERVED_MEM
--void of_reserved_mem_device_init(struct device *dev);
-+int of_reserved_mem_device_init(struct device *dev);
- void of_reserved_mem_device_release(struct device *dev);
- 
- void fdt_init_reserved_mem(void);
- void fdt_reserved_mem_save_node(unsigned long node, const char *uname,
- 			       phys_addr_t base, phys_addr_t size);
- #else
--static inline void of_reserved_mem_device_init(struct device *dev) { }
-+static inline int of_reserved_mem_device_init(struct device *dev)
-+{
-+	return -ENOSYS;
-+}
- static inline void of_reserved_mem_device_release(struct device *pdev) { }
- 
- static inline void fdt_init_reserved_mem(void) { }
-_
-
-
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
