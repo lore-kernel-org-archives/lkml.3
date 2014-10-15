@@ -1,335 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951AbaJOHWT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 03:22:19 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:37332 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751239AbaJOHWP (ORCPT
+	id S1752068AbaJOHYE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 03:24:04 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:49451 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752042AbaJOHYA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 03:22:15 -0400
-From: Dudley Du <dudley.dulixin@gmail.com>
-X-Google-Original-From: Dudley Du <dudl@cypress.com>
-To: dmitry.torokhov@gmail.com, rydberg@euromail.se
-Cc: Dudley Du <dudl@cypress.com>, bleung@google.com, patrikf@google.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 13/13] input: cyapa: add gen5 trackpad device read firmware image and raw data functions support
-Date: Wed, 15 Oct 2014 15:19:27 +0800
-Message-Id: <1413357567-26177-14-git-send-email-dudl@cypress.com>
+	Wed, 15 Oct 2014 03:24:00 -0400
+From: Kelvin Cheung <keguang.zhang@gmail.com>
+To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: rjw@rjwysocki.net, viresh.kumar@linaro.org, linux-mips@linux-mips.org,
+        ralf@linux-mips.org, Kelvin Cheung <keguang.zhang@gmail.com>
+Subject: [PATCH 6/6] cpufreq: Loongson1: Add cpufreq driver for Loongson1B (UPDATED)
+Date: Wed, 15 Oct 2014 15:23:32 +0800
+Message-Id: <1413357812-16895-1-git-send-email-keguang.zhang@gmail.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1413357567-26177-1-git-send-email-dudl@cypress.com>
-References: <1413357567-26177-1-git-send-email-dudl@cypress.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add read firmware image function supported for gen5 trackpad device,
-which its function is supplied through cyapa core read_fw interface.
-Through this interface, upper layer application can read out, check
-and backup the firmware image in trackpad device before updated
-with new one when new firmware image may have problems.
-Also add interfaces to report all sensor's raw data values to upper
-layer, so it can help to find out the performance issue when users
-reports problem, and also it's useful and required interface for
-some customers that require sensors' raw data.
-TEST=test on Chromebooks.
+This patch adds cpufreq driver for Loongson1B which
+is capable of changing the CPU frequency dynamically.
 
-Signed-off-by: Dudley Du <dudl@cypress.com>
+Signed-off-by: Kelvin Cheung <keguang.zhang@gmail.com>
 ---
- drivers/input/mouse/cyapa_gen5.c | 267 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 267 insertions(+)
+ drivers/cpufreq/Kconfig        |  10 ++
+ drivers/cpufreq/Makefile       |   1 +
+ drivers/cpufreq/ls1x-cpufreq.c | 233 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 244 insertions(+)
+ create mode 100644 drivers/cpufreq/ls1x-cpufreq.c
 
-diff --git a/drivers/input/mouse/cyapa_gen5.c b/drivers/input/mouse/cyapa_gen5.c
-index 90ea6b1..f96b950 100644
---- a/drivers/input/mouse/cyapa_gen5.c
-+++ b/drivers/input/mouse/cyapa_gen5.c
-@@ -1210,6 +1210,160 @@ static int cyapa_gen5_write_fw_block(struct cyapa *cyapa,
- 	return 0;
- }
+diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
+index ffe350f..99464d7 100644
+--- a/drivers/cpufreq/Kconfig
++++ b/drivers/cpufreq/Kconfig
+@@ -250,6 +250,16 @@ config LOONGSON2_CPUFREQ
  
-+static int cyapa_gen5_read_fw_bytes(struct cyapa *cyapa, u16 row_num, u8 *data)
+ 	  If in doubt, say N.
+ 
++config LOONGSON1_CPUFREQ
++	tristate "Loongson1 CPUFreq Driver"
++	help
++	  This option adds a CPUFreq driver for loongson1 processors which
++	  support software configurable cpu frequency.
++
++	  For details, take a look at <file:Documentation/cpu-freq/>.
++
++	  If in doubt, say N.
++
+ endmenu
+ 
+ menu "PowerPC CPU frequency scaling drivers"
+diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
+index db6d9a2..aca7bd3 100644
+--- a/drivers/cpufreq/Makefile
++++ b/drivers/cpufreq/Makefile
+@@ -98,6 +98,7 @@ obj-$(CONFIG_CRIS_MACH_ARTPEC3)		+= cris-artpec3-cpufreq.o
+ obj-$(CONFIG_ETRAXFS)			+= cris-etraxfs-cpufreq.o
+ obj-$(CONFIG_IA64_ACPI_CPUFREQ)		+= ia64-acpi-cpufreq.o
+ obj-$(CONFIG_LOONGSON2_CPUFREQ)		+= loongson2_cpufreq.o
++obj-$(CONFIG_LOONGSON1_CPUFREQ)		+= ls1x-cpufreq.o
+ obj-$(CONFIG_SH_CPU_FREQ)		+= sh-cpufreq.o
+ obj-$(CONFIG_SPARC_US2E_CPUFREQ)	+= sparc-us2e-cpufreq.o
+ obj-$(CONFIG_SPARC_US3_CPUFREQ)		+= sparc-us3-cpufreq.o
+diff --git a/drivers/cpufreq/ls1x-cpufreq.c b/drivers/cpufreq/ls1x-cpufreq.c
+new file mode 100644
+index 0000000..2655960
+--- /dev/null
++++ b/drivers/cpufreq/ls1x-cpufreq.c
+@@ -0,0 +1,233 @@
++/*
++ * CPU Frequency Scaling for Loongson 1 SoC
++ *
++ * Copyright (C) 2014 Zhang, Keguang <keguang.zhang@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2. This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/clk.h>
++#include <linux/clk-provider.h>
++#include <linux/cpu.h>
++#include <linux/cpufreq.h>
++#include <linux/delay.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++
++#include <asm/mach-loongson1/cpufreq.h>
++#include <asm/mach-loongson1/loongson1.h>
++
++static struct {
++	struct device *dev;
++	struct clk *clk;	/* CPU clk */
++	struct clk *mux_clk;	/* MUX of CPU clk */
++	struct clk *pll_clk;	/* PLL clk */
++	struct clk *osc_clk;	/* OSC clk */
++	unsigned int max_freq;
++	unsigned int min_freq;
++} ls1x_cpufreq;
++
++static int ls1x_cpufreq_notifier(struct notifier_block *nb,
++				 unsigned long val, void *data)
 +{
-+	int ret;
-+	u8 cmd[16];
-+	size_t cmd_len;
-+	u8 resp_data[CYAPA_TSG_FW_ROW_SIZE / 2 + GEN5_MIN_BL_RESP_LENGTH];
-+	int resp_len;
-+	u16 offset;
-+	u16 cmd_crc;
-+	struct cyapa_tsg_bin_image_data_record *fw_img_record;
++	if (val == CPUFREQ_POSTCHANGE)
++		current_cpu_data.udelay_val = loops_per_jiffy;
 +
-+	fw_img_record = (struct cyapa_tsg_bin_image_data_record *)data;
++	return NOTIFY_OK;
++}
 +
-+	cmd[0] = 0x04;  /* Register address */
-+	cmd[1] = 0x00;
-+	cmd[2] = 0x0e;
-+	cmd[3] = 0x00;
-+	cmd[4] = 0x40;  /* Report id 40h */
-+	cmd[5] = 0x00;
-+	cmd[6] = GEN5_SOP_KEY;
-+	cmd[7] = 0x3d;  /* Read application image command code */
-+	cmd[8] = 0x03;
-+	cmd[9] = 0x00;
-+	offset = row_num * CYAPA_TSG_FW_ROW_SIZE -
-+			CYAPA_TSG_START_OF_APPLICATION;
-+	put_unaligned_le16(offset, &cmd[10]);
-+	cmd[12] = CYAPA_TSG_IMG_READ_SIZE;
-+	cmd_crc = crc_itu_t(0xffff, &cmd[6], 7);
-+	put_unaligned_le16(cmd_crc, &cmd[13]);  /* CRC[15:0] */
-+	cmd[15] = GEN5_EOP_KEY;  /* EOP = 17h */
-+	cmd_len = 16;
++static struct notifier_block ls1x_cpufreq_notifier_block = {
++	.notifier_call = ls1x_cpufreq_notifier
++};
 +
-+	resp_len = CYAPA_TSG_IMG_READ_SIZE + GEN5_MIN_BL_RESP_LENGTH;
-+	ret = cyapa_i2c_pip_cmd_irq_sync(cyapa,
-+			cmd, cmd_len,
-+			resp_data, &resp_len,
-+			50, cyapa_gen5_sort_tsg_pip_bl_resp_data);
-+	if (resp_len != (CYAPA_TSG_IMG_READ_SIZE + GEN5_MIN_BL_RESP_LENGTH) ||
-+			ret || resp_data[2] != GEN5_BL_RESP_REPORT_ID ||
-+			!GEN5_CMD_COMPLETE_SUCCESS(resp_data[5]))
-+		return (ret < 0) ? ret : -EAGAIN;
++static int ls1x_cpufreq_target(struct cpufreq_policy *policy,
++			       unsigned int index)
++{
++	unsigned int old_freq, new_freq;
 +
-+	/* Copy first 64 bytes in the row. */
-+	memcpy(&fw_img_record->record_data[0], &resp_data[8],
-+			CYAPA_TSG_IMG_READ_SIZE);
++	old_freq = policy->cur;
++	new_freq = policy->freq_table[index].frequency;
 +
-+	if (row_num == CYAPA_TSG_IMG_APP_INTEGRITY_ROW_NUM) {
-+		/* Last row's rest 64 bytes are bootloader metadata,
-+		 * it's not allowed to be read out, will respond with error. */
-+		memset(&fw_img_record->record_data[CYAPA_TSG_IMG_READ_SIZE],
-+			0, CYAPA_TSG_IMG_READ_SIZE);
-+		goto skip_last_row;
-+	}
++	/*
++	 * The procedure of reconfiguring CPU clk is as below.
++	 *
++	 *  - Reparent CPU clk to OSC clk
++	 *  - Reset CPU clock (very important)
++	 *  - Reconfigure CPU DIV
++	 *  - Reparent CPU clk back to CPU DIV clk
++	 */
 +
-+	/* Read next 64 bytes in the row. */
-+	offset = offset + CYAPA_TSG_IMG_READ_SIZE;
-+	put_unaligned_le16(offset, &cmd[10]);
-+	cmd_crc = crc_itu_t(0xffff, &cmd[6], 7);
-+	put_unaligned_le16(cmd_crc, &cmd[13]);  /* CRC[15:0] */
-+	ret = cyapa_i2c_pip_cmd_irq_sync(cyapa,
-+			cmd, cmd_len,
-+			resp_data, &resp_len,
-+			500, cyapa_gen5_sort_tsg_pip_bl_resp_data);
-+	if (resp_len != (CYAPA_TSG_IMG_READ_SIZE + GEN5_MIN_BL_RESP_LENGTH) ||
-+			ret || resp_data[2] != GEN5_BL_RESP_REPORT_ID ||
-+			!GEN5_CMD_COMPLETE_SUCCESS(resp_data[5]))
-+		return (ret < 0) ? ret : -EAGAIN;
-+
-+	/* Copy last 64 bytes in the row. */
-+	memcpy(&fw_img_record->record_data[CYAPA_TSG_IMG_READ_SIZE],
-+		&resp_data[8], CYAPA_TSG_IMG_READ_SIZE);
-+
-+skip_last_row:
-+	fw_img_record->flash_array_id = 0;
-+	put_unaligned_be16(row_num, &fw_img_record->row_number);
-+	put_unaligned_be16(CYAPA_TSG_FW_ROW_SIZE, &fw_img_record->record_len);
++	dev_dbg(ls1x_cpufreq.dev, "%u KHz --> %u KHz\n", old_freq, new_freq);
++	clk_set_parent(policy->clk, ls1x_cpufreq.osc_clk);
++	__raw_writel(__raw_readl(LS1X_CLK_PLL_DIV) | RST_CPU_EN | RST_CPU,
++		     LS1X_CLK_PLL_DIV);
++	__raw_writel(__raw_readl(LS1X_CLK_PLL_DIV) & ~(RST_CPU_EN | RST_CPU),
++		     LS1X_CLK_PLL_DIV);
++	clk_set_rate(ls1x_cpufreq.mux_clk, new_freq * 1000);
++	clk_set_parent(policy->clk, ls1x_cpufreq.mux_clk);
 +
 +	return 0;
 +}
 +
-+static int cyapa_gen5_read_fw(struct cyapa *cyapa)
++static int ls1x_cpufreq_init(struct cpufreq_policy *policy)
 +{
-+	int ret;
-+	int fw_img_head_size;
-+	int fw_img_record_size;
-+	int row_index;
-+	int array_index;
-+	u32 img_start;
-+	u16 img_len;
-+	u16 img_start_row;
-+	u16 img_end_row;
-+	struct cyapa_tsg_bin_image_data_record app_integrity;
-+	u8 *record_data;
++	struct cpufreq_frequency_table *freq_tbl;
++	unsigned int pll_freq, freq;
++	int steps, i, ret;
 +
-+	ret = cyapa_gen5_bl_enter(cyapa);
-+	if (ret)
-+		goto err;
++	pll_freq = clk_get_rate(ls1x_cpufreq.pll_clk) / 1000;
 +
-+	cyapa_empty_pip_output_data(cyapa, NULL, NULL, NULL);
-+
-+	fw_img_head_size = sizeof(struct cyapa_tsg_bin_image_head);
-+	fw_img_record_size = sizeof(struct cyapa_tsg_bin_image_data_record);
-+
-+	/* Read app integrity block data. */
-+	row_index = CYAPA_TSG_IMG_APP_INTEGRITY_ROW_NUM;
-+	ret = cyapa_gen5_read_fw_bytes(cyapa, row_index, (u8 *)&app_integrity);
-+	if (ret)
-+		goto err;
-+	img_start = get_unaligned_le32(&app_integrity.record_data[16]);
-+	img_len = get_unaligned_le16(&app_integrity.record_data[20]);
-+	if ((img_start + img_len) % CYAPA_TSG_FW_ROW_SIZE)
-+		goto err;
-+	img_start_row = img_start / CYAPA_TSG_FW_ROW_SIZE;
-+	img_end_row = (img_start + img_len) / CYAPA_TSG_FW_ROW_SIZE - 1;
-+
-+	/* Allocate memory for image. */
-+	cyapa->fw_image_size = fw_img_head_size +
-+		(img_end_row -  img_start_row + 2) * fw_img_record_size;
-+	cyapa->fw_image = devm_kzalloc(&cyapa->client->dev,
-+					cyapa->fw_image_size, GFP_KERNEL);
-+	if (!cyapa->fw_image) {
++	steps = 1 << DIV_CPU_WIDTH;
++	freq_tbl = kzalloc(sizeof(*freq_tbl) * steps, GFP_KERNEL);
++	if (!freq_tbl) {
++		dev_err(ls1x_cpufreq.dev,
++			"failed to alloc cpufreq_frequency_table\n");
 +		ret = -ENOMEM;
-+		goto err;
++		goto out;
 +	}
 +
-+	/* Set image head data. */
-+	memcpy(cyapa->fw_image, &cyapa->fw_img_head, fw_img_head_size);
-+
-+	/* Read image blocks. */
-+	for (row_index = img_start_row, array_index = 0;
-+			row_index <= img_end_row;
-+			row_index++, array_index++) {
-+		record_data = &cyapa->fw_image[fw_img_head_size +
-+				array_index * fw_img_record_size];
-+		ret = cyapa_gen5_read_fw_bytes(cyapa, row_index, record_data);
-+		if (ret)
-+			goto err;
++	for (i = 0; i < (steps - 1); i++) {
++		freq = pll_freq / (i + 1);
++		if ((freq < ls1x_cpufreq.min_freq) ||
++		    (freq > ls1x_cpufreq.max_freq))
++			freq_tbl[i].frequency = CPUFREQ_ENTRY_INVALID;
++		else
++			freq_tbl[i].frequency = freq;
++		dev_dbg(ls1x_cpufreq.dev,
++			"cpufreq table: index %d: frequency %d\n", i,
++			freq_tbl[i].frequency);
 +	}
++	freq_tbl[i].frequency = CPUFREQ_TABLE_END;
 +
-+	/* Append last app integrity block data. */
-+	record_data = &cyapa->fw_image[fw_img_head_size +
-+				array_index * fw_img_record_size];
-+	memcpy(record_data, &app_integrity, fw_img_record_size);
-+
-+err:
-+	if (ret) {
-+		if (cyapa->fw_image)
-+			devm_kfree(&cyapa->client->dev, cyapa->fw_image);
-+		cyapa->fw_image = NULL;
-+		cyapa->fw_image_size = 0;
-+	}
++	policy->clk = ls1x_cpufreq.clk;
++	ret = cpufreq_generic_init(policy, freq_tbl, 0);
++	if (ret)
++		kfree(freq_tbl);
++out:
 +	return ret;
 +}
 +
- static int cyapa_gen5_do_fw_update(struct cyapa *cyapa,
- 		const struct firmware *fw)
- {
-@@ -2199,6 +2353,116 @@ resume_scanning:
- 	return ret + err;
- }
- 
-+static int cyapa_gen5_read_raw_data(struct cyapa *cyapa)
++static int ls1x_cpufreq_exit(struct cpufreq_policy *policy)
 +{
-+	int ret, err;
-+	int raw_cap_mutual_max, raw_cap_mutual_min, raw_cap_mutual_ave;
-+	int raw_cap_self_max, raw_cap_self_min, raw_cap_self_ave;
-+	int offset;
-+	int data_size, max, min, ave;
-+	ktime_t time_mono;
-+
-+	offset = 0;
-+	if (!cyapa->tp_raw_data) {
-+		if (cyapa->state != CYAPA_STATE_GEN5_APP ||
-+			!cyapa->electrodes_x || !cyapa->electrodes_y)
-+			return  -EINVAL;
-+
-+		cyapa->tp_raw_data_size = sizeof(s32) * (cyapa->electrodes_x *
-+			cyapa->electrodes_y + cyapa->electrodes_x +
-+			cyapa->electrodes_y) + GEN5_RAW_DATA_HEAD_SIZE;
-+		/*
-+		 * This buffer will be hold after used until the driver is
-+		 * unloaded, the purpose of it is to improve the performace
-+		 * to avoid frequently allocate and release the buffer.
-+		 */
-+		cyapa->tp_raw_data = devm_kzalloc(&cyapa->client->dev,
-+					cyapa->tp_raw_data_size, GFP_KERNEL);
-+		if (!cyapa->tp_raw_data)
-+			return -ENOMEM;
-+		memset(cyapa->tp_raw_data, 0, cyapa->tp_raw_data_size);
-+	}
-+
-+
-+	/*
-+	 * 1. Suspend Scanning.
-+	 *
-+	 * After suspend scanning, the raw data will not be updated,
-+	 * so the time of the raw data is before scanning suspended.
-+	 */
-+	time_mono = ktime_get();
-+	ret = cyapa_gen5_suspend_scanning(cyapa);
-+	if (ret)
-+		return ret;
-+
-+	/* 2. Get the correct electrodes_rx number. */
-+	if (cyapa->electrodes_rx == 0) {
-+		/*
-+		 * Through the read global idac interface to get the Rx number.
-+		 * this value is useful to the raw data map.
-+		 */
-+		data_size = 0;
-+		err = cyapa_gen5_read_idac_data(cyapa,
-+				GEN5_CMD_RETRIEVE_DATA_STRUCTURE,
-+				GEN5_RETRIEVE_MUTUAL_PWC_DATA,
-+				&data_size, &max, &min, &ave);
-+		if (err || cyapa->electrodes_rx == 0)
-+			goto resume_scanning;
-+	}
-+
-+	/* 3. Execuate panel scan. It must be executed before read data. */
-+	err = cyapa_gen5_execute_panel_scan(cyapa);
-+	if (err)
-+		goto resume_scanning;
-+
-+	/* 4. Retrieve panel scan, mutual cap raw data. */
-+	offset = GEN5_RAW_DATA_HEAD_SIZE;
-+	err = cyapa_gen5_read_panel_scan_raw_data(cyapa,
-+				GEN5_CMD_RETRIEVE_PANEL_SCAN,
-+				GEN5_PANEL_SCAN_MUTUAL_DIFFCOUNT,
-+				cyapa->electrodes_x * cyapa->electrodes_y,
-+				&raw_cap_mutual_max, &raw_cap_mutual_min,
-+				&raw_cap_mutual_ave,
-+				cyapa->tp_raw_data + offset);
-+	if (err)
-+		goto resume_scanning;
-+
-+	offset += sizeof(s32) * cyapa->electrodes_x * cyapa->electrodes_y;
-+
-+	/* 5. Retrieve panel scan, self cap raw data. */
-+	err = cyapa_gen5_read_panel_scan_raw_data(cyapa,
-+				GEN5_CMD_RETRIEVE_PANEL_SCAN,
-+				GEN5_PANEL_SCAN_SELF_DIFFCOUNT,
-+				cyapa->electrodes_x + cyapa->electrodes_y,
-+				&raw_cap_self_max, &raw_cap_self_min,
-+				&raw_cap_self_ave,
-+				cyapa->tp_raw_data + offset);
-+	if (err)
-+		goto resume_scanning;
-+
-+	offset += sizeof(s32) * (cyapa->electrodes_x + cyapa->electrodes_y);
-+
-+resume_scanning:
-+	/* 6. Resume Scanning*/
-+	ret = cyapa_gen5_resume_scanning(cyapa);
-+	if (ret || err)
-+		return ret ? ret : err;
-+
-+	*((struct timeval *)&cyapa->tp_raw_data[0]) =
-+						ktime_to_timeval(time_mono);
-+	cyapa->tp_raw_data[16] = (u8)cyapa->electrodes_x;
-+	cyapa->tp_raw_data[17] = (u8)cyapa->electrodes_y;
-+	cyapa->tp_raw_data[18] = (u8)cyapa->x_origin;
-+	cyapa->tp_raw_data[19] = (u8)cyapa->y_origin;
-+	cyapa->tp_raw_data[20] = (u8)sizeof(s32);
-+	cyapa->tp_raw_data[21] = (u8)sizeof(s32);
-+	cyapa->tp_raw_data[22] = (u8)cyapa->electrodes_rx;
-+	cyapa->tp_raw_data[23] = 0;  /* Reserved. */
-+
-+	cyapa->tp_raw_data_size = offset;
++	kfree(policy->freq_table);
 +	return 0;
 +}
 +
- static bool cyapa_gen5_sort_system_info_data(struct cyapa *cyapa,
- 		u8 *buf, int len)
- {
-@@ -2609,6 +2873,9 @@ const struct cyapa_dev_ops cyapa_gen5_ops = {
- 	.show_baseline = cyapa_gen5_show_baseline,
- 	.calibrate_store = cyapa_gen5_do_calibrate,
- 
-+	.read_fw = cyapa_gen5_read_fw,
-+	.read_raw_data = cyapa_gen5_read_raw_data,
++static struct cpufreq_driver ls1x_cpufreq_driver = {
++	.name		= "cpufreq-ls1x",
++	.flags		= CPUFREQ_STICKY | CPUFREQ_NEED_INITIAL_FREQ_CHECK,
++	.verify		= cpufreq_generic_frequency_table_verify,
++	.target_index	= ls1x_cpufreq_target,
++	.get		= cpufreq_generic_get,
++	.init		= ls1x_cpufreq_init,
++	.exit		= ls1x_cpufreq_exit,
++	.attr		= cpufreq_generic_attr,
++};
 +
- 	.initialize = cyapa_gen5_initialize,
- 
- 	.state_parse = cyapa_gen5_state_parse,
++static int ls1x_cpufreq_remove(struct platform_device *pdev)
++{
++	cpufreq_unregister_notifier(&ls1x_cpufreq_notifier_block,
++				    CPUFREQ_TRANSITION_NOTIFIER);
++	cpufreq_unregister_driver(&ls1x_cpufreq_driver);
++	clk_put(ls1x_cpufreq.osc_clk);
++	clk_put(ls1x_cpufreq.clk);
++
++	return 0;
++}
++
++static int ls1x_cpufreq_probe(struct platform_device *pdev)
++{
++	struct plat_ls1x_cpufreq *pdata = pdev->dev.platform_data;
++	struct clk *clk;
++	int ret;
++
++	if (!pdata)
++		return -EINVAL;
++	if (!pdata->clk_name)
++		return -EINVAL;
++	if (!pdata->osc_clk_name)
++		return -EINVAL;
++
++	ls1x_cpufreq.dev = &pdev->dev;
++
++	clk = clk_get(NULL, pdata->clk_name);
++	if (IS_ERR(clk)) {
++		dev_err(ls1x_cpufreq.dev, "unable to get %s clock\n",
++			pdata->clk_name);
++		ret = PTR_ERR(clk);
++		goto out;
++	}
++	ls1x_cpufreq.clk = clk;
++
++	clk = clk_get_parent(clk);
++	if (IS_ERR(clk)) {
++		dev_err(ls1x_cpufreq.dev, "unable to get parent of %s clock\n",
++			__clk_get_name(ls1x_cpufreq.clk));
++		ret = PTR_ERR(clk);
++		goto err_mux;
++	}
++	ls1x_cpufreq.mux_clk = clk;
++
++	clk = clk_get_parent(clk);
++	if (IS_ERR(clk)) {
++		dev_err(ls1x_cpufreq.dev, "unable to get parent of %s clock\n",
++			__clk_get_name(ls1x_cpufreq.mux_clk));
++		ret = PTR_ERR(clk);
++		goto err_mux;
++	}
++	ls1x_cpufreq.pll_clk = clk;
++
++	clk = clk_get(NULL, pdata->osc_clk_name);
++	if (IS_ERR(clk)) {
++		dev_err(ls1x_cpufreq.dev, "unable to get %s clock\n",
++			pdata->osc_clk_name);
++		ret = PTR_ERR(clk);
++		goto err_mux;
++	}
++	ls1x_cpufreq.osc_clk = clk;
++
++	ls1x_cpufreq.max_freq = pdata->max_freq;
++	ls1x_cpufreq.min_freq = pdata->min_freq;
++
++	ret = cpufreq_register_driver(&ls1x_cpufreq_driver);
++	if (ret) {
++		dev_err(ls1x_cpufreq.dev,
++			"failed to register cpufreq driver: %d\n", ret);
++		goto err_driver;
++	}
++
++	ret = cpufreq_register_notifier(&ls1x_cpufreq_notifier_block,
++					CPUFREQ_TRANSITION_NOTIFIER);
++
++	if (!ret)
++		goto out;
++
++	dev_err(ls1x_cpufreq.dev, "failed to register cpufreq notifier: %d\n",
++		ret);
++
++	cpufreq_unregister_driver(&ls1x_cpufreq_driver);
++err_driver:
++	clk_put(ls1x_cpufreq.osc_clk);
++err_mux:
++	clk_put(ls1x_cpufreq.clk);
++out:
++	return ret;
++}
++
++static struct platform_driver ls1x_cpufreq_platdrv = {
++	.driver = {
++		.name	= "ls1x-cpufreq",
++		.owner	= THIS_MODULE,
++	},
++	.probe		= ls1x_cpufreq_probe,
++	.remove		= ls1x_cpufreq_remove,
++};
++
++module_platform_driver(ls1x_cpufreq_platdrv);
++
++MODULE_AUTHOR("Kelvin Cheung <keguang.zhang@gmail.com>");
++MODULE_DESCRIPTION("Loongson 1 CPUFreq driver");
++MODULE_LICENSE("GPL");
 -- 
 1.9.1
 
