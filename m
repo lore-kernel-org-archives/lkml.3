@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756095AbaJOCaj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 22:30:39 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:56331 "EHLO
+	id S1756075AbaJOCah (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 22:30:37 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:56328 "EHLO
 	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932772AbaJOC0F (ORCPT
+	with ESMTP id S932771AbaJOC0F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 14 Oct 2014 22:26:05 -0400
 From: Yijing Wang <wangyijing@huawei.com>
@@ -33,9 +33,9 @@ CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Thierry Reding <thierry.reding@gmail.com>,
         "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
         Liviu Dudau <liviu@dudau.co.uk>, Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH v3 19/27] MIPS/Xlp/MSI: Use MSI chip framework to configure MSI/MSI-X irq
-Date: Wed, 15 Oct 2014 11:07:07 +0800
-Message-ID: <1413342435-7876-20-git-send-email-wangyijing@huawei.com>
+Subject: [PATCH v3 20/27] MIPS/Xlr/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+Date: Wed, 15 Oct 2014 11:07:08 +0800
+Message-ID: <1413342435-7876-21-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1413342435-7876-1-git-send-email-wangyijing@huawei.com>
 References: <1413342435-7876-1-git-send-email-wangyijing@huawei.com>
@@ -44,87 +44,75 @@ Content-Type: text/plain
 X-Originating-IP: [10.175.100.166]
 X-CFilter-Loop: Reflected
 X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020209.543DDB37.00B8,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	refid=str=0001.0A020206.543DDB37.004D,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
 	ip=0.0.0.0,
 	so=2013-05-26 15:14:31,
 	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 0054f166a817865d82e6391a1024f9e5
+X-Mirapoint-Loop-Id: 2a592ec8fea66c42bba217ed0721ce4c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Use MSI chip framework instead of arch MSI functions to configure
-MSI/MSI-X IRQ. So we can manage MSI/MSI-X irq in a unified framework.
+MSI/MSI-X irq. So we can manage MSI/MSI-X irq in a unified framework.
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- arch/mips/include/asm/netlogic/xlp-hal/pcibus.h |    1 +
- arch/mips/pci/msi-xlp.c                         |   11 +++++++++--
- arch/mips/pci/pci-xlp.c                         |    3 +++
- 3 files changed, 13 insertions(+), 2 deletions(-)
+ arch/mips/pci/pci-xlr.c |   17 +++++++++++++++--
+ 1 files changed, 15 insertions(+), 2 deletions(-)
 
-diff --git a/arch/mips/include/asm/netlogic/xlp-hal/pcibus.h b/arch/mips/include/asm/netlogic/xlp-hal/pcibus.h
-index 91540f4..90646ad 100644
---- a/arch/mips/include/asm/netlogic/xlp-hal/pcibus.h
-+++ b/arch/mips/include/asm/netlogic/xlp-hal/pcibus.h
-@@ -103,6 +103,7 @@
- 
- #ifdef CONFIG_PCI_MSI
- void xlp_init_node_msi_irqs(int node, int link);
-+extern struct msi_chip xlp_chip;
- #else
- static inline void xlp_init_node_msi_irqs(int node, int link) {}
- #endif
-diff --git a/arch/mips/pci/msi-xlp.c b/arch/mips/pci/msi-xlp.c
-index e469dc7..cca2257 100644
---- a/arch/mips/pci/msi-xlp.c
-+++ b/arch/mips/pci/msi-xlp.c
-@@ -245,7 +245,8 @@ static struct irq_chip xlp_msix_chip = {
- 	.irq_unmask	= unmask_msi_irq,
+diff --git a/arch/mips/pci/pci-xlr.c b/arch/mips/pci/pci-xlr.c
+index 0dde803..0e611de 100644
+--- a/arch/mips/pci/pci-xlr.c
++++ b/arch/mips/pci/pci-xlr.c
+@@ -149,6 +149,8 @@ static struct resource nlm_pci_io_resource = {
+ 	.flags		= IORESOURCE_IO,
  };
  
--void arch_teardown_msi_irq(unsigned int irq)
-+static void xlp_teardown_msi_irq(struct msi_chip *chip,
-+		unsigned int irq)
- {
- }
- 
-@@ -450,7 +451,8 @@ static int xlp_setup_msix(uint64_t lnkbase, int node, int link,
- 	return 0;
- }
- 
--int arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
-+static int xlp_setup_msi_irq(struct msi_chip *chip,
-+		struct pci_dev *dev, struct msi_desc *desc)
- {
- 	struct pci_dev *lnkdev;
- 	uint64_t lnkbase;
-@@ -472,6 +474,11 @@ int arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
- 		return xlp_setup_msi(lnkbase, node, link, desc);
- }
- 
-+struct msi_chip xlp_chip = {
-+	.setup_irq = xlp_setup_msi_irq,
-+	.teardown_irq = xlp_teardown_msi_irq,
-+};
++static struct msi_chip xlr_msi_chip;
 +
- void __init xlp_init_node_msi_irqs(int node, int link)
- {
- 	struct nlm_soc_info *nodep;
-diff --git a/arch/mips/pci/pci-xlp.c b/arch/mips/pci/pci-xlp.c
-index 7babf01..5d7b6a0 100644
---- a/arch/mips/pci/pci-xlp.c
-+++ b/arch/mips/pci/pci-xlp.c
-@@ -174,6 +174,9 @@ struct pci_controller nlm_pci_controller = {
+ struct pci_controller nlm_pci_controller = {
+ 	.index		= 0,
+ 	.pci_ops	= &nlm_pci_ops,
+@@ -156,6 +158,9 @@ struct pci_controller nlm_pci_controller = {
  	.mem_offset	= 0x00000000UL,
  	.io_resource	= &nlm_pci_io_resource,
  	.io_offset	= 0x00000000UL,
 +#ifdef CONFIG_PCI_MSI
-+	.msi_chip = &xlp_chip,
++	.msi_chip = &xlr_msi_chip,
 +#endif
  };
  
- struct pci_dev *xlp_get_pcie_link(const struct pci_dev *dev)
+ /*
+@@ -214,11 +219,13 @@ static int get_irq_vector(const struct pci_dev *dev)
+ }
+ 
+ #ifdef CONFIG_PCI_MSI
+-void arch_teardown_msi_irq(unsigned int irq)
++static void xlr_teardown_msi_irq(struct msi_chip *chip,
++		unsigned int irq)
+ {
+ }
+ 
+-int arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
++static int xlr_setup_msi_irq(struct msi_chip *chip,
++		struct pci_dev *dev, struct msi_desc *desc)
+ {
+ 	struct msi_msg msg;
+ 	struct pci_dev *lnk;
+@@ -263,6 +270,12 @@ int arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
+ 	write_msi_msg(irq, &msg);
+ 	return 0;
+ }
++
++static struct msi_chip xlr_msi_chip = {
++	.setup_irq = xlr_setup_msi_irq,
++	.teardown_irq = xlr_teardown_msi_irq,
++};
++
+ #endif
+ 
+ /* Extra ACK needed for XLR on chip PCI controller */
 -- 
 1.7.1
 
