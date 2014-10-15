@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751408AbaJOTRa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 15:17:30 -0400
-Received: from mail.kernel.org ([198.145.19.201]:60633 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751059AbaJOTR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 15:17:29 -0400
-Date: Wed, 15 Oct 2014 16:17:25 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Yasser Shalabi <yassershalabi@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, paulus@samba.org, a.p.zijlstra@chello.nl
-Subject: Re: [PATCH] perf: fix for double free in tools/perf stat
-Message-ID: <20141015191725.GQ3198@kernel.org>
-References: <1412437077-13109-1-git-send-email-yassershalabi@gmail.com>
- <871tqkgus2.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <871tqkgus2.fsf@sejong.aot.lge.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751451AbaJOTUc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 15:20:32 -0400
+Received: from mail-oi0-f74.google.com ([209.85.218.74]:36252 "EHLO
+	mail-oi0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751130AbaJOTUa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 15:20:30 -0400
+From: Yu Zhao <yuzhao@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Hugh Dickins <hughd@google.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Bob Liu <lliubbo@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        David Rientjes <rientjes@google.com>, Vlastimil Babka <vbabka@suse.cz>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Yu Zhao <yuzhao@google.com>
+Subject: [PATCH v2 2/2] mm: verify compound order when freeing a page
+Date: Wed, 15 Oct 2014 12:20:05 -0700
+Message-Id: <1413400805-15547-2-git-send-email-yuzhao@google.com>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1413400805-15547-1-git-send-email-yuzhao@google.com>
+References: <1413400805-15547-1-git-send-email-yuzhao@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Oct 07, 2014 at 05:15:41PM +0900, Namhyung Kim escreveu:
-> Hi Yasser,
-> 
-> On Sat,  4 Oct 2014 11:37:57 -0400, Yasser Shalabi wrote:
-> > Fix for double free bug in tools/perf due to dangling thread_map pointer in perf_evlist struct.
-> > Code path excercised when perf stat -C switch is used but not set and is followed by another switch.
-> > Example: perf stat -C -e. 
-> > Signed-off-by: Yasser Shalabi <yassershalabi@gmail.com>
-> >
-> > ---
-> >  tools/perf/util/evlist.c |    1 +
-> >  1 file changed, 1 insertion(+)
-> >
-> > diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-> > index 814e954..09af633 100644
-> > --- a/tools/perf/util/evlist.c
-> > +++ b/tools/perf/util/evlist.c
-> > @@ -845,6 +845,7 @@ int perf_evlist__create_maps(struct perf_evlist *evlist, struct target *target)
-> >  
-> >  out_delete_threads:
-> >  	thread_map__delete(evlist->threads);
-> > +	evlist->threads = 0;
-> 
-> Nitpick - I think NULL is preferred rather than 0.
+This allows us to catch the bug fixed in the previous patch
+(mm: free compound page with correct order).
 
-yeah, I fixed that.
- 
-> Other than that,
-> 
-> Acked-by: Namhyung Kim <namhyung@kernel.org>
+Here we also verify whether a page is tail page or not -- tail
+pages are supposed to be freed along with their head, not by
+themselves.
 
-Thanks, applied!
+Reviewed-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Signed-off-by: Yu Zhao <yuzhao@google.com>
+---
+ mm/page_alloc.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 736d8e1..5bf44e4 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -750,6 +750,9 @@ static bool free_pages_prepare(struct page *page, unsigned int order)
+ 	int i;
+ 	int bad = 0;
  
-> Thanks,
-> Namhyung
-> 
-> 
-> >  	return -1;
-> >  }
++	VM_BUG_ON_PAGE(PageTail(page), page);
++	VM_BUG_ON_PAGE(PageHead(page) && compound_order(page) != order, page);
++
+ 	trace_mm_page_free(page, order);
+ 	kmemcheck_free_shadow(page, order);
+ 
+-- 
+2.1.0.rc2.206.gedb03e5
+
