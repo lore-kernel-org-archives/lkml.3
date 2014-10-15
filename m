@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932812AbaJOCdx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 22:33:53 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:39158 "EHLO
+	id S932938AbaJOCfO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 22:35:14 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:39420 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932676AbaJOCZs (ORCPT
+	with ESMTP id S932682AbaJOCZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 22:25:48 -0400
+	Tue, 14 Oct 2014 22:25:47 -0400
 From: Yijing Wang <wangyijing@huawei.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
@@ -33,9 +33,9 @@ CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Thierry Reding <thierry.reding@gmail.com>,
         "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
         Liviu Dudau <liviu@dudau.co.uk>, Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH v3 04/27] arm/MSI: Save MSI chip in pci_sys_data
-Date: Wed, 15 Oct 2014 11:06:52 +0800
-Message-ID: <1413342435-7876-5-git-send-email-wangyijing@huawei.com>
+Subject: [PATCH v3 12/27] x86/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+Date: Wed, 15 Oct 2014 11:07:00 +0800
+Message-ID: <1413342435-7876-13-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1413342435-7876-1-git-send-email-wangyijing@huawei.com>
 References: <1413342435-7876-1-git-send-email-wangyijing@huawei.com>
@@ -47,128 +47,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Saving msi chip in pci_sys_data can make pci bus and
-devices don't need to know msi chip detail, it also
-make pci enumeration code be decoupled from msi chip.
-In fact, all pci devices under the same pci hostbridge
-share same msi chip. So msi chip should be seen as one
-of resources or attributes to be initialized in pci host
-bridge driver. Currently, pci hostbridge drivers create
-pci_host_bridge in pci_create_root_bus(), and pass arch
-specific pci sysdata to core pci scan functions. So pci
-arch sysdata is good place to save msi chip.
+Use MSI chip framework instead of arch MSI functions to configure
+MSI/MSI-X irq. So we can manage MSI/MSI-X irq in a unified framework.
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- arch/arm/include/asm/mach/pci.h |    6 ++++++
- arch/arm/include/asm/pci.h      |    9 +++++++++
- arch/arm/kernel/bios32.c        |    3 +++
- drivers/pci/msi.c               |    6 ++++++
- include/linux/pci.h             |    9 +++++++++
- 5 files changed, 33 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/pci.h     |   13 +++++++++++++
+ arch/x86/kernel/apic/io_apic.c |   19 +++++++++++++++++++
+ arch/x86/pci/acpi.c            |    1 +
+ arch/x86/pci/common.c          |    3 +++
+ 4 files changed, 36 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/include/asm/mach/pci.h b/arch/arm/include/asm/mach/pci.h
-index 7fc4278..59b0d87 100644
---- a/arch/arm/include/asm/mach/pci.h
-+++ b/arch/arm/include/asm/mach/pci.h
-@@ -22,6 +22,9 @@ struct hw_pci {
- #ifdef CONFIG_PCI_DOMAINS
- 	int		domain;
+diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
+index 0892ea0..f41b58a 100644
+--- a/arch/x86/include/asm/pci.h
++++ b/arch/x86/include/asm/pci.h
+@@ -20,6 +20,9 @@ struct pci_sysdata {
+ #ifdef CONFIG_X86_64
+ 	void		*iommu;		/* IOMMU private data */
  #endif
 +#ifdef CONFIG_PCI_MSI
 +	struct msi_chip *msi_chip;
 +#endif
- 	struct pci_ops	*ops;
- 	int		nr_controllers;
- 	void		**private_data;
-@@ -47,6 +50,9 @@ struct pci_sys_data {
- #ifdef CONFIG_PCI_DOMAINS
- 	int		domain;
- #endif
-+#ifdef CONFIG_PCI_MSI
-+	struct msi_chip *msi_chip;
-+#endif
- 	struct list_head node;
- 	int		busnr;		/* primary bus number			*/
- 	u64		mem_offset;	/* bus->cpu memory mapping offset	*/
-diff --git a/arch/arm/include/asm/pci.h b/arch/arm/include/asm/pci.h
-index 7e95d85..b562c09 100644
---- a/arch/arm/include/asm/pci.h
-+++ b/arch/arm/include/asm/pci.h
-@@ -31,6 +31,15 @@ static inline int pci_proc_domain(struct pci_bus *bus)
+ };
+ 
+ extern int pci_routeirq;
+@@ -41,6 +44,15 @@ static inline int pci_proc_domain(struct pci_bus *bus)
  }
- #endif /* CONFIG_PCI_DOMAINS */
+ #endif
  
 +#ifdef CONFIG_PCI_MSI
 +static inline struct msi_chip *pci_msi_chip(struct pci_bus *bus)
 +{
-+	struct pci_sys_data *root = bus->sysdata;
++	struct pci_sysdata *sd = bus->sysdata;
 +
-+	return root->msi_chip;
++	return sd->msi_chip;
 +}
 +#endif
 +
- /*
-  * The PCI address space does equal the physical memory address space.
-  * The networking and block device layers use this boolean for bounce
-diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
-index 17a26c1..a19038d 100644
---- a/arch/arm/kernel/bios32.c
-+++ b/arch/arm/kernel/bios32.c
-@@ -471,6 +471,9 @@ static void pcibios_init_hw(struct device *parent, struct hw_pci *hw,
- #ifdef CONFIG_PCI_DOMAINS
- 		sys->domain  = hw->domain;
- #endif
-+#ifdef CONFIG_PCI_MSI
-+		sys->msi_chip = hw->msi_chip;
-+#endif
- 		sys->busnr   = busnr;
- 		sys->swizzle = hw->swizzle;
- 		sys->map_irq = hw->map_irq;
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index 22e413c..f11108c 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -35,6 +35,9 @@ int __weak arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
- 	struct msi_chip *chip = dev->bus->msi;
- 	int err;
+ /* Can be used to override the logic in pci_scan_bus for skipping
+    already-configured bus numbers - to be used for buggy BIOSes
+    or architectures with incomplete PCI setup by the loader */
+@@ -101,6 +113,7 @@ void native_teardown_msi_irq(unsigned int irq);
+ void native_restore_msi_irqs(struct pci_dev *dev);
+ int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
+ 		  unsigned int irq_base, unsigned int irq_offset);
++extern struct msi_chip *x86_msi_chip;
+ #else
+ #define native_setup_msi_irqs		NULL
+ #define native_teardown_msi_irq		NULL
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 29290f5..ec79b38 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -3227,11 +3227,30 @@ int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ 	return 0;
+ }
  
-+	if (!chip)
-+		chip = pci_msi_chip(dev->bus);
++static int __native_setup_msi_irqs(struct msi_chip *chip,
++		struct pci_dev *dev, int nvec, int type)
++{
++	return native_setup_msi_irqs(dev, nvec, type);
++}
 +
- 	if (!chip || !chip->setup_irq)
- 		return -EINVAL;
+ void native_teardown_msi_irq(unsigned int irq)
+ {
+ 	irq_free_hwirq(irq);
+ }
  
-@@ -50,6 +53,9 @@ void __weak arch_teardown_msi_irq(unsigned int irq)
- 	struct msi_desc *entry = irq_get_msi_desc(irq);
- 	struct msi_chip *chip = entry->dev->bus->msi;
- 
-+	if (!chip)
-+		chip = pci_msi_chip(entry->dev->bus);
++static void __native_teardown_msi_irq(struct msi_chip *chip,
++		unsigned int irq)
++{
++	native_teardown_msi_irq(irq);
++}
 +
- 	if (!chip || !chip->teardown_irq)
++static struct msi_chip native_msi_chip = {
++	.setup_irqs = __native_setup_msi_irqs,
++	.teardown_irq = __native_teardown_msi_irq,
++};
++
++struct msi_chip *x86_msi_chip = &native_msi_chip;
++
+ #ifdef CONFIG_DMAR_TABLE
+ static int
+ dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
+diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+index cfd1b13..6341d6d 100644
+--- a/arch/x86/pci/acpi.c
++++ b/arch/x86/pci/acpi.c
+@@ -508,6 +508,7 @@ struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
+ 
+ 	sd = &info->sd;
+ 	sd->domain = domain;
++	sd->msi_chip = x86_msi_chip;
+ 	sd->node = node;
+ 	sd->companion = device;
+ 
+diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
+index 7b20bcc..0b2319a 100644
+--- a/arch/x86/pci/common.c
++++ b/arch/x86/pci/common.c
+@@ -468,6 +468,9 @@ void pcibios_scan_root(int busnum)
  		return;
- 
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 9cd2721..7a48b40 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -1433,6 +1433,15 @@ static inline int pci_get_new_domain_nr(void) { return -ENOSYS; }
- 
- #include <asm/pci.h>
- 
-+/* Just avoid compile error, will be clean up later */
+ 	}
+ 	sd->node = x86_pci_root_bus_node(busnum);
 +#ifdef CONFIG_PCI_MSI
-+
-+#ifndef pci_msi_chip
-+#define pci_msi_chip(bus)	NULL
++	sd->msi_chip = x86_msi_chip;
 +#endif
-+
-+#endif
-+
- /* these helpers provide future and backwards compatibility
-  * for accessing popular PCI BAR info */
- #define pci_resource_start(dev, bar)	((dev)->resource[(bar)].start)
+ 	x86_pci_root_bus_resources(busnum, &resources);
+ 	printk(KERN_DEBUG "PCI: Probing PCI hardware (bus %02x)\n", busnum);
+ 	bus = pci_scan_root_bus(NULL, busnum, &pci_root_ops, sd, &resources);
 -- 
 1.7.1
 
