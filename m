@@ -1,143 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751349AbaJOHGF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 03:06:05 -0400
-Received: from mail-by2on0124.outbound.protection.outlook.com ([207.46.100.124]:61437
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750775AbaJOHGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 03:06:03 -0400
-From: Jingchang Lu <jingchang.lu@freescale.com>
-To: <gregkh@linuxfoundation.org>
-CC: <peter@hurleysoftware.com>, <arnd@arndb.de>,
-        <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        Jingchang Lu <jingchang.lu@freescale.com>
-Subject: [PATCHv5] serial: of-serial: fix up PM ops on no_console_suspend and port type
-Date: Wed, 15 Oct 2014 14:19:27 +0800
-Message-ID: <1413353967-27866-1-git-send-email-jingchang.lu@freescale.com>
-X-Mailer: git-send-email 1.8.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(99396003)(76482002)(87936001)(120916001)(46102003)(80022003)(87286001)(19580405001)(48376002)(69596002)(50226001)(4396001)(19580395003)(6806004)(44976005)(84676001)(50466002)(62966002)(68736004)(93916002)(102836001)(47776003)(85306004)(26826002)(92726001)(64706001)(104166001)(85852003)(86362001)(20776003)(81156004)(31966008)(97736003)(92566001)(21056001)(2351001)(106466001)(50986999)(89996001)(88136002)(229853001)(105606002)(104016003)(107046002)(36756003)(110136001)(33646002)(95666004)(77156001);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR03MB480;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+	id S1751422AbaJOHIU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 03:08:20 -0400
+Received: from mga11.intel.com ([192.55.52.93]:18493 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751130AbaJOHIT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 03:08:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,722,1406617200"; 
+   d="scan'208";a="605588403"
+Date: Wed, 15 Oct 2014 10:08:12 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: David Cohen <david.a.cohen@linux.intel.com>
+Cc: Mathias Nyman <mathias.nyman@linux.intel.com>, linus.walleij@linaro.org,
+        gnurou@gmail.com, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC/PATCH] gpio/pinctrl: baytrail: move gpio driver from
+ pinctrl to gpio directory
+Message-ID: <20141015070812.GM2255@lahna.fi.intel.com>
+References: <1413227857-555-1-git-send-email-david.a.cohen@linux.intel.com>
+ <543CFC7F.2070607@linux.intel.com>
+ <20141014174535.GA6516@psi-dev26.jf.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB480;
-X-Forefront-PRVS: 0365C0E14B
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=jingchang.lu@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141014174535.GA6516@psi-dev26.jf.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes commit 2dea53bf57783f243c892e99c10c6921e956aa7e,
-"serial: of-serial: add PM suspend/resume support", which disables
-the uart clock on suspend, but also causes a hardware hang on register
-access if no_console_suspend command line option is used.
+On Tue, Oct 14, 2014 at 10:45:35AM -0700, David Cohen wrote:
+> Hi Mathias,
+> 
+> On Tue, Oct 14, 2014 at 01:35:43PM +0300, Mathias Nyman wrote:
+> > On 13.10.2014 22:17, David Cohen wrote:
+> > > Even though GPIO module on Intel Bay Trail is able to control pin
+> > > functionality, it's unlikely Linux kernel driver will ever support it
+> > > since BIOS should handle all pin muxing itself.
+> > > 
+> > > Currently this driver does not register any pinctrl interface and
+> > > doesn't call any pinctrl interface. It just uses on internal functions
+> > > the 'struct pinctrl_gpio_range', which is a weak justification to not be
+> > > under gpio directory.
+> > > 
+> > 
+> > This discussion was held when gpio-baytrail was first submitted.
+> > These threads explain the gpio/pinctrl-baytrail history:
+> > 
+> > http://marc.info/?l=linux-kernel&m=136981432427668&w=2
+> > http://marc.info/?l=linux-kernel&m=137113578604763&w=2
+> > http://marc.info/?l=linux-kernel&m=137155497023054&w=2
+> 
+> Thanks for pointing that out.
+> 
+> > 
+> > A proper pinctrl driver for baytrail is still not yet ruled out
+> 
+> Having it inside pinctrl directory is creating some confusion because
+> ppl expect it to implement the actual pinctrl interface.
 
-Also, not every of_serial device is an 8250 port, so the serial8250
-suspend/resume functions should only be applied to a real 8250 port.
+A typical pinctrl driver can implement both a pinctrl interface and a
+GPIO interface. So it is not uncommon to look the GPIO drivers under
+drivers/pinctrl/*.
 
-Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
----
-changes in v5: 
- add missing <linux/console.h> include.
+Furthermore the driver announces that it is a GPIO driver in its Kconfig
+entry:
 
-changes in v4:
- separate 8250 port suspend/resume from of_serial_suspend/resume.
+config PINCTRL_BAYTRAIL
+        bool "Intel Baytrail GPIO pin control"
 
-changes in v3:
- fix up point reference and deference.
+so I don't quite get why this would confuse people.
 
-changes in v2:
- add switch selection on uart type.
+We are also planning to add more Intel pinctrl (real) drivers in the
+future. drivers/pinctrl/intel/* should be the place where people find
+the pinctrl/GPIO drivers for newer Intel hardware.
 
- drivers/tty/serial/of_serial.c | 53 ++++++++++++++++++++++++++++++++++++------
- 1 file changed, 46 insertions(+), 7 deletions(-)
+> Anyway, the threads above are over 1 year old. Perhaps it was making
+> sense during that time, but unless somebody is working on pinctrl
+> interface now, IMHO we're misplacing the driver for too long. It'd
+> better to move this driver to gpio directory and when/if pinctrl
+> interface is implemented, we move it back to current place.
 
-diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c
-index 8bc2563..9c64ad2 100644
---- a/drivers/tty/serial/of_serial.c
-+++ b/drivers/tty/serial/of_serial.c
-@@ -9,6 +9,7 @@
-  *  2 of the License, or (at your option) any later version.
-  *
-  */
-+#include <linux/console.h>
- #include <linux/module.h>
- #include <linux/slab.h>
- #include <linux/delay.h>
-@@ -241,13 +242,48 @@ static int of_platform_serial_remove(struct platform_device *ofdev)
- }
- 
- #ifdef CONFIG_PM_SLEEP
--static int of_serial_suspend(struct device *dev)
-+#ifdef CONFIG_SERIAL_8250
-+static void of_serial_suspend_8250(struct of_serial_info *info)
- {
--	struct of_serial_info *info = dev_get_drvdata(dev);
-+	struct uart_8250_port *port8250 = serial8250_get_port(info->line);
-+	struct uart_port *port = &port8250->port;
- 
- 	serial8250_suspend_port(info->line);
--	if (info->clk)
-+	if (info->clk && (!uart_console(port) || console_suspend_enabled))
- 		clk_disable_unprepare(info->clk);
-+}
-+
-+static void of_serial_resume_8250(struct of_serial_info *info)
-+{
-+	struct uart_8250_port *port8250 = serial8250_get_port(info->line);
-+	struct uart_port *port = &port8250->port;
-+
-+	if (info->clk && (!uart_console(port) || console_suspend_enabled))
-+		clk_prepare_enable(info->clk);
-+
-+	serial8250_resume_port(info->line);
-+}
-+#else
-+static inline void of_serial_suspend_8250(struct of_serial_info *info)
-+{
-+}
-+
-+static inline void of_serial_resume_8250(struct of_serial_info *info)
-+{
-+}
-+#endif
-+
-+static int of_serial_suspend(struct device *dev)
-+{
-+	struct of_serial_info *info = dev_get_drvdata(dev);
-+
-+	switch(info->type) {
-+	case PORT_8250 ... PORT_MAX_8250:
-+		of_serial_suspend_8250(info);
-+		break;
-+	default:
-+		break;
-+	}
- 
- 	return 0;
- }
-@@ -256,10 +292,13 @@ static int of_serial_resume(struct device *dev)
- {
- 	struct of_serial_info *info = dev_get_drvdata(dev);
- 
--	if (info->clk)
--		clk_prepare_enable(info->clk);
--
--	serial8250_resume_port(info->line);
-+	switch(info->type) {
-+	case PORT_8250 ... PORT_MAX_8250:
-+		of_serial_resume_8250(info);
-+		break;
-+	default:
-+		break;
-+	}
- 
- 	return 0;
- }
--- 
-1.8.0
+I disagree.
 
+What happens when people and distros have CONFIG_PINCTRL_BAYTRAIL=y and
+now the symbol is changed to something else? For one, it will break the
+existing working configs.
