@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751811AbaJOIdL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 04:33:11 -0400
-Received: from mga14.intel.com ([192.55.52.115]:23299 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751306AbaJOIdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 04:33:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,722,1406617200"; 
-   d="scan'208";a="605623266"
-Date: Wed, 15 Oct 2014 13:27:48 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [RESEND PATCH v2 1/4] dmaengine: pl330: Remove non-NULL check
- for pl330_submit_req parameters
-Message-ID: <20141015075747.GK1638@intel.com>
-References: <1411994541-31494-1-git-send-email-k.kozlowski@samsung.com>
- <20141014115118.GG1638@intel.com>
- <543D19A9.5010109@metafoo.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <543D19A9.5010109@metafoo.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751605AbaJOIjI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 04:39:08 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:53042 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751232AbaJOIjG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 04:39:06 -0400
+From: Will Sheppard <wsheppard@embedded-bits.co.uk>
+To: linux-kernel@vger.kernel.org, lee.jones@linaro.org
+Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
+        Will Sheppard <wsheppard@embedded-bits.co.uk>
+Subject: [PATCH] mfd: arizona-spi: Add lines after declarations - checkpatch catch
+Date: Wed, 15 Oct 2014 09:38:47 +0100
+Message-Id: <1413362327-17378-1-git-send-email-wsheppard@embedded-bits.co.uk>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 14, 2014 at 02:40:09PM +0200, Lars-Peter Clausen wrote:
-> On 10/14/2014 01:51 PM, Vinod Koul wrote:
-> >On Mon, Sep 29, 2014 at 02:42:18PM +0200, Krzysztof Kozlowski wrote:
-> >>The pl330_submit_req() checked supplied 'struct pl330_thread thrd' and
-> >>'struct dma_pl330_desc desc' parameters for non-NULL. However these
-> >>checks are useless because supplied arguments won't be NULL.
-> >even if we have some error or bug?
-> >
-> >I would like this to be checked and complained loudly so we know something
-> >is going wrong rather than assuming it will be correct always.
-> >
-> 
-> In this case it is impossible to get to this code portion if the
-> pointer is NULL because it would have crashed earlier.
-Yes checking again,
-for desc it seems not neccessary as its deref earlier in calling code and
-thrd shouldnt be NULL, so will apply now
+This was found whilst running checkpatch.pl on arizona-spi.
 
+WARNING: Missing a blank line after declarations
++       struct arizona *arizona = spi_get_drvdata(spi);
++       arizona_dev_exit(arizona);
+
+Signed-off-by: Will Sheppard <wsheppard@embedded-bits.co.uk>
+---
+ drivers/mfd/arizona-spi.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/mfd/arizona-spi.c b/drivers/mfd/arizona-spi.c
+index 5145d78..8ef58bc 100644
+--- a/drivers/mfd/arizona-spi.c
++++ b/drivers/mfd/arizona-spi.c
+@@ -75,7 +75,9 @@ static int arizona_spi_probe(struct spi_device *spi)
+ static int arizona_spi_remove(struct spi_device *spi)
+ {
+ 	struct arizona *arizona = spi_get_drvdata(spi);
++
+ 	arizona_dev_exit(arizona);
++
+ 	return 0;
+ }
+ 
 -- 
-~Vinod
+1.8.5.2
+
