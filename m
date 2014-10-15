@@ -1,154 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751454AbaJOOiA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 10:38:00 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:34885 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751262AbaJOOh6 (ORCPT
+	id S1751462AbaJOOlz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 10:41:55 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:64896 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202AbaJOOlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 10:37:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141015073951.GB10908@ubuntu-mba51>
-References: <1413296756-25071-1-git-send-email-seth.forshee@canonical.com>
- <1413296756-25071-5-git-send-email-seth.forshee@canonical.com>
- <OFD40DA8DF.F78EA39D-ON86257D71.0057C4DC-86257D71.0064055D@us.ibm.com>
- <878ukis9oh.fsf@x220.int.ebiederm.org> <20141014205955.GA10908@ubuntu-mba51>
- <877g02pd7f.fsf@x220.int.ebiederm.org> <CALCETrU3Gzo-dx9uNH3Wuqa8Brk8xcxQsw7YGgVd74simXK0gw@mail.gmail.com>
- <20141015073951.GB10908@ubuntu-mba51>
+	Wed, 15 Oct 2014 10:41:53 -0400
+Message-ID: <543E87AC.5090402@amacapital.net>
+Date: Wed, 15 Oct 2014 07:41:48 -0700
 From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 15 Oct 2014 07:37:36 -0700
-Message-ID: <CALCETrWnHfXN9VK9P-97XiVN6LkWr1nV4CxMpsRPGCOMc1xvvg@mail.gmail.com>
-Subject: Re: [fuse-devel] [PATCH v4 4/5] fuse: Support privileged xattrs only
- with a mount option
-To: Andy Lutomirski <luto@amacapital.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Michael j Theall <mtheall@us.ibm.com>,
-        fuse-devel@lists.sourceforge.net,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>
-Content-Type: text/plain; charset=UTF-8
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+MIME-Version: 1.0
+To: David Madore <david+ml@madore.org>,
+        Linux Kernel mailing-list <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org
+Subject: Re: feature suggestion: implement SO_PEERCRED on local AF_INET/AF_INET6
+ sockets (allow uid-based identification on localhost)
+References: <20141015133518.GA7179@achernar.madore.org>
+In-Reply-To: <20141015133518.GA7179@achernar.madore.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 12:39 AM, Seth Forshee
-<seth.forshee@canonical.com> wrote:
-> On Tue, Oct 14, 2014 at 02:19:19PM -0700, Andy Lutomirski wrote:
->> On Tue, Oct 14, 2014 at 2:13 PM, Eric W. Biederman
->> <ebiederm@xmission.com> wrote:
->> > Seth Forshee <seth.forshee@canonical.com> writes:
->> >
->> >> On Tue, Oct 14, 2014 at 01:01:02PM -0700, Eric W. Biederman wrote:
->> >>> Michael j Theall <mtheall@us.ibm.com> writes:
->> >>>
->> >>> > Seth Forshee <seth.forshee@canonical.com> wrote on 10/14/2014 09:25:55 AM:
->> >>> >
->> >>> >> From: Seth Forshee <seth.forshee@canonical.com>
->> >>> >> To: Miklos Szeredi <miklos@szeredi.hu>
->> >>> >> Cc: fuse-devel@lists.sourceforge.net, "Serge H. Hallyn"
->> >>> >> <serge.hallyn@ubuntu.com>, linux-kernel@vger.kernel.org, Seth
->> >>> >> Forshee <seth.forshee@canonical.com>, "Eric W. Biederman"
->> >>> >> <ebiederm@xmission.com>, linux-fsdevel@vger.kernel.org
->> >>> >> Date: 10/14/2014 09:27 AM
->> >>> >> Subject: [fuse-devel] [PATCH v4 4/5] fuse: Support privileged xattrs
->> >>> >> only with a mount option
->> >>> >>
->> >>> >> Allowing unprivileged users to provide arbitrary xattrs via fuse
->> >>> >> mounts bypasses the normal restrictions on setting xattrs. Such
->> >>> >> mounts should be restricted to reading and writing xattrs in the
->> >>> >> user.* namespace.
->> >>> >>
->> >>> >
->> >>> > Can you explain how the normal restrictions on setting xattrs are
->> >>> > bypassed?
->> >>>
->> >>> If the fuse server is not run by root.  Which is a large part of the
->> >>> point of fuse.
->> >>
->> >> So the server could for example return trusted.* xattrs which were not
->> >> set by a privileged user.
->> >>
->> >>> > My filesystem still needs security.* and system.*, and it looks like
->> >>> > xattr_permission already prevents non-privileged users from accessing
->> >>> > trusted.*
->> >>>
->> >>> If the filesystem is mounted with nosuid (typical of a non-privileged
->> >>> mount of fuse) then the security.* attributes are ignored.
->> >>
->> >> That I wasn't aware of. In fact I still haven't found where this
->> >> restriction is implemented.
->> >
->> > My memory may be have been incomplete.  What I was thinking of is
->> > security/commoncap.c the MNT_NOSUID check in get_file_caps.
->> >
->> > Upon inspection that appears limited to file capabilities, and while
->> > there are a few other MNT_NOSUID checks under security the feel far from
->> > complete.
->> >
->> > Sigh.
->> >
->> > This deserves a hard look because if MNT_NOSUID is not sufficient than
->> > it may be possible for me to insert a usb stick with an extN filesystem
->> > with the right labels having it auto-mounted nosuid and subvert the
->> > security of something like selinux.
->>
->> It's this code in selinux/hooks.c:
->>
->>     if ((bprm->file->f_path.mnt->mnt_flags & MNT_NOSUID) ||
->>         (bprm->unsafe & LSM_UNSAFE_NO_NEW_PRIVS))
->>         new_tsec->sid = old_tsec->sid;
->>
->>
->> One might argue that this should actually generate -EPERM instead of
->> ignoring the label, but it should be safe against untrusted media.
->>
->> >
->> >> Nonetheless, a userns mount could be done without nosuid (though that
->> >> mount will also be unaccessible outside of that namespace).
->> >>
->> >>> >> It's difficult though to tell whether a mount is being performed
->> >>> >> on behalf of an unprivileged user since fuse mounts are ususally
->> >>> >> done via a suid root helper. Thus a new mount option,
->> >>> >> privileged_xattrs, is added to indicated that xattrs from other
->> >>> >> namespaces are allowed. This option can only be supplied by
->> >>> >> system-wide root; supplying the option as an unprivileged user
->> >>> >> will cause the mount to fail.
->> >>> >
->> >>> > I can't say I'm convinced that this is the right direction to head.
->> >>>
->> >>> With respect to defaults we could keep the current default if you
->> >>> have the global CAP_SYS_ADMIN privilege when the mount takes place
->> >>> and then avoid breaking anything.
->> >>
->> >> Except that unprivileged mounts are normally done by a suid root helper,
->> >> which is why I've required both global CAP_SYS_ADMIN and a mount option
->> >> to get the current default behavior.
->> >
->> > If nosuid is sufficient that may break existing setups for no good
->> > reason.
->> >
->> > Shrug.  I won't have much time for a bit but I figured I would highlight
->> > the potential security hole in existing setups.  So someone with time
->> > this week can look at that.
->>
->> I think I have a better solution.  I'll send it out.
->
-> To be honest I don't understand enough about how selinux uses security
-> labels to know what level of paranoia is appropriate, so I wrote this
-> out of an excess of paranoia. If the patch you sent restricts things
-> sufficiently then I'm perfectly happy to see this patch dropped.
->
-> And really with fuse all of this is really excess paranoia because (if
-> my other patches are applied at least) the fuse mount will be
-> inaccessible to any user outside the user namespace from which it was
-> mounted or its descendants.
->
+On 10/15/2014 06:35 AM, David Madore wrote:
+> Given an AF_UNIX socket, the getsockopt(, SOL_SOCKET, SO_PEERCRED,,)
+> call allows one endpoint to authenticate the other endpoint's pid, uid
+> and gid.
+> 
+> The call is valid on AF_INET and AF_INET6 sockets but returns no data
+> (pid=0, uid=-1, gid=-1).  Obviously it is meaningless to try to get
+> such credentials from a INET/INET6 socket in general, but there is one
+> case where it would make sense: namely, when the endpoint is local
+> (i.e., when the socket is a connection to the same machine, e.g., when
+> connecting to 127.0.0.0/8 or ::1/32).
+> 
+> Being able to authenticate local INET/INET6 sockets would be immensely
+> valuable for a number of programs, to provide some kind of access
+> control to local sockets.  For example, ssh allows port forwarding
+> using the -L and -D options: by default or by option (cf. the
+> GatewayPorts option of ssh), these port-forwarding sockets can be
+> restricted to localhost, but of course they cannot be restricted to
+> the user running ssh, which makes them a huge security problem.  Many
+> programs suffer from the same problem (they restrict some kind of
+> connection to localhost, but they of course cannot make a restriction
+> on which user will be able to connect).
+> 
+> One cannot simply retort "these programs should be using Unix-domain
+> sockets instead": I don't think many browsers support using a SOCKS
+> proxy or an HTTP proxy over a Unix-domain socket, and in the latter
+> case I'm not even sure it would make sense (protocol-wise).
+> 
+> If I believe <URL:
+> http://www.lehman.cuny.edu/cgi-bin/man-cgi?getpeerucred+3
+>  > ("The system currently supports both sides of connection end-points
+> for local AF_UNIX, AF_INET, and AF_INET6 sockets"), Solaris, or at
+> least some version thereof, support authentication of local AF_INET
+> and AF_INET6 sockets.
+> 
+> I think it would be wonderful if Linux had this.  I'm willing to work
+> on the implementation if it is considered *a priori* acceptable for
+> inclusion.
+> 
+> The data seems to be available, since it is exposed in /proc/net/tcp
+> and /proc/net/tcp6 and whatnots (implementation details left aside, it
+> is merely a question of matching a line with opposite endpoints to the
+> current socket and returning it).
+> 
+> [In principle, a userland program can parse /proc/net/tcp so it does
+> not need the feature I am suggesting, but in practice parsing a text
+> file to communicate with the kernel is yucky at best, and probably not
+> very robust (e.g., /proc might not be mounted), and it would be very
+> difficult to convince, say, the OpenSSH authors to include code that
+> parses the Linux /proc/net/tcp format (or even link with a library
+> which does this) in order to add access-control on ssh port-forwards:
+> having this under a more standard getsockpot() interface is cleaner
+> and opens at least some kind of hope that programs would agree to use
+> it.]
+> 
+> Question number 1: If this feature were implemented, would it be
+> considered acceptable for inclusion in the kernel?  (If there is some
+> reason why it can't be accepted, I'd like to know in advance, to avoid
+> working in vain.)
 
-I missed the rest of the series.  This is exciting!
+I will object to adding it as described, for the same reason that I
+object to anything that extends the current model of socket-based
+credential passing.  Ideally, credentials would *never* be implicitly
+captured by socket syscalls.  We live in the real world, and SO_****CRED
+exists, so I think the best we can do is to try to minimize its use.
 
-I'm not sure that the other protections you have are quite sufficient,
-though, without something like my patch.  I'll comment on the rest.
+I can elaborate further, or you can IIRC search the archives for
+SCM_IDENTITY, and you can also look at CVE-2013-1979 for a nasty example
+of why this model is broken.
+
+That being said, if anyone ever finished the SCM_IDENTITY work, I think
+I'd be okay with allowing it over TCP.  I can't speak for the network
+people, though, and you should ask on netdev (cc'd).
+
+> 
+> Question number 2: A priori, how difficult would it be to implement
+> this?  (As mentioned above, it seems trivial in principle to merely go
+> through the local endpoints to find a matching connection, but maybe
+> there are locking issues that I don't understand that make it much
+> more difficult than it would seem.)  Any guidelines on implementation?
+> (I imagine one should try to fill sk->sk_peer_cred at connect time,
+> but I don't really know how difficult this might turn out.)
+
+Dunno.
 
 --Andy
