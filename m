@@ -1,97 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751713AbaJOIKo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 04:10:44 -0400
-Received: from resqmta-ch2-11v.sys.comcast.net ([69.252.207.43]:54505 "EHLO
-	resqmta-ch2-11v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751661AbaJOIKj (ORCPT
+	id S1751483AbaJOIOj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 04:14:39 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45175 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751207AbaJOIOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 04:10:39 -0400
-Date: Wed, 15 Oct 2014 03:10:37 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Tejun Heo <htejun@gmail.com>
-cc: linux-kernel@vger.kernel.org
-Message-ID: <alpine.DEB.2.11.1410150308150.20152@gentwo.org>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 15 Oct 2014 04:14:35 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
+Message-ID: <543E2CD5.60708@jp.fujitsu.com>
+Date: Wed, 15 Oct 2014 17:14:13 +0900
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: zhen-hual@hp.com, bhelgaas@google.com, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+CC: linda.knippers@hp.com, jerry.hoemann@hp.com, lisa.mitchell@hp.com,
+        alexander.duyck@gmail.com, rwright@hp.com
+Subject: Re: [PATCH 1/1] pci: fix dmar fault for kdump kernel
+References: <1412925191-27970-1-git-send-email-zhen-hual@hp.com> <543CEE32.50109@hp.com>
+In-Reply-To: <543CEE32.50109@hp.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: Convert remaining __get_cpu_var uses
+(2014/10/14 18:34), Li, ZhenHua wrote:
+> I tested on the latest stable version 3.17, it works well.
+> 
+> On 10/10/2014 03:13 PM, Li, Zhen-Hua wrote:
+>> On a HP system with Intel vt-d supported and many PCI devices on it,
+>> when kernel crashed and the kdump kernel boots with intel_iommu=on,
+>> there may be some unexpected DMA requests on this adapter, which will
+>> cause DMA Remapping faults like:
+>>      dmar: DRHD: handling fault status reg 102
+>>      dmar: DMAR:[DMA Read] Request device [41:00.0] fault addr fff81000
+>>      DMAR:[fault reason 01] Present bit in root entry is clear
+>>
+>> This bug may happen on *any* PCI device.
+>> Analysis for this bug:
+>>
+>> The present bit is set in this function:
+>>
+>> static struct context_entry * device_to_context_entry(
+>>                  struct intel_iommu *iommu, u8 bus, u8 devfn)
+>> {
+>>      ......
+>>                  set_root_present(root);
+>>      ......
+>> }
+>>
+>> Calling tree:
+>>      device driver
+>>          intel_alloc_coherent
+>>              __intel_map_single
+>>                  domain_context_mapping
+>>                      domain_context_mapping_one
+>>                          device_to_context_entry
+>>
+>> This means, the present bit in root entry will not be set until the device
+>> driver is loaded.
+>>
+>> But in the kdump kernel, hardware devices are not aware that control has
+>> transferred to the second kernel, and those drivers must initialize again.
+>> Consequently there may be unexpected DMA requests from devices activity
+>> initiated in the first kernel leading to the DMA Remapping errors in the
+>> second kernel.
+>>
+>> To fix this DMAR fault, we need to reset the bus that this device on. Reset
+>> the device itself does not work.
+>>
+>> A patch for this bug that has been sent before:
+>> https://lkml.org/lkml/2014/9/30/55
+>> As in discussion, this bug may happen on *any* device, so we need to reset all
+>> pci devices.
+>>
+>> There was an original version(Takao Indoh) that resets the pcie devices:
+>> https://lkml.org/lkml/2013/5/14/9
 
-During the 3.18 merge period additional __get_cpu_var uses were
-added. The patch converts these to this_cpu_ptr().
+As far as I can remember, the original patch was nacked by
+the following reasons:
 
-[This does not address the powerpc issue where the conversion
-patches were routed directly to the powerpc maintainers but were
-not applied in the merge period. Will have to be handled separately]
+1) On sparc, the IOMMU is initialized before PCI devices are enumerated,
+   so there would still be a window where ongoing DMA could cause an
+   IOMMU error.
 
-Signed-off-by: Christoph Lameter <cl@linux.com>
+2) Basically Bjorn is thinking device reset should be done in the
+   1st kernel before jumping into 2nd kernel.
 
-Index: linux/arch/arm/xen/mm32.c
-===================================================================
---- linux.orig/arch/arm/xen/mm32.c
-+++ linux/arch/arm/xen/mm32.c
-@@ -56,7 +56,7 @@ static struct notifier_block xen_mm32_cp
- static void* xen_mm32_remap_page(dma_addr_t handle)
- {
- 	unsigned long virt = get_cpu_var(xen_mm32_scratch_virt);
--	pte_t *ptep = __get_cpu_var(xen_mm32_scratch_ptep);
-+	pte_t *ptep = __this_cpu_read(xen_mm32_scratch_ptep);
+And Bill Sumner proposed another idea.
+http://comments.gmane.org/gmane.linux.kernel.iommu/4828
+I don't know the current status of this patch, but I think Jerry Hoemann
+is working on this.
 
- 	*ptep = pfn_pte(handle >> PAGE_SHIFT, PAGE_KERNEL);
- 	local_flush_tlb_kernel_page(virt);
-Index: linux/arch/arm64/kernel/psci.c
-===================================================================
---- linux.orig/arch/arm64/kernel/psci.c
-+++ linux/arch/arm64/kernel/psci.c
-@@ -511,7 +511,7 @@ static int cpu_psci_cpu_kill(unsigned in
+Thanks,
+Takao Indoh
 
- static int psci_suspend_finisher(unsigned long index)
- {
--	struct psci_power_state *state = __get_cpu_var(psci_power_state);
-+	struct psci_power_state *state = __this_cpu_read(psci_power_state);
 
- 	return psci_ops.cpu_suspend(state[index - 1],
- 				    virt_to_phys(cpu_resume));
-@@ -520,7 +520,7 @@ static int psci_suspend_finisher(unsigne
- static int __maybe_unused cpu_psci_cpu_suspend(unsigned long index)
- {
- 	int ret;
--	struct psci_power_state *state = __get_cpu_var(psci_power_state);
-+	struct psci_power_state *state = __this_cpu_read(psci_power_state);
- 	/*
- 	 * idle state index 0 corresponds to wfi, should never be called
- 	 * from the cpu_suspend operations
-Index: linux/kernel/irq_work.c
-===================================================================
---- linux.orig/kernel/irq_work.c
-+++ linux/kernel/irq_work.c
-@@ -175,11 +175,11 @@ EXPORT_SYMBOL_GPL(irq_work_run);
+>>
+>> Update of this new version, comparing with Takao Indoh's version:
+>>      Add support for legacy PCI devices.
+>>      Use pci_try_reset_bus instead of do_downstream_device_reset in original version
+>>
+>> Randy Wright corrects some misunderstanding in this description.
+>>
+>> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+>> Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
+>> Signed-off-by: Randy Wright <rwright@hp.com>
+>> ---
+>>   drivers/pci/pci.c | 84 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>>   1 file changed, 84 insertions(+)
+>>
+>> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+>> index 2c9ac70..8cb146c 100644
+>> --- a/drivers/pci/pci.c
+>> +++ b/drivers/pci/pci.c
+>> @@ -23,6 +23,7 @@
+>>   #include <linux/device.h>
+>>   #include <linux/pm_runtime.h>
+>>   #include <linux/pci_hotplug.h>
+>> +#include <linux/crash_dump.h>
+>>   #include <asm-generic/pci-bridge.h>
+>>   #include <asm/setup.h>
+>>   #include "pci.h"
+>> @@ -4423,6 +4424,89 @@ void __weak pci_fixup_cardbus(struct pci_bus *bus)
+>>   }
+>>   EXPORT_SYMBOL(pci_fixup_cardbus);
+>>
+>> +/*
+>> + * Return true if dev is PCI root port or downstream port whose child is PCI
+>> + * endpoint except VGA device.
+>> + */
+>> +static int __pci_dev_need_reset(struct pci_dev *dev)
+>> +{
+>> +    struct pci_bus *subordinate;
+>> +    struct pci_dev *child;
+>> +
+>> +    if (dev->hdr_type != PCI_HEADER_TYPE_BRIDGE)
+>> +        return 0;
+>> +
+>> +    if (pci_is_pcie(dev)) {
+>> +        if ((pci_pcie_type(dev) != PCI_EXP_TYPE_ROOT_PORT) &&
+>> +            (pci_pcie_type(dev) != PCI_EXP_TYPE_DOWNSTREAM))
+>> +            return 0;
+>> +    }
+>> +
+>> +    subordinate = dev->subordinate;
+>> +    list_for_each_entry(child, &subordinate->devices, bus_list) {
+>> +        /* Don't reset switch, bridge, VGA device */
+>> +        if ((child->hdr_type == PCI_HEADER_TYPE_BRIDGE) ||
+>> +            ((child->class >> 16) == PCI_BASE_CLASS_BRIDGE) ||
+>> +            ((child->class >> 16) == PCI_BASE_CLASS_DISPLAY))
+>> +            return 0;
+>> +
+>> +        if (pci_is_pcie(child)) {
+>> +            if ((pci_pcie_type(child) == PCI_EXP_TYPE_UPSTREAM) ||
+>> +                (pci_pcie_type(child) == PCI_EXP_TYPE_PCI_BRIDGE))
+>> +                return 0;
+>> +        }
+>> +    }
+>> +
+>> +    return 1;
+>> +}
+>> +
+>> +struct pci_dev_reset_entry {
+>> +    struct list_head list;
+>> +    struct pci_dev *dev;
+>> +};
+>> +int __init pci_reset_endpoints(void)
+>> +{
+>> +    struct pci_dev *dev = NULL;
+>> +    struct pci_dev_reset_entry *pdev_entry, *tmp;
+>> +    struct pci_bus *subordinate = NULL;
+>> +    int has_it;
+>> +
+>> +    LIST_HEAD(pdev_list);
+>> +
+>> +    if (likely(!is_kdump_kernel()))
+>> +        return 0;
+>> +
+>> +    for_each_pci_dev(dev) {
+>> +        subordinate = dev->subordinate;
+>> +        if (!subordinate || list_empty(&subordinate->devices))
+>> +            continue;
+>> +
+>> +        has_it = 0;
+>> +        list_for_each_entry(pdev_entry, &pdev_list, list) {
+>> +            if (dev == pdev_entry->dev) {
+>> +                has_it = 1;
+>> +                break;
+>> +            }
+>> +        }
+>> +        if (has_it)
+>> +            continue;
+>> +
+>> +        if (__pci_dev_need_reset(dev)) {
+>> +            pdev_entry = kmalloc(sizeof(*pdev_entry), GFP_KERNEL);
+>> +            pdev_entry->dev = dev;
+>> +            list_add(&pdev_entry->list, &pdev_list);
+>> +        }
+>> +    }
+>> +
+>> +    list_for_each_entry_safe(pdev_entry, tmp, &pdev_list, list) {
+>> +        pci_try_reset_bus(pdev_entry->dev->subordinate);
+>> +        kfree(pdev_entry);
+>> +    }
+>> +
+>> +    return 0;
+>> +}
+>> +fs_initcall_sync(pci_reset_endpoints);
+>> +
+>>   static int __init pci_setup(char *str)
+>>   {
+>>       while (str) {
+>>
+> 
+> 
+> 
 
- void irq_work_tick(void)
- {
--	struct llist_head *raised = &__get_cpu_var(raised_list);
-+	struct llist_head *raised = this_cpu_ptr(&raised_list);
 
- 	if (!llist_empty(raised) && !arch_irq_work_has_interrupt())
- 		irq_work_run_list(raised);
--	irq_work_run_list(&__get_cpu_var(lazy_list));
-+	irq_work_run_list(this_cpu_ptr(&lazy_list));
- }
-
- /*
-Index: linux/kernel/time/tick-sched.c
-===================================================================
---- linux.orig/kernel/time/tick-sched.c
-+++ linux/kernel/time/tick-sched.c
-@@ -235,7 +235,7 @@ void tick_nohz_full_kick(void)
- 	if (!tick_nohz_full_cpu(smp_processor_id()))
- 		return;
-
--	irq_work_queue(&__get_cpu_var(nohz_full_kick_work));
-+	irq_work_queue(this_cpu_ptr(&nohz_full_kick_work));
- }
-
- /*
