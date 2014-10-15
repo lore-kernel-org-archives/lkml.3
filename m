@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752391AbaJOMuE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 08:50:04 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:44283 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751793AbaJOMuB (ORCPT
+	id S1752492AbaJOMuU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 08:50:20 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:37117 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752448AbaJOMuR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 08:50:01 -0400
-MIME-Version: 1.0
-Date: Wed, 15 Oct 2014 12:49:59 +0000
-Message-ID: <CALtyatFL8Fpeq5P7JJyC0NNjj8Y05DOOj4U+NbprUH2bWP5=Fw@mail.gmail.com>
-Subject: Requium for Linux. Killed by PC, Coup de grace - SystemD (Song included)
-From: Gregory Smith <gregorysmith1974a@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 15 Oct 2014 08:50:17 -0400
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: [PATCH 1/2] clocksource: enable pxa_timer for SA-1100 platform
+Date: Wed, 15 Oct 2014 16:50:04 +0400
+Message-Id: <1413377405-7503-1-git-send-email-dbaryshkov@gmail.com>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Requium for Linux. Killed by PC, Coup de grace - SystemD
+SA-11x0 platform used the same IP block as was used on PXA. Consequently
+it makes sense to have only one driver. Enable pxa_timer clocksource for
+StrongARM platform.
 
-youtu.be/0akuZk_SQpk
+Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+---
+ drivers/clocksource/Kconfig  | 6 ++++++
+ drivers/clocksource/Makefile | 2 +-
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
-GNU/Linux is dead. The final blow being SystemD, brought
-to you by the social justice warrior (aka: (male) feminist)
-known as Lennart Poettering. A turn coat against all
-other men, a "nice guy" trying to get pussy by bending his
-knee to fat ugly spiteful spinsters.
+diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+index cfd6519..fd99b08 100644
+--- a/drivers/clocksource/Kconfig
++++ b/drivers/clocksource/Kconfig
+@@ -216,4 +216,10 @@ config CLKSRC_VERSATILE
+ 	  ARM Versatile, RealView and Versatile Express reference
+ 	  platforms.
+ 
++config CLKSRC_PXA
++	def_bool y if ARCH_PXA || ARCH_SA1100
++	help
++	  This enables OST0 support available on PXA and SA-11x0
++	  platforms.
++
+ endmenu
+diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+index 7fd9fd1..6d9822e 100644
+--- a/drivers/clocksource/Makefile
++++ b/drivers/clocksource/Makefile
+@@ -20,7 +20,7 @@ obj-$(CONFIG_ARCH_CLPS711X)	+= clps711x-timer.o
+ obj-$(CONFIG_ARCH_MARCO)	+= timer-marco.o
+ obj-$(CONFIG_ARCH_MOXART)	+= moxart_timer.o
+ obj-$(CONFIG_ARCH_MXS)		+= mxs_timer.o
+-obj-$(CONFIG_ARCH_PXA)		+= pxa_timer.o
++obj-$(CONFIG_CLKSRC_PXA)	+= pxa_timer.o
+ obj-$(CONFIG_ARCH_PRIMA2)	+= timer-prima2.o
+ obj-$(CONFIG_ARCH_U300)		+= timer-u300.o
+ obj-$(CONFIG_SUN4I_TIMER)	+= sun4i_timer.o
+-- 
+2.1.1
 
-The assault began some years ago, to applause by
-"correct thinking" good little boys. The claim was the same
-as ever: we shall increase the potency of the ore by gathering
-twice as much of it! Turns out the rest was just dirt
-but you lost track of the vein.
-
-Carla Schrodinger - do nothing cunt. Rules the roost of the
-"Linux community". Because she's a feminist who claims to
-use linux.
-
-Community standards - profess the wrong beliefs, can't contribute.
-(Debian just gained one of these).
-
-Women making their nest, having the "big dogs" remove those men
-undesirable to them
-Fat feminist whores.
-
-The free software and opensource communities used to be dominated
-by men who did things. The people who actually created the
-projects or contributed code to them, important code, not just
-rehashes or UI changes.
-
-It is now dominated by worthless women who do not contribute anything
-execept for the few who contribute code churn, or apply patches that
-were created by men somewhere else, aswell as those women's sycophants
-such as Lennart Poettering. They jostle to supplant the few remaining
-originals in "the community".
-
-New men are shut out via "community standards". What man would ever even
-approach a place that would reject your code because you were mean
-to women or professed the wrong opinion anyway though?
-
-Congrats. You changed out productive men who see things, including
-feminist whores, for what they are, for low-to-no production females
-and nancys who's only goal is to pad their CV and escape to industry.
-(And maybe re-invent the wheel, coat it in shit, and make you eat it)
-
-Too bad Linus and RMS don't give a damn and don't say a word.
-(Or they agree with it all.)
-
-
-
-Song and picture license: Gnu GPL v2.
