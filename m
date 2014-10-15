@@ -1,68 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932911AbaJOC1o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 22:27:44 -0400
-Received: from smtprelay0097.hostedemail.com ([216.40.44.97]:57834 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932808AbaJOC0W (ORCPT
+	id S1756005AbaJOC0Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 22:26:16 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:39313 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932680AbaJOCZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 22:26:22 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:967:973:982:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2689:2828:2892:3138:3139:3140:3141:3142:3352:3622:3865:3867:3870:3871:3872:4321:4384:5007:6119:6261:7903:10004:10400:10848:11232:11657:11658:11914:12043:12295:12296:12517:12519:12740:13069:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: feast71_8e93ed9c2db1a
-X-Filterd-Recvd-Size: 2222
-Message-ID: <1413339973.7475.1.camel@perches.com>
-Subject: Re: get_maintainers.pl doesn't actually get the real MAINTAINERS?
-From: Joe Perches <joe@perches.com>
-To: Scott Branden <sbranden@broadcom.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Antti Palosaari <crope@iki.fi>, Jingoo Han <jg1.han@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        swarren@wwwdotorg.org
-Date: Tue, 14 Oct 2014 19:26:13 -0700
-In-Reply-To: <543DD959.2060801@broadcom.com>
-References: <543DD959.2060801@broadcom.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 14 Oct 2014 22:25:47 -0400
+From: Yijing Wang <wangyijing@huawei.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>, <linux-arch@vger.kernel.org>,
+        <arnab.basu@freescale.com>, <Bharat.Bhushan@freescale.com>,
+        <x86@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        <xen-devel@lists.xenproject.org>, Joerg Roedel <joro@8bytes.org>,
+        <iommu@lists.linux-foundation.org>, <linux-mips@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-s390@vger.kernel.org>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        "Tony Luck" <tony.luck@intel.com>, <linux-ia64@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "Sergei Shtylyov" <sergei.shtylyov@cogentembedded.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
+        Liviu Dudau <liviu@dudau.co.uk>, Yijing Wang <wangyijing@huawei.com>
+Subject: [PATCH v3 14/27] Irq_remapping/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+Date: Wed, 15 Oct 2014 11:07:02 +0800
+Message-ID: <1413342435-7876-15-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1413342435-7876-1-git-send-email-wangyijing@huawei.com>
+References: <1413342435-7876-1-git-send-email-wangyijing@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.175.100.166]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-10-14 at 19:18 -0700, Scott Branden wrote:
-> Hello,
-> 
-> I try running scripts/get_maintainers.pl but it doesn't seem to get the 
-> real maintainers properly.  Please note this is run against the current 
-> MAINTAINERS file.
-> 
-> One Example:  I would expect drivers/mmc/host/sdhci-bcm2835.c to be 
-> maintained by Stephen Warren based on drivers/*/*bcm2835* below.
+Use MSI chip framework instead of arch MSI functions to configure
+MSI/MSI-X irq. So we can manage MSI/MSI-X irq in a unified framework.
 
-get_maintainers doesn't use * as a depth wildcard
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+---
+ drivers/iommu/irq_remapping.c |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
 
-*/ matches a single top level directory level
-*/*/ matches one level below the top directory level.
-
->   But 
-> the get_maintainers.pl script does not seem to process the information 
-> in such a way.  So what needs to be corrected - the script or the syntax 
-> used in the MAINTAINERS file?
-> 
-> BROADCOM BCM2835 ARM ARCHICTURE
-> M:	Stephen Warren <swarren@wwwdotorg.org>
-> L:	linux-rpi-kernel@lists.infradead.org (moderated for non-subscribers)
-> T:	git git://git.kernel.org/pub/scm/linux/kernel/git/swarren/linux-rpi.git
-> S:	Maintained
-> F:	arch/arm/mach-bcm/board_bcm2835.c
-> F:	arch/arm/boot/dts/bcm2835*
-> F:	arch/arm/configs/bcm2835_defconfig
-> F:	drivers/*/*bcm2835*
-
-F:	drivers/*/*/*bmc2835*
-
+diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+index 33c4395..48d57e9 100644
+--- a/drivers/iommu/irq_remapping.c
++++ b/drivers/iommu/irq_remapping.c
+@@ -139,8 +139,8 @@ error:
+ 	return ret;
+ }
+ 
+-static int irq_remapping_setup_msi_irqs(struct pci_dev *dev,
+-					int nvec, int type)
++static int irq_remapping_setup_msi_irqs(struct msi_chip *chip,
++		struct pci_dev *dev, int nvec, int type)
+ {
+ 	if (type == PCI_CAP_ID_MSI)
+ 		return do_setup_msi_irqs(dev, nvec);
+@@ -148,6 +148,11 @@ static int irq_remapping_setup_msi_irqs(struct pci_dev *dev,
+ 		return do_setup_msix_irqs(dev, nvec);
+ }
+ 
++static struct msi_chip remap_msi_chip = {
++	.setup_irqs = irq_remapping_setup_msi_irqs,
++	.teardown_irq = native_teardown_msi_irq,
++};
++
+ static void eoi_ioapic_pin_remapped(int apic, int pin, int vector)
+ {
+ 	/*
+@@ -165,9 +170,9 @@ static void __init irq_remapping_modify_x86_ops(void)
+ 	x86_io_apic_ops.set_affinity	= set_remapped_irq_affinity;
+ 	x86_io_apic_ops.setup_entry	= setup_ioapic_remapped_entry;
+ 	x86_io_apic_ops.eoi_ioapic_pin	= eoi_ioapic_pin_remapped;
+-	x86_msi.setup_msi_irqs		= irq_remapping_setup_msi_irqs;
+ 	x86_msi.setup_hpet_msi		= setup_hpet_msi_remapped;
+ 	x86_msi.compose_msi_msg		= compose_remapped_msi_msg;
++	x86_msi_chip = &remap_msi_chip;
+ }
+ 
+ static __init int setup_nointremap(char *str)
+-- 
+1.7.1
 
