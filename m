@@ -1,153 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751566AbaJOVPQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 17:15:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55100 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751293AbaJOVPO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 17:15:14 -0400
-Message-ID: <1413407712.15099.16.camel@redhat.com>
-Subject: [GIT PULL] Audit changes for 3.18
-From: Eric Paris <eparis@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-audit@redhat.com
-Date: Wed, 15 Oct 2014 17:15:12 -0400
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751614AbaJOVUy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 17:20:54 -0400
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:62036 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751235AbaJOVUw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 17:20:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <543ECF6F.2030705@redhat.com>
+References: <1413399924-599-1-git-send-email-prarit@redhat.com>
+ <CAErSpo6Oy1S1OECirp6=tz+pQWUtkFE6p1LTzNaYtzxoX73FWw@mail.gmail.com> <543ECF6F.2030705@redhat.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 15 Oct 2014 15:20:30 -0600
+Message-ID: <CAErSpo76g-EPsUsMjhBpnnbKD3QufHz1xkvYaqXd8hYtgQ5u1g@mail.gmail.com>
+Subject: Re: [PATCH] pci, add sysfs numa_node write function
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Myron Stowe <mstowe@redhat.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So this change across a whole bunch of arches really solves one basic
-problem.  We want to audit when seccomp is killing a process.  seccomp
-hooks in before the audit syscall entry code.  audit_syscall_entry took
-as an argument the arch of the given syscall.  Since the arch is part of
-what makes a syscall number meaningful it's an important part of the
-record, but it isn't available when seccomp shoots the syscall...
+On Wed, Oct 15, 2014 at 1:47 PM, Prarit Bhargava <prarit@redhat.com> wrote:
+> On 10/15/2014 03:23 PM, Bjorn Helgaas wrote:
+>> Hi Prarit,
+>>
+>> On Wed, Oct 15, 2014 at 1:05 PM, Prarit Bhargava <prarit@redhat.com> wrote:
+>>> Consider a multi-node, multiple pci root bridge system which can be
+>>> configured into one large node or one node/socket.  When configuring the
+>>> system the numa_node value for each PCI root bridge is always set
+>>> incorrectly to -1, or NUMA_NO_NODE, rather than to the node value of each
+>>> socket.  Each PCI device inherits the numa value directly from it's parent
+>>> device, so that the NUMA_NO_NODE value is passed through the entire PCI
+>>> tree.
+>>>
+>>> Some new drivers, such as the Intel QAT driver, drivers/crypto/qat,
+>>> require that a specific node be assigned to the device in order to
+>>> achieve maximum performance for the device, and will fail to load if the
+>>> device has NUMA_NO_NODE.
+>>
+>> It seems ... unfriendly for a driver to fail to load just because it
+>> can't guarantee maximum performance.  Out of curiosity, where does
+>> this actually happen?  I had a quick look for NUMA_NO_NODE and
+>> module_init() functions in drivers/crypto/qat, and I didn't see the
+>> spot.
+>
+> The whole point of the Intel QAT driver is to guarantee max performance.  If
+> that is not possible the driver should not load (according to the thread
+> mentioned below)
+>
+>>
+>>> The driver would load if the numa_node value
+>>> was equal to or greater than -1 and quickly hacking the driver results in
+>>> a functional QAT driver.
+>>>
+>>> Using lspci and numactl it is easy to determine what the numa value should
+>>> be.  The problem is that there is no way to set it.  This patch adds a
+>>> store function for the PCI device's numa_node value.
+>>
+>> I'm not familiar with numactl.  It sounds like it can show you the
+>> NUMA topology?  Where does that information come from?
+>
+> You can map at least what nodes are available (although I suppose you can get
+> the same information from dmesg).  You have to do a bit of hunting through the
+> PCI tree to determine the root PCI devices, but you can determine which root
+> device is connected to which node.
 
-For most arch's we have a better way to get the arch (syscall_get_arch)
-So the solution was two fold:  Implement syscall_get_arch() everywhere
-there is audit which didn't have it.  Use syscall_get_arch() in the
-seccomp audit code.  Having syscall_get_arch() everywhere meant it was a
-useless flag on the stack and we could get rid of it for the typical
-syscall entry.
+Is numactl reading SRAT?  SLIT?  SMBIOS tables?  Presumably the kernel
+has access to whatever information you're getting from numactl and
+lspci, and if so, maybe we can do the workaround automatically in the
+kernel.
 
-This of course results in a couple of merge issues.  Pretty easy, x86_64
-appears to have removed the assembly we were editing and did it in C
-code in arch/x86/kernel/ptrace.c::do_audit_syscall_entry().  arm
-conflict is also obvious.
+>>> To use this, one can do
+>>>
+>>> echo 3 > /sys/devices/pci0000:ff/0000:ff:1f.3/numa_node
+>>>
+>>> to set the numa node for PCI device 0000:ff:1f.3.
+>>
+>> It definitely seems wrong that we don't set the node number correctly.
+>> pci_acpi_scan_root() sets the node number by looking for a _PXM method
+>> that applies to the host bridge.  Why does that not work in this case?
+>>  Does the BIOS not supply _PXM?
+>
+> Yeah ... unfortunately the BIOS is broken in this case.  And I know what you're
+> thinking ;) -- why not get the BIOS fixed?  I'm through relying on BIOS fixes
+> which can take six months to a year to appear in a production version... I've
+> been bitten too many times by promises of BIOS fixes that never materialize.
 
-The other changes inside the audit system aren't grand, fixed some
-records that had invalid spaces.  Better locking around the task comm
-field.  Removing some dead functions and structs.  Make some things
-static.  Really minor stuff.
+Yep, I understand.  The question is how we implement a workaround so
+it doesn't become the accepted way to do things.  Obviously we don't
+want people manually grubbing through numactl/lspci output or writing
+shell scripts to do things that *should* happen automatically.
 
+> We have systems that only have a support cycle of 3 years, and things like ACPI
+> _PXM updates are at the bottom of the list :/.
 
-The following changes since commit 19583ca584d6f574384e17fe7613dfaeadcdc4a6:
+Something's wrong with this picture.  If vendors are building systems
+where node information is important, and the platform doesn't tell the
+OS what the node numbers ARE, then in my opinion, the vendor is
+essentially asking for low performance and is getting what he asked
+for, and his customers should learn that the answer is to shop
+elsewhere.
 
-  Linux 3.16 (2014-08-03 15:25:02 -0700)
+Somewhere in the picture there needs to be a feedback loop that
+encourages the vendor to fix the problem.  I don't see that happening
+yet.  Having QAT fail because the platform didn't supply the
+information required to make it work would be a nice loop.  I don't
+want to completely paper over the problem without providing some other
+kind of feedback at the same time.
 
-are available in the git repository at:
+You're probably aware of [1], which was the same problem.  Apparently
+it was originally reported to RedHat as [2] (which is private, so I
+can't read it).  That led to a workaround hack for some AMD systems
+[3, 4].
 
-  git://git.infradead.org/users/eparis/audit.git master
+[1] https://bugzilla.kernel.org/show_bug.cgi?id=72051
+[2] https://bugzilla.redhat.com/show_bug.cgi?id=1040440
+[3] http://lkml.kernel.org/r/1394053603-3724-1-git-send-email-suravee.suthikulpanit@amd.com
+[4] http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=94d4bb5b1397
 
-for you to fetch changes up to 2991dd2b0117e864f394c826af6df144206ce0db:
+> FWIW, on this particular system I have a filed a bug with the vendor.
+>
+>>
+>> If there's information that numactl uses, maybe the kernel should use that, too?
+>>
+>> A sysfs interface might be a useful workaround, but obviously it would
+>> be far better if we could fix the BIOS and/or kernel so the workaround
+>> isn't necessary in the first place.
+>
+> Yep ... but like I said, I don't think anyone wants to wait a year.  What if we
+> never see a fix?
+>
+> Side issue:  While investigating this I noticed that plain kmalloc() is used in
+> the setup code.  Is there a reason we don't use kmalloc_node() in
+> pci_alloc_dev(), and other allocation functions?  It seems like we should be to
+> optimize system performance.  OTOH ... I haven't done any measurements to see if
+> it actually makes a difference :)
 
-  audit: rename audit_log_remove_rule to disambiguate for trees (2014-10-10 15:30:25 -0400)
+Yeah, that probably would make sense.  We do use kmalloc_node() for
+some of the host bridge stuff, thanks to 965cd0e4a5e5 ("x86, PCI,
+ACPI: Use kmalloc_node() to optimize for performance").  But it
+probably would make sense to extend that farther down, too.
 
-----------------------------------------------------------------
-AKASHI Takahiro (1):
-      arm64: audit: Add audit hook in syscall_trace_enter/exit()
-
-Burn Alting (1):
-      audit: invalid op= values for rules
-
-Eric Paris (11):
-      audit: drop unused struct audit_rule definition
-      SH: define syscall_get_arch() for superh
-      UM: implement syscall_get_arch()
-      Alpha: define syscall_get_arch()
-      ARCH: AUDIT: implement syscall_get_arch for all arches
-      ARCH: AUDIT: audit_syscall_entry() should not require the arch
-      audit: fix build error when asm/syscall.h does not exist
-      sparc: simplify syscall_get_arch()
-      sparc: implement is_32bit_task
-      audit: arm64: Remove the audit arch argument to audit_syscall_entry
-      audit: WARN if audit_rule_change called illegally
-
-Fabian Frederick (1):
-      kernel/audit.c: use ARRAY_SIZE instead of sizeof/sizeof[0]
-
-Guenter Roeck (1):
-      next: openrisc: Fix build
-
-Richard Guy Briggs (15):
-      syscall.h: fix doc text for syscall_get_arch()
-      audit: __audit_syscall_entry: ignore arch arg and call syscall_get_arch() directly
-      audit: add arch field to seccomp event log
-      audit: x86: drop arch from __audit_syscall_entry() interface
-      audit: reduce scope of audit_net_id
-      audit: reduce scope of audit_log_fcaps
-      audit: use atomic_t to simplify audit_serial()
-      audit: use union for audit_field values since they are mutually exclusive
-      audit: set nlmsg_len for multicast messages.
-      audit: correct AUDIT_GET_FEATURE return message type
-      audit: remove open_arg() function that is never used
-      audit: get comm using lock to avoid race in string printing
-      audit: put rule existence check in canonical order
-      audit: cull redundancy in audit_rule_change
-      audit: rename audit_log_remove_rule to disambiguate for trees
-
-Stephen Rothwell (1):
-      sparc: properly conditionalize use of TIF_32BIT
-
- arch/alpha/include/asm/syscall.h        | 11 +++++++
- arch/alpha/kernel/ptrace.c              |  2 +-
- arch/arm/kernel/ptrace.c                |  4 +--
- arch/arm64/kernel/ptrace.c              |  7 +++++
- arch/ia64/include/asm/syscall.h         |  6 ++++
- arch/ia64/kernel/ptrace.c               |  2 +-
- arch/microblaze/include/asm/syscall.h   |  5 +++
- arch/microblaze/kernel/ptrace.c         |  3 +-
- arch/mips/include/asm/syscall.h         |  2 +-
- arch/mips/kernel/ptrace.c               |  4 +--
- arch/openrisc/include/asm/syscall.h     |  5 +++
- arch/openrisc/include/uapi/asm/elf.h    |  3 +-
- arch/openrisc/kernel/ptrace.c           |  3 +-
- arch/parisc/include/asm/syscall.h       | 11 +++++++
- arch/parisc/kernel/ptrace.c             |  9 ++----
- arch/powerpc/include/asm/syscall.h      |  6 ++++
- arch/powerpc/kernel/ptrace.c            |  7 ++---
- arch/s390/kernel/ptrace.c               |  4 +--
- arch/sh/include/asm/syscall_32.h        | 10 ++++++
- arch/sh/include/asm/syscall_64.h        | 14 +++++++++
- arch/sh/kernel/ptrace_32.c              | 14 +--------
- arch/sh/kernel/ptrace_64.c              | 17 +---------
- arch/sparc/include/asm/syscall.h        |  7 +++++
- arch/sparc/include/asm/thread_info_32.h |  2 ++
- arch/sparc/include/asm/thread_info_64.h |  2 ++
- arch/sparc/kernel/ptrace_64.c           |  9 ++----
- arch/um/kernel/ptrace.c                 |  3 +-
- arch/x86/ia32/ia32entry.S               | 12 +++----
- arch/x86/kernel/entry_32.S              | 11 +++----
- arch/x86/kernel/entry_64.S              | 11 +++----
- arch/x86/kernel/ptrace.c                |  8 ++---
- arch/x86/um/asm/ptrace.h                |  4 ---
- arch/x86/um/asm/syscall.h               | 15 +++++++++
- arch/xtensa/kernel/ptrace.c             |  2 +-
- include/asm-generic/syscall.h           |  2 +-
- include/linux/audit.h                   | 25 +++++++++------
- include/uapi/linux/audit.h              | 14 +--------
- include/uapi/linux/elf-em.h             |  1 +
- kernel/audit.c                          | 30 ++++++------------
- kernel/audit.h                          |  1 -
- kernel/audit_tree.c                     |  6 ++--
- kernel/audit_watch.c                    |  4 +--
- kernel/auditfilter.c                    | 56 +++++++++++++++++++--------------
- kernel/auditsc.c                        | 28 ++++++-----------
- 44 files changed, 214 insertions(+), 188 deletions(-)
- create mode 100644 arch/alpha/include/asm/syscall.h
- create mode 100644 arch/x86/um/asm/syscall.h
-
-
+>>> Cc: Myron Stowe <mstowe@redhat.com>
+>>> Cc: Bjorn Helgaas <bhelgaas@google.com>
+>>> Cc: linux-pci@vger.kernel.org
+>>> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+>>> ---
+>>>  drivers/pci/pci-sysfs.c |   23 ++++++++++++++++++++++-
+>>>  1 file changed, 22 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+>>> index 92b6d9a..c05ed30 100644
+>>> --- a/drivers/pci/pci-sysfs.c
+>>> +++ b/drivers/pci/pci-sysfs.c
+>>> @@ -221,12 +221,33 @@ static ssize_t enabled_show(struct device *dev, struct device_attribute *attr,
+>>>  static DEVICE_ATTR_RW(enabled);
+>>>
+>>>  #ifdef CONFIG_NUMA
+>>> +static ssize_t numa_node_store(struct device *dev,
+>>> +                              struct device_attribute *attr,
+>>> +                              const char *buf, size_t count)
+>>> +{
+>>> +       int node, ret;
+>>> +
+>>> +       if (!capable(CAP_SYS_ADMIN))
+>>> +               return -EPERM;
+>>> +
+>>> +       ret = kstrtoint(buf, 0, &node);
+>>> +       if (ret)
+>>> +               return ret;
+>>> +
+>>> +       if (!node_online(node))
+>>> +               return -EINVAL;
+>>> +
+>>> +       dev->numa_node = node;
+>>> +
+>>> +       return count;
+>>> +}
+>>> +
+>>>  static ssize_t numa_node_show(struct device *dev, struct device_attribute *attr,
+>>>                               char *buf)
+>>>  {
+>>>         return sprintf(buf, "%d\n", dev->numa_node);
+>>>  }
+>>> -static DEVICE_ATTR_RO(numa_node);
+>>> +static DEVICE_ATTR_RW(numa_node);
+>>>  #endif
+>>>
+>>>  static ssize_t dma_mask_bits_show(struct device *dev,
+>>> --
+>>> 1.7.9.3
+>>>
+>>
+>>
+>
