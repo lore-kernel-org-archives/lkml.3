@@ -1,45 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751593AbaJOGcv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 02:32:51 -0400
-Received: from ozlabs.org ([103.22.144.67]:56066 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751345AbaJOGcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 02:32:48 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, gregkh@linuxfoundation.org,
-        dmitry.torokhov@gmail.com, tiwai@suse.de, tj@kernel.org,
-        arjan@linux.intel.com
-Cc: teg@jklm.no, rmilasan@suse.com, werner@suse.com, oleg@redhat.com,
-        hare@suse.com, bpoirier@suse.de, santosh@chelsio.com, pmladek@suse.cz,
-        dbueso@suse.com, mcgrof@suse.com, linux-kernel@vger.kernel.org,
-        cocci@systeme.lip6.fr, Christoph Hellwig <hch@infradead.org>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Ewan Milne <emilne@redhat.com>, Jean Delvare <jdelvare@suse.de>,
-        Hannes Reinecke <hare@suse.de>
-Subject: Re: [PATCH v2 2/7] module: add extra argument for parse_params() callback
-In-Reply-To: <1412372683-2003-3-git-send-email-mcgrof@do-not-panic.com>
-References: <1412372683-2003-1-git-send-email-mcgrof@do-not-panic.com> <1412372683-2003-3-git-send-email-mcgrof@do-not-panic.com>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 15 Oct 2014 16:05:00 +1030
-Message-ID: <87egu9c2uz.fsf@rustcorp.com.au>
+	id S1751740AbaJOGdD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 02:33:03 -0400
+Received: from mail-by2on0147.outbound.protection.outlook.com ([207.46.100.147]:38912
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751645AbaJOGdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 02:33:00 -0400
+From: Jingchang Lu <jingchang.lu@freescale.com>
+To: Joseph Lo <josephl@nvidia.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "peter@hurleysoftware.com" <peter@hurleysoftware.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCHv4] serial: of-serial: fix up PM ops on no_console_suspend
+ and port type
+Thread-Topic: [PATCHv4] serial: of-serial: fix up PM ops on no_console_suspend
+ and port type
+Thread-Index: AQHP55FFIMYR88HhxkeSAEfc0gxGHJwwV92AgABVjuA=
+Date: Wed, 15 Oct 2014 06:32:57 +0000
+Message-ID: <67564f37252242079bcd4c65827b8352@BL2PR03MB467.namprd03.prod.outlook.com>
+References: <1413276146-20388-1-git-send-email-jingchang.lu@freescale.com>
+ <543DC753.4070304@nvidia.com>
+In-Reply-To: <543DC753.4070304@nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [123.151.195.49]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB468;
+x-exchange-antispam-report-test: UriScan:;
+x-forefront-prvs: 0365C0E14B
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(199003)(377454003)(51704005)(479174003)(13464003)(189002)(24454002)(21056001)(122556002)(20776003)(85306004)(92566001)(86362001)(2656002)(74316001)(108616004)(33646002)(105586002)(106116001)(107046002)(106356001)(101416001)(40100003)(66066001)(95666004)(64706001)(99286002)(76576001)(120916001)(99396003)(97736003)(80022003)(19580395003)(46102003)(50986999)(76176999)(76482002)(31966008)(87936001)(4396001)(19580405001)(85852003)(54356999)(2501002)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB468;H:BL2PR03MB467.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9F6X8QL029371
 
-"Luis R. Rodriguez" <mcgrof@do-not-panic.com> writes:
-> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+>-----Original Message-----
+>From: Joseph Lo [mailto:josephl@nvidia.com]
+>Sent: Wednesday, October 15, 2014 9:01 AM
+>To: Lu Jingchang-B35083; gregkh@linuxfoundation.org
+>Cc: peter@hurleysoftware.com; arnd@arndb.de; linux-kernel@vger.kernel.org;
+>linux-serial@vger.kernel.org; linux-arm-kernel@lists.infradead.org
+>Subject: Re: [PATCHv4] serial: of-serial: fix up PM ops on
+>no_console_suspend and port type
 >
-> This adds an extra argument onto parse_params() to be used
-> as a way to make the unused callback a bit more useful and
-> generic by allowing the caller to pass on a data structure
-> of its choice. An example use case is to allow us to easily
-> make module parameters for every module which we will do
-> next.
+>On 10/14/2014 04:42 PM, Jingchang Lu wrote:
+>> This patch fixes commit 2dea53bf57783f243c892e99c10c6921e956aa7e,
+>> "serial: of-serial: add PM suspend/resume support", which disables the
+>> uart clock on suspend, but also causes a hardware hang on register
+>> access if no_console_suspend command line option is used.
+>>
+>> Also, not every of_serial device is an 8250 port, so the serial8250
+>> suspend/resume functions should only be applied to a real 8250 port.
+>>
+>> Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
+>
+>If you can make sure this patch can build without include
+><linux/console.h>, then this patch
+The build passes on my cloned linux-next tree, include next-20141014,
+but is required on my another kernel-3.12+ based tree, then I didn't
+add this header file when upstream. 
+Is the build broken on your source tree, and is the tree latest?
+If the header is needed, I will add it.
+Thanks.
 
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
-
-Cheers,
-Rusty.
+Best Regards,
+Jingchang
+>
+>Tested-by: Joseph Lo <josephl@nvidia.com>
+>
+>And thanks for your fix.
+>
+>> ---
+>> changes in v4:
+>>   separate 8250 port suspend/resume from of_serial_suspend/resume.
+>>
+>> changes in v3:
+>>   fix up point reference and deference.
+>>
+>> changes in v2:
+>>   add switch selection on uart type.
+>>
+>>   drivers/tty/serial/of_serial.c | 52
+>++++++++++++++++++++++++++++++++++++------
+>>   1 file changed, 45 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/drivers/tty/serial/of_serial.c
+>> b/drivers/tty/serial/of_serial.c index 8bc2563..5281f8f 100644
+>> --- a/drivers/tty/serial/of_serial.c
+>> +++ b/drivers/tty/serial/of_serial.c
+>> @@ -241,13 +241,48 @@ static int of_platform_serial_remove(struct
+>platform_device *ofdev)
+>>   }
+>>
+>>   #ifdef CONFIG_PM_SLEEP
+>> -static int of_serial_suspend(struct device *dev)
+>> +#ifdef CONFIG_SERIAL_8250
+>> +static void of_serial_suspend_8250(struct of_serial_info *info)
+>>   {
+>> -	struct of_serial_info *info = dev_get_drvdata(dev);
+>> +	struct uart_8250_port *port8250 = serial8250_get_port(info->line);
+>> +	struct uart_port *port = &port8250->port;
+>>
+>>   	serial8250_suspend_port(info->line);
+>> -	if (info->clk)
+>> +	if (info->clk && (!uart_console(port) || console_suspend_enabled))
+>>   		clk_disable_unprepare(info->clk);
+>> +}
+>> +
+>> +static void of_serial_resume_8250(struct of_serial_info *info) {
+>> +	struct uart_8250_port *port8250 = serial8250_get_port(info->line);
+>> +	struct uart_port *port = &port8250->port;
+>> +
+>> +	if (info->clk && (!uart_console(port) || console_suspend_enabled))
+>> +		clk_prepare_enable(info->clk);
+>> +
+>> +	serial8250_resume_port(info->line);
+>> +}
+>> +#else
+>> +static inline void of_serial_suspend_8250(struct of_serial_info
+>> +*info) { }
+>> +
+>> +static inline void of_serial_resume_8250(struct of_serial_info *info)
+>> +{ } #endif
+>> +
+>> +static int of_serial_suspend(struct device *dev) {
+>> +	struct of_serial_info *info = dev_get_drvdata(dev);
+>> +
+>> +	switch(info->type) {
+>> +	case PORT_8250 ... PORT_MAX_8250:
+>> +		of_serial_suspend_8250(info);
+>> +		break;
+>> +	default:
+>> +		break;
+>> +	}
+>>
+>>   	return 0;
+>>   }
+>> @@ -256,10 +291,13 @@ static int of_serial_resume(struct device *dev)
+>>   {
+>>   	struct of_serial_info *info = dev_get_drvdata(dev);
+>>
+>> -	if (info->clk)
+>> -		clk_prepare_enable(info->clk);
+>> -
+>> -	serial8250_resume_port(info->line);
+>> +	switch(info->type) {
+>> +	case PORT_8250 ... PORT_MAX_8250:
+>> +		of_serial_resume_8250(info);
+>> +		break;
+>> +	default:
+>> +		break;
+>> +	}
+>>
+>>   	return 0;
+>>   }
+>>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
