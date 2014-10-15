@@ -1,89 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751422AbaJOHIU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 03:08:20 -0400
-Received: from mga11.intel.com ([192.55.52.93]:18493 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751130AbaJOHIT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 03:08:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,722,1406617200"; 
-   d="scan'208";a="605588403"
-Date: Wed, 15 Oct 2014 10:08:12 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: David Cohen <david.a.cohen@linux.intel.com>
-Cc: Mathias Nyman <mathias.nyman@linux.intel.com>, linus.walleij@linaro.org,
-        gnurou@gmail.com, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC/PATCH] gpio/pinctrl: baytrail: move gpio driver from
- pinctrl to gpio directory
-Message-ID: <20141015070812.GM2255@lahna.fi.intel.com>
-References: <1413227857-555-1-git-send-email-david.a.cohen@linux.intel.com>
- <543CFC7F.2070607@linux.intel.com>
- <20141014174535.GA6516@psi-dev26.jf.intel.com>
+	id S1751272AbaJOHMm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 03:12:42 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:41276 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751130AbaJOHMk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 03:12:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141014174535.GA6516@psi-dev26.jf.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1411726047-3224-4-git-send-email-rebecca.swee.fun.chang@intel.com>
+References: <1411726047-3224-1-git-send-email-rebecca.swee.fun.chang@intel.com>
+	<1411726047-3224-4-git-send-email-rebecca.swee.fun.chang@intel.com>
+Date: Wed, 15 Oct 2014 09:12:40 +0200
+Message-ID: <CACRpkdY=FmMR2Gg-yaasMxMkjmVz2TOWDAVb8DJak9CXWtnk7A@mail.gmail.com>
+Subject: Re: [PATCHv2 3/3] gpio: sch: Enable IRQ support for Quark X1000
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>,
+        Denis Turischev <denis.turischev@compulab.co.il>
+Cc: Mika Westerberg <mika.westerberg@intel.com>,
+        GPIO Subsystem Mailing List <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 14, 2014 at 10:45:35AM -0700, David Cohen wrote:
-> Hi Mathias,
-> 
-> On Tue, Oct 14, 2014 at 01:35:43PM +0300, Mathias Nyman wrote:
-> > On 13.10.2014 22:17, David Cohen wrote:
-> > > Even though GPIO module on Intel Bay Trail is able to control pin
-> > > functionality, it's unlikely Linux kernel driver will ever support it
-> > > since BIOS should handle all pin muxing itself.
-> > > 
-> > > Currently this driver does not register any pinctrl interface and
-> > > doesn't call any pinctrl interface. It just uses on internal functions
-> > > the 'struct pinctrl_gpio_range', which is a weak justification to not be
-> > > under gpio directory.
-> > > 
-> > 
-> > This discussion was held when gpio-baytrail was first submitted.
-> > These threads explain the gpio/pinctrl-baytrail history:
-> > 
-> > http://marc.info/?l=linux-kernel&m=136981432427668&w=2
-> > http://marc.info/?l=linux-kernel&m=137113578604763&w=2
-> > http://marc.info/?l=linux-kernel&m=137155497023054&w=2
-> 
-> Thanks for pointing that out.
-> 
-> > 
-> > A proper pinctrl driver for baytrail is still not yet ruled out
-> 
-> Having it inside pinctrl directory is creating some confusion because
-> ppl expect it to implement the actual pinctrl interface.
+On Fri, Sep 26, 2014 at 12:07 PM, Chang Rebecca Swee Fun
+<rebecca.swee.fun.chang@intel.com> wrote:
 
-A typical pinctrl driver can implement both a pinctrl interface and a
-GPIO interface. So it is not uncommon to look the GPIO drivers under
-drivers/pinctrl/*.
+> Intel Quark X1000 GPIO controller supports interrupt handling for
+> both core power well and resume power well. This patch is to enable
+> the IRQ support and provide IRQ handling for Intel Quark X1000
+> GPIO-SCH device driver.
+>
+> This piece of work is derived from Dan O'Donovan's initial work for
+> Quark X1000 enabling.
+>
+> Signed-off-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+(...)
 
-Furthermore the driver announces that it is a GPIO driver in its Kconfig
-entry:
+This patch needs to be rebased on the gpio git "devel" branch or
+Torvalds' HEAD before I can apply it.
 
-config PINCTRL_BAYTRAIL
-        bool "Intel Baytrail GPIO pin control"
+>  #define GEN    0x00
+>  #define GIO    0x04
+>  #define GLV    0x08
+> +#define GTPE   0x0C
+> +#define GTNE   0x10
+> +#define GGPE   0x14
+> +#define GSMI   0x18
+> +#define GTS    0x1C
+> +#define CGNMIEN        0x40
+> +#define RGNMIEN        0x44
 
-so I don't quite get why this would confuse people.
+So the initial SCH driver for the Intel Poulsbo was submitted by Denis
+Turischev in 2010.
 
-We are also planning to add more Intel pinctrl (real) drivers in the
-future. drivers/pinctrl/intel/* should be the place where people find
-the pinctrl/GPIO drivers for newer Intel hardware.
+Does these registers exist and work on the Poulsbo as well?
 
-> Anyway, the threads above are over 1 year old. Perhaps it was making
-> sense during that time, but unless somebody is working on pinctrl
-> interface now, IMHO we're misplacing the driver for too long. It'd
-> better to move this driver to gpio directory and when/if pinctrl
-> interface is implemented, we move it back to current place.
+Is it really enough to distinguish between these variants by
+checking if we're getting an IRQ resource on the device or not?
+Is there some version register or so?
 
-I disagree.
+>  struct sch_gpio {
+>         struct gpio_chip chip;
+> +       struct irq_data data;
+>         spinlock_t lock;
+>         unsigned short iobase;
+>         unsigned short core_base;
+>         unsigned short resume_base;
+> +       int irq_base;
+> +       int irq_num;
+> +       int irq_support;
 
-What happens when people and distros have CONFIG_PINCTRL_BAYTRAIL=y and
-now the symbol is changed to something else? For one, it will break the
-existing working configs.
+Isn't that a bool?
+
+> +       irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+> +       sch->irq_support = !!irq;
+
+Yeah, it's a bool....
+
+> +       if (sch->irq_support) {
+> +               sch->irq_num = irq->start;
+> +               if (sch->irq_num < 0) {
+> +                       dev_warn(&pdev->dev,
+> +                                "failed to obtain irq number for device\n");
+> +                       sch->irq_support = 0;
+
+= false;
+
+> +       if (sch->irq_support) {
+> +               sch->irq_base = irq_alloc_descs(-1, 0, sch->chip.ngpio,
+> +                                               NUMA_NO_NODE);
+> +               if (sch->irq_base < 0) {
+> +                       dev_err(&pdev->dev,
+> +                               "failed to add GPIO IRQ descs\n");
+
+Failed to *allocate* actually...
+
+> +                       sch->irq_base = -1;
+
+This is overzealous. Drop it.
+
+> +                       goto err_sch_intr_chip;
+
+You're bailing out anyway, see.
+
+>  static int sch_gpio_remove(struct platform_device *pdev)
+>  {
+>         struct sch_gpio *sch = platform_get_drvdata(pdev);
+> +       int err;
+>
+> -       gpiochip_remove(&sch->chip);
+> -       return 0;
+> +       if (sch->irq_support) {
+> +               sch_gpio_irqs_deinit(sch, sch->chip.ngpio);
+> +
+> +               if (sch->irq_num >= 0)
+> +                       free_irq(sch->irq_num, sch);
+> +
+> +               irq_free_descs(sch->irq_base, sch->chip.ngpio);
+> +       }
+> +
+> +       err = gpiochip_remove(&sch->chip);
+> +       if (err)
+> +               dev_err(&pdev->dev,
+> +                       "%s gpiochip_remove() failed\n", __func__);
+
+So gpiochip_remove() does *NOT* return an error in the current
+kernel. We just removed that return value from the SCH driver in the
+previous cycle for the reason that we were killing off the return type.
+commit 9f5132ae82fdbb047cc187bf689a81c8cc0de7fa
+"gpio: remove all usage of gpio_remove retval in driver/gpio"
+
+So don't reintroduce stuff we're actively trying to get rid of.
+
+Apart from this is looks OK, Mika can you ACK the end result?
+
+Yours,
+Linus Walleij
