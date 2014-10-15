@@ -1,64 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751795AbaJOTq5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 15:46:57 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:52646 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721AbaJOTqz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 15:46:55 -0400
-Message-ID: <543ECF24.3040202@gmail.com>
-Date: Thu, 16 Oct 2014 01:46:44 +0600
-From: "Alexander E. Patrakov" <patrakov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1751845AbaJOTsF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 15:48:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48997 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751196AbaJOTsB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 15:48:01 -0400
+Message-ID: <543ECF6F.2030705@redhat.com>
+Date: Wed, 15 Oct 2014 15:47:59 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-To: Anatol Pomozov <anatol.pomozov@gmail.com>, Tom Gundersen <teg@jklm.no>
-CC: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Takashi Iwai <tiwai@suse.de>, Kay Sievers <kay@vrfy.org>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        hare <hare@suse.com>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Wu Zhangjin <falcon@meizu.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        "mpt-fusionlinux.pdl" <MPT-FusionLinux.pdl@avagotech.com>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Santosh Rastapur <santosh@chelsio.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        systemd Mailing List <systemd-devel@lists.freedesktop.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>
-Subject: Re: [systemd-devel] [RFC v2 3/6] kthread: warn on kill signal if
- not OOM
-References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com> <20140909011059.GB11706@mtj.dyndns.org> <1410241109.2028.22.camel@jarvis.lan> <CAB=NE6WGAMvffGDTkN5x5Cd+YOtD-Cmo3v7_8FmJ5cvCRbFEpw@mail.gmail.com> <1410291346.13298.16.camel@jarvis.lan> <CAB=NE6U6v-GhAaZv3yXn9uVFvBvE4Uq8z7MQU8N+CyW19WpnNQ@mail.gmail.com> <CAG-2HqUiUksdT4UyeDsdc1Q74=2BiX2TuzzGh_hoLiO5_DOvXQ@mail.gmail.com> <CAB=NE6UprJH69hzc1mjqyq6PAn+7LZmX65Z8CDwUdJ73nDusHg@mail.gmail.com> <CAG-2HqUzCvd55mq=M3=tXbHAjc2QnVuRtbFZMWTz9k_6BmmngQ@mail.gmail.com> <CAB=NE6XmFaWMKuW3vJ7QMZ1BmmWrAPezTYYsqatX4mMNdMjpog@mail.gmail.com> <CAG-2HqWYXo+uRtOk_XW-Bi5aXcTLphEMLCMy8a2THuEg9dHPzw@mail.gmail.com> <CAB=NE6XS9pWmfO7xjTpLFG1OdOJ=UktbOK5pjJCK8hzfXagfXQ@mail.gmail.com> <CAOMFOmVSwPAbPtNzPn93QGjbXh1B3QC7B2Ahd1Qxc=gWb6H7fQ@mail.gmail.com> <CAG-2HqXdxHrx4OL4E0TnzA1Fb6zK6J+qowfD0RHCwviGUv-_ng@mail.gmail.com> <CAOMFOmW2r2SyRVLAdZTV_1wK+gRES-hQXHGUGnWA=kvv6P3KXQ@mail.gmail.com>
-In-Reply-To: <CAOMFOmW2r2SyRVLAdZTV_1wK+gRES-hQXHGUGnWA=kvv6P3KXQ@mail.gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Myron Stowe <mstowe@redhat.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH] pci, add sysfs numa_node write function
+References: <1413399924-599-1-git-send-email-prarit@redhat.com> <CAErSpo6Oy1S1OECirp6=tz+pQWUtkFE6p1LTzNaYtzxoX73FWw@mail.gmail.com>
+In-Reply-To: <CAErSpo6Oy1S1OECirp6=tz+pQWUtkFE6p1LTzNaYtzxoX73FWw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-16.10.2014 01:41, Anatol Pomozov wrote:
-> True. module name should be enough. In this case to debug the issue user needs:
->   - disable failing udev rule (or blacklist module?)
->   - reboot, it will let the user get into shell
->   - modprobe the failing module
->   - use sysrq-trigger to get more information about stuck process
+On 10/15/2014 03:23 PM, Bjorn Helgaas wrote:
+> Hi Prarit,
+> 
+> On Wed, Oct 15, 2014 at 1:05 PM, Prarit Bhargava <prarit@redhat.com> wrote:
+>> Consider a multi-node, multiple pci root bridge system which can be
+>> configured into one large node or one node/socket.  When configuring the
+>> system the numa_node value for each PCI root bridge is always set
+>> incorrectly to -1, or NUMA_NO_NODE, rather than to the node value of each
+>> socket.  Each PCI device inherits the numa value directly from it's parent
+>> device, so that the NUMA_NO_NODE value is passed through the entire PCI
+>> tree.
+>>
+>> Some new drivers, such as the Intel QAT driver, drivers/crypto/qat,
+>> require that a specific node be assigned to the device in order to
+>> achieve maximum performance for the device, and will fail to load if the
+>> device has NUMA_NO_NODE.
+> 
+> It seems ... unfriendly for a driver to fail to load just because it
+> can't guarantee maximum performance.  Out of curiosity, where does
+> this actually happen?  I had a quick look for NUMA_NO_NODE and
+> module_init() functions in drivers/crypto/qat, and I didn't see the
+> spot.
 
-Nitpick: this only works only if the "stuck modprobe" bug is 100% 
-reproducible. Which is not a given. So it is better to collect as much 
-information about the bug when it is noticed by systemd.
+The whole point of the Intel QAT driver is to guarantee max performance.  If
+that is not possible the driver should not load (according to the thread
+mentioned below)
 
--- 
-Alexander E. Patrakov
+> 
+>> The driver would load if the numa_node value
+>> was equal to or greater than -1 and quickly hacking the driver results in
+>> a functional QAT driver.
+>>
+>> Using lspci and numactl it is easy to determine what the numa value should
+>> be.  The problem is that there is no way to set it.  This patch adds a
+>> store function for the PCI device's numa_node value.
+> 
+> I'm not familiar with numactl.  It sounds like it can show you the
+> NUMA topology?  Where does that information come from?
+
+You can map at least what nodes are available (although I suppose you can get
+the same information from dmesg).  You have to do a bit of hunting through the
+PCI tree to determine the root PCI devices, but you can determine which root
+device is connected to which node.
+
+> 
+>> To use this, one can do
+>>
+>> echo 3 > /sys/devices/pci0000:ff/0000:ff:1f.3/numa_node
+>>
+>> to set the numa node for PCI device 0000:ff:1f.3.
+> 
+> It definitely seems wrong that we don't set the node number correctly.
+> pci_acpi_scan_root() sets the node number by looking for a _PXM method
+> that applies to the host bridge.  Why does that not work in this case?
+>  Does the BIOS not supply _PXM?
+
+Yeah ... unfortunately the BIOS is broken in this case.  And I know what you're
+thinking ;) -- why not get the BIOS fixed?  I'm through relying on BIOS fixes
+which can take six months to a year to appear in a production version... I've
+been bitten too many times by promises of BIOS fixes that never materialize.
+
+We have systems that only have a support cycle of 3 years, and things like ACPI
+_PXM updates are at the bottom of the list :/.
+
+FWIW, on this particular system I have a filed a bug with the vendor.
+
+> 
+> If there's information that numactl uses, maybe the kernel should use that, too?
+> 
+> A sysfs interface might be a useful workaround, but obviously it would
+> be far better if we could fix the BIOS and/or kernel so the workaround
+> isn't necessary in the first place.
+
+Yep ... but like I said, I don't think anyone wants to wait a year.  What if we
+never see a fix?
+
+Side issue:  While investigating this I noticed that plain kmalloc() is used in
+the setup code.  Is there a reason we don't use kmalloc_node() in
+pci_alloc_dev(), and other allocation functions?  It seems like we should be to
+optimize system performance.  OTOH ... I haven't done any measurements to see if
+it actually makes a difference :)
+
+P.
+
+> 
+> Bjorn
+> 
+>> Cc: Myron Stowe <mstowe@redhat.com>
+>> Cc: Bjorn Helgaas <bhelgaas@google.com>
+>> Cc: linux-pci@vger.kernel.org
+>> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+>> ---
+>>  drivers/pci/pci-sysfs.c |   23 ++++++++++++++++++++++-
+>>  1 file changed, 22 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+>> index 92b6d9a..c05ed30 100644
+>> --- a/drivers/pci/pci-sysfs.c
+>> +++ b/drivers/pci/pci-sysfs.c
+>> @@ -221,12 +221,33 @@ static ssize_t enabled_show(struct device *dev, struct device_attribute *attr,
+>>  static DEVICE_ATTR_RW(enabled);
+>>
+>>  #ifdef CONFIG_NUMA
+>> +static ssize_t numa_node_store(struct device *dev,
+>> +                              struct device_attribute *attr,
+>> +                              const char *buf, size_t count)
+>> +{
+>> +       int node, ret;
+>> +
+>> +       if (!capable(CAP_SYS_ADMIN))
+>> +               return -EPERM;
+>> +
+>> +       ret = kstrtoint(buf, 0, &node);
+>> +       if (ret)
+>> +               return ret;
+>> +
+>> +       if (!node_online(node))
+>> +               return -EINVAL;
+>> +
+>> +       dev->numa_node = node;
+>> +
+>> +       return count;
+>> +}
+>> +
+>>  static ssize_t numa_node_show(struct device *dev, struct device_attribute *attr,
+>>                               char *buf)
+>>  {
+>>         return sprintf(buf, "%d\n", dev->numa_node);
+>>  }
+>> -static DEVICE_ATTR_RO(numa_node);
+>> +static DEVICE_ATTR_RW(numa_node);
+>>  #endif
+>>
+>>  static ssize_t dma_mask_bits_show(struct device *dev,
+>> --
+>> 1.7.9.3
+>>
+> 
+> 
+
