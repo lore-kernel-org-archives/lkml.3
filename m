@@ -1,79 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751676AbaJOQFP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 12:05:15 -0400
-Received: from mga03.intel.com ([134.134.136.65]:41572 "EHLO mga03.intel.com"
+	id S1751767AbaJOQFl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 12:05:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57311 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750880AbaJOQFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 12:05:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,725,1406617200"; 
-   d="scan'208";a="619199600"
-Date: Wed, 15 Oct 2014 20:58:42 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, balbi@ti.com, gregkh@linuxfoundation.org
-Subject: Re: [PATCH 09/13] dmaengine: edma: check for echan->edesc => NULL
- in edma_dma_pause()
-Message-ID: <20141015152842.GZ1638@intel.com>
-References: <1412014009-13315-1-git-send-email-bigeasy@linutronix.de>
- <1412014009-13315-10-git-send-email-bigeasy@linutronix.de>
+	id S1751322AbaJOQFk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 12:05:40 -0400
+Message-ID: <543E9B4B.9040608@zytor.com>
+Date: Wed, 15 Oct 2014 09:05:31 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412014009-13315-10-git-send-email-bigeasy@linutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Prarit Bhargava <prarit@redhat.com>
+CC: linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: Lockdep warning with init_espfix_ap()
+References: <5436AB4A.1080900@redhat.com> <543E994F.5030406@zytor.com> <543E9ACE.7050009@redhat.com>
+In-Reply-To: <543E9ACE.7050009@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 08:06:45PM +0200, Sebastian Andrzej Siewior wrote:
-> I added book keeping of whether or not the 8250-dma driver has an RX
-> transfer pending or not so we don't BUG here if it calls
-> dmaengine_pause() on a channel which has not a pending transfer. Guess
-> what, this is not enough.
-> The following can be triggered with a busy RX channel and hackbench in
-> background:
-> - DMA transfer completes. The callback is delayed via
->   vchan_cookie_complete() into a tasklet so it das not happen asap.
-> - hackbench keeps the system busy so the tasklet does not run "soon".
-> - the UART collected enough data and generates an "timeout"-interrupt.
->   Since 8250-dma *thinks* the DMA-transfer is still pending it tries to
->   cancel it via invoking dmaengine_pause() first. This causes the segfault
->   because echan->edesc is NULL now that the transfer completed (however
->   the callback did not run yet).
+On 10/15/2014 09:03 AM, Prarit Bhargava wrote:
+>>
+>> It is kind of a messy situation, because this code needs to allocate
+>> memory but is run before the secondary CPU is fully up.  As such, it is
+>> a false positive, at least in some ways.
 > 
-> With this patch we don't BUG in the scenario described.
-
-Applied, thanks
-
--- 
-~Vinod
-
-> 
-> Cc: vinod.koul@intel.com
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> ---
->  drivers/dma/edma.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-> index 7b65633f495e..123f578d6dd3 100644
-> --- a/drivers/dma/edma.c
-> +++ b/drivers/dma/edma.c
-> @@ -288,7 +288,7 @@ static int edma_slave_config(struct edma_chan *echan,
->  static int edma_dma_pause(struct edma_chan *echan)
->  {
->  	/* Pause/Resume only allowed with cyclic mode */
-> -	if (!echan->edesc->cyclic)
-> +	if (!echan->edesc || !echan->edesc->cyclic)
->  		return -EINVAL;
->  
->  	edma_pause(echan->ch_num);
-> -- 
-> 2.1.0
+> Interesting -- FWIW, I can reproduce this 100% of the time on _one_ system.  It
+> isn't a big deal and likely just worth noting at this point.  I *always* see it
+> when bringing up CPU 64 (of 128).
 > 
 
--- 
+... because that is the first CPU which needs to allocate memory.
+
+	-hpa
+
+
