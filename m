@@ -1,86 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751383AbaJONcm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 09:32:42 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:51146 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257AbaJONck (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 09:32:40 -0400
+	id S1751427AbaJONdr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 09:33:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29941 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750887AbaJONdp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 09:33:45 -0400
+Date: Wed, 15 Oct 2014 16:37:10 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Jason Wang <jasowang@redhat.com>
+Subject: Re: [PATCH] virtio_net: fix use after free
+Message-ID: <20141015133710.GA28339@redhat.com>
+References: <1413378878-28118-1-git-send-email-mst@redhat.com>
+ <063D6719AE5E284EB5DD2968C1650D6D1C9D77AB@AcuExch.aculab.com>
 MIME-Version: 1.0
-In-Reply-To: <543E7312.1020104@roeck-us.net>
-References: <1413298094-9276-1-git-send-email-octavian.purdila@intel.com>
-	<1413298094-9276-4-git-send-email-octavian.purdila@intel.com>
-	<20141014154151.GB10067@roeck-us.net>
-	<CAE1zotKpgEqAhtQvsFFee8xnX02MmhwrM0YU-6OHVZHcxiAi9g@mail.gmail.com>
-	<543E7312.1020104@roeck-us.net>
-Date: Wed, 15 Oct 2014 16:32:39 +0300
-Message-ID: <CAE1zotL4TLpdCeaX4=1YC=9PenscvAMDXJDAdYdVRNmGcjJaeQ@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 3/3] i2c: show and change bus frequency via sysfs
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Johan Hovold <johan@kernel.org>,
-        linux-i2c <linux-i2c@vger.kernel.org>, linux-api@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1C9D77AB@AcuExch.aculab.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 4:13 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> On 10/15/2014 04:49 AM, Octavian Purdila wrote:
->>
->> On Tue, Oct 14, 2014 at 6:41 PM, Guenter Roeck <linux@roeck-us.net> wrote:
->>>
->>>
->>> On Tue, Oct 14, 2014 at 05:48:14PM +0300, Octavian Purdila wrote:
->>>>
->>>> This patch adds three new sysfs files: bus_frequency,
->>>> bus_min_frequency and bus_max_frequency which allows the user to view
->>>> or change the bus frequency on a per bus level.
->>>>
->>
->> <snip>
->>
->>>> +
->>>> +static DEVICE_ATTR(bus_frequency, S_IRUGO, i2c_sysfs_freq_show,
->>>> +                i2c_sysfs_freq_store);
->>>
->>>
->>> Consider using DEVICE_ATTR_RO here. Also, extra empty line.
->>>
->>
->> Unfortunately that won't work because we must transform bus_frequency
->> to a RW entry (via is_visible) if the bus can change the frequency. We
->
->
-> Ah yes, you are right.
->
->> can't use DEVIE_ATTR_RW either, because transforming a RW entry to a
->> RO entry with is visible is not possible:
->>
->
-> Why not ?
->
-> is_visible returns the desired mode. Just like you can return mode |
-> S_IWUSR,
-> you can return mode & ~S_IWUSR.
->
-> Am I missing something ?
->
+On Wed, Oct 15, 2014 at 01:24:57PM +0000, David Laight wrote:
+> From: Michael S. Tsirkin
+> > commit 0b725a2ca61bedc33a2a63d0451d528b268cf975
+> >     net: Remove ndo_xmit_flush netdev operation, use signalling instead.
+> > 
+> > added code that looks at skb->xmit_more after the skb has
+> > been put in TX VQ. Since some paths process the ring and free the skb
+> > immediately, this can cause use after free.
+> > 
+> > Fix by storing xmit_more in a local variable.
+> > 
+> > Cc: David S. Miller <davem@davemloft.net>
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> > 
+> > David, am I using the API correctly?
+> > Seems to work for me.
+> > You used __netif_subqueue_stopped but that seems to use
+> > a slightly more expensive test_bit internally.
+> > The reason I added a variable for the txq here is because it's handy for
+> > BQL patch later on.
+> > 
+> > 
+> >  drivers/net/virtio_net.c | 4 +++-
+> >  1 file changed, 3 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> > index 3d0ce44..13d0a8b 100644
+> > --- a/drivers/net/virtio_net.c
+> > +++ b/drivers/net/virtio_net.c
+> > @@ -920,6 +920,8 @@ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
+> >  	int qnum = skb_get_queue_mapping(skb);
+> >  	struct send_queue *sq = &vi->sq[qnum];
+> >  	int err;
+> > +	struct netdev_queue *txq = netdev_get_tx_queue(dev, qnum);
+> 
+> Do you need to cache 'txq' on stack for the entire call?
+> Looks like it is only needed when 'kick' is true.
+> I've not looked to see if saves both 'dev' and 'qnum' being kept.
+> 
+> In any case it isn't mentioned in the commit message.
+> 
+> 	David
 
-Here is how sysfs uses is_visible:
+Code seems slightly neater this way, I haven't bothered to
+micro-optimize it to this level yet.
+Want to benchmark and send a patch on top?
 
-static int create_files(struct kernfs_node *parent, struct kobject *kobj,
-...
-                        if (grp->is_visible) {
-                                mode = grp->is_visible(kobj, *attr, i);
-                                if (!mode)
-                                        continue;
-                        }
-                        error = sysfs_add_file_mode_ns(parent, *attr, false,
-                                                       (*attr)->mode | mode,
-                                                       NULL);
-
-so basically is the mode set is the original mode from the attributed
-"or-ed" with the mode return by is_visible.
+> > +	bool kick = !skb->xmit_more;
+> > 
+> >  	/* Free up any pending old buffers before queueing new ones. */
+> >  	free_old_xmit_skbs(sq);
+> > @@ -956,7 +958,7 @@ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
+> >  		}
+> >  	}
+> > 
+> > -	if (__netif_subqueue_stopped(dev, qnum) || !skb->xmit_more)
+> > +	if (kick || netif_xmit_stopped(txq))
+> >  		virtqueue_kick(sq->vq);
+> > 
+> >  	return NETDEV_TX_OK;
+> > --
+> > MST
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe netdev" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
