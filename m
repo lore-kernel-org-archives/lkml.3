@@ -1,240 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752327AbaJOUyE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 16:54:04 -0400
-Received: from mail.kernel.org ([198.145.19.201]:35665 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752299AbaJOUyA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 16:54:00 -0400
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 14/15] perf session: Add option to copy events when queueing
-Date: Wed, 15 Oct 2014 17:52:47 -0300
-Message-Id: <1413406368-26245-15-git-send-email-acme@kernel.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1413406368-26245-1-git-send-email-acme@kernel.org>
-References: <1413406368-26245-1-git-send-email-acme@kernel.org>
+	id S1752423AbaJOUy7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 16:54:59 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:33843 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752398AbaJOUy5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 16:54:57 -0400
+Message-ID: <543EDF19.2070400@collabora.co.uk>
+Date: Wed, 15 Oct 2014 22:54:49 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+MIME-Version: 1.0
+To: Doug Anderson <dianders@chromium.org>
+CC: Kukjin Kim <kgene.kim@samsung.com>, Mark Brown <broonie@kernel.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] ARM: EXYNOS: Call regulator core suspend prepare
+ and finish functions
+References: <1413374496-27866-1-git-send-email-javier.martinez@collabora.co.uk> <CAD=FV=VT9RBitk5NoMKBRm=RVoNC4roLFEBLpd_L7Fuvxvs9SQ@mail.gmail.com>
+In-Reply-To: <CAD=FV=VT9RBitk5NoMKBRm=RVoNC4roLFEBLpd_L7Fuvxvs9SQ@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+Hello Doug,
 
-When processing events the session code has an ordered samples queue
-which is used to time-sort events coming in across multiple mmaps. At a
-later point in time samples on the queue are flushed up to some
-timestamp at which point the event is actually processed.
+Thanks a lot for your feedback.
 
-When analyzing events live (ie., record/analysis path in the same
-command) there is a race that leads to corrupted events and parse errors
-which cause perf to terminate. The problem is that when the event is
-placed in the ordered samples queue it is only a reference to the event
-which is really sitting in the mmap buffer. Even though the event is
-queued for later processing the mmap tail pointer is updated which
-indicates to the kernel that the event has been processed. The race is
-flushing the event from the queue before it gets overwritten by some
-other event. For commands trying to process events live (versus just
-writing to a file) and processing a high rate of events this leads to
-parse failures and perf terminates.
+On 10/15/2014 06:19 PM, Doug Anderson wrote:
+> Javier,
+> 
+> On Wed, Oct 15, 2014 at 5:01 AM, Javier Martinez Canillas
+> <javier.martinez@collabora.co.uk> wrote:
+>> The regulator framework has a set of helpers functions to be used when
+>> the system is entering and leaving from suspend but these are not called
+>> on Exynos platforms. This means that the .set_suspend_* function handlers
+>> defined in regulator drivers are never called when the system is suspended.
+>>
+>> Suggested-by: Doug Anderson <dianders@chromium.org>
+>> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> 
+> Could you also add a patch to your series ripping out the call in
+> "drivers/mfd/sec-core.c" since it doesn't belong there.  If you don't
+> rip that out then it will be called twice on systems with that
+> regulator.
+> 
 
-Examples hitting this problem are 'perf kvm stat live', especially with
-nested VMs which generate 100,000+ traces per second, and a command
-processing scheduling events with a high rate of context switching --
-e.g., running 'perf bench sched pipe'.
+Sure, in fact I thought the same before sending $subject but didn't remove it
+because mfd sec-core only calls regulator_suspend_prepare() but does not call
+regulator_suspend_finish() on resume. So I wondered if $subject would not break
+it anyways since it may change the driver assumption that the regulators .enable
+function won't be called on resume. That's why I added Chanwoo Choi to the cc
+list so he can be aware of this change and give his opinion is on that regard.
 
-This patch offers live commands an option to copy the event when it is
-placed in the ordered samples queue.
+I should had commented that on the patch...
 
-Based on a patch from David Ahern <dsahern@gmail.com>
+> 
+>> ---
+>>  arch/arm/mach-exynos/suspend.c | 16 ++++++++++++++++
+>>  1 file changed, 16 insertions(+)
+>>
+>> diff --git a/arch/arm/mach-exynos/suspend.c b/arch/arm/mach-exynos/suspend.c
+>> index f5d9773..5b9c551 100644
+>> --- a/arch/arm/mach-exynos/suspend.c
+>> +++ b/arch/arm/mach-exynos/suspend.c
+>> @@ -20,6 +20,7 @@
+>>  #include <linux/io.h>
+>>  #include <linux/irqchip/arm-gic.h>
+>>  #include <linux/err.h>
+>> +#include <linux/regulator/machine.h>
+>>
+>>  #include <asm/cacheflush.h>
+>>  #include <asm/hardware/cache-l2x0.h>
+>> @@ -270,14 +271,29 @@ static int exynos_suspend_enter(suspend_state_t state)
+>>
+>>  static int exynos_suspend_prepare(void)
+>>  {
+>> +       int ret;
+>> +
+>>         s3c_pm_check_prepare();
+>>
+>> +       /*
+>> +        * REVISIT: It would be better if struct platform_suspend_ops
+>> +        * .prepare handler get the suspend_state_t as a parameter to
+>> +        * avoid hard-coding the suspend to mem state. It's safe to do
+>> +        * it only because the suspend_valid_only_mem function is the
+>> +        * .valid callback used to check if a given state is supported
+>> +        * by the platform.
+>> +        */
+>> +       ret = regulator_suspend_prepare(PM_SUSPEND_MEM);
+>> +       if (ret)
+>> +               pr_info("Failed to prepare regulators for system suspend\n");
+>> +
+> 
+> nit: can you put this before s3c_pm_check_prepare().  pm_check is
+> pretty darn broken and I have a feeling that it will eventually be
+> ripped out (or in the very least ported to not be Samsung-specific and
+> include all of the "suspend volatile" crud that we have in the
+> chromeos-3.8 kernel), but might as well try not to break it further.
+> 
+> Changing the order also has the advantage of making prepare / finish
+> opposite orders (good!) and handling the fact that you would call
+> s3c_pm_check_prepare() but not s3c_pm_check_cleanup() if
+> regulator_suspend_prepare() fails.
+> 
 
-Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-Acked-by: Jiri Olsa <jolsa@kernel.org>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1412347212-28237-2-git-send-email-yarygin@linux.vnet.ibm.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/ordered-events.c | 49 ++++++++++++++++++++++++++++++++++++----
- tools/perf/util/ordered-events.h | 10 +++++++-
- tools/perf/util/session.c        |  5 ++--
- 3 files changed, 56 insertions(+), 8 deletions(-)
+Good point, I'll change that on v2. I'll wait until tomorrow to see if there
+are more comments and re-post with your suggestions.
 
-diff --git a/tools/perf/util/ordered-events.c b/tools/perf/util/ordered-events.c
-index 706ce1a66169..fd4be94125fb 100644
---- a/tools/perf/util/ordered-events.c
-+++ b/tools/perf/util/ordered-events.c
-@@ -1,5 +1,6 @@
- #include <linux/list.h>
- #include <linux/compiler.h>
-+#include <linux/string.h>
- #include "ordered-events.h"
- #include "evlist.h"
- #include "session.h"
-@@ -57,11 +58,45 @@ static void queue_event(struct ordered_events *oe, struct ordered_event *new)
- 	}
- }
- 
-+static union perf_event *__dup_event(struct ordered_events *oe,
-+				     union perf_event *event)
-+{
-+	union perf_event *new_event = NULL;
-+
-+	if (oe->cur_alloc_size < oe->max_alloc_size) {
-+		new_event = memdup(event, event->header.size);
-+		if (new_event)
-+			oe->cur_alloc_size += event->header.size;
-+	}
-+
-+	return new_event;
-+}
-+
-+static union perf_event *dup_event(struct ordered_events *oe,
-+				   union perf_event *event)
-+{
-+	return oe->copy_on_queue ? __dup_event(oe, event) : event;
-+}
-+
-+static void free_dup_event(struct ordered_events *oe, union perf_event *event)
-+{
-+	if (oe->copy_on_queue) {
-+		oe->cur_alloc_size -= event->header.size;
-+		free(event);
-+	}
-+}
-+
- #define MAX_SAMPLE_BUFFER	(64 * 1024 / sizeof(struct ordered_event))
--static struct ordered_event *alloc_event(struct ordered_events *oe)
-+static struct ordered_event *alloc_event(struct ordered_events *oe,
-+					 union perf_event *event)
- {
- 	struct list_head *cache = &oe->cache;
- 	struct ordered_event *new = NULL;
-+	union perf_event *new_event;
-+
-+	new_event = dup_event(oe, event);
-+	if (!new_event)
-+		return NULL;
- 
- 	if (!list_empty(cache)) {
- 		new = list_entry(cache->next, struct ordered_event, list);
-@@ -74,8 +109,10 @@ static struct ordered_event *alloc_event(struct ordered_events *oe)
- 		size_t size = MAX_SAMPLE_BUFFER * sizeof(*new);
- 
- 		oe->buffer = malloc(size);
--		if (!oe->buffer)
-+		if (!oe->buffer) {
-+			free_dup_event(oe, new_event);
- 			return NULL;
-+		}
- 
- 		pr("alloc size %" PRIu64 "B (+%zu), max %" PRIu64 "B\n",
- 		   oe->cur_alloc_size, size, oe->max_alloc_size);
-@@ -90,15 +127,17 @@ static struct ordered_event *alloc_event(struct ordered_events *oe)
- 		pr("allocation limit reached %" PRIu64 "B\n", oe->max_alloc_size);
- 	}
- 
-+	new->event = new_event;
- 	return new;
- }
- 
- struct ordered_event *
--ordered_events__new(struct ordered_events *oe, u64 timestamp)
-+ordered_events__new(struct ordered_events *oe, u64 timestamp,
-+		    union perf_event *event)
- {
- 	struct ordered_event *new;
- 
--	new = alloc_event(oe);
-+	new = alloc_event(oe, event);
- 	if (new) {
- 		new->timestamp = timestamp;
- 		queue_event(oe, new);
-@@ -111,6 +150,7 @@ void ordered_events__delete(struct ordered_events *oe, struct ordered_event *eve
- {
- 	list_move(&event->list, &oe->cache);
- 	oe->nr_events--;
-+	free_dup_event(oe, event->event);
- }
- 
- static int __ordered_events__flush(struct perf_session *s,
-@@ -240,6 +280,7 @@ void ordered_events__free(struct ordered_events *oe)
- 
- 		event = list_entry(oe->to_free.next, struct ordered_event, list);
- 		list_del(&event->list);
-+		free_dup_event(oe, event->event);
- 		free(event);
- 	}
- }
-diff --git a/tools/perf/util/ordered-events.h b/tools/perf/util/ordered-events.h
-index 3b2f20542a01..7b8f9b011f38 100644
---- a/tools/perf/util/ordered-events.h
-+++ b/tools/perf/util/ordered-events.h
-@@ -34,9 +34,11 @@ struct ordered_events {
- 	int			buffer_idx;
- 	unsigned int		nr_events;
- 	enum oe_flush		last_flush_type;
-+	bool                    copy_on_queue;
- };
- 
--struct ordered_event *ordered_events__new(struct ordered_events *oe, u64 timestamp);
-+struct ordered_event *ordered_events__new(struct ordered_events *oe, u64 timestamp,
-+					  union perf_event *event);
- void ordered_events__delete(struct ordered_events *oe, struct ordered_event *event);
- int ordered_events__flush(struct perf_session *s, struct perf_tool *tool,
- 			  enum oe_flush how);
-@@ -48,4 +50,10 @@ void ordered_events__set_alloc_size(struct ordered_events *oe, u64 size)
- {
- 	oe->max_alloc_size = size;
- }
-+
-+static inline
-+void ordered_events__set_copy_on_queue(struct ordered_events *oe, bool copy)
-+{
-+	oe->copy_on_queue = copy;
-+}
- #endif /* __ORDERED_EVENTS_H */
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 896bac73ea08..6702ac28754b 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -532,17 +532,16 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
- 			return -EINVAL;
- 	}
- 
--	new = ordered_events__new(oe, timestamp);
-+	new = ordered_events__new(oe, timestamp, event);
- 	if (!new) {
- 		ordered_events__flush(s, tool, OE_FLUSH__HALF);
--		new = ordered_events__new(oe, timestamp);
-+		new = ordered_events__new(oe, timestamp, event);
- 	}
- 
- 	if (!new)
- 		return -ENOMEM;
- 
- 	new->file_offset = file_offset;
--	new->event = event;
- 	return 0;
- }
- 
--- 
-1.9.3
+> 
+>>         return 0;
+>>  }
+>>
+>>  static void exynos_suspend_finish(void)
+>>  {
+>>         s3c_pm_check_cleanup();
+>> +       regulator_suspend_finish();
+>>  }
+>>
+>>  static const struct platform_suspend_ops exynos_suspend_ops = {
+
+Best regards,
+Javier 
 
