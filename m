@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751920AbaJOHoY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 03:44:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28184 "EHLO mx1.redhat.com"
+	id S1751815AbaJOHoI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 03:44:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10200 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751868AbaJOHoP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 03:44:15 -0400
+	id S1751238AbaJOHoF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 03:44:05 -0400
 From: Jason Wang <jasowang@redhat.com>
 To: rusty@rustcorp.com.au, mst@redhat.com,
         virtualization@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org, netdev@vger.kernel.org
 Cc: davem@davemloft.net, eric.dumazet@gmail.com,
         Jason Wang <jasowang@redhat.com>
-Subject: [RFC PATCH net-next 6/6] virtio-net: enable tx interrupt only for the final skb in the chain
-Date: Wed, 15 Oct 2014 15:25:30 +0800
-Message-Id: <1413357930-45302-7-git-send-email-jasowang@redhat.com>
+Subject: [RFC PATCH net-next 3/6] virtio-net: small optimization on free_old_xmit_skbs()
+Date: Wed, 15 Oct 2014 15:25:27 +0800
+Message-Id: <1413357930-45302-4-git-send-email-jasowang@redhat.com>
 In-Reply-To: <1413357930-45302-1-git-send-email-jasowang@redhat.com>
 References: <1413357930-45302-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the help of xmit_more and virtqueue_enable_cb_avail(), this patch
-enable tx interrupt only for the final skb in the chain if
-needed. This will help to mitigate tx interrupts.
+Accumulate the sent packets and sent bytes in local variables and perform a
+single u64_stats_update_begin/end() after.
 
 Cc: Rusty Russell <rusty@rustcorp.com.au>
 Cc: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: Jason Wang <jasowang@redhat.com>
 ---
- drivers/net/virtio_net.c |   10 +++++++---
- 1 files changed, 7 insertions(+), 3 deletions(-)
+ drivers/net/virtio_net.c |   12 ++++++++----
+ 1 files changed, 8 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 2afc2e2..5943f3f 100644
+index 3d0ce44..a4d56b8 100644
 --- a/drivers/net/virtio_net.c
 +++ b/drivers/net/virtio_net.c
-@@ -993,12 +993,16 @@ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
- 				virtqueue_disable_cb(sq->vq);
- 			}
- 		}
--	} else if (virtqueue_enable_cb(sq->vq)) {
--		free_old_xmit_skbs(sq, qsize);
+@@ -833,17 +833,21 @@ static void free_old_xmit_skbs(struct send_queue *sq)
+ 	unsigned int len;
+ 	struct virtnet_info *vi = sq->vq->vdev->priv;
+ 	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
++	u64 tx_bytes = 0, tx_packets = 0;
+ 
+ 	while ((skb = virtqueue_get_buf(sq->vq, &len)) != NULL) {
+ 		pr_debug("Sent skb %p\n", skb);
+ 
+-		u64_stats_update_begin(&stats->tx_syncp);
+-		stats->tx_bytes += skb->len;
+-		stats->tx_packets++;
+-		u64_stats_update_end(&stats->tx_syncp);
++		tx_bytes += skb->len;
++		tx_packets++;
+ 
+ 		dev_kfree_skb_any(skb);
  	}
- 
--	if (__netif_subqueue_stopped(dev, qnum) || !skb->xmit_more)
-+	if (__netif_subqueue_stopped(dev, qnum) || !skb->xmit_more) {
- 		virtqueue_kick(sq->vq);
-+		if (sq->vq->num_free >= 2 +MAX_SKB_FRAGS &&
-+		    unlikely(virtqueue_enable_cb_avail(sq->vq))) {
-+			free_old_xmit_skbs(sq, qsize);
-+			virtqueue_disable_cb(sq->vq);
-+		}
-+	}
- 
- 	return NETDEV_TX_OK;
++
++	u64_stats_update_begin(&stats->tx_syncp);
++	stats->tx_bytes += tx_bytes;
++	stats->tx_packets =+ tx_packets;
++	u64_stats_update_end(&stats->tx_syncp);
  }
+ 
+ static int xmit_skb(struct send_queue *sq, struct sk_buff *skb)
 -- 
 1.7.1
 
