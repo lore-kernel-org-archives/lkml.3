@@ -1,110 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638AbaJOMxU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 08:53:20 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:36031 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751584AbaJOMxS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 08:53:18 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH 1/3] input: alps: Reset mouse before identifying it
-Date: Wed, 15 Oct 2014 14:53:11 +0200
-User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.14.1; x86_64; ; )
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Yunkang Tang <yunkang.tang@cn.alps.com>,
-        Tommy Will <tommywill2011@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1412329392-5580-1-git-send-email-pali.rohar@gmail.com> <542E70CF.40205@redhat.com> <20141014060834.GA8084@dtor-glaptop>
-In-Reply-To: <20141014060834.GA8084@dtor-glaptop>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart13090347.3usXYhPieG";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201410151453.12115@pali>
+	id S1752663AbaJOMx1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 08:53:27 -0400
+Received: from numascale.com ([213.162.240.84]:53941 "EHLO numascale.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751584AbaJOMxY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 08:53:24 -0400
+From: Daniel J Blueman <daniel@numascale.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>
+Cc: Daniel J Blueman <daniel@numascale.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Steffen Persvold <sp@numascale.com>
+Subject: [PATCH 1/3] Numachip: fixes
+Date: Wed, 15 Oct 2014 20:53:06 +0800
+Message-Id: <1413377588-6985-1-git-send-email-daniel@numascale.com>
+X-Mailer: git-send-email 1.9.1
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - cpanel21.proisp.no
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - numascale.com
+X-Get-Message-Sender-Via: cpanel21.proisp.no: authenticated_id: daniel@numascale.com
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart13090347.3usXYhPieG
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+Fix APIC declaration to be consistent with definition; this addresses
+a compilation failure with the development branch of GCC, see:
+https://bugzilla.kernel.org/show_bug.cgi?id=78251
 
-On Tuesday 14 October 2014 08:08:34 Dmitry Torokhov wrote:
-> On Fri, Oct 03, 2014 at 11:47:59AM +0200, Hans de Goede wrote:
-> > Hi,
-> >=20
-> > Thanks for working on this!
-> >=20
-> > On 10/03/2014 11:43 AM, Pali Roh=C3=A1r wrote:
-> > > On some systems after starting computer function
-> > > alps_identify() does not detect dual ALPS
-> > > touchpad+trackstick device correctly and detect only
-> > > touchpad.
-> > >=20
-> > > Resetting ALPS device before identifiying it fixing this
-> > > problem and both parts touchpad and trackstick are
-> > > detected.
-> > >=20
-> > > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
-> > > Tested-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
-> >=20
-> > Looks good and seems sensible:
-> >=20
-> > Acked-by: Hans de Goede <hdegoede@redhat.com>
->=20
-> *sigh* I am not really happy about this, as we making boot
-> longer and longer for people without ALPS touchpads. It would
-> be better if we only reset the mouse when we knew we are
-> dealing with ALPS, and even better if we only reset it when
-> we suspected that we missed trackstick. Any chance of doing
-> this?
->=20
-> Thanks.
+Fix 16-bit APIC ID truncation and redundant APIC ICR idle polling
+for IPI to self (AMD64 APICs are documented in the system developer
+manuals to queue APIC writes).
 
-Dmitry, problem is that function check which detecting trackstick=20
-does not working when I start my laptop from power-off state and=20
-do not reset PS/2 device. But detecting ALPS touchpad looks like=20
-working. So if do not like this idea, what about doing something=20
-like this in alps_dectect function?
+Finally, add safe function to check if Numachip is detected, to be
+used elsewhere.
 
-int alps_detect(...)
-{
-=2E..
-/* detect if device is ALPS */
-if (alps_identify(...) < 0)
-return -1;
-/* now we know that device is ALPS */
-if (!(flags & ALPS_DUALPOINT)) {
-/* reset it and identify again, maybe there is trackstick */
-psmouse_reset(...);
-alps_identify(...);
-}
-=2E..
-}
+Candidate for stable.
 
-It will does not affect non ALPS devices (because first identify=20
-call will fail), but will affect ALPS devices without trackstick=20
-(because identify will be called twice and reset too).
+Signed-off-by: Daniel J Blueman <daniel@numascale.com>
+Reviewed-by: Steffen Persvold <sp@numascale.com>
+---
+ arch/x86/include/asm/numachip/numachip.h |  9 +++++++++
+ arch/x86/kernel/apic/apic_numachip.c     | 12 ++++++++----
+ 2 files changed, 17 insertions(+), 4 deletions(-)
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+diff --git a/arch/x86/include/asm/numachip/numachip.h b/arch/x86/include/asm/numachip/numachip.h
+index 1c6f7f6..3e1f4f9 100644
+--- a/arch/x86/include/asm/numachip/numachip.h
++++ b/arch/x86/include/asm/numachip/numachip.h
+@@ -16,4 +16,13 @@
+ 
+ extern int __init pci_numachip_init(void);
+ 
++#ifdef CONFIG_X86_NUMACHIP
++extern bool is_numachip_system(void);
++#else
++static inline bool is_numachip_system(void)
++{
++	return 0;
++}
++#endif
++
+ #endif /* _ASM_X86_NUMACHIP_NUMACHIP_H */
+diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
+index ae91539..4156470 100644
+--- a/arch/x86/kernel/apic/apic_numachip.c
++++ b/arch/x86/kernel/apic/apic_numachip.c
+@@ -30,9 +30,13 @@
+ #include <asm/apic_flat_64.h>
+ #include <asm/pgtable.h>
+ 
+-static int numachip_system __read_mostly;
++static bool numachip_system __read_mostly;
++static const struct apic apic_numachip __refconst;
+ 
+-static const struct apic apic_numachip __read_mostly;
++bool is_numachip_system(void)
++{
++	return numachip_system;
++}
+ 
+ static unsigned int get_apic_id(unsigned long x)
+ {
+@@ -40,7 +44,7 @@ static unsigned int get_apic_id(unsigned long x)
+ 	unsigned int id;
+ 
+ 	rdmsrl(MSR_FAM10H_NODE_ID, value);
+-	id = ((x >> 24) & 0xffU) | ((value << 2) & 0x3f00U);
++	id = ((x >> 24) & 0xffU) | ((value << 2) & 0xff00U);
+ 
+ 	return id;
+ }
+@@ -145,7 +149,7 @@ static void numachip_send_IPI_all(int vector)
+ 
+ static void numachip_send_IPI_self(int vector)
+ {
+-	__default_send_IPI_shortcut(APIC_DEST_SELF, vector, APIC_DEST_PHYSICAL);
++	apic_write(APIC_SELF_IPI, vector);
+ }
+ 
+ static int __init numachip_probe(void)
+-- 
+1.9.1
 
---nextPart13090347.3usXYhPieG
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlQ+bjgACgkQi/DJPQPkQ1LSxQCbBGUVn6omSbaZu8qGiqmtStmP
-KI4AoK+6/0oUg/pM0EVcaWpFKDzYrzpS
-=ucw3
------END PGP SIGNATURE-----
-
---nextPart13090347.3usXYhPieG--
