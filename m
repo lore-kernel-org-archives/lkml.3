@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585AbaJOPq2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 11:46:28 -0400
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:48049 "EHLO
+	id S1751644AbaJOPqd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 11:46:33 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:48050 "EHLO
 	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751262AbaJOPq0 (ORCPT
+	with ESMTP id S1751548AbaJOPq2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 11:46:26 -0400
+	Wed, 15 Oct 2014 11:46:28 -0400
 From: Heiko Carstens <heiko.carstens@de.ibm.com>
 To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
@@ -18,68 +18,65 @@ Cc: Vojtech Pavlik <vojtech@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
         Martin Schwidefsky <schwidefsky@de.ibm.com>,
         linux-kernel@vger.kernel.org,
         Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [PATCH 0/2] s390 vs. kprobes on ftrace
-Date: Wed, 15 Oct 2014 17:46:16 +0200
-Message-Id: <1413387978-984-1-git-send-email-heiko.carstens@de.ibm.com>
+Subject: [PATCH 1/2] kprobes: introduce ARCH_HANDLES_KPROBES_ON_FTRACE
+Date: Wed, 15 Oct 2014 17:46:17 +0200
+Message-Id: <1413387978-984-2-git-send-email-heiko.carstens@de.ibm.com>
 X-Mailer: git-send-email 1.8.5.5
+In-Reply-To: <1413387978-984-1-git-send-email-heiko.carstens@de.ibm.com>
+References: <1413387978-984-1-git-send-email-heiko.carstens@de.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14101515-0029-0000-0000-00000135863F
+x-cbid: 14101515-0029-0000-0000-000001358640
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Allow architectures to implement handling of kprobes on function
+tracer call sites on their own, without depending on common code.
 
-we would like to implement an architecture specific variant of "kprobes
-on ftrace" without using the current HAVE_KPROBES_ON_FTRACE infrastructure
-which is currently only used by x86.
+This patch removes the kprobes check if a kprobe is being placed
+on a function tracer call site and therefore gives full responsibility
+of handling this correctly to the architecture.
 
-The rationale for these two patches is:
-- we want to patch the first instruction of the mcount code block to
-  reduce the overhead of the function tracer
-- we'd like to keep the ftrace_caller function as simple as possible and
-  not require it to generate a 100% valid pt_regs structure as required
-  by the combination of DYNAMIC_FTRACE_WITH_REGS and HAVE_KPROBES_ON_FTRACE.
-  This allows us to not generate the psw mask field in the pt_regs
-  structure on each function tracer enabled function, which otherwise would
-  be very expensive. Besides that program check generated pt_regs contents
-  are "more" accurate than program generated ones and don't require any
-  maintenance.
-  And also we can keep the ftrace and kprobes backends quite separated.
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+---
+ arch/Kconfig     | 8 ++++++++
+ kernel/kprobes.c | 3 ++-
+ 2 files changed, 10 insertions(+), 1 deletion(-)
 
-In order to make this work a small common code change is necessary which
-removes a check if kprobe is being placed on an ftrace location (see
-first patch).
-
-If possible, I'd like to have an ACK from at least one of the kprobes
-maintainers for the first patch and bring it upstream via the s390 tree.
-
-Thanks,
-Heiko
-
-Heiko Carstens (2):
-  kprobes: introduce ARCH_HANDLES_KPROBES_ON_FTRACE
-  s390/ftrace,kprobes: allow to patch first instruction
-
- arch/Kconfig                    |   8 +++
- arch/s390/Kconfig               |   1 +
- arch/s390/include/asm/ftrace.h  |  52 ++++++++++++++--
- arch/s390/include/asm/kprobes.h |   1 +
- arch/s390/include/asm/lowcore.h |   4 +-
- arch/s390/include/asm/pgtable.h |  12 ++++
- arch/s390/kernel/asm-offsets.c  |   1 -
- arch/s390/kernel/early.c        |   4 --
- arch/s390/kernel/ftrace.c       | 132 +++++++++++++++++++++++++---------------
- arch/s390/kernel/kprobes.c      |  87 ++++++++++++++++++--------
- arch/s390/kernel/mcount.S       |   1 +
- arch/s390/kernel/setup.c        |   2 -
- arch/s390/kernel/smp.c          |   1 -
- kernel/kprobes.c                |   3 +-
- scripts/recordmcount.c          |   2 +-
- scripts/recordmcount.pl         |   2 +-
- 16 files changed, 220 insertions(+), 93 deletions(-)
-
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 05d7a8a458d5..e1a8e0edf03f 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -85,6 +85,14 @@ config KPROBES_ON_FTRACE
+ 	 passing of pt_regs to function tracing, then kprobes can
+ 	 optimize on top of function tracing.
+ 
++config ARCH_HANDLES_KPROBES_ON_FTRACE
++	def_bool n
++	help
++	 If an architecture can handle kprobes on function tracer call
++	 sites on own, then this option should be selected. This option
++	 removes the check which otherwise prevents to set kprobes on
++	 function tracer call sites.
++
+ config UPROBES
+ 	def_bool n
+ 	select PERCPU_RWSEM
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 3995f546d0f3..4cc48aa67635 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -1428,7 +1428,8 @@ static int check_kprobe_address_safe(struct kprobe *p,
+ 			return -EILSEQ;
+ 		p->flags |= KPROBE_FLAG_FTRACE;
+ #else	/* !CONFIG_KPROBES_ON_FTRACE */
+-		return -EINVAL;
++		if (!IS_ENABLED(CONFIG_ARCH_HANDLES_KPROBES_ON_FTRACE))
++			return -EINVAL;
+ #endif
+ 	}
+ 
 -- 
 1.8.5.5
 
