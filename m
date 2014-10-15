@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229AbaJOKdJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 06:33:09 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40493 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751456AbaJOKdH (ORCPT
+	id S1752296AbaJOKdc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 06:33:32 -0400
+Received: from rhcavuit01.kulnet.kuleuven.be ([134.58.240.129]:50829 "EHLO
+	cavuit01.kulnet.kuleuven.be" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751847AbaJOKdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 06:33:07 -0400
-Date: Wed, 15 Oct 2014 12:33:04 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, Anton Vorontsov <anton@enomsg.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH 3/8] power: 88pm860x_charger: Use power_supply_*() API
- for accessing function attrs
-Message-ID: <20141015103304.GC14266@amd>
-References: <1413289246-31650-1-git-send-email-k.kozlowski@samsung.com>
- <1413289246-31650-4-git-send-email-k.kozlowski@samsung.com>
+	Wed, 15 Oct 2014 06:33:31 -0400
+X-KULeuven-Envelope-From: bart.tanghe@thomasmore.be
+X-KULeuven-Scanned: Found to be clean
+X-KULeuven-ID: AA9EF13803A.A176A
+X-KULeuven-Information: Katholieke Universiteit Leuven
+Message-ID: <543E4D79.3070405@thomasmore.be>
+Date: Wed, 15 Oct 2014 12:33:29 +0200
+X-Kuleuven: This mail passed the K.U.Leuven mailcluster
+From: Bart Tanghe <bart.tanghe@thomasmore.be>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413289246-31650-4-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: matt.porter@linaro.org, linux-kernel@vger.kernel.org,
+        linux-pwm@vger.kernel.org, linux-rpi-kernel@lists.infradead.org
+Subject: Re: [PATCH v7]pwm: add BCM2835 PWM driver
+References: <1412763272-24269-1-git-send-email-bart.tanghe@thomasmore.be> <20141014135445.GA26015@ulmo>
+In-Reply-To: <20141014135445.GA26015@ulmo>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2014-10-14 14:20:41, Krzysztof Kozlowski wrote:
-> Replace direct calls to power supply function attributes with wrappers.
-> Wrappers provide safe access access in case of unregistering the power
-> supply (.e.g by removing the driver). Replace:
->  - get_property -> power_supply_get_property
->  - set_property -> power_supply_set_property
+
+On 2014-10-14 15:54, Thierry Reding wrote:
+> The above indicates that it would be 0x00, in which case it might be
+> better to just do...
 > 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> 	value &= ~(PWM_CONTROL_MASK << (PWM_CONTROL_STRIDE * pwm->hwpwm));
+> 
+> ... and get rid of DEFAULT_PWM_MODE.
 
-Acked-by: Pavel Machek <pavel@ucw.cz>
+Indeed, this has to be 0x00. PWM_CONTROL_MASK and DEFAULT_PWM_MODE are the same.
+I've declared DEFAULT_PWM_MODE because they have another meaning but the values are the same. 
+You can definetly use   
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+	value &= ~(PWM_CONTROL_MASK << (PWM_CONTROL_STRIDE * pwm->hwpwm));
+
+Bart
