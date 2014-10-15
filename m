@@ -1,209 +1,669 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752627AbaJOKjo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 06:39:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50595 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752594AbaJOKjm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 06:39:42 -0400
-Date: Wed, 15 Oct 2014 13:43:09 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        davem@davemloft.net, eric.dumazet@gmail.com
-Subject: Re: [RFC PATCH net-next 5/6] virtio-net: enable tx interrupt
-Message-ID: <20141015104309.GI25776@redhat.com>
-References: <1413357930-45302-1-git-send-email-jasowang@redhat.com>
- <1413357930-45302-6-git-send-email-jasowang@redhat.com>
- <20141015101826.GD25776@redhat.com>
- <543E4B95.2040209@redhat.com>
+	id S1752343AbaJOKjs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 06:39:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57955 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752594AbaJOKjp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 06:39:45 -0400
+Date: Wed, 15 Oct 2014 12:38:35 +0200
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: Linux 3.10.58
+Message-ID: <20141015103835.GB30956@kroah.com>
+References: <20141015103826.GA30956@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <543E4B95.2040209@redhat.com>
+In-Reply-To: <20141015103826.GA30956@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 06:25:25PM +0800, Jason Wang wrote:
-> On 10/15/2014 06:18 PM, Michael S. Tsirkin wrote:
-> > On Wed, Oct 15, 2014 at 03:25:29PM +0800, Jason Wang wrote:
-> >> > Orphan skb in ndo_start_xmit() breaks socket accounting and packet
-> >> > queuing. This in fact breaks lots of things such as pktgen and several
-> >> > TCP optimizations. And also make BQL can't be implemented for
-> >> > virtio-net.
-> >> > 
-> >> > This patch tries to solve this issue by enabling tx interrupt. To
-> >> > avoid introducing extra spinlocks, a tx napi was scheduled to free
-> >> > those packets.
-> >> > 
-> >> > More tx interrupt mitigation method could be used on top.
-> >> > 
-> >> > Cc: Rusty Russell <rusty@rustcorp.com.au>
-> >> > Cc: Michael S. Tsirkin <mst@redhat.com>
-> >> > Signed-off-by: Jason Wang <jasowang@redhat.com>
-> >> > ---
-> >> >  drivers/net/virtio_net.c |  125 +++++++++++++++++++++++++++++++---------------
-> >> >  1 files changed, 85 insertions(+), 40 deletions(-)
-> >> > 
-> >> > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> >> > index ccf98f9..2afc2e2 100644
-> >> > --- a/drivers/net/virtio_net.c
-> >> > +++ b/drivers/net/virtio_net.c
-> >> > @@ -72,6 +72,8 @@ struct send_queue {
-> >> >  
-> >> >  	/* Name of the send queue: output.$index */
-> >> >  	char name[40];
-> >> > +
-> >> > +	struct napi_struct napi;
-> >> >  };
-> >> >  
-> >> >  /* Internal representation of a receive virtqueue */
-> >> > @@ -217,15 +219,40 @@ static struct page *get_a_page(struct receive_queue *rq, gfp_t gfp_mask)
-> >> >  	return p;
-> >> >  }
-> >> >  
-> >> > +static int free_old_xmit_skbs(struct send_queue *sq, int budget)
-> >> > +{
-> >> > +	struct sk_buff *skb;
-> >> > +	unsigned int len;
-> >> > +	struct virtnet_info *vi = sq->vq->vdev->priv;
-> >> > +	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
-> >> > +	u64 tx_bytes = 0, tx_packets = 0;
-> >> > +
-> >> > +	while (tx_packets < budget &&
-> >> > +	       (skb = virtqueue_get_buf(sq->vq, &len)) != NULL) {
-> >> > +		pr_debug("Sent skb %p\n", skb);
-> >> > +
-> >> > +		tx_bytes += skb->len;
-> >> > +		tx_packets++;
-> >> > +
-> >> > +		dev_kfree_skb_any(skb);
-> >> > +	}
-> >> > +
-> >> > +	u64_stats_update_begin(&stats->tx_syncp);
-> >> > +	stats->tx_bytes += tx_bytes;
-> >> > +	stats->tx_packets =+ tx_packets;
-> >> > +	u64_stats_update_end(&stats->tx_syncp);
-> >> > +
-> >> > +	return tx_packets;
-> >> > +}
-> >> > +
-> >> >  static void skb_xmit_done(struct virtqueue *vq)
-> >> >  {
-> >> >  	struct virtnet_info *vi = vq->vdev->priv;
-> >> > +	struct send_queue *sq = &vi->sq[vq2txq(vq)];
-> >> >  
-> >> > -	/* Suppress further interrupts. */
-> >> > -	virtqueue_disable_cb(vq);
-> >> > -
-> >> > -	/* We were probably waiting for more output buffers. */
-> >> > -	netif_wake_subqueue(vi->dev, vq2txq(vq));
-> >> > +	if (napi_schedule_prep(&sq->napi)) {
-> >> > +		__napi_schedule(&sq->napi);
-> >> > +	}
-> >> >  }
-> >> >  
-> >> >  static unsigned int mergeable_ctx_to_buf_truesize(unsigned long mrg_ctx)
-> >> > @@ -774,7 +801,39 @@ again:
-> >> >  	return received;
-> >> >  }
-> >> >  
-> >> > +static int virtnet_poll_tx(struct napi_struct *napi, int budget)
-> >> > +{
-> >> > +	struct send_queue *sq =
-> >> > +		container_of(napi, struct send_queue, napi);
-> >> > +	struct virtnet_info *vi = sq->vq->vdev->priv;
-> >> > +	struct netdev_queue *txq = netdev_get_tx_queue(vi->dev, vq2txq(sq->vq));
-> >> > +	unsigned int r, sent = 0;
-> >> > +
-> >> > +again:
-> >> > +	__netif_tx_lock(txq, smp_processor_id());
-> >> > +	virtqueue_disable_cb(sq->vq);
-> >> > +	sent += free_old_xmit_skbs(sq, budget - sent);
-> >> > +
-> >> > +	if (sent < budget) {
-> >> > +		r = virtqueue_enable_cb_prepare(sq->vq);
-> >> > +		napi_complete(napi);
-> >> > +		__netif_tx_unlock(txq);
-> >> > +		if (unlikely(virtqueue_poll(sq->vq, r)) &&
-> > So you are enabling callback on the next packet,
-> > which is almost sure to cause an interrupt storm
-> > on the guest.
-> >
-> >
-> > I think it's a bad idea, this is why I used
-> > enable_cb_delayed in my patch.
-> 
-> Right, will do this, but may also need to make sure used event never
-> goes back since we may call virtqueue_enable_cb_avail().
-
-That's why my patch always calls virtqueue_enable_cb_delayed.
-So no need for hacks.
-
-Maybe you can review my patch and comment?
-
-
-
-
-> >
-> >
-> >> > +		    napi_schedule_prep(napi)) {
-> >> > +			virtqueue_disable_cb(sq->vq);
-> >> > +			__napi_schedule(napi);
-> >> > +			goto again;
-> >> > +		}
-> >> > +	} else {
-> >> > +		__netif_tx_unlock(txq);
-> >> > +	}
-> >> > +
-> >> > +	netif_wake_subqueue(vi->dev, vq2txq(sq->vq));
-> >> > +	return sent;
-> >> > +}
-> >> > +
-> >> >  #ifdef CONFIG_NET_RX_BUSY_POLL
-> >> > +
-> >> >  /* must be called with local_bh_disable()d */
-> >> >  static int virtnet_busy_poll(struct napi_struct *napi)
-> >> >  {
-> >> > @@ -822,36 +881,12 @@ static int virtnet_open(struct net_device *dev)
-> >> >  			if (!try_fill_recv(&vi->rq[i], GFP_KERNEL))
-> >> >  				schedule_delayed_work(&vi->refill, 0);
-> >> >  		virtnet_napi_enable(&vi->rq[i]);
-> >> > +		napi_enable(&vi->sq[i].napi);
-> >> >  	}
-> >> >  
-> >> >  	return 0;
-> >> >  }
-> >> >  
-> >> > -static int free_old_xmit_skbs(struct send_queue *sq)
-> >> > -{
-> >> > -	struct sk_buff *skb;
-> >> > -	unsigned int len;
-> >> > -	struct virtnet_info *vi = sq->vq->vdev->priv;
-> >> > -	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
-> >> > -	u64 tx_bytes = 0, tx_packets = 0;
-> >> > -
-> >> > -	while ((skb = virtqueue_get_buf(sq->vq, &len)) != NULL) {
-> >> > -		pr_debug("Sent skb %p\n", skb);
-> >> > -
-> >> > -		tx_bytes += skb->len;
-> >> > -		tx_packets++;
-> >> > -
-> >> > -		dev_kfree_skb_any(skb);
-> >> > -	}
-> >> > -
-> >> > -	u64_stats_update_begin(&stats->tx_syncp);
-> >> > -	stats->tx_bytes += tx_bytes;
-> >> > -	stats->tx_packets =+ tx_packets;
-> >> > -	u64_stats_update_end(&stats->tx_syncp);
-> >> > -
-> >> > -	return tx_packets;
-> >> > -}
-> >> > -
-> > So you end up moving it all anyway, why bother splitting out
-> > minor changes in previous patches?
-> 
-> To make review easier, but if you think this complicated it in fact,
-> will pack them into a single patch.
+diff --git a/Makefile b/Makefile
+index 9df630a513b7..c27454b8ca3e 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,6 +1,6 @@
+ VERSION = 3
+ PATCHLEVEL = 10
+-SUBLEVEL = 57
++SUBLEVEL = 58
+ EXTRAVERSION =
+ NAME = TOSSUG Baby Fish
+ 
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index 4942ddf9c8ae..3de4069f020e 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -6767,7 +6767,8 @@ static int tg3_rx(struct tg3_napi *tnapi, int budget)
+ 		skb->protocol = eth_type_trans(skb, tp->dev);
+ 
+ 		if (len > (tp->dev->mtu + ETH_HLEN) &&
+-		    skb->protocol != htons(ETH_P_8021Q)) {
++		    skb->protocol != htons(ETH_P_8021Q) &&
++		    skb->protocol != htons(ETH_P_8021AD)) {
+ 			dev_kfree_skb(skb);
+ 			goto drop_it_no_recycle;
+ 		}
+@@ -7759,8 +7760,6 @@ static netdev_tx_t tg3_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 
+ 	entry = tnapi->tx_prod;
+ 	base_flags = 0;
+-	if (skb->ip_summed == CHECKSUM_PARTIAL)
+-		base_flags |= TXD_FLAG_TCPUDP_CSUM;
+ 
+ 	mss = skb_shinfo(skb)->gso_size;
+ 	if (mss) {
+@@ -7776,6 +7775,13 @@ static netdev_tx_t tg3_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 
+ 		hdr_len = skb_transport_offset(skb) + tcp_hdrlen(skb) - ETH_HLEN;
+ 
++		/* HW/FW can not correctly segment packets that have been
++		 * vlan encapsulated.
++		 */
++		if (skb->protocol == htons(ETH_P_8021Q) ||
++		    skb->protocol == htons(ETH_P_8021AD))
++			return tg3_tso_bug(tp, skb);
++
+ 		if (!skb_is_gso_v6(skb)) {
+ 			iph->check = 0;
+ 			iph->tot_len = htons(mss + hdr_len);
+@@ -7822,6 +7828,17 @@ static netdev_tx_t tg3_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 				base_flags |= tsflags << 12;
+ 			}
+ 		}
++	} else if (skb->ip_summed == CHECKSUM_PARTIAL) {
++		/* HW/FW can not correctly checksum packets that have been
++		 * vlan encapsulated.
++		 */
++		if (skb->protocol == htons(ETH_P_8021Q) ||
++		    skb->protocol == htons(ETH_P_8021AD)) {
++			if (skb_checksum_help(skb))
++				goto drop;
++		} else  {
++			base_flags |= TXD_FLAG_TCPUDP_CSUM;
++		}
+ 	}
+ 
+ 	if (tg3_flag(tp, USE_JUMBO_BDFLAG) &&
+diff --git a/drivers/net/ethernet/myricom/myri10ge/myri10ge.c b/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
+index 7be9788ed0f6..4fb93c5b5563 100644
+--- a/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
++++ b/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
+@@ -856,6 +856,10 @@ static int myri10ge_dma_test(struct myri10ge_priv *mgp, int test_type)
+ 		return -ENOMEM;
+ 	dmatest_bus = pci_map_page(mgp->pdev, dmatest_page, 0, PAGE_SIZE,
+ 				   DMA_BIDIRECTIONAL);
++	if (unlikely(pci_dma_mapping_error(mgp->pdev, dmatest_bus))) {
++		__free_page(dmatest_page);
++		return -ENOMEM;
++	}
+ 
+ 	/* Run a small DMA test.
+ 	 * The magic multipliers to the length tell the firmware
+@@ -1191,6 +1195,7 @@ myri10ge_alloc_rx_pages(struct myri10ge_priv *mgp, struct myri10ge_rx_buf *rx,
+ 			int bytes, int watchdog)
+ {
+ 	struct page *page;
++	dma_addr_t bus;
+ 	int idx;
+ #if MYRI10GE_ALLOC_SIZE > 4096
+ 	int end_offset;
+@@ -1215,11 +1220,21 @@ myri10ge_alloc_rx_pages(struct myri10ge_priv *mgp, struct myri10ge_rx_buf *rx,
+ 					rx->watchdog_needed = 1;
+ 				return;
+ 			}
++
++			bus = pci_map_page(mgp->pdev, page, 0,
++					   MYRI10GE_ALLOC_SIZE,
++					   PCI_DMA_FROMDEVICE);
++			if (unlikely(pci_dma_mapping_error(mgp->pdev, bus))) {
++				__free_pages(page, MYRI10GE_ALLOC_ORDER);
++				if (rx->fill_cnt - rx->cnt < 16)
++					rx->watchdog_needed = 1;
++				return;
++			}
++
+ 			rx->page = page;
+ 			rx->page_offset = 0;
+-			rx->bus = pci_map_page(mgp->pdev, page, 0,
+-					       MYRI10GE_ALLOC_SIZE,
+-					       PCI_DMA_FROMDEVICE);
++			rx->bus = bus;
++
+ 		}
+ 		rx->info[idx].page = rx->page;
+ 		rx->info[idx].page_offset = rx->page_offset;
+@@ -2576,6 +2591,35 @@ myri10ge_submit_req(struct myri10ge_tx_buf *tx, struct mcp_kreq_ether_send *src,
+ 	mb();
+ }
+ 
++static void myri10ge_unmap_tx_dma(struct myri10ge_priv *mgp,
++				  struct myri10ge_tx_buf *tx, int idx)
++{
++	unsigned int len;
++	int last_idx;
++
++	/* Free any DMA resources we've alloced and clear out the skb slot */
++	last_idx = (idx + 1) & tx->mask;
++	idx = tx->req & tx->mask;
++	do {
++		len = dma_unmap_len(&tx->info[idx], len);
++		if (len) {
++			if (tx->info[idx].skb != NULL)
++				pci_unmap_single(mgp->pdev,
++						 dma_unmap_addr(&tx->info[idx],
++								bus), len,
++						 PCI_DMA_TODEVICE);
++			else
++				pci_unmap_page(mgp->pdev,
++					       dma_unmap_addr(&tx->info[idx],
++							      bus), len,
++					       PCI_DMA_TODEVICE);
++			dma_unmap_len_set(&tx->info[idx], len, 0);
++			tx->info[idx].skb = NULL;
++		}
++		idx = (idx + 1) & tx->mask;
++	} while (idx != last_idx);
++}
++
+ /*
+  * Transmit a packet.  We need to split the packet so that a single
+  * segment does not cross myri10ge->tx_boundary, so this makes segment
+@@ -2599,7 +2643,7 @@ static netdev_tx_t myri10ge_xmit(struct sk_buff *skb,
+ 	u32 low;
+ 	__be32 high_swapped;
+ 	unsigned int len;
+-	int idx, last_idx, avail, frag_cnt, frag_idx, count, mss, max_segments;
++	int idx, avail, frag_cnt, frag_idx, count, mss, max_segments;
+ 	u16 pseudo_hdr_offset, cksum_offset, queue;
+ 	int cum_len, seglen, boundary, rdma_count;
+ 	u8 flags, odd_flag;
+@@ -2696,9 +2740,12 @@ again:
+ 
+ 	/* map the skb for DMA */
+ 	len = skb_headlen(skb);
++	bus = pci_map_single(mgp->pdev, skb->data, len, PCI_DMA_TODEVICE);
++	if (unlikely(pci_dma_mapping_error(mgp->pdev, bus)))
++		goto drop;
++
+ 	idx = tx->req & tx->mask;
+ 	tx->info[idx].skb = skb;
+-	bus = pci_map_single(mgp->pdev, skb->data, len, PCI_DMA_TODEVICE);
+ 	dma_unmap_addr_set(&tx->info[idx], bus, bus);
+ 	dma_unmap_len_set(&tx->info[idx], len, len);
+ 
+@@ -2797,12 +2844,16 @@ again:
+ 			break;
+ 
+ 		/* map next fragment for DMA */
+-		idx = (count + tx->req) & tx->mask;
+ 		frag = &skb_shinfo(skb)->frags[frag_idx];
+ 		frag_idx++;
+ 		len = skb_frag_size(frag);
+ 		bus = skb_frag_dma_map(&mgp->pdev->dev, frag, 0, len,
+ 				       DMA_TO_DEVICE);
++		if (unlikely(pci_dma_mapping_error(mgp->pdev, bus))) {
++			myri10ge_unmap_tx_dma(mgp, tx, idx);
++			goto drop;
++		}
++		idx = (count + tx->req) & tx->mask;
+ 		dma_unmap_addr_set(&tx->info[idx], bus, bus);
+ 		dma_unmap_len_set(&tx->info[idx], len, len);
+ 	}
+@@ -2833,31 +2884,8 @@ again:
+ 	return NETDEV_TX_OK;
+ 
+ abort_linearize:
+-	/* Free any DMA resources we've alloced and clear out the skb
+-	 * slot so as to not trip up assertions, and to avoid a
+-	 * double-free if linearizing fails */
++	myri10ge_unmap_tx_dma(mgp, tx, idx);
+ 
+-	last_idx = (idx + 1) & tx->mask;
+-	idx = tx->req & tx->mask;
+-	tx->info[idx].skb = NULL;
+-	do {
+-		len = dma_unmap_len(&tx->info[idx], len);
+-		if (len) {
+-			if (tx->info[idx].skb != NULL)
+-				pci_unmap_single(mgp->pdev,
+-						 dma_unmap_addr(&tx->info[idx],
+-								bus), len,
+-						 PCI_DMA_TODEVICE);
+-			else
+-				pci_unmap_page(mgp->pdev,
+-					       dma_unmap_addr(&tx->info[idx],
+-							      bus), len,
+-					       PCI_DMA_TODEVICE);
+-			dma_unmap_len_set(&tx->info[idx], len, 0);
+-			tx->info[idx].skb = NULL;
+-		}
+-		idx = (idx + 1) & tx->mask;
+-	} while (idx != last_idx);
+ 	if (skb_is_gso(skb)) {
+ 		netdev_err(mgp->dev, "TSO but wanted to linearize?!?!?\n");
+ 		goto drop;
+diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
+index aea78fc2e48f..59e9c56e5b8a 100644
+--- a/drivers/net/hyperv/netvsc_drv.c
++++ b/drivers/net/hyperv/netvsc_drv.c
+@@ -138,6 +138,7 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
+ 	struct hv_netvsc_packet *packet;
+ 	int ret;
+ 	unsigned int i, num_pages, npg_data;
++	u32 skb_length = skb->len;
+ 
+ 	/* Add multipages for skb->data and additional 2 for RNDIS */
+ 	npg_data = (((unsigned long)skb->data + skb_headlen(skb) - 1)
+@@ -208,7 +209,7 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
+ 	ret = rndis_filter_send(net_device_ctx->device_ctx,
+ 				  packet);
+ 	if (ret == 0) {
+-		net->stats.tx_bytes += skb->len;
++		net->stats.tx_bytes += skb_length;
+ 		net->stats.tx_packets++;
+ 	} else {
+ 		kfree(packet);
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index b5d42fee8a84..c9f56ffdba9a 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -1951,8 +1951,10 @@ void usb_set_device_state(struct usb_device *udev,
+ 					|| new_state == USB_STATE_SUSPENDED)
+ 				;	/* No change to wakeup settings */
+ 			else if (new_state == USB_STATE_CONFIGURED)
+-				wakeup = udev->actconfig->desc.bmAttributes
+-					 & USB_CONFIG_ATT_WAKEUP;
++				wakeup = (udev->quirks &
++					USB_QUIRK_IGNORE_REMOTE_WAKEUP) ? 0 :
++					udev->actconfig->desc.bmAttributes &
++					USB_CONFIG_ATT_WAKEUP;
+ 			else
+ 				wakeup = 0;
+ 		}
+diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
+index 1053eb651b2f..a301b3fa622b 100644
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -162,6 +162,10 @@ static const struct usb_device_id usb_interface_quirk_list[] = {
+ 	{ USB_VENDOR_AND_INTERFACE_INFO(0x046d, USB_CLASS_VIDEO, 1, 0),
+ 	  .driver_info = USB_QUIRK_RESET_RESUME },
+ 
++	/* ASUS Base Station(T100) */
++	{ USB_DEVICE(0x0b05, 0x17e0), .driver_info =
++			USB_QUIRK_IGNORE_REMOTE_WAKEUP },
++
+ 	{ }  /* terminating entry must be last */
+ };
+ 
+diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
+index b14379659e35..b22a4bc308e2 100644
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -122,6 +122,7 @@ static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
+ 	{ USB_DEVICE(0x10C4, 0x88A4) }, /* MMB Networks ZigBee USB Device */
+ 	{ USB_DEVICE(0x10C4, 0x88A5) }, /* Planet Innovation Ingeni ZigBee USB Device */
++	{ USB_DEVICE(0x10C4, 0x8946) }, /* Ketra N1 Wireless Interface */
+ 	{ USB_DEVICE(0x10C4, 0xEA60) }, /* Silicon Labs factory default */
+ 	{ USB_DEVICE(0x10C4, 0xEA61) }, /* Silicon Labs factory default */
+ 	{ USB_DEVICE(0x10C4, 0xEA70) }, /* Silicon Labs factory default */
+@@ -155,6 +156,7 @@ static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
+ 	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
+ 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
++	{ USB_DEVICE(0x1D6F, 0x0010) }, /* Seluxit ApS RF Dongle */
+ 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
+ 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
+ 	{ USB_DEVICE(0x1FB9, 0x0100) }, /* Lake Shore Model 121 Current Source */
+diff --git a/include/linux/usb/quirks.h b/include/linux/usb/quirks.h
+index 52f944dfe2fd..49587dc22f5d 100644
+--- a/include/linux/usb/quirks.h
++++ b/include/linux/usb/quirks.h
+@@ -30,4 +30,7 @@
+    descriptor */
+ #define USB_QUIRK_DELAY_INIT		0x00000040
+ 
++/* device generates spurious wakeup, ignore remote wakeup capability */
++#define USB_QUIRK_IGNORE_REMOTE_WAKEUP	0x00000200
++
+ #endif /* __LINUX_USB_QUIRKS_H */
+diff --git a/include/net/inet_connection_sock.h b/include/net/inet_connection_sock.h
+index de2c78529afa..0a8f6f961baa 100644
+--- a/include/net/inet_connection_sock.h
++++ b/include/net/inet_connection_sock.h
+@@ -62,6 +62,7 @@ struct inet_connection_sock_af_ops {
+ 	void	    (*addr2sockaddr)(struct sock *sk, struct sockaddr *);
+ 	int	    (*bind_conflict)(const struct sock *sk,
+ 				     const struct inet_bind_bucket *tb, bool relax);
++	void	    (*mtu_reduced)(struct sock *sk);
+ };
+ 
+ /** inet_connection_sock - INET connection oriented sock
+diff --git a/include/net/sctp/command.h b/include/net/sctp/command.h
+index 35247271e557..5f39c1cc0766 100644
+--- a/include/net/sctp/command.h
++++ b/include/net/sctp/command.h
+@@ -118,7 +118,7 @@ typedef enum {
+  * analysis of the state functions, but in reality just taken from
+  * thin air in the hopes othat we don't trigger a kernel panic.
+  */
+-#define SCTP_MAX_NUM_COMMANDS 14
++#define SCTP_MAX_NUM_COMMANDS 20
+ 
+ typedef union {
+ 	__s32 i32;
+diff --git a/include/net/sock.h b/include/net/sock.h
+index 26b15c0780be..c0aad07160ef 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -932,7 +932,6 @@ struct proto {
+ 						struct sk_buff *skb);
+ 
+ 	void		(*release_cb)(struct sock *sk);
+-	void		(*mtu_reduced)(struct sock *sk);
+ 
+ 	/* Keeping track of sk's, looking them up, and port selection methods. */
+ 	void			(*hash)(struct sock *sk);
+diff --git a/include/net/tcp.h b/include/net/tcp.h
+index 6f87f0873843..29a1a63cd303 100644
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -460,6 +460,7 @@ extern const u8 *tcp_parse_md5sig_option(const struct tcphdr *th);
+  */
+ 
+ extern void tcp_v4_send_check(struct sock *sk, struct sk_buff *skb);
++void tcp_v4_mtu_reduced(struct sock *sk);
+ extern int tcp_v4_conn_request(struct sock *sk, struct sk_buff *skb);
+ extern struct sock * tcp_create_openreq_child(struct sock *sk,
+ 					      struct request_sock *req,
+diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
+index 5d87806d3ade..e025c1c788a1 100644
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -268,7 +268,7 @@ EXPORT_SYMBOL(tcp_v4_connect);
+  * It can be called through tcp_release_cb() if socket was owned by user
+  * at the time tcp_v4_err() was called to handle ICMP message.
+  */
+-static void tcp_v4_mtu_reduced(struct sock *sk)
++void tcp_v4_mtu_reduced(struct sock *sk)
+ {
+ 	struct dst_entry *dst;
+ 	struct inet_sock *inet = inet_sk(sk);
+@@ -298,6 +298,7 @@ static void tcp_v4_mtu_reduced(struct sock *sk)
+ 		tcp_simple_retransmit(sk);
+ 	} /* else let the usual retransmit timer handle it */
+ }
++EXPORT_SYMBOL(tcp_v4_mtu_reduced);
+ 
+ static void do_redirect(struct sk_buff *skb, struct sock *sk)
+ {
+@@ -2142,6 +2143,7 @@ const struct inet_connection_sock_af_ops ipv4_specific = {
+ 	.compat_setsockopt = compat_ip_setsockopt,
+ 	.compat_getsockopt = compat_ip_getsockopt,
+ #endif
++	.mtu_reduced	   = tcp_v4_mtu_reduced,
+ };
+ EXPORT_SYMBOL(ipv4_specific);
+ 
+@@ -2867,7 +2869,6 @@ struct proto tcp_prot = {
+ 	.sendpage		= tcp_sendpage,
+ 	.backlog_rcv		= tcp_v4_do_rcv,
+ 	.release_cb		= tcp_release_cb,
+-	.mtu_reduced		= tcp_v4_mtu_reduced,
+ 	.hash			= inet_hash,
+ 	.unhash			= inet_unhash,
+ 	.get_port		= inet_csk_get_port,
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index 56e29f0e230e..11ef25c9cf43 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -775,7 +775,7 @@ void tcp_release_cb(struct sock *sk)
+ 		__sock_put(sk);
+ 	}
+ 	if (flags & (1UL << TCP_MTU_REDUCED_DEFERRED)) {
+-		sk->sk_prot->mtu_reduced(sk);
++		inet_csk(sk)->icsk_af_ops->mtu_reduced(sk);
+ 		__sock_put(sk);
+ 	}
+ }
+@@ -2036,9 +2036,7 @@ void tcp_send_loss_probe(struct sock *sk)
+ 	if (WARN_ON(!skb || !tcp_skb_pcount(skb)))
+ 		goto rearm_timer;
+ 
+-	/* Probe with zero data doesn't trigger fast recovery. */
+-	if (skb->len > 0)
+-		err = __tcp_retransmit_skb(sk, skb);
++	err = __tcp_retransmit_skb(sk, skb);
+ 
+ 	/* Record snd_nxt for loss detection. */
+ 	if (likely(!err))
+diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
+index 7bcdd0df68db..d0912acd9522 100644
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -2691,8 +2691,18 @@ static void init_loopback(struct net_device *dev)
+ 			if (sp_ifa->flags & (IFA_F_DADFAILED | IFA_F_TENTATIVE))
+ 				continue;
+ 
+-			if (sp_ifa->rt)
+-				continue;
++			if (sp_ifa->rt) {
++				/* This dst has been added to garbage list when
++				 * lo device down, release this obsolete dst and
++				 * reallocate a new router for ifa.
++				 */
++				if (sp_ifa->rt->dst.obsolete > 0) {
++					ip6_rt_put(sp_ifa->rt);
++					sp_ifa->rt = NULL;
++				} else {
++					continue;
++				}
++			}
+ 
+ 			sp_rt = addrconf_dst_alloc(idev, &sp_ifa->addr, 0);
+ 
+diff --git a/net/ipv6/ip6_gre.c b/net/ipv6/ip6_gre.c
+index 7dca7c43fdf1..250a73e77f57 100644
+--- a/net/ipv6/ip6_gre.c
++++ b/net/ipv6/ip6_gre.c
+@@ -787,7 +787,7 @@ static inline int ip6gre_xmit_ipv4(struct sk_buff *skb, struct net_device *dev)
+ 		encap_limit = t->parms.encap_limit;
+ 
+ 	memcpy(&fl6, &t->fl.u.ip6, sizeof(fl6));
+-	fl6.flowi6_proto = IPPROTO_IPIP;
++	fl6.flowi6_proto = IPPROTO_GRE;
+ 
+ 	dsfield = ipv4_get_dsfield(iph);
+ 
+@@ -837,7 +837,7 @@ static inline int ip6gre_xmit_ipv6(struct sk_buff *skb, struct net_device *dev)
+ 		encap_limit = t->parms.encap_limit;
+ 
+ 	memcpy(&fl6, &t->fl.u.ip6, sizeof(fl6));
+-	fl6.flowi6_proto = IPPROTO_IPV6;
++	fl6.flowi6_proto = IPPROTO_GRE;
+ 
+ 	dsfield = ipv6_get_dsfield(ipv6h);
+ 	if (t->parms.flags & IP6_TNL_F_USE_ORIG_TCLASS)
+diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
+index 8d22460a811b..4ddf67c6355b 100644
+--- a/net/ipv6/sit.c
++++ b/net/ipv6/sit.c
+@@ -101,19 +101,19 @@ static struct ip_tunnel *ipip6_tunnel_lookup(struct net *net,
+ 	for_each_ip_tunnel_rcu(t, sitn->tunnels_r_l[h0 ^ h1]) {
+ 		if (local == t->parms.iph.saddr &&
+ 		    remote == t->parms.iph.daddr &&
+-		    (!dev || !t->parms.link || dev->iflink == t->parms.link) &&
++		    (!dev || !t->parms.link || dev->ifindex == t->parms.link) &&
+ 		    (t->dev->flags & IFF_UP))
+ 			return t;
+ 	}
+ 	for_each_ip_tunnel_rcu(t, sitn->tunnels_r[h0]) {
+ 		if (remote == t->parms.iph.daddr &&
+-		    (!dev || !t->parms.link || dev->iflink == t->parms.link) &&
++		    (!dev || !t->parms.link || dev->ifindex == t->parms.link) &&
+ 		    (t->dev->flags & IFF_UP))
+ 			return t;
+ 	}
+ 	for_each_ip_tunnel_rcu(t, sitn->tunnels_l[h1]) {
+ 		if (local == t->parms.iph.saddr &&
+-		    (!dev || !t->parms.link || dev->iflink == t->parms.link) &&
++		    (!dev || !t->parms.link || dev->ifindex == t->parms.link) &&
+ 		    (t->dev->flags & IFF_UP))
+ 			return t;
+ 	}
+diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
+index 66c718854e5a..1a87659a6139 100644
+--- a/net/ipv6/tcp_ipv6.c
++++ b/net/ipv6/tcp_ipv6.c
+@@ -1651,6 +1651,7 @@ static const struct inet_connection_sock_af_ops ipv6_specific = {
+ 	.compat_setsockopt = compat_ipv6_setsockopt,
+ 	.compat_getsockopt = compat_ipv6_getsockopt,
+ #endif
++	.mtu_reduced	   = tcp_v6_mtu_reduced,
+ };
+ 
+ #ifdef CONFIG_TCP_MD5SIG
+@@ -1682,6 +1683,7 @@ static const struct inet_connection_sock_af_ops ipv6_mapped = {
+ 	.compat_setsockopt = compat_ipv6_setsockopt,
+ 	.compat_getsockopt = compat_ipv6_getsockopt,
+ #endif
++	.mtu_reduced	   = tcp_v4_mtu_reduced,
+ };
+ 
+ #ifdef CONFIG_TCP_MD5SIG
+@@ -1919,7 +1921,6 @@ struct proto tcpv6_prot = {
+ 	.sendpage		= tcp_sendpage,
+ 	.backlog_rcv		= tcp_v6_do_rcv,
+ 	.release_cb		= tcp_release_cb,
+-	.mtu_reduced		= tcp_v6_mtu_reduced,
+ 	.hash			= tcp_v6_hash,
+ 	.unhash			= inet_unhash,
+ 	.get_port		= inet_csk_get_port,
+diff --git a/net/l2tp/l2tp_ppp.c b/net/l2tp/l2tp_ppp.c
+index 164fa9dcd97d..c3ae2411650c 100644
+--- a/net/l2tp/l2tp_ppp.c
++++ b/net/l2tp/l2tp_ppp.c
+@@ -756,7 +756,8 @@ static int pppol2tp_connect(struct socket *sock, struct sockaddr *uservaddr,
+ 	/* If PMTU discovery was enabled, use the MTU that was discovered */
+ 	dst = sk_dst_get(tunnel->sock);
+ 	if (dst != NULL) {
+-		u32 pmtu = dst_mtu(__sk_dst_get(tunnel->sock));
++		u32 pmtu = dst_mtu(dst);
++
+ 		if (pmtu != 0)
+ 			session->mtu = session->mru = pmtu -
+ 				PPPOL2TP_HEADER_OVERHEAD;
+diff --git a/net/openvswitch/actions.c b/net/openvswitch/actions.c
+index 894b6cbdd929..c4779ca59032 100644
+--- a/net/openvswitch/actions.c
++++ b/net/openvswitch/actions.c
+@@ -40,6 +40,9 @@ static int do_execute_actions(struct datapath *dp, struct sk_buff *skb,
+ 
+ static int make_writable(struct sk_buff *skb, int write_len)
+ {
++	if (!pskb_may_pull(skb, write_len))
++		return -ENOMEM;
++
+ 	if (!skb_cloned(skb) || skb_clone_writable(skb, write_len))
+ 		return 0;
+ 
+@@ -68,6 +71,8 @@ static int __pop_vlan_tci(struct sk_buff *skb, __be16 *current_tci)
+ 
+ 	vlan_set_encap_proto(skb, vhdr);
+ 	skb->mac_header += VLAN_HLEN;
++	if (skb_network_offset(skb) < ETH_HLEN)
++		skb_set_network_header(skb, ETH_HLEN);
+ 	skb_reset_mac_len(skb);
+ 
+ 	return 0;
+diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+index e8b5a0dfca21..81b4b816f131 100644
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -565,6 +565,7 @@ static void init_prb_bdqc(struct packet_sock *po,
+ 	p1->tov_in_jiffies = msecs_to_jiffies(p1->retire_blk_tov);
+ 	p1->blk_sizeof_priv = req_u->req3.tp_sizeof_priv;
+ 
++	p1->max_frame_len = p1->kblk_size - BLK_PLUS_PRIV(p1->blk_sizeof_priv);
+ 	prb_init_ft_ops(p1, req_u);
+ 	prb_setup_retire_blk_timer(po, tx_ring);
+ 	prb_open_block(p1, pbd);
+@@ -1803,6 +1804,18 @@ static int tpacket_rcv(struct sk_buff *skb, struct net_device *dev,
+ 			if ((int)snaplen < 0)
+ 				snaplen = 0;
+ 		}
++	} else if (unlikely(macoff + snaplen >
++			    GET_PBDQC_FROM_RB(&po->rx_ring)->max_frame_len)) {
++		u32 nval;
++
++		nval = GET_PBDQC_FROM_RB(&po->rx_ring)->max_frame_len - macoff;
++		pr_err_once("tpacket_rcv: packet too big, clamped from %u to %u. macoff=%u\n",
++			    snaplen, nval, macoff);
++		snaplen = nval;
++		if (unlikely((int)snaplen < 0)) {
++			snaplen = 0;
++			macoff = GET_PBDQC_FROM_RB(&po->rx_ring)->max_frame_len;
++		}
+ 	}
+ 	spin_lock(&sk->sk_receive_queue.lock);
+ 	h.raw = packet_current_rx_frame(po, skb,
+@@ -3642,6 +3655,10 @@ static int packet_set_ring(struct sock *sk, union tpacket_req_u *req_u,
+ 			goto out;
+ 		if (unlikely(req->tp_block_size & (PAGE_SIZE - 1)))
+ 			goto out;
++		if (po->tp_version >= TPACKET_V3 &&
++		    (int)(req->tp_block_size -
++			  BLK_PLUS_PRIV(req_u->req3.tp_sizeof_priv)) <= 0)
++			goto out;
+ 		if (unlikely(req->tp_frame_size < po->tp_hdrlen +
+ 					po->tp_reserve))
+ 			goto out;
+diff --git a/net/packet/internal.h b/net/packet/internal.h
+index 1035fa2d909c..ca086c0c2c08 100644
+--- a/net/packet/internal.h
++++ b/net/packet/internal.h
+@@ -29,6 +29,7 @@ struct tpacket_kbdq_core {
+ 	char		*pkblk_start;
+ 	char		*pkblk_end;
+ 	int		kblk_size;
++	unsigned int	max_frame_len;
+ 	unsigned int	knum_blocks;
+ 	uint64_t	knxt_seq_num;
+ 	char		*prev;
+diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
+index 6eb26403de6a..edc204b05c82 100644
+--- a/net/sctp/sm_statefuns.c
++++ b/net/sctp/sm_statefuns.c
+@@ -1782,9 +1782,22 @@ static sctp_disposition_t sctp_sf_do_dupcook_a(struct net *net,
+ 	/* Update the content of current association. */
+ 	sctp_add_cmd_sf(commands, SCTP_CMD_UPDATE_ASSOC, SCTP_ASOC(new_asoc));
+ 	sctp_add_cmd_sf(commands, SCTP_CMD_EVENT_ULP, SCTP_ULPEVENT(ev));
+-	sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
+-			SCTP_STATE(SCTP_STATE_ESTABLISHED));
+-	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
++	if (sctp_state(asoc, SHUTDOWN_PENDING) &&
++	    (sctp_sstate(asoc->base.sk, CLOSING) ||
++	     sock_flag(asoc->base.sk, SOCK_DEAD))) {
++		/* if were currently in SHUTDOWN_PENDING, but the socket
++		 * has been closed by user, don't transition to ESTABLISHED.
++		 * Instead trigger SHUTDOWN bundled with COOKIE_ACK.
++		 */
++		sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
++		return sctp_sf_do_9_2_start_shutdown(net, ep, asoc,
++						     SCTP_ST_CHUNK(0), NULL,
++						     commands);
++	} else {
++		sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
++				SCTP_STATE(SCTP_STATE_ESTABLISHED));
++		sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
++	}
+ 	return SCTP_DISPOSITION_CONSUME;
+ 
+ nomem_ev:
