@@ -1,123 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752157AbaJOKox (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 06:44:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55003 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751919AbaJOKov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 06:44:51 -0400
-Message-ID: <543E5019.9020507@redhat.com>
-Date: Wed, 15 Oct 2014 18:44:41 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        davem@davemloft.net, eric.dumazet@gmail.com
-Subject: Re: [RFC PATCH net-next 1/6] virtio: make sure used event never go
- backwards
-References: <1413357930-45302-1-git-send-email-jasowang@redhat.com> <1413357930-45302-2-git-send-email-jasowang@redhat.com> <20141015093432.GB25776@redhat.com> <543E48BF.4080502@redhat.com> <20141015103232.GG25776@redhat.com>
-In-Reply-To: <20141015103232.GG25776@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	id S1751788AbaJOKuH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 06:50:07 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:23704 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953AbaJOKuF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 06:50:05 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f4-b7f156d0000063c7-c3-543e51594afd
+Content-transfer-encoding: 8BIT
+Message-id: <1413370199.26771.4.camel@AMDC1943>
+Subject: Re: [PATCH 2/8] power_supply: sysfs: Use power_supply_*() API for
+ accessing function attrs
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, Anton Vorontsov <anton@enomsg.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Date: Wed, 15 Oct 2014 12:49:59 +0200
+In-reply-to: <20141015103217.GB14266@amd>
+References: <1413289246-31650-1-git-send-email-k.kozlowski@samsung.com>
+ <1413289246-31650-3-git-send-email-k.kozlowski@samsung.com>
+ <20141015103217.GB14266@amd>
+X-Mailer: Evolution 3.10.4-0ubuntu2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjkeLIzCtJLcpLzFFi42I5/e/4Vd3IQLsQg+UtMhYHt2pabJyxntVi
+	0pP3zBYTV05mtug8+4TZ4mzTG3aL+1+PMlpM+bOcyWLT42usFpd3zWGz+Nx7hNHiycIzTBZr
+	j9xlt7jduILN4u6po2wWp7tZLU7vLnEQ9JjQ/4nRY+esu+wem1doeWxa1cnmcefaHjaPeScD
+	PTYvqffY+b2B3aNvyypGjxWrv7N7fN4kF8AdxWWTkpqTWZZapG+XwJXxbuZ05oI/3BUv379m
+	amC8wtnFyMkhIWAi0dB5nR3CFpO4cG89G4gtJLCUUWLmVD0Qm1dAUOLH5HssXYwcHMwC8hJH
+	LmWDhJkF1CUmzVvE3MXIBVT+mVGi4Ws3I0S9vsTMOYfB5ggLpEoc71/DAmKzCRhLbF6+BCwu
+	AjRna98KsGZmgS5WiZ1TloA1swioSjy/f5kZxOYU0JRY1AJyEMiGJYwSLxpmsINcISGgLNHY
+	7zaBUWAWkvtmIdw3C8l9CxiZVzGKppYmFxQnpeca6hUn5haX5qXrJefnbmKExN2XHYyLj1kd
+	YhTgYFTi4eU4YBsixJpYVlyZe4hRgoNZSYQ30d8uRIg3JbGyKrUoP76oNCe1+BAjEwenVANj
+	/KmH9woc9bmucpyOMJfYMOmAVaH8yl9/ZTpv5Sj6HfpSdrDR2+zNWoPu9ZLvwxU8HzcmzRXT
+	fXjNwLepfXnzxNBq/Yj18/ty3194nPLs3ZtI6aQl/57Oq7KzCrs2hT0+uMJnh9z+kDdubquW
+	Ll90WfF98dkf/ZYWn95Yqa3m4mqIUGVsWztdiaU4I9FQi7moOBEAiUR9Q5kCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2014 06:32 PM, Michael S. Tsirkin wrote:
-> On Wed, Oct 15, 2014 at 06:13:19PM +0800, Jason Wang wrote:
->> On 10/15/2014 05:34 PM, Michael S. Tsirkin wrote:
->>> On Wed, Oct 15, 2014 at 03:25:25PM +0800, Jason Wang wrote:
->>>> This patch checks the new event idx to make sure used event idx never
->>>> goes back. This is used to synchronize the calls between
->>>> virtqueue_enable_cb_delayed() and virtqueue_enable_cb().
->>>>
->>>> Cc: Rusty Russell <rusty@rustcorp.com.au>
->>>> Cc: Michael S. Tsirkin <mst@redhat.com>
->>>> Signed-off-by: Jason Wang <jasowang@redhat.com>
->>> the implication being that moving event idx back might cause some race
->>> condition?  
->> This will cause race condition when tx interrupt is enabled. Consider
->> the following cases
->>
->> 1) tx napi was scheduled
->> 2) start_xmit() call virtqueue_enable_cb_delayed() and disable cb, [used
->> event is vq->last_used_idx + 3/4 pendg bufs]
->> 3) tx napi enable the callback by virtqueue_enable_cb() [ used event is
->> vq->last_used_idx ]
->>  
->> After step 3, used event was moved back, unnecessary tx interrupt was
->> triggered.
-> Well unnecessary interrupts are safe.
+On śro, 2014-10-15 at 12:32 +0200, Pavel Machek wrote:
+> On Tue 2014-10-14 14:20:40, Krzysztof Kozlowski wrote:
+> > Replace direct calls to power supply function attributes with wrappers.
+> > Wrappers provide safe access access in case of unregistering the power
+> > supply (.e.g by removing the driver). Replace:
+> >  - get_property -> power_supply_get_property
+> >  - set_property -> power_supply_set_property
+> >  - property_is_writeable -> power_supply_property_is_writeable
+> > 
+> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> 
+> Acked-by: Pavel Machek <pavel@ucw.cz>
 
-But it that is what we want to reduce.
-> With your patch caller of virtqueue_enable_cb will not get an
-> interrupt on the next buffer which is not safe.
->
-> If you don't want an interrupt on the next buffer, don't
-> call virtqueue_enable_cb.
+Thanks for looking at patches.
 
-So something like this patch should be done in virtio core somewhere
-else. Virtio-net can not do this since it does not have the knowledge of
-event index.
->
->>> If yes but please describe the race explicitly.
->>> Is there a bug we need to fix on stable?
->> Looks not, current code does not have such race condition.
->>> Please also explicitly describe a configuration that causes event idx
->>> to go back.
->>>
->>> All this info should go in the commit log.
->> Will do this.
->>>> ---
->>>>  drivers/virtio/virtio_ring.c |    7 +++++--
->>>>  1 files changed, 5 insertions(+), 2 deletions(-)
->>>>
->>>> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
->>>> index 3b1f89b..1b3929f 100644
->>>> --- a/drivers/virtio/virtio_ring.c
->>>> +++ b/drivers/virtio/virtio_ring.c
->>>> @@ -559,14 +559,17 @@ unsigned virtqueue_enable_cb_prepare(struct virtqueue *_vq)
->>>>  	u16 last_used_idx;
->>>>  
->>>>  	START_USE(vq);
->>>> -
->>>> +	last_used_idx = vq->last_used_idx;
->>>>  	/* We optimistically turn back on interrupts, then check if there was
->>>>  	 * more to do. */
->>>>  	/* Depending on the VIRTIO_RING_F_EVENT_IDX feature, we need to
->>>>  	 * either clear the flags bit or point the event index at the next
->>>>  	 * entry. Always do both to keep code simple. */
->>>>  	vq->vring.avail->flags &= ~VRING_AVAIL_F_NO_INTERRUPT;
->>>> -	vring_used_event(&vq->vring) = last_used_idx = vq->last_used_idx;
->>>> +	/* Make sure used event never go backwards */
->>> s/go/goes/
->>>
->>>> +	if (!vring_need_event(vring_used_event(&vq->vring),
->>>> +			      vq->vring.avail->idx, last_used_idx))
->>>> +		vring_used_event(&vq->vring) = last_used_idx;
->>> The result will be that driver will *not* get an interrupt
->>> on the next consumed buffer, which is likely not what driver
->>> intended when it called virtqueue_enable_cb.
->> This will only happen when we want to delay the interrupt for next few
->> consumed buffers (virtqueue_enable_cb_delayed() was called). For the
->> other case, vq->last_used_idx should be ahead of previous used event. Do
->> you see any other case?
-> Call virtqueue_enable_cb_delayed, later call virtqueue_enable_cb.  If
-> event index is not updated in virtqueue_enable_cb, driver will not get
-> an interrupt on the next buffer.
 
-This is just what we want I think. The interrupt was not lost but fired
-after 3/4 pending buffers were consumed. Do you see any real issue on this?
->
->>> Instead, how about we simply document the requirement that drivers either
->>> always call virtqueue_enable_cb_delayed or virtqueue_enable_cb
->>> but not both?
->> We need call them both when tx interrupt is enabled I believe.
-> Can you pls reply to my patch and document issues you see?
->
+> > @@ -76,7 +76,7 @@ static ssize_t power_supply_show_property(struct device *dev,
+> >  	if (off == POWER_SUPPLY_PROP_TYPE) {
+> >  		value.intval = psy->type;
+> >  	} else {
+> > -		ret = psy->get_property(psy, off, &value);
+> > +		ret = power_supply_get_property(psy, off, &value);
+> >  
+> 
+> One thing.. Your power_supply_get_property (and friends) check for psy
+> == NULL. Is it neccessary / good idea? As far as I can tell, it should
+> not really be NULL...
 
-In the previous reply you said you're using
-virtuqueue_enable_cb_delayed(), so no race in your patch.
+It is not necessary. I thought it would be a good behavior of such
+exported function. You're right that this shouldn't be NULL especially
+because previously it was dereferenced.
+
+Other existing power supply exported functions don't check this so maybe
+I shouldn't introduce inconsistency.
+
+I'll remove the check and re-spin. I'll found ugly typos in commit
+message anyway.
+
+Best regards,
+Krzysztof
+
 
