@@ -1,116 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162AbaJOKC0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 06:02:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54208 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751539AbaJOKCX (ORCPT
+	id S1752183AbaJOKDA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 06:03:00 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53056 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751421AbaJOKC7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 06:02:23 -0400
-Date: Wed, 15 Oct 2014 03:02:01 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-23aadb1fcda27e79a134ec35a7fb68f243269bcb@git.kernel.org>
-Cc: jolsa@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        adrian.hunter@intel.com, fweisbec@gmail.com, acme@redhat.com,
-        cjashfor@linux.vnet.ibm.com, tglx@linutronix.de, mail@milianw.de,
-        a.p.zijlstra@chello.nl, mingo@kernel.org, namhyung@kernel.org,
-        dsahern@gmail.com, paulus@samba.org
-Reply-To: namhyung@kernel.org, dsahern@gmail.com, a.p.zijlstra@chello.nl,
-        mingo@kernel.org, paulus@samba.org, mail@milianw.de,
-        adrian.hunter@intel.com, cjashfor@linux.vnet.ibm.com,
-        tglx@linutronix.de, acme@redhat.com, fweisbec@gmail.com, hpa@zytor.com,
-        jolsa@kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1412179229-19466-2-git-send-email-jolsa@kernel.org>
-References: <1412179229-19466-2-git-send-email-jolsa@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf callchain:
-  Move callchain_param to util object in to fix python test
-Git-Commit-ID: 23aadb1fcda27e79a134ec35a7fb68f243269bcb
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 15 Oct 2014 06:02:59 -0400
+Date: Wed, 15 Oct 2014 12:02:47 +0200
+From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+To: atull <atull@opensource.altera.com>
+Cc: Dinh Nguyen <dinguyen@opensource.altera.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>, dinh.linux@gmail.com,
+        grant.likely@linaro.org, robh+dt@kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] reset: socfpga: use arch_initcall for early
+ initialization
+Message-ID: <20141015100247.GB6255@pengutronix.de>
+References: <1412822646-11257-1-git-send-email-dinguyen@opensource.altera.com>
+ <1412845410.6809.3.camel@pengutronix.de>
+ <54368AA2.9000104@opensource.altera.com>
+ <20141009132835.GI15799@pengutronix.de>
+ <alpine.DEB.2.02.1410090950540.17462@atx-linux-37>
+ <20141009151935.GK15799@pengutronix.de>
+ <alpine.DEB.2.02.1410101123590.11270@atx-linux-37>
+ <alpine.DEB.2.02.1410141322160.11888@atx-linux-37>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1410141322160.11888@atx-linux-37>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 11:17:08 up 35 days,  2:04, 58 users,  load average: 0,18, 0,17,
+ 0,14
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: str@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  23aadb1fcda27e79a134ec35a7fb68f243269bcb
-Gitweb:     http://git.kernel.org/tip/23aadb1fcda27e79a134ec35a7fb68f243269bcb
-Author:     Jiri Olsa <jolsa@kernel.org>
-AuthorDate: Wed, 1 Oct 2014 18:00:26 +0200
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 3 Oct 2014 09:39:48 -0300
+Hi!
 
-perf callchain: Move callchain_param to util object in to fix python test
+On Tue, Oct 14, 2014 at 01:45:29PM -0500, atull wrote:
+> The FPGA bridge driver that I submitted last year handled the following
+> things:
+>  * The bridges might have been brought out of reset in the bootloader. Some
+>    of the bridges have write-only registers (!) so this information had to
+>    be passed in DT
 
-In following commit we changed the location of callchains data:
+Regmap has infrastructure to handle this.
 
-  72a128aa083a7f4cc4f800718aaae05d9c698e26
-  perf tools: Move callchain config from record_opts to callchain_param
+>  * fpga2sdram bridge widths configured in DT
 
-Now all callchains stuff stays in callchain_param struct, which adds its
-dependency for evsel.c object and breaks python perf.so usage
-(unresolved callchain_param).
+This should hold true for all bridges but the LWHPS.
 
-Moving callchain_param into callchain.c and adding it into
-python-ext-sources unleash just another dependency hell, so I ended up
-adding callchain_param into util.c for now.
+>  * Supports enabling the following Altera fpga bridges:
+>    * fpga2sdram
+>    * fpga2hps
+>    * hps2fpga
+>    * lwhps2fpga
+>  * interface in sysfs for each bridge to be put in reset/taken out of reset
+>    * Enable (take out of reset):
+>      $ echo 1 > /sys/class/fpga-bridge/fpga2hps/enable
+>    * Disable (hold in reset):
+>      $ echo 0 > /sys/class/fpga-bridge/fpga2hps/enable
+>    * Check enable/disable status (checks for all bits set):
+>      $ cat /sys/class/fpga-bridge/fpga2hps/enable
+>        (will print '0' or '1')
+>
 
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Milian Wolff <mail@milianw.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1412179229-19466-2-git-send-email-jolsa@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/hist.c | 7 -------
- tools/perf/util/util.c | 8 ++++++++
- 2 files changed, 8 insertions(+), 7 deletions(-)
+I don't like that. The proper solution should be unloading/loading the
+module for the bridge. On a reset the driver has to completely reset its state.
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 86569fa..b475956 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -14,13 +14,6 @@ static bool hists__filter_entry_by_thread(struct hists *hists,
- static bool hists__filter_entry_by_symbol(struct hists *hists,
- 					  struct hist_entry *he);
- 
--struct callchain_param	callchain_param = {
--	.mode	= CHAIN_GRAPH_REL,
--	.min_percent = 0.5,
--	.order  = ORDER_CALLEE,
--	.key	= CCKEY_FUNCTION
--};
--
- u16 hists__col_len(struct hists *hists, enum hist_column col)
- {
- 	return hists->col_len[col];
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index 24e8d87..d5eab3f 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -14,6 +14,14 @@
- #include <byteswap.h>
- #include <linux/kernel.h>
- #include <unistd.h>
-+#include "callchain.h"
-+
-+struct callchain_param	callchain_param = {
-+	.mode	= CHAIN_GRAPH_REL,
-+	.min_percent = 0.5,
-+	.order  = ORDER_CALLEE,
-+	.key	= CCKEY_FUNCTION
-+};
- 
- /*
-  * XXX We need to find a better place for these things...
+> Now that I'm enabling programming the FPGA from DT overlays, I also want
+> to support DT control of the bridges at the proper time.  So that would
+> support the use case where adding a DT overlay would:
+>  1. program the FPGA
+>  2. bring the appropriate bridges out of reset
+>  3. modprobe the driver
+> 
+> Deleting the DT overlay would undo these steps in reverse order.
+> 
+> I submitted it on 10/8/2013 (I copied you on it), but I don't see it on
+> lkml.org.  Probably because I submitted it from a gmail email address and
+> that sometimes doesn't play well with lkml.  I'm planning on resubmitting
+> when we have it better integrated with the reset subsystem.  If you can
+> give me an early idea of how this fits in with your needs, that would be
+> great.
+>
+
+I actually remember seeing that driver. The problem with the approach is,
+that the bridges are not some IP that you just turn on/off.
+The bridges are the busses that connect the FPGA to the SoC. So the driver
+and the DT has to accommodate for that.
+So, for the (LW)HPS that means we have a bus master driver, that has to
+
+booting:
+	- check if FPGA manager is enabled in DT
+	  - EPROBE_DEFER if FPGA manager isn't loaded
+	- check if FPGA is programmed
+	  - EPROBE_DEFER otherwise
+	- probe subnodes of bridge DT node
+
+dynamic:
+	- remove all drivers/devices previously probed by the bridge
+	  - put bridge in reset (maybe the remove call should always do that ?)
+	- program FPGA with (different) bitstream
+	- (update the DT)
+
+I haven't had time to really look at the overlay stuff, but I guess it will then
+just
+	- probe bridge drivers with 'status = "okay"' which will probe subdevices
+
+Question is: who will remove the bridge driver? Do the DT overlays do that kind
+of stuff?
+
+With the FPGA2HPS(SDRAM) bridges it gets a little difficult I guess.
+Who is the master on the FPGA2HPS bridge? Depends on your FPGA config.
+
+Regards,
+Steffen
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
