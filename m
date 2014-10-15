@@ -1,105 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751307AbaJOHQi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 03:16:38 -0400
-Received: from mail-bn1bbn0101.outbound.protection.outlook.com ([157.56.111.101]:46912
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750775AbaJOHQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 03:16:36 -0400
-X-Greylist: delayed 163616 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Oct 2014 03:16:36 EDT
-From: Jingchang Lu <jingchang.lu@freescale.com>
-To: Joseph Lo <josephl@nvidia.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "peter@hurleysoftware.com" <peter@hurleysoftware.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCHv4] serial: of-serial: fix up PM ops on no_console_suspend
- and port type
-Thread-Topic: [PATCHv4] serial: of-serial: fix up PM ops on no_console_suspend
- and port type
-Thread-Index: AQHP55FFIMYR88HhxkeSAEfc0gxGHJwwV92AgABVjuCAAAmnAIAAAxSAgAAEtuA=
-Date: Wed, 15 Oct 2014 07:16:33 +0000
-Message-ID: <b7caa34e784a47dfa585cea66ebfbb69@BL2PR03MB467.namprd03.prod.outlook.com>
-References: <1413276146-20388-1-git-send-email-jingchang.lu@freescale.com>
- <543DC753.4070304@nvidia.com>
- <67564f37252242079bcd4c65827b8352@BL2PR03MB467.namprd03.prod.outlook.com>
- <543E1730.2040108@nvidia.com> <543E19C5.3040200@nvidia.com>
-In-Reply-To: <543E19C5.3040200@nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [123.151.195.49]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB465;
-x-exchange-antispam-report-test: UriScan:;
-x-forefront-prvs: 0365C0E14B
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(13464003)(24454002)(51704005)(189002)(479174003)(377454003)(199003)(33646002)(107046002)(40100003)(108616004)(92566001)(93886004)(85306004)(120916001)(99396003)(105586002)(106116001)(99286002)(106356001)(74316001)(101416001)(95666004)(122556002)(19580395003)(21056001)(19580405001)(76576001)(76176999)(80022003)(46102003)(54356999)(85852003)(87936001)(66066001)(76482002)(2656002)(64706001)(20776003)(97736003)(50986999)(86362001)(2501002)(31966008)(4396001)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB465;H:BL2PR03MB467.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1751429AbaJOHUG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 03:20:06 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:56508 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751246AbaJOHUB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 03:20:01 -0400
+From: Dudley Du <dudley.dulixin@gmail.com>
+X-Google-Original-From: Dudley Du <dudl@cypress.com>
+To: dmitry.torokhov@gmail.com, rydberg@euromail.se
+Cc: Dudley Du <dudl@cypress.com>, bleung@google.com, patrikf@google.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 00/13] input: cyapa: intruction of cyapa patches
+Date: Wed, 15 Oct 2014 15:19:14 +0800
+Message-Id: <1413357567-26177-1-git-send-email-dudl@cypress.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9F7Ghqf029606
 
->-----Original Message-----
->From: Joseph Lo [mailto:josephl@nvidia.com]
->Sent: Wednesday, October 15, 2014 2:53 PM
->To: Lu Jingchang-B35083; gregkh@linuxfoundation.org
->Cc: linux-arm-kernel@lists.infradead.org; linux-serial@vger.kernel.org;
->peter@hurleysoftware.com; arnd@arndb.de; linux-kernel@vger.kernel.org
->Subject: Re: [PATCHv4] serial: of-serial: fix up PM ops on
->no_console_suspend and port type
->
->On 10/15/2014 02:41 PM, Joseph Lo wrote:
->> On 10/15/2014 02:32 PM, Jingchang Lu wrote:
->>>> -----Original Message-----
->>>> From: Joseph Lo [mailto:josephl@nvidia.com]
->>>> Sent: Wednesday, October 15, 2014 9:01 AM
->>>> To: Lu Jingchang-B35083; gregkh@linuxfoundation.org
->>>> Cc: peter@hurleysoftware.com; arnd@arndb.de;
->>>> linux-kernel@vger.kernel.org; linux-serial@vger.kernel.org;
->>>> linux-arm-kernel@lists.infradead.org
->>>> Subject: Re: [PATCHv4] serial: of-serial: fix up PM ops on
->>>> no_console_suspend and port type
->>>>
->>>> On 10/14/2014 04:42 PM, Jingchang Lu wrote:
->>>>> This patch fixes commit 2dea53bf57783f243c892e99c10c6921e956aa7e,
->>>>> "serial: of-serial: add PM suspend/resume support", which disables
->>>>> the uart clock on suspend, but also causes a hardware hang on
->>>>> register access if no_console_suspend command line option is used.
->>>>>
->>>>> Also, not every of_serial device is an 8250 port, so the serial8250
->>>>> suspend/resume functions should only be applied to a real 8250 port.
->>>>>
->>>>> Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
->>>>
->>>> If you can make sure this patch can build without include
->>>> <linux/console.h>, then this patch
->>> The build passes on my cloned linux-next tree, include next-20141014,
->>> but is required on my another kernel-3.12+ based tree, then I didn't
->>> add this header file when upstream.
->>> Is the build broken on your source tree, and is the tree latest?
->>> If the header is needed, I will add it.
->> I tested it on next-20141013 and k3.14, both of them need the fix. I
->> can check it again against the latest linux-next tree later. Thanks.
->>
->OK, I confirmed it. You should add the header file. It also doesn't build
->for me with the latest linux-next tree. Maybe you missed to enable
->CONFIG_PM_SLEEP or CONFIG_SERIAL_8250 when doing the build test in linux-
->next tree.
-I have sent out the v5 patch with last git-send-email command line,
-didn't realized the missing of your email address in the cc list when sending.
-Please help review the v5 patch. Thanks.
+Based on Dmitry's comments, I made v8 patches of cyapa trackpad device
+with below updates compared with v7 patches:
+1) [PATCH v8 01/13] - Remove the async thread for device detect in
+   proble routine, now the device detect process is completly done within
+   the device proble routine.
+2) [PATCH v8 01/13] - Split the irq cmd hander function to separated
+   function cyapa_default_irq_cmd_handler() and set it to interface
+   cyapa_default_ops.irq_cmd_handler.
+3) [PATCH v8 06/13] - Add cyapa->gen check in cyapa_gen3_irq_cmd_handler()
+   to avoid miss-enter when device protocol is still in detecting.
 
-Best Regards,
-Jingchang
->
->-Joseph
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+   
+V7 patches have below updates compared with v6 patches:
+1) [PATCH v7 01/13] - Split the irq cmd hander function to separated
+   function cyapa_default_irq_cmd_handler() and set it to interface
+   cyapa_default_ops.irq_cmd_handler.
+2) [PATCH v7 06/13] - Add cyapa->gen check in cyapa_gen3_irq_cmd_handler()
+   to avoid miss-enter when device protocol is still in detecting.
+
+
+V6 patches have below updates compared with v5 patches:
+1) Remove patch 14 of the lid filtering from the cyapa driver.
+
+V5 patches have below updates compared with v4 patches:
+1) Uses get_device()/put_device() instead of kobject_get()/kobject_put();
+2) Fix memories freed before debugfs entries issue;
+3) Make cyapa_debugs_root valid in driver module level
+   in module_init()/moudle_exit() ;
+4) Fix i2c_transfer() may return partial transfer issues.
+5) Add cyapa->removed flag to avoid detecting thread may still running
+   when driver module is removed.
+6) Fix the meanings of some comments and return error code not clear issue.
+
+This patch set is aimed to re-architecture the cyapa driver to support
+old gen3 trackpad device and new gen5 trackpad device in one
+cyapa driver for easily productions support based on
+customers' requirements, and add sysfs functions and interfaces
+supported that required by users and customers.
+Because the earlier gen3 and the latest gen5 trackpad devies using
+two different chipsets, and have different protocol and interfaces.
+If supported these two trackpad devices in two different drivers, then
+it will be difficult to manage productions and later firmware updates.
+it will cause customer don't know which one to use and update
+because these two trackpad devices have been used and integrated
+in same one productions at a time, so must to support these two trackpad
+devices in same on driver.
+
+The new architecture is made of:
+cyapa.c - the core of the architecture, supply interfaces and
+functions to system and read trackpad devices.
+cyapa.h - header file including macros and data structure definitions.
+cyapa_gen3.c - functions support for gen3 trackpad devices,
+cyapa_gen5.c - functions support for gen5 trackpad devices.
+
+Beside this introduction patch, it has 14 patches listed as below.
+For these patches each one is patched based on previous one.
+
+patch 1/13: re-architecture cyapa driver with core functions,
+and applying the device detecting function in async thread to speed
+up system boot time.
+
+patch 2/13: add cyapa driver power management interfaces support.
+
+patch 3/13: add cyapa driver runtime power management interfaces support.
+
+patch 4/13: add cyapa key function interfaces in sysfs system.
+Including read firmware version, get production ID, read baseline,
+re-calibrate trackpad baselines and do trackpad firmware update.
+
+patch 5/13: add read firmware image and read raw trackpad device'
+sensors' raw data interface in debugfs system.
+
+patch 6/13: add gen3 trackpad device basic functions support.
+
+patch 7/13: add gen3 trackpad device firmware update function support.
+
+patch 8/13: add gen3 trackpad device report baseline and do force
+re-calibrate functions support.
+
+patch 9/13: add gen3 trackpad device read firmware image function support.
+
+patch 10/13: add gen5 trackpad device basic functions support.
+
+patch 11/13: add gen5 trackpad device firmware update function support.
+
+patch 12/13: add gen5 trackpad device report baseline and do force
+re-calibrate functions support.
+
+patch 13/13: add gen5 trackpad device read firmware image and report
+sensors' raw data values functions support.
+
