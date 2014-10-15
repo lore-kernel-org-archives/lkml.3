@@ -1,361 +1,488 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751860AbaJOOtQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 10:49:16 -0400
-Received: from mga11.intel.com ([192.55.52.93]:46210 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751666AbaJOOs1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 10:48:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="400686741"
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: gregkh@linuxfoundation.org, linus.walleij@linaro.org, gnurou@gmail.com,
-        wsa@the-dreams.de, sameo@linux.intel.com, lee.jones@linaro.org
-Cc: arnd@arndb.de, johan@kernel.org, daniel.baluta@intel.com,
-        laurentiu.palcu@intel.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        linux-i2c@vger.kernel.org,
-        Octavian Purdila <octavian.purdila@intel.com>
-Subject: [PATCH v8 2/4] i2c: add support for Diolan DLN-2 USB-I2C adapter
-Date: Wed, 15 Oct 2014 17:48:09 +0300
-Message-Id: <1413384491-23703-3-git-send-email-octavian.purdila@intel.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1413384491-23703-1-git-send-email-octavian.purdila@intel.com>
-References: <1413384491-23703-1-git-send-email-octavian.purdila@intel.com>
+	id S1751883AbaJOOtt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 10:49:49 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:43428 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751458AbaJOOtq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 10:49:46 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+X-Google-Original-From: Andy Lutomirski <luto@mit.edu>
+Message-ID: <543E8983.5090001@mit.edu>
+Date: Wed, 15 Oct 2014 07:49:39 -0700
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+MIME-Version: 1.0
+Newsgroups: gmane.linux.kernel,gmane.comp.file-systems.fuse.devel,gmane.linux.file-systems
+To: Seth Forshee <seth.forshee@canonical.com>,
+        Miklos Szeredi <miklos@szeredi.hu>
+CC: fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>
+Subject: Re: [PATCH v4 2/5] fuse: Support fuse filesystems outside of init_user_ns
+References: <1413296756-25071-1-git-send-email-seth.forshee@canonical.com> <1413296756-25071-3-git-send-email-seth.forshee@canonical.com>
+In-Reply-To: <1413296756-25071-3-git-send-email-seth.forshee@canonical.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Laurentiu Palcu <laurentiu.palcu@intel.com>
+On 10/14/2014 07:25 AM, Seth Forshee wrote:
+> Update fuse to translate uids and gids to/from the user namspace
+> of the process servicing requests on /dev/fuse. Any ids which do
+> not map into the namespace will result in errors. inodes will
+> also be marked bad when unmappable ids are received from
+> userspace.
+> 
+> Due to security concerns the namespace used should be fixed,
+> otherwise a user might be able to gain elevated privileges or
+> influence processes that the user would otherwise be unable to
+> manipulate. Thus the namespace of the mounting process is used
+> for all translations, and this namespace is required to be the
+> same as the one in use when /dev/fuse was opened.
+> 
 
-This patch adds support for the Diolan DLN-2 I2C master module. Due
-to hardware limitations it does not support SMBUS quick commands.
+I'm not sure that this is necessary if my nosuid patch goes in, but I
+also don't think it makes any sense to hold this up while we find a
+perfect solution.
 
-Information about the USB protocol interface can be found in the
-Programmer's Reference Manual [1], see section 6.2.2 for the I2C
-master module commands and responses.
+Is there a decent way to extend this to different translation schemes in
+the future (e.g. a flag at fs setup that could be used)?
 
-[1] https://www.diolan.com/downloads/dln-api-manual.pdf
+--Andy
 
-Signed-off-by: Laurentiu Palcu <laurentiu.palcu@intel.com>
-Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
----
- drivers/i2c/busses/Kconfig    |  10 ++
- drivers/i2c/busses/Makefile   |   1 +
- drivers/i2c/busses/i2c-dln2.c | 270 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 281 insertions(+)
- create mode 100644 drivers/i2c/busses/i2c-dln2.c
-
-diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-index 2ac87fa..2f3f371 100644
---- a/drivers/i2c/busses/Kconfig
-+++ b/drivers/i2c/busses/Kconfig
-@@ -858,6 +858,16 @@ config I2C_DIOLAN_U2C
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called i2c-diolan-u2c.
- 
-+config I2C_DLN2
-+       tristate "Diolan DLN-2 USB I2C adapter"
-+       depends on MFD_DLN2
-+       help
-+         If you say yes to this option, support will be included for Diolan
-+         DLN2, a USB to I2C interface.
-+
-+         This driver can also be built as a module.  If so, the module
-+         will be called i2c-dln2.
-+
- config I2C_PARPORT
- 	tristate "Parallel port adapter"
- 	depends on PARPORT
-diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
-index 49bf07e..4755f79 100644
---- a/drivers/i2c/busses/Makefile
-+++ b/drivers/i2c/busses/Makefile
-@@ -85,6 +85,7 @@ obj-$(CONFIG_I2C_RCAR)		+= i2c-rcar.o
- 
- # External I2C/SMBus adapter drivers
- obj-$(CONFIG_I2C_DIOLAN_U2C)	+= i2c-diolan-u2c.o
-+obj-$(CONFIG_I2C_DLN2)		+= i2c-dln2.o
- obj-$(CONFIG_I2C_PARPORT)	+= i2c-parport.o
- obj-$(CONFIG_I2C_PARPORT_LIGHT)	+= i2c-parport-light.o
- obj-$(CONFIG_I2C_ROBOTFUZZ_OSIF)	+= i2c-robotfuzz-osif.o
-diff --git a/drivers/i2c/busses/i2c-dln2.c b/drivers/i2c/busses/i2c-dln2.c
-new file mode 100644
-index 0000000..62c38cd
---- /dev/null
-+++ b/drivers/i2c/busses/i2c-dln2.c
-@@ -0,0 +1,270 @@
-+/*
-+ * Driver for the Diolan DLN-2 USB-I2C adapter
-+ *
-+ * Copyright (c) 2014 Intel Corporation
-+ *
-+ * Derived from:
-+ *  i2c-diolan-u2c.c
-+ *  Copyright (c) 2010-2011 Ericsson AB
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation, version 2.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/types.h>
-+#include <linux/slab.h>
-+#include <linux/i2c.h>
-+#include <linux/platform_device.h>
-+#include <linux/mfd/dln2.h>
-+
-+#define DLN2_I2C_MODULE_ID		0x03
-+#define DLN2_I2C_CMD(cmd)		DLN2_CMD(cmd, DLN2_I2C_MODULE_ID)
-+
-+/* I2C commands */
-+#define DLN2_I2C_GET_PORT_COUNT		DLN2_I2C_CMD(0x00)
-+#define DLN2_I2C_ENABLE			DLN2_I2C_CMD(0x01)
-+#define DLN2_I2C_DISABLE		DLN2_I2C_CMD(0x02)
-+#define DLN2_I2C_IS_ENABLED		DLN2_I2C_CMD(0x03)
-+#define DLN2_I2C_WRITE			DLN2_I2C_CMD(0x06)
-+#define DLN2_I2C_READ			DLN2_I2C_CMD(0x07)
-+#define DLN2_I2C_SCAN_DEVICES		DLN2_I2C_CMD(0x08)
-+#define DLN2_I2C_PULLUP_ENABLE		DLN2_I2C_CMD(0x09)
-+#define DLN2_I2C_PULLUP_DISABLE		DLN2_I2C_CMD(0x0A)
-+#define DLN2_I2C_PULLUP_IS_ENABLED	DLN2_I2C_CMD(0x0B)
-+#define DLN2_I2C_TRANSFER		DLN2_I2C_CMD(0x0C)
-+#define DLN2_I2C_SET_MAX_REPLY_COUNT	DLN2_I2C_CMD(0x0D)
-+#define DLN2_I2C_GET_MAX_REPLY_COUNT	DLN2_I2C_CMD(0x0E)
-+
-+#define DLN2_I2C_MAX_XFER_SIZE		256
-+#define DLN2_I2C_BUF_SIZE		(DLN2_I2C_MAX_XFER_SIZE + 16)
-+
-+struct dln2_i2c {
-+	struct platform_device *pdev;
-+	struct i2c_adapter adapter;
-+	u8 port;
-+	/*
-+	 * Buffer to hold the packet for read or write transfers. One
-+	 * is enough since we can't have multiple transfers in
-+	 * parallel on the i2c adapter.
-+	 */
-+	void *buf;
-+};
-+
-+static int dln2_i2c_enable(struct dln2_i2c *dln2, bool enable)
-+{
-+	int ret;
-+	u16 cmd;
-+	struct {
-+		u8 port;
-+	} tx;
-+
-+	tx.port = dln2->port;
-+
-+	if (enable)
-+		cmd = DLN2_I2C_ENABLE;
-+	else
-+		cmd = DLN2_I2C_DISABLE;
-+
-+	ret = dln2_transfer(dln2->pdev, cmd, &tx, sizeof(tx),
-+			    NULL, NULL, NULL);
-+	if (ret < 0)
-+		return ret;
-+
-+	return 0;
-+}
-+
-+static int dln2_i2c_write(struct dln2_i2c *dln2, u8 addr,
-+			  u8 *data, u16 data_len)
-+{
-+	int ret;
-+	struct {
-+		u8 port;
-+		u8 addr;
-+		u8 mem_addr_len;
-+		__le32 mem_addr;
-+		__le16 buf_len;
-+		u8 buf[DLN2_I2C_MAX_XFER_SIZE];
-+	} __packed *tx = dln2->buf;
-+	unsigned len;
-+
-+	BUILD_BUG_ON(sizeof(*tx) > DLN2_I2C_BUF_SIZE);
-+
-+	tx->port = dln2->port;
-+	tx->addr = addr;
-+	tx->mem_addr_len = 0;
-+	tx->mem_addr = 0;
-+	tx->buf_len = cpu_to_le16(data_len);
-+	memcpy(tx->buf, data, data_len);
-+
-+	len = sizeof(*tx) + data_len - DLN2_I2C_MAX_XFER_SIZE;
-+	ret = dln2_transfer(dln2->pdev, DLN2_I2C_WRITE, tx, len,
-+			    NULL, NULL, NULL);
-+	if (ret < 0)
-+		return ret;
-+
-+	return data_len;
-+}
-+
-+static int dln2_i2c_read(struct dln2_i2c *dln2, u16 addr, u8 *data,
-+			 u16 data_len)
-+{
-+	int ret;
-+	struct {
-+		u8 port;
-+		u8 addr;
-+		u8 mem_addr_len;
-+		__le32 mem_addr;
-+		__le16 buf_len;
-+	} __packed tx;
-+	struct {
-+		__le16 buf_len;
-+		u8 buf[DLN2_I2C_MAX_XFER_SIZE];
-+	} __packed *rx = dln2->buf;
-+	unsigned rx_len = sizeof(*rx);
-+
-+	BUILD_BUG_ON(sizeof(*rx) > DLN2_I2C_BUF_SIZE);
-+
-+	tx.port = dln2->port;
-+	tx.addr = addr;
-+	tx.mem_addr_len = 0;
-+	tx.mem_addr = 0;
-+	tx.buf_len = cpu_to_le16(data_len);
-+
-+	ret = dln2_transfer(dln2->pdev, DLN2_I2C_READ, &tx, sizeof(tx),
-+			    rx, &rx_len, NULL);
-+	if (ret < 0)
-+		return ret;
-+	if (rx_len < sizeof(rx->buf_len) + data_len)
-+		return -EPROTO;
-+	if (le16_to_cpu(rx->buf_len) != data_len)
-+		return -EPROTO;
-+
-+	memcpy(data, rx->buf, data_len);
-+
-+	return data_len;
-+}
-+
-+static int dln2_i2c_xfer(struct i2c_adapter *adapter,
-+			 struct i2c_msg *msgs, int num)
-+{
-+	struct dln2_i2c *dln2 = i2c_get_adapdata(adapter);
-+	struct i2c_msg *pmsg;
-+	struct device *dev = &dln2->pdev->dev;
-+	int i;
-+
-+	for (i = 0; i < num; i++) {
-+		int ret;
-+
-+		pmsg = &msgs[i];
-+
-+		if (pmsg->len > DLN2_I2C_MAX_XFER_SIZE) {
-+			dev_warn(dev, "maximum transfer size exceeded\n");
-+			return -EOPNOTSUPP;
-+		}
-+
-+		if (pmsg->flags & I2C_M_RD) {
-+			ret = dln2_i2c_read(dln2, pmsg->addr, pmsg->buf,
-+					    pmsg->len);
-+			if (ret < 0)
-+				return ret;
-+
-+			pmsg->len = ret;
-+		} else {
-+			ret = dln2_i2c_write(dln2, pmsg->addr, pmsg->buf,
-+					     pmsg->len);
-+			if (ret != pmsg->len)
-+				return -EPROTO;
-+		}
-+	}
-+
-+	return num;
-+}
-+
-+static u32 dln2_i2c_func(struct i2c_adapter *a)
-+{
-+	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_BYTE | I2C_FUNC_SMBUS_BYTE_DATA |
-+		I2C_FUNC_SMBUS_WORD_DATA | I2C_FUNC_SMBUS_BLOCK_PROC_CALL |
-+		I2C_FUNC_SMBUS_I2C_BLOCK;
-+}
-+
-+static const struct i2c_algorithm dln2_i2c_usb_algorithm = {
-+	.master_xfer = dln2_i2c_xfer,
-+	.functionality = dln2_i2c_func,
-+};
-+
-+static int dln2_i2c_probe(struct platform_device *pdev)
-+{
-+	int ret;
-+	struct dln2_i2c *dln2;
-+	struct device *dev = &pdev->dev;
-+	struct dln2_platform_data *pdata = dev_get_platdata(&pdev->dev);
-+
-+	dln2 = devm_kzalloc(dev, sizeof(*dln2), GFP_KERNEL);
-+	if (!dln2)
-+		return -ENOMEM;
-+
-+	dln2->buf = devm_kmalloc(dev, DLN2_I2C_BUF_SIZE, GFP_KERNEL);
-+	if (!dln2->buf)
-+		return -ENOMEM;
-+
-+	dln2->pdev = pdev;
-+	dln2->port = pdata->port;
-+
-+	/* setup i2c adapter description */
-+	dln2->adapter.owner = THIS_MODULE;
-+	dln2->adapter.class = I2C_CLASS_HWMON;
-+	dln2->adapter.algo = &dln2_i2c_usb_algorithm;
-+	dln2->adapter.dev.parent = dev;
-+	i2c_set_adapdata(&dln2->adapter, dln2);
-+	snprintf(dln2->adapter.name, sizeof(dln2->adapter.name), "%s-%s-%d",
-+		 "dln2-i2c", dev_name(pdev->dev.parent), dln2->port);
-+
-+	platform_set_drvdata(pdev, dln2);
-+
-+	/* initialize the i2c interface */
-+	ret = dln2_i2c_enable(dln2, true);
-+	if (ret < 0) {
-+		dev_err(dev, "failed to initialize adapter: %d\n", ret);
-+		return ret;
-+	}
-+
-+	/* and finally attach to i2c layer */
-+	ret = i2c_add_adapter(&dln2->adapter);
-+	if (ret < 0) {
-+		dev_err(dev, "failed to add I2C adapter: %d\n", ret);
-+		goto out_disable;
-+	}
-+
-+	return 0;
-+
-+out_disable:
-+	dln2_i2c_enable(dln2, false);
-+
-+	return ret;
-+}
-+
-+static int dln2_i2c_remove(struct platform_device *pdev)
-+{
-+	struct dln2_i2c *dln2 = platform_get_drvdata(pdev);
-+
-+	i2c_del_adapter(&dln2->adapter);
-+	dln2_i2c_enable(dln2, false);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver dln2_i2c_driver = {
-+	.driver.name	= "dln2-i2c",
-+	.probe		= dln2_i2c_probe,
-+	.remove		= dln2_i2c_remove,
-+};
-+
-+module_platform_driver(dln2_i2c_driver);
-+
-+MODULE_AUTHOR("Laurentiu Palcu <laurentiu.palcu@intel.com>");
-+MODULE_DESCRIPTION("Driver for the Diolan DLN2 I2C master interface");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:dln2-i2c");
--- 
-1.9.1
+> Cc: Eric W. Biederman <ebiederm@xmission.com>
+> Cc: Serge H. Hallyn <serge.hallyn@ubuntu.com>
+> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+> ---
+>  fs/fuse/dev.c    |  4 +--
+>  fs/fuse/dir.c    | 81 ++++++++++++++++++++++++++++++++++++--------------------
+>  fs/fuse/fuse_i.h | 12 ++++++---
+>  fs/fuse/inode.c  | 73 +++++++++++++++++++++++++++++++++++++++-----------
+>  4 files changed, 121 insertions(+), 49 deletions(-)
+> 
+> diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+> index 839caebd34f1..03c8785ed731 100644
+> --- a/fs/fuse/dev.c
+> +++ b/fs/fuse/dev.c
+> @@ -127,8 +127,8 @@ static void __fuse_put_request(struct fuse_req *req)
+>  
+>  static void fuse_req_init_context(struct fuse_conn *fc, struct fuse_req *req)
+>  {
+> -	req->in.h.uid = from_kuid_munged(&init_user_ns, current_fsuid());
+> -	req->in.h.gid = from_kgid_munged(&init_user_ns, current_fsgid());
+> +	req->in.h.uid = from_kuid_munged(fc->user_ns, current_fsuid());
+> +	req->in.h.gid = from_kgid_munged(fc->user_ns, current_fsgid());
+>  	req->in.h.pid = pid_nr_ns(task_pid(current), fc->pid_ns);
+>  }
+>  
+> diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
+> index de1d84af9f7c..123db1e06c78 100644
+> --- a/fs/fuse/dir.c
+> +++ b/fs/fuse/dir.c
+> @@ -253,9 +253,12 @@ static int fuse_dentry_revalidate(struct dentry *entry, unsigned int flags)
+>  		if (err || (outarg.attr.mode ^ inode->i_mode) & S_IFMT)
+>  			goto invalid;
+>  
+> -		fuse_change_attributes(inode, &outarg.attr,
+> -				       entry_attr_timeout(&outarg),
+> -				       attr_version);
+> +		err = fuse_change_attributes(inode, &outarg.attr,
+> +					     entry_attr_timeout(&outarg),
+> +					     attr_version);
+> +		if (err)
+> +			goto invalid;
+> +
+>  		fuse_change_entry_timeout(entry, &outarg);
+>  	} else if (inode) {
+>  		fi = get_fuse_inode(inode);
+> @@ -340,8 +343,9 @@ int fuse_lookup_name(struct super_block *sb, u64 nodeid, struct qstr *name,
+>  	*inode = fuse_iget(sb, outarg->nodeid, outarg->generation,
+>  			   &outarg->attr, entry_attr_timeout(outarg),
+>  			   attr_version);
+> -	err = -ENOMEM;
+> -	if (!*inode) {
+> +	if (IS_ERR(*inode)) {
+> +		err = PTR_ERR(*inode);
+> +		*inode = NULL;
+>  		fuse_queue_forget(fc, forget, outarg->nodeid, 1);
+>  		goto out;
+>  	}
+> @@ -473,11 +477,11 @@ static int fuse_create_open(struct inode *dir, struct dentry *entry,
+>  	ff->open_flags = outopen.open_flags;
+>  	inode = fuse_iget(dir->i_sb, outentry.nodeid, outentry.generation,
+>  			  &outentry.attr, entry_attr_timeout(&outentry), 0);
+> -	if (!inode) {
+> +	if (IS_ERR(inode)) {
+>  		flags &= ~(O_CREAT | O_EXCL | O_TRUNC);
+>  		fuse_sync_release(ff, flags);
+>  		fuse_queue_forget(fc, forget, outentry.nodeid, 1);
+> -		err = -ENOMEM;
+> +		err = PTR_ERR(inode);
+>  		goto out_err;
+>  	}
+>  	kfree(forget);
+> @@ -588,9 +592,9 @@ static int create_new_entry(struct fuse_conn *fc, struct fuse_req *req,
+>  
+>  	inode = fuse_iget(dir->i_sb, outarg.nodeid, outarg.generation,
+>  			  &outarg.attr, entry_attr_timeout(&outarg), 0);
+> -	if (!inode) {
+> +	if (IS_ERR(inode)) {
+>  		fuse_queue_forget(fc, forget, outarg.nodeid, 1);
+> -		return -ENOMEM;
+> +		return PTR_ERR(inode);
+>  	}
+>  	kfree(forget);
+>  
+> @@ -905,8 +909,8 @@ static void fuse_fillattr(struct inode *inode, struct fuse_attr *attr,
+>  	stat->ino = attr->ino;
+>  	stat->mode = (inode->i_mode & S_IFMT) | (attr->mode & 07777);
+>  	stat->nlink = attr->nlink;
+> -	stat->uid = make_kuid(&init_user_ns, attr->uid);
+> -	stat->gid = make_kgid(&init_user_ns, attr->gid);
+> +	stat->uid = inode->i_uid;
+> +	stat->gid = inode->i_gid;
+>  	stat->rdev = inode->i_rdev;
+>  	stat->atime.tv_sec = attr->atime;
+>  	stat->atime.tv_nsec = attr->atimensec;
+> @@ -969,10 +973,10 @@ static int fuse_do_getattr(struct inode *inode, struct kstat *stat,
+>  			make_bad_inode(inode);
+>  			err = -EIO;
+>  		} else {
+> -			fuse_change_attributes(inode, &outarg.attr,
+> -					       attr_timeout(&outarg),
+> -					       attr_version);
+> -			if (stat)
+> +			err = fuse_change_attributes(inode, &outarg.attr,
+> +						     attr_timeout(&outarg),
+> +						     attr_version);
+> +			if (!err && stat)
+>  				fuse_fillattr(inode, &outarg.attr, stat);
+>  		}
+>  	}
+> @@ -1302,9 +1306,11 @@ static int fuse_direntplus_link(struct file *file,
+>  			fi->nlookup++;
+>  			spin_unlock(&fc->lock);
+>  
+> -			fuse_change_attributes(inode, &o->attr,
+> -					       entry_attr_timeout(o),
+> -					       attr_version);
+> +			err = fuse_change_attributes(inode, &o->attr,
+> +						     entry_attr_timeout(o),
+> +						     attr_version);
+> +			if (err)
+> +				goto out;
+>  
+>  			/*
+>  			 * The other branch to 'found' comes via fuse_iget()
+> @@ -1322,8 +1328,10 @@ static int fuse_direntplus_link(struct file *file,
+>  
+>  	inode = fuse_iget(dir->i_sb, o->nodeid, o->generation,
+>  			  &o->attr, entry_attr_timeout(o), attr_version);
+> -	if (!inode)
+> +	if (IS_ERR(inode)) {
+> +		err = PTR_ERR(inode);
+>  		goto out;
+> +	}
+>  
+>  	alias = d_materialise_unique(dentry, inode);
+>  	err = PTR_ERR(alias);
+> @@ -1556,17 +1564,25 @@ static bool update_mtime(unsigned ivalid, bool trust_local_mtime)
+>  	return true;
+>  }
+>  
+> -static void iattr_to_fattr(struct iattr *iattr, struct fuse_setattr_in *arg,
+> -			   bool trust_local_cmtime)
+> +static int iattr_to_fattr(struct fuse_conn *fc, struct iattr *iattr,
+> +			   struct fuse_setattr_in *arg, bool trust_local_cmtime)
+>  {
+>  	unsigned ivalid = iattr->ia_valid;
+>  
+>  	if (ivalid & ATTR_MODE)
+>  		arg->valid |= FATTR_MODE,   arg->mode = iattr->ia_mode;
+> -	if (ivalid & ATTR_UID)
+> -		arg->valid |= FATTR_UID,    arg->uid = from_kuid(&init_user_ns, iattr->ia_uid);
+> -	if (ivalid & ATTR_GID)
+> -		arg->valid |= FATTR_GID,    arg->gid = from_kgid(&init_user_ns, iattr->ia_gid);
+> +	if (ivalid & ATTR_UID) {
+> +		arg->uid = from_kuid(fc->user_ns, iattr->ia_uid);
+> +		if (arg->uid == (uid_t)-1)
+> +			return -EINVAL;
+> +		arg->valid |= FATTR_UID;
+> +	}
+> +	if (ivalid & ATTR_GID) {
+> +		arg->gid = from_kgid(fc->user_ns, iattr->ia_gid);
+> +		if (arg->gid == (gid_t)-1)
+> +			return -EINVAL;
+> +		arg->valid |= FATTR_GID;
+> +	}
+>  	if (ivalid & ATTR_SIZE)
+>  		arg->valid |= FATTR_SIZE,   arg->size = iattr->ia_size;
+>  	if (ivalid & ATTR_ATIME) {
+> @@ -1588,6 +1604,8 @@ static void iattr_to_fattr(struct iattr *iattr, struct fuse_setattr_in *arg,
+>  		arg->ctime = iattr->ia_ctime.tv_sec;
+>  		arg->ctimensec = iattr->ia_ctime.tv_nsec;
+>  	}
+> +
+> +	return 0;
+>  }
+>  
+>  /*
+> @@ -1741,7 +1759,9 @@ int fuse_do_setattr(struct inode *inode, struct iattr *attr,
+>  
+>  	memset(&inarg, 0, sizeof(inarg));
+>  	memset(&outarg, 0, sizeof(outarg));
+> -	iattr_to_fattr(attr, &inarg, trust_local_cmtime);
+> +	err = iattr_to_fattr(fc, attr, &inarg, trust_local_cmtime);
+> +	if (err)
+> +		goto error;
+>  	if (file) {
+>  		struct fuse_file *ff = file->private_data;
+>  		inarg.valid |= FATTR_FH;
+> @@ -1778,8 +1798,13 @@ int fuse_do_setattr(struct inode *inode, struct iattr *attr,
+>  		/* FIXME: clear I_DIRTY_SYNC? */
+>  	}
+>  
+> -	fuse_change_attributes_common(inode, &outarg.attr,
+> -				      attr_timeout(&outarg));
+> +	err = fuse_change_attributes_common(inode, &outarg.attr,
+> +				            attr_timeout(&outarg));
+> +	if (err) {
+> +		spin_unlock(&fc->lock);
+> +		goto error;
+> +	}
+> +
+>  	oldsize = inode->i_size;
+>  	/* see the comment in fuse_change_attributes() */
+>  	if (!is_wb || is_truncate || !S_ISREG(inode->i_mode))
+> diff --git a/fs/fuse/fuse_i.h b/fs/fuse/fuse_i.h
+> index a3ded071e2c6..81187ba04e4a 100644
+> --- a/fs/fuse/fuse_i.h
+> +++ b/fs/fuse/fuse_i.h
+> @@ -22,6 +22,7 @@
+>  #include <linux/rbtree.h>
+>  #include <linux/poll.h>
+>  #include <linux/workqueue.h>
+> +#include <linux/user_namespace.h>
+>  #include <linux/pid_namespace.h>
+>  
+>  /** Max number of pages that can be used in a single read request */
+> @@ -387,6 +388,9 @@ struct fuse_conn {
+>  	/** The group id for this mount */
+>  	kgid_t group_id;
+>  
+> +	/** The user namespace for this mount */
+> +	struct user_namespace *user_ns;
+> +
+>  	/** The pid namespace for this mount */
+>  	struct pid_namespace *pid_ns;
+>  
+> @@ -713,11 +717,11 @@ void fuse_init_symlink(struct inode *inode);
+>  /**
+>   * Change attributes of an inode
+>   */
+> -void fuse_change_attributes(struct inode *inode, struct fuse_attr *attr,
+> -			    u64 attr_valid, u64 attr_version);
+> +int fuse_change_attributes(struct inode *inode, struct fuse_attr *attr,
+> +			   u64 attr_valid, u64 attr_version);
+>  
+> -void fuse_change_attributes_common(struct inode *inode, struct fuse_attr *attr,
+> -				   u64 attr_valid);
+> +int fuse_change_attributes_common(struct inode *inode, struct fuse_attr *attr,
+> +				  u64 attr_valid);
+>  
+>  /**
+>   * Initialize the client device
+> diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+> index e137969815a3..b88b5a780228 100644
+> --- a/fs/fuse/inode.c
+> +++ b/fs/fuse/inode.c
+> @@ -155,11 +155,22 @@ static ino_t fuse_squash_ino(u64 ino64)
+>  	return ino;
+>  }
+>  
+> -void fuse_change_attributes_common(struct inode *inode, struct fuse_attr *attr,
+> -				   u64 attr_valid)
+> +int fuse_change_attributes_common(struct inode *inode, struct fuse_attr *attr,
+> +				  u64 attr_valid)
+>  {
+>  	struct fuse_conn *fc = get_fuse_conn(inode);
+>  	struct fuse_inode *fi = get_fuse_inode(inode);
+> +	kuid_t uid;
+> +	kgid_t gid;
+> +
+> +	uid = make_kuid(fc->user_ns, attr->uid);
+> +	gid = make_kgid(fc->user_ns, attr->gid);
+> +	if (!uid_valid(uid) || !gid_valid(gid)) {
+> +		make_bad_inode(inode);
+> +		return -EIO;
+> +	}
+> +	inode->i_uid = uid;
+> +	inode->i_gid = gid;
+>  
+>  	fi->attr_version = ++fc->attr_version;
+>  	fi->i_time = attr_valid;
+> @@ -167,8 +178,6 @@ void fuse_change_attributes_common(struct inode *inode, struct fuse_attr *attr,
+>  	inode->i_ino     = fuse_squash_ino(attr->ino);
+>  	inode->i_mode    = (inode->i_mode & S_IFMT) | (attr->mode & 07777);
+>  	set_nlink(inode, attr->nlink);
+> -	inode->i_uid     = make_kuid(&init_user_ns, attr->uid);
+> -	inode->i_gid     = make_kgid(&init_user_ns, attr->gid);
+>  	inode->i_blocks  = attr->blocks;
+>  	inode->i_atime.tv_sec   = attr->atime;
+>  	inode->i_atime.tv_nsec  = attr->atimensec;
+> @@ -195,26 +204,32 @@ void fuse_change_attributes_common(struct inode *inode, struct fuse_attr *attr,
+>  		inode->i_mode &= ~S_ISVTX;
+>  
+>  	fi->orig_ino = attr->ino;
+> +	return 0;
+>  }
+>  
+> -void fuse_change_attributes(struct inode *inode, struct fuse_attr *attr,
+> -			    u64 attr_valid, u64 attr_version)
+> +int fuse_change_attributes(struct inode *inode, struct fuse_attr *attr,
+> +			   u64 attr_valid, u64 attr_version)
+>  {
+>  	struct fuse_conn *fc = get_fuse_conn(inode);
+>  	struct fuse_inode *fi = get_fuse_inode(inode);
+>  	bool is_wb = fc->writeback_cache;
+>  	loff_t oldsize;
+>  	struct timespec old_mtime;
+> +	int err;
+>  
+>  	spin_lock(&fc->lock);
+>  	if ((attr_version != 0 && fi->attr_version > attr_version) ||
+>  	    test_bit(FUSE_I_SIZE_UNSTABLE, &fi->state)) {
+>  		spin_unlock(&fc->lock);
+> -		return;
+> +		return 0;
+>  	}
+>  
+>  	old_mtime = inode->i_mtime;
+> -	fuse_change_attributes_common(inode, attr, attr_valid);
+> +	err = fuse_change_attributes_common(inode, attr, attr_valid);
+> +	if (err) {
+> +		spin_unlock(&fc->lock);
+> +		return err;
+> +	}
+>  
+>  	oldsize = inode->i_size;
+>  	/*
+> @@ -249,6 +264,8 @@ void fuse_change_attributes(struct inode *inode, struct fuse_attr *attr,
+>  		if (inval)
+>  			invalidate_inode_pages2(inode->i_mapping);
+>  	}
+> +
+> +	return 0;
+>  }
+>  
+>  static void fuse_init_inode(struct inode *inode, struct fuse_attr *attr)
+> @@ -302,7 +319,7 @@ struct inode *fuse_iget(struct super_block *sb, u64 nodeid,
+>   retry:
+>  	inode = iget5_locked(sb, nodeid, fuse_inode_eq, fuse_inode_set, &nodeid);
+>  	if (!inode)
+> -		return NULL;
+> +		return ERR_PTR(-ENOMEM);
+>  
+>  	if ((inode->i_state & I_NEW)) {
+>  		inode->i_flags |= S_NOATIME;
+> @@ -319,11 +336,23 @@ struct inode *fuse_iget(struct super_block *sb, u64 nodeid,
+>  		goto retry;
+>  	}
+>  
+> +	/*
+> +	 * Must do this before incrementing nlookup, as the caller will
+> +	 * send a forget for the node if this function fails.
+> +	 */
+> +	if (fuse_change_attributes(inode, attr, attr_valid, attr_version)) {
+> +		/*
+> +		 * inode_make_bad() already called by
+> +		 * fuse_change_attributes()
+> +		 */
+> +		iput(inode);
+> +		return ERR_PTR(-EIO);
+> +	}
+> +
+>  	fi = get_fuse_inode(inode);
+>  	spin_lock(&fc->lock);
+>  	fi->nlookup++;
+>  	spin_unlock(&fc->lock);
+> -	fuse_change_attributes(inode, attr, attr_valid, attr_version);
+>  
+>  	return inode;
+>  }
+> @@ -496,6 +525,8 @@ static int parse_fuse_opt(char *opt, struct fuse_mount_data *d, int is_bdev)
+>  	memset(d, 0, sizeof(struct fuse_mount_data));
+>  	d->max_read = ~0;
+>  	d->blksize = FUSE_DEFAULT_BLKSIZE;
+> +	d->user_id = make_kuid(current_user_ns(), 0);
+> +	d->group_id = make_kgid(current_user_ns(), 0);
+>  
+>  	while ((p = strsep(&opt, ",")) != NULL) {
+>  		int token;
+> @@ -578,8 +609,10 @@ static int fuse_show_options(struct seq_file *m, struct dentry *root)
+>  	struct super_block *sb = root->d_sb;
+>  	struct fuse_conn *fc = get_fuse_conn_super(sb);
+>  
+> -	seq_printf(m, ",user_id=%u", from_kuid_munged(&init_user_ns, fc->user_id));
+> -	seq_printf(m, ",group_id=%u", from_kgid_munged(&init_user_ns, fc->group_id));
+> +	seq_printf(m, ",user_id=%u",
+> +		   from_kuid_munged(fc->user_ns, fc->user_id));
+> +	seq_printf(m, ",group_id=%u",
+> +		   from_kgid_munged(fc->user_ns, fc->group_id));
+>  	if (fc->flags & FUSE_DEFAULT_PERMISSIONS)
+>  		seq_puts(m, ",default_permissions");
+>  	if (fc->flags & FUSE_ALLOW_OTHER)
+> @@ -618,6 +651,7 @@ void fuse_conn_init(struct fuse_conn *fc)
+>  	fc->attr_version = 1;
+>  	get_random_bytes(&fc->scramble_key, sizeof(fc->scramble_key));
+>  	fc->pid_ns = get_pid_ns(task_active_pid_ns(current));
+> +	fc->user_ns = get_user_ns(current_user_ns());
+>  }
+>  EXPORT_SYMBOL_GPL(fuse_conn_init);
+>  
+> @@ -626,6 +660,8 @@ void fuse_conn_put(struct fuse_conn *fc)
+>  	if (atomic_dec_and_test(&fc->count)) {
+>  		if (fc->destroy_req)
+>  			fuse_request_free(fc->destroy_req);
+> +		put_user_ns(fc->user_ns);
+> +		fc->user_ns = NULL;
+>  		put_pid_ns(fc->pid_ns);
+>  		fc->pid_ns = NULL;
+>  		fc->release(fc);
+> @@ -643,12 +679,15 @@ EXPORT_SYMBOL_GPL(fuse_conn_get);
+>  static struct inode *fuse_get_root_inode(struct super_block *sb, unsigned mode)
+>  {
+>  	struct fuse_attr attr;
+> +	struct inode *inode;
+> +
+>  	memset(&attr, 0, sizeof(attr));
+>  
+>  	attr.mode = mode;
+>  	attr.ino = FUSE_ROOT_ID;
+>  	attr.nlink = 1;
+> -	return fuse_iget(sb, 1, 0, &attr, 0, 0);
+> +	inode = fuse_iget(sb, 1, 0, &attr, 0, 0);
+> +	return IS_ERR(inode) ? NULL : inode;
+>  }
+>  
+>  struct fuse_inode_handle {
+> @@ -1043,8 +1082,12 @@ static int fuse_fill_super(struct super_block *sb, void *data, int silent)
+>  	if (!file)
+>  		goto err;
+>  
+> -	if ((file->f_op != &fuse_dev_operations) ||
+> -	    (file->f_cred->user_ns != &init_user_ns))
+> +	/*
+> +	 * Require mount to happen from the same user namespace which
+> +	 * opened /dev/fuse to prevent potential attacks.
+> +	 */
+> +	if (file->f_op != &fuse_dev_operations ||
+> +	    file->f_cred->user_ns != current_user_ns())
+>  		goto err_fput;
+>  
+>  	fc = kmalloc(sizeof(*fc), GFP_KERNEL);
+> 
 
