@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751709AbaJOVXQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 17:23:16 -0400
-Received: from mail.ispras.ru ([83.149.199.45]:44680 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751188AbaJOVXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 17:23:15 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Brian Foster <bfoster@redhat.com>, xfs@oss.sgi.com,
-        linux-kernel@vger.kernel.org, spruce-project@linuxtesting.org
-Subject: [PATCH] xfs: fix deadlock on failure path in xfs_setattr_nonsize()
-Date: Wed, 15 Oct 2014 23:22:48 +0200
-Message-Id: <1413408168-3086-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.9.1
+	id S1751877AbaJOVXl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 17:23:41 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:35093 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751821AbaJOVXj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 17:23:39 -0400
+Date: Wed, 15 Oct 2014 22:23:10 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Greg KH <greg@kroah.com>
+Cc: David Laight <David.Laight@ACULAB.COM>,
+        "'Nathan Lynch'" <Nathan_Lynch@mentor.com>,
+        Felipe Balbi <balbi@ti.com>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "josh@joshtriplett.org" <josh@joshtriplett.org>,
+        Rabin Vincent <rabin@rab.in>, Alan Stern <stern@rowland.harvard.edu>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: RCU bug with v3.17-rc3 ?
+Message-ID: <20141015212310.GP12379@n2100.arm.linux.org.uk>
+References: <20141009162656.GE16002@saruman> <20141009204101.GA25955@debian> <20141009204637.GE25729@saruman> <20141009210715.GH25729@saruman> <20141010135743.GB31348@saruman> <20141010162531.GL12379@n2100.arm.linux.org.uk> <54388B81.5020306@mentor.com> <063D6719AE5E284EB5DD2968C1650D6D174C996E@AcuExch.aculab.com> <20141013114307.GO12379@n2100.arm.linux.org.uk> <20141014020640.GB25433@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141014020640.GB25433@kroah.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If xfs_trans_reserve() fails, xfs_setattr_nonsize() does not deallocate
-the transaction and does not release "freeze" lock. That leads to the
-following warning from lockdep:
-  [ BUG: lock held when returning to user space! ]
-  ------------------------------------------------
-  fs-driver-tests/7127 is leaving the kernel with locks still held!
-  1 lock held by fs-driver-tests/7127:
-   #0:  (sb_internal){.+.+.+}, at: [<ffffffffa0389a44>] xfs_trans_alloc+0x24/0x40 [xfs]
+On Tue, Oct 14, 2014 at 04:06:40AM +0200, Greg KH wrote:
+> On Mon, Oct 13, 2014 at 12:43:07PM +0100, Russell King - ARM Linux wrote:
+> > I think the only viable solution here is that:
+> > 
+> > 1. We blacklist the bad compiler versions outright in the kernel.
+> 
+> Yes, please do this, it's what we have done for other buggy compiler
+> versions, no need to do something different here.
+> 
+> > Remember, it's the distro's choice to fix these buggy compilers, so the
+> > onus is on _them_ to deal with the mess they've created by doing so.
+> 
+> I totally agree.
+> 
+> Is someone going to send this patch, or do I have to write it myself?
 
-The patch adds xfs_trans_cancel() on the failure path.
+As I said, I have a patch in progress, but it seems that there needed
+to be some discussion about exactly which compiler versions are affected.
+It seems that it's not as trivial as looking at the GCC bug entry.
 
-Found by Linux File System Verification project (linuxtesting.org).
-
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- fs/xfs/xfs_iops.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
-index 72129493e9d3..e2e785eec831 100644
---- a/fs/xfs/xfs_iops.c
-+++ b/fs/xfs/xfs_iops.c
-@@ -599,8 +599,10 @@ xfs_setattr_nonsize(
- 
- 	tp = xfs_trans_alloc(mp, XFS_TRANS_SETATTR_NOT_SIZE);
- 	error = xfs_trans_reserve(tp, &M_RES(mp)->tr_ichange, 0, 0);
--	if (error)
-+	if (error) {
-+		xfs_trans_cancel(tp, 0);
- 		goto out_dqrele;
-+	}
- 
- 	xfs_ilock(ip, XFS_ILOCK_EXCL);
- 
 -- 
-1.9.1
-
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
