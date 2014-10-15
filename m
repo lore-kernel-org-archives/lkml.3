@@ -1,116 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751583AbaJOW7Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 18:59:24 -0400
-Received: from mga11.intel.com ([192.55.52.93]:52545 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750994AbaJOW7W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 18:59:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="asc'?scan'208";a="400939844"
-Message-ID: <1413413961.2412.40.camel@jtkirshe-mobl>
-Subject: Re: [PATCH v2] bcm/CmHost.c: Fix noisy compile warnings
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: Fabio Estevam <fabio.estevam@freescale.com>, linux-kernel@vger.kernel.org,
-        mail@beyermatthias.de, devel@driverdev.osuosl.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Joe Perches <joe@perches.com>
-Date: Wed, 15 Oct 2014 15:59:21 -0700
-In-Reply-To: <1413399701-4321-1-git-send-email-jeffrey.t.kirsher@intel.com>
-References: <1413399701-4321-1-git-send-email-jeffrey.t.kirsher@intel.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-niEHmbDkTaq35b0ZPtn6"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	id S1751589AbaJOXCT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 19:02:19 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:53756 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033AbaJOXCS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 19:02:18 -0400
+Date: Wed, 15 Oct 2014 16:02:13 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, pekon@pek-sem.com, linux-mtd@lists.infradead.org
+Subject: Re: [PATCH 8/9] mtd: nand: stm_nand_bch: add support for ST's BCH
+ NAND controller
+Message-ID: <20141015230213.GY1193@ld-irv-0074>
+References: <1409143344-22458-1-git-send-email-lee.jones@linaro.org>
+ <1409143344-22458-9-git-send-email-lee.jones@linaro.org>
+ <20141006062127.GH3248@norris-Latitude-E6410>
+ <20141009143923.GR20647@lee--X1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141009143923.GR20647@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Oct 09, 2014 at 03:39:23PM +0100, Lee Jones wrote:
+> > > +static int check_erased_page(uint8_t *data, uint32_t page_size, int max_zeros)
+> > > +{
+> > > +	uint8_t *b = data;
+> > > +	int zeros = 0;
+> > > +	int i;
+> > > +
+> > > +	for (i = 0; i < page_size; i++) {
+> > > +		zeros += hweight8(~*b++);
+> > > +		if (zeros > max_zeros)
+> > > +			return -1;
+> > > +	}
+> > > +
+> > > +	if (zeros)
+> > > +		memset(data, 0xff, page_size);
+> > > +
+> > > +	return zeros;
+> > > +}
+> > 
+> > I pointed out some flaws in this function back in July [1]. You said
+> > you'd look into this one [2]. I really don't want to accept yet another
+> > custom, unsound erased-page check if at all possible.
+> 
+> That's not quite true.  I said that I think it doesn't matter about
+> not taking the OOB area into consideration, which I still believe is
+> the case.  This controller does not allow access into the OOB area.
 
---=-niEHmbDkTaq35b0ZPtn6
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Perhaps I'm not being clear enough.
 
-On Wed, 2014-10-15 at 12:01 -0700, Jeff Kirsher wrote:
-> From: Fabio Estevam <fabio.estevam@freescale.com>
->=20
-> The Beceem WIMAX was generating compile warnings on 64bit machines,
-> which were:
->=20
-> drivers/staging/bcm/CmHost.c: In function =E2=80=98StoreCmControlResponse=
-Message=E2=80=99:
-> drivers/staging/bcm/CmHost.c:1503:3: warning: cast to pointer from intege=
-r of different size [-Wint-to-pointer-cast]
->    (struct bcm_connect_mgr_params *) ntohl(
->    ^
-> drivers/staging/bcm/CmHost.c:1546:3: warning: cast to pointer from intege=
-r of different size [-Wint-to-pointer-cast]
->    (struct bcm_connect_mgr_params *) ntohl(
->    ^
-> drivers/staging/bcm/CmHost.c:1564:3: warning: cast to pointer from intege=
-r of different size [-Wint-to-pointer-cast]
->    (struct bcm_connect_mgr_params *) ntohl(
->=20
-> This resolves the issue by preventing the driver to compile if CONFIG_64B=
-IT
-> is enabled, since the driver is known to be broken for 64 bit arch's.
->=20
-> CC: Dan Carpenter <dan.carpenter@oracle.com>
-> CC: Joe Perches <joe@perches.com>
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-> Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+While the controller may not allow you to program the spare area
+directly, you do so implicitly by allowing the controller to program BCH
+parity bytes to the spare area, right? So when you want to check if the
+page is blank, you have to consider ALL areas that will be used -- both
+in-band and out-of-band.
 
-Greg- I have also submitted a patch to remove this driver entirely.  So
-if you choose to apply the patch to remove the driver, then you can
-disregard this patch.
+So, I'll repeat my question and try to elaborate:
 
-> ---
-> v2: change fix from using typecast u64 in the code to altering Kconfig to
->     prevent the driver from compiling on 64 bit arch's based on feedback
->=20
->  drivers/staging/bcm/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/drivers/staging/bcm/Kconfig b/drivers/staging/bcm/Kconfig
-> index 8acf4b2..273b328 100644
-> --- a/drivers/staging/bcm/Kconfig
-> +++ b/drivers/staging/bcm/Kconfig
-> @@ -1,6 +1,6 @@
->  config BCM_WIMAX
->         tristate "Beceem BCS200/BCS220-3 and BCSM250 wimax support"
-> -       depends on USB && NET
-> +       depends on USB && NET && !64BIT
->         help
->           This is an experimental driver for the Beceem WIMAX chipset use=
-d
->  	 by Sprint 4G.
+  "What if this is a mostly-blank page, with ECC data, but most of the
+  bitflips are in the spare area? Then you will "correct" this page to
+  all 0xFF, not noticing that this was really not a blank page at all."
 
+More specifically:
 
+  1. Suppose you program a page with just a single byte of non-0xff
+  data, and your correction strength is at least 8 bits per sector
 
---=-niEHmbDkTaq35b0ZPtn6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+  2. When programming this page, your BCH controller writes parity bytes
+  to the spare area
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+  3. Over time (a lot of reads, for example), suppose you develop a lot
+  of bit flips in the spare area, such that your controller cannot
+  correct them any longer
 
-iQIcBAABCgAGBQJUPvxJAAoJEOVv75VaS+3OT14P/3mAwK9G6IlN7bqspE+M7sRq
-KBG66SzADOBwO7C0L8ouDf2l5/jpDOGaSG/UFykEq1IIkFFbf5TRii/6QmQlWFul
-7zlZSVR01ddDwYCptUbvrg428th5sXC/rl8Wv4tm/dnhMnUHaE3HWD0JDYw6DqeA
-5326Ldw76u9H61XiZTCYxL7dWW85CDDmklYK+lAki27ap++2V6HPjP0V7jnXzoch
-E0QDQscLJhBOK+gwl97eb2+g/GY6eIUUOT3LOq8LW8rTUC4Ns49gF5csEs7Bebwt
-5pDsCo7sb2NVfVgq3AUBgqU0YAF0OKTZTBQ8O96/TpRx4MGJV+S1HU3H8iLTo8b2
-Z37NQOY8eP3UhRQBB6oyHIaICdd4UtnGREnM/dNMGjPuCIH+sU6qKT6drPjIG7cb
-kAris2pTi7XGvzMboGNzS+g0Cyv1W8RqCcv5uhEgbovC79Nd7RtcY3RQcMuoEMWU
-WVOu7nVf5d54vXqkPhXLHQUm8e3PguuhfWVI/7XHUnTs7AOyqGtPR/kTth45iFr3
-1j/J5ziJy/fu14lMmI4RR28cU/92GGuGlYQnNGEOHy7TM9dmJQN7ccVa97fFMSb+
-I+lxtFTDPRiyUsPGVhiZNgf/09aH1Cfwzyhby/6ZAjCnCoc3bDMWwQQg8M8Wk7N1
-7o79ecXgfL8Eosd9a1N3
-=O8Qz
------END PGP SIGNATURE-----
+Now consider two algorithms:
 
---=-niEHmbDkTaq35b0ZPtn6--
+  (A) Your current proposal, to just check the in-band data that you can
+  easily access. If there are more than X zero-bits in the page, return
+  an error. Otherwise, clear the page and log a correctable error.
 
+  (B) My suggestion, to check both the in-band and out-of-band. Same as
+  algorithm (A), except you check for X total zero-bits in both the
+  in-band and out-of-band
+
+In the scenario I described, algorithm A will only notice up to 8 zero
+bits (in that single byte we programmed), so if X is greater than 8,
+algorithm A will falsely declare this an erased page and silently
+clobber the data we programmed to it.
+
+Algorithm B would notice that there are many zero bits in the spare area
+(due to the programmed parity bytes) and will correctly declare this a
+corrupt, non-erased page.
+
+If I've made any false assumptions in here, please point them out. But
+otherwise, I'd say that any erased-page detection algorithm that ignores
+the spare area is incorrect.
+
+If you agree with me, then you have at least two options:
+
+(1) Remove this erased page check entirely from the initial driver, with
+    a TODO item to add spare area read support and to improve this
+    algorithm
+
+(2) Keep the check as-is, but put a large FIXME warning which notes why
+    the algorithm is wrong. It's possible the wrong algorithm is still
+    marginally better than no erased-page detection at all. I'm not sure
+    what the probability distributions are like for this sort of error.
+
+> > > +/* Returns the number of ECC errors, or '-1' for uncorrectable error */
+> > > +int bch_read_page(struct nandi_controller *nandi,
+> > > +		  loff_t offs,
+> > > +		  uint8_t *buf)
+> > > +{
+> > > +	struct nand_chip *chip = &nandi->info.chip;
+> > > +	struct bch_prog *prog = &bch_prog_read_page;
+> > > +	uint32_t page_size = nandi->info.mtd.writesize;
+> > > +	unsigned long list_phys;
+> > 
+> > Please use dma_addr_t. This is an intentionally opaque (to some degree)
+> > type.
+> > 
+> > > +	unsigned long buf_phys;
+> > 
+> > Ditto.
+> > 
+> > BTW, is your hardware actually restricted to a 32-bit address space? If
+> > it has some expanded registers for larger physical address ranges, it'd
+> > be good to handle the upper bits of the DMA address when mapping. Or
+> > else, it would be good to reflect this in your driver with
+> > dma_set_mask() I think.
+> 
+> Yes, it's 32bit only.  I will add a call to dma_set_mask() to reflect
+> this.
+> 
+> ... or not.  See below.
+> 
+> > > +	uint32_t ecc_err;
+> > > +	int ret = 0;
+> > > +
+> > > +	dev_dbg(nandi->dev, "%s: offs = 0x%012llx\n", __func__, offs);
+> > > +
+> > > +	BUG_ON(offs & (NANDI_BCH_DMA_ALIGNMENT - 1));
+> > > +
+> > > +	emiss_nandi_select(nandi, STM_NANDI_BCH);
+> > > +
+> > > +	nandi_enable_interrupts(nandi, NANDBCH_INT_SEQNODESOVER);
+> > > +	reinit_completion(&nandi->seq_completed);
+> > > +
+> > > +	/* Reset ECC stats */
+> > > +	writel(CFG_RESET_ECC_ALL | CFG_ENABLE_AFM,
+> > > +	       nandi->base + NANDBCH_CONTROLLER_CFG);
+> > > +	writel(CFG_ENABLE_AFM, nandi->base + NANDBCH_CONTROLLER_CFG);
+> > > +
+> > > +	prog->addr = (uint32_t)((offs >> (chip->page_shift - 8)) & 0xffffff00);
+> > > +
+> > > +	buf_phys = dma_map_single(NULL, buf, page_size, DMA_FROM_DEVICE);
+> > 
+> > Why NULL for the first arg? You should use the proper device (which will
+> > help with the 32-bit / 64-bit masking, I think.
+> > 
+> > Also, dma_map_single() can fail. It's good practice to check the return
+> > value with dma_mapping_error(). Same in a few other places.
+> 
+> If you do not supply the first parameter here, it falls back to
+> arm_dma_ops, which is what we want.  I guess this is also why we do
+> not have to set the DMA mask, as we're running on ARM32, rather than
+> AARCH64.
+
+I think it's standard practice to make your hardware limitations
+explicit when writing a driver. From Documentation/DMA-API-HOWTO.txt
+under "DMA addressing limitations":
+
+  "It is good style to do this even if your device holds the default
+  setting, because this shows that you did think about these issues wrt.
+  your device."
+
+But I won't press this issue.
+
+> > > +static int bch_mtd_read_oob(struct mtd_info *mtd,
+> > > +			    struct nand_chip *chip, int page)
+> > > +{
+> > > +	BUG();
+> > 
+> > Are you sure this can't be implemented, even if it's not the expected
+> > mode of operation? That's really unforunate.
+> 
+> It can.  We have a 'special' function for it using the extended
+> flexible mode.  Trying to upstream this has been hard enough already,
+> without more crud to deal with.  I will hopefully be adding this
+> functionality as small, succinct patches subsequently.
+
+OK. But this is relevant to my points above -- particularly, you might
+want the 'read OOB' functionality to properly implement the erased page
+check.
+
+> > > +	for_each_child_of_node(np, banknp) {
+> > 
+> > If you change the DT binding to require a proper compatible property,
+> > you'll need of_device_is_compatible() here.
+> 
+> I see no reason to allocate a compatible property to the bank
+> descriptors.  They're not being registered/actioned through
+> of_platform_populate(), so ...
+
+Well, this is all dependent on my comments on your DT binding patches. I
+commented there that you did, at times, list a "compatible" property,
+but you never actually used it and/or it was put in the wrong place. If
+you determine that you do not need the property, then this comment is
+also not applicable.
+
+One reason for a "compatible" property might be if you have different
+types of subnodes eventually, and you'll need to differentiate them. I
+only see a need for a single type of subnode right now (the "bank"), but
+it's possible you'd need to plan for the future.
+
+> > [1] http://lists.infradead.org/pipermail/linux-mtd/2014-July/054500.html
+> > [2] http://lists.infradead.org/pipermail/linux-mtd/2014-July/054881.html
+
+Brian
