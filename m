@@ -1,181 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752400AbaJOLj4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 07:39:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49619 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751964AbaJOLjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 07:39:54 -0400
-Date: Wed, 15 Oct 2014 14:43:21 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        davem@davemloft.net, eric.dumazet@gmail.com
-Subject: Re: [RFC PATCH net-next 2/6] virtio: introduce
- virtio_enable_cb_avail()
-Message-ID: <20141015114321.GB26918@redhat.com>
-References: <1413357930-45302-1-git-send-email-jasowang@redhat.com>
- <1413357930-45302-3-git-send-email-jasowang@redhat.com>
- <20141015092849.GA25776@redhat.com>
- <543E4A23.7060903@redhat.com>
- <20141015104130.GH25776@redhat.com>
- <543E5347.7060106@redhat.com>
+	id S1752048AbaJOLtn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 07:49:43 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:62188 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464AbaJOLtl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 07:49:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <543E5347.7060106@redhat.com>
+In-Reply-To: <20141014154151.GB10067@roeck-us.net>
+References: <1413298094-9276-1-git-send-email-octavian.purdila@intel.com>
+	<1413298094-9276-4-git-send-email-octavian.purdila@intel.com>
+	<20141014154151.GB10067@roeck-us.net>
+Date: Wed, 15 Oct 2014 14:49:39 +0300
+Message-ID: <CAE1zotKpgEqAhtQvsFFee8xnX02MmhwrM0YU-6OHVZHcxiAi9g@mail.gmail.com>
+Subject: Re: [RFC PATCH v2 3/3] i2c: show and change bus frequency via sysfs
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Johan Hovold <johan@kernel.org>,
+        linux-i2c <linux-i2c@vger.kernel.org>, linux-api@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 06:58:15PM +0800, Jason Wang wrote:
-> On 10/15/2014 06:41 PM, Michael S. Tsirkin wrote:
-> > On Wed, Oct 15, 2014 at 06:19:15PM +0800, Jason Wang wrote:
-> >> On 10/15/2014 05:28 PM, Michael S. Tsirkin wrote:
-> >>> On Wed, Oct 15, 2014 at 03:25:26PM +0800, Jason Wang wrote:
-> >>>> This patch introduces virtio_enable_cb_avail() to publish avail idx
-> >>>> and used event. This could be used by batched buffer submitting to
-> >>>> reduce the number of tx interrupts.
-> >>>>
-> >>>> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> >>>> Cc: Michael S. Tsirkin <mst@redhat.com>
-> >>>> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> >>>> ---
-> >>>>  drivers/virtio/virtio_ring.c |   22 ++++++++++++++++++++--
-> >>>>  include/linux/virtio.h       |    2 ++
-> >>>>  2 files changed, 22 insertions(+), 2 deletions(-)
-> >>>>
-> >>>> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-> >>>> index 1b3929f..d67fbf8 100644
-> >>>> --- a/drivers/virtio/virtio_ring.c
-> >>>> +++ b/drivers/virtio/virtio_ring.c
-> >>>> @@ -567,14 +567,32 @@ unsigned virtqueue_enable_cb_prepare(struct virtqueue *_vq)
-> >>>>  	 * entry. Always do both to keep code simple. */
-> >>>>  	vq->vring.avail->flags &= ~VRING_AVAIL_F_NO_INTERRUPT;
-> >>>>  	/* Make sure used event never go backwards */
-> >>>> -	if (!vring_need_event(vring_used_event(&vq->vring),
-> >>>> -			      vq->vring.avail->idx, last_used_idx))
-> >>>> +	if (vq->vring.avail->idx != vring_used_event(&vq->vring) &&
-> >>>> +	    !vring_need_event(vring_used_event(&vq->vring),
-> >>>> +			      vq->vring.avail->idx, last_used_idx)) {
-> >>>>  		vring_used_event(&vq->vring) = last_used_idx;
-> >>>> +	}
-> >>>>  	END_USE(vq);
-> >>>>  	return last_used_idx;
-> >>>>  }
-> >>>>  EXPORT_SYMBOL_GPL(virtqueue_enable_cb_prepare);
-> >>>>
-> >>> I see you are also changing virtqueue_enable_cb_prepare, why?
-> >> This is also used to prevent it from moving the used event backwards.
-> >> This may happens when we handle tx napi after we publish avail idx as
-> >> used event (virtqueue_enable_cb_avail() was called).
-> > So it's wrong exactly in the same way.
+On Tue, Oct 14, 2014 at 6:41 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>
+> On Tue, Oct 14, 2014 at 05:48:14PM +0300, Octavian Purdila wrote:
+> > This patch adds three new sysfs files: bus_frequency,
+> > bus_min_frequency and bus_max_frequency which allows the user to view
+> > or change the bus frequency on a per bus level.
 > >
-> > But also, please document this stuff, don't put
-> > unrelated changes in a patch called "introduce
-> > virtqueue_enable_cb_avail".
-> >
-> >
-> >>>> +bool virtqueue_enable_cb_avail(struct virtqueue *_vq)
-> >>>> +{
-> >>>> +	struct vring_virtqueue *vq = to_vvq(_vq);
-> >>>> +	bool ret;
-> >>>> +
-> >>>> +	START_USE(vq);
-> >>>> +	vq->vring.avail->flags &= ~VRING_AVAIL_F_NO_INTERRUPT;
-> >>>> +	vring_used_event(&vq->vring) = vq->vring.avail->idx;
-> >>>> +	ret = vring_need_event(vq->vring.avail->idx,
-> >>>> +			       vq->last_used_idx, vq->vring.used->idx);
-> >>>> +	END_USE(vq);
-> >>>> +
-> >>>> +	return ret;
-> >>>> +}
-> >>>> +EXPORT_SYMBOL_GPL(virtqueue_enable_cb_avail);
-> >>>> +
-> >>>>  /**
-> >>>>   * virtqueue_poll - query pending used buffers
-> >>>>   * @vq: the struct virtqueue we're talking about.
-> >>> Could not figure out what this does.
-> >>> Please add documentation.
-> >>>
-> >> Sure, does something like below explain what does this function do?
-> >>
-> >> /**                                                                            
-> >>
-> >>  * virtqueue_enable_cb_avail - restart callbacks after
-> >> disable_cb.           
-> >>  * @vq: the struct virtqueue we're talking
-> >> about.                              
-> >>  *                                                                             
-> >>
-> >>  * This re-enables callbacks but hints to the other side to
-> >> delay              
-> >>  * interrupts all of the available buffers have been processed;         
-> >
-> > So this is like virtqueue_enable_cb_delayed but even more
-> > aggressive?
-> > I think it's too agressive: it's better to wake up guest
-> > after you are through most of buffers, but not all,
-> > so guest and host can work in parallel.
-> 
-> Note that:
-> 
-> - it was only used when there are still few of free slots (which is
-> greater than 2 + MAX_SKB_FRAGS)
-> - my patch keeps the free_old_xmit_skbs() in the beginning of
-> start_xmit(), so the tx skb reclaiming does not depends totally on tx
-> interrupt. If more packets comes, we'd expect some of them were freed in
-> ndo_start_xmit(). If not, finally we may trigger the
-> virtqueue_enable_cb_delayed().
-> 
-> So probably not as aggressive as it looks. I will do benchmark on this.
 
-Mine too:
-        } else if (virtqueue_enable_cb_delayed(sq->vq)) {
-                free_old_xmit_skbs(txq, sq, qsize);
-        }
+<snip>
 
+> > +
+> > +static DEVICE_ATTR(bus_frequency, S_IRUGO, i2c_sysfs_freq_show,
+> > +                i2c_sysfs_freq_store);
+>
+> Consider using DEVICE_ATTR_RO here. Also, extra empty line.
+>
 
+Unfortunately that won't work because we must transform bus_frequency
+to a RW entry (via is_visible) if the bus can change the frequency. We
+can't use DEVIE_ATTR_RW either, because transforming a RW entry to a
+RO entry with is visible is not possible:
 
-> >
-> >
-> >>  * it returns "false" if there are at least one pending buffer in the
-> >> queue,          
-> >>  * to detect a possible race between the driver checking for more
-> >> work,        
-> >>  * and enabling
-> >> callbacks.                                                     
-> >>  *                                                                             
-> >>
-> >>  * Caller must ensure we don't call this with other
-> >> virtqueue                  
-> >>  * operations at the same time (except where
-> >> noted).                           
-> >>  */
-> >>
-> >>>> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
-> >>>> index b46671e..bfaf058 100644
-> >>>> --- a/include/linux/virtio.h
-> >>>> +++ b/include/linux/virtio.h
-> >>>> @@ -65,6 +65,8 @@ bool virtqueue_enable_cb(struct virtqueue *vq);
-> >>>>  
-> >>>>  unsigned virtqueue_enable_cb_prepare(struct virtqueue *vq);
-> >>>>  
-> >>>> +bool virtqueue_enable_cb_avail(struct virtqueue *vq);
-> >>>> +
-> >>>>  bool virtqueue_poll(struct virtqueue *vq, unsigned);
-> >>>>  
-> >>>>  bool virtqueue_enable_cb_delayed(struct virtqueue *vq);
-> >>>> -- 
-> >>>> 1.7.1
-> >>> --
-> >>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >>> the body of a message to majordomo@vger.kernel.org
-> >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >>> Please read the FAQ at  http://www.tux.org/lkml/
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+fs/sysfs/group.c:
+
+static int create_files(struct kernfs_node *parent, struct kobject *kobj,
+...
+                        if (grp->is_visible) {
+                                mode = grp->is_visible(kobj, *attr, i);
+                                if (!mode)
+                                        continue;
+                        }
+                        error = sysfs_add_file_mode_ns(parent, *attr, false,
+                                                       (*attr)->mode | mode,
+                                                       NULL);
+
+Of course if we only allow a RW frequency entry as you suggest below,
+then we can use DEVICE_ATTR_RW.
+
+> > +
+> > +
+> > +static ssize_t
+> > +i2c_sysfs_min_freq_show(struct device *dev, struct device_attribute *attr,
+> > +                       char *buf)
+> > +{
+> > +     struct i2c_adapter *adap = to_i2c_adapter(dev);
+> > +
+> > +     return snprintf(buf, PAGE_SIZE, "%d\n", adap->min_freq);
+> > +}
+> > +
+> > +static DEVICE_ATTR(bus_min_frequency, S_IRUGO, i2c_sysfs_min_freq_show, NULL);
+> > +
+>
+> Consider using DEVICE_ATTR_RO.
+>
+
+OK.
+
+> > +static ssize_t
+> > +i2c_sysfs_max_freq_show(struct device *dev, struct device_attribute *attr,
+> > +                       char *buf)
+> > +{
+> > +     struct i2c_adapter *adap = to_i2c_adapter(dev);
+> > +
+> > +     return snprintf(buf, PAGE_SIZE, "%d\n", adap->max_freq);
+> > +}
+> > +
+> > +static DEVICE_ATTR(bus_max_frequency, S_IRUGO, i2c_sysfs_max_freq_show, NULL);
+> > +
+> Consider using DEVICE_ATTR_RO.
+>
+
+OK.
+
+> Overall, it seems to me that the bus_ in front of the attrribute names
+> is really not necessary. The attributes are attached to the adapter, so it
+> should be obvious that the attributes describe the adapter (=bus) frequency and
+> not some other frequency.
+>
+> > +umode_t i2c_adapter_visible_attr(struct kobject *kobj,
+> > +                              struct attribute *attr, int idx)
+>
+> static umode_t
+>
+
+Oops :)
+
+> > +{
+> > +     struct device *dev = container_of(kobj, struct device, kobj);
+> > +     struct i2c_adapter *adap = to_i2c_adapter(dev);
+> > +     umode_t mode = attr->mode;
+> > +
+> > +     if (attr == &dev_attr_bus_min_frequency.attr)
+> > +             return adap->min_freq ? mode : 0;
+> > +
+> > +     if (attr == &dev_attr_bus_max_frequency.attr)
+> > +             return adap->max_freq ? mode : 0;
+> > +
+> > +     if (attr == &dev_attr_bus_frequency.attr) {
+> > +             if (adap->set_freq)
+> > +                     mode |= S_IWUSR;
+> > +             return adap->freq ? mode : 0;
+>
+> Personally, I would make all those attributes only visible if the adapter
+> supports setting the frquency, and not bother with other conditions,
+> to keep things simple. Not a strong call, though.
+>
+
+I don't have a strong opinion either. I think a RO frequency entry
+would help with debugging, but I am not sure how useful it is in
+practice.
