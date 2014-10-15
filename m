@@ -1,26 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015AbaJOUxV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 16:53:21 -0400
-Received: from mail.kernel.org ([198.145.19.201]:35422 "EHLO mail.kernel.org"
+	id S1752105AbaJOUx1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 16:53:27 -0400
+Received: from mail.kernel.org ([198.145.19.201]:35458 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751876AbaJOUxS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 16:53:18 -0400
+	id S1751876AbaJOUxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 16:53:23 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Cody P Schafer <dev@codyps.com>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>,
-        Haren Myneni <hbabu@us.ibm.com>, Jiri Olsa <jolsa@redhat.com>,
-        Michael Ellerman <michaele@au1.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, linuxppc-dev@lists.ozlabs.org,
+Cc: linux-kernel@vger.kernel.org, Kan Liang <kan.liang@intel.com>,
+        Andi Kleen <ak@linux.intel.com>, Jiri Olsa <jolsa@redhat.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 03/15] perf Documentation: Remove Ruplicated docs for powerpc cpu specific events
-Date: Wed, 15 Oct 2014 17:52:36 -0300
-Message-Id: <1413406368-26245-4-git-send-email-acme@kernel.org>
+Subject: [PATCH 05/15] perf tools: Parse the pmu event prefix and suffix
+Date: Wed, 15 Oct 2014 17:52:38 -0300
+Message-Id: <1413406368-26245-6-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1413406368-26245-1-git-send-email-acme@kernel.org>
 References: <1413406368-26245-1-git-send-email-acme@kernel.org>
@@ -28,615 +21,252 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cody P Schafer <dev@codyps.com>
+From: Kan Liang <kan.liang@intel.com>
 
-Listing specific events doesn't actually help us at all here because:
- - these events actually vary between different ppc processors, they
-   aren't garunteed to be present.
- - the documentation of the (generic) file contents is now superceded by the
-   docs for arbitrary event file contents.
+There are two types of event formats for PMU events. E.g. el-abort OR
+cpu/el-abort/. However, the lexer mistakenly recognizes the simple style
+format as two events.
 
-Signed-off-by: Cody P Schafer <dev@codyps.com>
-Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+The parse_events_pmu_check function uses bsearch to search the name in
+known pmu event list. It can tell the lexer that the name is a PE_NAME
+or a PMU event name prefix or a PMU event name suffix. All these
+information will be used for accurately parsing kernel PMU events.
+
+The pmu events list will be read from sysfs at runtime.
+
+Note: Currently, the patch only want to handle the PMU event name as
+"a-b" and "a". The only exception, "stalled-cycles-frontend" and
+"stalled-cycles-fronted", are already hardcoded in lexer.
+
+Signed-off-by: Kan Liang <kan.liang@intel.com>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Cc: Haren Myneni <hbabu@us.ibm.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Michael Ellerman <michaele@au1.ibm.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: linuxppc-dev@lists.ozlabs.org
-Link: http://lkml.kernel.org/r/1412143402-26061-5-git-send-email-sukadev@linux.vnet.ibm.com
+Link: http://lkml.kernel.org/r/1412694532-23391-3-git-send-email-kan.liang@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- .../testing/sysfs-bus-event_source-devices-events  | 573 ---------------------
- 1 file changed, 573 deletions(-)
+ tools/perf/util/parse-events.c | 117 +++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/parse-events.h |  14 +++++
+ tools/perf/util/pmu.c          |  10 ----
+ tools/perf/util/pmu.h          |  10 ++++
+ 4 files changed, 141 insertions(+), 10 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-index a5226f094159..20979f8b3edb 100644
---- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-+++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-@@ -27,579 +27,6 @@ Description:	Generic performance monitoring events
- 		"basename".
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index c5642e6748b2..c659a3ca1283 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -30,6 +30,15 @@ extern int parse_events_debug;
+ #endif
+ int parse_events_parse(void *data, void *scanner);
  
++static struct perf_pmu_event_symbol *perf_pmu_events_list;
++/*
++ * The variable indicates the number of supported pmu event symbols.
++ * 0 means not initialized and ready to init
++ * -1 means failed to init, don't try anymore
++ * >0 is the number of supported pmu event symbols
++ */
++static int perf_pmu_events_list_num;
++
+ static struct event_symbol event_symbols_hw[PERF_COUNT_HW_MAX] = {
+ 	[PERF_COUNT_HW_CPU_CYCLES] = {
+ 		.symbol = "cpu-cycles",
+@@ -863,6 +872,113 @@ int parse_events_name(struct list_head *list, char *name)
+ 	return 0;
+ }
  
--What: 		/sys/devices/cpu/events/PM_1PLUS_PPC_CMPL
--		/sys/devices/cpu/events/PM_BRU_FIN
--		/sys/devices/cpu/events/PM_BR_MPRED
--		/sys/devices/cpu/events/PM_CMPLU_STALL
--		/sys/devices/cpu/events/PM_CMPLU_STALL_BRU
--		/sys/devices/cpu/events/PM_CMPLU_STALL_DCACHE_MISS
--		/sys/devices/cpu/events/PM_CMPLU_STALL_DFU
--		/sys/devices/cpu/events/PM_CMPLU_STALL_DIV
--		/sys/devices/cpu/events/PM_CMPLU_STALL_ERAT_MISS
--		/sys/devices/cpu/events/PM_CMPLU_STALL_FXU
--		/sys/devices/cpu/events/PM_CMPLU_STALL_IFU
--		/sys/devices/cpu/events/PM_CMPLU_STALL_LSU
--		/sys/devices/cpu/events/PM_CMPLU_STALL_REJECT
--		/sys/devices/cpu/events/PM_CMPLU_STALL_SCALAR
--		/sys/devices/cpu/events/PM_CMPLU_STALL_SCALAR_LONG
--		/sys/devices/cpu/events/PM_CMPLU_STALL_STORE
--		/sys/devices/cpu/events/PM_CMPLU_STALL_THRD
--		/sys/devices/cpu/events/PM_CMPLU_STALL_VECTOR
--		/sys/devices/cpu/events/PM_CMPLU_STALL_VECTOR_LONG
--		/sys/devices/cpu/events/PM_CYC
--		/sys/devices/cpu/events/PM_GCT_NOSLOT_BR_MPRED
--		/sys/devices/cpu/events/PM_GCT_NOSLOT_BR_MPRED_IC_MISS
--		/sys/devices/cpu/events/PM_GCT_NOSLOT_CYC
--		/sys/devices/cpu/events/PM_GCT_NOSLOT_IC_MISS
--		/sys/devices/cpu/events/PM_GRP_CMPL
--		/sys/devices/cpu/events/PM_INST_CMPL
--		/sys/devices/cpu/events/PM_LD_MISS_L1
--		/sys/devices/cpu/events/PM_LD_REF_L1
--		/sys/devices/cpu/events/PM_RUN_CYC
--		/sys/devices/cpu/events/PM_RUN_INST_CMPL
--		/sys/devices/cpu/events/PM_IC_DEMAND_L2_BR_ALL
--		/sys/devices/cpu/events/PM_GCT_UTIL_7_TO_10_SLOTS
--		/sys/devices/cpu/events/PM_PMC2_SAVED
--		/sys/devices/cpu/events/PM_VSU0_16FLOP
--		/sys/devices/cpu/events/PM_MRK_LSU_DERAT_MISS
--		/sys/devices/cpu/events/PM_MRK_ST_CMPL
--		/sys/devices/cpu/events/PM_NEST_PAIR3_ADD
--		/sys/devices/cpu/events/PM_L2_ST_DISP
--		/sys/devices/cpu/events/PM_L2_CASTOUT_MOD
--		/sys/devices/cpu/events/PM_ISEG
--		/sys/devices/cpu/events/PM_MRK_INST_TIMEO
--		/sys/devices/cpu/events/PM_L2_RCST_DISP_FAIL_ADDR
--		/sys/devices/cpu/events/PM_LSU1_DC_PREF_STREAM_CONFIRM
--		/sys/devices/cpu/events/PM_IERAT_WR_64K
--		/sys/devices/cpu/events/PM_MRK_DTLB_MISS_16M
--		/sys/devices/cpu/events/PM_IERAT_MISS
--		/sys/devices/cpu/events/PM_MRK_PTEG_FROM_LMEM
--		/sys/devices/cpu/events/PM_FLOP
--		/sys/devices/cpu/events/PM_THRD_PRIO_4_5_CYC
--		/sys/devices/cpu/events/PM_BR_PRED_TA
--		/sys/devices/cpu/events/PM_EXT_INT
--		/sys/devices/cpu/events/PM_VSU_FSQRT_FDIV
--		/sys/devices/cpu/events/PM_MRK_LD_MISS_EXPOSED_CYC
--		/sys/devices/cpu/events/PM_LSU1_LDF
--		/sys/devices/cpu/events/PM_IC_WRITE_ALL
--		/sys/devices/cpu/events/PM_LSU0_SRQ_STFWD
--		/sys/devices/cpu/events/PM_PTEG_FROM_RL2L3_MOD
--		/sys/devices/cpu/events/PM_MRK_DATA_FROM_L31_SHR
--		/sys/devices/cpu/events/PM_DATA_FROM_L21_MOD
--		/sys/devices/cpu/events/PM_VSU1_SCAL_DOUBLE_ISSUED
--		/sys/devices/cpu/events/PM_VSU0_8FLOP
--		/sys/devices/cpu/events/PM_POWER_EVENT1
--		/sys/devices/cpu/events/PM_DISP_CLB_HELD_BAL
--		/sys/devices/cpu/events/PM_VSU1_2FLOP
--		/sys/devices/cpu/events/PM_LWSYNC_HELD
--		/sys/devices/cpu/events/PM_PTEG_FROM_DL2L3_SHR
--		/sys/devices/cpu/events/PM_INST_FROM_L21_MOD
--		/sys/devices/cpu/events/PM_IERAT_XLATE_WR_16MPLUS
--		/sys/devices/cpu/events/PM_IC_REQ_ALL
--		/sys/devices/cpu/events/PM_DSLB_MISS
--		/sys/devices/cpu/events/PM_L3_MISS
--		/sys/devices/cpu/events/PM_LSU0_L1_PREF
--		/sys/devices/cpu/events/PM_VSU_SCALAR_SINGLE_ISSUED
--		/sys/devices/cpu/events/PM_LSU1_DC_PREF_STREAM_CONFIRM_STRIDE
--		/sys/devices/cpu/events/PM_L2_INST
--		/sys/devices/cpu/events/PM_VSU0_FRSP
--		/sys/devices/cpu/events/PM_FLUSH_DISP
--		/sys/devices/cpu/events/PM_PTEG_FROM_L2MISS
--		/sys/devices/cpu/events/PM_VSU1_DQ_ISSUED
--		/sys/devices/cpu/events/PM_MRK_DATA_FROM_DMEM
--		/sys/devices/cpu/events/PM_LSU_FLUSH_ULD
--		/sys/devices/cpu/events/PM_PTEG_FROM_LMEM
--		/sys/devices/cpu/events/PM_MRK_DERAT_MISS_16M
--		/sys/devices/cpu/events/PM_THRD_ALL_RUN_CYC
--		/sys/devices/cpu/events/PM_MEM0_PREFETCH_DISP
--		/sys/devices/cpu/events/PM_MRK_STALL_CMPLU_CYC_COUNT
--		/sys/devices/cpu/events/PM_DATA_FROM_DL2L3_MOD
--		/sys/devices/cpu/events/PM_VSU_FRSP
--		/sys/devices/cpu/events/PM_MRK_DATA_FROM_L21_MOD
--		/sys/devices/cpu/events/PM_PMC1_OVERFLOW
--		/sys/devices/cpu/events/PM_VSU0_SINGLE
--		/sys/devices/cpu/events/PM_MRK_PTEG_FROM_L3MISS
--		/sys/devices/cpu/events/PM_MRK_PTEG_FROM_L31_SHR
--		/sys/devices/cpu/events/PM_VSU0_VECTOR_SP_ISSUED
--		/sys/devices/cpu/events/PM_VSU1_FEST
--		/sys/devices/cpu/events/PM_MRK_INST_DISP
--		/sys/devices/cpu/events/PM_VSU0_COMPLEX_ISSUED
--		/sys/devices/cpu/events/PM_LSU1_FLUSH_UST
--		/sys/devices/cpu/events/PM_FXU_IDLE
--		/sys/devices/cpu/events/PM_LSU0_FLUSH_ULD
--		/sys/devices/cpu/events/PM_MRK_DATA_FROM_DL2L3_MOD
--		/sys/devices/cpu/events/PM_LSU_LMQ_SRQ_EMPTY_ALL_CYC
--		/sys/devices/cpu/events/PM_LSU1_REJECT_LMQ_FULL
--		/sys/devices/cpu/events/PM_INST_PTEG_FROM_L21_MOD
--		/sys/devices/cpu/events/PM_INST_FROM_RL2L3_MOD
--		/sys/devices/cpu/events/PM_SHL_CREATED
--		/sys/devices/cpu/events/PM_L2_ST_HIT
--		/sys/devices/cpu/events/PM_DATA_FROM_DMEM
--		/sys/devices/cpu/events/PM_L3_LD_MISS
--		/sys/devices/cpu/events/PM_FXU1_BUSY_FXU0_IDLE
--		/sys/devices/cpu/events/PM_DISP_CLB_HELD_RES
--		/sys/devices/cpu/events/PM_L2_SN_SX_I_DONE
--		/sys/devices/cpu/events/PM_STCX_CMPL
--		/sys/devices/cpu/events/PM_VSU0_2FLOP
--		/sys/devices/cpu/events/PM_L3_PREF_MISS
--		/sys/devices/cpu/events/PM_LSU_SRQ_SYNC_CYC
--		/sys/devices/cpu/events/PM_LSU_REJECT_ERAT_MISS
--		/sys/devices/cpu/events/PM_L1_ICACHE_MISS
--		/sys/devices/cpu/events/PM_LSU1_FLUSH_SRQ
--		/sys/devices/cpu/events/PM_LD_REF_L1_LSU0
--		/sys/devices/cpu/events/PM_VSU0_FEST
--		/sys/devices/cpu/events/PM_VSU_VECTOR_SINGLE_ISSUED
--		/sys/devices/cpu/events/PM_FREQ_UP
--		/sys/devices/cpu/events/PM_DATA_FROM_LMEM
--		/sys/devices/cpu/events/PM_LSU1_LDX
--		/sys/devices/cpu/events/PM_PMC3_OVERFLOW
--		/sys/devices/cpu/events/PM_MRK_BR_MPRED
--		/sys/devices/cpu/events/PM_SHL_MATCH
--		/sys/devices/cpu/events/PM_MRK_BR_TAKEN
--		/sys/devices/cpu/events/PM_ISLB_MISS
--		/sys/devices/cpu/events/PM_DISP_HELD_THERMAL
--		/sys/devices/cpu/events/PM_INST_PTEG_FROM_RL2L3_SHR
--		/sys/devices/cpu/events/PM_LSU1_SRQ_STFWD
--		/sys/devices/cpu/events/PM_PTEG_FROM_DMEM
--		/sys/devices/cpu/events/PM_VSU_2FLOP
--		/sys/devices/cpu/events/PM_GCT_FULL_CYC
--		/sys/devices/cpu/events/PM_MRK_DATA_FROM_L3_CYC
--		/sys/devices/cpu/events/PM_LSU_SRQ_S0_ALLOC
--		/sys/devices/cpu/events/PM_MRK_DERAT_MISS_4K
--		/sys/devices/cpu/events/PM_BR_MPRED_TA
--		/sys/devices/cpu/events/PM_INST_PTEG_FROM_L2MISS
--		/sys/devices/cpu/events/PM_DPU_HELD_POWER
--		/sys/devices/cpu/events/PM_MRK_VSU_FIN
--		/sys/devices/cpu/events/PM_LSU_SRQ_S0_VALID
--		/sys/devices/cpu/events/PM_GCT_EMPTY_CYC
--		/sys/devices/cpu/events/PM_IOPS_DISP
--		/sys/devices/cpu/events/PM_RUN_SPURR
--		/sys/devices/cpu/events/PM_PTEG_FROM_L21_MOD
--		/sys/devices/cpu/events/PM_VSU0_1FLOP
--		/sys/devices/cpu/events/PM_SNOOP_TLBIE
--		/sys/devices/cpu/events/PM_DATA_FROM_L3MISS
--		/sys/devices/cpu/events/PM_VSU_SINGLE
--		/sys/devices/cpu/events/PM_DTLB_MISS_16G
--		/sys/devices/cpu/events/PM_FLUSH
--		/sys/devices/cpu/events/PM_L2_LD_HIT
--		/sys/devices/cpu/events/PM_NEST_PAIR2_AND
--		/sys/devices/cpu/events/PM_VSU1_1FLOP
--		/sys/devices/cpu/events/PM_IC_PREF_REQ
--		/sys/devices/cpu/events/PM_L3_LD_HIT
--		/sys/devices/cpu/events/PM_DISP_HELD
--		/sys/devices/cpu/events/PM_L2_LD
--		/sys/devices/cpu/events/PM_LSU_FLUSH_SRQ
--		/sys/devices/cpu/events/PM_BC_PLUS_8_CONV
--		/sys/devices/cpu/events/PM_MRK_DATA_FROM_L31_MOD_CYC
--		/sys/devices/cpu/events/PM_L2_RCST_BUSY_RC_FULL
--		/sys/devices/cpu/events/PM_TB_BIT_TRANS
--		/sys/devices/cpu/events/PM_THERMAL_MAX
--		/sys/devices/cpu/events/PM_LSU1_FLUSH_ULD
--		/sys/devices/cpu/events/PM_LSU1_REJECT_LHS
--		/sys/devices/cpu/events/PM_LSU_LRQ_S0_ALLOC
--		/sys/devices/cpu/events/PM_L3_CO_L31
--		/sys/devices/cpu/events/PM_POWER_EVENT4
--		/sys/devices/cpu/events/PM_DATA_FROM_L31_SHR
--		/sys/devices/cpu/events/PM_BR_UNCOND
--		/sys/devices/cpu/events/PM_LSU1_DC_PREF_STREAM_ALLOC
--		/sys/devices/cpu/events/PM_PMC4_REWIND
--		/sys/devices/cpu/events/PM_L2_RCLD_DISP
--		/sys/devices/cpu/events/PM_THRD_PRIO_2_3_CYC
--		/sys/devices/cpu/events/PM_MRK_PTEG_FROM_L2MISS
--		/sys/devices/cpu/events/PM_IC_DEMAND_L2_BHT_REDIRECT
--		/sys/devices/cpu/events/PM_DATA_FROM_L31_SHR
--		/sys/devices/cpu/events/PM_IC_PREF_CANCEL_L2
--		/sys/devices/cpu/events/PM_MRK_FIN_STALL_CYC_COUNT
--		/sys/devices/cpu/events/PM_BR_PRED_CCACHE
--		/sys/devices/cpu/events/PM_GCT_UTIL_1_TO_2_SLOTS
--		/sys/devices/cpu/events/PM_MRK_ST_CMPL_INT
--		/sys/devices/cpu/events/PM_LSU_TWO_TABLEWALK_CYC
--		/sys/devices/cpu/events/PM_MRK_DATA_FROM_L3MISS
--		/sys/devices/cpu/events/PM_LSU_SET_MPRED
--		/sys/devices/cpu/events/PM_FLUSH_DISP_TLBIE
--		/sys/devices/cpu/events/PM_VSU1_FCONV
--		/sys/devices/cpu/events/PM_DERAT_MISS_16G
--		/sys/devices/cpu/events/PM_INST_FROM_LMEM
--		/sys/devices/cpu/events/PM_IC_DEMAND_L2_BR_REDIRECT
--		/sys/devices/cpu/events/PM_INST_PTEG_FROM_L2
--		/sys/devices/cpu/events/PM_PTEG_FROM_L2
--		/sys/devices/cpu/events/PM_MRK_DATA_FROM_L21_SHR_CYC
--		/sys/devices/cpu/events/PM_MRK_DTLB_MISS_4K
--		/sys/devices/cpu/events/PM_VSU0_FPSCR
--		/sys/devices/cpu/events/PM_VSU1_VECT_DOUBLE_ISSUED
--		/sys/devices/cpu/events/PM_MRK_PTEG_FROM_RL2L3_MOD
--		/sys/devices/cpu/events/PM_MEM0_RQ_DISP
--		/sys/devices/cpu/events/PM_L2_LD_MISS
--		/sys/devices/cpu/events/PM_VMX_RESULT_SAT_1
--		/sys/devices/cpu/events/PM_L1_PREF
--		/sys/devices/cpu/events/PM_MRK_DATA_FROM_LMEM_CYC
--		/sys/devices/cpu/events/PM_GRP_IC_MISS_NONSPEC
--		/sys/devices/cpu/events/PM_PB_NODE_PUMP
--		/sys/devices/cpu/events/PM_SHL_MERGED
--		/sys/devices/cpu/events/PM_NEST_PAIR1_ADD
--		/sys/devices/cpu/events/PM_DATA_FROM_L3
--		/sys/devices/cpu/events/PM_LSU_FLUSH
--		/sys/devices/cpu/events/PM_LSU_SRQ_SYNC_COUNT
--		/sys/devices/cpu/events/PM_PMC2_OVERFLOW
--		/sys/devices/cpu/events/PM_LSU_LDF
--		/sys/devices/cpu/events/PM_POWER_EVENT3
--		/sys/devices/cpu/events/PM_DISP_WT
--		/sys/devices/cpu/events/PM_IC_BANK_CONFLICT
--		/sys/devices/cpu/events/PM_BR_MPRED_CR_TA
--		/sys/devices/cpu/events/PM_L2_INST_MISS
--		/sys/devices/cpu/events/PM_NEST_PAIR2_ADD
--		/sys/devices/cpu/events/PM_MRK_LSU_FLUSH
--		/sys/devices/cpu/events/PM_L2_LDST
--		/sys/devices/cpu/events/PM_INST_FROM_L31_SHR
--		/sys/devices/cpu/events/PM_VSU0_FIN
--		/sys/devices/cpu/events/PM_VSU1_FCONV
--		/sys/devices/cpu/events/PM_INST_FROM_RMEM
--		/sys/devices/cpu/events/PM_DISP_CLB_HELD_TLBIE
--		/sys/devices/cpu/events/PM_MRK_DATA_FROM_DMEM_CYC
--		/sys/devices/cpu/events/PM_BR_PRED_CR
--		/sys/devices/cpu/events/PM_LSU_REJECT
--		/sys/devices/cpu/events/PM_GCT_UTIL_3_TO_6_SLOTS
--		/sys/devices/cpu/events/PM_CMPLU_STALL_END_GCT_NOSLOT
--		/sys/devices/cpu/events/PM_LSU0_REJECT_LMQ_FULL
--		/sys/devices/cpu/events/PM_VSU_FEST
--		/sys/devices/cpu/events/PM_NEST_PAIR0_AND
--		/sys/devices/cpu/events/PM_PTEG_FROM_L3
--		/sys/devices/cpu/events/PM_POWER_EVENT2
--		/sys/devices/cpu/events/PM_IC_PREF_CANCEL_PAGE
--		/sys/devices/cpu/events/PM_VSU0_FSQRT_FDIV
--		/sys/devices/cpu/events/PM_MRK_GRP_CMPL
--		/sys/devices/cpu/events/PM_VSU0_SCAL_DOUBLE_ISSUED
--		/sys/devices/cpu/events/PM_GRP_DISP
--		/sys/devices/cpu/events/PM_LSU0_LDX
--		/sys/devices/cpu/events/PM_DATA_FROM_L2
--		/sys/devices/cpu/events/PM_MRK_DATA_FROM_RL2L3_MOD
--		/sys/devices/cpu/events/PM_VSU0_VECT_DOUBLE_ISSUED
--		/sys/devices/cpu/events/PM_VSU1_2FLOP_DOUBLE
--		/sys/devices/cpu/events/PM_THRD_PRIO_6_7_CYC
--		/sys/devices/cpu/events/PM_BC_PLUS_8_RSLV_TAKEN
--		/sys/devices/cpu/events/PM_BR_MPRED_CR
--		/sys/devices/cpu/events/PM_L3_CO_MEM
--		/sys/devices/cpu/events/PM_DATA_FROM_RL2L3_MOD
--		/sys/devices/cpu/events/PM_LSU_SRQ_FULL_CYC
--		/sys/devices/cpu/events/PM_TABLEWALK_CYC
--		/sys/devices/cpu/events/PM_MRK_PTEG_FROM_RMEM
--		/sys/devices/cpu/events/PM_LSU_SRQ_STFWD
--		/sys/devices/cpu/events/PM_INST_PTEG_FROM_RMEM
--		/sys/devices/cpu/events/PM_FXU0_FIN
--		/sys/devices/cpu/events/PM_LSU1_L1_SW_PREF
--		/sys/devices/cpu/events/PM_PTEG_FROM_L31_MOD
--		/sys/devices/cpu/events/PM_PMC5_OVERFLOW
--		/sys/devices/cpu/events/PM_LD_REF_L1_LSU1
--		/sys/devices/cpu/events/PM_INST_PTEG_FROM_L21_SHR
--		/sys/devices/cpu/events/PM_DATA_FROM_RMEM
--		/sys/devices/cpu/events/PM_VSU0_SCAL_SINGLE_ISSUED
--		/sys/devices/cpu/events/PM_BR_MPRED_LSTACK
--		/sys/devices/cpu/events/PM_MRK_DATA_FROM_RL2L3_MOD_CYC
--		/sys/devices/cpu/events/PM_LSU0_FLUSH_UST
--		/sys/devices/cpu/events/PM_LSU_NCST
--		/sys/devices/cpu/events/PM_BR_TAKEN
--		/sys/devices/cpu/events/PM_INST_PTEG_FROM_LMEM
--		/sys/devices/cpu/events/PM_DTLB_MISS_4K
--		/sys/devices/cpu/events/PM_PMC4_SAVED
--		/sys/devices/cpu/events/PM_VSU1_PERMUTE_ISSUED
--		/sys/devices/cpu/events/PM_SLB_MISS
--		/sys/devices/cpu/events/PM_LSU1_FLUSH_LRQ
--		/sys/devices/cpu/events/PM_DTLB_MISS
--		/sys/devices/cpu/events/PM_VSU1_FRSP
--		/sys/devices/cpu/events/PM_VSU_VECTOR_DOUBLE_ISSUED
--		/sys/devices/cpu/events/PM_L2_CASTOUT_SHR
--		/sys/devices/cpu/events/PM_DATA_FROM_DL2L3_SHR
--		/sys/devices/cpu/events/PM_VSU1_STF
--		/sys/devices/cpu/events/PM_ST_FIN
--		/sys/devices/cpu/events/PM_PTEG_FROM_L21_SHR
--		/sys/devices/cpu/events/PM_L2_LOC_GUESS_WRONG
--		/sys/devices/cpu/events/PM_MRK_STCX_FAIL
--		/sys/devices/cpu/events/PM_LSU0_REJECT_LHS
--		/sys/devices/cpu/events/PM_IC_PREF_CANCEL_HIT
--		/sys/devices/cpu/events/PM_L3_PREF_BUSY
--		/sys/devices/cpu/events/PM_MRK_BRU_FIN
--		/sys/devices/cpu/events/PM_LSU1_NCLD
--		/sys/devices/cpu/events/PM_INST_PTEG_FROM_L31_MOD
--		/sys/devices/cpu/events/PM_LSU_NCLD
--		/sys/devices/cpu/events/PM_LSU_LDX
--		/sys/devices/cpu/events/PM_L2_LOC_GUESS_CORRECT
--		/sys/devices/cpu/events/PM_THRESH_TIMEO
--		/sys/devices/cpu/events/PM_L3_PREF_ST
--		/sys/devices/cpu/events/PM_DISP_CLB_HELD_SYNC
--		/sys/devices/cpu/events/PM_VSU_SIMPLE_ISSUED
--		/sys/devices/cpu/events/PM_VSU1_SINGLE
--		/sys/devices/cpu/events/PM_DATA_TABLEWALK_CYC
--		/sys/devices/cpu/events/PM_L2_RC_ST_DONE
--		/sys/devices/cpu/events/PM_MRK_PTEG_FROM_L21_MOD
--		/sys/devices/cpu/events/PM_LARX_LSU1
--		/sys/devices/cpu/events/PM_MRK_DATA_FROM_RMEM
--		/sys/devices/cpu/events/PM_DISP_CLB_HELD
--		/sys/devices/cpu/events/PM_DERAT_MISS_4K
--		/sys/devices/cpu/events/PM_L2_RCLD_DISP_FAIL_ADDR
--		/sys/devices/cpu/events/PM_SEG_EXCEPTION
--		/sys/devices/cpu/events/PM_FLUSH_DISP_SB
--		/sys/devices/cpu/events/PM_L2_DC_INV
--		/sys/devices/cpu/events/PM_PTEG_FROM_DL2L3_MOD
--		/sys/devices/cpu/events/PM_DSEG
--		/sys/devices/cpu/events/PM_BR_PRED_LSTACK
--		/sys/devices/cpu/events/PM_VSU0_STF
--		/sys/devices/cpu/events/PM_LSU_FX_FIN
--		/sys/devices/cpu/events/PM_DERAT_MISS_16M
--		/sys/devices/cpu/events/PM_MRK_PTEG_FROM_DL2L3_MOD
--		/sys/devices/cpu/events/PM_GCT_UTIL_11_PLUS_SLOTS
--		/sys/devices/cpu/events/PM_INST_FROM_L3
--		/sys/devices/cpu/events/PM_MRK_IFU_FIN
--		/sys/devices/cpu/events/PM_ITLB_MISS
--		/sys/devices/cpu/events/PM_VSU_STF
--		/sys/devices/cpu/events/PM_LSU_FLUSH_UST
--		/sys/devices/cpu/events/PM_L2_LDST_MISS
--		/sys/devices/cpu/events/PM_FXU1_FIN
--		/sys/devices/cpu/events/PM_SHL_DEALLOCATED
--		/sys/devices/cpu/events/PM_L2_SN_M_WR_DONE
--		/sys/devices/cpu/events/PM_LSU_REJECT_SET_MPRED
--		/sys/devices/cpu/events/PM_L3_PREF_LD
--		/sys/devices/cpu/events/PM_L2_SN_M_RD_DONE
--		/sys/devices/cpu/events/PM_MRK_DERAT_MISS_16G
--		/sys/devices/cpu/events/PM_VSU_FCONV
--		/sys/devices/cpu/events/PM_ANY_THRD_RUN_CYC
--		/sys/devices/cpu/events/PM_LSU_LMQ_FULL_CYC
--		/sys/devices/cpu/events/PM_MRK_LSU_REJECT_LHS
--		/sys/devices/cpu/events/PM_MRK_LD_MISS_L1_CYC
--		/sys/devices/cpu/events/PM_MRK_DATA_FROM_L2_CYC
--		/sys/devices/cpu/events/PM_INST_IMC_MATCH_DISP
--		/sys/devices/cpu/events/PM_MRK_DATA_FROM_RMEM_CYC
--		/sys/devices/cpu/events/PM_VSU0_SIMPLE_ISSUED
--		/sys/devices/cpu/events/PM_MRK_PTEG_FROM_RL2L3_SHR
--		/sys/devices/cpu/events/PM_VSU_FMA_DOUBLE
--		/sys/devices/cpu/events/PM_VSU_4FLOP
--		/sys/devices/cpu/events/PM_VSU1_FIN
--		/sys/devices/cpu/events/PM_NEST_PAIR1_AND
--		/sys/devices/cpu/events/PM_INST_PTEG_FROM_RL2L3_MOD
--		/sys/devices/cpu/events/PM_PTEG_FROM_RMEM
--		/sys/devices/cpu/events/PM_LSU_LRQ_S0_VALID
--		/sys/devices/cpu/events/PM_LSU0_LDF
--		/sys/devices/cpu/events/PM_FLUSH_COMPLETION
--		/sys/devices/cpu/events/PM_ST_MISS_L1
--		/sys/devices/cpu/events/PM_L2_NODE_PUMP
--		/sys/devices/cpu/events/PM_INST_FROM_DL2L3_SHR
--		/sys/devices/cpu/events/PM_MRK_STALL_CMPLU_CYC
--		/sys/devices/cpu/events/PM_VSU1_DENORM
--		/sys/devices/cpu/events/PM_MRK_DATA_FROM_L31_SHR_CYC
--		/sys/devices/cpu/events/PM_NEST_PAIR0_ADD
--		/sys/devices/cpu/events/PM_INST_FROM_L3MISS
--		/sys/devices/cpu/events/PM_EE_OFF_EXT_INT
--		/sys/devices/cpu/events/PM_INST_PTEG_FROM_DMEM
--		/sys/devices/cpu/events/PM_INST_FROM_DL2L3_MOD
--		/sys/devices/cpu/events/PM_PMC6_OVERFLOW
--		/sys/devices/cpu/events/PM_VSU_2FLOP_DOUBLE
--		/sys/devices/cpu/events/PM_TLB_MISS
--		/sys/devices/cpu/events/PM_FXU_BUSY
--		/sys/devices/cpu/events/PM_L2_RCLD_DISP_FAIL_OTHER
--		/sys/devices/cpu/events/PM_LSU_REJECT_LMQ_FULL
--		/sys/devices/cpu/events/PM_IC_RELOAD_SHR
--		/sys/devices/cpu/events/PM_GRP_MRK
--		/sys/devices/cpu/events/PM_MRK_ST_NEST
--		/sys/devices/cpu/events/PM_VSU1_FSQRT_FDIV
--		/sys/devices/cpu/events/PM_LSU0_FLUSH_LRQ
--		/sys/devices/cpu/events/PM_LARX_LSU0
--		/sys/devices/cpu/events/PM_IBUF_FULL_CYC
--		/sys/devices/cpu/events/PM_MRK_DATA_FROM_DL2L3_SHR_CYC
--		/sys/devices/cpu/events/PM_LSU_DC_PREF_STREAM_ALLOC
--		/sys/devices/cpu/events/PM_GRP_MRK_CYC
--		/sys/devices/cpu/events/PM_MRK_DATA_FROM_RL2L3_SHR_CYC
--		/sys/devices/cpu/events/PM_L2_GLOB_GUESS_CORRECT
--		/sys/devices/cpu/events/PM_LSU_REJECT_LHS
--		/sys/devices/cpu/events/PM_MRK_DATA_FROM_LMEM
--		/sys/devices/cpu/events/PM_INST_PTEG_FROM_L3
--		/sys/devices/cpu/events/PM_FREQ_DOWN
--		/sys/devices/cpu/events/PM_PB_RETRY_NODE_PUMP
--		/sys/devices/cpu/events/PM_INST_FROM_RL2L3_SHR
--		/sys/devices/cpu/events/PM_MRK_INST_ISSUED
--		/sys/devices/cpu/events/PM_PTEG_FROM_L3MISS
--		/sys/devices/cpu/events/PM_RUN_PURR
--		/sys/devices/cpu/events/PM_MRK_GRP_IC_MISS
--		/sys/devices/cpu/events/PM_MRK_DATA_FROM_L3
--		/sys/devices/cpu/events/PM_PTEG_FROM_RL2L3_SHR
--		/sys/devices/cpu/events/PM_LSU_FLUSH_LRQ
--		/sys/devices/cpu/events/PM_MRK_DERAT_MISS_64K
--		/sys/devices/cpu/events/PM_INST_PTEG_FROM_DL2L3_MOD
--		/sys/devices/cpu/events/PM_L2_ST_MISS
--		/sys/devices/cpu/events/PM_MRK_PTEG_FROM_L21_SHR
--		/sys/devices/cpu/events/PM_LWSYNC
--		/sys/devices/cpu/events/PM_LSU0_DC_PREF_STREAM_CONFIRM_STRIDE
--		/sys/devices/cpu/events/PM_MRK_LSU_FLUSH_LRQ
--		/sys/devices/cpu/events/PM_INST_IMC_MATCH_CMPL
--		/sys/devices/cpu/events/PM_NEST_PAIR3_AND
--		/sys/devices/cpu/events/PM_PB_RETRY_SYS_PUMP
--		/sys/devices/cpu/events/PM_MRK_INST_FIN
--		/sys/devices/cpu/events/PM_MRK_PTEG_FROM_DL2L3_SHR
--		/sys/devices/cpu/events/PM_INST_FROM_L31_MOD
--		/sys/devices/cpu/events/PM_MRK_DTLB_MISS_64K
--		/sys/devices/cpu/events/PM_LSU_FIN
--		/sys/devices/cpu/events/PM_MRK_LSU_REJECT
--		/sys/devices/cpu/events/PM_L2_CO_FAIL_BUSY
--		/sys/devices/cpu/events/PM_MEM0_WQ_DISP
--		/sys/devices/cpu/events/PM_DATA_FROM_L31_MOD
--		/sys/devices/cpu/events/PM_THERMAL_WARN
--		/sys/devices/cpu/events/PM_VSU0_4FLOP
--		/sys/devices/cpu/events/PM_BR_MPRED_CCACHE
--		/sys/devices/cpu/events/PM_L1_DEMAND_WRITE
--		/sys/devices/cpu/events/PM_FLUSH_BR_MPRED
--		/sys/devices/cpu/events/PM_MRK_DTLB_MISS_16G
--		/sys/devices/cpu/events/PM_MRK_PTEG_FROM_DMEM
--		/sys/devices/cpu/events/PM_L2_RCST_DISP
--		/sys/devices/cpu/events/PM_LSU_PARTIAL_CDF
--		/sys/devices/cpu/events/PM_DISP_CLB_HELD_SB
--		/sys/devices/cpu/events/PM_VSU0_FMA_DOUBLE
--		/sys/devices/cpu/events/PM_FXU0_BUSY_FXU1_IDLE
--		/sys/devices/cpu/events/PM_IC_DEMAND_CYC
--		/sys/devices/cpu/events/PM_MRK_DATA_FROM_L21_SHR
--		/sys/devices/cpu/events/PM_MRK_LSU_FLUSH_UST
--		/sys/devices/cpu/events/PM_INST_PTEG_FROM_L3MISS
--		/sys/devices/cpu/events/PM_VSU_DENORM
--		/sys/devices/cpu/events/PM_MRK_LSU_PARTIAL_CDF
--		/sys/devices/cpu/events/PM_INST_FROM_L21_SHR
--		/sys/devices/cpu/events/PM_IC_PREF_WRITE
--		/sys/devices/cpu/events/PM_BR_PRED
--		/sys/devices/cpu/events/PM_INST_FROM_DMEM
--		/sys/devices/cpu/events/PM_IC_PREF_CANCEL_ALL
--		/sys/devices/cpu/events/PM_LSU_DC_PREF_STREAM_CONFIRM
--		/sys/devices/cpu/events/PM_MRK_LSU_FLUSH_SRQ
--		/sys/devices/cpu/events/PM_MRK_FIN_STALL_CYC
--		/sys/devices/cpu/events/PM_L2_RCST_DISP_FAIL_OTHER
--		/sys/devices/cpu/events/PM_VSU1_DD_ISSUED
--		/sys/devices/cpu/events/PM_PTEG_FROM_L31_SHR
--		/sys/devices/cpu/events/PM_DATA_FROM_L21_SHR
--		/sys/devices/cpu/events/PM_LSU0_NCLD
--		/sys/devices/cpu/events/PM_VSU1_4FLOP
--		/sys/devices/cpu/events/PM_VSU1_8FLOP
--		/sys/devices/cpu/events/PM_VSU_8FLOP
--		/sys/devices/cpu/events/PM_LSU_LMQ_SRQ_EMPTY_CYC
--		/sys/devices/cpu/events/PM_DTLB_MISS_64K
--		/sys/devices/cpu/events/PM_THRD_CONC_RUN_INST
--		/sys/devices/cpu/events/PM_MRK_PTEG_FROM_L2
--		/sys/devices/cpu/events/PM_PB_SYS_PUMP
--		/sys/devices/cpu/events/PM_VSU_FIN
--		/sys/devices/cpu/events/PM_MRK_DATA_FROM_L31_MOD
--		/sys/devices/cpu/events/PM_THRD_PRIO_0_1_CYC
--		/sys/devices/cpu/events/PM_DERAT_MISS_64K
--		/sys/devices/cpu/events/PM_PMC2_REWIND
--		/sys/devices/cpu/events/PM_INST_FROM_L2
--		/sys/devices/cpu/events/PM_GRP_BR_MPRED_NONSPEC
--		/sys/devices/cpu/events/PM_INST_DISP
--		/sys/devices/cpu/events/PM_MEM0_RD_CANCEL_TOTAL
--		/sys/devices/cpu/events/PM_LSU0_DC_PREF_STREAM_CONFIRM
--		/sys/devices/cpu/events/PM_L1_DCACHE_RELOAD_VALID
--		/sys/devices/cpu/events/PM_VSU_SCALAR_DOUBLE_ISSUED
--		/sys/devices/cpu/events/PM_L3_PREF_HIT
--		/sys/devices/cpu/events/PM_MRK_PTEG_FROM_L31_MOD
--		/sys/devices/cpu/events/PM_MRK_FXU_FIN
--		/sys/devices/cpu/events/PM_PMC4_OVERFLOW
--		/sys/devices/cpu/events/PM_MRK_PTEG_FROM_L3
--		/sys/devices/cpu/events/PM_LSU0_LMQ_LHR_MERGE
--		/sys/devices/cpu/events/PM_BTAC_HIT
--		/sys/devices/cpu/events/PM_L3_RD_BUSY
--		/sys/devices/cpu/events/PM_LSU0_L1_SW_PREF
--		/sys/devices/cpu/events/PM_INST_FROM_L2MISS
--		/sys/devices/cpu/events/PM_LSU0_DC_PREF_STREAM_ALLOC
--		/sys/devices/cpu/events/PM_L2_ST
--		/sys/devices/cpu/events/PM_VSU0_DENORM
--		/sys/devices/cpu/events/PM_MRK_DATA_FROM_DL2L3_SHR
--		/sys/devices/cpu/events/PM_BR_PRED_CR_TA
--		/sys/devices/cpu/events/PM_VSU0_FCONV
--		/sys/devices/cpu/events/PM_MRK_LSU_FLUSH_ULD
--		/sys/devices/cpu/events/PM_BTAC_MISS
--		/sys/devices/cpu/events/PM_MRK_LD_MISS_EXPOSED_CYC_COUNT
--		/sys/devices/cpu/events/PM_MRK_DATA_FROM_L2
--		/sys/devices/cpu/events/PM_LSU_DCACHE_RELOAD_VALID
--		/sys/devices/cpu/events/PM_VSU_FMA
--		/sys/devices/cpu/events/PM_LSU0_FLUSH_SRQ
--		/sys/devices/cpu/events/PM_LSU1_L1_PREF
--		/sys/devices/cpu/events/PM_IOPS_CMPL
--		/sys/devices/cpu/events/PM_L2_SYS_PUMP
--		/sys/devices/cpu/events/PM_L2_RCLD_BUSY_RC_FULL
--		/sys/devices/cpu/events/PM_LSU_LMQ_S0_ALLOC
--		/sys/devices/cpu/events/PM_FLUSH_DISP_SYNC
--		/sys/devices/cpu/events/PM_MRK_DATA_FROM_DL2L3_MOD_CYC
--		/sys/devices/cpu/events/PM_L2_IC_INV
--		/sys/devices/cpu/events/PM_MRK_DATA_FROM_L21_MOD_CYC
--		/sys/devices/cpu/events/PM_L3_PREF_LDST
--		/sys/devices/cpu/events/PM_LSU_SRQ_EMPTY_CYC
--		/sys/devices/cpu/events/PM_LSU_LMQ_S0_VALID
--		/sys/devices/cpu/events/PM_FLUSH_PARTIAL
--		/sys/devices/cpu/events/PM_VSU1_FMA_DOUBLE
--		/sys/devices/cpu/events/PM_1PLUS_PPC_DISP
--		/sys/devices/cpu/events/PM_DATA_FROM_L2MISS
--		/sys/devices/cpu/events/PM_SUSPENDED
--		/sys/devices/cpu/events/PM_VSU0_FMA
--		/sys/devices/cpu/events/PM_STCX_FAIL
--		/sys/devices/cpu/events/PM_VSU0_FSQRT_FDIV_DOUBLE
--		/sys/devices/cpu/events/PM_DC_PREF_DST
--		/sys/devices/cpu/events/PM_VSU1_SCAL_SINGLE_ISSUED
--		/sys/devices/cpu/events/PM_L3_HIT
--		/sys/devices/cpu/events/PM_L2_GLOB_GUESS_WRONG
--		/sys/devices/cpu/events/PM_MRK_DFU_FIN
--		/sys/devices/cpu/events/PM_INST_FROM_L1
--		/sys/devices/cpu/events/PM_IC_DEMAND_REQ
--		/sys/devices/cpu/events/PM_VSU1_FSQRT_FDIV_DOUBLE
--		/sys/devices/cpu/events/PM_VSU1_FMA
--		/sys/devices/cpu/events/PM_MRK_LD_MISS_L1
--		/sys/devices/cpu/events/PM_VSU0_2FLOP_DOUBLE
--		/sys/devices/cpu/events/PM_LSU_DC_PREF_STRIDED_STREAM_CONFIRM
--		/sys/devices/cpu/events/PM_INST_PTEG_FROM_L31_SHR
--		/sys/devices/cpu/events/PM_MRK_LSU_REJECT_ERAT_MISS
--		/sys/devices/cpu/events/PM_MRK_DATA_FROM_L2MISS
--		/sys/devices/cpu/events/PM_DATA_FROM_RL2L3_SHR
--		/sys/devices/cpu/events/PM_INST_FROM_PREF
--		/sys/devices/cpu/events/PM_VSU1_SQ
--		/sys/devices/cpu/events/PM_L2_LD_DISP
--		/sys/devices/cpu/events/PM_L2_DISP_ALL
--		/sys/devices/cpu/events/PM_THRD_GRP_CMPL_BOTH_CYC
--		/sys/devices/cpu/events/PM_VSU_FSQRT_FDIV_DOUBLE
--		/sys/devices/cpu/events/PM_INST_PTEG_FROM_DL2L3_SHR
--		/sys/devices/cpu/events/PM_VSU_1FLOP
--		/sys/devices/cpu/events/PM_HV_CYC
--		/sys/devices/cpu/events/PM_MRK_LSU_FIN
--		/sys/devices/cpu/events/PM_MRK_DATA_FROM_RL2L3_SHR
--		/sys/devices/cpu/events/PM_DTLB_MISS_16M
--		/sys/devices/cpu/events/PM_LSU1_LMQ_LHR_MERGE
--		/sys/devices/cpu/events/PM_IFU_FIN
--		/sys/devices/cpu/events/PM_1THRD_CON_RUN_INSTR
--		/sys/devices/cpu/events/PM_CMPLU_STALL_COUNT
--		/sys/devices/cpu/events/PM_MEM0_PB_RD_CL
--		/sys/devices/cpu/events/PM_THRD_1_RUN_CYC
--		/sys/devices/cpu/events/PM_THRD_2_CONC_RUN_INSTR
--		/sys/devices/cpu/events/PM_THRD_2_RUN_CYC
--		/sys/devices/cpu/events/PM_THRD_3_CONC_RUN_INST
--		/sys/devices/cpu/events/PM_THRD_3_RUN_CYC
--		/sys/devices/cpu/events/PM_THRD_4_CONC_RUN_INST
--		/sys/devices/cpu/events/PM_THRD_4_RUN_CYC
++static int
++comp_pmu(const void *p1, const void *p2)
++{
++	struct perf_pmu_event_symbol *pmu1 = (struct perf_pmu_event_symbol *) p1;
++	struct perf_pmu_event_symbol *pmu2 = (struct perf_pmu_event_symbol *) p2;
++
++	return strcmp(pmu1->symbol, pmu2->symbol);
++}
++
++static void perf_pmu__parse_cleanup(void)
++{
++	if (perf_pmu_events_list_num > 0) {
++		struct perf_pmu_event_symbol *p;
++		int i;
++
++		for (i = 0; i < perf_pmu_events_list_num; i++) {
++			p = perf_pmu_events_list + i;
++			free(p->symbol);
++		}
++		free(perf_pmu_events_list);
++		perf_pmu_events_list = NULL;
++		perf_pmu_events_list_num = 0;
++	}
++}
++
++#define SET_SYMBOL(str, stype)		\
++do {					\
++	p->symbol = str;		\
++	if (!p->symbol)			\
++		goto err;		\
++	p->type = stype;		\
++} while (0)
++
++/*
++ * Read the pmu events list from sysfs
++ * Save it into perf_pmu_events_list
++ */
++static void perf_pmu__parse_init(void)
++{
++
++	struct perf_pmu *pmu = NULL;
++	struct perf_pmu_alias *alias;
++	int len = 0;
++
++	pmu = perf_pmu__find("cpu");
++	if ((pmu == NULL) || list_empty(&pmu->aliases)) {
++		perf_pmu_events_list_num = -1;
++		return;
++	}
++	list_for_each_entry(alias, &pmu->aliases, list) {
++		if (strchr(alias->name, '-'))
++			len++;
++		len++;
++	}
++	perf_pmu_events_list = malloc(sizeof(struct perf_pmu_event_symbol) * len);
++	if (!perf_pmu_events_list)
++		return;
++	perf_pmu_events_list_num = len;
++
++	len = 0;
++	list_for_each_entry(alias, &pmu->aliases, list) {
++		struct perf_pmu_event_symbol *p = perf_pmu_events_list + len;
++		char *tmp = strchr(alias->name, '-');
++
++		if (tmp != NULL) {
++			SET_SYMBOL(strndup(alias->name, tmp - alias->name),
++					PMU_EVENT_SYMBOL_PREFIX);
++			p++;
++			SET_SYMBOL(strdup(++tmp), PMU_EVENT_SYMBOL_SUFFIX);
++			len += 2;
++		} else {
++			SET_SYMBOL(strdup(alias->name), PMU_EVENT_SYMBOL);
++			len++;
++		}
++	}
++	qsort(perf_pmu_events_list, len,
++		sizeof(struct perf_pmu_event_symbol), comp_pmu);
++
++	return;
++err:
++	perf_pmu__parse_cleanup();
++}
++
++enum perf_pmu_event_symbol_type
++perf_pmu__parse_check(const char *name)
++{
++	struct perf_pmu_event_symbol p, *r;
++
++	/* scan kernel pmu events from sysfs if needed */
++	if (perf_pmu_events_list_num == 0)
++		perf_pmu__parse_init();
++	/*
++	 * name "cpu" could be prefix of cpu-cycles or cpu// events.
++	 * cpu-cycles has been handled by hardcode.
++	 * So it must be cpu// events, not kernel pmu event.
++	 */
++	if ((perf_pmu_events_list_num <= 0) || !strcmp(name, "cpu"))
++		return PMU_EVENT_SYMBOL_ERR;
++
++	p.symbol = strdup(name);
++	r = bsearch(&p, perf_pmu_events_list,
++			(size_t) perf_pmu_events_list_num,
++			sizeof(struct perf_pmu_event_symbol), comp_pmu);
++	free(p.symbol);
++	return r ? r->type : PMU_EVENT_SYMBOL_ERR;
++}
++
+ static int parse_events__scanner(const char *str, void *data, int start_token)
+ {
+ 	YY_BUFFER_STATE buffer;
+@@ -917,6 +1033,7 @@ int parse_events(struct perf_evlist *evlist, const char *str)
+ 	int ret;
+ 
+ 	ret = parse_events__scanner(str, &data, PE_START_EVENTS);
++	perf_pmu__parse_cleanup();
+ 	if (!ret) {
+ 		int entries = data.idx - evlist->nr_entries;
+ 		perf_evlist__splice_list_tail(evlist, &data.list, entries);
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index df094b4ed5ed..db2cf78ff0f3 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -35,6 +35,18 @@ extern int parse_filter(const struct option *opt, const char *str, int unset);
+ 
+ #define EVENTS_HELP_MAX (128*1024)
+ 
++enum perf_pmu_event_symbol_type {
++	PMU_EVENT_SYMBOL_ERR,		/* not a PMU EVENT */
++	PMU_EVENT_SYMBOL,		/* normal style PMU event */
++	PMU_EVENT_SYMBOL_PREFIX,	/* prefix of pre-suf style event */
++	PMU_EVENT_SYMBOL_SUFFIX,	/* suffix of pre-suf style event */
++};
++
++struct perf_pmu_event_symbol {
++	char	*symbol;
++	enum perf_pmu_event_symbol_type	type;
++};
++
+ enum {
+ 	PARSE_EVENTS__TERM_TYPE_NUM,
+ 	PARSE_EVENTS__TERM_TYPE_STR,
+@@ -95,6 +107,8 @@ int parse_events_add_breakpoint(struct list_head *list, int *idx,
+ 				void *ptr, char *type);
+ int parse_events_add_pmu(struct list_head *list, int *idx,
+ 			 char *pmu , struct list_head *head_config);
++enum perf_pmu_event_symbol_type
++perf_pmu__parse_check(const char *name);
+ void parse_events__set_leader(char *name, struct list_head *list);
+ void parse_events_update_lists(struct list_head *list_event,
+ 			       struct list_head *list_all);
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 93a41ca96b8e..e243ad962a4d 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -12,16 +12,6 @@
+ #include "parse-events.h"
+ #include "cpumap.h"
+ 
+-#define UNIT_MAX_LEN	31 /* max length for event unit name */
 -
--Date:		2013/01/08
+-struct perf_pmu_alias {
+-	char *name;
+-	struct list_head terms; /* HEAD struct parse_events_term -> list */
+-	struct list_head list;  /* ELEM */
+-	char unit[UNIT_MAX_LEN+1];
+-	double scale;
+-};
 -
--Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
--		Linux Powerpc mailing list <linuxppc-dev@ozlabs.org>
--
--Description:	POWER-systems specific performance monitoring events
--
--		A collection of performance monitoring events that may be
--		supported by the POWER CPU. These events can be monitored
--		using the 'perf(1)' tool.
--
--		These events may not be supported by other CPUs.
--
--		The contents of each file would look like:
--
--			event=0xNNNN
--
--		where 'N' is a hex digit and the number '0xNNNN' shows the
--		"raw code" for the perf event identified by the file's
--		"basename".
--
--		Further, multiple terms like 'event=0xNNNN' can be specified
--		and separated with comma. All available terms are defined in
--		the /sys/bus/event_source/devices/<dev>/format file.
--
- What: /sys/bus/event_source/devices/<pmu>/events/<event>
- Date: 2014/02/24
- Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
+ struct perf_pmu_format {
+ 	char *name;
+ 	int value;
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index fe90a012c003..fe9dfbee8eed 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -30,6 +30,16 @@ struct perf_pmu_info {
+ 	double scale;
+ };
+ 
++#define UNIT_MAX_LEN	31 /* max length for event unit name */
++
++struct perf_pmu_alias {
++	char *name;
++	struct list_head terms; /* HEAD struct parse_events_term -> list */
++	struct list_head list;  /* ELEM */
++	char unit[UNIT_MAX_LEN+1];
++	double scale;
++};
++
+ struct perf_pmu *perf_pmu__find(const char *name);
+ int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
+ 		     struct list_head *head_terms);
 -- 
 1.9.3
 
