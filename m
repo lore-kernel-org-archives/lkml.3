@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751924AbaJOXf1 (ORCPT <rfc822;w@1wt.eu>);
+	id S1752121AbaJOXfk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 19:35:40 -0400
+Received: from roy.gaast.net ([80.101.33.21]:37075 "EHLO mail.gaast.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751262AbaJOXf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 15 Oct 2014 19:35:27 -0400
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:60785 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751227AbaJOXfZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 19:35:25 -0400
+Message-ID: <543F049F.5090605@gaast.net>
+Date: Thu, 16 Oct 2014 00:34:55 +0100
+From: Wilmer van der Gaast <wilmer@gaast.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130112 Icedove/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20141015170637.4063.22185.stgit@bhelgaas-glaptop2.roam.corp.google.com>
-References: <20141015165957.4063.66741.stgit@bhelgaas-glaptop2.roam.corp.google.com>
- <20141015170637.4063.22185.stgit@bhelgaas-glaptop2.roam.corp.google.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 15 Oct 2014 17:35:05 -0600
-Message-ID: <CAErSpo4j060imN0SOZM0LUc0hymDZMg4b3PcMhCChsubWfcNGA@mail.gmail.com>
-Subject: Re: [PATCH v1 08/10] kgdb: Remove "weak" from kgdb_arch_pc() declaration
-To: Jason Wessel <jason.wessel@windriver.com>,
-        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@redhat.com>,
-        John Stultz <john.stultz@linaro.org>, Eric Paris <eparis@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Harvey Harrison <harvey.harrison@gmail.com>,
-        Vineet Gupta <vgupta@synopsys.com>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Machine crashes right *after* ~successful resume
+References: <54347520.3050109@gaast.net> <543AA2FE.20105@gaast.net> <20141012204032.GA11171@amd> <9751497.0fL0kvsyX7@vostro.rjw.lan> <20141015111641.GC7792@gaast.net> <CAErSpo5A+nHTu2Y6KrXowBBCBsNw_hO0SRsnc6YRdJChCUmO6w@mail.gmail.com> <CAE9FiQV9t0bCfUy5Fichdk=04ruEVxGv-LUK1xxZjCrasAOACg@mail.gmail.com>
+In-Reply-To: <CAE9FiQV9t0bCfUy5Fichdk=04ruEVxGv-LUK1xxZjCrasAOACg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Harvey, Vineet, linux-sh; arc, sh, and x86 have kgdb_arch_pc()
-definitions and could see issues from this]
+Hello Yinghai,
 
-On Wed, Oct 15, 2014 at 11:06 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> kernel/debug/debug_core.c provides a default kgdb_arch_pc() definition
-> explicitly marked "weak".  Several architectures provide their own
-> definitions intended to override the default, but the "weak" attribute on
-> the declaration applied to the arch definitions as well, so the linker
-> chose one based on link order (see 10629d711ed7 ("PCI: Remove __weak
-> annotation from pcibios_get_phb_of_node decl")).
+On 15-10-14 19:39, Yinghai Lu wrote:
 >
-> Remove the "weak" attribute from the declaration so we always prefer a
-> non-weak definition over the weak one, independent of link order.
+> so third resume will not work? that is strange.
+> second and third should not use same code path...
 >
-> Fixes: 688b744d8bc8 ("kgdb: fix signedness mixmatches, add statics, add declaration to header")
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> CC: Harvey Harrison <harvey.harrison@gmail.com>
-> ---
->  include/linux/kgdb.h |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/include/linux/kgdb.h b/include/linux/kgdb.h
-> index 6b06d378f3df..e465bb15912d 100644
-> --- a/include/linux/kgdb.h
-> +++ b/include/linux/kgdb.h
-> @@ -283,7 +283,7 @@ struct kgdb_io {
->
->  extern struct kgdb_arch                arch_kgdb_ops;
->
-> -extern unsigned long __weak kgdb_arch_pc(int exception, struct pt_regs *regs);
-> +extern unsigned long kgdb_arch_pc(int exception, struct pt_regs *regs);
->
->  #ifdef CONFIG_SERIAL_KGDB_NMI
->  extern int kgdb_register_nmi_console(void);
->
+Always exactly the third time, yes. Seems strange indeed. :-( I was 
+under the impression that on each resume, completion time of device 
+resumes was growing, and wondered whether that could be related. However 
+looking back at my logs, this is not consistent, in some cases the time 
+is constant.
+
+Anyway, your patch works! Had to tweak it slightly to apply cleanly to 
+the 3.17 tarball I have, but my machine now went through eleven 
+successful suspend+resume cycles again.
+
+Is there anything I can do now to find out why your change is causing my 
+machine to crash?
+
+Thank you!
+
+
+Wilmer v/d Gaast.
+
+-- 
++-------- .''`.     - -- ---+  +        - -- --- ---- ----- ------+
+| wilmer : :'  :  gaast.net |  | OSS Programmer   www.bitlbee.org |
+| lintux `. `~'  debian.org |  | Full-time geek  wilmer.gaast.net |
++--- -- -  ` ---------------+  +------ ----- ---- --- -- -        +
