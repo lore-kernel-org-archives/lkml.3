@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751807AbaJOOso (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 10:48:44 -0400
+	id S1751860AbaJOOtQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 10:49:16 -0400
 Received: from mga11.intel.com ([192.55.52.93]:46210 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751706AbaJOOse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 10:48:34 -0400
+	id S1751666AbaJOOs1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 10:48:27 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="400686796"
+   d="scan'208";a="400686741"
 From: Octavian Purdila <octavian.purdila@intel.com>
 To: gregkh@linuxfoundation.org, linus.walleij@linaro.org, gnurou@gmail.com,
         wsa@the-dreams.de, sameo@linux.intel.com, lee.jones@linaro.org
@@ -17,9 +17,9 @@ Cc: arnd@arndb.de, johan@kernel.org, daniel.baluta@intel.com,
         linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
         linux-i2c@vger.kernel.org,
         Octavian Purdila <octavian.purdila@intel.com>
-Subject: [PATCH v8 4/4] gpio: add support for the Diolan DLN-2 USB GPIO driver
-Date: Wed, 15 Oct 2014 17:48:11 +0300
-Message-Id: <1413384491-23703-5-git-send-email-octavian.purdila@intel.com>
+Subject: [PATCH v8 2/4] i2c: add support for Diolan DLN-2 USB-I2C adapter
+Date: Wed, 15 Oct 2014 17:48:09 +0300
+Message-Id: <1413384491-23703-3-git-send-email-octavian.purdila@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1413384491-23703-1-git-send-email-octavian.purdila@intel.com>
 References: <1413384491-23703-1-git-send-email-octavian.purdila@intel.com>
@@ -27,68 +27,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Baluta <daniel.baluta@intel.com>
+From: Laurentiu Palcu <laurentiu.palcu@intel.com>
 
-This patch adds GPIO and IRQ support for the Diolan DLN-2 GPIO module.
+This patch adds support for the Diolan DLN-2 I2C master module. Due
+to hardware limitations it does not support SMBUS quick commands.
 
 Information about the USB protocol interface can be found in the
-Programmer's Reference Manual [1], see section 2.9 for the GPIO
-module commands and responses.
+Programmer's Reference Manual [1], see section 6.2.2 for the I2C
+master module commands and responses.
 
 [1] https://www.diolan.com/downloads/dln-api-manual.pdf
 
-Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
+Signed-off-by: Laurentiu Palcu <laurentiu.palcu@intel.com>
 Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
 ---
- drivers/gpio/Kconfig     |  12 +
- drivers/gpio/Makefile    |   1 +
- drivers/gpio/gpio-dln2.c | 557 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 570 insertions(+)
- create mode 100644 drivers/gpio/gpio-dln2.c
+ drivers/i2c/busses/Kconfig    |  10 ++
+ drivers/i2c/busses/Makefile   |   1 +
+ drivers/i2c/busses/i2c-dln2.c | 270 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 281 insertions(+)
+ create mode 100644 drivers/i2c/busses/i2c-dln2.c
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 9de1515..44ec206 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -897,4 +897,16 @@ config GPIO_VIPERBOARD
-           River Tech's viperboard.h for detailed meaning
-           of the module parameters.
+diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+index 2ac87fa..2f3f371 100644
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -858,6 +858,16 @@ config I2C_DIOLAN_U2C
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called i2c-diolan-u2c.
  
-+config GPIO_DLN2
-+	tristate "Diolan DLN2 GPIO support"
-+	depends on MFD_DLN2
-+	select GPIOLIB_IRQCHIP
++config I2C_DLN2
++       tristate "Diolan DLN-2 USB I2C adapter"
++       depends on MFD_DLN2
++       help
++         If you say yes to this option, support will be included for Diolan
++         DLN2, a USB to I2C interface.
 +
-+	help
-+	  Select this option to enable GPIO driver for the Diolan DLN2
-+	  board.
++         This driver can also be built as a module.  If so, the module
++         will be called i2c-dln2.
 +
-+	  This driver can also be built as a module. If so, the module
-+	  will be called gpio-dln2.
-+
- endif
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index 5d024e3..eaa97a0 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -26,6 +26,7 @@ obj-$(CONFIG_GPIO_CRYSTAL_COVE)	+= gpio-crystalcove.o
- obj-$(CONFIG_GPIO_DA9052)	+= gpio-da9052.o
- obj-$(CONFIG_GPIO_DA9055)	+= gpio-da9055.o
- obj-$(CONFIG_GPIO_DAVINCI)	+= gpio-davinci.o
-+obj-$(CONFIG_GPIO_DLN2)		+= gpio-dln2.o
- obj-$(CONFIG_GPIO_DWAPB)	+= gpio-dwapb.o
- obj-$(CONFIG_GPIO_EM)		+= gpio-em.o
- obj-$(CONFIG_GPIO_EP93XX)	+= gpio-ep93xx.o
-diff --git a/drivers/gpio/gpio-dln2.c b/drivers/gpio/gpio-dln2.c
+ config I2C_PARPORT
+ 	tristate "Parallel port adapter"
+ 	depends on PARPORT
+diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
+index 49bf07e..4755f79 100644
+--- a/drivers/i2c/busses/Makefile
++++ b/drivers/i2c/busses/Makefile
+@@ -85,6 +85,7 @@ obj-$(CONFIG_I2C_RCAR)		+= i2c-rcar.o
+ 
+ # External I2C/SMBus adapter drivers
+ obj-$(CONFIG_I2C_DIOLAN_U2C)	+= i2c-diolan-u2c.o
++obj-$(CONFIG_I2C_DLN2)		+= i2c-dln2.o
+ obj-$(CONFIG_I2C_PARPORT)	+= i2c-parport.o
+ obj-$(CONFIG_I2C_PARPORT_LIGHT)	+= i2c-parport-light.o
+ obj-$(CONFIG_I2C_ROBOTFUZZ_OSIF)	+= i2c-robotfuzz-osif.o
+diff --git a/drivers/i2c/busses/i2c-dln2.c b/drivers/i2c/busses/i2c-dln2.c
 new file mode 100644
-index 0000000..70c25af
+index 0000000..62c38cd
 --- /dev/null
-+++ b/drivers/gpio/gpio-dln2.c
-@@ -0,0 +1,557 @@
++++ b/drivers/i2c/busses/i2c-dln2.c
+@@ -0,0 +1,270 @@
 +/*
-+ * Driver for the Diolan DLN-2 USB-GPIO adapter
++ * Driver for the Diolan DLN-2 USB-I2C adapter
 + *
 + * Copyright (c) 2014 Intel Corporation
++ *
++ * Derived from:
++ *  i2c-diolan-u2c.c
++ *  Copyright (c) 2010-2011 Ericsson AB
 + *
 + * This program is free software; you can redistribute it and/or
 + * modify it under the terms of the GNU General Public License as
@@ -97,551 +102,260 @@ index 0000000..70c25af
 +
 +#include <linux/kernel.h>
 +#include <linux/module.h>
-+#include <linux/slab.h>
 +#include <linux/types.h>
-+#include <linux/irqdomain.h>
-+#include <linux/irq.h>
-+#include <linux/irqchip/chained_irq.h>
-+#include <linux/gpio.h>
-+#include <linux/gpio/driver.h>
++#include <linux/slab.h>
++#include <linux/i2c.h>
 +#include <linux/platform_device.h>
 +#include <linux/mfd/dln2.h>
 +
-+#define DLN2_GPIO_ID			0x01
++#define DLN2_I2C_MODULE_ID		0x03
++#define DLN2_I2C_CMD(cmd)		DLN2_CMD(cmd, DLN2_I2C_MODULE_ID)
 +
-+#define DLN2_GPIO_GET_PIN_COUNT		DLN2_CMD(0x01, DLN2_GPIO_ID)
-+#define DLN2_GPIO_SET_DEBOUNCE		DLN2_CMD(0x04, DLN2_GPIO_ID)
-+#define DLN2_GPIO_GET_DEBOUNCE		DLN2_CMD(0x05, DLN2_GPIO_ID)
-+#define DLN2_GPIO_PORT_GET_VAL		DLN2_CMD(0x06, DLN2_GPIO_ID)
-+#define DLN2_GPIO_PIN_GET_VAL		DLN2_CMD(0x0B, DLN2_GPIO_ID)
-+#define DLN2_GPIO_PIN_SET_OUT_VAL	DLN2_CMD(0x0C, DLN2_GPIO_ID)
-+#define DLN2_GPIO_PIN_GET_OUT_VAL	DLN2_CMD(0x0D, DLN2_GPIO_ID)
-+#define DLN2_GPIO_CONDITION_MET_EV	DLN2_CMD(0x0F, DLN2_GPIO_ID)
-+#define DLN2_GPIO_PIN_ENABLE		DLN2_CMD(0x10, DLN2_GPIO_ID)
-+#define DLN2_GPIO_PIN_DISABLE		DLN2_CMD(0x11, DLN2_GPIO_ID)
-+#define DLN2_GPIO_PIN_SET_DIRECTION	DLN2_CMD(0x13, DLN2_GPIO_ID)
-+#define DLN2_GPIO_PIN_GET_DIRECTION	DLN2_CMD(0x14, DLN2_GPIO_ID)
-+#define DLN2_GPIO_PIN_SET_EVENT_CFG	DLN2_CMD(0x1E, DLN2_GPIO_ID)
-+#define DLN2_GPIO_PIN_GET_EVENT_CFG	DLN2_CMD(0x1F, DLN2_GPIO_ID)
++/* I2C commands */
++#define DLN2_I2C_GET_PORT_COUNT		DLN2_I2C_CMD(0x00)
++#define DLN2_I2C_ENABLE			DLN2_I2C_CMD(0x01)
++#define DLN2_I2C_DISABLE		DLN2_I2C_CMD(0x02)
++#define DLN2_I2C_IS_ENABLED		DLN2_I2C_CMD(0x03)
++#define DLN2_I2C_WRITE			DLN2_I2C_CMD(0x06)
++#define DLN2_I2C_READ			DLN2_I2C_CMD(0x07)
++#define DLN2_I2C_SCAN_DEVICES		DLN2_I2C_CMD(0x08)
++#define DLN2_I2C_PULLUP_ENABLE		DLN2_I2C_CMD(0x09)
++#define DLN2_I2C_PULLUP_DISABLE		DLN2_I2C_CMD(0x0A)
++#define DLN2_I2C_PULLUP_IS_ENABLED	DLN2_I2C_CMD(0x0B)
++#define DLN2_I2C_TRANSFER		DLN2_I2C_CMD(0x0C)
++#define DLN2_I2C_SET_MAX_REPLY_COUNT	DLN2_I2C_CMD(0x0D)
++#define DLN2_I2C_GET_MAX_REPLY_COUNT	DLN2_I2C_CMD(0x0E)
 +
-+#define DLN2_GPIO_EVENT_NONE		0
-+#define DLN2_GPIO_EVENT_CHANGE		1
-+#define DLN2_GPIO_EVENT_LVL_HIGH	2
-+#define DLN2_GPIO_EVENT_LVL_LOW		3
-+#define DLN2_GPIO_EVENT_CHANGE_RISING	0x11
-+#define DLN2_GPIO_EVENT_CHANGE_FALLING  0x21
-+#define DLN2_GPIO_EVENT_MASK		0x0F
++#define DLN2_I2C_MAX_XFER_SIZE		256
++#define DLN2_I2C_BUF_SIZE		(DLN2_I2C_MAX_XFER_SIZE + 16)
 +
-+#define DLN2_GPIO_MAX_PINS 32
-+
-+struct dln2_irq_work {
-+	struct work_struct work;
-+	struct dln2_gpio *dln2;
-+	int pin;
-+	int type;
-+};
-+
-+struct dln2_gpio {
++struct dln2_i2c {
 +	struct platform_device *pdev;
-+	struct gpio_chip gpio;
-+
++	struct i2c_adapter adapter;
++	u8 port;
 +	/*
-+	 * Cache pin direction to save us one transfer, since the
-+	 * hardware has separate commands to read the in and out
-+	 * values.
++	 * Buffer to hold the packet for read or write transfers. One
++	 * is enough since we can't have multiple transfers in
++	 * parallel on the i2c adapter.
 +	 */
-+	DECLARE_BITMAP(output_enabled, DLN2_GPIO_MAX_PINS);
-+
-+	DECLARE_BITMAP(irqs_masked, DLN2_GPIO_MAX_PINS);
-+	DECLARE_BITMAP(irqs_enabled, DLN2_GPIO_MAX_PINS);
-+	DECLARE_BITMAP(irqs_pending, DLN2_GPIO_MAX_PINS);
-+	struct dln2_irq_work *irq_work;
++	void *buf;
 +};
 +
-+struct dln2_gpio_pin {
-+	__le16 pin;
-+};
-+
-+struct dln2_gpio_pin_val {
-+	__le16 pin __packed;
-+	u8 value;
-+};
-+
-+static int dln2_gpio_get_pin_count(struct platform_device *pdev)
++static int dln2_i2c_enable(struct dln2_i2c *dln2, bool enable)
 +{
 +	int ret;
-+	__le16 count;
-+	int len = sizeof(count);
-+
-+	ret = dln2_transfer(pdev, DLN2_GPIO_GET_PIN_COUNT, NULL, 0, &count,
-+			    &len, NULL);
-+	if (ret < 0)
-+		return ret;
-+	if (len < sizeof(count))
-+		return -EPROTO;
-+
-+	return le16_to_cpu(count);
-+}
-+
-+static int dln2_gpio_pin_cmd(struct dln2_gpio *dln2, int cmd, unsigned pin)
-+{
-+	struct dln2_gpio_pin req = {
-+		.pin = cpu_to_le16(pin),
-+	};
-+
-+	return dln2_transfer(dln2->pdev, cmd, &req, sizeof(req), NULL, NULL,
-+			     NULL);
-+}
-+
-+static int dln2_gpio_pin_val(struct dln2_gpio *dln2, int cmd, unsigned int pin)
-+{
-+	int ret;
-+	struct dln2_gpio_pin req = {
-+		.pin = cpu_to_le16(pin),
-+	};
-+	struct dln2_gpio_pin_val rsp;
-+	int len = sizeof(rsp);
-+
-+	ret = dln2_transfer(dln2->pdev, cmd, &req, sizeof(req), &rsp, &len,
-+			    NULL);
-+	if (ret < 0)
-+		return ret;
-+	if (len < sizeof(rsp) || req.pin != rsp.pin)
-+		return -EPROTO;
-+
-+	return rsp.value;
-+}
-+
-+static int dln2_gpio_pin_get_in_val(struct dln2_gpio *dln2, unsigned int pin)
-+{
-+	int ret;
-+
-+	ret = dln2_gpio_pin_val(dln2, DLN2_GPIO_PIN_GET_VAL, pin);
-+	if (ret < 0)
-+		return ret;
-+	return !!ret;
-+}
-+
-+static int dln2_gpio_pin_get_out_val(struct dln2_gpio *dln2, unsigned int pin)
-+{
-+	int ret;
-+
-+	ret = dln2_gpio_pin_val(dln2, DLN2_GPIO_PIN_GET_OUT_VAL, pin);
-+	if (ret < 0)
-+		return ret;
-+	return !!ret;
-+}
-+
-+static void dln2_gpio_pin_set_out_val(struct dln2_gpio *dln2,
-+				      unsigned int pin, int value)
-+{
-+	struct dln2_gpio_pin_val req = {
-+		.pin = cpu_to_le16(pin),
-+		.value = cpu_to_le16(value),
-+	};
-+
-+	dln2_transfer(dln2->pdev, DLN2_GPIO_PIN_SET_OUT_VAL, &req, sizeof(req),
-+		      NULL, NULL, NULL);
-+}
-+
-+#define DLN2_GPIO_DIRECTION_IN		0
-+#define DLN2_GPIO_DIRECTION_OUT		1
-+
-+static int dln2_gpio_request(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct dln2_gpio *dln2 = container_of(chip, struct dln2_gpio, gpio);
-+	struct dln2_gpio_pin req = {
-+		.pin = cpu_to_le16(offset),
-+	};
-+	struct dln2_gpio_pin_val rsp;
-+	int len = sizeof(rsp);
-+	int ret;
-+
-+	ret = dln2_gpio_pin_cmd(dln2, DLN2_GPIO_PIN_ENABLE, offset);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* cache the pin direction */
-+	ret = dln2_transfer(dln2->pdev, DLN2_GPIO_PIN_GET_DIRECTION,
-+			    &req, sizeof(req), &rsp, &len, NULL);
-+	if (ret < 0)
-+		return ret;
-+	if (len < sizeof(rsp) || req.pin != rsp.pin) {
-+		ret = -EPROTO;
-+		goto out_disable;
-+	}
-+
-+	switch (rsp.value) {
-+	case DLN2_GPIO_DIRECTION_IN:
-+		clear_bit(offset, dln2->output_enabled);
-+		return 0;
-+	case DLN2_GPIO_DIRECTION_OUT:
-+		set_bit(offset, dln2->output_enabled);
-+		return 0;
-+	default:
-+		ret = -EPROTO;
-+		goto out_disable;
-+	}
-+
-+out_disable:
-+	dln2_gpio_pin_cmd(dln2, DLN2_GPIO_PIN_DISABLE, offset);
-+	return ret;
-+}
-+
-+static void dln2_gpio_free(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct dln2_gpio *dln2 = container_of(chip, struct dln2_gpio, gpio);
-+
-+	dln2_gpio_pin_cmd(dln2, DLN2_GPIO_PIN_DISABLE, offset);
-+}
-+
-+static int dln2_gpio_get_direction(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct dln2_gpio *dln2 = container_of(chip, struct dln2_gpio, gpio);
-+
-+	if (test_bit(offset, dln2->output_enabled))
-+		return GPIOF_DIR_OUT;
-+
-+	return GPIOF_DIR_IN;
-+}
-+
-+static int dln2_gpio_get(struct gpio_chip *chip, unsigned int offset)
-+{
-+	struct dln2_gpio *dln2 = container_of(chip, struct dln2_gpio, gpio);
-+	int dir;
-+
-+	dir = dln2_gpio_get_direction(chip, offset);
-+	if (dir < 0)
-+		return dir;
-+
-+	if (dir == GPIOF_DIR_IN)
-+		return dln2_gpio_pin_get_in_val(dln2, offset);
-+
-+	return dln2_gpio_pin_get_out_val(dln2, offset);
-+}
-+
-+static void dln2_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
-+{
-+	struct dln2_gpio *dln2 = container_of(chip, struct dln2_gpio, gpio);
-+
-+	dln2_gpio_pin_set_out_val(dln2, offset, value);
-+}
-+
-+static int dln2_gpio_set_direction(struct gpio_chip *chip, unsigned offset,
-+				   unsigned dir)
-+{
-+	struct dln2_gpio *dln2 = container_of(chip, struct dln2_gpio, gpio);
-+	struct dln2_gpio_pin_val req = {
-+		.pin = cpu_to_le16(offset),
-+		.value = cpu_to_le16(dir),
-+	};
-+	int ret;
-+
-+	ret = dln2_transfer(dln2->pdev, DLN2_GPIO_PIN_SET_DIRECTION,
-+			    &req, sizeof(req), NULL, NULL, NULL);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (dir == DLN2_GPIO_DIRECTION_OUT)
-+		set_bit(offset, dln2->output_enabled);
-+	else
-+		clear_bit(offset, dln2->output_enabled);
-+
-+	return ret;
-+}
-+
-+static int dln2_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
-+{
-+	return dln2_gpio_set_direction(chip, offset, DLN2_GPIO_DIRECTION_IN);
-+}
-+
-+static int dln2_gpio_direction_output(struct gpio_chip *chip, unsigned offset,
-+				      int value)
-+{
-+	return dln2_gpio_set_direction(chip, offset, DLN2_GPIO_DIRECTION_OUT);
-+}
-+
-+static int dln2_gpio_set_debounce(struct gpio_chip *chip, unsigned offset,
-+				  unsigned debounce)
-+{
-+	struct dln2_gpio *dln2 = container_of(chip, struct dln2_gpio, gpio);
-+	__le32 duration = cpu_to_le32(debounce);
-+
-+	return dln2_transfer(dln2->pdev, DLN2_GPIO_SET_DEBOUNCE,
-+			     &duration, sizeof(duration), NULL, NULL, NULL);
-+}
-+
-+static int dln2_gpio_set_event_cfg(struct dln2_gpio *dln2, unsigned pin,
-+				   unsigned type, unsigned period)
-+{
++	u16 cmd;
 +	struct {
-+		__le16 pin;
-+		u8 type;
-+		__le16 period;
-+	} __packed req = {
-+		.pin = cpu_to_le16(pin),
-+		.type = type,
-+		.period = cpu_to_le16(period),
-+	};
++		u8 port;
++	} tx;
 +
-+	return dln2_transfer(dln2->pdev, DLN2_GPIO_PIN_SET_EVENT_CFG,
-+			     &req, sizeof(req), NULL, NULL, NULL);
-+}
++	tx.port = dln2->port;
 +
-+static void dln2_irq_work(struct work_struct *w)
-+{
-+	struct dln2_irq_work *iw = container_of(w, struct dln2_irq_work, work);
-+	struct dln2_gpio *dln2 = iw->dln2;
-+	u8 type = iw->type & DLN2_GPIO_EVENT_MASK;
-+
-+	if (test_bit(iw->pin, dln2->irqs_enabled))
-+		dln2_gpio_set_event_cfg(dln2, iw->pin, type, 0);
++	if (enable)
++		cmd = DLN2_I2C_ENABLE;
 +	else
-+		dln2_gpio_set_event_cfg(dln2, iw->pin, DLN2_GPIO_EVENT_NONE, 0);
-+}
++		cmd = DLN2_I2C_DISABLE;
 +
-+static void dln2_irq_enable(struct irq_data *irqd)
-+{
-+	struct gpio_chip *gc = irq_data_get_irq_chip_data(irqd);
-+	struct dln2_gpio *dln2 = container_of(gc, struct dln2_gpio, gpio);
-+	int pin = irqd_to_hwirq(irqd);
-+
-+	set_bit(pin, dln2->irqs_enabled);
-+	schedule_work(&dln2->irq_work[pin].work);
-+}
-+
-+static void dln2_irq_disable(struct irq_data *irqd)
-+{
-+	struct gpio_chip *gc = irq_data_get_irq_chip_data(irqd);
-+	struct dln2_gpio *dln2 = container_of(gc, struct dln2_gpio, gpio);
-+	int pin = irqd_to_hwirq(irqd);
-+
-+	clear_bit(pin, dln2->irqs_enabled);
-+	schedule_work(&dln2->irq_work[pin].work);
-+}
-+
-+static void dln2_irq_mask(struct irq_data *irqd)
-+{
-+	struct gpio_chip *gc = irq_data_get_irq_chip_data(irqd);
-+	struct dln2_gpio *dln2 = container_of(gc, struct dln2_gpio, gpio);
-+	int pin = irqd_to_hwirq(irqd);
-+
-+	set_bit(pin, dln2->irqs_masked);
-+}
-+
-+static void dln2_irq_unmask(struct irq_data *irqd)
-+{
-+	struct gpio_chip *gc = irq_data_get_irq_chip_data(irqd);
-+	struct dln2_gpio *dln2 = container_of(gc, struct dln2_gpio, gpio);
-+	struct device *dev = dln2->gpio.dev;
-+	int pin = irqd_to_hwirq(irqd);
-+
-+	if (test_and_clear_bit(pin, dln2->irqs_pending)) {
-+		int irq;
-+
-+		irq = irq_find_mapping(dln2->gpio.irqdomain, pin);
-+		if (!irq) {
-+			dev_err(dev, "pin %d not mapped to IRQ\n", pin);
-+			return;
-+		}
-+
-+		generic_handle_irq(irq);
-+	}
-+}
-+
-+static int dln2_irq_set_type(struct irq_data *irqd, unsigned type)
-+{
-+	struct gpio_chip *gc = irq_data_get_irq_chip_data(irqd);
-+	struct dln2_gpio *dln2 = container_of(gc, struct dln2_gpio, gpio);
-+	int pin = irqd_to_hwirq(irqd);
-+
-+	switch (type) {
-+	case IRQ_TYPE_LEVEL_HIGH:
-+		dln2->irq_work[pin].type = DLN2_GPIO_EVENT_LVL_HIGH;
-+		break;
-+	case IRQ_TYPE_LEVEL_LOW:
-+		dln2->irq_work[pin].type = DLN2_GPIO_EVENT_LVL_LOW;
-+		break;
-+	case IRQ_TYPE_EDGE_BOTH:
-+		dln2->irq_work[pin].type = DLN2_GPIO_EVENT_CHANGE;
-+		break;
-+	case IRQ_TYPE_EDGE_RISING:
-+		dln2->irq_work[pin].type = DLN2_GPIO_EVENT_CHANGE_RISING;
-+		break;
-+	case IRQ_TYPE_EDGE_FALLING:
-+		dln2->irq_work[pin].type = DLN2_GPIO_EVENT_CHANGE_FALLING;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
++	ret = dln2_transfer(dln2->pdev, cmd, &tx, sizeof(tx),
++			    NULL, NULL, NULL);
++	if (ret < 0)
++		return ret;
 +
 +	return 0;
 +}
 +
-+static struct irq_chip dln2_gpio_irqchip = {
-+	.name = "dln2-irq",
-+	.irq_enable = dln2_irq_enable,
-+	.irq_disable = dln2_irq_disable,
-+	.irq_mask = dln2_irq_mask,
-+	.irq_unmask = dln2_irq_unmask,
-+	.irq_set_type = dln2_irq_set_type,
-+};
-+
-+static void dln2_gpio_event(struct platform_device *pdev, u16 echo,
-+			    const void *data, int len)
++static int dln2_i2c_write(struct dln2_i2c *dln2, u8 addr,
++			  u8 *data, u16 data_len)
 +{
-+	int pin, irq;
-+	const struct {
-+		__le16 count;
-+		__u8 type;
-+		__le16 pin;
-+		__u8 value;
-+	} __packed *event = data;
-+	struct dln2_gpio *dln2 = platform_get_drvdata(pdev);
++	int ret;
++	struct {
++		u8 port;
++		u8 addr;
++		u8 mem_addr_len;
++		__le32 mem_addr;
++		__le16 buf_len;
++		u8 buf[DLN2_I2C_MAX_XFER_SIZE];
++	} __packed *tx = dln2->buf;
++	unsigned len;
 +
-+	if (len < sizeof(*event)) {
-+		dev_err(dln2->gpio.dev, "short event message\n");
-+		return;
-+	}
++	BUILD_BUG_ON(sizeof(*tx) > DLN2_I2C_BUF_SIZE);
 +
-+	pin = le16_to_cpu(event->pin);
-+	if (pin >= dln2->gpio.ngpio) {
-+		dev_err(dln2->gpio.dev, "out of bounds pin %d\n", pin);
-+		return;
-+	}
++	tx->port = dln2->port;
++	tx->addr = addr;
++	tx->mem_addr_len = 0;
++	tx->mem_addr = 0;
++	tx->buf_len = cpu_to_le16(data_len);
++	memcpy(tx->buf, data, data_len);
 +
-+	irq = irq_find_mapping(dln2->gpio.irqdomain, pin);
-+	if (!irq) {
-+		dev_err(dln2->gpio.dev, "pin %d not mapped to IRQ\n", pin);
-+		return;
-+	}
++	len = sizeof(*tx) + data_len - DLN2_I2C_MAX_XFER_SIZE;
++	ret = dln2_transfer(dln2->pdev, DLN2_I2C_WRITE, tx, len,
++			    NULL, NULL, NULL);
++	if (ret < 0)
++		return ret;
 +
-+	if (!test_bit(pin, dln2->irqs_enabled))
-+		return;
-+	if (test_bit(pin, dln2->irqs_masked)) {
-+		set_bit(pin, dln2->irqs_pending);
-+		return;
-+	}
-+
-+	switch (dln2->irq_work[pin].type) {
-+	case DLN2_GPIO_EVENT_CHANGE_RISING:
-+		if (event->value)
-+			generic_handle_irq(irq);
-+		break;
-+	case DLN2_GPIO_EVENT_CHANGE_FALLING:
-+		if (!event->value)
-+			generic_handle_irq(irq);
-+		break;
-+	default:
-+		generic_handle_irq(irq);
-+	}
++	return data_len;
 +}
 +
-+static int dln2_gpio_probe(struct platform_device *pdev)
++static int dln2_i2c_read(struct dln2_i2c *dln2, u16 addr, u8 *data,
++			 u16 data_len)
 +{
-+	struct dln2_gpio *dln2;
++	int ret;
++	struct {
++		u8 port;
++		u8 addr;
++		u8 mem_addr_len;
++		__le32 mem_addr;
++		__le16 buf_len;
++	} __packed tx;
++	struct {
++		__le16 buf_len;
++		u8 buf[DLN2_I2C_MAX_XFER_SIZE];
++	} __packed *rx = dln2->buf;
++	unsigned rx_len = sizeof(*rx);
++
++	BUILD_BUG_ON(sizeof(*rx) > DLN2_I2C_BUF_SIZE);
++
++	tx.port = dln2->port;
++	tx.addr = addr;
++	tx.mem_addr_len = 0;
++	tx.mem_addr = 0;
++	tx.buf_len = cpu_to_le16(data_len);
++
++	ret = dln2_transfer(dln2->pdev, DLN2_I2C_READ, &tx, sizeof(tx),
++			    rx, &rx_len, NULL);
++	if (ret < 0)
++		return ret;
++	if (rx_len < sizeof(rx->buf_len) + data_len)
++		return -EPROTO;
++	if (le16_to_cpu(rx->buf_len) != data_len)
++		return -EPROTO;
++
++	memcpy(data, rx->buf, data_len);
++
++	return data_len;
++}
++
++static int dln2_i2c_xfer(struct i2c_adapter *adapter,
++			 struct i2c_msg *msgs, int num)
++{
++	struct dln2_i2c *dln2 = i2c_get_adapdata(adapter);
++	struct i2c_msg *pmsg;
++	struct device *dev = &dln2->pdev->dev;
++	int i;
++
++	for (i = 0; i < num; i++) {
++		int ret;
++
++		pmsg = &msgs[i];
++
++		if (pmsg->len > DLN2_I2C_MAX_XFER_SIZE) {
++			dev_warn(dev, "maximum transfer size exceeded\n");
++			return -EOPNOTSUPP;
++		}
++
++		if (pmsg->flags & I2C_M_RD) {
++			ret = dln2_i2c_read(dln2, pmsg->addr, pmsg->buf,
++					    pmsg->len);
++			if (ret < 0)
++				return ret;
++
++			pmsg->len = ret;
++		} else {
++			ret = dln2_i2c_write(dln2, pmsg->addr, pmsg->buf,
++					     pmsg->len);
++			if (ret != pmsg->len)
++				return -EPROTO;
++		}
++	}
++
++	return num;
++}
++
++static u32 dln2_i2c_func(struct i2c_adapter *a)
++{
++	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_BYTE | I2C_FUNC_SMBUS_BYTE_DATA |
++		I2C_FUNC_SMBUS_WORD_DATA | I2C_FUNC_SMBUS_BLOCK_PROC_CALL |
++		I2C_FUNC_SMBUS_I2C_BLOCK;
++}
++
++static const struct i2c_algorithm dln2_i2c_usb_algorithm = {
++	.master_xfer = dln2_i2c_xfer,
++	.functionality = dln2_i2c_func,
++};
++
++static int dln2_i2c_probe(struct platform_device *pdev)
++{
++	int ret;
++	struct dln2_i2c *dln2;
 +	struct device *dev = &pdev->dev;
-+	int pins;
-+	int i, ret;
++	struct dln2_platform_data *pdata = dev_get_platdata(&pdev->dev);
 +
-+	pins = dln2_gpio_get_pin_count(pdev);
-+	if (pins < 0) {
-+		dev_err(dev, "failed to get pin count: %d\n", pins);
-+		return pins;
-+	}
-+	if (pins > DLN2_GPIO_MAX_PINS) {
-+		pins = DLN2_GPIO_MAX_PINS;
-+		dev_warn(dev, "clamping pins to %d\n", DLN2_GPIO_MAX_PINS);
-+	}
-+
-+	dln2 = devm_kzalloc(&pdev->dev, sizeof(*dln2), GFP_KERNEL);
++	dln2 = devm_kzalloc(dev, sizeof(*dln2), GFP_KERNEL);
 +	if (!dln2)
 +		return -ENOMEM;
 +
-+	dln2->irq_work = devm_kcalloc(&pdev->dev, pins,
-+				      sizeof(struct dln2_irq_work), GFP_KERNEL);
-+	if (!dln2->irq_work)
++	dln2->buf = devm_kmalloc(dev, DLN2_I2C_BUF_SIZE, GFP_KERNEL);
++	if (!dln2->buf)
 +		return -ENOMEM;
-+	for (i = 0; i < pins; i++) {
-+		INIT_WORK(&dln2->irq_work[i].work, dln2_irq_work);
-+		dln2->irq_work[i].pin = i;
-+		dln2->irq_work[i].dln2 = dln2;
-+	}
 +
 +	dln2->pdev = pdev;
++	dln2->port = pdata->port;
 +
-+	dln2->gpio.label = "dln2";
-+	dln2->gpio.dev = dev;
-+	dln2->gpio.owner = THIS_MODULE;
-+	dln2->gpio.base = -1;
-+	dln2->gpio.ngpio = pins;
-+	dln2->gpio.exported = true;
-+	dln2->gpio.can_sleep = true;
-+	dln2->gpio.irq_not_threaded = true;
-+	dln2->gpio.set = dln2_gpio_set;
-+	dln2->gpio.get = dln2_gpio_get;
-+	dln2->gpio.request = dln2_gpio_request;
-+	dln2->gpio.free = dln2_gpio_free;
-+	dln2->gpio.get_direction = dln2_gpio_get_direction;
-+	dln2->gpio.direction_input = dln2_gpio_direction_input;
-+	dln2->gpio.direction_output = dln2_gpio_direction_output;
-+	dln2->gpio.set_debounce = dln2_gpio_set_debounce;
++	/* setup i2c adapter description */
++	dln2->adapter.owner = THIS_MODULE;
++	dln2->adapter.class = I2C_CLASS_HWMON;
++	dln2->adapter.algo = &dln2_i2c_usb_algorithm;
++	dln2->adapter.dev.parent = dev;
++	i2c_set_adapdata(&dln2->adapter, dln2);
++	snprintf(dln2->adapter.name, sizeof(dln2->adapter.name), "%s-%s-%d",
++		 "dln2-i2c", dev_name(pdev->dev.parent), dln2->port);
 +
 +	platform_set_drvdata(pdev, dln2);
 +
-+	ret = gpiochip_add(&dln2->gpio);
++	/* initialize the i2c interface */
++	ret = dln2_i2c_enable(dln2, true);
 +	if (ret < 0) {
-+		dev_err(dev, "failed to add gpio chip: %d\n", ret);
-+		goto out;
++		dev_err(dev, "failed to initialize adapter: %d\n", ret);
++		return ret;
 +	}
 +
-+	ret = gpiochip_irqchip_add(&dln2->gpio, &dln2_gpio_irqchip, 0,
-+				   handle_simple_irq, IRQ_TYPE_NONE);
++	/* and finally attach to i2c layer */
++	ret = i2c_add_adapter(&dln2->adapter);
 +	if (ret < 0) {
-+		dev_err(dev, "failed to add irq chip: %d\n", ret);
-+		goto out_gpiochip_remove;
-+	}
-+
-+	ret = dln2_register_event_cb(pdev, DLN2_GPIO_CONDITION_MET_EV,
-+				     dln2_gpio_event);
-+	if (ret) {
-+		dev_err(dev, "failed to register event cb: %d\n", ret);
-+		goto out_gpiochip_remove;
++		dev_err(dev, "failed to add I2C adapter: %d\n", ret);
++		goto out_disable;
 +	}
 +
 +	return 0;
 +
-+out_gpiochip_remove:
-+	gpiochip_remove(&dln2->gpio);
-+out:
++out_disable:
++	dln2_i2c_enable(dln2, false);
++
 +	return ret;
 +}
 +
-+static int dln2_gpio_remove(struct platform_device *pdev)
++static int dln2_i2c_remove(struct platform_device *pdev)
 +{
-+	struct dln2_gpio *dln2 = platform_get_drvdata(pdev);
-+	int i;
++	struct dln2_i2c *dln2 = platform_get_drvdata(pdev);
 +
-+	dln2_unregister_event_cb(pdev, DLN2_GPIO_CONDITION_MET_EV);
-+	for (i = 0; i < dln2->gpio.ngpio; i++)
-+		flush_work(&dln2->irq_work[i].work);
-+	gpiochip_remove(&dln2->gpio);
++	i2c_del_adapter(&dln2->adapter);
++	dln2_i2c_enable(dln2, false);
 +
 +	return 0;
 +}
 +
-+static struct platform_driver dln2_gpio_driver = {
-+	.driver.name	= "dln2-gpio",
-+	.probe		= dln2_gpio_probe,
-+	.remove		= dln2_gpio_remove,
++static struct platform_driver dln2_i2c_driver = {
++	.driver.name	= "dln2-i2c",
++	.probe		= dln2_i2c_probe,
++	.remove		= dln2_i2c_remove,
 +};
 +
-+module_platform_driver(dln2_gpio_driver);
++module_platform_driver(dln2_i2c_driver);
 +
-+MODULE_AUTHOR("Daniel Baluta <daniel.baluta@intel.com");
-+MODULE_DESCRIPTION("Driver for the Diolan DLN2 GPIO interface");
++MODULE_AUTHOR("Laurentiu Palcu <laurentiu.palcu@intel.com>");
++MODULE_DESCRIPTION("Driver for the Diolan DLN2 I2C master interface");
 +MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:dln2-gpio");
++MODULE_ALIAS("platform:dln2-i2c");
 -- 
 1.9.1
 
