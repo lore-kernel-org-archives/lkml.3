@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752102AbaJOX15 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 19:27:57 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:33534 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751661AbaJOX1z (ORCPT
+	id S1751702AbaJOX2q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 19:28:46 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:54244 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809AbaJOX2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 19:27:55 -0400
+	Wed, 15 Oct 2014 19:28:45 -0400
 MIME-Version: 1.0
-In-Reply-To: <20141015170609.4063.10668.stgit@bhelgaas-glaptop2.roam.corp.google.com>
+In-Reply-To: <CAErSpo7K2dhNWz7HL_JCrB6pvq5+aeOYCwD2YV1_DLtcVcAKfA@mail.gmail.com>
 References: <20141015165957.4063.66741.stgit@bhelgaas-glaptop2.roam.corp.google.com>
- <20141015170609.4063.10668.stgit@bhelgaas-glaptop2.roam.corp.google.com>
+ <20141015170602.4063.5577.stgit@bhelgaas-glaptop2.roam.corp.google.com> <CAErSpo7K2dhNWz7HL_JCrB6pvq5+aeOYCwD2YV1_DLtcVcAKfA@mail.gmail.com>
 From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 15 Oct 2014 17:27:35 -0600
-Message-ID: <CAErSpo4ZhxFxRT9=ww8F8bKkfQe5jQTtfSvw2XfxAPvHzArKTQ@mail.gmail.com>
-Subject: Re: [PATCH v1 04/10] MIPS: Remove "weak" from platform_maar_init() declaration
+Date: Wed, 15 Oct 2014 17:28:24 -0600
+Message-ID: <CAErSpo6KnNKz8z1dcHqKTO6450MfGRm0nLk65sTvAcnUmGqiQQ@mail.gmail.com>
+Subject: Re: [PATCH v1 03/10] MIPS: CPC: Make mips_cpc_phys_base() static
 To: Jason Wessel <jason.wessel@windriver.com>,
         Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@redhat.com>,
         John Stultz <john.stultz@linaro.org>, Eric Paris <eparis@redhat.com>,
@@ -27,36 +27,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc linux-mips]
+[+cc linux-mips for real this time.  sheesh]
 
-On Wed, Oct 15, 2014 at 11:06 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> arch/mips/mm/init.c provides a default platform_maar_init() definition
-> explicitly marked "weak".  arch/mips/mti-malta/malta-memory.c provides its
-> own definition intended to override the default, but the "weak" attribute
-> on the declaration applied to this as well, so the linker chose one based
-> on link order (see 10629d711ed7 ("PCI: Remove __weak annotation from
-> pcibios_get_phb_of_node decl")).
+On Wed, Oct 15, 2014 at 5:27 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> [+cc linux-mips@linux-mips.org]
 >
-> Remove the "weak" attribute from the declaration so we always prefer a
-> non-weak definition over the weak one, independent of link order.
->
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> CC: linux-mips@linux-mips.org
-> ---
->  arch/mips/include/asm/maar.h |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/arch/mips/include/asm/maar.h b/arch/mips/include/asm/maar.h
-> index 6c62b0f899c0..b02891f9caaf 100644
-> --- a/arch/mips/include/asm/maar.h
-> +++ b/arch/mips/include/asm/maar.h
-> @@ -26,7 +26,7 @@
->   *
->   * Return:     The number of MAAR pairs configured.
->   */
-> -unsigned __weak platform_maar_init(unsigned num_pairs);
-> +unsigned platform_maar_init(unsigned num_pairs);
->
->  /**
->   * write_maar_pair() - write to a pair of MAARs
->
+> On Wed, Oct 15, 2014 at 11:06 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> There's only one implementation of mips_cpc_phys_base(), and it's only used
+>> within the same file, so it doesn't need to be weak, and it doesn't need an
+>> extern declaration.
+>>
+>> Remove the extern mips_cpc_phys_base() declaration and make it static.
+>>
+>> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+>> CC: linux-mips@linux-mips.org
+>> ---
+>>  arch/mips/include/asm/mips-cpc.h |   10 ----------
+>>  arch/mips/kernel/mips-cpc.c      |    2 +-
+>>  2 files changed, 1 insertion(+), 11 deletions(-)
+>>
+>> diff --git a/arch/mips/include/asm/mips-cpc.h b/arch/mips/include/asm/mips-cpc.h
+>> index e139a534e0fd..8ff92cd74bde 100644
+>> --- a/arch/mips/include/asm/mips-cpc.h
+>> +++ b/arch/mips/include/asm/mips-cpc.h
+>> @@ -28,16 +28,6 @@ extern void __iomem *mips_cpc_base;
+>>  extern phys_t mips_cpc_default_phys_base(void);
+>>
+>>  /**
+>> - * mips_cpc_phys_base - retrieve the physical base address of the CPC
+>> - *
+>> - * This function returns the physical base address of the Cluster Power
+>> - * Controller memory mapped registers, or 0 if no Cluster Power Controller
+>> - * is present. It may be overriden by individual platforms which determine
+>> - * this address in a different way.
+>> - */
+>> -extern phys_t __weak mips_cpc_phys_base(void);
+>> -
+>> -/**
+>>   * mips_cpc_probe - probe for a Cluster Power Controller
+>>   *
+>>   * Attempt to detect the presence of a Cluster Power Controller. Returns 0 if
+>> diff --git a/arch/mips/kernel/mips-cpc.c b/arch/mips/kernel/mips-cpc.c
+>> index ba473608a347..36c20ae509d8 100644
+>> --- a/arch/mips/kernel/mips-cpc.c
+>> +++ b/arch/mips/kernel/mips-cpc.c
+>> @@ -21,7 +21,7 @@ static DEFINE_PER_CPU_ALIGNED(spinlock_t, cpc_core_lock);
+>>
+>>  static DEFINE_PER_CPU_ALIGNED(unsigned long, cpc_core_lock_flags);
+>>
+>> -phys_t __weak mips_cpc_phys_base(void)
+>> +static phys_t mips_cpc_phys_base(void)
+>>  {
+>>         u32 cpc_base;
+>>
+>>
