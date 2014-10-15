@@ -1,138 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751597AbaJOSzw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 14:55:52 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57937 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751548AbaJOSzs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751360AbaJOSzs (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 15 Oct 2014 14:55:48 -0400
-Date: Wed, 15 Oct 2014 13:55:39 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: David Cohen <david.a.cohen@linux.intel.com>
-CC: Felipe Balbi <balbi@ti.com>, <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: dwc3: be more verbose on ERRATIC_ERROR interrupt
-Message-ID: <20141015185539.GF15770@saruman>
-Reply-To: <balbi@ti.com>
-References: <1413317705-10194-1-git-send-email-david.a.cohen@linux.intel.com>
- <20141015050022.GA2378@saruman>
- <20141015165718.GB4529@psi-dev26.jf.intel.com>
- <20141015170145.GC4529@psi-dev26.jf.intel.com>
- <20141015170610.GC15770@saruman>
- <20141015183633.GD4529@psi-dev26.jf.intel.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RDS4xtyBfx+7DiaI"
-Content-Disposition: inline
-In-Reply-To: <20141015183633.GD4529@psi-dev26.jf.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Received: from mga02.intel.com ([134.134.136.20]:33467 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751033AbaJOSzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 14:55:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,726,1406617200"; 
+   d="scan'208";a="619321219"
+Message-ID: <1413399277.1902.51.camel@spandruv-desktop.jf.intel.com>
+Subject: Re: [PATCH] i2c: Add generic support passing secondary devices
+ addresses
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mark.rutland@arm.com
+Date: Wed, 15 Oct 2014 11:54:37 -0700
+In-Reply-To: <20141003104637.GC1349@katana>
+References: <1409925739-28188-1-git-send-email-jean-michel.hautbois@vodalys.com>
+	 <20140922104555.GQ1786@lahna.fi.intel.com> <542023C8.8080802@metafoo.de>
+	 <20140922134535.GZ1786@lahna.fi.intel.com> <54202E28.80500@metafoo.de>
+	 <20140922144144.GF1786@lahna.fi.intel.com> <20141003104637.GC1349@katana>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---RDS4xtyBfx+7DiaI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Lars and Jean,
 
-On Wed, Oct 15, 2014 at 11:36:33AM -0700, David Cohen wrote:
-> On Wed, Oct 15, 2014 at 12:06:10PM -0500, Felipe Balbi wrote:
-> > On Wed, Oct 15, 2014 at 10:01:45AM -0700, David Cohen wrote:
-> > > On Wed, Oct 15, 2014 at 09:57:18AM -0700, David Cohen wrote:
-> > > > On Wed, Oct 15, 2014 at 12:00:22AM -0500, Felipe Balbi wrote:
-> > > > > Hi,
-> > > > >=20
-> > > > > On Tue, Oct 14, 2014 at 01:15:05PM -0700, David Cohen wrote:
-> > > > > > ERRATIC_ERROR interrupt is an event that needs more attention f=
-rom
-> > > > > > developers than currently implemented, since this indicates a s=
-erious
-> > > > > > stability issue. The only way to get warned about it is by sele=
-cting the
-> > > > > > maximum driver's verbosity.
-> > > > > >=20
-> > > > > > This patch increases a bit the error's verbosity.
-> > > > > >=20
-> > > > > > Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-> > > > > > ---
-> > > > > >  drivers/usb/dwc3/gadget.c | 3 ++-
-> > > > > >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > > > > >=20
-> > > > > > diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadge=
-t.c
-> > > > > > index 3818b26bfc05..132e761d62e4 100644
-> > > > > > --- a/drivers/usb/dwc3/gadget.c
-> > > > > > +++ b/drivers/usb/dwc3/gadget.c
-> > > > > > @@ -2484,7 +2484,8 @@ static void dwc3_gadget_interrupt(struct =
-dwc3 *dwc,
-> > > > > >  		dev_vdbg(dwc->dev, "Start of Periodic Frame\n");
-> > > > > >  		break;
-> > > > > >  	case DWC3_DEVICE_EVENT_ERRATIC_ERROR:
-> > > > > > -		dev_vdbg(dwc->dev, "Erratic Error\n");
-> > > > > > +		WARN_ON_ONCE(1);
-> > > > > > +		dev_dbg(dwc->dev, "Erratic Error\n");
-> > > > >=20
-> > > > > how about:
-> > > > > 		WARN_ONCE(true, "Erratic Error\n");
-> > > > >=20
-> > > > > instead ?
-> > > >=20
-> > > > When erratic error event happens, in my experience it is usually
-> > > > followed but many of them in a row. It may end up too verbose.
-> > >=20
-> > > Oops, sorry for my confusion. I read WARN(), not WARN_ONCE() when I r=
-ead
-> > > for the first time :)
-> > >=20
-> > > I let the dev_dbg() because it may be useful to get all the occurrenc=
-es
-> > > in case debug is enabled. But WARN_ONCE() is fine too if you prefer.
-> >=20
-> > We might WARN_ONCE() and forcibly disconnect from host as the platform
-> > worn't work anymore after Erratic Error happens. Then just make that
-> > clear with "Erratic Error: disconnecting from host\n" or something like
-> > that.
->=20
-> That works.
-> I assume calling dwc3_gadget_disconnect_interrupt() from
-> DWC3_DEVICE_EVENT_ERRATIC_ERROR should be enough to disconnect the
-> gadget and propagate the status to userspace.
->=20
-> >=20
-> > The only way to fix erratic error (by fixing code - probably PHY driver)
-> > will require rebooting the platform anyway. At a minimum, you'd have to
-> > unload and reload dwc3.ko, just make sure (if you can reproduce erratic
-> > error easily) modprobe -r dwc3 && modprobe dwc3 still causes dwc3 to
-> > reconnect to host.
->=20
-> It does. Forcing soft reset on whole IP is how databook describes to
-> solve it.
+Are you taking this patch further to take care about ACPI related stuff
+submitted by Mika?
 
-alright, then please send a patch and I'll take for v3.19
+Thanks,
+Srinivas
+On Fri, 2014-10-03 at 12:46 +0200, Wolfram Sang wrote: 
+> > > Ok, looks like there are two main differences in the two implementations.
+> > > 
+> > > 1) The ACPI one uses a integer index and the DT one uses a string index to
+> > > lookup the device.
+> > > 
+> > > The problem with the index lookup is that the order is binding specific. So
+> > > it might be different between e.g. the devicetree binding and the ACPI
+> > > binding. This makes it quite hard to use the API in a generic way and you'd
+> > > end up with hacks like:
+> > > 
+> > > if (client->dev.of_node)
+> > > 	index = 3;
+> > > else if (ACPI_COMPANION(client->dev))
+> > > 	index = 1;
+> > > else
+> > > 	index = 5;
+> > > 
+> > 
+> > Indeed.
+> > 
+> > > So we might need a extra translation table which maps a name to a ACPI index
+> > > and then we could use the name as the generic index in the driver.
+> > 
+> > Good thing is that ACPI 5.1 _DSD finally allows us to use similar naming
+> > as the DT has been doing. Problem is that we need to support both the
+> > new way *and* the older index lookup somehow :-/
+> > 
+> > > 2) The ACPI implementation returns the i2c_board_info and the adapter, while
+> > > the DT implementation returns the instantiated I2C client device.
+> > > 
+> > > It might make sense to have both. I image that most drivers are just
+> > > interested in creating a new client device and will simply pass the board
+> > > info and adapter they got to i2c_new_device(). In this case it makes sense
+> > > to have a helper function which already does this internally to avoid
+> > > boilerplate code duplication.
+> > 
+> > I agree. How about making that helper a wrapper around the function that
+> > returns both i2c_board_info and an adapter?
+> > 
+> > > There will probably some special cases though in which case the driver wants
+> > > to get the adapter and the board info and then manually call
+> > > i2c_new_device() after having done some additional steps.
+> > 
+> > Yes, if the alternative address happens to be on another bus. That
+> > should at least be possible with this API.
+> 
+> Thanks for the discussion so far! I'll wait and see if some patches come
+> out of it and mark this one as deferred for now.
+> 
 
---=20
-balbi
 
---RDS4xtyBfx+7DiaI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUPsMrAAoJEIaOsuA1yqRE3EEP/3pCURils87mq2gXNyDIdlUZ
-+Mi6K89zd5rbIu8pEvVld8ZmrcJQkDhFnsvCdKWwrMVVEJbcdza1sxmWHaLD0fg3
-7tIucKsM2wJY7QzbwAfXlDSuYDQRxFcrRbc6hAwA/dkQEkJUa1aNuYIJdPbV7/l1
-pIoUFlBF7u97P2mW8xYZ69LYpAT+I2fP3IC9PUmb4EOT47WhFs2i9dztFtUp8vlG
-NJ3ZOFkUbsPdGjjcVNB4hrhqInjN0LhTzHVwC7A2eex7pi7/NPRXXTtbHSrvAYmm
-xXHh8X7BivMCymeYHpqi+6o63S3icN0gkxIaJEX9uo66SvAqKPnDZ3n6PW2LpHuF
-xA3zLagcoK3RWCcx+lCk1l0l04xO/e9GpHZ0QrlLyvu9YFEF3oD4zWzxwv924mgI
-w5rsxsINTjvjGzWuFfiDcxUglkkpTBxbR4IqIVcN+qL5MPYnaCSK3ZNmP5Hf8kiy
-Iy7ggop0SWp33LGu6BuXiTHv4RP+jkG38RFpaJBppJuIPP4CZkSn2XPOwyNZkT/C
-W3zE0V1izY927vI+U2q5rpdIwUY29nMkpFYgyCDNYve7PJD74+/U/l/FJwt7qLIp
-8PaFuUMRlmx2IjkGQUFXpwV7GYVHM9fns9XG7Uw8hcWzy9EUN702L3x9iTI6jqCH
-WsrXkzMQwVucPg+K42GT
-=6Nku
------END PGP SIGNATURE-----
-
---RDS4xtyBfx+7DiaI--
