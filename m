@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751400AbaJOOZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 10:25:26 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:37387 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751195AbaJOOZX (ORCPT
+	id S1751348AbaJOOZZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 10:25:25 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:15578 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191AbaJOOZW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 10:25:23 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-97-543e83d03512
+	Wed, 15 Oct 2014 10:25:22 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-5b-543e83d0c58f
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Sebastian Reichel <sre@kernel.org>,
         Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
         David Woodhouse <dwmw2@infradead.org>, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>, stable@vger.kernel.org
-Subject: [PATCH v2 2/2] power: bq2415x_charger: Fix memory leak on DTS parsing
- error
-Date: Wed, 15 Oct 2014 16:25:10 +0200
-Message-id: <1413383110-20310-2-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH v2 1/2] power: bq2415x_charger: Properly handle ENODEV from
+ power_supply_get_by_phandle
+Date: Wed, 15 Oct 2014 16:25:09 +0200
+Message-id: <1413383110-20310-1-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
-In-reply-to: <1413383110-20310-1-git-send-email-k.kozlowski@samsung.com>
-References: <1413383110-20310-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrIJMWRmVeSWpSXmKPExsVy+t/xq7oXmu1CDA4fU7CY9OQ9s8XElZOZ
-	LV6/MLS4vGsOm8Xn3iOMFqd3l1gs2PiI0YHdY+esu+wem1doeWxa1cnm0bdlFaPH501yAaxR
-	XDYpqTmZZalF+nYJXBkP+j4yFjzlq3j8uYGlgfEfdxcjJ4eEgInEzp597BC2mMSFe+vZQGwh
-	gaWMEhceZnQxcgHZfUwSreeuMoEk2ASMJTYvX8IGkhAR2M0oMWHqchaQBLOAp8S7vw+BJnFw
-	CAuESfycbg4SZhFQldhw5TBYCa+Au8S7J6tZIJbJSZw8NpkVxOYU8JA4sXIPK0irEFDN2g+M
-	Exh5FzAyrGIUTS1NLihOSs811CtOzC0uzUvXS87P3cQICaYvOxgXH7M6xCjAwajEw8txwDZE
-	iDWxrLgy9xCjBAezkgjv/AS7ECHelMTKqtSi/Pii0pzU4kOMTBycUg2MsY+NegOrmjI6kzZw
-	TeL63L7ktv21pGR+tdmxi50tBT9IqT46W3oqOuQkc7DhXZapOitFU8NqDByLYwL87jafeBLF
-	L1rYc/X31G13piR6mToHVJxc7mD50p5ZKnuhdfzLUw/OmCrfYOifesluyR9RzzDjjTz76o8z
-	6f0zFN91Ounl0zzH+TFKLMUZiYZazEXFiQCTqstBBAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNJMWRmVeSWpSXmKPExsVy+t/xq7oXmu1CDBpvclhMevKe2WLiysnM
+	Fq9fGFpc3jWHzeJz7xFGi9O7SywWbHzE6MDusXPWXXaPzSu0PDat6mTz6NuyitHj8ya5ANYo
+	LpuU1JzMstQifbsErowJyy6wFizmq1h6fA9bA+MH7i5GTg4JAROJOzdXMEPYYhIX7q1nA7GF
+	BJYyStzc6tDFyAVk9zFJtJ67ygSSYBMwlti8fAkbSEJEYDejxISpy1lAEswCnhLv/j5kB7GF
+	BTIlrj97CDaVRUBVYu2MS2A1vALuEu1PJ7FBbJOTOHlsMusERu4FjAyrGEVTS5MLipPSc430
+	ihNzi0vz0vWS83M3MUIC5OsOxqXHrA4xCnAwKvHwchywDRFiTSwrrsw9xCjBwawkwjs/wS5E
+	iDclsbIqtSg/vqg0J7X4ECMTB6dUA6PZvxDe0q+l3hz/DrCfm5SWcObr1Ac/O/49Fp14pWau
+	eujrmc6XlPZ+5P8ssXXK6wT/pW3+RXbGZ18eNu//qcSl94N3n+y5wNwnlxXYxQ1kLl2SfxN8
+	tO3Cpadsu/KCJ+6+9tL65CHesx4twovmdDWdK62YUSHsqPX1LdulS72TFj8+oORUuX6iEktx
+	RqKhFnNRcSIAzNvyou4BAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Memory allocated for 'name' was leaking if required binding properties
-were not present.
+The power_supply_get_by_phandle() on error returns ENODEV or NULL.
+The driver later expects obtained pointer to power supply to be
+valid or NULL. If it is not NULL then it dereferences it in
+bq2415x_notifier_call() which would lead to dereferencing ENODEV-value
+pointer.
 
-The memory for 'name' was allocated early at probe with kasprintf(). It
-was freed in error paths executed before and after parsing DTS but not
-in that error path.
+Properly handle the power_supply_get_by_phandle() error case by
+replacing error value with NULL. This indicates that usb charger
+detection won't be used.
 
-Fix the error path for parsing device tree properties.
+Fix also memory leak of 'name' if power_supply_get_by_phandle() fails
+with NULL and probe should defer.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Fixes: faffd234cf85 ("bq2415x_charger: Add DT support")
@@ -51,49 +53,36 @@ Cc: <stable@vger.kernel.org>
 ---
 
 Changes since v1:
-1. None, new patch.
+1. Fix memory leak in probe defer (goto error_2) (suggested by Sebastian
+   Reichel).
+2. Don't fail the probe if 'ti,usb-charger-detection' is not present.
+   Just print message.
 ---
- drivers/power/bq2415x_charger.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/power/bq2415x_charger.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/power/bq2415x_charger.c b/drivers/power/bq2415x_charger.c
-index edf945a5260f..311be01480c8 100644
+index e384844a1ae1..edf945a5260f 100644
 --- a/drivers/power/bq2415x_charger.c
 +++ b/drivers/power/bq2415x_charger.c
-@@ -1609,27 +1609,27 @@ static int bq2415x_probe(struct i2c_client *client,
- 		ret = of_property_read_u32(np, "ti,current-limit",
- 				&bq->init_data.current_limit);
- 		if (ret)
--			return ret;
+@@ -1579,8 +1579,15 @@ static int bq2415x_probe(struct i2c_client *client,
+ 	if (np) {
+ 		bq->notify_psy = power_supply_get_by_phandle(np, "ti,usb-charger-detection");
+ 
+-		if (!bq->notify_psy)
+-			return -EPROBE_DEFER;
++		if (IS_ERR(bq->notify_psy)) {
++			bq->notify_psy = NULL;
++			dev_info(&client->dev,
++				"no 'ti,usb-charger-detection' property (err=%ld)\n",
++				PTR_ERR(bq->notify_psy));
++		} else if (!bq->notify_psy) {
++			ret = -EPROBE_DEFER;
 +			goto error_2;
- 		ret = of_property_read_u32(np, "ti,weak-battery-voltage",
- 				&bq->init_data.weak_battery_voltage);
- 		if (ret)
--			return ret;
-+			goto error_2;
- 		ret = of_property_read_u32(np, "ti,battery-regulation-voltage",
- 				&bq->init_data.battery_regulation_voltage);
- 		if (ret)
--			return ret;
-+			goto error_2;
- 		ret = of_property_read_u32(np, "ti,charge-current",
- 				&bq->init_data.charge_current);
- 		if (ret)
--			return ret;
-+			goto error_2;
- 		ret = of_property_read_u32(np, "ti,termination-current",
- 				&bq->init_data.termination_current);
- 		if (ret)
--			return ret;
-+			goto error_2;
- 		ret = of_property_read_u32(np, "ti,resistor-sense",
- 				&bq->init_data.resistor_sense);
- 		if (ret)
--			return ret;
-+			goto error_2;
- 	} else {
- 		memcpy(&bq->init_data, pdata, sizeof(bq->init_data));
++		}
  	}
+ 	else if (pdata->notify_device)
+ 		bq->notify_psy = power_supply_get_by_name(pdata->notify_device);
 -- 
 1.9.1
 
