@@ -1,244 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751728AbaJOPVb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 11:21:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56952 "EHLO mx2.suse.de"
+	id S1751638AbaJOPZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 11:25:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9131 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751316AbaJOPVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 11:21:30 -0400
-Date: Wed, 15 Oct 2014 17:21:28 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/5] mm: memcontrol: remove obsolete kmemcg pinning tricks
-Message-ID: <20141015152128.GH23547@dhcp22.suse.cz>
-References: <1413303637-23862-1-git-send-email-hannes@cmpxchg.org>
- <1413303637-23862-4-git-send-email-hannes@cmpxchg.org>
+	id S1751313AbaJOPZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 11:25:28 -0400
+Date: Wed, 15 Oct 2014 11:25:23 -0400
+From: Aristeu Rozanski <aris@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: [PATCH] tiny: reverse logic for DISABLE_DEV_COREDUMP
+Message-ID: <20141015152522.GL5930@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1413303637-23862-4-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 14-10-14 12:20:35, Johannes Weiner wrote:
-> As charges now pin the css explicitely, there is no more need for
-> kmemcg to acquire a proxy reference for outstanding pages during
-> offlining, or maintain state to identify such "dead" groups.
-> 
-> This was the last user of the uncharge functions' return values, so
-> remove them as well.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> Reviewed-by: Vladimir Davydov <vdavydov@parallels.com>
+It's desirable for allnconfig and tinyconfig targets to result in the
+least amount of code possible. DISABLE_DEV_COREDUMP exists as a way to
+switch off DEV_COREDUMP regardless if any drivers select
+WANT_DEV_COREDUMP.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+This patch renames the option to ENABLE_DEV_COREDUMP and setting it to
+'n' (as in allnconfig or tinyconfig) will effectively disable device
+coredump.
 
-> ---
->  include/linux/page_counter.h |  4 +--
->  mm/memcontrol.c              | 74 +-------------------------------------------
->  mm/page_counter.c            | 23 +++-----------
->  3 files changed, 7 insertions(+), 94 deletions(-)
-> 
-> diff --git a/include/linux/page_counter.h b/include/linux/page_counter.h
-> index d92d18949474..a878ef61d073 100644
-> --- a/include/linux/page_counter.h
-> +++ b/include/linux/page_counter.h
-> @@ -32,12 +32,12 @@ static inline unsigned long page_counter_read(struct page_counter *counter)
->  	return atomic_long_read(&counter->count);
->  }
->  
-> -int page_counter_cancel(struct page_counter *counter, unsigned long nr_pages);
-> +void page_counter_cancel(struct page_counter *counter, unsigned long nr_pages);
->  void page_counter_charge(struct page_counter *counter, unsigned long nr_pages);
->  int page_counter_try_charge(struct page_counter *counter,
->  			    unsigned long nr_pages,
->  			    struct page_counter **fail);
-> -int page_counter_uncharge(struct page_counter *counter, unsigned long nr_pages);
-> +void page_counter_uncharge(struct page_counter *counter, unsigned long nr_pages);
->  int page_counter_limit(struct page_counter *counter, unsigned long limit);
->  int page_counter_memparse(const char *buf, unsigned long *nr_pages);
->  
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index a3feead6be15..7551e12f8ff7 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -369,7 +369,6 @@ struct mem_cgroup {
->  /* internal only representation about the status of kmem accounting. */
->  enum {
->  	KMEM_ACCOUNTED_ACTIVE, /* accounted by this cgroup itself */
-> -	KMEM_ACCOUNTED_DEAD, /* dead memcg with pending kmem charges */
->  };
->  
->  #ifdef CONFIG_MEMCG_KMEM
-> @@ -383,22 +382,6 @@ static bool memcg_kmem_is_active(struct mem_cgroup *memcg)
->  	return test_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_account_flags);
->  }
->  
-> -static void memcg_kmem_mark_dead(struct mem_cgroup *memcg)
-> -{
-> -	/*
-> -	 * Our caller must use css_get() first, because memcg_uncharge_kmem()
-> -	 * will call css_put() if it sees the memcg is dead.
-> -	 */
-> -	smp_wmb();
-> -	if (test_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_account_flags))
-> -		set_bit(KMEM_ACCOUNTED_DEAD, &memcg->kmem_account_flags);
-> -}
-> -
-> -static bool memcg_kmem_test_and_clear_dead(struct mem_cgroup *memcg)
-> -{
-> -	return test_and_clear_bit(KMEM_ACCOUNTED_DEAD,
-> -				  &memcg->kmem_account_flags);
-> -}
->  #endif
->  
->  /* Stuffs for move charges at task migration. */
-> @@ -2741,22 +2724,7 @@ static void memcg_uncharge_kmem(struct mem_cgroup *memcg,
->  	if (do_swap_account)
->  		page_counter_uncharge(&memcg->memsw, nr_pages);
->  
-> -	/* Not down to 0 */
-> -	if (page_counter_uncharge(&memcg->kmem, nr_pages)) {
-> -		css_put_many(&memcg->css, nr_pages);
-> -		return;
-> -	}
-> -
-> -	/*
-> -	 * Releases a reference taken in kmem_cgroup_css_offline in case
-> -	 * this last uncharge is racing with the offlining code or it is
-> -	 * outliving the memcg existence.
-> -	 *
-> -	 * The memory barrier imposed by test&clear is paired with the
-> -	 * explicit one in memcg_kmem_mark_dead().
-> -	 */
-> -	if (memcg_kmem_test_and_clear_dead(memcg))
-> -		css_put(&memcg->css);
-> +	page_counter_uncharge(&memcg->kmem, nr_pages);
->  
->  	css_put_many(&memcg->css, nr_pages);
->  }
-> @@ -4740,40 +4708,6 @@ static void memcg_destroy_kmem(struct mem_cgroup *memcg)
->  {
->  	mem_cgroup_sockets_destroy(memcg);
->  }
-> -
-> -static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
-> -{
-> -	if (!memcg_kmem_is_active(memcg))
-> -		return;
-> -
-> -	/*
-> -	 * kmem charges can outlive the cgroup. In the case of slab
-> -	 * pages, for instance, a page contain objects from various
-> -	 * processes. As we prevent from taking a reference for every
-> -	 * such allocation we have to be careful when doing uncharge
-> -	 * (see memcg_uncharge_kmem) and here during offlining.
-> -	 *
-> -	 * The idea is that that only the _last_ uncharge which sees
-> -	 * the dead memcg will drop the last reference. An additional
-> -	 * reference is taken here before the group is marked dead
-> -	 * which is then paired with css_put during uncharge resp. here.
-> -	 *
-> -	 * Although this might sound strange as this path is called from
-> -	 * css_offline() when the referencemight have dropped down to 0 and
-> -	 * shouldn't be incremented anymore (css_tryget_online() would
-> -	 * fail) we do not have other options because of the kmem
-> -	 * allocations lifetime.
-> -	 */
-> -	css_get(&memcg->css);
-> -
-> -	memcg_kmem_mark_dead(memcg);
-> -
-> -	if (page_counter_read(&memcg->kmem))
-> -		return;
-> -
-> -	if (memcg_kmem_test_and_clear_dead(memcg))
-> -		css_put(&memcg->css);
-> -}
->  #else
->  static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
->  {
-> @@ -4783,10 +4717,6 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
->  static void memcg_destroy_kmem(struct mem_cgroup *memcg)
->  {
->  }
-> -
-> -static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
-> -{
-> -}
->  #endif
->  
->  /*
-> @@ -5390,8 +5320,6 @@ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
->  	}
->  	spin_unlock(&memcg->event_list_lock);
->  
-> -	kmem_cgroup_css_offline(memcg);
-> -
->  	/*
->  	 * This requires that offlining is serialized.  Right now that is
->  	 * guaranteed because css_killed_work_fn() holds the cgroup_mutex.
-> diff --git a/mm/page_counter.c b/mm/page_counter.c
-> index fc4990c6bb5b..71a0e92e7051 100644
-> --- a/mm/page_counter.c
-> +++ b/mm/page_counter.c
-> @@ -12,19 +12,14 @@
->   * page_counter_cancel - take pages out of the local counter
->   * @counter: counter
->   * @nr_pages: number of pages to cancel
-> - *
-> - * Returns whether there are remaining pages in the counter.
->   */
-> -int page_counter_cancel(struct page_counter *counter, unsigned long nr_pages)
-> +void page_counter_cancel(struct page_counter *counter, unsigned long nr_pages)
->  {
->  	long new;
->  
->  	new = atomic_long_sub_return(nr_pages, &counter->count);
-> -
->  	/* More uncharges than charges? */
->  	WARN_ON_ONCE(new < 0);
-> -
-> -	return new > 0;
->  }
->  
->  /**
-> @@ -113,23 +108,13 @@ failed:
->   * page_counter_uncharge - hierarchically uncharge pages
->   * @counter: counter
->   * @nr_pages: number of pages to uncharge
-> - *
-> - * Returns whether there are remaining charges in @counter.
->   */
-> -int page_counter_uncharge(struct page_counter *counter, unsigned long nr_pages)
-> +void page_counter_uncharge(struct page_counter *counter, unsigned long nr_pages)
->  {
->  	struct page_counter *c;
-> -	int ret = 1;
->  
-> -	for (c = counter; c; c = c->parent) {
-> -		int remainder;
-> -
-> -		remainder = page_counter_cancel(c, nr_pages);
-> -		if (c == counter && !remainder)
-> -			ret = 0;
-> -	}
-> -
-> -	return ret;
-> +	for (c = counter; c; c = c->parent)
-> +		page_counter_cancel(c, nr_pages);
->  }
->  
->  /**
-> -- 
-> 2.1.2
-> 
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Josh Triplett <josh@joshtriplett.org>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Aristeu Rozanski <arozansk@redhat.com>
 
--- 
-Michal Hocko
-SUSE Labs
+diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
+index 134f763..63a5702 100644
+--- a/drivers/base/Kconfig
++++ b/drivers/base/Kconfig
+@@ -171,20 +171,23 @@ config WANT_DEV_COREDUMP
+ 	  Drivers should "select" this option if they desire to use the
+ 	  device coredump mechanism.
+ 
+-config DISABLE_DEV_COREDUMP
+-	bool "Disable device coredump" if EXPERT
++config ENABLE_DEV_COREDUMP
++	bool "Enable device coredump" if EXPERT
++	default y
+ 	help
+-	  Disable the device coredump mechanism despite drivers wanting to
+-	  use it; this allows for more sensitive systems or systems that
+-	  don't want to ever access the information to not have the code,
+-	  nor keep any data.
++	  This option controls if the device coredump mechanism is available or
++	  not; if disabled, the mechanism will be omitted even if drivers that
++	  can use it are enabled.
++	  Say 'N' for more sensitive systems or systems that don't want
++	  to ever access the information to not have the code, nor keep any
++	  data.
+ 
+-	  If unsure, say N.
++	  If unsure, say Y.
+ 
+ config DEV_COREDUMP
+ 	bool
+ 	default y if WANT_DEV_COREDUMP
+-	depends on !DISABLE_DEV_COREDUMP
++	depends on ENABLE_DEV_COREDUMP
+ 
+ config DEBUG_DRIVER
+ 	bool "Driver Core verbose debug messages"
