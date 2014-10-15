@@ -1,94 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756042AbaJOFNp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 01:13:45 -0400
-Received: from mga03.intel.com ([134.134.136.65]:32498 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751173AbaJOFL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 01:11:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,721,1406617200"; 
-   d="scan'208";a="618867763"
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 5/8] x86: Make old K8 swapgs workaround conditional
-Date: Tue, 14 Oct 2014 22:11:48 -0700
-Message-Id: <1413349911-3620-5-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1413349911-3620-1-git-send-email-andi@firstfloor.org>
-References: <1413349911-3620-1-git-send-email-andi@firstfloor.org>
+	id S1751418AbaJOFW2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 01:22:28 -0400
+Received: from mail-by2on0107.outbound.protection.outlook.com ([207.46.100.107]:60269
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751073AbaJOFW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 01:22:26 -0400
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <thierry.reding@gmail.com>, <linux-pwm@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH v2 1/3] pwm: ftm: fix one bug of wrong counting the use counter.
+Date: Wed, 15 Oct 2014 13:21:33 +0800
+Message-ID: <1413350495-40980-2-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 2.1.0.27.g96db324
+In-Reply-To: <1413350495-40980-1-git-send-email-Li.Xiubo@freescale.com>
+References: <1413350495-40980-1-git-send-email-Li.Xiubo@freescale.com>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(76482002)(50466002)(48376002)(50226001)(104166001)(93916002)(92726001)(92566001)(77156001)(36756003)(87286001)(21056001)(4396001)(99396003)(19580405001)(104016003)(44976005)(107046002)(6806004)(80022003)(95666004)(50986999)(46102003)(69596002)(106466001)(81156004)(31966008)(229853001)(85306004)(120916001)(97736003)(105606002)(26826002)(87936001)(102836001)(84676001)(76176999)(20776003)(68736004)(88136002)(47776003)(86362001)(89996001)(64706001)(85852003)(19580395003)(62966002);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0619;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0619;
+X-Forefront-PRVS: 0365C0E14B
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Li.Xiubo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+No matter what times the FTM pwm is enabled, the use_count will
+always be one.
 
-Every gs selector/index reload always paid an extra MFENCE
-between the two SWAPGS. This was to work around an old
-bug in early K8 steppings.  All other CPUs don't need the extra
-mfence. Patch the extra MFENCE only in for K8.
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 ---
- arch/x86/include/asm/cpufeature.h |  1 +
- arch/x86/kernel/cpu/amd.c         |  3 +++
- arch/x86/kernel/entry_64.S        | 10 +++++++++-
- 3 files changed, 13 insertions(+), 1 deletion(-)
+ drivers/pwm/pwm-fsl-ftm.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index bb9b258..5125c95 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -102,6 +102,7 @@
- #define X86_FEATURE_APERFMPERF	( 3*32+28) /* APERFMPERF */
- #define X86_FEATURE_EAGER_FPU	( 3*32+29) /* "eagerfpu" Non lazy FPU restore */
- #define X86_FEATURE_NONSTOP_TSC_S3 ( 3*32+30) /* TSC doesn't stop in S3 state */
-+#define X86_FEATURE_SWAPGS_MFENCE (3*32+31) /* SWAPGS may need MFENCE */
+diff --git a/drivers/pwm/pwm-fsl-ftm.c b/drivers/pwm/pwm-fsl-ftm.c
+index 0f2cc7e..1150598 100644
+--- a/drivers/pwm/pwm-fsl-ftm.c
++++ b/drivers/pwm/pwm-fsl-ftm.c
+@@ -299,7 +299,7 @@ static int fsl_counter_clock_enable(struct fsl_pwm_chip *fpc)
+ {
+ 	int ret;
  
- /* Intel-defined CPU features, CPUID level 0x00000001 (ecx), word 4 */
- #define X86_FEATURE_XMM3	( 4*32+ 0) /* "pni" SSE-3 */
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 60e5497..85988e8 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -544,6 +544,9 @@ static void init_amd_k8(struct cpuinfo_x86 *c)
- 	if ((level >= 0x0f48 && level < 0x0f50) || level >= 0x0f58)
- 		set_cpu_cap(c, X86_FEATURE_REP_GOOD);
+-	if (fpc->use_count != 0)
++	if (fpc->use_count++ != 0)
+ 		return 0;
  
-+	/* Early steppings needed a mfence on swapgs. */
-+	set_cpu_cap(c, X86_FEATURE_SWAPGS_MFENCE);
-+
- 	/*
- 	 * Some BIOSes incorrectly force this feature, but only K8 revision D
- 	 * (model = 0x14) and later actually support it.
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 43b46a1..5913360 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1216,13 +1216,21 @@ ENTRY(native_load_gs_index)
- 	SWAPGS
- gs_change:
- 	movl %edi,%gs
--2:	mfence		/* workaround */
-+2:	ASM_NOP3	/* may be replaced with mfence */
- 	SWAPGS
- 	popfq_cfi
- 	ret
- 	CFI_ENDPROC
- END(native_load_gs_index)
+ 	/* select counter clock source */
+@@ -316,8 +316,6 @@ static int fsl_counter_clock_enable(struct fsl_pwm_chip *fpc)
+ 		return ret;
+ 	}
  
-+	/* Early K8 systems needed an mfence after swapgs to workaround a bug */
-+	.section .altinstr_replacement,"ax"
-+3:	mfence
-+	.previous
-+	.section .altinstructions,"a"
-+	altinstruction_entry 2b,3b,X86_FEATURE_SWAPGS_MFENCE,3,3
-+	.previous
-+
- 	_ASM_EXTABLE(gs_change,bad_gs)
- 	.section .fixup,"ax"
- 	/* running with kernelgs */
+-	fpc->use_count++;
+-
+ 	return 0;
+ }
+ 
 -- 
-1.9.3
+2.1.0.27.g96db324
 
