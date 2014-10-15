@@ -1,307 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068AbaJOHYE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 03:24:04 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:49451 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752042AbaJOHYA (ORCPT
+	id S1751373AbaJOHUE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 03:20:04 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:37097 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751207AbaJOHUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 03:24:00 -0400
-From: Kelvin Cheung <keguang.zhang@gmail.com>
-To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: rjw@rjwysocki.net, viresh.kumar@linaro.org, linux-mips@linux-mips.org,
-        ralf@linux-mips.org, Kelvin Cheung <keguang.zhang@gmail.com>
-Subject: [PATCH 6/6] cpufreq: Loongson1: Add cpufreq driver for Loongson1B (UPDATED)
-Date: Wed, 15 Oct 2014 15:23:32 +0800
-Message-Id: <1413357812-16895-1-git-send-email-keguang.zhang@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 15 Oct 2014 03:20:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <1411566612-32277-5-git-send-email-k.kozlowski@samsung.com>
+References: <1411566612-32277-1-git-send-email-k.kozlowski@samsung.com>
+	<1411566612-32277-5-git-send-email-k.kozlowski@samsung.com>
+Date: Wed, 15 Oct 2014 09:19:59 +0200
+Message-ID: <CAPDyKFqgsFjWOEyRksuPaWg66W2jr3QrUcKL9b9HCDMpGYRkbg@mail.gmail.com>
+Subject: Re: [PATCH v7 4/5] dma: pl330: add Power Management support
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        dmaengine@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Michal Simek <michal.simek@xilinx.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds cpufreq driver for Loongson1B which
-is capable of changing the CPU frequency dynamically.
+On 24 September 2014 15:50, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
+> This patch adds both normal PM suspend/resume support and runtime PM
+> support to pl330 DMA engine driver.
+>
+> The runtime power management for pl330 DMA driver allows gating of AMBA
+> clock (PDMA) in FSYS clock domain, when the device is not processing any
+> requests. This is necessary to enter low power modes on Exynos SoCs
+> (e.g. LPA on Exynos4x12 or W-AFTR on Exynos3250).
+>
+> Runtime PM resuming of the device may happen in atomic context (during
+> call device_issue_pending()) so pm_runtime_irq_safe() is used. This will
+> lead only to disabling/enabling of the clock but this is sufficient for
+> gating the clock and for reducing energy usage.
+>
+> During system sleep the AMBA bus clock is also unprepared.
+>
+> Suggested-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-Signed-off-by: Kelvin Cheung <keguang.zhang@gmail.com>
----
- drivers/cpufreq/Kconfig        |  10 ++
- drivers/cpufreq/Makefile       |   1 +
- drivers/cpufreq/ls1x-cpufreq.c | 233 +++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 244 insertions(+)
- create mode 100644 drivers/cpufreq/ls1x-cpufreq.c
+Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
 
-diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
-index ffe350f..99464d7 100644
---- a/drivers/cpufreq/Kconfig
-+++ b/drivers/cpufreq/Kconfig
-@@ -250,6 +250,16 @@ config LOONGSON2_CPUFREQ
- 
- 	  If in doubt, say N.
- 
-+config LOONGSON1_CPUFREQ
-+	tristate "Loongson1 CPUFreq Driver"
-+	help
-+	  This option adds a CPUFreq driver for loongson1 processors which
-+	  support software configurable cpu frequency.
-+
-+	  For details, take a look at <file:Documentation/cpu-freq/>.
-+
-+	  If in doubt, say N.
-+
- endmenu
- 
- menu "PowerPC CPU frequency scaling drivers"
-diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
-index db6d9a2..aca7bd3 100644
---- a/drivers/cpufreq/Makefile
-+++ b/drivers/cpufreq/Makefile
-@@ -98,6 +98,7 @@ obj-$(CONFIG_CRIS_MACH_ARTPEC3)		+= cris-artpec3-cpufreq.o
- obj-$(CONFIG_ETRAXFS)			+= cris-etraxfs-cpufreq.o
- obj-$(CONFIG_IA64_ACPI_CPUFREQ)		+= ia64-acpi-cpufreq.o
- obj-$(CONFIG_LOONGSON2_CPUFREQ)		+= loongson2_cpufreq.o
-+obj-$(CONFIG_LOONGSON1_CPUFREQ)		+= ls1x-cpufreq.o
- obj-$(CONFIG_SH_CPU_FREQ)		+= sh-cpufreq.o
- obj-$(CONFIG_SPARC_US2E_CPUFREQ)	+= sparc-us2e-cpufreq.o
- obj-$(CONFIG_SPARC_US3_CPUFREQ)		+= sparc-us3-cpufreq.o
-diff --git a/drivers/cpufreq/ls1x-cpufreq.c b/drivers/cpufreq/ls1x-cpufreq.c
-new file mode 100644
-index 0000000..2655960
---- /dev/null
-+++ b/drivers/cpufreq/ls1x-cpufreq.c
-@@ -0,0 +1,233 @@
-+/*
-+ * CPU Frequency Scaling for Loongson 1 SoC
-+ *
-+ * Copyright (C) 2014 Zhang, Keguang <keguang.zhang@gmail.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/clk-provider.h>
-+#include <linux/cpu.h>
-+#include <linux/cpufreq.h>
-+#include <linux/delay.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+
-+#include <asm/mach-loongson1/cpufreq.h>
-+#include <asm/mach-loongson1/loongson1.h>
-+
-+static struct {
-+	struct device *dev;
-+	struct clk *clk;	/* CPU clk */
-+	struct clk *mux_clk;	/* MUX of CPU clk */
-+	struct clk *pll_clk;	/* PLL clk */
-+	struct clk *osc_clk;	/* OSC clk */
-+	unsigned int max_freq;
-+	unsigned int min_freq;
-+} ls1x_cpufreq;
-+
-+static int ls1x_cpufreq_notifier(struct notifier_block *nb,
-+				 unsigned long val, void *data)
-+{
-+	if (val == CPUFREQ_POSTCHANGE)
-+		current_cpu_data.udelay_val = loops_per_jiffy;
-+
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block ls1x_cpufreq_notifier_block = {
-+	.notifier_call = ls1x_cpufreq_notifier
-+};
-+
-+static int ls1x_cpufreq_target(struct cpufreq_policy *policy,
-+			       unsigned int index)
-+{
-+	unsigned int old_freq, new_freq;
-+
-+	old_freq = policy->cur;
-+	new_freq = policy->freq_table[index].frequency;
-+
-+	/*
-+	 * The procedure of reconfiguring CPU clk is as below.
-+	 *
-+	 *  - Reparent CPU clk to OSC clk
-+	 *  - Reset CPU clock (very important)
-+	 *  - Reconfigure CPU DIV
-+	 *  - Reparent CPU clk back to CPU DIV clk
-+	 */
-+
-+	dev_dbg(ls1x_cpufreq.dev, "%u KHz --> %u KHz\n", old_freq, new_freq);
-+	clk_set_parent(policy->clk, ls1x_cpufreq.osc_clk);
-+	__raw_writel(__raw_readl(LS1X_CLK_PLL_DIV) | RST_CPU_EN | RST_CPU,
-+		     LS1X_CLK_PLL_DIV);
-+	__raw_writel(__raw_readl(LS1X_CLK_PLL_DIV) & ~(RST_CPU_EN | RST_CPU),
-+		     LS1X_CLK_PLL_DIV);
-+	clk_set_rate(ls1x_cpufreq.mux_clk, new_freq * 1000);
-+	clk_set_parent(policy->clk, ls1x_cpufreq.mux_clk);
-+
-+	return 0;
-+}
-+
-+static int ls1x_cpufreq_init(struct cpufreq_policy *policy)
-+{
-+	struct cpufreq_frequency_table *freq_tbl;
-+	unsigned int pll_freq, freq;
-+	int steps, i, ret;
-+
-+	pll_freq = clk_get_rate(ls1x_cpufreq.pll_clk) / 1000;
-+
-+	steps = 1 << DIV_CPU_WIDTH;
-+	freq_tbl = kzalloc(sizeof(*freq_tbl) * steps, GFP_KERNEL);
-+	if (!freq_tbl) {
-+		dev_err(ls1x_cpufreq.dev,
-+			"failed to alloc cpufreq_frequency_table\n");
-+		ret = -ENOMEM;
-+		goto out;
-+	}
-+
-+	for (i = 0; i < (steps - 1); i++) {
-+		freq = pll_freq / (i + 1);
-+		if ((freq < ls1x_cpufreq.min_freq) ||
-+		    (freq > ls1x_cpufreq.max_freq))
-+			freq_tbl[i].frequency = CPUFREQ_ENTRY_INVALID;
-+		else
-+			freq_tbl[i].frequency = freq;
-+		dev_dbg(ls1x_cpufreq.dev,
-+			"cpufreq table: index %d: frequency %d\n", i,
-+			freq_tbl[i].frequency);
-+	}
-+	freq_tbl[i].frequency = CPUFREQ_TABLE_END;
-+
-+	policy->clk = ls1x_cpufreq.clk;
-+	ret = cpufreq_generic_init(policy, freq_tbl, 0);
-+	if (ret)
-+		kfree(freq_tbl);
-+out:
-+	return ret;
-+}
-+
-+static int ls1x_cpufreq_exit(struct cpufreq_policy *policy)
-+{
-+	kfree(policy->freq_table);
-+	return 0;
-+}
-+
-+static struct cpufreq_driver ls1x_cpufreq_driver = {
-+	.name		= "cpufreq-ls1x",
-+	.flags		= CPUFREQ_STICKY | CPUFREQ_NEED_INITIAL_FREQ_CHECK,
-+	.verify		= cpufreq_generic_frequency_table_verify,
-+	.target_index	= ls1x_cpufreq_target,
-+	.get		= cpufreq_generic_get,
-+	.init		= ls1x_cpufreq_init,
-+	.exit		= ls1x_cpufreq_exit,
-+	.attr		= cpufreq_generic_attr,
-+};
-+
-+static int ls1x_cpufreq_remove(struct platform_device *pdev)
-+{
-+	cpufreq_unregister_notifier(&ls1x_cpufreq_notifier_block,
-+				    CPUFREQ_TRANSITION_NOTIFIER);
-+	cpufreq_unregister_driver(&ls1x_cpufreq_driver);
-+	clk_put(ls1x_cpufreq.osc_clk);
-+	clk_put(ls1x_cpufreq.clk);
-+
-+	return 0;
-+}
-+
-+static int ls1x_cpufreq_probe(struct platform_device *pdev)
-+{
-+	struct plat_ls1x_cpufreq *pdata = pdev->dev.platform_data;
-+	struct clk *clk;
-+	int ret;
-+
-+	if (!pdata)
-+		return -EINVAL;
-+	if (!pdata->clk_name)
-+		return -EINVAL;
-+	if (!pdata->osc_clk_name)
-+		return -EINVAL;
-+
-+	ls1x_cpufreq.dev = &pdev->dev;
-+
-+	clk = clk_get(NULL, pdata->clk_name);
-+	if (IS_ERR(clk)) {
-+		dev_err(ls1x_cpufreq.dev, "unable to get %s clock\n",
-+			pdata->clk_name);
-+		ret = PTR_ERR(clk);
-+		goto out;
-+	}
-+	ls1x_cpufreq.clk = clk;
-+
-+	clk = clk_get_parent(clk);
-+	if (IS_ERR(clk)) {
-+		dev_err(ls1x_cpufreq.dev, "unable to get parent of %s clock\n",
-+			__clk_get_name(ls1x_cpufreq.clk));
-+		ret = PTR_ERR(clk);
-+		goto err_mux;
-+	}
-+	ls1x_cpufreq.mux_clk = clk;
-+
-+	clk = clk_get_parent(clk);
-+	if (IS_ERR(clk)) {
-+		dev_err(ls1x_cpufreq.dev, "unable to get parent of %s clock\n",
-+			__clk_get_name(ls1x_cpufreq.mux_clk));
-+		ret = PTR_ERR(clk);
-+		goto err_mux;
-+	}
-+	ls1x_cpufreq.pll_clk = clk;
-+
-+	clk = clk_get(NULL, pdata->osc_clk_name);
-+	if (IS_ERR(clk)) {
-+		dev_err(ls1x_cpufreq.dev, "unable to get %s clock\n",
-+			pdata->osc_clk_name);
-+		ret = PTR_ERR(clk);
-+		goto err_mux;
-+	}
-+	ls1x_cpufreq.osc_clk = clk;
-+
-+	ls1x_cpufreq.max_freq = pdata->max_freq;
-+	ls1x_cpufreq.min_freq = pdata->min_freq;
-+
-+	ret = cpufreq_register_driver(&ls1x_cpufreq_driver);
-+	if (ret) {
-+		dev_err(ls1x_cpufreq.dev,
-+			"failed to register cpufreq driver: %d\n", ret);
-+		goto err_driver;
-+	}
-+
-+	ret = cpufreq_register_notifier(&ls1x_cpufreq_notifier_block,
-+					CPUFREQ_TRANSITION_NOTIFIER);
-+
-+	if (!ret)
-+		goto out;
-+
-+	dev_err(ls1x_cpufreq.dev, "failed to register cpufreq notifier: %d\n",
-+		ret);
-+
-+	cpufreq_unregister_driver(&ls1x_cpufreq_driver);
-+err_driver:
-+	clk_put(ls1x_cpufreq.osc_clk);
-+err_mux:
-+	clk_put(ls1x_cpufreq.clk);
-+out:
-+	return ret;
-+}
-+
-+static struct platform_driver ls1x_cpufreq_platdrv = {
-+	.driver = {
-+		.name	= "ls1x-cpufreq",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= ls1x_cpufreq_probe,
-+	.remove		= ls1x_cpufreq_remove,
-+};
-+
-+module_platform_driver(ls1x_cpufreq_platdrv);
-+
-+MODULE_AUTHOR("Kelvin Cheung <keguang.zhang@gmail.com>");
-+MODULE_DESCRIPTION("Loongson 1 CPUFreq driver");
-+MODULE_LICENSE("GPL");
--- 
-1.9.1
+Kind regards
+Uffe
 
+> ---
+>  drivers/dma/pl330.c | 94 ++++++++++++++++++++++++++++++++++++++++++++++++++---
+>  1 file changed, 90 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+> index 4839bfa74a10..b123431e62ed 100644
+> --- a/drivers/dma/pl330.c
+> +++ b/drivers/dma/pl330.c
+> @@ -27,6 +27,7 @@
+>  #include <linux/of.h>
+>  #include <linux/of_dma.h>
+>  #include <linux/err.h>
+> +#include <linux/pm_runtime.h>
+>
+>  #include "dmaengine.h"
+>  #define PL330_MAX_CHAN         8
+> @@ -265,6 +266,9 @@ static unsigned cmd_line;
+>
+>  #define NR_DEFAULT_DESC        16
+>
+> +/* Delay for runtime PM autosuspend, ms */
+> +#define PL330_AUTOSUSPEND_DELAY 20
+> +
+>  /* Populated by the PL330 core driver for DMA API driver's info */
+>  struct pl330_config {
+>         u32     periph_id;
+> @@ -1958,6 +1962,7 @@ static void pl330_tasklet(unsigned long data)
+>         struct dma_pl330_chan *pch = (struct dma_pl330_chan *)data;
+>         struct dma_pl330_desc *desc, *_dt;
+>         unsigned long flags;
+> +       bool power_down = false;
+>
+>         spin_lock_irqsave(&pch->lock, flags);
+>
+> @@ -1972,10 +1977,17 @@ static void pl330_tasklet(unsigned long data)
+>         /* Try to submit a req imm. next to the last completed cookie */
+>         fill_queue(pch);
+>
+> -       /* Make sure the PL330 Channel thread is active */
+> -       spin_lock(&pch->thread->dmac->lock);
+> -       _start(pch->thread);
+> -       spin_unlock(&pch->thread->dmac->lock);
+> +       if (list_empty(&pch->work_list)) {
+> +               spin_lock(&pch->thread->dmac->lock);
+> +               _stop(pch->thread);
+> +               spin_unlock(&pch->thread->dmac->lock);
+> +               power_down = true;
+> +       } else {
+> +               /* Make sure the PL330 Channel thread is active */
+> +               spin_lock(&pch->thread->dmac->lock);
+> +               _start(pch->thread);
+> +               spin_unlock(&pch->thread->dmac->lock);
+> +       }
+>
+>         while (!list_empty(&pch->completed_list)) {
+>                 dma_async_tx_callback callback;
+> @@ -1990,6 +2002,12 @@ static void pl330_tasklet(unsigned long data)
+>                 if (pch->cyclic) {
+>                         desc->status = PREP;
+>                         list_move_tail(&desc->node, &pch->work_list);
+> +                       if (power_down) {
+> +                               spin_lock(&pch->thread->dmac->lock);
+> +                               _start(pch->thread);
+> +                               spin_unlock(&pch->thread->dmac->lock);
+> +                               power_down = false;
+> +                       }
+>                 } else {
+>                         desc->status = FREE;
+>                         list_move_tail(&desc->node, &pch->dmac->desc_pool);
+> @@ -2004,6 +2022,12 @@ static void pl330_tasklet(unsigned long data)
+>                 }
+>         }
+>         spin_unlock_irqrestore(&pch->lock, flags);
+> +
+> +       /* If work list empty, power down */
+> +       if (power_down) {
+> +               pm_runtime_mark_last_busy(pch->dmac->ddma.dev);
+> +               pm_runtime_put_autosuspend(pch->dmac->ddma.dev);
+> +       }
+>  }
+>
+>  bool pl330_filter(struct dma_chan *chan, void *param)
+> @@ -2073,6 +2097,7 @@ static int pl330_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd, unsigned
+>
+>         switch (cmd) {
+>         case DMA_TERMINATE_ALL:
+> +               pm_runtime_get_sync(pl330->ddma.dev);
+>                 spin_lock_irqsave(&pch->lock, flags);
+>
+>                 spin_lock(&pl330->lock);
+> @@ -2099,10 +2124,15 @@ static int pl330_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd, unsigned
+>                         dma_cookie_complete(&desc->txd);
+>                 }
+>
+> +               if (!list_empty(&pch->work_list))
+> +                       pm_runtime_put(pl330->ddma.dev);
+> +
+>                 list_splice_tail_init(&pch->submitted_list, &pl330->desc_pool);
+>                 list_splice_tail_init(&pch->work_list, &pl330->desc_pool);
+>                 list_splice_tail_init(&pch->completed_list, &pl330->desc_pool);
+>                 spin_unlock_irqrestore(&pch->lock, flags);
+> +               pm_runtime_mark_last_busy(pl330->ddma.dev);
+> +               pm_runtime_put_autosuspend(pl330->ddma.dev);
+>                 break;
+>         case DMA_SLAVE_CONFIG:
+>                 slave_config = (struct dma_slave_config *)arg;
+> @@ -2138,6 +2168,7 @@ static void pl330_free_chan_resources(struct dma_chan *chan)
+>
+>         tasklet_kill(&pch->task);
+>
+> +       pm_runtime_get_sync(pch->dmac->ddma.dev);
+>         spin_lock_irqsave(&pch->lock, flags);
+>
+>         pl330_release_channel(pch->thread);
+> @@ -2147,6 +2178,8 @@ static void pl330_free_chan_resources(struct dma_chan *chan)
+>                 list_splice_tail_init(&pch->work_list, &pch->dmac->desc_pool);
+>
+>         spin_unlock_irqrestore(&pch->lock, flags);
+> +       pm_runtime_mark_last_busy(pch->dmac->ddma.dev);
+> +       pm_runtime_put_autosuspend(pch->dmac->ddma.dev);
+>  }
+>
+>  static enum dma_status
+> @@ -2162,6 +2195,15 @@ static void pl330_issue_pending(struct dma_chan *chan)
+>         unsigned long flags;
+>
+>         spin_lock_irqsave(&pch->lock, flags);
+> +       if (list_empty(&pch->work_list)) {
+> +               /*
+> +                * Warn on nothing pending. Empty submitted_list may
+> +                * break our pm_runtime usage counter as it is
+> +                * updated on work_list emptiness status.
+> +                */
+> +               WARN_ON(list_empty(&pch->submitted_list));
+> +               pm_runtime_get_sync(pch->dmac->ddma.dev);
+> +       }
+>         list_splice_tail_init(&pch->submitted_list, &pch->work_list);
+>         spin_unlock_irqrestore(&pch->lock, flags);
+>
+> @@ -2585,6 +2627,41 @@ static int pl330_dma_device_slave_caps(struct dma_chan *dchan,
+>         return 0;
+>  }
+>
+> +/*
+> + * Assume that IRQ safe runtime PM is chosen in probe and amba bus driver
+> + * will only disable/enable the clock in runtime PM suspend/resume.
+> + */
+> +static int __maybe_unused pl330_suspend(struct device *dev)
+> +{
+> +       struct amba_device *pcdev = to_amba_device(dev);
+> +       int ret;
+> +
+> +       ret = pm_runtime_force_suspend(dev);
+> +       if (ret)
+> +               return ret;
+> +
+> +       amba_pclk_unprepare(pcdev);
+> +
+> +       return 0;
+> +}
+> +
+> +static int __maybe_unused pl330_resume(struct device *dev)
+> +{
+> +       struct amba_device *pcdev = to_amba_device(dev);
+> +
+> +       amba_pclk_prepare(pcdev);
+> +
+> +       /*
+> +        * TODO: Idea for future. The device should not be woken up after
+> +        * system resume if it is not needed. It could stay runtime suspended
+> +        * waiting for DMA requests. However for safe suspend and resume we
+> +        * forcibly resume the device here.
+> +        */
+> +       return pm_runtime_force_resume(dev);
+> +}
+> +
+> +static SIMPLE_DEV_PM_OPS(pl330_pm, pl330_suspend, pl330_resume);
+> +
+>  static int
+>  pl330_probe(struct amba_device *adev, const struct amba_id *id)
+>  {
+> @@ -2738,6 +2815,12 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
+>                 pcfg->data_buf_dep, pcfg->data_bus_width / 8, pcfg->num_chan,
+>                 pcfg->num_peri, pcfg->num_events);
+>
+> +       pm_runtime_irq_safe(&adev->dev);
+> +       pm_runtime_use_autosuspend(&adev->dev);
+> +       pm_runtime_set_autosuspend_delay(&adev->dev, PL330_AUTOSUSPEND_DELAY);
+> +       pm_runtime_mark_last_busy(&adev->dev);
+> +       pm_runtime_put_autosuspend(&adev->dev);
+> +
+>         return 0;
+>  probe_err3:
+>         /* Idle the DMAC */
+> @@ -2764,6 +2847,8 @@ static int pl330_remove(struct amba_device *adev)
+>         struct pl330_dmac *pl330 = amba_get_drvdata(adev);
+>         struct dma_pl330_chan *pch, *_p;
+>
+> +       pm_runtime_get_noresume(pl330->ddma.dev);
+> +
+>         if (adev->dev.of_node)
+>                 of_dma_controller_free(adev->dev.of_node);
+>
+> @@ -2802,6 +2887,7 @@ static struct amba_driver pl330_driver = {
+>         .drv = {
+>                 .owner = THIS_MODULE,
+>                 .name = "dma-pl330",
+> +               .pm = &pl330_pm,
+>         },
+>         .id_table = pl330_ids,
+>         .probe = pl330_probe,
+> --
+> 1.9.1
+>
