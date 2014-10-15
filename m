@@ -1,132 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752423AbaJOUy7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 16:54:59 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:33843 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752398AbaJOUy5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 16:54:57 -0400
-Message-ID: <543EDF19.2070400@collabora.co.uk>
-Date: Wed, 15 Oct 2014 22:54:49 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
-MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: Kukjin Kim <kgene.kim@samsung.com>, Mark Brown <broonie@kernel.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] ARM: EXYNOS: Call regulator core suspend prepare
- and finish functions
-References: <1413374496-27866-1-git-send-email-javier.martinez@collabora.co.uk> <CAD=FV=VT9RBitk5NoMKBRm=RVoNC4roLFEBLpd_L7Fuvxvs9SQ@mail.gmail.com>
-In-Reply-To: <CAD=FV=VT9RBitk5NoMKBRm=RVoNC4roLFEBLpd_L7Fuvxvs9SQ@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1752368AbaJOU4T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 16:56:19 -0400
+Received: from mail.kernel.org ([198.145.19.201]:35473 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752082AbaJOUx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 16:53:26 -0400
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Kan Liang <kan.liang@intel.com>,
+        Andi Kleen <ak@linux.intel.com>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 06/15] perf tools: Add support to new style format of kernel PMU event
+Date: Wed, 15 Oct 2014 17:52:39 -0300
+Message-Id: <1413406368-26245-7-git-send-email-acme@kernel.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1413406368-26245-1-git-send-email-acme@kernel.org>
+References: <1413406368-26245-1-git-send-email-acme@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Doug,
+From: Kan Liang <kan.liang@intel.com>
 
-Thanks a lot for your feedback.
+Add new rules for kernel PMU event.
 
-On 10/15/2014 06:19 PM, Doug Anderson wrote:
-> Javier,
-> 
-> On Wed, Oct 15, 2014 at 5:01 AM, Javier Martinez Canillas
-> <javier.martinez@collabora.co.uk> wrote:
->> The regulator framework has a set of helpers functions to be used when
->> the system is entering and leaving from suspend but these are not called
->> on Exynos platforms. This means that the .set_suspend_* function handlers
->> defined in regulator drivers are never called when the system is suspended.
->>
->> Suggested-by: Doug Anderson <dianders@chromium.org>
->> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> 
-> Could you also add a patch to your series ripping out the call in
-> "drivers/mfd/sec-core.c" since it doesn't belong there.  If you don't
-> rip that out then it will be called twice on systems with that
-> regulator.
-> 
+Currently, the patch only want to handle the PMU event name as "a-b" and
+"a".
 
-Sure, in fact I thought the same before sending $subject but didn't remove it
-because mfd sec-core only calls regulator_suspend_prepare() but does not call
-regulator_suspend_finish() on resume. So I wondered if $subject would not break
-it anyways since it may change the driver assumption that the regulators .enable
-function won't be called on resume. That's why I added Chanwoo Choi to the cc
-list so he can be aware of this change and give his opinion is on that regard.
+event_pmu:
+PE_KERNEL_PMU_EVENT sep_dc
+|
+PE_PMU_EVENT_PRE '-' PE_PMU_EVENT_SUF sep_dc
 
-I should had commented that on the patch...
+PE_KERNEL_PMU_EVENT token is for
+cycles-ct/cycles-t/mem-loads/mem-stores.
 
-> 
->> ---
->>  arch/arm/mach-exynos/suspend.c | 16 ++++++++++++++++
->>  1 file changed, 16 insertions(+)
->>
->> diff --git a/arch/arm/mach-exynos/suspend.c b/arch/arm/mach-exynos/suspend.c
->> index f5d9773..5b9c551 100644
->> --- a/arch/arm/mach-exynos/suspend.c
->> +++ b/arch/arm/mach-exynos/suspend.c
->> @@ -20,6 +20,7 @@
->>  #include <linux/io.h>
->>  #include <linux/irqchip/arm-gic.h>
->>  #include <linux/err.h>
->> +#include <linux/regulator/machine.h>
->>
->>  #include <asm/cacheflush.h>
->>  #include <asm/hardware/cache-l2x0.h>
->> @@ -270,14 +271,29 @@ static int exynos_suspend_enter(suspend_state_t state)
->>
->>  static int exynos_suspend_prepare(void)
->>  {
->> +       int ret;
->> +
->>         s3c_pm_check_prepare();
->>
->> +       /*
->> +        * REVISIT: It would be better if struct platform_suspend_ops
->> +        * .prepare handler get the suspend_state_t as a parameter to
->> +        * avoid hard-coding the suspend to mem state. It's safe to do
->> +        * it only because the suspend_valid_only_mem function is the
->> +        * .valid callback used to check if a given state is supported
->> +        * by the platform.
->> +        */
->> +       ret = regulator_suspend_prepare(PM_SUSPEND_MEM);
->> +       if (ret)
->> +               pr_info("Failed to prepare regulators for system suspend\n");
->> +
-> 
-> nit: can you put this before s3c_pm_check_prepare().  pm_check is
-> pretty darn broken and I have a feeling that it will eventually be
-> ripped out (or in the very least ported to not be Samsung-specific and
-> include all of the "suspend volatile" crud that we have in the
-> chromeos-3.8 kernel), but might as well try not to break it further.
-> 
-> Changing the order also has the advantage of making prepare / finish
-> opposite orders (good!) and handling the fact that you would call
-> s3c_pm_check_prepare() but not s3c_pm_check_cleanup() if
-> regulator_suspend_prepare() fails.
-> 
+The prefix cycles is mixed up with cpu-cycles.  loads and stores are
+mixed up with cache event So they have to be hardcode in lex.
 
-Good point, I'll change that on v2. I'll wait until tomorrow to see if there
-are more comments and re-post with your suggestions.
+PE_PMU_EVENT_PRE and PE_PMU_EVENT_SUF tokens are for other PMU events.
 
-> 
->>         return 0;
->>  }
->>
->>  static void exynos_suspend_finish(void)
->>  {
->>         s3c_pm_check_cleanup();
->> +       regulator_suspend_finish();
->>  }
->>
->>  static const struct platform_suspend_ops exynos_suspend_ops = {
+The lex looks generic identifier up in the table and return the matched
+token. If there is no match, generic PE_NAME token will be return.
 
-Best regards,
-Javier 
+Using the rules, kernel PMU event could use new style format without //
+
+so you can use:
+
+  perf record -e mem-loads ...
+
+instead of:
+
+  perf record -e cpu/mem-loads/
+
+Signed-off-by: Kan Liang <kan.liang@intel.com>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Link: http://lkml.kernel.org/r/1412694532-23391-4-git-send-email-kan.liang@intel.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/parse-events.l | 30 +++++++++++++++++++++++++++++-
+ tools/perf/util/parse-events.y | 40 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 69 insertions(+), 1 deletion(-)
+
+diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+index 343299575b30..906630bbf8eb 100644
+--- a/tools/perf/util/parse-events.l
++++ b/tools/perf/util/parse-events.l
+@@ -51,6 +51,24 @@ static int str(yyscan_t scanner, int token)
+ 	return token;
+ }
+ 
++static int pmu_str_check(yyscan_t scanner)
++{
++	YYSTYPE *yylval = parse_events_get_lval(scanner);
++	char *text = parse_events_get_text(scanner);
++
++	yylval->str = strdup(text);
++	switch (perf_pmu__parse_check(text)) {
++		case PMU_EVENT_SYMBOL_PREFIX:
++			return PE_PMU_EVENT_PRE;
++		case PMU_EVENT_SYMBOL_SUFFIX:
++			return PE_PMU_EVENT_SUF;
++		case PMU_EVENT_SYMBOL:
++			return PE_KERNEL_PMU_EVENT;
++		default:
++			return PE_NAME;
++	}
++}
++
+ static int sym(yyscan_t scanner, int type, int config)
+ {
+ 	YYSTYPE *yylval = parse_events_get_lval(scanner);
+@@ -178,6 +196,16 @@ alignment-faults				{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_AL
+ emulation-faults				{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS); }
+ dummy						{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_DUMMY); }
+ 
++	/*
++	 * We have to handle the kernel PMU event cycles-ct/cycles-t/mem-loads/mem-stores separately.
++	 * Because the prefix cycles is mixed up with cpu-cycles.
++	 * loads and stores are mixed up with cache event
++	 */
++cycles-ct					{ return str(yyscanner, PE_KERNEL_PMU_EVENT); }
++cycles-t					{ return str(yyscanner, PE_KERNEL_PMU_EVENT); }
++mem-loads					{ return str(yyscanner, PE_KERNEL_PMU_EVENT); }
++mem-stores					{ return str(yyscanner, PE_KERNEL_PMU_EVENT); }
++
+ L1-dcache|l1-d|l1d|L1-data		|
+ L1-icache|l1-i|l1i|L1-instruction	|
+ LLC|L2					|
+@@ -199,7 +227,7 @@ r{num_raw_hex}		{ return raw(yyscanner); }
+ {num_hex}		{ return value(yyscanner, 16); }
+ 
+ {modifier_event}	{ return str(yyscanner, PE_MODIFIER_EVENT); }
+-{name}			{ return str(yyscanner, PE_NAME); }
++{name}			{ return pmu_str_check(yyscanner); }
+ "/"			{ BEGIN(config); return '/'; }
+ -			{ return '-'; }
+ ,			{ BEGIN(event); return ','; }
+diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+index 55fab6ad609a..93c4c9fbc922 100644
+--- a/tools/perf/util/parse-events.y
++++ b/tools/perf/util/parse-events.y
+@@ -47,6 +47,7 @@ static inc_group_count(struct list_head *list,
+ %token PE_NAME_CACHE_TYPE PE_NAME_CACHE_OP_RESULT
+ %token PE_PREFIX_MEM PE_PREFIX_RAW PE_PREFIX_GROUP
+ %token PE_ERROR
++%token PE_PMU_EVENT_PRE PE_PMU_EVENT_SUF PE_KERNEL_PMU_EVENT
+ %type <num> PE_VALUE
+ %type <num> PE_VALUE_SYM_HW
+ %type <num> PE_VALUE_SYM_SW
+@@ -58,6 +59,7 @@ static inc_group_count(struct list_head *list,
+ %type <str> PE_MODIFIER_EVENT
+ %type <str> PE_MODIFIER_BP
+ %type <str> PE_EVENT_NAME
++%type <str> PE_PMU_EVENT_PRE PE_PMU_EVENT_SUF PE_KERNEL_PMU_EVENT
+ %type <num> value_sym
+ %type <head> event_config
+ %type <term> event_term
+@@ -220,6 +222,44 @@ PE_NAME '/' '/'
+ 	ABORT_ON(parse_events_add_pmu(list, &data->idx, $1, NULL));
+ 	$$ = list;
+ }
++|
++PE_KERNEL_PMU_EVENT sep_dc
++{
++	struct parse_events_evlist *data = _data;
++	struct list_head *head;
++	struct parse_events_term *term;
++	struct list_head *list;
++
++	ALLOC_LIST(head);
++	ABORT_ON(parse_events_term__num(&term, PARSE_EVENTS__TERM_TYPE_USER,
++					$1, 1));
++	list_add_tail(&term->list, head);
++
++	ALLOC_LIST(list);
++	ABORT_ON(parse_events_add_pmu(list, &data->idx, "cpu", head));
++	parse_events__free_terms(head);
++	$$ = list;
++}
++|
++PE_PMU_EVENT_PRE '-' PE_PMU_EVENT_SUF sep_dc
++{
++	struct parse_events_evlist *data = _data;
++	struct list_head *head;
++	struct parse_events_term *term;
++	struct list_head *list;
++	char pmu_name[128];
++	snprintf(&pmu_name, 128, "%s-%s", $1, $3);
++
++	ALLOC_LIST(head);
++	ABORT_ON(parse_events_term__num(&term, PARSE_EVENTS__TERM_TYPE_USER,
++					&pmu_name, 1));
++	list_add_tail(&term->list, head);
++
++	ALLOC_LIST(list);
++	ABORT_ON(parse_events_add_pmu(list, &data->idx, "cpu", head));
++	parse_events__free_terms(head);
++	$$ = list;
++}
+ 
+ value_sym:
+ PE_VALUE_SYM_HW
+-- 
+1.9.3
 
