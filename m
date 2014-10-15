@@ -1,77 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752474AbaJOL2F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 07:28:05 -0400
-Received: from mail-by2on0144.outbound.protection.outlook.com ([207.46.100.144]:46673
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752443AbaJOL2D convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 07:28:03 -0400
-From: Thomas Shao <huishao@microsoft.com>
-To: Richard Cochran <richardcochran@gmail.com>
-CC: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        KY Srinivasan <kys@microsoft.com>
-Subject: RE: [PATCH v2 2/2] hyperv: Implement Time Synchronization using
- host time sample
-Thread-Topic: [PATCH v2 2/2] hyperv: Implement Time Synchronization using
- host time sample
-Thread-Index: AQHP6EpV0yTtUPFvLUmVTRuWJYo4nZww4UkAgAAArUCAAAZPAIAAHKPw
-Date: Wed, 15 Oct 2014 11:27:43 +0000
-Message-ID: <CD2CABCB2C0A0D4682C5F8AD840141540C1A46@HKXPRD3002MB006.064d.mgd.msft.net>
-References: <1413362404-16284-1-git-send-email-huishao@microsoft.com>
- <20141015091808.GB5300@localhost.localdomain>
- <CD2CABCB2C0A0D4682C5F8AD840141540C171E@HKXPRD3002MB006.064d.mgd.msft.net>
- <20141015094308.GA5452@localhost.localdomain>
-In-Reply-To: <20141015094308.GA5452@localhost.localdomain>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [141.251.55.4]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752220AbaJOLff (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 07:35:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9108 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751301AbaJOLfd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 07:35:33 -0400
+Date: Wed, 15 Oct 2014 14:38:59 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        davem@davemloft.net, eric.dumazet@gmail.com
+Subject: Re: [RFC PATCH net-next 1/6] virtio: make sure used event never go
+ backwards
+Message-ID: <20141015113859.GA26918@redhat.com>
+References: <1413357930-45302-1-git-send-email-jasowang@redhat.com>
+ <1413357930-45302-2-git-send-email-jasowang@redhat.com>
+ <20141015093432.GB25776@redhat.com>
+ <543E48BF.4080502@redhat.com>
+ <20141015103232.GG25776@redhat.com>
+ <543E5019.9020507@redhat.com>
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(438002)(164054003)(189002)(24454002)(377454003)(13464003)(51704005)(199003)(52604005)(81156004)(106466001)(64706001)(66066001)(26826002)(46102003)(80022003)(106116001)(47776003)(20776003)(86146001)(23726002)(31966008)(16796002)(68736004)(76482002)(33656002)(107046002)(110136001)(77096002)(93886004)(85306004)(120916001)(95666004)(1411001)(6806004)(21056001)(86612001)(99396003)(4396001)(85852003)(44976005)(84676001)(92566001)(97736003)(46406003)(87936001)(92726001)(86362001)(50466002)(50986999)(2656002)(19580405001)(19580395003)(55846006)(69596002)(76176999)(54356999)(97756001);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB1212;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1212;
-X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
-X-Forefront-PRVS: 0365C0E14B
-Authentication-Results: spf=pass (sender IP is 131.107.125.37)
- smtp.mailfrom=huishao@microsoft.com; 
-X-OriginatorOrg: microsoft.onmicrosoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <543E5019.9020507@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> -----Original Message-----
-> From: Richard Cochran [mailto:richardcochran@gmail.com]
-> Sent: Wednesday, October 15, 2014 5:43 PM
-> To: Thomas Shao
-> Cc: tglx@linutronix.de; gregkh@linuxfoundation.org; linux-
-> kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
-> apw@canonical.com; jasowang@redhat.com; KY Srinivasan
-> Subject: Re: [PATCH v2 2/2] hyperv: Implement Time Synchronization using
-> host time sample
+On Wed, Oct 15, 2014 at 06:44:41PM +0800, Jason Wang wrote:
+> On 10/15/2014 06:32 PM, Michael S. Tsirkin wrote:
+> > On Wed, Oct 15, 2014 at 06:13:19PM +0800, Jason Wang wrote:
+> >> On 10/15/2014 05:34 PM, Michael S. Tsirkin wrote:
+> >>> On Wed, Oct 15, 2014 at 03:25:25PM +0800, Jason Wang wrote:
+> >>>> This patch checks the new event idx to make sure used event idx never
+> >>>> goes back. This is used to synchronize the calls between
+> >>>> virtqueue_enable_cb_delayed() and virtqueue_enable_cb().
+> >>>>
+> >>>> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> >>>> Cc: Michael S. Tsirkin <mst@redhat.com>
+> >>>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> >>> the implication being that moving event idx back might cause some race
+> >>> condition?  
+> >> This will cause race condition when tx interrupt is enabled. Consider
+> >> the following cases
+> >>
+> >> 1) tx napi was scheduled
+> >> 2) start_xmit() call virtqueue_enable_cb_delayed() and disable cb, [used
+> >> event is vq->last_used_idx + 3/4 pendg bufs]
+> >> 3) tx napi enable the callback by virtqueue_enable_cb() [ used event is
+> >> vq->last_used_idx ]
+> >>  
+> >> After step 3, used event was moved back, unnecessary tx interrupt was
+> >> triggered.
+> > Well unnecessary interrupts are safe.
 > 
-> On Wed, Oct 15, 2014 at 09:21:33AM +0000, Thomas Shao wrote:
+> But it that is what we want to reduce.
+
+It's all about correctness. I don't think mixing enable_cb
+and enable_cb_delayed makes sense, let's just make
+virtio behave correctly if that happens, no need to
+optimize for that.
+
+
+> > With your patch caller of virtqueue_enable_cb will not get an
+> > interrupt on the next buffer which is not safe.
 > >
-> > In V2, I address all the Dan's comments.
+> > If you don't want an interrupt on the next buffer, don't
+> > call virtqueue_enable_cb.
 > 
-> It is customary to detail the changes in each patch series revision, in order to
-> make things easier for the reviewers.
+> So something like this patch should be done in virtio core somewhere
+> else. Virtio-net can not do this since it does not have the knowledge of
+> event index.
+
+Take a look at my patch - no calls to enable_cb, only
+enable_cb_delayed, so we should be fine.
+
+> >
+> >>> If yes but please describe the race explicitly.
+> >>> Is there a bug we need to fix on stable?
+> >> Looks not, current code does not have such race condition.
+> >>> Please also explicitly describe a configuration that causes event idx
+> >>> to go back.
+> >>>
+> >>> All this info should go in the commit log.
+> >> Will do this.
+> >>>> ---
+> >>>>  drivers/virtio/virtio_ring.c |    7 +++++--
+> >>>>  1 files changed, 5 insertions(+), 2 deletions(-)
+> >>>>
+> >>>> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+> >>>> index 3b1f89b..1b3929f 100644
+> >>>> --- a/drivers/virtio/virtio_ring.c
+> >>>> +++ b/drivers/virtio/virtio_ring.c
+> >>>> @@ -559,14 +559,17 @@ unsigned virtqueue_enable_cb_prepare(struct virtqueue *_vq)
+> >>>>  	u16 last_used_idx;
+> >>>>  
+> >>>>  	START_USE(vq);
+> >>>> -
+> >>>> +	last_used_idx = vq->last_used_idx;
+> >>>>  	/* We optimistically turn back on interrupts, then check if there was
+> >>>>  	 * more to do. */
+> >>>>  	/* Depending on the VIRTIO_RING_F_EVENT_IDX feature, we need to
+> >>>>  	 * either clear the flags bit or point the event index at the next
+> >>>>  	 * entry. Always do both to keep code simple. */
+> >>>>  	vq->vring.avail->flags &= ~VRING_AVAIL_F_NO_INTERRUPT;
+> >>>> -	vring_used_event(&vq->vring) = last_used_idx = vq->last_used_idx;
+> >>>> +	/* Make sure used event never go backwards */
+> >>> s/go/goes/
+> >>>
+> >>>> +	if (!vring_need_event(vring_used_event(&vq->vring),
+> >>>> +			      vq->vring.avail->idx, last_used_idx))
+> >>>> +		vring_used_event(&vq->vring) = last_used_idx;
+> >>> The result will be that driver will *not* get an interrupt
+> >>> on the next consumed buffer, which is likely not what driver
+> >>> intended when it called virtqueue_enable_cb.
+> >> This will only happen when we want to delay the interrupt for next few
+> >> consumed buffers (virtqueue_enable_cb_delayed() was called). For the
+> >> other case, vq->last_used_idx should be ahead of previous used event. Do
+> >> you see any other case?
+> > Call virtqueue_enable_cb_delayed, later call virtqueue_enable_cb.  If
+> > event index is not updated in virtqueue_enable_cb, driver will not get
+> > an interrupt on the next buffer.
 > 
+> This is just what we want I think. The interrupt was not lost but fired
+> after 3/4 pending buffers were consumed. Do you see any real issue on this?
 
-OK. Thanks for pointing that out, Richard.
+Yes, this violates the API. For example device might never
+consume the rest of buffers.
 
-> Thanks,
-> Richard
+
+> >
+> >>> Instead, how about we simply document the requirement that drivers either
+> >>> always call virtqueue_enable_cb_delayed or virtqueue_enable_cb
+> >>> but not both?
+> >> We need call them both when tx interrupt is enabled I believe.
+> > Can you pls reply to my patch and document issues you see?
+> >
+> 
+> In the previous reply you said you're using
+> virtuqueue_enable_cb_delayed(), so no race in your patch.
+
+OK so you think my patch is also correct, but that yours gives better
+efficiency?
+
+-- 
+MST
