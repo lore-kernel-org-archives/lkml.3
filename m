@@ -1,100 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751429AbaJOUBJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 16:01:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36294 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721AbaJOUBI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 16:01:08 -0400
-Date: Wed, 15 Oct 2014 13:01:02 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] checkpatch: Add error on use of attribute((weak))
- or __weak
-Message-Id: <20141015130102.43f322c4db1ed1bf736e97f1@linux-foundation.org>
-In-Reply-To: <1413402764.7484.10.camel@perches.com>
-References: <cover.1413400022.git.joe@perches.com>
-	<4391d882bb26278110d07b9a5e23ec44f5f8328a.1413400022.git.joe@perches.com>
-	<20141015124225.01a4cad19c4f3a198efc996e@linux-foundation.org>
-	<1413402348.7484.8.camel@perches.com>
-	<20141015125000.44353284288395e216659953@linux-foundation.org>
-	<1413402764.7484.10.camel@perches.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751666AbaJOUDv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 16:03:51 -0400
+Received: from mga11.intel.com ([192.55.52.93]:40678 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750792AbaJOUDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 16:03:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="400857882"
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: wsa@the-dreams.de
+Cc: linux@roeck-us.net, johan@kernel.org, linux-i2c@vger.kernel.org,
+        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Octavian Purdila <octavian.purdila@intel.com>
+Subject: [PATH v3 0/4] i2c: show and change bus frequency via sysfs
+Date: Wed, 15 Oct 2014 23:03:27 +0300
+Message-Id: <1413403411-8895-1-git-send-email-octavian.purdila@intel.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Oct 2014 12:52:44 -0700 Joe Perches <joe@perches.com> wrote:
+This patch series adds support to show and change the bus frequency
+via sysfs, by exposing files to show the minimum, maximum and current
+frequency as well as allowing the frequency to be changed. This allows
+the user to view or change the bus frequency on a per bus level.
 
-> On Wed, 2014-10-15 at 12:50 -0700, Andrew Morton wrote:
-> > On Wed, 15 Oct 2014 12:45:48 -0700 Joe Perches <joe@perches.com> wrote:
-> > 
-> > > On Wed, 2014-10-15 at 12:42 -0700, Andrew Morton wrote:
-> > > > On Wed, 15 Oct 2014 12:32:08 -0700 Joe Perches <joe@perches.com> wrote:
-> > > > 
-> > > > > Using weak can have unintended link defects.
-> > > > > Emit an error on its use.
-> > > > 
-> > > > Well, we don't want a warning about use of __weak in function
-> > > > definitions.  Only in declarations.
-> > > 
-> > > Why is that?
-> > 
-> > Because the problem we're trying to detect is when __weak is used on a
-> > declaration.
-> > 
-> > This is OK:
-> > 
-> > foo.h:
-> > extern int foo(void);
-> > foo.c:
-> > int __weak foo(void)
-> > {
-> > 	...
-> > }
-> > 
-> > But this is not OK:
-> > 
-> > foo.h:
-> > extern __weak int foo(void);
-> > foo.c:
-> > int __weak foo(void)
-> > {
-> > 	...
-> > }
-> > 
-> 
-> And this?
-> 
-> foo.c:
-> 
-> extern __weak int foo(void);
-> 
-> int __weak foo(void)
-> {
-> }
-> 
+Changes since v3:
 
-That's why I just said "And this bit maybe is checking for use in a
-header file, which is not as good as checking for a declaration but is
-probably good enough."
+ * use DEVICE_ATTR_RO and make i2c_adapter_visible_attr static
+ 
+ * implement sysfs bus frequency support for the diolan u2c bus
 
-I don't think that would trigger the bug anyway.  The problem is that
+Octavian Purdila (4):
+  i2c: document the existing i2c sysfs ABI
+  i2c: document struct i2c_adapter
+  i2c: show and change bus frequency via sysfs
+  i2c: i2c-diolan-u2c: sysfs bus frequency support
 
-extern __weak int foo(void);
+ Documentation/ABI/testing/sysfs-bus-i2c | 75 +++++++++++++++++++++++++++
+ drivers/i2c/busses/i2c-diolan-u2c.c     | 49 ++++++++++++------
+ drivers/i2c/i2c-core.c                  | 90 +++++++++++++++++++++++++++++++++
+ include/linux/i2c.h                     | 32 ++++++++++--
+ 4 files changed, 228 insertions(+), 18 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-bus-i2c
 
-int foo(void)
-{
-}
-
-unexpectedly and undesirably turns foo() into __weak.
-
-I think it would be sufficient to check for __weak in a declaration. 
-If that isn't practical then checking for __weak in a .h file should
-suffice.
+-- 
+1.9.1
 
