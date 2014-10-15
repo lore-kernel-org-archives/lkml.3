@@ -1,72 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947AbaJOJOz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 05:14:55 -0400
-Received: from mta-out1.inet.fi ([62.71.2.197]:46741 "EHLO kirsi1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751916AbaJOJOy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 05:14:54 -0400
-Date: Wed, 15 Oct 2014 12:14:39 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Yu Zhao <yuzhao@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Hugh Dickins <hughd@google.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Bob Liu <lliubbo@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        David Rientjes <rientjes@google.com>, Vlastimil Babka <vbabka@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] mm: verify compound order when freeing a page
-Message-ID: <20141015091439.GC12538@node.dhcp.inet.fi>
-References: <1413317800-25450-1-git-send-email-yuzhao@google.com>
- <1413317800-25450-2-git-send-email-yuzhao@google.com>
+	id S1751967AbaJOJSL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 05:18:11 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:33589 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464AbaJOJSJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 05:18:09 -0400
+Date: Wed, 15 Oct 2014 14:47:57 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "balbi@ti.com" <balbi@ti.com>
+Subject: Re: [PATCH] usb: dwc2: gadget: sparse warning of context imbalance
+Message-ID: <20141015091757.GA3575@sudip-PC>
+References: <1412946579-6805-1-git-send-email-sudipm.mukherjee@gmail.com>
+ <A2CA0424C0A6F04399FB9E1CD98E0304844E225E@US01WEMBX2.internal.synopsys.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1413317800-25450-2-git-send-email-yuzhao@google.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E0304844E225E@US01WEMBX2.internal.synopsys.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 14, 2014 at 01:16:40PM -0700, Yu Zhao wrote:
-> This allows us to easily catch the bug fixed in previous patch.
+On Tue, Oct 14, 2014 at 08:55:55PM +0000, Paul Zimmerman wrote:
+> > From: Sudip Mukherjee [mailto:sudipm.mukherjee@gmail.com]
+> > Sent: Friday, October 10, 2014 6:10 AM
+> > 
+> > sparse was giving the following warning:
+> > 	warning: context imbalance in 's3c_hsotg_ep_enable'
+> > 	- different lock contexts for basic block
+> > 
+> > we were returning ENOMEM while still holding the spinlock.
+> > The sparse warning was fixed by releasing the spinlock before return.
+> > 
+> > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+> > ---
+> >  drivers/usb/dwc2/gadget.c | 4 +++-
+> >  1 file changed, 3 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
+> > index 7b5856f..046e90d 100644
+> > --- a/drivers/usb/dwc2/gadget.c
+> > +++ b/drivers/usb/dwc2/gadget.c
+> > @@ -2561,8 +2561,10 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
+> >  			hs_ep->fifo_size = val;
+> >  			break;
+> >  		}
+> > -		if (i == 8)
+> > +		if (i == 8) {
+> > +			spin_unlock_irqrestore(&hsotg->lock, flags);
+> >  			return -ENOMEM;
+> > +		}
+> >  	}
+> > 
+> >  	/* for non control endpoints, set PID to D0 */
 > 
-> Here we also verify whether a page is tail page or not -- tail
-> pages are supposed to be freed along with their head, not by
-> themselves.
+> For a long function like this, I'd rather keep a single return point at
+> the end. Something like this:
 > 
-> Signed-off-by: Yu Zhao <yuzhao@google.com>
-> ---
->  mm/page_alloc.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 736d8e1..2bcc770 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -750,6 +750,9 @@ static bool free_pages_prepare(struct page *page, unsigned int order)
->  	int i;
->  	int bad = 0;
+>  		}
+> -		if (i == 8)
+> -			return -ENOMEM;
+> +		if (i == 8) {
+> +			ret = -ENOMEM;
+> +			goto out;
+> +		}
+>  	}
+> ...
 >  
-> +	VM_BUG_ON(PageTail(page));
-> +	VM_BUG_ON(PageHead(page) && compound_order(page) != order);
-> +
+> +out:
+>  	spin_unlock_irqrestore(&hsotg->lock, flags);
+>  	return ret;
+>  }
+> 
+> Care to respin the patch like that?
+> 
+sure , modified patch will be in your inbox in a short time. 
 
-Use VM_BUG_ON_PAGE(), please.
-
->  	trace_mm_page_free(page, order);
->  	kmemcheck_free_shadow(page, order);
->  
+thanks
+sudip
 > -- 
-> 2.1.0.rc2.206.gedb03e5
+> Paul
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
- Kirill A. Shutemov
