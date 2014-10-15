@@ -1,57 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752076AbaJOW3k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 18:29:40 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:35177 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751188AbaJOW3j (ORCPT
+	id S1752103AbaJOWai (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 18:30:38 -0400
+Received: from achernar.gro-tsen.net ([195.154.91.68]:33151 "EHLO
+	achernar.gro-tsen.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750721AbaJOWag (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 18:29:39 -0400
-Date: Wed, 15 Oct 2014 23:29:32 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Linux PCI <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH RFC 2/2] arm: kernel: fix pci_mmap_page_range() offset
- calculation
-Message-ID: <20141015222932.GL27405@n2100.arm.linux.org.uk>
-References: <1413374624-30066-1-git-send-email-lorenzo.pieralisi@arm.com>
- <1413374624-30066-2-git-send-email-lorenzo.pieralisi@arm.com>
+	Wed, 15 Oct 2014 18:30:36 -0400
+Date: Thu, 16 Oct 2014 00:30:33 +0200
+From: David Madore <david+ml@madore.org>
+To: Linux Kernel mailing-list <linux-kernel@vger.kernel.org>,
+        Linux network mailing-list <netdev@vger.kernel.org>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Subject: Re: feature suggestion: implement SO_PEERCRED on local
+ AF_INET/AF_INET6 sockets (allow uid-based identification on localhost)
+Message-ID: <20141015223033.GA11458@achernar.madore.org>
+References: <20141015133518.GA7179@achernar.madore.org>
+ <543E87AC.5090402@amacapital.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1413374624-30066-2-git-send-email-lorenzo.pieralisi@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <543E87AC.5090402@amacapital.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 01:03:41PM +0100, Lorenzo Pieralisi wrote:
-> ARM relies on the standard implementation of pci_resource_to_user()
-> which actually is an identity map and exports to user space
-> PCI memory resources as they are stored in PCI devices resources (ie BARs)
-> which represent CPU physical addresses (fixed-up using BUS to CPU
-> address conversions) not PCI bus addresses.
+On Wed, Oct 15, 2014 at 07:41:48AM -0700, Andy Lutomirski wrote:
+> On 10/15/2014 06:35 AM, David Madore wrote:
+> > Given an AF_UNIX socket, the getsockopt(, SOL_SOCKET, SO_PEERCRED,,)
+> > call allows one endpoint to authenticate the other endpoint's pid, uid
+> > and gid.
+> > 
+> > The call is valid on AF_INET and AF_INET6 sockets but returns no data
+> > (pid=0, uid=-1, gid=-1).  Obviously it is meaningless to try to get
+> > such credentials from a INET/INET6 socket in general, but there is one
+> > case where it would make sense: namely, when the endpoint is local
+> > (i.e., when the socket is a connection to the same machine, e.g., when
+> > connecting to 127.0.0.0/8 or ::1/32).
+> 
+> I will object to adding it as described, for the same reason that I
+> object to anything that extends the current model of socket-based
+> credential passing.  Ideally, credentials would *never* be implicitly
+> captured by socket syscalls.  We live in the real world, and SO_****CRED
+> exists, so I think the best we can do is to try to minimize its use.
+> 
+> I can elaborate further, or you can IIRC search the archives for
+> SCM_IDENTITY, and you can also look at CVE-2013-1979 for a nasty example
+> of why this model is broken.
 
-This paragraph seems wrong.
+>From what I understand, what was broken is mainly that the credentials
+were evaluated when the write() system call took place rather than
+when socket() or bind(): this violates the Unix security model
+(privilege control occurs when the file descriptor is created, not
+when it is used).  On the contrary, it is conform to Unix security
+principles that credentials are checked implicitly when binding a
+socket (this happens when permissions are being checked on the path
+when binding or connecting on a Unix domain socket; and to allow
+binding to secure ports in the INET domain; and so on).  It seems to
+me that a suid program that is willing to create or bind a socket on
+behalf of its caller without knowing exactly what it will be
+connecting to, it should intrinsically be treated as a security
+vulnerability, even when it is not obviously exploitable.
 
-It first says that PCI memory resources contain the same values that the
-PCI device has in its BAR.  It then goes on to say that they are CPU
-physical addresses.  That is not true.
+Also, to go along the real world examples, identd exists and is used
+for identification on local networks (e.g. localhost), so the capture
+of credentials already takes place.  Unix programmers are aware of
+this, and know that a privileged program should not bind a socket if
+they don't want to leak privileges.  (Another example is the use of -m
+owner in iptables.)
 
-For example, DC21285 systems always have done this as: the PCI bars
-contain the _bus_ addresses, which tend to be in the range 0 to
-0x7fffffff.  These correspond with a CPU physical address of
-0x80000000 to 0xffffffff.  The PCI bus resources for IOMEM resources
-contains the CPU physical address of the mapping.
+And, of course, if Solaris already has this feature, there is some
+experience for it.  Has there been any documented vulnerability
+relating to the fact that Solaris allows getpeerucred() to
+authenticate locally connected AF_INET sockets?
 
-> On platforms where the mapping between CPU and BUS address is not a 1:1
-> mapping this is erroneous, in that an additional shift is applied to
-> an already fixed-up offset passed from userspace.
+Note that since the possibility of using SO_PEERCRED on AF_INET
+sockets does not hitherto exist on Linux, we can be sure that nobody
+uses it, so it's not like it might open vulnerabilities in existing
+code.  If you think it's insecure, it can be documented as such (by
+comparing it with identd): I still think it's better than having no
+control at all when binding to localhost, which is the present
+situation (causing, e.g., CVE-2014-2914).
 
-Yes, I think this is a correct patch inspite of the description. :)
+Because SO_PEERCRED currently returns {pid=0,uid=-1,gid=-1} on
+AF_INET, we might still return this value if there is any risk that
+the endpoint would be unwilling to share its credentials: for example,
+this value might be returned if the other endpoint is not ptraceable
+by the caller - this would still cover the essential use case, which
+is for unprivileged users to authenticate the connections from their
+own processes.  Would this limitation assuage your worries about the
+proposed feature?
+
+The thing is, I don't see any other way the ssh port forwarding mess
+can ever be improved.  Do you have another solution in mind that?
+
+Any attempt to have some kind of authentication of local sockets that
+required participation on the client (authenticatee)'s part is doomed:
+if modifying the protocol and/or client code is an option, we might as
+well use some form of crypto / TLS.  Or Unix-domain sockets.  But what
+are we supposed to do when modifying the client (to make it send
+credentials, use crypto or connect on AF_UNIX) is not an option?
 
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+     David A. Madore
+   ( http://www.madore.org/~david/ )
