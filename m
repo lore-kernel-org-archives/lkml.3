@@ -1,97 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751348AbaJOXHJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 19:07:09 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:39737 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870AbaJOXHG (ORCPT
+	id S1751484AbaJOXHo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 19:07:44 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:53078 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751178AbaJOXHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 19:07:06 -0400
-Date: Thu, 16 Oct 2014 01:07:01 +0200
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, fuse-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
-        Seth Forshee <seth.forshee@canonical.com>
-Subject: Re: [PATCH v4 5/5] fuse: Allow user namespace mounts
-Message-ID: <20141015230701.GD988@ubuntu-mba51>
-Mail-Followup-To: Andy Lutomirski <luto@amacapital.net>,
-	Miklos Szeredi <miklos@szeredi.hu>,
-	fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-	linux-fsdevel@vger.kernel.org,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	"Serge H. Hallyn" <serge.hallyn@ubuntu.com>
-References: <1413296756-25071-1-git-send-email-seth.forshee@canonical.com>
- <1413296756-25071-6-git-send-email-seth.forshee@canonical.com>
- <543E8BAD.7000207@mit.edu>
+	Wed, 15 Oct 2014 19:07:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <543E8BAD.7000207@mit.edu>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141015130544.380aca0acfcb1413459520b0@linux-foundation.org>
+References: <1413403115-1551-1-git-send-email-jamieliu@google.com>
+	<20141015130544.380aca0acfcb1413459520b0@linux-foundation.org>
+Date: Wed, 15 Oct 2014 16:07:42 -0700
+Message-ID: <CAKU+Ga8Onii31qr5OJOrAJt1CPde-0zG703fkxKyJV5ATBkPQQ@mail.gmail.com>
+Subject: Re: [PATCH] mm: vmscan: count only dirty pages as congested
+From: Jamie Liu <jamieliu@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
+        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 07:58:53AM -0700, Andy Lutomirski wrote:
-> On 10/14/2014 07:25 AM, Seth Forshee wrote:
-> > Cc: Eric W. Biederman <ebiederm@xmission.com>
-> > Cc: Serge H. Hallyn <serge.hallyn@ubuntu.com>
-> > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-> > ---
-> >  fs/fuse/inode.c | 4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
-> > index 5e00a6a76049..6522926b14e4 100644
-> > --- a/fs/fuse/inode.c
-> > +++ b/fs/fuse/inode.c
-> > @@ -1212,7 +1212,7 @@ static void fuse_kill_sb_anon(struct super_block *sb)
-> >  static struct file_system_type fuse_fs_type = {
-> >  	.owner		= THIS_MODULE,
-> >  	.name		= "fuse",
-> > -	.fs_flags	= FS_HAS_SUBTYPE,
-> > +	.fs_flags	= FS_HAS_SUBTYPE | FS_USERNS_MOUNT,
-> >  	.mount		= fuse_mount,
-> >  	.kill_sb	= fuse_kill_sb_anon,
-> >  };
-> > @@ -1244,7 +1244,7 @@ static struct file_system_type fuseblk_fs_type = {
-> >  	.name		= "fuseblk",
-> >  	.mount		= fuse_mount_blk,
-> >  	.kill_sb	= fuse_kill_sb_blk,
-> > -	.fs_flags	= FS_REQUIRES_DEV | FS_HAS_SUBTYPE,
-> > +	.fs_flags	= FS_REQUIRES_DEV | FS_HAS_SUBTYPE | FS_USERNS_MOUNT,
-> 
-> I think it's decision time -- if these patches are applied, then FUSE
-> will be the first filesystem for which userns nodev behavior matters for
-> security, so applying this patch will enshrine an API decision.
-> 
-> I would very much prefer to make this patch depend on this:
-> 
-> http://lkml.kernel.org/g/2686c32f00b14148379e8cfee9c028c794d4aa1a.1407974494.git.luto@amacapital.net
-> 
-> That change will require that anyone who tries to mount one of these
-> things explicitly requests MS_NODEV instead of keeping the current
-> behavior of implicitly setting MS_NODEV and possibly confusing user code
-> that tries to remount.
-> 
-> If you like my patch, feel free to fold it in to your series, or Eric
-> can apply it directly (pretty please).
-> 
-> For background, with your patches as is, if you mount a FUSE fs and then
-> remount it with identical flags, the remount is likely to fail.
+wait_iff_congested() only waits if ZONE_CONGESTED is set (and at least
+one BDI is still congested). Modulo concurrent changes to BDI
+congestion status:
 
-(Resending my response since I still don't see it on lkml after 7+
-hours)
+After this change, the probability that a given shrink_inactive_list()
+sets ZONE_CONGESTED increases monotonically with the fraction of dirty
+pages on the LRU, to 100% if all dirty pages are backed by a
+write-congested BDI. This is in line with what appears to intended,
+judging by the comment:
 
-I discussed this with Eric during LinuxCon NA ... as I recall he was
-undecided about whether or not to use your patch at the time. I do
-prefer an explicit failure over implicitly adding MS_NODEV, but it's not
-up to me. I do agree though that we should make a decision before
-merging the fuse patches, I was just assuming that the decision was
-already made.
+/*
+* Tag a zone as congested if all the dirty pages scanned were
+* backed by a congested BDI and wait_iff_congested will stall.
+*/
+if (nr_dirty && nr_dirty == nr_congested)
+set_bit(ZONE_CONGESTED, &zone->flags);
 
-Thanks,
-Seth
+Before this change, the probability that a given
+shrink_inactive_list() sets ZONE_CONGESTED varies erratically. Because
+the ZONE_CONGESTED condition is nr_dirty && nr_dirty == nr_congested,
+the probability peaks when the fraction of dirty pages is equal to the
+fraction of file pages backed by congested BDIs. So under some
+circumstances, an increase in the fraction of dirty pages or in the
+fraction of congested pages can actually result in an *decreased*
+probability that reclaim will stall for writeback congestion, and vice
+versa; which is both counterintuitive and counterproductive.
+
+On Wed, Oct 15, 2014 at 1:05 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Wed, 15 Oct 2014 12:58:35 -0700 Jamie Liu <jamieliu@google.com> wrote:
+>
+>> shrink_page_list() counts all pages with a mapping, including clean
+>> pages, toward nr_congested if they're on a write-congested BDI.
+>> shrink_inactive_list() then sets ZONE_CONGESTED if nr_dirty ==
+>> nr_congested. Fix this apples-to-oranges comparison by only counting
+>> pages for nr_congested if they count for nr_dirty.
+>>
+>> ...
+>>
+>> --- a/mm/vmscan.c
+>> +++ b/mm/vmscan.c
+>> @@ -875,7 +875,8 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+>>                * end of the LRU a second time.
+>>                */
+>>               mapping = page_mapping(page);
+>> -             if ((mapping && bdi_write_congested(mapping->backing_dev_info)) ||
+>> +             if (((dirty || writeback) && mapping &&
+>> +                  bdi_write_congested(mapping->backing_dev_info)) ||
+>>                   (writeback && PageReclaim(page)))
+>>                       nr_congested++;
+>
+> What are the observed runtime effects of this change?
