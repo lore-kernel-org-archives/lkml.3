@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755968AbaJOFMQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 01:12:16 -0400
-Received: from mga14.intel.com ([192.55.52.115]:61472 "EHLO mga14.intel.com"
+	id S1755994AbaJOFMU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 01:12:20 -0400
+Received: from mga02.intel.com ([134.134.136.20]:12369 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751828AbaJOFMF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 01:12:05 -0400
+	id S1755905AbaJOFMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 01:12:17 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="400441083"
+X-IronPort-AV: E=Sophos;i="5.04,721,1406617200"; 
+   d="scan'208";a="589177540"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: x86@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 8/8] x86: Use rd/wr fs/gs base in arch_prctl
-Date: Tue, 14 Oct 2014 22:11:51 -0700
-Message-Id: <1413349911-3620-8-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 7/8] x86: Add documentation for rd/wr fs/gs base
+Date: Tue, 14 Oct 2014 22:11:50 -0700
+Message-Id: <1413349911-3620-7-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1413349911-3620-1-git-send-email-andi@firstfloor.org>
 References: <1413349911-3620-1-git-send-email-andi@firstfloor.org>
@@ -24,129 +24,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Convert arch_prctl to use the new instructions to
-change fs/gs if available, instead of using MSRs.
-
-This is merely a small performance optimization,
-no new functionality.
-
-With the new instructions the syscall is really obsolete,
-as everything can be set directly in ring 3. But the syscall
-is widely used by existing software, so we still support it.
-
-The syscall still enforces that the addresses are not
-in kernel space, even though that is not needed more.
-This is mainly so that the programs written for new CPUs
-do not suddenly fail on old CPUs.
-
-With the new instructions available it prefers to use
-them in the context switch, instead of using the old
-"use GDT segment rewrite" trick.
-
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/process_64.c | 45 ++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 37 insertions(+), 8 deletions(-)
+ Documentation/x86/fsgs.txt | 73 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 73 insertions(+)
+ create mode 100644 Documentation/x86/fsgs.txt
 
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index 9bad75a..7669b3b 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -486,15 +486,23 @@ long do_arch_prctl(struct task_struct *task, int code, unsigned long addr)
- 	int ret = 0;
- 	int doit = task == current;
- 	int cpu;
-+	int fast_seg = boot_cpu_has(X86_FEATURE_FSGSBASE);
- 
- 	switch (code) {
- 	case ARCH_SET_GS:
-+		/*
-+		 * With fast_seg we don't need that check anymore,
-+		 * but keep it so that programs do not suddenly
-+		 * start failing when run on older CPUs.
-+		 * If you really want to set a address in kernel space
-+		 * use WRGSBASE directly.
-+		 */
- 		if (addr >= TASK_SIZE_OF(task))
- 			return -EPERM;
- 		cpu = get_cpu();
- 		/* handle small bases via the GDT because that's faster to
- 		   switch. */
--		if (addr <= 0xffffffff) {
-+		if (addr <= 0xffffffff && !fast_seg) {
- 			set_32bit_tls(task, GS_TLS, addr);
- 			if (doit) {
- 				load_TLS(&task->thread, cpu);
-@@ -506,8 +514,17 @@ long do_arch_prctl(struct task_struct *task, int code, unsigned long addr)
- 			task->thread.gsindex = 0;
- 			task->thread.gs = addr;
- 			if (doit) {
--				load_gs_index(0);
--				ret = wrmsrl_safe(MSR_KERNEL_GS_BASE, addr);
-+				if (fast_seg) {
-+					local_irq_disable();
-+					swapgs();
-+					loadsegment(gs, 0);
-+					wrgsbase(addr);
-+					swapgs();
-+					local_irq_enable();
-+				} else {
-+					load_gs_index(0);
-+					ret = wrmsrl_safe(MSR_KERNEL_GS_BASE, addr);
-+				}
- 			}
- 		}
- 		put_cpu();
-@@ -520,7 +537,7 @@ long do_arch_prctl(struct task_struct *task, int code, unsigned long addr)
- 		cpu = get_cpu();
- 		/* handle small bases via the GDT because that's faster to
- 		   switch. */
--		if (addr <= 0xffffffff) {
-+		if (addr <= 0xffffffff && !fast_seg) {
- 			set_32bit_tls(task, FS_TLS, addr);
- 			if (doit) {
- 				load_TLS(&task->thread, cpu);
-@@ -535,7 +552,10 @@ long do_arch_prctl(struct task_struct *task, int code, unsigned long addr)
- 				/* set the selector to 0 to not confuse
- 				   __switch_to */
- 				loadsegment(fs, 0);
--				ret = wrmsrl_safe(MSR_FS_BASE, addr);
-+				if (fast_seg)
-+					wrfsbase(addr);
-+				else
-+					ret = wrmsrl_safe(MSR_FS_BASE, addr);
- 			}
- 		}
- 		put_cpu();
-@@ -544,6 +564,8 @@ long do_arch_prctl(struct task_struct *task, int code, unsigned long addr)
- 		unsigned long base;
- 		if (task->thread.fsindex == FS_TLS_SEL)
- 			base = read_32bit_tls(task, FS_TLS);
-+		else if (doit && fast_seg)
-+			base = rdfsbase();
- 		else if (doit)
- 			rdmsrl(MSR_FS_BASE, base);
- 		else
-@@ -558,9 +580,16 @@ long do_arch_prctl(struct task_struct *task, int code, unsigned long addr)
- 			base = read_32bit_tls(task, GS_TLS);
- 		else if (doit) {
- 			savesegment(gs, gsindex);
--			if (gsindex)
--				rdmsrl(MSR_KERNEL_GS_BASE, base);
--			else
-+			if (gsindex) {
-+				if (fast_seg) {
-+					local_irq_disable();
-+					swapgs();
-+					base = rdgsbase();
-+					swapgs();
-+					local_irq_enable();
-+				} else
-+					rdmsrl(MSR_KERNEL_GS_BASE, base);
-+			} else
- 				base = task->thread.gs;
- 		} else
- 			base = task->thread.gs;
+diff --git a/Documentation/x86/fsgs.txt b/Documentation/x86/fsgs.txt
+new file mode 100644
+index 0000000..d895b25
+--- /dev/null
++++ b/Documentation/x86/fsgs.txt
+@@ -0,0 +1,73 @@
++
++Using FS and GS prefixes on x86_64-linux
++
++The x86 architecture supports segment prefixes per instruction to add an
++offset to an address.  On 64bit x86, these are mostly nops, except for FS
++and GS.
++
++This offers an efficient way to reference a global pointer.
++
++The compiler has to generate special code to use these base registers,
++or they can be accessed with inline assembler.
++
++	mov %gs:offset,%reg
++	mov %fs:offset,%reg
++
++FS is used to address the thread local segment (TLS), declared using
++__thread.  The compiler the automatically generates the correct prefixes and
++relocations to access these values.
++
++FS is normally managed by the runtime code or the threading library.
++
++GS is freely available, but may need special (compiler or inline assembler)
++code to use.
++
++Traditionally 64bit FS and GS could be set by the arch_prctl system call
++
++	arch_prctl(ARCH_SET_GS, value)
++	arch_prctl(ARCH_SET_FS, value)
++
++[There was also an older method using modify_ldt(), inherited from 32bit,
++but this is not discussed here.]
++
++However using a syscall is problematic for user space threading libraries
++that want to context switch in user space.
++
++Newer Intel CPUs (Ivy Bridge and later) added new instructions to directly
++access these registers quickly from user context
++
++	RDFSBASE %reg	read the FS base	(or _readfsbase_u64)
++	RDGSBASE %reg	read the GS base	(or _readgsbase_u64)
++
++	WRFSBASE %reg	write the FS base	(or _writefsbase_u64)
++	WRGSBASE %reg	write the GS base	(or _writegsbase_u64)
++
++The instructions are supported by the CPU when the "fsgsbase" string is shown in
++/proc/cpuinfo (or directly retrieved through the CPUID instruction).
++The instructions are only available to 64bit binaries.
++
++However the kernel needs to explicitly enable these instructions, as it
++may otherwise not correctly context switch the state. Newer Linux
++kernels enable this. When the kernel did not enable the instruction
++they will fault.
++
++An FSGSBASE enabled kernel can be detected by checking the AT_HWCAP2
++bitmask in the aux vector. When the HWCAP2_FSGSBASE bit is set the
++kernel supports RDFSGSBASE.
++
++	#include <sys/auxv.h>
++	#include <elf.h>
++
++	/* Will be eventually in asm/hwcap.h */
++	#define HWCAP2_FSGSBASE        (1 << 0)
++
++        unsigned val = getauxval(AT_HWCAP2);
++        if (val & HWCAP2_FSGSBASE) {
++                asm("wrgsbase %0" :: "r" (ptr));
++        }
++
++Another requirement is that the FS or GS selector has to be zero
++(is normally true unless changed explicitly)
++
++
++Andi Kleen
 -- 
 1.9.3
 
