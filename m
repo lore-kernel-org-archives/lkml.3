@@ -1,93 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115AbaJOGfm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 02:35:42 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:45157 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751580AbaJOGfk (ORCPT
+	id S1751540AbaJOGhd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 02:37:33 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:42596 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751208AbaJOGhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 02:35:40 -0400
-From: Chander Kashyap <k.chander@samsung.com>
-To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, daniel.lezcano@linaro.org,
-        lorenzo.pieralisi@arm.com, catalin.marinas@arm.com,
-        mark.rutland@arm.com, rjw@rjwysocki.net, kgene.kim@samsung.com,
-        Chander Kashyap <k.chander@samsung.com>
-Subject: [PATCH] arm64: dts: exynos7: add support for cpuidle core power down
-Date: Wed, 15 Oct 2014 12:05:20 +0530
-Message-Id: <1413354920-20165-1-git-send-email-k.chander@samsung.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 15 Oct 2014 02:37:32 -0400
+Message-ID: <543E1628.4020808@gmail.com>
+Date: Tue, 14 Oct 2014 23:37:28 -0700
+From: Frank Rowand <frowand.list@gmail.com>
+Reply-To: frowand.list@gmail.com
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>, Rob Landley <rob@landley.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chuck Ebbert <cebbert.lkml@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH v5] init: Disable defaults if init= fails
+References: <5c6381879bea68aebb13530442f1cf8a052be97f.1411958379.git.luto@amacapital.net> <542B4DA3.5080105@gmail.com> <542B519B.6010001@landley.net> <542B5E44.40303@gmail.com> <542B7200.6030902@landley.net> <CALCETrWr--A26UEv_7DeZa-Te1fTBDQgCdZt24n5LWkAnOa6jQ@mail.gmail.com> <20141001180510.GA28540@cloud> <CALCETrUK07j8+iQ8oSW70sgePxg_GJY3ASBBS+U9fvp_f2Rz5w@mail.gmail.com> <20141014140052.2f114c158ffe6cd953020f1c@linux-foundation.org> <CALCETrXB337oy2BcL3Y-U1CZDqR7TMPxsR9b9R=EatWvvc4zfg@mail.gmail.com> <543E0A25.80401@gmail.com> <CALCETrV5K15EPDiPvCFhxCHuZ6J4+S=KniOE-WkBgpiVkLLk4w@mail.gmail.com>
+In-Reply-To: <CALCETrV5K15EPDiPvCFhxCHuZ6J4+S=KniOE-WkBgpiVkLLk4w@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Exynos7 has core power down state where cores can be powered off independently.
-This patch adds support for this state.
+On 10/14/2014 10:56 PM, Andy Lutomirski wrote:
+> On Tue, Oct 14, 2014 at 10:46 PM, Frank Rowand <frowand.list@gmail.com> wrote:
+>> On 10/14/2014 2:21 PM, Andy Lutomirski wrote:
+>>> On Tue, Oct 14, 2014 at 2:00 PM, Andrew Morton
+>>> <akpm@linux-foundation.org> wrote:
+>>>> On Wed, 1 Oct 2014 11:13:14 -0700 Andy Lutomirski <luto@amacapital.net> wrote:
+>>>>
+>>>>> On Wed, Oct 1, 2014 at 11:05 AM,  <josh@joshtriplett.org> wrote:
+>>>>>> On Tue, Sep 30, 2014 at 09:53:56PM -0700, Andy Lutomirski wrote:
+>>>>>>> I significantly prefer default N.  Scripts that play with init= really
+>>>>>>> don't want the fallback, and I can imagine contexts in which it could
+>>>>>>> be a security problem.
+>>>>>>
+>>>>>> While I certainly would prefer the non-fallback behavior for init as
+>>>>>> well, standard kernel practice has typically been to use "default y" for
+>>>>>> previously built-in features that become configurable.  And I'd
+>>>>>> certainly prefer a compile-time configuration option like this (even
+>>>>>> with default y) over a "strictinit" kernel command-line option.
+>>>>>>
+>>>>>
+>>>>> Fair enough.
+>>>>>
+>>>>> So: "default y" for a release or two, then switch the default?  Having
+>>>>> default y will annoy virtme, though it's not the end of the world.
+>>>>> Virtme is intended to work with more-or-less-normal kernels.
+>>>>>
+>>>>
+>>>> Adding another Kconfig option is tiresome.  What was wrong with strictinit=?
+>>>
+>>> The consensus seems to be that adding a non-default option to get
+>>
+>>       ^^^^^^^^^  I do not think you know what the word consensus means. :-)
+>>
+>> I did not agree.
+>>
+>> I do agree with Andrew (but with no opinion on whether "strictinit=SOMETHING"
+>> or just "strictinit".
+>>
+>>> sensible behavior would be unfortunate.  Also, I don't like
+> 
+> Even you're not disagreeing that it's ugly, though, FWIW.
 
-Signed-off-by: Chander Kashyap <k.chander@samsung.com>
----
-This patch has following dependencies:
-	- [PATCH v5 0/8] arch: arm64: Enable support for Samsung Exynos7 SoC
-		http://www.spinics.net/lists/linux-samsung-soc/msg37047.html
-	- [PATCH v9 0/8] ARM generic idle states
-		http://permalink.gmane.org/gmane.linux.power-management.general/49224
+You are putting (lack of) words in my mouth.  I did not comment on
+"ugly" because it did not seem that big a deal to me.  I have no
+desire to bikeshed on ugly in this particular instance.
 
- arch/arm64/boot/dts/exynos/exynos7.dtsi |   18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+> 
+>>   ^^^^^^^^^^^^^^^^^
+>>   behavior that is useful in some or many contexts
+> 
+> Is there a context in which the current behavior is useful beyond
+> "whoops, I typoed my grub command line edit, and I still want my
+> system to boot into *something* even if it's the wrong thing"?  I'm
+> not personally that sympathetic to that particular use case, but maybe
+> there's another one.
 
-diff --git a/arch/arm64/boot/dts/exynos/exynos7.dtsi b/arch/arm64/boot/dts/exynos/exynos7.dtsi
-index ce221ac..8e0a034 100644
---- a/arch/arm64/boot/dts/exynos/exynos7.dtsi
-+++ b/arch/arm64/boot/dts/exynos/exynos7.dtsi
-@@ -36,6 +36,7 @@
- 			device_type = "cpu";
- 			compatible = "arm,cortex-a57", "arm,armv8";
- 			enable-method = "psci";
-+			cpu-idle-states = <&CPU_SLEEP>;
- 			reg = <0x0>;
- 		};
- 
-@@ -43,6 +44,7 @@
- 			device_type = "cpu";
- 			compatible = "arm,cortex-a57", "arm,armv8";
- 			enable-method = "psci";
-+			cpu-idle-states = <&CPU_SLEEP>;
- 			reg = <0x1>;
- 		};
- 
-@@ -50,6 +52,7 @@
- 			device_type = "cpu";
- 			compatible = "arm,cortex-a57", "arm,armv8";
- 			enable-method = "psci";
-+			cpu-idle-states = <&CPU_SLEEP>;
- 			reg = <0x2>;
- 		};
- 
-@@ -57,8 +60,23 @@
- 			device_type = "cpu";
- 			compatible = "arm,cortex-a57", "arm,armv8";
- 			enable-method = "psci";
-+			cpu-idle-states = <&CPU_SLEEP>;
- 			reg = <0x3>;
- 		};
-+
-+		idle-states {
-+			entry-method = "arm,psci";
-+
-+			CPU_SLEEP: cpu-sleep {
-+				compatible = "arm,idle-state";
-+				local-timer-stop;
-+				arm,psci-suspend-param = <0x0010000>;
-+				entry-latency-us = <20>;
-+				exit-latency-us = <150>;
-+				min-residency-us = <2100>;
-+				status = "enabled";
-+			};
-+		};
- 	};
- 
- 	psci {
--- 
-1.7.9.5
+We've been through this before.  I should have ignored your "sensible
+behavior" comment.  Sorry, again no need for me to bike shed on that.
+
+The question from Andrew was whether to use a config option or a command
+line option.  One could choose either behavior as default, whether
+controlled by command line or config option.
+
+
+> 
+> --Andy
+> 
+>>
+>>> strictinit=, since backwards-compatible setups will have to do
+>>> init=foo strictinit=foo.  My original proposal was init=foo
+>>> strictinit.
+>>>
+>>> TBH, my preference would be to make strict mode unconditional.
+>>> http://xkcd.com/1172/
+>>>
+>>> --Andy
 
