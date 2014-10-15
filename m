@@ -1,102 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751059AbaJOF5F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 01:57:05 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:39531 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758AbaJOF5D (ORCPT
+	id S1751378AbaJOG20 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 02:28:26 -0400
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:52535 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751232AbaJOG2Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 01:57:03 -0400
+	Wed, 15 Oct 2014 02:28:25 -0400
+Message-ID: <543E1407.7020509@vmware.com>
+Date: Tue, 14 Oct 2014 23:28:23 -0700
+From: Petr Vandrovec <petr@vmware.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <543E0A25.80401@gmail.com>
-References: <5c6381879bea68aebb13530442f1cf8a052be97f.1411958379.git.luto@amacapital.net>
- <542B4DA3.5080105@gmail.com> <542B519B.6010001@landley.net>
- <542B5E44.40303@gmail.com> <542B7200.6030902@landley.net> <CALCETrWr--A26UEv_7DeZa-Te1fTBDQgCdZt24n5LWkAnOa6jQ@mail.gmail.com>
- <20141001180510.GA28540@cloud> <CALCETrUK07j8+iQ8oSW70sgePxg_GJY3ASBBS+U9fvp_f2Rz5w@mail.gmail.com>
- <20141014140052.2f114c158ffe6cd953020f1c@linux-foundation.org>
- <CALCETrXB337oy2BcL3Y-U1CZDqR7TMPxsR9b9R=EatWvvc4zfg@mail.gmail.com> <543E0A25.80401@gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 14 Oct 2014 22:56:39 -0700
-Message-ID: <CALCETrV5K15EPDiPvCFhxCHuZ6J4+S=KniOE-WkBgpiVkLLk4w@mail.gmail.com>
-Subject: Re: [PATCH v5] init: Disable defaults if init= fails
-To: Frank Rowand <frowand.list@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>, Rob Landley <rob@landley.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chuck Ebbert <cebbert.lkml@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Shuah Khan <shuah.kh@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+CC: Jens Axboe <axboe@kernel.dk>, Arvind Kumar <arvindkumar@vmware.com>,
+        Chris J Arges <chris.j.arges@canonical.com>,
+        Christoph Hellwig <hch@lst.de>, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Do not silently discard WRITE_SAME requests
+References: <20141011063053.GB18215@petr-dev3.eng.vmware.com>	<yq1lhomahwt.fsf@sermon.lab.mkp.net> <543A1D1A.8090808@vmware.com> <yq1h9z687zd.fsf@sermon.lab.mkp.net>
+In-Reply-To: <yq1h9z687zd.fsf@sermon.lab.mkp.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 14, 2014 at 10:46 PM, Frank Rowand <frowand.list@gmail.com> wrote:
-> On 10/14/2014 2:21 PM, Andy Lutomirski wrote:
->> On Tue, Oct 14, 2014 at 2:00 PM, Andrew Morton
->> <akpm@linux-foundation.org> wrote:
->>> On Wed, 1 Oct 2014 11:13:14 -0700 Andy Lutomirski <luto@amacapital.net> wrote:
->>>
->>>> On Wed, Oct 1, 2014 at 11:05 AM,  <josh@joshtriplett.org> wrote:
->>>>> On Tue, Sep 30, 2014 at 09:53:56PM -0700, Andy Lutomirski wrote:
->>>>>> I significantly prefer default N.  Scripts that play with init= really
->>>>>> don't want the fallback, and I can imagine contexts in which it could
->>>>>> be a security problem.
->>>>>
->>>>> While I certainly would prefer the non-fallback behavior for init as
->>>>> well, standard kernel practice has typically been to use "default y" for
->>>>> previously built-in features that become configurable.  And I'd
->>>>> certainly prefer a compile-time configuration option like this (even
->>>>> with default y) over a "strictinit" kernel command-line option.
->>>>>
->>>>
->>>> Fair enough.
->>>>
->>>> So: "default y" for a release or two, then switch the default?  Having
->>>> default y will annoy virtme, though it's not the end of the world.
->>>> Virtme is intended to work with more-or-less-normal kernels.
->>>>
->>>
->>> Adding another Kconfig option is tiresome.  What was wrong with strictinit=?
->>
->> The consensus seems to be that adding a non-default option to get
+On 10/14/2014 5:57 PM, Martin K. Petersen wrote:
+>>>>>> "Petr" == Petr Vandrovec <petr@vmware.com> writes:
 >
->       ^^^^^^^^^  I do not think you know what the word consensus means. :-)
+> Petr,
 >
-> I did not agree.
+> Petr> Logic (from 2011, commit 8af1954d172a46a63e5e79dae523a6d74715e458)
+> Petr> says that EOPNOTSUPP is returned when DISCARD request failed, as
+> Petr> discarding is optional, and failures can be safely ignored.  That
+> Petr> is definitely not true for WRITE_SAME failures, and so unsupported
+> Petr> WRITE_SAME should return different error code than unsupported
+> Petr> DISCARD.
 >
-> I do agree with Andrew (but with no opinion on whether "strictinit=SOMETHING"
-> or just "strictinit".
+> I agree. With Lukas' change the bio batch error handling is too
+> permissive for the write same case. It also made the regular zeroout
+> error handling case a bit fishy but it is unlikely that we'd get
+> EOPNOTSUPP on a regular write.
 >
->> sensible behavior would be unfortunate.  Also, I don't like
-
-Even you're not disagreeing that it's ugly, though, FWIW.
-
->   ^^^^^^^^^^^^^^^^^
->   behavior that is useful in some or many contexts
-
-Is there a context in which the current behavior is useful beyond
-"whoops, I typoed my grub command line edit, and I still want my
-system to boot into *something* even if it's the wrong thing"?  I'm
-not personally that sympathetic to that particular use case, but maybe
-there's another one.
-
---Andy
-
+> So for the block portion:
 >
->> strictinit=, since backwards-compatible setups will have to do
->> init=foo strictinit=foo.  My original proposal was init=foo
->> strictinit.
->>
->> TBH, my preference would be to make strict mode unconditional.
->> http://xkcd.com/1172/
->>
->> --Andy
->>
+> Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
+> Cc: stable@vger.kernel.org # 3.7+
+>
+> Petr> revert of blacklisting VMware's LSI (if anything, blacklist should
+> Petr> be for current firmware version of 'VMware Virtual SCSI Disk', as
+> Petr> f.e. passed-through (RDM) SCSI disks do support WRITE_SAME under
+> Petr> VMware) -- see attached updated diff.
+>
+> If you have a better heuristic then let's by all means use it. Please
+> adjust the pattern matching strings to match the actual values returned
+> by the target.
+>
+>
+> SCSI: Only blacklist WRITE SAME for VMware virtual disks
+>
+> Commit 4089b71cc820 blacklisted WRITE SAME for all VMware disks.
+> However, the WRITE SAME commands are supported for passthrough
+> disks. Change the heuristic so we only blacklist virtual disks.
+
+Hi,
+   is there any reason to do blacklisting?  Why not let first request 
+fail, and switch to non-write-same code path once that happens?
+
+If you want to go ahead with blacklisting, then entries should be:
+
+{ "VMware", "Virtual disk", "1.0", BLIST_NO_WRITE_SAME },   //ESX
+{ "VMware,", "VMware Virtual S", "1.0", BLIST_NO_WRITE_SAME }, //WS,Fusion
+
+(yes, on Workstation and Fusion there is really comma in the vendor name 
+and VMware is repeated in the device ID - first is 'VMware, Inc.' 
+truncated to 8 characters, and second is 'VMware Virtual SCSI Hard 
+Drive' truncated to 16; we got revision right...)
+				Thanks,
+					Petr
+
+
+> Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+> Reported-by: Petr Vandrovec <petr@vmware.com>
+>
+> diff --git a/drivers/message/fusion/mptspi.c b/drivers/message/fusion/mptspi.c
+> index 613231c16194..787933d43d32 100644
+> --- a/drivers/message/fusion/mptspi.c
+> +++ b/drivers/message/fusion/mptspi.c
+> @@ -1419,11 +1419,6 @@ mptspi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+>   		goto out_mptspi_probe;
+>           }
+>
+> -	/* VMWare emulation doesn't properly implement WRITE_SAME
+> -	 */
+> -	if (pdev->subsystem_vendor == 0x15AD)
+> -		sh->no_write_same = 1;
+> -
+>   	spin_lock_irqsave(&ioc->FreeQlock, flags);
+>
+>   	/* Attach the SCSI Host to the IOC structure
+> diff --git a/drivers/scsi/scsi_devinfo.c b/drivers/scsi/scsi_devinfo.c
+> index 49014a143c6a..402aebfb97dd 100644
+> --- a/drivers/scsi/scsi_devinfo.c
+> +++ b/drivers/scsi/scsi_devinfo.c
+> @@ -249,6 +249,7 @@ static struct {
+>   	{"TOSHIBA", "CD-ROM", NULL, BLIST_ISROM},
+>   	{"Traxdata", "CDR4120", NULL, BLIST_NOLUN},	/* locks up */
+>   	{"USB2.0", "SMARTMEDIA/XD", NULL, BLIST_FORCELUN | BLIST_INQUIRY_36},
+> +	{"VMware", "Virtual SCSI Disk", NULL, BLIST_NO_WRITE_SAME},
+>   	{"WangDAT", "Model 2600", "01.7", BLIST_SELECT_NO_ATN},
+>   	{"WangDAT", "Model 3200", "02.2", BLIST_SELECT_NO_ATN},
+>   	{"WangDAT", "Model 1300", "02.4", BLIST_SELECT_NO_ATN},
+> diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
+> index ba3f1e8d0d57..c57daffe57af 100644
+> --- a/drivers/scsi/scsi_scan.c
+> +++ b/drivers/scsi/scsi_scan.c
+> @@ -955,6 +955,9 @@ static int scsi_add_lun(struct scsi_device *sdev, unsigned char *inq_result,
+>   	if (*bflags & BLIST_NO_DIF)
+>   		sdev->no_dif = 1;
+>
+> +	if (*bflags & BLIST_NO_WRITE_SAME)
+> +		sdev->no_write_same = 1;
+> +
+>   	sdev->eh_timeout = SCSI_DEFAULT_EH_TIMEOUT;
+>
+>   	if (*bflags & BLIST_TRY_VPD_PAGES)
+> diff --git a/include/scsi/scsi_devinfo.h b/include/scsi/scsi_devinfo.h
+> index 183eaab7c380..1a24efb4b1d6 100644
+> --- a/include/scsi/scsi_devinfo.h
+> +++ b/include/scsi/scsi_devinfo.h
+> @@ -36,5 +36,6 @@
+>   					     for sequential scan */
+>   #define BLIST_TRY_VPD_PAGES	0x10000000 /* Attempt to read VPD pages */
+>   #define BLIST_NO_RSOC		0x20000000 /* don't try to issue RSOC */
+> +#define BLIST_NO_WRITE_SAME	0x40000000 /* don't try to issue WRITE SAME */
+>
+>   #endif
+>
 >
 
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
