@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755892AbaJOCOq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 22:14:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14648 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755536AbaJOCOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 22:14:45 -0400
-Date: Wed, 15 Oct 2014 10:14:31 +0800
-From: WANG Chao <chaowang@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Baoquan He <bhe@redhat.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "open list:X86 ARCHITECTURE..." <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch/x86/purgatory/Makefile: supress kexec-purgatory.c
- is up to date message
-Message-ID: <20141015021431.GE2013@dhcp-17-37.nay.redhat.com>
-References: <1413262019-3759-1-git-send-email-chaowang@redhat.com>
- <20141014215253.GM5127@redhat.com>
+	id S932592AbaJOCSH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 22:18:07 -0400
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:9899 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755820AbaJOCSF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 22:18:05 -0400
+X-IronPort-AV: E=Sophos;i="5.04,720,1406617200"; 
+   d="scan'208";a="48224470"
+Message-ID: <543DD959.2060801@broadcom.com>
+Date: Tue, 14 Oct 2014 19:18:01 -0700
+From: Scott Branden <sbranden@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141014215253.GM5127@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Antti Palosaari <crope@iki.fi>, Jingoo Han <jg1.han@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <swarren@wwwdotorg.org>
+Subject: get_maintainers.pl doesn't actually get the real MAINTAINERS?
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/14 at 05:52pm, Vivek Goyal wrote:
-> On Tue, Oct 14, 2014 at 12:46:58PM +0800, WANG Chao wrote:
-> > Supress this unnecessary message during kernel re-build
-> > (CONFIG_KEXEC_FILE=y):
-> > 
-> > make[1]: `arch/x86/purgatory/kexec-purgatory.c' is up to date.
-> > 
-> > Signed-off-by: WANG Chao <chaowang@redhat.com>
-> > ---
-> >  arch/x86/purgatory/Makefile | 1 +
-> >  1 file changed, 1 insertion(+)
-> > 
-> > diff --git a/arch/x86/purgatory/Makefile b/arch/x86/purgatory/Makefile
-> > index f52e033..2c835e3 100644
-> > --- a/arch/x86/purgatory/Makefile
-> > +++ b/arch/x86/purgatory/Makefile
-> > @@ -24,6 +24,7 @@ quiet_cmd_bin2c = BIN2C   $@
-> >  
-> >  $(obj)/kexec-purgatory.c: $(obj)/purgatory.ro FORCE
-> >  	$(call if_changed,bin2c)
-> > +	@:
-> 
-> Where can I find the description of "@:" and how does it work?
+Hello,
 
-@ is used to suppress echo'ing. See:
-https://www.gnu.org/software/make/manual/html_node/Echoing.html
+I try running scripts/get_maintainers.pl but it doesn't seem to get the 
+real maintainers properly.  Please note this is run against the current 
+MAINTAINERS file.
 
-This is a trick to avoid "... is up to date" message". Check out commit
-a9358bc ("x86/build: Supress realmode.bin is up to date message").
+One Example:  I would expect drivers/mmc/host/sdhci-bcm2835.c to be 
+maintained by Stephen Warren based on drivers/*/*bcm2835* below.  But 
+the get_maintainers.pl script does not seem to process the information 
+in such a way.  So what needs to be corrected - the script or the syntax 
+used in the MAINTAINERS file?
 
-Thanks
-WANG Chao
+BROADCOM BCM2835 ARM ARCHICTURE
+M:	Stephen Warren <swarren@wwwdotorg.org>
+L:	linux-rpi-kernel@lists.infradead.org (moderated for non-subscribers)
+T:	git git://git.kernel.org/pub/scm/linux/kernel/git/swarren/linux-rpi.git
+S:	Maintained
+F:	arch/arm/mach-bcm/board_bcm2835.c
+F:	arch/arm/boot/dts/bcm2835*
+F:	arch/arm/configs/bcm2835_defconfig
+F:	drivers/*/*bcm2835*
+
+Regards,
+Scott
