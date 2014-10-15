@@ -1,106 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751663AbaJOJuh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 05:50:37 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:38421 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751292AbaJOJug convert rfc822-to-8bit (ORCPT
+	id S1751818AbaJOJ4q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 05:56:46 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:58993 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347AbaJOJ4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 05:50:36 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Michael S. Tsirkin'" <mst@redhat.com>, Jason Wang <jasowang@redhat.com>
-CC: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>
-Subject: RE: [RFC PATCH net-next 3/6] virtio-net: small optimization on
- free_old_xmit_skbs()
-Thread-Topic: [RFC PATCH net-next 3/6] virtio-net: small optimization on
- free_old_xmit_skbs()
-Thread-Index: AQHP6FsCsmX5zz5fkUSOZUv7LBGEbpww6EfA
-Date: Wed, 15 Oct 2014 09:49:01 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1C9D752A@AcuExch.aculab.com>
-References: <1413357930-45302-1-git-send-email-jasowang@redhat.com>
- <1413357930-45302-4-git-send-email-jasowang@redhat.com>
- <20141015093739.GC25776@redhat.com>
-In-Reply-To: <20141015093739.GC25776@redhat.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Wed, 15 Oct 2014 05:56:44 -0400
+Date: Wed, 15 Oct 2014 11:56:38 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Borislav Petkov <bp@suse.de>, Chuck Ebbert <cebbert.lkml@gmail.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Douglas Hatch <doug.hatch@hp.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Milian Wolff <mail@milianw.de>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Scott J Norton <scott.norton@hp.com>,
+        Stephane Eranian <eranian@google.com>,
+        Waiman Long <Waiman.Long@hp.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 00/24] perf/core improvements and fixes
+Message-ID: <20141015095638.GA26625@gmail.com>
+References: <1413320673-5784-1-git-send-email-acme@kernel.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413320673-5784-1-git-send-email-acme@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Of Michael S. Tsirkin
-> On Wed, Oct 15, 2014 at 03:25:27PM +0800, Jason Wang wrote:
-> > Accumulate the sent packets and sent bytes in local variables and perform a
-> > single u64_stats_update_begin/end() after.
-> >
-> > Cc: Rusty Russell <rusty@rustcorp.com.au>
-> > Cc: Michael S. Tsirkin <mst@redhat.com>
-> > Signed-off-by: Jason Wang <jasowang@redhat.com>
+
+* Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
+
+> Hi Ingo,
 > 
-> Not sure how much it's worth but since Eric suggested it ...
-
-Probably depends on the actual cost of u64_stats_update_begin/end
-against the likely extra saving of the tx_bytes and tx_packets
-values onto the stack across the call to dev_kfree_skb_any().
-(Which depends on the number of caller saved registers.)
-
-> Acked-by: Michael S. Tsirkin <mst@redhat.com>
+> 	Please consider pulling,
 > 
-> > ---
-> >  drivers/net/virtio_net.c |   12 ++++++++----
-> >  1 files changed, 8 insertions(+), 4 deletions(-)
-> >
-> > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> > index 3d0ce44..a4d56b8 100644
-> > --- a/drivers/net/virtio_net.c
-> > +++ b/drivers/net/virtio_net.c
-> > @@ -833,17 +833,21 @@ static void free_old_xmit_skbs(struct send_queue *sq)
-> >  	unsigned int len;
-> >  	struct virtnet_info *vi = sq->vq->vdev->priv;
-> >  	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
-> > +	u64 tx_bytes = 0, tx_packets = 0;
+> - Arnaldo
+> 
+> The following changes since commit cc6cd47e7395bc05c5077009808b820633eb3f18:
+> 
+>   perf/x86: Tone down kernel messages when the PMU check fails in a virtual environment (2014-10-03 06:04:41 +0200)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-core-for-mingo
+> 
+> for you to fetch changes up to 2c241bd35e6f626ad6f867dcf9fefdc2315f125f:
+> 
+>   perf symbols: Make sym->end be the first address after the symbol range (2014-10-14 17:50:58 -0300)
+> 
+> ----------------------------------------------------------------
+> perf/core improvements and fixes:
+> 
+> Infrastructure:
+> 
+> . Do not include a struct hists per perf_evsel, untangling the histogram code
+>   from perf_evsel, to pave the way for exporting a minimalistic
+>   tools/lib/api/perf/ library usable by tools/perf and initially by the rasd
+>   daemon being developed by Borislav Petkov, Robert Richter and Jean Pihet.
+>   (Arnaldo Carvalho de Melo)
+> 
+> . Make perf_evlist__open(evlist, NULL, NULL), i.e. without cpu and thread
+>   maps mean syswide monitoring, reducing the boilerplate for tools that
+>   only want system wide mode. (Arnaldo Carvalho de Melo)
+> 
+> . Fix off-by-one bugs in map->end handling (Stephane Eranian)
+> 
+> . Fix off-by-one bug in maps__find(), also related to map->end handling (Namhyung Kim)
+> 
+> . Make struct symbol->end be the first addr after the symbol range, to make it
+>   match the convention used for struct map->end. (Arnaldo Carvalho de Melo)
+> 
+> . Fix perf_evlist__add_pollfd() error handling in 'perf kvm stat live' (Jiri Olsa)
+> 
+> . Fix python test build by moving callchain_param to an object linked into the
+>   python binding (Jiri Olsa)
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Arnaldo Carvalho de Melo (18):
+>       perf sched: Stop updating hists stats, not used
+>       perf script: Stop updating hists stats, not used
+>       perf evsel: Add hists helper
+>       perf session: Don't count per evsel events
+>       perf tools: Move events_stats struct to event.h
+>       perf ui browsers: Add missing include
+>       perf session: Remove last reference to hists struct
+>       perf evsel: Subclassing
+>       perf callchain: Move the callchain_param extern to callchain.h
+>       perf tools: Remove hists from evsel
+>       perf thread_map: Create dummy constructor out of open coded equivalent
+>       perf evlist: Check that there is a thread_map when preparing a workload
+>       perf evlist: Default to syswide target when no thread/cpu maps set
+>       perf evsel: Add missing 'target' struct forward declaration
+>       perf evsel: Make some exit routines static
+>       perf machine: Add missing dsos->root rbtree root initialization
+>       perf symbols: Fix map->end fixup
+>       perf symbols: Make sym->end be the first address after the symbol range
+> 
+> Jiri Olsa (4):
+>       perf kvm stat live: Fix perf_evlist__add_pollfd error handling
+>       perf kvm stat live: Use perf_evlist__add_pollfd return fd position
+>       perf kvm stat live: Use fdarray object instead of pollfd
+>       perf callchain: Move callchain_param to util object in to fix python test
+> 
+> Namhyung Kim (1):
+>       perf tools: Fixup off-by-one comparision in maps__find
+> 
+> Stephane Eranian (1):
+>       perf tools: fix off-by-one error in maps
+> 
+>  tools/perf/builtin-annotate.c                      | 14 +++--
+>  tools/perf/builtin-diff.c                          | 21 ++++---
+>  tools/perf/builtin-kvm.c                           | 22 +++----
+>  tools/perf/builtin-record.c                        |  1 +
+>  tools/perf/builtin-report.c                        | 24 ++++---
+>  tools/perf/builtin-sched.c                         |  3 -
+>  tools/perf/builtin-script.c                        |  1 -
+>  tools/perf/builtin-top.c                           | 60 ++++++++++--------
+>  tools/perf/tests/builtin-test.c                    |  5 ++
+>  tools/perf/tests/hists_cumulate.c                  |  8 +--
+>  tools/perf/tests/hists_filter.c                    | 23 +++----
+>  tools/perf/tests/hists_link.c                      | 23 ++++---
+>  tools/perf/tests/hists_output.c                    | 20 +++---
+>  tools/perf/ui/browsers/header.c                    |  1 +
+>  tools/perf/ui/browsers/hists.c                     | 20 +++---
+>  tools/perf/ui/gtk/hists.c                          |  2 +-
+>  tools/perf/util/annotate.c                         |  8 +--
+>  tools/perf/util/callchain.h                        |  2 +
+>  tools/perf/util/event.h                            | 26 ++++++++
+>  tools/perf/util/evlist.c                           | 48 +++++++++++++-
+>  tools/perf/util/evsel.c                            | 66 ++++++++++++++-----
+>  tools/perf/util/evsel.h                            | 14 ++---
+>  tools/perf/util/hist.c                             | 73 +++++++++++++++++-----
+>  tools/perf/util/hist.h                             | 49 +++++++--------
+>  tools/perf/util/machine.c                          | 10 ++-
+>  tools/perf/util/map.c                              |  8 +--
+>  .../util/scripting-engines/trace-event-python.c    |  1 +
+>  tools/perf/util/session.c                          | 23 -------
+>  tools/perf/util/session.h                          |  1 -
+>  tools/perf/util/sort.c                             |  4 +-
+>  tools/perf/util/symbol.c                           |  8 +--
+>  tools/perf/util/symbol.h                           |  2 +-
+>  tools/perf/util/thread_map.c                       | 21 ++++---
+>  tools/perf/util/thread_map.h                       |  1 +
+>  tools/perf/util/util.c                             |  8 +++
+>  35 files changed, 392 insertions(+), 229 deletions(-)
 
-tx_packets need only be 'unsigned int'.
-The same is almost certainly true of tx_bytes.
+Pulled, thanks a lot Arnaldo!
 
-	David
-
-> >  	while ((skb = virtqueue_get_buf(sq->vq, &len)) != NULL) {
-> >  		pr_debug("Sent skb %p\n", skb);
-> >
-> > -		u64_stats_update_begin(&stats->tx_syncp);
-> > -		stats->tx_bytes += skb->len;
-> > -		stats->tx_packets++;
-> > -		u64_stats_update_end(&stats->tx_syncp);
-> > +		tx_bytes += skb->len;
-> > +		tx_packets++;
-> >
-> >  		dev_kfree_skb_any(skb);
-> >  	}
-> > +
-> > +	u64_stats_update_begin(&stats->tx_syncp);
-> > +	stats->tx_bytes += tx_bytes;
-> > +	stats->tx_packets =+ tx_packets;
-> > +	u64_stats_update_end(&stats->tx_syncp);
-> >  }
-> >
-> >  static int xmit_skb(struct send_queue *sq, struct sk_buff *skb)
-> > --
-> > 1.7.1
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
+	Ingo
