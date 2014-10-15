@@ -1,228 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751589AbaJOXCT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 19:02:19 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:53756 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033AbaJOXCS (ORCPT
+	id S1751348AbaJOXHJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 19:07:09 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:39737 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750870AbaJOXHG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 19:02:18 -0400
-Date: Wed, 15 Oct 2014 16:02:13 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, pekon@pek-sem.com, linux-mtd@lists.infradead.org
-Subject: Re: [PATCH 8/9] mtd: nand: stm_nand_bch: add support for ST's BCH
- NAND controller
-Message-ID: <20141015230213.GY1193@ld-irv-0074>
-References: <1409143344-22458-1-git-send-email-lee.jones@linaro.org>
- <1409143344-22458-9-git-send-email-lee.jones@linaro.org>
- <20141006062127.GH3248@norris-Latitude-E6410>
- <20141009143923.GR20647@lee--X1>
+	Wed, 15 Oct 2014 19:07:06 -0400
+Date: Thu, 16 Oct 2014 01:07:01 +0200
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, fuse-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
+        Seth Forshee <seth.forshee@canonical.com>
+Subject: Re: [PATCH v4 5/5] fuse: Allow user namespace mounts
+Message-ID: <20141015230701.GD988@ubuntu-mba51>
+Mail-Followup-To: Andy Lutomirski <luto@amacapital.net>,
+	Miklos Szeredi <miklos@szeredi.hu>,
+	fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	"Serge H. Hallyn" <serge.hallyn@ubuntu.com>
+References: <1413296756-25071-1-git-send-email-seth.forshee@canonical.com>
+ <1413296756-25071-6-git-send-email-seth.forshee@canonical.com>
+ <543E8BAD.7000207@mit.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141009143923.GR20647@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <543E8BAD.7000207@mit.edu>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 09, 2014 at 03:39:23PM +0100, Lee Jones wrote:
-> > > +static int check_erased_page(uint8_t *data, uint32_t page_size, int max_zeros)
-> > > +{
-> > > +	uint8_t *b = data;
-> > > +	int zeros = 0;
-> > > +	int i;
-> > > +
-> > > +	for (i = 0; i < page_size; i++) {
-> > > +		zeros += hweight8(~*b++);
-> > > +		if (zeros > max_zeros)
-> > > +			return -1;
-> > > +	}
-> > > +
-> > > +	if (zeros)
-> > > +		memset(data, 0xff, page_size);
-> > > +
-> > > +	return zeros;
-> > > +}
+On Wed, Oct 15, 2014 at 07:58:53AM -0700, Andy Lutomirski wrote:
+> On 10/14/2014 07:25 AM, Seth Forshee wrote:
+> > Cc: Eric W. Biederman <ebiederm@xmission.com>
+> > Cc: Serge H. Hallyn <serge.hallyn@ubuntu.com>
+> > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+> > ---
+> >  fs/fuse/inode.c | 4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
 > > 
-> > I pointed out some flaws in this function back in July [1]. You said
-> > you'd look into this one [2]. I really don't want to accept yet another
-> > custom, unsound erased-page check if at all possible.
+> > diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+> > index 5e00a6a76049..6522926b14e4 100644
+> > --- a/fs/fuse/inode.c
+> > +++ b/fs/fuse/inode.c
+> > @@ -1212,7 +1212,7 @@ static void fuse_kill_sb_anon(struct super_block *sb)
+> >  static struct file_system_type fuse_fs_type = {
+> >  	.owner		= THIS_MODULE,
+> >  	.name		= "fuse",
+> > -	.fs_flags	= FS_HAS_SUBTYPE,
+> > +	.fs_flags	= FS_HAS_SUBTYPE | FS_USERNS_MOUNT,
+> >  	.mount		= fuse_mount,
+> >  	.kill_sb	= fuse_kill_sb_anon,
+> >  };
+> > @@ -1244,7 +1244,7 @@ static struct file_system_type fuseblk_fs_type = {
+> >  	.name		= "fuseblk",
+> >  	.mount		= fuse_mount_blk,
+> >  	.kill_sb	= fuse_kill_sb_blk,
+> > -	.fs_flags	= FS_REQUIRES_DEV | FS_HAS_SUBTYPE,
+> > +	.fs_flags	= FS_REQUIRES_DEV | FS_HAS_SUBTYPE | FS_USERNS_MOUNT,
 > 
-> That's not quite true.  I said that I think it doesn't matter about
-> not taking the OOB area into consideration, which I still believe is
-> the case.  This controller does not allow access into the OOB area.
-
-Perhaps I'm not being clear enough.
-
-While the controller may not allow you to program the spare area
-directly, you do so implicitly by allowing the controller to program BCH
-parity bytes to the spare area, right? So when you want to check if the
-page is blank, you have to consider ALL areas that will be used -- both
-in-band and out-of-band.
-
-So, I'll repeat my question and try to elaborate:
-
-  "What if this is a mostly-blank page, with ECC data, but most of the
-  bitflips are in the spare area? Then you will "correct" this page to
-  all 0xFF, not noticing that this was really not a blank page at all."
-
-More specifically:
-
-  1. Suppose you program a page with just a single byte of non-0xff
-  data, and your correction strength is at least 8 bits per sector
-
-  2. When programming this page, your BCH controller writes parity bytes
-  to the spare area
-
-  3. Over time (a lot of reads, for example), suppose you develop a lot
-  of bit flips in the spare area, such that your controller cannot
-  correct them any longer
-
-Now consider two algorithms:
-
-  (A) Your current proposal, to just check the in-band data that you can
-  easily access. If there are more than X zero-bits in the page, return
-  an error. Otherwise, clear the page and log a correctable error.
-
-  (B) My suggestion, to check both the in-band and out-of-band. Same as
-  algorithm (A), except you check for X total zero-bits in both the
-  in-band and out-of-band
-
-In the scenario I described, algorithm A will only notice up to 8 zero
-bits (in that single byte we programmed), so if X is greater than 8,
-algorithm A will falsely declare this an erased page and silently
-clobber the data we programmed to it.
-
-Algorithm B would notice that there are many zero bits in the spare area
-(due to the programmed parity bytes) and will correctly declare this a
-corrupt, non-erased page.
-
-If I've made any false assumptions in here, please point them out. But
-otherwise, I'd say that any erased-page detection algorithm that ignores
-the spare area is incorrect.
-
-If you agree with me, then you have at least two options:
-
-(1) Remove this erased page check entirely from the initial driver, with
-    a TODO item to add spare area read support and to improve this
-    algorithm
-
-(2) Keep the check as-is, but put a large FIXME warning which notes why
-    the algorithm is wrong. It's possible the wrong algorithm is still
-    marginally better than no erased-page detection at all. I'm not sure
-    what the probability distributions are like for this sort of error.
-
-> > > +/* Returns the number of ECC errors, or '-1' for uncorrectable error */
-> > > +int bch_read_page(struct nandi_controller *nandi,
-> > > +		  loff_t offs,
-> > > +		  uint8_t *buf)
-> > > +{
-> > > +	struct nand_chip *chip = &nandi->info.chip;
-> > > +	struct bch_prog *prog = &bch_prog_read_page;
-> > > +	uint32_t page_size = nandi->info.mtd.writesize;
-> > > +	unsigned long list_phys;
-> > 
-> > Please use dma_addr_t. This is an intentionally opaque (to some degree)
-> > type.
-> > 
-> > > +	unsigned long buf_phys;
-> > 
-> > Ditto.
-> > 
-> > BTW, is your hardware actually restricted to a 32-bit address space? If
-> > it has some expanded registers for larger physical address ranges, it'd
-> > be good to handle the upper bits of the DMA address when mapping. Or
-> > else, it would be good to reflect this in your driver with
-> > dma_set_mask() I think.
+> I think it's decision time -- if these patches are applied, then FUSE
+> will be the first filesystem for which userns nodev behavior matters for
+> security, so applying this patch will enshrine an API decision.
 > 
-> Yes, it's 32bit only.  I will add a call to dma_set_mask() to reflect
-> this.
+> I would very much prefer to make this patch depend on this:
 > 
-> ... or not.  See below.
+> http://lkml.kernel.org/g/2686c32f00b14148379e8cfee9c028c794d4aa1a.1407974494.git.luto@amacapital.net
 > 
-> > > +	uint32_t ecc_err;
-> > > +	int ret = 0;
-> > > +
-> > > +	dev_dbg(nandi->dev, "%s: offs = 0x%012llx\n", __func__, offs);
-> > > +
-> > > +	BUG_ON(offs & (NANDI_BCH_DMA_ALIGNMENT - 1));
-> > > +
-> > > +	emiss_nandi_select(nandi, STM_NANDI_BCH);
-> > > +
-> > > +	nandi_enable_interrupts(nandi, NANDBCH_INT_SEQNODESOVER);
-> > > +	reinit_completion(&nandi->seq_completed);
-> > > +
-> > > +	/* Reset ECC stats */
-> > > +	writel(CFG_RESET_ECC_ALL | CFG_ENABLE_AFM,
-> > > +	       nandi->base + NANDBCH_CONTROLLER_CFG);
-> > > +	writel(CFG_ENABLE_AFM, nandi->base + NANDBCH_CONTROLLER_CFG);
-> > > +
-> > > +	prog->addr = (uint32_t)((offs >> (chip->page_shift - 8)) & 0xffffff00);
-> > > +
-> > > +	buf_phys = dma_map_single(NULL, buf, page_size, DMA_FROM_DEVICE);
-> > 
-> > Why NULL for the first arg? You should use the proper device (which will
-> > help with the 32-bit / 64-bit masking, I think.
-> > 
-> > Also, dma_map_single() can fail. It's good practice to check the return
-> > value with dma_mapping_error(). Same in a few other places.
+> That change will require that anyone who tries to mount one of these
+> things explicitly requests MS_NODEV instead of keeping the current
+> behavior of implicitly setting MS_NODEV and possibly confusing user code
+> that tries to remount.
 > 
-> If you do not supply the first parameter here, it falls back to
-> arm_dma_ops, which is what we want.  I guess this is also why we do
-> not have to set the DMA mask, as we're running on ARM32, rather than
-> AARCH64.
-
-I think it's standard practice to make your hardware limitations
-explicit when writing a driver. From Documentation/DMA-API-HOWTO.txt
-under "DMA addressing limitations":
-
-  "It is good style to do this even if your device holds the default
-  setting, because this shows that you did think about these issues wrt.
-  your device."
-
-But I won't press this issue.
-
-> > > +static int bch_mtd_read_oob(struct mtd_info *mtd,
-> > > +			    struct nand_chip *chip, int page)
-> > > +{
-> > > +	BUG();
-> > 
-> > Are you sure this can't be implemented, even if it's not the expected
-> > mode of operation? That's really unforunate.
+> If you like my patch, feel free to fold it in to your series, or Eric
+> can apply it directly (pretty please).
 > 
-> It can.  We have a 'special' function for it using the extended
-> flexible mode.  Trying to upstream this has been hard enough already,
-> without more crud to deal with.  I will hopefully be adding this
-> functionality as small, succinct patches subsequently.
+> For background, with your patches as is, if you mount a FUSE fs and then
+> remount it with identical flags, the remount is likely to fail.
 
-OK. But this is relevant to my points above -- particularly, you might
-want the 'read OOB' functionality to properly implement the erased page
-check.
+(Resending my response since I still don't see it on lkml after 7+
+hours)
 
-> > > +	for_each_child_of_node(np, banknp) {
-> > 
-> > If you change the DT binding to require a proper compatible property,
-> > you'll need of_device_is_compatible() here.
-> 
-> I see no reason to allocate a compatible property to the bank
-> descriptors.  They're not being registered/actioned through
-> of_platform_populate(), so ...
+I discussed this with Eric during LinuxCon NA ... as I recall he was
+undecided about whether or not to use your patch at the time. I do
+prefer an explicit failure over implicitly adding MS_NODEV, but it's not
+up to me. I do agree though that we should make a decision before
+merging the fuse patches, I was just assuming that the decision was
+already made.
 
-Well, this is all dependent on my comments on your DT binding patches. I
-commented there that you did, at times, list a "compatible" property,
-but you never actually used it and/or it was put in the wrong place. If
-you determine that you do not need the property, then this comment is
-also not applicable.
-
-One reason for a "compatible" property might be if you have different
-types of subnodes eventually, and you'll need to differentiate them. I
-only see a need for a single type of subnode right now (the "bank"), but
-it's possible you'd need to plan for the future.
-
-> > [1] http://lists.infradead.org/pipermail/linux-mtd/2014-July/054500.html
-> > [2] http://lists.infradead.org/pipermail/linux-mtd/2014-July/054881.html
-
-Brian
+Thanks,
+Seth
