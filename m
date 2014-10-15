@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755982AbaJOC0O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 22:26:14 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:39153 "EHLO
+	id S1755961AbaJOC0L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 22:26:11 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:39154 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932675AbaJOCZr (ORCPT
+	with ESMTP id S932671AbaJOCZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 14 Oct 2014 22:25:47 -0400
 From: Yijing Wang <wangyijing@huawei.com>
@@ -33,9 +33,9 @@ CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Thierry Reding <thierry.reding@gmail.com>,
         "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
         Liviu Dudau <liviu@dudau.co.uk>, Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH v3 08/27] PCI: mvebu: Save msi chip in pci_sys_data
-Date: Wed, 15 Oct 2014 11:06:56 +0800
-Message-ID: <1413342435-7876-9-git-send-email-wangyijing@huawei.com>
+Subject: [PATCH v3 01/27] MSI: Remove the redundant irq_set_chip_data()
+Date: Wed, 15 Oct 2014 11:06:49 +0800
+Message-ID: <1413342435-7876-2-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1413342435-7876-1-git-send-email-wangyijing@huawei.com>
 References: <1413342435-7876-1-git-send-email-wangyijing@huawei.com>
@@ -47,49 +47,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Save msi chip in pci_sys_data instead of assign
-msi chip to every pci bus in .add_bus().
+Currently, pcie-designware, pcie-rcar and pci-tegra drivers
+use irq chip_data to save the msi_chip pointer. They
+already call irq_set_chip_data() in their own MSI irq map
+functions. And chip_data is an opaque pointer, how to use
+it is arch dependent. It should not be placed in MSI core.
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Reviewed-by: Thierry Reding <treding@nvidia.com>
 ---
- drivers/pci/host/pci-mvebu.c |   10 +++-------
- 1 files changed, 3 insertions(+), 7 deletions(-)
+ drivers/pci/msi.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/pci/host/pci-mvebu.c b/drivers/pci/host/pci-mvebu.c
-index b1315e1..f8e9c6c 100644
---- a/drivers/pci/host/pci-mvebu.c
-+++ b/drivers/pci/host/pci-mvebu.c
-@@ -774,12 +774,6 @@ static struct pci_bus *mvebu_pcie_scan_bus(int nr, struct pci_sys_data *sys)
- 	return bus;
- }
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index 2f7c92c..ecb92a5 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -41,14 +41,13 @@ int __weak arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
+ 	if (err < 0)
+ 		return err;
  
--static void mvebu_pcie_add_bus(struct pci_bus *bus)
--{
--	struct mvebu_pcie *pcie = sys_to_pcie(bus->sysdata);
--	bus->msi = pcie->msi;
--}
+-	irq_set_chip_data(desc->irq, chip);
 -
- static resource_size_t mvebu_pcie_align_resource(struct pci_dev *dev,
- 						 const struct resource *res,
- 						 resource_size_t start,
-@@ -816,6 +810,9 @@ static void mvebu_pcie_enable(struct mvebu_pcie *pcie)
- 
- 	memset(&hw, 0, sizeof(hw));
- 
-+#ifdef CONFIG_PCI_MSI
-+	hw.msi_chip = pcie->msi;
-+#endif
- 	hw.nr_controllers = 1;
- 	hw.private_data   = (void **)&pcie;
- 	hw.setup          = mvebu_pcie_setup;
-@@ -823,7 +820,6 @@ static void mvebu_pcie_enable(struct mvebu_pcie *pcie)
- 	hw.map_irq        = of_irq_parse_and_map_pci;
- 	hw.ops            = &mvebu_pcie_ops;
- 	hw.align_resource = mvebu_pcie_align_resource;
--	hw.add_bus        = mvebu_pcie_add_bus;
- 
- 	pci_common_init(&hw);
+ 	return 0;
  }
+ 
+ void __weak arch_teardown_msi_irq(unsigned int irq)
+ {
+-	struct msi_chip *chip = irq_get_chip_data(irq);
++	struct msi_desc *entry = irq_get_msi_desc(irq);
++	struct msi_chip *chip = entry->dev->bus->msi;
+ 
+ 	if (!chip || !chip->teardown_irq)
+ 		return;
 -- 
 1.7.1
 
