@@ -1,92 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751408AbaJOW5E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 18:57:04 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:38976 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870AbaJOW5B (ORCPT
+	id S1751450AbaJOW7H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 18:59:07 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:46373 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809AbaJOW7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 18:57:01 -0400
-Date: Wed, 15 Oct 2014 15:56:57 -0700
-From: Dmitry Torokhov <dtor@chromium.org>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Benson Leung <bleung@chromium.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ACPI: do not fail suspend if unable to configure wakeup
-Message-ID: <20141015225657.GA818@dtor-ws>
+	Wed, 15 Oct 2014 18:59:04 -0400
+Date: Wed, 15 Oct 2014 17:20:13 +0200
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, fuse-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>
+Subject: Re: [PATCH v4 5/5] fuse: Allow user namespace mounts
+Message-ID: <20141015152013.GB988@ubuntu-mba51>
+Mail-Followup-To: Andy Lutomirski <luto@amacapital.net>,
+	Miklos Szeredi <miklos@szeredi.hu>,
+	fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	"Serge H. Hallyn" <serge.hallyn@ubuntu.com>
+References: <1413296756-25071-1-git-send-email-seth.forshee@canonical.com>
+ <1413296756-25071-6-git-send-email-seth.forshee@canonical.com>
+ <543E8BAD.7000207@mit.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <543E8BAD.7000207@mit.edu>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Newer kernels put i2c devices with ACPI companion in ACPI power domain and
-then ACPI will try to configure them for wakeup (if requested).
-Unfortunately on some Chromebooks firmware separates wakeup GPIO into a
-completely separate device (which is handled by the kernel as a sleep
-button), leaving the touchpads themselves not wakeup capable (as far as
-ACPI is concerned). This causes ACPI late suspend code to fail to configure
-them as wakeup sources and aborts entire suspend.
+On Wed, Oct 15, 2014 at 07:58:53AM -0700, Andy Lutomirski wrote:
+> On 10/14/2014 07:25 AM, Seth Forshee wrote:
+> > Cc: Eric W. Biederman <ebiederm@xmission.com>
+> > Cc: Serge H. Hallyn <serge.hallyn@ubuntu.com>
+> > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+> > ---
+> >  fs/fuse/inode.c | 4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+> > index 5e00a6a76049..6522926b14e4 100644
+> > --- a/fs/fuse/inode.c
+> > +++ b/fs/fuse/inode.c
+> > @@ -1212,7 +1212,7 @@ static void fuse_kill_sb_anon(struct super_block *sb)
+> >  static struct file_system_type fuse_fs_type = {
+> >  	.owner		= THIS_MODULE,
+> >  	.name		= "fuse",
+> > -	.fs_flags	= FS_HAS_SUBTYPE,
+> > +	.fs_flags	= FS_HAS_SUBTYPE | FS_USERNS_MOUNT,
+> >  	.mount		= fuse_mount,
+> >  	.kill_sb	= fuse_kill_sb_anon,
+> >  };
+> > @@ -1244,7 +1244,7 @@ static struct file_system_type fuseblk_fs_type = {
+> >  	.name		= "fuseblk",
+> >  	.mount		= fuse_mount_blk,
+> >  	.kill_sb	= fuse_kill_sb_blk,
+> > -	.fs_flags	= FS_REQUIRES_DEV | FS_HAS_SUBTYPE,
+> > +	.fs_flags	= FS_REQUIRES_DEV | FS_HAS_SUBTYPE | FS_USERNS_MOUNT,
+> 
+> I think it's decision time -- if these patches are applied, then FUSE
+> will be the first filesystem for which userns nodev behavior matters for
+> security, so applying this patch will enshrine an API decision.
+> 
+> I would very much prefer to make this patch depend on this:
+> 
+> http://lkml.kernel.org/g/2686c32f00b14148379e8cfee9c028c794d4aa1a.1407974494.git.luto@amacapital.net
+> 
+> That change will require that anyone who tries to mount one of these
+> things explicitly requests MS_NODEV instead of keeping the current
+> behavior of implicitly setting MS_NODEV and possibly confusing user code
+> that tries to remount.
+> 
+> If you like my patch, feel free to fold it in to your series, or Eric
+> can apply it directly (pretty please).
+> 
+> For background, with your patches as is, if you mount a FUSE fs and then
+> remount it with identical flags, the remount is likely to fail.
 
-To work around this issues let's not abort entire suspend process if
-driver asked to be a wakeup source but ACPI can not satisfy that
-request.
+I discussed this with Eric during LinuxCon NA ... as I recall he was
+undecided about whether or not to use your patch at the time. I do
+prefer an explicit failure over implicitly adding MS_NODEV, but it's not
+up to me. I do agree though that we should make a decision before
+merging the fuse patches, I was just assuming that the decision was
+already made.
 
-Note that originally I tried to simply change the driver to not mark
-device as wakeup source, unfortunately then we do not know that we
-should not be powering down the device completely, otherwise we can't
-wake up.
-
-Verified by making sure that "echo mem > /sys/power/state" works on
-Squawks.
-
-Reviewed-by: Benson Leung <bleung@chromium.org>
-Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
----
- drivers/acpi/device_pm.c | 16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/acpi/device_pm.c b/drivers/acpi/device_pm.c
-index 67075f8..440bc3d 100644
---- a/drivers/acpi/device_pm.c
-+++ b/drivers/acpi/device_pm.c
-@@ -871,6 +871,7 @@ int acpi_dev_suspend_late(struct device *dev)
- 	struct acpi_device *adev = ACPI_COMPANION(dev);
- 	u32 target_state;
- 	bool wakeup;
-+	bool can_wakeup;
- 	int error;
- 
- 	if (!adev)
-@@ -878,12 +879,19 @@ int acpi_dev_suspend_late(struct device *dev)
- 
- 	target_state = acpi_target_system_state();
- 	wakeup = device_may_wakeup(dev);
--	error = acpi_device_wakeup(adev, target_state, wakeup);
--	if (wakeup && error)
--		return error;
-+	can_wakeup = acpi_device_can_wakeup(adev);
-+
-+	if (can_wakeup) {
-+		error = acpi_device_wakeup(adev, target_state, wakeup);
-+		if (wakeup && error)
-+			return error;
-+	} else if (wakeup) {
-+		dev_warn(dev,
-+			 "device is not wakeup-capable, not enabling wakeup\n");
-+	}
- 
- 	error = acpi_dev_pm_low_power(dev, adev, target_state);
--	if (error)
-+	if (error && can_wakeup)
- 		acpi_device_wakeup(adev, ACPI_STATE_UNKNOWN, false);
- 
- 	return error;
--- 
-2.1.0.rc2.206.gedb03e5
-
-
--- 
-Dmitry
+Thanks,
+Seth
