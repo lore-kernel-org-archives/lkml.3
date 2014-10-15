@@ -1,31 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652AbaJOKG1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 06:06:27 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54517 "EHLO
+	id S1752670AbaJOKGj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 06:06:39 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54530 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751919AbaJOKGY (ORCPT
+	with ESMTP id S1751931AbaJOKGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 06:06:24 -0400
-Date: Wed, 15 Oct 2014 03:05:33 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-e167f995e26249aa93708589c5eea539652351fa@git.kernel.org>
-Cc: mingo@redhat.com, dzickus@redhat.com, paulus@samba.org, jolsa@kernel.org,
-        tglx@linutronix.de, hpa@zytor.com, acme@redhat.com,
-        namhyung@kernel.org, linux-kernel@vger.kernel.org, doug.hatch@hp.com,
-        peterz@infradead.org, jolsa@redhat.com, scott.norton@hp.com,
-        mingo@kernel.org
-Reply-To: mingo@kernel.org, scott.norton@hp.com, jolsa@redhat.com,
-        peterz@infradead.org, doug.hatch@hp.com, linux-kernel@vger.kernel.org,
-        namhyung@kernel.org, acme@redhat.com, hpa@zytor.com,
-        dzickus@redhat.com, paulus@samba.org, tglx@linutronix.de,
-        jolsa@kernel.org, mingo@redhat.com
-In-Reply-To: <20141014180353.GF3198@kernel.org>
-References: <20141014180353.GF3198@kernel.org>
+	Wed, 15 Oct 2014 06:06:35 -0400
+Date: Wed, 15 Oct 2014 03:05:46 -0700
+From: tip-bot for Stephane Eranian <tipbot@zytor.com>
+Message-ID: <tip-77faf4d060e3ee1fd2ff6cd39f2b2eb887100422@git.kernel.org>
+Cc: peterz@infradead.org, acme@redhat.com, hpa@zytor.com, dsahern@gmail.com,
+        linux-kernel@vger.kernel.org, eranian@google.com, namhyung@kernel.org,
+        tglx@linutronix.de, mingo@kernel.org, jolsa@redhat.com
+Reply-To: mingo@kernel.org, jolsa@redhat.com, tglx@linutronix.de,
+        eranian@google.com, namhyung@kernel.org, linux-kernel@vger.kernel.org,
+        dsahern@gmail.com, hpa@zytor.com, acme@redhat.com,
+        peterz@infradead.org
+In-Reply-To: <20141006083532.GA4850@quad>
+References: <20141006083532.GA4850@quad>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf machine: Add missing dsos->
- root rbtree root initialization
-Git-Commit-ID: e167f995e26249aa93708589c5eea539652351fa
+Subject: [tip:perf/urgent] perf tools: fix off-by-one error in maps
+Git-Commit-ID: 77faf4d060e3ee1fd2ff6cd39f2b2eb887100422
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,76 +34,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e167f995e26249aa93708589c5eea539652351fa
-Gitweb:     http://git.kernel.org/tip/e167f995e26249aa93708589c5eea539652351fa
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 14 Oct 2014 15:07:48 -0300
+Commit-ID:  77faf4d060e3ee1fd2ff6cd39f2b2eb887100422
+Gitweb:     http://git.kernel.org/tip/77faf4d060e3ee1fd2ff6cd39f2b2eb887100422
+Author:     Stephane Eranian <eranian@google.com>
+AuthorDate: Mon, 6 Oct 2014 10:35:32 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 14 Oct 2014 17:50:44 -0300
+CommitDate: Tue, 14 Oct 2014 17:50:55 -0300
 
-perf machine: Add missing dsos->root rbtree root initialization
+perf tools: fix off-by-one error in maps
 
-A segfault happens on 'perf test hists_link' because we end up using a
-struct machines on the stack, and then machines__init() was not
-initializing the newly introduced rb_root, just the existing list_head.
+This patch fixes off-by-one errors in the management of maps.
 
-When we introduced struct dsos, to group the two ways to store dsos,
-i.e. the linked list and the rbtree, we didn't turned the initialization
-done in:
+A map is defined by start address and length as implemented by
+map__new():
 
-	machines__init(machines->host) ->
-		machine__init() ->
-			INIT_LIST_HEAD
+  map__init(map, type, start, start + len, pgoff, dso);
 
-into a dsos__init() to keep on initializing the list_head but _as well_
-initializing the rb_root, oops.
+  map->start = addr;
+  map->end = end;
 
-All worked because outside perf-test we probably zalloc the whole thing
-which ends up initializing it in to NULL.
+Consequently, the actual address range is [start; end[ map->end is the
+first byte outside the range.
 
-So the problem looks contained to 'perf test' that uses it on stack,
-etc.
+This patch fixes two bugs where upper bound checking was off-by-one.
 
-Reported-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Waiman Long <Waiman.Long@hp.com>,
-Cc: Adrian Hunter <adrian.hunter@intel.com>,
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Douglas Hatch <doug.hatch@hp.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@kernel.org>
+In V2, we fix map_groups__fixup_overlappings() some more where
+map->start was off-by-one as reported by Jiri.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Scott J Norton <scott.norton@hp.com>
-Cc: Waiman Long <Waiman.Long@hp.com>,
-Link: http://lkml.kernel.org/r/20141014180353.GF3198@kernel.org
+Link: http://lkml.kernel.org/r/20141006083532.GA4850@quad
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/machine.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ tools/perf/util/map.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index b7d477f..34fc7c8 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -13,12 +13,18 @@
- #include <symbol/kallsyms.h>
- #include "unwind.h"
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index b709059..186418b 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -556,7 +556,7 @@ struct symbol *map_groups__find_symbol_by_name(struct map_groups *mg,
  
-+static void dsos__init(struct dsos *dsos)
-+{
-+	INIT_LIST_HEAD(&dsos->head);
-+	dsos->root = RB_ROOT;
-+}
-+
- int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
+ int map_groups__find_ams(struct addr_map_symbol *ams, symbol_filter_t filter)
  {
- 	map_groups__init(&machine->kmaps);
- 	RB_CLEAR_NODE(&machine->rb_node);
--	INIT_LIST_HEAD(&machine->user_dsos.head);
--	INIT_LIST_HEAD(&machine->kernel_dsos.head);
-+	dsos__init(&machine->user_dsos);
-+	dsos__init(&machine->kernel_dsos);
+-	if (ams->addr < ams->map->start || ams->addr > ams->map->end) {
++	if (ams->addr < ams->map->start || ams->addr >= ams->map->end) {
+ 		if (ams->map->groups == NULL)
+ 			return -1;
+ 		ams->map = map_groups__find(ams->map->groups, ams->map->type,
+@@ -664,7 +664,7 @@ int map_groups__fixup_overlappings(struct map_groups *mg, struct map *map,
+ 				goto move_map;
+ 			}
  
- 	machine->threads = RB_ROOT;
- 	INIT_LIST_HEAD(&machine->dead_threads);
+-			before->end = map->start - 1;
++			before->end = map->start;
+ 			map_groups__insert(mg, before);
+ 			if (verbose >= 2)
+ 				map__fprintf(before, fp);
+@@ -678,7 +678,7 @@ int map_groups__fixup_overlappings(struct map_groups *mg, struct map *map,
+ 				goto move_map;
+ 			}
+ 
+-			after->start = map->end + 1;
++			after->start = map->end;
+ 			map_groups__insert(mg, after);
+ 			if (verbose >= 2)
+ 				map__fprintf(after, fp);
