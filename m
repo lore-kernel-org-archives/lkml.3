@@ -1,137 +1,295 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048AbaJOLtn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 07:49:43 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:62188 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464AbaJOLtl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 07:49:41 -0400
+	id S1752134AbaJOLxj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 07:53:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53250 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751214AbaJOLxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 07:53:38 -0400
+Date: Wed, 15 Oct 2014 14:57:07 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: Re: [PATCH RFC] virtio_net: enable tx interrupt
+Message-ID: <20141015115707.GD26918@redhat.com>
+References: <1413323524-23380-1-git-send-email-mst@redhat.com>
+ <543E54B4.7040602@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20141014154151.GB10067@roeck-us.net>
-References: <1413298094-9276-1-git-send-email-octavian.purdila@intel.com>
-	<1413298094-9276-4-git-send-email-octavian.purdila@intel.com>
-	<20141014154151.GB10067@roeck-us.net>
-Date: Wed, 15 Oct 2014 14:49:39 +0300
-Message-ID: <CAE1zotKpgEqAhtQvsFFee8xnX02MmhwrM0YU-6OHVZHcxiAi9g@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 3/3] i2c: show and change bus frequency via sysfs
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Johan Hovold <johan@kernel.org>,
-        linux-i2c <linux-i2c@vger.kernel.org>, linux-api@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <543E54B4.7040602@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 14, 2014 at 6:41 PM, Guenter Roeck <linux@roeck-us.net> wrote:
->
-> On Tue, Oct 14, 2014 at 05:48:14PM +0300, Octavian Purdila wrote:
-> > This patch adds three new sysfs files: bus_frequency,
-> > bus_min_frequency and bus_max_frequency which allows the user to view
-> > or change the bus frequency on a per bus level.
+On Wed, Oct 15, 2014 at 07:04:20PM +0800, Jason Wang wrote:
+> On 10/15/2014 05:53 AM, Michael S. Tsirkin wrote:
+> > On newer hosts that support delayed tx interrupts,
+> > we probably don't have much to gain from orphaning
+> > packets early.
 > >
-
-<snip>
-
+> > Based on patch by Jason Wang.
+> >
+> > Note: this will likely degrade performance for hosts without event idx
+> > support.  Various fallback options are available, including
+> > orphaning conditionally.
+> > Testing TBD.
+> >
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> >  drivers/net/virtio_net.c | 119 +++++++++++++++++++++++++++++++++--------------
+> >  1 file changed, 83 insertions(+), 36 deletions(-)
+> >
+> > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> > index 6b6e136..62c059d 100644
+> > --- a/drivers/net/virtio_net.c
+> > +++ b/drivers/net/virtio_net.c
+> > @@ -72,6 +72,8 @@ struct send_queue {
+> >  
+> >  	/* Name of the send queue: output.$index */
+> >  	char name[40];
 > > +
-> > +static DEVICE_ATTR(bus_frequency, S_IRUGO, i2c_sysfs_freq_show,
-> > +                i2c_sysfs_freq_store);
->
-> Consider using DEVICE_ATTR_RO here. Also, extra empty line.
->
-
-Unfortunately that won't work because we must transform bus_frequency
-to a RW entry (via is_visible) if the bus can change the frequency. We
-can't use DEVIE_ATTR_RW either, because transforming a RW entry to a
-RO entry with is visible is not possible:
-
-fs/sysfs/group.c:
-
-static int create_files(struct kernfs_node *parent, struct kobject *kobj,
-...
-                        if (grp->is_visible) {
-                                mode = grp->is_visible(kobj, *attr, i);
-                                if (!mode)
-                                        continue;
-                        }
-                        error = sysfs_add_file_mode_ns(parent, *attr, false,
-                                                       (*attr)->mode | mode,
-                                                       NULL);
-
-Of course if we only allow a RW frequency entry as you suggest below,
-then we can use DEVICE_ATTR_RW.
-
-> > +
-> > +
-> > +static ssize_t
-> > +i2c_sysfs_min_freq_show(struct device *dev, struct device_attribute *attr,
-> > +                       char *buf)
+> > +	struct napi_struct napi;
+> >  };
+> >  
+> >  /* Internal representation of a receive virtqueue */
+> > @@ -211,15 +213,38 @@ static struct page *get_a_page(struct receive_queue *rq, gfp_t gfp_mask)
+> >  	return p;
+> >  }
+> >  
+> > +static int free_old_xmit_skbs(struct send_queue *sq, int budget)
 > > +{
-> > +     struct i2c_adapter *adap = to_i2c_adapter(dev);
+> > +	struct sk_buff *skb;
+> > +	unsigned int len;
+> > +	struct virtnet_info *vi = sq->vq->vdev->priv;
+> > +	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
+> > +	int sent = 0;
 > > +
-> > +     return snprintf(buf, PAGE_SIZE, "%d\n", adap->min_freq);
+> > +	while (sent < budget &&
+> > +	       (skb = virtqueue_get_buf(sq->vq, &len)) != NULL) {
+> > +		pr_debug("Sent skb %p\n", skb);
+> > +
+> > +		u64_stats_update_begin(&stats->tx_syncp);
+> > +		stats->tx_bytes += skb->len;
+> > +		stats->tx_packets++;
+> > +		u64_stats_update_end(&stats->tx_syncp);
+> > +
+> > +		dev_kfree_skb_any(skb);
+> > +		sent++;
+> > +	}
+> > +
+> > +	return sent;
 > > +}
 > > +
-> > +static DEVICE_ATTR(bus_min_frequency, S_IRUGO, i2c_sysfs_min_freq_show, NULL);
-> > +
->
-> Consider using DEVICE_ATTR_RO.
->
-
-OK.
-
-> > +static ssize_t
-> > +i2c_sysfs_max_freq_show(struct device *dev, struct device_attribute *attr,
-> > +                       char *buf)
+> >  static void skb_xmit_done(struct virtqueue *vq)
+> >  {
+> >  	struct virtnet_info *vi = vq->vdev->priv;
+> > +	struct send_queue *sq = &vi->sq[vq2txq(vq)];
+> >  
+> > -	/* Suppress further interrupts. */
+> > -	virtqueue_disable_cb(vq);
+> > -
+> > -	/* We were probably waiting for more output buffers. */
+> > -	netif_wake_subqueue(vi->dev, vq2txq(vq));
+> > +	if (napi_schedule_prep(&sq->napi)) {
+> > +		__napi_schedule(&sq->napi);
+> > +	}
+> >  }
+> >  
+> >  static unsigned int mergeable_ctx_to_buf_truesize(unsigned long mrg_ctx)
+> > @@ -766,6 +791,37 @@ again:
+> >  	return received;
+> >  }
+> >  
+> > +static int virtnet_poll_tx(struct napi_struct *napi, int budget)
 > > +{
-> > +     struct i2c_adapter *adap = to_i2c_adapter(dev);
+> > +	struct send_queue *sq =
+> > +		container_of(napi, struct send_queue, napi);
+> > +	struct virtnet_info *vi = sq->vq->vdev->priv;
+> > +	struct netdev_queue *txq = netdev_get_tx_queue(vi->dev, vq2txq(sq->vq));
+> > +	unsigned int r, sent = 0;
 > > +
-> > +     return snprintf(buf, PAGE_SIZE, "%d\n", adap->max_freq);
+> > +again:
+> > +	__netif_tx_lock(txq, smp_processor_id());
+> > +	virtqueue_disable_cb(sq->vq);
+> > +	sent += free_old_xmit_skbs(sq, budget - sent);
+> > +
+> > +	if (sent < budget) {
+> > +		r = virtqueue_enable_cb_prepare(sq->vq);
+> 
+> So even virtqueue_enable_cb_delayed() was used in start_xmit(). This can
+> move used index backwards to trigger unnecessary interrupts.
+
+Good point. I'll rework this to use virtqueue_enable_cb_delayed.
+
+virtqueue_enable_cb_delayed_prepare might be nice to
+reduce lock contention, but that needs to be benchmarked.
+
+
+> > +		napi_complete(napi);
+> > +		__netif_tx_unlock(txq);
+> > +		if (unlikely(virtqueue_poll(sq->vq, r)) &&
+> > +		    napi_schedule_prep(napi)) {
+> > +			virtqueue_disable_cb(sq->vq);
+> > +			__napi_schedule(napi);
+> > +			goto again;
+> > +		}
+> > +	} else {
+> > +		__netif_tx_unlock(txq);
+> > +	}
+> > +
+> > +	netif_wake_subqueue(vi->dev, vq2txq(sq->vq));
+> > +	return sent;
 > > +}
 > > +
-> > +static DEVICE_ATTR(bus_max_frequency, S_IRUGO, i2c_sysfs_max_freq_show, NULL);
+> >  #ifdef CONFIG_NET_RX_BUSY_POLL
+> >  /* must be called with local_bh_disable()d */
+> >  static int virtnet_busy_poll(struct napi_struct *napi)
+> > @@ -814,30 +870,12 @@ static int virtnet_open(struct net_device *dev)
+> >  			if (!try_fill_recv(&vi->rq[i], GFP_KERNEL))
+> >  				schedule_delayed_work(&vi->refill, 0);
+> >  		virtnet_napi_enable(&vi->rq[i]);
+> > +		napi_enable(&vi->sq[i].napi);
+> >  	}
+> >  
+> >  	return 0;
+> >  }
+> >  
+> > -static void free_old_xmit_skbs(struct send_queue *sq)
+> > -{
+> > -	struct sk_buff *skb;
+> > -	unsigned int len;
+> > -	struct virtnet_info *vi = sq->vq->vdev->priv;
+> > -	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
+> > -
+> > -	while ((skb = virtqueue_get_buf(sq->vq, &len)) != NULL) {
+> > -		pr_debug("Sent skb %p\n", skb);
+> > -
+> > -		u64_stats_update_begin(&stats->tx_syncp);
+> > -		stats->tx_bytes += skb->len;
+> > -		stats->tx_packets++;
+> > -		u64_stats_update_end(&stats->tx_syncp);
+> > -
+> > -		dev_kfree_skb_any(skb);
+> > -	}
+> > -}
+> > -
+> >  static int xmit_skb(struct send_queue *sq, struct sk_buff *skb)
+> >  {
+> >  	struct skb_vnet_hdr *hdr;
+> > @@ -902,7 +940,9 @@ static int xmit_skb(struct send_queue *sq, struct sk_buff *skb)
+> >  		sg_set_buf(sq->sg, hdr, hdr_len);
+> >  		num_sg = skb_to_sgvec(skb, sq->sg + 1, 0, skb->len) + 1;
+> >  	}
+> > -	return virtqueue_add_outbuf(sq->vq, sq->sg, num_sg, skb, GFP_ATOMIC);
 > > +
-> Consider using DEVICE_ATTR_RO.
->
+> > +	return virtqueue_add_outbuf(sq->vq, sq->sg, num_sg, skb,
+> > +				    GFP_ATOMIC);
+> >  }
+> >  
+> >  static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
+> > @@ -910,10 +950,9 @@ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
+> >  	struct virtnet_info *vi = netdev_priv(dev);
+> >  	int qnum = skb_get_queue_mapping(skb);
+> >  	struct send_queue *sq = &vi->sq[qnum];
+> > -	int err;
+> > +	int err, qsize = virtqueue_get_vring_size(sq->vq);
+> >  
+> > -	/* Free up any pending old buffers before queueing new ones. */
+> > -	free_old_xmit_skbs(sq);
+> 
+> I think we'd better keep this. Since it may the tx skb freeing not
+> totally depends on the tx interrupt, delayed interrupt may work better
+> without damage the latency.
 
-OK.
+Hmm ok but I think it's best to do it at the end,
+after we have sent the packet.
+Will update the patch.
 
-> Overall, it seems to me that the bus_ in front of the attrribute names
-> is really not necessary. The attributes are attached to the adapter, so it
-> should be obvious that the attributes describe the adapter (=bus) frequency and
-> not some other frequency.
->
-> > +umode_t i2c_adapter_visible_attr(struct kobject *kobj,
-> > +                              struct attribute *attr, int idx)
->
-> static umode_t
->
-
-Oops :)
-
-> > +{
-> > +     struct device *dev = container_of(kobj, struct device, kobj);
-> > +     struct i2c_adapter *adap = to_i2c_adapter(dev);
-> > +     umode_t mode = attr->mode;
-> > +
-> > +     if (attr == &dev_attr_bus_min_frequency.attr)
-> > +             return adap->min_freq ? mode : 0;
-> > +
-> > +     if (attr == &dev_attr_bus_max_frequency.attr)
-> > +             return adap->max_freq ? mode : 0;
-> > +
-> > +     if (attr == &dev_attr_bus_frequency.attr) {
-> > +             if (adap->set_freq)
-> > +                     mode |= S_IWUSR;
-> > +             return adap->freq ? mode : 0;
->
-> Personally, I would make all those attributes only visible if the adapter
-> supports setting the frquency, and not bother with other conditions,
-> to keep things simple. Not a strong call, though.
->
-
-I don't have a strong opinion either. I think a RO frequency entry
-would help with debugging, but I am not sure how useful it is in
-practice.
+> > +	virtqueue_disable_cb(sq->vq);
+> >  
+> >  	/* Try to transmit */
+> >  	err = xmit_skb(sq, skb);
+> > @@ -930,22 +969,20 @@ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
+> >  	}
+> >  	virtqueue_kick(sq->vq);
+> >  
+> > -	/* Don't wait up for transmitted skbs to be freed. */
+> > -	skb_orphan(skb);
+> > -	nf_reset(skb);
+> > -
+> >  	/* Apparently nice girls don't return TX_BUSY; stop the queue
+> >  	 * before it gets out of hand.  Naturally, this wastes entries. */
+> >  	if (sq->vq->num_free < 2+MAX_SKB_FRAGS) {
+> >  		netif_stop_subqueue(dev, qnum);
+> >  		if (unlikely(!virtqueue_enable_cb_delayed(sq->vq))) {
+> >  			/* More just got used, free them then recheck. */
+> > -			free_old_xmit_skbs(sq);
+> > +			free_old_xmit_skbs(sq, qsize);
+> >  			if (sq->vq->num_free >= 2+MAX_SKB_FRAGS) {
+> >  				netif_start_subqueue(dev, qnum);
+> >  				virtqueue_disable_cb(sq->vq);
+> >  			}
+> >  		}
+> > +	} else if (virtqueue_enable_cb_delayed(sq->vq)) {
+> > +		free_old_xmit_skbs(sq, qsize);
+> >  	}
+> >  
+> >  	return NETDEV_TX_OK;
+> > @@ -1124,8 +1161,10 @@ static int virtnet_close(struct net_device *dev)
+> >  	/* Make sure refill_work doesn't re-enable napi! */
+> >  	cancel_delayed_work_sync(&vi->refill);
+> >  
+> > -	for (i = 0; i < vi->max_queue_pairs; i++)
+> > +	for (i = 0; i < vi->max_queue_pairs; i++) {
+> >  		napi_disable(&vi->rq[i].napi);
+> > +		napi_disable(&vi->sq[i].napi);
+> > +	}
+> >  
+> >  	return 0;
+> >  }
+> > @@ -1438,8 +1477,10 @@ static void virtnet_free_queues(struct virtnet_info *vi)
+> >  {
+> >  	int i;
+> >  
+> > -	for (i = 0; i < vi->max_queue_pairs; i++)
+> > +	for (i = 0; i < vi->max_queue_pairs; i++) {
+> >  		netif_napi_del(&vi->rq[i].napi);
+> > +		netif_napi_del(&vi->sq[i].napi);
+> > +	}
+> >  
+> >  	kfree(vi->rq);
+> >  	kfree(vi->sq);
+> > @@ -1593,6 +1634,8 @@ static int virtnet_alloc_queues(struct virtnet_info *vi)
+> >  		netif_napi_add(vi->dev, &vi->rq[i].napi, virtnet_poll,
+> >  			       napi_weight);
+> >  		napi_hash_add(&vi->rq[i].napi);
+> > +		netif_napi_add(vi->dev, &vi->sq[i].napi, virtnet_poll_tx,
+> > +			       napi_weight);
+> >  
+> >  		sg_init_table(vi->rq[i].sg, ARRAY_SIZE(vi->rq[i].sg));
+> >  		ewma_init(&vi->rq[i].mrg_avg_pkt_len, 1, RECEIVE_AVG_WEIGHT);
+> > @@ -1893,8 +1936,10 @@ static int virtnet_freeze(struct virtio_device *vdev)
+> >  	if (netif_running(vi->dev)) {
+> >  		for (i = 0; i < vi->max_queue_pairs; i++) {
+> >  			napi_disable(&vi->rq[i].napi);
+> > +			napi_disable(&vi->sq[i].napi);
+> >  			napi_hash_del(&vi->rq[i].napi);
+> >  			netif_napi_del(&vi->rq[i].napi);
+> > +			netif_napi_del(&vi->sq[i].napi);
+> >  		}
+> >  	}
+> >  
+> > @@ -1919,8 +1964,10 @@ static int virtnet_restore(struct virtio_device *vdev)
+> >  			if (!try_fill_recv(&vi->rq[i], GFP_KERNEL))
+> >  				schedule_delayed_work(&vi->refill, 0);
+> >  
+> > -		for (i = 0; i < vi->max_queue_pairs; i++)
+> > +		for (i = 0; i < vi->max_queue_pairs; i++) {
+> >  			virtnet_napi_enable(&vi->rq[i]);
+> > +			napi_enable(&vi->sq[i].napi);
+> > +		}
+> >  	}
+> >  
+> >  	netif_device_attach(vi->dev);
