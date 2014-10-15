@@ -1,79 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756109AbaJOCbN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 22:31:13 -0400
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:43876 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755951AbaJOCbL (ORCPT
+	id S932784AbaJOC0B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 22:26:01 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:39160 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932669AbaJOCZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 22:31:11 -0400
-X-IronPort-AV: E=Sophos;i="5.04,720,1406617200"; 
-   d="scan'208";a="48460682"
-Message-ID: <543DDC6D.8030701@broadcom.com>
-Date: Tue, 14 Oct 2014 19:31:09 -0700
-From: Scott Branden <sbranden@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Tue, 14 Oct 2014 22:25:47 -0400
+From: Yijing Wang <wangyijing@huawei.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>, <linux-arch@vger.kernel.org>,
+        <arnab.basu@freescale.com>, <Bharat.Bhushan@freescale.com>,
+        <x86@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        <xen-devel@lists.xenproject.org>, Joerg Roedel <joro@8bytes.org>,
+        <iommu@lists.linux-foundation.org>, <linux-mips@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-s390@vger.kernel.org>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        "Tony Luck" <tony.luck@intel.com>, <linux-ia64@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "Sergei Shtylyov" <sergei.shtylyov@cogentembedded.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
+        Liviu Dudau <liviu@dudau.co.uk>, Yijing Wang <wangyijing@huawei.com>
+Subject: [PATCH v3 09/27] arm/PCI: Clean unused pcibios_add_bus() and pcibios_remove_bus()
+Date: Wed, 15 Oct 2014 11:06:57 +0800
+Message-ID: <1413342435-7876-10-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1413342435-7876-1-git-send-email-wangyijing@huawei.com>
+References: <1413342435-7876-1-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Mauro Carvalho Chehab" <m.chehab@samsung.com>,
-        Antti Palosaari <crope@iki.fi>, Jingoo Han <jg1.han@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <swarren@wwwdotorg.org>
-Subject: Re: get_maintainers.pl doesn't actually get the real MAINTAINERS?
-References: <543DD959.2060801@broadcom.com> <1413339973.7475.1.camel@perches.com>
-In-Reply-To: <1413339973.7475.1.camel@perches.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.175.100.166]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-10-14 07:26 PM, Joe Perches wrote:
-> On Tue, 2014-10-14 at 19:18 -0700, Scott Branden wrote:
->> Hello,
->>
->> I try running scripts/get_maintainers.pl but it doesn't seem to get the
->> real maintainers properly.  Please note this is run against the current
->> MAINTAINERS file.
->>
->> One Example:  I would expect drivers/mmc/host/sdhci-bcm2835.c to be
->> maintained by Stephen Warren based on drivers/*/*bcm2835* below.
->
-> get_maintainers doesn't use * as a depth wildcard
->
-> */ matches a single top level directory level
-> */*/ matches one level below the top directory level.
->
->>    But
->> the get_maintainers.pl script does not seem to process the information
->> in such a way.  So what needs to be corrected - the script or the syntax
->> used in the MAINTAINERS file?
->>
->> BROADCOM BCM2835 ARM ARCHICTURE
->> M:	Stephen Warren <swarren@wwwdotorg.org>
->> L:	linux-rpi-kernel@lists.infradead.org (moderated for non-subscribers)
->> T:	git git://git.kernel.org/pub/scm/linux/kernel/git/swarren/linux-rpi.git
->> S:	Maintained
->> F:	arch/arm/mach-bcm/board_bcm2835.c
->> F:	arch/arm/boot/dts/bcm2835*
->> F:	arch/arm/configs/bcm2835_defconfig
->> F:	drivers/*/*bcm2835*
->
-> F:	drivers/*/*/*bmc2835*
-Thanks for the explanation.  So somebody should really do the following 
-to maintain any files no matter where they are located?
-F:	*/*bcm2835*
-F:	*/*/*bcm2835*
-F:	*/*/*/*bcm2835*
-F:	*/*/*/*/*bcm2835*
-F:	*/*/*/*/*/*bcm2835*
-F:	*/*/*/*/*/*/*bcm2835*
-F:	*/*/*/*/*/*/*/*bcm2835*
+MSI chip will be saved in pci_sys_data, now we can
+clean up pcibios_add_bus() and pcibios_remove_bus()
+in arm, and use pci_find_msi_chip() to get msi chip
+in core MSI code.
 
-Or, can a recursive option be added in the script?
->
->
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+---
+ arch/arm/include/asm/mach/pci.h |    4 ----
+ arch/arm/kernel/bios32.c        |   16 ----------------
+ drivers/pci/msi.c               |   11 +++--------
+ 3 files changed, 3 insertions(+), 28 deletions(-)
+
+diff --git a/arch/arm/include/asm/mach/pci.h b/arch/arm/include/asm/mach/pci.h
+index 59b0d87..230b2c9 100644
+--- a/arch/arm/include/asm/mach/pci.h
++++ b/arch/arm/include/asm/mach/pci.h
+@@ -39,8 +39,6 @@ struct hw_pci {
+ 					  resource_size_t start,
+ 					  resource_size_t size,
+ 					  resource_size_t align);
+-	void		(*add_bus)(struct pci_bus *bus);
+-	void		(*remove_bus)(struct pci_bus *bus);
+ };
+ 
+ /*
+@@ -71,8 +69,6 @@ struct pci_sys_data {
+ 					  resource_size_t start,
+ 					  resource_size_t size,
+ 					  resource_size_t align);
+-	void		(*add_bus)(struct pci_bus *bus);
+-	void		(*remove_bus)(struct pci_bus *bus);
+ 	void		*private_data;	/* platform controller private data	*/
+ };
+ 
+diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
+index a19038d..b1b872e 100644
+--- a/arch/arm/kernel/bios32.c
++++ b/arch/arm/kernel/bios32.c
+@@ -360,20 +360,6 @@ void pcibios_fixup_bus(struct pci_bus *bus)
+ }
+ EXPORT_SYMBOL(pcibios_fixup_bus);
+ 
+-void pcibios_add_bus(struct pci_bus *bus)
+-{
+-	struct pci_sys_data *sys = bus->sysdata;
+-	if (sys->add_bus)
+-		sys->add_bus(bus);
+-}
+-
+-void pcibios_remove_bus(struct pci_bus *bus)
+-{
+-	struct pci_sys_data *sys = bus->sysdata;
+-	if (sys->remove_bus)
+-		sys->remove_bus(bus);
+-}
+-
+ /*
+  * Swizzle the device pin each time we cross a bridge.  If a platform does
+  * not provide a swizzle function, we perform the standard PCI swizzling.
+@@ -478,8 +464,6 @@ static void pcibios_init_hw(struct device *parent, struct hw_pci *hw,
+ 		sys->swizzle = hw->swizzle;
+ 		sys->map_irq = hw->map_irq;
+ 		sys->align_resource = hw->align_resource;
+-		sys->add_bus = hw->add_bus;
+-		sys->remove_bus = hw->remove_bus;
+ 		INIT_LIST_HEAD(&sys->resources);
+ 
+ 		if (hw->private_data)
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index f11108c..56e54ad 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -32,12 +32,10 @@ int pci_msi_ignore_mask;
+ 
+ int __weak arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
+ {
+-	struct msi_chip *chip = dev->bus->msi;
++	struct msi_chip *chip;
+ 	int err;
+ 
+-	if (!chip)
+-		chip = pci_msi_chip(dev->bus);
+-
++	chip = pci_msi_chip(dev->bus);
+ 	if (!chip || !chip->setup_irq)
+ 		return -EINVAL;
+ 
+@@ -51,10 +49,7 @@ int __weak arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
+ void __weak arch_teardown_msi_irq(unsigned int irq)
+ {
+ 	struct msi_desc *entry = irq_get_msi_desc(irq);
+-	struct msi_chip *chip = entry->dev->bus->msi;
+-
+-	if (!chip)
+-		chip = pci_msi_chip(entry->dev->bus);
++	struct msi_chip *chip = pci_msi_chip(entry->dev->bus);
+ 
+ 	if (!chip || !chip->teardown_irq)
+ 		return;
+-- 
+1.7.1
 
