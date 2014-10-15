@@ -1,62 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932666AbaJODaT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 23:30:19 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:34523 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755643AbaJODaS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 23:30:18 -0400
-From: Wang Nan <wangnan0@huawei.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <zhangzhiqiang.zhang@huawei.com>,
-        <peifeiyue@huawei.com>, <wangnan0@huawei.com>
-Subject: [PATCH] perf tools: fix incorrect header string
-Date: Wed, 15 Oct 2014 11:28:53 +0800
-Message-ID: <1413343733-7973-1-git-send-email-wangnan0@huawei.com>
-X-Mailer: git-send-email 1.8.4
+	id S1755965AbaJODer (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 23:34:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6342 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755841AbaJODep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 23:34:45 -0400
+Message-ID: <543DEB4B.1010505@redhat.com>
+Date: Wed, 15 Oct 2014 11:34:35 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020209.543DEA47.016B,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 07fc0b3cf2c96426d9dd023fbf0869a9
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH net-next RFC 3/3] virtio-net: conditionally enable tx
+ interrupt
+References: <1413011806-3813-1-git-send-email-jasowang@redhat.com> <1413011806-3813-4-git-send-email-jasowang@redhat.com> <20141014215146.GB23344@redhat.com>
+In-Reply-To: <20141014215146.GB23344@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit fbe96f29 (perf tools: Make perf.data more self-descriptive)
-read '/proc/cpuinfo' to form cpu descriptor. For ARM, it finds
-'Processor' field. It is correct when the patch merged, but due to
-commit b4b8f770 (ARM: kernel: update cpuinfo to print all online CPUs
-features), the corresponding information becomes 'model name' field.
+On 10/15/2014 05:51 AM, Michael S. Tsirkin wrote:
+> On Sat, Oct 11, 2014 at 03:16:46PM +0800, Jason Wang wrote:
+>> > We free transmitted packets in ndo_start_xmit() in the past to get better
+>> > performance in the past. One side effect is that skb_orphan() needs to be
+>> > called in ndo_start_xmit() which makes sk_wmem_alloc not accurate in
+>> > fact. For TCP protocol, this means several optimization could not work well
+>> > such as TCP small queue and auto corking. This can lead extra low
+>> > throughput of small packets stream.
+>> > 
+>> > Thanks to the urgent descriptor support. This patch tries to solve this
+>> > issue by enable the tx interrupt selectively for stream packets. This means
+>> > we don't need to orphan TCP stream packets in ndo_start_xmit() but enable
+>> > tx interrupt for those packets. After we get tx interrupt, a tx napi was
+>> > scheduled to free those packets.
+>> > 
+>> > With this method, sk_wmem_alloc of TCP socket were more accurate than in
+>> > the past which let TCP can batch more through TSQ and auto corking.
+>> > 
+>> > Signed-off-by: Jason Wang <jasowang@redhat.com>
+>> > ---
+>> >  drivers/net/virtio_net.c | 164 ++++++++++++++++++++++++++++++++++++-----------
+>> >  1 file changed, 128 insertions(+), 36 deletions(-)
+>> > 
+>> > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+>> > index 5810841..b450fc4 100644
+>> > --- a/drivers/net/virtio_net.c
+>> > +++ b/drivers/net/virtio_net.c
+>> > @@ -72,6 +72,8 @@ struct send_queue {
+>> >  
+>> >  	/* Name of the send queue: output.$index */
+>> >  	char name[40];
+>> > +
+>> > +	struct napi_struct napi;
+>> >  };
+>> >  
+>> >  /* Internal representation of a receive virtqueue */
+>> > @@ -217,15 +219,40 @@ static struct page *get_a_page(struct receive_queue *rq, gfp_t gfp_mask)
+>> >  	return p;
+>> >  }
+>> >  
+>> > +static int free_old_xmit_skbs(struct send_queue *sq, int budget)
+>> > +{
+>> > +	struct sk_buff *skb;
+>> > +	unsigned int len;
+>> > +	struct virtnet_info *vi = sq->vq->vdev->priv;
+>> > +	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
+>> > +	int sent = 0;
+>> > +
+>> > +	while (sent < budget &&
+>> > +	       (skb = virtqueue_get_buf(sq->vq, &len)) != NULL) {
+>> > +		pr_debug("Sent skb %p\n", skb);
+>> > +
+>> > +		u64_stats_update_begin(&stats->tx_syncp);
+>> > +		stats->tx_bytes += skb->len;
+>> > +		stats->tx_packets++;
+>> > +		u64_stats_update_end(&stats->tx_syncp);
+>> > +
+>> > +		dev_kfree_skb_any(skb);
+>> > +		sent++;
+>> > +	}
+>> > +
+>> > +	return sent;
+>> > +}
+>> > +
+>> >  static void skb_xmit_done(struct virtqueue *vq)
+>> >  {
+>> >  	struct virtnet_info *vi = vq->vdev->priv;
+>> > +	struct send_queue *sq = &vi->sq[vq2txq(vq)];
+>> >  
+>> > -	/* Suppress further interrupts. */
+>> > -	virtqueue_disable_cb(vq);
+>> > -
+>> > -	/* We were probably waiting for more output buffers. */
+>> > -	netif_wake_subqueue(vi->dev, vq2txq(vq));
+>> > +	if (napi_schedule_prep(&sq->napi)) {
+>> > +		virtqueue_disable_cb(vq);
+>> > +		virtqueue_disable_cb_urgent(vq);
+> This disable_cb is no longer safe in xmit_done callback,
+> since queue can be running at the same time.
+>
+> You must do it under tx lock. And yes, this likely will not work
+> work well without event_idx. We'll probably need extra
+> synchronization for such old hosts.
+>
+>
+>
 
-This patch simply corrects it.
-
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
----
- tools/perf/perf-sys.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/tools/perf/perf-sys.h b/tools/perf/perf-sys.h
-index 937e432..4293970 100644
---- a/tools/perf/perf-sys.h
-+++ b/tools/perf/perf-sys.h
-@@ -113,7 +113,7 @@
- #define mb()		((void(*)(void))0xffff0fa0)()
- #define wmb()		((void(*)(void))0xffff0fa0)()
- #define rmb()		((void(*)(void))0xffff0fa0)()
--#define CPUINFO_PROC	"Processor"
-+#define CPUINFO_PROC	"model name"
- #endif
- 
- #ifdef __aarch64__
--- 
-1.8.4
-
+Yes, and the virtqueue_enable_cb_prepare() in virtnet_poll_tx() needs to
+be synced with virtqueue_enabled_cb_dealyed(). Otherwise an old idx will
+be published and we may still see tx interrupt storm.
