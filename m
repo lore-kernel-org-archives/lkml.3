@@ -1,121 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751238AbaJOVEJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 17:04:09 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:23785 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721AbaJOVEI (ORCPT
+	id S1751340AbaJOVNJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 17:13:09 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:36773 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762AbaJOVNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 17:04:08 -0400
-Date: Wed, 15 Oct 2014 17:03:55 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, boris.ostrovsky@oracle.com,
-        xen-devel@lists.xenproject.org,
-        " linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH next] xen: pcifront: Process failure for
- pcifront_(re)scan_root()
-Message-ID: <20141015210355.GB6579@laptop.dumpdata.com>
-References: <469h2cuyy0a5y5fn77uh3y1b.1413332405802@email.android.com>
+	Wed, 15 Oct 2014 17:13:07 -0400
+Date: Wed, 15 Oct 2014 14:13:03 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Suleiman Souhlal <suleiman@google.com>, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [patch resend] mm, thp: fix collapsing of hugepages on madvise
+In-Reply-To: <alpine.DEB.2.02.1410041947080.7055@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.02.1410151412120.3146@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1410041947080.7055@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <469h2cuyy0a5y5fn77uh3y1b.1413332405802@email.android.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 08:20:06AM +0800, Chen Gang wrote:
-> 
-> At least for me, what you said sound OK.
+If an anonymous mapping is not allowed to fault thp memory and then
+madvise(MADV_HUGEPAGE) is used after fault, khugepaged will never
+collapse this memory into thp memory.
 
-Let me review it - next week.
-> 
-> Thanks.
-> 
-> 
-> Send from Lenovo A788t.
-> 
-> Bjorn Helgaas <bhelgaas@google.com> wrote:
-> 
-> >On Mon, Oct 06, 2014 at 11:04:45AM +0800, Chen Gang wrote:
-> >> When pcifront_rescan_root() or pcifront_scan_root() fails, need return
-> >> error code, neither set XenbusStateConnected state, just like the other
-> >> areas have done.
-> >>
-> >> For pcifront_rescan_root(), it will return error code ("num_roots = 0;",
-> >> skip xenbus_switch_state return value).
-> >> 
-> >> For pcifront_scan_root(), it will return 0 ("num_roots = 0;", set 0 by
-> >> the return value of xenbus_switch_state, which always return 0, at
-> >> present).
-> >
-> >The changelog is somewhat confusing because it talks about the patch hunks
-> >in reverse order (the pcifront_scan_root() change is first in the patch,
-> >but the changelog mentions pcifront_rescan_root() first).  I *think* this
-> >means:
-> >
-> >  When pcifront_try_connect() finds no PCI roots, it falls back to calling
-> >  pcifront_scan_root() for 0000:00.  If that fails, it used to switch to
-> >  XenbusStateConnected and return success (because xenbus_switch_state()
-> >  currently always succeeds).
-> >
-> >  If pcifront_scan_root() fails, leave the XenbusState unchanged and
-> >  return an error code.
-> >
-> >  Similarly, pcifront_attach_devices() falls back to calling
-> >  pcifront_rescan_root() for 0000:00.  If that fails, it used to 
-> >  switch to XenbusStateConnected and return an error code.
-> >
-> >  If pcifront_rescan_root() fails, leave the XenbusState unchanged and
-> >  return the error code.
-> >
-> >The "num_roots" part doesn't seem relevant to me.
-> >
-> >> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-> >
-> >Konrad, if you want to take this, feel free.  Otherwise, if you ack it and
-> >you think my changelog understanding makes sense, I can pick it up.
-> >
-> >It does seem odd that pcifront_attach_devices() ignores the
-> >xenbus_switch_state() return value while pcifront_try_connect() does not.
-> >But many other callers also ignore the return value, so maybe that's OK.
-> >
-> >Bjorn
-> >
-> >> ---
-> >>  drivers/pci/xen-pcifront.c | 10 ++++++++++
-> >>  1 file changed, 10 insertions(+)
-> >> 
-> >> diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
-> >> index 53df39a..d78d884 100644
-> >> --- a/drivers/pci/xen-pcifront.c
-> >> +++ b/drivers/pci/xen-pcifront.c
-> >> @@ -866,6 +866,11 @@ static int pcifront_try_connect(struct pcifront_device *pdev)
-> >>  		xenbus_dev_error(pdev->xdev, err,
-> >>  				 "No PCI Roots found, trying 0000:00");
-> >>  		err = pcifront_scan_root(pdev, 0, 0);
-> >> +		if (err) {
-> >> +			xenbus_dev_fatal(pdev->xdev, err,
-> >> +					 "Error scanning PCI root 0000:00");
-> >> +			goto out;
-> >> +		}
-> >>  		num_roots = 0;
-> >>  	} else if (err != 1) {
-> >>  		if (err == 0)
-> >> @@ -947,6 +952,11 @@ static int pcifront_attach_devices(struct pcifront_device *pdev)
-> >>  		xenbus_dev_error(pdev->xdev, err,
-> >>  				 "No PCI Roots found, trying 0000:00");
-> >>  		err = pcifront_rescan_root(pdev, 0, 0);
-> >> +		if (err) {
-> >> +			xenbus_dev_fatal(pdev->xdev, err,
-> >> +					 "Error scanning PCI root 0000:00");
-> >> +			goto out;
-> >> +		}
-> >>  		num_roots = 0;
-> >>  	} else if (err != 1) {
-> >>  		if (err == 0)
-> >> -- 
-> >> 1.9.3
+This occurs because the madvise(2) handler for thp, hugepage_madvise(),
+clears VM_NOHUGEPAGE on the stack and it isn't stored in vma->vm_flags
+until the final action of madvise_behavior().  This causes the
+khugepaged_enter_vma_merge() to be a no-op in hugepage_madvise() when the
+vma had previously had VM_NOHUGEPAGE set.
+
+Fix this by passing the correct vma flags to the khugepaged mm slot
+handler.  There's no chance khugepaged can run on this vma until after
+madvise_behavior() returns since we hold mm->mmap_sem.
+
+It would be possible to clear VM_NOHUGEPAGE directly from vma->vm_flags
+in hugepage_advise(), but I didn't want to introduce special case
+behavior into madvise_behavior().  I think it's best to just let it
+always set vma->vm_flags itself.
+
+Cc: <stable@vger.kernel.org>
+Reported-by: Suleiman Souhlal <suleiman@google.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ include/linux/khugepaged.h | 17 ++++++++++-------
+ mm/huge_memory.c           | 11 ++++++-----
+ mm/mmap.c                  |  8 ++++----
+ 3 files changed, 20 insertions(+), 16 deletions(-)
+
+diff --git a/include/linux/khugepaged.h b/include/linux/khugepaged.h
+--- a/include/linux/khugepaged.h
++++ b/include/linux/khugepaged.h
+@@ -6,7 +6,8 @@
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ extern int __khugepaged_enter(struct mm_struct *mm);
+ extern void __khugepaged_exit(struct mm_struct *mm);
+-extern int khugepaged_enter_vma_merge(struct vm_area_struct *vma);
++extern int khugepaged_enter_vma_merge(struct vm_area_struct *vma,
++				      unsigned long vm_flags);
+ 
+ #define khugepaged_enabled()					       \
+ 	(transparent_hugepage_flags &				       \
+@@ -35,13 +36,13 @@ static inline void khugepaged_exit(struct mm_struct *mm)
+ 		__khugepaged_exit(mm);
+ }
+ 
+-static inline int khugepaged_enter(struct vm_area_struct *vma)
++static inline int khugepaged_enter(struct vm_area_struct *vma,
++				   unsigned long vm_flags)
+ {
+ 	if (!test_bit(MMF_VM_HUGEPAGE, &vma->vm_mm->flags))
+ 		if ((khugepaged_always() ||
+-		     (khugepaged_req_madv() &&
+-		      vma->vm_flags & VM_HUGEPAGE)) &&
+-		    !(vma->vm_flags & VM_NOHUGEPAGE))
++		     (khugepaged_req_madv() && (vm_flags & VM_HUGEPAGE))) &&
++		    !(vm_flags & VM_NOHUGEPAGE))
+ 			if (__khugepaged_enter(vma->vm_mm))
+ 				return -ENOMEM;
+ 	return 0;
+@@ -54,11 +55,13 @@ static inline int khugepaged_fork(struct mm_struct *mm, struct mm_struct *oldmm)
+ static inline void khugepaged_exit(struct mm_struct *mm)
+ {
+ }
+-static inline int khugepaged_enter(struct vm_area_struct *vma)
++static inline int khugepaged_enter(struct vm_area_struct *vma,
++				   unsigned long vm_flags)
+ {
+ 	return 0;
+ }
+-static inline int khugepaged_enter_vma_merge(struct vm_area_struct *vma)
++static inline int khugepaged_enter_vma_merge(struct vm_area_struct *vma,
++					     unsigned long vm_flags)
+ {
+ 	return 0;
+ }
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -803,7 +803,7 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		return VM_FAULT_FALLBACK;
+ 	if (unlikely(anon_vma_prepare(vma)))
+ 		return VM_FAULT_OOM;
+-	if (unlikely(khugepaged_enter(vma)))
++	if (unlikely(khugepaged_enter(vma, vma->vm_flags)))
+ 		return VM_FAULT_OOM;
+ 	if (!(flags & FAULT_FLAG_WRITE) &&
+ 			transparent_hugepage_use_zero_page()) {
+@@ -1970,7 +1970,7 @@ int hugepage_madvise(struct vm_area_struct *vma,
+ 		 * register it here without waiting a page fault that
+ 		 * may not happen any time soon.
+ 		 */
+-		if (unlikely(khugepaged_enter_vma_merge(vma)))
++		if (unlikely(khugepaged_enter_vma_merge(vma, *vm_flags)))
+ 			return -ENOMEM;
+ 		break;
+ 	case MADV_NOHUGEPAGE:
+@@ -2071,7 +2071,8 @@ int __khugepaged_enter(struct mm_struct *mm)
+ 	return 0;
+ }
+ 
+-int khugepaged_enter_vma_merge(struct vm_area_struct *vma)
++int khugepaged_enter_vma_merge(struct vm_area_struct *vma,
++			       unsigned long vm_flags)
+ {
+ 	unsigned long hstart, hend;
+ 	if (!vma->anon_vma)
+@@ -2083,11 +2084,11 @@ int khugepaged_enter_vma_merge(struct vm_area_struct *vma)
+ 	if (vma->vm_ops)
+ 		/* khugepaged not yet working on file or special mappings */
+ 		return 0;
+-	VM_BUG_ON_VMA(vma->vm_flags & VM_NO_THP, vma);
++	VM_BUG_ON_VMA(vm_flags & VM_NO_THP, vma);
+ 	hstart = (vma->vm_start + ~HPAGE_PMD_MASK) & HPAGE_PMD_MASK;
+ 	hend = vma->vm_end & HPAGE_PMD_MASK;
+ 	if (hstart < hend)
+-		return khugepaged_enter(vma);
++		return khugepaged_enter(vma, vm_flags);
+ 	return 0;
+ }
+ 
+diff --git a/mm/mmap.c b/mm/mmap.c
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1080,7 +1080,7 @@ struct vm_area_struct *vma_merge(struct mm_struct *mm,
+ 				end, prev->vm_pgoff, NULL);
+ 		if (err)
+ 			return NULL;
+-		khugepaged_enter_vma_merge(prev);
++		khugepaged_enter_vma_merge(prev, vm_flags);
+ 		return prev;
+ 	}
+ 
+@@ -1099,7 +1099,7 @@ struct vm_area_struct *vma_merge(struct mm_struct *mm,
+ 				next->vm_pgoff - pglen, NULL);
+ 		if (err)
+ 			return NULL;
+-		khugepaged_enter_vma_merge(area);
++		khugepaged_enter_vma_merge(area, vm_flags);
+ 		return area;
+ 	}
+ 
+@@ -2208,7 +2208,7 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
+ 		}
+ 	}
+ 	vma_unlock_anon_vma(vma);
+-	khugepaged_enter_vma_merge(vma);
++	khugepaged_enter_vma_merge(vma, vma->vm_flags);
+ 	validate_mm(vma->vm_mm);
+ 	return error;
+ }
+@@ -2277,7 +2277,7 @@ int expand_downwards(struct vm_area_struct *vma,
+ 		}
+ 	}
+ 	vma_unlock_anon_vma(vma);
+-	khugepaged_enter_vma_merge(vma);
++	khugepaged_enter_vma_merge(vma, vma->vm_flags);
+ 	validate_mm(vma->vm_mm);
+ 	return error;
+ }
