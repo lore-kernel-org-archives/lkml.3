@@ -1,133 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183AbaJOKDA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 06:03:00 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53056 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421AbaJOKC7 (ORCPT
+	id S1752213AbaJOKDT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 06:03:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54241 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752187AbaJOKDP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 06:02:59 -0400
-Date: Wed, 15 Oct 2014 12:02:47 +0200
-From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-To: atull <atull@opensource.altera.com>
-Cc: Dinh Nguyen <dinguyen@opensource.altera.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>, dinh.linux@gmail.com,
-        grant.likely@linaro.org, robh+dt@kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] reset: socfpga: use arch_initcall for early
- initialization
-Message-ID: <20141015100247.GB6255@pengutronix.de>
-References: <1412822646-11257-1-git-send-email-dinguyen@opensource.altera.com>
- <1412845410.6809.3.camel@pengutronix.de>
- <54368AA2.9000104@opensource.altera.com>
- <20141009132835.GI15799@pengutronix.de>
- <alpine.DEB.2.02.1410090950540.17462@atx-linux-37>
- <20141009151935.GK15799@pengutronix.de>
- <alpine.DEB.2.02.1410101123590.11270@atx-linux-37>
- <alpine.DEB.2.02.1410141322160.11888@atx-linux-37>
+	Wed, 15 Oct 2014 06:03:15 -0400
+Date: Wed, 15 Oct 2014 03:02:28 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-zzmoo39yalrl9hzu9nc2xqml@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        namhyung@kernel.org, dsahern@gmail.com, peterz@infradead.org,
+        dzickus@redhat.com, fweisbec@gmail.com, bp@suse.de, efault@gmx.de,
+        jean.pihet@linaro.org, tglx@linutronix.de, mingo@kernel.org,
+        jolsa@redhat.com, paulus@samba.org, adrian.hunter@intel.com,
+        hpa@zytor.com
+Reply-To: namhyung@kernel.org, eranian@google.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, bp@suse.de,
+        fweisbec@gmail.com, peterz@infradead.org, dsahern@gmail.com,
+        dzickus@redhat.com, mingo@kernel.org, jolsa@redhat.com,
+        tglx@linutronix.de, jean.pihet@linaro.org, efault@gmx.de,
+        hpa@zytor.com, adrian.hunter@intel.com, paulus@samba.org
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf script: Stop updating hists stats,
+  not used
+Git-Commit-ID: 49c23f2d541ebf7ae5e9fff03301f4e7145cc979
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1410141322160.11888@atx-linux-37>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 11:17:08 up 35 days,  2:04, 58 users,  load average: 0,18, 0,17,
- 0,14
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: str@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Commit-ID:  49c23f2d541ebf7ae5e9fff03301f4e7145cc979
+Gitweb:     http://git.kernel.org/tip/49c23f2d541ebf7ae5e9fff03301f4e7145cc979
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Thu, 9 Oct 2014 11:45:42 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 9 Oct 2014 11:46:41 -0300
 
-On Tue, Oct 14, 2014 at 01:45:29PM -0500, atull wrote:
-> The FPGA bridge driver that I submitted last year handled the following
-> things:
->  * The bridges might have been brought out of reset in the bootloader. Some
->    of the bridges have write-only registers (!) so this information had to
->    be passed in DT
+perf script: Stop updating hists stats, not used
 
-Regmap has infrastructure to handle this.
+Not used here, remove to reduce perf_evsel/hists structs interaction.
 
->  * fpga2sdram bridge widths configured in DT
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-zzmoo39yalrl9hzu9nc2xqml@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-script.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-This should hold true for all bridges but the LWHPS.
-
->  * Supports enabling the following Altera fpga bridges:
->    * fpga2sdram
->    * fpga2hps
->    * hps2fpga
->    * lwhps2fpga
->  * interface in sysfs for each bridge to be put in reset/taken out of reset
->    * Enable (take out of reset):
->      $ echo 1 > /sys/class/fpga-bridge/fpga2hps/enable
->    * Disable (hold in reset):
->      $ echo 0 > /sys/class/fpga-bridge/fpga2hps/enable
->    * Check enable/disable status (checks for all bits set):
->      $ cat /sys/class/fpga-bridge/fpga2hps/enable
->        (will print '0' or '1')
->
-
-I don't like that. The proper solution should be unloading/loading the
-module for the bridge. On a reset the driver has to completely reset its state.
-
-> Now that I'm enabling programming the FPGA from DT overlays, I also want
-> to support DT control of the bridges at the proper time.  So that would
-> support the use case where adding a DT overlay would:
->  1. program the FPGA
->  2. bring the appropriate bridges out of reset
->  3. modprobe the driver
-> 
-> Deleting the DT overlay would undo these steps in reverse order.
-> 
-> I submitted it on 10/8/2013 (I copied you on it), but I don't see it on
-> lkml.org.  Probably because I submitted it from a gmail email address and
-> that sometimes doesn't play well with lkml.  I'm planning on resubmitting
-> when we have it better integrated with the reset subsystem.  If you can
-> give me an early idea of how this fits in with your needs, that would be
-> great.
->
-
-I actually remember seeing that driver. The problem with the approach is,
-that the bridges are not some IP that you just turn on/off.
-The bridges are the busses that connect the FPGA to the SoC. So the driver
-and the DT has to accommodate for that.
-So, for the (LW)HPS that means we have a bus master driver, that has to
-
-booting:
-	- check if FPGA manager is enabled in DT
-	  - EPROBE_DEFER if FPGA manager isn't loaded
-	- check if FPGA is programmed
-	  - EPROBE_DEFER otherwise
-	- probe subnodes of bridge DT node
-
-dynamic:
-	- remove all drivers/devices previously probed by the bridge
-	  - put bridge in reset (maybe the remove call should always do that ?)
-	- program FPGA with (different) bitstream
-	- (update the DT)
-
-I haven't had time to really look at the overlay stuff, but I guess it will then
-just
-	- probe bridge drivers with 'status = "okay"' which will probe subdevices
-
-Question is: who will remove the bridge driver? Do the DT overlays do that kind
-of stuff?
-
-With the FPGA2HPS(SDRAM) bridges it gets a little difficult I guess.
-Who is the master on the FPGA2HPS bridge? Depends on your FPGA config.
-
-Regards,
-Steffen
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index b9b9e58..6b4925f 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -572,7 +572,6 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
+ 
+ 	scripting_ops->process_event(event, sample, evsel, thread, &al);
+ 
+-	evsel->hists.stats.total_period += sample->period;
+ 	return 0;
+ }
+ 
