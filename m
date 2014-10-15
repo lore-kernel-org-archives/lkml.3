@@ -1,89 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751705AbaJOWGi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 18:06:38 -0400
-Received: from mga01.intel.com ([192.55.52.88]:36171 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750721AbaJOWGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 18:06:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="400917797"
-Date: Wed, 15 Oct 2014 15:06:54 -0700
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: Ian Abbott <abbotti@mev.co.uk>
-Cc: hsweeten@visionengravers.com, gregkh@linuxfoundation.org,
-        trivial@kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: comedi: ii_pci20kc: add CONFIG_HAS_IOMEM
- dependence
-Message-ID: <20141015220654.GE4529@psi-dev26.jf.intel.com>
-References: <1413408339-12816-1-git-send-email-david.a.cohen@linux.intel.com>
- <543EEDAC.7050800@mev.co.uk>
+	id S1751851AbaJOWKA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 18:10:00 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:35153 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750792AbaJOWJ7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 18:09:59 -0400
+Date: Wed, 15 Oct 2014 23:09:43 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Kees Cook <keescook@chromium.org>
+Cc: Paolo Pisati <p.pisati@gmail.com>, Jason Baron <jbaron@redhat.com>,
+        David Miller <davem@davemloft.net>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: arm: JUMP_LABEL and DEBUG_SET_MODULE_RONX should be mutually
+ exclusive?
+Message-ID: <20141015220943.GK27405@n2100.arm.linux.org.uk>
+References: <20141015122102.GB4427@stinkpad>
+ <CAGXu5jLEAjR+X0KnnipGH2gp569_PFp5DYyfgXU=Szxgk5EcpA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <543EEDAC.7050800@mev.co.uk>
+In-Reply-To: <CAGXu5jLEAjR+X0KnnipGH2gp569_PFp5DYyfgXU=Szxgk5EcpA@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 10:57:00PM +0100, Ian Abbott wrote:
-> On 15/10/14 22:25, David Cohen wrote:
-> >ii_pci20kc uses io memory which makes it not compilable on architectures
-> >without HAS_IOMEM such as UML:
+On Wed, Oct 15, 2014 at 08:34:17AM -0700, Kees Cook wrote:
+> On Wed, Oct 15, 2014 at 5:21 AM, Paolo Pisati <p.pisati@gmail.com> wrote:
+> > Hi,
 > >
-> >   CC      drivers/net/wireless/ti/wl1251/main.o
-> >drivers/staging/comedi/drivers/ii_pci20kc.c: In function ‘ii20k_attach’:
-> >drivers/staging/comedi/drivers/ii_pci20kc.c:442:2: error: implicit
-> >declaration of function ‘ioremap’
-> >[-Werror=implicit-function-declaration]
-> >   dev->mmio = ioremap(membase, II20K_SIZE);
-> >   ^
-> >drivers/staging/comedi/drivers/ii_pci20kc.c:442:12: warning: assignment
-> >makes pointer from integer without a cast
-> >   dev->mmio = ioremap(membase, II20K_SIZE);
-> >             ^
-> >drivers/staging/comedi/drivers/ii_pci20kc.c: In function ‘ii20k_detach’:
-> >drivers/staging/comedi/drivers/ii_pci20kc.c:512:3: error: implicit
-> >declaration of function ‘iounmap’
-> >[-Werror=implicit-function-declaration]
-> >    iounmap(dev->mmio);
-> >    ^
-> >
-> >Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-> >---
-> >  drivers/staging/comedi/Kconfig | 1 +
-> >  1 file changed, 1 insertion(+)
-> >
-> >diff --git a/drivers/staging/comedi/Kconfig b/drivers/staging/comedi/Kconfig
-> >index a8bc2b567789..56be2112c731 100644
-> >--- a/drivers/staging/comedi/Kconfig
-> >+++ b/drivers/staging/comedi/Kconfig
-> >@@ -425,6 +425,7 @@ config COMEDI_AIO_IIRO_16
-> >  	  called aio_iiro_16.
-> >
-> >  config COMEDI_II_PCI20KC
-> >+	depends on HAS_IOMEM
-> >  	tristate "Intelligent Instruments PCI-20001C carrier support"
-> >  	---help---
-> >  	  Enable support for Intelligent Instruments PCI-20001C carrier
-> >
+> > i keep hitting this with BRIDGE=m, JUMP_LABEL=y and DEBUG_SET_MODULE_RONX=y:
 > 
-> The same fix was already submitted by Chen Gang:
-> 
-> https://lkml.org/lkml/2014/10/2/318
+> I think my RO/NX patch series solves this. I sent a pull request, but
+> I haven't seen any movement on it. :(
 
-Thanks. I sent this patch based on today's linux-next's "make ARCH=um
-allyesconfig". But nevermind if it was already sent.
+Sorry Kees.
 
-Br, David
+However, even if I had looked at it, I would /not/ have been able to
+pull it.  It does the absolutely fatal thing for any pull request:
 
-> 
-> Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
-> 
-> -- 
-> -=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
-> -=(                          Web: http://www.mev.co.uk/  )=-
+The following changes since commit cc31d8f887953e9824c4d9333b15c335ee7d1b65:
+
+  Merge branches 'fiq' (early part), 'fixes' and 'misc' into for-next (2014-09-2+6 14:40:19 +0100)
+
+That commit is on my "for-next" branch.  The clue is in the name. :)
+Just like trying to base commits onto the linux-next tree, trying to
+base commits on an aggregate branch intended for linux-next usage
+doesn't work for all the same reasons.
+
+The commit which ultimately ended up being merged was:
+
+commit d5d16892243e7755da706d03b34da85ea6a74117
+Merge: 3467e765a592 ad684dce87fa f3354ab67476 421520ba9829
+Author: Russell King <rmk+kernel@arm.linux.org.uk>
+Date:   Thu Oct 2 21:47:02 2014 +0100
+
+    Merge branches 'fiq' (early part), 'fixes', 'l2c' (early part) and 'misc' into for-next
+
+compared to the one you based on:
+
+commit cc31d8f887953e9824c4d9333b15c335ee7d1b65
+Merge: 3467e765a592 5ca918e5e3f9 e16343c47e42
+Author: Russell King <rmk+kernel@arm.linux.org.uk>
+Date:   Fri Sep 26 14:40:19 2014 +0100
+
+    Merge branches 'fiq' (early part), 'fixes' and 'misc' into for-next
+
+So, although "fiq" was the same, "fixes" had additional commits added,
+an additional "l2c" branch was added, and two additional commits in "misc".
+
+The reason why I publish a "for-next" branch is exactly so I don't have
+to push out lots of individual branches, and then have to tell SFR which
+branches he needs to pull on a regular basis.  "for-next" is an aggregate
+unstable branch solely intended to be pulled into linux-next (and thus
+inspected by others.)
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
