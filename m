@@ -1,105 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751840AbaJOIq3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 04:46:29 -0400
-Received: from mga01.intel.com ([192.55.52.88]:44929 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751709AbaJOIq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 04:46:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="400519005"
-Date: Wed, 15 Oct 2014 11:46:20 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>, devicetree@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: Re: [PATCH 06/13] gpio / ACPI: Add support for _DSD device properties
-Message-ID: <20141015084620.GO2255@lahna.fi.intel.com>
-References: <2660541.BycO7TFnA2@vostro.rjw.lan>
- <1651636.CsIdshL7Av@vostro.rjw.lan>
- <20141014134403.66480C408A6@trevor.secretlab.ca>
+	id S1751544AbaJOJAN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 05:00:13 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:42371 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751306AbaJOJAK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 05:00:10 -0400
+Date: Wed, 15 Oct 2014 10:00:47 +0100
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Chander Kashyap <k.chander@samsung.com>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "kgene.kim@samsung.com" <kgene.kim@samsung.com>
+Subject: Re: [PATCH] arm64: dts: exynos7: add support for cpuidle core power
+ down
+Message-ID: <20141015090047.GA26484@red-moon>
+References: <1413354920-20165-1-git-send-email-k.chander@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1413354920-20165-1-git-send-email-k.chander@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 15 Oct 2014 09:00:05.0251 (UTC) FILETIME=[6989E530:01CFE856]
+X-MC-Unique: 114101510000715401
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20141014134403.66480C408A6@trevor.secretlab.ca>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 14, 2014 at 03:44:03PM +0200, Grant Likely wrote:
-> On Tue, 07 Oct 2014 02:15:18 +0200
-> , "Rafael J. Wysocki" <rjw@rjwysocki.net>
->  wrote:
-> > From: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > 
-> > With release of ACPI 5.1 and _DSD method we can finally name GPIOs (and
-> > other things as well) returned by _CRS. Previously we were only able to
-> > use integer index to find the corresponding GPIO, which is pretty error
-> > prone if the order changes.
-> > 
-> > With _DSD we can now query GPIOs using name instead of an integer index,
-> > like the below example shows:
-> > 
-> >   // Bluetooth device with reset and shutdown GPIOs
-> >   Device (BTH)
-> >   {
-> >       Name (_HID, ...)
-> > 
-> >       Name (_CRS, ResourceTemplate ()
-> >       {
-> >           GpioIo (Exclusive, PullUp, 0, 0, IoRestrictionInputOnly,
-> >                   "\\_SB.GPO0", 0, ResourceConsumer) {15}
-> >           GpioIo (Exclusive, PullUp, 0, 0, IoRestrictionInputOnly,
-> >                   "\\_SB.GPO0", 0, ResourceConsumer) {27, 31}
-> >       })
-> > 
-> >       Name (_DSD, Package ()
-> >       {
-> >           ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-> >           Package ()
-> > 	  {
-> >               Package () {"reset-gpio", Package() {^BTH, 1, 1, 0 }},
-> >               Package () {"shutdown-gpio", Package() {^BTH, 0, 0, 0 }},
-> >           }
-> >       })
-> >   }
-> > 
-> > The format of the supported GPIO property is:
-> > 
-> >   Package () { "name", Package () { ref, index, pin, active_low }}
-> > 
-> >   ref - The device that has _CRS containing GpioIo()/GpioInt() resources,
-> >         typically this is the device itself (BTH in our case).
-> >   index - Index of the GpioIo()/GpioInt() resource in _CRS starting from zero.
-> >   pin - Pin in the GpioIo()/GpioInt() resource. Typically this is zero.
-> >   active_low - If 1 the GPIO is marked as active_low.
-> > 
-> > Since ACPI GpioIo() resource does not have field saying whether it is
-> > active low or high, the "active_low" argument can be used here. Setting
-> > it to 1 marks the GPIO as active low.
-> > 
-> > In our Bluetooth example the "reset-gpio" refers to the second GpioIo()
-> > resource, second pin in that resource with the GPIO number of 31.
-> > 
-> > This patch implements necessary support to gpiolib for extracting GPIOs
-> > using _DSD device properties.
+On Wed, Oct 15, 2014 at 07:35:20AM +0100, Chander Kashyap wrote:
+> Exynos7 has core power down state where cores can be powered off independently.
+> This patch adds support for this state.
+
+Please tell us more about the idle-state values you are adding, in particular
+entry, exit latencies and min-residency values.
+
+> Signed-off-by: Chander Kashyap <k.chander@samsung.com>
+> ---
+> This patch has following dependencies:
+> 	- [PATCH v5 0/8] arch: arm64: Enable support for Samsung Exynos7 SoC
+> 		http://www.spinics.net/lists/linux-samsung-soc/msg37047.html
+> 	- [PATCH v9 0/8] ARM generic idle states
+> 		http://permalink.gmane.org/gmane.linux.power-management.general/49224
+
+Series above was merged, so dependency is stale.
+
+>  arch/arm64/boot/dts/exynos/exynos7.dtsi |   18 ++++++++++++++++++
+>  1 file changed, 18 insertions(+)
 > 
-> Patch looks good, but please put the above description into
-> /Documentation until we've got a better place to document extra bindings.
+> diff --git a/arch/arm64/boot/dts/exynos/exynos7.dtsi b/arch/arm64/boot/dts/exynos/exynos7.dtsi
+> index ce221ac..8e0a034 100644
+> --- a/arch/arm64/boot/dts/exynos/exynos7.dtsi
+> +++ b/arch/arm64/boot/dts/exynos/exynos7.dtsi
+> @@ -36,6 +36,7 @@
+>  			device_type = "cpu";
+>  			compatible = "arm,cortex-a57", "arm,armv8";
+>  			enable-method = "psci";
+> +			cpu-idle-states = <&CPU_SLEEP>;
 
-Thanks for the review.
+I would add cpu-idle-states phandle after the reg property, as defined
+in the idle states bindings.
 
-If you don't mind, I would like to make a separate patch on top of this
-series adding this description to Documentation/acpi/properties.txt.
+>  			reg = <0x0>;
+>  		};
+>  
+> @@ -43,6 +44,7 @@
+>  			device_type = "cpu";
+>  			compatible = "arm,cortex-a57", "arm,armv8";
+>  			enable-method = "psci";
+> +			cpu-idle-states = <&CPU_SLEEP>;
+>  			reg = <0x1>;
+>  		};
+>  
+> @@ -50,6 +52,7 @@
+>  			device_type = "cpu";
+>  			compatible = "arm,cortex-a57", "arm,armv8";
+>  			enable-method = "psci";
+> +			cpu-idle-states = <&CPU_SLEEP>;
+>  			reg = <0x2>;
+>  		};
+>  
+> @@ -57,8 +60,23 @@
+>  			device_type = "cpu";
+>  			compatible = "arm,cortex-a57", "arm,armv8";
+>  			enable-method = "psci";
+> +			cpu-idle-states = <&CPU_SLEEP>;
+>  			reg = <0x3>;
+>  		};
+> +
+> +		idle-states {
+> +			entry-method = "arm,psci";
+> +
+> +			CPU_SLEEP: cpu-sleep {
+> +				compatible = "arm,idle-state";
+> +				local-timer-stop;
+> +				arm,psci-suspend-param = <0x0010000>;
+> +				entry-latency-us = <20>;
+> +				exit-latency-us = <150>;
+> +				min-residency-us = <2100>;
+> +				status = "enabled";
+
+status ? This is not a documented property. If you need it please explain
+why, define its bindings and we can see how to accommodate it.
+
+Thank you,
+Lorenzo
+
+> +			};
+> +		};
+>  	};
+>  
+>  	psci {
+> -- 
+> 1.7.9.5
+> 
+> 
+
