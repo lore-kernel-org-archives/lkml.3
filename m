@@ -1,31 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641AbaJOKGM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 06:06:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54496 "EHLO
+	id S1752652AbaJOKG1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 06:06:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54517 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751923AbaJOKGI (ORCPT
+	with ESMTP id S1751919AbaJOKGY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 06:06:08 -0400
-Date: Wed, 15 Oct 2014 03:05:08 -0700
+	Wed, 15 Oct 2014 06:06:24 -0400
+Date: Wed, 15 Oct 2014 03:05:33 -0700
 From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-94t3jvw4tmzrq3dnovvpl65e@git.kernel.org>
-Cc: namhyung@kernel.org, bp@suse.de, mingo@kernel.org, jean.pihet@linaro.org,
-        adrian.hunter@intel.com, peterz@infradead.org,
-        linux-kernel@vger.kernel.org, eranian@google.com, jolsa@redhat.com,
-        acme@redhat.com, efault@gmx.de, dsahern@gmail.com, hpa@zytor.com,
-        dzickus@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        paulus@samba.org
-Reply-To: efault@gmx.de, dsahern@gmail.com, hpa@zytor.com, dzickus@redhat.com,
-        fweisbec@gmail.com, tglx@linutronix.de, paulus@samba.org,
-        mingo@kernel.org, bp@suse.de, namhyung@kernel.org,
-        adrian.hunter@intel.com, peterz@infradead.org, jean.pihet@linaro.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        jolsa@redhat.com
+Message-ID: <tip-e167f995e26249aa93708589c5eea539652351fa@git.kernel.org>
+Cc: mingo@redhat.com, dzickus@redhat.com, paulus@samba.org, jolsa@kernel.org,
+        tglx@linutronix.de, hpa@zytor.com, acme@redhat.com,
+        namhyung@kernel.org, linux-kernel@vger.kernel.org, doug.hatch@hp.com,
+        peterz@infradead.org, jolsa@redhat.com, scott.norton@hp.com,
+        mingo@kernel.org
+Reply-To: mingo@kernel.org, scott.norton@hp.com, jolsa@redhat.com,
+        peterz@infradead.org, doug.hatch@hp.com, linux-kernel@vger.kernel.org,
+        namhyung@kernel.org, acme@redhat.com, hpa@zytor.com,
+        dzickus@redhat.com, paulus@samba.org, tglx@linutronix.de,
+        jolsa@kernel.org, mingo@redhat.com
+In-Reply-To: <20141014180353.GF3198@kernel.org>
+References: <20141014180353.GF3198@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf evsel: Add missing 'target'
-  struct forward declaration
-Git-Commit-ID: 80b2210c623dc47e0847816989dd647738e4fb94
+Subject: [tip:perf/urgent] perf machine: Add missing dsos->
+ root rbtree root initialization
+Git-Commit-ID: e167f995e26249aa93708589c5eea539652351fa
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,46 +38,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  80b2210c623dc47e0847816989dd647738e4fb94
-Gitweb:     http://git.kernel.org/tip/80b2210c623dc47e0847816989dd647738e4fb94
+Commit-ID:  e167f995e26249aa93708589c5eea539652351fa
+Gitweb:     http://git.kernel.org/tip/e167f995e26249aa93708589c5eea539652351fa
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Mon, 13 Oct 2014 10:29:50 -0300
+AuthorDate: Tue, 14 Oct 2014 15:07:48 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 14 Oct 2014 17:32:54 -0300
+CommitDate: Tue, 14 Oct 2014 17:50:44 -0300
 
-perf evsel: Add missing 'target' struct forward declaration
+perf machine: Add missing dsos->root rbtree root initialization
 
-We use it in evsel.h but were getting it indirectly, fix it.
+A segfault happens on 'perf test hists_link' because we end up using a
+struct machines on the stack, and then machines__init() was not
+initializing the newly introduced rb_root, just the existing list_head.
 
-Noticed while working on having evsel.h usable by rasd.c.
+When we introduced struct dsos, to group the two ways to store dsos,
+i.e. the linked list and the rbtree, we didn't turned the initialization
+done in:
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: David Ahern <dsahern@gmail.com>
+	machines__init(machines->host) ->
+		machine__init() ->
+			INIT_LIST_HEAD
+
+into a dsos__init() to keep on initializing the list_head but _as well_
+initializing the rb_root, oops.
+
+All worked because outside perf-test we probably zalloc the whole thing
+which ends up initializing it in to NULL.
+
+So the problem looks contained to 'perf test' that uses it on stack,
+etc.
+
+Reported-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Waiman Long <Waiman.Long@hp.com>,
+Cc: Adrian Hunter <adrian.hunter@intel.com>,
 Cc: Don Zickus <dzickus@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
+Cc: Douglas Hatch <doug.hatch@hp.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@kernel.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-94t3jvw4tmzrq3dnovvpl65e@git.kernel.org
+Cc: Scott J Norton <scott.norton@hp.com>
+Cc: Waiman Long <Waiman.Long@hp.com>,
+Link: http://lkml.kernel.org/r/20141014180353.GF3198@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evsel.h | 1 +
- 1 file changed, 1 insertion(+)
+ tools/perf/util/machine.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index fee9274..5c80cf0 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -99,6 +99,7 @@ union u64_swap {
- };
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index b7d477f..34fc7c8 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -13,12 +13,18 @@
+ #include <symbol/kallsyms.h>
+ #include "unwind.h"
  
- struct cpu_map;
-+struct target;
- struct thread_map;
- struct perf_evlist;
- struct record_opts;
++static void dsos__init(struct dsos *dsos)
++{
++	INIT_LIST_HEAD(&dsos->head);
++	dsos->root = RB_ROOT;
++}
++
+ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
+ {
+ 	map_groups__init(&machine->kmaps);
+ 	RB_CLEAR_NODE(&machine->rb_node);
+-	INIT_LIST_HEAD(&machine->user_dsos.head);
+-	INIT_LIST_HEAD(&machine->kernel_dsos.head);
++	dsos__init(&machine->user_dsos);
++	dsos__init(&machine->kernel_dsos);
+ 
+ 	machine->threads = RB_ROOT;
+ 	INIT_LIST_HEAD(&machine->dead_threads);
