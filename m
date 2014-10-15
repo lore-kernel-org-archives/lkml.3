@@ -1,72 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751293AbaJOHFU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 03:05:20 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:55369 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750775AbaJOHFS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 03:05:18 -0400
-Message-ID: <1413356714.27272.3.camel@x220>
-Subject: Re: [PATCH v4 03/25] virtio-pci: move freeze/restore to virtio core
-From: Paul Bolle <pebolle@tiscali.nl>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
-        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, linux-scsi@vger.kernel.org,
-        linux-s390@vger.kernel.org, v9fs-developer@lists.sourceforge.net,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        Amit Shah <amit.shah@redhat.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Heinz Graalfs <graalfs@linux.vnet.ibm.com>
-Date: Wed, 15 Oct 2014 09:05:14 +0200
-In-Reply-To: <1413114332-626-4-git-send-email-mst-v4@redhat.com>
-References: <1413114332-626-1-git-send-email-mst-v4@redhat.com>
-	 <1413114332-626-4-git-send-email-mst-v4@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 15 Oct 2014 07:05:14.0451 (UTC) FILETIME=[5E4D4230:01CFE846]
-X-RcptDomain: vger.kernel.org
+	id S1751349AbaJOHGF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 03:06:05 -0400
+Received: from mail-by2on0124.outbound.protection.outlook.com ([207.46.100.124]:61437
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750775AbaJOHGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 03:06:03 -0400
+From: Jingchang Lu <jingchang.lu@freescale.com>
+To: <gregkh@linuxfoundation.org>
+CC: <peter@hurleysoftware.com>, <arnd@arndb.de>,
+        <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        Jingchang Lu <jingchang.lu@freescale.com>
+Subject: [PATCHv5] serial: of-serial: fix up PM ops on no_console_suspend and port type
+Date: Wed, 15 Oct 2014 14:19:27 +0800
+Message-ID: <1413353967-27866-1-git-send-email-jingchang.lu@freescale.com>
+X-Mailer: git-send-email 1.8.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(99396003)(76482002)(87936001)(120916001)(46102003)(80022003)(87286001)(19580405001)(48376002)(69596002)(50226001)(4396001)(19580395003)(6806004)(44976005)(84676001)(50466002)(62966002)(68736004)(93916002)(102836001)(47776003)(85306004)(26826002)(92726001)(64706001)(104166001)(85852003)(86362001)(20776003)(81156004)(31966008)(97736003)(92566001)(21056001)(2351001)(106466001)(50986999)(89996001)(88136002)(229853001)(105606002)(104016003)(107046002)(36756003)(110136001)(33646002)(95666004)(77156001);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR03MB480;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB480;
+X-Forefront-PRVS: 0365C0E14B
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=jingchang.lu@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-10-13 at 10:48 +0300, Michael S. Tsirkin wrote:
-> This is in preparation to extending config changed event handling
-> in core.
-> Wrapping these in an API also seems to make for a cleaner code.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+This patch fixes commit 2dea53bf57783f243c892e99c10c6921e956aa7e,
+"serial: of-serial: add PM suspend/resume support", which disables
+the uart clock on suspend, but also causes a hardware hang on register
+access if no_console_suspend command line option is used.
 
-This patch landed in today's linux-next (next-20141015).
+Also, not every of_serial device is an 8250 port, so the serial8250
+suspend/resume functions should only be applied to a real 8250 port.
 
->  include/linux/virtio.h      |  6 +++++
->  drivers/virtio/virtio.c     | 54 +++++++++++++++++++++++++++++++++++++++++++++
->  drivers/virtio/virtio_pci.c | 54 ++-------------------------------------------
->  3 files changed, 62 insertions(+), 52 deletions(-)
-> 
-> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
-> index 3c19bd3..8df7ba8 100644
-> --- a/include/linux/virtio.h
-> +++ b/include/linux/virtio.h
-> @@ -78,6 +78,7 @@ bool virtqueue_is_broken(struct virtqueue *vq);
->  /**
->   * virtio_device - representation of a device using virtio
->   * @index: unique position on the virtio bus
-> + * @failed: saved value for CONFIG_S_FAILED bit (for restore)
+Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
+---
+changes in v5: 
+ add missing <linux/console.h> include.
 
-s/CONFIG_S_FAILED/VIRTIO_CONFIG_S_FAILED/?
+changes in v4:
+ separate 8250 port suspend/resume from of_serial_suspend/resume.
 
->   * @dev: underlying device.
->   * @id: the device type identification (used to match it with a driver).
->   * @config: the configuration ops for this device.
+changes in v3:
+ fix up point reference and deference.
 
+changes in v2:
+ add switch selection on uart type.
 
-Paul Bolle
+ drivers/tty/serial/of_serial.c | 53 ++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 46 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c
+index 8bc2563..9c64ad2 100644
+--- a/drivers/tty/serial/of_serial.c
++++ b/drivers/tty/serial/of_serial.c
+@@ -9,6 +9,7 @@
+  *  2 of the License, or (at your option) any later version.
+  *
+  */
++#include <linux/console.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/delay.h>
+@@ -241,13 +242,48 @@ static int of_platform_serial_remove(struct platform_device *ofdev)
+ }
+ 
+ #ifdef CONFIG_PM_SLEEP
+-static int of_serial_suspend(struct device *dev)
++#ifdef CONFIG_SERIAL_8250
++static void of_serial_suspend_8250(struct of_serial_info *info)
+ {
+-	struct of_serial_info *info = dev_get_drvdata(dev);
++	struct uart_8250_port *port8250 = serial8250_get_port(info->line);
++	struct uart_port *port = &port8250->port;
+ 
+ 	serial8250_suspend_port(info->line);
+-	if (info->clk)
++	if (info->clk && (!uart_console(port) || console_suspend_enabled))
+ 		clk_disable_unprepare(info->clk);
++}
++
++static void of_serial_resume_8250(struct of_serial_info *info)
++{
++	struct uart_8250_port *port8250 = serial8250_get_port(info->line);
++	struct uart_port *port = &port8250->port;
++
++	if (info->clk && (!uart_console(port) || console_suspend_enabled))
++		clk_prepare_enable(info->clk);
++
++	serial8250_resume_port(info->line);
++}
++#else
++static inline void of_serial_suspend_8250(struct of_serial_info *info)
++{
++}
++
++static inline void of_serial_resume_8250(struct of_serial_info *info)
++{
++}
++#endif
++
++static int of_serial_suspend(struct device *dev)
++{
++	struct of_serial_info *info = dev_get_drvdata(dev);
++
++	switch(info->type) {
++	case PORT_8250 ... PORT_MAX_8250:
++		of_serial_suspend_8250(info);
++		break;
++	default:
++		break;
++	}
+ 
+ 	return 0;
+ }
+@@ -256,10 +292,13 @@ static int of_serial_resume(struct device *dev)
+ {
+ 	struct of_serial_info *info = dev_get_drvdata(dev);
+ 
+-	if (info->clk)
+-		clk_prepare_enable(info->clk);
+-
+-	serial8250_resume_port(info->line);
++	switch(info->type) {
++	case PORT_8250 ... PORT_MAX_8250:
++		of_serial_resume_8250(info);
++		break;
++	default:
++		break;
++	}
+ 
+ 	return 0;
+ }
+-- 
+1.8.0
 
