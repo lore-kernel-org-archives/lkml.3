@@ -1,161 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751818AbaJOJ4q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 05:56:46 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:58993 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347AbaJOJ4o (ORCPT
+	id S1751954AbaJOKAu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 06:00:50 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:56641 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751257AbaJOKAs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 05:56:44 -0400
-Date: Wed, 15 Oct 2014 11:56:38 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Borislav Petkov <bp@suse.de>, Chuck Ebbert <cebbert.lkml@gmail.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Douglas Hatch <doug.hatch@hp.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Milian Wolff <mail@milianw.de>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Scott J Norton <scott.norton@hp.com>,
-        Stephane Eranian <eranian@google.com>,
-        Waiman Long <Waiman.Long@hp.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/24] perf/core improvements and fixes
-Message-ID: <20141015095638.GA26625@gmail.com>
-References: <1413320673-5784-1-git-send-email-acme@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413320673-5784-1-git-send-email-acme@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 15 Oct 2014 06:00:48 -0400
+X-AuditID: cbfee68d-f79296d000004278-0d-543e45ce257d
+From: Heesub Shin <heesub.shin@samsung.com>
+To: Dan Streetman <ddstreet@ieee.org>,
+        Seth Jennings <sjennings@variantweb.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sunae Seo <sunae.seo@samsung.com>,
+        Heesub Shin <heesub.shin@samsung.com>
+Subject: [PATCH] mm/zbud: init user ops only when it is needed
+Date: Wed, 15 Oct 2014 19:00:43 +0900
+Message-id: <1413367243-23524-1-git-send-email-heesub.shin@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFLMWRmVeSWpSXmKPExsVy+t8zTd1zrnYhBh9/SVjMWb+GzeLlIU2L
+	C227WSwOzl7CZHF51xw2i3tr/rNafDr6iM2icfc7NgcOj6cTDjJ5bPo0id3jxIzfLB59W1Yx
+	elz/VuTxeZNcAFsUl01Kak5mWWqRvl0CV0bzz1dMBf/ZK+78/MjawHiGrYuRk0NCwETiVNMa
+	RghbTOLCvfVAcS4OIYFljBLzNv9nhina+eUbI0RiOqPE1JufoJx2JomrK38zdTFycLAJaEsc
+	2hYMYooI1ElM/hwHUsIs0ABUv/MG2CBhATuJfY+usYPUsAioSszaaAUS5hVwl1i16RgTxC45
+	iZPHJrOC9EoI9LNLXN3cyQ6SYBEQkPg2+RALSK+EgKzEpgNQt0lKHFxxg2UCo+ACRoZVjKKp
+	BckFxUnpRYZ6xYm5xaV56XrJ+bmbGCFB3LuD8fYB60OMAhyMSjy8Fq9sQ4RYE8uKK3MPMZoC
+	bZjILCWanA+MlbySeENjMyMLUxNTYyNzSzMlcV5FqZ/BQgLpiSWp2ampBalF8UWlOanFhxiZ
+	ODilGhjZL0eV7tPw/KTecOONQ/G2PT+2TdvexTMtZ+nb5+G72F/fnnjBrvzigdSFhmdjy09O
+	uy4i/lVV9oVh1q1FU90b01NqgpQmeOy3U58ksH52yJ3lDUK3+VTq/f3T/5hfSXv5/vaLU2UR
+	pl97UlUeumlNm8falW19kSG+v9nUSTHikLibbZtP+WIlluKMREMt5qLiRAByWTm5XQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCIsWRmVeSWpSXmKPExsVy+t9jQd1zrnYhBr9+i1jMWb+GzeLlIU2L
+	C227WSwOzl7CZHF51xw2i3tr/rNafDr6iM2icfc7NgcOj6cTDjJ5bPo0id3jxIzfLB59W1Yx
+	elz/VuTxeZNcAFtUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2S
+	i0+ArltmDtA9SgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCOsaM5p+vmAr+
+	s1fc+fmRtYHxDFsXIyeHhICJxM4v3xghbDGJC/fWA8W5OIQEpjNKTL35iRHCaWeSuLryN1MX
+	IwcHm4C2xKFtwSCmiECdxOTPcSAlzAINQPU7bzCDDBIWsJPY9+gaO0gNi4CqxKyNViBhXgF3
+	iVWbjjFB7JKTOHlsMusERu4FjAyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3MYJj5Jn0DsZV
+	DRaHGAU4GJV4eDkO2IYIsSaWFVfmHmKU4GBWEuEtdrELEeJNSaysSi3Kjy8qzUktPsRoCrR8
+	IrOUaHI+MH7zSuINjU3MjCyNzIxNzI2NlcR5D7ZaBwoJpCeWpGanphakFsH0MXFwSjUwTpXc
+	vs3hvZTG2y2LJKduvibX/ts6rO89+8ankn/aJFeWKG6v/V/belP2wcRVvTdfvv6+vtTBLHPz
+	v8UWv6Y8vnTkWu+37efjK3kDj3avl9eR7zo7bZ7SgmnTIj8vmpmXev/V3PlrVbp8toj4s77Z
+	LthrpXs/KP+KjmF6XcLe3ZtKfy3actK/rFSJpTgj0VCLuag4EQBl3/m5pwIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When zbud is initialized through the zpool wrapper, pool->ops which
+points to user-defined operations is always set regardless of whether it
+is specified from the upper layer. This causes zbud_reclaim_page() to
+iterate its loop for evicting pool pages out without any gain.
 
-* Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
+This patch sets the user-defined ops only when it is needed, so that
+zbud_reclaim_page() can bail out the reclamation loop earlier if there
+is no user-defined operations specified.
 
-> Hi Ingo,
-> 
-> 	Please consider pulling,
-> 
-> - Arnaldo
-> 
-> The following changes since commit cc6cd47e7395bc05c5077009808b820633eb3f18:
-> 
->   perf/x86: Tone down kernel messages when the PMU check fails in a virtual environment (2014-10-03 06:04:41 +0200)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-core-for-mingo
-> 
-> for you to fetch changes up to 2c241bd35e6f626ad6f867dcf9fefdc2315f125f:
-> 
->   perf symbols: Make sym->end be the first address after the symbol range (2014-10-14 17:50:58 -0300)
-> 
-> ----------------------------------------------------------------
-> perf/core improvements and fixes:
-> 
-> Infrastructure:
-> 
-> . Do not include a struct hists per perf_evsel, untangling the histogram code
->   from perf_evsel, to pave the way for exporting a minimalistic
->   tools/lib/api/perf/ library usable by tools/perf and initially by the rasd
->   daemon being developed by Borislav Petkov, Robert Richter and Jean Pihet.
->   (Arnaldo Carvalho de Melo)
-> 
-> . Make perf_evlist__open(evlist, NULL, NULL), i.e. without cpu and thread
->   maps mean syswide monitoring, reducing the boilerplate for tools that
->   only want system wide mode. (Arnaldo Carvalho de Melo)
-> 
-> . Fix off-by-one bugs in map->end handling (Stephane Eranian)
-> 
-> . Fix off-by-one bug in maps__find(), also related to map->end handling (Namhyung Kim)
-> 
-> . Make struct symbol->end be the first addr after the symbol range, to make it
->   match the convention used for struct map->end. (Arnaldo Carvalho de Melo)
-> 
-> . Fix perf_evlist__add_pollfd() error handling in 'perf kvm stat live' (Jiri Olsa)
-> 
-> . Fix python test build by moving callchain_param to an object linked into the
->   python binding (Jiri Olsa)
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> ----------------------------------------------------------------
-> Arnaldo Carvalho de Melo (18):
->       perf sched: Stop updating hists stats, not used
->       perf script: Stop updating hists stats, not used
->       perf evsel: Add hists helper
->       perf session: Don't count per evsel events
->       perf tools: Move events_stats struct to event.h
->       perf ui browsers: Add missing include
->       perf session: Remove last reference to hists struct
->       perf evsel: Subclassing
->       perf callchain: Move the callchain_param extern to callchain.h
->       perf tools: Remove hists from evsel
->       perf thread_map: Create dummy constructor out of open coded equivalent
->       perf evlist: Check that there is a thread_map when preparing a workload
->       perf evlist: Default to syswide target when no thread/cpu maps set
->       perf evsel: Add missing 'target' struct forward declaration
->       perf evsel: Make some exit routines static
->       perf machine: Add missing dsos->root rbtree root initialization
->       perf symbols: Fix map->end fixup
->       perf symbols: Make sym->end be the first address after the symbol range
-> 
-> Jiri Olsa (4):
->       perf kvm stat live: Fix perf_evlist__add_pollfd error handling
->       perf kvm stat live: Use perf_evlist__add_pollfd return fd position
->       perf kvm stat live: Use fdarray object instead of pollfd
->       perf callchain: Move callchain_param to util object in to fix python test
-> 
-> Namhyung Kim (1):
->       perf tools: Fixup off-by-one comparision in maps__find
-> 
-> Stephane Eranian (1):
->       perf tools: fix off-by-one error in maps
-> 
->  tools/perf/builtin-annotate.c                      | 14 +++--
->  tools/perf/builtin-diff.c                          | 21 ++++---
->  tools/perf/builtin-kvm.c                           | 22 +++----
->  tools/perf/builtin-record.c                        |  1 +
->  tools/perf/builtin-report.c                        | 24 ++++---
->  tools/perf/builtin-sched.c                         |  3 -
->  tools/perf/builtin-script.c                        |  1 -
->  tools/perf/builtin-top.c                           | 60 ++++++++++--------
->  tools/perf/tests/builtin-test.c                    |  5 ++
->  tools/perf/tests/hists_cumulate.c                  |  8 +--
->  tools/perf/tests/hists_filter.c                    | 23 +++----
->  tools/perf/tests/hists_link.c                      | 23 ++++---
->  tools/perf/tests/hists_output.c                    | 20 +++---
->  tools/perf/ui/browsers/header.c                    |  1 +
->  tools/perf/ui/browsers/hists.c                     | 20 +++---
->  tools/perf/ui/gtk/hists.c                          |  2 +-
->  tools/perf/util/annotate.c                         |  8 +--
->  tools/perf/util/callchain.h                        |  2 +
->  tools/perf/util/event.h                            | 26 ++++++++
->  tools/perf/util/evlist.c                           | 48 +++++++++++++-
->  tools/perf/util/evsel.c                            | 66 ++++++++++++++-----
->  tools/perf/util/evsel.h                            | 14 ++---
->  tools/perf/util/hist.c                             | 73 +++++++++++++++++-----
->  tools/perf/util/hist.h                             | 49 +++++++--------
->  tools/perf/util/machine.c                          | 10 ++-
->  tools/perf/util/map.c                              |  8 +--
->  .../util/scripting-engines/trace-event-python.c    |  1 +
->  tools/perf/util/session.c                          | 23 -------
->  tools/perf/util/session.h                          |  1 -
->  tools/perf/util/sort.c                             |  4 +-
->  tools/perf/util/symbol.c                           |  8 +--
->  tools/perf/util/symbol.h                           |  2 +-
->  tools/perf/util/thread_map.c                       | 21 ++++---
->  tools/perf/util/thread_map.h                       |  1 +
->  tools/perf/util/util.c                             |  8 +++
->  35 files changed, 392 insertions(+), 229 deletions(-)
+Signed-off-by: Heesub Shin <heesub.shin@samsung.com>
+---
+ mm/zbud.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Pulled, thanks a lot Arnaldo!
+diff --git a/mm/zbud.c b/mm/zbud.c
+index ecf1dbe..db8de74 100644
+--- a/mm/zbud.c
++++ b/mm/zbud.c
+@@ -132,7 +132,7 @@ static struct zbud_ops zbud_zpool_ops = {
+ 
+ static void *zbud_zpool_create(gfp_t gfp, struct zpool_ops *zpool_ops)
+ {
+-	return zbud_create_pool(gfp, &zbud_zpool_ops);
++	return zbud_create_pool(gfp, zpool_ops ? &zbud_zpool_ops : NULL);
+ }
+ 
+ static void zbud_zpool_destroy(void *pool)
+-- 
+1.9.1
 
-	Ingo
