@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039AbaJOQWj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 12:22:39 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:33544 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751695AbaJOQVA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751810AbaJOQVA (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 15 Oct 2014 12:21:00 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:33518 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751605AbaJOQUx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 12:20:53 -0400
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 To: Mark Brown <broonie@kernel.org>
 Cc: Doug Anderson <dianders@chromium.org>,
@@ -17,222 +17,93 @@ Cc: Doug Anderson <dianders@chromium.org>,
         linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH 4/9] regulator: max77802: Add set suspend mode for BUCKs and simplify code
-Date: Wed, 15 Oct 2014 18:20:34 +0200
-Message-Id: <1413390039-19364-5-git-send-email-javier.martinez@collabora.co.uk>
+Subject: [PATCH 0/9] Add max77802 regulator operating mode support
+Date: Wed, 15 Oct 2014 18:20:30 +0200
+Message-Id: <1413390039-19364-1-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1413390039-19364-1-git-send-email-javier.martinez@collabora.co.uk>
-References: <1413390039-19364-1-git-send-email-javier.martinez@collabora.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The max77802 PMIC has a special enable pin (PWRREQ) that can be used
-by the Application Processor (AP) to power down and up voltage rails.
+Hello Mark,
 
-The max77802 PMIC regulators have 3 different enable control logics.
-Some regulators support to be configured on different operational mode
-during normal operation while others only support to be put in a Low
-Power Mode while the system has entered in sleep mode. Some regulators
-don't even support that configuration. The logics are the following:
+This is the second attempt to add operating modes support for the
+regulators in the max77802 PMIC. Instead of trying to come up with
+a generic solution like in the previous attempt [0], I added DT
+properties that are specific to the max77802 PMIC so is documented
+clearly what are the operating modes that each regulator support. The
+series version is not v2 because it's a completely different approach.
 
-Enable Control Logic1 by PWRREQ (BUCK 2-4, LDO2, LDO4-19, LDO22, LDO35)
--------------------------------
-0: Output OFF
-1: Output ON/OFF (Controlled by PWRREQ)
-     PWRREQ = HIGH (1): Output ON in Normal Mode
-     PWRREQ = LOW (0): Output OFF
-2: Output On with Low Power Mode (Controlled by PWRREQ)
-     PWRREQ = HIGH (1) : Output ON in Normal Mode
-     PWRREQ = LOW (0): Output ON in Low Power Mode
-3: Output ON in Normal Mode
+There is a "maxim,regulator-initial-mode" property to configure at
+startup the operating mode for the regulators that support changing
+its mode during normal operation and "maxim,regulator-{disk,mem}-mode"
+properties for the regulators that only support changing its operating
+mode when the system enters in a suspend state.
 
-Enable Control Logic2 by PWRREQ (LDO1, LDO20, LDO21)
--------------------------------
-0: Output ON/OFF by ENx
-1: Output ON in Low Power Mode
-2: Output ON in Low Power Mode (Controlled by PWRREQ)
-   PWRREQ = HIGH (1): Output ON in Normal Mode
-   PWRREQ = LOW (0): Output ON in Low Power Mode
-3: Output ON in Normal Mode
+The regulators can be enabled or disabled during suspend by using the
+standard "regulator-{on,off}-in-suspend" properties from Chanwoo Choi's
+regulator suspend state series [1].
 
-Enable Control Logic3 by PWRREQ (LDO3)
--------------------------------
-0 or 3: Output ON in Normal Mode
-1: Output ON in Low Power Mode
-2: Output ON in Low Power Mode (Controlled by PWRREQ)
-   PWRREQ = HIGH (1): Output ON in Normal Mode
-   PWRREQ = LOW (0): Output ON in Low Power Mode
+I tried to use as much as possible the infrastructure that is already
+provided in the regulator framework by adding the needed handlers for
+the set_suspend_* operations.
 
-The driver only implemented .set_suspend_mode for the LDOs regulators
-but some BUCKs also support to be put in Low Power Mode on system wide
-suspend so they should be supported as well. Two different functions
-were used for the logic 1 and 2 but this is not necessary.
+Also, the driver still had some assumptions and didn't clearly made a
+distinction between the valid modes (normal and low power) and off which
+is not an operating mode as you explained. So I reworked a bit to better
+treat them separately as is expected by the regulator API.
 
-Only normal and Low Power Mode are valid operational modes, OFF is not
-an mode but is a regulator state that is handled by .set_suspend_enable
-ad .set_suspend_disable. So the same .set_suspend_mode function can be
-used by all the regulators that support Output On with Low Power Mode
-by PWRREQ, making much simpler the code to set the suspend mode.
+This series depend on [1] and also patch:
+"ARM: EXYNOS: Call regulator core suspend prepare and finish functions" [2].
 
-Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
----
- drivers/regulator/max77802.c | 94 ++++++++++++++++++++++----------------------
- 1 file changed, 47 insertions(+), 47 deletions(-)
+Javier Martinez Canillas (9):
+  regulator: max77802: Add .set_suspend_{enable,disable} callbacks
+  regulator: max77802: Add .{get,set}_mode callbacks
+  regulator: max77802: Split regulator operations for BUCKs
+  regulator: max77802: Add set suspend mode for BUCKs and simplify code
+  regulator: max77802: Don't treat OFF as an operating mode
+  regulator: max77802: Add header for operating modes
+  regulator: max77802: Document regulator opmode DT properties
+  regulator: max77802: Parse regulator operating mode properties
+  ARM: dts: Configure regulators for suspend on exynos Peach boards
 
-diff --git a/drivers/regulator/max77802.c b/drivers/regulator/max77802.c
-index a621700..150eb3a 100644
---- a/drivers/regulator/max77802.c
-+++ b/drivers/regulator/max77802.c
-@@ -50,6 +50,7 @@
- #define MAX77802_RAMP_RATE_SHIFT_4BIT	4
- 
- #define MAX77802_OFF_PWRREQ		0x1
-+#define MAX77802_LP_PWRREQ		0x2
- 
- #define MAX77802_MODE(pval) ((pval == MAX77802_OPMODE_NORMAL) ?	\
- 			     REGULATOR_MODE_NORMAL : REGULATOR_MODE_STANDBY)
-@@ -146,71 +147,69 @@ static unsigned max77802_get_mode(struct regulator_dev *rdev)
- 	return MAX77802_MODE(max77802->opmode[id]);
- }
- 
--/*
-- * Some LDOs supports LPM-ON/OFF/Normal-ON mode during suspend state
-- * (Enable Control Logic1 by PWRREQ)
-+/**
-+ * max77802_set_suspend_mode - set regulator opmode when the system is suspended
-+ * @rdev: regulator to change mode
-+ * @mode: operating mode to be set
-+ *
-+ * Will set the operating mode for the regulators during system suspend.
-+ * This function is valid for the three different enable control logics:
-  *
-- * LDOs 2, 4-19, 22-35.
-+ * Enable Control Logic1 by PWRREQ (BUCK 2-4 and LDOs 2, 4-19, 22-35)
-+ * Enable Control Logic2 by PWRREQ (LDOs 1, 20, 21)
-+ * Enable Control Logic3 by PWRREQ (LDO 3)
-  *
-+ * If setting the regulator mode fails, the function only warns but does
-+ * not return an error code to avoid the regulator core to stop setting
-+ * the operating mode for the remaining regulators.
-  */
--static int max77802_ldo_set_suspend_mode_logic1(struct regulator_dev *rdev,
--						unsigned int mode)
-+static int max77802_set_suspend_mode(struct regulator_dev *rdev,
-+				     unsigned int mode)
- {
- 	struct max77802_regulator_prv *max77802 = rdev_get_drvdata(rdev);
- 	int id = rdev_get_id(rdev);
- 	unsigned int val;
- 	int shift = max77802_get_opmode_shift(id);
- 
--	switch (mode) {
--	case REGULATOR_MODE_IDLE:			/* ON in LP Mode */
--		val = MAX77802_OPMODE_LP;
--		break;
--	case REGULATOR_MODE_NORMAL:			/* ON in Normal Mode */
--		val = MAX77802_OPMODE_NORMAL;
--		break;
--	case REGULATOR_MODE_STANDBY:			/* ON/OFF by PWRREQ */
--		val = MAX77802_OPMODE_STANDBY;
--		break;
--	default:
--		dev_warn(&rdev->dev, "%s: regulator mode: 0x%x not supported\n",
-+	/*
-+	 * If the regulator has been disabled for suspend
-+	 * then is invalid to try setting a suspend mode.
-+	 */
-+	if (!max77802->opmode[id] == MAX77802_OFF_PWRREQ) {
-+		dev_warn(&rdev->dev, "%s: is disabled, mode: 0x%x not set\n",
- 			 rdev->desc->name, mode);
--		return -EINVAL;
-+		return 0;
- 	}
- 
--	max77802->opmode[id] = val;
--	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
--				  rdev->desc->enable_mask, val << shift);
--}
--
--/*
-- * Mode 1 (Output[ON/OFF] by PWRREQ) is not supported on some LDOs
-- * (Enable Control Logic2 by PWRREQ)
-- *
-- * LDOs 1, 20, 21, and 3,
-- *
-- */
--static int max77802_ldo_set_suspend_mode_logic2(struct regulator_dev *rdev,
--						unsigned int mode)
--{
--	struct max77802_regulator_prv *max77802 = rdev_get_drvdata(rdev);
--	int id = rdev_get_id(rdev);
--	unsigned int val;
--	int shift = max77802_get_opmode_shift(id);
--
- 	switch (mode) {
--	case REGULATOR_MODE_IDLE:			/* ON in LP Mode */
--		val = MAX77802_OPMODE_LP;
--		break;
--	case REGULATOR_MODE_NORMAL:			/* ON in Normal Mode */
--		val = MAX77802_OPMODE_NORMAL;
-+	case REGULATOR_MODE_IDLE:
-+	case REGULATOR_MODE_STANDBY:
-+		/*
-+		 * If the regulator opmode is normal then enable
-+		 * ON in Low Power Mode by PWRREQ. If the mode is
-+		 * already Low Power then no action is required.
-+		 */
-+		if (max77802->opmode[id] == MAX77802_OPMODE_NORMAL)
-+			val = MAX77802_LP_PWRREQ;
-+		else
-+			return 0;
- 		break;
-+	case REGULATOR_MODE_NORMAL:
-+		/*
-+		 * If the regulator operating mode is Low Power then
-+		 * normal is not a valid opmode in suspend. If the
-+		 * mode is already normal then no action is required.
-+		 */
-+		if (max77802->opmode[id] == MAX77802_OPMODE_LP)
-+			dev_warn(&rdev->dev, "%s: in Low Power: 0x%x invalid\n",
-+				 rdev->desc->name, mode);
-+		return 0;
- 	default:
- 		dev_warn(&rdev->dev, "%s: regulator mode: 0x%x not supported\n",
- 			 rdev->desc->name, mode);
- 		return -EINVAL;
- 	}
- 
--	max77802->opmode[id] = val;
- 	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
- 				  rdev->desc->enable_mask, val << shift);
- }
-@@ -295,7 +294,7 @@ static struct regulator_ops max77802_ldo_ops_logic1 = {
- 	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
- 	.set_suspend_enable	= max77802_enable,
- 	.set_suspend_disable	= max77802_set_suspend_disable,
--	.set_suspend_mode	= max77802_ldo_set_suspend_mode_logic1,
-+	.set_suspend_mode	= max77802_set_suspend_mode,
- };
- 
- /*
-@@ -312,7 +311,7 @@ static struct regulator_ops max77802_ldo_ops_logic2 = {
- 	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
- 	.set_mode		= max77802_set_mode,
- 	.get_mode		= max77802_get_mode,
--	.set_suspend_mode	= max77802_ldo_set_suspend_mode_logic2,
-+	.set_suspend_mode	= max77802_set_suspend_mode,
- };
- 
- /* BUCKS 1, 6 */
-@@ -343,6 +342,7 @@ static struct regulator_ops max77802_buck_234_ops = {
- 	.set_ramp_delay		= max77802_set_ramp_delay_2bit,
- 	.set_suspend_enable	= max77802_enable,
- 	.set_suspend_disable	= max77802_set_suspend_disable,
-+	.set_suspend_mode	= max77802_set_suspend_mode,
- };
- 
- /* BUCKs 5, 7-10 */
--- 
-2.1.0
+ .../devicetree/bindings/regulator/max77802.txt     |  45 ++++++
+ arch/arm/boot/dts/exynos5420-peach-pit.dts         |  81 ++++++++++
+ arch/arm/boot/dts/exynos5800-peach-pi.dts          |  81 ++++++++++
+ drivers/regulator/max77802.c                       | 168 ++++++++++++++++-----
+ include/dt-bindings/regulator/maxim,max77802.h     |  18 +++
+ include/linux/mfd/max77686.h                       |   7 -
+ 6 files changed, 353 insertions(+), 47 deletions(-)
+ create mode 100644 include/dt-bindings/regulator/maxim,max77802.h
 
+Patch #1 adds handlers for all regulators that can be enabled and disabled
+during suspend
+
+Patch #2 adds a get and set mode function handlers for the regulators whose
+operating mode can be changed at runtime.
+
+Patch #3 split the regulator operations for the BUCK regulators since don't
+have the exact functionality.
+
+Patch #4 add support for changing the operating mode for all regulators that
+support setting a different opmode during suspend.
+
+Patch #5 is a cleanup to not call OFF an operating mode.
+
+Patch #6 adds a header file with the valid operating modes so it can be used
+by Device Tree source files.
+
+Patch #7 extend the max77802 DT binding to include the properties used to
+setup the regulators modes.
+
+Patch #8 adds the support to parse these from the driver.
+
+Patch #9 configures the modes for the max77802 regulators in the Device Tree
+source file of the Peach Chromebooks.
+
+Best regards,
+Javier
+
+[0]: https://lkml.org/lkml/2014/10/8/331
+[1]: https://lkml.org/lkml/2014/10/10/161
+[2]: https://lkml.org/lkml/2014/10/15/228
