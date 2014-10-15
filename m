@@ -1,81 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752062AbaJOQXV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 12:23:21 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:33542 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751698AbaJOQU6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 12:20:58 -0400
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-To: Mark Brown <broonie@kernel.org>
-Cc: Doug Anderson <dianders@chromium.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Chris Zhong <zyw@rock-chips.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH 3/9] regulator: max77802: Split regulator operations for BUCKs
-Date: Wed, 15 Oct 2014 18:20:33 +0200
-Message-Id: <1413390039-19364-4-git-send-email-javier.martinez@collabora.co.uk>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1413390039-19364-1-git-send-email-javier.martinez@collabora.co.uk>
-References: <1413390039-19364-1-git-send-email-javier.martinez@collabora.co.uk>
+	id S1751650AbaJOQeJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 12:34:09 -0400
+Received: from mga02.intel.com ([134.134.136.20]:44283 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750994AbaJOQeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 12:34:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,725,1406617200"; 
+   d="scan'208";a="589550924"
+Date: Wed, 15 Oct 2014 21:28:00 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: dmaengine@vger.kernel.org
+Cc: Viresh Kumar <viresh.linux@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Mark Brown <broonie@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Felipe Balbi <balbi@ti.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Jingoo Han <jg1.han@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Denis Carikli <denis@eukrea.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Alexander Stein <alexander.stein@systec-electronic.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mtd@lists.infradead.org,
+        netdev@vger.kernel.org, linux-spi@vger.kernel.org,
+        linux-serial@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: Re: [PATCH 00/12] dmaengine: remove users of device_control
+Message-ID: <20141015155800.GA1638@intel.com>
+References: <1413041973-28146-1-git-send-email-vinod.koul@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413041973-28146-1-git-send-email-vinod.koul@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not all the max77802 BUCKs regulators have the same functionality, for
-example BUCKs 2-4 support the output to be configured as normal or Low
-Power Mode by the PWRREQ enable pin while the other BUCKs only support
-their output to be set ON or OFF by PWRREQ. As a preparation for adding
-a set_suspend_mode function handler for all the regulators that support
-Low Power Mode by PWRREQ, split the operations for BUCKs regulators.
+On Sat, Oct 11, 2014 at 09:09:33PM +0530, Vinod Koul wrote:
+> The recent discussion [1] on the API have resulted in moving away from
+> device_control ioctl method to proper channel APIs.
+> There are still few users on the device_control which should use the wrappers
+> existing rather than access device_control.
+> This will aid us in deprecating and removing device_control, possibly after
+> the merge window.
+> 
+> These can be merged thru respective subsystem tree or dmaengine tree. Either
+> way please just let me know.
 
-Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
----
- drivers/regulator/max77802.c | 19 +++++++++++++++++--
- 1 file changed, 17 insertions(+), 2 deletions(-)
+Applying to dmaengine-next with acks recived, dropping the ones which are
+applied by respective folks
 
-diff --git a/drivers/regulator/max77802.c b/drivers/regulator/max77802.c
-index baf834d..a621700 100644
---- a/drivers/regulator/max77802.c
-+++ b/drivers/regulator/max77802.c
-@@ -330,7 +330,22 @@ static struct regulator_ops max77802_buck_16_dvs_ops = {
- 	.set_suspend_disable	= max77802_set_suspend_disable,
- };
- 
--/* BUCKs 2-4, 5, 7-10 */
-+/* BUCKs 2-4 */
-+static struct regulator_ops max77802_buck_234_ops = {
-+	.list_voltage		= regulator_list_voltage_linear,
-+	.map_voltage		= regulator_map_voltage_linear,
-+	.is_enabled		= regulator_is_enabled_regmap,
-+	.enable			= max77802_enable,
-+	.disable		= regulator_disable_regmap,
-+	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
-+	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
-+	.set_ramp_delay		= max77802_set_ramp_delay_2bit,
-+	.set_suspend_enable	= max77802_enable,
-+	.set_suspend_disable	= max77802_set_suspend_disable,
-+};
-+
-+/* BUCKs 5, 7-10 */
- static struct regulator_ops max77802_buck_dvs_ops = {
- 	.list_voltage		= regulator_list_voltage_linear,
- 	.map_voltage		= regulator_map_voltage_linear,
-@@ -404,7 +419,7 @@ static struct regulator_ops max77802_buck_dvs_ops = {
- 	.name		= "BUCK"#num,					\
- 	.id		= MAX77802_BUCK##num,				\
- 	.supply_name	= "inb"#num,					\
--	.ops		= &max77802_buck_dvs_ops,			\
-+	.ops		= &max77802_buck_234_ops,			\
- 	.type		= REGULATOR_VOLTAGE,				\
- 	.owner		= THIS_MODULE,					\
- 	.min_uV		= 600000,					\
 -- 
-2.1.0
+~Vinod
 
+> 
+> Feng's kbuild has tested these as well [2]
+> 
+> [1]: http://www.spinics.net/lists/dmaengine/msg02212.html
+> [2]: http://git.infradead.org/users/vkoul/slave-dma.git/shortlog/refs/heads/topic/dma_control_cleanup
+> 
+> Vinod Koul (12):
+>   pata_arasan_cf: use dmaengine_terminate_all() API
+>   dmaengine: coh901318: use dmaengine_terminate_all() API
+>   [media] V4L2: mx3_camer: use dmaengine_pause() API
+>   mtd: fsmc_nand: use dmaengine_terminate_all() API
+>   mtd: sh_flctl: use dmaengine_terminate_all() API
+>   net: ks8842: use dmaengine_terminate_all() API
+>   spi/atmel: use dmaengine_terminate_all() API
+>   spi/spi-dw-mid.c: use dmaengine_slave_config() API
+>   serial: sh-sci: use dmaengine_terminate_all() API
+>   usb: musb: ux500_dma: use dmaengine_xxx() APIs
+>   ASoC: txx9: use dmaengine_terminate_all() API
+>   video: mx3fb: use dmaengine_terminate_all() API
+> 
+>  drivers/ata/pata_arasan_cf.c                   |    5 ++---
+>  drivers/dma/coh901318.c                        |    2 +-
+>  drivers/media/platform/soc_camera/mx3_camera.c |    6 ++----
+>  drivers/mtd/nand/fsmc_nand.c                   |    2 +-
+>  drivers/mtd/nand/sh_flctl.c                    |    2 +-
+>  drivers/net/ethernet/micrel/ks8842.c           |    6 ++----
+>  drivers/spi/spi-atmel.c                        |    6 ++----
+>  drivers/spi/spi-dw-mid.c                       |    6 ++----
+>  drivers/tty/serial/sh-sci.c                    |    2 +-
+>  drivers/usb/musb/ux500_dma.c                   |    7 ++-----
+>  drivers/video/fbdev/mx3fb.c                    |    3 +--
+>  sound/soc/txx9/txx9aclc.c                      |    7 +++----
+>  12 files changed, 20 insertions(+), 34 deletions(-)
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe dmaengine" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
