@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932805AbaJOC0F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 22:26:05 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:39163 "EHLO
+	id S932813AbaJOC0T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 22:26:19 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:40019 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932670AbaJOCZr (ORCPT
+	with ESMTP id S932808AbaJOC0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 22:25:47 -0400
+	Tue, 14 Oct 2014 22:26:08 -0400
 From: Yijing Wang <wangyijing@huawei.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
@@ -33,9 +33,9 @@ CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Thierry Reding <thierry.reding@gmail.com>,
         "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
         Liviu Dudau <liviu@dudau.co.uk>, Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH v3 06/27] PCI: designware: Save msi chip in pci_sys_data
-Date: Wed, 15 Oct 2014 11:06:54 +0800
-Message-ID: <1413342435-7876-7-git-send-email-wangyijing@huawei.com>
+Subject: [PATCH v3 22/27] s390/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+Date: Wed, 15 Oct 2014 11:07:10 +0800
+Message-ID: <1413342435-7876-23-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1413342435-7876-1-git-send-email-wangyijing@huawei.com>
 References: <1413342435-7876-1-git-send-email-wangyijing@huawei.com>
@@ -47,51 +47,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Save msi chip in pci_sys_data instead of assign
-msi chip to every pci bus in .add_bus().
+Use MSI chip framework instead of arch MSI functions to configure
+MSI/MSI-X irq. So we can manage MSI/MSI-X irq in a unified framework.
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- drivers/pci/host/pcie-designware.c |   15 ++++-----------
- 1 files changed, 4 insertions(+), 11 deletions(-)
+Hi Sebastian,
+   I dropped the Acked-by , because this version has a
+lot changes compared to last. So, I guess you may want to check it again.
+---
+ arch/s390/include/asm/pci.h |    9 +++++++++
+ arch/s390/pci/pci.c         |   12 ++++++++++--
+ 2 files changed, 19 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
-index dfed00a..56fa8ab 100644
---- a/drivers/pci/host/pcie-designware.c
-+++ b/drivers/pci/host/pcie-designware.c
-@@ -498,6 +498,10 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
- 	val |= PORT_LOGIC_SPEED_CHANGE;
- 	dw_pcie_wr_own_conf(pp, PCIE_LINK_WIDTH_SPEED_CONTROL, 4, val);
+diff --git a/arch/s390/include/asm/pci.h b/arch/s390/include/asm/pci.h
+index c030900..4d41f08 100644
+--- a/arch/s390/include/asm/pci.h
++++ b/arch/s390/include/asm/pci.h
+@@ -88,6 +88,8 @@ struct zpci_dev {
+ 	u32 uid;			/* user defined id */
+ 	u8 util_str[CLP_UTIL_STR_LEN];	/* utility string */
  
-+#ifdef CONFIG_PCI_MSI
-+	dw_pcie_msi_chip.dev = pp->dev;
-+	dw_pci.msi_chip = &dw_pcie_msi_chip;
-+#endif
- 	dw_pci.nr_controllers = 1;
- 	dw_pci.private_data = (void **)&pp;
- 
-@@ -747,21 +751,10 @@ static int dw_pcie_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
- 	return irq;
- }
- 
--static void dw_pcie_add_bus(struct pci_bus *bus)
--{
--	if (IS_ENABLED(CONFIG_PCI_MSI)) {
--		struct pcie_port *pp = sys_to_pcie(bus->sysdata);
--
--		dw_pcie_msi_chip.dev = pp->dev;
--		bus->msi = &dw_pcie_msi_chip;
--	}
--}
--
- static struct hw_pci dw_pci = {
- 	.setup		= dw_pcie_setup,
- 	.scan		= dw_pcie_scan_bus,
- 	.map_irq	= dw_pcie_map_irq,
--	.add_bus	= dw_pcie_add_bus,
++	struct msi_chip *msi_chip;
++
+ 	/* IRQ stuff */
+ 	u64		msi_addr;	/* MSI address */
+ 	struct airq_iv *aibv;		/* adapter interrupt bit vector */
+@@ -121,6 +123,13 @@ struct zpci_dev {
+ 	struct dentry	*debugfs_perf;
  };
  
- void dw_pcie_setup_rc(struct pcie_port *pp)
++static inline struct msi_chip *pci_msi_chip(struct pci_bus *bus)
++{
++	struct zpci_dev *zpci = bus->sysdata;
++
++	return zpci->msi_chip;
++}
++
+ static inline bool zdev_enabled(struct zpci_dev *zdev)
+ {
+ 	return (zdev->fh & (1UL << 31)) ? true : false;
+diff --git a/arch/s390/pci/pci.c b/arch/s390/pci/pci.c
+index 552b990..bf6732f 100644
+--- a/arch/s390/pci/pci.c
++++ b/arch/s390/pci/pci.c
+@@ -358,7 +358,8 @@ static void zpci_irq_handler(struct airq_struct *airq)
+ 	}
+ }
+ 
+-int arch_setup_msi_irqs(struct pci_dev *pdev, int nvec, int type)
++static int zpci_setup_msi_irqs(struct msi_chip *chip,
++		struct pci_dev *pdev, int nvec, int type)
+ {
+ 	struct zpci_dev *zdev = get_zdev(pdev);
+ 	unsigned int hwirq, msi_vecs;
+@@ -434,7 +435,8 @@ out:
+ 	return rc;
+ }
+ 
+-void arch_teardown_msi_irqs(struct pci_dev *pdev)
++static void zpci_teardown_msi_irqs(struct msi_chip *chip,
++		struct pci_dev *pdev)
+ {
+ 	struct zpci_dev *zdev = get_zdev(pdev);
+ 	struct msi_desc *msi;
+@@ -464,6 +466,11 @@ void arch_teardown_msi_irqs(struct pci_dev *pdev)
+ 	airq_iv_free_bit(zpci_aisb_iv, zdev->aisb);
+ }
+ 
++static struct msi_chip zpci_msi_chip = {
++	.setup_irqs = zpci_setup_msi_irqs,
++	.teardown_irqs = zpci_teardown_msi_irqs,
++};
++
+ static void zpci_map_resources(struct zpci_dev *zdev)
+ {
+ 	struct pci_dev *pdev = zdev->pdev;
+@@ -749,6 +756,7 @@ static int zpci_scan_bus(struct zpci_dev *zdev)
+ 	if (ret)
+ 		return ret;
+ 
++	zdev->msi_chip = &zpci_msi_chip;
+ 	zdev->bus = pci_scan_root_bus(NULL, ZPCI_BUS_NR, &pci_root_ops,
+ 				      zdev, &resources);
+ 	if (!zdev->bus) {
 -- 
 1.7.1
 
