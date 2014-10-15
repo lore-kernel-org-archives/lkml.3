@@ -1,93 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751684AbaJOIpr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 04:45:47 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:24846 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751313AbaJOIpp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 04:45:45 -0400
-Message-ID: <543E3427.2040207@hp.com>
-Date: Wed, 15 Oct 2014 16:45:27 +0800
-From: "Li, ZhenHua" <zhen-hual@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751840AbaJOIq3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 04:46:29 -0400
+Received: from mga01.intel.com ([192.55.52.88]:44929 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751709AbaJOIq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 04:46:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="400519005"
+Date: Wed, 15 Oct 2014 11:46:20 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>, devicetree@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH 06/13] gpio / ACPI: Add support for _DSD device properties
+Message-ID: <20141015084620.GO2255@lahna.fi.intel.com>
+References: <2660541.BycO7TFnA2@vostro.rjw.lan>
+ <1651636.CsIdshL7Av@vostro.rjw.lan>
+ <20141014134403.66480C408A6@trevor.secretlab.ca>
 MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>
-CC: Jerry.Hoemann@hp.com, indou.takao@jp.fujitsu.com, bhe@redhat.com,
-        linux-pci@vger.kernel.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
-        ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com, zhenhua@hp.com,
-        "Vaden, Tom L (HP Server OS Architecture)" <tom.vaden@hp.com>
-Subject: Re: [PATCH 0/8] iommu/vt-d: Fix crash dump failure caused by legacy
- DMA/IO
-References: <1398386198-19304-1-git-send-email-bill.sumner@hp.com> <1398854973.12733.23.camel@i7.infradead.org> <20140702133258.GN26537@8bytes.org> <20140711162745.GA8335@anatevka.fc.hp.com> <543E2BDA.8030906@hp.com>
-In-Reply-To: <543E2BDA.8030906@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141014134403.66480C408A6@trevor.secretlab.ca>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add Tom to CC list.
-On 10/15/2014 04:10 PM, Li, ZhenHua wrote:
-> David, Joerg,
-> I plan to merge this patch set with 3.17 stable kernel, and split this
-> patch set into two :
-> 1. The core part, including the changed functions, like [Patch 4/8],
-> [Patch 8/8].
-> 2. For the formatting issues, like [Patch 1/8],[Patch 3/8],  including
-> the changes for code formations, creation of new files
-> intel-iommu-kdump.c, intel-iommu-private.h.
->
-> I believe this will make the patch set more clear to read and understand.
->
-> What are your suggestions?
->
-> Thanks
-> Zhenhua
->
->
-> On 07/12/2014 12:27 AM, Jerry Hoemann wrote:
->> On Wed, Jul 02, 2014 at 03:32:59PM +0200, Joerg Roedel wrote:
->>> Hi David,
->>>
->>> On Wed, Apr 30, 2014 at 11:49:33AM +0100, David Woodhouse wrote:
->>>> There could be all kinds of existing mappings in the DMA page tables,
->>>> and I'm not sure it's safe to preserve them. What prevents the
->>>> crashdump
->>>> kernel from trying to use any of the physical pages which are
->>>> accessible, and which could thus be corrupted by stray DMA?
->>>>
->>>> In fact, the old kernel could even have set up 1:1 passthrough mappings
->>>> for some devices, which would then be able to DMA *anywhere*. Surely we
->>>> need to prevent that?
->>>
->>> Ideally we would prevent that, yes. But the problem is that a failed DMA
->>> transaction might put the device into an unrecoverable state. Usually
->>> any in-flight DMA transactions should only target buffers set up by the
->>> previous kernel and not corrupt any data.
->>>
->>>> After the last round of this patchset, we discussed a potential
->>>> improvement where you point every virtual bus address at the *same*
->>>> physical scratch page.
->>>
->>> That is a solution to prevent the in-flight DMA failures. But what
->>> happens when there is some in-flight DMA to a disk to write some inodes
->>> or a new superblock. Then this scratch address-space may cause
->>> filesystem corruption at worst.
->>>
->>> So with this in mind I would prefer initially taking over the
->>> page-tables from the old kernel before the device drivers re-initialize
->>> the devices.
->>>
->>>
->>>     Joerg
->>
->> David, Joerg,
->>
->> What do you think here?  Do you want me to update the patch set for 3.17?
->>
->> Jerry
->>
->
+On Tue, Oct 14, 2014 at 03:44:03PM +0200, Grant Likely wrote:
+> On Tue, 07 Oct 2014 02:15:18 +0200
+> , "Rafael J. Wysocki" <rjw@rjwysocki.net>
+>  wrote:
+> > From: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > 
+> > With release of ACPI 5.1 and _DSD method we can finally name GPIOs (and
+> > other things as well) returned by _CRS. Previously we were only able to
+> > use integer index to find the corresponding GPIO, which is pretty error
+> > prone if the order changes.
+> > 
+> > With _DSD we can now query GPIOs using name instead of an integer index,
+> > like the below example shows:
+> > 
+> >   // Bluetooth device with reset and shutdown GPIOs
+> >   Device (BTH)
+> >   {
+> >       Name (_HID, ...)
+> > 
+> >       Name (_CRS, ResourceTemplate ()
+> >       {
+> >           GpioIo (Exclusive, PullUp, 0, 0, IoRestrictionInputOnly,
+> >                   "\\_SB.GPO0", 0, ResourceConsumer) {15}
+> >           GpioIo (Exclusive, PullUp, 0, 0, IoRestrictionInputOnly,
+> >                   "\\_SB.GPO0", 0, ResourceConsumer) {27, 31}
+> >       })
+> > 
+> >       Name (_DSD, Package ()
+> >       {
+> >           ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
+> >           Package ()
+> > 	  {
+> >               Package () {"reset-gpio", Package() {^BTH, 1, 1, 0 }},
+> >               Package () {"shutdown-gpio", Package() {^BTH, 0, 0, 0 }},
+> >           }
+> >       })
+> >   }
+> > 
+> > The format of the supported GPIO property is:
+> > 
+> >   Package () { "name", Package () { ref, index, pin, active_low }}
+> > 
+> >   ref - The device that has _CRS containing GpioIo()/GpioInt() resources,
+> >         typically this is the device itself (BTH in our case).
+> >   index - Index of the GpioIo()/GpioInt() resource in _CRS starting from zero.
+> >   pin - Pin in the GpioIo()/GpioInt() resource. Typically this is zero.
+> >   active_low - If 1 the GPIO is marked as active_low.
+> > 
+> > Since ACPI GpioIo() resource does not have field saying whether it is
+> > active low or high, the "active_low" argument can be used here. Setting
+> > it to 1 marks the GPIO as active low.
+> > 
+> > In our Bluetooth example the "reset-gpio" refers to the second GpioIo()
+> > resource, second pin in that resource with the GPIO number of 31.
+> > 
+> > This patch implements necessary support to gpiolib for extracting GPIOs
+> > using _DSD device properties.
+> 
+> Patch looks good, but please put the above description into
+> /Documentation until we've got a better place to document extra bindings.
 
+Thanks for the review.
+
+If you don't mind, I would like to make a separate patch on top of this
+series adding this description to Documentation/acpi/properties.txt.
