@@ -1,44 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751961AbaJOJnP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 05:43:15 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:41150 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317AbaJOJnO (ORCPT
+	id S1751663AbaJOJuh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 05:50:37 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:38421 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751292AbaJOJug convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 05:43:14 -0400
-Date: Wed, 15 Oct 2014 11:43:08 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: Thomas Shao <huishao@microsoft.com>
-Cc: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+	Wed, 15 Oct 2014 05:50:36 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Michael S. Tsirkin'" <mst@redhat.com>, Jason Wang <jasowang@redhat.com>
+CC: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        KY Srinivasan <kys@microsoft.com>
-Subject: Re: [PATCH v2 2/2] hyperv: Implement Time Synchronization using host
- time sample
-Message-ID: <20141015094308.GA5452@localhost.localdomain>
-References: <1413362404-16284-1-git-send-email-huishao@microsoft.com>
- <20141015091808.GB5300@localhost.localdomain>
- <CD2CABCB2C0A0D4682C5F8AD840141540C171E@HKXPRD3002MB006.064d.mgd.msft.net>
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>
+Subject: RE: [RFC PATCH net-next 3/6] virtio-net: small optimization on
+ free_old_xmit_skbs()
+Thread-Topic: [RFC PATCH net-next 3/6] virtio-net: small optimization on
+ free_old_xmit_skbs()
+Thread-Index: AQHP6FsCsmX5zz5fkUSOZUv7LBGEbpww6EfA
+Date: Wed, 15 Oct 2014 09:49:01 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1C9D752A@AcuExch.aculab.com>
+References: <1413357930-45302-1-git-send-email-jasowang@redhat.com>
+ <1413357930-45302-4-git-send-email-jasowang@redhat.com>
+ <20141015093739.GC25776@redhat.com>
+In-Reply-To: <20141015093739.GC25776@redhat.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CD2CABCB2C0A0D4682C5F8AD840141540C171E@HKXPRD3002MB006.064d.mgd.msft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 09:21:33AM +0000, Thomas Shao wrote:
+From: Of Michael S. Tsirkin
+> On Wed, Oct 15, 2014 at 03:25:27PM +0800, Jason Wang wrote:
+> > Accumulate the sent packets and sent bytes in local variables and perform a
+> > single u64_stats_update_begin/end() after.
+> >
+> > Cc: Rusty Russell <rusty@rustcorp.com.au>
+> > Cc: Michael S. Tsirkin <mst@redhat.com>
+> > Signed-off-by: Jason Wang <jasowang@redhat.com>
 > 
-> In V2, I address all the Dan's comments.
+> Not sure how much it's worth but since Eric suggested it ...
 
-It is customary to detail the changes in each patch series revision,
-in order to make things easier for the reviewers.
+Probably depends on the actual cost of u64_stats_update_begin/end
+against the likely extra saving of the tx_bytes and tx_packets
+values onto the stack across the call to dev_kfree_skb_any().
+(Which depends on the number of caller saved registers.)
 
-Thanks,
-Richard
+> Acked-by: Michael S. Tsirkin <mst@redhat.com>
+> 
+> > ---
+> >  drivers/net/virtio_net.c |   12 ++++++++----
+> >  1 files changed, 8 insertions(+), 4 deletions(-)
+> >
+> > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> > index 3d0ce44..a4d56b8 100644
+> > --- a/drivers/net/virtio_net.c
+> > +++ b/drivers/net/virtio_net.c
+> > @@ -833,17 +833,21 @@ static void free_old_xmit_skbs(struct send_queue *sq)
+> >  	unsigned int len;
+> >  	struct virtnet_info *vi = sq->vq->vdev->priv;
+> >  	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
+> > +	u64 tx_bytes = 0, tx_packets = 0;
+
+tx_packets need only be 'unsigned int'.
+The same is almost certainly true of tx_bytes.
+
+	David
+
+> >  	while ((skb = virtqueue_get_buf(sq->vq, &len)) != NULL) {
+> >  		pr_debug("Sent skb %p\n", skb);
+> >
+> > -		u64_stats_update_begin(&stats->tx_syncp);
+> > -		stats->tx_bytes += skb->len;
+> > -		stats->tx_packets++;
+> > -		u64_stats_update_end(&stats->tx_syncp);
+> > +		tx_bytes += skb->len;
+> > +		tx_packets++;
+> >
+> >  		dev_kfree_skb_any(skb);
+> >  	}
+> > +
+> > +	u64_stats_update_begin(&stats->tx_syncp);
+> > +	stats->tx_bytes += tx_bytes;
+> > +	stats->tx_packets =+ tx_packets;
+> > +	u64_stats_update_end(&stats->tx_syncp);
+> >  }
+> >
+> >  static int xmit_skb(struct send_queue *sq, struct sk_buff *skb)
+> > --
+> > 1.7.1
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
