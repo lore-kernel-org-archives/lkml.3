@@ -1,151 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752477AbaJOU4s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 16:56:48 -0400
-Received: from mail.kernel.org ([198.145.19.201]:35433 "EHLO mail.kernel.org"
+	id S1750994AbaJOUxF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 16:53:05 -0400
+Received: from mail.kernel.org ([198.145.19.201]:35331 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751877AbaJOUxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 16:53:20 -0400
+	id S1751243AbaJOUxC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 16:53:02 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Kan Liang <kan.liang@intel.com>,
-        Andi Kleen <ak@linux.intel.com>, Jiri Olsa <jolsa@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Anshuman Khandual <khandual@linux.vnet.ibm.com>,
+        Arun Sharma <asharma@fb.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Cody P Schafer <dev@codyps.com>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Haren Myneni <hbabu@us.ibm.com>, Jean Pihet <jean.pihet@linaro.org>,
+        Jiri Olsa <jolsa@redhat.com>, Kan Liang <kan.liang@intel.com>,
+        linuxppc-dev@lists.ozlabs.org, Masanari Iida <standby24x7@gmail.com>,
+        Michael Ellerman <michaele@au1.ibm.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Taeung Song <treeze.taeung@gmail.com>,
+        Yasser Shalabi <yassershalabi@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 04/15] Revert "perf tools: Default to cpu// for events v5"
-Date: Wed, 15 Oct 2014 17:52:37 -0300
-Message-Id: <1413406368-26245-5-git-send-email-acme@kernel.org>
+Subject: [GIT PULL 00/15] perf/core improvements and fixes
+Date: Wed, 15 Oct 2014 17:52:33 -0300
+Message-Id: <1413406368-26245-1-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1413406368-26245-1-git-send-email-acme@kernel.org>
-References: <1413406368-26245-1-git-send-email-acme@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kan Liang <kan.liang@intel.com>
+Hi Ingo,
 
-This reverts commit 50e200f07948 ("perf tools: Default to cpu// for
-events v5")
+	Please consider pulling, I guess the changes are minor of affect just some
+non-core feature, so it is you call if you prefer to pull it into perf/urgent instead.
 
-The fixup cannot handle the case that
-new style format(which without //) mixed with
-other different formats.
+Best Regards,
 
-For example,
-group events with new style format: {mem-stores,mem-loads}
-some hardware event + new style event: cycles,mem-loads
-Cache event + new style event: LLC-loads,mem-loads
-Raw event + new style event:
-cpu/event=0xc8,umask=0x08/,mem-loads
-old style event and new stytle mixture: mem-stores,cpu/mem-loads/
+- Arnaldo
 
-Signed-off-by: Kan Liang <kan.liang@intel.com>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/r/1412694532-23391-2-git-send-email-kan.liang@intel.com
+The following changes since commit ec4212d88a77eb6caec10777ddd629b702a5ebbd:
+
+  Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/urgent (2014-10-15 11:54:14 +0200)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-core-for-mingo
+
+for you to fetch changes up to 673d659f5c5918b7ddbafebf1f129c9eb82973b4:
+
+  perf kvm stat live: Enable events copying (2014-10-15 17:39:03 -0300)
+
+----------------------------------------------------------------
+perf/core improvements and fixes:
+
+User visible:
+
+* Add a visual cue for toggle zeroing of samples in 'perf top' (Taeung Song)
+
+* Fix for double free in 'perf stat' when using some specific invalid
+  command line combo (Yasser Shalabi)
+
+Infrastructure:
+
+* Add option to copy events when queuing for sorting across cpu buffers
+  and enable it for 'perf kvm stat live', to avoid having events left
+  in the queue pointing to the ring buffer be rewritten in high volume
+  sessions.  (Alexander Yarygin, improving work done by David Ahern):
+
+* Document sysfs events/ interfaces (Cody P Schafer)
+
+* Add support to new style format of kernel PMU event. (Kan Liang)
+
+* Fix typos in perf/Documentation (Masanari Iida)
+
+* Improve callchains when using libunwind (Namhyung Kim)
+
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/include/linux/string.h |  1 -
- tools/perf/util/parse-events.c         | 30 +-----------------------------
- tools/perf/util/string.c               | 24 ------------------------
- 3 files changed, 1 insertion(+), 54 deletions(-)
+  Lines starting with '#' will be ignored.
 
-diff --git a/tools/perf/util/include/linux/string.h b/tools/perf/util/include/linux/string.h
-index 97a800738226..6f19c548ecc0 100644
---- a/tools/perf/util/include/linux/string.h
-+++ b/tools/perf/util/include/linux/string.h
-@@ -1,4 +1,3 @@
- #include <string.h>
- 
- void *memdup(const void *src, size_t len);
--int str_append(char **s, int *len, const char *a);
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index d76aa30cb1fb..c5642e6748b2 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -6,7 +6,7 @@
- #include "parse-options.h"
- #include "parse-events.h"
- #include "exec_cmd.h"
--#include "linux/string.h"
-+#include "string.h"
- #include "symbol.h"
- #include "cache.h"
- #include "header.h"
-@@ -863,32 +863,6 @@ int parse_events_name(struct list_head *list, char *name)
- 	return 0;
- }
- 
--static int parse_events__scanner(const char *str, void *data, int start_token);
--
--static int parse_events_fixup(int ret, const char *str, void *data,
--			      int start_token)
--{
--	char *o = strdup(str);
--	char *s = NULL;
--	char *t = o;
--	char *p;
--	int len = 0;
--
--	if (!o)
--		return ret;
--	while ((p = strsep(&t, ",")) != NULL) {
--		if (s)
--			str_append(&s, &len, ",");
--		str_append(&s, &len, "cpu/");
--		str_append(&s, &len, p);
--		str_append(&s, &len, "/");
--	}
--	free(o);
--	if (!s)
--		return -ENOMEM;
--	return parse_events__scanner(s, data, start_token);
--}
--
- static int parse_events__scanner(const char *str, void *data, int start_token)
- {
- 	YY_BUFFER_STATE buffer;
-@@ -909,8 +883,6 @@ static int parse_events__scanner(const char *str, void *data, int start_token)
- 	parse_events__flush_buffer(buffer, scanner);
- 	parse_events__delete_buffer(buffer, scanner);
- 	parse_events_lex_destroy(scanner);
--	if (ret && !strchr(str, '/'))
--		ret = parse_events_fixup(ret, str, data, start_token);
- 	return ret;
- }
- 
-diff --git a/tools/perf/util/string.c b/tools/perf/util/string.c
-index d87767f76903..6afd6106ceb5 100644
---- a/tools/perf/util/string.c
-+++ b/tools/perf/util/string.c
-@@ -357,27 +357,3 @@ void *memdup(const void *src, size_t len)
- 
- 	return p;
- }
--
--/**
-- * str_append - reallocate string and append another
-- * @s: pointer to string pointer
-- * @len: pointer to len (initialized)
-- * @a: string to append.
-- */
--int str_append(char **s, int *len, const char *a)
--{
--	int olen = *s ? strlen(*s) : 0;
--	int nlen = olen + strlen(a) + 1;
--	if (*len < nlen) {
--		*len = *len * 2;
--		if (*len < nlen)
--			*len = nlen;
--		*s = realloc(*s, *len);
--		if (!*s)
--			return -ENOMEM;
--		if (olen == 0)
--			**s = 0;
--	}
--	strcat(*s, a);
--	return 0;
--}
--- 
-1.9.3
+----------------------------------------------------------------
+Alexander Yarygin (2):
+      perf session: Add option to copy events when queueing
+      perf kvm stat live: Enable events copying
 
+Cody P Schafer (2):
+      perf Documentation: sysfs events/ interfaces
+      perf Documentation: Remove Ruplicated docs for powerpc cpu specific events
+
+Kan Liang (4):
+      Revert "perf tools: Default to cpu// for events v5"
+      perf tools: Parse the pmu event prefix and suffix
+      perf tools: Add support to new style format of kernel PMU event
+      perf test: Add test case for pmu event new style format
+
+Masanari Iida (1):
+      perf Documentation: Fix typos in perf/Documentation
+
+Namhyung Kim (4):
+      perf report: Set callchain_param.record_mode for future use
+      perf callchain: Create an address space per thread
+      perf kvm: Use thread_{,_set}_priv helpers
+      perf trace: Use thread_{,_set}_priv helpers
+
+Taeung Song (1):
+      perf top: Add a visual cue for toggle zeroing of samples
+
+Yasser Shalabi (1):
+      perf evlist: Fix for double free in tools/perf stat
+
+ .../testing/sysfs-bus-event_source-devices-events  | 611 ++-------------------
+ tools/perf/Documentation/perf-diff.txt             |   6 +-
+ tools/perf/Documentation/perf-kvm.txt              |   4 +-
+ tools/perf/Documentation/perf-list.txt             |   2 +-
+ tools/perf/Documentation/perf-record.txt           |   2 +-
+ tools/perf/Documentation/perf-script-perl.txt      |   4 +-
+ tools/perf/Documentation/perf-script-python.txt    |   6 +-
+ tools/perf/Documentation/perf-script.txt           |   2 +-
+ tools/perf/Documentation/perf-test.txt             |   2 +-
+ tools/perf/Documentation/perf-trace.txt            |   2 +-
+ tools/perf/builtin-kvm.c                           |   7 +-
+ tools/perf/builtin-report.c                        |   7 +
+ tools/perf/builtin-trace.c                         |  16 +-
+ tools/perf/tests/dwarf-unwind.c                    |   3 +
+ tools/perf/tests/parse-events.c                    |  36 ++
+ tools/perf/ui/browsers/hists.c                     |  32 +-
+ tools/perf/util/evlist.c                           |   1 +
+ tools/perf/util/include/linux/string.h             |   1 -
+ tools/perf/util/ordered-events.c                   |  49 +-
+ tools/perf/util/ordered-events.h                   |  10 +-
+ tools/perf/util/parse-events.c                     | 133 ++++-
+ tools/perf/util/parse-events.h                     |  14 +
+ tools/perf/util/parse-events.l                     |  30 +-
+ tools/perf/util/parse-events.y                     |  40 ++
+ tools/perf/util/pmu.c                              |  10 -
+ tools/perf/util/pmu.h                              |  10 +
+ tools/perf/util/session.c                          |   5 +-
+ tools/perf/util/string.c                           |  24 -
+ tools/perf/util/thread.c                           |   6 +
+ tools/perf/util/unwind-libunwind.c                 |  37 +-
+ tools/perf/util/unwind.h                           |  17 +
+ 31 files changed, 460 insertions(+), 669 deletions(-)
