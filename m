@@ -1,92 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752172AbaJORGz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 13:06:55 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:35386 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751238AbaJORGw (ORCPT
+	id S1751382AbaJORI3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 13:08:29 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:39783 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751160AbaJORGI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 13:06:52 -0400
-Subject: [PATCH v1 10/10] uprobes: Remove "weak" from function declarations
-To: Jason Wessel <jason.wessel@windriver.com>,
-        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@redhat.com>,
-        John Stultz <john.stultz@linaro.org>, Eric Paris <eparis@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Wed, 15 Oct 2014 11:06:50 -0600
-Message-ID: <20141015170650.4063.2816.stgit@bhelgaas-glaptop2.roam.corp.google.com>
-In-Reply-To: <20141015165957.4063.66741.stgit@bhelgaas-glaptop2.roam.corp.google.com>
-References: <20141015165957.4063.66741.stgit@bhelgaas-glaptop2.roam.corp.google.com>
-User-Agent: StGit/0.16
+	Wed, 15 Oct 2014 13:06:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20141015150512.GA22951@ubuntu-mba51>
+References: <1413296756-25071-1-git-send-email-seth.forshee@canonical.com>
+ <1413296756-25071-3-git-send-email-seth.forshee@canonical.com>
+ <543E8983.5090001@mit.edu> <20141015150512.GA22951@ubuntu-mba51>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 15 Oct 2014 10:05:46 -0700
+Message-ID: <CALCETrXtHGzBbxFjZ_S3Zb0KkN1y6Uqm6CNkYSY37BLLcocFGw@mail.gmail.com>
+Subject: Re: [PATCH v4 2/5] fuse: Support fuse filesystems outside of init_user_ns
+To: Andy Lutomirski <luto@amacapital.net>, Miklos Szeredi <miklos@szeredi.hu>,
+        fuse-devel@lists.sourceforge.net,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the following interfaces:
+On Wed, Oct 15, 2014 at 8:05 AM, Seth Forshee
+<seth.forshee@canonical.com> wrote:
+> On Wed, Oct 15, 2014 at 07:49:39AM -0700, Andy Lutomirski wrote:
+>> On 10/14/2014 07:25 AM, Seth Forshee wrote:
+>> > Update fuse to translate uids and gids to/from the user namspace
+>> > of the process servicing requests on /dev/fuse. Any ids which do
+>> > not map into the namespace will result in errors. inodes will
+>> > also be marked bad when unmappable ids are received from
+>> > userspace.
+>> >
+>> > Due to security concerns the namespace used should be fixed,
+>> > otherwise a user might be able to gain elevated privileges or
+>> > influence processes that the user would otherwise be unable to
+>> > manipulate. Thus the namespace of the mounting process is used
+>> > for all translations, and this namespace is required to be the
+>> > same as the one in use when /dev/fuse was opened.
+>> >
+>>
+>> I'm not sure that this is necessary if my nosuid patch goes in, but I
+>> also don't think it makes any sense to hold this up while we find a
+>> perfect solution.
+>>
+>> Is there a decent way to extend this to different translation schemes in
+>> the future (e.g. a flag at fs setup that could be used)?
+>
+> I think it would be possible to relax the translation scheme
+> restrictions in the future, certainly that's easier than tightening down
+> a looser restriction. I still favor picking one namespace to use for
+> translation (surely that's how it would work with other filesystems
+> anyway) rather than using the current namespace during /dev/fuse I/O. I
+> did an implementation using the latter technique, and it's far more
+> complex with no benefits that I can see.
 
-  set_swbp()
-  set_orig_insn()
-  is_swbp_insn()
-  is_trap_insn()
-  uprobe_get_swbp_addr()
-  arch_uprobe_ignore()
-  arch_uprobe_copy_ixol()
+Long term, I think we'll want more flexible translations for
+filesystems on removable media, even when both the mounter and the
+accessing process are in the init user namespace.  But this can wait.
 
-kernel/events/uprobes.c provides default definitions explicitly marked
-"weak".  Some architectures provide their own definitions intended to
-override the defaults, but the "weak" attribute on the declarations applied
-to the arch definitions as well, so the linker chose one based on link
-order (see 10629d711ed7 ("PCI: Remove __weak annotation from
-pcibios_get_phb_of_node decl")).
+--Andy
 
-Remove the "weak" attribute from the declarations so we always prefer a
-non-weak definition over the weak one, independent of link order.
+>
+> Thanks,
+> Seth
 
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-CC: Victor Kamensky <victor.kamensky@linaro.org>
-CC: Oleg Nesterov <oleg@redhat.com>
-CC: David A. Long <dave.long@linaro.org>
-CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-CC: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
----
- include/linux/uprobes.h |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index 4f844c6b03ee..60beb5dc7977 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -98,11 +98,11 @@ struct uprobes_state {
- 	struct xol_area		*xol_area;
- };
- 
--extern int __weak set_swbp(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long vaddr);
--extern int __weak set_orig_insn(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long vaddr);
--extern bool __weak is_swbp_insn(uprobe_opcode_t *insn);
--extern bool __weak is_trap_insn(uprobe_opcode_t *insn);
--extern unsigned long __weak uprobe_get_swbp_addr(struct pt_regs *regs);
-+extern int set_swbp(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long vaddr);
-+extern int set_orig_insn(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long vaddr);
-+extern bool is_swbp_insn(uprobe_opcode_t *insn);
-+extern bool is_trap_insn(uprobe_opcode_t *insn);
-+extern unsigned long uprobe_get_swbp_addr(struct pt_regs *regs);
- extern unsigned long uprobe_get_trap_addr(struct pt_regs *regs);
- extern int uprobe_write_opcode(struct mm_struct *mm, unsigned long vaddr, uprobe_opcode_t);
- extern int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
-@@ -128,8 +128,8 @@ extern bool arch_uprobe_xol_was_trapped(struct task_struct *tsk);
- extern int  arch_uprobe_exception_notify(struct notifier_block *self, unsigned long val, void *data);
- extern void arch_uprobe_abort_xol(struct arch_uprobe *aup, struct pt_regs *regs);
- extern unsigned long arch_uretprobe_hijack_return_addr(unsigned long trampoline_vaddr, struct pt_regs *regs);
--extern bool __weak arch_uprobe_ignore(struct arch_uprobe *aup, struct pt_regs *regs);
--extern void __weak arch_uprobe_copy_ixol(struct page *page, unsigned long vaddr,
-+extern bool arch_uprobe_ignore(struct arch_uprobe *aup, struct pt_regs *regs);
-+extern void arch_uprobe_copy_ixol(struct page *page, unsigned long vaddr,
- 					 void *src, unsigned long len);
- #else /* !CONFIG_UPROBES */
- struct uprobes_state {
 
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
