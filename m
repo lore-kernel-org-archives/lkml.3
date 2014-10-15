@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751710AbaJOWYz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 18:24:55 -0400
-Received: from libra.uberspace.de ([95.143.172.171]:52855 "EHLO
-	libra.uberspace.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751183AbaJOWYy (ORCPT
+	id S1752076AbaJOW3k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 18:29:40 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:35177 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751188AbaJOW3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 18:24:54 -0400
-Date: Thu, 16 Oct 2014 00:24:47 +0200
-From: Matthias Beyer <mail@beyermatthias.de>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] bcm/CmHost.c: Fix noisy compile warnings
-Message-ID: <20141015222447.GB20142@fu.3gs>
-Reply-To: Matthias Beyer <mail@beyermatthias.de>
-References: <1413375999-10210-1-git-send-email-jeffrey.t.kirsher@intel.com>
- <20141015123431.GA23154@mwanda>
- <20141015125934.GB23154@mwanda>
- <1413378213.2412.13.camel@jtkirshe-mobl>
- <20141015214151.GA20142@fu.3gs>
- <1413411584.2412.35.camel@jtkirshe-mobl>
+	Wed, 15 Oct 2014 18:29:39 -0400
+Date: Wed, 15 Oct 2014 23:29:32 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Linux PCI <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH RFC 2/2] arm: kernel: fix pci_mmap_page_range() offset
+ calculation
+Message-ID: <20141015222932.GL27405@n2100.arm.linux.org.uk>
+References: <1413374624-30066-1-git-send-email-lorenzo.pieralisi@arm.com>
+ <1413374624-30066-2-git-send-email-lorenzo.pieralisi@arm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pvezYHf7grwyp3Bc"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1413411584.2412.35.camel@jtkirshe-mobl>
+In-Reply-To: <1413374624-30066-2-git-send-email-lorenzo.pieralisi@arm.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 15, 2014 at 01:03:41PM +0100, Lorenzo Pieralisi wrote:
+> ARM relies on the standard implementation of pci_resource_to_user()
+> which actually is an identity map and exports to user space
+> PCI memory resources as they are stored in PCI devices resources (ie BARs)
+> which represent CPU physical addresses (fixed-up using BUS to CPU
+> address conversions) not PCI bus addresses.
 
---pvezYHf7grwyp3Bc
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This paragraph seems wrong.
 
-On 15-10-2014 15:19:44, Jeff Kirsher wrote:
-> I will just go ahead and create a patch to remove the driver.  Greg can
-> then decide to either accept the patch to fix the Kconfig or accept the
-> patch to remove the driver.
+It first says that PCI memory resources contain the same values that the
+PCI device has in its BAR.  It then goes on to say that they are CPU
+physical addresses.  That is not true.
 
-Don't forget the maintainers file :-)
+For example, DC21285 systems always have done this as: the PCI bars
+contain the _bus_ addresses, which tend to be in the range 0 to
+0x7fffffff.  These correspond with a CPU physical address of
+0x80000000 to 0xffffffff.  The PCI bus resources for IOMEM resources
+contains the CPU physical address of the mapping.
 
---=20
-Mit freundlichen Gr=FC=DFen,
-Kind regards,
-Matthias Beyer
+> On platforms where the mapping between CPU and BUS address is not a 1:1
+> mapping this is erroneous, in that an additional shift is applied to
+> an already fixed-up offset passed from userspace.
 
-Proudly sent with mutt.
-Happily signed with gnupg.
+Yes, I think this is a correct patch inspite of the description. :)
 
---pvezYHf7grwyp3Bc
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUPvQvAAoJEJi+S08gyg+UBwQP/1m2vxO+2bX9dYV0wUK8Vv+M
-bUJkNXy0+GPhefCyYuZiDxb+M3V5inV6O8fkJ6WG79j87KXWTT6GAR1+S1DjiDXq
-VxguXAunlatwIJAnswwl2Q7U0hE/EeC/cICF3lg9KI8hle7z0PkRHbGIjfkjqsMj
-MiDtRDzJnobqIAZRDpOFOtkA8RIy5YcEKcf9HVRBO6QNddMgVt69yiuDzPflTWPx
-am5TurZuItSuH68Yo4GSAnCatHAoKF0/03bKm1Qygf5IZQyv+ISqpO/QhnjhQGQz
-CYTGQS6fq+jiV034riM31+oAp465i8xMFL9i5qVvp1y+g1zOUAx9GhgdGA1LlB7R
-cOu3+vK+99OwF1Bt9niz5jTR5+TQj+1lLiNk3RDLeov6mVq+NDPo1PQPcQ1idrGZ
-tCTKJDk6Sx3YL7+XpaREC3uKlub1ubQc93lQPuBX3x7EFFwxoiokvqY43u73wKvy
-o8qmxVTJOs574Kt+viWZIkFAtpO4nSHWKQzVxECLfFRUUHN8yEfTOGI+XpE5HoTt
-R8Lz7nN5qV18SeKJ/lmRB97Vb2CvefGNfTG7t1CozLw6kePp3wgdaQX1XOyyDIvl
-pW9ccFrY+9lfnbnY40nX1LzUh5aOh1I/flN1BAvxZjWOl50PwORptsYM31GiKQR6
-rXqnIEKEJCsCQHaCuCy0
-=LyEc
------END PGP SIGNATURE-----
-
---pvezYHf7grwyp3Bc--
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
