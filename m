@@ -1,36 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751544AbaJOUPX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 16:15:23 -0400
-Received: from smtp-1.concepts.nl ([213.197.30.124]:43976 "EHLO
-	smtp-1.concepts.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750776AbaJOUPV (ORCPT
+	id S1751364AbaJOURN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 16:17:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36707 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820AbaJOURM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 16:15:21 -0400
-X-Greylist: delayed 903 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Oct 2014 16:15:21 EDT
-Message-ID: <543ED24D.4070905@xmsnet.nl>
-Date: Wed, 15 Oct 2014 22:00:13 +0200
-From: Hans de Bruin <jmdebruin@xmsnet.nl>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.8.1
-MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: 3.17.0+ files disappearing after playing old dos game on nfsroot
- laptop
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 15 Oct 2014 16:17:12 -0400
+Date: Wed, 15 Oct 2014 13:17:10 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Heesub Shin <heesub.shin@samsung.com>
+Cc: Dan Streetman <ddstreet@ieee.org>,
+        Seth Jennings <sjennings@variantweb.net>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Sunae Seo <sunae.seo@samsung.com>
+Subject: Re: [PATCH] mm/zbud: init user ops only when it is needed
+Message-Id: <20141015131710.ffd6c40996cd1ce6c16dbae8@linux-foundation.org>
+In-Reply-To: <1413367243-23524-1-git-send-email-heesub.shin@samsung.com>
+References: <1413367243-23524-1-git-send-email-heesub.shin@samsung.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Concepts-MailScanner-Information: Please contact abuse@concepts.nl for more information
-X-Concepts-MailScanner-ID: 1XeUk1-0000ik-O4
-X-Concepts-MailScanner: Found to be clean
-X-Concepts-MailScanner-SpamCheck: 
-X-Concepts-MailScanner-From: jmdebruin@xmsnet.nl
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After playing an old dos game i am missing files on my nfsroot installed 
-laptop. Which one, wel /bin/ls is at least one of them. After a reboot 
-there all back again.  But not al is well. Some icons on my kde panel 
-where gone. I have seen this twice in the last day's
+On Wed, 15 Oct 2014 19:00:43 +0900 Heesub Shin <heesub.shin@samsung.com> wrote:
 
--- 
-Hans
+> When zbud is initialized through the zpool wrapper, pool->ops which
+> points to user-defined operations is always set regardless of whether it
+> is specified from the upper layer. This causes zbud_reclaim_page() to
+> iterate its loop for evicting pool pages out without any gain.
+> 
+> This patch sets the user-defined ops only when it is needed, so that
+> zbud_reclaim_page() can bail out the reclamation loop earlier if there
+> is no user-defined operations specified.
+
+Which callsite is calling zbud_zpool_create(..., NULL)?
+
+> ...
+> --- a/mm/zbud.c
+> +++ b/mm/zbud.c
+> @@ -132,7 +132,7 @@ static struct zbud_ops zbud_zpool_ops = {
+>  
+>  static void *zbud_zpool_create(gfp_t gfp, struct zpool_ops *zpool_ops)
+>  {
+> -	return zbud_create_pool(gfp, &zbud_zpool_ops);
+> +	return zbud_create_pool(gfp, zpool_ops ? &zbud_zpool_ops : NULL);
+>  }
+>  
+>  static void zbud_zpool_destroy(void *pool)
+
