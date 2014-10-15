@@ -1,170 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751528AbaJOX4X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 19:56:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47563 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751232AbaJOX4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 19:56:21 -0400
-Date: Thu, 16 Oct 2014 07:55:37 +0800
-From: Baoquan He <bhe@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        x86@kernel.org, ak@linux.intel.com, ebiederm@xmission.com,
-        kexec@lists.infradead.org, whissi@whissi.de,
-        kumagai-atsushi@mxc.nes.nec.co.jp, stable@vger.kernel.org
-Subject: Re: [resend Patch v3 1/2] kaslr: check if kernel location is changed
-Message-ID: <20141015235537.GA1642@dhcp-17-102.nay.redhat.com>
-References: <20141008192728.GA26517@redhat.com>
- <20141011031452.GB11560@dhcp-16-116.nay.redhat.com>
- <543907B5.7060001@zytor.com>
- <20141013125257.GB6466@redhat.com>
- <20141013151955.GA9777@redhat.com>
- <543BF304.9090708@zytor.com>
- <20141013172242.GB9777@redhat.com>
- <20141014124932.GC5127@redhat.com>
- <20141015033701.GD16068@dhcp-16-116.nay.redhat.com>
- <695BEC26-402D-4B1C-9266-137F2BCFE5B9@zytor.com>
+	id S1751589AbaJOX6W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 19:58:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38385 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751293AbaJOX6V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 19:58:21 -0400
+Date: Wed, 15 Oct 2014 16:58:20 -0700
+From: akpm@linux-foundation.org
+To: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org, sfr@canb.auug.org.au, mhocko@suse.cz
+Subject: mmotm 2014-10-15-16-57 uploaded
+Message-ID: <543f0a1c.AmG8qX8YTuJY54NT%akpm@linux-foundation.org>
+User-Agent: Heirloom mailx 12.5 6/20/10
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <695BEC26-402D-4B1C-9266-137F2BCFE5B9@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/14 at 01:32pm, H. Peter Anvin wrote:
-> I don't see why we can't randomize anywhere in physical space.  We already handle the kernel above 4 GB and it wouldn't be hard to do the equivalent for the decompress/relocation code, using a #PF handler.  Not all CPUs support 1 GB pages.
-> 
+The mm-of-the-moment snapshot 2014-10-15-16-57 has been uploaded to
 
-Well, IIUC, in arch/x86/boot/compressed/head_64.S pgtable contains 6
-page frames and is used to build 4G identity mapping. Then this pgtable
-is loaded into cr3. Later jump into 64bit mode. decompress/relocation
-code should work in this region. Isn't it right?
+   http://www.ozlabs.org/~akpm/mmotm/
 
-Currently kernel surely can be put anywhere, even above 4G. This have
-been done very often in kexec/kdump. However in kexec/kdump the identity
-mapping is built for all physical memory after jumping to startup_64
-directly from purgatory, that's why kexec/kdump kernel can be put
-anywhere.
+mmotm-readme.txt says
 
-So for normal kernel, don't we need to extend the physical memory mappng
-to a larger region if we want to randomize anywhere in physical space?
+README for mm-of-the-moment:
 
-Thanks
-Baoquan
+http://www.ozlabs.org/~akpm/mmotm/
+
+This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
+more than once a week.
+
+You will need quilt to apply these patches to the latest Linus release (3.x
+or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
+http://ozlabs.org/~akpm/mmotm/series
+
+The file broken-out.tar.gz contains two datestamp files: .DATE and
+.DATE-yyyy-mm-dd-hh-mm-ss.  Both contain the string yyyy-mm-dd-hh-mm-ss,
+followed by the base kernel version against which this patch series is to
+be applied.
+
+This tree is partially included in linux-next.  To see which patches are
+included in linux-next, consult the `series' file.  Only the patches
+within the #NEXT_PATCHES_START/#NEXT_PATCHES_END markers are included in
+linux-next.
+
+A git tree which contains the memory management portion of this tree is
+maintained at git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
+by Michal Hocko.  It contains the patches which are between the
+"#NEXT_PATCHES_START mm" and "#NEXT_PATCHES_END" markers, from the series
+file, http://www.ozlabs.org/~akpm/mmotm/series.
 
 
-> On October 14, 2014 8:37:01 PM PDT, Baoquan He <bhe@redhat.com> wrote:
-> >On 10/14/14 at 08:49am, Vivek Goyal wrote:
-> >> On Mon, Oct 13, 2014 at 01:22:42PM -0400, Vivek Goyal wrote:
-> >> > On Mon, Oct 13, 2014 at 08:43:00AM -0700, H. Peter Anvin wrote:
-> >> > > On 10/13/2014 08:19 AM, Vivek Goyal wrote:
-> >> > > >>>
-> >> > > >>> This really shouldn't have happened this way on x86-64.  It
-> >has to happen
-> >> > > >>> this way on i386, but I worry that this may be a serious
-> >misdesign in kaslr
-> >> > > >>> on x86-64.  I'm also wondering if there is any other fallout
-> >of this?
-> >> > > >>
-> >> > > >> I agree. On x86_64, we should stick to previous design and
-> >this new
-> >> > > >> logic of performing relocations does not sound very clean and
-> >makes
-> >> > > >> things very confusing.
-> >> > > >>
-> >> > > >> I am wondering that why couldn't we simply adjust page tables
-> >in case of
-> >> > > >> kaslr on x86_64, instead of performing relocations.
-> >> > > > 
-> >> > > > Well, IIUC, if virtual addresses are shifted w.r.t what virtual
-> >address
-> >> > > > kernel was compiled for, then relocation will have to be done.
-> >> > > > 
-> >> > > > So question will be if physical address shift is enough for
-> >kaslr or
-> >> > > > virtual address shift is necessary.
-> >> > > > 
-> >> > > 
-> >> > > I would assume that without a virtual address shift kaslr is
-> >pretty darn
-> >> > > pointless.  Without the physical address shift the 1:1 map can be
-> >used,
-> >> > > and again, kaslr becomes pointless.  However, there is absolutely
-> >no
-> >> > > reason why they should be coupled.  They can, in fact, be
-> >independently
-> >> > > randomized.
-> >> > 
-> >> > Agreed. On x86_64, we should be able to randomize virtual address
-> >space
-> >> > and physical address space independently. And in that case whole of
-> >> > the physical memory should be available for a possible location for
-> >> > kernel. (As opposed to a small limit (I guess 1GB) now)
-> >
-> >It can be done to randomize virtual address space and physical address
-> >space independently. But limited by the 2G of kernel text mapping and
-> >module mapping virtual address space, virtual address can be randomized
-> >in (0x1000000, 1G) range. While physical address can be randomized in
-> >(0x1000000, 4G) according to the identity mapping of normal kernel.
-> >Then
-> >phys_base still stores an relative value, a different offset than
-> >before.
-> >
-> >This can be easily implement. One thing is still there's a limit for
-> >physical addr randomization, only below 4G. So I am wondering if we can
-> >extend the identify mapping to complete mapping of 48 bit, using 1G
-> >page
-> >frame. This can make physical addr be randomized to anywhere.
-> >
-> >So now there may be 3 options:
-> >
-> >1) Fix this bug in current kaslr. Since when randomize the new kernel
-> >location in choose_kernel_location(), cmdline options has been checked
-> >strictly, e.g if nokaslr is specified, it's safe to do the kernel
-> >location randomization. Then in handle_relocations(), we only need to
-> >check if the kernel location is changed, comparing with kernel loaded
-> >addr. If changed, kaslr is done, let's do the relocation handling. If
-> >not changed, no kaslr id done, just skip the relocation handling like
-> >before.
-> >
-> >2) randomize the virtual addr space and physical addr space
-> >independently. But physical addr space must be below 4G.
-> >
-> >3) extend the identity mapping to 48bit of addr space. Then we can
-> >randomized the virtual addr space in (0x1000000, 1G) and physical addr
-> >space in (0x1000000, real physical memory end).
-> >
-> >If option 3 is doable, it's the best. If not, I think bug fix should be
-> >better.
-> >
-> >> 
-> >> Hi Peter,
-> >> 
-> >> So what do we do about this issue in short term to make kexec work.
-> >Even
-> >> if we go for above solution, to make kexec work we will have to pass
-> >> "nokaslr" as we don't want kernel to move around in physical address
-> >space
-> >> as it might stomp over ELF headers we have stored.
-> >
-> >kexec doesn't need ELF headers. Kdump may need it. But in current
-> >kexec-tools implementation, kernel/initrd and other stuffs are placed
-> >from top to down, current implementation won't do kaslr since it only
-> >happened between kernel loaded addr and 1G. So we don't need to worry
-> >about the stomping.
-> >
-> >> 
-> >> If you don't like current patch, should we just disable relocations
-> >in
-> >> x86_64 if "nokaslr" command line is passed. That way kernel will not
-> >> be moved in physical as well as virtual address space.
-> >> 
-> >> Thanks
-> >> Vivek
-> 
-> -- 
-> Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+A full copy of the full kernel tree with the linux-next and mmotm patches
+already applied is available through git within an hour of the mmotm
+release.  Individual mmotm releases are tagged.  The master branch always
+points to the latest release, so it's constantly rebasing.
+
+http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary
+
+To develop on top of mmotm git:
+
+  $ git remote add mmotm git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
+  $ git remote update mmotm
+  $ git checkout -b topic mmotm/master
+  <make changes, commit>
+  $ git send-email mmotm/master.. [...]
+
+To rebase a branch with older patches to a new mmotm release:
+
+  $ git remote update mmotm
+  $ git rebase --onto mmotm/master <topic base> topic
+
+
+
+
+The directory http://www.ozlabs.org/~akpm/mmots/ (mm-of-the-second)
+contains daily snapshots of the -mm tree.  It is updated more frequently
+than mmotm, and is untested.
+
+A git copy of this tree is available at
+
+	http://git.cmpxchg.org/?p=linux-mmots.git;a=summary
+
+and use of this tree is similar to
+http://git.cmpxchg.org/?p=linux-mmotm.git, described above.
+
+
+This mmotm tree contains the following patches against 3.17:
+(patches marked "*" will be included in linux-next)
+
+  origin.patch
+  i-need-old-gcc.patch
+  arch-alpha-kernel-systblss-remove-debug-check.patch
+* cgroup-kmemleak-add-kmemleak_free-for-cgroup-deallocations.patch
+* mm-compaction-avoid-premature-range-skip-in-isolate_migratepages_range.patch
+* fsnotify-next_i-is-freed-during-fsnotify_unmount_inodes.patch
+* gcov-add-arm64-to-gcov_profile_all.patch
+* mm-free-compound-page-with-correct-order.patch
+* drivers-of-add-return-value-to-of_reserved_mem_device_init.patch
+* mm-thp-fix-collapsing-of-hugepages-on-madvise.patch
+* fs-cifs-remove-obsolete-__constant.patch
+* fs-cifs-filec-replace-countsize-kzalloc-by-kcalloc.patch
+* fs-cifs-smb2filec-replace-countsize-kzalloc-by-kcalloc.patch
+* kernel-posix-timersc-code-clean-up.patch
+* kernel-posix-timersc-code-clean-up-checkpatch-fixes.patch
+* input-route-kbd-leds-through-the-generic-leds-layer.patch
+* input-route-kbd-leds-through-the-generic-leds-layer-fix.patch
+* input-route-kbd-leds-through-the-generic-leds-layer-fix-2.patch
+* fs-ext4-fsyncc-generic_file_fsync-call-based-on-barrier-flag.patch
+* ocfs2-dlm-let-sender-retry-if-dlm_dispatch_assert_master-failed-with-enomem.patch
+* o2dlm-fix-null-pointer-dereference-in-o2dlm_blocking_ast_wrapper.patch
+* o2dlm-fix-null-pointer-dereference-in-o2dlm_blocking_ast_wrapper-checkpatch-fixes.patch
+* ocfs2-free-inode-when-i_count-becomes-zero.patch
+* ocfs2-call-ocfs2_journal_access_di-before-ocfs2_journal_dirty-in-ocfs2_write_end_nolock.patch
+* ocfs2-avoid-access-invalid-address-when-read-o2dlm-debug-messages.patch
+* ocfs2-avoid-access-invalid-address-when-read-o2dlm-debug-messages-v2.patch
+* ocfs2-dlm-fix-race-between-dispatched_work-and-dlm_lockres_grab_inflight_worker.patch
+* ocfs2-reflink-fix-slow-unlink-for-refcounted-file.patch
+* ocfs2-fix-journal-commit-deadlock.patch
+* ocfs2-eliminate-the-static-flag-of-some-functions.patch
+* ocfs2-add-two-functions-of-add-and-remove-inode-in-orphan-dir.patch
+* ocfs2-add-orphan-recovery-types-in-ocfs2_recover_orphans.patch
+* ocfs2-add-and-remove-inode-in-orphan-dir-in-ocfs2_direct_io.patch
+* ocfs2-add-and-remove-inode-in-orphan-dir-in-ocfs2_direct_io-fix.patch
+* ocfs2-allocate-blocks-in-ocfs2_direct_io_get_blocks.patch
+* ocfs2-do-not-fallback-to-buffer-i-o-write-if-appending.patch
+* ocfs2-do-not-fallback-to-buffer-i-o-write-if-fill-holes.patch
+* ocfs2-do-not-fallback-to-buffer-i-o-write-if-fill-holes-checkpatch-fixes.patch
+* bio-modify-__bio_add_page-to-accept-pages-that-dont-start-a-new-segment.patch
+* block-restore-proc-partitions-to-not-display-non-partitionable-removable-devices.patch
+  mm.patch
+* mm-memcontrol-lockless-page-counters.patch
+* mm-memcontrol-lockless-page-counters-fix.patch
+* mm-memcontrol-lockless-page-counters-fix-fix.patch
+* mm-hugetlb_cgroup-convert-to-lockless-page-counters.patch
+* kernel-res_counter-remove-the-unused-api.patch
+* mm-memcontrol-convert-reclaim-iterator-to-simple-css-refcounting.patch
+* mm-memcontrol-convert-reclaim-iterator-to-simple-css-refcounting-fix.patch
+* mm-memcontrol-take-a-css-reference-for-each-charged-page.patch
+* mm-memcontrol-remove-obsolete-kmemcg-pinning-tricks.patch
+* mm-memcontrol-continue-cache-reclaim-from-offlined-groups.patch
+* mm-memcontrol-remove-synchroneous-stock-draining-code.patch
+* mm-page_alloc-convert-boot-printks-without-log-level-to-pr_info.patch
+* vmalloc-replace-printk-with-pr_warn.patch
+* vmscan-replace-printk-with-pr_err.patch
+* mm-introduce-single-zone-pcplists-drain.patch
+* mm-page_isolation-drain-single-zone-pcplists.patch
+* mm-cma-drain-single-zone-pcplists.patch
+* mm-memory_hotplug-failure-drain-single-zone-pcplists.patch
+* cma-make-default-cma-area-size-zero-for-x86.patch
+* mm-update-generic-gup-implementation-to-handle-hugepage-directory.patch
+* arch-powerpc-switch-to-generic-rcu-get_user_pages_fast.patch
+* mm-verify-compound-order-when-freeing-a-page.patch
+* mm-vmscan-count-only-dirty-pages-as-congested.patch
+* mm-compaction-pass-classzone_idx-and-alloc_flags-to-watermark-checking.patch
+* mm-compaction-simplify-deferred-compaction.patch
+* mm-compaction-simplify-deferred-compaction-fix.patch
+* mm-compaction-defer-only-on-compact_complete.patch
+* mm-compaction-always-update-cached-scanner-positions.patch
+* mm-compaction-more-focused-lru-and-pcplists-draining.patch
+* mm-introduce-do_shared_fault-and-drop-do_fault-fix-fix.patch
+* fs-mpagec-forgotten-write_sync-in-case-of-data-integrity-write.patch
+* zsmalloc-merge-size_class-to-reduce-fragmentation.patch
+* mm-zbud-init-user-ops-only-when-it-is-needed.patch
+* do_shared_fault-check-that-mmap_sem-is-held.patch
+* security-smack-replace-kzalloc-with-kmem_cache-for-inode_smack.patch
+* freezer-check-oom-kill-while-being-frozen.patch
+* freezer-remove-obsolete-comments-in-__thaw_task.patch
+* oom-pm-oom-killed-task-cannot-escape-pm-suspend.patch
+* fs-proc-use-a-rb-tree-for-the-directory-entries.patch
+* fs-proc-use-a-rb-tree-for-the-directory-entries-fix.patch
+* ia64-trivial-replace-get_unused_fd-by-get_unused_fd_flags0.patch
+* ppc-cell-trivial-replace-get_unused_fd-by-get_unused_fd_flags0.patch
+* binfmt_misc-trivial-replace-get_unused_fd-by-get_unused_fd_flags0.patch
+* file-trivial-replace-get_unused_fd-by-get_unused_fd_flags0.patch
+* file-remove-get_unused_fd-macro.patch
+* drivers-misc-ti-st-st_corec-fix-null-dereference-on-protocol-type-check.patch
+* lib-vsprintf-add-%pt-format-specifier.patch
+* drivers-video-backlight-backlightc-remove-backlight-sysfs-uevent.patch
+* mm-utilc-add-kstrimdup.patch
+* lib-add-crc64-ecma-module.patch
+* checkpatch-add-an-error-test-for-no-space-before-comma.patch
+* checkpatch-add-error-on-use-of-attributeweak-or-__weak-declarations.patch
+* checkpatch-improve-test-for-no-space-after-cast.patch
+* drivers-rtc-interfacec-check-the-validation-of-rtc_time-in-__rtc_read_time.patch
+* rtc-pm8xxx-rework-to-support-pm8941-rtc.patch
+* rtc-pm8xxx-rework-to-support-pm8941-rtc-checkpatch-fixes.patch
+* hfsplus-fix-longname-handling.patch
+* kexec-remove-unnecessary-kern_err-from-kexecc.patch
+* kernel-sysctl-resolve-missing-field-initializers-warnings.patch
+* fs-affs-filec-forward-declaration-clean-up.patch
+* fs-affs-amigaffsc-use-va_format-instead-of-buffer-vnsprintf.patch
+* kgdb-timeout-if-secondary-cpus-ignore-the-roundup.patch
+* make-initrd-compression-algorithm-selection-not-expert.patch
+* ipc-semc-chance-memory-barrier-in-sem_lock-to-smp_rmb.patch
+* ipc-semc-chance-memory-barrier-in-sem_lock-to-smp_rmb-fix.patch
+* ipc-semc-chance-memory-barrier-in-sem_lock-to-smp_rmb-fix-fix.patch
+* ipc-semc-increase-semmsl-semmni-semopm.patch
+* ipc-msg-increase-msgmni-remove-scaling.patch
+* ipc-msg-increase-msgmni-remove-scaling-checkpatch-fixes.patch
+  linux-next.patch
+  linux-next-git-rejects.patch
+* drivers-gpio-gpio-zevioc-fix-build.patch
+* efi-bgrt-add-error-handling-inform-the-user-when-ignoring-the-bgrt.patch
+* maintainers-update-santosh-shilimkars-email-id.patch
+* fat-add-i_disksize-to-represent-uninitialized-size.patch
+* fat-add-fat_fallocate-operation.patch
+* fat-skip-cluster-allocation-on-fallocated-region.patch
+* fat-permit-to-return-phy-block-number-by-fibmap-in-fallocated-region.patch
+* documentation-filesystems-vfattxt-update-the-limitation-for-fat-fallocate.patch
+* mm-replace-remap_file_pages-syscall-with-emulation.patch
+* w1-call-put_device-if-device_register-fails.patch
+* mm-add-strictlimit-knob-v2.patch
+  debugging-keep-track-of-page-owners.patch
+  debugging-keep-track-of-page-owners-fix.patch
+  page-owners-correct-page-order-when-to-free-page.patch
+  make-sure-nobodys-leaking-resources.patch
+  journal_add_journal_head-debug.patch
+  journal_add_journal_head-debug-fix.patch
+  releasing-resources-with-children.patch
+  make-frame_pointer-default=y.patch
+  kernel-forkc-export-kernel_thread-to-modules.patch
+  mutex-subsystem-synchro-test-module.patch
+  slab-leaks3-default-y.patch
+  add-debugging-aid-for-memory-initialisation-problems.patch
+  workaround-for-a-pci-restoring-bug.patch
+  single_open-seq_release-leak-diagnostics.patch
