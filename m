@@ -1,98 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751318AbaJORpB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 13:45:01 -0400
-Received: from mga03.intel.com ([134.134.136.65]:47412 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750775AbaJORpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 13:45:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,725,1406617200"; 
-   d="asc'?scan'208";a="589600218"
-Message-ID: <1413394958.2412.23.camel@jtkirshe-mobl>
-Subject: Re: [PATCH] bcm/CmHost.c: Fix noisy compile warnings
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Joe Perches <joe@perches.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Date: Wed, 15 Oct 2014 10:42:38 -0700
-In-Reply-To: <1413389496.7484.3.camel@perches.com>
-References: <1413375999-10210-1-git-send-email-jeffrey.t.kirsher@intel.com>
-	 <20141015123431.GA23154@mwanda> <20141015125934.GB23154@mwanda>
-	 <1413378213.2412.13.camel@jtkirshe-mobl>
-	 <1413389496.7484.3.camel@perches.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-MYXLGxpx2/uJuEIvRZis"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	id S1751232AbaJOR5o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 13:57:44 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:47688 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993AbaJOR5m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 13:57:42 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH 1/3] input: alps: Reset mouse before identifying it
+Date: Wed, 15 Oct 2014 19:57:37 +0200
+User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.14.1; x86_64; ; )
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Yunkang Tang <yunkang.tang@cn.alps.com>,
+        Tommy Will <tommywill2011@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1412329392-5580-1-git-send-email-pali.rohar@gmail.com> <201410151453.12115@pali> <20141015174315.GA1968@dtor-ws>
+In-Reply-To: <20141015174315.GA1968@dtor-ws>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart1463637.NoubF65mUi";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201410151957.37855@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-MYXLGxpx2/uJuEIvRZis
-Content-Type: text/plain; charset="UTF-8"
+--nextPart1463637.NoubF65mUi
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, 2014-10-15 at 09:11 -0700, Joe Perches wrote:
-> On Wed, 2014-10-15 at 06:03 -0700, Jeff Kirsher wrote:
-> []
-> > I thought I remember Greg saying something about getting rid of this
-> > driver anyway, but I could be wrong.  If Greg decides to keep this
-> > driver around, then I think we should something like your suggestion
-> > above.
+On Wednesday 15 October 2014 19:43:15 Dmitry Torokhov wrote:
+> On Wed, Oct 15, 2014 at 02:53:11PM +0200, Pali Roh=C3=A1r wrote:
+> > On Tuesday 14 October 2014 08:08:34 Dmitry Torokhov wrote:
+> > > On Fri, Oct 03, 2014 at 11:47:59AM +0200, Hans de Goede=20
+wrote:
+> > > > Hi,
+> > > >=20
+> > > > Thanks for working on this!
+> > > >=20
+> > > > On 10/03/2014 11:43 AM, Pali Roh=C3=A1r wrote:
+> > > > > On some systems after starting computer function
+> > > > > alps_identify() does not detect dual ALPS
+> > > > > touchpad+trackstick device correctly and detect only
+> > > > > touchpad.
+> > > > >=20
+> > > > > Resetting ALPS device before identifiying it fixing
+> > > > > this problem and both parts touchpad and trackstick
+> > > > > are detected.
+> > > > >=20
+> > > > > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+> > > > > Tested-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+> > > >=20
+> > > > Looks good and seems sensible:
+> > > >=20
+> > > > Acked-by: Hans de Goede <hdegoede@redhat.com>
+> > >=20
+> > > *sigh* I am not really happy about this, as we making boot
+> > > longer and longer for people without ALPS touchpads. It
+> > > would be better if we only reset the mouse when we knew
+> > > we are dealing with ALPS, and even better if we only
+> > > reset it when we suspected that we missed trackstick. Any
+> > > chance of doing this?
+> > >=20
+> > > Thanks.
+> >=20
+> > Dmitry, problem is that function check which detecting
+> > trackstick does not working when I start my laptop from
+> > power-off state and do not reset PS/2 device. But detecting
+> > ALPS touchpad looks like working. So if do not like this
+> > idea, what about doing something like this in alps_dectect
+> > function?
+> >=20
+> > int alps_detect(...)
+> > {
+> > ...
+> > /* detect if device is ALPS */
+> > if (alps_identify(...) < 0)
+> > return -1;
+> > /* now we know that device is ALPS */
+> > if (!(flags & ALPS_DUALPOINT)) {
+> > /* reset it and identify again, maybe there is trackstick */
+> > psmouse_reset(...);
+> > alps_identify(...);
+> > }
+> > ...
+> > }
+> >=20
+> > It will does not affect non ALPS devices (because first
+> > identify call will fail), but will affect ALPS devices
+> > without trackstick (because identify will be called twice
+> > and reset too).
 >=20
-> Or maybe just make the Kconfig depend on X86_32
-
-I like the idea, but won't this exclude other 32 bit systems like MIPS
-and I am sure there might be others.  I could assume that Beceem WIMAX
-was intended for x86 arch's that are 32 bit only, which may be a safe
-bet.  The only thing we know for sure is that is broken on 64bit.
-
-> ---
->  drivers/staging/bcm/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> I think this is a step in right direction. Do you know what
+> exactly fails in alps_identify() on your box if you do not
+> call psmouse_reset?
 >=20
-> diff --git a/drivers/staging/bcm/Kconfig b/drivers/staging/bcm/Kconfig
-> index 8acf4b2..fa5a3a4 100644
-> --- a/drivers/staging/bcm/Kconfig
-> +++ b/drivers/staging/bcm/Kconfig
-> @@ -1,6 +1,6 @@
->  config BCM_WIMAX
->         tristate "Beceem BCS200/BCS220-3 and BCSM250 wimax support"
-> -       depends on USB && NET
-> +       depends on USB && NET && X86_32
->         help
->           This is an experimental driver for the Beceem WIMAX chipset use=
-d
->  	 by Sprint 4G.
->=20
->=20
+> Thanks.
 
+Yes, I know. It is failing in alps_probe_trackstick_v3(). It=20
+calls alps_command_mode_read_reg(...) and it returns 0 which=20
+means trackstick is not there.
 
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
---=-MYXLGxpx2/uJuEIvRZis
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+--nextPart1463637.NoubF65mUi
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABCgAGBQJUPrIOAAoJEOVv75VaS+3OxCMP/inSqfM7RHnJohZzwKkotKw9
-qbAyYZGIIe6sNVlW4RS4XRPcbmNSriOd0g/pOo6PNH422WcSs7cvNBJLmZF1PklQ
-l0goyWYbouqmIHII32cHt530pVPffQahsJ8f3k4u3sPKGqZ+dgJBKRHVVNXI0Kd2
-PpEXGNCI9z2Xp8E5yRdGZXgWHuYvjv8oOKOVAauP9r6Y/GAUIJT2IqhY8sFdEAcQ
-JPc2ZC0g5R3JFFr2EJIC3I2saKjtNW/c3EBrHAeCXLX8d+B/4K3DOj4gc7jD5HNt
-EiMQ1AVgphExKBvi/16vTC+U6kTsDR/S/zkkpPVRfxClnGUhdLfa+HY078y9CbbZ
-0/ppnm+ZnFnsAZFAWTo8+W8Nfv+nCdeL/KhaCHwRN4dnkY2n2YxbnBaSPJGIh8mx
-j0UjPtE8iO5XJilINu81VLYNiz+aMFcRcEGA56BERG0bqwNjEnXVrZDrsw5RoGDF
-lUDi0RXjqdsUfbSAC3Sn97PSRhMzE4L8HJfFI0xaDyl+Iw7+RWN/anv1DSWlxO6J
-HuF9Jl9BKZPymWT6gK4K58pDKyPcjFhQGm7TrWqR2kMqoc5VzbiQfeTXByOGjH/H
-XH80JmlubdhBGOscQYjm8gyoEnp1/jCE4pNmnb+vW6VzfC7+VVodWktUDOGx93Na
-qonY5w9m1qGqLgo/Upv5
-=0yMp
+iEYEABECAAYFAlQ+tZEACgkQi/DJPQPkQ1LGKQCeLa6ANKEYU7zJrywwKGryGIvu
+ZQEAn2/4Fsa9Q9W0e584PrsNmg0KgRMy
+=lzgw
 -----END PGP SIGNATURE-----
 
---=-MYXLGxpx2/uJuEIvRZis--
-
+--nextPart1463637.NoubF65mUi--
