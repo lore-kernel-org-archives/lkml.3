@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217AbaJOFYu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 01:24:50 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:51701 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751210AbaJOFYs (ORCPT
+	id S1752665AbaJOF1M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 01:27:12 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:54408 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751173AbaJOF1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 01:24:48 -0400
-Message-ID: <543E0511.3050505@st.com>
-Date: Wed, 15 Oct 2014 07:24:33 +0200
-From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 15 Oct 2014 01:27:10 -0400
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>, <sfr@canb.auug.org.au>
-Cc: <netdev@vger.kernel.org>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the net tree
-References: <20141015104411.306b138e@canb.auug.org.au> <20141014.220254.144210672646232483.davem@davemloft.net>
-In-Reply-To: <20141014.220254.144210672646232483.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.52.138.72]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-10-15_02:2014-10-14,2014-10-15,1970-01-01 signatures=0
+In-Reply-To: <alpine.LRH.2.11.1410150158010.29573@namei.org>
+References: <alpine.LRH.2.11.1410150158010.29573@namei.org>
+Date: Wed, 15 Oct 2014 07:27:09 +0200
+X-Google-Sender-Auth: GmxXRon1TFqNrk7rlOySUJ62SM0
+Message-ID: <CA+55aFzOuVhvdDActs=AXr7ZvOkHyH-M2rKVun+Q6R0=r50bvg@mail.gmail.com>
+Subject: Re: [GIT PULL] SELinux list corruption fix for 3.18
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: James Morris <jmorris@namei.org>
+Cc: LSM List <linux-security-module@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Paul Moore <paul@paul-moore.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2014 4:02 AM, David Miller wrote:
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Wed, 15 Oct 2014 10:44:11 +1100
+On Tue, Oct 14, 2014 at 5:05 PM, James Morris <jmorris@namei.org> wrote:
+> This is a fix for list corruption in the SELinux code.
 >
->> Hi all,
->>
->> After merging the net tree, today's linux-next build (arm
->> multi_v7_defconfig) failed like this:
->>
->> drivers/built-in.o: In function `.LANCHOR0':
->> :(.rodata+0x6b764): undefined reference to `sti_gmac_data'
->> :(.rodata+0x6b828): undefined reference to `sti_gmac_data'
->> :(.rodata+0x6b8ec): undefined reference to `sti_gmac_data'
->> :(.rodata+0x6b9b0): undefined reference to `sti_gmac_data'
->>
->> Caused by commit 53b26b9bc9a5 ("stmmac: dwmac-sti: review the
->> glue-logic for STi4xx and STiD127 SoCs") which renamed sti_gmac_data to
->> stih4xx_dwmac_data (or something) without updating all the references
->> to it (including the one added in the previous commit ...).
->>
->> I reverted that commit for today.
->
-> Sigh, Giuseppe if I don't see a proper fix by tomorrow I'm
-> reverting all of the stmmac changes I applied today.
+> Note that the git-log output is still broken due to the back-merge issue
+> previously discussed.  The fix is in commit
+> 7c66bdc72bc3d792886c42bbab4b214c1fe536e0
 
-I am looking at this now and let you know soon
+No, the log is correct (the log always is, the back-merges can cause
+the trivial *diff* to be broken).
 
-peppe
+Your branch has way more than that one list corruption fix in it.
+Please fix your branch, or fix your description.
+
+            Linus
