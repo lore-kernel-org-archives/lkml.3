@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752352AbaJOKQQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 06:16:16 -0400
-Received: from mail.windriver.com ([147.11.1.11]:48111 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751822AbaJOKQP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 06:16:15 -0400
-Message-ID: <543E4949.1050606@windriver.com>
-Date: Wed, 15 Oct 2014 18:15:37 +0800
-From: yzhu1 <Yanjun.Zhu@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752062AbaJOKT1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 06:19:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5205 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751468AbaJOKT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 06:19:26 -0400
+Date: Wed, 15 Oct 2014 13:22:51 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        davem@davemloft.net, eric.dumazet@gmail.com
+Subject: Re: [RFC PATCH net-next 6/6] virtio-net: enable tx interrupt only
+ for the final skb in the chain
+Message-ID: <20141015102251.GE25776@redhat.com>
+References: <1413357930-45302-1-git-send-email-jasowang@redhat.com>
+ <1413357930-45302-7-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
-To: Willy Tarreau <w@1wt.eu>, Zhu Yanjun <zyjzyj2000@gmail.com>
-CC: <sandeep.kumar@freescale.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <Yue.Tao@windriver.com>,
-        <guang.yang@windriver.com>, <joe@perches.com>, <festevam@gmail.com>,
-        <richardcochran@gmail.com>, <clarocq@gmail.com>,
-        <yongjun_wei@trendmicro.com.cn>, <claudiu.manoil@freescale.com>,
-        <roy.xu@huawei.com>, <sky.wangfeng@huawei.com>,
-        zhuyj <zyjzyj2000@gmail.com>
-Subject: Re: [PATCH] gianfar: disable vlan tag insertion by default on 2.6.x
-References: <1413367234-28652-1-git-send-email-Yanjun.Zhu@windriver.com> <20141015100949.GA30089@1wt.eu>
-In-Reply-To: <20141015100949.GA30089@1wt.eu>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.162.201]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413357930-45302-7-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2014 06:09 PM, Willy Tarreau wrote:
-> Hi Zhu,
->
-> On Wed, Oct 15, 2014 at 06:00:33PM +0800, Zhu Yanjun wrote:
->> In commit f43c75d4b6[gianfar: disable TX vlan based on kernel 2.6.x],
->> gianfar nic disables TX vlan. But gianfar nic enables vlan tag
->> insertion by default. This will lead to unusable connections on
->> some configurations. Since vlan tag insertion is disabled by default
->> and it is not enabled any longer, it is not necessary to disable it again.
->>
->> Zhu Yanjun (1):
->>    gianfar: disable vlan tag insertion by default
->>
->>   drivers/net/gianfar.c | 6 ------
->>   1 file changed, 6 deletions(-)
->>
->> -- 
->> 1.9.1
-> There's no patch in this e-mail. Since you sent another e-mail with almost
-> the same subject, I'm confused, it's unclear to me whether I only need to
-> apply the patch in the other one with this commit message or if it's just
-> that you accidently dropped the patch when sending this e-mail. Could you
-> please enlighten me ?
->
-> Thanks,
-> Willy
->
-Hi, Willy
+On Wed, Oct 15, 2014 at 03:25:30PM +0800, Jason Wang wrote:
+> With the help of xmit_more and virtqueue_enable_cb_avail(), this patch
+> enable tx interrupt only for the final skb in the chain if
+> needed. This will help to mitigate tx interrupts.
+> 
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-Sorry. Please apply the patch in the other one with this commit message.
+I think you should split xmit_more stuff out.
 
-Thanks a lot.
-Zhu Yanjun
+
+
+> ---
+>  drivers/net/virtio_net.c |   10 +++++++---
+>  1 files changed, 7 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index 2afc2e2..5943f3f 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -993,12 +993,16 @@ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
+>  				virtqueue_disable_cb(sq->vq);
+>  			}
+>  		}
+> -	} else if (virtqueue_enable_cb(sq->vq)) {
+> -		free_old_xmit_skbs(sq, qsize);
+>  	}
+>  
+> -	if (__netif_subqueue_stopped(dev, qnum) || !skb->xmit_more)
+> +	if (__netif_subqueue_stopped(dev, qnum) || !skb->xmit_more) {
+>  		virtqueue_kick(sq->vq);
+> +		if (sq->vq->num_free >= 2 +MAX_SKB_FRAGS &&
+> +		    unlikely(virtqueue_enable_cb_avail(sq->vq))) {
+> +			free_old_xmit_skbs(sq, qsize);
+> +			virtqueue_disable_cb(sq->vq);
+> +		}
+> +	}
+>  
+>  	return NETDEV_TX_OK;
+>  }
+> -- 
+> 1.7.1
