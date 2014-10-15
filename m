@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751385AbaJOWmh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 18:42:37 -0400
-Received: from mga01.intel.com ([192.55.52.88]:43437 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750966AbaJOWmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 18:42:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,728,1406617200"; 
-   d="asc'?scan'208";a="606087816"
-Message-ID: <1413412874.2412.36.camel@jtkirshe-mobl>
-Subject: Re: [PATCH] bcm/CmHost.c: Fix noisy compile warnings
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Matthias Beyer <mail@beyermatthias.de>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Date: Wed, 15 Oct 2014 15:41:14 -0700
-In-Reply-To: <20141015222447.GB20142@fu.3gs>
-References: <1413375999-10210-1-git-send-email-jeffrey.t.kirsher@intel.com>
-	 <20141015123431.GA23154@mwanda> <20141015125934.GB23154@mwanda>
-	 <1413378213.2412.13.camel@jtkirshe-mobl> <20141015214151.GA20142@fu.3gs>
-	 <1413411584.2412.35.camel@jtkirshe-mobl> <20141015222447.GB20142@fu.3gs>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-HmN2m52+kHWDYLrnkpBt"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+	id S1751490AbaJOWpa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 18:45:30 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:50238 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750870AbaJOWp3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 18:45:29 -0400
+Message-ID: <1413413127.17186.5.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: Regarding tx-nocache-copy in the Sheevaplug
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Benjamin Poirier <benjamin.poirier@gmail.com>
+Cc: =?ISO-8859-1?Q?Llu=EDs?= Batlle i Rossell <viric@viric.name>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Carles =?ISO-8859-1?Q?Pag=E8s?= <page@cubata.homelinux.net>,
+        linux-arm-kernel@lists.infradead.org
+Date: Wed, 15 Oct 2014 15:45:27 -0700
+In-Reply-To: <20141015215701.GA4109@f1.synalogic.ca>
+References: <20141013105246.GD1972@vicerveza.homeunix.net>
+	 <20141015215701.GA4109@f1.synalogic.ca>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
 Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2014-10-15 at 14:57 -0700, Benjamin Poirier wrote:
+> On 2014/10/13 12:52, Lluís Batlle i Rossell wrote:
+> > Hello,
+> > 
+> > on the 7th of January 2014 ths patch was applied:
+> > https://lkml.org/lkml/2014/1/7/307
+> > 
+> > [PATCH v2] net: Do not enable tx-nocache-copy by default
+> >         
+> > In the Sheevaplug (ARM Feroceon 88FR131 from Marvell) this made packets to be
+> > sent corrupted. I think this machine has something special about the cache.
+> > 
+> > Enabling back this tx-nocache-copy (as it used to be before the patch) the
+> > transfers work fine again. I think that most people, encountering this problem,
+> > completely disable the tx offload instead of enabling back this setting.
+> > 
+> > Is this an ARM kernel problem regarding this platform?
+> 
+> This is odd, only x86 defines ARCH_HAS_NOCACHE_UACCESS. On arm,
+> skb_do_copy_data_nocache() should end up using __copy_from_user()
+> regardless of tx-nocache-copy.
 
---=-HmN2m52+kHWDYLrnkpBt
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+ kmap_atomic()/kunmap_atomic() is missing, so we lack
+__cpuc_flush_dcache_area() operations.
 
-On Thu, 2014-10-16 at 00:24 +0200, Matthias Beyer wrote:
-> On 15-10-2014 15:19:44, Jeff Kirsher wrote:
-> > I will just go ahead and create a patch to remove the driver.  Greg
-> can
-> > then decide to either accept the patch to fix the Kconfig or accept
-> the
-> > patch to remove the driver.
->=20
-> Don't forget the maintainers file :-)
 
-Yep, got it.  Thanks for the reminder.
 
---=-HmN2m52+kHWDYLrnkpBt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAABCgAGBQJUPvgKAAoJEOVv75VaS+3O1GQQAJNooBhApaywHnYYMXDU0uS5
-5bNBrBhfOiwiJiOskruD2qUnN1KJ+aBALxHfs2LhRO1vcRgs4dnLnpVchXIZr38w
-a1fUFdQOV7omf8EK0LG1JpVEV2mMcfuB3Ui1hsBQqDVqYCjx4uZrsYLJJKVksq6b
-NPYSehJRO2YaLf6O8I+le63KNUXZRc9glEak7CCq91sotFcMY+JRKN5IIOz2hdww
-Vt96RQZGKXoVPD4H9p86/TPDE6soPupw78YUMH0OtipqYBXu/hujPvshVFkWJhJ2
-EMzRP0ZsYdGZZQRnAH0KpRUto5rpBkxMNsImJwgmqtNghGbUmp14Ttb+lbMjKNVx
-dG9TsvBt4DJgfry36H3wCmPdjUT7FmVqN4rwtjetXDqxIEd4BZ3yukElWmX+7phX
-MQHe09uAozh6oQE3+KanV/0C8Z4qqBtFltuF4m6/fbgwKbnUsx7sJW4klXS7OLEu
-MurG6docbNjBz4MOd3flJ+Z2LCZI4N2ZiAsjcDE/mAnpZffqD0OL7QS/EJqRDQNZ
-IX+JXanf7KODB4qE1X14hRjhn/2+LMT6J5iT0fTZp/rJBhJCy27/Wk89Fy8qGdFV
-ltVEPgFxJZ5Qyn1RUC+Qz9XJtAWe6FsLV3qMj7EvfABEg3oKDpt0QxC3/wx9oF0z
-3Et4ukl6fHkEuQULGktp
-=YJm7
------END PGP SIGNATURE-----
-
---=-HmN2m52+kHWDYLrnkpBt--
 
