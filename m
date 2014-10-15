@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999AbaJOUsj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 16:48:39 -0400
-Received: from va-smtp01.263.net ([54.88.144.211]:40692 "EHLO
+	id S1752044AbaJOUtR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 16:49:17 -0400
+Received: from va-smtp01.263.net ([54.88.144.211]:41553 "EHLO
 	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887AbaJOUsh (ORCPT
+	with ESMTP id S1752005AbaJOUtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 16:48:37 -0400
+	Wed, 15 Oct 2014 16:49:16 -0400
 X-RL-SENDER: zyw@rock-chips.com
 X-FST-TO: heiko@sntech.de
 X-SENDER-IP: 127.0.0.1
 X-LOGIN-NAME: zyw@rock-chips.com
-X-UNIQUE-TAG: <ea5616f9997c7faf9526b3e4deff93ac>
+X-UNIQUE-TAG: <33883497e94eab7c271f3bb67db381fb>
 X-ATTACHMENT-NUM: 0
 X-DNS-TYPE: 1
 From: zyw@rock-chips.com
@@ -25,9 +25,9 @@ Cc: Mike Turquette <mturquette@linaro.org>,
         Pawel Moll <pawel.moll@arm.com>, Chris Zhong <zyw@rock-chips.com>,
         Mark Rutland <mark.rutland@arm.com>,
         linux-arm-kernel@lists.infradead.org, Tony Xie <xxx@rock-chips.com>
-Subject: [PATCH 2/4] clk: rockchip: RK3288: add suspend and resume
-Date: Wed, 15 Oct 2014 13:48:22 -0700
-Message-Id: <1413406102-16293-1-git-send-email-zyw@rock-chips.com>
+Subject: [PATCH 3/4] ARM: dts: add RK3288 suspend support
+Date: Wed, 15 Oct 2014 13:49:04 -0700
+Message-Id: <1413406144-16329-1-git-send-email-zyw@rock-chips.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1413405987-16196-1-git-send-email-zyw@rock-chips.com>
 References: <1413405987-16196-1-git-send-email-zyw@rock-chips.com>
@@ -37,93 +37,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Chris Zhong <zyw@rock-chips.com>
 
-save and restore some clks, which might be changed in suspend.
+add pmu_intmem subnode for suspend, add suspend pinctrl
 
 Signed-off-by: Tony Xie <xxx@rock-chips.com>
 Signed-off-by: Chris Zhong <zyw@rock-chips.com>
 ---
 
- drivers/clk/rockchip/clk-rk3288.c |   61 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 61 insertions(+)
+ arch/arm/boot/dts/rk3288.dtsi |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/drivers/clk/rockchip/clk-rk3288.c b/drivers/clk/rockchip/clk-rk3288.c
-index b22a2d2..f14cfdc 100644
---- a/drivers/clk/rockchip/clk-rk3288.c
-+++ b/drivers/clk/rockchip/clk-rk3288.c
-@@ -680,6 +680,66 @@ static struct rockchip_clk_branch rk3288_clk_branches[] __initdata = {
- 	GATE(0, "pclk_isp_in", "ext_isp", 0, RK3288_CLKGATE_CON(16), 3, GFLAGS),
- };
+diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+index 5950b0a..081af7a 100644
+--- a/arch/arm/boot/dts/rk3288.dtsi
++++ b/arch/arm/boot/dts/rk3288.dtsi
+@@ -241,6 +241,11 @@
+ 		status = "disabled";
+ 	};
  
-+#ifdef CONFIG_PM_SLEEP
-+static const int rk3288_saved_cru_reg_ids[] = {
-+	RK3288_MODE_CON,
-+	RK3288_CLKSEL_CON(0),
-+	RK3288_CLKSEL_CON(1),
-+	RK3288_CLKSEL_CON(10),
-+	RK3288_CLKSEL_CON(33),
-+	RK3288_CLKSEL_CON(37),
-+};
++	pmu_intmem@ff720000 {
++		compatible = "mmio-sram", "rockchip,rk3288-pmu-sram";
++		reg = <0xff720000 0x4000>;
++	};
 +
-+static u32 rk3288_saved_cru_regs[ARRAY_SIZE(rk3288_saved_cru_reg_ids)];
-+
-+/*
-+ * cru will be set in maskrom when system wake up from fastboot
-+ * mode in suspend,
-+ * so the operation is saving the changed regs.
-+ * The apll/cpll/gpll will be set into slow mode in maskrom.
-+ * It is mean that resume code run in 24m quit slowly!
-+ * so we must resume these plls as soon as possible.
-+ */
-+static int rk3288_clk_suspend(void)
-+{
-+	int i, reg_id;
-+
-+	for (i = 0; i < ARRAY_SIZE(rk3288_saved_cru_reg_ids); i++) {
-+		reg_id = rk3288_saved_cru_reg_ids[i];
-+
-+		rk3288_saved_cru_regs[i] =
-+				__raw_readl(rk3288_cru_base + reg_id);
-+	}
-+	return 0;
-+}
-+
-+static void rk3288_clk_resume(void)
-+{
-+	int i, reg_id;
-+
-+	for (i = ARRAY_SIZE(rk3288_saved_cru_reg_ids) - 1; i >= 0; i--) {
-+		reg_id = rk3288_saved_cru_reg_ids[i];
-+
-+		__raw_writel(rk3288_saved_cru_regs[i] | 0xffff0000,
-+			     rk3288_cru_base + reg_id);
-+	}
-+}
-+
-+static struct syscore_ops rk3288_clk_syscore_ops = {
-+	.suspend = rk3288_clk_suspend,
-+	.resume = rk3288_clk_resume,
-+};
-+
-+static void rk3288_clk_sleep_init(void __iomem *reg_base)
-+{
-+	rk3288_cru_base = reg_base;
-+	register_syscore_ops(&rk3288_clk_syscore_ops);
-+}
-+
-+#else /* CONFIG_PM_SLEEP */
-+static void rk3288_clk_sleep_init(void __iomem *reg_base) {}
-+#endif
-+
- static void __init rk3288_clk_init(struct device_node *np)
- {
- 	void __iomem *reg_base;
-@@ -713,5 +773,6 @@ static void __init rk3288_clk_init(struct device_node *np)
+ 	pmu: power-management@ff730000 {
+ 		compatible = "rockchip,rk3288-pmu", "syscon";
+ 		reg = <0xff730000 0x100>;
+@@ -421,6 +426,12 @@
+ 			bias-disable;
+ 		};
  
- 	rockchip_register_softrst(np, 9, reg_base + RK3288_SOFTRST_CON(0),
- 				  ROCKCHIP_SOFTRST_HIWORD_MASK);
-+	rk3288_clk_sleep_init(reg_base);
- }
- CLK_OF_DECLARE(rk3288_cru, "rockchip,rk3288-cru", rk3288_clk_init);
++		sleep {
++			global_pwroff: global-pwroff {
++				rockchip,pins = <0 0 RK_FUNC_1 &pcfg_pull_none>;
++			};
++		};
++
+ 		i2c0 {
+ 			i2c0_xfer: i2c0-xfer {
+ 				rockchip,pins = <0 15 RK_FUNC_1 &pcfg_pull_none>,
 -- 
 1.7.9.5
 
