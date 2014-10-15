@@ -1,117 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965AbaJODer (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 23:34:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6342 "EHLO mx1.redhat.com"
+	id S1755997AbaJODhn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 23:37:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59887 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755841AbaJODep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 23:34:45 -0400
-Message-ID: <543DEB4B.1010505@redhat.com>
-Date: Wed, 15 Oct 2014 11:34:35 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1755968AbaJODhl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Oct 2014 23:37:41 -0400
+Date: Wed, 15 Oct 2014 11:37:01 +0800
+From: Baoquan He <bhe@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        x86@kernel.org, ak@linux.intel.com, ebiederm@xmission.com,
+        kexec@lists.infradead.org, whissi@whissi.de,
+        kumagai-atsushi@mxc.nes.nec.co.jp, stable@vger.kernel.org
+Subject: Re: [resend Patch v3 1/2] kaslr: check if kernel location is changed
+Message-ID: <20141015033701.GD16068@dhcp-16-116.nay.redhat.com>
+References: <20141001135237.GA13689@redhat.com>
+ <543553C7.9010906@zytor.com>
+ <20141008192728.GA26517@redhat.com>
+ <20141011031452.GB11560@dhcp-16-116.nay.redhat.com>
+ <543907B5.7060001@zytor.com>
+ <20141013125257.GB6466@redhat.com>
+ <20141013151955.GA9777@redhat.com>
+ <543BF304.9090708@zytor.com>
+ <20141013172242.GB9777@redhat.com>
+ <20141014124932.GC5127@redhat.com>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH net-next RFC 3/3] virtio-net: conditionally enable tx
- interrupt
-References: <1413011806-3813-1-git-send-email-jasowang@redhat.com> <1413011806-3813-4-git-send-email-jasowang@redhat.com> <20141014215146.GB23344@redhat.com>
-In-Reply-To: <20141014215146.GB23344@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141014124932.GC5127@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2014 05:51 AM, Michael S. Tsirkin wrote:
-> On Sat, Oct 11, 2014 at 03:16:46PM +0800, Jason Wang wrote:
->> > We free transmitted packets in ndo_start_xmit() in the past to get better
->> > performance in the past. One side effect is that skb_orphan() needs to be
->> > called in ndo_start_xmit() which makes sk_wmem_alloc not accurate in
->> > fact. For TCP protocol, this means several optimization could not work well
->> > such as TCP small queue and auto corking. This can lead extra low
->> > throughput of small packets stream.
->> > 
->> > Thanks to the urgent descriptor support. This patch tries to solve this
->> > issue by enable the tx interrupt selectively for stream packets. This means
->> > we don't need to orphan TCP stream packets in ndo_start_xmit() but enable
->> > tx interrupt for those packets. After we get tx interrupt, a tx napi was
->> > scheduled to free those packets.
->> > 
->> > With this method, sk_wmem_alloc of TCP socket were more accurate than in
->> > the past which let TCP can batch more through TSQ and auto corking.
->> > 
->> > Signed-off-by: Jason Wang <jasowang@redhat.com>
->> > ---
->> >  drivers/net/virtio_net.c | 164 ++++++++++++++++++++++++++++++++++++-----------
->> >  1 file changed, 128 insertions(+), 36 deletions(-)
->> > 
->> > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
->> > index 5810841..b450fc4 100644
->> > --- a/drivers/net/virtio_net.c
->> > +++ b/drivers/net/virtio_net.c
->> > @@ -72,6 +72,8 @@ struct send_queue {
->> >  
->> >  	/* Name of the send queue: output.$index */
->> >  	char name[40];
->> > +
->> > +	struct napi_struct napi;
->> >  };
->> >  
->> >  /* Internal representation of a receive virtqueue */
->> > @@ -217,15 +219,40 @@ static struct page *get_a_page(struct receive_queue *rq, gfp_t gfp_mask)
->> >  	return p;
->> >  }
->> >  
->> > +static int free_old_xmit_skbs(struct send_queue *sq, int budget)
->> > +{
->> > +	struct sk_buff *skb;
->> > +	unsigned int len;
->> > +	struct virtnet_info *vi = sq->vq->vdev->priv;
->> > +	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
->> > +	int sent = 0;
->> > +
->> > +	while (sent < budget &&
->> > +	       (skb = virtqueue_get_buf(sq->vq, &len)) != NULL) {
->> > +		pr_debug("Sent skb %p\n", skb);
->> > +
->> > +		u64_stats_update_begin(&stats->tx_syncp);
->> > +		stats->tx_bytes += skb->len;
->> > +		stats->tx_packets++;
->> > +		u64_stats_update_end(&stats->tx_syncp);
->> > +
->> > +		dev_kfree_skb_any(skb);
->> > +		sent++;
->> > +	}
->> > +
->> > +	return sent;
->> > +}
->> > +
->> >  static void skb_xmit_done(struct virtqueue *vq)
->> >  {
->> >  	struct virtnet_info *vi = vq->vdev->priv;
->> > +	struct send_queue *sq = &vi->sq[vq2txq(vq)];
->> >  
->> > -	/* Suppress further interrupts. */
->> > -	virtqueue_disable_cb(vq);
->> > -
->> > -	/* We were probably waiting for more output buffers. */
->> > -	netif_wake_subqueue(vi->dev, vq2txq(vq));
->> > +	if (napi_schedule_prep(&sq->napi)) {
->> > +		virtqueue_disable_cb(vq);
->> > +		virtqueue_disable_cb_urgent(vq);
-> This disable_cb is no longer safe in xmit_done callback,
-> since queue can be running at the same time.
->
-> You must do it under tx lock. And yes, this likely will not work
-> work well without event_idx. We'll probably need extra
-> synchronization for such old hosts.
->
->
->
+On 10/14/14 at 08:49am, Vivek Goyal wrote:
+> On Mon, Oct 13, 2014 at 01:22:42PM -0400, Vivek Goyal wrote:
+> > On Mon, Oct 13, 2014 at 08:43:00AM -0700, H. Peter Anvin wrote:
+> > > On 10/13/2014 08:19 AM, Vivek Goyal wrote:
+> > > >>>
+> > > >>> This really shouldn't have happened this way on x86-64.  It has to happen
+> > > >>> this way on i386, but I worry that this may be a serious misdesign in kaslr
+> > > >>> on x86-64.  I'm also wondering if there is any other fallout of this?
+> > > >>
+> > > >> I agree. On x86_64, we should stick to previous design and this new
+> > > >> logic of performing relocations does not sound very clean and makes
+> > > >> things very confusing.
+> > > >>
+> > > >> I am wondering that why couldn't we simply adjust page tables in case of
+> > > >> kaslr on x86_64, instead of performing relocations.
+> > > > 
+> > > > Well, IIUC, if virtual addresses are shifted w.r.t what virtual address
+> > > > kernel was compiled for, then relocation will have to be done.
+> > > > 
+> > > > So question will be if physical address shift is enough for kaslr or
+> > > > virtual address shift is necessary.
+> > > > 
+> > > 
+> > > I would assume that without a virtual address shift kaslr is pretty darn
+> > > pointless.  Without the physical address shift the 1:1 map can be used,
+> > > and again, kaslr becomes pointless.  However, there is absolutely no
+> > > reason why they should be coupled.  They can, in fact, be independently
+> > > randomized.
+> > 
+> > Agreed. On x86_64, we should be able to randomize virtual address space
+> > and physical address space independently. And in that case whole of
+> > the physical memory should be available for a possible location for
+> > kernel. (As opposed to a small limit (I guess 1GB) now)
 
-Yes, and the virtqueue_enable_cb_prepare() in virtnet_poll_tx() needs to
-be synced with virtqueue_enabled_cb_dealyed(). Otherwise an old idx will
-be published and we may still see tx interrupt storm.
+It can be done to randomize virtual address space and physical address
+space independently. But limited by the 2G of kernel text mapping and
+module mapping virtual address space, virtual address can be randomized
+in (0x1000000, 1G) range. While physical address can be randomized in
+(0x1000000, 4G) according to the identity mapping of normal kernel. Then
+phys_base still stores an relative value, a different offset than before.
+
+This can be easily implement. One thing is still there's a limit for
+physical addr randomization, only below 4G. So I am wondering if we can
+extend the identify mapping to complete mapping of 48 bit, using 1G page
+frame. This can make physical addr be randomized to anywhere.
+
+So now there may be 3 options:
+
+1) Fix this bug in current kaslr. Since when randomize the new kernel
+location in choose_kernel_location(), cmdline options has been checked
+strictly, e.g if nokaslr is specified, it's safe to do the kernel
+location randomization. Then in handle_relocations(), we only need to
+check if the kernel location is changed, comparing with kernel loaded
+addr. If changed, kaslr is done, let's do the relocation handling. If
+not changed, no kaslr id done, just skip the relocation handling like
+before.
+
+2) randomize the virtual addr space and physical addr space
+independently. But physical addr space must be below 4G.
+
+3) extend the identity mapping to 48bit of addr space. Then we can
+randomized the virtual addr space in (0x1000000, 1G) and physical addr
+space in (0x1000000, real physical memory end).
+
+If option 3 is doable, it's the best. If not, I think bug fix should be
+better.
+
+> 
+> Hi Peter,
+> 
+> So what do we do about this issue in short term to make kexec work. Even
+> if we go for above solution, to make kexec work we will have to pass
+> "nokaslr" as we don't want kernel to move around in physical address space
+> as it might stomp over ELF headers we have stored.
+
+kexec doesn't need ELF headers. Kdump may need it. But in current
+kexec-tools implementation, kernel/initrd and other stuffs are placed
+from top to down, current implementation won't do kaslr since it only
+happened between kernel loaded addr and 1G. So we don't need to worry
+about the stomping.
+
+> 
+> If you don't like current patch, should we just disable relocations in
+> x86_64 if "nokaslr" command line is passed. That way kernel will not
+> be moved in physical as well as virtual address space.
+> 
+> Thanks
+> Vivek
