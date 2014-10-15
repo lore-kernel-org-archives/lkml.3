@@ -1,279 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751822AbaJOQfV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 12:35:21 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:49930 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751383AbaJOQfQ (ORCPT
+	id S1751646AbaJOQkD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 12:40:03 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:50051 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994AbaJOQkB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 12:35:16 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: akpm@linux-foundation.org, Steve Capper <steve.capper@linaro.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, benh@kernel.crashing.org,
-        mpe@ellerman.id.au
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH 1/2] mm: Update generic gup implementation to handle hugepage directory
-Date: Wed, 15 Oct 2014 22:04:47 +0530
-Message-Id: <1413390888-4934-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.9.1
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14101516-0013-0000-0000-000001B5F630
+	Wed, 15 Oct 2014 12:40:01 -0400
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: [PATCH] ARM: zynq: Actually remove hotplug.c
+Date: Wed, 15 Oct 2014 09:39:53 -0700
+Message-Id: <1413391193-26710-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 2.1.2.1.g5e69ed6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update generic gup implementation with powerpc specific details.
-On powerpc at pmd level we can have hugepte, normal pmd pointer
-or a pointer to the hugepage directory.
+Commit 'ARM: zynq: Remove hotplug.c'
+(caf86a73eab4132f870e883216850d9eee40b04b) was supposed to remove
+hotplug.c - but it didn't. It moved all content from
+hotplug.c elsewhere and removed its entry from the Makefile, but missed
+to actually remove the whole file. Remove it now.
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 ---
- include/linux/hugetlb.h |   1 +
- include/linux/mm.h      |  26 +++++++++++
- mm/gup.c                | 113 +++++++++++++++++++++++-------------------------
- 3 files changed, 81 insertions(+), 59 deletions(-)
+ arch/arm/mach-zynq/Makefile  |  2 --
+ arch/arm/mach-zynq/hotplug.c | 14 --------------
+ 2 files changed, 16 deletions(-)
+ delete mode 100644 arch/arm/mach-zynq/hotplug.c
 
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index 6e6d338641fe..65e12a24ce1d 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -138,6 +138,7 @@ static inline void hugetlb_show_meminfo(void)
- #define prepare_hugepage_range(file, addr, len)	(-EINVAL)
- #define pmd_huge(x)	0
- #define pud_huge(x)	0
-+#define pgd_huge(x)	0
- #define is_hugepage_only_range(mm, addr, len)	0
- #define hugetlb_free_pgd_range(tlb, addr, end, floor, ceiling) ({BUG(); 0; })
- #define hugetlb_fault(mm, vma, addr, flags)	({ BUG(); 0; })
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 02d11ee7f19d..f97732412cb4 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1219,6 +1219,32 @@ long get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
- 		    struct vm_area_struct **vmas);
- int get_user_pages_fast(unsigned long start, int nr_pages, int write,
- 			struct page **pages);
-+
-+#ifdef CONFIG_HAVE_GENERIC_RCU_GUP
-+#ifndef is_hugepd
-+/*
-+ * Some architectures support hugepage directory format that is
-+ * required to support different hugetlbfs sizes.
-+ */
-+typedef struct { unsigned long pd; } hugepd_t;
-+#define is_hugepd(hugepd) (0)
-+#define __hugepd(x) ((hugepd_t) { (x) })
-+static inline int gup_hugepd(hugepd_t hugepd, unsigned long addr,
-+			     unsigned pdshift, unsigned long end,
-+			     int write, struct page **pages, int *nr)
-+{
-+	return 0;
-+}
-+#else
-+extern int gup_hugepd(hugepd_t hugepd, unsigned long addr,
-+		      unsigned pdshift, unsigned long end,
-+		      int write, struct page **pages, int *nr);
-+#endif
-+extern int gup_huge_pte(pte_t orig, pte_t *ptep, unsigned long addr,
-+			unsigned long sz, unsigned long end, int write,
-+			struct page **pages, int *nr);
-+#endif
-+
- struct kvec;
- int get_kernel_pages(const struct kvec *iov, int nr_pages, int write,
- 			struct page **pages);
-diff --git a/mm/gup.c b/mm/gup.c
-index cd62c8c90d4a..13c560ef9ddf 100644
---- a/mm/gup.c
-+++ b/mm/gup.c
-@@ -786,65 +786,31 @@ static int gup_pte_range(pmd_t pmd, unsigned long addr, unsigned long end,
- }
- #endif /* __HAVE_ARCH_PTE_SPECIAL */
+diff --git a/arch/arm/mach-zynq/Makefile b/arch/arm/mach-zynq/Makefile
+index c85fb3f7d5cd..b03a97eb7501 100644
+--- a/arch/arm/mach-zynq/Makefile
++++ b/arch/arm/mach-zynq/Makefile
+@@ -4,6 +4,4 @@
  
--static int gup_huge_pmd(pmd_t orig, pmd_t *pmdp, unsigned long addr,
--		unsigned long end, int write, struct page **pages, int *nr)
-+int gup_huge_pte(pte_t orig, pte_t *ptep, unsigned long addr,
-+		 unsigned long sz, unsigned long end, int write,
-+		 struct page **pages, int *nr)
- {
--	struct page *head, *page, *tail;
- 	int refs;
-+	unsigned long pte_end;
-+	struct page *head, *page, *tail;
- 
--	if (write && !pmd_write(orig))
--		return 0;
+ # Common support
+ obj-y				:= common.o slcr.o pm.o
+-CFLAGS_REMOVE_hotplug.o		=-march=armv6k
+-CFLAGS_hotplug.o 		=-Wa,-march=armv7-a -mcpu=cortex-a9
+ obj-$(CONFIG_SMP)		+= headsmp.o platsmp.o
+diff --git a/arch/arm/mach-zynq/hotplug.c b/arch/arm/mach-zynq/hotplug.c
+deleted file mode 100644
+index b685c89f11e4..000000000000
+--- a/arch/arm/mach-zynq/hotplug.c
++++ /dev/null
+@@ -1,14 +0,0 @@
+-/*
+- * Copyright (C) 2012-2013 Xilinx
+- *
+- * based on linux/arch/arm/mach-realview/hotplug.c
+- *
+- * Copyright (C) 2002 ARM Ltd.
+- * All Rights Reserved
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-#include <asm/proc-fns.h>
 -
--	refs = 0;
--	head = pmd_page(orig);
--	page = head + ((addr & ~PMD_MASK) >> PAGE_SHIFT);
--	tail = page;
--	do {
--		VM_BUG_ON_PAGE(compound_head(page) != head, page);
--		pages[*nr] = page;
--		(*nr)++;
--		page++;
--		refs++;
--	} while (addr += PAGE_SIZE, addr != end);
- 
--	if (!page_cache_add_speculative(head, refs)) {
--		*nr -= refs;
-+	if (write && !pte_write(orig))
- 		return 0;
--	}
- 
--	if (unlikely(pmd_val(orig) != pmd_val(*pmdp))) {
--		*nr -= refs;
--		while (refs--)
--			put_page(head);
-+	if (!pte_present(orig))
- 		return 0;
--	}
- 
--	/*
--	 * Any tail pages need their mapcount reference taken before we
--	 * return. (This allows the THP code to bump their ref count when
--	 * they are split into base pages).
--	 */
--	while (refs--) {
--		if (PageTail(tail))
--			get_huge_page_tail(tail);
--		tail++;
--	}
--
--	return 1;
--}
--
--static int gup_huge_pud(pud_t orig, pud_t *pudp, unsigned long addr,
--		unsigned long end, int write, struct page **pages, int *nr)
--{
--	struct page *head, *page, *tail;
--	int refs;
-+	pte_end = (addr + sz) & ~(sz-1);
-+	if (pte_end < end)
-+		end = pte_end;
- 
--	if (write && !pud_write(orig))
--		return 0;
-+	/* hugepages are never "special" */
-+	VM_BUG_ON(!pfn_valid(pte_pfn(orig)));
- 
- 	refs = 0;
--	head = pud_page(orig);
--	page = head + ((addr & ~PUD_MASK) >> PAGE_SHIFT);
-+	head = pte_page(orig);
-+	page = head + ((addr & (sz-1)) >> PAGE_SHIFT);
- 	tail = page;
- 	do {
- 		VM_BUG_ON_PAGE(compound_head(page) != head, page);
-@@ -859,13 +825,18 @@ static int gup_huge_pud(pud_t orig, pud_t *pudp, unsigned long addr,
- 		return 0;
- 	}
- 
--	if (unlikely(pud_val(orig) != pud_val(*pudp))) {
-+	if (unlikely(pte_val(orig) != pte_val(*ptep))) {
- 		*nr -= refs;
- 		while (refs--)
- 			put_page(head);
- 		return 0;
- 	}
- 
-+	/*
-+	 * Any tail pages need their mapcount reference taken before we
-+	 * return. (This allows the THP code to bump their ref count when
-+	 * they are split into base pages).
-+	 */
- 	while (refs--) {
- 		if (PageTail(tail))
- 			get_huge_page_tail(tail);
-@@ -898,10 +869,19 @@ static int gup_pmd_range(pud_t pud, unsigned long addr, unsigned long end,
- 			if (pmd_numa(pmd))
- 				return 0;
- 
--			if (!gup_huge_pmd(pmd, pmdp, addr, next, write,
--				pages, nr))
-+			if (!gup_huge_pte(__pte(pmd_val(pmd)), (pte_t *)pmdp,
-+					  addr, PMD_SIZE, next,
-+					  write, pages, nr))
- 				return 0;
- 
-+		} else if (unlikely(is_hugepd(__hugepd(pmd_val(pmd))))) {
-+			/*
-+			 * architecture have different format for hugetlbfs
-+			 * pmd format and THP pmd format
-+			 */
-+			if (!gup_hugepd(__hugepd(pmd_val(pmd)), addr, PMD_SHIFT,
-+					next, write, pages, nr))
-+				return 0;
- 		} else if (!gup_pte_range(pmd, addr, next, write, pages, nr))
- 				return 0;
- 	} while (pmdp++, addr = next, addr != end);
-@@ -909,22 +889,27 @@ static int gup_pmd_range(pud_t pud, unsigned long addr, unsigned long end,
- 	return 1;
- }
- 
--static int gup_pud_range(pgd_t *pgdp, unsigned long addr, unsigned long end,
-+static int gup_pud_range(pgd_t pgd, unsigned long addr, unsigned long end,
- 		int write, struct page **pages, int *nr)
- {
- 	unsigned long next;
- 	pud_t *pudp;
- 
--	pudp = pud_offset(pgdp, addr);
-+	pudp = pud_offset(&pgd, addr);
- 	do {
- 		pud_t pud = ACCESS_ONCE(*pudp);
- 
- 		next = pud_addr_end(addr, end);
- 		if (pud_none(pud))
- 			return 0;
--		if (pud_huge(pud)) {
--			if (!gup_huge_pud(pud, pudp, addr, next, write,
--					pages, nr))
-+		if (unlikely(pud_huge(pud))) {
-+			if (!gup_huge_pte(__pte(pud_val(pud)), (pte_t *)pudp,
-+					  addr, PUD_SIZE, next,
-+					  write, pages, nr))
-+				return 0;
-+		} else if (unlikely(is_hugepd(__hugepd(pud_val(pud))))) {
-+			if (!gup_hugepd(__hugepd(pud_val(pud)), addr, PUD_SHIFT,
-+					next, write, pages, nr))
- 				return 0;
- 		} else if (!gup_pmd_range(pud, addr, next, write, pages, nr))
- 			return 0;
-@@ -970,10 +955,21 @@ int __get_user_pages_fast(unsigned long start, int nr_pages, int write,
- 	local_irq_save(flags);
- 	pgdp = pgd_offset(mm, addr);
- 	do {
-+		pgd_t pgd = ACCESS_ONCE(*pgdp);
-+
- 		next = pgd_addr_end(addr, end);
--		if (pgd_none(*pgdp))
-+		if (pgd_none(pgd))
- 			break;
--		else if (!gup_pud_range(pgdp, addr, next, write, pages, &nr))
-+		if (unlikely(pgd_huge(pgd))) {
-+			if (!gup_huge_pte(__pte(pgd_val(pgd)), (pte_t *)pgdp,
-+					  addr, PGDIR_SIZE, next,
-+					  write, pages, &nr))
-+				break;
-+		} else if (unlikely(is_hugepd(__hugepd(pgd_val(pgd))))) {
-+			if (!gup_hugepd(__hugepd(pgd_val(pgd)), addr, PGDIR_SHIFT,
-+					next, write, pages, &nr))
-+				break;
-+		} else if (!gup_pud_range(pgd, addr, next, write, pages, &nr))
- 			break;
- 	} while (pgdp++, addr = next, addr != end);
- 	local_irq_restore(flags);
-@@ -1028,5 +1024,4 @@ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
- 
- 	return ret;
- }
--
- #endif /* CONFIG_HAVE_GENERIC_RCU_GUP */
 -- 
-1.9.1
+2.1.2.1.g5e69ed6
 
