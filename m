@@ -1,110 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141AbaJOLfe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 07:35:34 -0400
-Received: from mga01.intel.com ([192.55.52.88]:26479 "EHLO mga01.intel.com"
+	id S1752400AbaJOLj4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 07:39:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49619 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751257AbaJOLfc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 07:35:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="400584095"
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>
-Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, josh.triplett@intel.com,
-        christophe.ricard@gmail.com, will.c.arthur@intel.com,
-        monty.wiseman@intel.com,
-        Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Subject: [PATCH v3 0/6] TPM 2.0 support
-Date: Wed, 15 Oct 2014 13:35:10 +0200
-Message-Id: <1413372916-12091-1-git-send-email-jarkko.sakkinen@linux.intel.com>
-X-Mailer: git-send-email 2.1.0
+	id S1751964AbaJOLjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 07:39:54 -0400
+Date: Wed, 15 Oct 2014 14:43:21 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        davem@davemloft.net, eric.dumazet@gmail.com
+Subject: Re: [RFC PATCH net-next 2/6] virtio: introduce
+ virtio_enable_cb_avail()
+Message-ID: <20141015114321.GB26918@redhat.com>
+References: <1413357930-45302-1-git-send-email-jasowang@redhat.com>
+ <1413357930-45302-3-git-send-email-jasowang@redhat.com>
+ <20141015092849.GA25776@redhat.com>
+ <543E4A23.7060903@redhat.com>
+ <20141015104130.GH25776@redhat.com>
+ <543E5347.7060106@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <543E5347.7060106@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set enables TPM2 protocol and provides drivers for FIFO and
-CRB interfaces. In addition life-cycle model is somewhat improved (but
-not yet fully fixed) for TPM device drivers. There's still work to do
-in ref counting and locking but this patch set takes (I believe) the
-correct interm steps towards right direction.
+On Wed, Oct 15, 2014 at 06:58:15PM +0800, Jason Wang wrote:
+> On 10/15/2014 06:41 PM, Michael S. Tsirkin wrote:
+> > On Wed, Oct 15, 2014 at 06:19:15PM +0800, Jason Wang wrote:
+> >> On 10/15/2014 05:28 PM, Michael S. Tsirkin wrote:
+> >>> On Wed, Oct 15, 2014 at 03:25:26PM +0800, Jason Wang wrote:
+> >>>> This patch introduces virtio_enable_cb_avail() to publish avail idx
+> >>>> and used event. This could be used by batched buffer submitting to
+> >>>> reduce the number of tx interrupts.
+> >>>>
+> >>>> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> >>>> Cc: Michael S. Tsirkin <mst@redhat.com>
+> >>>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> >>>> ---
+> >>>>  drivers/virtio/virtio_ring.c |   22 ++++++++++++++++++++--
+> >>>>  include/linux/virtio.h       |    2 ++
+> >>>>  2 files changed, 22 insertions(+), 2 deletions(-)
+> >>>>
+> >>>> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+> >>>> index 1b3929f..d67fbf8 100644
+> >>>> --- a/drivers/virtio/virtio_ring.c
+> >>>> +++ b/drivers/virtio/virtio_ring.c
+> >>>> @@ -567,14 +567,32 @@ unsigned virtqueue_enable_cb_prepare(struct virtqueue *_vq)
+> >>>>  	 * entry. Always do both to keep code simple. */
+> >>>>  	vq->vring.avail->flags &= ~VRING_AVAIL_F_NO_INTERRUPT;
+> >>>>  	/* Make sure used event never go backwards */
+> >>>> -	if (!vring_need_event(vring_used_event(&vq->vring),
+> >>>> -			      vq->vring.avail->idx, last_used_idx))
+> >>>> +	if (vq->vring.avail->idx != vring_used_event(&vq->vring) &&
+> >>>> +	    !vring_need_event(vring_used_event(&vq->vring),
+> >>>> +			      vq->vring.avail->idx, last_used_idx)) {
+> >>>>  		vring_used_event(&vq->vring) = last_used_idx;
+> >>>> +	}
+> >>>>  	END_USE(vq);
+> >>>>  	return last_used_idx;
+> >>>>  }
+> >>>>  EXPORT_SYMBOL_GPL(virtqueue_enable_cb_prepare);
+> >>>>
+> >>> I see you are also changing virtqueue_enable_cb_prepare, why?
+> >> This is also used to prevent it from moving the used event backwards.
+> >> This may happens when we handle tx napi after we publish avail idx as
+> >> used event (virtqueue_enable_cb_avail() was called).
+> > So it's wrong exactly in the same way.
+> >
+> > But also, please document this stuff, don't put
+> > unrelated changes in a patch called "introduce
+> > virtqueue_enable_cb_avail".
+> >
+> >
+> >>>> +bool virtqueue_enable_cb_avail(struct virtqueue *_vq)
+> >>>> +{
+> >>>> +	struct vring_virtqueue *vq = to_vvq(_vq);
+> >>>> +	bool ret;
+> >>>> +
+> >>>> +	START_USE(vq);
+> >>>> +	vq->vring.avail->flags &= ~VRING_AVAIL_F_NO_INTERRUPT;
+> >>>> +	vring_used_event(&vq->vring) = vq->vring.avail->idx;
+> >>>> +	ret = vring_need_event(vq->vring.avail->idx,
+> >>>> +			       vq->last_used_idx, vq->vring.used->idx);
+> >>>> +	END_USE(vq);
+> >>>> +
+> >>>> +	return ret;
+> >>>> +}
+> >>>> +EXPORT_SYMBOL_GPL(virtqueue_enable_cb_avail);
+> >>>> +
+> >>>>  /**
+> >>>>   * virtqueue_poll - query pending used buffers
+> >>>>   * @vq: the struct virtqueue we're talking about.
+> >>> Could not figure out what this does.
+> >>> Please add documentation.
+> >>>
+> >> Sure, does something like below explain what does this function do?
+> >>
+> >> /**                                                                            
+> >>
+> >>  * virtqueue_enable_cb_avail - restart callbacks after
+> >> disable_cb.           
+> >>  * @vq: the struct virtqueue we're talking
+> >> about.                              
+> >>  *                                                                             
+> >>
+> >>  * This re-enables callbacks but hints to the other side to
+> >> delay              
+> >>  * interrupts all of the available buffers have been processed;         
+> >
+> > So this is like virtqueue_enable_cb_delayed but even more
+> > aggressive?
+> > I think it's too agressive: it's better to wake up guest
+> > after you are through most of buffers, but not all,
+> > so guest and host can work in parallel.
+> 
+> Note that:
+> 
+> - it was only used when there are still few of free slots (which is
+> greater than 2 + MAX_SKB_FRAGS)
+> - my patch keeps the free_old_xmit_skbs() in the beginning of
+> start_xmit(), so the tx skb reclaiming does not depends totally on tx
+> interrupt. If more packets comes, we'd expect some of them were freed in
+> ndo_start_xmit(). If not, finally we may trigger the
+> virtqueue_enable_cb_delayed().
+> 
+> So probably not as aggressive as it looks. I will do benchmark on this.
 
-TPM2 sysfs attributes are placed to misc dev instead of binding them
-to the platform device as misc dev represents the device to the user
-space. TPM1 uses invalid place for the sysfs attributes.
+Mine too:
+        } else if (virtqueue_enable_cb_delayed(sq->vq)) {
+                free_old_xmit_skbs(txq, sq, qsize);
+        }
 
-Major changes since v1:
 
-- Improved struct tpm_chip life-cycle by taking advantage of devres
-  API.
-- Refined sysfs attributes as simple key-values thereby not repeating
-  mistakes in TPM1 sysfs attributes.
-- Documented functions in tpm-chip.c and tpm2-cmd.c.
-- Documented sysfs attributes.
 
-Major changes since v2:
-
-- Lots of fixes in calling order in device drivers (thanks to Jason
-  Gunthorpe for pointing these out!).
-- Attach sysfs attributes to the misc device because it represents
-  TPM device to the user space.
-
-Known opens:
-
-- I'm still pending to test the FIFO (tpm_tis) driver. Now I should
-  have system to actually get this done but I'm right now at the
-  LinuxCon.
-- struct tpm_chip would need proper ref counting and locking applied
-  everywhere but this has been existing problem before this patch set.
-  It is a large change that I'm willing to work on after getting this
-  merged first.
-- It might be that in some cases PPI interface might be attached to
-  a wrong PPI interface if ACPI tree shows up having two PPI interface. 
-  I think the way PPI interface is grabbed is invalid. Instead it should
-  be passed an ACPI handle to the device and it should take PPI interface
-  under that ACPi handle. I can add a fix to do this in v4 if everyone
-  else agrees.
-
-Jarkko Sakkinen (5):
-  tpm: merge duplicate transmit_cmd() functions
-  tpm: two-phase chip management functions
-  tpm: TPM 2.0 commands
-  tpm: TPM 2.0 sysfs attributes
-  tpm: TPM 2.0 CRB Interface
-
-Will Arthur (1):
-  tpm: TPM 2.0 FIFO Interface
-
- Documentation/ABI/stable/sysfs-class-tpm2 |  72 ++++
- drivers/char/tpm/Kconfig                  |   9 +
- drivers/char/tpm/Makefile                 |   3 +-
- drivers/char/tpm/tpm-chip.c               | 209 ++++++++++++
- drivers/char/tpm/tpm-dev.c                |   7 +-
- drivers/char/tpm/tpm-interface.c          | 225 +++----------
- drivers/char/tpm/tpm-sysfs.c              |  23 +-
- drivers/char/tpm/tpm.h                    | 106 +++++-
- drivers/char/tpm/tpm2-cmd.c               | 543 ++++++++++++++++++++++++++++++
- drivers/char/tpm/tpm2-sysfs.c             | 314 +++++++++++++++++
- drivers/char/tpm/tpm_atmel.c              |  11 +-
- drivers/char/tpm/tpm_crb.c                | 329 ++++++++++++++++++
- drivers/char/tpm/tpm_i2c_atmel.c          |  33 +-
- drivers/char/tpm/tpm_i2c_infineon.c       |  37 +-
- drivers/char/tpm/tpm_i2c_nuvoton.c        |  44 +--
- drivers/char/tpm/tpm_i2c_stm_st33.c       |  22 +-
- drivers/char/tpm/tpm_ibmvtpm.c            |  17 +-
- drivers/char/tpm/tpm_infineon.c           |  13 +-
- drivers/char/tpm/tpm_nsc.c                |  11 +-
- drivers/char/tpm/tpm_tis.c                | 160 +++++----
- drivers/char/tpm/xen-tpmfront.c           |  14 +-
- 21 files changed, 1813 insertions(+), 389 deletions(-)
- create mode 100644 Documentation/ABI/stable/sysfs-class-tpm2
- create mode 100644 drivers/char/tpm/tpm-chip.c
- create mode 100644 drivers/char/tpm/tpm2-cmd.c
- create mode 100644 drivers/char/tpm/tpm2-sysfs.c
- create mode 100644 drivers/char/tpm/tpm_crb.c
-
--- 
-2.1.0
-
+> >
+> >
+> >>  * it returns "false" if there are at least one pending buffer in the
+> >> queue,          
+> >>  * to detect a possible race between the driver checking for more
+> >> work,        
+> >>  * and enabling
+> >> callbacks.                                                     
+> >>  *                                                                             
+> >>
+> >>  * Caller must ensure we don't call this with other
+> >> virtqueue                  
+> >>  * operations at the same time (except where
+> >> noted).                           
+> >>  */
+> >>
+> >>>> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
+> >>>> index b46671e..bfaf058 100644
+> >>>> --- a/include/linux/virtio.h
+> >>>> +++ b/include/linux/virtio.h
+> >>>> @@ -65,6 +65,8 @@ bool virtqueue_enable_cb(struct virtqueue *vq);
+> >>>>  
+> >>>>  unsigned virtqueue_enable_cb_prepare(struct virtqueue *vq);
+> >>>>  
+> >>>> +bool virtqueue_enable_cb_avail(struct virtqueue *vq);
+> >>>> +
+> >>>>  bool virtqueue_poll(struct virtqueue *vq, unsigned);
+> >>>>  
+> >>>>  bool virtqueue_enable_cb_delayed(struct virtqueue *vq);
+> >>>> -- 
+> >>>> 1.7.1
+> >>> --
+> >>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> >>> the body of a message to majordomo@vger.kernel.org
+> >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >>> Please read the FAQ at  http://www.tux.org/lkml/
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
