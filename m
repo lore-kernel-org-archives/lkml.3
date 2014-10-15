@@ -1,115 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751957AbaJOVlX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 17:41:23 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:34013 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751894AbaJOVlV (ORCPT
+	id S1752035AbaJOVmA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 17:42:00 -0400
+Received: from libra.uberspace.de ([95.143.172.171]:56077 "EHLO
+	libra.uberspace.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750887AbaJOVl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 17:41:21 -0400
-Date: Wed, 15 Oct 2014 18:39:53 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        dwmw2@infradead.org, computersforpeace@gmail.com, jg1.han@samsung.com,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mtd: orion_nand: fix error code path in probe
-Message-ID: <20141015213953.GB23155@arch.hh.imgtec.org>
-References: <1413296198-29486-1-git-send-email-michael.opdenacker@free-electrons.com>
- <20141014213503.GD5331@lunn.ch>
+	Wed, 15 Oct 2014 17:41:58 -0400
+Date: Wed, 15 Oct 2014 23:41:51 +0200
+From: Matthias Beyer <mail@beyermatthias.de>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] bcm/CmHost.c: Fix noisy compile warnings
+Message-ID: <20141015214151.GA20142@fu.3gs>
+Reply-To: Matthias Beyer <mail@beyermatthias.de>
+References: <1413375999-10210-1-git-send-email-jeffrey.t.kirsher@intel.com>
+ <20141015123431.GA23154@mwanda>
+ <20141015125934.GB23154@mwanda>
+ <1413378213.2412.13.camel@jtkirshe-mobl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UugvWAfsgieZRqgk"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141014213503.GD5331@lunn.ch>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1413378213.2412.13.camel@jtkirshe-mobl>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 Oct 11:35 PM, Andrew Lunn wrote:
-> On Tue, Oct 14, 2014 at 04:16:38PM +0200, Michael Opdenacker wrote:
-> > This replaces kzalloc() and ioremap() calls by
-> > the corresponding devm_ functions in the probe() routine,
-> > which automatically release the corresponding resources
-> > when probe() fails or when the device is removed.
-> > 
-> > This simplifies the error management code and
-> > fixes a bug reported by "make coccicheck":
-> > 
-> > if "board = devm_kzalloc()" fails, the probe()
-> > function jumps incorrectly to label "no_res" and
-> > therefore returns without running "iounmap()"
-> > 
-> > Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-> > ---
-> >  drivers/mtd/nand/orion_nand.c | 28 +++++++++-------------------
-> >  1 file changed, 9 insertions(+), 19 deletions(-)
-> > 
-> > diff --git a/drivers/mtd/nand/orion_nand.c b/drivers/mtd/nand/orion_nand.c
-> > index 471b4df3a5ac..a9c2bde16c25 100644
-> > --- a/drivers/mtd/nand/orion_nand.c
-> > +++ b/drivers/mtd/nand/orion_nand.c
-> > @@ -19,7 +19,7 @@
-> >  #include <linux/mtd/partitions.h>
-> >  #include <linux/clk.h>
-> >  #include <linux/err.h>
-> > -#include <asm/io.h>
-> > +#include <linux/io.h>
-> >  #include <asm/sizes.h>
-> >  #include <linux/platform_data/mtd-orion_nand.h>
-> >  
-> > @@ -85,32 +85,30 @@ static int __init orion_nand_probe(struct platform_device *pdev)
-> >  	int ret = 0;
-> >  	u32 val = 0;
-> >  
-> > -	nc = kzalloc(sizeof(struct nand_chip) + sizeof(struct mtd_info), GFP_KERNEL);
-> > +	nc = devm_kzalloc(&pdev->dev,
-> > +			sizeof(struct nand_chip) + sizeof(struct mtd_info),
-> > +			GFP_KERNEL);
-> >  	if (!nc) {
-> > -		ret = -ENOMEM;
-> > -		goto no_res;
-> > +		return -ENOMEM;
-> >  	}
-> >  	mtd = (struct mtd_info *)(nc + 1);
-> >  
-> >  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> >  	if (!res) {
-> > -		ret = -ENODEV;
-> > -		goto no_res;
-> > +		return -ENODEV;
-> >  	}
-> >  
-> > -	io_base = ioremap(res->start, resource_size(res));
-> > +	io_base = devm_ioremap(&pdev->dev, res->start, resource_size(res));
-> >  	if (!io_base) {
-> >  		dev_err(&pdev->dev, "ioremap failed\n");
-> > -		ret = -EIO;
-> > -		goto no_res;
-> > +		return -EIO;
-> >  	}
-> 
-> Hi Michael
-> 
-> It is quite a common pattern to use:
-> 
->         res = platform_get_resource(dev, IORESOURCE_MEM, 0);
->         c->membase = devm_ioremap_resource(&dev->dev, res);
->         if (IS_ERR(c->membase))
-> 	   return PTR_ERR(c->membase)
-> 
-> which is more compact.
-> 
 
-Be careful with this. devm_ioremap and devm_ioremap_resource are not
-the same thing, as the former requests the region as well.
+--UugvWAfsgieZRqgk
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It can break things if the region is shared across several drivers.
-I don't think this is the case, so in fact adding the request is correct,
-but it's a more intrusive change than just "code cleanup".
+On 15-10-2014 06:03:33, Jeff Kirsher wrote:
+>=20
+> I thought I remember Greg saying something about getting rid of this
+> driver anyway, but I could be wrong.  If Greg decides to keep this
+> driver around, then I think we should something like your suggestion
+> above.
 
--- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+Let me throw in my comment here: Yes, Greg stated in several places
+that this whole driver should be removed. I was about to ask when this
+will happen, so let me add a suggestion:
+
+    Lets delete this _now_!!1!1!
+
+If you care, I can search the statements where Greg stated that this
+should be removed, but I guess this some effort... I can barely
+remember that one time was on the linuxnewbies ML and one or two times
+here.
+
+--=20
+Mit freundlichen Gr=FC=DFen,
+Kind regards,
+Matthias Beyer
+
+Proudly sent with mutt.
+Happily signed with gnupg.
+
+--UugvWAfsgieZRqgk
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUPuofAAoJEJi+S08gyg+UfUcP/RPrwUOwDfkc0zNYNtJjw8x9
+3pOBKiRAqNaj+En2gD5ikthNmFPOuqLE7QuWDhRvPnN94piQSXOSM55wYQpuvYQO
+x0DMjulY/MvCV7og78A0DVZ3Q/CGmvyBRi5chDVW3zhtPCcHrDA4WC0oLI9f7nCB
+AXLZ6Eig/4IoLELpzrvHUA3TCPyvWaNeEJEJFJTMUTLbNe/rpbPo7nCJSt0U00ei
+6jg9RIfBZrqoGzoI9nbX4zyXy7B0N/7dHcH/4RBgcwCv4SP3XM1vDPBHKoM70qv0
+jKwI1cuYh2S6zl9sPW7VF2sO9P+owjzcXjwYyZdXdkkOPJfCLGqH62TDYLAhf17n
+A3vafSSm/eOnHaqyYjlcD8mdW6OaG8qX+cBXGcm3eq3MEuATt/9b7fE3jBYZ/rEx
+Vk5WDFwnpNSex8p/cFl6/znvO8c6e8jUFvfqbo+epGYBPSOB33LX6BJH8YK9bHqm
+FZyzNgeeHg2g0lKzWszSz8cj/JjTRNwWzRDM0ohkjJ+yTTxNAMpCmFGikmuHcK1I
+9usooag3IIG9xpmOU+GMYMqOtDbIxCzpPybpNfbvQK5DWKGMswty9tp+nFi3PKYI
+vSQspjgqOxn198kTnGk5J7wybXIdgWDFI8gQtJxV/G9WwCI44fyxJQuXGG7+Y5ed
+0Ofbld34GtHBlL1UVmHa
+=6XB7
+-----END PGP SIGNATURE-----
+
+--UugvWAfsgieZRqgk--
