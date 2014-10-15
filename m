@@ -1,120 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751610AbaJOPeh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 11:34:37 -0400
-Received: from mga01.intel.com ([192.55.52.88]:59531 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751447AbaJOPef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 11:34:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="400715008"
-Date: Wed, 15 Oct 2014 20:29:10 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Kiran Padwal <kiran.padwal@smartplayin.com>
-Cc: dan.j.williams@intel.com, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] dma: cppi41: Switch to using managed resource in
- probe
-Message-ID: <20141015145910.GV1638@intel.com>
-References: <1411554226-32134-1-git-send-email-kiran.padwal@smartplayin.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411554226-32134-1-git-send-email-kiran.padwal@smartplayin.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751739AbaJOPfQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 11:35:16 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:36368 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751650AbaJOPfO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 11:35:14 -0400
+Content-Type: text/plain; charset=iso-8859-1
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH 0/8] Armada XP pinctrl consolidation and ix4-300d fixes
+From: Benoit Masson <benoitm@perenite.com>
+In-Reply-To: <20141015144123.GA18413@lunn.ch>
+Date: Wed, 15 Oct 2014 17:35:13 +0200
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Benoit Masson <yahoo@perenite.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <B4E62BBB-856D-48E9-B694-C6149DB0E864@perenite.com>
+References: <1411157684-6991-1-git-send-email-sebastian.hesselbarth@gmail.com> <-7443282711873112734@unknownmsgid> <20141003141102.GJ3895@titan.lakedaemon.net> <542EBB93.108@gmail.com> <A9781A2E-F3CA-4E8A-833C-D167B456D9F7@perenite.com> <542EC3A3.1060605@gmail.com> <1ACB5318-863E-40D8-8B27-41F1C0D0A4B8@perenite.com> <5432BFB1.2060300@gmail.com> <CE7A9795-C2AF-451A-8018-3A0B8788BF60@perenite.com> <1CDF8F6B-42FF-4D6A-B52F-6DB270F2673C@perenite.com> <20141015144123.GA18413@lunn.ch>
+To: Andrew Lunn <andrew@lunn.ch>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 03:53:46PM +0530, Kiran Padwal wrote:
-> This change uses managed resource APIs to allocate resources such as,
-> mem, irq in order to simplify the driver unload or failure cases
-Applied, thanks
 
--- 
-~Vinod
+Le 15 oct. 2014 à 16:41, Andrew Lunn <andrew@lunn.ch> a écrit :
 
+>>> All the 3 branch works WHEN APPLYING A0 patch (below), with both my custom kernel config and the arch/arm/configs/mvebu_v7_defconfig
+>> Just one thing though, one of my cron behavior change with 3.17, when I use the cmd  "/sbin/hwclock --adjust -f /dev/rtc1" I get this new error I never had before:
+>> "hwclock: select() to /dev/rtc1 to wait for clock tick timed out: Success"
+>> 
+>> where rtc1 if the i2c rtc connected to the i2C bus, can this be related to the i2c patch that would slow down i2c operation or somthing ? 
 > 
-> Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
-> ---
-> Changes since v1:
->  - Used devm_free_irq
+> Hi Benoit
 > 
->  drivers/dma/cppi41.c |   16 +++++-----------
->  1 file changed, 5 insertions(+), 11 deletions(-)
+> It won't fix your problem, but if the built in RTC is not usable, it
+> would be good to disable it in the .dts file. The i2c RTC will then
+> become RTC0.
 > 
-> diff --git a/drivers/dma/cppi41.c b/drivers/dma/cppi41.c
-> index 5921ce3..cf7633f 100644
-> --- a/drivers/dma/cppi41.c
-> +++ b/drivers/dma/cppi41.c
-> @@ -938,7 +938,7 @@ static int cppi41_dma_probe(struct platform_device *pdev)
->  	if (!glue_info)
->  		return -EINVAL;
->  
-> -	cdd = kzalloc(sizeof(*cdd), GFP_KERNEL);
-> +	cdd = devm_kzalloc(&pdev->dev, sizeof(*cdd), GFP_KERNEL);
->  	if (!cdd)
->  		return -ENOMEM;
->  
-> @@ -959,10 +959,8 @@ static int cppi41_dma_probe(struct platform_device *pdev)
->  	cdd->qmgr_mem = of_iomap(dev->of_node, 3);
->  
->  	if (!cdd->usbss_mem || !cdd->ctrl_mem || !cdd->sched_mem ||
-> -			!cdd->qmgr_mem) {
-> -		ret = -ENXIO;
-> -		goto err_remap;
-> -	}
-> +			!cdd->qmgr_mem)
-> +		return -ENXIO;
->  
->  	pm_runtime_enable(dev);
->  	ret = pm_runtime_get_sync(dev);
-> @@ -989,7 +987,7 @@ static int cppi41_dma_probe(struct platform_device *pdev)
->  
->  	cppi_writel(USBSS_IRQ_PD_COMP, cdd->usbss_mem + USBSS_IRQ_ENABLER);
->  
-> -	ret = request_irq(irq, glue_info->isr, IRQF_SHARED,
-> +	ret = devm_request_irq(&pdev->dev, irq, glue_info->isr, IRQF_SHARED,
->  			dev_name(dev), cdd);
->  	if (ret)
->  		goto err_irq;
-> @@ -1009,7 +1007,6 @@ static int cppi41_dma_probe(struct platform_device *pdev)
->  err_of:
->  	dma_async_device_unregister(&cdd->ddev);
->  err_dma_reg:
-> -	free_irq(irq, cdd);
->  err_irq:
->  	cppi_writel(0, cdd->usbss_mem + USBSS_IRQ_CLEARR);
->  	cleanup_chans(cdd);
-> @@ -1023,8 +1020,6 @@ err_get_sync:
->  	iounmap(cdd->ctrl_mem);
->  	iounmap(cdd->sched_mem);
->  	iounmap(cdd->qmgr_mem);
-> -err_remap:
-> -	kfree(cdd);
->  	return ret;
->  }
->  
-> @@ -1036,7 +1031,7 @@ static int cppi41_dma_remove(struct platform_device *pdev)
->  	dma_async_device_unregister(&cdd->ddev);
->  
->  	cppi_writel(0, cdd->usbss_mem + USBSS_IRQ_CLEARR);
-> -	free_irq(cdd->irq, cdd);
-> +	devm_free_irq(&pdev->dev, cdd->irq, cdd);
->  	cleanup_chans(cdd);
->  	deinit_cppi41(&pdev->dev, cdd);
->  	iounmap(cdd->usbss_mem);
-> @@ -1045,7 +1040,6 @@ static int cppi41_dma_remove(struct platform_device *pdev)
->  	iounmap(cdd->qmgr_mem);
->  	pm_runtime_put(&pdev->dev);
->  	pm_runtime_disable(&pdev->dev);
-> -	kfree(cdd);
->  	return 0;
->  }
->  
-> -- 
-> 1.7.9.5
 > 
+> The actual "error" message is odd:
+> "hwclock: select() to /dev/rtc1 to wait for clock tick timed out: Success"
+> 
+Yes this is the wired thing is that everything works, even getting the date via "cat /sys/class/i2c-adapter/i2c-0/0-0051/rtc/rtc1/time" is ok
+reading the rtc driver code it seems this message is shown when multiple resources try to access shared rtc... but why now and not before ?
 
--- 
+So I was wondering if the i2c_quirk() applied by the batch has any effect with this ?
+
+Anyhow I'll handle the message for now and see if there are performance impact on this...
+
+Benoit
+
+> Success means it actually worked, not an error. Does the RTC contain
+> the correct time afterwards?
+> 
+>    Andrew
+
