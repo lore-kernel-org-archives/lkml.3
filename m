@@ -1,115 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932656AbaJOAxF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Oct 2014 20:53:05 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:46188 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932348AbaJOAxD convert rfc822-to-8bit (ORCPT
+	id S1755886AbaJOA6K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Oct 2014 20:58:10 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:39363 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755592AbaJOA6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Oct 2014 20:53:03 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH 0/8] Armada XP pinctrl consolidation and ix4-300d fixes
-From: Benoit Masson <benoitm@perenite.com>
-In-Reply-To: <5432BFB1.2060300@gmail.com>
-Date: Wed, 15 Oct 2014 02:53:02 +0200
-Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Benoit Masson <yahoo@perenite.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <CE7A9795-C2AF-451A-8018-3A0B8788BF60@perenite.com>
-References: <1411157684-6991-1-git-send-email-sebastian.hesselbarth@gmail.com> <-7443282711873112734@unknownmsgid> <20141003141102.GJ3895@titan.lakedaemon.net> <542EBB93.108@gmail.com> <A9781A2E-F3CA-4E8A-833C-D167B456D9F7@perenite.com> <542EC3A3.1060605@gmail.com> <1ACB5318-863E-40D8-8B27-41F1C0D0A4B8@perenite.com> <5432BFB1.2060300@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-X-Mailer: Apple Mail (2.1878.6)
+	Tue, 14 Oct 2014 20:58:08 -0400
+To: Petr Vandrovec <petr@vmware.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>, Arvind Kumar <arvindkumar@vmware.com>,
+        Chris J Arges <chris.j.arges@canonical.com>,
+        Christoph Hellwig <hch@lst.de>, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Do not silently discard WRITE_SAME requests
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <20141011063053.GB18215@petr-dev3.eng.vmware.com>
+	<yq1lhomahwt.fsf@sermon.lab.mkp.net> <543A1D1A.8090808@vmware.com>
+Date: Tue, 14 Oct 2014 20:57:58 -0400
+In-Reply-To: <543A1D1A.8090808@vmware.com> (Petr Vandrovec's message of "Sat,
+	11 Oct 2014 23:18:02 -0700")
+Message-ID: <yq1h9z687zd.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>>>> "Petr" == Petr Vandrovec <petr@vmware.com> writes:
 
-Le 6 oct. 2014 à 18:13, Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> a écrit :
+Petr,
 
-> On 10/06/2014 01:11 AM, Benoit Masson wrote:
->> Le 3 oct. 2014 à 17:41, Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> a écrit :
->>> On 10/03/2014 05:29 PM, Benoit Masson wrote:
->>>> Le 3 oct. 2014 à 17:06, Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> a écrit :
->>>>> On 10/03/2014 04:11 PM, Jason Cooper wrote:
->>>>>> On Sun, Sep 21, 2014 at 04:11:23PM +0200, Benoit Masson wrote:
->>>>>>>> Le 19 sept. 2014 à 22:14, Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> a écrit :
->>> [...]
->>>>>>>> Patches are based on v3.17-rc1 and intended for v3.18 but I am not in
->>>>>>>> a hurry. I only compile tested this, so a formal Tested-by from Benoit
->>>>>>>> for the ix4 and any other Armada XP board would be great.
->>>>>>> 
->>>>>>> I'm not sure what to test since I only receive some patch from the
->>>>>>> series of 8. Should I get all 8 or only those you sent me. I'll be
->>>>>>> able to test during next week.
->>>>>> 
->>>>>> Did you ever get a chance to test this series?
->>>>> 
->>>>> Uhm, I never prepared a branch for Benoit to test. I have pushed the
->>>>> patches with Thomas Acked-by's and renamed eeprom node based on
->>>>> v3.17-rc1 to
->>>>> 
->>>>> https://github.com/shesselba/linux-dove.git devel/mvebu-ix4
->>>>> 
->>> [...]
->> Maybe I missed something ? is this branch you sent me a bare fork
->> from mainline 3.17 ? does it includes the armada XP step A0 patch ?
-> 
-> Benoit,
-> 
-Hi,
-> I prepared more branches with the series
-> - on top of v3.17 release:
-> https://github.com/shesselba/linux-dove.git devel/mvebu-ix4_v3.17
-> 
-> - on top of next-20141003 (i.e. what will become v3.18-rc1):
-> https://github.com/shesselba/linux-dove.git devel/mvebu-ix4_next-20141003
-> 
-> It would be great, if you can test in this order:
-> - vanilla v3.17
-> - mvebu-ix4_v3.17
-> - mvebu-ix4_next-20141003
-> 
-All the 3 branch works WHEN APPLYING A0 patch (below), with both my custom kernel config and the arch/arm/configs/mvebu_v7_defconfig
+Petr> Logic (from 2011, commit 8af1954d172a46a63e5e79dae523a6d74715e458)
+Petr> says that EOPNOTSUPP is returned when DISCARD request failed, as
+Petr> discarding is optional, and failures can be safely ignored.  That
+Petr> is definitely not true for WRITE_SAME failures, and so unsupported
+Petr> WRITE_SAME should return different error code than unsupported
+Petr> DISCARD.
 
-The reason why it didn't worked last time was that apparently the A0 patch (copied) below was not merged into 3.17 :(
+I agree. With Lukas' change the bio batch error handling is too
+permissive for the write same case. It also made the regular zeroout
+error handling case a bit fishy but it is unlikely that we'd get
+EOPNOTSUPP on a regular write.
 
-This means that ix4-300d support is broken on 3.17 because of the A0 stepping patch not merged.
+So for the block portion:
 
-patch (from Andrew Lunn Acked-by Gregory Clement is missing:
+Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
+Cc: stable@vger.kernel.org # 3.7+
 
----
- arch/arm/mach-mvebu/board-v7.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Petr> revert of blacklisting VMware's LSI (if anything, blacklist should
+Petr> be for current firmware version of 'VMware Virtual SCSI Disk', as
+Petr> f.e. passed-through (RDM) SCSI disks do support WRITE_SAME under
+Petr> VMware) -- see attached updated diff.
 
-diff --git a/arch/arm/mach-mvebu/board-v7.c b/arch/arm/mach-mvebu/board-v7.c
-index b2524d6..b1e148d 100644
---- a/arch/arm/mach-mvebu/board-v7.c
-+++ b/arch/arm/mach-mvebu/board-v7.c
-@@ -174,7 +174,7 @@ static void __init thermal_quirk(void)
+If you have a better heuristic then let's by all means use it. Please
+adjust the pattern matching strings to match the actual values returned
+by the target.
+
+
+SCSI: Only blacklist WRITE SAME for VMware virtual disks
+
+Commit 4089b71cc820 blacklisted WRITE SAME for all VMware disks.
+However, the WRITE SAME commands are supported for passthrough
+disks. Change the heuristic so we only blacklist virtual disks.
+
+Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+Reported-by: Petr Vandrovec <petr@vmware.com>
+
+diff --git a/drivers/message/fusion/mptspi.c b/drivers/message/fusion/mptspi.c
+index 613231c16194..787933d43d32 100644
+--- a/drivers/message/fusion/mptspi.c
++++ b/drivers/message/fusion/mptspi.c
+@@ -1419,11 +1419,6 @@ mptspi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 		goto out_mptspi_probe;
+         }
  
- static void __init mvebu_dt_init(void)
- {
--	if (of_machine_is_compatible("plathome,openblocks-ax3-4"))
-+	if (of_machine_is_compatible("marvell,armadaxp"))
- 		i2c_quirk();
- 	if (of_machine_is_compatible("marvell,a375-db")) {
- 		external_abort_quirk();
--- 
-1.9.1
-> If any branch fails, you can stop and please report back.
-> 
-> I also have the ix4 but I need more time for a full setup like you
-> already seem to have ready. Again, there is no hurry, take your time.
-> 
-> Thanks!
-> 
-> Sebastian
+-	/* VMWare emulation doesn't properly implement WRITE_SAME
+-	 */
+-	if (pdev->subsystem_vendor == 0x15AD)
+-		sh->no_write_same = 1;
+-
+ 	spin_lock_irqsave(&ioc->FreeQlock, flags);
+ 
+ 	/* Attach the SCSI Host to the IOC structure
+diff --git a/drivers/scsi/scsi_devinfo.c b/drivers/scsi/scsi_devinfo.c
+index 49014a143c6a..402aebfb97dd 100644
+--- a/drivers/scsi/scsi_devinfo.c
++++ b/drivers/scsi/scsi_devinfo.c
+@@ -249,6 +249,7 @@ static struct {
+ 	{"TOSHIBA", "CD-ROM", NULL, BLIST_ISROM},
+ 	{"Traxdata", "CDR4120", NULL, BLIST_NOLUN},	/* locks up */
+ 	{"USB2.0", "SMARTMEDIA/XD", NULL, BLIST_FORCELUN | BLIST_INQUIRY_36},
++	{"VMware", "Virtual SCSI Disk", NULL, BLIST_NO_WRITE_SAME},
+ 	{"WangDAT", "Model 2600", "01.7", BLIST_SELECT_NO_ATN},
+ 	{"WangDAT", "Model 3200", "02.2", BLIST_SELECT_NO_ATN},
+ 	{"WangDAT", "Model 1300", "02.4", BLIST_SELECT_NO_ATN},
+diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
+index ba3f1e8d0d57..c57daffe57af 100644
+--- a/drivers/scsi/scsi_scan.c
++++ b/drivers/scsi/scsi_scan.c
+@@ -955,6 +955,9 @@ static int scsi_add_lun(struct scsi_device *sdev, unsigned char *inq_result,
+ 	if (*bflags & BLIST_NO_DIF)
+ 		sdev->no_dif = 1;
+ 
++	if (*bflags & BLIST_NO_WRITE_SAME)
++		sdev->no_write_same = 1;
++
+ 	sdev->eh_timeout = SCSI_DEFAULT_EH_TIMEOUT;
+ 
+ 	if (*bflags & BLIST_TRY_VPD_PAGES)
+diff --git a/include/scsi/scsi_devinfo.h b/include/scsi/scsi_devinfo.h
+index 183eaab7c380..1a24efb4b1d6 100644
+--- a/include/scsi/scsi_devinfo.h
++++ b/include/scsi/scsi_devinfo.h
+@@ -36,5 +36,6 @@
+ 					     for sequential scan */
+ #define BLIST_TRY_VPD_PAGES	0x10000000 /* Attempt to read VPD pages */
+ #define BLIST_NO_RSOC		0x20000000 /* don't try to issue RSOC */
++#define BLIST_NO_WRITE_SAME	0x40000000 /* don't try to issue WRITE SAME */
+ 
+ #endif
 
+
+-- 
+Martin K. Petersen	Oracle Linux Engineering
