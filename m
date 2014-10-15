@@ -1,95 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751565AbaJOHhu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 03:37:50 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:33321 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751264AbaJOHhr (ORCPT
+	id S1751666AbaJOHj4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 03:39:56 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:34266 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751398AbaJOHjy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 03:37:47 -0400
-MIME-Version: 1.0
-Date: Wed, 15 Oct 2014 15:37:44 +0800
-Message-ID: <CAJd=RBDbziyL1FR+eHLe-8zXSFa0mfMPi2Xcg2-aP=GvyALHjg@mail.gmail.com>
-Subject: Re: [RFC 2/5] x86: Store a per-cpu shadow copy of CR4
-From: Hillf Danton <dhillf@gmail.com>
+	Wed, 15 Oct 2014 03:39:54 -0400
+Date: Wed, 15 Oct 2014 09:39:51 +0200
+From: Seth Forshee <seth.forshee@canonical.com>
 To: Andy Lutomirski <luto@amacapital.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
-        "hillf.zj" <hillf.zj@alibaba-inc.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Michael j Theall <mtheall@us.ibm.com>,
+        fuse-devel@lists.sourceforge.net,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>
+Subject: Re: [fuse-devel] [PATCH v4 4/5] fuse: Support privileged xattrs only
+ with a mount option
+Message-ID: <20141015073951.GB10908@ubuntu-mba51>
+Mail-Followup-To: Andy Lutomirski <luto@amacapital.net>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Michael j Theall <mtheall@us.ibm.com>,
+	fuse-devel@lists.sourceforge.net,
+	Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Miklos Szeredi <miklos@szeredi.hu>,
+	"Serge H. Hallyn" <serge.hallyn@ubuntu.com>
+References: <1413296756-25071-1-git-send-email-seth.forshee@canonical.com>
+ <1413296756-25071-5-git-send-email-seth.forshee@canonical.com>
+ <OFD40DA8DF.F78EA39D-ON86257D71.0057C4DC-86257D71.0064055D@us.ibm.com>
+ <878ukis9oh.fsf@x220.int.ebiederm.org>
+ <20141014205955.GA10908@ubuntu-mba51>
+ <877g02pd7f.fsf@x220.int.ebiederm.org>
+ <CALCETrU3Gzo-dx9uNH3Wuqa8Brk8xcxQsw7YGgVd74simXK0gw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrU3Gzo-dx9uNH3Wuqa8Brk8xcxQsw7YGgVd74simXK0gw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Andy
->
-> Context switches and TLB flushes can change individual bits of CR4.
-> CR4 reads take several cycles, so store a shadow copy of CR4 in a
-> per-cpu variable.
->
-> To avoid wasting a cache line, I added the CR4 shadow to
-> cpu_tlbstate, which is already touched during context switches.
->
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
->  arch/x86/include/asm/tlbflush.h | 52
-> ++++++++++++++++++++++++++++++-----------
->  arch/x86/kernel/cpu/common.c    |  7 ++++++
->  arch/x86/kernel/head32.c        |  1 +
->  arch/x86/kernel/head64.c        |  2 ++
->  arch/x86/kvm/vmx.c              |  4 ++--
->  arch/x86/mm/init.c              |  8 +++++++
->  arch/x86/mm/tlb.c               |  3 ---
->  7 files changed, 59 insertions(+), 18 deletions(-)
->
-> diff --git a/arch/x86/include/asm/tlbflush.h
-> b/arch/x86/include/asm/tlbflush.h
-> index 95b672f8b493..a04cad4bcbc3 100644
-> --- a/arch/x86/include/asm/tlbflush.h
-> +++ b/arch/x86/include/asm/tlbflush.h
-> @@ -15,14 +15,37 @@
->  #define __flush_tlb_single(addr) __native_flush_tlb_single(addr)
->  #endif
->
-> +struct tlb_state {
-> +#ifdef CONFIG_SMP
-> +	struct mm_struct *active_mm;
-> +	int state;
-> +#endif
-> +
-> +	/*
-> +	 * Access to this CR4 shadow and to H/W CR4 is protected by
-> +	 * disabling interrupts when modifying either one.
-> +	 */
-> +	unsigned long cr4;
-> +};
-> +DECLARE_PER_CPU_SHARED_ALIGNED(struct tlb_state, cpu_tlbstate);
-> +
-> +/* Initialize cr4 shadow for this CPU. */
-> +static inline void cr4_init_shadow(void)
-> +{
-> +	this_cpu_write(cpu_tlbstate.cr4, read_cr4());
-> +}
-> +
->  /* Set in this cpu's CR4. */
->  static inline void cr4_set(unsigned long mask)
->  {
->  	unsigned long cr4;
->
-> -	cr4 = read_cr4();
-> -	cr4 |= mask;
-> -	write_cr4(cr4);
-> +	cr4 = this_cpu_read(cpu_tlbstate.cr4);
-> +	if (!(cr4 & mask)) {
+On Tue, Oct 14, 2014 at 02:19:19PM -0700, Andy Lutomirski wrote:
+> On Tue, Oct 14, 2014 at 2:13 PM, Eric W. Biederman
+> <ebiederm@xmission.com> wrote:
+> > Seth Forshee <seth.forshee@canonical.com> writes:
+> >
+> >> On Tue, Oct 14, 2014 at 01:01:02PM -0700, Eric W. Biederman wrote:
+> >>> Michael j Theall <mtheall@us.ibm.com> writes:
+> >>>
+> >>> > Seth Forshee <seth.forshee@canonical.com> wrote on 10/14/2014 09:25:55 AM:
+> >>> >
+> >>> >> From: Seth Forshee <seth.forshee@canonical.com>
+> >>> >> To: Miklos Szeredi <miklos@szeredi.hu>
+> >>> >> Cc: fuse-devel@lists.sourceforge.net, "Serge H. Hallyn"
+> >>> >> <serge.hallyn@ubuntu.com>, linux-kernel@vger.kernel.org, Seth
+> >>> >> Forshee <seth.forshee@canonical.com>, "Eric W. Biederman"
+> >>> >> <ebiederm@xmission.com>, linux-fsdevel@vger.kernel.org
+> >>> >> Date: 10/14/2014 09:27 AM
+> >>> >> Subject: [fuse-devel] [PATCH v4 4/5] fuse: Support privileged xattrs
+> >>> >> only with a mount option
+> >>> >>
+> >>> >> Allowing unprivileged users to provide arbitrary xattrs via fuse
+> >>> >> mounts bypasses the normal restrictions on setting xattrs. Such
+> >>> >> mounts should be restricted to reading and writing xattrs in the
+> >>> >> user.* namespace.
+> >>> >>
+> >>> >
+> >>> > Can you explain how the normal restrictions on setting xattrs are
+> >>> > bypassed?
+> >>>
+> >>> If the fuse server is not run by root.  Which is a large part of the
+> >>> point of fuse.
+> >>
+> >> So the server could for example return trusted.* xattrs which were not
+> >> set by a privileged user.
+> >>
+> >>> > My filesystem still needs security.* and system.*, and it looks like
+> >>> > xattr_permission already prevents non-privileged users from accessing
+> >>> > trusted.*
+> >>>
+> >>> If the filesystem is mounted with nosuid (typical of a non-privileged
+> >>> mount of fuse) then the security.* attributes are ignored.
+> >>
+> >> That I wasn't aware of. In fact I still haven't found where this
+> >> restriction is implemented.
+> >
+> > My memory may be have been incomplete.  What I was thinking of is
+> > security/commoncap.c the MNT_NOSUID check in get_file_caps.
+> >
+> > Upon inspection that appears limited to file capabilities, and while
+> > there are a few other MNT_NOSUID checks under security the feel far from
+> > complete.
+> >
+> > Sigh.
+> >
+> > This deserves a hard look because if MNT_NOSUID is not sufficient than
+> > it may be possible for me to insert a usb stick with an extN filesystem
+> > with the right labels having it auto-mounted nosuid and subvert the
+> > security of something like selinux.
+> 
+> It's this code in selinux/hooks.c:
+> 
+>     if ((bprm->file->f_path.mnt->mnt_flags & MNT_NOSUID) ||
+>         (bprm->unsafe & LSM_UNSAFE_NO_NEW_PRIVS))
+>         new_tsec->sid = old_tsec->sid;
+> 
+> 
+> One might argue that this should actually generate -EPERM instead of
+> ignoring the label, but it should be safe against untrusted media.
+> 
+> >
+> >> Nonetheless, a userns mount could be done without nosuid (though that
+> >> mount will also be unaccessible outside of that namespace).
+> >>
+> >>> >> It's difficult though to tell whether a mount is being performed
+> >>> >> on behalf of an unprivileged user since fuse mounts are ususally
+> >>> >> done via a suid root helper. Thus a new mount option,
+> >>> >> privileged_xattrs, is added to indicated that xattrs from other
+> >>> >> namespaces are allowed. This option can only be supplied by
+> >>> >> system-wide root; supplying the option as an unprivileged user
+> >>> >> will cause the mount to fail.
+> >>> >
+> >>> > I can't say I'm convinced that this is the right direction to head.
+> >>>
+> >>> With respect to defaults we could keep the current default if you
+> >>> have the global CAP_SYS_ADMIN privilege when the mount takes place
+> >>> and then avoid breaking anything.
+> >>
+> >> Except that unprivileged mounts are normally done by a suid root helper,
+> >> which is why I've required both global CAP_SYS_ADMIN and a mount option
+> >> to get the current default behavior.
+> >
+> > If nosuid is sufficient that may break existing setups for no good
+> > reason.
+> >
+> > Shrug.  I won't have much time for a bit but I figured I would highlight
+> > the potential security hole in existing setups.  So someone with time
+> > this week can look at that.
+> 
+> I think I have a better solution.  I'll send it out.
 
-What if cr4 contains bit_A and mask contains bits A and B?
+To be honest I don't understand enough about how selinux uses security
+labels to know what level of paranoia is appropriate, so I wrote this
+out of an excess of paranoia. If the patch you sent restricts things
+sufficiently then I'm perfectly happy to see this patch dropped.
 
-Hillf
-> +		cr4 |= mask;
-> +		this_cpu_write(cpu_tlbstate.cr4, cr4);
-> +		write_cr4(cr4);
-> +	}
->  }
->
-[...]
+And really with fuse all of this is really excess paranoia because (if
+my other patches are applied at least) the fuse mount will be
+inaccessible to any user outside the user namespace from which it was
+mounted or its descendants.
+
+Thanks,
+Seth
+
