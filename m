@@ -1,100 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751719AbaJOOyD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 10:54:03 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:30689 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751378AbaJOOyB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 10:54:01 -0400
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        konrad.wilk@oracle.com, david.vrabel@citrix.com
-Cc: tianyu.lan@intel.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xenproject.org, boris.ostrovsky@oracle.com
-Subject: [PATCH] xen/smp: Use die_complete completion when taking CPU down
-Date: Wed, 15 Oct 2014 10:55:10 -0400
-Message-Id: <1413384910-1231-1-git-send-email-boris.ostrovsky@oracle.com>
-X-Mailer: git-send-email 1.8.1.4
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S1751583AbaJOO4W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 10:56:22 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:38976 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751281AbaJOO4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 10:56:20 -0400
+Date: Wed, 15 Oct 2014 16:55:39 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, Benoit Masson <benoitm@perenite.com>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Benoit Masson <yahoo@perenite.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/8] Armada XP pinctrl consolidation and ix4-300d fixes
+Message-ID: <20141015145539.GB18413@lunn.ch>
+References: <-7443282711873112734@unknownmsgid>
+ <20141003141102.GJ3895@titan.lakedaemon.net>
+ <542EBB93.108@gmail.com>
+ <A9781A2E-F3CA-4E8A-833C-D167B456D9F7@perenite.com>
+ <542EC3A3.1060605@gmail.com>
+ <1ACB5318-863E-40D8-8B27-41F1C0D0A4B8@perenite.com>
+ <5432BFB1.2060300@gmail.com>
+ <CE7A9795-C2AF-451A-8018-3A0B8788BF60@perenite.com>
+ <20141015144259.GB17447@titan.lakedaemon.net>
+ <543E898D.10606@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <543E898D.10606@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 2ed53c0d6cc9 ("x86/smpboot: Speed up suspend/resume by avoiding
-100ms sleep for CPU offline during S3") introduced completions to CPU
-offlining process. These completions are not initialized on Xen kernels
-causing a panic in play_dead_common().
+> >Do you have a link to an email thread or the patch Subject line?  I can
+> >confirm it's missing from mvebu/fixes...
+> 
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-July/275487.html
+> 
+> But you and Andrew should check what Arnd suggested. IIRC, there
+> was also an appropriate follow-up patch discussion started by
+> Andrew.
 
-Add handling of die_complete on Xen (this requires moving die_complete
-to global scope. While at it, move die_complete definition in
-arch/x86/kernel/smpboot.c under ifdef CONFIG_HOTPLUG_CPU)
+There was a lot of back and forth with Arnd. In the end, he gave up
+arguing because too many voices did not like his solution. So my
+original version stands.
 
-Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
----
- arch/x86/include/asm/cpu.h | 3 +++
- arch/x86/kernel/smpboot.c  | 4 +++-
- arch/x86/xen/smp.c         | 4 ++++
- 3 files changed, 10 insertions(+), 1 deletion(-)
+However, the patch at the end of 
 
-diff --git a/arch/x86/include/asm/cpu.h b/arch/x86/include/asm/cpu.h
-index d2b1298..b65d5c9 100644
---- a/arch/x86/include/asm/cpu.h
-+++ b/arch/x86/include/asm/cpu.h
-@@ -6,6 +6,7 @@
- #include <linux/topology.h>
- #include <linux/nodemask.h>
- #include <linux/percpu.h>
-+#include <linux/completion.h>
- 
- #ifdef CONFIG_SMP
- 
-@@ -26,6 +27,8 @@ struct x86_cpu {
- };
- 
- #ifdef CONFIG_HOTPLUG_CPU
-+DECLARE_PER_CPU(struct completion, die_complete);
-+
- extern int arch_register_cpu(int num);
- extern void arch_unregister_cpu(int);
- extern void start_cpu0(void);
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 2d5200e..abe9005 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -102,7 +102,9 @@ DEFINE_PER_CPU_READ_MOSTLY(cpumask_var_t, cpu_llc_shared_map);
- DEFINE_PER_CPU_SHARED_ALIGNED(struct cpuinfo_x86, cpu_info);
- EXPORT_PER_CPU_SYMBOL(cpu_info);
- 
--static DEFINE_PER_CPU(struct completion, die_complete);
-+#ifdef CONFIG_HOTPLUG_CPU
-+DEFINE_PER_CPU(struct completion, die_complete);
-+#endif
- 
- atomic_t init_deasserted;
- 
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index 8650cdb..4da0008 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -498,6 +498,7 @@ static int xen_cpu_disable(void)
- 	if (cpu == 0)
- 		return -EBUSY;
- 
-+	init_completion(&per_cpu(die_complete, smp_processor_id()));
- 	cpu_disable_common();
- 
- 	load_cr3(swapper_pg_dir);
-@@ -510,6 +511,9 @@ static void xen_cpu_die(unsigned int cpu)
- 		current->state = TASK_UNINTERRUPTIBLE;
- 		schedule_timeout(HZ/10);
- 	}
-+
-+	wait_for_completion_timeout(&per_cpu(die_complete, cpu), HZ);
-+
- 	xen_smp_intr_free(cpu);
- 	xen_uninit_lock_cpu(cpu);
- 	xen_teardown_timer(cpu);
--- 
-1.8.1.4
+http://lists.infradead.org/pipermail/linux-arm-kernel/2014-July/275528.html
 
+is useful, and it would be nice if it could be merged as well.
+
+   Andrew
