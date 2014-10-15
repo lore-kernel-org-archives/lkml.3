@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751254AbaJONG5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 09:06:57 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:56035 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758AbaJONGy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 09:06:54 -0400
-Date: Wed, 15 Oct 2014 15:05:47 +0200
-From: Mark Brown <broonie@kernel.org>
-To: Addy Ke <addy.ke@rock-chips.com>
-Cc: heiko@sntech.de, dianders@chromium.org, grant.likely@linaro.org,
-        robh+dt@kernel.org, amstan@google.com, sonnyrao@google.com,
-        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, devicetree@vger.kernel.org,
-        olof@lixom.net, hj@rock-chips.com, kever.yang@rock-chips.com,
-        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
-        yzq@rock-chips.com, zhenfu.fang@rock-chips.com, cf@rock-chips.com,
-        zhangqing@rock-chips.com, hl@rock-chips.com, wei.luo@rock-chips.com
-Message-ID: <20141015130547.GE27755@sirena.org.uk>
-References: <1413372311-4203-1-git-send-email-addy.ke@rock-chips.com>
- <1413372378-4309-1-git-send-email-addy.ke@rock-chips.com>
+	id S1751349AbaJONJK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 09:09:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63838 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751241AbaJONJH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 09:09:07 -0400
+Date: Wed, 15 Oct 2014 09:06:28 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: WANG Chao <chaowang@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Baoquan He <bhe@redhat.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "open list:X86 ARCHITECTURE..." <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch/x86/purgatory/Makefile: supress kexec-purgatory.c
+ is up to date message
+Message-ID: <20141015130628.GA3450@redhat.com>
+References: <1413262019-3759-1-git-send-email-chaowang@redhat.com>
+ <20141014215253.GM5127@redhat.com>
+ <20141015021431.GE2013@dhcp-17-37.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YGrZF/eHoPhUd1nD"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1413372378-4309-1-git-send-email-addy.ke@rock-chips.com>
-X-Cookie: You are magnetic in your bearing.
+In-Reply-To: <20141015021431.GE2013@dhcp-17-37.nay.redhat.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 62.156.150.204
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] spi/rockchip: fix bug that cause spi transfer timed
- out in DMA duplex mode
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 15, 2014 at 10:14:31AM +0800, WANG Chao wrote:
+> On 10/14/14 at 05:52pm, Vivek Goyal wrote:
+> > On Tue, Oct 14, 2014 at 12:46:58PM +0800, WANG Chao wrote:
+> > > Supress this unnecessary message during kernel re-build
+> > > (CONFIG_KEXEC_FILE=y):
+> > > 
+> > > make[1]: `arch/x86/purgatory/kexec-purgatory.c' is up to date.
+> > > 
+> > > Signed-off-by: WANG Chao <chaowang@redhat.com>
+> > > ---
+> > >  arch/x86/purgatory/Makefile | 1 +
+> > >  1 file changed, 1 insertion(+)
+> > > 
+> > > diff --git a/arch/x86/purgatory/Makefile b/arch/x86/purgatory/Makefile
+> > > index f52e033..2c835e3 100644
+> > > --- a/arch/x86/purgatory/Makefile
+> > > +++ b/arch/x86/purgatory/Makefile
+> > > @@ -24,6 +24,7 @@ quiet_cmd_bin2c = BIN2C   $@
+> > >  
+> > >  $(obj)/kexec-purgatory.c: $(obj)/purgatory.ro FORCE
+> > >  	$(call if_changed,bin2c)
+> > > +	@:
+> > 
+> > Where can I find the description of "@:" and how does it work?
+> 
+> @ is used to suppress echo'ing. See:
+> https://www.gnu.org/software/make/manual/html_node/Echoing.html
+> 
+> This is a trick to avoid "... is up to date" message". Check out commit
+> a9358bc ("x86/build: Supress realmode.bin is up to date message").
 
---YGrZF/eHoPhUd1nD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks for the explanations. Looks good to me.
 
-On Wed, Oct 15, 2014 at 07:26:18PM +0800, Addy Ke wrote:
-> In rx mode, dma must be prepared before spi is enabled.
-> But in tx and tr mode, spi must be enabled first.
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
-Applied, thanks.
-
---YGrZF/eHoPhUd1nD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUPnEqAAoJECTWi3JdVIfQZrUH/jLADsi/+19f2WDcj5hK3jK1
-GK+w5iwhHmLMkWGfWJh0KDoQrSPq3Z3W34TJP9dAv2svwmfGI0NFr5A/sj9R2YKu
-GPLxuycb3gv7Efg/t9Yr3jXXtAqfvJuuCzz1KUFyiNnCrJMrKjpYKLsltR0cCDIq
-IS1MTwMH0RzowBBhwvvE6FJSe9BOUlyjt3jYlj+dtHIxNC+NC6uBKgqqRLRDT5hl
-jLNyA4SF1j5GwSIN5Wz3m4GlOCk4i3ha5LPU3ZvS0GBKloVQbhfHevxzgz9XVOzr
-ehps6hYseb47G9KvUoYmU7ECJYJTXznsNzvkJNtvhxeyzOaNilwZtD2zzhIuniQ=
-=kNFe
------END PGP SIGNATURE-----
-
---YGrZF/eHoPhUd1nD--
+Vivek
