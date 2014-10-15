@@ -1,91 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751923AbaJOTdl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 15:33:41 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:55159 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106AbaJOTdk (ORCPT
+	id S1751324AbaJOTlq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 15:41:46 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:39507 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750721AbaJOTln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 15:33:40 -0400
+	Wed, 15 Oct 2014 15:41:43 -0400
 MIME-Version: 1.0
-X-Originating-IP: [67.83.175.92]
-In-Reply-To: <CA+C-WL8asc-Dw3vLH0ruvNLO-eCKBbFjC40rjuQDXudMvaP6Ow@mail.gmail.com>
-References: <1413380500-3914-1-git-send-email-patrick@parcs.ath.cx> <CA+C-WL8asc-Dw3vLH0ruvNLO-eCKBbFjC40rjuQDXudMvaP6Ow@mail.gmail.com>
-From: Patrick Palka <patrick@parcs.ath.cx>
-Date: Wed, 15 Oct 2014 15:33:18 -0400
-Message-ID: <CA+C-WL_wmRUfQMT_voJx4q+YBXLc_jX_g9Kayt8P10rvSeF1FA@mail.gmail.com>
-Subject: Re: [PATCH] ring-buffer: use atomic_[set|clear]_mask in place of a
- cmpxchg loop
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Patrick Palka <patrick@parcs.ath.cx>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@redhat.com>
+In-Reply-To: <CAG-2HqXdxHrx4OL4E0TnzA1Fb6zK6J+qowfD0RHCwviGUv-_ng@mail.gmail.com>
+References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
+	<CAB=NE6Wti1RpAFk5q_YeZn2F9Rd=wsiwhyPszu74nG9fXwH5vQ@mail.gmail.com>
+	<20140905141241.GC10455@mtj.dyndns.org>
+	<20140905164405.GA28964@core.coreip.homeip.net>
+	<20140905174925.GA12991@mtj.dyndns.org>
+	<CAB=NE6VPTV39pNujOgO422wbUvU44HZ7s=aaxPVraNECqA6e4Q@mail.gmail.com>
+	<20140905224047.GC15723@mtj.dyndns.org>
+	<CAB=NE6Uz1VD5qpMFSBfQRV8ih9FQcCUhNtWMvD38t5hdDvix4Q@mail.gmail.com>
+	<20140909011059.GB11706@mtj.dyndns.org>
+	<1410241109.2028.22.camel@jarvis.lan>
+	<CAB=NE6WGAMvffGDTkN5x5Cd+YOtD-Cmo3v7_8FmJ5cvCRbFEpw@mail.gmail.com>
+	<1410291346.13298.16.camel@jarvis.lan>
+	<CAB=NE6U6v-GhAaZv3yXn9uVFvBvE4Uq8z7MQU8N+CyW19WpnNQ@mail.gmail.com>
+	<CAG-2HqUiUksdT4UyeDsdc1Q74=2BiX2TuzzGh_hoLiO5_DOvXQ@mail.gmail.com>
+	<CAB=NE6UprJH69hzc1mjqyq6PAn+7LZmX65Z8CDwUdJ73nDusHg@mail.gmail.com>
+	<CAG-2HqUzCvd55mq=M3=tXbHAjc2QnVuRtbFZMWTz9k_6BmmngQ@mail.gmail.com>
+	<CAB=NE6XmFaWMKuW3vJ7QMZ1BmmWrAPezTYYsqatX4mMNdMjpog@mail.gmail.com>
+	<CAG-2HqWYXo+uRtOk_XW-Bi5aXcTLphEMLCMy8a2THuEg9dHPzw@mail.gmail.com>
+	<CAB=NE6XS9pWmfO7xjTpLFG1OdOJ=UktbOK5pjJCK8hzfXagfXQ@mail.gmail.com>
+	<CAOMFOmVSwPAbPtNzPn93QGjbXh1B3QC7B2Ahd1Qxc=gWb6H7fQ@mail.gmail.com>
+	<CAG-2HqXdxHrx4OL4E0TnzA1Fb6zK6J+qowfD0RHCwviGUv-_ng@mail.gmail.com>
+Date: Wed, 15 Oct 2014 12:41:42 -0700
+Message-ID: <CAOMFOmW2r2SyRVLAdZTV_1wK+gRES-hQXHGUGnWA=kvv6P3KXQ@mail.gmail.com>
+Subject: Re: [systemd-devel] [RFC v2 3/6] kthread: warn on kill signal if not OOM
+From: Anatol Pomozov <anatol.pomozov@gmail.com>
+To: Tom Gundersen <teg@jklm.no>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, Tejun Heo <tj@kernel.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Takashi Iwai <tiwai@suse.de>, Kay Sievers <kay@vrfy.org>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        hare <hare@suse.com>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Wu Zhangjin <falcon@meizu.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        "mpt-fusionlinux.pdl" <MPT-FusionLinux.pdl@avagotech.com>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        systemd Mailing List <systemd-devel@lists.freedesktop.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 3:08 PM, Patrick Palka <patrick@parcs.ath.cx> wrote:
-> On Wed, Oct 15, 2014 at 9:41 AM, Patrick Palka <patrick@parcs.ath.cx> wrote:
->> Instead of open-coding the equivalent cmpxchg loop we can just use
->> atomic_set_mask and atomic_clear_mask to atomically OR or AND
->> the value in &buffer->record_disabled.
->>
->> Cc: Steven Rostedt <rostedt@goodmis.org>
->> Cc: Ingo Molnar <mingo@redhat.com>
->> Signed-off-by: Patrick Palka <patrick@parcs.ath.cx>
->> ---
->>
->> NB: I have only tested this patch on x86_64 by booting with
->> CONFIG_RING_BUFFER_STARTUP_TEST=y.
->>
->>  kernel/trace/ring_buffer.c | 16 ++--------------
->>  1 file changed, 2 insertions(+), 14 deletions(-)
->>
->> diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
->> index 2d75c94..e15ce2a 100644
->> --- a/kernel/trace/ring_buffer.c
->> +++ b/kernel/trace/ring_buffer.c
->> @@ -3050,13 +3050,7 @@ EXPORT_SYMBOL_GPL(ring_buffer_record_enable);
->>   */
->>  void ring_buffer_record_off(struct ring_buffer *buffer)
->>  {
->> -       unsigned int rd;
->> -       unsigned int new_rd;
->> -
->> -       do {
->> -               rd = atomic_read(&buffer->record_disabled);
->> -               new_rd = rd | RB_BUFFER_OFF;
->> -       } while (atomic_cmpxchg(&buffer->record_disabled, rd, new_rd) != rd);
->> +       atomic_set_mask(RB_BUFFER_OFF, &buffer->record_disabled);
->>  }
->>  EXPORT_SYMBOL_GPL(ring_buffer_record_off);
->>
->> @@ -3073,13 +3067,7 @@ EXPORT_SYMBOL_GPL(ring_buffer_record_off);
->>   */
->>  void ring_buffer_record_on(struct ring_buffer *buffer)
->>  {
->> -       unsigned int rd;
->> -       unsigned int new_rd;
->> -
->> -       do {
->> -               rd = atomic_read(&buffer->record_disabled);
->> -               new_rd = rd & ~RB_BUFFER_OFF;
->> -       } while (atomic_cmpxchg(&buffer->record_disabled, rd, new_rd) != rd);
->> +       atomic_clear_mask(RB_BUFFER_OFF, &buffer->record_disabled);
->>  }
->>  EXPORT_SYMBOL_GPL(ring_buffer_record_on);
->>
->> --
->> 2.1.2.443.g670a3c1
->>
->
-> It just occurred to me that atomic_clear_mask and atomic_set_mask
-> expect to take an int *, not an atomic_t *, so this patch is bogus...
-> Sorry for the noise.
+Hi
 
-Uh, actually, the generic implementations of these functions (defined
-in include/asm-generic/atomic.h) _do_ take an atomic_t *. It's the
-specialized x86 definitions of these functions (defined in
-arch/x86/include/asm/atomic.h) that take (expect) an int *. So this
-patch is not bogus; the x86 specializations for atomic_clear_mask and
-atomic_set_mask are. I will try to fix this in a separate patch.
+On Fri, Oct 10, 2014 at 3:45 PM, Tom Gundersen <teg@jklm.no> wrote:
+> On Fri, Oct 10, 2014 at 11:54 PM, Anatol Pomozov
+> <anatol.pomozov@gmail.com> wrote:
+>> 1) Why not to make the timeout configurable through config file? There
+>> is already udev.conf you can put config option there. Thus people with
+>> modprobe issues can easily "fix" the problem. And then decrease
+>> default timeout back to 30 seconds. I agree that long module loading
+>> (more than 30 secs) is abnormal and should be investigated by driver
+>> authors.
+>
+> We can already configure this either on the udev or kernel
+> commandline, is that not sufficient (I don't object to also adding it
+> to the config file, just asking)?
+
+I did not know that udev timeout can be configured via kernel cmd. And
+because other people ask about changing timeout they most like did not
+know about it neither. Actually looking at
+http://www.freedesktop.org/software/systemd/man/kernel-command-line.html
+I do not see where it mentions udev timeout.
+
+I think adding configuration to the right place (udev config file) and
+adding documentation to make the option more discoverable will solve
+the topic starter issue. Now anyone can easily set timeout they want.
+The default timeout can go back to 30 sec in this case.
+
+>> 2) Could you add 'echo w > /proc/sysrq-trigger' to udev code right
+>> before killing the "modprobe" thread? sysrq will print information
+>> about stuck threads (including modprobe itself) this will make
+>> debugging easier. e.g. dmesg here
+>> https://bugs.archlinux.org/task/40454 says nothing where the threads
+>> were stuck.
+>
+> Are the current warnings (in udev git) sufficient (should tell you
+> which module is taking long, but still won't tell you which kernel
+> thread of course)?
+
+True. module name should be enough. In this case to debug the issue user needs:
+ - disable failing udev rule (or blacklist module?)
+ - reboot, it will let the user get into shell
+ - modprobe the failing module
+ - use sysrq-trigger to get more information about stuck process
+
+So it is more matter of easier problem debugging. Not critical but it
+will be useful imho. This feature can be configured via udev.conf
