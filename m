@@ -1,95 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752166AbaJOWcO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 18:32:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37933 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287AbaJOWcN (ORCPT
+	id S1751534AbaJOWgc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 18:36:32 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:35188 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750809AbaJOWgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 18:32:13 -0400
-Date: Wed, 15 Oct 2014 15:32:12 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH 2/5] mm, compaction: simplify deferred compaction
-Message-Id: <20141015153212.7b9029c8bb8e9c1b8736181d@linux-foundation.org>
-In-Reply-To: <1412696019-21761-3-git-send-email-vbabka@suse.cz>
-References: <1412696019-21761-1-git-send-email-vbabka@suse.cz>
-	<1412696019-21761-3-git-send-email-vbabka@suse.cz>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 15 Oct 2014 18:36:31 -0400
+Date: Wed, 15 Oct 2014 23:36:17 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Kees Cook <keescook@chromium.org>
+Cc: Paolo Pisati <p.pisati@gmail.com>, Jason Baron <jbaron@redhat.com>,
+        David Miller <davem@davemloft.net>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: arm: JUMP_LABEL and DEBUG_SET_MODULE_RONX should be mutually
+ exclusive?
+Message-ID: <20141015223617.GM27405@n2100.arm.linux.org.uk>
+References: <20141015122102.GB4427@stinkpad>
+ <CAGXu5jLEAjR+X0KnnipGH2gp569_PFp5DYyfgXU=Szxgk5EcpA@mail.gmail.com>
+ <20141015220943.GK27405@n2100.arm.linux.org.uk>
+ <CAGXu5j+kxThAzwytKTv-033-jY5hTxT80PNiXp144mE=eay99Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5j+kxThAzwytKTv-033-jY5hTxT80PNiXp144mE=eay99Q@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  7 Oct 2014 17:33:36 +0200 Vlastimil Babka <vbabka@suse.cz> wrote:
-
-> Since commit ("mm, compaction: defer each zone individually instead of
-> preferred zone"), compaction is deferred for each zone where sync direct
-> compaction fails, and reset where it succeeds. However, it was observed
-> that for DMA zone compaction often appeared to succeed while subsequent
-> allocation attempt would not, due to different outcome of watermark check.
-> In order to properly defer compaction in this zone, the candidate zone has
-> to be passed back to __alloc_pages_direct_compact() and compaction deferred
-> in the zone after the allocation attempt fails.
+On Wed, Oct 15, 2014 at 05:21:29PM -0500, Kees Cook wrote:
+> On Wed, Oct 15, 2014 at 5:09 PM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+> > On Wed, Oct 15, 2014 at 08:34:17AM -0700, Kees Cook wrote:
+> >> On Wed, Oct 15, 2014 at 5:21 AM, Paolo Pisati <p.pisati@gmail.com> wrote:
+> >> > Hi,
+> >> >
+> >> > i keep hitting this with BRIDGE=m, JUMP_LABEL=y and DEBUG_SET_MODULE_RONX=y:
+> >>
+> >> I think my RO/NX patch series solves this. I sent a pull request, but
+> >> I haven't seen any movement on it. :(
+> >
+> > Sorry Kees.
+> >
+> > However, even if I had looked at it, I would /not/ have been able to
+> > pull it.  It does the absolutely fatal thing for any pull request:
+> >
+> > The following changes since commit cc31d8f887953e9824c4d9333b15c335ee7d1b65:
+> >
+> >   Merge branches 'fiq' (early part), 'fixes' and 'misc' into for-next (2014-09-2+6 14:40:19 +0100)
+> >
+> > That commit is on my "for-next" branch.  The clue is in the name. :)
+> > Just like trying to base commits onto the linux-next tree, trying to
+> > base commits on an aggregate branch intended for linux-next usage
+> > doesn't work for all the same reasons.
 > 
-> The large source of mismatch between watermark check in compaction and
-> allocation was the lack of alloc_flags and classzone_idx values in compaction,
-> which has been fixed in the previous patch. So with this problem fixed, we
-> can simplify the code by removing the candidate_zone parameter and deferring
-> in __alloc_pages_direct_compact().
-> 
-> After this patch, the compaction activity during stress-highalloc benchmark is
-> still somewhat increased, but it's negligible compared to the increase that
-> occurred without the better watermark checking. This suggests that it is still
-> possible to apparently succeed in compaction but fail to allocate, possibly
-> due to parallel allocation activity.
-> 
-> ...
->
-> --- a/include/linux/compaction.h
-> +++ b/include/linux/compaction.h
-> @@ -33,8 +33,7 @@ extern int fragmentation_index(struct zone *zone, unsigned int order);
->  extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
->  			int order, gfp_t gfp_mask, nodemask_t *mask,
->  			enum migrate_mode mode, int *contended,
-> -			int alloc_flags, int classzone_idx,
-> -			struct zone **candidate_zone);
-> +			int alloc_flags, int classzone_idx);
->  extern void compact_pgdat(pg_data_t *pgdat, int order);
->  extern void reset_isolation_suitable(pg_data_t *pgdat);
->  extern unsigned long compaction_suitable(struct zone *zone, int order,
-> @@ -105,8 +104,7 @@ static inline bool compaction_restarting(struct zone *zone, int order)
->  static inline unsigned long try_to_compact_pages(struct zonelist *zonelist,
->  			int order, gfp_t gfp_mask, nodemask_t *nodemask,
->  			enum migrate_mode mode, int *contended,
-> -			int alloc_flags, int classzone_idx,
-> -			struct zone **candidate_zone)
-> +			int alloc_flags, int classzone_idx);
->  {
->  	return COMPACT_CONTINUE;
->  }
+> Ah! My mistake; I was trying to figure out which branch would be best
+> for you to pull from. What do you prefer I use as the base for the
+> pull request?
 
---- a/include/linux/compaction.h~mm-compaction-simplify-deferred-compaction-fix
-+++ a/include/linux/compaction.h
-@@ -104,7 +104,7 @@ static inline bool compaction_restarting
- static inline unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 			int order, gfp_t gfp_mask, nodemask_t *nodemask,
- 			enum migrate_mode mode, int *contended,
--			int alloc_flags, int classzone_idx);
-+			int alloc_flags, int classzone_idx)
- {
- 	return COMPACT_CONTINUE;
- }
+I much prefer branches against one of Linus' release points than some
+point in someone elses tree - unless, of course, there are dependencies
+that need to be solved (which means there should be something in the
+pull request explaining that.)
 
-It clearly wasn't tested with this config.  Please do so and let us
-know the result?
+If it conflicts with something I have in my tree, then that's generally
+not a problem unless the conflict is horrid, at which point it can be
+discussed.
 
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
