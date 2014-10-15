@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751815AbaJOHoI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 03:44:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10200 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751238AbaJOHoF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 03:44:05 -0400
-From: Jason Wang <jasowang@redhat.com>
-To: rusty@rustcorp.com.au, mst@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Cc: davem@davemloft.net, eric.dumazet@gmail.com,
-        Jason Wang <jasowang@redhat.com>
-Subject: [RFC PATCH net-next 3/6] virtio-net: small optimization on free_old_xmit_skbs()
-Date: Wed, 15 Oct 2014 15:25:27 +0800
-Message-Id: <1413357930-45302-4-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1413357930-45302-1-git-send-email-jasowang@redhat.com>
-References: <1413357930-45302-1-git-send-email-jasowang@redhat.com>
+	id S1751969AbaJOHqt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 03:46:49 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58857 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751228AbaJOHqr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 03:46:47 -0400
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: chas@cmf.nrl.navy.mil
+Cc: linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH] atm: simplify lanai.c by using module_pci_driver
+Date: Wed, 15 Oct 2014 09:45:50 +0200
+Message-Id: <1413359150-13552-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Accumulate the sent packets and sent bytes in local variables and perform a
-single u64_stats_update_begin/end() after.
+This simplifies the lanai.c driver by using
+the module_pci_driver() macro, at the expense
+of losing only debugging messages.
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
 ---
- drivers/net/virtio_net.c |   12 ++++++++----
- 1 files changed, 8 insertions(+), 4 deletions(-)
+ drivers/atm/lanai.c | 22 +---------------------
+ 1 file changed, 1 insertion(+), 21 deletions(-)
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 3d0ce44..a4d56b8 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -833,17 +833,21 @@ static void free_old_xmit_skbs(struct send_queue *sq)
- 	unsigned int len;
- 	struct virtnet_info *vi = sq->vq->vdev->priv;
- 	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
-+	u64 tx_bytes = 0, tx_packets = 0;
+diff --git a/drivers/atm/lanai.c b/drivers/atm/lanai.c
+index fa7d701933ba..93eaf8d94492 100644
+--- a/drivers/atm/lanai.c
++++ b/drivers/atm/lanai.c
+@@ -2614,27 +2614,7 @@ static struct pci_driver lanai_driver = {
+ 	.probe    = lanai_init_one,
+ };
  
- 	while ((skb = virtqueue_get_buf(sq->vq, &len)) != NULL) {
- 		pr_debug("Sent skb %p\n", skb);
+-static int __init lanai_module_init(void)
+-{
+-	int x;
+-
+-	x = pci_register_driver(&lanai_driver);
+-	if (x != 0)
+-		printk(KERN_ERR DEV_LABEL ": no adapter found\n");
+-	return x;
+-}
+-
+-static void __exit lanai_module_exit(void)
+-{
+-	/* We'll only get called when all the interfaces are already
+-	 * gone, so there isn't much to do
+-	 */
+-	DPRINTK("cleanup_module()\n");
+-	pci_unregister_driver(&lanai_driver);
+-}
+-
+-module_init(lanai_module_init);
+-module_exit(lanai_module_exit);
++module_pci_driver(lanai_driver);
  
--		u64_stats_update_begin(&stats->tx_syncp);
--		stats->tx_bytes += skb->len;
--		stats->tx_packets++;
--		u64_stats_update_end(&stats->tx_syncp);
-+		tx_bytes += skb->len;
-+		tx_packets++;
- 
- 		dev_kfree_skb_any(skb);
- 	}
-+
-+	u64_stats_update_begin(&stats->tx_syncp);
-+	stats->tx_bytes += tx_bytes;
-+	stats->tx_packets =+ tx_packets;
-+	u64_stats_update_end(&stats->tx_syncp);
- }
- 
- static int xmit_skb(struct send_queue *sq, struct sk_buff *skb)
+ MODULE_AUTHOR("Mitchell Blank Jr <mitch@sfgoth.com>");
+ MODULE_DESCRIPTION("Efficient Networks Speedstream 3010 driver");
 -- 
-1.7.1
+1.9.1
 
