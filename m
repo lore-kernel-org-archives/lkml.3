@@ -1,104 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751347AbaJONmU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 09:42:20 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35769 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751178AbaJONmS (ORCPT
+	id S1751394AbaJONms (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 09:42:48 -0400
+Received: from achernar.gro-tsen.net ([195.154.91.68]:60163 "EHLO
+	achernar.gro-tsen.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751094AbaJONmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 09:42:18 -0400
-Date: Wed, 15 Oct 2014 14:42:09 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Darren Hart <dvhart@linux.intel.com>
-Subject: Re: [PATCH v4 00/13] Add ACPI _DSD and unified device properties
- support
-Message-ID: <20141015134209.GD20034@leverpostej>
-References: <2660541.BycO7TFnA2@vostro.rjw.lan>
- <1413378271.2762.77.camel@infradead.org>
- <20141015131551.GC20034@leverpostej>
- <1413379736.2762.79.camel@infradead.org>
+	Wed, 15 Oct 2014 09:42:46 -0400
+X-Greylist: delayed 442 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Oct 2014 09:42:46 EDT
+Date: Wed, 15 Oct 2014 15:35:18 +0200
+From: David Madore <david+ml@madore.org>
+To: Linux Kernel mailing-list <linux-kernel@vger.kernel.org>
+Subject: feature suggestion: implement SO_PEERCRED on local AF_INET/AF_INET6
+ sockets (allow uid-based identification on localhost)
+Message-ID: <20141015133518.GA7179@achernar.madore.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1413379736.2762.79.camel@infradead.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 02:28:56PM +0100, David Woodhouse wrote:
-> On Wed, 2014-10-15 at 14:15 +0100, Mark Rutland wrote:
-> > > @@ -155,7 +168,7 @@ static int of_platform_serial_probe(struct platform_device *ofdev)
-> > >  	if (!match)
-> > >  		return -EINVAL;
-> > >  
-> > > -	if (of_find_property(ofdev->dev.of_node, "used-by-rtas", NULL))
-> > > +	if (!device_get_property(&ofdev->dev, "used-by-rtas", NULL))
-> > >  		return -EBUSY;
-> > 
-> > This property should never be present on an ACPI system. RTAS is a
-> > completely different firmware interface on PowerPC.
-> 
-> Yes, I sincerely hope we never see used-by-rtas being set on a non-PPC
-> system. But this isn't a new consideration; we were already checking for
-> 'used-by-rtas' on *all* platforms. Perhaps we shouldn't be. But that's
-> almost orthogonal to the issue at hand.
+Given an AF_UNIX socket, the getsockopt(, SOL_SOCKET, SO_PEERCRED,,)
+call allows one endpoint to authenticate the other endpoint's pid, uid
+and gid.
 
-We have been checking for all DT platforms, and that's a bug for DT.
-Copying that bug to ACPI is inexcusable given we know it's a bug to do
-so.
+The call is valid on AF_INET and AF_INET6 sockets but returns no data
+(pid=0, uid=-1, gid=-1).  Obviously it is meaningless to try to get
+such credentials from a INET/INET6 socket in general, but there is one
+case where it would make sense: namely, when the endpoint is local
+(i.e., when the socket is a connection to the same machine, e.g., when
+connecting to 127.0.0.0/8 or ::1/32).
 
-No-one is using ACPI+RTAS, so there is no reason to enable this property
-for ACPI. The only reason anyone would (mis)use this property with ACPI
-is because Linux happened to support that combination, which need not be
-the case because it doesn't make any sense.
+Being able to authenticate local INET/INET6 sockets would be immensely
+valuable for a number of programs, to provide some kind of access
+control to local sockets.  For example, ssh allows port forwarding
+using the -L and -D options: by default or by option (cf. the
+GatewayPorts option of ssh), these port-forwarding sockets can be
+restricted to localhost, but of course they cannot be restricted to
+the user running ssh, which makes them a huge security problem.  Many
+programs suffer from the same problem (they restrict some kind of
+connection to localhost, but they of course cannot make a restriction
+on which user will be able to connect).
 
-> > As a general note, I would hope that we're not going to blindly convert
-> > drivers and subsystems over to a common property interface without
-> > considering each property w.r.t. the particular FW interface. 
-> >
-> > Each addition to _DSD, especially if through a common accessor needs
-> > _more_ scrutiny than is applied to DT bindings, and we hardly manage to
-> > review DT bindings.
-> 
-> The whole point here is to use existing bindings rather than having to
-> reinvent the wheel. Sure, where the existing binding really makes no
-> sense for certain subsystems, we should come up with something
-> different.
+One cannot simply retort "these programs should be using Unix-domain
+sockets instead": I don't think many browsers support using a SOCKS
+proxy or an HTTP proxy over a Unix-domain socket, and in the latter
+case I'm not even sure it would make sense (protocol-wise).
 
-I understand that. However, where a binding doesn't make sense (as in
-this case), it shouldn't be enabled for ACPI as it provides a larger
-surface area for misuse, for no benefit.
+If I believe <URL:
+http://www.lehman.cuny.edu/cgi-bin/man-cgi?getpeerucred+3
+ > ("The system currently supports both sides of connection end-points
+for local AF_UNIX, AF_INET, and AF_INET6 sockets"), Solaris, or at
+least some version thereof, support authentication of local AF_INET
+and AF_INET6 sockets.
 
-> But in the general case for 'leaf-node' peripherals we would hope that
-> we don't really have to change *anything* other than to make sure the
-> driver is using generic property accessor functions instead of the old
-> OF-specific ones. The point here is *consistency*. We really don't want
-> to make a habit of reinventing different bindings to be exposed through
-> the different firmware types.
+I think it would be wonderful if Linux had this.  I'm willing to work
+on the implementation if it is considered *a priori* acceptable for
+inclusion.
 
-Where we have a property of a leaf-node that is independent of the
-description format, sure. I am not asking us to re-invent bindings, but
-we must consider the differences between ACPI and DT systems when trying
-to port a DT binding to ACPI.
+The data seems to be available, since it is exposed in /proc/net/tcp
+and /proc/net/tcp6 and whatnots (implementation details left aside, it
+is merely a question of matching a line with opposite endpoints to the
+current socket and returning it).
 
-My concern here is that we don't have the mechanisms in place for
-sufficient scrutiny to be applied when bindings are ported over. We
-_will_ end up porting over things that don't make sense (as this patch
-shows), and some of those are likely to cause unnecessary pain for
-everyone. It does not make sense to say that is OK.
+[In principle, a userland program can parse /proc/net/tcp so it does
+not need the feature I am suggesting, but in practice parsing a text
+file to communicate with the kernel is yucky at best, and probably not
+very robust (e.g., /proc might not be mounted), and it would be very
+difficult to convince, say, the OpenSSH authors to include code that
+parses the Linux /proc/net/tcp format (or even link with a library
+which does this) in order to add access-control on ssh port-forwards:
+having this under a more standard getsockpot() interface is cleaner
+and opens at least some kind of hope that programs would agree to use
+it.]
 
-Mark.
+Question number 1: If this feature were implemented, would it be
+considered acceptable for inclusion in the kernel?  (If there is some
+reason why it can't be accepted, I'd like to know in advance, to avoid
+working in vain.)
+
+Question number 2: A priori, how difficult would it be to implement
+this?  (As mentioned above, it seems trivial in principle to merely go
+through the local endpoints to find a matching connection, but maybe
+there are locking issues that I don't understand that make it much
+more difficult than it would seem.)  Any guidelines on implementation?
+(I imagine one should try to fill sk->sk_peer_cred at connect time,
+but I don't really know how difficult this might turn out.)
+
+Any comments on the matter are welcome.
+
+Happy hacking,
+
+-- 
+     David A. Madore
+   ( http://www.madore.org/~david/ )
