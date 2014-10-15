@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751273AbaJOOEI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 10:04:08 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:56300 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106AbaJOOEG (ORCPT
+	id S1751392AbaJOOHX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 10:07:23 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:56138 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268AbaJOOHU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 10:04:06 -0400
-Date: Wed, 15 Oct 2014 16:03:37 +0200
-From: Mark Brown <broonie@kernel.org>
-To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Romain Perier <romain.perier@gmail.com>, devicetree@vger.kernel.org,
-        lgirdwood@gmail.com, linux-kernel@vger.kernel.org, robh@kernel.org,
-        mark.rutland@arm.com
-Message-ID: <20141015140337.GI27755@sirena.org.uk>
-References: <1413268273-15151-1-git-send-email-romain.perier@gmail.com>
- <20141015124142.92D0EC40B00@trevor.secretlab.ca>
- <20141015134245.GH27755@sirena.org.uk>
- <40398493.mf2VbOGMuV@phil>
+	Wed, 15 Oct 2014 10:07:20 -0400
+Date: Wed, 15 Oct 2014 15:07:59 +0100
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Chander Kashyap <k.chander@samsung.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "kgene.kim@samsung.com" <kgene.kim@samsung.com>
+Subject: Re: [PATCH] arm64: dts: exynos7: add support for cpuidle core power
+ down
+Message-ID: <20141015140759.GB26484@red-moon>
+References: <1413354920-20165-1-git-send-email-k.chander@samsung.com>
+ <20141015090047.GA26484@red-moon>
+ <20141015130218.GB20034@leverpostej>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Av0MaMCQQeg4b3so"
+In-Reply-To: <20141015130218.GB20034@leverpostej>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 15 Oct 2014 14:07:14.0506 (UTC) FILETIME=[523B0AA0:01CFE881]
+X-MC-Unique: 114101515071605601
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <40398493.mf2VbOGMuV@phil>
-X-Cookie: You are magnetic in your bearing.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 62.156.150.204
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC v3 PATCH 1/5] of: Add standard property for poweroff
- capability
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 15, 2014 at 02:02:18PM +0100, Mark Rutland wrote:
+> > > +			CPU_SLEEP: cpu-sleep {
+> > > +				compatible = "arm,idle-state";
+> > > +				local-timer-stop;
+> > > +				arm,psci-suspend-param = <0x0010000>;
+> > > +				entry-latency-us = <20>;
+> > > +				exit-latency-us = <150>;
+> > > +				min-residency-us = <2100>;
+> > > +				status = "enabled";
+> 
+> While status is a relatively standard property, it's absence implies
+> everything is OK. There no need for it here as-is.
+> 
+> Additionally, the canonical value is "okay", not "enabled", so this
+> would fail were we to use of_device_is_available in the idle states
+> parsing.
 
---Av0MaMCQQeg4b3so
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Good point. I still want it documented in the bindings, keeping in mind
+your remark above.
 
-On Wed, Oct 15, 2014 at 03:56:03PM +0200, Heiko St=FCbner wrote:
-> Am Mittwoch, 15. Oktober 2014, 15:42:45 schrieb Mark Brown:
+> > status ? This is not a documented property. If you need it please explain
+> > why, define its bindings and we can see how to accommodate it.
+> 
+> Do we expect that some idle states won't be available on some boards
+> built from the same platform?
 
-> > I guess I should apply these (except the DTS update) since the first
-> > user that's being added is a regulator driver?
+I think it is something we should expect and be able to cope with that.
 
-> I'd think so.
-> In any case, I'll take the "ARM: dts: ..." patch if you take the others.
+I will add status to idle-states bindings updates for this cycle and patch DT
+parsing code accordingly.
 
-Sounds like a plan.  I just tried applying and got some conflicts but
-I'm guessing that this is due to changes that are landing in the merge
-window so I'll try again once -rc1 is out.
+Lorenzo
 
---Av0MaMCQQeg4b3so
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUPn64AAoJECTWi3JdVIfQGQIH/A/b6j2HDLcddduEyBGASorE
-5o0VdPyRTSWto0Gg4Ki2C1rJyNvUFFS/AAnC49uZS1nFFdSw+9lw8M2YJjtbTd7F
-bwDQVavDbqzeiZN3ZuBvX81uhFzQfF18LN02JG7jvh8Amunq7xMtlX0VG447cje/
-FYf9KT1mEITTIxC2MxTMnbGNMzXcZHoVQmSKEuXqDmjNJ1XOUi00+aPB50PASuk/
-hLXXiRtS8x1iZwe0Vl+qXQBzwbsKQuVtyZwp/yphYx5qgA3WAJgCt5A/HbnqHZVg
-v/Xc7X0UOzTZnWrGMBW58Bb1KU/9b4s/qiUBdkGOFKAO1wBWnMhsyP982bUnPRU=
-=Cr1o
------END PGP SIGNATURE-----
-
---Av0MaMCQQeg4b3so--
