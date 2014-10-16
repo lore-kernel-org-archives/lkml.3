@@ -1,342 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751828AbaJPMCJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 08:02:09 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:43156 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751423AbaJPMCH convert rfc822-to-8bit (ORCPT
+	id S1751966AbaJPMD1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 08:03:27 -0400
+Received: from smtprelay2.synopsys.com ([198.182.60.111]:52797 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750819AbaJPMDZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 08:02:07 -0400
-X-IronPort-AV: E=Sophos;i="5.04,731,1406563200"; 
-   d="scan'208";a="37440299"
-From: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
-To: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
-CC: Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segooon@gmail.com>, Mateusz Guzik <mguzik@redhat.com>
-Subject: [PATCHv5] procfs: show hierarchy of pid namespace
-Date: Thu, 16 Oct 2014 20:01:56 +0800
-Message-ID: <1413460916-2852-1-git-send-email-chenhanxiao@cn.fujitsu.com>
-X-Mailer: git-send-email 1.9.3
+	Thu, 16 Oct 2014 08:03:25 -0400
+From: Prabu Thangamuthu <Prabu.T@synopsys.com>
+To: Jaehoon Chung <jh80.chung@samsung.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Prabu Thangamuthu <Prabu.T@synopsys.com>
+CC: Alim Akhtar <alim.akhtar@gmail.com>, Seungwon Jeon <tgih.jun@samsung.com>,
+        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Manjunath M Bettegowda" <Manjunath.MB@synopsys.com>
+Subject: RE: [PATCH v6] mmc: dw_mmc: Add IDMAC 64-bit address mode support
+Thread-Topic: [PATCH v6] mmc: dw_mmc: Add IDMAC 64-bit address mode support
+Thread-Index: Ac/jk1qr/snYPd5/S8KOP2Bi2Gh6DQD5pesAADITLAAAJ0L7gAASq14A//+zEQCAAACvgP//nJsw
+Date: Thu, 16 Oct 2014 12:01:26 +0000
+Message-ID: <705D14B1C7978B40A723277C067CEDE21B333F60@IN01WEMBXB.internal.synopsys.com>
+References: <705D14B1C7978B40A723277C067CEDE21B3336B2@IN01WEMBXB.internal.synopsys.com>
+ <CAGOxZ51fzvoqUQ7=8312iLyu4jwgmskkaysgXQHju-E5EM5gNQ@mail.gmail.com>
+ <CAFp+6iFQ=MU-R-mYLeL0=H5fVWkxVu5s4ineh3RcSExCUNAjCA@mail.gmail.com>
+ <543F6A93.1070008@samsung.com>
+ <705D14B1C7978B40A723277C067CEDE21B333F07@IN01WEMBXB.internal.synopsys.com>
+ <CAFp+6iEXMNzaEgcpFE_vCYj6xwPLJvLzBhA5NFrfnEt1kSyk8Q@mail.gmail.com>
+ <543FA7E7.5030009@samsung.com>
+In-Reply-To: <543FA7E7.5030009@samsung.com>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.144.112.99]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [10.167.226.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9GC3XO0005605
 
-We lack of pid hierarchy information, and this will lead to:
-a) we don't know pids' relationship, who is whose child:
-   /proc/PID/ns/pid only tell us whether two pids live in same ns;
-b) bring trouble to nested lxc container check/restore/migration
-c) bring trouble to pid translation between containers;
+Hi,
 
-This patch will show the hierarchy of pid namespace
-by pidns_hierarchy like:
+On Thu, Oct 16, 2014 at 4:42 PM, Jaehoon Chung <jh80.chung@samsung.com> wrote:
+> On 10/16/2014 08:09 PM, Vivek Gautam wrote:
+> > Hi Prabu,
+> >
+> >
+> > On Thu, Oct 16, 2014 at 4:09 PM, Prabu Thangamuthu
+> <Prabu.T@synopsys.com> wrote:
+> >>
+> >> Hi Jaehoon, Vivek, Alim,
+> >>
+> >> Thanks for your review comments.
+> >>
+> >> On Thu, Oct 16, 2014 at 12:20 PM, Jaehoon Chung
+> <jh80.chung@samsung.com> wrote:
+> >>> Hi, Prabu.
+> >>>
+> >>> On 10/15/2014 09:05 PM, Vivek Gautam wrote:
+> >>>> Hi Prabu,
+> >>>>
+> >>>>
+> >>>> On Tue, Oct 14, 2014 at 5:41 PM, Alim Akhtar
+> >>>> <alim.akhtar@gmail.com>
+> >>> wrote:
+> >>>>> Hi Prahu,
+> >>>>> Thanks for a quick re-spin o the patch.
+> >>>>> One last comment, this is more of a information seek.
+> >>>>> On Thu, Oct 9, 2014 at 1:09 PM, Prabu Thangamuthu
+> >>> <Prabu.T@synopsys.com> wrote:
+> >>>>>> Synopsys DW_MMC IP core supports Internal DMA Controller with
+> >>>>>> 64-bit
+> >>> address mode from IP version 2.70a onwards.
+> >>>>>> Updated the driver to support IDMAC 64-bit addressing mode.
+> >>>>>>
+> >>>>>> Tested the features in DW_MMC core v2.70a and v2.40a with HAPS-
+> 51
+> >>> setup and driver is working fine.
+> >>>>>>
+> >>>>>> Signed-off-by: Prabu Thangamuthu <prabu.t@synopsys.com>
+> >>>>>> ---
+> >>>>>> Change log v6:
+> >>>>>>         - Updated with review comment.
+> >>>>>>
+> >>>>>> Change log v5:
+> >>>>>>         - Recreated the patch against linux-next as this patch is
+> >>>>>> required for another patch
+> >>>>>> http://www.spinics.net/lists/arm-kernel/msg357985.html
+> >>>>>>
+> >>>>>> Change log v4:
+> >>>>>>         - Add the dynamic support for 32-bit and 64-bit address
+> >>>>>> mode based
+> >>> on hw configuration.
+> >>>>>>         - Removed the CONFIG_MMC_DW_IDMAC_64BIT_ADDRESS
+> macro.
+> >>>>>>
+> >>>>>>  drivers/mmc/host/dw_mmc.c  |  195
+> >>> +++++++++++++++++++++++++++++++++++---------
+> >>>>>>  drivers/mmc/host/dw_mmc.h  |   11 +++
+> >>>>>>  include/linux/mmc/dw_mmc.h |    2 +
+> >>>>>>  3 files changed, 170 insertions(+), 38 deletions(-)
+> >>>>>>
+> >>>>>> diff --git a/drivers/mmc/host/dw_mmc.c
+> >>> b/drivers/mmc/host/dw_mmc.c
+> >>>>>> index 69f0cc6..c3b75a5 100644
+> >>>>>> --- a/drivers/mmc/host/dw_mmc.c
+> >>>>>> +++ b/drivers/mmc/host/dw_mmc.c
+> >>>>>> @@ -62,6 +62,24 @@
+> >>>>>>                                  SDMMC_IDMAC_INT_FBE |
+> SDMMC_IDMAC_INT_RI | \
+> >>>>>>                                  SDMMC_IDMAC_INT_TI)
+> >>>>>>
+> >>>>>> +struct idmac_desc_64addr {
+> >>>>>> +       u32             des0;   /* Control Descriptor */
+> >>>>>> +
+> >>>>>> +       u32             des1;   /* Reserved */
+> >>>>> What is the default value of these _Reserved_ descriptors? As
+> >>>>> these are pointers, do you thing initializing then to zero make sense?
+> >>
+> >> We don't think it's required to assign zero to reserved des field as
+> mobster core not going to use this field's for any operations unless user has
+> modified it.
+> >> Also it's working fine in our test set-up without initializing them to zero.
+> 
+> Right, it's not required to assign zero to there. And It's working fine, because
+> it's not used or referred anywhere.
+> Just Recommend to initialize to zero.
 
-[root@localhost ~]#cat /proc/pidns_hierarchy
-18060 18102 1534
-18060 18102 1600
-1550
-*Note: numbers represent the pid 1 in different ns
+Fine.
+ 
+> Actually, i don't understand why des1 is reserved..
 
-It shows the pid hierarchy below:
+It's reserved for future enhancement.
 
-      init_pid_ns (not showed in /proc/pidns_hierarchy)
-              ‚îÇ
-‚îå‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îê
-ns1                      ns2
-‚îÇ                        ‚îÇ
-1550                    18060
-                          ‚îÇ
-                          ‚îÇ
-                         ns3
-                          ‚îÇ
-                        18102
-                          ‚îÇ
-                 ‚îå‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îê
-                 ns4                   ns5
-                 ‚îÇ                    ‚îÇ
-                1534                  1600
+> >>
+> >>>>
+> >>>> I think the default reset value of these descriptors will depend on
+> >>>> how dwmmc is integrated in h/w and how these descriptors are then
+> >>>> configured.
+> >>>>
+> >>>> So it makes sense to initialize these descriptors to zero before use.
+> >>>> We have seen on our exynos7 system, that we need to initialize the
+> >>>> descriptors des1 and des2 to zero before we use them further.
+> >>
+> >> It looks like exynos7 is using this reserved fields for some other purposes.
+> To make it generic, we will initialize the reserved fields to zero.
+> >>
+> >> Does exynos7 requires des2 (Buffer sizes) also to be initialized to zero?
+> >
+> > Yes, we need des2 to be initialized to zero.
+> > One question however, do we have some default reset value set to these
+> > descriptors ? If yes then how can we check this value ?
+> 
+> I knew it doesn't have the reset value for descriptors.
+> 
 
-Every pid printed in pidns_hierarchy
-is the init pid of that pid ns level.
+Yes, it's correct.
 
-Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
----
-v5: collect pid by find_ge_pid;
-    use local list inside nslist_proc_show();
-    use get_pid, remove mutex lock.
-v4: simplify pid collection and some performance optimizamtion
-    fix another race issue.
-v3: fix a race issue and memory leak issue
-v2: use a procfs text file instead of dirs under /proc
 
- fs/proc/Kconfig           |   6 ++
- fs/proc/Makefile          |   1 +
- fs/proc/pidns_hierarchy.c | 226 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 233 insertions(+)
- create mode 100644 fs/proc/pidns_hierarchy.c
-
-diff --git a/fs/proc/Kconfig b/fs/proc/Kconfig
-index 2183fcf..4bb111c 100644
---- a/fs/proc/Kconfig
-+++ b/fs/proc/Kconfig
-@@ -71,3 +71,9 @@ config PROC_PAGE_MONITOR
- 	  /proc/pid/smaps, /proc/pid/clear_refs, /proc/pid/pagemap,
- 	  /proc/kpagecount, and /proc/kpageflags. Disabling these
-           interfaces will reduce the size of the kernel by approximately 4kb.
-+
-+config PROC_PID_HIERARCHY
-+	bool "Enable /proc/pidns_hierarchy support" if EXPERT
-+	depends on PROC_FS
-+	help
-+	  Show pid namespace hierarchy information
-diff --git a/fs/proc/Makefile b/fs/proc/Makefile
-index 7151ea4..33e384b 100644
---- a/fs/proc/Makefile
-+++ b/fs/proc/Makefile
-@@ -30,3 +30,4 @@ proc-$(CONFIG_PROC_KCORE)	+= kcore.o
- proc-$(CONFIG_PROC_VMCORE)	+= vmcore.o
- proc-$(CONFIG_PRINTK)	+= kmsg.o
- proc-$(CONFIG_PROC_PAGE_MONITOR)	+= page.o
-+proc-$(CONFIG_PROC_PID_HIERARCHY)	+= pidns_hierarchy.o
-diff --git a/fs/proc/pidns_hierarchy.c b/fs/proc/pidns_hierarchy.c
-new file mode 100644
-index 0000000..2f5148c
---- /dev/null
-+++ b/fs/proc/pidns_hierarchy.c
-@@ -0,0 +1,226 @@
-+#include <linux/init.h>
-+#include <linux/errno.h>
-+#include <linux/proc_fs.h>
-+#include <linux/module.h>
-+#include <linux/list.h>
-+#include <linux/slab.h>
-+#include <linux/pid_namespace.h>
-+#include <linux/seq_file.h>
-+
-+/*
-+ *  /proc/pidns_hierarchy
-+ *
-+ *  show the hierarchy of pid namespace
-+ */
-+
-+#define NS_HIERARCHY	"pidns_hierarchy"
-+
-+/* list for host pid collection */
-+struct pidns_list {
-+	struct list_head list;
-+	struct pid *pid;
-+};
-+
-+static void free_pidns_list(struct list_head *head)
-+{
-+	struct pidns_list *tmp, *pos;
-+
-+	list_for_each_entry_safe(pos, tmp, head, list) {
-+		list_del(&pos->list);
-+		put_pid(pos->pid);
-+		kfree(pos);
-+	}
-+}
-+
-+static int
-+pidns_list_add(struct pid *pid, struct list_head *list_head,
-+		struct pid_namespace *curr_ns)
-+{
-+	struct pidns_list *ent;
-+	struct pid_namespace *ns;
-+
-+	ent = kmalloc(sizeof(*ent), GFP_KERNEL);
-+	if (!ent)
-+		return -ENOMEM;
-+
-+	ent->pid = pid;
-+	ns = pid->numbers[pid->level].ns;
-+	if (curr_ns) {
-+		/* add pids who is the child of curr_ns */
-+		for (; ns != NULL; ns = ns->parent)
-+			if (ns == curr_ns) {
-+				list_add_tail(&ent->list, list_head);
-+				break;
-+			}
-+	} else
-+		list_add_tail(&ent->list, list_head);
-+
-+	return 0;
-+}
-+
-+static int
-+pidns_list_filter(struct list_head *pidns_list,
-+		struct list_head *pidns_tree)
-+{
-+	struct pidns_list *pos, *pos_t;
-+	struct pid_namespace *ns0, *ns1;
-+	struct pid *pid0, *pid1;
-+	int rc, flag = 0;
-+
-+	/* screen pid with relationship
-+	 * in pidns_list, we may add pids like
-+	 * ns0   ns1   ns2
-+	 * pid1->pid2->pid3
-+	 * we should screen pid1, pid2 and keep pid3
-+	 */
-+	list_for_each_entry(pos, pidns_list, list) {
-+		list_for_each_entry(pos_t, pidns_list, list) {
-+			flag = 0;
-+			pid0 = pos->pid;
-+			pid1 = pos_t->pid;
-+			ns0 = pid0->numbers[pid0->level].ns;
-+			ns1 = pid1->numbers[pid1->level].ns;
-+			if (pos->pid->level < pos_t->pid->level)
-+				for (; ns1 != NULL; ns1 = ns1->parent)
-+					if (ns0 == ns1) {
-+						flag = 1;
-+						break;
-+					}
-+			if (flag == 1)
-+				break;
-+		}
-+
-+		if (flag == 0) {
-+			rcu_read_lock();
-+			get_pid(pos->pid);
-+			rcu_read_unlock();
-+			rc = pidns_list_add(pos->pid, pidns_tree, NULL);
-+			if (rc)
-+				goto out;
-+		}
-+	}
-+
-+	/* Now all usefull stuffs are in pidns_tree, free pidns_list*/
-+	free_pidns_list(pidns_list);
-+
-+	return 0;
-+
-+out:
-+	free_pidns_list(pidns_tree);
-+	return rc;
-+}
-+
-+/* collect pids in pidns_list,
-+ * then remove duplicated ones,
-+ * add the rest to pidns_tree
-+ */
-+static int proc_pidns_list_refresh(struct pid_namespace *curr_ns,
-+		struct list_head *pidns_list,
-+		struct list_head *pidns_tree)
-+{
-+	struct pid *pid;
-+	int new_nr, nr = 0;
-+	int rc;
-+
-+	/* collect pid in differet ns */
-+	while (nr < PID_MAX_LIMIT) {
-+		rcu_read_lock();
-+		pid = find_ge_pid(nr, curr_ns);
-+		if (pid) {
-+			new_nr = pid_vnr(pid);
-+			if (!is_child_reaper(pid)) {
-+				nr = new_nr + 1;
-+				rcu_read_unlock();
-+				continue;
-+			}
-+			get_pid(pid);
-+			rcu_read_unlock();
-+			rc = pidns_list_add(pid, pidns_list, curr_ns);
-+			if (rc)
-+				goto out;
-+		} else {
-+			rcu_read_unlock();
-+			break;
-+		}
-+		nr = new_nr + 1;
-+	}
-+
-+	/* Only one pid found as child reaper,
-+	 * no sub-namespace of current pid namespace,
-+	 * return 0 directly.
-+	 */
-+	if (list_is_singular(pidns_list)) {
-+		rc = 0;
-+		goto out;
-+	}
-+
-+	/* screen duplicate pids from list pidns_list
-+	* and form a new list pidns_tree
-+	*/
-+	rc = pidns_list_filter(pidns_list, pidns_tree);
-+	if (rc)
-+		goto out;
-+
-+	return 0;
-+
-+out:
-+	free_pidns_list(pidns_list);
-+	return rc;
-+}
-+
-+static int nslist_proc_show(struct seq_file *m, void *v)
-+{
-+	struct pidns_list *pos;
-+	struct pid_namespace *ns, *curr_ns;
-+	struct pid *pid;
-+	char pid_buf[16];
-+	int i, rc;
-+
-+	LIST_HEAD(pidns_list);
-+	LIST_HEAD(pidns_tree);
-+
-+	curr_ns = task_active_pid_ns(current);
-+
-+	rc = proc_pidns_list_refresh(curr_ns, &pidns_list, &pidns_tree);
-+	if (rc)
-+		return rc;
-+
-+	/* print pid namespace hierarchy */
-+	list_for_each_entry(pos, &pidns_tree, list) {
-+		pid = pos->pid;
-+		for (i = curr_ns->level + 1; i <= pid->level; i++) {
-+			ns = pid->numbers[i].ns;
-+			/* show PID '1' in specific pid ns */
-+			snprintf(pid_buf, 16, "%u",
-+				pid_vnr(find_pid_ns(1, ns)));
-+			seq_printf(m, "%s ", pid_buf);
-+		}
-+
-+		seq_putc(m, '\n');
-+	}
-+
-+	free_pidns_list(&pidns_tree);
-+
-+	return 0;
-+}
-+
-+static int nslist_proc_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, nslist_proc_show, NULL);
-+}
-+
-+static const struct file_operations proc_nspid_nslist_fops = {
-+	.open		= nslist_proc_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= single_release,
-+};
-+
-+static int __init pidns_hierarchy_init(void)
-+{
-+	proc_create(NS_HIERARCHY, S_IWUGO,
-+		NULL, &proc_nspid_nslist_fops);
-+
-+	return 0;
-+}
-+fs_initcall(pidns_hierarchy_init);
--- 
-1.9.3
-
+Regards,
+Prabu Thangamuthu.
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
