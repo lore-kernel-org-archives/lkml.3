@@ -1,29 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751866AbaJPFZt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 01:25:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33621 "EHLO
+	id S1751562AbaJPFYV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 01:24:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33548 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214AbaJPFZq (ORCPT
+	with ESMTP id S1751477AbaJPFYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 01:25:46 -0400
-Date: Wed, 15 Oct 2014 22:24:41 -0700
-From: tip-bot for Masanari Iida <tipbot@zytor.com>
-Message-ID: <tip-96355f2cfb61bb057df9bc0712cd7323dba28080@git.kernel.org>
-Cc: mingo@kernel.org, rdunlap@infradead.org, paulus@samba.org,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        standby24x7@gmail.com, hpa@zytor.com, acme@redhat.com,
-        tglx@linutronix.de, mingo@redhat.com
-Reply-To: a.p.zijlstra@chello.nl, standby24x7@gmail.com, hpa@zytor.com,
-        acme@redhat.com, tglx@linutronix.de, mingo@redhat.com,
-        mingo@kernel.org, paulus@samba.org, rdunlap@infradead.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1410275930-17207-1-git-send-email-standby24x7@gmail.com>
-References: <1410275930-17207-1-git-send-email-standby24x7@gmail.com>
+	Thu, 16 Oct 2014 01:24:19 -0400
+Date: Wed, 15 Oct 2014 22:23:56 -0700
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-66f066d8994bd146304bab72fa09c1e644c4b3ff@git.kernel.org>
+Cc: jolsa@kernel.org, namhyung@kernel.org, jean.pihet@linaro.org,
+        acme@redhat.com, fweisbec@gmail.com, paulus@samba.org, hpa@zytor.com,
+        asharma@fb.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        dsahern@gmail.com, namhyung.kim@lge.com, tglx@linutronix.de,
+        jolsa@redhat.com, linux-kernel@vger.kernel.org
+Reply-To: jolsa@redhat.com, linux-kernel@vger.kernel.org, namhyung.kim@lge.com,
+        tglx@linutronix.de, asharma@fb.com, dsahern@gmail.com,
+        mingo@kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
+        hpa@zytor.com, fweisbec@gmail.com, namhyung@kernel.org,
+        jean.pihet@linaro.org, acme@redhat.com, jolsa@kernel.org
+In-Reply-To: <1412556363-26229-3-git-send-email-namhyung@kernel.org>
+References: <1412556363-26229-3-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf Documentation: Fix typos in perf/
- Documentation
-Git-Commit-ID: 96355f2cfb61bb057df9bc0712cd7323dba28080
+Subject: [tip:perf/urgent] perf callchain:
+  Create an address space per thread
+Git-Commit-ID: 66f066d8994bd146304bab72fa09c1e644c4b3ff
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,178 +38,197 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  96355f2cfb61bb057df9bc0712cd7323dba28080
-Gitweb:     http://git.kernel.org/tip/96355f2cfb61bb057df9bc0712cd7323dba28080
-Author:     Masanari Iida <standby24x7@gmail.com>
-AuthorDate: Wed, 10 Sep 2014 00:18:50 +0900
+Commit-ID:  66f066d8994bd146304bab72fa09c1e644c4b3ff
+Gitweb:     http://git.kernel.org/tip/66f066d8994bd146304bab72fa09c1e644c4b3ff
+Author:     Namhyung Kim <namhyung@kernel.org>
+AuthorDate: Mon, 6 Oct 2014 09:46:00 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 15 Oct 2014 17:39:02 -0300
+CommitDate: Wed, 15 Oct 2014 17:38:23 -0300
 
-perf Documentation: Fix typos in perf/Documentation
+perf callchain: Create an address space per thread
 
-This patch fix spelling typos found in tool/perf/Documentation.
+The unw_addr_space_t in libunwind represents an address space to be used
+for stack unwinding.  It doesn't need to be create/destory everytime to
+unwind callchain (as in get_entries) and can have a same lifetime as
+thread (unless exec called).
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>
+So move the address space construction/destruction logic to the thread
+lifetime handling functions.  This is a preparation to enable caching in
+the unwind library.
+
+Note that it saves unw_addr_space_t object using thread__set_priv().  It
+seems currently only used by perf trace and perf kvm stat commands which
+don't use callchain.
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Jean Pihet <jean.pihet@linaro.org>
+Acked-by: Jiri Olsa <jolsa@kernel.org>
+Cc: Arun Sharma <asharma@fb.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Link: http://lkml.kernel.org/r/1410275930-17207-1-git-send-email-standby24x7@gmail.com
+Link: http://lkml.kernel.org/r/1412556363-26229-3-git-send-email-namhyung@kernel.org
+[ Fixup unwind-libunwind.c missing CALLCHAIN_DWARF definition, added
+  missing __maybe_unused on unused parameters in stubs at util/unwind.h ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-diff.txt          | 6 +++---
- tools/perf/Documentation/perf-kvm.txt           | 4 ++--
- tools/perf/Documentation/perf-list.txt          | 2 +-
- tools/perf/Documentation/perf-record.txt        | 2 +-
- tools/perf/Documentation/perf-script-perl.txt   | 4 ++--
- tools/perf/Documentation/perf-script-python.txt | 6 +++---
- tools/perf/Documentation/perf-script.txt        | 2 +-
- tools/perf/Documentation/perf-test.txt          | 2 +-
- tools/perf/Documentation/perf-trace.txt         | 2 +-
- 9 files changed, 15 insertions(+), 15 deletions(-)
+ tools/perf/util/thread.c           |  6 ++++++
+ tools/perf/util/unwind-libunwind.c | 37 ++++++++++++++++++++++++++++++++-----
+ tools/perf/util/unwind.h           | 17 +++++++++++++++++
+ 3 files changed, 55 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
-index b3b8aba..e463caa 100644
---- a/tools/perf/Documentation/perf-diff.txt
-+++ b/tools/perf/Documentation/perf-diff.txt
-@@ -196,10 +196,10 @@ If specified the 'Weighted diff' column is displayed with value 'd' computed as:
+diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+index a9df7f2..2b7b2d9 100644
+--- a/tools/perf/util/thread.c
++++ b/tools/perf/util/thread.c
+@@ -7,6 +7,7 @@
+ #include "util.h"
+ #include "debug.h"
+ #include "comm.h"
++#include "unwind.h"
  
-   - period being the hist entry period value
+ int thread__init_map_groups(struct thread *thread, struct machine *machine)
+ {
+@@ -37,6 +38,9 @@ struct thread *thread__new(pid_t pid, pid_t tid)
+ 		thread->cpu = -1;
+ 		INIT_LIST_HEAD(&thread->comm_list);
  
--  - WEIGHT-A/WEIGHT-B being user suplied weights in the the '-c' option
-+  - WEIGHT-A/WEIGHT-B being user supplied weights in the the '-c' option
-     behind ':' separator like '-c wdiff:1,2'.
--    - WIEGHT-A being the weight of the data file
--    - WIEGHT-B being the weight of the baseline data file
-+    - WEIGHT-A being the weight of the data file
-+    - WEIGHT-B being the weight of the baseline data file
++		if (unwind__prepare_access(thread) < 0)
++			goto err_thread;
++
+ 		comm_str = malloc(32);
+ 		if (!comm_str)
+ 			goto err_thread;
+@@ -48,6 +52,7 @@ struct thread *thread__new(pid_t pid, pid_t tid)
+ 			goto err_thread;
  
- SEE ALSO
- --------
-diff --git a/tools/perf/Documentation/perf-kvm.txt b/tools/perf/Documentation/perf-kvm.txt
-index 6e689dc..6252e77 100644
---- a/tools/perf/Documentation/perf-kvm.txt
-+++ b/tools/perf/Documentation/perf-kvm.txt
-@@ -100,7 +100,7 @@ OPTIONS
- STAT REPORT OPTIONS
- -------------------
- --vcpu=<value>::
--       analyze events which occures on this vcpu. (default: all vcpus)
-+       analyze events which occur on this vcpu. (default: all vcpus)
+ 		list_add(&comm->list, &thread->comm_list);
++
+ 	}
  
- --event=<value>::
-        event to be analyzed. Possible values: vmexit, mmio (x86 only),
-@@ -134,7 +134,7 @@ STAT LIVE OPTIONS
-     Analyze events only for given process ID(s) (comma separated list).
+ 	return thread;
+@@ -69,6 +74,7 @@ void thread__delete(struct thread *thread)
+ 		list_del(&comm->list);
+ 		comm__free(comm);
+ 	}
++	unwind__finish_access(thread);
  
- --vcpu=<value>::
--       analyze events which occures on this vcpu. (default: all vcpus)
-+       analyze events which occur on this vcpu. (default: all vcpus)
+ 	free(thread);
+ }
+diff --git a/tools/perf/util/unwind-libunwind.c b/tools/perf/util/unwind-libunwind.c
+index 92b56db..e060386 100644
+--- a/tools/perf/util/unwind-libunwind.c
++++ b/tools/perf/util/unwind-libunwind.c
+@@ -24,6 +24,7 @@
+ #include <linux/list.h>
+ #include <libunwind.h>
+ #include <libunwind-ptrace.h>
++#include "callchain.h"
+ #include "thread.h"
+ #include "session.h"
+ #include "perf_regs.h"
+@@ -525,12 +526,12 @@ static unw_accessors_t accessors = {
+ 	.get_proc_name		= get_proc_name,
+ };
  
+-static int get_entries(struct unwind_info *ui, unwind_entry_cb_t cb,
+-		       void *arg, int max_stack)
++int unwind__prepare_access(struct thread *thread)
+ {
+ 	unw_addr_space_t addr_space;
+-	unw_cursor_t c;
+-	int ret;
++
++	if (callchain_param.record_mode != CALLCHAIN_DWARF)
++		return 0;
  
- --event=<value>::
-diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
-index 6fce6a6..cbb4f74 100644
---- a/tools/perf/Documentation/perf-list.txt
-+++ b/tools/perf/Documentation/perf-list.txt
-@@ -19,7 +19,7 @@ various perf commands with the -e option.
- EVENT MODIFIERS
- ---------------
+ 	addr_space = unw_create_addr_space(&accessors, 0);
+ 	if (!addr_space) {
+@@ -538,6 +539,33 @@ static int get_entries(struct unwind_info *ui, unwind_entry_cb_t cb,
+ 		return -ENOMEM;
+ 	}
  
--Events can optionally have a modifer by appending a colon and one or
-+Events can optionally have a modifier by appending a colon and one or
- more modifiers. Modifiers allow the user to restrict the events to be
- counted. The following modifiers exist:
++	thread__set_priv(thread, addr_space);
++
++	return 0;
++}
++
++void unwind__finish_access(struct thread *thread)
++{
++	unw_addr_space_t addr_space;
++
++	if (callchain_param.record_mode != CALLCHAIN_DWARF)
++		return;
++
++	addr_space = thread__priv(thread);
++	unw_destroy_addr_space(addr_space);
++}
++
++static int get_entries(struct unwind_info *ui, unwind_entry_cb_t cb,
++		       void *arg, int max_stack)
++{
++	unw_addr_space_t addr_space;
++	unw_cursor_t c;
++	int ret;
++
++	addr_space = thread__priv(ui->thread);
++	if (addr_space == NULL)
++		return -1;
++
+ 	ret = unw_init_remote(&c, addr_space, ui);
+ 	if (ret)
+ 		display_error(ret);
+@@ -549,7 +577,6 @@ static int get_entries(struct unwind_info *ui, unwind_entry_cb_t cb,
+ 		ret = ip ? entry(ip, ui->thread, ui->machine, cb, arg) : 0;
+ 	}
  
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index d460049..398f8d5 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -146,7 +146,7 @@ the thread executes on the designated CPUs. Default is to monitor all CPUs.
+-	unw_destroy_addr_space(addr_space);
+ 	return ret;
+ }
  
- -N::
- --no-buildid-cache::
--Do not update the builid cache. This saves some overhead in situations
-+Do not update the buildid cache. This saves some overhead in situations
- where the information in the perf.data file (which includes buildids)
- is sufficient.
+diff --git a/tools/perf/util/unwind.h b/tools/perf/util/unwind.h
+index f030612..c17c485 100644
+--- a/tools/perf/util/unwind.h
++++ b/tools/perf/util/unwind.h
+@@ -4,6 +4,7 @@
+ #include <linux/types.h>
+ #include "event.h"
+ #include "symbol.h"
++#include "thread.h"
  
-diff --git a/tools/perf/Documentation/perf-script-perl.txt b/tools/perf/Documentation/perf-script-perl.txt
-index d00bef2..dfbb506 100644
---- a/tools/perf/Documentation/perf-script-perl.txt
-+++ b/tools/perf/Documentation/perf-script-perl.txt
-@@ -181,8 +181,8 @@ strings for flag and symbolic fields.  These correspond to the strings
- and values parsed from the 'print fmt' fields of the event format
- files:
- 
--  flag_str($event_name, $field_name, $field_value) - returns the string represention corresponding to $field_value for the flag field $field_name of event $event_name
--  symbol_str($event_name, $field_name, $field_value) - returns the string represention corresponding to $field_value for the symbolic field $field_name of event $event_name
-+  flag_str($event_name, $field_name, $field_value) - returns the string representation corresponding to $field_value for the flag field $field_name of event $event_name
-+  symbol_str($event_name, $field_name, $field_value) - returns the string representation corresponding to $field_value for the symbolic field $field_name of event $event_name
- 
- Perf::Trace::Context Module
- ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-diff --git a/tools/perf/Documentation/perf-script-python.txt b/tools/perf/Documentation/perf-script-python.txt
-index 9f1f054..54acba2 100644
---- a/tools/perf/Documentation/perf-script-python.txt
-+++ b/tools/perf/Documentation/perf-script-python.txt
-@@ -263,7 +263,7 @@ and having the counts we've tallied as values.
- 
- The print_syscall_totals() function iterates over the entries in the
- dictionary and displays a line for each entry containing the syscall
--name (the dictonary keys contain the syscall ids, which are passed to
-+name (the dictionary keys contain the syscall ids, which are passed to
- the Util function syscall_name(), which translates the raw syscall
- numbers to the corresponding syscall name strings).  The output is
- displayed after all the events in the trace have been processed, by
-@@ -576,8 +576,8 @@ strings for flag and symbolic fields.  These correspond to the strings
- and values parsed from the 'print fmt' fields of the event format
- files:
- 
--  flag_str(event_name, field_name, field_value) - returns the string represention corresponding to field_value for the flag field field_name of event event_name
--  symbol_str(event_name, field_name, field_value) - returns the string represention corresponding to field_value for the symbolic field field_name of event event_name
-+  flag_str(event_name, field_name, field_value) - returns the string representation corresponding to field_value for the flag field field_name of event event_name
-+  symbol_str(event_name, field_name, field_value) - returns the string representation corresponding to field_value for the symbolic field field_name of event event_name
- 
- The *autodict* function returns a special kind of Python
- dictionary that implements Perl's 'autovivifying' hashes in Python
-diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
-index 05f9a0a..5a0160d 100644
---- a/tools/perf/Documentation/perf-script.txt
-+++ b/tools/perf/Documentation/perf-script.txt
-@@ -140,7 +140,7 @@ OPTIONS
-     
- 		"Overriding previous field request for all events."
-     
--	Alternativey, consider the order:
-+	Alternatively, consider the order:
-     
- 		-f comm,tid,time,ip,sym -f trace:
-     
-diff --git a/tools/perf/Documentation/perf-test.txt b/tools/perf/Documentation/perf-test.txt
-index d1d3e5121..31a5c3e 100644
---- a/tools/perf/Documentation/perf-test.txt
-+++ b/tools/perf/Documentation/perf-test.txt
-@@ -25,7 +25,7 @@ OPTIONS
- -------
- -s::
- --skip::
--	Tests to skip (comma separater numeric list).
-+	Tests to skip (comma separated numeric list).
- 
- -v::
- --verbose::
-diff --git a/tools/perf/Documentation/perf-trace.txt b/tools/perf/Documentation/perf-trace.txt
-index 02aac83..7e1b1f2 100644
---- a/tools/perf/Documentation/perf-trace.txt
-+++ b/tools/perf/Documentation/perf-trace.txt
-@@ -20,7 +20,7 @@ scheduling events, etc.
- This is a live mode tool in addition to working with perf.data files like
- the other perf tools. Files can be generated using the 'perf record' command
- but the session needs to include the raw_syscalls events (-e 'raw_syscalls:*').
--Alernatively, the 'perf trace record' can be used as a shortcut to
-+Alternatively, 'perf trace record' can be used as a shortcut to
- automatically include the raw_syscalls events when writing events to a file.
- 
- The following options apply to perf trace; options to perf trace record are
+ struct unwind_entry {
+ 	struct map	*map;
+@@ -21,6 +22,15 @@ int unwind__get_entries(unwind_entry_cb_t cb, void *arg,
+ /* libunwind specific */
+ #ifdef HAVE_LIBUNWIND_SUPPORT
+ int libunwind__arch_reg_id(int regnum);
++int unwind__prepare_access(struct thread *thread);
++void unwind__finish_access(struct thread *thread);
++#else
++static inline int unwind__prepare_access(struct thread *thread __maybe_unused)
++{
++	return 0;
++}
++
++static inline void unwind__finish_access(struct thread *thread __maybe_unused) {}
+ #endif
+ #else
+ static inline int
+@@ -33,5 +43,12 @@ unwind__get_entries(unwind_entry_cb_t cb __maybe_unused,
+ {
+ 	return 0;
+ }
++
++static inline int unwind__prepare_access(struct thread *thread __maybe_unused)
++{
++	return 0;
++}
++
++static inline void unwind__finish_access(struct thread *thread __maybe_unused) {}
+ #endif /* HAVE_DWARF_UNWIND_SUPPORT */
+ #endif /* __UNWIND_H */
