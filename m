@@ -1,89 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752232AbaJPRmS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 13:42:18 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:43998 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751935AbaJPRmR (ORCPT
+	id S1752327AbaJPRmy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 13:42:54 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:29086 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751472AbaJPRmx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 13:42:17 -0400
+	Thu, 16 Oct 2014 13:42:53 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/64YCLr5ljGMcaDcnjH1uQjv4NlGlmwCY=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 2A39360086A
+Date: Thu, 16 Oct 2014 13:42:45 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Stephan Mueller <smueller@chronox.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kernel crypto API interface specification
+Message-ID: <20141016174245.GL17447@titan.lakedaemon.net>
+References: <7502136.9BkWHTZ0th@myon.chronox.de>
+ <20141016132501.GI17447@titan.lakedaemon.net>
+ <20141016150604.GK17447@titan.lakedaemon.net>
+ <2081738.uvS0jMPrv1@myon.chronox.de>
 MIME-Version: 1.0
-In-Reply-To: <1413480303.6702.7.camel@perches.com>
-References: <1413479722-29247-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <1413480303.6702.7.camel@perches.com>
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Date: Thu, 16 Oct 2014 19:41:55 +0200
-Message-ID: <CAFo99gbGrGXz+gYQn0hAPKxN73BLLWhaUPVN0DVq6-3PiFzOSw@mail.gmail.com>
-Subject: Re: [PATCH 3v] char: hw_random: core.c: Changed from using strncat to strlcat
-To: Joe Perches <joe@perches.com>
-Cc: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.apana.org.au>,
-        Torsten Duwe <duwe@lst.de>, "Theodore Ts'o" <tytso@mit.edu>,
-        Jason Cooper <jason@lakedaemon.net>, Amit Shah <amit.shah@redhat.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Kees Cook <keescook@chromium.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2081738.uvS0jMPrv1@myon.chronox.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-10-16 19:25 GMT+02:00 Joe Perches <joe@perches.com>:
-> On Thu, 2014-10-16 at 19:15 +0200, Rickard Strandqvist wrote:
->> The buf is used to hold the list of hwrng devices registered.
->> The old code ensures we don't walk off the end of buf as we
->> fill it, but it's unnecessarily complicated and thus difficult
->> to maintain. Simplify it by using strlcat.
->> We also ensure the string within buf is NULL terminated
->> so the final strlen is ok.
-> []
->> diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
-> []
->> @@ -289,16 +288,13 @@ static ssize_t hwrng_attr_available_show(struct device *dev,
->>               return -ERESTARTSYS;
->>       buf[0] = '\0';
->>       list_for_each_entry(rng, &rng_list, list) {
->> -             strncat(buf, rng->name, PAGE_SIZE - ret - 1);
->> -             ret += strlen(rng->name);
->> -             strncat(buf, " ", PAGE_SIZE - ret - 1);
->> -             ret++;
->> +             strlcat(buf, rng->name, PAGE_SIZE);
->> +             strlcat(buf, " ", PAGE_SIZE);
->>       }
->> -     strncat(buf, "\n", PAGE_SIZE - ret - 1);
->> -     ret++;
->> +     strlcat(buf, "\n", PAGE_SIZE);
->>       mutex_unlock(&rng_mutex);
->>
->> -     return ret;
->> +     return strlen(buf);
->>  }
->>
->>  static DEVICE_ATTR(rng_current, S_IRUGO | S_IWUSR,
->
-> Rickard, can you please use some optimizations here
-> (and elsewhere) so that strlcat doesn't always have
-> to strlen the first string and the return doesn't
-> have to do the strlen too?
->
-> You could use a temporary for the returned length
-> of the strlcat so that if it's shorter than
-> the buffer, the next strlcat can start at the
-> appropriate known position instead of having
-> to do the initial strlen again and again.
->
+On Thu, Oct 16, 2014 at 06:50:58PM +0200, Stephan Mueller wrote:
+> Am Donnerstag, 16. Oktober 2014, 11:06:05 schrieb Jason Cooper:
+> 
+> Hi Jason,
+> 
+> > On Thu, Oct 16, 2014 at 09:25:01AM -0400, Jason Cooper wrote:
+> > > + Grant, Geert,
+> > > 
+> > > Stephan has created some great example code for both the kernel crypto
+> > > API and the userspace crypto API.  As examples tend to bitrot, I was
+> > > wondering if the code could serve as test code.  Then it would have a
+> > > triple role: API regression testing, crypto test suite, and reference
+> > > implementation.
+> > > 
+> > > Original patch is here:
+> > >   https://lkml.kernel.org/r/7502136.9BkWHTZ0th@myon.chronox.de
+> > > 
+> > > On Thu, Oct 16, 2014 at 09:19:08AM +0200, Stephan Mueller wrote:
+> > > > Am Mittwoch, 15. Oktober 2014, 13:58:00 schrieb Jason Cooper:
+> > > > > On Tue, Oct 14, 2014 at 09:46:50PM +0200, Stephan Mueller wrote:
+> > ...
+> > 
+> > > > > Perhaps the userspace API example should be a separate file with this
+> > > > > text at the top?  Seems odd having it at the end.  Also, if you copied
+> > > > > it from cryptsetup, is the copyright info correct?
+> > > > 
+> > > > I did not copy it from cryptsetup. I only used it as a basis, especially
+> > > > with the data structure handling in _kcapi_cipher_crypt. But you are
+> > > > right, I changed the license for the user space by taking the
+> > > > cryptsetup license.> 
+> > > Ok.  It looks like Geert and Grant took part in the kernel test
+> > > unconference, so I'm adding them to the Cc.  I hope they can give us
+> > > some pointers as to where we could hook in this code.  Then we can
+> > > simply refer to it from the userspace API document.
+> > 
+> > tools/testing/selftests/crypto would be a good location for the example
+> > code in the next version of this patch.  Make sure to take a look at
+> > tools/testing/selftests/README.txt.
+> 
+> Well, I have written a FIPS 140-2 CAVS test harness covering all ciphers NIST 
+> is interested. Maybe this can go there?
 
+Assuming you own the code and are willing to license it under and
+compatible license, then yes.  I would keep it a separate test from
+other crypto tests, though.
 
-Hi Joe
+There may be some push back wrt it being FIPS 140-2.  But I think it's
+worth considering.
 
-Yes that did not take advantage last strlcat was foolish.
+thx,
 
-But the others, I am very hesitant about. Because strlcat like
-snprintf and strlcpy returns the length that would be copied rather
-than what is actually copied. Hence such a code to be even more
-complex than before.
-
-
-Kind regards
-Rickard Strandqvist
+Jason.
