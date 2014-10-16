@@ -1,56 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751938AbaJPCTV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 22:19:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9476 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751795AbaJPCTT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 22:19:19 -0400
-Date: Wed, 15 Oct 2014 22:18:59 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Felipe Balbi <balbi@ti.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org,
-        aubrey.li@linux.intel.com
-Subject: [Patch v2] x86: Make Atom PMC driver configurable.
-Message-ID: <20141016021859.GA12042@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-	Felipe Balbi <balbi@ti.com>, x86@kernel.org,
-	aubrey.li@linux.intel.com
-References: <20141015144603.GA19944@redhat.com>
- <20141015145245.GB11511@saruman>
- <20141015145924.GA21199@redhat.com>
- <20141015172030.6bb3c522@alan.etchedpixels.co.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141015172030.6bb3c522@alan.etchedpixels.co.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752010AbaJPCVw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 22:21:52 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:53738 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751329AbaJPCVu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 22:21:50 -0400
+X-AuditID: cbfee68d-f79296d000004278-a8-543f2bbcd2c7
+Message-id: <543F2BBB.6090709@samsung.com>
+Date: Thu, 16 Oct 2014 11:21:47 +0900
+From: Jaehoon Chung <jh80.chung@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Doug Anderson <dianders@chromium.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>
+Cc: Addy Ke <addy.ke@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Andrew Bresticker <abrestic@chromium.org>, heiko@sntech.de,
+        chris@printf.net, linux-mmc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mmc: dw_mmc: rockchip: Don't recalc the clock when it goes
+ off
+References: <1413304752-7823-1-git-send-email-dianders@chromium.org>
+In-reply-to: <1413304752-7823-1-git-send-email-dianders@chromium.org>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHIsWRmVeSWpSXmKPExsWyRsSkWHePtn2IwenrIhYr3/9ltFj2/zuT
+	xYN529gsJlzezmhxdtlBNov/j16zWmx6fI3V4vKuOWwWR/73M1p8evCf2eLJmZmMFh/uX2S2
+	OL423IHXY3bDRRaPO9f2sHlsXlLvcePVQiaPv7P2s3j0bVnF6LH92jxmj8+b5AI4orhsUlJz
+	MstSi/TtErgy9h46wVxwjLOi88gW5gbG0+xdjJwcEgImElfurmeDsMUkLtwDsbk4hASWMkps
+	X3ALqIgDrKjxqDVEfDqjxLaj29khnNeMEneffWMC6eYV0JK4dWMB2CQWAVWJ5n0rWUFsNgEd
+	ie3fjoPViAqESRxqmwdVLyjxY/I9FhBbRKBconHrCbDNzALHmST+r/4CNkhYIFTi1InljCC2
+	kICLROuFBWANnAKuEj8vnwZbwAy0YH/rNDYIW15i85q3zBDvTOSQOL3VE+IgAYlvkw+xQHwj
+	K7HpAFSJpMTBFTdYJjCKzUJy0iwkU2chmbqAkXkVo2hqQXJBcVJ6kaFecWJucWleul5yfu4m
+	RmA0n/73rHcH4+0D1ocYBTgYlXh4LV7ZhgixJpYVV+YeYjQFumIis5Rocj4wZeSVxBsamxlZ
+	mJqYGhuZW5opifMqSv0MFhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cC45O30Y5eW7lKx/M9T
+	trvEPKdrcdoHt0g1k2076rx1xOvSp8TY65se5zAo4GR8FFdwyzr6Z663roRIziw7ncMO1j2X
+	+sLXT5KRr5ok8Hla00stp7tXcox2xEoV+6Z7pXXLvvxw5PimeTZsdlXNuyQqfDxnROzWi94z
+	xedQzoozAsJ2CtMPdCixFGckGmoxFxUnAgBAT1FU4QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJKsWRmVeSWpSXmKPExsVy+t9jQd092vYhBhM38VisfP+X0WLZ/+9M
+	Fg/mbWOzmHB5O6PF2WUH2Sz+P3rNarHp8TVWi8u75rBZHPnfz2jx6cF/ZosnZ2YyWny4f5HZ
+	4vjacAdej9kNF1k87lzbw+axeUm9x41XC5k8/s7az+LRt2UVo8f2a/OYPT5vkgvgiGpgtMlI
+	TUxJLVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wBOllJoSwxpxQo
+	FJBYXKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjDmLH30AnmgmOcFZ1HtjA3MJ5m72Lk4JAQ
+	MJFoPGrdxcgJZIpJXLi3nq2LkYtDSGA6o8S2o9vZIZzXjBJ3n31jAqniFdCSuHVjARuIzSKg
+	KtG8byUriM0moCOx/dtxsBpRgTCJQ23zoOoFJX5MvscCYosIlEs0bj0BtoFZ4DiTxP/VX8AG
+	CQuESpw6sZwRxBYScJFovbAArIFTwFXi5+XTYAuYgRbsb53GBmHLS2xe85Z5AqPALCQ7ZiEp
+	m4WkbAEj8ypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M4GTxTHoH46oGi0OMAhyMSjy8HAds
+	Q4RYE8uKK3MPMUpwMCuJ8M7lsg8R4k1JrKxKLcqPLyrNSS0+xGgKDIKJzFKiyfnARJZXEm9o
+	bGJmZGlkbmhhZGyuJM57sNU6UEggPbEkNTs1tSC1CKaPiYNTqoFxtsfltq9X/I6KH88pM/2W
+	fTVN+tUaV5a1X7eJMGyzLKywlnp62G3zsuZ9S3/MuRf878HBSRf8d5c+YtrHtfnS+TCJgCV1
+	c0sK8jmXHqo6X/Gcd27/tDmNU8otV06b5MN274FJrJFwK3d1m6G8UAln0zfm0oV8vRqvGaNX
+	pVzhC6kVWrt1U6mPEktxRqKhFnNRcSIAoyBgWCwDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Atom PMC driver is always built-in, regardless of whether
-the kernel being built is going to be run on an Atom (or even Intel) CPU.
+Hi, Doug.
 
-Signed-off-by: Dave Jones <davej@redhat.com>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: aubrey.li@linux.intel.com
+It looks good to me.
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index f2327e88e07c..b4dfd96aeea8 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -2485,7 +2485,8 @@ config X86_DMA_REMAP
- 	depends on STA2X11
- 
- config PMC_ATOM
--	def_bool y
-+	tristate "Intel Atom SOC power management controller driver"
-+	default y
-         depends on PCI
- 
- source "net/Kconfig"
+Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
+
+On 10/15/2014 01:39 AM, Doug Anderson wrote:
+> The "set_ios" function is called with a clock of 0 when the clock is
+> turning off.  There's no reason to go through all the extra Rockchip
+> logic (whose goal is to make sure DIV is 0 or 1) in that case.  The
+> Rockchip logic happened to work because the CCF will pick the lowest
+> possible rate when you ask it for a clock of 0, but it's silly to go
+> through all the remuxing and adjusting for no reason.
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+>  drivers/mmc/host/dw_mmc-rockchip.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/drivers/mmc/host/dw_mmc-rockchip.c b/drivers/mmc/host/dw_mmc-rockchip.c
+> index f0c2cb1..bbb4ec3 100644
+> --- a/drivers/mmc/host/dw_mmc-rockchip.c
+> +++ b/drivers/mmc/host/dw_mmc-rockchip.c
+> @@ -37,6 +37,9 @@ static void dw_mci_rk3288_set_ios(struct dw_mci *host, struct mmc_ios *ios)
+>  	unsigned int cclkin;
+>  	u32 bus_hz;
+>  
+> +	if (ios->clock == 0)
+> +		return;
+> +
+>  	/*
+>  	 * cclkin: source clock of mmc controller
+>  	 * bus_hz: card interface clock generated by CLKGEN
+> 
+
