@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010AbaJPCVw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 22:21:52 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:53738 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751329AbaJPCVu (ORCPT
+	id S1751847AbaJPCZk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 22:25:40 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:48738 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342AbaJPCZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 22:21:50 -0400
-X-AuditID: cbfee68d-f79296d000004278-a8-543f2bbcd2c7
-Message-id: <543F2BBB.6090709@samsung.com>
-Date: Thu, 16 Oct 2014 11:21:47 +0900
-From: Jaehoon Chung <jh80.chung@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
+	Wed, 15 Oct 2014 22:25:39 -0400
+X-AuditID: cbfee690-f79ab6d0000046f7-45-543f2ca157c8
+Message-id: <543F2CA0.3080703@samsung.com>
+Date: Thu, 16 Oct 2014 11:25:36 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
 MIME-version: 1.0
-To: Doug Anderson <dianders@chromium.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>
-Cc: Addy Ke <addy.ke@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Andrew Bresticker <abrestic@chromium.org>, heiko@sntech.de,
-        chris@printf.net, linux-mmc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mmc: dw_mmc: rockchip: Don't recalc the clock when it goes
- off
-References: <1413304752-7823-1-git-send-email-dianders@chromium.org>
-In-reply-to: <1413304752-7823-1-git-send-email-dianders@chromium.org>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH] drivers: rtc: fix s3c-rtc initialization failure without
+ rtc source clock
+References: <1413372446-28541-1-git-send-email-m.szyprowski@samsung.com>
+In-reply-to: <1413372446-28541-1-git-send-email-m.szyprowski@samsung.com>
 Content-type: text/plain; charset=ISO-8859-1
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHIsWRmVeSWpSXmKPExsWyRsSkWHePtn2IwenrIhYr3/9ltFj2/zuT
-	xYN529gsJlzezmhxdtlBNov/j16zWmx6fI3V4vKuOWwWR/73M1p8evCf2eLJmZmMFh/uX2S2
-	OL423IHXY3bDRRaPO9f2sHlsXlLvcePVQiaPv7P2s3j0bVnF6LH92jxmj8+b5AI4orhsUlJz
-	MstSi/TtErgy9h46wVxwjLOi88gW5gbG0+xdjJwcEgImElfurmeDsMUkLtwDsbk4hASWMkps
-	X3ALqIgDrKjxqDVEfDqjxLaj29khnNeMEneffWMC6eYV0JK4dWMB2CQWAVWJ5n0rWUFsNgEd
-	ie3fjoPViAqESRxqmwdVLyjxY/I9FhBbRKBconHrCbDNzALHmST+r/4CNkhYIFTi1InljCC2
-	kICLROuFBWANnAKuEj8vnwZbwAy0YH/rNDYIW15i85q3zBDvTOSQOL3VE+IgAYlvkw+xQHwj
-	K7HpAFSJpMTBFTdYJjCKzUJy0iwkU2chmbqAkXkVo2hqQXJBcVJ6kaFecWJucWleul5yfu4m
-	RmA0n/73rHcH4+0D1ocYBTgYlXh4LV7ZhgixJpYVV+YeYjQFumIis5Rocj4wZeSVxBsamxlZ
-	mJqYGhuZW5opifMqSv0MFhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cC45O30Y5eW7lKx/M9T
-	trvEPKdrcdoHt0g1k2076rx1xOvSp8TY65se5zAo4GR8FFdwyzr6Z663roRIziw7ncMO1j2X
-	+sLXT5KRr5ok8Hla00stp7tXcox2xEoV+6Z7pXXLvvxw5PimeTZsdlXNuyQqfDxnROzWi94z
-	xedQzoozAsJ2CtMPdCixFGckGmoxFxUnAgBAT1FU4QIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJKsWRmVeSWpSXmKPExsVy+t9jQd092vYhBhM38VisfP+X0WLZ/+9M
-	Fg/mbWOzmHB5O6PF2WUH2Sz+P3rNarHp8TVWi8u75rBZHPnfz2jx6cF/ZosnZ2YyWny4f5HZ
-	4vjacAdej9kNF1k87lzbw+axeUm9x41XC5k8/s7az+LRt2UVo8f2a/OYPT5vkgvgiGpgtMlI
-	TUxJLVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wBOllJoSwxpxQo
-	FJBYXKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjDmLH30AnmgmOcFZ1HtjA3MJ5m72Lk4JAQ
-	MJFoPGrdxcgJZIpJXLi3nq2LkYtDSGA6o8S2o9vZIZzXjBJ3n31jAqniFdCSuHVjARuIzSKg
-	KtG8byUriM0moCOx/dtxsBpRgTCJQ23zoOoFJX5MvscCYosIlEs0bj0BtoFZ4DiTxP/VX8AG
-	CQuESpw6sZwRxBYScJFovbAArIFTwFXi5+XTYAuYgRbsb53GBmHLS2xe85Z5AqPALCQ7ZiEp
-	m4WkbAEj8ypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M4GTxTHoH46oGi0OMAhyMSjy8HAds
-	Q4RYE8uKK3MPMUpwMCuJ8M7lsg8R4k1JrKxKLcqPLyrNSS0+xGgKDIKJzFKiyfnARJZXEm9o
-	bGJmZGlkbmhhZGyuJM57sNU6UEggPbEkNTs1tSC1CKaPiYNTqoFxtsfltq9X/I6KH88pM/2W
-	fTVN+tUaV5a1X7eJMGyzLKywlnp62G3zsuZ9S3/MuRf878HBSRf8d5c+YtrHtfnS+TCJgCV1
-	c0sK8jmXHqo6X/Gcd27/tDmNU8otV06b5MN274FJrJFwK3d1m6G8UAln0zfm0oV8vRqvGaNX
-	pVzhC6kVWrt1U6mPEktxRqKhFnNRcSIAoyBgWCwDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFIsWRmVeSWpSXmKPExsWyRsSkWHehjn2IwfIrIhZLLl5lt+hdcJXN
+	4mzTG3aLy7vmsFmsPXKX3WJ/ZwejA5vHnokn2Tz6tqxi9Jg+7yeTx+dNcgEsUVw2Kak5mWWp
+	Rfp2CVwZP7pOsRQs4amYedakgXEaVxcjJ4eEgInE8R3PWCBsMYkL99azdTFycQgJLGWUOH2q
+	mQmmaMe2n0wQiemMEo9fPGaBcF4zSlyY+o8dpIpXQEti1qUbrCA2i4CqxLZ/EHE2oPj+FzfY
+	QGxRgTCJldOvsEDUC0r8mHwPzBYR0JfobrvCCDKUWWAHo0T3r8OMIAlhgQSJbT9fMoPYQgIe
+	Esen7AMbxCngKfHt/H+wZcwCOhL7W6exQdjyEpvXvGUGGSQhsI9d4vLrRnaIiwQkvk0+BLSN
+	AyghK7HpADPEa5ISB1fcYJnAKDYLyU2zkIydhWTsAkbmVYyiqQXJBcVJ6UUmesWJucWleel6
+	yfm5mxiBUXb637MJOxjvHbA+xCjAwajEw2vxyjZEiDWxrLgy9xCjKdAVE5mlRJPzgbGcVxJv
+	aGxmZGFqYmpsZG5ppiTO+1rqZ7CQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGRkaPgJQ/D8I6
+	i2L97/05+TEjU/rkhrMWl7r2dm58fG+y+Zajv8+GTn3GL/i4y57ztvwFzds22yO23vrM+PvL
+	2jmvJ87fePBtg91p8UPekfoMqrUcbuekfTyEnDUnfdt57a/99PaONCH3J82zV1ScnL9rH+Nt
+	+9fMFutvzjn0WOxo4qTdex+2BG9WYinOSDTUYi4qTgQALZr9wq0CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCIsWRmVeSWpSXmKPExsVy+t9jQd2FOvYhBt9P8losuXiV3aJ3wVU2
+	i7NNb9gtLu+aw2ax9shddov9nR2MDmweeyaeZPPo27KK0WP6vJ9MHp83yQWwRDUw2mSkJqak
+	Fimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYAbVdSKEvMKQUKBSQW
+	Fyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYwZvzoOsVSsISnYuZZkwbGaVxdjJwcEgImEju2
+	/WSCsMUkLtxbz9bFyMUhJDCdUeLxi8csEM5rRokLU/+xg1TxCmhJzLp0gxXEZhFQldj2DyLO
+	BhTf/+IGG4gtKhAmsXL6FRaIekGJH5PvgdkiAvoS3W1XGEGGMgvsYJTo/nWYESQhLJAgse3n
+	S2YQW0jAQ+L4lH1ggzgFPCW+nf8PtoxZQEdif+s0NghbXmLzmrfMExgFZiHZMQtJ2SwkZQsY
+	mVcxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBMfwM+kdjKsaLA4xCnAwKvHwchywDRFiTSwr
+	rsw9xCjBwawkwjuXyz5EiDclsbIqtSg/vqg0J7X4EKMpMAgmMkuJJucD00teSbyhsYmZkaWR
+	uaGFkbG5kjjvwVbrQCGB9MSS1OzU1ILUIpg+Jg5OqQbG2MDrdyW2xsRV/29ZE3LljhjX6aSM
+	fZG7dHtrbq1r5E3ge3X0/yMTde89ZjxXfnOFbp7/V6H1SIqrWtKurDTZjqfZn3cJhm9dpz/7
+	qJ+A46PNx9eZuOeysHYdd/V79H2F3aS2+mQPBbf7eesjrjJUtRdH739nzfzki0HCZSvjw8Jt
+	qQeEIh2VWIozEg21mIuKEwGytLdt9wIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -63,38 +57,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Doug.
-
-It looks good to me.
-
-Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
-
-On 10/15/2014 01:39 AM, Doug Anderson wrote:
-> The "set_ios" function is called with a clock of 0 when the clock is
-> turning off.  There's no reason to go through all the extra Rockchip
-> logic (whose goal is to make sure DIV is 0 or 1) in that case.  The
-> Rockchip logic happened to work because the CCF will pick the lowest
-> possible rate when you ask it for a clock of 0, but it's silly to go
-> through all the remuxing and adjusting for no reason.
+On 10/15/2014 08:27 PM, Marek Szyprowski wrote:
+> This patch fixes unconditional initialization failure on non-exynos3250
+> SoCs. Commit df9e26d093d33a097c5558aab017dd2f540ccfe5 ("rtc: s3c: add support for RTC of Exynos3250 SoC") introduced rtc source clock support,
+> but also added initialization failure on SoCs, which doesn't need such
+> clock.
 > 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 > ---
->  drivers/mmc/host/dw_mmc-rockchip.c | 3 +++
->  1 file changed, 3 insertions(+)
+>  drivers/rtc/rtc-s3c.c | 14 ++++++++------
+>  1 file changed, 8 insertions(+), 6 deletions(-)
 > 
-> diff --git a/drivers/mmc/host/dw_mmc-rockchip.c b/drivers/mmc/host/dw_mmc-rockchip.c
-> index f0c2cb1..bbb4ec3 100644
-> --- a/drivers/mmc/host/dw_mmc-rockchip.c
-> +++ b/drivers/mmc/host/dw_mmc-rockchip.c
-> @@ -37,6 +37,9 @@ static void dw_mci_rk3288_set_ios(struct dw_mci *host, struct mmc_ios *ios)
->  	unsigned int cclkin;
->  	u32 bus_hz;
+> diff --git a/drivers/rtc/rtc-s3c.c b/drivers/rtc/rtc-s3c.c
+> index a6b1252c9941..806072238c00 100644
+> --- a/drivers/rtc/rtc-s3c.c
+> +++ b/drivers/rtc/rtc-s3c.c
+> @@ -535,13 +535,15 @@ static int s3c_rtc_probe(struct platform_device *pdev)
+>  	}
+>  	clk_prepare_enable(info->rtc_clk);
 >  
-> +	if (ios->clock == 0)
-> +		return;
-> +
->  	/*
->  	 * cclkin: source clock of mmc controller
->  	 * bus_hz: card interface clock generated by CLKGEN
+> -	info->rtc_src_clk = devm_clk_get(&pdev->dev, "rtc_src");
+> -	if (IS_ERR(info->rtc_src_clk)) {
+> -		dev_err(&pdev->dev, "failed to find rtc source clock\n");
+> -		return PTR_ERR(info->rtc_src_clk);
+> +	if (info->data->needs_src_clk) {
+> +		info->rtc_src_clk = devm_clk_get(&pdev->dev, "rtc_src");
+> +		if (IS_ERR(info->rtc_src_clk)) {
+> +			dev_err(&pdev->dev,
+> +				"failed to find rtc source clock\n");
+> +			return PTR_ERR(info->rtc_src_clk);
+> +		}
+> +		clk_prepare_enable(info->rtc_src_clk);
+>  	}
+> -	clk_prepare_enable(info->rtc_src_clk);
+> -
+>  
+>  	/* check to see if everything is setup correctly */
+>  	if (info->data->enable)
 > 
+
+Reviewed-by: Chanwoo Choi <cw00.choi@samsung.com>
+
+Thanks,
+Chanwoo Choi
 
