@@ -1,95 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752536AbaJPTRV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 15:17:21 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:42148 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751414AbaJPTRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 15:17:20 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Jianqun <jay.xu@rock-chips.com>
-Cc: mturquette@linaro.org, dianders@chromium.org, kever.yang@rock-chips.com,
-        dbasehore@chromium.org, mark.yao@rock-chips.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        huangtao@rock-chips.com, cf@rock-chips.com
-Subject: Re: [PATCH v2] clk: rockchip: rk3288: i2s_frac adds flag to set parent's rate
-Date: Thu, 16 Oct 2014 21:17:06 +0200
-Message-ID: <5441807.rM669MWZMA@phil>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1413161056-10273-1-git-send-email-jay.xu@rock-chips.com>
-References: <1412046724-28069-1-git-send-email-jay.xu@rock-chips.com> <1413161056-10273-1-git-send-email-jay.xu@rock-chips.com>
+	id S1752407AbaJPTTF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 15:19:05 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:41157 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309AbaJPTTE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 15:19:04 -0400
+Date: Thu, 16 Oct 2014 12:18:57 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: atull <atull@opensource.altera.com>
+Cc: jdelvare@suse.de, lm-sensors@lm-sensors.org, lgirdwood@gmail.com,
+        broonie@kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, delicious.quinoa@gmail.com,
+        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
+Subject: Re: [PATCH v6 3/4] pmbus: add regulator support
+Message-ID: <20141016191857.GA22237@roeck-us.net>
+References: <1413399310-19277-1-git-send-email-atull@opensource.altera.com>
+ <1413399310-19277-4-git-send-email-atull@opensource.altera.com>
+ <20141016183501.GA21253@roeck-us.net>
+ <alpine.DEB.2.02.1410161339450.28663@atx-linux-37>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1410161339450.28663@atx-linux-37>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jianqun,
-
-Am Montag, 13. Oktober 2014, 08:44:16 schrieb Jianqun:
-> The relation of i2s nodes as follows:
->           i2s_src               1           1            594000000  0
->              i2s_frac           1           1            11289600   0
->                 i2s_pre         1           1            11289600   0
->                    sclk_i2s0    1           1            11289600   0
->                    i2s0_clkout  0           0            11289600   0
->                       hclk_i2s0 1           1            148500000  0
+On Thu, Oct 16, 2014 at 01:40:23PM -0500, atull wrote:
+> On Thu, 16 Oct 2014, Guenter Roeck wrote:
 > 
-> "sclk_i2s0" is the master clock, should allow to set its parent's rate.
-> Add flag CLK_SET_RATE_PARENT for "i2s_frac", "i2s_pre" and "sclk_i2s0".
+> > On Wed, Oct 15, 2014 at 01:55:09PM -0500, atull@opensource.altera.com wrote:
+> > > From: Alan Tull <atull@opensource.altera.com>
+> > > 
+> > > Add support for simple on/off control of each channel.
+> > > 
+> > > To add regulator support, the pmbus part driver needs to add
+> > > regulator_desc information and number of regulators to its
+> > > pmbus_driver_info struct.
+> > > 
+> > > regulator_desc can be declared using default macro for a
+> > > regulator (PMBUS_REGULATOR) that is in pmbus.h
+> > > 
+> > > The regulator_init_data can be initialized from either
+> > > platform data or the device tree.
+> > > 
+> > > Signed-off-by: Alan Tull <atull@opensource.altera.com>
+> > > Reviewed-by: Mark Brown <broonie@kernel.org>
+> > > Cc: Guenter Roeck <linux@roeck-us.net>
+> > 
+> > Hi Alan,
+> > 
+> > I am still seeing lots of the following:
+> > 
+> > vout0: Failed to create debugfs directory
+> > vout1: Failed to create debugfs directory
+> > vout2: Failed to create debugfs directory
+> > vout3: Failed to create debugfs directory
+> > vout4: Failed to create debugfs directory
+> > vout5: Failed to create debugfs directory
+> > vout6: Failed to create debugfs directory
+> > vout7: Failed to create debugfs directory
+> > 
+> > I thought there was a problem in the regulator core, but after looking
+> > into it concluded that the regulator core _should_ prepend the names
+> > with the device name when creating the debugfs entries, unless no device
+> > name is specified. So something must be missing. We'll need to sort
+> > this out before I can accept the code.
+> > 
+> > Thanks,
+> > Guenter
+> > 
 > 
-> Tested on rk3288 board using max98090, with command "aplay <music.wav>"
-> and cat /sys/kernel/debug/clk/clk_summary |grep i2s
+> Hi Guenter,
 > 
-> Signed-off-by: Jianqun <jay.xu@rock-chips.com>
-
-It looks like this is already in the mainline kernel [0].
-
-It seems like I didn't catch the "Change-Id" at the time, and it is the 
-variant where i2s_clkout can set the parent rates.
-
-Could you do a follow-up patch removing the CLK_SET_RATE_PARENT from 
-i2s_clkout again please?
-
-
-Thanks
-Heiko
-
-[0] 
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=fc69ed70c16a31d6a77ec47a30a9fe941f763f1e
-
-> ---
-> change since v1:
-> - no "Change-Id"s in upstream patches, suggested by Heiko
-> - to limit i2s0_clkout to select between its two parent without being able
->   influence the core i2s clock, suggested by Heiko
+> OK, I will look into it.
 > 
->  drivers/clk/rockchip/clk-rk3288.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/clk/rockchip/clk-rk3288.c
-> b/drivers/clk/rockchip/clk-rk3288.c index b22a2d2..ae32d78 100644
-> --- a/drivers/clk/rockchip/clk-rk3288.c
-> +++ b/drivers/clk/rockchip/clk-rk3288.c
-> @@ -238,15 +238,15 @@ static struct rockchip_clk_branch
-> rk3288_clk_branches[] __initdata = { COMPOSITE(0, "i2s_src",
-> mux_pll_src_cpll_gpll_p, 0,
->  			RK3288_CLKSEL_CON(4), 15, 1, MFLAGS, 0, 7, DFLAGS,
->  			RK3288_CLKGATE_CON(4), 1, GFLAGS),
-> -	COMPOSITE_FRAC(0, "i2s_frac", "i2s_src", 0,
-> +	COMPOSITE_FRAC(0, "i2s_frac", "i2s_src", CLK_SET_RATE_PARENT,
->  			RK3288_CLKSEL_CON(8), 0,
->  			RK3288_CLKGATE_CON(4), 2, GFLAGS),
-> -	MUX(0, "i2s_pre", mux_i2s_pre_p, 0,
-> +	MUX(0, "i2s_pre", mux_i2s_pre_p, CLK_SET_RATE_PARENT,
->  			RK3288_CLKSEL_CON(4), 8, 2, MFLAGS),
->  	COMPOSITE_NODIV(0, "i2s0_clkout", mux_i2s_clkout_p, 0,
->  			RK3288_CLKSEL_CON(4), 12, 1, MFLAGS,
->  			RK3288_CLKGATE_CON(4), 0, GFLAGS),
-> -	GATE(SCLK_I2S0, "sclk_i2s0", "i2s_pre", 0,
-> +	GATE(SCLK_I2S0, "sclk_i2s0", "i2s_pre", CLK_SET_RATE_PARENT,
->  			RK3288_CLKGATE_CON(4), 3, GFLAGS),
-> 
->  	MUX(0, "spdif_src", mux_pll_src_cpll_gpll_p, 0,
+Hi Alan,
 
+I tracked it down a bit further. It is a regulator core problem after all.
+Turns out the parent device name is not _always_ used when creating
+debugfs directories. The culprit is rdev_init_debugfs, which just takes
+rdev_get_name() to create the name. I am currently playing with it.
+
+Problem is that if I just prepend the parent device name (if available)
+in rdev_init_debugfs, I get something like the following.
+
+2-005c-pmb-vout0     5-005d-vout6  5-005f-vout5  5-0061-vout4
+2-005c-pmb-vout1     5-005d-vout7  5-005f-vout6  5-0061-vout5
+2-005c-pmb-vout2     5-005e-vout0  5-005f-vout7  5-0061-vout6
+2-005c-vout3         5-005e-vout1  5-0060-vout0  5-0061-vout7
+2-005c-vout4         5-005e-vout2  5-0060-vout1  5-0062-vout0
+2-005c-vout5         5-005e-vout3  5-0060-vout2  5-0062-vout1
+2-005c-vout6         5-005e-vout4  5-0060-vout3  5-0062-vout2
+2-005c-vout7         5-005e-vout5  5-0060-vout4  5-0062-vout3
+3p3v.11-3P3V         5-005e-vout6  5-0060-vout5  5-0062-vout4
+5-005d-fpc-5d-vout0  5-005e-vout7  5-0060-vout6  5-0062-vout5
+5-005d-fpc-5d-vout1  5-005f-vout0  5-0060-vout7  5-0062-vout6
+5-005d-vout2         5-005f-vout1  5-0061-vout0  5-0062-vout7
+5-005d-vout3         5-005f-vout2  5-0061-vout1  reg-dummy-regulator-dummy
+5-005d-vout4         5-005f-vout3  5-0061-vout2  supply_map
+5-005d-vout5         5-005f-vout4  5-0061-vout3
+
+This is a bit better but creates names such as "3p3v.11-3P3V"
+and "reg-dummy-regulator-dummy" which doesn't make much sense
+either. So I think we'll need something better than that.
+
+Guenter
