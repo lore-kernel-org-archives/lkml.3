@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752285AbaJPKWV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 06:22:21 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37364 "EHLO
+	id S1752719AbaJPKWy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 06:22:54 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:37349 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752612AbaJPKUY (ORCPT
+	with ESMTP id S1752605AbaJPKUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 06:20:24 -0400
+	Thu, 16 Oct 2014 06:20:23 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -14,10 +14,11 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH v2 47/53] dmaengine: edma: Declare slave capabilities for the generic code
-Date: Thu, 16 Oct 2014 12:17:46 +0200
-Message-Id: <1413454672-27400-48-git-send-email-maxime.ripard@free-electrons.com>
+        Dan Williams <dan.j.williams@intel.com>,
+        Barry Song <baohua@kernel.org>
+Subject: [PATCH v2 51/53] dmaengine: sirf: Declare slave capabilities for the generic code
+Date: Thu, 16 Oct 2014 12:17:50 +0200
+Message-Id: <1413454672-27400-52-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -32,48 +33,44 @@ Make use of this code.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/dma/edma.c | 21 +++++++--------------
- 1 file changed, 7 insertions(+), 14 deletions(-)
+ drivers/dma/sirf-dma.c | 17 ++++-------------
+ 1 file changed, 4 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-index 5ac2d7dc38c9..5009f2c765e3 100644
---- a/drivers/dma/edma.c
-+++ b/drivers/dma/edma.c
-@@ -971,19 +971,6 @@ static void __init edma_chan_init(struct edma_cc *ecc,
- 				 BIT(DMA_SLAVE_BUSWIDTH_3_BYTES) | \
- 				 BIT(DMA_SLAVE_BUSWIDTH_4_BYTES))
+diff --git a/drivers/dma/sirf-dma.c b/drivers/dma/sirf-dma.c
+index 711c2bae9003..87294f9b8094 100644
+--- a/drivers/dma/sirf-dma.c
++++ b/drivers/dma/sirf-dma.c
+@@ -628,18 +628,6 @@ EXPORT_SYMBOL(sirfsoc_dma_filter_id);
+ 	BIT(DMA_SLAVE_BUSWIDTH_4_BYTES) | \
+ 	BIT(DMA_SLAVE_BUSWIDTH_8_BYTES))
  
--static int edma_dma_device_slave_caps(struct dma_chan *dchan,
--				      struct dma_slave_caps *caps)
+-static int sirfsoc_dma_device_slave_caps(struct dma_chan *dchan,
+-	struct dma_slave_caps *caps)
 -{
--	caps->src_addr_widths = EDMA_DMA_BUSWIDTHS;
--	caps->dst_addr_widths = EDMA_DMA_BUSWIDTHS;
+-	caps->src_addr_widths = SIRFSOC_DMA_BUSWIDTHS;
+-	caps->dst_addr_widths = SIRFSOC_DMA_BUSWIDTHS;
 -	caps->directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
 -	caps->cmd_pause = true;
 -	caps->cmd_terminate = true;
--	caps->residue_granularity = DMA_RESIDUE_GRANULARITY_BURST;
 -
 -	return 0;
 -}
 -
- static void edma_dma_init(struct edma_cc *ecc, struct dma_device *dma,
- 			  struct device *dev)
+ static struct dma_chan *of_dma_sirfsoc_xlate(struct of_phandle_args *dma_spec,
+ 	struct of_dma *ofdma)
  {
-@@ -998,7 +985,13 @@ static void edma_dma_init(struct edma_cc *ecc, struct dma_device *dma,
- 	dma->device_pause = edma_dma_pause;
- 	dma->device_resume = edma_dma_resume;
- 	dma->device_terminate_all = edma_terminate_all;
--	dma->device_slave_caps = edma_dma_device_slave_caps;
-+
-+	dma->src_addr_widths = EDMA_DMA_BUSWIDTHS;
-+	dma->dst_addr_widths = EDMA_DMA_BUSWIDTHS;
+@@ -727,7 +715,10 @@ static int sirfsoc_dma_probe(struct platform_device *op)
+ 	dma->device_tx_status = sirfsoc_dma_tx_status;
+ 	dma->device_prep_interleaved_dma = sirfsoc_dma_prep_interleaved;
+ 	dma->device_prep_dma_cyclic = sirfsoc_dma_prep_cyclic;
+-	dma->device_slave_caps = sirfsoc_dma_device_slave_caps;
++	dma->src_addr_widths = SIRFSOC_DMA_BUSWIDTHS;
++	dma->dst_addr_widths = SIRFSOC_DMA_BUSWIDTHS;
 +	dma->directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
-+	dma->residue_granularity = DMA_RESIDUE_GRANULARITY_BURST;
 +	dma->generic_slave_caps = true;
-+
- 	dma->dev = dev;
  
- 	/*
+ 	INIT_LIST_HEAD(&dma->channels);
+ 	dma_cap_set(DMA_SLAVE, dma->cap_mask);
 -- 
 2.1.1
 
