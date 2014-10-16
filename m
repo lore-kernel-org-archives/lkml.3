@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752642AbaJPK0I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 06:26:08 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37349 "EHLO
+	id S1752847AbaJPK0m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 06:26:42 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:37364 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752589AbaJPKUV (ORCPT
+	with ESMTP id S1752579AbaJPKUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 06:20:21 -0400
+	Thu, 16 Oct 2014 06:20:19 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -15,9 +15,9 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
         Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH v2 44/53] dmaengine: txx9: Rename device_control
-Date: Thu, 16 Oct 2014 12:17:43 +0200
-Message-Id: <1413454672-27400-45-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v2 41/53] dmaengine: mv_xor: Remove device_control
+Date: Thu, 16 Oct 2014 12:17:40 +0200
+Message-Id: <1413454672-27400-42-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -25,47 +25,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename the device_control callback of the TXX9 DMA driver to terminate_all
-since it's all it's really doing. That will eventually be used to retrieve
-slave capabilities.
+The Marvell XOR engine doesn't allow any operations that use to be defined in
+device_control, it shouldn't need to be defined. Since it's going to be
+deprecated, remove it altogether.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/dma/txx9dmac.c | 9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
+ drivers/dma/mv_xor.c | 9 ---------
+ 1 file changed, 9 deletions(-)
 
-diff --git a/drivers/dma/txx9dmac.c b/drivers/dma/txx9dmac.c
-index 17686caf64d5..cb24d3efe3a2 100644
---- a/drivers/dma/txx9dmac.c
-+++ b/drivers/dma/txx9dmac.c
-@@ -901,17 +901,12 @@ txx9dmac_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
- 	return &first->txd;
+diff --git a/drivers/dma/mv_xor.c b/drivers/dma/mv_xor.c
+index 394cbc5c93e3..a6a792e5f19a 100644
+--- a/drivers/dma/mv_xor.c
++++ b/drivers/dma/mv_xor.c
+@@ -978,14 +978,6 @@ out:
+ 	return err;
  }
  
--static int txx9dmac_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--			    unsigned long arg)
-+static int txx9dmac_terminate_all(struct dma_chan *chan)
- {
- 	struct txx9dmac_chan *dc = to_txx9dmac_chan(chan);
- 	struct txx9dmac_desc *desc, *_desc;
- 	LIST_HEAD(list);
- 
--	/* Only supports DMA_TERMINATE_ALL */
--	if (cmd != DMA_TERMINATE_ALL)
--		return -EINVAL;
+-/* This driver does not implement any of the optional DMA operations. */
+-static int
+-mv_xor_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-	       unsigned long arg)
+-{
+-	return -ENOSYS;
+-}
 -
- 	dev_vdbg(chan2dev(chan), "terminate_all\n");
- 	spin_lock_bh(&dc->lock);
+ static int mv_xor_channel_remove(struct mv_xor_chan *mv_chan)
+ {
+ 	struct dma_chan *chan, *_chan;
+@@ -1044,7 +1036,6 @@ mv_xor_channel_add(struct mv_xor_device *xordev,
+ 	dma_dev->device_free_chan_resources = mv_xor_free_chan_resources;
+ 	dma_dev->device_tx_status = mv_xor_status;
+ 	dma_dev->device_issue_pending = mv_xor_issue_pending;
+-	dma_dev->device_control = mv_xor_control;
+ 	dma_dev->dev = &pdev->dev;
  
-@@ -1109,7 +1104,7 @@ static int __init txx9dmac_chan_probe(struct platform_device *pdev)
- 	dc->dma.dev = &pdev->dev;
- 	dc->dma.device_alloc_chan_resources = txx9dmac_alloc_chan_resources;
- 	dc->dma.device_free_chan_resources = txx9dmac_free_chan_resources;
--	dc->dma.device_control = txx9dmac_control;
-+	dc->dma.device_terminate_all = txx9dmac_terminate_all;
- 	dc->dma.device_tx_status = txx9dmac_tx_status;
- 	dc->dma.device_issue_pending = txx9dmac_issue_pending;
- 	if (pdata && pdata->memcpy_chan == ch) {
+ 	/* set prep routines based on capability */
 -- 
 2.1.1
 
