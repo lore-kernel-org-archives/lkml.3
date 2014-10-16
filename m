@@ -1,101 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751073AbaJPDSh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 23:18:37 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:56203 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751035AbaJPDSg (ORCPT
+	id S1751313AbaJPDVp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 23:21:45 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:25919 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751160AbaJPDVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 23:18:36 -0400
-Date: Wed, 15 Oct 2014 23:11:54 -0400 (EDT)
-Message-Id: <20141015.231154.1804074463934900124.davem@davemloft.net>
-To: mroos@linux.ee
-Cc: iamjoonsoo.kim@lge.com, linux-kernel@vger.kernel.org, cl@linux.com,
-        penberg@kernel.org, rientjes@google.com, akpm@linux-foundation.org,
-        linux-mm@kvack.org, sparclinux@vger.kernel.org
-Subject: Re: unaligned accesses in SLAB etc.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LRH.2.11.1410152310080.11974@adalberg.ut.ee>
-References: <alpine.LRH.2.11.1410151059520.8050@adalberg.ut.ee>
-	<20141015.143624.941838991598108211.davem@davemloft.net>
-	<alpine.LRH.2.11.1410152310080.11974@adalberg.ut.ee>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Wed, 15 Oct 2014 23:21:44 -0400
+Message-ID: <543F39A9.3030308@huawei.com>
+Date: Thu, 16 Oct 2014 11:21:13 +0800
+From: Wang Nan <wangnan0@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, <linux-kernel@vger.kernel.org>,
+        <zhangzhiqiang.zhang@huawei.com>, <peifeiyue@huawei.com>
+Subject: Re: [PATCH] perf tools: fix incorrect header string
+References: <1413343733-7973-1-git-send-email-wangnan0@huawei.com> <20141015151358.GK3198@kernel.org>
+In-Reply-To: <20141015151358.GK3198@kernel.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 15 Oct 2014 20:11:58 -0700 (PDT)
+X-Originating-IP: [10.111.69.90]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020206.543F39C5.0124,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 42c5bab00416c5614985352a045f9653
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Meelis Roos <mroos@linux.ee>
-Date: Wed, 15 Oct 2014 23:11:34 +0300 (EEST)
-
->> >> The gcc-4.9 case is interesting, are you saying that a gcc-4.9 compiled
->> >> kernel works fine on other systems?
->> > 
->> > Yes, all USII based systems work fine with Debian gcc-4.9, as does 
->> > T2000. Of USIII* systems, V210 and V440 exhibit the boot hang with 
->> > gcc-4.9 and V480 crashes wit FATAL exception during boot that is 
->> > probably earlier than the gcc boot hang so I do not know about V480 and 
->> > gcc-4.9. V240 not tested because of fan failures, V245 is in the queue 
->> > for setup but not tested so far.
->> 
->> Ok, on the V210/V440 can you boot with "-p" on the kernel boot command
->> line and post the log?  Let's start by seeing how far it gets, maybe
->> we can figure out roughly where it dies.
+On 2014/10/15 23:13, Arnaldo Carvalho de Melo wrote:
+> Em Wed, Oct 15, 2014 at 11:28:53AM +0800, Wang Nan escreveu:
+>> Commit fbe96f29 (perf tools: Make perf.data more self-descriptive)
+>> read '/proc/cpuinfo' to form cpu descriptor. For ARM, it finds
+>> 'Processor' field. It is correct when the patch merged, but due to
+>> commit b4b8f770 (ARM: kernel: update cpuinfo to print all online CPUs
+>> features), the corresponding information becomes 'model name' field.
+>>
+>> This patch simply corrects it.
 > 
-> http://www.spinics.net/lists/sparclinux/msg12238.html and 
-> http://www.spinics.net/lists/sparclinux/msg12468.html are my relevant 
-> posts about it. Should I get something more? It would be easy because of 
-> ALOM.
+> It doesn't :-)
+> 
+> It makes it work with kernels >= b4b8f770, and fail with older kernels.
+> 
+> We need to somehow figure out where the right information is regardless
+> of the kernel.
+> 
+> - Arnaldo
+>  
 
-Less information than I had hoped :-/
+However it is a real problem. Look at output on arm platform at the
+bottom of this mail, especially  "cpudesc", "total memory" and "cmdline" field.
 
-I thought it was hanging "during boot" meaning before we try to
-execute userspace.  When in fact it seems to die exactly when we start
-running the init process.
+By further debugging I found that the real problem resides in return value checking
+when write header error. Please see my other patches:
 
-Wrt. disassembly of fault_in_user_windows(), that's not likely the
-cause because if it were being miscompiled it would equally not work
-on the other systems.
+https://lkml.org/lkml/2014/10/15/612
+https://lkml.org/lkml/2014/10/15/611
 
-Something in the UltraSPARC-III specific code paths is going wrong
-(either it is miscompiled, or the code makes an assumption that isn't
-valid which has happened in the past).
-
-Do you happen to have both gcc-4.9 and a previously working compiler
-on these systems?  If you do, we can build a kernel with gcc-4.9 and
-then selectively compile certain failes with the older working
-compiler to narrow down what compiles into something non-working with
-gcc-4.9
-
-I would start with the following files:
-
-	arch/sparc/mm/init_64.c
-	arch/sparc/mm/tlb.c
-	arch/sparc/mm/tsb.c
-	arch/sparc/mm/fault_64.c
-
-And failing that, go for various files under arch/sparc/kernel/ such as:
-
-	arch/sparc/kernel/process_64.c
-	arch/sparc/kernel/smp_64.c
-	arch/sparc/kernel/sys_sparc_64.c
-	arch/sparc/kernel/sys_sparc32.c
-	arch/sparc/kernel/traps_64.c
-
-Hopefully, this should be a simply matter of doing a complete build
-with gcc-4.9, then removing the object file we want to selectively
-build with the older compiler and then going:
-
-	make CC="gcc-4.6" arch/sparc/mm/init_64.o
-
-then relinking with plain 'make'.
-
-If the build system rebuilds the object file on you when you try
-to relink the final kernel image, we'll have to do some of this
-by hand to make the test.
+I think at least one of them is required.
 
 Thanks.
+
+>> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+>> ---
+>>  tools/perf/perf-sys.h | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/tools/perf/perf-sys.h b/tools/perf/perf-sys.h
+>> index 937e432..4293970 100644
+>> --- a/tools/perf/perf-sys.h
+>> +++ b/tools/perf/perf-sys.h
+>> @@ -113,7 +113,7 @@
+>>  #define mb()		((void(*)(void))0xffff0fa0)()
+>>  #define wmb()		((void(*)(void))0xffff0fa0)()
+>>  #define rmb()		((void(*)(void))0xffff0fa0)()
+>> -#define CPUINFO_PROC	"Processor"
+>> +#define CPUINFO_PROC	"model name"
+>>  #endif
+>>  
+>>  #ifdef __aarch64__
+>> -- 
+>> 1.8.4
+
+
+
+bash-4.2# perf record ls
+...
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.001 MB perf.data (~36 samples) ]
+bash-4.2# perf report --stdio --header
+Error:
+The perf.data file has no samples!
+# ========
+# captured on: Fri Sep 12 10:09:10 2014
+# hostname : arma15el
+# os release : 3.17.0+
+# perf version : 3.10.53
+# arch : armv7l
+# nrcpus online : 4
+# nrcpus avail : 1
+# cpudesc : (null)
+# total memory : 0 kB
+# cmdline :
+# event : name = cycles, type = 0, config = 0x0, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, excl_host = 0, excl_guest = 1, precise_ip = 0
+# pmu mappings: not available
+# ========
+#
+
+
 
