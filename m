@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752925AbaJPVOy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 17:14:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51837 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751318AbaJPVOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 17:14:52 -0400
-Date: Thu, 16 Oct 2014 23:11:36 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: + freezer-check-oom-kill-while-being-frozen.patch added to -mm
-	tree
-Message-ID: <20141016211136.GA27468@redhat.com>
-References: <20141016203954.GA26336@redhat.com> <CAM_iQpUyCR3Bv1QhFkVmii9vB=fjMAUiWZ4T+mj60=FUZOXS+A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAM_iQpUyCR3Bv1QhFkVmii9vB=fjMAUiWZ4T+mj60=FUZOXS+A@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752996AbaJPVPO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 17:15:14 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:49841 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752796AbaJPVPM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 17:15:12 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Torsten Duwe <duwe@lst.de>, Jason Cooper <jason@lakedaemon.net>,
+        "Theodore Ts'o" <tytso@mit.edu>, Amit Shah <amit.shah@redhat.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Kees Cook <keescook@chromium.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH v5] char: hw_random: core.c:  Changed from using strncat to strlcat
+Date: Thu, 16 Oct 2014 23:17:23 +0200
+Message-Id: <1413494243-30867-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16, Cong Wang wrote:
->
-> On Thu, Oct 16, 2014 at 1:39 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >> Fix the issue by checking for TIF_MEMDIE thread flag and get away from the
-> >> fridge if it is set.  oom_scan_process_thread doesn't have to check for
-> >> the frozen task anymore because do_send_sig_info will wake up the thread
-> >> and TIF_MEMDIE is already set by that time.
-> >
-> > I must have missed something... but __refrigerator() sleeps in
-> > TASK_UNINTERRUPTIBLE and do_send_sig_info() won't wake it up?
-> >
->
-> This is exactly what we are trying to fix. Make sure you read the patch
-> as well before reply?
+The buf is used to hold the list of hwrng devices registered.
+The old code ensures we don't walk off the end of buf as we
+fill it, but it's unnecessarily complicated and thus difficult
+to maintain. Simplify it by using strlcat.
 
-I did read the patch, but I can't understand it. I am sorry about that,
-and I am asking for your help.
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Reviewed-by: Jason Cooper <jason@lakedaemon.net>
+---
+ drivers/char/hw_random/core.c |   12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
 
-I agree that oom_scan_process_thread()->__thaw_task() doesn't really
-help.
-
-But also I can't understand why this patch helps. The changelog says:
-
-	do_send_sig_info will wake up the thread
-
-why?
-
-Oleg.
+diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
+index aa30a25..1500cfd 100644
+--- a/drivers/char/hw_random/core.c
++++ b/drivers/char/hw_random/core.c
+@@ -281,7 +281,6 @@ static ssize_t hwrng_attr_available_show(struct device *dev,
+ 					 char *buf)
+ {
+ 	int err;
+-	ssize_t ret = 0;
+ 	struct hwrng *rng;
+ 
+ 	err = mutex_lock_interruptible(&rng_mutex);
+@@ -289,16 +288,13 @@ static ssize_t hwrng_attr_available_show(struct device *dev,
+ 		return -ERESTARTSYS;
+ 	buf[0] = '\0';
+ 	list_for_each_entry(rng, &rng_list, list) {
+-		strncat(buf, rng->name, PAGE_SIZE - ret - 1);
+-		ret += strlen(rng->name);
+-		strncat(buf, " ", PAGE_SIZE - ret - 1);
+-		ret++;
++		strlcat(buf, rng->name, PAGE_SIZE);
++		strlcat(buf, " ", PAGE_SIZE);
+ 	}
+-	strncat(buf, "\n", PAGE_SIZE - ret - 1);
+-	ret++;
++	strlcat(buf, "\n", PAGE_SIZE);
+ 	mutex_unlock(&rng_mutex);
+ 
+-	return ret;
++	return strlen(buf);
+ }
+ 
+ static DEVICE_ATTR(rng_current, S_IRUGO | S_IWUSR,
+-- 
+1.7.10.4
 
