@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752776AbaJPKYE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 06:24:04 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37364 "EHLO
+	id S1752436AbaJPKYB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 06:24:01 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:37359 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751509AbaJPKUV (ORCPT
+	with ESMTP id S1751433AbaJPKUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 06:20:21 -0400
+	Thu, 16 Oct 2014 06:20:22 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -15,9 +15,9 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
         Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH v2 50/53] dmaengine: pl330: Declare slave capabilities for the generic code
-Date: Thu, 16 Oct 2014 12:17:49 +0200
-Message-Id: <1413454672-27400-51-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v2 49/53] dmaengine: omap: Declare slave capabilities for the generic code
+Date: Thu, 16 Oct 2014 12:17:48 +0200
+Message-Id: <1413454672-27400-50-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -32,46 +32,46 @@ Make use of this code.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/dma/pl330.c | 19 +++++--------------
+ drivers/dma/omap-dma.c | 19 +++++--------------
  1 file changed, 5 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-index 1e3d3459e62c..f31f54df09f3 100644
---- a/drivers/dma/pl330.c
-+++ b/drivers/dma/pl330.c
-@@ -2576,19 +2576,6 @@ static irqreturn_t pl330_irq_handler(int irq, void *data)
- 	BIT(DMA_SLAVE_BUSWIDTH_4_BYTES) | \
- 	BIT(DMA_SLAVE_BUSWIDTH_8_BYTES)
+diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
+index 767fbfaa6592..def56ea309ab 100644
+--- a/drivers/dma/omap-dma.c
++++ b/drivers/dma/omap-dma.c
+@@ -1067,19 +1067,6 @@ static void omap_dma_free(struct omap_dmadev *od)
+ 				 BIT(DMA_SLAVE_BUSWIDTH_2_BYTES) | \
+ 				 BIT(DMA_SLAVE_BUSWIDTH_4_BYTES))
  
--static int pl330_dma_device_slave_caps(struct dma_chan *dchan,
--	struct dma_slave_caps *caps)
+-static int omap_dma_device_slave_caps(struct dma_chan *dchan,
+-				      struct dma_slave_caps *caps)
 -{
--	caps->src_addr_widths = PL330_DMA_BUSWIDTHS;
--	caps->dst_addr_widths = PL330_DMA_BUSWIDTHS;
+-	caps->src_addr_widths = OMAP_DMA_BUSWIDTHS;
+-	caps->dst_addr_widths = OMAP_DMA_BUSWIDTHS;
 -	caps->directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
--	caps->cmd_pause = false;
+-	caps->cmd_pause = true;
 -	caps->cmd_terminate = true;
--	caps->residue_granularity = DMA_RESIDUE_GRANULARITY_DESCRIPTOR;
+-	caps->residue_granularity = DMA_RESIDUE_GRANULARITY_BURST;
 -
 -	return 0;
 -}
 -
- static int
- pl330_probe(struct amba_device *adev, const struct amba_id *id)
+ static int omap_dma_probe(struct platform_device *pdev)
  {
-@@ -2708,7 +2695,11 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
- 	pd->device_config = pl330_config;
- 	pd->device_terminate_all = pl330_terminate_all;
- 	pd->device_issue_pending = pl330_issue_pending;
--	pd->device_slave_caps = pl330_dma_device_slave_caps;
-+	pd->src_addr_widths = PL330_DMA_BUSWIDTHS;
-+	pd->dst_addr_widths = PL330_DMA_BUSWIDTHS;
-+	pd->directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
-+	pd->residue_granularity = DMA_RESIDUE_GRANULARITY_DESCRIPTOR;
-+	pd->generic_slave_caps = true;
- 
- 	ret = dma_async_device_register(pd);
- 	if (ret) {
+ 	struct omap_dmadev *od;
+@@ -1113,7 +1100,11 @@ static int omap_dma_probe(struct platform_device *pdev)
+ 	od->ddev.device_pause = omap_dma_pause;
+ 	od->ddev.device_resume = omap_dma_resume;
+ 	od->ddev.device_terminate_all = omap_dma_terminate_all;
+-	od->ddev.device_slave_caps = omap_dma_device_slave_caps;
++	od->ddev.src_addr_widths = OMAP_DMA_BUSWIDTHS;
++	od->ddev.dst_addr_widths = OMAP_DMA_BUSWIDTHS;
++	od->ddev.directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
++	od->ddev.residue_granularity = DMA_RESIDUE_GRANULARITY_BURST;
++	od->ddev.generic_slave_caps = true;
+ 	od->ddev.dev = &pdev->dev;
+ 	INIT_LIST_HEAD(&od->ddev.channels);
+ 	INIT_LIST_HEAD(&od->pending);
 -- 
 2.1.1
 
