@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751594AbaJPHdr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 03:33:47 -0400
+	id S1751565AbaJPHdq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 03:33:46 -0400
 Received: from mailout3.w1.samsung.com ([210.118.77.13]:33231 "EHLO
 	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751425AbaJPHdi (ORCPT
+	with ESMTP id S1751392AbaJPHdh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 03:33:38 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-02-543f74d01c73
+	Thu, 16 Oct 2014 03:33:37 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-ef-543f74cf2c0c
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Linus Walleij <linus.walleij@linaro.org>,
         Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
@@ -23,25 +23,25 @@ Cc: Anton Vorontsov <anton@enomsg.org>, Guenter Roeck <linux@roeck-us.net>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v2 6/8] power: apm_power: Use power_supply_*() API for
- accessing function attrs
-Date: Thu, 16 Oct 2014 09:32:55 +0200
-Message-id: <1413444777-24107-7-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH v2 5/8] mfd: ab8500: Use power_supply_*() API for accessing
+ function attrs
+Date: Thu, 16 Oct 2014 09:32:54 +0200
+Message-id: <1413444777-24107-6-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1413444777-24107-1-git-send-email-k.kozlowski@samsung.com>
 References: <1413444777-24107-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t/xy7oXSuxDDB5dYrM4uFXTYuOM9awW
-	k568Z7aYuHIys0Xn2SfMFq9fGFqcbXrDbnH/61FGiyl/ljNZbHp8jdXi8q45bBafe48wWjxZ
-	eIbJYu2Ru+wWtxtXsFncPXWUzeJ0N6vF6d0lDkIeE/o/MXrsnHWX3WPzCi2PTas62TzuXNvD
-	5jHvZKDH5iX1Hju/N7B79G1ZxeixYvV3do/Pm+QCuKO4bFJSczLLUov07RK4MiYt+MBY8I+j
-	4vumr4wNjNfYuxg5OSQETCTufp7GCGGLSVy4t56ti5GLQ0hgKaNE19efzBBOH5PEzkuXwDrY
-	BIwlNi9fAlYlInCdSaJzxQQWEIdZoJFZ4l1DMxNIlbBAokT3uTNAczk4WARUJV6d4gIJ8wq4
-	S2zpvMsKsU5O4uSxyWA2p4CHxPSzV8EWCAHVNE7YzzaBkXcBI8MqRtHU0uSC4qT0XCO94sTc
-	4tK8dL3k/NxNjJCg/7qDcekxq0OMAhyMSjy8GsH2IUKsiWXFlbmHGCU4mJVEeJsLgUK8KYmV
-	ValF+fFFpTmpxYcYmTg4pRoYtwq2zmk1/bFHjmeSvGhF227pYMfougtFilc9m/hPr5W9vO7k
-	wQnhqz/cny/6QuOKm9CEHU9ca9Y7LzFP+dl75EZI42Uvbe9ZJ0yL7V5ddfOwOJkqtYspgn1+
-	7Qf//dO2n7lft3D+WiW1XavXr7794/CclzPUCieELaySOajLyvCtzSCFa5rtESWW4oxEQy3m
-	ouJEAFfrvaFYAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGLMWRmVeSWpSXmKPExsVy+t/xy7rnS+xDDP63iloc3KppsXHGelaL
+	SU/eM1tMXDmZ2aLz7BNmi9cvDC3ONr1ht7j/9SijxZQ/y5ksNj2+xmpxedccNovPvUcYLZ4s
+	PMNksfbIXXaL240r2CzunjrKZnG6m9Xi9O4SByGPCf2fGD12zrrL7rF5hZbHplWdbB53ru1h
+	85h3MtBj85J6j53fG9g9+rasYvRYsfo7u8fnTXIB3FFcNimpOZllqUX6dglcGVeOPWMtuMBd
+	8b7/M1MD4wXOLkZODgkBE4nlS+czQdhiEhfurWfrYuTiEBJYyihx6995Vginj0ni4bdOVpAq
+	NgFjic3Ll4BViQhcZ5LoXDGBBcRhFmhklnjX0Aw2S1ggRqJ/9zsWEJtFQFXixI4pbCA2r4C7
+	xLzLG9gh9slJnDw2GWwqp4CHxPSzV8HiQkA1jRP2s01g5F3AyLCKUTS1NLmgOCk911CvODG3
+	uDQvXS85P3cTIyTsv+xgXHzM6hCjAAejEg+vRrB9iBBrYllxZe4hRgkOZiUR3uZCoBBvSmJl
+	VWpRfnxRaU5q8SFGJg5OqQbGyLLffsarwrLY8/t2c5zmPSq45qh00WWpjUtKP82X4tXnvbt+
+	oZn940j3w+xRLy+u2D+R/dmuu/Ghj2fe69y4qrRN/+HaV0+kJqx/xWB79W1zxeJIWcs58tuu
+	L6k7M2fj3TurxTje9/4JTF7A8khOyu77t63sj6oUN3neS9/KYfHujoi3Qu/ZiUosxRmJhlrM
+	RcWJANKE02ZZAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -54,27 +54,36 @@ supply (e.g. by removing the driver). Replace:
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Acked-by: Jonghwa Lee <jonghwa3.lee@samusng.com>
 Acked-by: Pavel Machek <pavel@ucw.cz>
+Acked-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/power/apm_power.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/mfd/ab8500-sysctrl.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/power/apm_power.c b/drivers/power/apm_power.c
-index 39763015b360..2206f9ff6488 100644
---- a/drivers/power/apm_power.c
-+++ b/drivers/power/apm_power.c
-@@ -15,10 +15,10 @@
- #include <linux/apm-emulation.h>
+diff --git a/drivers/mfd/ab8500-sysctrl.c b/drivers/mfd/ab8500-sysctrl.c
+index 8e0dae59844d..93b2d2c32ca3 100644
+--- a/drivers/mfd/ab8500-sysctrl.c
++++ b/drivers/mfd/ab8500-sysctrl.c
+@@ -49,7 +49,8 @@ static void ab8500_power_off(void)
+ 		if (!psy)
+ 			continue;
  
+-		ret = psy->get_property(psy, POWER_SUPPLY_PROP_ONLINE, &val);
++		ret = power_supply_get_property(psy, POWER_SUPPLY_PROP_ONLINE,
++				&val);
  
--#define PSY_PROP(psy, prop, val) (psy->get_property(psy, \
-+#define PSY_PROP(psy, prop, val) (power_supply_get_property(psy, \
- 			 POWER_SUPPLY_PROP_##prop, val))
- 
--#define _MPSY_PROP(prop, val) (main_battery->get_property(main_battery, \
-+#define _MPSY_PROP(prop, val) (power_supply_get_property(main_battery, \
- 							 prop, val))
- 
- #define MPSY_PROP(prop, val) _MPSY_PROP(POWER_SUPPLY_PROP_##prop, val)
+ 		if (!ret && val.intval) {
+ 			charger_present = true;
+@@ -63,8 +64,8 @@ static void ab8500_power_off(void)
+ 	/* Check if battery is known */
+ 	psy = power_supply_get_by_name("ab8500_btemp");
+ 	if (psy) {
+-		ret = psy->get_property(psy, POWER_SUPPLY_PROP_TECHNOLOGY,
+-					&val);
++		ret = power_supply_get_property(psy,
++				POWER_SUPPLY_PROP_TECHNOLOGY, &val);
+ 		if (!ret && val.intval != POWER_SUPPLY_TECHNOLOGY_UNKNOWN) {
+ 			printk(KERN_INFO
+ 			       "Charger \"%s\" is connected with known battery."
 -- 
 1.9.1
 
