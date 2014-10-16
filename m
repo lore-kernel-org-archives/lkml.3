@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561AbaJPKUP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 06:20:15 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37280 "EHLO
+	id S1752701AbaJPKUd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 06:20:33 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:37378 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752078AbaJPKUL (ORCPT
+	with ESMTP id S1752582AbaJPKUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 06:20:11 -0400
+	Thu, 16 Oct 2014 06:20:19 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -14,10 +14,11 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH v2 28/53] dmaengine: mxs: Split device_control
-Date: Thu, 16 Oct 2014 12:17:27 +0200
-Message-Id: <1413454672-27400-29-git-send-email-maxime.ripard@free-electrons.com>
+        Dan Williams <dan.j.williams@intel.com>,
+        Michal Simek <michal.simek@xilinx.com>
+Subject: [PATCH v2 40/53] dmaengine: xilinx: Split device_control
+Date: Thu, 16 Oct 2014 12:17:39 +0200
+Message-Id: <1413454672-27400-41-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -25,159 +26,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the Freescale MXS DMA driver to make use
-of the newly introduced callbacks, that will eventually be used to retrieve
-slave capabilities.
+Split the device_control callback of the Xilinx VDMA driver to make use of the
+newly introduced callbacks, that will eventually be used to retrieve slave
+capabilities.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/dma/mxs-dma.c | 59 ++++++++++++++++++++-------------------------------
- 1 file changed, 23 insertions(+), 36 deletions(-)
+ drivers/dma/xilinx/xilinx_vdma.c | 27 ++++-----------------------
+ 1 file changed, 4 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/dma/mxs-dma.c b/drivers/dma/mxs-dma.c
-index 5ea61201dbf0..834041e5a769 100644
---- a/drivers/dma/mxs-dma.c
-+++ b/drivers/dma/mxs-dma.c
-@@ -202,8 +202,9 @@ static struct mxs_dma_chan *to_mxs_dma_chan(struct dma_chan *chan)
- 	return container_of(chan, struct mxs_dma_chan, chan);
- }
- 
--static void mxs_dma_reset_chan(struct mxs_dma_chan *mxs_chan)
-+static void mxs_dma_reset_chan(struct dma_chan *chan)
+diff --git a/drivers/dma/xilinx/xilinx_vdma.c b/drivers/dma/xilinx/xilinx_vdma.c
+index 42a13e8d4607..35024e7b9f9f 100644
+--- a/drivers/dma/xilinx/xilinx_vdma.c
++++ b/drivers/dma/xilinx/xilinx_vdma.c
+@@ -996,8 +996,10 @@ error:
+  * xilinx_vdma_terminate_all - Halt the channel and free descriptors
+  * @chan: Driver specific VDMA Channel pointer
+  */
+-static void xilinx_vdma_terminate_all(struct xilinx_vdma_chan *chan)
++static int xilinx_vdma_terminate_all(struct dma_chan *dchan)
  {
-+	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
- 	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
- 	int chan_id = mxs_chan->chan.chan_id;
- 
-@@ -250,8 +251,9 @@ static void mxs_dma_reset_chan(struct mxs_dma_chan *mxs_chan)
- 	mxs_chan->status = DMA_COMPLETE;
- }
- 
--static void mxs_dma_enable_chan(struct mxs_dma_chan *mxs_chan)
-+static void mxs_dma_enable_chan(struct dma_chan *chan)
- {
-+	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
- 	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
- 	int chan_id = mxs_chan->chan.chan_id;
- 
-@@ -272,13 +274,16 @@ static void mxs_dma_enable_chan(struct mxs_dma_chan *mxs_chan)
- 	mxs_chan->reset = false;
- }
- 
--static void mxs_dma_disable_chan(struct mxs_dma_chan *mxs_chan)
-+static void mxs_dma_disable_chan(struct dma_chan *chan)
- {
-+	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
++	struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
 +
- 	mxs_chan->status = DMA_COMPLETE;
+ 	/* Halt the DMA engine */
+ 	xilinx_vdma_halt(chan);
+ 
+@@ -1070,27 +1072,6 @@ int xilinx_vdma_channel_set_config(struct dma_chan *dchan,
  }
+ EXPORT_SYMBOL(xilinx_vdma_channel_set_config);
  
--static void mxs_dma_pause_chan(struct mxs_dma_chan *mxs_chan)
-+static void mxs_dma_pause_chan(struct dma_chan *chan)
- {
-+	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
- 	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
- 	int chan_id = mxs_chan->chan.chan_id;
- 
-@@ -293,8 +298,9 @@ static void mxs_dma_pause_chan(struct mxs_dma_chan *mxs_chan)
- 	mxs_chan->status = DMA_PAUSED;
- }
- 
--static void mxs_dma_resume_chan(struct mxs_dma_chan *mxs_chan)
-+static void mxs_dma_resume_chan(struct dma_chan *chan)
- {
-+	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
- 	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
- 	int chan_id = mxs_chan->chan.chan_id;
- 
-@@ -383,7 +389,7 @@ static irqreturn_t mxs_dma_int_handler(int irq, void *dev_id)
- 			"%s: error in channel %d\n", __func__,
- 			chan);
- 		mxs_chan->status = DMA_ERROR;
--		mxs_dma_reset_chan(mxs_chan);
-+		mxs_dma_reset_chan(mxs_chan->chan);
- 	} else if (mxs_chan->status != DMA_COMPLETE) {
- 		if (mxs_chan->flags & MXS_DMA_SG_LOOP) {
- 			mxs_chan->status = DMA_IN_PROGRESS;
-@@ -432,7 +438,7 @@ static int mxs_dma_alloc_chan_resources(struct dma_chan *chan)
- 	if (ret)
- 		goto err_clk;
- 
--	mxs_dma_reset_chan(mxs_chan);
-+	mxs_dma_reset_chan(chan);
- 
- 	dma_async_tx_descriptor_init(&mxs_chan->desc, chan);
- 	mxs_chan->desc.tx_submit = mxs_dma_tx_submit;
-@@ -456,7 +462,7 @@ static void mxs_dma_free_chan_resources(struct dma_chan *chan)
- 	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
- 	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
- 
--	mxs_dma_disable_chan(mxs_chan);
-+	mxs_dma_disable_chan(chan);
- 
- 	free_irq(mxs_chan->chan_irq, mxs_dma);
- 
-@@ -651,28 +657,14 @@ err_out:
- 	return NULL;
- }
- 
--static int mxs_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--		unsigned long arg)
-+static int mxs_dma_terminate_all(struct dma_chan *chan)
- {
- 	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
--	int ret = 0;
--
--	switch (cmd) {
--	case DMA_TERMINATE_ALL:
--		mxs_dma_reset_chan(mxs_chan);
--		mxs_dma_disable_chan(mxs_chan);
--		break;
--	case DMA_PAUSE:
--		mxs_dma_pause_chan(mxs_chan);
--		break;
--	case DMA_RESUME:
--		mxs_dma_resume_chan(mxs_chan);
--		break;
--	default:
--		ret = -ENOSYS;
--	}
- 
--	return ret;
-+	mxs_dma_reset_chan(chan);
-+	mxs_dma_disable_chan(chan);
-+
-+	return 0;
- }
- 
- static enum dma_status mxs_dma_tx_status(struct dma_chan *chan,
-@@ -701,13 +693,6 @@ static enum dma_status mxs_dma_tx_status(struct dma_chan *chan,
- 	return mxs_chan->status;
- }
- 
--static void mxs_dma_issue_pending(struct dma_chan *chan)
+-/**
+- * xilinx_vdma_device_control - Configure DMA channel of the device
+- * @dchan: DMA Channel pointer
+- * @cmd: DMA control command
+- * @arg: Channel configuration
+- *
+- * Return: '0' on success and failure value on error
+- */
+-static int xilinx_vdma_device_control(struct dma_chan *dchan,
+-				      enum dma_ctrl_cmd cmd, unsigned long arg)
 -{
--	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
+-	struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
 -
--	mxs_dma_enable_chan(mxs_chan);
+-	if (cmd != DMA_TERMINATE_ALL)
+-		return -ENXIO;
+-
+-	xilinx_vdma_terminate_all(chan);
+-
+-	return 0;
 -}
 -
- static int __init mxs_dma_init(struct mxs_dma_engine *mxs_dma)
- {
- 	int ret;
-@@ -860,8 +845,10 @@ static int __init mxs_dma_probe(struct platform_device *pdev)
- 	mxs_dma->dma_device.device_tx_status = mxs_dma_tx_status;
- 	mxs_dma->dma_device.device_prep_slave_sg = mxs_dma_prep_slave_sg;
- 	mxs_dma->dma_device.device_prep_dma_cyclic = mxs_dma_prep_dma_cyclic;
--	mxs_dma->dma_device.device_control = mxs_dma_control;
--	mxs_dma->dma_device.device_issue_pending = mxs_dma_issue_pending;
-+	mxs_dma->dma_device.device_pause = mxs_dma_pause_chan;
-+	mxs_dma->dma_device.device_resume = mxs_dma_resume_chan;
-+	mxs_dma->dma_device.device_terminate_all = mxs_dma_terminate_all;
-+	mxs_dma->dma_device.device_issue_pending = mxs_dma_enable_chan;
+ /* -----------------------------------------------------------------------------
+  * Probe and remove
+  */
+@@ -1295,7 +1276,7 @@ static int xilinx_vdma_probe(struct platform_device *pdev)
+ 				xilinx_vdma_free_chan_resources;
+ 	xdev->common.device_prep_interleaved_dma =
+ 				xilinx_vdma_dma_prep_interleaved;
+-	xdev->common.device_control = xilinx_vdma_device_control;
++	xdev->common.device_terminate_all = xilinx_vdma_terminate_all;
+ 	xdev->common.device_tx_status = xilinx_vdma_tx_status;
+ 	xdev->common.device_issue_pending = xilinx_vdma_issue_pending;
  
- 	ret = dma_async_device_register(&mxs_dma->dma_device);
- 	if (ret) {
 -- 
 2.1.1
 
