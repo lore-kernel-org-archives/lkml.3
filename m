@@ -1,93 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824AbaJPUZs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 16:25:48 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:41295 "EHLO
+	id S1753250AbaJPU2Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 16:28:16 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:60652 "EHLO
 	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752479AbaJPUZq (ORCPT
+	with ESMTP id S1752801AbaJPUZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 16:25:46 -0400
+	Thu, 16 Oct 2014 16:25:48 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
         linux-serial@vger.kernel.org,
         One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
         Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH -next 00/27] tty locking changes
-Date: Thu, 16 Oct 2014 16:24:58 -0400
-Message-Id: <1413491125-20134-1-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH -next 04/27] tty: Clarify re-open behavior of master ptys
+Date: Thu, 16 Oct 2014 16:25:02 -0400
+Message-Id: <1413491125-20134-5-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1413491125-20134-1-git-send-email-peter@hurleysoftware.com>
+References: <1413491125-20134-1-git-send-email-peter@hurleysoftware.com>
 X-Authenticated-User: 990527 peter@hurleysoftware.com
 X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Re-opening master ptys is not allowed. Once opened and for the remaining
+lifetime of the master pty, its tty count is 1. If its tty count has
+dropped to 0, then the master pty was closed and TTY_CLOSING was set,
+and destruction may begin imminently.
 
-This patch series has 3 major changes to how tty locking behaves:
-1. the lock order of tty_lock() and tty->ldisc_sem is reversed;
-   this eliminates a bunch of lock drop/reacquire which, in turn,
-   eliminates tty state tracking that can no longer be observed.
-   This also allows the pty driver to wait for input processing to
-   complete while closing before setting TTY_OTHER_CLOSED (which
-   eliminates the ugliness of checking input twice in n_tty_read() and
-   n_tty_poll()).
-2. the footprint of tty_mutex is reduced to only adding and removing
-   ttys and is no longer held to acquire the tty_lock() in tty_open();
-   this allows for multiple ttys to be opened concurrently, even if
-   one open stalls waiting for its tty_lock().
-3. pty pair locking is reordered to master first, then slave, rather
-   than by address. This works because, while releasing the master pty,
-   the slave tty count needs to be changed, whereas, when releasing the
-   slave, the master pty does not need to be accessed.
-   This furthur eliminates more lock drop/reacquire.
+Besides the normal case of a legacy BSD pty master being re-opened
+(which always returns -EIO), this code is only reachable in 2 degenerate
+cases:
+1. The pty master is the controlling terminal (this is possible through
+   the TIOCSCTTY ioctl). pty masters are not designed to be controlling
+   terminals and it's an oversight that tiocsctty() ever let that happen.
+   The attempted open of /dev/tty will always fail. No known program does
+   this.
+2. The legacy BSD pty slave was opened first. The slave open will fail
+   in pty_open() and tty_release() will commence. But before tty_release()
+   claims the tty_mutex, there is a very small window where a parallel
+   master open might succeed. In a test of racing legacy BSD slave and
+   master parallel opens, where:
+      slave open attempts:  10000   success:4527  failure:5473
+      master open attempts: 11728   success:5789  failure:5939
+   only 8 master open attempts would have succeeded reaching this code and
+   successfully opened the master pty. This case is not possible with
+   SysV ptys.
 
-The longer-term goals, which this series builds towards, is:
-1. simplifying the tty open/close behavior
-2. eliminating the ASYNC_CLOSING code without breaking existing userspace
-3. eliminating returning -EIO from tty_open(). Not sure if this is possible yet.
+Always return -EIO if a master pty is re-opened or the slave is opened
+first and the master opened in parallel (for legacy BSD ptys).
 
-Regards,
+Furthermore, now that changing the slave's count is not required,
+the tty_lock is sufficient for preventing concurrent changes to the
+tty being re-opened (or failing re-opening).
 
-Peter Hurley (27):
-  tty: Don't hold tty_lock for ldisc release
-  tty: Invert tty_lock/ldisc_sem lock order
-  tty: Remove TTY_HUPPING
-  tty: Clarify re-open behavior of master ptys
-  tty: Check tty->count instead of TTY_CLOSING in tty_reopen()
-  pty: Always return -EIO if slave BSD pty opened first
-  tty: Re-open /dev/tty without tty_mutex
-  tty: Drop tty_mutex before tty reopen
-  tty: Remove TTY_CLOSING
-  tty: Don't take tty_mutex for tty count changes
-  tty: Don't release tty locks for wait queue sanity check
-  tty: Document check_tty_count() requires tty_lock held
-  tty: Simplify pty pair teardown logic
-  tty: Fold pty pair handling into tty_flush_works()
-  tty: Simplify tty_ldisc_release() interface
-  tty: Simplify tty_release_checks() interface
-  tty: Simplify tty_release() state checks
-  tty: Change tty lock order to master->slave
-  tty: Remove tty_unhangup() declaration
-  tty: Refactor __tty_hangup to enable lockdep annotation
-  pty: Don't drop pty master tty lock to hangup slave
-  tty: Document hangup call tree
-  pty, n_tty: Simplify input processing on final close
-  tty: Prefix tty_ldisc_{lock,lock_nested,unlock} functions
-  tty: Fix hung task on pty hangup
-  tty: Fix timeout on pty set ldisc
-  tty: Flush ldisc buffer atomically with tty flip buffers
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/tty_io.c | 15 ++++-----------
+ 1 file changed, 4 insertions(+), 11 deletions(-)
 
- drivers/tty/n_tty.c      |  46 ++++----
- drivers/tty/pty.c        |  12 +-
- drivers/tty/tty_buffer.c |  10 +-
- drivers/tty/tty_io.c     | 279 ++++++++++++++++++++++++-----------------------
- drivers/tty/tty_ldisc.c  | 106 +++++++++---------
- drivers/tty/tty_mutex.c  |  32 +++---
- include/linux/tty.h      |  15 +--
- 7 files changed, 250 insertions(+), 250 deletions(-)
-
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index fd06512..5b6253f 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1444,9 +1444,9 @@ void tty_driver_remove_tty(struct tty_driver *driver, struct tty_struct *tty)
+  * 	@tty	- the tty to open
+  *
+  *	Return 0 on success, -errno on error.
++ *	Re-opens on master ptys are not allowed and return -EIO.
+  *
+- *	Locking: tty_mutex must be held from the time the tty was found
+- *		 till this open completes.
++ *	Locking: Caller must hold tty_lock
+  */
+ static int tty_reopen(struct tty_struct *tty)
+ {
+@@ -1456,16 +1456,9 @@ static int tty_reopen(struct tty_struct *tty)
+ 		return -EIO;
+ 
+ 	if (driver->type == TTY_DRIVER_TYPE_PTY &&
+-	    driver->subtype == PTY_TYPE_MASTER) {
+-		/*
+-		 * special case for PTY masters: only one open permitted,
+-		 * and the slave side open count is incremented as well.
+-		 */
+-		if (tty->count)
+-			return -EIO;
++	    driver->subtype == PTY_TYPE_MASTER)
++		return -EIO;
+ 
+-		tty->link->count++;
+-	}
+ 	tty->count++;
+ 
+ 	WARN_ON(!tty->ldisc);
 -- 
 2.1.1
 
