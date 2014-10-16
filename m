@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751321AbaJPHtM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 03:49:12 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:20116 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870AbaJPHtK (ORCPT
+	id S1751369AbaJPHvV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 03:51:21 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:65264 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750765AbaJPHvU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 03:49:10 -0400
-Date: Thu, 16 Oct 2014 10:48:27 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Joe Perches <joe@perches.com>
-Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] bcm/CmHost.c: Fix noisy compile warnings
-Message-ID: <20141016074827.GD23154@mwanda>
-References: <1413375999-10210-1-git-send-email-jeffrey.t.kirsher@intel.com>
- <20141015123431.GA23154@mwanda>
- <20141015125934.GB23154@mwanda>
- <1413378213.2412.13.camel@jtkirshe-mobl>
- <1413389496.7484.3.camel@perches.com>
- <20141015195345.GQ26918@mwanda>
- <1413403429.7484.13.camel@perches.com>
+	Thu, 16 Oct 2014 03:51:20 -0400
+Message-ID: <543F78F1.6040203@fb.com>
+Date: Thu, 16 Oct 2014 03:51:13 -0400
+From: Chris Mason <clm@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413403429.7484.13.camel@perches.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>
+Subject: [GIT PULL] Btrfs corruption fix
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-10-16_04:2014-10-15,2014-10-16,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=8.94047058608294e-11 kscore.compositescore=0
+ circleOfTrustscore=28.9261618248808 compositescore=0.998049563855454
+ urlsuspect_oldscore=0.998049563855454 suspectscore=2
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=62764
+ rbsscore=0.998049563855454 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1410160079
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 01:03:49PM -0700, Joe Perches wrote:
-> On Wed, 2014-10-15 at 22:53 +0300, Dan Carpenter wrote:
-> > On Wed, Oct 15, 2014 at 09:11:36AM -0700, Joe Perches wrote:
-> > > On Wed, 2014-10-15 at 06:03 -0700, Jeff Kirsher wrote:
-> > > []
-> > > > I thought I remember Greg saying something about getting rid of this
-> > > > driver anyway, but I could be wrong.  If Greg decides to keep this
-> > > > driver around, then I think we should something like your suggestion
-> > > > above.
-> > > 
-> > > Or maybe just make the Kconfig depend on X86_32
-> > 
-> > What I like about your patches is that they are pure theoretical work
-> > and I don't have to think about them like regular proper patches with a
-> > signed off by etc.  All the fun, none of the responsibility.
-> 
-> I've sent a lot of signed-off patches.
-> These are simple suggestions.
-> 
-> I think COMPILE_TEST isn't useful here.
+Hi Linus,
 
-I don't understand...  COMPILE_TEST means runing a static checker on
-the driver.  Why would we not want to do QA?
+I'm testing a pull with more fixes, but wanted to get this one out so
+Greg can pick it up.  The corruption isn't easy to hit, you have to do a
+readonly snapshot and have orphans in the snapshot.  But my review and
+testing missed the bug.  Filipe has added a better xfstest to cover it.
 
-regards,
-dan carpenter
+Please pull:
 
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+
+Chris Mason (1) commits (+33/-36):
+    Revert "Btrfs: race free update of commit root for ro snapshots"
+
+Total: (1) commits (+33/-36)
+
+ fs/btrfs/inode.c | 36 ------------------------------------
+ fs/btrfs/ioctl.c | 33 +++++++++++++++++++++++++++++++++
+ 2 files changed, 33 insertions(+), 36 deletions(-)
