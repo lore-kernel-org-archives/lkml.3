@@ -1,82 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278AbaJPM3K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 08:29:10 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:53889 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751904AbaJPM3I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 08:29:08 -0400
-Date: Thu, 16 Oct 2014 14:29:01 +0200
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Lv Zheng <lv.zheng@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pm@vger.kernel.org, Anton Vorontsov <anton@enomsg.org>,
-        Pavel Machek <pavel@ucw.cz>, Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v2 7/7] mfd: ab8500: Decrement the power supply's device
- reference counter
-Message-ID: <20141016122901.GA22725@lee--X1>
-References: <1413445327-24862-1-git-send-email-k.kozlowski@samsung.com>
- <1413445327-24862-8-git-send-email-k.kozlowski@samsung.com>
+	id S1752373AbaJPM3a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 08:29:30 -0400
+Received: from mail.efficios.com ([78.47.125.74]:36633 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751934AbaJPM33 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 08:29:29 -0400
+Date: Thu, 16 Oct 2014 14:29:08 +0200
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v11 17/21] ext2: Remove ext2_aops_xip
+Message-ID: <20141016122908.GO19075@thinkos.etherlink>
+References: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com>
+ <1411677218-29146-18-git-send-email-matthew.r.wilcox@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1413445327-24862-8-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1411677218-29146-18-git-send-email-matthew.r.wilcox@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Oct 2014, Krzysztof Kozlowski wrote:
-
-> Use power_supply_put() to decrement the power supply's device reference
-> counter.
+On 25-Sep-2014 04:33:34 PM, Matthew Wilcox wrote:
+> We shouldn't need a special address_space_operations any more
 > 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Acked-by: Pavel Machek <pavel@ucw.cz>
+> Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
 
-I already Acked this.
+Reviewed-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 
 > ---
->  drivers/mfd/ab8500-sysctrl.c | 2 ++
->  1 file changed, 2 insertions(+)
+>  fs/ext2/ext2.h  | 1 -
+>  fs/ext2/inode.c | 7 +------
+>  fs/ext2/namei.c | 4 ++--
+>  3 files changed, 3 insertions(+), 9 deletions(-)
 > 
-> diff --git a/drivers/mfd/ab8500-sysctrl.c b/drivers/mfd/ab8500-sysctrl.c
-> index 93b2d2c32ca3..d05a5719cfc4 100644
-> --- a/drivers/mfd/ab8500-sysctrl.c
-> +++ b/drivers/mfd/ab8500-sysctrl.c
-> @@ -51,6 +51,7 @@ static void ab8500_power_off(void)
+> diff --git a/fs/ext2/ext2.h b/fs/ext2/ext2.h
+> index b30c3bd..b8b1c11 100644
+> --- a/fs/ext2/ext2.h
+> +++ b/fs/ext2/ext2.h
+> @@ -793,7 +793,6 @@ extern const struct file_operations ext2_xip_file_operations;
 >  
->  		ret = power_supply_get_property(psy, POWER_SUPPLY_PROP_ONLINE,
->  				&val);
-> +		power_supply_put(psy);
+>  /* inode.c */
+>  extern const struct address_space_operations ext2_aops;
+> -extern const struct address_space_operations ext2_aops_xip;
+>  extern const struct address_space_operations ext2_nobh_aops;
 >  
->  		if (!ret && val.intval) {
->  			charger_present = true;
-> @@ -73,6 +74,7 @@ static void ab8500_power_off(void)
->  			       pss[i]);
->  			machine_restart("charging");
->  		}
-> +		power_supply_put(psy);
->  	}
+>  /* namei.c */
+> diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
+> index 154cbcf..034fd42 100644
+> --- a/fs/ext2/inode.c
+> +++ b/fs/ext2/inode.c
+> @@ -891,11 +891,6 @@ const struct address_space_operations ext2_aops = {
+>  	.error_remove_page	= generic_error_remove_page,
+>  };
 >  
->  shutdown:
+> -const struct address_space_operations ext2_aops_xip = {
+> -	.bmap			= ext2_bmap,
+> -	.direct_IO		= ext2_direct_IO,
+> -};
+> -
+>  const struct address_space_operations ext2_nobh_aops = {
+>  	.readpage		= ext2_readpage,
+>  	.readpages		= ext2_readpages,
+> @@ -1394,7 +1389,7 @@ struct inode *ext2_iget (struct super_block *sb, unsigned long ino)
+>  	if (S_ISREG(inode->i_mode)) {
+>  		inode->i_op = &ext2_file_inode_operations;
+>  		if (test_opt(inode->i_sb, XIP)) {
+> -			inode->i_mapping->a_ops = &ext2_aops_xip;
+> +			inode->i_mapping->a_ops = &ext2_aops;
+>  			inode->i_fop = &ext2_xip_file_operations;
+>  		} else if (test_opt(inode->i_sb, NOBH)) {
+>  			inode->i_mapping->a_ops = &ext2_nobh_aops;
+> diff --git a/fs/ext2/namei.c b/fs/ext2/namei.c
+> index 7ca803f..0db888c 100644
+> --- a/fs/ext2/namei.c
+> +++ b/fs/ext2/namei.c
+> @@ -105,7 +105,7 @@ static int ext2_create (struct inode * dir, struct dentry * dentry, umode_t mode
+>  
+>  	inode->i_op = &ext2_file_inode_operations;
+>  	if (test_opt(inode->i_sb, XIP)) {
+> -		inode->i_mapping->a_ops = &ext2_aops_xip;
+> +		inode->i_mapping->a_ops = &ext2_aops;
+>  		inode->i_fop = &ext2_xip_file_operations;
+>  	} else if (test_opt(inode->i_sb, NOBH)) {
+>  		inode->i_mapping->a_ops = &ext2_nobh_aops;
+> @@ -126,7 +126,7 @@ static int ext2_tmpfile(struct inode *dir, struct dentry *dentry, umode_t mode)
+>  
+>  	inode->i_op = &ext2_file_inode_operations;
+>  	if (test_opt(inode->i_sb, XIP)) {
+> -		inode->i_mapping->a_ops = &ext2_aops_xip;
+> +		inode->i_mapping->a_ops = &ext2_aops;
+>  		inode->i_fop = &ext2_xip_file_operations;
+>  	} else if (test_opt(inode->i_sb, NOBH)) {
+>  		inode->i_mapping->a_ops = &ext2_nobh_aops;
+> -- 
+> 2.1.0
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+> 
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
+Key fingerprint: 2A0B 4ED9 15F2 D3FA 45F5  B162 1728 0A97 8118 6ACF
