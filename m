@@ -1,96 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751329AbaJPDKn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 23:10:43 -0400
-Received: from [119.145.14.65] ([119.145.14.65]:62443 "EHLO
-	szxga02-in.huawei.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993AbaJPDKl (ORCPT
+	id S1751073AbaJPDSh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 23:18:37 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:56203 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035AbaJPDSg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 23:10:41 -0400
-From: Wang Nan <wangnan0@huawei.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Adrian Hunter <adrian.hunter@intel.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Wang Nan <wangnan0@huawei.com>,
-        Waiman Long <Waiman.Long@hp.com>
-CC: <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
-Subject: [PATCH] perf tools: ensure return negitive value when write header error
-Date: Thu, 16 Oct 2014 11:08:29 +0800
-Message-ID: <1413428909-80017-1-git-send-email-wangnan0@huawei.com>
-X-Mailer: git-send-email 1.8.4
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
+	Wed, 15 Oct 2014 23:18:36 -0400
+Date: Wed, 15 Oct 2014 23:11:54 -0400 (EDT)
+Message-Id: <20141015.231154.1804074463934900124.davem@davemloft.net>
+To: mroos@linux.ee
+Cc: iamjoonsoo.kim@lge.com, linux-kernel@vger.kernel.org, cl@linux.com,
+        penberg@kernel.org, rientjes@google.com, akpm@linux-foundation.org,
+        linux-mm@kvack.org, sparclinux@vger.kernel.org
+Subject: Re: unaligned accesses in SLAB etc.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.LRH.2.11.1410152310080.11974@adalberg.ut.ee>
+References: <alpine.LRH.2.11.1410151059520.8050@adalberg.ut.ee>
+	<20141015.143624.941838991598108211.davem@davemloft.net>
+	<alpine.LRH.2.11.1410152310080.11974@adalberg.ut.ee>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 15 Oct 2014 20:11:58 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When 'perf record' write headers, it calls write_xxx in
-tools/perf/util/header.c, and check return value. It rolls back all
-working only when return value is negative.
+From: Meelis Roos <mroos@linux.ee>
+Date: Wed, 15 Oct 2014 23:11:34 +0300 (EEST)
 
-This patch ensures write_cpudesc() and write_total_mem() return negative number
-when error. Without this patch, headers reported by 'perf report' header is
-error in some platform. Following output is caputured on ARM, which doesn't
-contain "Processor" field in /proc/cpuinfo. See "cpudesc", "total memory" and
-"cmdline" field.
+>> >> The gcc-4.9 case is interesting, are you saying that a gcc-4.9 compiled
+>> >> kernel works fine on other systems?
+>> > 
+>> > Yes, all USII based systems work fine with Debian gcc-4.9, as does 
+>> > T2000. Of USIII* systems, V210 and V440 exhibit the boot hang with 
+>> > gcc-4.9 and V480 crashes wit FATAL exception during boot that is 
+>> > probably earlier than the gcc boot hang so I do not know about V480 and 
+>> > gcc-4.9. V240 not tested because of fan failures, V245 is in the queue 
+>> > for setup but not tested so far.
+>> 
+>> Ok, on the V210/V440 can you boot with "-p" on the kernel boot command
+>> line and post the log?  Let's start by seeing how far it gets, maybe
+>> we can figure out roughly where it dies.
+> 
+> http://www.spinics.net/lists/sparclinux/msg12238.html and 
+> http://www.spinics.net/lists/sparclinux/msg12468.html are my relevant 
+> posts about it. Should I get something more? It would be easy because of 
+> ALOM.
 
-   bash-4.2# perf record ls
-   ...
-   [ perf record: Woken up 1 times to write data ]
-   [ perf record: Captured and wrote 0.001 MB perf.data (~36 samples) ]
-   bash-4.2# perf report --stdio --header
-   Error:
-   The perf.data file has no samples!
-   # ========
-   # captured on: Fri Sep 12 10:09:10 2014
-   # hostname : arma15el
-   # os release : 3.17.0+
-   # perf version : 3.10.53
-   # arch : armv7l
-   # nrcpus online : 4
-   # nrcpus avail : 1
-   # cpudesc : (null)
-   # total memory : 0 kB
-   # cmdline :
-   # event : name = cycles, type = 0, config = 0x0, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, excl_host = 0, excl_guest = 1, precise_ip = 0
-   # pmu mappings: not available
-   # ========
-   #
+Less information than I had hoped :-/
 
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
----
- tools/perf/util/header.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+I thought it was hanging "during boot" meaning before we try to
+execute userspace.  When in fact it seems to die exactly when we start
+running the init process.
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index ce0de00..39b80ac 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -605,8 +605,10 @@ static int write_cpudesc(int fd, struct perf_header *h __maybe_unused,
- 			break;
- 	}
- 
--	if (ret)
-+	if (ret) {
-+		ret = -1;
- 		goto done;
-+	}
- 
- 	s = buf;
- 
-@@ -950,7 +952,8 @@ static int write_total_mem(int fd, struct perf_header *h __maybe_unused,
- 		n = sscanf(buf, "%*s %"PRIu64, &mem);
- 		if (n == 1)
- 			ret = do_write(fd, &mem, sizeof(mem));
--	}
-+	} else
-+		ret = -1;
- 	free(buf);
- 	fclose(fp);
- 	return ret;
--- 
-1.8.4
+Wrt. disassembly of fault_in_user_windows(), that's not likely the
+cause because if it were being miscompiled it would equally not work
+on the other systems.
+
+Something in the UltraSPARC-III specific code paths is going wrong
+(either it is miscompiled, or the code makes an assumption that isn't
+valid which has happened in the past).
+
+Do you happen to have both gcc-4.9 and a previously working compiler
+on these systems?  If you do, we can build a kernel with gcc-4.9 and
+then selectively compile certain failes with the older working
+compiler to narrow down what compiles into something non-working with
+gcc-4.9
+
+I would start with the following files:
+
+	arch/sparc/mm/init_64.c
+	arch/sparc/mm/tlb.c
+	arch/sparc/mm/tsb.c
+	arch/sparc/mm/fault_64.c
+
+And failing that, go for various files under arch/sparc/kernel/ such as:
+
+	arch/sparc/kernel/process_64.c
+	arch/sparc/kernel/smp_64.c
+	arch/sparc/kernel/sys_sparc_64.c
+	arch/sparc/kernel/sys_sparc32.c
+	arch/sparc/kernel/traps_64.c
+
+Hopefully, this should be a simply matter of doing a complete build
+with gcc-4.9, then removing the object file we want to selectively
+build with the older compiler and then going:
+
+	make CC="gcc-4.6" arch/sparc/mm/init_64.o
+
+then relinking with plain 'make'.
+
+If the build system rebuilds the object file on you when you try
+to relink the final kernel image, we'll have to do some of this
+by hand to make the test.
+
+Thanks.
 
