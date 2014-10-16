@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751346AbaJPG7d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 02:59:33 -0400
-Received: from mga14.intel.com ([192.55.52.115]:33385 "EHLO mga14.intel.com"
+	id S1751349AbaJPHDD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 03:03:03 -0400
+Received: from smtp2.it.da.ut.ee ([193.40.5.67]:42957 "EHLO smtp2.it.da.ut.ee"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750805AbaJPG7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 02:59:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="401094641"
-Date: Thu, 16 Oct 2014 08:59:20 +0200
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arch/x86/realmode: make trampoline code conditional for
- x86-32
-Message-ID: <20141016065920.GA4235@intel.com>
-References: <1413387506-5269-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <543E96FF.6000201@zytor.com>
+	id S1750766AbaJPHDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 03:03:00 -0400
+Date: Thu, 16 Oct 2014 10:02:57 +0300 (EEST)
+From: Meelis Roos <mroos@linux.ee>
+To: David Miller <davem@davemloft.net>
+cc: iamjoonsoo.kim@lge.com, linux-kernel@vger.kernel.org, cl@linux.com,
+        penberg@kernel.org, rientjes@google.com, akpm@linux-foundation.org,
+        linux-mm@kvack.org, sparclinux@vger.kernel.org
+Subject: Re: unaligned accesses in SLAB etc.
+In-Reply-To: <20141014.173246.921084057467310731.davem@davemloft.net>
+Message-ID: <alpine.LRH.2.11.1410160956090.13273@adalberg.ut.ee>
+References: <20141013235219.GA11191@js1304-P5Q-DELUXE> <20141013.200416.641735303627599182.davem@davemloft.net> <alpine.LRH.2.11.1410150012001.11850@adalberg.ut.ee> <20141014.173246.921084057467310731.davem@davemloft.net>
+User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <543E96FF.6000201@zytor.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 08:47:11AM -0700, H. Peter Anvin wrote:
-> On 10/15/2014 08:38 AM, Jarkko Sakkinen wrote:
-> > Trampoline code is only needed for SMP and in x86-64 for wakeup
-> > code. Make it conditional in order to minimize the kernel size.
+> >> > I'd like to know that your another problem is related to commit
+> >> > bf0dea23a9c0 ("mm/slab: use percpu allocator for cpu cache").  So,
+> >> > if the commit is reverted, your another problem is also gone
+> >> > completely?
+> >> 
+> >> The other problem has been present forever.
 > > 
-> > Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> > ---
-> >  arch/x86/realmode/rm/Makefile | 4 ++++
-> >  1 file changed, 4 insertions(+)
-> > 
-> > diff --git a/arch/x86/realmode/rm/Makefile b/arch/x86/realmode/rm/Makefile
-> > index 7c0d7be..82b7312 100644
-> > --- a/arch/x86/realmode/rm/Makefile
-> > +++ b/arch/x86/realmode/rm/Makefile
-> > @@ -20,7 +20,11 @@ wakeup-objs	+= video-vesa.o
-> >  wakeup-objs	+= video-bios.o
-> >  
-> >  realmode-y			+= header.o
-> > +ifdef CONFIG_X86_64
-> >  realmode-y			+= trampoline_$(BITS).o
-> > +else
-> > +realmode-$(CONFIG_SMP)		+= trampoline_$(BITS).o
-> > +endif
-> >  realmode-y			+= stack.o
-> >  realmode-y			+= reboot.o
-> >  realmode-$(CONFIG_ACPI_SLEEP)	+= $(wakeup-objs)
-> > 
+> > Umm? I am afraid I have been describing it badly. This random 
+> > SIGBUS+SIGSEGV problem is new - I have not seen it before.
 > 
-> It is usually preferred to make this a hidden config option (e.g.
-> CONFIG_X86_TRAMPOLINE) rather than use ifdef, especially since your
-> ifdef has another conditional inside it.
+> Sorry, I thought it was the same bug that causes git corruptions
+> for you.  I misunderstood.
+> 
+> > I have been able to do kernel compiles for years on sparc64 (modulo 
+> > specific bugs in specific configurations) and 3.17 + start/end swap 
+> > patch seems also stable for most machine. With yesterdays git + align 
+> > patch, it dies with SIGBUS multiple times during compilation so it's a 
+> > new regression for me.
+> > 
+> > Will try reverting that commit tomorrow.
+> 
+> If that fails, please try to bisect, it will help us a lot.
 
-OK, I'll revise the patch, thanks.
+Commit bf0dea23a9c0 is working OK with no revert needed (checked out 
+this revision and it tested OK).
 
-> 	-hpa
+So far I know that the breakage seems to have happened between
+cadbb58039f7cab1def9c931012ab04c953a6997 (first sparc commit of 
+the batch, working OK on V100) and 
+bdcf81b658ebc4c2640c3c2c55c8b31c601b6996 (last sparc commit before the 
+merge, breaks on E3500). Will continue bisecting the sparc64 commits.
 
-/Jarkko
+Also, I noticed that when the problem happens, it's deterministic - with 
+some kernels, sshd dies reproducibly on login. With most kernels, 
+building kernel breaks in one specific location, not randomly.
+
+scripts/Makefile.build:352: recipe for target 'sound/modules.order' failed
+make[1]: *** [sound/modules.order] Bus error
+make[1]: *** Deleting file 'sound/modules.order'
+Makefile:929: recipe for target 'sound' failed
+
+Will tell when I get more details.
+
+-- 
+Meelis Roos (mroos@linux.ee)
