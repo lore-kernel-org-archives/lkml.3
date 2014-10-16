@@ -1,57 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751565AbaJPIXu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 04:23:50 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:21716 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751160AbaJPIXp (ORCPT
+	id S1751608AbaJPIZH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 04:25:07 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:64130 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750816AbaJPIZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 04:23:45 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-7a-543f808f7b9c
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH] regulator: s2mps11: Don't zero allocated memory for external
- control
-Date: Thu, 16 Oct 2014 10:23:28 +0200
-Message-id: <1413447808-16429-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNJMWRmVeSWpSXmKPExsVy+t/xq7r9DfYhBlsPs1hMffiEzeL1C0OL
-	b1c6mCwu75rDZnFxxRcmB1aPnbPusntsWtXJ5tG3ZRWjx+dNcgEsUVw2Kak5mWWpRfp2CVwZ
-	765IFvxiq2g68YWpgfEraxcjJ4eEgInE/nl3mCFsMYkL99azdTFycQgJLGWU2PluBjtIQkig
-	j0ni6z0+EJtNwFhi8/IlYEUiAj2MEi+3fgbrZhYwlPj57g9Yg7BAuMSzWxeZuhg5OFgEVCXu
-	L9EBMXkF3CVm/hGH2CUncfLYZNYJjNwLGBlWMYqmliYXFCel5xrpFSfmFpfmpesl5+duYoQE
-	wNcdjEuPWR1iFOBgVOLh1Qi2DxFiTSwrrsw9xCjBwawkwttcCBTiTUmsrEotyo8vKs1JLT7E
-	yMTBKdXA2G2ppBYYuPVcp9ynqWeaUlwOvDi2qGxNjFsUd/pnO1N1wQ2RHySW27av2rcx7u4l
-	rUviUtPWPmTbPZsrxCXzb4ZTDrta7kOmCzZX5Ge/bvF77lLHdTE3JGJ3aaXWkYcMX/LDN1wQ
-	0FxYdyc6IuR1duU8t9UhH/suOc4Iq9v0hM/jHMuryuI/SizFGYmGWsxFxYkAaiHn7d4BAAA=
+	Thu, 16 Oct 2014 04:25:03 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Hui Zhu <zhuhui@xiaomi.com>
+Cc: m.szyprowski@samsung.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 2/4] (CMA_AGGRESSIVE) Add argument hibernation to function shrink_all_memory
+Date: Thu, 16 Oct 2014 10:45:21 +0200
+Message-ID: <1471435.6q4YYkTopF@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1413430551-22392-3-git-send-email-zhuhui@xiaomi.com>
+References: <1413430551-22392-1-git-send-email-zhuhui@xiaomi.com> <1413430551-22392-3-git-send-email-zhuhui@xiaomi.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver was allocating memory for storing GPIOs for external control
-with unnecessary GFP_ZERO flag. Then right after allocation it
-initialized memory to -EINVAL in loop. Skip the GFP_ZERO flag.
+[CC list trimmed]
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- drivers/regulator/s2mps11.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Thursday, October 16, 2014 11:35:49 AM Hui Zhu wrote:
+> Function shrink_all_memory try to free `nr_to_reclaim' of memory.
+> CMA_AGGRESSIVE_SHRINK function will call this functon to free `nr_to_reclaim' of
+> memory.  It need different scan_control with current caller function
+> hibernate_preallocate_memory.
+> 
+> If hibernation is true, the caller is hibernate_preallocate_memory.
+> if not, the caller is CMA alloc function.
+> 
+> Signed-off-by: Hui Zhu <zhuhui@xiaomi.com>
+> ---
+>  include/linux/swap.h    |  3 ++-
+>  kernel/power/snapshot.c |  2 +-
+>  mm/vmscan.c             | 19 +++++++++++++------
+>  3 files changed, 16 insertions(+), 8 deletions(-)
+> 
+> diff --git a/include/linux/swap.h b/include/linux/swap.h
+> index 37a585b..9f2cb43 100644
+> --- a/include/linux/swap.h
+> +++ b/include/linux/swap.h
+> @@ -335,7 +335,8 @@ extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
+>  						gfp_t gfp_mask, bool noswap,
+>  						struct zone *zone,
+>  						unsigned long *nr_scanned);
+> -extern unsigned long shrink_all_memory(unsigned long nr_pages);
+> +extern unsigned long shrink_all_memory(unsigned long nr_pages,
+> +				       bool hibernation);
+>  extern int vm_swappiness;
+>  extern int remove_mapping(struct address_space *mapping, struct page *page);
+>  extern unsigned long vm_total_pages;
+> diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
+> index 791a618..a00fc35 100644
+> --- a/kernel/power/snapshot.c
+> +++ b/kernel/power/snapshot.c
+> @@ -1657,7 +1657,7 @@ int hibernate_preallocate_memory(void)
+>  	 * NOTE: If this is not done, performance will be hurt badly in some
+>  	 * test cases.
+>  	 */
+> -	shrink_all_memory(saveable - size);
+> +	shrink_all_memory(saveable - size, true);
 
-diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
-index adab82d5279f..7f59e67252e7 100644
---- a/drivers/regulator/s2mps11.c
-+++ b/drivers/regulator/s2mps11.c
-@@ -845,7 +845,7 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	};
- 
--	s2mps11->ext_control_gpio = devm_kzalloc(&pdev->dev,
-+	s2mps11->ext_control_gpio = devm_kmalloc(&pdev->dev,
- 			sizeof(*s2mps11->ext_control_gpio) * s2mps11->rdev_num,
- 			GFP_KERNEL);
- 	if (!s2mps11->ext_control_gpio)
+Instead of doing this, can you please define
+
+__shrink_all_memory()
+
+that will take the appropriate struct scan_control as an argument and
+then define two wrappers around that, one for hibernation and one for CMA?
+
+The way you did it opens a field for bugs caused by passing a wrong value
+as the second argument.
+
+>  
+>  	/*
+>  	 * The number of saveable pages in memory was too high, so apply some
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index dcb4707..fdcfa30 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -3404,7 +3404,7 @@ void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx)
+>  	wake_up_interruptible(&pgdat->kswapd_wait);
+>  }
+>  
+> -#ifdef CONFIG_HIBERNATION
+> +#if defined CONFIG_HIBERNATION || defined CONFIG_CMA_AGGRESSIVE
+>  /*
+>   * Try to free `nr_to_reclaim' of memory, system-wide, and return the number of
+>   * freed pages.
+> @@ -3413,22 +3413,29 @@ void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx)
+>   * LRU order by reclaiming preferentially
+>   * inactive > active > active referenced > active mapped
+>   */
+> -unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
+> +unsigned long shrink_all_memory(unsigned long nr_to_reclaim, bool hibernation)
+>  {
+>  	struct reclaim_state reclaim_state;
+>  	struct scan_control sc = {
+>  		.nr_to_reclaim = nr_to_reclaim,
+> -		.gfp_mask = GFP_HIGHUSER_MOVABLE,
+>  		.priority = DEF_PRIORITY,
+> -		.may_writepage = 1,
+>  		.may_unmap = 1,
+>  		.may_swap = 1,
+> -		.hibernation_mode = 1,
+>  	};
+>  	struct zonelist *zonelist = node_zonelist(numa_node_id(), sc.gfp_mask);
+>  	struct task_struct *p = current;
+>  	unsigned long nr_reclaimed;
+>  
+> +	if (hibernation) {
+> +		sc.hibernation_mode = 1;
+> +		sc.may_writepage = 1;
+> +		sc.gfp_mask = GFP_HIGHUSER_MOVABLE;
+> +	} else {
+> +		sc.hibernation_mode = 0;
+> +		sc.may_writepage = !laptop_mode;
+> +		sc.gfp_mask = GFP_USER | __GFP_MOVABLE | __GFP_HIGHMEM;
+> +	}
+> +
+>  	p->flags |= PF_MEMALLOC;
+>  	lockdep_set_current_reclaim_state(sc.gfp_mask);
+>  	reclaim_state.reclaimed_slab = 0;
+> @@ -3442,7 +3449,7 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
+>  
+>  	return nr_reclaimed;
+>  }
+> -#endif /* CONFIG_HIBERNATION */
+> +#endif /* CONFIG_HIBERNATION || CONFIG_CMA_AGGRESSIVE */
+>  
+>  /* It's optimal to keep kswapds on the same CPUs as their memory, but
+>     not required for correctness.  So if the last cpu in a node goes
+> 
+
 -- 
-1.9.1
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
