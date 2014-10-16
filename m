@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542AbaJPNJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 09:09:57 -0400
-Received: from ppsw-40.csi.cam.ac.uk ([131.111.8.140]:53401 "EHLO
-	ppsw-40.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435AbaJPNJ4 (ORCPT
+	id S1752582AbaJPNKX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 09:10:23 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:41683 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751316AbaJPNKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 09:09:56 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Date: Thu, 16 Oct 2014 14:09:54 +0100 (BST)
-From: Anton Altaparmakov <anton@tuxera.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ntfs-dev@lists.sourceforge.net
-Subject: [git pull] Small NTFS update
-Message-ID: <Pine.LNX.4.64.1410161347570.15284@hermes-1.csi.cam.ac.uk>
+	Thu, 16 Oct 2014 09:10:19 -0400
+Date: Thu, 16 Oct 2014 21:10:07 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Stephan Mueller <smueller@chronox.de>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Marek Vasut <marex@denx.de>
+Subject: Re: [PATCH] kernel crypto API interface specification
+Message-ID: <20141016131007.GA11517@gondor.apana.org.au>
+References: <7502136.9BkWHTZ0th@myon.chronox.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7502136.9BkWHTZ0th@myon.chronox.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, Oct 14, 2014 at 09:46:50PM +0200, Stephan Mueller wrote:
+> The update adds a complete interface documentation of the kernel crypto
+> API. All cipher types supported by the kernel crypto API are documented.
+> 
+> In addition, kernel and user space example code is provided. The sample
+> code covers synchronous and asynchronous cipher operation, random
+> number generation and performing hashing as well as encryption and
+> decryption in user space.
+> 
+> Signed-off-by: Stephan Mueller <smueller@chronox.de>
 
-Here is a small NTFS update notably implementing FIBMAP ioctl for NTFS by 
-adding the bmap address space operation.  People seem to still want 
-FIBMAP.
+Thanks for the patch Stephan!
 
-Please pull from
+Marek Vasut <marex@denx.de> has also been working on a set of
+documentation for the crypto API so he might have some comments
+on this.
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/aia21/ntfs.git master
-
-to get these changes:
-
- Documentation/filesystems/ntfs.txt | 268 
--------------------------------------
- fs/ntfs/Makefile                   |   2 +-
- fs/ntfs/aops.c                     | 163 ++++++++++++++++++++--
- fs/ntfs/inode.c                    |  19 +--
- fs/ntfs/ntfs.h                     |   8 +-
- 5 files changed, 167 insertions(+), 293 deletions(-)
-
-Shortlog:
-
-Anton Altaparmakov (4):
-      NTFS: Split ntfs_aops into ntfs_normal_aops and ntfs_compressed_aop
-            in preparation for them diverging.
-      NTFS: Remove changelog from Documentation/filesystems/ntfs.txt.
-      NTFS: Add bmap address space operation needed for FIBMAP ioctl.
-      NTFS: Bump version to 2.1.31.
-
-Thanks a lot in advance!
-
-Best regards,
-
-	Anton
+Cheers,
 -- 
-Anton Altaparmakov <anton at tuxera.com> (replace at with @)
-Senior Kernel Engineer, Tuxera Inc., http://www.tuxera.com/
-Linux NTFS maintainer
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
