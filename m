@@ -1,86 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751652AbaJPJrZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 05:47:25 -0400
-Received: from sauhun.de ([89.238.76.85]:45267 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750947AbaJPJrY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 05:47:24 -0400
-Date: Thu, 16 Oct 2014 11:48:04 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Andreas Werner <andreas.werner@men.de>, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org, johannes.thumshirn@men.de
-Subject: Re: [PATCH 1/2] drivers/misc/eeprom/men_eeprod: Introduce MEN Board
- Information EEPROM driver
-Message-ID: <20141016094804.GB1273@katana>
-References: <cover.1413416105.git.andreas.werner@men.de>
- <d169930cfe45d4c05c79f7dd00471d732441529d.1413416105.git.andreas.werner@men.de>
- <20141016085835.GA1273@katana>
- <20141016093414.GA25214@kroah.com>
+	id S1751569AbaJPJtT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 05:49:19 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40015 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194AbaJPJtR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 05:49:17 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <543F945F.4020303@jp.fujitsu.com>
+Date: Thu, 16 Oct 2014 18:48:15 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tjCHc7DPkfUGtrlw"
-Content-Disposition: inline
-In-Reply-To: <20141016093414.GA25214@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: <mingo@redhat.com>, <peterz@infradead.org>
+CC: <kernellwp@gmail.com>, <riel@redhat.com>, <tkhai@yandex.ru>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] sched/fair: Care divide error in update_task_scan_period()
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+While offling node by hot removing memory, the following divide error
+occurs:
 
---tjCHc7DPkfUGtrlw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+  divide error: 0000 [#1] SMP
+  [...]
+  Call Trace:
+   [...] handle_mm_fault
+   [...] ? try_to_wake_up
+   [...] ? wake_up_state
+   [...] __do_page_fault
+   [...] ? do_futex
+   [...] ? put_prev_entity
+   [...] ? __switch_to
+   [...] do_page_fault
+   [...] page_fault
+  [...]
+  RIP  [<ffffffff810a7081>] task_numa_fault
+   RSP <ffff88084eb2bcb0>
 
-On Thu, Oct 16, 2014 at 11:34:14AM +0200, Greg KH wrote:
-> On Thu, Oct 16, 2014 at 10:58:35AM +0200, Wolfram Sang wrote:
-> > > +struct eeprom_data {
-> > > +	uint8_t eeprod_id;
-> > > +
-> > > +	uint8_t revision[3];
-> > > +	uint32_t serialnr;
-> > > +	uint8_t board_model;
-> > > +	char hw_name[6];
-> > > +
-> > > +	uint8_t reserved;
-> > > +
-> > > +	__be16 prod_date;
-> > > +	__be16 rep_date;
-> > > +
-> > > +	uint8_t reserved2[4];
-> > > +};
-> >=20
-> > And what if the compiler reorders?
->=20
-> It's not allowed to reorder, but it can add padding wherever it wants
-> to, which if this is a on-device structure, can cause problems.  Use
-> __packed to prevent that.
+The issue occurs as follows:
+  1. When page fault occurs and page is allocated from node 1,
+     task_struct->numa_faults_buffer_memory[] of node 1 is
+     incremented and p->numa_faults_locality[] is also incremented
+     as follows:
 
-Yes, took the wrong word, sorry, I meant __packed.
+     o numa_faults_buffer_memory[]       o numa_faults_locality[]
+              NR_NUMA_HINT_FAULT_TYPES
+             |      0     |     1     |
+     ----------------------------------  ----------------------
+      node 0 |      0     |     0     |   remote |      0     |
+      node 1 |      0     |     1     |   locale |      1     |
+     ----------------------------------  ----------------------
+
+  2. node 1 is offlined by hot removing memory.
+
+  3. When page fault occurs, fault_types[] is calculated by using
+     p->numa_faults_buffer_memory[] of all online nodes in
+     task_numa_placement(). But node 1 was offline by step 2. So
+     the fault_types[] is calculated by using only
+     p->numa_faults_buffer_memory[] of node 0. So both of fault_types[]
+     are set to 0.
+
+  4. The values(0) of fault_types[] pass to update_task_scan_period().
+
+  5. numa_faults_locality[1] is set to 1. So the following division is
+     calculated.
+
+        static void update_task_scan_period(struct task_struct *p,
+                                unsigned long shared, unsigned long private){
+        ...
+                ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared));
+        }
+
+  6. But both of private and shared are set to 0. So divide error
+     occurs here.
+
+The divide error is rare case because the trigger is node offline.
+By this patch, when both of private and shared are set to 0,
+denominator is set to 1 for avoiding divide error.
+
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: Wanpeng Li <kernellwp@gmail.com>
+CC: Rik van Riel <riel@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>
+---
+ kernel/sched/fair.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index bfa3c86..580fc74 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1466,6 +1466,7 @@ static void update_task_scan_period(struct task_struct *p,
+
+ 	unsigned long remote = p->numa_faults_locality[0];
+ 	unsigned long local = p->numa_faults_locality[1];
++	unsigned long total_faults = shared + private;
+
+ 	/*
+ 	 * If there were no record hinting faults then either the task is
+@@ -1496,6 +1497,14 @@ static void update_task_scan_period(struct task_struct *p,
+ 			slot = 1;
+ 		diff = slot * period_slot;
+ 	} else {
++		/*
++		 * This is a rare case. total_faults might become 0 after
++		 * offlining node. In this case, total_faults is set to 1
++		 * for avoiding divide error.
++		 */
++		if (unlikely(total_faults == 0))
++			total_faults = 1;
++
+ 		diff = -(NUMA_PERIOD_THRESHOLD - ratio) * period_slot;
+
+ 		/*
+@@ -1506,7 +1515,7 @@ static void update_task_scan_period(struct task_struct *p,
+ 		 * scanning faster if shared accesses dominate as it may
+ 		 * simply bounce migrations uselessly
+ 		 */
+-		ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared));
++		ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (total_faults));
+ 		diff = (diff * ratio) / NUMA_PERIOD_SLOTS;
+ 	}
+
+-- 
+1.8.3.1
 
 
---tjCHc7DPkfUGtrlw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUP5RUAAoJEBQN5MwUoCm2MZUP+QGAz+WpLi+FF45FIonW1/SB
-3dhP8GOLhKjHo0NoxvSeqELwP2TgpRxWG9JuVODxYA8owXTH4ijJYBEFKi5VYdhT
-FaSLF0eUwzTC60yWNk4VD0o/05kI5ccj0pjgDZVGoiKZL9CDXu4HdRf2lLJn/It6
-DhRqZiR9EItkJ1abf9WqjQ38gaeXcProoWCFc5o9+jIhzE6R9oK5/q39fhDwg6I8
-WwBd42xpQFdUod5mxj0fXe9v2nYMCRe1OmoYUsVmG9xRu9ws2wG8lOc9H6uRGjQr
-20O/KYOzvKfm3iR+UnOQcEXZ4sHrXRd4tHGyFriuZTdf41BmUyOR5pIUJquHI7Eh
-YVnE+ZIbwrUWlyzZzvq6aJvK/rQGxXftRA/et3Ml5K0rW7tCv7MM78VATF221Gr5
-ZXeoPkPWfyO4PNU4sXM3KWUZzr31GcLcxKNwSZMHRF1lAk03hT/hgqlzwR2I6F/g
-qENGPrSLvk84WKbWJJrjf4WNclt+lLDoRog2cu4Uw41SVx3kyGz7/gpphsCJ32Yb
-dAxHZU32/WgYG8wZ4I3jolarNKVMamlenfxPpPePA1bWRKdYSlDvcmOJxDF/t2MX
-DNHHn8A3eYWmyXUqsVIRVm0AcD0YV/elWuGwCbwUlpRJAItRad0Af94HiafzZgR1
-8uj2qlqx0xrs62ZtEodQ
-=KeL/
------END PGP SIGNATURE-----
-
---tjCHc7DPkfUGtrlw--
