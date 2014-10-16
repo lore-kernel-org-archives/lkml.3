@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751667AbaJPB24 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 21:28:56 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:55944 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820AbaJPB2y (ORCPT
+	id S1751474AbaJPBq4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 21:46:56 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:52185 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751001AbaJPBqy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 21:28:54 -0400
-Date: Thu, 16 Oct 2014 09:28:40 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Jim Davis <jim.epost@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-crypto <linux-crypto@vger.kernel.org>
-Subject: Re: randconfig build error with next-20141015, in crypto
-Message-ID: <20141016012840.GA7943@gondor.apana.org.au>
-References: <CA+r1Zhj1nYEoP22cTQ71poxLU6zF2OZHbTarPFhOfwU8ddM7Rg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+r1Zhj1nYEoP22cTQ71poxLU6zF2OZHbTarPFhOfwU8ddM7Rg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 15 Oct 2014 21:46:54 -0400
+From: hansechang@gmail.com
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xen.org
+Cc: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, Ian.Campbell@eu.citrix.com,
+        dgdegra@tycho.nsa.gov, jinsong.liu@alibaba-inc.com,
+        Chang Huaixin <huaixin.chx@alibaba-inc.com>
+Subject: [PATCH] Input: xen-kbdfront - free grant table entry in xenkbd_disconnect_backend
+Date: Thu, 16 Oct 2014 09:46:32 +0800
+Message-Id: <1413423992-3005-1-git-send-email-hansechang@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 04:24:20PM -0700, Jim Davis wrote:
-> This looks like a similar problem to one reported in August
-> (https://lists.01.org/pipermail/kbuild-all/2014-August/006021.html),
-> but there are significantly more errors this time.   Random
-> configuration file attached:
-> 
-> crypto/built-in.o: In function `crypto_ctr_free':
-> ctr.c:(.text+0x41): undefined reference to `crypto_drop_spawn'
+From: Chang Huaixin <huaixin.chx@alibaba-inc.com>
 
-Something is wrong with your test because your config file is
-inconsistent with the current Kconfig description.  In particular,
-you've got CRYPTO_CTR=y and CRYPTO_BLKCIPHER=m and yet in our
-Kconfig CRYPTO_CTR explicitly selects CRYPTO_BLKCIPHER.
+xenkbd_disconnect_backend doesn't free grant table entry.
+This bug affects live migration.
 
-If you're just doing a simple make then this could be a bug in the
-kbuild system.
+xenkbd_disconnect_backend uses gnttab_end_foreign_access_ref
+to handle grant table entry which doesn't really free an entry.
 
-Cheers,
+Thus every time we do xenkbd_resume, grant table entry increses
+by one. As an grant table entry occupies 8 bytes, an grant table
+page has at most 512 entries. Every 512 times we do xenkdb_resume,
+grant table pages increses by one.
+
+After around 3500 times of live migration, grant table pages
+will increase by 7, causing too many pages to populate and hitting
+max_pages limit when assigning pages.Thus assign_pages will fail,
+so will live migration.
+
+Signed-off-by: Chang Huaixin <huaixin.chx@alibaba-inc.com>
+---
+ drivers/input/misc/xen-kbdfront.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/input/misc/xen-kbdfront.c b/drivers/input/misc/xen-kbdfront.c
+index fbfdc10..e2ecfc6 100644
+--- a/drivers/input/misc/xen-kbdfront.c
++++ b/drivers/input/misc/xen-kbdfront.c
+@@ -285,7 +285,7 @@ static int xenkbd_connect_backend(struct xenbus_device *dev,
+  error_evtchan:
+ 	xenbus_free_evtchn(dev, evtchn);
+  error_grant:
+-	gnttab_end_foreign_access_ref(info->gref, 0);
++	gnttab_end_foreign_access(info->gref, 0, 0UL);
+ 	info->gref = -1;
+ 	return ret;
+ }
+@@ -296,7 +296,7 @@ static void xenkbd_disconnect_backend(struct xenkbd_info *info)
+ 		unbind_from_irqhandler(info->irq, info);
+ 	info->irq = -1;
+ 	if (info->gref >= 0)
+-		gnttab_end_foreign_access_ref(info->gref, 0);
++		gnttab_end_foreign_access(info->gref, 0, 0UL);
+ 	info->gref = -1;
+ }
+ 
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+1.9.1
+
