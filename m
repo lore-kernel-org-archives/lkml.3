@@ -1,263 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542AbaJPOSZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 10:18:25 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:38357 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232AbaJPOSX (ORCPT
+	id S1752109AbaJPOXi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 10:23:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43678 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751218AbaJPOXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 10:18:23 -0400
+	Thu, 16 Oct 2014 10:23:36 -0400
+Date: Thu, 16 Oct 2014 16:22:31 +0200
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Luis Henriques <luis.henriques@canonical.com>
+Cc: Kamal Mostafa <kamal@canonical.com>, kernel-team@lists.ubuntu.com,
+        Willy Tarreau <w@1wt.eu>, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3.13 163/163] lzo: check for length overrun in variable
+ length encoding.
+Message-ID: <20141016142231.GE11231@kroah.com>
+References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
+ <1412888588-26755-164-git-send-email-kamal@canonical.com>
+ <20141010053048.GD3594@1wt.eu>
+ <1413221463.11421.30.camel@fourier>
+ <20141014015233.GA24799@kroah.com>
+ <20141014085841.GA7710@hercules>
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <20141016124741.GA3832@kroah.com>
-References: <20141016124741.GA3832@kroah.com>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Thu, 16 Oct 2014 16:18:02 +0200
-Message-ID: <CAKgNAkiPg8G13XZXG6CiaBFZ1yqY2J7_OAppDOGweuNpRaojuA@mail.gmail.com>
-Subject: Re: [PATCH] staging: android: binder: move to the "real" part of the kernel
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
-        Linux API <linux-api@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        John Stultz <john.stultz@linaro.org>,
-        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Anup Patel <anup.patel@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141014085841.GA7710@hercules>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 2:47 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->
-> The Android binder code has been "stable" for many years now.  No matter
-> what comes in the future, we are going to have to support this API, so
-> might as well move it to the "real" part of the kernel as there's no
-> real work that needs to be done to the existing code.
+On Tue, Oct 14, 2014 at 10:58:41AM +0200, Luis Henriques wrote:
+> On Tue, Oct 14, 2014 at 03:52:33AM +0200, Greg Kroah-Hartman wrote:
+> > On Mon, Oct 13, 2014 at 10:31:03AM -0700, Kamal Mostafa wrote:
+> > > On Fri, 2014-10-10 at 07:30 +0200, Willy Tarreau wrote:
+> > > > Hi Kamal,
+> > > > 
+> > > > [ removed Don Bailey from the CC who's certainly not interested in this ]
+> > > > 
+> > > > On Thu, Oct 09, 2014 at 02:03:08PM -0700, Kamal Mostafa wrote:
+> > > > > 3.13.11.9 -stable review patch.  If anyone has any objections, please let me know.
+> > > > > 
+> > > > > ------------------
+> > > > > 
+> > > > > From: Willy Tarreau <w@1wt.eu>
+> > > > > 
+> > > > > commit 72cf90124e87d975d0b2114d930808c58b4c05e4 upstream.
+> > > > 
+> > > > (...)
+> > > 
+> > > Hi Willy-
+> > > 
+> > > Thanks very much for reviewing this.
+> > > 
+> > > > This one (and the accompanying revert) are still not present in more
+> > > > recent stable kernels, so I find it surprizing that you're proposing
+> > > > to integrate them now.
+> > > 
+> > > I can hold out those lzo fixes until the next 3.13-stable if you prefer.
+> > 
+> > Please do so.
+> > 
+> > > But fwiw...
+> > > 
+> > > >  If someone upgrades from 3.13.11.9 to 3.14.21
+> > > > or 3.16.5, they'd expect to keep all fixes but will lose this one, so
+> > > > this is a bit confusing.
+> > > 
+> > > I think those sorts of scheduling mismatches and discrepancies between
+> > > stable versions are pretty common.  Examples:  The top 11 commits in
+> > > v3.12.30 have not yet been applied[0] to any of the newer stable
+> > > branches;
+> > 
+> > Those -mm patches from Mel are "special", I'm taking it slow in merging
+> > them, doing lots of local testing and code review, and not all of them
+> > even are relevant for 3.14, so don't take the acceptance /
+> > non-acceptance of them as any kind of "proof" of anything at all.
+> > 
+> > > Many of the commits in v3.10.57 have not yet been applied[1]
+> > > to linux-3.12.y but have been released in other newer stables.
+> > 
+> > That's because I am ahead of Jiri, which will almost always happen due
+> > to our different workflows and time available to spend on stable
+> > kernels.
+> > 
+> > > >  Is there any reason you're not tracking fixes
+> > > > from more recent versions like Jiri, Li, Ben and I are doing ?
+> > > 
+> > > We (the Canonical stable maintainers) have always tracked the "cc:
+> > > stable" fixes directly from mainline, not from the more-recent-version
+> > > branches.  Given the examples above, it seems that the kernel.org
+> > > maintainers are doing that too, yes?
+> > 
+> > You have included patches in your release that are not in _any_ public
+> > release on kernel.org yet.  Which is fine, you are allowed to do
+> > whatever you want, but that goes against the existing rules of stable
+> > patches that we have been following for well over the past year for when
+> > it is acceptable to add a patch to a stable release.
+> > 
+> 
+> Could you please provide us with examples of commits in one of our
+> extended stable trees that is not on any other public release at
+> kernel.org?  We really try hard to follow the process defined for the
+> official stable kernels, so if this has happen in the past it was
+> definitely a mistake from our side, and we would love to get your
+> feedback during the review cycles.
 
-Where does one find the canonical documentation of the user-space API?
+I don't really know, and honestly, don't care to spend the time and
+energy to dig through to find this out.  The lzo ones jumped out at me
+as I know the history behind them, and if you note, _I_ even didn't put
+them in a stable kernel yet, as they have not shown up in a release from
+Linus.
 
-Thanks,
+As the maintainer involved didn't ask you to go against the well-known
+stable tree rules, that's a warning to others that perhaps something is
+wrong here...
 
-Michael
+best of luck,
 
-
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
->
-> This was discussed in the Android miniconf at the Plumbers conference.
-> If anyone has any objections to this, please let me know, otherwise I'm
-> queueing this up for 3.19-rc1
->
->
->  drivers/Kconfig                                    |  2 ++
->  drivers/Makefile                                   |  1 +
->  drivers/android/Kconfig                            | 37 ++++++++++++++++++++++
->  drivers/android/Makefile                           |  3 ++
->  drivers/{staging => }/android/binder.c             |  0
->  drivers/{staging => }/android/binder.h             |  2 +-
->  drivers/{staging => }/android/binder_trace.h       |  0
->  drivers/staging/android/Kconfig                    | 30 ------------------
->  drivers/staging/android/Makefile                   |  1 -
->  include/uapi/linux/Kbuild                          |  1 +
->  include/uapi/linux/android/Kbuild                  |  2 ++
->  .../uapi => include/uapi/linux/android}/binder.h   |  0
->  12 files changed, 47 insertions(+), 32 deletions(-)
->  create mode 100644 drivers/android/Kconfig
->  create mode 100644 drivers/android/Makefile
->  rename drivers/{staging => }/android/binder.c (100%)
->  rename drivers/{staging => }/android/binder.h (95%)
->  rename drivers/{staging => }/android/binder_trace.h (100%)
->  create mode 100644 include/uapi/linux/android/Kbuild
->  rename {drivers/staging/android/uapi => include/uapi/linux/android}/binder.h (100%)
->
-> diff --git a/drivers/Kconfig b/drivers/Kconfig
-> index 1a693d3f9d51..569ff7886dc3 100644
-> --- a/drivers/Kconfig
-> +++ b/drivers/Kconfig
-> @@ -182,4 +182,6 @@ source "drivers/ras/Kconfig"
->
->  source "drivers/thunderbolt/Kconfig"
->
-> +source "drivers/android/Kconfig"
-> +
->  endmenu
-> diff --git a/drivers/Makefile b/drivers/Makefile
-> index ebee55537a05..60d19820a4d4 100644
-> --- a/drivers/Makefile
-> +++ b/drivers/Makefile
-> @@ -161,3 +161,4 @@ obj-$(CONFIG_POWERCAP)              += powercap/
->  obj-$(CONFIG_MCB)              += mcb/
->  obj-$(CONFIG_RAS)              += ras/
->  obj-$(CONFIG_THUNDERBOLT)      += thunderbolt/
-> +obj-$(CONFIG_ANDROID)          += android/
-> diff --git a/drivers/android/Kconfig b/drivers/android/Kconfig
-> new file mode 100644
-> index 000000000000..bdfc6c6f4f5a
-> --- /dev/null
-> +++ b/drivers/android/Kconfig
-> @@ -0,0 +1,37 @@
-> +menu "Android"
-> +
-> +config ANDROID
-> +       bool "Android Drivers"
-> +       ---help---
-> +         Enable support for various drivers needed on the Android platform
-> +
-> +if ANDROID
-> +
-> +config ANDROID_BINDER_IPC
-> +       bool "Android Binder IPC Driver"
-> +       depends on MMU
-> +       default n
-> +       ---help---
-> +         Binder is used in Android for both communication between processes,
-> +         and remote method invocation.
-> +
-> +         This means one Android process can call a method/routine in another
-> +         Android process, using Binder to identify, invoke and pass arguments
-> +         between said processes.
-> +
-> +config ANDROID_BINDER_IPC_32BIT
-> +       bool
-> +       depends on !64BIT && ANDROID_BINDER_IPC
-> +       default y
-> +       ---help---
-> +         The Binder API has been changed to support both 32 and 64bit
-> +         applications in a mixed environment.
-> +
-> +         Enable this to support an old 32-bit Android user-space (v4.4 and
-> +         earlier).
-> +
-> +         Note that enabling this will break newer Android user-space.
-> +
-> +endif # if ANDROID
-> +
-> +endmenu
-> diff --git a/drivers/android/Makefile b/drivers/android/Makefile
-> new file mode 100644
-> index 000000000000..3b7e4b072c58
-> --- /dev/null
-> +++ b/drivers/android/Makefile
-> @@ -0,0 +1,3 @@
-> +ccflags-y += -I$(src)                  # needed for trace events
-> +
-> +obj-$(CONFIG_ANDROID_BINDER_IPC)       += binder.o
-> diff --git a/drivers/staging/android/binder.c b/drivers/android/binder.c
-> similarity index 100%
-> rename from drivers/staging/android/binder.c
-> rename to drivers/android/binder.c
-> diff --git a/drivers/staging/android/binder.h b/drivers/android/binder.h
-> similarity index 95%
-> rename from drivers/staging/android/binder.h
-> rename to drivers/android/binder.h
-> index eb0834656dfe..5dc6a66b0665 100644
-> --- a/drivers/staging/android/binder.h
-> +++ b/drivers/android/binder.h
-> @@ -24,7 +24,7 @@
->  #define BINDER_IPC_32BIT 1
->  #endif
->
-> -#include "uapi/binder.h"
-> +#include <uapi/linux/android/binder.h>
->
->  #endif /* _LINUX_BINDER_H */
->
-> diff --git a/drivers/staging/android/binder_trace.h b/drivers/android/binder_trace.h
-> similarity index 100%
-> rename from drivers/staging/android/binder_trace.h
-> rename to drivers/android/binder_trace.h
-> diff --git a/drivers/staging/android/Kconfig b/drivers/staging/android/Kconfig
-> index 7a0e28852965..7e012f37792b 100644
-> --- a/drivers/staging/android/Kconfig
-> +++ b/drivers/staging/android/Kconfig
-> @@ -1,37 +1,7 @@
->  menu "Android"
->
-> -config ANDROID
-> -       bool "Android Drivers"
-> -       ---help---
-> -         Enable support for various drivers needed on the Android platform
-> -
->  if ANDROID
->
-> -config ANDROID_BINDER_IPC
-> -       bool "Android Binder IPC Driver"
-> -       depends on MMU
-> -       default n
-> -       ---help---
-> -         Binder is used in Android for both communication between processes,
-> -         and remote method invocation.
-> -
-> -         This means one Android process can call a method/routine in another
-> -         Android process, using Binder to identify, invoke and pass arguments
-> -         between said processes.
-> -
-> -config ANDROID_BINDER_IPC_32BIT
-> -       bool
-> -       depends on !64BIT && ANDROID_BINDER_IPC
-> -       default y
-> -       ---help---
-> -         The Binder API has been changed to support both 32 and 64bit
-> -         applications in a mixed environment.
-> -
-> -         Enable this to support an old 32-bit Android user-space (v4.4 and
-> -         earlier).
-> -
-> -         Note that enabling this will break newer Android user-space.
-> -
->  config ASHMEM
->         bool "Enable the Anonymous Shared Memory Subsystem"
->         default n
-> diff --git a/drivers/staging/android/Makefile b/drivers/staging/android/Makefile
-> index 517ad5ffa429..479b2b86f8c8 100644
-> --- a/drivers/staging/android/Makefile
-> +++ b/drivers/staging/android/Makefile
-> @@ -2,7 +2,6 @@ ccflags-y += -I$(src)                   # needed for trace events
->
->  obj-y                                  += ion/
->
-> -obj-$(CONFIG_ANDROID_BINDER_IPC)       += binder.o
->  obj-$(CONFIG_ASHMEM)                   += ashmem.o
->  obj-$(CONFIG_ANDROID_LOGGER)           += logger.o
->  obj-$(CONFIG_ANDROID_TIMED_OUTPUT)     += timed_output.o
-> diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
-> index 70e150ebc6c9..1bbaf6457861 100644
-> --- a/include/uapi/linux/Kbuild
-> +++ b/include/uapi/linux/Kbuild
-> @@ -1,4 +1,5 @@
->  # UAPI Header export list
-> +header-y += android/
->  header-y += byteorder/
->  header-y += can/
->  header-y += caif/
-> diff --git a/include/uapi/linux/android/Kbuild b/include/uapi/linux/android/Kbuild
-> new file mode 100644
-> index 000000000000..ca011eec252a
-> --- /dev/null
-> +++ b/include/uapi/linux/android/Kbuild
-> @@ -0,0 +1,2 @@
-> +# UAPI Header export list
-> +header-y += binder.h
-> diff --git a/drivers/staging/android/uapi/binder.h b/include/uapi/linux/android/binder.h
-> similarity index 100%
-> rename from drivers/staging/android/uapi/binder.h
-> rename to include/uapi/linux/android/binder.h
-> --
-> 2.1.2
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-api" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+greg k-h
