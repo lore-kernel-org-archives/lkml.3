@@ -1,142 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585AbaJPNtX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 09:49:23 -0400
-Received: from relay.parallels.com ([195.214.232.42]:60025 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422AbaJPNtW (ORCPT
+	id S1752741AbaJPNt3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 09:49:29 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:35644 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752597AbaJPNt0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 09:49:22 -0400
-Message-ID: <1413467359.19914.2.camel@tkhai>
-Subject: [PATCH] sched/fair: Fix race in update_cfs_rq_h_load()
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>
-Date: Thu, 16 Oct 2014 17:49:19 +0400
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
+	Thu, 16 Oct 2014 09:49:26 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.26.172]
+In-Reply-To: <CAErSpo45JNAFM7gYM39hsAw=O+Pe2FLJYpj3WV0p2rDe-_t+xg@mail.gmail.com>
+References: <20141015165957.4063.66741.stgit@bhelgaas-glaptop2.roam.corp.google.com>
+ <20141015170617.4063.2807.stgit@bhelgaas-glaptop2.roam.corp.google.com> <CAErSpo45JNAFM7gYM39hsAw=O+Pe2FLJYpj3WV0p2rDe-_t+xg@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 16 Oct 2014 07:49:05 -0600
+Message-ID: <CAErSpo6978-uGD6Mq+tESXVZsmZSLWCuAwyBzO9pKHg_foNZPg@mail.gmail.com>
+Subject: Re: [PATCH v1 05/10] MIPS: MT: Move "weak" from vpe_run() declaration
+ to definition
+To: Jason Wessel <jason.wessel@windriver.com>,
+        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@redhat.com>,
+        John Stultz <john.stultz@linaro.org>, Eric Paris <eparis@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[+cc Stephen]
 
-The original idea of cfs_rq::last_h_load_update was to do not
-update cfs_rq::h_load more than once a jiffies.
+On Wed, Oct 15, 2014 at 5:28 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> [+cc linux-mips]
+>
+> On Wed, Oct 15, 2014 at 11:06 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> When the "weak" attribute is on a declaration in a header file, every
+>> definition where the header is included becomes weak, and the linker
+>> chooses one definition based on link order (see 10629d711ed7 ("PCI: Remove
+>> __weak annotation from pcibios_get_phb_of_node decl")).
+>>
+>> Move the "weak" attribute from the declaration to the default definition so
+>> we always prefer a non-weak definition over the weak one, independent of
+>> link order.
+>>
+>> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+>> CC: linux-mips@linux-mips.org
+>> ---
+>>  arch/mips/include/asm/vpe.h |    2 +-
+>>  arch/mips/kernel/vpe-mt.c   |    2 +-
+>>  2 files changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/mips/include/asm/vpe.h b/arch/mips/include/asm/vpe.h
+>> index 7849f3978fea..80e70dbd1f64 100644
+>> --- a/arch/mips/include/asm/vpe.h
+>> +++ b/arch/mips/include/asm/vpe.h
+>> @@ -122,7 +122,7 @@ void release_vpe(struct vpe *v);
+>>  void *alloc_progmem(unsigned long len);
+>>  void release_progmem(void *ptr);
+>>
+>> -int __weak vpe_run(struct vpe *v);
+>> +int vpe_run(struct vpe *v);
+>>  void cleanup_tc(struct tc *tc);
+>>
+>>  int __init vpe_module_init(void);
+>> diff --git a/arch/mips/kernel/vpe-mt.c b/arch/mips/kernel/vpe-mt.c
+>> index 2e003b11a098..0e5899a2cd96 100644
+>> --- a/arch/mips/kernel/vpe-mt.c
+>> +++ b/arch/mips/kernel/vpe-mt.c
+>> @@ -23,7 +23,7 @@ static int major;
+>>  static int hw_tcs, hw_vpes;
+>>
+>>  /* We are prepared so configure and start the VPE... */
+>> -int vpe_run(struct vpe *v)
+>> +int __weak vpe_run(struct vpe *v)
+>>  {
+>>         unsigned long flags, val, dmt_flag;
+>>         struct vpe_notifications *notifier;
+>>
 
-Since task_numa_compare()->task_h_load()->update_cfs_rq_h_load()
-makes unlocked update, this may be a reason of race between two
-parallel updates, or with remote rq->curr changing.
+Just FYI, this patch was in linux-next today, but I dropped it
+temporarily because Fengguang's auto-builder found the following issue
+with it:
 
-The patch does not change idea, but it excludes the race. Now we
-update cfs_rq::h_load holding rq's lock. This happens in two
-places: every jiffie in task_tick_fair(), and in set_curr_task_fair()
-when task becomes fair.
+All error/warnings:
 
-Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-Reported-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/sched/fair.c  |   23 +++++++++++------------
- kernel/sched/sched.h |    1 -
- 2 files changed, 11 insertions(+), 13 deletions(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index b78280c..fd2007e 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5562,28 +5562,22 @@ static void update_blocked_averages(int cpu)
-  * This needs to be done in a top-down fashion because the load of a child
-  * group is a fraction of its parents load.
-  */
--static void update_cfs_rq_h_load(struct cfs_rq *cfs_rq)
-+static void update_cfs_rq_h_load(struct task_struct *curr)
- {
-+	struct cfs_rq *cfs_rq = task_cfs_rq(curr);
- 	struct rq *rq = rq_of(cfs_rq);
- 	struct sched_entity *se = cfs_rq->tg->se[cpu_of(rq)];
--	unsigned long now = jiffies;
- 	unsigned long load;
- 
--	if (cfs_rq->last_h_load_update == now)
--		return;
-+	lockdep_assert_held(&rq->lock);
- 
- 	cfs_rq->h_load_next = NULL;
- 	for_each_sched_entity(se) {
- 		cfs_rq = cfs_rq_of(se);
- 		cfs_rq->h_load_next = se;
--		if (cfs_rq->last_h_load_update == now)
--			break;
- 	}
- 
--	if (!se) {
--		cfs_rq->h_load = cfs_rq->runnable_load_avg;
--		cfs_rq->last_h_load_update = now;
--	}
-+	cfs_rq->h_load = cfs_rq->runnable_load_avg;
- 
- 	while ((se = cfs_rq->h_load_next) != NULL) {
- 		load = cfs_rq->h_load;
-@@ -5591,7 +5585,6 @@ static void update_cfs_rq_h_load(struct cfs_rq *cfs_rq)
- 				cfs_rq->runnable_load_avg + 1);
- 		cfs_rq = group_cfs_rq(se);
- 		cfs_rq->h_load = load;
--		cfs_rq->last_h_load_update = now;
- 	}
- }
- 
-@@ -5599,7 +5592,6 @@ static unsigned long task_h_load(struct task_struct *p)
- {
- 	struct cfs_rq *cfs_rq = task_cfs_rq(p);
- 
--	update_cfs_rq_h_load(cfs_rq);
- 	return div64_ul(p->se.avg.load_avg_contrib * cfs_rq->h_load,
- 			cfs_rq->runnable_load_avg + 1);
- }
-@@ -5608,6 +5600,10 @@ static inline void update_blocked_averages(int cpu)
- {
- }
- 
-+static void update_cfs_rq_h_load(struct task_struct *curr)
-+{
-+}
-+
- static unsigned long task_h_load(struct task_struct *p)
- {
- 	return p->se.avg.load_avg_contrib;
-@@ -7509,6 +7505,7 @@ static void task_tick_fair(struct rq *rq, struct task_struct *curr, int queued)
- 		task_tick_numa(rq, curr);
- 
- 	update_rq_runnable_avg(rq, 1);
-+	update_cfs_rq_h_load(curr);
- }
- 
- /*
-@@ -7662,6 +7659,8 @@ static void set_curr_task_fair(struct rq *rq)
- 		/* ensure bandwidth has been allocated on our new cfs_rq */
- 		account_cfs_rq_runtime(cfs_rq, 0);
- 	}
-+
-+	update_cfs_rq_h_load(rq->curr);
- }
- 
- void init_cfs_rq(struct cfs_rq *cfs_rq)
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 6130251..5b23d6c 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -361,7 +361,6 @@ struct cfs_rq {
- 	 * this group.
- 	 */
- 	unsigned long h_load;
--	u64 last_h_load_update;
- 	struct sched_entity *h_load_next;
- #endif /* CONFIG_FAIR_GROUP_SCHED */
- #endif /* CONFIG_SMP */
-
-
-
+   arch/mips/kernel/vpe.c: In function 'vpe_release':
+>> arch/mips/kernel/vpe.c:830:29: error: the address of 'vpe_run' will always evaluate as 'true' [-Werror=address]
+      if ((vpe_elfload(v) >= 0) && vpe_run) {
+                                ^
+   cc1: all warnings being treated as errors
