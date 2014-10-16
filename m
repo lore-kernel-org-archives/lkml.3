@@ -1,108 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751690AbaJPAbx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 20:31:53 -0400
-Received: from mga03.intel.com ([134.134.136.65]:3647 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750820AbaJPAbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 20:31:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,728,1406617200"; 
-   d="scan'208";a="619540509"
-From: "Chen, Alvin" <alvin.chen@intel.com>
-To: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Mark Brown <broonie@kernel.org>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Westerberg, Mika" <mika.westerberg@intel.com>,
-        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
-        "Tan, Raymond" <raymond.tan@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: RE: [PATCH 0/2 v3] SPI: spi-pxa2xx: Add support for Intel Quark
- X1000 SPI controller
-Thread-Topic: [PATCH 0/2 v3] SPI: spi-pxa2xx: Add support for Intel Quark
- X1000 SPI controller
-Thread-Index: AQHP4s2062u9hI2nNE2pT5OIIxNEG5wx6j9Q
-Date: Thu, 16 Oct 2014 00:31:41 +0000
-Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E999534@SHSMSX101.ccr.corp.intel.com>
-References: <1412783423-9408-1-git-send-email-alvin.chen@intel.com>
-In-Reply-To: <1412783423-9408-1-git-send-email-alvin.chen@intel.com>
+	id S1751569AbaJPAwv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 20:52:51 -0400
+Received: from mailout.micron.com ([137.201.242.129]:33441 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751294AbaJPAwu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 20:52:50 -0400
+From: bpqw <bpqw@micron.com>
+To: Marek Vasut <marex@denx.de>
+CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        "shijie8@gmail.com" <shijie8@gmail.com>,
+        "geert+renesas@glider.be" <geert+renesas@glider.be>,
+        "grmoore@altera.com" <grmoore@altera.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/1 v2] driver:mtd:spi-nor:fix spi_nor_scan overwrite
+ platform ID point
+Thread-Topic: [PATCH 1/1 v2] driver:mtd:spi-nor:fix spi_nor_scan overwrite
+ platform ID point
+Thread-Index: AQHP6ADrbICFEEG1rUGWsJLbyrieFJwx3D+w
+Date: Thu, 16 Oct 2014 00:52:02 +0000
+Message-ID: <A765B125120D1346A63912DDE6D8B6315E6D82@NTXXIAMBX02.xacn.micron.com>
+References: <A765B125120D1346A63912DDE6D8B6315E62CB@NTXXIAMBX02.xacn.micron.com>
+ <201410150045.53976.marex@denx.de>
+In-Reply-To: <201410150045.53976.marex@denx.de>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
+x-originating-ip: [10.167.84.5]
+x-tm-as-product-ver: SMEX-10.0.0.4152-7.000.1014-21028.000
+x-tm-as-result: No--43.433100-0.000000-31
+x-tm-as-user-approved-sender: Yes
+x-tm-as-user-blocked-sender: No
+x-mt-checkinternalsenderrule: True
 Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9G0WBNq002254
-
-Hi Mark,
-
-Any update for these patches? Just want to follow-up.
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9G0qwvC002288
 
 
-Best regardsï¼ŒAlvin Chen
-ICFS Platform Engineering Solution
-Flex Services (CMMI Level 3, IQA2005, IQA2008),Â Greater Asia Region Intel Information Technology Tel. 010-82171960
-inet.8-7581960
-Email. alvin.chen@intel.com 
+>Won't $info contain an undefined value in case the newly added condition isn't met ? The old code initialized $info to a certain value always, the new code does not do that.
 
-> -----Original Message-----
-> From: Chen, Alvin
-> Sent: Wednesday, October 8, 2014 11:50 PM
-> To: Eric Miao; Russell King; Haojian Zhuang; Mark Brown
-> Cc: linux-arm-kernel@lists.infradead.org; linux-spi@vger.kernel.org;
-> linux-kernel@vger.kernel.org; Westerberg, Mika; Kweh, Hock Leong; Ong, Boon
-> Leong; Tan, Raymond; Chen, Alvin; Andy Shevchenko
-> Subject: [PATCH 0/2 v3] SPI: spi-pxa2xx: Add support for Intel Quark X1000 SPI
-> controller
-> 
-> Hi,
-> Intel Quark X1000 consists of two SPI controllers which can be PCI enumerated.
-> SPI-PXA2XX PCI layer doesn't support it. Thus, we add support for Intel Quark
-> X1000 SPI as well.
-> 
-> ---
-> v3:
-> [PATCH 1/2]
-> * Improve the commit message.
-> * A couple of minor fixes.
-> [PATCH 2/2]
-> * Set '.num_chipselect' to '1' instead of '4'.
-> * A couple of minor fixes.
-> 
-> v2:
->   Split into two patches: one is for helper functions,
->   and another is for quark supporting.
-> 
-> [PATCH 1/2]
-> * Add helper functions to access registers.
-> * Use 'switch' instead of 'if-else'.
-> [PATCH 2/2]
-> * Use 'switch' instead of 'if-else'.
-> * Add comments for the 'dds'&'clk_div' caculation.
-> * A couple of minor fixes.
-> 
-> Weike Chen (2):
->   SPI: spi-pxa2xx: Add helpers for regiseters' accessing
->   SPI: spi-pxa2xx: SPI support for Intel Quark X1000
-> 
->  drivers/spi/spi-pxa2xx-pci.c |    8 ++
->  drivers/spi/spi-pxa2xx.c     |  304
-> ++++++++++++++++++++++++++++++++++++------
->  drivers/spi/spi-pxa2xx.h     |   16 ++-
->  include/linux/pxa2xx_ssp.h   |   21 +++
->  4 files changed, 304 insertions(+), 45 deletions(-)
-> 
-> --
-> 1.7.9.5
+Hi,Marek Vasut
+ Thanks.the $info has been defined before as below:
 
+ info = (void *)id->driver_data;
+  
+Unless id has not been initialized before.If having the following situation,
+current linux codes will not properly match platform device data:
+
+For example:
+
+const struct spi_device_id spi_nor_ids[] = {
+......
+......
+......
+	{ "n25q064",     INFO(0x20ba17, 0, 64 * 1024,  128, 0) },
+	{ "n25q128a11",  INFO(0x20bb18, 0, 64 * 1024,  256, 0) },//former right platform point will be overwrote by this data info.
+	{ "n25q128a13",  INFO(0x20bb18, 0x1234, 64 * 1024,  512, SECT_4K) },//this is the right platform data,I want to match this data info.
+	{ "n25q256a",    INFO(0x20ba19, 0, 64 * 1024,  512, SECT_4K) },
+	{ "n25q512a",    INFO(0x20bb20, 0, 64 * 1024, 1024, SECT_4K) },
+......
+......
+......
+};
+EXPORT_SYMBOL_GPL(spi_nor_ids);
+
+Maybe my patch should take into account that ID is NULL,
+I want to change my patch following, could you please give me some suggestions:
+
+	struct flash_info *tmpinfo;
+
+	tmpinfo = (void *)jid->driver_data;
+	if (id == NULL || tmpinfo->jedec_id != info->jedec_id ||
+		 (info->ext_id != 0 && tmpinfo->ext_id != info->ext_id)) {
+			dev_warn(dev, "found %s, expected %s\n",
+				jid->name, id->name);
+			id = jid;
+			info = (void *)jid->driver_data;
+				}
 ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
