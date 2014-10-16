@@ -1,74 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751605AbaJPPGQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 11:06:16 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:27181 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751334AbaJPPGN (ORCPT
+	id S1751654AbaJPPJq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 11:09:46 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:46822 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051AbaJPPJo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 11:06:13 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+m7qSterZA61QyO/kc3tNdaZ90kSZpo4o=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 033DD600689
-Date: Thu, 16 Oct 2014 11:06:05 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Stephan Mueller <smueller@chronox.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kernel crypto API interface specification
-Message-ID: <20141016150604.GK17447@titan.lakedaemon.net>
-References: <7502136.9BkWHTZ0th@myon.chronox.de>
- <20141015175800.GH17447@titan.lakedaemon.net>
- <3251314.QkilbvNUO7@myon.chronox.de>
- <20141016132501.GI17447@titan.lakedaemon.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141016132501.GI17447@titan.lakedaemon.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 16 Oct 2014 11:09:44 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: linux-kernel@vger.kernel.org, mturquette@linaro.org, trivial@kernel.org,
+        linus.walleij@linaro.org, gnurou@gmail.com, jcliburn@gmail.com,
+        chris.snook@gmail.com, viresh.linux@gmail.com, inki.dae@samsung.com,
+        dh09.lee@samsung.com, kgene.kim@samsung.com, rdunlap@infradead.org
+Cc: netdev@vger.kernel.org, Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] [trivial] treewide: Fix company name in module descriptions
+Date: Fri, 17 Oct 2014 00:09:24 +0900
+Message-Id: <1413472164-22366-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 2.1.2.443.g670a3c1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 09:25:01AM -0400, Jason Cooper wrote:
-> + Grant, Geert,
-> 
-> Stephan has created some great example code for both the kernel crypto
-> API and the userspace crypto API.  As examples tend to bitrot, I was
-> wondering if the code could serve as test code.  Then it would have a
-> triple role: API regression testing, crypto test suite, and reference
-> implementation.
-> 
-> Original patch is here:
-> 
->   https://lkml.kernel.org/r/7502136.9BkWHTZ0th@myon.chronox.de
-> 
-> On Thu, Oct 16, 2014 at 09:19:08AM +0200, Stephan Mueller wrote:
-> > Am Mittwoch, 15. Oktober 2014, 13:58:00 schrieb Jason Cooper:
-> > > On Tue, Oct 14, 2014 at 09:46:50PM +0200, Stephan Mueller wrote:
-...
-> > > Perhaps the userspace API example should be a separate file with this
-> > > text at the top?  Seems odd having it at the end.  Also, if you copied
-> > > it from cryptsetup, is the copyright info correct?
-> > 
-> > I did not copy it from cryptsetup. I only used it as a basis, especially with 
-> > the data structure handling in _kcapi_cipher_crypt. But you are right, I 
-> > changed the license for the user space by taking the cryptsetup license.
-> 
-> Ok.  It looks like Geert and Grant took part in the kernel test
-> unconference, so I'm adding them to the Cc.  I hope they can give us
-> some pointers as to where we could hook in this code.  Then we can
-> simply refer to it from the userspace API document.
+This patch fix company name's spelling typo in module descriptions
+and a Kconfig.
 
-tools/testing/selftests/crypto would be a good location for the example
-code in the next version of this patch.  Make sure to take a look at
-tools/testing/selftests/README.txt.
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ drivers/clk/Kconfig                                 | 2 +-
+ drivers/gpio/gpio-spear-spics.c                     | 2 +-
+ drivers/net/ethernet/atheros/atl1c/atl1c_main.c     | 2 +-
+ drivers/pinctrl/spear/pinctrl-plgpio.c              | 2 +-
+ drivers/video/fbdev/exynos/exynos_mipi_dsi.c        | 2 +-
+ drivers/video/fbdev/exynos/exynos_mipi_dsi_common.c | 2 +-
+ 6 files changed, 6 insertions(+), 6 deletions(-)
 
-thx,
+diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+index 455fd17..3f44f29 100644
+--- a/drivers/clk/Kconfig
++++ b/drivers/clk/Kconfig
+@@ -28,7 +28,7 @@ config COMMON_CLK_WM831X
+ 	depends on MFD_WM831X
+ 	---help---
+           Supports the clocking subsystem of the WM831x/2x series of
+-	  PMICs from Wolfson Microlectronics.
++	  PMICs from Wolfson Microelectronics.
+ 
+ source "drivers/clk/versatile/Kconfig"
+ 
+diff --git a/drivers/gpio/gpio-spear-spics.c b/drivers/gpio/gpio-spear-spics.c
+index 353263c..506a2ea 100644
+--- a/drivers/gpio/gpio-spear-spics.c
++++ b/drivers/gpio/gpio-spear-spics.c
+@@ -204,5 +204,5 @@ static int __init spics_gpio_init(void)
+ subsys_initcall(spics_gpio_init);
+ 
+ MODULE_AUTHOR("Shiraz Hashim <shiraz.linux.kernel@gmail.com>");
+-MODULE_DESCRIPTION("ST Microlectronics SPEAr SPI Chip Select Abstraction");
++MODULE_DESCRIPTION("STMicroelectronics SPEAr SPI Chip Select Abstraction");
+ MODULE_LICENSE("GPL");
+diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+index 72fb86b..c9946c6 100644
+--- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
++++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+@@ -48,7 +48,7 @@ MODULE_DEVICE_TABLE(pci, atl1c_pci_tbl);
+ 
+ MODULE_AUTHOR("Jie Yang");
+ MODULE_AUTHOR("Qualcomm Atheros Inc., <nic-devel@qualcomm.com>");
+-MODULE_DESCRIPTION("Qualcom Atheros 100/1000M Ethernet Network Driver");
++MODULE_DESCRIPTION("Qualcomm Atheros 100/1000M Ethernet Network Driver");
+ MODULE_LICENSE("GPL");
+ MODULE_VERSION(ATL1C_DRV_VERSION);
+ 
+diff --git a/drivers/pinctrl/spear/pinctrl-plgpio.c b/drivers/pinctrl/spear/pinctrl-plgpio.c
+index bddb791..ce5f22c 100644
+--- a/drivers/pinctrl/spear/pinctrl-plgpio.c
++++ b/drivers/pinctrl/spear/pinctrl-plgpio.c
+@@ -724,5 +724,5 @@ static int __init plgpio_init(void)
+ subsys_initcall(plgpio_init);
+ 
+ MODULE_AUTHOR("Viresh Kumar <viresh.kumar@linaro.org>");
+-MODULE_DESCRIPTION("ST Microlectronics SPEAr PLGPIO driver");
++MODULE_DESCRIPTION("STMicroelectronics SPEAr PLGPIO driver");
+ MODULE_LICENSE("GPL");
+diff --git a/drivers/video/fbdev/exynos/exynos_mipi_dsi.c b/drivers/video/fbdev/exynos/exynos_mipi_dsi.c
+index cee9602..716bfad 100644
+--- a/drivers/video/fbdev/exynos/exynos_mipi_dsi.c
++++ b/drivers/video/fbdev/exynos/exynos_mipi_dsi.c
+@@ -570,5 +570,5 @@ static struct platform_driver exynos_mipi_dsi_driver = {
+ module_platform_driver(exynos_mipi_dsi_driver);
+ 
+ MODULE_AUTHOR("InKi Dae <inki.dae@samsung.com>");
+-MODULE_DESCRIPTION("Samusung SoC MIPI-DSI driver");
++MODULE_DESCRIPTION("Samsung SoC MIPI-DSI driver");
+ MODULE_LICENSE("GPL");
+diff --git a/drivers/video/fbdev/exynos/exynos_mipi_dsi_common.c b/drivers/video/fbdev/exynos/exynos_mipi_dsi_common.c
+index 85edabf..2358a2f 100644
+--- a/drivers/video/fbdev/exynos/exynos_mipi_dsi_common.c
++++ b/drivers/video/fbdev/exynos/exynos_mipi_dsi_common.c
+@@ -876,5 +876,5 @@ int exynos_mipi_dsi_fifo_clear(struct mipi_dsim_device *dsim,
+ }
+ 
+ MODULE_AUTHOR("InKi Dae <inki.dae@samsung.com>");
+-MODULE_DESCRIPTION("Samusung SoC MIPI-DSI common driver");
++MODULE_DESCRIPTION("Samsung SoC MIPI-DSI common driver");
+ MODULE_LICENSE("GPL");
+-- 
+2.1.2.443.g670a3c1
 
-Jason.
