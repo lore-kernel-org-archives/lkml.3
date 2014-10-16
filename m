@@ -1,83 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631AbaJPRsi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 13:48:38 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:39758 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752585AbaJPRsf (ORCPT
+	id S1752073AbaJPRw2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 13:52:28 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:57391 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751334AbaJPRw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 13:48:35 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18/6+6/+yHcdSiuNBpQcR71T4dJPudsUzE=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 9D26760088F
-Date: Thu, 16 Oct 2014 13:48:23 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Joe Perches <joe@perches.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>, Torsten Duwe <duwe@lst.de>,
-        "Theodore Ts'o" <tytso@mit.edu>, Amit Shah <amit.shah@redhat.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Kees Cook <keescook@chromium.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3v] char: hw_random: core.c:  Changed from using
- strncat to strlcat
-Message-ID: <20141016174823.GM17447@titan.lakedaemon.net>
-References: <1413479722-29247-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <1413480303.6702.7.camel@perches.com>
+	Thu, 16 Oct 2014 13:52:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413480303.6702.7.camel@perches.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [2620:0:1000:157d:b52d:4c07:5bea:2dd9]
+In-Reply-To: <4AF7ABD3-EC90-47B8-96F3-B0AC396C52CC@codeaurora.org>
+References: <A246CCDC-948C-429E-9FC5-934D317EB9D4@codeaurora.org>
+	<201410011641.44037.arnd@arndb.de>
+	<4AF7ABD3-EC90-47B8-96F3-B0AC396C52CC@codeaurora.org>
+Date: Thu, 16 Oct 2014 10:52:25 -0700
+Message-ID: <CAOesGMgqJrpV_i4f82_eWDLCnOONipCu4fLJ-5n-T56N=8KXWw@mail.gmail.com>
+Subject: Re: [GIT PULL] qcom SoC changes for v3.18
+From: Olof Johansson <olof@lixom.net>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, "arm@kernel.org" <arm@kernel.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Lina Iyer <lina.iyer@linaro.org>, Stephen Boyd <sboyd@codeaurora.org>,
+        Olav Haugan <ohaugan@codeaurora.org>, markivx@codeaurora.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 10:25:03AM -0700, Joe Perches wrote:
-> On Thu, 2014-10-16 at 19:15 +0200, Rickard Strandqvist wrote:
-> > The buf is used to hold the list of hwrng devices registered.
-> > The old code ensures we don't walk off the end of buf as we
-> > fill it, but it's unnecessarily complicated and thus difficult
-> > to maintain. Simplify it by using strlcat.
-> > We also ensure the string within buf is NULL terminated
-> > so the final strlen is ok.
-> []
-> > diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
-> []
-> > @@ -289,16 +288,13 @@ static ssize_t hwrng_attr_available_show(struct device *dev,
-> >  		return -ERESTARTSYS;
-> >  	buf[0] = '\0';
-> >  	list_for_each_entry(rng, &rng_list, list) {
-> > -		strncat(buf, rng->name, PAGE_SIZE - ret - 1);
-> > -		ret += strlen(rng->name);
-> > -		strncat(buf, " ", PAGE_SIZE - ret - 1);
-> > -		ret++;
-> > +		strlcat(buf, rng->name, PAGE_SIZE);
-> > +		strlcat(buf, " ", PAGE_SIZE);
-> >  	}
-> > -	strncat(buf, "\n", PAGE_SIZE - ret - 1);
-> > -	ret++;
-> > +	strlcat(buf, "\n", PAGE_SIZE);
-> >  	mutex_unlock(&rng_mutex);
-> >  
-> > -	return ret;
-> > +	return strlen(buf);
-> >  }
-> >  
-> >  static DEVICE_ATTR(rng_current, S_IRUGO | S_IWUSR,
-> 
-> Rickard, can you please use some optimizations here
-> (and elsewhere) so that strlcat doesn't always have
-> to strlen the first string and the return doesn't
-> have to do the strlen too?
+Hi,
 
-Joe, is further optimization worth the effort?  This function is only
-called when the end user reads the sysfs file rng_available...
+On Wed, Oct 15, 2014 at 1:18 AM, Kumar Gala <galak@codeaurora.org> wrote:
+>
+> On Oct 1, 2014, at 4:41 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>
+>> On Monday 22 September 2014, Kumar Gala wrote:
+>>> The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
+>>>
+>>>  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
+>>>
+>>> are available in the git repository at:
+>>>
+>>>  git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-soc-for-3.18
+>>>
+>>> for you to fetch changes up to 525fbb55947177cdae507b0d292f43c2c9a75a47:
+>>>
+>>>  ARM: qcom: Move scm-boot files to drivers/soc and include/soc (2014-09-18 18:14:01 -0500)
+>>>
+>>> ----------------------------------------------------------------
+>>> Qualcomm ARM Based SoC Updates for v3.18
+>>>
+>>> * Moved scm support into drivers/soc/qcom (allows for use by drivers)
+>>> * Various bug fixes and minor feature additions to scm code
+>>> * Added big-endian support to debug MSM uart
+>>
+>> Pulled it into next/late now. This means we're not sending it together with the
+>> other pull requests to Linus. We'll see how things go during the first week
+>> and may or may not send it in the second week of the merge window depending
+>> on that.
+>>
+>>       Arnd
+>
+> Any update if you guys will end up sending this to linus for 3.18 or not?
 
-thx,
+There ended up being several issues with the next/late branch so I
+believe the current outlook is that we'll not send it.
 
-Jason.
+(Arnd has been handling most of the 3.18 stuff and he might have
+changed his mind since we last talked about it, but that's the state
+as far as i know).
+
+
+-Olof
