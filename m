@@ -1,110 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751386AbaJPJ40 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 05:56:26 -0400
-Received: from tundra.namei.org ([65.99.196.166]:50436 "EHLO namei.org"
+	id S1751621AbaJPJ60 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 05:58:26 -0400
+Received: from sauhun.de ([89.238.76.85]:45341 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751001AbaJPJ4Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 05:56:25 -0400
-Date: Thu, 16 Oct 2014 20:56:21 +1100 (AEDT)
-From: James Morris <jmorris@namei.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Moore <paul@paul-moore.com>
-Subject: [GIT PULL] SELinux fix for 3.18 (updated)
-Message-ID: <alpine.LRH.2.11.1410162052120.25020@namei.org>
-User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
+	id S1750966AbaJPJ6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 05:58:24 -0400
+Date: Thu, 16 Oct 2014 11:59:10 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Andreas Werner <andreas.werner@men.de>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, johannes.thumshirn@men.de
+Subject: Re: [PATCH 1/2] drivers/misc/eeprom/men_eeprod: Introduce MEN Board
+ Information EEPROM driver
+Message-ID: <20141016095910.GC1273@katana>
+References: <cover.1413416105.git.andreas.werner@men.de>
+ <d169930cfe45d4c05c79f7dd00471d732441529d.1413416105.git.andreas.werner@men.de>
+ <20141016085835.GA1273@katana>
+ <20141016102126.GB23256@awelinux>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lCAWRPmW1mITcIfM"
+Content-Disposition: inline
+In-Reply-To: <20141016102126.GB23256@awelinux>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull this fix for a list corruption bug in the SELinux code.
 
-This is an updated pull request after fixing the previously discussed git 
-repo issues.
+--lCAWRPmW1mITcIfM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
 
----
+> I do not want to parse the things in userspace because this EEPROM data
+> are related to the hardware and i want to give our customer the easiest w=
+ay
+> to access the data without installing any tool.
 
-The following changes since commit 0429fbc0bdc297d64188483ba029a23773ae07b0:
+I understand that point of view. From an upstream point of view, things
+may look different, though.
 
-  Merge branch 'for-3.18-consistent-ops' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu (2014-10-15 07:48:18 +0200)
+> The current state to read the eeprom data is, that customer needs to inst=
+all a big
+> environment where the tool is integrated to have access to those kind of =
+simple
+> data or they have to write their own code.
 
-are available in the git repository at:
+i2cget from i2c-tools? You could do a simple shell script to parse the
+data. Or do a board specific hook which reads the data and prints it to
+the logfiles...
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus2
+> > Consider how bloated the sysfs-ABI might get if every vendor who uses an
+> > eeprom wants to expose the data this way?
+> >=20
+>=20
+> Yes and no. The possible sysfs entries gets bloated if every vendor will =
+do it
+> like this way, but normally there is just one Board EEPROM on the board, =
+therefore
+> only one driver gets loaded.
 
-James Morris (1):
-      Merge branch 'stable-3.18' of git://git.infradead.org/users/pcmoore/selinux into for-linus2
+I am not talking about runtime here, I don't care about that. I am
+talking about the ABI we create and we have to maintain basically
+forever. And with vendor specific configuartion data I have doubts with
+that being stable.
 
-Stephen Smalley (1):
-      selinux: fix inode security list corruption
+> I mean its the same for every i2c device like a temperature sensor, I can=
+ also
+> read it from userspace without any special hwmon driver.
 
----
+These is a HUGE difference. If I read tempX_input, I don't need to care
+if the sensor is I2C or SPI or whatever. The kernel abstracts that away.
+The files you create are for your I2C EEPROM only. Data gets
+"reformatted" and access gets hidden, but nothing is abstracted away.
+It would be different if we had a generic convention for "serial_id" or
+stuff like that. But as configuration data is highly specific I don't
+see this coming.
 
- security/selinux/hooks.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-commit 9b32011acdc4428474b7cba865f713a11b9b9bd3
-Merge: 0429fbc 923190d
-Author: James Morris <james.l.morris@oracle.com>
-Date:   Thu Oct 16 21:04:18 2014 +1100
 
-    Merge branch 'stable-3.18' of git://git.infradead.org/users/pcmoore/selinux into for-linus2
+--lCAWRPmW1mITcIfM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-commit 923190d32de4428afbea5e5773be86bea60a9925
-Author: Stephen Smalley <sds@tycho.nsa.gov>
-Date:   Mon Oct 6 16:32:52 2014 -0400
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-    selinux: fix inode security list corruption
-    
-    sb_finish_set_opts() can race with inode_free_security()
-    when initializing inode security structures for inodes
-    created prior to initial policy load or by the filesystem
-    during ->mount().   This appears to have always been
-    a possible race, but commit 3dc91d4 ("SELinux:  Fix possible
-    NULL pointer dereference in selinux_inode_permission()")
-    made it more evident by immediately reusing the unioned
-    list/rcu element  of the inode security structure for call_rcu()
-    upon an inode_free_security().  But the underlying issue
-    was already present before that commit as a possible use-after-free
-    of isec.
-    
-    Shivnandan Kumar reported the list corruption and proposed
-    a patch to split the list and rcu elements out of the union
-    as separate fields of the inode_security_struct so that setting
-    the rcu element would not affect the list element.  However,
-    this would merely hide the issue and not truly fix the code.
-    
-    This patch instead moves up the deletion of the list entry
-    prior to dropping the sbsec->isec_lock initially.  Then,
-    if the inode is dropped subsequently, there will be no further
-    references to the isec.
-    
-    Reported-by: Shivnandan Kumar <shivnandan.k@samsung.com>
-    Signed-off-by: Stephen Smalley <sds@tycho.nsa.gov>
-    Cc: stable@vger.kernel.org
-    Signed-off-by: Paul Moore <pmoore@redhat.com>
+iQIcBAEBAgAGBQJUP5buAAoJEBQN5MwUoCm22vIP/RdD8wIVSxhDA5dv+qpizBG4
+RR1xbeTCirzJQ8ZZNWGVK8JB/hcO4kEztlZSpGCXK09VqNk39kiOi1i7b3IxQbyE
+4sOWk5r8tdKtO4wwJs6Mi5Z3Q+MHHx9Gj4sSIg3Tepk/bW9b6JLXRVZTwuIbfNnX
+6TUZdIMN5L2YRRMTf0pMximA8FUu6++WXW6EDBji8lSbklU8gGqkMALQikeBq668
++ZVpTcB5tyq7gPMC+EyH7irLaRZGOOIuoZ0zlI01HRfDZOTzCpcvlsZFmq/gCN36
+p1/3NsHYzfR0ICAJKn1rx7i9N2o/xXxkxjgtbd/d4/KIQKmqOemJEYvi6wiXCpxg
+NQSoxVt9/pR0ebqGqnyacffS3V84gJMKonoyrjtvXilh1t38nENwuO58IxnqWKiL
+l3TzlusffOckd9vYvMmmGMBIV60vx96nXmkmZRC8wkN3nmVDi/lFu4thkueMyJiQ
+cL/ZDErm7CjqPxtCMDK9zA5EOAXuOtunw4llZYQAC/1pXRPcWL01LFW4YqJ+6qP8
+CL8iXsMvgMOTosA5OIzfxaTSdZxWMDEVkwHMRCA74AFch3/3TESvPiPU5xhxwu4U
+j/vwjiDY1IDfNLUq93xbDsQz6P5EOCCVZhj9r8FE34r7GprmS1fLRDXHA3EhGI2t
+S+SFlV2lobjF173y/kt2
+=fQiZ
+-----END PGP SIGNATURE-----
 
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 29e64d4..2478976 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -481,6 +481,7 @@ next_inode:
- 				list_entry(sbsec->isec_head.next,
- 					   struct inode_security_struct, list);
- 		struct inode *inode = isec->inode;
-+		list_del_init(&isec->list);
- 		spin_unlock(&sbsec->isec_lock);
- 		inode = igrab(inode);
- 		if (inode) {
-@@ -489,7 +490,6 @@ next_inode:
- 			iput(inode);
- 		}
- 		spin_lock(&sbsec->isec_lock);
--		list_del_init(&isec->list);
- 		goto next_inode;
- 	}
- 	spin_unlock(&sbsec->isec_lock);
-
+--lCAWRPmW1mITcIfM--
