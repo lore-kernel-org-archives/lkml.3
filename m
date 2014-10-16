@@ -1,115 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751398AbaJPOzL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 10:55:11 -0400
-Received: from mail.kernel.org ([198.145.19.201]:43844 "EHLO mail.kernel.org"
+	id S1751568AbaJPOzw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 10:55:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53761 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750947AbaJPOzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 10:55:09 -0400
-Date: Thu, 16 Oct 2014 11:55:04 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Wang Nan <wangnan0@huawei.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        zhangzhiqiang.zhang@huawei.com, peifeiyue@huawei.com
-Subject: Re: [PATCH] perf tools: fix incorrect header string
-Message-ID: <20141016145504.GW3198@kernel.org>
-References: <1413343733-7973-1-git-send-email-wangnan0@huawei.com>
- <20141015151358.GK3198@kernel.org>
- <543F39A9.3030308@huawei.com>
+	id S1751268AbaJPOzu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 10:55:50 -0400
+Date: Thu, 16 Oct 2014 10:55:34 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, "Alasdair G. Kergon" <agk@redhat.com>,
+        Mike Snitzer <msnitzer@redhat.com>, Milan Broz <gmazyland@gmail.com>,
+        kkolasa@winsoft.pl, dm-devel@redhat.com
+Subject: Re: [PATCH] slab: implement kmalloc guard
+In-Reply-To: <20140915021133.GC2676@js1304-P5Q-DELUXE>
+Message-ID: <alpine.LRH.2.02.1410161049280.25043@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1409051833510.9790@file01.intranet.prod.int.rdu2.redhat.com> <alpine.DEB.2.11.1409080932490.20388@gentwo.org> <alpine.LRH.2.02.1409081041160.29432@file01.intranet.prod.int.rdu2.redhat.com> <alpine.DEB.2.11.1409081108190.20388@gentwo.org>
+ <alpine.LRH.2.02.1409112211060.30537@file01.intranet.prod.int.rdu2.redhat.com> <20140915021133.GC2676@js1304-P5Q-DELUXE>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <543F39A9.3030308@huawei.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Oct 16, 2014 at 11:21:13AM +0800, Wang Nan escreveu:
-> On 2014/10/15 23:13, Arnaldo Carvalho de Melo wrote:
-> > Em Wed, Oct 15, 2014 at 11:28:53AM +0800, Wang Nan escreveu:
-> >> Commit fbe96f29 (perf tools: Make perf.data more self-descriptive)
-> >> read '/proc/cpuinfo' to form cpu descriptor. For ARM, it finds
-> >> 'Processor' field. It is correct when the patch merged, but due to
-> >> commit b4b8f770 (ARM: kernel: update cpuinfo to print all online CPUs
-> >> features), the corresponding information becomes 'model name' field.
-> >>
-> >> This patch simply corrects it.
-> > 
-> > It doesn't :-)
-> > 
-> > It makes it work with kernels >= b4b8f770, and fail with older kernels.
-> > 
-> > We need to somehow figure out where the right information is regardless
-> > of the kernel.
-> > 
-> > - Arnaldo
-> >  
-> 
-> However it is a real problem. Look at output on arm platform at the
-> bottom of this mail, especially  "cpudesc", "total memory" and "cmdline" field.
 
-Yeah, I haven't said it wasn't a problem, just that the proposed fix
-wasn't enough.
 
-- Arnaldo
- 
-> By further debugging I found that the real problem resides in return value checking
-> when write header error. Please see my other patches:
+On Mon, 15 Sep 2014, Joonsoo Kim wrote:
+
+> On Thu, Sep 11, 2014 at 10:32:52PM -0400, Mikulas Patocka wrote:
+> > 
+> > 
+> > On Mon, 8 Sep 2014, Christoph Lameter wrote:
+> > 
+> > > On Mon, 8 Sep 2014, Mikulas Patocka wrote:
+> > > 
+> > > > I don't know what you mean. If someone allocates 10000 objects with sizes
+> > > > from 1 to 10000, you can't have 10000 slab caches - you can't have a slab
+> > > > cache for each used size. Also - you can't create a slab cache in
+> > > > interrupt context.
+> > > 
+> > > Oh you can create them up front on bootup. And I think only the small
+> > > sizes matter. Allocations >=8K are pushed to the page allocator anyways.
+> > 
+> > Only for SLUB. For SLAB, large allocations are still use SLAB caches up to 
+> > 4M. But anyway - having 8K preallocated slab caches is too much.
+> > 
+> > If you want to integrate this patch into the slab/slub subsystem, a better 
+> > solution would be to store the exact size requested with kmalloc along the 
+> > slab/slub object itself (before the preceding redzone). But it would 
+> > result in duplicating the work - you'd have to repeat the logic in this 
+> > patch three times - once for slab, once for slub and once for 
+> > kmalloc_large/kmalloc_large_node.
+> > 
+> > I don't know if it would be better than this patch.
 > 
-> https://lkml.org/lkml/2014/10/15/612
-> https://lkml.org/lkml/2014/10/15/611
+> Hello,
 > 
-> I think at least one of them is required.
+> Out of bound write could be detected by kernel address asanitizer(KASan).
+> See following link.
+> 
+> https://lkml.org/lkml/2014/9/10/441
+> 
+> Although this patch also looks good to me, I think that KASan is
+> better than this, because it could detect out of bound write and
+> has more features for debugging.
 > 
 > Thanks.
-> 
-> >> Signed-off-by: Wang Nan <wangnan0@huawei.com>
-> >> ---
-> >>  tools/perf/perf-sys.h | 2 +-
-> >>  1 file changed, 1 insertion(+), 1 deletion(-)
-> >>
-> >> diff --git a/tools/perf/perf-sys.h b/tools/perf/perf-sys.h
-> >> index 937e432..4293970 100644
-> >> --- a/tools/perf/perf-sys.h
-> >> +++ b/tools/perf/perf-sys.h
-> >> @@ -113,7 +113,7 @@
-> >>  #define mb()		((void(*)(void))0xffff0fa0)()
-> >>  #define wmb()		((void(*)(void))0xffff0fa0)()
-> >>  #define rmb()		((void(*)(void))0xffff0fa0)()
-> >> -#define CPUINFO_PROC	"Processor"
-> >> +#define CPUINFO_PROC	"model name"
-> >>  #endif
-> >>  
-> >>  #ifdef __aarch64__
-> >> -- 
-> >> 1.8.4
-> 
-> 
-> 
-> bash-4.2# perf record ls
-> ...
-> [ perf record: Woken up 1 times to write data ]
-> [ perf record: Captured and wrote 0.001 MB perf.data (~36 samples) ]
-> bash-4.2# perf report --stdio --header
-> Error:
-> The perf.data file has no samples!
-> # ========
-> # captured on: Fri Sep 12 10:09:10 2014
-> # hostname : arma15el
-> # os release : 3.17.0+
-> # perf version : 3.10.53
-> # arch : armv7l
-> # nrcpus online : 4
-> # nrcpus avail : 1
-> # cpudesc : (null)
-> # total memory : 0 kB
-> # cmdline :
-> # event : name = cycles, type = 0, config = 0x0, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, excl_host = 0, excl_guest = 1, precise_ip = 0
-> # pmu mappings: not available
-> # ========
-> #
-> 
-> 
+
+Surely, KAsan detects more bugs. But it has also high overhead. The 
+overhead of kmalloc guard is very low.
+
+The kmalloc guard already helped to find one previously unknown bug: 
+http://lkml.iu.edu/hypermail/linux/kernel/1409.1/02325.html
+
+Mikulas
