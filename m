@@ -1,107 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751829AbaJPK5R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 06:57:17 -0400
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:54767 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803AbaJPK5P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 06:57:15 -0400
-Date: Thu, 16 Oct 2014 12:57:09 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
-        Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] s390 vs. kprobes on ftrace
-Message-ID: <20141016105709.GA11072@osiris>
-References: <1413387978-984-1-git-send-email-heiko.carstens@de.ibm.com>
- <543F5C84.7090005@hitachi.com>
+	id S1751728AbaJPLBb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 07:01:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43509 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750765AbaJPLBa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 07:01:30 -0400
+Date: Thu, 16 Oct 2014 13:01:27 +0200
+From: Jan Kara <jack@suse.cz>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
+        "xfs@oss.sgi.com" <xfs@oss.sgi.com>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [vfs] WARNING: CPU: 3 PID: 2339 at mm/truncate.c:758
+ pagecache_isize_extended+0xdd/0x120()
+Message-ID: <20141016110127.GD6085@quack.suse.cz>
+References: <20141016100913.GA8140@wfg-t540p.sh.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/mixed; boundary="IJpNTDwzlM2Ie8A6"
 Content-Disposition: inline
-In-Reply-To: <543F5C84.7090005@hitachi.com>
+In-Reply-To: <20141016100913.GA8140@wfg-t540p.sh.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14101610-0025-0000-0000-000001E9A390
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Masami,
 
-thank you for your comments!
+--IJpNTDwzlM2Ie8A6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On Thu, Oct 16, 2014 at 02:49:56PM +0900, Masami Hiramatsu wrote:
-> (2014/10/16 0:46), Heiko Carstens wrote:
-> > we would like to implement an architecture specific variant of "kprobes
-> > on ftrace" without using the current HAVE_KPROBES_ON_FTRACE infrastructure
-> > which is currently only used by x86.
-> > 
-> > The rationale for these two patches is:
-> > - we want to patch the first instruction of the mcount code block to
-> >   reduce the overhead of the function tracer
-> > - we'd like to keep the ftrace_caller function as simple as possible and
-> >   not require it to generate a 100% valid pt_regs structure as required
-> >   by the combination of DYNAMIC_FTRACE_WITH_REGS and HAVE_KPROBES_ON_FTRACE.
-> >   This allows us to not generate the psw mask field in the pt_regs
-> >   structure on each function tracer enabled function, which otherwise would
-> >   be very expensive. Besides that program check generated pt_regs contents
-> >   are "more" accurate than program generated ones and don't require any
-> >   maintenance.
-> >   And also we can keep the ftrace and kprobes backends quite separated.
+On Thu 16-10-14 18:09:13, Wu Fengguang wrote:
+> Hi Jan,
 > 
-> I'm not sure about s390 nor have the machine, so it is very helpful if you
-> give us a command line level test and show us the result with this patch :)
-> Fortunately, we already have ftracetest under tools/tesitng/selftest/ftrace/.
-> You can add the testcase for checking co-existence of kprobes and ftrace on
-> an entry of a function.
+> Your patch gives a warning on the xfs code path. :)
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git dev
+> commit be330474e2d0533a7a6185e567f3654fec096dbd ("vfs: fix data corruption when blocksize < pagesize for mmaped data")
+...
 
-Ok, my personal test case was just a kernel module, that added/removed a kprobe
-while also enabling/disabling function tracing and verifying that both the
-kprobes handler got called correctly and correct entries were added to the
-function trace buffer.
-Everything worked as expected, however I think I can come up with a test case
-that will fit into the ftrace selftests.
-I just need to get familiar with the kprobe dynamic event interface (again) ;)
+> <5>[   25.956576] XFS (sda1): Mounting V4 Filesystem
+> <6>[   26.194468] XFS (sda1): Ending clean mount
+> <4>[   27.258450] ------------[ cut here ]------------
+> <4>[   27.258789] WARNING: CPU: 3 PID: 2339 at mm/truncate.c:758 pagecache_isize_extended+0xdd/0x120()
+  Ah, I believe this is:
+WARN_ON(!mutex_is_locked(&inode->i_mutex));
+  because XFS doesn't use i_mutex but its private rwlock. I forgot to check
+dmesg after running xfstests for XFS and didn't notice this. Anyway, the
+solution is to just remove the assertion since it doesn't hold for all
+filesystems. Patch for that is attached. Thanks Fengguang for catching
+this.
 
-> And also, since ftrace is now supporting assembly trampoline code for each
-> handler, performance overhead can be reduced if we save registers only when
-> the kprobes enabled on the function. I'm not sure it can implement on s390,
-> but your requirement looks similar. What would you think about that?
+								Honza
 
-Yes, Vojtech Pavlik did send patches which implemented that. But that resulted
-in a lot of asm code duplication which I didn't feel comfortable with.
-Right now the s390 variant of ftrace_regs_caller() is an alias to
-ftrace_caller() which means we only have one piece of code which handles both
-variants.
-I'm still thinking of a different solution which handles the creation of the
-pt_regs contents 100% correct with an own trampoline for ftrace_regs_caller(),
-but that's a different story.
+> <4>[   27.259443] Modules linked in: ipmi_watchdog ipmi_msghandler btrfs xor raid6_pq sg sr_mod cdrom sd_mod firewire_ohci firewire_core crc_itu_t snd_hda_codec_realtek pcspkr snd_hda_codec_generic ahci libahci libata snd_hda_intel i2c_i801 snd_hda_controller parport_pc parport snd_hda_codec snd_hwdep snd_pcm snd_timer shpchp snd x38_edac edac_core soundcore acpi_cpufreq
+> <4>[   27.262734] CPU: 3 PID: 2339 Comm: fallocate Not tainted 3.17.0-gda9a9f1 #1
+> <4>[   27.263153] Hardware name:                  /        , BIOS VVRBLI9J.86A.2891.2007.0511.1144 05/11/2007
+> <4>[   27.263780]  0000000000000009 ffff88007a43fd88 ffffffff81859ea6 0000000000000000
+> <4>[   27.264492]  ffff88007a43fdc0 ffffffff8106ef0d 0000000000001000 ffff88005b6f05a8
+> <4>[   27.265199]  0000000000000000 ffff88005b6f05a8 0000000004000000 ffff88007a43fdd0
+> <4>[   27.265906] Call Trace:
+> <4>[   27.266165]  [<ffffffff81859ea6>] dump_stack+0x4d/0x66
+> <4>[   27.266511]  [<ffffffff8106ef0d>] warn_slowpath_common+0x7d/0xa0
+> <4>[   27.266900]  [<ffffffff8106efea>] warn_slowpath_null+0x1a/0x20
+> <4>[   27.267286]  [<ffffffff8117020d>] pagecache_isize_extended+0xdd/0x120
+> <4>[   27.267690]  [<ffffffff811712b7>] truncate_setsize+0x27/0x40
+> <4>[   27.268068]  [<ffffffff8133eab7>] xfs_setattr_size+0x157/0x3a0
+> <4>[   27.268442]  [<ffffffff8134c827>] ? xfs_trans_commit+0x157/0x250
+> <4>[   27.268821]  [<ffffffff813336df>] xfs_file_fallocate+0x2df/0x300
+> <4>[   27.269215]  [<ffffffff811dbb09>] ? __sb_start_write+0x49/0xf0
+> <4>[   27.269596]  [<ffffffff813923b4>] ? selinux_file_permission+0xc4/0x120
+> <4>[   27.270009]  [<ffffffff811d7563>] do_fallocate+0x123/0x1b0
+> <4>[   27.270380]  [<ffffffff811d7633>] SyS_fallocate+0x43/0x70
+> <4>[   27.270738]  [<ffffffff81862c69>] system_call_fastpath+0x16/0x1b
+> <4>[   27.271119] ---[ end trace 6a3b1350ad399610 ]---
+> <4>[   27.274498] ------------[ cut here ]------------
 
-However, this is more or less independently to the question of what you think
-about allowing an architecture to handle kprobes on ftrace completely in the
-architecture backend.
+--IJpNTDwzlM2Ie8A6
+Content-Type: text/x-patch; charset=us-ascii
+Content-Disposition: attachment; filename="0001-mm-Remove-false-WARN_ON-from-pagecache_isize_extende.patch"
 
->From a pure technical point of view both versions can be implemented and would
-also work on s390:
-- either handling kprobes on ftrace completely by the architecture
-- or implement a "full" version of DYNAMIC_FTRACE_WITH_REGS and then also
-  implement a similar HAVE_KPROBES_ON_FTRACE backend like x86 already has
+>From de3426d6495f4b44b14c09b7c7202e9a86d864b9 Mon Sep 17 00:00:00 2001
+From: Jan Kara <jack@suse.cz>
+Date: Thu, 16 Oct 2014 12:58:42 +0200
+Subject: [PATCH] mm: Remove false WARN_ON from pagecache_isize_extended()
 
-Personally I'd prefer handling kprobes on ftrace completely by the
-architecture backend, because both Martin and I think this simply looks
-better, and keeps things more separated.
-Given that this preference only requires removal of a sanity check in
-kprobes.c ("don't put a kprobe on an ftrace location") I'd say this shouldn't
-be a problem, no?
+The WARN_ON checking whether i_mutex is held in
+pagecache_isize_extended() was wrong because some filesystems (e.g.
+XFS) use different locks for serialization of truncates / writes. So
+just remove the check.
 
-Thanks,
-Heiko
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ mm/truncate.c | 1 -
+ 1 file changed, 1 deletion(-)
 
+diff --git a/mm/truncate.c b/mm/truncate.c
+index 261eaf6e5a19..c646084e5eec 100644
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -755,7 +755,6 @@ void pagecache_isize_extended(struct inode *inode, loff_t from, loff_t to)
+ 	struct page *page;
+ 	pgoff_t index;
+ 
+-	WARN_ON(!mutex_is_locked(&inode->i_mutex));
+ 	WARN_ON(to > inode->i_size);
+ 
+ 	if (from >= to || bsize == PAGE_CACHE_SIZE)
+-- 
+1.8.1.4
+
+
+--IJpNTDwzlM2Ie8A6--
