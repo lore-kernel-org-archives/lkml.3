@@ -1,125 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751663AbaJPHYD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 03:24:03 -0400
-Received: from mail1.bemta14.messagelabs.com ([193.109.254.108]:27422 "EHLO
-	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751632AbaJPHYB (ORCPT
+	id S1751697AbaJPHYN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 03:24:13 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:24620 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751671AbaJPHYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 03:24:01 -0400
-X-Env-Sender: Andreas.Werner@men.de
-X-Msg-Ref: server-3.tower-194.messagelabs.com!1413444237!19546310!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.12.3; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Thu, 16 Oct 2014 09:23:57 +0200
-Date: Thu, 16 Oct 2014 10:15:27 +0200
-From: Andreas Werner <andreas.werner@men.de>
-To: <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>, <wsa@the-dreams.de>,
-        <linux-i2c@vger.kernel.org>, <johannes.thumshirn@men.de>,
-        <andreas.werner@men.de>
-Subject: [PATCH 2/2] Documentation/ABI/testing/men_eeprod: Added sysfs
- description for men_eeprod
-Message-ID: <dd7d012a2067068570c000fa85eb1760097baa92.1413416105.git.andreas.werner@men.de>
-References: <cover.1413416105.git.andreas.werner@men.de>
+	Thu, 16 Oct 2014 03:24:11 -0400
+Message-ID: <543F7289.8010807@huawei.com>
+Date: Thu, 16 Oct 2014 15:23:53 +0800
+From: Weng Meiling <wengmeiling.weng@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <cover.1413416105.git.andreas.werner@men.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [192.1.1.171]
+To: Frans Klaver <fransklaver@gmail.com>
+CC: Greg KH <gregkh@linuxfoundation.org>, <tj@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, <akpm@linux-foundation.org>,
+        <adilger.kernel@dilger.ca>, Jan Kara <jack@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Xiang Rui <rui.xiang@huawei.com>, Li Zefan <lizefan@huawei.com>,
+        Huang Qiang <h.huangqiang@huawei.com>,
+        Zhao Hongjiang <zhaohongjiang@huawei.com>
+Subject: Re: Subject: [PATCH] kobject: fix the race between kobject_del and
+ get_device_parent
+References: <543E1754.8040701@huawei.com>	<543F25D3.8010708@huawei.com> <CAH6sp9PZYLRntXzmX14OmJpwWBu2_h=_h3oSvpaHE=gAG0meBw@mail.gmail.com>
+In-Reply-To: <CAH6sp9PZYLRntXzmX14OmJpwWBu2_h=_h3oSvpaHE=gAG0meBw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.24.66]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020202.543F7298.010B,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: d62fd44aa0b65d0dd98eecb70c94d65c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the description for the men_eeprod.
-men_eeprod is a driver for the MEN Board Information EEPROM which
-exports the data using sysfs entries.
-
-Signed-off-by: Andreas Werner <andreas.werner@men.de>
----
- .../ABI/testing/sysfs-bus-i2c-devices-men_eeprod   | 69 ++++++++++++++++++++++
- 1 file changed, 69 insertions(+)
- create mode 100644 Documentation/ABI/testing/sysfs-bus-i2c-devices-men_eeprod
-
-diff --git a/Documentation/ABI/testing/sysfs-bus-i2c-devices-men_eeprod b/Documentation/ABI/testing/sysfs-bus-i2c-devices-men_eeprod
-new file mode 100644
-index 0000000..a488d0e
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-bus-i2c-devices-men_eeprod
-@@ -0,0 +1,69 @@
-+What:		/sys/bus/i2c/devices/i2c-<busnr>/<busnr>-<devaddr>/eeprod_id
-+Date:		October 2014
-+Contact:	Andreas Werner <andreas.werner@men.de>
-+Description:
-+		Show the identifier of the EEPROM structure.
-+		There are different layouts of the EEPROM with more or less
-+		information. The ID identifies each of the layouts.
-+
-+		Currently supported structure is EEPROD2 (0x0E)
-+
-+What:		/sys/bus/i2c/devices/i2c-<busnr>/<busnr>-<devaddr>/revision
-+Date:		October 2014
-+Contact:	Andreas Werner <andreas.werner@men.de>
-+Description:
-+		Show the revision of the board.
-+		Format of the revision field is XX.XX.XX
-+
-+What:		/sys/bus/i2c/devices/i2c-<busnr>/<busnr>-<devaddr>/serialnr
-+Date:		October 2014
-+Contact:	Andreas Werner <andreas.werner@men.de>
-+Description:
-+		Show the serialnumber of the board. The serial number is
-+		a decimal number.
-+
-+What:		/sys/bus/i2c/devices/i2c-<busnr>/<busnr>-<devaddr>/hw_name
-+Date:		October 2014
-+Contact:	Andreas Werner <andreas.werner@men.de>
-+Description:
-+		Show the name of the board including the model.
-+		There are boards which have different features such as
-+		different size of RAM, the model identifies the different
-+		types.
-+
-+		Format of the hw_name is: <name><model>.
-+		Example: F075P00 where F75P is the hw_name and 00 the model.
-+
-+What:		/sys/bus/i2c/devices/i2c-<busnr>/<busnr>-<devaddr>/prod_date
-+Date:		October 2014
-+Contact:	Andreas Werner <andreas.werner@men.de>
-+Description:
-+		Show the board production date.
-+
-+		Format of the date: YYYY-MM-DD
-+
-+What:		/sys/bus/i2c/devices/i2c-<busnr>/<busnr>-<devaddr>/rep_date
-+Date:		October 2014
-+Contact:	Andreas Werner <andreas.werner@men.de>
-+Description:
-+		Show the last repair date.
-+		If the board returns back to the repair department, this field
-+		will be programmed with the current date.
-+		If the board has never returned, the field will be empty and
-+		the read access to this sysfs entry returns -EINVAL.
-+
-+		Format of the date: YYYY-MM-DD
-+
-+What:		/sys/bus/i2c/devices/i2c-<busnr>/<busnr>-<devaddr>/user_section
-+Date:		October 2014
-+Contact:	Andreas Werner <andreas.werner@men.de>
-+Description:
-+		Read or write access to the user section of the EEPROM
-+		This sysfs entry is a binary file where customer can write
-+		there own data to.
-+		The size of this file depends on the EEPROM layout which is
-+		identified by the eeprod_id.
-+
-+		eeprod_id	user_section size
-+		---------------------------------
-+		0x0E		232 byte
--- 
-2.1.0
+On 2014/10/16 15:07, Frans Klaver wrote:
+> On Thu, Oct 16, 2014 at 3:56 AM, Weng Meiling
+> <wengmeiling.weng@huawei.com> wrote:
+>>
+>> Would you please give me some of your views on this issue? Any suggestion is appreciative.
+> 
+> It'll come. Be patient.
+> 
+> .
+> 
+yeah, maybe I'm too impatient :). But this is important for me.
+Thanks for your reply.
 
