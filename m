@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752252AbaJPMVU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 08:21:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59750 "EHLO mx1.redhat.com"
+	id S1752396AbaJPMVg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 08:21:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52564 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752003AbaJPMVS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 08:21:18 -0400
+	id S1752307AbaJPMVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 08:21:34 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Andi Kleen <ak@linux.intel.com>,
@@ -16,9 +16,9 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Andi Kleen <ak@linux.intel.com>,
         Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 2/7] perf tools: Fix report -F in_tx for data without branch info
-Date: Thu, 16 Oct 2014 14:20:44 +0200
-Message-Id: <1413462049-12124-3-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 5/7] perf tools: Fix report -F symbol_from for data without branch info
+Date: Thu, 16 Oct 2014 14:20:47 +0200
+Message-Id: <1413462049-12124-6-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1413462049-12124-1-git-send-email-jolsa@kernel.org>
 References: <1413462049-12124-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,7 +30,7 @@ is allocated, which is wrong and following perf session ends
 up with report segfault.
 
   $ perf record ls
-  $ perf report -F in_tx
+  $ perf report -F symbol_from
   perf: Segmentation fault
 
 Checking that hist_entry::branch_info is valid and display
@@ -47,41 +47,44 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/sort.c | 13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ tools/perf/util/sort.c | 16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
 diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 8355260cbf3f..923dbbd9f65a 100644
+index 134633c474a0..d64c020acac5 100644
 --- a/tools/perf/util/sort.c
 +++ b/tools/perf/util/sort.c
-@@ -1021,6 +1021,9 @@ struct sort_entry sort_abort = {
- static int64_t
- sort__in_tx_cmp(struct hist_entry *left, struct hist_entry *right)
- {
+@@ -404,6 +404,12 @@ sort__sym_from_cmp(struct hist_entry *left, struct hist_entry *right)
+ 	struct addr_map_symbol *from_l = &left->branch_info->from;
+ 	struct addr_map_symbol *from_r = &right->branch_info->from;
+ 
 +	if (!left->branch_info || !right->branch_info)
 +		return 0;
 +
- 	return left->branch_info->flags.in_tx !=
- 		right->branch_info->flags.in_tx;
- }
-@@ -1028,10 +1031,14 @@ sort__in_tx_cmp(struct hist_entry *left, struct hist_entry *right)
- static int hist_entry__in_tx_snprintf(struct hist_entry *he, char *bf,
- 				    size_t size, unsigned int width)
++	from_l = &left->branch_info->from;
++	from_r = &right->branch_info->from;
++
+ 	if (!from_l->sym && !from_r->sym)
+ 		return _sort__addr_cmp(from_l->addr, from_r->addr);
+ 
+@@ -430,10 +436,14 @@ sort__sym_to_cmp(struct hist_entry *left, struct hist_entry *right)
+ static int hist_entry__sym_from_snprintf(struct hist_entry *he, char *bf,
+ 					 size_t size, unsigned int width)
  {
--	static const char *out = ".";
-+	static const char *out = "N/A";
- 
--	if (he->branch_info->flags.in_tx)
--		out = "T";
+-	struct addr_map_symbol *from = &he->branch_info->from;
+-	return _hist_entry__sym_snprintf(from->map, from->sym, from->addr,
+-					 he->level, bf, size, width);
 +	if (he->branch_info) {
-+		if (he->branch_info->flags.in_tx)
-+			out = "T";
-+		else
-+			out = ".";
-+	}
++		struct addr_map_symbol *from = &he->branch_info->from;
  
- 	return repsep_snprintf(bf, size, "%-*s", width, out);
++		return _hist_entry__sym_snprintf(from->map, from->sym, from->addr,
++						 he->level, bf, size, width);
++	}
++
++	return repsep_snprintf(bf, size, "%-*.*s", width, width, "N/A");
  }
+ 
+ static int hist_entry__sym_to_snprintf(struct hist_entry *he, char *bf,
 -- 
 1.9.3
 
