@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751383AbaJPDgU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 23:36:20 -0400
+	id S1751476AbaJPDgl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 23:36:41 -0400
 Received: from [42.62.48.242] ([42.62.48.242]:7234 "EHLO manager.mioffice.cn"
 	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750993AbaJPDgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 23:36:17 -0400
+	id S1751325AbaJPDgT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 23:36:19 -0400
 From: Hui Zhu <zhuhui@xiaomi.com>
 To: <rjw@rjwysocki.net>, <len.brown@intel.com>, <pavel@ucw.cz>,
         <m.szyprowski@samsung.com>, <akpm@linux-foundation.org>,
@@ -23,9 +23,9 @@ To: <rjw@rjwysocki.net>, <len.brown@intel.com>, <pavel@ucw.cz>,
         <vdavydov@parallels.com>, <suleiman@google.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
         <linux-mm@kvack.org>, Hui Zhu <zhuhui@xiaomi.com>
-Subject: [PATCH 1/4] (CMA_AGGRESSIVE) Add CMA_AGGRESSIVE to Kconfig
-Date: Thu, 16 Oct 2014 11:35:48 +0800
-Message-ID: <1413430551-22392-2-git-send-email-zhuhui@xiaomi.com>
+Subject: [PATCH 4/4] (CMA_AGGRESSIVE) Update page alloc function
+Date: Thu, 16 Oct 2014 11:35:51 +0800
+Message-ID: <1413430551-22392-5-git-send-email-zhuhui@xiaomi.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1413430551-22392-1-git-send-email-zhuhui@xiaomi.com>
 References: <1413430551-22392-1-git-send-email-zhuhui@xiaomi.com>
@@ -40,78 +40,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add CMA_AGGRESSIVE config that depend on CMA to Linux kernel config.
-Add CMA_AGGRESSIVE_PHY_MAX, CMA_AGGRESSIVE_FREE_MIN and CMA_AGGRESSIVE_SHRINK
-that depend on CMA_AGGRESSIVE.
-
-If physical memory size (not include CMA memory) in byte less than or equal to
-CMA_AGGRESSIVE_PHY_MAX, CMA aggressive switch (sysctl vm.cma-aggressive-switch)
-will be opened.
-
-When system boot, this value will set to sysctl "vm.cma-aggressive-free-min".
-
-If this value is true, sysctl "vm.cma-aggressive-shrink-switch" will be set to
-true when Linux boot.
+If page alloc function __rmqueue try to get pages from MIGRATE_MOVABLE and
+conditions (cma_alloc_counter, cma_aggressive_free_min, cma_alloc_counter)
+allow, MIGRATE_CMA will be allocated as MIGRATE_MOVABLE first.
 
 Signed-off-by: Hui Zhu <zhuhui@xiaomi.com>
 ---
- mm/Kconfig | 43 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 43 insertions(+)
+ mm/page_alloc.c | 42 +++++++++++++++++++++++++++++++-----------
+ 1 file changed, 31 insertions(+), 11 deletions(-)
 
-diff --git a/mm/Kconfig b/mm/Kconfig
-index 1d1ae6b..940f5f3 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -527,6 +527,49 @@ config CMA_AREAS
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 736d8e1..87bc326 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -65,6 +65,10 @@
+ #include <asm/div64.h>
+ #include "internal.h"
  
- 	  If unsure, leave the default value "7".
++#ifdef CONFIG_CMA_AGGRESSIVE
++#include <linux/cma.h>
++#endif
++
+ /* prevent >1 _updater_ of zone percpu pageset ->high and ->batch fields */
+ static DEFINE_MUTEX(pcp_batch_high_lock);
+ #define MIN_PERCPU_PAGELIST_FRACTION	(8)
+@@ -1189,20 +1193,36 @@ static struct page *__rmqueue(struct zone *zone, unsigned int order,
+ {
+ 	struct page *page;
  
-+config CMA_AGGRESSIVE
-+	bool "CMA aggressive"
-+	depends on CMA
-+	default n
-+	help
-+	  Be more aggressive about taking memory from CMA when allocate MOVABLE
-+	  page.
-+	  Sysctl "vm.cma-aggressive-switch", "vm.cma-aggressive-alloc-max"
-+	  and "vm.cma-aggressive-shrink-switch" can control this function.
-+	  If unsure, say "n".
-+
-+config CMA_AGGRESSIVE_PHY_MAX
-+	hex "Physical memory size in Bytes that auto turn on the CMA aggressive switch"
-+	depends on CMA_AGGRESSIVE
-+	default 0x40000000
-+	help
-+	  If physical memory size (not include CMA memory) in byte less than or
-+	  equal to this value, CMA aggressive switch will be opened.
-+	  After the Linux boot, sysctl "vm.cma-aggressive-switch" can control
-+	  the CMA AGGRESSIVE switch.
-+
-+config CMA_AGGRESSIVE_FREE_MIN
-+	int "The minimum free CMA page number that CMA aggressive work"
-+	depends on CMA_AGGRESSIVE
-+	default 500
-+	help
-+	  When system boot, this value will set to sysctl
-+	  "vm.cma-aggressive-free-min".
-+	  If the number of CMA free pages is small than this sysctl value,
-+	  CMA aggressive will not work.
-+
-+config CMA_AGGRESSIVE_SHRINK
-+	bool "CMA aggressive shrink"
-+	depends on CMA_AGGRESSIVE
-+	default y
-+	help
-+	  If this value is true, sysctl "vm.cma-aggressive-shrink-switch" will
-+	  be set to true when Linux boot.
-+	  If sysctl "vm.cma-aggressive-shrink-switch" is true and free normal
-+	  memory's size is smaller than the size that it want to allocate,
-+	  do memory shrink before driver allocate pages from CMA.
-+	  If unsure, say "y".
-+
- config MEM_SOFT_DIRTY
- 	bool "Track memory changes"
- 	depends on CHECKPOINT_RESTORE && HAVE_ARCH_SOFT_DIRTY && PROC_FS
+-retry_reserve:
++#ifdef CONFIG_CMA_AGGRESSIVE
++	if (cma_aggressive_switch
++	    && migratetype == MIGRATE_MOVABLE
++	    && atomic_read(&cma_alloc_counter) == 0
++	    && global_page_state(NR_FREE_CMA_PAGES) > cma_aggressive_free_min
++							+ (1 << order))
++		migratetype = MIGRATE_CMA;
++#endif
++retry:
+ 	page = __rmqueue_smallest(zone, order, migratetype);
+ 
+-	if (unlikely(!page) && migratetype != MIGRATE_RESERVE) {
+-		page = __rmqueue_fallback(zone, order, migratetype);
++	if (unlikely(!page)) {
++#ifdef CONFIG_CMA_AGGRESSIVE
++		if (migratetype == MIGRATE_CMA) {
++			migratetype = MIGRATE_MOVABLE;
++			goto retry;
++		}
++#endif
++		if (migratetype != MIGRATE_RESERVE) {
++			page = __rmqueue_fallback(zone, order, migratetype);
+ 
+-		/*
+-		 * Use MIGRATE_RESERVE rather than fail an allocation. goto
+-		 * is used because __rmqueue_smallest is an inline function
+-		 * and we want just one call site
+-		 */
+-		if (!page) {
+-			migratetype = MIGRATE_RESERVE;
+-			goto retry_reserve;
++			/*
++			* Use MIGRATE_RESERVE rather than fail an allocation.
++			* goto is used because __rmqueue_smallest is an inline
++			* function and we want just one call site
++			*/
++			if (!page) {
++				migratetype = MIGRATE_RESERVE;
++				goto retry;
++			}
+ 		}
+ 	}
+ 
 -- 
 1.9.1
 
