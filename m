@@ -1,82 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814AbaJPKYJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 06:24:09 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:59057 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752781AbaJPKYF convert rfc822-to-8bit (ORCPT
+	id S1752833AbaJPKYO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 06:24:14 -0400
+Received: from relay6-d.mail.gandi.net ([217.70.183.198]:38775 "EHLO
+	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752781AbaJPKYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 06:24:05 -0400
-Date: Thu, 16 Oct 2014 11:24:45 +0100
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Linux PCI <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH RFC 2/2] arm: kernel: fix pci_mmap_page_range() offset
- calculation
-Message-ID: <20141016102445.GA28187@red-moon>
-References: <1413374624-30066-1-git-send-email-lorenzo.pieralisi@arm.com>
- <1413374624-30066-2-git-send-email-lorenzo.pieralisi@arm.com>
- <20141015222932.GL27405@n2100.arm.linux.org.uk>
+	Thu, 16 Oct 2014 06:24:11 -0400
+X-Originating-IP: 62.156.150.204
+Date: Thu, 16 Oct 2014 12:24:05 +0200
+From: Josh Triplett <josh@joshtriplett.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Aristeu Rozanski <aris@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tiny: reverse logic for DISABLE_DEV_COREDUMP
+Message-ID: <20141016102404.GB1077@thin>
+References: <20141015152522.GL5930@redhat.com>
+ <20141015231446.GD685@kroah.com>
+ <20141016035157.GA25133@thin>
+ <20141016101843.GB25971@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <20141015222932.GL27405@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 16 Oct 2014 10:24:01.0880 (UTC) FILETIME=[4E043D80:01CFE92B]
-X-MC-Unique: 114101611240202701
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20141016101843.GB25971@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
-
-thanks for having a look.
-
-On Wed, Oct 15, 2014 at 11:29:32PM +0100, Russell King - ARM Linux wrote:
-> On Wed, Oct 15, 2014 at 01:03:41PM +0100, Lorenzo Pieralisi wrote:
-> > ARM relies on the standard implementation of pci_resource_to_user()
-> > which actually is an identity map and exports to user space
-> > PCI memory resources as they are stored in PCI devices resources (ie BARs)
-> > which represent CPU physical addresses (fixed-up using BUS to CPU
-> > address conversions) not PCI bus addresses.
+On Thu, Oct 16, 2014 at 12:18:43PM +0200, Greg Kroah-Hartman wrote:
+> On Thu, Oct 16, 2014 at 05:51:58AM +0200, Josh Triplett wrote:
+> > On Thu, Oct 16, 2014 at 01:14:46AM +0200, Greg Kroah-Hartman wrote:
+> > > On Wed, Oct 15, 2014 at 11:25:23AM -0400, Aristeu Rozanski wrote:
+> > > > It's desirable for allnconfig and tinyconfig targets to result in the
+> > > > least amount of code possible. DISABLE_DEV_COREDUMP exists as a way to
+> > > > switch off DEV_COREDUMP regardless if any drivers select
+> > > > WANT_DEV_COREDUMP.
+> > > > 
+> > > > This patch renames the option to ENABLE_DEV_COREDUMP and setting it to
+> > > > 'n' (as in allnconfig or tinyconfig) will effectively disable device
+> > > > coredump.
+> > > > 
+> > > > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > > > Cc: Josh Triplett <josh@joshtriplett.org>
+> > > > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> > > > Signed-off-by: Aristeu Rozanski <arozansk@redhat.com>
+> > > 
+> > > Any reason you didn't cc: the author of this feature / Kconfig option
+> > > about this change you are proposing?
+> > 
+> > Likely my fault; I'd suggested using get_maintainer.pl, which does not
+> > show that for this patch:
+> > 
+> > ~/src/linux$ scripts/get_maintainer.pl < /tmp/patch
+> > Greg Kroah-Hartman <gregkh@linuxfoundation.org> (supporter:DRIVER CORE, KOBJ...)
+> > linux-kernel@vger.kernel.org (open list)
 > 
-> This paragraph seems wrong.
-> 
-> It first says that PCI memory resources contain the same values that the
-> PCI device has in its BAR.  It then goes on to say that they are CPU
-> physical addresses.  That is not true.
-> 
-> For example, DC21285 systems always have done this as: the PCI bars
-> contain the _bus_ addresses, which tend to be in the range 0 to
-> 0x7fffffff.  These correspond with a CPU physical address of
-> 0x80000000 to 0xffffffff.  The PCI bus resources for IOMEM resources
-> contains the CPU physical address of the mapping.
+> Yes, as that's just the Kconfig file, but at least let the person who
+> wrote that entry a chance to review it, that's just "being nice" :)
 
-It is a commit log wording problem, I exactly meant what you said, I
-will reword it (or remove "ie BARs" from it, since it is misleading).
+I agree; I'm just saying blame me rather than Aristeu. :)
 
-I think that the word "BAR" is a bit misused in helpers function like:
-
-pci_resource_{start/end/len}
-
-too but as long as we all know what that means (and I write proper
-commit logs :)) it is all fine.
-
-> > On platforms where the mapping between CPU and BUS address is not a 1:1
-> > mapping this is erroneous, in that an additional shift is applied to
-> > an already fixed-up offset passed from userspace.
-> 
-> Yes, I think this is a correct patch inspite of the description. :)
-
-Great, I will reword it and wait for comments on patch 1 that changes
-pci_mmap_fits() (it does not affect ARM, but would like to get both changes
-in coherently - ie if I am asked to change patch 1 I will probably have
-to change this patch too).
-
-Thanks,
-Lorenzo
-
+- Josh Triplett
