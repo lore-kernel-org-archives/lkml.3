@@ -1,53 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752323AbaJPNyp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 09:54:45 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:40138 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752009AbaJPNyo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 09:54:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAJfpegvS+rmFqGgvHq183Z-MxLAwcgEB57LQxAwy3QAe5CaVwg@mail.gmail.com>
-References: <20140925120244.540.31506.stgit@dhcp-10-30-22-200.sw.ru>
-	<CA+55aFwfTeoCJDs6RJg++0SY=SsPrn7Y_Y0Ag_TsNvd6Vsj1Eg@mail.gmail.com>
-	<CAFboF2yhGyjk4e_CHQV5b2WvB-QhsWNyHvFiFG_OM_=3-KArLQ@mail.gmail.com>
-	<CA+55aFwqAOGbQ-LYmD-aSALTyA0p9=0vNdsJWd+uweUQyzsW8w@mail.gmail.com>
-	<20140930191933.GC5011@tucsk.piliscsaba.szeredi.hu>
-	<CA+55aFyD2Q6tJzRUbNyNFRdbSN09SAN9CqC5BTmCtOu4W9PKGw@mail.gmail.com>
-	<542BE551.1010705@parallels.com>
-	<CAJfpegs4Up_feUbqEGxfhq+rZneTmy0qcZy-k3so7VjufQY7-w@mail.gmail.com>
-	<543F9E75.2090509@parallels.com>
-	<CAJfpegvS+rmFqGgvHq183Z-MxLAwcgEB57LQxAwy3QAe5CaVwg@mail.gmail.com>
-Date: Thu, 16 Oct 2014 15:54:42 +0200
-X-Google-Sender-Auth: u36g_0cwndkhP8X4XJ_Vd3T_9M4
-Message-ID: <CA+55aFw68DMazGSu=YaOVVEWp=_LrD+2abah+5Tq3kpmH-r+Hg@mail.gmail.com>
-Subject: Re: [PATCH 0/5] fuse: handle release synchronously (v4)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Maxim Patlasov <mpatlasov@parallels.com>, Anand Avati <avati@gluster.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michael j Theall <mtheall@us.ibm.com>,
-        fuse-devel <fuse-devel@lists.sourceforge.net>
-Content-Type: text/plain; charset=UTF-8
+	id S1752352AbaJPN6t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 09:58:49 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:51847 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751587AbaJPN6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 09:58:47 -0400
+Message-ID: <1413467936.6148.17.camel@mm-sol.com>
+Subject: Re: [PATCH v3 1/2] iio: vadc: Qualcomm SPMI PMIC voltage ADC driver
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Stanimir Varbanov <svarbanov@mm-sol.com>, lars <lars@metafoo.de>,
+        sachin.kamat@linaro.org, srinivas.pandruvada@linux.intel.com,
+        linux-iio@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Date: Thu, 16 Oct 2014 16:58:56 +0300
+In-Reply-To: <542FDF41.2040106@kernel.org>
+References: <1411563415-11933-1-git-send-email-svarbanov@mm-sol.com>
+		 <1411563415-11933-2-git-send-email-svarbanov@mm-sol.com>
+		 <542D1B11.8070600@mm-sol.com> <1412251686.1027.15.camel@iivanov-dev>
+	 <542FDF41.2040106@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.13.5-fta1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 3:43 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
->
-> One idea is to change ->flush() so it's responsible for fput()-ing the
-> file.  That way we could take control of the actual refcount
-> decrement.  There are only 20 flush instances in the tree, so it
-> wouldn't be a huge change.
 
-Since that *still* wouldn't fix the problem with the whole "count
-elevated by other things" issue, I really don't want to hear about
-these random broken hacks that are fundamentally broken crap.
+Hi, 
 
-Really. Stop cc'ing me with "let's implement this hack that cannot
-work in general". I'm not interested. There's a reason we don't do
-this. We don't make up random hacks that we know cannot work in the
-general case.
+On Sat, 2014-10-04 at 12:51 +0100, Jonathan Cameron wrote:
+> On 02/10/14 13:08, Ivan T. Ivanov wrote:
+> >  +iio maintainers
+> > 
+> >  On Thu, 2014-10-02 at 12:29 +0300, Ivan T. Ivanov wrote:
+> > >  Hi Stan,
+> > > >
+> > >  On 09/24/2014 03:56 PM, Stanimir Varbanov wrote:
+> > > >
+> > >  <snip>
+> > > >
+> > > >  +static int vadc_get_dt_data(struct vadc_priv *vadc, struct 
+> > > > device_node *node)
+> > > >  +{
+> > > >  +      struct iio_chan_spec *iio_chan = vadc->iio_chans;
+> > > >  +      const struct vadc_channels *vadc_chan;
+> > > >  +      struct vadc_channel_prop prop;
+> > > >  +      struct device_node *child;
+> > > >  +      int ret, index = 0;
+> > > >  +
+> > > >  +      for_each_available_child_of_node(node, child) {
+> > > >  +      ret = vadc_get_dt_channel_data(vadc->dev, &prop, 
+> > > > child);
+> > > >  +      if (ret)
+> > > >  +      return ret;
+> > > >  +
+> > > >  +      vadc->chan_props[index] = prop;
+> > > >  +
+> > > >  +      vadc_chan = &vadc_chans[prop.channel];
+> > > >  +
+> > > >  +      iio_chan->channel = prop.channel;
+> > > >  +      iio_chan->datasheet_name = vadc_chan->datasheet_name;
+> > > >  +      iio_chan->info_mask_separate = vadc_chan->info_mask;
+> > > >  +      iio_chan->type = vadc_chan->type;
+> > > >  +      iio_chan->indexed = 1;
+> > > >  +      iio_chan->scan_type.sign = 's';
+> > > >  +      iio_chan->scan_type.realbits = 15;
+> > > >  +      iio_chan->scan_type.storagebits = 16;
+> > > >  +      iio_chan->address = index++;
+> > > >  +
+> > > >  +      iio_chan++;
+> > > >  +      }
+> > > >  +
+> > > >  +      return 0;
+> > > >  +}
+> > > >  +
+> > > >
+> > >  <snip>
+> > > >
+> > > >  +static int vadc_probe(struct platform_device *pdev)
+> > > >  +{
+> > > >
+> > >  <snip>
+> > > >
+> > > >  +
+> > > >  +      indio_dev->dev.parent = dev;
+> > > >  +      indio_dev->dev.of_node = node;
+> > > >  +      indio_dev->name = pdev->name;
+> > > >  +      indio_dev->modes = INDIO_DIRECT_MODE;
+> > > >  +      indio_dev->info = &vadc_info;
+> > > >  +      indio_dev->channels = vadc->iio_chans;
+> > > >  +      indio_dev->num_channels = vadc->nchannels;
+> > > >
+> > >  This will not work as we thought. Registration will be fine and 
+> > > entries
+> > >  in sysfs are created as expected, but this is breaking 
+> > > numbering scheme
+> > >  for client drivers. For us the problem is that iio framework 
+> > > expect channels
+> > >  numbering to be linear and channel number should not be greater 
+> > > than
+> > >  channel count. For example even if die temperature channel is 
+> > > always 8, if
+> > >  I describe only 5 channels in DTS files (4 for reference points 
+> > > measurement)
+> > >  and 1 for die temperature, clients could not get OF reference to
+> > >  temperature
+> > >  channel using io-channels = <&pm8941_vadc 8>;
+> > > >
+> > >  Jonathan, please, could you advise us.
+> I'd like to let the solution you proposed sit on the list a little 
+> longer.
+> It seems fairly sensible, but lets see what others suggest.
 
-            Linus
+It is quiet :-) Just for the record the same aproach is used in
+PWM, Reset, Gpio and PHY frameworks.
+
+Patch in question: https://lkml.org/lkml/2014/10/2/199
+
+Regards,
+Ivan
+
+
+> 
+> Jonathan
