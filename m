@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751433AbaJPDgV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 23:36:21 -0400
-Received: from [42.62.48.242] ([42.62.48.242]:15935 "EHLO manager.mioffice.cn"
+	id S1751383AbaJPDgU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 23:36:20 -0400
+Received: from [42.62.48.242] ([42.62.48.242]:7234 "EHLO manager.mioffice.cn"
 	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751073AbaJPDgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 23:36:18 -0400
+	id S1750993AbaJPDgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 23:36:17 -0400
 From: Hui Zhu <zhuhui@xiaomi.com>
 To: <rjw@rjwysocki.net>, <len.brown@intel.com>, <pavel@ucw.cz>,
         <m.szyprowski@samsung.com>, <akpm@linux-foundation.org>,
@@ -23,9 +23,9 @@ To: <rjw@rjwysocki.net>, <len.brown@intel.com>, <pavel@ucw.cz>,
         <vdavydov@parallels.com>, <suleiman@google.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
         <linux-mm@kvack.org>, Hui Zhu <zhuhui@xiaomi.com>
-Subject: [PATCH 2/4] (CMA_AGGRESSIVE) Add argument hibernation to function shrink_all_memory
-Date: Thu, 16 Oct 2014 11:35:49 +0800
-Message-ID: <1413430551-22392-3-git-send-email-zhuhui@xiaomi.com>
+Subject: [PATCH 1/4] (CMA_AGGRESSIVE) Add CMA_AGGRESSIVE to Kconfig
+Date: Thu, 16 Oct 2014 11:35:48 +0800
+Message-ID: <1413430551-22392-2-git-send-email-zhuhui@xiaomi.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1413430551-22392-1-git-send-email-zhuhui@xiaomi.com>
 References: <1413430551-22392-1-git-send-email-zhuhui@xiaomi.com>
@@ -40,104 +40,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function shrink_all_memory try to free `nr_to_reclaim' of memory.
-CMA_AGGRESSIVE_SHRINK function will call this functon to free `nr_to_reclaim' of
-memory.  It need different scan_control with current caller function
-hibernate_preallocate_memory.
+Add CMA_AGGRESSIVE config that depend on CMA to Linux kernel config.
+Add CMA_AGGRESSIVE_PHY_MAX, CMA_AGGRESSIVE_FREE_MIN and CMA_AGGRESSIVE_SHRINK
+that depend on CMA_AGGRESSIVE.
 
-If hibernation is true, the caller is hibernate_preallocate_memory.
-if not, the caller is CMA alloc function.
+If physical memory size (not include CMA memory) in byte less than or equal to
+CMA_AGGRESSIVE_PHY_MAX, CMA aggressive switch (sysctl vm.cma-aggressive-switch)
+will be opened.
+
+When system boot, this value will set to sysctl "vm.cma-aggressive-free-min".
+
+If this value is true, sysctl "vm.cma-aggressive-shrink-switch" will be set to
+true when Linux boot.
 
 Signed-off-by: Hui Zhu <zhuhui@xiaomi.com>
 ---
- include/linux/swap.h    |  3 ++-
- kernel/power/snapshot.c |  2 +-
- mm/vmscan.c             | 19 +++++++++++++------
- 3 files changed, 16 insertions(+), 8 deletions(-)
+ mm/Kconfig | 43 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 43 insertions(+)
 
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index 37a585b..9f2cb43 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -335,7 +335,8 @@ extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
- 						gfp_t gfp_mask, bool noswap,
- 						struct zone *zone,
- 						unsigned long *nr_scanned);
--extern unsigned long shrink_all_memory(unsigned long nr_pages);
-+extern unsigned long shrink_all_memory(unsigned long nr_pages,
-+				       bool hibernation);
- extern int vm_swappiness;
- extern int remove_mapping(struct address_space *mapping, struct page *page);
- extern unsigned long vm_total_pages;
-diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
-index 791a618..a00fc35 100644
---- a/kernel/power/snapshot.c
-+++ b/kernel/power/snapshot.c
-@@ -1657,7 +1657,7 @@ int hibernate_preallocate_memory(void)
- 	 * NOTE: If this is not done, performance will be hurt badly in some
- 	 * test cases.
- 	 */
--	shrink_all_memory(saveable - size);
-+	shrink_all_memory(saveable - size, true);
+diff --git a/mm/Kconfig b/mm/Kconfig
+index 1d1ae6b..940f5f3 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -527,6 +527,49 @@ config CMA_AREAS
  
- 	/*
- 	 * The number of saveable pages in memory was too high, so apply some
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index dcb4707..fdcfa30 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -3404,7 +3404,7 @@ void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx)
- 	wake_up_interruptible(&pgdat->kswapd_wait);
- }
+ 	  If unsure, leave the default value "7".
  
--#ifdef CONFIG_HIBERNATION
-+#if defined CONFIG_HIBERNATION || defined CONFIG_CMA_AGGRESSIVE
- /*
-  * Try to free `nr_to_reclaim' of memory, system-wide, and return the number of
-  * freed pages.
-@@ -3413,22 +3413,29 @@ void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx)
-  * LRU order by reclaiming preferentially
-  * inactive > active > active referenced > active mapped
-  */
--unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
-+unsigned long shrink_all_memory(unsigned long nr_to_reclaim, bool hibernation)
- {
- 	struct reclaim_state reclaim_state;
- 	struct scan_control sc = {
- 		.nr_to_reclaim = nr_to_reclaim,
--		.gfp_mask = GFP_HIGHUSER_MOVABLE,
- 		.priority = DEF_PRIORITY,
--		.may_writepage = 1,
- 		.may_unmap = 1,
- 		.may_swap = 1,
--		.hibernation_mode = 1,
- 	};
- 	struct zonelist *zonelist = node_zonelist(numa_node_id(), sc.gfp_mask);
- 	struct task_struct *p = current;
- 	unsigned long nr_reclaimed;
- 
-+	if (hibernation) {
-+		sc.hibernation_mode = 1;
-+		sc.may_writepage = 1;
-+		sc.gfp_mask = GFP_HIGHUSER_MOVABLE;
-+	} else {
-+		sc.hibernation_mode = 0;
-+		sc.may_writepage = !laptop_mode;
-+		sc.gfp_mask = GFP_USER | __GFP_MOVABLE | __GFP_HIGHMEM;
-+	}
++config CMA_AGGRESSIVE
++	bool "CMA aggressive"
++	depends on CMA
++	default n
++	help
++	  Be more aggressive about taking memory from CMA when allocate MOVABLE
++	  page.
++	  Sysctl "vm.cma-aggressive-switch", "vm.cma-aggressive-alloc-max"
++	  and "vm.cma-aggressive-shrink-switch" can control this function.
++	  If unsure, say "n".
 +
- 	p->flags |= PF_MEMALLOC;
- 	lockdep_set_current_reclaim_state(sc.gfp_mask);
- 	reclaim_state.reclaimed_slab = 0;
-@@ -3442,7 +3449,7 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
- 
- 	return nr_reclaimed;
- }
--#endif /* CONFIG_HIBERNATION */
-+#endif /* CONFIG_HIBERNATION || CONFIG_CMA_AGGRESSIVE */
- 
- /* It's optimal to keep kswapds on the same CPUs as their memory, but
-    not required for correctness.  So if the last cpu in a node goes
++config CMA_AGGRESSIVE_PHY_MAX
++	hex "Physical memory size in Bytes that auto turn on the CMA aggressive switch"
++	depends on CMA_AGGRESSIVE
++	default 0x40000000
++	help
++	  If physical memory size (not include CMA memory) in byte less than or
++	  equal to this value, CMA aggressive switch will be opened.
++	  After the Linux boot, sysctl "vm.cma-aggressive-switch" can control
++	  the CMA AGGRESSIVE switch.
++
++config CMA_AGGRESSIVE_FREE_MIN
++	int "The minimum free CMA page number that CMA aggressive work"
++	depends on CMA_AGGRESSIVE
++	default 500
++	help
++	  When system boot, this value will set to sysctl
++	  "vm.cma-aggressive-free-min".
++	  If the number of CMA free pages is small than this sysctl value,
++	  CMA aggressive will not work.
++
++config CMA_AGGRESSIVE_SHRINK
++	bool "CMA aggressive shrink"
++	depends on CMA_AGGRESSIVE
++	default y
++	help
++	  If this value is true, sysctl "vm.cma-aggressive-shrink-switch" will
++	  be set to true when Linux boot.
++	  If sysctl "vm.cma-aggressive-shrink-switch" is true and free normal
++	  memory's size is smaller than the size that it want to allocate,
++	  do memory shrink before driver allocate pages from CMA.
++	  If unsure, say "y".
++
+ config MEM_SOFT_DIRTY
+ 	bool "Track memory changes"
+ 	depends on CHECKPOINT_RESTORE && HAVE_ARCH_SOFT_DIRTY && PROC_FS
 -- 
 1.9.1
 
