@@ -1,52 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751440AbaJPDwJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 23:52:09 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:35260 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751328AbaJPDwG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 23:52:06 -0400
-X-Originating-IP: 212.144.255.202
-Date: Thu, 16 Oct 2014 05:51:58 +0200
-From: Josh Triplett <josh@joshtriplett.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Aristeu Rozanski <aris@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tiny: reverse logic for DISABLE_DEV_COREDUMP
-Message-ID: <20141016035157.GA25133@thin>
-References: <20141015152522.GL5930@redhat.com>
- <20141015231446.GD685@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141015231446.GD685@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751579AbaJPDww (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 23:52:52 -0400
+Received: from mga01.intel.com ([192.55.52.88]:62064 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751373AbaJPDwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 23:52:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="401039219"
+From: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Mika Westerberg <mika.westerberg@intel.com>,
+        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>,
+        GPIO Subsystem Mailing List <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Denis Turischev <denis.turischev@compulab.co.il>
+Subject: [PATCHv3 2/3] gpio: sch: Add support for Intel Quark X1000 SoC
+Date: Thu, 16 Oct 2014 11:51:14 +0800
+Message-Id: <1413431475-12799-3-git-send-email-rebecca.swee.fun.chang@intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1413431475-12799-1-git-send-email-rebecca.swee.fun.chang@intel.com>
+References: <1413431475-12799-1-git-send-email-rebecca.swee.fun.chang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 01:14:46AM +0200, Greg Kroah-Hartman wrote:
-> On Wed, Oct 15, 2014 at 11:25:23AM -0400, Aristeu Rozanski wrote:
-> > It's desirable for allnconfig and tinyconfig targets to result in the
-> > least amount of code possible. DISABLE_DEV_COREDUMP exists as a way to
-> > switch off DEV_COREDUMP regardless if any drivers select
-> > WANT_DEV_COREDUMP.
-> > 
-> > This patch renames the option to ENABLE_DEV_COREDUMP and setting it to
-> > 'n' (as in allnconfig or tinyconfig) will effectively disable device
-> > coredump.
-> > 
-> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > Cc: Josh Triplett <josh@joshtriplett.org>
-> > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> > Signed-off-by: Aristeu Rozanski <arozansk@redhat.com>
-> 
-> Any reason you didn't cc: the author of this feature / Kconfig option
-> about this change you are proposing?
+Intel Quark X1000 provides a total of 16 GPIOs. The GPIOs are split between
+the legacy I/O bridge and the GPIO controller.
 
-Likely my fault; I'd suggested using get_maintainer.pl, which does not
-show that for this patch:
+GPIO-SCH is the GPIO pins on legacy bridge for Intel Quark SoC.
+Intel Quark X1000 has 2 GPIOs powered by the core power well and 6 from
+the suspend power well.
 
-~/src/linux$ scripts/get_maintainer.pl < /tmp/patch
-Greg Kroah-Hartman <gregkh@linuxfoundation.org> (supporter:DRIVER CORE, KOBJ...)
-linux-kernel@vger.kernel.org (open list)
+This piece of work is derived from Dan O'Donovan's initial work for Quark
+X1000 enabling.
+
+Signed-off-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+---
+ drivers/gpio/Kconfig    |   11 +++++++++--
+ drivers/gpio/gpio-sch.c |    6 ++++++
+ 2 files changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 0959ca9..0e60f93 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -371,25 +371,32 @@ config GPIO_VR41XX
+ 	  Say yes here to support the NEC VR4100 series General-purpose I/O Uint
+ 
+ config GPIO_SCH
+-	tristate "Intel SCH/TunnelCreek/Centerton GPIO"
++	tristate "Intel SCH/TunnelCreek/Centerton/Quark X1000 GPIO"
+ 	depends on PCI && X86
+ 	select MFD_CORE
+ 	select LPC_SCH
+ 	help
+ 	  Say yes here to support GPIO interface on Intel Poulsbo SCH,
+-	  Intel Tunnel Creek processor or Intel Centerton processor.
++	  Intel Tunnel Creek processor, Intel Centerton processor or
++	  Intel Quark X1000 SoC.
++
+ 	  The Intel SCH contains a total of 14 GPIO pins. Ten GPIOs are
+ 	  powered by the core power rail and are turned off during sleep
+ 	  modes (S3 and higher). The remaining four GPIOs are powered by
+ 	  the Intel SCH suspend power supply. These GPIOs remain
+ 	  active during S3. The suspend powered GPIOs can be used to wake the
+ 	  system from the Suspend-to-RAM state.
++
+ 	  The Intel Tunnel Creek processor has 5 GPIOs powered by the
+ 	  core power rail and 9 from suspend power supply.
++
+ 	  The Intel Centerton processor has a total of 30 GPIO pins.
+ 	  Twenty-one are powered by the core power rail and 9 from the
+ 	  suspend power supply.
+ 
++	  The Intel Quark X1000 SoC has 2 GPIOs powered by the core
++	  power well and 6 from the suspend power well.
++
+ config GPIO_ICH
+ 	tristate "Intel ICH GPIO"
+ 	depends on PCI && X86
+diff --git a/drivers/gpio/gpio-sch.c b/drivers/gpio/gpio-sch.c
+index 6e89be9..952990f 100644
+--- a/drivers/gpio/gpio-sch.c
++++ b/drivers/gpio/gpio-sch.c
+@@ -241,6 +241,12 @@ static int sch_gpio_probe(struct platform_device *pdev)
+ 		sch->chip.ngpio = 30;
+ 		break;
+ 
++	case PCI_DEVICE_ID_INTEL_QUARK_X1000_ILB:
++		sch->core_base = 0;
++		sch->resume_base = 2;
++		sch->chip.ngpio = 8;
++		break;
++
+ 	default:
+ 		return -ENODEV;
+ 	}
+-- 
+1.7.9.5
+
