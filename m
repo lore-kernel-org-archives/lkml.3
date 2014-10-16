@@ -1,107 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726AbaJPTqP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 15:46:15 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:64527 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752302AbaJPTqN (ORCPT
+	id S1752837AbaJPTsR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 15:48:17 -0400
+Received: from mail.kmu-office.ch ([178.209.48.102]:36807 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751875AbaJPTsM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 15:46:13 -0400
-Date: Thu, 16 Oct 2014 12:46:07 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: atull@opensource.altera.com
-Cc: jdelvare@suse.de, lm-sensors@lm-sensors.org, lgirdwood@gmail.com,
-        broonie@kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, delicious.quinoa@gmail.com,
-        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
-Subject: Re: [PATCH v6 1/4] hwmon: ltc2978: device tree bindings documentation
-Message-ID: <20141016194607.GA23042@roeck-us.net>
-References: <1413399310-19277-1-git-send-email-atull@opensource.altera.com>
- <1413399310-19277-2-git-send-email-atull@opensource.altera.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413399310-19277-2-git-send-email-atull@opensource.altera.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 16 Oct 2014 15:48:12 -0400
+X-Amavis-Alert: BAD HEADER, Duplicate header field: "In-Reply-To"
+From: Stefan Agner <stefan@agner.ch>
+To: linus.walleij@linaro.org, gnurou@gmail.com, shawn.guo@freescale.com,
+        kernel@pengutronix.de
+Cc: linux-gpio@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, bpringlemeir@nbsps.com,
+        l.stach@pengutronix.de, stefan@agner.ch
+Subject: [PATCH v5 1/4] pinctrl: imx: add gpio pinmux support for vf610
+Date: Thu, 16 Oct 2014 21:47:57 +0200
+Message-Id: <a6e91699b6bf7dc4e8293374bce7c05a0d40053c.1413488264.git.stefan@agner.ch>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <cover.1413488264.git.stefan@agner.ch>
+References: <cover.1413488264.git.stefan@agner.ch>
+In-Reply-To: <cover.1413488264.git.stefan@agner.ch>
+References: <cover.1413488264.git.stefan@agner.ch>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 01:55:07PM -0500, atull@opensource.altera.com wrote:
-> From: Alan Tull <atull@opensource.altera.com>
-> 
-> Add device tree bindings documentation for ltc2978.
-> 
-> Signed-off-by: Alan Tull <atull@opensource.altera.com>
-> Cc: Guenter Roeck <linux@roeck-us.net>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Mark Brown <broonie@kernel.org>
-> ---
-> v2: clean whitespace
-> 
-> v3: list compatible strings in single column
->     add vendor as lltc
->     mention regulators.txt instead of documenting regulator-name
->     s/vout_en/vout/
->     remove size_cells, address-cells
->     use node name to identify regulators
-> ---
->  .../devicetree/bindings/hwmon/ltc2978.txt          |   39 ++++++++++++++++++++
->  1 file changed, 39 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/hwmon/ltc2978.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/hwmon/ltc2978.txt b/Documentation/devicetree/bindings/hwmon/ltc2978.txt
-> new file mode 100644
-> index 0000000..16c1227
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/hwmon/ltc2978.txt
-> @@ -0,0 +1,39 @@
-> +ltc2978
-> +
-> +Required properties:
-> +- compatible: should contain one of:
-> +  * "lltc,ltc2974"
-> +  * "lltc,ltc2977"
-> +  * "lltc,ltc2978"
-> +  * "lltc,ltc3880"
-> +  * "lltc,ltc3883"
-> +  * "lltc,ltm4676"
-> +- reg: I2C slave address
-> +
-> +Optional properties:
-> +- regulators: A node that houses a sub-node for each regulator controlled by
-> +  the device. Each sub-node is identified using the node's name, with valid
-> +  values listed below. The content of each sub-node is defined by the
-> +  standard binding for regulators; see regulator.txt.
-> +
-> +Valid names of regulators depend on number of supplies supported per device:
-> +  * ltc2974 : vout0 - vout3
-> +  * ltc2977 : vout0 - vout7
-> +  * ltc2978 : vout0 - vout7
-> +  * ltc3880 : vout0 - vout1
-> +  * ltc3883 : vout0
-> +  * ltm4676 : vout0 - vout1
-> +
-> +Example:
-> +ltc2978@5e {
-> +	compatible = "ltc2978";
+Add pinmux support for GPIO for Vybrid (vf610) IOMUX controller.
+This is needed since direction configuration is not part of the
+GPIO module in Vybrid.
 
-Nitpick, but still:
+Signed-off-by: Stefan Agner <stefan@agner.ch>
+Acked-by: Shawn Guo <shawn.guo@freescale.com>
+---
+ drivers/pinctrl/freescale/pinctrl-imx.c | 72 +++++++++++++++++++++++++++++++++
+ 1 file changed, 72 insertions(+)
 
-		"lltc,ltc2978"
+diff --git a/drivers/pinctrl/freescale/pinctrl-imx.c b/drivers/pinctrl/freescale/pinctrl-imx.c
+index f244676..52f2b94 100644
+--- a/drivers/pinctrl/freescale/pinctrl-imx.c
++++ b/drivers/pinctrl/freescale/pinctrl-imx.c
+@@ -294,11 +294,83 @@ static int imx_pmx_get_groups(struct pinctrl_dev *pctldev, unsigned selector,
+ 	return 0;
+ }
+ 
++static int imx_pmx_gpio_request_enable(struct pinctrl_dev *pctldev,
++			struct pinctrl_gpio_range *range, unsigned offset)
++{
++	struct imx_pinctrl *ipctl = pinctrl_dev_get_drvdata(pctldev);
++	const struct imx_pinctrl_soc_info *info = ipctl->info;
++	const struct imx_pin_reg *pin_reg;
++	struct imx_pin_group *grp;
++	struct imx_pin *imx_pin;
++	unsigned int pin, group;
++	u32 reg;
++
++	/* Currently implementation only for shared mux/conf register */
++	if (!(info->flags & SHARE_MUX_CONF_REG))
++		return -EINVAL;
++
++	pin_reg = &info->pin_regs[offset];
++	if (pin_reg->mux_reg == -1)
++		return -EINVAL;
++
++	/* Find the pinctrl config with GPIO mux mode for the requested pin */
++	for (group = 0; group < info->ngroups; group++) {
++		grp = &info->groups[group];
++		for (pin = 0; pin < grp->npins; pin++) {
++			imx_pin = &grp->pins[pin];
++			if (imx_pin->pin == offset && !imx_pin->mux_mode)
++				goto mux_pin;
++		}
++	}
++
++	return -EINVAL;
++
++mux_pin:
++	reg = readl(ipctl->base + pin_reg->mux_reg);
++	reg &= ~(0x7 << 20);
++	reg |= imx_pin->config;
++	writel(reg, ipctl->base + pin_reg->mux_reg);
++
++	return 0;
++}
++
++static int imx_pmx_gpio_set_direction(struct pinctrl_dev *pctldev,
++	   struct pinctrl_gpio_range *range, unsigned offset, bool input)
++{
++	struct imx_pinctrl *ipctl = pinctrl_dev_get_drvdata(pctldev);
++	const struct imx_pinctrl_soc_info *info = ipctl->info;
++	const struct imx_pin_reg *pin_reg;
++	u32 reg;
++
++	/*
++	 * Only Vybrid has the input/output buffer enable flags (IBE/OBE)
++	 * They are part of the shared mux/conf register.
++	 */
++	if (!(info->flags & SHARE_MUX_CONF_REG))
++		return -EINVAL;
++
++	pin_reg = &info->pin_regs[offset];
++	if (pin_reg->mux_reg == -1)
++		return -EINVAL;
++
++	/* IBE always enabled allows us to read the value "on the wire" */
++	reg = readl(ipctl->base + pin_reg->mux_reg);
++	if (input)
++		reg &= ~0x2;
++	else
++		reg |= 0x2;
++	writel(reg, ipctl->base + pin_reg->mux_reg);
++
++	return 0;
++}
++
+ static const struct pinmux_ops imx_pmx_ops = {
+ 	.get_functions_count = imx_pmx_get_funcs_count,
+ 	.get_function_name = imx_pmx_get_func_name,
+ 	.get_function_groups = imx_pmx_get_groups,
+ 	.set_mux = imx_pmx_set,
++	.gpio_request_enable = imx_pmx_gpio_request_enable,
++	.gpio_set_direction = imx_pmx_gpio_set_direction,
+ };
+ 
+ static int imx_pinconf_get(struct pinctrl_dev *pctldev,
+-- 
+2.1.2
 
-> +	reg = <0x5e>;
-> +	regulators {
-> +		vout0 {
-> +			regulator-name = "FPGA-2.5V";
-> +		};
-> +		vout2 {
-> +			regulator-name = "FPGA-1.5V";
-> +		};
-> +	};
-> +};
-> -- 
-> 1.7.9.5
-> 
