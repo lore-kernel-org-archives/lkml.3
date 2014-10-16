@@ -1,65 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608AbaJPMXh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 08:23:37 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:35683 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752583AbaJPMXg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 08:23:36 -0400
-Date: Thu, 16 Oct 2014 13:23:23 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Daniel Drake <drake@endlessm.com>, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, Linux Kernel <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 3.17-rc4 v7 0/6] arm: Implement
- arch_trigger_all_cpu_backtrace
-Message-ID: <20141016122322.GO27405@n2100.arm.linux.org.uk>
-References: <1410970218-28847-1-git-send-email-daniel.thompson@linaro.org>
- <CAD8Lp44gPOBh_q1zDy3y1GkrRVAvix5YaNr-+E92+g8Q7fLKJA@mail.gmail.com>
- <543F8EA8.6080905@linaro.org>
+	id S1752250AbaJPM0j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 08:26:39 -0400
+Received: from mail.efficios.com ([78.47.125.74]:36598 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750902AbaJPM0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 08:26:37 -0400
+Date: Thu, 16 Oct 2014 14:26:18 +0200
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v11 16/21] vfs,ext2: Remove CONFIG_EXT2_FS_XIP and rename
+ CONFIG_FS_XIP to CONFIG_FS_DAX
+Message-ID: <20141016122618.GN19075@thinkos.etherlink>
+References: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com>
+ <1411677218-29146-17-git-send-email-matthew.r.wilcox@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <543F8EA8.6080905@linaro.org>
+In-Reply-To: <1411677218-29146-17-git-send-email-matthew.r.wilcox@intel.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 10:23:52AM +0100, Daniel Thompson wrote:
-> On 14/10/14 23:37, Daniel Drake wrote:
-> > I'm testing your patches on Exynos4412 and I guess in their current
-> > state they don't go quite this deep, as the only callers of
-> > trigger_all_cpu_backtrace() are sysrq, hung_task and spinlock debug
-> > code - none of which seem as fail-safe as a trigger like a
-> > pre-programmed watchdog NMI interrupt would be.
-> > 
-> > Do I need to find a way to get CONFIG_FIQ available on this platform
-> > first? and/or CONFIG_HARDLOCKUP_DETECTOR?
+On 25-Sep-2014 04:33:33 PM, Matthew Wilcox wrote:
+> The fewer Kconfig options we have the better.  Use the generic
+> CONFIG_FS_DAX to enable XIP support in ext2 as well as in the core.
 > 
-> You need CONFIG_FIQ working first. Be aware that this may be impossible
-> on Exynos unless you control the TrustZone. For this reason most of my
-> development is on Freescale i.MX6 (because i.MX6 boots in secure mode).
+> Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+> ---
+>  fs/Kconfig         | 21 ++++++++++++++-------
+>  fs/Makefile        |  2 +-
+>  fs/ext2/Kconfig    | 11 -----------
+>  fs/ext2/ext2.h     |  2 +-
+>  fs/ext2/file.c     |  4 ++--
+>  fs/ext2/super.c    |  4 ++--
+>  include/linux/fs.h |  4 ++--
+>  7 files changed, 22 insertions(+), 26 deletions(-)
+> 
+> diff --git a/fs/Kconfig b/fs/Kconfig
+> index 312393f..a9eb53d 100644
+> --- a/fs/Kconfig
+> +++ b/fs/Kconfig
+> @@ -13,13 +13,6 @@ if BLOCK
+>  source "fs/ext2/Kconfig"
+>  source "fs/ext3/Kconfig"
+>  source "fs/ext4/Kconfig"
+> -
+> -config FS_XIP
+> -# execute in place
+> -	bool
+> -	depends on EXT2_FS_XIP
+> -	default y
+> -
+>  source "fs/jbd/Kconfig"
+>  source "fs/jbd2/Kconfig"
+>  
+> @@ -40,6 +33,20 @@ source "fs/ocfs2/Kconfig"
+>  source "fs/btrfs/Kconfig"
+>  source "fs/nilfs2/Kconfig"
+>  
+> +config FS_DAX
+> +	bool "Direct Access support"
+> +	depends on MMU
+> +	help
+> +	  Direct Access (DAX) can be used on memory-backed block devices.
+> +	  If the block device supports DAX and the filesystem supports DAX,
+> +	  then you can avoid using the pagecache to buffer I/Os.  Turning
+> +	  on this option will compile in support for DAX; you will need to
+> +	  mount the filesystem using the -o xip option.
 
-CONFIG_FIQ enables the legacy FIQ code which is unsuitable for use on
-SMP, so that should not be a requirement.
+There is a mismatch between the documentation file (earlier patch): -o
+dax, and this config description: -o xip.
 
-We still need to validate all the code we're proposing to run in FIQ
-context does not violate any locking.  IRQ-safe locks will do not
-prevent FIQs occuring, and using IRQ-safe locks which are also taken
-in the FIQ path /will/ cause deadlocks.  So, we need to ensure that
-the perf internals are safe for this.
+I guess we might want to switch the mount option to "-o dax" and
+document it as such, and since it should be usable transparently for the
+same use-cases "-o xip" was enabling, we might want to keep parsing of
+"-o xip" in the code for backward compatibility.
 
-Lastly, platforms running in non-secure mode most likely will not be
-able to take /any/ advantage from the FIQ stuff because FIQs will 
-likely only be available to the secure firmware.
+Thoughts ?
+
+Thanks,
+
+Mathieu
+
+> +
+> +	  If you do not have a block device that is capable of using this,
+> +	  or if unsure, say N.  Saying Y will increase the size of the kernel
+> +	  by about 2kB.
+> +
+>  endif # BLOCK
+>  
+>  # Posix ACL utility routines
+> diff --git a/fs/Makefile b/fs/Makefile
+> index 0325ec3..df4a4cf 100644
+> --- a/fs/Makefile
+> +++ b/fs/Makefile
+> @@ -28,7 +28,7 @@ obj-$(CONFIG_SIGNALFD)		+= signalfd.o
+>  obj-$(CONFIG_TIMERFD)		+= timerfd.o
+>  obj-$(CONFIG_EVENTFD)		+= eventfd.o
+>  obj-$(CONFIG_AIO)               += aio.o
+> -obj-$(CONFIG_FS_XIP)		+= dax.o
+> +obj-$(CONFIG_FS_DAX)		+= dax.o
+>  obj-$(CONFIG_FILE_LOCKING)      += locks.o
+>  obj-$(CONFIG_COMPAT)		+= compat.o compat_ioctl.o
+>  obj-$(CONFIG_BINFMT_AOUT)	+= binfmt_aout.o
+> diff --git a/fs/ext2/Kconfig b/fs/ext2/Kconfig
+> index 14a6780..c634874e 100644
+> --- a/fs/ext2/Kconfig
+> +++ b/fs/ext2/Kconfig
+> @@ -42,14 +42,3 @@ config EXT2_FS_SECURITY
+>  
+>  	  If you are not using a security module that requires using
+>  	  extended attributes for file security labels, say N.
+> -
+> -config EXT2_FS_XIP
+> -	bool "Ext2 execute in place support"
+> -	depends on EXT2_FS && MMU
+> -	help
+> -	  Execute in place can be used on memory-backed block devices. If you
+> -	  enable this option, you can select to mount block devices which are
+> -	  capable of this feature without using the page cache.
+> -
+> -	  If you do not use a block device that is capable of using this,
+> -	  or if unsure, say N.
+> diff --git a/fs/ext2/ext2.h b/fs/ext2/ext2.h
+> index 5ecf570..b30c3bd 100644
+> --- a/fs/ext2/ext2.h
+> +++ b/fs/ext2/ext2.h
+> @@ -380,7 +380,7 @@ struct ext2_inode {
+>  #define EXT2_MOUNT_NO_UID32		0x000200  /* Disable 32-bit UIDs */
+>  #define EXT2_MOUNT_XATTR_USER		0x004000  /* Extended user attributes */
+>  #define EXT2_MOUNT_POSIX_ACL		0x008000  /* POSIX Access Control Lists */
+> -#ifdef CONFIG_FS_XIP
+> +#ifdef CONFIG_FS_DAX
+>  #define EXT2_MOUNT_XIP			0x010000  /* Execute in place */
+>  #else
+>  #define EXT2_MOUNT_XIP			0
+> diff --git a/fs/ext2/file.c b/fs/ext2/file.c
+> index da8dc64..46b333d 100644
+> --- a/fs/ext2/file.c
+> +++ b/fs/ext2/file.c
+> @@ -25,7 +25,7 @@
+>  #include "xattr.h"
+>  #include "acl.h"
+>  
+> -#ifdef CONFIG_EXT2_FS_XIP
+> +#ifdef CONFIG_FS_DAX
+>  static int ext2_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+>  {
+>  	return dax_fault(vma, vmf, ext2_get_block);
+> @@ -109,7 +109,7 @@ const struct file_operations ext2_file_operations = {
+>  	.splice_write	= iter_file_splice_write,
+>  };
+>  
+> -#ifdef CONFIG_EXT2_FS_XIP
+> +#ifdef CONFIG_FS_DAX
+>  const struct file_operations ext2_xip_file_operations = {
+>  	.llseek		= generic_file_llseek,
+>  	.read		= new_sync_read,
+> diff --git a/fs/ext2/super.c b/fs/ext2/super.c
+> index 0393c6d..feb53d8 100644
+> --- a/fs/ext2/super.c
+> +++ b/fs/ext2/super.c
+> @@ -287,7 +287,7 @@ static int ext2_show_options(struct seq_file *seq, struct dentry *root)
+>  		seq_puts(seq, ",grpquota");
+>  #endif
+>  
+> -#if defined(CONFIG_EXT2_FS_XIP)
+> +#ifdef CONFIG_FS_DAX
+>  	if (sbi->s_mount_opt & EXT2_MOUNT_XIP)
+>  		seq_puts(seq, ",xip");
+>  #endif
+> @@ -549,7 +549,7 @@ static int parse_options(char *options, struct super_block *sb)
+>  			break;
+>  #endif
+>  		case Opt_xip:
+> -#ifdef CONFIG_EXT2_FS_XIP
+> +#ifdef CONFIG_FS_DAX
+>  			set_opt (sbi->s_mount_opt, XIP);
+>  #else
+>  			ext2_msg(sb, KERN_INFO, "xip option not supported");
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index d73db11..e6b48cc 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -1642,7 +1642,7 @@ struct super_operations {
+>  #define IS_IMA(inode)		((inode)->i_flags & S_IMA)
+>  #define IS_AUTOMOUNT(inode)	((inode)->i_flags & S_AUTOMOUNT)
+>  #define IS_NOSEC(inode)		((inode)->i_flags & S_NOSEC)
+> -#ifdef CONFIG_FS_XIP
+> +#ifdef CONFIG_FS_DAX
+>  #define IS_DAX(inode)		((inode)->i_flags & S_DAX)
+>  #else
+>  #define IS_DAX(inode)		0
+> @@ -2488,7 +2488,7 @@ extern loff_t fixed_size_llseek(struct file *file, loff_t offset,
+>  extern int generic_file_open(struct inode * inode, struct file * filp);
+>  extern int nonseekable_open(struct inode * inode, struct file * filp);
+>  
+> -#ifdef CONFIG_FS_XIP
+> +#ifdef CONFIG_FS_DAX
+>  int dax_clear_blocks(struct inode *, sector_t block, long size);
+>  int dax_truncate_page(struct inode *, loff_t from, get_block_t);
+>  ssize_t dax_do_io(int rw, struct kiocb *, struct inode *, struct iov_iter *,
+> -- 
+> 2.1.0
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+> 
 
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
+Key fingerprint: 2A0B 4ED9 15F2 D3FA 45F5  B162 1728 0A97 8118 6ACF
