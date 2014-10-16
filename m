@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757AbaJPUPQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 16:15:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42464 "EHLO mx1.redhat.com"
+	id S1752783AbaJPUQr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 16:16:47 -0400
+Received: from smtp2.it.da.ut.ee ([193.40.5.67]:42177 "EHLO smtp2.it.da.ut.ee"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751369AbaJPUPO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 16:15:14 -0400
-Date: Thu, 16 Oct 2014 16:15:04 -0400
-From: Dave Jones <davej@redhat.com>
-To: Dmitry Monakhov <dmonlist@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org
-Subject: Re: kernel BUG at fs/ext4/inode.c:2982!
-Message-ID: <20141016201504.GA24798@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Dmitry Monakhov <dmonlist@gmail.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	linux-ext4@vger.kernel.org
-References: <20141016055718.GA17655@redhat.com>
- <871tq8pdh4.fsf@openvz.org>
- <20141016143346.GA9910@redhat.com>
+	id S1751637AbaJPUQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 16:16:46 -0400
+Date: Thu, 16 Oct 2014 23:16:44 +0300 (EEST)
+From: Meelis Roos <mroos@linux.ee>
+To: David Miller <davem@redhat.com>
+cc: iamjoonsoo.kim@lge.com, linux-kernel@vger.kernel.org, cl@linux.com,
+        penberg@kernel.org, rientjes@google.com, akpm@linux-foundation.org,
+        linux-mm@kvack.org, sparclinux@vger.kernel.org
+Subject: Re: unaligned accesses in SLAB etc.
+In-Reply-To: <20141016.160742.1639247937393238792.davem@redhat.com>
+Message-ID: <alpine.LRH.2.11.1410162313440.19924@adalberg.ut.ee>
+References: <alpine.LRH.2.11.1410150012001.11850@adalberg.ut.ee> <20141014.173246.921084057467310731.davem@davemloft.net> <alpine.LRH.2.11.1410160956090.13273@adalberg.ut.ee> <20141016.160742.1639247937393238792.davem@redhat.com>
+User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141016143346.GA9910@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 10:33:46AM -0400, Dave Jones wrote:
+> > scripts/Makefile.build:352: recipe for target 'sound/modules.order' failed
+> > make[1]: *** [sound/modules.order] Bus error
+> > make[1]: *** Deleting file 'sound/modules.order'
+> > Makefile:929: recipe for target 'sound' failed
+> 
+> I just reproduced this on my Sun Blade 2500, so it can trigger on UltraSPARC-IIIi
+> systems too.
 
- >  > Try this patch http://www.spinics.net/lists/linux-ext4/msg45683.html
- > 
- > I'll give it a try if I can get it reproducing easily, otherwise I cna't say
- > either way whether the patch is doing any good.
+My bisection led to the folloowing commit but it seems irrelevant (I 
+have no sun4v on these machines):
 
-ok, I managed to reproduce it a few times, and then tried again with
-your patch.  I'm not sure if it's related, but I'm now seeing lockups
-in ext4.  The process that gets stuck looks like this..
+4ccb9272892c33ef1c19a783cfa87103b30c2784 is the first bad commit
+commit 4ccb9272892c33ef1c19a783cfa87103b30c2784
+Author: bob picco <bpicco@meloft.net>
+Date:   Tue Sep 16 09:26:47 2014 -0400
 
-trinity-c21     R  running task    13232  9781    831 0x10000004
- 0000000000000000 0000000000000001 0000000000000000 0000000000000000
- ffff8800c8d333d8 0000000000000000 0000000000000002 00000000cacaa650
- ffff880217cf7db8 0000000000000000 0000000000000000 ffffffffa929ff8c
-Call Trace:
- [<ffffffffa929ff8c>] ? ext4_map_blocks+0x31c/0x560
- [<ffffffffa929fe75>] ? ext4_map_blocks+0x205/0x560
- [<ffffffffa92e689c>] ? ext4_es_find_delayed_extent_range+0x48c/0x4e0
- [<ffffffffa9298fe1>] ? ext4_llseek+0x261/0x3f0
- [<ffffffffa922e6e9>] ? __fdget_pos+0x49/0x50
- [<ffffffffa90e484e>] ? rcu_read_lock_held+0x6e/0x80
- [<ffffffffa920ca44>] ? SyS_lseek+0x94/0xc0
+    sparc64: sun4v TLB error power off events
 
-I've got to run right now, but I'll look into tracing it some more when I get back.
 
-	Dave
+However, the following chunk sound slightly suspicious:
 
++       if (fault_code & FAULT_CODE_BAD_RA)
++               goto do_sigbus;
++
+
+because SIGNUS is what I got. For some machines, it killed chekroot 
+during startup, for some shells under some circumstances, for some sshd.
+
+-- 
+Meelis Roos (mroos@linux.ee)
