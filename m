@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752081AbaJPQt6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 12:49:58 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:34976 "EHLO
+	id S1752170AbaJPQuB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 12:50:01 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:34985 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751784AbaJPQtz (ORCPT
+	with ESMTP id S1751449AbaJPQt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 12:49:55 -0400
+	Thu, 16 Oct 2014 12:49:59 -0400
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 To: Mark Brown <broonie@kernel.org>
 Cc: Lee Jones <lee.jones@linaro.org>, Doug Anderson <dianders@chromium.org>,
@@ -17,9 +17,9 @@ Cc: Lee Jones <lee.jones@linaro.org>, Doug Anderson <dianders@chromium.org>,
         linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v2 3/7] regulator: max77802: Don't treat OFF as an operating mode
-Date: Thu, 16 Oct 2014 18:48:49 +0200
-Message-Id: <1413478133-2577-4-git-send-email-javier.martinez@collabora.co.uk>
+Subject: [PATCH v2 4/7] regulator: max77802: Add header for operating modes
+Date: Thu, 16 Oct 2014 18:48:50 +0200
+Message-Id: <1413478133-2577-5-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1413478133-2577-1-git-send-email-javier.martinez@collabora.co.uk>
 References: <1413478133-2577-1-git-send-email-javier.martinez@collabora.co.uk>
@@ -27,40 +27,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The only operating modes that are supported by the regulators in the
-max77802 PMIC are Output ON (normal) and Output On in Low Power Mode.
-OFF was wrongly counted as an operating mode while is only a regulator
-status. Make clear in the code that OFF is not an operating mode.
+Add a header file for the max77802 constants that could be shared between
+the regulator driver and Device Tree source files. Also, remove standby
+and off opmodes since only normal and low power are valid operating modes.
 
 Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 ---
 
 Changes since v1: None
 
- drivers/regulator/max77802.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/regulator/max77802.c                   |  1 +
+ include/dt-bindings/regulator/maxim,max77802.h | 18 ++++++++++++++++++
+ include/linux/mfd/max77686.h                   |  7 -------
+ 3 files changed, 19 insertions(+), 7 deletions(-)
+ create mode 100644 include/dt-bindings/regulator/maxim,max77802.h
 
 diff --git a/drivers/regulator/max77802.c b/drivers/regulator/max77802.c
-index dae2c1a..3abf99d 100644
+index 3abf99d..5839c45 100644
 --- a/drivers/regulator/max77802.c
 +++ b/drivers/regulator/max77802.c
-@@ -49,6 +49,7 @@
- #define MAX77802_RAMP_RATE_MASK_4BIT	0xF0
- #define MAX77802_RAMP_RATE_SHIFT_4BIT	4
+@@ -33,6 +33,7 @@
+ #include <linux/regulator/of_regulator.h>
+ #include <linux/mfd/max77686.h>
+ #include <linux/mfd/max77686-private.h>
++#include <dt-bindings/regulator/maxim,max77802.h>
  
-+#define MAX77802_STATUS_OFF		0x0
- #define MAX77802_OFF_PWRREQ		0x1
- #define MAX77802_LP_PWRREQ		0x2
+ /* Default ramp delay in case it is not manually set */
+ #define MAX77802_RAMP_DELAY		100000		/* uV/us */
+diff --git a/include/dt-bindings/regulator/maxim,max77802.h b/include/dt-bindings/regulator/maxim,max77802.h
+new file mode 100644
+index 0000000..cf28631
+--- /dev/null
++++ b/include/dt-bindings/regulator/maxim,max77802.h
+@@ -0,0 +1,18 @@
++/*
++ * Copyright (C) 2014 Google, Inc
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Device Tree binding constants for the Maxim 77802 PMIC regulators
++ */
++
++#ifndef _DT_BINDINGS_REGULATOR_MAXIM_MAX77802_H
++#define _DT_BINDINGS_REGULATOR_MAXIM_MAX77802_H
++
++/* Regulator operating modes */
++#define MAX77802_OPMODE_LP	1
++#define MAX77802_OPMODE_NORMAL	3
++
++#endif /* _DT_BINDINGS_REGULATOR_MAXIM_MAX77802_H */
+diff --git a/include/linux/mfd/max77686.h b/include/linux/mfd/max77686.h
+index 7e6dc4b..553f7d0 100644
+--- a/include/linux/mfd/max77686.h
++++ b/include/linux/mfd/max77686.h
+@@ -131,13 +131,6 @@ enum max77686_opmode {
+ 	MAX77686_OPMODE_STANDBY,
+ };
  
-@@ -615,7 +616,7 @@ static int max77802_pmic_probe(struct platform_device *pdev)
- 		 * the hardware reports OFF as the regulator operating mode.
- 		 * Default to operating mode NORMAL in that case.
- 		 */
--		if (val == MAX77802_OPMODE_OFF)
-+		if (val == MAX77802_STATUS_OFF)
- 			max77802->opmode[id] = MAX77802_OPMODE_NORMAL;
- 		else
- 			max77802->opmode[id] = val;
+-enum max77802_opmode {
+-	MAX77802_OPMODE_OFF,
+-	MAX77802_OPMODE_STANDBY,
+-	MAX77802_OPMODE_LP,
+-	MAX77802_OPMODE_NORMAL,
+-};
+-
+ struct max77686_opmode_data {
+ 	int id;
+ 	int mode;
 -- 
 2.1.0
 
