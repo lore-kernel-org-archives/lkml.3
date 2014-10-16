@@ -1,178 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751763AbaJPBvt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 21:51:49 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:50875 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751238AbaJPBvs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 21:51:48 -0400
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <broonie@kernel.org>
-CC: <linux-spi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <nicolas.ferre@atmel.com>, <wenyou.yang@atmel.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH] spi/atmel: add support for runtime PM
-Date: Thu, 16 Oct 2014 09:49:20 +0800
-Message-ID: <1413424160-21180-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751795AbaJPBxb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 21:53:31 -0400
+Received: from ozlabs.org ([103.22.144.67]:55237 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750820AbaJPBxa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 21:53:30 -0400
+Date: Thu, 16 Oct 2014 12:53:21 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the thermal tree
+Message-ID: <20141016125321.20509c53@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/HRYdY8r3JID.Axv=KS1gLVn"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drivers should put the device into low power states proactively whenever the
-device is not in use. Thus implement support for runtime PM and use the
-autosuspend feature to make sure that we can still perform well in case we see
-lots of SPI traffic within short period of time.
+--Sig_/HRYdY8r3JID.Axv=KS1gLVn
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
----
- drivers/spi/spi-atmel.c |   62 +++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 55 insertions(+), 7 deletions(-)
+Hi Zhang,
 
-diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
-index 649dcb5..aca285e 100644
---- a/drivers/spi/spi-atmel.c
-+++ b/drivers/spi/spi-atmel.c
-@@ -26,6 +26,7 @@
- #include <linux/io.h>
- #include <linux/gpio.h>
- #include <linux/pinctrl/consumer.h>
-+#include <linux/pm_runtime.h>
- 
- /* SPI register offsets */
- #define SPI_CR					0x0000
-@@ -191,6 +192,8 @@
- 
- #define SPI_DMA_TIMEOUT		(msecs_to_jiffies(1000))
- 
-+#define AUTOSUSPEND_TIMEOUT	2000
-+
- struct atmel_spi_dma {
- 	struct dma_chan			*chan_rx;
- 	struct dma_chan			*chan_tx;
-@@ -1313,6 +1316,7 @@ static int atmel_spi_probe(struct platform_device *pdev)
- 	master->setup = atmel_spi_setup;
- 	master->transfer_one_message = atmel_spi_transfer_one_message;
- 	master->cleanup = atmel_spi_cleanup;
-+	master->auto_runtime_pm = true;
- 	platform_set_drvdata(pdev, master);
- 
- 	as = spi_master_get_devdata(master);
-@@ -1385,6 +1389,11 @@ static int atmel_spi_probe(struct platform_device *pdev)
- 	dev_info(&pdev->dev, "Atmel SPI Controller at 0x%08lx (irq %d)\n",
- 			(unsigned long)regs->start, irq);
- 
-+	pm_runtime_set_autosuspend_delay(&pdev->dev, AUTOSUSPEND_TIMEOUT);
-+	pm_runtime_use_autosuspend(&pdev->dev);
-+	pm_runtime_set_active(&pdev->dev);
-+	pm_runtime_enable(&pdev->dev);
-+
- 	ret = devm_spi_register_master(&pdev->dev, master);
- 	if (ret)
- 		goto out_free_dma;
-@@ -1392,6 +1401,9 @@ static int atmel_spi_probe(struct platform_device *pdev)
- 	return 0;
- 
- out_free_dma:
-+	pm_runtime_disable(&pdev->dev);
-+	pm_runtime_set_suspended(&pdev->dev);
-+
- 	if (as->use_dma)
- 		atmel_spi_release_dma(as);
- 
-@@ -1413,6 +1425,8 @@ static int atmel_spi_remove(struct platform_device *pdev)
- 	struct spi_master	*master = platform_get_drvdata(pdev);
- 	struct atmel_spi	*as = spi_master_get_devdata(master);
- 
-+	pm_runtime_get_sync(&pdev->dev);
-+
- 	/* reset the hardware and block queue progress */
- 	spin_lock_irq(&as->lock);
- 	if (as->use_dma) {
-@@ -1430,9 +1444,13 @@ static int atmel_spi_remove(struct platform_device *pdev)
- 
- 	clk_disable_unprepare(as->clk);
- 
-+	pm_runtime_put_noidle(&pdev->dev);
-+	pm_runtime_disable(&pdev->dev);
-+
- 	return 0;
- }
- 
-+#ifdef CONFIG_PM
- #ifdef CONFIG_PM_SLEEP
- static int atmel_spi_suspend(struct device *dev)
- {
-@@ -1447,9 +1465,10 @@ static int atmel_spi_suspend(struct device *dev)
- 		return ret;
- 	}
- 
--	clk_disable_unprepare(as->clk);
--
--	pinctrl_pm_select_sleep_state(dev);
-+	if (!pm_runtime_suspended(dev)) {
-+		clk_disable_unprepare(as->clk);
-+		pinctrl_pm_select_sleep_state(dev);
-+	}
- 
- 	return 0;
- }
-@@ -1460,9 +1479,10 @@ static int atmel_spi_resume(struct device *dev)
- 	struct atmel_spi	*as = spi_master_get_devdata(master);
- 	int ret;
- 
--	pinctrl_pm_select_default_state(dev);
--
--	clk_prepare_enable(as->clk);
-+	if (!pm_runtime_suspended(dev)) {
-+		pinctrl_pm_select_default_state(dev);
-+		clk_prepare_enable(as->clk);
-+	}
- 
- 	/* Start the queue running */
- 	ret = spi_master_resume(master);
-@@ -1471,9 +1491,37 @@ static int atmel_spi_resume(struct device *dev)
- 
- 	return ret;
- }
-+#endif
- 
--static SIMPLE_DEV_PM_OPS(atmel_spi_pm_ops, atmel_spi_suspend, atmel_spi_resume);
-+#ifdef CONFIG_PM_RUNTIME
-+static int atmel_spi_runtime_suspend(struct device *dev)
-+{
-+	struct spi_master *master = dev_get_drvdata(dev);
-+	struct atmel_spi *as = spi_master_get_devdata(master);
- 
-+	clk_disable_unprepare(as->clk);
-+	pinctrl_pm_select_sleep_state(dev);
-+
-+	return 0;
-+}
-+
-+static int atmel_spi_runtime_resume(struct device *dev)
-+{
-+	struct spi_master *master = dev_get_drvdata(dev);
-+	struct atmel_spi *as = spi_master_get_devdata(master);
-+
-+	pinctrl_pm_select_default_state(dev);
-+	clk_prepare_enable(as->clk);
-+
-+	return 0;
-+}
-+#endif
-+
-+static const struct dev_pm_ops atmel_spi_pm_ops = {
-+	SET_SYSTEM_SLEEP_PM_OPS(atmel_spi_suspend, atmel_spi_resume)
-+	SET_RUNTIME_PM_OPS(atmel_spi_runtime_suspend,
-+			   atmel_spi_runtime_resume, NULL)
-+};
- #define ATMEL_SPI_PM_OPS	(&atmel_spi_pm_ops)
- #else
- #define ATMEL_SPI_PM_OPS	NULL
--- 
-1.7.9.5
+After merging the thermal tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
+drivers/thermal/thermal_core.c:1183:1: error: redefinition of 'thermal_cool=
+ing_device_register'
+ thermal_cooling_device_register(char *type, void *devdata,
+ ^
+In file included from drivers/thermal/thermal_core.c:34:0:
+include/linux/thermal.h:345:46: note: previous definition of 'thermal_cooli=
+ng_device_register' was here
+ static inline struct thermal_cooling_device *thermal_cooling_device_regist=
+er(
+                                              ^
+drivers/thermal/thermal_core.c:1221:6: error: redefinition of 'thermal_cool=
+ing_device_unregister'
+ void thermal_cooling_device_unregister(struct thermal_cooling_device *cdev)
+      ^
+In file included from drivers/thermal/thermal_core.c:34:0:
+include/linux/thermal.h:351:20: note: previous definition of 'thermal_cooli=
+ng_device_unregister' was here
+ static inline void thermal_cooling_device_unregister(struct thermal_coolin=
+g_device *cdev)
+                    ^
+
+Caused by commit 571ed5a8177a ("Thermal: int340x thermal: fix a Kconfig
+dependency error").
+
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Sig_/HRYdY8r3JID.Axv=KS1gLVn
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUPyUWAAoJEMDTa8Ir7ZwVk4sP/0CdbOy+PdOVLQDE+oNHhnFz
+DxYCBQ1NrRc7brjtpmb5LeM1xc2UB11HSNGQpSR4QChImARy7bz3Lm9tWX2lCly4
+3neDBzRS5bM71er3hB3mrUVeQMiz7As632rOFJlZGVMXvKLgXup9HNo9sNF8xRVb
+bznf7m+cDoDEasWMt6XEdsFl/mcKFOuloxdRK5ToKtXX1+PZ8s5x8o8w3q4fJjJb
+D9yUrCyqkl56tMFaS30M4yDoLF5aSTwz5G2XM3LO7b3+ebsdZRzxqoWYEcwKFYuG
+tLhBcM1iRW0npKb4lfIfNZGnasl4FeUlPmnRHCHaN8BPCDQOMwAdXm7hye6ut6/7
+1jLMw/E15UONRvTqzNa/Pp5j3RcGeQJVQHsVHEb6a1pCYtL1Pv3wTw3zoqTf0fSI
+/srAxOjLcJ/j+EF5Na8LKFOoo9TrSUdt0RI84lXHJu4FubUSebshl5HJ6hG7O1rb
+JwdYv9zDr+TV51yqQfiK3JcP+vhHuvEgFDL0++22X6CaFF+Aoat4/ZlSad3Odw8V
+gPr+M5OQP12OtEBR2soCKqCel3h5hk9vx/0QWodYrAfN8S8k4ZDfsuafg3Geoo9S
+vsNjUAvWyOWFLzHXjxzveYTG34/rX9htJ4pjqQuRFJwNEHTE49Hu37ytH7uPo2bo
+5wx1jEcCVbXXw0ioMRBy
+=xnD5
+-----END PGP SIGNATURE-----
+
+--Sig_/HRYdY8r3JID.Axv=KS1gLVn--
