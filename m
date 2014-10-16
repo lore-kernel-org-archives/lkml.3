@@ -1,73 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751997AbaJPKGc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 06:06:32 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58296 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751433AbaJPKGa (ORCPT
+	id S1751534AbaJPKM2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 06:12:28 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:45637 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191AbaJPKM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 06:06:30 -0400
-Date: Thu, 16 Oct 2014 11:34:40 +0200
-From: Mark Brown <broonie@kernel.org>
-To: addy ke <addy.ke@rock-chips.com>
-Cc: heiko@sntech.de, dianders@chromium.org, grant.likely@linaro.org,
-        robh+dt@kernel.org, amstan@google.com, sonnyrao@google.com,
-        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, devicetree@vger.kernel.org,
-        olof@lixom.net, hj@rock-chips.com, kever.yang@rock-chips.com,
-        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
-        yzq@rock-chips.com, zhenfu.fang@rock-chips.com, cf@rock-chips.com,
-        zhangqing@rock-chips.com, hl@rock-chips.com, wei.luo@rock-chips.com
-Message-ID: <20141016093440.GC2200@sirena.org.uk>
-References: <1413372311-4203-1-git-send-email-addy.ke@rock-chips.com>
- <1413372378-4309-1-git-send-email-addy.ke@rock-chips.com>
- <20141015130547.GE27755@sirena.org.uk>
- <543F8F2A.9040904@rock-chips.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pAwQNkOnpTn9IO2O"
-Content-Disposition: inline
-In-Reply-To: <543F8F2A.9040904@rock-chips.com>
-X-Cookie: Is this really happening?
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 62.156.150.204
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] spi/rockchip: fix bug that cause spi transfer timed
- out in DMA duplex mode
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Thu, 16 Oct 2014 06:12:26 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] pinctrl: tegra-xusb: Don't leak configurations
+Date: Thu, 16 Oct 2014 12:12:22 +0200
+Message-Id: <1413454342-16935-1-git-send-email-thierry.reding@gmail.com>
+X-Mailer: git-send-email 2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Thierry Reding <treding@nvidia.com>
 
---pAwQNkOnpTn9IO2O
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The pinctrl config helpers make a separate copy of the configuration, so
+callers must make sure to free any dynamically allocated memory that was
+used to store it.
 
-On Thu, Oct 16, 2014 at 05:26:02PM +0800, addy ke wrote:
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+---
+ drivers/pinctrl/pinctrl-tegra-xusb.c | 19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
-> The following changes is nessarry:(if tx complete, spi must be disabled too)
-> diff --git a/drivers/spi/spi-rockchip.c b/drivers/spi/spi-rockchip.c
-> index 153269b..87bc16f 100644
+diff --git a/drivers/pinctrl/pinctrl-tegra-xusb.c b/drivers/pinctrl/pinctrl-tegra-xusb.c
+index 1631ec94fb02..080ec7723ef2 100644
+--- a/drivers/pinctrl/pinctrl-tegra-xusb.c
++++ b/drivers/pinctrl/pinctrl-tegra-xusb.c
+@@ -20,6 +20,7 @@
+ #include <linux/pinctrl/pinmux.h>
+ #include <linux/platform_device.h>
+ #include <linux/reset.h>
++#include <linux/slab.h>
+ 
+ #include <dt-bindings/pinctrl/pinctrl-tegra-xusb.h>
+ 
+@@ -171,7 +172,7 @@ static int tegra_xusb_padctl_parse_subnode(struct tegra_xusb_padctl *padctl,
+ 			if (err == -EINVAL)
+ 				continue;
+ 
+-			return err;
++			goto out;
+ 		}
+ 
+ 		config = TEGRA_XUSB_PADCTL_PACK(properties[i].param, value);
+@@ -179,7 +180,7 @@ static int tegra_xusb_padctl_parse_subnode(struct tegra_xusb_padctl *padctl,
+ 		err = pinctrl_utils_add_config(padctl->pinctrl, &configs,
+ 					       &num_configs, config);
+ 		if (err < 0)
+-			return err;
++			goto out;
+ 	}
+ 
+ 	if (function)
+@@ -190,14 +191,14 @@ static int tegra_xusb_padctl_parse_subnode(struct tegra_xusb_padctl *padctl,
+ 
+ 	err = of_property_count_strings(np, "nvidia,lanes");
+ 	if (err < 0)
+-		return err;
++		goto out;
+ 
+ 	reserve *= err;
+ 
+ 	err = pinctrl_utils_reserve_map(padctl->pinctrl, maps, reserved_maps,
+ 					num_maps, reserve);
+ 	if (err < 0)
+-		return err;
++		goto out;
+ 
+ 	of_property_for_each_string(np, "nvidia,lanes", prop, group) {
+ 		if (function) {
+@@ -205,7 +206,7 @@ static int tegra_xusb_padctl_parse_subnode(struct tegra_xusb_padctl *padctl,
+ 					reserved_maps, num_maps, group,
+ 					function);
+ 			if (err < 0)
+-				return err;
++				goto out;
+ 		}
+ 
+ 		if (num_configs) {
+@@ -214,11 +215,15 @@ static int tegra_xusb_padctl_parse_subnode(struct tegra_xusb_padctl *padctl,
+ 					configs, num_configs,
+ 					PIN_MAP_TYPE_CONFIGS_GROUP);
+ 			if (err < 0)
+-				return err;
++				goto out;
+ 		}
+ 	}
+ 
+-	return 0;
++	err = 0;
++
++out:
++	kfree(configs);
++	return err;
+ }
+ 
+ static int tegra_xusb_padctl_dt_node_to_map(struct pinctrl_dev *pinctrl,
+-- 
+2.1.2
 
-Please send this using the normal submission process.
-
---pAwQNkOnpTn9IO2O
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUP5EvAAoJECTWi3JdVIfQCXQH/RU6JwnyaxOhvqyazCG1SBn/
-mAWJ2EyFc+hhm1ao/caDwG0TKP1HXS35JbflhETePYeTaiVvmG7RDRvsRXDHe/qi
-G6vWXcxdalH3tcCES+CUAbFcW1RAgbUjlWKjIOGB1Z04F4x7OusdRoqQZhKCMr9D
-OhEFP0z3iH3s8ET4hPUw1vv4HzNFVBrndSZfGKi7KCUPpNAseplII49ZigaFC8KX
-4o86FWM0qJt9wy7y2VHQxYXaapjoYeHiAyEmT6dfAYsQE0yNmaXoNo2OWvYiv7HX
-wT+Zpo4goW4ZVG40AwLIyqmhBMWxn48X4MfFU/ieLGJa+mpqWoJ6eokYYuv7dL0=
-=mqAw
------END PGP SIGNATURE-----
-
---pAwQNkOnpTn9IO2O--
