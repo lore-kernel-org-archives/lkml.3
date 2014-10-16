@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707AbaJPTiJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 15:38:09 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:40836 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751340AbaJPTiH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 15:38:07 -0400
-Message-ID: <54401E9D.4050707@free-electrons.com>
-Date: Thu, 16 Oct 2014 21:38:05 +0200
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752696AbaJPTkS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 15:40:18 -0400
+Received: from mga11.intel.com ([192.55.52.93]:44468 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751887AbaJPTkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 15:40:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="401436380"
+Date: Thu, 16 Oct 2014 15:39:21 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v11 02/21] block: Change direct_access calling convention
+Message-ID: <20141016193921.GC11522@wil.cx>
+References: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com>
+ <1411677218-29146-3-git-send-email-matthew.r.wilcox@intel.com>
+ <20141016084550.GA19075@thinkos.etherlink>
 MIME-Version: 1.0
-To: trivial@kernel.org
-CC: Eduardo Valentin <edubezval@gmail.com>, rdunlap@infradead.org,
-        joe@perches.com, akpm@linux-foundation.org, arend@broadcom.com,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org
-Subject: Re: [PATCH] [RESEND][TRIVIAL] treewide: fix occurrences of "the the
- "
-References: <542DB1F3.6030609@free-electrons.com> <1412280903-6139-1-git-send-email-michael.opdenacker@free-electrons.com> <20141002223724.GA11578@developer> <543FBB95.9010209@free-electrons.com>
-In-Reply-To: <543FBB95.9010209@free-electrons.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141016084550.GA19075@thinkos.etherlink>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2014 02:35 PM, Michael Opdenacker wrote:
-> Greetings,
->
-> On 10/03/2014 12:37 AM, Eduardo Valentin wrote:
->
->> On Tmon behalf:
->>
->> Acked-by: Eduardo Valentin <edubezval@gmail.com>
-> Any chance to get this perged before the end of the current merge window
-> (Linus said it would last until sometime next week)? I'm posting a new
-> update with fixes for new issues that accumulated... Otherwise, there
-> will be even more the next time, and current reviews may get obsolete.
->
-> And I'd also hate to have to send commits to individual maintainers,
-> polluting the history tree with loads of commits for the same trivial
-> change...
+On Thu, Oct 16, 2014 at 10:45:50AM +0200, Mathieu Desnoyers wrote:
+> > -static int
+> > +static long
+> >  axon_ram_direct_access(struct block_device *device, sector_t sector,
+> > -		       void **kaddr, unsigned long *pfn)
+> > +		       void **kaddr, unsigned long *pfn, long size)
+> 
+> Why "long" as type for size ? What is the intent to have it signed, and
+> why using a 32-bit type on 32-bit architectures rather than 64-bit ?
+> Can we run into issues if we try to map a >2GB file on 32-bit
+> architectures ?
 
-As I was advised, I will resent once more and copy Linus this time, in
-case he is available to help with this ever-growing treewide patch.
+The interface requires that the entirety of the pmem be mapped at
+all times (see the void **kaddr).  So the total amount of pmem in the
+system can't be larger than 4GB on a 32-bit system.  On x86-32, that's
+actually limited to 1GB (because we give userspace 3GB), so the problem
+doesn't come up.  Maybe this would be more of a potetial problem on
+other architectures.
 
-Michael.
+As noted elsewhere in the thread, it would be possible, and maybe
+desirable, to remove the need to have all of pmem mapped into the kernel
+address space at all times, but I'm not looking to solve that problem
+with this patch-set.
 
--- 
-Michael Opdenacker, CEO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-+33 484 258 098
+The intent of having it signed is that users pass in the size they want
+to have and are returned the size they actually got.  Since the function
+must be able to return an error, keeping size signed is natural.
 
+> > +long bdev_direct_access(struct block_device *bdev, sector_t sector,
+> > +			void **addr, unsigned long *pfn, long size)
+> > +{
+> > +	long avail;
+> > +	const struct block_device_operations *ops = bdev->bd_disk->fops;
+> > +
+> > +	if (size < 0)
+> > +		return size;
+> 
+> I'm wondering how we should handle size == 0 here. Should it be accepted
+> or refused ?
+
+It is a bit of a bizarre case.  I'm inclined to the current behaviour
+of saying "this is the address where you can access zero bytes" :-)
+
+But maybe it indicates a bug in the caller, and being noisy about it
+would result in the caller getting fixed.
