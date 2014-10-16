@@ -1,112 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752241AbaJPMbd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 08:31:33 -0400
-Received: from thoth.sbs.de ([192.35.17.2]:59163 "EHLO thoth.sbs.de"
+	id S1752452AbaJPMcE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 08:32:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36007 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751001AbaJPMbc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 08:31:32 -0400
-Message-ID: <543FBA9E.6070704@siemens.com>
-Date: Thu, 16 Oct 2014 14:31:26 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1750805AbaJPMcB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 08:32:01 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <5432A4F1.4040507@samsung.com>
+References: <5432A4F1.4040507@samsung.com> <20141003143012.26457.54004.stgit@warthog.procyon.org.uk>
+To: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Cc: dhowells@redhat.com, rusty@rustcorp.com.au,
+        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
+        linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+Subject: Re: [PATCH 0/3] MODSIGN: Use PKCS#7 cert to avoid SKIDs
 MIME-Version: 1.0
-To: Daniel Wagner <daniel.wagner@bmw-carit.de>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v0] scripts/gdb: Use a generator instead of iterator for
- task list
-References: <1412841839-24537-1-git-send-email-daniel.wagner@bmw-carit.de> <1412841839-24537-2-git-send-email-daniel.wagner@bmw-carit.de>
-In-Reply-To: <1412841839-24537-2-git-send-email-daniel.wagner@bmw-carit.de>
-Content-Type: text/plain; charset=iso-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <1892.1413462701.1@warthog.procyon.org.uk>
+Date: Thu, 16 Oct 2014 13:31:41 +0100
+Message-ID: <1893.1413462701@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-10-09 10:03, Daniel Wagner wrote:
-> The iterator does not return any task_struct from the thread_group list
-> because the first condition in the 'if not t or ...' will only be the
-> first time None.
-> 
-> Instead of keeping track of the state ourself in the next() function,
-> we fall back using Python's generator.
-> 
-> Signed-off-by: Daniel Wagner <daniel.wagner@bmw-carit.de>
-> Cc: Jan Kiszka <jan.kiszka@siemens.com>
-> ---
->  scripts/gdb/linux/tasks.py | 50 +++++++++++++++++++---------------------------
->  1 file changed, 20 insertions(+), 30 deletions(-)
-> 
-> diff --git a/scripts/gdb/linux/tasks.py b/scripts/gdb/linux/tasks.py
-> index 0008e75..e2037d9 100644
-> --- a/scripts/gdb/linux/tasks.py
-> +++ b/scripts/gdb/linux/tasks.py
-> @@ -18,38 +18,28 @@ from linux import utils
->  
->  task_type = utils.CachedType("struct task_struct")
->  
-> -
-> -class TaskList:
-> -    def __init__(self):
-> -        global task_type
-> -        self.task_ptr_type = task_type.get_type().pointer()
-> -        self.init_task = gdb.parse_and_eval("init_task")
-> -        self.curr_group = self.init_task.address
-> -        self.curr_task = None
-> -
-> -    def __iter__(self):
-> -        return self
-> -
-> -    def __next__(self):
-> -        t = self.curr_task
-> -        if not t or t == self.curr_group:
-> -            self.curr_group = \
-> -                utils.container_of(self.curr_group['tasks']['next'],
-> -                                   self.task_ptr_type, "tasks")
-> -            if self.curr_group == self.init_task.address:
-> -                raise StopIteration
-> -            t = self.curr_task = self.curr_group
-> -        else:
-> -            self.curr_task = \
-> -                utils.container_of(t['thread_group']['next'],
-> -                                   self.task_ptr_type, "thread_group")
-> -        return t
-> -
-> -    def next(self):
-> -        return self.__next__()
-> +def task_lists():
-> +    global task_type
-> +    task_ptr_type = task_type.get_type().pointer()
-> +    init_task = gdb.parse_and_eval("init_task").address
-> +    t = g = init_task
-> +
-> +    while True:
-> +        while True:
-> +            yield t
-> +
-> +            t = utils.container_of(t['thread_group']['next'],
-> +                                   task_ptr_type, "thread_group")
-> +            if t == g:
-> +                break
-> +
-> +        t = g = utils.container_of(g['tasks']['next'],
-> +                                   task_ptr_type, "tasks")
-> +        if t == init_task:
-> +            return
->  
->  def get_task_by_pid(pid):
-> -    for task in TaskList():
-> +    for task in task_lists():
->          if int(task['pid']) == pid:
->              return task
->      return None
-> 
+Dmitry Kasatkin <d.kasatkin@samsung.com> wrote:
 
-Thanks for the fix (and the nice simplification), added to my queue.
-I'll repost the whole series ASAP.
+> /tmp/ccgSFKJd.o: In function `display_openssl_errors':
+> sign-file.c:(.text+0x4e): undefined reference to `ERR_peek_error'
+> sign-file.c:(.text+0xa1): undefined reference to `ERR_error_string'
+> ...
 
-Jan
+Is this solved for you by making the attached change?
 
--- 
-Siemens AG, Corporate Technology, CT RTC ITP SES-DE
-Corporate Competence Center Embedded Linux
+David
+---
+
+diff --git a/scripts/Makefile b/scripts/Makefile
+index 1d9c40be606e..719311b7bd46 100644
+--- a/scripts/Makefile
++++ b/scripts/Makefile
+@@ -20,7 +20,7 @@ hostprogs-$(CONFIG_MODULE_SIG)	 += sign-file
+ 
+ HOSTCFLAGS_sortextable.o = -I$(srctree)/tools/include
+ HOSTCFLAGS_asn1_compiler.o = -I$(srctree)/include
+-HOSTCFLAGS_sign-file.o = -lcrypto
++HOSTLOADLIBES_sign-file = -lcrypto
