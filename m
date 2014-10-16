@@ -1,84 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876AbaJPJ7M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 05:59:12 -0400
-Received: from regular1.263xmail.com ([211.150.99.139]:41010 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484AbaJPJ7L (ORCPT
+	id S1751909AbaJPJ7v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 05:59:51 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:36920 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751001AbaJPJ7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 05:59:11 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: addy.ke@rock-chips.com
-X-FST-TO: broonie@kernel.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: addy.ke@rock-chips.com
-X-UNIQUE-TAG: <8ee1423387150e899c22a788fb27e67a>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <543F96DB.40403@rock-chips.com>
-Date: Thu, 16 Oct 2014 17:58:51 +0800
-From: addy ke <addy.ke@rock-chips.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 16 Oct 2014 05:59:49 -0400
+Date: Thu, 16 Oct 2014 11:59:46 +0200
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] ARM: berlin: Add AHCI and SATA PHY nodes to BG2
+Message-ID: <20141016095946.GB1061@kwain>
+References: <1413042073-14253-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1413042073-14253-5-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
-To: broonie@kernel.org
-CC: heiko@sntech.de, dianders@chromium.org, grant.likely@linaro.org,
-        robh+dt@kernel.org, amstan@google.com, sonnyrao@google.com,
-        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, devicetree@vger.kernel.org,
-        olof@lixom.net, hj@rock-chips.com, kever.yang@rock-chips.com,
-        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
-        yzq@rock-chips.com, zhenfu.fang@rock-chips.com, cf@rock-chips.com,
-        zhangqing@rock-chips.com, hl@rock-chips.com, wei.luo@rock-chips.com
-Subject: Re: [PATCH 1/2] spi/rockchip: fix bug that case spi can't go as fast
- as slave request
-References: <1413372311-4203-1-git-send-email-addy.ke@rock-chips.com> <1413372349-4254-1-git-send-email-addy.ke@rock-chips.com> <20141015130452.GD27755@sirena.org.uk> <543F8CD2.1010302@rock-chips.com> <20141016093410.GB2200@sirena.org.uk>
-In-Reply-To: <20141016093410.GB2200@sirena.org.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1413042073-14253-5-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Sebastian,
 
+On Sat, Oct 11, 2014 at 05:41:12PM +0200, Sebastian Hesselbarth wrote:
+>  
+> +		ahci: sata@e90000 {
+> +			compatible = "marvell,berlin2-ahci", "generic-ahci";
+> +			reg = <0xe90000 0x1000>;
+> +			interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
+> +			clocks = <&chip CLKID_SATA>;
+> +			#address-cells = <1>;
+> +			#size-cells = <0>;
+> +			status = "disabled";
 
-On 2014/10/16 17:34, Mark Brown wrote:
-> On Thu, Oct 16, 2014 at 05:16:02PM +0800, addy ke wrote:
->> On 2014/10/15 21:04, Mark Brown wrote:
->>> On Wed, Oct 15, 2014 at 07:25:49PM +0800, Addy Ke wrote:
-> 
->>>> +	if (WARN_ON(rs->speed > MAX_SCLK_OUT))
->>>> +		rs->speed = MAX_SCLK_OUT;
-> 
->>>> +	/* the minimum divsor is 2 */
->>>> +	if (rs->max_freq < 2 * rs->speed) {
->>>> +		clk_set_rate(rs->spiclk, 2 * rs->speed);
->>>> +		rs->max_freq = clk_get_rate(rs->spiclk);
->>>> +	}
-> 
->>> I'll apply this but you should be checking the return code from
->>> clk_set_rate() here, please send a followup patch doing that.  It might
-> 
->> If clk_set_rate return error, do I only put dev_warn here or return error value to spi core?
-> 
-> It'd be better to return an error if we need to set the rate and can't
-> do it.
-> 
->>> also be worth consdering just setting the rate unconditionally here, it
->>> seems like it should make things simpler.
-> 
->> I think we need.
->> If we set the rate unconditionally here, clk_set_rate() will be executed in each spi transfer.
-> 
-> Is that really such a high cost?
-> 
-Not high cost, but  I think if the default spi_clk is enough, we do not need to set spi_clk again.
+The ahci generic driver actually returns -ENODEV if no port is
+activated. There is no need to disable it from there.
 
-Maybe we can only set spi_clk as (2 * MAX_SCLK_OUT) in probe().
+> +
+> +			sata0: sata-port@0 {
+> +				reg = <0>;
+> +				phys = <&sata_phy 0>;
+> +				status = "disabled";
+> +			};
+> +
+> +			sata1: sata-port@1 {
+> +				reg = <1>;
+> +				phys = <&sata_phy 1>;
+> +				status = "disabled";
+> +			};
+> +		};
 
+Antoine
 
-
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
