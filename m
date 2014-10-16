@@ -1,125 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751813AbaJPO7g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 10:59:36 -0400
-Received: from lists.s-osg.org ([54.187.51.154]:40958 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751696AbaJPO7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 10:59:33 -0400
-Message-ID: <543FDD51.9040404@osg.samsung.com>
-Date: Thu, 16 Oct 2014 08:59:29 -0600
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1751440AbaJPPFn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 11:05:43 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:48924 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750947AbaJPPFl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 11:05:41 -0400
+Message-ID: <543FDEC8.1080102@gmail.com>
+Date: Thu, 16 Oct 2014 08:05:44 -0700
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>, m.chehab@samsung.com
-CC: Lars-Peter Clausen <lars@metafoo.de>, akpm@linux-foundation.org,
-        gregkh@linuxfoundation.org, crope@iki.fi, olebowle@gmx.com,
-        dheitmueller@kernellabs.com, hverkuil@xs4all.nl, ramakrmu@cisco.com,
-        sakari.ailus@linux.intel.com, laurent.pinchart@ideasonboard.com,
-        perex@perex.cz, prabhakar.csengg@gmail.com, tim.gardner@canonical.com,
-        linux@eikelenboom.it, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, linux-media@vger.kernel.org
-Subject: Re: [alsa-devel] [PATCH v2 5/6] sound/usb: pcm changes to use media
- token api
-References: <cover.1413246370.git.shuahkh@osg.samsung.com> <cf1059cc2606f20d921e5691e3d59945a19a7871.1413246372.git.shuahkh@osg.samsung.com> <543FB374.8020604@metafoo.de> <543FC3CD.8050805@osg.samsung.com> <s5h38aow1ub.wl-tiwai@suse.de> <543FD1EC.5010206@osg.samsung.com> <s5hy4sgumjo.wl-tiwai@suse.de> <543FD892.6010209@osg.samsung.com> <s5htx34ul3w.wl-tiwai@suse.de>
-In-Reply-To: <s5htx34ul3w.wl-tiwai@suse.de>
-Content-Type: text/plain; charset=windows-1252
+To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+CC: dirk.brandewie@gmail.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cpufreq: intel_pstate: Fix setting max_perf_pct in performance
+ policy
+References: <1413415011-31290-1-git-send-email-pali.rohar@gmail.com>
+In-Reply-To: <1413415011-31290-1-git-send-email-pali.rohar@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2014 08:48 AM, Takashi Iwai wrote:
-> At Thu, 16 Oct 2014 08:39:14 -0600,
-> Shuah Khan wrote:
->>
->> On 10/16/2014 08:16 AM, Takashi Iwai wrote:
->>> At Thu, 16 Oct 2014 08:10:52 -0600,
->>> Shuah Khan wrote:
->>>>
->>>> On 10/16/2014 08:01 AM, Takashi Iwai wrote:
->>>>> At Thu, 16 Oct 2014 07:10:37 -0600,
->>>>> Shuah Khan wrote:
->>>>>>
->>>>>> On 10/16/2014 06:00 AM, Lars-Peter Clausen wrote:
->>>>>>> On 10/14/2014 04:58 PM, Shuah Khan wrote:
->>>>>>> [...]
->>>>>>>>       switch (cmd) {
->>>>>>>>       case SNDRV_PCM_TRIGGER_START:
->>>>>>>> +        err = media_get_audio_tkn(&subs->dev->dev);
->>>>>>>> +        if (err == -EBUSY) {
->>>>>>>> +            dev_info(&subs->dev->dev, "%s device is busy\n",
->>>>>>>> +                    __func__);
->>>>>>>
->>>>>>> In my opinion this should not dev_info() as this is out of band error
->>>>>>> signaling and also as the potential to spam the log. The userspace
->>>>>>> application is already properly notified by the return code.
->>>>>>>
->>>>>>
->>>>>> Yes it has the potential to flood the dmesg especially with alsa,
->>>>>> I will remove the dev_info().
->>>>>
->>>>> Yes.  And, I think doing this in the trigger isn't the best.
->>>>> Why not in open & close?
->>>>
->>>> My first cut of this change was in open and close. I saw pulseaudio
->>>> application go into this loop trying to open the device. To avoid
->>>> such problems, I went with trigger stat and stop. That made all the
->>>> pulseaudio continues attempts to open problems go away.
->>>
->>> But now starting the stream gives the error, and PA would loop it
->>> again, no?
->>>
->>>
->>>>> Also, is this token restriction needed only for PCM?  No mixer or
->>>>> other controls?
->>>>
->>>> snd_pcm_ops are the only ones media drivers implement and use. So
->>>> I don't think mixer is needed. If it is needed, it is not to hard
->>>> to add for that case.
->>>
->>> Well, then I wonder what resource does actually conflict with
->>> usb-audio and media drivers at all...?
->>>
->>
->> audio for dvb/v4l apps gets disrupted when audio app starts. For
->> example, dvb or v4l app tuned to a channel, and when an audio app
->> starts. audio path needs protected to avoid conflicts between
->> digital and analog applications as well.
-> 
-> OK, then concentrating on only PCM is fine.
-> 
-> But, I'm still not convinced about doing the token management in the
-> trigger.  The reason -EBUSY doesn't work is that it's the very same
-> error code when a PCM device is blocked by other processes.  And
-> -EAGAIN is interpreted by PCM core to -EBUSY for historical reasons.
+On 10/15/2014 04:16 PM, Pali Rohár wrote:
+> Code which changes policy to powersave changes also max_policy_pct based on
+> max_freq. Code which change max_perf_pct has upper limit base on value
+> max_policy_pct. When policy is changing from powersave back to performance
+> then max_policy_pct is not changed. Which means that changing max_perf_pct is
+> not possible to high values if max_freq was too low in powersave policy.
+>
+> Test case:
+>
+> $ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
+> 800000
+> $ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
+> 3300000
+> $ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+> performance
+> $ cat /sys/devices/system/cpu/intel_pstate/max_perf_pct
+> 100
+>
+> $ echo powersave > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+> $ echo 800000 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
+> $ echo 20 > /sys/devices/system/cpu/intel_pstate/max_perf_pct
+>
+> $ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+> powersave
+> $ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
+> 800000
+> $ cat /sys/devices/system/cpu/intel_pstate/max_perf_pct
+> 20
+>
+> $ echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+> $ echo 3300000 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
+> $ echo 100 > /sys/devices/system/cpu/intel_pstate/max_perf_pct
+>
+> $ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+> performance
+> $ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
+> 3300000
+> $ cat /sys/devices/system/cpu/intel_pstate/max_perf_pct
+> 24
+>
+> And now intel_pstate driver allows to set maximal value for max_perf_pct based
+> on max_policy_pct which is 24 for previous powersave max_freq 800000.
+>
+> This patch will set default value for max_policy_pct when setting policy to
+> performance so it will allow to set also max value for max_perf_pct.
+>
+> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
 
-ah. ok your recommendation is to go with open and close.
-Mauro has some reservations with holding at open when I discussed
-my observations with pulseaudio when I was holding token in open
-instead of trigger start. Maybe he can chime with his concerns.
-I think his concern was breaking applications if token is held in
-open().
+Acked-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
 
-Based on what you are seeing trigger could be worse.
+> Cc: stable@vger.kernel.org
+> ---
+>   drivers/cpufreq/intel_pstate.c |    1 +
+>   1 file changed, 1 insertion(+)
+>
+> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+> index 0668b38..7547ab5 100644
+> --- a/drivers/cpufreq/intel_pstate.c
+> +++ b/drivers/cpufreq/intel_pstate.c
+> @@ -714,6 +714,7 @@ static int intel_pstate_set_policy(struct cpufreq_policy *policy)
+>   	if (policy->policy == CPUFREQ_POLICY_PERFORMANCE) {
+>   		limits.min_perf_pct = 100;
+>   		limits.min_perf = int_tofp(1);
+> +		limits.max_policy_pct = 100;
+>   		limits.max_perf_pct = 100;
+>   		limits.max_perf = int_tofp(1);
+>   		limits.no_turbo = limits.turbo_disabled;
+>
 
-> 
-> How applications (e.g. PA) should behave if the token get fails?
-> Shouldn't it retry or totally give up?
-> 
-
-It would be up to the application I would think. I see that arecord
-quits right away when it finds the device busy. pluseaudio on the other
-hand appears to retry. I downloaded pulseaudio sources to understand
-what it is doing, however I didn't get too far. The way it does audio
-handling is complex for me to follow without spending a lot of time.
-
-thanks,
--- Shuah
-
--- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
