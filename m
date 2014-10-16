@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728AbaJPTAl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 15:00:41 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:45945 "EHLO
+	id S1752698AbaJPTAj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 15:00:39 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:45807 "EHLO
 	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752463AbaJPTAG (ORCPT
+	with ESMTP id S1752479AbaJPTAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 15:00:06 -0400
+	Thu, 16 Oct 2014 15:00:07 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
         Jiri Slaby <jslaby@suse.cz>,
         One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
         Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH -next 07/10] tty: Fix multiple races when setting the controlling terminal
-Date: Thu, 16 Oct 2014 14:59:47 -0400
-Message-Id: <1413485990-16855-8-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH -next 08/10] tty: Move session_of_pgrp() and make static
+Date: Thu, 16 Oct 2014 14:59:48 -0400
+Message-Id: <1413485990-16855-9-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1413485990-16855-1-git-send-email-peter@hurleysoftware.com>
 References: <1413485990-16855-1-git-send-email-peter@hurleysoftware.com>
@@ -25,93 +25,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Claim a read lock on the tasklist_lock while setting the controlling
-terminal for the session leader. This fixes multiple races:
-1. task_pgrp() and task_session() cannot be safely dereferenced, such
-   as passing to get_pid(), without holding either rcu_read_lock() or
-   tasklist_lock
-2. setsid() unwisely allows any thread in the thread group to
-   make the thread group leader the session leader; this makes the
-   unlocked reads of ->signal->leader and signal->tty potentially
-   unordered, stale or even have spurious values.
+tiocspgrp() is the lone caller of session_of_pgrp(); relocate and
+limit to file scope.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/tty_io.c | 23 +++++++++++++++++------
- 1 file changed, 17 insertions(+), 6 deletions(-)
+ drivers/tty/tty_io.c   | 21 +++++++++++++++++++++
+ include/linux/kernel.h |  3 ---
+ kernel/exit.c          | 21 ---------------------
+ 3 files changed, 21 insertions(+), 24 deletions(-)
 
 diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index e33edfa..4226ae7 100644
+index 4226ae7..c15421df 100644
 --- a/drivers/tty/tty_io.c
 +++ b/drivers/tty/tty_io.c
-@@ -502,8 +502,15 @@ void proc_clear_tty(struct task_struct *p)
- 	tty_kref_put(tty);
+@@ -2522,6 +2522,27 @@ struct pid *tty_get_pgrp(struct tty_struct *tty)
  }
+ EXPORT_SYMBOL_GPL(tty_get_pgrp);
  
--/* Called under the sighand lock */
--
-+/**
-+ * proc_set_tty -  set the controlling terminal
++/*
++ * This checks not only the pgrp, but falls back on the pid if no
++ * satisfactory pgrp is found. I dunno - gdb doesn't work correctly
++ * without this...
 + *
-+ * Only callable by the session leader and only if it does not already have
-+ * a controlling terminal.
-+ *
-+ * Caller must hold:  a readlock on tasklist_lock
-+ *		      sighand lock
++ * The caller must hold rcu lock or the tasklist lock.
 + */
- static void __proc_set_tty(struct tty_struct *tty)
- {
- 	unsigned long flags;
-@@ -2158,6 +2165,7 @@ retry_open:
- 
- 	mutex_lock(&tty_mutex);
- 	tty_lock(tty);
-+	read_lock(&tasklist_lock);
- 	spin_lock_irq(&current->sighand->siglock);
- 	if (!noctty &&
- 	    current->signal->leader &&
-@@ -2165,6 +2173,7 @@ retry_open:
- 	    tty->session == NULL)
- 		__proc_set_tty(tty);
- 	spin_unlock_irq(&current->sighand->siglock);
-+	read_unlock(&tasklist_lock);
- 	tty_unlock(tty);
- 	mutex_unlock(&tty_mutex);
- 	return 0;
-@@ -2454,10 +2463,13 @@ static int fionbio(struct file *file, int __user *p)
- static int tiocsctty(struct tty_struct *tty, int arg)
- {
- 	int ret = 0;
--	if (current->signal->leader && (task_session(current) == tty->session))
--		return ret;
- 
- 	mutex_lock(&tty_mutex);
-+	read_lock(&tasklist_lock);
++static struct pid *session_of_pgrp(struct pid *pgrp)
++{
++	struct task_struct *p;
++	struct pid *sid = NULL;
 +
-+	if (current->signal->leader && (task_session(current) == tty->session))
-+		goto unlock;
++	p = pid_task(pgrp, PIDTYPE_PGID);
++	if (p == NULL)
++		p = pid_task(pgrp, PIDTYPE_PID);
++	if (p != NULL)
++		sid = task_session(p);
 +
- 	/*
- 	 * The process must be a session leader and
- 	 * not have a controlling tty already.
-@@ -2476,9 +2488,7 @@ static int tiocsctty(struct tty_struct *tty, int arg)
- 			/*
- 			 * Steal it away
- 			 */
--			read_lock(&tasklist_lock);
- 			session_clear_tty(tty->session);
--			read_unlock(&tasklist_lock);
- 		} else {
- 			ret = -EPERM;
- 			goto unlock;
-@@ -2486,6 +2496,7 @@ static int tiocsctty(struct tty_struct *tty, int arg)
- 	}
- 	proc_set_tty(tty);
- unlock:
-+	read_unlock(&tasklist_lock);
- 	mutex_unlock(&tty_mutex);
- 	return ret;
++	return sid;
++}
++
+ /**
+  *	tiocgpgrp		-	get process group
+  *	@tty: tty passed by user
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 95624be..70c1e12 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -414,9 +414,6 @@ extern int __kernel_text_address(unsigned long addr);
+ extern int kernel_text_address(unsigned long addr);
+ extern int func_ptr_is_kernel_text(void *ptr);
+ 
+-struct pid;
+-extern struct pid *session_of_pgrp(struct pid *pgrp);
+-
+ unsigned long int_sqrt(unsigned long);
+ 
+ extern void bust_spinlocks(int yes);
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 32c58f7..0973f4c 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -214,27 +214,6 @@ repeat:
  }
+ 
+ /*
+- * This checks not only the pgrp, but falls back on the pid if no
+- * satisfactory pgrp is found. I dunno - gdb doesn't work correctly
+- * without this...
+- *
+- * The caller must hold rcu lock or the tasklist lock.
+- */
+-struct pid *session_of_pgrp(struct pid *pgrp)
+-{
+-	struct task_struct *p;
+-	struct pid *sid = NULL;
+-
+-	p = pid_task(pgrp, PIDTYPE_PGID);
+-	if (p == NULL)
+-		p = pid_task(pgrp, PIDTYPE_PID);
+-	if (p != NULL)
+-		sid = task_session(p);
+-
+-	return sid;
+-}
+-
+-/*
+  * Determine if a process group is "orphaned", according to the POSIX
+  * definition in 2.2.2.52.  Orphaned process groups are not to be affected
+  * by terminal-generated stop signals.  Newly orphaned process groups are
 -- 
 2.1.1
 
