@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752282AbaJPKTd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 06:19:33 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37134 "EHLO
+	id S1752322AbaJPKTi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 06:19:38 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:37164 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751789AbaJPKT0 (ORCPT
+	with ESMTP id S1751789AbaJPKTe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 06:19:26 -0400
+	Thu, 16 Oct 2014 06:19:34 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -14,10 +14,11 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
         Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH v2 07/53] dmaengine: Move slave caps to dma_device
-Date: Thu, 16 Oct 2014 12:17:06 +0200
-Message-Id: <1413454672-27400-8-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v2 11/53] dmaengine: coh901318: Split device_control
+Date: Thu, 16 Oct 2014 12:17:10 +0200
+Message-Id: <1413454672-27400-12-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -25,62 +26,191 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The previous code was relying on the fact that the slave_caps were to be
-defined on a per channel basis.
-
-However, this proved to be a bit overkill, since every driver filling these so
-far were hardcoding it, disregarding which channel was actually given.
-
-Add these capabilities to the dma_device structure, so that drivers can just
-provide them at probe time, and be done with it.
+Split the device_control callback of the ST-Ericsson COH901318 DMA driver to
+make use of the newly introduced callbacks, that will eventually be used to
+retrieve slave capabilities.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- include/linux/dmaengine.h | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ drivers/dma/coh901318.c | 137 +++++++++++++++++++++---------------------------
+ 1 file changed, 60 insertions(+), 77 deletions(-)
 
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index 85afd71df2e7..befa352ccba6 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -594,6 +594,14 @@ struct dma_tx_state {
-  * @fill_align: alignment shift for memset operations
-  * @dev_id: unique device ID
-  * @dev: struct device reference for dma mapping api
-+ * @src_addr_widths: bit mask of src addr widths the device supports
-+ * @dst_addr_widths: bit mask of dst addr widths the device supports
-+ * @directions: bit mask of slave direction the device supports since
-+ * 	the enum dma_transfer_direction is not defined as bits for
-+ * 	each type of direction, the dma controller should fill (1 <<
-+ * 	<TYPE>) and same should be checked by controller as well
-+ * @residue_granularity: granularity of the transfer residue reported
-+ *	by tx_status
-  * @device_alloc_chan_resources: allocate resources and return the
-  *	number of allocated descriptors
-  * @device_free_chan_resources: release DMA channel's resources
-@@ -644,6 +652,10 @@ struct dma_device {
- 	struct device *dev;
+diff --git a/drivers/dma/coh901318.c b/drivers/dma/coh901318.c
+index 3c6716e0b78e..418e4e4fb7ba 100644
+--- a/drivers/dma/coh901318.c
++++ b/drivers/dma/coh901318.c
+@@ -2114,6 +2114,57 @@ static irqreturn_t dma_irq_handler(int irq, void *dev_id)
+ 	return IRQ_HANDLED;
+ }
  
- 	bool generic_slave_caps;
-+	u32 src_addr_widths;
-+	u32 dst_addr_widths;
-+	u32 directions;
-+	enum dma_residue_granularity residue_granularity;
- 
- 	int (*device_alloc_chan_resources)(struct dma_chan *chan);
- 	void (*device_free_chan_resources)(struct dma_chan *chan);
-@@ -796,6 +808,11 @@ static inline int dma_get_slave_caps(struct dma_chan *chan, struct dma_slave_cap
- 	if (device->generic_slave_caps)
- 		return -ENXIO;
- 
-+	caps->src_addr_widths = device->src_addr_widths;
-+	caps->dst_addr_widths = device->dst_addr_widths;
-+	caps->directions = device->directions;
-+	caps->residue_granularity = device->residue_granularity;
++static int coh901318_terminate_all(struct dma_chan *chan)
++{
++	unsigned long flags;
++	struct coh901318_chan *cohc = to_coh901318_chan(chan);
++	struct coh901318_desc *cohd;
++	void __iomem *virtbase = cohc->base->virtbase;
 +
- 	caps->cmd_pause = !!device->device_pause;
- 	caps->cmd_terminate = !!device->device_terminate_all;
++	/* The remainder of this function terminates the transfer */
++	coh901318_pause(chan);
++	spin_lock_irqsave(&cohc->lock, flags);
++
++	/* Clear any pending BE or TC interrupt */
++	if (cohc->id < 32) {
++		writel(1 << cohc->id, virtbase + COH901318_BE_INT_CLEAR1);
++		writel(1 << cohc->id, virtbase + COH901318_TC_INT_CLEAR1);
++	} else {
++		writel(1 << (cohc->id - 32), virtbase +
++		       COH901318_BE_INT_CLEAR2);
++		writel(1 << (cohc->id - 32), virtbase +
++		       COH901318_TC_INT_CLEAR2);
++	}
++
++	enable_powersave(cohc);
++
++	while ((cohd = coh901318_first_active_get(cohc))) {
++		/* release the lli allocation*/
++		coh901318_lli_free(&cohc->base->pool, &cohd->lli);
++
++		/* return desc to free-list */
++		coh901318_desc_remove(cohd);
++		coh901318_desc_free(cohc, cohd);
++	}
++
++	while ((cohd = coh901318_first_queued(cohc))) {
++		/* release the lli allocation*/
++		coh901318_lli_free(&cohc->base->pool, &cohd->lli);
++
++		/* return desc to free-list */
++		coh901318_desc_remove(cohd);
++		coh901318_desc_free(cohc, cohd);
++	}
++
++
++	cohc->nbr_active_done = 0;
++	cohc->busy = 0;
++
++	spin_unlock_irqrestore(&cohc->lock, flags);
++
++	return 0;
++}
++
+ static int coh901318_alloc_chan_resources(struct dma_chan *chan)
+ {
+ 	struct coh901318_chan	*cohc = to_coh901318_chan(chan);
+@@ -2156,7 +2207,7 @@ coh901318_free_chan_resources(struct dma_chan *chan)
  
+ 	spin_unlock_irqrestore(&cohc->lock, flags);
+ 
+-	chan->device->device_control(chan, DMA_TERMINATE_ALL, 0);
++	coh901318_terminate_all(chan);
+ }
+ 
+ 
+@@ -2540,80 +2591,6 @@ static void coh901318_dma_set_runtimeconfig(struct dma_chan *chan,
+ 	cohc->ctrl = ctrl;
+ }
+ 
+-static int
+-coh901318_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-		  unsigned long arg)
+-{
+-	unsigned long flags;
+-	struct coh901318_chan *cohc = to_coh901318_chan(chan);
+-	struct coh901318_desc *cohd;
+-	void __iomem *virtbase = cohc->base->virtbase;
+-
+-	if (cmd == DMA_SLAVE_CONFIG) {
+-		struct dma_slave_config *config =
+-			(struct dma_slave_config *) arg;
+-
+-		coh901318_dma_set_runtimeconfig(chan, config);
+-		return 0;
+-	  }
+-
+-	if (cmd == DMA_PAUSE) {
+-		coh901318_pause(chan);
+-		return 0;
+-	}
+-
+-	if (cmd == DMA_RESUME) {
+-		coh901318_resume(chan);
+-		return 0;
+-	}
+-
+-	if (cmd != DMA_TERMINATE_ALL)
+-		return -ENXIO;
+-
+-	/* The remainder of this function terminates the transfer */
+-	coh901318_pause(chan);
+-	spin_lock_irqsave(&cohc->lock, flags);
+-
+-	/* Clear any pending BE or TC interrupt */
+-	if (cohc->id < 32) {
+-		writel(1 << cohc->id, virtbase + COH901318_BE_INT_CLEAR1);
+-		writel(1 << cohc->id, virtbase + COH901318_TC_INT_CLEAR1);
+-	} else {
+-		writel(1 << (cohc->id - 32), virtbase +
+-		       COH901318_BE_INT_CLEAR2);
+-		writel(1 << (cohc->id - 32), virtbase +
+-		       COH901318_TC_INT_CLEAR2);
+-	}
+-
+-	enable_powersave(cohc);
+-
+-	while ((cohd = coh901318_first_active_get(cohc))) {
+-		/* release the lli allocation*/
+-		coh901318_lli_free(&cohc->base->pool, &cohd->lli);
+-
+-		/* return desc to free-list */
+-		coh901318_desc_remove(cohd);
+-		coh901318_desc_free(cohc, cohd);
+-	}
+-
+-	while ((cohd = coh901318_first_queued(cohc))) {
+-		/* release the lli allocation*/
+-		coh901318_lli_free(&cohc->base->pool, &cohd->lli);
+-
+-		/* return desc to free-list */
+-		coh901318_desc_remove(cohd);
+-		coh901318_desc_free(cohc, cohd);
+-	}
+-
+-
+-	cohc->nbr_active_done = 0;
+-	cohc->busy = 0;
+-
+-	spin_unlock_irqrestore(&cohc->lock, flags);
+-
+-	return 0;
+-}
+-
+ void coh901318_base_init(struct dma_device *dma, const int *pick_chans,
+ 			 struct coh901318_base *base)
+ {
+@@ -2717,7 +2694,10 @@ static int __init coh901318_probe(struct platform_device *pdev)
+ 	base->dma_slave.device_prep_slave_sg = coh901318_prep_slave_sg;
+ 	base->dma_slave.device_tx_status = coh901318_tx_status;
+ 	base->dma_slave.device_issue_pending = coh901318_issue_pending;
+-	base->dma_slave.device_control = coh901318_control;
++	base->dma_slave.device_config = coh901318_dma_set_runtimeconfig;
++	base->dma_slave.device_pause = coh901318_pause;
++	base->dma_slave.device_resume = coh901318_resume;
++	base->dma_slave.device_terminate_all = coh901318_terminate_all;
+ 	base->dma_slave.dev = &pdev->dev;
+ 
+ 	err = dma_async_device_register(&base->dma_slave);
+@@ -2737,7 +2717,10 @@ static int __init coh901318_probe(struct platform_device *pdev)
+ 	base->dma_memcpy.device_prep_dma_memcpy = coh901318_prep_memcpy;
+ 	base->dma_memcpy.device_tx_status = coh901318_tx_status;
+ 	base->dma_memcpy.device_issue_pending = coh901318_issue_pending;
+-	base->dma_memcpy.device_control = coh901318_control;
++	base->dma_memcpy.device_config = coh901318_dma_set_runtimeconfig;
++	base->dma_memcpy.device_pause = coh901318_pause;
++	base->dma_memcpy.device_resume = coh901318_resume;
++	base->dma_memcpy.device_terminate_all = coh901318_terminate_all;
+ 	base->dma_memcpy.dev = &pdev->dev;
+ 	/*
+ 	 * This controller can only access address at even 32bit boundaries,
 -- 
 2.1.1
 
