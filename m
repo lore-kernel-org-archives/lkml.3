@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087AbaJPU0L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 16:26:11 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:46590 "EHLO
+	id S1753145AbaJPU0b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 16:26:31 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:37201 "EHLO
 	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752911AbaJPUZv (ORCPT
+	with ESMTP id S1752885AbaJPUZu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 16:25:51 -0400
+	Thu, 16 Oct 2014 16:25:50 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
         linux-serial@vger.kernel.org,
         One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
         Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH -next 09/27] tty: Remove TTY_CLOSING
-Date: Thu, 16 Oct 2014 16:25:07 -0400
-Message-Id: <1413491125-20134-10-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH -next 08/27] tty: Drop tty_mutex before tty reopen
+Date: Thu, 16 Oct 2014 16:25:06 -0400
+Message-Id: <1413491125-20134-9-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1413491125-20134-1-git-send-email-peter@hurleysoftware.com>
 References: <1413491125-20134-1-git-send-email-peter@hurleysoftware.com>
@@ -25,67 +25,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that re-open is not permitted for a legacy BSD pty master,
-using TTY_CLOSING to indicate when a tty can be torn-down is
-no longer necessary.
+Holding tty_mutex for a tty re-open is no longer necessary since
+"tty: Clarify re-open behavior of master ptys". Because the
+slave tty count is no longer accessed by tty_reopen(), holding
+tty_mutex to prevent concurrent final tty_release() of the slave
+pty is not required.
+
+As with "tty: Re-open /dev/tty without tty_mutex", holding a
+tty kref until the tty_lock is acquired is sufficient to ensure
+the tty has not been freed, which, in turn, is sufficient to
+ensure the tty_lock can be safely acquired and the tty count
+can be safely retrieved. A non-zero tty count with the tty lock
+held guarantees that release_tty() has not run and cannot
+run concurrently with tty_reopen().
+
+Change tty_driver_lookup_tty() to acquire the tty kref, which
+allows the tty_mutex to be dropped before acquiring the tty lock.
+Dropping the tty_mutex before attempting the tty_lock allows
+other ttys to be opened and released, without needing this
+tty_reopen() to complete.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/tty_io.c | 14 ++------------
- include/linux/tty.h  |  1 -
- 2 files changed, 2 insertions(+), 13 deletions(-)
+ drivers/tty/tty_io.c | 25 +++++++++++++++++--------
+ 1 file changed, 17 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index ded0445..55f9931 100644
+index 1b6f38c..ded0445 100644
 --- a/drivers/tty/tty_io.c
 +++ b/drivers/tty/tty_io.c
-@@ -1197,7 +1197,7 @@ void tty_write_message(struct tty_struct *tty, char *msg)
- 	if (tty) {
- 		mutex_lock(&tty->atomic_write_lock);
- 		tty_lock(tty);
--		if (tty->ops->write && !test_bit(TTY_CLOSING, &tty->flags)) {
-+		if (tty->ops->write && tty->count > 0) {
- 			tty_unlock(tty);
- 			tty->ops->write(tty, msg, strlen(msg));
- 		} else
-@@ -1887,16 +1887,6 @@ int tty_release(struct inode *inode, struct file *filp)
- 	/*
- 	 * Perform some housekeeping before deciding whether to return.
- 	 *
--	 * Set the TTY_CLOSING flag if this was the last open.  In the
--	 * case of a pty we may have to wait around for the other side
--	 * to close, and TTY_CLOSING makes sure we can't be reopened.
--	 */
--	if (tty_closing)
--		set_bit(TTY_CLOSING, &tty->flags);
--	if (o_tty_closing)
--		set_bit(TTY_CLOSING, &o_tty->flags);
--
--	/*
- 	 * If _either_ side is closing, make sure there aren't any
- 	 * processes that still think tty or o_tty is their controlling
- 	 * tty.
-@@ -1911,7 +1901,7 @@ int tty_release(struct inode *inode, struct file *filp)
+@@ -1344,19 +1344,24 @@ static ssize_t tty_line_name(struct tty_driver *driver, int index, char *p)
+  *	@driver: the driver for the tty
+  *	@idx:	 the minor number
+  *
+- *	Return the tty, if found or ERR_PTR() otherwise.
++ *	Return the tty, if found. If not found, return NULL or ERR_PTR() if the
++ *	driver lookup() method returns an error.
+  *
+- *	Locking: tty_mutex must be held. If tty is found, the mutex must
+- *	be held until the 'fast-open' is also done. Will change once we
+- *	have refcounting in the driver and per driver locking
++ *	Locking: tty_mutex must be held. If the tty is found, bump the tty kref.
+  */
+ static struct tty_struct *tty_driver_lookup_tty(struct tty_driver *driver,
+ 		struct inode *inode, int idx)
+ {
++	struct tty_struct *tty;
++
+ 	if (driver->ops->lookup)
+-		return driver->ops->lookup(driver, inode, idx);
++		tty = driver->ops->lookup(driver, inode, idx);
++	else
++		tty = driver->ttys[idx];
  
- 	mutex_unlock(&tty_mutex);
- 	tty_unlock_pair(tty, o_tty);
--	/* At this point the TTY_CLOSING flag should ensure a dead tty
-+	/* At this point, the tty->count == 0 should ensure a dead tty
- 	   cannot be re-opened by a racing opener */
+-	return driver->ttys[idx];
++	if (!IS_ERR(tty))
++		tty_kref_get(tty);
++	return tty;
+ }
  
- 	/* check whether both sides are closing ... */
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index ff0dd7a..35b29f0 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -316,7 +316,6 @@ struct tty_file_private {
- #define TTY_EXCLUSIVE 		3	/* Exclusive open mode */
- #define TTY_DEBUG 		4	/* Debugging */
- #define TTY_DO_WRITE_WAKEUP 	5	/* Call write_wakeup after queuing new */
--#define TTY_CLOSING 		7	/* ->close() in progress */
- #define TTY_LDISC_OPEN	 	11	/* Line discipline is open */
- #define TTY_PTY_LOCK 		16	/* pty private */
- #define TTY_NO_WRITE_SPLIT 	17	/* Preserve write boundaries to driver */
+ /**
+@@ -2089,16 +2094,20 @@ retry_open:
+ 		}
+ 
+ 		if (tty) {
++			mutex_unlock(&tty_mutex);
+ 			tty_lock(tty);
++			/* safe to drop the kref from tty_driver_lookup_tty() */
++			tty_kref_put(tty);
+ 			retval = tty_reopen(tty);
+ 			if (retval < 0) {
+ 				tty_unlock(tty);
+ 				tty = ERR_PTR(retval);
+ 			}
+-		} else	/* Returns with the tty_lock held for now */
++		} else { /* Returns with the tty_lock held for now */
+ 			tty = tty_init_dev(driver, index);
++			mutex_unlock(&tty_mutex);
++		}
+ 
+-		mutex_unlock(&tty_mutex);
+ 		tty_driver_kref_put(driver);
+ 	}
+ 
 -- 
 2.1.1
 
