@@ -1,95 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751700AbaJPJXq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 05:23:46 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:63386 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751035AbaJPJXo (ORCPT
+	id S1752053AbaJPJZl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 05:25:41 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:61657 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369AbaJPJZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 05:23:44 -0400
-Message-ID: <543F8EA8.6080905@linaro.org>
-Date: Thu, 16 Oct 2014 10:23:52 +0100
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Thu, 16 Oct 2014 05:25:38 -0400
+Date: Thu, 16 Oct 2014 10:25:30 +0100
+From: Steve Capper <steve.capper@linaro.org>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: akpm@linux-foundation.org, Andrea Arcangeli <aarcange@redhat.com>,
+        benh@kernel.crashing.org, mpe@ellerman.id.au, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-arch@vger.kernel.org, will.deacon@arm.com,
+        catalin.marinas@arm.com, linux@arm.linux.org.uk
+Subject: Re: [PATCH 1/2] mm: Update generic gup implementation to handle
+ hugepage directory
+Message-ID: <20141016092529.GA1524@linaro.org>
+References: <1413390888-4934-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Daniel Drake <drake@endlessm.com>
-CC: Russell King <linux@arm.linux.org.uk>, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, Linux Kernel <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 3.17-rc4 v7 0/6] arm: Implement arch_trigger_all_cpu_backtrace
-References: <1410970218-28847-1-git-send-email-daniel.thompson@linaro.org> <CAD8Lp44gPOBh_q1zDy3y1GkrRVAvix5YaNr-+E92+g8Q7fLKJA@mail.gmail.com>
-In-Reply-To: <CAD8Lp44gPOBh_q1zDy3y1GkrRVAvix5YaNr-+E92+g8Q7fLKJA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413390888-4934-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/10/14 23:37, Daniel Drake wrote:
-> Hi,
+On Wed, Oct 15, 2014 at 10:04:47PM +0530, Aneesh Kumar K.V wrote:
+> Update generic gup implementation with powerpc specific details.
+> On powerpc at pmd level we can have hugepte, normal pmd pointer
+> or a pointer to the hugepage directory.
 > 
-> Thanks a lot for working on this!
-> 
-> On Wed, Sep 17, 2014 at 10:10 AM, Daniel Thompson
-> <daniel.thompson@linaro.org> wrote:
->> Changes *before* v1:
->>
->> * This patchset is a hugely cut-down successor to "[PATCH v11 00/19]
->>   arm: KGDB NMI/FIQ support". Thanks to Thomas Gleixner for suggesting
->>   the new structure. For historic details see:
->>         https://lkml.org/lkml/2014/9/2/227
-> 
-> What's the right way to extend your work in order to get a NMI-like
-> watchdog hard lockup detector similar to the one on x86?
+> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-There are a few things to get into place for this.
+Hi,
+This patch causes compiler errors on arm and arm64 due to pgd_huge
+being undefined. I've attached a fixup below, this fixup will require
+that #define pgd_huge(pgd) 0 be added back into:
+arch/powerpc/include/asm/page.h
+For the second patch in this series.
 
-1. Figure out what number to put into the PMU to get an interrupt every
-   10s and provide the stub functions for the lock up detector.
+Another avenue would be to do something like:
+#ifndef pgd_huge
+#define pgd_huge(pgd)	(0)
+#endif
 
-2. Modify the current ARM PMU support to make is possible for this code
-   to run from a FIQ handler. This should be feasible by replicating
-   the design pattern used on x86. Nevertheless this is a fairly big
-   chunk of code review and testing.
+Then no changes would be required to arm and arm64 (or other
+architectures).
 
-3. Modify the Linux IRQ support to allow some kind of flag to
-   hint/demand that an interrupt be treated as NMI-ish in order to
-   switch (unshared) interrupts into FIQ mode and hook this up in
-   the GIC.
+To help with bisectability, could we please have a suitable fix applied
+to the two patches in the -mm tree:
+http://ozlabs.org/~akpm/mmots/broken-out/mm-update-generic-gup-implementation-to-handle-hugepage-directory.patch
+http://ozlabs.org/~akpm/mmots/broken-out/arch-powerpc-switch-to-generic-rcu-get_user_pages_fast.patch
 
-   [Side note, this approach was suggested by Thomas Gleixner in
-   response to some rather hacky patches from me. My patches are
-   robust enough but are poorly designed and hard to maintain.
-   Thus if you want to do any quick prototyping you might skip this
-   step and dig out my old patches:
+rather than applied afterwards?
 
-https://git.linaro.org/people/daniel.thompson/linux.git/shortlog/refs/heads/dev/kdb-fiq
+With pgd_huge(x) defined, this patch passes my futex test on arm
+(Arndale platform) and arm64(Juno).
 
-Note also that, as a side effect of the above, tools like oprofile would
-also get a very significant boost for kernel profiling because they
-would no longer attribute time spent in interrupt handlers to interrupt
-unmask functions.
-
-At present I've done a little work towards all three of the above but
-none are complete (most of the code has never been executed).
+Cheers,
+-- 
+Steve
 
 
-> I'm testing your patches on Exynos4412 and I guess in their current
-> state they don't go quite this deep, as the only callers of
-> trigger_all_cpu_backtrace() are sysrq, hung_task and spinlock debug
-> code - none of which seem as fail-safe as a trigger like a
-> pre-programmed watchdog NMI interrupt would be.
-> 
-> Do I need to find a way to get CONFIG_FIQ available on this platform
-> first? and/or CONFIG_HARDLOCKUP_DETECTOR?
 
-You need CONFIG_FIQ working first. Be aware that this may be impossible
-on Exynos unless you control the TrustZone. For this reason most of my
-development is on Freescale i.MX6 (because i.MX6 boots in secure mode).
+>From 2fb7b0308f0aca94c50611257ba82d656abb0768 Mon Sep 17 00:00:00 2001
+From: Steve Capper <steve.capper@linaro.org>
+Date: Thu, 16 Oct 2014 09:09:48 +0100
+Subject: [PATCH] Fixup for Update generic gup implementation
 
+The patch:
+mm: Update generic gup implementation to handle hugepage directory
 
-Daniel.
+will not compile for arm or arm64 due to pgd_huge being undefined.
+
+Signed-off-by: Steve Capper <steve.capper@linaro.org>
+---
+ arch/arm/include/asm/pgtable.h   | 2 ++
+ arch/arm64/include/asm/pgtable.h | 2 ++
+ include/linux/hugetlb.h          | 1 -
+ 3 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
+index 90aa4583..46f81fb 100644
+--- a/arch/arm/include/asm/pgtable.h
++++ b/arch/arm/include/asm/pgtable.h
+@@ -181,6 +181,8 @@ extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
+ /* to find an entry in a kernel page-table-directory */
+ #define pgd_offset_k(addr)	pgd_offset(&init_mm, addr)
+ 
++#define pgd_huge(pgd)		(0)
++
+ #define pmd_none(pmd)		(!pmd_val(pmd))
+ #define pmd_present(pmd)	(pmd_val(pmd))
+ 
+diff --git a/arch/arm64/include/asm/pgtable.h b/arch/arm64/include/asm/pgtable.h
+index 464c5ce..d4462ca 100644
+--- a/arch/arm64/include/asm/pgtable.h
++++ b/arch/arm64/include/asm/pgtable.h
+@@ -462,6 +462,8 @@ static inline pmd_t pmd_modify(pmd_t pmd, pgprot_t newprot)
+ extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
+ extern pgd_t idmap_pg_dir[PTRS_PER_PGD];
+ 
++#define pgd_huge(pgd)		(0)
++
+ /*
+  * Encode and decode a swap entry:
+  *	bits 0-1:	present (must be zero)
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index 65e12a2..6e6d338 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -138,7 +138,6 @@ static inline void hugetlb_show_meminfo(void)
+ #define prepare_hugepage_range(file, addr, len)	(-EINVAL)
+ #define pmd_huge(x)	0
+ #define pud_huge(x)	0
+-#define pgd_huge(x)	0
+ #define is_hugepage_only_range(mm, addr, len)	0
+ #define hugetlb_free_pgd_range(tlb, addr, end, floor, ceiling) ({BUG(); 0; })
+ #define hugetlb_fault(mm, vma, addr, flags)	({ BUG(); 0; })
+-- 
+1.9.3
