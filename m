@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751943AbaJPJFH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 05:05:07 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:36402 "EHLO
+	id S1752496AbaJPJJy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 05:09:54 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:36420 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751429AbaJPJFE (ORCPT
+	with ESMTP id S1751928AbaJPJFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 05:05:04 -0400
+	Thu, 16 Oct 2014 05:05:07 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Dan Williams <dan.j.williams@intel.com>,
-        linux-rpi-kernel@lists.infradead.org
-Subject: [PATCH 02/11] dmaengine: bcm2835: Remove chancnt affectations
-Date: Thu, 16 Oct 2014 11:00:54 +0200
-Message-Id: <1413450063-23829-3-git-send-email-maxime.ripard@free-electrons.com>
+        Dan Williams <dan.j.williams@intel.com>
+Subject: [PATCH 07/11] dmaengine: omap: Remove chancnt affectations
+Date: Thu, 16 Oct 2014 11:00:59 +0200
+Message-Id: <1413450063-23829-8-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1413450063-23829-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1413450063-23829-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -32,22 +30,22 @@ function.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/dma/bcm2835-dma.c | 2 --
+ drivers/dma/omap-dma.c | 2 --
  1 file changed, 2 deletions(-)
 
-diff --git a/drivers/dma/bcm2835-dma.c b/drivers/dma/bcm2835-dma.c
-index 68007974961a..def66fbbb7f3 100644
---- a/drivers/dma/bcm2835-dma.c
-+++ b/drivers/dma/bcm2835-dma.c
-@@ -525,8 +525,6 @@ static int bcm2835_dma_chan_init(struct bcm2835_dmadev *d, int chan_id, int irq)
- 	vchan_init(&c->vc, &d->ddev);
+diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
+index 4cf7d9a950d7..b1e8c7317c0c 100644
+--- a/drivers/dma/omap-dma.c
++++ b/drivers/dma/omap-dma.c
+@@ -1069,8 +1069,6 @@ static int omap_dma_chan_init(struct omap_dmadev *od, int dma_sig)
+ 	vchan_init(&c->vc, &od->ddev);
  	INIT_LIST_HEAD(&c->node);
  
--	d->ddev.chancnt++;
+-	od->ddev.chancnt++;
 -
- 	c->chan_base = BCM2835_DMA_CHANIO(d->base, chan_id);
- 	c->ch = chan_id;
- 	c->irq_number = irq;
+ 	return 0;
+ }
+ 
 -- 
 2.1.1
 
