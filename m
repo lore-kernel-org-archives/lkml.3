@@ -1,68 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235AbaJPXQO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 19:16:14 -0400
-Received: from ozlabs.org ([103.22.144.67]:35880 "EHLO ozlabs.org"
+	id S1753204AbaJPXQN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 19:16:13 -0400
+Received: from ozlabs.org ([103.22.144.67]:58226 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753096AbaJPXQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753097AbaJPXQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Oct 2014 19:16:06 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Cc: David Woodhouse <David.Woodhouse@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Arjun Sreedharan <arjun024@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: krealloc in kernel/params.c
-In-Reply-To: <87fveo1h07.fsf@rasmusvillemoes.dk>
-References: <87mw8y8jq7.fsf@rasmusvillemoes.dk> <87r3yaapyf.fsf@rustcorp.com.au> <87fveo1h07.fsf@rasmusvillemoes.dk>
+To: "Linus Torvalds" <torvalds@linux-foundation.org>
+Cc: "LKML" <linux-kernel@vger.kernel.org>,
+        <virtualization@lists.linux-foundation.org>
+Cc: Amit Shah <amit.shah@redhat.com>
+Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PULL] More virtio fun
 User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Fri, 17 Oct 2014 09:29:27 +1030
-Message-ID: <87wq7zaaeo.fsf@rustcorp.com.au>
+Date: Fri, 17 Oct 2014 09:41:26 +1030
+Message-ID: <87r3y7a9up.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rasmus Villemoes <linux@rasmusvillemoes.dk> writes:
-> On Wed, Oct 15 2014, Rusty Russell <rusty@rustcorp.com.au> wrote:
->
->> Rasmus Villemoes <linux@rasmusvillemoes.dk> writes:
->> The kzalloc-then-always-krealloc pattern is perhaps overly simplistic,
->> but this code has clearly confused people.  It worked on me...
->>
->
-> I think kzalloc immediately followed by kreallocing the returned value
-> is rather ugly. Other than that:
+The following changes since commit 7ec62d421bdf29cb31101ae2689f7f3a9906289a:
 
-Indeed, but it's an obvious pattern.  "If not initialized, initialize".
+  Merge branch 'for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs (2014-09-10 14:04:17 -0700)
 
->> -		num = mk->mp->num;
->> -		attrs = mk->mp->grp.attrs;
->> +		/* First allocation. */
->> +		mk->mp = kzalloc(sizeof(*mk->mp), GFP_KERNEL);
->> +		if (!mk->mp)
->> +			return -ENOMEM;
->
-> free_module_param_attrs does not check mk->mp for being NULL before
-> kfree'ing mk->mp->grp.attrs, so this will oops.
+are available in the git repository at:
 
-Nice catch, folded this in:
 
-diff --git a/kernel/params.c b/kernel/params.c
-index 3ebe6c64aa67..ee92e67f2cee 100644
---- a/kernel/params.c
-+++ b/kernel/params.c
-@@ -650,7 +650,8 @@ static __modinit int add_sysfs_param(struct module_kobject *mk,
- #ifdef CONFIG_MODULES
- static void free_module_param_attrs(struct module_kobject *mk)
- {
--	kfree(mk->mp->grp.attrs);
-+	if (mk->mp)
-+		kfree(mk->mp->grp.attrs);
- 	kfree(mk->mp);
- 	mk->mp = NULL;
- }
+  git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git tags/virtio-next-for-linus
 
-Thanks!
+for you to fetch changes up to 1bbc26062754b012656d34103215f7552e02b999:
+
+  virtio-rng: refactor probe error handling (2014-10-15 10:25:14 +1030)
+
+----------------------------------------------------------------
+One cc: stable commit, the rest are a series of minor cleanups which have
+been sitting in MST's tree during my vacation.  I changed a function name
+and made one trivial change, then they spent two days in linux-next.
+
+Thanks,
 Rusty.
+
+----------------------------------------------------------------
+Michael S. Tsirkin (24):
+      virtio_pci: fix virtio spec compliance on restore
+      virtio: unify config_changed handling
+      virtio-pci: move freeze/restore to virtio core
+      virtio: defer config changed notifications
+      virtio_blk: drop config_enable
+      virtio-blk: drop config_mutex
+      virtio_net: drop config_enable
+      virtio-net: drop config_mutex
+      virtio_net: minor cleanup
+      virtio: add API to enable VQs early
+      virtio_net: enable VQs early
+      virtio_blk: enable VQs early
+      virtio_console: enable VQs early
+      9p/trans_virtio: enable VQs early
+      virtio_net: fix use after free on allocation failure
+      virtio_scsi: move kick event out from virtscsi_init
+      virtio_blk: enable VQs early on restore
+      virtio_scsi: enable VQs early on restore
+      virtio_console: enable VQs early on restore
+      virtio_net: enable VQs early on restore
+      virtio_scsi: fix race on device removal
+      virtio_balloon: enable VQs early on restore
+      virtio_scsi: drop scan callback
+      virtio-rng: refactor probe error handling
+
+Paolo Bonzini (1):
+      virito_scsi: use freezable WQ for events
+
+ drivers/block/virtio_blk.c          |  40 ++++----------
+ drivers/char/hw_random/virtio-rng.c |  15 +++---
+ drivers/char/virtio_console.c       |   4 ++
+ drivers/misc/mic/card/mic_virtio.c  |   6 +--
+ drivers/net/virtio_net.c            |  44 +++++----------
+ drivers/s390/kvm/kvm_virtio.c       |   9 +---
+ drivers/s390/kvm/virtio_ccw.c       |   6 +--
+ drivers/scsi/virtio_scsi.c          |  42 +++++++++------
+ drivers/virtio/virtio.c             | 103 ++++++++++++++++++++++++++++++++++++
+ drivers/virtio/virtio_balloon.c     |   2 +
+ drivers/virtio/virtio_mmio.c        |   7 +--
+ drivers/virtio/virtio_pci.c         |  33 ++----------
+ include/linux/virtio.h              |  14 +++++
+ include/linux/virtio_config.h       |  17 ++++++
+ net/9p/trans_virtio.c               |   2 +
+ 15 files changed, 207 insertions(+), 137 deletions(-)
