@@ -1,65 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751246AbaJPDeY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 23:34:24 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:40230 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953AbaJPDeW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 23:34:22 -0400
+	id S1751433AbaJPDgV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 23:36:21 -0400
+Received: from [42.62.48.242] ([42.62.48.242]:15935 "EHLO manager.mioffice.cn"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751073AbaJPDgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 23:36:18 -0400
+From: Hui Zhu <zhuhui@xiaomi.com>
+To: <rjw@rjwysocki.net>, <len.brown@intel.com>, <pavel@ucw.cz>,
+        <m.szyprowski@samsung.com>, <akpm@linux-foundation.org>,
+        <mina86@mina86.com>, <aneesh.kumar@linux.vnet.ibm.com>,
+        <iamjoonsoo.kim@lge.com>, <hannes@cmpxchg.org>, <riel@redhat.com>,
+        <mgorman@suse.de>, <minchan@kernel.org>, <nasa4836@gmail.com>,
+        <ddstreet@ieee.org>, <hughd@google.com>, <mingo@kernel.org>,
+        <rientjes@google.com>, <peterz@infradead.org>, <keescook@chromium.org>,
+        <atomlin@redhat.com>, <raistlin@linux.it>, <axboe@fb.com>,
+        <paulmck@linux.vnet.ibm.com>, <kirill.shutemov@linux.intel.com>,
+        <n-horiguchi@ah.jp.nec.com>, <k.khlebnikov@samsung.com>,
+        <msalter@redhat.com>, <deller@gmx.de>, <tangchen@cn.fujitsu.com>,
+        <ben@decadent.org.uk>, <akinobu.mita@gmail.com>,
+        <lauraa@codeaurora.org>, <vbabka@suse.cz>, <sasha.levin@oracle.com>,
+        <vdavydov@parallels.com>, <suleiman@google.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-mm@kvack.org>, Hui Zhu <zhuhui@xiaomi.com>
+Subject: [PATCH 2/4] (CMA_AGGRESSIVE) Add argument hibernation to function shrink_all_memory
+Date: Thu, 16 Oct 2014 11:35:49 +0800
+Message-ID: <1413430551-22392-3-git-send-email-zhuhui@xiaomi.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1413430551-22392-1-git-send-email-zhuhui@xiaomi.com>
+References: <1413430551-22392-1-git-send-email-zhuhui@xiaomi.com>
 MIME-Version: 1.0
-In-Reply-To: <1413406102-16293-1-git-send-email-zyw@rock-chips.com>
-References: <1413405987-16196-1-git-send-email-zyw@rock-chips.com>
-	<1413406102-16293-1-git-send-email-zyw@rock-chips.com>
-Date: Wed, 15 Oct 2014 20:34:21 -0700
-X-Google-Sender-Auth: HkRaVUOP3ihBoMchyVyUMAHOUIc
-Message-ID: <CAD=FV=Vuwhsf4FeL6ZkB5dguEWxawWOeA6Ex-3mZdepX1bZKsA@mail.gmail.com>
-Subject: Re: [PATCH 2/4] clk: rockchip: RK3288: add suspend and resume
-From: Doug Anderson <dianders@chromium.org>
-To: Chris <zyw@rock-chips.com>
-Cc: Heiko Stuebner <heiko@sntech.de>, Mike Turquette <mturquette@linaro.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-rockchip@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Tony Xie <xxx@rock-chips.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [172.27.14.101]
+X-ClientProxiedBy: CNCAS1.mioffice.cn (10.237.8.131) To cnbox4.mioffice.cn
+ (10.237.8.144)
+X-EsetResult: clean, is OK
+X-EsetId: 587748382C4597170C3011
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris,
+Function shrink_all_memory try to free `nr_to_reclaim' of memory.
+CMA_AGGRESSIVE_SHRINK function will call this functon to free `nr_to_reclaim' of
+memory.  It need different scan_control with current caller function
+hibernate_preallocate_memory.
 
-On Wed, Oct 15, 2014 at 1:48 PM,  <zyw@rock-chips.com> wrote:
-> From: Chris Zhong <zyw@rock-chips.com>
->
-> save and restore some clks, which might be changed in suspend.
->
-> Signed-off-by: Tony Xie <xxx@rock-chips.com>
-> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
-> ---
->
->  drivers/clk/rockchip/clk-rk3288.c |   61 +++++++++++++++++++++++++++++++++++++
->  1 file changed, 61 insertions(+)
+If hibernation is true, the caller is hibernate_preallocate_memory.
+if not, the caller is CMA alloc function.
 
-Put this as patch set #1?  It's safe to do this first and the other
-patch won't work without it (right?)
+Signed-off-by: Hui Zhu <zhuhui@xiaomi.com>
+---
+ include/linux/swap.h    |  3 ++-
+ kernel/power/snapshot.c |  2 +-
+ mm/vmscan.c             | 19 +++++++++++++------
+ 3 files changed, 16 insertions(+), 8 deletions(-)
 
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index 37a585b..9f2cb43 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -335,7 +335,8 @@ extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
+ 						gfp_t gfp_mask, bool noswap,
+ 						struct zone *zone,
+ 						unsigned long *nr_scanned);
+-extern unsigned long shrink_all_memory(unsigned long nr_pages);
++extern unsigned long shrink_all_memory(unsigned long nr_pages,
++				       bool hibernation);
+ extern int vm_swappiness;
+ extern int remove_mapping(struct address_space *mapping, struct page *page);
+ extern unsigned long vm_total_pages;
+diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
+index 791a618..a00fc35 100644
+--- a/kernel/power/snapshot.c
++++ b/kernel/power/snapshot.c
+@@ -1657,7 +1657,7 @@ int hibernate_preallocate_memory(void)
+ 	 * NOTE: If this is not done, performance will be hurt badly in some
+ 	 * test cases.
+ 	 */
+-	shrink_all_memory(saveable - size);
++	shrink_all_memory(saveable - size, true);
+ 
+ 	/*
+ 	 * The number of saveable pages in memory was too high, so apply some
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index dcb4707..fdcfa30 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -3404,7 +3404,7 @@ void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx)
+ 	wake_up_interruptible(&pgdat->kswapd_wait);
+ }
+ 
+-#ifdef CONFIG_HIBERNATION
++#if defined CONFIG_HIBERNATION || defined CONFIG_CMA_AGGRESSIVE
+ /*
+  * Try to free `nr_to_reclaim' of memory, system-wide, and return the number of
+  * freed pages.
+@@ -3413,22 +3413,29 @@ void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx)
+  * LRU order by reclaiming preferentially
+  * inactive > active > active referenced > active mapped
+  */
+-unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
++unsigned long shrink_all_memory(unsigned long nr_to_reclaim, bool hibernation)
+ {
+ 	struct reclaim_state reclaim_state;
+ 	struct scan_control sc = {
+ 		.nr_to_reclaim = nr_to_reclaim,
+-		.gfp_mask = GFP_HIGHUSER_MOVABLE,
+ 		.priority = DEF_PRIORITY,
+-		.may_writepage = 1,
+ 		.may_unmap = 1,
+ 		.may_swap = 1,
+-		.hibernation_mode = 1,
+ 	};
+ 	struct zonelist *zonelist = node_zonelist(numa_node_id(), sc.gfp_mask);
+ 	struct task_struct *p = current;
+ 	unsigned long nr_reclaimed;
+ 
++	if (hibernation) {
++		sc.hibernation_mode = 1;
++		sc.may_writepage = 1;
++		sc.gfp_mask = GFP_HIGHUSER_MOVABLE;
++	} else {
++		sc.hibernation_mode = 0;
++		sc.may_writepage = !laptop_mode;
++		sc.gfp_mask = GFP_USER | __GFP_MOVABLE | __GFP_HIGHMEM;
++	}
++
+ 	p->flags |= PF_MEMALLOC;
+ 	lockdep_set_current_reclaim_state(sc.gfp_mask);
+ 	reclaim_state.reclaimed_slab = 0;
+@@ -3442,7 +3449,7 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
+ 
+ 	return nr_reclaimed;
+ }
+-#endif /* CONFIG_HIBERNATION */
++#endif /* CONFIG_HIBERNATION || CONFIG_CMA_AGGRESSIVE */
+ 
+ /* It's optimal to keep kswapds on the same CPUs as their memory, but
+    not required for correctness.  So if the last cpu in a node goes
+-- 
+1.9.1
 
-> +static int rk3288_clk_suspend(void)
-> +{
-> +       int i, reg_id;
-> +
-> +       for (i = 0; i < ARRAY_SIZE(rk3288_saved_cru_reg_ids); i++) {
-> +               reg_id = rk3288_saved_cru_reg_ids[i];
-> +
-> +               rk3288_saved_cru_regs[i] =
-> +                               __raw_readl(rk3288_cru_base + reg_id);
-
-As talked about off-list, should probably not be the __raw version
-here and elsewhere in this file.
