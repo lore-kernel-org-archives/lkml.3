@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695AbaJPUtL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 16:49:11 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:36271 "EHLO
+	id S1752829AbaJPUte (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 16:49:34 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:58714 "EHLO
 	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752274AbaJPUtJ (ORCPT
+	with ESMTP id S1752138AbaJPUtc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 16:49:09 -0400
+	Thu, 16 Oct 2014 16:49:32 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
         linux-serial@vger.kernel.org,
         One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
         Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH -next 26/27] tty: Fix timeout on pty set ldisc
-Date: Thu, 16 Oct 2014 16:25:24 -0400
-Message-Id: <1413491125-20134-27-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH -next 27/27] tty: Flush ldisc buffer atomically with tty flip buffers
+Date: Thu, 16 Oct 2014 16:25:25 -0400
+Message-Id: <1413491125-20134-28-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1413491125-20134-1-git-send-email-peter@hurleysoftware.com>
 References: <1413491125-20134-1-git-send-email-peter@hurleysoftware.com>
@@ -25,93 +25,118 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When changing the ldisc on one end of a pty pair, there may be
-waiting readers/writers on the other end which may not exit from
-the ldisc i/o loop, preventing tty_ldisc_lock_pair_timeout() from
-acquiring the other side's ldisc lock.
+tty_ldisc_flush() first clears the line discipline input buffer,
+then clears the tty flip buffers. However, this allows for existing
+data in the tty flip buffers to be added after the ldisc input
+buffer has been cleared, but before the flip buffers have been cleared.
 
-Only acquire this side's ldisc lock; although this will no longer
-prevent the other side from writing new input, that input will not
-be processed until after the ldisc change completes. This has no
-effect on normal ttys; new input from the driver was never disabled.
+Add an optional ldisc parameter to tty_buffer_flush() to allow
+tty_ldisc_flush() to pass the ldisc to clear.
 
-Remove tty_ldisc_enable_pair().
+NB: Initially, the plan was to do this automatically in
+tty_buffer_flush(). However, an audit of the behavior of existing
+line disciplines showed that performing a ldisc buffer flush on
+ioctl(TCFLSH) was not always the outcome. For example, some line
+disciplines have flush_buffer() methods but not ioctl() methods,
+so a ->flush_buffer() command would be unexpected.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/tty_ldisc.c | 21 ++++-----------------
- 1 file changed, 4 insertions(+), 17 deletions(-)
+ drivers/tty/tty_buffer.c | 10 ++++++++--
+ drivers/tty/tty_io.c     |  2 +-
+ drivers/tty/tty_ldisc.c  | 12 +++++-------
+ include/linux/tty.h      |  2 +-
+ 4 files changed, 15 insertions(+), 11 deletions(-)
 
+diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
+index 143deb6..3605103 100644
+--- a/drivers/tty/tty_buffer.c
++++ b/drivers/tty/tty_buffer.c
+@@ -202,14 +202,16 @@ static void tty_buffer_free(struct tty_port *port, struct tty_buffer *b)
+ /**
+  *	tty_buffer_flush		-	flush full tty buffers
+  *	@tty: tty to flush
++ *	@ld:  optional ldisc ptr (must be referenced)
+  *
+- *	flush all the buffers containing receive data.
++ *	flush all the buffers containing receive data. If ld != NULL,
++ *	flush the ldisc input buffer.
+  *
+  *	Locking: takes buffer lock to ensure single-threaded flip buffer
+  *		 'consumer'
+  */
+ 
+-void tty_buffer_flush(struct tty_struct *tty)
++void tty_buffer_flush(struct tty_struct *tty, struct tty_ldisc *ld)
+ {
+ 	struct tty_port *port = tty->port;
+ 	struct tty_bufhead *buf = &port->buf;
+@@ -223,6 +225,10 @@ void tty_buffer_flush(struct tty_struct *tty)
+ 		buf->head = next;
+ 	}
+ 	buf->head->read = buf->head->commit;
++
++	if (ld && ld->ops->flush_buffer)
++		ld->ops->flush_buffer(tty);
++
+ 	atomic_dec(&buf->priority);
+ 	mutex_unlock(&buf->lock);
+ }
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index 8effd44..2931f42 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -2939,7 +2939,7 @@ long tty_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 		case TCIFLUSH:
+ 		case TCIOFLUSH:
+ 		/* flush tty buffer and allow ldisc to process ioctl */
+-			tty_buffer_flush(tty);
++			tty_buffer_flush(tty, NULL);
+ 			break;
+ 		}
+ 		break;
 diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-index 1dbe278..6368dd9 100644
+index 6368dd9..b66a81d 100644
 --- a/drivers/tty/tty_ldisc.c
 +++ b/drivers/tty/tty_ldisc.c
-@@ -393,16 +393,6 @@ static void __lockfunc tty_ldisc_unlock_pair(struct tty_struct *tty,
- 		__tty_ldisc_unlock(tty2);
- }
- 
--static void __lockfunc tty_ldisc_enable_pair(struct tty_struct *tty,
--					     struct tty_struct *tty2)
--{
--	clear_bit(TTY_LDISC_HALTED, &tty->flags);
--	if (tty2)
--		clear_bit(TTY_LDISC_HALTED, &tty2->flags);
--
--	tty_ldisc_unlock_pair(tty, tty2);
--}
--
- /**
+@@ -397,19 +397,17 @@ static void __lockfunc tty_ldisc_unlock_pair(struct tty_struct *tty,
   *	tty_ldisc_flush	-	flush line discipline queue
   *	@tty: tty
-@@ -535,14 +525,13 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
+  *
+- *	Flush the line discipline queue (if any) for this tty. If there
+- *	is no line discipline active this is a no-op.
++ *	Flush the line discipline queue (if any) and the tty flip buffers
++ *	for this tty.
+  */
+ 
+ void tty_ldisc_flush(struct tty_struct *tty)
  {
- 	int retval;
- 	struct tty_ldisc *old_ldisc, *new_ldisc;
--	struct tty_struct *o_tty = tty->link;
+ 	struct tty_ldisc *ld = tty_ldisc_ref(tty);
+-	if (ld) {
+-		if (ld->ops->flush_buffer)
+-			ld->ops->flush_buffer(tty);
++
++	tty_buffer_flush(tty, ld);
++	if (ld)
+ 		tty_ldisc_deref(ld);
+-	}
+-	tty_buffer_flush(tty);
+ }
+ EXPORT_SYMBOL_GPL(tty_ldisc_flush);
  
- 	new_ldisc = tty_ldisc_get(tty, ldisc);
- 	if (IS_ERR(new_ldisc))
- 		return PTR_ERR(new_ldisc);
- 
- 	tty_lock(tty);
--	retval = tty_ldisc_lock_pair_timeout(tty, o_tty, 5 * HZ);
-+	retval = tty_ldisc_lock(tty, 5 * HZ);
- 	if (retval) {
- 		tty_ldisc_put(new_ldisc);
- 		tty_unlock(tty);
-@@ -554,7 +543,7 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
- 	 */
- 
- 	if (tty->ldisc->ops->num == ldisc) {
--		tty_ldisc_enable_pair(tty, o_tty);
-+		tty_ldisc_unlock(tty);
- 		tty_ldisc_put(new_ldisc);
- 		tty_unlock(tty);
- 		return 0;
-@@ -565,7 +554,7 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
- 	if (test_bit(TTY_HUPPED, &tty->flags)) {
- 		/* We were raced by the hangup method. It will have stomped
- 		   the ldisc data and closed the ldisc down */
--		tty_ldisc_enable_pair(tty, o_tty);
-+		tty_ldisc_unlock(tty);
- 		tty_ldisc_put(new_ldisc);
- 		tty_unlock(tty);
- 		return -EIO;
-@@ -599,13 +588,11 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
- 	/*
- 	 *	Allow ldisc referencing to occur again
- 	 */
--	tty_ldisc_enable_pair(tty, o_tty);
-+	tty_ldisc_unlock(tty);
- 
- 	/* Restart the work queue in case no characters kick it off. Safe if
- 	   already running */
- 	schedule_work(&tty->port->buf.work);
--	if (o_tty)
--		schedule_work(&o_tty->port->buf.work);
- 
- 	tty_unlock(tty);
- 	return retval;
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index 8a90253..90256ee 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -442,7 +442,7 @@ extern void __do_SAK(struct tty_struct *tty);
+ extern void no_tty(void);
+ extern void tty_flush_to_ldisc(struct tty_struct *tty);
+ extern void tty_buffer_free_all(struct tty_port *port);
+-extern void tty_buffer_flush(struct tty_struct *tty);
++extern void tty_buffer_flush(struct tty_struct *tty, struct tty_ldisc *ld);
+ extern void tty_buffer_init(struct tty_port *port);
+ extern speed_t tty_termios_baud_rate(struct ktermios *termios);
+ extern speed_t tty_termios_input_baud_rate(struct ktermios *termios);
 -- 
 2.1.1
 
