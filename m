@@ -1,69 +1,423 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728AbaJPNdQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 09:33:16 -0400
-Received: from regular1.263xmail.com ([211.150.99.133]:51503 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752197AbaJPNdN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 09:33:13 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: wxt@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 211.143.145.243
-X-LOGIN-NAME: wxt@rock-chips.com
-X-UNIQUE-TAG: <90e6537223a9a73fd0d13fab88888164>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Caesar Wang <caesar.wang@rock-chips.com>
-To: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com
-Cc: zyf@rock-chips.com, dianders@chromium.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        cf@rock-chips.com, dmitry.torokhov@gmail.com, dbasehore@chromium.org,
-        huangtao@rock-chips.com, cjf@rock-chips.com, zhengsq@rock-chips.com,
-        vladimir_zapolskiy@mentor.com,
-        Caesar Wang <caesar.wang@rock-chips.com>
-Subject: [PATCH v11 5/5] ARM: dts: enable Thermal on rk3288-evb board
-Date: Thu, 16 Oct 2014 21:31:41 +0800
-Message-Id: <1413466301-25952-6-git-send-email-caesar.wang@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1413466301-25952-1-git-send-email-caesar.wang@rock-chips.com>
-References: <1413466301-25952-1-git-send-email-caesar.wang@rock-chips.com>
+	id S1752761AbaJPNeU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 09:34:20 -0400
+Received: from mail.efficios.com ([78.47.125.74]:37184 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751422AbaJPNeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 09:34:18 -0400
+Date: Thu, 16 Oct 2014 15:33:55 +0200
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Matthew Wilcox <willy@linux.intel.com>
+Subject: Re: [PATCH v11 06/21] vfs: Add copy_to_iter(), copy_from_iter() and
+ iov_iter_zero()
+Message-ID: <20141016133355.GT19075@thinkos.etherlink>
+References: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com>
+ <1411677218-29146-7-git-send-email-matthew.r.wilcox@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411677218-29146-7-git-send-email-matthew.r.wilcox@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-when a thermal temperature over TSHUT.Default to via
-CRU reset the entire chip on rk3288-evb Board
+On 25-Sep-2014 04:33:23 PM, Matthew Wilcox wrote:
+> From: Matthew Wilcox <willy@linux.intel.com>
+> 
+> For DAX, we want to be able to copy between iovecs and kernel addresses
+> that don't necessarily have a struct page.  This is a fairly simple
+> rearrangement for bvec iters to kmap the pages outside and pass them in,
+> but for user iovecs it gets more complicated because we might try various
+> different ways to kmap the memory.  Duplicating the existing logic works
+> out best in this case.
+> 
+> We need to be able to write zeroes to an iovec for reads from unwritten
+> ranges in a file.  This is performed by the new iov_iter_zero() function,
+> again patterned after the existing code that handles iovec iterators.
+> 
+> Signed-off-by: Matthew Wilcox <willy@linux.intel.com>
+> ---
+>  include/linux/uio.h |   3 +
+>  mm/iov_iter.c       | 237 ++++++++++++++++++++++++++++++++++++++++++++++++----
+>  2 files changed, 226 insertions(+), 14 deletions(-)
+> 
+> diff --git a/include/linux/uio.h b/include/linux/uio.h
+> index 48d64e6..1863ddd 100644
+> --- a/include/linux/uio.h
+> +++ b/include/linux/uio.h
+> @@ -80,6 +80,9 @@ size_t copy_page_to_iter(struct page *page, size_t offset, size_t bytes,
+>  			 struct iov_iter *i);
+>  size_t copy_page_from_iter(struct page *page, size_t offset, size_t bytes,
+>  			 struct iov_iter *i);
+> +size_t copy_to_iter(void *addr, size_t bytes, struct iov_iter *i);
+> +size_t copy_from_iter(void *addr, size_t bytes, struct iov_iter *i);
+> +size_t iov_iter_zero(size_t bytes, struct iov_iter *);
+>  unsigned long iov_iter_alignment(const struct iov_iter *i);
+>  void iov_iter_init(struct iov_iter *i, int direction, const struct iovec *iov,
+>  			unsigned long nr_segs, size_t count);
+> diff --git a/mm/iov_iter.c b/mm/iov_iter.c
+> index ab88dc0..d481fd8 100644
+> --- a/mm/iov_iter.c
+> +++ b/mm/iov_iter.c
+> @@ -4,6 +4,96 @@
+>  #include <linux/slab.h>
+>  #include <linux/vmalloc.h>
+>  
+> +static size_t copy_to_iter_iovec(void *from, size_t bytes, struct iov_iter *i)
+> +{
+> +	size_t skip, copy, left, wanted;
+> +	const struct iovec *iov;
+> +	char __user *buf;
+> +
+> +	if (unlikely(bytes > i->count))
+> +		bytes = i->count;
+> +
+> +	if (unlikely(!bytes))
+> +		return 0;
+> +
+> +	wanted = bytes;
+> +	iov = i->iov;
+> +	skip = i->iov_offset;
+> +	buf = iov->iov_base + skip;
+> +	copy = min(bytes, iov->iov_len - skip);
+> +
+> +	left = __copy_to_user(buf, from, copy);
 
-Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
----
- arch/arm/boot/dts/rk3288-evb.dtsi | 5 +++++
- 1 file changed, 5 insertions(+)
+How comes this function uses __copy_to_user without any access_ok()
+check ? This has security implications.
 
-diff --git a/arch/arm/boot/dts/rk3288-evb.dtsi b/arch/arm/boot/dts/rk3288-evb.dtsi
-index cb83cea..6636aa7 100644
---- a/arch/arm/boot/dts/rk3288-evb.dtsi
-+++ b/arch/arm/boot/dts/rk3288-evb.dtsi
-@@ -148,6 +148,11 @@
- 	status = "okay";
- };
- 
-+&tsadc {
-+	tsadc-ht-reset-mode = <0>; /* reset mode 0:CRU 1:GPIO */
-+	status = "okay";
-+};
-+
- &pinctrl {
- 	backlight {
- 		bl_en: bl-en {
+> +	copy -= left;
+> +	skip += copy;
+> +	from += copy;
+> +	bytes -= copy;
+> +	while (unlikely(!left && bytes)) {
+> +		iov++;
+> +		buf = iov->iov_base;
+> +		copy = min(bytes, iov->iov_len);
+> +		left = __copy_to_user(buf, from, copy);
+
+same here.
+
+> +		copy -= left;
+> +		skip = copy;
+> +		from += copy;
+> +		bytes -= copy;
+> +	}
+> +
+> +	if (skip == iov->iov_len) {
+> +		iov++;
+> +		skip = 0;
+> +	}
+> +	i->count -= wanted - bytes;
+> +	i->nr_segs -= iov - i->iov;
+> +	i->iov = iov;
+> +	i->iov_offset = skip;
+> +	return wanted - bytes;
+> +}
+> +
+> +static size_t copy_from_iter_iovec(void *to, size_t bytes, struct iov_iter *i)
+> +{
+> +	size_t skip, copy, left, wanted;
+> +	const struct iovec *iov;
+> +	char __user *buf;
+> +
+> +	if (unlikely(bytes > i->count))
+> +		bytes = i->count;
+> +
+> +	if (unlikely(!bytes))
+> +		return 0;
+> +
+> +	wanted = bytes;
+> +	iov = i->iov;
+> +	skip = i->iov_offset;
+> +	buf = iov->iov_base + skip;
+> +	copy = min(bytes, iov->iov_len - skip);
+> +
+> +	left = __copy_from_user(to, buf, copy);
+
+same here.
+
+> +	copy -= left;
+> +	skip += copy;
+> +	to += copy;
+> +	bytes -= copy;
+> +	while (unlikely(!left && bytes)) {
+> +		iov++;
+> +		buf = iov->iov_base;
+> +		copy = min(bytes, iov->iov_len);
+> +		left = __copy_from_user(to, buf, copy);
+
+same.
+
+> +		copy -= left;
+> +		skip = copy;
+> +		to += copy;
+> +		bytes -= copy;
+> +	}
+> +
+> +	if (skip == iov->iov_len) {
+> +		iov++;
+> +		skip = 0;
+> +	}
+> +	i->count -= wanted - bytes;
+> +	i->nr_segs -= iov - i->iov;
+> +	i->iov = iov;
+> +	i->iov_offset = skip;
+> +	return wanted - bytes;
+> +}
+> +
+>  static size_t copy_page_to_iter_iovec(struct page *page, size_t offset, size_t bytes,
+>  			 struct iov_iter *i)
+>  {
+> @@ -166,6 +256,50 @@ done:
+>  	return wanted - bytes;
+>  }
+>  
+> +static size_t zero_iovec(size_t bytes, struct iov_iter *i)
+> +{
+> +	size_t skip, copy, left, wanted;
+> +	const struct iovec *iov;
+> +	char __user *buf;
+> +
+> +	if (unlikely(bytes > i->count))
+> +		bytes = i->count;
+> +
+> +	if (unlikely(!bytes))
+> +		return 0;
+> +
+> +	wanted = bytes;
+> +	iov = i->iov;
+> +	skip = i->iov_offset;
+> +	buf = iov->iov_base + skip;
+> +	copy = min(bytes, iov->iov_len - skip);
+> +
+> +	left = __clear_user(buf, copy);
+
+I would guess an access_ok() would be needed here too.
+
+> +	copy -= left;
+> +	skip += copy;
+> +	bytes -= copy;
+> +
+> +	while (unlikely(!left && bytes)) {
+> +		iov++;
+> +		buf = iov->iov_base;
+> +		copy = min(bytes, iov->iov_len);
+> +		left = __clear_user(buf, copy);
+
+Same.
+
+> +		copy -= left;
+> +		skip = copy;
+> +		bytes -= copy;
+> +	}
+> +
+> +	if (skip == iov->iov_len) {
+> +		iov++;
+> +		skip = 0;
+> +	}
+> +	i->count -= wanted - bytes;
+> +	i->nr_segs -= iov - i->iov;
+> +	i->iov = iov;
+> +	i->iov_offset = skip;
+> +	return wanted - bytes;
+> +}
+> +
+>  static size_t __iovec_copy_from_user_inatomic(char *vaddr,
+>  			const struct iovec *iov, size_t base, size_t bytes)
+>  {
+> @@ -412,12 +546,17 @@ static void memcpy_to_page(struct page *page, size_t offset, char *from, size_t
+>  	kunmap_atomic(to);
+>  }
+>  
+> -static size_t copy_page_to_iter_bvec(struct page *page, size_t offset, size_t bytes,
+> -			 struct iov_iter *i)
+> +static void memzero_page(struct page *page, size_t offset, size_t len)
+> +{
+> +	char *addr = kmap_atomic(page);
+> +	memset(addr + offset, 0, len);
+> +	kunmap_atomic(addr);
+> +}
+> +
+> +static size_t copy_to_iter_bvec(void *from, size_t bytes, struct iov_iter *i)
+>  {
+>  	size_t skip, copy, wanted;
+>  	const struct bio_vec *bvec;
+> -	void *kaddr, *from;
+>  
+>  	if (unlikely(bytes > i->count))
+>  		bytes = i->count;
+> @@ -430,8 +569,6 @@ static size_t copy_page_to_iter_bvec(struct page *page, size_t offset, size_t by
+>  	skip = i->iov_offset;
+>  	copy = min_t(size_t, bytes, bvec->bv_len - skip);
+>  
+> -	kaddr = kmap_atomic(page);
+> -	from = kaddr + offset;
+>  	memcpy_to_page(bvec->bv_page, skip + bvec->bv_offset, from, copy);
+>  	skip += copy;
+>  	from += copy;
+> @@ -444,7 +581,6 @@ static size_t copy_page_to_iter_bvec(struct page *page, size_t offset, size_t by
+>  		from += copy;
+>  		bytes -= copy;
+>  	}
+> -	kunmap_atomic(kaddr);
+>  	if (skip == bvec->bv_len) {
+>  		bvec++;
+>  		skip = 0;
+> @@ -456,12 +592,10 @@ static size_t copy_page_to_iter_bvec(struct page *page, size_t offset, size_t by
+>  	return wanted - bytes;
+>  }
+>  
+> -static size_t copy_page_from_iter_bvec(struct page *page, size_t offset, size_t bytes,
+> -			 struct iov_iter *i)
+> +static size_t copy_from_iter_bvec(void *to, size_t bytes, struct iov_iter *i)
+>  {
+>  	size_t skip, copy, wanted;
+>  	const struct bio_vec *bvec;
+> -	void *kaddr, *to;
+>  
+>  	if (unlikely(bytes > i->count))
+>  		bytes = i->count;
+> @@ -473,10 +607,6 @@ static size_t copy_page_from_iter_bvec(struct page *page, size_t offset, size_t
+>  	bvec = i->bvec;
+>  	skip = i->iov_offset;
+>  
+> -	kaddr = kmap_atomic(page);
+> -
+> -	to = kaddr + offset;
+> -
+>  	copy = min(bytes, bvec->bv_len - skip);
+>  
+>  	memcpy_from_page(to, bvec->bv_page, bvec->bv_offset + skip, copy);
+> @@ -493,7 +623,6 @@ static size_t copy_page_from_iter_bvec(struct page *page, size_t offset, size_t
+>  		to += copy;
+>  		bytes -= copy;
+>  	}
+> -	kunmap_atomic(kaddr);
+>  	if (skip == bvec->bv_len) {
+>  		bvec++;
+>  		skip = 0;
+> @@ -505,6 +634,61 @@ static size_t copy_page_from_iter_bvec(struct page *page, size_t offset, size_t
+>  	return wanted;
+>  }
+>  
+> +static size_t copy_page_to_iter_bvec(struct page *page, size_t offset,
+> +					size_t bytes, struct iov_iter *i)
+> +{
+> +	void *kaddr = kmap_atomic(page);
+> +	size_t wanted = copy_to_iter_bvec(kaddr + offset, bytes, i);
+
+missing newline.
+
+> +	kunmap_atomic(kaddr);
+> +	return wanted;
+> +}
+> +
+> +static size_t copy_page_from_iter_bvec(struct page *page, size_t offset,
+> +					size_t bytes, struct iov_iter *i)
+> +{
+> +	void *kaddr = kmap_atomic(page);
+> +	size_t wanted = copy_from_iter_bvec(kaddr + offset, bytes, i);
+
+missing newline.
+
+Thanks,
+
+Mathieu
+
+> +	kunmap_atomic(kaddr);
+> +	return wanted;
+> +}
+> +
+> +static size_t zero_bvec(size_t bytes, struct iov_iter *i)
+> +{
+> +	size_t skip, copy, wanted;
+> +	const struct bio_vec *bvec;
+> +
+> +	if (unlikely(bytes > i->count))
+> +		bytes = i->count;
+> +
+> +	if (unlikely(!bytes))
+> +		return 0;
+> +
+> +	wanted = bytes;
+> +	bvec = i->bvec;
+> +	skip = i->iov_offset;
+> +	copy = min_t(size_t, bytes, bvec->bv_len - skip);
+> +
+> +	memzero_page(bvec->bv_page, skip + bvec->bv_offset, copy);
+> +	skip += copy;
+> +	bytes -= copy;
+> +	while (bytes) {
+> +		bvec++;
+> +		copy = min(bytes, (size_t)bvec->bv_len);
+> +		memzero_page(bvec->bv_page, bvec->bv_offset, copy);
+> +		skip = copy;
+> +		bytes -= copy;
+> +	}
+> +	if (skip == bvec->bv_len) {
+> +		bvec++;
+> +		skip = 0;
+> +	}
+> +	i->count -= wanted - bytes;
+> +	i->nr_segs -= bvec - i->bvec;
+> +	i->bvec = bvec;
+> +	i->iov_offset = skip;
+> +	return wanted - bytes;
+> +}
+> +
+>  static size_t copy_from_user_bvec(struct page *page,
+>  		struct iov_iter *i, unsigned long offset, size_t bytes)
+>  {
+> @@ -668,6 +852,31 @@ size_t copy_page_from_iter(struct page *page, size_t offset, size_t bytes,
+>  }
+>  EXPORT_SYMBOL(copy_page_from_iter);
+>  
+> +size_t copy_to_iter(void *addr, size_t bytes, struct iov_iter *i)
+> +{
+> +	if (i->type & ITER_BVEC)
+> +		return copy_to_iter_bvec(addr, bytes, i);
+> +	else
+> +		return copy_to_iter_iovec(addr, bytes, i);
+> +}
+> +
+> +size_t copy_from_iter(void *addr, size_t bytes, struct iov_iter *i)
+> +{
+> +	if (i->type & ITER_BVEC)
+> +		return copy_from_iter_bvec(addr, bytes, i);
+> +	else
+> +		return copy_from_iter_iovec(addr, bytes, i);
+> +}
+> +
+> +size_t iov_iter_zero(size_t bytes, struct iov_iter *i)
+> +{
+> +	if (i->type & ITER_BVEC) {
+> +		return zero_bvec(bytes, i);
+> +	} else {
+> +		return zero_iovec(bytes, i);
+> +	}
+> +}
+> +
+>  size_t iov_iter_copy_from_user_atomic(struct page *page,
+>  		struct iov_iter *i, unsigned long offset, size_t bytes)
+>  {
+> -- 
+> 2.1.0
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+> 
+
 -- 
-1.9.1
-
-
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
+Key fingerprint: 2A0B 4ED9 15F2 D3FA 45F5  B162 1728 0A97 8118 6ACF
