@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751674AbaJPJlG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 05:41:06 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:36452 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751196AbaJPJlE (ORCPT
+	id S1751531AbaJPJni (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 05:43:38 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:39830 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966AbaJPJng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 05:41:04 -0400
+	Thu, 16 Oct 2014 05:43:36 -0400
+Date: Thu, 16 Oct 2014 11:43:33 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Kirill Tkhai <ktkhai@parallels.com>
+Cc: Kirill Tkhai <tkhai@yandex.ru>, Oleg Nesterov <oleg@redhat.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Vladimir Davydov <vdavydov@parallels.com>
+Subject: Re: [PATCH RFC] sched: Revert delayed_put_task_struct() and fix use
+ after free
+Message-ID: <20141016094333.GJ7369@worktop.fdxtended.com>
+References: <1413376300.24793.55.camel@tkhai>
+ <20141015150641.GA2755@redhat.com>
+ <20141015194044.GA4557@redhat.com>
+ <543EEB1F.3040900@yandex.ru>
+ <20141016075950.GC7369@worktop.fdxtended.com>
+ <1413447404.24793.67.camel@tkhai>
 MIME-Version: 1.0
-Date: Thu, 16 Oct 2014 17:41:01 +0800
-Message-ID: <CAGZxSSSBpCvJt=PFbihTmPneJqiocU8VZSDHpXgkf5dhWZ850Q@mail.gmail.com>
-Subject: [PATCH v2] arm64: mm: use macro instead of if judgement of ZONE_DMA
-From: Yifan Zhang <yifan.zhangm@gmail.com>
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, mark.rutland@arm.com,
-        lauraa@codeaurora.org, ganapatrao.kulkarni@caviumnetworks.com,
-        robh@kernel.org, leif.lindholm@linaro.org, Yalin.Wang@sonymobile.com,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org
-Cc: Yifan Zhang <zhangyf@marvell.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1413447404.24793.67.camel@tkhai>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-if disable CONFIG_ZONE_DMA, ZONE_DMA becomes undefined.
+On Thu, Oct 16, 2014 at 12:16:44PM +0400, Kirill Tkhai wrote:
+> В Чт, 16/10/2014 в 09:59 +0200, Peter Zijlstra пишет:
+> > On Thu, Oct 16, 2014 at 01:46:07AM +0400, Kirill Tkhai wrote:
+> > > > --- x/kernel/sched/fair.c
+> > > > +++ x/kernel/sched/fair.c
+> > > > @@ -1165,7 +1165,7 @@ static void task_numa_compare(struct tas
+> > > >  
+> > > >  	rcu_read_lock();
+> > > >  	cur = ACCESS_ONCE(dst_rq->curr);
+> > > > -	if (cur->pid == 0) /* idle */
+> > > > +	if (is_idle_task(cur) || (curr->flags & PF_EXITING))
+> > > >  		cur = NULL;
+> > > >  
+> > > >  	/*
+> > > > 
+> > > 
+> > > Looks like, we have to use the same fix for task_numa_group().
+> > 
+> > Don't think so, task_numa_group() is only called from task_numa_fault()
+> > which is on 'current' and neither idle and PF_EXITING should be
+> > faulting.
+> 
+> Isn't task_numa_group() fully preemptible?
 
-Signed-off-by: Yifan Zhang <zhangyf@marvell.com>
----
- arch/arm64/mm/init.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+Not seeing how that is relevant.
 
-diff --git a/arch/arm64/mm/init.c b/arch/arm64/mm/init.c
-index 494297c..887ca5d 100644
---- a/arch/arm64/mm/init.c
-+++ b/arch/arm64/mm/init.c
-@@ -82,10 +82,10 @@ static void __init zone_sizes_init(unsigned long
-min, unsigned long max)
-    memset(zone_size, 0, sizeof(zone_size));
+> It seems cpu_rq(cpu)->curr is not always equal to p.
 
-    /* 4GB maximum for 32-bit only capable devices */
--   if (IS_ENABLED(CONFIG_ZONE_DMA)) {
--       max_dma = PFN_DOWN(max_zone_dma_phys());
--       zone_size[ZONE_DMA] = max_dma - min;
--   }
-+#ifdef CONFIG_ZONE_DMA
-+   max_dma = PFN_DOWN(max_zone_dma_phys());
-+   zone_size[ZONE_DMA] = max_dma - min;
-+#endif
-    zone_size[ZONE_NORMAL] = max - max_dma;
+It should be afaict:
 
-    memcpy(zhole_size, zone_size, sizeof(zhole_size));
-@@ -97,10 +97,12 @@ static void __init zone_sizes_init(unsigned long
-min, unsigned long max)
-        if (start >= max)
-            continue;
+ task_numa_fault()
+  p = current;
 
--       if (IS_ENABLED(CONFIG_ZONE_DMA) && start < max_dma) {
-+#ifdef CONFIG_ZONE_DMA
-+       if (start < max_dma) {
-            unsigned long dma_end = min(end, max_dma);
-            zhole_size[ZONE_DMA] -= dma_end - start;
-        }
-+#endif
+  task_numa_group(p, ..);
 
-        if (end > max_dma) {
-            unsigned long normal_end = min(end, max);
---
-1.7.9.5
+And like said, idle tasks and PF_EXITING task should never get (numa)
+faults for they should never be touching userspace.
