@@ -1,114 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751289AbaJPF6J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 01:58:09 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:48343 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210AbaJPF6I (ORCPT
+	id S1751309AbaJPGAg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 02:00:36 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:57006 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994AbaJPGAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 01:58:08 -0400
-Date: Thu, 16 Oct 2014 11:27:59 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@redhat.com>,
-        John Stultz <john.stultz@linaro.org>, Eric Paris <eparis@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 10/10] uprobes: Remove "weak" from function
- declarations
-Message-ID: <20141016055758.GA24804@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20141015165957.4063.66741.stgit@bhelgaas-glaptop2.roam.corp.google.com>
- <20141015170650.4063.2816.stgit@bhelgaas-glaptop2.roam.corp.google.com>
+	Thu, 16 Oct 2014 02:00:35 -0400
+Message-ID: <543F5EFA.7050209@hitachi.com>
+Date: Thu, 16 Oct 2014 15:00:26 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20141015170650.4063.2816.stgit@bhelgaas-glaptop2.roam.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14101605-4790-0000-0000-0000044D7D74
+To: Gioh Kim <gioh.kim@lge.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: How can I check creator of probe point?
+References: <543C8787.7010003@lge.com>
+In-Reply-To: <543C8787.7010003@lge.com>
+Content-Type: text/plain; charset=EUC-KR
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Bjorn Helgaas <bhelgaas@google.com> [2014-10-15 11:06:50]:
+Hello Gioh,
 
-> For the following interfaces:
-> 
->   set_swbp()
->   set_orig_insn()
->   is_swbp_insn()
->   is_trap_insn()
->   uprobe_get_swbp_addr()
->   arch_uprobe_ignore()
->   arch_uprobe_copy_ixol()
-> 
-> kernel/events/uprobes.c provides default definitions explicitly marked
-> "weak".  Some architectures provide their own definitions intended to
-> override the defaults, but the "weak" attribute on the declarations applied
-> to the arch definitions as well, so the linker chose one based on link
-> order (see 10629d711ed7 ("PCI: Remove __weak annotation from
-> pcibios_get_phb_of_node decl")).
-> 
-> Remove the "weak" attribute from the declarations so we always prefer a
-> non-weak definition over the weak one, independent of link order.
-> 
+If you can use ftrace and perftool, you can also put probes on
+caller site. perf-probe will give you source-code level probes.
+Or, just trace kmalloc event with ftrace stacktrace option, which
+gives you caller information so that you can filter your driver
+by postprocessing.
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Thank you,
 
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> CC: Victor Kamensky <victor.kamensky@linaro.org>
-> CC: Oleg Nesterov <oleg@redhat.com>
-> CC: David A. Long <dave.long@linaro.org>
-> CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> CC: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-> ---
->  include/linux/uprobes.h |   14 +++++++-------
->  1 file changed, 7 insertions(+), 7 deletions(-)
+(2014/10/14 11:16), Gioh Kim wrote:
 > 
-> diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-> index 4f844c6b03ee..60beb5dc7977 100644
-> --- a/include/linux/uprobes.h
-> +++ b/include/linux/uprobes.h
-> @@ -98,11 +98,11 @@ struct uprobes_state {
->  	struct xol_area		*xol_area;
+> Hi,
+> 
+> I am trying to find a way to make statistics for memory allocation of my device driver.
+> I want to know how much memory it allocates and how many times it calls kmalloc().
+> 
+> So I am considering to use kprobe but I think it doesn't provide a way to identify who makes the probe point.
+> Can I distinguish kmalloc() calling only from my driver?
+> 
+> For example I think it could be like this:
+> 
+> diff --git a/samples/kprobes/kretprobe_example.c b/samples/kprobes/kretprobe_example.c
+> index 1041b67..5322e0a 100644
+> --- a/samples/kprobes/kretprobe_example.c
+> +++ b/samples/kprobes/kretprobe_example.c
+> @@ -32,6 +32,7 @@ MODULE_PARM_DESC(func, "Function to kretprobe; this module will report the"
+> 
+>  /* per-instance private data */
+>  struct my_data {
+> +       unsigned long signature;
+>         ktime_t entry_stamp;
 >  };
->  
-> -extern int __weak set_swbp(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long vaddr);
-> -extern int __weak set_orig_insn(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long vaddr);
-> -extern bool __weak is_swbp_insn(uprobe_opcode_t *insn);
-> -extern bool __weak is_trap_insn(uprobe_opcode_t *insn);
-> -extern unsigned long __weak uprobe_get_swbp_addr(struct pt_regs *regs);
-> +extern int set_swbp(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long vaddr);
-> +extern int set_orig_insn(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long vaddr);
-> +extern bool is_swbp_insn(uprobe_opcode_t *insn);
-> +extern bool is_trap_insn(uprobe_opcode_t *insn);
-> +extern unsigned long uprobe_get_swbp_addr(struct pt_regs *regs);
->  extern unsigned long uprobe_get_trap_addr(struct pt_regs *regs);
->  extern int uprobe_write_opcode(struct mm_struct *mm, unsigned long vaddr, uprobe_opcode_t);
->  extern int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
-> @@ -128,8 +128,8 @@ extern bool arch_uprobe_xol_was_trapped(struct task_struct *tsk);
->  extern int  arch_uprobe_exception_notify(struct notifier_block *self, unsigned long val, void *data);
->  extern void arch_uprobe_abort_xol(struct arch_uprobe *aup, struct pt_regs *regs);
->  extern unsigned long arch_uretprobe_hijack_return_addr(unsigned long trampoline_vaddr, struct pt_regs *regs);
-> -extern bool __weak arch_uprobe_ignore(struct arch_uprobe *aup, struct pt_regs *regs);
-> -extern void __weak arch_uprobe_copy_ixol(struct page *page, unsigned long vaddr,
-> +extern bool arch_uprobe_ignore(struct arch_uprobe *aup, struct pt_regs *regs);
-> +extern void arch_uprobe_copy_ixol(struct page *page, unsigned long vaddr,
->  					 void *src, unsigned long len);
->  #else /* !CONFIG_UPROBES */
->  struct uprobes_state {
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> @@ -43,8 +44,10 @@ static int entry_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
+>         if (!current->mm)
+>                 return 1;       /* Skip kernel threads */
+> 
+> -       data = (struct my_data *)ri->data;
+> -       data->entry_stamp = ktime_get();
+> +       if (signature == 0xabcdabcd) {
+> +               data = (struct my_data *)ri->data;
+> +               data->entry_stamp = ktime_get();
+> +       }
+>         return 0;
+>  }
+> 
+> @@ -60,10 +63,12 @@ static int ret_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
+>         s64 delta;
+>         ktime_t now;
+> 
+> -       now = ktime_get();
+> -       delta = ktime_to_ns(ktime_sub(now, data->entry_stamp));
+> -       printk(KERN_INFO "%s returned %d and took %lld ns to execute\n",
+> -                       func_name, retval, (long long)delta);
+> +       if (signature == 0xabcdabcd) {
+> +               now = ktime_get();
+> +               delta = ktime_to_ns(ktime_sub(now, data->entry_stamp));
+> +               printk(KERN_INFO "%s returned %d and took %lld ns to execute\n",
+> +                      func_name, retval, (long long)delta);
+> +       }
+>         return 0;
+>  }
+> 
+> 
+
 
 -- 
-Thanks and Regards
-Srikar Dronamraju
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
