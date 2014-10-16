@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752866AbaJPK0n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 06:26:43 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37354 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752577AbaJPKUT (ORCPT
+	id S1752882AbaJPK1A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 06:27:00 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58408 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751633AbaJPK05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 06:20:19 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
-        lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH v2 42/53] dmaengine: pch-dma: Rename device_control
-Date: Thu, 16 Oct 2014 12:17:41 +0200
-Message-Id: <1413454672-27400-43-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
+	Thu, 16 Oct 2014 06:26:57 -0400
+Date: Thu, 16 Oct 2014 12:26:36 +0200
+From: Mark Brown <broonie@kernel.org>
+To: addy ke <addy.ke@rock-chips.com>
+Cc: heiko@sntech.de, dianders@chromium.org, grant.likely@linaro.org,
+        robh+dt@kernel.org, amstan@google.com, sonnyrao@google.com,
+        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, devicetree@vger.kernel.org,
+        olof@lixom.net, hj@rock-chips.com, kever.yang@rock-chips.com,
+        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
+        yzq@rock-chips.com, zhenfu.fang@rock-chips.com, cf@rock-chips.com,
+        zhangqing@rock-chips.com, hl@rock-chips.com, wei.luo@rock-chips.com
+Message-ID: <20141016102636.GE2200@sirena.org.uk>
+References: <1413372311-4203-1-git-send-email-addy.ke@rock-chips.com>
+ <1413372349-4254-1-git-send-email-addy.ke@rock-chips.com>
+ <20141015130452.GD27755@sirena.org.uk>
+ <543F8CD2.1010302@rock-chips.com>
+ <20141016093410.GB2200@sirena.org.uk>
+ <543F96DB.40403@rock-chips.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3O1VwFp74L81IIeR"
+Content-Disposition: inline
+In-Reply-To: <543F96DB.40403@rock-chips.com>
+X-Cookie: Is this really happening?
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 62.156.150.204
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] spi/rockchip: fix bug that case spi can't go as fast
+ as slave request
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename the device_control callback of the Intel PCH DMA driver to terminate_all
-since it's all it's really doing. That will eventually be used to retrieve
-slave capabilities.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- drivers/dma/pch_dma.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+--3O1VwFp74L81IIeR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
-index 9f9ca9fe5ce6..d03b9c93ccab 100644
---- a/drivers/dma/pch_dma.c
-+++ b/drivers/dma/pch_dma.c
-@@ -665,16 +665,12 @@ err_desc_get:
- 	return NULL;
- }
- 
--static int pd_device_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--			     unsigned long arg)
-+static int pd_device_terminate_all(struct dma_chan *chan)
- {
- 	struct pch_dma_chan *pd_chan = to_pd_chan(chan);
- 	struct pch_dma_desc *desc, *_d;
- 	LIST_HEAD(list);
- 
--	if (cmd != DMA_TERMINATE_ALL)
--		return -ENXIO;
--
- 	spin_lock_irq(&pd_chan->lock);
- 
- 	pdc_set_mode(&pd_chan->chan, DMA_CTL0_DISABLE);
-@@ -932,7 +928,7 @@ static int pch_dma_probe(struct pci_dev *pdev,
- 	pd->dma.device_tx_status = pd_tx_status;
- 	pd->dma.device_issue_pending = pd_issue_pending;
- 	pd->dma.device_prep_slave_sg = pd_prep_slave_sg;
--	pd->dma.device_control = pd_device_control;
-+	pd->dma.device_terminate_all = pd_device_terminate_all;
- 
- 	err = dma_async_device_register(&pd->dma);
- 	if (err) {
--- 
-2.1.1
+On Thu, Oct 16, 2014 at 05:58:51PM +0800, addy ke wrote:
 
+Please fix your mailer to word wrap within paragraphs.
+
+> On 2014/10/16 17:34, Mark Brown wrote:
+
+> >> If we set the rate unconditionally here, clk_set_rate() will be executed in each spi transfer.
+
+> > Is that really such a high cost?
+
+> Not high cost, but  I think if the default spi_clk is enough, we do not need to set spi_clk again.
+
+> Maybe we can only set spi_clk as (2 * MAX_SCLK_OUT) in probe().
+
+It's not too bad to do it where it is, it just seems better to be
+simpler.
+
+--3O1VwFp74L81IIeR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUP51bAAoJECTWi3JdVIfQsqUIAIBGJkL6Jkve/Hu047z7xaaz
+iNtIkYoYq8em30yzbYyH2YKXog+D4HRng6bR1rI/Pil0bfPliYMFiHJBz3l3XfrO
+TgNcyZE3Lm1CWOOuADLmmvtzz+z70tSXJRVPPplFPXU9OQrZBdzo3ZRSMMOyzXfl
+UFMIndIcr0A6hDkPNsldHLrpkVitI7ceZjG86nDu/uPtqQRj1Nzl0J67w5EzmNLN
+oByideJoYAv0oYWnUHe/EPpRQz7JYlilZ5DoCpNUP0HKWeYhtgU51r37vzB5glg0
+SyUHKqp94ysx3ZDsUMm9pSUvQz3y8KJxj8wiszqkbnw4Nohz2f+B3+6UpMoYQn0=
+=9p8j
+-----END PGP SIGNATURE-----
+
+--3O1VwFp74L81IIeR--
