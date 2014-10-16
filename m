@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751509AbaJPL3K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 07:29:10 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:49663 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750765AbaJPL3I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 07:29:08 -0400
-Date: Thu, 16 Oct 2014 13:29:10 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Peter Zijlstra <peterz@infradead.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Cc: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Erik Bosman <ebn310@few.vu.nl>
-Subject: Re: [RFC 1/5] x86: Clean up cr4 manipulation
-Message-ID: <20141016112910.GC25025@nazgul.tnic>
-References: <cover.1413323611.git.luto@amacapital.net>
- <724658a527c0572dde1a400a5e90b85f45421201.1413323611.git.luto@amacapital.net>
- <20141016081633.GG7369@worktop.fdxtended.com>
- <20141016111858.GB25025@nazgul.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20141016111858.GB25025@nazgul.tnic>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751872AbaJPLhQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 07:37:16 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:51048 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765AbaJPLhP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 07:37:15 -0400
+From: James Geboski <jgeboski@gmail.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] cpufreq: allow powersave governor as the default without expert mode
+Date: Thu, 16 Oct 2014 07:37:11 -0400
+Message-Id: <1413459431-12355-1-git-send-email-jgeboski@gmail.com>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <1413322689-6195-1-git-send-email-jgeboski@gmail.com>
+References: <1413322689-6195-1-git-send-email-jgeboski@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 01:18:58PM +0200, Borislav Petkov wrote:
-> On Thu, Oct 16, 2014 at 10:16:33AM +0200, Peter Zijlstra wrote:
-> > On Tue, Oct 14, 2014 at 03:57:35PM -0700, Andy Lutomirski wrote:
-> > > +/* Set in this cpu's CR4. */
-> > > +static inline void cr4_set(unsigned long mask)
-> > > +{
-> > > +	unsigned long cr4;
-> > > +
-> > > +	cr4 = read_cr4();
-> > > +	cr4 |= mask;
-> > > +	write_cr4(cr4);
-> > > +}
-> > > +
-> > > +/* Clear in this cpu's CR4. */
-> > > +static inline void cr4_clear(unsigned long mask)
-> > > +{
-> > > +	unsigned long cr4;
-> > > +
-> > > +	cr4 = read_cr4();
-> > > +	cr4 &= ~mask;
-> > > +	write_cr4(cr4);
-> > > +}
+The intel_pstate driver only supports the performance and the powersave
+governors. With the performance governor ensuring the highest possible
+performance settings, userspace tools fail to make any lasting changes.
+In order to allow userspace tools to make modifications to the settings,
+the powersave governor must be in use. This makes having the powersave
+governor as the default convenient for systems where the intel_pstate
+driver is being employed. Having to enable expert mode in the kernel
+configuration is just a headache for such a trivial task.
 
-Btw, on a related note, we probably should check whether the bits we
-want to set/clear are already set/cleared and then save us the CR4
-write.
+This patch applies to all kernel versions 2.6.38 or greater after the
+migration from CONFIG_EMBEDDED to CONFIG_EXPERT (6a108a14fa35). Most
+importantly, this applies to kernel versions 3.9 or greater when the
+intel_pstate driver was introduced.
 
-It probably won't be the case all that much but still...
+Signed-off-by: James Geboski <jgeboski@gmail.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ChangeLog v2:
+  - Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/cpufreq/Kconfig | 1 -
+ 1 file changed, 1 deletion(-)
 
+diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
+index 3489f8f..73df7db 100644
+--- a/drivers/cpufreq/Kconfig
++++ b/drivers/cpufreq/Kconfig
+@@ -63,7 +63,6 @@ config CPU_FREQ_DEFAULT_GOV_PERFORMANCE
+ 
+ config CPU_FREQ_DEFAULT_GOV_POWERSAVE
+ 	bool "powersave"
+-	depends on EXPERT
+ 	select CPU_FREQ_GOV_POWERSAVE
+ 	help
+ 	  Use the CPUFreq governor 'powersave' as default. This sets
 -- 
-Regards/Gruss,
-    Boris.
---
+2.1.2
+
