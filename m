@@ -1,37 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752789AbaJPUID (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 16:08:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59890 "EHLO mx1.redhat.com"
+	id S1752480AbaJPULy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 16:11:54 -0400
+Received: from smtp2.it.da.ut.ee ([193.40.5.67]:41044 "EHLO smtp2.it.da.ut.ee"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751637AbaJPUIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 16:08:00 -0400
-Date: Thu, 16 Oct 2014 16:07:42 -0400 (EDT)
-Message-Id: <20141016.160742.1639247937393238792.davem@redhat.com>
-To: mroos@linux.ee
-Cc: iamjoonsoo.kim@lge.com, linux-kernel@vger.kernel.org, cl@linux.com,
-        penberg@kernel.org, rientjes@google.com, akpm@linux-foundation.org,
-        linux-mm@kvack.org, sparclinux@vger.kernel.org
+	id S1751539AbaJPULw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 16:11:52 -0400
+Date: Thu, 16 Oct 2014 23:11:49 +0300 (EEST)
+From: Meelis Roos <mroos@linux.ee>
+To: David Miller <davem@davemloft.net>
+cc: iamjoonsoo.kim@lge.com, Linux Kernel list <linux-kernel@vger.kernel.org>,
+        cl@linux.com, penberg@kernel.org, rientjes@google.com,
+        akpm@linux-foundation.org, linux-mm@kvack.org,
+        sparclinux@vger.kernel.org
 Subject: Re: unaligned accesses in SLAB etc.
-From: David Miller <davem@redhat.com>
-In-Reply-To: <alpine.LRH.2.11.1410160956090.13273@adalberg.ut.ee>
-References: <alpine.LRH.2.11.1410150012001.11850@adalberg.ut.ee>
-	<20141014.173246.921084057467310731.davem@davemloft.net>
-	<alpine.LRH.2.11.1410160956090.13273@adalberg.ut.ee>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.LRH.2.11.1410161021130.5119@adalberg.ut.ee>
+Message-ID: <alpine.LRH.2.11.1410162309560.19924@adalberg.ut.ee>
+References: <alpine.LRH.2.11.1410151059520.8050@adalberg.ut.ee> <20141015.143624.941838991598108211.davem@davemloft.net> <alpine.LRH.2.11.1410152310080.11974@adalberg.ut.ee> <20141015.231154.1804074463934900124.davem@davemloft.net>
+ <alpine.LRH.2.11.1410161021130.5119@adalberg.ut.ee>
+User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Meelis Roos <mroos@linux.ee>
-Date: Thu, 16 Oct 2014 10:02:57 +0300 (EEST)
+> > Hopefully, this should be a simply matter of doing a complete build
+> > with gcc-4.9, then removing the object file we want to selectively
+> > build with the older compiler and then going:
+> > 
+> > 	make CC="gcc-4.6" arch/sparc/mm/init_64.o
+> > 
+> > then relinking with plain 'make'.
+> > 
+> > If the build system rebuilds the object file on you when you try
+> > to relink the final kernel image, we'll have to do some of this
+> > by hand to make the test.
+> 
+> Unfortunately it starts a full rebuild with plain make after compiling 
+> some files with gcc-4.6 - detects CC change?
 
-> scripts/Makefile.build:352: recipe for target 'sound/modules.order' failed
-> make[1]: *** [sound/modules.order] Bus error
-> make[1]: *** Deleting file 'sound/modules.order'
-> Makefile:929: recipe for target 'sound' failed
+Figured out from make V=1 how to call gcc-4.6 directly, so far my 
+bisection shows that it one or probably more of arch/sparc/kernel/*.c 
+but probably more than 1 - 2 halfs of it both failed. Still bisecting.
 
-I just reproduced this on my Sun Blade 2500, so it can trigger on UltraSPARC-IIIi
-systems too.
+-- 
+Meelis Roos (mroos@linux.ee)
