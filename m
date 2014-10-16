@@ -1,61 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752409AbaJPTMu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 15:12:50 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:37855 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751798AbaJPTMt (ORCPT
+	id S1752513AbaJPTOz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 15:14:55 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:40711 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751309AbaJPTOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 15:12:49 -0400
-Message-ID: <544018AF.5090507@hurleysoftware.com>
-Date: Thu, 16 Oct 2014 15:12:47 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ia64: Pin controlling tty for unaligned fault message
-References: <1413486653-26010-1-git-send-email-peter@hurleysoftware.com>
-In-Reply-To: <1413486653-26010-1-git-send-email-peter@hurleysoftware.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+	Thu, 16 Oct 2014 15:14:54 -0400
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: hare@suse.de, JBottomley@parallels.com
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        julia.lawall@lip6.fr,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH] aic7xxx: replace kmalloc/memset by kzalloc
+Date: Thu, 16 Oct 2014 21:14:38 +0200
+Message-Id: <1413486878-375-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2014 03:10 PM, Peter Hurley wrote:
-> Prevent destruction of the controlling tty before tty_write_message()
-> can determine if the tty is safe to use.
+This replaces kmalloc + memset by a call to kzalloc.
 
-This does not make tty_write_message() bulletproof from concurrent
-teardown, but that's on my todo list.
+This also fixes one checkpatch.pl issue in the process.
 
+This improvement was suggested by "make coccicheck"
 
-> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-> ---
->  arch/ia64/kernel/unaligned.c | 7 +++++--
->  1 file changed, 5 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/ia64/kernel/unaligned.c b/arch/ia64/kernel/unaligned.c
-> index 622772b..e7ae608 100644
-> --- a/arch/ia64/kernel/unaligned.c
-> +++ b/arch/ia64/kernel/unaligned.c
-> @@ -1336,8 +1336,11 @@ ia64_handle_unaligned (unsigned long ifa, struct pt_regs *regs)
->  			 * Don't call tty_write_message() if we're in the kernel; we might
->  			 * be holding locks...
->  			 */
-> -			if (user_mode(regs))
-> -				tty_write_message(current->signal->tty, buf);
-> +			if (user_mode(regs)) {
-> +				struct tty_struct *tty = get_current_tty();
-> +				tty_write_message(tty, buf);
-> +				tty_kref_put(tty);
-> +			}
->  			buf[len-1] = '\0';	/* drop '\r' */
->  			/* watch for command names containing %s */
->  			printk(KERN_WARNING "%s", buf);
-> 
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+---
+ drivers/scsi/aic7xxx/aic79xx_core.c |  3 +--
+ drivers/scsi/aic7xxx/aic79xx_osm.c  |  3 +--
+ drivers/scsi/aic7xxx/aic7xxx_core.c | 10 ++++------
+ drivers/scsi/aic7xxx/aic7xxx_osm.c  |  3 +--
+ 4 files changed, 7 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/scsi/aic7xxx/aic79xx_core.c b/drivers/scsi/aic7xxx/aic79xx_core.c
+index 0bcacf71aef8..9ce383c884c0 100644
+--- a/drivers/scsi/aic7xxx/aic79xx_core.c
++++ b/drivers/scsi/aic7xxx/aic79xx_core.c
+@@ -10437,14 +10437,13 @@ ahd_handle_en_lun(struct ahd_softc *ahd, struct cam_sim *sim, union ccb *ccb)
+ 				return;
+ 			}
+ 		}
+-		lstate = kmalloc(sizeof(*lstate), GFP_ATOMIC);
++		lstate = kzalloc(sizeof(*lstate), GFP_ATOMIC);
+ 		if (lstate == NULL) {
+ 			xpt_print_path(ccb->ccb_h.path);
+ 			printk("Couldn't allocate lstate\n");
+ 			ccb->ccb_h.status = CAM_RESRC_UNAVAIL;
+ 			return;
+ 		}
+-		memset(lstate, 0, sizeof(*lstate));
+ 		status = xpt_create_path(&lstate->path, /*periph*/NULL,
+ 					 xpt_path_path_id(ccb->ccb_h.path),
+ 					 xpt_path_target_id(ccb->ccb_h.path),
+diff --git a/drivers/scsi/aic7xxx/aic79xx_osm.c b/drivers/scsi/aic7xxx/aic79xx_osm.c
+index ed333669a7dc..67a01e804195 100644
+--- a/drivers/scsi/aic7xxx/aic79xx_osm.c
++++ b/drivers/scsi/aic7xxx/aic79xx_osm.c
+@@ -1325,10 +1325,9 @@ int
+ ahd_platform_alloc(struct ahd_softc *ahd, void *platform_arg)
+ {
+ 	ahd->platform_data =
+-	    kmalloc(sizeof(struct ahd_platform_data), GFP_ATOMIC);
++	    kzalloc(sizeof(struct ahd_platform_data), GFP_ATOMIC);
+ 	if (ahd->platform_data == NULL)
+ 		return (ENOMEM);
+-	memset(ahd->platform_data, 0, sizeof(struct ahd_platform_data));
+ 	ahd->platform_data->irq = AHD_LINUX_NOIRQ;
+ 	ahd_lockinit(ahd);
+ 	ahd->seltime = (aic79xx_seltime & 0x3) << 4;
+diff --git a/drivers/scsi/aic7xxx/aic7xxx_core.c b/drivers/scsi/aic7xxx/aic7xxx_core.c
+index 10172a3af1b9..c4829d84b335 100644
+--- a/drivers/scsi/aic7xxx/aic7xxx_core.c
++++ b/drivers/scsi/aic7xxx/aic7xxx_core.c
+@@ -4464,10 +4464,9 @@ ahc_softc_init(struct ahc_softc *ahc)
+ 	ahc->pause = ahc->unpause | PAUSE; 
+ 	/* XXX The shared scb data stuff should be deprecated */
+ 	if (ahc->scb_data == NULL) {
+-		ahc->scb_data = kmalloc(sizeof(*ahc->scb_data), GFP_ATOMIC);
++		ahc->scb_data = kzalloc(sizeof(*ahc->scb_data), GFP_ATOMIC);
+ 		if (ahc->scb_data == NULL)
+ 			return (ENOMEM);
+-		memset(ahc->scb_data, 0, sizeof(*ahc->scb_data));
+ 	}
+ 
+ 	return (0);
+@@ -4780,10 +4779,10 @@ ahc_init_scbdata(struct ahc_softc *ahc)
+ 	SLIST_INIT(&scb_data->sg_maps);
+ 
+ 	/* Allocate SCB resources */
+-	scb_data->scbarray = kmalloc(sizeof(struct scb) * AHC_SCB_MAX_ALLOC, GFP_ATOMIC);
++	scb_data->scbarray = kzalloc(sizeof(struct scb) * AHC_SCB_MAX_ALLOC,
++				GFP_ATOMIC);
+ 	if (scb_data->scbarray == NULL)
+ 		return (ENOMEM);
+-	memset(scb_data->scbarray, 0, sizeof(struct scb) * AHC_SCB_MAX_ALLOC);
+ 
+ 	/* Determine the number of hardware SCBs and initialize them */
+ 
+@@ -7558,14 +7557,13 @@ ahc_handle_en_lun(struct ahc_softc *ahc, struct cam_sim *sim, union ccb *ccb)
+ 				return;
+ 			}
+ 		}
+-		lstate = kmalloc(sizeof(*lstate), GFP_ATOMIC);
++		lstate = kzalloc(sizeof(*lstate), GFP_ATOMIC);
+ 		if (lstate == NULL) {
+ 			xpt_print_path(ccb->ccb_h.path);
+ 			printk("Couldn't allocate lstate\n");
+ 			ccb->ccb_h.status = CAM_RESRC_UNAVAIL;
+ 			return;
+ 		}
+-		memset(lstate, 0, sizeof(*lstate));
+ 		status = xpt_create_path(&lstate->path, /*periph*/NULL,
+ 					 xpt_path_path_id(ccb->ccb_h.path),
+ 					 xpt_path_target_id(ccb->ccb_h.path),
+diff --git a/drivers/scsi/aic7xxx/aic7xxx_osm.c b/drivers/scsi/aic7xxx/aic7xxx_osm.c
+index d2c9bf39033d..350701407ecd 100644
+--- a/drivers/scsi/aic7xxx/aic7xxx_osm.c
++++ b/drivers/scsi/aic7xxx/aic7xxx_osm.c
+@@ -1213,10 +1213,9 @@ ahc_platform_alloc(struct ahc_softc *ahc, void *platform_arg)
+ {
+ 
+ 	ahc->platform_data =
+-	    kmalloc(sizeof(struct ahc_platform_data), GFP_ATOMIC);
++	    kzalloc(sizeof(struct ahc_platform_data), GFP_ATOMIC);
+ 	if (ahc->platform_data == NULL)
+ 		return (ENOMEM);
+-	memset(ahc->platform_data, 0, sizeof(struct ahc_platform_data));
+ 	ahc->platform_data->irq = AHC_LINUX_NOIRQ;
+ 	ahc_lockinit(ahc);
+ 	ahc->seltime = (aic7xxx_seltime & 0x3) << 4;
+-- 
+1.9.1
 
