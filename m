@@ -1,80 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751287AbaJPI4A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 04:56:00 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:48850 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816AbaJPIz5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 04:55:57 -0400
-Message-ID: <543F8812.2020002@codeaurora.org>
-Date: Thu, 16 Oct 2014 01:55:46 -0700
-From: Laura Abbott <lauraa@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751465AbaJPI5u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 04:57:50 -0400
+Received: from sauhun.de ([89.238.76.85]:44954 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751199AbaJPI5s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 04:57:48 -0400
+Date: Thu, 16 Oct 2014 10:58:35 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Andreas Werner <andreas.werner@men.de>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, johannes.thumshirn@men.de
+Subject: Re: [PATCH 1/2] drivers/misc/eeprom/men_eeprod: Introduce MEN Board
+ Information EEPROM driver
+Message-ID: <20141016085835.GA1273@katana>
+References: <cover.1413416105.git.andreas.werner@men.de>
+ <d169930cfe45d4c05c79f7dd00471d732441529d.1413416105.git.andreas.werner@men.de>
 MIME-Version: 1.0
-To: Hui Zhu <zhuhui@xiaomi.com>, rjw@rjwysocki.net, len.brown@intel.com,
-        pavel@ucw.cz, m.szyprowski@samsung.com, akpm@linux-foundation.org,
-        mina86@mina86.com, aneesh.kumar@linux.vnet.ibm.com,
-        iamjoonsoo.kim@lge.com, hannes@cmpxchg.org, riel@redhat.com,
-        mgorman@suse.de, minchan@kernel.org, nasa4836@gmail.com,
-        ddstreet@ieee.org, hughd@google.com, mingo@kernel.org,
-        rientjes@google.com, peterz@infradead.org, keescook@chromium.org,
-        atomlin@redhat.com, raistlin@linux.it, axboe@fb.com,
-        paulmck@linux.vnet.ibm.com, kirill.shutemov@linux.intel.com,
-        n-horiguchi@ah.jp.nec.com, k.khlebnikov@samsung.com,
-        msalter@redhat.com, deller@gmx.de, tangchen@cn.fujitsu.com,
-        ben@decadent.org.uk, akinobu.mita@gmail.com, vbabka@suse.cz,
-        sasha.levin@oracle.com, vdavydov@parallels.com, suleiman@google.com
-CC: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 0/4] (CMA_AGGRESSIVE) Make CMA memory be more aggressive
- about allocation
-References: <1413430551-22392-1-git-send-email-zhuhui@xiaomi.com>
-In-Reply-To: <1413430551-22392-1-git-send-email-zhuhui@xiaomi.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YiEDa0DAkWCtVeE4"
+Content-Disposition: inline
+In-Reply-To: <d169930cfe45d4c05c79f7dd00471d732441529d.1413416105.git.andreas.werner@men.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2014 8:35 PM, Hui Zhu wrote:
-> In fallbacks of page_alloc.c, MIGRATE_CMA is the fallback of
-> MIGRATE_MOVABLE.
-> MIGRATE_MOVABLE will use MIGRATE_CMA when it doesn't have a page in
-> order that Linux kernel want.
->
-> If a system that has a lot of user space program is running, for
-> instance, an Android board, most of memory is in MIGRATE_MOVABLE and
-> allocated.  Before function __rmqueue_fallback get memory from
-> MIGRATE_CMA, the oom_killer will kill a task to release memory when
-> kernel want get MIGRATE_UNMOVABLE memory because fallbacks of
-> MIGRATE_UNMOVABLE are MIGRATE_RECLAIMABLE and MIGRATE_MOVABLE.
-> This status is odd.  The MIGRATE_CMA has a lot free memory but Linux
-> kernel kill some tasks to release memory.
->
-> This patch series adds a new function CMA_AGGRESSIVE to make CMA memory
-> be more aggressive about allocation.
-> If function CMA_AGGRESSIVE is available, when Linux kernel call function
-> __rmqueue try to get pages from MIGRATE_MOVABLE and conditions allow,
-> MIGRATE_CMA will be allocated as MIGRATE_MOVABLE first.  If MIGRATE_CMA
-> doesn't have enough pages for allocation, go back to allocate memory from
-> MIGRATE_MOVABLE.
-> Then the memory of MIGRATE_MOVABLE can be kept for MIGRATE_UNMOVABLE and
-> MIGRATE_RECLAIMABLE which doesn't have fallback MIGRATE_CMA.
->
 
-It's good to see another proposal to fix CMA utilization. Do you have
-any data about the success rate of CMA contiguous allocation after
-this patch series? I played around with a similar approach of using
-CMA for MIGRATE_MOVABLE allocations and found that although utilization
-did increase, contiguous allocations failed at a higher rate and were
-much slower. I see what this series is trying to do with avoiding
-allocation from CMA pages when a contiguous allocation is progress.
-My concern is that there would still be problems with contiguous
-allocation after all the MIGRATE_MOVABLE fallback has happened.
+--YiEDa0DAkWCtVeE4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-Laura
+On Thu, Oct 16, 2014 at 10:15:08AM +0200, Andreas Werner wrote:
+> Added driver to support the MEN Board Information EEPROM.
+> The driver exports the production information as read only sysfs
+> entries, as well as a user section which is read/write accessible.
+>=20
+> Tested on PPC QorIQ and Intel Atom E680.
+>=20
+> Tested-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+> Signed-off-by: Andreas Werner <andreas.werner@men.de>
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+I guess this is just a standard EEPROM with a well defined layout?
+Why don't you want to use the standard driver then and parse the thing
+in userspace?
+
+Consider how bloated the sysfs-ABI might get if every vendor who uses an
+eeprom wants to expose the data this way?
+
+> +struct eeprom_data {
+> +	uint8_t eeprod_id;
+> +
+> +	uint8_t revision[3];
+> +	uint32_t serialnr;
+> +	uint8_t board_model;
+> +	char hw_name[6];
+> +
+> +	uint8_t reserved;
+> +
+> +	__be16 prod_date;
+> +	__be16 rep_date;
+> +
+> +	uint8_t reserved2[4];
+> +};
+
+And what if the compiler reorders?
+
+
+--YiEDa0DAkWCtVeE4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUP4i7AAoJEBQN5MwUoCm2ajYP/jA4GWsaAPyluwHcUWY0oOqI
+dhmJeltzXUFnleDM/PhpS9FxFnIZ8Y5clYDDcbEOKlxAj9gTaV4p80oZc+EJevPg
+f1EIhOQ00t1TOH7GMBhxqu3RruOCPYPuvlpPDkw8qZbniSi4x4C14VZ7Pex6vNh0
+kGW+KC7QuCvnDxgbkyLFrWVIOAkC/9W0agt7afhKqw5N76hMVGolYW3W+bhExzw8
+oe6SGrKWOjqmxZqRHom9AaTX8Aqin9/YLYrI96U02DNeNIEZXPbutG1HL2Iz6Q55
+poPyS1BDgaaYBukDf7Wfl6ooP91rHUkwWGAMTjTKls2SnMaKsP8wvV1n4MHd/xAE
+gTa3QyECN4isWG5TIo4XHRkLVNRIl2PKZT5/mTC8z3ORq+OM2d4dSQsrdfMfrTXH
+eoUglKHA0EArk0NSeF7403zCJDnVJ4Uklurs2q3gNCfxzehy4W+HzcdrZShvSMlE
+BpYsHgEuvBEstXqgrUSTr31UMDMt6DfYQdSq/fRg0JJ6T5B18y2nLSH+ZzlgB9yx
+gOeRlKdrWS5m68KRLfCxPGlmDvpnEy03bxC7n7pMy/bWoUi3XxV73qdfYQVisFR2
+zAI9/PExQH/3Jja9VEh90vz2vaGNcwu84eBArVNvHaAT3FT93OkZeJLd56j989+k
+Z1eqtDi7MCj2qgSGnNOo
+=0lvX
+-----END PGP SIGNATURE-----
+
+--YiEDa0DAkWCtVeE4--
