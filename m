@@ -1,103 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752554AbaJPRMx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 13:12:53 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:49410 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752321AbaJPRMP (ORCPT
+	id S1752600AbaJPRNP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 13:13:15 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:34381 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752558AbaJPRNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 13:12:15 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>
-Subject: [PATCH RFC v2 6/8] pinctrl: pinconf-generic: Infer map type from DT property
-Date: Thu, 16 Oct 2014 10:11:33 -0700
-Message-Id: <1413479495-14206-7-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 2.1.2.1.g5e69ed6
-In-Reply-To: <1413479495-14206-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1413479495-14206-1-git-send-email-soren.brinkmann@xilinx.com>
+	Thu, 16 Oct 2014 13:13:13 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Torsten Duwe <duwe@lst.de>, "Theodore Ts'o" <tytso@mit.edu>,
+        Jason Cooper <jason@lakedaemon.net>, Amit Shah <amit.shah@redhat.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Kees Cook <keescook@chromium.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 3v] char: hw_random: core.c:  Changed from using strncat to strlcat
+Date: Thu, 16 Oct 2014 19:15:22 +0200
+Message-Id: <1413479722-29247-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the new 'groups' property, the DT parser can infer the map type
-from the fact whether 'pins' or 'groups' is used to specify the pin
-group to work on.
-To maintain backwards compatibitliy with current usage of the DT
-binding, this is only done when an invalid map type is passed to the
-parsing function.
+The buf is used to hold the list of hwrng devices registered.
+The old code ensures we don't walk off the end of buf as we
+fill it, but it's unnecessarily complicated and thus difficult
+to maintain. Simplify it by using strlcat.
+We also ensure the string within buf is NULL terminated
+so the final strlen is ok.
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/pinctrl/pinconf-generic.c       | 17 ++++++++++++++---
- include/linux/pinctrl/pinconf-generic.h |  7 +++++++
- 2 files changed, 21 insertions(+), 3 deletions(-)
+ drivers/char/hw_random/core.c |   12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/pinctrl/pinconf-generic.c b/drivers/pinctrl/pinconf-generic.c
-index 17ac8f00e16b..38b21e6a36a8 100644
---- a/drivers/pinctrl/pinconf-generic.c
-+++ b/drivers/pinctrl/pinconf-generic.c
-@@ -266,6 +266,7 @@ int pinconf_generic_dt_subnode_to_map(struct pinctrl_dev *pctldev,
- 	unsigned reserve;
- 	struct property *prop;
- 	const char *group;
-+	const char *dt_pin_specifier = "pins";
+diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
+index aa30a25..1500cfd 100644
+--- a/drivers/char/hw_random/core.c
++++ b/drivers/char/hw_random/core.c
+@@ -281,7 +281,6 @@ static ssize_t hwrng_attr_available_show(struct device *dev,
+ 					 char *buf)
+ {
+ 	int err;
+-	ssize_t ret = 0;
+ 	struct hwrng *rng;
  
- 	ret = of_property_read_string(np, "function", &function);
- 	if (ret < 0) {
-@@ -286,10 +287,20 @@ int pinconf_generic_dt_subnode_to_map(struct pinctrl_dev *pctldev,
- 		reserve++;
- 	if (num_configs)
- 		reserve++;
-+
- 	ret = of_property_count_strings(np, "pins");
- 	if (ret < 0) {
--		dev_err(dev, "could not parse property pins\n");
--		goto exit;
-+		ret = of_property_count_strings(np, "groups");
-+		if (ret < 0) {
-+			dev_err(dev, "could not parse property pins/groups\n");
-+			goto exit;
-+		}
-+		if (type == PIN_MAP_TYPE_INVALID)
-+			type = PIN_MAP_TYPE_CONFIGS_GROUP;
-+		dt_pin_specifier = "groups";
-+	} else {
-+		if (type == PIN_MAP_TYPE_INVALID)
-+			type = PIN_MAP_TYPE_CONFIGS_PIN;
+ 	err = mutex_lock_interruptible(&rng_mutex);
+@@ -289,16 +288,13 @@ static ssize_t hwrng_attr_available_show(struct device *dev,
+ 		return -ERESTARTSYS;
+ 	buf[0] = '\0';
+ 	list_for_each_entry(rng, &rng_list, list) {
+-		strncat(buf, rng->name, PAGE_SIZE - ret - 1);
+-		ret += strlen(rng->name);
+-		strncat(buf, " ", PAGE_SIZE - ret - 1);
+-		ret++;
++		strlcat(buf, rng->name, PAGE_SIZE);
++		strlcat(buf, " ", PAGE_SIZE);
  	}
- 	reserve *= ret;
+-	strncat(buf, "\n", PAGE_SIZE - ret - 1);
+-	ret++;
++	strlcat(buf, "\n", PAGE_SIZE);
+ 	mutex_unlock(&rng_mutex);
  
-@@ -298,7 +309,7 @@ int pinconf_generic_dt_subnode_to_map(struct pinctrl_dev *pctldev,
- 	if (ret < 0)
- 		goto exit;
- 
--	of_property_for_each_string(np, "pins", prop, group) {
-+	of_property_for_each_string(np, dt_pin_specifier, prop, group) {
- 		if (function) {
- 			ret = pinctrl_utils_add_map_mux(pctldev, map,
- 					reserved_maps, num_maps, group,
-diff --git a/include/linux/pinctrl/pinconf-generic.h b/include/linux/pinctrl/pinconf-generic.h
-index dd1d3251fb93..5a13bdf9dfc7 100644
---- a/include/linux/pinctrl/pinconf-generic.h
-+++ b/include/linux/pinctrl/pinconf-generic.h
-@@ -178,6 +178,13 @@ static inline int pinconf_generic_dt_node_to_map_pin(
- 			PIN_MAP_TYPE_CONFIGS_PIN);
+-	return ret;
++	return strlen(buf);
  }
  
-+static inline int pinconf_generic_dt_node_to_map_all(
-+		struct pinctrl_dev *pctldev, struct device_node *np_config,
-+		struct pinctrl_map **map, unsigned *num_maps)
-+{
-+	return pinconf_generic_dt_node_to_map(pctldev, np_config, map, num_maps,
-+			PIN_MAP_TYPE_INVALID);
-+}
- #endif
- 
- #endif /* CONFIG_GENERIC_PINCONF */
+ static DEVICE_ATTR(rng_current, S_IRUGO | S_IWUSR,
 -- 
-2.1.2.1.g5e69ed6
+1.7.10.4
 
