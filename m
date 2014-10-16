@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751659AbaJPCDJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 22:03:09 -0400
-Received: from smtprelay0056.hostedemail.com ([216.40.44.56]:50274 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751298AbaJPCDH (ORCPT
+	id S1751690AbaJPCTM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 22:19:12 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:51699 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751251AbaJPCTL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 22:03:07 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:973:982:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2693:2828:2915:3138:3139:3140:3141:3142:3622:3865:3867:3868:3870:3873:4321:5007:6261:7903:9010:10004:10400:10848:11232:11658:11914:12517:12519:12663:12740:13019:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: party44_8f57a04428c48
-X-Filterd-Recvd-Size: 1408
-Message-ID: <1413424983.7484.21.camel@perches.com>
-Subject: Re: [PATCH] Change for codestyle and good read
-From: Joe Perches <joe@perches.com>
-To: Albino Biasutti Neto <bino@riseup.net>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Date: Wed, 15 Oct 2014 19:03:03 -0700
-In-Reply-To: <CA+bYFQZrdVaSUpzfPnhaVL_JorZt6fLO+ObqxgQKd3k8OWfi8Q@mail.gmail.com>
-References: <1413414942-5338-1-git-send-email-bino@riseup.net>
-	 <1413415606.7484.19.camel@perches.com>
-	 <CA+bYFQZrdVaSUpzfPnhaVL_JorZt6fLO+ObqxgQKd3k8OWfi8Q@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 15 Oct 2014 22:19:11 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: akpm@linux-foundation.org, Mel Gorman <mgorman@suse.de>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH] mm/numa balancing: Rearrange Kconfig entry
+Date: Thu, 16 Oct 2014 07:48:55 +0530
+Message-Id: <1413425935-24767-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.9.1
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14101602-0017-0000-0000-00000058070B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-10-15 at 22:55 -0300, Albino Biasutti Neto wrote:
-> I'm writing my first kernel patch, sorry. I will be better in the next.
+Add the default enable config option after the NUMA_BALANCING option
+so that it appears related in the nconfig interface.
 
-Please experiment with files in drivers/staging/
-before you work on other files.
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+NOTE: Resending with linux-mm on cc:
 
-Even then, verify what you do by using tools
-like scripts/objdiff and scripts/checkpatch.pl
-before you send a patch to the mailing list or
-to a maintainer.
+ init/Kconfig | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-Also use scripts/get_maintainer.pl to help
-figure out who should be a patch email recipient.
-
-
+diff --git a/init/Kconfig b/init/Kconfig
+index 5a5613ed49bc..d73c934f9e77 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -889,14 +889,6 @@ config ARCH_SUPPORTS_INT128
+ config ARCH_WANT_NUMA_VARIABLE_LOCALITY
+ 	bool
+ 
+-config NUMA_BALANCING_DEFAULT_ENABLED
+-	bool "Automatically enable NUMA aware memory/task placement"
+-	default y
+-	depends on NUMA_BALANCING
+-	help
+-	  If set, automatic NUMA balancing will be enabled if running on a NUMA
+-	  machine.
+-
+ config NUMA_BALANCING
+ 	bool "Memory placement aware NUMA scheduler"
+ 	depends on ARCH_SUPPORTS_NUMA_BALANCING
+@@ -909,6 +901,14 @@ config NUMA_BALANCING
+ 
+ 	  This system will be inactive on UMA systems.
+ 
++config NUMA_BALANCING_DEFAULT_ENABLED
++	bool "Automatically enable NUMA aware memory/task placement"
++	default y
++	depends on NUMA_BALANCING
++	help
++	  If set, automatic NUMA balancing will be enabled if running on a NUMA
++	  machine.
++
+ menuconfig CGROUPS
+ 	boolean "Control Group support"
+ 	select KERNFS
+-- 
+1.9.1
 
