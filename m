@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751799AbaJPHfw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 03:35:52 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:58025 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751208AbaJPHdf (ORCPT
+	id S1751823AbaJPHgL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 03:36:11 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:33231 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164AbaJPHdf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Oct 2014 03:33:35 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-ee-543f74cdc49c
+X-AuditID: cbfec7f4-b7f156d0000063c7-e0-543f74ccd96b
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Linus Walleij <linus.walleij@linaro.org>,
         Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
@@ -23,74 +23,222 @@ Cc: Anton Vorontsov <anton@enomsg.org>, Guenter Roeck <linux@roeck-us.net>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v2 2/8] power_supply: sysfs: Use power_supply_*() API for
- accessing function attrs
-Date: Thu, 16 Oct 2014 09:32:51 +0200
-Message-id: <1413444777-24107-3-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH v2 1/8] power_supply: Add API for safe access of power supply
+ function attrs
+Date: Thu, 16 Oct 2014 09:32:50 +0200
+Message-id: <1413444777-24107-2-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1413444777-24107-1-git-send-email-k.kozlowski@samsung.com>
 References: <1413444777-24107-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t/xy7pnS+xDDN6eZbc4uFXTYuOM9awW
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGLMWRmVeSWpSXmKPExsVy+t/xy7pnSuxDDHZ8FrM4uFXTYuOM9awW
 	k568Z7aYuHIys0Xn2SfMFq9fGFqcbXrDbnH/61FGiyl/ljNZbHp8jdXi8q45bBafe48wWjxZ
 	eIbJYu2Ru+wWtxtXsFncPXWUzeJ0N6vF6d0lDkIeE/o/MXrsnHWX3WPzCi2PTas62TzuXNvD
-	5jHvZKDH5iX1Hju/N7B79G1ZxeixYvV3do/Pm+QCuKO4bFJSczLLUov07RK4Mo4cKC/YxFtx
-	4tM+xgbGdu4uRk4OCQETiVMT5jBB2GISF+6tZ+ti5OIQEljKKPF9YwuU08cksaBxEzNIFZuA
-	scTm5UvAEiIC15kkOldMYAFxmAUamSXeNTSDzRIWSJG4eXMfWAeLgKrE04aLYHFeAXeJsycm
-	skLsk5M4eWwymM0p4CEx/exVdhBbCKimccJ+tgmMvAsYGVYxiqaWJhcUJ6XnGukVJ+YWl+al
-	6yXn525ihAT91x2MS49ZHWIU4GBU4uHVCLYPEWJNLCuuzD3EKMHBrCTC21wIFOJNSaysSi3K
-	jy8qzUktPsTIxMEp1cBourrAhLvZ5swq5wtTpz9/62oy+6C6s/FSPQmbk/Lli7lmMe6wPX96
-	/Z39pxT8w1S4HLI+rZ3KY/t70bxSvxTxnHSJeSX/Z6x7zhCafN9/4cJ0RpVAzVk6u6e9O6dX
-	wD0rb+qv42d5OTauL+5c0qgV8u//nrLYLdZOc51jojbn7EpQXCi3bc0uJZbijERDLeai4kQA
-	ds+caFgCAAA=
+	5jHvZKDH5iX1Hju/N7B79G1ZxeixYvV3do/Pm+QCuKO4bFJSczLLUov07RK4MjZ2PmMqWOJe
+	cePwP5YGxjs2XYycHBICJhLrZl9mhLDFJC7cW8/WxcjFISSwlFHi2bE9TBBOH5PE6h0HWUGq
+	2ASMJTYvXwJWJSJwnUmic8UEFhCHWaCRWeJdQzMTSJWwQJzE/C9P2EFsFgFViU1bX7KB2LwC
+	7hI3Px6D2icncfLYZLCpnAIeEtPPXgWrFwKqaZywn20CI+8CRoZVjKKppckFxUnpuYZ6xYm5
+	xaV56XrJ+bmbGCFh/2UH4+JjVocYBTgYlXh4NYLtQ4RYE8uKK3MPMUpwMCuJ8DYXAoV4UxIr
+	q1KL8uOLSnNSiw8xMnFwSjUwCnKsn19ncm6zxvOZrV6z/4fZ3/KwMy/9djo97G3GzfBjWx84
+	dsrbPGC3iZK5+7PLWEf/v8/VopOy8Vsumz5793fTyqLbPoIZGfFrKudUF136eV3miMdruaCt
+	y6Xftm0TdLy5TviIl6b8NWOe+va/XgWWvRe52thWtM1aLPr3p/SB1v3elqWHlViKMxINtZiL
+	ihMBzLf0LVkCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace direct calls to power supply function attributes with wrappers.
-Wrappers provide safe access in case of unregistering the power
-supply (e.g. by removing the driver). Replace:
+Add simple wrappers for accessing power supply's function attributes:
  - get_property -> power_supply_get_property
  - set_property -> power_supply_set_property
  - property_is_writeable -> power_supply_property_is_writeable
+ - external_power_changed -> power_supply_external_power_changed
+ - set_charged -> power_supply_set_charged
+
+This API adds a safe way of accessing a power supply from another
+driver. Particularly it solves invalid memory references (and lockup) in
+following race condition scenario:
+
+Thread 1: charger manager
+Thread 2: power supply driver, used by charger manager
+
+THREAD 1 (charger manager)         THREAD 2 (power supply driver)
+==========================         ==============================
+psy = power_supply_get_by_name()
+                                   Driver unbind, .remove
+                                     power_supply_unregister
+                                     Device fully removed
+psy->get_property()
+
+The 'get_property' callback is still valid and leads to actual calling of
+Thread2->get_property() but now in invalid context because the driver was
+unbound.
+
+This could be observed easily with charger manager driver (here compiled
+with max17042 fuel gauge):
+$ echo "12-0036" > /sys/bus/i2c/drivers/max17042/unbind
+$ cat /sys/devices/virtual/power_supply/battery/temp
+[  240.505998] INFO: task cat:1394 blocked for more than 120 seconds.
+[  240.510762]       Not tainted 3.17.0-next-20141007-00028-ge60b6dd79570-dirty #183
+[  240.518208] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[  240.526025] cat             D c0469548     0  1394      1 0x00000000
+[  240.532384] [<c0469548>] (__schedule) from [<c0469d54>] (schedule_preempt_disabled+0x14/0x20)
+[  240.540885] [<c0469d54>] (schedule_preempt_disabled) from [<c046af20>] (mutex_lock_nested+0x1bc/0x458)
+[  240.550171] [<c046af20>] (mutex_lock_nested) from [<c0287a98>] (regmap_read+0x30/0x60)
+[  240.558079] [<c0287a98>] (regmap_read) from [<c032238c>] (max17042_get_property+0x2e8/0x350)
+[  240.566490] [<c032238c>] (max17042_get_property) from [<c0324b60>] (charger_get_property+0x238/0x31c)
+[  240.575688] [<c0324b60>] (charger_get_property) from [<c0320764>] (power_supply_show_property+0x48/0x1e0)
+[  240.585241] [<c0320764>] (power_supply_show_property) from [<c027308c>] (dev_attr_show+0x1c/0x48)
+[  240.594100] [<c027308c>] (dev_attr_show) from [<c0141fb0>] (sysfs_kf_seq_show+0x84/0x104)
+[  240.602251] [<c0141fb0>] (sysfs_kf_seq_show) from [<c0140b18>] (kernfs_seq_show+0x24/0x28)
+[  240.610497] [<c0140b18>] (kernfs_seq_show) from [<c0104574>] (seq_read+0x1b0/0x484)
+[  240.618138] [<c0104574>] (seq_read) from [<c00e1e24>] (vfs_read+0x88/0x144)
+[  240.625127] [<c00e1e24>] (vfs_read) from [<c00e1f20>] (SyS_read+0x40/0x8c)
+[  240.631941] [<c00e1f20>] (SyS_read) from [<c000e760>] (ret_fast_syscall+0x0/0x48)
+
+Or:
+[   17.277605] Division by zero in kernel.
+[   17.280043] CPU: 2 PID: 1384 Comm: cat Not tainted 3.17.0-next-20141007-00028-ge60b6dd79570-dirty #181
+[   17.289348] [<c00140f0>] (unwind_backtrace) from [<c0011228>] (show_stack+0x10/0x14)
+[   17.297055] [<c0011228>] (show_stack) from [<c04680d0>] (dump_stack+0x70/0xbc)
+[   17.304264] [<c04680d0>] (dump_stack) from [<c01f7a28>] (Ldiv0+0x8/0x10)
+[   17.310933] [<c01f7a28>] (Ldiv0) from [<c01f79f8>] (__aeabi_uidivmod+0x8/0x18)
+[   17.318132] [<c01f79f8>] (__aeabi_uidivmod) from [<c0287a84>] (regmap_read+0x1c/0x60)
+[   17.325956] [<c0287a84>] (regmap_read) from [<c0322260>] (max17042_get_property+0x1bc/0x350)
+[   17.334361] [<c0322260>] (max17042_get_property) from [<c0324734>] (charger_get_property+0x198/0x328)
+[   17.343560] [<c0324734>] (charger_get_property) from [<c0320764>] (power_supply_show_property+0x48/0x1e0)
+[   17.353108] [<c0320764>] (power_supply_show_property) from [<c03209d4>] (power_supply_uevent+0x9c/0x1c4)
+[   17.362575] [<c03209d4>] (power_supply_uevent) from [<c02745d0>] (dev_uevent+0xb8/0x1c8)
+[   17.370639] [<c02745d0>] (dev_uevent) from [<c0272c4c>] (uevent_show+0xa8/0x104)
+[   17.378015] [<c0272c4c>] (uevent_show) from [<c027308c>] (dev_attr_show+0x1c/0x48)
+[   17.385579] [<c027308c>] (dev_attr_show) from [<c0141fb0>] (sysfs_kf_seq_show+0x84/0x104)
+[   17.393731] [<c0141fb0>] (sysfs_kf_seq_show) from [<c0140b18>] (kernfs_seq_show+0x24/0x28)
+[   17.401979] [<c0140b18>] (kernfs_seq_show) from [<c0104574>] (seq_read+0x1b0/0x484)
+[   17.409619] [<c0104574>] (seq_read) from [<c00e1e24>] (vfs_read+0x88/0x144)
+[   17.416557] [<c00e1e24>] (vfs_read) from [<c00e1f20>] (SyS_read+0x40/0x8c)
+[   17.423416] [<c00e1f20>] (SyS_read) from [<c000e760>] (ret_fast_syscall+0x0/0x48)
+[   17.430880] power_supply battery: driver failed to report `voltage_now' property: -22
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Acked-by: Jonghwa Lee <jonghwa3.lee@samusng.com>
 Acked-by: Pavel Machek <pavel@ucw.cz>
 ---
- drivers/power/power_supply_sysfs.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/power/power_supply_core.c | 57 +++++++++++++++++++++++++++++++++++++--
+ include/linux/power_supply.h      | 16 +++++++++++
+ 2 files changed, 71 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
-index 62653f50a524..f817aab80813 100644
---- a/drivers/power/power_supply_sysfs.c
-+++ b/drivers/power/power_supply_sysfs.c
-@@ -76,7 +76,7 @@ static ssize_t power_supply_show_property(struct device *dev,
- 	if (off == POWER_SUPPLY_PROP_TYPE) {
- 		value.intval = psy->type;
- 	} else {
--		ret = psy->get_property(psy, off, &value);
-+		ret = power_supply_get_property(psy, off, &value);
+diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
+index 6cb7fe5c022d..94f278cf2cbb 100644
+--- a/drivers/power/power_supply_core.c
++++ b/drivers/power/power_supply_core.c
+@@ -366,6 +366,56 @@ struct power_supply *power_supply_get_by_phandle(struct device_node *np,
+ EXPORT_SYMBOL_GPL(power_supply_get_by_phandle);
+ #endif /* CONFIG_OF */
  
- 		if (ret < 0) {
- 			if (ret == -ENODATA)
-@@ -125,7 +125,7 @@ static ssize_t power_supply_store_property(struct device *dev,
++int power_supply_get_property(struct power_supply *psy,
++			    enum power_supply_property psp,
++			    union power_supply_propval *val)
++{
++	if (!psy->dev)
++		return -ENODEV;
++
++	return psy->get_property(psy, psp, val);
++}
++EXPORT_SYMBOL_GPL(power_supply_get_property);
++
++int power_supply_set_property(struct power_supply *psy,
++			    enum power_supply_property psp,
++			    const union power_supply_propval *val)
++{
++	if (!psy->dev || !psy->set_property)
++		return -ENODEV;
++
++	return psy->set_property(psy, psp, val);
++}
++EXPORT_SYMBOL_GPL(power_supply_set_property);
++
++int power_supply_property_is_writeable(struct power_supply *psy,
++					enum power_supply_property psp)
++{
++	if (!psy->dev || !psy->property_is_writeable)
++		return -ENODEV;
++
++	return psy->property_is_writeable(psy, psp);
++}
++EXPORT_SYMBOL_GPL(power_supply_property_is_writeable);
++
++void power_supply_external_power_changed(struct power_supply *psy)
++{
++	if (!psy->dev || !psy->external_power_changed)
++		return;
++
++	psy->external_power_changed(psy);
++}
++EXPORT_SYMBOL_GPL(power_supply_external_power_changed);
++
++void power_supply_set_charged(struct power_supply *psy)
++{
++	if (!psy->dev || !psy->set_charged)
++		return;
++
++	psy->set_charged(psy);
++}
++EXPORT_SYMBOL_GPL(power_supply_set_charged);
++
+ int power_supply_powers(struct power_supply *psy, struct device *dev)
+ {
+ 	return sysfs_create_link(&psy->dev->kobj, &dev->kobj, "powers");
+@@ -616,13 +666,16 @@ EXPORT_SYMBOL_GPL(power_supply_register_no_ws);
  
- 	value.intval = long_val;
+ void power_supply_unregister(struct power_supply *psy)
+ {
++	struct device *dev = psy->dev;
++
+ 	cancel_work_sync(&psy->changed_work);
+ 	sysfs_remove_link(&psy->dev->kobj, "powers");
++	psy->dev = NULL;
+ 	power_supply_remove_triggers(psy);
+ 	psy_unregister_cooler(psy);
+ 	psy_unregister_thermal(psy);
+-	device_init_wakeup(psy->dev, false);
+-	device_unregister(psy->dev);
++	device_init_wakeup(dev, false);
++	device_unregister(dev);
+ }
+ EXPORT_SYMBOL_GPL(power_supply_unregister);
  
--	ret = psy->set_property(psy, off, &value);
-+	ret = power_supply_set_property(psy, off, &value);
- 	if (ret < 0)
- 		return ret;
+diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
+index 3ed049673022..44e749c65505 100644
+--- a/include/linux/power_supply.h
++++ b/include/linux/power_supply.h
+@@ -189,6 +189,12 @@ struct power_supply {
+ 	size_t num_supplies;
+ 	struct device_node *of_node;
  
-@@ -223,7 +223,7 @@ static umode_t power_supply_attr_is_visible(struct kobject *kobj,
++	/*
++	 * Functions for drivers implementing power supply class.
++	 * These shouldn't be called directly by other drivers for accessing
++	 * this power supply. Instead use power_supply_*() functions (for
++	 * example power_supply_get_property()).
++	 */
+ 	int (*get_property)(struct power_supply *psy,
+ 			    enum power_supply_property psp,
+ 			    union power_supply_propval *val);
+@@ -268,6 +274,16 @@ extern int power_supply_is_system_supplied(void);
+ static inline int power_supply_is_system_supplied(void) { return -ENOSYS; }
+ #endif
  
- 		if (property == attrno) {
- 			if (psy->property_is_writeable &&
--			    psy->property_is_writeable(psy, property) > 0)
-+			    power_supply_property_is_writeable(psy, property) > 0)
- 				mode |= S_IWUSR;
- 
- 			return mode;
++extern int power_supply_get_property(struct power_supply *psy,
++			    enum power_supply_property psp,
++			    union power_supply_propval *val);
++extern int power_supply_set_property(struct power_supply *psy,
++			    enum power_supply_property psp,
++			    const union power_supply_propval *val);
++extern int power_supply_property_is_writeable(struct power_supply *psy,
++					enum power_supply_property psp);
++extern void power_supply_external_power_changed(struct power_supply *psy);
++extern void power_supply_set_charged(struct power_supply *psy);
+ extern int power_supply_register(struct device *parent,
+ 				 struct power_supply *psy);
+ extern int power_supply_register_no_ws(struct device *parent,
 -- 
 1.9.1
 
