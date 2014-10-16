@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751369AbaJPFXH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 01:23:07 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33485 "EHLO
+	id S1751400AbaJPFXU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 01:23:20 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33496 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750766AbaJPFXE (ORCPT
+	with ESMTP id S1750766AbaJPFXS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 01:23:04 -0400
-Date: Wed, 15 Oct 2014 22:22:52 -0700
+	Thu, 16 Oct 2014 01:23:18 -0400
+Date: Wed, 15 Oct 2014 22:23:07 -0700
 From: tip-bot for Kan Liang <tipbot@zytor.com>
-Message-ID: <tip-ba32a4511c65e41958384d2f7a046a6ec6e151e5@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, jolsa@redhat.com,
-        acme@redhat.com, mingo@kernel.org, ak@linux.intel.com,
-        kan.liang@intel.com, tglx@linutronix.de
-Reply-To: ak@linux.intel.com, tglx@linutronix.de, kan.liang@intel.com,
-        mingo@kernel.org, acme@redhat.com, hpa@zytor.com, jolsa@redhat.com,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1412694532-23391-4-git-send-email-kan.liang@intel.com>
-References: <1412694532-23391-4-git-send-email-kan.liang@intel.com>
+Message-ID: <tip-ffe59788e69b548bd62cc9a053253a8af2cdda1d@git.kernel.org>
+Cc: hpa@zytor.com, mingo@kernel.org, ak@linux.intel.com, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, acme@redhat.com, jolsa@redhat.com,
+        kan.liang@intel.com
+Reply-To: ak@linux.intel.com, hpa@zytor.com, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, acme@redhat.com,
+        kan.liang@intel.com, jolsa@redhat.com
+In-Reply-To: <1412694532-23391-5-git-send-email-kan.liang@intel.com>
+References: <1412694532-23391-5-git-send-email-kan.liang@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools:
-  Add support to new style format of kernel PMU event
-Git-Commit-ID: ba32a4511c65e41958384d2f7a046a6ec6e151e5
+Subject: [tip:perf/urgent] perf test:
+  Add test case for pmu event new style format
+Git-Commit-ID: ffe59788e69b548bd62cc9a053253a8af2cdda1d
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,174 +34,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ba32a4511c65e41958384d2f7a046a6ec6e151e5
-Gitweb:     http://git.kernel.org/tip/ba32a4511c65e41958384d2f7a046a6ec6e151e5
+Commit-ID:  ffe59788e69b548bd62cc9a053253a8af2cdda1d
+Gitweb:     http://git.kernel.org/tip/ffe59788e69b548bd62cc9a053253a8af2cdda1d
 Author:     Kan Liang <kan.liang@intel.com>
-AuthorDate: Tue, 7 Oct 2014 11:08:51 -0400
+AuthorDate: Tue, 7 Oct 2014 11:08:52 -0400
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 15 Oct 2014 16:05:45 -0300
+CommitDate: Wed, 15 Oct 2014 16:10:24 -0300
 
-perf tools: Add support to new style format of kernel PMU event
+perf test: Add test case for pmu event new style format
 
-Add new rules for kernel PMU event.
+Add test case in automated tests suite. It checks not only the two types
+of pmu event stytle formats "pmu_event_name" and "cpu/pmu_event_name/",
+but also the different formats mixtures which are more likely to trigger
+parse issue.
 
-Currently, the patch only want to handle the PMU event name as "a-b" and
-"a".
+The patch set including this one has been tested by the perf automated
+test:
 
-event_pmu:
-PE_KERNEL_PMU_EVENT sep_dc
-|
-PE_PMU_EVENT_PRE '-' PE_PMU_EVENT_SUF sep_dc
+   ./perf test parse -v"
 
-PE_KERNEL_PMU_EVENT token is for
-cycles-ct/cycles-t/mem-loads/mem-stores.
+On haswell, ivybridge and Romley platform.
 
-The prefix cycles is mixed up with cpu-cycles.  loads and stores are
-mixed up with cache event So they have to be hardcode in lex.
+The patch set also has been tested on haswell by the following script.
 
-PE_PMU_EVENT_PRE and PE_PMU_EVENT_SUF tokens are for other PMU events.
+Note: please make sure that your test system support TSX and
+L1-dcache-loads events. Otherwise, you may want to change the events to
+other pmu events.
 
-The lex looks generic identifier up in the table and return the matched
-token. If there is no match, generic PE_NAME token will be return.
+  [lk@localhost ~]$ cat perf_style_test.sh
+  # hardware events + kernel pmu event with different style
+  perf stat -x, -e cycles,mem-stores,tx-start sleep 2
+  perf stat -x, -e cpu-cycles,cycles-ct,cycles-t sleep 2
+  perf stat -x, -e cycles,cpu/cycles-ct/,cpu/cycles-t/ sleep 2
+  perf stat -x, -e instructions,cpu/tx-start/ sleep 2
+  perf stat -x, -e '{cycles,tx-start}' sleep 2
+  perf stat -x, -e '{cycles,cpu/tx-start/}' sleep 2
 
-Using the rules, kernel PMU event could use new style format without //
+  # HW Cache event + kernel pmu event with different style
+  perf stat -x, -e L1-dcache-loads,cpu/mem-stores/,tx-start sleep 2
+  perf stat -x, -e L1-dcache-loads,mem-stores,cpu/tx-start/ sleep 2
+  perf stat -x, -e '{L1-dcache-loads,mem-stores}' sleep 2
+  perf stat -x, -e '{L1-dcache-loads,cpu/tx-start/}' sleep 2
 
-so you can use:
-
-  perf record -e mem-loads ...
-
-instead of:
-
-  perf record -e cpu/mem-loads/
+  # Raw event + kernel pmu event with different style:
+  perf stat -x, -e cpu/event=0xc0,umask=0x00/,mem-loads,cpu/mem-stores/ sleep 2
+  perf stat -x, -e cpu/event=0xc0,umask=0x00/,tx-start,cpu/el-start/ sleep 2
+  perf stat -x, -e '{cpu/event=0xc0,umask=0x00/,tx-start}' sleep 2
 
 Signed-off-by: Kan Liang <kan.liang@intel.com>
 Acked-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Andi Kleen <ak@linux.intel.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/r/1412694532-23391-4-git-send-email-kan.liang@intel.com
+Link: http://lkml.kernel.org/r/1412694532-23391-5-git-send-email-kan.liang@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/parse-events.l | 30 +++++++++++++++++++++++++++++-
- tools/perf/util/parse-events.y | 40 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 69 insertions(+), 1 deletion(-)
+ tools/perf/tests/parse-events.c | 36 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 36 insertions(+)
 
-diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-index 3432995..906630b 100644
---- a/tools/perf/util/parse-events.l
-+++ b/tools/perf/util/parse-events.l
-@@ -51,6 +51,24 @@ static int str(yyscan_t scanner, int token)
- 	return token;
+diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
+index 5941927..7f2f51f 100644
+--- a/tools/perf/tests/parse-events.c
++++ b/tools/perf/tests/parse-events.c
+@@ -457,6 +457,36 @@ static int test__checkevent_pmu_events(struct perf_evlist *evlist)
+ 	return 0;
  }
  
-+static int pmu_str_check(yyscan_t scanner)
-+{
-+	YYSTYPE *yylval = parse_events_get_lval(scanner);
-+	char *text = parse_events_get_text(scanner);
 +
-+	yylval->str = strdup(text);
-+	switch (perf_pmu__parse_check(text)) {
-+		case PMU_EVENT_SYMBOL_PREFIX:
-+			return PE_PMU_EVENT_PRE;
-+		case PMU_EVENT_SYMBOL_SUFFIX:
-+			return PE_PMU_EVENT_SUF;
-+		case PMU_EVENT_SYMBOL:
-+			return PE_KERNEL_PMU_EVENT;
-+		default:
-+			return PE_NAME;
-+	}
++static int test__checkevent_pmu_events_mix(struct perf_evlist *evlist)
++{
++	struct perf_evsel *evsel = perf_evlist__first(evlist);
++
++	/* pmu-event:u */
++	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
++	TEST_ASSERT_VAL("wrong exclude_user",
++			!evsel->attr.exclude_user);
++	TEST_ASSERT_VAL("wrong exclude_kernel",
++			evsel->attr.exclude_kernel);
++	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
++	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
++	TEST_ASSERT_VAL("wrong pinned", !evsel->attr.pinned);
++
++	/* cpu/pmu-event/u*/
++	evsel = perf_evsel__next(evsel);
++	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
++	TEST_ASSERT_VAL("wrong type", PERF_TYPE_RAW == evsel->attr.type);
++	TEST_ASSERT_VAL("wrong exclude_user",
++			!evsel->attr.exclude_user);
++	TEST_ASSERT_VAL("wrong exclude_kernel",
++			evsel->attr.exclude_kernel);
++	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
++	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
++	TEST_ASSERT_VAL("wrong pinned", !evsel->attr.pinned);
++
++	return 0;
 +}
 +
- static int sym(yyscan_t scanner, int type, int config)
+ static int test__checkterms_simple(struct list_head *terms)
  {
- 	YYSTYPE *yylval = parse_events_get_lval(scanner);
-@@ -178,6 +196,16 @@ alignment-faults				{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_AL
- emulation-faults				{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS); }
- dummy						{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_DUMMY); }
+ 	struct parse_events_term *term;
+@@ -1554,6 +1584,12 @@ static int test_pmu_events(void)
+ 		e.check = test__checkevent_pmu_events;
  
-+	/*
-+	 * We have to handle the kernel PMU event cycles-ct/cycles-t/mem-loads/mem-stores separately.
-+	 * Because the prefix cycles is mixed up with cpu-cycles.
-+	 * loads and stores are mixed up with cache event
-+	 */
-+cycles-ct					{ return str(yyscanner, PE_KERNEL_PMU_EVENT); }
-+cycles-t					{ return str(yyscanner, PE_KERNEL_PMU_EVENT); }
-+mem-loads					{ return str(yyscanner, PE_KERNEL_PMU_EVENT); }
-+mem-stores					{ return str(yyscanner, PE_KERNEL_PMU_EVENT); }
-+
- L1-dcache|l1-d|l1d|L1-data		|
- L1-icache|l1-i|l1i|L1-instruction	|
- LLC|L2					|
-@@ -199,7 +227,7 @@ r{num_raw_hex}		{ return raw(yyscanner); }
- {num_hex}		{ return value(yyscanner, 16); }
+ 		ret = test_event(&e);
++		if (ret)
++			break;
++		snprintf(name, MAX_NAME, "%s:u,cpu/event=%s/u", ent->d_name, ent->d_name);
++		e.name  = name;
++		e.check = test__checkevent_pmu_events_mix;
++		ret = test_event(&e);
+ #undef MAX_NAME
+ 	}
  
- {modifier_event}	{ return str(yyscanner, PE_MODIFIER_EVENT); }
--{name}			{ return str(yyscanner, PE_NAME); }
-+{name}			{ return pmu_str_check(yyscanner); }
- "/"			{ BEGIN(config); return '/'; }
- -			{ return '-'; }
- ,			{ BEGIN(event); return ','; }
-diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
-index 55fab6a..93c4c9f 100644
---- a/tools/perf/util/parse-events.y
-+++ b/tools/perf/util/parse-events.y
-@@ -47,6 +47,7 @@ static inc_group_count(struct list_head *list,
- %token PE_NAME_CACHE_TYPE PE_NAME_CACHE_OP_RESULT
- %token PE_PREFIX_MEM PE_PREFIX_RAW PE_PREFIX_GROUP
- %token PE_ERROR
-+%token PE_PMU_EVENT_PRE PE_PMU_EVENT_SUF PE_KERNEL_PMU_EVENT
- %type <num> PE_VALUE
- %type <num> PE_VALUE_SYM_HW
- %type <num> PE_VALUE_SYM_SW
-@@ -58,6 +59,7 @@ static inc_group_count(struct list_head *list,
- %type <str> PE_MODIFIER_EVENT
- %type <str> PE_MODIFIER_BP
- %type <str> PE_EVENT_NAME
-+%type <str> PE_PMU_EVENT_PRE PE_PMU_EVENT_SUF PE_KERNEL_PMU_EVENT
- %type <num> value_sym
- %type <head> event_config
- %type <term> event_term
-@@ -220,6 +222,44 @@ PE_NAME '/' '/'
- 	ABORT_ON(parse_events_add_pmu(list, &data->idx, $1, NULL));
- 	$$ = list;
- }
-+|
-+PE_KERNEL_PMU_EVENT sep_dc
-+{
-+	struct parse_events_evlist *data = _data;
-+	struct list_head *head;
-+	struct parse_events_term *term;
-+	struct list_head *list;
-+
-+	ALLOC_LIST(head);
-+	ABORT_ON(parse_events_term__num(&term, PARSE_EVENTS__TERM_TYPE_USER,
-+					$1, 1));
-+	list_add_tail(&term->list, head);
-+
-+	ALLOC_LIST(list);
-+	ABORT_ON(parse_events_add_pmu(list, &data->idx, "cpu", head));
-+	parse_events__free_terms(head);
-+	$$ = list;
-+}
-+|
-+PE_PMU_EVENT_PRE '-' PE_PMU_EVENT_SUF sep_dc
-+{
-+	struct parse_events_evlist *data = _data;
-+	struct list_head *head;
-+	struct parse_events_term *term;
-+	struct list_head *list;
-+	char pmu_name[128];
-+	snprintf(&pmu_name, 128, "%s-%s", $1, $3);
-+
-+	ALLOC_LIST(head);
-+	ABORT_ON(parse_events_term__num(&term, PARSE_EVENTS__TERM_TYPE_USER,
-+					&pmu_name, 1));
-+	list_add_tail(&term->list, head);
-+
-+	ALLOC_LIST(list);
-+	ABORT_ON(parse_events_add_pmu(list, &data->idx, "cpu", head));
-+	parse_events__free_terms(head);
-+	$$ = list;
-+}
- 
- value_sym:
- PE_VALUE_SYM_HW
