@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751886AbaJPJuH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 05:50:07 -0400
-Received: from relay.parallels.com ([195.214.232.42]:41220 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191AbaJPJuG (ORCPT
+	id S1751937AbaJPJuR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 05:50:17 -0400
+Received: from mail0.toppoint.de ([217.70.197.20]:47876 "EHLO
+	mail0.toppoint.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751794AbaJPJuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 05:50:06 -0400
-Message-ID: <1413453002.24793.72.camel@tkhai>
-Subject: Re: [PATCH RFC] sched: Revert delayed_put_task_struct() and fix use
- after free
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Kirill Tkhai <tkhai@yandex.ru>, Oleg Nesterov <oleg@redhat.com>,
-        <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        "Vladimir Davydov" <vdavydov@parallels.com>
-Date: Thu, 16 Oct 2014 13:50:02 +0400
-In-Reply-To: <20141016094333.GJ7369@worktop.fdxtended.com>
-References: <1413376300.24793.55.camel@tkhai>
-	 <20141015150641.GA2755@redhat.com> <20141015194044.GA4557@redhat.com>
-	 <543EEB1F.3040900@yandex.ru> <20141016075950.GC7369@worktop.fdxtended.com>
-	 <1413447404.24793.67.camel@tkhai>
-	 <20141016094333.GJ7369@worktop.fdxtended.com>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
+	Thu, 16 Oct 2014 05:50:13 -0400
+X-Greylist: delayed 405 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Oct 2014 05:50:12 EDT
+Date: Thu, 16 Oct 2014 09:37:34 +0000
+From: Wilfried Klaebe <w-lkml@lebenslange-mailadresse.de>
+To: linux-kernel@vger.kernel.org
+Cc: trivial@kernel.org, dri-devel@lists.freedesktop.org,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
+        David Airlie <airlied@linux.ie>
+Subject: [RESEND] [PATCH] radeon: clean up coding style differences in
+ radeon_get_bios()
+Message-ID: <20141016093734.GA2563@kaos.lebenslange-mailadresse.de>
+Mail-Followup-To: linux-kernel@vger.kernel.org, trivial@kernel.org,
+	dri-devel@lists.freedesktop.org,
+	Alex Deucher <alexander.deucher@amd.com>,
+	Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
+	David Airlie <airlied@linux.ie>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.26.172]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-В Чт, 16/10/2014 в 11:43 +0200, Peter Zijlstra пишет:
-> On Thu, Oct 16, 2014 at 12:16:44PM +0400, Kirill Tkhai wrote:
-> > В Чт, 16/10/2014 в 09:59 +0200, Peter Zijlstra пишет:
-> > > On Thu, Oct 16, 2014 at 01:46:07AM +0400, Kirill Tkhai wrote:
-> > > > > --- x/kernel/sched/fair.c
-> > > > > +++ x/kernel/sched/fair.c
-> > > > > @@ -1165,7 +1165,7 @@ static void task_numa_compare(struct tas
-> > > > >  
-> > > > >  	rcu_read_lock();
-> > > > >  	cur = ACCESS_ONCE(dst_rq->curr);
-> > > > > -	if (cur->pid == 0) /* idle */
-> > > > > +	if (is_idle_task(cur) || (curr->flags & PF_EXITING))
-> > > > >  		cur = NULL;
-> > > > >  
-> > > > >  	/*
-> > > > > 
-> > > > 
-> > > > Looks like, we have to use the same fix for task_numa_group().
-> > > 
-> > > Don't think so, task_numa_group() is only called from task_numa_fault()
-> > > which is on 'current' and neither idle and PF_EXITING should be
-> > > faulting.
-> > 
-> > Isn't task_numa_group() fully preemptible?
-> 
-> Not seeing how that is relevant.
-> 
-> > It seems cpu_rq(cpu)->curr is not always equal to p.
-> 
-> It should be afaict:
-> 
->  task_numa_fault()
->   p = current;
-> 
->   task_numa_group(p, ..);
-> 
-> And like said, idle tasks and PF_EXITING task should never get (numa)
-> faults for they should never be touching userspace.
+radeon: clean up coding style differences in radeon_get_bios()
 
-I mean p can be moved to other cpu.
+Signed-off-by: Wilfried Klaebe <w-lkml@lebenslange-mailadresse.de>
 
-tsk = ACCESS_ONCE(cpu_rq(cpu)->curr);
+diff --git a/drivers/gpu/drm/radeon/radeon_bios.c b/drivers/gpu/drm/radeon/radeon_bios.c
+index 6a03624..63ccb8f 100644
+--- a/drivers/gpu/drm/radeon/radeon_bios.c
++++ b/drivers/gpu/drm/radeon/radeon_bios.c
+@@ -658,12 +658,10 @@ bool radeon_get_bios(struct radeon_device *rdev)
+ 		r = igp_read_bios_from_vram(rdev);
+ 	if (r == false)
+ 		r = radeon_read_bios(rdev);
+-	if (r == false) {
++	if (r == false)
+ 		r = radeon_read_disabled_bios(rdev);
+-	}
+-	if (r == false) {
++	if (r == false)
+ 		r = radeon_read_platform_bios(rdev);
+-	}
+ 	if (r == false || rdev->bios == NULL) {
+ 		DRM_ERROR("Unable to locate a BIOS ROM\n");
+ 		rdev->bios = NULL;
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
 
-tsk is not p, (i.e current) here.
+
 
