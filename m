@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752322AbaJPKTi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 06:19:38 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37164 "EHLO
+	id S1752390AbaJPKTu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 06:19:50 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:37188 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751789AbaJPKTe (ORCPT
+	with ESMTP id S1752299AbaJPKTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 06:19:34 -0400
+	Thu, 16 Oct 2014 06:19:37 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -14,11 +14,12 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
+        Viresh Kumar <viresh.linux@gmail.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
         Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH v2 11/53] dmaengine: coh901318: Split device_control
-Date: Thu, 16 Oct 2014 12:17:10 +0200
-Message-Id: <1413454672-27400-12-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v2 14/53] dmaengine: dw: Split device_control
+Date: Thu, 16 Oct 2014 12:17:13 +0200
+Message-Id: <1413454672-27400-15-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -26,191 +27,160 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the ST-Ericsson COH901318 DMA driver to
-make use of the newly introduced callbacks, that will eventually be used to
-retrieve slave capabilities.
+Split the device_control callback of the DesignWare DMA driver to make use
+of the newly introduced callbacks, that will eventually be used to retrieve
+slave capabilities.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/dma/coh901318.c | 137 +++++++++++++++++++++---------------------------
- 1 file changed, 60 insertions(+), 77 deletions(-)
+ drivers/dma/dw/core.c | 92 +++++++++++++++++++++++++++------------------------
+ 1 file changed, 49 insertions(+), 43 deletions(-)
 
-diff --git a/drivers/dma/coh901318.c b/drivers/dma/coh901318.c
-index 3c6716e0b78e..418e4e4fb7ba 100644
---- a/drivers/dma/coh901318.c
-+++ b/drivers/dma/coh901318.c
-@@ -2114,6 +2114,57 @@ static irqreturn_t dma_irq_handler(int irq, void *dev_id)
- 	return IRQ_HANDLED;
- }
- 
-+static int coh901318_terminate_all(struct dma_chan *chan)
-+{
-+	unsigned long flags;
-+	struct coh901318_chan *cohc = to_coh901318_chan(chan);
-+	struct coh901318_desc *cohd;
-+	void __iomem *virtbase = cohc->base->virtbase;
-+
-+	/* The remainder of this function terminates the transfer */
-+	coh901318_pause(chan);
-+	spin_lock_irqsave(&cohc->lock, flags);
-+
-+	/* Clear any pending BE or TC interrupt */
-+	if (cohc->id < 32) {
-+		writel(1 << cohc->id, virtbase + COH901318_BE_INT_CLEAR1);
-+		writel(1 << cohc->id, virtbase + COH901318_TC_INT_CLEAR1);
-+	} else {
-+		writel(1 << (cohc->id - 32), virtbase +
-+		       COH901318_BE_INT_CLEAR2);
-+		writel(1 << (cohc->id - 32), virtbase +
-+		       COH901318_TC_INT_CLEAR2);
-+	}
-+
-+	enable_powersave(cohc);
-+
-+	while ((cohd = coh901318_first_active_get(cohc))) {
-+		/* release the lli allocation*/
-+		coh901318_lli_free(&cohc->base->pool, &cohd->lli);
-+
-+		/* return desc to free-list */
-+		coh901318_desc_remove(cohd);
-+		coh901318_desc_free(cohc, cohd);
-+	}
-+
-+	while ((cohd = coh901318_first_queued(cohc))) {
-+		/* release the lli allocation*/
-+		coh901318_lli_free(&cohc->base->pool, &cohd->lli);
-+
-+		/* return desc to free-list */
-+		coh901318_desc_remove(cohd);
-+		coh901318_desc_free(cohc, cohd);
-+	}
-+
-+
-+	cohc->nbr_active_done = 0;
-+	cohc->busy = 0;
-+
-+	spin_unlock_irqrestore(&cohc->lock, flags);
-+
-+	return 0;
-+}
-+
- static int coh901318_alloc_chan_resources(struct dma_chan *chan)
- {
- 	struct coh901318_chan	*cohc = to_coh901318_chan(chan);
-@@ -2156,7 +2207,7 @@ coh901318_free_chan_resources(struct dma_chan *chan)
- 
- 	spin_unlock_irqrestore(&cohc->lock, flags);
- 
--	chan->device->device_control(chan, DMA_TERMINATE_ALL, 0);
-+	coh901318_terminate_all(chan);
- }
- 
- 
-@@ -2540,80 +2591,6 @@ static void coh901318_dma_set_runtimeconfig(struct dma_chan *chan,
- 	cohc->ctrl = ctrl;
+diff --git a/drivers/dma/dw/core.c b/drivers/dma/dw/core.c
+index 1af731b83b3f..a3d3a51387c6 100644
+--- a/drivers/dma/dw/core.c
++++ b/drivers/dma/dw/core.c
+@@ -955,8 +955,7 @@ static inline void convert_burst(u32 *maxburst)
+ 		*maxburst = 0;
  }
  
 -static int
--coh901318_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--		  unsigned long arg)
--{
--	unsigned long flags;
--	struct coh901318_chan *cohc = to_coh901318_chan(chan);
--	struct coh901318_desc *cohd;
--	void __iomem *virtbase = cohc->base->virtbase;
--
--	if (cmd == DMA_SLAVE_CONFIG) {
--		struct dma_slave_config *config =
--			(struct dma_slave_config *) arg;
--
--		coh901318_dma_set_runtimeconfig(chan, config);
--		return 0;
--	  }
--
--	if (cmd == DMA_PAUSE) {
--		coh901318_pause(chan);
--		return 0;
--	}
--
--	if (cmd == DMA_RESUME) {
--		coh901318_resume(chan);
--		return 0;
--	}
--
--	if (cmd != DMA_TERMINATE_ALL)
--		return -ENXIO;
--
--	/* The remainder of this function terminates the transfer */
--	coh901318_pause(chan);
--	spin_lock_irqsave(&cohc->lock, flags);
--
--	/* Clear any pending BE or TC interrupt */
--	if (cohc->id < 32) {
--		writel(1 << cohc->id, virtbase + COH901318_BE_INT_CLEAR1);
--		writel(1 << cohc->id, virtbase + COH901318_TC_INT_CLEAR1);
--	} else {
--		writel(1 << (cohc->id - 32), virtbase +
--		       COH901318_BE_INT_CLEAR2);
--		writel(1 << (cohc->id - 32), virtbase +
--		       COH901318_TC_INT_CLEAR2);
--	}
--
--	enable_powersave(cohc);
--
--	while ((cohd = coh901318_first_active_get(cohc))) {
--		/* release the lli allocation*/
--		coh901318_lli_free(&cohc->base->pool, &cohd->lli);
--
--		/* return desc to free-list */
--		coh901318_desc_remove(cohd);
--		coh901318_desc_free(cohc, cohd);
--	}
--
--	while ((cohd = coh901318_first_queued(cohc))) {
--		/* release the lli allocation*/
--		coh901318_lli_free(&cohc->base->pool, &cohd->lli);
--
--		/* return desc to free-list */
--		coh901318_desc_remove(cohd);
--		coh901318_desc_free(cohc, cohd);
--	}
--
--
--	cohc->nbr_active_done = 0;
--	cohc->busy = 0;
--
--	spin_unlock_irqrestore(&cohc->lock, flags);
--
--	return 0;
--}
--
- void coh901318_base_init(struct dma_device *dma, const int *pick_chans,
- 			 struct coh901318_base *base)
+-set_runtime_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
++static int dwc_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
  {
-@@ -2717,7 +2694,10 @@ static int __init coh901318_probe(struct platform_device *pdev)
- 	base->dma_slave.device_prep_slave_sg = coh901318_prep_slave_sg;
- 	base->dma_slave.device_tx_status = coh901318_tx_status;
- 	base->dma_slave.device_issue_pending = coh901318_issue_pending;
--	base->dma_slave.device_control = coh901318_control;
-+	base->dma_slave.device_config = coh901318_dma_set_runtimeconfig;
-+	base->dma_slave.device_pause = coh901318_pause;
-+	base->dma_slave.device_resume = coh901318_resume;
-+	base->dma_slave.device_terminate_all = coh901318_terminate_all;
- 	base->dma_slave.dev = &pdev->dev;
+ 	struct dw_dma_chan *dwc = to_dw_dma_chan(chan);
  
- 	err = dma_async_device_register(&base->dma_slave);
-@@ -2737,7 +2717,10 @@ static int __init coh901318_probe(struct platform_device *pdev)
- 	base->dma_memcpy.device_prep_dma_memcpy = coh901318_prep_memcpy;
- 	base->dma_memcpy.device_tx_status = coh901318_tx_status;
- 	base->dma_memcpy.device_issue_pending = coh901318_issue_pending;
--	base->dma_memcpy.device_control = coh901318_control;
-+	base->dma_memcpy.device_config = coh901318_dma_set_runtimeconfig;
-+	base->dma_memcpy.device_pause = coh901318_pause;
-+	base->dma_memcpy.device_resume = coh901318_resume;
-+	base->dma_memcpy.device_terminate_all = coh901318_terminate_all;
- 	base->dma_memcpy.dev = &pdev->dev;
- 	/*
- 	 * This controller can only access address at even 32bit boundaries,
+@@ -977,29 +976,54 @@ set_runtime_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
+ 	return 0;
+ }
+ 
+-static inline void dwc_chan_pause(struct dw_dma_chan *dwc)
++static inline void dwc_chan_resume(struct dw_dma_chan *dwc)
+ {
+ 	u32 cfglo = channel_readl(dwc, CFG_LO);
+-	unsigned int count = 20;	/* timeout iterations */
+ 
++	channel_writel(dwc, CFG_LO, cfglo & ~DWC_CFGL_CH_SUSP);
++
++	dwc->paused = false;
++}
++
++static int dwc_pause(struct dma_chan *chan)
++{
++	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
++	unsigned long		flags;
++	unsigned int		count = 20;	/* timeout iterations */
++	u32			cfglo;
++
++	spin_lock_irqsave(&dwc->lock, flags);
++
++	cfglo = channel_readl(dwc, CFG_LO);
+ 	channel_writel(dwc, CFG_LO, cfglo | DWC_CFGL_CH_SUSP);
+ 	while (!(channel_readl(dwc, CFG_LO) & DWC_CFGL_FIFO_EMPTY) && count--)
+ 		udelay(2);
+ 
+ 	dwc->paused = true;
++
++	spin_unlock_irqrestore(&dwc->lock, flags);
++
++	return 0;
+ }
+ 
+-static inline void dwc_chan_resume(struct dw_dma_chan *dwc)
++static int dwc_resume(struct dma_chan *chan)
+ {
+-	u32 cfglo = channel_readl(dwc, CFG_LO);
++	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
++	unsigned long		flags;
+ 
+-	channel_writel(dwc, CFG_LO, cfglo & ~DWC_CFGL_CH_SUSP);
++	if (!dwc->paused)
++		return 0;
+ 
+-	dwc->paused = false;
++	spin_lock_irqsave(&dwc->lock, flags);
++
++	dwc_chan_resume(dwc);
++
++	spin_unlock_irqrestore(&dwc->lock, flags);
++
++	return 0;
+ }
+ 
+-static int dwc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-		       unsigned long arg)
++static int dwc_terminate_all(struct dma_chan *chan)
+ {
+ 	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
+ 	struct dw_dma		*dw = to_dw_dma(chan->device);
+@@ -1007,44 +1031,23 @@ static int dwc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ 	unsigned long		flags;
+ 	LIST_HEAD(list);
+ 
+-	if (cmd == DMA_PAUSE) {
+-		spin_lock_irqsave(&dwc->lock, flags);
+-
+-		dwc_chan_pause(dwc);
+-
+-		spin_unlock_irqrestore(&dwc->lock, flags);
+-	} else if (cmd == DMA_RESUME) {
+-		if (!dwc->paused)
+-			return 0;
+-
+-		spin_lock_irqsave(&dwc->lock, flags);
+-
+-		dwc_chan_resume(dwc);
+-
+-		spin_unlock_irqrestore(&dwc->lock, flags);
+-	} else if (cmd == DMA_TERMINATE_ALL) {
+-		spin_lock_irqsave(&dwc->lock, flags);
++	spin_lock_irqsave(&dwc->lock, flags);
+ 
+-		clear_bit(DW_DMA_IS_SOFT_LLP, &dwc->flags);
++	clear_bit(DW_DMA_IS_SOFT_LLP, &dwc->flags);
+ 
+-		dwc_chan_disable(dw, dwc);
++	dwc_chan_disable(dw, dwc);
+ 
+-		dwc_chan_resume(dwc);
++	dwc_chan_resume(dwc);
+ 
+-		/* active_list entries will end up before queued entries */
+-		list_splice_init(&dwc->queue, &list);
+-		list_splice_init(&dwc->active_list, &list);
++	/* active_list entries will end up before queued entries */
++	list_splice_init(&dwc->queue, &list);
++	list_splice_init(&dwc->active_list, &list);
+ 
+-		spin_unlock_irqrestore(&dwc->lock, flags);
++	spin_unlock_irqrestore(&dwc->lock, flags);
+ 
+-		/* Flush all pending and queued descriptors */
+-		list_for_each_entry_safe(desc, _desc, &list, desc_node)
+-			dwc_descriptor_complete(dwc, desc, false);
+-	} else if (cmd == DMA_SLAVE_CONFIG) {
+-		return set_runtime_config(chan, (struct dma_slave_config *)arg);
+-	} else {
+-		return -ENXIO;
+-	}
++	/* Flush all pending and queued descriptors */
++	list_for_each_entry_safe(desc, _desc, &list, desc_node)
++		dwc_descriptor_complete(dwc, desc, false);
+ 
+ 	return 0;
+ }
+@@ -1654,7 +1657,10 @@ int dw_dma_probe(struct dw_dma_chip *chip, struct dw_dma_platform_data *pdata)
+ 	dw->dma.device_prep_dma_memcpy = dwc_prep_dma_memcpy;
+ 
+ 	dw->dma.device_prep_slave_sg = dwc_prep_slave_sg;
+-	dw->dma.device_control = dwc_control;
++	dw->dma.device_config = dwc_config;
++	dw->dma.device_pause = dwc_pause;
++	dw->dma.device_resume = dwc_resume;
++	dw->dma.device_terminate_all = dwc_terminate_all;
+ 
+ 	dw->dma.device_tx_status = dwc_tx_status;
+ 	dw->dma.device_issue_pending = dwc_issue_pending;
 -- 
 2.1.1
 
