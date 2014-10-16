@@ -1,65 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752169AbaJPJTh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 05:19:37 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.143]:60951 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751874AbaJPJTg (ORCPT
+	id S1752567AbaJPJTs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 05:19:48 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:52684 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752309AbaJPJTp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 05:19:36 -0400
-X-Env-Sender: Andreas.Werner@men.de
-X-Msg-Ref: server-11.tower-179.messagelabs.com!1413451173!34027207!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.12.2; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Thu, 16 Oct 2014 11:19:33 +0200
-Date: Thu, 16 Oct 2014 12:11:03 +0200
-From: Andreas Werner <andreas.werner@men.de>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Andreas Werner <andreas.werner@men.de>, <linux-kernel@vger.kernel.org>,
-        <wsa@the-dreams.de>, <linux-i2c@vger.kernel.org>,
-        <johannes.thumshirn@men.de>
-Subject: Re: [PATCH 1/2] drivers/misc/eeprom/men_eeprod: Introduce MEN Board
- Information EEPROM driver
-Message-ID: <20141016101102.GA23256@awelinux>
-References: <cover.1413416105.git.andreas.werner@men.de>
- <d169930cfe45d4c05c79f7dd00471d732441529d.1413416105.git.andreas.werner@men.de>
- <20141016084412.GB22265@kroah.com>
+	Thu, 16 Oct 2014 05:19:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20141016084412.GB22265@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [192.1.1.171]
+Date: Thu, 16 Oct 2014 17:19:43 +0800
+Message-ID: <CAGZxSSRsYYNURnVB1fpGSTMA7WJMdy=Cmt1pj0Q=69ahHEsO1w@mail.gmail.com>
+Subject: [PATCH] arm64: mm: use macro instead of if judgement of ZONE_DMA
+From: Yifan Zhang <yifan.zhangm@gmail.com>
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, mark.rutland@arm.com,
+        lauraa@codeaurora.org, ganapatrao.kulkarni@caviumnetworks.com,
+        robh@kernel.org, leif.lindholm@linaro.org, Yalin.Wang@sonymobile.com,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-kernel@vger.kernel.org, yifan.zhangm@gmail.com
+Cc: Yifan Zhang <zhangyf@marvell.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 10:44:12AM +0200, Greg KH wrote:
-> On Thu, Oct 16, 2014 at 10:15:08AM +0200, Andreas Werner wrote:
-> > +struct eeprom_data {
-> > +	uint8_t eeprod_id;
-> 
-> Please use the "real" kernel types, "u8" here, and "u32" in other places
-> you use uint32_t (those are userspace types, not kernel types, sorry.)
-> 
+if disable CONFIG_ZONE_DMA, ZONE_DMA becomes undefined.
 
-You are right i will change it.
 
-> > +static DEVICE_ATTR(eeprod_id, S_IRUGO, show_eeprod_id, NULL);
-> > +static DEVICE_ATTR(revision, S_IRUGO, show_revision, NULL);
-> > +static DEVICE_ATTR(serial, S_IRUGO, show_serialnr, NULL);
-> > +static DEVICE_ATTR(hw_name, S_IRUGO, show_hw_name, NULL);
-> > +static DEVICE_ATTR(prod_date, S_IRUGO, show_prod_date, NULL);
-> > +static DEVICE_ATTR(rep_date, S_IRUGO, show_rep_date, NULL);
-> 
-> DEVICE_ATTR_RO() please.
 
-OK no problem, will change it.
+Signed-off-by: Yifan Zhang <zhangyf@marvell.com>
 
-Thanks.
+---
 
-Regards
-Andy
+ arch/arm64/mm/init.c |   12 +++++++-----
+
+ 1 file changed, 7 insertions(+), 5 deletions(-)
+
+
+
+diff --git a/arch/arm64/mm/init.c b/arch/arm64/mm/init.c index
+494297c..887ca5d 100644
+
+--- a/arch/arm64/mm/init.c
+
++++ b/arch/arm64/mm/init.c
+
+@@ -82,10 +82,10 @@ static void __init zone_sizes_init(unsigned long
+min, unsigned long max)
+
+        memset(zone_size, 0, sizeof(zone_size));
+
+
+
+        /* 4GB maximum for 32-bit only capable devices */
+
+-        if (IS_ENABLED(CONFIG_ZONE_DMA)) {
+
+-                 max_dma = PFN_DOWN(max_zone_dma_phys());
+
+-                 zone_size[ZONE_DMA] = max_dma - min;
+
+-        }
+
++#ifdef CONFIG_ZONE_DMA
+
++       max_dma = PFN_DOWN(max_zone_dma_phys());
+
++       zone_size[ZONE_DMA] = max_dma - min;
+
++#endif
+
+        zone_size[ZONE_NORMAL] = max - max_dma;
+
+
+
+       memcpy(zhole_size, zone_size, sizeof(zhole_size)); @@ -97,10
++97,12 @@ static void __init zone_sizes_init(unsigned long min,
+unsigned long max)
+
+                 if (start >= max)
+
+                           continue;
+
+
+
+-                 if (IS_ENABLED(CONFIG_ZONE_DMA) && start < max_dma) {
+
++#ifdef CONFIG_ZONE_DMA
+
++                if (start < max_dma) {
+
+                           unsigned long dma_end = min(end, max_dma);
+
+                           zhole_size[ZONE_DMA] -= dma_end - start;
+
+                 }
+
++#endif
+
+
+
+                 if (end > max_dma) {
+
+                           unsigned long normal_end = min(end, max);
+
+--
+
+1.7.9.5
