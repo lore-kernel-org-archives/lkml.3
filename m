@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937AbaJPOHt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 10:07:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46677 "EHLO mx1.redhat.com"
+	id S1752898AbaJPOHl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 10:07:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24522 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752905AbaJPOHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 10:07:47 -0400
+	id S1752669AbaJPOHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 10:07:39 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Andi Kleen <ak@linux.intel.com>,
@@ -16,9 +16,9 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Andi Kleen <ak@linux.intel.com>,
         Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 4/7] perf tools: Fix report -F symbol_to for data without branch info
-Date: Thu, 16 Oct 2014 16:07:04 +0200
-Message-Id: <1413468427-31049-5-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 3/7] perf tools: Fix report -F mispredict for data without branch info
+Date: Thu, 16 Oct 2014 16:07:03 +0200
+Message-Id: <1413468427-31049-4-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1413468427-31049-1-git-send-email-jolsa@kernel.org>
 References: <1413468427-31049-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,7 +30,7 @@ is allocated, which is wrong and following perf session ends
 up with report segfault.
 
   $ perf record ls
-  $ perf report -F symbol_to
+  $ perf report -F mispredict
   perf: Segmentation fault
 
 Checking that hist_entry::branch_info is valid and display
@@ -47,47 +47,48 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/sort.c | 19 ++++++++++++++-----
- 1 file changed, 14 insertions(+), 5 deletions(-)
+ tools/perf/util/sort.c | 20 ++++++++++++--------
+ 1 file changed, 12 insertions(+), 8 deletions(-)
 
 diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 0c68af83e7dd..57047c0a247c 100644
+index 9bcdb57076b8..0c68af83e7dd 100644
 --- a/tools/perf/util/sort.c
 +++ b/tools/perf/util/sort.c
-@@ -413,8 +413,13 @@ sort__sym_from_cmp(struct hist_entry *left, struct hist_entry *right)
+@@ -471,11 +471,13 @@ struct sort_entry sort_sym_to = {
  static int64_t
- sort__sym_to_cmp(struct hist_entry *left, struct hist_entry *right)
+ sort__mispredict_cmp(struct hist_entry *left, struct hist_entry *right)
  {
--	struct addr_map_symbol *to_l = &left->branch_info->to;
--	struct addr_map_symbol *to_r = &right->branch_info->to;
-+	struct addr_map_symbol *to_l, *to_r;
-+
+-	const unsigned char mp = left->branch_info->flags.mispred !=
+-					right->branch_info->flags.mispred;
+-	const unsigned char p = left->branch_info->flags.predicted !=
+-					right->branch_info->flags.predicted;
++	unsigned char mp, p;
+ 
 +	if (!left->branch_info || !right->branch_info)
 +		return cmp_null(left->branch_info, right->branch_info);
 +
-+	to_l = &left->branch_info->to;
-+	to_r = &right->branch_info->to;
- 
- 	if (!to_l->sym && !to_r->sym)
- 		return _sort__addr_cmp(to_l->addr, to_r->addr);
-@@ -434,10 +439,14 @@ static int hist_entry__sym_from_snprintf(struct hist_entry *he, char *bf,
- static int hist_entry__sym_to_snprintf(struct hist_entry *he, char *bf,
- 				       size_t size, unsigned int width)
- {
--	struct addr_map_symbol *to = &he->branch_info->to;
--	return _hist_entry__sym_snprintf(to->map, to->sym, to->addr,
--					 he->level, bf, size, width);
-+	if (he->branch_info) {
-+		struct addr_map_symbol *to = &he->branch_info->to;
-+
-+		return _hist_entry__sym_snprintf(to->map, to->sym, to->addr,
-+						 he->level, bf, size, width);
-+	}
- 
-+	return repsep_snprintf(bf, size, "%-*.*s", width, width, "N/A");
++	mp = left->branch_info->flags.mispred != right->branch_info->flags.mispred;
++	p  = left->branch_info->flags.predicted != right->branch_info->flags.predicted;
+ 	return mp || p;
  }
  
- struct sort_entry sort_dso_from = {
+@@ -483,10 +485,12 @@ static int hist_entry__mispredict_snprintf(struct hist_entry *he, char *bf,
+ 				    size_t size, unsigned int width){
+ 	static const char *out = "N/A";
+ 
+-	if (he->branch_info->flags.predicted)
+-		out = "N";
+-	else if (he->branch_info->flags.mispred)
+-		out = "Y";
++	if (he->branch_info) {
++		if (he->branch_info->flags.predicted)
++			out = "N";
++		else if (he->branch_info->flags.mispred)
++			out = "Y";
++	}
+ 
+ 	return repsep_snprintf(bf, size, "%-*.*s", width, width, out);
+ }
 -- 
 1.9.3
 
