@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753089AbaJPU4f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 16:56:35 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:46816 "EHLO
+	id S1753330AbaJPU5J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 16:57:09 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:37138 "EHLO
 	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753123AbaJPUyo (ORCPT
+	with ESMTP id S1752784AbaJPUyk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 16:54:44 -0400
+	Thu, 16 Oct 2014 16:54:40 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
         Jiri Slaby <jslaby@suse.cz>,
         One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
         Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH -next 08/10] serial: core: Colocate crucial structure linkage
-Date: Thu, 16 Oct 2014 16:54:25 -0400
-Message-Id: <1413492867-20679-9-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH -next 02/10] serial: core: Flush ldisc after dropping port mutex in uart_close()
+Date: Thu, 16 Oct 2014 16:54:19 -0400
+Message-Id: <1413492867-20679-3-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1413492867-20679-1-git-send-email-peter@hurleysoftware.com>
 References: <1413492867-20679-1-git-send-email-peter@hurleysoftware.com>
@@ -25,34 +25,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The key function of uart_add_one_port() is to cross-reference the
-UART driver's port structure with the serial core's state table;
-keep the assignments together and document this crucial association.
+The tty buffers (and any line discipline buffers) must be flushed after
+the UART hardware has shutdown; otherwise, a racing open on the same
+tty may receive data from the previous session, which is a security
+hazard. However, holding the port mutex while flushing the line
+discipline buffers creates a lock inversion if the set_termios()
+handler takes the port mutex (as it does in the followup patch,
+'serial: Fix locking for uart driver set_termios method'.
+
+Flush the ldisc buffers after dropping the port mutex; the tty lock
+is still held which prevents a concurrent open() from advancing while
+flushing. Since no new rx data is possible after uart_shutdown() until
+a new open reinitializes the port, the later flush has no impact on
+what data is being discarded.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/serial/serial_core.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/tty/serial/serial_core.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index 676c03a..e04ae58 100644
+index ce0e762..6203c6c 100644
 --- a/drivers/tty/serial/serial_core.c
 +++ b/drivers/tty/serial/serial_core.c
-@@ -2594,11 +2594,12 @@ int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
- 		goto out;
- 	}
+@@ -1360,9 +1360,6 @@ static void uart_close(struct tty_struct *tty, struct file *filp)
  
-+	/* Link the port to the driver state table and vice versa */
- 	state->uart_port = uport;
--	state->pm_state = UART_PM_STATE_UNDEFINED;
-+	uport->state = state;
+ 	mutex_lock(&port->mutex);
+ 	uart_shutdown(tty, state);
+-
+-	tty_ldisc_flush(tty);
+-
+ 	tty_port_tty_set(port, NULL);
+ 	tty->closing = 0;
+ 	spin_lock_irqsave(&port->lock, flags);
+@@ -1389,6 +1386,8 @@ static void uart_close(struct tty_struct *tty, struct file *filp)
+ 	wake_up_interruptible(&port->close_wait);
  
-+	state->pm_state = UART_PM_STATE_UNDEFINED;
- 	uport->cons = drv->cons;
--	uport->state = state;
+ 	mutex_unlock(&port->mutex);
++
++	tty_ldisc_flush(tty);
+ }
  
- 	/*
- 	 * If this port is a console, then the spinlock is already
+ static void uart_wait_until_sent(struct tty_struct *tty, int timeout)
 -- 
 2.1.1
 
