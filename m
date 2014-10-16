@@ -1,77 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751520AbaJPPF7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 11:05:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50192 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751449AbaJPPF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 11:05:57 -0400
-Date: Thu, 16 Oct 2014 17:05:53 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Paul Bolle <pebolle@tiscali.nl>,
-        Valentin Rothberg <valentinrothberg@gmail.com>,
-        Vladimir Davydov <vdavydov@parallels.com>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/3] kernel: res_counter: remove the unused API
-Message-ID: <20141016150553.GA26234@dhcp22.suse.cz>
-References: <1413251163-8517-1-git-send-email-hannes@cmpxchg.org>
- <1413251163-8517-4-git-send-email-hannes@cmpxchg.org>
- <1413444034.2128.27.camel@x220>
- <20141016112021.GC338@dhcp22.suse.cz>
- <20141016144641.GC9180@phnom.home.cmpxchg.org>
+	id S1751605AbaJPPGQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 11:06:16 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:27181 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751334AbaJPPGN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 11:06:13 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+m7qSterZA61QyO/kc3tNdaZ90kSZpo4o=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 033DD600689
+Date: Thu, 16 Oct 2014 11:06:05 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Stephan Mueller <smueller@chronox.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kernel crypto API interface specification
+Message-ID: <20141016150604.GK17447@titan.lakedaemon.net>
+References: <7502136.9BkWHTZ0th@myon.chronox.de>
+ <20141015175800.GH17447@titan.lakedaemon.net>
+ <3251314.QkilbvNUO7@myon.chronox.de>
+ <20141016132501.GI17447@titan.lakedaemon.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141016144641.GC9180@phnom.home.cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141016132501.GI17447@titan.lakedaemon.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 16-10-14 10:46:41, Johannes Weiner wrote:
-> On Thu, Oct 16, 2014 at 01:20:21PM +0200, Michal Hocko wrote:
-> > On Thu 16-10-14 09:20:34, Paul Bolle wrote:
-> > > On Mon, 2014-10-13 at 21:46 -0400, Johannes Weiner wrote:
-> > > > All memory accounting and limiting has been switched over to the
-> > > > lockless page counters.  Bye, res_counter!
-> > > > 
-> > > > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > > > Acked-by: Vladimir Davydov <vdavydov@parallels.com>
-> > > > Acked-by: Michal Hocko <mhocko@suse.cz>
-> > > 
-> > > This patch landed in today's linux-next (ie, next 20141016).
-> > > 
-> > > >  Documentation/cgroups/resource_counter.txt | 197 -------------------------
-> > > >  include/linux/res_counter.h                | 223 -----------------------------
-> > > >  init/Kconfig                               |   6 -
-> > > >  kernel/Makefile                            |   1 -
-> > > >  kernel/res_counter.c                       | 211 ---------------------------
-> > > >  5 files changed, 638 deletions(-)
-> > > >  delete mode 100644 Documentation/cgroups/resource_counter.txt
-> > > >  delete mode 100644 include/linux/res_counter.h
-> > > >  delete mode 100644 kernel/res_counter.c
-> > > 
-> > > There's a last reference to CONFIG_RESOURCE_COUNTERS in
-> > > Documentation/cgroups/memory.txt. That reference could be dropped too,
-> > > couldn't it?
-> > ---
-> > From a54e375e85c814199f480cb4ee7a133a395c5a00 Mon Sep 17 00:00:00 2001
-> > From: Michal Hocko <mhocko@suse.cz>
-> > Date: Thu, 16 Oct 2014 13:15:24 +0200
-> > Subject: [PATCH] kernel-res_counter-remove-the-unused-api-fix
-> > 
-> > ditch the last remainings of res_counter
-> > 
-> > Reported-by: Paul Bolle <pebolle@tiscali.nl>
-> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+On Thu, Oct 16, 2014 at 09:25:01AM -0400, Jason Cooper wrote:
+> + Grant, Geert,
 > 
-> That makes sense, although that document is still littered with
-> out-of-date and seemingly irrelevant information, which is why I
-> didn't bother to update it.
+> Stephan has created some great example code for both the kernel crypto
+> API and the userspace crypto API.  As examples tend to bitrot, I was
+> wondering if the code could serve as test code.  Then it would have a
+> triple role: API regression testing, crypto test suite, and reference
+> implementation.
+> 
+> Original patch is here:
+> 
+>   https://lkml.kernel.org/r/7502136.9BkWHTZ0th@myon.chronox.de
+> 
+> On Thu, Oct 16, 2014 at 09:19:08AM +0200, Stephan Mueller wrote:
+> > Am Mittwoch, 15. Oktober 2014, 13:58:00 schrieb Jason Cooper:
+> > > On Tue, Oct 14, 2014 at 09:46:50PM +0200, Stephan Mueller wrote:
+...
+> > > Perhaps the userspace API example should be a separate file with this
+> > > text at the top?  Seems odd having it at the end.  Also, if you copied
+> > > it from cryptsetup, is the copyright info correct?
+> > 
+> > I did not copy it from cryptsetup. I only used it as a basis, especially with 
+> > the data structure handling in _kcapi_cipher_crypt. But you are right, I 
+> > changed the license for the user space by taking the cryptsetup license.
+> 
+> Ok.  It looks like Geert and Grant took part in the kernel test
+> unconference, so I'm adding them to the Cc.  I hope they can give us
+> some pointers as to where we could hook in this code.  Then we can
+> simply refer to it from the userspace API document.
 
-I would also prefer to re-write or remove it long term.
+tools/testing/selftests/crypto would be a good location for the example
+code in the next version of this patch.  Make sure to take a look at
+tools/testing/selftests/README.txt.
 
--- 
-Michal Hocko
-SUSE Labs
+thx,
+
+Jason.
