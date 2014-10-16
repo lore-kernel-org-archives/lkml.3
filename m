@@ -1,104 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986AbaJPUuP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 16:50:15 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:36601 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752951AbaJPUuM (ORCPT
+	id S1753037AbaJPUu1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 16:50:27 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:34340 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752996AbaJPUuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 16:50:12 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
-        linux-serial@vger.kernel.org,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH -next 17/27] tty: Simplify tty_release() state checks
-Date: Thu, 16 Oct 2014 16:25:15 -0400
-Message-Id: <1413491125-20134-18-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1413491125-20134-1-git-send-email-peter@hurleysoftware.com>
-References: <1413491125-20134-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+	Thu, 16 Oct 2014 16:50:23 -0400
+Date: Thu, 16 Oct 2014 16:50:17 -0400 (EDT)
+Message-Id: <20141016.165017.1151349565275102498.davem@davemloft.net>
+To: mroos@linux.ee
+Cc: iamjoonsoo.kim@lge.com, linux-kernel@vger.kernel.org, cl@linux.com,
+        penberg@kernel.org, rientjes@google.com, akpm@linux-foundation.org,
+        linux-mm@kvack.org, sparclinux@vger.kernel.org
+Subject: Re: unaligned accesses in SLAB etc.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20141016.162001.599580415052560455.davem@redhat.com>
+References: <20141016.160742.1639247937393238792.davem@redhat.com>
+	<alpine.LRH.2.11.1410162313440.19924@adalberg.ut.ee>
+	<20141016.162001.599580415052560455.davem@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 16 Oct 2014 13:50:23 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The local o_tty variable in tty_release() is now accessed only
-when closing the pty master.
+From: David Miller <davem@redhat.com>
+Date: Thu, 16 Oct 2014 16:20:01 -0400 (EDT)
 
-Set o_tty to slave pty when closing pty master, otherwise NULL;
-use o_tty != NULL as replacement for pty_master.
+> So I'm going to audit all the code paths to make sure we don't put garbage
+> into the fault_code value.
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/tty_io.c | 19 +++++++++----------
- 1 file changed, 9 insertions(+), 10 deletions(-)
+There are two code paths where we can put garbage into the fault_code
+value.  And for the dtlb_prot.S case, the value we put in there is
+TLB_TAG_ACCESS which is 0x30, which include bit 0x20 which is that
+FAULT_CODE_BAD_RA indication which is erroneously triggering.
 
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 8fedd22..fb043b9 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -1758,8 +1758,8 @@ static int tty_release_checks(struct tty_struct *tty, int idx)
- int tty_release(struct inode *inode, struct file *filp)
- {
- 	struct tty_struct *tty = file_tty(filp);
--	struct tty_struct *o_tty;
--	int	pty_master, do_sleep, final;
-+	struct tty_struct *o_tty = NULL;
-+	int	do_sleep, final;
- 	int	idx;
- 	char	buf[64];
- 	long	timeout = 0;
-@@ -1774,10 +1774,9 @@ int tty_release(struct inode *inode, struct file *filp)
- 	__tty_fasync(-1, filp, 0);
- 
- 	idx = tty->index;
--	pty_master = (tty->driver->type == TTY_DRIVER_TYPE_PTY &&
--		      tty->driver->subtype == PTY_TYPE_MASTER);
--	/* Review: parallel close */
--	o_tty = tty->link;
-+	if (tty->driver->type == TTY_DRIVER_TYPE_PTY &&
-+	    tty->driver->subtype == PTY_TYPE_MASTER)
-+		o_tty = tty->link;
- 
- 	if (tty_release_checks(tty, idx)) {
- 		tty_unlock(tty);
-@@ -1821,7 +1820,7 @@ int tty_release(struct inode *inode, struct file *filp)
- 				do_sleep++;
- 			}
- 		}
--		if (pty_master && o_tty->count <= 1) {
-+		if (o_tty && o_tty->count <= 1) {
- 			if (waitqueue_active(&o_tty->read_wait)) {
- 				wake_up_poll(&o_tty->read_wait, POLLIN);
- 				do_sleep++;
-@@ -1846,7 +1845,7 @@ int tty_release(struct inode *inode, struct file *filp)
- 			timeout = MAX_SCHEDULE_TIMEOUT;
- 	}
- 
--	if (pty_master) {
-+	if (o_tty) {
- 		if (--o_tty->count < 0) {
- 			printk(KERN_WARNING "%s: bad pty slave count (%d) for %s\n",
- 				__func__, o_tty->count, tty_name(o_tty, buf));
-@@ -1880,13 +1879,13 @@ int tty_release(struct inode *inode, struct file *filp)
- 	if (!tty->count) {
- 		read_lock(&tasklist_lock);
- 		session_clear_tty(tty->session);
--		if (pty_master)
-+		if (o_tty)
- 			session_clear_tty(o_tty->session);
- 		read_unlock(&tasklist_lock);
- 	}
- 
- 	/* check whether both sides are closing ... */
--	final = !tty->count && !(pty_master && o_tty->count);
-+	final = !tty->count && !(o_tty && o_tty->count);
- 
- 	tty_unlock_pair(tty, o_tty);
- 	/* At this point, the tty->count == 0 should ensure a dead tty
--- 
-2.1.1
+The other path is via hugepage TLB misses, for the situation where
+we haven't allocated the huge TSB for the thread yet.  That might
+explain some other longer-term problems we've had.
 
+I'm about to test the following fix:
+
+diff --git a/arch/sparc/kernel/dtlb_prot.S b/arch/sparc/kernel/dtlb_prot.S
+index b2c2c5b..d668ca14 100644
+--- a/arch/sparc/kernel/dtlb_prot.S
++++ b/arch/sparc/kernel/dtlb_prot.S
+@@ -24,11 +24,11 @@
+ 	mov		TLB_TAG_ACCESS, %g4		! For reload of vaddr
+ 
+ /* PROT ** ICACHE line 2: More real fault processing */
++	ldxa		[%g4] ASI_DMMU, %g5		! Put tagaccess in %g5
+ 	bgu,pn		%xcc, winfix_trampoline		! Yes, perform winfixup
+-	 ldxa		[%g4] ASI_DMMU, %g5		! Put tagaccess in %g5
+-	ba,pt		%xcc, sparc64_realfault_common	! Nope, normal fault
+ 	 mov		FAULT_CODE_DTLB | FAULT_CODE_WRITE, %g4
+-	nop
++	ba,pt		%xcc, sparc64_realfault_common	! Nope, normal fault
++	 nop
+ 	nop
+ 	nop
+ 	nop
+diff --git a/arch/sparc/kernel/tsb.S b/arch/sparc/kernel/tsb.S
+index 14158d4..be98685 100644
+--- a/arch/sparc/kernel/tsb.S
++++ b/arch/sparc/kernel/tsb.S
+@@ -162,10 +162,10 @@ tsb_miss_page_table_walk_sun4v_fastpath:
+ 	nop
+ 	.previous
+ 
+-	rdpr	%tl, %g3
+-	cmp	%g3, 1
++	rdpr	%tl, %g7
++	cmp	%g7, 1
+ 	bne,pn	%xcc, winfix_trampoline
+-	 nop
++	 mov	%g3, %g4
+ 	ba,pt	%xcc, etrap
+ 	 rd	%pc, %g7
+ 	call	hugetlb_setup
