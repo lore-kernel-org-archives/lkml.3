@@ -1,144 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750966AbaJPE5O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 00:57:14 -0400
-Received: from ozlabs.org ([103.22.144.67]:46632 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750719AbaJPE5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 00:57:12 -0400
-Date: Thu, 16 Oct 2014 15:56:57 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: linux-next: build failure after merge of the akpm-current tree
-Message-ID: <20141016155657.1b4ea40d@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/d=WGpqgi.UegLCM+3Z/0gGU"; protocol="application/pgp-signature"
+	id S1751198AbaJPE6p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 00:58:45 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35291 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750766AbaJPE6o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 00:58:44 -0400
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: andrew@lunn.ch, ezequiel.garcia@free-electrons.com, dwmw2@infradead.org,
+        computersforpeace@gmail.com
+Cc: jg1.han@samsung.com, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH v2] mtd: orion_nand: fix error code path in probe
+Date: Thu, 16 Oct 2014 06:58:35 +0200
+Message-Id: <1413435515-12134-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <543F4CF0.8080404@free-electrons.com>
+References: <543F4CF0.8080404@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/d=WGpqgi.UegLCM+3Z/0gGU
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+This replaces kzalloc() and ioremap() calls by devm_ functions
+in the probe() routine, which automatically release the corresponding
+resources when probe() fails or when the device is removed.
 
-Hi Andrew,
+This simplifies simplifies the error management code, and brings
+the below improvements or changes:
 
-After merging the akpm tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+A. Fixing a bug reported by "make coccicheck":
 
-In file included from mm/memcontrol.c:28:0:
-include/linux/page_counter.h: In function 'page_counter_init':
-include/linux/page_counter.h:19:27: error: 'LONG_MAX' undeclared (first use=
- in this function)
- #define PAGE_COUNTER_MAX (LONG_MAX / PAGE_SIZE)
-                           ^
-include/linux/page_counter.h:26:19: note: in expansion of macro 'PAGE_COUNT=
-ER_MAX'
-  counter->limit =3D PAGE_COUNTER_MAX;
-                   ^
-include/linux/page_counter.h:19:27: note: each undeclared identifier is rep=
-orted only once for each function it appears in
- #define PAGE_COUNTER_MAX (LONG_MAX / PAGE_SIZE)
-                           ^
-include/linux/page_counter.h:26:19: note: in expansion of macro 'PAGE_COUNT=
-ER_MAX'
-  counter->limit =3D PAGE_COUNTER_MAX;
-                   ^
-include/linux/page_counter.h:19:38: error: 'PAGE_SIZE' undeclared (first us=
-e in this function)
- #define PAGE_COUNTER_MAX (LONG_MAX / PAGE_SIZE)
-                                      ^
-include/linux/page_counter.h:26:19: note: in expansion of macro 'PAGE_COUNT=
-ER_MAX'
-  counter->limit =3D PAGE_COUNTER_MAX;
-                   ^
-In file included from mm/page_counter.c:7:0:
-include/linux/page_counter.h: In function 'page_counter_init':
-include/linux/page_counter.h:19:27: error: 'LONG_MAX' undeclared (first use=
- in this function)
- #define PAGE_COUNTER_MAX (LONG_MAX / PAGE_SIZE)
-                           ^
-include/linux/page_counter.h:26:19: note: in expansion of macro 'PAGE_COUNT=
-ER_MAX'
-  counter->limit =3D PAGE_COUNTER_MAX;
-                   ^
-include/linux/page_counter.h:19:27: note: each undeclared identifier is rep=
-orted only once for each function it appears in
- #define PAGE_COUNTER_MAX (LONG_MAX / PAGE_SIZE)
-                           ^
-include/linux/page_counter.h:26:19: note: in expansion of macro 'PAGE_COUNT=
-ER_MAX'
-  counter->limit =3D PAGE_COUNTER_MAX;
-                   ^
-include/linux/page_counter.h:19:38: error: 'PAGE_SIZE' undeclared (first us=
-e in this function)
- #define PAGE_COUNTER_MAX (LONG_MAX / PAGE_SIZE)
-                                      ^
-include/linux/page_counter.h:26:19: note: in expansion of macro 'PAGE_COUNT=
-ER_MAX'
-  counter->limit =3D PAGE_COUNTER_MAX;
-                   ^
+If "board = devm_kzalloc()" fails, the probe() function jumps
+incorrectly to label "no_res" and therefore returns without
+running iounmap().
 
-Caused by commit 36a1bfb2a772 ("mm: memcontrol: lockless page
-counters").  See Rule 1 in Documentation/SubmitChecklist.
+B. Requesting the memory region
 
-I have added the following patch for today:
+Using devm_ioremap_resource() makes the probe() function request
+the corresponding memory region before running ioremap(), as
+it is supposed to do.
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 16 Oct 2014 15:49:08 +1100
-Subject: [PATCH] mm: memcontrol: add includes for page_counter.h
+C. Standardizing the error codes:
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+The use of devm_ioremap_resource() changes the return value:
+ * -ENOMEM instead of -EIO in case of ioremap() failure,
+ * -EINVAL instead of -ENODEV in case of platform_get_resource()
+   failure.
+
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
 ---
- include/linux/page_counter.h | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/mtd/nand/orion_nand.c | 39 +++++++++++----------------------------
+ 1 file changed, 11 insertions(+), 28 deletions(-)
 
-diff --git a/include/linux/page_counter.h b/include/linux/page_counter.h
-index a878ef61d073..785640e4efec 100644
---- a/include/linux/page_counter.h
-+++ b/include/linux/page_counter.h
-@@ -2,6 +2,9 @@
- #define _LINUX_PAGE_COUNTER_H
-=20
- #include <linux/atomic.h>
-+#include <linux/kernel.h>
-+
-+#include <asm/page.h>
-=20
- struct page_counter {
- 	atomic_long_t count;
---=20
-2.1.1
+diff --git a/drivers/mtd/nand/orion_nand.c b/drivers/mtd/nand/orion_nand.c
+index 471b4df3a5ac..0b49d5d34c50 100644
+--- a/drivers/mtd/nand/orion_nand.c
++++ b/drivers/mtd/nand/orion_nand.c
+@@ -19,7 +19,7 @@
+ #include <linux/mtd/partitions.h>
+ #include <linux/clk.h>
+ #include <linux/err.h>
+-#include <asm/io.h>
++#include <linux/io.h>
+ #include <asm/sizes.h>
+ #include <linux/platform_data/mtd-orion_nand.h>
 
+@@ -85,33 +85,24 @@ static int __init orion_nand_probe(struct platform_device *pdev)
+ 	int ret = 0;
+ 	u32 val = 0;
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+-	nc = kzalloc(sizeof(struct nand_chip) + sizeof(struct mtd_info), GFP_KERNEL);
+-	if (!nc) {
+-		ret = -ENOMEM;
+-		goto no_res;
+-	}
++	nc = devm_kzalloc(&pdev->dev,
++			sizeof(struct nand_chip) + sizeof(struct mtd_info),
++			GFP_KERNEL);
++	if (!nc)
++		return -ENOMEM;
+ 	mtd = (struct mtd_info *)(nc + 1);
 
---Sig_/d=WGpqgi.UegLCM+3Z/0gGU
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		ret = -ENODEV;
+-		goto no_res;
+-	}
++	io_base = devm_ioremap_resource(&pdev->dev, res);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+-	io_base = ioremap(res->start, resource_size(res));
+-	if (!io_base) {
+-		dev_err(&pdev->dev, "ioremap failed\n");
+-		ret = -EIO;
+-		goto no_res;
+-	}
++	if (IS_ERR(io_base))
++		return PTR_ERR(io_base);
 
-iQIcBAEBCAAGBQJUP1AhAAoJEMDTa8Ir7ZwVl3oP/ibT2AWF8hk0fVOW1z7sWpsb
-xeHw9+2Oa4480bFL4AFd77W+fjB6QkSbWUnqVjvHjv32IDMh28rKK6OObyBZZHRT
-RpTjHhT145IKZQRjLbr4JkDodqJieDQKR13ieqIot8GZ6LCxs/UOWepi0aj8zgdR
-aYm/rP6F2fqluIbllJMGZdoAw3rBBliOSSdEZRvINbkv4uVB+q39QkDvoi3bUawR
-ROKu1jkis26UehoRocY8TPV/BE2I20klU3WLOa2w4DhAGA3DPuDKfvWGXTus2LDT
-LglNH86ij65KZ9M6KWn+bKuaONa3YAB9Z+Nnki6nIktrF5unir8I1eIBe29FpSve
-fldLmCMd2MvsxUD9KfAfzK457A0vBkFl/nMCxVSI8aQlYOfTatJF4tuKRwr8ixvd
-+jgj6uQYenVdDqyDdnJ3h0M+QqOLnbNGK922h72zGuxHOny0QwVhjzSrGt2Bmr1d
-EwzmdIIG1bmch52zeoM0PVUCOlLdSwZWSxmlnTRRDfoilCdcHFh8w/rX8gnqxu76
-XJdOnB5YE3hZwUlouVrLxFSfcvGGaBNDND0CQvq9WFHOiieIRG58BDr4GrGIjzv/
-7MA7slLzJgni5RRzO/mwRCiWjJ22qMXg90ePopZOHvns663kY1f1entkRsy7+eN4
-EAKEbqZ9fC9hj/+D2mnS
-=Jz03
------END PGP SIGNATURE-----
+ 	if (pdev->dev.of_node) {
+ 		board = devm_kzalloc(&pdev->dev, sizeof(struct orion_nand_data),
+ 					GFP_KERNEL);
+-		if (!board) {
+-			ret = -ENOMEM;
+-			goto no_res;
+-		}
++		if (!board)
++			return -ENOMEM;
+ 		if (!of_property_read_u32(pdev->dev.of_node, "cle", &val))
+ 			board->cle = (u8)val;
+ 		else
+@@ -185,9 +176,6 @@ no_dev:
+ 		clk_disable_unprepare(clk);
+ 		clk_put(clk);
+ 	}
+-	iounmap(io_base);
+-no_res:
+-	kfree(nc);
 
---Sig_/d=WGpqgi.UegLCM+3Z/0gGU--
+ 	return ret;
+ }
+@@ -195,15 +183,10 @@ no_res:
+ static int orion_nand_remove(struct platform_device *pdev)
+ {
+ 	struct mtd_info *mtd = platform_get_drvdata(pdev);
+-	struct nand_chip *nc = mtd->priv;
+ 	struct clk *clk;
+
+ 	nand_release(mtd);
+
+-	iounmap(nc->IO_ADDR_W);
+-
+-	kfree(nc);
+-
+ 	clk = clk_get(&pdev->dev, NULL);
+ 	if (!IS_ERR(clk)) {
+ 		clk_disable_unprepare(clk);
+--
+1.9.1
+
