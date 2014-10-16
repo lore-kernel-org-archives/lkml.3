@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010AbaJPQt5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 12:49:57 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:34955 "EHLO
+	id S1751893AbaJPQtz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 12:49:55 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:34959 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751309AbaJPQtx (ORCPT
+	with ESMTP id S1751347AbaJPQtw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 12:49:53 -0400
+	Thu, 16 Oct 2014 12:49:52 -0400
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 To: Mark Brown <broonie@kernel.org>
 Cc: Lee Jones <lee.jones@linaro.org>, Doug Anderson <dianders@chromium.org>,
@@ -17,87 +17,103 @@ Cc: Lee Jones <lee.jones@linaro.org>, Doug Anderson <dianders@chromium.org>,
         linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v2 0/7] Add max77802 regulator operating mode support
-Date: Thu, 16 Oct 2014 18:48:46 +0200
-Message-Id: <1413478133-2577-1-git-send-email-javier.martinez@collabora.co.uk>
+Subject: [PATCH v2 1/7] regulator: max77802: Add .{get,set}_mode callbacks
+Date: Thu, 16 Oct 2014 18:48:47 +0200
+Message-Id: <1413478133-2577-2-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1413478133-2577-1-git-send-email-javier.martinez@collabora.co.uk>
+References: <1413478133-2577-1-git-send-email-javier.martinez@collabora.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Mark,
+Some max77802 LDOs (1, 3, 20 and 21) support to be configured in Low
+Power Mode during system normal operation. Add function handlers for
+the .get_mode and .set_mode operations to set the mode on these LDOs.
 
-This is the second version of the series that adds operating modes
-support for the regulators in the max77802 PMIC. It address issues
-pointed out in "regulator: max77802: Add .{get,set}_mode callbacks"
-and also removes the patches you already picked on the topic branch.
-The first version of the series was [0].
+Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+---
 
-The series adds a "maxim,regulator-initial-mode" property to configure
-at startup the operating mode for the regulators that support changing
-its mode during normal operation and "maxim,regulator-{disk,mem}-mode"
-properties for the regulators that only support changing its operating
-mode when the system enters in a suspend state.
+Changes since v1:
+ - Use a static inline function instead of a macro to map the modes.
+   Suggested by Mark Brown.
+ - Don't have multiple standard modes mapping onto a single hw mode.
+   Suggested by Mark Brown.
 
-The regulators can be enabled or disabled during suspend by using the
-standard "regulator-{on,off}-in-suspend" properties from Chanwoo Choi's
-regulator suspend state series [1].
+ drivers/regulator/max77802.c | 46 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 46 insertions(+)
 
-I tried to use as much as possible the infrastructure that is already
-provided in the regulator framework by adding the needed handlers for
-the set_suspend_* operations.
+diff --git a/drivers/regulator/max77802.c b/drivers/regulator/max77802.c
+index 8425c0d..6eabb95 100644
+--- a/drivers/regulator/max77802.c
++++ b/drivers/regulator/max77802.c
+@@ -70,6 +70,12 @@ struct max77802_regulator_prv {
+ 	unsigned int opmode[MAX77802_REG_MAX];
+ };
+ 
++static inline int max77802_map_mode(int mode)
++{
++	return mode == MAX77802_OPMODE_NORMAL ?
++		REGULATOR_MODE_NORMAL : REGULATOR_MODE_STANDBY;
++}
++
+ static int max77802_get_opmode_shift(int id)
+ {
+ 	if (id == MAX77802_BUCK1 || (id >= MAX77802_BUCK5 &&
+@@ -105,6 +111,44 @@ static int max77802_set_suspend_disable(struct regulator_dev *rdev)
+ }
+ 
+ /*
++ * Some LDOs support Low Power Mode while the system is running.
++ *
++ * LDOs 1, 3, 20, 21.
++ */
++static int max77802_set_mode(struct regulator_dev *rdev, unsigned int mode)
++{
++	struct max77802_regulator_prv *max77802 = rdev_get_drvdata(rdev);
++	int id = rdev_get_id(rdev);
++	unsigned int val;
++	int shift = max77802_get_opmode_shift(id);
++
++	switch (mode) {
++	case REGULATOR_MODE_STANDBY:
++		val = MAX77802_OPMODE_LP;	/* ON in Low Power Mode */
++		break;
++	case REGULATOR_MODE_NORMAL:
++		val = MAX77802_OPMODE_NORMAL;	/* ON in Normal Mode */
++		break;
++	default:
++		dev_warn(&rdev->dev, "%s: regulator mode: 0x%x not supported\n",
++			 rdev->desc->name, mode);
++		return -EINVAL;
++	}
++
++	max77802->opmode[id] = val;
++	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
++				  rdev->desc->enable_mask, val << shift);
++}
++
++static unsigned max77802_get_mode(struct regulator_dev *rdev)
++{
++	struct max77802_regulator_prv *max77802 = rdev_get_drvdata(rdev);
++	int id = rdev_get_id(rdev);
++
++	return max77802_map_mode(max77802->opmode[id]);
++}
++
++/*
+  * Some LDOs supports LPM-ON/OFF/Normal-ON mode during suspend state
+  * (Enable Control Logic1 by PWRREQ)
+  *
+@@ -268,6 +312,8 @@ static struct regulator_ops max77802_ldo_ops_logic2 = {
+ 	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
+ 	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
+ 	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
++	.set_mode		= max77802_set_mode,
++	.get_mode		= max77802_get_mode,
+ 	.set_suspend_mode	= max77802_ldo_set_suspend_mode_logic2,
+ };
+ 
+-- 
+2.1.0
 
-Also, the driver still had some assumptions and didn't clearly made a
-distinction between the valid modes (normal and low power) and off which
-is not an operating mode as you explained. So I reworked a bit to better
-treat them separately as is expected by the regulator API.
-
-This series depend on [1] and also v2 of patch:
-"ARM: EXYNOS: Call regulator core suspend prepare and finish functions" [2].
-
-NOTE: Patch #4 touches a header in include/linux/mfd so some coordination
-with the mfd maintainer (added as cc) will be needed.
-
-Javier Martinez Canillas (7):
-  regulator: max77802: Add .{get,set}_mode callbacks
-  regulator: max77802: Add set suspend mode for BUCKs and simplify code
-  regulator: max77802: Don't treat OFF as an operating mode
-  regulator: max77802: Add header for operating modes
-  regulator: max77802: Document regulator opmode DT properties
-  regulator: max77802: Parse regulator operating mode properties
-  ARM: dts: Configure regulators for suspend on exynos Peach boards
-
- .../devicetree/bindings/regulator/max77802.txt     |  45 ++++++++
- arch/arm/boot/dts/exynos5420-peach-pit.dts         |  81 ++++++++++++++
- arch/arm/boot/dts/exynos5800-peach-pi.dts          |  81 ++++++++++++++
- drivers/regulator/max77802.c                       | 122 ++++++++++++++++-----
- include/dt-bindings/regulator/maxim,max77802.h     |  18 +++
- include/linux/mfd/max77686.h                       |   7 --
- 6 files changed, 319 insertions(+), 35 deletions(-)
- create mode 100644 include/dt-bindings/regulator/maxim,max77802.h
-
-Patch #1 adds a get and set mode function handlers for the regulators whose
-operating mode can be changed at runtime.
-
-Patch #2 adds support for changing the operating mode for all regulators
-that support setting a different opmode during suspend.
-
-Patch #3 is a cleanup to not call OFF an operating mode.
-
-Patch #4 adds a header file with the valid operating modes so it can be used
-by Device Tree source files.
-
-Patch #5 extend the max77802 DT binding to include the properties used to
-setup the regulators modes.
-
-Patch #6 adds the support to parse these from the driver.
-
-Patch #7 configures the modes for the max77802 regulators in the Device Tree
-source file of the Peach Chromebooks.
-
-Best regards,
-Javier
-
-[0]: https://lkml.org/lkml/2014/10/8/331
-[1]: https://lkml.org/lkml/2014/10/10/161
-[2]: http://www.spinics.net/lists/arm-kernel/msg369923.html
