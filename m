@@ -1,93 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204AbaJPXQN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 19:16:13 -0400
-Received: from ozlabs.org ([103.22.144.67]:58226 "EHLO ozlabs.org"
+	id S1753177AbaJPXQL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 19:16:11 -0400
+Received: from ozlabs.org ([103.22.144.67]:38420 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753097AbaJPXQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753095AbaJPXQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Oct 2014 19:16:06 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>
-Cc: "LKML" <linux-kernel@vger.kernel.org>,
-        <virtualization@lists.linux-foundation.org>
-Cc: Amit Shah <amit.shah@redhat.com>
-Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PULL] More virtio fun
+To: Ionut Alexa <ionut.m.alexa@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ionut Alexa <ionut.m.alexa@gmail.com>
+Subject: Re: [PATCH] kernel:module Fix coding style errors and warnings.
+In-Reply-To: <1413455749-29357-1-git-send-email-ionut.m.alexa@gmail.com>
+References: <1413455749-29357-1-git-send-email-ionut.m.alexa@gmail.com>
 User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Fri, 17 Oct 2014 09:41:26 +1030
-Message-ID: <87r3y7a9up.fsf@rustcorp.com.au>
+Date: Fri, 17 Oct 2014 09:36:20 +1030
+Message-ID: <87tx33aa37.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 7ec62d421bdf29cb31101ae2689f7f3a9906289a:
+Ionut Alexa <ionut.m.alexa@gmail.com> writes:
+> Fixed codin style errors and warnings. Changes printk with
+> print_debug/warn. Changed seq_printf to seq_puts.
+>
+> Signed-off-by: Ionut Alexa <ionut.m.alexa@gmail.com>
 
-  Merge branch 'for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs (2014-09-10 14:04:17 -0700)
+Hi Ionut,
 
-are available in the git repository at:
+Please drop the following changes:
+> @@ -110,7 +110,7 @@ struct list_head *kdb_modules = &modules; /* kdb needs the list of modules */
+>  #ifdef CONFIG_MODULE_SIG_FORCE
+>  static bool sig_enforce = true;
+>  #else
+> -static bool sig_enforce = false;
+> +static bool sig_enforce; /* by default set to false */
+>  
+>  static int param_set_bool_enable_only(const char *val,
+>  				      const struct kernel_param *kp)
+> @@ -156,15 +156,15 @@ static BLOCKING_NOTIFIER_HEAD(module_notify_list);
+>  
+>  /* Bounds of module allocation, for speeding __module_address.
+>   * Protected by module_mutex. */
+> -static unsigned long module_addr_min = -1UL, module_addr_max = 0;
+> +static unsigned long module_addr_min = -1UL, module_addr_max; /* addr_max=0 */
 
+I think the explicit initializers are clearer.  Gcc realizes they're
+zero and puts them in bss anyway, so there's no size cost.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git tags/virtio-next-for-linus
+> -int register_module_notifier(struct notifier_block * nb)
+> +int register_module_notifier(struct notifier_block *nb)
+>  {
+>  	return blocking_notifier_chain_register(&module_notify_list, nb);
+>  }
+>  EXPORT_SYMBOL(register_module_notifier);
+>  
+> -int unregister_module_notifier(struct notifier_block * nb)
+> +int unregister_module_notifier(struct notifier_block *nb)
+>  {
+>  	return blocking_notifier_chain_unregister(&module_notify_list, nb);
+>  }
+> @@ -740,8 +740,7 @@ static inline int try_force_unload(unsigned int flags)
+>  }
+>  #endif /* CONFIG_MODULE_FORCE_UNLOAD */
+>  
+> -struct stopref
+> -{
+> +struct stopref {
+>  	struct module *mod;
+>  	int flags;
+>  	int *forced;
 
-for you to fetch changes up to 1bbc26062754b012656d34103215f7552e02b999:
+These are fine.
 
-  virtio-rng: refactor probe error handling (2014-10-15 10:25:14 +1030)
+> @@ -878,7 +877,7 @@ static inline void print_unload_info(struct seq_file *m, struct module *mod)
+>  	seq_printf(m, " %lu ", module_refcount(mod));
+>  
+>  	/* Always include a trailing , so userspace can differentiate
+> -           between this and the old multi-field proc format. */
+> +	 * between this and the old multi-field proc format. */
+>  	list_for_each_entry(use, &mod->source_list, source_list) {
+>  		printed_something = 1;
+>  		seq_printf(m, "%s,", use->source->name);
 
-----------------------------------------------------------------
-One cc: stable commit, the rest are a series of minor cleanups which have
-been sitting in MST's tree during my vacation.  I changed a function name
-and made one trivial change, then they spent two days in linux-next.
+Actually, kernel style for multi-line comments, like it or not, is:
+
+  	/*
+         * Always include a trailing , so userspace can differentiate
+	 * between this and the old multi-field proc format.
+         */
+        
+> @@ -1953,7 +1951,7 @@ static int simplify_symbols(struct module *mod, const struct load_info *info)
+>  			/* We compiled with -fno-common.  These are not
+>  			   supposed to happen.  */
+>  			pr_debug("Common symbol: %s\n", name);
+> -			printk("%s: please compile with -fno-common\n",
+> +			pr_debug("%s: please compile with -fno-common\n",
+>  			       mod->name);
+>  			ret = -ENOEXEC;
+>  			break;
+
+Please change it to pr_warn rather than pr_debug!
+
+> @@ -3022,7 +3020,7 @@ static int do_init_module(struct module *mod)
+>  		ret = do_one_initcall(mod->init);
+>  	if (ret < 0) {
+>  		/* Init routine failed: abort.  Try to protect us from
+> -                   buggy refcounters. */
+> +		 * buggy refcounters. */
+>  		mod->state = MODULE_STATE_GOING;
+>  		synchronize_sched();
+>  		module_put(mod);
+> @@ -3174,7 +3172,7 @@ out:
+
+Comment style here, too.
+
+> @@ -3816,7 +3814,7 @@ void print_modules(void)
+>  	struct module *mod;
+>  	char buf[8];
+>  
+> -	printk(KERN_DEFAULT "Modules linked in:");
+> +	pr_warn("Modules linked in:");
+
+This is not the same as KERN_DEFAULT; is it correct?
 
 Thanks,
 Rusty.
-
-----------------------------------------------------------------
-Michael S. Tsirkin (24):
-      virtio_pci: fix virtio spec compliance on restore
-      virtio: unify config_changed handling
-      virtio-pci: move freeze/restore to virtio core
-      virtio: defer config changed notifications
-      virtio_blk: drop config_enable
-      virtio-blk: drop config_mutex
-      virtio_net: drop config_enable
-      virtio-net: drop config_mutex
-      virtio_net: minor cleanup
-      virtio: add API to enable VQs early
-      virtio_net: enable VQs early
-      virtio_blk: enable VQs early
-      virtio_console: enable VQs early
-      9p/trans_virtio: enable VQs early
-      virtio_net: fix use after free on allocation failure
-      virtio_scsi: move kick event out from virtscsi_init
-      virtio_blk: enable VQs early on restore
-      virtio_scsi: enable VQs early on restore
-      virtio_console: enable VQs early on restore
-      virtio_net: enable VQs early on restore
-      virtio_scsi: fix race on device removal
-      virtio_balloon: enable VQs early on restore
-      virtio_scsi: drop scan callback
-      virtio-rng: refactor probe error handling
-
-Paolo Bonzini (1):
-      virito_scsi: use freezable WQ for events
-
- drivers/block/virtio_blk.c          |  40 ++++----------
- drivers/char/hw_random/virtio-rng.c |  15 +++---
- drivers/char/virtio_console.c       |   4 ++
- drivers/misc/mic/card/mic_virtio.c  |   6 +--
- drivers/net/virtio_net.c            |  44 +++++----------
- drivers/s390/kvm/kvm_virtio.c       |   9 +---
- drivers/s390/kvm/virtio_ccw.c       |   6 +--
- drivers/scsi/virtio_scsi.c          |  42 +++++++++------
- drivers/virtio/virtio.c             | 103 ++++++++++++++++++++++++++++++++++++
- drivers/virtio/virtio_balloon.c     |   2 +
- drivers/virtio/virtio_mmio.c        |   7 +--
- drivers/virtio/virtio_pci.c         |  33 ++----------
- include/linux/virtio.h              |  14 +++++
- include/linux/virtio_config.h       |  17 ++++++
- net/9p/trans_virtio.c               |   2 +
- 15 files changed, 207 insertions(+), 137 deletions(-)
