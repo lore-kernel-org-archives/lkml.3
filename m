@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751446AbaJPHwZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 03:52:25 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:26775 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993AbaJPHwY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 03:52:24 -0400
-Date: Thu, 16 Oct 2014 10:52:11 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: Fabio Estevam <fabio.estevam@freescale.com>, devel@driverdev.osuosl.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>
-Subject: Re: [PATCH v2] bcm/CmHost.c: Fix noisy compile warnings
-Message-ID: <20141016075211.GE23154@mwanda>
-References: <1413399701-4321-1-git-send-email-jeffrey.t.kirsher@intel.com>
- <20141015195549.GR26918@mwanda>
- <1413404767.2412.31.camel@jtkirshe-mobl>
+	id S1751465AbaJPHxa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 03:53:30 -0400
+Received: from mail.efficios.com ([78.47.125.74]:34010 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750870AbaJPHx3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 03:53:29 -0400
+Date: Thu, 16 Oct 2014 09:52:51 +0200
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH v11 01/21] axonram: Fix bug in direct_access
+Message-ID: <20141016075251.GA18259@thinkos.etherlink>
+References: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com>
+ <1411677218-29146-2-git-send-email-matthew.r.wilcox@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1413404767.2412.31.camel@jtkirshe-mobl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1411677218-29146-2-git-send-email-matthew.r.wilcox@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 01:26:07PM -0700, Jeff Kirsher wrote:
-> On Wed, 2014-10-15 at 22:55 +0300, Dan Carpenter wrote:
-> > On Wed, Oct 15, 2014 at 12:01:41PM -0700, Jeff Kirsher wrote:
-> > > From: Fabio Estevam <fabio.estevam@freescale.com>
-> > > 
-> > > The Beceem WIMAX was generating compile warnings on 64bit machines,
-> > > which were:
-> > > 
-> > > drivers/staging/bcm/CmHost.c: In function ‘StoreCmControlResponseMessage’:
-> > > drivers/staging/bcm/CmHost.c:1503:3: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
-> > >    (struct bcm_connect_mgr_params *) ntohl(
-> > >    ^
-> > > drivers/staging/bcm/CmHost.c:1546:3: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
-> > >    (struct bcm_connect_mgr_params *) ntohl(
-> > >    ^
-> > > drivers/staging/bcm/CmHost.c:1564:3: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
-> > >    (struct bcm_connect_mgr_params *) ntohl(
-> > > 
-> > > This resolves the issue by preventing the driver to compile if CONFIG_64BIT
-> > > is enabled, since the driver is known to be broken for 64 bit arch's.
-> > > 
-> > 
-> > Oops.  Someone turned a Joe patch into a real patch.  Please enable
-> > COMPILE_TEST for this.
+On 25-Sep-2014 04:33:18 PM, Matthew Wilcox wrote:
+> The 'pfn' returned by axonram was completely bogus, and has been since
+> 2008.
 > 
-> I agree with Joe, that COMPILE_TEST is not useful for this driver.
+> Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+> Reviewed-by: Jan Kara <jack@suse.cz>
 
-If we remove the driver fine, but if we keep the driver then we should
-do enable any QA testing we can.
+This should also be submitted for stable kernels. (CC
+stable@vger.kernel.org)
 
-regards,
-dan carpenter
+Reviewed-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 
+> ---
+>  arch/powerpc/sysdev/axonram.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/powerpc/sysdev/axonram.c b/arch/powerpc/sysdev/axonram.c
+> index 47b6b9f..830edc8 100644
+> --- a/arch/powerpc/sysdev/axonram.c
+> +++ b/arch/powerpc/sysdev/axonram.c
+> @@ -156,7 +156,7 @@ axon_ram_direct_access(struct block_device *device, sector_t sector,
+>  	}
+>  
+>  	*kaddr = (void *)(bank->ph_addr + offset);
+> -	*pfn = virt_to_phys(kaddr) >> PAGE_SHIFT;
+> +	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
+>  
+>  	return 0;
+>  }
+> -- 
+> 2.1.0
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+> 
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
+Key fingerprint: 2A0B 4ED9 15F2 D3FA 45F5  B162 1728 0A97 8118 6ACF
