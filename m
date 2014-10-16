@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752204AbaJPQ5k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 12:57:40 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:32761 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751645AbaJPQ5j (ORCPT
+	id S1752292AbaJPQ6N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 12:58:13 -0400
+Received: from mail-oi0-f73.google.com ([209.85.218.73]:43642 "EHLO
+	mail-oi0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751872AbaJPQ6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 12:57:39 -0400
-To: schwidefsky@de.ibm.com
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, oleg@redhat.com
-Subject: Re: [PATCH] kernel/kmod: fix use-after-free of the sub_info structure
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <20141016160042.7f898871@mschwide>
-In-Reply-To: <20141016160042.7f898871@mschwide>
-Message-Id: <201410170157.AFH86961.FQtFHJVLOFSOOM@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Fri, 17 Oct 2014 01:57:25 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Thu, 16 Oct 2014 12:58:11 -0400
+From: Sonny Rao <sonnyrao@chromium.org>
+To: Alim Akhtar <alim.akhtar@gmail.com>, linux-mmc@vger.kernel.org
+Cc: Heiko Stuebner <heiko@sntech.de>, Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>, dianders@chromium.org,
+        eddie.cai@rock-chips.com, addy.ke@rock-chips.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Sonny Rao <sonnyrao@chromium.org>
+Subject: [PATCH v2] mmc: dw_mmc: Reset DMA before enabling IDMAC
+Date: Thu, 16 Oct 2014 09:58:05 -0700
+Message-Id: <1413478686-6857-1-git-send-email-sonnyrao@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Martin Schwidefsky wrote:
-> Found this in the message log on a s390 system:
-> 
-> BUG kmalloc-192 (Not tainted): Poison overwritten
+We've already got a reset of DMA after it's done.  Add one before we
+start DMA too.  This fixes a data corruption on Rockchip SoCs which
+will get bad data when doing a DMA transfer after doing a PIO transfer.
 
-The use-after-free location you are suspecting is
+We tested this on an Exynos 5800 with HS200 and didn't notice any
+difference in sequential read throughput.
 
-----------
-        retval = do_execve(getname_kernel(sub_info->path),
-                           (const char __user *const __user *)sub_info->argv,
-                           (const char __user *const __user *)sub_info->envp);
-        if (!retval)
-                return 0;
+Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Tested-by: Doug Anderson <dianders@chromium.org>
+---
+ drivers/mmc/host/dw_mmc.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-        /* Exec failed? */
-fail:
-        sub_info->retval = retval;
-        do_exit(0);
-}
-----------
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index 69f0cc6..ca67f69 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -83,6 +83,7 @@ struct idmac_desc {
+ #endif /* CONFIG_MMC_DW_IDMAC */
+ 
+ static bool dw_mci_reset(struct dw_mci *host);
++static bool dw_mci_ctrl_reset(struct dw_mci *host, u32 reset);
+ 
+ #if defined(CONFIG_DEBUG_FS)
+ static int dw_mci_req_show(struct seq_file *s, void *v)
+@@ -448,6 +449,10 @@ static void dw_mci_idmac_start_dma(struct dw_mci *host, unsigned int sg_len)
+ 
+ 	dw_mci_translate_sglist(host, host->data, sg_len);
+ 
++	/* Make sure to reset DMA in case we did PIO before this */
++	dw_mci_ctrl_reset(host, SDMMC_CTRL_DMA_RESET);
++	dw_mci_idmac_reset(host);
++
+ 	/* Select IDMAC interface */
+ 	temp = mci_readl(host, CTRL);
+ 	temp |= SDMMC_CTRL_USE_IDMAC;
+-- 
+2.1.2
 
-, isn't it?
-
-I could not interpret the
-
-> For UMH_NO_WAIT __call_usermodehelper() frees the sub_info structure
-> directly, for UMH_WAIT_EXEC the call to umh_complete() allows
-> call_usermodehelper_exec() to continue which then frees sub_info.
-
-lines.
-
-For both UMH_NO_WAIT and UMH_WAIT_EXEC cases,
-
-  kernel_thread(call_helper, sub_info, CLONE_VFORK | SIGCHLD)
-
-in __call_usermodehelper() waits for do_execve() to succeed or do_exit(),
-doesn't it? What is wrong with assigning sub_info->retval in
-____call_usermodehelper() when do_execve() did not succeed?
-Which function/thread can free sub_info before assigning sub_info->retval?
-
-Regards.
