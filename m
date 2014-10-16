@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751694AbaJPIMn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 04:12:43 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:18884 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106AbaJPIMk convert rfc822-to-8bit (ORCPT
+	id S1751814AbaJPIMw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 04:12:52 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:65351 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751714AbaJPIMs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 04:12:40 -0400
-From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
-To: Mark Brown <broonie@kernel.org>
-CC: "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH] spi/atmel: add support for runtime PM
-Thread-Topic: [PATCH] spi/atmel: add support for runtime PM
-Thread-Index: AQHP6OOz3LvTFspzlkWsWVFQ1Yxkwpwxzh0AgACO95A=
-Date: Thu, 16 Oct 2014 08:09:49 +0000
-Message-ID: <B256D81BAE5131468A838E5D7A243641BF589DDC@penmbx02.corp.atmel.com>
-References: <1413424160-21180-1-git-send-email-wenyou.yang@atmel.com>
- <20141016073004.GL27755@sirena.org.uk>
-In-Reply-To: <20141016073004.GL27755@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.5.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 16 Oct 2014 04:12:48 -0400
 MIME-Version: 1.0
+In-Reply-To: <A765B125120D1346A63912DDE6D8B6315E6F6F@NTXXIAMBX02.xacn.micron.com>
+References: <A765B125120D1346A63912DDE6D8B6315E62CB@NTXXIAMBX02.xacn.micron.com>
+	<CACna6rw4g1wWPv+VgL8WeA9rz-j8A6k+4bN7D=MQ9OU-BinToA@mail.gmail.com>
+	<A765B125120D1346A63912DDE6D8B6315E6F6F@NTXXIAMBX02.xacn.micron.com>
+Date: Thu, 16 Oct 2014 10:12:47 +0200
+Message-ID: <CACna6rxNbPzSYbe9GjQCSAeB8FgVi6ZpgKo=AB=6nYc4QcqN1g@mail.gmail.com>
+Subject: Re: [PATCH 1/1 v2] driver:mtd:spi-nor:fix spi_nor_scan overwrite
+ platform ID point
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: =?UTF-8?B?QmVhbiBIdW8g6ZyN5paM5paMIChiZWFuaHVvKQ==?= 
+	<beanhuo@micron.com>
+Cc: Brian Norris <computersforpeace@gmail.com>, Marek Vasut <marex@denx.de>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "grmoore@altera.com" <grmoore@altera.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "shijie8@gmail.com" <shijie8@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "geert+renesas@glider.be" <geert+renesas@glider.be>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On 16 October 2014 10:00, Bean Huo 霍斌斌 (beanhuo) <beanhuo@micron.com> wrote:
+>>There are a lot of changes happening/requested around this code. I also proposed some patch touching this code, see https://patchwork.ozlabs.org/patch/377917/
+>
+>>Right now there is a slow ongoing work on fixing some m25p80 regression, which also may touch the code you change. So I'll suggest postponing this patch until we get a regression fixed and then work on this hacky code again.
+>
+>
+> Thanks for your concerns.But for the same deivce id with the different extended id and
+> the same device name with the different device id issue, in your patch,this doesn't take
+> into account. I have encountered this situation. for example:
 
-> -----Original Message-----
-> From: Mark Brown [mailto:broonie@kernel.org]
-> Sent: Thursday, October 16, 2014 3:30 PM
-> To: Yang, Wenyou
-> Cc: linux-spi@vger.kernel.org; linux-kernel@vger.kernel.org; Ferre, Nicolas; linux-
-> arm-kernel@lists.infradead.org
-> Subject: Re: [PATCH] spi/atmel: add support for runtime PM
-> 
-> On Thu, Oct 16, 2014 at 09:49:20AM +0800, Wenyou Yang wrote:
-> 
-> > +static int atmel_spi_runtime_resume(struct device *dev) {
-> > +	struct spi_master *master = dev_get_drvdata(dev);
-> > +	struct atmel_spi *as = spi_master_get_devdata(master);
-> > +
-> > +	pinctrl_pm_select_default_state(dev);
-> > +	clk_prepare_enable(as->clk);
-> > +
-> 
-> This looks mostly good but you should check the return value of
-> clk_prepare_enable() - it can fail.
-Thanks a lot, I will add it.
-
-Best Regards,
-Wenyou Yang
+I really wasn't looking into details yet and I'm aware my patch does
+something else. I just say we should first fix the regression and then
+base next patches on top of that regression fix. I'm not NACKing your
+changes :)
