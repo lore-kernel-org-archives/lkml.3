@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752734AbaJPKXP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 06:23:15 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37391 "EHLO
+	id S1752799AbaJPKYF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 06:24:05 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:37354 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752596AbaJPKUW (ORCPT
+	with ESMTP id S1752593AbaJPKUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 06:20:22 -0400
+	Thu, 16 Oct 2014 06:20:21 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -14,10 +14,12 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH v2 52/53] dmaengine: sun6i: Declare slave capabilities for the generic code
-Date: Thu, 16 Oct 2014 12:17:51 +0200
-Message-Id: <1413454672-27400-53-git-send-email-maxime.ripard@free-electrons.com>
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Dan Williams <dan.j.williams@intel.com>,
+        linux-rpi-kernel@lists.infradead.org
+Subject: [PATCH v2 45/53] dmaengine: bcm2835: Declare slave capabilities for the generic code
+Date: Thu, 16 Oct 2014 12:17:44 +0200
+Message-Id: <1413454672-27400-46-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -32,30 +34,43 @@ Make use of this code.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/dma/sun6i-dma.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/dma/bcm2835-dma.c | 16 ++++------------
+ 1 file changed, 4 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/dma/sun6i-dma.c b/drivers/dma/sun6i-dma.c
-index 6324c1e27cc9..1cb347e9f20d 100644
---- a/drivers/dma/sun6i-dma.c
-+++ b/drivers/dma/sun6i-dma.c
-@@ -944,6 +944,16 @@ static int sun6i_dma_probe(struct platform_device *pdev)
- 	sdc->slave.device_resume		= sun6i_dma_resume;
- 	sdc->slave.device_terminate_all		= sun6i_dma_terminate_all;
- 	sdc->slave.chancnt			= NR_MAX_VCHANS;
-+	sdc->slave.generic_slave_caps		= true;
-+	sdc->slave.src_addr_widths		= BIT(DMA_SLAVE_BUSWIDTH_1_BYTE) |
-+						  BIT(DMA_SLAVE_BUSWIDTH_2_BYTES) |
-+						  BIT(DMA_SLAVE_BUSWIDTH_4_BYTES);
-+	sdc->slave.dst_addr_widths		= BIT(DMA_SLAVE_BUSWIDTH_1_BYTE) |
-+						  BIT(DMA_SLAVE_BUSWIDTH_2_BYTES) |
-+						  BIT(DMA_SLAVE_BUSWIDTH_4_BYTES);
-+	sdc->slave.directions			= BIT(DMA_DEV_TO_MEM) |
-+						  BIT(DMA_MEM_TO_DEV);
-+	sdc->slave.residue_granularity		= DMA_RESIDUE_GRANULARITY_BURST;
- 	sdc->slave.dev = &pdev->dev;
+diff --git a/drivers/dma/bcm2835-dma.c b/drivers/dma/bcm2835-dma.c
+index 243bb1ed6bfc..f4f200113e0f 100644
+--- a/drivers/dma/bcm2835-dma.c
++++ b/drivers/dma/bcm2835-dma.c
+@@ -552,18 +552,6 @@ static struct dma_chan *bcm2835_dma_xlate(struct of_phandle_args *spec,
+ 	return chan;
+ }
  
- 	sdc->pchans = devm_kcalloc(&pdev->dev, NR_MAX_CHANNELS,
+-static int bcm2835_dma_device_slave_caps(struct dma_chan *dchan,
+-	struct dma_slave_caps *caps)
+-{
+-	caps->src_addr_widths = BIT(DMA_SLAVE_BUSWIDTH_4_BYTES);
+-	caps->dst_addr_widths = BIT(DMA_SLAVE_BUSWIDTH_4_BYTES);
+-	caps->directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
+-	caps->cmd_pause = false;
+-	caps->cmd_terminate = true;
+-
+-	return 0;
+-}
+-
+ static int bcm2835_dma_probe(struct platform_device *pdev)
+ {
+ 	struct bcm2835_dmadev *od;
+@@ -605,6 +593,10 @@ static int bcm2835_dma_probe(struct platform_device *pdev)
+ 	od->ddev.device_prep_dma_cyclic = bcm2835_dma_prep_dma_cyclic;
+ 	od->ddev.device_config = bcm2835_dma_slave_config;
+ 	od->ddev.device_terminate_all = bcm2835_dma_terminate_all;
++	od->ddev.generic_slave_caps = true;
++	od->ddev.src_addr_widths = BIT(DMA_SLAVE_BUSWIDTH_4_BYTES);
++	od->ddev.dst_addr_widths = BIT(DMA_SLAVE_BUSWIDTH_4_BYTES);
++	od->ddev.directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
+ 	od->ddev.dev = &pdev->dev;
+ 	INIT_LIST_HEAD(&od->ddev.channels);
+ 	spin_lock_init(&od->lock);
 -- 
 2.1.1
 
