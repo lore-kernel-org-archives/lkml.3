@@ -1,42 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048AbaJPKTM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 06:19:12 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:57620 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751647AbaJPKTK (ORCPT
+	id S1752156AbaJPKTS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 06:19:18 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:37107 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751647AbaJPKTO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 06:19:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <A765B125120D1346A63912DDE6D8B6315E6FE5@NTXXIAMBX02.xacn.micron.com>
-References: <A765B125120D1346A63912DDE6D8B6315E62CB@NTXXIAMBX02.xacn.micron.com>
-	<CACna6rw4g1wWPv+VgL8WeA9rz-j8A6k+4bN7D=MQ9OU-BinToA@mail.gmail.com>
-	<A765B125120D1346A63912DDE6D8B6315E6F6F@NTXXIAMBX02.xacn.micron.com>
-	<CACna6rxNbPzSYbe9GjQCSAeB8FgVi6ZpgKo=AB=6nYc4QcqN1g@mail.gmail.com>
-	<A765B125120D1346A63912DDE6D8B6315E6FE5@NTXXIAMBX02.xacn.micron.com>
-Date: Thu, 16 Oct 2014 12:19:09 +0200
-Message-ID: <CACna6ryjvp1F7=u0NSK77G5X8dQgutuQRwg3AX_XCRS=MG_Vcg@mail.gmail.com>
-Subject: Re: [PATCH 1/1 v2] driver:mtd:spi-nor:fix spi_nor_scan overwrite
- platform ID point
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: bpqw <bpqw@micron.com>
-Cc: Brian Norris <computersforpeace@gmail.com>, Marek Vasut <marex@denx.de>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "grmoore@altera.com" <grmoore@altera.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "shijie8@gmail.com" <shijie8@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "geert+renesas@glider.be" <geert+renesas@glider.be>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 16 Oct 2014 06:19:14 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
+        lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: [PATCH v2 04/53] dmaengine: split out pause/resume operations from device_control
+Date: Thu, 16 Oct 2014 12:17:03 +0200
+Message-Id: <1413454672-27400-5-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 October 2014 10:41, bpqw <bpqw@micron.com> wrote:
-> By the way ,I still don't understand why you specify id NULL in you patch:
+Split out the pause and resume operations to callbacks of their own. In order
+to preserve some backwark compatibility, the dmaengine_pause/dmaengine_resume
+are still falling back on dmaengine_device_control.
 
-I guess I needed it for my Broadcom SPI driver, see:
-mtd: bcm53xxspiflash: new driver for SPI flahes on Broadcom ARM SoCs
-https://patchwork.ozlabs.org/patch/381902/
+Hopefully, that will allow to get the device capabilities in a generic way,
+removing the need to implement device_slave_caps.
 
-But I'll need to re-think that and update my patch.
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ include/linux/dmaengine.h | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index 7937f81e5e2e..b89c8004fcd8 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -612,6 +612,10 @@ struct dma_tx_state {
+  *	code
+  * @device_control: manipulate all pending operations on a channel, returns
+  *	zero or error code
++ * @device_pause: Pauses any transfer happening on a channel. Returns
++ *	0 or an error code
++ * @device_resume: Resumes any transfer on a channel previously
++ *	paused. Returns 0 or an error code
+  * @device_tx_status: poll for transaction completion, the optional
+  *	txstate parameter can be supplied with a pointer to get a
+  *	struct with auxiliary transfer status information, otherwise the call
+@@ -680,6 +684,8 @@ struct dma_device {
+ 			     struct dma_slave_config *config);
+ 	int (*device_control)(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ 			      unsigned long arg);
++	int (*device_pause)(struct dma_chan *chan);
++	int (*device_resume)(struct dma_chan *chan);
+ 	enum dma_status (*device_tx_status)(struct dma_chan *chan,
+ 					    dma_cookie_t cookie,
+ 					    struct dma_tx_state *txstate);
+@@ -783,11 +789,17 @@ static inline int dmaengine_terminate_all(struct dma_chan *chan)
+ 
+ static inline int dmaengine_pause(struct dma_chan *chan)
+ {
++	if (chan->device->device_pause)
++		return chan->device->device_pause(chan);
++
+ 	return dmaengine_device_control(chan, DMA_PAUSE, 0);
+ }
+ 
+ static inline int dmaengine_resume(struct dma_chan *chan)
+ {
++	if (chan->device->device_resume)
++		return chan->device->device_resume(chan);
++
+ 	return dmaengine_device_control(chan, DMA_RESUME, 0);
+ }
+ 
+-- 
+2.1.1
+
