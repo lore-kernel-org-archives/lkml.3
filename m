@@ -1,188 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194AbaJPJ0W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 05:26:22 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:15600 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199AbaJPJ0U (ORCPT
+	id S1751945AbaJPJaJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 05:30:09 -0400
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.145]:10119 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750966AbaJPJaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 05:26:20 -0400
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <broonie@kernel.org>
-CC: <linux-spi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <nicolas.ferre@atmel.com>, <wenyou.yang@atmel.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v2] spi/atmel: add support for runtime PM
-Date: Thu, 16 Oct 2014 17:23:10 +0800
-Message-ID: <1413451390-22859-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 16 Oct 2014 05:30:06 -0400
+X-Env-Sender: Andreas.Werner@men.de
+X-Msg-Ref: server-6.tower-180.messagelabs.com!1413451793!37122309!1
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.12.2; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Thu, 16 Oct 2014 11:29:54 +0200
+Date: Thu, 16 Oct 2014 12:21:27 +0200
+From: Andreas Werner <andreas.werner@men.de>
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: Andreas Werner <andreas.werner@men.de>, <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
+        <johannes.thumshirn@men.de>
+Subject: Re: [PATCH 1/2] drivers/misc/eeprom/men_eeprod: Introduce MEN Board
+ Information EEPROM driver
+Message-ID: <20141016102126.GB23256@awelinux>
+References: <cover.1413416105.git.andreas.werner@men.de>
+ <d169930cfe45d4c05c79f7dd00471d732441529d.1413416105.git.andreas.werner@men.de>
+ <20141016085835.GA1273@katana>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20141016085835.GA1273@katana>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [192.1.1.171]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drivers should put the device into low power states proactively whenever the
-device is not in use. Thus implement support for runtime PM and use the
-autosuspend feature to make sure that we can still perform well in case we see
-lots of SPI traffic within short period of time.
+On Thu, Oct 16, 2014 at 10:58:35AM +0200, Wolfram Sang wrote:
+> * PGP Signed by an unknown key
+> 
+> On Thu, Oct 16, 2014 at 10:15:08AM +0200, Andreas Werner wrote:
+> > Added driver to support the MEN Board Information EEPROM.
+> > The driver exports the production information as read only sysfs
+> > entries, as well as a user section which is read/write accessible.
+> > 
+> > Tested on PPC QorIQ and Intel Atom E680.
+> > 
+> > Tested-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+> > Signed-off-by: Andreas Werner <andreas.werner@men.de>
+> 
+> I guess this is just a standard EEPROM with a well defined layout?
+> Why don't you want to use the standard driver then and parse the thing
+> in userspace?
+>
 
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
----
-Change log
-v2:
-    add check the return value of clk_prepare_enable().
+Yes it is a standard 256byte eeprom.
+I do not want to parse the things in userspace because this EEPROM data
+are related to the hardware and i want to give our customer the easiest way
+to access the data without installing any tool.
 
- drivers/spi/spi-atmel.c |   68 ++++++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 61 insertions(+), 7 deletions(-)
+The current state to read the eeprom data is, that customer needs to install a big
+environment where the tool is integrated to have access to those kind of simple
+data or they have to write their own code.
 
-diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
-index 649dcb5..bc9d969 100644
---- a/drivers/spi/spi-atmel.c
-+++ b/drivers/spi/spi-atmel.c
-@@ -26,6 +26,7 @@
- #include <linux/io.h>
- #include <linux/gpio.h>
- #include <linux/pinctrl/consumer.h>
-+#include <linux/pm_runtime.h>
+If our support department get some questions from the customer they always want
+to have exact information about the board. Therefore I want to use this driver
+and sysfs to get the informations as fast as possible without installing anything.
  
- /* SPI register offsets */
- #define SPI_CR					0x0000
-@@ -191,6 +192,8 @@
- 
- #define SPI_DMA_TIMEOUT		(msecs_to_jiffies(1000))
- 
-+#define AUTOSUSPEND_TIMEOUT	2000
-+
- struct atmel_spi_dma {
- 	struct dma_chan			*chan_rx;
- 	struct dma_chan			*chan_tx;
-@@ -1313,6 +1316,7 @@ static int atmel_spi_probe(struct platform_device *pdev)
- 	master->setup = atmel_spi_setup;
- 	master->transfer_one_message = atmel_spi_transfer_one_message;
- 	master->cleanup = atmel_spi_cleanup;
-+	master->auto_runtime_pm = true;
- 	platform_set_drvdata(pdev, master);
- 
- 	as = spi_master_get_devdata(master);
-@@ -1385,6 +1389,11 @@ static int atmel_spi_probe(struct platform_device *pdev)
- 	dev_info(&pdev->dev, "Atmel SPI Controller at 0x%08lx (irq %d)\n",
- 			(unsigned long)regs->start, irq);
- 
-+	pm_runtime_set_autosuspend_delay(&pdev->dev, AUTOSUSPEND_TIMEOUT);
-+	pm_runtime_use_autosuspend(&pdev->dev);
-+	pm_runtime_set_active(&pdev->dev);
-+	pm_runtime_enable(&pdev->dev);
-+
- 	ret = devm_spi_register_master(&pdev->dev, master);
- 	if (ret)
- 		goto out_free_dma;
-@@ -1392,6 +1401,9 @@ static int atmel_spi_probe(struct platform_device *pdev)
- 	return 0;
- 
- out_free_dma:
-+	pm_runtime_disable(&pdev->dev);
-+	pm_runtime_set_suspended(&pdev->dev);
-+
- 	if (as->use_dma)
- 		atmel_spi_release_dma(as);
- 
-@@ -1413,6 +1425,8 @@ static int atmel_spi_remove(struct platform_device *pdev)
- 	struct spi_master	*master = platform_get_drvdata(pdev);
- 	struct atmel_spi	*as = spi_master_get_devdata(master);
- 
-+	pm_runtime_get_sync(&pdev->dev);
-+
- 	/* reset the hardware and block queue progress */
- 	spin_lock_irq(&as->lock);
- 	if (as->use_dma) {
-@@ -1430,9 +1444,13 @@ static int atmel_spi_remove(struct platform_device *pdev)
- 
- 	clk_disable_unprepare(as->clk);
- 
-+	pm_runtime_put_noidle(&pdev->dev);
-+	pm_runtime_disable(&pdev->dev);
-+
- 	return 0;
- }
- 
-+#ifdef CONFIG_PM
- #ifdef CONFIG_PM_SLEEP
- static int atmel_spi_suspend(struct device *dev)
- {
-@@ -1447,9 +1465,10 @@ static int atmel_spi_suspend(struct device *dev)
- 		return ret;
- 	}
- 
--	clk_disable_unprepare(as->clk);
--
--	pinctrl_pm_select_sleep_state(dev);
-+	if (!pm_runtime_suspended(dev)) {
-+		clk_disable_unprepare(as->clk);
-+		pinctrl_pm_select_sleep_state(dev);
-+	}
- 
- 	return 0;
- }
-@@ -1460,9 +1479,12 @@ static int atmel_spi_resume(struct device *dev)
- 	struct atmel_spi	*as = spi_master_get_devdata(master);
- 	int ret;
- 
--	pinctrl_pm_select_default_state(dev);
--
--	clk_prepare_enable(as->clk);
-+	if (!pm_runtime_suspended(dev)) {
-+		pinctrl_pm_select_default_state(dev);
-+		ret = clk_prepare_enable(as->clk);
-+		if (ret)
-+			return ret;
-+	}
- 
- 	/* Start the queue running */
- 	ret = spi_master_resume(master);
-@@ -1471,9 +1493,41 @@ static int atmel_spi_resume(struct device *dev)
- 
- 	return ret;
- }
-+#endif
- 
--static SIMPLE_DEV_PM_OPS(atmel_spi_pm_ops, atmel_spi_suspend, atmel_spi_resume);
-+#ifdef CONFIG_PM_RUNTIME
-+static int atmel_spi_runtime_suspend(struct device *dev)
-+{
-+	struct spi_master *master = dev_get_drvdata(dev);
-+	struct atmel_spi *as = spi_master_get_devdata(master);
- 
-+	clk_disable_unprepare(as->clk);
-+	pinctrl_pm_select_sleep_state(dev);
-+
-+	return 0;
-+}
-+
-+static int atmel_spi_runtime_resume(struct device *dev)
-+{
-+	struct spi_master *master = dev_get_drvdata(dev);
-+	struct atmel_spi *as = spi_master_get_devdata(master);
-+	int ret;
-+
-+	pinctrl_pm_select_default_state(dev);
-+
-+	ret = clk_prepare_enable(as->clk);
-+	if (ret)
-+		return ret;
-+
-+	return 0;
-+}
-+#endif
-+
-+static const struct dev_pm_ops atmel_spi_pm_ops = {
-+	SET_SYSTEM_SLEEP_PM_OPS(atmel_spi_suspend, atmel_spi_resume)
-+	SET_RUNTIME_PM_OPS(atmel_spi_runtime_suspend,
-+			   atmel_spi_runtime_resume, NULL)
-+};
- #define ATMEL_SPI_PM_OPS	(&atmel_spi_pm_ops)
- #else
- #define ATMEL_SPI_PM_OPS	NULL
--- 
-1.7.9.5
+> Consider how bloated the sysfs-ABI might get if every vendor who uses an
+> eeprom wants to expose the data this way?
+> 
 
+Yes and no. The possible sysfs entries gets bloated if every vendor will do it
+like this way, but normally there is just one Board EEPROM on the board, therefore
+only one driver gets loaded.
+
+I mean its the same for every i2c device like a temperature sensor, I can also
+read it from userspace without any special hwmon driver.
+
+> > +struct eeprom_data {
+> > +	uint8_t eeprod_id;
+> > +
+> > +	uint8_t revision[3];
+> > +	uint32_t serialnr;
+> > +	uint8_t board_model;
+> > +	char hw_name[6];
+> > +
+> > +	uint8_t reserved;
+> > +
+> > +	__be16 prod_date;
+> > +	__be16 rep_date;
+> > +
+> > +	uint8_t reserved2[4];
+> > +};
+> 
+> And what if the compiler reorders?
+
+Shit you are right, I will pack it.#
+
+> 
+> 
+> * Unknown Key
+> * 0x14A029B6
+
+Regards
+Andy
