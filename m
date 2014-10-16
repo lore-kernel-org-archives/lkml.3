@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751793AbaJPICG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 04:02:06 -0400
-Received: from mailout.micron.com ([137.201.242.129]:15146 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164AbaJPICC (ORCPT
+	id S1751806AbaJPICU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 04:02:20 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50211 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750989AbaJPICO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 04:02:02 -0400
-From: =?utf-8?B?QmVhbiBIdW8g6ZyN5paM5paMIChiZWFuaHVvKQ==?= 
-	<beanhuo@micron.com>
-To: Rafal Milecki <zajec5@gmail.com>,
-        Brian Norris <computersforpeace@gmail.com>
-CC: Marek Vasut <marex@denx.de>, "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "grmoore@altera.com" <grmoore@altera.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "shijie8@gmail.com" <shijie8@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "geert+renesas@glider.be" <geert+renesas@glider.be>
-Subject: RE: [PATCH 1/1 v2] driver:mtd:spi-nor:fix spi_nor_scan overwrite
- platform ID point
-Thread-Topic: [PATCH 1/1 v2] driver:mtd:spi-nor:fix spi_nor_scan overwrite
- platform ID point
-Thread-Index: AQHP6ROhG57jwc2EF0C6Q8aiR7XicZwyWLkw
-Date: Thu, 16 Oct 2014 08:00:51 +0000
-Message-ID: <A765B125120D1346A63912DDE6D8B6315E6F6F@NTXXIAMBX02.xacn.micron.com>
-References: <A765B125120D1346A63912DDE6D8B6315E62CB@NTXXIAMBX02.xacn.micron.com>
- <CACna6rw4g1wWPv+VgL8WeA9rz-j8A6k+4bN7D=MQ9OU-BinToA@mail.gmail.com>
-In-Reply-To: <CACna6rw4g1wWPv+VgL8WeA9rz-j8A6k+4bN7D=MQ9OU-BinToA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.84.5]
-x-tm-as-product-ver: SMEX-10.0.0.4152-7.000.1014-21028.001
-x-tm-as-result: No--41.228900-0.000000-31
-x-tm-as-user-approved-sender: Yes
-x-tm-as-user-blocked-sender: No
-x-mt-checkinternalsenderrule: True
-Content-Type: text/plain; charset="utf-8"
+	Thu, 16 Oct 2014 04:02:14 -0400
+Date: Thu, 16 Oct 2014 10:02:09 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Patrick Palka <patrick@parcs.ath.cx>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Pranith Kumar <bobby.prani@gmail.com>
+Subject: Re: [PATCH] Fix the x86 specializations of atomic_[set|clear]_mask
+Message-ID: <20141016080209.GE7369@worktop.fdxtended.com>
+References: <1413405481-28818-1-git-send-email-patrick@parcs.ath.cx>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413405481-28818-1-git-send-email-patrick@parcs.ath.cx>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9G82DVo003867
 
->There are a lot of changes happening/requested around this code. I also proposed some patch touching this code, see https://patchwork.ozlabs.org/patch/377917/
+On Wed, Oct 15, 2014 at 04:38:01PM -0400, Patrick Palka wrote:
+> This patch fixes a number of issues with these specializations:
+> 
+>   1. The memory operand inside the asm specification is erroneously
+>   declared read-only instead of read-write.
+> 
+>   2. There is no reason to require the 1st operand of andl/orl to be
+>   inside a register; the 1st operand could also be an immediate operand.
+>   So change its specification from "r" to "ir".
+> 
+>   3. Since addr is supposed to be an atomic_t *, the memory operand
+>   should be addr->counter and not *addr.
+> 
+>   4. These specializations should be inline functions instead of macros.
+> 
+>   5. Finally, the "memory" clobbers are unnecessary, so they should be
+>   removed.  (This is in line with the other atomic functions such as
+>   atomic_add and atomic_sub, the likes of which do not have a "memory"
+>   clobber.)
 
->Right now there is a slow ongoing work on fixing some m25p80 regression, which also may touch the code you change. So I'll suggest postponing this patch until we get a regression fixed and then work on this hacky code again.
-
-
-Thanks for your concerns.But for the same deivce id with the different extended id and
-the same device name with the different device id issue, in your patch,this doesn't take
-into account. I have encountered this situation. for example:
-
-
-first condition (for the same deivce id with the different extended id):
-
-	{ "n25q064",     INFO(0x20ba17, 0, 64 * 1024,  128, 0) },
-	{ "n25ml064",    INFO(0x20ba17, 0x1234, 64 * 1024,  256, 0) },//right device data
-	{ "n25q128a13",  INFO(0x20ba18, 0, 64 * 1024,  256, 0) },
-	{ "n25q256a",    INFO(0x20ba19, 0, 64 * 1024,  512, SECT_4K) },
-	{ "n25q512a",    INFO(0x20bb20, 0, 64 * 1024, 1024, SECT_4K) },
-
-second condition(the same device id with the different device name):
-
- 	{ "n25tl28",     INFO(0x20ba17, 0, 64 * 1024,  128, 0) },
-	{ "n25ml028",     INFO(0x20ba17, 0, 64 * 1024,  256, 0) },//right device data
-	{ "n25q128a13",  INFO(0x20ba18, 0, 64 * 1024,  256, 0) },
-	{ "n25q256a",    INFO(0x20ba19, 0, 64 * 1024,  512, SECT_4K) },
-	{ "n25q512a",    INFO(0x20bb20, 0, 64 * 1024, 1024, SECT_4K) },
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+No real problem with this, but I'm going to kill off these functions
+when I get a little time :)
