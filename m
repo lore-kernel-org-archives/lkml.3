@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086AbaJPXQE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 19:16:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49606 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753048AbaJPXQB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 19:16:01 -0400
-Date: Fri, 17 Oct 2014 01:14:57 +0200
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
-        Linux API <linux-api@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Anup Patel <anup.patel@linaro.org>
-Subject: Re: [PATCH] staging: android: binder: move to the "real" part of the
- kernel
-Message-ID: <20141016231457.GB13592@kroah.com>
-References: <20141016124741.GA3832@kroah.com>
- <CAKgNAkiPg8G13XZXG6CiaBFZ1yqY2J7_OAppDOGweuNpRaojuA@mail.gmail.com>
+	id S1753235AbaJPXQO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 19:16:14 -0400
+Received: from ozlabs.org ([103.22.144.67]:35880 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753096AbaJPXQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 19:16:06 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Cc: David Woodhouse <David.Woodhouse@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Arjun Sreedharan <arjun024@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: krealloc in kernel/params.c
+In-Reply-To: <87fveo1h07.fsf@rasmusvillemoes.dk>
+References: <87mw8y8jq7.fsf@rasmusvillemoes.dk> <87r3yaapyf.fsf@rustcorp.com.au> <87fveo1h07.fsf@rasmusvillemoes.dk>
+User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Fri, 17 Oct 2014 09:29:27 +1030
+Message-ID: <87wq7zaaeo.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKgNAkiPg8G13XZXG6CiaBFZ1yqY2J7_OAppDOGweuNpRaojuA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 04:18:02PM +0200, Michael Kerrisk (man-pages) wrote:
-> On Thu, Oct 16, 2014 at 2:47 PM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> > From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >
-> > The Android binder code has been "stable" for many years now.  No matter
-> > what comes in the future, we are going to have to support this API, so
-> > might as well move it to the "real" part of the kernel as there's no
-> > real work that needs to be done to the existing code.
-> 
-> Where does one find the canonical documentation of the user-space API?
+Rasmus Villemoes <linux@rasmusvillemoes.dk> writes:
+> On Wed, Oct 15 2014, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>
+>> Rasmus Villemoes <linux@rasmusvillemoes.dk> writes:
+>> The kzalloc-then-always-krealloc pattern is perhaps overly simplistic,
+>> but this code has clearly confused people.  It worked on me...
+>>
+>
+> I think kzalloc immediately followed by kreallocing the returned value
+> is rather ugly. Other than that:
 
-There really is only one "canonical" thing, and that is in the libbinder
-code in the Android userspace repository.  And it's not really
-"documentation" so much as, "a C file that interacts with the ioctls in
-the binder kernel code" :(
+Indeed, but it's an obvious pattern.  "If not initialized, initialize".
 
-Think of this as just a random character driver with some funny ioctls
-that will never get really documented as there is only one user of it.
+>> -		num = mk->mp->num;
+>> -		attrs = mk->mp->grp.attrs;
+>> +		/* First allocation. */
+>> +		mk->mp = kzalloc(sizeof(*mk->mp), GFP_KERNEL);
+>> +		if (!mk->mp)
+>> +			return -ENOMEM;
+>
+> free_module_param_attrs does not check mk->mp for being NULL before
+> kfree'ing mk->mp->grp.attrs, so this will oops.
 
-sorry,
+Nice catch, folded this in:
 
-greg k-h
+diff --git a/kernel/params.c b/kernel/params.c
+index 3ebe6c64aa67..ee92e67f2cee 100644
+--- a/kernel/params.c
++++ b/kernel/params.c
+@@ -650,7 +650,8 @@ static __modinit int add_sysfs_param(struct module_kobject *mk,
+ #ifdef CONFIG_MODULES
+ static void free_module_param_attrs(struct module_kobject *mk)
+ {
+-	kfree(mk->mp->grp.attrs);
++	if (mk->mp)
++		kfree(mk->mp->grp.attrs);
+ 	kfree(mk->mp);
+ 	mk->mp = NULL;
+ }
+
+Thanks!
+Rusty.
