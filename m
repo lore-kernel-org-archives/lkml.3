@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751872AbaJPLhQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 07:37:16 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:51048 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765AbaJPLhP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 07:37:15 -0400
-From: James Geboski <jgeboski@gmail.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] cpufreq: allow powersave governor as the default without expert mode
-Date: Thu, 16 Oct 2014 07:37:11 -0400
-Message-Id: <1413459431-12355-1-git-send-email-jgeboski@gmail.com>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1413322689-6195-1-git-send-email-jgeboski@gmail.com>
-References: <1413322689-6195-1-git-send-email-jgeboski@gmail.com>
+	id S1751394AbaJPLtX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 07:49:23 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:36612 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750805AbaJPLtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 07:49:22 -0400
+Date: Thu, 16 Oct 2014 13:49:17 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Erik Bosman <ebn310@few.vu.nl>
+Subject: Re: [RFC 2/5] x86: Store a per-cpu shadow copy of CR4
+Message-ID: <20141016114917.GD25025@nazgul.tnic>
+References: <cover.1413323611.git.luto@amacapital.net>
+ <808fa43ef6e24d1df47c2666174d997105b9582d.1413323611.git.luto@amacapital.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <808fa43ef6e24d1df47c2666174d997105b9582d.1413323611.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The intel_pstate driver only supports the performance and the powersave
-governors. With the performance governor ensuring the highest possible
-performance settings, userspace tools fail to make any lasting changes.
-In order to allow userspace tools to make modifications to the settings,
-the powersave governor must be in use. This makes having the powersave
-governor as the default convenient for systems where the intel_pstate
-driver is being employed. Having to enable expert mode in the kernel
-configuration is just a headache for such a trivial task.
+On Tue, Oct 14, 2014 at 03:57:36PM -0700, Andy Lutomirski wrote:
+> Context switches and TLB flushes can change individual bits of CR4.
+> CR4 reads take several cycles, so store a shadow copy of CR4 in a
+> per-cpu variable.
+> 
+> To avoid wasting a cache line, I added the CR4 shadow to
+> cpu_tlbstate, which is already touched during context switches.
 
-This patch applies to all kernel versions 2.6.38 or greater after the
-migration from CONFIG_EMBEDDED to CONFIG_EXPERT (6a108a14fa35). Most
-importantly, this applies to kernel versions 3.9 or greater when the
-intel_pstate driver was introduced.
+So does this even show in any workloads as any improvement?
 
-Signed-off-by: James Geboski <jgeboski@gmail.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
----
-ChangeLog v2:
-  - Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/Kconfig | 1 -
- 1 file changed, 1 deletion(-)
+Also, what's the rule with reading the shadow CR4? kvm only? Because
+svm_set_cr4() in svm.c reads the host CR4 too.
 
-diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
-index 3489f8f..73df7db 100644
---- a/drivers/cpufreq/Kconfig
-+++ b/drivers/cpufreq/Kconfig
-@@ -63,7 +63,6 @@ config CPU_FREQ_DEFAULT_GOV_PERFORMANCE
- 
- config CPU_FREQ_DEFAULT_GOV_POWERSAVE
- 	bool "powersave"
--	depends on EXPERT
- 	select CPU_FREQ_GOV_POWERSAVE
- 	help
- 	  Use the CPUFreq governor 'powersave' as default. This sets
+Should we make all code access the shadow CR4 maybe...
+
 -- 
-2.1.2
-
+Regards/Gruss,
+    Boris.
+--
