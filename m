@@ -1,86 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751593AbaJPPtM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 11:49:12 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:60608 "EHLO mail.skyhub.de"
+	id S1751678AbaJPPt6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 11:49:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34111 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751073AbaJPPtL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 11:49:11 -0400
-Date: Thu, 16 Oct 2014 17:49:14 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Erik Bosman <ebn310@few.vu.nl>
-Subject: Re: [RFC 3/5] x86: Add a comment clarifying LDT context switching
-Message-ID: <20141016154914.GD30314@nazgul.tnic>
-References: <cover.1413323611.git.luto@amacapital.net>
- <93ffc13d9e829f3ded9776fec62385bccb7439e1.1413323612.git.luto@amacapital.net>
+	id S1751360AbaJPPt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 11:49:56 -0400
+Date: Thu, 16 Oct 2014 11:49:49 -0400
+From: Aristeu Rozanski <aris@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: [PATCH] tiny: reverse logic for DISABLE_DEV_COREDUMP
+Message-ID: <20141016154949.GR5930@redhat.com>
+References: <20141016133658.GP5930@redhat.com>
+ <20141016134430.GB7664@thin>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <93ffc13d9e829f3ded9776fec62385bccb7439e1.1413323612.git.luto@amacapital.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141016134430.GB7664@thin>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 14, 2014 at 03:57:37PM -0700, Andy Lutomirski wrote:
-> The code is correct, but only for a rather subtle reason.  This
-> confused me for quite a while when I read switch_mm, so clarify the
-> code to avoid confusing other people, too.
-> 
-> TBH, I wouldn't be surprised if this code was only correct by
-> accident.
-> 
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
->  arch/x86/include/asm/mmu_context.h | 11 ++++++++++-
->  1 file changed, 10 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/include/asm/mmu_context.h b/arch/x86/include/asm/mmu_context.h
-> index 166af2a8e865..04478103df37 100644
-> --- a/arch/x86/include/asm/mmu_context.h
-> +++ b/arch/x86/include/asm/mmu_context.h
-> @@ -53,7 +53,16 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
->  		/* Stop flush ipis for the previous mm */
->  		cpumask_clear_cpu(cpu, mm_cpumask(prev));
->  
-> -		/* Load the LDT, if the LDT is different: */
-> +		/*
-> +		 * Load the LDT, if the LDT is different.
-> +		 *
-> +		 * It's possible leave_mm(prev) has been called.  If so,
-> +		 * then prev->context.ldt could be out of sync with the
-> +		 * LDT descriptor or the LDT register.  This can only happen
+It's desirable for allnconfig and tinyconfig targets to result in the
+least amount of code possible. DISABLE_DEV_COREDUMP exists as a way to
+switch off DEV_COREDUMP regardless if any drivers select
+WANT_DEV_COREDUMP.
 
-I'm staring at the code and trying to figure out where on the leave_mm()
-path this could happen. Got any code pointers?
+This patch renames the option to ENABLE_DEV_COREDUMP and setting it to
+'n' (as in allnconfig or tinyconfig) will effectively disable device
+coredump.
 
-:-)
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Josh Triplett <josh@joshtriplett.org>
+Cc: Johannes Berg <johannes@sipsolutions.net>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Aristeu Rozanski <arozansk@redhat.com>
+---
+ drivers/base/Kconfig | 19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
 
-> +		 * if prev->context.ldt is non-null, since we never free
-> +		 * an LDT.  But LDTs can't be shared across mms, so
-> +		 * prev->context.ldt won't be equal to next->context.ldt.
-> +		 */
->  		if (unlikely(prev->context.ldt != next->context.ldt))
->  			load_LDT_nolock(&next->context);
->  	}
-> -- 
-> 1.9.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
+index 134f763..99d3072 100644
+--- a/drivers/base/Kconfig
++++ b/drivers/base/Kconfig
+@@ -171,20 +171,23 @@ config WANT_DEV_COREDUMP
+ 	  Drivers should "select" this option if they desire to use the
+ 	  device coredump mechanism.
+ 
+-config DISABLE_DEV_COREDUMP
+-	bool "Disable device coredump" if EXPERT
++config ENABLE_DEV_COREDUMP
++	bool "Enable device coredump" if EXPERT
++	default y
+ 	help
+-	  Disable the device coredump mechanism despite drivers wanting to
+-	  use it; this allows for more sensitive systems or systems that
+-	  don't want to ever access the information to not have the code,
+-	  nor keep any data.
++	  This option controls if the device coredump mechanism is available or
++	  not; if disabled, the mechanism will be omitted even if drivers that
++	  can use it are enabled.
++	  Say 'N' for more sensitive systems or systems that don't want
++	  to ever access the information to not have the code, nor keep any
++	  data.
+ 
+-	  If unsure, say N.
++	  If unsure, say Y.
+ 
+ config DEV_COREDUMP
+ 	bool
+ 	default y if WANT_DEV_COREDUMP
+-	depends on !DISABLE_DEV_COREDUMP
++	depends on ENABLE_DEV_COREDUMP
+ 
+ config DEBUG_DRIVER
+ 	bool "Driver Core verbose debug messages"
 -- 
-Regards/Gruss,
-    Boris.
---
+1.8.3.1
+
