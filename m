@@ -1,87 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752246AbaJPMfr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 08:35:47 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:42716 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751177AbaJPMfp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 08:35:45 -0400
-Message-ID: <543FBB97.9010006@hurleysoftware.com>
-Date: Thu, 16 Oct 2014 08:35:35 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1752185AbaJPMip (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 08:38:45 -0400
+Received: from mail.efficios.com ([78.47.125.74]:36745 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751232AbaJPMio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 08:38:44 -0400
+Date: Thu, 16 Oct 2014 14:38:24 +0200
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Ross Zwisler <ross.zwisler@linux.intel.com>
+Subject: Re: [PATCH v11 19/21] dax: Add dax_zero_page_range
+Message-ID: <20141016123824.GQ19075@thinkos.etherlink>
+References: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com>
+ <1411677218-29146-20-git-send-email-matthew.r.wilcox@intel.com>
 MIME-Version: 1.0
-To: Sudhir Sreedharan <ssreedharan@mvista.com>, gregkh@linuxfoundation.org,
-        khilman@kernel.org
-CC: linux-serial@vger.kernel.org, jslaby@suse.cz, linux-kernel@vger.kernel.org,
-        olof@lixom.net, linux-arm-kernel@lists.infradead.org,
-        geert@linux-m68k.org
-Subject: Re: [PATCH] tty: serial: 8250_core: restore the LCR register in set_sleep
-References: <54369F77.5000906@hurleysoftware.com> <1413355395-5871-1-git-send-email-ssreedharan@mvista.com>
-In-Reply-To: <1413355395-5871-1-git-send-email-ssreedharan@mvista.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411677218-29146-20-git-send-email-matthew.r.wilcox@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2014 02:43 AM, Sudhir Sreedharan wrote:
-> In ST16650V2 based serial uarts, while initalizing the PM state,
-> LCR registers are being initialized to 0 in serial8250_set_sleep().
-> If console port is already initialized and being used, this will
-> throws garbage in the console.
+On 25-Sep-2014 04:33:36 PM, Matthew Wilcox wrote:
+> This new function allows us to support hole-punch for DAX files by zeroing
+> a partial page, as opposed to the dax_truncate_page() function which can
+> only truncate to the end of the page.  Reimplement dax_truncate_page() to
+> call dax_zero_page_range().
 > 
-> Signed-off-by: Sudhir Sreedharan <ssreedharan@mvista.com>
+> Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+> [ported to 3.13-rc2]
+> Signed-off-by: Ross Zwisler <ross.zwisler@linux.intel.com>
 > ---
->  drivers/tty/serial/8250/8250_core.c |    7 +++++--
->  1 files changed, 5 insertions(+), 2 deletions(-)
+>  Documentation/filesystems/dax.txt |  1 +
+>  fs/dax.c                          | 36 +++++++++++++++++++++++++++++++-----
+>  include/linux/fs.h                |  7 +++++++
+>  3 files changed, 39 insertions(+), 5 deletions(-)
 > 
-> diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-> index ca5cfdc..e054482 100644
-> --- a/drivers/tty/serial/8250/8250_core.c
-> +++ b/drivers/tty/serial/8250/8250_core.c
-> @@ -595,6 +595,7 @@ static void serial8250_rpm_put_tx(struct uart_8250_port *p)
->   */
->  static void serial8250_set_sleep(struct uart_8250_port *p, int sleep)
->  {
-> +	unsigned char lcr, efr;
->  	/*
->  	 * Exar UARTs have a SLEEP register that enables or disables
->  	 * each UART to enter sleep mode separately.  On the XR17V35x the
-> @@ -611,6 +612,8 @@ static void serial8250_set_sleep(struct uart_8250_port *p, int sleep)
+> diff --git a/Documentation/filesystems/dax.txt b/Documentation/filesystems/dax.txt
+> index 635adaa..ebcd97f 100644
+> --- a/Documentation/filesystems/dax.txt
+> +++ b/Documentation/filesystems/dax.txt
+> @@ -62,6 +62,7 @@ Filesystem support consists of
+>    for fault and page_mkwrite (which should probably call dax_fault() and
+>    dax_mkwrite(), passing the appropriate get_block() callback)
+>  - calling dax_truncate_page() instead of block_truncate_page() for DAX files
+> +- calling dax_zero_page_range() instead of zero_user() for DAX files
+>  - ensuring that there is sufficient locking between reads, writes,
+>    truncates and page faults
 >  
->  	if (p->capabilities & UART_CAP_SLEEP) {
->  		if (p->capabilities & UART_CAP_EFR) {
-> +			lcr = serial_in(p, UART_LCR);
-> +			efr = serial_in(p, UART_EFR);
->  			serial_out(p, UART_LCR, UART_LCR_CONF_MODE_B);
->  			serial_out(p, UART_EFR, UART_EFR_ECB);
->  			serial_out(p, UART_LCR, 0);
-> @@ -618,8 +621,8 @@ static void serial8250_set_sleep(struct uart_8250_port *p, int sleep)
->  		serial_out(p, UART_IER, sleep ? UART_IERX_SLEEP : 0);
->  		if (p->capabilities & UART_CAP_EFR) {
->  			serial_out(p, UART_LCR, UART_LCR_CONF_MODE_B);
-> -			serial_out(p, UART_EFR, 0);
-> -			serial_out(p, UART_LCR, 0);
-> +			serial_out(p, UART_EFR, sleep ? 0 : efr);
-> +			serial_out(p, UART_LCR, sleep ? 0 : lcr);
+> diff --git a/fs/dax.c b/fs/dax.c
+> index 6801be7..91b7561 100644
+> --- a/fs/dax.c
+> +++ b/fs/dax.c
+> @@ -462,13 +462,16 @@ int dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
+>  EXPORT_SYMBOL_GPL(dax_fault);
+>  
+>  /**
+> - * dax_truncate_page - handle a partial page being truncated in a DAX file
+> + * dax_zero_page_range - zero a range within a page of a DAX file
+>   * @inode: The file being truncated
+>   * @from: The file offset that is being truncated to
+> + * @length: The number of bytes to zero
+>   * @get_block: The filesystem method used to translate file offsets to blocks
+>   *
+> - * Similar to block_truncate_page(), this function can be called by a
+> - * filesystem when it is truncating an DAX file to handle the partial page.
+> + * This function can be called by a filesystem when it is zeroing part of a
+> + * page in a DAX file.  This is intended for hole-punch operations.  If
+> + * you are truncating a file, the helper function dax_truncate_page() may be
+> + * more convenient.
+>   *
+>   * We work in terms of PAGE_CACHE_SIZE here for commonality with
+>   * block_truncate_page(), but we could go down to PAGE_SIZE if the filesystem
+> @@ -476,17 +479,18 @@ EXPORT_SYMBOL_GPL(dax_fault);
+>   * block size is smaller than PAGE_SIZE, we have to zero the rest of the page
+>   * since the file might be mmaped.
+>   */
+> -int dax_truncate_page(struct inode *inode, loff_t from, get_block_t get_block)
+> +int dax_zero_page_range(struct inode *inode, loff_t from, unsigned length,
 
-Why is it necessary to clear EFR and LCR here? Does the UART not
-power down?
+nit: unsigned -> unsigned int ?
 
-UARTs with CAP_SLEEP but not CAP_EFR don't clear LCR before sleep.
+Do we want a unsigned int or unsigned long here ?
 
-However, if there is some kind of intentional side-effect here,
-then a comment should note that.
+> +							get_block_t get_block)
+>  {
+>  	struct buffer_head bh;
+>  	pgoff_t index = from >> PAGE_CACHE_SHIFT;
+>  	unsigned offset = from & (PAGE_CACHE_SIZE-1);
+> -	unsigned length = PAGE_CACHE_ALIGN(from) - from;
+>  	int err;
+>  
+>  	/* Block boundary? Nothing to do */
+>  	if (!length)
+>  		return 0;
+> +	BUG_ON((offset + length) > PAGE_CACHE_SIZE);
 
-Regards,
-Peter Hurley
+Isn't it a bit extreme to BUG_ON this condition ? We could return an
+error to the caller, and perhaps WARN_ON_ONCE(), but BUG_ON() appears to
+be slightly too strong here.
 
->  		}
->  	}
->  out:
+>  
+>  	memset(&bh, 0, sizeof(bh));
+>  	bh.b_size = PAGE_CACHE_SIZE;
+> @@ -503,4 +507,26 @@ int dax_truncate_page(struct inode *inode, loff_t from, get_block_t get_block)
+>  
+>  	return 0;
+>  }
+> +EXPORT_SYMBOL_GPL(dax_zero_page_range);
+> +
+> +/**
+> + * dax_truncate_page - handle a partial page being truncated in a DAX file
+> + * @inode: The file being truncated
+> + * @from: The file offset that is being truncated to
+> + * @get_block: The filesystem method used to translate file offsets to blocks
+> + *
+> + * Similar to block_truncate_page(), this function can be called by a
+> + * filesystem when it is truncating an DAX file to handle the partial page.
+
+an DAX -> a DAX
+
+> + *
+> + * We work in terms of PAGE_CACHE_SIZE here for commonality with
+> + * block_truncate_page(), but we could go down to PAGE_SIZE if the filesystem
+> + * took care of disposing of the unnecessary blocks.  Even if the filesystem
+> + * block size is smaller than PAGE_SIZE, we have to zero the rest of the page
+> + * since the file might be mmaped.
+> + */
+> +int dax_truncate_page(struct inode *inode, loff_t from, get_block_t get_block)
+> +{
+> +	unsigned length = PAGE_CACHE_ALIGN(from) - from;
+
+unsigned -> unsigned int.
+
+Same question about "unsigned long" as above.
+
+> +	return dax_zero_page_range(inode, from, length, get_block);
+> +}
+>  EXPORT_SYMBOL_GPL(dax_truncate_page);
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index e6b48cc..105d0f0 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -2490,6 +2490,7 @@ extern int nonseekable_open(struct inode * inode, struct file * filp);
+>  
+>  #ifdef CONFIG_FS_DAX
+>  int dax_clear_blocks(struct inode *, sector_t block, long size);
+> +int dax_zero_page_range(struct inode *, loff_t from, unsigned len, get_block_t);
+>  int dax_truncate_page(struct inode *, loff_t from, get_block_t);
+>  ssize_t dax_do_io(int rw, struct kiocb *, struct inode *, struct iov_iter *,
+>  		loff_t, get_block_t, dio_iodone_t, int flags);
+> @@ -2506,6 +2507,12 @@ static inline int dax_truncate_page(struct inode *i, loff_t frm, get_block_t gb)
+>  	return 0;
+>  }
+>  
+> +static inline int dax_zero_page_range(struct inode *i, loff_t frm,
+> +						unsigned len, get_block_t gb)
+> +{
+> +	return 0;
+
+Should we return 0 or -ENOSYS here ?
+
+Thanks,
+
+Mathieu
+
+> +}
+> +
+>  static inline ssize_t dax_do_io(int rw, struct kiocb *iocb,
+>  		struct inode *inode, struct iov_iter *iter, loff_t pos,
+>  		get_block_t get_block, dio_iodone_t end_io, int flags)
+> -- 
+> 2.1.0
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
 > 
 
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
+Key fingerprint: 2A0B 4ED9 15F2 D3FA 45F5  B162 1728 0A97 8118 6ACF
