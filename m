@@ -1,77 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073AbaJPRw2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 13:52:28 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:57391 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334AbaJPRw0 (ORCPT
+	id S1752172AbaJPRx6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 13:53:58 -0400
+Received: from smtprelay0095.hostedemail.com ([216.40.44.95]:37590 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751309AbaJPRx4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 13:52:26 -0400
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:157d:b52d:4c07:5bea:2dd9]
-In-Reply-To: <4AF7ABD3-EC90-47B8-96F3-B0AC396C52CC@codeaurora.org>
-References: <A246CCDC-948C-429E-9FC5-934D317EB9D4@codeaurora.org>
-	<201410011641.44037.arnd@arndb.de>
-	<4AF7ABD3-EC90-47B8-96F3-B0AC396C52CC@codeaurora.org>
-Date: Thu, 16 Oct 2014 10:52:25 -0700
-Message-ID: <CAOesGMgqJrpV_i4f82_eWDLCnOONipCu4fLJ-5n-T56N=8KXWw@mail.gmail.com>
-Subject: Re: [GIT PULL] qcom SoC changes for v3.18
-From: Olof Johansson <olof@lixom.net>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, "arm@kernel.org" <arm@kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Lina Iyer <lina.iyer@linaro.org>, Stephen Boyd <sboyd@codeaurora.org>,
-        Olav Haugan <ohaugan@codeaurora.org>, markivx@codeaurora.org
-Content-Type: text/plain; charset=UTF-8
+	Thu, 16 Oct 2014 13:53:56 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:2903:2914:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3871:3872:3873:3874:4250:4321:4605:5007:6261:6742:7903:9010:10004:10400:10848:11026:11232:11658:11914:12043:12438:12517:12519:12663:12740:13972:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: shoes18_4322801a4138
+X-Filterd-Recvd-Size: 3691
+Message-ID: <1413482027.8915.1.camel@perches.com>
+Subject: Re: [PATCH 3v] char: hw_random: core.c: Changed from using strncat
+ to strlcat
+From: Joe Perches <joe@perches.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.apana.org.au>,
+        Torsten Duwe <duwe@lst.de>, "Theodore Ts'o" <tytso@mit.edu>,
+        Jason Cooper <jason@lakedaemon.net>, Amit Shah <amit.shah@redhat.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Kees Cook <keescook@chromium.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 16 Oct 2014 10:53:47 -0700
+In-Reply-To: <CAFo99gbGrGXz+gYQn0hAPKxN73BLLWhaUPVN0DVq6-3PiFzOSw@mail.gmail.com>
+References: <1413479722-29247-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	 <1413480303.6702.7.camel@perches.com>
+	 <CAFo99gbGrGXz+gYQn0hAPKxN73BLLWhaUPVN0DVq6-3PiFzOSw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 2014-10-16 at 19:41 +0200, Rickard Strandqvist wrote:
+> 2014-10-16 19:25 GMT+02:00 Joe Perches <joe@perches.com>:
+> > On Thu, 2014-10-16 at 19:15 +0200, Rickard Strandqvist wrote:
+> >> The buf is used to hold the list of hwrng devices registered.
+> >> The old code ensures we don't walk off the end of buf as we
+> >> fill it, but it's unnecessarily complicated and thus difficult
+> >> to maintain. Simplify it by using strlcat.
+> >> We also ensure the string within buf is NULL terminated
+> >> so the final strlen is ok.
+> > []
+> >> diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
+> > []
+> >> @@ -289,16 +288,13 @@ static ssize_t hwrng_attr_available_show(struct device *dev,
+> >>               return -ERESTARTSYS;
+> >>       buf[0] = '\0';
+> >>       list_for_each_entry(rng, &rng_list, list) {
+> >> -             strncat(buf, rng->name, PAGE_SIZE - ret - 1);
+> >> -             ret += strlen(rng->name);
+> >> -             strncat(buf, " ", PAGE_SIZE - ret - 1);
+> >> -             ret++;
+> >> +             strlcat(buf, rng->name, PAGE_SIZE);
+> >> +             strlcat(buf, " ", PAGE_SIZE);
+> >>       }
+> >> -     strncat(buf, "\n", PAGE_SIZE - ret - 1);
+> >> -     ret++;
+> >> +     strlcat(buf, "\n", PAGE_SIZE);
+> >>       mutex_unlock(&rng_mutex);
+> >>
+> >> -     return ret;
+> >> +     return strlen(buf);
+> >>  }
+> >>
+> >>  static DEVICE_ATTR(rng_current, S_IRUGO | S_IWUSR,
+> >
+> > Rickard, can you please use some optimizations here
+> > (and elsewhere) so that strlcat doesn't always have
+> > to strlen the first string and the return doesn't
+> > have to do the strlen too?
+> >
+> > You could use a temporary for the returned length
+> > of the strlcat so that if it's shorter than
+> > the buffer, the next strlcat can start at the
+> > appropriate known position instead of having
+> > to do the initial strlen again and again.
+[]
+> But the others, I am very hesitant about. Because strlcat like
+> snprintf and strlcpy returns the length that would be copied rather
+> than what is actually copied. Hence such a code to be even more
+> complex than before.
 
-On Wed, Oct 15, 2014 at 1:18 AM, Kumar Gala <galak@codeaurora.org> wrote:
->
-> On Oct 1, 2014, at 4:41 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->
->> On Monday 22 September 2014, Kumar Gala wrote:
->>> The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
->>>
->>>  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
->>>
->>> are available in the git repository at:
->>>
->>>  git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-soc-for-3.18
->>>
->>> for you to fetch changes up to 525fbb55947177cdae507b0d292f43c2c9a75a47:
->>>
->>>  ARM: qcom: Move scm-boot files to drivers/soc and include/soc (2014-09-18 18:14:01 -0500)
->>>
->>> ----------------------------------------------------------------
->>> Qualcomm ARM Based SoC Updates for v3.18
->>>
->>> * Moved scm support into drivers/soc/qcom (allows for use by drivers)
->>> * Various bug fixes and minor feature additions to scm code
->>> * Added big-endian support to debug MSM uart
->>
->> Pulled it into next/late now. This means we're not sending it together with the
->> other pull requests to Linus. We'll see how things go during the first week
->> and may or may not send it in the second week of the merge window depending
->> on that.
->>
->>       Arnd
->
-> Any update if you guys will end up sending this to linus for 3.18 or not?
-
-There ended up being several issues with the next/late branch so I
-believe the current outlook is that we'll not send it.
-
-(Arnd has been handling most of the 3.18 stuff and he might have
-changed his mind since we last talked about it, but that's the state
-as far as i know).
+None of the conversions you've done seem to use the
+return value so maybe there should be yet another
+function that doesn't return an overrun value.
 
 
--Olof
