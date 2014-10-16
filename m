@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752532AbaJPTar (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 15:30:47 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:40802 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752035AbaJPTaq (ORCPT
+	id S1752585AbaJPTdw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 15:33:52 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:55895 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751472AbaJPTdu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 15:30:46 -0400
-Message-ID: <54401CE3.8000307@free-electrons.com>
-Date: Thu, 16 Oct 2014 21:30:43 +0200
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: hare@suse.de, JBottomley@parallels.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, julia.lawall@lip6.fr
-Subject: Re: [PATCH] aic7xxx: replace kmalloc/memset by kzalloc
-References: <1413486878-375-1-git-send-email-michael.opdenacker@free-electrons.com> <1413487720.15773.1.camel@perches.com>
-In-Reply-To: <1413487720.15773.1.camel@perches.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Oct 2014 15:33:50 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH -next 0/9] pty fixes
+Date: Thu, 16 Oct 2014 15:33:21 -0400
+Message-Id: <1413488010-16885-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 2.1.1
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
+Hi Greg,
 
-On 10/16/2014 09:28 PM, Joe Perches wrote:
-> On Thu, 2014-10-16 at 21:14 +0200, Michael Opdenacker wrote:
->
->  
->  	/* Allocate SCB resources */
-> -	scb_data->scbarray = kmalloc(sizeof(struct scb) * AHC_SCB_MAX_ALLOC, GFP_ATOMIC);
-> +	scb_data->scbarray = kzalloc(sizeof(struct scb) * AHC_SCB_MAX_ALLOC,
-> +				GFP_ATOMIC);
->  	if (scb_data->scbarray == NULL)
->  		return (ENOMEM);
-> -	memset(scb_data->scbarray, 0, sizeof(struct scb) * AHC_SCB_MAX_ALLOC);
->  
->  	/* Determine the number of hardware SCBs and initialize them */
->  
-> Probably better as kcalloc.
+This series addresses some pecularities of the pty driver, especially
+set_termios() handling, which is moved into the pty driver proper, and
+packet mode/ctrl_lock behavior.
 
-Hey, well spotted! Thanks for your review. I will post a new version soon.
+Regards,
 
-Cheers,
+Peter Hurley (9):
+  tty: WARN for attempted set_termios() of pty master
+  tty: Move pty-specific set_termios() handling to pty driver
+  pty: Use spin_lock_irq() for pty_set_termios()
+  tty: Use spin_lock_irq() for ctrl_lock when interrupts enabled
+  pty: Don't claim slave's ctrl_lock for master's packet mode
+  pty: Fix packet mode setting race
+  pty: Hold ctrl_lock for packet mode updates
+  tty: Fix missed wakeup from packet mode status update
+  n_tty: Only process packet mode data in raw mode
 
-Michael.
-
->
-
+ drivers/tty/n_tty.c     | 39 +++++++++++++++++++------------------
+ drivers/tty/pty.c       | 51 ++++++++++++++++++++++++++++++++++++-------------
+ drivers/tty/tty_ioctl.c | 34 ++++-----------------------------
+ 3 files changed, 62 insertions(+), 62 deletions(-)
 
 -- 
-Michael Opdenacker, CEO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-+33 484 258 098
+2.1.1
 
