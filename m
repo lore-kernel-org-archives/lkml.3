@@ -1,75 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560AbaJPJQZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 05:16:25 -0400
-Received: from regular1.263xmail.com ([211.150.99.137]:44299 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194AbaJPJQW (ORCPT
+	id S1751807AbaJPJTX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 05:19:23 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:49645 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751160AbaJPJTW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 05:16:22 -0400
-X-Greylist: delayed 78650 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Oct 2014 05:16:22 EDT
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: addy.ke@rock-chips.com
-X-FST-TO: broonie@kernel.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: addy.ke@rock-chips.com
-X-UNIQUE-TAG: <7e1e6baad8e684dd1d1c498e964827a0>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <543F8CD2.1010302@rock-chips.com>
-Date: Thu, 16 Oct 2014 17:16:02 +0800
-From: addy ke <addy.ke@rock-chips.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 16 Oct 2014 05:19:22 -0400
+Message-ID: <543F8D97.70605@gmail.com>
+Date: Thu, 16 Oct 2014 11:19:19 +0200
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-To: broonie@kernel.org
-CC: heiko@sntech.de, dianders@chromium.org, grant.likely@linaro.org,
-        robh+dt@kernel.org, amstan@google.com, sonnyrao@google.com,
-        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, devicetree@vger.kernel.org,
-        olof@lixom.net, hj@rock-chips.com, kever.yang@rock-chips.com,
-        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
-        yzq@rock-chips.com, zhenfu.fang@rock-chips.com, cf@rock-chips.com,
-        zhangqing@rock-chips.com, hl@rock-chips.com, wei.luo@rock-chips.com
-Subject: Re: [PATCH 1/2] spi/rockchip: fix bug that case spi can't go as fast
- as slave request
-References: <1413372311-4203-1-git-send-email-addy.ke@rock-chips.com> <1413372349-4254-1-git-send-email-addy.ke@rock-chips.com> <20141015130452.GD27755@sirena.org.uk>
-In-Reply-To: <20141015130452.GD27755@sirena.org.uk>
-Content-Type: text/plain; charset=UTF-8
+To: lkml <linux-kernel@vger.kernel.org>
+CC: mtk.manpages@gmail.com
+Subject: man-pages-3.75 is released
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi, Mark
+Gidday,
 
-On 2014/10/15 21:04, Mark Brown wrote:
-> On Wed, Oct 15, 2014 at 07:25:49PM +0800, Addy Ke wrote:
-> 
->> +	if (WARN_ON(rs->speed > MAX_SCLK_OUT))
->> +		rs->speed = MAX_SCLK_OUT;
->> +
->> +	/* the minimum divsor is 2 */
->> +	if (rs->max_freq < 2 * rs->speed) {
->> +		clk_set_rate(rs->spiclk, 2 * rs->speed);
->> +		rs->max_freq = clk_get_rate(rs->spiclk);
->> +	}
-> 
-> I'll apply this but you should be checking the return code from
-> clk_set_rate() here, please send a followup patch doing that.  It might
+The Linux man-pages maintainer proudly announces:
 
-If clk_set_rate return error, do I only put dev_warn here or return error value to spi core?
+    man-pages-3.75 - man pages for Linux
 
-> also be worth consdering just setting the rate unconditionally here, it
-> seems like it should make things simpler.
-> 
-I think we need.
-If we set the rate unconditionally here, clk_set_rate() will be executed in each spi transfer.
+Tarball download:
+    http://www.kernel.org/doc/man-pages/download.html
+Git repository:
+    https://git.kernel.org/cgit/docs/man-pages/man-pages.git/
+Online changelog:
+    http://man7.org/linux/man-pages/changelog.html#release_3.75
+
+A short summary of the release is blogged at:
+http://linux-man-pages.blogspot.com/2014/10/man-pages-375-is-released.html
+
+The current version of the pages is browsable at:
+http://man7.org/linux/man-pages/
+
+A few changes in this release that may be of interest to readers of
+this list are given below.
+
+Cheers,
+
+Michael
+
+==================== Changes in man-pages-3.75 ====================
+
+New and rewritten pages
+-----------------------
+
+pthread_rwlockattr_setkind_np.3
+    Robert Schweikert  [Michael Kerrisk]
+        New page documenting pthread_rwlockattr_[sg]etkind_np(3)
+            Documents pthread_rwlockattr_setkind_np(3) and
+            pthread_rwlockattr_getkind_np(3).
 
 
+Changes to individual pages
+---------------------------
+
+readv.2
+    Michael Kerrisk
+        The raw preadv() and pwritev() syscalls split 'offset' into 2 arguments
+
+signal.7
+    Michael Kerrisk
+        pthread_mutex_lock() and pthread_cond_wait() are restartable
+            pthread_mutex_lock(, pthread_cond_wait(), and related APIs are
+            automatically restarted if interrupted by a signal handler.
+
+unix.7
+    Michael Kerrisk  [Carlos O'Donell, David Miller, Tetsuo Handa]
+        Various additions and rewordings
+            Notable changes:
+            * Clarify some details for pathname sockets.
+            * Add some advice on portably coding with pathname sockets.
+            * Note the "buggy" behavior for pathname sockets when
+              the supplied pathname is 108 bytes (after a report by
+              Tetsuo Handa).
 
 
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
