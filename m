@@ -1,67 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751909AbaJPJ7v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 05:59:51 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:36920 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751001AbaJPJ7t (ORCPT
+	id S1751480AbaJPKE6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 06:04:58 -0400
+Received: from relay.parallels.com ([195.214.232.42]:43767 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751239AbaJPKE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 05:59:49 -0400
-Date: Thu, 16 Oct 2014 11:59:46 +0200
-From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] ARM: berlin: Add AHCI and SATA PHY nodes to BG2
-Message-ID: <20141016095946.GB1061@kwain>
-References: <1413042073-14253-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1413042073-14253-5-git-send-email-sebastian.hesselbarth@gmail.com>
+	Thu, 16 Oct 2014 06:04:57 -0400
+Message-ID: <1413453893.24793.74.camel@tkhai>
+Subject: Re: [PATCH RFC] sched: Revert delayed_put_task_struct() and fix use
+ after free
+From: Kirill Tkhai <ktkhai@parallels.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Kirill Tkhai <tkhai@yandex.ru>, Oleg Nesterov <oleg@redhat.com>,
+        <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        "Vladimir Davydov" <vdavydov@parallels.com>
+Date: Thu, 16 Oct 2014 14:04:53 +0400
+In-Reply-To: <1413453115.24793.73.camel@tkhai>
+References: <1413376300.24793.55.camel@tkhai>
+	 <20141015150641.GA2755@redhat.com> <20141015194044.GA4557@redhat.com>
+	 <543EEB1F.3040900@yandex.ru> <20141016075950.GC7369@worktop.fdxtended.com>
+	 <1413447404.24793.67.camel@tkhai>
+	 <20141016094333.GJ7369@worktop.fdxtended.com>
+	 <1413453002.24793.72.camel@tkhai> <1413453115.24793.73.camel@tkhai>
+Organization: Parallels
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1413042073-14253-5-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.30.26.172]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
+В Чт, 16/10/2014 в 13:51 +0400, Kirill Tkhai пишет:
+> В Чт, 16/10/2014 в 13:50 +0400, Kirill Tkhai пишет:
+> > В Чт, 16/10/2014 в 11:43 +0200, Peter Zijlstra пишет:
+> > > On Thu, Oct 16, 2014 at 12:16:44PM +0400, Kirill Tkhai wrote:
+> > > > В Чт, 16/10/2014 в 09:59 +0200, Peter Zijlstra пишет:
+> > > > > On Thu, Oct 16, 2014 at 01:46:07AM +0400, Kirill Tkhai wrote:
+> > > > > > > --- x/kernel/sched/fair.c
+> > > > > > > +++ x/kernel/sched/fair.c
+> > > > > > > @@ -1165,7 +1165,7 @@ static void task_numa_compare(struct tas
+> > > > > > >  
+> > > > > > >  	rcu_read_lock();
+> > > > > > >  	cur = ACCESS_ONCE(dst_rq->curr);
+> > > > > > > -	if (cur->pid == 0) /* idle */
+> > > > > > > +	if (is_idle_task(cur) || (curr->flags & PF_EXITING))
+> > > > > > >  		cur = NULL;
+> > > > > > >  
+> > > > > > >  	/*
+> > > > > > > 
+> > > > > > 
+> > > > > > Looks like, we have to use the same fix for task_numa_group().
+> > > > > 
+> > > > > Don't think so, task_numa_group() is only called from task_numa_fault()
+> > > > > which is on 'current' and neither idle and PF_EXITING should be
+> > > > > faulting.
+> > > > 
+> > > > Isn't task_numa_group() fully preemptible?
+> > > 
+> > > Not seeing how that is relevant.
+> > > 
+> > > > It seems cpu_rq(cpu)->curr is not always equal to p.
+> > > 
+> > > It should be afaict:
+> > > 
+> > >  task_numa_fault()
+> > >   p = current;
+> > > 
+> > >   task_numa_group(p, ..);
+> > > 
+> > > And like said, idle tasks and PF_EXITING task should never get (numa)
+> > > faults for they should never be touching userspace.
+> > 
+> > I mean p can be moved to other cpu.
+> > 
+> > tsk = ACCESS_ONCE(cpu_rq(cpu)->curr);
+> > 
+> > tsk is not p, (i.e current) here.
+> 
+> Maybe I undestand wrong and preemption is disabled in memory fault?
 
-On Sat, Oct 11, 2014 at 05:41:12PM +0200, Sebastian Hesselbarth wrote:
->  
-> +		ahci: sata@e90000 {
-> +			compatible = "marvell,berlin2-ahci", "generic-ahci";
-> +			reg = <0xe90000 0x1000>;
-> +			interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
-> +			clocks = <&chip CLKID_SATA>;
-> +			#address-cells = <1>;
-> +			#size-cells = <0>;
-> +			status = "disabled";
+Ah, I found pagefault_disable(). No questions.
 
-The ahci generic driver actually returns -ENODEV if no port is
-activated. There is no need to disable it from there.
 
-> +
-> +			sata0: sata-port@0 {
-> +				reg = <0>;
-> +				phys = <&sata_phy 0>;
-> +				status = "disabled";
-> +			};
-> +
-> +			sata1: sata-port@1 {
-> +				reg = <1>;
-> +				phys = <&sata_phy 1>;
-> +				status = "disabled";
-> +			};
-> +		};
-
-Antoine
-
--- 
-Antoine T�nart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
