@@ -1,97 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751888AbaJPIRW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 04:17:22 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:35743 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751372AbaJPIRR convert rfc822-to-8bit (ORCPT
+	id S1751916AbaJPIRh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 04:17:37 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:60766 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751164AbaJPIRe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 04:17:17 -0400
+	Thu, 16 Oct 2014 04:17:34 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Vishnu Pratap Singh <vishnu.ps@samsung.com>
+Cc: akpm@linux-foundation.org, len.brown@intel.com, pavel@ucw.cz,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        cpgs@samsung.com, pintu.k@samsung.com, vishu13285@gmail.com
+Subject: Re: [PATCH] [kernel]: process: replace printk with pr_err
+Date: Thu, 16 Oct 2014 10:37:50 +0200
+Message-ID: <2484936.7PAAKpDVM2@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1413435995-32317-1-git-send-email-vishnu.ps@samsung.com>
+References: <1413435995-32317-1-git-send-email-vishnu.ps@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <1413415011-31290-1-git-send-email-pali.rohar@gmail.com>
-References: <1413415011-31290-1-git-send-email-pali.rohar@gmail.com>
-Date: Thu, 16 Oct 2014 13:47:16 +0530
-Message-ID: <CAKohpo=xf8vfA7XK5h492xzEkQ-aD2wXw-pFQCqQ7Cxr0NhF-A@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: intel_pstate: Fix setting max_perf_pct in
- performance policy
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc'ing Dirk.
+On Thursday, October 16, 2014 10:36:35 AM Vishnu Pratap Singh wrote:
+> This patch replaces printk(KERN_ERR...) with pr_err found.
 
-On 16 October 2014 04:46, Pali Rohár <pali.rohar@gmail.com> wrote:
-> Code which changes policy to powersave changes also max_policy_pct based on
-> max_freq. Code which change max_perf_pct has upper limit base on value
-> max_policy_pct. When policy is changing from powersave back to performance
-> then max_policy_pct is not changed. Which means that changing max_perf_pct is
-> not possible to high values if max_freq was too low in powersave policy.
->
-> Test case:
->
-> $ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
-> 800000
-> $ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
-> 3300000
-> $ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
-> performance
-> $ cat /sys/devices/system/cpu/intel_pstate/max_perf_pct
-> 100
->
-> $ echo powersave > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
-> $ echo 800000 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
-> $ echo 20 > /sys/devices/system/cpu/intel_pstate/max_perf_pct
->
-> $ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
-> powersave
-> $ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
-> 800000
-> $ cat /sys/devices/system/cpu/intel_pstate/max_perf_pct
-> 20
->
-> $ echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
-> $ echo 3300000 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
-> $ echo 100 > /sys/devices/system/cpu/intel_pstate/max_perf_pct
->
-> $ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
-> performance
-> $ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
-> 3300000
-> $ cat /sys/devices/system/cpu/intel_pstate/max_perf_pct
-> 24
->
-> And now intel_pstate driver allows to set maximal value for max_perf_pct based
-> on max_policy_pct which is 24 for previous powersave max_freq 800000.
->
-> This patch will set default value for max_policy_pct when setting policy to
-> performance so it will allow to set also max value for max_perf_pct.
->
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> Cc: stable@vger.kernel.org
+What is the reason?  Does the existing code cause any problems to happen?
+
+> Signed-off-by: Vishnu Pratap Singh <vishnu.ps@samsung.com>
 > ---
->  drivers/cpufreq/intel_pstate.c |    1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-> index 0668b38..7547ab5 100644
-> --- a/drivers/cpufreq/intel_pstate.c
-> +++ b/drivers/cpufreq/intel_pstate.c
-> @@ -714,6 +714,7 @@ static int intel_pstate_set_policy(struct cpufreq_policy *policy)
->         if (policy->policy == CPUFREQ_POLICY_PERFORMANCE) {
->                 limits.min_perf_pct = 100;
->                 limits.min_perf = int_tofp(1);
-> +               limits.max_policy_pct = 100;
->                 limits.max_perf_pct = 100;
->                 limits.max_perf = int_tofp(1);
->                 limits.no_turbo = limits.turbo_disabled;
-> --
-> 1.7.9.5
->
+>  kernel/power/process.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/kernel/power/process.c b/kernel/power/process.c
+> index 7b32322..401f7ee 100644
+> --- a/kernel/power/process.c
+> +++ b/kernel/power/process.c
+> @@ -85,7 +85,7 @@ static int try_to_freeze_tasks(bool user_only)
+>  
+>  	if (todo) {
+>  		printk("\n");
+> -		printk(KERN_ERR "Freezing of tasks %s after %d.%03d seconds "
+> +		pr_err("Freezing of tasks %s after %d.%03d seconds "
+>  		       "(%d tasks refusing to freeze, wq_busy=%d):\n",
+>  		       wakeup ? "aborted" : "failed",
+>  		       elapsed_msecs / 1000, elapsed_msecs % 1000,
+> 
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
