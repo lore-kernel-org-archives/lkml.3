@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752875AbaJPSNR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 14:13:17 -0400
-Received: from g2t2354.austin.hp.com ([15.217.128.53]:15814 "EHLO
-	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676AbaJPSLX (ORCPT
+	id S1752622AbaJPSLP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 14:11:15 -0400
+Received: from g2t1383g.austin.hp.com ([15.217.136.92]:51371 "EHLO
+	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636AbaJPSLM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 14:11:23 -0400
+	Thu, 16 Oct 2014 14:11:12 -0400
 From: Waiman Long <Waiman.Long@hp.com>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -23,12 +23,11 @@ Cc: linux-arch@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
         Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
         David Vrabel <david.vrabel@citrix.com>,
         Oleg Nesterov <oleg@redhat.com>, Scott J Norton <scott.norton@hp.com>,
-        Douglas Hatch <doug.hatch@hp.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Waiman Long <Waiman.Long@hp.com>
-Subject: [PATCH v12 07/11] qspinlock: Revert to test-and-set on hypervisors
-Date: Thu, 16 Oct 2014 14:10:36 -0400
-Message-Id: <1413483040-58399-8-git-send-email-Waiman.Long@hp.com>
+        Douglas Hatch <doug.hatch@hp.com>, Waiman Long <Waiman.Long@hp.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH v12 04/11] qspinlock: Extract out code snippets for the next patch
+Date: Thu, 16 Oct 2014 14:10:33 -0400
+Message-Id: <1413483040-58399-5-git-send-email-Waiman.Long@hp.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1413483040-58399-1-git-send-email-Waiman.Long@hp.com>
 References: <1413483040-58399-1-git-send-email-Waiman.Long@hp.com>
@@ -36,84 +35,162 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <peterz@infradead.org>
+This is a preparatory patch that extracts out the following 2 code
+snippets to prepare for the next performance optimization patch.
 
-When we detect a hypervisor (!paravirt, see qspinlock paravirt support
-patches), revert to a simple test-and-set lock to avoid the horrors
-of queue preemption.
+ 1) the logic for the exchange of new and previous tail code words
+    into a new xchg_tail() function.
+ 2) the logic for clearing the pending bit and setting the locked bit
+    into a new clear_pending_set_locked() function.
 
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+This patch also simplifies the trylock operation before queuing by
+calling queue_spin_trylock() directly.
+
 Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- arch/x86/include/asm/qspinlock.h |   14 ++++++++++++++
- include/asm-generic/qspinlock.h  |    7 +++++++
- kernel/locking/qspinlock.c       |    3 +++
- 3 files changed, 24 insertions(+), 0 deletions(-)
+ include/asm-generic/qspinlock_types.h |    2 +
+ kernel/locking/qspinlock.c            |   91 +++++++++++++++++++++-----------
+ 2 files changed, 62 insertions(+), 31 deletions(-)
 
-diff --git a/arch/x86/include/asm/qspinlock.h b/arch/x86/include/asm/qspinlock.h
-index a6a8762..05a77fe 100644
---- a/arch/x86/include/asm/qspinlock.h
-+++ b/arch/x86/include/asm/qspinlock.h
-@@ -1,6 +1,7 @@
- #ifndef _ASM_X86_QSPINLOCK_H
- #define _ASM_X86_QSPINLOCK_H
+diff --git a/include/asm-generic/qspinlock_types.h b/include/asm-generic/qspinlock_types.h
+index 4196694..88d647c 100644
+--- a/include/asm-generic/qspinlock_types.h
++++ b/include/asm-generic/qspinlock_types.h
+@@ -58,6 +58,8 @@ typedef struct qspinlock {
+ #define _Q_TAIL_CPU_BITS	(32 - _Q_TAIL_CPU_OFFSET)
+ #define _Q_TAIL_CPU_MASK	_Q_SET_MASK(TAIL_CPU)
  
-+#include <asm/cpufeature.h>
- #include <asm-generic/qspinlock_types.h>
- 
- #ifndef CONFIG_X86_PPRO_FENCE
-@@ -20,6 +21,19 @@ static inline void queue_spin_unlock(struct qspinlock *lock)
- 
- #endif /* !CONFIG_X86_PPRO_FENCE */
- 
-+#define virt_queue_spin_lock virt_queue_spin_lock
++#define _Q_TAIL_MASK		(_Q_TAIL_IDX_MASK | _Q_TAIL_CPU_MASK)
 +
-+static inline bool virt_queue_spin_lock(struct qspinlock *lock)
-+{
-+	if (!static_cpu_has(X86_FEATURE_HYPERVISOR))
-+		return false;
-+
-+	while (atomic_cmpxchg(&lock->val, 0, _Q_LOCKED_VAL) != 0)
-+		cpu_relax();
-+
-+	return true;
-+}
-+
- #include <asm-generic/qspinlock.h>
+ #define _Q_LOCKED_VAL		(1U << _Q_LOCKED_OFFSET)
+ #define _Q_PENDING_VAL		(1U << _Q_PENDING_OFFSET)
  
- #endif /* _ASM_X86_QSPINLOCK_H */
-diff --git a/include/asm-generic/qspinlock.h b/include/asm-generic/qspinlock.h
-index e8a7ae8..a53a7bb 100644
---- a/include/asm-generic/qspinlock.h
-+++ b/include/asm-generic/qspinlock.h
-@@ -98,6 +98,13 @@ static __always_inline void queue_spin_unlock(struct qspinlock *lock)
- }
- #endif
- 
-+#ifndef virt_queue_spin_lock
-+static __always_inline bool virt_queue_spin_lock(struct qspinlock *lock)
-+{
-+	return false;
-+}
-+#endif
-+
- /*
-  * Initializier
-  */
 diff --git a/kernel/locking/qspinlock.c b/kernel/locking/qspinlock.c
-index fb0e988..1c1926a 100644
+index 226b11d..48bd2ad 100644
 --- a/kernel/locking/qspinlock.c
 +++ b/kernel/locking/qspinlock.c
-@@ -257,6 +257,9 @@ void queue_spin_lock_slowpath(struct qspinlock *lock, u32 val)
+@@ -95,6 +95,54 @@ static inline struct mcs_spinlock *decode_tail(u32 tail)
+ #define _Q_LOCKED_PENDING_MASK (_Q_LOCKED_MASK | _Q_PENDING_MASK)
  
- 	BUILD_BUG_ON(CONFIG_NR_CPUS >= (1U << _Q_TAIL_CPU_BITS));
- 
-+	if (virt_queue_spin_lock(lock))
-+		return;
+ /**
++ * clear_pending_set_locked - take ownership and clear the pending bit.
++ * @lock: Pointer to queue spinlock structure
++ * @val : Current value of the queue spinlock 32-bit word
++ *
++ * *,1,0 -> *,0,1
++ */
++static __always_inline void
++clear_pending_set_locked(struct qspinlock *lock, u32 val)
++{
++	u32 new, old;
 +
- 	/*
- 	 * wait for in-progress pending->locked hand-overs
++	for (;;) {
++		new = (val & ~_Q_PENDING_MASK) | _Q_LOCKED_VAL;
++
++		old = atomic_cmpxchg(&lock->val, val, new);
++		if (old == val)
++			break;
++
++		val = old;
++	}
++}
++
++/**
++ * xchg_tail - Put in the new queue tail code word & retrieve previous one
++ * @lock : Pointer to queue spinlock structure
++ * @tail : The new queue tail code word
++ * Return: The previous queue tail code word
++ *
++ * xchg(lock, tail)
++ *
++ * p,*,* -> n,*,* ; prev = xchg(lock, node)
++ */
++static __always_inline u32 xchg_tail(struct qspinlock *lock, u32 tail)
++{
++	u32 old, new, val = atomic_read(&lock->val);
++
++	for (;;) {
++		new = (val & _Q_LOCKED_PENDING_MASK) | tail;
++		old = atomic_cmpxchg(&lock->val, val, new);
++		if (old == val)
++			break;
++
++		val = old;
++	}
++	return old;
++}
++
++/**
+  * queue_spin_lock_slowpath - acquire the queue spinlock
+  * @lock: Pointer to queue spinlock structure
+  * @val: Current value of the queue spinlock 32-bit word
+@@ -176,15 +224,7 @@ void queue_spin_lock_slowpath(struct qspinlock *lock, u32 val)
  	 *
+ 	 * *,1,0 -> *,0,1
+ 	 */
+-	for (;;) {
+-		new = (val & ~_Q_PENDING_MASK) | _Q_LOCKED_VAL;
+-
+-		old = atomic_cmpxchg(&lock->val, val, new);
+-		if (old == val)
+-			break;
+-
+-		val = old;
+-	}
++	clear_pending_set_locked(lock, val);
+ 	return;
+ 
+ 	/*
+@@ -201,37 +241,26 @@ queue:
+ 	node->next = NULL;
+ 
+ 	/*
+-	 * We have already touched the queueing cacheline; don't bother with
+-	 * pending stuff.
+-	 *
+-	 * trylock || xchg(lock, node)
+-	 *
+-	 * 0,0,0 -> 0,0,1 ; no tail, not locked -> no tail, locked.
+-	 * p,y,x -> n,y,x ; tail was p -> tail is n; preserving locked.
++	 * We touched a (possibly) cold cacheline in the per-cpu queue node;
++	 * attempt the trylock once more in the hope someone let go while we
++	 * weren't watching.
+ 	 */
+-	for (;;) {
+-		new = _Q_LOCKED_VAL;
+-		if (val)
+-			new = tail | (val & _Q_LOCKED_PENDING_MASK);
+-
+-		old = atomic_cmpxchg(&lock->val, val, new);
+-		if (old == val)
+-			break;
+-
+-		val = old;
+-	}
++	if (queue_spin_trylock(lock))
++		goto release;
+ 
+ 	/*
+-	 * we won the trylock; forget about queueing.
++	 * We have already touched the queueing cacheline; don't bother with
++	 * pending stuff.
++	 *
++	 * p,*,* -> n,*,*
+ 	 */
+-	if (new == _Q_LOCKED_VAL)
+-		goto release;
++	old = xchg_tail(lock, tail);
+ 
+ 	/*
+ 	 * if there was a previous node; link it and wait until reaching the
+ 	 * head of the waitqueue.
+ 	 */
+-	if (old & ~_Q_LOCKED_PENDING_MASK) {
++	if (old & _Q_TAIL_MASK) {
+ 		prev = decode_tail(old);
+ 		ACCESS_ONCE(prev->next) = node;
+ 
 -- 
 1.7.1
 
