@@ -1,234 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751562AbaJPFYV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 01:24:21 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33548 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751477AbaJPFYT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 01:24:19 -0400
-Date: Wed, 15 Oct 2014 22:23:56 -0700
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-66f066d8994bd146304bab72fa09c1e644c4b3ff@git.kernel.org>
-Cc: jolsa@kernel.org, namhyung@kernel.org, jean.pihet@linaro.org,
-        acme@redhat.com, fweisbec@gmail.com, paulus@samba.org, hpa@zytor.com,
-        asharma@fb.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        dsahern@gmail.com, namhyung.kim@lge.com, tglx@linutronix.de,
-        jolsa@redhat.com, linux-kernel@vger.kernel.org
-Reply-To: jolsa@redhat.com, linux-kernel@vger.kernel.org, namhyung.kim@lge.com,
-        tglx@linutronix.de, asharma@fb.com, dsahern@gmail.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
-        hpa@zytor.com, fweisbec@gmail.com, namhyung@kernel.org,
-        jean.pihet@linaro.org, acme@redhat.com, jolsa@kernel.org
-In-Reply-To: <1412556363-26229-3-git-send-email-namhyung@kernel.org>
-References: <1412556363-26229-3-git-send-email-namhyung@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf callchain:
-  Create an address space per thread
-Git-Commit-ID: 66f066d8994bd146304bab72fa09c1e644c4b3ff
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1751164AbaJPFfN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 01:35:13 -0400
+Received: from mga11.intel.com ([192.55.52.93]:20827 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750766AbaJPFfM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 01:35:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="401069213"
+Message-ID: <543F590D.90905@linux.intel.com>
+Date: Thu, 16 Oct 2014 13:35:09 +0800
+From: "Li, Aubrey" <aubrey.li@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+To: Ingo Molnar <mingo@kernel.org>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Felipe Balbi <balbi@ti.com>, x86@kernel.org
+Subject: Re: [Patch v2] x86: Make Atom PMC driver configurable.
+References: <20141015144603.GA19944@redhat.com> <20141015145245.GB11511@saruman> <20141015145924.GA21199@redhat.com> <20141015172030.6bb3c522@alan.etchedpixels.co.uk> <20141016021859.GA12042@redhat.com> <20141016052448.GB14796@gmail.com>
+In-Reply-To: <20141016052448.GB14796@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  66f066d8994bd146304bab72fa09c1e644c4b3ff
-Gitweb:     http://git.kernel.org/tip/66f066d8994bd146304bab72fa09c1e644c4b3ff
-Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Mon, 6 Oct 2014 09:46:00 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 15 Oct 2014 17:38:23 -0300
+On 2014/10/16 13:24, Ingo Molnar wrote:
+> 
+> * Dave Jones <davej@redhat.com> wrote:
+> 
+>> The Atom PMC driver is always built-in, regardless of whether
+>> the kernel being built is going to be run on an Atom (or even Intel) CPU.
+>>
+>> Signed-off-by: Dave Jones <davej@redhat.com>
+>> Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+>> Cc: aubrey.li@linux.intel.com
+>>
+>> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+>> index f2327e88e07c..b4dfd96aeea8 100644
+>> --- a/arch/x86/Kconfig
+>> +++ b/arch/x86/Kconfig
+>> @@ -2485,7 +2485,8 @@ config X86_DMA_REMAP
+>>  	depends on STA2X11
+>>  
+>>  config PMC_ATOM
+>> -	def_bool y
+>> +	tristate "Intel Atom SOC power management controller driver"
+>> +	default y
+>>          depends on PCI
+>>  
+> 
+> So what I think should happen is to decouple of the 'must work' 
+> features from the optional debug features in this 'driver': the 
+> Atom SoC power-off quirk should be made unconditional, as long as 
+> the .config is Atom-supported (CPU_SUP_INTEL I guess).
+> 
+> All the other bits, such as the debugfs interface, should be in a 
+> separately and appropriately named config option, 
+> CONFIG_X86_INTEL_ATOM_PMC_DEBUG=y or so, with 'default n'.
+> 
+> The file should probably be split up, the quirk moved into one of 
+> the generic quirk files, while pmc_atom.c should have the debugfs 
+> interface.
+> 
+> That way we don't break anyone and remove the unnecessary code as 
+> well. It's also a nice clean up.
 
-perf callchain: Create an address space per thread
+Thanks for the suggestion, I'll take a look if I can refine it after
+I clean up my plate. Please expect a delay here.
 
-The unw_addr_space_t in libunwind represents an address space to be used
-for stack unwinding.  It doesn't need to be create/destory everytime to
-unwind callchain (as in get_entries) and can have a same lifetime as
-thread (unless exec called).
+-Aubrey
 
-So move the address space construction/destruction logic to the thread
-lifetime handling functions.  This is a preparation to enable caching in
-the unwind library.
+> 
+> Thanks,
+> 
+> 	Ingo
+> 
+> 
 
-Note that it saves unw_addr_space_t object using thread__set_priv().  It
-seems currently only used by perf trace and perf kvm stat commands which
-don't use callchain.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Jean Pihet <jean.pihet@linaro.org>
-Acked-by: Jiri Olsa <jolsa@kernel.org>
-Cc: Arun Sharma <asharma@fb.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1412556363-26229-3-git-send-email-namhyung@kernel.org
-[ Fixup unwind-libunwind.c missing CALLCHAIN_DWARF definition, added
-  missing __maybe_unused on unused parameters in stubs at util/unwind.h ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/thread.c           |  6 ++++++
- tools/perf/util/unwind-libunwind.c | 37 ++++++++++++++++++++++++++++++++-----
- tools/perf/util/unwind.h           | 17 +++++++++++++++++
- 3 files changed, 55 insertions(+), 5 deletions(-)
-
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index a9df7f2..2b7b2d9 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -7,6 +7,7 @@
- #include "util.h"
- #include "debug.h"
- #include "comm.h"
-+#include "unwind.h"
- 
- int thread__init_map_groups(struct thread *thread, struct machine *machine)
- {
-@@ -37,6 +38,9 @@ struct thread *thread__new(pid_t pid, pid_t tid)
- 		thread->cpu = -1;
- 		INIT_LIST_HEAD(&thread->comm_list);
- 
-+		if (unwind__prepare_access(thread) < 0)
-+			goto err_thread;
-+
- 		comm_str = malloc(32);
- 		if (!comm_str)
- 			goto err_thread;
-@@ -48,6 +52,7 @@ struct thread *thread__new(pid_t pid, pid_t tid)
- 			goto err_thread;
- 
- 		list_add(&comm->list, &thread->comm_list);
-+
- 	}
- 
- 	return thread;
-@@ -69,6 +74,7 @@ void thread__delete(struct thread *thread)
- 		list_del(&comm->list);
- 		comm__free(comm);
- 	}
-+	unwind__finish_access(thread);
- 
- 	free(thread);
- }
-diff --git a/tools/perf/util/unwind-libunwind.c b/tools/perf/util/unwind-libunwind.c
-index 92b56db..e060386 100644
---- a/tools/perf/util/unwind-libunwind.c
-+++ b/tools/perf/util/unwind-libunwind.c
-@@ -24,6 +24,7 @@
- #include <linux/list.h>
- #include <libunwind.h>
- #include <libunwind-ptrace.h>
-+#include "callchain.h"
- #include "thread.h"
- #include "session.h"
- #include "perf_regs.h"
-@@ -525,12 +526,12 @@ static unw_accessors_t accessors = {
- 	.get_proc_name		= get_proc_name,
- };
- 
--static int get_entries(struct unwind_info *ui, unwind_entry_cb_t cb,
--		       void *arg, int max_stack)
-+int unwind__prepare_access(struct thread *thread)
- {
- 	unw_addr_space_t addr_space;
--	unw_cursor_t c;
--	int ret;
-+
-+	if (callchain_param.record_mode != CALLCHAIN_DWARF)
-+		return 0;
- 
- 	addr_space = unw_create_addr_space(&accessors, 0);
- 	if (!addr_space) {
-@@ -538,6 +539,33 @@ static int get_entries(struct unwind_info *ui, unwind_entry_cb_t cb,
- 		return -ENOMEM;
- 	}
- 
-+	thread__set_priv(thread, addr_space);
-+
-+	return 0;
-+}
-+
-+void unwind__finish_access(struct thread *thread)
-+{
-+	unw_addr_space_t addr_space;
-+
-+	if (callchain_param.record_mode != CALLCHAIN_DWARF)
-+		return;
-+
-+	addr_space = thread__priv(thread);
-+	unw_destroy_addr_space(addr_space);
-+}
-+
-+static int get_entries(struct unwind_info *ui, unwind_entry_cb_t cb,
-+		       void *arg, int max_stack)
-+{
-+	unw_addr_space_t addr_space;
-+	unw_cursor_t c;
-+	int ret;
-+
-+	addr_space = thread__priv(ui->thread);
-+	if (addr_space == NULL)
-+		return -1;
-+
- 	ret = unw_init_remote(&c, addr_space, ui);
- 	if (ret)
- 		display_error(ret);
-@@ -549,7 +577,6 @@ static int get_entries(struct unwind_info *ui, unwind_entry_cb_t cb,
- 		ret = ip ? entry(ip, ui->thread, ui->machine, cb, arg) : 0;
- 	}
- 
--	unw_destroy_addr_space(addr_space);
- 	return ret;
- }
- 
-diff --git a/tools/perf/util/unwind.h b/tools/perf/util/unwind.h
-index f030612..c17c485 100644
---- a/tools/perf/util/unwind.h
-+++ b/tools/perf/util/unwind.h
-@@ -4,6 +4,7 @@
- #include <linux/types.h>
- #include "event.h"
- #include "symbol.h"
-+#include "thread.h"
- 
- struct unwind_entry {
- 	struct map	*map;
-@@ -21,6 +22,15 @@ int unwind__get_entries(unwind_entry_cb_t cb, void *arg,
- /* libunwind specific */
- #ifdef HAVE_LIBUNWIND_SUPPORT
- int libunwind__arch_reg_id(int regnum);
-+int unwind__prepare_access(struct thread *thread);
-+void unwind__finish_access(struct thread *thread);
-+#else
-+static inline int unwind__prepare_access(struct thread *thread __maybe_unused)
-+{
-+	return 0;
-+}
-+
-+static inline void unwind__finish_access(struct thread *thread __maybe_unused) {}
- #endif
- #else
- static inline int
-@@ -33,5 +43,12 @@ unwind__get_entries(unwind_entry_cb_t cb __maybe_unused,
- {
- 	return 0;
- }
-+
-+static inline int unwind__prepare_access(struct thread *thread __maybe_unused)
-+{
-+	return 0;
-+}
-+
-+static inline void unwind__finish_access(struct thread *thread __maybe_unused) {}
- #endif /* HAVE_DWARF_UNWIND_SUPPORT */
- #endif /* __UNWIND_H */
