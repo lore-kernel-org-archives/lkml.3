@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751273AbaJPFKO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 01:10:14 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:45888 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750734AbaJPFKM (ORCPT
+	id S1751313AbaJPFKj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 01:10:39 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:34767 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751173AbaJPFKg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 01:10:12 -0400
-Date: Thu, 16 Oct 2014 07:10:07 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@redhat.com>,
-        John Stultz <john.stultz@linaro.org>, Eric Paris <eparis@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 06/10] clocksource: Remove "weak" from
- clocksource_default_clock() declaration
-Message-ID: <20141016051007.GB14640@gmail.com>
-References: <20141015165957.4063.66741.stgit@bhelgaas-glaptop2.roam.corp.google.com>
- <20141015170624.4063.24678.stgit@bhelgaas-glaptop2.roam.corp.google.com>
+	Thu, 16 Oct 2014 01:10:36 -0400
+Date: Thu, 16 Oct 2014 07:10:31 +0200
+From: Simon Horman <horms@verge.net.au>
+To: Rolf Evers-Fischer <embedded24@evers-fischer.de>
+Cc: magnus.damm@gmail.com, linux-sh@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arch: arm: mach-shmobile: Remove ARCH_HAS_OPP completely
+Message-ID: <20141016051031.GA1265@verge.net.au>
+References: <1413379785-14468-1-git-send-email-embedded24@evers-fischer.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141015170624.4063.24678.stgit@bhelgaas-glaptop2.roam.corp.google.com>
+In-Reply-To: <1413379785-14468-1-git-send-email-embedded24@evers-fischer.de>
+Organisation: Horms Solutions Ltd.
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Bjorn Helgaas <bhelgaas@google.com> wrote:
-
-> kernel/time/jiffies.c provides a default clocksource_default_clock()
-> definition explicitly marked "weak".  arch/s390 provides its own definition
-> intended to override the default, but the "weak" attribute on the
-> declaration applied to the s390 definition as well, so the linker chose one
-> based on link order (see 10629d711ed7 ("PCI: Remove __weak annotation from
-> pcibios_get_phb_of_node decl")).
+On Wed, Oct 15, 2014 at 03:29:45PM +0200, Rolf Evers-Fischer wrote:
+> The Kconfig symbol ARCH_HAS_OPP became redundant in v3.16: commit
+> 049d595a4db3 ("PM / OPP: Make OPP invisible to users in Kconfig")
+> removed the only dependency that used it. Setting it had no effect
+> anymore.
 > 
-> Remove the "weak" attribute from the clocksource_default_clock()
-> declaration so we always prefer a non-weak definition over the weak one,
-> independent of link order.
+> So commit 78c5e0bb145d ("PM / OPP: Remove ARCH_HAS_OPP") removed it. For
+> some reason that commit did not remove all select statements for that
+> symbol. These statements are now useless.
 > 
-> Fixes: f1b82746c1e9 ("clocksource: Cleanup clocksource selection")
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> CC: Daniel Lezcano <daniel.lezcano@linaro.org>
-> CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> Commit adad5621f3e1 ("PM / devfreq: Remove ARCH_HAS_OPP completely")
+> removed it for devfreq. Remove one from mach-shmobile too.
+> 
+> Signed-off-by: Rolf Evers-Fischer <embedded24@evers-fischer.de>
+
+Thanks, I have queued this up.
+
 > ---
->  include/linux/clocksource.h |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  arch/arm/mach-shmobile/Kconfig | 1 -
+>  1 file changed, 1 deletion(-)
 > 
-> diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
-> index 653f0e2b6ca9..abcafaa20b86 100644
-> --- a/include/linux/clocksource.h
-> +++ b/include/linux/clocksource.h
-> @@ -287,7 +287,7 @@ extern struct clocksource* clocksource_get_next(void);
->  extern void clocksource_change_rating(struct clocksource *cs, int rating);
->  extern void clocksource_suspend(void);
->  extern void clocksource_resume(void);
-> -extern struct clocksource * __init __weak clocksource_default_clock(void);
-> +extern struct clocksource * __init clocksource_default_clock(void);
->  extern void clocksource_mark_unstable(struct clocksource *cs);
-
-Acked-by: Ingo Molnar <mingo@kernel.org>
-
-Thanks,
-
-	Ingo
+> diff --git a/arch/arm/mach-shmobile/Kconfig b/arch/arm/mach-shmobile/Kconfig
+> index 21f457b..f59019d 100644
+> --- a/arch/arm/mach-shmobile/Kconfig
+> +++ b/arch/arm/mach-shmobile/Kconfig
+> @@ -36,7 +36,6 @@ menuconfig ARCH_SHMOBILE_MULTI
+>  	select NO_IOPORT_MAP
+>  	select PINCTRL
+>  	select ARCH_REQUIRE_GPIOLIB
+> -	select ARCH_HAS_OPP
+>  
+>  if ARCH_SHMOBILE_MULTI
+>  
+> -- 
+> 1.9.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-sh" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
