@@ -1,140 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371AbaJPKTs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 06:19:48 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37196 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751890AbaJPKTo (ORCPT
+	id S1753121AbaJPKdu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 06:33:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42126 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752349AbaJPKTr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 06:19:44 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
-        lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH v2 15/53] dmaengine: edma: Split device_control
-Date: Thu, 16 Oct 2014 12:17:14 +0200
-Message-Id: <1413454672-27400-16-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
+	Thu, 16 Oct 2014 06:19:47 -0400
+Date: Thu, 16 Oct 2014 12:18:43 +0200
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Aristeu Rozanski <aris@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tiny: reverse logic for DISABLE_DEV_COREDUMP
+Message-ID: <20141016101843.GB25971@kroah.com>
+References: <20141015152522.GL5930@redhat.com>
+ <20141015231446.GD685@kroah.com>
+ <20141016035157.GA25133@thin>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141016035157.GA25133@thin>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the TI EDMA driver to make use of the
-newly introduced callbacks, that will eventually be used to retrieve slave
-capabilities.
+On Thu, Oct 16, 2014 at 05:51:58AM +0200, Josh Triplett wrote:
+> On Thu, Oct 16, 2014 at 01:14:46AM +0200, Greg Kroah-Hartman wrote:
+> > On Wed, Oct 15, 2014 at 11:25:23AM -0400, Aristeu Rozanski wrote:
+> > > It's desirable for allnconfig and tinyconfig targets to result in the
+> > > least amount of code possible. DISABLE_DEV_COREDUMP exists as a way to
+> > > switch off DEV_COREDUMP regardless if any drivers select
+> > > WANT_DEV_COREDUMP.
+> > > 
+> > > This patch renames the option to ENABLE_DEV_COREDUMP and setting it to
+> > > 'n' (as in allnconfig or tinyconfig) will effectively disable device
+> > > coredump.
+> > > 
+> > > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > > Cc: Josh Triplett <josh@joshtriplett.org>
+> > > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> > > Signed-off-by: Aristeu Rozanski <arozansk@redhat.com>
+> > 
+> > Any reason you didn't cc: the author of this feature / Kconfig option
+> > about this change you are proposing?
+> 
+> Likely my fault; I'd suggested using get_maintainer.pl, which does not
+> show that for this patch:
+> 
+> ~/src/linux$ scripts/get_maintainer.pl < /tmp/patch
+> Greg Kroah-Hartman <gregkh@linuxfoundation.org> (supporter:DRIVER CORE, KOBJ...)
+> linux-kernel@vger.kernel.org (open list)
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- drivers/dma/edma.c | 50 +++++++++++++++-----------------------------------
- 1 file changed, 15 insertions(+), 35 deletions(-)
+Yes, as that's just the Kconfig file, but at least let the person who
+wrote that entry a chance to review it, that's just "being nice" :)
 
-diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-index b3d641881d9d..5ac2d7dc38c9 100644
---- a/drivers/dma/edma.c
-+++ b/drivers/dma/edma.c
-@@ -244,8 +244,9 @@ static void edma_execute(struct edma_chan *echan)
- 	}
- }
- 
--static int edma_terminate_all(struct edma_chan *echan)
-+static int edma_terminate_all(struct dma_chan *chan)
- {
-+	struct edma_chan *echan = to_edma_chan(chan);
- 	unsigned long flags;
- 	LIST_HEAD(head);
- 
-@@ -273,9 +274,11 @@ static int edma_terminate_all(struct edma_chan *echan)
- 	return 0;
- }
- 
--static int edma_slave_config(struct edma_chan *echan,
-+static int edma_slave_config(struct dma_chan *chan,
- 	struct dma_slave_config *cfg)
- {
-+	struct edma_chan *echan = to_edma_chan(chan);
-+
- 	if (cfg->src_addr_width == DMA_SLAVE_BUSWIDTH_8_BYTES ||
- 	    cfg->dst_addr_width == DMA_SLAVE_BUSWIDTH_8_BYTES)
- 		return -EINVAL;
-@@ -285,8 +288,10 @@ static int edma_slave_config(struct edma_chan *echan,
- 	return 0;
- }
- 
--static int edma_dma_pause(struct edma_chan *echan)
-+static int edma_dma_pause(struct dma_chan *chan)
- {
-+	struct edma_chan *echan = to_edma_chan(chan);
-+
- 	/* Pause/Resume only allowed with cyclic mode */
- 	if (!echan->edesc->cyclic)
- 		return -EINVAL;
-@@ -295,8 +300,10 @@ static int edma_dma_pause(struct edma_chan *echan)
- 	return 0;
- }
- 
--static int edma_dma_resume(struct edma_chan *echan)
-+static int edma_dma_resume(struct dma_chan *chan)
- {
-+	struct edma_chan *echan = to_edma_chan(chan);
-+
- 	/* Pause/Resume only allowed with cyclic mode */
- 	if (!echan->edesc->cyclic)
- 		return -EINVAL;
-@@ -305,36 +312,6 @@ static int edma_dma_resume(struct edma_chan *echan)
- 	return 0;
- }
- 
--static int edma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--			unsigned long arg)
--{
--	int ret = 0;
--	struct dma_slave_config *config;
--	struct edma_chan *echan = to_edma_chan(chan);
--
--	switch (cmd) {
--	case DMA_TERMINATE_ALL:
--		edma_terminate_all(echan);
--		break;
--	case DMA_SLAVE_CONFIG:
--		config = (struct dma_slave_config *)arg;
--		ret = edma_slave_config(echan, config);
--		break;
--	case DMA_PAUSE:
--		ret = edma_dma_pause(echan);
--		break;
--
--	case DMA_RESUME:
--		ret = edma_dma_resume(echan);
--		break;
--
--	default:
--		ret = -ENOSYS;
--	}
--
--	return ret;
--}
--
- /*
-  * A PaRAM set configuration abstraction used by other modes
-  * @chan: Channel who's PaRAM set we're configuring
-@@ -1017,7 +994,10 @@ static void edma_dma_init(struct edma_cc *ecc, struct dma_device *dma,
- 	dma->device_free_chan_resources = edma_free_chan_resources;
- 	dma->device_issue_pending = edma_issue_pending;
- 	dma->device_tx_status = edma_tx_status;
--	dma->device_control = edma_control;
-+	dma->device_config = edma_slave_config;
-+	dma->device_pause = edma_dma_pause;
-+	dma->device_resume = edma_dma_resume;
-+	dma->device_terminate_all = edma_terminate_all;
- 	dma->device_slave_caps = edma_dma_device_slave_caps;
- 	dma->dev = dev;
- 
--- 
-2.1.1
+thanks,
 
+greg k-h
