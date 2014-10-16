@@ -1,166 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753082AbaJPKai (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 06:30:38 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37287 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752536AbaJPKUP (ORCPT
+	id S1753098AbaJPKa6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 06:30:58 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56021 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751815AbaJPKUN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 06:20:15 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
-        lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH v2 29/53] dmaengine: nbpfaxi: Split device_control
-Date: Thu, 16 Oct 2014 12:17:28 +0200
-Message-Id: <1413454672-27400-30-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
+	Thu, 16 Oct 2014 06:20:13 -0400
+Date: Thu, 16 Oct 2014 11:20:02 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: "zyw@rock-chips.com" <zyw@rock-chips.com>
+Cc: Heiko Stuebner <heiko@sntech.de>, Mike Turquette <mturquette@linaro.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "dianders@chromium.org" <dianders@chromium.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-rockchip@lists.infradead.org" 
+	<linux-rockchip@lists.infradead.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Tony Xie <xxx@rock-chips.com>
+Subject: Re: [PATCH 3/4] ARM: dts: add RK3288 suspend support
+Message-ID: <20141016102001.GA24714@leverpostej>
+References: <1413405987-16196-1-git-send-email-zyw@rock-chips.com>
+ <1413406144-16329-1-git-send-email-zyw@rock-chips.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413406144-16329-1-git-send-email-zyw@rock-chips.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the NBPF AXI DMA driver to make use
-of the newly introduced callbacks, that will eventually be used to retrieve
-slave capabilities.
+On Wed, Oct 15, 2014 at 09:49:04PM +0100, zyw@rock-chips.com wrote:
+> From: Chris Zhong <zyw@rock-chips.com>
+> 
+> add pmu_intmem subnode for suspend, add suspend pinctrl
+> 
+> Signed-off-by: Tony Xie <xxx@rock-chips.com>
+> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+> ---
+> 
+>  arch/arm/boot/dts/rk3288.dtsi |   11 +++++++++++
+>  1 file changed, 11 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+> index 5950b0a..081af7a 100644
+> --- a/arch/arm/boot/dts/rk3288.dtsi
+> +++ b/arch/arm/boot/dts/rk3288.dtsi
+> @@ -241,6 +241,11 @@
+>  		status = "disabled";
+>  	};
+>  
+> +	pmu_intmem@ff720000 {
+> +		compatible = "mmio-sram", "rockchip,rk3288-pmu-sram";
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- drivers/dma/nbpfaxi.c | 92 +++++++++++++++++++++++++--------------------------
- 1 file changed, 46 insertions(+), 46 deletions(-)
+These strings should be the other way around -- the most specific string
+should be first.
 
-diff --git a/drivers/dma/nbpfaxi.c b/drivers/dma/nbpfaxi.c
-index b4a61ccbb443..2585bfd317a7 100644
---- a/drivers/dma/nbpfaxi.c
-+++ b/drivers/dma/nbpfaxi.c
-@@ -565,13 +565,6 @@ static void nbpf_configure(struct nbpf_device *nbpf)
- 	nbpf_write(nbpf, NBPF_CTRL, NBPF_CTRL_LVINT);
- }
- 
--static void nbpf_pause(struct nbpf_channel *chan)
--{
--	nbpf_chan_write(chan, NBPF_CHAN_CTRL, NBPF_CHAN_CTRL_SETSUS);
--	/* See comment in nbpf_prep_one() */
--	nbpf_chan_write(chan, NBPF_CHAN_CTRL, NBPF_CHAN_CTRL_CLREN);
--}
--
- /*		Generic part			*/
- 
- /* DMA ENGINE functions */
-@@ -837,54 +830,59 @@ static void nbpf_chan_idle(struct nbpf_channel *chan)
- 	}
- }
- 
--static int nbpf_control(struct dma_chan *dchan, enum dma_ctrl_cmd cmd,
--			unsigned long arg)
-+static int nbpf_pause(struct dma_chan *dchan)
- {
- 	struct nbpf_channel *chan = nbpf_to_chan(dchan);
- 	struct dma_slave_config *config;
- 
--	dev_dbg(dchan->device->dev, "Entry %s(%d)\n", __func__, cmd);
-+	dev_dbg(dchan->device->dev, "Entry %s\n", __func__);
- 
--	switch (cmd) {
--	case DMA_TERMINATE_ALL:
--		dev_dbg(dchan->device->dev, "Terminating\n");
--		nbpf_chan_halt(chan);
--		nbpf_chan_idle(chan);
--		break;
-+	chan->paused = true;
-+	nbpf_chan_write(chan, NBPF_CHAN_CTRL, NBPF_CHAN_CTRL_SETSUS);
-+	/* See comment in nbpf_prep_one() */
-+	nbpf_chan_write(chan, NBPF_CHAN_CTRL, NBPF_CHAN_CTRL_CLREN);
- 
--	case DMA_SLAVE_CONFIG:
--		if (!arg)
--			return -EINVAL;
--		config = (struct dma_slave_config *)arg;
-+	return 0;
-+}
- 
--		/*
--		 * We could check config->slave_id to match chan->terminal here,
--		 * but with DT they would be coming from the same source, so
--		 * such a check would be superflous
--		 */
-+static int nbpf_terminate_all(struct dma_chan *dchan)
-+{
-+	struct nbpf_channel *chan = nbpf_to_chan(dchan);
- 
--		chan->slave_dst_addr = config->dst_addr;
--		chan->slave_dst_width = nbpf_xfer_size(chan->nbpf,
--						       config->dst_addr_width, 1);
--		chan->slave_dst_burst = nbpf_xfer_size(chan->nbpf,
--						       config->dst_addr_width,
--						       config->dst_maxburst);
--		chan->slave_src_addr = config->src_addr;
--		chan->slave_src_width = nbpf_xfer_size(chan->nbpf,
--						       config->src_addr_width, 1);
--		chan->slave_src_burst = nbpf_xfer_size(chan->nbpf,
--						       config->src_addr_width,
--						       config->src_maxburst);
--		break;
-+	dev_dbg(dchan->device->dev, "Entry %s\n", __func__);
-+	dev_dbg(dchan->device->dev, "Terminating\n");
- 
--	case DMA_PAUSE:
--		chan->paused = true;
--		nbpf_pause(chan);
--		break;
-+	nbpf_chan_halt(chan);
-+	nbpf_chan_idle(chan);
- 
--	default:
--		return -ENXIO;
--	}
-+	return 0;
-+}
-+
-+static int nbpf_config(struct dma_chan *dchan,
-+		       struct dma_slave_config *config)
-+{
-+	struct nbpf_channel *chan = nbpf_to_chan(dchan);
-+
-+	dev_dbg(dchan->device->dev, "Entry %s\n", __func__);
-+
-+	/*
-+	 * We could check config->slave_id to match chan->terminal here,
-+	 * but with DT they would be coming from the same source, so
-+	 * such a check would be superflous
-+	 */
-+
-+	chan->slave_dst_addr = config->dst_addr;
-+	chan->slave_dst_width = nbpf_xfer_size(chan->nbpf,
-+					       config->dst_addr_width, 1);
-+	chan->slave_dst_burst = nbpf_xfer_size(chan->nbpf,
-+					       config->dst_addr_width,
-+					       config->dst_maxburst);
-+	chan->slave_src_addr = config->src_addr;
-+	chan->slave_src_width = nbpf_xfer_size(chan->nbpf,
-+					       config->src_addr_width, 1);
-+	chan->slave_src_burst = nbpf_xfer_size(chan->nbpf,
-+					       config->src_addr_width,
-+					       config->src_maxburst);
- 
- 	return 0;
- }
-@@ -1426,7 +1424,9 @@ static int nbpf_probe(struct platform_device *pdev)
- 
- 	/* Compulsory for DMA_SLAVE fields */
- 	dma_dev->device_prep_slave_sg = nbpf_prep_slave_sg;
--	dma_dev->device_control = nbpf_control;
-+	dma_dev->device_config = nbpf_config;
-+	dma_dev->device_pause = nbpf_pause;
-+	dma_dev->device_terminate_all = nbpf_terminate_all;
- 
- 	platform_set_drvdata(pdev, nbpf);
- 
--- 
-2.1.1
-
+Mark.
