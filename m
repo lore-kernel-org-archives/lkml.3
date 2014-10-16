@@ -1,79 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752457AbaJPQvE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 12:51:04 -0400
-Received: from mail.eperm.de ([89.247.134.16]:54076 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751289AbaJPQvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 12:51:02 -0400
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kernel crypto API interface specification
-Date: Thu, 16 Oct 2014 18:50:58 +0200
-Message-ID: <2081738.uvS0jMPrv1@myon.chronox.de>
-User-Agent: KMail/4.14.1 (Linux/3.16.4-200.fc20.x86_64; KDE/4.14.1; x86_64; ; )
-In-Reply-To: <20141016150604.GK17447@titan.lakedaemon.net>
-References: <7502136.9BkWHTZ0th@myon.chronox.de> <20141016132501.GI17447@titan.lakedaemon.net> <20141016150604.GK17447@titan.lakedaemon.net>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1752010AbaJPQt5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 12:49:57 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:34955 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309AbaJPQtx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 12:49:53 -0400
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Mark Brown <broonie@kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Doug Anderson <dianders@chromium.org>,
+        Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Chris Zhong <zyw@rock-chips.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [PATCH v2 0/7] Add max77802 regulator operating mode support
+Date: Thu, 16 Oct 2014 18:48:46 +0200
+Message-Id: <1413478133-2577-1-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 16. Oktober 2014, 11:06:05 schrieb Jason Cooper:
+Hello Mark,
 
-Hi Jason,
+This is the second version of the series that adds operating modes
+support for the regulators in the max77802 PMIC. It address issues
+pointed out in "regulator: max77802: Add .{get,set}_mode callbacks"
+and also removes the patches you already picked on the topic branch.
+The first version of the series was [0].
 
-> On Thu, Oct 16, 2014 at 09:25:01AM -0400, Jason Cooper wrote:
-> > + Grant, Geert,
-> > 
-> > Stephan has created some great example code for both the kernel crypto
-> > API and the userspace crypto API.  As examples tend to bitrot, I was
-> > wondering if the code could serve as test code.  Then it would have a
-> > triple role: API regression testing, crypto test suite, and reference
-> > implementation.
-> > 
-> > Original patch is here:
-> >   https://lkml.kernel.org/r/7502136.9BkWHTZ0th@myon.chronox.de
-> > 
-> > On Thu, Oct 16, 2014 at 09:19:08AM +0200, Stephan Mueller wrote:
-> > > Am Mittwoch, 15. Oktober 2014, 13:58:00 schrieb Jason Cooper:
-> > > > On Tue, Oct 14, 2014 at 09:46:50PM +0200, Stephan Mueller wrote:
-> ...
-> 
-> > > > Perhaps the userspace API example should be a separate file with this
-> > > > text at the top?  Seems odd having it at the end.  Also, if you copied
-> > > > it from cryptsetup, is the copyright info correct?
-> > > 
-> > > I did not copy it from cryptsetup. I only used it as a basis, especially
-> > > with the data structure handling in _kcapi_cipher_crypt. But you are
-> > > right, I changed the license for the user space by taking the
-> > > cryptsetup license.> 
-> > Ok.  It looks like Geert and Grant took part in the kernel test
-> > unconference, so I'm adding them to the Cc.  I hope they can give us
-> > some pointers as to where we could hook in this code.  Then we can
-> > simply refer to it from the userspace API document.
-> 
-> tools/testing/selftests/crypto would be a good location for the example
-> code in the next version of this patch.  Make sure to take a look at
-> tools/testing/selftests/README.txt.
+The series adds a "maxim,regulator-initial-mode" property to configure
+at startup the operating mode for the regulators that support changing
+its mode during normal operation and "maxim,regulator-{disk,mem}-mode"
+properties for the regulators that only support changing its operating
+mode when the system enters in a suspend state.
 
-Well, I have written a FIPS 140-2 CAVS test harness covering all ciphers NIST 
-is interested. Maybe this can go there?
+The regulators can be enabled or disabled during suspend by using the
+standard "regulator-{on,off}-in-suspend" properties from Chanwoo Choi's
+regulator suspend state series [1].
 
-> 
-> thx,
-> 
-> Jason.
+I tried to use as much as possible the infrastructure that is already
+provided in the regulator framework by adding the needed handlers for
+the set_suspend_* operations.
 
+Also, the driver still had some assumptions and didn't clearly made a
+distinction between the valid modes (normal and low power) and off which
+is not an operating mode as you explained. So I reworked a bit to better
+treat them separately as is expected by the regulator API.
 
--- 
-Ciao
-Stephan
+This series depend on [1] and also v2 of patch:
+"ARM: EXYNOS: Call regulator core suspend prepare and finish functions" [2].
+
+NOTE: Patch #4 touches a header in include/linux/mfd so some coordination
+with the mfd maintainer (added as cc) will be needed.
+
+Javier Martinez Canillas (7):
+  regulator: max77802: Add .{get,set}_mode callbacks
+  regulator: max77802: Add set suspend mode for BUCKs and simplify code
+  regulator: max77802: Don't treat OFF as an operating mode
+  regulator: max77802: Add header for operating modes
+  regulator: max77802: Document regulator opmode DT properties
+  regulator: max77802: Parse regulator operating mode properties
+  ARM: dts: Configure regulators for suspend on exynos Peach boards
+
+ .../devicetree/bindings/regulator/max77802.txt     |  45 ++++++++
+ arch/arm/boot/dts/exynos5420-peach-pit.dts         |  81 ++++++++++++++
+ arch/arm/boot/dts/exynos5800-peach-pi.dts          |  81 ++++++++++++++
+ drivers/regulator/max77802.c                       | 122 ++++++++++++++++-----
+ include/dt-bindings/regulator/maxim,max77802.h     |  18 +++
+ include/linux/mfd/max77686.h                       |   7 --
+ 6 files changed, 319 insertions(+), 35 deletions(-)
+ create mode 100644 include/dt-bindings/regulator/maxim,max77802.h
+
+Patch #1 adds a get and set mode function handlers for the regulators whose
+operating mode can be changed at runtime.
+
+Patch #2 adds support for changing the operating mode for all regulators
+that support setting a different opmode during suspend.
+
+Patch #3 is a cleanup to not call OFF an operating mode.
+
+Patch #4 adds a header file with the valid operating modes so it can be used
+by Device Tree source files.
+
+Patch #5 extend the max77802 DT binding to include the properties used to
+setup the regulators modes.
+
+Patch #6 adds the support to parse these from the driver.
+
+Patch #7 configures the modes for the max77802 regulators in the Device Tree
+source file of the Peach Chromebooks.
+
+Best regards,
+Javier
+
+[0]: https://lkml.org/lkml/2014/10/8/331
+[1]: https://lkml.org/lkml/2014/10/10/161
+[2]: http://www.spinics.net/lists/arm-kernel/msg369923.html
