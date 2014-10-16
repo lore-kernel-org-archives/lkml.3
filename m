@@ -1,107 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751694AbaJPAMQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 20:12:16 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:34122 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870AbaJPAMP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 20:12:15 -0400
+	id S1751484AbaJPAbq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 20:31:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9553 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750820AbaJPAbq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 20:31:46 -0400
+Message-ID: <543F11EF.4090206@redhat.com>
+Date: Thu, 16 Oct 2014 08:31:43 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-In-Reply-To: <20141016000705.GA12208@achernar.madore.org>
-References: <20141015133518.GA7179@achernar.madore.org> <543E87AC.5090402@amacapital.net>
- <20141015223033.GA11458@achernar.madore.org> <CALCETrXnfU6cGaYNBy-X=GKwBZ07Wf8VvnUz1R-qgKVtGrS=hQ@mail.gmail.com>
- <20141016000705.GA12208@achernar.madore.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 15 Oct 2014 17:11:53 -0700
-Message-ID: <CALCETrX4SjC05CYWfBsTOn-XaBLQLtmHWAd8b+9xONiFB1Soxw@mail.gmail.com>
-Subject: Re: feature suggestion: implement SO_PEERCRED on local
- AF_INET/AF_INET6 sockets (allow uid-based identification on localhost)
-To: David Madore <david+ml@madore.org>
-Cc: Linux Kernel mailing-list <linux-kernel@vger.kernel.org>,
-        Linux network mailing-list <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC v2 0/3] virtio_net: enabling tx interrupts
+References: <1413383116-30977-1-git-send-email-mst@redhat.com>
+In-Reply-To: <1413383116-30977-1-git-send-email-mst@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 5:07 PM, David Madore <david+ml@madore.org> wrote:
-> On Wed, Oct 15, 2014 at 03:54:08PM -0700, Andy Lutomirski wrote:
->> On Wed, Oct 15, 2014 at 3:30 PM, David Madore <david+ml@madore.org> wrote:
->> > Note that since the possibility of using SO_PEERCRED on AF_INET
->> > sockets does not hitherto exist on Linux, we can be sure that nobody
->> > uses it, so it's not like it might open vulnerabilities in existing
->> > code.  If you think it's insecure, it can be documented as such (by
->> > comparing it with identd): I still think it's better than having no
->> > control at all when binding to localhost, which is the present
->> > situation (causing, e.g., CVE-2014-2914).
->>
->> This doesn't follow.  *Everybody* uses connect on AF_INET.
->>
->> IMO anything that sends a caller's credentials needs to be explicit and opt-in.
+On 10/15/2014 10:32 PM, Michael S. Tsirkin wrote:
+> RFC patches to enable tx interrupts.
+> This is to demonstrate how this can be done without
+> core virtio changes, and to make sure I understand
+> the new APIs correctly.
 >
-> I'm confused as to whether you mean "opt-in" on the side of the caller
-> (=process requesting the endpoint's credentials), or on that of the
-> endpoint (=authenticated process).  On the one hand I don't understand
-> what it could mean on the caller side, on the other hand you mention
-> explicit support in OpenSSH, which would be the caller in my scenario.
-
-I mean the authenticated process, not the process doing the authentication.
-
+> Testing TBD: I'm going offline for several days, will only be able to
+> test afterwards (unless someone beats me to this).
+> So I thought I'd post this early.
 >
-> So, in case I haven't been clear enough, the situation I have in mind
-> is: on "thishost", I run "ssh -L 14321:remotehost:4321 somehost" to
-> forward connexions on from the local port 14321 of thishost (where ssh
-> listens on the loopback) to the port 4321 of remotehost.
-> Unfortunately, now everyone with an acccount on thishost can connect
-> to port 14321 and effectively emit a connection from somehost to
-> remotehost on my behalf.  I think everyone agrees that this is a huge
-> problem.  But I don't understand how you propose to remedy this.
-
-Unfortunately, I think that you need client changes.  These could be
-semi-transparent (using LD_PRELOAD) or almost completely transparent
-(using network namespaces).
-
-Actually, a network namespace-based proxying tool could be very useful.
-
+> Applies on top of patch: "virtio_net: fix use after free"
+> that I recently sent.
 >
-> Patching ssh is an option, but I don't see how to do it (ssh needs to
-> make sure that the connections it receives on 14321 are from the same
-> uid, and this seems impossible without the feature I'm discussing).
-> Patching the kernel is an option.  Patching clients that connect to
-> 14321, on the other hand, is not, because there are many different
-> ones, and their protocol is defined by immutable Internet standards,
-> so we have no latitude there (for example, we can't ask a Web browser
-> to connect to Unix domain sockets: there simply isn't a URL scheme to
-> refer to them).  Adding iptables rules is not an option if I'm not the
-> system administrator on thishost.
+> Changes:
+> 	address comments by Jason Wang, use delayed cb everywhere
+> 	rebased Jason's patch on top of mine and include it (with some tweaks)
+>
+> Jason, feel free to either use this, try it out, or take ideas out
+> of this patchset and reuse in any other way you see fit.
 
-I misunderstood.  I though that you wanted a server-side solution.
+Sure, will do some tests first.
 
+Thanks
 >
-> So, how can we solve this problem securely?
+> Jason Wang (1):
+>   virtio-net: optimize free_old_xmit_skbs stats
 >
->> I believe that there is no secure way to authenticate clients that
->> currently don't authenticate themselves without changing the clients.
->> That's the whole point: currently-secure are written under the
->> assumption that they are not exercising their credentials.  You can't
->> safely change that without making it opt-in.
+> Michael S. Tsirkin (2):
+>   virtio_net: enable tx interrupt
+>   virtio_net: bql
 >
-> Then what are we to do, given that modifying the clients is
-> impossible?
->
-> What about my proposal that user credentials would be returned only if
-> they refer to the same user as the caller user and that the caller is
-> permitted to ptrace the endpoint?  This answers your objection of
-> leaking credentials: the caller could do anything at all with the
-> other side since it could ptrace it - we're just permitting a user to
-> authenticate their own sockets.  A further sysctl could enable the use
-> of the call in more general cases, for those administrators who think
-> it should be allowed.
+>  drivers/net/virtio_net.c | 153 ++++++++++++++++++++++++++++++++++-------------
+>  1 file changed, 111 insertions(+), 42 deletions(-)
 >
 
-Ugh.
-
-That's probably safe, but it's quite disgusting IMO.
-
---Andy
