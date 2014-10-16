@@ -1,164 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751130AbaJPFSQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 01:18:16 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:46663 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765AbaJPFSO (ORCPT
+	id S1751247AbaJPFVv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 01:21:51 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33453 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750969AbaJPFVu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 01:18:14 -0400
-Date: Thu, 16 Oct 2014 07:18:07 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>,
-        Arun Sharma <asharma@fb.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Cody P Schafer <dev@codyps.com>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Haren Myneni <hbabu@us.ibm.com>, Jean Pihet <jean.pihet@linaro.org>,
-        Jiri Olsa <jolsa@redhat.com>, Kan Liang <kan.liang@intel.com>,
-        linuxppc-dev@lists.ozlabs.org, Masanari Iida <standby24x7@gmail.com>,
-        Michael Ellerman <michaele@au1.ibm.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Taeung Song <treeze.taeung@gmail.com>,
-        Yasser Shalabi <yassershalabi@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/15] perf/core improvements and fixes
-Message-ID: <20141016051807.GA14796@gmail.com>
-References: <1413406368-26245-1-git-send-email-acme@kernel.org>
+	Thu, 16 Oct 2014 01:21:50 -0400
+Date: Wed, 15 Oct 2014 22:21:33 -0700
+From: tip-bot for Taeung Song <tipbot@zytor.com>
+Message-ID: <tip-1e378ebd117d1828b9d5dbe0538887478fcb9d84@git.kernel.org>
+Cc: eranian@google.com, tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, acme@redhat.com, treeze.taeung@gmail.com,
+        mingo@kernel.org, namhyung@kernel.org
+Reply-To: hpa@zytor.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        eranian@google.com, namhyung@kernel.org, treeze.taeung@gmail.com,
+        mingo@kernel.org, acme@redhat.com
+In-Reply-To: <1412665995-26359-1-git-send-email-treeze.taeung@gmail.com>
+References: <1412665995-26359-1-git-send-email-treeze.taeung@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf top:
+  Add a visual cue for toggle zeroing of samples
+Git-Commit-ID: 1e378ebd117d1828b9d5dbe0538887478fcb9d84
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1413406368-26245-1-git-send-email-acme@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  1e378ebd117d1828b9d5dbe0538887478fcb9d84
+Gitweb:     http://git.kernel.org/tip/1e378ebd117d1828b9d5dbe0538887478fcb9d84
+Author:     Taeung Song <treeze.taeung@gmail.com>
+AuthorDate: Tue, 7 Oct 2014 16:13:15 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 15 Oct 2014 15:47:48 -0300
 
-* Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
+perf top: Add a visual cue for toggle zeroing of samples
 
-> Hi Ingo,
-> 
-> 	Please consider pulling, I guess the changes are minor of affect just some
-> non-core feature, so it is you call if you prefer to pull it into perf/urgent instead.
-> 
-> Best Regards,
-> 
-> - Arnaldo
-> 
-> The following changes since commit ec4212d88a77eb6caec10777ddd629b702a5ebbd:
-> 
->   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/urgent (2014-10-15 11:54:14 +0200)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-core-for-mingo
-> 
-> for you to fetch changes up to 673d659f5c5918b7ddbafebf1f129c9eb82973b4:
-> 
->   perf kvm stat live: Enable events copying (2014-10-15 17:39:03 -0300)
-> 
-> ----------------------------------------------------------------
-> perf/core improvements and fixes:
-> 
-> User visible:
-> 
-> * Add a visual cue for toggle zeroing of samples in 'perf top' (Taeung Song)
-> 
-> * Fix for double free in 'perf stat' when using some specific invalid
->   command line combo (Yasser Shalabi)
-> 
-> Infrastructure:
-> 
-> * Add option to copy events when queuing for sorting across cpu buffers
->   and enable it for 'perf kvm stat live', to avoid having events left
->   in the queue pointing to the ring buffer be rewritten in high volume
->   sessions.  (Alexander Yarygin, improving work done by David Ahern):
-> 
-> * Document sysfs events/ interfaces (Cody P Schafer)
-> 
-> * Add support to new style format of kernel PMU event. (Kan Liang)
-> 
-> * Fix typos in perf/Documentation (Masanari Iida)
-> 
-> * Improve callchains when using libunwind (Namhyung Kim)
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
->   Lines starting with '#' will be ignored.
-> 
-> ----------------------------------------------------------------
-> Alexander Yarygin (2):
->       perf session: Add option to copy events when queueing
->       perf kvm stat live: Enable events copying
-> 
-> Cody P Schafer (2):
->       perf Documentation: sysfs events/ interfaces
->       perf Documentation: Remove Ruplicated docs for powerpc cpu specific events
-> 
-> Kan Liang (4):
->       Revert "perf tools: Default to cpu// for events v5"
->       perf tools: Parse the pmu event prefix and suffix
->       perf tools: Add support to new style format of kernel PMU event
->       perf test: Add test case for pmu event new style format
-> 
-> Masanari Iida (1):
->       perf Documentation: Fix typos in perf/Documentation
-> 
-> Namhyung Kim (4):
->       perf report: Set callchain_param.record_mode for future use
->       perf callchain: Create an address space per thread
->       perf kvm: Use thread_{,_set}_priv helpers
->       perf trace: Use thread_{,_set}_priv helpers
-> 
-> Taeung Song (1):
->       perf top: Add a visual cue for toggle zeroing of samples
-> 
-> Yasser Shalabi (1):
->       perf evlist: Fix for double free in tools/perf stat
-> 
->  .../testing/sysfs-bus-event_source-devices-events  | 611 ++-------------------
->  tools/perf/Documentation/perf-diff.txt             |   6 +-
->  tools/perf/Documentation/perf-kvm.txt              |   4 +-
->  tools/perf/Documentation/perf-list.txt             |   2 +-
->  tools/perf/Documentation/perf-record.txt           |   2 +-
->  tools/perf/Documentation/perf-script-perl.txt      |   4 +-
->  tools/perf/Documentation/perf-script-python.txt    |   6 +-
->  tools/perf/Documentation/perf-script.txt           |   2 +-
->  tools/perf/Documentation/perf-test.txt             |   2 +-
->  tools/perf/Documentation/perf-trace.txt            |   2 +-
->  tools/perf/builtin-kvm.c                           |   7 +-
->  tools/perf/builtin-report.c                        |   7 +
->  tools/perf/builtin-trace.c                         |  16 +-
->  tools/perf/tests/dwarf-unwind.c                    |   3 +
->  tools/perf/tests/parse-events.c                    |  36 ++
->  tools/perf/ui/browsers/hists.c                     |  32 +-
->  tools/perf/util/evlist.c                           |   1 +
->  tools/perf/util/include/linux/string.h             |   1 -
->  tools/perf/util/ordered-events.c                   |  49 +-
->  tools/perf/util/ordered-events.h                   |  10 +-
->  tools/perf/util/parse-events.c                     | 133 ++++-
->  tools/perf/util/parse-events.h                     |  14 +
->  tools/perf/util/parse-events.l                     |  30 +-
->  tools/perf/util/parse-events.y                     |  40 ++
->  tools/perf/util/pmu.c                              |  10 -
->  tools/perf/util/pmu.h                              |  10 +
->  tools/perf/util/session.c                          |   5 +-
->  tools/perf/util/string.c                           |  24 -
->  tools/perf/util/thread.c                           |   6 +
->  tools/perf/util/unwind-libunwind.c                 |  37 +-
->  tools/perf/util/unwind.h                           |  17 +
->  31 files changed, 460 insertions(+), 669 deletions(-)
+When 'perf top' is run, one can't easily find a difference
+between -z option and normal output.
+So I added a visual cue to know whether it is the zeroing or not.
 
-Pulled, thanks a lot Arnaldo!
+Output is as below.
 
-	Ingo
+Before:
+ $ perf top
+
+ Samples: 61K of event 'cycles', Event count (approx.): 3908136933
+ Overhead  Shared Object                       Symbol
+    1.42%  firefox                             [.] 0x0000000000011e76
+    1.32%  libpthread-2.17.so                  [.] pthread_mutex_lock
+
+If you press key 'z' or run with zero option like '$ perf top --zero', it is as below.
+
+After:
+ Samples: 61K of event 'cycles', Event count (approx.): 3908136933 [z]
+ Overhead  Shared Object                       Symbol
+    1.42%  firefox                             [.] 0x0000000000011e76
+    1.32%  libpthread-2.17.so                  [.] pthread_mutex_lock
+
+Signed-off-by: Taeung Song <treeze.taeung@gmail.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1412665995-26359-1-git-send-email-treeze.taeung@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/ui/browsers/hists.c | 32 ++++++++++++++++++++++----------
+ 1 file changed, 22 insertions(+), 10 deletions(-)
+
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 68eab9e..cfb976b 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -35,7 +35,9 @@ struct hist_browser {
+ 
+ extern void hist_browser__init_hpp(void);
+ 
+-static int hists__browser_title(struct hists *hists, char *bf, size_t size);
++static int hists__browser_title(struct hists *hists,
++				struct hist_browser_timer *hbt,
++				char *bf, size_t size);
+ static void hist_browser__update_nr_entries(struct hist_browser *hb);
+ 
+ static struct rb_node *hists__filter_entries(struct rb_node *nd,
+@@ -390,7 +392,7 @@ static int hist_browser__run(struct hist_browser *browser,
+ 	browser->b.entries = &browser->hists->entries;
+ 	browser->b.nr_entries = hist_browser__nr_entries(browser);
+ 
+-	hists__browser_title(browser->hists, title, sizeof(title));
++	hists__browser_title(browser->hists, hbt, title, sizeof(title));
+ 
+ 	if (ui_browser__show(&browser->b, title,
+ 			     "Press '?' for help on key bindings") < 0)
+@@ -417,7 +419,8 @@ static int hist_browser__run(struct hist_browser *browser,
+ 				ui_browser__warn_lost_events(&browser->b);
+ 			}
+ 
+-			hists__browser_title(browser->hists, title, sizeof(title));
++			hists__browser_title(browser->hists,
++					     hbt, title, sizeof(title));
+ 			ui_browser__show_title(&browser->b, title);
+ 			continue;
+ 		}
+@@ -1204,7 +1207,15 @@ static struct thread *hist_browser__selected_thread(struct hist_browser *browser
+ 	return browser->he_selection->thread;
+ }
+ 
+-static int hists__browser_title(struct hists *hists, char *bf, size_t size)
++/* Check whether the browser is for 'top' or 'report' */
++static inline bool is_report_browser(void *timer)
++{
++	return timer == NULL;
++}
++
++static int hists__browser_title(struct hists *hists,
++				struct hist_browser_timer *hbt,
++				char *bf, size_t size)
+ {
+ 	char unit;
+ 	int printed;
+@@ -1258,6 +1269,13 @@ static int hists__browser_title(struct hists *hists, char *bf, size_t size)
+ 	if (dso)
+ 		printed += scnprintf(bf + printed, size - printed,
+ 				    ", DSO: %s", dso->short_name);
++	if (!is_report_browser(hbt)) {
++		struct perf_top *top = hbt->arg;
++
++		if (top->zero)
++			printed += scnprintf(bf + printed, size - printed, " [z]");
++	}
++
+ 	return printed;
+ }
+ 
+@@ -1269,12 +1287,6 @@ static inline void free_popup_options(char **options, int n)
+ 		zfree(&options[i]);
+ }
+ 
+-/* Check whether the browser is for 'top' or 'report' */
+-static inline bool is_report_browser(void *timer)
+-{
+-	return timer == NULL;
+-}
+-
+ /*
+  * Only runtime switching of perf data file will make "input_name" point
+  * to a malloced buffer. So add "is_input_name_malloced" flag to decide
