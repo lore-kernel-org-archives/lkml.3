@@ -1,106 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751694AbaJPJn5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 05:43:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41502 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751490AbaJPJnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 05:43:55 -0400
-Date: Thu, 16 Oct 2014 11:43:51 +0200
-From: Jean Delvare <jdelvare@suse.de>
-To: James Ralston <james.d.ralston@intel.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>, linux-doc@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] i2c-i801: Add Device IDs for Intel Sunrise Point
- PCH
-Message-ID: <20141016114351.3f17743a@endymion.delvare>
-In-Reply-To: <1413238824-5513-1-git-send-email-james.d.ralston@intel.com>
-References: <1413238824-5513-1-git-send-email-james.d.ralston@intel.com>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-suse-linux-gnu)
+	id S1751824AbaJPJpF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 05:45:05 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:58008 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751293AbaJPJpB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 05:45:01 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Darren Hart <dvhart@linux.intel.com>, Mark Rutland <mark.rutland@arm.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "dvhart@infradead.org" <dvhart@infradead.org>
+Subject: Re: [PATCH v4 00/13] Add ACPI _DSD and unified device properties support
+Date: Thu, 16 Oct 2014 12:05:16 +0200
+Message-ID: <2459115.UMgof0Byf6@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <543E9605.6020502@linux.intel.com>
+References: <2660541.BycO7TFnA2@vostro.rjw.lan> <20141015151702.GG20034@leverpostej> <543E9605.6020502@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
-
-On Mon, 13 Oct 2014 15:20:24 -0700, James Ralston wrote:
-> This patch adds the I2C/SMBus Device IDs for the Intel Sunrise Point PCH.
+On Wednesday, October 15, 2014 05:43:01 PM Darren Hart wrote:
 > 
-> Signed-off-by: James Ralston <james.d.ralston@intel.com>
-> ---
->  Documentation/i2c/busses/i2c-i801 | 1 +
->  drivers/i2c/busses/Kconfig        | 1 +
->  drivers/i2c/busses/i2c-i801.c     | 3 +++
->  3 files changed, 5 insertions(+)
+> On 10/15/14 17:17, Mark Rutland wrote:
+> > On Wed, Oct 15, 2014 at 03:46:39PM +0100, Darren Hart wrote:
 > 
-> diff --git a/Documentation/i2c/busses/i2c-i801 b/Documentation/i2c/busses/i2c-i801
-> index e9c803e..793c83d 100644
-> --- a/Documentation/i2c/busses/i2c-i801
-> +++ b/Documentation/i2c/busses/i2c-i801
-> @@ -28,6 +28,7 @@ Supported adapters:
->    * Intel Wildcat Point (PCH)
->    * Intel Wildcat Point-LP (PCH)
->    * Intel BayTrail (SOC)
-> +  * Intel Sunrise Point-H (PCH)
->     Datasheets: Publicly available at the Intel website
->  
->  On Intel Patsburg and later chipsets, both the normal host SMBus controller
-> diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-> index 2ac87fa..9f4f574 100644
-> --- a/drivers/i2c/busses/Kconfig
-> +++ b/drivers/i2c/busses/Kconfig
-> @@ -112,6 +112,7 @@ config I2C_I801
->  	    Wildcat Point (PCH)
->  	    Wildcat Point-LP (PCH)
->  	    BayTrail (SOC)
-> +	    Sunrise Point-H (PCH)
->  
->  	  This driver can also be built as a module.  If so, the module
->  	  will be called i2c-i801.
-> diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
-> index 10467a3..7cfc183 100644
-> --- a/drivers/i2c/busses/i2c-i801.c
-> +++ b/drivers/i2c/busses/i2c-i801.c
-> @@ -62,6 +62,7 @@
->   * Wildcat Point (PCH)		0x8ca2	32	hard	yes	yes	yes
->   * Wildcat Point-LP (PCH)	0x9ca2	32	hard	yes	yes	yes
->   * BayTrail (SOC)		0x0f12	32	hard	yes	yes	yes
-> + * Sunrise Point-H (PCH) 	0xa123  32	hard	yes	yes	yes
+> >> Mark, what would you propose we do differently to enable this driver to
+> >> be firmware-type agnostic?
+> > 
+> > For this particular driver, all I'm asking for is that the
+> > "used-by-rtas" property is not moved over from of_find_property to
+> > device_get_property. It is irrelevant for all ACPI systems. Evidently my
+> > comment was unclear; I apologise for that.
+> 
+> So my objection here is that by keeping the of_* terms in the driver we
+> are required to include of, although it does safely convert to returning
+> NULL if !CONFIG_OF I suppose.
 
-checkpatch is unhappy:
+Agreed.
 
-WARNING: please, no space before tabs
-#93: FILE: drivers/i2c/busses/i2c-i801.c:65:
-+ * Sunrise Point-H (PCH) ^I0xa123  32^Ihard^Iyes^Iyes^Iyes$
+> > We have status = "disabled" as a less specific mechanism for telling the
+> > OS to ignore a node in DT. I was under the impression that ACPI already
+> > had a mechanism for marking devices to be ignored, but perhaps I am
+> > mistaken.
+> 
+> That is correct, in ACPI this would be properly implemented with the
+> _STA reserved named method. In which case it wouldn't enumerate.
+> 
+> > 
+> > The concerns I mentioned at the end of my original reply were of a more
+> > general nature than this particular device description.
 
->   *
->   * Features supported by this driver:
->   * Software PEC				no
-> @@ -184,6 +185,7 @@
->  #define PCI_DEVICE_ID_INTEL_WELLSBURG_SMBUS_MS2		0x8d7f
->  #define PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_SMBUS		0x9c22
->  #define PCI_DEVICE_ID_INTEL_WILDCATPOINT_LP_SMBUS	0x9ca2
-> +#define PCI_DEVICE_ID_INTEL_SUNRISEPOINT_H_SMBUS	0xa123
->  
->  struct i801_mux_config {
->  	char *gpio_chip;
-> @@ -830,6 +832,7 @@ static const struct pci_device_id i801_ids[] = {
->  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_WILDCATPOINT_LP_SMBUS) },
->  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_BAYTRAIL_SMBUS) },
->  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_BRASWELL_SMBUS) },
-> +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_SUNRISEPOINT_H_SMBUS) },
->  	{ 0, }
->  };
->  
+Moreover, to me, the question really is "Does this driver need to be any
+different depending on whether DT or ACPI is used by the platform and if
+so, then why?".
 
-Other than that, patch looks good, thanks.
-
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
+In my opinion, there is no technical reason for such differences to be present
+in this particular case.  The fact that the "used-by-rtas" property does not
+make sense for the ACPI case doesn't imply that the driver should not be allowed
+to check it then.
 
 -- 
-Jean Delvare
-SUSE L3 Support
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
