@@ -1,82 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751051AbaJPEcj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 00:32:39 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:62209 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750734AbaJPEci (ORCPT
+	id S1750902AbaJPEnc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 00:43:32 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35264 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750733AbaJPEnb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 00:32:38 -0400
+	Thu, 16 Oct 2014 00:43:31 -0400
+Message-ID: <543F4CF0.8080404@free-electrons.com>
+Date: Thu, 16 Oct 2014 06:43:28 +0200
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-In-Reply-To: <543F049F.5090605@gaast.net>
-References: <54347520.3050109@gaast.net>
-	<543AA2FE.20105@gaast.net>
-	<20141012204032.GA11171@amd>
-	<9751497.0fL0kvsyX7@vostro.rjw.lan>
-	<20141015111641.GC7792@gaast.net>
-	<CAErSpo5A+nHTu2Y6KrXowBBCBsNw_hO0SRsnc6YRdJChCUmO6w@mail.gmail.com>
-	<CAE9FiQV9t0bCfUy5Fichdk=04ruEVxGv-LUK1xxZjCrasAOACg@mail.gmail.com>
-	<543F049F.5090605@gaast.net>
-Date: Wed, 15 Oct 2014 21:32:37 -0700
-X-Google-Sender-Auth: QfWETiQA6uncTWziBEW6bm8nvK8
-Message-ID: <CAE9FiQWDHq5esSt4UvE5AkHR-=XMvrzaNFwLg+0xKisTNOtcsQ@mail.gmail.com>
-Subject: Re: Machine crashes right *after* ~successful resume
-From: Yinghai Lu <yinghai@kernel.org>
-To: Wilmer van der Gaast <wilmer@gaast.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=001a11c326fef69934050582bc44
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>
+CC: dwmw2@infradead.org, computersforpeace@gmail.com, jg1.han@samsung.com,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mtd: orion_nand: fix error code path in probe
+References: <1413296198-29486-1-git-send-email-michael.opdenacker@free-electrons.com> <20141014213503.GD5331@lunn.ch> <20141015213953.GB23155@arch.hh.imgtec.org>
+In-Reply-To: <20141015213953.GB23155@arch.hh.imgtec.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a11c326fef69934050582bc44
-Content-Type: text/plain; charset=UTF-8
+Andrew, Ezequiel,
 
-On Wed, Oct 15, 2014 at 4:34 PM, Wilmer van der Gaast <wilmer@gaast.net> wrote:
+Many thanks for your review!
+
+On 10/15/2014 11:39 PM, Ezequiel Garcia wrote:
+> On 14 Oct 11:35 PM, Andrew Lunn wrote:
 >
-> Is there anything I can do now to find out why your change is causing my
-> machine to crash?
+>> Hi Michael
+>>
+>> It is quite a common pattern to use:
+>>
+>>         res = platform_get_resource(dev, IORESOURCE_MEM, 0);
+>>         c->membase = devm_ioremap_resource(&dev->dev, res);
+>>         if (IS_ERR(c->membase))
+>> 	   return PTR_ERR(c->membase)
+>>
+>> which is more compact.
 
-Can you please try attached patch? that should workaround the problem.
+I like it, thanks for the suggestion!
 
-as some driver is using pci_enable_device in .resume instead of
-pci_renable_device....
+>>
+> Be careful with this. devm_ioremap and devm_ioremap_resource are not
+> the same thing, as the former requests the region as well.
+>
+> It can break things if the region is shared across several drivers.
+> I don't think this is the case, so in fact adding the request is correct,
+> but it's a more intrusive change than just "code cleanup".
 
-We should skip the pci_enable_bridge in those pci_enable_device to avoid
-contention between async device_resume.
+Right. If I understand correctly, requesting the region should always be
+done anyway, so this should be a welcome change.
 
-Thanks
+What Andrew suggests also changes the return value: -ENOMEM instead of
+-EIO, though it should be more standard. This could have side effects too!
 
-Yinghai
+I'll post a V2 right away.
 
---001a11c326fef69934050582bc44
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="skip_enable_bridge_on_resume_path.patch"
-Content-Disposition: attachment; 
-	filename="skip_enable_bridge_on_resume_path.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_i1bm3bxu0
+Thanks again!
 
-ZGlmZiAtLWdpdCBhL2RyaXZlcnMvcGNpL3BjaS5jIGIvZHJpdmVycy9wY2kvcGNpLmMKaW5kZXgg
-NjI1YTRhYy4uNjU2NzgzMSAxMDA2NDQKLS0tIGEvZHJpdmVycy9wY2kvcGNpLmMKKysrIGIvZHJp
-dmVycy9wY2kvcGNpLmMKQEAgLTEyNjYsNyArMTI2Niw2IEBAIHN0YXRpYyB2b2lkIHBjaV9lbmFi
-bGVfYnJpZGdlKHN0cnVjdCBwY2lfZGV2ICpkZXYpCiAKIHN0YXRpYyBpbnQgcGNpX2VuYWJsZV9k
-ZXZpY2VfZmxhZ3Moc3RydWN0IHBjaV9kZXYgKmRldiwgdW5zaWduZWQgbG9uZyBmbGFncykKIHsK
-LQlzdHJ1Y3QgcGNpX2RldiAqYnJpZGdlOwogCWludCBlcnI7CiAJaW50IGksIGJhcnMgPSAwOwog
-CkBAIC0xMjg1LDkgKzEyODQsMTkgQEAgc3RhdGljIGludCBwY2lfZW5hYmxlX2RldmljZV9mbGFn
-cyhzdHJ1Y3QgcGNpX2RldiAqZGV2LCB1bnNpZ25lZCBsb25nIGZsYWdzKQogCWlmIChhdG9taWNf
-aW5jX3JldHVybigmZGV2LT5lbmFibGVfY250KSA+IDEpCiAJCXJldHVybiAwOwkJLyogYWxyZWFk
-eSBlbmFibGVkICovCiAKLQlicmlkZ2UgPSBwY2lfdXBzdHJlYW1fYnJpZGdlKGRldik7Ci0JaWYg
-KGJyaWRnZSkKLQkJcGNpX2VuYWJsZV9icmlkZ2UoYnJpZGdlKTsKKwkvKgorCSAqIERvIG5vdCBl
-bmFibGUgYnJpZGdlIGFnYWluIG9uIHJlc3VtZSBwYXRoLCBhcyBwYXJlbnQgc3RhdGUKKwkgKiBn
-ZXQgcmVzdG9yZWQgYmVmb3JlLgorCSAqIEFsc28gY291bGQgYXZvaWQgZGVsYXkgYmV0d2VlbiBk
-aWZmZXJlbnQgYXN5bmMgcmVzdW1lLgorCSAqLworCWlmICghKGRldi0+ZGV2LnBvd2VyLmlzX3N1
-c3BlbmRlZCB8fAorCSAgICAgIGRldi0+ZGV2LnBvd2VyLmlzX25vaXJxX3N1c3BlbmRlZCB8fAor
-CSAgICAgIGRldi0+ZGV2LnBvd2VyLmlzX2xhdGVfc3VzcGVuZGVkKSkgeworCQlzdHJ1Y3QgcGNp
-X2RldiAqYnJpZGdlID0gcGNpX3Vwc3RyZWFtX2JyaWRnZShkZXYpOworCisJCWlmIChicmlkZ2Up
-CisJCQlwY2lfZW5hYmxlX2JyaWRnZShicmlkZ2UpOworCX0KIAogCS8qIG9ubHkgc2tpcCBzcmlv
-diByZWxhdGVkICovCiAJZm9yIChpID0gMDsgaSA8PSBQQ0lfUk9NX1JFU09VUkNFOyBpKyspCg==
---001a11c326fef69934050582bc44--
+Cheers,
+
+Michael.
+
+-- 
+Michael Opdenacker, CEO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
++33 484 258 098
+
