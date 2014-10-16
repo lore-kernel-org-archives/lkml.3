@@ -1,67 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751383AbaJPOd4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 10:33:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32268 "EHLO mx1.redhat.com"
+	id S1751313AbaJPOjS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 10:39:18 -0400
+Received: from lists.s-osg.org ([54.187.51.154]:40922 "EHLO lists.s-osg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750994AbaJPOdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 10:33:55 -0400
-Date: Thu, 16 Oct 2014 10:33:46 -0400
-From: Dave Jones <davej@redhat.com>
-To: Dmitry Monakhov <dmonlist@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
-Subject: Re: kernel BUG at fs/ext4/inode.c:2982!
-Message-ID: <20141016143346.GA9910@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Dmitry Monakhov <dmonlist@gmail.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	linux-ext4@vger.kernel.org
-References: <20141016055718.GA17655@redhat.com>
- <871tq8pdh4.fsf@openvz.org>
+	id S1750989AbaJPOjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 10:39:17 -0400
+Message-ID: <543FD892.6010209@osg.samsung.com>
+Date: Thu, 16 Oct 2014 08:39:14 -0600
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <871tq8pdh4.fsf@openvz.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Takashi Iwai <tiwai@suse.de>
+CC: Lars-Peter Clausen <lars@metafoo.de>, m.chehab@samsung.com,
+        akpm@linux-foundation.org, gregkh@linuxfoundation.org, crope@iki.fi,
+        olebowle@gmx.com, dheitmueller@kernellabs.com, hverkuil@xs4all.nl,
+        ramakrmu@cisco.com, sakari.ailus@linux.intel.com,
+        laurent.pinchart@ideasonboard.com, perex@perex.cz,
+        prabhakar.csengg@gmail.com, tim.gardner@canonical.com,
+        linux@eikelenboom.it, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, linux-media@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH v2 5/6] sound/usb: pcm changes to use media
+ token api
+References: <cover.1413246370.git.shuahkh@osg.samsung.com> <cf1059cc2606f20d921e5691e3d59945a19a7871.1413246372.git.shuahkh@osg.samsung.com> <543FB374.8020604@metafoo.de> <543FC3CD.8050805@osg.samsung.com> <s5h38aow1ub.wl-tiwai@suse.de> <543FD1EC.5010206@osg.samsung.com> <s5hy4sgumjo.wl-tiwai@suse.de>
+In-Reply-To: <s5hy4sgumjo.wl-tiwai@suse.de>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 01:31:51PM +0400, Dmitry Monakhov wrote:
- > Dave Jones <davej@redhat.com> writes:
- > 
- > > Just hit this on Linus' current tree while running my fuzz-tester.
- > > (No logs unfortunatly, so no idea what actually happened).
- > >
- > > kernel BUG at fs/ext4/inode.c:2982!
- > Looks
- > familiar.http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-8086
- > Are you playing with fcntl?
+On 10/16/2014 08:16 AM, Takashi Iwai wrote:
+> At Thu, 16 Oct 2014 08:10:52 -0600,
+> Shuah Khan wrote:
+>>
+>> On 10/16/2014 08:01 AM, Takashi Iwai wrote:
+>>> At Thu, 16 Oct 2014 07:10:37 -0600,
+>>> Shuah Khan wrote:
+>>>>
+>>>> On 10/16/2014 06:00 AM, Lars-Peter Clausen wrote:
+>>>>> On 10/14/2014 04:58 PM, Shuah Khan wrote:
+>>>>> [...]
+>>>>>>       switch (cmd) {
+>>>>>>       case SNDRV_PCM_TRIGGER_START:
+>>>>>> +        err = media_get_audio_tkn(&subs->dev->dev);
+>>>>>> +        if (err == -EBUSY) {
+>>>>>> +            dev_info(&subs->dev->dev, "%s device is busy\n",
+>>>>>> +                    __func__);
+>>>>>
+>>>>> In my opinion this should not dev_info() as this is out of band error
+>>>>> signaling and also as the potential to spam the log. The userspace
+>>>>> application is already properly notified by the return code.
+>>>>>
+>>>>
+>>>> Yes it has the potential to flood the dmesg especially with alsa,
+>>>> I will remove the dev_info().
+>>>
+>>> Yes.  And, I think doing this in the trigger isn't the best.
+>>> Why not in open & close?
+>>
+>> My first cut of this change was in open and close. I saw pulseaudio
+>> application go into this loop trying to open the device. To avoid
+>> such problems, I went with trigger stat and stop. That made all the
+>> pulseaudio continues attempts to open problems go away.
+> 
+> But now starting the stream gives the error, and PA would loop it
+> again, no?
+> 
+> 
+>>> Also, is this token restriction needed only for PCM?  No mixer or
+>>> other controls?
+>>
+>> snd_pcm_ops are the only ones media drivers implement and use. So
+>> I don't think mixer is needed. If it is needed, it is not to hard
+>> to add for that case.
+> 
+> Well, then I wonder what resource does actually conflict with
+> usb-audio and media drivers at all...?
+> 
 
-Actually, I was mistaken, there was a partial log.
+audio for dvb/v4l apps gets disrupted when audio app starts. For
+example, dvb or v4l app tuned to a channel, and when an audio app
+starts. audio path needs protected to avoid conflicts between
+digital and analog applications as well.
 
-Pid that oopsed was 24261. Last two calls of that pid was..
+-- Shuah
 
-[child10:24261] [125] sendfile(out_fd=672, in_fd=672, offset=0x1, count=0xce89) = -1 (Bad address)
-[child10:24261] [126] sendfile(out_fd=672, in_fd=672, offset=0x0, count=0xa1f000) 
 
-The second call was the one that oopsed.
-No idea what fd 672 was unfortunatly. I'll have to add better logging of fd types.
-
-At the same time that was running, other pids were also doing stuff with that same fd.
-
-[child6:24355] [124] writev(fd=672, vec=0x1d2ec60, vlen=206) 
-[child8:24515] [1498] lseek(fd=672, offset=-1, whence=0x2) 
-
-Note that those calls also didn't complete, meaning they probably blocked on
-some lock that the oopsing pid was holding.
-
-So no recent fcntl's unless they were done before the last 2 syscalls each process did.
-
- > Try this patch http://www.spinics.net/lists/linux-ext4/msg45683.html
-
-I'll give it a try if I can get it reproducing easily, otherwise I cna't say
-either way whether the patch is doing any good.
-
-	Dave
-
+-- 
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
