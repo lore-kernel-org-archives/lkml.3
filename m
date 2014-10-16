@@ -1,109 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751654AbaJPPJq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 11:09:46 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:46822 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051AbaJPPJo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 11:09:44 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: linux-kernel@vger.kernel.org, mturquette@linaro.org, trivial@kernel.org,
-        linus.walleij@linaro.org, gnurou@gmail.com, jcliburn@gmail.com,
-        chris.snook@gmail.com, viresh.linux@gmail.com, inki.dae@samsung.com,
-        dh09.lee@samsung.com, kgene.kim@samsung.com, rdunlap@infradead.org
-Cc: netdev@vger.kernel.org, Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] [trivial] treewide: Fix company name in module descriptions
-Date: Fri, 17 Oct 2014 00:09:24 +0900
-Message-Id: <1413472164-22366-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 2.1.2.443.g670a3c1
+	id S1751492AbaJPPL1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 11:11:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50347 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751160AbaJPPL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 11:11:26 -0400
+Message-ID: <543FE01A.5020205@suse.cz>
+Date: Thu, 16 Oct 2014 17:11:22 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH 2/5] mm, compaction: simplify deferred compaction
+References: <1412696019-21761-1-git-send-email-vbabka@suse.cz>	<1412696019-21761-3-git-send-email-vbabka@suse.cz> <20141015153212.7b9029c8bb8e9c1b8736181d@linux-foundation.org>
+In-Reply-To: <20141015153212.7b9029c8bb8e9c1b8736181d@linux-foundation.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fix company name's spelling typo in module descriptions
-and a Kconfig.
+On 10/16/2014 12:32 AM, Andrew Morton wrote:
+> On Tue,  7 Oct 2014 17:33:36 +0200 Vlastimil Babka <vbabka@suse.cz> wrote:
+>> @@ -105,8 +104,7 @@ static inline bool compaction_restarting(struct zone *zone, int order)
+>>  static inline unsigned long try_to_compact_pages(struct zonelist *zonelist,
+>>  			int order, gfp_t gfp_mask, nodemask_t *nodemask,
+>>  			enum migrate_mode mode, int *contended,
+>> -			int alloc_flags, int classzone_idx,
+>> -			struct zone **candidate_zone)
+>> +			int alloc_flags, int classzone_idx);
+>>  {
+>>  	return COMPACT_CONTINUE;
+>>  }
+> 
+> --- a/include/linux/compaction.h~mm-compaction-simplify-deferred-compaction-fix
+> +++ a/include/linux/compaction.h
+> @@ -104,7 +104,7 @@ static inline bool compaction_restarting
+>  static inline unsigned long try_to_compact_pages(struct zonelist *zonelist,
+>  			int order, gfp_t gfp_mask, nodemask_t *nodemask,
+>  			enum migrate_mode mode, int *contended,
+> -			int alloc_flags, int classzone_idx);
+> +			int alloc_flags, int classzone_idx)
+>  {
+>  	return COMPACT_CONTINUE;
+>  }
+> 
+> It clearly wasn't tested with this config.  Please do so and let us
+> know the result?
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- drivers/clk/Kconfig                                 | 2 +-
- drivers/gpio/gpio-spear-spics.c                     | 2 +-
- drivers/net/ethernet/atheros/atl1c/atl1c_main.c     | 2 +-
- drivers/pinctrl/spear/pinctrl-plgpio.c              | 2 +-
- drivers/video/fbdev/exynos/exynos_mipi_dsi.c        | 2 +-
- drivers/video/fbdev/exynos/exynos_mipi_dsi_common.c | 2 +-
- 6 files changed, 6 insertions(+), 6 deletions(-)
+Sorry, forgot. Hopefully will get better next time, since I learned
+about the undertaker/vampyr tool [1] today.
 
-diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-index 455fd17..3f44f29 100644
---- a/drivers/clk/Kconfig
-+++ b/drivers/clk/Kconfig
-@@ -28,7 +28,7 @@ config COMMON_CLK_WM831X
- 	depends on MFD_WM831X
- 	---help---
-           Supports the clocking subsystem of the WM831x/2x series of
--	  PMICs from Wolfson Microlectronics.
-+	  PMICs from Wolfson Microelectronics.
- 
- source "drivers/clk/versatile/Kconfig"
- 
-diff --git a/drivers/gpio/gpio-spear-spics.c b/drivers/gpio/gpio-spear-spics.c
-index 353263c..506a2ea 100644
---- a/drivers/gpio/gpio-spear-spics.c
-+++ b/drivers/gpio/gpio-spear-spics.c
-@@ -204,5 +204,5 @@ static int __init spics_gpio_init(void)
- subsys_initcall(spics_gpio_init);
- 
- MODULE_AUTHOR("Shiraz Hashim <shiraz.linux.kernel@gmail.com>");
--MODULE_DESCRIPTION("ST Microlectronics SPEAr SPI Chip Select Abstraction");
-+MODULE_DESCRIPTION("STMicroelectronics SPEAr SPI Chip Select Abstraction");
- MODULE_LICENSE("GPL");
-diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-index 72fb86b..c9946c6 100644
---- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-+++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-@@ -48,7 +48,7 @@ MODULE_DEVICE_TABLE(pci, atl1c_pci_tbl);
- 
- MODULE_AUTHOR("Jie Yang");
- MODULE_AUTHOR("Qualcomm Atheros Inc., <nic-devel@qualcomm.com>");
--MODULE_DESCRIPTION("Qualcom Atheros 100/1000M Ethernet Network Driver");
-+MODULE_DESCRIPTION("Qualcomm Atheros 100/1000M Ethernet Network Driver");
- MODULE_LICENSE("GPL");
- MODULE_VERSION(ATL1C_DRV_VERSION);
- 
-diff --git a/drivers/pinctrl/spear/pinctrl-plgpio.c b/drivers/pinctrl/spear/pinctrl-plgpio.c
-index bddb791..ce5f22c 100644
---- a/drivers/pinctrl/spear/pinctrl-plgpio.c
-+++ b/drivers/pinctrl/spear/pinctrl-plgpio.c
-@@ -724,5 +724,5 @@ static int __init plgpio_init(void)
- subsys_initcall(plgpio_init);
- 
- MODULE_AUTHOR("Viresh Kumar <viresh.kumar@linaro.org>");
--MODULE_DESCRIPTION("ST Microlectronics SPEAr PLGPIO driver");
-+MODULE_DESCRIPTION("STMicroelectronics SPEAr PLGPIO driver");
- MODULE_LICENSE("GPL");
-diff --git a/drivers/video/fbdev/exynos/exynos_mipi_dsi.c b/drivers/video/fbdev/exynos/exynos_mipi_dsi.c
-index cee9602..716bfad 100644
---- a/drivers/video/fbdev/exynos/exynos_mipi_dsi.c
-+++ b/drivers/video/fbdev/exynos/exynos_mipi_dsi.c
-@@ -570,5 +570,5 @@ static struct platform_driver exynos_mipi_dsi_driver = {
- module_platform_driver(exynos_mipi_dsi_driver);
- 
- MODULE_AUTHOR("InKi Dae <inki.dae@samsung.com>");
--MODULE_DESCRIPTION("Samusung SoC MIPI-DSI driver");
-+MODULE_DESCRIPTION("Samsung SoC MIPI-DSI driver");
- MODULE_LICENSE("GPL");
-diff --git a/drivers/video/fbdev/exynos/exynos_mipi_dsi_common.c b/drivers/video/fbdev/exynos/exynos_mipi_dsi_common.c
-index 85edabf..2358a2f 100644
---- a/drivers/video/fbdev/exynos/exynos_mipi_dsi_common.c
-+++ b/drivers/video/fbdev/exynos/exynos_mipi_dsi_common.c
-@@ -876,5 +876,5 @@ int exynos_mipi_dsi_fifo_clear(struct mipi_dsim_device *dsim,
- }
- 
- MODULE_AUTHOR("InKi Dae <inki.dae@samsung.com>");
--MODULE_DESCRIPTION("Samusung SoC MIPI-DSI common driver");
-+MODULE_DESCRIPTION("Samsung SoC MIPI-DSI common driver");
- MODULE_LICENSE("GPL");
--- 
-2.1.2.443.g670a3c1
+You patch does fix the compilation, thanks. Boot+stress-highalloc tests
+are now running through the series but I don't expect any surprises -
+the series is basically a no-op with CONFIG_COMPACTION disabled.
 
+[1] http://lwn.net/Articles/616098/
