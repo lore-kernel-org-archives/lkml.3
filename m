@@ -1,128 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752352AbaJPN6t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 09:58:49 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:51847 "EHLO extserv.mm-sol.com"
+	id S1752571AbaJPN7K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 09:59:10 -0400
+Received: from mga11.intel.com ([192.55.52.93]:24975 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751587AbaJPN6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 09:58:47 -0400
-Message-ID: <1413467936.6148.17.camel@mm-sol.com>
-Subject: Re: [PATCH v3 1/2] iio: vadc: Qualcomm SPMI PMIC voltage ADC driver
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: Stanimir Varbanov <svarbanov@mm-sol.com>, lars <lars@metafoo.de>,
-        sachin.kamat@linaro.org, srinivas.pandruvada@linux.intel.com,
-        linux-iio@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Date: Thu, 16 Oct 2014 16:58:56 +0300
-In-Reply-To: <542FDF41.2040106@kernel.org>
-References: <1411563415-11933-1-git-send-email-svarbanov@mm-sol.com>
-		 <1411563415-11933-2-git-send-email-svarbanov@mm-sol.com>
-		 <542D1B11.8070600@mm-sol.com> <1412251686.1027.15.camel@iivanov-dev>
-	 <542FDF41.2040106@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.13.5-fta1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752487AbaJPN7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 09:59:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,732,1406617200"; 
+   d="scan'208";a="606440483"
+Date: Thu, 16 Oct 2014 09:59:03 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Matthew Wilcox <willy@linux.intel.com>
+Subject: Re: [PATCH v11 06/21] vfs: Add copy_to_iter(), copy_from_iter() and
+ iov_iter_zero()
+Message-ID: <20141016135903.GA11522@wil.cx>
+References: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com>
+ <1411677218-29146-7-git-send-email-matthew.r.wilcox@intel.com>
+ <20141016133355.GT19075@thinkos.etherlink>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141016133355.GT19075@thinkos.etherlink>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Hi, 
-
-On Sat, 2014-10-04 at 12:51 +0100, Jonathan Cameron wrote:
-> On 02/10/14 13:08, Ivan T. Ivanov wrote:
-> >  +iio maintainers
-> > 
-> >  On Thu, 2014-10-02 at 12:29 +0300, Ivan T. Ivanov wrote:
-> > >  Hi Stan,
-> > > >
-> > >  On 09/24/2014 03:56 PM, Stanimir Varbanov wrote:
-> > > >
-> > >  <snip>
-> > > >
-> > > >  +static int vadc_get_dt_data(struct vadc_priv *vadc, struct 
-> > > > device_node *node)
-> > > >  +{
-> > > >  +      struct iio_chan_spec *iio_chan = vadc->iio_chans;
-> > > >  +      const struct vadc_channels *vadc_chan;
-> > > >  +      struct vadc_channel_prop prop;
-> > > >  +      struct device_node *child;
-> > > >  +      int ret, index = 0;
-> > > >  +
-> > > >  +      for_each_available_child_of_node(node, child) {
-> > > >  +      ret = vadc_get_dt_channel_data(vadc->dev, &prop, 
-> > > > child);
-> > > >  +      if (ret)
-> > > >  +      return ret;
-> > > >  +
-> > > >  +      vadc->chan_props[index] = prop;
-> > > >  +
-> > > >  +      vadc_chan = &vadc_chans[prop.channel];
-> > > >  +
-> > > >  +      iio_chan->channel = prop.channel;
-> > > >  +      iio_chan->datasheet_name = vadc_chan->datasheet_name;
-> > > >  +      iio_chan->info_mask_separate = vadc_chan->info_mask;
-> > > >  +      iio_chan->type = vadc_chan->type;
-> > > >  +      iio_chan->indexed = 1;
-> > > >  +      iio_chan->scan_type.sign = 's';
-> > > >  +      iio_chan->scan_type.realbits = 15;
-> > > >  +      iio_chan->scan_type.storagebits = 16;
-> > > >  +      iio_chan->address = index++;
-> > > >  +
-> > > >  +      iio_chan++;
-> > > >  +      }
-> > > >  +
-> > > >  +      return 0;
-> > > >  +}
-> > > >  +
-> > > >
-> > >  <snip>
-> > > >
-> > > >  +static int vadc_probe(struct platform_device *pdev)
-> > > >  +{
-> > > >
-> > >  <snip>
-> > > >
-> > > >  +
-> > > >  +      indio_dev->dev.parent = dev;
-> > > >  +      indio_dev->dev.of_node = node;
-> > > >  +      indio_dev->name = pdev->name;
-> > > >  +      indio_dev->modes = INDIO_DIRECT_MODE;
-> > > >  +      indio_dev->info = &vadc_info;
-> > > >  +      indio_dev->channels = vadc->iio_chans;
-> > > >  +      indio_dev->num_channels = vadc->nchannels;
-> > > >
-> > >  This will not work as we thought. Registration will be fine and 
-> > > entries
-> > >  in sysfs are created as expected, but this is breaking 
-> > > numbering scheme
-> > >  for client drivers. For us the problem is that iio framework 
-> > > expect channels
-> > >  numbering to be linear and channel number should not be greater 
-> > > than
-> > >  channel count. For example even if die temperature channel is 
-> > > always 8, if
-> > >  I describe only 5 channels in DTS files (4 for reference points 
-> > > measurement)
-> > >  and 1 for die temperature, clients could not get OF reference to
-> > >  temperature
-> > >  channel using io-channels = <&pm8941_vadc 8>;
-> > > >
-> > >  Jonathan, please, could you advise us.
-> I'd like to let the solution you proposed sit on the list a little 
-> longer.
-> It seems fairly sensible, but lets see what others suggest.
-
-It is quiet :-) Just for the record the same aproach is used in
-PWM, Reset, Gpio and PHY frameworks.
-
-Patch in question: https://lkml.org/lkml/2014/10/2/199
-
-Regards,
-Ivan
-
-
+On Thu, Oct 16, 2014 at 03:33:55PM +0200, Mathieu Desnoyers wrote:
+> > +static size_t copy_to_iter_iovec(void *from, size_t bytes, struct iov_iter *i)
+> > +{
+[...]
+> > +	left = __copy_to_user(buf, from, copy);
 > 
-> Jonathan
+> How comes this function uses __copy_to_user without any access_ok()
+> check ? This has security implications.
+
+The access_ok() check is done higher up the call-chain if it's appropriate.
+These functions can be (intentionally) called to access kernel addresses,
+so it wouldn't be appropriate to do that here.
+
+> > +static size_t copy_page_to_iter_bvec(struct page *page, size_t offset,
+> > +					size_t bytes, struct iov_iter *i)
+> > +{
+> > +	void *kaddr = kmap_atomic(page);
+> > +	size_t wanted = copy_to_iter_bvec(kaddr + offset, bytes, i);
+> 
+> missing newline.
+> 
+> > +	kunmap_atomic(kaddr);
+> > +	return wanted;
+> > +}
+
+Are you seriously suggesting that:
+
+static size_t copy_page_to_iter_bvec(struct page *page, size_t offset,
+                                        size_t bytes, struct iov_iter *i)
+{
+        void *kaddr = kmap_atomic(page);
+        size_t wanted = copy_to_iter_bvec(kaddr + offset, bytes, i);
+
+        kunmap_atomic(kaddr);
+        return wanted;
+}
+
+is more readable than without the newline?  I can see the point of the
+rule for functions with a lot of variables, or a lot of lines, but I
+don't see the point of it for such a small function.
+
+In any case, this patch is now upstream, so I shan't be proposing any
+stylistic changes for it.
