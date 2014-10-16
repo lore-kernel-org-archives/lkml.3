@@ -1,98 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577AbaJPUD4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 16:03:56 -0400
-Received: from mga01.intel.com ([192.55.52.88]:13002 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751864AbaJPUDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 16:03:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,734,1406617200"; 
-   d="scan'208";a="615720764"
-Date: Thu, 16 Oct 2014 22:03:38 +0200
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arch/x86/realmode: make trampoline code conditional for
- x86-32
-Message-ID: <20141016200338.GA4337@intel.com>
-References: <1413450350-20672-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+	id S1752671AbaJPUGz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 16:06:55 -0400
+Received: from endruntechnologies.com ([64.142.115.26]:57172 "EHLO
+	mail.endruntechnologies.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751539AbaJPUGy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 16:06:54 -0400
+Message-ID: <54402619.8080703@endruntechnologies.com>
+Date: Thu, 16 Oct 2014 13:10:01 -0700
+From: Mike Skoog <mskoog@endruntechnologies.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413450350-20672-1-git-send-email-jarkko.sakkinen@linux.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: greg KH <gregkh@linuxfoundation.org>
+CC: linux-serial@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Add EndRun PCIe PTP card to 8250_pci.c
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 11:05:50AM +0200, Jarkko Sakkinen wrote:
-> Trampoline code is only needed for SMP and in x86-64 for wakeup
-> code. Make it conditional in order to minimize the kernel size.
-> Added a new hidden config option CONFIG_X86_TRAMPOLINE as
-> suggested by H. Peter Anvin.
-> 
-> The justification for this patch is tinyfication effort run by
-> Josh Triplett. In embedded world a 32-bit processor without SMP
-> is not uncommon phenomenon.
-> 
-> I think the trampoline code could be completely ripped off if
-> ACPI_SLEEP and INTEL_TXT are not enabled but did not want to
-> include that yet into this patch.
-> 
-> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> ---
->  arch/x86/Kconfig              |  4 ++++
->  arch/x86/realmode/rm/Makefile | 10 +++++-----
->  2 files changed, 9 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index f2327e8..9603ca3 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -2488,6 +2488,10 @@ config PMC_ATOM
->  	def_bool y
->          depends on PCI
->  
-> +config X86_TRAMPOLINE
-> +	def_bool y
-> +	depends on X86_64 || SMP
+>From 8b670622745c137892109ee93429d08564a1ddbb Mon Sep 17 00:00:00 2001
+From: Mike Skoog <mskoog.endruntechnologies.com>
+Date: Thu, 16 Oct 2014 07:47:56 -0700
+Subject: [PATCH] 8250_pci: Added driver for Endrun Technologies PTP PCIe card.
 
-I think this could be just as well
+Added recognition of EndRun Technologies PCIe PTP slave card
+and setup two ttySx ports for communication with the card for
+retrieval of PTP based time and to communicate with the card's
+Linux OS.
 
-  depends on (X86_64 && (INTEL_TXT || ACPI_SLEEP)) || SMP
+Signed-off-by: Mike Skoog <mskoog@endruntechnologies.com>
+Signed-off-by: Mike Korreng <mkorreng@endruntechnologies.com>
+---
+ drivers/tty/serial/8250/8250_pci.c |   67 ++++++++++++++++++++++++++++++++++++
+ 1 files changed, 67 insertions(+), 0 deletions(-)
 
-Should I send an updated patch?
+diff --git a/drivers/tty/serial/8250/8250_pci.c b/drivers/tty/serial/8250/8250_pci.c
+index 61830b1..9047aba 100644
+--- a/drivers/tty/serial/8250/8250_pci.c
++++ b/drivers/tty/serial/8250/8250_pci.c
+@@ -1000,6 +1000,40 @@ static void pci_ite887x_exit(struct pci_dev *dev)
+ }
+ 
+ /*
++ * EndRun Technologies.
++ * Determine the number of ports available on the device.
++ */
++#define PCI_VENDOR_ID_ENDRUN			0x7401
++#define PCI_DEVICE_ID_ENDRUN_1588	0xe100
++
++static int pci_endrun_init(struct pci_dev *dev)
++{
++	u8 __iomem *p;
++	unsigned long deviceID;
++	unsigned int  number_uarts = 0;
++
++	/* EndRun device is all 0xexxx */
++	if (dev->vendor == PCI_VENDOR_ID_ENDRUN &&
++		(dev->device & 0xf000) != 0xe000)
++		return 0;
++
++	p = pci_iomap(dev, 0, 5);
++	if (p == NULL)
++		return -ENOMEM;
++
++	deviceID = ioread32(p);
++	/* EndRun device */
++	if (deviceID == 0x07000200) {
++		number_uarts = ioread8(p + 4);
++		dev_dbg(&dev->dev,
++			"%d ports detected on EndRun PCI Express device\n",
++			number_uarts);
++	}
++	pci_iounmap(dev, p);
++	return number_uarts;
++}
++
++/*
+  * Oxford Semiconductor Inc.
+  * Check that device is part of the Tornado range of devices, then determine
+  * the number of ports available on the device.
+@@ -2303,6 +2337,17 @@ static struct pci_serial_quirk pci_serial_quirks[] __refdata = {
+ 		.setup		= pci_netmos_9900_setup,
+ 	},
+ 	/*
++	 * EndRun Technologies
++	*/
++	{
++		.vendor		= PCI_VENDOR_ID_ENDRUN,
++		.device		= PCI_ANY_ID,
++		.subvendor	= PCI_ANY_ID,
++		.subdevice	= PCI_ANY_ID,
++		.init		= pci_endrun_init,
++		.setup		= pci_default_setup,
++	},
++	/*
+ 	 * For Oxford Semiconductor Tornado based devices
+ 	 */
+ 	{
+@@ -2711,6 +2756,7 @@ enum pci_board_num_t {
+ 	pbn_panacom2,
+ 	pbn_panacom4,
+ 	pbn_plx_romulus,
++	pbn_endrun_2_4000000,
+ 	pbn_oxsemi,
+ 	pbn_oxsemi_1_4000000,
+ 	pbn_oxsemi_2_4000000,
+@@ -3255,6 +3301,20 @@ static struct pciserial_board pci_boards[] = {
+ 	},
+ 
+ 	/*
++	 * EndRun Technologies
++	* Uses the size of PCI Base region 0 to
++	* signal now many ports are available
++	* 2 port 952 Uart support
++	*/
++	[pbn_endrun_2_4000000] = {
++		.flags		= FL_BASE0,
++		.num_ports	= 2,
++		.base_baud	= 4000000,
++		.uart_offset	= 0x200,
++		.first_offset	= 0x1000,
++	},
++
++	/*
+ 	 * This board uses the size of PCI Base region 0 to
+ 	 * signal now many ports are available
+ 	 */
+@@ -4121,6 +4181,13 @@ static struct pci_device_id serial_pci_tbl[] = {
+ 		0x10b5, 0x106a, 0, 0,
+ 		pbn_plx_romulus },
+ 	/*
++	* EndRun Technologies. PCI express device range.
++	*    EndRun PTP/1588 has 2 Native UARTs.
++	*/
++	{	PCI_VENDOR_ID_ENDRUN, PCI_DEVICE_ID_ENDRUN_1588,
++		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
++		pbn_endrun_2_4000000 },
++	/*
+ 	 * Quatech cards. These actually have configurable clocks but for
+ 	 * now we just use the default.
+ 	 *
+-- 
+1.7.1
 
-> +
->  source "net/Kconfig"
->  
->  source "drivers/Kconfig"
-> diff --git a/arch/x86/realmode/rm/Makefile b/arch/x86/realmode/rm/Makefile
-> index 7c0d7be..299e450 100644
-> --- a/arch/x86/realmode/rm/Makefile
-> +++ b/arch/x86/realmode/rm/Makefile
-> @@ -19,11 +19,11 @@ wakeup-objs	+= video-vga.o
->  wakeup-objs	+= video-vesa.o
->  wakeup-objs	+= video-bios.o
->  
-> -realmode-y			+= header.o
-> -realmode-y			+= trampoline_$(BITS).o
-> -realmode-y			+= stack.o
-> -realmode-y			+= reboot.o
-> -realmode-$(CONFIG_ACPI_SLEEP)	+= $(wakeup-objs)
-> +realmode-y				+= header.o
-> +realmode-$(CONFIG_X86_TRAMPOLINE)	+= trampoline_$(BITS).o
-> +realmode-y				+= stack.o
-> +realmode-y				+= reboot.o
-> +realmode-$(CONFIG_ACPI_SLEEP)		+= $(wakeup-objs)
->  
->  targets	+= $(realmode-y)
->  
-> -- 
-> 2.1.0
-> 
-
-/Jarkko
