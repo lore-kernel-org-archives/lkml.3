@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751369AbaJPHvV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 03:51:21 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:65264 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750765AbaJPHvU (ORCPT
+	id S1751446AbaJPHwZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 03:52:25 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:26775 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993AbaJPHwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 03:51:20 -0400
-Message-ID: <543F78F1.6040203@fb.com>
-Date: Thu, 16 Oct 2014 03:51:13 -0400
-From: Chris Mason <clm@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Thu, 16 Oct 2014 03:52:24 -0400
+Date: Thu, 16 Oct 2014 10:52:11 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: Fabio Estevam <fabio.estevam@freescale.com>, devel@driverdev.osuosl.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>
+Subject: Re: [PATCH v2] bcm/CmHost.c: Fix noisy compile warnings
+Message-ID: <20141016075211.GE23154@mwanda>
+References: <1413399701-4321-1-git-send-email-jeffrey.t.kirsher@intel.com>
+ <20141015195549.GR26918@mwanda>
+ <1413404767.2412.31.camel@jtkirshe-mobl>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>
-Subject: [GIT PULL] Btrfs corruption fix
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-10-16_04:2014-10-15,2014-10-16,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=8.94047058608294e-11 kscore.compositescore=0
- circleOfTrustscore=28.9261618248808 compositescore=0.998049563855454
- urlsuspect_oldscore=0.998049563855454 suspectscore=2
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=62764
- rbsscore=0.998049563855454 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1410160079
-X-FB-Internal: deliver
+In-Reply-To: <1413404767.2412.31.camel@jtkirshe-mobl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, Oct 15, 2014 at 01:26:07PM -0700, Jeff Kirsher wrote:
+> On Wed, 2014-10-15 at 22:55 +0300, Dan Carpenter wrote:
+> > On Wed, Oct 15, 2014 at 12:01:41PM -0700, Jeff Kirsher wrote:
+> > > From: Fabio Estevam <fabio.estevam@freescale.com>
+> > > 
+> > > The Beceem WIMAX was generating compile warnings on 64bit machines,
+> > > which were:
+> > > 
+> > > drivers/staging/bcm/CmHost.c: In function ‘StoreCmControlResponseMessage’:
+> > > drivers/staging/bcm/CmHost.c:1503:3: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
+> > >    (struct bcm_connect_mgr_params *) ntohl(
+> > >    ^
+> > > drivers/staging/bcm/CmHost.c:1546:3: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
+> > >    (struct bcm_connect_mgr_params *) ntohl(
+> > >    ^
+> > > drivers/staging/bcm/CmHost.c:1564:3: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
+> > >    (struct bcm_connect_mgr_params *) ntohl(
+> > > 
+> > > This resolves the issue by preventing the driver to compile if CONFIG_64BIT
+> > > is enabled, since the driver is known to be broken for 64 bit arch's.
+> > > 
+> > 
+> > Oops.  Someone turned a Joe patch into a real patch.  Please enable
+> > COMPILE_TEST for this.
+> 
+> I agree with Joe, that COMPILE_TEST is not useful for this driver.
 
-I'm testing a pull with more fixes, but wanted to get this one out so
-Greg can pick it up.  The corruption isn't easy to hit, you have to do a
-readonly snapshot and have orphans in the snapshot.  But my review and
-testing missed the bug.  Filipe has added a better xfstest to cover it.
+If we remove the driver fine, but if we keep the driver then we should
+do enable any QA testing we can.
 
-Please pull:
+regards,
+dan carpenter
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
-
-Chris Mason (1) commits (+33/-36):
-    Revert "Btrfs: race free update of commit root for ro snapshots"
-
-Total: (1) commits (+33/-36)
-
- fs/btrfs/inode.c | 36 ------------------------------------
- fs/btrfs/ioctl.c | 33 +++++++++++++++++++++++++++++++++
- 2 files changed, 33 insertions(+), 36 deletions(-)
