@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752784AbaJPVIi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 17:08:38 -0400
-Received: from roy.gaast.net ([80.101.33.21]:43830 "EHLO mail.gaast.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751643AbaJPVIh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 17:08:37 -0400
-Message-ID: <544033CF.3080104@gaast.net>
-Date: Thu, 16 Oct 2014 22:08:31 +0100
-From: Wilmer van der Gaast <wilmer@gaast.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130112 Icedove/17.0.2
+	id S1752889AbaJPVJX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 17:09:23 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:49763 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751408AbaJPVJW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 17:09:22 -0400
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+In-Reply-To: <20141015151511.ea81b39adcee0954518bf5f3@linux-foundation.org>
+References: <1412514377-19387-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <1412514377-19387-2-git-send-email-rickard_strandqvist@spectrumdigital.se> <20141015151511.ea81b39adcee0954518bf5f3@linux-foundation.org>
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Date: Thu, 16 Oct 2014 23:09:00 +0200
+Message-ID: <CAFo99gZqNwwQMknCSW8uQSfJS2Lheq0gwQKNSBp1XTQGd3nQ=w@mail.gmail.com>
+Subject: Re: [PATCH v2] lib: string.c: Added a funktion function strzcpy
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Grant Likely <grant.likely@linaro.org>, Andi Kleen <ak@linux.intel.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Machine crashes right *after* ~successful resume
-References: <54347520.3050109@gaast.net> <543AA2FE.20105@gaast.net> <20141012204032.GA11171@amd> <9751497.0fL0kvsyX7@vostro.rjw.lan> <20141015111641.GC7792@gaast.net> <CAErSpo5A+nHTu2Y6KrXowBBCBsNw_hO0SRsnc6YRdJChCUmO6w@mail.gmail.com> <CAE9FiQV9t0bCfUy5Fichdk=04ruEVxGv-LUK1xxZjCrasAOACg@mail.gmail.com> <543F049F.5090605@gaast.net> <CAE9FiQWDHq5esSt4UvE5AkHR-=XMvrzaNFwLg+0xKisTNOtcsQ@mail.gmail.com> <543F9182.9000004@gaast.net> <CAE9FiQVNZHTxpNCnn+YPtqjWrQjFmtTh06sbBawqFonMFwSZ-w@mail.gmail.com>
-In-Reply-To: <CAE9FiQVNZHTxpNCnn+YPtqjWrQjFmtTh06sbBawqFonMFwSZ-w@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-I have filed a bug now: 
-https://bugzilla.kernel.org/show_bug.cgi?id=86421 We should probably 
-continue the discussion there now? I've added just you to the CC field, 
-not sure who else on this thread is still interested at this point.
-
-On 16-10-14 17:36, Yinghai Lu wrote:
+2014-10-16 0:15 GMT+02:00 Andrew Morton <akpm@linux-foundation.org>:
+> On Sun,  5 Oct 2014 15:06:17 +0200 Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se> wrote:
 >
-> Can you put "debug ignore_loglevel" in boot command line?
-> So we can compare output from serial console between good one and bad
-> one directly.
+>> Added a function strzcpy which works the same as strncpy,
+>> but guaranteed to produce the trailing null character.
+>>
+>> There are many places in the code where strncpy used although it
+>> must be zero terminated, and switching to strlcpy is not an option
+>> because the string must nonetheless be fyld with zero characters.
 >
-Did that, will throw the output in the same log dir. Those arguments 
-resulted in very little extra output. :-/
-
-> Also did you try to remove r8169 every time before suspend?
->
-Did that on this run, no difference either. For full completeness, I 
-reproduced this problem with no modules loaded (done from initramfs) at 
-all, with a kernel with your workaround included, logs are here: 
-http://gaast.net/~wilmer/.lkml/bad3.17-patched-debug-initramfs.txt
+> As I mentioned last time, I think this patch would be better if it came
+> with follow-on patches which convert at least some of those callsites.
+> As it stands, this function has no callers and hence it won't get
+> tested.  Plus those follow-on patches will demonstrate the value of
+> this patch and will provide example usages.
 
 
-Wilmer v/d Gaast.
+Hi
 
--- 
-+-------- .''`.     - -- ---+  +        - -- --- ---- ----- ------+
-| wilmer : :'  :  gaast.net |  | OSS Programmer   www.bitlbee.org |
-| lintux `. `~'  debian.org |  | Full-time geek  wilmer.gaast.net |
-+--- -- -  ` ---------------+  +------ ----- ---- --- -- -        +
+Sure I can do that! I have saved some patches just to be able to use
+this new feature.
+But should I submit everything as one patch then?
+Or is there some kind of dependency thing I can use...
+
+I have also e-mailed with Dan about this, he pointed out the same as
+some of my tests indicate that strzcpy maybe just should use strncpy
+and add a null character instead because strncpy is optimized
+depending on the hardware it runs on.
+What do you think about that?
+
+
+Kind regards
+Rickard Strandqvist
