@@ -1,123 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751719AbaJPRBq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 13:01:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53188 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751309AbaJPRBp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 13:01:45 -0400
-Message-ID: <543FF9F2.4020005@infradead.org>
-Date: Thu, 16 Oct 2014 10:01:38 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1752034AbaJPRC7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 13:02:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56116 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751289AbaJPRC5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 13:02:57 -0400
+Date: Thu, 16 Oct 2014 13:02:36 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@redhat.com>,
+        John Stultz <john.stultz@linaro.org>, Eric Paris <eparis@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>
+Subject: Re: [PATCH v1 01/10] audit: Remove "weak" from
+ audit_classify_compat_syscall() declaration
+Message-ID: <20141016170236.GE15532@madcap2.tricolour.ca>
+References: <20141015165957.4063.66741.stgit@bhelgaas-glaptop2.roam.corp.google.com>
+ <20141015170547.4063.99053.stgit@bhelgaas-glaptop2.roam.corp.google.com>
+ <CAErSpo5zdt4MrxJaAyAoDQXAimAL_Tk4Q5-zFoBSsTTpmU7ecw@mail.gmail.com>
 MIME-Version: 1.0
-To: Masanari Iida <standby24x7@gmail.com>, linux-kernel@vger.kernel.org,
-        mturquette@linaro.org, trivial@kernel.org, linus.walleij@linaro.org,
-        gnurou@gmail.com, jcliburn@gmail.com, chris.snook@gmail.com,
-        viresh.linux@gmail.com, inki.dae@samsung.com, dh09.lee@samsung.com,
-        kgene.kim@samsung.com
-CC: netdev@vger.kernel.org
-Subject: Re: [PATCH] [trivial] treewide: Fix company name in module descriptions
-References: <1413472164-22366-1-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1413472164-22366-1-git-send-email-standby24x7@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo5zdt4MrxJaAyAoDQXAimAL_Tk4Q5-zFoBSsTTpmU7ecw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/14 08:09, Masanari Iida wrote:
-> This patch fix company name's spelling typo in module descriptions
-> and a Kconfig.
-> 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+On 14/10/15, Bjorn Helgaas wrote:
+> [+cc AKASHI, Richard; sorry, I botched my "stg mail" so you weren't
+> included the first time]
 
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
+Makes sense, ACK.
 
-Thanks.
+> On Wed, Oct 15, 2014 at 11:05 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> > There's only one audit_classify_compat_syscall() definition, so it doesn't
+> > need to be weak.
+> >
+> > Remove the "weak" attribute from the audit_classify_compat_syscall()
+> > declaration.
+> >
+> > Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> > CC: AKASHI Takahiro <takahiro.akashi@linaro.org>
+> > CC: Richard Guy Briggs <rgb@redhat.com>
+> > ---
+> >  include/linux/audit.h |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> > diff --git a/include/linux/audit.h b/include/linux/audit.h
+> > index 22cfddb75566..1b6098beb46b 100644
+> > --- a/include/linux/audit.h
+> > +++ b/include/linux/audit.h
+> > @@ -86,7 +86,7 @@ extern unsigned compat_dir_class[];
+> >  extern unsigned compat_chattr_class[];
+> >  extern unsigned compat_signal_class[];
+> >
+> > -extern int __weak audit_classify_compat_syscall(int abi, unsigned syscall);
+> > +extern int audit_classify_compat_syscall(int abi, unsigned syscall);
+> >
+> >  /* audit_names->type values */
+> >  #define        AUDIT_TYPE_UNKNOWN      0       /* we don't know yet */
 
-> ---
->  drivers/clk/Kconfig                                 | 2 +-
->  drivers/gpio/gpio-spear-spics.c                     | 2 +-
->  drivers/net/ethernet/atheros/atl1c/atl1c_main.c     | 2 +-
->  drivers/pinctrl/spear/pinctrl-plgpio.c              | 2 +-
->  drivers/video/fbdev/exynos/exynos_mipi_dsi.c        | 2 +-
->  drivers/video/fbdev/exynos/exynos_mipi_dsi_common.c | 2 +-
->  6 files changed, 6 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-> index 455fd17..3f44f29 100644
-> --- a/drivers/clk/Kconfig
-> +++ b/drivers/clk/Kconfig
-> @@ -28,7 +28,7 @@ config COMMON_CLK_WM831X
->  	depends on MFD_WM831X
->  	---help---
->            Supports the clocking subsystem of the WM831x/2x series of
-> -	  PMICs from Wolfson Microlectronics.
-> +	  PMICs from Wolfson Microelectronics.
->  
->  source "drivers/clk/versatile/Kconfig"
->  
-> diff --git a/drivers/gpio/gpio-spear-spics.c b/drivers/gpio/gpio-spear-spics.c
-> index 353263c..506a2ea 100644
-> --- a/drivers/gpio/gpio-spear-spics.c
-> +++ b/drivers/gpio/gpio-spear-spics.c
-> @@ -204,5 +204,5 @@ static int __init spics_gpio_init(void)
->  subsys_initcall(spics_gpio_init);
->  
->  MODULE_AUTHOR("Shiraz Hashim <shiraz.linux.kernel@gmail.com>");
-> -MODULE_DESCRIPTION("ST Microlectronics SPEAr SPI Chip Select Abstraction");
-> +MODULE_DESCRIPTION("STMicroelectronics SPEAr SPI Chip Select Abstraction");
->  MODULE_LICENSE("GPL");
-> diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-> index 72fb86b..c9946c6 100644
-> --- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-> +++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-> @@ -48,7 +48,7 @@ MODULE_DEVICE_TABLE(pci, atl1c_pci_tbl);
->  
->  MODULE_AUTHOR("Jie Yang");
->  MODULE_AUTHOR("Qualcomm Atheros Inc., <nic-devel@qualcomm.com>");
-> -MODULE_DESCRIPTION("Qualcom Atheros 100/1000M Ethernet Network Driver");
-> +MODULE_DESCRIPTION("Qualcomm Atheros 100/1000M Ethernet Network Driver");
->  MODULE_LICENSE("GPL");
->  MODULE_VERSION(ATL1C_DRV_VERSION);
->  
-> diff --git a/drivers/pinctrl/spear/pinctrl-plgpio.c b/drivers/pinctrl/spear/pinctrl-plgpio.c
-> index bddb791..ce5f22c 100644
-> --- a/drivers/pinctrl/spear/pinctrl-plgpio.c
-> +++ b/drivers/pinctrl/spear/pinctrl-plgpio.c
-> @@ -724,5 +724,5 @@ static int __init plgpio_init(void)
->  subsys_initcall(plgpio_init);
->  
->  MODULE_AUTHOR("Viresh Kumar <viresh.kumar@linaro.org>");
-> -MODULE_DESCRIPTION("ST Microlectronics SPEAr PLGPIO driver");
-> +MODULE_DESCRIPTION("STMicroelectronics SPEAr PLGPIO driver");
->  MODULE_LICENSE("GPL");
-> diff --git a/drivers/video/fbdev/exynos/exynos_mipi_dsi.c b/drivers/video/fbdev/exynos/exynos_mipi_dsi.c
-> index cee9602..716bfad 100644
-> --- a/drivers/video/fbdev/exynos/exynos_mipi_dsi.c
-> +++ b/drivers/video/fbdev/exynos/exynos_mipi_dsi.c
-> @@ -570,5 +570,5 @@ static struct platform_driver exynos_mipi_dsi_driver = {
->  module_platform_driver(exynos_mipi_dsi_driver);
->  
->  MODULE_AUTHOR("InKi Dae <inki.dae@samsung.com>");
-> -MODULE_DESCRIPTION("Samusung SoC MIPI-DSI driver");
-> +MODULE_DESCRIPTION("Samsung SoC MIPI-DSI driver");
->  MODULE_LICENSE("GPL");
-> diff --git a/drivers/video/fbdev/exynos/exynos_mipi_dsi_common.c b/drivers/video/fbdev/exynos/exynos_mipi_dsi_common.c
-> index 85edabf..2358a2f 100644
-> --- a/drivers/video/fbdev/exynos/exynos_mipi_dsi_common.c
-> +++ b/drivers/video/fbdev/exynos/exynos_mipi_dsi_common.c
-> @@ -876,5 +876,5 @@ int exynos_mipi_dsi_fifo_clear(struct mipi_dsim_device *dsim,
->  }
->  
->  MODULE_AUTHOR("InKi Dae <inki.dae@samsung.com>");
-> -MODULE_DESCRIPTION("Samusung SoC MIPI-DSI common driver");
-> +MODULE_DESCRIPTION("Samsung SoC MIPI-DSI common driver");
->  MODULE_LICENSE("GPL");
-> 
+- RGB
 
-
--- 
-~Randy
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
