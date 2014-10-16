@@ -1,109 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751644AbaJPQUX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 12:20:23 -0400
-Received: from galahad.ideasonboard.com ([185.26.127.97]:37155 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251AbaJPQUV (ORCPT
+	id S1751840AbaJPQWG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 12:22:06 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:60436 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751288AbaJPQWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 12:20:21 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Antoine =?ISO-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
-        lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Michal Simek <michal.simek@xilinx.com>
-Subject: Re: [PATCH v2 40/53] dmaengine: xilinx: Split device_control
-Date: Thu, 16 Oct 2014 19:20:33 +0300
-Message-ID: <16437910.e1eS0oSP8W@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.14.14-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <1413454672-27400-41-git-send-email-maxime.ripard@free-electrons.com>
-References: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com> <1413454672-27400-41-git-send-email-maxime.ripard@free-electrons.com>
+	Thu, 16 Oct 2014 12:22:05 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <20141016154914.GD30314@nazgul.tnic>
+References: <cover.1413323611.git.luto@amacapital.net> <93ffc13d9e829f3ded9776fec62385bccb7439e1.1413323612.git.luto@amacapital.net>
+ <20141016154914.GD30314@nazgul.tnic>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 16 Oct 2014 09:21:42 -0700
+Message-ID: <CALCETrVmS+ZNj+iXNTy5zC8araMH=x=jUBNDMUNPDJwu0huMMQ@mail.gmail.com>
+Subject: Re: [RFC 3/5] x86: Add a comment clarifying LDT context switching
+To: Borislav Petkov <bp@alien8.de>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Erik Bosman <ebn310@few.vu.nl>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Maxime,
+On Thu, Oct 16, 2014 at 8:49 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Tue, Oct 14, 2014 at 03:57:37PM -0700, Andy Lutomirski wrote:
+>> The code is correct, but only for a rather subtle reason.  This
+>> confused me for quite a while when I read switch_mm, so clarify the
+>> code to avoid confusing other people, too.
+>>
+>> TBH, I wouldn't be surprised if this code was only correct by
+>> accident.
+>>
+>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>> ---
+>>  arch/x86/include/asm/mmu_context.h | 11 ++++++++++-
+>>  1 file changed, 10 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/arch/x86/include/asm/mmu_context.h b/arch/x86/include/asm/mmu_context.h
+>> index 166af2a8e865..04478103df37 100644
+>> --- a/arch/x86/include/asm/mmu_context.h
+>> +++ b/arch/x86/include/asm/mmu_context.h
+>> @@ -53,7 +53,16 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
+>>               /* Stop flush ipis for the previous mm */
+>>               cpumask_clear_cpu(cpu, mm_cpumask(prev));
+>>
+>> -             /* Load the LDT, if the LDT is different: */
+>> +             /*
+>> +              * Load the LDT, if the LDT is different.
+>> +              *
+>> +              * It's possible leave_mm(prev) has been called.  If so,
+>> +              * then prev->context.ldt could be out of sync with the
+>> +              * LDT descriptor or the LDT register.  This can only happen
+>
+> I'm staring at the code and trying to figure out where on the leave_mm()
+> path this could happen. Got any code pointers?
 
-Thank you for the patch.
+I think it's the same as in the other case in switch_mm.  leave_mm
+does cpumask_clear_cpu(cpu, mm_cpumask(active_mm)), and, once that has
+happened, modify_ldt won't send an IPI to this CPU.  So, if leave_mm
+runs, and then another CPU calls modify_ldt on the mm that is in lazy
+mode here, it won't update our LDT register, so the LDT register and
+prev->context.ldt might not match.
 
-On Thursday 16 October 2014 12:17:39 Maxime Ripard wrote:
-> Split the device_control callback of the Xilinx VDMA driver to make use of
-> the newly introduced callbacks, that will eventually be used to retrieve
-> slave capabilities.
-> 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> ---
->  drivers/dma/xilinx/xilinx_vdma.c | 27 ++++-----------------------
->  1 file changed, 4 insertions(+), 23 deletions(-)
-> 
-> diff --git a/drivers/dma/xilinx/xilinx_vdma.c
-> b/drivers/dma/xilinx/xilinx_vdma.c index 42a13e8d4607..35024e7b9f9f 100644
-> --- a/drivers/dma/xilinx/xilinx_vdma.c
-> +++ b/drivers/dma/xilinx/xilinx_vdma.c
-> @@ -996,8 +996,10 @@ error:
->   * xilinx_vdma_terminate_all - Halt the channel and free descriptors
->   * @chan: Driver specific VDMA Channel pointer
->   */
-> -static void xilinx_vdma_terminate_all(struct xilinx_vdma_chan *chan)
-> +static int xilinx_vdma_terminate_all(struct dma_chan *dchan)
+I think that, if that's the case, then prev->context.ldt can't be NULL
+and can't have the same non-NULL value as next->context.ldt.  I hope.
 
-I'm pretty sure you now miss a return statement at the end of the function. 
-With that fixed,
+I'll try to make the comment clearer in v2.
 
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+--Andy
 
->  {
-> +	struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
-> +
->  	/* Halt the DMA engine */
->  	xilinx_vdma_halt(chan);
-> 
-> @@ -1070,27 +1072,6 @@ int xilinx_vdma_channel_set_config(struct dma_chan
-> *dchan, }
->  EXPORT_SYMBOL(xilinx_vdma_channel_set_config);
-> 
-> -/**
-> - * xilinx_vdma_device_control - Configure DMA channel of the device
-> - * @dchan: DMA Channel pointer
-> - * @cmd: DMA control command
-> - * @arg: Channel configuration
-> - *
-> - * Return: '0' on success and failure value on error
-> - */
-> -static int xilinx_vdma_device_control(struct dma_chan *dchan,
-> -				      enum dma_ctrl_cmd cmd, unsigned long arg)
-> -{
-> -	struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
-> -
-> -	if (cmd != DMA_TERMINATE_ALL)
-> -		return -ENXIO;
-> -
-> -	xilinx_vdma_terminate_all(chan);
-> -
-> -	return 0;
-> -}
-> -
->  /*
-> ---------------------------------------------------------------------------
-> -- * Probe and remove
->   */
-> @@ -1295,7 +1276,7 @@ static int xilinx_vdma_probe(struct platform_device
-> *pdev) xilinx_vdma_free_chan_resources;
->  	xdev->common.device_prep_interleaved_dma =
->  				xilinx_vdma_dma_prep_interleaved;
-> -	xdev->common.device_control = xilinx_vdma_device_control;
-> +	xdev->common.device_terminate_all = xilinx_vdma_terminate_all;
->  	xdev->common.device_tx_status = xilinx_vdma_tx_status;
->  	xdev->common.device_issue_pending = xilinx_vdma_issue_pending;
+>
+> :-)
+>
+>> +              * if prev->context.ldt is non-null, since we never free
+>> +              * an LDT.  But LDTs can't be shared across mms, so
+>> +              * prev->context.ldt won't be equal to next->context.ldt.
+>> +              */
+>>               if (unlikely(prev->context.ldt != next->context.ldt))
+>>                       load_LDT_nolock(&next->context);
+>>       }
+>> --
+>> 1.9.3
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>
+> --
+> Regards/Gruss,
+>     Boris.
+> --
+
+
 
 -- 
-Regards,
-
-Laurent Pinchart
-
+Andy Lutomirski
+AMA Capital Management, LLC
