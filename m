@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250AbaJPU2Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 16:28:16 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:60652 "EHLO
+	id S1753256AbaJPU2k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 16:28:40 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:44444 "EHLO
 	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752801AbaJPUZs (ORCPT
+	with ESMTP id S1752635AbaJPUZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Oct 2014 16:25:48 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
@@ -13,9 +13,9 @@ Cc: linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
         linux-serial@vger.kernel.org,
         One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
         Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH -next 04/27] tty: Clarify re-open behavior of master ptys
-Date: Thu, 16 Oct 2014 16:25:02 -0400
-Message-Id: <1413491125-20134-5-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH -next 03/27] tty: Remove TTY_HUPPING
+Date: Thu, 16 Oct 2014 16:25:01 -0400
+Message-Id: <1413491125-20134-4-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1413491125-20134-1-git-send-email-peter@hurleysoftware.com>
 References: <1413491125-20134-1-git-send-email-peter@hurleysoftware.com>
@@ -25,77 +25,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Re-opening master ptys is not allowed. Once opened and for the remaining
-lifetime of the master pty, its tty count is 1. If its tty count has
-dropped to 0, then the master pty was closed and TTY_CLOSING was set,
-and destruction may begin imminently.
+Now that tty_ldisc_hangup() does not drop the tty lock, it is no
+longer possible to observe TTY_HUPPING while holding the tty lock
+on another cpu.
 
-Besides the normal case of a legacy BSD pty master being re-opened
-(which always returns -EIO), this code is only reachable in 2 degenerate
-cases:
-1. The pty master is the controlling terminal (this is possible through
-   the TIOCSCTTY ioctl). pty masters are not designed to be controlling
-   terminals and it's an oversight that tiocsctty() ever let that happen.
-   The attempted open of /dev/tty will always fail. No known program does
-   this.
-2. The legacy BSD pty slave was opened first. The slave open will fail
-   in pty_open() and tty_release() will commence. But before tty_release()
-   claims the tty_mutex, there is a very small window where a parallel
-   master open might succeed. In a test of racing legacy BSD slave and
-   master parallel opens, where:
-      slave open attempts:  10000   success:4527  failure:5473
-      master open attempts: 11728   success:5789  failure:5939
-   only 8 master open attempts would have succeeded reaching this code and
-   successfully opened the master pty. This case is not possible with
-   SysV ptys.
-
-Always return -EIO if a master pty is re-opened or the slave is opened
-first and the master opened in parallel (for legacy BSD ptys).
-
-Furthermore, now that changing the slave's count is not required,
-the tty_lock is sufficient for preventing concurrent changes to the
-tty being re-opened (or failing re-opening).
+Remove TTY_HUPPING bit definition.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/tty_io.c | 15 ++++-----------
- 1 file changed, 4 insertions(+), 11 deletions(-)
+ drivers/tty/tty_io.c    | 12 +-----------
+ drivers/tty/tty_ldisc.c |  3 +--
+ include/linux/tty.h     |  1 -
+ 3 files changed, 2 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index fd06512..5b6253f 100644
+index e18491a..fd06512 100644
 --- a/drivers/tty/tty_io.c
 +++ b/drivers/tty/tty_io.c
-@@ -1444,9 +1444,9 @@ void tty_driver_remove_tty(struct tty_driver *driver, struct tty_struct *tty)
-  * 	@tty	- the tty to open
-  *
-  *	Return 0 on success, -errno on error.
-+ *	Re-opens on master ptys are not allowed and return -EIO.
-  *
-- *	Locking: tty_mutex must be held from the time the tty was found
-- *		 till this open completes.
-+ *	Locking: Caller must hold tty_lock
-  */
- static int tty_reopen(struct tty_struct *tty)
+@@ -690,9 +690,6 @@ static void __tty_hangup(struct tty_struct *tty, int exit_session)
+ 		return;
+ 	}
+ 
+-	/* some functions below drop BTM, so we need this bit */
+-	set_bit(TTY_HUPPING, &tty->flags);
+-
+ 	/* inuse_filps is protected by the single tty lock,
+ 	   this really needs to change if we want to flush the
+ 	   workqueue with the lock held */
+@@ -717,10 +714,6 @@ static void __tty_hangup(struct tty_struct *tty, int exit_session)
+ 	while (refs--)
+ 		tty_kref_put(tty);
+ 
+-	/*
+-	 * it drops BTM and thus races with reopen
+-	 * we protect the race by TTY_HUPPING
+-	 */
+ 	tty_ldisc_hangup(tty);
+ 
+ 	spin_lock_irq(&tty->ctrl_lock);
+@@ -752,8 +745,6 @@ static void __tty_hangup(struct tty_struct *tty, int exit_session)
+ 	 * can't yet guarantee all that.
+ 	 */
+ 	set_bit(TTY_HUPPED, &tty->flags);
+-	clear_bit(TTY_HUPPING, &tty->flags);
+-
+ 	tty_unlock(tty);
+ 
+ 	if (f)
+@@ -1461,8 +1452,7 @@ static int tty_reopen(struct tty_struct *tty)
  {
-@@ -1456,16 +1456,9 @@ static int tty_reopen(struct tty_struct *tty)
+ 	struct tty_driver *driver = tty->driver;
+ 
+-	if (test_bit(TTY_CLOSING, &tty->flags) ||
+-			test_bit(TTY_HUPPING, &tty->flags))
++	if (test_bit(TTY_CLOSING, &tty->flags))
  		return -EIO;
  
  	if (driver->type == TTY_DRIVER_TYPE_PTY &&
--	    driver->subtype == PTY_TYPE_MASTER) {
--		/*
--		 * special case for PTY masters: only one open permitted,
--		 * and the slave side open count is incremented as well.
--		 */
--		if (tty->count)
--			return -EIO;
-+	    driver->subtype == PTY_TYPE_MASTER)
-+		return -EIO;
+diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
+index 28858eb..49001fa 100644
+--- a/drivers/tty/tty_ldisc.c
++++ b/drivers/tty/tty_ldisc.c
+@@ -544,8 +544,7 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
  
--		tty->link->count++;
--	}
- 	tty->count++;
+ 	old_ldisc = tty->ldisc;
  
- 	WARN_ON(!tty->ldisc);
+-	if (test_bit(TTY_HUPPING, &tty->flags) ||
+-	    test_bit(TTY_HUPPED, &tty->flags)) {
++	if (test_bit(TTY_HUPPED, &tty->flags)) {
+ 		/* We were raced by the hangup method. It will have stomped
+ 		   the ldisc data and closed the ldisc down */
+ 		tty_ldisc_enable_pair(tty, o_tty);
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index b36b0b4..ff0dd7a 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -321,7 +321,6 @@ struct tty_file_private {
+ #define TTY_PTY_LOCK 		16	/* pty private */
+ #define TTY_NO_WRITE_SPLIT 	17	/* Preserve write boundaries to driver */
+ #define TTY_HUPPED 		18	/* Post driver->hangup() */
+-#define TTY_HUPPING 		21	/* ->hangup() in progress */
+ #define TTY_LDISC_HALTED	22	/* Line discipline is halted */
+ 
+ #define TTY_WRITE_FLUSH(tty) tty_write_flush((tty))
 -- 
 2.1.1
 
