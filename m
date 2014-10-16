@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752644AbaJPKgR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 06:36:17 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37156 "EHLO
+	id S1753209AbaJPKgo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 06:36:44 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:37149 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752225AbaJPKTb (ORCPT
+	with ESMTP id S1752226AbaJPKT1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 06:19:31 -0400
+	Thu, 16 Oct 2014 06:19:27 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -14,12 +14,11 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Dan Williams <dan.j.williams@intel.com>,
-        linux-rpi-kernel@lists.infradead.org
-Subject: [PATCH v2 10/53] dmaengine: bcm2835: Split device_control
-Date: Thu, 16 Oct 2014 12:17:09 +0200
-Message-Id: <1413454672-27400-11-git-send-email-maxime.ripard@free-electrons.com>
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: [PATCH v2 09/53] dmaengine: hdmac: Split device_control
+Date: Thu, 16 Oct 2014 12:17:08 +0200
+Message-Id: <1413454672-27400-10-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -27,81 +26,191 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the Broadcom BCM2835 DMA driver to make
-use of the newly introduced callbacks, that will eventually be used to retrieve
+Split the device_control callback of the Atmel HDMAC driver to make use
+of the newly introduced callbacks, that will eventually be used to retrieve
 slave capabilities.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/dma/bcm2835-dma.c | 31 ++++++++-----------------------
- 1 file changed, 8 insertions(+), 23 deletions(-)
+ drivers/dma/at_hdmac.c | 121 +++++++++++++++++++++++++++++--------------------
+ 1 file changed, 73 insertions(+), 48 deletions(-)
 
-diff --git a/drivers/dma/bcm2835-dma.c b/drivers/dma/bcm2835-dma.c
-index 8a6a9c27fe83..243bb1ed6bfc 100644
---- a/drivers/dma/bcm2835-dma.c
-+++ b/drivers/dma/bcm2835-dma.c
-@@ -436,9 +436,11 @@ static struct dma_async_tx_descriptor *bcm2835_dma_prep_dma_cyclic(
- 	return vchan_tx_prep(&c->vc, &d->vd, flags);
+diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+index ca9dd2613283..86450b3442f2 100644
+--- a/drivers/dma/at_hdmac.c
++++ b/drivers/dma/at_hdmac.c
+@@ -972,11 +972,13 @@ err_out:
+ 	return NULL;
  }
  
--static int bcm2835_dma_slave_config(struct bcm2835_chan *c,
--		struct dma_slave_config *cfg)
-+static int bcm2835_dma_slave_config(struct dma_chan *chan,
-+				    struct dma_slave_config *cfg)
+-static int set_runtime_config(struct dma_chan *chan,
+-			      struct dma_slave_config *sconfig)
++static int atc_config(struct dma_chan *chan,
++		      struct dma_slave_config *sconfig)
  {
-+	struct bcm2835_chan *c = to_bcm2835_dma_chan(chan);
+ 	struct at_dma_chan	*atchan = to_at_dma_chan(chan);
+ 
++	dev_vdbg(chan2dev(chan), "%s\n", __func__);
 +
- 	if ((cfg->direction == DMA_DEV_TO_MEM &&
- 	     cfg->src_addr_width != DMA_SLAVE_BUSWIDTH_4_BYTES) ||
- 	    (cfg->direction == DMA_MEM_TO_DEV &&
-@@ -452,8 +454,9 @@ static int bcm2835_dma_slave_config(struct bcm2835_chan *c,
+ 	/* Check if it is chan is configured for slave transfers */
+ 	if (!chan->private)
+ 		return -EINVAL;
+@@ -989,9 +991,28 @@ static int set_runtime_config(struct dma_chan *chan,
  	return 0;
  }
  
--static int bcm2835_dma_terminate_all(struct bcm2835_chan *c)
-+static int bcm2835_dma_terminate_all(struct dma_chan *chan)
++static int atc_pause(struct dma_chan *chan)
++{
++	struct at_dma_chan	*atchan = to_at_dma_chan(chan);
++	struct at_dma		*atdma = to_at_dma(chan->device);
++	int			chan_id = atchan->chan_common.chan_id;
++	unsigned long		flags;
+ 
+-static int atc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-		       unsigned long arg)
++	LIST_HEAD(list);
++
++	dev_vdbg(chan2dev(chan), "%s\n", __func__);
++
++	spin_lock_irqsave(&atchan->lock, flags);
++
++	dma_writel(atdma, CHER, AT_DMA_SUSP(chan_id));
++	set_bit(ATC_IS_PAUSED, &atchan->status);
++
++	spin_unlock_irqrestore(&atchan->lock, flags);
++
++	return 0;
++}
++
++static int atc_resume(struct dma_chan *chan)
  {
-+	struct bcm2835_chan *c = to_bcm2835_dma_chan(chan);
- 	struct bcm2835_dmadev *d = to_bcm2835_dma_dev(c->vc.chan.device);
- 	unsigned long flags;
- 	int timeout = 10000;
-@@ -495,24 +498,6 @@ static int bcm2835_dma_terminate_all(struct bcm2835_chan *c)
- 	return 0;
- }
+ 	struct at_dma_chan	*atchan = to_at_dma_chan(chan);
+ 	struct at_dma		*atdma = to_at_dma(chan->device);
+@@ -1000,60 +1021,61 @@ static int atc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
  
--static int bcm2835_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--	unsigned long arg)
--{
--	struct bcm2835_chan *c = to_bcm2835_dma_chan(chan);
--
--	switch (cmd) {
--	case DMA_SLAVE_CONFIG:
--		return bcm2835_dma_slave_config(c,
--				(struct dma_slave_config *)arg);
--
--	case DMA_TERMINATE_ALL:
--		return bcm2835_dma_terminate_all(c);
--
--	default:
+ 	LIST_HEAD(list);
+ 
+-	dev_vdbg(chan2dev(chan), "atc_control (%d)\n", cmd);
++	dev_vdbg(chan2dev(chan), "%s\n", __func__);
+ 
+-	if (cmd == DMA_PAUSE) {
+-		spin_lock_irqsave(&atchan->lock, flags);
++	if (!atc_chan_is_paused(atchan))
++		return 0;
+ 
+-		dma_writel(atdma, CHER, AT_DMA_SUSP(chan_id));
+-		set_bit(ATC_IS_PAUSED, &atchan->status);
++	spin_lock_irqsave(&atchan->lock, flags);
+ 
+-		spin_unlock_irqrestore(&atchan->lock, flags);
+-	} else if (cmd == DMA_RESUME) {
+-		if (!atc_chan_is_paused(atchan))
+-			return 0;
++	dma_writel(atdma, CHDR, AT_DMA_RES(chan_id));
++	clear_bit(ATC_IS_PAUSED, &atchan->status);
+ 
+-		spin_lock_irqsave(&atchan->lock, flags);
++	spin_unlock_irqrestore(&atchan->lock, flags);
+ 
+-		dma_writel(atdma, CHDR, AT_DMA_RES(chan_id));
+-		clear_bit(ATC_IS_PAUSED, &atchan->status);
++	return 0;
++}
+ 
+-		spin_unlock_irqrestore(&atchan->lock, flags);
+-	} else if (cmd == DMA_TERMINATE_ALL) {
+-		struct at_desc	*desc, *_desc;
+-		/*
+-		 * This is only called when something went wrong elsewhere, so
+-		 * we don't really care about the data. Just disable the
+-		 * channel. We still have to poll the channel enable bit due
+-		 * to AHB/HSB limitations.
+-		 */
+-		spin_lock_irqsave(&atchan->lock, flags);
++static int atc_terminate_all(struct dma_chan *chan)
++{
++	struct at_dma_chan	*atchan = to_at_dma_chan(chan);
++	struct at_dma		*atdma = to_at_dma(chan->device);
++	int			chan_id = atchan->chan_common.chan_id;
++	struct at_desc		*desc, *_desc;
++	unsigned long		flags;
+ 
+-		/* disabling channel: must also remove suspend state */
+-		dma_writel(atdma, CHDR, AT_DMA_RES(chan_id) | atchan->mask);
++	LIST_HEAD(list);
+ 
+-		/* confirm that this channel is disabled */
+-		while (dma_readl(atdma, CHSR) & atchan->mask)
+-			cpu_relax();
++	dev_vdbg(chan2dev(chan), "%s\n", __func__);
+ 
+-		/* active_list entries will end up before queued entries */
+-		list_splice_init(&atchan->queue, &list);
+-		list_splice_init(&atchan->active_list, &list);
++	/*
++	 * This is only called when something went wrong elsewhere, so
++	 * we don't really care about the data. Just disable the
++	 * channel. We still have to poll the channel enable bit due
++	 * to AHB/HSB limitations.
++	 */
++	spin_lock_irqsave(&atchan->lock, flags);
+ 
+-		/* Flush all pending and queued descriptors */
+-		list_for_each_entry_safe(desc, _desc, &list, desc_node)
+-			atc_chain_complete(atchan, desc);
++	/* disabling channel: must also remove suspend state */
++	dma_writel(atdma, CHDR, AT_DMA_RES(chan_id) | atchan->mask);
+ 
+-		clear_bit(ATC_IS_PAUSED, &atchan->status);
+-		/* if channel dedicated to cyclic operations, free it */
+-		clear_bit(ATC_IS_CYCLIC, &atchan->status);
++	/* confirm that this channel is disabled */
++	while (dma_readl(atdma, CHSR) & atchan->mask)
++		cpu_relax();
+ 
+-		spin_unlock_irqrestore(&atchan->lock, flags);
+-	} else if (cmd == DMA_SLAVE_CONFIG) {
+-		return set_runtime_config(chan, (struct dma_slave_config *)arg);
+-	} else {
 -		return -ENXIO;
 -	}
--}
--
- static int bcm2835_dma_chan_init(struct bcm2835_dmadev *d, int chan_id, int irq)
- {
- 	struct bcm2835_chan *c;
-@@ -617,9 +602,9 @@ static int bcm2835_dma_probe(struct platform_device *pdev)
- 	od->ddev.device_free_chan_resources = bcm2835_dma_free_chan_resources;
- 	od->ddev.device_tx_status = bcm2835_dma_tx_status;
- 	od->ddev.device_issue_pending = bcm2835_dma_issue_pending;
--	od->ddev.device_slave_caps = bcm2835_dma_device_slave_caps;
- 	od->ddev.device_prep_dma_cyclic = bcm2835_dma_prep_dma_cyclic;
--	od->ddev.device_control = bcm2835_dma_control;
-+	od->ddev.device_config = bcm2835_dma_slave_config;
-+	od->ddev.device_terminate_all = bcm2835_dma_terminate_all;
- 	od->ddev.dev = &pdev->dev;
- 	INIT_LIST_HEAD(&od->ddev.channels);
- 	spin_lock_init(&od->lock);
++	/* active_list entries will end up before queued entries */
++	list_splice_init(&atchan->queue, &list);
++	list_splice_init(&atchan->active_list, &list);
++
++	/* Flush all pending and queued descriptors */
++	list_for_each_entry_safe(desc, _desc, &list, desc_node)
++		atc_chain_complete(atchan, desc);
++
++	clear_bit(ATC_IS_PAUSED, &atchan->status);
++	/* if channel dedicated to cyclic operations, free it */
++	clear_bit(ATC_IS_CYCLIC, &atchan->status);
++
++	spin_unlock_irqrestore(&atchan->lock, flags);
+ 
+ 	return 0;
+ }
+@@ -1505,7 +1527,10 @@ static int __init at_dma_probe(struct platform_device *pdev)
+ 		/* controller can do slave DMA: can trigger cyclic transfers */
+ 		dma_cap_set(DMA_CYCLIC, atdma->dma_common.cap_mask);
+ 		atdma->dma_common.device_prep_dma_cyclic = atc_prep_dma_cyclic;
+-		atdma->dma_common.device_control = atc_control;
++		atdma->dma_common.device_config = atc_config;
++		atdma->dma_common.device_pause = atc_pause;
++		atdma->dma_common.device_resume = atc_resume;
++		atdma->dma_common.device_terminate_all = atc_terminate_all;
+ 	}
+ 
+ 	dma_writel(atdma, EN, AT_DMA_ENABLE);
+@@ -1622,7 +1647,7 @@ static void atc_suspend_cyclic(struct at_dma_chan *atchan)
+ 	if (!atc_chan_is_paused(atchan)) {
+ 		dev_warn(chan2dev(chan),
+ 		"cyclic channel not paused, should be done by channel user\n");
+-		atc_control(chan, DMA_PAUSE, 0);
++		atc_pause(chan);
+ 	}
+ 
+ 	/* now preserve additional data for cyclic operations */
 -- 
 2.1.1
 
