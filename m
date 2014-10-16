@@ -1,105 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721AbaJPXAh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 19:00:37 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:61828 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106AbaJPXAf (ORCPT
+	id S1752641AbaJPXNb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 19:13:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49594 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765AbaJPXN3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 19:00:35 -0400
-Date: Thu, 16 Oct 2014 16:00:30 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [git pull] Input updates for 3.18-rc0 (part 2)
-Message-ID: <20141016230030.GD30009@dtor-ws>
+	Thu, 16 Oct 2014 19:13:29 -0400
+Date: Fri, 17 Oct 2014 01:12:21 +0200
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
+        Linux API <linux-api@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Anup Patel <anup.patel@linaro.org>
+Subject: Re: [PATCH] staging: android: binder: move to the "real" part of the
+ kernel
+Message-ID: <20141016231221.GA13592@kroah.com>
+References: <20141016124741.GA3832@kroah.com>
+ <CALAqxLU05D8qQA47E77PiuuN7eVt66WEq1qn+PqdE-tpEUzFpw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CALAqxLU05D8qQA47E77PiuuN7eVt66WEq1qn+PqdE-tpEUzFpw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, Oct 16, 2014 at 10:09:04AM -0700, John Stultz wrote:
+> On Thu, Oct 16, 2014 at 5:47 AM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >
+> > The Android binder code has been "stable" for many years now.  No matter
+> 
+> Well, ignoring the ABI break that landed in the last year. :)
 
-Please pull from:
+As no one noticed, it wasn't a "break" :)
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
-or
-	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+> > This was discussed in the Android miniconf at the Plumbers conference.
+> > If anyone has any objections to this, please let me know, otherwise I'm
+> > queueing this up for 3.19-rc1
+> 
+> So my main concerns/thoughts here are:
+> 
+> Who is going to maintain this? Has Arve agreed?
 
-to receive 2nd round of updates for the input subsystem. Mostly simple
-bug fixes, although we do have one brand new driver for Microchip AR1021
-i2c touchscreen. Also there is change to stop trying to use i8042 active
-multiplexing by default (it is still possible to activate it via
-i8042.nomux=0 on boxes that implement it).
+Do we really need someone to do more work that has been done on it in
+the past as an official "maintainer"?  I'll be glad to do it, as I doubt
+it will require any time at all.
 
-Changelog:
----------
+> Are the Android guys comfortable with the ABI stability rules they'll
+> now face?
 
-Andreas Bosch (1):
-      Input: alps - fix v4 button press recognition
+Just because something is in staging, doesn't mean you don't have to
+follow the same ABI stability rules as the rest of the kernel.  If a
+change had happened to this code that broke userspace in the past, I
+would have reverted it.  So this should not be anything different from
+what has been happening inthe past.
 
-Chang Huaixin (1):
-      Input: xen-kbdfront - free grant table entry in xenkbd_disconnect_backend
+And the Android developers said they were happy to see this code move
+into the "real" part of the kernel.
 
-Christian Gmeiner (1):
-      Input: Add Microchip AR1021 i2c touchscreen
+> Currently in the android space no one but libbinder should use the
+> kernel interface.
 
-Dmitry Torokhov (4):
-      Input: evdev - fix EVIOCG{type} ioctl
-      Input: automatically set EV_ABS bit in input_set_abs_params
-      Input: synaptics - gate forcepad support by DMI check
-      Input: i8042 - disable active multiplexing by default
+That is correct.  If you do that, you deserve all of the pain and
+suffering and rooted machines you will get.
 
-Hans de Goede (1):
-      Input: i8042 - add noloop quirk for Asus X750LN
+> Can we enforce that no one use this interface out-side of android (To
+> ensure its one of those "if the abi breaks and no one notices..." edge
+> cases)?
 
-Jaewon Kim (1):
-      Input: max77693-haptic - fix state check in imax77693_haptic_disable()
+This is the kernel, we can not dictate "use", that's the good part of
+the GPLv2 :)
 
-Pramod Gurav (2):
-      Input: opencores-kbd - switch to using managed resources
-      Input: adp5588-keys - cancel workqueue in failure path
+Again, as no one has done this before, I strongly doubt it will happen
+in the future.
 
-Richard Leitner (2):
-      Input: avoid negative input device numbers
-      Input: serio - avoid negative serio device numbers
+> I'm still hopeful that a libbinder over kdbus will eventually pan out.
+> I still see having two core IPC mechanisms (even if the use cases are
+> different in style) as a negative, and I worry this might reduce
+> motivation to unify things at the lower level. Granted, such work can
+> still continue, but the incentives do change.
 
-Sjoerd Simons (1):
-      Input: cros_ec_keyb - add of match table
+Yes, things are going to change in the future, there is work happening
+here, and there was a presentation at Plumbers about what is going to be
+coming.
 
-Tommi Rantala (2):
-      Input: xpad - add USB ID for Thrustmaster Ferrari 458 Racing Wheel
-      Input: xpad - add Thrustmaster as Xbox 360 controller vendor
+But all of the changes will be in new code.  Be it kdbus, or something
+else if that doesn't work out.  This existing binder.c file will not be
+changing at all.  This existing ABI, and codebase, is something that we
+have to maintain forever for those millions of devices out there in the
+real world today.  So as there really is nothing left to do on it, it
+deserves to be in the main part of the kernel source tree.
 
+thanks,
 
-Diffstat:
---------
-
- Documentation/kernel-parameters.txt    |   2 +-
- drivers/input/evdev.c                  |  13 +-
- drivers/input/input.c                  |   5 +-
- drivers/input/joystick/xpad.c          |   2 +
- drivers/input/keyboard/adp5588-keys.c  |   1 +
- drivers/input/keyboard/cros_ec_keyb.c  |   9 ++
- drivers/input/keyboard/opencores-kbd.c |  72 ++-------
- drivers/input/misc/max77693-haptic.c   |   2 +-
- drivers/input/misc/xen-kbdfront.c      |   4 +-
- drivers/input/mouse/alps.c             |   4 +-
- drivers/input/mouse/synaptics.c        |  22 ++-
- drivers/input/mouse/synaptics.h        |   8 +-
- drivers/input/serio/i8042-x86ia64io.h  | 287 ++-------------------------------
- drivers/input/serio/i8042.c            |   2 +-
- drivers/input/serio/serio.c            |   4 +-
- drivers/input/touchscreen/Kconfig      |  12 ++
- drivers/input/touchscreen/Makefile     |   1 +
- drivers/input/touchscreen/ar1021_i2c.c | 181 +++++++++++++++++++++
- 18 files changed, 280 insertions(+), 351 deletions(-)
- create mode 100644 drivers/input/touchscreen/ar1021_i2c.c
-
--- 
-Dmitry
-
+greg k-h
