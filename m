@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752225AbaJPQuI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 12:50:08 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:34992 "EHLO
+	id S1752275AbaJPQuM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 12:50:12 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:35000 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751449AbaJPQuF (ORCPT
+	with ESMTP id S1752207AbaJPQuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 12:50:05 -0400
+	Thu, 16 Oct 2014 12:50:08 -0400
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 To: Mark Brown <broonie@kernel.org>
 Cc: Lee Jones <lee.jones@linaro.org>, Doug Anderson <dianders@chromium.org>,
@@ -17,9 +17,9 @@ Cc: Lee Jones <lee.jones@linaro.org>, Doug Anderson <dianders@chromium.org>,
         linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v2 5/7] regulator: max77802: Document regulator opmode DT properties
-Date: Thu, 16 Oct 2014 18:48:51 +0200
-Message-Id: <1413478133-2577-6-git-send-email-javier.martinez@collabora.co.uk>
+Subject: [PATCH v2 6/7] regulator: max77802: Parse regulator operating mode properties
+Date: Thu, 16 Oct 2014 18:48:52 +0200
+Message-Id: <1413478133-2577-7-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1413478133-2577-1-git-send-email-javier.martinez@collabora.co.uk>
 References: <1413478133-2577-1-git-send-email-javier.martinez@collabora.co.uk>
@@ -27,91 +27,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some regulators from the max77802 PMIC support to be configured in one
-of two operating mode: Output ON (normal) and Output On Low Power Mode.
-Not all regulators support these two modes and for some of them, the
-mode can be changed while the system is running in normal operation
-while others only support their mode to be changed on system suspend.
+The max77802 PMIC regulators output can be configured in one of two
+modes: Output ON (normal) and Output ON in Low Power Mode. Some of
+the regulators support their operating mode to be changed on startup
+or by consumers when the system is running while others only support
+their operating mode to be changed while the system has entered in a
+suspend state.
 
-Extend the max77802 PMIC binding adding Device Tree properties so the
-regulators operating modes can be configured.
+The max77802 PMIC Device Tree binding document a set of properties to
+configure the regulators operating modes from a FDT. This patch parse
+those properties and fills the regulator constraints so the regulator
+core can call the suspend handlers when the system enters into sleep.
 
 Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 ---
 
-Changes since v1: None
+Changes since v1:
+ - Use the static inline max77802_map_mode() function instead of a macro.
+   Suggested by Mark Brown.
 
- .../devicetree/bindings/regulator/max77802.txt     | 45 ++++++++++++++++++++++
- 1 file changed, 45 insertions(+)
+ drivers/regulator/max77802.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/regulator/max77802.txt b/Documentation/devicetree/bindings/regulator/max77802.txt
-index 5aeaffc..34812e0 100644
---- a/Documentation/devicetree/bindings/regulator/max77802.txt
-+++ b/Documentation/devicetree/bindings/regulator/max77802.txt
-@@ -25,6 +25,39 @@ with their hardware counterparts as follow. The valid names are:
- 			example: LDO1, LDO2, LDO35.
- 	-BUCKn 	:	for BUCKs, where n can lie in range 1 to 10.
- 			example: BUCK1, BUCK5, BUCK10.
-+
-+Besides the standard regulator constraints, the max77802 regulator supports
-+two different operating modes: Normal and Low Power Mode. Some regulators
-+support the modes to be changed at startup or by the consumers during normal
-+operation while others only support to change the mode during system suspend.
-+The following optional properties can be used to configure the operating modes:
-+
-+- maxim,regulator-initial-mode: initial operating mode.
-+  This property can only be used on regulators that support changing their mode
-+  during normal operation. These regulators are LDO1, LDO3, LDO20 and LDO21.
-+- maxim,regulator-disk-mode: operating mode for the regulator when the system
-+  enters in the Suspend-to-Disk state.
-+- maxim,regulator-mem-mode: operating mode for the regulator when the system
-+  enters in the Suspend-to-RAM state.
-+
-+The value for maxim,regulator-[initial,disk,mem]-mode is one of the following:
-+	1: Normal regulator voltage output mode.
-+	3: Low Power which reduces the quiescent current down to only 1uA
-+
-+The list of valid modes are defined in the dt-bindings/regulator/regulator.h
-+header and can be included by device tree source files. If no mode is defined,
-+then the OS will not manage the modes and the HW default values will be used.
-+
-+The maxim,regulator-[initial,disk,mem]-mode properties can only be used with
-+regulators that support changing their mode to Low Power Mode during suspend.
-+These regulators are BUCKs 2-4 and LDOs 1-35.
-+
-+The maxim,regulator-[disk,mem]-mode property only takes effect if the regulator
-+has been marked as enabled for the given suspend mode using the standard
-+"regulator-on-in-suspend" property. If the regulator has not been explicitly
-+enabled or if it was marked as disabled with "regulator-off-in-suspend", then
-+setting the operating mode for that state will have no effect.
-+
- Example:
+diff --git a/drivers/regulator/max77802.c b/drivers/regulator/max77802.c
+index 5839c45..e2fbd45 100644
+--- a/drivers/regulator/max77802.c
++++ b/drivers/regulator/max77802.c
+@@ -518,6 +518,22 @@ static struct regulator_desc regulators[] = {
+ };
  
- 	max77802@09 {
-@@ -36,11 +69,23 @@ Example:
- 		#size-cells = <0>;
- 
- 		regulators {
-+			ldo1_reg: LDO1 {
-+				regulator-name = "vdd_1v0";
-+				regulator-min-microvolt = <1000000>;
-+				regulator-max-microvolt = <1000000>;
-+				regulator-always-on;
-+				maxim,regulator-initial-mode = <MAX77802_OPMODE_LP>;
-+			};
+ #ifdef CONFIG_OF
 +
- 			ldo11_reg: LDO11 {
- 				regulator-name = "vdd_ldo11";
- 				regulator-min-microvolt = <1900000>;
- 				regulator-max-microvolt = <1900000>;
- 				regulator-always-on;
-+				maxim,regulator-mem-mode = <MAX77802_OPMODE_LP>;
-+				regulator-state-mem {
-+					regulator-on-in-suspend;
-+				};
- 			};
++static void max77802_parse_opmodes(struct device_node *np,
++				   struct regulation_constraints *cons)
++{
++	u32 pval;
++
++	if (!of_property_read_u32(np, "maxim,regulator-initial-mode", &pval))
++		cons->initial_mode = max77802_map_mode(pval);
++
++	if (!of_property_read_u32(np, "maxim,regulator-disk-mode", &pval))
++		cons->state_disk.mode = max77802_map_mode(pval);
++
++	if (!of_property_read_u32(np, "maxim,regulator-mem-mode", &pval))
++		cons->state_mem.mode = max77802_map_mode(pval);
++}
++
+ static int max77802_pmic_dt_parse_pdata(struct platform_device *pdev,
+ 					struct max77686_platform_data *pdata)
+ {
+@@ -555,6 +571,8 @@ static int max77802_pmic_dt_parse_pdata(struct platform_device *pdev,
+ 		rdata[i].initdata = rmatch.init_data;
+ 		rdata[i].of_node = rmatch.of_node;
+ 		rdata[i].id = regulators[i].id;
++		max77802_parse_opmodes(rdata[i].of_node,
++				       &rdata[i].initdata->constraints);
+ 	}
  
- 			buck1_reg: BUCK1 {
+ 	pdata->regulators = rdata;
 -- 
 2.1.0
 
