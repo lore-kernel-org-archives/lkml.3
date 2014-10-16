@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752217AbaJPRMI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 13:12:08 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:49101 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752148AbaJPRMF (ORCPT
+	id S1752375AbaJPRMQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 13:12:16 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:53376 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752308AbaJPRMM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 13:12:05 -0400
+	Thu, 16 Oct 2014 13:12:12 -0400
 From: Soren Brinkmann <soren.brinkmann@xilinx.com>
 To: Linus Walleij <linus.walleij@linaro.org>
 Cc: =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
         Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         Steffen Trumtrar <s.trumtrar@pengutronix.de>
-Subject: [PATCH RFC v2 2/8] pinctrl: pinconf-generic: Add flag to print arguments
-Date: Thu, 16 Oct 2014 10:11:29 -0700
-Message-Id: <1413479495-14206-3-git-send-email-soren.brinkmann@xilinx.com>
+Subject: [PATCH RFC v2 5/8] pinctrl: zynq: Support low power mode property
+Date: Thu, 16 Oct 2014 10:11:32 -0700
+Message-Id: <1413479495-14206-6-git-send-email-soren.brinkmann@xilinx.com>
 X-Mailer: git-send-email 2.1.2.1.g5e69ed6
 In-Reply-To: <1413479495-14206-1-git-send-email-soren.brinkmann@xilinx.com>
 References: <1413479495-14206-1-git-send-email-soren.brinkmann@xilinx.com>
@@ -23,114 +23,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When dumping pinconf information in debugfs, config arguments are only
-printed when a unit is present and the argument is != 0. For parameters
-like the slew rate, this does not work. The slew rate uses a driver
-specific format for the argument, i.e. 0 can be a valid argument and a
-unit is not provided for it.
-For that reason, add a flag to enable printing the argument instead of
-inferring it from the presence of a unit and the value of the argument.
+ - for HSTL type pins, allow setting the low power mode property
 
 Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 ---
- drivers/pinctrl/pinconf-generic.c | 65 ++++++++++++++++++++++-----------------
- 1 file changed, 37 insertions(+), 28 deletions(-)
+ drivers/pinctrl/pinctrl-zynq.c | 33 ++++++++++++++++++++++++++++-----
+ 1 file changed, 28 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/pinctrl/pinconf-generic.c b/drivers/pinctrl/pinconf-generic.c
-index 29ff77f90fcb..e28ef957ca2d 100644
---- a/drivers/pinctrl/pinconf-generic.c
-+++ b/drivers/pinctrl/pinconf-generic.c
-@@ -32,30 +32,32 @@ struct pin_config_item {
- 	const enum pin_config_param param;
- 	const char * const display;
- 	const char * const format;
-+	bool has_arg;
+diff --git a/drivers/pinctrl/pinctrl-zynq.c b/drivers/pinctrl/pinctrl-zynq.c
+index f3fce76c8390..0136bddbb4be 100644
+--- a/drivers/pinctrl/pinctrl-zynq.c
++++ b/drivers/pinctrl/pinctrl-zynq.c
+@@ -879,9 +879,10 @@ static const struct pinmux_ops zynq_pinmux_ops = {
  };
  
--#define PCONFDUMP(a, b, c) { .param = a, .display = b, .format = c }
-+#define PCONFDUMP(a, b, c, d) { .param = a, .display = b, .format = c, \
-+				.has_arg = d }
+ /* pinconfig */
+-#define ZYNQ_PINCONF_TRISTATE	BIT(0)
+-#define ZYNQ_PINCONF_SPEED	BIT(8)
+-#define ZYNQ_PINCONF_PULLUP	BIT(12)
++#define ZYNQ_PINCONF_TRISTATE		BIT(0)
++#define ZYNQ_PINCONF_SPEED		BIT(8)
++#define ZYNQ_PINCONF_PULLUP		BIT(12)
++#define ZYNQ_PINCONF_DISABLE_RECVR	BIT(13)
  
- static struct pin_config_item conf_items[] = {
--	PCONFDUMP(PIN_CONFIG_BIAS_DISABLE, "input bias disabled", NULL),
--	PCONFDUMP(PIN_CONFIG_BIAS_HIGH_IMPEDANCE, "input bias high impedance", NULL),
--	PCONFDUMP(PIN_CONFIG_BIAS_BUS_HOLD, "input bias bus hold", NULL),
--	PCONFDUMP(PIN_CONFIG_BIAS_PULL_UP, "input bias pull up", NULL),
--	PCONFDUMP(PIN_CONFIG_BIAS_PULL_DOWN, "input bias pull down", NULL),
-+	PCONFDUMP(PIN_CONFIG_BIAS_DISABLE, "input bias disabled", NULL, false),
-+	PCONFDUMP(PIN_CONFIG_BIAS_HIGH_IMPEDANCE, "input bias high impedance", NULL, false),
-+	PCONFDUMP(PIN_CONFIG_BIAS_BUS_HOLD, "input bias bus hold", NULL, false),
-+	PCONFDUMP(PIN_CONFIG_BIAS_PULL_UP, "input bias pull up", NULL, false),
-+	PCONFDUMP(PIN_CONFIG_BIAS_PULL_DOWN, "input bias pull down", NULL, false),
- 	PCONFDUMP(PIN_CONFIG_BIAS_PULL_PIN_DEFAULT,
--				"input bias pull to pin specific state", NULL),
--	PCONFDUMP(PIN_CONFIG_DRIVE_PUSH_PULL, "output drive push pull", NULL),
--	PCONFDUMP(PIN_CONFIG_DRIVE_OPEN_DRAIN, "output drive open drain", NULL),
--	PCONFDUMP(PIN_CONFIG_DRIVE_OPEN_SOURCE, "output drive open source", NULL),
--	PCONFDUMP(PIN_CONFIG_DRIVE_STRENGTH, "output drive strength", "mA"),
--	PCONFDUMP(PIN_CONFIG_INPUT_ENABLE, "input enabled", NULL),
--	PCONFDUMP(PIN_CONFIG_INPUT_SCHMITT_ENABLE, "input schmitt enabled", NULL),
--	PCONFDUMP(PIN_CONFIG_INPUT_SCHMITT, "input schmitt trigger", NULL),
--	PCONFDUMP(PIN_CONFIG_INPUT_DEBOUNCE, "input debounce", "usec"),
--	PCONFDUMP(PIN_CONFIG_POWER_SOURCE, "pin power source", "selector"),
--	PCONFDUMP(PIN_CONFIG_SLEW_RATE, "slew rate", NULL),
--	PCONFDUMP(PIN_CONFIG_LOW_POWER_MODE, "pin low power", "mode"),
--	PCONFDUMP(PIN_CONFIG_OUTPUT, "pin output", "level"),
-+				"input bias pull to pin specific state", NULL, false),
-+	PCONFDUMP(PIN_CONFIG_DRIVE_PUSH_PULL, "output drive push pull", NULL, false),
-+	PCONFDUMP(PIN_CONFIG_DRIVE_OPEN_DRAIN, "output drive open drain", NULL, false),
-+	PCONFDUMP(PIN_CONFIG_DRIVE_OPEN_SOURCE, "output drive open source", NULL, false),
-+	PCONFDUMP(PIN_CONFIG_DRIVE_STRENGTH, "output drive strength", "mA", true),
-+	PCONFDUMP(PIN_CONFIG_INPUT_ENABLE, "input enabled", NULL, false),
-+	PCONFDUMP(PIN_CONFIG_INPUT_SCHMITT_ENABLE, "input schmitt enabled", NULL, false),
-+	PCONFDUMP(PIN_CONFIG_INPUT_SCHMITT, "input schmitt trigger", NULL, false),
-+	PCONFDUMP(PIN_CONFIG_INPUT_DEBOUNCE, "input debounce", "usec", true),
-+	PCONFDUMP(PIN_CONFIG_POWER_SOURCE, "pin power source", "selector", true),
-+	PCONFDUMP(PIN_CONFIG_SLEW_RATE, "slew rate", NULL, true),
-+	PCONFDUMP(PIN_CONFIG_LOW_POWER_MODE, "pin low power", "mode", true),
-+	PCONFDUMP(PIN_CONFIG_OUTPUT, "pin output", "level", true),
+ #define ZYNQ_PINCONF_IOTYPE_SHIFT	9
+ #define ZYNQ_PINCONF_IOTYPE_MASK	(7 << ZYNQ_PINCONF_IOTYPE_SHIFT)
+@@ -895,6 +896,11 @@ enum zynq_io_standards {
+ 	zynq_iostd_max
  };
  
- void pinconf_generic_dump_pin(struct pinctrl_dev *pctldev,
-@@ -85,11 +87,14 @@ void pinconf_generic_dump_pin(struct pinctrl_dev *pctldev,
- 		seq_puts(s, " ");
- 		seq_puts(s, conf_items[i].display);
- 		/* Print unit if available */
--		if (conf_items[i].format &&
--		    pinconf_to_config_argument(config) != 0)
--			seq_printf(s, " (%u %s)",
--				   pinconf_to_config_argument(config),
--				   conf_items[i].format);
-+		if (conf_items[i].has_arg) {
-+			seq_printf(s, " (%u",
-+				   pinconf_to_config_argument(config));
-+			if (conf_items[i].format)
-+				seq_printf(s, " %s)", conf_items[i].format);
++static unsigned int zynq_pinconf_iostd_get(u32 reg)
++{
++	return (reg & ZYNQ_PINCONF_IOTYPE_MASK) >> ZYNQ_PINCONF_IOTYPE_SHIFT;
++}
++
+ static int zynq_pinconf_cfg_get(struct pinctrl_dev *pctldev,
+ 				unsigned pin,
+ 				unsigned long *config)
+@@ -930,9 +936,19 @@ static int zynq_pinconf_cfg_get(struct pinctrl_dev *pctldev,
+ 	case PIN_CONFIG_SLEW_RATE:
+ 		arg = !!(reg & ZYNQ_PINCONF_SPEED);
+ 		break;
++	case PIN_CONFIG_LOW_POWER_MODE:
++	{
++		enum zynq_io_standards iostd = zynq_pinconf_iostd_get(reg);
++
++		if (iostd != zynq_iostd_hstl)
++			return -EINVAL;
++		if (!(reg & ZYNQ_PINCONF_DISABLE_RECVR))
++			return -EINVAL;
++		arg = !!(reg & ZYNQ_PINCONF_DISABLE_RECVR);
++		break;
++	}
+ 	case PIN_CONFIG_IOSTANDARD:
+-		arg = reg & ZYNQ_PINCONF_IOTYPE_MASK;
+-		arg >>= ZYNQ_PINCONF_IOTYPE_SHIFT;
++		arg = zynq_pinconf_iostd_get(reg);
+ 		break;
+ 	default:
+ 		return -ENOTSUPP;
+@@ -994,6 +1010,13 @@ static int zynq_pinconf_cfg_set(struct pinctrl_dev *pctldev,
+ 			}
+ 			reg |= arg << ZYNQ_PINCONF_IOTYPE_SHIFT;
+ 			break;
++		case PIN_CONFIG_LOW_POWER_MODE:
++			if (arg)
++				reg |= ZYNQ_PINCONF_DISABLE_RECVR;
 +			else
-+				seq_puts(s, ")");
-+		}
- 	}
- }
- 
-@@ -121,10 +126,14 @@ void pinconf_generic_dump_group(struct pinctrl_dev *pctldev,
- 		seq_puts(s, " ");
- 		seq_puts(s, conf_items[i].display);
- 		/* Print unit if available */
--		if (conf_items[i].format && config != 0)
--			seq_printf(s, " (%u %s)",
--				   pinconf_to_config_argument(config),
--				   conf_items[i].format);
-+		if (conf_items[i].has_arg) {
-+			seq_printf(s, " (%u",
-+				   pinconf_to_config_argument(config));
-+			if (conf_items[i].format)
-+				seq_printf(s, " %s)", conf_items[i].format);
-+			else
-+				seq_puts(s, ")");
-+		}
- 	}
- }
- 
++				reg &= ~ZYNQ_PINCONF_DISABLE_RECVR;
++
++			break;
+ 		default:
+ 			dev_warn(pctldev->dev,
+ 				 "unsupported configuration parameter '%u'\n",
 -- 
 2.1.2.1.g5e69ed6
 
