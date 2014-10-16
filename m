@@ -1,56 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386AbaJPRs2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 13:48:28 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:61328 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751864AbaJPRs0 (ORCPT
+	id S1752631AbaJPRsi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 13:48:38 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:39758 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752585AbaJPRsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 13:48:26 -0400
-Message-ID: <1413481705.28798.32.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: Regarding tx-nocache-copy in the Sheevaplug
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Benjamin Poirier <benjamin.poirier@gmail.com>
-Cc: =?ISO-8859-1?Q?Llu=EDs?= Batlle i Rossell <viric@viric.name>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Carles =?ISO-8859-1?Q?Pag=E8s?= <page@cubata.homelinux.net>,
-        linux-arm-kernel@lists.infradead.org
-Date: Thu, 16 Oct 2014 10:48:25 -0700
-In-Reply-To: <20141016173401.GA16515@f1.synalogic.ca>
-References: <20141013105246.GD1972@vicerveza.homeunix.net>
-	 <20141015215701.GA4109@f1.synalogic.ca>
-	 <1413413127.17186.5.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20141016173401.GA16515@f1.synalogic.ca>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Oct 2014 13:48:35 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18/6+6/+yHcdSiuNBpQcR71T4dJPudsUzE=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 9D26760088F
+Date: Thu, 16 Oct 2014 13:48:23 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Joe Perches <joe@perches.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>, Torsten Duwe <duwe@lst.de>,
+        "Theodore Ts'o" <tytso@mit.edu>, Amit Shah <amit.shah@redhat.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Kees Cook <keescook@chromium.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3v] char: hw_random: core.c:  Changed from using
+ strncat to strlcat
+Message-ID: <20141016174823.GM17447@titan.lakedaemon.net>
+References: <1413479722-29247-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <1413480303.6702.7.camel@perches.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413480303.6702.7.camel@perches.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-10-16 at 10:34 -0700, Benjamin Poirier wrote:
-> On 2014/10/15 15:45, Eric Dumazet wrote:
-
-> >  kmap_atomic()/kunmap_atomic() is missing, so we lack
-> > __cpuc_flush_dcache_area() operations.
-> > 
+On Thu, Oct 16, 2014 at 10:25:03AM -0700, Joe Perches wrote:
+> On Thu, 2014-10-16 at 19:15 +0200, Rickard Strandqvist wrote:
+> > The buf is used to hold the list of hwrng devices registered.
+> > The old code ensures we don't walk off the end of buf as we
+> > fill it, but it's unnecessarily complicated and thus difficult
+> > to maintain. Simplify it by using strlcat.
+> > We also ensure the string within buf is NULL terminated
+> > so the final strlen is ok.
+> []
+> > diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
+> []
+> > @@ -289,16 +288,13 @@ static ssize_t hwrng_attr_available_show(struct device *dev,
+> >  		return -ERESTARTSYS;
+> >  	buf[0] = '\0';
+> >  	list_for_each_entry(rng, &rng_list, list) {
+> > -		strncat(buf, rng->name, PAGE_SIZE - ret - 1);
+> > -		ret += strlen(rng->name);
+> > -		strncat(buf, " ", PAGE_SIZE - ret - 1);
+> > -		ret++;
+> > +		strlcat(buf, rng->name, PAGE_SIZE);
+> > +		strlcat(buf, " ", PAGE_SIZE);
+> >  	}
+> > -	strncat(buf, "\n", PAGE_SIZE - ret - 1);
+> > -	ret++;
+> > +	strlcat(buf, "\n", PAGE_SIZE);
+> >  	mutex_unlock(&rng_mutex);
+> >  
+> > -	return ret;
+> > +	return strlen(buf);
+> >  }
+> >  
+> >  static DEVICE_ATTR(rng_current, S_IRUGO | S_IWUSR,
 > 
-> You lost me there.
-> 1) I don't see the link
-> 2) It seems kmap_atomic and so on are there:
-> $ grep kmap_atomic System.map-3.16-2-kirkwood
-> c0014838 T kmap_atomic
-> c001491c T kmap_atomic_pfn
-> c00149a4 T kmap_atomic_to_page
-> 
-> MACH_KIRKWOOD selects CPU_FEROCEON which has
-> __cpuc_flush_dcache_area ->
-> 	cpu_cache.flush_kern_dcache_area ->
-> 		feroceon_flush_kern_dcache_area
+> Rickard, can you please use some optimizations here
+> (and elsewhere) so that strlcat doesn't always have
+> to strlen the first string and the return doesn't
+> have to do the strlen too?
 
-I meant to put a '?' instead of a '.'
+Joe, is further optimization worth the effort?  This function is only
+called when the end user reads the sysfs file rng_available...
 
-Note that tcp does a copy, using :
+thx,
 
-
+Jason.
