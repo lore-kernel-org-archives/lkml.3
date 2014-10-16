@@ -1,84 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751821AbaJPJv6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 05:51:58 -0400
-Received: from relay.parallels.com ([195.214.232.42]:41476 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241AbaJPJv5 (ORCPT
+	id S1751769AbaJPJwo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 05:52:44 -0400
+Received: from mail-oi0-f42.google.com ([209.85.218.42]:41906 "EHLO
+	mail-oi0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750947AbaJPJwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 05:51:57 -0400
-Message-ID: <1413453115.24793.73.camel@tkhai>
-Subject: Re: [PATCH RFC] sched: Revert delayed_put_task_struct() and fix use
- after free
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Kirill Tkhai <tkhai@yandex.ru>, Oleg Nesterov <oleg@redhat.com>,
-        <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        "Vladimir Davydov" <vdavydov@parallels.com>
-Date: Thu, 16 Oct 2014 13:51:55 +0400
-In-Reply-To: <1413453002.24793.72.camel@tkhai>
-References: <1413376300.24793.55.camel@tkhai>
-	 <20141015150641.GA2755@redhat.com> <20141015194044.GA4557@redhat.com>
-	 <543EEB1F.3040900@yandex.ru> <20141016075950.GC7369@worktop.fdxtended.com>
-	 <1413447404.24793.67.camel@tkhai>
-	 <20141016094333.GJ7369@worktop.fdxtended.com>
-	 <1413453002.24793.72.camel@tkhai>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
+	Thu, 16 Oct 2014 05:52:43 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.26.172]
+In-Reply-To: <CAJhJPsVV74gVEMpMZfBcnm-=sHivpPZGY==tzT-rXsv82B0Scg@mail.gmail.com>
+References: <CAJhJPsVV74gVEMpMZfBcnm-=sHivpPZGY==tzT-rXsv82B0Scg@mail.gmail.com>
+Date: Thu, 16 Oct 2014 15:22:42 +0530
+Message-ID: <CAKohpomFP5=eO7hFJyXQqM6_jOGT9gY+f3g3qqKgYwg5rgh3Ag@mail.gmail.com>
+Subject: Re: [PATCH 6/6] cpufreq: Loongson1: Add cpufreq driver for Loongson1B (UPDATED)
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Kelvin Cheung <keguang.zhang@gmail.com>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-mips@linux-mips.org,
+        Ralf Baechle <ralf@linux-mips.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-В Чт, 16/10/2014 в 13:50 +0400, Kirill Tkhai пишет:
-> В Чт, 16/10/2014 в 11:43 +0200, Peter Zijlstra пишет:
-> > On Thu, Oct 16, 2014 at 12:16:44PM +0400, Kirill Tkhai wrote:
-> > > В Чт, 16/10/2014 в 09:59 +0200, Peter Zijlstra пишет:
-> > > > On Thu, Oct 16, 2014 at 01:46:07AM +0400, Kirill Tkhai wrote:
-> > > > > > --- x/kernel/sched/fair.c
-> > > > > > +++ x/kernel/sched/fair.c
-> > > > > > @@ -1165,7 +1165,7 @@ static void task_numa_compare(struct tas
-> > > > > >  
-> > > > > >  	rcu_read_lock();
-> > > > > >  	cur = ACCESS_ONCE(dst_rq->curr);
-> > > > > > -	if (cur->pid == 0) /* idle */
-> > > > > > +	if (is_idle_task(cur) || (curr->flags & PF_EXITING))
-> > > > > >  		cur = NULL;
-> > > > > >  
-> > > > > >  	/*
-> > > > > > 
-> > > > > 
-> > > > > Looks like, we have to use the same fix for task_numa_group().
-> > > > 
-> > > > Don't think so, task_numa_group() is only called from task_numa_fault()
-> > > > which is on 'current' and neither idle and PF_EXITING should be
-> > > > faulting.
-> > > 
-> > > Isn't task_numa_group() fully preemptible?
-> > 
-> > Not seeing how that is relevant.
-> > 
-> > > It seems cpu_rq(cpu)->curr is not always equal to p.
-> > 
-> > It should be afaict:
-> > 
-> >  task_numa_fault()
-> >   p = current;
-> > 
-> >   task_numa_group(p, ..);
-> > 
-> > And like said, idle tasks and PF_EXITING task should never get (numa)
-> > faults for they should never be touching userspace.
-> 
-> I mean p can be moved to other cpu.
-> 
-> tsk = ACCESS_ONCE(cpu_rq(cpu)->curr);
-> 
-> tsk is not p, (i.e current) here.
+On 16 October 2014 15:00, Kelvin Cheung <keguang.zhang@gmail.com> wrote:
 
-Maybe I undestand wrong and preemption is disabled in memory fault?
+Just to let u know, your mails are probably generated in html whereas they
+should be in text mode.
 
+> 2014-10-16 16:23 GMT+08:00 Viresh Kumar <viresh.kumar@linaro.org>:
+>>
+>> This is not how we send updated versions, GIT and other tools will commit
+>> the "(UPDATED)" part while applying. What you were required to do was
+>> something like:
+>>
+>> git format-patch A..B --subject-prefix="PATCH V2"
+>
+>
+> I use 'updated' because only one patch in the patch set need to be updated.
+> If you insist, I will regenerate this patch.
 
+Even in that case you can do what I was saying. No, you don't need to resend
+for that reason now. :)
+
+>> On 15 October 2014 12:53, Kelvin Cheung <keguang.zhang@gmail.com> wrote:
+>> > +static int ls1x_cpufreq_remove(struct platform_device *pdev)
+>> > +{
+>> > +       cpufreq_unregister_notifier(&ls1x_cpufreq_notifier_block,
+>> > +                                   CPUFREQ_TRANSITION_NOTIFIER);
+>> > +       cpufreq_unregister_driver(&ls1x_cpufreq_driver);
+>> > +       clk_put(ls1x_cpufreq.osc_clk);
+>> > +       clk_put(ls1x_cpufreq.clk);
+>> > +
+>> > +       return 0;
+>> > +}
+>> > +
+>> > +static int ls1x_cpufreq_probe(struct platform_device *pdev)
+>> > +{
+>> > +       struct plat_ls1x_cpufreq *pdata = pdev->dev.platform_data;
+>> > +       struct clk *clk;
+>> > +       int ret;
+>> > +
+>> > +       if (!pdata)
+>> > +               return -EINVAL;
+>> > +       if (!pdata->clk_name)
+>> > +               return -EINVAL;
+>> > +       if (!pdata->osc_clk_name)
+>> > +               return -EINVAL;
+>>
+>> I didn't wanted you to do this, You could have done this:
+>>
+>>        if (!pdata || !pdata->clk_name || !pdata->osc_clk_name)
+>>                return -EINVAL;
+>>
+>> So, just a || instead of && :)
+>>
+>> > +
+>> > +       ls1x_cpufreq.dev = &pdev->dev;
+>> > +
+>> > +       clk = clk_get(NULL, pdata->clk_name);
+>>
+>> I believe we agreed for devm_clk_get(), isn't it ?
+>
+>
+> In my case I think clk_get() is enough.
+
+Obviously its enough but wouldn't it be better to use a infrastructure
+which is somewhat better ?
+
+> Moreover, most of cpufreq drivers use clk_get().
+
+So what? Is that a good enough reason for adopting a good change?
