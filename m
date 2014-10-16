@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751704AbaJPQAi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 12:00:38 -0400
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:35496 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751209AbaJPQAh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 12:00:37 -0400
-X-IronPort-AV: E=Sophos;i="5.04,733,1406617200"; 
-   d="scan'208";a="48602699"
-Message-ID: <543FEB82.8000503@broadcom.com>
-Date: Thu, 16 Oct 2014 09:00:02 -0700
-From: Ray Jui <rjui@broadcom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751573AbaJPQEe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 12:04:34 -0400
+Received: from mga11.intel.com ([192.55.52.93]:54482 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751210AbaJPQEc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 12:04:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="401325072"
+Date: Thu, 16 Oct 2014 18:03:58 +0200
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+To: Greg KH <greg@kroah.com>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, josh.triplett@intel.com,
+        christophe.ricard@gmail.com, will.c.arthur@intel.com,
+        monty.wiseman@intel.com
+Subject: Re: [PATCH v3 4/6] tpm: TPM 2.0 sysfs attributes
+Message-ID: <20141016160358.GB12979@intel.com>
+References: <1413372916-12091-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <1413372916-12091-5-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <20141016093146.GA25070@kroah.com>
 MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>
-CC: Dan Williams <djbw@fb.com>, Scott Branden <sbranden@broadcom.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: Consider moving the init of pl330 to earlier?
-References: <5436FF8F.8060602@broadcom.com> <20141016065912.GB1638@intel.com>
-In-Reply-To: <20141016065912.GB1638@intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141016093146.GA25070@kroah.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Oct 16, 2014 at 11:31:46AM +0200, Greg KH wrote:
+> On Wed, Oct 15, 2014 at 01:35:14PM +0200, Jarkko Sakkinen wrote:
+> > +int tpm2_sysfs_add_device(struct tpm_chip *chip)
+> > +{
+> > +	struct pcr_bank *pcr_bank;
+> > +	struct kobject *pcrs_kobj;
+> > +	struct device *dev = chip->dev;
+> > +	int rc;
+> > +
+> > +	rc = sysfs_create_group(&chip->vendor.miscdev.this_device->kobj,
+> > +				&tpm_dev_group);
+> > +	if (rc) {
+> > +		dev_err(dev, "failed to create sysfs attributes, %d\n", rc);
+> > +		return rc;
+> > +	}
+> 
+> You just raced and created sysfs files _after_ userspace saw that your
+> device was enabled.
 
+Here the options are limited because misc_register already spawns
+KOBJ_ADD. Not much to do unless we would wipe the current use of 
+misc driver completely.
 
-On 10/15/2014 11:59 PM, Vinod Koul wrote:
-> On Thu, Oct 09, 2014 at 02:35:11PM -0700, Ray Jui wrote:
->> Hi,
->>
->> How do you guys like the idea of moving the driver initialization of
->> the pl330 DMA driver to earlier? For example, to arch_initcall_sync
->> or subsys_initcall? Currently the pl330 driver is registered through
->> module_amba_driver call, which translates to device_initcall in the
->> end. This is a bit late considering in many systems, DMA controller
->> is one of the core components that may have many slave devices
->> depending on. Most slave drivers are typically done at
->> device_initcall. When done at the same level, DMA may not be ready
->> while the slave devices are being initialized. In addition, under
->> the drivers/dma directory, we currently have various other DMA
->> drivers also done at subsys_initcall.
->>
->> One issue that I'm seeing with the Broadcom Cygnus SoC is that, when
->> we try to use DMA with SPI (PL022), the request for DMA channel
->> would fail because the spi-pl022 driver we use is initialized at
->> subsys_initcall. At the time the PL330 driver is not yet
->> initialized. The reason why spi-pl022 is done at subsys_initcall is
->> that some regulators communicate through the SPI bus so people
->> decided to move it to earlier (commit 25c8e03b by Linus Walleij),
->> which seems to be a valid reason to me.
-> As a subsytem we encourage folks to use early init calls and then have
-> clients use late_init so that dependency is solved.
->
-> So feel free to send the patch
->
-Will do. Thanks!
+> 
+> > +	pcrs_kobj = kobject_create_and_add("pcrs",
+> > +					   &chip->vendor.miscdev.this_device->kobj);
+> 
+> Ick, no no no no.  Never create a kobject under a 'struct device'.  You
+> just lost all libudev support for any attribute you created under here,
+> not good at all.  Use a "real" device if you really want a sub-device,
+> not a kobject.
 
-Ray
+Ack, will rework this.
+
+> thanks,
+> 
+> greg k-h
+
+/Jarkko
