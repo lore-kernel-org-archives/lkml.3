@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751328AbaJPDgS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 23:36:18 -0400
-Received: from [42.62.48.242] ([42.62.48.242]:15935 "EHLO manager.mioffice.cn"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750969AbaJPDgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 23:36:17 -0400
-From: Hui Zhu <zhuhui@xiaomi.com>
-To: <rjw@rjwysocki.net>, <len.brown@intel.com>, <pavel@ucw.cz>,
-        <m.szyprowski@samsung.com>, <akpm@linux-foundation.org>,
-        <mina86@mina86.com>, <aneesh.kumar@linux.vnet.ibm.com>,
-        <iamjoonsoo.kim@lge.com>, <hannes@cmpxchg.org>, <riel@redhat.com>,
-        <mgorman@suse.de>, <minchan@kernel.org>, <nasa4836@gmail.com>,
-        <ddstreet@ieee.org>, <hughd@google.com>, <mingo@kernel.org>,
-        <rientjes@google.com>, <peterz@infradead.org>, <keescook@chromium.org>,
-        <atomlin@redhat.com>, <raistlin@linux.it>, <axboe@fb.com>,
-        <paulmck@linux.vnet.ibm.com>, <kirill.shutemov@linux.intel.com>,
-        <n-horiguchi@ah.jp.nec.com>, <k.khlebnikov@samsung.com>,
-        <msalter@redhat.com>, <deller@gmx.de>, <tangchen@cn.fujitsu.com>,
-        <ben@decadent.org.uk>, <akinobu.mita@gmail.com>,
-        <lauraa@codeaurora.org>, <vbabka@suse.cz>, <sasha.levin@oracle.com>,
-        <vdavydov@parallels.com>, <suleiman@google.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-mm@kvack.org>, Hui Zhu <zhuhui@xiaomi.com>
-Subject: [PATCH 0/4] (CMA_AGGRESSIVE) Make CMA memory be more aggressive about allocation
-Date: Thu, 16 Oct 2014 11:35:47 +0800
-Message-ID: <1413430551-22392-1-git-send-email-zhuhui@xiaomi.com>
-X-Mailer: git-send-email 1.9.1
+	id S1751254AbaJPDlP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 23:41:15 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:51997 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953AbaJPDlM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 23:41:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.27.14.101]
-X-ClientProxiedBy: CNCAS1.mioffice.cn (10.237.8.131) To cnbox4.mioffice.cn
- (10.237.8.144)
-X-EsetResult: clean, is OK
-X-EsetId: 587748382C4597170C3011
+In-Reply-To: <1413406225-16366-1-git-send-email-zyw@rock-chips.com>
+References: <1413405987-16196-1-git-send-email-zyw@rock-chips.com>
+	<1413406225-16366-1-git-send-email-zyw@rock-chips.com>
+Date: Wed, 15 Oct 2014 20:41:11 -0700
+X-Google-Sender-Auth: jMdZ2DrzG1UJZgT_h-NAZGnBzXs
+Message-ID: <CAD=FV=V4LrUxLRoMA4neUdA7Xq+mvQwF9MeMtoJ03t0Gjm+R1A@mail.gmail.com>
+Subject: Re: [PATCH 4/4] ARM: rockchip: add pmu-sram sub
+From: Doug Anderson <dianders@chromium.org>
+To: Chris <zyw@rock-chips.com>
+Cc: Heiko Stuebner <heiko@sntech.de>, Mike Turquette <mturquette@linaro.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-rockchip@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Tony Xie <xxx@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In fallbacks of page_alloc.c, MIGRATE_CMA is the fallback of
-MIGRATE_MOVABLE.
-MIGRATE_MOVABLE will use MIGRATE_CMA when it doesn't have a page in
-order that Linux kernel want.
+Chris,
 
-If a system that has a lot of user space program is running, for
-instance, an Android board, most of memory is in MIGRATE_MOVABLE and
-allocated.  Before function __rmqueue_fallback get memory from
-MIGRATE_CMA, the oom_killer will kill a task to release memory when
-kernel want get MIGRATE_UNMOVABLE memory because fallbacks of
-MIGRATE_UNMOVABLE are MIGRATE_RECLAIMABLE and MIGRATE_MOVABLE.
-This status is odd.  The MIGRATE_CMA has a lot free memory but Linux
-kernel kill some tasks to release memory.
+On Wed, Oct 15, 2014 at 1:50 PM,  <zyw@rock-chips.com> wrote:
+> From: Chris Zhong <zyw@rock-chips.com>
+>
+> The pmu-sram is used to store resume code, suspend/resume need get the
+> address of it. Therefore add a node and documentation for it.
 
-This patch series adds a new function CMA_AGGRESSIVE to make CMA memory
-be more aggressive about allocation.
-If function CMA_AGGRESSIVE is available, when Linux kernel call function
-__rmqueue try to get pages from MIGRATE_MOVABLE and conditions allow,
-MIGRATE_CMA will be allocated as MIGRATE_MOVABLE first.  If MIGRATE_CMA
-doesn't have enough pages for allocation, go back to allocate memory from
-MIGRATE_MOVABLE.
-Then the memory of MIGRATE_MOVABLE can be kept for MIGRATE_UNMOVABLE and
-MIGRATE_RECLAIMABLE which doesn't have fallback MIGRATE_CMA.
+This patch just adds bindings, not a node.
 
+>
+> Signed-off-by: Tony Xie <xxx@rock-chips.com>
+> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+>
+> ---
+>
+>  .../devicetree/bindings/arm/rockchip/pmu-sram.txt  |   15 +++++++++++++++
+>  1 file changed, 15 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/arm/rockchip/pmu-sram.txt
+
+Title of this patch should probably mention bindings somewhere.  Also
+bindings should be patch #3 and the adding to the DTS patch #4.
