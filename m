@@ -1,73 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751499AbaJPImw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 04:42:52 -0400
-Received: from mailout.micron.com ([137.201.242.129]:26754 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751298AbaJPImr (ORCPT
+	id S1751528AbaJPIpU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 04:45:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41539 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765AbaJPIpR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 04:42:47 -0400
-From: bpqw <bpqw@micron.com>
-To: Rafal Milecki <zajec5@gmail.com>
-CC: Brian Norris <computersforpeace@gmail.com>, Marek Vasut <marex@denx.de>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "grmoore@altera.com" <grmoore@altera.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "shijie8@gmail.com" <shijie8@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "geert+renesas@glider.be" <geert+renesas@glider.be>
-Subject: RE: [PATCH 1/1 v2] driver:mtd:spi-nor:fix spi_nor_scan overwrite
- platform ID point
-Thread-Topic: [PATCH 1/1 v2] driver:mtd:spi-nor:fix spi_nor_scan overwrite
- platform ID point
-Thread-Index: AQHP6Rj7oWZwUNDmiUaIxe5rb6fQoJwyZjXw
-Date: Thu, 16 Oct 2014 08:41:54 +0000
-Message-ID: <A765B125120D1346A63912DDE6D8B6315E6FE5@NTXXIAMBX02.xacn.micron.com>
-References: <A765B125120D1346A63912DDE6D8B6315E62CB@NTXXIAMBX02.xacn.micron.com>
-	<CACna6rw4g1wWPv+VgL8WeA9rz-j8A6k+4bN7D=MQ9OU-BinToA@mail.gmail.com>
-	<A765B125120D1346A63912DDE6D8B6315E6F6F@NTXXIAMBX02.xacn.micron.com>
- <CACna6rxNbPzSYbe9GjQCSAeB8FgVi6ZpgKo=AB=6nYc4QcqN1g@mail.gmail.com>
-In-Reply-To: <CACna6rxNbPzSYbe9GjQCSAeB8FgVi6ZpgKo=AB=6nYc4QcqN1g@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.84.5]
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-21030.000
-X-TM-AS-Result: No--0.514600-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-x-mt-checkinternalsenderrule: True
-Content-Type: text/plain; charset="utf-8"
+	Thu, 16 Oct 2014 04:45:17 -0400
+Date: Thu, 16 Oct 2014 10:44:12 +0200
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Andreas Werner <andreas.werner@men.de>
+Cc: linux-kernel@vger.kernel.org, wsa@the-dreams.de, linux-i2c@vger.kernel.org,
+        johannes.thumshirn@men.de
+Subject: Re: [PATCH 1/2] drivers/misc/eeprom/men_eeprod: Introduce MEN Board
+ Information EEPROM driver
+Message-ID: <20141016084412.GB22265@kroah.com>
+References: <cover.1413416105.git.andreas.werner@men.de>
+ <d169930cfe45d4c05c79f7dd00471d732441529d.1413416105.git.andreas.werner@men.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <d169930cfe45d4c05c79f7dd00471d732441529d.1413416105.git.andreas.werner@men.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9G8guxA004072
 
+On Thu, Oct 16, 2014 at 10:15:08AM +0200, Andreas Werner wrote:
+> +struct eeprom_data {
+> +	uint8_t eeprod_id;
 
->I really wasn't looking into details yet and I'm aware my patch does something else. I just say we should first fix the regression and then base next patches on top of that regression fix. I'm not NACKing your changes :)
+Please use the "real" kernel types, "u8" here, and "u32" in other places
+you use uint32_t (those are userspace types, not kernel types, sorry.)
 
-I will take into account for your patch,and will cover all these isse in my next version patch.
+> +static DEVICE_ATTR(eeprod_id, S_IRUGO, show_eeprod_id, NULL);
+> +static DEVICE_ATTR(revision, S_IRUGO, show_revision, NULL);
+> +static DEVICE_ATTR(serial, S_IRUGO, show_serialnr, NULL);
+> +static DEVICE_ATTR(hw_name, S_IRUGO, show_hw_name, NULL);
+> +static DEVICE_ATTR(prod_date, S_IRUGO, show_prod_date, NULL);
+> +static DEVICE_ATTR(rep_date, S_IRUGO, show_rep_date, NULL);
 
-By the way ,I still don't understand why you specify id NULL in you patch:
-
-+	if (id) {
-+		info = (void *)id->driver_data;
-+		if (info->jedec_id) {
-+			dev_warn(dev,
-+				 "passed SPI device ID (%s) contains JEDEC, ignoring it, driver should be fixed!\n",
-+				 id->name);
-+			id = NULL;
- 		}
- 	}
- 
-+	if (!id) {
-+		id = nor->read_id(nor);
-+		if (IS_ERR(id))
-+			return PTR_ERR(id);
-+	}
-+	info = (void *)id->driver_data;
-+
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+DEVICE_ATTR_RO() please.
