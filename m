@@ -1,151 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751443AbaJPIXY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 04:23:24 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:59325 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751202AbaJPIXU (ORCPT
+	id S1751565AbaJPIXu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 04:23:50 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:21716 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751160AbaJPIXp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 04:23:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <1413357812-16895-1-git-send-email-keguang.zhang@gmail.com>
-References: <1413357812-16895-1-git-send-email-keguang.zhang@gmail.com>
-Date: Thu, 16 Oct 2014 13:53:19 +0530
-Message-ID: <CAKohpok9T1mT0Pb9ue0Pe8SMo4e6DEXzBn2mPoTo2rUHG+MTXQ@mail.gmail.com>
-Subject: Re: [PATCH 6/6] cpufreq: Loongson1: Add cpufreq driver for Loongson1B (UPDATED)
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Kelvin Cheung <keguang.zhang@gmail.com>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-mips@linux-mips.org,
-        Ralf Baechle <ralf@linux-mips.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 16 Oct 2014 04:23:45 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-7a-543f808f7b9c
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH] regulator: s2mps11: Don't zero allocated memory for external
+ control
+Date: Thu, 16 Oct 2014 10:23:28 +0200
+Message-id: <1413447808-16429-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNJMWRmVeSWpSXmKPExsVy+t/xq7r9DfYhBlsPs1hMffiEzeL1C0OL
+	b1c6mCwu75rDZnFxxRcmB1aPnbPusntsWtXJ5tG3ZRWjx+dNcgEsUVw2Kak5mWWpRfp2CVwZ
+	765IFvxiq2g68YWpgfEraxcjJ4eEgInE/nl3mCFsMYkL99azdTFycQgJLGWU2PluBjtIQkig
+	j0ni6z0+EJtNwFhi8/IlYEUiAj2MEi+3fgbrZhYwlPj57g9Yg7BAuMSzWxeZuhg5OFgEVCXu
+	L9EBMXkF3CVm/hGH2CUncfLYZNYJjNwLGBlWMYqmliYXFCel5xrpFSfmFpfmpesl5+duYoQE
+	wNcdjEuPWR1iFOBgVOLh1Qi2DxFiTSwrrsw9xCjBwawkwttcCBTiTUmsrEotyo8vKs1JLT7E
+	yMTBKdXA2G2ppBYYuPVcp9ynqWeaUlwOvDi2qGxNjFsUd/pnO1N1wQ2RHySW27av2rcx7u4l
+	rUviUtPWPmTbPZsrxCXzb4ZTDrta7kOmCzZX5Ge/bvF77lLHdTE3JGJ3aaXWkYcMX/LDN1wQ
+	0FxYdyc6IuR1duU8t9UhH/suOc4Iq9v0hM/jHMuryuI/SizFGYmGWsxFxYkAaiHn7d4BAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is not how we send updated versions, GIT and other tools will commit
-the "(UPDATED)" part while applying. What you were required to do was
-something like:
+The driver was allocating memory for storing GPIOs for external control
+with unnecessary GFP_ZERO flag. Then right after allocation it
+initialized memory to -EINVAL in loop. Skip the GFP_ZERO flag.
 
-git format-patch A..B --subject-prefix="PATCH V2"
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ drivers/regulator/s2mps11.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-On 15 October 2014 12:53, Kelvin Cheung <keguang.zhang@gmail.com> wrote:
-> +static int ls1x_cpufreq_remove(struct platform_device *pdev)
-> +{
-> +       cpufreq_unregister_notifier(&ls1x_cpufreq_notifier_block,
-> +                                   CPUFREQ_TRANSITION_NOTIFIER);
-> +       cpufreq_unregister_driver(&ls1x_cpufreq_driver);
-> +       clk_put(ls1x_cpufreq.osc_clk);
-> +       clk_put(ls1x_cpufreq.clk);
-> +
-> +       return 0;
-> +}
-> +
-> +static int ls1x_cpufreq_probe(struct platform_device *pdev)
-> +{
-> +       struct plat_ls1x_cpufreq *pdata = pdev->dev.platform_data;
-> +       struct clk *clk;
-> +       int ret;
-> +
-> +       if (!pdata)
-> +               return -EINVAL;
-> +       if (!pdata->clk_name)
-> +               return -EINVAL;
-> +       if (!pdata->osc_clk_name)
-> +               return -EINVAL;
+diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
+index adab82d5279f..7f59e67252e7 100644
+--- a/drivers/regulator/s2mps11.c
++++ b/drivers/regulator/s2mps11.c
+@@ -845,7 +845,7 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	};
+ 
+-	s2mps11->ext_control_gpio = devm_kzalloc(&pdev->dev,
++	s2mps11->ext_control_gpio = devm_kmalloc(&pdev->dev,
+ 			sizeof(*s2mps11->ext_control_gpio) * s2mps11->rdev_num,
+ 			GFP_KERNEL);
+ 	if (!s2mps11->ext_control_gpio)
+-- 
+1.9.1
 
-I didn't wanted you to do this, You could have done this:
-
-       if (!pdata || !pdata->clk_name || !pdata->osc_clk_name)
-               return -EINVAL;
-
-So, just a || instead of && :)
-
-> +
-> +       ls1x_cpufreq.dev = &pdev->dev;
-> +
-> +       clk = clk_get(NULL, pdata->clk_name);
-
-I believe we agreed for devm_clk_get(), isn't it ?
-
-> +       if (IS_ERR(clk)) {
-> +               dev_err(ls1x_cpufreq.dev, "unable to get %s clock\n",
-> +                       pdata->clk_name);
-> +               ret = PTR_ERR(clk);
-> +               goto out;
-> +       }
-> +       ls1x_cpufreq.clk = clk;
-> +
-> +       clk = clk_get_parent(clk);
-> +       if (IS_ERR(clk)) {
-> +               dev_err(ls1x_cpufreq.dev, "unable to get parent of %s clock\n",
-> +                       __clk_get_name(ls1x_cpufreq.clk));
-> +               ret = PTR_ERR(clk);
-> +               goto err_mux;
-> +       }
-> +       ls1x_cpufreq.mux_clk = clk;
-> +
-> +       clk = clk_get_parent(clk);
-> +       if (IS_ERR(clk)) {
-> +               dev_err(ls1x_cpufreq.dev, "unable to get parent of %s clock\n",
-> +                       __clk_get_name(ls1x_cpufreq.mux_clk));
-> +               ret = PTR_ERR(clk);
-> +               goto err_mux;
-> +       }
-> +       ls1x_cpufreq.pll_clk = clk;
-> +
-> +       clk = clk_get(NULL, pdata->osc_clk_name);
-> +       if (IS_ERR(clk)) {
-> +               dev_err(ls1x_cpufreq.dev, "unable to get %s clock\n",
-> +                       pdata->osc_clk_name);
-> +               ret = PTR_ERR(clk);
-> +               goto err_mux;
-> +       }
-> +       ls1x_cpufreq.osc_clk = clk;
-> +
-> +       ls1x_cpufreq.max_freq = pdata->max_freq;
-> +       ls1x_cpufreq.min_freq = pdata->min_freq;
-> +
-> +       ret = cpufreq_register_driver(&ls1x_cpufreq_driver);
-> +       if (ret) {
-> +               dev_err(ls1x_cpufreq.dev,
-> +                       "failed to register cpufreq driver: %d\n", ret);
-> +               goto err_driver;
-> +       }
-> +
-> +       ret = cpufreq_register_notifier(&ls1x_cpufreq_notifier_block,
-> +                                       CPUFREQ_TRANSITION_NOTIFIER);
-> +
-> +       if (!ret)
-> +               goto out;
-> +
-> +       dev_err(ls1x_cpufreq.dev, "failed to register cpufreq notifier: %d\n",
-> +               ret);
-> +
-> +       cpufreq_unregister_driver(&ls1x_cpufreq_driver);
-> +err_driver:
-> +       clk_put(ls1x_cpufreq.osc_clk);
-> +err_mux:
-> +       clk_put(ls1x_cpufreq.clk);
-> +out:
-> +       return ret;
-> +}
-> +
-> +static struct platform_driver ls1x_cpufreq_platdrv = {
-> +       .driver = {
-> +               .name   = "ls1x-cpufreq",
-> +               .owner  = THIS_MODULE,
-> +       },
-> +       .probe          = ls1x_cpufreq_probe,
-> +       .remove         = ls1x_cpufreq_remove,
-> +};
-> +
-> +module_platform_driver(ls1x_cpufreq_platdrv);
-> +
-> +MODULE_AUTHOR("Kelvin Cheung <keguang.zhang@gmail.com>");
-> +MODULE_DESCRIPTION("Loongson 1 CPUFreq driver");
-> +MODULE_LICENSE("GPL");
-> --
-> 1.9.1
->
