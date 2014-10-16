@@ -1,90 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752669AbaJPNol (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 09:44:41 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:42938 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232AbaJPNok (ORCPT
+	id S1752684AbaJPNpd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 09:45:33 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:55422 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752271AbaJPNpb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 09:44:40 -0400
-X-Originating-IP: 62.156.150.204
-Date: Thu, 16 Oct 2014 15:44:30 +0200
-From: Josh Triplett <josh@joshtriplett.org>
-To: Aristeu Rozanski <aris@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Johannes Berg <johannes@sipsolutions.net>
-Subject: Re: [PATCH] tiny: reverse logic for DISABLE_DEV_COREDUMP
-Message-ID: <20141016134430.GB7664@thin>
-References: <20141016133658.GP5930@redhat.com>
+	Thu, 16 Oct 2014 09:45:31 -0400
+Date: Thu, 16 Oct 2014 15:45:22 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@redhat.com>,
+        John Stultz <john.stultz@linaro.org>, Eric Paris <eparis@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>
+Subject: Re: [PATCH v1 06/10] clocksource: Remove "weak" from
+ clocksource_default_clock() declaration
+Message-ID: <20141016154522.1d660793@mschwide>
+In-Reply-To: <CAErSpo6timzQ7YDj=SMyCT=g4tgb5i4zua4OUYsYcg8Ur-J-SQ@mail.gmail.com>
+References: <20141015165957.4063.66741.stgit@bhelgaas-glaptop2.roam.corp.google.com>
+	<20141015170624.4063.24678.stgit@bhelgaas-glaptop2.roam.corp.google.com>
+	<CAErSpo5E6zxtogVjMqZiUGAoRz6mMudSUqcH9B+DZ-R8xYN2kQ@mail.gmail.com>
+	<20141016092232.570be048@mschwide>
+	<CAErSpo6timzQ7YDj=SMyCT=g4tgb5i4zua4OUYsYcg8Ur-J-SQ@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141016133658.GP5930@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14101613-0029-0000-0000-000001394B54
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 09:36:58AM -0400, Aristeu Rozanski wrote:
-> (This time Cc'ing Johannes)
+On Thu, 16 Oct 2014 07:40:16 -0600
+Bjorn Helgaas <bhelgaas@google.com> wrote:
 
-This kind of note shouldn't be in the commit-message portion of the
-commit.
-
-> It's desirable for allnconfig and tinyconfig targets to result in the
-> least amount of code possible. DISABLE_DEV_COREDUMP exists as a way to
-> switch off DEV_COREDUMP regardless if any drivers select
-> WANT_DEV_COREDUMP.
+> On Thu, Oct 16, 2014 at 1:22 AM, Martin Schwidefsky
+> <schwidefsky@de.ibm.com> wrote:
+> > On Wed, 15 Oct 2014 17:30:33 -0600
+> > Bjorn Helgaas <bhelgaas@google.com> wrote:
+> >
+> >> [+cc Daniel, Martin, linux-s390; sorry, I botched my "stg mail" so you
+> >> weren't included the first time.  s390 could see issues from this.]
+> >>
+> >> On Wed, Oct 15, 2014 at 11:06 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> >> > kernel/time/jiffies.c provides a default clocksource_default_clock()
+> >> > definition explicitly marked "weak".  arch/s390 provides its own definition
+> >> > intended to override the default, but the "weak" attribute on the
+> >> > declaration applied to the s390 definition as well, so the linker chose one
+> >> > based on link order (see 10629d711ed7 ("PCI: Remove __weak annotation from
+> >> > pcibios_get_phb_of_node decl")).
+> >> >
+> >> > Remove the "weak" attribute from the clocksource_default_clock()
+> >> > declaration so we always prefer a non-weak definition over the weak one,
+> >> > independent of link order.
+> >> >
+> >> > Fixes: f1b82746c1e9 ("clocksource: Cleanup clocksource selection")
+> >> > Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> >> > CC: Daniel Lezcano <daniel.lezcano@linaro.org>
+> >> > CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> >> > ---
+> >> >  include/linux/clocksource.h |    2 +-
+> >> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >> >
+> >> > diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
+> >> > index 653f0e2b6ca9..abcafaa20b86 100644
+> >> > --- a/include/linux/clocksource.h
+> >> > +++ b/include/linux/clocksource.h
+> >> > @@ -287,7 +287,7 @@ extern struct clocksource* clocksource_get_next(void);
+> >> >  extern void clocksource_change_rating(struct clocksource *cs, int rating);
+> >> >  extern void clocksource_suspend(void);
+> >> >  extern void clocksource_resume(void);
+> >> > -extern struct clocksource * __init __weak clocksource_default_clock(void);
+> >> > +extern struct clocksource * __init clocksource_default_clock(void);
+> >> >  extern void clocksource_mark_unstable(struct clocksource *cs);
+> >> >
+> >> >  extern u64
+> >> >
+> >
+> > s390 compiles and boots without the __weak for clocksource_default_clock.
 > 
-> This patch renames the option to ENABLE_DEV_COREDUMP and setting it to
-> 'n' (as in allnconfig or tinyconfig) will effectively disable device
-> coredump.
-> 
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Josh Triplett <josh@joshtriplett.org>
-> Cc: Johannes Berg <johannes@sipsolutions.net>
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> Signed-off-by: Aristeu Rozanski <arozansk@redhat.com>
+> I assume this means you've tested this patch and s390 compiles and boots?
 
-You should have a "---" line here, followed by a diffstat.  If you're
-not using git format-patch to format your patches, you should.
+Correct.
+ 
+> I assume you *don't* mean that s390 could drop its
+> clocksource_default_clock() implementation and use the generic one,
+> right?
 
-- Josh Triplett
+Sorry, but I want to keep the s390 TOD clock as default.
+The jiffies clock is not precise enough, even if it is used only at the beginning.
 
-> diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
-> index 134f763..99d3072 100644
-> --- a/drivers/base/Kconfig
-> +++ b/drivers/base/Kconfig
-> @@ -171,20 +171,23 @@ config WANT_DEV_COREDUMP
->  	  Drivers should "select" this option if they desire to use the
->  	  device coredump mechanism.
->  
-> -config DISABLE_DEV_COREDUMP
-> -	bool "Disable device coredump" if EXPERT
-> +config ENABLE_DEV_COREDUMP
-> +	bool "Enable device coredump" if EXPERT
-> +	default y
->  	help
-> -	  Disable the device coredump mechanism despite drivers wanting to
-> -	  use it; this allows for more sensitive systems or systems that
-> -	  don't want to ever access the information to not have the code,
-> -	  nor keep any data.
-> +	  This option controls if the device coredump mechanism is available or
-> +	  not; if disabled, the mechanism will be omitted even if drivers that
-> +	  can use it are enabled.
-> +	  Say 'N' for more sensitive systems or systems that don't want
-> +	  to ever access the information to not have the code, nor keep any
-> +	  data.
->  
-> -	  If unsure, say N.
-> +	  If unsure, say Y.
->  
->  config DEV_COREDUMP
->  	bool
->  	default y if WANT_DEV_COREDUMP
-> -	depends on !DISABLE_DEV_COREDUMP
-> +	depends on ENABLE_DEV_COREDUMP
->  
->  config DEBUG_DRIVER
->  	bool "Driver Core verbose debug messages"
+-- 
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
+
