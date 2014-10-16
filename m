@@ -1,30 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751483AbaJPFXv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 01:23:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33516 "EHLO
+	id S1751520AbaJPFYJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 01:24:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33532 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751070AbaJPFXs (ORCPT
+	with ESMTP id S1750993AbaJPFYG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 01:23:48 -0400
-Date: Wed, 15 Oct 2014 22:21:51 -0700
-From: tip-bot for Cody P Schafer <tipbot@zytor.com>
-Message-ID: <tip-ed90a4466340e51699139ea83dbe0f4536360e6d@git.kernel.org>
-Cc: jolsa@redhat.com, sukadev@linux.vnet.ibm.com, acme@redhat.com,
-        hpa@zytor.com, michaele@au1.ibm.com, mingo@kernel.org,
-        khandual@linux.vnet.ibm.com, tglx@linutronix.de, hbabu@us.ibm.com,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, dev@codyps.com,
-        ak@linux.intel.com, eranian@google.com, paulus@samba.org
-Reply-To: linux-kernel@vger.kernel.org, peterz@infradead.org, dev@codyps.com,
-        ak@linux.intel.com, paulus@samba.org, eranian@google.com,
-        sukadev@linux.vnet.ibm.com, hpa@zytor.com, acme@redhat.com,
-        jolsa@redhat.com, mingo@kernel.org, michaele@au1.ibm.com,
-        khandual@linux.vnet.ibm.com, tglx@linutronix.de, hbabu@us.ibm.com
-In-Reply-To: <1412143402-26061-4-git-send-email-sukadev@linux.vnet.ibm.com>
-References: <1412143402-26061-4-git-send-email-sukadev@linux.vnet.ibm.com>
+	Thu, 16 Oct 2014 01:24:06 -0400
+Date: Wed, 15 Oct 2014 22:23:39 -0700
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-0cdccac6fe4b1316f04f0dbfcc4efab51932014a@git.kernel.org>
+Cc: tglx@linutronix.de, acme@redhat.com, hpa@zytor.com, paulus@samba.org,
+        jolsa@redhat.com, a.p.zijlstra@chello.nl, fweisbec@gmail.com,
+        jean.pihet@linaro.org, jolsa@kernel.org, linux-kernel@vger.kernel.org,
+        dsahern@gmail.com, namhyung@kernel.org, mingo@kernel.org,
+        namhyung.kim@lge.com
+Reply-To: jean.pihet@linaro.org, fweisbec@gmail.com, a.p.zijlstra@chello.nl,
+        mingo@kernel.org, dsahern@gmail.com, namhyung@kernel.org,
+        namhyung.kim@lge.com, jolsa@kernel.org, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, jolsa@redhat.com, acme@redhat.com, hpa@zytor.com,
+        paulus@samba.org
+In-Reply-To: <1412556363-26229-2-git-send-email-namhyung@kernel.org>
+References: <1412556363-26229-2-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf Documentation: sysfs events/ interfaces
-Git-Commit-ID: ed90a4466340e51699139ea83dbe0f4536360e6d
+Subject: [tip:perf/urgent] perf report:
+  Set callchain_param.record_mode for future use
+Git-Commit-ID: 0cdccac6fe4b1316f04f0dbfcc4efab51932014a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -37,105 +38,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ed90a4466340e51699139ea83dbe0f4536360e6d
-Gitweb:     http://git.kernel.org/tip/ed90a4466340e51699139ea83dbe0f4536360e6d
-Author:     Cody P Schafer <dev@codyps.com>
-AuthorDate: Tue, 30 Sep 2014 23:03:19 -0700
+Commit-ID:  0cdccac6fe4b1316f04f0dbfcc4efab51932014a
+Gitweb:     http://git.kernel.org/tip/0cdccac6fe4b1316f04f0dbfcc4efab51932014a
+Author:     Namhyung Kim <namhyung@kernel.org>
+AuthorDate: Mon, 6 Oct 2014 09:45:59 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 15 Oct 2014 15:54:40 -0300
+CommitDate: Wed, 15 Oct 2014 16:20:03 -0300
 
-perf Documentation: sysfs events/ interfaces
+perf report: Set callchain_param.record_mode for future use
 
-Add documentation for the <event>, <event>.scale, and <event>.unit
-files in sysfs.
+Normally the callchain_param.record_mode is used only for record path.
+But as it might need to prepare something for dwarf unwinding, setup
+this info for perf report too.
 
-	<event>.scale and <event>.unit were undocumented.
-	<event> was previously documented only for specific powerpc pmu events.
-
-Signed-off-by: Cody P Schafer <dev@codyps.com>
-Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Cc: Cody P Schafer <dev@codyps.com>
-Cc: Haren Myneni <hbabu@us.ibm.com>
-Cc: Haren Myneni <hbabu@us.ibm.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Jiri Olsa <jolsa@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Michael Ellerman <michaele@au1.ibm.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: linuxppc-dev@lists.ozlabs.org
-Link: http://lkml.kernel.org/r/1412143402-26061-4-git-send-email-sukadev@linux.vnet.ibm.com
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1412556363-26229-2-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- .../testing/sysfs-bus-event_source-devices-events  | 60 ++++++++++++++++++++++
- 1 file changed, 60 insertions(+)
+ tools/perf/builtin-report.c     | 7 +++++++
+ tools/perf/tests/dwarf-unwind.c | 3 +++
+ 2 files changed, 10 insertions(+)
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-index 7b40a3c..a5226f0 100644
---- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-+++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-@@ -599,3 +599,63 @@ Description:	POWER-systems specific performance monitoring events
- 		Further, multiple terms like 'event=0xNNNN' can be specified
- 		and separated with comma. All available terms are defined in
- 		the /sys/bus/event_source/devices/<dev>/format file.
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 2cfc4b93..140a6cd 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -257,6 +257,13 @@ static int report__setup_sample_type(struct report *rep)
+ 		}
+ 	}
+ 
++	if (symbol_conf.use_callchain || symbol_conf.cumulate_callchain) {
++		if ((sample_type & PERF_SAMPLE_REGS_USER) &&
++		    (sample_type & PERF_SAMPLE_STACK_USER))
++			callchain_param.record_mode = CALLCHAIN_DWARF;
++		else
++			callchain_param.record_mode = CALLCHAIN_FP;
++	}
+ 	return 0;
+ }
+ 
+diff --git a/tools/perf/tests/dwarf-unwind.c b/tools/perf/tests/dwarf-unwind.c
+index 96adb73..fc25e57 100644
+--- a/tools/perf/tests/dwarf-unwind.c
++++ b/tools/perf/tests/dwarf-unwind.c
+@@ -9,6 +9,7 @@
+ #include "perf_regs.h"
+ #include "map.h"
+ #include "thread.h"
++#include "callchain.h"
+ 
+ static int mmap_handler(struct perf_tool *tool __maybe_unused,
+ 			union perf_event *event,
+@@ -120,6 +121,8 @@ int test__dwarf_unwind(void)
+ 		return -1;
+ 	}
+ 
++	callchain_param.record_mode = CALLCHAIN_DWARF;
 +
-+What: /sys/bus/event_source/devices/<pmu>/events/<event>
-+Date: 2014/02/24
-+Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
-+Description:	Per-pmu performance monitoring events specific to the running system
-+
-+		Each file (except for some of those with a '.' in them, '.unit'
-+		and '.scale') in the 'events' directory describes a single
-+		performance monitoring event supported by the <pmu>. The name
-+		of the file is the name of the event.
-+
-+		File contents:
-+
-+			<term>[=<value>][,<term>[=<value>]]...
-+
-+		Where <term> is one of the terms listed under
-+		/sys/bus/event_source/devices/<pmu>/format/ and <value> is
-+		a number is base-16 format with a '0x' prefix (lowercase only).
-+		If a <term> is specified alone (without an assigned value), it
-+		is implied that 0x1 is assigned to that <term>.
-+
-+		Examples (each of these lines would be in a seperate file):
-+
-+			event=0x2abc
-+			event=0x423,inv,cmask=0x3
-+			domain=0x1,offset=0x8,starting_index=0xffff
-+
-+		Each of the assignments indicates a value to be assigned to a
-+		particular set of bits (as defined by the format file
-+		corresponding to the <term>) in the perf_event structure passed
-+		to the perf_open syscall.
-+
-+What: /sys/bus/event_source/devices/<pmu>/events/<event>.unit
-+Date: 2014/02/24
-+Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
-+Description:	Perf event units
-+
-+		A string specifying the English plural numerical unit that <event>
-+		(once multiplied by <event>.scale) represents.
-+
-+		Example:
-+
-+			Joules
-+
-+What: /sys/bus/event_source/devices/<pmu>/events/<event>.scale
-+Date: 2014/02/24
-+Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
-+Description:	Perf event scaling factors
-+
-+		A string representing a floating point value expressed in
-+		scientific notation to be multiplied by the event count
-+		recieved from the kernel to match the unit specified in the
-+		<event>.unit file.
-+
-+		Example:
-+
-+			2.3283064365386962890625e-10
-+
-+		This is provided to avoid performing floating point arithmetic
-+		in the kernel.
+ 	if (init_live_machine(machine)) {
+ 		pr_err("Could not init machine\n");
+ 		goto out;
