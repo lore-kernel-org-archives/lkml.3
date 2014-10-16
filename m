@@ -1,80 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751130AbaJPF51 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 01:57:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1663 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750789AbaJPF5Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 01:57:25 -0400
-Date: Thu, 16 Oct 2014 01:57:18 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: linux-ext4@vger.kernel.org
-Subject: kernel BUG at fs/ext4/inode.c:2982!
-Message-ID: <20141016055718.GA17655@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	linux-ext4@vger.kernel.org
+	id S1751289AbaJPF6J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 01:58:09 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:48343 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751210AbaJPF6I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 01:58:08 -0400
+Date: Thu, 16 Oct 2014 11:27:59 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@redhat.com>,
+        John Stultz <john.stultz@linaro.org>, Eric Paris <eparis@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1 10/10] uprobes: Remove "weak" from function
+ declarations
+Message-ID: <20141016055758.GA24804@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20141015165957.4063.66741.stgit@bhelgaas-glaptop2.roam.corp.google.com>
+ <20141015170650.4063.2816.stgit@bhelgaas-glaptop2.roam.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141015170650.4063.2816.stgit@bhelgaas-glaptop2.roam.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14101605-4790-0000-0000-0000044D7D74
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just hit this on Linus' current tree while running my fuzz-tester.
-(No logs unfortunatly, so no idea what actually happened).
+* Bjorn Helgaas <bhelgaas@google.com> [2014-10-15 11:06:50]:
 
-kernel BUG at fs/ext4/inode.c:2982!
-invalid opcode: 0000 [#1] SMP DEBUG_PAGEALLOC
-Modules linked in: hidp rfcomm af_key llc2 can_bcm sctp libcrc32c can_raw nfc caif_socket caif af_802154 ieee802154 phonet af_rxrpc bluetooth can pppoe pppox ppp_generic slhc irda crc_ccitt rds rose x25 atm netrom appletalk ipx p8023 p8022 psnap llc ax25 nouveau cfg80211 rfkill kvm_intel kvm video backlight mxm_wmi wmi i2c_algo_bit drm_kms_helper ttm drm microcode tg3 serio_raw pcspkr ptp pps_core libphy i2c_core lpc_ich mfd_core rtc_cmos shpchp nfsd auth_rpcgss oid_registry nfs_acl lockd grace sunrpc raid0 floppy
-CPU: 3 PID: 24261 Comm: trinity-c10 Not tainted 3.17.0+ #5 
-Hardware name: Dell Inc.                 Precision WorkStation 490    /0DT031, BIOS A08 04/25/2008
-task: ffff8802094ccb40 ti: ffff8800bc168000 task.ti: ffff8800bc168000
-RIP: 0010:[<ffffffff9a27cf83>]  [<ffffffff9a27cf83>] ext4_direct_IO+0x713/0x750
-RSP: 0018:ffff8800bc16ba78  EFLAGS: 00010246
-RAX: 0000000000020000 RBX: 0000000000000001 RCX: 000000000000000f
-RDX: 0000000000000008 RSI: ffff880033e368d0 RDI: ffff8802094cd3b8
-RBP: ffff8800bc16baf8 R08: 0000000000000001 R09: 0000000000000000
-R10: 0000000000000001 R11: 0000000000000001 R12: ffff8800bc16bd40
-R13: ffff880033e368d0 R14: ffff8800bc16bb30 R15: 000000000000001f
-FS:  00007f8cc4e8f740(0000) GS:ffff880226400000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000001 CR3: 00000000b7747000 CR4: 00000000000007e0
-DR0: 0000000001c16000 DR1: 000000000160a000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
-Stack:
- ffffea000560a600 ffffea00060dc480 ffffea000503d880 ffffea0005cbfc80
- ffffea00056e6500 ffffea00049b1780 ffff880033e368d0 ffffea0005da7980
- 0000000000010000 0000000000010000 ffff8800bc16baf8 ffff880033e36ae0
-Call Trace:
- [<ffffffff9a1838d9>] generic_file_direct_write+0xa9/0x170
- [<ffffffff9a183c4c>] __generic_file_write_iter+0x2ac/0x350
- [<ffffffff9a275df9>] ext4_file_write_iter+0x109/0x3f0
- [<ffffffff9a1d8adc>] ? __kmalloc+0x39c/0x420
- [<ffffffff9a0a89e8>] ? sched_clock_cpu+0xa8/0xd0
- [<ffffffff9a227881>] ? iter_file_splice_write+0x91/0x450
- [<ffffffff9a0a8a66>] ? local_clock+0x16/0x30
- [<ffffffff9a227a53>] iter_file_splice_write+0x263/0x450
- [<ffffffff9a226d06>] direct_splice_actor+0x36/0x40
- [<ffffffff9a2272d3>] splice_direct_to_actor+0xc3/0x1f0
- [<ffffffff9a226cd0>] ? generic_pipe_buf_nosteal+0x10/0x10
- [<ffffffff9a229032>] do_splice_direct+0x82/0xb0
- [<ffffffff9a1f454f>] do_sendfile+0x1af/0x3a0
- [<ffffffff9a1f533a>] SyS_sendfile64+0x8a/0xa0
- [<ffffffff9a6ea82a>] ? tracesys_phase2+0x75/0xd9
- [<ffffffff9a6ea889>] tracesys_phase2+0xd4/0xd9
-Code: e8 83 57 e4 ff 85 c0 0f 85 a0 fc ff ff e9 47 ff ff ff 48 c7 c7 e0 f4 c3 9a e8 6a 57 e4 ff 85 c0 0f 85 e7 fc ff ff e9 6c ff ff ff <0f> 0b be fe 0b 00 00 48 c7 c7 f9 4d a2 9a e8 7a 3b df ff e9 c8 
-RIP  [<ffffffff9a27cf83>] ext4_direct_IO+0x713/0x750
- RSP <ffff8800bc16ba78>
----[ end trace d80209ec68bf10b8 ]---
+> For the following interfaces:
+> 
+>   set_swbp()
+>   set_orig_insn()
+>   is_swbp_insn()
+>   is_trap_insn()
+>   uprobe_get_swbp_addr()
+>   arch_uprobe_ignore()
+>   arch_uprobe_copy_ixol()
+> 
+> kernel/events/uprobes.c provides default definitions explicitly marked
+> "weak".  Some architectures provide their own definitions intended to
+> override the defaults, but the "weak" attribute on the declarations applied
+> to the arch definitions as well, so the linker chose one based on link
+> order (see 10629d711ed7 ("PCI: Remove __weak annotation from
+> pcibios_get_phb_of_node decl")).
+> 
+> Remove the "weak" attribute from the declarations so we always prefer a
+> non-weak definition over the weak one, independent of link order.
+> 
 
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-That BUG_ON is..
+> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> CC: Victor Kamensky <victor.kamensky@linaro.org>
+> CC: Oleg Nesterov <oleg@redhat.com>
+> CC: David A. Long <dave.long@linaro.org>
+> CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> CC: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+> ---
+>  include/linux/uprobes.h |   14 +++++++-------
+>  1 file changed, 7 insertions(+), 7 deletions(-)
+> 
+> diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+> index 4f844c6b03ee..60beb5dc7977 100644
+> --- a/include/linux/uprobes.h
+> +++ b/include/linux/uprobes.h
+> @@ -98,11 +98,11 @@ struct uprobes_state {
+>  	struct xol_area		*xol_area;
+>  };
+>  
+> -extern int __weak set_swbp(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long vaddr);
+> -extern int __weak set_orig_insn(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long vaddr);
+> -extern bool __weak is_swbp_insn(uprobe_opcode_t *insn);
+> -extern bool __weak is_trap_insn(uprobe_opcode_t *insn);
+> -extern unsigned long __weak uprobe_get_swbp_addr(struct pt_regs *regs);
+> +extern int set_swbp(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long vaddr);
+> +extern int set_orig_insn(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long vaddr);
+> +extern bool is_swbp_insn(uprobe_opcode_t *insn);
+> +extern bool is_trap_insn(uprobe_opcode_t *insn);
+> +extern unsigned long uprobe_get_swbp_addr(struct pt_regs *regs);
+>  extern unsigned long uprobe_get_trap_addr(struct pt_regs *regs);
+>  extern int uprobe_write_opcode(struct mm_struct *mm, unsigned long vaddr, uprobe_opcode_t);
+>  extern int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
+> @@ -128,8 +128,8 @@ extern bool arch_uprobe_xol_was_trapped(struct task_struct *tsk);
+>  extern int  arch_uprobe_exception_notify(struct notifier_block *self, unsigned long val, void *data);
+>  extern void arch_uprobe_abort_xol(struct arch_uprobe *aup, struct pt_regs *regs);
+>  extern unsigned long arch_uretprobe_hijack_return_addr(unsigned long trampoline_vaddr, struct pt_regs *regs);
+> -extern bool __weak arch_uprobe_ignore(struct arch_uprobe *aup, struct pt_regs *regs);
+> -extern void __weak arch_uprobe_copy_ixol(struct page *page, unsigned long vaddr,
+> +extern bool arch_uprobe_ignore(struct arch_uprobe *aup, struct pt_regs *regs);
+> +extern void arch_uprobe_copy_ixol(struct page *page, unsigned long vaddr,
+>  					 void *src, unsigned long len);
+>  #else /* !CONFIG_UPROBES */
+>  struct uprobes_state {
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-2982         BUG_ON(iocb->private == NULL);
+-- 
+Thanks and Regards
+Srikar Dronamraju
 
-I'll try and reproduce it in the morning.
-
-	Dave
