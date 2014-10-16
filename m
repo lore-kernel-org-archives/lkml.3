@@ -1,98 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751732AbaJPO7c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 10:59:32 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:64879 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751682AbaJPO7a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 10:59:30 -0400
-Date: Thu, 16 Oct 2014 15:59:27 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pm@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
-        Mark Salter <msalter@redhat.com>
-Subject: Re: [PATCH 42/44] efi: Register poweroff handler with kernel
- poweroff handler
-Message-ID: <20141016145927.GI14343@console-pimps.org>
-References: <1412659726-29957-1-git-send-email-linux@roeck-us.net>
- <1412659726-29957-43-git-send-email-linux@roeck-us.net>
+	id S1751813AbaJPO7g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 10:59:36 -0400
+Received: from lists.s-osg.org ([54.187.51.154]:40958 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751696AbaJPO7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 10:59:33 -0400
+Message-ID: <543FDD51.9040404@osg.samsung.com>
+Date: Thu, 16 Oct 2014 08:59:29 -0600
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412659726-29957-43-git-send-email-linux@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Takashi Iwai <tiwai@suse.de>, m.chehab@samsung.com
+CC: Lars-Peter Clausen <lars@metafoo.de>, akpm@linux-foundation.org,
+        gregkh@linuxfoundation.org, crope@iki.fi, olebowle@gmx.com,
+        dheitmueller@kernellabs.com, hverkuil@xs4all.nl, ramakrmu@cisco.com,
+        sakari.ailus@linux.intel.com, laurent.pinchart@ideasonboard.com,
+        perex@perex.cz, prabhakar.csengg@gmail.com, tim.gardner@canonical.com,
+        linux@eikelenboom.it, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, linux-media@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH v2 5/6] sound/usb: pcm changes to use media
+ token api
+References: <cover.1413246370.git.shuahkh@osg.samsung.com> <cf1059cc2606f20d921e5691e3d59945a19a7871.1413246372.git.shuahkh@osg.samsung.com> <543FB374.8020604@metafoo.de> <543FC3CD.8050805@osg.samsung.com> <s5h38aow1ub.wl-tiwai@suse.de> <543FD1EC.5010206@osg.samsung.com> <s5hy4sgumjo.wl-tiwai@suse.de> <543FD892.6010209@osg.samsung.com> <s5htx34ul3w.wl-tiwai@suse.de>
+In-Reply-To: <s5htx34ul3w.wl-tiwai@suse.de>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 06 Oct, at 10:28:44PM, Guenter Roeck wrote:
-> Register with kernel poweroff handler instead of setting pm_power_off
-> directly. Register with low priority value of 64 since the efi code
-> states that this is a poweroff handler of last resort.
+On 10/16/2014 08:48 AM, Takashi Iwai wrote:
+> At Thu, 16 Oct 2014 08:39:14 -0600,
+> Shuah Khan wrote:
+>>
+>> On 10/16/2014 08:16 AM, Takashi Iwai wrote:
+>>> At Thu, 16 Oct 2014 08:10:52 -0600,
+>>> Shuah Khan wrote:
+>>>>
+>>>> On 10/16/2014 08:01 AM, Takashi Iwai wrote:
+>>>>> At Thu, 16 Oct 2014 07:10:37 -0600,
+>>>>> Shuah Khan wrote:
+>>>>>>
+>>>>>> On 10/16/2014 06:00 AM, Lars-Peter Clausen wrote:
+>>>>>>> On 10/14/2014 04:58 PM, Shuah Khan wrote:
+>>>>>>> [...]
+>>>>>>>>       switch (cmd) {
+>>>>>>>>       case SNDRV_PCM_TRIGGER_START:
+>>>>>>>> +        err = media_get_audio_tkn(&subs->dev->dev);
+>>>>>>>> +        if (err == -EBUSY) {
+>>>>>>>> +            dev_info(&subs->dev->dev, "%s device is busy\n",
+>>>>>>>> +                    __func__);
+>>>>>>>
+>>>>>>> In my opinion this should not dev_info() as this is out of band error
+>>>>>>> signaling and also as the potential to spam the log. The userspace
+>>>>>>> application is already properly notified by the return code.
+>>>>>>>
+>>>>>>
+>>>>>> Yes it has the potential to flood the dmesg especially with alsa,
+>>>>>> I will remove the dev_info().
+>>>>>
+>>>>> Yes.  And, I think doing this in the trigger isn't the best.
+>>>>> Why not in open & close?
+>>>>
+>>>> My first cut of this change was in open and close. I saw pulseaudio
+>>>> application go into this loop trying to open the device. To avoid
+>>>> such problems, I went with trigger stat and stop. That made all the
+>>>> pulseaudio continues attempts to open problems go away.
+>>>
+>>> But now starting the stream gives the error, and PA would loop it
+>>> again, no?
+>>>
+>>>
+>>>>> Also, is this token restriction needed only for PCM?  No mixer or
+>>>>> other controls?
+>>>>
+>>>> snd_pcm_ops are the only ones media drivers implement and use. So
+>>>> I don't think mixer is needed. If it is needed, it is not to hard
+>>>> to add for that case.
+>>>
+>>> Well, then I wonder what resource does actually conflict with
+>>> usb-audio and media drivers at all...?
+>>>
+>>
+>> audio for dvb/v4l apps gets disrupted when audio app starts. For
+>> example, dvb or v4l app tuned to a channel, and when an audio app
+>> starts. audio path needs protected to avoid conflicts between
+>> digital and analog applications as well.
 > 
-> Cc: Matt Fleming <matt.fleming@intel.com>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
->  drivers/firmware/efi/reboot.c | 23 +++++++++++++++++++----
->  1 file changed, 19 insertions(+), 4 deletions(-)
- 
-Looks OK to me. Mark?
+> OK, then concentrating on only PCM is fine.
+> 
+> But, I'm still not convinced about doing the token management in the
+> trigger.  The reason -EBUSY doesn't work is that it's the very same
+> error code when a PCM device is blocked by other processes.  And
+> -EAGAIN is interpreted by PCM core to -EBUSY for historical reasons.
 
-> diff --git a/drivers/firmware/efi/reboot.c b/drivers/firmware/efi/reboot.c
-> index 9c59d1c..c082439 100644
-> --- a/drivers/firmware/efi/reboot.c
-> +++ b/drivers/firmware/efi/reboot.c
-> @@ -3,6 +3,8 @@
->   * Copyright (c) 2014 Red Hat, Inc., Mark Salter <msalter@redhat.com>
->   */
->  #include <linux/efi.h>
-> +#include <linux/notifier.h>
-> +#include <linux/pm.h>
->  #include <linux/reboot.h>
->  
->  int efi_reboot_quirk_mode = -1;
-> @@ -38,19 +40,32 @@ bool __weak efi_poweroff_required(void)
->  	return false;
->  }
->  
-> -static void efi_power_off(void)
-> +static int efi_power_off(struct notifier_block *this,
-> +			 unsigned long unused1, void *unused2)
->  {
->  	efi.reset_system(EFI_RESET_SHUTDOWN, EFI_SUCCESS, 0, NULL);
-> +
-> +	return NOTIFY_DONE;
->  }
->  
-> +static struct notifier_block efi_poweroff_nb = {
-> +	.notifier_call = efi_power_off,
-> +	.priority = 64,
-> +};
-> +
->  static int __init efi_shutdown_init(void)
->  {
-> +	int ret = 0;
-> +
->  	if (!efi_enabled(EFI_RUNTIME_SERVICES))
->  		return -ENODEV;
->  
-> -	if (efi_poweroff_required())
-> -		pm_power_off = efi_power_off;
-> +	if (efi_poweroff_required()) {
-> +		ret = register_poweroff_handler(&efi_poweroff_nb);
-> +		if (ret)
-> +			pr_err("efi: Failed to register poweroff handler\n");
-> +	}
->  
-> -	return 0;
-> +	return ret;
->  }
->  late_initcall(efi_shutdown_init);
-> -- 
-> 1.9.1
+ah. ok your recommendation is to go with open and close.
+Mauro has some reservations with holding at open when I discussed
+my observations with pulseaudio when I was holding token in open
+instead of trigger start. Maybe he can chime with his concerns.
+I think his concern was breaking applications if token is held in
+open().
 
+Based on what you are seeing trigger could be worse.
+
+> 
+> How applications (e.g. PA) should behave if the token get fails?
+> Shouldn't it retry or totally give up?
+> 
+
+It would be up to the application I would think. I see that arecord
+quits right away when it finds the device busy. pluseaudio on the other
+hand appears to retry. I downloaded pulseaudio sources to understand
+what it is doing, however I didn't get too far. The way it does audio
+handling is complex for me to follow without spending a lot of time.
+
+thanks,
+-- Shuah
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
