@@ -1,76 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799AbaJPKYF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 06:24:05 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37354 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752593AbaJPKUV (ORCPT
+	id S1752814AbaJPKYJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 06:24:09 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:59057 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752781AbaJPKYF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 06:20:21 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
-        lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Dan Williams <dan.j.williams@intel.com>,
-        linux-rpi-kernel@lists.infradead.org
-Subject: [PATCH v2 45/53] dmaengine: bcm2835: Declare slave capabilities for the generic code
-Date: Thu, 16 Oct 2014 12:17:44 +0200
-Message-Id: <1413454672-27400-46-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
+	Thu, 16 Oct 2014 06:24:05 -0400
+Date: Thu, 16 Oct 2014 11:24:45 +0100
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Linux PCI <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH RFC 2/2] arm: kernel: fix pci_mmap_page_range() offset
+ calculation
+Message-ID: <20141016102445.GA28187@red-moon>
+References: <1413374624-30066-1-git-send-email-lorenzo.pieralisi@arm.com>
+ <1413374624-30066-2-git-send-email-lorenzo.pieralisi@arm.com>
+ <20141015222932.GL27405@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+In-Reply-To: <20141015222932.GL27405@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 16 Oct 2014 10:24:01.0880 (UTC) FILETIME=[4E043D80:01CFE92B]
+X-MC-Unique: 114101611240202701
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the generic slave caps code can make use of the device assigned
-capabilities, instead of relying on a callback to be implemented.
+Hi Russell,
 
-Make use of this code.
+thanks for having a look.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- drivers/dma/bcm2835-dma.c | 16 ++++------------
- 1 file changed, 4 insertions(+), 12 deletions(-)
+On Wed, Oct 15, 2014 at 11:29:32PM +0100, Russell King - ARM Linux wrote:
+> On Wed, Oct 15, 2014 at 01:03:41PM +0100, Lorenzo Pieralisi wrote:
+> > ARM relies on the standard implementation of pci_resource_to_user()
+> > which actually is an identity map and exports to user space
+> > PCI memory resources as they are stored in PCI devices resources (ie BARs)
+> > which represent CPU physical addresses (fixed-up using BUS to CPU
+> > address conversions) not PCI bus addresses.
+> 
+> This paragraph seems wrong.
+> 
+> It first says that PCI memory resources contain the same values that the
+> PCI device has in its BAR.  It then goes on to say that they are CPU
+> physical addresses.  That is not true.
+> 
+> For example, DC21285 systems always have done this as: the PCI bars
+> contain the _bus_ addresses, which tend to be in the range 0 to
+> 0x7fffffff.  These correspond with a CPU physical address of
+> 0x80000000 to 0xffffffff.  The PCI bus resources for IOMEM resources
+> contains the CPU physical address of the mapping.
 
-diff --git a/drivers/dma/bcm2835-dma.c b/drivers/dma/bcm2835-dma.c
-index 243bb1ed6bfc..f4f200113e0f 100644
---- a/drivers/dma/bcm2835-dma.c
-+++ b/drivers/dma/bcm2835-dma.c
-@@ -552,18 +552,6 @@ static struct dma_chan *bcm2835_dma_xlate(struct of_phandle_args *spec,
- 	return chan;
- }
- 
--static int bcm2835_dma_device_slave_caps(struct dma_chan *dchan,
--	struct dma_slave_caps *caps)
--{
--	caps->src_addr_widths = BIT(DMA_SLAVE_BUSWIDTH_4_BYTES);
--	caps->dst_addr_widths = BIT(DMA_SLAVE_BUSWIDTH_4_BYTES);
--	caps->directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
--	caps->cmd_pause = false;
--	caps->cmd_terminate = true;
--
--	return 0;
--}
--
- static int bcm2835_dma_probe(struct platform_device *pdev)
- {
- 	struct bcm2835_dmadev *od;
-@@ -605,6 +593,10 @@ static int bcm2835_dma_probe(struct platform_device *pdev)
- 	od->ddev.device_prep_dma_cyclic = bcm2835_dma_prep_dma_cyclic;
- 	od->ddev.device_config = bcm2835_dma_slave_config;
- 	od->ddev.device_terminate_all = bcm2835_dma_terminate_all;
-+	od->ddev.generic_slave_caps = true;
-+	od->ddev.src_addr_widths = BIT(DMA_SLAVE_BUSWIDTH_4_BYTES);
-+	od->ddev.dst_addr_widths = BIT(DMA_SLAVE_BUSWIDTH_4_BYTES);
-+	od->ddev.directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
- 	od->ddev.dev = &pdev->dev;
- 	INIT_LIST_HEAD(&od->ddev.channels);
- 	spin_lock_init(&od->lock);
--- 
-2.1.1
+It is a commit log wording problem, I exactly meant what you said, I
+will reword it (or remove "ie BARs" from it, since it is misleading).
+
+I think that the word "BAR" is a bit misused in helpers function like:
+
+pci_resource_{start/end/len}
+
+too but as long as we all know what that means (and I write proper
+commit logs :)) it is all fine.
+
+> > On platforms where the mapping between CPU and BUS address is not a 1:1
+> > mapping this is erroneous, in that an additional shift is applied to
+> > an already fixed-up offset passed from userspace.
+> 
+> Yes, I think this is a correct patch inspite of the description. :)
+
+Great, I will reword it and wait for comments on patch 1 that changes
+pci_mmap_fits() (it does not affect ARM, but would like to get both changes
+in coherently - ie if I am asked to change patch 1 I will probably have
+to change this patch too).
+
+Thanks,
+Lorenzo
 
