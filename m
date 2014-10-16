@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829AbaJPUte (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 16:49:34 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:58714 "EHLO
+	id S1752931AbaJPUt4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 16:49:56 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:52465 "EHLO
 	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752138AbaJPUtc (ORCPT
+	with ESMTP id S1752138AbaJPUty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 16:49:32 -0400
+	Thu, 16 Oct 2014 16:49:54 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
         linux-serial@vger.kernel.org,
         One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
         Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH -next 27/27] tty: Flush ldisc buffer atomically with tty flip buffers
-Date: Thu, 16 Oct 2014 16:25:25 -0400
-Message-Id: <1413491125-20134-28-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH -next 18/27] tty: Change tty lock order to master->slave
+Date: Thu, 16 Oct 2014 16:25:16 -0400
+Message-Id: <1413491125-20134-19-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1413491125-20134-1-git-send-email-peter@hurleysoftware.com>
 References: <1413491125-20134-1-git-send-email-peter@hurleysoftware.com>
@@ -25,118 +25,133 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tty_ldisc_flush() first clears the line discipline input buffer,
-then clears the tty flip buffers. However, this allows for existing
-data in the tty flip buffers to be added after the ldisc input
-buffer has been cleared, but before the flip buffers have been cleared.
+When releasing the master pty, the slave pty also needs to be locked
+to prevent concurrent tty count changes for the slave pty and to
+ensure that only one parallel master and slave release observe the
+final close, and proceed to destruct the pty pair. Conversely, when
+releasing the slave pty, locking the master pty is not necessary
+(since the master's state can be inferred by the slave tty count).
 
-Add an optional ldisc parameter to tty_buffer_flush() to allow
-tty_ldisc_flush() to pass the ldisc to clear.
+Introduce tty_lock_slave()/tty_unlock_slave() which acquires/releases
+the tty lock of the slave pty. Remove tty_lock_pair()/tty_unlock_pair().
 
-NB: Initially, the plan was to do this automatically in
-tty_buffer_flush(). However, an audit of the behavior of existing
-line disciplines showed that performing a ldisc buffer flush on
-ioctl(TCFLSH) was not always the outcome. For example, some line
-disciplines have flush_buffer() methods but not ioctl() methods,
-so a ->flush_buffer() command would be unexpected.
+Dropping the tty_lock is no longer required to re-establish a stable
+lock order.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/tty_buffer.c | 10 ++++++++--
- drivers/tty/tty_io.c     |  2 +-
- drivers/tty/tty_ldisc.c  | 12 +++++-------
- include/linux/tty.h      |  2 +-
- 4 files changed, 15 insertions(+), 11 deletions(-)
+ drivers/tty/tty_io.c    | 10 ++++++----
+ drivers/tty/tty_mutex.c | 32 +++++++++++++-------------------
+ include/linux/tty.h     |  7 ++-----
+ 3 files changed, 21 insertions(+), 28 deletions(-)
 
-diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
-index 143deb6..3605103 100644
---- a/drivers/tty/tty_buffer.c
-+++ b/drivers/tty/tty_buffer.c
-@@ -202,14 +202,16 @@ static void tty_buffer_free(struct tty_port *port, struct tty_buffer *b)
- /**
-  *	tty_buffer_flush		-	flush full tty buffers
-  *	@tty: tty to flush
-+ *	@ld:  optional ldisc ptr (must be referenced)
-  *
-- *	flush all the buffers containing receive data.
-+ *	flush all the buffers containing receive data. If ld != NULL,
-+ *	flush the ldisc input buffer.
-  *
-  *	Locking: takes buffer lock to ensure single-threaded flip buffer
-  *		 'consumer'
-  */
- 
--void tty_buffer_flush(struct tty_struct *tty)
-+void tty_buffer_flush(struct tty_struct *tty, struct tty_ldisc *ld)
- {
- 	struct tty_port *port = tty->port;
- 	struct tty_bufhead *buf = &port->buf;
-@@ -223,6 +225,10 @@ void tty_buffer_flush(struct tty_struct *tty)
- 		buf->head = next;
- 	}
- 	buf->head->read = buf->head->commit;
-+
-+	if (ld && ld->ops->flush_buffer)
-+		ld->ops->flush_buffer(tty);
-+
- 	atomic_dec(&buf->priority);
- 	mutex_unlock(&buf->lock);
- }
 diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 8effd44..2931f42 100644
+index fb043b9..58015b3 100644
 --- a/drivers/tty/tty_io.c
 +++ b/drivers/tty/tty_io.c
-@@ -2939,7 +2939,7 @@ long tty_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 		case TCIFLUSH:
- 		case TCIOFLUSH:
- 		/* flush tty buffer and allow ldisc to process ioctl */
--			tty_buffer_flush(tty);
-+			tty_buffer_flush(tty, NULL);
- 			break;
- 		}
- 		break;
-diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-index 6368dd9..b66a81d 100644
---- a/drivers/tty/tty_ldisc.c
-+++ b/drivers/tty/tty_ldisc.c
-@@ -397,19 +397,17 @@ static void __lockfunc tty_ldisc_unlock_pair(struct tty_struct *tty,
-  *	tty_ldisc_flush	-	flush line discipline queue
-  *	@tty: tty
-  *
-- *	Flush the line discipline queue (if any) for this tty. If there
-- *	is no line discipline active this is a no-op.
-+ *	Flush the line discipline queue (if any) and the tty flip buffers
-+ *	for this tty.
-  */
+@@ -1791,7 +1791,9 @@ int tty_release(struct inode *inode, struct file *filp)
+ 	if (tty->ops->close)
+ 		tty->ops->close(tty, filp);
  
- void tty_ldisc_flush(struct tty_struct *tty)
- {
- 	struct tty_ldisc *ld = tty_ldisc_ref(tty);
--	if (ld) {
--		if (ld->ops->flush_buffer)
--			ld->ops->flush_buffer(tty);
+-	tty_unlock(tty);
++	/* If tty is pty master, lock the slave pty (stable lock order) */
++	tty_lock_slave(o_tty);
 +
-+	tty_buffer_flush(tty, ld);
-+	if (ld)
- 		tty_ldisc_deref(ld);
--	}
--	tty_buffer_flush(tty);
- }
- EXPORT_SYMBOL_GPL(tty_ldisc_flush);
+ 	/*
+ 	 * Sanity check: if tty->count is going to zero, there shouldn't be
+ 	 * any waiters on tty->read_wait or tty->write_wait.  We test the
+@@ -1805,8 +1807,6 @@ int tty_release(struct inode *inode, struct file *filp)
+ 	 * Thus this test wouldn't be triggered at the time the slave closed,
+ 	 * so we do it now.
+ 	 */
+-	tty_lock_pair(tty, o_tty);
+-
+ 	while (1) {
+ 		do_sleep = 0;
  
+@@ -1887,7 +1887,9 @@ int tty_release(struct inode *inode, struct file *filp)
+ 	/* check whether both sides are closing ... */
+ 	final = !tty->count && !(o_tty && o_tty->count);
+ 
+-	tty_unlock_pair(tty, o_tty);
++	tty_unlock_slave(o_tty);
++	tty_unlock(tty);
++
+ 	/* At this point, the tty->count == 0 should ensure a dead tty
+ 	   cannot be re-opened by a racing opener */
+ 
+diff --git a/drivers/tty/tty_mutex.c b/drivers/tty/tty_mutex.c
+index 2e41abe..f43e995 100644
+--- a/drivers/tty/tty_mutex.c
++++ b/drivers/tty/tty_mutex.c
+@@ -4,6 +4,11 @@
+ #include <linux/semaphore.h>
+ #include <linux/sched.h>
+ 
++/*
++ * Nested tty locks are necessary for releasing pty pairs.
++ * The stable lock order is master pty first, then slave pty.
++ */
++
+ /* Legacy tty mutex glue */
+ 
+ enum {
+@@ -45,29 +50,18 @@ void __lockfunc tty_unlock(struct tty_struct *tty)
+ }
+ EXPORT_SYMBOL(tty_unlock);
+ 
+-/*
+- * Getting the big tty mutex for a pair of ttys with lock ordering
+- * On a non pty/tty pair tty2 can be NULL which is just fine.
+- */
+-void __lockfunc tty_lock_pair(struct tty_struct *tty,
+-					struct tty_struct *tty2)
++void __lockfunc tty_lock_slave(struct tty_struct *tty)
+ {
+-	if (tty < tty2) {
+-		tty_lock(tty);
+-		tty_lock_nested(tty2, TTY_MUTEX_NESTED);
+-	} else {
+-		if (tty2 && tty2 != tty)
+-			tty_lock(tty2);
++	if (tty && tty != tty->link) {
++		WARN_ON(!mutex_is_locked(&tty->link->legacy_mutex) ||
++			!tty->driver->type == TTY_DRIVER_TYPE_PTY ||
++			!tty->driver->type == PTY_TYPE_SLAVE);
+ 		tty_lock_nested(tty, TTY_MUTEX_NESTED);
+ 	}
+ }
+-EXPORT_SYMBOL(tty_lock_pair);
+ 
+-void __lockfunc tty_unlock_pair(struct tty_struct *tty,
+-						struct tty_struct *tty2)
++void __lockfunc tty_unlock_slave(struct tty_struct *tty)
+ {
+-	tty_unlock(tty);
+-	if (tty2 && tty2 != tty)
+-		tty_unlock(tty2);
++	if (tty && tty != tty->link)
++		tty_unlock(tty);
+ }
+-EXPORT_SYMBOL(tty_unlock_pair);
 diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 8a90253..90256ee 100644
+index af1a7f3..a07b4b4 100644
 --- a/include/linux/tty.h
 +++ b/include/linux/tty.h
-@@ -442,7 +442,7 @@ extern void __do_SAK(struct tty_struct *tty);
- extern void no_tty(void);
- extern void tty_flush_to_ldisc(struct tty_struct *tty);
- extern void tty_buffer_free_all(struct tty_port *port);
--extern void tty_buffer_flush(struct tty_struct *tty);
-+extern void tty_buffer_flush(struct tty_struct *tty, struct tty_ldisc *ld);
- extern void tty_buffer_init(struct tty_port *port);
- extern speed_t tty_termios_baud_rate(struct ktermios *termios);
- extern speed_t tty_termios_input_baud_rate(struct ktermios *termios);
+@@ -638,11 +638,8 @@ extern long vt_compat_ioctl(struct tty_struct *tty,
+ /* functions for preparation of BKL removal */
+ extern void __lockfunc tty_lock(struct tty_struct *tty);
+ extern void __lockfunc tty_unlock(struct tty_struct *tty);
+-extern void __lockfunc tty_lock_pair(struct tty_struct *tty,
+-				struct tty_struct *tty2);
+-extern void __lockfunc tty_unlock_pair(struct tty_struct *tty,
+-				struct tty_struct *tty2);
+-
++extern void __lockfunc tty_lock_slave(struct tty_struct *tty);
++extern void __lockfunc tty_unlock_slave(struct tty_struct *tty);
+ /*
+  * this shall be called only from where BTM is held (like close)
+  *
 -- 
 2.1.1
 
