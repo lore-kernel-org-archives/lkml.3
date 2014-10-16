@@ -1,71 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751531AbaJPJni (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 05:43:38 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:39830 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750966AbaJPJng (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 05:43:36 -0400
-Date: Thu, 16 Oct 2014 11:43:33 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kirill Tkhai <ktkhai@parallels.com>
-Cc: Kirill Tkhai <tkhai@yandex.ru>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Vladimir Davydov <vdavydov@parallels.com>
-Subject: Re: [PATCH RFC] sched: Revert delayed_put_task_struct() and fix use
- after free
-Message-ID: <20141016094333.GJ7369@worktop.fdxtended.com>
-References: <1413376300.24793.55.camel@tkhai>
- <20141015150641.GA2755@redhat.com>
- <20141015194044.GA4557@redhat.com>
- <543EEB1F.3040900@yandex.ru>
- <20141016075950.GC7369@worktop.fdxtended.com>
- <1413447404.24793.67.camel@tkhai>
+	id S1751694AbaJPJn5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 05:43:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41502 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751490AbaJPJnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 05:43:55 -0400
+Date: Thu, 16 Oct 2014 11:43:51 +0200
+From: Jean Delvare <jdelvare@suse.de>
+To: James Ralston <james.d.ralston@intel.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, linux-doc@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] i2c-i801: Add Device IDs for Intel Sunrise Point
+ PCH
+Message-ID: <20141016114351.3f17743a@endymion.delvare>
+In-Reply-To: <1413238824-5513-1-git-send-email-james.d.ralston@intel.com>
+References: <1413238824-5513-1-git-send-email-james.d.ralston@intel.com>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1413447404.24793.67.camel@tkhai>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 12:16:44PM +0400, Kirill Tkhai wrote:
-> В Чт, 16/10/2014 в 09:59 +0200, Peter Zijlstra пишет:
-> > On Thu, Oct 16, 2014 at 01:46:07AM +0400, Kirill Tkhai wrote:
-> > > > --- x/kernel/sched/fair.c
-> > > > +++ x/kernel/sched/fair.c
-> > > > @@ -1165,7 +1165,7 @@ static void task_numa_compare(struct tas
-> > > >  
-> > > >  	rcu_read_lock();
-> > > >  	cur = ACCESS_ONCE(dst_rq->curr);
-> > > > -	if (cur->pid == 0) /* idle */
-> > > > +	if (is_idle_task(cur) || (curr->flags & PF_EXITING))
-> > > >  		cur = NULL;
-> > > >  
-> > > >  	/*
-> > > > 
-> > > 
-> > > Looks like, we have to use the same fix for task_numa_group().
-> > 
-> > Don't think so, task_numa_group() is only called from task_numa_fault()
-> > which is on 'current' and neither idle and PF_EXITING should be
-> > faulting.
+Hi James,
+
+On Mon, 13 Oct 2014 15:20:24 -0700, James Ralston wrote:
+> This patch adds the I2C/SMBus Device IDs for the Intel Sunrise Point PCH.
 > 
-> Isn't task_numa_group() fully preemptible?
+> Signed-off-by: James Ralston <james.d.ralston@intel.com>
+> ---
+>  Documentation/i2c/busses/i2c-i801 | 1 +
+>  drivers/i2c/busses/Kconfig        | 1 +
+>  drivers/i2c/busses/i2c-i801.c     | 3 +++
+>  3 files changed, 5 insertions(+)
+> 
+> diff --git a/Documentation/i2c/busses/i2c-i801 b/Documentation/i2c/busses/i2c-i801
+> index e9c803e..793c83d 100644
+> --- a/Documentation/i2c/busses/i2c-i801
+> +++ b/Documentation/i2c/busses/i2c-i801
+> @@ -28,6 +28,7 @@ Supported adapters:
+>    * Intel Wildcat Point (PCH)
+>    * Intel Wildcat Point-LP (PCH)
+>    * Intel BayTrail (SOC)
+> +  * Intel Sunrise Point-H (PCH)
+>     Datasheets: Publicly available at the Intel website
+>  
+>  On Intel Patsburg and later chipsets, both the normal host SMBus controller
+> diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+> index 2ac87fa..9f4f574 100644
+> --- a/drivers/i2c/busses/Kconfig
+> +++ b/drivers/i2c/busses/Kconfig
+> @@ -112,6 +112,7 @@ config I2C_I801
+>  	    Wildcat Point (PCH)
+>  	    Wildcat Point-LP (PCH)
+>  	    BayTrail (SOC)
+> +	    Sunrise Point-H (PCH)
+>  
+>  	  This driver can also be built as a module.  If so, the module
+>  	  will be called i2c-i801.
+> diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
+> index 10467a3..7cfc183 100644
+> --- a/drivers/i2c/busses/i2c-i801.c
+> +++ b/drivers/i2c/busses/i2c-i801.c
+> @@ -62,6 +62,7 @@
+>   * Wildcat Point (PCH)		0x8ca2	32	hard	yes	yes	yes
+>   * Wildcat Point-LP (PCH)	0x9ca2	32	hard	yes	yes	yes
+>   * BayTrail (SOC)		0x0f12	32	hard	yes	yes	yes
+> + * Sunrise Point-H (PCH) 	0xa123  32	hard	yes	yes	yes
 
-Not seeing how that is relevant.
+checkpatch is unhappy:
 
-> It seems cpu_rq(cpu)->curr is not always equal to p.
+WARNING: please, no space before tabs
+#93: FILE: drivers/i2c/busses/i2c-i801.c:65:
++ * Sunrise Point-H (PCH) ^I0xa123  32^Ihard^Iyes^Iyes^Iyes$
 
-It should be afaict:
+>   *
+>   * Features supported by this driver:
+>   * Software PEC				no
+> @@ -184,6 +185,7 @@
+>  #define PCI_DEVICE_ID_INTEL_WELLSBURG_SMBUS_MS2		0x8d7f
+>  #define PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_SMBUS		0x9c22
+>  #define PCI_DEVICE_ID_INTEL_WILDCATPOINT_LP_SMBUS	0x9ca2
+> +#define PCI_DEVICE_ID_INTEL_SUNRISEPOINT_H_SMBUS	0xa123
+>  
+>  struct i801_mux_config {
+>  	char *gpio_chip;
+> @@ -830,6 +832,7 @@ static const struct pci_device_id i801_ids[] = {
+>  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_WILDCATPOINT_LP_SMBUS) },
+>  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_BAYTRAIL_SMBUS) },
+>  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_BRASWELL_SMBUS) },
+> +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_SUNRISEPOINT_H_SMBUS) },
+>  	{ 0, }
+>  };
+>  
 
- task_numa_fault()
-  p = current;
+Other than that, patch looks good, thanks.
 
-  task_numa_group(p, ..);
+Reviewed-by: Jean Delvare <jdelvare@suse.de>
 
-And like said, idle tasks and PF_EXITING task should never get (numa)
-faults for they should never be touching userspace.
+-- 
+Jean Delvare
+SUSE L3 Support
