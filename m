@@ -1,210 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751441AbaJPOjj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 10:39:39 -0400
-Received: from lists.s-osg.org ([54.187.51.154]:40941 "EHLO lists.s-osg.org"
+	id S1751346AbaJPOoK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 10:44:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36473 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751334AbaJPOj2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 10:39:28 -0400
-Message-ID: <543FD89E.70106@osg.samsung.com>
-Date: Thu, 16 Oct 2014 08:39:26 -0600
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1751035AbaJPOoH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 10:44:07 -0400
+Message-ID: <543FD9B2.6050802@redhat.com>
+Date: Thu, 16 Oct 2014 07:44:02 -0700
+From: Alexander Duyck <alexander.h.duyck@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: m.chehab@samsung.com, akpm@linux-foundation.org,
-        gregkh@linuxfoundation.org, crope@iki.fi, olebowle@gmx.com,
-        dheitmueller@kernellabs.com, hverkuil@xs4all.nl, ramakrmu@cisco.com,
-        sakari.ailus@linux.intel.com, laurent.pinchart@ideasonboard.com,
-        perex@perex.cz, prabhakar.csengg@gmail.com, tim.gardner@canonical.com,
-        linux@eikelenboom.it, linux-media@vger.kernel.org,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/6] media: add media token device resource framework
-References: <cover.1413246370.git.shuahkh@osg.samsung.com> <c8bae1d475b1086302fcb83bc463ec01437c3f95.1413246372.git.shuahkh@osg.samsung.com> <s5h8ukhw9eu.wl-tiwai@suse.de> <543F1708.1040303@osg.samsung.com> <s5h4mv4w1wc.wl-tiwai@suse.de>
-In-Reply-To: <s5h4mv4w1wc.wl-tiwai@suse.de>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+To: Prarit Bhargava <prarit@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Myron Stowe <mstowe@redhat.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH] pci, add sysfs numa_node write function
+References: <1413399924-599-1-git-send-email-prarit@redhat.com> <CAErSpo6Oy1S1OECirp6=tz+pQWUtkFE6p1LTzNaYtzxoX73FWw@mail.gmail.com> <543ECF6F.2030705@redhat.com> <CAErSpo76g-EPsUsMjhBpnnbKD3QufHz1xkvYaqXd8hYtgQ5u1g@mail.gmail.com> <543FBAEF.7030905@redhat.com>
+In-Reply-To: <543FBAEF.7030905@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2014 08:00 AM, Takashi Iwai wrote:
-> At Wed, 15 Oct 2014 18:53:28 -0600,
-> Shuah Khan wrote:
->>
->> On 10/15/2014 11:05 AM, Takashi Iwai wrote:
->>
->>>> +#if defined(CONFIG_MEDIA_SUPPORT)
->>>> +extern int media_tknres_create(struct device *dev);
->>>> +extern int media_tknres_destroy(struct device *dev);
->>>> +
->>>> +extern int media_get_tuner_tkn(struct device *dev);
->>>> +extern int media_put_tuner_tkn(struct device *dev);
->>>> +
->>>> +extern int media_get_audio_tkn(struct device *dev);
->>>> +extern int media_put_audio_tkn(struct device *dev);
->>>
->>> The words "tknres" and "tkn" (especially latter) look ugly and not
->>> clear to me.  IMO, it should be "token".
->>
->> No problem. I can change that to media_token_create/destroy()
->> and expand token in other functions.
->>
->>>> +struct media_tkn {
->>>> +	spinlock_t lock;
->>>> +	unsigned int owner;	/* owner task pid */
->>>> +	unsigned int tgid;	/* owner task gid */
->>>> +	struct task_struct *task;
->>>> +};
->>>> +
->>>> +struct media_tknres {
->>>> +	struct media_tkn tuner;
->>>> +	struct media_tkn audio;
->>>> +};
->>>
->>> Why do you need to have both tuner and audio tokens?  If I understand
->>> correctly, no matter whether it's tuner or audio, if it's being used,
->>> the open must fail, right?
->>
->> As it evolved during development, it turns out at the moment I don't
->> have any use-cases that require holding audio and tuner separately.
->> It probably could be collapsed into just a media token. I have to
->> think about this some.
->>
->>>> +
->>>> +static int __media_get_tkn(struct media_tkn *tkn, char *tkn_str)
->>>> +{
->>>> +	int rc = 0;
->>>> +	unsigned tpid;
->>>> +	unsigned tgid;
->>>> +
->>>> +	spin_lock(&tkn->lock);
->>>
->>> You should use spin_lock_irqsave() here and in all other places.
->>> The trigger callback in usb-audio, for example, may be called in irq
->>> context.
->>
->> ok. Good point, will change that.
->>
->>>
->>>> +
->>>> +	tpid = task_pid_nr(current);
->>>> +	tgid = task_tgid_nr(current);
->>>> +
->>>> +	/* allow task in the same group id to release */
->>>
->>> IMO, it's not "release" but "steal"...  But what happens if the stolen
->>> owner calls put?  Then it'll be released although the stealing owner
->>> still thinks it's being held.
->>
->> Yeah it could be called a steal. :) Essentially tgid happens to be
->> the real owner. I am overwriting the pid with current pid when
->> tgid is same.
->>
->> media dvb and v4l apps start two or more threads that all share the
->> tgid and subsequent token gets should be allowed based on the tgid.
->>
->> Scenario 1:
->>
->> Please note that there are 3 device files in question and media
->> token resource is the lock for all. Hence the changes to v4l-core,
->> dvb-core, and snd-usb-audio to hold the token for exclusive access
->> when the task or tgid don't match.
->>
->> program starts:
->> - first thread opens device file in R/W mode - open gets the token
->>   or thread makes ioctls calls that clearly indicates intent to
->>   change tuner settings
->> - creates one thread for audio
->> - creates another for video or continues video function
->> - video thread does a close and re-opens the device file
->>
->>   In this case when thread tries to close, token put fails unless
->>   tasks with same tgid are allowed to release.
->>   ( I ran into this one of the media applications and it is a valid
->>     case to handle, thread can close the file and should be able to
->>     open again without running into token busy case )
->>
->> - or continue to just use the device file
->> - audio thread does snd_pcm_capture ops - trigger start
->>
->> program exits:
->> - video thread closes the device file
->> - audio thread does snd_pcm_capture ops - trigger stop
->>
->> This got me thinking about the scenario when an application
->> does a fork() as opposed to create a thread. I have to think
->> about this and see how I can address that.
->>
->>>
->>>> +	if (tkn->task && ((tkn->task != current) && (tkn->tgid != tgid))) {
->>>
->>> Shouldn't the second "&&" be "||" instead?
->>> And too many parentheses there.
->>
->> Right - this is my bad. The comment right above this conditional
->> is a give away that, at some point I did a copy and paste from
->> _put to _get and only changed the first task null check.
->> I am yelling at myself at the moment.
->>
->>>
->>>> +			rc = -EBUSY;
->>>
->>> Wrong indentation.
->>
->> Yes. Will fix that.
->>
->>>
->>> I have a feeling that the whole thing can be a bit more simplified in
->>> the end...
->>>
->>
->> Any ideas to simplify are welcome.
-> 
-> There are a few points to make things more consistent and simplified,
-> IMO.  First of all, the whole concept can be more generalized.  It's
-> not necessarily only for media and audio.  Rather we can make it a
-> generic dev_token.  Then it'll become more convincing to land into
-> lib/*.
 
-Right. At the moment this is very media specific.
+On 10/16/2014 05:32 AM, Prarit Bhargava wrote:
+> On 10/15/2014 05:20 PM, Bjorn Helgaas wrote:
+>> On Wed, Oct 15, 2014 at 1:47 PM, Prarit Bhargava <prarit@redhat.com> wrote:
+>>> On 10/15/2014 03:23 PM, Bjorn Helgaas wrote:
+>>>> Hi Prarit,
+>>>>
+>>>> On Wed, Oct 15, 2014 at 1:05 PM, Prarit Bhargava <prarit@redhat.com> wrote:
+>>>>> Consider a multi-node, multiple pci root bridge system which can be
+>>>>> configured into one large node or one node/socket.  When configuring the
+>>>>> system the numa_node value for each PCI root bridge is always set
+>>>>> incorrectly to -1, or NUMA_NO_NODE, rather than to the node value of each
+>>>>> socket.  Each PCI device inherits the numa value directly from it's parent
+>>>>> device, so that the NUMA_NO_NODE value is passed through the entire PCI
+>>>>> tree.
+>>>>>
+>>>>> Some new drivers, such as the Intel QAT driver, drivers/crypto/qat,
+>>>>> require that a specific node be assigned to the device in order to
+>>>>> achieve maximum performance for the device, and will fail to load if the
+>>>>> device has NUMA_NO_NODE.
+>>>> It seems ... unfriendly for a driver to fail to load just because it
+>>>> can't guarantee maximum performance.  Out of curiosity, where does
+>>>> this actually happen?  I had a quick look for NUMA_NO_NODE and
+>>>> module_init() functions in drivers/crypto/qat, and I didn't see the
+>>>> spot.
+>>> The whole point of the Intel QAT driver is to guarantee max performance.  If
+>>> that is not possible the driver should not load (according to the thread
+>>> mentioned below)
 
-> 
-> The media-specific handling is only about the pid and gid checks.
-> This can be implemented as a callback that is passed at creating a
-> token, for example.  This will reduce the core code in lib/*.
-> 
-> Also, get and put should handle a proper refcount.  The point I
-> mentioned in my previous post is the possible unbalance, and you'll
-> see unexpected unlock in the scenario.  In addition, with use of kref,
-> the lock can be removed.
+This is just short-sighted thinking.  The fact that the PCI device 
+advertises -1 means that either the BIOS isn't configured, or the PCI 
+slots are shared as was the case on some Nehalem systems where the IOH 
+was shared between two sockets.  I suspect that this driver doesn't even 
+take that into account as it was likely only written for Sandy Bridge 
+architectures.
 
-Yes. kref would eliminate the need for locks and potential for
-unbalanced scenario.
+>>>>> To use this, one can do
+>>>>>
+>>>>> echo 3 > /sys/devices/pci0000:ff/0000:ff:1f.3/numa_node
+>>>>>
+>>>>> to set the numa node for PCI device 0000:ff:1f.3.
+>>>> It definitely seems wrong that we don't set the node number correctly.
+>>>> pci_acpi_scan_root() sets the node number by looking for a _PXM method
+>>>> that applies to the host bridge.  Why does that not work in this case?
+>>>>   Does the BIOS not supply _PXM?
+>>> Yeah ... unfortunately the BIOS is broken in this case.  And I know what you're
+>>> thinking ;) -- why not get the BIOS fixed?  I'm through relying on BIOS fixes
+>>> which can take six months to a year to appear in a production version... I've
+>>> been bitten too many times by promises of BIOS fixes that never materialize.
+>> Yep, I understand.  The question is how we implement a workaround so
+>> it doesn't become the accepted way to do things.  Obviously we don't
+>> want people manually grubbing through numactl/lspci output or writing
+>> shell scripts to do things that *should* happen automatically.
 
-> 
-> So, essentially the lib code would be just a devres_alloc() for an
-> object with kref, and dev_token_get() will take a kref with the
-> exclusion check.
-> 
+I'd say if nothing else we should flag the system as tainted as soon as 
+we start overwriting BIOS/ACPI configured values with sysfs. This is one 
+of the reasons for the TAINT_FIRMWARE_WORKAROUND even existing.
 
-I considered callback for media specific handling to make this token
-construct generic. Talked myself out of it with the idea to get this
-working for media use-case first and then extend it to be generic.
+>> Somewhere in the picture there needs to be a feedback loop that
+>> encourages the vendor to fix the problem.  I don't see that happening
+>> yet.  Having QAT fail because the platform didn't supply the
+>> information required to make it work would be a nice loop.  I don't
+>> want to completely paper over the problem without providing some other
+>> kind of feedback at the same time.
+> Okay -- I see what you're after here and I completely agree with it.  But
+> sometimes I feel like I banging on a silent drum with some of these companies
+> about this stuff :(  My frustration with these companies is starting to show I
+> guess...
 
-With this patch set covering media cases including non-media driver,
-I think I am confident that the approach itself works to address the
-issues and I don't mind pursuing a generic approach you are suggesting.
-The current work isn't that far off and I can get the generic working
-without many changes.
+Just how visible is the QAT driver load failure?  I has a similar issue 
+with DCA not being configured in a number of BIOSes and it wasn't until 
+I made the issue painfully visible with TAINT_FIRMWARE_WORKAROUND that I 
+started to see any traction on getting this fixed in the BIOSes.
 
-Thanks again for talking through the problem and ideas.
+We would need to sort out the systems that actually have bad BIOSes 
+versus just being configured without PCI slots directly associated with 
+any given NUMA node since there are systems where that is a valid 
+configuration.
 
--- Shuah
+>> You're probably aware of [1], which was the same problem.  Apparently
+>> it was originally reported to RedHat as [2] (which is private, so I
+>> can't read it).  That led to a workaround hack for some AMD systems
+>> [3, 4].
+> Yeah ... part of me was thinking that maybe I should do something like
+> the above but I didn't know how you'd feel about expanding that hack.  I'll look
+> into it.  I'd prefer it to be opt-in with a kernel parameter.
+>
+> P.
 
--- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+Are you thinking something like a "pci=assign-numa"?  The problem is 
+there doesn't seem to be a good way to currently determine the NUMA 
+layout without the information being provided by the BIOS/ACPI tables, 
+and we probably don't want to be creating a definition of the NUMA 
+layout per platform.
+
+Thanks,
+
+Alex
+
