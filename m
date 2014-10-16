@@ -1,205 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000AbaJPK2r (ORCPT <rfc822;w@1wt.eu>);
+	id S1753024AbaJPK2v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 06:28:51 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:46692 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752768AbaJPK2r convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Oct 2014 06:28:47 -0400
-Received: from mail.efficios.com ([78.47.125.74]:35562 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752754AbaJPK2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 06:28:45 -0400
-Date: Thu, 16 Oct 2014 12:28:26 +0200
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v11 10/21] dax,ext2: Replace xip_truncate_page with
- dax_truncate_page
-Message-ID: <20141016102826.GH19075@thinkos.etherlink>
-References: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com>
- <1411677218-29146-11-git-send-email-matthew.r.wilcox@intel.com>
+Date: Thu, 16 Oct 2014 11:28:33 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Michael Ellerman <mpe@ellerman.id.au>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        linux-pci <linux-pci@vger.kernel.org>
+Subject: Re: of/pci: Fix the conversion of IO ranges into IO resources
+Message-ID: <20141016102833.GL4599@e106497-lin.cambridge.arm.com>
+References: <20141009200235.55E5166107E@gitolite.kernel.org>
+ <1413358507.4748.4.camel@pasglop>
+ <20141015090239.GB18070@e106497-lin.cambridge.arm.com>
+ <1413428148.20705.2.camel@concordia>
+ <20141016090529.GG4599@e106497-lin.cambridge.arm.com>
+ <1413453882.11213.95.camel@pasglop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1413453882.11213.95.camel@pasglop>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 16 Oct 2014 10:28:34.0349 (UTC) FILETIME=[F06BB5D0:01CFE92B]
+X-MC-Unique: 114101611284007601
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1411677218-29146-11-git-send-email-matthew.r.wilcox@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25-Sep-2014 04:33:27 PM, Matthew Wilcox wrote:
-> It takes a get_block parameter just like nobh_truncate_page() and
-> block_truncate_page()
+On Thu, Oct 16, 2014 at 11:04:42AM +0100, Benjamin Herrenschmidt wrote:
+> On Thu, 2014-10-16 at 10:05 +0100, Liviu Dudau wrote:
+> > So you are going to continue converting IO ranges as IORESOURCE_MEM resources but with a
+> > different flag. Is that something that powerpc depends on or is it an artifact of too
+> > much code living around the kernel that has built in assumption of that being the fact?
+> > I'm trying to understand the world around powerpc so as to attempt to make a useful
+> > contribution in the future.
 > 
-> Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-> ---
->  fs/dax.c           | 44 ++++++++++++++++++++++++++++++++++++++++++++
->  fs/ext2/inode.c    |  2 +-
->  include/linux/fs.h |  4 ++--
->  mm/filemap_xip.c   | 40 ----------------------------------------
->  4 files changed, 47 insertions(+), 43 deletions(-)
+> I'm not sure I understand what you mean and which specific resources you
+> are talking about.
 > 
-> diff --git a/fs/dax.c b/fs/dax.c
-> index ac5d3a6..6801be7 100644
-> --- a/fs/dax.c
-> +++ b/fs/dax.c
-> @@ -460,3 +460,47 @@ int dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
->  	return result;
->  }
->  EXPORT_SYMBOL_GPL(dax_fault);
-> +
-> +/**
-> + * dax_truncate_page - handle a partial page being truncated in a DAX file
-> + * @inode: The file being truncated
-> + * @from: The file offset that is being truncated to
-> + * @get_block: The filesystem method used to translate file offsets to blocks
-> + *
-> + * Similar to block_truncate_page(), this function can be called by a
-> + * filesystem when it is truncating an DAX file to handle the partial page.
-> + *
-> + * We work in terms of PAGE_CACHE_SIZE here for commonality with
-> + * block_truncate_page(), but we could go down to PAGE_SIZE if the filesystem
-> + * took care of disposing of the unnecessary blocks.  Even if the filesystem
-> + * block size is smaller than PAGE_SIZE, we have to zero the rest of the page
-> + * since the file might be mmaped.
-> + */
-> +int dax_truncate_page(struct inode *inode, loff_t from, get_block_t get_block)
-> +{
-> +	struct buffer_head bh;
-> +	pgoff_t index = from >> PAGE_CACHE_SHIFT;
-> +	unsigned offset = from & (PAGE_CACHE_SIZE-1);
-> +	unsigned length = PAGE_CACHE_ALIGN(from) - from;
+> For PCI devices, the IO BAR resources have IORESOURCE_IO ... 
 
-nits: unsigned -> unsigned int (I'm starting to think that FS code
-perhaps has different coding style than kernel/ core code)
+Correct. But the old version of of_pci_range_to_resource() and the powerpc opencoded
+version generate the same .start .end values for an IO range as it would for an
+MEM range, just the type of resource is different.
 
-> +	int err;
-> +
-> +	/* Block boundary? Nothing to do */
-> +	if (!length)
-> +		return 0;
-> +
-> +	memset(&bh, 0, sizeof(bh));
-> +	bh.b_size = PAGE_CACHE_SIZE;
-> +	err = get_block(inode, index, &bh, 0);
-> +	if (err < 0)
-> +		return err;
-> +	if (buffer_written(&bh)) {
-> +		void *addr;
+Like I've said before and also put down in the commit message for 0b0b0893d49b, my
+understanding of the way Linux uses IORESOURCE_IO resources is that they are supposed
+to be based on the "magic port address 0." Nothing wrong with saying that powerpc
+sees IORESOURCE_IO as being something capable of covering the entire CPU address
+space, but ARM based architectures have decided to use an offset value for .start and
+.end and to base IO starting from PCI_IOBASE (which is what the macro signals).
 
-missing newline.
+I'm just trying to understand how things stand here, I'm not starting a polemic.
 
-Other than that:
-
-Reviewed-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-
-Thanks,
-
-Mathieu
-
-> +		err = dax_get_addr(&bh, &addr, inode->i_blkbits);
-> +		if (err < 0)
-> +			return err;
-> +		memset(addr + offset, 0, length);
-> +	}
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(dax_truncate_page);
-> diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
-> index 52978b8..5ac0a34 100644
-> --- a/fs/ext2/inode.c
-> +++ b/fs/ext2/inode.c
-> @@ -1210,7 +1210,7 @@ static int ext2_setsize(struct inode *inode, loff_t newsize)
->  	inode_dio_wait(inode);
->  
->  	if (IS_DAX(inode))
-> -		error = xip_truncate_page(inode->i_mapping, newsize);
-> +		error = dax_truncate_page(inode, newsize, ext2_get_block);
->  	else if (test_opt(inode->i_sb, NOBH))
->  		error = nobh_truncate_page(inode->i_mapping,
->  				newsize, ext2_get_block);
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 338f04b..eee848d 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -2492,7 +2492,7 @@ extern int nonseekable_open(struct inode * inode, struct file * filp);
->  
->  #ifdef CONFIG_FS_XIP
->  int dax_clear_blocks(struct inode *, sector_t block, long size);
-> -extern int xip_truncate_page(struct address_space *mapping, loff_t from);
-> +int dax_truncate_page(struct inode *, loff_t from, get_block_t);
->  ssize_t dax_do_io(int rw, struct kiocb *, struct inode *, struct iov_iter *,
->  		loff_t, get_block_t, dio_iodone_t, int flags);
->  int dax_fault(struct vm_area_struct *, struct vm_fault *, get_block_t);
-> @@ -2503,7 +2503,7 @@ static inline int dax_clear_blocks(struct inode *i, sector_t blk, long sz)
->  	return 0;
->  }
->  
-> -static inline int xip_truncate_page(struct address_space *mapping, loff_t from)
-> +static inline int dax_truncate_page(struct inode *i, loff_t frm, get_block_t gb)
->  {
->  	return 0;
->  }
-> diff --git a/mm/filemap_xip.c b/mm/filemap_xip.c
-> index 9dd45f3..6316578 100644
-> --- a/mm/filemap_xip.c
-> +++ b/mm/filemap_xip.c
-> @@ -21,43 +21,3 @@
->  #include <asm/tlbflush.h>
->  #include <asm/io.h>
->  
-> -/*
-> - * truncate a page used for execute in place
-> - * functionality is analog to block_truncate_page but does use get_xip_mem
-> - * to get the page instead of page cache
-> - */
-> -int
-> -xip_truncate_page(struct address_space *mapping, loff_t from)
-> -{
-> -	pgoff_t index = from >> PAGE_CACHE_SHIFT;
-> -	unsigned offset = from & (PAGE_CACHE_SIZE-1);
-> -	unsigned blocksize;
-> -	unsigned length;
-> -	void *xip_mem;
-> -	unsigned long xip_pfn;
-> -	int err;
-> -
-> -	BUG_ON(!mapping->a_ops->get_xip_mem);
-> -
-> -	blocksize = 1 << mapping->host->i_blkbits;
-> -	length = offset & (blocksize - 1);
-> -
-> -	/* Block boundary? Nothing to do */
-> -	if (!length)
-> -		return 0;
-> -
-> -	length = blocksize - length;
-> -
-> -	err = mapping->a_ops->get_xip_mem(mapping, index, 0,
-> -						&xip_mem, &xip_pfn);
-> -	if (unlikely(err)) {
-> -		if (err == -ENODATA)
-> -			/* Hole? No need to truncate */
-> -			return 0;
-> -		else
-> -			return err;
-> -	}
-> -	memset(xip_mem + offset, 0, length);
-> -	return 0;
-> -}
-> -EXPORT_SYMBOL_GPL(xip_truncate_page);
-> -- 
-> 2.1.0
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> The case where we might get an IORESOURCE_MEM, at least that's how my old
+> code used to work, was is if we try to use the device-tree to convert a
+> PCI IO device address before we have initialized our mappings (ie, before
+> we have probed our PCI host bridges).
+
+Although we might be cross-talking here, I would like to understand better this case.
+What do you mean by "use the device-tree to convert a PCI IO device address" ? Are
+you trying to do IO transactions before PCI host brige was setup?
+
+> 
+> In that case, we would get an IORESOURCE_MEM (which is functional as long
+> as one ioremap's and uses the proper accessors for memory resources).
+> 
+> Once we have the PCI host bridges probed, the IO space is assigned, and
+> such conversion routines will transform the addresses properly into IO
+> resources.
+
+The way I'm leaning to is to get everyone towards the following workflow:
+  - gather PCI resources describing the host bridge address space (IO + MEM)
+  - (future) create a struct pci_host_bridge that holds those resources
+    plus any other information that might be required for successfully
+    scanning the root bus
+  - (in driver) create a host bridge struct to hold driver specific data
+  - create root bus passing on the driver host bridge struct and (in future)
+    the pci_host_bridge structure
+  - scan root bus.
+
+Is this workflow going to be useful to powerpc or is there something missing
+here?
+
+> 
+> Note that it's fairly rare that we use the device-tree for PCI based
+> resources anyway and even rarer than we do that before the PCI host
+> bridges have been properly setup and thus their IO space allocated.
+> 
+> Note that the problems exposed by these patches can be entirely reproduced
+> in qemu using virtio, so you should be able to test a little bit if you
+> have a reasonably fast x86 box to run qemu on.
+
+Which host bridge/device(s) do I need to tell qemu to emulate/pass through?
+Do you have a wiki/README page where I can get details on how to setup a
+test environment with powerpc-qemu + virtio + PCIe?
+
+Best regards,
+Liviu
+
+> 
+> Cheers,
+> Ben.
+> 
 > 
 > 
 
 -- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
-Key fingerprint: 2A0B 4ED9 15F2 D3FA 45F5  B162 1728 0A97 8118 6ACF
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
+
