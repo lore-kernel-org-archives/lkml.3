@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240AbaJPJGr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 05:06:47 -0400
-Received: from smtp6-g21.free.fr ([212.27.42.6]:52747 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752213AbaJPJGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 05:06:45 -0400
-Message-Id: <5c9c907710593ff24820577b4dc22deeaecc2555.1413223900.git.ydroneaud@opteya.com>
-In-Reply-To: <cover.1413223900.git.ydroneaud@opteya.com>
-References: <cover.1413223900.git.ydroneaud@opteya.com>
-From: Yann Droneaud <ydroneaud@opteya.com>
-To: Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <trivial@kernel.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 21 Mar 2013 20:10:54 +0100
-Subject: [PATCHv9 3/5] binfmt_misc: trivial: replace get_unused_fd() by
- get_unused_fd_flags(0)
+	id S1752085AbaJPJFQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 05:05:16 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:36413 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751817AbaJPJFF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 05:05:05 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: [PATCH 05/11] dmaengine: k3: Remove chancnt affectations
+Date: Thu, 16 Oct 2014 11:00:57 +0200
+Message-Id: <1413450063-23829-6-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1413450063-23829-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1413450063-23829-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces calls to get_unused_fd() with equivalent call to
-get_unused_fd_flags(0) to preserve current behavor for existing code.
+chanctnt is already filled by dma_async_device_register, which uses the channel
+list to know how much channels there is.
 
-In a further patch, get_unused_fd() will be removed so that new code
-start using get_unused_fd_flags(), with the hope O_CLOEXEC could be
-used, either by default or choosen by userspace.
+Since it's already filled, we can safely remove it from the drivers' probe
+function.
 
-Link: http://lkml.kernel.org/r/cover.1413223900.git.ydroneaud@opteya.com
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: trivial@kernel.org
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- fs/binfmt_misc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/dma/k3dma.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
-index fd8beb9657a2..1cc5377ba955 100644
---- a/fs/binfmt_misc.c
-+++ b/fs/binfmt_misc.c
-@@ -153,7 +153,7 @@ static int load_misc_binary(struct linux_binprm *bprm)
- 		/* if the binary should be opened on behalf of the
- 		 * interpreter than keep it open and assign descriptor
- 		 * to it */
-- 		fd_binary = get_unused_fd();
-+		fd_binary = get_unused_fd_flags(0);
-  		if (fd_binary < 0) {
-  			retval = fd_binary;
-  			goto _ret;
+diff --git a/drivers/dma/k3dma.c b/drivers/dma/k3dma.c
+index a1f911aaf220..58219aa649fd 100644
+--- a/drivers/dma/k3dma.c
++++ b/drivers/dma/k3dma.c
+@@ -722,7 +722,6 @@ static int k3_dma_probe(struct platform_device *op)
+ 	d->slave.device_issue_pending = k3_dma_issue_pending;
+ 	d->slave.device_control = k3_dma_control;
+ 	d->slave.copy_align = DMA_ALIGN;
+-	d->slave.chancnt = d->dma_requests;
+ 
+ 	/* init virtual channel */
+ 	d->chans = devm_kzalloc(&op->dev,
 -- 
-1.9.3
+2.1.1
 
