@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752107AbaJPQIT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 12:08:19 -0400
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:49733
-	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751309AbaJPQIR (ORCPT
+	id S1751695AbaJPQKg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 12:10:36 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:43052 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238AbaJPQKf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 12:08:17 -0400
-Date: Thu, 16 Oct 2014 18:08:15 +0200
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Aditya Kali <adityakali@google.com>
-Cc: tj@kernel.org, lizefan@huawei.com, serge.hallyn@ubuntu.com,
-        luto@amacapital.net, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        mingo@redhat.com, containers@lists.linux-foundation.org
-Subject: Re: [PATCHv1 2/8] sched: new clone flag CLONE_NEWCGROUP for cgroup
- namespace
-Message-ID: <20141016160815.GB1392@mail.hallyn.com>
-References: <adityakali-cgroupns>
- <1413235430-22944-1-git-send-email-adityakali@google.com>
- <1413235430-22944-3-git-send-email-adityakali@google.com>
+	Thu, 16 Oct 2014 12:10:35 -0400
+Message-ID: <543FEDFF.2000105@kernel.dk>
+Date: Thu, 16 Oct 2014 10:10:39 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413235430-22944-3-git-send-email-adityakali@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: IO request merging
+References: <20141016122740.GI6085@quack.suse.cz>
+In-Reply-To: <20141016122740.GI6085@quack.suse.cz>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Aditya Kali (adityakali@google.com):
-> CLONE_NEWCGROUP will be used to create new cgroup namespace.
+On 10/16/2014 06:27 AM, Jan Kara wrote:
+>   Hello,
 > 
-> Signed-off-by: Aditya Kali <adityakali@google.com>
+>   one of our customers was complaining that elv_attempt_insert_merge()
+> merges two requests (via blk_attempt_req_merge()) without asking IO
+> scheduler for permission (->elevator_allow_merge_fn() callback). Now for
+> them this is a problem because of their custom IO scheduler but looking
+> into the code this can result in somewhat suboptimal behavior for CFQ as
+> well (merging two requests from different IO contexts, possibly merging
+> sync & async request). What do others think about this?
+> 
+> Regarding possible fix, we cannot really call ->elevator_allow_merge_fn()
+> because that assumes it is called from a context of a process submitting the
+> passed bio. So we would need to create a separate allow merge callback for
+> this.
 
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+It would need a new (rq to rq) merge hook, if they have a custom IO
+scheduler, they should submit a change to allow that kind of behaviour.
+Outside of potentially mixing sync and async IO (which seems like
+something that should rarely/never happen), not sure I see a lot of
+downsides. And that case could be explicitly checked in attempt_merge()
+or blk_attempt_req_merge() without having to define a new hook to catch
+that specific case. For the hook, cfq would lookup the io contexts and
+compare, and basically disallow any merge that crosses a cfq io context
+boundary. But given that I would only expect these types of merges to
+happen very rarely, the sync vs async check would be good enough for me.
 
-> ---
->  include/uapi/linux/sched.h | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/include/uapi/linux/sched.h b/include/uapi/linux/sched.h
-> index 34f9d73..2f90d00 100644
-> --- a/include/uapi/linux/sched.h
-> +++ b/include/uapi/linux/sched.h
-> @@ -21,8 +21,7 @@
->  #define CLONE_DETACHED		0x00400000	/* Unused, ignored */
->  #define CLONE_UNTRACED		0x00800000	/* set if the tracing process can't force CLONE_PTRACE on this clone */
->  #define CLONE_CHILD_SETTID	0x01000000	/* set the TID in the child */
-> -/* 0x02000000 was previously the unused CLONE_STOPPED (Start in stopped state)
-> -   and is now available for re-use. */
-> +#define CLONE_NEWCGROUP		0x02000000	/* New cgroup namespace */
->  #define CLONE_NEWUTS		0x04000000	/* New utsname group? */
->  #define CLONE_NEWIPC		0x08000000	/* New ipcs */
->  #define CLONE_NEWUSER		0x10000000	/* New user namespace */
-> -- 
-> 2.1.0.rc2.206.gedb03e5
-> 
-> _______________________________________________
-> Containers mailing list
-> Containers@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/containers
+-- 
+Jens Axboe
+
