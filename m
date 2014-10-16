@@ -1,71 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751474AbaJPBq4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 21:46:56 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:52185 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751001AbaJPBqy (ORCPT
+	id S1751763AbaJPBvt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 21:51:49 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:50875 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238AbaJPBvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 21:46:54 -0400
-From: hansechang@gmail.com
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xen.org
-Cc: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com, Ian.Campbell@eu.citrix.com,
-        dgdegra@tycho.nsa.gov, jinsong.liu@alibaba-inc.com,
-        Chang Huaixin <huaixin.chx@alibaba-inc.com>
-Subject: [PATCH] Input: xen-kbdfront - free grant table entry in xenkbd_disconnect_backend
-Date: Thu, 16 Oct 2014 09:46:32 +0800
-Message-Id: <1413423992-3005-1-git-send-email-hansechang@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 15 Oct 2014 21:51:48 -0400
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: <broonie@kernel.org>
+CC: <linux-spi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <nicolas.ferre@atmel.com>, <wenyou.yang@atmel.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH] spi/atmel: add support for runtime PM
+Date: Thu, 16 Oct 2014 09:49:20 +0800
+Message-ID: <1413424160-21180-1-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chang Huaixin <huaixin.chx@alibaba-inc.com>
+Drivers should put the device into low power states proactively whenever the
+device is not in use. Thus implement support for runtime PM and use the
+autosuspend feature to make sure that we can still perform well in case we see
+lots of SPI traffic within short period of time.
 
-xenkbd_disconnect_backend doesn't free grant table entry.
-This bug affects live migration.
-
-xenkbd_disconnect_backend uses gnttab_end_foreign_access_ref
-to handle grant table entry which doesn't really free an entry.
-
-Thus every time we do xenkbd_resume, grant table entry increses
-by one. As an grant table entry occupies 8 bytes, an grant table
-page has at most 512 entries. Every 512 times we do xenkdb_resume,
-grant table pages increses by one.
-
-After around 3500 times of live migration, grant table pages
-will increase by 7, causing too many pages to populate and hitting
-max_pages limit when assigning pages.Thus assign_pages will fail,
-so will live migration.
-
-Signed-off-by: Chang Huaixin <huaixin.chx@alibaba-inc.com>
+Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
 ---
- drivers/input/misc/xen-kbdfront.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/spi/spi-atmel.c |   62 +++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 55 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/input/misc/xen-kbdfront.c b/drivers/input/misc/xen-kbdfront.c
-index fbfdc10..e2ecfc6 100644
---- a/drivers/input/misc/xen-kbdfront.c
-+++ b/drivers/input/misc/xen-kbdfront.c
-@@ -285,7 +285,7 @@ static int xenkbd_connect_backend(struct xenbus_device *dev,
-  error_evtchan:
- 	xenbus_free_evtchn(dev, evtchn);
-  error_grant:
--	gnttab_end_foreign_access_ref(info->gref, 0);
-+	gnttab_end_foreign_access(info->gref, 0, 0UL);
- 	info->gref = -1;
- 	return ret;
- }
-@@ -296,7 +296,7 @@ static void xenkbd_disconnect_backend(struct xenkbd_info *info)
- 		unbind_from_irqhandler(info->irq, info);
- 	info->irq = -1;
- 	if (info->gref >= 0)
--		gnttab_end_foreign_access_ref(info->gref, 0);
-+		gnttab_end_foreign_access(info->gref, 0, 0UL);
- 	info->gref = -1;
+diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
+index 649dcb5..aca285e 100644
+--- a/drivers/spi/spi-atmel.c
++++ b/drivers/spi/spi-atmel.c
+@@ -26,6 +26,7 @@
+ #include <linux/io.h>
+ #include <linux/gpio.h>
+ #include <linux/pinctrl/consumer.h>
++#include <linux/pm_runtime.h>
+ 
+ /* SPI register offsets */
+ #define SPI_CR					0x0000
+@@ -191,6 +192,8 @@
+ 
+ #define SPI_DMA_TIMEOUT		(msecs_to_jiffies(1000))
+ 
++#define AUTOSUSPEND_TIMEOUT	2000
++
+ struct atmel_spi_dma {
+ 	struct dma_chan			*chan_rx;
+ 	struct dma_chan			*chan_tx;
+@@ -1313,6 +1316,7 @@ static int atmel_spi_probe(struct platform_device *pdev)
+ 	master->setup = atmel_spi_setup;
+ 	master->transfer_one_message = atmel_spi_transfer_one_message;
+ 	master->cleanup = atmel_spi_cleanup;
++	master->auto_runtime_pm = true;
+ 	platform_set_drvdata(pdev, master);
+ 
+ 	as = spi_master_get_devdata(master);
+@@ -1385,6 +1389,11 @@ static int atmel_spi_probe(struct platform_device *pdev)
+ 	dev_info(&pdev->dev, "Atmel SPI Controller at 0x%08lx (irq %d)\n",
+ 			(unsigned long)regs->start, irq);
+ 
++	pm_runtime_set_autosuspend_delay(&pdev->dev, AUTOSUSPEND_TIMEOUT);
++	pm_runtime_use_autosuspend(&pdev->dev);
++	pm_runtime_set_active(&pdev->dev);
++	pm_runtime_enable(&pdev->dev);
++
+ 	ret = devm_spi_register_master(&pdev->dev, master);
+ 	if (ret)
+ 		goto out_free_dma;
+@@ -1392,6 +1401,9 @@ static int atmel_spi_probe(struct platform_device *pdev)
+ 	return 0;
+ 
+ out_free_dma:
++	pm_runtime_disable(&pdev->dev);
++	pm_runtime_set_suspended(&pdev->dev);
++
+ 	if (as->use_dma)
+ 		atmel_spi_release_dma(as);
+ 
+@@ -1413,6 +1425,8 @@ static int atmel_spi_remove(struct platform_device *pdev)
+ 	struct spi_master	*master = platform_get_drvdata(pdev);
+ 	struct atmel_spi	*as = spi_master_get_devdata(master);
+ 
++	pm_runtime_get_sync(&pdev->dev);
++
+ 	/* reset the hardware and block queue progress */
+ 	spin_lock_irq(&as->lock);
+ 	if (as->use_dma) {
+@@ -1430,9 +1444,13 @@ static int atmel_spi_remove(struct platform_device *pdev)
+ 
+ 	clk_disable_unprepare(as->clk);
+ 
++	pm_runtime_put_noidle(&pdev->dev);
++	pm_runtime_disable(&pdev->dev);
++
+ 	return 0;
  }
  
++#ifdef CONFIG_PM
+ #ifdef CONFIG_PM_SLEEP
+ static int atmel_spi_suspend(struct device *dev)
+ {
+@@ -1447,9 +1465,10 @@ static int atmel_spi_suspend(struct device *dev)
+ 		return ret;
+ 	}
+ 
+-	clk_disable_unprepare(as->clk);
+-
+-	pinctrl_pm_select_sleep_state(dev);
++	if (!pm_runtime_suspended(dev)) {
++		clk_disable_unprepare(as->clk);
++		pinctrl_pm_select_sleep_state(dev);
++	}
+ 
+ 	return 0;
+ }
+@@ -1460,9 +1479,10 @@ static int atmel_spi_resume(struct device *dev)
+ 	struct atmel_spi	*as = spi_master_get_devdata(master);
+ 	int ret;
+ 
+-	pinctrl_pm_select_default_state(dev);
+-
+-	clk_prepare_enable(as->clk);
++	if (!pm_runtime_suspended(dev)) {
++		pinctrl_pm_select_default_state(dev);
++		clk_prepare_enable(as->clk);
++	}
+ 
+ 	/* Start the queue running */
+ 	ret = spi_master_resume(master);
+@@ -1471,9 +1491,37 @@ static int atmel_spi_resume(struct device *dev)
+ 
+ 	return ret;
+ }
++#endif
+ 
+-static SIMPLE_DEV_PM_OPS(atmel_spi_pm_ops, atmel_spi_suspend, atmel_spi_resume);
++#ifdef CONFIG_PM_RUNTIME
++static int atmel_spi_runtime_suspend(struct device *dev)
++{
++	struct spi_master *master = dev_get_drvdata(dev);
++	struct atmel_spi *as = spi_master_get_devdata(master);
+ 
++	clk_disable_unprepare(as->clk);
++	pinctrl_pm_select_sleep_state(dev);
++
++	return 0;
++}
++
++static int atmel_spi_runtime_resume(struct device *dev)
++{
++	struct spi_master *master = dev_get_drvdata(dev);
++	struct atmel_spi *as = spi_master_get_devdata(master);
++
++	pinctrl_pm_select_default_state(dev);
++	clk_prepare_enable(as->clk);
++
++	return 0;
++}
++#endif
++
++static const struct dev_pm_ops atmel_spi_pm_ops = {
++	SET_SYSTEM_SLEEP_PM_OPS(atmel_spi_suspend, atmel_spi_resume)
++	SET_RUNTIME_PM_OPS(atmel_spi_runtime_suspend,
++			   atmel_spi_runtime_resume, NULL)
++};
+ #define ATMEL_SPI_PM_OPS	(&atmel_spi_pm_ops)
+ #else
+ #define ATMEL_SPI_PM_OPS	NULL
 -- 
-1.9.1
+1.7.9.5
 
