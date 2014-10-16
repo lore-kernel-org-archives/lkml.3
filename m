@@ -1,68 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584AbaJPKFY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 06:05:24 -0400
-Received: from gate.crashing.org ([63.228.1.57]:53455 "EHLO gate.crashing.org"
+	id S1751811AbaJPKFz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 06:05:55 -0400
+Received: from mail.efficios.com ([78.47.125.74]:35197 "EHLO mail.efficios.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750816AbaJPKFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 06:05:22 -0400
-Message-ID: <1413453882.11213.95.camel@pasglop>
-Subject: Re: of/pci: Fix the conversion of IO ranges into IO resources
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: Michael Ellerman <mpe@ellerman.id.au>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        linux-pci <linux-pci@vger.kernel.org>
-Date: Thu, 16 Oct 2014 21:04:42 +1100
-In-Reply-To: <20141016090529.GG4599@e106497-lin.cambridge.arm.com>
-References: <20141009200235.55E5166107E@gitolite.kernel.org>
-	 <1413358507.4748.4.camel@pasglop>
-	 <20141015090239.GB18070@e106497-lin.cambridge.arm.com>
-	 <1413428148.20705.2.camel@concordia>
-	 <20141016090529.GG4599@e106497-lin.cambridge.arm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751515AbaJPKFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 06:05:53 -0400
+Date: Thu, 16 Oct 2014 12:05:25 +0200
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v11 08/21] dax,ext2: Replace ext2_clear_xip_target with
+ dax_clear_blocks
+Message-ID: <20141016100525.GF19075@thinkos.etherlink>
+References: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com>
+ <1411677218-29146-9-git-send-email-matthew.r.wilcox@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411677218-29146-9-git-send-email-matthew.r.wilcox@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-10-16 at 10:05 +0100, Liviu Dudau wrote:
-> So you are going to continue converting IO ranges as IORESOURCE_MEM resources but with a
-> different flag. Is that something that powerpc depends on or is it an artifact of too
-> much code living around the kernel that has built in assumption of that being the fact?
-> I'm trying to understand the world around powerpc so as to attempt to make a useful
-> contribution in the future.
+On 25-Sep-2014 04:33:25 PM, Matthew Wilcox wrote:
+> This is practically generic code; other filesystems will want to call
+> it from other places, but there's nothing ext2-specific about it.
+> 
+> Make it a little more generic by allowing it to take a count of the number
+> of bytes to zero rather than fixing it to a single page.  Thanks to Dave
+> Hansen for suggesting that I need to call cond_resched() if zeroing more
+> than one page.
+> 
+> Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+> ---
+>  fs/dax.c           | 35 +++++++++++++++++++++++++++++++++++
+>  fs/ext2/inode.c    |  8 +++++---
+>  fs/ext2/xip.c      | 14 --------------
+>  fs/ext2/xip.h      |  3 ---
+>  include/linux/fs.h |  6 ++++++
+>  5 files changed, 46 insertions(+), 20 deletions(-)
+> 
+> diff --git a/fs/dax.c b/fs/dax.c
+> index 108c68e..02e226f 100644
+> --- a/fs/dax.c
+> +++ b/fs/dax.c
+> @@ -20,8 +20,43 @@
+>  #include <linux/fs.h>
+>  #include <linux/genhd.h>
+>  #include <linux/mutex.h>
+> +#include <linux/sched.h>
+>  #include <linux/uio.h>
+>  
+> +int dax_clear_blocks(struct inode *inode, sector_t block, long size)
+> +{
+> +	struct block_device *bdev = inode->i_sb->s_bdev;
+> +	sector_t sector = block << (inode->i_blkbits - 9);
 
-I'm not sure I understand what you mean and which specific resources you
-are talking about.
+Is there a define e.g. SECTOR_SHIFT rather than using this hardcoded "9"
+value ?
 
-For PCI devices, the IO BAR resources have IORESOURCE_IO ... 
+> +
+> +	might_sleep();
+> +	do {
+> +		void *addr;
+> +		unsigned long pfn;
+> +		long count;
+> +
+> +		count = bdev_direct_access(bdev, sector, &addr, &pfn, size);
+> +		if (count < 0)
+> +			return count;
+> +		while (count > 0) {
+> +			unsigned pgsz = PAGE_SIZE - offset_in_page(addr);
 
-The case where we might get an IORESOURCE_MEM, at least that's how my old
-code used to work, was is if we try to use the device-tree to convert a
-PCI IO device address before we have initialized our mappings (ie, before
-we have probed our PCI host bridges).
+unsigned -> unsigned int
 
-In that case, we would get an IORESOURCE_MEM (which is functional as long
-as one ioremap's and uses the proper accessors for memory resources).
+add a newline between variable declaration and following code.
 
-Once we have the PCI host bridges probed, the IO space is assigned, and
-such conversion routines will transform the addresses properly into IO
-resources.
+> +			if (pgsz > count)
+> +				pgsz = count;
+> +			if (pgsz < PAGE_SIZE)
+> +				memset(addr, 0, pgsz);
+> +			else
+> +				clear_page(addr);
+> +			addr += pgsz;
+> +			size -= pgsz;
+> +			count -= pgsz;
+> +			sector += pgsz / 512;
 
-Note that it's fairly rare that we use the device-tree for PCI based
-resources anyway and even rarer than we do that before the PCI host
-bridges have been properly setup and thus their IO space allocated.
+Also wondering about those 512 constants everywhere in the code
+(including prior patches). Perhaps it calls for a SECTOR_SIZE define ?
 
-Note that the problems exposed by these patches can be entirely reproduced
-in qemu using virtio, so you should be able to test a little bit if you
-have a reasonably fast x86 box to run qemu on.
+> +			cond_resched();
+> +		}
+> +	} while (size);
 
-Cheers,
-Ben.
+Just to stay on the safe side, can we do while (size > 0) ? Just in case
+an unforeseen issue makes size negative, and gets us in a very long loop.
 
+Thanks,
 
+Mathieu
+
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(dax_clear_blocks);
+> +
+>  static long dax_get_addr(struct buffer_head *bh, void **addr, unsigned blkbits)
+>  {
+>  	unsigned long pfn;
+> diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
+> index 3ccd5fd..52978b8 100644
+> --- a/fs/ext2/inode.c
+> +++ b/fs/ext2/inode.c
+> @@ -733,10 +733,12 @@ static int ext2_get_blocks(struct inode *inode,
+>  
+>  	if (IS_DAX(inode)) {
+>  		/*
+> -		 * we need to clear the block
+> +		 * block must be initialised before we put it in the tree
+> +		 * so that it's not found by another thread before it's
+> +		 * initialised
+>  		 */
+> -		err = ext2_clear_xip_target (inode,
+> -			le32_to_cpu(chain[depth-1].key));
+> +		err = dax_clear_blocks(inode, le32_to_cpu(chain[depth-1].key),
+> +						1 << inode->i_blkbits);
+>  		if (err) {
+>  			mutex_unlock(&ei->truncate_mutex);
+>  			goto cleanup;
+> diff --git a/fs/ext2/xip.c b/fs/ext2/xip.c
+> index bbc5fec..8cfca3a 100644
+> --- a/fs/ext2/xip.c
+> +++ b/fs/ext2/xip.c
+> @@ -42,20 +42,6 @@ __ext2_get_block(struct inode *inode, pgoff_t pgoff, int create,
+>  	return rc;
+>  }
+>  
+> -int
+> -ext2_clear_xip_target(struct inode *inode, sector_t block)
+> -{
+> -	void *kaddr;
+> -	unsigned long pfn;
+> -	long size;
+> -
+> -	size = __inode_direct_access(inode, block, &kaddr, &pfn, PAGE_SIZE);
+> -	if (size < 0)
+> -		return size;
+> -	clear_page(kaddr);
+> -	return 0;
+> -}
+> -
+>  void ext2_xip_verify_sb(struct super_block *sb)
+>  {
+>  	struct ext2_sb_info *sbi = EXT2_SB(sb);
+> diff --git a/fs/ext2/xip.h b/fs/ext2/xip.h
+> index 29be737..b2592f2 100644
+> --- a/fs/ext2/xip.h
+> +++ b/fs/ext2/xip.h
+> @@ -7,8 +7,6 @@
+>  
+>  #ifdef CONFIG_EXT2_FS_XIP
+>  extern void ext2_xip_verify_sb (struct super_block *);
+> -extern int ext2_clear_xip_target (struct inode *, sector_t);
+> -
+>  static inline int ext2_use_xip (struct super_block *sb)
+>  {
+>  	struct ext2_sb_info *sbi = EXT2_SB(sb);
+> @@ -19,6 +17,5 @@ int ext2_get_xip_mem(struct address_space *, pgoff_t, int,
+>  #else
+>  #define ext2_xip_verify_sb(sb)			do { } while (0)
+>  #define ext2_use_xip(sb)			0
+> -#define ext2_clear_xip_target(inode, chain)	0
+>  #define ext2_get_xip_mem			NULL
+>  #endif
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 45839e8..c04d371 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -2490,11 +2490,17 @@ extern int generic_file_open(struct inode * inode, struct file * filp);
+>  extern int nonseekable_open(struct inode * inode, struct file * filp);
+>  
+>  #ifdef CONFIG_FS_XIP
+> +int dax_clear_blocks(struct inode *, sector_t block, long size);
+>  extern int xip_file_mmap(struct file * file, struct vm_area_struct * vma);
+>  extern int xip_truncate_page(struct address_space *mapping, loff_t from);
+>  ssize_t dax_do_io(int rw, struct kiocb *, struct inode *, struct iov_iter *,
+>  		loff_t, get_block_t, dio_iodone_t, int flags);
+>  #else
+> +static inline int dax_clear_blocks(struct inode *i, sector_t blk, long sz)
+> +{
+> +	return 0;
+> +}
+> +
+>  static inline int xip_truncate_page(struct address_space *mapping, loff_t from)
+>  {
+>  	return 0;
+> -- 
+> 2.1.0
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+> 
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
+Key fingerprint: 2A0B 4ED9 15F2 D3FA 45F5  B162 1728 0A97 8118 6ACF
