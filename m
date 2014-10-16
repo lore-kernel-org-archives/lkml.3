@@ -1,175 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096AbaJPKOZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 06:14:25 -0400
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:43999
-	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609AbaJPKOV (ORCPT
+	id S1751850AbaJPKNt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 06:13:49 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:34554 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490AbaJPKNq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 06:14:21 -0400
-Date: Thu, 16 Oct 2014 12:14:18 +0200
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Michael j Theall <mtheall@us.ibm.com>,
-        fuse-devel@lists.sourceforge.net, Miklos Szeredi <miklos@szeredi.hu>,
-        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
-        Seth Forshee <seth.forshee@canonical.com>
-Subject: Re: [PATCH v3] fs: Treat foreign mounts as nosuid
-Message-ID: <20141016101418.GA30273@mail.hallyn.com>
-References: <252a4d87d99fc2b5fe4411c838f65b312c4e13cd.1413330857.git.luto@amacapital.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <252a4d87d99fc2b5fe4411c838f65b312c4e13cd.1413330857.git.luto@amacapital.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 16 Oct 2014 06:13:46 -0400
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Lee Jones <lee.jones@linaro.org>, Doug Anderson <dianders@chromium.org>,
+        Mark Brown <broonie@kernel.org>, Tomasz Figa <tomasz.figa@gmail.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [PATCH v2 1/2] Revert "mfd: sec-core: Prepare regulators for suspend state to reduce power-consumption"
+Date: Thu, 16 Oct 2014 12:13:29 +0200
+Message-Id: <1413454410-23396-2-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1413454410-23396-1-git-send-email-javier.martinez@collabora.co.uk>
+References: <1413454410-23396-1-git-send-email-javier.martinez@collabora.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Andy Lutomirski (luto@amacapital.net):
-> If a process gets access to a mount from a different namespace user
-> namespace, that process should not be able to take advantage of
-> setuid files or selinux entrypoints from that filesystem.
-> Technically, trusting mounts created by the same or ancestor user
-> namespaces ought to be safe, but it's simpler to distrust all
-> foreign mounts.
-> 
-> This will make it safer to allow more complex filesystems to be
-> mounted in non-root user namespaces.
-> 
-> This does not remove the need for MNT_LOCK_NOSUID.  The setuid,
-> setgid, and file capability bits can no longer be abused if code in
-> a user namespace were to clear nosuid on an untrusted filesystem,
-> but this patch, by itself, is insufficient to protect the system
-> from abuse of files that, when execed, would increase MAC privilege.
-> 
-> As a more concrete explanation, any task that can manipulate a
-> vfsmount associated with a given user namespace already has
-> capabilities in that namespace and all of its descendents.  If they
-> can cause a malicious setuid, setgid, or file-caps executable to
-> appear in that mount, then that executable will only allow them to
-> elevate privileges in exactly the set of namespaces in which they
-> are already privileges.
-> 
-> On the other hand, if they can cause a malicious executable to
-> appear with a dangerous MAC label, running it could change the
-> caller's security context in a way that should not have been
-> possible, even inside the namespace in which the task is confined.
-> 
-> As a hardening measure, this would have made CVE-2014-5207 much
-> more difficult to exploit.
-> 
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+This reverts commit b7cde7078d2344073c310aa65fc2b0a845d2cb5b
+("mfd: sec-core: Prepare regulators for suspend state to reduce power-consumption")
 
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Commit b7cde7078d23 called regulator_suspend_prepare() to prepare the
+regulators for a suspend state. But did it from the device pm suspend
+handler but regulator_suspend_prepare() iterates over all regulators
+and not only the one managed by this device so it doesn't seems to be
+correct to call it from a device driver.
 
-> ---
-> 
-> Changes from v2:
->  - Fix comment typo.
-> 
-> Changes from v1:
->  - Treat all foreign mounts as nosuid, not just non-self-or-ancestor
->    userns mounts.
-> 
->  fs/exec.c                |  2 +-
->  fs/namespace.c           | 13 +++++++++++++
->  include/linux/mount.h    |  1 +
->  security/commoncap.c     |  2 +-
->  security/selinux/hooks.c |  4 ++--
->  5 files changed, 18 insertions(+), 4 deletions(-)
-> 
-> diff --git a/fs/exec.c b/fs/exec.c
-> index a2b42a98c743..ac0bb22aa3ed 100644
-> --- a/fs/exec.c
-> +++ b/fs/exec.c
-> @@ -1267,7 +1267,7 @@ int prepare_binprm(struct linux_binprm *bprm)
->  	bprm->cred->euid = current_euid();
->  	bprm->cred->egid = current_egid();
->  
-> -	if (!(bprm->file->f_path.mnt->mnt_flags & MNT_NOSUID) &&
-> +	if (mnt_may_suid(bprm->file->f_path.mnt) &&
->  	    !task_no_new_privs(current) &&
->  	    kuid_has_mapping(bprm->cred->user_ns, inode->i_uid) &&
->  	    kgid_has_mapping(bprm->cred->user_ns, inode->i_gid)) {
-> diff --git a/fs/namespace.c b/fs/namespace.c
-> index ef42d9bee212..4df0b393c29d 100644
-> --- a/fs/namespace.c
-> +++ b/fs/namespace.c
-> @@ -3019,6 +3019,19 @@ found:
->  	return visible;
->  }
->  
-> +bool mnt_may_suid(struct vfsmount *mnt)
-> +{
-> +	/*
-> +	 * Foreign mounts (accessed via fchdir or through /proc
-> +	 * symlinks) are always treated as if they are nosuid.  This
-> +	 * prevents namespaces from trusting potentially unsafe
-> +	 * suid/sgid bits, file caps, or security labels that originate
-> +	 * in other namespaces.
-> +	 */
-> +	return real_mount(mnt)->mnt_ns == current->nsproxy->mnt_ns &&
-> +		!(mnt->mnt_flags & MNT_NOSUID);
-> +}
-> +
->  static void *mntns_get(struct task_struct *task)
->  {
->  	struct mnt_namespace *ns = NULL;
-> diff --git a/include/linux/mount.h b/include/linux/mount.h
-> index 9262e4bf0cc3..b7b84bafe09b 100644
-> --- a/include/linux/mount.h
-> +++ b/include/linux/mount.h
-> @@ -80,6 +80,7 @@ extern void mntput(struct vfsmount *mnt);
->  extern struct vfsmount *mntget(struct vfsmount *mnt);
->  extern struct vfsmount *mnt_clone_internal(struct path *path);
->  extern int __mnt_is_readonly(struct vfsmount *mnt);
-> +extern bool mnt_may_suid(struct vfsmount *mnt);
->  
->  struct file_system_type;
->  extern struct vfsmount *vfs_kern_mount(struct file_system_type *type,
-> diff --git a/security/commoncap.c b/security/commoncap.c
-> index bab0611afc1e..52b3eed065e0 100644
-> --- a/security/commoncap.c
-> +++ b/security/commoncap.c
-> @@ -443,7 +443,7 @@ static int get_file_caps(struct linux_binprm *bprm, bool *effective, bool *has_c
->  	if (!file_caps_enabled)
->  		return 0;
->  
-> -	if (bprm->file->f_path.mnt->mnt_flags & MNT_NOSUID)
-> +	if (!mnt_may_suid(bprm->file->f_path.mnt))
->  		return 0;
->  
->  	dentry = dget(bprm->file->f_dentry);
-> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-> index b0e940497e23..2089fd0d539e 100644
-> --- a/security/selinux/hooks.c
-> +++ b/security/selinux/hooks.c
-> @@ -2139,7 +2139,7 @@ static int selinux_bprm_set_creds(struct linux_binprm *bprm)
->  		 */
->  		if (bprm->unsafe & LSM_UNSAFE_NO_NEW_PRIVS)
->  			return -EPERM;
-> -		if (bprm->file->f_path.mnt->mnt_flags & MNT_NOSUID)
-> +		if (!mnt_may_suid(bprm->file->f_path.mnt))
->  			return -EACCES;
->  	} else {
->  		/* Check for a default transition on this program. */
-> @@ -2153,7 +2153,7 @@ static int selinux_bprm_set_creds(struct linux_binprm *bprm)
->  	ad.type = LSM_AUDIT_DATA_PATH;
->  	ad.u.path = bprm->file->f_path;
->  
-> -	if ((bprm->file->f_path.mnt->mnt_flags & MNT_NOSUID) ||
-> +	if (!mnt_may_suid(bprm->file->f_path.mnt) ||
->  	    (bprm->unsafe & LSM_UNSAFE_NO_NEW_PRIVS))
->  		new_tsec->sid = old_tsec->sid;
->  
-> -- 
-> 1.9.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+It is better to call the regulator suspend prepare/finish functions
+from platform code instead so this patch reverts the mentioned commit.
+---
+ drivers/mfd/Kconfig    |  1 -
+ drivers/mfd/sec-core.c | 10 ----------
+ 2 files changed, 11 deletions(-)
+
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 1456ea7..fd8cc4c 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -655,7 +655,6 @@ config MFD_SEC_CORE
+ 	select MFD_CORE
+ 	select REGMAP_I2C
+ 	select REGMAP_IRQ
+-	select REGULATOR
+ 	help
+ 	 Support for the Samsung Electronics MFD series.
+ 	 This driver provides common support for accessing the device,
+diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+index dba7e2b..5993608 100644
+--- a/drivers/mfd/sec-core.c
++++ b/drivers/mfd/sec-core.c
+@@ -31,7 +31,6 @@
+ #include <linux/mfd/samsung/s2mpu02.h>
+ #include <linux/mfd/samsung/s5m8763.h>
+ #include <linux/mfd/samsung/s5m8767.h>
+-#include <linux/regulator/machine.h>
+ #include <linux/regmap.h>
+ 
+ static const struct mfd_cell s5m8751_devs[] = {
+@@ -432,15 +431,6 @@ static int sec_pmic_suspend(struct device *dev)
+ 	 */
+ 	disable_irq(sec_pmic->irq);
+ 
+-	switch (sec_pmic->device_type) {
+-	case S2MPS14X:
+-	case S2MPU02:
+-		regulator_suspend_prepare(PM_SUSPEND_MEM);
+-		break;
+-	default:
+-		break;
+-	}
+-
+ 	return 0;
+ }
+ 
+-- 
+2.1.0
+
