@@ -1,66 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752756AbaJPVrN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 17:47:13 -0400
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:55853
-	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752138AbaJPVrL (ORCPT
+	id S1752868AbaJPVrr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 17:47:47 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:35300 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751875AbaJPVrq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 17:47:11 -0400
-Date: Thu, 16 Oct 2014 23:47:10 +0200
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Aditya Kali <adityakali@google.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Andy Lutomirski <luto@amacapital.net>, cgroups@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Rohit Jnagal <jnagal@google.com>
-Subject: Re: [PATCHv1 7/8] cgroup: cgroup namespace setns support
-Message-ID: <20141016214710.GA4759@mail.hallyn.com>
-References: <1413235430-22944-1-git-send-email-adityakali@google.com>
- <1413235430-22944-8-git-send-email-adityakali@google.com>
- <20141016211236.GA4308@mail.hallyn.com>
- <CAGr1F2EH0ynfFihTh1dv=n1faxUh0zS3ggk303bwGnDnW2PUCw@mail.gmail.com>
+	Thu, 16 Oct 2014 17:47:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGr1F2EH0ynfFihTh1dv=n1faxUh0zS3ggk303bwGnDnW2PUCw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141015223617.GM27405@n2100.arm.linux.org.uk>
+References: <20141015122102.GB4427@stinkpad>
+	<CAGXu5jLEAjR+X0KnnipGH2gp569_PFp5DYyfgXU=Szxgk5EcpA@mail.gmail.com>
+	<20141015220943.GK27405@n2100.arm.linux.org.uk>
+	<CAGXu5j+kxThAzwytKTv-033-jY5hTxT80PNiXp144mE=eay99Q@mail.gmail.com>
+	<20141015223617.GM27405@n2100.arm.linux.org.uk>
+Date: Thu, 16 Oct 2014 16:47:45 -0500
+X-Google-Sender-Auth: 1gcRoLSnMGm6zVtqKcZ_vsP32aA
+Message-ID: <CAGXu5jLiQ57Q50qkonszWEOEagTbds9CZi9sxbOofR2gy+Qj_g@mail.gmail.com>
+Subject: Re: arm: JUMP_LABEL and DEBUG_SET_MODULE_RONX should be mutually exclusive?
+From: Kees Cook <keescook@chromium.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Paolo Pisati <p.pisati@gmail.com>, Jason Baron <jbaron@redhat.com>,
+        David Miller <davem@davemloft.net>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Aditya Kali (adityakali@google.com):
-> On Thu, Oct 16, 2014 at 2:12 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
-> > Quoting Aditya Kali (adityakali@google.com):
-> >> setns on a cgroup namespace is allowed only if
-> >> * task has CAP_SYS_ADMIN in its current user-namespace and
-> >>   over the user-namespace associated with target cgroupns.
-> >> * task's current cgroup is descendent of the target cgroupns-root
-> >>   cgroup.
-> >
-> > What is the point of this?
-> >
-> > If I'm a user logged into
-> > /lxc/c1/user.slice/user-1000.slice/session-c12.scope and I start
-> > a container which is in
-> > /lxc/c1/user.slice/user-1000.slice/session-c12.scope/x1
-> > then I will want to be able to enter the container's cgroup.
-> > The container's cgroup root is under my own (satisfying the
-> > below condition0 but my cgroup is not a descendent of the
-> > container's cgroup.
-> >
-> This condition is there because we don't want to do implicit cgroup
-> changes when a process attaches to another cgroupns. cgroupns tries to
-> preserve the invariant that at any point, your current cgroup is
-> always under the cgroupns-root of your cgroup namespace. But in your
-> example, if we allow a process in "session-c12.scope" container to
-> attach to cgroupns root'ed at "session-c12.scope/x1" container
-> (without implicitly moving its cgroup), then this invariant won't
-> hold.
+On Wed, Oct 15, 2014 at 5:36 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Wed, Oct 15, 2014 at 05:21:29PM -0500, Kees Cook wrote:
+>> On Wed, Oct 15, 2014 at 5:09 PM, Russell King - ARM Linux
+>> <linux@arm.linux.org.uk> wrote:
+>> > On Wed, Oct 15, 2014 at 08:34:17AM -0700, Kees Cook wrote:
+>> >> On Wed, Oct 15, 2014 at 5:21 AM, Paolo Pisati <p.pisati@gmail.com> wrote:
+>> >> > Hi,
+>> >> >
+>> >> > i keep hitting this with BRIDGE=m, JUMP_LABEL=y and DEBUG_SET_MODULE_RONX=y:
+>> >>
+>> >> I think my RO/NX patch series solves this. I sent a pull request, but
+>> >> I haven't seen any movement on it. :(
+>> >
+>> > Sorry Kees.
+>> >
+>> > However, even if I had looked at it, I would /not/ have been able to
+>> > pull it.  It does the absolutely fatal thing for any pull request:
+>> >
+>> > The following changes since commit cc31d8f887953e9824c4d9333b15c335ee7d1b65:
+>> >
+>> >   Merge branches 'fiq' (early part), 'fixes' and 'misc' into for-next (2014-09-2+6 14:40:19 +0100)
+>> >
+>> > That commit is on my "for-next" branch.  The clue is in the name. :)
+>> > Just like trying to base commits onto the linux-next tree, trying to
+>> > base commits on an aggregate branch intended for linux-next usage
+>> > doesn't work for all the same reasons.
+>>
+>> Ah! My mistake; I was trying to figure out which branch would be best
+>> for you to pull from. What do you prefer I use as the base for the
+>> pull request?
+>
+> I much prefer branches against one of Linus' release points than some
+> point in someone elses tree - unless, of course, there are dependencies
+> that need to be solved (which means there should be something in the
+> pull request explaining that.)
+>
+> If it conflicts with something I have in my tree, then that's generally
+> not a problem unless the conflict is horrid, at which point it can be
+> discussed.
 
-Oh, I see.  Guess that should be workable.  Thanks.
+Okay, thanks. I've resent the pull request based off of the v3.17 tag.
 
--serge
+Thanks!
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
