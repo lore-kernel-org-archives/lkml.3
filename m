@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472AbaJPMVp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 08:21:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13050 "EHLO mx1.redhat.com"
+	id S1752498AbaJPMVt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 08:21:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16078 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752409AbaJPMVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 08:21:40 -0400
+	id S1752409AbaJPMVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 08:21:47 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Andi Kleen <ak@linux.intel.com>,
@@ -16,9 +16,9 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Andi Kleen <ak@linux.intel.com>,
         Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 6/7] perf tools: Fix report -F dso_to for data without branch info
-Date: Thu, 16 Oct 2014 14:20:48 +0200
-Message-Id: <1413462049-12124-7-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 7/7] perf tools: Fix report -F dso_from for data without branch info
+Date: Thu, 16 Oct 2014 14:20:49 +0200
+Message-Id: <1413462049-12124-8-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1413462049-12124-1-git-send-email-jolsa@kernel.org>
 References: <1413462049-12124-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,7 +30,7 @@ is allocated, which is wrong and following perf session ends
 up with report segfault.
 
   $ perf record ls
-  $ perf report -F dso_to
+  $ perf report -F dso_from
   perf: Segmentation fault
 
 Checking that hist_entry::branch_info is valid and display
@@ -51,27 +51,27 @@ Signed-off-by: Jiri Olsa <jolsa@kernel.org>
  1 file changed, 8 insertions(+), 2 deletions(-)
 
 diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index d64c020acac5..1c303f8cc61d 100644
+index 1c303f8cc61d..6a8435a550d7 100644
 --- a/tools/perf/util/sort.c
 +++ b/tools/perf/util/sort.c
-@@ -387,6 +387,9 @@ static int hist_entry__dso_from_snprintf(struct hist_entry *he, char *bf,
+@@ -373,6 +373,9 @@ struct sort_entry sort_cpu = {
  static int64_t
- sort__dso_to_cmp(struct hist_entry *left, struct hist_entry *right)
+ sort__dso_from_cmp(struct hist_entry *left, struct hist_entry *right)
  {
 +	if (!left->branch_info || !right->branch_info)
 +		return 0;
 +
- 	return _sort__dso_cmp(left->branch_info->to.map,
- 			      right->branch_info->to.map);
+ 	return _sort__dso_cmp(left->branch_info->from.map,
+ 			      right->branch_info->from.map);
  }
-@@ -394,8 +397,11 @@ sort__dso_to_cmp(struct hist_entry *left, struct hist_entry *right)
- static int hist_entry__dso_to_snprintf(struct hist_entry *he, char *bf,
- 				       size_t size, unsigned int width)
+@@ -380,8 +383,11 @@ sort__dso_from_cmp(struct hist_entry *left, struct hist_entry *right)
+ static int hist_entry__dso_from_snprintf(struct hist_entry *he, char *bf,
+ 				    size_t size, unsigned int width)
  {
--	return _hist_entry__dso_snprintf(he->branch_info->to.map,
+-	return _hist_entry__dso_snprintf(he->branch_info->from.map,
 -					 bf, size, width);
 +	if (he->branch_info)
-+		return _hist_entry__dso_snprintf(he->branch_info->to.map,
++		return _hist_entry__dso_snprintf(he->branch_info->from.map,
 +						 bf, size, width);
 +	else
 +		return repsep_snprintf(bf, size, "%-*.*s", width, width, "N/A");
