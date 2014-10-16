@@ -1,269 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838AbaJPSL5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 14:11:57 -0400
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:50376 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752398AbaJPSLm (ORCPT
+	id S1752863AbaJPSMJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 14:12:09 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:44571 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636AbaJPSMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 14:11:42 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-arch@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Scott J Norton <scott.norton@hp.com>,
-        Douglas Hatch <doug.hatch@hp.com>, Waiman Long <Waiman.Long@hp.com>
-Subject: [PATCH v12 11/11] pvqspinlock, x86: Enable PV qspinlock for XEN
-Date: Thu, 16 Oct 2014 14:10:40 -0400
-Message-Id: <1413483040-58399-12-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1413483040-58399-1-git-send-email-Waiman.Long@hp.com>
-References: <1413483040-58399-1-git-send-email-Waiman.Long@hp.com>
+	Thu, 16 Oct 2014 14:12:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <20141016180517.GO17447@titan.lakedaemon.net>
+References: <1413479722-29247-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <1413480303.6702.7.camel@perches.com> <20141016174823.GM17447@titan.lakedaemon.net>
+ <1413482157.8915.3.camel@perches.com> <20141016180517.GO17447@titan.lakedaemon.net>
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Date: Thu, 16 Oct 2014 20:11:45 +0200
+Message-ID: <CAFo99ga8ei=m4kt=p+djtNy0+FsHg+DLHXS5xJttUu36NqWY8w@mail.gmail.com>
+Subject: Re: [PATCH 3v] char: hw_random: core.c: Changed from using strncat to strlcat
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Joe Perches <joe@perches.com>, Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>, Torsten Duwe <duwe@lst.de>,
+        "Theodore Ts'o" <tytso@mit.edu>, Amit Shah <amit.shah@redhat.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Kees Cook <keescook@chromium.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the necessary XEN specific code to allow XEN to
-support the CPU halting and kicking operations needed by the queue
-spinlock PV code.
+2014-10-16 20:05 GMT+02:00 Jason Cooper <jason@lakedaemon.net>:
+> On Thu, Oct 16, 2014 at 10:55:57AM -0700, Joe Perches wrote:
+>> On Thu, 2014-10-16 at 13:48 -0400, Jason Cooper wrote:
+>> > On Thu, Oct 16, 2014 at 10:25:03AM -0700, Joe Perches wrote:
+>> > > On Thu, 2014-10-16 at 19:15 +0200, Rickard Strandqvist wrote:
+>> > > > The buf is used to hold the list of hwrng devices registered.
+>> > > > The old code ensures we don't walk off the end of buf as we
+>> > > > fill it, but it's unnecessarily complicated and thus difficult
+>> > > > to maintain. Simplify it by using strlcat.
+>> > > > We also ensure the string within buf is NULL terminated
+>> > > > so the final strlen is ok.
+>> > > []
+>> > > > diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
+>> > > []
+>> > > > @@ -289,16 +288,13 @@ static ssize_t hwrng_attr_available_show(struct device *dev,
+>> > > >                 return -ERESTARTSYS;
+>> > > >         buf[0] = '\0';
+>> > > >         list_for_each_entry(rng, &rng_list, list) {
+>> > > > -               strncat(buf, rng->name, PAGE_SIZE - ret - 1);
+>> > > > -               ret += strlen(rng->name);
+>> > > > -               strncat(buf, " ", PAGE_SIZE - ret - 1);
+>> > > > -               ret++;
+>> > > > +               strlcat(buf, rng->name, PAGE_SIZE);
+>> > > > +               strlcat(buf, " ", PAGE_SIZE);
+>> > > >         }
+>> > > > -       strncat(buf, "\n", PAGE_SIZE - ret - 1);
+>> > > > -       ret++;
+>> > > > +       strlcat(buf, "\n", PAGE_SIZE);
+>> > > >         mutex_unlock(&rng_mutex);
+>> > > >
+>> > > > -       return ret;
+>> > > > +       return strlen(buf);
+>> > > >  }
+>> > > >
+>> > > >  static DEVICE_ATTR(rng_current, S_IRUGO | S_IWUSR,
+>> > >
+>> > > Rickard, can you please use some optimizations here
+>> > > (and elsewhere) so that strlcat doesn't always have
+>> > > to strlen the first string and the return doesn't
+>> > > have to do the strlen too?
+>> >
+>> > Joe, is further optimization worth the effort?  This function is only
+>> > called when the end user reads the sysfs file rng_available...
+>>
+>> It's unlikely that it matters much here.
+>>
+>> I just don't like the repeated and unnecessary strlen.
+>>
+>> I do imagine this pattern being repeated though where
+>> it does matter.
+>
+> Agreed.  Back to why I like to see descriptions from the author
+> demonstrating they grok the code they are changing :)
+>
 
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
----
- arch/x86/xen/spinlock.c |  149 +++++++++++++++++++++++++++++++++++++++++++++--
- kernel/Kconfig.locks    |    2 +-
- 2 files changed, 145 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
-index d1b6a32..8edc197 100644
---- a/arch/x86/xen/spinlock.c
-+++ b/arch/x86/xen/spinlock.c
-@@ -17,6 +17,12 @@
- #include "xen-ops.h"
- #include "debugfs.h"
- 
-+static DEFINE_PER_CPU(int, lock_kicker_irq) = -1;
-+static DEFINE_PER_CPU(char *, irq_name);
-+static bool xen_pvspin = true;
-+
-+#ifndef CONFIG_QUEUE_SPINLOCK
-+
- enum xen_contention_stat {
- 	TAKEN_SLOW,
- 	TAKEN_SLOW_PICKUP,
-@@ -100,12 +106,9 @@ struct xen_lock_waiting {
- 	__ticket_t want;
- };
- 
--static DEFINE_PER_CPU(int, lock_kicker_irq) = -1;
--static DEFINE_PER_CPU(char *, irq_name);
- static DEFINE_PER_CPU(struct xen_lock_waiting, lock_waiting);
- static cpumask_t waiting_cpus;
- 
--static bool xen_pvspin = true;
- __visible void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
- {
- 	int irq = __this_cpu_read(lock_kicker_irq);
-@@ -213,6 +216,118 @@ static void xen_unlock_kick(struct arch_spinlock *lock, __ticket_t next)
- 	}
- }
- 
-+#else /* CONFIG_QUEUE_SPINLOCK */
-+
-+#ifdef CONFIG_XEN_DEBUG_FS
-+static u32 kick_nohlt_stats;		/* Kick but not halt count	*/
-+static u32 halt_qhead_stats;		/* Queue head halting count	*/
-+static u32 halt_qnode_stats;		/* Queue node halting count	*/
-+static u32 halt_abort_stats;		/* Halting abort count		*/
-+static u32 wake_kick_stats;		/* Wakeup by kicking count	*/
-+static u32 wake_spur_stats;		/* Spurious wakeup count	*/
-+static u64 time_blocked;		/* Total blocking time		*/
-+
-+static inline void xen_halt_stats(enum pv_lock_stats type)
-+{
-+	if (type == PV_HALT_QHEAD)
-+		add_smp(&halt_qhead_stats, 1);
-+	else if (type == PV_HALT_QNODE)
-+		add_smp(&halt_qnode_stats, 1);
-+	else /* type == PV_HALT_ABORT */
-+		add_smp(&halt_abort_stats, 1);
-+}
-+
-+void xen_lock_stats(enum pv_lock_stats type)
-+{
-+	if (type == PV_WAKE_KICKED)
-+		add_smp(&wake_kick_stats, 1);
-+	else if (type == PV_WAKE_SPURIOUS)
-+		add_smp(&wake_spur_stats, 1);
-+	else /* type == PV_KICK_NOHALT */
-+		add_smp(&kick_nohlt_stats, 1);
-+}
-+PV_CALLEE_SAVE_REGS_THUNK(xen_lock_stats);
-+
-+static inline u64 spin_time_start(void)
-+{
-+	return sched_clock();
-+}
-+
-+static inline void spin_time_accum_blocked(u64 start)
-+{
-+	u64 delta;
-+
-+	delta = sched_clock() - start;
-+	add_smp(&time_blocked, delta);
-+}
-+#else /* CONFIG_XEN_DEBUG_FS */
-+static inline void xen_halt_stats(enum pv_lock_stats type)
-+{
-+}
-+
-+static inline u64 spin_time_start(void)
-+{
-+	return 0;
-+}
-+
-+static inline void spin_time_accum_blocked(u64 start)
-+{
-+}
-+#endif /* CONFIG_XEN_DEBUG_FS */
-+
-+void xen_kick_cpu(int cpu)
-+{
-+	xen_send_IPI_one(cpu, XEN_SPIN_UNLOCK_VECTOR);
-+}
-+PV_CALLEE_SAVE_REGS_THUNK(xen_kick_cpu);
-+
-+/*
-+ * Halt the current CPU & release it back to the host
-+ */
-+void xen_halt_cpu(u8 *lockbyte)
-+{
-+	int irq = __this_cpu_read(lock_kicker_irq);
-+	unsigned long flags;
-+	u64 start;
-+
-+	/* If kicker interrupts not initialized yet, just spin */
-+	if (irq == -1)
-+		return;
-+
-+	/*
-+	 * Make sure an interrupt handler can't upset things in a
-+	 * partially setup state.
-+	 */
-+	local_irq_save(flags);
-+	start = spin_time_start();
-+
-+	xen_halt_stats(lockbyte ? PV_HALT_QHEAD : PV_HALT_QNODE);
-+	/* clear pending */
-+	xen_clear_irq_pending(irq);
-+
-+	/* Allow interrupts while blocked */
-+	local_irq_restore(flags);
-+	/*
-+	 * Don't halt if the lock is now available
-+	 */
-+	if (lockbyte && !ACCESS_ONCE(*lockbyte)) {
-+		xen_halt_stats(PV_HALT_ABORT);
-+		return;
-+	}
-+	/*
-+	 * If an interrupt happens here, it will leave the wakeup irq
-+	 * pending, which will cause xen_poll_irq() to return
-+	 * immediately.
-+	 */
-+
-+	/* Block until irq becomes pending (or perhaps a spurious wakeup) */
-+	xen_poll_irq(irq);
-+	spin_time_accum_blocked(start);
-+}
-+PV_CALLEE_SAVE_REGS_THUNK(xen_halt_cpu);
-+
-+#endif /* CONFIG_QUEUE_SPINLOCK */
-+
- static irqreturn_t dummy_handler(int irq, void *dev_id)
- {
- 	BUG();
-@@ -258,7 +373,6 @@ void xen_uninit_lock_cpu(int cpu)
- 	per_cpu(irq_name, cpu) = NULL;
- }
- 
--
- /*
-  * Our init of PV spinlocks is split in two init functions due to us
-  * using paravirt patching and jump labels patching and having to do
-@@ -275,8 +389,17 @@ void __init xen_init_spinlocks(void)
- 		return;
- 	}
- 	printk(KERN_DEBUG "xen: PV spinlocks enabled\n");
-+
-+#ifdef CONFIG_QUEUE_SPINLOCK
-+	pv_lock_ops.kick_cpu = PV_CALLEE_SAVE(xen_kick_cpu);
-+	pv_lock_ops.lockwait = PV_CALLEE_SAVE(xen_halt_cpu);
-+#ifdef CONFIG_XEN_DEBUG_FS
-+	pv_lock_ops.lockstat = PV_CALLEE_SAVE(xen_lock_stats);
-+#endif
-+#else
- 	pv_lock_ops.lock_spinning = PV_CALLEE_SAVE(xen_lock_spinning);
- 	pv_lock_ops.unlock_kick = xen_unlock_kick;
-+#endif
- }
- 
- /*
-@@ -321,6 +444,7 @@ static int __init xen_spinlock_debugfs(void)
- 
- 	d_spin_debug = debugfs_create_dir("spinlocks", d_xen);
- 
-+#ifndef CONFIG_QUEUE_SPINLOCK
- 	debugfs_create_u8("zero_stats", 0644, d_spin_debug, &zero_stats);
- 
- 	debugfs_create_u32("taken_slow", 0444, d_spin_debug,
-@@ -340,7 +464,22 @@ static int __init xen_spinlock_debugfs(void)
- 
- 	debugfs_create_u32_array("histo_blocked", 0444, d_spin_debug,
- 				spinlock_stats.histo_spin_blocked, HISTO_BUCKETS + 1);
--
-+#else /* CONFIG_QUEUE_SPINLOCK */
-+	debugfs_create_u32("kick_nohlt_stats",
-+			   0644, d_spin_debug, &kick_nohlt_stats);
-+	debugfs_create_u32("halt_qhead_stats",
-+			   0644, d_spin_debug, &halt_qhead_stats);
-+	debugfs_create_u32("halt_qnode_stats",
-+			   0644, d_spin_debug, &halt_qnode_stats);
-+	debugfs_create_u32("halt_abort_stats",
-+			   0644, d_spin_debug, &halt_abort_stats);
-+	debugfs_create_u32("wake_kick_stats",
-+			   0644, d_spin_debug, &wake_kick_stats);
-+	debugfs_create_u32("wake_spur_stats",
-+			   0644, d_spin_debug, &wake_spur_stats);
-+	debugfs_create_u64("time_blocked",
-+			   0644, d_spin_debug, &time_blocked);
-+#endif /* CONFIG_QUEUE_SPINLOCK */
- 	return 0;
- }
- fs_initcall(xen_spinlock_debugfs);
-diff --git a/kernel/Kconfig.locks b/kernel/Kconfig.locks
-index 57301de..1e66280 100644
---- a/kernel/Kconfig.locks
-+++ b/kernel/Kconfig.locks
-@@ -236,7 +236,7 @@ config ARCH_USE_QUEUE_SPINLOCK
- 
- config QUEUE_SPINLOCK
- 	def_bool y if ARCH_USE_QUEUE_SPINLOCK
--	depends on SMP && (!PARAVIRT_SPINLOCKS || !XEN)
-+	depends on SMP
- 
- config ARCH_USE_QUEUE_RWLOCK
- 	bool
--- 
-1.7.1
+Hi
 
+I will submit a new patch without return strlen.
+
+
+All these features are more or less stupid really.
+You can also read what Linus thinks about this here.
+
+https://plus.google.com/111049168280159033135/posts/1amLbuhWbh5
+
+
+I keep on trying to get a patch that solves one of these stupid
+functions, but the strncpy in that case.
+
+
+Kind regards
+Rickard Strandqvist
