@@ -1,183 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752105AbaJPJfm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 05:35:42 -0400
-Received: from mail.efficios.com ([78.47.125.74]:34908 "EHLO mail.efficios.com"
+	id S1751924AbaJPJgK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 05:36:10 -0400
+Received: from roy.gaast.net ([80.101.33.21]:40163 "EHLO mail.gaast.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751850AbaJPJfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 05:35:39 -0400
-Date: Thu, 16 Oct 2014 11:35:17 +0200
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v11 05/21] vfs,ext2: Introduce IS_DAX(inode)
-Message-ID: <20141016093517.GD19075@thinkos.etherlink>
-References: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com>
- <1411677218-29146-6-git-send-email-matthew.r.wilcox@intel.com>
+	id S1751398AbaJPJgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 05:36:08 -0400
+Message-ID: <543F9182.9000004@gaast.net>
+Date: Thu, 16 Oct 2014 10:36:02 +0100
+From: Wilmer van der Gaast <wilmer@gaast.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130112 Icedove/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411677218-29146-6-git-send-email-matthew.r.wilcox@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Machine crashes right *after* ~successful resume
+References: <54347520.3050109@gaast.net> <543AA2FE.20105@gaast.net> <20141012204032.GA11171@amd> <9751497.0fL0kvsyX7@vostro.rjw.lan> <20141015111641.GC7792@gaast.net> <CAErSpo5A+nHTu2Y6KrXowBBCBsNw_hO0SRsnc6YRdJChCUmO6w@mail.gmail.com> <CAE9FiQV9t0bCfUy5Fichdk=04ruEVxGv-LUK1xxZjCrasAOACg@mail.gmail.com> <543F049F.5090605@gaast.net> <CAE9FiQWDHq5esSt4UvE5AkHR-=XMvrzaNFwLg+0xKisTNOtcsQ@mail.gmail.com>
+In-Reply-To: <CAE9FiQWDHq5esSt4UvE5AkHR-=XMvrzaNFwLg+0xKisTNOtcsQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25-Sep-2014 04:33:22 PM, Matthew Wilcox wrote:
-> Use an inode flag to tag inodes which should avoid using the page cache.
-> Convert ext2 to use it instead of mapping_is_xip().  Prevent I/Os to
-> files tagged with the DAX flag from falling back to buffered I/O.
+Hello,
 
-I agree that DAX enabled FS should not silently fallback to buffered
-I/O, since it would void some guarantees about persistency of data that
-has been written to a DAX mmap()'d region.
+On 16-10-14 05:32, Yinghai Lu wrote:
+>
+> Can you please try attached patch? that should workaround the problem.
+>
+Sadly, no luck. (I do assume you meant me to use the patch against a 
+clean 3.17 tree *without* yesterday's revert patch applied.) Back to a 
+crash at/after the third resume:
 
-> 
-> Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-> Reviewed-by: Jan Kara <jack@suse.cz>
+[  372.502897] usb 3-1.1: reset high-speed USB device number 3 using 
+ehci-pci
+[  372.678765] usb 2-1.5: reset low-speed USB device number 3 using ehci-pci
+[  373.398437] Clocksource tsc unstable (delta = -136457848 ns)
+[  373.897503] Switched to clocksource hpet
+[  373.897536] PM: resume of devices complete after 2143.535 msecs
+[  373.898225] r8169 0000:07:00.0 eth0: link up
+[  374.319311] Restarting tasks ... done.
+(And then nothing.)
 
-Reviewed-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Interestingly I did see the "resume of devices" time grow on each resume 
+again this time. I'll put the full dmesg dump in the same place like 
+before: http://gaast.net/~wilmer/.lkml/
 
-> ---
->  fs/ext2/inode.c    |  9 ++++++---
->  fs/ext2/xip.h      |  2 --
->  include/linux/fs.h |  6 ++++++
->  mm/filemap.c       | 19 ++++++++++++-------
->  4 files changed, 24 insertions(+), 12 deletions(-)
-> 
-> diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
-> index 36d35c3..0cb0448 100644
-> --- a/fs/ext2/inode.c
-> +++ b/fs/ext2/inode.c
-> @@ -731,7 +731,7 @@ static int ext2_get_blocks(struct inode *inode,
->  		goto cleanup;
->  	}
->  
-> -	if (ext2_use_xip(inode->i_sb)) {
-> +	if (IS_DAX(inode)) {
->  		/*
->  		 * we need to clear the block
->  		 */
-> @@ -1201,7 +1201,7 @@ static int ext2_setsize(struct inode *inode, loff_t newsize)
->  
->  	inode_dio_wait(inode);
->  
-> -	if (mapping_is_xip(inode->i_mapping))
-> +	if (IS_DAX(inode))
->  		error = xip_truncate_page(inode->i_mapping, newsize);
->  	else if (test_opt(inode->i_sb, NOBH))
->  		error = nobh_truncate_page(inode->i_mapping,
-> @@ -1273,7 +1273,8 @@ void ext2_set_inode_flags(struct inode *inode)
->  {
->  	unsigned int flags = EXT2_I(inode)->i_flags;
->  
-> -	inode->i_flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC);
-> +	inode->i_flags &= ~(S_SYNC | S_APPEND | S_IMMUTABLE | S_NOATIME |
-> +				S_DIRSYNC | S_DAX);
->  	if (flags & EXT2_SYNC_FL)
->  		inode->i_flags |= S_SYNC;
->  	if (flags & EXT2_APPEND_FL)
-> @@ -1284,6 +1285,8 @@ void ext2_set_inode_flags(struct inode *inode)
->  		inode->i_flags |= S_NOATIME;
->  	if (flags & EXT2_DIRSYNC_FL)
->  		inode->i_flags |= S_DIRSYNC;
-> +	if (test_opt(inode->i_sb, XIP))
-> +		inode->i_flags |= S_DAX;
->  }
->  
->  /* Propagate flags from i_flags to EXT2_I(inode)->i_flags */
-> diff --git a/fs/ext2/xip.h b/fs/ext2/xip.h
-> index 18b34d2..29be737 100644
-> --- a/fs/ext2/xip.h
-> +++ b/fs/ext2/xip.h
-> @@ -16,9 +16,7 @@ static inline int ext2_use_xip (struct super_block *sb)
->  }
->  int ext2_get_xip_mem(struct address_space *, pgoff_t, int,
->  				void **, unsigned long *);
-> -#define mapping_is_xip(map) unlikely(map->a_ops->get_xip_mem)
->  #else
-> -#define mapping_is_xip(map)			0
->  #define ext2_xip_verify_sb(sb)			do { } while (0)
->  #define ext2_use_xip(sb)			0
->  #define ext2_clear_xip_target(inode, chain)	0
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 9418772..e99e5c4 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -1605,6 +1605,7 @@ struct super_operations {
->  #define S_IMA		1024	/* Inode has an associated IMA struct */
->  #define S_AUTOMOUNT	2048	/* Automount/referral quasi-directory */
->  #define S_NOSEC		4096	/* no suid or xattr security attributes */
-> +#define S_DAX		8192	/* Direct Access, avoiding the page cache */
->  
->  /*
->   * Note that nosuid etc flags are inode-specific: setting some file-system
-> @@ -1642,6 +1643,11 @@ struct super_operations {
->  #define IS_IMA(inode)		((inode)->i_flags & S_IMA)
->  #define IS_AUTOMOUNT(inode)	((inode)->i_flags & S_AUTOMOUNT)
->  #define IS_NOSEC(inode)		((inode)->i_flags & S_NOSEC)
-> +#ifdef CONFIG_FS_XIP
-> +#define IS_DAX(inode)		((inode)->i_flags & S_DAX)
-> +#else
-> +#define IS_DAX(inode)		0
-> +#endif
->  
->  /*
->   * Inode state bits.  Protected by inode->i_lock
-> diff --git a/mm/filemap.c b/mm/filemap.c
-> index 90effcd..fec4db9 100644
-> --- a/mm/filemap.c
-> +++ b/mm/filemap.c
-> @@ -1718,9 +1718,11 @@ generic_file_read_iter(struct kiocb *iocb, struct iov_iter *iter)
->  		 * we've already read everything we wanted to, or if
->  		 * there was a short read because we hit EOF, go ahead
->  		 * and return.  Otherwise fallthrough to buffered io for
-> -		 * the rest of the read.
-> +		 * the rest of the read.  Buffered reads will not work for
-> +		 * DAX files, so don't bother trying.
->  		 */
-> -		if (retval < 0 || !iov_iter_count(iter) || *ppos >= size) {
-> +		if (retval < 0 || !iov_iter_count(iter) || *ppos >= size ||
-> +		    IS_DAX(inode)) {
->  			file_accessed(file);
->  			goto out;
->  		}
-> @@ -2584,13 +2586,16 @@ ssize_t __generic_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
->  		loff_t endbyte;
->  
->  		written = generic_file_direct_write(iocb, from, pos);
-> -		if (written < 0 || written == count)
-> -			goto out;
-> -
->  		/*
-> -		 * direct-io write to a hole: fall through to buffered I/O
-> -		 * for completing the rest of the request.
-> +		 * If the write stopped short of completing, fall back to
-> +		 * buffered writes.  Some filesystems do this for writes to
-> +		 * holes, for example.  For DAX files, a buffered write will
-> +		 * not succeed (even if it did, DAX does not handle dirty
-> +		 * page-cache pages correctly).
->  		 */
-> +		if (written < 0 || written == count || IS_DAX(inode))
-> +			goto out;
-> +
->  		pos += written;
->  		count -= written;
->  
-> -- 
-> 2.1.0
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-> 
+There's a lspci -vv dump there as well, as Bjorn asked for. I'll file a 
+bug on bugzilla tonight.
+
+> as some driver is using pci_enable_device in .resume instead of
+> pci_renable_device....
+>
+Maybe this doesn't matter, but I could reproduce this issue even with no 
+modules loaded at all (so barebone that I couldn't even mount my rootfs 
+and had to do this testing in the initrd), so with only mainline kernel 
+code running.
+
+
+Thanks,
+
+Wilmer v/d Gaast.
 
 -- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
-Key fingerprint: 2A0B 4ED9 15F2 D3FA 45F5  B162 1728 0A97 8118 6ACF
++-------- .''`.     - -- ---+  +        - -- --- ---- ----- ------+
+| wilmer : :'  :  gaast.net |  | OSS Programmer   www.bitlbee.org |
+| lintux `. `~'  debian.org |  | Full-time geek  wilmer.gaast.net |
++--- -- -  ` ---------------+  +------ ----- ---- --- -- -        +
