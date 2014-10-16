@@ -1,138 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751933AbaJPKGS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 06:06:18 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751872AbaJPKGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 06:06:16 -0400
-Message-ID: <543F9895.7010502@nod.at>
-Date: Thu, 16 Oct 2014 12:06:13 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1752067AbaJPKGe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 06:06:34 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58296 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751872AbaJPKGb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 06:06:31 -0400
+Date: Thu, 16 Oct 2014 11:34:10 +0200
+From: Mark Brown <broonie@kernel.org>
+To: addy ke <addy.ke@rock-chips.com>
+Cc: heiko@sntech.de, dianders@chromium.org, grant.likely@linaro.org,
+        robh+dt@kernel.org, amstan@google.com, sonnyrao@google.com,
+        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, devicetree@vger.kernel.org,
+        olof@lixom.net, hj@rock-chips.com, kever.yang@rock-chips.com,
+        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
+        yzq@rock-chips.com, zhenfu.fang@rock-chips.com, cf@rock-chips.com,
+        zhangqing@rock-chips.com, hl@rock-chips.com, wei.luo@rock-chips.com
+Message-ID: <20141016093410.GB2200@sirena.org.uk>
+References: <1413372311-4203-1-git-send-email-addy.ke@rock-chips.com>
+ <1413372349-4254-1-git-send-email-addy.ke@rock-chips.com>
+ <20141015130452.GD27755@sirena.org.uk>
+ <543F8CD2.1010302@rock-chips.com>
 MIME-Version: 1.0
-To: dedekind1@gmail.com
-CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] UBI: Fastmap: Care about the protection queue
-References: <1412029248-22454-1-git-send-email-richard@nod.at>				 <1412029248-22454-4-git-send-email-richard@nod.at>			 <1412346676.3795.62.camel@sauron.fi.intel.com> <542EF3BF.1070401@nod.at>		 <1413206263.7906.18.camel@sauron.fi.intel.com> <543BE21F.5020504@nod.at>	 <1413213803.7906.45.camel@sauron.fi.intel.com> <543C3E60.4080507@nod.at> <1413282203.7906.72.camel@sauron.fi.intel.com>
-In-Reply-To: <1413282203.7906.72.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="RASg3xLB4tUQ4RcS"
+Content-Disposition: inline
+In-Reply-To: <543F8CD2.1010302@rock-chips.com>
+X-Cookie: Is this really happening?
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 62.156.150.204
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] spi/rockchip: fix bug that case spi can't go as fast
+ as slave request
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 14.10.2014 um 12:23 schrieb Artem Bityutskiy:
-> On Mon, 2014-10-13 at 23:04 +0200, Richard Weinberger wrote:
->> Am 13.10.2014 um 17:23 schrieb Artem Bityutskiy:
->>> Well, used and free are RB-trees, looking them up is slow.
->>
->> This is true but we'd have to look it up in multiple trees and the protection queue...
-> 
-> Right. 2 RB-trees, and one list. The list is empty most of the time, or
-> contains one element. 
 
-Actually it is the free, used and scrub tree plus the protection queue.
-Then there is another place where PEBs can hide, the erase work queue.
-This brings me to an issue I've recently identified and fixed in my local queue.
+--RASg3xLB4tUQ4RcS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-ubi_wl_put_peb() does the following:
-                if (in_wl_tree(e, &ubi->used)) {
-                        self_check_in_wl_tree(ubi, e, &ubi->used);
-                        rb_erase(&e->u.rb, &ubi->used);
-                } else if (in_wl_tree(e, &ubi->scrub)) {
-                        self_check_in_wl_tree(ubi, e, &ubi->scrub);
-                        rb_erase(&e->u.rb, &ubi->scrub);
-                } else if (in_wl_tree(e, &ubi->erroneous)) {
-                        self_check_in_wl_tree(ubi, e, &ubi->erroneous);
-                        rb_erase(&e->u.rb, &ubi->erroneous);
-                        ubi->erroneous_peb_count -= 1;
-                        ubi_assert(ubi->erroneous_peb_count >= 0);
-                        /* Erroneous PEBs should be tortured */
-                        torture = 1;
-                } else {
-                        err = prot_queue_del(ubi, e->pnum);
-                        if (err) {
-                                ubi_err("PEB %d not found", pnum);
-                                ubi_ro_mode(ubi);
-                                spin_unlock(&ubi->wl_lock);
-                                return err;
-                        }
-                }
-        }
-        spin_unlock(&ubi->wl_lock);
+On Thu, Oct 16, 2014 at 05:16:02PM +0800, addy ke wrote:
+> On 2014/10/15 21:04, Mark Brown wrote:
+> > On Wed, Oct 15, 2014 at 07:25:49PM +0800, Addy Ke wrote:
 
-        err = schedule_erase(ubi, e, vol_id, lnum, torture);
+> >> +	if (WARN_ON(rs->speed > MAX_SCLK_OUT))
+> >> +		rs->speed = MAX_SCLK_OUT;
 
-If it happens that a fastmap write is needed between spin_unlock() and schedule_erase(), fastmap
-will miss this PEB. Because it go already deleted from one of the RB trees or the protection queue but not
-jet queued to the work list. Yes, I hit this bug in real world.
+> >> +	/* the minimum divsor is 2 */
+> >> +	if (rs->max_freq < 2 * rs->speed) {
+> >> +		clk_set_rate(rs->spiclk, 2 * rs->speed);
+> >> +		rs->max_freq = clk_get_rate(rs->spiclk);
+> >> +	}
 
-My solution is marking the ubi_wl_entry's ->state attribute with a flag like UBI_WLE_STATE_ERASE.
-This way I was also able to get rid of the ubi_is_erase_work() wart.
+> > I'll apply this but you should be checking the return code from
+> > clk_set_rate() here, please send a followup patch doing that.  It might
 
-> So we'd look-up 2 RB-trees most of the time. Very rarely we'd need to
-> look at the list containing very few elements.
-> 
-> Not that bad, I think.
-> 
->> ubi_update_fastmap() takes ubi->wl_lock anyway to block any changes in the free, used, etc. trees
->> to make sure that the to be taken state snapshot is consistent.
-> 
-> I think this is fine.
-> 
->>> But there is a price - memory consumption. We do not want to pay it just
->>> for making the inter-subsystems boundaries better, there ought to be a
->>> better reason.
->>>
->>> Say, for an (imaginary) 8GiB NAND chip with 128KiB PEB size this would
->>> cost 256KiB of RAM.
->>
->> Is 128KiB PEB size still realistic on modern NANDs?
->> Even if, 256KiB are not much and the kernel consumes this additionally with
->> every new release.
-> 
-> Right, but the point is that bigger systems use eMMC and wouldn't bother
-> with raw flash. Raw flash trending down the smaller systems, where a
-> hundred of kilobytes matters.
-> 
->> But I can understand your concerns.
-> 
-> Thanks, yes, my point is to be careful about the RAM we consume, and try
-> to avoid growing this data structure, an only do it if we have to.
+> If clk_set_rate return error, do I only put dev_warn here or return error value to spi core?
 
-Currently I'm using an integer variable. But a char would also do it. I need only
-a few flags.
+It'd be better to return an error if we need to set the rate and can't
+do it.
 
-What I'm trying to say is, state tracking would solve the "internal state accessing" problem in a clean and
-sane way.
+> > also be worth consdering just setting the rate unconditionally here, it
+> > seems like it should make things simpler.
 
-I gave the ubi_get_peb_state() idea a try. Unfortunately it won't work that well as expected.
-The UBI Fastmap on-flash layout has a section which contains the state and EC counter of each PEB.
-But the PEBs are not stored on flash starting with 0 to ubi->peb_count, they are stored by their state.
-First free, then used, then scrub and finally to be erased PEBs. I've chosen this layout to avoid an
-addition on-flash state attribute to keep the overall structure small.
+> I think we need.
+> If we set the rate unconditionally here, clk_set_rate() will be executed in each spi transfer.
 
-So, writing a fastmap like:
-for (i = 0; i < ubi->peb_count; i++)
-  ubi_get_peb_state(i);
+Is that really such a high cost?
 
-...won't work. I need to iterate first over the free RB tree, then over the used tree, and so on.
-This way I'd have to allocate memory and store the state somewhere or iterate multiple times over the same RB trees.
+--RASg3xLB4tUQ4RcS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-What about this:
-Let's create a file like fastmap-wl.c, it will contain all Fastmap functions which deal with internal
-wl.c stuff. In wl.c we can add:
-#ifdef CONFIG_MTD_UBI_FASTMAP
-#include "fastmap-wl.c"
-#endif
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-This way we can get rid of almost all #ifdefs in wl.c and don't have to export a lot of new fastmap specific helper functions in wl.c
-to global scope.
-Including a c file is common practice in Linux.
-A prominent example is USB. See drivers/usb/host/ehci-hcd.c.
+iQEcBAEBAgAGBQJUP5ERAAoJECTWi3JdVIfQxfgH+QGfQFD/KQ+OmRJyUPfMHGXX
+6JdP9nSyawWv7+xoUgLK9rDuTnwOxJedbhsToh1wJDcjg3bOgrnoiWkbADNH1L/e
+IHsMq+HJTZmv9xq4oaFx/vVHeFFPSsh2AtldEOMgmM50bGlg3M2sTo0Pg5mVdmIg
+tEMCXUtXU1Ehs9OsZh0HT0sZK7H+sPD9VfFVwRE03EZRjIy6LtfEwCihCAB9/tMM
+bGpomAJq7Az1BP5y5SWLru4X1H4uad4kaywaAUB6jqF35MlR1qXdAkjzFGZoBm91
+vMd6ouDuDCfmg2NzKwIJ+mqXOWC7QijzlMmvkmUujef9aDyZAho5fXIwS66PKL8=
+=lzOL
+-----END PGP SIGNATURE-----
 
-What do you think?
-
-Thanks,
-//richard
+--RASg3xLB4tUQ4RcS--
