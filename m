@@ -1,136 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751569AbaJPJtT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 05:49:19 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40015 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194AbaJPJtR (ORCPT
+	id S1751786AbaJPJte (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 05:49:34 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:40534 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751298AbaJPJtc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 05:49:17 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <543F945F.4020303@jp.fujitsu.com>
-Date: Thu, 16 Oct 2014 18:48:15 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 16 Oct 2014 05:49:32 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: David Woodhouse <David.Woodhouse@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Arjun Sreedharan <arjun024@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: krealloc in kernel/params.c
+Organization: D03
+References: <87mw8y8jq7.fsf@rasmusvillemoes.dk>
+	<87r3yaapyf.fsf@rustcorp.com.au>
+X-Hashcash: 1:20:141016:arjun024@gmail.com::iQ1cssQTKdCFV5dV:00000000000000000000000000000000000000000001HmB
+X-Hashcash: 1:20:141016:akpm@linux-foundation.org::NhlmlAwxN4sPzOf1:0000000000000000000000000000000000003W6J
+X-Hashcash: 1:20:141016:linux-kernel@vger.kernel.org::jHagWWlQZjoB4XB6:00000000000000000000000000000000059yZ
+X-Hashcash: 1:20:141016:geert@linux-m68k.org::YglDqRTnvJCswehF:000000000000000000000000000000000000000004a1q
+X-Hashcash: 1:20:141016:rusty@rustcorp.com.au::zkCHp7URyAXS5NSD:00000000000000000000000000000000000000008SZJ
+X-Hashcash: 1:20:141016:david.woodhouse@intel.com::jRJbBk3xIrQFUwGk:000000000000000000000000000000000000DOuF
+Date: Thu, 16 Oct 2014 11:49:28 +0200
+In-Reply-To: <87r3yaapyf.fsf@rustcorp.com.au> (Rusty Russell's message of
+	"Wed, 15 Oct 2014 15:29:04 +1030")
+Message-ID: <87fveo1h07.fsf@rasmusvillemoes.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: <mingo@redhat.com>, <peterz@infradead.org>
-CC: <kernellwp@gmail.com>, <riel@redhat.com>, <tkhai@yandex.ru>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] sched/fair: Care divide error in update_task_scan_period()
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
-X-TM-AS-MML: No
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While offling node by hot removing memory, the following divide error
-occurs:
+On Wed, Oct 15 2014, Rusty Russell <rusty@rustcorp.com.au> wrote:
 
-  divide error: 0000 [#1] SMP
-  [...]
-  Call Trace:
-   [...] handle_mm_fault
-   [...] ? try_to_wake_up
-   [...] ? wake_up_state
-   [...] __do_page_fault
-   [...] ? do_futex
-   [...] ? put_prev_entity
-   [...] ? __switch_to
-   [...] do_page_fault
-   [...] page_fault
-  [...]
-  RIP  [<ffffffff810a7081>] task_numa_fault
-   RSP <ffff88084eb2bcb0>
+> Rasmus Villemoes <linux@rasmusvillemoes.dk> writes:
+>> It is likely that I'm just missing something trivial, but I have
+>> a hard time understanding 63662139e ("params: Fix potential
+>> memory leak in add_sysfs_param()").
+>
+> Yes, it was a bad commit, and we've been discussing it, see:
+>
+> [PATCH] params: fix potential memory leak in add_sysfs_param()
+>
+> The only error case we are about is when add_sysfs_param()
+> is called from module_param_sysfs_setup(): the in-kernel cases
+> at boot time are assumed not to fail.
+>
+> That call should invoke free_module_param_attrs() when it fails,
+> rather than relying on add_sysfs_param() to clean up.
+>
+> Don't patch bad code - rewrite it.  (Kernigan and Plauger)
+>
+> How's this?
+>
+> params: cleanup sysfs allocation
+>
+> commit 63662139e519ce06090b2759cf4a1d291b9cc0e2 attempted to patch a
+> leak (which would only happen on OOM, ie. never), but it didn't quite
+> work.
+>
+> This rewrites the code to be as simple as possible.  add_sysfs_param()
+> adds a parameter.  If it fails, it's the caller's responsibility to
+> clean up the parameters which already exist.
+>
+> The kzalloc-then-always-krealloc pattern is perhaps overly simplistic,
+> but this code has clearly confused people.  It worked on me...
+>
 
-The issue occurs as follows:
-  1. When page fault occurs and page is allocated from node 1,
-     task_struct->numa_faults_buffer_memory[] of node 1 is
-     incremented and p->numa_faults_locality[] is also incremented
-     as follows:
+I think kzalloc immediately followed by kreallocing the returned value
+is rather ugly. Other than that:
 
-     o numa_faults_buffer_memory[]       o numa_faults_locality[]
-              NR_NUMA_HINT_FAULT_TYPES
-             |      0     |     1     |
-     ----------------------------------  ----------------------
-      node 0 |      0     |     0     |   remote |      0     |
-      node 1 |      0     |     1     |   locale |      1     |
-     ----------------------------------  ----------------------
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+>
+> diff --git a/kernel/params.c b/kernel/params.c
+> index db97b791390f..5b8005d01dfc 100644
+> --- a/kernel/params.c
+> +++ b/kernel/params.c
+> @@ -603,68 +603,58 @@ static __modinit int add_sysfs_param(struct module_kobject *mk,
+>  				     const struct kernel_param *kp,
+>  				     const char *name)
+>  {
+> -	struct module_param_attrs *new;
+> -	struct attribute **attrs;
+> -	int err, num;
+> +	struct module_param_attrs *new_mp;
+> +	struct attribute **new_attrs;
+> +	unsigned int i;
+>  
+>  	/* We don't bother calling this with invisible parameters. */
+>  	BUG_ON(!kp->perm);
+>  
+>  	if (!mk->mp) {
+> -		num = 0;
+> -		attrs = NULL;
+> -	} else {
+> -		num = mk->mp->num;
+> -		attrs = mk->mp->grp.attrs;
+> +		/* First allocation. */
+> +		mk->mp = kzalloc(sizeof(*mk->mp), GFP_KERNEL);
+> +		if (!mk->mp)
+> +			return -ENOMEM;
 
-  2. node 1 is offlined by hot removing memory.
-
-  3. When page fault occurs, fault_types[] is calculated by using
-     p->numa_faults_buffer_memory[] of all online nodes in
-     task_numa_placement(). But node 1 was offline by step 2. So
-     the fault_types[] is calculated by using only
-     p->numa_faults_buffer_memory[] of node 0. So both of fault_types[]
-     are set to 0.
-
-  4. The values(0) of fault_types[] pass to update_task_scan_period().
-
-  5. numa_faults_locality[1] is set to 1. So the following division is
-     calculated.
-
-        static void update_task_scan_period(struct task_struct *p,
-                                unsigned long shared, unsigned long private){
-        ...
-                ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared));
-        }
-
-  6. But both of private and shared are set to 0. So divide error
-     occurs here.
-
-The divide error is rare case because the trigger is node offline.
-By this patch, when both of private and shared are set to 0,
-denominator is set to 1 for avoiding divide error.
-
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: Wanpeng Li <kernellwp@gmail.com>
-CC: Rik van Riel <riel@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>
----
- kernel/sched/fair.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index bfa3c86..580fc74 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1466,6 +1466,7 @@ static void update_task_scan_period(struct task_struct *p,
-
- 	unsigned long remote = p->numa_faults_locality[0];
- 	unsigned long local = p->numa_faults_locality[1];
-+	unsigned long total_faults = shared + private;
-
- 	/*
- 	 * If there were no record hinting faults then either the task is
-@@ -1496,6 +1497,14 @@ static void update_task_scan_period(struct task_struct *p,
- 			slot = 1;
- 		diff = slot * period_slot;
- 	} else {
-+		/*
-+		 * This is a rare case. total_faults might become 0 after
-+		 * offlining node. In this case, total_faults is set to 1
-+		 * for avoiding divide error.
-+		 */
-+		if (unlikely(total_faults == 0))
-+			total_faults = 1;
-+
- 		diff = -(NUMA_PERIOD_THRESHOLD - ratio) * period_slot;
-
- 		/*
-@@ -1506,7 +1515,7 @@ static void update_task_scan_period(struct task_struct *p,
- 		 * scanning faster if shared accesses dominate as it may
- 		 * simply bounce migrations uselessly
- 		 */
--		ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared));
-+		ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (total_faults));
- 		diff = (diff * ratio) / NUMA_PERIOD_SLOTS;
- 	}
-
--- 
-1.8.3.1
+free_module_param_attrs does not check mk->mp for being NULL before
+kfree'ing mk->mp->grp.attrs, so this will oops.
 
 
+Rasmus
