@@ -1,68 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039AbaJPJxi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 05:53:38 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:36886 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751349AbaJPJxg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 05:53:36 -0400
-Date: Thu, 16 Oct 2014 11:53:23 +0200
-From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFT 0/8] Marvell PXA168 libphy handling and Berlin
- Ethernet
-Message-ID: <20141016095323.GA1061@kwain>
-References: <1412858346-11334-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S1751386AbaJPJ40 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 05:56:26 -0400
+Received: from tundra.namei.org ([65.99.196.166]:50436 "EHLO namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751001AbaJPJ4Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 05:56:25 -0400
+Date: Thu, 16 Oct 2014 20:56:21 +1100 (AEDT)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Moore <paul@paul-moore.com>
+Subject: [GIT PULL] SELinux fix for 3.18 (updated)
+Message-ID: <alpine.LRH.2.11.1410162052120.25020@namei.org>
+User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1412858346-11334-1-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
+Please pull this fix for a list corruption bug in the SELinux code.
 
-On Thu, Oct 09, 2014 at 02:38:58PM +0200, Sebastian Hesselbarth wrote:
-> This patch series deals with a removing a IP feature that can be found
-> on all currently supported Marvell Ethernet IP (pxa168_eth, mv643xx_eth,
-> mvneta). The MAC IP allows to automatically perform PHY auto-negotiation
-> without software interaction.
-> 
-> However, this feature (a) fundamentally clashes with the way libphy works
-> and (b) is unable to deal with quirky PHYs that require special treatment.
-> In this series, pxa168_eth driver is rewritten to completely disable that
-> feature and properly deal with libphy provided PHYs. The other two drivers
-> are suspect to future patch sets, also removing the code related with it.
-> 
-> Currently, the patches are based on next-20141009 and will be resent once
-> v3.18-rc1 drops. This is a Request-For-Test on both BG2Q and MMP/gplug as
+This is an updated pull request after fixing the previously discussed git 
+repo issues.
 
-I tested the series on a BG2Q, it worked well.
 
-Antoine
+---
 
-> these are the current users of pxa168_eth. A branch with this patches on
-> top of next-20141009 can be found at
-> 
-> git://git.infradead.org/users/hesselba/linux-berlin.git devel/bg2-bg2cd-eth-v1
-> 
-> It would be great to get a Tested-byfrom MMP guys on gplug - if they
-> have that board somewhere. Also, BG2Q (Antoine) needs a phy-connection-type
-> property. My guess is that, if it is using internal PHY, it is "mii", too.
+The following changes since commit 0429fbc0bdc297d64188483ba029a23773ae07b0:
 
--- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+  Merge branch 'for-3.18-consistent-ops' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu (2014-10-15 07:48:18 +0200)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus2
+
+James Morris (1):
+      Merge branch 'stable-3.18' of git://git.infradead.org/users/pcmoore/selinux into for-linus2
+
+Stephen Smalley (1):
+      selinux: fix inode security list corruption
+
+---
+
+ security/selinux/hooks.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+commit 9b32011acdc4428474b7cba865f713a11b9b9bd3
+Merge: 0429fbc 923190d
+Author: James Morris <james.l.morris@oracle.com>
+Date:   Thu Oct 16 21:04:18 2014 +1100
+
+    Merge branch 'stable-3.18' of git://git.infradead.org/users/pcmoore/selinux into for-linus2
+
+commit 923190d32de4428afbea5e5773be86bea60a9925
+Author: Stephen Smalley <sds@tycho.nsa.gov>
+Date:   Mon Oct 6 16:32:52 2014 -0400
+
+    selinux: fix inode security list corruption
+    
+    sb_finish_set_opts() can race with inode_free_security()
+    when initializing inode security structures for inodes
+    created prior to initial policy load or by the filesystem
+    during ->mount().   This appears to have always been
+    a possible race, but commit 3dc91d4 ("SELinux:  Fix possible
+    NULL pointer dereference in selinux_inode_permission()")
+    made it more evident by immediately reusing the unioned
+    list/rcu element  of the inode security structure for call_rcu()
+    upon an inode_free_security().  But the underlying issue
+    was already present before that commit as a possible use-after-free
+    of isec.
+    
+    Shivnandan Kumar reported the list corruption and proposed
+    a patch to split the list and rcu elements out of the union
+    as separate fields of the inode_security_struct so that setting
+    the rcu element would not affect the list element.  However,
+    this would merely hide the issue and not truly fix the code.
+    
+    This patch instead moves up the deletion of the list entry
+    prior to dropping the sbsec->isec_lock initially.  Then,
+    if the inode is dropped subsequently, there will be no further
+    references to the isec.
+    
+    Reported-by: Shivnandan Kumar <shivnandan.k@samsung.com>
+    Signed-off-by: Stephen Smalley <sds@tycho.nsa.gov>
+    Cc: stable@vger.kernel.org
+    Signed-off-by: Paul Moore <pmoore@redhat.com>
+
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index 29e64d4..2478976 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -481,6 +481,7 @@ next_inode:
+ 				list_entry(sbsec->isec_head.next,
+ 					   struct inode_security_struct, list);
+ 		struct inode *inode = isec->inode;
++		list_del_init(&isec->list);
+ 		spin_unlock(&sbsec->isec_lock);
+ 		inode = igrab(inode);
+ 		if (inode) {
+@@ -489,7 +490,6 @@ next_inode:
+ 			iput(inode);
+ 		}
+ 		spin_lock(&sbsec->isec_lock);
+-		list_del_init(&isec->list);
+ 		goto next_inode;
+ 	}
+ 	spin_unlock(&sbsec->isec_lock);
+
