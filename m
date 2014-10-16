@@ -1,70 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751871AbaJPReI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 13:34:08 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:61130 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751449AbaJPReG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 13:34:06 -0400
-Date: Thu, 16 Oct 2014 10:34:01 -0700
-From: Benjamin Poirier <benjamin.poirier@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: =?iso-8859-1?Q?Llu=EDs?= Batlle i Rossell <viric@viric.name>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Carles =?iso-8859-1?Q?Pag=E8s?= <page@cubata.homelinux.net>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Regarding tx-nocache-copy in the Sheevaplug
-Message-ID: <20141016173401.GA16515@f1.synalogic.ca>
-References: <20141013105246.GD1972@vicerveza.homeunix.net>
- <20141015215701.GA4109@f1.synalogic.ca>
- <1413413127.17186.5.camel@edumazet-glaptop2.roam.corp.google.com>
+	id S1752120AbaJPRfN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 13:35:13 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:50378 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751433AbaJPRfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 13:35:11 -0400
+Date: Thu, 16 Oct 2014 12:34:56 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] USB: OHCI: ohci-at91: remove unnecessary headers
+Message-ID: <20141016173456.GA4357@saruman>
+Reply-To: <balbi@ti.com>
+References: <1413474758-18861-1-git-send-email-alexandre.belloni@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0OAP2g/MAC+5xKAE"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1413413127.17186.5.camel@edumazet-glaptop2.roam.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1413474758-18861-1-git-send-email-alexandre.belloni@free-electrons.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/10/15 15:45, Eric Dumazet wrote:
-> On Wed, 2014-10-15 at 14:57 -0700, Benjamin Poirier wrote:
-> > On 2014/10/13 12:52, Lluís Batlle i Rossell wrote:
-> > > Hello,
-> > > 
-> > > on the 7th of January 2014 ths patch was applied:
-> > > https://lkml.org/lkml/2014/1/7/307
-> > > 
-> > > [PATCH v2] net: Do not enable tx-nocache-copy by default
-> > >         
-> > > In the Sheevaplug (ARM Feroceon 88FR131 from Marvell) this made packets to be
-> > > sent corrupted. I think this machine has something special about the cache.
-> > > 
-> > > Enabling back this tx-nocache-copy (as it used to be before the patch) the
-> > > transfers work fine again. I think that most people, encountering this problem,
-> > > completely disable the tx offload instead of enabling back this setting.
-> > > 
-> > > Is this an ARM kernel problem regarding this platform?
-> > 
-> > This is odd, only x86 defines ARCH_HAS_NOCACHE_UACCESS. On arm,
-> > skb_do_copy_data_nocache() should end up using __copy_from_user()
-> > regardless of tx-nocache-copy.
-> 
->  kmap_atomic()/kunmap_atomic() is missing, so we lack
-> __cpuc_flush_dcache_area() operations.
-> 
+--0OAP2g/MAC+5xKAE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-You lost me there.
-1) I don't see the link
-2) It seems kmap_atomic and so on are there:
-$ grep kmap_atomic System.map-3.16-2-kirkwood
-c0014838 T kmap_atomic
-c001491c T kmap_atomic_pfn
-c00149a4 T kmap_atomic_to_page
+On Thu, Oct 16, 2014 at 05:52:38PM +0200, Alexandre Belloni wrote:
+> Remove unnecessary mach/* headers to be able to converge to a multiplatfo=
+rm
+> kernel.
+>=20
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 
-MACH_KIRKWOOD selects CPU_FEROCEON which has
-__cpuc_flush_dcache_area ->
-	cpu_cache.flush_kern_dcache_area ->
-		feroceon_flush_kern_dcache_area
+Very nice
+
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+
+> ---
+>  drivers/usb/host/ohci-at91.c | 4 ----
+>  1 file changed, 4 deletions(-)
+>=20
+> diff --git a/drivers/usb/host/ohci-at91.c b/drivers/usb/host/ohci-at91.c
+> index e49eb4f90f5d..6181549883af 100644
+> --- a/drivers/usb/host/ohci-at91.c
+> +++ b/drivers/usb/host/ohci-at91.c
+> @@ -24,12 +24,8 @@
+>  #include <linux/usb.h>
+>  #include <linux/usb/hcd.h>
+> =20
+> -#include <mach/hardware.h>
+>  #include <asm/gpio.h>
+> =20
+> -#include <mach/cpu.h>
+> -
+> -
+>  #include "ohci.h"
+> =20
+>  #define valid_port(index)	((index) >=3D 0 && (index) < AT91_MAX_USBH_POR=
+TS)
+> --=20
+> 1.9.1
+>=20
+
+--=20
+balbi
+
+--0OAP2g/MAC+5xKAE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUQAHAAAoJEIaOsuA1yqREPjwQAKUWRZNVtuEV3Eh97B2bH49U
+G5CTsKbMQtV2YhZzVb4/42Sv/Q1ANXCDSWebeK1a/L1JbIw3qox3628Fn9/RcKUO
+Ebt3xX107/W0ZYJxnp7ij4UkkDWtG48K6xqKrbIQGNE8XyD9diCSRDR+4KvjooiM
+sd244UqtZeTtqvaDAb1AZNBxzOxbnQKL3FglqTg7kjcBkeMPS+ga34Zj6ivxe3iK
+kK/a59JBofpPF2tUJstcU6LOqlLR2buD2rfoEldGH7fClaZ1Xfbp96hvhI/I9thh
+YEIrrr1t8ltSSqtrhaZxhJmPNEvG1w3XypcFOtKJBuuSZ9LfS0E9yNhTClIfnSqN
+X1l311n11bZ79+PmT8uxq7eV7xhcL0aFIt3TXmlnV8HCbH3d4qYRPIB5jkDVI2d0
+Gm6Gkp+e5HZZtR8Pt2mSMpdZVYkM214AnIzHNE4UHXsZw5XqCQprH2Hz2dJrZN6Z
+kX4yLO/gE8b4gURk82AICO+cXj6bFrGj5FxvlpBNgjVNEunh0r7T2SdgN4IOi0Y1
+EO3hGnkYfIwqpurmE9h6+xSqXzZSOP80f0fBpH4fMuOpE6VJ30kDqmu2BcBy8CM8
+rRDY2CTgv8YwtKdj7RAlRLjm6YN/RxyiZMLQ908DFDeds85sY8cDvwtst3hIoOCg
+TbVI6ke/n7IzNuJlp3Ui
+=iEKk
+-----END PGP SIGNATURE-----
+
+--0OAP2g/MAC+5xKAE--
