@@ -1,43 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751528AbaJPIpU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 04:45:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41539 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765AbaJPIpR (ORCPT
+	id S1751546AbaJPIqf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 04:46:35 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:46616 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765AbaJPIqc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 04:45:17 -0400
-Date: Thu, 16 Oct 2014 10:44:12 +0200
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Andreas Werner <andreas.werner@men.de>
-Cc: linux-kernel@vger.kernel.org, wsa@the-dreams.de, linux-i2c@vger.kernel.org,
-        johannes.thumshirn@men.de
-Subject: Re: [PATCH 1/2] drivers/misc/eeprom/men_eeprod: Introduce MEN Board
- Information EEPROM driver
-Message-ID: <20141016084412.GB22265@kroah.com>
-References: <cover.1413416105.git.andreas.werner@men.de>
- <d169930cfe45d4c05c79f7dd00471d732441529d.1413416105.git.andreas.werner@men.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <d169930cfe45d4c05c79f7dd00471d732441529d.1413416105.git.andreas.werner@men.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 16 Oct 2014 04:46:32 -0400
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] serial: 8250: sparse warning of incorrect type
+Date: Thu, 16 Oct 2014 14:16:22 +0530
+Message-Id: <1413449182-1117-1-git-send-email-sudipm.mukherjee@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 10:15:08AM +0200, Andreas Werner wrote:
-> +struct eeprom_data {
-> +	uint8_t eeprod_id;
+fixed a sparse warning in 8250_core.c :
+	incorrect type in assignment (different address spaces)
 
-Please use the "real" kernel types, "u8" here, and "u32" in other places
-you use uint32_t (those are userspace types, not kernel types, sorry.)
+the warning was because an unsigned char pointer was being assigned to
+a pointer of unsigned char __iomem type .
 
-> +static DEVICE_ATTR(eeprod_id, S_IRUGO, show_eeprod_id, NULL);
-> +static DEVICE_ATTR(revision, S_IRUGO, show_revision, NULL);
-> +static DEVICE_ATTR(serial, S_IRUGO, show_serialnr, NULL);
-> +static DEVICE_ATTR(hw_name, S_IRUGO, show_hw_name, NULL);
-> +static DEVICE_ATTR(prod_date, S_IRUGO, show_prod_date, NULL);
-> +static DEVICE_ATTR(rep_date, S_IRUGO, show_rep_date, NULL);
+Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+---
+ drivers/tty/serial/8250/8250.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-DEVICE_ATTR_RO() please.
+diff --git a/drivers/tty/serial/8250/8250.h b/drivers/tty/serial/8250/8250.h
+index cb51be55..9547fd5 100644
+--- a/drivers/tty/serial/8250/8250.h
++++ b/drivers/tty/serial/8250/8250.h
+@@ -51,7 +51,7 @@ struct old_serial_port {
+ 	unsigned int flags;
+ 	unsigned char hub6;
+ 	unsigned char io_type;
+-	unsigned char *iomem_base;
++	unsigned char __iomem *iomem_base;
+ 	unsigned short iomem_reg_shift;
+ 	unsigned long irqflags;
+ };
+-- 
+1.8.1.2
+
