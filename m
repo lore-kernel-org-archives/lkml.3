@@ -1,58 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751484AbaJPAbq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Oct 2014 20:31:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9553 "EHLO mx1.redhat.com"
+	id S1751690AbaJPAbx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Oct 2014 20:31:53 -0400
+Received: from mga03.intel.com ([134.134.136.65]:3647 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750820AbaJPAbq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Oct 2014 20:31:46 -0400
-Message-ID: <543F11EF.4090206@redhat.com>
-Date: Thu, 16 Oct 2014 08:31:43 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1750820AbaJPAbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Oct 2014 20:31:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,728,1406617200"; 
+   d="scan'208";a="619540509"
+From: "Chen, Alvin" <alvin.chen@intel.com>
+To: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Mark Brown <broonie@kernel.org>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        "Tan, Raymond" <raymond.tan@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: RE: [PATCH 0/2 v3] SPI: spi-pxa2xx: Add support for Intel Quark
+ X1000 SPI controller
+Thread-Topic: [PATCH 0/2 v3] SPI: spi-pxa2xx: Add support for Intel Quark
+ X1000 SPI controller
+Thread-Index: AQHP4s2062u9hI2nNE2pT5OIIxNEG5wx6j9Q
+Date: Thu, 16 Oct 2014 00:31:41 +0000
+Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E999534@SHSMSX101.ccr.corp.intel.com>
+References: <1412783423-9408-1-git-send-email-alvin.chen@intel.com>
+In-Reply-To: <1412783423-9408-1-git-send-email-alvin.chen@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC v2 0/3] virtio_net: enabling tx interrupts
-References: <1413383116-30977-1-git-send-email-mst@redhat.com>
-In-Reply-To: <1413383116-30977-1-git-send-email-mst@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9G0WBNq002254
 
-On 10/15/2014 10:32 PM, Michael S. Tsirkin wrote:
-> RFC patches to enable tx interrupts.
-> This is to demonstrate how this can be done without
-> core virtio changes, and to make sure I understand
-> the new APIs correctly.
->
-> Testing TBD: I'm going offline for several days, will only be able to
-> test afterwards (unless someone beats me to this).
-> So I thought I'd post this early.
->
-> Applies on top of patch: "virtio_net: fix use after free"
-> that I recently sent.
->
-> Changes:
-> 	address comments by Jason Wang, use delayed cb everywhere
-> 	rebased Jason's patch on top of mine and include it (with some tweaks)
->
-> Jason, feel free to either use this, try it out, or take ideas out
-> of this patchset and reuse in any other way you see fit.
+Hi Mark,
 
-Sure, will do some tests first.
+Any update for these patches? Just want to follow-up.
 
-Thanks
->
-> Jason Wang (1):
->   virtio-net: optimize free_old_xmit_skbs stats
->
-> Michael S. Tsirkin (2):
->   virtio_net: enable tx interrupt
->   virtio_net: bql
->
->  drivers/net/virtio_net.c | 153 ++++++++++++++++++++++++++++++++++-------------
->  1 file changed, 111 insertions(+), 42 deletions(-)
->
 
+Best regardsï¼ŒAlvin Chen
+ICFS Platform Engineering Solution
+Flex Services (CMMI Level 3, IQA2005, IQA2008),Â Greater Asia Region Intel Information Technology Tel. 010-82171960
+inet.8-7581960
+Email. alvin.chen@intel.com 
+
+> -----Original Message-----
+> From: Chen, Alvin
+> Sent: Wednesday, October 8, 2014 11:50 PM
+> To: Eric Miao; Russell King; Haojian Zhuang; Mark Brown
+> Cc: linux-arm-kernel@lists.infradead.org; linux-spi@vger.kernel.org;
+> linux-kernel@vger.kernel.org; Westerberg, Mika; Kweh, Hock Leong; Ong, Boon
+> Leong; Tan, Raymond; Chen, Alvin; Andy Shevchenko
+> Subject: [PATCH 0/2 v3] SPI: spi-pxa2xx: Add support for Intel Quark X1000 SPI
+> controller
+> 
+> Hi,
+> Intel Quark X1000 consists of two SPI controllers which can be PCI enumerated.
+> SPI-PXA2XX PCI layer doesn't support it. Thus, we add support for Intel Quark
+> X1000 SPI as well.
+> 
+> ---
+> v3:
+> [PATCH 1/2]
+> * Improve the commit message.
+> * A couple of minor fixes.
+> [PATCH 2/2]
+> * Set '.num_chipselect' to '1' instead of '4'.
+> * A couple of minor fixes.
+> 
+> v2:
+>   Split into two patches: one is for helper functions,
+>   and another is for quark supporting.
+> 
+> [PATCH 1/2]
+> * Add helper functions to access registers.
+> * Use 'switch' instead of 'if-else'.
+> [PATCH 2/2]
+> * Use 'switch' instead of 'if-else'.
+> * Add comments for the 'dds'&'clk_div' caculation.
+> * A couple of minor fixes.
+> 
+> Weike Chen (2):
+>   SPI: spi-pxa2xx: Add helpers for regiseters' accessing
+>   SPI: spi-pxa2xx: SPI support for Intel Quark X1000
+> 
+>  drivers/spi/spi-pxa2xx-pci.c |    8 ++
+>  drivers/spi/spi-pxa2xx.c     |  304
+> ++++++++++++++++++++++++++++++++++++------
+>  drivers/spi/spi-pxa2xx.h     |   16 ++-
+>  include/linux/pxa2xx_ssp.h   |   21 +++
+>  4 files changed, 304 insertions(+), 45 deletions(-)
+> 
+> --
+> 1.7.9.5
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
