@@ -1,72 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752352AbaJPTAE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 15:00:04 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:33304 "EHLO
+	id S1752874AbaJPTAu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 15:00:50 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:56899 "EHLO
 	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751472AbaJPTAB (ORCPT
+	with ESMTP id S1752482AbaJPTAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 15:00:01 -0400
+	Thu, 16 Oct 2014 15:00:08 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
         Jiri Slaby <jslaby@suse.cz>,
         One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
         Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH -next 00/10] Fixes to controlling tty handling
-Date: Thu, 16 Oct 2014 14:59:40 -0400
-Message-Id: <1413485990-16855-1-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH -next 09/10] tty: Serialize proc_set_tty() with tty_lock
+Date: Thu, 16 Oct 2014 14:59:49 -0400
+Message-Id: <1413485990-16855-10-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1413485990-16855-1-git-send-email-peter@hurleysoftware.com>
+References: <1413485990-16855-1-git-send-email-peter@hurleysoftware.com>
 X-Authenticated-User: 990527 peter@hurleysoftware.com
 X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Setting the controlling terminal for a session occurs with either
+the first open of a non-pty master tty or with ioctl(TIOCSCTTY).
+Since only the session leader can set the controlling terminal for
+a session (and the session leader cannot change), it is not
+necessary to prevent a process from attempting to set different
+ttys as the controlling terminal concurrently.
 
-This patch series:
-1. removes stale code from the controlling tty handling functions
-2. relocates the ctty functions to eliminate forward declarations
-3. fixes several unsafe races when setting the controlling tty
-4. eliminates holding tty_mutex as a necessary condition of
-   setting the controlling terminal
+So it's only necessary to prevent the same tty from becoming the
+controlling terminal for different session leaders. The tty_lock()
+is sufficient to prevent concurrent proc_set_tty() for the same
+tty.
 
-#4 is part of an overall effort to reduce the tty_mutex footprint.
+Remove the tty_mutex lock region; add tty_lock() to tiocsctty().
 
-Unfortunately, this series does not fix two other race conditions:
-1. disassociate_ctty()/no_tty() does not teardown the tty<->process
-associations atomically wrt job control, so it is possible to
-observe spurious error conditions from job control (tty_check_change()
-and job_control()). I'm looking into inverting the lock order of
-tty->ctrl_lock and tsk->sighand->siglock() to see if holding ctrl_lock
-is a suitable solution for atomic teardown. Especially now that
-ctrl_lock is not used for flow control anymore :)
-2. task_pgrp() and task_session() are used unsafely. These fixes
-will be clearer after #1 is fixed.
+While this may appear to allow a race condition between opening
+the controlling tty via tty_open_current_tty() and stealing the
+controlling tty via ioctl(TIOCSCTTY, 1), that race condition already
+existed. Even if the tty_mutex prevented stealing the controlling tty
+while tty_open_current_tty() returned the original controlling tty,
+it cannot prevent stealing the controlling tty before tty_open() returns.
+Thus, tty_open() could already return a no-longer-controlling tty when
+opening /dev/tty.
 
-Regards,
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/tty_io.c | 13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
 
-Peter Hurley (10):
-  tty: Remove tty_pair_get_tty()/tty_pair_get_pty() api
-  tty: Reorder proc_set_tty() and related fns
-  tty: Remove tsk parameter from proc_set_tty()
-  uml: Fix unsafe pid reference to foreground process group
-  tty: Replace open-coded tty_get_pgrp()
-  tty: Remove !tty condition from __proc_set_tty()
-  tty: Fix multiple races when setting the controlling terminal
-  tty: Move session_of_pgrp() and make static
-  tty: Serialize proc_set_tty() with tty_lock
-  tty: Update code comment in __proc_set_tty()
-
- arch/um/drivers/line.c |   6 +-
- drivers/tty/pty.c      |  24 ++----
- drivers/tty/tty_io.c   | 204 +++++++++++++++++++++++++++----------------------
- include/linux/kernel.h |   3 -
- include/linux/tty.h    |   3 -
- kernel/exit.c          |  21 -----
- 6 files changed, 123 insertions(+), 138 deletions(-)
-
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index c15421df..7def510 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -508,7 +508,8 @@ void proc_clear_tty(struct task_struct *p)
+  * Only callable by the session leader and only if it does not already have
+  * a controlling terminal.
+  *
+- * Caller must hold:  a readlock on tasklist_lock
++ * Caller must hold:  tty_lock()
++ *		      a readlock on tasklist_lock
+  *		      sighand lock
+  */
+ static void __proc_set_tty(struct tty_struct *tty)
+@@ -2160,11 +2161,8 @@ retry_open:
+ 		goto retry_open;
+ 	}
+ 	clear_bit(TTY_HUPPED, &tty->flags);
+-	tty_unlock(tty);
+ 
+ 
+-	mutex_lock(&tty_mutex);
+-	tty_lock(tty);
+ 	read_lock(&tasklist_lock);
+ 	spin_lock_irq(&current->sighand->siglock);
+ 	if (!noctty &&
+@@ -2175,7 +2173,6 @@ retry_open:
+ 	spin_unlock_irq(&current->sighand->siglock);
+ 	read_unlock(&tasklist_lock);
+ 	tty_unlock(tty);
+-	mutex_unlock(&tty_mutex);
+ 	return 0;
+ err_unlock:
+ 	mutex_unlock(&tty_mutex);
+@@ -2455,7 +2452,7 @@ static int fionbio(struct file *file, int __user *p)
+  *	leader to set this tty as the controlling tty for the session.
+  *
+  *	Locking:
+- *		Takes tty_mutex() to protect tty instance
++ *		Takes tty_lock() to serialize proc_set_tty() for this tty
+  *		Takes tasklist_lock internally to walk sessions
+  *		Takes ->siglock() when updating signal->tty
+  */
+@@ -2464,7 +2461,7 @@ static int tiocsctty(struct tty_struct *tty, int arg)
+ {
+ 	int ret = 0;
+ 
+-	mutex_lock(&tty_mutex);
++	tty_lock(tty);
+ 	read_lock(&tasklist_lock);
+ 
+ 	if (current->signal->leader && (task_session(current) == tty->session))
+@@ -2497,7 +2494,7 @@ static int tiocsctty(struct tty_struct *tty, int arg)
+ 	proc_set_tty(tty);
+ unlock:
+ 	read_unlock(&tasklist_lock);
+-	mutex_unlock(&tty_mutex);
++	tty_unlock(tty);
+ 	return ret;
+ }
+ 
 -- 
 2.1.1
 
