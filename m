@@ -1,136 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752513AbaJPTOz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 15:14:55 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:40711 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751309AbaJPTOy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 15:14:54 -0400
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: hare@suse.de, JBottomley@parallels.com
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        julia.lawall@lip6.fr,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] aic7xxx: replace kmalloc/memset by kzalloc
-Date: Thu, 16 Oct 2014 21:14:38 +0200
-Message-Id: <1413486878-375-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
+	id S1752536AbaJPTRV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 15:17:21 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:42148 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751414AbaJPTRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 15:17:20 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Jianqun <jay.xu@rock-chips.com>
+Cc: mturquette@linaro.org, dianders@chromium.org, kever.yang@rock-chips.com,
+        dbasehore@chromium.org, mark.yao@rock-chips.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        huangtao@rock-chips.com, cf@rock-chips.com
+Subject: Re: [PATCH v2] clk: rockchip: rk3288: i2s_frac adds flag to set parent's rate
+Date: Thu, 16 Oct 2014 21:17:06 +0200
+Message-ID: <5441807.rM669MWZMA@phil>
+User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <1413161056-10273-1-git-send-email-jay.xu@rock-chips.com>
+References: <1412046724-28069-1-git-send-email-jay.xu@rock-chips.com> <1413161056-10273-1-git-send-email-jay.xu@rock-chips.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This replaces kmalloc + memset by a call to kzalloc.
+Hi Jianqun,
 
-This also fixes one checkpatch.pl issue in the process.
+Am Montag, 13. Oktober 2014, 08:44:16 schrieb Jianqun:
+> The relation of i2s nodes as follows:
+>           i2s_src               1           1            594000000  0
+>              i2s_frac           1           1            11289600   0
+>                 i2s_pre         1           1            11289600   0
+>                    sclk_i2s0    1           1            11289600   0
+>                    i2s0_clkout  0           0            11289600   0
+>                       hclk_i2s0 1           1            148500000  0
+> 
+> "sclk_i2s0" is the master clock, should allow to set its parent's rate.
+> Add flag CLK_SET_RATE_PARENT for "i2s_frac", "i2s_pre" and "sclk_i2s0".
+> 
+> Tested on rk3288 board using max98090, with command "aplay <music.wav>"
+> and cat /sys/kernel/debug/clk/clk_summary |grep i2s
+> 
+> Signed-off-by: Jianqun <jay.xu@rock-chips.com>
 
-This improvement was suggested by "make coccicheck"
+It looks like this is already in the mainline kernel [0].
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- drivers/scsi/aic7xxx/aic79xx_core.c |  3 +--
- drivers/scsi/aic7xxx/aic79xx_osm.c  |  3 +--
- drivers/scsi/aic7xxx/aic7xxx_core.c | 10 ++++------
- drivers/scsi/aic7xxx/aic7xxx_osm.c  |  3 +--
- 4 files changed, 7 insertions(+), 12 deletions(-)
+It seems like I didn't catch the "Change-Id" at the time, and it is the 
+variant where i2s_clkout can set the parent rates.
 
-diff --git a/drivers/scsi/aic7xxx/aic79xx_core.c b/drivers/scsi/aic7xxx/aic79xx_core.c
-index 0bcacf71aef8..9ce383c884c0 100644
---- a/drivers/scsi/aic7xxx/aic79xx_core.c
-+++ b/drivers/scsi/aic7xxx/aic79xx_core.c
-@@ -10437,14 +10437,13 @@ ahd_handle_en_lun(struct ahd_softc *ahd, struct cam_sim *sim, union ccb *ccb)
- 				return;
- 			}
- 		}
--		lstate = kmalloc(sizeof(*lstate), GFP_ATOMIC);
-+		lstate = kzalloc(sizeof(*lstate), GFP_ATOMIC);
- 		if (lstate == NULL) {
- 			xpt_print_path(ccb->ccb_h.path);
- 			printk("Couldn't allocate lstate\n");
- 			ccb->ccb_h.status = CAM_RESRC_UNAVAIL;
- 			return;
- 		}
--		memset(lstate, 0, sizeof(*lstate));
- 		status = xpt_create_path(&lstate->path, /*periph*/NULL,
- 					 xpt_path_path_id(ccb->ccb_h.path),
- 					 xpt_path_target_id(ccb->ccb_h.path),
-diff --git a/drivers/scsi/aic7xxx/aic79xx_osm.c b/drivers/scsi/aic7xxx/aic79xx_osm.c
-index ed333669a7dc..67a01e804195 100644
---- a/drivers/scsi/aic7xxx/aic79xx_osm.c
-+++ b/drivers/scsi/aic7xxx/aic79xx_osm.c
-@@ -1325,10 +1325,9 @@ int
- ahd_platform_alloc(struct ahd_softc *ahd, void *platform_arg)
- {
- 	ahd->platform_data =
--	    kmalloc(sizeof(struct ahd_platform_data), GFP_ATOMIC);
-+	    kzalloc(sizeof(struct ahd_platform_data), GFP_ATOMIC);
- 	if (ahd->platform_data == NULL)
- 		return (ENOMEM);
--	memset(ahd->platform_data, 0, sizeof(struct ahd_platform_data));
- 	ahd->platform_data->irq = AHD_LINUX_NOIRQ;
- 	ahd_lockinit(ahd);
- 	ahd->seltime = (aic79xx_seltime & 0x3) << 4;
-diff --git a/drivers/scsi/aic7xxx/aic7xxx_core.c b/drivers/scsi/aic7xxx/aic7xxx_core.c
-index 10172a3af1b9..c4829d84b335 100644
---- a/drivers/scsi/aic7xxx/aic7xxx_core.c
-+++ b/drivers/scsi/aic7xxx/aic7xxx_core.c
-@@ -4464,10 +4464,9 @@ ahc_softc_init(struct ahc_softc *ahc)
- 	ahc->pause = ahc->unpause | PAUSE; 
- 	/* XXX The shared scb data stuff should be deprecated */
- 	if (ahc->scb_data == NULL) {
--		ahc->scb_data = kmalloc(sizeof(*ahc->scb_data), GFP_ATOMIC);
-+		ahc->scb_data = kzalloc(sizeof(*ahc->scb_data), GFP_ATOMIC);
- 		if (ahc->scb_data == NULL)
- 			return (ENOMEM);
--		memset(ahc->scb_data, 0, sizeof(*ahc->scb_data));
- 	}
- 
- 	return (0);
-@@ -4780,10 +4779,10 @@ ahc_init_scbdata(struct ahc_softc *ahc)
- 	SLIST_INIT(&scb_data->sg_maps);
- 
- 	/* Allocate SCB resources */
--	scb_data->scbarray = kmalloc(sizeof(struct scb) * AHC_SCB_MAX_ALLOC, GFP_ATOMIC);
-+	scb_data->scbarray = kzalloc(sizeof(struct scb) * AHC_SCB_MAX_ALLOC,
-+				GFP_ATOMIC);
- 	if (scb_data->scbarray == NULL)
- 		return (ENOMEM);
--	memset(scb_data->scbarray, 0, sizeof(struct scb) * AHC_SCB_MAX_ALLOC);
- 
- 	/* Determine the number of hardware SCBs and initialize them */
- 
-@@ -7558,14 +7557,13 @@ ahc_handle_en_lun(struct ahc_softc *ahc, struct cam_sim *sim, union ccb *ccb)
- 				return;
- 			}
- 		}
--		lstate = kmalloc(sizeof(*lstate), GFP_ATOMIC);
-+		lstate = kzalloc(sizeof(*lstate), GFP_ATOMIC);
- 		if (lstate == NULL) {
- 			xpt_print_path(ccb->ccb_h.path);
- 			printk("Couldn't allocate lstate\n");
- 			ccb->ccb_h.status = CAM_RESRC_UNAVAIL;
- 			return;
- 		}
--		memset(lstate, 0, sizeof(*lstate));
- 		status = xpt_create_path(&lstate->path, /*periph*/NULL,
- 					 xpt_path_path_id(ccb->ccb_h.path),
- 					 xpt_path_target_id(ccb->ccb_h.path),
-diff --git a/drivers/scsi/aic7xxx/aic7xxx_osm.c b/drivers/scsi/aic7xxx/aic7xxx_osm.c
-index d2c9bf39033d..350701407ecd 100644
---- a/drivers/scsi/aic7xxx/aic7xxx_osm.c
-+++ b/drivers/scsi/aic7xxx/aic7xxx_osm.c
-@@ -1213,10 +1213,9 @@ ahc_platform_alloc(struct ahc_softc *ahc, void *platform_arg)
- {
- 
- 	ahc->platform_data =
--	    kmalloc(sizeof(struct ahc_platform_data), GFP_ATOMIC);
-+	    kzalloc(sizeof(struct ahc_platform_data), GFP_ATOMIC);
- 	if (ahc->platform_data == NULL)
- 		return (ENOMEM);
--	memset(ahc->platform_data, 0, sizeof(struct ahc_platform_data));
- 	ahc->platform_data->irq = AHC_LINUX_NOIRQ;
- 	ahc_lockinit(ahc);
- 	ahc->seltime = (aic7xxx_seltime & 0x3) << 4;
--- 
-1.9.1
+Could you do a follow-up patch removing the CLK_SET_RATE_PARENT from 
+i2s_clkout again please?
+
+
+Thanks
+Heiko
+
+[0] 
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=fc69ed70c16a31d6a77ec47a30a9fe941f763f1e
+
+> ---
+> change since v1:
+> - no "Change-Id"s in upstream patches, suggested by Heiko
+> - to limit i2s0_clkout to select between its two parent without being able
+>   influence the core i2s clock, suggested by Heiko
+> 
+>  drivers/clk/rockchip/clk-rk3288.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/clk/rockchip/clk-rk3288.c
+> b/drivers/clk/rockchip/clk-rk3288.c index b22a2d2..ae32d78 100644
+> --- a/drivers/clk/rockchip/clk-rk3288.c
+> +++ b/drivers/clk/rockchip/clk-rk3288.c
+> @@ -238,15 +238,15 @@ static struct rockchip_clk_branch
+> rk3288_clk_branches[] __initdata = { COMPOSITE(0, "i2s_src",
+> mux_pll_src_cpll_gpll_p, 0,
+>  			RK3288_CLKSEL_CON(4), 15, 1, MFLAGS, 0, 7, DFLAGS,
+>  			RK3288_CLKGATE_CON(4), 1, GFLAGS),
+> -	COMPOSITE_FRAC(0, "i2s_frac", "i2s_src", 0,
+> +	COMPOSITE_FRAC(0, "i2s_frac", "i2s_src", CLK_SET_RATE_PARENT,
+>  			RK3288_CLKSEL_CON(8), 0,
+>  			RK3288_CLKGATE_CON(4), 2, GFLAGS),
+> -	MUX(0, "i2s_pre", mux_i2s_pre_p, 0,
+> +	MUX(0, "i2s_pre", mux_i2s_pre_p, CLK_SET_RATE_PARENT,
+>  			RK3288_CLKSEL_CON(4), 8, 2, MFLAGS),
+>  	COMPOSITE_NODIV(0, "i2s0_clkout", mux_i2s_clkout_p, 0,
+>  			RK3288_CLKSEL_CON(4), 12, 1, MFLAGS,
+>  			RK3288_CLKGATE_CON(4), 0, GFLAGS),
+> -	GATE(SCLK_I2S0, "sclk_i2s0", "i2s_pre", 0,
+> +	GATE(SCLK_I2S0, "sclk_i2s0", "i2s_pre", CLK_SET_RATE_PARENT,
+>  			RK3288_CLKGATE_CON(4), 3, GFLAGS),
+> 
+>  	MUX(0, "spdif_src", mux_pll_src_cpll_gpll_p, 0,
 
