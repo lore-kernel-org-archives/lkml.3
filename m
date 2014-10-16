@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751458AbaJPIxK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 04:53:10 -0400
-Received: from mail-oi0-f43.google.com ([209.85.218.43]:48416 "EHLO
-	mail-oi0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751269AbaJPIxH (ORCPT
+	id S1751287AbaJPI4A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 04:56:00 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:48850 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750816AbaJPIz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 04:53:07 -0400
+	Thu, 16 Oct 2014 04:55:57 -0400
+Message-ID: <543F8812.2020002@codeaurora.org>
+Date: Thu, 16 Oct 2014 01:55:46 -0700
+From: Laura Abbott <lauraa@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <1406250448-470-1-git-send-email-skannan@codeaurora.org>
-References: <1405464473-3916-1-git-send-email-skannan@codeaurora.org>
-	<1406250448-470-1-git-send-email-skannan@codeaurora.org>
-Date: Thu, 16 Oct 2014 14:23:06 +0530
-Message-ID: <CAKohpokebj4jkyYipVKUF24Xu4KiVCX2n2D+yj29qxBdzJ-Jdw@mail.gmail.com>
-Subject: Re: [PATCH v4 0/5] Simplify hotplug/suspend handling
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: "Rafael J . Wysocki" <rjw@rjwysocki.net>,
-        Todd Poynor <toddpoynor@google.com>,
-        "Srivatsa S . Bhat" <srivatsa@mit.edu>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
+To: Hui Zhu <zhuhui@xiaomi.com>, rjw@rjwysocki.net, len.brown@intel.com,
+        pavel@ucw.cz, m.szyprowski@samsung.com, akpm@linux-foundation.org,
+        mina86@mina86.com, aneesh.kumar@linux.vnet.ibm.com,
+        iamjoonsoo.kim@lge.com, hannes@cmpxchg.org, riel@redhat.com,
+        mgorman@suse.de, minchan@kernel.org, nasa4836@gmail.com,
+        ddstreet@ieee.org, hughd@google.com, mingo@kernel.org,
+        rientjes@google.com, peterz@infradead.org, keescook@chromium.org,
+        atomlin@redhat.com, raistlin@linux.it, axboe@fb.com,
+        paulmck@linux.vnet.ibm.com, kirill.shutemov@linux.intel.com,
+        n-horiguchi@ah.jp.nec.com, k.khlebnikov@samsung.com,
+        msalter@redhat.com, deller@gmx.de, tangchen@cn.fujitsu.com,
+        ben@decadent.org.uk, akinobu.mita@gmail.com, vbabka@suse.cz,
+        sasha.levin@oracle.com, vdavydov@parallels.com, suleiman@google.com
+CC: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 0/4] (CMA_AGGRESSIVE) Make CMA memory be more aggressive
+ about allocation
+References: <1413430551-22392-1-git-send-email-zhuhui@xiaomi.com>
+In-Reply-To: <1413430551-22392-1-git-send-email-zhuhui@xiaomi.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 July 2014 06:37, Saravana Kannan <skannan@codeaurora.org> wrote:
-> Series of patchs to simplify policy/sysfs/kobj/locking handling across
-> suspend/resume
+On 10/15/2014 8:35 PM, Hui Zhu wrote:
+> In fallbacks of page_alloc.c, MIGRATE_CMA is the fallback of
+> MIGRATE_MOVABLE.
+> MIGRATE_MOVABLE will use MIGRATE_CMA when it doesn't have a page in
+> order that Linux kernel want.
 >
-> The following have been tested so far on a 2x2 cluster environment:
-> - Boot with 2 cpus and no cpufreq driver.
-> - mod probe driver and see cpufreq sysfs files show up only for the 1st cluster.
-> - Online the rest of the 2 CPUs and have files show up correctly.
-> - rmmod the driver and see the files go away.
-> - modprobe again (or back and forth multiples times) and see it work.
-> - suspend/resume works as expected.
-> - When a cluster is offline, all read/writes to its sysfs files return an error
+> If a system that has a lot of user space program is running, for
+> instance, an Android board, most of memory is in MIGRATE_MOVABLE and
+> allocated.  Before function __rmqueue_fallback get memory from
+> MIGRATE_CMA, the oom_killer will kill a task to release memory when
+> kernel want get MIGRATE_UNMOVABLE memory because fallbacks of
+> MIGRATE_UNMOVABLE are MIGRATE_RECLAIMABLE and MIGRATE_MOVABLE.
+> This status is odd.  The MIGRATE_CMA has a lot free memory but Linux
+> kernel kill some tasks to release memory.
 >
-> v4
-> - Split it up into smaller patches
-> - Will handle physical CPU removal correctly
-> - Fixed earlier mistake of deleting code under !recover_policy
-> - Dropped some code refactor that reuses a lot of code between add/remove
-> - Dropped fix for exiting hotplug race with cpufreq driver probe/rmmod
-> - Dropped changes will come later once this series is acked.
+> This patch series adds a new function CMA_AGGRESSIVE to make CMA memory
+> be more aggressive about allocation.
+> If function CMA_AGGRESSIVE is available, when Linux kernel call function
+> __rmqueue try to get pages from MIGRATE_MOVABLE and conditions allow,
+> MIGRATE_CMA will be allocated as MIGRATE_MOVABLE first.  If MIGRATE_CMA
+> doesn't have enough pages for allocation, go back to allocate memory from
+> MIGRATE_MOVABLE.
+> Then the memory of MIGRATE_MOVABLE can be kept for MIGRATE_UNMOVABLE and
+> MIGRATE_RECLAIMABLE which doesn't have fallback MIGRATE_CMA.
+>
 
-Hi Saravana,
+It's good to see another proposal to fix CMA utilization. Do you have
+any data about the success rate of CMA contiguous allocation after
+this patch series? I played around with a similar approach of using
+CMA for MIGRATE_MOVABLE allocations and found that although utilization
+did increase, contiguous allocations failed at a higher rate and were
+much slower. I see what this series is trying to do with avoiding
+allocation from CMA pages when a contiguous allocation is progress.
+My concern is that there would still be problems with contiguous
+allocation after all the MIGRATE_MOVABLE fallback has happened.
 
-Any  updates on this? We might need some of this soon or should somebody
-else start working on this ?
+Thanks,
+Laura
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
