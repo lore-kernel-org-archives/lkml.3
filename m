@@ -1,127 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751709AbaJPQFh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 12:05:37 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:51987 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228AbaJPQFf (ORCPT
+	id S1751938AbaJPQGB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 12:06:01 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:38218 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751816AbaJPQF6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 12:05:35 -0400
+	Thu, 16 Oct 2014 12:05:58 -0400
+Date: Thu, 16 Oct 2014 09:05:55 -0700
+From: Dmitry Torokhov <dtor@chromium.org>
+To: "Rafael J. Wysocki" <rafael@kernel.org>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Benson Leung <bleung@chromium.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ACPI: do not fail suspend if unable to configure wakeup
+Message-ID: <20141016160555.GA3255@dtor-ws>
+References: <20141015225657.GA818@dtor-ws>
+ <CAJZ5v0jAe9npr-4U+CGCQWfZ8bQ988z+_pRjUiMN871kP-39FQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <543F9202.8010806@samsung.com>
-References: <1413304389-6580-1-git-send-email-dianders@chromium.org>
-	<543F7F91.1010609@samsung.com>
-	<543F9202.8010806@samsung.com>
-Date: Thu, 16 Oct 2014 09:05:33 -0700
-X-Google-Sender-Auth: j3TFj-MNz57gqdhCDBIBvCz63iE
-Message-ID: <CAD=FV=XxXV3pEfVfU0CUSrNwPEnv4sn0QYmxO17xr88K9+jW5Q@mail.gmail.com>
-Subject: Re: [PATCH] mmc: dw_mmc: Remove old card detect infrastructure
-From: Doug Anderson <dianders@chromium.org>
-To: Jaehoon Chung <jh80.chung@samsung.com>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>, Seungwon Jeon <tgih.jun@samsung.com>,
-        Addy Ke <addy.ke@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Chris Ball <chris@printf.net>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJZ5v0jAe9npr-4U+CGCQWfZ8bQ988z+_pRjUiMN871kP-39FQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jaehoon,
+Hi Rafael,
 
-On Thu, Oct 16, 2014 at 2:38 AM, Jaehoon Chung <jh80.chung@samsung.com> wrote:
-> Hi, Doug.
->
-> Add one comment.
->
-> On 10/16/2014 05:19 PM, Jaehoon Chung wrote:
->> Hi, Doug.
->>
->> Looks good to me.
->>
->> Tested-by: Jaehoon Chung <jh80.chung@samsung.com>
->> with exynos3/4 series.
->>
->> Need to check exynos5 with using other "card detect" mechanism.
->>
->> Best Regards,
->> Jaehoon Chung
->>
->> On 10/15/2014 01:33 AM, Doug Anderson wrote:
->>> The dw_mmc driver had a bunch of code that ran whenever a card was
->>> ejected and inserted.  However, this code was old and crufty and
->>> should be removed.  Some evidence that it's really not needed:
->>>
->>> 1. Is is supposed to be legal to use 'cd-gpio' on dw_mmc instead of
->>>    using the built-in card detect mechanism.  The 'cd-gpio' code
->>>    doesn't run any of the crufty old code but yet still works.
->>>
->>> 2. While looking at this, I realized that my old change (369ac86 mmc:
->>>    dw_mmc: don't queue up a card detect at slot startup) actually
->>>    castrated the old code a little bit already and nobody noticed.
->>>    Specifically "last_detect_state" was left as 0 at bootup.  That
->>>    means that on the first card removal none of the crufty code ran.
->>>
->>> 3. I can run "while true; do dd if=/dev/mmcblk1 of=/dev/null; done"
->>>    while ejecting and inserting an SD Card and the world doesn't
->>>    explode.
->>>
->>> If some of the crufty old code is actually needed, we should justify
->>> it and also put it in some place where it will be run even with
->>> "cd-gpio".
->>>
->>> Note that in my case I'm using the "cd-gpio" mechanism but for various
->>> reasons the hardware triggers a dw_mmc "card detect" at bootup.  That
->>> was actually causing a real bug.  The card detect workqueue was
->>> running while the system was trying to enumerate the card.  The
->>> "present != slot->last_detect_state" triggered and we were doing all
->>> kinds of crazy stuff and messing up enumeration.  The new mechanism of
->>> just asking the core to check the card is much safer and then the
->>> bogus interrupt doesn't hurt.
->
-> Did you read the Card-detect Recommendation?
-> There is a Recommendation for Card-detect(CDT) at TRM.
-> We don't read the CDETECT register(0x50) anywhere. Could you share this register value after detecting?
+On Thu, Oct 16, 2014 at 10:10:20AM +0200, Rafael J. Wysocki wrote:
+> Hi,
+> 
+> On Thu, Oct 16, 2014 at 12:56 AM, Dmitry Torokhov <dtor@chromium.org> wrote:
+> > Newer kernels put i2c devices with ACPI companion in ACPI power domain and
+> > then ACPI will try to configure them for wakeup (if requested).
+> > Unfortunately on some Chromebooks firmware separates wakeup GPIO into a
+> > completely separate device (which is handled by the kernel as a sleep
+> > button), leaving the touchpads themselves not wakeup capable (as far as
+> > ACPI is concerned). This causes ACPI late suspend code to fail to configure
+> > them as wakeup sources and aborts entire suspend.
+> >
+> > To work around this issues let's not abort entire suspend process if
+> > driver asked to be a wakeup source but ACPI can not satisfy that
+> > request.
+> >
+> > Note that originally I tried to simply change the driver to not mark
+> > device as wakeup source, unfortunately then we do not know that we
+> > should not be powering down the device completely, otherwise we can't
+> > wake up.
+> >
+> > Verified by making sure that "echo mem > /sys/power/state" works on
+> > Squawks.
+> >
+> > Reviewed-by: Benson Leung <bleung@chromium.org>
+> > Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
+> > ---
+> >  drivers/acpi/device_pm.c | 16 ++++++++++++----
+> >  1 file changed, 12 insertions(+), 4 deletions(-)
+> >
+> > diff --git a/drivers/acpi/device_pm.c b/drivers/acpi/device_pm.c
+> > index 67075f8..440bc3d 100644
+> > --- a/drivers/acpi/device_pm.c
+> > +++ b/drivers/acpi/device_pm.c
+> > @@ -871,6 +871,7 @@ int acpi_dev_suspend_late(struct device *dev)
+> >         struct acpi_device *adev = ACPI_COMPANION(dev);
+> >         u32 target_state;
+> >         bool wakeup;
+> > +       bool can_wakeup;
+> >         int error;
+> >
+> >         if (!adev)
+> > @@ -878,12 +879,19 @@ int acpi_dev_suspend_late(struct device *dev)
+> >
+> >         target_state = acpi_target_system_state();
+> >         wakeup = device_may_wakeup(dev);
+> > -       error = acpi_device_wakeup(adev, target_state, wakeup);
+> > -       if (wakeup && error)
+> > -               return error;
+> > +       can_wakeup = acpi_device_can_wakeup(adev);
+> > +
+> > +       if (can_wakeup) {
+> > +               error = acpi_device_wakeup(adev, target_state, wakeup);
+> > +               if (wakeup && error)
+> > +                       return error;
+> > +       } else if (wakeup) {
+> 
+> I think we just need to return an error code in that case, because otherwise
 
-Sure we do.  Look at dw_mci_get_cd().  I see "mci_readl(slot->host, CDETECT)".
+We used to return error and that error aborted the suspend altogether,
+which prompted creating this patch.
 
+> this is potentially dangerous (worst case, it may be impossible to wake up
+> the machine at all after that).
 
-> And I think "last_detect_state" is used for "software should read card detect register and store in memory."
+Yes, there is such potential, but that kind of error (no working wakeup
+sources) will be discovered before a box is shipped. Right now we have
+boxes in the wild that suspend fine with 3.10 and refuse to suspend with
+3.14 because between 3.10 and 3.14 we started placing i2c devices with
+ACPI companions into ACPI power domain and ACPI power domain is now
+trying to configure them as wakeup sources and fails.
 
-Well yeah, last_detect_state DID store the result of the card detect
-register in memory.  ...but it wasn't the only place that the card
-detect state was stored in memory.  The MMC core handles things for
-you, right?  Said another way: put a printout in dw_mci_get_cd() when
-the CDETECT is read.  Insert a card.  You should see your printout.
-Now try to access your card.  Did your printout happen?  It shouldn't.
-Linux knows that the card is still inserted because it stored that
-fact in memory (in some MMC core data structure).
+Thanks.
 
-The MMC core handles polling the card detect at boot time (calling
-dw_mci_get_cd()) to see if there is a card inserted.  The Linux core
-also handles calling dw_mci_get_cd() as appropriate when you tell it
-something may have changed with mmc_detect_change().  Let's let the
-core do its work.
-
-If we _really_ need to follow the recommendation in the Designware
-TRM, we should:
-
-1. Before enabling interrupts cache the CDETECT (per slot)
-
-2. In the IRQ handler read the CDETECT.
-
-3. Never read CDETECT in dw_mci_get_cd().  Only use the cached value.
-
-If you insist I'll spin the patch for that, but I'd rather not since:
-
-* The old code definitely didn't get CDETECT in the irq handler (it
-read it in the work routine), so it already violated the
-recommendation.
-
-* The designware guide shows this as a recommendation, not a
-requirement.  I think they are just trying to make things simpler for
-you, but nothing could be simpler than letting the MMC core do all the
-heavy lifting.
+-- 
+Dmitry
