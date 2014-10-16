@@ -1,193 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115AbaJPLLl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 07:11:41 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:45501 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765AbaJPLLj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 07:11:39 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee690-f79ab6d0000046f7-81-543fa7e76c10
-Content-transfer-encoding: 8BIT
-Message-id: <543FA7E7.5030009@samsung.com>
-Date: Thu, 16 Oct 2014 20:11:35 +0900
-From: Jaehoon Chung <jh80.chung@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-To: Vivek Gautam <gautam.vivek@samsung.com>,
-        Prabu Thangamuthu <Prabu.T@synopsys.com>
-Cc: Alim Akhtar <alim.akhtar@gmail.com>, Seungwon Jeon <tgih.jun@samsung.com>,
-        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Manjunath M Bettegowda <Manjunath.MB@synopsys.com>
-Subject: Re: [PATCH v6] mmc: dw_mmc: Add IDMAC 64-bit address mode support
-References: <705D14B1C7978B40A723277C067CEDE21B3336B2@IN01WEMBXB.internal.synopsys.com>
- <CAGOxZ51fzvoqUQ7=8312iLyu4jwgmskkaysgXQHju-E5EM5gNQ@mail.gmail.com>
- <CAFp+6iFQ=MU-R-mYLeL0=H5fVWkxVu5s4ineh3RcSExCUNAjCA@mail.gmail.com>
- <543F6A93.1070008@samsung.com>
- <705D14B1C7978B40A723277C067CEDE21B333F07@IN01WEMBXB.internal.synopsys.com>
- <CAFp+6iEXMNzaEgcpFE_vCYj6xwPLJvLzBhA5NFrfnEt1kSyk8Q@mail.gmail.com>
-In-reply-to: <CAFp+6iEXMNzaEgcpFE_vCYj6xwPLJvLzBhA5NFrfnEt1kSyk8Q@mail.gmail.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPIsWRmVeSWpSXmKPExsWyRsSkSPf5cvsQg2kXzC2W3qq2mHB5O6NF
-	25WD7BaXd81hszjyv5/RYsXsuWwWE7YeZ7X4cP8is8XxteEOnB47Z91l97hzbQ+bx41XC5k8
-	+rasYvTYsv8zo8fnTXIBbFFcNimpOZllqUX6dglcGY27iwomqlbs27WftYFxjWwXIyeHhICJ
-	xIb1O9ggbDGJC/fWA9lcHEICSxkl2hp2s8AU7T83mREiMZ1R4lrnSlaQBK+AoMSPyfeAijg4
-	mAXkJY5cygYJMwuoS0yat4gZov41o8TdlR9YIOq1JGYveMUKUs8ioCrxcQnYGDYBHYnt344z
-	gdiiAmESh9rmgdkiAuESmy+dB5vDLHCMSeJg52t2kISwgJfEjo9z2SEWzGWWaN73EGwBp0Cw
-	xO8trSwgCQmBl+wSh3a3MoMkWAQEJL5NPgR2qYSArMSmA8wQn0lKHFxxg2UCo9gsJP/MQvhn
-	FpJ/FjAyr2IUTS1ILihOSi8y0StOzC0uzUvXS87P3cQIjMfT/55N2MF474D1IUYBDkYlHt4L
-	AfYhQqyJZcWVuYcYTYGOmMgsJZqcD4z6vJJ4Q2MzIwtTE1NjI3NLMyVx3tdSP4OFBNITS1Kz
-	U1MLUovii0pzUosPMTJxcEo1MIY6MHLyc8k7Z2Re+qk77+yk6NunO9905Nzb9t73i3z0un19
-	e9uMf0Ymbwj7Va5SO2V7lrnZzg9hLz+J3LcoXv94g2V8peikSYef33VatPmOt0pKQfUXqSM7
-	m3/PknM9wtau2XH09+clVa1/Vq+8Jb55U0zA4ymKkj7p1tdOzDZijTzWJXTY/7ESS3FGoqEW
-	c1FxIgDFU4+bwgIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJIsWRmVeSWpSXmKPExsVy+t9jQd3ny+1DDJ7N1rdYeqvaYsLl7YwW
-	bVcOsltc3jWHzeLI/35GixWz57JZTNh6nNXiw/2LzBbH14Y7cHrsnHWX3ePOtT1sHjdeLWTy
-	6NuyitFjy/7PjB6fN8kFsEU1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZGOoaWlqYKynk
-	Jeam2iq5+AToumXmAB2lpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsYcxo
-	3F1UMFG1Yt+u/awNjGtkuxg5OSQETCT2n5vMCGGLSVy4t56ti5GLQ0hgOqPEtc6VrCAJXgFB
-	iR+T77F0MXJwMAvISxy5lA0SZhZQl5g0bxEzRP1rRom7Kz+wQNRrScxe8IoVpJ5FQFXi4xKw
-	MWwCOhLbvx1nArFFBcIkDrXNA7NFBMIlNl86DzaHWeAYk8TBztfsIAlhAS+JHR/nskMsmMss
-	0bzvIdgCToFgid9bWlkmMArMQnLfLIT7ZiG5bwEj8ypG0dSC5ILipPRcQ73ixNzi0rx0veT8
-	3E2M4Gh/JrWDcWWDxSFGAQ5GJR5ejWD7ECHWxLLiytxDjBIczEoivIsmAYV4UxIrq1KL8uOL
-	SnNSiw8xmgJ9N5FZSjQ5H5iI8kriDY1NzIwsjcwNLYyMzZXEeQ+0WgcKCaQnlqRmp6YWpBbB
-	9DFxcEo1MKqxGklcm1F+7l/NdJMW4eV/vNJzN9/KDbj/8VSkc69PlONpz0ebvU6vfM5/inFZ
-	p+f7p2Yrp09QiTTeJXK75nyPjdO6+8vEjjz9/XiZ1+dKzoU+bw8orFmx7dPxkh9P9+eZbe2f
-	3+t5cs7WgJ9i7zvmrdj2cLv4FqcPjcwHerkDf4Xp8izclqCqxFKckWioxVxUnAgAcRTM3AwD	AAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1751828AbaJPLRe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 07:17:34 -0400
+Received: from mga11.intel.com ([192.55.52.93]:11242 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750966AbaJPLRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 07:17:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,731,1406617200"; 
+   d="scan'208";a="615465509"
+Message-ID: <1413458248.2396.15.camel@linux.intel.com>
+Subject: Re: [PATCH v2 14/53] dmaengine: dw: Split device_control
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Antoine =?ISO-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
+        lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
+        Viresh Kumar <viresh.linux@gmail.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Date: Thu, 16 Oct 2014 14:17:28 +0300
+In-Reply-To: <1413454672-27400-15-git-send-email-maxime.ripard@free-electrons.com>
+References: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
+	 <1413454672-27400-15-git-send-email-maxime.ripard@free-electrons.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.6-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2014 08:09 PM, Vivek Gautam wrote:
-> Hi Prabu,
-> 
-> 
-> On Thu, Oct 16, 2014 at 4:09 PM, Prabu Thangamuthu <Prabu.T@synopsys.com> wrote:
->>
->> Hi Jaehoon, Vivek, Alim,
->>
->> Thanks for your review comments.
->>
->> On Thu, Oct 16, 2014 at 12:20 PM, Jaehoon Chung <jh80.chung@samsung.com> wrote:
->>> Hi, Prabu.
->>>
->>> On 10/15/2014 09:05 PM, Vivek Gautam wrote:
->>>> Hi Prabu,
->>>>
->>>>
->>>> On Tue, Oct 14, 2014 at 5:41 PM, Alim Akhtar <alim.akhtar@gmail.com>
->>> wrote:
->>>>> Hi Prahu,
->>>>> Thanks for a quick re-spin o the patch.
->>>>> One last comment, this is more of a information seek.
->>>>> On Thu, Oct 9, 2014 at 1:09 PM, Prabu Thangamuthu
->>> <Prabu.T@synopsys.com> wrote:
->>>>>> Synopsys DW_MMC IP core supports Internal DMA Controller with 64-bit
->>> address mode from IP version 2.70a onwards.
->>>>>> Updated the driver to support IDMAC 64-bit addressing mode.
->>>>>>
->>>>>> Tested the features in DW_MMC core v2.70a and v2.40a with HAPS-51
->>> setup and driver is working fine.
->>>>>>
->>>>>> Signed-off-by: Prabu Thangamuthu <prabu.t@synopsys.com>
->>>>>> ---
->>>>>> Change log v6:
->>>>>>         - Updated with review comment.
->>>>>>
->>>>>> Change log v5:
->>>>>>         - Recreated the patch against linux-next as this patch is
->>>>>> required for another patch
->>>>>> http://www.spinics.net/lists/arm-kernel/msg357985.html
->>>>>>
->>>>>> Change log v4:
->>>>>>         - Add the dynamic support for 32-bit and 64-bit address mode based
->>> on hw configuration.
->>>>>>         - Removed the CONFIG_MMC_DW_IDMAC_64BIT_ADDRESS macro.
->>>>>>
->>>>>>  drivers/mmc/host/dw_mmc.c  |  195
->>> +++++++++++++++++++++++++++++++++++---------
->>>>>>  drivers/mmc/host/dw_mmc.h  |   11 +++
->>>>>>  include/linux/mmc/dw_mmc.h |    2 +
->>>>>>  3 files changed, 170 insertions(+), 38 deletions(-)
->>>>>>
->>>>>> diff --git a/drivers/mmc/host/dw_mmc.c
->>> b/drivers/mmc/host/dw_mmc.c
->>>>>> index 69f0cc6..c3b75a5 100644
->>>>>> --- a/drivers/mmc/host/dw_mmc.c
->>>>>> +++ b/drivers/mmc/host/dw_mmc.c
->>>>>> @@ -62,6 +62,24 @@
->>>>>>                                  SDMMC_IDMAC_INT_FBE | SDMMC_IDMAC_INT_RI | \
->>>>>>                                  SDMMC_IDMAC_INT_TI)
->>>>>>
->>>>>> +struct idmac_desc_64addr {
->>>>>> +       u32             des0;   /* Control Descriptor */
->>>>>> +
->>>>>> +       u32             des1;   /* Reserved */
->>>>> What is the default value of these _Reserved_ descriptors? As these
->>>>> are pointers, do you thing initializing then to zero make sense?
->>
->> We don't think it's required to assign zero to reserved des field as mobster core not going to use this field's for any operations unless user has modified it.
->> Also it's working fine in our test set-up without initializing them to zero.
+On Thu, 2014-10-16 at 12:17 +0200, Maxime Ripard wrote:
+> Split the device_control callback of the DesignWare DMA driver to make use
+> of the newly introduced callbacks, that will eventually be used to retrieve
+> slave capabilities.
 
-Right, it's not required to assign zero to there. And It's working fine, because it's not used or referred anywhere.
-Just Recommend to initialize to zero.
-Actually, i don't understand why des1 is reserved..
+I will look at the main patches in the series later, but now I would
+like to comment this one.
 
->>
->>>>
->>>> I think the default reset value of these descriptors will depend on
->>>> how dwmmc is integrated in h/w and how these descriptors are then
->>>> configured.
->>>>
->>>> So it makes sense to initialize these descriptors to zero before use.
->>>> We have seen on our exynos7 system, that we need to initialize the
->>>> descriptors des1 and des2 to zero before we use them further.
->>
->> It looks like exynos7 is using this reserved fields for some other purposes. To make it generic, we will initialize the reserved fields to zero.
->>
->> Does exynos7 requires des2 (Buffer sizes) also to be initialized to zero?
 > 
-> Yes, we need des2 to be initialized to zero.
-> One question however, do we have some default reset value set to these
-> descriptors ? If yes then how can we check this value ?
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> ---
+>  drivers/dma/dw/core.c | 92 +++++++++++++++++++++++++++------------------------
+>  1 file changed, 49 insertions(+), 43 deletions(-)
+> 
+> diff --git a/drivers/dma/dw/core.c b/drivers/dma/dw/core.c
+> index 1af731b83b3f..a3d3a51387c6 100644
+> --- a/drivers/dma/dw/core.c
+> +++ b/drivers/dma/dw/core.c
+> @@ -955,8 +955,7 @@ static inline void convert_burst(u32 *maxburst)
+>  		*maxburst = 0;
+>  }
+>  
+> -static int
+> -set_runtime_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
+> +static int dwc_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
 
-I knew it doesn't have the reset value for descriptors.
 
-Best Regards,
-Jaehoon Chung
+>  {
+>  	struct dw_dma_chan *dwc = to_dw_dma_chan(chan);
+>  
+> @@ -977,29 +976,54 @@ set_runtime_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
+>  	return 0;
+>  }
+>  
+> -static inline void dwc_chan_pause(struct dw_dma_chan *dwc)
+> +static inline void dwc_chan_resume(struct dw_dma_chan *dwc)
 
-> I just tried printing the value of des1 and des2 in dw_mci_translate_sglist()
-> where we are assigning these descriptors.
-> 
->>
->>>
->>> I agreed with Vivek and Alim's comment.
->>>
->>> And I think you can fix the below compile warning.
->>>
->>> drivers/mmc/host/dw_mmc.c: In function ‘dw_mci_idmac_init’:
->>> drivers/mmc/host/dw_mmc.c:542:21: warning: right shift count >= width of
->>> type [enabled by default]
->>> drivers/mmc/host/dw_mmc.c:547:3: warning: right shift count >= width of
->>> type [enabled by default]
->>> drivers/mmc/host/dw_mmc.c:575:3: warning: right shift count >= width of
->>> type [enabled by default]
->>>
->>> I will check this patch with 2.70a and other version.
->>>
->>
->> We will fix the warnings and post the new patch.
->>
->> Regards,
->> Prabu Thangamuthu.
->>
-> 
-> 
-> 
+Could we keep the order of functions as previous?
+
+>  {
+>  	u32 cfglo = channel_readl(dwc, CFG_LO);
+> -	unsigned int count = 20;	/* timeout iterations */
+>  
+> +	channel_writel(dwc, CFG_LO, cfglo & ~DWC_CFGL_CH_SUSP);
+> +
+> +	dwc->paused = false;
+> +}
+> +
+> +static int dwc_pause(struct dma_chan *chan)
+> +{
+> +	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
+> +	unsigned long		flags;
+> +	unsigned int		count = 20;	/* timeout iterations */
+> +	u32			cfglo;
+> +
+> +	spin_lock_irqsave(&dwc->lock, flags);
+> +
+> +	cfglo = channel_readl(dwc, CFG_LO);
+>  	channel_writel(dwc, CFG_LO, cfglo | DWC_CFGL_CH_SUSP);
+>  	while (!(channel_readl(dwc, CFG_LO) & DWC_CFGL_FIFO_EMPTY) && count--)
+>  		udelay(2);
+>  
+>  	dwc->paused = true;
+> +
+> +	spin_unlock_irqrestore(&dwc->lock, flags);
+> +
+> +	return 0;
+>  }
+>  
+> -static inline void dwc_chan_resume(struct dw_dma_chan *dwc)
+> +static int dwc_resume(struct dma_chan *chan)
+>  {
+> -	u32 cfglo = channel_readl(dwc, CFG_LO);
+
+> +	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
+> +	unsigned long		flags;
+>  
+> -	channel_writel(dwc, CFG_LO, cfglo & ~DWC_CFGL_CH_SUSP);
+> +	if (!dwc->paused)
+> +		return 0;
+>  
+> -	dwc->paused = false;
+> +	spin_lock_irqsave(&dwc->lock, flags);
+> +
+> +	dwc_chan_resume(dwc);
+> +
+> +	spin_unlock_irqrestore(&dwc->lock, flags);
+> +
+> +	return 0;
+>  }
+>  
+> -static int dwc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+> -		       unsigned long arg)
+> +static int dwc_terminate_all(struct dma_chan *chan)
+>  {
+>  	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
+>  	struct dw_dma		*dw = to_dw_dma(chan->device);
+> @@ -1007,44 +1031,23 @@ static int dwc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+>  	unsigned long		flags;
+>  	LIST_HEAD(list);
+>  
+> -	if (cmd == DMA_PAUSE) {
+> -		spin_lock_irqsave(&dwc->lock, flags);
+> -
+> -		dwc_chan_pause(dwc);
+> -
+> -		spin_unlock_irqrestore(&dwc->lock, flags);
+> -	} else if (cmd == DMA_RESUME) {
+> -		if (!dwc->paused)
+> -			return 0;
+> -
+> -		spin_lock_irqsave(&dwc->lock, flags);
+> -
+> -		dwc_chan_resume(dwc);
+> -
+> -		spin_unlock_irqrestore(&dwc->lock, flags);
+> -	} else if (cmd == DMA_TERMINATE_ALL) {
+> -		spin_lock_irqsave(&dwc->lock, flags);
+> +	spin_lock_irqsave(&dwc->lock, flags);
+>  
+> -		clear_bit(DW_DMA_IS_SOFT_LLP, &dwc->flags);
+> +	clear_bit(DW_DMA_IS_SOFT_LLP, &dwc->flags);
+>  
+> -		dwc_chan_disable(dw, dwc);
+> +	dwc_chan_disable(dw, dwc);
+>  
+> -		dwc_chan_resume(dwc);
+> +	dwc_chan_resume(dwc);
+>  
+> -		/* active_list entries will end up before queued entries */
+> -		list_splice_init(&dwc->queue, &list);
+> -		list_splice_init(&dwc->active_list, &list);
+> +	/* active_list entries will end up before queued entries */
+> +	list_splice_init(&dwc->queue, &list);
+> +	list_splice_init(&dwc->active_list, &list);
+>  
+> -		spin_unlock_irqrestore(&dwc->lock, flags);
+> +	spin_unlock_irqrestore(&dwc->lock, flags);
+>  
+> -		/* Flush all pending and queued descriptors */
+> -		list_for_each_entry_safe(desc, _desc, &list, desc_node)
+> -			dwc_descriptor_complete(dwc, desc, false);
+> -	} else if (cmd == DMA_SLAVE_CONFIG) {
+> -		return set_runtime_config(chan, (struct dma_slave_config *)arg);
+> -	} else {
+> -		return -ENXIO;
+> -	}
+> +	/* Flush all pending and queued descriptors */
+> +	list_for_each_entry_safe(desc, _desc, &list, desc_node)
+> +		dwc_descriptor_complete(dwc, desc, false);
+>  
+>  	return 0;
+>  }
+> @@ -1654,7 +1657,10 @@ int dw_dma_probe(struct dw_dma_chip *chip, struct dw_dma_platform_data *pdata)
+>  	dw->dma.device_prep_dma_memcpy = dwc_prep_dma_memcpy;
+>  
+>  	dw->dma.device_prep_slave_sg = dwc_prep_slave_sg;
+> -	dw->dma.device_control = dwc_control;
+> +	dw->dma.device_config = dwc_config;
+> +	dw->dma.device_pause = dwc_pause;
+> +	dw->dma.device_resume = dwc_resume;
+> +	dw->dma.device_terminate_all = dwc_terminate_all;
+>  
+>  	dw->dma.device_tx_status = dwc_tx_status;
+>  	dw->dma.device_issue_pending = dwc_issue_pending;
+
+
+-- 
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
 
