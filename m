@@ -1,71 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197AbaJPKu7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 06:50:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41056 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184AbaJPKu5 (ORCPT
+	id S1752020AbaJPKwt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 06:52:49 -0400
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.119]:50370 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751429AbaJPKwr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 06:50:57 -0400
-Date: Thu, 16 Oct 2014 12:50:54 +0200
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kamal Mostafa <kamal@canonical.com>, kernel-team@lists.ubuntu.com,
-        Willy Tarreau <w@1wt.eu>, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.13 163/163] lzo: check for length overrun in variable
- length encoding.
-Message-ID: <20141016105054.GA5467@hercules>
-References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
- <1412888588-26755-164-git-send-email-kamal@canonical.com>
- <20141010053048.GD3594@1wt.eu>
- <1413221463.11421.30.camel@fourier>
- <20141014015233.GA24799@kroah.com>
- <20141014085841.GA7710@hercules>
- <543F7D76.1000208@suse.cz>
+	Thu, 16 Oct 2014 06:52:47 -0400
+X-Env-Sender: Andreas.Werner@men.de
+X-Msg-Ref: server-4.tower-194.messagelabs.com!1413456751!19513378!1
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.12.3; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Thu, 16 Oct 2014 12:52:31 +0200
+Date: Thu, 16 Oct 2014 13:44:02 +0200
+From: Andreas Werner <andreas.werner@men.de>
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: Andreas Werner <andreas.werner@men.de>, <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
+        <johannes.thumshirn@men.de>
+Subject: Re: [PATCH 1/2] drivers/misc/eeprom/men_eeprod: Introduce MEN Board
+ Information EEPROM driver
+Message-ID: <20141016114401.GA22506@awelinux>
+References: <cover.1413416105.git.andreas.werner@men.de>
+ <d169930cfe45d4c05c79f7dd00471d732441529d.1413416105.git.andreas.werner@men.de>
+ <20141016085835.GA1273@katana>
+ <20141016102126.GB23256@awelinux>
+ <20141016095910.GC1273@katana>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <543F7D76.1000208@suse.cz>
+In-Reply-To: <20141016095910.GC1273@katana>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [192.1.1.171]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 10:10:30AM +0200, Jiri Slaby wrote:
-> On 10/14/2014, 10:58 AM, Luis Henriques wrote:
-> > Could you please provide us with examples of commits in one of our
-> > extended stable trees that is not on any other public release at
-> > kernel.org?
-> 
-> Hi, from 3.12.y, for example:
-> commit 48e8cad86bb1241c08bdaa80db022c25068ff8e0
-> Author: Jiri Slaby <jslaby@suse.cz>
-> Date:   Mon Jul 14 15:20:17 2014 +0200
-> 
->     Revert "aio: fix kernel memory disclosure in io_getevents()
-> introduced in v3.10"
-> 
->     This reverts commit 0e2e24e5dc6eb6f0698e9dc97e652f132b885624, which
->     was applied twice mistakenly. The first one is
->     bee3f7b8188d4b2a5dfaeb2eb4a68d99f67daecf.
+On Thu, Oct 16, 2014 at 11:59:10AM +0200, Wolfram Sang wrote:
+> * PGP Signed by an unknown key
 > 
 > 
-> Or any other patch without the "commit upstream" line. This may also
-> happen where there is no way of backporting a fix to the stable tree due
-> to later changes. Instead, a simple fix is applied, but it has no
-> connection to the original commit but the reference.
+> > I do not want to parse the things in userspace because this EEPROM data
+> > are related to the hardware and i want to give our customer the easiest way
+> > to access the data without installing any tool.
+> 
+> I understand that point of view. From an upstream point of view, things
+> may look different, though.
 > 
 
-Thank you for your reply Jiri, but I believe you're referring to
-commits that are in stable kernels and that are not on Linus tree.  I
-do understand that these are required occasionally for the reasons you
-stated above, and they are usually provided by subsystem maintainers.
+I also understand your point of view :-).
+Most customers wants just to have a running system without installing anything.
+And for me an EEPROM is so simple and should not need a complicated way
+to access it.
 
-However, the initial discussion was about commits that are not in a
-public release (e.g. a Linus rc kernel) at kernel.org.
+> > The current state to read the eeprom data is, that customer needs to install a big
+> > environment where the tool is integrated to have access to those kind of simple
+> > data or they have to write their own code.
+> 
+> i2cget from i2c-tools? You could do a simple shell script to parse the
+> data. Or do a board specific hook which reads the data and prints it to
+> the logfiles...
+> 
 
-Cheers,
---
-Luís
+Yes of course there are a lot of possibilities. This was just an example
+what we currently use and what was developed years ago.
+
+With a driver like this you can also define read only attributes to prevent customer
+to write or modify the data in the production section. With i2ctools you can just
+write any data to it you want.
+
+> > > Consider how bloated the sysfs-ABI might get if every vendor who uses an
+> > > eeprom wants to expose the data this way?
+> > > 
+> > 
+> > Yes and no. The possible sysfs entries gets bloated if every vendor will do it
+> > like this way, but normally there is just one Board EEPROM on the board, therefore
+> > only one driver gets loaded.
+> 
+> I am not talking about runtime here, I don't care about that. I am
+> talking about the ABI we create and we have to maintain basically
+> forever. And with vendor specific configuartion data I have doubts with
+> that being stable.
+> 
+
+Ok, but i do not think that we can make a "general" ABI definition for those kind
+of devices because every vendor will have its own data in the EEPROM which he want
+to have.
+
+> > I mean its the same for every i2c device like a temperature sensor, I can also
+> > read it from userspace without any special hwmon driver.
+> 
+> These is a HUGE difference. If I read tempX_input, I don't need to care
+> if the sensor is I2C or SPI or whatever. The kernel abstracts that away.
+> The files you create are for your I2C EEPROM only. Data gets
+> "reformatted" and access gets hidden, but nothing is abstracted away.
+> It would be different if we had a generic convention for "serial_id" or
+> stuff like that. But as configuration data is highly specific I don't
+> see this coming.
+> 
+
+For a standard sysfs interface it is a huge difference yes. At the point
+of few from the EEPROM device it is a device like a temp sensor which
+could be different from vendor to vendor.
+
+Regards
+Andy
+
+> 
+> * Unknown Key
+> * 0x14A029B6
