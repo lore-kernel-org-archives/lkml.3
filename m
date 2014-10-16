@@ -1,144 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751608AbaJPIZH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 04:25:07 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:64130 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750816AbaJPIZD (ORCPT
+	id S1751321AbaJPI0d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 04:26:33 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:37557 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750870AbaJPI0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 04:25:03 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Hui Zhu <zhuhui@xiaomi.com>
-Cc: m.szyprowski@samsung.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 2/4] (CMA_AGGRESSIVE) Add argument hibernation to function shrink_all_memory
-Date: Thu, 16 Oct 2014 10:45:21 +0200
-Message-ID: <1471435.6q4YYkTopF@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1413430551-22392-3-git-send-email-zhuhui@xiaomi.com>
-References: <1413430551-22392-1-git-send-email-zhuhui@xiaomi.com> <1413430551-22392-3-git-send-email-zhuhui@xiaomi.com>
+	Thu, 16 Oct 2014 04:26:31 -0400
+Date: Thu, 16 Oct 2014 10:26:24 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Erik Bosman <ebn310@few.vu.nl>
+Subject: Re: [RFC 2/5] x86: Store a per-cpu shadow copy of CR4
+Message-ID: <20141016082624.GH7369@worktop.fdxtended.com>
+References: <cover.1413323611.git.luto@amacapital.net>
+ <808fa43ef6e24d1df47c2666174d997105b9582d.1413323611.git.luto@amacapital.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <808fa43ef6e24d1df47c2666174d997105b9582d.1413323611.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[CC list trimmed]
-
-On Thursday, October 16, 2014 11:35:49 AM Hui Zhu wrote:
-> Function shrink_all_memory try to free `nr_to_reclaim' of memory.
-> CMA_AGGRESSIVE_SHRINK function will call this functon to free `nr_to_reclaim' of
-> memory.  It need different scan_control with current caller function
-> hibernate_preallocate_memory.
+On Tue, Oct 14, 2014 at 03:57:36PM -0700, Andy Lutomirski wrote:
+> Context switches and TLB flushes can change individual bits of CR4.
+> CR4 reads take several cycles, so store a shadow copy of CR4 in a
+> per-cpu variable.
 > 
-> If hibernation is true, the caller is hibernate_preallocate_memory.
-> if not, the caller is CMA alloc function.
-> 
-> Signed-off-by: Hui Zhu <zhuhui@xiaomi.com>
-> ---
->  include/linux/swap.h    |  3 ++-
->  kernel/power/snapshot.c |  2 +-
->  mm/vmscan.c             | 19 +++++++++++++------
->  3 files changed, 16 insertions(+), 8 deletions(-)
-> 
-> diff --git a/include/linux/swap.h b/include/linux/swap.h
-> index 37a585b..9f2cb43 100644
-> --- a/include/linux/swap.h
-> +++ b/include/linux/swap.h
-> @@ -335,7 +335,8 @@ extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
->  						gfp_t gfp_mask, bool noswap,
->  						struct zone *zone,
->  						unsigned long *nr_scanned);
-> -extern unsigned long shrink_all_memory(unsigned long nr_pages);
-> +extern unsigned long shrink_all_memory(unsigned long nr_pages,
-> +				       bool hibernation);
->  extern int vm_swappiness;
->  extern int remove_mapping(struct address_space *mapping, struct page *page);
->  extern unsigned long vm_total_pages;
-> diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
-> index 791a618..a00fc35 100644
-> --- a/kernel/power/snapshot.c
-> +++ b/kernel/power/snapshot.c
-> @@ -1657,7 +1657,7 @@ int hibernate_preallocate_memory(void)
->  	 * NOTE: If this is not done, performance will be hurt badly in some
->  	 * test cases.
->  	 */
-> -	shrink_all_memory(saveable - size);
-> +	shrink_all_memory(saveable - size, true);
+> To avoid wasting a cache line, I added the CR4 shadow to
+> cpu_tlbstate, which is already touched during context switches.
 
-Instead of doing this, can you please define
+I'm a little confused. We should be more specific I suppose, context
+switches don't always change mm, but CR4 state is per task.
 
-__shrink_all_memory()
+>From a quick look, only switch_mm() pokes at tlb, switch_to() does not.
 
-that will take the appropriate struct scan_control as an argument and
-then define two wrappers around that, one for hibernation and one for CMA?
 
-The way you did it opens a field for bugs caused by passing a wrong value
-as the second argument.
-
->  
->  	/*
->  	 * The number of saveable pages in memory was too high, so apply some
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index dcb4707..fdcfa30 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -3404,7 +3404,7 @@ void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx)
->  	wake_up_interruptible(&pgdat->kswapd_wait);
->  }
->  
-> -#ifdef CONFIG_HIBERNATION
-> +#if defined CONFIG_HIBERNATION || defined CONFIG_CMA_AGGRESSIVE
->  /*
->   * Try to free `nr_to_reclaim' of memory, system-wide, and return the number of
->   * freed pages.
-> @@ -3413,22 +3413,29 @@ void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx)
->   * LRU order by reclaiming preferentially
->   * inactive > active > active referenced > active mapped
->   */
-> -unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
-> +unsigned long shrink_all_memory(unsigned long nr_to_reclaim, bool hibernation)
->  {
->  	struct reclaim_state reclaim_state;
->  	struct scan_control sc = {
->  		.nr_to_reclaim = nr_to_reclaim,
-> -		.gfp_mask = GFP_HIGHUSER_MOVABLE,
->  		.priority = DEF_PRIORITY,
-> -		.may_writepage = 1,
->  		.may_unmap = 1,
->  		.may_swap = 1,
-> -		.hibernation_mode = 1,
->  	};
->  	struct zonelist *zonelist = node_zonelist(numa_node_id(), sc.gfp_mask);
->  	struct task_struct *p = current;
->  	unsigned long nr_reclaimed;
->  
-> +	if (hibernation) {
-> +		sc.hibernation_mode = 1;
-> +		sc.may_writepage = 1;
-> +		sc.gfp_mask = GFP_HIGHUSER_MOVABLE;
-> +	} else {
-> +		sc.hibernation_mode = 0;
-> +		sc.may_writepage = !laptop_mode;
-> +		sc.gfp_mask = GFP_USER | __GFP_MOVABLE | __GFP_HIGHMEM;
-> +	}
-> +
->  	p->flags |= PF_MEMALLOC;
->  	lockdep_set_current_reclaim_state(sc.gfp_mask);
->  	reclaim_state.reclaimed_slab = 0;
-> @@ -3442,7 +3449,7 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
->  
->  	return nr_reclaimed;
->  }
-> -#endif /* CONFIG_HIBERNATION */
-> +#endif /* CONFIG_HIBERNATION || CONFIG_CMA_AGGRESSIVE */
->  
->  /* It's optimal to keep kswapds on the same CPUs as their memory, but
->     not required for correctness.  So if the last cpu in a node goes
-> 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
