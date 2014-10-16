@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170AbaJPKen (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 06:34:43 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37200 "EHLO
+	id S1752692AbaJPKfA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 06:35:00 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:37179 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752331AbaJPKTr (ORCPT
+	with ESMTP id S1752297AbaJPKTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 06:19:47 -0400
+	Thu, 16 Oct 2014 06:19:37 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -15,9 +15,9 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
         Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH v2 06/53] dmaengine: Create a generic dma_slave_caps callback
-Date: Thu, 16 Oct 2014 12:17:05 +0200
-Message-Id: <1413454672-27400-7-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v2 13/53] dmaengine: jz4740: Split device_control
+Date: Thu, 16 Oct 2014 12:17:12 +0200
+Message-Id: <1413454672-27400-14-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -25,69 +25,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dma_slave_caps is very important to the generic layers that might interact with
-dmaengine, such as ASoC. Unfortunately, it has been added as yet another
-dma_device callback, and most of the existing drivers haven't implemented it,
-reducing its reliability.
-
-Introduce a generic behaviour and a flag to trigger it. In case this flag
-hasn't been set, fall back to the old mechanism.
+Split the device_control callback of the JZ4740 DMA driver to make use of the
+newly introduced callbacks, that will eventually be used to retrieve slave
+capabilities.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- include/linux/dmaengine.h | 25 +++++++++++++++++++++----
- 1 file changed, 21 insertions(+), 4 deletions(-)
+ drivers/dma/dma-jz4740.c | 20 +++-----------------
+ 1 file changed, 3 insertions(+), 17 deletions(-)
 
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index 4d0294ec3567..85afd71df2e7 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -643,6 +643,8 @@ struct dma_device {
- 	int dev_id;
- 	struct device *dev;
- 
-+	bool generic_slave_caps;
-+
- 	int (*device_alloc_chan_resources)(struct dma_chan *chan);
- 	void (*device_free_chan_resources)(struct dma_chan *chan);
- 
-@@ -772,17 +774,32 @@ static inline struct dma_async_tx_descriptor *dmaengine_prep_interleaved_dma(
- 
- static inline int dma_get_slave_caps(struct dma_chan *chan, struct dma_slave_caps *caps)
- {
-+	struct dma_device *device;
-+
- 	if (!chan || !caps)
- 		return -EINVAL;
- 
-+	device = chan->device;
-+
- 	/* check if the channel supports slave transactions */
--	if (!test_bit(DMA_SLAVE, chan->device->cap_mask.bits))
-+	if (!test_bit(DMA_SLAVE, device->cap_mask.bits))
-+		return -ENXIO;
-+
-+	if (device->device_slave_caps)
-+		return device->device_slave_caps(chan, caps);
-+
-+	/*
-+	 * Check whether it reports it uses the generic slave
-+	 * capabilities, if not, that means it doesn't support any
-+	 * kind of slave capabilities reporting.
-+	 */
-+	if (device->generic_slave_caps)
- 		return -ENXIO;
- 
--	if (chan->device->device_slave_caps)
--		return chan->device->device_slave_caps(chan, caps);
-+	caps->cmd_pause = !!device->device_pause;
-+	caps->cmd_terminate = !!device->device_terminate_all;
- 
--	return -ENXIO;
-+	return 0;
+diff --git a/drivers/dma/dma-jz4740.c b/drivers/dma/dma-jz4740.c
+index 6a9d89c93b1f..2ee3f8f8693f 100644
+--- a/drivers/dma/dma-jz4740.c
++++ b/drivers/dma/dma-jz4740.c
+@@ -210,7 +210,7 @@ static enum jz4740_dma_transfer_size jz4740_dma_maxburst(u32 maxburst)
  }
  
- static inline int dmaengine_terminate_all(struct dma_chan *chan)
+ static int jz4740_dma_slave_config(struct dma_chan *c,
+-	const struct dma_slave_config *config)
++				   struct dma_slave_config *config)
+ {
+ 	struct jz4740_dmaengine_chan *chan = to_jz4740_dma_chan(c);
+ 	struct jz4740_dma_dev *dmadev = jz4740_dma_chan_get_dev(chan);
+@@ -290,21 +290,6 @@ static int jz4740_dma_terminate_all(struct dma_chan *c)
+ 	return 0;
+ }
+ 
+-static int jz4740_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-	unsigned long arg)
+-{
+-	struct dma_slave_config *config = (struct dma_slave_config *)arg;
+-
+-	switch (cmd) {
+-	case DMA_SLAVE_CONFIG:
+-		return jz4740_dma_slave_config(chan, config);
+-	case DMA_TERMINATE_ALL:
+-		return jz4740_dma_terminate_all(chan);
+-	default:
+-		return -ENOSYS;
+-	}
+-}
+-
+ static int jz4740_dma_start_transfer(struct jz4740_dmaengine_chan *chan)
+ {
+ 	struct jz4740_dma_dev *dmadev = jz4740_dma_chan_get_dev(chan);
+@@ -560,7 +545,8 @@ static int jz4740_dma_probe(struct platform_device *pdev)
+ 	dd->device_issue_pending = jz4740_dma_issue_pending;
+ 	dd->device_prep_slave_sg = jz4740_dma_prep_slave_sg;
+ 	dd->device_prep_dma_cyclic = jz4740_dma_prep_dma_cyclic;
+-	dd->device_control = jz4740_dma_control;
++	dd->device_config = jz4740_dma_slave_config;
++	dd->device_terminate_all = jz4740_dma_terminate_all;
+ 	dd->dev = &pdev->dev;
+ 	dd->chancnt = JZ_DMA_NR_CHANS;
+ 	INIT_LIST_HEAD(&dd->channels);
 -- 
 2.1.1
 
