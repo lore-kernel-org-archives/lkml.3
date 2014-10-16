@@ -1,42 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850AbaJPUb3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 16:31:29 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54261 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751874AbaJPUb2 (ORCPT
+	id S1752521AbaJPUhZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 16:37:25 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:46815 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369AbaJPUhX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 16:31:28 -0400
-Date: Thu, 16 Oct 2014 22:31:19 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kirill Tkhai <ktkhai@parallels.com>
-Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] sched/fair: Fix race in update_cfs_rq_h_load()
-Message-ID: <20141016203119.GM7369@worktop.fdxtended.com>
-References: <1413467359.19914.2.camel@tkhai>
+	Thu, 16 Oct 2014 16:37:23 -0400
+Date: Thu, 16 Oct 2014 13:37:19 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: hansechang@gmail.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xen.org, Chang Huaixin <huaixin.chx@alibaba-inc.com>,
+        jinsong.liu@alibaba-inc.com, Ian.Campbell@eu.citrix.com,
+        dgdegra@tycho.nsa.gov, boris.ostrovsky@oracle.com
+Subject: Re: [Xen-devel] [PATCH] Input: xen-kbdfront - free grant table entry
+ in xenkbd_disconnect_backend
+Message-ID: <20141016203719.GB38361@dtor-ws>
+References: <1413423992-3005-1-git-send-email-hansechang@gmail.com>
+ <543FEBC5.2050202@citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1413467359.19914.2.camel@tkhai>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <543FEBC5.2050202@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 05:49:19PM +0400, Kirill Tkhai wrote:
+On Thu, Oct 16, 2014 at 05:01:09PM +0100, David Vrabel wrote:
+> On 16/10/14 02:46, hansechang@gmail.com wrote:
+> > From: Chang Huaixin <huaixin.chx@alibaba-inc.com>
+> > 
+> > xenkbd_disconnect_backend doesn't free grant table entry.
+> > This bug affects live migration.
+> > 
+> > xenkbd_disconnect_backend uses gnttab_end_foreign_access_ref
+> > to handle grant table entry which doesn't really free an entry.
+> > 
+> > Thus every time we do xenkbd_resume, grant table entry increses
+> > by one. As an grant table entry occupies 8 bytes, an grant table
+> > page has at most 512 entries. Every 512 times we do xenkdb_resume,
+> > grant table pages increses by one.
+> > 
+> > After around 3500 times of live migration, grant table pages
+> > will increase by 7, causing too many pages to populate and hitting
+> > max_pages limit when assigning pages.Thus assign_pages will fail,
+> > so will live migration.
 > 
-> The original idea of cfs_rq::last_h_load_update was to do not
-> update cfs_rq::h_load more than once a jiffies.
+> Acked-by: David Vrabel <david.vrabel@citrix.com>
 > 
-> Since task_numa_compare()->task_h_load()->update_cfs_rq_h_load()
-> makes unlocked update, this may be a reason of race between two
-> parallel updates, or with remote rq->curr changing.
-> 
-> The patch does not change idea, but it excludes the race. Now we
-> update cfs_rq::h_load holding rq's lock. This happens in two
-> places: every jiffie in task_tick_fair(), and in set_curr_task_fair()
-> when task becomes fair.
+> This need to be send to the input subsystem maintainers.
 
-But why is this a problem? Most of the load balance code is racy like
-hell -- purposely so, added serialization is typically worse.
+Applied, thank you.
+
+-- 
+Dmitry
