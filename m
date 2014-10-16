@@ -1,66 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751677AbaJPRJH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 13:09:07 -0400
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:54267 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751289AbaJPRJF (ORCPT
+	id S1751996AbaJPRKY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 13:10:24 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45185 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309AbaJPRKX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 13:09:05 -0400
+	Thu, 16 Oct 2014 13:10:23 -0400
+Date: Thu, 16 Oct 2014 18:10:13 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Yifan Zhang <yifan.zhangm@gmail.com>
+Cc: Will Deacon <Will.Deacon@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
+        "lauraa@codeaurora.org" <lauraa@codeaurora.org>,
+        "ganapatrao.kulkarni@caviumnetworks.com" 
+	<ganapatrao.kulkarni@caviumnetworks.com>,
+        "robh@kernel.org" <robh@kernel.org>,
+        "leif.lindholm@linaro.org" <leif.lindholm@linaro.org>,
+        "Yalin.Wang@sonymobile.com" <Yalin.Wang@sonymobile.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yifan Zhang <zhangyf@marvell.com>
+Subject: Re: [PATCH v2] arm64: mm: use macro instead of if judgement of
+ ZONE_DMA
+Message-ID: <20141016171012.GE5252@e104818-lin.cambridge.arm.com>
+References: <CAGZxSSSBpCvJt=PFbihTmPneJqiocU8VZSDHpXgkf5dhWZ850Q@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20141016124741.GA3832@kroah.com>
-References: <20141016124741.GA3832@kroah.com>
-Date: Thu, 16 Oct 2014 10:09:04 -0700
-Message-ID: <CALAqxLU05D8qQA47E77PiuuN7eVt66WEq1qn+PqdE-tpEUzFpw@mail.gmail.com>
-Subject: Re: [PATCH] staging: android: binder: move to the "real" part of the kernel
-From: John Stultz <john.stultz@linaro.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
-        Linux API <linux-api@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Anup Patel <anup.patel@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGZxSSSBpCvJt=PFbihTmPneJqiocU8VZSDHpXgkf5dhWZ850Q@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 5:47 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->
-> The Android binder code has been "stable" for many years now.  No matter
+On Thu, Oct 16, 2014 at 10:41:01AM +0100, Yifan Zhang wrote:
+> if disable CONFIG_ZONE_DMA, ZONE_DMA becomes undefined.
 
-Well, ignoring the ABI break that landed in the last year. :)
+I agree that this is the case but can you explain why you need to
+disable ZONE_DMA? It currently is def_bool y, so it cannot be disabled
+unless you hack the Kconfig.
 
-> what comes in the future, we are going to have to support this API, so
-> might as well move it to the "real" part of the kernel as there's no
-> real work that needs to be done to the existing code.
->
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
->
-> This was discussed in the Android miniconf at the Plumbers conference.
-> If anyone has any objections to this, please let me know, otherwise I'm
-> queueing this up for 3.19-rc1
-
-So my main concerns/thoughts here are:
-
-Who is going to maintain this? Has Arve agreed?  Are the Android guys
-comfortable with the ABI stability rules they'll now face?  Currently
-in the android space no one but libbinder should use the kernel
-interface. Can we enforce that no one use this interface out-side of
-android (To ensure its one of those "if the abi breaks and no one
-notices..." edge cases)?
-
-I'm still hopeful that a libbinder over kdbus will eventually pan out.
-I still see having two core IPC mechanisms (even if the use cases are
-different in style) as a negative, and I worry this might reduce
-motivation to unify things at the lower level. Granted, such work can
-still continue, but the incentives do change.
-
-thanks
--john
+-- 
+Catalin
