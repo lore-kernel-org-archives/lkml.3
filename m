@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438AbaJPKT5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 06:19:57 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37221 "EHLO
+	id S1752488AbaJPKUC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 06:20:02 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:37235 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752401AbaJPKTy (ORCPT
+	with ESMTP id S1752430AbaJPKT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 06:19:54 -0400
+	Thu, 16 Oct 2014 06:19:57 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -15,9 +15,9 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
         Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH v2 20/53] dmaengine: intel-mid-dma: Split device_control
-Date: Thu, 16 Oct 2014 12:17:19 +0200
-Message-Id: <1413454672-27400-21-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v2 23/53] dmaengine: mmp-pdma: Split device_control
+Date: Thu, 16 Oct 2014 12:17:22 +0200
+Message-Id: <1413454672-27400-24-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -25,73 +25,152 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the Intel MID DMA driver to make use
+Split the device_control callback of the Marvell MMP PDMA driver to make use
 of the newly introduced callbacks, that will eventually be used to retrieve
 slave capabilities.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/dma/intel_mid_dma.c | 25 ++++++-------------------
- 1 file changed, 6 insertions(+), 19 deletions(-)
+ drivers/dma/mmp_pdma.c | 109 +++++++++++++++++++++++++------------------------
+ 1 file changed, 56 insertions(+), 53 deletions(-)
 
-diff --git a/drivers/dma/intel_mid_dma.c b/drivers/dma/intel_mid_dma.c
-index 1aab8130efa1..5aaead9b56f7 100644
---- a/drivers/dma/intel_mid_dma.c
-+++ b/drivers/dma/intel_mid_dma.c
-@@ -492,10 +492,10 @@ static enum dma_status intel_mid_dma_tx_status(struct dma_chan *chan,
- 	return ret;
+diff --git a/drivers/dma/mmp_pdma.c b/drivers/dma/mmp_pdma.c
+index a1a4db5721b8..75787b5009b5 100644
+--- a/drivers/dma/mmp_pdma.c
++++ b/drivers/dma/mmp_pdma.c
+@@ -683,68 +683,70 @@ fail:
+ 	return NULL;
  }
  
--static int dma_slave_control(struct dma_chan *chan, unsigned long arg)
-+static int intel_mid_dma_config(struct dma_chan *chan,
-+				struct dma_slave_config *slave)
+-static int mmp_pdma_control(struct dma_chan *dchan, enum dma_ctrl_cmd cmd,
+-			    unsigned long arg)
++static int mmp_pdma_config(struct dma_chan *dchan,
++			   struct dma_slave_config *cfg)
  {
- 	struct intel_mid_dma_chan	*midc = to_intel_mid_dma_chan(chan);
--	struct dma_slave_config  *slave = (struct dma_slave_config *)arg;
- 	struct intel_mid_dma_slave *mid_slave;
+ 	struct mmp_pdma_chan *chan = to_mmp_pdma_chan(dchan);
+-	struct dma_slave_config *cfg = (void *)arg;
+-	unsigned long flags;
+ 	u32 maxburst = 0, addr = 0;
+ 	enum dma_slave_buswidth width = DMA_SLAVE_BUSWIDTH_UNDEFINED;
  
- 	BUG_ON(!midc);
-@@ -509,28 +509,14 @@ static int dma_slave_control(struct dma_chan *chan, unsigned long arg)
- 	midc->mid_slave = mid_slave;
+ 	if (!dchan)
+ 		return -EINVAL;
+ 
+-	switch (cmd) {
+-	case DMA_TERMINATE_ALL:
+-		disable_chan(chan->phy);
+-		mmp_pdma_free_phy(chan);
+-		spin_lock_irqsave(&chan->desc_lock, flags);
+-		mmp_pdma_free_desc_list(chan, &chan->chain_pending);
+-		mmp_pdma_free_desc_list(chan, &chan->chain_running);
+-		spin_unlock_irqrestore(&chan->desc_lock, flags);
+-		chan->idle = true;
+-		break;
+-	case DMA_SLAVE_CONFIG:
+-		if (cfg->direction == DMA_DEV_TO_MEM) {
+-			chan->dcmd = DCMD_INCTRGADDR | DCMD_FLOWSRC;
+-			maxburst = cfg->src_maxburst;
+-			width = cfg->src_addr_width;
+-			addr = cfg->src_addr;
+-		} else if (cfg->direction == DMA_MEM_TO_DEV) {
+-			chan->dcmd = DCMD_INCSRCADDR | DCMD_FLOWTRG;
+-			maxburst = cfg->dst_maxburst;
+-			width = cfg->dst_addr_width;
+-			addr = cfg->dst_addr;
+-		}
+-
+-		if (width == DMA_SLAVE_BUSWIDTH_1_BYTE)
+-			chan->dcmd |= DCMD_WIDTH1;
+-		else if (width == DMA_SLAVE_BUSWIDTH_2_BYTES)
+-			chan->dcmd |= DCMD_WIDTH2;
+-		else if (width == DMA_SLAVE_BUSWIDTH_4_BYTES)
+-			chan->dcmd |= DCMD_WIDTH4;
+-
+-		if (maxburst == 8)
+-			chan->dcmd |= DCMD_BURST8;
+-		else if (maxburst == 16)
+-			chan->dcmd |= DCMD_BURST16;
+-		else if (maxburst == 32)
+-			chan->dcmd |= DCMD_BURST32;
+-
+-		chan->dir = cfg->direction;
+-		chan->dev_addr = addr;
+-		/* FIXME: drivers should be ported over to use the filter
+-		 * function. Once that's done, the following two lines can
+-		 * be removed.
+-		 */
+-		if (cfg->slave_id)
+-			chan->drcmr = cfg->slave_id;
+-		break;
+-	default:
+-		return -ENOSYS;
++	if (cfg->direction == DMA_DEV_TO_MEM) {
++		chan->dcmd = DCMD_INCTRGADDR | DCMD_FLOWSRC;
++		maxburst = cfg->src_maxburst;
++		width = cfg->src_addr_width;
++		addr = cfg->src_addr;
++	} else if (cfg->direction == DMA_MEM_TO_DEV) {
++		chan->dcmd = DCMD_INCSRCADDR | DCMD_FLOWTRG;
++		maxburst = cfg->dst_maxburst;
++		width = cfg->dst_addr_width;
++		addr = cfg->dst_addr;
+ 	}
+ 
++	if (width == DMA_SLAVE_BUSWIDTH_1_BYTE)
++		chan->dcmd |= DCMD_WIDTH1;
++	else if (width == DMA_SLAVE_BUSWIDTH_2_BYTES)
++		chan->dcmd |= DCMD_WIDTH2;
++	else if (width == DMA_SLAVE_BUSWIDTH_4_BYTES)
++		chan->dcmd |= DCMD_WIDTH4;
++
++	if (maxburst == 8)
++		chan->dcmd |= DCMD_BURST8;
++	else if (maxburst == 16)
++		chan->dcmd |= DCMD_BURST16;
++	else if (maxburst == 32)
++		chan->dcmd |= DCMD_BURST32;
++
++	chan->dir = cfg->direction;
++	chan->dev_addr = addr;
++	/* FIXME: drivers should be ported over to use the filter
++	 * function. Once that's done, the following two lines can
++	 * be removed.
++	 */
++	if (cfg->slave_id)
++		chan->drcmr = cfg->slave_id;
++
++	return 0;
++}
++
++static int mmp_pdma_terminate_all(struct dma_chan *dchan)
++{
++	struct mmp_pdma_chan *chan = to_mmp_pdma_chan(dchan);
++	unsigned long flags;
++
++	if (!dchan)
++		return -EINVAL;
++
++	disable_chan(chan->phy);
++	mmp_pdma_free_phy(chan);
++	spin_lock_irqsave(&chan->desc_lock, flags);
++	mmp_pdma_free_desc_list(chan, &chan->chain_pending);
++	mmp_pdma_free_desc_list(chan, &chan->chain_running);
++	spin_unlock_irqrestore(&chan->desc_lock, flags);
++	chan->idle = true;
++
  	return 0;
  }
--/**
-- * intel_mid_dma_device_control -	DMA device control
-- * @chan: chan for DMA control
-- * @cmd: control cmd
-- * @arg: cmd arg value
-- *
-- * Perform DMA control command
-- */
--static int intel_mid_dma_device_control(struct dma_chan *chan,
--			enum dma_ctrl_cmd cmd, unsigned long arg)
-+
-+static int intel_mid_dma_terminate_all(struct dma_chan *chan)
- {
- 	struct intel_mid_dma_chan	*midc = to_intel_mid_dma_chan(chan);
- 	struct middma_device	*mid = to_middma_device(chan->device);
- 	struct intel_mid_dma_desc	*desc, *_desc;
- 	union intel_mid_dma_cfg_lo cfg_lo;
  
--	if (cmd == DMA_SLAVE_CONFIG)
--		return dma_slave_control(chan, arg);
--
--	if (cmd != DMA_TERMINATE_ALL)
--		return -ENXIO;
--
- 	spin_lock_bh(&midc->lock);
- 	if (midc->busy == false) {
- 		spin_unlock_bh(&midc->lock);
-@@ -1148,7 +1134,8 @@ static int mid_setup_dma(struct pci_dev *pdev)
- 	dma->common.device_prep_dma_memcpy = intel_mid_dma_prep_memcpy;
- 	dma->common.device_issue_pending = intel_mid_dma_issue_pending;
- 	dma->common.device_prep_slave_sg = intel_mid_dma_prep_slave_sg;
--	dma->common.device_control = intel_mid_dma_device_control;
-+	dma->common.device_config = intel_mid_dma_config;
-+	dma->common.device_terminate_all = intel_mid_dma_terminate_all;
+@@ -1061,7 +1063,8 @@ static int mmp_pdma_probe(struct platform_device *op)
+ 	pdev->device.device_prep_slave_sg = mmp_pdma_prep_slave_sg;
+ 	pdev->device.device_prep_dma_cyclic = mmp_pdma_prep_dma_cyclic;
+ 	pdev->device.device_issue_pending = mmp_pdma_issue_pending;
+-	pdev->device.device_control = mmp_pdma_control;
++	pdev->device.device_config = mmp_pdma_config;
++	pdev->device.device_terminate_all = mmp_pdma_terminate_all;
+ 	pdev->device.copy_align = PDMA_ALIGNMENT;
  
- 	/*enable dma cntrl*/
- 	iowrite32(REG_BIT0, dma->dma_base + DMA_CFG);
+ 	if (pdev->dev->coherent_dma_mask)
 -- 
 2.1.1
 
