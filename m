@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263AbaJQG7u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 02:59:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34736 "EHLO mx2.suse.de"
+	id S1753328AbaJQHCV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 03:02:21 -0400
+Received: from mga03.intel.com ([134.134.136.65]:60717 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750828AbaJQG7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 02:59:49 -0400
-Date: Fri, 17 Oct 2014 08:59:47 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Cong Wang <xiyou.wangcong@gmail.com>, David Rientjes <rientjes@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: + freezer-check-oom-kill-while-being-frozen.patch added to -mm
- tree
-Message-ID: <20141017065947.GA8076@dhcp22.suse.cz>
-References: <20141016203954.GA26336@redhat.com>
+	id S1750729AbaJQHCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 03:02:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,737,1406617200"; 
+   d="scan'208";a="620344502"
+Date: Thu, 16 Oct 2014 18:33:31 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v11 07/21] dax,ext2: Replace XIP read and write with DAX
+ I/O
+Message-ID: <20141016223331.GA11169@wil.cx>
+References: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com>
+ <1411677218-29146-8-git-send-email-matthew.r.wilcox@intel.com>
+ <20141016095027.GE19075@thinkos.etherlink>
+ <20141016195112.GE11522@wil.cx>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141016203954.GA26336@redhat.com>
+In-Reply-To: <20141016195112.GE11522@wil.cx>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 16-10-14 22:39:54, Oleg Nesterov wrote:
-> > Fix the issue by checking for TIF_MEMDIE thread flag and get away from the
-> > fridge if it is set.  oom_scan_process_thread doesn't have to check for
-> > the frozen task anymore because do_send_sig_info will wake up the thread
-> > and TIF_MEMDIE is already set by that time.
+On Thu, Oct 16, 2014 at 03:51:12PM -0400, Matthew Wilcox wrote:
+> On Thu, Oct 16, 2014 at 11:50:27AM +0200, Mathieu Desnoyers wrote:
+> > > +			if (rw == WRITE) {
+> > > +				if (!buffer_mapped(bh)) {
+> > > +					retval = -EIO;
+> > > +					/* FIXME: fall back to buffered I/O */
+> > 
+> > Fallback on buffered I/O would void guarantee about having data stored
+> > into persistent memory after write returns. Not sure we actually want
+> > that.
 > 
-> I must have missed something... but __refrigerator() sleeps in
-> TASK_UNINTERRUPTIBLE and do_send_sig_info() won't wake it up?
+> Yeah, I think that comment is just stale.  I can't see a way in which
+> buffered I/O would succeed after DAX I/O falis.
 
-Ouch, I have completely missed this part when reviewing Cong's original
-patch. I got confused by the retry loop. Anyway you are right and the
-patch as is currently doesn't work as intented.
+On further consideration, I think the whole thing is just foolish.
+I don't see how get_block(create == 1) can return success *and* a buffer
+that is !mapped.
 
-Can we simply make the task sleep interruptible? It retries and rechecks
-the freezing conditions after wakeup anyway. It is true this would be a
-user visible change because frozen tasks won't be in D state anymore
-(this would make a difference for cgroup freezing because nobody would
-see this in PM freezer). Does anybody depend on this?
+So I did this nice simplification:
 
-Another possible way would be reintroducing freezer check into OOM path
-and kick the task even when it is in UN state.
+-                       if (rw == WRITE) {
+-                               if (!buffer_mapped(bh)) {
+-                                       retval = -EIO;
+-                                       /* FIXME: fall back to buffered I/O */
+-                                       break;
+-                               }
+-                               hole = false;
+-                       } else {
+-                               hole = !buffer_written(bh);
+-                       }
++                       hole = (rw != WRITE) && !buffer_written(bh);
 
-Thanks!
--- 
-Michal Hocko
-SUSE Labs
+(compile-tested only; I'm going to run all the changes through xfstests
+next week when I'm back home before sending out a v12).
