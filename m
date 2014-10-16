@@ -1,92 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741AbaJPNt3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 09:49:29 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:35644 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752597AbaJPNt0 (ORCPT
+	id S1752323AbaJPNyp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 09:54:45 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:40138 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752009AbaJPNyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 09:49:26 -0400
+	Thu, 16 Oct 2014 09:54:44 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo45JNAFM7gYM39hsAw=O+Pe2FLJYpj3WV0p2rDe-_t+xg@mail.gmail.com>
-References: <20141015165957.4063.66741.stgit@bhelgaas-glaptop2.roam.corp.google.com>
- <20141015170617.4063.2807.stgit@bhelgaas-glaptop2.roam.corp.google.com> <CAErSpo45JNAFM7gYM39hsAw=O+Pe2FLJYpj3WV0p2rDe-_t+xg@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 16 Oct 2014 07:49:05 -0600
-Message-ID: <CAErSpo6978-uGD6Mq+tESXVZsmZSLWCuAwyBzO9pKHg_foNZPg@mail.gmail.com>
-Subject: Re: [PATCH v1 05/10] MIPS: MT: Move "weak" from vpe_run() declaration
- to definition
-To: Jason Wessel <jason.wessel@windriver.com>,
-        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@redhat.com>,
-        John Stultz <john.stultz@linaro.org>, Eric Paris <eparis@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
+In-Reply-To: <CAJfpegvS+rmFqGgvHq183Z-MxLAwcgEB57LQxAwy3QAe5CaVwg@mail.gmail.com>
+References: <20140925120244.540.31506.stgit@dhcp-10-30-22-200.sw.ru>
+	<CA+55aFwfTeoCJDs6RJg++0SY=SsPrn7Y_Y0Ag_TsNvd6Vsj1Eg@mail.gmail.com>
+	<CAFboF2yhGyjk4e_CHQV5b2WvB-QhsWNyHvFiFG_OM_=3-KArLQ@mail.gmail.com>
+	<CA+55aFwqAOGbQ-LYmD-aSALTyA0p9=0vNdsJWd+uweUQyzsW8w@mail.gmail.com>
+	<20140930191933.GC5011@tucsk.piliscsaba.szeredi.hu>
+	<CA+55aFyD2Q6tJzRUbNyNFRdbSN09SAN9CqC5BTmCtOu4W9PKGw@mail.gmail.com>
+	<542BE551.1010705@parallels.com>
+	<CAJfpegs4Up_feUbqEGxfhq+rZneTmy0qcZy-k3so7VjufQY7-w@mail.gmail.com>
+	<543F9E75.2090509@parallels.com>
+	<CAJfpegvS+rmFqGgvHq183Z-MxLAwcgEB57LQxAwy3QAe5CaVwg@mail.gmail.com>
+Date: Thu, 16 Oct 2014 15:54:42 +0200
+X-Google-Sender-Auth: u36g_0cwndkhP8X4XJ_Vd3T_9M4
+Message-ID: <CA+55aFw68DMazGSu=YaOVVEWp=_LrD+2abah+5Tq3kpmH-r+Hg@mail.gmail.com>
+Subject: Re: [PATCH 0/5] fuse: handle release synchronously (v4)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Maxim Patlasov <mpatlasov@parallels.com>, Anand Avati <avati@gluster.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michael j Theall <mtheall@us.ibm.com>,
+        fuse-devel <fuse-devel@lists.sourceforge.net>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Stephen]
-
-On Wed, Oct 15, 2014 at 5:28 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> [+cc linux-mips]
+On Thu, Oct 16, 2014 at 3:43 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
 >
-> On Wed, Oct 15, 2014 at 11:06 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> When the "weak" attribute is on a declaration in a header file, every
->> definition where the header is included becomes weak, and the linker
->> chooses one definition based on link order (see 10629d711ed7 ("PCI: Remove
->> __weak annotation from pcibios_get_phb_of_node decl")).
->>
->> Move the "weak" attribute from the declaration to the default definition so
->> we always prefer a non-weak definition over the weak one, independent of
->> link order.
->>
->> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
->> CC: linux-mips@linux-mips.org
->> ---
->>  arch/mips/include/asm/vpe.h |    2 +-
->>  arch/mips/kernel/vpe-mt.c   |    2 +-
->>  2 files changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/mips/include/asm/vpe.h b/arch/mips/include/asm/vpe.h
->> index 7849f3978fea..80e70dbd1f64 100644
->> --- a/arch/mips/include/asm/vpe.h
->> +++ b/arch/mips/include/asm/vpe.h
->> @@ -122,7 +122,7 @@ void release_vpe(struct vpe *v);
->>  void *alloc_progmem(unsigned long len);
->>  void release_progmem(void *ptr);
->>
->> -int __weak vpe_run(struct vpe *v);
->> +int vpe_run(struct vpe *v);
->>  void cleanup_tc(struct tc *tc);
->>
->>  int __init vpe_module_init(void);
->> diff --git a/arch/mips/kernel/vpe-mt.c b/arch/mips/kernel/vpe-mt.c
->> index 2e003b11a098..0e5899a2cd96 100644
->> --- a/arch/mips/kernel/vpe-mt.c
->> +++ b/arch/mips/kernel/vpe-mt.c
->> @@ -23,7 +23,7 @@ static int major;
->>  static int hw_tcs, hw_vpes;
->>
->>  /* We are prepared so configure and start the VPE... */
->> -int vpe_run(struct vpe *v)
->> +int __weak vpe_run(struct vpe *v)
->>  {
->>         unsigned long flags, val, dmt_flag;
->>         struct vpe_notifications *notifier;
->>
+> One idea is to change ->flush() so it's responsible for fput()-ing the
+> file.  That way we could take control of the actual refcount
+> decrement.  There are only 20 flush instances in the tree, so it
+> wouldn't be a huge change.
 
-Just FYI, this patch was in linux-next today, but I dropped it
-temporarily because Fengguang's auto-builder found the following issue
-with it:
+Since that *still* wouldn't fix the problem with the whole "count
+elevated by other things" issue, I really don't want to hear about
+these random broken hacks that are fundamentally broken crap.
 
-All error/warnings:
+Really. Stop cc'ing me with "let's implement this hack that cannot
+work in general". I'm not interested. There's a reason we don't do
+this. We don't make up random hacks that we know cannot work in the
+general case.
 
-   arch/mips/kernel/vpe.c: In function 'vpe_release':
->> arch/mips/kernel/vpe.c:830:29: error: the address of 'vpe_run' will always evaluate as 'true' [-Werror=address]
-      if ((vpe_elfload(v) >= 0) && vpe_run) {
-                                ^
-   cc1: all warnings being treated as errors
+            Linus
