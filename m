@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751383AbaJQKDh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 06:03:37 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:49930 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828AbaJQKDg (ORCPT
+	id S1751446AbaJQKJh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 06:09:37 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:17723 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750835AbaJQKJf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 06:03:36 -0400
-Date: Fri, 17 Oct 2014 15:33:25 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: Paul Zimmerman <paulz@synopsys.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 2/2] usb: dwc2: gadget: modify return statement
-Message-ID: <20141017100325.GA21465@sudip-PC>
-References: <1413521043-7587-1-git-send-email-sudipm.mukherjee@gmail.com>
- <1413521043-7587-2-git-send-email-sudipm.mukherjee@gmail.com>
- <063D6719AE5E284EB5DD2968C1650D6D1C9D8926@AcuExch.aculab.com>
+	Fri, 17 Oct 2014 06:09:35 -0400
+Message-ID: <5440EAD8.4060801@fb.com>
+Date: Fri, 17 Oct 2014 06:09:28 -0400
+From: Chris Mason <clm@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1C9D8926@AcuExch.aculab.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>
+Subject: Re: [GIT PULL] Btrfs corruption fix
+References: <543F78F1.6040203@fb.com>
+In-Reply-To: <543F78F1.6040203@fb.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-10-17_03:2014-10-17,2014-10-17,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=1.332078891636e-11 kscore.compositescore=0
+ circleOfTrustscore=29.4129509548051 compositescore=0.998049563855454
+ urlsuspect_oldscore=0.998049563855454 suspectscore=2
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.998049563855454 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1410170099
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 17, 2014 at 09:02:00AM +0000, David Laight wrote:
-> From: Of Sudip Mukherjee
-> > modified the function to have a single return statement at the end
-> > instead of multiple return statement in the middle of the function
-> > to improve the readability of the code.
-> 
-> Many of us would disagree with you there.
-> Early returns actually make the code easier to read, certainly
-> better than a goto 'end of function'.
-> 
-actually , frankly speaking, this first return statement was also easier for me to understand. But in my v1 patch , Paul mentioned : 
->For a long function like this, I'd rather keep a single return point at
->the end.
-so I thought he meant all the return statements in the function. 
-
-thanks
-sudip
 
 
-> 	David
+On 10/16/2014 03:51 AM, Chris Mason wrote:
+> Hi Linus,
 > 
-> > This patch depends on the previous patch of the series.
-> > 
-> > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> > ---
-> >  drivers/usb/dwc2/gadget.c | 4 +++-
-> >  1 file changed, 3 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
-> > index 7f25527..e8a8fc7 100644
-> > --- a/drivers/usb/dwc2/gadget.c
-> > +++ b/drivers/usb/dwc2/gadget.c
-> > @@ -2471,7 +2471,8 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
-> >  	dir_in = (desc->bEndpointAddress & USB_ENDPOINT_DIR_MASK) ? 1 : 0;
-> >  	if (dir_in != hs_ep->dir_in) {
-> >  		dev_err(hsotg->dev, "%s: direction mismatch!\n", __func__);
-> > -		return -EINVAL;
-> > +		ret = -EINVAL;
-> > +		goto error1;
-> >  	}
-> > 
-> >  	mps = usb_endpoint_maxp(desc);
-> > @@ -2583,6 +2584,7 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
-> > 
-> >  error:
-> >  	spin_unlock_irqrestore(&hsotg->lock, flags);
-> > +error1:
-> >  	return ret;
-> >  }
-> > 
-> > --
-> > 1.8.1.2
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> I'm testing a pull with more fixes, but wanted to get this one out so
+> Greg can pick it up.  The corruption isn't easy to hit, you have to do a
+> readonly snapshot and have orphans in the snapshot.  But my review and
+> testing missed the bug.  Filipe has added a better xfstest to cover it.
 > 
+> Please pull:
 > 
+> git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+
+Sorry Linus, I realized this morning I forgot my sob.  I've pushed out an
+updated commit to a new for-linus-update branch.  The code and diffstat are 
+exactly the same:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus-update
+
+> 
+> Chris Mason (1) commits (+33/-36):
+>     Revert "Btrfs: race free update of commit root for ro snapshots"
+> 
+> Total: (1) commits (+33/-36)
+> 
+>  fs/btrfs/inode.c | 36 ------------------------------------
+>  fs/btrfs/ioctl.c | 33 +++++++++++++++++++++++++++++++++
+>  2 files changed, 33 insertions(+), 36 deletions(-)
+> 
+
+-chris
