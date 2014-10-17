@@ -1,149 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753165AbaJQAiM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 20:38:12 -0400
-Received: from mailout.micron.com ([137.201.242.129]:21540 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753134AbaJQAiJ convert rfc822-to-8bit (ORCPT
+	id S1753185AbaJQAlD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 20:41:03 -0400
+Received: from regular1.263xmail.com ([211.150.99.139]:56209 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751491AbaJQAk7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 20:38:09 -0400
-From: =?iso-2022-jp?B?QmVhbiBIdW8gGyRCcDlJTElMGyhCIChiZWFuaHVvKQ==?= 
-	<beanhuo@micron.com>
-To: Marek Vasut <marex@denx.de>, "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>
-CC: "shijie8@gmail.com" <shijie8@gmail.com>,
-        "geert+renesas@glider.be" <geert+renesas@glider.be>,
-        "grmoore@altera.com" <grmoore@altera.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/1 v3] driver:mtd:spi-nor: Add Micron quad I/O support
-Thread-Topic: [PATCH 1/1 v3] driver:mtd:spi-nor: Add Micron quad I/O support
-Thread-Index: AQHP2KkjagwG2in0R7+6ioZ2PHnYSpwTG1RugAKuPPCAAgpzkIADfZeAgBhBsxA=
-Date: Fri, 17 Oct 2014 00:37:26 +0000
-Message-ID: <A765B125120D1346A63912DDE6D8B6315E70C6@NTXXIAMBX02.xacn.micron.com>
-References: <A765B125120D1346A63912DDE6D8B6315DCC46@NTXXIAMBX02.xacn.micron.com>
- <201409251211.57183.marex@denx.de>
- <A765B125120D1346A63912DDE6D8B6315DCDF1@NTXXIAMBX02.xacn.micron.com>
- <201409261046.07132.marex@denx.de>   
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.84.5]
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-21032.003
-X-TM-AS-Result: No-0.104300-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-x-mt-checkinternalsenderrule: True
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Thu, 16 Oct 2014 20:40:59 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: mark.yao@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: mark.yao@rock-chips.com
+X-UNIQUE-TAG: <0f12cde999399c9d5cd3d204a4769158>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <5440658D.6020504@rock-chips.com>
+Date: Fri, 17 Oct 2014 08:40:45 +0800
+From: Mark yao <mark.yao@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
+To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        Daniel Vetter <daniel@ffwll.ch>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>
+CC: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        dianders@chromium.org, marcheu@chromium.org, dbehr@chromium.org,
+        olof@lixom.net, djkurtz@chromium.org, xjq@rock-chips.com,
+        kfx@rock-chips.com, cym@rock-chips.com, cf@rock-chips.com,
+        zyw@rock-chips.com, xxm@rock-chips.com, huangtao@rock-chips.com,
+        kever.yang@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
+        xw@rock-chips.com, Mark Yao <mark.yao@rock-chips.com>
+Subject: Re: [PATCH v11 0/3] Add drm driver for Rockchip Socs
+References: <1412763781-31533-1-git-send-email-mark.yao@rock-chips.com>
+In-Reply-To: <1412763781-31533-1-git-send-email-mark.yao@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds code which enables Quad I/O mode on Micron SPI NOR flashes.
+Hi
+I think Rockchip drm driver is ready now, can it land?
 
-For Micron SPI NOR flash, enabling or disabling quad I/O protocol is controlled 
-by EVCR (Enhanced Volatile Configuration Register), Quad I/O protocol bit 7. 
-When EVCR bit 7 is reset to 0, the SPI NOR flash will operate in quad I/O mode.
+Thanks.
+On 2014年10月08日 18:23, Mark Yao wrote:
+> This a series of patches is a DRM Driver for Rockchip Socs, add support
+> for vop devices. Future patches will add additional encoders/connectors,
+> such as eDP, HDMI.
+>
+> The basic "crtc" for rockchip is a "VOP" - Video Output Processor.
+> the vop devices found on Rockchip rk3288 Soc, rk3288 soc have two similar
+> Vop devices. Vop devices support iommu mapping, we use dma-mapping API with
+> ARM_DMA_USE_IOMMU.
+>
+> Changes in v2:
+> - add DRM master device node to list all display nodes that comprise
+>    the graphics subsystem.
+> - use the component framework to defer main drm driver probe
+>    until all VOP devices have been probed.
+> - use dma-mapping API with ARM_DMA_USE_IOMMU, create dma mapping by
+>    master device and each vop device can shared the drm dma mapping.
+> - use drm_crtc_init_with_planes and drm_universal_plane_init.
+> - remove unnecessary middle layers.
+> - add cursor set, move funcs to rockchip drm crtc.
+> - add vop reset.
+>
+> Changes in v3:
+> - change "crtc->fb" to "crtc->primary-fb"
+> Adviced by Daniel Vetter
+> - init cursor plane with universal api, remove unnecessary cursor set,move
+>
+> Changes in v4:
+> Adviced by David Herrmann
+> - remove drm_platform_*() usage, use register drm device directly.
+> Adviced by Rob Clark
+> - remove special mmap ioctl, do userspace mmap with normal mmap() or mmap offset
+>
+> Changes in v5:
+> Adviced by Arnd Bergmann
+> - doing DMA start with a 32-bit masks with dma_mask and dma_coherent_mark
+> - fix some incorrect dependencies.
+> Adviced by Boris BREZILLON
+> - fix some mistake and bugs.
+> Adviced by Daniel Vetter
+> - drop all special ioctl and use generic kms ioctl instead.
+> Adviced by Rob Clark
+> - use unlocked api for drm_fb_helper_restore_fbdev_mode.
+> - remove unused rockchip_gem_prime_import_sg_table.
+>
+> Changes in v6:
+> - set gem buffer pitch 64 bytes align, needed by mali gpu.
+> Adviced by Daniel Kurtz
+> - fix some mistake, bugs, remove unused define, more better code style etc.
+> - use clk_prepare()/unprepare() at probe()/remove() and clk_enable()/disable()
+>    at runtime instead of clk_prepare_enable().
+> - provide a help function from vop for encoder to do mode config, instead of
+>    using drm_diaplay_mode private method.
+> - change vop mode_set timing to make it more safely.
+>
+> Changes in v7:
+> - fix memory leakage problem.
+>
+> Changes in v8:
+> - fix iommu crash when use dual crtc.
+> - use frame start interrupt for vsync instead of line flag interrupt,
+> because the win config take affect at frame start time, if we use ling flag
+> interrupt, the address check often failed.
+> Adviced by Daniel Kurtz
+> - fix some bugs, mistake, remove unused function
+> - keep clock and vop disabled when probe end
+> - use drm_plane_helper_check_update to check update_plane if vaild
+>
+> Changes in v9:
+> - fix suspend and resume bug, make iommu attach and detach safely.
+> - fix mail info style.
+>
+> Changes in v10:
+> Adviced by Andrzej Hajda
+> - check drm_dev if it's NULL at PM suspend/resume
+> Adviced by Sean Paul
+> - use drm_fb_helper_prepare to init fb_helper funcs
+> - Optimized code structure and remove some unnecessary Variables.
+>
+> Changes in v11:
+> - fix mistake that use wrong variable at rockchip sys_resume/sys_suspend
+>
+> Mark yao (3):
+>    drm: rockchip: Add basic drm driver
+>    dt-bindings: video: Add for rockchip display subsytem
+>    dt-bindings: video: Add documentation for rockchip vop
+>
+>   .../devicetree/bindings/video/rockchip-drm.txt     |   19 +
+>   .../devicetree/bindings/video/rockchip-vop.txt     |   58 +
+>   drivers/gpu/drm/Kconfig                            |    2 +
+>   drivers/gpu/drm/Makefile                           |    1 +
+>   drivers/gpu/drm/rockchip/Kconfig                   |   17 +
+>   drivers/gpu/drm/rockchip/Makefile                  |    8 +
+>   drivers/gpu/drm/rockchip/rockchip_drm_drv.c        |  449 ++++++
+>   drivers/gpu/drm/rockchip/rockchip_drm_drv.h        |   54 +
+>   drivers/gpu/drm/rockchip/rockchip_drm_fb.c         |  200 +++
+>   drivers/gpu/drm/rockchip/rockchip_drm_fb.h         |   28 +
+>   drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c      |  210 +++
+>   drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h      |   20 +
+>   drivers/gpu/drm/rockchip/rockchip_drm_gem.c        |  293 ++++
+>   drivers/gpu/drm/rockchip/rockchip_drm_gem.h        |   54 +
+>   drivers/gpu/drm/rockchip/rockchip_drm_vop.c        | 1427 ++++++++++++++++++++
+>   drivers/gpu/drm/rockchip/rockchip_drm_vop.h        |  196 +++
+>   16 files changed, 3036 insertions(+)
+>
 
-Signed-off-by: bean huo <beanhuo@micron.com>
-Acked-by: Marek Vasut <marex@denx.de>
----
- v1-v2:modified to that capture wait_till_ready()
-	 return value,if error,directly return its
-	 the value.
- v2-v3:directly use the reurning error value of
-	 read_reg and write_reg,instead of -EINVAL.
 
- drivers/mtd/spi-nor/spi-nor.c |   46 +++++++++++++++++++++++++++++++++++++++++
- include/linux/mtd/spi-nor.h   |    6 ++++++
- 2 files changed, 52 insertions(+)
-
-diff --git a/drivers/mtd/spi-nor/spi-nor.c b/drivers/mtd/spi-nor/spi-nor.c index b5ad6be..486b167 100644
---- a/drivers/mtd/spi-nor/spi-nor.c
-+++ b/drivers/mtd/spi-nor/spi-nor.c
-@@ -878,6 +878,45 @@ static int spansion_quad_enable(struct spi_nor *nor)
- 	return 0;
- }
- 
-+static int micron_quad_enable(struct spi_nor *nor) {
-+	int ret, val;
-+
-+	ret = nor->read_reg(nor, SPINOR_OP_RD_EVCR, &val, 1);
-+	if (ret < 0) {
-+		dev_err(nor->dev, "error %d reading EVCR\n", ret);
-+		return ret;
-+	}
-+
-+	write_enable(nor);
-+
-+	/* set EVCR ,enable quad I/O */
-+	nor->cmd_buf[0] = val & ~EVCR_QUAD_EN_MICRON;
-+	ret = nor->write_reg(nor, SPINOR_OP_WD_EVCR, nor->cmd_buf, 1, 0);
-+	if (ret < 0) {
-+		dev_err(nor->dev,
-+			"error while writing EVCR register\n");
-+		return ret;
-+	}
-+
-+	ret = wait_till_ready(nor);
-+	if (ret)
-+		return ret;
-+
-+	/* read EVCR and check it */
-+	ret = nor->read_reg(nor, SPINOR_OP_RD_EVCR, &val, 1);
-+	if (ret < 0) {
-+		dev_err(nor->dev, "error %d reading EVCR\n", ret);
-+		return ret;
-+	}
-+	if (val & EVCR_QUAD_EN_MICRON) {
-+		dev_err(nor->dev, "Micron EVCR Quad bit not clear\n");
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
- static int set_quad_mode(struct spi_nor *nor, u32 jedec_id)  {
- 	int status;
-@@ -890,6 +929,13 @@ static int set_quad_mode(struct spi_nor *nor, u32 jedec_id)
- 			return -EINVAL;
- 		}
- 		return status;
-+	case CFI_MFR_ST:
-+		status = micron_quad_enable(nor);
-+		if (status) {
-+			dev_err(nor->dev, "Micron quad-read not enabled\n");
-+			return -EINVAL;
-+		}
-+		return status;
- 	default:
- 		status = spansion_quad_enable(nor);
- 		if (status) {
-diff --git a/include/linux/mtd/spi-nor.h b/include/linux/mtd/spi-nor.h index 9e6294f..d71b659 100644
---- a/include/linux/mtd/spi-nor.h
-+++ b/include/linux/mtd/spi-nor.h
-@@ -56,6 +56,10 @@
- /* Used for Spansion flashes only. */
- #define SPINOR_OP_BRWR		0x17	/* Bank register write */
- 
-+/* Used for Micron flashes only. */
-+#define SPINOR_OP_RD_EVCR	0x65	/* Read EVCR register */
-+#define SPINOR_OP_WD_EVCR	0x61	/* Write EVCR register */
-+
- /* Status Register bits. */
- #define SR_WIP			1	/* Write in progress */
- #define SR_WEL			2	/* Write enable latch */
-@@ -67,6 +71,8 @@
- 
- #define SR_QUAD_EN_MX		0x40	/* Macronix Quad I/O */
- 
-+#define EVCR_QUAD_EN_MICRON	0x80	/* Micron Quad I/O */
-+
- /* Flag Status Register bits */
- #define FSR_READY		0x80
- 
---
-1.7.9.5
