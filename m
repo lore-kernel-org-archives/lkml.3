@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753903AbaJQTdR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 15:33:17 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:45323 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753538AbaJQTdP (ORCPT
+	id S1753876AbaJQTkx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 15:40:53 -0400
+Received: from smtprelay0069.hostedemail.com ([216.40.44.69]:35930 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753538AbaJQTkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 15:33:15 -0400
-Message-ID: <54416EF6.1050403@fb.com>
-Date: Fri, 17 Oct 2014 15:33:10 -0400
-From: Josef Bacik <jbacik@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: Davidlohr Bueso <dave@stgolabs.net>, LKML <linux-kernel@vger.kernel.org>,
-        <linux-btrfs@vger.kernel.org>
-Subject: Re: btrfs soft lockups: locks gone crazy
-References: <1413271664.27233.13.camel@linux-t7sj.site>
-In-Reply-To: <1413271664.27233.13.camel@linux-t7sj.site>
-Content-Type: text/plain; charset="utf-8"; format=flowed
+	Fri, 17 Oct 2014 15:40:52 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 40,2.5,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3871:3873:3874:4321:5007:6261:10011:10400:10848:11026:11232:11658:11914:12043:12296:12517:12519:12679:12740:13069:13095:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:1:0
+X-HE-Tag: mice47_7baf3b8912b50
+X-Filterd-Recvd-Size: 1581
+Message-ID: <1413574848.14629.6.camel@perches.com>
+Subject: Re: [PATCH] staging: octeon: Replace memcpy with ETH_ALEN
+From: Joe Perches <joe@perches.com>
+To: Balavasu <kp.balavasu@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 17 Oct 2014 12:40:48 -0700
+In-Reply-To: <20141017184705.GA17944@vasu-Inspiron-3542>
+References: <20141017184705.GA17944@vasu-Inspiron-3542>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-10-17_05:2014-10-17,2014-10-17,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 spamscore=0
- suspectscore=0 phishscore=0 adultscore=0 bulkscore=0 classifier=spam
- adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1410170174
-X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2014 03:27 AM, Davidlohr Bueso wrote:
-> Hello,
->
-> I'm getting massive amounts of cpu soft lockups in Linus's tree for
-> today. This occurs almost immediately and is very reproducible in aim7
-> disk workloads using btrfs:
->
+On Sat, 2014-10-18 at 00:17 +0530, Balavasu wrote:
+> This patch fixes the checkpatch.pl issue
+> WARNING: memcpy(dev->dev_addr, mac, ETH_ALEN);
 
-I'm trying to reproduce but it's not popping for me.  What is the setup 
-of your fs?  mkfs options, mount options etc.  And how are you running 
-aim7?  I'm using reaim with the default reaim.config and workfile,disk, 
-is this what you are using?  If not please attach your config and 
-workfile so I can be sure to be doing the same thing as you.  Thanks,
+That is not the actual warning.
 
-Josef
+This is the warning:
+
+Prefer ether_addr_copy() over memcpy() if the Ethernet addresses are __aligned(2)
+
+How have you made sure that mac can not have odd alignment?
+
+Make sure your commit message shows how you know
+that mac is appropriately aligned.
+
+> diff --git a/drivers/staging/octeon/ethernet.c b/drivers/staging/octeon/ethernet.c
+[]
+> @@ -452,7 +452,7 @@ int cvm_oct_common_init(struct net_device *dev)
+>  		mac = of_get_mac_address(priv->of_node);
+>  
+>  	if (mac)
+> -		memcpy(dev->dev_addr, mac, ETH_ALEN);
+> +		ether_addr_copy(dev->dev_addr, mac);
+>  	else
+>  		eth_hw_addr_random(dev);
+>  
+
 
