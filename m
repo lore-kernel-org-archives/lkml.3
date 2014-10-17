@@ -1,139 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753189AbaJQGZO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 02:25:14 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:48077 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750828AbaJQGZL convert rfc822-to-8bit (ORCPT
+	id S1753362AbaJQG14 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 02:27:56 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:53492 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750835AbaJQG1z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 02:25:11 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Mark yao <mark.yao@rock-chips.com>
-Cc: Dave Airlie <airlied@gmail.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Rob Clark <robdclark@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rom Lemarchand <romlem@google.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-doc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>, linux-api@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, dianders@chromium.org,
-        =?ISO-8859-1?Q?St=E9phane?= Marchesin <marcheu@chromium.org>,
-        dbehr@chromium.org, Olof Johansson <olof@lixom.net>,
-        djkurtz@chromium.org, xjq@rock-chips.com, kfx@rock-chips.com,
-        cym@rock-chips.com, cf@rock-chips.com, zyw@rock-chips.com,
-        xxm@rock-chips.com, huangtao@rock-chips.com, kever.yang@rock-chips.com,
-        yxj@rock-chips.com, wxt@rock-chips.com, xw@rock-chips.com
-Subject: Re: [PATCH v11 0/3] Add drm driver for Rockchip Socs
-Date: Fri, 17 Oct 2014 08:24:42 +0200
-Message-ID: <282711393.zuCWIeu2Oz@phil>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <5440999D.5010601@rock-chips.com>
-References: <1412763781-31533-1-git-send-email-mark.yao@rock-chips.com> <CAPM=9twVrmni_BRV_9-QLk+JUbcgXEjAM0g-tYH6su8=sDQ35g@mail.gmail.com> <5440999D.5010601@rock-chips.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+	Fri, 17 Oct 2014 02:27:55 -0400
+From: Kelvin Cheung <keguang.zhang@gmail.com>
+To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: rjw@rjwysocki.net, viresh.kumar@linaro.org, linux-mips@linux-mips.org,
+        ralf@linux-mips.org, Kelvin Cheung <keguang.zhang@gmail.com>
+Subject: [PATCH V2 6/6] cpufreq: Loongson1: Add cpufreq driver for Loongson1B
+Date: Fri, 17 Oct 2014 14:27:33 +0800
+Message-Id: <1413527253-22632-1-git-send-email-keguang.zhang@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+This patch adds cpufreq driver for Loongson1B which
+is capable of changing the CPU frequency dynamically.
 
-Am Freitag, 17. Oktober 2014, 12:22:53 schrieb Mark yao:
-> On 2014年10月17日 08:46, Dave Airlie wrote:
-> > On 17 October 2014 10:40, Mark yao <mark.yao@rock-chips.com> wrote:
-> >> Hi
-> >> I think Rockchip drm driver is ready now, can it land?
-> > 
-> > I probably want to wait until -rc1 though I suppose since its a new
-> > driver and self contained we might be able to see if Linus is
-> > interested in squeezing it in.
-> > 
-> > Can you send me a git pull request for it against drm-next or even 3.17.
-> > 
-> > Dave.
-> 
-> Hi, Dave
->      the git pull request:
-> 
-> The following changes since commit 4db36870b92cdf5a79615aeabc68efc97df13918:
+Signed-off-by: Kelvin Cheung <keguang.zhang@gmail.com>
+---
+ drivers/cpufreq/Kconfig        |  10 ++
+ drivers/cpufreq/Makefile       |   1 +
+ drivers/cpufreq/ls1x-cpufreq.c | 229 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 240 insertions(+)
+ create mode 100644 drivers/cpufreq/ls1x-cpufreq.c
 
-I think this needs a fix. Your commit 4db36870b is the pending iommu driver. 
-Which isn't part of neither the mainline kernel nor the drm tree Dave meant.
-
-What Dave meant was to base your patches on top of his "drm-next" branch or 
-the raw 3.17 release.
-
-So either base the branch on drm-next from
-	http://cgit.freedesktop.org/~airlied/linux/log/?h=drm-next
-
-or the 3.17 release tag from Linus Torvalds. Apply your patches on top and 
-create pull from there.
-
-I've just checked ... your drm patches apply cleanly against 3.17, so your 
-branch to be pulled should probably look something like
-	https://github.com/mmind/linux-rockchip/commits/tmp/drmtest
-
-
-Heiko
-
-> 
->    FROMLIST: iommu/rockchip: rk3288 iommu driver (2014-10-17 10:26:18 +0800)
-> 
-> are available in the git repository at:
-> 
->    https://github.com/markyzq/kernel-drm-rockchip.git mydrm
-> 
-> for you to fetch changes up to 0db2be88bea08ab8afe5e3d13f8a2c9e637a9514:
-> 
->    dt-bindings: video: Add documentation for rockchip vop (2014-10-17
-> 10:27:15 +0800)
-> 
-> ----------------------------------------------------------------
-> Mark yao (3):
->        drm: rockchip: Add basic drm driver
->        dt-bindings: video: Add for rockchip display subsytem
->        dt-bindings: video: Add documentation for rockchip vop
-> 
->   .../devicetree/bindings/video/rockchip-drm.txt     |   19 +
->   .../devicetree/bindings/video/rockchip-vop.txt     |   58 +
->   drivers/gpu/drm/Kconfig                            |    2 +
->   drivers/gpu/drm/Makefile                           |    1 +
->   drivers/gpu/drm/rockchip/Kconfig                   |   17 +
->   drivers/gpu/drm/rockchip/Makefile                  |    8 +
->   drivers/gpu/drm/rockchip/rockchip_drm_drv.c        |  449 ++++++
->   drivers/gpu/drm/rockchip/rockchip_drm_drv.h        |   54 +
->   drivers/gpu/drm/rockchip/rockchip_drm_fb.c         |  200 +++
->   drivers/gpu/drm/rockchip/rockchip_drm_fb.h         |   28 +
->   drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c      |  210 +++
->   drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h      |   20 +
->   drivers/gpu/drm/rockchip/rockchip_drm_gem.c        |  293 ++++
->   drivers/gpu/drm/rockchip/rockchip_drm_gem.h        |   54 +
->   drivers/gpu/drm/rockchip/rockchip_drm_vop.c        | 1427
-> ++++++++++++++++++++
->   drivers/gpu/drm/rockchip/rockchip_drm_vop.h        |  196 +++
->   16 files changed, 3036 insertions(+)
->   create mode 100644
-> Documentation/devicetree/bindings/video/rockchip-drm.txt
->   create mode 100644
-> Documentation/devicetree/bindings/video/rockchip-vop.txt
->   create mode 100644 drivers/gpu/drm/rockchip/Kconfig
->   create mode 100644 drivers/gpu/drm/rockchip/Makefile
->   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_drv.c
->   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_drv.h
->   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fb.c
->   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fb.h
->   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c
->   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h
->   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_gem.c
->   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_gem.h
->   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_vop.c
->   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_vop.h
+diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
+index ffe350f..99464d7 100644
+--- a/drivers/cpufreq/Kconfig
++++ b/drivers/cpufreq/Kconfig
+@@ -250,6 +250,16 @@ config LOONGSON2_CPUFREQ
+ 
+ 	  If in doubt, say N.
+ 
++config LOONGSON1_CPUFREQ
++	tristate "Loongson1 CPUFreq Driver"
++	help
++	  This option adds a CPUFreq driver for loongson1 processors which
++	  support software configurable cpu frequency.
++
++	  For details, take a look at <file:Documentation/cpu-freq/>.
++
++	  If in doubt, say N.
++
+ endmenu
+ 
+ menu "PowerPC CPU frequency scaling drivers"
+diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
+index db6d9a2..aca7bd3 100644
+--- a/drivers/cpufreq/Makefile
++++ b/drivers/cpufreq/Makefile
+@@ -98,6 +98,7 @@ obj-$(CONFIG_CRIS_MACH_ARTPEC3)		+= cris-artpec3-cpufreq.o
+ obj-$(CONFIG_ETRAXFS)			+= cris-etraxfs-cpufreq.o
+ obj-$(CONFIG_IA64_ACPI_CPUFREQ)		+= ia64-acpi-cpufreq.o
+ obj-$(CONFIG_LOONGSON2_CPUFREQ)		+= loongson2_cpufreq.o
++obj-$(CONFIG_LOONGSON1_CPUFREQ)		+= ls1x-cpufreq.o
+ obj-$(CONFIG_SH_CPU_FREQ)		+= sh-cpufreq.o
+ obj-$(CONFIG_SPARC_US2E_CPUFREQ)	+= sparc-us2e-cpufreq.o
+ obj-$(CONFIG_SPARC_US3_CPUFREQ)		+= sparc-us3-cpufreq.o
+diff --git a/drivers/cpufreq/ls1x-cpufreq.c b/drivers/cpufreq/ls1x-cpufreq.c
+new file mode 100644
+index 0000000..1941c91
+--- /dev/null
++++ b/drivers/cpufreq/ls1x-cpufreq.c
+@@ -0,0 +1,229 @@
++/*
++ * CPU Frequency Scaling for Loongson 1 SoC
++ *
++ * Copyright (C) 2014 Zhang, Keguang <keguang.zhang@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2. This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/clk.h>
++#include <linux/clk-provider.h>
++#include <linux/cpu.h>
++#include <linux/cpufreq.h>
++#include <linux/delay.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++
++#include <asm/mach-loongson1/cpufreq.h>
++#include <asm/mach-loongson1/loongson1.h>
++
++static struct {
++	struct device *dev;
++	struct clk *clk;	/* CPU clk */
++	struct clk *mux_clk;	/* MUX of CPU clk */
++	struct clk *pll_clk;	/* PLL clk */
++	struct clk *osc_clk;	/* OSC clk */
++	unsigned int max_freq;
++	unsigned int min_freq;
++} ls1x_cpufreq;
++
++static int ls1x_cpufreq_notifier(struct notifier_block *nb,
++				 unsigned long val, void *data)
++{
++	if (val == CPUFREQ_POSTCHANGE)
++		current_cpu_data.udelay_val = loops_per_jiffy;
++
++	return NOTIFY_OK;
++}
++
++static struct notifier_block ls1x_cpufreq_notifier_block = {
++	.notifier_call = ls1x_cpufreq_notifier
++};
++
++static int ls1x_cpufreq_target(struct cpufreq_policy *policy,
++			       unsigned int index)
++{
++	unsigned int old_freq, new_freq;
++
++	old_freq = policy->cur;
++	new_freq = policy->freq_table[index].frequency;
++
++	/*
++	 * The procedure of reconfiguring CPU clk is as below.
++	 *
++	 *  - Reparent CPU clk to OSC clk
++	 *  - Reset CPU clock (very important)
++	 *  - Reconfigure CPU DIV
++	 *  - Reparent CPU clk back to CPU DIV clk
++	 */
++
++	dev_dbg(ls1x_cpufreq.dev, "%u KHz --> %u KHz\n", old_freq, new_freq);
++	clk_set_parent(policy->clk, ls1x_cpufreq.osc_clk);
++	__raw_writel(__raw_readl(LS1X_CLK_PLL_DIV) | RST_CPU_EN | RST_CPU,
++		     LS1X_CLK_PLL_DIV);
++	__raw_writel(__raw_readl(LS1X_CLK_PLL_DIV) & ~(RST_CPU_EN | RST_CPU),
++		     LS1X_CLK_PLL_DIV);
++	clk_set_rate(ls1x_cpufreq.mux_clk, new_freq * 1000);
++	clk_set_parent(policy->clk, ls1x_cpufreq.mux_clk);
++
++	return 0;
++}
++
++static int ls1x_cpufreq_init(struct cpufreq_policy *policy)
++{
++	struct cpufreq_frequency_table *freq_tbl;
++	unsigned int pll_freq, freq;
++	int steps, i, ret;
++
++	pll_freq = clk_get_rate(ls1x_cpufreq.pll_clk) / 1000;
++
++	steps = 1 << DIV_CPU_WIDTH;
++	freq_tbl = kzalloc(sizeof(*freq_tbl) * steps, GFP_KERNEL);
++	if (!freq_tbl) {
++		dev_err(ls1x_cpufreq.dev,
++			"failed to alloc cpufreq_frequency_table\n");
++		ret = -ENOMEM;
++		goto out;
++	}
++
++	for (i = 0; i < (steps - 1); i++) {
++		freq = pll_freq / (i + 1);
++		if ((freq < ls1x_cpufreq.min_freq) ||
++		    (freq > ls1x_cpufreq.max_freq))
++			freq_tbl[i].frequency = CPUFREQ_ENTRY_INVALID;
++		else
++			freq_tbl[i].frequency = freq;
++		dev_dbg(ls1x_cpufreq.dev,
++			"cpufreq table: index %d: frequency %d\n", i,
++			freq_tbl[i].frequency);
++	}
++	freq_tbl[i].frequency = CPUFREQ_TABLE_END;
++
++	policy->clk = ls1x_cpufreq.clk;
++	ret = cpufreq_generic_init(policy, freq_tbl, 0);
++	if (ret)
++		kfree(freq_tbl);
++out:
++	return ret;
++}
++
++static int ls1x_cpufreq_exit(struct cpufreq_policy *policy)
++{
++	kfree(policy->freq_table);
++	return 0;
++}
++
++static struct cpufreq_driver ls1x_cpufreq_driver = {
++	.name		= "cpufreq-ls1x",
++	.flags		= CPUFREQ_STICKY | CPUFREQ_NEED_INITIAL_FREQ_CHECK,
++	.verify		= cpufreq_generic_frequency_table_verify,
++	.target_index	= ls1x_cpufreq_target,
++	.get		= cpufreq_generic_get,
++	.init		= ls1x_cpufreq_init,
++	.exit		= ls1x_cpufreq_exit,
++	.attr		= cpufreq_generic_attr,
++};
++
++static int ls1x_cpufreq_remove(struct platform_device *pdev)
++{
++	cpufreq_unregister_notifier(&ls1x_cpufreq_notifier_block,
++				    CPUFREQ_TRANSITION_NOTIFIER);
++	cpufreq_unregister_driver(&ls1x_cpufreq_driver);
++	devm_clk_put(&pdev->dev, ls1x_cpufreq.osc_clk);
++	devm_clk_put(&pdev->dev, ls1x_cpufreq.clk);
++
++	return 0;
++}
++
++static int ls1x_cpufreq_probe(struct platform_device *pdev)
++{
++	struct plat_ls1x_cpufreq *pdata = pdev->dev.platform_data;
++	struct clk *clk;
++	int ret;
++
++	if (!pdata || !pdata->clk_name || !pdata->osc_clk_name)
++		return -EINVAL;
++
++	ls1x_cpufreq.dev = &pdev->dev;
++
++	clk = devm_clk_get(&pdev->dev, pdata->clk_name);
++	if (IS_ERR(clk)) {
++		dev_err(ls1x_cpufreq.dev, "unable to get %s clock\n",
++			pdata->clk_name);
++		ret = PTR_ERR(clk);
++		goto out;
++	}
++	ls1x_cpufreq.clk = clk;
++
++	clk = clk_get_parent(clk);
++	if (IS_ERR(clk)) {
++		dev_err(ls1x_cpufreq.dev, "unable to get parent of %s clock\n",
++			__clk_get_name(ls1x_cpufreq.clk));
++		ret = PTR_ERR(clk);
++		goto err_mux;
++	}
++	ls1x_cpufreq.mux_clk = clk;
++
++	clk = clk_get_parent(clk);
++	if (IS_ERR(clk)) {
++		dev_err(ls1x_cpufreq.dev, "unable to get parent of %s clock\n",
++			__clk_get_name(ls1x_cpufreq.mux_clk));
++		ret = PTR_ERR(clk);
++		goto err_mux;
++	}
++	ls1x_cpufreq.pll_clk = clk;
++
++	clk = devm_clk_get(&pdev->dev, pdata->osc_clk_name);
++	if (IS_ERR(clk)) {
++		dev_err(ls1x_cpufreq.dev, "unable to get %s clock\n",
++			pdata->osc_clk_name);
++		ret = PTR_ERR(clk);
++		goto err_mux;
++	}
++	ls1x_cpufreq.osc_clk = clk;
++
++	ls1x_cpufreq.max_freq = pdata->max_freq;
++	ls1x_cpufreq.min_freq = pdata->min_freq;
++
++	ret = cpufreq_register_driver(&ls1x_cpufreq_driver);
++	if (ret) {
++		dev_err(ls1x_cpufreq.dev,
++			"failed to register cpufreq driver: %d\n", ret);
++		goto err_driver;
++	}
++
++	ret = cpufreq_register_notifier(&ls1x_cpufreq_notifier_block,
++					CPUFREQ_TRANSITION_NOTIFIER);
++
++	if (!ret)
++		goto out;
++
++	dev_err(ls1x_cpufreq.dev, "failed to register cpufreq notifier: %d\n",
++		ret);
++
++	cpufreq_unregister_driver(&ls1x_cpufreq_driver);
++err_driver:
++	devm_clk_put(&pdev->dev, ls1x_cpufreq.osc_clk);
++err_mux:
++	devm_clk_put(&pdev->dev, ls1x_cpufreq.clk);
++out:
++	return ret;
++}
++
++static struct platform_driver ls1x_cpufreq_platdrv = {
++	.driver = {
++		.name	= "ls1x-cpufreq",
++		.owner	= THIS_MODULE,
++	},
++	.probe		= ls1x_cpufreq_probe,
++	.remove		= ls1x_cpufreq_remove,
++};
++
++module_platform_driver(ls1x_cpufreq_platdrv);
++
++MODULE_AUTHOR("Kelvin Cheung <keguang.zhang@gmail.com>");
++MODULE_DESCRIPTION("Loongson 1 CPUFreq driver");
++MODULE_LICENSE("GPL");
+-- 
+1.9.1
 
