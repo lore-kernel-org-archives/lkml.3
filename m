@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162AbaJQN5D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 09:57:03 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:55213 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751870AbaJQN47 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 09:56:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPDyKFoHkr-Z3PY0tTw9BPF8gJY_bVLtJL2KK7_uoq_008ymnw@mail.gmail.com>
-References: <1413457353-4222-1-git-send-email-jinkun.hong@rock-chips.com>
-	<1413457353-4222-2-git-send-email-jinkun.hong@rock-chips.com>
-	<CAPDyKFoHkr-Z3PY0tTw9BPF8gJY_bVLtJL2KK7_uoq_008ymnw@mail.gmail.com>
-Date: Fri, 17 Oct 2014 15:56:57 +0200
-X-Google-Sender-Auth: 0iN_0PL_Sar0v-apeAVJdrflwRk
-Message-ID: <CAMuHMdUPCP2BZUBmLaxzxAnKM7U73UGu_wsuswHtEYm2aYurxg@mail.gmail.com>
-Subject: Re: [PATCH v3 1/3] power-domain: add power domain drivers for
- Rockchip platform
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: "jinkun.hong" <jinkun.hong@rock-chips.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Heiko Stuebner <heiko@sntech.de>, linux-rockchip@lists.infradead.org,
-        Jack Dai <jack.dai@rock-chips.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1753203AbaJQN5S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 09:57:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14187 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753171AbaJQN5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 09:57:14 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH] clocksource, Add warning to clocksource_delta() validation code
+Date: Fri, 17 Oct 2014 09:57:06 -0400
+Message-Id: <1413554226-12652-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ulf,
+A bug report came in against an older kernel which output "backward time"
+messages and the report noted that the upstream kernel worked.  After some
+investigation it turned out that one of the sockets was bad on the system
+and the "backward time" messages were caused by a real, but intermittent,
+hardware failure.
 
-On Thu, Oct 16, 2014 at 3:06 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
->> +
->> +       ret = pm_clk_create(dev);
->> +       if (ret) {
->> +               dev_err(dev, "pm_clk_create failed %d\n", ret);
->> +               return;
->> +       };
->> +
->> +       while ((clk = of_clk_get(dev->of_node, i++)) && !IS_ERR(clk)) {
->> +               ret = pm_clk_add_clk(dev, clk);
->> +               if (ret) {
->> +                       dev_err(dev, "pm_clk_add_clk failed %d\n", ret);
->> +                       goto clk_err;
->> +               };
->> +       }
->> +
->> +       if (!IS_ENABLED(CONFIG_PM_RUNTIME)) {
->
-> Could you elaborate on why you need to do this check here?
+Commit 09ec54429c6d10f87d1f084de53ae2c1c3a81108 ("clocksource: Move
+cycle_last validation to core code") modifies the x86 clocksource such that
+if a negative delta between two reads of time is calculated the
+clocksource_delta() code will return 0.  There is no warning when this
+occurs and there really should be one in order to catch not only hardware
+issues like the issue above, but potential coding issues as the code is
+modified.  This patch introduces a WARN() which will also dump a stack
+trace to the console so the exact code path can be evaluated.
 
-If runtime PM is enabled, the clocks are managed by runtime PM, and will
-be enabled/disabled later when needed.
+I tested this by booting on the broken hardware and left the system idle
+until a negative clocksource_delta() event occurred.
 
-If runtime PM is disabled, the clocks are not managed by runtime PM,
-so they should be enabled at initialization time.
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+---
+ kernel/time/timekeeping_internal.h |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-Grygorii and I do the same thing for keystone resp. pm-rmobile.
+diff --git a/kernel/time/timekeeping_internal.h b/kernel/time/timekeeping_internal.h
+index 4ea005a..abe6bc8 100644
+--- a/kernel/time/timekeeping_internal.h
++++ b/kernel/time/timekeeping_internal.h
+@@ -17,7 +17,12 @@ static inline cycle_t clocksource_delta(cycle_t now, cycle_t last, cycle_t mask)
+ {
+ 	cycle_t ret = (now - last) & mask;
+ 
+-	return (s64) ret > 0 ? ret : 0;
++	if ((s64)ret > 0)
++		return ret;
++
++	WARN(1, "Clocksource calculated negative delta, %lld.  last = %llu, now = %llu, mask = %llx\n",
++	     (s64)ret, last, now, mask);
++	return 0;
+ }
+ #else
+ static inline cycle_t clocksource_delta(cycle_t now, cycle_t last, cycle_t mask)
+-- 
+1.7.9.3
 
-> When I see a check for IS_ENABLED(CONFIG_PM_RUNTIME), that indicates
-> to me that we actually have an another issue, perhaps in the PM clk
-> API.
-
-Good point. Perhaps this can be handled in pm_clk_add() instead?
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
