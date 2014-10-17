@@ -1,124 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878AbaJQTbG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 15:31:06 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:40047 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753663AbaJQTbD (ORCPT
+	id S1753903AbaJQTdR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 15:33:17 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:45323 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753538AbaJQTdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 15:31:03 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Florian Fainelli <f.fainelli@gmail.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH] dsa: Fix conversion from host device to mii bus
-Date: Fri, 17 Oct 2014 12:30:58 -0700
-Message-Id: <1413574258-21766-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
+	Fri, 17 Oct 2014 15:33:15 -0400
+Message-ID: <54416EF6.1050403@fb.com>
+Date: Fri, 17 Oct 2014 15:33:10 -0400
+From: Josef Bacik <jbacik@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+MIME-Version: 1.0
+To: Davidlohr Bueso <dave@stgolabs.net>, LKML <linux-kernel@vger.kernel.org>,
+        <linux-btrfs@vger.kernel.org>
+Subject: Re: btrfs soft lockups: locks gone crazy
+References: <1413271664.27233.13.camel@linux-t7sj.site>
+In-Reply-To: <1413271664.27233.13.camel@linux-t7sj.site>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-10-17_05:2014-10-17,2014-10-17,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 spamscore=0
+ suspectscore=0 phishscore=0 adultscore=0 bulkscore=0 classifier=spam
+ adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1410170174
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit b4d2394d01bc ("dsa: Replace mii_bus with a generic host device")
-replaces mii_bus with a generic host_dev, and introduces
-dsa_host_dev_to_mii_bus() to support conversion from host_dev to mii_bus.
-However, in some cases it uses to_mii_bus to perform that conversion.
-Since host_dev is not the phy bus device but typically a platform device,
-this fails and results in a crash with the affected drivers.
+On 10/14/2014 03:27 AM, Davidlohr Bueso wrote:
+> Hello,
+>
+> I'm getting massive amounts of cpu soft lockups in Linus's tree for
+> today. This occurs almost immediately and is very reproducible in aim7
+> disk workloads using btrfs:
+>
 
-BUG: unable to handle kernel NULL pointer dereference at           (null)
-IP: [<ffffffff81781d35>] __mutex_lock_slowpath+0x75/0x100
-PGD 406783067 PUD 406784067 PMD 0
-Oops: 0002 [#1] SMP
-...
-Call Trace:
-[<ffffffff810a538b>] ? pick_next_task_fair+0x61b/0x880
-[<ffffffff81781de3>] mutex_lock+0x23/0x37
-[<ffffffff81533244>] mdiobus_read+0x34/0x60
-[<ffffffff8153b95a>] __mv88e6xxx_reg_read+0x8a/0xa0
-[<ffffffff8153b9bc>] mv88e6xxx_reg_read+0x4c/0xa0
+I'm trying to reproduce but it's not popping for me.  What is the setup 
+of your fs?  mkfs options, mount options etc.  And how are you running 
+aim7?  I'm using reaim with the default reaim.config and workfile,disk, 
+is this what you are using?  If not please attach your config and 
+workfile so I can be sure to be doing the same thing as you.  Thanks,
 
-Fixes: b4d2394d01bc ("dsa: Replace mii_bus with a generic host device")
-Cc: Alexander Duyck <alexander.h.duyck@intel.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
- drivers/net/dsa/mv88e6060.c | 16 ++++++++++++----
- drivers/net/dsa/mv88e6xxx.c | 14 ++++++++++----
- 2 files changed, 22 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/net/dsa/mv88e6060.c b/drivers/net/dsa/mv88e6060.c
-index 776e965..05b0ca3 100644
---- a/drivers/net/dsa/mv88e6060.c
-+++ b/drivers/net/dsa/mv88e6060.c
-@@ -21,8 +21,12 @@
- 
- static int reg_read(struct dsa_switch *ds, int addr, int reg)
- {
--	return mdiobus_read(to_mii_bus(ds->master_dev),
--			    ds->pd->sw_addr + addr, reg);
-+	struct mii_bus *bus = dsa_host_dev_to_mii_bus(ds->master_dev);
-+
-+	if (bus == NULL)
-+		return -EINVAL;
-+
-+	return mdiobus_read(bus, ds->pd->sw_addr + addr, reg);
- }
- 
- #define REG_READ(addr, reg)					\
-@@ -38,8 +42,12 @@ static int reg_read(struct dsa_switch *ds, int addr, int reg)
- 
- static int reg_write(struct dsa_switch *ds, int addr, int reg, u16 val)
- {
--	return mdiobus_write(to_mii_bus(ds->master_dev),
--			     ds->pd->sw_addr + addr, reg, val);
-+	struct mii_bus *bus = dsa_host_dev_to_mii_bus(ds->master_dev);
-+
-+	if (bus == NULL)
-+		return -EINVAL;
-+
-+	return mdiobus_write(bus, ds->pd->sw_addr + addr, reg, val);
- }
- 
- #define REG_WRITE(addr, reg, val)				\
-diff --git a/drivers/net/dsa/mv88e6xxx.c b/drivers/net/dsa/mv88e6xxx.c
-index d6f6428..a6c90cf 100644
---- a/drivers/net/dsa/mv88e6xxx.c
-+++ b/drivers/net/dsa/mv88e6xxx.c
-@@ -75,11 +75,14 @@ int __mv88e6xxx_reg_read(struct mii_bus *bus, int sw_addr, int addr, int reg)
- int mv88e6xxx_reg_read(struct dsa_switch *ds, int addr, int reg)
- {
- 	struct mv88e6xxx_priv_state *ps = ds_to_priv(ds);
-+	struct mii_bus *bus = dsa_host_dev_to_mii_bus(ds->master_dev);
- 	int ret;
- 
-+	if (bus == NULL)
-+		return -EINVAL;
-+
- 	mutex_lock(&ps->smi_mutex);
--	ret = __mv88e6xxx_reg_read(to_mii_bus(ds->master_dev),
--				   ds->pd->sw_addr, addr, reg);
-+	ret = __mv88e6xxx_reg_read(bus, ds->pd->sw_addr, addr, reg);
- 	mutex_unlock(&ps->smi_mutex);
- 
- 	return ret;
-@@ -119,11 +122,14 @@ int __mv88e6xxx_reg_write(struct mii_bus *bus, int sw_addr, int addr,
- int mv88e6xxx_reg_write(struct dsa_switch *ds, int addr, int reg, u16 val)
- {
- 	struct mv88e6xxx_priv_state *ps = ds_to_priv(ds);
-+	struct mii_bus *bus = dsa_host_dev_to_mii_bus(ds->master_dev);
- 	int ret;
- 
-+	if (bus == NULL)
-+		return -EINVAL;
-+
- 	mutex_lock(&ps->smi_mutex);
--	ret = __mv88e6xxx_reg_write(to_mii_bus(ds->master_dev),
--				    ds->pd->sw_addr, addr, reg, val);
-+	ret = __mv88e6xxx_reg_write(bus, ds->pd->sw_addr, addr, reg, val);
- 	mutex_unlock(&ps->smi_mutex);
- 
- 	return ret;
--- 
-1.9.1
+Josef
 
