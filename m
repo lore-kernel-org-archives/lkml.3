@@ -1,194 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752476AbaJQNCk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 09:02:40 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:41342 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251AbaJQNCi (ORCPT
+	id S1752752AbaJQNEF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 09:04:05 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47384 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751710AbaJQNEC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 09:02:38 -0400
-From: Kevin Hilman <khilman@kernel.org>
-To: Wenyou Yang <wenyou.yang@atmel.com>
-Cc: <broonie@kernel.org>, <linux-spi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <nicolas.ferre@atmel.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] spi/atmel: add support for runtime PM
-References: <1413424160-21180-1-git-send-email-wenyou.yang@atmel.com>
-Date: Fri, 17 Oct 2014 06:02:35 -0700
-In-Reply-To: <1413424160-21180-1-git-send-email-wenyou.yang@atmel.com> (Wenyou
-	Yang's message of "Thu, 16 Oct 2014 09:49:20 +0800")
-Message-ID: <7hk33yhms4.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Fri, 17 Oct 2014 09:04:02 -0400
+Date: Fri, 17 Oct 2014 14:03:54 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "jslaby@suse.cz" <jslaby@suse.cz>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "broonie@linaro.org" <broonie@linaro.org>,
+        "m-karicheri2@ti.com" <m-karicheri2@ti.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "artagnon@gmail.com" <artagnon@gmail.com>,
+        "rrichter@cavium.com" <rrichter@cavium.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "orsonzhai@gmail.com" <orsonzhai@gmail.com>,
+        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
+        "zhizhou.zhang@spreadtrum.com" <zhizhou.zhang@spreadtrum.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "sprdlinux@freelists.org" <sprdlinux@freelists.org>
+Subject: Re: [PATCH v2 5/5] tty/serial: Add earlycon support for Spreadtrum
+ serial driver
+Message-ID: <20141017130354.GC5587@leverpostej>
+References: <sprd-1017-v2>
+ <1413539665-11484-1-git-send-email-chunyan.zhang@spreadtrum.com>
+ <1413539665-11484-6-git-send-email-chunyan.zhang@spreadtrum.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413539665-11484-6-git-send-email-chunyan.zhang@spreadtrum.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wenyou Yang <wenyou.yang@atmel.com> writes:
-
-> Drivers should put the device into low power states proactively whenever the
-> device is not in use. Thus implement support for runtime PM and use the
-> autosuspend feature to make sure that we can still perform well in case we see
-> lots of SPI traffic within short period of time.
->
-> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+On Fri, Oct 17, 2014 at 10:54:25AM +0100, Chunyan Zhang wrote:
+> Add serial driver for spreadtrum sharkl platform with earlycon
+> support at first.
+> 
+> Signed-off-by: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
 > ---
->  drivers/spi/spi-atmel.c |   62 +++++++++++++++++++++++++++++++++++++++++------
->  1 file changed, 55 insertions(+), 7 deletions(-)
->
-> diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
-> index 649dcb5..aca285e 100644
-> --- a/drivers/spi/spi-atmel.c
-> +++ b/drivers/spi/spi-atmel.c
-> @@ -26,6 +26,7 @@
->  #include <linux/io.h>
->  #include <linux/gpio.h>
->  #include <linux/pinctrl/consumer.h>
-> +#include <linux/pm_runtime.h>
+>  drivers/tty/serial/Kconfig       |   24 ++++++++++++++
+>  drivers/tty/serial/Makefile      |    1 +
+>  drivers/tty/serial/sprd-serial.c |   64 ++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 89 insertions(+)
+>  create mode 100644 drivers/tty/serial/sprd-serial.c
+> 
+> diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+> index 26cec64..33b8f90 100644
+> --- a/drivers/tty/serial/Kconfig
+> +++ b/drivers/tty/serial/Kconfig
+> @@ -113,6 +113,30 @@ config SERIAL_SB1250_DUART_CONSOLE
 >  
->  /* SPI register offsets */
->  #define SPI_CR					0x0000
-> @@ -191,6 +192,8 @@
+>  	  If unsure, say Y.
 >  
->  #define SPI_DMA_TIMEOUT		(msecs_to_jiffies(1000))
->  
-> +#define AUTOSUSPEND_TIMEOUT	2000
+> +config SERIAL_SPRD
+> +	tristate "Support for SPRD serial"
+> +	depends on ARM || ARM64
+> +	select SERIAL_CORE
+> +	help
+> +          This enables the driver for the Spreadtrum's serial.
 > +
->  struct atmel_spi_dma {
->  	struct dma_chan			*chan_rx;
->  	struct dma_chan			*chan_tx;
-> @@ -1313,6 +1316,7 @@ static int atmel_spi_probe(struct platform_device *pdev)
->  	master->setup = atmel_spi_setup;
->  	master->transfer_one_message = atmel_spi_transfer_one_message;
->  	master->cleanup = atmel_spi_cleanup;
-> +	master->auto_runtime_pm = true;
->  	platform_set_drvdata(pdev, master);
->  
->  	as = spi_master_get_devdata(master);
-> @@ -1385,6 +1389,11 @@ static int atmel_spi_probe(struct platform_device *pdev)
->  	dev_info(&pdev->dev, "Atmel SPI Controller at 0x%08lx (irq %d)\n",
->  			(unsigned long)regs->start, irq);
->  
-> +	pm_runtime_set_autosuspend_delay(&pdev->dev, AUTOSUSPEND_TIMEOUT);
-> +	pm_runtime_use_autosuspend(&pdev->dev);
-> +	pm_runtime_set_active(&pdev->dev);
-> +	pm_runtime_enable(&pdev->dev);
+> +config SERIAL_SPRD_NR
+> +        int "Maximum number of sprd serial ports"
+> +        depends on SERIAL_SPRD
+> +        default "4"
+
+This is not used below.
+
 > +
->  	ret = devm_spi_register_master(&pdev->dev, master);
->  	if (ret)
->  		goto out_free_dma;
-> @@ -1392,6 +1401,9 @@ static int atmel_spi_probe(struct platform_device *pdev)
->  	return 0;
->  
->  out_free_dma:
-> +	pm_runtime_disable(&pdev->dev);
-> +	pm_runtime_set_suspended(&pdev->dev);
+> +config SERIAL_SPRD_CONSOLE
+> +        bool "SPRD UART console support"
+> +        depends on SERIAL_SPRD=y
+> +        select SERIAL_CORE_CONSOLE
+> +	select SERIAL_EARLYCON
+> +        help
+> +	  Support for early debug console using Spreadtrum's serial. This enables
+> +	  the console before standard serial driver is probed. This is enabled
+> +	  with "earlycon=serial_sprd" on the kernel command line. The console is
+> +	  enabled when early_param is processed.
+
+There only appears to be an earlycon driver, and not "standard serial
+driver".
+
+What happens after earlycon?
+
+Surely there should be a real driver to take ownership of the UART?
+
+As far as I can see it won't be possible to boot your platform to a
+prompt, because earlycon will have gone before that.
+
+Thanks,
+Mark.
+
 > +
->  	if (as->use_dma)
->  		atmel_spi_release_dma(as);
->  
-> @@ -1413,6 +1425,8 @@ static int atmel_spi_remove(struct platform_device *pdev)
->  	struct spi_master	*master = platform_get_drvdata(pdev);
->  	struct atmel_spi	*as = spi_master_get_devdata(master);
->  
-> +	pm_runtime_get_sync(&pdev->dev);
 > +
->  	/* reset the hardware and block queue progress */
->  	spin_lock_irq(&as->lock);
->  	if (as->use_dma) {
-> @@ -1430,9 +1444,13 @@ static int atmel_spi_remove(struct platform_device *pdev)
+>  config SERIAL_ATMEL
+>  	bool "AT91 / AT32 on-chip serial port support"
+>  	depends on ARCH_AT91 || AVR32
+> diff --git a/drivers/tty/serial/Makefile b/drivers/tty/serial/Makefile
+> index 0080cc3..b16e0d4 100644
+> --- a/drivers/tty/serial/Makefile
+> +++ b/drivers/tty/serial/Makefile
+> @@ -92,6 +92,7 @@ obj-$(CONFIG_SERIAL_ARC)	+= arc_uart.o
+>  obj-$(CONFIG_SERIAL_RP2)	+= rp2.o
+>  obj-$(CONFIG_SERIAL_FSL_LPUART)	+= fsl_lpuart.o
+>  obj-$(CONFIG_SERIAL_MEN_Z135)	+= men_z135_uart.o
+> +obj-$(CONFIG_SERIAL_SPRD) += sprd-serial.o
 >  
->  	clk_disable_unprepare(as->clk);
->  
-> +	pm_runtime_put_noidle(&pdev->dev);
-
-Why the _noidle version?
-
-> +	pm_runtime_disable(&pdev->dev);
+>  # GPIOLIB helpers for modem control lines
+>  obj-$(CONFIG_SERIAL_MCTRL_GPIO)	+= serial_mctrl_gpio.o
+> diff --git a/drivers/tty/serial/sprd-serial.c b/drivers/tty/serial/sprd-serial.c
+> new file mode 100644
+> index 0000000..9ae594f
+> --- /dev/null
+> +++ b/drivers/tty/serial/sprd-serial.c
+> @@ -0,0 +1,64 @@
+> +/*
+> + * Copyright (C) 2012 Spreadtrum Communications Inc.
+> + *
+> + * This software is licensed under the terms of the GNU General Public
+> + * License version 2, as published by the Free Software Foundation, and
+> + * may be copied, distributed, and modified under those terms.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
 > +
->  	return 0;
->  }
->  
-> +#ifdef CONFIG_PM
-
-Why CONFIG_PM?  CONFIG_PM_SLEEP  causes CONFIG_PM=y, so this seems
-redundant.
-
->  #ifdef CONFIG_PM_SLEEP
->  static int atmel_spi_suspend(struct device *dev)
->  {
-> @@ -1447,9 +1465,10 @@ static int atmel_spi_suspend(struct device *dev)
->  		return ret;
->  	}
->  
-> -	clk_disable_unprepare(as->clk);
-> -
-> -	pinctrl_pm_select_sleep_state(dev);
-> +	if (!pm_runtime_suspended(dev)) {
-> +		clk_disable_unprepare(as->clk);
-> +		pinctrl_pm_select_sleep_state(dev);
-> +	}
-
-a.k.a. pm_runtime_put_sync() since the ->runtime_suspend() callback does
-the same thing.
-
->  	return 0;
->  }
-> @@ -1460,9 +1479,10 @@ static int atmel_spi_resume(struct device *dev)
->  	struct atmel_spi	*as = spi_master_get_devdata(master);
->  	int ret;
->  
-> -	pinctrl_pm_select_default_state(dev);
-> -
-> -	clk_prepare_enable(as->clk);
-> +	if (!pm_runtime_suspended(dev)) {
-> +		pinctrl_pm_select_default_state(dev);
-> +		clk_prepare_enable(as->clk);
-> +	}
-
-a.k.a. pm_runtime_get_sync()
-
-Kevin
-
->  	/* Start the queue running */
->  	ret = spi_master_resume(master);
-> @@ -1471,9 +1491,37 @@ static int atmel_spi_resume(struct device *dev)
->  
->  	return ret;
->  }
-> +#endif
->  
-> -static SIMPLE_DEV_PM_OPS(atmel_spi_pm_ops, atmel_spi_suspend, atmel_spi_resume);
-> +#ifdef CONFIG_PM_RUNTIME
-> +static int atmel_spi_runtime_suspend(struct device *dev)
+> +#include <linux/kernel.h>
+> +#include <linux/console.h>
+> +#include <linux/init.h>
+> +#include <linux/serial_core.h>
+> +#include <linux/of.h>
+> +
+> +/*offset*/
+> +#define UART_TXD	0x0000
+> +#define UART_RXD	0x0004
+> +#define UART_STS0	0x0008
+> +#define UART_STS1	0x000C
+> +#define UART_IEN	0x0010
+> +#define UART_ICLR	0x0014
+> +#define UART_CTL0	0x0018
+> +#define UART_CTL1	0x001C
+> +#define UART_CTL2	0x0020
+> +#define UART_CLKD0	0x0024
+> +#define UART_CLKD1	0x0028
+> +#define UART_STS2	0x002C
+> +
+> +/*line status */
+> +#define UART_LSR_TX_OVER	(0x1<<15)
+> +
+> +static void serial_sprd_putc(struct uart_port *port, int c)
 > +{
-> +	struct spi_master *master = dev_get_drvdata(dev);
-> +	struct atmel_spi *as = spi_master_get_devdata(master);
->  
-> +	clk_disable_unprepare(as->clk);
-> +	pinctrl_pm_select_sleep_state(dev);
-> +
-> +	return 0;
+> +	while (!(readl(port->membase + UART_STS0) & UART_LSR_TX_OVER))
+> +		;
+> +	writeb(c, port->membase + UART_TXD);
 > +}
 > +
-> +static int atmel_spi_runtime_resume(struct device *dev)
+> +static void serial_sprd_early_write(struct console *con, const char *s,
+> +				    unsigned n)
 > +{
-> +	struct spi_master *master = dev_get_drvdata(dev);
-> +	struct atmel_spi *as = spi_master_get_devdata(master);
+> +	struct earlycon_device *dev = con->data;
 > +
-> +	pinctrl_pm_select_default_state(dev);
-> +	clk_prepare_enable(as->clk);
+> +	uart_console_write(&dev->port, s, n, serial_sprd_putc);
+> +}
 > +
+> +static int __init serial_sprd_early_console_setup(
+> +				struct earlycon_device *device,
+> +				const char *opt)
+> +{
+> +	if (!device->port.membase)
+> +		return -ENODEV;
+> +
+> +	device->con->write = serial_sprd_early_write;
 > +	return 0;
 > +}
-> +#endif
-> +
-> +static const struct dev_pm_ops atmel_spi_pm_ops = {
-> +	SET_SYSTEM_SLEEP_PM_OPS(atmel_spi_suspend, atmel_spi_resume)
-> +	SET_RUNTIME_PM_OPS(atmel_spi_runtime_suspend,
-> +			   atmel_spi_runtime_resume, NULL)
-> +};
->  #define ATMEL_SPI_PM_OPS	(&atmel_spi_pm_ops)
->  #else
->  #define ATMEL_SPI_PM_OPS	NULL
+> +EARLYCON_DECLARE(serial_sprd, serial_sprd_early_console_setup);
+> +OF_EARLYCON_DECLARE(serial_sprd, "sprd,serial",
+> +		    serial_sprd_early_console_setup);
+> -- 
+> 1.7.9.5
+> 
+> 
