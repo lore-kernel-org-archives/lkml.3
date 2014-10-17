@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319AbaJQNi5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 09:38:57 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:56379 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752739AbaJQNiy (ORCPT
+	id S1753359AbaJQNjI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 09:39:08 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:40736 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753264AbaJQNjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 09:38:54 -0400
+	Fri, 17 Oct 2014 09:39:05 -0400
 From: Hanjun Guo <hanjun.guo@linaro.org>
 To: Catalin Marinas <catalin.marinas@arm.com>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
@@ -27,11 +27,10 @@ Cc: Graeme Gregory <graeme.gregory@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
         Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
         Kangkang.Shen@huawei.com, linux-acpi@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-acpi@lists.linaro.org, Al Stone <al.stone@linaro.org>,
-        Hanjun Guo <hanjun.guo@linaro.org>
-Subject: [PATCH v5 06/18] ARM64 / ACPI: Introduce early_param for "acpi" and pass acpi=force to enable ACPI
-Date: Fri, 17 Oct 2014 21:37:02 +0800
-Message-Id: <1413553034-20956-7-git-send-email-hanjun.guo@linaro.org>
+        linaro-acpi@lists.linaro.org, Hanjun Guo <hanjun.guo@linaro.org>
+Subject: [PATCH v5 07/18] ARM64 / ACPI: If we chose to boot from acpi then disable FDT
+Date: Fri, 17 Oct 2014 21:37:03 +0800
+Message-Id: <1413553034-20956-8-git-send-email-hanjun.guo@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org>
 References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org>
@@ -39,120 +38,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Al Stone <al.stone@linaro.org>
+From: Graeme Gregory <graeme.gregory@linaro.org>
 
-Introduce one early parameters "off" and "force" for "acpi", acpi=off
-will be the default behavior for ARM64, so introduce acpi=force to
-enable ACPI on ARM64.
+If the early boot methods of acpi are happy that we have valid ACPI
+tables and acpi=force has been passed, then do not unflat devicetree
+effectively disabling further hardware probing from DT.
 
-Disable ACPI before early parameters parsed, and enable it to pass
-"acpi=force" if people want use ACPI on ARM64. This ensures DT be
-the prefer one if ACPI table and DT both are provided at this moment.
-
-Signed-off-by: Al Stone <al.stone@linaro.org>
 Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
 Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
 ---
- Documentation/kernel-parameters.txt |    3 ++-
- arch/arm64/include/asm/acpi.h       |    9 +++++++++
- arch/arm64/kernel/acpi.c            |   17 +++++++++++++++++
- arch/arm64/kernel/setup.c           |    3 +++
- 4 files changed, 31 insertions(+), 1 deletion(-)
+ arch/arm64/kernel/setup.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 5ae8608..2af0948 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -165,7 +165,7 @@ multipliers 'Kilo', 'Mega', and 'Giga', equalling 2^10, 2^20, and 2^30
- bytes respectively. Such letter suffixes can also be entirely omitted.
- 
- 
--	acpi=		[HW,ACPI,X86]
-+	acpi=		[HW,ACPI,X86,ARM64]
- 			Advanced Configuration and Power Interface
- 			Format: { force | off | strict | noirq | rsdt }
- 			force -- enable ACPI if default was off
-@@ -175,6 +175,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 				strictly ACPI specification compliant.
- 			rsdt -- prefer RSDT over (default) XSDT
- 			copy_dsdt -- copy DSDT to memory
-+			For ARM64, ONLY "acpi=off" or "acpi=force" are available
- 
- 			See also Documentation/power/runtime_pm.txt, pci=noacpi
- 
-diff --git a/arch/arm64/include/asm/acpi.h b/arch/arm64/include/asm/acpi.h
-index 8b837ab..496c33b 100644
---- a/arch/arm64/include/asm/acpi.h
-+++ b/arch/arm64/include/asm/acpi.h
-@@ -26,6 +26,13 @@ static inline void disable_acpi(void)
- 	acpi_noirq = 1;
- }
- 
-+static inline void enable_acpi(void)
-+{
-+	acpi_disabled = 0;
-+	acpi_pci_disabled = 0;
-+	acpi_noirq = 0;
-+}
-+
- /*
-  * It's used from ACPI core in kdump to boot UP system with SMP kernel,
-  * with this check the ACPI core will not override the CPU index
-@@ -40,6 +47,8 @@ static inline bool acpi_has_cpu_in_madt(void)
- 
- static inline void arch_fix_phys_package_id(int num, u32 slot) { }
- 
-+#else
-+static inline void disable_acpi(void) { }
- #endif /* CONFIG_ACPI */
- 
- #endif /*_ASM_ACPI_H*/
-diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
-index 9252f72..39a1655 100644
---- a/arch/arm64/kernel/acpi.c
-+++ b/arch/arm64/kernel/acpi.c
-@@ -67,3 +67,20 @@ void __init acpi_boot_table_init(void)
- 	if (acpi_table_init())
- 		disable_acpi();
- }
-+
-+static int __init parse_acpi(char *arg)
-+{
-+	if (!arg)
-+		return -EINVAL;
-+
-+	/* "acpi=off" disables both ACPI table parsing and interpreter */
-+	if (strcmp(arg, "off") == 0)
-+		disable_acpi();
-+	else if (strcmp(arg, "force") == 0) /* force ACPI to be enabled */
-+		enable_acpi();
-+	else
-+		return -EINVAL;	/* Core will print when we return error */
-+
-+	return 0;
-+}
-+early_param("acpi", parse_acpi);
 diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
-index 5b05227..15621b9 100644
+index 15621b9..e4f2576 100644
 --- a/arch/arm64/kernel/setup.c
 +++ b/arch/arm64/kernel/setup.c
-@@ -60,6 +60,7 @@
- #include <asm/memblock.h>
- #include <asm/psci.h>
- #include <asm/efi.h>
-+#include <asm/acpi.h>
+@@ -401,7 +401,8 @@ void __init setup_arch(char **cmdline_p)
+ 	efi_idmap_init();
  
- unsigned int processor_id;
- EXPORT_SYMBOL(processor_id);
-@@ -384,6 +385,8 @@ void __init setup_arch(char **cmdline_p)
+ 	cpu_logical_map(0) = read_cpuid_mpidr() & MPIDR_HWID_BITMASK;
+-	unflatten_device_tree();
++	if (acpi_disabled)
++		unflatten_device_tree();
  
- 	early_ioremap_init();
+ 	psci_init();
  
-+	disable_acpi();
-+
- 	parse_early_param();
- 
- 	efi_init();
 -- 
 1.7.9.5
 
