@@ -1,258 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753083AbaJQPTx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 11:19:53 -0400
-Received: from 9.mo3.mail-out.ovh.net ([87.98.184.141]:48524 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752472AbaJQPTv (ORCPT
+	id S1753200AbaJQPUk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 11:20:40 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:58925 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752451AbaJQPUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 11:19:51 -0400
-X-Greylist: delayed 2319 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Oct 2014 11:19:51 EDT
-From: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
-To: Heiko Stuebner <heiko@sntech.de>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org (moderated list:ARM/Rockchip
-	SoC...),
-        linux-rockchip@lists.infradead.org (open list:ARM/Rockchip SoC...),
-        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
-        linux-kernel@vger.kernel.org (open list)
-Cc: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
-Subject: [PATCH] ARM: dts: rockchip: use internal pull-up resistors on I2C busses
-Date: Fri, 17 Oct 2014 16:40:30 +0200
-Message-Id: <1413556830-27854-1-git-send-email-julien.chauveau@neo-technologies.fr>
-X-Mailer: git-send-email 1.9.1
-X-Ovh-Tracer-Id: 3057944148409647329
-X-Ovh-Remote: 193.248.240.88 (laubervilliers-656-01-116-88.w193-248.abo.wanadoo.fr)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejhedrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejhedrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Fri, 17 Oct 2014 11:20:38 -0400
+Date: Fri, 17 Oct 2014 17:20:07 +0200
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Michal Hocko <mhocko@suse.cz>
+CC: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 4/5] mm: memcontrol: continue cache reclaim from offlined
+ groups
+Message-ID: <20141017152007.GD16496@esperanza>
+References: <1413303637-23862-1-git-send-email-hannes@cmpxchg.org>
+ <1413303637-23862-5-git-send-email-hannes@cmpxchg.org>
+ <20141017084011.GC5641@esperanza>
+ <20141017140022.GF8076@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20141017140022.GF8076@dhcp22.suse.cz>
+X-Originating-IP: [88.152.235.95]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to the I2C bus specification, it is required to use pull-up resistors
-on the clock and data lines. Probing the I2C busses with i2cdetect results in
-bad results when no devices are connected and no external resistors are used.
+On Fri, Oct 17, 2014 at 04:00:22PM +0200, Michal Hocko wrote:
+> On Fri 17-10-14 10:40:11, Vladimir Davydov wrote:
+> > On Tue, Oct 14, 2014 at 12:20:36PM -0400, Johannes Weiner wrote:
+> > > On cgroup deletion, outstanding page cache charges are moved to the
+> > > parent group so that they're not lost and can be reclaimed during
+> > > pressure on/inside said parent.  But this reparenting is fairly tricky
+> > > and its synchroneous nature has led to several lock-ups in the past.
+> > > 
+> > > Since css iterators now also include offlined css, memcg iterators can
+> > > be changed to include offlined children during reclaim of a group, and
+> > > leftover cache can just stay put.
+> > > 
+> > > There is a slight change of behavior in that charges of deleted groups
+> > > no longer show up as local charges in the parent.  But they are still
+> > > included in the parent's hierarchical statistics.
+> > > 
+> > > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> > > ---
+> > >  mm/memcontrol.c | 218 +-------------------------------------------------------
+> > >  1 file changed, 1 insertion(+), 217 deletions(-)
+> > 
+> > I do like the stats :-) However, as I've already mentioned, on big
+> > machines we can end up with hundred of thousands of dead css's.
+> 
+> css->id is bound to the css life so this is bound to the maximum number
+> of allowed cgroups AFAIR. It is true that dead memcgs might block
+> creation of new. This is a good point. It would be a problem either when
+> there is no reclaim (global or memcg) or when groups are very short
+> lived. One possible way out would be counting dead memcgs and kick
+> background mem_cgroup_force_empty loop over those that are dead once we
+> hit a threshold. This should be pretty trivial to implement.
 
-This patch configures the I2C busses to use the internal pull-up resistors
-on the RK3066, RK3188 and RK3288 Rockchip processors. It should also be noted
-that these default pull settings match the original configuration on these SoCs.
+Right, this shouldn't be a problem.
 
-Below is the results of using i2cdetect on a I2C bus with no devices connected
-before (1) and after (2) applying this patch.
+> > Iterating over all of them during reclaim may result in noticeable lags.
+> > One day we'll have to do something about that I guess.
+> >
+> > Another issue is that AFAICT currently we can't have more than 64K
+> > cgroups due to the MEM_CGROUP_ID_MAX limit.The limit exists, because we
+> > use css ids for tagging swap entries and we don't want to spend too much
+> > memory on this. May be, we should simply use the mem_cgroup pointer
+> > instead of the css id?
+> 
+> We are using the id to reduce the memory footprint. We cannot effort 8B
+> per each swappage (we can have GBs of swap space in the system).
 
-(1) root@localhost:~# i2cdetect 3
+>From my experience nowadays most servers have much more RAM than swap
+space, that's why I'm wondering if it really makes any difference
+to have 2 bytes allocated per swap entry vs 8 bytes.
 
-WARNING! This program can confuse your I2C bus, cause data loss and worse!
-I will probe file /dev/i2c-3.
-I will probe address range 0x03-0x77.
-Continue? [Y/n]
-     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
-00:          03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f
-10: 10 11 12 13 14 15 16 17 18 19 1a 1b 1c 1d 1e 1f
-20: 20 21 22 23 24 25 26 27 28 29 2a 2b 2c 2d 2e 2f
-30: -- -- -- -- -- rk3x-i2c 2005a000.i2c: timeout, ipd: 0x81, state: 2
--- rk3x-i2c 2005a000.i2c: timeout, ipd: 0x80, state: 2
--- rk3x-i2c 2005a000.i2c: timeout, ipd: 0x80, state: 2
--- rk3x-i2c 2005a000.i2c: timeout, ipd: 0x80, state: 3
--- rk3x-i2c 2005a000.i2c: timeout, ipd: 0x80, state: 3
--- rk3x-i2c 2005a000.i2c: timeout, ipd: 0x80, state: 3
--- rk3x-i2c 2005a000.i2c: timeout, ipd: 0x80, state: 3
-...
+> > OTOH, the reparenting code looks really ugly. And we can't easily
+> > reparent swap and kmem. So I think it's a reasonable change.
+> 
+> At least swap shouldn't be a big deal. Hugh already had a patch for
+> that. You would simply have to go over all swap entries and change the
+> id. kmem should be doable as well as you have already shown in your
+> patches. The main question is. Do we really need it? I think we are good
+> now and should make the code more complicated once this starts being a
+> practical problem.
 
-(2) root@localhost:~# i2cdetect 3
+For kmem it isn't that simple. We can't merge slab caches due to their
+high performance nature, so we have no choice rather having them hanging
+around after css death attached either to the dead css or some other
+intermediate structure (a kind of kmem context). But I agree there's no
+point bothering until nobody complains.
 
-WARNING! This program can confuse your I2C bus, cause data loss and worse!
-I will probe file /dev/i2c-3.
-I will probe address range 0x03-0x77.
-Continue? [Y/n]
-     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
-00:          -- -- -- -- -- -- -- -- -- -- -- -- --
-10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-70: -- -- -- -- -- -- -- --
-
-Signed-off-by: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
----
- arch/arm/boot/dts/rk3066a.dtsi | 20 ++++++++++----------
- arch/arm/boot/dts/rk3188.dtsi  | 20 ++++++++++----------
- arch/arm/boot/dts/rk3288.dtsi  | 24 ++++++++++++------------
- 3 files changed, 32 insertions(+), 32 deletions(-)
-
-diff --git a/arch/arm/boot/dts/rk3066a.dtsi b/arch/arm/boot/dts/rk3066a.dtsi
-index ad9c2db..c5cdf55 100644
---- a/arch/arm/boot/dts/rk3066a.dtsi
-+++ b/arch/arm/boot/dts/rk3066a.dtsi
-@@ -202,36 +202,36 @@
- 
- 		i2c0 {
- 			i2c0_xfer: i2c0-xfer {
--				rockchip,pins = <RK_GPIO2 28 RK_FUNC_1 &pcfg_pull_none>,
--						<RK_GPIO2 29 RK_FUNC_1 &pcfg_pull_none>;
-+				rockchip,pins = <RK_GPIO2 28 RK_FUNC_1 &pcfg_pull_up>,
-+						<RK_GPIO2 29 RK_FUNC_1 &pcfg_pull_up>;
- 			};
- 		};
- 
- 		i2c1 {
- 			i2c1_xfer: i2c1-xfer {
--				rockchip,pins = <RK_GPIO2 30 RK_FUNC_1 &pcfg_pull_none>,
--						<RK_GPIO2 31 RK_FUNC_1 &pcfg_pull_none>;
-+				rockchip,pins = <RK_GPIO2 30 RK_FUNC_1 &pcfg_pull_up>,
-+						<RK_GPIO2 31 RK_FUNC_1 &pcfg_pull_up>;
- 			};
- 		};
- 
- 		i2c2 {
- 			i2c2_xfer: i2c2-xfer {
--				rockchip,pins = <RK_GPIO3 0 RK_FUNC_1 &pcfg_pull_none>,
--						<RK_GPIO3 1 RK_FUNC_1 &pcfg_pull_none>;
-+				rockchip,pins = <RK_GPIO3 0 RK_FUNC_1 &pcfg_pull_up>,
-+						<RK_GPIO3 1 RK_FUNC_1 &pcfg_pull_up>;
- 			};
- 		};
- 
- 		i2c3 {
- 			i2c3_xfer: i2c3-xfer {
--				rockchip,pins = <RK_GPIO3 2 RK_FUNC_2 &pcfg_pull_none>,
--						<RK_GPIO3 3 RK_FUNC_2 &pcfg_pull_none>;
-+				rockchip,pins = <RK_GPIO3 2 RK_FUNC_2 &pcfg_pull_up>,
-+						<RK_GPIO3 3 RK_FUNC_2 &pcfg_pull_up>;
- 			};
- 		};
- 
- 		i2c4 {
- 			i2c4_xfer: i2c4-xfer {
--				rockchip,pins = <RK_GPIO3 4 RK_FUNC_1 &pcfg_pull_none>,
--						<RK_GPIO3 5 RK_FUNC_1 &pcfg_pull_none>;
-+				rockchip,pins = <RK_GPIO3 4 RK_FUNC_1 &pcfg_pull_up>,
-+						<RK_GPIO3 5 RK_FUNC_1 &pcfg_pull_up>;
- 			};
- 		};
- 
-diff --git a/arch/arm/boot/dts/rk3188.dtsi b/arch/arm/boot/dts/rk3188.dtsi
-index ddaada7..ee2865f 100644
---- a/arch/arm/boot/dts/rk3188.dtsi
-+++ b/arch/arm/boot/dts/rk3188.dtsi
-@@ -188,36 +188,36 @@
- 
- 		i2c0 {
- 			i2c0_xfer: i2c0-xfer {
--				rockchip,pins = <RK_GPIO1 24 RK_FUNC_1 &pcfg_pull_none>,
--						<RK_GPIO1 25 RK_FUNC_1 &pcfg_pull_none>;
-+				rockchip,pins = <RK_GPIO1 24 RK_FUNC_1 &pcfg_pull_up>,
-+						<RK_GPIO1 25 RK_FUNC_1 &pcfg_pull_up>;
- 			};
- 		};
- 
- 		i2c1 {
- 			i2c1_xfer: i2c1-xfer {
--				rockchip,pins = <RK_GPIO1 26 RK_FUNC_1 &pcfg_pull_none>,
--						<RK_GPIO1 27 RK_FUNC_1 &pcfg_pull_none>;
-+				rockchip,pins = <RK_GPIO1 26 RK_FUNC_1 &pcfg_pull_up>,
-+						<RK_GPIO1 27 RK_FUNC_1 &pcfg_pull_up>;
- 			};
- 		};
- 
- 		i2c2 {
- 			i2c2_xfer: i2c2-xfer {
--				rockchip,pins = <RK_GPIO1 28 RK_FUNC_1 &pcfg_pull_none>,
--						<RK_GPIO1 29 RK_FUNC_1 &pcfg_pull_none>;
-+				rockchip,pins = <RK_GPIO1 28 RK_FUNC_1 &pcfg_pull_up>,
-+						<RK_GPIO1 29 RK_FUNC_1 &pcfg_pull_up>;
- 			};
- 		};
- 
- 		i2c3 {
- 			i2c3_xfer: i2c3-xfer {
--				rockchip,pins = <RK_GPIO3 14 RK_FUNC_2 &pcfg_pull_none>,
--						<RK_GPIO3 15 RK_FUNC_2 &pcfg_pull_none>;
-+				rockchip,pins = <RK_GPIO3 14 RK_FUNC_2 &pcfg_pull_up>,
-+						<RK_GPIO3 15 RK_FUNC_2 &pcfg_pull_up>;
- 			};
- 		};
- 
- 		i2c4 {
- 			i2c4_xfer: i2c4-xfer {
--				rockchip,pins = <RK_GPIO1 30 RK_FUNC_1 &pcfg_pull_none>,
--						<RK_GPIO1 31 RK_FUNC_1 &pcfg_pull_none>;
-+				rockchip,pins = <RK_GPIO1 30 RK_FUNC_1 &pcfg_pull_up>,
-+						<RK_GPIO1 31 RK_FUNC_1 &pcfg_pull_up>;
- 			};
- 		};
- 
-diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-index 874e66d..9a4b1f7 100644
---- a/arch/arm/boot/dts/rk3288.dtsi
-+++ b/arch/arm/boot/dts/rk3288.dtsi
-@@ -636,43 +636,43 @@
- 
- 		i2c0 {
- 			i2c0_xfer: i2c0-xfer {
--				rockchip,pins = <0 15 RK_FUNC_1 &pcfg_pull_none>,
--						<0 16 RK_FUNC_1 &pcfg_pull_none>;
-+				rockchip,pins = <0 15 RK_FUNC_1 &pcfg_pull_up>,
-+						<0 16 RK_FUNC_1 &pcfg_pull_up>;
- 			};
- 		};
- 
- 		i2c1 {
- 			i2c1_xfer: i2c1-xfer {
--				rockchip,pins = <8 4 RK_FUNC_1 &pcfg_pull_none>,
--						<8 5 RK_FUNC_1 &pcfg_pull_none>;
-+				rockchip,pins = <8 4 RK_FUNC_1 &pcfg_pull_up>,
-+						<8 5 RK_FUNC_1 &pcfg_pull_up>;
- 			};
- 		};
- 
- 		i2c2 {
- 			i2c2_xfer: i2c2-xfer {
--				rockchip,pins = <6 9 RK_FUNC_1 &pcfg_pull_none>,
--						<6 10 RK_FUNC_1 &pcfg_pull_none>;
-+				rockchip,pins = <6 9 RK_FUNC_1 &pcfg_pull_up>,
-+						<6 10 RK_FUNC_1 &pcfg_pull_up>;
- 			};
- 		};
- 
- 		i2c3 {
- 			i2c3_xfer: i2c3-xfer {
--				rockchip,pins = <2 16 RK_FUNC_1 &pcfg_pull_none>,
--						<2 17 RK_FUNC_1 &pcfg_pull_none>;
-+				rockchip,pins = <2 16 RK_FUNC_1 &pcfg_pull_up>,
-+						<2 17 RK_FUNC_1 &pcfg_pull_up>;
- 			};
- 		};
- 
- 		i2c4 {
- 			i2c4_xfer: i2c4-xfer {
--				rockchip,pins = <7 17 RK_FUNC_1 &pcfg_pull_none>,
--						<7 18 RK_FUNC_1 &pcfg_pull_none>;
-+				rockchip,pins = <7 17 RK_FUNC_1 &pcfg_pull_up>,
-+						<7 18 RK_FUNC_1 &pcfg_pull_up>;
- 			};
- 		};
- 
- 		i2c5 {
- 			i2c5_xfer: i2c5-xfer {
--				rockchip,pins = <7 19 RK_FUNC_1 &pcfg_pull_none>,
--						<7 20 RK_FUNC_1 &pcfg_pull_none>;
-+				rockchip,pins = <7 19 RK_FUNC_1 &pcfg_pull_up>,
-+						<7 20 RK_FUNC_1 &pcfg_pull_up>;
- 			};
- 		};
- 
--- 
-1.9.1
-
+Thanks,
+Vladimir
