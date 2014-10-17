@@ -1,77 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142AbaJQL5m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 07:57:42 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33083 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589AbaJQL5j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 07:57:39 -0400
-Date: Fri, 17 Oct 2014 13:57:01 +0200
-From: Mark Brown <broonie@kernel.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Lee Jones <lee.jones@linaro.org>, Doug Anderson <dianders@chromium.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Chris Zhong <zyw@rock-chips.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Message-ID: <20141017115701.GE1820@sirena.org.uk>
-References: <1413478133-2577-1-git-send-email-javier.martinez@collabora.co.uk>
- <1413478133-2577-6-git-send-email-javier.martinez@collabora.co.uk>
+	id S1752393AbaJQMAA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 08:00:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60390 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751589AbaJQL76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 07:59:58 -0400
+Message-ID: <544104BC.4000104@redhat.com>
+Date: Fri, 17 Oct 2014 07:59:56 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="//IivP0gvsAy3Can"
-Content-Disposition: inline
-In-Reply-To: <1413478133-2577-6-git-send-email-javier.martinez@collabora.co.uk>
-X-Cookie: Excellent day to have a rotten day.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 62.156.150.204
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 5/7] regulator: max77802: Document regulator opmode DT
- properties
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Myron Stowe <mstowe@redhat.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Alexander Duyck <alexander.h.duyck@redhat.com>
+Subject: Re: [PATCH] pci, add sysfs numa_node write function
+References: <1413399924-599-1-git-send-email-prarit@redhat.com>  <CAErSpo6Oy1S1OECirp6=tz+pQWUtkFE6p1LTzNaYtzxoX73FWw@mail.gmail.com>  <543ECF6F.2030705@redhat.com>  <CAErSpo76g-EPsUsMjhBpnnbKD3QufHz1xkvYaqXd8hYtgQ5u1g@mail.gmail.com>  <543FBAEF.7030905@redhat.com> <1413488723.2539.72.camel@zim.stowe>
+In-Reply-To: <1413488723.2539.72.camel@zim.stowe>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---//IivP0gvsAy3Can
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-On Thu, Oct 16, 2014 at 06:48:51PM +0200, Javier Martinez Canillas wrote:
+On 10/16/2014 03:45 PM, Myron Stowe wrote:
+> On Thu, 2014-10-16 at 08:32 -0400, Prarit Bhargava wrote:
+>>
+>> On 10/15/2014 05:20 PM, Bjorn Helgaas wrote:
+>>> On Wed, Oct 15, 2014 at 1:47 PM, Prarit Bhargava <prarit@redhat.com> wrote:
+>>>> On 10/15/2014 03:23 PM, Bjorn Helgaas wrote:
+>>>>> Hi Prarit,
+>>>>>
+>>>>> On Wed, Oct 15, 2014 at 1:05 PM, Prarit Bhargava <prarit@redhat.com> wrote:
+>>>>>> Consider a multi-node, multiple pci root bridge system which can be
+>>>>>> configured into one large node or one node/socket.  When configuring the
+>>>>>> system the numa_node value for each PCI root bridge is always set
+>>>>>> incorrectly to -1, or NUMA_NO_NODE, rather than to the node value of each
+>>>>>> socket.  Each PCI device inherits the numa value directly from it's parent
+>>>>>> device, so that the NUMA_NO_NODE value is passed through the entire PCI
+>>>>>> tree.
+>>>>>>
+>>>>>> Some new drivers, such as the Intel QAT driver, drivers/crypto/qat,
+>>>>>> require that a specific node be assigned to the device in order to
+>>>>>> achieve maximum performance for the device, and will fail to load if the
+>>>>>> device has NUMA_NO_NODE.
+>>>>>
+>>>>> It seems ... unfriendly for a driver to fail to load just because it
+>>>>> can't guarantee maximum performance.  Out of curiosity, where does
+>>>>> this actually happen?  I had a quick look for NUMA_NO_NODE and
+>>>>> module_init() functions in drivers/crypto/qat, and I didn't see the
+>>>>> spot.
+>>>>
+>>>> The whole point of the Intel QAT driver is to guarantee max performance.  If
+>>>> that is not possible the driver should not load (according to the thread
+>>>> mentioned below)
+>>>>
+>>>>>
+>>>>>> The driver would load if the numa_node value
+>>>>>> was equal to or greater than -1 and quickly hacking the driver results in
+>>>>>> a functional QAT driver.
+>>>>>>
+>>>>>> Using lspci and numactl it is easy to determine what the numa value should
+>>>>>> be.  The problem is that there is no way to set it.  This patch adds a
+>>>>>> store function for the PCI device's numa_node value.
+>>>>>
+>>>>> I'm not familiar with numactl.  It sounds like it can show you the
+>>>>> NUMA topology?  Where does that information come from?
 
-> +- maxim,regulator-initial-mode: initial operating mode.
-> +  This property can only be used on regulators that support changing their mode
-> +  during normal operation. These regulators are LDO1, LDO3, LDO20 and LDO21.
-> +- maxim,regulator-disk-mode: operating mode for the regulator when the system
-> +  enters in the Suspend-to-Disk state.
-> +- maxim,regulator-mem-mode: operating mode for the regulator when the system
-> +  enters in the Suspend-to-RAM state.
+numactl simply determines the number of nodes on the system by traversing
 
-This seems pretty ugly since it's not integrated with the suspend state
-binding at all - adding new suspend modes is going to involve changing
-the binding which seems icky.  Adding a standard property to set modes
-doesn't seem so bad, I think a translation function to parse device
-specific mode bindings in properties might be the way forwards.
+/sys/devices/system/node
 
---//IivP0gvsAy3Can
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+For example, the output of 'numactl --hardware'
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+available: 2 nodes (0-1)
+node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 24 25 26 27 28 29 30 31 32 33 34 35
+node 0 size: 32075 MB
+node 0 free: 30862 MB
+node 1 cpus: 12 13 14 15 16 17 18 19 20 21 22 23 36 37 38 39 40 41 42 43 44 45 46 47
+node 1 size: 32239 MB
+node 1 free: 31251 MB
+node distances:
+node   0   1
+  0:  10  21
+  1:  21  10
 
-iQEcBAEBAgAGBQJUQQQMAAoJECTWi3JdVIfQyy0H/0Abr/wX2dEV8wmMq5CiC7Vg
-nAUMqqmylSuKrATHRJ0+wXmvUYoitcgr23dkuP6w4j322tj/CaMcBy1rZAf2ZqrA
-DeeoyY58el6+4cX54Q6UbpJnzgjsQNVeaBNYQQora160r5rh6A+YvzXQnEP+LNAq
-vgpkFvrgG/mp5BRHo87fDBxL5C1m4zDM3p5BaGf3Myh6bq6x/fEhPFZEg7HHH+G/
-dOwuPNsRGgCV0t4k/+c4BBC3SWLWjP217Ns0fFfTDTygv+50dVQQNc9ssLYR49Xb
-ljLOTpP1g0q0acZBmccGtnPBJNYQshUMi3CvHx8xgMuC9IB50m8MQniHQlvK77A=
-=trBw
------END PGP SIGNATURE-----
+I then use lpsci to determine what pci root nodes there are, and knowing a
+little bit about the system architecture (are the IOHs shared between sockets,
+are they 1/socket, etc.) I can make an educated guess on what the numa_node
+value should be.
 
---//IivP0gvsAy3Can--
+I thought about hardcoding something similar in the kernel ... but there are
+some significant issues (which Myron points out as well).  The code would have
+to be constantly maintained.  That is not something we can do long term.  Every
+new processor & chipset would have to be added to the code to determine exactly
+how the pci root bridge was connected.  Even then, it is entirely possible (as
+in the case with some cpu hotplug systems) that IOH-less sockets were populated
+[1] which would severely hamper any assumptions in a calculation.
+
+That also doesn't take into account systems where the manufacturer *wants*
+NUMA_NO_NODE, and doesn't want per-node allocations.
+
+Alexander has suggested that modifying my original patch to do (sorry for the
+cut-and-paste)
+
+static ssize_t numa_node_store(struct device *dev,
+                               struct device_attribute *attr,
+                               const char *buf, size_t count)
+{
+        int node, ret;
+
+        if (!capable(CAP_SYS_ADMIN))
+                return -EPERM;
+
+        ret = kstrtoint(buf, 0, &node);
+        if (ret)
+                return ret;
+
+        if (!node_online(node))
+                return -EINVAL;
+
+        WARN_TAINT(1, TAINT_FIRMWARE_WORKAROUND,
+                   FW_BUG "ACPI _PXM should have set this device's root bridge
+numa_node to %d but set it to %d.  Please contact your hardware vendor for
+updates.",
+                   node, dev->numa_node);
+
+        dev->numa_node = node;
+
+        return count;
+}
+
+*might* be amenable to everyone.  I think it nicely handles Bjorn's concern
+about being loud when overriding the _PXM entries ...
+
+P.
+
+[1] These sockets really aren't IOH-less.  The IOH has been disabled in BIOS.
