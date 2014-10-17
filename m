@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712AbaJQMkq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 08:40:46 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33195 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751446AbaJQMkd (ORCPT
+	id S1752372AbaJQMmt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 08:42:49 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:57897 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751215AbaJQMms (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 08:40:33 -0400
-Date: Fri, 17 Oct 2014 14:39:37 +0200
-From: Mark Brown <broonie@kernel.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Lee Jones <lee.jones@linaro.org>, Doug Anderson <dianders@chromium.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Chris Zhong <zyw@rock-chips.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Message-ID: <20141017123937.GM1820@sirena.org.uk>
-References: <1413478133-2577-1-git-send-email-javier.martinez@collabora.co.uk>
- <1413478133-2577-3-git-send-email-javier.martinez@collabora.co.uk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UUMz/kfoogzZ9WLZ"
-Content-Disposition: inline
-In-Reply-To: <1413478133-2577-3-git-send-email-javier.martinez@collabora.co.uk>
-X-Cookie: Excellent day to have a rotten day.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 62.156.150.204
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 2/7] regulator: max77802: Add set suspend mode for
- BUCKs and simplify code
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Fri, 17 Oct 2014 08:42:48 -0400
+From: Sudhir Sreedharan <ssreedharan@mvista.com>
+To: peter@hurleysoftware.com, gregkh@linuxfoundation.org, khilman@kernel.org
+Cc: linux-serial@vger.kernel.org, jslaby@suse.cz, linux-kernel@vger.kernel.org,
+        olof@lixom.net, linux-arm-kernel@lists.infradead.org,
+        geert@linux-m68k.org, Sudhir Sreedharan <ssreedharan@mvista.com>
+Subject: [PATCH v1] tty: serial: 8250_core: restore the LCR register in set_sleep
+Date: Fri, 17 Oct 2014 18:09:18 +0530
+Message-Id: <1413549558-24227-1-git-send-email-ssreedharan@mvista.com>
+X-Mailer: git-send-email 1.7.0.1
+In-Reply-To: <CAJJ77WsAi5jmnDxY45ipu3a94D6+yoHJNHgExhFsVoirV3NoyQ@mail.gmail.com>
+References: <CAJJ77WsAi5jmnDxY45ipu3a94D6+yoHJNHgExhFsVoirV3NoyQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In ST16650V2 based serial uarts, while initalizing the PM state,
+LCR registers are being initialized to 0 in serial8250_set_sleep().
+If console port is already initialized and being used, this will
+throws garbage in the console.
 
---UUMz/kfoogzZ9WLZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Sudhir Sreedharan <ssreedharan@mvista.com>
+---
+Changes in v1:
+	Removed the condition of sleep flag for restoring the LCR and EFR.
+	Initialized the lcr and efr variables.
 
-On Thu, Oct 16, 2014 at 06:48:48PM +0200, Javier Martinez Canillas wrote:
-> The max77802 PMIC has a special enable pin (PWRREQ) that can be used
-> by the Application Processor (AP) to power down and up voltage rails.
+ drivers/tty/serial/8250/8250_core.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-Applied, thanks.
+diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
+index ca5cfdc..b170487 100644
+--- a/drivers/tty/serial/8250/8250_core.c
++++ b/drivers/tty/serial/8250/8250_core.c
+@@ -595,6 +595,7 @@ static void serial8250_rpm_put_tx(struct uart_8250_port *p)
+  */
+ static void serial8250_set_sleep(struct uart_8250_port *p, int sleep)
+ {
++	unsigned char lcr = 0, efr = 0;
+ 	/*
+ 	 * Exar UARTs have a SLEEP register that enables or disables
+ 	 * each UART to enter sleep mode separately.  On the XR17V35x the
+@@ -611,6 +612,8 @@ static void serial8250_set_sleep(struct uart_8250_port *p, int sleep)
+ 
+ 	if (p->capabilities & UART_CAP_SLEEP) {
+ 		if (p->capabilities & UART_CAP_EFR) {
++			lcr = serial_in(p, UART_LCR);
++			efr = serial_in(p, UART_EFR);
+ 			serial_out(p, UART_LCR, UART_LCR_CONF_MODE_B);
+ 			serial_out(p, UART_EFR, UART_EFR_ECB);
+ 			serial_out(p, UART_LCR, 0);
+@@ -618,8 +621,8 @@ static void serial8250_set_sleep(struct uart_8250_port *p, int sleep)
+ 		serial_out(p, UART_IER, sleep ? UART_IERX_SLEEP : 0);
+ 		if (p->capabilities & UART_CAP_EFR) {
+ 			serial_out(p, UART_LCR, UART_LCR_CONF_MODE_B);
+-			serial_out(p, UART_EFR, 0);
+-			serial_out(p, UART_LCR, 0);
++			serial_out(p, UART_EFR, efr);
++			serial_out(p, UART_LCR, lcr);
+ 		}
+ 	}
+ out:
+-- 
+1.7.0.1
 
---UUMz/kfoogzZ9WLZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUQQ4JAAoJECTWi3JdVIfQXMcH/RCRHKr8sop8a40AAPZ1DBIm
-K0vg154jcXlaa9iP2fWoTQ/4ZDF+NYaNJqtVTF6gotDNOnoEYinLOhqOFN8N9Qxb
-GDu2B/53JkSTX/wsZQ7TAv4AX8aUJskWyZbvuJFO61jrelHrlzbw7sn6Y2w3U9by
-pxSEchwTp9acWcbds5b+4t0h8WcHP0VNDwBrHagvdwCYPDx8idab4LDqwS34p7kX
-zqV1ZWyFaNS4ziRLuHv2NBGTNcuxHC2fcJPi7d9Dnr66PY2VZoDY296ItYTByePM
-MWH8CgxEBI+2eNbTfDCKWCm8r4axL9Xx8Ch1UvqdAtWVcwxqvz5MHXJbXwBZnXI=
-=cz7v
------END PGP SIGNATURE-----
-
---UUMz/kfoogzZ9WLZ--
