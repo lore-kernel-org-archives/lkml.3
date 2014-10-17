@@ -1,148 +1,306 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751712AbaJQKXF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 06:23:05 -0400
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.220]:14475 "EHLO
-	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254AbaJQKXE convert rfc822-to-8bit (ORCPT
+	id S1751986AbaJQKYL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 06:24:11 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:42639 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751318AbaJQKYI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 06:23:04 -0400
-X-Greylist: delayed 367 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Oct 2014 06:23:03 EDT
-X-RZG-AUTH: :JGIXVUS7cutRB/49FwqZ7WcKdUCnXG6JabOfSXKWrat+gdPpyI0=
-X-RZG-CLASS-ID: mo00
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH 2/2] Documentation: devicetree: Add bindings for Wi2Wi w2sg0004 gps
-From: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-In-Reply-To: <20141017093714.GB4202@leverpostej>
-Date: Fri, 17 Oct 2014 12:16:42 +0200
-Cc: Marek Belisko <marek@goldelico.com>, "arnd@arndb.de" <arnd@arndb.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <D65FF64A-856F-47EC-B3DE-7F2FCE505087@goldelico.com>
-References: <1413491183-15018-1-git-send-email-marek@goldelico.com> <1413491183-15018-2-git-send-email-marek@goldelico.com> <20141017093714.GB4202@leverpostej>
-To: Mark Rutland <mark.rutland@arm.com>
-X-Mailer: Apple Mail (2.1878.6)
+	Fri, 17 Oct 2014 06:24:08 -0400
+From: Kelvin Cheung <keguang.zhang@gmail.com>
+To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: rjw@rjwysocki.net, viresh.kumar@linaro.org, linux-mips@linux-mips.org,
+        ralf@linux-mips.org, Kelvin Cheung <keguang.zhang@gmail.com>
+Subject: [PATCH V3 6/6] cpufreq: Loongson1: Add cpufreq driver for Loongson1B
+Date: Fri, 17 Oct 2014 18:23:31 +0800
+Message-Id: <1413541411-26609-1-git-send-email-keguang.zhang@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch adds cpufreq driver for Loongson1B which
+is capable of changing the CPU frequency dynamically.
 
-Am 17.10.2014 um 11:37 schrieb Mark Rutland <mark.rutland@arm.com>:
+Signed-off-by: Kelvin Cheung <keguang.zhang@gmail.com>
 
-> On Thu, Oct 16, 2014 at 09:26:23PM +0100, Marek Belisko wrote:
->> Signed-off-by: H. Nikolaus Schaller <hns@goldelico.com>
->> Signed-off-by: Marek Belisko <marek@goldelico.com>
->> ---
->> .../devicetree/bindings/misc/wi2wi,w2sg0004.txt    | 44 ++++++++++++++++++++++
->> 1 file changed, 44 insertions(+)
->> create mode 100644 Documentation/devicetree/bindings/misc/wi2wi,w2sg0004.txt
->> 
->> diff --git a/Documentation/devicetree/bindings/misc/wi2wi,w2sg0004.txt b/Documentation/devicetree/bindings/misc/wi2wi,w2sg0004.txt
->> new file mode 100644
->> index 0000000..e144441
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/misc/wi2wi,w2sg0004.txt
->> @@ -0,0 +1,44 @@
->> +Wi2Wi GPS module connected through UART
->> +
->> +Required properties:
->> +- compatible: wi2wi,w2sg0004 or wi2wi,w2sg0084
->> +- pinctrl: specify two states (default and monitor). One is the default (UART) mode
->> +  and the other is for monitoring the RX line by an interrupt
->> +- on-off-gpio: the GPIO that controls the module's on-off toggle input
->> +
->> +Optional properties:
->> +- lna-suppy: an (optional) LNA regulator that is enabled together with the GPS receiver
->> +
->> +example:
->> +
->> +        gps_receiver: w2sg0004 {
->> +                compatible = "wi2wi,w2sg0004";
-> 
-> I couldn't spot "wi2wi" in
-> Documentation/devicetree/bindings/vendor-prefixes.txt (in mainline).
-> 
-> Could you please add it?
-> 
->> +                gpio-controller;
->> +                #gpio-cells = <2>;
-> 
-> As far as I can see, these properties aren't necessary. This only
-> consumes a GPIO, it doesn't provide any.
+---
+V3:
+   Remove superfluous devm_clk_put().
+V2:
+   Use devm_clk_get() instead of clk_get().
+   Other minor fixes.
+V1:
+   Add cpufreq driver for Loongson1B.
+---
+ drivers/cpufreq/Kconfig        |  10 ++
+ drivers/cpufreq/Makefile       |   1 +
+ drivers/cpufreq/ls1x-cpufreq.c | 223 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 234 insertions(+)
+ create mode 100644 drivers/cpufreq/ls1x-cpufreq.c
 
-Well, it provides one GPIO. Sort of a "virtual“ GPIO. It is needed so that 
-it can be wired up to the DTR gpio of the UART driver (unfortunately this
-patch was reverted some months ago from mainline and we will reintroduce
-it soon).
-
-The reason to solve it that way is that we did not want to have a direct link
-between this driver and any serial drivers or other mechanisms how drivers
-can detect that their serial port (/dev/tty*) is opened.
-
-It is used to power down the w2sg GPS chip if no user space process is
-accessing its serial port (or de-asserts DTR through tcsetattr/ioctl).
-
-> 
->> +
->> +                pinctrl-names = "default", "monitor";
->> +                pinctrl-0 = <&uart2_pins>;
->> +                pinctrl-1 = <&uart2_rx_irq_pins>;
->> +
->> +                interrupt-parent = <&gpio5>;
->> +                interrupts = <19 IRQ_TYPE_EDGE_FALLING>;  /* GPIO_147: RX - trigger on arrival of start bit */
-> 
-> While interrupts is a standard property, please describe above how many
-> you expect and what their logical function is.
-> 
-> The only part I'm confused about is how the link to the UART is
-> described. I assume I'm just ignorant of some existing pattern.
-
-The serial link itself is not described at all because it is assumed to be a „must have“.
-The driver only needs to monitor the RX line and needs to switch it between UART and
-GPIO/IRQ mode. So this monitoring switch is described (with two different pinctrl states).
-
-We know that it is a little tricky to control this chip correctly - and we think this solution
-is the most general (no direct dependency on the serial line, and just to pinmux states
-and an interrupt).
-
-> 
-> Otherwise this looks ok.
-> 
-> Thanks,
-> Mark.
-
-Thanks as well,
-Nikolaus
-
-> 
->> +                lna-supply = <&vsim>;	/* LNA regulator */
->> +                on-off-gpio = <&gpio5 17 0>;	/* GPIO_145: trigger for turning on/off w2sg0004 */
->> +
->> +&pinmux {
->> +
->> +	uart2_pins: pinmux_uart2_pins {
->> +		pinctrl-single,pins = <
->> +			0x14a (PIN_INPUT | MUX_MODE0)		/* uart2_tx.uart2_rx */
->> +			0x148 (PIN_OUTPUT | MUX_MODE0)		/* uart2_tx.uart2_tx */
->> +		>;
->> +	};
->> +
->> +	uart2_rx_irq_pins: pinmux_uart2_rx_irq_pins {
->> +		pinctrl-single,pins = <
->> +			/* switch RX to GPIO so that we can get interrupts by the start bit */
->> +			0x14a (PIN_INPUT | MUX_MODE4)		/* uart2_tx.uart2_rx */
->> +		>;
->> +	};
->> +
->> +}
->> -- 
->> 1.9.1
+diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
+index ffe350f..99464d7 100644
+--- a/drivers/cpufreq/Kconfig
++++ b/drivers/cpufreq/Kconfig
+@@ -250,6 +250,16 @@ config LOONGSON2_CPUFREQ
+ 
+ 	  If in doubt, say N.
+ 
++config LOONGSON1_CPUFREQ
++	tristate "Loongson1 CPUFreq Driver"
++	help
++	  This option adds a CPUFreq driver for loongson1 processors which
++	  support software configurable cpu frequency.
++
++	  For details, take a look at <file:Documentation/cpu-freq/>.
++
++	  If in doubt, say N.
++
+ endmenu
+ 
+ menu "PowerPC CPU frequency scaling drivers"
+diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
+index db6d9a2..aca7bd3 100644
+--- a/drivers/cpufreq/Makefile
++++ b/drivers/cpufreq/Makefile
+@@ -98,6 +98,7 @@ obj-$(CONFIG_CRIS_MACH_ARTPEC3)		+= cris-artpec3-cpufreq.o
+ obj-$(CONFIG_ETRAXFS)			+= cris-etraxfs-cpufreq.o
+ obj-$(CONFIG_IA64_ACPI_CPUFREQ)		+= ia64-acpi-cpufreq.o
+ obj-$(CONFIG_LOONGSON2_CPUFREQ)		+= loongson2_cpufreq.o
++obj-$(CONFIG_LOONGSON1_CPUFREQ)		+= ls1x-cpufreq.o
+ obj-$(CONFIG_SH_CPU_FREQ)		+= sh-cpufreq.o
+ obj-$(CONFIG_SPARC_US2E_CPUFREQ)	+= sparc-us2e-cpufreq.o
+ obj-$(CONFIG_SPARC_US3_CPUFREQ)		+= sparc-us3-cpufreq.o
+diff --git a/drivers/cpufreq/ls1x-cpufreq.c b/drivers/cpufreq/ls1x-cpufreq.c
+new file mode 100644
+index 0000000..25fbd6a
+--- /dev/null
++++ b/drivers/cpufreq/ls1x-cpufreq.c
+@@ -0,0 +1,223 @@
++/*
++ * CPU Frequency Scaling for Loongson 1 SoC
++ *
++ * Copyright (C) 2014 Zhang, Keguang <keguang.zhang@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2. This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/clk.h>
++#include <linux/clk-provider.h>
++#include <linux/cpu.h>
++#include <linux/cpufreq.h>
++#include <linux/delay.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++
++#include <asm/mach-loongson1/cpufreq.h>
++#include <asm/mach-loongson1/loongson1.h>
++
++static struct {
++	struct device *dev;
++	struct clk *clk;	/* CPU clk */
++	struct clk *mux_clk;	/* MUX of CPU clk */
++	struct clk *pll_clk;	/* PLL clk */
++	struct clk *osc_clk;	/* OSC clk */
++	unsigned int max_freq;
++	unsigned int min_freq;
++} ls1x_cpufreq;
++
++static int ls1x_cpufreq_notifier(struct notifier_block *nb,
++				 unsigned long val, void *data)
++{
++	if (val == CPUFREQ_POSTCHANGE)
++		current_cpu_data.udelay_val = loops_per_jiffy;
++
++	return NOTIFY_OK;
++}
++
++static struct notifier_block ls1x_cpufreq_notifier_block = {
++	.notifier_call = ls1x_cpufreq_notifier
++};
++
++static int ls1x_cpufreq_target(struct cpufreq_policy *policy,
++			       unsigned int index)
++{
++	unsigned int old_freq, new_freq;
++
++	old_freq = policy->cur;
++	new_freq = policy->freq_table[index].frequency;
++
++	/*
++	 * The procedure of reconfiguring CPU clk is as below.
++	 *
++	 *  - Reparent CPU clk to OSC clk
++	 *  - Reset CPU clock (very important)
++	 *  - Reconfigure CPU DIV
++	 *  - Reparent CPU clk back to CPU DIV clk
++	 */
++
++	dev_dbg(ls1x_cpufreq.dev, "%u KHz --> %u KHz\n", old_freq, new_freq);
++	clk_set_parent(policy->clk, ls1x_cpufreq.osc_clk);
++	__raw_writel(__raw_readl(LS1X_CLK_PLL_DIV) | RST_CPU_EN | RST_CPU,
++		     LS1X_CLK_PLL_DIV);
++	__raw_writel(__raw_readl(LS1X_CLK_PLL_DIV) & ~(RST_CPU_EN | RST_CPU),
++		     LS1X_CLK_PLL_DIV);
++	clk_set_rate(ls1x_cpufreq.mux_clk, new_freq * 1000);
++	clk_set_parent(policy->clk, ls1x_cpufreq.mux_clk);
++
++	return 0;
++}
++
++static int ls1x_cpufreq_init(struct cpufreq_policy *policy)
++{
++	struct cpufreq_frequency_table *freq_tbl;
++	unsigned int pll_freq, freq;
++	int steps, i, ret;
++
++	pll_freq = clk_get_rate(ls1x_cpufreq.pll_clk) / 1000;
++
++	steps = 1 << DIV_CPU_WIDTH;
++	freq_tbl = kzalloc(sizeof(*freq_tbl) * steps, GFP_KERNEL);
++	if (!freq_tbl) {
++		dev_err(ls1x_cpufreq.dev,
++			"failed to alloc cpufreq_frequency_table\n");
++		ret = -ENOMEM;
++		goto out;
++	}
++
++	for (i = 0; i < (steps - 1); i++) {
++		freq = pll_freq / (i + 1);
++		if ((freq < ls1x_cpufreq.min_freq) ||
++		    (freq > ls1x_cpufreq.max_freq))
++			freq_tbl[i].frequency = CPUFREQ_ENTRY_INVALID;
++		else
++			freq_tbl[i].frequency = freq;
++		dev_dbg(ls1x_cpufreq.dev,
++			"cpufreq table: index %d: frequency %d\n", i,
++			freq_tbl[i].frequency);
++	}
++	freq_tbl[i].frequency = CPUFREQ_TABLE_END;
++
++	policy->clk = ls1x_cpufreq.clk;
++	ret = cpufreq_generic_init(policy, freq_tbl, 0);
++	if (ret)
++		kfree(freq_tbl);
++out:
++	return ret;
++}
++
++static int ls1x_cpufreq_exit(struct cpufreq_policy *policy)
++{
++	kfree(policy->freq_table);
++	return 0;
++}
++
++static struct cpufreq_driver ls1x_cpufreq_driver = {
++	.name		= "cpufreq-ls1x",
++	.flags		= CPUFREQ_STICKY | CPUFREQ_NEED_INITIAL_FREQ_CHECK,
++	.verify		= cpufreq_generic_frequency_table_verify,
++	.target_index	= ls1x_cpufreq_target,
++	.get		= cpufreq_generic_get,
++	.init		= ls1x_cpufreq_init,
++	.exit		= ls1x_cpufreq_exit,
++	.attr		= cpufreq_generic_attr,
++};
++
++static int ls1x_cpufreq_remove(struct platform_device *pdev)
++{
++	cpufreq_unregister_notifier(&ls1x_cpufreq_notifier_block,
++				    CPUFREQ_TRANSITION_NOTIFIER);
++	cpufreq_unregister_driver(&ls1x_cpufreq_driver);
++
++	return 0;
++}
++
++static int ls1x_cpufreq_probe(struct platform_device *pdev)
++{
++	struct plat_ls1x_cpufreq *pdata = pdev->dev.platform_data;
++	struct clk *clk;
++	int ret;
++
++	if (!pdata || !pdata->clk_name || !pdata->osc_clk_name)
++		return -EINVAL;
++
++	ls1x_cpufreq.dev = &pdev->dev;
++
++	clk = devm_clk_get(&pdev->dev, pdata->clk_name);
++	if (IS_ERR(clk)) {
++		dev_err(ls1x_cpufreq.dev, "unable to get %s clock\n",
++			pdata->clk_name);
++		ret = PTR_ERR(clk);
++		goto out;
++	}
++	ls1x_cpufreq.clk = clk;
++
++	clk = clk_get_parent(clk);
++	if (IS_ERR(clk)) {
++		dev_err(ls1x_cpufreq.dev, "unable to get parent of %s clock\n",
++			__clk_get_name(ls1x_cpufreq.clk));
++		ret = PTR_ERR(clk);
++		goto out;
++	}
++	ls1x_cpufreq.mux_clk = clk;
++
++	clk = clk_get_parent(clk);
++	if (IS_ERR(clk)) {
++		dev_err(ls1x_cpufreq.dev, "unable to get parent of %s clock\n",
++			__clk_get_name(ls1x_cpufreq.mux_clk));
++		ret = PTR_ERR(clk);
++		goto out;
++	}
++	ls1x_cpufreq.pll_clk = clk;
++
++	clk = devm_clk_get(&pdev->dev, pdata->osc_clk_name);
++	if (IS_ERR(clk)) {
++		dev_err(ls1x_cpufreq.dev, "unable to get %s clock\n",
++			pdata->osc_clk_name);
++		ret = PTR_ERR(clk);
++		goto out;
++	}
++	ls1x_cpufreq.osc_clk = clk;
++
++	ls1x_cpufreq.max_freq = pdata->max_freq;
++	ls1x_cpufreq.min_freq = pdata->min_freq;
++
++	ret = cpufreq_register_driver(&ls1x_cpufreq_driver);
++	if (ret) {
++		dev_err(ls1x_cpufreq.dev,
++			"failed to register cpufreq driver: %d\n", ret);
++		goto out;
++	}
++
++	ret = cpufreq_register_notifier(&ls1x_cpufreq_notifier_block,
++					CPUFREQ_TRANSITION_NOTIFIER);
++
++	if (!ret)
++		goto out;
++
++	dev_err(ls1x_cpufreq.dev, "failed to register cpufreq notifier: %d\n",
++		ret);
++
++	cpufreq_unregister_driver(&ls1x_cpufreq_driver);
++out:
++	return ret;
++}
++
++static struct platform_driver ls1x_cpufreq_platdrv = {
++	.driver = {
++		.name	= "ls1x-cpufreq",
++		.owner	= THIS_MODULE,
++	},
++	.probe		= ls1x_cpufreq_probe,
++	.remove		= ls1x_cpufreq_remove,
++};
++
++module_platform_driver(ls1x_cpufreq_platdrv);
++
++MODULE_AUTHOR("Kelvin Cheung <keguang.zhang@gmail.com>");
++MODULE_DESCRIPTION("Loongson 1 CPUFreq driver");
++MODULE_LICENSE("GPL");
+-- 
+1.9.1
 
