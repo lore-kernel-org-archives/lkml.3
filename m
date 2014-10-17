@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716AbaJQNMp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 09:12:45 -0400
-Received: from mail.logicbricks.com ([89.201.165.134]:17284 "EHLO
+	id S1752803AbaJQNMv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 09:12:51 -0400
+Received: from mail.logicbricks.com ([89.201.165.134]:17285 "EHLO
 	mail.logicbricks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752597AbaJQNMn (ORCPT
+	with ESMTP id S1752597AbaJQNMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 09:12:43 -0400
+	Fri, 17 Oct 2014 09:12:49 -0400
 From: Davor Joja <davorjoja@logicbricks.com>
 To: <linux-kernel@vger.kernel.org>
 CC: Davor Joja <davorjoja@logicbricks.com>
-Subject: [PATCH 01/10] fbdev: Xylon framebuffer driver
-Date: Fri, 17 Oct 2014 15:06:52 +0200
+Subject: [PATCH 03/10] fbdev: xylon: Framebuffer driver ioctl
+Date: Fri, 17 Oct 2014 15:06:54 +0200
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1413551221-15187-1-git-send-email-davorjoja@logicbricks.com>
 References: <1413551221-15187-1-git-send-email-davorjoja@logicbricks.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [192.168.0.95]
-Message-ID: <f8503a9a-e4d7-47f5-a6a9-2ac0f7323ad7@mail.xylon.local>
+Message-ID: <4be88bee-f246-447b-a517-c220378a6705@mail.xylon.local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Driver registration and OF binding.
+Driver IOCTL providing advanced video controller functionality to be
+used by user space applications.
 
 Signed-off-by: Davor Joja <davorjoja@logicbricks.com>
 ---
- drivers/video/fbdev/xylon/xylonfb_main.c | 526 +++++++++++++++++++++++++++++++
- 1 file changed, 526 insertions(+)
- create mode 100644 drivers/video/fbdev/xylon/xylonfb_main.c
+ drivers/video/fbdev/xylon/xylonfb_ioctl.c | 676 ++++++++++++++++++++++++++++++
+ 1 file changed, 676 insertions(+)
+ create mode 100644 drivers/video/fbdev/xylon/xylonfb_ioctl.c
 
-diff --git a/drivers/video/fbdev/xylon/xylonfb_main.c b/drivers/video/fbdev/xylon/xylonfb_main.c
+diff --git a/drivers/video/fbdev/xylon/xylonfb_ioctl.c b/drivers/video/fbdev/xylon/xylonfb_ioctl.c
 new file mode 100644
-index 0000000..5777360
+index 0000000..296aef80
 --- /dev/null
-+++ b/drivers/video/fbdev/xylon/xylonfb_main.c
-@@ -0,0 +1,526 @@
++++ b/drivers/video/fbdev/xylon/xylonfb_ioctl.c
+@@ -0,0 +1,676 @@
 +/*
-+ * Xylon logiCVC frame buffer Open Firmware driver
++ * Xylon logiCVC frame buffer driver IOCTL functionality
 + *
 + * Copyright (C) 2014 Xylon d.o.o.
 + * Author: Davor Joja <davor.joja@logicbricks.com>
@@ -53,516 +54,666 @@ index 0000000..5777360
 + * GNU General Public License for more details.
 + */
 +
-+#include <linux/errno.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
 +#include <linux/platform_device.h>
-+#include <video/of_display_timing.h>
-+#include <video/of_videomode.h>
-+#include <video/videomode.h>
++#include <linux/uaccess.h>
++#include <uapi/linux/xylonfb.h>
 +
-+#include "xylonfb_core.h"
 +#include "logicvc.h"
++#include "xylonfb_core.h"
 +
-+static void xylonfb_init_ctrl(struct device_node *dn, enum display_flags flags,
-+			      u32 *ctrl)
++static int xylonfb_get_vblank(struct fb_vblank *vblank, struct fb_info *fbi)
 +{
-+	u32 ctrl_reg = (LOGICVC_CTRL_HSYNC | LOGICVC_CTRL_VSYNC |
-+			LOGICVC_CTRL_DATA_ENABLE);
++	vblank->flags |= FB_VBLANK_HAVE_VSYNC;
 +
-+	XYLONFB_DBG(INFO, "%s", __func__);
-+
-+	if (of_property_read_bool(dn, "hsync-active-low") ||
-+	    (flags & DISPLAY_FLAGS_HSYNC_LOW))
-+		ctrl_reg |= LOGICVC_CTRL_HSYNC_INVERT;
-+	if (of_property_read_bool(dn, "vsync-active-low") ||
-+	    (flags & DISPLAY_FLAGS_VSYNC_LOW))
-+		ctrl_reg |= LOGICVC_CTRL_VSYNC_INVERT;
-+	if (of_property_read_bool(dn, "data-enable-active-low") ||
-+	    (flags & DISPLAY_FLAGS_DE_LOW))
-+		ctrl_reg |= LOGICVC_CTRL_DATA_ENABLE_INVERT;
-+	if (of_property_read_bool(dn, "pixel-data-invert"))
-+		ctrl_reg |= LOGICVC_CTRL_PIXEL_DATA_INVERT;
-+	if (of_property_read_bool(dn, "pixel-data-output-trigger-high") ||
-+	    (flags & DISPLAY_FLAGS_PIXDATA_POSEDGE))
-+		ctrl_reg |= LOGICVC_CTRL_PIXEL_DATA_TRIGGER_INVERT;
-+
-+	*ctrl = ctrl_reg;
++	return 0;
 +}
 +
-+static int xylonfb_layer_set_format(struct xylonfb_layer_fix_data *fd,
-+				    struct device *dev)
++static void xylonfb_vsync_ctrl(struct fb_info *fbi, bool enable)
 +{
-+	XYLONFB_DBG(INFO, "%s", __func__);
++	struct xylonfb_layer_data *ld = fbi->par;
++	struct xylonfb_data *data = ld->data;
++	u32 imr;
++
++	mutex_lock(&data->irq_mutex);
++
++	imr = data->reg_access.get_reg_val(data->dev_base,
++					   LOGICVC_INT_MASK_ROFF, ld);
++	if (enable) {
++		imr &= (~LOGICVC_INT_V_SYNC);
++		writel(LOGICVC_INT_V_SYNC,
++		       data->dev_base + LOGICVC_INT_STAT_ROFF);
++	} else {
++		imr |= LOGICVC_INT_V_SYNC;
++	}
++
++	data->reg_access.set_reg_val(imr, data->dev_base,
++				     LOGICVC_INT_MASK_ROFF, ld);
++
++	mutex_unlock(&data->irq_mutex);
++}
++
++int xylonfb_vsync_wait(u32 crt, struct fb_info *fbi)
++{
++	struct xylonfb_layer_data *ld = fbi->par;
++	struct xylonfb_data *data = ld->data;
++	int ret, count;
++
++	mutex_lock(&data->irq_mutex);
++
++	count = data->vsync.count;
++
++	ret = wait_event_interruptible_timeout(data->vsync.wait,
++					       (count != data->vsync.count),
++					       HZ/10);
++
++	mutex_unlock(&data->irq_mutex);
++
++	if (ret < 0)
++		return ret;
++	else if (ret == 0)
++		return -ETIMEDOUT;
++
++	return 0;
++}
++
++static unsigned int alpha_normalized(unsigned int alpha, unsigned int used_bits,
++				     bool set)
++{
++	if (set)
++		return alpha / (255 / ((1 << used_bits) - 1));
++	else
++		return (((255 << 16) / ((1 << used_bits) - 1)) * alpha) >> 16;
++}
++
++static int xylonfb_layer_alpha(struct xylonfb_layer_data *ld, u8 *alpha,
++			       bool set)
++{
++	struct xylonfb_data *data = ld->data;
++	struct xylonfb_layer_fix_data *fd = ld->fd;
++	unsigned int used_bits;
++	u32 val;
++
++	if (fd->transparency != LOGICVC_ALPHA_LAYER)
++		return -EPERM;
 +
 +	switch (fd->type) {
-+	case LOGICVC_LAYER_ALPHA:
-+		fd->format = XYLONFB_FORMAT_A8;
++	case LOGICVC_LAYER_YUV:
++		used_bits = 8;
 +		break;
-+
 +	case LOGICVC_LAYER_RGB:
 +		switch (fd->bpp) {
 +		case 8:
-+			switch (fd->transparency) {
-+			case LOGICVC_ALPHA_CLUT_16BPP:
-+				fd->format = XYLONFB_FORMAT_C8;
-+				fd->format_clut = XYLONFB_FORMAT_CLUT_ARGB6565;
-+				break;
-+			case LOGICVC_ALPHA_CLUT_32BPP:
-+				fd->format = XYLONFB_FORMAT_C8;
-+				fd->format_clut = XYLONFB_FORMAT_CLUT_ARGB8888;
-+				break;
-+			case LOGICVC_ALPHA_LAYER:
-+				fd->format = XYLONFB_FORMAT_RGB332;
-+				break;
-+			default:
-+				return -EINVAL;
-+			}
++			used_bits = 3;
 +			break;
 +		case 16:
-+			if (fd->transparency != LOGICVC_ALPHA_LAYER)
-+				return -EINVAL;
-+
-+			fd->format = XYLONFB_FORMAT_RGB565;
++			used_bits = 6;
 +			break;
 +		case 32:
-+			switch (fd->transparency) {
-+			case LOGICVC_ALPHA_LAYER:
-+				fd->format = XYLONFB_FORMAT_XRGB8888;
++			used_bits = 8;
++			break;
++		default:
++			return -EINVAL;
++		}
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	if (!set) {
++		val = data->reg_access.get_reg_val(ld->base,
++						   LOGICVC_LAYER_ALPHA_ROFF,
++						   ld);
++		*alpha = (u8)(val & (0xFF >> (8 - used_bits)));
++	}
++
++	/* get/set normalized alpha value */
++	*alpha = alpha_normalized(*alpha, used_bits, set);
++
++	if (set)
++		data->reg_access.set_reg_val(*alpha, ld->base,
++					     LOGICVC_LAYER_ALPHA_ROFF,
++					     ld);
++
++	return 0;
++}
++
++static int xylonfb_layer_buff(struct fb_info *fbi,
++			      struct xylonfb_layer_buffer *layer_buff,
++			      bool set)
++{
++	struct xylonfb_layer_data *ld = fbi->par;
++	unsigned int layer_id = ld->fd->id;
++	u32 reg;
++
++	if (set) {
++		if (layer_buff->id >= LOGICVC_MAX_LAYER_BUFFERS)
++			return -EINVAL;
++
++		reg = readl(ld->data->dev_base + LOGICVC_VBUFF_SELECT_ROFF);
++		reg |= (1 << (10 + layer_id));
++		reg &= ~(0x03 << (layer_id << 1));
++		reg |= (layer_buff->id << (layer_id << 1));
++		writel(reg, ld->data->dev_base + LOGICVC_VBUFF_SELECT_ROFF);
++
++		xylonfb_vsync_wait(0, fbi);
++	} else {
++		reg = readl(ld->data->dev_base + LOGICVC_VBUFF_SELECT_ROFF);
++		reg >>= ((layer_id << 1));
++		layer_buff->id = reg & 0x03;
++	}
++
++	return 0;
++}
++
++static void xylonfb_rgb_yuv(u32 c1, u32 c2, u32 c3, u32 *pixel,
++			    struct xylonfb_layer_data *ld, bool rgb2yuv)
++{
++	struct xylonfb_data *data = ld->data;
++	u32 r, g, b, y, u, v;
++
++	if (rgb2yuv) {
++		y = ((data->coeff.cyr * c1) + (data->coeff.cyg * c2) +
++		     (data->coeff.cyb * c3) + data->coeff.cy) /
++		     LOGICVC_YUV_NORM;
++		u = ((-data->coeff.cur * c1) - (data->coeff.cug * c2) +
++		     (data->coeff.cub * c3) + LOGICVC_COEFF_U) /
++		     LOGICVC_YUV_NORM;
++		v = ((data->coeff.cvr * c1) - (data->coeff.cvg * c2) -
++		     (data->coeff.cvb * c3) + LOGICVC_COEFF_V) /
++		     LOGICVC_YUV_NORM;
++
++		*pixel = (0xFF << 24) | (y << 16) | (u << 8) | v;
++	} else {
++		r = ((c1 * LOGICVC_RGB_NORM) + (LOGICVC_COEFF_R_U * c2) -
++		     LOGICVC_COEFF_R) / LOGICVC_RGB_NORM;
++		g = ((c1 * LOGICVC_RGB_NORM) - (LOGICVC_COEFF_G_U * c2) -
++		     (LOGICVC_COEFF_G_V * c3) + LOGICVC_COEFF_G) /
++		     LOGICVC_RGB_NORM;
++		b = ((c1 * LOGICVC_RGB_NORM) - (LOGICVC_COEFF_B_V * c3) -
++		     LOGICVC_COEFF_B) / LOGICVC_RGB_NORM;
++
++		*pixel = (0xFF << 24) | (r << 16) | (g << 8) | b;
++	}
++}
++
++static int xylonfb_layer_color_rgb(struct xylonfb_layer_data *ld,
++				   struct xylonfb_layer_color *layer_color,
++				   unsigned int reg_offset, bool set)
++{
++	struct xylonfb_data *data = ld->data;
++	struct xylonfb_layer_fix_data *fd = ld->fd;
++	void __iomem *base;
++	u32 r = 0, g = 0, b = 0;
++	u32 raw_rgb, y, u, v;
++	int bpp, transparency;
++
++	if (reg_offset == LOGICVC_LAYER_TRANSP_COLOR_ROFF) {
++		base = ld->base;
++		bpp = fd->bpp;
++		transparency = fd->transparency;
++	} else /* if (reg_offset == LOGICVC_BACKGROUND_COLOR_ROFF) */ {
++		base = data->dev_base;
++		bpp = data->bg_layer_bpp;
++		transparency = -1;
++	}
++
++	if (set) {
++		if (layer_color->use_raw) {
++			raw_rgb = layer_color->raw_rgb;
++		} else if (data->flags & XYLONFB_FLAGS_BACKGROUND_LAYER_YUV) {
++			r = layer_color->r;
++			g = layer_color->g;
++			b = layer_color->b;
++			xylonfb_rgb_yuv(r, g, b, &raw_rgb, ld, true);
++		} else {
++			r = layer_color->r;
++			g = layer_color->g;
++			b = layer_color->b;
++check_bpp_set:
++			switch (bpp) {
++			case 8:
++				switch (transparency) {
++				case LOGICVC_ALPHA_CLUT_16BPP:
++					bpp = 16;
++					goto check_bpp_set;
++					break;
++				case LOGICVC_ALPHA_CLUT_32BPP:
++					bpp = 32;
++					goto check_bpp_set;
++					break;
++				default:
++					raw_rgb = (r & 0xE0) |
++						   ((g & 0xE0) >> 3) |
++						   ((b & 0xC0) >> 6);
++					break;
++				}
 +				break;
-+			case LOGICVC_ALPHA_PIXEL:
-+				fd->format = XYLONFB_FORMAT_ARGB8888;
++			case 16:
++				raw_rgb = ((r & 0xF8) << 8) |
++					   ((g & 0xFC) << 3) |
++					   ((b & 0xF8) >> 3);
++				break;
++			case 32:
++				raw_rgb = (r << 16) | (g << 8) | b;
 +				break;
 +			default:
-+				return -EINVAL;
++				raw_rgb = 0;
 +			}
-+			break;
 +		}
-+		break;
-+
-+	case LOGICVC_LAYER_YUV:
-+		switch (fd->bpp) {
-+		case 8:
-+			if (fd->transparency != LOGICVC_ALPHA_CLUT_32BPP)
-+				return -EINVAL;
-+
-+			fd->format = XYLONFB_FORMAT_C8;
-+			fd->format_clut = XYLONFB_FORMAT_CLUT_AYUV8888;
-+			break;
-+		case 16:
-+			if (fd->transparency != LOGICVC_ALPHA_LAYER)
-+				return -EINVAL;
-+
-+			fd->format = XYLONFB_FORMAT_YUYV;
-+			break;
-+		case 32:
-+			if (fd->transparency != LOGICVC_ALPHA_PIXEL)
-+				return -EINVAL;
-+
-+			fd->format = XYLONFB_FORMAT_AYUV;
-+			break;
-+		}
-+		break;
-+
-+	default:
-+		dev_err(dev, "unsupported layer type\n");
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+static int xylonfb_parse_layer_info(struct device_node *parent_dn,
-+				    struct xylonfb_data *data, int id)
-+{
-+	struct device *dev = &data->pdev->dev;
-+	struct device_node *dn;
-+	struct xylonfb_layer_fix_data *fd;
-+	int ret;
-+	char layer_name[10];
-+	const char *string;
-+
-+	XYLONFB_DBG(INFO, "%s", __func__);
-+
-+	snprintf(layer_name, sizeof(layer_name), "layer_%d", id);
-+	dn = of_get_child_by_name(parent_dn, layer_name);
-+	if (!dn)
-+		return 0;
-+
-+	data->layers++;
-+
-+	fd = devm_kzalloc(&data->pdev->dev,
-+			  sizeof(struct xylonfb_layer_fix_data), GFP_KERNEL);
-+	if (!fd) {
-+		dev_err(dev, "failed allocate layer fix data (%d)\n", id);
-+		return -ENOMEM;
-+	}
-+
-+	data->fd[id] = fd;
-+
-+	fd->id = id;
-+
-+	ret = of_property_read_u32(dn, "address", &fd->address);
-+	if (ret && (ret != -EINVAL)) {
-+		dev_err(dev, "failed get address\n");
-+		return ret;
-+	}
-+	ret = of_property_read_u32_index(dn, "address", 1, &fd->address_range);
-+
-+	ret = of_property_read_u32(dn, "buffer-offset", &fd->buffer_offset);
-+	if (ret && (ret != -EINVAL)) {
-+		dev_err(dev, "failed get buffer-offset\n");
-+		return ret;
-+	}
-+
-+	ret = of_property_read_u32(dn, "bits-per-pixel", &fd->bpp);
-+	if (ret) {
-+		dev_err(dev, "failed get bits-per-pixel\n");
-+		return ret;
-+	}
-+	switch (fd->bpp) {
-+	case 8:
-+	case 16:
-+	case 32:
-+		break;
-+	default:
-+		dev_err(dev, "invalid bits-per-pixel value\n");
-+		return -EINVAL;
-+	}
-+
-+	ret = of_property_read_string(dn, "type", &string);
-+	if (ret) {
-+		dev_err(dev, "failed get type\n");
-+		return ret;
-+	}
-+	if (!strcmp(string, "alpha")) {
-+		fd->type = LOGICVC_LAYER_ALPHA;
-+	} else if (!strcmp(string, "rgb")) {
-+		fd->type = LOGICVC_LAYER_RGB;
-+	} else if (!strcmp(string, "yuv")) {
-+		fd->type = LOGICVC_LAYER_YUV;
++		data->reg_access.set_reg_val(raw_rgb, base, reg_offset, ld);
 +	} else {
-+		dev_err(dev, "unsupported layer type\n");
-+		return -EINVAL;
-+	}
-+
-+	if (fd->type != LOGICVC_LAYER_ALPHA) {
-+		ret = of_property_read_string(dn, "transparency", &string);
-+		if (ret) {
-+			dev_err(dev, "failed get transparency\n");
-+			return ret;
-+		}
-+		if (!strcmp(string, "clut16")) {
-+			fd->transparency = LOGICVC_ALPHA_CLUT_16BPP;
-+		} else if (!strcmp(string, "clut32")) {
-+			fd->transparency = LOGICVC_ALPHA_CLUT_32BPP;
-+		} else if (!strcmp(string, "layer")) {
-+			fd->transparency = LOGICVC_ALPHA_LAYER;
-+		} else if (!strcmp(string, "pixel")) {
-+			fd->transparency = LOGICVC_ALPHA_PIXEL;
++		raw_rgb = data->reg_access.get_reg_val(base, reg_offset, ld);
++check_bpp_get:
++		if (data->flags & XYLONFB_FLAGS_BACKGROUND_LAYER_YUV) {
++			y = (raw_rgb >> 16) & 0xFF;
++			u = (raw_rgb >> 8) & 0xFF;
++			v = raw_rgb & 0xFF;
++			xylonfb_rgb_yuv(y, u, v, &raw_rgb, ld, false);
 +		} else {
-+			dev_err(dev, "unsupported layer transparency\n");
-+			return -EINVAL;
++			switch (bpp) {
++			case 8:
++				switch (transparency) {
++				case LOGICVC_ALPHA_CLUT_16BPP:
++					bpp = 16;
++					goto check_bpp_get;
++					break;
++				case LOGICVC_ALPHA_CLUT_32BPP:
++					bpp = 32;
++					goto check_bpp_get;
++					break;
++				default:
++					r = raw_rgb >> 5;
++					r = (((r << 3) | r) << 2) | (r >> 1);
++					g = (raw_rgb >> 2) & 0x07;
++					g = (((g << 3) | g) << 2) | (g >> 1);
++					b = raw_rgb & 0x03;
++					b = (b << 6) | (b << 4) | (b << 2) | b;
++					break;
++				}
++				break;
++			case 16:
++				r = raw_rgb >> 11;
++				r = (r << 3) | (r >> 2);
++				g = (raw_rgb >> 5) & 0x3F;
++				g = (g << 2) | (g >> 4);
++				b = raw_rgb & 0x1F;
++				b = (b << 3) | (b >> 2);
++				break;
++			case 32:
++				r = raw_rgb >> 16;
++				g = (raw_rgb >> 8) & 0xFF;
++				b = raw_rgb & 0xFF;
++				break;
++			default:
++				raw_rgb = r = g = b = 0;
++			}
 +		}
-+	}
-+
-+	if (of_property_read_bool(dn, "component-swap"))
-+		fd->component_swap = true;
-+
-+	fd->width = data->pixel_stride;
-+
-+	ret = xylonfb_layer_set_format(fd, dev);
-+	if (ret) {
-+		dev_err(dev, "failed set layer format\n");
-+		return ret;
-+	}
-+
-+	of_node_put(dn);
-+
-+	return id + 1;
-+}
-+
-+static int xylon_parse_hw_info(struct device_node *dn,
-+			       struct xylonfb_data *data)
-+{
-+	struct device *dev = &data->pdev->dev;
-+	int ret;
-+	const char *string;
-+
-+	XYLONFB_DBG(INFO, "%s", __func__);
-+
-+	ret = of_property_read_u32(dn, "background-layer-bits-per-pixel",
-+				   &data->bg_layer_bpp);
-+	if (ret && (ret != -EINVAL)) {
-+		dev_err(dev, "failed get bg-layer-bits-per-pixel\n");
-+		return ret;
-+	} else if (ret == 0) {
-+		data->flags |= XYLONFB_FLAGS_BACKGROUND_LAYER;
-+
-+		ret = of_property_read_string(dn, "background-layer-type",
-+					      &string);
-+		if (ret) {
-+			dev_err(dev, "failed get bg-layer-type\n");
-+			return ret;
-+		}
-+		if (!strcmp(string, "rgb")) {
-+			data->flags |= XYLONFB_FLAGS_BACKGROUND_LAYER_RGB;
-+		} else if (!strcmp(string, "yuv")) {
-+			data->flags |= XYLONFB_FLAGS_BACKGROUND_LAYER_YUV;
-+		} else {
-+			dev_err(dev, "unsupported bg layer type\n");
-+			return -EINVAL;
-+		}
-+	}
-+
-+	if (of_property_read_bool(dn, "display-interface-itu656"))
-+		data->flags |= XYLONFB_FLAGS_DISPLAY_INTERFACE_ITU656;
-+
-+	if (of_property_read_bool(dn, "readable-regs"))
-+		data->flags |= XYLONFB_FLAGS_READABLE_REGS;
-+	else
-+		dev_warn(dev, "logicvc registers not readable\n");
-+
-+	if (of_property_read_bool(dn, "size-position"))
-+		data->flags |= XYLONFB_FLAGS_SIZE_POSITION;
-+	else
-+		dev_warn(dev, "logicvc size-position disabled\n");
-+
-+	ret = of_property_read_u32(dn, "pixel-stride", &data->pixel_stride);
-+	if (ret) {
-+		dev_err(dev, "failed get pixel-stride\n");
-+		return ret;
-+	}
-+
-+	ret = of_property_read_u32(dn, "power-delay", &data->pwr_delay);
-+	if (ret && (ret != -EINVAL)) {
-+		dev_err(dev, "failed get power-delay\n");
-+		return ret;
-+	}
-+
-+	ret = of_property_read_u32(dn, "signal-delay", &data->sig_delay);
-+	if (ret && (ret != -EINVAL)) {
-+		dev_err(dev, "failed get signal\n");
-+		return ret;
++		layer_color->raw_rgb = raw_rgb;
++		layer_color->r = (u8)r;
++		layer_color->g = (u8)g;
++		layer_color->b = (u8)b;
 +	}
 +
 +	return 0;
 +}
 +
-+static const struct of_device_id logicvc_of_match[] = {
-+	{ .compatible = "xylon,logicvc-3.02.b" },
-+	{ .compatible = "xylon,logicvc-4.01.b" },
-+	{/* end of table */}
-+};
-+
-+static int xylonfb_get_logicvc_configuration(struct xylonfb_data *data)
++static int xylonfb_layer_geometry(struct fb_info *fbi,
++				  struct xylonfb_layer_geometry *layer_geometry,
++				  bool set)
 +{
-+	struct device *dev = &data->pdev->dev;
-+	struct device_node *dn = data->device;
-+	const struct of_device_id *match;
-+	struct videomode vm;
-+	int i, ret;
++	struct xylonfb_layer_data *ld = fbi->par;
++	struct xylonfb_data *data = ld->data;
++	struct xylonfb_layer_fix_data *fd = ld->fd;
++	u32 x, y, width, height, xoff, yoff, xres, yres;
 +
-+	XYLONFB_DBG(INFO, "%s", __func__);
++	xres = fbi->var.xres;
++	yres = fbi->var.yres;
 +
-+	match = of_match_node(logicvc_of_match, dn);
-+	if (!match) {
-+		dev_err(dev, "failed match logicvc\n");
-+		return -ENODEV;
-+	}
++	if (set) {
++		x = layer_geometry->x;
++		y = layer_geometry->y;
++		width = layer_geometry->width;
++		height = layer_geometry->height;
 +
-+	ret = of_address_to_resource(dn, 0, &data->resource_mem);
-+	if (ret) {
-+		dev_err(dev, "failed get mem resource\n");
-+		return ret;
-+	}
-+	data->irq = of_irq_to_resource(dn, 0, &data->resource_irq);
-+	if (data->irq == 0) {
-+		dev_err(dev, "failed get irq resource\n");
-+		return ret;
-+	}
++		if ((x > xres) || (y > yres))
++			return -EINVAL;
 +
-+	ret = xylon_parse_hw_info(dn, data);
-+	if (ret)
-+		return ret;
++		if ((width == 0) || (height == 0))
++			return -EINVAL;
 +
-+	for (i = 0; i < LOGICVC_MAX_LAYERS; i++) {
-+		ret = xylonfb_parse_layer_info(dn, data, i);
-+		if (ret < 0)
-+			return ret;
-+		if (ret == 0)
-+			break;
-+	}
-+
-+	if (data->flags & XYLONFB_FLAGS_BACKGROUND_LAYER &&
-+	    data->layers == LOGICVC_MAX_LAYERS) {
-+		data->flags &= ~XYLONFB_FLAGS_BACKGROUND_LAYER;
-+		data->layers--;
-+		if (data->console_layer == data->layers)
-+			data->console_layer--;
-+
-+		dev_warn(dev, "invalid last layer configuration\n");
-+	}
-+
-+	if (data->vm.name[0] == 0) {
-+		ret = of_get_videomode(dn, &vm, OF_USE_NATIVE_MODE);
-+		if (!ret) {
-+			fb_videomode_from_videomode(&vm, &data->vm.vmode);
-+
-+			sprintf(data->vm.name, "%dx%d",
-+				data->vm.vmode.xres, data->vm.vmode.yres);
-+
-+			data->flags |= XYLONFB_FLAGS_VMODE_CUSTOM;
++		if ((x + width) > xres) {
++			width = xres - x;
++			layer_geometry->width = width;
 +		}
-+	}
++		if ((y + height) > yres) {
++			height = yres - y;
++			layer_geometry->height = height;
++		}
++		/* YUV 4:2:2 layer type can only have even layer width */
++		if ((width > 2) && (fd->type == LOGICVC_LAYER_YUV) &&
++		    (fd->bpp == 16))
++			width &= ~((unsigned long) + 1);
 +
-+	xylonfb_init_ctrl(dn, vm.flags, &data->vm.ctrl);
++		/*
++		 * logiCVC 3.x registers write sequence:
++		 * offset, size, position with implicit last write to
++		 * LOGICVC_LAYER_VPOS_ROFF
++		 * logiCVC 4.x registers write sequence:
++		 * size, position with implicit last write to
++		 * LOGICVC_LAYER_ADDR_ROFF
++		 */
++		if (!(data->flags & XYLONFB_FLAGS_DYNAMIC_LAYER_ADDRESS)) {
++			data->reg_access.set_reg_val(layer_geometry->x_offset,
++						     ld->base,
++						     LOGICVC_LAYER_HOFF_ROFF,
++						     ld);
++			data->reg_access.set_reg_val(layer_geometry->y_offset,
++						     ld->base,
++						     LOGICVC_LAYER_VOFF_ROFF,
++						     ld);
++		}
++		data->reg_access.set_reg_val((width - 1), ld->base,
++					     LOGICVC_LAYER_HSIZE_ROFF,
++					     ld);
++		data->reg_access.set_reg_val((height - 1), ld->base,
++					     LOGICVC_LAYER_VSIZE_ROFF,
++					     ld);
++		data->reg_access.set_reg_val((xres - (x + 1)), ld->base,
++					     LOGICVC_LAYER_HPOS_ROFF,
++					     ld);
++		data->reg_access.set_reg_val((yres - (y + 1)), ld->base,
++					     LOGICVC_LAYER_VPOS_ROFF,
++					     ld);
++		if (data->flags & XYLONFB_FLAGS_DYNAMIC_LAYER_ADDRESS) {
++			xoff = layer_geometry->x_offset * (ld->fd->bpp / 8);
++			yoff = layer_geometry->y_offset * ld->fd->width *
++			       (ld->fd->bpp / 8);
 +
-+	return 0;
-+}
++			ld->fb_pbase_active = ld->fb_pbase + xoff + yoff;
 +
-+static int xylonfb_get_driver_configuration(struct xylonfb_data *data)
-+{
-+	struct device *dev = &data->pdev->dev;
-+	struct device_node *dn = data->pdev->dev.of_node;
-+	int ret;
-+	const char *string;
-+
-+	XYLONFB_DBG(INFO, "%s", __func__);
-+
-+	data->device = of_parse_phandle(dn, "device", 0);
-+	if (!data->device) {
-+		dev_err(dev, "failed get device\n");
-+		return -ENODEV;
-+	}
-+
-+	data->pixel_clock = of_parse_phandle(dn, "clocks", 0);
-+
-+	ret = of_property_read_u32(dn, "console-layer", &data->console_layer);
-+	if (ret && (ret != -EINVAL)) {
-+			dev_err(dev, "failed get console-layer\n");
-+			return ret;
++			data->reg_access.set_reg_val(ld->fb_pbase_active,
++						     ld->base,
++						     LOGICVC_LAYER_ADDR_ROFF,
++						     ld);
++		}
 +	} else {
-+		data->flags |= XYLONFB_FLAGS_CHECK_CONSOLE_LAYER;
++		x = data->reg_access.get_reg_val(ld->base,
++						 LOGICVC_LAYER_HPOS_ROFF,
++						 ld);
++		layer_geometry->x = xres - (x + 1);
++		y = data->reg_access.get_reg_val(ld->base,
++						 LOGICVC_LAYER_VPOS_ROFF,
++						 ld);
++		layer_geometry->y = yres - (y + 1);
++		layer_geometry->width =
++			data->reg_access.get_reg_val(ld->base,
++						     LOGICVC_LAYER_HSIZE_ROFF,
++						     ld);
++		layer_geometry->width += 1;
++		layer_geometry->height =
++			data->reg_access.get_reg_val(ld->base,
++						     LOGICVC_LAYER_VSIZE_ROFF,
++						     ld);
++		layer_geometry->height += 1;
 +	}
 +
-+	if (of_property_read_bool(dn, "vsync-irq"))
-+		data->flags |= XYLONFB_FLAGS_VSYNC_IRQ;
++	return 0;
++}
 +
-+	ret = of_property_read_string(dn, "video-mode", &string);
-+	if (ret && (ret != -EINVAL)) {
-+		dev_err(dev, "failed get video-mode\n");
-+		return ret;
-+	} else if (ret == 0) {
-+		strcpy(data->vm.name, string);
++static int xylonfb_layer_reg_access(struct xylonfb_layer_data *ld,
++				    struct xylonfb_hw_access *hw_access,
++				    bool set)
++{
++	struct xylonfb_data *data = ld->data;
++	struct xylonfb_layer_fix_data *fd = ld->fd;
++	u32 offset;
++	u32 rel_offset;
++
++	if ((hw_access->offset < LOGICVC_LAYER_BASE_OFFSET) ||
++	    (hw_access->offset > LOGICVC_LAYER_BASE_END))
++		return -EPERM;
++
++	if (data->flags & XYLONFB_FLAGS_READABLE_REGS) {
++		offset = hw_access->offset;
++		if (set)
++			data->reg_access.set_reg_val(hw_access->value,
++						     data->dev_base,
++						     offset,
++						     ld);
++		else
++			hw_access->value =
++				data->reg_access.get_reg_val(data->dev_base,
++							     offset,
++							     ld);
 +		return 0;
 +	}
 +
++	rel_offset = hw_access->offset - (fd->id * 0x80) -
++		     LOGICVC_LAYER_BASE_OFFSET;
++
++	if (rel_offset > LOGICVC_LAYER_BASE_END)
++		return -EINVAL;
++
++	if (set)
++		data->reg_access.set_reg_val(hw_access->value, ld->base,
++					     rel_offset, ld);
++	else
++		hw_access->value = data->reg_access.get_reg_val(ld->base,
++								rel_offset, ld);
++
 +	return 0;
 +}
 +
-+static int xylonfb_probe(struct platform_device *pdev)
++int xylonfb_ioctl(struct fb_info *fbi, unsigned int cmd, unsigned long arg)
 +{
-+	struct xylonfb_data *data;
-+	int ret;
++	struct xylonfb_layer_data *ld = fbi->par;
++	struct xylonfb_data *data = ld->data;
++	union {
++		struct fb_vblank vblank;
++		struct xylonfb_hw_access hw_access;
++		struct xylonfb_layer_buffer layer_buff;
++		struct xylonfb_layer_color layer_color;
++		struct xylonfb_layer_geometry layer_geometry;
++		struct xylonfb_layer_transparency layer_transp;
++	} ioctl;
++	void __user *argp = (void __user *)arg;
++	unsigned long val;
++	u32 var32;
++	int ret = 0;
++	bool flag;
 +
-+	XYLONFB_DBG(INFO, "%s", __func__);
++	switch (cmd) {
++	case FBIOGET_VBLANK:
++		if (copy_from_user(&ioctl.vblank, argp, sizeof(ioctl.vblank)))
++			return -EFAULT;
 +
-+	data = devm_kzalloc(&pdev->dev, sizeof(struct xylonfb_data),
-+			     GFP_KERNEL);
-+	if (!data) {
-+		dev_err(&pdev->dev, "failed allocate init data\n");
-+		return -ENOMEM;
++		ret = xylonfb_get_vblank(&ioctl.vblank, fbi);
++		if (!ret &&
++		    copy_to_user(argp, &ioctl.vblank, sizeof(ioctl.vblank)))
++			ret = -EFAULT;
++		break;
++
++	case FBIO_WAITFORVSYNC:
++		if (get_user(var32, (u32 __user *)arg))
++			return -EFAULT;
++
++		ret = xylonfb_vsync_wait(var32, fbi);
++		break;
++
++	case XYLONFB_VSYNC_CTRL:
++		if (get_user(flag, (u8 __user *)arg))
++			return -EFAULT;
++
++		xylonfb_vsync_ctrl(fbi, flag);
++		break;
++
++	case XYLONFB_LAYER_IDX:
++		var32 = ld->fd->id;
++		put_user(var32, (u32 __user *)arg);
++		break;
++
++	case XYLONFB_LAYER_ALPHA:
++		if (copy_from_user(&ioctl.layer_transp, argp,
++				   sizeof(ioctl.layer_transp)))
++			return -EFAULT;
++
++		mutex_lock(&ld->mutex);
++		ret = xylonfb_layer_alpha(ld, &ioctl.layer_transp.alpha,
++					  ioctl.layer_transp.set);
++		if (!ret && !ioctl.layer_transp.set)
++			if (copy_to_user(argp, &ioctl.layer_transp,
++					 sizeof(ioctl.layer_transp)))
++				ret = -EFAULT;
++		mutex_unlock(&ld->mutex);
++		break;
++
++	case XYLONFB_LAYER_COLOR_TRANSP_CTRL:
++		if (get_user(flag, (u8 __user *)arg))
++			return -EFAULT;
++
++		mutex_lock(&ld->mutex);
++		var32 = data->reg_access.get_reg_val(ld->base,
++						     LOGICVC_LAYER_CTRL_ROFF,
++						     ld);
++		if (flag)
++			var32 |= LOGICVC_LAYER_CTRL_COLOR_TRANSPARENCY_BIT;
++		else
++			var32 &= ~LOGICVC_LAYER_CTRL_COLOR_TRANSPARENCY_BIT;
++		data->reg_access.set_reg_val(var32, ld->base,
++					     LOGICVC_LAYER_CTRL_ROFF,
++					     ld);
++		mutex_unlock(&ld->mutex);
++		break;
++
++	case XYLONFB_LAYER_COLOR_TRANSP:
++		if (copy_from_user(&ioctl.layer_color, argp,
++				   sizeof(ioctl.layer_color)))
++			return -EFAULT;
++
++		mutex_lock(&ld->mutex);
++		ret = xylonfb_layer_color_rgb(ld, &ioctl.layer_color,
++					      LOGICVC_LAYER_TRANSP_COLOR_ROFF,
++					      ioctl.layer_color.set);
++		if (!ret && !ioctl.layer_color.set)
++			if (copy_to_user(argp, &ioctl.layer_color,
++					 sizeof(ioctl.layer_color)))
++				ret = -EFAULT;
++		mutex_unlock(&ld->mutex);
++		break;
++
++	case XYLONFB_LAYER_GEOMETRY:
++		if (!(data->flags & XYLONFB_FLAGS_SIZE_POSITION))
++			return -EINVAL;
++
++		if (copy_from_user(&ioctl.layer_geometry, argp,
++				   sizeof(ioctl.layer_geometry)))
++			return -EFAULT;
++
++		mutex_lock(&ld->mutex);
++		ret = xylonfb_layer_geometry(fbi, &ioctl.layer_geometry,
++					     ioctl.layer_geometry.set);
++		if (!ret && !ioctl.layer_geometry.set)
++			if (copy_to_user(argp, &ioctl.layer_geometry,
++					 sizeof(ioctl.layer_geometry)))
++				ret = -EFAULT;
++		mutex_unlock(&ld->mutex);
++		break;
++
++	case XYLONFB_LAYER_BUFFER:
++		if (data->major >= 4)
++			return -EPERM;
++
++		if (copy_from_user(&ioctl.layer_buff, argp,
++				   sizeof(ioctl.layer_buff)))
++			return -EFAULT;
++
++		mutex_lock(&ld->mutex);
++		ret = xylonfb_layer_buff(fbi, &ioctl.layer_buff,
++					 ioctl.layer_buff.set);
++		if (!ret && !ioctl.layer_buff.set)
++			if (copy_to_user(argp, &ioctl.layer_buff,
++					 sizeof(ioctl.layer_buff)))
++				ret = -EFAULT;
++		mutex_unlock(&ld->mutex);
++		break;
++
++	case XYLONFB_LAYER_BUFFER_OFFSET:
++		if (data->major < 4) {
++			var32 = readl(ld->data->dev_base +
++				      LOGICVC_VBUFF_SELECT_ROFF);
++			var32 >>= (ld->fd->id << 1);
++			var32 &= 0x03;
++			val = ld->fd->buffer_offset;
++			val *= var32;
++		} else {
++			val = ld->fd->buffer_offset;
++		}
++		put_user(val, (unsigned long __user *)arg);
++		break;
++
++	case XYLONFB_BACKGROUND_COLOR:
++		if (data->bg_layer_bpp == 0)
++			return -EPERM;
++
++		if (copy_from_user(&ioctl.layer_color, argp,
++				   sizeof(ioctl.layer_color)))
++			return -EFAULT;
++
++		mutex_lock(&ld->mutex);
++		ret = xylonfb_layer_color_rgb(ld, &ioctl.layer_color,
++					      LOGICVC_BACKGROUND_COLOR_ROFF,
++					      ioctl.layer_color.set);
++		if (!ret && !ioctl.layer_color.set)
++			if (copy_to_user(argp, &ioctl.layer_color,
++					 sizeof(ioctl.layer_color)))
++				ret = -EFAULT;
++		mutex_unlock(&ld->mutex);
++		break;
++
++	case XYLONFB_LAYER_EXT_BUFF_SWITCH:
++		if (get_user(flag, (u8 __user *)arg))
++			return -EFAULT;
++
++		mutex_lock(&ld->mutex);
++		var32 = data->reg_access.get_reg_val(ld->base,
++						     LOGICVC_LAYER_CTRL_ROFF,
++						     ld);
++		if (flag)
++			var32 |= LOGICVC_LAYER_CTRL_EXTERNAL_BUFFER_SWITCH;
++		else
++			var32 &= ~LOGICVC_LAYER_CTRL_EXTERNAL_BUFFER_SWITCH;
++		data->reg_access.set_reg_val(var32, ld->base,
++					     LOGICVC_LAYER_CTRL_ROFF,
++					     ld);
++		mutex_unlock(&ld->mutex);
++		break;
++
++	case XYLONFB_HW_ACCESS:
++		if (copy_from_user(&ioctl.hw_access, argp,
++				   sizeof(ioctl.hw_access)))
++			return -EFAULT;
++
++		ret = xylonfb_layer_reg_access(ld, &ioctl.hw_access,
++					       ioctl.hw_access.set);
++		if (!ret && !ioctl.hw_access.set)
++			if (copy_to_user(argp, &ioctl.hw_access,
++					 sizeof(ioctl.hw_access)))
++				ret = -EFAULT;
++		break;
++
++	case XYLONFB_IP_CORE_VERSION:
++		var32 = (data->major << 16) | (data->minor << 8) | data->patch;
++		if (copy_to_user(argp, &var32, sizeof(u32)))
++			ret = -EFAULT;
++		break;
++
++	default:
++		dev_err(&data->pdev->dev, "unknown ioctl");
++		ret = -EINVAL;
 +	}
 +
-+	data->pdev = pdev;
-+
-+	ret = xylonfb_get_driver_configuration(data);
-+	if (ret)
-+		goto xylonfb_probe_error;
-+
-+	ret = xylonfb_get_logicvc_configuration(data);
-+	if (ret)
-+		goto xylonfb_probe_error;
-+
-+	ret = xylonfb_init_core(data);
-+
-+xylonfb_probe_error:
 +	return ret;
 +}
-+
-+static int xylonfb_remove(struct platform_device *pdev)
-+{
-+	XYLONFB_DBG(INFO, "%s", __func__);
-+
-+	return xylonfb_deinit_core(pdev);
-+}
-+
-+static const struct of_device_id xylonfb_of_match[] = {
-+	{ .compatible = "xylon,fb-3.00.a" },
-+	{/* end of table */},
-+};
-+MODULE_DEVICE_TABLE(of, xylonfb_of_match);
-+
-+static struct platform_driver xylonfb_driver = {
-+	.probe = xylonfb_probe,
-+	.remove = xylonfb_remove,
-+	.driver = {
-+		.owner = THIS_MODULE,
-+		.name = XYLONFB_DEVICE_NAME,
-+		.of_match_table = xylonfb_of_match,
-+	},
-+};
-+
-+static int xylonfb_get_params(char *options)
-+{
-+	char *this_opt;
-+
-+	XYLONFB_DBG(INFO, "%s", __func__);
-+
-+	if (!options || !*options)
-+		return 0;
-+
-+	while ((this_opt = strsep(&options, ",")) != NULL) {
-+		if (!*this_opt)
-+			continue;
-+		xylonfb_mode_option = this_opt;
-+	}
-+	return 0;
-+}
-+
-+static int xylonfb_init(void)
-+{
-+	char *option = NULL;
-+	/*
-+	 *  Kernel boot options (in 'video=xxxfb:<options>' format)
-+	 */
-+	if (fb_get_options(XYLONFB_DRIVER_NAME, &option))
-+		return -ENODEV;
-+	/* Set internal module parameters */
-+	xylonfb_get_params(option);
-+
-+	if (platform_driver_register(&xylonfb_driver)) {
-+		pr_err("failed %s driver registration\n", XYLONFB_DRIVER_NAME);
-+		return -ENODEV;
-+	}
-+
-+	return 0;
-+}
-+
-+static void __exit xylonfb_exit(void)
-+{
-+	platform_driver_unregister(&xylonfb_driver);
-+}
-+
-+module_init(xylonfb_init);
-+module_exit(xylonfb_exit);
-+
-+MODULE_LICENSE("GPL v2");
-+MODULE_DESCRIPTION(XYLONFB_DRIVER_DESCRIPTION);
-+MODULE_VERSION(XYLONFB_DRIVER_VERSION);
 -- 
 1.9.1
 
