@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335AbaJQPxX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 11:53:23 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:46009 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752032AbaJQPxW (ORCPT
+	id S1753328AbaJQPyP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 11:54:15 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:39224 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752490AbaJQPyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 11:53:22 -0400
+	Fri, 17 Oct 2014 11:54:14 -0400
+Message-ID: <54413B9B.9030702@ahsoftware.de>
+Date: Fri, 17 Oct 2014 17:54:03 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Date: Fri, 17 Oct 2014 11:53:21 -0400
-Message-ID: <CACXcFmnjqsDZ0nq2h9ymiUQMczD7yX64COVnz8WsrC38fL1iuQ@mail.gmail.com>
-Subject: RFC: Alternative to systemd?
-From: Sandy Harris <sandyinchina@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Frans Klaver <fransklaver@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>
+Subject: Re: [PATCH 00/27] Fix common bug in most nand drivers not showing
+ a device in sysfs
+References: <1401142372-14148-1-git-send-email-holler@ahsoftware.de>	<543F678E.1030401@ahsoftware.de> <CAH6sp9O=36FTGg4FTCywsNzdJi4PjUmiiT6_EHr=i166+NA2ng@mail.gmail.com>
+In-Reply-To: <CAH6sp9O=36FTGg4FTCywsNzdJi4PjUmiiT6_EHr=i166+NA2ng@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've been reading the debates around systemd, haven't reached any firm
-conclusion but the criticism that Unix programs should "do one thing
-and do it well" certainly resonates with me.
+Am 17.10.2014 um 12:53 schrieb Frans Klaver:
+> On Thu, Oct 16, 2014 at 8:37 AM, Alexander Holler <holler@ahsoftware.de> wrote:
+>>
+>> I wonder if anyone else will fix this in a maintainer-approved style which
+>> doesn't use these evil leftovers from C666 called functions.
+>
+> I'll pick this up then.
 
-On the other hand, this may be one of those cases where theory and
-practice need to differ; more-or-less all the arguments against
-systemd's complexity and overly broad scope have been used in debates
-over monolithic vs. message-passing kernels. I'd say that in theory
-message-passing and smaller programs are obviously better in some
-ways, but in practice other considerations may be more important. That
-is certainly the case for the kernel; I do not know if it is for
-systemd.
+Thanks.
 
-All that said, I don't want to re-open the debate here. I would,
-though, like to solicit comment on what seems to me a possible simple
-alternative that deals with only one of the problems systemd claims to
-solve; expressing dependencies that the init process needs to deal
-with. There seems to be fairly widespread agreement that the way
-sysvinit does this rather clumsy.
+>
+> Still interested in following progress?
 
-We already have a well-established way of dealing with some types of
-dependency, in makefiles. Would something with roughly that syntax
-work for expressing the dependencies here? Sample lines might be
-things like:
+As you wish. It's such a simple patch, that I think every word about it
+is almost a waste of time. I assume the result will be just 21
+one-line-patches anyway, missing the chance to avoid similiar silly
+patch series in the future by creating a common function (which even
+reduces code size over all).
 
-sshd: random
+I've originally just did it because I've assumed any maintainer would
+just wave it through not seeing a chance for big discussions.
 
-!random:
-       cat /var/run/random_seed >/dev/urandom
+So, if you like, just add my Signed-off-by too, there isn't really much
+one could do wrong. ;)
 
-The first line says sshd depends on random; "init sshd" will first
-deal with dependencies, so it does the command for random before
-starting sshd. Since no command is given for sshd, it defaults to
-"sshd &". If arguments are needed, put in a command line. If some
-other process depends on sshd it just checks whether it is running via
-"ps -C sshd" and, if not, starts it.
+Thanks again,
 
-"!random:" says, via the "!", that random is not a process that can be
-checked with ps -C. We would need to add a data structure to support
-another way to check if the process had been run. In actual use' we'd
-also have a more complex command than just the cat.
-
-It seems to me this could handle everything needed for init's startup
-activities. Adding simple run levels is straightforward; just define
-!runlevel3 or !network or whatever with appropriate dependencies. I am
-not certain whether or how it might be extended to stop processes when
-reducing run level, though.
-
-Comments?
+Alexander Holler
