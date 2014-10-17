@@ -1,220 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751601AbaJQJNa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 05:13:30 -0400
-Received: from mail-bl2on0114.outbound.protection.outlook.com ([65.55.169.114]:56493
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751231AbaJQJN1 convert rfc822-to-8bit (ORCPT
+	id S1751799AbaJQJNs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 05:13:48 -0400
+Received: from g2t1383g.austin.hp.com ([15.217.136.92]:9039 "EHLO
+	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238AbaJQJNp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 05:13:27 -0400
-X-Greylist: delayed 818 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Oct 2014 05:13:26 EDT
-X-WSS-ID: 0NDKZMH-08-TLJ-02
-X-M-MSG: 
-From: Huang Rui <ray.huang@amd.com>
-To: Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Vincent Wan <vincent.wan@amd.com>, Tony Li <tony.li@amd.com>,
-        <linux-usb@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Huang Rui <ray.huang@amd.com>
-Subject: [PATCH v2 00/16] usb: dwc3: add support for AMD NL SoC
-Date: Fri, 17 Oct 2014 16:53:25 +0800
-Message-ID: <1413536021-4886-1-git-send-email-ray.huang@amd.com>
-X-Mailer: git-send-email 1.9.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset="yes"
-Content-Transfer-Encoding: 8BIT
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(164054003)(97736003)(50226001)(102836001)(53416004)(92726001)(86362001)(44976005)(62966002)(31966008)(20776003)(68736004)(101416001)(19580405001)(19580395003)(47776003)(92566001)(105586002)(77096002)(93916002)(84676001)(64706001)(36756003)(229853001)(87286001)(87936001)(88136002)(85306004)(85852003)(4396001)(120916001)(104166001)(77156001)(89996001)(80022003)(46102003)(95666004)(76482002)(107046002)(50466002)(99396003)(21056001)(50986999)(33646002)(106466001)(2171001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB201;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB201;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 0367A50BB1
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Ray.Huang@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+	Fri, 17 Oct 2014 05:13:45 -0400
+From: "Li, Zhen-Hua" <zhen-hual@hp.com>
+To: <linux-kernel@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        <linux-pci@vger.kernel.org>, <indou.takao@jp.fujitsu.com>,
+        Eric Biederman <ebiederm@xmission.com>, <kexec@lists.infradead.org>
+Cc: <linda.knippers@hp.com>, "Li, Zhen-Hua" <zhen-hual@hp.com>,
+        Randy Wright <rwright@hp.com>
+Subject: [PATCH 1/1] pci: reset all pci endpoints to stop on going dma
+Date: Fri, 17 Oct 2014 17:13:27 +0800
+Message-Id: <1413537207-16514-1-git-send-email-zhen-hual@hp.com>
+X-Mailer: git-send-email 2.0.0-rc0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This is an update of the patch
+	https://lkml.org/lkml/2014/10/10/37
 
-The series of patches add AMD NL SoC support for DesignWare USB3 OTG IP with
-PCI bus glue layer. This controller supported hibernation, LPM erratum and used
-the 2.80a IP version and amd own phy. Current implementation support both
-simulation and SoC platform. And already tested with gadget zero and msc tool.
-It works well on file storage gadget.
+This patch is doing the reset works before the kdump kernel boots.
 
+On a Linux system with iommu supported and many PCI devices on it,
+when kernel crashed and the kdump kernel boots with intel_iommu=on,
+there may be some unexpected DMA requests on this adapter, which will
+cause DMA Remapping faults like:
+    dmar: DRHD: handling fault status reg 102
+    dmar: DMAR:[DMA Read] Request device [41:00.0] fault addr fff81000
+    DMAR:[fault reason 01] Present bit in root entry is clear
 
-These patches are generated on balbi/testing/next
+This bug may happen on *any* PCI device.
+Analysis for this bug:
 
-Changes from v1 -> v2
-- remove dual role function temporarily
-- add pci quirk to avoid to bind with xhci driver
-- distinguish between simulation board and soc
-- break down all the special quirks
+The present bit is set in this function:
 
+static struct context_entry * device_to_context_entry(
+                struct intel_iommu *iommu, u8 bus, u8 devfn)
+{
+    ......
+                set_root_present(root);
+    ......
+}
 
-Patch 1:
-- add PCI device id into pci bus glue
+Calling tree:
+    device driver
+        intel_alloc_coherent
+            __intel_map_single
+                domain_context_mapping
+                    domain_context_mapping_one
+                        device_to_context_entry
 
-Patch 2:
-- add PCI quirk to avoid to bind with xhci
+This means, the present bit in root entry will not be set until the device
+driver is loaded.
 
-Patch 3:
-- enable hibernation
+But in the kdump kernel, hardware devices are not aware that control has
+transferred to the second kernel, and those drivers must initialize again.
+Consequently there may be unexpected DMA requests from devices activity
+initiated in the first kernel leading to the DMA Remapping errors in the
+second kernel.
 
-Patch 4:
-- distinguish between simulation board and soc
+To fix this DMAR fault, we need to reset the bus that this device on. Reset
+the device itself does not work.
 
-Patch 5:
-- add quirks flag to be compatible for kinds of soc
+A patch for this bug that has been sent before:
+https://lkml.org/lkml/2014/9/30/55
+As in discussion, this bug may happen on *any* device, so we need to reset
+all pci devices.
 
-Patch 6 - 16:
-- as felipe's suggestion, break down all the special quirks of amd nl
+There was an original version(Takao Indoh) that resets the pcie devices:
+https://lkml.org/lkml/2013/5/14/9
 
+According to the previous discussion, On sparc, the IOMMU is initialized
+before PCI devices are enumerated, this patch does the resetting works before
+the kdump kernel boots, so it can also fix the problems on sparc.
 
-Patch set already passed all the MSC testing, detailed result is below:
+Update of this new version, comparing with Takao Indoh's version:
+    Add support for legacy PCI devices.
+    Use pci_try_reset_bus instead of do_downstream_device_reset.
+    Reset all PCI/PCIe deviecs in the first kernel, before kdump kernel boots.
 
-root@hr-ub:/home/ray/felipe/usb-tools# ./msc.sh -o /dev/sdb1
-Starting test suite: 2014年 10月 09日 星期四 18:02:41 CST
-test 0a: simple 4k read/write
-test  0: sent       3.91 MB read       0.03 MB/s write       0.03 MB/s ... success
-test 0b: simple 8k read/write
-test  0: sent       7.81 MB read       6.15 MB/s write       5.96 MB/s ... success
-test 0c: simple 16k read/write
-test  0: sent      15.62 MB read      14.30 MB/s write      12.97 MB/s ... success
-test 0d: simple 32k read/write
-test  0: sent      31.25 MB read      18.26 MB/s write      17.10 MB/s ... success
-test 0e: simple 64k read/write
-test  0: sent      62.50 MB read      22.00 MB/s write      16.33 MB/s ... success
-test 1: simple 1-sector read/write
-test  1: sent     500.00 kB read       1.05 MB/s write       0.93 MB/s ... success
-test 2: simple 8-sectors read/write
-test  2: sent       3.91 MB read       6.52 MB/s write       6.10 MB/s ... success
-test 3: simple 32-sectors read/write
-test  3: sent      15.62 MB read      14.33 MB/s write      13.14 MB/s ... success
-test 4: simple 64-sectors read/write
-test  4: sent      31.25 MB read      17.79 MB/s write      16.38 MB/s ... success
-test 5a: scatter/gather for 2-sectors buflen 4k
-test  5: sent    1000.00 kB read       1.85 MB/s write       1.56 MB/s ... success
-test 5b: scatter/gather for 2-sectors buflen 8k
-test  5: sent    1000.00 kB read       1.91 MB/s write       1.63 MB/s ... success
-test 5c: scatter/gather for 2-sectors buflen 16k
-test  5: sent    1000.00 kB read       1.94 MB/s write       1.62 MB/s ... success
-test 5d: scatter/gather for 2-sectors buflen 32k
-test  5: sent    1000.00 kB read       1.93 MB/s write       1.64 MB/s ... success
-test 5e: scatter/gather for 2-sectors buflen 64k
-test  5: sent    1000.00 kB read       1.96 MB/s write       1.68 MB/s ... success
-test 6a: scatter/gather for 8-sectors buflen 4k
-test  6: sent       3.91 MB read       6.53 MB/s write       6.05 MB/s ... success
-test 6b: scatter/gather for 8-sectors buflen 8k
-test  6: sent       3.91 MB read       6.56 MB/s write       5.98 MB/s ... success
-test 6c: scatter/gather for 8-sectors buflen 16k
-test  6: sent       3.91 MB read       6.55 MB/s write       6.15 MB/s ... success
-test 6d: scatter/gather for 8-sectors buflen 32k
-test  6: sent       3.91 MB read       6.51 MB/s write       6.06 MB/s ... success
-test 6e: scatter/gather for 8-sectors buflen 64k
-test  6: sent       3.91 MB read       6.50 MB/s write       6.06 MB/s ... success
-test 7a: scatter/gather for 32-sectors buflen 16k
-test  7: sent      15.62 MB read      14.23 MB/s write      12.99 MB/s ... success
-test 7b: scatter/gather for 32-sectors buflen 32k
-test  7: sent      15.62 MB read      14.27 MB/s write      12.91 MB/s ... success
-test 7c: scatter/gather for 32-sectors buflen 64k
-test  7: sent      15.62 MB read      14.73 MB/s write      13.00 MB/s ... success
-test 8a: scatter/gather for 64-sectors buflen 32k
-test  8: sent      31.25 MB read      18.42 MB/s write      16.65 MB/s ... success
-test 8b: scatter/gather for 64-sectors buflen 64k
-test  8: sent      31.25 MB read      17.70 MB/s write      16.39 MB/s ... success
-test 9: scatter/gather for 128-sectors buflen 64k
-test  9: sent      62.50 MB read      21.14 MB/s write      16.07 MB/s ... success
-test 10: read over the end of the block device
-test 10: sent      62.01 MB read       0.00 MB/s write       0.00 MB/s ... success
-test 11: lseek past the end of the block device
-test 11: sent       0.00 B read       0.00 MB/s write       0.00 MB/s ... success
-test 12: write over the end of the block device
-test 12: sent       0.00 B read       0.00 MB/s write       0.00 MB/s ... success
-test 13: write 1 sg, read 8 random size sgs
-test 13: sent      62.50 MB read      21.61 MB/s write      16.21 MB/s ... success
-test 14: write 8 random size sgs, read 1 sg
-test 14: sent      62.50 MB read      22.52 MB/s write      18.61 MB/s ... success
-test 15: write and read 8 random size sgs
-test 15: sent      62.50 MB read      22.31 MB/s write      19.28 MB/s ... success
-test 16a: read with heap allocated buffer
-test 16: sent      62.50 MB read      21.69 MB/s write       0.00 MB/s ... success
-test 16b: read with stack allocated buffer
-test 16: sent      62.50 MB read      21.42 MB/s write       0.00 MB/s ... success
-test 17a: write with heap allocated buffer
-test 17: sent       0.00 B read       0.00 MB/s write      19.94 MB/s ... success
-test 17b: write with stack allocated buffer
-test 17: sent       0.00 B read       0.00 MB/s write      20.09 MB/s ... success
-test 18a: write 0x00 and read it back
-test 18: sent      62.50 MB read      21.94 MB/s write      16.96 MB/s ... success
-test 18b: write 0xff and read it back
-test 18: sent      62.50 MB read      19.89 MB/s write      15.51 MB/s ... success
-test 18c: write 0x55 and read it back
-test 18: sent      62.50 MB read      22.00 MB/s write      16.62 MB/s ... success
-test 18d: write 0xaa and read it back
-test 18: sent      62.50 MB read      21.81 MB/s write      16.53 MB/s ... success
-test 18e: write 0x11 and read it back
-test 18: sent      62.50 MB read      22.33 MB/s write      17.00 MB/s ... success
-test 18f: write 0x22 and read it back
-test 18: sent      62.50 MB read      21.66 MB/s write      16.44 MB/s ... success
-test 18g: write 0x44 and read it back
-test 18: sent      62.50 MB read      22.23 MB/s write      17.08 MB/s ... success
-test 18h: write 0x88 and read it back
-test 18: sent      62.50 MB read      21.54 MB/s write      16.17 MB/s ... success
-test 18i: write 0x33 and read it back
-test 18: sent      62.50 MB read      21.20 MB/s write      16.58 MB/s ... success
-test 18j: write 0x66 and read it back
-test 18: sent      62.50 MB read      21.82 MB/s write      16.13 MB/s ... success
-test 18k: write 0x99 and read it back
-test 18: sent      62.50 MB read      21.92 MB/s write      16.36 MB/s ... success
-test 18l: write 0xcc and read it back
-test 18: sent      62.50 MB read      22.37 MB/s write      16.74 MB/s ... success
-test 18m: write 0x77 and read it back
-test 18: sent      62.50 MB read      22.34 MB/s write      16.24 MB/s ... success
-test 18n: write 0xbb and read it back
-test 18: sent      62.50 MB read      21.82 MB/s write      16.23 MB/s ... success
-test 18o: write 0xdd and read it back
-test 18: sent      62.50 MB read      21.38 MB/s write      16.48 MB/s ... success
-test 18p: write 0xee and read it back
-test 18: sent      62.50 MB read      22.33 MB/s write      16.15 MB/s ... success
-Test suite ended: 2014年 10月 09日 星期四 18:13:36 CST
+Randy Wright corrects some misunderstanding in this description.
 
+Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
+Signed-off-by: Randy Wright <rwright@hp.com>
+---
+ drivers/pci/pci.c   | 82 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/pci.h |  6 ++++
+ kernel/kexec.c      |  2 ++
+ 3 files changed, 90 insertions(+)
 
-Thanks,
-Rui
-
-Huang Rui (16):
-  usb: dwc3: add AMD NL support
-  pci: quirks: add quirk to avoid AMD NL to bind with xhci
-  usb: dwc3: enable hibernation if to be supported
-  usb: dwc3: add a flag to check if it is fpga board
-  usb: dwc3: add quirks support to be compatible for kinds of SoCs
-  usb: dwc3: add disscramble quirk
-  usb: dwc3: add lpm erratum support
-  usb: dwc3: add u2exit lfps quirk
-  usb: dwc3: add P3 in U2 SS inactive quirk
-  usb: dwc3: add request p1p2p3 quirk
-  usb: dwc3: add delay p1p2p3 quirk
-  usb: dwc3: add delay phy power change quirk
-  usb: dwc3: add lfps filter quirk
-  usb: dwc3: enable rx_detect to polling lfps quirk
-  usb: dwc3: add tx demphasis quirk
-  usb: dwc3: enable usb suspend phy
-
- drivers/pci/quirks.c             | 20 ++++++++++++
- drivers/usb/dwc3/core.c          | 66 +++++++++++++++++++++++++++++++++++++++-
- drivers/usb/dwc3/core.h          | 42 +++++++++++++++++++------
- drivers/usb/dwc3/dwc3-pci.c      | 26 ++++++++++++++++
- drivers/usb/dwc3/gadget.c        |  7 +++++
- drivers/usb/dwc3/platform_data.h | 16 ++++++++++
- 6 files changed, 167 insertions(+), 10 deletions(-)
-
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 625a4ac..aa9192a 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -23,6 +23,7 @@
+ #include <linux/device.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/pci_hotplug.h>
++#include <linux/crash_dump.h>
+ #include <asm-generic/pci-bridge.h>
+ #include <asm/setup.h>
+ #include "pci.h"
+@@ -4466,6 +4467,87 @@ void __weak pci_fixup_cardbus(struct pci_bus *bus)
+ }
+ EXPORT_SYMBOL(pci_fixup_cardbus);
+ 
++/*
++ * Return true if dev is PCI root port or downstream port whose child is PCI
++ * endpoint except VGA device.
++ */
++static int __pci_dev_need_reset(struct pci_dev *dev)
++{
++	struct pci_bus *subordinate;
++	struct pci_dev *child;
++
++	if (dev->hdr_type != PCI_HEADER_TYPE_BRIDGE)
++		return 0;
++
++	if (pci_is_pcie(dev)) {
++		if ((pci_pcie_type(dev) != PCI_EXP_TYPE_ROOT_PORT) &&
++		    (pci_pcie_type(dev) != PCI_EXP_TYPE_DOWNSTREAM))
++			return 0;
++	}
++
++	subordinate = dev->subordinate;
++	list_for_each_entry(child, &subordinate->devices, bus_list) {
++		/* Don't reset switch, bridge, VGA device */
++		if ((child->hdr_type == PCI_HEADER_TYPE_BRIDGE) ||
++		    ((child->class >> 16) == PCI_BASE_CLASS_BRIDGE) ||
++		    ((child->class >> 16) == PCI_BASE_CLASS_DISPLAY))
++			return 0;
++
++		if (pci_is_pcie(child)) {
++			if ((pci_pcie_type(child) == PCI_EXP_TYPE_UPSTREAM) ||
++			    (pci_pcie_type(child) == PCI_EXP_TYPE_PCI_BRIDGE))
++				return 0;
++		}
++	}
++
++	return 1;
++}
++
++struct pci_dev_reset_entry {
++	struct list_head list;
++	struct pci_dev *dev;
++};
++int pci_reset_endpoints(void)
++{
++	struct pci_dev *dev = NULL;
++	struct pci_dev_reset_entry *pdev_entry, *tmp;
++	struct pci_bus *subordinate = NULL;
++	int has_it;
++
++	LIST_HEAD(pdev_list);
++
++
++	for_each_pci_dev(dev) {
++		subordinate = dev->subordinate;
++		if (!subordinate || list_empty(&subordinate->devices))
++			continue;
++
++		has_it = 0;
++		list_for_each_entry(pdev_entry, &pdev_list, list) {
++			if (dev == pdev_entry->dev) {
++				has_it = 1;
++				break;
++			}
++		}
++		if (has_it)
++			continue;
++
++		if (__pci_dev_need_reset(dev)) {
++			pdev_entry = kmalloc(sizeof(*pdev_entry), GFP_KERNEL);
++			pdev_entry->dev = dev;
++			list_add(&pdev_entry->list, &pdev_list);
++		}
++	}
++
++	list_for_each_entry_safe(pdev_entry, tmp, &pdev_list, list) {
++		pci_try_reset_bus(pdev_entry->dev->subordinate);
++		kfree(pdev_entry);
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(pci_reset_endpoints);
++
+ static int __init pci_setup(char *str)
+ {
+ 	while (str) {
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 5be8db4..1cf7207 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -1869,4 +1869,10 @@ static inline bool pci_is_dev_assigned(struct pci_dev *pdev)
+ {
+ 	return (pdev->dev_flags & PCI_DEV_FLAGS_ASSIGNED) == PCI_DEV_FLAGS_ASSIGNED;
+ }
++
++/*
++ * Reset all pci devices by resetting the buses.
++ */
++int pci_reset_endpoints(void);
++
+ #endif /* LINUX_PCI_H */
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index 2abf9f6..986e8f7 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -36,6 +36,7 @@
+ #include <linux/syscore_ops.h>
+ #include <linux/compiler.h>
+ #include <linux/hugetlb.h>
++#include <linux/pci.h>
+ 
+ #include <asm/page.h>
+ #include <asm/uaccess.h>
+@@ -1474,6 +1475,7 @@ void crash_kexec(struct pt_regs *regs)
+ 		if (kexec_crash_image) {
+ 			struct pt_regs fixed_regs;
+ 
++			pci_reset_endpoints();
+ 			crash_setup_regs(&fixed_regs, regs);
+ 			crash_save_vmcoreinfo();
+ 			machine_crash_shutdown(&fixed_regs);
 -- 
-1.9.1
+2.0.0-rc0
 
