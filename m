@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328AbaJQOkB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 10:40:01 -0400
+	id S1753372AbaJQOkj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 10:40:39 -0400
 Received: from mga02.intel.com ([134.134.136.20]:59879 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753073AbaJQOjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 10:39:31 -0400
+	id S1753076AbaJQOj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 10:39:26 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,739,1406617200"; 
-   d="scan'208";a="590940679"
+   d="scan'208";a="590940640"
 From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 To: Kishon Vijay Abraham I <kishon@ti.com>
 Cc: Vivek Gautam <gautam.vivek@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, andrew.kim@intel.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCHv4 5/6] base: platform: name the device already during allocation
-Date: Fri, 17 Oct 2014 17:39:15 +0300
-Message-Id: <1413556756-5050-6-git-send-email-heikki.krogerus@linux.intel.com>
+        linux-usb@vger.kernel.org, andrew.kim@intel.com
+Subject: [PATCHv4 3/6] arm: omap3: twl: use the new lookup method with usb phy
+Date: Fri, 17 Oct 2014 17:39:13 +0300
+Message-Id: <1413556756-5050-4-git-send-email-heikki.krogerus@linux.intel.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1413556756-5050-1-git-send-email-heikki.krogerus@linux.intel.com>
 References: <1413556756-5050-1-git-send-email-heikki.krogerus@linux.intel.com>
@@ -24,145 +23,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The device name is needed when assigning resources like
-clocks or GPIOs to devices using lookups. If
-PLATFORM_DEVICE_AUTO is used, the device name is not know
-before platform_device_add is called after which it's too
-late to assign that kind of resources as the drivers most
-likely have already requested them.
-
-By naming the device already in platform_device_alloc, the
-resources can be assigned before platform_device_add is
-called.
+Provide complete association for the phy and it's user
+(musb) with the new phy lookup method.
 
 Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/base/platform.c | 69 +++++++++++++++++++++++++++++--------------------
- 1 file changed, 41 insertions(+), 28 deletions(-)
+ arch/arm/mach-omap2/twl-common.c | 17 ++++++-----------
+ 1 file changed, 6 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index b2afc29..97b6da3 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -195,11 +195,41 @@ void platform_device_put(struct platform_device *pdev)
+diff --git a/arch/arm/mach-omap2/twl-common.c b/arch/arm/mach-omap2/twl-common.c
+index b0d54da..0e4f3e3 100644
+--- a/arch/arm/mach-omap2/twl-common.c
++++ b/arch/arm/mach-omap2/twl-common.c
+@@ -91,18 +91,11 @@ void __init omap_pmic_late_init(void)
  }
- EXPORT_SYMBOL_GPL(platform_device_put);
  
-+static int pdev_set_name(struct platform_device *pdev)
-+{
-+	int ret;
-+
-+	switch (pdev->id) {
-+	default:
-+		return dev_set_name(&pdev->dev, "%s.%d", pdev->name,  pdev->id);
-+	case PLATFORM_DEVID_NONE:
-+		return dev_set_name(&pdev->dev, "%s", pdev->name);
-+	case PLATFORM_DEVID_AUTO:
-+		/*
-+		 * Automatically allocated device ID. We mark it as such so
-+		 * that we remember it must be freed, and we append a suffix
-+		 * to avoid namespace collision with explicit IDs.
-+		 */
-+		ret = ida_simple_get(&platform_devid_ida, 0, 0, GFP_KERNEL);
-+		if (ret < 0)
-+			return ret;
-+		pdev->id = ret;
-+		pdev->id_auto = true;
-+		return dev_set_name(&pdev->dev, "%s.%d.auto", pdev->name,
-+				    pdev->id);
+ #if defined(CONFIG_ARCH_OMAP3)
+-struct phy_consumer consumers[] = {
+-	PHY_CONSUMER("musb-hdrc.0", "usb"),
+-};
+-
+-struct phy_init_data init_data = {
+-	.consumers = consumers,
+-	.num_consumers = ARRAY_SIZE(consumers),
+-};
++static struct phy_lookup twl4030_usb_lookup = PHY_LOOKUP("twl4030_usb",
++							 "musb-hdrc.0", "usb");
+ 
+ static struct twl4030_usb_data omap3_usb_pdata = {
+-	.usb_mode	= T2_USB_MODE_ULPI,
+-	.init_data	= &init_data,
++	.usb_mode = T2_USB_MODE_ULPI,
+ };
+ 
+ static int omap3_batt_table[] = {
+@@ -225,8 +218,10 @@ void __init omap3_pmic_get_config(struct twl4030_platform_data *pmic_data,
+ 	}
+ 
+ 	/* Common platform data configurations */
+-	if (pdata_flags & TWL_COMMON_PDATA_USB && !pmic_data->usb)
++	if (pdata_flags & TWL_COMMON_PDATA_USB && !pmic_data->usb) {
++		phy_register_lookup(&twl4030_usb_lookup);
+ 		pmic_data->usb = &omap3_usb_pdata;
 +	}
-+
-+	return 0;
-+}
-+
- static void platform_device_release(struct device *dev)
- {
- 	struct platform_object *pa = container_of(dev, struct platform_object,
- 						  pdev.dev);
  
-+	if (pa->pdev.id_auto)
-+		ida_simple_remove(&platform_devid_ida, pa->pdev.id);
-+
- 	of_device_node_put(&pa->pdev.dev);
- 	kfree(pa->pdev.dev.platform_data);
- 	kfree(pa->pdev.mfd_cell);
-@@ -228,6 +258,10 @@ struct platform_device *platform_device_alloc(const char *name, int id)
- 		device_initialize(&pa->pdev.dev);
- 		pa->pdev.dev.release = platform_device_release;
- 		arch_setup_pdev_archdata(&pa->pdev);
-+		if (pdev_set_name(&pa->pdev)) {
-+			kfree(pa);
-+			return NULL;
-+		}
- 	}
- 
- 	return pa ? &pa->pdev : NULL;
-@@ -308,28 +342,6 @@ int platform_device_add(struct platform_device *pdev)
- 
- 	pdev->dev.bus = &platform_bus_type;
- 
--	switch (pdev->id) {
--	default:
--		dev_set_name(&pdev->dev, "%s.%d", pdev->name,  pdev->id);
--		break;
--	case PLATFORM_DEVID_NONE:
--		dev_set_name(&pdev->dev, "%s", pdev->name);
--		break;
--	case PLATFORM_DEVID_AUTO:
--		/*
--		 * Automatically allocated device ID. We mark it as such so
--		 * that we remember it must be freed, and we append a suffix
--		 * to avoid namespace collision with explicit IDs.
--		 */
--		ret = ida_simple_get(&platform_devid_ida, 0, 0, GFP_KERNEL);
--		if (ret < 0)
--			goto err_out;
--		pdev->id = ret;
--		pdev->id_auto = true;
--		dev_set_name(&pdev->dev, "%s.%d.auto", pdev->name, pdev->id);
--		break;
--	}
--
- 	for (i = 0; i < pdev->num_resources; i++) {
- 		struct resource *p, *r = &pdev->resource[i];
- 
-@@ -372,7 +384,6 @@ int platform_device_add(struct platform_device *pdev)
- 			release_resource(r);
- 	}
- 
-- err_out:
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(platform_device_add);
-@@ -392,11 +403,6 @@ void platform_device_del(struct platform_device *pdev)
- 	if (pdev) {
- 		device_del(&pdev->dev);
- 
--		if (pdev->id_auto) {
--			ida_simple_remove(&platform_devid_ida, pdev->id);
--			pdev->id = PLATFORM_DEVID_AUTO;
--		}
--
- 		for (i = 0; i < pdev->num_resources; i++) {
- 			struct resource *r = &pdev->resource[i];
- 			unsigned long type = resource_type(r);
-@@ -414,8 +420,15 @@ EXPORT_SYMBOL_GPL(platform_device_del);
-  */
- int platform_device_register(struct platform_device *pdev)
- {
-+	int ret;
-+
- 	device_initialize(&pdev->dev);
- 	arch_setup_pdev_archdata(pdev);
-+
-+	ret = pdev_set_name(pdev);
-+	if (ret)
-+		return ret;
-+
- 	return platform_device_add(pdev);
- }
- EXPORT_SYMBOL_GPL(platform_device_register);
+ 	if (pdata_flags & TWL_COMMON_PDATA_BCI && !pmic_data->bci)
+ 		pmic_data->bci = &omap3_bci_pdata;
 -- 
 2.1.1
 
