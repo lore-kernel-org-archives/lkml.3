@@ -1,63 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462AbaJQIke (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 04:40:34 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:49695 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751158AbaJQIka (ORCPT
+	id S1753551AbaJQInP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 04:43:15 -0400
+Received: from regular1.263xmail.com ([211.150.99.140]:58306 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158AbaJQInI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 04:40:30 -0400
-Date: Fri, 17 Oct 2014 10:40:11 +0200
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 4/5] mm: memcontrol: continue cache reclaim from offlined
- groups
-Message-ID: <20141017084011.GC5641@esperanza>
-References: <1413303637-23862-1-git-send-email-hannes@cmpxchg.org>
- <1413303637-23862-5-git-send-email-hannes@cmpxchg.org>
+	Fri, 17 Oct 2014 04:43:08 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: mark.yao@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: mark.yao@rock-chips.com
+X-UNIQUE-TAG: <1984f63e6866eb9151fcbe4eeb6dc39f>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <5440D68E.4070103@rock-chips.com>
+Date: Fri, 17 Oct 2014 16:42:54 +0800
+From: Mark yao <mark.yao@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1413303637-23862-5-git-send-email-hannes@cmpxchg.org>
-X-Originating-IP: [62.156.150.204]
+To: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>
+CC: Dave Airlie <airlied@gmail.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Rob Clark <robdclark@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-doc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>, linux-api@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, dianders@chromium.org,
+        =?UTF-8?B?U3TDqXBoYW5lIE1hcmNoZXNpbg==?= <marcheu@chromium.org>,
+        dbehr@chromium.org, Olof Johansson <olof@lixom.net>,
+        djkurtz@chromium.org, xjq@rock-chips.com, kfx@rock-chips.com,
+        cym@rock-chips.c, om@null.null, cf@rock-chips.com, zyw@rock-chips.com,
+        xxm@rock-chips.com, huangtao@rock-chips.com, kever.yang@rock-chips.com,
+        yxj@rock-chips.com, wxt@rock-chips.com, xw@rock-chips.com
+Subject: Re: [PATCH v11 0/3] Add drm driver for Rockchip Socs
+References: <1412763781-31533-1-git-send-email-mark.yao@rock-chips.com> <282711393.zuCWIeu2Oz@phil> <5440D041.9020300@rock-chips.com> <4044646.m0RgIJvLdJ@phil>
+In-Reply-To: <4044646.m0RgIJvLdJ@phil>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 14, 2014 at 12:20:36PM -0400, Johannes Weiner wrote:
-> On cgroup deletion, outstanding page cache charges are moved to the
-> parent group so that they're not lost and can be reclaimed during
-> pressure on/inside said parent.  But this reparenting is fairly tricky
-> and its synchroneous nature has led to several lock-ups in the past.
-> 
-> Since css iterators now also include offlined css, memcg iterators can
-> be changed to include offlined children during reclaim of a group, and
-> leftover cache can just stay put.
-> 
-> There is a slight change of behavior in that charges of deleted groups
-> no longer show up as local charges in the parent.  But they are still
-> included in the parent's hierarchical statistics.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> ---
->  mm/memcontrol.c | 218 +-------------------------------------------------------
->  1 file changed, 1 insertion(+), 217 deletions(-)
+On 2014年10月17日 16:25, Heiko Stübner wrote:
+> Am Freitag, 17. Oktober 2014, 16:16:01 schrieb Mark yao:
+>> On 2014年10月17日 14:24, Heiko Stübner wrote:
+>>> Hi Mark,
+>>>
+>>> Am Freitag, 17. Oktober 2014, 12:22:53 schrieb Mark yao:
+>>>> On 2014年10月17日 08:46, Dave Airlie wrote:
+>>>>> On 17 October 2014 10:40, Mark yao <mark.yao@rock-chips.com> wrote:
+>>>>>> Hi
+>>>>>> I think Rockchip drm driver is ready now, can it land?
+>>>>> I probably want to wait until -rc1 though I suppose since its a new
+>>>>> driver and self contained we might be able to see if Linus is
+>>>>> interested in squeezing it in.
+>>>>>
+>>>>> Can you send me a git pull request for it against drm-next or even 3.17.
+>>>>>
+>>>>> Dave.
+>>>> Hi, Dave
+>>>>
+>>>>        the git pull request:
+>>>> The following changes since commit
+> 4db36870b92cdf5a79615aeabc68efc97df13918:
+>>> I think this needs a fix. Your commit 4db36870b is the pending iommu
+>>> driver. Which isn't part of neither the mainline kernel nor the drm tree
+>>> Dave meant.
+>>>
+>>> What Dave meant was to base your patches on top of his "drm-next" branch
+>>> or
+>>> the raw 3.17 release.
+>>>
+>>> So either base the branch on drm-next from
+>>>
+>>> 	http://cgit.freedesktop.org/~airlied/linux/log/?h=drm-next
+>>>
+>>> or the 3.17 release tag from Linus Torvalds. Apply your patches on top and
+>>> create pull from there.
+>>>
+>>> I've just checked ... your drm patches apply cleanly against 3.17, so your
+>>> branch to be pulled should probably look something like
+>>>
+>>> 	https://github.com/mmind/linux-rockchip/commits/tmp/drmtest
+>>>
+>>> Heiko
+>> Hi Heiko
+>>       thanks for you check.
+>>
+>> Hi Dave
+>>       I have reupload a branch cleanly against 3.17:
+> sorry, but I think this might need another round.
+>
+> Your current base commit 0429fbc0bdc2 is already part of the current 3.18
+> merge window - which Dave won't have in his tree I guess. The commit you
+> should base your patches on is bfe01a5ba249 - the 3.17 release.
+>
+> Simply do a
+> 	git checkout v3.17
+> 	git checkout -b drmupstream
+>
+> apply your patches and send the pull request with v3.17 as base.
+>
+>
+> Heiko
+>
 
-I do like the stats :-) However, as I've already mentioned, on big
-machines we can end up with hundred of thousands of dead css's.
-Iterating over all of them during reclaim may result in noticeable lags.
-One day we'll have to do something about that I guess.
+I think that would be ok:
 
-Another issue is that AFAICT currently we can't have more than 64K
-cgroups due to the MEM_CGROUP_ID_MAX limit. The limit exists, because we
-use css ids for tagging swap entries and we don't want to spend too much
-memory on this. May be, we should simply use the mem_cgroup pointer
-instead of the css id?
+The following changes since commit bfe01a5ba2490f299e1d2d5508cbbbadd897bbe9:
 
-OTOH, the reparenting code looks really ugly. And we can't easily
-reparent swap and kmem. So I think it's a reasonable change.
+   Linux 3.17 (2014-10-05 12:23:04 -0700)
 
-Acked-by: Vladimir Davydov <vdavydov@parallels.com>
+are available in the git repository at:
+
+   https://github.com/markyzq/kernel-drm-rockchip.git drmrockchip
+
+for you to fetch changes up to 45bb5f4e7e82b30e9e7069c73441413680c9a59f:
+
+   dt-bindings: video: Add documentation for rockchip vop (2014-10-17 
+16:39:31 +0800)
+
+----------------------------------------------------------------
+Mark yao (3):
+       drm: rockchip: Add basic drm driver
+       dt-bindings: video: Add for rockchip display subsytem
+       dt-bindings: video: Add documentation for rockchip vop
+
+  .../devicetree/bindings/video/rockchip-drm.txt     |   19 +
+  .../devicetree/bindings/video/rockchip-vop.txt     |   58 +
+  drivers/gpu/drm/Kconfig                            |    2 +
+  drivers/gpu/drm/Makefile                           |    1 +
+  drivers/gpu/drm/rockchip/Kconfig                   |   17 +
+  drivers/gpu/drm/rockchip/Makefile                  |    8 +
+  drivers/gpu/drm/rockchip/rockchip_drm_drv.c        |  449 ++++++
+  drivers/gpu/drm/rockchip/rockchip_drm_drv.h        |   54 +
+  drivers/gpu/drm/rockchip/rockchip_drm_fb.c         |  200 +++
+  drivers/gpu/drm/rockchip/rockchip_drm_fb.h         |   28 +
+  drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c      |  210 +++
+  drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h      |   20 +
+  drivers/gpu/drm/rockchip/rockchip_drm_gem.c        |  293 ++++
+  drivers/gpu/drm/rockchip/rockchip_drm_gem.h        |   54 +
+  drivers/gpu/drm/rockchip/rockchip_drm_vop.c        | 1427 
+++++++++++++++++++++
+  drivers/gpu/drm/rockchip/rockchip_drm_vop.h        |  196 +++
+  16 files changed, 3036 insertions(+)
+  create mode 100644 
+Documentation/devicetree/bindings/video/rockchip-drm.txt
+  create mode 100644 
+Documentation/devicetree/bindings/video/rockchip-vop.txt
+  create mode 100644 drivers/gpu/drm/rockchip/Kconfig
+  create mode 100644 drivers/gpu/drm/rockchip/Makefile
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_drv.c
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_drv.h
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fb.c
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fb.h
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_gem.c
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_gem.h
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_vop.c
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_vop.h
+
+
+
