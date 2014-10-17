@@ -1,180 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753551AbaJQInP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 04:43:15 -0400
-Received: from regular1.263xmail.com ([211.150.99.140]:58306 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751158AbaJQInI (ORCPT
+	id S1753569AbaJQIoT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 04:44:19 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:36622 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751083AbaJQIoP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 04:43:08 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: mark.yao@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: mark.yao@rock-chips.com
-X-UNIQUE-TAG: <1984f63e6866eb9151fcbe4eeb6dc39f>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <5440D68E.4070103@rock-chips.com>
-Date: Fri, 17 Oct 2014 16:42:54 +0800
-From: Mark yao <mark.yao@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 17 Oct 2014 04:44:15 -0400
 MIME-Version: 1.0
-To: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>
-CC: Dave Airlie <airlied@gmail.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Rob Clark <robdclark@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rom Lemarchand <romlem@google.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-doc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>, linux-api@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, dianders@chromium.org,
-        =?UTF-8?B?U3TDqXBoYW5lIE1hcmNoZXNpbg==?= <marcheu@chromium.org>,
-        dbehr@chromium.org, Olof Johansson <olof@lixom.net>,
-        djkurtz@chromium.org, xjq@rock-chips.com, kfx@rock-chips.com,
-        cym@rock-chips.c, om@null.null, cf@rock-chips.com, zyw@rock-chips.com,
-        xxm@rock-chips.com, huangtao@rock-chips.com, kever.yang@rock-chips.com,
-        yxj@rock-chips.com, wxt@rock-chips.com, xw@rock-chips.com
-Subject: Re: [PATCH v11 0/3] Add drm driver for Rockchip Socs
-References: <1412763781-31533-1-git-send-email-mark.yao@rock-chips.com> <282711393.zuCWIeu2Oz@phil> <5440D041.9020300@rock-chips.com> <4044646.m0RgIJvLdJ@phil>
-In-Reply-To: <4044646.m0RgIJvLdJ@phil>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1413431475-12799-2-git-send-email-rebecca.swee.fun.chang@intel.com>
+References: <1413431475-12799-1-git-send-email-rebecca.swee.fun.chang@intel.com>
+ <1413431475-12799-2-git-send-email-rebecca.swee.fun.chang@intel.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Fri, 17 Oct 2014 17:43:54 +0900
+Message-ID: <CAAVeFuKVH4R0r1mdxgNRJY=D9hVSyO7NQ5eCOn4qcYMz6+vR3w@mail.gmail.com>
+Subject: Re: [PATCHv3 1/3] gpio: sch: Consolidate similar algorithms
+To: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Mika Westerberg <mika.westerberg@intel.com>,
+        GPIO Subsystem Mailing List <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Denis Turischev <denis.turischev@compulab.co.il>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014年10月17日 16:25, Heiko Stübner wrote:
-> Am Freitag, 17. Oktober 2014, 16:16:01 schrieb Mark yao:
->> On 2014年10月17日 14:24, Heiko Stübner wrote:
->>> Hi Mark,
->>>
->>> Am Freitag, 17. Oktober 2014, 12:22:53 schrieb Mark yao:
->>>> On 2014年10月17日 08:46, Dave Airlie wrote:
->>>>> On 17 October 2014 10:40, Mark yao <mark.yao@rock-chips.com> wrote:
->>>>>> Hi
->>>>>> I think Rockchip drm driver is ready now, can it land?
->>>>> I probably want to wait until -rc1 though I suppose since its a new
->>>>> driver and self contained we might be able to see if Linus is
->>>>> interested in squeezing it in.
->>>>>
->>>>> Can you send me a git pull request for it against drm-next or even 3.17.
->>>>>
->>>>> Dave.
->>>> Hi, Dave
->>>>
->>>>        the git pull request:
->>>> The following changes since commit
-> 4db36870b92cdf5a79615aeabc68efc97df13918:
->>> I think this needs a fix. Your commit 4db36870b is the pending iommu
->>> driver. Which isn't part of neither the mainline kernel nor the drm tree
->>> Dave meant.
->>>
->>> What Dave meant was to base your patches on top of his "drm-next" branch
->>> or
->>> the raw 3.17 release.
->>>
->>> So either base the branch on drm-next from
->>>
->>> 	http://cgit.freedesktop.org/~airlied/linux/log/?h=drm-next
->>>
->>> or the 3.17 release tag from Linus Torvalds. Apply your patches on top and
->>> create pull from there.
->>>
->>> I've just checked ... your drm patches apply cleanly against 3.17, so your
->>> branch to be pulled should probably look something like
->>>
->>> 	https://github.com/mmind/linux-rockchip/commits/tmp/drmtest
->>>
->>> Heiko
->> Hi Heiko
->>       thanks for you check.
->>
->> Hi Dave
->>       I have reupload a branch cleanly against 3.17:
-> sorry, but I think this might need another round.
+On Thu, Oct 16, 2014 at 12:51 PM, Chang Rebecca Swee Fun
+<rebecca.swee.fun.chang@intel.com> wrote:
+> Consolidating similar algorithms into common functions to make
+> GPIO SCH simpler and manageable.
 >
-> Your current base commit 0429fbc0bdc2 is already part of the current 3.18
-> merge window - which Dave won't have in his tree I guess. The commit you
-> should base your patches on is bfe01a5ba249 - the 3.17 release.
+> Signed-off-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+> ---
+>  drivers/gpio/gpio-sch.c |   95 ++++++++++++++++++++++++++---------------------
+>  1 file changed, 53 insertions(+), 42 deletions(-)
 >
-> Simply do a
-> 	git checkout v3.17
-> 	git checkout -b drmupstream
+> diff --git a/drivers/gpio/gpio-sch.c b/drivers/gpio/gpio-sch.c
+> index 99720c8..6e89be9 100644
+> --- a/drivers/gpio/gpio-sch.c
+> +++ b/drivers/gpio/gpio-sch.c
+> @@ -63,94 +63,105 @@ static unsigned sch_gpio_bit(struct sch_gpio *sch, unsigned gpio)
+>         return gpio % 8;
+>  }
 >
-> apply your patches and send the pull request with v3.17 as base.
+> -static void sch_gpio_enable(struct sch_gpio *sch, unsigned gpio)
+> +static void sch_gpio_register_set(struct sch_gpio *sch, unsigned gpio,
+> +                                 unsigned reg)
+>  {
+>         unsigned short offset, bit;
+>         u8 enable;
 >
+>         spin_lock(&sch->lock);
+
+...
+
 >
-> Heiko
+> -       offset = sch_gpio_offset(sch, gpio, GEN);
+> +       offset = sch_gpio_offset(sch, gpio, reg);
+>         bit = sch_gpio_bit(sch, gpio);
 >
+>         enable = inb(sch->iobase + offset);
 
-I think that would be ok:
+I see identical blocks of code in sch_gpio_register_clear(),
+sch_gpio_reg_get() and sch_gpio_reg_set() (and possibly other
+functions?). Maybe this could be factorized into an inline function
+that would return the "enable" variable?
 
-The following changes since commit bfe01a5ba2490f299e1d2d5508cbbbadd897bbe9:
+Also, "enable" looks like the wrong name here. The exact same result
+is later called "disable" and "curr_dirs" later.
 
-   Linux 3.17 (2014-10-05 12:23:04 -0700)
+> -       if (!(enable & (1 << bit)))
+> -               outb(enable | (1 << bit), sch->iobase + offset);
+> +       if (!(enable & BIT(bit)))
+> +               outb(enable | BIT(bit), sch->iobase + offset);
+>
+>         spin_unlock(&sch->lock);
+>  }
+>
+> -static int sch_gpio_direction_in(struct gpio_chip *gc, unsigned  gpio_num)
+> +static void sch_gpio_register_clear(struct sch_gpio *sch, unsigned gpio,
+> +                                   unsigned reg)
+>  {
+> -       struct sch_gpio *sch = to_sch_gpio(gc);
+> -       u8 curr_dirs;
+>         unsigned short offset, bit;
+> +       u8 disable;
+>
+>         spin_lock(&sch->lock);
+>
+> -       offset = sch_gpio_offset(sch, gpio_num, GIO);
+> -       bit = sch_gpio_bit(sch, gpio_num);
+> -
+> -       curr_dirs = inb(sch->iobase + offset);
+> +       offset = sch_gpio_offset(sch, gpio, reg);
+> +       bit = sch_gpio_bit(sch, gpio);
+>
+> -       if (!(curr_dirs & (1 << bit)))
+> -               outb(curr_dirs | (1 << bit), sch->iobase + offset);
+> +       disable = inb(sch->iobase + offset);
+> +       if (disable & BIT(bit))
+> +               outb(disable & ~BIT(bit), sch->iobase + offset);
+>
+>         spin_unlock(&sch->lock);
+> -       return 0;
+>  }
+>
+> -static int sch_gpio_get(struct gpio_chip *gc, unsigned gpio_num)
+> +static int sch_gpio_reg_get(struct gpio_chip *gc, unsigned gpio, unsigned reg)
+>  {
+>         struct sch_gpio *sch = to_sch_gpio(gc);
+> -       int res;
+>         unsigned short offset, bit;
+> +       u8 curr_dirs;
+>
+> -       offset = sch_gpio_offset(sch, gpio_num, GLV);
+> -       bit = sch_gpio_bit(sch, gpio_num);
+> +       offset = sch_gpio_offset(sch, gpio, reg);
+> +       bit = sch_gpio_bit(sch, gpio);
+>
+> -       res = !!(inb(sch->iobase + offset) & (1 << bit));
+> +       curr_dirs = !!(inb(sch->iobase + offset) & BIT(bit));
+>
+> -       return res;
+> +       return curr_dirs;
+>  }
+>
+> -static void sch_gpio_set(struct gpio_chip *gc, unsigned gpio_num, int val)
+> +static void sch_gpio_reg_set(struct gpio_chip *gc, unsigned gpio, unsigned reg,
+> +                            int val)
+>  {
+>         struct sch_gpio *sch = to_sch_gpio(gc);
+> -       u8 curr_vals;
+>         unsigned short offset, bit;
+> +       u8 curr_dirs;
+>
+> -       spin_lock(&sch->lock);
+> -
+> -       offset = sch_gpio_offset(sch, gpio_num, GLV);
+> -       bit = sch_gpio_bit(sch, gpio_num);
+> +       offset = sch_gpio_offset(sch, gpio, reg);
+> +       bit = sch_gpio_bit(sch, gpio);
+>
+> -       curr_vals = inb(sch->iobase + offset);
+> +       curr_dirs = inb(sch->iobase + offset);
+>
+>         if (val)
+> -               outb(curr_vals | (1 << bit), sch->iobase + offset);
+> +               outb(curr_dirs | BIT(bit), sch->iobase + offset);
+>         else
+> -               outb((curr_vals & ~(1 << bit)), sch->iobase + offset);
+> +               outb((curr_dirs & ~BIT(bit)), sch->iobase + offset);
+> +}
 
-are available in the git repository at:
+Mmmm this really looks like sch_gpio_register_set() and
+sch_gpio_register_clear() could just call sch_gpio_reg_set() right
+after acquiring the spinlock. Also the names are very similar and it
+is not clear why you need two different functions here. Couldn't you
+call sch_gpio_reg_set(gc, gpio, reg, 1) in place of
+sch_gpio_register_set() and sch_gpio_reg_set(gc, gpio, reg, 0) for
+sch_gpio_register_clear()? You may need to acquire the spinlock before
+some call sites, but that's preferable to having very similar
+functions bearing a very similar name IMHO.
 
-   https://github.com/markyzq/kernel-drm-rockchip.git drmrockchip
+>
+> +static int sch_gpio_direction_in(struct gpio_chip *gc, unsigned gpio_num)
+> +{
+> +       struct sch_gpio *sch = to_sch_gpio(gc);
+> +
+> +       spin_lock(&sch->lock);
+> +       sch_gpio_register_set(sch, gpio_num, GIO);
 
-for you to fetch changes up to 45bb5f4e7e82b30e9e7069c73441413680c9a59f:
+So here you are acquiring sch->lock, then calling
+sch_gpio_register_set() which will try to acquire the same spinlock
+first thing. Wouldn't that deadlock? Have you tested changing the
+direction of a GPIO? This again speaks in favor or reducing the number
+of similar functions in this file.
 
-   dt-bindings: video: Add documentation for rockchip vop (2014-10-17 
-16:39:31 +0800)
+Unless I misunderstood something there are still some issues that make
+this file harder to understand than it should, and which can sometimes
+bork the system altogether. It is a good idea to cleanup this file,
+but please try to go one step further - this should simplify locking
+and ultimately get rid of the locking issues.
 
-----------------------------------------------------------------
-Mark yao (3):
-       drm: rockchip: Add basic drm driver
-       dt-bindings: video: Add for rockchip display subsytem
-       dt-bindings: video: Add documentation for rockchip vop
-
-  .../devicetree/bindings/video/rockchip-drm.txt     |   19 +
-  .../devicetree/bindings/video/rockchip-vop.txt     |   58 +
-  drivers/gpu/drm/Kconfig                            |    2 +
-  drivers/gpu/drm/Makefile                           |    1 +
-  drivers/gpu/drm/rockchip/Kconfig                   |   17 +
-  drivers/gpu/drm/rockchip/Makefile                  |    8 +
-  drivers/gpu/drm/rockchip/rockchip_drm_drv.c        |  449 ++++++
-  drivers/gpu/drm/rockchip/rockchip_drm_drv.h        |   54 +
-  drivers/gpu/drm/rockchip/rockchip_drm_fb.c         |  200 +++
-  drivers/gpu/drm/rockchip/rockchip_drm_fb.h         |   28 +
-  drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c      |  210 +++
-  drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h      |   20 +
-  drivers/gpu/drm/rockchip/rockchip_drm_gem.c        |  293 ++++
-  drivers/gpu/drm/rockchip/rockchip_drm_gem.h        |   54 +
-  drivers/gpu/drm/rockchip/rockchip_drm_vop.c        | 1427 
-++++++++++++++++++++
-  drivers/gpu/drm/rockchip/rockchip_drm_vop.h        |  196 +++
-  16 files changed, 3036 insertions(+)
-  create mode 100644 
-Documentation/devicetree/bindings/video/rockchip-drm.txt
-  create mode 100644 
-Documentation/devicetree/bindings/video/rockchip-vop.txt
-  create mode 100644 drivers/gpu/drm/rockchip/Kconfig
-  create mode 100644 drivers/gpu/drm/rockchip/Makefile
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_drv.c
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_drv.h
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fb.c
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fb.h
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_gem.c
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_gem.h
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_vop.c
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_vop.h
-
-
-
+And hopefully I will also take less time to review v4. :P
