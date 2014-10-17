@@ -1,73 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753368AbaJQQIj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 12:08:39 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:47303 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753154AbaJQQIi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 12:08:38 -0400
-Message-ID: <54413F02.1050405@roeck-us.net>
-Date: Fri, 17 Oct 2014 09:08:34 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753395AbaJQQK5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 12:10:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53985 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752032AbaJQQKz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 12:10:55 -0400
+Date: Fri, 17 Oct 2014 18:10:06 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Jen-Cheng(Tommy) Huang" <tommy24@gatech.edu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 8/9] perf script: Add period data column
+Message-ID: <20141017161006.GA19692@krava.redhat.com>
+References: <1408977943-16594-1-git-send-email-jolsa@kernel.org>
+ <1408977943-16594-9-git-send-email-jolsa@kernel.org>
+ <53FDEC51.3070301@gmail.com>
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>, stable@vger.kernel.org
-CC: satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.12 000/197] 3.12.31-stable review
-References: <cover.1413533329.git.jslaby@suse.cz>
-In-Reply-To: <cover.1413533329.git.jslaby@suse.cz>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Suspect
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 512
-X-CTCH-RefID: str=0001.0A020207.54413F05.014E,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=512,sb=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 1
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 1
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53FDEC51.3070301@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/2014 01:11 AM, Jiri Slaby wrote:
-> This is the start of the stable review cycle for the 3.12.31 release.
-> There are 197 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Tue Oct 21 10:08:49 CEST 2014.
-> Anything received after that time might be too late.
->
+On Wed, Aug 27, 2014 at 08:33:53AM -0600, David Ahern wrote:
+> On 8/25/14, 8:45 AM, Jiri Olsa wrote:
+> >Adding period data column to be displayed in perf script.
+> >It's possible to get period values using -f option, like:
+> >
+> >   $ perf script -f comm,tid,time,period,ip,sym,dso
+> >           :26019 26019 52414.329088:       3707  ffffffff8105443a native_write_msr_safe ([kernel.kallsyms])
+> >           :26019 26019 52414.329088:         44  ffffffff8105443a native_write_msr_safe ([kernel.kallsyms])
+> >           :26019 26019 52414.329093:       1987  ffffffff8105443a native_write_msr_safe ([kernel.kallsyms])
+> >           :26019 26019 52414.329093:          6  ffffffff8105443a native_write_msr_safe ([kernel.kallsyms])
+> >               ls 26019 52414.329442:     537558        3407c0639c _dl_map_object_from_fd (/usr/lib64/ld-2.17.so)
+> >               ls 26019 52414.329442:       2099        3407c0639c _dl_map_object_from_fd (/usr/lib64/ld-2.17.so)
+> >               ls 26019 52414.330181:    1242100        34080917bb get_next_seq (/usr/lib64/libc-2.17.so)
+> >               ls 26019 52414.330181:       3774        34080917bb get_next_seq (/usr/lib64/libc-2.17.so)
+> >               ls 26019 52414.331427:    1083662  ffffffff810c7dc2 update_curr ([kernel.kallsyms])
+> >               ls 26019 52414.331427:        360  ffffffff810c7dc2 update_curr ([kernel.kallsyms])
+> >
+> >Cc: Andi Kleen <andi@firstfloor.org>
+> >Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+> >Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> >Cc: David Ahern <dsahern@gmail.com>
+> >Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> >Cc: Ingo Molnar <mingo@kernel.org>
+> >Cc: Jen-Cheng(Tommy) Huang <tommy24@gatech.edu>
+> >Cc: Namhyung Kim <namhyung@kernel.org>
+> >Cc: Paul Mackerras <paulus@samba.org>
+> >Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> >Cc: Stephane Eranian <eranian@google.com>
+> >Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+> >---
+> >  tools/perf/Documentation/perf-script.txt |  2 +-
+> >  tools/perf/builtin-script.c              | 12 +++++++++++-
+> >  2 files changed, 12 insertions(+), 2 deletions(-)
+> 
+> Acked-by: David Ahern <dsahern@gmail.com>
 
-Build results:
-	total: 135 pass: 135 fail: 0
-Qemu test results:
-	total: 27 pass: 27 fail: 0
+Arnaldo,
+could you please pick this one and patch 9/9?
+just realized this was left behind ;-)
 
-Details are available at http://server.roeck-us.net:8010/builders.
-
-Guenter
-
+thanks,
+jirka
