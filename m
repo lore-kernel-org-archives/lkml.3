@@ -1,43 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753596AbaJQIrK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 04:47:10 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:41546 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753360AbaJQIrH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 04:47:07 -0400
-Message-ID: <5440D781.1080308@suse.cz>
-Date: Fri, 17 Oct 2014 10:46:57 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH -next 05/10] tty: Document defunct ASYNC_* bits in uapi
- header
-References: <1413492867-20679-1-git-send-email-peter@hurleysoftware.com> <1413492867-20679-6-git-send-email-peter@hurleysoftware.com>
-In-Reply-To: <1413492867-20679-6-git-send-email-peter@hurleysoftware.com>
-Content-Type: text/plain; charset=iso-8859-2
-Content-Transfer-Encoding: 7bit
+	id S1753672AbaJQIrn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 04:47:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21016 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753538AbaJQIrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 04:47:40 -0400
+From: WANG Chao <chaowang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-api@vger.kernel.org (open list:ABI/API)
+Subject: [PATCH] Documentation/ABI/testing/sysfs-ibft: fix a typo
+Date: Fri, 17 Oct 2014 16:47:26 +0800
+Message-Id: <1413535647-17801-1-git-send-email-chaowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2014, 10:54 PM, Peter Hurley wrote:
-> Note the serial_struct flags for which the kernel ignores and performs
-> no action. The flags cannot be removed since they form part of the
-> userspace interface via the TIOCSSERIAL/TIOCGSERIAL ioctls.
+Correct a sentence in Documentation/ABI/testing/sysfs-ibft.
 
-Hello,
+Signed-off-by: WANG Chao <chaowang@redhat.com>
+---
+ Documentation/ABI/testing/sysfs-ibft | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-would it make sense to mark them deprecated somehow? At build time, or
-at least warn in the serial core that "current->comm is using a
-deprecated flag"_ratelimited()?
-
-thanks,
+diff --git a/Documentation/ABI/testing/sysfs-ibft b/Documentation/ABI/testing/sysfs-ibft
+index c2b7d11..cac3930 100644
+--- a/Documentation/ABI/testing/sysfs-ibft
++++ b/Documentation/ABI/testing/sysfs-ibft
+@@ -20,4 +20,4 @@ Date:		November 2007
+ Contact:	Konrad Rzeszutek <ketuzsezr@darnok.org>
+ Description:	The /sys/firmware/ibft/ethernetX directory will contain
+ 		files that expose the iSCSI Boot Firmware Table NIC data.
+-		This can this can the IP address, MAC, and gateway of the NIC.
++		Usually this contains the IP address, MAC, and gateway of the NIC.
 -- 
-js
-suse labs
+1.9.3
+
