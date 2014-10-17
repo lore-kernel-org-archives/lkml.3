@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162AbaJQMFd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 08:05:33 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:59130 "HELO
+	id S1753203AbaJQMFy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 08:05:54 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:60902 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751664AbaJQMDd (ORCPT
+	with SMTP id S1752571AbaJQMDd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 Oct 2014 08:03:33 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
@@ -19,9 +19,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Bryan Wu <cooloney@gmail.com>, Darren Hart <dvhart@linux.intel.com>,
         Mark Rutland <mark.rutland@arm.com>
-Subject: [PATCH v5 04/12] misc: at25: Make use of device property API
-Date: Fri, 17 Oct 2014 14:07:20 +0200
-Message-ID: <2622882.aDapnxaRN0@vostro.rjw.lan>
+Subject: [PATCH v5 05/12] gpio / ACPI: Add support for _DSD device properties
+Date: Fri, 17 Oct 2014 14:09:06 +0200
+Message-ID: <1560260.mftar1ICFI@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
 In-Reply-To: <11223831.j9KAEfSQsY@vostro.rjw.lan>
 References: <2660541.BycO7TFnA2@vostro.rjw.lan> <11223831.j9KAEfSQsY@vostro.rjw.lan>
@@ -34,104 +34,332 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-Make use of device property API in this driver so that both DT and ACPI
-based systems can use this driver.
+With release of ACPI 5.1 and _DSD method we can finally name GPIOs (and
+other things as well) returned by _CRS. Previously we were only able to
+use integer index to find the corresponding GPIO, which is pretty error
+prone if the order changes.
+
+With _DSD we can now query GPIOs using name instead of an integer index,
+like the below example shows:
+
+  // Bluetooth device with reset and shutdown GPIOs
+  Device (BTH)
+  {
+      Name (_HID, ...)
+
+      Name (_CRS, ResourceTemplate ()
+      {
+          GpioIo (Exclusive, PullUp, 0, 0, IoRestrictionInputOnly,
+                  "\\_SB.GPO0", 0, ResourceConsumer) {15}
+          GpioIo (Exclusive, PullUp, 0, 0, IoRestrictionInputOnly,
+                  "\\_SB.GPO0", 0, ResourceConsumer) {27, 31}
+      })
+
+      Name (_DSD, Package ()
+      {
+          ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
+          Package ()
+	  {
+              Package () {"reset-gpio", Package() {^BTH, 1, 1, 0 }},
+              Package () {"shutdown-gpio", Package() {^BTH, 0, 0, 0 }},
+          }
+      })
+  }
+
+The format of the supported GPIO property is:
+
+  Package () { "name", Package () { ref, index, pin, active_low }}
+
+  ref - The device that has _CRS containing GpioIo()/GpioInt() resources,
+        typically this is the device itself (BTH in our case).
+  index - Index of the GpioIo()/GpioInt() resource in _CRS starting from zero.
+  pin - Pin in the GpioIo()/GpioInt() resource. Typically this is zero.
+  active_low - If 1 the GPIO is marked as active_low.
+
+Since ACPI GpioIo() resource does not have field saying whether it is
+active low or high, the "active_low" argument can be used here. Setting
+it to 1 marks the GPIO as active low.
+
+In our Bluetooth example the "reset-gpio" refers to the second GpioIo()
+resource, second pin in that resource with the GPIO number of 31.
+
+This patch implements necessary support to gpiolib for extracting GPIOs
+using _DSD device properties.
 
 Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/misc/eeprom/at25.c |   34 +++++++++++++---------------------
- 1 file changed, 13 insertions(+), 21 deletions(-)
+ Documentation/acpi/gpio-properties.txt |   52 ++++++++++++++++++++++
+ drivers/gpio/gpiolib-acpi.c            |   78 +++++++++++++++++++++++++++------
+ drivers/gpio/gpiolib.c                 |   30 +++++++++++-
+ drivers/gpio/gpiolib.h                 |    7 +-
+ 4 files changed, 146 insertions(+), 21 deletions(-)
 
-Index: linux-pm/drivers/misc/eeprom/at25.c
+Index: linux-pm/drivers/gpio/gpiolib-acpi.c
 ===================================================================
---- linux-pm.orig/drivers/misc/eeprom/at25.c
-+++ linux-pm/drivers/misc/eeprom/at25.c
-@@ -18,7 +18,7 @@
+--- linux-pm.orig/drivers/gpio/gpiolib-acpi.c
++++ linux-pm/drivers/gpio/gpiolib-acpi.c
+@@ -290,6 +290,7 @@ void acpi_gpiochip_free_interrupts(struc
+ struct acpi_gpio_lookup {
+ 	struct acpi_gpio_info info;
+ 	int index;
++	int pin_index;
+ 	struct gpio_desc *desc;
+ 	int n;
+ };
+@@ -303,13 +304,24 @@ static int acpi_find_gpio(struct acpi_re
  
- #include <linux/spi/spi.h>
- #include <linux/spi/eeprom.h>
--#include <linux/of.h>
-+#include <linux/property.h>
+ 	if (lookup->n++ == lookup->index && !lookup->desc) {
+ 		const struct acpi_resource_gpio *agpio = &ares->data.gpio;
++		int pin_index = lookup->pin_index;
++
++		if (pin_index >= agpio->pin_table_length)
++			return 1;
  
- /*
-  * NOTE: this is an *EEPROM* driver.  The vagaries of product naming
-@@ -301,35 +301,33 @@ static ssize_t at25_mem_write(struct mem
+ 		lookup->desc = acpi_get_gpiod(agpio->resource_source.string_ptr,
+-					      agpio->pin_table[0]);
++					      agpio->pin_table[pin_index]);
+ 		lookup->info.gpioint =
+ 			agpio->connection_type == ACPI_RESOURCE_GPIO_TYPE_INT;
+-		lookup->info.active_low =
+-			agpio->polarity == ACPI_ACTIVE_LOW;
++
++		/*
++		 * ActiveLow is only specified for GpioInt resource. If
++		 * GpioIo is used then the only way to set the flag is
++		 * to use _DSD "gpios" property.
++		 */
++		if (lookup->info.gpioint)
++			lookup->info.active_low =
++				agpio->polarity == ACPI_ACTIVE_LOW;
+ 	}
  
- /*-------------------------------------------------------------------------*/
+ 	return 1;
+@@ -317,40 +329,75 @@ static int acpi_find_gpio(struct acpi_re
  
--static int at25_np_to_chip(struct device *dev,
--			   struct device_node *np,
--			   struct spi_eeprom *chip)
-+static int at25_fw_to_chip(struct device *dev, struct spi_eeprom *chip)
+ /**
+  * acpi_get_gpiod_by_index() - get a GPIO descriptor from device resources
+- * @dev: pointer to a device to get GPIO from
++ * @adev: pointer to a ACPI device to get GPIO from
++ * @propname: Property name of the GPIO (optional)
+  * @index: index of GpioIo/GpioInt resource (starting from %0)
+  * @info: info pointer to fill in (optional)
+  *
+- * Function goes through ACPI resources for @dev and based on @index looks
++ * Function goes through ACPI resources for @adev and based on @index looks
+  * up a GpioIo/GpioInt resource, translates it to the Linux GPIO descriptor,
+  * and returns it. @index matches GpioIo/GpioInt resources only so if there
+  * are total %3 GPIO resources, the index goes from %0 to %2.
+  *
++ * If @propname is specified the GPIO is looked using device property. In
++ * that case @index is used to select the GPIO entry in the property value
++ * (in case of multiple).
++ *
+  * If the GPIO cannot be translated or there is an error an ERR_PTR is
+  * returned.
+  *
+  * Note: if the GPIO resource has multiple entries in the pin list, this
+  * function only returns the first.
+  */
+-struct gpio_desc *acpi_get_gpiod_by_index(struct device *dev, int index,
++struct gpio_desc *acpi_get_gpiod_by_index(struct acpi_device *adev,
++					  const char *propname, int index,
+ 					  struct acpi_gpio_info *info)
  {
- 	u32 val;
+ 	struct acpi_gpio_lookup lookup;
+ 	struct list_head resource_list;
+-	struct acpi_device *adev;
+-	acpi_handle handle;
++	bool active_low = false;
+ 	int ret;
  
- 	memset(chip, 0, sizeof(*chip));
--	strncpy(chip->name, np->name, sizeof(chip->name));
-+	strncpy(chip->name, "at25", sizeof(chip->name));
+-	if (!dev)
+-		return ERR_PTR(-EINVAL);
+-
+-	handle = ACPI_HANDLE(dev);
+-	if (!handle || acpi_bus_get_device(handle, &adev))
++	if (!adev)
+ 		return ERR_PTR(-ENODEV);
  
--	if (of_property_read_u32(np, "size", &val) == 0 ||
--	    of_property_read_u32(np, "at25,byte-len", &val) == 0) {
-+	if (device_property_read_u32(dev, "size", &val) == 0 ||
-+	    device_property_read_u32(dev, "at25,byte-len", &val) == 0) {
- 		chip->byte_len = val;
- 	} else {
- 		dev_err(dev, "Error: missing \"size\" property\n");
- 		return -ENODEV;
- 	}
+ 	memset(&lookup, 0, sizeof(lookup));
+ 	lookup.index = index;
  
--	if (of_property_read_u32(np, "pagesize", &val) == 0 ||
--	    of_property_read_u32(np, "at25,page-size", &val) == 0) {
-+	if (device_property_read_u32(dev, "pagesize", &val) == 0 ||
-+	    device_property_read_u32(dev, "at25,page-size", &val) == 0) {
- 		chip->page_size = (u16)val;
- 	} else {
- 		dev_err(dev, "Error: missing \"pagesize\" property\n");
- 		return -ENODEV;
- 	}
++	if (propname) {
++		struct acpi_reference_args args;
++
++		dev_dbg(&adev->dev, "GPIO: looking up %s\n", propname);
++
++		memset(&args, 0, sizeof(args));
++		ret = acpi_dev_get_property_reference(adev, propname, NULL,
++						      index, &args);
++		if (ret)
++			return ERR_PTR(ret);
++
++		/*
++		 * The property was found and resolved so need to
++		 * lookup the GPIO based on returned args instead.
++		 */
++		adev = args.adev;
++		if (args.nargs >= 2) {
++			lookup.index = args.args[0];
++			lookup.pin_index = args.args[1];
++			/*
++			 * 3rd argument, if present is used to
++			 * specify active_low.
++			 */
++			if (args.nargs >= 3)
++				active_low = !!args.args[2];
++		}
++
++		dev_dbg(&adev->dev, "GPIO: _DSD returned %s %zd %llu %llu %llu\n",
++			dev_name(&adev->dev), args.nargs,
++			args.args[0], args.args[1], args.args[2]);
++	} else {
++		dev_dbg(&adev->dev, "GPIO: looking up %d in _CRS\n", index);
++	}
++
+ 	INIT_LIST_HEAD(&resource_list);
+ 	ret = acpi_dev_get_resources(adev, &resource_list, acpi_find_gpio,
+ 				     &lookup);
+@@ -359,8 +406,11 @@ struct gpio_desc *acpi_get_gpiod_by_inde
  
--	if (of_property_read_u32(np, "at25,addr-mode", &val) == 0) {
-+	if (device_property_read_u32(dev, "at25,addr-mode", &val) == 0) {
- 		chip->flags = (u16)val;
- 	} else {
--		if (of_property_read_u32(np, "address-width", &val)) {
-+		if (device_property_read_u32(dev, "address-width", &val)) {
- 			dev_err(dev,
- 				"Error: missing \"address-width\" property\n");
- 			return -ENODEV;
-@@ -350,7 +348,7 @@ static int at25_np_to_chip(struct device
- 				val);
- 			return -ENODEV;
- 		}
--		if (of_find_property(np, "read-only", NULL))
-+		if (device_property_present(dev, "read-only"))
- 			chip->flags |= EE_READONLY;
- 	}
- 	return 0;
-@@ -360,21 +358,15 @@ static int at25_probe(struct spi_device
+ 	acpi_dev_free_resource_list(&resource_list);
+ 
+-	if (lookup.desc && info)
++	if (lookup.desc && info) {
+ 		*info = lookup.info;
++		if (active_low)
++			info->active_low = active_low;
++	}
+ 
+ 	return lookup.desc ? lookup.desc : ERR_PTR(-ENOENT);
+ }
+Index: linux-pm/drivers/gpio/gpiolib.c
+===================================================================
+--- linux-pm.orig/drivers/gpio/gpiolib.c
++++ linux-pm/drivers/gpio/gpiolib.c
+@@ -1505,14 +1505,36 @@ static struct gpio_desc *acpi_find_gpio(
+ 					unsigned int idx,
+ 					enum gpio_lookup_flags *flags)
  {
- 	struct at25_data	*at25 = NULL;
- 	struct spi_eeprom	chip;
--	struct device_node	*np = spi->dev.of_node;
- 	int			err;
- 	int			sr;
- 	int			addrlen;
++	static const char * const suffixes[] = { "gpios", "gpio" };
++	struct acpi_device *adev = ACPI_COMPANION(dev);
+ 	struct acpi_gpio_info info;
+ 	struct gpio_desc *desc;
++	char propname[32];
++	int i;
  
- 	/* Chip description */
- 	if (!spi->dev.platform_data) {
--		if (np) {
--			err = at25_np_to_chip(&spi->dev, np, &chip);
--			if (err)
--				return err;
--		} else {
--			dev_err(&spi->dev, "Error: no chip description\n");
--			return -ENODEV;
--		}
-+		err = at25_fw_to_chip(&spi->dev, &chip);
-+		if (err)
-+			return err;
- 	} else
- 		chip = *(struct spi_eeprom *)spi->dev.platform_data;
+-	desc = acpi_get_gpiod_by_index(dev, idx, &info);
+-	if (IS_ERR(desc))
+-		return desc;
++	/* Try first from _DSD */
++	for (i = 0; i < ARRAY_SIZE(suffixes); i++) {
++		if (con_id && strcmp(con_id, "gpios")) {
++			snprintf(propname, sizeof(propname), "%s-%s",
++				 con_id, suffixes[i]);
++		} else {
++			snprintf(propname, sizeof(propname), "%s",
++				 suffixes[i]);
++		}
  
+-	if (info.gpioint && info.active_low)
++		desc = acpi_get_gpiod_by_index(adev, propname, 0, &info);
++		if (!IS_ERR(desc) || (PTR_ERR(desc) == -EPROBE_DEFER))
++			break;
++	}
++
++	/* Then from plain _CRS GPIOs */
++	if (IS_ERR(desc)) {
++		desc = acpi_get_gpiod_by_index(adev, NULL, idx, &info);
++		if (IS_ERR(desc))
++			return desc;
++	}
++
++	if (info.active_low)
+ 		*flags |= GPIO_ACTIVE_LOW;
+ 
+ 	return desc;
+Index: linux-pm/drivers/gpio/gpiolib.h
+===================================================================
+--- linux-pm.orig/drivers/gpio/gpiolib.h
++++ linux-pm/drivers/gpio/gpiolib.h
+@@ -34,7 +34,8 @@ void acpi_gpiochip_remove(struct gpio_ch
+ void acpi_gpiochip_request_interrupts(struct gpio_chip *chip);
+ void acpi_gpiochip_free_interrupts(struct gpio_chip *chip);
+ 
+-struct gpio_desc *acpi_get_gpiod_by_index(struct device *dev, int index,
++struct gpio_desc *acpi_get_gpiod_by_index(struct acpi_device *adev,
++					  const char *propname, int index,
+ 					  struct acpi_gpio_info *info);
+ #else
+ static inline void acpi_gpiochip_add(struct gpio_chip *chip) { }
+@@ -47,8 +48,8 @@ static inline void
+ acpi_gpiochip_free_interrupts(struct gpio_chip *chip) { }
+ 
+ static inline struct gpio_desc *
+-acpi_get_gpiod_by_index(struct device *dev, int index,
+-			struct acpi_gpio_info *info)
++acpi_get_gpiod_by_index(struct acpi_device *adev, const char *propname,
++			int index, struct acpi_gpio_info *info)
+ {
+ 	return ERR_PTR(-ENOSYS);
+ }
+Index: linux-pm/Documentation/acpi/gpio-properties.txt
+===================================================================
+--- /dev/null
++++ linux-pm/Documentation/acpi/gpio-properties.txt
+@@ -0,0 +1,52 @@
++_DSD Device Properties Related to GPIO
++--------------------------------------
++
++With the release of ACPI 5.1 and the _DSD configuration objecte names
++can finally be given to GPIOs (and other things as well) returned by
++_CRS.  Previously, we were only able to use an integer index to find
++the corresponding GPIO, which is pretty error prone (it depends on
++the _CRS output ordering, for example).
++
++With _DSD we can now query GPIOs using a name instead of an integer
++index, like the ASL example below shows:
++
++  // Bluetooth device with reset and shutdown GPIOs
++  Device (BTH)
++  {
++      Name (_HID, ...)
++
++      Name (_CRS, ResourceTemplate ()
++      {
++          GpioIo (Exclusive, PullUp, 0, 0, IoRestrictionInputOnly,
++                  "\\_SB.GPO0", 0, ResourceConsumer) {15}
++          GpioIo (Exclusive, PullUp, 0, 0, IoRestrictionInputOnly,
++                  "\\_SB.GPO0", 0, ResourceConsumer) {27, 31}
++      })
++
++      Name (_DSD, Package ()
++      {
++          ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
++          Package ()
++	  {
++              Package () {"reset-gpio", Package() {^BTH, 1, 1, 0 }},
++              Package () {"shutdown-gpio", Package() {^BTH, 0, 0, 0 }},
++          }
++      })
++  }
++
++The format of the supported GPIO property is:
++
++  Package () { "name", Package () { ref, index, pin, active_low }}
++
++  ref - The device that has _CRS containing GpioIo()/GpioInt() resources,
++        typically this is the device itself (BTH in our case).
++  index - Index of the GpioIo()/GpioInt() resource in _CRS starting from zero.
++  pin - Pin in the GpioIo()/GpioInt() resource. Typically this is zero.
++  active_low - If 1 the GPIO is marked as active_low.
++
++Since ACPI GpioIo() resource does not have a field saying whether it is
++active low or high, the "active_low" argument can be used here.  Setting
++it to 1 marks the GPIO as active low.
++
++In our Bluetooth example the "reset-gpio" refers to the second GpioIo()
++resource, second pin in that resource with the GPIO number of 31.
 
