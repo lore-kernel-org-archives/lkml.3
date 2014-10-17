@@ -1,324 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753148AbaJQOKk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 10:10:40 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:55598 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752885AbaJQOKR (ORCPT
+	id S1752766AbaJQOKO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 10:10:14 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:36989 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751939AbaJQOKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 10:10:17 -0400
-Date: Fri, 17 Oct 2014 15:10:10 +0100
-From: Steve Capper <steve.capper@linaro.org>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: akpm@linux-foundation.org, Andrea Arcangeli <aarcange@redhat.com>,
-        benh@kernel.crashing.org, mpe@ellerman.id.au, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
-        catalin.marinas@arm.com, will.deacon@arm.com
-Subject: Re: [PATCH V2 1/2] mm: Update generic gup implementation to handle
- hugepage directory
-Message-ID: <20141017141009.GA24167@linaro.org>
-References: <1413520687-31729-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413520687-31729-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 17 Oct 2014 10:10:11 -0400
+From: Dominik Dingel <dingel@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Bob Liu <lliubbo@gmail.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Gleb Natapov <gleb@kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Jianyu Zhan <nasa4836@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Konstantin Weitz <konstantin.weitz@gmail.com>, kvm@vger.kernel.org,
+        linux390@de.ibm.com, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Dominik Dingel <dingel@linux.vnet.ibm.com>
+Subject: [PATCH 0/4] mm: new flag to forbid zero page mappings for a vma
+Date: Fri, 17 Oct 2014 16:09:46 +0200
+Message-Id: <1413554990-48512-1-git-send-email-dingel@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.5.5
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14101714-0029-0000-0000-0000013DF890
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 17, 2014 at 10:08:06AM +0530, Aneesh Kumar K.V wrote:
-> Update generic gup implementation with powerpc specific details.
-> On powerpc at pmd level we can have hugepte, normal pmd pointer
-> or a pointer to the hugepage directory.
-> 
-> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> ---
-> Changes from V1: 
-> * Folded arm/arm64 related changes into the patch
-> * Dropped pgd_huge from generic header
-> 
->  arch/arm/include/asm/pgtable.h   |   2 +
->  arch/arm64/include/asm/pgtable.h |   2 +
->  include/linux/mm.h               |  26 +++++++++
->  mm/gup.c                         | 113 +++++++++++++++++++--------------------
->  4 files changed, 84 insertions(+), 59 deletions(-)
-> 
+s390 has the special notion of storage keys which are some sort of page flags
+associated with physical pages and live outside of direct addressable memory.
+These storage keys can be queried and changed with a special set of instructions.
+The mentioned instructions behave quite nicely under virtualization, if there is: 
+- an invalid pte, then the instructions will work on some memory reserved in the host page table
+- a valid pte, then the instructions will work with the real storage key
 
-Hi Aneesh,
-Thanks for coding this up. I've tested this for arm (Arndale board) and
-arm64 (Juno); it builds without any issues and passes my futex on THP
-tail test.
+Thanks to Martin with his software reference and dirty bit tracking, the kernel does not issue any 
+storage key instructions as now a software based approach will be taken, on the other hand 
+distributions in the wild are currently using them.
 
-Please add my:
-Tested-by: Steve Capper <steve.capper@linaro.org>
+However, for virtualized guests we still have a problem with guest pages mapped to zero pages
+and the kernel same page merging.  WIth each one multiple guest pages will point to the same 
+physical page and share the same storage key.
 
-As this patch progresses through -mm, the arm maintainer:
-Russell King <linux@arm.linux.org.uk>
+Let's fix this by introducing a new flag which will forbid new zero page mappings.
+If the guest issues a storage key related instruction we flag all vmas and drop existing 
+zero page mappings and unmerge the guest memory.
 
-and arm64 maintainers:
-Catalin Marinas <catalin.marinas@arm.com>
-Will Deacon <will.deacon@arm.com>
+Dominik Dingel (4):
+  s390/mm: recfactor global pgste updates
+  mm: introduce new VM_NOZEROPAGE flag
+  s390/mm: prevent and break zero page mappings in case of storage keys
+  s390/mm: disable KSM for storage key enabled pages
 
-should also be on CC.
+ arch/s390/Kconfig               |   3 +
+ arch/s390/include/asm/pgalloc.h |   2 -
+ arch/s390/include/asm/pgtable.h |   3 +-
+ arch/s390/kvm/kvm-s390.c        |   2 +-
+ arch/s390/kvm/priv.c            |  17 ++--
+ arch/s390/mm/pgtable.c          | 181 ++++++++++++++++++----------------------
+ include/linux/mm.h              |  13 ++-
+ mm/huge_memory.c                |   2 +-
+ mm/memory.c                     |   2 +-
+ 9 files changed, 112 insertions(+), 113 deletions(-)
 
-Cheers,
 -- 
-Steve
+1.8.5.5
 
-> diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
-> index 90aa4583b308..46f81fbaa4a5 100644
-> --- a/arch/arm/include/asm/pgtable.h
-> +++ b/arch/arm/include/asm/pgtable.h
-> @@ -181,6 +181,8 @@ extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
->  /* to find an entry in a kernel page-table-directory */
->  #define pgd_offset_k(addr)	pgd_offset(&init_mm, addr)
->  
-> +#define pgd_huge(pgd)		(0)
-> +
->  #define pmd_none(pmd)		(!pmd_val(pmd))
->  #define pmd_present(pmd)	(pmd_val(pmd))
->  
-> diff --git a/arch/arm64/include/asm/pgtable.h b/arch/arm64/include/asm/pgtable.h
-> index cefd3e825612..ed8f42497ac4 100644
-> --- a/arch/arm64/include/asm/pgtable.h
-> +++ b/arch/arm64/include/asm/pgtable.h
-> @@ -464,6 +464,8 @@ static inline pmd_t pmd_modify(pmd_t pmd, pgprot_t newprot)
->  extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
->  extern pgd_t idmap_pg_dir[PTRS_PER_PGD];
->  
-> +#define pgd_huge(pgd)		(0)
-> +
->  /*
->   * Encode and decode a swap entry:
->   *	bits 0-1:	present (must be zero)
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index 02d11ee7f19d..f97732412cb4 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -1219,6 +1219,32 @@ long get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
->  		    struct vm_area_struct **vmas);
->  int get_user_pages_fast(unsigned long start, int nr_pages, int write,
->  			struct page **pages);
-> +
-> +#ifdef CONFIG_HAVE_GENERIC_RCU_GUP
-> +#ifndef is_hugepd
-> +/*
-> + * Some architectures support hugepage directory format that is
-> + * required to support different hugetlbfs sizes.
-> + */
-> +typedef struct { unsigned long pd; } hugepd_t;
-> +#define is_hugepd(hugepd) (0)
-> +#define __hugepd(x) ((hugepd_t) { (x) })
-> +static inline int gup_hugepd(hugepd_t hugepd, unsigned long addr,
-> +			     unsigned pdshift, unsigned long end,
-> +			     int write, struct page **pages, int *nr)
-> +{
-> +	return 0;
-> +}
-> +#else
-> +extern int gup_hugepd(hugepd_t hugepd, unsigned long addr,
-> +		      unsigned pdshift, unsigned long end,
-> +		      int write, struct page **pages, int *nr);
-> +#endif
-> +extern int gup_huge_pte(pte_t orig, pte_t *ptep, unsigned long addr,
-> +			unsigned long sz, unsigned long end, int write,
-> +			struct page **pages, int *nr);
-> +#endif
-> +
->  struct kvec;
->  int get_kernel_pages(const struct kvec *iov, int nr_pages, int write,
->  			struct page **pages);
-> diff --git a/mm/gup.c b/mm/gup.c
-> index cd62c8c90d4a..13c560ef9ddf 100644
-> --- a/mm/gup.c
-> +++ b/mm/gup.c
-> @@ -786,65 +786,31 @@ static int gup_pte_range(pmd_t pmd, unsigned long addr, unsigned long end,
->  }
->  #endif /* __HAVE_ARCH_PTE_SPECIAL */
->  
-> -static int gup_huge_pmd(pmd_t orig, pmd_t *pmdp, unsigned long addr,
-> -		unsigned long end, int write, struct page **pages, int *nr)
-> +int gup_huge_pte(pte_t orig, pte_t *ptep, unsigned long addr,
-> +		 unsigned long sz, unsigned long end, int write,
-> +		 struct page **pages, int *nr)
->  {
-> -	struct page *head, *page, *tail;
->  	int refs;
-> +	unsigned long pte_end;
-> +	struct page *head, *page, *tail;
->  
-> -	if (write && !pmd_write(orig))
-> -		return 0;
-> -
-> -	refs = 0;
-> -	head = pmd_page(orig);
-> -	page = head + ((addr & ~PMD_MASK) >> PAGE_SHIFT);
-> -	tail = page;
-> -	do {
-> -		VM_BUG_ON_PAGE(compound_head(page) != head, page);
-> -		pages[*nr] = page;
-> -		(*nr)++;
-> -		page++;
-> -		refs++;
-> -	} while (addr += PAGE_SIZE, addr != end);
->  
-> -	if (!page_cache_add_speculative(head, refs)) {
-> -		*nr -= refs;
-> +	if (write && !pte_write(orig))
->  		return 0;
-> -	}
->  
-> -	if (unlikely(pmd_val(orig) != pmd_val(*pmdp))) {
-> -		*nr -= refs;
-> -		while (refs--)
-> -			put_page(head);
-> +	if (!pte_present(orig))
->  		return 0;
-> -	}
->  
-> -	/*
-> -	 * Any tail pages need their mapcount reference taken before we
-> -	 * return. (This allows the THP code to bump their ref count when
-> -	 * they are split into base pages).
-> -	 */
-> -	while (refs--) {
-> -		if (PageTail(tail))
-> -			get_huge_page_tail(tail);
-> -		tail++;
-> -	}
-> -
-> -	return 1;
-> -}
-> -
-> -static int gup_huge_pud(pud_t orig, pud_t *pudp, unsigned long addr,
-> -		unsigned long end, int write, struct page **pages, int *nr)
-> -{
-> -	struct page *head, *page, *tail;
-> -	int refs;
-> +	pte_end = (addr + sz) & ~(sz-1);
-> +	if (pte_end < end)
-> +		end = pte_end;
->  
-> -	if (write && !pud_write(orig))
-> -		return 0;
-> +	/* hugepages are never "special" */
-> +	VM_BUG_ON(!pfn_valid(pte_pfn(orig)));
->  
->  	refs = 0;
-> -	head = pud_page(orig);
-> -	page = head + ((addr & ~PUD_MASK) >> PAGE_SHIFT);
-> +	head = pte_page(orig);
-> +	page = head + ((addr & (sz-1)) >> PAGE_SHIFT);
->  	tail = page;
->  	do {
->  		VM_BUG_ON_PAGE(compound_head(page) != head, page);
-> @@ -859,13 +825,18 @@ static int gup_huge_pud(pud_t orig, pud_t *pudp, unsigned long addr,
->  		return 0;
->  	}
->  
-> -	if (unlikely(pud_val(orig) != pud_val(*pudp))) {
-> +	if (unlikely(pte_val(orig) != pte_val(*ptep))) {
->  		*nr -= refs;
->  		while (refs--)
->  			put_page(head);
->  		return 0;
->  	}
->  
-> +	/*
-> +	 * Any tail pages need their mapcount reference taken before we
-> +	 * return. (This allows the THP code to bump their ref count when
-> +	 * they are split into base pages).
-> +	 */
->  	while (refs--) {
->  		if (PageTail(tail))
->  			get_huge_page_tail(tail);
-> @@ -898,10 +869,19 @@ static int gup_pmd_range(pud_t pud, unsigned long addr, unsigned long end,
->  			if (pmd_numa(pmd))
->  				return 0;
->  
-> -			if (!gup_huge_pmd(pmd, pmdp, addr, next, write,
-> -				pages, nr))
-> +			if (!gup_huge_pte(__pte(pmd_val(pmd)), (pte_t *)pmdp,
-> +					  addr, PMD_SIZE, next,
-> +					  write, pages, nr))
->  				return 0;
->  
-> +		} else if (unlikely(is_hugepd(__hugepd(pmd_val(pmd))))) {
-> +			/*
-> +			 * architecture have different format for hugetlbfs
-> +			 * pmd format and THP pmd format
-> +			 */
-> +			if (!gup_hugepd(__hugepd(pmd_val(pmd)), addr, PMD_SHIFT,
-> +					next, write, pages, nr))
-> +				return 0;
->  		} else if (!gup_pte_range(pmd, addr, next, write, pages, nr))
->  				return 0;
->  	} while (pmdp++, addr = next, addr != end);
-> @@ -909,22 +889,27 @@ static int gup_pmd_range(pud_t pud, unsigned long addr, unsigned long end,
->  	return 1;
->  }
->  
-> -static int gup_pud_range(pgd_t *pgdp, unsigned long addr, unsigned long end,
-> +static int gup_pud_range(pgd_t pgd, unsigned long addr, unsigned long end,
->  		int write, struct page **pages, int *nr)
->  {
->  	unsigned long next;
->  	pud_t *pudp;
->  
-> -	pudp = pud_offset(pgdp, addr);
-> +	pudp = pud_offset(&pgd, addr);
->  	do {
->  		pud_t pud = ACCESS_ONCE(*pudp);
->  
->  		next = pud_addr_end(addr, end);
->  		if (pud_none(pud))
->  			return 0;
-> -		if (pud_huge(pud)) {
-> -			if (!gup_huge_pud(pud, pudp, addr, next, write,
-> -					pages, nr))
-> +		if (unlikely(pud_huge(pud))) {
-> +			if (!gup_huge_pte(__pte(pud_val(pud)), (pte_t *)pudp,
-> +					  addr, PUD_SIZE, next,
-> +					  write, pages, nr))
-> +				return 0;
-> +		} else if (unlikely(is_hugepd(__hugepd(pud_val(pud))))) {
-> +			if (!gup_hugepd(__hugepd(pud_val(pud)), addr, PUD_SHIFT,
-> +					next, write, pages, nr))
->  				return 0;
->  		} else if (!gup_pmd_range(pud, addr, next, write, pages, nr))
->  			return 0;
-> @@ -970,10 +955,21 @@ int __get_user_pages_fast(unsigned long start, int nr_pages, int write,
->  	local_irq_save(flags);
->  	pgdp = pgd_offset(mm, addr);
->  	do {
-> +		pgd_t pgd = ACCESS_ONCE(*pgdp);
-> +
->  		next = pgd_addr_end(addr, end);
-> -		if (pgd_none(*pgdp))
-> +		if (pgd_none(pgd))
->  			break;
-> -		else if (!gup_pud_range(pgdp, addr, next, write, pages, &nr))
-> +		if (unlikely(pgd_huge(pgd))) {
-> +			if (!gup_huge_pte(__pte(pgd_val(pgd)), (pte_t *)pgdp,
-> +					  addr, PGDIR_SIZE, next,
-> +					  write, pages, &nr))
-> +				break;
-> +		} else if (unlikely(is_hugepd(__hugepd(pgd_val(pgd))))) {
-> +			if (!gup_hugepd(__hugepd(pgd_val(pgd)), addr, PGDIR_SHIFT,
-> +					next, write, pages, &nr))
-> +				break;
-> +		} else if (!gup_pud_range(pgd, addr, next, write, pages, &nr))
->  			break;
->  	} while (pgdp++, addr = next, addr != end);
->  	local_irq_restore(flags);
-> @@ -1028,5 +1024,4 @@ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
->  
->  	return ret;
->  }
-> -
->  #endif /* CONFIG_HAVE_GENERIC_RCU_GUP */
-> -- 
-> 1.9.1
-> 
