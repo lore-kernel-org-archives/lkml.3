@@ -1,36 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753298AbaJQEqN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 00:46:13 -0400
-Received: from mail-oi0-f52.google.com ([209.85.218.52]:53513 "EHLO
-	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750835AbaJQEqM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 00:46:12 -0400
+	id S1751688AbaJQFFA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 01:05:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56810 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750753AbaJQFE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 01:04:59 -0400
+Message-ID: <5440A36C.8050700@redhat.com>
+Date: Fri, 17 Oct 2014 13:04:44 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-In-Reply-To: <20141016180355.GA14194@drone.musicnaut.iki.fi>
-References: <1413357812-16895-1-git-send-email-keguang.zhang@gmail.com>
-	<20141016180355.GA14194@drone.musicnaut.iki.fi>
-Date: Fri, 17 Oct 2014 10:16:11 +0530
-Message-ID: <CAKohpomjWt8fKU9=bT5fva+Qr_vJBg0cMWH1WcDFp_1NneV+qQ@mail.gmail.com>
-Subject: Re: [PATCH 6/6] cpufreq: Loongson1: Add cpufreq driver for Loongson1B (UPDATED)
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: Kelvin Cheung <keguang.zhang@gmail.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-mips@linux-mips.org,
-        Ralf Baechle <ralf@linux-mips.org>
-Content-Type: text/plain; charset=UTF-8
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        davem@davemloft.net, eric.dumazet@gmail.com
+Subject: Re: [RFC PATCH net-next 1/6] virtio: make sure used event never go
+ backwards
+References: <1413357930-45302-1-git-send-email-jasowang@redhat.com> <1413357930-45302-2-git-send-email-jasowang@redhat.com> <20141015093432.GB25776@redhat.com> <543E48BF.4080502@redhat.com> <20141015103232.GG25776@redhat.com> <543E5019.9020507@redhat.com> <20141015113859.GA26918@redhat.com>
+In-Reply-To: <20141015113859.GA26918@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 October 2014 23:33, Aaro Koskinen <aaro.koskinen@iki.fi> wrote:
-> Why it's called "ls1x-cpufreq" instead of "loongson1_cpufreq"?
+On 10/15/2014 07:38 PM, Michael S. Tsirkin wrote:
+> On Wed, Oct 15, 2014 at 06:44:41PM +0800, Jason Wang wrote:
+>> On 10/15/2014 06:32 PM, Michael S. Tsirkin wrote:
+>>> On Wed, Oct 15, 2014 at 06:13:19PM +0800, Jason Wang wrote:
+>>>> On 10/15/2014 05:34 PM, Michael S. Tsirkin wrote:
+>>>>> On Wed, Oct 15, 2014 at 03:25:25PM +0800, Jason Wang wrote:
+>>>>>> This patch checks the new event idx to make sure used event idx never
+>>>>>> goes back. This is used to synchronize the calls between
+>>>>>> virtqueue_enable_cb_delayed() and virtqueue_enable_cb().
+>>>>>>
+>>>>>> Cc: Rusty Russell <rusty@rustcorp.com.au>
+>>>>>> Cc: Michael S. Tsirkin <mst@redhat.com>
+>>>>>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>>>>> the implication being that moving event idx back might cause some race
+>>>>> condition?  
+>>>> This will cause race condition when tx interrupt is enabled. Consider
+>>>> the following cases
+>>>>
+>>>> 1) tx napi was scheduled
+>>>> 2) start_xmit() call virtqueue_enable_cb_delayed() and disable cb, [used
+>>>> event is vq->last_used_idx + 3/4 pendg bufs]
+>>>> 3) tx napi enable the callback by virtqueue_enable_cb() [ used event is
+>>>> vq->last_used_idx ]
+>>>>  
+>>>> After step 3, used event was moved back, unnecessary tx interrupt was
+>>>> triggered.
+>>> Well unnecessary interrupts are safe.
+>> But it that is what we want to reduce.
+> It's all about correctness. I don't think mixing enable_cb
+> and enable_cb_delayed makes sense, let's just make
+> virtio behave correctly if that happens, no need to
+> optimize for that.
 
-This is what Kelvin told me when I asked him the same query:
+Then as you said, need document or add WARN_ON() or BUG() in case both
+of the two are used.
+>
+>
+>>> With your patch caller of virtqueue_enable_cb will not get an
+>>> interrupt on the next buffer which is not safe.
+>>>
+>>> If you don't want an interrupt on the next buffer, don't
+>>> call virtqueue_enable_cb.
+>> So something like this patch should be done in virtio core somewhere
+>> else. Virtio-net can not do this since it does not have the knowledge of
+>> event index.
+> Take a look at my patch - no calls to enable_cb, only
+> enable_cb_delayed, so we should be fine.
+>
+>>>>> If yes but please describe the race explicitly.
+>>>>> Is there a bug we need to fix on stable?
+>>>> Looks not, current code does not have such race condition.
+>>>>> Please also explicitly describe a configuration that causes event idx
+>>>>> to go back.
+>>>>>
+>>>>> All this info should go in the commit log.
+>>>> Will do this.
+>>>>>> ---
+>>>>>>  drivers/virtio/virtio_ring.c |    7 +++++--
+>>>>>>  1 files changed, 5 insertions(+), 2 deletions(-)
+>>>>>>
+>>>>>> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+>>>>>> index 3b1f89b..1b3929f 100644
+>>>>>> --- a/drivers/virtio/virtio_ring.c
+>>>>>> +++ b/drivers/virtio/virtio_ring.c
+>>>>>> @@ -559,14 +559,17 @@ unsigned virtqueue_enable_cb_prepare(struct virtqueue *_vq)
+>>>>>>  	u16 last_used_idx;
+>>>>>>  
+>>>>>>  	START_USE(vq);
+>>>>>> -
+>>>>>> +	last_used_idx = vq->last_used_idx;
+>>>>>>  	/* We optimistically turn back on interrupts, then check if there was
+>>>>>>  	 * more to do. */
+>>>>>>  	/* Depending on the VIRTIO_RING_F_EVENT_IDX feature, we need to
+>>>>>>  	 * either clear the flags bit or point the event index at the next
+>>>>>>  	 * entry. Always do both to keep code simple. */
+>>>>>>  	vq->vring.avail->flags &= ~VRING_AVAIL_F_NO_INTERRUPT;
+>>>>>> -	vring_used_event(&vq->vring) = last_used_idx = vq->last_used_idx;
+>>>>>> +	/* Make sure used event never go backwards */
+>>>>> s/go/goes/
+>>>>>
+>>>>>> +	if (!vring_need_event(vring_used_event(&vq->vring),
+>>>>>> +			      vq->vring.avail->idx, last_used_idx))
+>>>>>> +		vring_used_event(&vq->vring) = last_used_idx;
+>>>>> The result will be that driver will *not* get an interrupt
+>>>>> on the next consumed buffer, which is likely not what driver
+>>>>> intended when it called virtqueue_enable_cb.
+>>>> This will only happen when we want to delay the interrupt for next few
+>>>> consumed buffers (virtqueue_enable_cb_delayed() was called). For the
+>>>> other case, vq->last_used_idx should be ahead of previous used event. Do
+>>>> you see any other case?
+>>> Call virtqueue_enable_cb_delayed, later call virtqueue_enable_cb.  If
+>>> event index is not updated in virtqueue_enable_cb, driver will not get
+>>> an interrupt on the next buffer.
+>> This is just what we want I think. The interrupt was not lost but fired
+>> after 3/4 pending buffers were consumed. Do you see any real issue on this?
+> Yes, this violates the API. For example device might never
+> consume the rest of buffers.
 
-Other drivers of loongson1 are already named *ls1x*, such as
-clk-ls1x.c and rtc-ls1x.c.
-So I just keep pace with them.
+Then it should be a bug of device which is out of the control of guest.
+If not, device might never also consume 3/4 rest of buffers.
+>
+>>>>> Instead, how about we simply document the requirement that drivers either
+>>>>> always call virtqueue_enable_cb_delayed or virtqueue_enable_cb
+>>>>> but not both?
+>>>> We need call them both when tx interrupt is enabled I believe.
+>>> Can you pls reply to my patch and document issues you see?
+>>>
+>> In the previous reply you said you're using
+>> virtuqueue_enable_cb_delayed(), so no race in your patch.
+> OK so you think my patch is also correct, but that yours gives better
+> efficiency?
+>
+
+Need some benchmark to see the difference I think.
+
