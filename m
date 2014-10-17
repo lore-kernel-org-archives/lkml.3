@@ -1,101 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753096AbaJQAh4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 20:37:56 -0400
-Received: from cassarossa.samfundet.no ([193.35.52.29]:50197 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116AbaJQAhz (ORCPT
+	id S1753165AbaJQAiM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 20:38:12 -0400
+Received: from mailout.micron.com ([137.201.242.129]:21540 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753134AbaJQAiJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 20:37:55 -0400
-Date: Fri, 17 Oct 2014 02:21:32 +0200
-From: "Steinar H. Gunderson" <sgunderson@bigfoot.com>
-To: linux-kernel@vger.kernel.org
-Subject: getaddrinfo slowdown in 3.17.1, due to getifaddrs
-Message-ID: <20141017002132.GA29584@sesse.net>
+	Thu, 16 Oct 2014 20:38:09 -0400
+From: =?iso-2022-jp?B?QmVhbiBIdW8gGyRCcDlJTElMGyhCIChiZWFuaHVvKQ==?= 
+	<beanhuo@micron.com>
+To: Marek Vasut <marex@denx.de>, "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>
+CC: "shijie8@gmail.com" <shijie8@gmail.com>,
+        "geert+renesas@glider.be" <geert+renesas@glider.be>,
+        "grmoore@altera.com" <grmoore@altera.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/1 v3] driver:mtd:spi-nor: Add Micron quad I/O support
+Thread-Topic: [PATCH 1/1 v3] driver:mtd:spi-nor: Add Micron quad I/O support
+Thread-Index: AQHP2KkjagwG2in0R7+6ioZ2PHnYSpwTG1RugAKuPPCAAgpzkIADfZeAgBhBsxA=
+Date: Fri, 17 Oct 2014 00:37:26 +0000
+Message-ID: <A765B125120D1346A63912DDE6D8B6315E70C6@NTXXIAMBX02.xacn.micron.com>
+References: <A765B125120D1346A63912DDE6D8B6315DCC46@NTXXIAMBX02.xacn.micron.com>
+ <201409251211.57183.marex@denx.de>
+ <A765B125120D1346A63912DDE6D8B6315DCDF1@NTXXIAMBX02.xacn.micron.com>
+ <201409261046.07132.marex@denx.de>   
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.84.5]
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-21032.003
+X-TM-AS-Result: No-0.104300-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-X-Operating-System: Linux 3.16.3 on a x86_64
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch adds code which enables Quad I/O mode on Micron SPI NOR flashes.
 
-We recently upgraded a machine from 3.14.5 to 3.17.1, and a Perl script we're
-running to poll SNMP suddenly needed ten times as much time to complete.
-ps shows that it keeps being in state D (ie., I/O), and strace with -ttT
-shows this curious pattern:
+For Micron SPI NOR flash, enabling or disabling quad I/O protocol is controlled 
+by EVCR (Enhanced Volatile Configuration Register), Quad I/O protocol bit 7. 
+When EVCR bit 7 is reset to 0, the SPI NOR flash will operate in quad I/O mode.
 
-02:11:33.106973 socket(PF_NETLINK, SOCK_RAW, 0) = 42 <0.000013>
-02:11:33.107013 bind(42, {sa_family=AF_NETLINK, pid=0, groups=00000000}, 12) = 0 <0.000010>
-02:11:33.107051 getsockname(42, {sa_family=AF_NETLINK, pid=1128, groups=00000000}, [12]) = 0 <0.000008>
-02:11:33.107094 sendto(42, "\24\0\0\0\26\0\1\3\265^@T\0\0\0\0\0\0\0\0", 20, 0, {sa_family=AF_NETLINK, pid=0, groups=00000000}, 12) = 20 <0.000015>
-02:11:33.107146 recvmsg(42, {msg_name(12)={sa_family=AF_NETLINK, pid=0, groups=00000000}, msg_iov(1)=[{"L\0\0\0\24\0\2\0\265^@Th\4\0\0\2\10\200\376\1\0\0\0\10\0\1\0\177\0\0\1"..., 4096}], msg_controllen=0, msg_flags=0}, 0) = 332 <0.000016>
-02:11:33.107208 recvmsg(42, {msg_name(12)={sa_family=AF_NETLINK, pid=0, groups=00000000}, msg_iov(1)=[{"H\0\0\0\24\0\2\0\265^@Th\4\0\0\n\200\200\376\1\0\0\0\24\0\1\0\0\0\0\0"..., 4096}], msg_controllen=0, msg_flags=0}, 0) = 936 <0.000010>
-02:11:33.107262 recvmsg(42, {msg_name(12)={sa_family=AF_NETLINK, pid=0, groups=00000000}, msg_iov(1)=[{"\24\0\0\0\3\0\2\0\265^@Th\4\0\0\0\0\0\0\1\0\0\0\24\0\1\0\0\0\0\0"..., 4096}], msg_controllen=0, msg_flags=0}, 0) = 20 <0.000009>
-02:11:33.107313 close(42)               = 0 <0.057092>
-02:11:33.164529 open("/etc/hosts", O_RDONLY|O_CLOEXEC) = 42 <0.000080>
-<more stuff...>
+Signed-off-by: bean huo <beanhuo@micron.com>
+Acked-by: Marek Vasut <marex@denx.de>
+---
+ v1-v2:modified to that capture wait_till_ready()
+	 return value,if error,directly return its
+	 the value.
+ v2-v3:directly use the reurning error value of
+	 read_reg and write_reg,instead of -EINVAL.
 
-Debugging with gdb indicates that this is from getaddrinfo calls, which the
-program (for, well, Perl reasons) uses as part of DNS reverse lookups.
-getaddrinfo wants to look at the list of interfaces on the system
-(__check_pf in glibc), which calls out to netlink via getifaddrs.
-Note specifically the call to close(), which takes 57 ms to complete.
+ drivers/mtd/spi-nor/spi-nor.c |   46 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/mtd/spi-nor.h   |    6 ++++++
+ 2 files changed, 52 insertions(+)
 
-This doesn't happen on every single getaddrinfo call, but more like 50% of
-them. I've tried on another machine, running 3.16.3, and we don't see
-anything like it.
-
-I've distilled it down to this Perl script:
-
-  #! /usr/bin/perl
-  use strict;
-  use warnings;
-  use Socket::GetAddrInfo;
-  
-  for my $i (1..1000) {
-  	my ($err, @res) = Socket::GetAddrInfo::getaddrinfo("127.0.0.1", undef, { flags => Socket::GetAddrInfo::AI_NUMERICHOST });
-  }
-
-On my 3.16.3 machine, this completes in 26 ms. On the 3.17.1 machine:
-65 _seconds_! According to the stack, this is what it's doing:
-
-[<ffffffff810766b7>] wait_rcu_gp+0x48/0x4f
-[<ffffffff81078be5>] synchronize_sched+0x29/0x2b
-[<ffffffff813aacdb>] synchronize_net+0x19/0x1b
-[<ffffffff813d313e>] netlink_release+0x25b/0x2b7
-[<ffffffff8139af07>] sock_release+0x1a/0x79
-[<ffffffff8139b1f4>] sock_close+0xd/0x11
-[<ffffffff8111feca>] __fput+0xdf/0x184
-[<ffffffff8111ff9f>] ____fput+0x9/0xb
-[<ffffffff81051610>] task_work_run+0x7c/0x94
-[<ffffffff810026b2>] do_notify_resume+0x55/0x66
-[<ffffffff8146feda>] int_signal+0x12/0x17
-[<ffffffffffffffff>] 0xffffffffffffffff
-
-strace indicates it starts off nicely, then goes completely off:
-
-cirkus:~> time strace -e close -ttT perl test.pl 
-02:20:39.292060 close(3)                = 0 <0.000041>
-02:20:39.292407 close(3)                = 0 <0.000037>
-02:20:39.292660 close(3)                = 0 <0.000010>
-02:20:39.292883 close(3)                = 0 <0.000009>
-02:20:39.293100 close(3)                = 0 <0.000009>
-[some more fast ones...]
-02:20:39.311421 close(4)                = 0 <0.000009>
-02:20:39.311927 close(3)                = 0 <0.000011>
-02:20:39.312188 close(3)                = 0 <0.072224>
-02:20:39.384979 close(3)                = 0 <0.059658>
-02:20:39.445378 close(3)                = 0 <0.048205>
-02:20:39.494213 close(3)                = 0 <0.060195>
-^C
-
-Is there a way to fix this? Somehow I doubt we're the only ones calling
-getaddrinfo in this way. :-)
-
-/* Steinar */
--- 
-Homepage: http://www.sesse.net/
+diff --git a/drivers/mtd/spi-nor/spi-nor.c b/drivers/mtd/spi-nor/spi-nor.c index b5ad6be..486b167 100644
+--- a/drivers/mtd/spi-nor/spi-nor.c
++++ b/drivers/mtd/spi-nor/spi-nor.c
+@@ -878,6 +878,45 @@ static int spansion_quad_enable(struct spi_nor *nor)
+ 	return 0;
+ }
+ 
++static int micron_quad_enable(struct spi_nor *nor) {
++	int ret, val;
++
++	ret = nor->read_reg(nor, SPINOR_OP_RD_EVCR, &val, 1);
++	if (ret < 0) {
++		dev_err(nor->dev, "error %d reading EVCR\n", ret);
++		return ret;
++	}
++
++	write_enable(nor);
++
++	/* set EVCR ,enable quad I/O */
++	nor->cmd_buf[0] = val & ~EVCR_QUAD_EN_MICRON;
++	ret = nor->write_reg(nor, SPINOR_OP_WD_EVCR, nor->cmd_buf, 1, 0);
++	if (ret < 0) {
++		dev_err(nor->dev,
++			"error while writing EVCR register\n");
++		return ret;
++	}
++
++	ret = wait_till_ready(nor);
++	if (ret)
++		return ret;
++
++	/* read EVCR and check it */
++	ret = nor->read_reg(nor, SPINOR_OP_RD_EVCR, &val, 1);
++	if (ret < 0) {
++		dev_err(nor->dev, "error %d reading EVCR\n", ret);
++		return ret;
++	}
++	if (val & EVCR_QUAD_EN_MICRON) {
++		dev_err(nor->dev, "Micron EVCR Quad bit not clear\n");
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
+ static int set_quad_mode(struct spi_nor *nor, u32 jedec_id)  {
+ 	int status;
+@@ -890,6 +929,13 @@ static int set_quad_mode(struct spi_nor *nor, u32 jedec_id)
+ 			return -EINVAL;
+ 		}
+ 		return status;
++	case CFI_MFR_ST:
++		status = micron_quad_enable(nor);
++		if (status) {
++			dev_err(nor->dev, "Micron quad-read not enabled\n");
++			return -EINVAL;
++		}
++		return status;
+ 	default:
+ 		status = spansion_quad_enable(nor);
+ 		if (status) {
+diff --git a/include/linux/mtd/spi-nor.h b/include/linux/mtd/spi-nor.h index 9e6294f..d71b659 100644
+--- a/include/linux/mtd/spi-nor.h
++++ b/include/linux/mtd/spi-nor.h
+@@ -56,6 +56,10 @@
+ /* Used for Spansion flashes only. */
+ #define SPINOR_OP_BRWR		0x17	/* Bank register write */
+ 
++/* Used for Micron flashes only. */
++#define SPINOR_OP_RD_EVCR	0x65	/* Read EVCR register */
++#define SPINOR_OP_WD_EVCR	0x61	/* Write EVCR register */
++
+ /* Status Register bits. */
+ #define SR_WIP			1	/* Write in progress */
+ #define SR_WEL			2	/* Write enable latch */
+@@ -67,6 +71,8 @@
+ 
+ #define SR_QUAD_EN_MX		0x40	/* Macronix Quad I/O */
+ 
++#define EVCR_QUAD_EN_MICRON	0x80	/* Micron Quad I/O */
++
+ /* Flag Status Register bits */
+ #define FSR_READY		0x80
+ 
+--
+1.7.9.5
