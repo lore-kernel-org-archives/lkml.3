@@ -1,163 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379AbaJQHaK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 03:30:10 -0400
-Received: from shelob.surriel.com ([74.92.59.67]:35997 "EHLO
-	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753325AbaJQHaG (ORCPT
+	id S1753337AbaJQHhD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 03:37:03 -0400
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:39755 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751037AbaJQHhA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 03:30:06 -0400
-From: riel@redhat.com
-To: linux-kernel@vger.kernel.org
-Cc: chegu_vinod@hp.com, peterz@infradead.org, mingo@redhat.com,
-        mgorman@suse.de
-Subject: [PATCH 4/6] sched,numa: calculate node scores in complex NUMA topologies
-Date: Fri, 17 Oct 2014 03:29:52 -0400
-Message-Id: <1413530994-9732-5-git-send-email-riel@redhat.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1413530994-9732-1-git-send-email-riel@redhat.com>
-References: <1413530994-9732-1-git-send-email-riel@redhat.com>
+	Fri, 17 Oct 2014 03:37:00 -0400
+Date: Fri, 17 Oct 2014 09:36:53 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH] kernel/kmod: fix use-after-free of the
+ sub_infostructure
+Message-ID: <20141017093653.6fa60dff@mschwide>
+In-Reply-To: <20141016215834.GA28864@redhat.com>
+References: <20141016160042.7f898871@mschwide>
+	<201410170157.AFH86961.FQtFHJVLOFSOOM@I-love.SAKURA.ne.jp>
+	<20141016174209.GB18318@redhat.com>
+	<201410170630.EBH48400.FSOHVQJOFMLtFO@I-love.SAKURA.ne.jp>
+	<20141016215834.GA28864@redhat.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14101707-0013-0000-0000-0000017BBD4C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rik van Riel <riel@redhat.com>
+On Thu, 16 Oct 2014 23:58:34 +0200
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-In order to do task placement on systems with complex NUMA topologies,
-it is necessary to count the faults on nodes nearby the node that is
-being examined for a potential move.
+> I also agree that the changelog could mention exec_mmap. Plus a comment
+> about UMH_NO_WAIT && sub_info->complete == NULL. So yes, perhaps v2 makes
+> sense if Martin agrees.
 
-In case of a system with a backplane interconnect, we are dealing with
-groups of NUMA nodes; each of the nodes within a group is the same number
-of hops away from nodes in other groups in the system. Optimal placement
-on this topology is achieved by counting all nearby nodes equally. When
-comparing nodes A and B at distance N, nearby nodes are those at distances
-smaller than N from nodes A or B.
-
-Placement strategy on a system with a glueless mesh NUMA topology needs
-to be different, because there are no natural groups of nodes determined
-by the hardware. Instead, when dealing with two nodes A and B at distance
-N, N >= 2, there will be intermediate nodes at distance < N from both nodes
-A and B. Good placement can be achieved by right shifting the faults on
-nearby nodes by the number of hops from the node being scored. In this
-context, a nearby node is any node less than the maximum distance in the
-system away from the node. Those nodes are skipped for efficiency reasons,
-there is no real policy reason to do so.
-
-Placement policy on directly connected NUMA systems is not affected.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Tested-by: Chegu Vinod <chegu_vinod@hp.com>
+Version 2 of the patch. All change requests have gone in except for the
+mention of exec_mmap. I don't quite get the relevance of it, do_execve
+can fail for the various reasons.
 ---
- kernel/sched/fair.c | 74 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 74 insertions(+)
+Subject: [PATCH] kernel/kmod: fix use-after-free of the sub_info structure
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 1c540f5..6df460f 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -924,6 +924,71 @@ static inline unsigned long group_faults_cpu(struct numa_group *group, int nid)
- 		group->faults_cpu[task_faults_idx(nid, 1)];
- }
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+
+Found this in the message log on a s390 system:
+
+BUG kmalloc-192 (Not tainted): Poison overwritten
+Disabling lock debugging due to kernel taint
+INFO: 0x00000000684761f4-0x00000000684761f7. First byte 0xff instead of 0x6b
+INFO: Allocated in call_usermodehelper_setup+0x70/0x128 age=71 cpu=2 pid=648
+ __slab_alloc.isra.47.constprop.56+0x5f6/0x658
+ kmem_cache_alloc_trace+0x106/0x408
+ call_usermodehelper_setup+0x70/0x128
+ call_usermodehelper+0x62/0x90
+ cgroup_release_agent+0x178/0x1c0
+ process_one_work+0x36e/0x680
+ worker_thread+0x2f0/0x4f8
+ kthread+0x10a/0x120
+ kernel_thread_starter+0x6/0xc
+ kernel_thread_starter+0x0/0xc
+INFO: Freed in call_usermodehelper_exec+0x110/0x1b8 age=71 cpu=2 pid=648
+ __slab_free+0x94/0x560
+ kfree+0x364/0x3e0
+ call_usermodehelper_exec+0x110/0x1b8
+ cgroup_release_agent+0x178/0x1c0
+ process_one_work+0x36e/0x680
+ worker_thread+0x2f0/0x4f8
+ kthread+0x10a/0x120
+ kernel_thread_starter+0x6/0xc
+ kernel_thread_starter+0x0/0xc
+
+There is a use-after-free bug on the subprocess_info structure allocated
+by the user mode helper. In case do_execve() returns with an error
+____call_usermodehelper() stores the error code to sub_info->retval,
+but sub_info can already have been freed.
+
+Regarding UMH_NO_WAIT, the sub_info structure can be freed by
+__call_usermodehelper() before the worker thread returns from
+do_execve(), allowing memory corruption when do_execve() failed
+after exec_mmap() is called.
+
+Regarding UMH_WAIT_EXEC, the call to umh_complete() allows
+call_usermodehelper_exec() to continue which then frees sub_info.
+
+To fix this race the code needs to make sure that the call to
+call_usermodehelper_freeinfo() is always done after the last store
+to sub_info->retval.
+
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Reviewed-by: Oleg Nesterov <oleg@redhat.com>
+Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+---
+ kernel/kmod.c | 76 +++++++++++++++++++++++++++++------------------------------
+ 1 file changed, 37 insertions(+), 39 deletions(-)
+
+diff --git a/kernel/kmod.c b/kernel/kmod.c
+index 8637e04..80f7a6d 100644
+--- a/kernel/kmod.c
++++ b/kernel/kmod.c
+@@ -196,12 +196,34 @@ int __request_module(bool wait, const char *fmt, ...)
+ EXPORT_SYMBOL(__request_module);
+ #endif /* CONFIG_MODULES */
  
-+/* Handle placement on systems where not all nodes are directly connected. */
-+static unsigned long score_nearby_nodes(struct task_struct *p, int nid,
-+					int maxdist, bool task)
++static void call_usermodehelper_freeinfo(struct subprocess_info *info)
 +{
-+	unsigned long score = 0;
-+	int node;
++	if (info->cleanup)
++		(*info->cleanup)(info);
++	kfree(info);
++}
 +
++static void umh_complete(struct subprocess_info *sub_info)
++{
++	struct completion *comp = xchg(&sub_info->complete, NULL);
 +	/*
-+	 * All nodes are directly connected, and the same distance
-+	 * from each other. No need for fancy placement algorithms.
++	 * See call_usermodehelper_exec(). If xchg() returns NULL
++	 * we own sub_info, the UMH_KILLABLE caller has gone away
++	 * or the caller used UMH_NO_WAIT.
 +	 */
-+	if (sched_numa_topology_type == NUMA_DIRECT)
-+		return 0;
-+
-+	/*
-+	 * This code is called for each node, introducing N^2 complexity,
-+	 * which should be ok given the number of nodes rarely exceeds 8.
-+	 */
-+	for_each_online_node(node) {
-+		unsigned long faults;
-+		int dist = node_distance(nid, node);
-+
-+		/*
-+		 * The furthest away nodes in the system are not interesting
-+		 * for placement; nid was already counted.
-+		 */
-+		if (dist == sched_max_numa_distance || node == nid)
-+			continue;
-+
-+		/*
-+		 * On systems with a backplane NUMA topology, compare groups
-+		 * of nodes, and move tasks towards the group with the most
-+		 * memory accesses. When comparing two nodes at distance
-+		 * "hoplimit", only nodes closer by than "hoplimit" are part
-+		 * of each group. Skip other nodes.
-+		 */
-+		if (sched_numa_topology_type == NUMA_BACKPLANE &&
-+					dist > maxdist)
-+			continue;
-+
-+		/* Add up the faults from nearby nodes. */
-+		if (task)
-+			faults = task_faults(p, node);
-+		else
-+			faults = group_faults(p, node);
-+
-+		/*
-+		 * On systems with a glueless mesh NUMA topology, there are
-+		 * no fixed "groups of nodes". Instead, nodes that are not
-+		 * directly connected bounce traffic through intermediate
-+		 * nodes; a numa_group can occupy any set of nodes.
-+		 * The further away a node is, the less the faults count.
-+		 * This seems to result in good task placement.
-+		 */
-+		if (sched_numa_topology_type == NUMA_GLUELESS_MESH) {
-+			faults *= (sched_max_numa_distance - dist);
-+			faults /= (sched_max_numa_distance - LOCAL_DISTANCE);
-+		}
-+
-+		score += faults;
-+	}
-+
-+	return score;
++	if (comp)
++		complete(comp);
++	else
++		call_usermodehelper_freeinfo(sub_info);
 +}
 +
  /*
-  * These return the fraction of accesses done by a particular task, or
-  * task group, on a particular numa node.  The group weight is given a
-@@ -944,6 +1009,8 @@ static inline unsigned long task_weight(struct task_struct *p, int nid,
- 		return 0;
+  * This is the task which runs the usermode application
+  */
+ static int ____call_usermodehelper(void *data)
+ {
+ 	struct subprocess_info *sub_info = data;
++	int wait = sub_info->wait & ~UMH_KILLABLE;
+ 	struct cred *new;
+ 	int retval;
  
- 	faults = task_faults(p, nid);
-+	faults += score_nearby_nodes(p, nid, dist, true);
-+
- 	return 1000 * faults / total_faults;
+@@ -221,7 +243,7 @@ static int ____call_usermodehelper(void *data)
+ 	retval = -ENOMEM;
+ 	new = prepare_kernel_cred(current);
+ 	if (!new)
+-		goto fail;
++		goto out;
+ 
+ 	spin_lock(&umh_sysctl_lock);
+ 	new->cap_bset = cap_intersect(usermodehelper_bset, new->cap_bset);
+@@ -233,7 +255,7 @@ static int ____call_usermodehelper(void *data)
+ 		retval = sub_info->init(sub_info, new);
+ 		if (retval) {
+ 			abort_creds(new);
+-			goto fail;
++			goto out;
+ 		}
+ 	}
+ 
+@@ -242,12 +264,13 @@ static int ____call_usermodehelper(void *data)
+ 	retval = do_execve(getname_kernel(sub_info->path),
+ 			   (const char __user *const __user *)sub_info->argv,
+ 			   (const char __user *const __user *)sub_info->envp);
++out:
++	sub_info->retval = retval;
++	/* wait_for_helper() will call umh_complete if UHM_WAIT_PROC. */
++	if (wait != UMH_WAIT_PROC)
++		umh_complete(sub_info);
+ 	if (!retval)
+ 		return 0;
+-
+-	/* Exec failed? */
+-fail:
+-	sub_info->retval = retval;
+ 	do_exit(0);
  }
  
-@@ -961,6 +1028,8 @@ static inline unsigned long group_weight(struct task_struct *p, int nid,
- 		return 0;
- 
- 	faults = group_faults(p, nid);
-+	faults += score_nearby_nodes(p, nid, dist, false);
-+
- 	return 1000 * faults / total_faults;
+@@ -258,26 +281,6 @@ static int call_helper(void *data)
+ 	return ____call_usermodehelper(data);
  }
  
-@@ -1363,6 +1432,11 @@ static int task_numa_migrate(struct task_struct *p)
- 				continue;
+-static void call_usermodehelper_freeinfo(struct subprocess_info *info)
+-{
+-	if (info->cleanup)
+-		(*info->cleanup)(info);
+-	kfree(info);
+-}
+-
+-static void umh_complete(struct subprocess_info *sub_info)
+-{
+-	struct completion *comp = xchg(&sub_info->complete, NULL);
+-	/*
+-	 * See call_usermodehelper_exec(). If xchg() returns NULL
+-	 * we own sub_info, the UMH_KILLABLE caller has gone away.
+-	 */
+-	if (comp)
+-		complete(comp);
+-	else
+-		call_usermodehelper_freeinfo(sub_info);
+-}
+-
+ /* Keventd can't block, but this (a child) can. */
+ static int wait_for_helper(void *data)
+ {
+@@ -336,18 +339,8 @@ static void __call_usermodehelper(struct work_struct *work)
+ 		kmod_thread_locker = NULL;
+ 	}
  
- 			dist = node_distance(env.src_nid, env.dst_nid);
-+			if (sched_numa_topology_type == NUMA_BACKPLANE &&
-+						dist != env.dist) {
-+				taskweight = task_weight(p, env.src_nid, dist);
-+				groupweight = group_weight(p, env.src_nid, dist);
-+			}
+-	switch (wait) {
+-	case UMH_NO_WAIT:
+-		call_usermodehelper_freeinfo(sub_info);
+-		break;
+-
+-	case UMH_WAIT_PROC:
+-		if (pid > 0)
+-			break;
+-		/* FALLTHROUGH */
+-	case UMH_WAIT_EXEC:
+-		if (pid < 0)
+-			sub_info->retval = pid;
++	if (pid < 0) {
++		sub_info->retval = pid;
+ 		umh_complete(sub_info);
+ 	}
+ }
+@@ -588,7 +581,12 @@ int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
+ 		goto out;
+ 	}
  
- 			/* Only consider nodes where both task and groups benefit */
- 			taskimp = task_weight(p, nid, dist) - taskweight;
+-	sub_info->complete = &done;
++	/*
++	 * Set the completion pointer only if there is a waiter.
++	 * This makes it possible to use umh_complete to free
++	 * the data structure in case of UMH_NO_WAIT.
++	 */
++	sub_info->complete = (wait == UMH_NO_WAIT) ? NULL : &done;
+ 	sub_info->wait = wait;
+ 
+ 	queue_work(khelper_wq, &sub_info->work);
 -- 
-1.9.3
+1.8.5.5
 
