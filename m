@@ -1,306 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986AbaJQKYL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 06:24:11 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:42639 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751318AbaJQKYI (ORCPT
+	id S1752124AbaJQKZn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 06:25:43 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:51897 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751293AbaJQKZm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 06:24:08 -0400
-From: Kelvin Cheung <keguang.zhang@gmail.com>
-To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: rjw@rjwysocki.net, viresh.kumar@linaro.org, linux-mips@linux-mips.org,
-        ralf@linux-mips.org, Kelvin Cheung <keguang.zhang@gmail.com>
-Subject: [PATCH V3 6/6] cpufreq: Loongson1: Add cpufreq driver for Loongson1B
-Date: Fri, 17 Oct 2014 18:23:31 +0800
-Message-Id: <1413541411-26609-1-git-send-email-keguang.zhang@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Fri, 17 Oct 2014 06:25:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <543FBB97.9010006@hurleysoftware.com>
+References: <54369F77.5000906@hurleysoftware.com>
+	<1413355395-5871-1-git-send-email-ssreedharan@mvista.com>
+	<543FBB97.9010006@hurleysoftware.com>
+Date: Fri, 17 Oct 2014 15:55:41 +0530
+Message-ID: <CAJJ77WsAi5jmnDxY45ipu3a94D6+yoHJNHgExhFsVoirV3NoyQ@mail.gmail.com>
+Subject: Re: [PATCH] tty: serial: 8250_core: restore the LCR register in set_sleep
+From: Sudhir Sreedharan <ssreedharan@mvista.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Kevin Hilman <khilman@kernel.org>,
+        linux-serial@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
+        lkml <linux-kernel@vger.kernel.org>, Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds cpufreq driver for Loongson1B which
-is capable of changing the CPU frequency dynamically.
+Hi Peter,
 
-Signed-off-by: Kelvin Cheung <keguang.zhang@gmail.com>
+On Thu, Oct 16, 2014 at 6:05 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
+> On 10/15/2014 02:43 AM, Sudhir Sreedharan wrote:
+>> In ST16650V2 based serial uarts, while initalizing the PM state,
+>> LCR registers are being initialized to 0 in serial8250_set_sleep().
+>> If console port is already initialized and being used, this will
+>> throws garbage in the console.
+>>
+>> Signed-off-by: Sudhir Sreedharan <ssreedharan@mvista.com>
+>> ---
+>>  drivers/tty/serial/8250/8250_core.c |    7 +++++--
+>>  1 files changed, 5 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
+>> index ca5cfdc..e054482 100644
+>> --- a/drivers/tty/serial/8250/8250_core.c
+>> +++ b/drivers/tty/serial/8250/8250_core.c
+>> @@ -595,6 +595,7 @@ static void serial8250_rpm_put_tx(struct uart_8250_port *p)
+>>   */
+>>  static void serial8250_set_sleep(struct uart_8250_port *p, int sleep)
+>>  {
+>> +     unsigned char lcr, efr;
+>>       /*
+>>        * Exar UARTs have a SLEEP register that enables or disables
+>>        * each UART to enter sleep mode separately.  On the XR17V35x the
+>> @@ -611,6 +612,8 @@ static void serial8250_set_sleep(struct uart_8250_port *p, int sleep)
+>>
+>>       if (p->capabilities & UART_CAP_SLEEP) {
+>>               if (p->capabilities & UART_CAP_EFR) {
+>> +                     lcr = serial_in(p, UART_LCR);
+>> +                     efr = serial_in(p, UART_EFR);
+>>                       serial_out(p, UART_LCR, UART_LCR_CONF_MODE_B);
+>>                       serial_out(p, UART_EFR, UART_EFR_ECB);
+>>                       serial_out(p, UART_LCR, 0);
+>> @@ -618,8 +621,8 @@ static void serial8250_set_sleep(struct uart_8250_port *p, int sleep)
+>>               serial_out(p, UART_IER, sleep ? UART_IERX_SLEEP : 0);
+>>               if (p->capabilities & UART_CAP_EFR) {
+>>                       serial_out(p, UART_LCR, UART_LCR_CONF_MODE_B);
+>> -                     serial_out(p, UART_EFR, 0);
+>> -                     serial_out(p, UART_LCR, 0);
+>> +                     serial_out(p, UART_EFR, sleep ? 0 : efr);
+>> +                     serial_out(p, UART_LCR, sleep ? 0 : lcr);
+>
+> Why is it necessary to clear EFR and LCR here? Does the UART not
+> power down?
+>
+> UARTs with CAP_SLEEP but not CAP_EFR don't clear LCR before sleep.
+>
+> However, if there is some kind of intentional side-effect here,
+> then a comment should note that.
 
----
-V3:
-   Remove superfluous devm_clk_put().
-V2:
-   Use devm_clk_get() instead of clk_get().
-   Other minor fixes.
-V1:
-   Add cpufreq driver for Loongson1B.
----
- drivers/cpufreq/Kconfig        |  10 ++
- drivers/cpufreq/Makefile       |   1 +
- drivers/cpufreq/ls1x-cpufreq.c | 223 +++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 234 insertions(+)
- create mode 100644 drivers/cpufreq/ls1x-cpufreq.c
+Yes, we can restore the LCR and EFR with the saved values.
+                     serial_out(p, UART_EFR, efr);
+                     serial_out(p, UART_LCR, lcr);
 
-diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
-index ffe350f..99464d7 100644
---- a/drivers/cpufreq/Kconfig
-+++ b/drivers/cpufreq/Kconfig
-@@ -250,6 +250,16 @@ config LOONGSON2_CPUFREQ
- 
- 	  If in doubt, say N.
- 
-+config LOONGSON1_CPUFREQ
-+	tristate "Loongson1 CPUFreq Driver"
-+	help
-+	  This option adds a CPUFreq driver for loongson1 processors which
-+	  support software configurable cpu frequency.
-+
-+	  For details, take a look at <file:Documentation/cpu-freq/>.
-+
-+	  If in doubt, say N.
-+
- endmenu
- 
- menu "PowerPC CPU frequency scaling drivers"
-diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
-index db6d9a2..aca7bd3 100644
---- a/drivers/cpufreq/Makefile
-+++ b/drivers/cpufreq/Makefile
-@@ -98,6 +98,7 @@ obj-$(CONFIG_CRIS_MACH_ARTPEC3)		+= cris-artpec3-cpufreq.o
- obj-$(CONFIG_ETRAXFS)			+= cris-etraxfs-cpufreq.o
- obj-$(CONFIG_IA64_ACPI_CPUFREQ)		+= ia64-acpi-cpufreq.o
- obj-$(CONFIG_LOONGSON2_CPUFREQ)		+= loongson2_cpufreq.o
-+obj-$(CONFIG_LOONGSON1_CPUFREQ)		+= ls1x-cpufreq.o
- obj-$(CONFIG_SH_CPU_FREQ)		+= sh-cpufreq.o
- obj-$(CONFIG_SPARC_US2E_CPUFREQ)	+= sparc-us2e-cpufreq.o
- obj-$(CONFIG_SPARC_US3_CPUFREQ)		+= sparc-us3-cpufreq.o
-diff --git a/drivers/cpufreq/ls1x-cpufreq.c b/drivers/cpufreq/ls1x-cpufreq.c
-new file mode 100644
-index 0000000..25fbd6a
---- /dev/null
-+++ b/drivers/cpufreq/ls1x-cpufreq.c
-@@ -0,0 +1,223 @@
-+/*
-+ * CPU Frequency Scaling for Loongson 1 SoC
-+ *
-+ * Copyright (C) 2014 Zhang, Keguang <keguang.zhang@gmail.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/clk-provider.h>
-+#include <linux/cpu.h>
-+#include <linux/cpufreq.h>
-+#include <linux/delay.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+
-+#include <asm/mach-loongson1/cpufreq.h>
-+#include <asm/mach-loongson1/loongson1.h>
-+
-+static struct {
-+	struct device *dev;
-+	struct clk *clk;	/* CPU clk */
-+	struct clk *mux_clk;	/* MUX of CPU clk */
-+	struct clk *pll_clk;	/* PLL clk */
-+	struct clk *osc_clk;	/* OSC clk */
-+	unsigned int max_freq;
-+	unsigned int min_freq;
-+} ls1x_cpufreq;
-+
-+static int ls1x_cpufreq_notifier(struct notifier_block *nb,
-+				 unsigned long val, void *data)
-+{
-+	if (val == CPUFREQ_POSTCHANGE)
-+		current_cpu_data.udelay_val = loops_per_jiffy;
-+
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block ls1x_cpufreq_notifier_block = {
-+	.notifier_call = ls1x_cpufreq_notifier
-+};
-+
-+static int ls1x_cpufreq_target(struct cpufreq_policy *policy,
-+			       unsigned int index)
-+{
-+	unsigned int old_freq, new_freq;
-+
-+	old_freq = policy->cur;
-+	new_freq = policy->freq_table[index].frequency;
-+
-+	/*
-+	 * The procedure of reconfiguring CPU clk is as below.
-+	 *
-+	 *  - Reparent CPU clk to OSC clk
-+	 *  - Reset CPU clock (very important)
-+	 *  - Reconfigure CPU DIV
-+	 *  - Reparent CPU clk back to CPU DIV clk
-+	 */
-+
-+	dev_dbg(ls1x_cpufreq.dev, "%u KHz --> %u KHz\n", old_freq, new_freq);
-+	clk_set_parent(policy->clk, ls1x_cpufreq.osc_clk);
-+	__raw_writel(__raw_readl(LS1X_CLK_PLL_DIV) | RST_CPU_EN | RST_CPU,
-+		     LS1X_CLK_PLL_DIV);
-+	__raw_writel(__raw_readl(LS1X_CLK_PLL_DIV) & ~(RST_CPU_EN | RST_CPU),
-+		     LS1X_CLK_PLL_DIV);
-+	clk_set_rate(ls1x_cpufreq.mux_clk, new_freq * 1000);
-+	clk_set_parent(policy->clk, ls1x_cpufreq.mux_clk);
-+
-+	return 0;
-+}
-+
-+static int ls1x_cpufreq_init(struct cpufreq_policy *policy)
-+{
-+	struct cpufreq_frequency_table *freq_tbl;
-+	unsigned int pll_freq, freq;
-+	int steps, i, ret;
-+
-+	pll_freq = clk_get_rate(ls1x_cpufreq.pll_clk) / 1000;
-+
-+	steps = 1 << DIV_CPU_WIDTH;
-+	freq_tbl = kzalloc(sizeof(*freq_tbl) * steps, GFP_KERNEL);
-+	if (!freq_tbl) {
-+		dev_err(ls1x_cpufreq.dev,
-+			"failed to alloc cpufreq_frequency_table\n");
-+		ret = -ENOMEM;
-+		goto out;
-+	}
-+
-+	for (i = 0; i < (steps - 1); i++) {
-+		freq = pll_freq / (i + 1);
-+		if ((freq < ls1x_cpufreq.min_freq) ||
-+		    (freq > ls1x_cpufreq.max_freq))
-+			freq_tbl[i].frequency = CPUFREQ_ENTRY_INVALID;
-+		else
-+			freq_tbl[i].frequency = freq;
-+		dev_dbg(ls1x_cpufreq.dev,
-+			"cpufreq table: index %d: frequency %d\n", i,
-+			freq_tbl[i].frequency);
-+	}
-+	freq_tbl[i].frequency = CPUFREQ_TABLE_END;
-+
-+	policy->clk = ls1x_cpufreq.clk;
-+	ret = cpufreq_generic_init(policy, freq_tbl, 0);
-+	if (ret)
-+		kfree(freq_tbl);
-+out:
-+	return ret;
-+}
-+
-+static int ls1x_cpufreq_exit(struct cpufreq_policy *policy)
-+{
-+	kfree(policy->freq_table);
-+	return 0;
-+}
-+
-+static struct cpufreq_driver ls1x_cpufreq_driver = {
-+	.name		= "cpufreq-ls1x",
-+	.flags		= CPUFREQ_STICKY | CPUFREQ_NEED_INITIAL_FREQ_CHECK,
-+	.verify		= cpufreq_generic_frequency_table_verify,
-+	.target_index	= ls1x_cpufreq_target,
-+	.get		= cpufreq_generic_get,
-+	.init		= ls1x_cpufreq_init,
-+	.exit		= ls1x_cpufreq_exit,
-+	.attr		= cpufreq_generic_attr,
-+};
-+
-+static int ls1x_cpufreq_remove(struct platform_device *pdev)
-+{
-+	cpufreq_unregister_notifier(&ls1x_cpufreq_notifier_block,
-+				    CPUFREQ_TRANSITION_NOTIFIER);
-+	cpufreq_unregister_driver(&ls1x_cpufreq_driver);
-+
-+	return 0;
-+}
-+
-+static int ls1x_cpufreq_probe(struct platform_device *pdev)
-+{
-+	struct plat_ls1x_cpufreq *pdata = pdev->dev.platform_data;
-+	struct clk *clk;
-+	int ret;
-+
-+	if (!pdata || !pdata->clk_name || !pdata->osc_clk_name)
-+		return -EINVAL;
-+
-+	ls1x_cpufreq.dev = &pdev->dev;
-+
-+	clk = devm_clk_get(&pdev->dev, pdata->clk_name);
-+	if (IS_ERR(clk)) {
-+		dev_err(ls1x_cpufreq.dev, "unable to get %s clock\n",
-+			pdata->clk_name);
-+		ret = PTR_ERR(clk);
-+		goto out;
-+	}
-+	ls1x_cpufreq.clk = clk;
-+
-+	clk = clk_get_parent(clk);
-+	if (IS_ERR(clk)) {
-+		dev_err(ls1x_cpufreq.dev, "unable to get parent of %s clock\n",
-+			__clk_get_name(ls1x_cpufreq.clk));
-+		ret = PTR_ERR(clk);
-+		goto out;
-+	}
-+	ls1x_cpufreq.mux_clk = clk;
-+
-+	clk = clk_get_parent(clk);
-+	if (IS_ERR(clk)) {
-+		dev_err(ls1x_cpufreq.dev, "unable to get parent of %s clock\n",
-+			__clk_get_name(ls1x_cpufreq.mux_clk));
-+		ret = PTR_ERR(clk);
-+		goto out;
-+	}
-+	ls1x_cpufreq.pll_clk = clk;
-+
-+	clk = devm_clk_get(&pdev->dev, pdata->osc_clk_name);
-+	if (IS_ERR(clk)) {
-+		dev_err(ls1x_cpufreq.dev, "unable to get %s clock\n",
-+			pdata->osc_clk_name);
-+		ret = PTR_ERR(clk);
-+		goto out;
-+	}
-+	ls1x_cpufreq.osc_clk = clk;
-+
-+	ls1x_cpufreq.max_freq = pdata->max_freq;
-+	ls1x_cpufreq.min_freq = pdata->min_freq;
-+
-+	ret = cpufreq_register_driver(&ls1x_cpufreq_driver);
-+	if (ret) {
-+		dev_err(ls1x_cpufreq.dev,
-+			"failed to register cpufreq driver: %d\n", ret);
-+		goto out;
-+	}
-+
-+	ret = cpufreq_register_notifier(&ls1x_cpufreq_notifier_block,
-+					CPUFREQ_TRANSITION_NOTIFIER);
-+
-+	if (!ret)
-+		goto out;
-+
-+	dev_err(ls1x_cpufreq.dev, "failed to register cpufreq notifier: %d\n",
-+		ret);
-+
-+	cpufreq_unregister_driver(&ls1x_cpufreq_driver);
-+out:
-+	return ret;
-+}
-+
-+static struct platform_driver ls1x_cpufreq_platdrv = {
-+	.driver = {
-+		.name	= "ls1x-cpufreq",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= ls1x_cpufreq_probe,
-+	.remove		= ls1x_cpufreq_remove,
-+};
-+
-+module_platform_driver(ls1x_cpufreq_platdrv);
-+
-+MODULE_AUTHOR("Kelvin Cheung <keguang.zhang@gmail.com>");
-+MODULE_DESCRIPTION("Loongson 1 CPUFreq driver");
-+MODULE_LICENSE("GPL");
--- 
-1.9.1
+I will send a new patch with the changes.
 
+Thanks,
+Sudhir
+
+>
+> Regards,
+> Peter Hurley
+>
+>>               }
+>>       }
+>>  out:
+>>
+>
