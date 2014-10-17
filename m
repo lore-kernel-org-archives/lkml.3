@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426AbaJQIgL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 04:36:11 -0400
-Received: from 8bytes.org ([81.169.241.247]:39475 "EHLO theia.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751158AbaJQIgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 04:36:08 -0400
-Date: Fri, 17 Oct 2014 10:36:05 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Grant Grundler <grundler@chromium.org>,
-        =?iso-8859-1?Q?St=E9phane?= Marchesin <marcheu@chromium.org>,
-        Simon Xue <xxm@rock-chips.com>, Heiko Stuebner <heiko@sntech.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:IOMMU DRIVERS" <iommu@lists.linux-foundation.org>,
-        "moderated list:ARM/Rockchip SoC..." 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v5 1/3] iommu/rockchip: rk3288 iommu driver
-Message-ID: <20141017083605.GL28786@8bytes.org>
-References: <1413273762-32489-1-git-send-email-djkurtz@chromium.org>
- <1413273762-32489-2-git-send-email-djkurtz@chromium.org>
- <CAGS+omBp-pDkuexN40buvVViUJn6_o0S7nWWr9wXqCxOYoYALQ@mail.gmail.com>
+	id S1753462AbaJQIke (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 04:40:34 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:49695 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158AbaJQIka (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 04:40:30 -0400
+Date: Fri, 17 Oct 2014 10:40:11 +0200
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 4/5] mm: memcontrol: continue cache reclaim from offlined
+ groups
+Message-ID: <20141017084011.GC5641@esperanza>
+References: <1413303637-23862-1-git-send-email-hannes@cmpxchg.org>
+ <1413303637-23862-5-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <CAGS+omBp-pDkuexN40buvVViUJn6_o0S7nWWr9wXqCxOYoYALQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1413303637-23862-5-git-send-email-hannes@cmpxchg.org>
+X-Originating-IP: [62.156.150.204]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 17, 2014 at 10:22:13AM +0800, Daniel Kurtz wrote:
-> Gentle ping.
+On Tue, Oct 14, 2014 at 12:20:36PM -0400, Johannes Weiner wrote:
+> On cgroup deletion, outstanding page cache charges are moved to the
+> parent group so that they're not lost and can be reclaimed during
+> pressure on/inside said parent.  But this reparenting is fairly tricky
+> and its synchroneous nature has led to several lock-ups in the past.
 > 
-> Any more feedback on the rockchip iommu driver?
+> Since css iterators now also include offlined css, memcg iterators can
+> be changed to include offlined children during reclaim of a group, and
+> leftover cache can just stay put.
+> 
+> There is a slight change of behavior in that charges of deleted groups
+> no longer show up as local charges in the parent.  But they are still
+> included in the parent's hierarchical statistics.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> ---
+>  mm/memcontrol.c | 218 +-------------------------------------------------------
+>  1 file changed, 1 insertion(+), 217 deletions(-)
 
-I'll look at it in more detail when the merge window is over.
+I do like the stats :-) However, as I've already mentioned, on big
+machines we can end up with hundred of thousands of dead css's.
+Iterating over all of them during reclaim may result in noticeable lags.
+One day we'll have to do something about that I guess.
 
+Another issue is that AFAICT currently we can't have more than 64K
+cgroups due to the MEM_CGROUP_ID_MAX limit. The limit exists, because we
+use css ids for tagging swap entries and we don't want to spend too much
+memory on this. May be, we should simply use the mem_cgroup pointer
+instead of the css id?
 
-	Joerg
+OTOH, the reparenting code looks really ugly. And we can't easily
+reparent swap and kmem. So I think it's a reasonable change.
 
+Acked-by: Vladimir Davydov <vdavydov@parallels.com>
