@@ -1,58 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751571AbaJQJz5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 05:55:57 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:43284 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828AbaJQJz4 (ORCPT
+	id S1751383AbaJQKDh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 06:03:37 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:49930 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828AbaJQKDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 05:55:56 -0400
-Date: Fri, 17 Oct 2014 02:55:55 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: michaelc@cs.wisc.edu
-Cc: linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
-        ceph-devel@vger.kernel.org, axboe@kernel.dk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] block: add function to issue compare and write
-Message-ID: <20141017095555.GA360@infradead.org>
-References: <1413437835-13778-1-git-send-email-michaelc@cs.wisc.edu>
- <1413437835-13778-3-git-send-email-michaelc@cs.wisc.edu>
+	Fri, 17 Oct 2014 06:03:36 -0400
+Date: Fri, 17 Oct 2014 15:33:25 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: Paul Zimmerman <paulz@synopsys.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 2/2] usb: dwc2: gadget: modify return statement
+Message-ID: <20141017100325.GA21465@sudip-PC>
+References: <1413521043-7587-1-git-send-email-sudipm.mukherjee@gmail.com>
+ <1413521043-7587-2-git-send-email-sudipm.mukherjee@gmail.com>
+ <063D6719AE5E284EB5DD2968C1650D6D1C9D8926@AcuExch.aculab.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1413437835-13778-3-git-send-email-michaelc@cs.wisc.edu>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1C9D8926@AcuExch.aculab.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 12:37:12AM -0500, michaelc@cs.wisc.edu wrote:
-> @@ -160,7 +160,7 @@ enum rq_flag_bits {
->  	__REQ_DISCARD,		/* request to discard sectors */
->  	__REQ_SECURE,		/* secure discard (used with __REQ_DISCARD) */
->  	__REQ_WRITE_SAME,	/* write same block many times */
-> -
-> +	__REQ_CMP_AND_WRITE,	/* compare data and write if matched */
+On Fri, Oct 17, 2014 at 09:02:00AM +0000, David Laight wrote:
+> From: Of Sudip Mukherjee
+> > modified the function to have a single return statement at the end
+> > instead of multiple return statement in the middle of the function
+> > to improve the readability of the code.
+> 
+> Many of us would disagree with you there.
+> Early returns actually make the code easier to read, certainly
+> better than a goto 'end of function'.
+> 
+actually , frankly speaking, this first return statement was also easier for me to understand. But in my v1 patch , Paul mentioned : 
+>For a long function like this, I'd rather keep a single return point at
+>the end.
+so I thought he meant all the return statements in the function. 
 
-I think it's time that we stop overloading the request flags with
-request types.
+thanks
+sudip
 
-We already have req->cmd_type which actually is a fairly good
-description of what we get except for REQ_TYPE_FS, which is a horrible
-overload using req->cmd_flags.
 
-Given that you're just one of many currently ongoing patches to add
-more flags here I think you need to byte the bullet and fix this up
-by replacing REQ_TYPE_FS with:
-
-REQ_TYPE_WRITE
-REQ_TYPE_READ
-REQ_TYPE_FLUSH
-REQ_TYPE_DISCARD
-REQ_TYPE_WRITE_SAME
-REQ_TYPE_CMP_AND_WRITE
-
-sd.c is a nice guide of what should be a flag and what a type since my
-last refactoring of the command_init function.
+> 	David
+> 
+> > This patch depends on the previous patch of the series.
+> > 
+> > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+> > ---
+> >  drivers/usb/dwc2/gadget.c | 4 +++-
+> >  1 file changed, 3 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
+> > index 7f25527..e8a8fc7 100644
+> > --- a/drivers/usb/dwc2/gadget.c
+> > +++ b/drivers/usb/dwc2/gadget.c
+> > @@ -2471,7 +2471,8 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
+> >  	dir_in = (desc->bEndpointAddress & USB_ENDPOINT_DIR_MASK) ? 1 : 0;
+> >  	if (dir_in != hs_ep->dir_in) {
+> >  		dev_err(hsotg->dev, "%s: direction mismatch!\n", __func__);
+> > -		return -EINVAL;
+> > +		ret = -EINVAL;
+> > +		goto error1;
+> >  	}
+> > 
+> >  	mps = usb_endpoint_maxp(desc);
+> > @@ -2583,6 +2584,7 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
+> > 
+> >  error:
+> >  	spin_unlock_irqrestore(&hsotg->lock, flags);
+> > +error1:
+> >  	return ret;
+> >  }
+> > 
+> > --
+> > 1.8.1.2
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
