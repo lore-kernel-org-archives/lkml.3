@@ -1,66 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612AbaJQSK7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 14:10:59 -0400
-Received: from smtprelay4.synopsys.com ([198.182.44.111]:58748 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753292AbaJQSK5 convert rfc822-to-8bit (ORCPT
+	id S1753503AbaJQSRl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 14:17:41 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:45054 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753127AbaJQSRk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 14:10:57 -0400
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
-        David Laight <David.Laight@ACULAB.COM>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v3 2/2] usb: dwc2: gadget: modify return statement
-Thread-Topic: [PATCH v3 2/2] usb: dwc2: gadget: modify return statement
-Thread-Index: AQHP6cUG28F+qHxVJUawV10ZLnQBUpw0c9QAgAARKYCAABFG8A==
-Date: Fri, 17 Oct 2014 18:10:54 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844E33A2@US01WEMBX2.internal.synopsys.com>
-References: <1413521043-7587-1-git-send-email-sudipm.mukherjee@gmail.com>
- <1413521043-7587-2-git-send-email-sudipm.mukherjee@gmail.com>
- <063D6719AE5E284EB5DD2968C1650D6D1C9D8926@AcuExch.aculab.com>
- <20141017100325.GA21465@sudip-PC>
-In-Reply-To: <20141017100325.GA21465@sudip-PC>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.240]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 17 Oct 2014 14:17:40 -0400
 MIME-Version: 1.0
+In-Reply-To: <1413554226-12652-1-git-send-email-prarit@redhat.com>
+References: <1413554226-12652-1-git-send-email-prarit@redhat.com>
+Date: Fri, 17 Oct 2014 11:17:39 -0700
+Message-ID: <CALAqxLWaVE2MG5HGigv-KJuOP1UgJrrLgOt+HueJx81h1dDX-w@mail.gmail.com>
+Subject: Re: [PATCH] clocksource, Add warning to clocksource_delta()
+ validation code
+From: John Stultz <john.stultz@linaro.org>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Sudip Mukherjee [mailto:sudipm.mukherjee@gmail.com]
-> Sent: Friday, October 17, 2014 3:03 AM
-> 
-> On Fri, Oct 17, 2014 at 09:02:00AM +0000, David Laight wrote:
-> > From: Of Sudip Mukherjee
-> > > modified the function to have a single return statement at the end
-> > > instead of multiple return statement in the middle of the function
-> > > to improve the readability of the code.
-> >
-> > Many of us would disagree with you there.
-> > Early returns actually make the code easier to read, certainly
-> > better than a goto 'end of function'.
-> >
-> actually , frankly speaking, this first return statement was also easier for me to understand. But in
-> my v1 patch , Paul mentioned :
-> >For a long function like this, I'd rather keep a single return point at
-> >the end.
-> so I thought he meant all the return statements in the function.
+On Fri, Oct 17, 2014 at 6:57 AM, Prarit Bhargava <prarit@redhat.com> wrote:
+> A bug report came in against an older kernel which output "backward time"
+> messages and the report noted that the upstream kernel worked.  After some
+> investigation it turned out that one of the sockets was bad on the system
+> and the "backward time" messages were caused by a real, but intermittent,
+> hardware failure.
+>
+> Commit 09ec54429c6d10f87d1f084de53ae2c1c3a81108 ("clocksource: Move
+> cycle_last validation to core code") modifies the x86 clocksource such that
+> if a negative delta between two reads of time is calculated the
+> clocksource_delta() code will return 0.  There is no warning when this
+> occurs and there really should be one in order to catch not only hardware
+> issues like the issue above, but potential coding issues as the code is
+> modified.  This patch introduces a WARN() which will also dump a stack
+> trace to the console so the exact code path can be evaluated.
+>
+> I tested this by booting on the broken hardware and left the system idle
+> until a negative clocksource_delta() event occurred.
+>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+> ---
+>  kernel/time/timekeeping_internal.h |    7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
+>
+> diff --git a/kernel/time/timekeeping_internal.h b/kernel/time/timekeeping_internal.h
+> index 4ea005a..abe6bc8 100644
+> --- a/kernel/time/timekeeping_internal.h
+> +++ b/kernel/time/timekeeping_internal.h
+> @@ -17,7 +17,12 @@ static inline cycle_t clocksource_delta(cycle_t now, cycle_t last, cycle_t mask)
+>  {
+>         cycle_t ret = (now - last) & mask;
+>
+> -       return (s64) ret > 0 ? ret : 0;
+> +       if ((s64)ret > 0)
+> +               return ret;
+> +
+> +       WARN(1, "Clocksource calculated negative delta, %lld.  last = %llu, now = %llu, mask = %llx\n",
+> +            (s64)ret, last, now, mask);
+> +       return 0;
 
-What I didn't like about your first patch was that there were two
-places where the spinlock was released. I think that is error-prone,
-as can be seen by the original bug. But I am OK with leaving the
-first return statement as-is, since the spinlock is not held there.
 
-So I think we should apply patch 1, and drop patch 2.
+I realize you followed up that this wasn't finished, but just as some
+feedback, there's a number of types of hardware where there may be a
+very slight skew between cpu TSC, and this will briefly trigger right
+after each timekeeping update if a system is reading the clock
+frequently (think of the case where the update happens on the cpu
+thats just a little bit ahead, while a timestamping loop is running on
+a cpu that is a little bit behind).
 
--- 
-Paul
+So this warning would trigger quite often and be a bit alarming when
+its really expected (well... more like unfortunate but handled)
+behavior.
 
+thanks
+-john
