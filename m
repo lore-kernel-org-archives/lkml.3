@@ -1,108 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457AbaJQHrk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 03:47:40 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:37226 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911AbaJQHrj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 03:47:39 -0400
-Date: Fri, 17 Oct 2014 09:47:18 +0200
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 1/3] mm: memcontrol: lockless page counters
-Message-ID: <20141017074718.GB5641@esperanza>
-References: <1413251163-8517-1-git-send-email-hannes@cmpxchg.org>
- <1413251163-8517-2-git-send-email-hannes@cmpxchg.org>
+	id S1753378AbaJQHt1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 03:49:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35474 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750911AbaJQHtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 03:49:25 -0400
+From: Thomas Renninger <trenn@suse.de>
+To: minyard@acm.org, martin.wilck@ts.fujitsu.com
+Cc: linux-kernel@vger.kernel.org, openipmi-developer@lists.sourceforge.net
+Subject: Re: [patch 1/3] ipmi: Setup ipmi_devintf automatically if ipmi_msghandler gets loaded
+Date: Fri, 17 Oct 2014 09:49:24 +0200
+Message-ID: <27197467.RMEiFLZMHQ@d46>
+User-Agent: KMail/4.11.5 (Linux/3.11.10-11-desktop; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <543DCC4C.3090404@acm.org>
+References: <20141014144020.683892494@d46.suse.de> <20141014144315.178850163@d46.suse.de> <543DCC4C.3090404@acm.org>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1413251163-8517-2-git-send-email-hannes@cmpxchg.org>
-X-Originating-IP: [62.156.150.204]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 13, 2014 at 09:46:01PM -0400, Johannes Weiner wrote:
-> Memory is internally accounted in bytes, using spinlock-protected
-> 64-bit counters, even though the smallest accounting delta is a page.
-> The counter interface is also convoluted and does too many things.
-> 
-> Introduce a new lockless word-sized page counter API, then change all
-> memory accounting over to it.  The translation from and to bytes then
-> only happens when interfacing with userspace.
-> 
-> The removed locking overhead is noticable when scaling beyond the
-> per-cpu charge caches - on a 4-socket machine with 144-threads, the
-> following test shows the performance differences of 288 memcgs
-> concurrently running a page fault benchmark:
-> 
-> vanilla:
-> 
->    18631648.500498      task-clock (msec)         #  140.643 CPUs utilized            ( +-  0.33% )
->          1,380,638      context-switches          #    0.074 K/sec                    ( +-  0.75% )
->             24,390      cpu-migrations            #    0.001 K/sec                    ( +-  8.44% )
->      1,843,305,768      page-faults               #    0.099 M/sec                    ( +-  0.00% )
-> 50,134,994,088,218      cycles                    #    2.691 GHz                      ( +-  0.33% )
->    <not supported>      stalled-cycles-frontend
->    <not supported>      stalled-cycles-backend
->  8,049,712,224,651      instructions              #    0.16  insns per cycle          ( +-  0.04% )
->  1,586,970,584,979      branches                  #   85.176 M/sec                    ( +-  0.05% )
->      1,724,989,949      branch-misses             #    0.11% of all branches          ( +-  0.48% )
-> 
->      132.474343877 seconds time elapsed                                          ( +-  0.21% )
-> 
-> lockless:
-> 
->    12195979.037525      task-clock (msec)         #  133.480 CPUs utilized            ( +-  0.18% )
->            832,850      context-switches          #    0.068 K/sec                    ( +-  0.54% )
->             15,624      cpu-migrations            #    0.001 K/sec                    ( +- 10.17% )
->      1,843,304,774      page-faults               #    0.151 M/sec                    ( +-  0.00% )
-> 32,811,216,801,141      cycles                    #    2.690 GHz                      ( +-  0.18% )
->    <not supported>      stalled-cycles-frontend
->    <not supported>      stalled-cycles-backend
->  9,999,265,091,727      instructions              #    0.30  insns per cycle          ( +-  0.10% )
->  2,076,759,325,203      branches                  #  170.282 M/sec                    ( +-  0.12% )
->      1,656,917,214      branch-misses             #    0.08% of all branches          ( +-  0.55% )
-> 
->       91.369330729 seconds time elapsed                                          ( +-  0.45% )
-> 
-> On top of improved scalability, this also gets rid of the icky long
-> long types in the very heart of memcg, which is great for 32 bit and
-> also makes the code a lot more readable.
-> 
-> Notable differences between the old and new API:
-> 
-> - res_counter_charge() and res_counter_charge_nofail() become
->   page_counter_try_charge() and page_counter_charge() resp. to match
->   the more common kernel naming scheme of try_do()/do()
-> 
-> - res_counter_uncharge_until() is only ever used to cancel a local
->   counter and never to uncharge bigger segments of a hierarchy, so
->   it's replaced by the simpler page_counter_cancel()
-> 
-> - res_counter_set_limit() is replaced by page_counter_limit(), which
->   expects its callers to serialize against themselves
-> 
-> - res_counter_memparse_write_strategy() is replaced by
->   page_counter_limit(), which rounds down to the nearest page size -
->   rather than up.  This is more reasonable for explicitely requested
->   hard upper limits.
-> 
-> - to keep charging light-weight, page_counter_try_charge() charges
->   speculatively, only to roll back if the result exceeds the limit.
->   Because of this, a failing bigger charge can temporarily lock out
->   smaller charges that would otherwise succeed.  The error is bounded
->   to the difference between the smallest and the biggest possible
->   charge size, so for memcg, this means that a failing THP charge can
->   send base page charges into reclaim upto 2MB (4MB) before the limit
->   would have been reached.  This should be acceptable.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Hi,
 
-Definitely better than it was.
+On Tuesday, October 14, 2014 08:22:20 PM Corey Minyard wrote:
+> On 10/14/2014 09:40 AM, trenn@suse.de wrote:
+> > This removes the ipmi_devintf to be a module, but it will automatically
+> > compiled in if ipmi_msghandler is set.
+> > 
+> > ipmi_msghandler module is renamed to ipmi_handler because of the name
+> > clash with the ipmi_msghandler.o object file (see Makefile for details).
+> > Alternatively ipmi_msghandler.c could be renamed to ipmi_handler.c, but
+> > not polluting git history should be more of an advantage than module
+> > renaming.
+> > 
+> > cleanup_ipmi_dev() and init_ipmi_devintf() implemented in ipmi_devintf.c
+> > are are simply declared ipmi_msghandler.c without creating a separate
+> > header file which looks more reasonable to me. Hope that is ok.
+> 
+> One minor style issue: the function definitions should really be in a .h
+> file.
+Ok.
 
-Acked-by: Vladimir Davydov <vdavydov@parallels.com>
+> Renaming the module is also probably a bad idea.  If this was to go in,
+> it would certainly need to keep the ipmi_msghandler.ko name to avoid
+> complete breakage all over the place.
+? What should break?
+It should never be needed to load ipmi_msghandler manually.
+Even if autoloading does not work, loading the low level
+serving driver (e.g. ipmi_si) is enough. This one will request
+ipmi_(msg)handler.ko automatically.
+I excpect this is the same for all other ipmi HW serving drivers, right?
+
+> In that vein, I am worried that this would just result in a lot of work
+> for all the distros that have set up this already.
+We also loaded the ipmi driver manually via the OpenIPMI init service
+which simply tried to load ipmi drivers.
+This results in boot load time, resource and code overhead.
+As ipmi autoload seem to work fine for recent HW these days, the userspace
+interface should load as well, otherwise the whole autoloading is more
+or less useless.
+
+> I'm trying to see the pros and cons of
+> this, and I can't see that the pros outweigh the cons.  Do you have people
+> that have issues with this?
+
+Yes. In fact Fujitsu opened a bug for this. Unfortunately I cannot set it
+public as it is against SLES12. If I find a way, I'll reference it in
+the changelog:
+https://bugzilla.novell.com/show_bug.cgi?id=893181
+Subject:
+ipmi_devintf is not available when IPMI device is detected
+
+I already added Martin to CC: of the patch changelog, but quilt may
+not have recogized it and not added him to CC?
+
+Beside Fujitsu, I'd like to have this fixed as well.
+We adjust BMC settings via after install script on our servers via
+ipmitool. This does not work because of this bug.
+One has to:
+modprobe ipmi_devintf
+This is overhead and makes the whole autoloading mechanism useless.
+And even worse, ipmi_devintf seem to load on all machines whether they
+have an ipmi controller or not.
+
+
+> > In fact there already was a kind of autoloading mechanism (gets deleted
+> > with this patch). I interpret this line that ipmi_devintf should get
+> > autoloaded if ipmi_si gets loaded?:
+> > -MODULE_ALIAS("platform:ipmi_si");
+> > 
+> > But:
+> >   - It's wrong: There are other low lever drivers which can be used by
+> >   
+> >     ipmi_devintf
+> >   
+> >   - It does not work (anymore?)
+> >   - There is no need to keep ipmi_devintf as a module (resource and load
+> >   time
+> >   
+> >     overhead)
+> 
+> This change is certainly a good idea.  Whatever it was trying to do is
+> wrong.
+
+Thanks. I am convinced that the right way to go for is to integrate the 
+ipmi_devintf into ipmi_msghandler.
+
+I see 3 options how to do this:
+  - rename ipmi_msghandler.ko to ipmi_handler.ko
+    As this only is an interface provider for other modules getting
+    loaded/requested automatically and never needs to be loaded manually
+    (pls correct me if I am wrong), I would like to go for this option.
+
+  - rename ipmi_msghandler.c to ipmi_handler.c
+    -> git history lost. But should still be seen via:
+    git log --follow?
+
+  - Someone finds another way how to modify the Makefile to achieve above.
+
+Thanks,
+
+     Thomas
