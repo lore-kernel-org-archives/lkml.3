@@ -1,66 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753211AbaJQBrj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 21:47:39 -0400
-Received: from ozlabs.org ([103.22.144.67]:42941 "EHLO ozlabs.org"
+	id S1753240AbaJQBws (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 21:52:48 -0400
+Received: from mga01.intel.com ([192.55.52.88]:60838 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751643AbaJQBri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 21:47:38 -0400
-Date: Fri, 17 Oct 2014 12:47:30 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Christoffer Dall <cdall@cs.columbia.edu>,
-        Marc Zyngier <marc.zyngier@arm.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the kvm-arm tree with Linus' tree
-Message-ID: <20141017124730.6df8beb3@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1751643AbaJQBwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 21:52:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,735,1406617200"; 
+   d="scan'208";a="606776093"
+Date: Thu, 16 Oct 2014 18:53:22 -0700
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Mathias Nyman <mathias.nyman@linux.intel.com>, linus.walleij@linaro.org,
+        gnurou@gmail.com, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC/PATCH] gpio/pinctrl: baytrail: move gpio driver from
+ pinctrl to gpio directory
+Message-ID: <20141017015322.GB4513@psi-dev26.jf.intel.com>
+References: <1413227857-555-1-git-send-email-david.a.cohen@linux.intel.com>
+ <543CFC7F.2070607@linux.intel.com>
+ <20141014174535.GA6516@psi-dev26.jf.intel.com>
+ <20141015070812.GM2255@lahna.fi.intel.com>
+ <20141015165542.GA4529@psi-dev26.jf.intel.com>
+ <20141016080123.GW2255@lahna.fi.intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/=WTJO1K3l0bG=pSNQaqcEp2"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141016080123.GW2255@lahna.fi.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/=WTJO1K3l0bG=pSNQaqcEp2
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Thu, Oct 16, 2014 at 11:01:23AM +0300, Mika Westerberg wrote:
+> On Wed, Oct 15, 2014 at 09:55:42AM -0700, David Cohen wrote:
+> > Hi Mika,
+> > 
+> > Thanks for your feedback. See below my reply.
+> > 
+> > On Wed, Oct 15, 2014 at 10:08:12AM +0300, Mika Westerberg wrote:
+> > > On Tue, Oct 14, 2014 at 10:45:35AM -0700, David Cohen wrote:
+> > > > Hi Mathias,
+> > > > 
+> > > > On Tue, Oct 14, 2014 at 01:35:43PM +0300, Mathias Nyman wrote:
+> > > > > On 13.10.2014 22:17, David Cohen wrote:
+> > > > > > Even though GPIO module on Intel Bay Trail is able to control pin
+> > > > > > functionality, it's unlikely Linux kernel driver will ever support it
+> > > > > > since BIOS should handle all pin muxing itself.
+> > > > > > 
+> > > > > > Currently this driver does not register any pinctrl interface and
+> > > > > > doesn't call any pinctrl interface. It just uses on internal functions
+> > > > > > the 'struct pinctrl_gpio_range', which is a weak justification to not be
+> > > > > > under gpio directory.
+> > > > > > 
+> > > > > 
+> > > > > This discussion was held when gpio-baytrail was first submitted.
+> > > > > These threads explain the gpio/pinctrl-baytrail history:
+> > > > > 
+> > > > > http://marc.info/?l=linux-kernel&m=136981432427668&w=2
+> > > > > http://marc.info/?l=linux-kernel&m=137113578604763&w=2
+> > > > > http://marc.info/?l=linux-kernel&m=137155497023054&w=2
+> > > > 
+> > > > Thanks for pointing that out.
+> > > > 
+> > > > > 
+> > > > > A proper pinctrl driver for baytrail is still not yet ruled out
+> > > > 
+> > > > Having it inside pinctrl directory is creating some confusion because
+> > > > ppl expect it to implement the actual pinctrl interface.
+> > > 
+> > > A typical pinctrl driver can implement both a pinctrl interface and a
+> > > GPIO interface. So it is not uncommon to look the GPIO drivers under
+> > > drivers/pinctrl/*.
+> > 
+> > Agreed :)
+> > But pinctrl-baytrail has no pinctrl interface, just gpio.
+> 
+> The hardware is capable of muxing pins etc. it just has not been
+> implemented because we currently don't have need for anything else.
+> I have seen that in some of our internal trees the driver is also muxing
+> alternate functions to the pins (using non-pinctrl interface). So maybe
+> it will get a full pinctrl support in the future.
+> 
+> We certainly don't want to move it from pinctrl to gpio and then back.
+> 
+> > > Furthermore the driver announces that it is a GPIO driver in its Kconfig
+> > > entry:
+> > > 
+> > > config PINCTRL_BAYTRAIL
+> > >         bool "Intel Baytrail GPIO pin control"
+> > > 
+> > > so I don't quite get why this would confuse people.
+> > 
+> > How come? You just wrote the inconsistence :)
+> 
+> Well, it says it is a "GPIO pin control" :-)
 
-Hi all,
+PINCTRL_BAYTRAIL means it implements pinctrl iterface. The text says
+otherwise.
 
-Today's linux-next merge of the kvm-arm tree got a conflict in
-virt/kvm/arm/vgic-v2.c between commit 1f2bb4acc125 ("arm/arm64: KVM:
-Fix unaligned access bug on gicv2 access") from Linus' tree and commit
-2df36a5dd679 ("arm/arm64: KVM: Fix BE accesses to GICv2 EISR and ELRSR
-regs") from the kvm-arm tree.
+> 
+> > We're enabling PINCTRL_BAYTRAIL to build a gpio only driver.
+> > 
+> > > 
+> > > We are also planning to add more Intel pinctrl (real) drivers in the
+> > > future. drivers/pinctrl/intel/* should be the place where people find
+> > > the pinctrl/GPIO drivers for newer Intel hardware.
+> > 
+> > I fully agree pinctrl/gpio drivers should stay under drivers/pinctrl.
+> > But we're talking about a gpio driver. IMHO we should at least mention
+> > in the driver it lacks pinctrl interface currently but it will come in
+> > future.
+> 
+> OK, why not.
+> 
+> > A side discussion would be why a distro would want to have the pinctrl
+> > interface on Bay Trail. I'd assume any driver being the consumer of it
+> > is likely to be wrong. When Linux boots, all pins' functions should be
+> > already set.
+> 
+> In an ideal world, yes. However, the reality has shown that BIOS/FW gets
+> these wrong and we need to work it around in the OS.
 
-I fixed it up (since I don't know any better, I just used the kvm-arm
-tree version) and can carry the fix as necessary (no action is
-required).
+But we never upstream these workarounds, right? :)
+That would be useful during internal development while we get a fix from
+fw developers. Any driver upstreamed for Bay Trail actually using this
+pinctrl interface is very likely to be wrong.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> Also for devices like MinnowBoard MAX (which has Baytrail SoC), you
+> actually might want to mux some other function out of certain pins.
 
---Sig_/=WTJO1K3l0bG=pSNQaqcEp2
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+I fully agree on this one. MinnowBoard MAX is a valid reason to expose
+pinctrl interface. A TODO comment on Kconfig help text and/or on driver
+should be enough then.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUQHU3AAoJEMDTa8Ir7ZwVYtwQAIHmDgFKXNwazRTGec3T6zU3
-ICpQi8Uuc7jHnYw0jMm55/Z1D1O6YOxsekluI9prkf7AAezxHO8wkArsUbHNMk2P
-qtE6WtvcylS8IJO+UUEToPXczxLzIbU0zcGNkJOyCvlG/qBrUw/JiX2vcvx5k6wf
-lgg3fL0Ivkk7Bss0JAG3+esuLwJKNnq47SEL5/RbTFjCGB0GTNNbV0Dl/QnSoVCh
-4JDLszDyHj75jfC7B2jB+Qdw9jIUSM4X1HqHY+eiTLQiQ3i8KK2XtePeV3WYr7QQ
-zD4H0kZSvLgfUhdrXRkJ7scp4ZvdFNHPZJvzgZtcz/UzV2AmFATlDpWn+wCm/yjH
-4y3KYauXNiRyemkJ+6R4WrePHrdHJ8/Hdscga6B2T3sKwVLjZaoUM04ceFVASuyY
-8540q90OxuVI7J9mYws/daGhRUck9yFBLUI9qot5gACu1gSdYF6mU4+kN1QfNyeJ
-N7pWVfnbl6RhoO8LxlhgkdfEL8+bKs0nLDKIVzdvpxQuFLnlMVO6LhvBPsTu3u+l
-l8c36uj8N6aT1liNa3MLjErZtrsMyULMK37hhbDK7FcncBW0xL858hIAc2HEkw/d
-/V+mjI8/0/brsIXHG9PZ0PPvMKuqsjDqQcut2VKVkPVDYY8oc5FZ7lV6ST5cM6H2
-xUYBAHAUnFoB4F5PNRZM
-=jDQQ
------END PGP SIGNATURE-----
-
---Sig_/=WTJO1K3l0bG=pSNQaqcEp2--
+Br, David
