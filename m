@@ -1,93 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562AbaJQOA0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 10:00:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45801 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751408AbaJQOAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 10:00:25 -0400
-Date: Fri, 17 Oct 2014 16:00:22 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 4/5] mm: memcontrol: continue cache reclaim from offlined
- groups
-Message-ID: <20141017140022.GF8076@dhcp22.suse.cz>
-References: <1413303637-23862-1-git-send-email-hannes@cmpxchg.org>
- <1413303637-23862-5-git-send-email-hannes@cmpxchg.org>
- <20141017084011.GC5641@esperanza>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141017084011.GC5641@esperanza>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752311AbaJQOKQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 10:10:16 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:36992 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752032AbaJQOKL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 10:10:11 -0400
+From: Dominik Dingel <dingel@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Bob Liu <lliubbo@gmail.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Gleb Natapov <gleb@kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Jianyu Zhan <nasa4836@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Konstantin Weitz <konstantin.weitz@gmail.com>, kvm@vger.kernel.org,
+        linux390@de.ibm.com, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Dominik Dingel <dingel@linux.vnet.ibm.com>
+Subject: [PATCH 2/4] mm: introduce new VM_NOZEROPAGE flag
+Date: Fri, 17 Oct 2014 16:09:48 +0200
+Message-Id: <1413554990-48512-3-git-send-email-dingel@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.5.5
+In-Reply-To: <1413554990-48512-1-git-send-email-dingel@linux.vnet.ibm.com>
+References: <1413554990-48512-1-git-send-email-dingel@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14101714-0029-0000-0000-0000013DF88D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 17-10-14 10:40:11, Vladimir Davydov wrote:
-> On Tue, Oct 14, 2014 at 12:20:36PM -0400, Johannes Weiner wrote:
-> > On cgroup deletion, outstanding page cache charges are moved to the
-> > parent group so that they're not lost and can be reclaimed during
-> > pressure on/inside said parent.  But this reparenting is fairly tricky
-> > and its synchroneous nature has led to several lock-ups in the past.
-> > 
-> > Since css iterators now also include offlined css, memcg iterators can
-> > be changed to include offlined children during reclaim of a group, and
-> > leftover cache can just stay put.
-> > 
-> > There is a slight change of behavior in that charges of deleted groups
-> > no longer show up as local charges in the parent.  But they are still
-> > included in the parent's hierarchical statistics.
-> > 
-> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > ---
-> >  mm/memcontrol.c | 218 +-------------------------------------------------------
-> >  1 file changed, 1 insertion(+), 217 deletions(-)
-> 
-> I do like the stats :-) However, as I've already mentioned, on big
-> machines we can end up with hundred of thousands of dead css's.
+Add a new vma flag to allow an architecture to disable the backing
+of non-present, anonymous pages with the read-only empty zero page.
 
-css->id is bound to the css life so this is bound to the maximum number
-of allowed cgroups AFAIR. It is true that dead memcgs might block
-creation of new. This is a good point. It would be a problem either when
-there is no reclaim (global or memcg) or when groups are very short
-lived. One possible way out would be counting dead memcgs and kick
-background mem_cgroup_force_empty loop over those that are dead once we
-hit a threshold. This should be pretty trivial to implement.
+Signed-off-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
+Acked-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+---
+ include/linux/mm.h | 13 +++++++++++--
+ mm/huge_memory.c   |  2 +-
+ mm/memory.c        |  2 +-
+ 3 files changed, 13 insertions(+), 4 deletions(-)
 
-> Iterating over all of them during reclaim may result in noticeable lags.
-> One day we'll have to do something about that I guess.
->
-> Another issue is that AFAICT currently we can't have more than 64K
-> cgroups due to the MEM_CGROUP_ID_MAX limit.The limit exists, because we
-> use css ids for tagging swap entries and we don't want to spend too much
-> memory on this. May be, we should simply use the mem_cgroup pointer
-> instead of the css id?
-
-We are using the id to reduce the memory footprint. We cannot effort 8B
-per each swappage (we can have GBs of swap space in the system).
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index cd33ae2..8f09c91 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -113,7 +113,7 @@ extern unsigned int kobjsize(const void *objp);
+ #define VM_GROWSDOWN	0x00000100	/* general info on the segment */
+ #define VM_PFNMAP	0x00000400	/* Page-ranges managed without "struct page", just pure PFN */
+ #define VM_DENYWRITE	0x00000800	/* ETXTBSY on write attempts.. */
+-
++#define VM_NOZEROPAGE	0x00001000	/* forbid new zero page mappings */
+ #define VM_LOCKED	0x00002000
+ #define VM_IO           0x00004000	/* Memory mapped I/O or similar */
  
-> OTOH, the reparenting code looks really ugly. And we can't easily
-> reparent swap and kmem. So I think it's a reasonable change.
-
-At least swap shouldn't be a big deal. Hugh already had a patch for
-that. You would simply have to go over all swap entries and change the
-id. kmem should be doable as well as you have already shown in your
-patches. The main question is. Do we really need it? I think we are good
-now and should make the code more complicated once this starts being a
-practical problem.
-
-> Acked-by: Vladimir Davydov <vdavydov@parallels.com>
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
+@@ -179,7 +179,7 @@ extern unsigned int kobjsize(const void *objp);
+ #define VM_SPECIAL (VM_IO | VM_DONTEXPAND | VM_PFNMAP | VM_MIXEDMAP)
+ 
+ /* This mask defines which mm->def_flags a process can inherit its parent */
+-#define VM_INIT_DEF_MASK	VM_NOHUGEPAGE
++#define VM_INIT_DEF_MASK	(VM_NOHUGEPAGE | VM_NOZEROPAGE)
+ 
+ /*
+  * mapping from the currently active vm_flags protection bits (the
+@@ -1293,6 +1293,15 @@ static inline int stack_guard_page_end(struct vm_area_struct *vma,
+ 		!vma_growsup(vma->vm_next, addr);
+ }
+ 
++static inline int vma_forbids_zeropage(struct vm_area_struct *vma)
++{
++#ifdef CONFIG_NOZEROPAGE
++	return vma->vm_flags & VM_NOZEROPAGE;
++#else
++	return 0;
++#endif
++}
++
+ extern struct task_struct *task_of_stack(struct task_struct *task,
+ 				struct vm_area_struct *vma, bool in_group);
+ 
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index de98415..c271265 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -805,7 +805,7 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		return VM_FAULT_OOM;
+ 	if (unlikely(khugepaged_enter(vma, vma->vm_flags)))
+ 		return VM_FAULT_OOM;
+-	if (!(flags & FAULT_FLAG_WRITE) &&
++	if (!(flags & FAULT_FLAG_WRITE) && !vma_forbids_zeropage(vma) &&
+ 			transparent_hugepage_use_zero_page()) {
+ 		spinlock_t *ptl;
+ 		pgtable_t pgtable;
+diff --git a/mm/memory.c b/mm/memory.c
+index 64f82aa..1859b2b 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2640,7 +2640,7 @@ static int do_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		return VM_FAULT_SIGBUS;
+ 
+ 	/* Use the zero-page for reads */
+-	if (!(flags & FAULT_FLAG_WRITE)) {
++	if (!(flags & FAULT_FLAG_WRITE) && !vma_forbids_zeropage(vma)) {
+ 		entry = pte_mkspecial(pfn_pte(my_zero_pfn(address),
+ 						vma->vm_page_prot));
+ 		page_table = pte_offset_map_lock(mm, pmd, address, &ptl);
 -- 
-Michal Hocko
-SUSE Labs
+1.8.5.5
+
