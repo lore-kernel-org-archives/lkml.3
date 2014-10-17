@@ -1,62 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753630AbaJQRSG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 13:18:06 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:46952 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753356AbaJQRSA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 13:18:00 -0400
-Date: Fri, 17 Oct 2014 10:17:56 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Nick Dyer <nick.dyer@itdev.co.uk>
-Cc: Greg KH <greg@kroah.com>, Jonathan Cameron <jic23@kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Touch processing on host CPU
-Message-ID: <20141017171756.GA22238@dtor-ws>
-References: <5440F282.8040306@itdev.co.uk>
+	id S1753643AbaJQRWY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 13:22:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36867 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753047AbaJQRWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 13:22:23 -0400
+Date: Fri, 17 Oct 2014 19:19:04 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Michal Hocko <mhocko@suse.cz>, Cong Wang <xiyou.wangcong@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: + oom-pm-oom-killed-task-cannot-escape-pm-suspend.patch added
+	to -mm tree
+Message-ID: <20141017171904.GA12263@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5440F282.8040306@itdev.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nick,
+Michal, I am not really arguing with this patch, but since you are going
+(iiuc) to resend it anyway let me ask a couple of questions.
 
-On Fri, Oct 17, 2014 at 11:42:10AM +0100, Nick Dyer wrote:
-> Hi-
-> 
-> I'm trying to find out which subsystem maintainer I should be talking to -
-> apologies if I'm addressing the wrong people.
-> 
-> There is a model for doing touch processing where the touch controller
-> becomes a much simpler device which sends out raw acquisitions (over SPI 
-> at up to 1Mbps + protocol overheads). All touch processing is then done in
-> user space by the host CPU. An example of this is NVIDIA DirectTouch - see:
-> http://blogs.nvidia.com/blog/2012/02/24/industry-adopts-nvidia-directtouch/
-> 
-> In the spirit of "upstream first", I'm trying to figure out how to get a
-> driver accepted. Obviously it's not an input device in the normal sense. Is
-> it acceptable just to send the raw touch data out via a char device? Is
-> there another subsystem which is a good match (eg IIO)? Does the protocol
-> (there is ancillary/control data as well) need to be documented?
+> This, however, still keeps
+> a window open when a killed task didn't manage to die by the time
+> freeze_processes finishes.
 
-I'd really think *long* and *hard* about this. Even if you will have the
-touch process open source you have 2 options: route it back into the
-kernel through uinput, thus adding latency (which might be OK, need to
-measure and decide), or go back about 10 years where we had
-device-specific drivers in XFree86 and re-create them again, and also do
-the same for Wayland, Chrome, Android, etc.
+Sure,
 
-If you will have touch processing in a binary blob, you'll also be going
-to ages "Works with Ubuntu 12.04 on x86_32!" (and nothing else), or
-"Android 5.1.2 on Tegra Blah (build 78912KT)" (and nothing else).
+> Fix this race by checking all tasks after OOM killer has been disabled.
 
-Thanks.
+But this doesn't close the race entirely? please see below.
 
--- 
-Dmitry
+>  int freeze_processes(void)
+>  {
+>  	int error;
+> +	int oom_kills_saved;
+>
+>  	error = __usermodehelper_disable(UMH_FREEZING);
+>  	if (error)
+> @@ -132,12 +133,40 @@ int freeze_processes(void)
+>  	pm_wakeup_clear();
+>  	printk("Freezing user space processes ... ");
+>  	pm_freezing = true;
+> +	oom_kills_saved = oom_kills_count();
+>  	error = try_to_freeze_tasks(true);
+>  	if (!error) {
+> -		printk("done.");
+>  		__usermodehelper_set_disable_depth(UMH_DISABLED);
+>  		oom_killer_disable();
+> +
+> +		/*
+> +		 * There was a OOM kill while we were freezing tasks
+> +		 * and the killed task might be still on the way out
+> +		 * so we have to double check for race.
+> +		 */
+> +		if (oom_kills_count() != oom_kills_saved) {
+
+OK, I agree, this makes the things better, but perhaps we should document
+(at least in the changelog) that this is still racy. oom_killer_disable()
+obviously can stop the already called out_of_memory(), it can kill a frozen
+task right after this check or even after the loop before.
+
+> +			struct task_struct *g, *p;
+> +
+> +			read_lock(&tasklist_lock);
+> +			do_each_thread(g, p) {
+> +				if (p == current || freezer_should_skip(p) ||
+> +				    frozen(p))
+> +					continue;
+> +				error = -EBUSY;
+> +				break;
+> +			} while_each_thread(g, p);
+
+Please use for_each_process_thread(), do/while_each_thread is deprecated.
+
+> +/*
+> + * Number of OOM killer invocations (including memcg OOM killer).
+> + * Primarily used by PM freezer to check for potential races with
+> + * OOM killed frozen task.
+> + */
+> +static atomic_t oom_kills = ATOMIC_INIT(0);
+> +
+> +int oom_kills_count(void)
+> +{
+> +	return atomic_read(&oom_kills);
+> +}
+> +
+>  #define K(x) ((x) << (PAGE_SHIFT-10))
+>  /*
+>   * Must be called while holding a reference to p, which will be released upon
+> @@ -504,11 +516,13 @@ void oom_kill_process(struct task_struct
+>  			pr_err("Kill process %d (%s) sharing same memory\n",
+>  				task_pid_nr(p), p->comm);
+>  			task_unlock(p);
+> +			atomic_inc(&oom_kills);
+
+Do we really need this? Can't freeze_processes() (ab)use oom_notify_list?
+
+Yes, we can have more false positives this way, but probably this doesn't
+matter? This is unlikely case anyway.
+
+Oleg.
+
