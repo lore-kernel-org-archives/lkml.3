@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751465AbaJQXCM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 19:02:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42455 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751325AbaJQXCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 19:02:11 -0400
-Message-ID: <54419FEA.4090207@redhat.com>
-Date: Fri, 17 Oct 2014 16:02:02 -0700
-From: Alexander Duyck <alexander.h.duyck@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>,
-        "David S. Miller" <davem@davemloft.net>
-CC: Florian Fainelli <f.fainelli@gmail.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>, netdev@vger.kernel.org,
+	id S1751458AbaJQXUa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 19:20:30 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:60001 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751325AbaJQXU3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 19:20:29 -0400
+From: Dan Streetman <ddstreet@ieee.org>
+To: Michael Ellerman <mpe@ellerman.id.au>, benh@kernel.crashing.org,
+        nfont@linux.vnet.ibm.com
+Cc: Dan Streetman <ddstreet@ieee.org>, linuxppc-dev@lists.ozlabs.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dsa: Fix conversion from host device to mii bus
-References: <1413574258-21766-1-git-send-email-linux@roeck-us.net>
-In-Reply-To: <1413574258-21766-1-git-send-email-linux@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: [PATCH] MAINTAINERS: nx-842 driver maintainer change
+Date: Fri, 17 Oct 2014 19:19:59 -0400
+Message-Id: <1413587999-12684-1-git-send-email-ddstreet@ieee.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/2014 12:30 PM, Guenter Roeck wrote:
-> Commit b4d2394d01bc ("dsa: Replace mii_bus with a generic host device")
-> replaces mii_bus with a generic host_dev, and introduces
-> dsa_host_dev_to_mii_bus() to support conversion from host_dev to mii_bus.
-> However, in some cases it uses to_mii_bus to perform that conversion.
-> Since host_dev is not the phy bus device but typically a platform device,
-> this fails and results in a crash with the affected drivers.
->
-> BUG: unable to handle kernel NULL pointer dereference at           (null)
-> IP: [<ffffffff81781d35>] __mutex_lock_slowpath+0x75/0x100
-> PGD 406783067 PUD 406784067 PMD 0
-> Oops: 0002 [#1] SMP
-> ...
-> Call Trace:
-> [<ffffffff810a538b>] ? pick_next_task_fair+0x61b/0x880
-> [<ffffffff81781de3>] mutex_lock+0x23/0x37
-> [<ffffffff81533244>] mdiobus_read+0x34/0x60
-> [<ffffffff8153b95a>] __mv88e6xxx_reg_read+0x8a/0xa0
-> [<ffffffff8153b9bc>] mv88e6xxx_reg_read+0x4c/0xa0
->
-> Fixes: b4d2394d01bc ("dsa: Replace mii_bus with a generic host device")
-> Cc: Alexander Duyck <alexander.h.duyck@intel.com>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
+Change maintainer of nx-842 compression coprocessor driver
+to Dan Streetman.
 
-The fix looks good to me.
+Signed-off-by: Dan Streetman <ddstreet@ieee.org>
+Cc: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+---
+ MAINTAINERS | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Acked-by: Alexander Duyck <alexander.h.duyck@redhat.com>
+diff --git a/MAINTAINERS b/MAINTAINERS
+index b0f17d5..3cc3e41 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4605,7 +4605,7 @@ S:	Supported
+ F:	drivers/crypto/nx/
+ 
+ IBM Power 842 compression accelerator
+-M:	Nathan Fontenot <nfont@linux.vnet.ibm.com>
++M:	Dan Streetman <ddstreet@us.ibm.com>
+ S:	Supported
+ F:	drivers/crypto/nx/nx-842.c
+ F:	include/linux/nx842.h
+-- 
+1.8.3.1
+
