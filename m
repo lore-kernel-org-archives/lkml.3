@@ -1,133 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947AbaJQUAq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 16:00:46 -0400
-Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:38148 "EHLO
-	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753826AbaJQUAo (ORCPT
+	id S1753966AbaJQUA7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 16:00:59 -0400
+Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:36141 "EHLO
+	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753826AbaJQUA6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 16:00:44 -0400
+	Fri, 17 Oct 2014 16:00:58 -0400
 X-Belgacom-Dynamic: yes
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhIOAJR0QVRXQz/c/2dsb2JhbABbgw6BK7hjAQEBAQEBBQFzmi2BFRcBfYRfI4EaN4hDAb9Gjl0shiKKKx2ENQWdWZYlgUcBgjE7L4JLAQEB
+X-IronPort-Anti-Spam-Result: AvwSACB0QVRXQz/c/2dsb2JhbABbgw6BK7hjAQEBAQEBBQFzmicEAoEVFwF9hF8jgRo3iEMBv0aPCYYiiUdkHYQ1BZ1ZjGSJQYFHAYIxOy+BBoFFAQEB
 From: Fabian Frederick <fabf@skynet.be>
 To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Ralf Baechle <ralf@linux-mips.org>,
-        "David S. Miller" <davem@davemloft.net>, linux-hams@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCH 1/1 net-next] netrom: use linux/uaccess.h
-Date: Fri, 17 Oct 2014 22:00:22 +0200
-Message-Id: <1413576023-26717-1-git-send-email-fabf@skynet.be>
+Cc: Fabian Frederick <fabf@skynet.be>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org
+Subject: [PATCH 1/1 linux-next] x86: sysfb: use PTR_ERR_OR_ZERO
+Date: Fri, 17 Oct 2014 22:00:53 +0200
+Message-Id: <1413576053-26761-1-git-send-email-fabf@skynet.be>
 X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-replace asm/uaccess.h by linux/uaccess.h
+replace IS_ERR/PTR_ERR
 
 Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- net/netrom/af_netrom.c | 2 +-
- net/netrom/nr_dev.c    | 2 +-
- net/netrom/nr_in.c     | 2 +-
- net/netrom/nr_out.c    | 2 +-
- net/netrom/nr_route.c  | 2 +-
- net/netrom/nr_subr.c   | 2 +-
- net/netrom/nr_timer.c  | 2 +-
- 7 files changed, 7 insertions(+), 7 deletions(-)
+ arch/x86/kernel/sysfb.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/netrom/af_netrom.c b/net/netrom/af_netrom.c
-index 71cf1bf..1b06a1f 100644
---- a/net/netrom/af_netrom.c
-+++ b/net/netrom/af_netrom.c
-@@ -30,7 +30,7 @@
- #include <linux/skbuff.h>
- #include <net/net_namespace.h>
- #include <net/sock.h>
--#include <asm/uaccess.h>
-+#include <linux/uaccess.h>
- #include <linux/fcntl.h>
- #include <linux/termios.h>	/* For TIOCINQ/OUTQ */
- #include <linux/mm.h>
-diff --git a/net/netrom/nr_dev.c b/net/netrom/nr_dev.c
-index 743262b..6ae063c 100644
---- a/net/netrom/nr_dev.c
-+++ b/net/netrom/nr_dev.c
-@@ -20,8 +20,8 @@
- #include <linux/in.h>
- #include <linux/if_ether.h>	/* For the statistics structure. */
- #include <linux/slab.h>
-+#include <linux/uaccess.h>
+diff --git a/arch/x86/kernel/sysfb.c b/arch/x86/kernel/sysfb.c
+index 193ec2c..160386e 100644
+--- a/arch/x86/kernel/sysfb.c
++++ b/arch/x86/kernel/sysfb.c
+@@ -67,7 +67,7 @@ static __init int sysfb_init(void)
  
--#include <asm/uaccess.h>
- #include <asm/io.h>
+ 	pd = platform_device_register_resndata(NULL, name, 0,
+ 					       NULL, 0, si, sizeof(*si));
+-	return IS_ERR(pd) ? PTR_ERR(pd) : 0;
++	return PTR_ERR_OR_ZERO(pd);
+ }
  
- #include <linux/inet.h>
-diff --git a/net/netrom/nr_in.c b/net/netrom/nr_in.c
-index c3073a2..80dbd0b 100644
---- a/net/netrom/nr_in.c
-+++ b/net/netrom/nr_in.c
-@@ -23,7 +23,7 @@
- #include <linux/skbuff.h>
- #include <net/sock.h>
- #include <net/tcp_states.h>
--#include <asm/uaccess.h>
-+#include <linux/uaccess.h>
- #include <linux/fcntl.h>
- #include <linux/mm.h>
- #include <linux/interrupt.h>
-diff --git a/net/netrom/nr_out.c b/net/netrom/nr_out.c
-index 0b4bcb2..00fbf14 100644
---- a/net/netrom/nr_out.c
-+++ b/net/netrom/nr_out.c
-@@ -22,7 +22,7 @@
- #include <linux/netdevice.h>
- #include <linux/skbuff.h>
- #include <net/sock.h>
--#include <asm/uaccess.h>
-+#include <linux/uaccess.h>
- #include <linux/fcntl.h>
- #include <linux/mm.h>
- #include <linux/interrupt.h>
-diff --git a/net/netrom/nr_route.c b/net/netrom/nr_route.c
-index b976d5e..96b64d2 100644
---- a/net/netrom/nr_route.c
-+++ b/net/netrom/nr_route.c
-@@ -25,7 +25,7 @@
- #include <linux/if_arp.h>
- #include <linux/skbuff.h>
- #include <net/sock.h>
--#include <asm/uaccess.h>
-+#include <linux/uaccess.h>
- #include <linux/fcntl.h>
- #include <linux/termios.h>	/* For TIOCINQ/OUTQ */
- #include <linux/mm.h>
-diff --git a/net/netrom/nr_subr.c b/net/netrom/nr_subr.c
-index ca40e22..029c8bb 100644
---- a/net/netrom/nr_subr.c
-+++ b/net/netrom/nr_subr.c
-@@ -22,7 +22,7 @@
- #include <linux/skbuff.h>
- #include <net/sock.h>
- #include <net/tcp_states.h>
--#include <asm/uaccess.h>
-+#include <linux/uaccess.h>
- #include <linux/fcntl.h>
- #include <linux/mm.h>
- #include <linux/interrupt.h>
-diff --git a/net/netrom/nr_timer.c b/net/netrom/nr_timer.c
-index ff2c1b1..94d0580 100644
---- a/net/netrom/nr_timer.c
-+++ b/net/netrom/nr_timer.c
-@@ -23,7 +23,7 @@
- #include <linux/skbuff.h>
- #include <net/sock.h>
- #include <net/tcp_states.h>
--#include <asm/uaccess.h>
-+#include <linux/uaccess.h>
- #include <linux/fcntl.h>
- #include <linux/mm.h>
- #include <linux/interrupt.h>
+ /* must execute after PCI subsystem for EFI quirks */
 -- 
 1.9.3
 
