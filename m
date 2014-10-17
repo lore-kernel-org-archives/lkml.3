@@ -1,65 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448AbaJQLQE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 07:16:04 -0400
-Received: from smtp-out-111.synserver.de ([212.40.185.111]:1041 "EHLO
-	smtp-out-111.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751723AbaJQLQC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 07:16:02 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 30700
-Message-ID: <5440FA6B.6040303@metafoo.de>
-Date: Fri, 17 Oct 2014 13:15:55 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.8.1
-MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>
-CC: Ray Jui <rjui@broadcom.com>, Dan Williams <dan.j.williams@intel.com>,
-        Scott Branden <sbranden@broadcom.com>, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dmaengine: pl330: use subsys_initcall
-References: <rjui@broadcom.com> <1413506896-4536-1-git-send-email-rjui@broadcom.com> <5440C929.9050906@metafoo.de> <20141017073535.GN1638@intel.com>
-In-Reply-To: <20141017073535.GN1638@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752618AbaJQLQN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 07:16:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42700 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751723AbaJQLQK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 07:16:10 -0400
+From: Juergen Gross <jgross@suse.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        konrad.wilk@oracle.com, david.vrabel@citrix.com
+Cc: Juergen Gross <jgross@suse.com>
+Subject: [PATCH V2] xen: avoid race in p2m handling
+Date: Fri, 17 Oct 2014 13:16:06 +0200
+Message-Id: <1413544566-12250-1-git-send-email-jgross@suse.com>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/2014 09:35 AM, Vinod Koul wrote:
-> On Fri, Oct 17, 2014 at 09:45:45AM +0200, Lars-Peter Clausen wrote:
->> On 10/17/2014 02:48 AM, Ray Jui wrote:
->>> As part of subsystem that many slave drivers depend on, it's more
->>> appropriate for the pl330 DMA driver to be initialized at
->>> subsys_initcall than device_initcall
->>
->> Well, we do have -EPROBE_DEFER these days to handle these kinds of
->> dependencies so we no longer have to these kinds of manual init
->> reordering tricks.
-> How ould that work?
->
-> Consider for example SPI and dmanegine. SPI driver got probed, then to start
-> a transaction requested a channel... while dmaengine driver is still getting
-> probed/not probed yet. So SPI driver didnt get a channel.
->
+When a new p2m leaf is allocated this leaf is linked into the p2m tree
+via cmpxchg. Unfortunately the compare value for checking the success
+of the update is read after checking for the need of a new leaf. It is
+possible that a new leaf has been linked into the tree concurrently
+in between. This could lead to a leaked memory page and to the loss of
+some p2m entries.
 
-Ideally the SPI driver requests the channel in probe function and if the DMA 
-controller is not yet probed returns EPROBE_DEFER. If the SPI driver 
-requests the channel in the transfer handler it needs to deal with being 
-able to fall back to non DMA transfers anyway so this shouldn't be a problem.
+Avoid the race by using the read compare value for checking the need
+of a new p2m leaf and use ACCESS_ONCE() to get it.
 
-But in any case fiddling around with the init sequences is just a quick hack 
-and might makes the problem less likely to appear in some cases, but there 
-is no guarantee that it works. And I think the proper solution at the moment 
-is to use probe deferral.
+There are other places which seem to need ACCESS_ONCE() to ensure
+proper operation. Change them accordingly.
 
-Other subsystems have seen patches which moved drivers from using 
-subsys_initcall to device_initcall/module_..._driver/ with the reasoning 
-that this is no longer necessary because of EPROBE_DEFER. So I don't think 
-we should be doing the exact opposite in DMA framework. Also if we'd apply 
-this patch it won't take to long until somebody suggest going back to 
-module_platform_driver() instead of subsys_initcall.
+Signed-off-by: Juergen Gross <jgross@suse.com>
+---
+ arch/x86/xen/p2m.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-- Lars
+diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+index d1b3da2..b456b04 100644
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -532,12 +532,13 @@ static bool alloc_p2m(unsigned long pfn)
+ 	unsigned topidx, mididx;
+ 	unsigned long ***top_p, **mid;
+ 	unsigned long *top_mfn_p, *mid_mfn;
++	unsigned long *p2m_orig;
+ 
+ 	topidx = p2m_top_index(pfn);
+ 	mididx = p2m_mid_index(pfn);
+ 
+ 	top_p = &p2m_top[topidx];
+-	mid = *top_p;
++	mid = ACCESS_ONCE(*top_p);
+ 
+ 	if (mid == p2m_mid_missing) {
+ 		/* Mid level is missing, allocate a new one */
+@@ -552,7 +553,7 @@ static bool alloc_p2m(unsigned long pfn)
+ 	}
+ 
+ 	top_mfn_p = &p2m_top_mfn[topidx];
+-	mid_mfn = p2m_top_mfn_p[topidx];
++	mid_mfn = ACCESS_ONCE(p2m_top_mfn_p[topidx]);
+ 
+ 	BUG_ON(virt_to_mfn(mid_mfn) != *top_mfn_p);
+ 
+@@ -579,11 +580,10 @@ static bool alloc_p2m(unsigned long pfn)
+ 		}
+ 	}
+ 
+-	if (p2m_top[topidx][mididx] == p2m_identity ||
+-	    p2m_top[topidx][mididx] == p2m_missing) {
++	p2m_orig = ACCESS_ONCE(p2m_top[topidx][mididx]);
++	if (p2m_orig == p2m_identity || p2m_orig == p2m_missing) {
+ 		/* p2m leaf page is missing */
+ 		unsigned long *p2m;
+-		unsigned long *p2m_orig = p2m_top[topidx][mididx];
+ 
+ 		p2m = alloc_p2m_page();
+ 		if (!p2m)
+-- 
+1.8.4.5
+
