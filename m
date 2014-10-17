@@ -1,72 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201AbaJQQpi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 12:45:38 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:41856 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752032AbaJQQph (ORCPT
+	id S1753390AbaJQQ4p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 12:56:45 -0400
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:56530 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753213AbaJQQ4n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 12:45:37 -0400
-Message-ID: <544147AC.7010406@gmail.com>
-Date: Sat, 18 Oct 2014 03:15:32 +1030
-From: Daniel Cotton <danielcotton.mailinglists@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 17 Oct 2014 12:56:43 -0400
+X-IronPort-AV: E=Sophos;i="5.04,740,1406617200"; 
+   d="scan'208";a="48326580"
+Message-ID: <54414A48.9090902@broadcom.com>
+Date: Fri, 17 Oct 2014 09:56:40 -0700
+From: Ray Jui <rjui@broadcom.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Jens Axboe <axboe@fb.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] drivers/block/mtip32xx: Fix incorrect warning
-References: <543A6C3A.4070408@gmail.com> <543BE49E.2010007@fb.com>
-In-Reply-To: <543BE49E.2010007@fb.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
+To: Lars-Peter Clausen <lars@metafoo.de>, Vinod Koul <vinod.koul@intel.com>
+CC: Dan Williams <dan.j.williams@intel.com>,
+        Scott Branden <sbranden@broadcom.com>, <dmaengine@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] dmaengine: pl330: use subsys_initcall
+References: <rjui@broadcom.com> <1413506896-4536-1-git-send-email-rjui@broadcom.com> <5440C929.9050906@metafoo.de> <20141017073535.GN1638@intel.com> <5440FA6B.6040303@metafoo.de> <54414153.70804@broadcom.com> <5441464D.8040303@metafoo.de>
+In-Reply-To: <5441464D.8040303@metafoo.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/10/2014 1:11 am, Jens Axboe wrote:
- > What is the patch against? It doesn't apply to for-3.18/drivers or even
- > master.
- >
 
-Sorry about that, I'm new to this; it applied against whatever master I 
-had at the time. Here's a v2 against for-3.18/drivers:
+On 10/17/2014 9:39 AM, Lars-Peter Clausen wrote:
+> On 10/17/2014 06:18 PM, Ray Jui wrote:
+>> On 10/17/2014 4:15 AM, Lars-Peter Clausen wrote:
+>>> On 10/17/2014 09:35 AM, Vinod Koul wrote:
+>>>> On Fri, Oct 17, 2014 at 09:45:45AM +0200, Lars-Peter Clausen wrote:
+>>>>> On 10/17/2014 02:48 AM, Ray Jui wrote:
+>>>>>> As part of subsystem that many slave drivers depend on, it's more
+>>>>>> appropriate for the pl330 DMA driver to be initialized at
+>>>>>> subsys_initcall than device_initcall
+>>>>>
+>>>>> Well, we do have -EPROBE_DEFER these days to handle these kinds of
+>>>>> dependencies so we no longer have to these kinds of manual init
+>>>>> reordering tricks.
+>>>> How ould that work?
+>>>>
+>>>> Consider for example SPI and dmanegine. SPI driver got probed, then to
+>>>> start
+>>>> a transaction requested a channel... while dmaengine driver is still
+>>>> getting
+>>>> probed/not probed yet. So SPI driver didnt get a channel.
+>>>>
+>>>
+>>> Ideally the SPI driver requests the channel in probe function and if the
+>>> DMA controller is not yet probed returns EPROBE_DEFER. If the SPI driver
+>>> requests the channel in the transfer handler it needs to deal with being
+>>> able to fall back to non DMA transfers anyway so this shouldn't be a
+>>> problem.
+>> So in the case of the spi-pl022 driver. It requests the channel in probe
+>> function. And obviously DMA is not mandatory, so when the channel request
+>> fails the probe won't fail and instead it falls back to PIO. In this
+>> case,
+>> can you recommend a different way to solve this problem without having
+>> the
+>> DMA driver probed earlier than its slaves?
+>
+>
+> dma_request_slave_channel() has the problem that we can't differentiate
+> between no channel provided and channel provided but the dma driver
+> hasn't probed yet. The function will return NULL in both cases. But
+> Stephen Warren added dma_request_slave_channel_reason() a while ago to
+> solve this problem. This function returns a ERR_PTR. If it returns
+> ERR_PTR(-EPROBE_DEFER) it means that a channel has been provided but the
+> DMA driver hasn't probed yet. In this case the SPI driver should return
+> -EPROBE_DEFER to try again later. If the function returns a different
+> error code that means that it was not possible to get the DMA channel
+> and it should fall back to PIO.
+>
+Thanks for the information. This will solve our problem.
 
-Prevent mtip32xx block driver from showing a warning at load time 
-("Error creating debugfs parent") when debugfs is not included in
-the kernel. If debugfs is included, show the error code. Fixes bug
-55831 in the Bugzilla.
+>>
+>>>
+>>> But in any case fiddling around with the init sequences is just a quick
+>>> hack and might makes the problem less likely to appear in some cases,
+>>> but there is no guarantee that it works. And I think the proper solution
+>>> at the moment is to use probe deferral.
+>> I think it makes sense to have the DMA driver, as one of the core
+>> components
+>> in various SoCs that a lot of peripheral drivers depend on, to be
+>> registered
+>> at the level of subsys_init or somewhere close. We are not changing this
+>> just to get SPI to work. We are changing this because we think DMA
+>> should be
+>> ready before a lot of its slaves, which are typically done at
+>> device_initcall.
+>
+> But if the DMA driver for example depends on a clock driver do you put
+> the clock driver at a even earlier init level? The problem with using
+> init levels for solving this problem is that there is only a small
+> amount of init levels available and representing the dependency chains
+> is neither possible with it nor were init level ever intended for
+> solving this. EPROBE_DEFER on the other hand is.
+>
+>>
+>> I have no problem relying on EPROBE_DEFER for this, provided that it
+>> works.
+>> The issue is, like I mentioned above, for a lot of slave devices DMA
+>> is not
+>> mandatory, when DMA fails at probe they would fall back to PIO and
+>> never use
+>> DMA. Another disadvantage I see with EPROBE_DEFER is delayed boot time.
+>>
+>
+> Yea, the EPROBE_DEFER implementation is not ideal, but that is a problem
+> that should be solved rather than working around it. I think there are
+> patches somewhere for example that build a device dependency graph from
+> the phandles in the devicetree and than probe devices in the correct
+> order to reduce the number of times probe deferral is necessary.
+>
+Agreed. Yes, it would be very nice if we can eventually describe the 
+dependencies of various components in a system by utilizing the device 
+tree. This way the dependencies can be customized for each individual SoC.
 
-Signed-off-by: Daniel Cotton <danielcotton.patches@gmail.com>
----
-  drivers/block/mtip32xx/mtip32xx.c | 11 +++++++----
-  1 file changed, 7 insertions(+), 4 deletions(-)
+>>>
+>>> Other subsystems have seen patches which moved drivers from using
+>>> subsys_initcall to device_initcall/module_..._driver/ with the reasoning
+>>> that this is no longer necessary because of EPROBE_DEFER. So I don't
+>>> think we should be doing the exact opposite in DMA framework. Also if
+>>> we'd apply this patch it won't take to long until somebody suggest going
+>>> back to module_platform_driver() instead of subsys_initcall.
+>>>
+>>> - Lars
+>> There are currently 12 DMA drivers under drivers/dma registering
+>> themselves
+>> at subsys_init. I don't see why pl330 cannot do the same. Is there any
+>> concern that it may not work for some other SoCs when it's done at
+>> subsys_init? So far I cannot think of any. The only dependency of
+>> pl330 is
+>> the ARM apb_pclk, required during AMBA bus probe. But that's usually
+>> ready
+>> before subsys_init.
+>
+> Those other drivers should be converted to device_initcall rather than
+> converting the PL330 driver to subsys_init. Using subsys_init for device
+> drivers is a hack which was used to try to solve ordering problems. But
+> it doesn't work that great, especially if you have more than two devices
+> in your dependency chain. The solution that people have come up with to
+> solve this problem in a better way is probe deferral by the means of
+> -EPROBE_DEFER.
+>
+> - Lars
+>
+Thanks, Lars, for providing these information. They are very useful!
 
-diff --git a/drivers/block/mtip32xx/mtip32xx.c 
-b/drivers/block/mtip32xx/mtip32xx.c
-index 936f8c1..b0953e3 100644
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -4688,16 +4688,19 @@ static int __init mtip_init(void)
-  	mtip_major = error;
-
-  	dfs_parent = debugfs_create_dir("rssd", NULL);
--	if (IS_ERR_OR_NULL(dfs_parent)) {
--		pr_warn("Error creating debugfs parent\n");
-+	if (IS_ERR_OR_NULL(dfs_parent) && PTR_ERR(dfs_parent) != -ENODEV) {
-+		pr_warn("Error creating debugfs parent, error code: %ld\n",
-+			PTR_ERR(dfs_parent));
-  		dfs_parent = NULL;
-  	}
-  	if (dfs_parent) {
-  		dfs_device_status = debugfs_create_file("device_status",
-  					S_IRUGO, dfs_parent, NULL,
-  					&mtip_device_status_fops);
--		if (IS_ERR_OR_NULL(dfs_device_status)) {
--			pr_err("Error creating device_status node\n");
-+		if (IS_ERR_OR_NULL(dfs_device_status) &&
-+		    PTR_ERR(dfs_device_status) != -ENODEV) {
-+			pr_err("Error creating device_status node, error code: %ld\n",
-+				PTR_ERR(dfs_device_status));
-  			dfs_device_status = NULL;
-  		}
-  	}
+Ray
