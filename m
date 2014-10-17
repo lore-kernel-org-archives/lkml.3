@@ -1,235 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751799AbaJQJNs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 05:13:48 -0400
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:9039 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751238AbaJQJNp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 05:13:45 -0400
-From: "Li, Zhen-Hua" <zhen-hual@hp.com>
-To: <linux-kernel@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        <linux-pci@vger.kernel.org>, <indou.takao@jp.fujitsu.com>,
-        Eric Biederman <ebiederm@xmission.com>, <kexec@lists.infradead.org>
-Cc: <linda.knippers@hp.com>, "Li, Zhen-Hua" <zhen-hual@hp.com>,
-        Randy Wright <rwright@hp.com>
-Subject: [PATCH 1/1] pci: reset all pci endpoints to stop on going dma
-Date: Fri, 17 Oct 2014 17:13:27 +0800
-Message-Id: <1413537207-16514-1-git-send-email-zhen-hual@hp.com>
-X-Mailer: git-send-email 2.0.0-rc0
+	id S1752020AbaJQJOA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 05:14:00 -0400
+Received: from mail-bl2on0134.outbound.protection.outlook.com ([65.55.169.134]:29568
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751815AbaJQJN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 05:13:57 -0400
+X-WSS-ID: 0NDKZN6-07-HN4-02
+X-M-MSG: 
+From: Huang Rui <ray.huang@amd.com>
+To: Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Vincent Wan <vincent.wan@amd.com>, Tony Li <tony.li@amd.com>,
+        <linux-usb@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Huang Rui <ray.huang@amd.com>
+Subject: [PATCH v2 04/16] usb: dwc3: add a flag to check if it is fpga board
+Date: Fri, 17 Oct 2014 16:53:29 +0800
+Message-ID: <1413536021-4886-5-git-send-email-ray.huang@amd.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1413536021-4886-1-git-send-email-ray.huang@amd.com>
+References: <1413536021-4886-1-git-send-email-ray.huang@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(31966008)(15975445006)(89996001)(97736003)(50986999)(99396003)(80022003)(21056001)(15202345003)(20776003)(47776003)(64706001)(53416004)(88136002)(102836001)(68736004)(87286001)(84676001)(46102003)(87936001)(15395725005)(50466002)(44976005)(85306004)(19580395003)(19580405001)(85852003)(575784001)(93916002)(86362001)(229853001)(77156001)(106466001)(92566001)(36756003)(120916001)(76482002)(95666004)(2171001)(33646002)(62966002)(101416001)(50226001)(4396001)(92726001)(76176999)(104166001)(77096002)(48376002)(105586002)(107046002)(6606295002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB203;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB203;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 0367A50BB1
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Ray.Huang@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an update of the patch
-	https://lkml.org/lkml/2014/10/10/37
+Some chip vendor is on pre-silicon phase, which needs to use the simulation
+board. It should have the same product and vendor id with the true soc, but
+might have some minor different configurations.
 
-This patch is doing the reset works before the kdump kernel boots.
+Below thread discussion proposes to find a method to distinguish between
+simulation board and soc.
 
-On a Linux system with iommu supported and many PCI devices on it,
-when kernel crashed and the kdump kernel boots with intel_iommu=on,
-there may be some unexpected DMA requests on this adapter, which will
-cause DMA Remapping faults like:
-    dmar: DRHD: handling fault status reg 102
-    dmar: DMAR:[DMA Read] Request device [41:00.0] fault addr fff81000
-    DMAR:[fault reason 01] Present bit in root entry is clear
+http://marc.info/?l=linux-usb&m=141194772206369&w=2
 
-This bug may happen on *any* PCI device.
-Analysis for this bug:
+In Andvanced Configuration of coreConsultant, there is the parameter of
+DWC_USB_EN_FPGA. This bit has the function we need. And it would response as 7
+bit of GHWPARAMS6 register. So it's able to check this functional bit to confirm
+if works on FPGA board.
 
-The present bit is set in this function:
-
-static struct context_entry * device_to_context_entry(
-                struct intel_iommu *iommu, u8 bus, u8 devfn)
-{
-    ......
-                set_root_present(root);
-    ......
-}
-
-Calling tree:
-    device driver
-        intel_alloc_coherent
-            __intel_map_single
-                domain_context_mapping
-                    domain_context_mapping_one
-                        device_to_context_entry
-
-This means, the present bit in root entry will not be set until the device
-driver is loaded.
-
-But in the kdump kernel, hardware devices are not aware that control has
-transferred to the second kernel, and those drivers must initialize again.
-Consequently there may be unexpected DMA requests from devices activity
-initiated in the first kernel leading to the DMA Remapping errors in the
-second kernel.
-
-To fix this DMAR fault, we need to reset the bus that this device on. Reset
-the device itself does not work.
-
-A patch for this bug that has been sent before:
-https://lkml.org/lkml/2014/9/30/55
-As in discussion, this bug may happen on *any* device, so we need to reset
-all pci devices.
-
-There was an original version(Takao Indoh) that resets the pcie devices:
-https://lkml.org/lkml/2013/5/14/9
-
-According to the previous discussion, On sparc, the IOMMU is initialized
-before PCI devices are enumerated, this patch does the resetting works before
-the kdump kernel boots, so it can also fix the problems on sparc.
-
-Update of this new version, comparing with Takao Indoh's version:
-    Add support for legacy PCI devices.
-    Use pci_try_reset_bus instead of do_downstream_device_reset.
-    Reset all PCI/PCIe deviecs in the first kernel, before kdump kernel boots.
-
-Randy Wright corrects some misunderstanding in this description.
-
-Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
-Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
-Signed-off-by: Randy Wright <rwright@hp.com>
+Reported-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Huang Rui <ray.huang@amd.com>
 ---
- drivers/pci/pci.c   | 82 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/pci.h |  6 ++++
- kernel/kexec.c      |  2 ++
- 3 files changed, 90 insertions(+)
+ drivers/usb/dwc3/core.c | 6 ++++++
+ drivers/usb/dwc3/core.h | 5 +++++
+ 2 files changed, 11 insertions(+)
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 625a4ac..aa9192a 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -23,6 +23,7 @@
- #include <linux/device.h>
- #include <linux/pm_runtime.h>
- #include <linux/pci_hotplug.h>
-+#include <linux/crash_dump.h>
- #include <asm-generic/pci-bridge.h>
- #include <asm/setup.h>
- #include "pci.h"
-@@ -4466,6 +4467,87 @@ void __weak pci_fixup_cardbus(struct pci_bus *bus)
- }
- EXPORT_SYMBOL(pci_fixup_cardbus);
+diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+index bf77509..ddac372 100644
+--- a/drivers/usb/dwc3/core.c
++++ b/drivers/usb/dwc3/core.c
+@@ -455,6 +455,12 @@ static int dwc3_core_init(struct dwc3 *dwc)
+ 		dev_dbg(dwc->dev, "No power optimization available\n");
+ 	}
  
-+/*
-+ * Return true if dev is PCI root port or downstream port whose child is PCI
-+ * endpoint except VGA device.
-+ */
-+static int __pci_dev_need_reset(struct pci_dev *dev)
-+{
-+	struct pci_bus *subordinate;
-+	struct pci_dev *child;
-+
-+	if (dev->hdr_type != PCI_HEADER_TYPE_BRIDGE)
-+		return 0;
-+
-+	if (pci_is_pcie(dev)) {
-+		if ((pci_pcie_type(dev) != PCI_EXP_TYPE_ROOT_PORT) &&
-+		    (pci_pcie_type(dev) != PCI_EXP_TYPE_DOWNSTREAM))
-+			return 0;
++	/* check if current dwc3 is on simulation board */
++	if (dwc->hwparams.hwparams6 & DWC3_GHWPARAMS6_EN_FPGA) {
++		dev_dbg(dwc->dev, "it is on FPGA board\n");
++		dwc->is_fpga = true;
 +	}
 +
-+	subordinate = dev->subordinate;
-+	list_for_each_entry(child, &subordinate->devices, bus_list) {
-+		/* Don't reset switch, bridge, VGA device */
-+		if ((child->hdr_type == PCI_HEADER_TYPE_BRIDGE) ||
-+		    ((child->class >> 16) == PCI_BASE_CLASS_BRIDGE) ||
-+		    ((child->class >> 16) == PCI_BASE_CLASS_DISPLAY))
-+			return 0;
-+
-+		if (pci_is_pcie(child)) {
-+			if ((pci_pcie_type(child) == PCI_EXP_TYPE_UPSTREAM) ||
-+			    (pci_pcie_type(child) == PCI_EXP_TYPE_PCI_BRIDGE))
-+				return 0;
-+		}
-+	}
-+
-+	return 1;
-+}
-+
-+struct pci_dev_reset_entry {
-+	struct list_head list;
-+	struct pci_dev *dev;
-+};
-+int pci_reset_endpoints(void)
-+{
-+	struct pci_dev *dev = NULL;
-+	struct pci_dev_reset_entry *pdev_entry, *tmp;
-+	struct pci_bus *subordinate = NULL;
-+	int has_it;
-+
-+	LIST_HEAD(pdev_list);
-+
-+
-+	for_each_pci_dev(dev) {
-+		subordinate = dev->subordinate;
-+		if (!subordinate || list_empty(&subordinate->devices))
-+			continue;
-+
-+		has_it = 0;
-+		list_for_each_entry(pdev_entry, &pdev_list, list) {
-+			if (dev == pdev_entry->dev) {
-+				has_it = 1;
-+				break;
-+			}
-+		}
-+		if (has_it)
-+			continue;
-+
-+		if (__pci_dev_need_reset(dev)) {
-+			pdev_entry = kmalloc(sizeof(*pdev_entry), GFP_KERNEL);
-+			pdev_entry->dev = dev;
-+			list_add(&pdev_entry->list, &pdev_list);
-+		}
-+	}
-+
-+	list_for_each_entry_safe(pdev_entry, tmp, &pdev_list, list) {
-+		pci_try_reset_bus(pdev_entry->dev->subordinate);
-+		kfree(pdev_entry);
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(pci_reset_endpoints);
-+
- static int __init pci_setup(char *str)
- {
- 	while (str) {
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 5be8db4..1cf7207 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -1869,4 +1869,10 @@ static inline bool pci_is_dev_assigned(struct pci_dev *pdev)
- {
- 	return (pdev->dev_flags & PCI_DEV_FLAGS_ASSIGNED) == PCI_DEV_FLAGS_ASSIGNED;
- }
-+
-+/*
-+ * Reset all pci devices by resetting the buses.
-+ */
-+int pci_reset_endpoints(void);
-+
- #endif /* LINUX_PCI_H */
-diff --git a/kernel/kexec.c b/kernel/kexec.c
-index 2abf9f6..986e8f7 100644
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -36,6 +36,7 @@
- #include <linux/syscore_ops.h>
- #include <linux/compiler.h>
- #include <linux/hugetlb.h>
-+#include <linux/pci.h>
+ 	/*
+ 	 * WORKAROUND: DWC3 revisions <1.90a have a bug
+ 	 * where the device can fail to connect at SuperSpeed
+diff --git a/drivers/usb/dwc3/core.h b/drivers/usb/dwc3/core.h
+index a715ee1..f6ee623 100644
+--- a/drivers/usb/dwc3/core.h
++++ b/drivers/usb/dwc3/core.h
+@@ -210,6 +210,9 @@
+ #define DWC3_GHWPARAMS4_HIBER_SCRATCHBUFS(n)	(((n) & (0x0f << 13)) >> 13)
+ #define DWC3_MAX_HIBER_SCRATCHBUFS		15
  
- #include <asm/page.h>
- #include <asm/uaccess.h>
-@@ -1474,6 +1475,7 @@ void crash_kexec(struct pt_regs *regs)
- 		if (kexec_crash_image) {
- 			struct pt_regs fixed_regs;
- 
-+			pci_reset_endpoints();
- 			crash_setup_regs(&fixed_regs, regs);
- 			crash_save_vmcoreinfo();
- 			machine_crash_shutdown(&fixed_regs);
++/* Global HWPARAMS6 Register */
++#define DWC3_GHWPARAMS6_EN_FPGA			(1 << 7)
++
+ /* Device Configuration Register */
+ #define DWC3_DCFG_DEVADDR(addr)	((addr) << 3)
+ #define DWC3_DCFG_DEVADDR_MASK	DWC3_DCFG_DEVADDR(0x7f)
+@@ -662,6 +665,7 @@ struct dwc3_scratchpad_array {
+  * @ep0_expect_in: true when we expect a DATA IN transfer
+  * @has_hibernation: true when dwc3 was configured with Hibernation
+  * @is_selfpowered: true when we are selfpowered
++ * @is_fpga: true when we are using the FPGA board
+  * @needs_fifo_resize: not all users might want fifo resizing, flag it
+  * @pullups_connected: true when Run/Stop bit is set
+  * @resize_fifos: tells us it's ok to reconfigure our TxFIFO sizes.
+@@ -765,6 +769,7 @@ struct dwc3 {
+ 	unsigned		ep0_expect_in:1;
+ 	unsigned		has_hibernation:1;
+ 	unsigned		is_selfpowered:1;
++	unsigned		is_fpga:1;
+ 	unsigned		needs_fifo_resize:1;
+ 	unsigned		pullups_connected:1;
+ 	unsigned		resize_fifos:1;
 -- 
-2.0.0-rc0
+1.9.1
 
