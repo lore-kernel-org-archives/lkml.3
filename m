@@ -1,85 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296AbaJQDIq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 23:08:46 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:35959 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751643AbaJQDIo (ORCPT
+	id S1753173AbaJQDZg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 23:25:36 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:61906 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751643AbaJQDZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 23:08:44 -0400
+	Thu, 16 Oct 2014 23:25:34 -0400
 MIME-Version: 1.0
-In-Reply-To: <20141016171012.GE5252@e104818-lin.cambridge.arm.com>
-References: <CAGZxSSSBpCvJt=PFbihTmPneJqiocU8VZSDHpXgkf5dhWZ850Q@mail.gmail.com>
-	<20141016171012.GE5252@e104818-lin.cambridge.arm.com>
-Date: Fri, 17 Oct 2014 11:08:43 +0800
-Message-ID: <CAGZxSSSZ+b28rcHYRi5EWV9K4izHZBkO3fJTdang5XTaNMRTrw@mail.gmail.com>
-Subject: Re: [PATCH v2] arm64: mm: use macro instead of if judgement of ZONE_DMA
-From: Yifan Zhang <yifan.zhangm@gmail.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Will Deacon <Will.Deacon@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
-        "lauraa@codeaurora.org" <lauraa@codeaurora.org>,
-        "ganapatrao.kulkarni@caviumnetworks.com" 
-	<ganapatrao.kulkarni@caviumnetworks.com>,
-        "robh@kernel.org" <robh@kernel.org>,
-        "leif.lindholm@linaro.org" <leif.lindholm@linaro.org>,
-        "Yalin.Wang@sonymobile.com" <Yalin.Wang@sonymobile.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yifan Zhang <zhangyf@marvell.com>
+In-Reply-To: <20141016231221.GA13592@kroah.com>
+References: <20141016124741.GA3832@kroah.com>
+	<CALAqxLU05D8qQA47E77PiuuN7eVt66WEq1qn+PqdE-tpEUzFpw@mail.gmail.com>
+	<20141016231221.GA13592@kroah.com>
+Date: Thu, 16 Oct 2014 20:25:33 -0700
+Message-ID: <CALAqxLXDZ4Q_C456o_A-V_LkcY=wpoC30kvNavyVaZRu7uK9fQ@mail.gmail.com>
+Subject: Re: [PATCH] staging: android: binder: move to the "real" part of the kernel
+From: John Stultz <john.stultz@linaro.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
+        Linux API <linux-api@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Anup Patel <anup.patel@linaro.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Catalin,
-
-I found In current arm64 code, there is no normal zone, only DMA zone.
-
-Number of blocks type     Unmovable  Reclaimable      Movable
-Reserve          CMA      Isolate
-
-Node 0, zone    DMA          142           12           69
-1           28            0
-
-
-When zone_sizes_init, zone_size[ZONE_NORMAL] is initialized to 0. (it
-is 3.10, I didn't try the latest code base)
-
-static void __init zone_sizes_init(unsigned long min, unsigned long max)
-{
-    struct memblock_region *reg;
-    unsigned long zone_size[MAX_NR_ZONES], zhole_size[MAX_NR_ZONES];
-    unsigned long max_dma = min;
-
-    memset(zone_size, 0, sizeof(zone_size));
-
-#ifdef CONFIG_ZONE_DMA
-    /* 4GB maximum for 32-bit only capable devices */
-    unsigned long max_dma_phys =
-        (unsigned long)(dma_to_phys(NULL, DMA_BIT_MASK(32)) + 1);
-    max_dma = max(min, min(max, max_dma_phys >> PAGE_SHIFT));
-    zone_size[ZONE_DMA] = max_dma - min;
-#endif
-    zone_size[ZONE_NORMAL] = max - max_dma;
-
-
-Then I just tried to enable ZONE_NORMAL in our platform, and found
-this compiling error.
-
-Is this ZONE_DMA cover full memory and ZONE_NORMAL = 0 strategy on
-purpose ? We will not use ZONE_NORMAL on arm64 ?
-
-
-
-On Fri, Oct 17, 2014 at 1:10 AM, Catalin Marinas
-<catalin.marinas@arm.com> wrote:
-> On Thu, Oct 16, 2014 at 10:41:01AM +0100, Yifan Zhang wrote:
->> if disable CONFIG_ZONE_DMA, ZONE_DMA becomes undefined.
+On Thu, Oct 16, 2014 at 4:12 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Thu, Oct 16, 2014 at 10:09:04AM -0700, John Stultz wrote:
+>> On Thu, Oct 16, 2014 at 5:47 AM, Greg Kroah-Hartman
+>> <gregkh@linuxfoundation.org> wrote:
+>> > From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> >
+>> > The Android binder code has been "stable" for many years now.  No matter
+>>
+>> Well, ignoring the ABI break that landed in the last year. :)
 >
-> I agree that this is the case but can you explain why you need to
-> disable ZONE_DMA? It currently is def_bool y, so it cannot be disabled
-> unless you hack the Kconfig.
+> As no one noticed, it wasn't a "break" :)
 >
-> --
-> Catalin
+>> > This was discussed in the Android miniconf at the Plumbers conference.
+>> > If anyone has any objections to this, please let me know, otherwise I'm
+>> > queueing this up for 3.19-rc1
+>>
+>> So my main concerns/thoughts here are:
+>>
+>> Who is going to maintain this? Has Arve agreed?
+>
+> Do we really need someone to do more work that has been done on it in
+> the past as an official "maintainer"?  I'll be glad to do it, as I doubt
+> it will require any time at all.
+
+Ok. The only caution I have if Arve isn't involved is that we have in
+the past merged cleanup changes that introduced bugs, and it wasn't
+until Arve took at look at the new kernel that these were sorted out
+(see e194fd8a5d8e0a7eeed239a8534460724b62fe2d). So I think if at all
+possible getting his ack on things would be good.
+
+>> Are the Android guys comfortable with the ABI stability rules they'll
+>> now face?
+>
+> Just because something is in staging, doesn't mean you don't have to
+> follow the same ABI stability rules as the rest of the kernel.  If a
+> change had happened to this code that broke userspace in the past, I
+> would have reverted it.  So this should not be anything different from
+> what has been happening inthe past.
+>
+> And the Android developers said they were happy to see this code move
+> into the "real" part of the kernel.
+
+Alright then.
+
+
+>> Currently in the android space no one but libbinder should use the
+>> kernel interface.
+>
+> That is correct.  If you do that, you deserve all of the pain and
+> suffering and rooted machines you will get.
+
+You reference this issue quite a bit, and I have a handwavy sense of
+the problem, but do you have a more detailed link to the specific
+issue here?
+
+
+>> Can we enforce that no one use this interface out-side of android (To
+>> ensure its one of those "if the abi breaks and no one notices..." edge
+>> cases)?
+>
+> This is the kernel, we can not dictate "use", that's the good part of
+> the GPLv2 :)
+>
+> Again, as no one has done this before, I strongly doubt it will happen
+> in the future.
+
+Well, the longer something is in the kernel, the more likely someone
+will depend on it.
+
+
+>> I'm still hopeful that a libbinder over kdbus will eventually pan out.
+>> I still see having two core IPC mechanisms (even if the use cases are
+>> different in style) as a negative, and I worry this might reduce
+>> motivation to unify things at the lower level. Granted, such work can
+>> still continue, but the incentives do change.
+>
+> Yes, things are going to change in the future, there is work happening
+> here, and there was a presentation at Plumbers about what is going to be
+> coming.
+>
+> But all of the changes will be in new code.  Be it kdbus, or something
+> else if that doesn't work out.  This existing binder.c file will not be
+> changing at all.  This existing ABI, and codebase, is something that we
+> have to maintain forever for those millions of devices out there in the
+> real world today.  So as there really is nothing left to do on it, it
+> deserves to be in the main part of the kernel source tree.
+
+Well, realistically, those millions of devices out there will almost
+*never* get a kernel version bump
+
+But yes, I'm fine with it going in. I'm just a bit surprised at how
+quickly thoughts change here.
+
+This does raise the question if the same standard could be held to
+ashmem then? That's a *much* simpler and easier to maintain chunk of
+code, and is just as isolated, logic wise.  And while I think it would
+be ideal if the unpinning feature could be done more generically, if
+volatile ranges really doesn't have a future, then its maybe silly to
+hold ashmem out as well?
+
+thanks
+-john
