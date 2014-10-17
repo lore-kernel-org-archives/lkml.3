@@ -1,39 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752977AbaJQMqP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 08:46:15 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:46942 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752199AbaJQMqL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 08:46:11 -0400
-X-IronPort-AV: E=Sophos;i="5.04,739,1406592000"; 
-   d="scan'208";a="182321741"
-Message-ID: <54410F90.3070206@citrix.com>
-Date: Fri, 17 Oct 2014 13:46:08 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1753078AbaJQMqk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 08:46:40 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:52255 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753016AbaJQMqi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 08:46:38 -0400
+Message-ID: <54410FA0.6000903@hurleysoftware.com>
+Date: Fri, 17 Oct 2014 08:46:24 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Martin Kelly <martin@martingkelly.com>, <david.vrabel@citrix.com>,
-        <xen-devel@lists.xenproject.org>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <mingo@redhat.com>, Martin Kelly <martkell@amazon.com>,
-        <boris.ostrovsky@oracle.com>, <tglx@linutronix.de>
-Subject: Re: [Xen-devel] [PATCH] x86/xen: panic on bad Xen-provided memory
- map
-References: <1413517692-17727-1-git-send-email-martin@martingkelly.com>
-In-Reply-To: <1413517692-17727-1-git-send-email-martin@martingkelly.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Sudhir Sreedharan <ssreedharan@mvista.com>, gregkh@linuxfoundation.org
+CC: khilman@kernel.org, linux-serial@vger.kernel.org, jslaby@suse.cz,
+        linux-kernel@vger.kernel.org, olof@lixom.net,
+        linux-arm-kernel@lists.infradead.org, geert@linux-m68k.org
+Subject: Re: [PATCH v1] tty: serial: 8250_core: restore the LCR register in
+ set_sleep
+References: <CAJJ77WsAi5jmnDxY45ipu3a94D6+yoHJNHgExhFsVoirV3NoyQ@mail.gmail.com> <1413549558-24227-1-git-send-email-ssreedharan@mvista.com>
+In-Reply-To: <1413549558-24227-1-git-send-email-ssreedharan@mvista.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/10/14 04:48, Martin Kelly wrote:
-> Panic if Xen provides a memory map with 0 entries. Although this is
-> unlikely, it is better to catch the error at the point of seeing the map
-> than later on as a symptom of some other crash.
+On 10/17/2014 08:39 AM, Sudhir Sreedharan wrote:
+> In ST16650V2 based serial uarts, while initalizing the PM state,
+> LCR registers are being initialized to 0 in serial8250_set_sleep().
+> If console port is already initialized and being used, this will
+> throws garbage in the console.
 
-Applied, thanks.
+Thanks.
 
-David
+Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
+
+
