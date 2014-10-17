@@ -1,84 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751848AbaJQM3H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 08:29:07 -0400
-Received: from mail-yk0-f172.google.com ([209.85.160.172]:45223 "EHLO
-	mail-yk0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751215AbaJQM3E (ORCPT
+	id S1752382AbaJQMas (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 08:30:48 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33159 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262AbaJQMaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 08:29:04 -0400
+	Fri, 17 Oct 2014 08:30:46 -0400
+Date: Fri, 17 Oct 2014 14:29:37 +0200
+From: Mark Brown <broonie@kernel.org>
+To: Addy Ke <addy.ke@rock-chips.com>
+Cc: heiko@sntech.de, dianders@chromium.org, grant.likely@linaro.org,
+        robh+dt@kernel.org, amstan@google.com, sonnyrao@google.com,
+        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, devicetree@vger.kernel.org,
+        olof@lixom.net, hj@rock-chips.com, kever.yang@rock-chips.com,
+        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
+        yzq@rock-chips.com, zhenfu.fang@rock-chips.com, cf@rock-chips.com,
+        zhangqing@rock-chips.com, hl@rock-chips.com, wei.luo@rock-chips.com
+Message-ID: <20141017122937.GK1820@sirena.org.uk>
+References: <1413510253-3519-1-git-send-email-addy.ke@rock-chips.com>
 MIME-Version: 1.0
-In-Reply-To: <1413478686-6857-1-git-send-email-sonnyrao@chromium.org>
-References: <1413478686-6857-1-git-send-email-sonnyrao@chromium.org>
-From: Alim Akhtar <alim.akhtar@gmail.com>
-Date: Fri, 17 Oct 2014 17:58:22 +0530
-Message-ID: <CAGOxZ53C8DNpK92G9_OhdtU5xT+jqSimgDCkqMF1mvsNDnA2+A@mail.gmail.com>
-Subject: Re: [PATCH v2] mmc: dw_mmc: Reset DMA before enabling IDMAC
-To: Sonny Rao <sonnyrao@chromium.org>
-Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Heiko Stuebner <heiko@sntech.de>, Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Douglas Anderson <dianders@chromium.org>,
-        Eddie Cai <eddie.cai@rock-chips.com>, Addy Ke <addy.ke@rock-chips.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5mZBmBd1ZkdwT1ny"
+Content-Disposition: inline
+In-Reply-To: <1413510253-3519-1-git-send-email-addy.ke@rock-chips.com>
+X-Cookie: Excellent day to have a rotten day.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 62.156.150.204
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] spi/rockchip: spi controller must be disabled in tx
+ callback too
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sonny,
 
-On Thu, Oct 16, 2014 at 10:28 PM, Sonny Rao <sonnyrao@chromium.org> wrote:
-> We've already got a reset of DMA after it's done.  Add one before we
-> start DMA too.  This fixes a data corruption on Rockchip SoCs which
-> will get bad data when doing a DMA transfer after doing a PIO transfer.
->
-> We tested this on an Exynos 5800 with HS200 and didn't notice any
-> difference in sequential read throughput.
->
-> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> Tested-by: Doug Anderson <dianders@chromium.org>
+--5mZBmBd1ZkdwT1ny
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This looks fine.
+On Fri, Oct 17, 2014 at 09:44:13AM +0800, Addy Ke wrote:
+> Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
 
-Reviewed-by: Alim Akhtar <alim.akhtar@samsung.com>
-> ---
->  drivers/mmc/host/dw_mmc.c | 5 +++++
->  1 file changed, 5 insertions(+)
->
-> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-> index 69f0cc6..ca67f69 100644
-> --- a/drivers/mmc/host/dw_mmc.c
-> +++ b/drivers/mmc/host/dw_mmc.c
-> @@ -83,6 +83,7 @@ struct idmac_desc {
->  #endif /* CONFIG_MMC_DW_IDMAC */
->
->  static bool dw_mci_reset(struct dw_mci *host);
-> +static bool dw_mci_ctrl_reset(struct dw_mci *host, u32 reset);
->
->  #if defined(CONFIG_DEBUG_FS)
->  static int dw_mci_req_show(struct seq_file *s, void *v)
-> @@ -448,6 +449,10 @@ static void dw_mci_idmac_start_dma(struct dw_mci *host, unsigned int sg_len)
->
->         dw_mci_translate_sglist(host, host->data, sg_len);
->
-> +       /* Make sure to reset DMA in case we did PIO before this */
-> +       dw_mci_ctrl_reset(host, SDMMC_CTRL_DMA_RESET);
-> +       dw_mci_idmac_reset(host);
-> +
->         /* Select IDMAC interface */
->         temp = mci_readl(host, CTRL);
->         temp |= SDMMC_CTRL_USE_IDMAC;
-> --
-> 2.1.2
->
+Applied, thanks.
 
+--5mZBmBd1ZkdwT1ny
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
--- 
-Regards,
-Alim
+iQEcBAEBAgAGBQJUQQuwAAoJECTWi3JdVIfQmn4H/jutDQY3t8Ck34xwvUpl1tbr
+ttypqQoJHVRBQKcfabAO8GH3caU246mIwQ43SgpBHAE0oQZh3CaGuUmaPNeLy4Yo
+JYNb99McbD3EPDWRyBIKaZUIAjddUOz5NCwH+80v7b4uCHNazM6MO2/UIwjEBtAD
+I4cbCHKi/MR7BcaYgDCp6L9KYCWjoBqPwZYKQm3udY0M+iuIIRx6Xz30DiaJ+Gic
+6rWBK8R39riv0oH6SQ8zFFdO9hx6TfqA2BDQBjhB0GzWNrX0dHaSNBs/UAxoI6AQ
+XIsCss0MTtSmr5morvZ4rb1eNL4w8hr+QEkMvRgyztqJs2mGqjQO4lj//8Y25LM=
+=g+oM
+-----END PGP SIGNATURE-----
+
+--5mZBmBd1ZkdwT1ny--
