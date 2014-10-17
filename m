@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753316AbaJQOxK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 10:53:10 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49342 "EHLO arroyo.ext.ti.com"
+	id S1753348AbaJQOxn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 10:53:43 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:48931 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752343AbaJQOxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 10:53:08 -0400
-Date: Fri, 17 Oct 2014 09:52:52 -0500
+	id S1751846AbaJQOxl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 10:53:41 -0400
+Date: Fri, 17 Oct 2014 09:53:25 -0500
 From: Felipe Balbi <balbi@ti.com>
 To: Huang Rui <ray.huang@amd.com>
 CC: Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
@@ -17,128 +17,87 @@ CC: Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
         Vincent Wan <vincent.wan@amd.com>, Tony Li <tony.li@amd.com>,
         <linux-usb@vger.kernel.org>, <linux-pci@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 09/16] usb: dwc3: add P3 in U2 SS inactive quirk
-Message-ID: <20141017145252.GE26260@saruman>
+Subject: Re: [PATCH v2 10/16] usb: dwc3: add request p1p2p3 quirk
+Message-ID: <20141017145325.GF26260@saruman>
 Reply-To: <balbi@ti.com>
 References: <1413536021-4886-1-git-send-email-ray.huang@amd.com>
- <1413536021-4886-10-git-send-email-ray.huang@amd.com>
+ <1413536021-4886-11-git-send-email-ray.huang@amd.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xA/XKXTdy9G3iaIz"
+	protocol="application/pgp-signature"; boundary="V4b9U9vrdWczvw78"
 Content-Disposition: inline
-In-Reply-To: <1413536021-4886-10-git-send-email-ray.huang@amd.com>
+In-Reply-To: <1413536021-4886-11-git-send-email-ray.huang@amd.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---xA/XKXTdy9G3iaIz
+--V4b9U9vrdWczvw78
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, Oct 17, 2014 at 04:53:34PM +0800, Huang Rui wrote:
-> AMD NL needs to enable P3 OK for U2/SSInactive on USB3PIPE register.
+On Fri, Oct 17, 2014 at 04:53:35PM +0800, Huang Rui wrote:
+> AMD NL needs to enable always request P1/P2/P3 for U1/U2/U3 for AMD own p=
+hy.
 >=20
 > Signed-off-by: Huang Rui <ray.huang@amd.com>
 > ---
->  drivers/usb/dwc3/core.c          | 20 ++++++++++++++++++++
->  drivers/usb/dwc3/core.h          |  1 +
->  drivers/usb/dwc3/dwc3-pci.c      |  3 ++-
->  drivers/usb/dwc3/platform_data.h |  1 +
->  4 files changed, 24 insertions(+), 1 deletion(-)
+>  drivers/usb/dwc3/core.c          | 3 +++
+>  drivers/usb/dwc3/core.h          | 1 +
+>  drivers/usb/dwc3/dwc3-pci.c      | 3 ++-
+>  drivers/usb/dwc3/platform_data.h | 1 +
+>  4 files changed, 7 insertions(+), 1 deletion(-)
 >=20
 > diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-> index 7322d85..9d0a249 100644
+> index 9d0a249..ec8b667 100644
 > --- a/drivers/usb/dwc3/core.c
 > +++ b/drivers/usb/dwc3/core.c
-> @@ -365,6 +365,24 @@ static void dwc3_cache_hwparams(struct dwc3 *dwc)
->  }
+> @@ -377,6 +377,9 @@ static void dwc3_phy_setup(struct dwc3 *dwc)
+>  	if (dwc->quirks & DWC3_QUIRK_U2SSINP3OK)
+>  		reg |=3D DWC3_GUSB3PIPECTL_U2SSINP3OK;
 > =20
->  /**
-> + * dwc3_phy_setup - Configure USB3 PHY Interface of DWC3 Core
-> + * @dwc: Pointer to our controller context structure
-> + */
-> +static void dwc3_phy_setup(struct dwc3 *dwc)
-> +{
-> +	u32 reg;
-> +
-> +	reg =3D dwc3_readl(dwc->regs, DWC3_GUSB3PIPECTL(0));
-> +
-> +	if (dwc->quirks & DWC3_QUIRK_U2SSINP3OK)
+> +	if (dwc->quirks & DWC3_QUIRK_REQP1P2P3)
 
-	if (dwc->p3_ok_on_ss_inactive_quirk)
+	if (dwc->request_p1p2p3_quirk)
 
-> +		reg |=3D DWC3_GUSB3PIPECTL_U2SSINP3OK;
-> +
-> +	dwc3_writel(dwc->regs, DWC3_GUSB3PIPECTL(0), reg);
-> +
-> +	mdelay(100);
-> +}
-> +
-> +/**
->   * dwc3_core_init - Low-level initialization of DWC3 Core
->   * @dwc: Pointer to our controller context structure
->   *
-> @@ -484,6 +502,8 @@ static int dwc3_core_init(struct dwc3 *dwc)
-> =20
->  	dwc3_writel(dwc->regs, DWC3_GCTL, reg);
-> =20
-> +	dwc3_phy_setup(dwc);
-> +
->  	ret =3D dwc3_alloc_scratch_buffers(dwc);
->  	if (ret)
->  		goto err1;
-> diff --git a/drivers/usb/dwc3/core.h b/drivers/usb/dwc3/core.h
-> index 3d27f10..71cb255 100644
-> --- a/drivers/usb/dwc3/core.h
-> +++ b/drivers/usb/dwc3/core.h
-> @@ -176,6 +176,7 @@
-> =20
->  /* Global USB3 PIPE Control Register */
->  #define DWC3_GUSB3PIPECTL_PHYSOFTRST	(1 << 31)
-> +#define DWC3_GUSB3PIPECTL_U2SSINP3OK	(1 << 29)
->  #define DWC3_GUSB3PIPECTL_SUSPHY	(1 << 17)
-> =20
->  /* Global TX Fifo Size Register */
 > diff --git a/drivers/usb/dwc3/dwc3-pci.c b/drivers/usb/dwc3/dwc3-pci.c
-> index cdb9b04..1235eb3 100644
+> index 1235eb3..7154d18 100644
 > --- a/drivers/usb/dwc3/dwc3-pci.c
 > +++ b/drivers/usb/dwc3/dwc3-pci.c
-> @@ -150,7 +150,8 @@ static int dwc3_pci_probe(struct pci_dev *pci,
->  			PCI_DEVICE_ID_AMD_NL) {
+> @@ -151,7 +151,8 @@ static int dwc3_pci_probe(struct pci_dev *pci,
 >  		dwc3_pdata.has_lpm_erratum =3D true;
 >  		dwc3_pdata.quirks |=3D DWC3_QUIRK_AMD_NL
-> -			| DWC3_QUIRK_U2EXIT_LFPS;
-> +			| DWC3_QUIRK_U2EXIT_LFPS
-> +			| DWC3_QUIRK_U2SSINP3OK;
->  	}
+>  			| DWC3_QUIRK_U2EXIT_LFPS
+> -			| DWC3_QUIRK_U2SSINP3OK;
+> +			| DWC3_QUIRK_U2SSINP3OK
+> +			| DWC3_QUIRK_REQP1P2P3;
 
-again to be combined in a single patch as the last patch in the series.
+to be combined with the last patch in this series.
 
 --=20
 balbi
 
---xA/XKXTdy9G3iaIz
+--V4b9U9vrdWczvw78
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJUQS1EAAoJEIaOsuA1yqRExVsP+QFhwzIgYM/EzeLzFlLdU04H
-fU0OsqzXhRZHplMQwOUEnG2n3KzeRMKZ43dpnYCjGiFjqZRC452xwFGgUcA1x4pW
-3eNhETResGIiIZCc4v419XRbC+AyJqWcttKJaapPg7YvDYdM7uT1DKd1/9Spwk5k
-5829lk9pf4doZBHMt7QTyrc/yM9EoTKdBWb98nvwOi6E79sIE69clOtt9XRQ8SUW
-Q88yQvcdC+j2bV8/CoukZAXVk6MnVwD6YnyzJLB/9UvORkhLa+CpWSLPMjo2J8hy
-wYte4OIgqoGAnSmjkot4SdOU2flz0p3mUa/cWW1FTpo5J7p5TgUsGVYooZHXxwpA
-1awdnj1sFiJKi1jzkUhfGtv57H2q7a+qD1hzggziuc+p+9rXuzGG/v9Au0KQfw4M
-vueGyZfpAbXAwWJFYyQeU8PS7eId7yIvqH7rHcPQ4TPIEutXVyzOBQHfH0LaSe62
-Qc2g7RziudQ8rG5E6MWlknCzGYDnwfm2n/L5xpYBFtaGj/DuOm5ammOOMrQYy+U/
-AzxIr2IsruwlY2SyEoG0z6eOfF0ZnNr+kCjWlfC0u5QjVkYkxP23hOxB2mGPGw3a
-qvBNua/5DVxDhO80cGkbCSugZnpR4xkcKlbYh3jbvPhWnXi3GtGtBjrIYcbG/FY3
-oUOlxFC2ET6iHr9rpWQX
-=D4Ed
+iQIcBAEBAgAGBQJUQS1lAAoJEIaOsuA1yqREvy4QAKzRs4UqXWseG48ICi3EyKHr
+HnOLePDdpCppx0qx8oqwaqE0TN55oItxtSeNIhqG5CM1Dl7jLT6fkSNFX94S04EU
+klGNa2CZJYuPjXmDR3aRk7rJ4qO4bGzddmoo6n3RXnJC5aWwU7oT9LnifjeSGVW8
+LR8zaj1SLyd5Few7Go41A3NLF3ftBXDIVRI1pfgQA76b0KL9oD0InVORDJYBSZHl
+igMf9d9oYtPknMQ81NrSCCRJMFQobC2HjtozLc+i/haO5Sc3sVxe3cADktZMtwat
+rkToj3m7o5SGmIKcWrZQfE8u4GVyaSSP6zB95Kf1IBIMs+sMLO2axP3Gpl+oZik4
+3ERa47Rq1SowWFje2laPtcrIl5lWtsn6jY5yywClkWlX0g4QEC2X3BYFS7hHXyHt
+ZEbP+UnALkQXf7rBYWWzSUesonLWUrHzfru01rxVENlbkUqvxn2P5LIPIu+i6oZr
+Tx44P2Crj5NHw82I1dEOtIOeKxREbH86O61qnWZ/XRMaiQySvj2Qt86TJxNFwt1L
+IyPIBusLWn6qNScodHZvNnKMtTQ71WzBu/QCsGc58Vu4CGg6eCB6wXNCYClumMhj
+9AryK+uua0vOQQKstLevo0KdLVr3Q6ZMKJdD1myMJSB4U04OQx3CExJsyry05poq
+ji+dS8JdVGcgUDMPOgJW
+=ySw0
 -----END PGP SIGNATURE-----
 
---xA/XKXTdy9G3iaIz--
+--V4b9U9vrdWczvw78--
