@@ -1,171 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753456AbaJQIZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 04:25:57 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:48779 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750835AbaJQIZx convert rfc822-to-8bit (ORCPT
+	id S1753882AbaJQI0L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 04:26:11 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:37242 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750835AbaJQI0G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 04:25:53 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Mark yao <mark.yao@rock-chips.com>
-Cc: Dave Airlie <airlied@gmail.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Rob Clark <robdclark@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rom Lemarchand <romlem@google.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-doc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>, linux-api@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, dianders@chromium.org,
-        =?ISO-8859-1?Q?St=E9phane?= Marchesin <marcheu@chromium.org>,
-        dbehr@chromium.org, Olof Johansson <olof@lixom.net>,
-        djkurtz@chromium.org, xjq@rock-chips.com, kfx@rock-chips.com,
-        cym@rock-chips.c, om@null.null, cf@rock-chips.com, zyw@rock-chips.com,
-        xxm@rock-chips.com, huangtao@rock-chips.com, kever.yang@rock-chips.com,
-        yxj@rock-chips.com, wxt@rock-chips.com, xw@rock-chips.com
-Subject: Re: [PATCH v11 0/3] Add drm driver for Rockchip Socs
-Date: Fri, 17 Oct 2014 10:25:19 +0200
-Message-ID: <4044646.m0RgIJvLdJ@phil>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <5440D041.9020300@rock-chips.com>
-References: <1412763781-31533-1-git-send-email-mark.yao@rock-chips.com> <282711393.zuCWIeu2Oz@phil> <5440D041.9020300@rock-chips.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+	Fri, 17 Oct 2014 04:26:06 -0400
+From: Ionut Alexa <ionut.m.alexa@gmail.com>
+To: rusty@rustcorp.com.au
+Cc: linux-kernel@vger.kernel.org, Ionut Alexa <ionut.m.alexa@gmail.com>
+Subject: [PATCH] kernel:module Fix coding style errors and warnings.
+Date: Fri, 17 Oct 2014 11:32:51 +0300
+Message-Id: <1413534771-746-1-git-send-email-ionut.m.alexa@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, 17. Oktober 2014, 16:16:01 schrieb Mark yao:
-> On 2014年10月17日 14:24, Heiko Stübner wrote:
-> > Hi Mark,
-> > 
-> > Am Freitag, 17. Oktober 2014, 12:22:53 schrieb Mark yao:
-> >> On 2014年10月17日 08:46, Dave Airlie wrote:
-> >>> On 17 October 2014 10:40, Mark yao <mark.yao@rock-chips.com> wrote:
-> >>>> Hi
-> >>>> I think Rockchip drm driver is ready now, can it land?
-> >>> 
-> >>> I probably want to wait until -rc1 though I suppose since its a new
-> >>> driver and self contained we might be able to see if Linus is
-> >>> interested in squeezing it in.
-> >>> 
-> >>> Can you send me a git pull request for it against drm-next or even 3.17.
-> >>> 
-> >>> Dave.
-> >> 
-> >> Hi, Dave
-> >> 
-> >>       the git pull request:
-> >> The following changes since commit 
-4db36870b92cdf5a79615aeabc68efc97df13918:
-> > I think this needs a fix. Your commit 4db36870b is the pending iommu
-> > driver. Which isn't part of neither the mainline kernel nor the drm tree
-> > Dave meant.
-> > 
-> > What Dave meant was to base your patches on top of his "drm-next" branch
-> > or
-> > the raw 3.17 release.
-> > 
-> > So either base the branch on drm-next from
-> > 
-> > 	http://cgit.freedesktop.org/~airlied/linux/log/?h=drm-next
-> > 
-> > or the 3.17 release tag from Linus Torvalds. Apply your patches on top and
-> > create pull from there.
-> > 
-> > I've just checked ... your drm patches apply cleanly against 3.17, so your
-> > branch to be pulled should probably look something like
-> > 
-> > 	https://github.com/mmind/linux-rockchip/commits/tmp/drmtest
-> > 
-> > Heiko
-> 
-> Hi Heiko
->      thanks for you check.
-> 
-> Hi Dave
->      I have reupload a branch cleanly against 3.17:
+Fixed codin style errors and warnings. Changes printk with
+print_debug/warn. Changed seq_printf to seq_puts.
 
-sorry, but I think this might need another round. 
+Signed-off-by: Ionut Alexa <ionut.m.alexa@gmail.com>
+---
+ kernel/module.c |   58 ++++++++++++++++++++++++++++---------------------------
+ 1 file changed, 30 insertions(+), 28 deletions(-)
 
-Your current base commit 0429fbc0bdc2 is already part of the current 3.18 
-merge window - which Dave won't have in his tree I guess. The commit you 
-should base your patches on is bfe01a5ba249 - the 3.17 release.
-
-Simply do a
-	git checkout v3.17
-	git checkout -b drmupstream
-
-apply your patches and send the pull request with v3.17 as base.
-
-
-Heiko
-
-
-> 
-> The following changes since commit 0429fbc0bdc297d64188483ba029a23773ae07b0:
-> 
->    Merge branch 'for-3.18-consistent-ops' of
-> git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu (2014-10-15
-> 07:48:18 +0200)
-> 
-> are available in the git repository at:
-> 
-> 
->    https://github.com/markyzq/kernel-drm-rockchip.git drmupstream
-> 
-> for you to fetch changes up to f92714d79376a4168ea3ae0b13ccd0b90a640f35:
-> 
->    dt-bindings: video: Add documentation for rockchip vop (2014-10-17
-> 16:09:23 +0800)
-> 
-> ----------------------------------------------------------------
-> Mark yao (3):
->        drm: rockchip: Add basic drm driver
->        dt-bindings: video: Add for rockchip display subsytem
->        dt-bindings: video: Add documentation for rockchip vop
-> 
->   .../devicetree/bindings/video/rockchip-drm.txt     |   19 +
->   .../devicetree/bindings/video/rockchip-vop.txt     |   58 +
->   drivers/gpu/drm/Kconfig                            |    2 +
->   drivers/gpu/drm/Makefile                           |    1 +
->   drivers/gpu/drm/rockchip/Kconfig                   |   17 +
->   drivers/gpu/drm/rockchip/Makefile                  |    8 +
->   drivers/gpu/drm/rockchip/rockchip_drm_drv.c        |  449 ++++++
->   drivers/gpu/drm/rockchip/rockchip_drm_drv.h        |   54 +
->   drivers/gpu/drm/rockchip/rockchip_drm_fb.c         |  200 +++
->   drivers/gpu/drm/rockchip/rockchip_drm_fb.h         |   28 +
->   drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c      |  210 +++
->   drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h      |   20 +
->   drivers/gpu/drm/rockchip/rockchip_drm_gem.c        |  293 ++++
->   drivers/gpu/drm/rockchip/rockchip_drm_gem.h        |   54 +
->   drivers/gpu/drm/rockchip/rockchip_drm_vop.c        | 1427
-> ++++++++++++++++++++
->   drivers/gpu/drm/rockchip/rockchip_drm_vop.h        |  196 +++
->   16 files changed, 3036 insertions(+)
->   create mode 100644
-> Documentation/devicetree/bindings/video/rockchip-drm.txt
->   create mode 100644
-> Documentation/devicetree/bindings/video/rockchip-vop.txt
->   create mode 100644 drivers/gpu/drm/rockchip/Kconfig
->   create mode 100644 drivers/gpu/drm/rockchip/Makefile
->   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_drv.c
->   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_drv.h
->   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fb.c
->   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fb.h
->   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c
->   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h
->   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_gem.c
->   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_gem.h
->   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_vop.c
->   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_vop.h
+diff --git a/kernel/module.c b/kernel/module.c
+index 65586ff..b19ea41 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -158,13 +158,13 @@ static BLOCKING_NOTIFIER_HEAD(module_notify_list);
+  * Protected by module_mutex. */
+ static unsigned long module_addr_min = -1UL, module_addr_max = 0;
+ 
+-int register_module_notifier(struct notifier_block * nb)
++int register_module_notifier(struct notifier_block *nb)
+ {
+ 	return blocking_notifier_chain_register(&module_notify_list, nb);
+ }
+ EXPORT_SYMBOL(register_module_notifier);
+ 
+-int unregister_module_notifier(struct notifier_block * nb)
++int unregister_module_notifier(struct notifier_block *nb)
+ {
+ 	return blocking_notifier_chain_unregister(&module_notify_list, nb);
+ }
+@@ -740,8 +740,7 @@ static inline int try_force_unload(unsigned int flags)
+ }
+ #endif /* CONFIG_MODULE_FORCE_UNLOAD */
+ 
+-struct stopref
+-{
++struct stopref {
+ 	struct module *mod;
+ 	int flags;
+ 	int *forced;
+@@ -877,8 +876,10 @@ static inline void print_unload_info(struct seq_file *m, struct module *mod)
+ 
+ 	seq_printf(m, " %lu ", module_refcount(mod));
+ 
+-	/* Always include a trailing , so userspace can differentiate
+-           between this and the old multi-field proc format. */
++	/*
++	 * Always include a trailing , so userspace can differentiate
++	 * between this and the old multi-field proc format.
++	 */
+ 	list_for_each_entry(use, &mod->source_list, source_list) {
+ 		printed_something = 1;
+ 		seq_printf(m, "%s,", use->source->name);
+@@ -886,11 +887,11 @@ static inline void print_unload_info(struct seq_file *m, struct module *mod)
+ 
+ 	if (mod->init != NULL && mod->exit == NULL) {
+ 		printed_something = 1;
+-		seq_printf(m, "[permanent],");
++		seq_puts(m, "[permanent],");
+ 	}
+ 
+ 	if (!printed_something)
+-		seq_printf(m, "-");
++		seq_puts(m, "-");
+ }
+ 
+ void __symbol_put(const char *symbol)
+@@ -978,7 +979,7 @@ EXPORT_SYMBOL(module_put);
+ static inline void print_unload_info(struct seq_file *m, struct module *mod)
+ {
+ 	/* We don't know the usage count, or what modules are using. */
+-	seq_printf(m, " - -");
++	seq_puts(m, " - -");
+ }
+ 
+ static inline void module_unload_free(struct module *mod)
+@@ -1131,7 +1132,7 @@ static unsigned long maybe_relocated(unsigned long crc,
+ static int check_version(Elf_Shdr *sechdrs,
+ 			 unsigned int versindex,
+ 			 const char *symname,
+-			 struct module *mod, 
++			 struct module *mod,
+ 			 const unsigned long *crc,
+ 			 const struct module *crc_owner)
+ {
+@@ -1165,7 +1166,7 @@ static int check_version(Elf_Shdr *sechdrs,
+ 	return 0;
+ 
+ bad_version:
+-	printk("%s: disagrees about version of symbol %s\n",
++	pr_warn("%s: disagrees about version of symbol %s\n",
+ 	       mod->name, symname);
+ 	return 0;
+ }
+@@ -1200,7 +1201,7 @@ static inline int same_magic(const char *amagic, const char *bmagic,
+ static inline int check_version(Elf_Shdr *sechdrs,
+ 				unsigned int versindex,
+ 				const char *symname,
+-				struct module *mod, 
++				struct module *mod,
+ 				const unsigned long *crc,
+ 				const struct module *crc_owner)
+ {
+@@ -1288,15 +1289,13 @@ static inline bool sect_empty(const Elf_Shdr *sect)
+ 	return !(sect->sh_flags & SHF_ALLOC) || sect->sh_size == 0;
+ }
+ 
+-struct module_sect_attr
+-{
++struct module_sect_attr {
+ 	struct module_attribute mattr;
+ 	char *name;
+ 	unsigned long address;
+ };
+ 
+-struct module_sect_attrs
+-{
++struct module_sect_attrs {
+ 	struct attribute_group grp;
+ 	unsigned int nsections;
+ 	struct module_sect_attr attrs[0];
+@@ -1550,7 +1549,8 @@ static int module_add_modinfo_attrs(struct module *mod)
+ 		    (attr->test && attr->test(mod))) {
+ 			memcpy(temp_attr, attr, sizeof(*temp_attr));
+ 			sysfs_attr_init(&temp_attr->attr);
+-			error = sysfs_create_file(&mod->mkobj.kobj,&temp_attr->attr);
++			error = sysfs_create_file(&mod->mkobj.kobj,
++					&temp_attr->attr);
+ 			++temp_attr;
+ 		}
+ 	}
+@@ -1566,7 +1566,7 @@ static void module_remove_modinfo_attrs(struct module *mod)
+ 		/* pick a field to test for end of list */
+ 		if (!attr->attr.name)
+ 			break;
+-		sysfs_remove_file(&mod->mkobj.kobj,&attr->attr);
++		sysfs_remove_file(&mod->mkobj.kobj, &attr->attr);
+ 		if (attr->free)
+ 			attr->free(mod);
+ 	}
+@@ -1953,7 +1953,7 @@ static int simplify_symbols(struct module *mod, const struct load_info *info)
+ 			/* We compiled with -fno-common.  These are not
+ 			   supposed to happen.  */
+ 			pr_debug("Common symbol: %s\n", name);
+-			printk("%s: please compile with -fno-common\n",
++			pr_warn("%s: please compile with -fno-common\n",
+ 			       mod->name);
+ 			ret = -ENOEXEC;
+ 			break;
+@@ -2257,7 +2257,7 @@ static char elf_type(const Elf_Sym *sym, const struct load_info *info)
+ }
+ 
+ static bool is_core_symbol(const Elf_Sym *src, const Elf_Shdr *sechdrs,
+-                           unsigned int shnum)
++			unsigned int shnum)
+ {
+ 	const Elf_Shdr *sec;
+ 
+@@ -2733,7 +2733,7 @@ static int find_module_sections(struct module *mod, struct load_info *info)
+ 		 * This shouldn't happen with same compiler and binutils
+ 		 * building all parts of the module.
+ 		 */
+-		printk(KERN_WARNING "%s: has both .ctors and .init_array.\n",
++		pr_warn("%s: has both .ctors and .init_array.\n",
+ 		       mod->name);
+ 		return -EINVAL;
+ 	}
+@@ -3021,8 +3021,10 @@ static int do_init_module(struct module *mod)
+ 	if (mod->init != NULL)
+ 		ret = do_one_initcall(mod->init);
+ 	if (ret < 0) {
+-		/* Init routine failed: abort.  Try to protect us from
+-                   buggy refcounters. */
++		/*
++		 * Init routine failed: abort.  Try to protect us from
++		 * buggy refcounters.
++		 */
+ 		mod->state = MODULE_STATE_GOING;
+ 		synchronize_sched();
+ 		module_put(mod);
+@@ -3174,7 +3176,7 @@ out:
+ 
+ static int unknown_module_param_cb(char *param, char *val, const char *modname)
+ {
+-	/* Check for magic 'dyndbg' arg */ 
++	/* Check for magic 'dyndbg' arg */
+ 	int ret = ddebug_dyndbg_module_param_cb(param, val, modname);
+ 	if (ret != 0)
+ 		pr_warn("%s: unknown parameter '%s' ignored\n", modname, param);
+@@ -3657,8 +3659,8 @@ static int m_show(struct seq_file *m, void *p)
+ 
+ 	/* Informative for users. */
+ 	seq_printf(m, " %s",
+-		   mod->state == MODULE_STATE_GOING ? "Unloading":
+-		   mod->state == MODULE_STATE_COMING ? "Loading":
++		   mod->state == MODULE_STATE_GOING ? "Unloading" :
++		   mod->state == MODULE_STATE_COMING ? "Loading" :
+ 		   "Live");
+ 	/* Used by oprofile and other similar tools. */
+ 	seq_printf(m, " 0x%pK", mod->module_core);
+@@ -3667,7 +3669,7 @@ static int m_show(struct seq_file *m, void *p)
+ 	if (mod->taints)
+ 		seq_printf(m, " %s", module_flags(mod, buf));
+ 
+-	seq_printf(m, "\n");
++	seq_puts(m, "\n");
+ 	return 0;
+ }
+ 
+@@ -3816,7 +3818,7 @@ void print_modules(void)
+ 	struct module *mod;
+ 	char buf[8];
+ 
+-	printk(KERN_DEFAULT "Modules linked in:");
++	pr_warn("Modules linked in:");
+ 	/* Most callers should already have preempt disabled, but make sure */
+ 	preempt_disable();
+ 	list_for_each_entry_rcu(mod, &modules, list) {
+-- 
+1.7.10.4
 
