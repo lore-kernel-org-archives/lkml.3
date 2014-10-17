@@ -1,71 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752495AbaJQJUF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 05:20:05 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:64901 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752241AbaJQJUB (ORCPT
+	id S1751346AbaJQJ00 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 05:26:26 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:44196 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750867AbaJQJ0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 05:20:01 -0400
-Date: Fri, 17 Oct 2014 18:19:50 +0900
-From: Gyungoh Yoo <gyungoh@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: sameo@linux.intel.com, lee.jones@linaro.org, jg1.han@samsung.com,
-        cooloney@gmail.com, lgirdwood@gmail.com, jack.yoo@skyworksinc.com,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        grant.likely@linaro.org, robh+dt@kernel.org, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
-        shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
-        trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
-        jic23@kernel.org
-Subject: Re: [RESUBMIT PATCH v4 7/8] regulator: sky81452: Add compatible
- string for device binding
-Message-ID: <20141017091950.GA3233@jack-ThinkPad-T520>
-References: <1412657745-7812-1-git-send-email-jack.yoo@skyworksinc.com>
- <1413179262-27636-1-git-send-email-jack.yoo@skyworksinc.com>
- <1413179262-27636-8-git-send-email-jack.yoo@skyworksinc.com>
- <20141013103512.GJ27755@sirena.org.uk>
- <20141014011112.GB2751@jack-ThinkPad-T520>
- <20141014075606.GN27755@sirena.org.uk>
+	Fri, 17 Oct 2014 05:26:24 -0400
+Date: Fri, 17 Oct 2014 12:26:01 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-api@vger.kernel.org, Anup Patel <anup.patel@linaro.org>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>
+Subject: Re: [PATCH] staging: android: binder: move to the "real" part of the
+ kernel
+Message-ID: <20141017092601.GH23154@mwanda>
+References: <20141016124741.GA3832@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141014075606.GN27755@sirena.org.uk>
+In-Reply-To: <20141016124741.GA3832@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 14, 2014 at 09:56:06AM +0200, Mark Brown wrote:
-> On Tue, Oct 14, 2014 at 10:11:12AM +0900, Gyungoh Yoo wrote:
-> > On Mon, Oct 13, 2014 at 12:35:12PM +0200, Mark Brown wrote:
-> 
-> > > If you're doing anything here you should convert the code to use the
-> > > simplified interface for parsing regulator data based on putting the
-> > > subnode name and regualtor name in the regulator descriptor.
-> 
-> > Thank you for the review.
-> 
-> > The driver has of_device_id.
-> 
-> > static const struct of_device_id sky81452_reg_of_match[] = {
-> >         { .compatible = "skyworks,sky81452-regulator", },
-> >         { }
-> > };
-> 
-> > And the MFD adds the driver with of_compatible="skyworks,sky81452-regulator".
-> > MFD core maps the device node and the regulator driver does
-> > not need to parse the subnode name.
-> 
-> No, that's for the device (and as I say I don't think this is a good
-> idea).  I'm talking about the parsing of the constraints from the DT.
+The code isn't very beautiful and there are lots of details wrong like
+the error codes.
 
-Wow. I understand.
-I missed .supply_name. I think I need something like
-below, before devm_regulator_register().
+Al had some critical things to say about it but it looks like most of
+those issues have been fixed.
 
-	config->supply_name = init_data->constraints.name;
+regards,
+dan carpenter
 
-I will resubmit it.
-Thank you so much.
