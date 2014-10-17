@@ -1,42 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753197AbaJQElZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 00:41:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51334 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851AbaJQElX (ORCPT
+	id S1752977AbaJQEoT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 00:44:19 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:55869 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750936AbaJQEoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 00:41:23 -0400
-Date: Thu, 16 Oct 2014 21:42:40 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Vladimir Davydov <vdavydov@parallels.com>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
+	Fri, 17 Oct 2014 00:44:18 -0400
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Paul Zimmerman <paulz@synopsys.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [patch 4/5] mm: memcontrol: continue cache reclaim from
- offlined groups
-Message-Id: <20141016214240.ade3712f.akpm@linux-foundation.org>
-In-Reply-To: <20141017030221.GA8506@phnom.home.cmpxchg.org>
-References: <1413303637-23862-1-git-send-email-hannes@cmpxchg.org>
-	<1413303637-23862-5-git-send-email-hannes@cmpxchg.org>
-	<20141015152555.GI23547@dhcp22.suse.cz>
-	<20141017030221.GA8506@phnom.home.cmpxchg.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Subject: [PATCH v3 1/2] usb: dwc2: gadget: sparse warning of context imbalance
+Date: Fri, 17 Oct 2014 10:14:02 +0530
+Message-Id: <1413521043-7587-1-git-send-email-sudipm.mukherjee@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Oct 2014 23:02:21 -0400 Johannes Weiner <hannes@cmpxchg.org> wrote:
+sparse was giving the following warning:
+        warning: context imbalance in 's3c_hsotg_ep_enable'
+	                - different lock contexts for basic block
 
-> Andrew, could you update the changelog in place to have that paragraph
-> read
-> 
-> Since c2931b70a32c ("cgroup: iterate cgroup_subsys_states directly")
-> css iterators now also include offlined css, so memcg iterators can be
-> changed to include offlined children during reclaim of a group, and
-> leftover cache can just stay put.
+we were returning ENOMEM while still holding the spinlock.
+The sparse warning was fixed by releasing the spinlock before return.
 
-Done.
+Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+---
+ drivers/usb/dwc2/gadget.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
+index 7b5856f..7f25527 100644
+--- a/drivers/usb/dwc2/gadget.c
++++ b/drivers/usb/dwc2/gadget.c
+@@ -2561,8 +2561,10 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
+ 			hs_ep->fifo_size = val;
+ 			break;
+ 		}
+-		if (i == 8)
+-			return -ENOMEM;
++		if (i == 8) {
++			ret = -ENOMEM;
++			goto error;
++		}
+ 	}
+ 
+ 	/* for non control endpoints, set PID to D0 */
+@@ -2579,6 +2581,7 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
+ 	/* enable the endpoint interrupt */
+ 	s3c_hsotg_ctrl_epint(hsotg, index, dir_in, 1);
+ 
++error:
+ 	spin_unlock_irqrestore(&hsotg->lock, flags);
+ 	return ret;
+ }
+-- 
+1.8.1.2
+
