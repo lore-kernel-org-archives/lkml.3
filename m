@@ -1,111 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752086AbaJQKhw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 06:37:52 -0400
-Received: from mail-oi0-f43.google.com ([209.85.218.43]:64631 "EHLO
-	mail-oi0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751346AbaJQKhu (ORCPT
+	id S1752157AbaJQKnX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 06:43:23 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:43063 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751632AbaJQKnW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 06:37:50 -0400
+	Fri, 17 Oct 2014 06:43:22 -0400
+Date: Fri, 17 Oct 2014 19:43:09 +0900
+From: Gyungoh Yoo <gyungoh@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: sameo@linux.intel.com, lee.jones@linaro.org, jg1.han@samsung.com,
+        cooloney@gmail.com, lgirdwood@gmail.com, jack.yoo@skyworksinc.com,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        grant.likely@linaro.org, robh+dt@kernel.org, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
+        shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
+        trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
+        jic23@kernel.org
+Subject: Re: [RESUBMIT PATCH v4 7/8] regulator: sky81452: Add compatible
+ string for device binding
+Message-ID: <20141017104309.GA3136@jack-ThinkPad-T520>
+References: <1412657745-7812-1-git-send-email-jack.yoo@skyworksinc.com>
+ <1413179262-27636-1-git-send-email-jack.yoo@skyworksinc.com>
+ <1413179262-27636-8-git-send-email-jack.yoo@skyworksinc.com>
+ <20141013103512.GJ27755@sirena.org.uk>
+ <20141014011112.GB2751@jack-ThinkPad-T520>
+ <20141014075606.GN27755@sirena.org.uk>
+ <20141017091950.GA3233@jack-ThinkPad-T520>
+ <20141017101734.GB1820@sirena.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <1413541411-26609-1-git-send-email-keguang.zhang@gmail.com>
-References: <1413541411-26609-1-git-send-email-keguang.zhang@gmail.com>
-Date: Fri, 17 Oct 2014 16:07:50 +0530
-Message-ID: <CAKohponU38r6V_VvGz0bd_nXsNeZQy5=KYK2UGKAQxpey7q9cg@mail.gmail.com>
-Subject: Re: [PATCH V3 6/6] cpufreq: Loongson1: Add cpufreq driver for Loongson1B
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Kelvin Cheung <keguang.zhang@gmail.com>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-mips@linux-mips.org,
-        Ralf Baechle <ralf@linux-mips.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141017101734.GB1820@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 October 2014 15:53, Kelvin Cheung <keguang.zhang@gmail.com> wrote:
-> This patch adds cpufreq driver for Loongson1B which
-> is capable of changing the CPU frequency dynamically.
->
-> Signed-off-by: Kelvin Cheung <keguang.zhang@gmail.com>
->
-> ---
-> V3:
->    Remove superfluous devm_clk_put().
+On Fri, Oct 17, 2014 at 12:17:34PM +0200, Mark Brown wrote:
+> On Fri, Oct 17, 2014 at 06:19:50PM +0900, Gyungoh Yoo wrote:
+> 
+> > Wow. I understand.
+> > I missed .supply_name. I think I need something like
+> > below, before devm_regulator_register().
+> 
+> > 	config->supply_name = init_data->constraints.name;
+> 
+> > I will resubmit it.
+> 
+> No, not supply_name (though you really should be initializing that
+> anyway) and you definitely don't want to set supply_name to something
+> from constraints.  The supply_name should be the name of the input pin
+> that supplies power to the regulator.  I was referring to of_match and
+> regulators_node.
 
-Sorry for being bad to you :)
+Wow. I had misunderstanding.
 
-> +static int ls1x_cpufreq_probe(struct platform_device *pdev)
-> +{
-> +       struct plat_ls1x_cpufreq *pdata = pdev->dev.platform_data;
-> +       struct clk *clk;
-> +       int ret;
-> +
-> +       if (!pdata || !pdata->clk_name || !pdata->osc_clk_name)
-> +               return -EINVAL;
-> +
-> +       ls1x_cpufreq.dev = &pdev->dev;
-> +
-> +       clk = devm_clk_get(&pdev->dev, pdata->clk_name);
-> +       if (IS_ERR(clk)) {
-> +               dev_err(ls1x_cpufreq.dev, "unable to get %s clock\n",
-> +                       pdata->clk_name);
-> +               ret = PTR_ERR(clk);
-> +               goto out;
-> +       }
-> +       ls1x_cpufreq.clk = clk;
-> +
-> +       clk = clk_get_parent(clk);
-> +       if (IS_ERR(clk)) {
-> +               dev_err(ls1x_cpufreq.dev, "unable to get parent of %s clock\n",
-> +                       __clk_get_name(ls1x_cpufreq.clk));
-> +               ret = PTR_ERR(clk);
-> +               goto out;
-> +       }
-> +       ls1x_cpufreq.mux_clk = clk;
-> +
-> +       clk = clk_get_parent(clk);
-> +       if (IS_ERR(clk)) {
-> +               dev_err(ls1x_cpufreq.dev, "unable to get parent of %s clock\n",
-> +                       __clk_get_name(ls1x_cpufreq.mux_clk));
-> +               ret = PTR_ERR(clk);
-> +               goto out;
-> +       }
-> +       ls1x_cpufreq.pll_clk = clk;
-> +
-> +       clk = devm_clk_get(&pdev->dev, pdata->osc_clk_name);
-> +       if (IS_ERR(clk)) {
-> +               dev_err(ls1x_cpufreq.dev, "unable to get %s clock\n",
-> +                       pdata->osc_clk_name);
-> +               ret = PTR_ERR(clk);
-> +               goto out;
-> +       }
-> +       ls1x_cpufreq.osc_clk = clk;
-> +
-> +       ls1x_cpufreq.max_freq = pdata->max_freq;
-> +       ls1x_cpufreq.min_freq = pdata->min_freq;
-> +
-> +       ret = cpufreq_register_driver(&ls1x_cpufreq_driver);
-> +       if (ret) {
-> +               dev_err(ls1x_cpufreq.dev,
-> +                       "failed to register cpufreq driver: %d\n", ret);
-> +               goto out;
-> +       }
-> +
-> +       ret = cpufreq_register_notifier(&ls1x_cpufreq_notifier_block,
-> +                                       CPUFREQ_TRANSITION_NOTIFIER);
-> +
-> +       if (!ret)
-> +               goto out;
-> +
-> +       dev_err(ls1x_cpufreq.dev, "failed to register cpufreq notifier: %d\n",
-> +               ret);
-> +
-> +       cpufreq_unregister_driver(&ls1x_cpufreq_driver);
-> +out:
+Are you talking about simplification using of_regulator_match()?
+This driver has only one regulator.
+Is the API also useful for this driver?
+Like reg-fixed-voltage, how about using of_get_fixed_voltage_config()?
 
-But all these goto out; doesn't make sense anymore. Just issue returns
-from all places and add
+Thanks.
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
