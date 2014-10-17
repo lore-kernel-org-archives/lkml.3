@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045AbaJQUBo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 16:01:44 -0400
-Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:40117 "EHLO
-	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753826AbaJQUBm (ORCPT
+	id S1754068AbaJQUBz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 16:01:55 -0400
+Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:58065 "EHLO
+	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754047AbaJQUBx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 16:01:42 -0400
+	Fri, 17 Oct 2014 16:01:53 -0400
 X-Belgacom-Dynamic: yes
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvwSANF0QVRXQz/c/2dsb2JhbABbgw6BK7hjAQEBAQEBBQFzmicEAoEVFwF9hF8jgRo3iEMBvzyPCYYiiUdkHYQ1BZ1ZjGSJQYFHAYIxOy+BBoFFAQEB
+X-IronPort-Anti-Spam-Result: AhIOANF0QVRXQz/c/2dsb2JhbABbgw6BK7hjAQEBAQEBBQFzmi2BFRcBfYRfI4EaN4hDAb88jwmGIoorHYQ1BY9kjXWMZIlBgUcBgjE7L4JLAQEB
 From: Fabian Frederick <fabf@skynet.be>
 To: linux-kernel@vger.kernel.org
 Cc: Fabian Frederick <fabf@skynet.be>, "H. Peter Anvin" <hpa@zytor.com>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         x86@kernel.org
-Subject: [PATCH 2/4 linux-next] x86, msr: use PTR_ERR_OR_ZERO
-Date: Fri, 17 Oct 2014 22:01:38 +0200
-Message-Id: <1413576099-27059-1-git-send-email-fabf@skynet.be>
+Subject: [PATCH 3/4 linux-next] x86, msr: convert printk to pr_foo()
+Date: Fri, 17 Oct 2014 22:01:50 +0200
+Message-Id: <1413576110-27103-1-git-send-email-fabf@skynet.be>
 X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-replace IS_ERR/PTR_ERR
+Also define pr_fmt.
 
 Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- arch/x86/kernel/msr.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/msr.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/arch/x86/kernel/msr.c b/arch/x86/kernel/msr.c
-index f1f3ed0..5b14dac 100644
+index 5b14dac..1c66cd0 100644
 --- a/arch/x86/kernel/msr.c
 +++ b/arch/x86/kernel/msr.c
-@@ -206,7 +206,7 @@ static int msr_device_create(int cpu)
+@@ -22,6 +22,8 @@
+  * an SMP box will direct the access to CPU %d.
+  */
  
- 	dev = device_create(msr_class, NULL, MKDEV(MSR_MAJOR, cpu), NULL,
- 			    "msr%d", cpu);
--	return IS_ERR(dev) ? PTR_ERR(dev) : 0;
-+	return PTR_ERR_OR_ZERO(dev);
- }
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/module.h>
  
- static void msr_device_destroy(int cpu)
+ #include <linux/types.h>
+@@ -248,8 +250,7 @@ static int __init msr_init(void)
+ 	i = 0;
+ 
+ 	if (__register_chrdev(MSR_MAJOR, 0, NR_CPUS, "cpu/msr", &msr_fops)) {
+-		printk(KERN_ERR "msr: unable to get major %d for msr\n",
+-		       MSR_MAJOR);
++		pr_err("unable to get major %d for msr\n", MSR_MAJOR);
+ 		err = -EBUSY;
+ 		goto out;
+ 	}
 -- 
 1.9.3
 
