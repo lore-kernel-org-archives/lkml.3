@@ -1,96 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753076AbaJQPbm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 11:31:42 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:51233 "EHLO arroyo.ext.ti.com"
+	id S1753114AbaJQPfM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 11:35:12 -0400
+Received: from mail.efficios.com ([78.47.125.74]:48200 "EHLO mail.efficios.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752032AbaJQPbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 11:31:40 -0400
-Date: Fri, 17 Oct 2014 10:31:24 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-CC: Kishon Vijay Abraham I <kishon@ti.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <andrew.kim@intel.com>
-Subject: Re: [PATCHv4 1/6] phy: safer to_phy() macro
-Message-ID: <20141017153124.GO26260@saruman>
-Reply-To: <balbi@ti.com>
-References: <1413556756-5050-1-git-send-email-heikki.krogerus@linux.intel.com>
- <1413556756-5050-2-git-send-email-heikki.krogerus@linux.intel.com>
+	id S1752032AbaJQPfK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 11:35:10 -0400
+Date: Fri, 17 Oct 2014 15:35:01 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Matthew Wilcox <willy@linux.intel.com>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Message-ID: <289646725.10903.1413560101974.JavaMail.zimbra@efficios.com>
+In-Reply-To: <20141016194815.GD11522@wil.cx>
+References: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com> <1411677218-29146-5-git-send-email-matthew.r.wilcox@intel.com> <20141016091136.GC19075@thinkos.etherlink> <20141016194815.GD11522@wil.cx>
+Subject: Re: [PATCH v11 04/21] mm: Allow page fault handlers to perform the
+ COW
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nljfjKcp9HDtPSOP"
-Content-Disposition: inline
-In-Reply-To: <1413556756-5050-2-git-send-email-heikki.krogerus@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [62.156.150.204]
+X-Mailer: Zimbra 8.0.7_GA_6021 (ZimbraWebClient - FF32 (Linux)/8.0.7_GA_6021)
+Thread-Topic: Allow page fault handlers to perform the COW
+Thread-Index: 9j2fJEE5GPnbzn2qT7biLTrSnik4EQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nljfjKcp9HDtPSOP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+----- Original Message -----
+> From: "Matthew Wilcox" <willy@linux.intel.com>
+> To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
+> Cc: "Matthew Wilcox" <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+> linux-kernel@vger.kernel.org
+> Sent: Thursday, October 16, 2014 9:48:15 PM
+> Subject: Re: [PATCH v11 04/21] mm: Allow page fault handlers to perform the COW
+> 
+> On Thu, Oct 16, 2014 at 11:12:22AM +0200, Mathieu Desnoyers wrote:
+> > On 25-Sep-2014 04:33:21 PM, Matthew Wilcox wrote:
+[...]
+> > > diff --git a/include/linux/mm.h b/include/linux/mm.h
+> > > index 8981cc8..0a47817 100644
+> > > --- a/include/linux/mm.h
+> > > +++ b/include/linux/mm.h
+> > > @@ -208,6 +208,7 @@ struct vm_fault {
+> > >  	pgoff_t pgoff;			/* Logical page offset based on vma */
+> > >  	void __user *virtual_address;	/* Faulting virtual address */
+> > >  
+> > > +	struct page *cow_page;		/* Handler may choose to COW */
+> > 
+> > The page fault handler being very much performance sensitive, I'm
+> > wondering if it would not be better to move cow_page near the end of
+> > struct vm_fault, so that the "page" field can stay on the first
+> > cache line.
+> 
+> I think your mental arithmetic has an "off by double" there:
+> 
+> struct vm_fault {
+>         unsigned int               flags;                /*     0     4 */
+> 
+>         /* XXX 4 bytes hole, try to pack */
+> 
+>         long unsigned int          pgoff;                /*     8     8 */
+>         void *                     virtual_address;      /*    16     8 */
+>         struct page *              cow_page;             /*    24     8 */
+>         struct page *              page;                 /*    32     8 */
+>         long unsigned int          max_pgoff;            /*    40     8 */
+>         pte_t *                    pte;                  /*    48     8 */
+> 
+>         /* size: 56, cachelines: 1, members: 7 */
+>         /* sum members: 52, holes: 1, sum holes: 4 */
+>         /* last cacheline: 56 bytes */
+> };
 
-On Fri, Oct 17, 2014 at 05:39:11PM +0300, Heikki Krogerus wrote:
-> This makes to_phy() macro work with other variable names
-> besides "dev".
->=20
-> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> Tested-by: Vivek Gautam <gautam.vivek@samsung.com>
+Although it's pretty much always true that recent architectures L2 cache
+lines are 64 bytes, I was more thinking about L1 cache lines, which are,
+at least on moderately old Intel Pentium HW, 32 bytes in size (AFAIK
+Pentium II and III).
 
-Acked-by: Felipe Balbi <balbi@ti.com>
+It remains to be seen whether we care about performance that much on this
+kind of HW though.
 
-> ---
->  include/linux/phy/phy.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
-> index 8cb6f81..9fda683 100644
-> --- a/include/linux/phy/phy.h
-> +++ b/include/linux/phy/phy.h
-> @@ -110,7 +110,7 @@ struct phy_init_data {
->  	.port		=3D _port,				\
->  }
-> =20
-> -#define	to_phy(dev)	(container_of((dev), struct phy, dev))
-> +#define	to_phy(a)	(container_of((a), struct phy, dev))
-> =20
->  #define	of_phy_provider_register(dev, xlate)	\
->  	__of_phy_provider_register((dev), THIS_MODULE, (xlate))
-> --=20
-> 2.1.1
->=20
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> > > @@ -2000,6 +2000,7 @@ static int do_page_mkwrite(struct vm_area_struct
+> > > *vma, struct page *page,
+> > >  	vmf.pgoff = page->index;
+> > >  	vmf.flags = FAULT_FLAG_WRITE|FAULT_FLAG_MKWRITE;
+> > >  	vmf.page = page;
+> > > +	vmf.cow_page = NULL;
+> > 
+> > Could we add a FAULT_FLAG_COW_PAGE to vmf.flags, so we don't have to set
+> > cow_page to NULL in the common case (when it is not used) ?
+> 
+> I don't think we're short on bits, so I'm not opposed.  Any MM people
+> want to weigh in before I make this change?
 
---=20
-balbi
+Well since new HW seem to have standardized on 64-bytes L1 cache lines
+(recent Intel and ARM Cortex A7 and A15), perhaps it's not worth it. However
+I'd be curious if there are other architectures out there we care about
+performance-wise that still have 32-byte cache lines.
 
---nljfjKcp9HDtPSOP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Mathieu
 
-iQIcBAEBAgAGBQJUQTZMAAoJEIaOsuA1yqREyBYP/iOkwwc3v4ESxDoujcut0rTZ
-fJ8Vvaa42c014BpeQvS1I6ljWs2dnOSxJB1q+7JwjThpECtN8xjtB1c/lL8yoYL1
-HZwf/Sz+sUzHTEAUYGLTmAR2+cyXmkOnKlDYTsu9mwZJ6rMyVy6fteynxXbSj+VP
-wyhErgt1KMx0dswBdnUenKI6THBP93Gt3OeG9WjSTewkKFFgj5cDFi7qdOZzKiQP
-wXQ4hfpqutiY1+TIByXBjeXtYfNiYliRGzzjs6nM9EOO92FtVuePA1EEqgvgdCDy
-+g0NrGkcRSRd81AaICu3LIcnGPDjiz01iwofBjgfjRr3Jol5a2wrYNfXTckwk6xX
-Ym37o1jjqXX17BqV4O7cBJUqVgaSTo7ftaTZ+W1NaQ52eq15r3cqCnxhv9AGW7pt
-L0EcWn+Aj1N8NU+swBRxKxLPAm60YhLiZgWBBDWMU85Mh8T2OALL1OHUrSVwpXF+
-tyGoEuMrj8D0HosyzxuzgRSjYUmpWh7TTFjAxVOGMIGfowJMh1e8NUJ6vSNHgb/R
-RhY5zuiLh0kjDsps0D24iOwuj5Md4W1CA2NC0YmbGuS6VovpNNkhVrj8rYu835ZE
-AxVgxJlZ9ml4v1Hsjz9aBxzcfX8W1aUk5FeYw3gSRSYDl5w8lW6I0FifW/upjVWA
-aB69PBy5pWb2/ruVC0Ku
-=VBnb
------END PGP SIGNATURE-----
-
---nljfjKcp9HDtPSOP--
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
