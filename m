@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792AbaJQNVw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 09:21:52 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:55829 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751710AbaJQNVv (ORCPT
+	id S1752861AbaJQNWH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 09:22:07 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:40496 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581AbaJQNWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 09:21:51 -0400
-From: Nix <nix@esperi.org.uk>
-To: Johan Hovold <johan@kernel.org>
-Cc: Paul Martin <pm@debian.org>, Oliver Neukum <oliver@neukum.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [3.16.1 BISECTED REGRESSION]: Simtec Entropy Key (cdc-acm) broken in 3.16
-References: <878um4tg09.fsf@spindle.srvr.nix>
-	<1409569752.24385.12.camel@linux-fkkt.site>
-	<874mwnosz1.fsf@spindle.srvr.nix> <871tqe2zqt.fsf_-_@spindle.srvr.nix>
-	<20141011195108.GA8275@thinkpad.nowster.org.uk>
-	<87y4smz1l0.fsf@spindle.srvr.nix> <20141012185845.GB2786@localhost>
-	<878uklynq9.fsf@spindle.srvr.nix> <20141014083432.GB7958@localhost>
-Emacs: ... it's not just a way of life, it's a text editor!
-Date: Fri, 17 Oct 2014 14:21:35 +0100
-In-Reply-To: <20141014083432.GB7958@localhost> (Johan Hovold's message of
-	"Tue, 14 Oct 2014 10:34:32 +0200")
-Message-ID: <87k33yx25c.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.50 (gnu/linux)
+	Fri, 17 Oct 2014 09:22:04 -0400
+Date: Fri, 17 Oct 2014 06:22:02 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Christoph Hellwig <hch@infradead.org>, "hare@suse.de" <hare@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "jbottomley@parallels.com" <jbottomley@parallels.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH 0/2] Drivers: scsi: storvsc: Fix issues with
+ hot-add/remove of LUNs
+Message-ID: <20141017132202.GH16538@infradead.org>
+References: <1408244954-27417-1-git-send-email-kys@microsoft.com>
+ <20140925134726.GA26946@infradead.org>
+ <65593e832b5b4da184470799eac9e384@BY2PR0301MB0711.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-URT-Metrics: spindle 1060; Body=5 Fuz1=5 Fuz2=5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <65593e832b5b4da184470799eac9e384@BY2PR0301MB0711.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 Oct 2014, Johan Hovold outgrape:
-> Another thing you could try is to add back the 
->
-> 	acm_set_control(acm, 0);
->
-> just after the dev_info message in probe.
+On Tue, Oct 07, 2014 at 05:44:38PM +0000, KY Srinivasan wrote:
+> > So can anywayone give me a review for those two patches?
+> 
+> Did you get the reviews?
 
-"Add back" suggests that this line existed before this change. It
-didn't, as far as I can see. Probing has
+No.
 
-acm_set_control(acm, acm->ctrlout);
-
-*shutdown* has
-
-acm_set_control(acm, acm->ctrlout = 0);
-
-Did you mean that I should try adding back the acm_set_control() during
-shutdown, or the one during probe?
-
--- 
-NULL && (void)
