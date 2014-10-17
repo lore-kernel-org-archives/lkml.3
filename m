@@ -1,113 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647AbaJQIzU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 04:55:20 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:59842 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753588AbaJQIzP (ORCPT
+	id S1753633AbaJQI5n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 04:57:43 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60810 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753355AbaJQI5l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 04:55:15 -0400
-Date: Fri, 17 Oct 2014 10:55:09 +0200
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Maxim Patlasov <mpatlasov@parallels.com>, Anand Avati <avati@gluster.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michael j Theall <mtheall@us.ibm.com>,
-        fuse-devel <fuse-devel@lists.sourceforge.net>
-Subject: Re: [PATCH 0/5] fuse: handle release synchronously (v4)
-Message-ID: <20141017085509.GE5011@tucsk.piliscsaba.szeredi.hu>
-References: <CA+55aFwfTeoCJDs6RJg++0SY=SsPrn7Y_Y0Ag_TsNvd6Vsj1Eg@mail.gmail.com>
- <CAFboF2yhGyjk4e_CHQV5b2WvB-QhsWNyHvFiFG_OM_=3-KArLQ@mail.gmail.com>
- <CA+55aFwqAOGbQ-LYmD-aSALTyA0p9=0vNdsJWd+uweUQyzsW8w@mail.gmail.com>
- <20140930191933.GC5011@tucsk.piliscsaba.szeredi.hu>
- <CA+55aFyD2Q6tJzRUbNyNFRdbSN09SAN9CqC5BTmCtOu4W9PKGw@mail.gmail.com>
- <542BE551.1010705@parallels.com>
- <CAJfpegs4Up_feUbqEGxfhq+rZneTmy0qcZy-k3so7VjufQY7-w@mail.gmail.com>
- <543F9E75.2090509@parallels.com>
- <CAJfpegvS+rmFqGgvHq183Z-MxLAwcgEB57LQxAwy3QAe5CaVwg@mail.gmail.com>
- <CA+55aFw68DMazGSu=YaOVVEWp=_LrD+2abah+5Tq3kpmH-r+Hg@mail.gmail.com>
+	Fri, 17 Oct 2014 04:57:41 -0400
+Date: Fri, 17 Oct 2014 10:57:26 +0200
+From: Mark Brown <broonie@kernel.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        Vinod Koul <vinod.koul@intel.com>
+Message-ID: <20141017085726.GC3771@sirena.org.uk>
+References: <543feedb.9M0AZfu7MKIHlZcy%fengguang.wu@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="V88s5gaDVPzZ0KCq"
 Content-Disposition: inline
-In-Reply-To: <CA+55aFw68DMazGSu=YaOVVEWp=_LrD+2abah+5Tq3kpmH-r+Hg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <543feedb.9M0AZfu7MKIHlZcy%fengguang.wu@intel.com>
+X-Cookie: Avoid gunfire in the bathroom tonight.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 62.156.150.204
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: Intel: mrfld: fix semicolon.cocci warnings
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 03:54:42PM +0200, Linus Torvalds wrote:
-> On Thu, Oct 16, 2014 at 3:43 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> >
-> > One idea is to change ->flush() so it's responsible for fput()-ing the
-> > file.  That way we could take control of the actual refcount
-> > decrement.  There are only 20 flush instances in the tree, so it
-> > wouldn't be a huge change.
-> 
-> Since that *still* wouldn't fix the problem with the whole "count
-> elevated by other things" issue, I really don't want to hear about
-> these random broken hacks that are fundamentally broken crap.
 
-The problem with those "count elevated by other things" is that they are
-actually bugs.  Take the following test case (this is not made up, I really got
-bug reports agains something like this).
+--V88s5gaDVPzZ0KCq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-mount("/dev/foo", "/mnt");
-fd = creat("/mnt/bar");
-close(fd);
-umount("/mnt")
+On Fri, Oct 17, 2014 at 12:14:19AM +0800, Fengguang Wu wrote:
+> sound/soc/intel/sst-atom-controls.c:249:2-3: Unneeded semicolon
+> sound/soc/intel/sst-atom-controls.c:289:2-3: Unneeded semicolon
 
-If that umount fails with EBUSY, that's a bug, since we've released the only
-known resource we've opened on that mount.
+Applied, thanks.
 
-Now, if some completely unrelated "lsof" instance goes fishing in /proc, then
-that will be able to hold that release up, making the test fail.
+--V88s5gaDVPzZ0KCq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-And it's actually trivially fixable.  See attached patch.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Thanks,
-Miklos
+iQEcBAEBAgAGBQJUQNn2AAoJECTWi3JdVIfQfuMH/20NMRqJu4AC73ZUDiNmL4qO
+CPU60xhS5XpqQAKj+pCB5OrFN1STPMpoZqnh5yuiSw9Bn+aN75l6WxO+JICdxdwI
+oOOXyF5vY6Z7d+TYNzU5kFega2iMd2ayYK47fX16bjwllmqfmu+F7lu+OCNgweBN
++AuCpkwjHVvTrgp5nYBDstuFNLQTAqOPCB5/mNLUaOeXWGJeDlTojNhc3HaXjZVt
+cilIji54Fwqy333uMnxJtYVHmXWt0qyBy9kwg63mETllNltoG442dmwK6/Ig7PhA
+uVMuvDd9vFISslTPkjlKwWA/Uw9i1GDeNlbEpQw/f/jUKTDOT//1jpaSKofi2J0=
+=cHGd
+-----END PGP SIGNATURE-----
 
-diff --git a/fs/proc/fd.c b/fs/proc/fd.c
-index e11d7c590bb0..f8a67dafb04f 100644
---- a/fs/proc/fd.c
-+++ b/fs/proc/fd.c
-@@ -19,6 +19,8 @@ static int seq_show(struct seq_file *m, void *v)
- {
- 	struct files_struct *files = NULL;
- 	int f_flags = 0, ret = -ENOENT;
-+	loff_t f_pos;
-+	int mnt_id;
- 	struct file *file = NULL;
- 	struct task_struct *task;
- 
-@@ -41,7 +43,13 @@ static int seq_show(struct seq_file *m, void *v)
- 			if (close_on_exec(fd, fdt))
- 				f_flags |= O_CLOEXEC;
- 
--			get_file(file);
-+			f_pos = file->f_pos;
-+			mnt_id = real_mount(file->f_path.mnt)->mnt_id;
-+
-+			if (file->f_op->show_fdinfo)
-+				get_file(file);
-+			else
-+				file = NULL;
- 			ret = 0;
- 		}
- 		spin_unlock(&files->file_lock);
-@@ -50,11 +58,11 @@ static int seq_show(struct seq_file *m, void *v)
- 
- 	if (!ret) {
- 		seq_printf(m, "pos:\t%lli\nflags:\t0%o\nmnt_id:\t%i\n",
--			   (long long)file->f_pos, f_flags,
--			   real_mount(file->f_path.mnt)->mnt_id);
--		if (file->f_op->show_fdinfo)
-+			   (long long) f_pos, f_flags, mnt_id);
-+		if (file) {
- 			ret = file->f_op->show_fdinfo(m, file);
--		fput(file);
-+			fput(file);
-+		}
- 	}
- 
- 	return ret;
+--V88s5gaDVPzZ0KCq--
