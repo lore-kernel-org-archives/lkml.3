@@ -1,99 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200AbaJQPUk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 11:20:40 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:58925 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752451AbaJQPUi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 11:20:38 -0400
-Date: Fri, 17 Oct 2014 17:20:07 +0200
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Michal Hocko <mhocko@suse.cz>
-CC: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 4/5] mm: memcontrol: continue cache reclaim from offlined
- groups
-Message-ID: <20141017152007.GD16496@esperanza>
-References: <1413303637-23862-1-git-send-email-hannes@cmpxchg.org>
- <1413303637-23862-5-git-send-email-hannes@cmpxchg.org>
- <20141017084011.GC5641@esperanza>
- <20141017140022.GF8076@dhcp22.suse.cz>
+	id S1752883AbaJQPZN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 11:25:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41234 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751408AbaJQPZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 11:25:11 -0400
+Date: Fri, 17 Oct 2014 17:21:56 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH] kernel/kmod: fix use-after-free of the
+	sub_infostructure
+Message-ID: <20141017152156.GA6519@redhat.com>
+References: <20141016160042.7f898871@mschwide> <201410170157.AFH86961.FQtFHJVLOFSOOM@I-love.SAKURA.ne.jp> <20141016174209.GB18318@redhat.com> <201410170630.EBH48400.FSOHVQJOFMLtFO@I-love.SAKURA.ne.jp> <20141016215834.GA28864@redhat.com> <20141017093653.6fa60dff@mschwide>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141017140022.GF8076@dhcp22.suse.cz>
-X-Originating-IP: [88.152.235.95]
+In-Reply-To: <20141017093653.6fa60dff@mschwide>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 17, 2014 at 04:00:22PM +0200, Michal Hocko wrote:
-> On Fri 17-10-14 10:40:11, Vladimir Davydov wrote:
-> > On Tue, Oct 14, 2014 at 12:20:36PM -0400, Johannes Weiner wrote:
-> > > On cgroup deletion, outstanding page cache charges are moved to the
-> > > parent group so that they're not lost and can be reclaimed during
-> > > pressure on/inside said parent.  But this reparenting is fairly tricky
-> > > and its synchroneous nature has led to several lock-ups in the past.
-> > > 
-> > > Since css iterators now also include offlined css, memcg iterators can
-> > > be changed to include offlined children during reclaim of a group, and
-> > > leftover cache can just stay put.
-> > > 
-> > > There is a slight change of behavior in that charges of deleted groups
-> > > no longer show up as local charges in the parent.  But they are still
-> > > included in the parent's hierarchical statistics.
-> > > 
-> > > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > > ---
-> > >  mm/memcontrol.c | 218 +-------------------------------------------------------
-> > >  1 file changed, 1 insertion(+), 217 deletions(-)
-> > 
-> > I do like the stats :-) However, as I've already mentioned, on big
-> > machines we can end up with hundred of thousands of dead css's.
-> 
-> css->id is bound to the css life so this is bound to the maximum number
-> of allowed cgroups AFAIR. It is true that dead memcgs might block
-> creation of new. This is a good point. It would be a problem either when
-> there is no reclaim (global or memcg) or when groups are very short
-> lived. One possible way out would be counting dead memcgs and kick
-> background mem_cgroup_force_empty loop over those that are dead once we
-> hit a threshold. This should be pretty trivial to implement.
+On 10/17, Martin Schwidefsky wrote:
+>
+> On Thu, 16 Oct 2014 23:58:34 +0200
+> Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> > I also agree that the changelog could mention exec_mmap. Plus a comment
+> > about UMH_NO_WAIT && sub_info->complete == NULL. So yes, perhaps v2 makes
+> > sense if Martin agrees.
+>
+> Version 2 of the patch.
 
-Right, this shouldn't be a problem.
+Thanks!
 
-> > Iterating over all of them during reclaim may result in noticeable lags.
-> > One day we'll have to do something about that I guess.
-> >
-> > Another issue is that AFAICT currently we can't have more than 64K
-> > cgroups due to the MEM_CGROUP_ID_MAX limit.The limit exists, because we
-> > use css ids for tagging swap entries and we don't want to spend too much
-> > memory on this. May be, we should simply use the mem_cgroup pointer
-> > instead of the css id?
-> 
-> We are using the id to reduce the memory footprint. We cannot effort 8B
-> per each swappage (we can have GBs of swap space in the system).
+> All change requests have gone in except for the
+> mention of exec_mmap. I don't quite get the relevance of it, do_execve
+> can fail for the various reasons.
 
->From my experience nowadays most servers have much more RAM than swap
-space, that's why I'm wondering if it really makes any difference
-to have 2 bytes allocated per swap entry vs 8 bytes.
+Yes. But if it fails before exec_mmap() (which in particular calls
+mm_release()->complete_vfork_done()) we are safe; sub_info can't go away
+because the parent sleeps in sys_wait4() if UMH_WAIT_PROC, or it sleeps
+in wait_for_vfork_done() otherwise.
 
-> > OTOH, the reparenting code looks really ugly. And we can't easily
-> > reparent swap and kmem. So I think it's a reasonable change.
-> 
-> At least swap shouldn't be a big deal. Hugh already had a patch for
-> that. You would simply have to go over all swap entries and change the
-> id. kmem should be doable as well as you have already shown in your
-> patches. The main question is. Do we really need it? I think we are good
-> now and should make the code more complicated once this starts being a
-> practical problem.
+But this is minor, and this only relates to the changelog. So still/again
 
-For kmem it isn't that simple. We can't merge slab caches due to their
-high performance nature, so we have no choice rather having them hanging
-around after css death attached either to the dead css or some other
-intermediate structure (a kind of kmem context). But I agree there's no
-point bothering until nobody complains.
+Reviewed-by: Oleg Nesterov <oleg@redhat.com>
 
-Thanks,
-Vladimir
