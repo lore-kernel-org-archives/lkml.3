@@ -1,148 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753185AbaJQPKs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 11:10:48 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:58492 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752472AbaJQPKr (ORCPT
+	id S1752839AbaJQPPF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 11:15:05 -0400
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:55250 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751939AbaJQPPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 11:10:47 -0400
-Date: Fri, 17 Oct 2014 10:10:26 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Huang Rui <ray.huang@amd.com>
-CC: Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Vincent Wan <vincent.wan@amd.com>, Tony Li <tony.li@amd.com>,
-        <linux-usb@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 00/16] usb: dwc3: add support for AMD NL SoC
-Message-ID: <20141017151026.GN26260@saruman>
-Reply-To: <balbi@ti.com>
-References: <1413536021-4886-1-git-send-email-ray.huang@amd.com>
+	Fri, 17 Oct 2014 11:15:03 -0400
+From: Vince Weaver <vincent.weaver@maine.edu>
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Fri, 17 Oct 2014 11:21:41 -0400 (EDT)
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+Subject: Re: perf: 3.17 another perf_fuzzer lockup
+In-Reply-To: <alpine.DEB.2.11.1410171015540.15673@vincent-weaver-1.umelst.maine.edu>
+Message-ID: <alpine.DEB.2.11.1410171118090.15673@vincent-weaver-1.umelst.maine.edu>
+References: <alpine.DEB.2.11.1410061130100.11293@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.11.1410061151400.12313@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.11.1410151418570.3151@vincent-weaver-1.umelst.maine.edu>
+ <alpine.DEB.2.11.1410161723220.9124@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.11.1410171015540.15673@vincent-weaver-1.umelst.maine.edu>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/TUrtqMIkCP4YtJm"
-Content-Disposition: inline
-In-Reply-To: <1413536021-4886-1-git-send-email-ray.huang@amd.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---/TUrtqMIkCP4YtJm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 17 Oct 2014, Vince Weaver wrote:
 
-Hi,
+> Now to find out why this could happen.  Probably something to do with 
+> crazy RCU magic :(
 
-On Fri, Oct 17, 2014 at 04:53:25PM +0800, Huang Rui wrote:
-> The series of patches add AMD NL SoC support for DesignWare USB3 OTG
-> IP with PCI bus glue layer. This controller supported hibernation, LPM
-> erratum and used the 2.80a IP version and amd own phy. Current
-> implementation support both simulation and SoC platform. And already
-> tested with gadget zero and msc tool.  It works well on file storage
-> gadget.
+it looks like there's an unbalanced get_ctx() / put_ctx() here, as the
+software event context on the main process should not get decremented
+to 0 unless that process is exiting, yet it happens.
 
-patches look much, much nicer there are still a few things to fix. A
-global set of issues which I see:
+Maybe this is bisectable.  Hmmm.
 
-1) Let's get confirmation that all those quirks will be needed in
-production as well, I have a feeling quite a few of them won't be.
+[  106.781177] VMW: using pid 2941
+[  127.216558] ------------[ cut here ]------------
 
-2) All quirks should become 1-bit fields insteads of single-bits on a
-32-bit variable.
+And here's where ctx->refcount gets decremented to 0.
 
-3) All quirks should have DeviceTree counterparts. They should all
-become boolean properties should we can:
+[  127.221237] WARNING: CPU: 0 PID: 2941 at kernel/events/core.c:905 put_ctx+0x57/0x8e()
+[  127.256799] CPU: 0 PID: 2941 Comm: perf_fuzzer Not tainted 3.17.0+ #97
+[  127.263372] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BIOS 080015  10/19/2012
+[  127.272289]  0000000000000009 ffff8800cb107d98 ffffffff81530f3c 000000000000249e
+[  127.279954]  0000000000000000 ffff8800cb107dd8 ffffffff8104005d ffff8800cae4b750
+[  127.287621]  ffffffff810cf819 ffff8800cbb26400 ffff8800cae4b000 ffff8800cbb26410
+[  127.295285] Call Trace:
+[  127.297789]  [<ffffffff81530f3c>] dump_stack+0x46/0x58
+[  127.302980]  [<ffffffff8104005d>] warn_slowpath_common+0x81/0x9b
+[  127.309036]  [<ffffffff810cf819>] ? put_ctx+0x57/0x8e
+[  127.314134]  [<ffffffff8104011a>] warn_slowpath_null+0x1a/0x1c
+[  127.320022]  [<ffffffff810cf819>] put_ctx+0x57/0x8e
+[  127.324957]  [<ffffffff810cf898>] __free_event+0x48/0x71
+[  127.330326]  [<ffffffff8112bb01>] ? __d_free_external+0x29/0x4f
+[  127.336298]  [<ffffffff810d1311>] _free_event+0xd6/0xdb
+[  127.341585]  [<ffffffff810d13ee>] put_event+0xd8/0xe1
+[  127.346693]  [<ffffffff810d141e>] perf_release+0x15/0x19
+[  127.352062]  [<ffffffff8111cd7d>] __fput+0xf1/0x1a6
+[  127.356994]  [<ffffffff8111ce6a>] ____fput+0xe/0x10
+[  127.361931]  [<ffffffff81055402>] task_work_run+0x83/0x9a
+[  127.367389]  [<ffffffff810029ca>] do_notify_resume+0x5a/0x61
+[  127.373106]  [<ffffffff81536720>] int_signal+0x12/0x17
+[  127.378300] ---[ end trace 8508b4f6a48d2f87 ]---
 
-	dwc->tx_deemphasis_quirk =3D of_property_read_bool(node,
-		"snps,tx_deemphasis_quirk");
+and here a little later is when we try to add a new software event
+but it gets infinitely stuck.
 
-> These patches are generated on balbi/testing/next
->=20
-> Changes from v1 -> v2
-> - remove dual role function temporarily
-> - add pci quirk to avoid to bind with xhci driver
-> - distinguish between simulation board and soc
-> - break down all the special quirks
->=20
->=20
-> Patch 1:
-> - add PCI device id into pci bus glue
+[  127.385717] VMW: task->perf_event_ctxp[1]=ffff8800cbb26400, EAGAIN, ref=1
+[  127.392566] VMW: pmu->type=1 type=1 config=8 pid=2941
 
-this guy should be the last in the series, with all AMD quirks being
-enabled at once. This will avoid bisection points where AMD's platforms
-don't work.
 
-> Patch 2:
+Vince
 
-this should become as patch one :-)
-
-> - add PCI quirk to avoid to bind with xhci
->=20
-> Patch 3:
-> - enable hibernation
->=20
-> Patch 4:
-> - distinguish between simulation board and soc
->=20
-> Patch 5:
-> - add quirks flag to be compatible for kinds of soc
->=20
-> Patch 6 - 16:
-> - as felipe's suggestion, break down all the special quirks of amd nl
->=20
->=20
-> Patch set already passed all the MSC testing, detailed result is below:
->=20
-> root@hr-ub:/home/ray/felipe/usb-tools# ./msc.sh -o /dev/sdb1
-> test 0e: simple 64k read/write
-> test  0: sent      62.50 MB read      22.00 MB/s write      16.33 MB/s ..=
-=2E success
-
-Are you still running with VERBOSE_DEBUG on USB2 ? Here's what I get on
-USB2 connected to my PC with DWC3 running on a single-core cortex-a9
-board:
-
-$ ./msc -t0 -o /dev/sdh -s 65536 -c 5000
-test  0: sent     312.50 MB read      31.63 MB/s write      29.10 MB/s ... =
-success
-
-And with RAM as backend:
-
-$ ./msc -t0 -o /dev/sdh -s 65536 -c 5000
-test  0: sent     312.50 MB read      31.64 MB/s write      29.04 MB/s ... =
-success
-
-cheers
-
---=20
-balbi
-
---/TUrtqMIkCP4YtJm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUQTFiAAoJEIaOsuA1yqREpxYQAKb0mo7Peg3eyQgcm+bALpcq
-/x70lR7SJQRk9eSWuHA/VIJ5cBtTDYnwILAD6e4fT+1VGTMV6Z1raqi7GPMyWzv9
-sXHktZccJalLAhaRCLWL8kjAr1JzhvDB5mQ9vkNGcX94bx9rTaXbhyoDUgWKunj2
-inIei2pxqEZ/+yVrk6kh5G6C7YmQ4R+OUuCaB4Ix5t+hNrh/6labx6heSZfETcNC
-WjNesMnr/4BUyrDZr1wo++VJYl3z46ukjASLnlEzldMAJekbaSGS6sZALfUqADuD
-1BnYRAcmy3YvKD7lfBr2ocOSF50+1byM9SJZucId1iu3jSpdV7iOlkj0cikwZWa6
-Oony54PHJlNdTzbPyfDMJ08Gj7Sdog3wecyQjGkmfbGvbMDCbWVLvHMdL1bfZn6W
-CDMtRRYEi6w/dRPm+KiyIzYSR0hPt802D8gII916w2RBUq04/15y7AjSzk4frDZy
-YDOZoHSLbvie9/hg7IasnWt5yV2Xc2RQhHWiGuw/9O7tnHCehml9noppy7BjlOux
-7YR6+2KlguskKcTpbVawqjmgvPLnqeAysJ8BCAasTRJlvg7xGXYfU8IJ6MZpG87k
-vskHydbQNG8NV0L1mWTdNwjzMiwQdAJPwsox0CA3eX9d2WT/cteEJfQFczQtI6Ae
-YZFERZINKg3Ip8+6l9eX
-=0DTv
------END PGP SIGNATURE-----
-
---/TUrtqMIkCP4YtJm--
