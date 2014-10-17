@@ -1,64 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837AbaJQTX1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 15:23:27 -0400
-Received: from mga14.intel.com ([192.55.52.115]:7522 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753298AbaJQTXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 15:23:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="401998577"
-Message-ID: <54416CA2.2010701@linux.intel.com>
-Date: Fri, 17 Oct 2014 21:23:14 +0200
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>, devicetree@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Mark Rutland <mark.rutland@arm.com>
-Subject: Re: [PATCH v5 00/12] Add ACPI _DSD and unified device properties
- support
-References: <2660541.BycO7TFnA2@vostro.rjw.lan> <11223831.j9KAEfSQsY@vostro.rjw.lan> <20141017154007.GB29643@kroah.com>
-In-Reply-To: <20141017154007.GB29643@kroah.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	id S1753878AbaJQTbG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 15:31:06 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:40047 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753663AbaJQTbD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 15:31:03 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Florian Fainelli <f.fainelli@gmail.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH] dsa: Fix conversion from host device to mii bus
+Date: Fri, 17 Oct 2014 12:30:58 -0700
+Message-Id: <1413574258-21766-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit b4d2394d01bc ("dsa: Replace mii_bus with a generic host device")
+replaces mii_bus with a generic host_dev, and introduces
+dsa_host_dev_to_mii_bus() to support conversion from host_dev to mii_bus.
+However, in some cases it uses to_mii_bus to perform that conversion.
+Since host_dev is not the phy bus device but typically a platform device,
+this fails and results in a crash with the affected drivers.
 
+BUG: unable to handle kernel NULL pointer dereference at           (null)
+IP: [<ffffffff81781d35>] __mutex_lock_slowpath+0x75/0x100
+PGD 406783067 PUD 406784067 PMD 0
+Oops: 0002 [#1] SMP
+...
+Call Trace:
+[<ffffffff810a538b>] ? pick_next_task_fair+0x61b/0x880
+[<ffffffff81781de3>] mutex_lock+0x23/0x37
+[<ffffffff81533244>] mdiobus_read+0x34/0x60
+[<ffffffff8153b95a>] __mv88e6xxx_reg_read+0x8a/0xa0
+[<ffffffff8153b9bc>] mv88e6xxx_reg_read+0x4c/0xa0
 
-On 10/17/14 17:40, Greg Kroah-Hartman wrote:
-> On Fri, Oct 17, 2014 at 02:01:33PM +0200, Rafael J. Wysocki wrote:
->> Hi Everyone,
->>
->> Hving had a couple of chats with Grant and Arnd during LinuxCon EU/LPC, we
->> now have version 5 taking all feedback into account (hopefully).
->>
->> Changes have been made to patch [02/12] and to patches [09-12/12], although
->> in patches [10-12/12] they are fairly minor.  I have retained the Greg's
->> ACK on patch [02/12], because it is essentially the same that have been
->> posted aleady and ACKed by him (Greg, please let me know if I shouldn't
->> do that) and all the ACKs on the remaining patches except for patch [09/12]
->> which is substantially different.  Still, if reviewers think that their
->> ACKs don't apply any more, please let me know and I'll remove them.
-> 
-> No objection from me to keep my ACK on those patches, thanks for asking.
-> 
-> greg k-h
-> 
+Fixes: b4d2394d01bc ("dsa: Replace mii_bus with a generic host device")
+Cc: Alexander Duyck <alexander.h.duyck@intel.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ drivers/net/dsa/mv88e6060.c | 16 ++++++++++++----
+ drivers/net/dsa/mv88e6xxx.c | 14 ++++++++++----
+ 2 files changed, 22 insertions(+), 8 deletions(-)
 
-Mine certainly still apply as well.
-
+diff --git a/drivers/net/dsa/mv88e6060.c b/drivers/net/dsa/mv88e6060.c
+index 776e965..05b0ca3 100644
+--- a/drivers/net/dsa/mv88e6060.c
++++ b/drivers/net/dsa/mv88e6060.c
+@@ -21,8 +21,12 @@
+ 
+ static int reg_read(struct dsa_switch *ds, int addr, int reg)
+ {
+-	return mdiobus_read(to_mii_bus(ds->master_dev),
+-			    ds->pd->sw_addr + addr, reg);
++	struct mii_bus *bus = dsa_host_dev_to_mii_bus(ds->master_dev);
++
++	if (bus == NULL)
++		return -EINVAL;
++
++	return mdiobus_read(bus, ds->pd->sw_addr + addr, reg);
+ }
+ 
+ #define REG_READ(addr, reg)					\
+@@ -38,8 +42,12 @@ static int reg_read(struct dsa_switch *ds, int addr, int reg)
+ 
+ static int reg_write(struct dsa_switch *ds, int addr, int reg, u16 val)
+ {
+-	return mdiobus_write(to_mii_bus(ds->master_dev),
+-			     ds->pd->sw_addr + addr, reg, val);
++	struct mii_bus *bus = dsa_host_dev_to_mii_bus(ds->master_dev);
++
++	if (bus == NULL)
++		return -EINVAL;
++
++	return mdiobus_write(bus, ds->pd->sw_addr + addr, reg, val);
+ }
+ 
+ #define REG_WRITE(addr, reg, val)				\
+diff --git a/drivers/net/dsa/mv88e6xxx.c b/drivers/net/dsa/mv88e6xxx.c
+index d6f6428..a6c90cf 100644
+--- a/drivers/net/dsa/mv88e6xxx.c
++++ b/drivers/net/dsa/mv88e6xxx.c
+@@ -75,11 +75,14 @@ int __mv88e6xxx_reg_read(struct mii_bus *bus, int sw_addr, int addr, int reg)
+ int mv88e6xxx_reg_read(struct dsa_switch *ds, int addr, int reg)
+ {
+ 	struct mv88e6xxx_priv_state *ps = ds_to_priv(ds);
++	struct mii_bus *bus = dsa_host_dev_to_mii_bus(ds->master_dev);
+ 	int ret;
+ 
++	if (bus == NULL)
++		return -EINVAL;
++
+ 	mutex_lock(&ps->smi_mutex);
+-	ret = __mv88e6xxx_reg_read(to_mii_bus(ds->master_dev),
+-				   ds->pd->sw_addr, addr, reg);
++	ret = __mv88e6xxx_reg_read(bus, ds->pd->sw_addr, addr, reg);
+ 	mutex_unlock(&ps->smi_mutex);
+ 
+ 	return ret;
+@@ -119,11 +122,14 @@ int __mv88e6xxx_reg_write(struct mii_bus *bus, int sw_addr, int addr,
+ int mv88e6xxx_reg_write(struct dsa_switch *ds, int addr, int reg, u16 val)
+ {
+ 	struct mv88e6xxx_priv_state *ps = ds_to_priv(ds);
++	struct mii_bus *bus = dsa_host_dev_to_mii_bus(ds->master_dev);
+ 	int ret;
+ 
++	if (bus == NULL)
++		return -EINVAL;
++
+ 	mutex_lock(&ps->smi_mutex);
+-	ret = __mv88e6xxx_reg_write(to_mii_bus(ds->master_dev),
+-				    ds->pd->sw_addr, addr, reg, val);
++	ret = __mv88e6xxx_reg_write(bus, ds->pd->sw_addr, addr, reg, val);
+ 	mutex_unlock(&ps->smi_mutex);
+ 
+ 	return ret;
 -- 
-Darren Hart
-Intel Open Source Technology Center
+1.9.1
+
