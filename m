@@ -1,84 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352AbaJQNOn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 09:14:43 -0400
-Received: from mail.logicbricks.com ([89.201.165.134]:17285 "EHLO
-	mail.logicbricks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752808AbaJQNM4 (ORCPT
+	id S1753384AbaJQNOu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 09:14:50 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:52177 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752540AbaJQNOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 09:12:56 -0400
-From: Davor Joja <davorjoja@logicbricks.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Davor Joja <davorjoja@logicbricks.com>
-Subject: [PATCH 06/10] fbdev: xylon: Framebuffer driver kernel and make configuration
-Date: Fri, 17 Oct 2014 15:06:57 +0200
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1413551221-15187-1-git-send-email-davorjoja@logicbricks.com>
-References: <1413551221-15187-1-git-send-email-davorjoja@logicbricks.com>
+	Fri, 17 Oct 2014 09:14:48 -0400
+Message-ID: <54411642.3050903@roeck-us.net>
+Date: Fri, 17 Oct 2014 06:14:42 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.168.0.95]
-Message-ID: <b471b4a8-074e-4cea-8be0-630d4f75b7bf@mail.xylon.local>
+To: Jiri Slaby <jslaby@suse.cz>, stable@vger.kernel.org
+CC: satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3.12 000/197] 3.12.31-stable review
+References: <cover.1413533329.git.jslaby@suse.cz>
+In-Reply-To: <cover.1413533329.git.jslaby@suse.cz>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020209.54411647.0286,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 1
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Driver kernel and build configuration.
+On 10/17/2014 01:11 AM, Jiri Slaby wrote:
+> This is the start of the stable review cycle for the 3.12.31 release.
+> There are 197 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Tue Oct 21 10:08:49 CEST 2014.
+> Anything received after that time might be too late.
+>
 
-Signed-off-by: Davor Joja <davorjoja@logicbricks.com>
----
- drivers/video/fbdev/xylon/Kconfig  | 31 +++++++++++++++++++++++++++++++
- drivers/video/fbdev/xylon/Makefile |  3 +++
- 2 files changed, 34 insertions(+)
- create mode 100644 drivers/video/fbdev/xylon/Kconfig
- create mode 100644 drivers/video/fbdev/xylon/Makefile
+Jiri,
 
-diff --git a/drivers/video/fbdev/xylon/Kconfig b/drivers/video/fbdev/xylon/Kconfig
-new file mode 100644
-index 0000000..74278ad
---- /dev/null
-+++ b/drivers/video/fbdev/xylon/Kconfig
-@@ -0,0 +1,31 @@
-+menuconfig FB_XYLON
-+	tristate "Xylon logiCVC frame buffer support"
-+	depends on FB
-+	default n
-+	select FB_CFB_FILLRECT
-+	select FB_CFB_COPYAREA
-+	select FB_CFB_IMAGEBLIT
-+	select FB_MODE_HELPERS
-+	select VIDEOMODE_HELPERS
-+	help
-+	  Choose this option if you want to use the Xylon logiCVC as frame
-+	  buffer device. Without the support of PCI & AGP.
-+
-+config FB_XYLON_PIXCLK
-+	bool "Xylon logiCVC pixel clock"
-+	depends on FB_XYLON
-+	default n
-+	help
-+	  logiCVC pixel clock generated from:
-+	  - External generator not controllable by Xylon framebuffer driver
-+	    This is default selection.
-+	  - Generators controllable by Xylon framebuffer driver
-+
-+config FB_XYLON_PIXCLK_LOGICLK
-+	bool "Xylon logiCLK pixel clock generator"
-+	depends on FB_XYLON && FB_XYLON_PIXCLK
-+	default n
-+	select COMMON_CLK_LOGICLK
-+	help
-+	  Support for controlling pixel clock generation from
-+	  Xylon logiCLK FGPA IP core.
-diff --git a/drivers/video/fbdev/xylon/Makefile b/drivers/video/fbdev/xylon/Makefile
-new file mode 100644
-index 0000000..3baa96a
---- /dev/null
-+++ b/drivers/video/fbdev/xylon/Makefile
-@@ -0,0 +1,3 @@
-+xylonfb-y := xylonfb_main.o xylonfb_core.o xylonfb_ioctl.o xylonfb_pixclk.o
-+
-+obj-$(CONFIG_FB_XYLON) += xylonfb.o
--- 
-1.9.1
+my auto-builder tries to pull the patches from branch stable-3.12-queue of
+git://git.kernel.org/pub/scm/linux/kernel/git/jirislaby/linux-stable.git.
+
+Only this time it isn't there. Do you have a new location ?
+
+Thanks,
+Guenter
 
