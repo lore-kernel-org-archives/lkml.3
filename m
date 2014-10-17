@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813AbaJQMDh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 08:03:37 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:53018 "HELO
+	id S1752953AbaJQMEF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 08:04:05 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:52425 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751922AbaJQMDa (ORCPT
+	with SMTP id S1752721AbaJQMDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 08:03:30 -0400
+	Fri, 17 Oct 2014 08:03:36 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
         ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         Aaron Lu <aaron.lu@intel.com>, devicetree@vger.kernel.org,
         Linus Walleij <linus.walleij@linaro.org>,
@@ -19,12 +19,12 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Bryan Wu <cooloney@gmail.com>, Darren Hart <dvhart@linux.intel.com>,
         Mark Rutland <mark.rutland@arm.com>
-Subject: [PATCH v5 10/12] gpio: Support for unified device properties interface
-Date: Fri, 17 Oct 2014 14:16 +0200
-Message-ID: <1510578.dSiEYPPI9m@vostro.rjw.lan>
+Subject: [PATCH v5 00/12] Add ACPI _DSD and unified device properties support
+Date: Fri, 17 Oct 2014 14:01:33 +0200
+Message-ID: <11223831.j9KAEfSQsY@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <11223831.j9KAEfSQsY@vostro.rjw.lan>
-References: <2660541.BycO7TFnA2@vostro.rjw.lan> <11223831.j9KAEfSQsY@vostro.rjw.lan>
+In-Reply-To: <2660541.BycO7TFnA2@vostro.rjw.lan>
+References: <2660541.BycO7TFnA2@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -32,160 +32,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
+Hi Everyone,
 
-Some drivers need to deal with only firmware representation of its
-GPIOs. An example would be a GPIO button array driver where each button
-is described as a separate firmware node in device tree. Typically these
-child nodes do not have physical representation in the Linux device
-model.
+Hving had a couple of chats with Grant and Arnd during LinuxCon EU/LPC, we
+now have version 5 taking all feedback into account (hopefully).
 
-In order to help device drivers to handle such firmware child nodes we
-add dev[m]_get_named_gpiod_from_child() that takes a child firmware
-node pointer as its second argument (the first one is the parent device
-itself), finds the GPIO using whatever is the underlying firmware
-method, and requests the GPIO properly.
+Changes have been made to patch [02/12] and to patches [09-12/12], although
+in patches [10-12/12] they are fairly minor.  I have retained the Greg's
+ACK on patch [02/12], because it is essentially the same that have been
+posted aleady and ACKed by him (Greg, please let me know if I shouldn't
+do that) and all the ACKs on the remaining patches except for patch [09/12]
+which is substantially different.  Still, if reviewers think that their
+ACKs don't apply any more, please let me know and I'll remove them.
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Acked-by: Alexandre Courbot <acourbot@nvidia.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/gpio/devres.c         |   36 +++++++++++++++++++++++++++
- drivers/gpio/gpiolib.c        |   56 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/gpio/consumer.h |    8 ++++++
- 3 files changed, 100 insertions(+)
+Patch [02/12] now contains helper functions for all proprerty data types
+that can be accessed which call the existing of_ functions, because Grant
+preferred that.
 
-Index: linux-pm/drivers/gpio/devres.c
-===================================================================
---- linux-pm.orig/drivers/gpio/devres.c
-+++ linux-pm/drivers/gpio/devres.c
-@@ -109,6 +109,42 @@ struct gpio_desc *__must_check __devm_gp
- EXPORT_SYMBOL(__devm_gpiod_get_index);
- 
- /**
-+ * devm_get_named_gpiod_from_child - managed dev_get_named_gpiod_from_child()
-+ * @dev:	GPIO consumer
-+ * @child:	firmware node (child of @dev)
-+ * @propname:	name of the firmware property
-+ * @index:	index of the GPIO in the property value in case of many
-+ *
-+ * GPIO descriptors returned from this function are automatically disposed on
-+ * driver detach.
-+ */
-+struct gpio_desc *devm_get_named_gpiod_from_child(struct device *dev,
-+						  struct fwnode_handle *child,
-+						  const char *propname,
-+						  int index)
-+{
-+	struct gpio_desc **dr;
-+	struct gpio_desc *desc;
-+
-+	dr = devres_alloc(devm_gpiod_release, sizeof(struct gpio_desc *),
-+			  GFP_KERNEL);
-+	if (!dr)
-+		return ERR_PTR(-ENOMEM);
-+
-+	desc = fwnode_get_named_gpiod(child, propname, index);
-+	if (IS_ERR(desc)) {
-+		devres_free(dr);
-+		return desc;
-+	}
-+
-+	*dr = desc;
-+	devres_add(dev, dr);
-+
-+	return desc;
-+}
-+EXPORT_SYMBOL(devm_get_named_gpiod_from_child);
-+
-+/**
-  * devm_gpiod_get_index_optional - Resource-managed gpiod_get_index_optional()
-  * @dev: GPIO consumer
-  * @con_id: function within the GPIO consumer
-Index: linux-pm/drivers/gpio/gpiolib.c
-===================================================================
---- linux-pm.orig/drivers/gpio/gpiolib.c
-+++ linux-pm/drivers/gpio/gpiolib.c
-@@ -1735,6 +1735,62 @@ struct gpio_desc *__must_check __gpiod_g
- EXPORT_SYMBOL_GPL(__gpiod_get_index);
- 
- /**
-+ * fwnode_get_named_gpiod - obtain a GPIO from firmware node
-+ * @fwnode:	handle of the firmware node
-+ * @propname:	name of the firmware property
-+ * @idx:	index of the GPIO in the property value in case of many
-+ *
-+ * This function can be used for drivers that get their configuration
-+ * from firmware.
-+ *
-+ * Function properly finds the corresponding GPIO using whatever is the
-+ * underlying firmware interface and then makes sure that the GPIO
-+ * descriptor is requested before it is returned to the caller.
-+ *
-+ * In case of error an ERR_PTR() is returned.
-+ */
-+struct gpio_desc *fwnode_get_named_gpiod(struct fwnode_handle *fwnode,
-+					 const char *propname, int index)
-+{
-+	struct gpio_desc *desc = ERR_PTR(-ENODEV);
-+	bool active_low = false;
-+	int ret;
-+
-+	if (!fwnode)
-+		return ERR_PTR(-EINVAL);
-+
-+	if (is_of_node(fwnode)) {
-+		enum of_gpio_flags flags;
-+
-+		desc = of_get_named_gpiod_flags(of_node(fwnode), propname,
-+						index, &flags);
-+		if (!IS_ERR(desc))
-+			active_low = flags & OF_GPIO_ACTIVE_LOW;
-+	} else if (is_acpi_node(fwnode)) {
-+		struct acpi_gpio_info info;
-+
-+		desc = acpi_get_gpiod_by_index(acpi_node(fwnode), propname,
-+					       index, &info);
-+		if (!IS_ERR(desc))
-+			active_low = info.active_low;
-+	}
-+
-+	if (IS_ERR(desc))
-+		return desc;
-+
-+	ret = gpiod_request(desc, NULL);
-+	if (ret)
-+		return ERR_PTR(ret);
-+
-+	/* Only value flag can be set from both DT and ACPI is active_low */
-+	if (active_low)
-+		set_bit(FLAG_ACTIVE_LOW, &desc->flags);
-+
-+	return desc;
-+}
-+EXPORT_SYMBOL_GPL(fwnode_get_named_gpiod);
-+
-+/**
-  * gpiod_get_index_optional - obtain an optional GPIO from a multi-index GPIO
-  *                            function
-  * @dev: GPIO consumer, can be NULL for system-global GPIOs
-Index: linux-pm/include/linux/gpio/consumer.h
-===================================================================
---- linux-pm.orig/include/linux/gpio/consumer.h
-+++ linux-pm/include/linux/gpio/consumer.h
-@@ -94,6 +94,14 @@ int gpiod_to_irq(const struct gpio_desc
- struct gpio_desc *gpio_to_desc(unsigned gpio);
- int desc_to_gpio(const struct gpio_desc *desc);
- 
-+/* Child properties interface */
-+struct fwnode_handle;
-+
-+struct gpio_desc *fwnode_get_named_gpiod(struct fwnode_handle *fwnode,
-+					 const char *propname, int index);
-+struct gpio_desc *devm_get_named_gpiod_from_child(struct device *dev,
-+						  struct fwnode_handle *child,
-+						  const char *propname, int index);
- #else /* CONFIG_GPIOLIB */
- 
- static inline struct gpio_desc *__must_check __gpiod_get(struct device *dev,
+Patch [09/12] introduces quite a new concept, which is the struct fwnode_handle
+structure containing one field (type) and embedded in struct device_node
+(type==FWNODE_OF) and struct acpi_device (type==FWNODE_ACPI).  In short, if
+we are passed a struct fwnode_handle pointer, we can get from it to the
+appropriate device node pointer (either struct acpi_device or struct device_node)
+using container_of() after we've checked the type.  This is needed for the code
+that needs to access child nodes of a device in case when they don't have
+struct device representations (whatever the reason).  This has been suggested
+by Grant and pretty much everyone involved agrees that it's better that the
+alternatives presented so far.
 
+For completeness, the previous cover letter is appended below.
+
+Rafael
+
+
+On Tuesday, October 07, 2014 02:10:56 AM Rafael J. Wysocki wrote:
+> Hi Everyone,
+> 
+> This is version 4 of the unified device properties interface patchset.
+> 
+> The original cover letter from Mika is here:
+> 
+> http://marc.info/?l=devicetree&m=141087052200600&w=4
+> 
+> My cover letter for version 3 is here:
+> 
+> http://marc.info/?l=linux-acpi&m=141212903816560&w=4
+> 
+> One major change from the previous iteration is that now we will
+> use the "compatible" property to match drivers to devices having
+> "PRP0001" as their _HID, so for example the at25 driver doesn't
+> have to add the extra ACPI match table as part of the conversion
+> to the unified interface (patch [05/13] in this series).
+> 
+> The second major change is that I've split the driver core patch
+> in two, where the first one ([02/13]) does not contain any stuff
+> related to iterating over the child nodes of a given device.
+> Accordingly, the whole patch series has been rearranged so that
+> the relatively non-controversial patches [01-09/13], most of which
+> have been ACKed already, go first and then goes the second driver
+> core patch ([10/13]) and the other patches related to it.
+> 
+> In patches [10-13/13] I used the Arnd's suggestion to implement
+> device_for_each_child_node() as a macro which makes the changes
+> in patches [12-13/13] look more straightforward among other things.
+> 
+> I've retained the Greg's ACKs on patches [02/13] and [10/13], because
+> the first of them is things ACKed by Greg only and the change in the
+> second one is just an implementation detail in my opinion (Greg, please
+> let me know if that's inappropriate).
+> 
+> Thanks!
+> 
+> 
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
