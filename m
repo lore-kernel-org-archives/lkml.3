@@ -1,239 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882AbaJQI0L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 04:26:11 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:37242 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750835AbaJQI0G (ORCPT
+	id S1753941AbaJQI0t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 04:26:49 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:46185 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753900AbaJQI0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 04:26:06 -0400
-From: Ionut Alexa <ionut.m.alexa@gmail.com>
-To: rusty@rustcorp.com.au
-Cc: linux-kernel@vger.kernel.org, Ionut Alexa <ionut.m.alexa@gmail.com>
-Subject: [PATCH] kernel:module Fix coding style errors and warnings.
-Date: Fri, 17 Oct 2014 11:32:51 +0300
-Message-Id: <1413534771-746-1-git-send-email-ionut.m.alexa@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 17 Oct 2014 04:26:43 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>, Chris Ball <chris@printf.net>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv2 0/3] Remove mach/atmel-mci.h
+Date: Fri, 17 Oct 2014 10:26:35 +0200
+Message-Id: <1413534398-22645-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed codin style errors and warnings. Changes printk with
-print_debug/warn. Changed seq_printf to seq_puts.
+This patch series removes the uses of mach/atmel-mci.h and the files themselves.
+The final goal is to be able to switch AT91 to multiplatform.
 
-Signed-off-by: Ionut Alexa <ionut.m.alexa@gmail.com>
----
- kernel/module.c |   58 ++++++++++++++++++++++++++++---------------------------
- 1 file changed, 30 insertions(+), 28 deletions(-)
+The first patch introduces a new platform_data file and uses it in the driver.
+The two following patches remove the uses of mach/atmel-mci.h and the header
+itself from avR32 and ARM/at91.
 
-diff --git a/kernel/module.c b/kernel/module.c
-index 65586ff..b19ea41 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -158,13 +158,13 @@ static BLOCKING_NOTIFIER_HEAD(module_notify_list);
-  * Protected by module_mutex. */
- static unsigned long module_addr_min = -1UL, module_addr_max = 0;
- 
--int register_module_notifier(struct notifier_block * nb)
-+int register_module_notifier(struct notifier_block *nb)
- {
- 	return blocking_notifier_chain_register(&module_notify_list, nb);
- }
- EXPORT_SYMBOL(register_module_notifier);
- 
--int unregister_module_notifier(struct notifier_block * nb)
-+int unregister_module_notifier(struct notifier_block *nb)
- {
- 	return blocking_notifier_chain_unregister(&module_notify_list, nb);
- }
-@@ -740,8 +740,7 @@ static inline int try_force_unload(unsigned int flags)
- }
- #endif /* CONFIG_MODULE_FORCE_UNLOAD */
- 
--struct stopref
--{
-+struct stopref {
- 	struct module *mod;
- 	int flags;
- 	int *forced;
-@@ -877,8 +876,10 @@ static inline void print_unload_info(struct seq_file *m, struct module *mod)
- 
- 	seq_printf(m, " %lu ", module_refcount(mod));
- 
--	/* Always include a trailing , so userspace can differentiate
--           between this and the old multi-field proc format. */
-+	/*
-+	 * Always include a trailing , so userspace can differentiate
-+	 * between this and the old multi-field proc format.
-+	 */
- 	list_for_each_entry(use, &mod->source_list, source_list) {
- 		printed_something = 1;
- 		seq_printf(m, "%s,", use->source->name);
-@@ -886,11 +887,11 @@ static inline void print_unload_info(struct seq_file *m, struct module *mod)
- 
- 	if (mod->init != NULL && mod->exit == NULL) {
- 		printed_something = 1;
--		seq_printf(m, "[permanent],");
-+		seq_puts(m, "[permanent],");
- 	}
- 
- 	if (!printed_something)
--		seq_printf(m, "-");
-+		seq_puts(m, "-");
- }
- 
- void __symbol_put(const char *symbol)
-@@ -978,7 +979,7 @@ EXPORT_SYMBOL(module_put);
- static inline void print_unload_info(struct seq_file *m, struct module *mod)
- {
- 	/* We don't know the usage count, or what modules are using. */
--	seq_printf(m, " - -");
-+	seq_puts(m, " - -");
- }
- 
- static inline void module_unload_free(struct module *mod)
-@@ -1131,7 +1132,7 @@ static unsigned long maybe_relocated(unsigned long crc,
- static int check_version(Elf_Shdr *sechdrs,
- 			 unsigned int versindex,
- 			 const char *symname,
--			 struct module *mod, 
-+			 struct module *mod,
- 			 const unsigned long *crc,
- 			 const struct module *crc_owner)
- {
-@@ -1165,7 +1166,7 @@ static int check_version(Elf_Shdr *sechdrs,
- 	return 0;
- 
- bad_version:
--	printk("%s: disagrees about version of symbol %s\n",
-+	pr_warn("%s: disagrees about version of symbol %s\n",
- 	       mod->name, symname);
- 	return 0;
- }
-@@ -1200,7 +1201,7 @@ static inline int same_magic(const char *amagic, const char *bmagic,
- static inline int check_version(Elf_Shdr *sechdrs,
- 				unsigned int versindex,
- 				const char *symname,
--				struct module *mod, 
-+				struct module *mod,
- 				const unsigned long *crc,
- 				const struct module *crc_owner)
- {
-@@ -1288,15 +1289,13 @@ static inline bool sect_empty(const Elf_Shdr *sect)
- 	return !(sect->sh_flags & SHF_ALLOC) || sect->sh_size == 0;
- }
- 
--struct module_sect_attr
--{
-+struct module_sect_attr {
- 	struct module_attribute mattr;
- 	char *name;
- 	unsigned long address;
- };
- 
--struct module_sect_attrs
--{
-+struct module_sect_attrs {
- 	struct attribute_group grp;
- 	unsigned int nsections;
- 	struct module_sect_attr attrs[0];
-@@ -1550,7 +1549,8 @@ static int module_add_modinfo_attrs(struct module *mod)
- 		    (attr->test && attr->test(mod))) {
- 			memcpy(temp_attr, attr, sizeof(*temp_attr));
- 			sysfs_attr_init(&temp_attr->attr);
--			error = sysfs_create_file(&mod->mkobj.kobj,&temp_attr->attr);
-+			error = sysfs_create_file(&mod->mkobj.kobj,
-+					&temp_attr->attr);
- 			++temp_attr;
- 		}
- 	}
-@@ -1566,7 +1566,7 @@ static void module_remove_modinfo_attrs(struct module *mod)
- 		/* pick a field to test for end of list */
- 		if (!attr->attr.name)
- 			break;
--		sysfs_remove_file(&mod->mkobj.kobj,&attr->attr);
-+		sysfs_remove_file(&mod->mkobj.kobj, &attr->attr);
- 		if (attr->free)
- 			attr->free(mod);
- 	}
-@@ -1953,7 +1953,7 @@ static int simplify_symbols(struct module *mod, const struct load_info *info)
- 			/* We compiled with -fno-common.  These are not
- 			   supposed to happen.  */
- 			pr_debug("Common symbol: %s\n", name);
--			printk("%s: please compile with -fno-common\n",
-+			pr_warn("%s: please compile with -fno-common\n",
- 			       mod->name);
- 			ret = -ENOEXEC;
- 			break;
-@@ -2257,7 +2257,7 @@ static char elf_type(const Elf_Sym *sym, const struct load_info *info)
- }
- 
- static bool is_core_symbol(const Elf_Sym *src, const Elf_Shdr *sechdrs,
--                           unsigned int shnum)
-+			unsigned int shnum)
- {
- 	const Elf_Shdr *sec;
- 
-@@ -2733,7 +2733,7 @@ static int find_module_sections(struct module *mod, struct load_info *info)
- 		 * This shouldn't happen with same compiler and binutils
- 		 * building all parts of the module.
- 		 */
--		printk(KERN_WARNING "%s: has both .ctors and .init_array.\n",
-+		pr_warn("%s: has both .ctors and .init_array.\n",
- 		       mod->name);
- 		return -EINVAL;
- 	}
-@@ -3021,8 +3021,10 @@ static int do_init_module(struct module *mod)
- 	if (mod->init != NULL)
- 		ret = do_one_initcall(mod->init);
- 	if (ret < 0) {
--		/* Init routine failed: abort.  Try to protect us from
--                   buggy refcounters. */
-+		/*
-+		 * Init routine failed: abort.  Try to protect us from
-+		 * buggy refcounters.
-+		 */
- 		mod->state = MODULE_STATE_GOING;
- 		synchronize_sched();
- 		module_put(mod);
-@@ -3174,7 +3176,7 @@ out:
- 
- static int unknown_module_param_cb(char *param, char *val, const char *modname)
- {
--	/* Check for magic 'dyndbg' arg */ 
-+	/* Check for magic 'dyndbg' arg */
- 	int ret = ddebug_dyndbg_module_param_cb(param, val, modname);
- 	if (ret != 0)
- 		pr_warn("%s: unknown parameter '%s' ignored\n", modname, param);
-@@ -3657,8 +3659,8 @@ static int m_show(struct seq_file *m, void *p)
- 
- 	/* Informative for users. */
- 	seq_printf(m, " %s",
--		   mod->state == MODULE_STATE_GOING ? "Unloading":
--		   mod->state == MODULE_STATE_COMING ? "Loading":
-+		   mod->state == MODULE_STATE_GOING ? "Unloading" :
-+		   mod->state == MODULE_STATE_COMING ? "Loading" :
- 		   "Live");
- 	/* Used by oprofile and other similar tools. */
- 	seq_printf(m, " 0x%pK", mod->module_core);
-@@ -3667,7 +3669,7 @@ static int m_show(struct seq_file *m, void *p)
- 	if (mod->taints)
- 		seq_printf(m, " %s", module_flags(mod, buf));
- 
--	seq_printf(m, "\n");
-+	seq_puts(m, "\n");
- 	return 0;
- }
- 
-@@ -3816,7 +3818,7 @@ void print_modules(void)
- 	struct module *mod;
- 	char buf[8];
- 
--	printk(KERN_DEFAULT "Modules linked in:");
-+	pr_warn("Modules linked in:");
- 	/* Most callers should already have preempt disabled, but make sure */
- 	preempt_disable();
- 	list_for_each_entry_rcu(mod, &modules, list) {
+Changes in v2:
+ - include back linux/atmel-mci.h and really remove mach/atmel-mci.h in at91sam9g45_devices.c
+
+Alexandre Belloni (3):
+  mmc: atmel-mci: move mache header to platform_data
+  ARM: at91: remove mach/atmel-mci.h
+  avr32: remove mach/atmel-mci.h
+
+ arch/arm/mach-at91/at91sam9g45_devices.c        |  2 +-
+ arch/arm/mach-at91/include/mach/atmel-mci.h     | 17 -----------------
+ arch/avr32/mach-at32ap/at32ap700x.c             |  2 +-
+ arch/avr32/mach-at32ap/include/mach/atmel-mci.h | 17 -----------------
+ drivers/mmc/host/atmel-mci.c                    |  2 +-
+ include/linux/platform_data/mmc-atmel-mci.h     | 22 ++++++++++++++++++++++
+ 6 files changed, 25 insertions(+), 37 deletions(-)
+ delete mode 100644 arch/arm/mach-at91/include/mach/atmel-mci.h
+ delete mode 100644 arch/avr32/mach-at32ap/include/mach/atmel-mci.h
+ create mode 100644 include/linux/platform_data/mmc-atmel-mci.h
+
 -- 
-1.7.10.4
+1.9.1
 
