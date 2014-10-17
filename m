@@ -1,179 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752037AbaJQK6d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 06:58:33 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:38830 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751346AbaJQK6b (ORCPT
+	id S1752199AbaJQLGE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 07:06:04 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45087 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751637AbaJQLGB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 06:58:31 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-08-5440f654b3c7
-From: Andrzej Hajda <a.hajda@samsung.com>
-To: linux-pm@vger.kernel.org (open list:SUSPEND TO RAM)
-Cc: Andrzej Hajda <a.hajda@samsung.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] PM / Runtime: Rework RPM get callback routines
-Date: Fri, 17 Oct 2014 12:58:02 +0200
-Message-id: <1413543482-12748-1-git-send-email-a.hajda@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEJMWRmVeSWpSXmKPExsVy+t/xq7oh3xxCDDbel7W4te4cq0Xz4vVs
-	FrOm7GWyuLxrDpvF594jjBZ3Tx1lszhz+hKrA7vH4j0vmTz2z13D7rHlajuLR9+WVYweK1Z/
-	Z/f4vEkugC2KyyYlNSezLLVI3y6BK+PLnwssBf8VKxpWFTYwzpXuYuTkkBAwkXjSvZwZwhaT
-	uHBvPRuILSSwlFHi3v7CLkYuILuPSWLfyQ5WkASbgKbE3803wYpEBMwl1q+5wAhSxCzwnlFi
-	V/cSsCJhAXuJWQ3bwIpYBFQlOj/dArN5BZwlZhx6ygKxTU7i5LHJrBMYuRcwMqxiFE0tTS4o
-	TkrPNdIrTswtLs1L10vOz93ECAmXrzsYlx6zOsQowMGoxMPLEOMQIsSaWFZcmXuIUYKDWUmE
-	t/8WUIg3JbGyKrUoP76oNCe1+BAjEwenFNCnl5SbH3+uNJV44PxzRUH293r/506XP2enXv31
-	Rqlvsd0h3kfTzVvXzq5+yf7jrXwqb5Z5b4Nk50zZiCbhXbsVw+KMUh3Y7WyN7++uZ/v6z2TV
-	tV1On/9GNFg3P9Rr3FjQ67l1VlPWTS6GBUZLO5z3t0lJffo6/2b367yNymKhdsVh8mGGYkos
-	xRmJhlrMRcWJAGCIrTj1AQAA
+	Fri, 17 Oct 2014 07:06:01 -0400
+Date: Fri, 17 Oct 2014 12:00:44 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+Cc: Marek Belisko <marek@goldelico.com>, "arnd@arndb.de" <arnd@arndb.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] Documentation: devicetree: Add bindings for Wi2Wi
+ w2sg0004 gps
+Message-ID: <20141017110043.GA5335@leverpostej>
+References: <1413491183-15018-1-git-send-email-marek@goldelico.com>
+ <1413491183-15018-2-git-send-email-marek@goldelico.com>
+ <20141017093714.GB4202@leverpostej>
+ <D65FF64A-856F-47EC-B3DE-7F2FCE505087@goldelico.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <D65FF64A-856F-47EC-B3DE-7F2FCE505087@goldelico.com>
+Thread-Topic: [PATCH 2/2] Documentation: devicetree: Add bindings for Wi2Wi
+ w2sg0004 gps
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+acceptlanguage: en-GB, en-US
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PM uses three separate functions to fetch RPM callbacks.
-These functions uses quite complicated macro in their body.
-The patch replaces these routines with one small macro and
-one helper function.
+On Fri, Oct 17, 2014 at 11:16:42AM +0100, Dr. H. Nikolaus Schaller wrote:
+> 
+> Am 17.10.2014 um 11:37 schrieb Mark Rutland <mark.rutland@arm.com>:
+> 
+> > On Thu, Oct 16, 2014 at 09:26:23PM +0100, Marek Belisko wrote:
+> >> Signed-off-by: H. Nikolaus Schaller <hns@goldelico.com>
+> >> Signed-off-by: Marek Belisko <marek@goldelico.com>
+> >> ---
+> >> .../devicetree/bindings/misc/wi2wi,w2sg0004.txt    | 44 ++++++++++++++++++++++
+> >> 1 file changed, 44 insertions(+)
+> >> create mode 100644 Documentation/devicetree/bindings/misc/wi2wi,w2sg0004.txt
+> >> 
+> >> diff --git a/Documentation/devicetree/bindings/misc/wi2wi,w2sg0004.txt b/Documentation/devicetree/bindings/misc/wi2wi,w2sg0004.txt
+> >> new file mode 100644
+> >> index 0000000..e144441
+> >> --- /dev/null
+> >> +++ b/Documentation/devicetree/bindings/misc/wi2wi,w2sg0004.txt
+> >> @@ -0,0 +1,44 @@
+> >> +Wi2Wi GPS module connected through UART
+> >> +
+> >> +Required properties:
+> >> +- compatible: wi2wi,w2sg0004 or wi2wi,w2sg0084
+> >> +- pinctrl: specify two states (default and monitor). One is the default (UART) mode
+> >> +  and the other is for monitoring the RX line by an interrupt
+> >> +- on-off-gpio: the GPIO that controls the module's on-off toggle input
+> >> +
+> >> +Optional properties:
+> >> +- lna-suppy: an (optional) LNA regulator that is enabled together with the GPS receiver
+> >> +
+> >> +example:
+> >> +
+> >> +        gps_receiver: w2sg0004 {
+> >> +                compatible = "wi2wi,w2sg0004";
+> > 
+> > I couldn't spot "wi2wi" in
+> > Documentation/devicetree/bindings/vendor-prefixes.txt (in mainline).
+> > 
+> > Could you please add it?
+> > 
+> >> +                gpio-controller;
+> >> +                #gpio-cells = <2>;
+> > 
+> > As far as I can see, these properties aren't necessary. This only
+> > consumes a GPIO, it doesn't provide any.
+> 
+> Well, it provides one GPIO. Sort of a "virtual“ GPIO. It is needed so that 
+> it can be wired up to the DTR gpio of the UART driver (unfortunately this
+> patch was reverted some months ago from mainline and we will reintroduce
+> it soon).
 
-Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
----
-Hi,
+If this GPIO doesn't really exist, then it's a Linux internal
+implementation detail rather than a description of the hardware, and
+doesn't really belong in the DT.
 
-I guess such constructs (offsetof and void* arithmetic) are little bit
-controversial. On the other side they seems to me more clear than the
-current solution. For sure they produce better code:
-   8186	     72	     24	   8282	   205a	drivers/base/power/runtime.old.o
-   7938	     72	     24	   8034	   1f62	drivers/base/power/runtime.o
+It sounds like what we actually need is the ability to describe devices
+attached to UARTs. Then you could have a mechanism whereby the UART
+driver can notify the other device driver regarding events (e.g. the
+UART being opened for access), or the other driver could claim ownership
+of the UART and expose its own interface to userspace.
 
-Regards
-Andrzej
----
- drivers/base/power/runtime.c | 69 +++++++++++++++++++++-----------------------
- 1 file changed, 33 insertions(+), 36 deletions(-)
+That would be independent of the particular UART or other device, and
+the only description necessary in the DT would be an accurate
+representation of the way the hardware is wired.
 
-diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
-index 67c7938..8f1ab84 100644
---- a/drivers/base/power/runtime.c
-+++ b/drivers/base/power/runtime.c
-@@ -13,42 +13,39 @@
- #include <trace/events/rpm.h>
- #include "power.h"
- 
--#define RPM_GET_CALLBACK(dev, cb)				\
--({								\
--	int (*__rpm_cb)(struct device *__d);			\
--								\
--	if (dev->pm_domain)					\
--		__rpm_cb = dev->pm_domain->ops.cb;		\
--	else if (dev->type && dev->type->pm)			\
--		__rpm_cb = dev->type->pm->cb;			\
--	else if (dev->class && dev->class->pm)			\
--		__rpm_cb = dev->class->pm->cb;			\
--	else if (dev->bus && dev->bus->pm)			\
--		__rpm_cb = dev->bus->pm->cb;			\
--	else							\
--		__rpm_cb = NULL;				\
--								\
--	if (!__rpm_cb && dev->driver && dev->driver->pm)	\
--		__rpm_cb = dev->driver->pm->cb;			\
--								\
--	__rpm_cb;						\
--})
--
--static int (*rpm_get_suspend_cb(struct device *dev))(struct device *)
--{
--	return RPM_GET_CALLBACK(dev, runtime_suspend);
--}
-+typedef int (*pm_callback_t)(struct device *);
- 
--static int (*rpm_get_resume_cb(struct device *dev))(struct device *)
-+static pm_callback_t __rpm_get_callback(struct device *dev, size_t cb_offset)
- {
--	return RPM_GET_CALLBACK(dev, runtime_resume);
-+	pm_callback_t cb;
-+	const struct dev_pm_ops *ops;
-+
-+	if (dev->pm_domain)
-+		ops = &dev->pm_domain->ops;
-+	else if (dev->type && dev->type->pm)
-+		ops = dev->type->pm;
-+	else if (dev->class && dev->class->pm)
-+		ops = dev->class->pm;
-+	else if (dev->bus && dev->bus->pm)
-+		ops = dev->bus->pm;
-+	else
-+		ops = NULL;
-+
-+	if (ops)
-+		cb = *(pm_callback_t *)((void *)ops + cb_offset);
-+	else
-+		cb = NULL;
-+
-+	if (!cb && dev->driver && dev->driver->pm)
-+		cb = *(pm_callback_t *)((void *)dev->driver->pm + cb_offset);
-+
-+	return cb;
- }
- 
-+#define RPM_GET_CALLBACK(dev, callback) \
-+		__rpm_get_callback(dev, offsetof(struct dev_pm_ops, callback))
-+
- #ifdef CONFIG_PM_RUNTIME
--static int (*rpm_get_idle_cb(struct device *dev))(struct device *)
--{
--	return RPM_GET_CALLBACK(dev, runtime_idle);
--}
- 
- static int rpm_resume(struct device *dev, int rpmflags);
- static int rpm_suspend(struct device *dev, int rpmflags);
-@@ -347,7 +344,7 @@ static int rpm_idle(struct device *dev, int rpmflags)
- 
- 	dev->power.idle_notification = true;
- 
--	callback = rpm_get_idle_cb(dev);
-+	callback = RPM_GET_CALLBACK(dev, runtime_idle);
- 
- 	if (callback)
- 		retval = __rpm_callback(callback, dev);
-@@ -517,7 +514,7 @@ static int rpm_suspend(struct device *dev, int rpmflags)
- 
- 	__update_runtime_status(dev, RPM_SUSPENDING);
- 
--	callback = rpm_get_suspend_cb(dev);
-+	callback = RPM_GET_CALLBACK(dev, runtime_suspend);
- 
- 	retval = rpm_callback(callback, dev);
- 	if (retval)
-@@ -737,7 +734,7 @@ static int rpm_resume(struct device *dev, int rpmflags)
- 
- 	__update_runtime_status(dev, RPM_RESUMING);
- 
--	callback = rpm_get_resume_cb(dev);
-+	callback = RPM_GET_CALLBACK(dev, runtime_resume);
- 
- 	retval = rpm_callback(callback, dev);
- 	if (retval) {
-@@ -1431,7 +1428,7 @@ int pm_runtime_force_suspend(struct device *dev)
- 	if (pm_runtime_status_suspended(dev))
- 		return 0;
- 
--	callback = rpm_get_suspend_cb(dev);
-+	callback = RPM_GET_CALLBACK(dev, runtime_suspend);
- 
- 	if (!callback) {
- 		ret = -ENOSYS;
-@@ -1467,7 +1464,7 @@ int pm_runtime_force_resume(struct device *dev)
- 	int (*callback)(struct device *);
- 	int ret = 0;
- 
--	callback = rpm_get_resume_cb(dev);
-+	callback = RPM_GET_CALLBACK(dev, runtime_resume);
- 
- 	if (!callback) {
- 		ret = -ENOSYS;
--- 
-1.9.1
+There are a few ways that could be done, but I suspect the simplest is
+to just have the device as a sub-node of the UART, like we do for SPI or
+I2C buses:
 
+	serial@f00 {
+		compatible = "vendor,uart";
+		reg = <0xf00 0x100>;
+		...
+
+		gps {
+			compatible = "wi2wi,w2sg0004";
+			...
+		};
+	};
+
+That wouldn't work for devices with multiple UART connections. Do those
+exist, and are they common in configurations where out-of-band
+management is necessary (e.g. regulators, clocks)?
+
+> The reason to solve it that way is that we did not want to have a direct link
+> between this driver and any serial drivers or other mechanisms how drivers
+> can detect that their serial port (/dev/tty*) is opened.
+>
+> It is used to power down the w2sg GPS chip if no user space process is
+> accessing its serial port (or de-asserts DTR through tcsetattr/ioctl).
+> 
+> > 
+> >> +
+> >> +                pinctrl-names = "default", "monitor";
+> >> +                pinctrl-0 = <&uart2_pins>;
+> >> +                pinctrl-1 = <&uart2_rx_irq_pins>;
+> >> +
+> >> +                interrupt-parent = <&gpio5>;
+> >> +                interrupts = <19 IRQ_TYPE_EDGE_FALLING>;  /* GPIO_147: RX - trigger on arrival of start bit */
+> > 
+> > While interrupts is a standard property, please describe above how many
+> > you expect and what their logical function is.
+> > 
+> > The only part I'm confused about is how the link to the UART is
+> > described. I assume I'm just ignorant of some existing pattern.
+> 
+> The serial link itself is not described at all because it is assumed to be a „must have“.
+
+Huh? So it's a "must have" that you "don't have" in the DT?
+
+I think that the relationship is being described incorrectly in the DT,
+and I think that there is a more general problem that needs to be
+addressed in order to make this case work.
+
+> The driver only needs to monitor the RX line and needs to switch it between UART and
+> GPIO/IRQ mode. So this monitoring switch is described (with two different pinctrl states).
+
+While this particular driver only needs that at this point in time,
+that's not necessarily true of drivers for similar devices, nor is it
+necessarily true if we need to add additional features to this driver.
+
+Describing the relationship leaves a lot more freedom to improve things
+without having to update every DTB.
+ 
+> We know that it is a little tricky to control this chip correctly - and we think this solution
+> is the most general (no direct dependency on the serial line, and just to pinmux states
+> and an interrupt).
+
+I think that the rough approach I sketched out above is more general,
+and I think that you must describe the relationship with the serial
+line.
+
+It's not clear to me whether the interrupt you describe is attached to
+the GPS, or if this is logically part of the UART.
+
+Thanks,
+Mark.
