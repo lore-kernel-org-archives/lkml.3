@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751667AbaJQJBT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 05:01:19 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:51897 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751555AbaJQJBP (ORCPT
+	id S1751870AbaJQJCf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 05:02:35 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:63783 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750867AbaJQJCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 05:01:15 -0400
-From: Kumar Gala <galak@codeaurora.org>
-To: gregkh@linuxfoundation.org
-Cc: Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] tty/serial: earlycon: Fix print for implied MMIO case
-Date: Fri, 17 Oct 2014 04:01:11 -0500
-Message-Id: <1413536471-3454-1-git-send-email-galak@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
+	Fri, 17 Oct 2014 05:02:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <1412188684-20820-1-git-send-email-pramod.gurav@smartplayin.com>
+References: <1412188684-20820-1-git-send-email-pramod.gurav@smartplayin.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Fri, 17 Oct 2014 18:02:11 +0900
+Message-ID: <CAAVeFu+3MW3LMm-HV+7jBgaQmMOF+m=KGNP1nLnaij8=X0=xcg@mail.gmail.com>
+Subject: Re: [PATCH] gpio: grgpio: remove irq_domain resources on failure
+To: Pramod Gurav <pramod.gurav@smartplayin.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the case in which we just provide an address as an argument to the
-earlycon console type like:
+On Thu, Oct 2, 2014 at 3:38 AM, Pramod Gurav
+<pramod.gurav@smartplayin.com> wrote:
+> Call irq_domain_remove when gpiochip_add fails to release irq_domain
+> resources.
+>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: Alexandre Courbot <gnurou@gmail.com>
+> Cc: linux-gpio@vger.kernel.org
+> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+> ---
+>  drivers/gpio/gpio-grgpio.c | 1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/drivers/gpio/gpio-grgpio.c b/drivers/gpio/gpio-grgpio.c
+> index 66ad3df..38acdce 100644
+> --- a/drivers/gpio/gpio-grgpio.c
+> +++ b/drivers/gpio/gpio-grgpio.c
+> @@ -441,6 +441,7 @@ static int grgpio_probe(struct platform_device *ofdev)
+>         err = gpiochip_add(gc);
+>         if (err) {
+>                 dev_err(&ofdev->dev, "Could not add gpiochip\n");
+> +               irq_domain_remove(priv->domain);
+>                 return err;
+>         }
 
-earlycon=msm_serial_dm,0xf991e000
-
-We would report this as an IO port based mapping and not as MMIO.  Simple
-fix to use the port->iotype to decide which message to print.
-
-Signed-off-by: Kumar Gala <galak@codeaurora.org>
----
- drivers/tty/serial/earlycon.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/tty/serial/earlycon.c b/drivers/tty/serial/earlycon.c
-index a514ee6..64fe25a 100644
---- a/drivers/tty/serial/earlycon.c
-+++ b/drivers/tty/serial/earlycon.c
-@@ -98,7 +98,7 @@ static int __init parse_options(struct earlycon_device *device,
- 		strlcpy(device->options, options, length);
- 	}
- 
--	if (mmio || mmio32)
-+	if (port->iotype == UPIO_MEM || port->iotype == UPIO_MEM32)
- 		pr_info("Early serial console at MMIO%s 0x%llx (options '%s')\n",
- 			mmio32 ? "32" : "",
- 			(unsigned long long)port->mapbase,
--- 
-Qualcomm Innovation Center, Inc.
- The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
- a Linux Foundation Collaborative Project
-
+Acked-by: Alexandre Courbot <acourbot@nvidia.com>
