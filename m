@@ -1,42 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752861AbaJQNWH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 09:22:07 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:40496 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751581AbaJQNWE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 09:22:04 -0400
-Date: Fri, 17 Oct 2014 06:22:02 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Christoph Hellwig <hch@infradead.org>, "hare@suse.de" <hare@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "jbottomley@parallels.com" <jbottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH 0/2] Drivers: scsi: storvsc: Fix issues with
- hot-add/remove of LUNs
-Message-ID: <20141017132202.GH16538@infradead.org>
-References: <1408244954-27417-1-git-send-email-kys@microsoft.com>
- <20140925134726.GA26946@infradead.org>
- <65593e832b5b4da184470799eac9e384@BY2PR0301MB0711.namprd03.prod.outlook.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <65593e832b5b4da184470799eac9e384@BY2PR0301MB0711.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1752768AbaJQNYl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 09:24:41 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:33712 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751723AbaJQNYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 09:24:40 -0400
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: Dmitry Monakhov <dmonakhov@openvz.org>
+Subject: [PATCH] fs: make generic_block_fiemap sig-tolerant
+Date: Fri, 17 Oct 2014 17:24:29 +0400
+Message-Id: <1413552269-32203-1-git-send-email-dmonakhov@openvz.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 07, 2014 at 05:44:38PM +0000, KY Srinivasan wrote:
-> > So can anywayone give me a review for those two patches?
-> 
-> Did you get the reviews?
+__generic_block_fiemap may spin very long time for large sparse files.
 
-No.
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+---
+ fs/ioctl.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/fs/ioctl.c b/fs/ioctl.c
+index 8ac3fad..6fbeb68 100644
+--- a/fs/ioctl.c
++++ b/fs/ioctl.c
+@@ -379,6 +379,11 @@ int __generic_block_fiemap(struct inode *inode,
+ 				past_eof = true;
+ 		}
+ 		cond_resched();
++		if (fatal_signal_pending(current)) {
++			ret = -EINTR;
++			break;
++		}
++
+ 	} while (1);
+ 
+ 	/* If ret is 1 then we just hit the end of the extent array */
+-- 
+1.7.1
 
