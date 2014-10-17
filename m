@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275AbaJQQHj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 12:07:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48783 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753154AbaJQQHi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 12:07:38 -0400
-Date: Fri, 17 Oct 2014 18:07:37 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Cong Wang <xiyou.wangcong@gmail.com>, David Rientjes <rientjes@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: + freezer-check-oom-kill-while-being-frozen.patch added to -mm
- tree
-Message-ID: <20141017160737.GH8076@dhcp22.suse.cz>
-References: <20141016203954.GA26336@redhat.com>
- <CAM_iQpUyCR3Bv1QhFkVmii9vB=fjMAUiWZ4T+mj60=FUZOXS+A@mail.gmail.com>
- <20141016211136.GA27468@redhat.com>
- <CAM_iQpXM6eUnvofOq0c71Nx3HygzriKKpN6Vc1+fY=dzFR08ig@mail.gmail.com>
- <20141016213512.GA28099@redhat.com>
- <CAM_iQpUFBDscS2n41FdE3S016c_jkb4HaKomy14G7Ez9x4w3+g@mail.gmail.com>
- <20141016222237.GA30063@redhat.com>
- <CAM_iQpVZtOCzWA3wWuG5y7AyOBUx41-81jrt+dSeHvr6eHY4RA@mail.gmail.com>
- <20141017152429.GA7227@redhat.com>
+	id S1753368AbaJQQIj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 12:08:39 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:47303 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753154AbaJQQIi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 12:08:38 -0400
+Message-ID: <54413F02.1050405@roeck-us.net>
+Date: Fri, 17 Oct 2014 09:08:34 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141017152429.GA7227@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jiri Slaby <jslaby@suse.cz>, stable@vger.kernel.org
+CC: satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3.12 000/197] 3.12.31-stable review
+References: <cover.1413533329.git.jslaby@suse.cz>
+In-Reply-To: <cover.1413533329.git.jslaby@suse.cz>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Suspect
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 512
+X-CTCH-RefID: str=0001.0A020207.54413F05.014E,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=512,sb=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 1
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 1
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 17-10-14 17:24:29, Oleg Nesterov wrote:
-> On 10/16, Cong Wang wrote:
-> >
-> > On Thu, Oct 16, 2014 at 3:22 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > > On 10/16, Cong Wang wrote:
-> > >>
-> > >> it will always stay in asleep after schedule()?
-> > >
-> > > Not always. But it will stay asleep in this particular case.
-> >
-> > Hmm, so we still need to wake it up in oom killer:
-> >
-> >         if (test_tsk_thread_flag(task, TIF_MEMDIE)) {
-> >                if (unlikely(frozen(task)))
-> >                       wake_up_state(task, TASK_UNINTERRUPTIBLE);
-> >
-> > I will update the patch if Michal doesn't.
-> 
-> I think it would be better to simply keep that __thaw_task() in
-> oom_scan_process_thread().
+On 10/17/2014 01:11 AM, Jiri Slaby wrote:
+> This is the start of the stable review cycle for the 3.12.31 release.
+> There are 197 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Tue Oct 21 10:08:49 CEST 2014.
+> Anything received after that time might be too late.
+>
 
-yeah, v2 of the patch (I guess you were on CC) does exactly this.
+Build results:
+	total: 135 pass: 135 fail: 0
+Qemu test results:
+	total: 27 pass: 27 fail: 0
 
-Thanks!
--- 
-Michal Hocko
-SUSE Labs
+Details are available at http://server.roeck-us.net:8010/builders.
+
+Guenter
+
