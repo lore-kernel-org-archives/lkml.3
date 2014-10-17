@@ -1,170 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309AbaJQOLu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 10:11:50 -0400
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:36999 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752358AbaJQOKM (ORCPT
+	id S1753331AbaJQONS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 10:13:18 -0400
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:64247 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752540AbaJQONR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 10:10:12 -0400
-From: Dominik Dingel <dingel@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        Rik van Riel <riel@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Bob Liu <lliubbo@gmail.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Gleb Natapov <gleb@kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Jianyu Zhan <nasa4836@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Konstantin Weitz <konstantin.weitz@gmail.com>, kvm@vger.kernel.org,
-        linux390@de.ibm.com, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
+	Fri, 17 Oct 2014 10:13:17 -0400
+From: Vince Weaver <vincent.weaver@maine.edu>
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Fri, 17 Oct 2014 10:19:50 -0400 (EDT)
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Dominik Dingel <dingel@linux.vnet.ibm.com>
-Subject: [PATCH 4/4] s390/mm: disable KSM for storage key enabled pages
-Date: Fri, 17 Oct 2014 16:09:50 +0200
-Message-Id: <1413554990-48512-5-git-send-email-dingel@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.5.5
-In-Reply-To: <1413554990-48512-1-git-send-email-dingel@linux.vnet.ibm.com>
-References: <1413554990-48512-1-git-send-email-dingel@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14101714-0029-0000-0000-0000013DF894
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+Subject: Re: perf: 3.17 another perf_fuzzer lockup
+In-Reply-To: <alpine.DEB.2.11.1410161723220.9124@vincent-weaver-1.umelst.maine.edu>
+Message-ID: <alpine.DEB.2.11.1410171015540.15673@vincent-weaver-1.umelst.maine.edu>
+References: <alpine.DEB.2.11.1410061130100.11293@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.11.1410061151400.12313@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.11.1410151418570.3151@vincent-weaver-1.umelst.maine.edu>
+ <alpine.DEB.2.11.1410161723220.9124@vincent-weaver-1.umelst.maine.edu>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When storage keys are enabled unmerge already merged pages and prevent
-new pages from being merged.
+On Thu, 16 Oct 2014, Vince Weaver wrote:
 
-Signed-off-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
-Acked-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
----
- arch/s390/include/asm/pgtable.h |  2 +-
- arch/s390/kvm/priv.c            | 17 ++++++++++++-----
- arch/s390/mm/pgtable.c          | 15 +++++++++++++--
- 3 files changed, 26 insertions(+), 8 deletions(-)
+> > It looks like the
+> > 			else if (task->perf_event_ctxp[ctxn])
+> > 	                        err = -EAGAIN;
+> 
+> It is indeed stuck there, waiting for task->perf_event_ctxp[1] to get
+> set to zero, which never happens.
+> 
 
-diff --git a/arch/s390/include/asm/pgtable.h b/arch/s390/include/asm/pgtable.h
-index 1e991f6a..a5362e4 100644
---- a/arch/s390/include/asm/pgtable.h
-+++ b/arch/s390/include/asm/pgtable.h
-@@ -1749,7 +1749,7 @@ static inline pte_t mk_swap_pte(unsigned long type, unsigned long offset)
- extern int vmem_add_mapping(unsigned long start, unsigned long size);
- extern int vmem_remove_mapping(unsigned long start, unsigned long size);
- extern int s390_enable_sie(void);
--extern void s390_enable_skey(void);
-+extern int s390_enable_skey(void);
- extern void s390_reset_cmma(struct mm_struct *mm);
- 
- /*
-diff --git a/arch/s390/kvm/priv.c b/arch/s390/kvm/priv.c
-index f89c1cd..e0967fd 100644
---- a/arch/s390/kvm/priv.c
-+++ b/arch/s390/kvm/priv.c
-@@ -156,21 +156,25 @@ static int handle_store_cpu_address(struct kvm_vcpu *vcpu)
- 	return 0;
- }
- 
--static void __skey_check_enable(struct kvm_vcpu *vcpu)
-+static int __skey_check_enable(struct kvm_vcpu *vcpu)
- {
-+	int rc = 0;
- 	if (!(vcpu->arch.sie_block->ictl & (ICTL_ISKE | ICTL_SSKE | ICTL_RRBE)))
--		return;
-+		return rc;
- 
--	s390_enable_skey();
-+	rc = s390_enable_skey();
- 	trace_kvm_s390_skey_related_inst(vcpu);
- 	vcpu->arch.sie_block->ictl &= ~(ICTL_ISKE | ICTL_SSKE | ICTL_RRBE);
-+	return rc;
- }
- 
- 
- static int handle_skey(struct kvm_vcpu *vcpu)
- {
--	__skey_check_enable(vcpu);
-+	int rc = __skey_check_enable(vcpu);
- 
-+	if (rc)
-+		return rc;
- 	vcpu->stat.instruction_storage_key++;
- 
- 	if (vcpu->arch.sie_block->gpsw.mask & PSW_MASK_PSTATE)
-@@ -692,7 +696,10 @@ static int handle_pfmf(struct kvm_vcpu *vcpu)
- 		}
- 
- 		if (vcpu->run->s.regs.gprs[reg1] & PFMF_SK) {
--			__skey_check_enable(vcpu);
-+			int rc = __skey_check_enable(vcpu);
-+
-+			if (rc)
-+				return rc;
- 			if (set_guest_storage_key(current->mm, useraddr,
- 					vcpu->run->s.regs.gprs[reg1] & PFMF_KEY,
- 					vcpu->run->s.regs.gprs[reg1] & PFMF_NQ))
-diff --git a/arch/s390/mm/pgtable.c b/arch/s390/mm/pgtable.c
-index 6321692..b3311c1 100644
---- a/arch/s390/mm/pgtable.c
-+++ b/arch/s390/mm/pgtable.c
-@@ -18,6 +18,8 @@
- #include <linux/rcupdate.h>
- #include <linux/slab.h>
- #include <linux/swapops.h>
-+#include <linux/ksm.h>
-+#include <linux/mman.h>
- 
- #include <asm/pgtable.h>
- #include <asm/pgalloc.h>
-@@ -1328,18 +1330,26 @@ static int __s390_enable_skey(pte_t *pte, unsigned long addr,
- 	return 0;
- }
- 
--void s390_enable_skey(void)
-+int s390_enable_skey(void)
- {
- 	struct mm_walk walk = { .pte_entry = __s390_enable_skey };
- 	struct mm_struct *mm = current->mm;
- 	struct vm_area_struct *vma;
-+	int rc = 0;
- 
- 	down_write(&mm->mmap_sem);
- 	if (mm_use_skey(mm))
- 		goto out_up;
- 
--	for (vma = mm->mmap; vma; vma = vma->vm_next)
-+	for (vma = mm->mmap; vma; vma = vma->vm_next) {
-+		if (ksm_madvise(vma, vma->vm_start, vma->vm_end,
-+				MADV_UNMERGEABLE, &vma->vm_flags)) {
-+			rc = -ENOMEM;
-+			goto out_up;
-+		}
- 		vma->vm_flags |= VM_NOZEROPAGE;
-+	}
-+	mm->def_flags &= ~VM_MERGEABLE;
- 	mm->def_flags |= VM_NOZEROPAGE;
- 
- 	walk.mm = mm;
-@@ -1348,6 +1358,7 @@ void s390_enable_skey(void)
- 
- out_up:
- 	up_write(&mm->mmap_sem);
-+	return rc;
- }
- EXPORT_SYMBOL_GPL(s390_enable_skey);
- 
--- 
-1.8.5.5
+OK, so with some more printk()s, it looks like somehow the parent thread
+is trying to open a software event on itself.
+
+	task->perf_event_ctxp[1]
+
+has a valid pointer, but the ctx it points to has a ctx->lock of 0.
+
+So perf_lock_task_context() always returns NULL.
+
+So in find_get_context()
+	we get stuck in an infinite retry loop, waiting forever for
+	either ctx->lock to go positive or for task->perf_event_ctxp[1]
+	to go NULL, neither of which is going to happen.
+
+Now to find out why this could happen.  Probably something to do with 
+crazy RCU magic :(
+
+Vince
 
