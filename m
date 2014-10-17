@@ -1,162 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335AbaJQMHJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 08:07:09 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:59433 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752003AbaJQMDa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 08:03:30 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>, devicetree@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Darren Hart <dvhart@linux.intel.com>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: [PATCH v5 08/12] input: gpio_keys_polled - Add support for GPIO descriptors
-Date: Fri, 17 Oct 2014 14:12:54 +0200
-Message-ID: <1824440.YORlkIENqH@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <11223831.j9KAEfSQsY@vostro.rjw.lan>
-References: <2660541.BycO7TFnA2@vostro.rjw.lan> <11223831.j9KAEfSQsY@vostro.rjw.lan>
+	id S1752376AbaJQMOW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 08:14:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56161 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751251AbaJQMOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 08:14:20 -0400
+Message-ID: <5441080F.1070900@redhat.com>
+Date: Fri, 17 Oct 2014 08:14:07 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: Saravana Kannan <skannan@codeaurora.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?Um9iZXJ0IFNjaMO2bmU=?= <robert.schoene@tu-dresden.de>
+Subject: Re: Locking issues with cpufreq and sysfs
+References: <543BCF9A.1060603@redhat.com> <CAKohpokBpQ9zhSU3bJQ9pVv68s6cFg8TNsqi+sJK8V1OQUTWzA@mail.gmail.com> <543D6A5C.1060809@redhat.com> <CAKohponYvbpaphKCHoPH=6jDCpWop_BH_DKq6HwOx0SEe39sqw@mail.gmail.com>
+In-Reply-To: <CAKohponYvbpaphKCHoPH=6jDCpWop_BH_DKq6HwOx0SEe39sqw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Aaron Lu <aaron.lu@intel.com>
-
-GPIO descriptors are the preferred way over legacy GPIO numbers
-nowadays. Convert the driver to use GPIO descriptors internally but
-still allow passing legacy GPIO numbers from platform data to support
-existing platforms.
-
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Acked-by: Alexandre Courbot <acourbot@nvidia.com>
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
-Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/input/keyboard/gpio_keys_polled.c | 39 +++++++++++++++++++++----------
- include/linux/gpio_keys.h                 |  3 +++
- 2 files changed, 30 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/input/keyboard/gpio_keys_polled.c b/drivers/input/keyboard/gpio_keys_polled.c
-index 432d363..b7a514c 100644
---- a/drivers/input/keyboard/gpio_keys_polled.c
-+++ b/drivers/input/keyboard/gpio_keys_polled.c
-@@ -23,6 +23,7 @@
- #include <linux/ioport.h>
- #include <linux/platform_device.h>
- #include <linux/gpio.h>
-+#include <linux/gpio/consumer.h>
- #include <linux/gpio_keys.h>
- #include <linux/of.h>
- #include <linux/of_platform.h>
-@@ -51,15 +52,14 @@ static void gpio_keys_polled_check_state(struct input_dev *input,
- 	int state;
- 
- 	if (bdata->can_sleep)
--		state = !!gpio_get_value_cansleep(button->gpio);
-+		state = !!gpiod_get_value_cansleep(button->gpiod);
- 	else
--		state = !!gpio_get_value(button->gpio);
-+		state = !!gpiod_get_value(button->gpiod);
- 
- 	if (state != bdata->last_state) {
- 		unsigned int type = button->type ?: EV_KEY;
- 
--		input_event(input, type, button->code,
--			    !!(state ^ button->active_low));
-+		input_event(input, type, button->code, state);
- 		input_sync(input);
- 		bdata->count = 0;
- 		bdata->last_state = state;
-@@ -259,7 +259,6 @@ static int gpio_keys_polled_probe(struct platform_device *pdev)
- 	for (i = 0; i < pdata->nbuttons; i++) {
- 		struct gpio_keys_button *button = &pdata->buttons[i];
- 		struct gpio_keys_button_data *bdata = &bdev->data[i];
--		unsigned int gpio = button->gpio;
- 		unsigned int type = button->type ?: EV_KEY;
- 
- 		if (button->wakeup) {
-@@ -267,15 +266,31 @@ static int gpio_keys_polled_probe(struct platform_device *pdev)
- 			return -EINVAL;
- 		}
- 
--		error = devm_gpio_request_one(&pdev->dev, gpio, GPIOF_IN,
--					      button->desc ? : DRV_NAME);
--		if (error) {
--			dev_err(dev, "unable to claim gpio %u, err=%d\n",
--				gpio, error);
--			return error;
-+		/*
-+		 * Legacy GPIO number so request the GPIO here and
-+		 * convert it to descriptor.
-+		 */
-+		if (!button->gpiod && gpio_is_valid(button->gpio)) {
-+			unsigned flags = 0;
-+
-+			if (button->active_low)
-+				flags |= GPIOF_ACTIVE_LOW;
-+
-+			error = devm_gpio_request_one(&pdev->dev, button->gpio,
-+					flags, button->desc ? : DRV_NAME);
-+			if (error) {
-+				dev_err(dev, "unable to claim gpio %u, err=%d\n",
-+					button->gpio, error);
-+				return error;
-+			}
-+
-+			button->gpiod = gpio_to_desc(button->gpio);
- 		}
- 
--		bdata->can_sleep = gpio_cansleep(gpio);
-+		if (IS_ERR(button->gpiod))
-+			return PTR_ERR(button->gpiod);
-+
-+		bdata->can_sleep = gpiod_cansleep(button->gpiod);
- 		bdata->last_state = -1;
- 		bdata->threshold = DIV_ROUND_UP(button->debounce_interval,
- 						pdata->poll_interval);
-diff --git a/include/linux/gpio_keys.h b/include/linux/gpio_keys.h
-index 8b62246..ee2d8c6 100644
---- a/include/linux/gpio_keys.h
-+++ b/include/linux/gpio_keys.h
-@@ -2,6 +2,7 @@
- #define _GPIO_KEYS_H
- 
- struct device;
-+struct gpio_desc;
- 
- /**
-  * struct gpio_keys_button - configuration parameters
-@@ -17,6 +18,7 @@ struct device;
-  *			disable button via sysfs
-  * @value:		axis value for %EV_ABS
-  * @irq:		Irq number in case of interrupt keys
-+ * @gpiod:		GPIO descriptor
-  */
- struct gpio_keys_button {
- 	unsigned int code;
-@@ -29,6 +31,7 @@ struct gpio_keys_button {
- 	bool can_disable;
- 	int value;
- 	unsigned int irq;
-+	struct gpio_desc *gpiod;
- };
- 
- /**
--- 
-1.9.3
 
 
+On 10/16/2014 07:23 AM, Viresh Kumar wrote:
+> On 14 October 2014 23:54, Prarit Bhargava <prarit@redhat.com> wrote:
+>> Here's what I think we should do.  Taking a step back, the purpose of the
+>> cpufreq sysfs files is to allow userspace to read current cpu frequency
+>> settings, and to allow userspce to modify the governor and set the max & min
+>> ranges for cpu frequencies.  This can be done per device or for all cpus
+>> depending on the driver.
+> 
+> Okay.
+> 
+>> We have to guarantee that bothing reading and writing will always work and that
+>> write operations will always be atomic relative to userspace.  The current
+> 
+> Ok.
+> 
+>> implementation of cpufreq does this through the following locks:
+>>
+>> cpufreq_driver_lock: protects the cpufreq_cpu_data array and cpufreq_driver->boost
+>> cpufreq_governor_lock: protects the current governor
+> 
+> Its just for serialization..
+> 
+>> cpufreq_governor_mutex: protects the cpufreq_governor_list
+>> cpufreq_rwsem: protects the driver from being unloaded
+>> global_kobj_lock: protects the "cpufreq" kobject
+>> each policy has a rwsem (policy->rwsem): protects the cpufreq_policy struct
+>> each policy has a transition_lock (policy->transition): synchronizes
+>>                                                         frequency transitions
+>>
+>> While examining this code I was wondering exactly why we allow multiple readers
+>> and writers in cpufreq.  I could understand if we felt that this data was
+>> critical; but it really isn't.  A short delay here isn't that big of a deal IMO
+>> (if someone can produce a case where a delay would cause a serious problem I'd
+>>  like to hear it).  I don't even think it is safe in most cases to allow readers
+>> while cpufreq values are changing; if we're changing the governor userspace
+>> cannot rely on the value of (for example) cpuinfo_max_freq.
+> 
+> I don't know how reader writer lock will fail and a normal lock will not.
+> There is only benefit of rwlock, that readers can read things while
+> there is nobody
+> writing..
+> 
+>> So I'm proposing that we move to a single threaded read/write using, if
+> 
+> Okay, but how will that benefit us ?
+
+It will greatly simplify the code.  The locking isn't working in this code at
+all right now and is causing various reported panics ... you yourself are
+pushing a lock patch that serializes operations -- which is causing other
+problems during testing.
+
+> 
+>> possible, a single policy lock for now.  We might transition this back to a
+>> rwsem later on, however, for the first attempt at cleaning this up I think we
+>> should just stick with a simple lock.  In doing that, IMO we remove
+>>
+>> cpufreq_rwsem: protects the driver from being unloaded
+>> cpufreq_governor_lock: protects the current governor
+>> each policy has a rwsem (policy->rwsem): protects the cpufreq_policy struct
+>>
+>> and potentially
+>>
+>> cpufreq_driver_lock: protects the cpufreq_cpu_data array and cpufreq_driver->boost
+> 
+> Not really sure, but yeah we might be able to club few of them..
+> 
+>> After looking at the way the code would be structured, I'm wondering if
+>>
+>> cpufreq_governor_mutex: protects the cpufreq_governor_list
+>>
+>> is overkill.  The loading of a module should be atomic relative to the cpufreq
+>> code, so this lock may not be required.  (Admittedly I haven't tested that...)
+>>
+>> That would leave:
+>>
+>> global_kobj_lock: protects the "cpufreq" kobject
+>> each policy has a transition_lock (policy->transition): synchronizes
+>>                                                         frequency transitions
+>>
+>> and a new lock, perhaps called policy->lock, to serialize all events.
+>>
+>> Pros: We clean all this up to a simpler single threaded model.  Bugs and races
+>> here would be much easier to handle.  We're currently putting band-aid on
+>> band-aids in this code ATM and it looks like we're seeing old races expanded
+>> or new races exposed.
+>>
+>> Cons: We lose the ability to do simultaneous reads and writes ... although
+>> I remain unconvinced that this would ever be safe to do.  ie) If I change the
+>> governor while at the same time reading, for example, the current cpu
+>> frequency I cannot rely on that value to be valid.
+>>
+>> After that we can add some reference counting to the sysfs file accesses
+>> so that we can block after the sysfs removal when we change cpufreq
+>> governors.  I think that would be trivial and that it would resolve any races
+>> when adding and removing governor's sysfs files.
+> 
+> Not really sure, but if you solve few things with getting these bugs resolved
+> then we might apply your patches without any issues.
+> 
