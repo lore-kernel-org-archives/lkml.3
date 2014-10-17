@@ -1,57 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753876AbaJQTkx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 15:40:53 -0400
-Received: from smtprelay0069.hostedemail.com ([216.40.44.69]:35930 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753538AbaJQTkw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 15:40:52 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 40,2.5,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3871:3873:3874:4321:5007:6261:10011:10400:10848:11026:11232:11658:11914:12043:12296:12517:12519:12679:12740:13069:13095:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:1:0
-X-HE-Tag: mice47_7baf3b8912b50
-X-Filterd-Recvd-Size: 1581
-Message-ID: <1413574848.14629.6.camel@perches.com>
-Subject: Re: [PATCH] staging: octeon: Replace memcpy with ETH_ALEN
-From: Joe Perches <joe@perches.com>
-To: Balavasu <kp.balavasu@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 17 Oct 2014 12:40:48 -0700
-In-Reply-To: <20141017184705.GA17944@vasu-Inspiron-3542>
-References: <20141017184705.GA17944@vasu-Inspiron-3542>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753886AbaJQTtt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 15:49:49 -0400
+Received: from mail.kernel.org ([198.145.19.201]:41559 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753677AbaJQTts (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 15:49:48 -0400
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@suse.de>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jean Pihet <jean.pihet@linaro.org>,
+        Jen-Cheng Huang <tommy24@gatech.edu>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [GIT PULL 0/5] perf/core improvements and fixes
+Date: Fri, 17 Oct 2014 16:49:28 -0300
+Message-Id: <1413575373-10787-1-git-send-email-acme@kernel.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-10-18 at 00:17 +0530, Balavasu wrote:
-> This patch fixes the checkpatch.pl issue
-> WARNING: memcpy(dev->dev_addr, mac, ETH_ALEN);
+Hi Ingo,
 
-That is not the actual warning.
+	Please consider pulling,
 
-This is the warning:
+- Arnaldo
 
-Prefer ether_addr_copy() over memcpy() if the Ethernet addresses are __aligned(2)
+The following changes since commit 691286b5561aab2e1b00119bc328598c01250548:
 
-How have you made sure that mac can not have odd alignment?
+  kprobes/x86: Remove stale ARCH_SUPPORTS_KPROBES_ON_FTRACE define (2014-10-17 07:18:34 +0200)
 
-Make sure your commit message shows how you know
-that mac is appropriately aligned.
+are available in the git repository at:
 
-> diff --git a/drivers/staging/octeon/ethernet.c b/drivers/staging/octeon/ethernet.c
-[]
-> @@ -452,7 +452,7 @@ int cvm_oct_common_init(struct net_device *dev)
->  		mac = of_get_mac_address(priv->of_node);
->  
->  	if (mac)
-> -		memcpy(dev->dev_addr, mac, ETH_ALEN);
-> +		ether_addr_copy(dev->dev_addr, mac);
->  	else
->  		eth_hw_addr_random(dev);
->  
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-core-for-mingo
 
+for you to fetch changes up to e8564b710c6df2c3aeb56c507c22f4bcfa4c0b2d:
 
+  perf script: Add period as a default output column (2014-10-17 15:22:19 -0300)
+
+----------------------------------------------------------------
+perf/core improvements and fixes:
+
+User visible:
+
+o Add period data column and make it default in 'perf script' (Jiri Olsa)
+
+Infrastructure:
+
+* Move exit stuff from perf_evsel__delete to perf_evsel__exit, delete
+  should be just a front end for exit + free (Arnaldo Carvalho de Melo)
+
+* Add missing 'struct option' forward declaration (Arnaldo Carvalho de Melo)
+
+* No need to drag util/cgroup.h into evsel.h (Arnaldo Carvalho de Melo)
+
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+
+----------------------------------------------------------------
+Arnaldo Carvalho de Melo (3):
+      perf evsel: Move exit stuff from __delete to __exit
+      perf evlist: Add missing 'struct option' forward declaration
+      perf evsel: No need to drag util/cgroup.h
+
+Jiri Olsa (2):
+      perf script: Add period data column
+      perf script: Add period as a default output column
+
+ tools/perf/Documentation/perf-script.txt |  2 +-
+ tools/perf/builtin-record.c              |  1 +
+ tools/perf/builtin-script.c              | 21 +++++++++++++++++----
+ tools/perf/builtin-stat.c                |  1 +
+ tools/perf/util/evlist.h                 |  2 ++
+ tools/perf/util/evsel.c                  | 11 ++++++-----
+ tools/perf/util/evsel.h                  |  3 ++-
+ 7 files changed, 30 insertions(+), 11 deletions(-)
