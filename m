@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753672AbaJQSWR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 14:22:17 -0400
-Received: from mail.kernel.org ([198.145.19.201]:39371 "EHLO mail.kernel.org"
+	id S1753738AbaJQSXU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 14:23:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27293 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753263AbaJQSWQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 14:22:16 -0400
-Date: Fri, 17 Oct 2014 15:22:08 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@kernel.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Jen-Cheng(Tommy) Huang" <tommy24@gatech.edu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 8/9] perf script: Add period data column
-Message-ID: <20141017182208.GA3198@kernel.org>
-References: <1408977943-16594-1-git-send-email-jolsa@kernel.org>
- <1408977943-16594-9-git-send-email-jolsa@kernel.org>
- <53FDEC51.3070301@gmail.com>
- <20141017161006.GA19692@krava.redhat.com>
+	id S1753292AbaJQSXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 14:23:19 -0400
+Message-ID: <54415E86.1090609@redhat.com>
+Date: Fri, 17 Oct 2014 14:23:02 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141017161006.GA19692@krava.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: John Stultz <john.stultz@linaro.org>
+CC: lkml <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] clocksource, Add warning to clocksource_delta() validation
+ code
+References: <1413554226-12652-1-git-send-email-prarit@redhat.com> <CALAqxLWaVE2MG5HGigv-KJuOP1UgJrrLgOt+HueJx81h1dDX-w@mail.gmail.com>
+In-Reply-To: <CALAqxLWaVE2MG5HGigv-KJuOP1UgJrrLgOt+HueJx81h1dDX-w@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Oct 17, 2014 at 06:10:06PM +0200, Jiri Olsa escreveu:
-> On Wed, Aug 27, 2014 at 08:33:53AM -0600, David Ahern wrote:
-> > On 8/25/14, 8:45 AM, Jiri Olsa wrote:
-> > >Adding period data column to be displayed in perf script.
-> > >It's possible to get period values using -f option, like:
-> > >
-> > >   $ perf script -f comm,tid,time,period,ip,sym,dso
-> > >           :26019 26019 52414.329088:       3707  ffffffff8105443a native_write_msr_safe ([kernel.kallsyms])
-> > >           :26019 26019 52414.329088:         44  ffffffff8105443a native_write_msr_safe ([kernel.kallsyms])
-> > >           :26019 26019 52414.329093:       1987  ffffffff8105443a native_write_msr_safe ([kernel.kallsyms])
-> > >           :26019 26019 52414.329093:          6  ffffffff8105443a native_write_msr_safe ([kernel.kallsyms])
-> > >               ls 26019 52414.329442:     537558        3407c0639c _dl_map_object_from_fd (/usr/lib64/ld-2.17.so)
-> > >               ls 26019 52414.329442:       2099        3407c0639c _dl_map_object_from_fd (/usr/lib64/ld-2.17.so)
-> > >               ls 26019 52414.330181:    1242100        34080917bb get_next_seq (/usr/lib64/libc-2.17.so)
-> > >               ls 26019 52414.330181:       3774        34080917bb get_next_seq (/usr/lib64/libc-2.17.so)
-> > >               ls 26019 52414.331427:    1083662  ffffffff810c7dc2 update_curr ([kernel.kallsyms])
-> > >               ls 26019 52414.331427:        360  ffffffff810c7dc2 update_curr ([kernel.kallsyms])
-> > >
-> > >Cc: Andi Kleen <andi@firstfloor.org>
-> > >Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-> > >Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> > >Cc: David Ahern <dsahern@gmail.com>
-> > >Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> > >Cc: Ingo Molnar <mingo@kernel.org>
-> > >Cc: Jen-Cheng(Tommy) Huang <tommy24@gatech.edu>
-> > >Cc: Namhyung Kim <namhyung@kernel.org>
-> > >Cc: Paul Mackerras <paulus@samba.org>
-> > >Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > >Cc: Stephane Eranian <eranian@google.com>
-> > >Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-> > >---
-> > >  tools/perf/Documentation/perf-script.txt |  2 +-
-> > >  tools/perf/builtin-script.c              | 12 +++++++++++-
-> > >  2 files changed, 12 insertions(+), 2 deletions(-)
-> > 
-> > Acked-by: David Ahern <dsahern@gmail.com>
-> 
-> Arnaldo,
-> could you please pick this one and patch 9/9?
-> just realized this was left behind ;-)
 
-Applied both.
+
+On 10/17/2014 02:17 PM, John Stultz wrote:
+> On Fri, Oct 17, 2014 at 6:57 AM, Prarit Bhargava <prarit@redhat.com> wrote:
+>> A bug report came in against an older kernel which output "backward time"
+>> messages and the report noted that the upstream kernel worked.  After some
+>> investigation it turned out that one of the sockets was bad on the system
+>> and the "backward time" messages were caused by a real, but intermittent,
+>> hardware failure.
+>>
+>> Commit 09ec54429c6d10f87d1f084de53ae2c1c3a81108 ("clocksource: Move
+>> cycle_last validation to core code") modifies the x86 clocksource such that
+>> if a negative delta between two reads of time is calculated the
+>> clocksource_delta() code will return 0.  There is no warning when this
+>> occurs and there really should be one in order to catch not only hardware
+>> issues like the issue above, but potential coding issues as the code is
+>> modified.  This patch introduces a WARN() which will also dump a stack
+>> trace to the console so the exact code path can be evaluated.
+>>
+>> I tested this by booting on the broken hardware and left the system idle
+>> until a negative clocksource_delta() event occurred.
+>>
+>> Cc: John Stultz <john.stultz@linaro.org>
+>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+>> ---
+>>  kernel/time/timekeeping_internal.h |    7 ++++++-
+>>  1 file changed, 6 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/kernel/time/timekeeping_internal.h b/kernel/time/timekeeping_internal.h
+>> index 4ea005a..abe6bc8 100644
+>> --- a/kernel/time/timekeeping_internal.h
+>> +++ b/kernel/time/timekeeping_internal.h
+>> @@ -17,7 +17,12 @@ static inline cycle_t clocksource_delta(cycle_t now, cycle_t last, cycle_t mask)
+>>  {
+>>         cycle_t ret = (now - last) & mask;
+>>
+>> -       return (s64) ret > 0 ? ret : 0;
+>> +       if ((s64)ret > 0)
+>> +               return ret;
+>> +
+>> +       WARN(1, "Clocksource calculated negative delta, %lld.  last = %llu, now = %llu, mask = %llx\n",
+>> +            (s64)ret, last, now, mask);
+>> +       return 0;
+> 
+> 
+> I realize you followed up that this wasn't finished, but just as some
+> feedback, there's a number of types of hardware where there may be a
+> very slight skew between cpu TSC, and this will briefly trigger right
+> after each timekeeping update if a system is reading the clock
+> frequently (think of the case where the update happens on the cpu
+> thats just a little bit ahead, while a timestamping loop is running on
+> a cpu that is a little bit behind).
+
+Ah, interesting.  Okay ... drop this patch then.  Thanks for the info John.
+
+P.
