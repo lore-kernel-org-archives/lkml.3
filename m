@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702AbaJQUrj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 16:47:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48491 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751672AbaJQUri (ORCPT
+	id S1751769AbaJQUrs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 16:47:48 -0400
+Received: from va-smtp01.263.net ([54.88.144.211]:52040 "EHLO
+	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751730AbaJQUrq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 16:47:38 -0400
-Date: Fri, 17 Oct 2014 13:47:27 -0700
-From: tip-bot for Fabian Frederick <tipbot@zytor.com>
-Message-ID: <tip-03452d27c6cd9cebb59a6bb0fb6bd8557916c263@git.kernel.org>
-Cc: hpa@linux.intel.com, fabf@skynet.be, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, mingo@kernel.org, hpa@zytor.com
-Reply-To: hpa@zytor.com, mingo@kernel.org, hpa@linux.intel.com, fabf@skynet.be,
-        tglx@linutronix.de, linux-kernel@vger.kernel.org
-In-Reply-To: <1413576120-27147-1-git-send-email-fabf@skynet.be>
-References: <1413576120-27147-1-git-send-email-fabf@skynet.be>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cleanups] x86, msr:
-  Use seek definitions instead of hard-coded values
-Git-Commit-ID: 03452d27c6cd9cebb59a6bb0fb6bd8557916c263
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Fri, 17 Oct 2014 16:47:46 -0400
+X-RL-SENDER: zyw@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: zyw@rock-chips.com
+X-UNIQUE-TAG: <452b61ab76eec59695e5c73e5787dcda>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: zyw@rock-chips.com
+To: Heiko Stuebner <heiko@sntech.de>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>, dianders@chromium.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-rockchip@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Chris Zhong <zyw@rock-chips.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        linux-arm-kernel@lists.infradead.org, Tony Xie <xxx@rock-chips.com>
+Subject: [PATCH v2 3/4] ARM: rockchip: Add pmu-sram binding
+Date: Fri, 17 Oct 2014 13:47:33 -0700
+Message-Id: <1413578853-26256-1-git-send-email-zyw@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1413578696-26125-1-git-send-email-zyw@rock-chips.com>
+References: <1413578696-26125-1-git-send-email-zyw@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  03452d27c6cd9cebb59a6bb0fb6bd8557916c263
-Gitweb:     http://git.kernel.org/tip/03452d27c6cd9cebb59a6bb0fb6bd8557916c263
-Author:     Fabian Frederick <fabf@skynet.be>
-AuthorDate: Fri, 17 Oct 2014 22:01:59 +0200
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 17 Oct 2014 13:40:55 -0700
+From: Chris Zhong <zyw@rock-chips.com>
 
-x86, msr: Use seek definitions instead of hard-coded values
+The pmu-sram is used to store resume code, suspend/resume need get the
+address of it. Therefore add a binding and documentation for it.
 
-Replace 0/1 by SEEK_SET/SEEK_CUR.
-
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
-Link: http://lkml.kernel.org/r/1413576120-27147-1-git-send-email-fabf@skynet.be
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Tony Xie <xxx@rock-chips.com>
+Signed-off-by: Chris Zhong <zyw@rock-chips.com>
 ---
- arch/x86/kernel/msr.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/msr.c b/arch/x86/kernel/msr.c
-index 826c8b0..113e707 100644
---- a/arch/x86/kernel/msr.c
-+++ b/arch/x86/kernel/msr.c
-@@ -52,11 +52,11 @@ static loff_t msr_seek(struct file *file, loff_t offset, int orig)
- 
- 	mutex_lock(&inode->i_mutex);
- 	switch (orig) {
--	case 0:
-+	case SEEK_SET:
- 		file->f_pos = offset;
- 		ret = file->f_pos;
- 		break;
--	case 1:
-+	case SEEK_CUR:
- 		file->f_pos += offset;
- 		ret = file->f_pos;
- 		break;
+Changes in v2: None
+
+ .../devicetree/bindings/arm/rockchip/pmu-sram.txt  |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/rockchip/pmu-sram.txt
+
+diff --git a/Documentation/devicetree/bindings/arm/rockchip/pmu-sram.txt b/Documentation/devicetree/bindings/arm/rockchip/pmu-sram.txt
+new file mode 100644
+index 0000000..77284c0
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/rockchip/pmu-sram.txt
+@@ -0,0 +1,15 @@
++Rockchip SRAM for pmu:
++------------------------------
++
++The sram of pmu is used to store the function of resume from maskrom(the 1st
++level loader).
++
++Required node properties:
++- compatible : should be "rockchip,rk3288-pmu-sram"
++- reg : physical base address and the size of the registers window
++
++Example:
++	pmu_intmem@ff720000 {
++		compatible = "rockchip,rk3288-pmu-sram", "mmio-sram";
++		reg = <0xff720000 0x4000>;
++	};
+-- 
+1.7.9.5
+
