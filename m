@@ -1,249 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753021AbaJQNNF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 09:13:05 -0400
+	id S1753264AbaJQNNz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 09:13:55 -0400
 Received: from mail.logicbricks.com ([89.201.165.134]:17285 "EHLO
 	mail.logicbricks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752904AbaJQNNB (ORCPT
+	with ESMTP id S1752960AbaJQNNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 09:13:01 -0400
+	Fri, 17 Oct 2014 09:13:04 -0400
 From: Davor Joja <davorjoja@logicbricks.com>
 To: <linux-kernel@vger.kernel.org>
 CC: Davor Joja <davorjoja@logicbricks.com>
-Subject: [PATCH 10/10] bindings: video: Xylon logiCVC IP core device binding
-Date: Fri, 17 Oct 2014 15:07:01 +0200
+Subject: [PATCH 08/10] fbdev: Xylon framebuffer driver to fbdev Kconfig and Makefile
+Date: Fri, 17 Oct 2014 15:06:59 +0200
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1413551221-15187-1-git-send-email-davorjoja@logicbricks.com>
 References: <1413551221-15187-1-git-send-email-davorjoja@logicbricks.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [192.168.0.95]
-Message-ID: <facd04b5-0494-42cd-bea7-1d43f8df4b54@mail.xylon.local>
+Message-ID: <2c72d71f-1ade-45ad-bea5-57068d3d2191@mail.xylon.local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Xylon logiCVC IP core binding description.
+Adding Xylon framebuffer driver to fbdev Kconfig and Makefile.
 
 Signed-off-by: Davor Joja <davorjoja@logicbricks.com>
 ---
- .../devicetree/bindings/video/xylon-logicvc.txt    | 207 +++++++++++++++++++++
- 1 file changed, 207 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/video/xylon-logicvc.txt
+ drivers/video/fbdev/Kconfig  | 1 +
+ drivers/video/fbdev/Makefile | 1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/video/xylon-logicvc.txt b/Documentation/devicetree/bindings/video/xylon-logicvc.txt
-new file mode 100644
-index 0000000..12f24c5
---- /dev/null
-+++ b/Documentation/devicetree/bindings/video/xylon-logicvc.txt
-@@ -0,0 +1,207 @@
-+Binding for Xylon logiCVC configurable video controller IP core
-+
-+Required properties:
-+ - compatible: "xylon,logicvc-4.00.a", "xylon,logicvc-4.01.a"
-+ - reg: MMIO base address and size of the logiCVC IP core address space
-+ - interrupts-parent: the phandle for interrupt controller
-+ - interrupts: the interrupt number
-+ - pixel-stride: layer width in pixels
-+      Common for all available logiCVC standard layers.
-+
-+ - layer_N: layer has its own configuration described with below properties,
-+      where N is layer ID in range 0 - 4
-+   - bits-per-pixel: layer bits per pixel configuration (8, 16, 32)
-+         Layer is configured to be used with specified pixel width in bits.
-+         Pixels written to layer video memory must match in size to configured
-+         "bits-per-pixel" value.
-+         Note: Allowed "transparency" for values of "bits-per-pixel":
-+
-+         ===============================================
-+             bits-per-pixel             transparency
-+         ===============================================
-+                   8                       clut16
-+                   8                       clut32
-+                   8                       layer
-+                   16                      layer
-+                   32                      layer, pixel
-+         ===============================================
-+
-+   - type: layer type (rgb, yuv, alpha)
-+         Layer is configured to be used with specified color space.
-+         Pixels written to layer video memory must match specified color format.
-+         Type is set to "alpha" if layer contains only pixel alpha values
-+         used by layer above. Permitted layer IDs for configuring layer alpha
-+         are 1 and 3.
-+   - transparency: layer transparency (clut16, clut32, layer, pixel)
-+         logiCVC layer can be configured to have transparency control on
-+         CLUT, layer or pixel level.
-+         "CLUT" mode enables controlling of layer transparency by changing
-+         alpha value in logiCVC CLUT registers.
-+         "Layer" mode enables controlling of layer transparency by changing
-+         alpha value in single logiCVC register.
-+         "Pixel" mode enables controlling of pixel transparency by changing
-+         dedicated alpha bits of specific pixel in video memory.
-+         Note: "transparency" property is not used if "type" property is set
-+         to "alpha".
-+
-+Optional properties:
-+ - background-layer-bits-per-pixel: background layer bits per pixel (8, 16, 32)
-+      If omitted, last available layer is logiCVC standard layer, which has its
-+      own video memory of specific size, color format and specified
-+      bits per pixel.
-+      If 8, 16 or 32, last available layer is logiCVC background layer,
-+      with only specified bits per pixel value.
-+ - background-layer-type: background layer type (rgb, yuv)
-+      Must be used only when "background-layer-bits-per-pixel" exist.
-+      If set to "rgb", in case of 32 bits per pixel, background color register
-+      must be written with XRGB8888 value. In case of 16 bits per pixel,
-+      background color register must be written with RGB565 value.
-+      If set to "yuv", background color register must be written with XYUV8888
-+      value.
-+ - hsync-active-low: horizontal synchronization pulse is active low "L"
-+      If omitted, generated horizontal synchronization pulse polarity is logic
-+      high "H".
-+ - vsync-active-low: vertical synchronization pulse is active low "L"
-+      If omitted, generated vertical synchronization pulse polarity is logic
-+      high "H".
-+ - pixel-data-invert: output pixel data polarity is inverted
-+      If omitted, logiCVC outputs pixel data at default interface polarity.
-+ - pixel-data-output-trigger-high: output pixel data triggers on rising edge
-+      If omitted, logiCVC outputs pixel data on falling edge of pixel clock.
-+ - readable-regs: all logiCVC registers are available for reading
-+      If omitted, only Interrupt Status, Power Control and IP Version registers
-+      are available for reading.
-+ - size-position: logiCVC functionality for controlling on screen layer size
-+      and position available
-+      If omitted, functionality not available.
-+ - component-swap: swap the order of colour components inside the pixel
-+ - data-enable-active-low: data enable signal is active low "L"
-+      If omitted, generated data enable polarity is logic high "H".
-+ - display-interface-itu656: modifies RGB to YUV conversion coefficients
-+ - address: layer video memory address for layer_N where
-+      N is layer ID in range 0 - 4.
-+      logiCVC can be configured to have layer video memory address hardcoded
-+      as layer register reset value. This video memory is not part of the system
-+      memory. Still it is accessible by CPU and HW devices.
-+      If omitted, layer video memory address is set dynamically by
-+      device driver.Layer video memory address can be changed dynamically
-+      despite the hardcoded address.
-+      Note: Additionally, address range parameter can be set. It defines range
-+      of video memory in bytes starting from provided address. It is mandatory
-+      for physically last layer in memory. If range parameter is omitted for
-+      physically last layer, range will be by default set to 2048 lines.
-+      If omitted for any other layer then physically last layer,
-+      range will be calculated according to address of next physical layer.
-+ - buffer-offset: buffer address offset represented in number of lines
-+      Used only for HW buffer switching.
-+      If omitted, buffer offset variable is by default set to "0".
-+ - power-delay: delay in ms after enabling display power supply
-+      If omitted, delay is by default set to "0".
-+ - signal-delay: delay in ms after enabling display control and data signals
-+      in parallel and LVDS interface
-+      If omitted, delay is by default set to "0".
-+ - display-timings: custom display video mode timing parameters
-+      If omitted, driver will use its default video mode timings.
-+      native-mode optional parameter determines which video mode timings from
-+      the list are used. If native-mode parameter is omitted, first available
-+      video mode timings are used.
-+
-+Example:
-+
-+	logicvc_0: logicvc@40000000 {
-+		compatible = "xylon,logicvc-4.00.a";
-+		reg = <0x40030000 0x6000>;
-+		interrupt-parent = <&ps7_scugic_0>;
-+		interrupts = <0 59 4>;
-+		background-layer-bits-per-pixel = <32>;
-+		background-layer-type = "rgb";
-+		display-interface-itu656;
-+		hsync-active-low;
-+		vsync-active-low;
-+		data-enable-active-low;
-+		pixel-data-invert;
-+		pixel-data-output-trigger-high;
-+		readable-regs;
-+		size-position;
-+		pixel-stride = <2048>;
-+		power-delay = <100>;
-+		signal-delay = <50>;
-+		layer_0 {
-+			address = <0x30000000>
-+			buffer-offset = <512>;
-+			bits-per-pixel = <16>;
-+			type = "yuv";
-+			transparency = "layer";
-+			component-swap;
-+		};
-+		layer_1 {
-+			address = <0x30600000>;
-+			bits-per-pixel = <32>;
-+			type = "rgb";
-+			transparency = "pixel";
-+		};
-+		layer_2 {
-+			address = <0x31F50000>;
-+			bits-per-pixel = <8>;
-+			type = "rgb";
-+			transparency = "clut32";
-+		};
-+		layer_3 {
-+			address = <0x3216C000 0xCA8000>;
-+			bits-per-pixel = <16>;
-+			type = "rgb";
-+			transparency = "layer";
-+		};
-+
-+		display-timings {
-+			native-mode = <&wsxga>;
-+			hd720p: 1280x720 {
-+				clock-frequency = <74250000>;
-+				hactive = <1280>;
-+				vactive = <720>;
-+				hfront-porch = <110>;
-+				hback-porch = <220>;
-+				hsync-len = <40>;
-+				vfront-porch = <5>;
-+				vback-porch = <20>;
-+				vsync-len = <5>;
-+				hsync-active = <0>;
-+				vsync-active = <0>;
-+				de-active = <1>;
-+				pixelclk-active = <1>;
-+			};
-+			wsxga: 1680x1050 {
-+				clock-frequency = <119000000>;
-+				hactive = <1680>;
-+				vactive = <1050>;
-+				hfront-porch = <48>;
-+				hback-porch = <80>;
-+				hsync-len = <32>;
-+				vfront-porch = <3>;
-+				vback-porch = <21>;
-+				vsync-len = <6>;
-+			};
-+			hd1080p: 1920x1080 {
-+				clock-frequency = <148500000>;
-+				hactive = <1920>;
-+				vactive = <1080>;
-+				hfront-porch = <88>;
-+				hback-porch = <148>;
-+				hsync-len = <44>;
-+				vfront-porch = <4>;
-+				vback-porch = <36>;
-+				vsync-len = <5>;
-+			};
-+			TM050RBH01: 800x480 {
-+				clock-frequency = <30000000>;
-+				hactive = <800>;
-+				vactive = <480>;
-+				hfront-porch = <40>;
-+				hback-porch = <40>;
-+				hsync-len = <48>;
-+				vfront-porch = <13>;
-+				vback-porch = <29>;
-+				vsync-len = <3>;
-+			};
-+		};
-+	};
+diff --git a/drivers/video/fbdev/Kconfig b/drivers/video/fbdev/Kconfig
+index ccbe2ae..9fb8dcc 100644
+--- a/drivers/video/fbdev/Kconfig
++++ b/drivers/video/fbdev/Kconfig
+@@ -2473,6 +2473,7 @@ source "drivers/video/fbdev/omap/Kconfig"
+ source "drivers/video/fbdev/omap2/Kconfig"
+ source "drivers/video/fbdev/exynos/Kconfig"
+ source "drivers/video/fbdev/mmp/Kconfig"
++source "drivers/video/fbdev/xylon/Kconfig"
+ 
+ config FB_SH_MOBILE_MERAM
+ 	tristate "SuperH Mobile MERAM read ahead support"
+diff --git a/drivers/video/fbdev/Makefile b/drivers/video/fbdev/Makefile
+index 1979aff..537fcb2 100644
+--- a/drivers/video/fbdev/Makefile
++++ b/drivers/video/fbdev/Makefile
+@@ -132,6 +132,7 @@ obj-$(CONFIG_FB_JZ4740)		  += jz4740_fb.o
+ obj-$(CONFIG_FB_PUV3_UNIGFX)      += fb-puv3.o
+ obj-$(CONFIG_FB_HYPERV)		  += hyperv_fb.o
+ obj-$(CONFIG_FB_OPENCORES)	  += ocfb.o
++obj-y                             += xylon/
+ 
+ # Platform or fallback drivers go here
+ obj-$(CONFIG_FB_UVESA)            += uvesafb.o
 -- 
 1.9.1
 
