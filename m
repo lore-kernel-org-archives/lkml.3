@@ -1,126 +1,298 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688AbaJQEXi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 00:23:38 -0400
-Received: from regular1.263xmail.com ([211.150.99.139]:33537 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750753AbaJQEXT (ORCPT
+	id S1751747AbaJQEiX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 00:38:23 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:57110 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750753AbaJQEiV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 00:23:19 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: mark.yao@rock-chips.com
-X-FST-TO: airlied@gmail.com
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: mark.yao@rock-chips.com
-X-UNIQUE-TAG: <2b4ab5cad240cf7167a462ba901bf20e>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <5440999D.5010601@rock-chips.com>
-Date: Fri, 17 Oct 2014 12:22:53 +0800
-From: Mark yao <mark.yao@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Dave Airlie <airlied@gmail.com>
-CC: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Rob Clark <robdclark@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rom Lemarchand <romlem@google.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-doc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>, linux-api@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, dianders@chromium.org,
-        =?UTF-8?B?U3TDqXBoYW5lIE1hcmNoZXNpbg==?= <marcheu@chromium.org>,
-        dbehr@chromium.org, Olof Johansson <olof@lixom.net>,
-        djkurtz@chromium.org, xjq@rock-chips.com, kfx@rock-chips.com,
-        cym@rock-chips.com, cf@rock-chips.com, zyw@rock-chips.com,
-        xxm@rock-chips.com, huangtao@rock-chips.com, kever.yang@rock-chips.com,
-        yxj@rock-chips.com, wxt@rock-chips.com, xw@rock-chips.com
-Subject: Re: [PATCH v11 0/3] Add drm driver for Rockchip Socs
-References: <1412763781-31533-1-git-send-email-mark.yao@rock-chips.com>	<5440658D.6020504@rock-chips.com> <CAPM=9twVrmni_BRV_9-QLk+JUbcgXEjAM0g-tYH6su8=sDQ35g@mail.gmail.com>
-In-Reply-To: <CAPM=9twVrmni_BRV_9-QLk+JUbcgXEjAM0g-tYH6su8=sDQ35g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Fri, 17 Oct 2014 00:38:21 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: akpm@linux-foundation.org, Steve Capper <steve.capper@linaro.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, benh@kernel.crashing.org,
+        mpe@ellerman.id.au
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH V2 1/2] mm: Update generic gup implementation to handle hugepage directory
+Date: Fri, 17 Oct 2014 10:08:06 +0530
+Message-Id: <1413520687-31729-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.9.1
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14101704-0009-0000-0000-0000019E9A0A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014年10月17日 08:46, Dave Airlie wrote:
-> On 17 October 2014 10:40, Mark yao <mark.yao@rock-chips.com> wrote:
->> Hi
->> I think Rockchip drm driver is ready now, can it land?
-> I probably want to wait until -rc1 though I suppose since its a new
-> driver and self contained we might be able to see if Linus is
-> interested in squeezing it in.
->
-> Can you send me a git pull request for it against drm-next or even 3.17.
->
-> Dave.
-Hi, Dave
-     the git pull request:
+Update generic gup implementation with powerpc specific details.
+On powerpc at pmd level we can have hugepte, normal pmd pointer
+or a pointer to the hugepage directory.
 
-The following changes since commit 4db36870b92cdf5a79615aeabc68efc97df13918:
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+Changes from V1: 
+* Folded arm/arm64 related changes into the patch
+* Dropped pgd_huge from generic header
 
-   FROMLIST: iommu/rockchip: rk3288 iommu driver (2014-10-17 10:26:18 +0800)
+ arch/arm/include/asm/pgtable.h   |   2 +
+ arch/arm64/include/asm/pgtable.h |   2 +
+ include/linux/mm.h               |  26 +++++++++
+ mm/gup.c                         | 113 +++++++++++++++++++--------------------
+ 4 files changed, 84 insertions(+), 59 deletions(-)
 
-are available in the git repository at:
-
-   https://github.com/markyzq/kernel-drm-rockchip.git mydrm
-
-for you to fetch changes up to 0db2be88bea08ab8afe5e3d13f8a2c9e637a9514:
-
-   dt-bindings: video: Add documentation for rockchip vop (2014-10-17 
-10:27:15 +0800)
-
-----------------------------------------------------------------
-Mark yao (3):
-       drm: rockchip: Add basic drm driver
-       dt-bindings: video: Add for rockchip display subsytem
-       dt-bindings: video: Add documentation for rockchip vop
-
-  .../devicetree/bindings/video/rockchip-drm.txt     |   19 +
-  .../devicetree/bindings/video/rockchip-vop.txt     |   58 +
-  drivers/gpu/drm/Kconfig                            |    2 +
-  drivers/gpu/drm/Makefile                           |    1 +
-  drivers/gpu/drm/rockchip/Kconfig                   |   17 +
-  drivers/gpu/drm/rockchip/Makefile                  |    8 +
-  drivers/gpu/drm/rockchip/rockchip_drm_drv.c        |  449 ++++++
-  drivers/gpu/drm/rockchip/rockchip_drm_drv.h        |   54 +
-  drivers/gpu/drm/rockchip/rockchip_drm_fb.c         |  200 +++
-  drivers/gpu/drm/rockchip/rockchip_drm_fb.h         |   28 +
-  drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c      |  210 +++
-  drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h      |   20 +
-  drivers/gpu/drm/rockchip/rockchip_drm_gem.c        |  293 ++++
-  drivers/gpu/drm/rockchip/rockchip_drm_gem.h        |   54 +
-  drivers/gpu/drm/rockchip/rockchip_drm_vop.c        | 1427 
-++++++++++++++++++++
-  drivers/gpu/drm/rockchip/rockchip_drm_vop.h        |  196 +++
-  16 files changed, 3036 insertions(+)
-  create mode 100644 
-Documentation/devicetree/bindings/video/rockchip-drm.txt
-  create mode 100644 
-Documentation/devicetree/bindings/video/rockchip-vop.txt
-  create mode 100644 drivers/gpu/drm/rockchip/Kconfig
-  create mode 100644 drivers/gpu/drm/rockchip/Makefile
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_drv.c
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_drv.h
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fb.c
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fb.h
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_gem.c
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_gem.h
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_vop.c
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_vop.h
-
+diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
+index 90aa4583b308..46f81fbaa4a5 100644
+--- a/arch/arm/include/asm/pgtable.h
++++ b/arch/arm/include/asm/pgtable.h
+@@ -181,6 +181,8 @@ extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
+ /* to find an entry in a kernel page-table-directory */
+ #define pgd_offset_k(addr)	pgd_offset(&init_mm, addr)
+ 
++#define pgd_huge(pgd)		(0)
++
+ #define pmd_none(pmd)		(!pmd_val(pmd))
+ #define pmd_present(pmd)	(pmd_val(pmd))
+ 
+diff --git a/arch/arm64/include/asm/pgtable.h b/arch/arm64/include/asm/pgtable.h
+index cefd3e825612..ed8f42497ac4 100644
+--- a/arch/arm64/include/asm/pgtable.h
++++ b/arch/arm64/include/asm/pgtable.h
+@@ -464,6 +464,8 @@ static inline pmd_t pmd_modify(pmd_t pmd, pgprot_t newprot)
+ extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
+ extern pgd_t idmap_pg_dir[PTRS_PER_PGD];
+ 
++#define pgd_huge(pgd)		(0)
++
+ /*
+  * Encode and decode a swap entry:
+  *	bits 0-1:	present (must be zero)
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 02d11ee7f19d..f97732412cb4 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1219,6 +1219,32 @@ long get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+ 		    struct vm_area_struct **vmas);
+ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 			struct page **pages);
++
++#ifdef CONFIG_HAVE_GENERIC_RCU_GUP
++#ifndef is_hugepd
++/*
++ * Some architectures support hugepage directory format that is
++ * required to support different hugetlbfs sizes.
++ */
++typedef struct { unsigned long pd; } hugepd_t;
++#define is_hugepd(hugepd) (0)
++#define __hugepd(x) ((hugepd_t) { (x) })
++static inline int gup_hugepd(hugepd_t hugepd, unsigned long addr,
++			     unsigned pdshift, unsigned long end,
++			     int write, struct page **pages, int *nr)
++{
++	return 0;
++}
++#else
++extern int gup_hugepd(hugepd_t hugepd, unsigned long addr,
++		      unsigned pdshift, unsigned long end,
++		      int write, struct page **pages, int *nr);
++#endif
++extern int gup_huge_pte(pte_t orig, pte_t *ptep, unsigned long addr,
++			unsigned long sz, unsigned long end, int write,
++			struct page **pages, int *nr);
++#endif
++
+ struct kvec;
+ int get_kernel_pages(const struct kvec *iov, int nr_pages, int write,
+ 			struct page **pages);
+diff --git a/mm/gup.c b/mm/gup.c
+index cd62c8c90d4a..13c560ef9ddf 100644
+--- a/mm/gup.c
++++ b/mm/gup.c
+@@ -786,65 +786,31 @@ static int gup_pte_range(pmd_t pmd, unsigned long addr, unsigned long end,
+ }
+ #endif /* __HAVE_ARCH_PTE_SPECIAL */
+ 
+-static int gup_huge_pmd(pmd_t orig, pmd_t *pmdp, unsigned long addr,
+-		unsigned long end, int write, struct page **pages, int *nr)
++int gup_huge_pte(pte_t orig, pte_t *ptep, unsigned long addr,
++		 unsigned long sz, unsigned long end, int write,
++		 struct page **pages, int *nr)
+ {
+-	struct page *head, *page, *tail;
+ 	int refs;
++	unsigned long pte_end;
++	struct page *head, *page, *tail;
+ 
+-	if (write && !pmd_write(orig))
+-		return 0;
+-
+-	refs = 0;
+-	head = pmd_page(orig);
+-	page = head + ((addr & ~PMD_MASK) >> PAGE_SHIFT);
+-	tail = page;
+-	do {
+-		VM_BUG_ON_PAGE(compound_head(page) != head, page);
+-		pages[*nr] = page;
+-		(*nr)++;
+-		page++;
+-		refs++;
+-	} while (addr += PAGE_SIZE, addr != end);
+ 
+-	if (!page_cache_add_speculative(head, refs)) {
+-		*nr -= refs;
++	if (write && !pte_write(orig))
+ 		return 0;
+-	}
+ 
+-	if (unlikely(pmd_val(orig) != pmd_val(*pmdp))) {
+-		*nr -= refs;
+-		while (refs--)
+-			put_page(head);
++	if (!pte_present(orig))
+ 		return 0;
+-	}
+ 
+-	/*
+-	 * Any tail pages need their mapcount reference taken before we
+-	 * return. (This allows the THP code to bump their ref count when
+-	 * they are split into base pages).
+-	 */
+-	while (refs--) {
+-		if (PageTail(tail))
+-			get_huge_page_tail(tail);
+-		tail++;
+-	}
+-
+-	return 1;
+-}
+-
+-static int gup_huge_pud(pud_t orig, pud_t *pudp, unsigned long addr,
+-		unsigned long end, int write, struct page **pages, int *nr)
+-{
+-	struct page *head, *page, *tail;
+-	int refs;
++	pte_end = (addr + sz) & ~(sz-1);
++	if (pte_end < end)
++		end = pte_end;
+ 
+-	if (write && !pud_write(orig))
+-		return 0;
++	/* hugepages are never "special" */
++	VM_BUG_ON(!pfn_valid(pte_pfn(orig)));
+ 
+ 	refs = 0;
+-	head = pud_page(orig);
+-	page = head + ((addr & ~PUD_MASK) >> PAGE_SHIFT);
++	head = pte_page(orig);
++	page = head + ((addr & (sz-1)) >> PAGE_SHIFT);
+ 	tail = page;
+ 	do {
+ 		VM_BUG_ON_PAGE(compound_head(page) != head, page);
+@@ -859,13 +825,18 @@ static int gup_huge_pud(pud_t orig, pud_t *pudp, unsigned long addr,
+ 		return 0;
+ 	}
+ 
+-	if (unlikely(pud_val(orig) != pud_val(*pudp))) {
++	if (unlikely(pte_val(orig) != pte_val(*ptep))) {
+ 		*nr -= refs;
+ 		while (refs--)
+ 			put_page(head);
+ 		return 0;
+ 	}
+ 
++	/*
++	 * Any tail pages need their mapcount reference taken before we
++	 * return. (This allows the THP code to bump their ref count when
++	 * they are split into base pages).
++	 */
+ 	while (refs--) {
+ 		if (PageTail(tail))
+ 			get_huge_page_tail(tail);
+@@ -898,10 +869,19 @@ static int gup_pmd_range(pud_t pud, unsigned long addr, unsigned long end,
+ 			if (pmd_numa(pmd))
+ 				return 0;
+ 
+-			if (!gup_huge_pmd(pmd, pmdp, addr, next, write,
+-				pages, nr))
++			if (!gup_huge_pte(__pte(pmd_val(pmd)), (pte_t *)pmdp,
++					  addr, PMD_SIZE, next,
++					  write, pages, nr))
+ 				return 0;
+ 
++		} else if (unlikely(is_hugepd(__hugepd(pmd_val(pmd))))) {
++			/*
++			 * architecture have different format for hugetlbfs
++			 * pmd format and THP pmd format
++			 */
++			if (!gup_hugepd(__hugepd(pmd_val(pmd)), addr, PMD_SHIFT,
++					next, write, pages, nr))
++				return 0;
+ 		} else if (!gup_pte_range(pmd, addr, next, write, pages, nr))
+ 				return 0;
+ 	} while (pmdp++, addr = next, addr != end);
+@@ -909,22 +889,27 @@ static int gup_pmd_range(pud_t pud, unsigned long addr, unsigned long end,
+ 	return 1;
+ }
+ 
+-static int gup_pud_range(pgd_t *pgdp, unsigned long addr, unsigned long end,
++static int gup_pud_range(pgd_t pgd, unsigned long addr, unsigned long end,
+ 		int write, struct page **pages, int *nr)
+ {
+ 	unsigned long next;
+ 	pud_t *pudp;
+ 
+-	pudp = pud_offset(pgdp, addr);
++	pudp = pud_offset(&pgd, addr);
+ 	do {
+ 		pud_t pud = ACCESS_ONCE(*pudp);
+ 
+ 		next = pud_addr_end(addr, end);
+ 		if (pud_none(pud))
+ 			return 0;
+-		if (pud_huge(pud)) {
+-			if (!gup_huge_pud(pud, pudp, addr, next, write,
+-					pages, nr))
++		if (unlikely(pud_huge(pud))) {
++			if (!gup_huge_pte(__pte(pud_val(pud)), (pte_t *)pudp,
++					  addr, PUD_SIZE, next,
++					  write, pages, nr))
++				return 0;
++		} else if (unlikely(is_hugepd(__hugepd(pud_val(pud))))) {
++			if (!gup_hugepd(__hugepd(pud_val(pud)), addr, PUD_SHIFT,
++					next, write, pages, nr))
+ 				return 0;
+ 		} else if (!gup_pmd_range(pud, addr, next, write, pages, nr))
+ 			return 0;
+@@ -970,10 +955,21 @@ int __get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 	local_irq_save(flags);
+ 	pgdp = pgd_offset(mm, addr);
+ 	do {
++		pgd_t pgd = ACCESS_ONCE(*pgdp);
++
+ 		next = pgd_addr_end(addr, end);
+-		if (pgd_none(*pgdp))
++		if (pgd_none(pgd))
+ 			break;
+-		else if (!gup_pud_range(pgdp, addr, next, write, pages, &nr))
++		if (unlikely(pgd_huge(pgd))) {
++			if (!gup_huge_pte(__pte(pgd_val(pgd)), (pte_t *)pgdp,
++					  addr, PGDIR_SIZE, next,
++					  write, pages, &nr))
++				break;
++		} else if (unlikely(is_hugepd(__hugepd(pgd_val(pgd))))) {
++			if (!gup_hugepd(__hugepd(pgd_val(pgd)), addr, PGDIR_SHIFT,
++					next, write, pages, &nr))
++				break;
++		} else if (!gup_pud_range(pgd, addr, next, write, pages, &nr))
+ 			break;
+ 	} while (pgdp++, addr = next, addr != end);
+ 	local_irq_restore(flags);
+@@ -1028,5 +1024,4 @@ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 
+ 	return ret;
+ }
+-
+ #endif /* CONFIG_HAVE_GENERIC_RCU_GUP */
+-- 
+1.9.1
 
