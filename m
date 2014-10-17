@@ -1,83 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753261AbaJQOnl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 10:43:41 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:56201 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751408AbaJQOnj (ORCPT
+	id S1753197AbaJQOpv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 10:45:51 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:57200 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751846AbaJQOpu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 10:43:39 -0400
+	Fri, 17 Oct 2014 10:45:50 -0400
+Date: Fri, 17 Oct 2014 09:45:32 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Huang Rui <ray.huang@amd.com>
+CC: Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Vincent Wan <vincent.wan@amd.com>, Tony Li <tony.li@amd.com>,
+        <linux-usb@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 06/16] usb: dwc3: add disscramble quirk
+Message-ID: <20141017144532.GB26260@saruman>
+Reply-To: <balbi@ti.com>
+References: <1413536021-4886-1-git-send-email-ray.huang@amd.com>
+ <1413536021-4886-7-git-send-email-ray.huang@amd.com>
 MIME-Version: 1.0
-In-Reply-To: <1413556088-30194-1-git-send-email-daniel.thompson@linaro.org>
-References: <1413556088-30194-1-git-send-email-daniel.thompson@linaro.org>
-Date: Fri, 17 Oct 2014 10:43:39 -0400
-Message-ID: <CAF6AEGscgtzr6pW+M6xb3Ht7pMknd7ZT5Qd1zJYExgJf8wqaVg@mail.gmail.com>
-Subject: Re: [PATCH 3.17] drm/msm: Fix fbdev for 16- and 24-bit modes.
-From: Rob Clark <robdclark@gmail.com>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: David Airlie <airlied@linux.ie>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        linaro-kernel@lists.linaro.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LyciRD1jyfeSSjG0"
+Content-Disposition: inline
+In-Reply-To: <1413536021-4886-7-git-send-email-ray.huang@amd.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 17, 2014 at 10:28 AM, Daniel Thompson
-<daniel.thompson@linaro.org> wrote:
-> Currently forcing the video mode from the kernel command line (for example
-> video=HDMI-A-1:1280x720-16@60) does not correctly set the number of bits
-> per pixel. This is due to a rather aggressive override in
-> msm_fbdev_create(). This is a particular problem for Android bring up
-> because the software EGL fallbacks don't support 32bpp.
->
-> This problem could be trivially fixed by removing the override completely.
-> However to avoid regressing commit 96673ecbd7f6 ("drm/msm: default to
-> XR24 rather than AR24") this patch continues to override the depth if
-> there are 32 bits per pixel.
->
-> Change was tested by dd'ing a test image to /dev/fb0 with no video=
-> (still 32bpp, DBG() message observed), video=1920x1080-32@60 (message
-> observed), video=1920x1080-24@60 and video=1920x1080-16@60 .
->
-> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-> Cc: David Airlie <airlied@linux.ie>
-> Cc: Rob Clark <robdclark@gmail.com>
+--LyciRD1jyfeSSjG0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi,
+
+On Fri, Oct 17, 2014 at 04:53:31PM +0800, Huang Rui wrote:
+> AMD NL fpga needs to enable disscramble quirk. And this quirk doesn't nee=
+d on
+> the true soc.
+>=20
+> Signed-off-by: Huang Rui <ray.huang@amd.com>
 > ---
->  drivers/gpu/drm/msm/msm_fbdev.c | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/gpu/drm/msm/msm_fbdev.c b/drivers/gpu/drm/msm/msm_fbdev.c
-> index ab5bfd2..ed0171d 100644
-> --- a/drivers/gpu/drm/msm/msm_fbdev.c
-> +++ b/drivers/gpu/drm/msm/msm_fbdev.c
-> @@ -93,8 +93,10 @@ static int msm_fbdev_create(struct drm_fb_helper *helper,
->         uint32_t paddr;
->         int ret, size;
->
-> -       sizes->surface_bpp = 32;
-> -       sizes->surface_depth = 24;
-> +       if (sizes->surface_bpp == 32) {
-> +               DBG("forcing surface depth to 24\n");
-> +               sizes->surface_depth = 24;
-> +       }
+>  drivers/usb/dwc3/core.c          | 8 +++++++-
+>  drivers/usb/dwc3/dwc3-pci.c      | 5 +++++
+>  drivers/usb/dwc3/platform_data.h | 4 ++++
+>  3 files changed, 16 insertions(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+> index 50c0eae..819e501 100644
+> --- a/drivers/usb/dwc3/core.c
+> +++ b/drivers/usb/dwc3/core.c
+> @@ -422,7 +422,6 @@ static int dwc3_core_init(struct dwc3 *dwc)
+> =20
+>  	reg =3D dwc3_readl(dwc->regs, DWC3_GCTL);
+>  	reg &=3D ~DWC3_GCTL_SCALEDOWN_MASK;
+> -	reg &=3D ~DWC3_GCTL_DISSCRAMBLE;
+> =20
+>  	switch (DWC3_GHWPARAMS1_EN_PWROPT(dwc->hwparams.hwparams1)) {
+>  	case DWC3_GHWPARAMS1_EN_PWROPT_CLK:
+> @@ -461,6 +460,13 @@ static int dwc3_core_init(struct dwc3 *dwc)
+>  		dwc->is_fpga =3D true;
+>  	}
+> =20
+> +	if ((dwc->quirks & DWC3_QUIRK_AMD_NL) && dwc->is_fpga)
+> +		dwc->quirks |=3D DWC3_QUIRK_DISSCRAMBLE;
+> +
+> +	if (dwc->quirks & DWC3_QUIRK_DISSCRAMBLE)
 
-Thanks.. we could probably even drop this forcing depth to 24.. from a
-quick check in drm_fb_helper_single_fb_probe() the default is 24/32
-which should be enough for the "flicker-free" handover from splash
-screen to X.
+this should only be set if is_fpga, and this quirk should be a 1-bit
+flag, so here's what you should do:
 
-Not really sure why I was forcing the depth/bpp.. I think copy/paste
-of a hack from another driver to do video 'underlays' ;-)
+	WARN_ONCE(dwc->disable_scramble_quirk && !dwc->is_fpga,
+		"disable_scramble cannot be used on non-FPGA builds\n");
 
-BR,
--R
+	if (dwc->disable_scramble && dwc->is_fpga)
+		reg |=3D DWC3_GCTL_DISSCRAMBLE;
+	else
+		reg &=3D ~DWC3_GCTL_DISSCRAMBLE;
 
->
->         DBG("create fbdev: %dx%d@%d (%dx%d)", sizes->surface_width,
->                         sizes->surface_height, sizes->surface_bpp,
-> --
-> 1.9.3
->
+> +		reg |=3D DWC3_GCTL_DISSCRAMBLE;
+> +	else
+> +		reg &=3D ~DWC3_GCTL_DISSCRAMBLE;
+
+add a blank line here, to aid readability.
+
+>  	/*
+>  	 * WORKAROUND: DWC3 revisions <1.90a have a bug
+>  	 * where the device can fail to connect at SuperSpeed
+> diff --git a/drivers/usb/dwc3/dwc3-pci.c b/drivers/usb/dwc3/dwc3-pci.c
+> index 18569a4..a89db6c 100644
+> --- a/drivers/usb/dwc3/dwc3-pci.c
+> +++ b/drivers/usb/dwc3/dwc3-pci.c
+> @@ -146,6 +146,11 @@ static int dwc3_pci_probe(struct pci_dev *pci,
+>  	res[1].name	=3D "dwc_usb3";
+>  	res[1].flags	=3D IORESOURCE_IRQ;
+> =20
+> +	if (pci->vendor =3D=3D PCI_VENDOR_ID_AMD && pci->device =3D=3D
+> +			PCI_DEVICE_ID_AMD_NL) {
+> +		dwc3_pdata.quirks |=3D DWC3_QUIRK_AMD_NL;
+> +	}
+
+should be part of another patch and the quirk is
+"disable_scramble_quirk", not AMD.
+
+--=20
+balbi
+
+--LyciRD1jyfeSSjG0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUQSuMAAoJEIaOsuA1yqREM84P/16X8tKJCCHzOQd2yYvvi2FG
+JkDbxb4I5mX9AmxAYpjr3mG/WTaLNZteRsh2lrck/oXzD4+l7BM6zXE0z8vxS1rx
+7xxP84H6eBX6J1NVKZJi3CTJ4mUo2jW4RucPN/fETH24odEmxIuuutagQd8ET2/v
+gYofKcWfXJTL/Id7ZHRJ+1Ah/QlfDM1W8xcOP0wldt7MA3tXX7r9HTi0m8ortLSU
+LK277cS5btbgh3GiZrPinDi94l7TBmy3u58FzUoV01Tc0x0bPNC4G5iwy5hZLteW
+pEXtSUUtd19Ise8nuiC0G7kCArAokaMb5EXMIFPotP5fGdCn98AKTfhRMaUMqOdx
+pD5mKcbhKHnccFuUpXt7+etdt9y+BaEWb1aASlhe/DFvmwbrr518vLqoDeA1QrWc
+7/sbnSZoeO6eikC9K9DaQrGfMHRRHhXr3drkSc0yzdaN68/PO5Z+R26KiScvszrP
+iCkaBdFQoUmgIFXCB/h5XavQ9vQOMVK0hmeQs7CUQ4iReofEZ00dqc3BARu/i2DX
+u5itcnHJ5DtjHBPh1nt/LekLT2AcJuWjxjHM0cHXoldPJc2tivS++Tpt8+crz8Tm
+0tChQVzR2g8oJuHVAucJtCETs5buEWfG6ZvjkmJW/kPdKtvQTPHtiY9eXz9JD2zo
+UpKYdfsgSV46GVsCPyQs
+=hFRu
+-----END PGP SIGNATURE-----
+
+--LyciRD1jyfeSSjG0--
