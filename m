@@ -1,54 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751334AbaJQUzf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 16:55:35 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:56893 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750867AbaJQUzd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 16:55:33 -0400
-Date: Fri, 17 Oct 2014 13:55:30 -0700
-From: Benjamin Poirier <benjamin.poirier@gmail.com>
-To: =?iso-8859-1?Q?Llu=EDs?= Batlle i Rossell <viric@viric.name>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org,
-        Carles =?iso-8859-1?Q?Pag=E8s?= <page@cubata.homelinux.net>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Regarding tx-nocache-copy in the Sheevaplug
-Message-ID: <20141017205530.GA7367@f1.synalogic.ca>
-References: <20141013105246.GD1972@vicerveza.homeunix.net>
- <20141015215701.GA4109@f1.synalogic.ca>
- <1413413127.17186.5.camel@edumazet-glaptop2.roam.corp.google.com>
- <20141016173401.GA16515@f1.synalogic.ca>
- <20141016174628.GL1972@vicerveza.homeunix.net>
+	id S1751279AbaJQVGe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 17:06:34 -0400
+Received: from mail-bl2on0075.outbound.protection.outlook.com ([65.55.169.75]:26400
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750765AbaJQVGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 17:06:33 -0400
+X-Greylist: delayed 1962 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Oct 2014 17:06:32 EDT
+From: <tthayer@opensource.altera.com>
+To: <bp@alien8.de>, <dougthompson@xmission.com>, <m.chehab@samsung.com>,
+        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <linux@arm.linux.org.uk>, <dinguyen@altera.com>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <tthayer.linux@gmail.com>,
+        <tthayer@opensource.altera.com>, <tthayer@altera.com>
+Subject: [PATCHv2 1/4] arm: socfpga: Enable L2 Cache ECC on startup.
+Date: Fri, 17 Oct 2014 15:33:45 -0500
+Message-ID: <1413578029-13205-2-git-send-email-tthayer@opensource.altera.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1413578029-13205-1-git-send-email-tthayer@opensource.altera.com>
+References: <1413578029-13205-1-git-send-email-tthayer@opensource.altera.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141016174628.GL1972@vicerveza.homeunix.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: DM2PR00CA0029.namprd00.prod.outlook.com (25.160.243.39) To
+ BN1PR03MB124.namprd03.prod.outlook.com (10.255.201.23)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR03MB124;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 0367A50BB1
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(22564002)(199003)(106356001)(81156004)(48376002)(87976001)(76482002)(77156001)(88136002)(62966002)(87286001)(66066001)(64706001)(95666004)(53416004)(229853001)(33646002)(47776003)(107046002)(85306004)(20776003)(31966008)(89996001)(85852003)(50466002)(105586002)(42186005)(102836001)(104166001)(46102003)(15975445006)(80022003)(40100003)(97736003)(19580405001)(122386002)(19580395003)(77096002)(93916002)(99396003)(76176999)(86152002)(86362001)(92566001)(4396001)(575784001)(50986999)(2201001)(69596002)(101416001)(15202345003)(21056001)(92726001)(50226001)(120916001)(921003)(1121002);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR03MB124;H:dinh-ubuntu.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/10/16 19:46, Lluís Batlle i Rossell wrote:
-[...]
-> 
-> Hello all,
-> 
-> it seems I was a bit wrong - although enabling back tx-nocache-copy makes the
-> tx-errors happen much less often (ssh complaining about HMAC), they still
-> happen. It seems that something was introduced in some recent kernels that broke
-> the tx offload.
-> 
-> I have no idea what it can be, but since 2.6 until at least 3.10 the network
-> driver worked fine with tx offload in this sheevaplug board.
+From: Thor Thayer <tthayer@opensource.altera.com>
 
-It's not the most pleasant alternative but if you can be sure enough
-whether the problem is occurring or not, you could try bisecting,
-possibly limiting the bisection to mv643xx
+This patch enables the ECC for L2 cache on machine
+startup.  The ECC has to be enabled before data is
+is stored in memory otherwise the ECC will fail on
+reads.
 
-$ git bisect start v3.16.3 v3.10 -- drivers/net/ethernet/marvell/mv643xx_eth.c
-Bisecting: 16 revisions left to test after this (roughly 4 steps)
+Signed-off-by: Thor Thayer <tthayer@opensource.altera.com>
+---
+v2: Split OCRAM initialization into separate patch.
+---
+ MAINTAINERS                      |    1 +
+ arch/arm/mach-socfpga/Makefile   |    1 +
+ arch/arm/mach-socfpga/l2_cache.c |   44 ++++++++++++++++++++++++++++++++++++++
+ arch/arm/mach-socfpga/l2_cache.h |   28 ++++++++++++++++++++++++
+ arch/arm/mach-socfpga/socfpga.c  |    5 ++++-
+ 5 files changed, 78 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm/mach-socfpga/l2_cache.c
+ create mode 100644 arch/arm/mach-socfpga/l2_cache.h
 
-The problem might be outside of the driver though.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index ee1bc5b..d0c7752 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1407,6 +1407,7 @@ ARM/SOCFPGA EDAC SUPPORT
+ M:	Thor Thayer <tthayer@opensource.altera.com>
+ S:	Maintained
+ F:	drivers/edac/altera_edac.
++F:	arch/arm/mach-socfpga/l2_cache.*
+ 
+ ARM/STI ARCHITECTURE
+ M:	Srinivas Kandagatla <srinivas.kandagatla@gmail.com>
+diff --git a/arch/arm/mach-socfpga/Makefile b/arch/arm/mach-socfpga/Makefile
+index 6dd7a93..142609e 100644
+--- a/arch/arm/mach-socfpga/Makefile
++++ b/arch/arm/mach-socfpga/Makefile
+@@ -4,3 +4,4 @@
+ 
+ obj-y					:= socfpga.o
+ obj-$(CONFIG_SMP)	+= headsmp.o platsmp.o
++obj-$(CONFIG_EDAC_ALTERA_L2C) += l2_cache.o
+diff --git a/arch/arm/mach-socfpga/l2_cache.c b/arch/arm/mach-socfpga/l2_cache.c
+new file mode 100644
+index 0000000..8e109f3
+--- /dev/null
++++ b/arch/arm/mach-socfpga/l2_cache.c
+@@ -0,0 +1,44 @@
++/*
++ * Copyright Altera Corporation (C) 2014. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#include <linux/clk-provider.h>
++#include <linux/of_platform.h>
++#include <linux/of_address.h>
++
++#include "l2_cache.h"
++
++void socfpga_init_l2_ecc(void)
++{
++	struct device_node *np;
++	void __iomem  *mapped_l2_edac_addr;
++
++	np = of_find_compatible_node(NULL, NULL, "altr,l2-edac");
++	if (!np) {
++		pr_err("SOCFPGA: Unable to find altr,l2-edac in dtb\n");
++		return;
++	}
++
++	mapped_l2_edac_addr = of_iomap(np, 0);
++	if (!mapped_l2_edac_addr) {
++		pr_err("SOCFPGA: Unable to find L2 ECC mapping in dtb\n");
++		return;
++	}
++
++	/* Enable ECC */
++	writel(0x01, mapped_l2_edac_addr);
++
++	pr_debug("SOCFPGA: Success Initializing L2 cache ECC\n");
++}
++
+diff --git a/arch/arm/mach-socfpga/l2_cache.h b/arch/arm/mach-socfpga/l2_cache.h
+new file mode 100644
+index 0000000..58e140d
+--- /dev/null
++++ b/arch/arm/mach-socfpga/l2_cache.h
+@@ -0,0 +1,28 @@
++/*
++ * Copyright Altera Corporation (C) 2014. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#ifndef MACH_SOCFPGA_L2_CACHE_H
++#define MACH_SOCFPGA_L2_CACHE_H
++
++#ifdef CONFIG_EDAC_ALTERA_L2C
++void socfpga_init_l2_ecc(void);
++#else
++inline void socfpga_init_l2_ecc(void)
++{
++}
++#endif
++
++#endif /* #ifndef MACH_SOCFPGA_L2_CACHE_H */
+diff --git a/arch/arm/mach-socfpga/socfpga.c b/arch/arm/mach-socfpga/socfpga.c
+index adbf383..af6413a 100644
+--- a/arch/arm/mach-socfpga/socfpga.c
++++ b/arch/arm/mach-socfpga/socfpga.c
+@@ -1,5 +1,5 @@
+ /*
+- *  Copyright (C) 2012 Altera Corporation
++ *  Copyright (C) 2012;2014 Altera Corporation
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -25,6 +25,8 @@
+ #include <asm/mach/map.h>
+ 
+ #include "core.h"
++#include "l2_cache.h"
++#include "ocram.h"
+ 
+ void __iomem *socfpga_scu_base_addr = ((void __iomem *)(SOCFPGA_SCU_VIRT_BASE));
+ void __iomem *sys_manager_base_addr;
+@@ -83,6 +85,7 @@ static void __init socfpga_init_irq(void)
+ {
+ 	irqchip_init();
+ 	socfpga_sysmgr_init();
++	socfpga_init_l2_ecc();
+ }
+ 
+ static void socfpga_cyclone5_restart(enum reboot_mode mode, const char *cmd)
+-- 
+1.7.9.5
+
