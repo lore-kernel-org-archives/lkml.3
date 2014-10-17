@@ -1,238 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751706AbaJQJaP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 05:30:15 -0400
-Received: from [42.62.48.242] ([42.62.48.242]:51003 "EHLO manager.mioffice.cn"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750828AbaJQJaN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 05:30:13 -0400
-From: Hui Zhu <zhuhui@xiaomi.com>
-To: <rjw@rjwysocki.net>, <len.brown@intel.com>, <pavel@ucw.cz>,
-        <m.szyprowski@samsung.com>, <akpm@linux-foundation.org>,
-        <mina86@mina86.com>, <aneesh.kumar@linux.vnet.ibm.com>,
-        <iamjoonsoo.kim@lge.com>, <hannes@cmpxchg.org>, <riel@redhat.com>,
-        <mgorman@suse.de>, <minchan@kernel.org>, <nasa4836@gmail.com>,
-        <ddstreet@ieee.org>, <hughd@google.com>, <mingo@kernel.org>,
-        <rientjes@google.com>, <peterz@infradead.org>, <keescook@chromium.org>,
-        <atomlin@redhat.com>, <raistlin@linux.it>, <axboe@fb.com>,
-        <paulmck@linux.vnet.ibm.com>, <kirill.shutemov@linux.intel.com>,
-        <n-horiguchi@ah.jp.nec.com>, <k.khlebnikov@samsung.com>,
-        <msalter@redhat.com>, <deller@gmx.de>, <tangchen@cn.fujitsu.com>,
-        <ben@decadent.org.uk>, <akinobu.mita@gmail.com>,
-        <lauraa@codeaurora.org>, <vbabka@suse.cz>, <sasha.levin@oracle.com>,
-        <vdavydov@parallels.com>, <suleiman@google.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-mm@kvack.org>, Hui Zhu <zhuhui@xiaomi.com>
-Subject: [PATCH v2 3/4] (CMA_AGGRESSIVE) Update reserve custom contiguous area code
-Date: Fri, 17 Oct 2014 17:30:05 +0800
-Message-ID: <1413538205-15915-1-git-send-email-zhuhui@xiaomi.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1413430551-22392-4-git-send-email-zhuhui@xiaomi.com>
-References: <1413430551-22392-4-git-send-email-zhuhui@xiaomi.com>
+	id S1751318AbaJQJhO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 05:37:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38666 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750765AbaJQJhK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 05:37:10 -0400
+Date: Fri, 17 Oct 2014 10:37:02 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>,
+        Vladimir Davydov <vdavydov@parallels.com>, Dave Hansen <dave@sr71.net>,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 3/3] mm: memcontrol: fix transparent huge page
+ allocations under pressure
+Message-ID: <20141017093702.GF23874@suse.de>
+References: <1411571338-8178-1-git-send-email-hannes@cmpxchg.org>
+ <1411571338-8178-4-git-send-email-hannes@cmpxchg.org>
+ <20140929135707.GA25956@dhcp22.suse.cz>
+ <20140929175700.GA20053@cmpxchg.org>
+ <20141007135950.GD14243@dhcp22.suse.cz>
+ <20141008011106.GA12339@cmpxchg.org>
+ <20141008153329.GF4592@dhcp22.suse.cz>
+ <20141008174725.GA31706@cmpxchg.org>
+ <20141011232759.GA10135@phnom.home.cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.27.14.101]
-X-ClientProxiedBy: CNCAS1.mioffice.cn (10.237.8.131) To cnbox4.mioffice.cn
- (10.237.8.144)
-X-EsetResult: clean, is OK
-X-EsetId: 587748382C4597170C3615
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20141011232759.GA10135@phnom.home.cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update this patch according to the comments from Rafael.
+On Sat, Oct 11, 2014 at 07:27:59PM -0400, Johannes Weiner wrote:
+> > I don't particularly like the decisions the current code makes, but it
+> > should work.  We have put in a lot of effort to prevent overreclaim in
+> > the last few years, and a big part of this was decoupling the priority
+> > level from the actual reclaim results.  Nowadays, the priority level
+> > should merely dictate the scan window and have no impact on the number
+> > of pages actually reclaimed.  I don't expect that it will, but if it
+> > does, that's a reclaim bug that needs to be addressed.  If we ask for
+> > N pages, it should never reclaim significantly more than that,
+> > regardless of how aggressively it has to scan to accomplish that.
+> 
+> That being said, I don't get the rationale behind the proportionality
+> code in shrink_lruvec().  The patch that introduced it - e82e0561dae9
+> ("mm: vmscan: obey proportional scanning requirements for kswapd") -
+> mentions respecting swappiness, but as per above we ignore swappiness
+> anyway until we run low on cache and into actual pressure. 
 
-Add cma_alloc_counter, cma_aggressive_switch, cma_aggressive_free_min and
-cma_aggressive_shrink_switch.
+Swappiness is ignored until active < inactive which is not necessarily
+indicative of pressure. Filesystems may mark pages active and move them
+to the active list in the absense of pressure for example.
 
-cma_aggressive_switch is the swith for all CMA_AGGRESSIVE function.  It can be
-controlled by sysctl vm.cma-aggressive-switch.
+The changelog does not mention it but a big motivator for the patch was
+this result https://lkml.org/lkml/2014/5/22/420 and the opening paragraph
+mentions "The intent was to minimse direct reclaim latency but Yuanhan
+Liu pointer out that it substitutes one long stall for many small stalls
+and distorts aging for normal workloads like streaming readers/writers."
 
-cma_aggressive_free_min can be controlled by sysctl
-"vm.cma-aggressive-free-min".  If the number of CMA free pages is small than
-this sysctl value, CMA_AGGRESSIVE will not work in page alloc code.
+> And under
+> pressure, once we struggle to reclaim nr_to_reclaim, proportionality
+> enforces itself when one LRU type target hits zero and we continue to
+> scan the one for which more pressure was allocated.  But as long as we
+> scan both lists at the same SWAP_CLUSTER_MAX rate and have no problem
+> getting nr_to_reclaim pages with left-over todo for *both* LRU types,
+> what's the point of going on?
+> 
 
-cma_aggressive_shrink_switch can be controlled by sysctl
-"vm.cma-aggressive-shrink-switch".  If sysctl "vm.cma-aggressive-shrink-switch"
-is true and free normal memory's size is smaller than the size that it want to
-allocate, do memory shrink with function git commit -a --amend before driver
-allocate pages from CMA.
+If we always scanned evenly then it risks reintroducing the long-lived
+problem where starting a large amount of IO in the background pushed
+everything into swap
 
-When Linux kernel try to reserve custom contiguous area, increase the value of
-cma_alloc_counter.  CMA_AGGRESSIVE will not work in page alloc code.
-After reserve custom contiguous area function return, decreases the value of
-cma_alloc_counter.
+> The justification for enforcing proportionality in direct reclaim is
+> particularly puzzling:
+> 
+> ---
+> 
+> commit 1a501907bbea8e6ebb0b16cf6db9e9cbf1d2c813
+> Author: Mel Gorman <mgorman@suse.de>
+> Date:   Wed Jun 4 16:10:49 2014 -0700
+> 
+>     mm: vmscan: use proportional scanning during direct reclaim and full scan at DEF_PRIORITY
+> 
+> [...]
+> 
+>                                                   3.15.0-rc5            3.15.0-rc5
+>                                                     shrinker            proportion
+>     Unit  lru-file-readonce    elapsed      5.3500 (  0.00%)      5.4200 ( -1.31%)
+>     Unit  lru-file-readonce time_range      0.2700 (  0.00%)      0.1400 ( 48.15%)
+>     Unit  lru-file-readonce time_stddv      0.1148 (  0.00%)      0.0536 ( 53.33%)
+>     Unit lru-file-readtwice    elapsed      8.1700 (  0.00%)      8.1700 (  0.00%)
+>     Unit lru-file-readtwice time_range      0.4300 (  0.00%)      0.2300 ( 46.51%)
+>     Unit lru-file-readtwice time_stddv      0.1650 (  0.00%)      0.0971 ( 41.16%)
+>     
+>     The test cases are running multiple dd instances reading sparse files. The results are within
+>     the noise for the small test machine. The impact of the patch is more noticable from the vmstats
+>     
+>                                 3.15.0-rc5  3.15.0-rc5
+>                                   shrinker  proportion
+>     Minor Faults                     35154       36784
+>     Major Faults                       611        1305
+>     Swap Ins                           394        1651
+>     Swap Outs                         4394        5891
+>     Allocation stalls               118616       44781
+>     Direct pages scanned           4935171     4602313
+>     Kswapd pages scanned          15921292    16258483
+>     Kswapd pages reclaimed        15913301    16248305
+>     Direct pages reclaimed         4933368     4601133
+>     Kswapd efficiency                  99%         99%
+>     Kswapd velocity             670088.047  682555.961
+>     Direct efficiency                  99%         99%
+>     Direct velocity             207709.217  193212.133
+>     Percentage direct scans            23%         22%
+>     Page writes by reclaim        4858.000    6232.000
+>     Page writes file                   464         341
+>     Page writes anon                  4394        5891
+>     
+>     Note that there are fewer allocation stalls even though the amount
+>     of direct reclaim scanning is very approximately the same.
+> 
+> ---
+> 
+> The timings show nothing useful, but the statistics strongly speak
+> *against* this patch.  Sure, direct reclaim invocations are reduced,
+> but everything else worsened: minor faults increased, major faults
+> doubled(!), swapins quadrupled(!!), swapins increased, pages scanned
+> increased, pages reclaimed increased, reclaim page writes increased.
+> 
 
-Signed-off-by: Hui Zhu <zhuhui@xiaomi.com>
----
- include/linux/cma.h |  7 +++++++
- kernel/sysctl.c     | 27 +++++++++++++++++++++++++++
- mm/cma.c            | 54 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 88 insertions(+)
+Direct reclaim invocations reducing was in line with the intent to
+prevent many small stalls.
 
-diff --git a/include/linux/cma.h b/include/linux/cma.h
-index 0430ed0..df96abf 100644
---- a/include/linux/cma.h
-+++ b/include/linux/cma.h
-@@ -15,6 +15,13 @@
- 
- struct cma;
- 
-+#ifdef CONFIG_CMA_AGGRESSIVE
-+extern atomic_t cma_alloc_counter;
-+extern int cma_aggressive_switch;
-+extern unsigned long cma_aggressive_free_min;
-+extern int cma_aggressive_shrink_switch;
-+#endif
-+
- extern phys_addr_t cma_get_base(struct cma *cma);
- extern unsigned long cma_get_size(struct cma *cma);
- 
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 4aada6d..646929e2 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -92,6 +92,10 @@
- #include <linux/nmi.h>
- #endif
- 
-+#ifdef CONFIG_CMA_AGGRESSIVE
-+#include <linux/cma.h>
-+#endif
-+
- 
- #if defined(CONFIG_SYSCTL)
- 
-@@ -1485,6 +1489,29 @@ static struct ctl_table vm_table[] = {
- 		.mode		= 0644,
- 		.proc_handler	= proc_doulongvec_minmax,
- 	},
-+#ifdef CONFIG_CMA_AGGRESSIVE
-+	{
-+		.procname	= "cma-aggressive-switch",
-+		.data		= &cma_aggressive_switch,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0600,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{
-+		.procname	= "cma-aggressive-free-min",
-+		.data		= &cma_aggressive_free_min,
-+		.maxlen		= sizeof(unsigned long),
-+		.mode		= 0600,
-+		.proc_handler	= proc_doulongvec_minmax,
-+	},
-+	{
-+		.procname	= "cma-aggressive-shrink-switch",
-+		.data		= &cma_aggressive_shrink_switch,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0600,
-+		.proc_handler	= proc_dointvec,
-+	},
-+#endif
- 	{ }
- };
- 
-diff --git a/mm/cma.c b/mm/cma.c
-index 963bc4a..1cf341c 100644
---- a/mm/cma.c
-+++ b/mm/cma.c
-@@ -33,6 +33,7 @@
- #include <linux/log2.h>
- #include <linux/cma.h>
- #include <linux/highmem.h>
-+#include <linux/swap.h>
- 
- struct cma {
- 	unsigned long	base_pfn;
-@@ -127,6 +128,27 @@ err:
- 	return -EINVAL;
- }
- 
-+#ifdef CONFIG_CMA_AGGRESSIVE
-+/* The counter for the dma_alloc_from_contiguous and
-+   dma_release_from_contiguous.  */
-+atomic_t cma_alloc_counter = ATOMIC_INIT(0);
-+
-+/* Swich of CMA_AGGRESSIVE.  */
-+int cma_aggressive_switch __read_mostly;
-+
-+/* If the number of CMA free pages is small than this value, CMA_AGGRESSIVE will
-+   not work. */
-+#ifdef CONFIG_CMA_AGGRESSIVE_FREE_MIN
-+unsigned long cma_aggressive_free_min __read_mostly =
-+					CONFIG_CMA_AGGRESSIVE_FREE_MIN;
-+#else
-+unsigned long cma_aggressive_free_min __read_mostly = 500;
-+#endif
-+
-+/* Swich of CMA_AGGRESSIVE shink.  */
-+int cma_aggressive_shrink_switch __read_mostly;
-+#endif
-+
- static int __init cma_init_reserved_areas(void)
- {
- 	int i;
-@@ -138,6 +160,22 @@ static int __init cma_init_reserved_areas(void)
- 			return ret;
- 	}
- 
-+#ifdef CONFIG_CMA_AGGRESSIVE
-+	cma_aggressive_switch = 0;
-+#ifdef CONFIG_CMA_AGGRESSIVE_PHY_MAX
-+	if (memblock_phys_mem_size() <= CONFIG_CMA_AGGRESSIVE_PHY_MAX)
-+#else
-+	if (memblock_phys_mem_size() <= 0x40000000)
-+#endif
-+		cma_aggressive_switch = 1;
-+
-+	cma_aggressive_shrink_switch = 0;
-+#ifdef CONFIG_CMA_AGGRESSIVE_SHRINK
-+	if (cma_aggressive_switch)
-+		cma_aggressive_shrink_switch = 1;
-+#endif
-+#endif
-+
- 	return 0;
- }
- core_initcall(cma_init_reserved_areas);
-@@ -312,6 +350,11 @@ struct page *cma_alloc(struct cma *cma, int count, unsigned int align)
- 	unsigned long bitmap_maxno, bitmap_no, bitmap_count;
- 	struct page *page = NULL;
- 	int ret;
-+#ifdef CONFIG_CMA_AGGRESSIVE
-+	int free = global_page_state(NR_FREE_PAGES)
-+			- global_page_state(NR_FREE_CMA_PAGES)
-+			- totalreserve_pages;
-+#endif
- 
- 	if (!cma || !cma->count)
- 		return NULL;
-@@ -326,6 +369,13 @@ struct page *cma_alloc(struct cma *cma, int count, unsigned int align)
- 	bitmap_maxno = cma_bitmap_maxno(cma);
- 	bitmap_count = cma_bitmap_pages_to_bits(cma, count);
- 
-+#ifdef CONFIG_CMA_AGGRESSIVE
-+	atomic_inc(&cma_alloc_counter);
-+	if (cma_aggressive_switch && cma_aggressive_shrink_switch
-+	    && free < count)
-+		shrink_all_memory_for_cma(count - free);
-+#endif
-+
- 	for (;;) {
- 		mutex_lock(&cma->lock);
- 		bitmap_no = bitmap_find_next_zero_area(cma->bitmap,
-@@ -361,6 +411,10 @@ struct page *cma_alloc(struct cma *cma, int count, unsigned int align)
- 		start = bitmap_no + mask + 1;
- 	}
- 
-+#ifdef CONFIG_CMA_AGGRESSIVE
-+	atomic_dec(&cma_alloc_counter);
-+#endif
-+
- 	pr_debug("%s(): returned %p\n", __func__, page);
- 	return page;
- }
+The increase in minor faults is marginal in absolute terms and very
+likely within the noise.
+
+Major faults might have doubled but in absolute terms is about the size
+of a THP allocation or roughly a 25ms stall (depending on disk obviously)
+overall in a long-lived test.
+
+Differences in swap figures are also large in relative terms but very
+small in absolute terms. Again, I suspected it was within the noise.
+
+Same rational for the others. The changes in reclaim stats in absolute
+terms are small considering the type of test being executed. The reclaim
+figure changes look terrifying but if you look at the sum of direct and
+kswapd reclaimed pages you'll see that the difference is marginal and all
+that changed was who did the work. Same for scanning. Total scanning and
+reclaim work was approximately similar, all that changed in this test is
+what process did the work.
+
+What was more important in this case was Yuanhan Liu report that the patch
+addressed a major regression.
+
+> Mel, do you maybe remember details that are not in the changelogs?
+
+The link to Yuanhan Liu's report was missing but that happened after the
+changelog was written so that is hardly a surprise. Nothing else springs
+to mind.
+
+> Because based on them alone, I think we should look at other ways to
+> ensure we scan with the right amount of vigor...
+
+I'm not against it per-se but avoid over-reacting about changes in stats
+that are this small in absolute terms. If you do change this area, I
+strongly suggest you also test with the parallelio-memcachetest configs
+from mmtests and watch for IO causing excessive swap.
+
 -- 
-1.9.1
-
+Mel Gorman
+SUSE Labs
