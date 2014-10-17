@@ -1,108 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738AbaJQJPG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 05:15:06 -0400
-Received: from mail-bn1bon0138.outbound.protection.outlook.com ([157.56.111.138]:57888
+	id S1752638AbaJQJPD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 05:15:03 -0400
+Received: from mail-bn1bbn0105.outbound.protection.outlook.com ([157.56.111.105]:39904
 	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751254AbaJQJPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752566AbaJQJPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 Oct 2014 05:15:00 -0400
-X-Greylist: delayed 915 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Oct 2014 05:15:00 EDT
-X-WSS-ID: 0NDKZOA-08-TNG-02
+X-WSS-ID: 0NDKZNJ-08-TMV-02
 X-M-MSG: 
 From: Huang Rui <ray.huang@amd.com>
 To: Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
-        "Bjorn Helgaas" <bhelgaas@google.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 CC: Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
         Heikki Krogerus <heikki.krogerus@linux.intel.com>,
         Vincent Wan <vincent.wan@amd.com>, Tony Li <tony.li@amd.com>,
         <linux-usb@vger.kernel.org>, <linux-pci@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, Huang Rui <ray.huang@amd.com>
-Subject: [PATCH v2 12/16] usb: dwc3: add delay phy power change quirk
-Date: Fri, 17 Oct 2014 16:53:37 +0800
-Message-ID: <1413536021-4886-13-git-send-email-ray.huang@amd.com>
+Subject: [PATCH v2 07/16] usb: dwc3: add lpm erratum support
+Date: Fri, 17 Oct 2014 16:53:32 +0800
+Message-ID: <1413536021-4886-8-git-send-email-ray.huang@amd.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1413536021-4886-1-git-send-email-ray.huang@amd.com>
 References: <1413536021-4886-1-git-send-email-ray.huang@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(21056001)(48376002)(44976005)(19580395003)(19580405001)(53416004)(80022003)(50466002)(99396003)(76482002)(120916001)(102836001)(84676001)(31966008)(50986999)(62966002)(64706001)(104166001)(86362001)(93916002)(76176999)(20776003)(89996001)(85852003)(47776003)(2171001)(87936001)(85306004)(101416001)(87286001)(92566001)(77156001)(88136002)(4396001)(50226001)(33646002)(95666004)(92726001)(46102003)(36756003)(68736004)(229853001)(97736003)(77096002)(106466001)(105586002)(107046002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB202;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB202;
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(479174003)(85852003)(87936001)(89996001)(2171001)(87286001)(93916002)(86362001)(575784001)(92566001)(92726001)(53416004)(88136002)(50986999)(76176999)(77156001)(62966002)(36756003)(31966008)(95666004)(64706001)(77096002)(48376002)(105586002)(85306004)(107046002)(20776003)(21056001)(47776003)(97736003)(229853001)(99396003)(68736004)(19580405001)(19580395003)(101416001)(44976005)(106466001)(84676001)(102836001)(4396001)(104166001)(76482002)(120916001)(50226001)(46102003)(50466002)(80022003)(33646002);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB195;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB195;
 X-Exchange-Antispam-Report-Test: UriScan:;
 X-Forefront-PRVS: 0367A50BB1
 Authentication-Results: spf=none (sender IP is 165.204.84.222)
  smtp.mailfrom=Ray.Huang@amd.com; 
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB090;
 X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AMD NL needs to delay PHY power change from P0 to P1/P2/P3 when link state
-changing from U0 to U1/U2/U3 respectively.
+When parameter DWC_USB3_LPM_ERRATA_ENABLE is enabled in Andvanced Configuration
+of coreConsultant, it supports of xHCI BESL Errata Dated 10/19/2011 is enabled
+in host mode. In device mode it adds the capability to send NYET response based
+on the BESL value received in the LPM token.
 
+This patch add an entry that soc platform is able to define the lpm capacity
+with their own device tree or bus glue layer.
+
+Suggested-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Huang Rui <ray.huang@amd.com>
 ---
- drivers/usb/dwc3/core.c          | 3 +++
- drivers/usb/dwc3/core.h          | 1 +
- drivers/usb/dwc3/dwc3-pci.c      | 3 ++-
- drivers/usb/dwc3/platform_data.h | 1 +
- 4 files changed, 7 insertions(+), 1 deletion(-)
+ drivers/usb/dwc3/core.c          |  2 ++
+ drivers/usb/dwc3/core.h          | 24 +++++++++++++++---------
+ drivers/usb/dwc3/dwc3-pci.c      |  1 +
+ drivers/usb/dwc3/gadget.c        |  7 +++++++
+ drivers/usb/dwc3/platform_data.h |  1 +
+ 5 files changed, 26 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-index a9f1d4c..920a8ab 100644
+index 819e501..25db533 100644
 --- a/drivers/usb/dwc3/core.c
 +++ b/drivers/usb/dwc3/core.c
-@@ -383,6 +383,9 @@ static void dwc3_phy_setup(struct dwc3 *dwc)
- 	if (dwc->quirks & DWC3_QUIRK_DEPP1P2P3)
- 		reg |= DWC3_GUSB3PIPECTL_DEP1P2P3(1);
+@@ -708,11 +708,13 @@ static int dwc3_probe(struct platform_device *pdev)
  
-+	if (dwc->quirks & DWC3_QUIRK_DEPOCHANGE)
-+		reg |= DWC3_GUSB3PIPECTL_DEPOCHANGE;
-+
- 	dwc3_writel(dwc->regs, DWC3_GUSB3PIPECTL(0), reg);
+ 	if (node) {
+ 		dwc->maximum_speed = of_usb_get_maximum_speed(node);
++		dwc->has_lpm_erratum = of_property_read_bool(node, "snps,has-lpm-erratum");
  
- 	mdelay(100);
+ 		dwc->needs_fifo_resize = of_property_read_bool(node, "tx-fifo-resize");
+ 		dwc->dr_mode = of_usb_get_dr_mode(node);
+ 	} else if (pdata) {
+ 		dwc->maximum_speed = pdata->maximum_speed;
++		dwc->has_lpm_erratum = pdata->has_lpm_erratum;
+ 
+ 		dwc->needs_fifo_resize = pdata->tx_fifo_resize;
+ 		dwc->dr_mode = pdata->dr_mode;
 diff --git a/drivers/usb/dwc3/core.h b/drivers/usb/dwc3/core.h
-index cf70fa6..4c0200f 100644
+index cfe0d57..d58479e 100644
 --- a/drivers/usb/dwc3/core.h
 +++ b/drivers/usb/dwc3/core.h
-@@ -180,6 +180,7 @@
- #define DWC3_GUSB3PIPECTL_REQP1P2P3	(1 << 24)
- #define DWC3_GUSB3PIPECTL_DEP1P2P3_MASK	DWC3_GUSB3PIPECTL_DEP1P2P3(7)
- #define DWC3_GUSB3PIPECTL_DEP1P2P3(n)	((n) << 19)
-+#define DWC3_GUSB3PIPECTL_DEPOCHANGE	(1 << 18)
- #define DWC3_GUSB3PIPECTL_SUSPHY	(1 << 17)
+@@ -246,16 +246,19 @@
+ #define DWC3_DCTL_TRGTULST_SS_INACT	(DWC3_DCTL_TRGTULST(6))
  
- /* Global TX Fifo Size Register */
+ /* These apply for core versions 1.94a and later */
+-#define DWC3_DCTL_KEEP_CONNECT	(1 << 19)
+-#define DWC3_DCTL_L1_HIBER_EN	(1 << 18)
+-#define DWC3_DCTL_CRS		(1 << 17)
+-#define DWC3_DCTL_CSS		(1 << 16)
++#define DWC3_DCTL_LPM_ERRATA_MASK	DWC3_DCTL_LPM_ERRATA(0xf)
++#define DWC3_DCTL_LPM_ERRATA(n)		((n) << 20)
+ 
+-#define DWC3_DCTL_INITU2ENA	(1 << 12)
+-#define DWC3_DCTL_ACCEPTU2ENA	(1 << 11)
+-#define DWC3_DCTL_INITU1ENA	(1 << 10)
+-#define DWC3_DCTL_ACCEPTU1ENA	(1 << 9)
+-#define DWC3_DCTL_TSTCTRL_MASK	(0xf << 1)
++#define DWC3_DCTL_KEEP_CONNECT		(1 << 19)
++#define DWC3_DCTL_L1_HIBER_EN		(1 << 18)
++#define DWC3_DCTL_CRS			(1 << 17)
++#define DWC3_DCTL_CSS			(1 << 16)
++
++#define DWC3_DCTL_INITU2ENA		(1 << 12)
++#define DWC3_DCTL_ACCEPTU2ENA		(1 << 11)
++#define DWC3_DCTL_INITU1ENA		(1 << 10)
++#define DWC3_DCTL_ACCEPTU1ENA		(1 << 9)
++#define DWC3_DCTL_TSTCTRL_MASK		(0xf << 1)
+ 
+ #define DWC3_DCTL_ULSTCHNGREQ_MASK	(0x0f << 5)
+ #define DWC3_DCTL_ULSTCHNGREQ(n) (((n) << 5) & DWC3_DCTL_ULSTCHNGREQ_MASK)
+@@ -665,6 +668,8 @@ struct dwc3_scratchpad_array {
+  * @ep0_bounced: true when we used bounce buffer
+  * @ep0_expect_in: true when we expect a DATA IN transfer
+  * @has_hibernation: true when dwc3 was configured with Hibernation
++ * @has_lpm_erratum: true when core was configured with LPM Erratum. Note that
++ *			there's now way for software to detect this in runtime.
+  * @is_selfpowered: true when we are selfpowered
+  * @is_fpga: true when we are using the FPGA board
+  * @needs_fifo_resize: not all users might want fifo resizing, flag it
+@@ -771,6 +776,7 @@ struct dwc3 {
+ 	unsigned		ep0_bounced:1;
+ 	unsigned		ep0_expect_in:1;
+ 	unsigned		has_hibernation:1;
++	unsigned		has_lpm_erratum:1;
+ 	unsigned		is_selfpowered:1;
+ 	unsigned		is_fpga:1;
+ 	unsigned		needs_fifo_resize:1;
 diff --git a/drivers/usb/dwc3/dwc3-pci.c b/drivers/usb/dwc3/dwc3-pci.c
-index 23ae6a7..0eb8b2a 100644
+index a89db6c..bbe946c 100644
 --- a/drivers/usb/dwc3/dwc3-pci.c
 +++ b/drivers/usb/dwc3/dwc3-pci.c
-@@ -153,7 +153,8 @@ static int dwc3_pci_probe(struct pci_dev *pci,
- 			| DWC3_QUIRK_U2EXIT_LFPS
- 			| DWC3_QUIRK_U2SSINP3OK
- 			| DWC3_QUIRK_REQP1P2P3
--			| DWC3_QUIRK_DEPP1P2P3;
-+			| DWC3_QUIRK_DEPP1P2P3
-+			| DWC3_QUIRK_DEPOCHANGE;
+@@ -148,6 +148,7 @@ static int dwc3_pci_probe(struct pci_dev *pci,
+ 
+ 	if (pci->vendor == PCI_VENDOR_ID_AMD && pci->device ==
+ 			PCI_DEVICE_ID_AMD_NL) {
++		dwc3_pdata.has_lpm_erratum = true;
+ 		dwc3_pdata.quirks |= DWC3_QUIRK_AMD_NL;
  	}
  
- 	ret = platform_device_add_resources(dwc3, res, ARRAY_SIZE(res));
+diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
+index 1f2a719..33bfc70 100644
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -1581,6 +1581,13 @@ static int dwc3_gadget_start(struct usb_gadget *g,
+ 	}
+ 	dwc3_writel(dwc->regs, DWC3_DCFG, reg);
+ 
++	if (dwc->has_lpm_erratum) {
++		reg = dwc3_readl(dwc->regs, DWC3_DCTL);
++		/* REVISIT should this be configurable ? */
++		reg |= DWC3_DCTL_LPM_ERRATA(0xf);
++		dwc3_writel(dwc->regs, DWC3_DCTL, reg);
++	}
++
+ 	dwc->start_config_issued = false;
+ 
+ 	/* Start with SuperSpeed Default */
 diff --git a/drivers/usb/dwc3/platform_data.h b/drivers/usb/dwc3/platform_data.h
-index e668c1f..934c5e1 100644
+index 9c5f074..098ab04 100644
 --- a/drivers/usb/dwc3/platform_data.h
 +++ b/drivers/usb/dwc3/platform_data.h
-@@ -34,5 +34,6 @@ struct dwc3_platform_data {
- #define DWC3_QUIRK_U2SSINP3OK		(1 << 3)
- #define DWC3_QUIRK_REQP1P2P3		(1 << 4)
- #define DWC3_QUIRK_DEPP1P2P3		(1 << 5)
-+#define DWC3_QUIRK_DEPOCHANGE		(1 << 6)
+@@ -25,6 +25,7 @@ struct dwc3_platform_data {
+ 	enum usb_dr_mode dr_mode;
+ 	bool tx_fifo_resize;
  
- };
++	unsigned has_lpm_erratum:1;
+ 	u32     quirks;
+ 
+ #define DWC3_QUIRK_AMD_NL		(1 << 0)
 -- 
 1.9.1
 
