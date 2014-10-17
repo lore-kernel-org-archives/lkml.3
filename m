@@ -1,90 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786AbaJQO0n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 10:26:43 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33362 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751816AbaJQO0m (ORCPT
+	id S1752861AbaJQO2a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 10:28:30 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:38793 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752037AbaJQO23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 10:26:42 -0400
-Date: Fri, 17 Oct 2014 16:26:05 +0200
-From: Mark Brown <broonie@kernel.org>
-To: Gyungoh Yoo <gyungoh@gmail.com>
-Cc: sameo@linux.intel.com, lee.jones@linaro.org, jg1.han@samsung.com,
-        cooloney@gmail.com, lgirdwood@gmail.com, jack.yoo@skyworksinc.com,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        grant.likely@linaro.org, robh+dt@kernel.org, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
-        shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
-        trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
-        jic23@kernel.org
-Message-ID: <20141017142605.GU1820@sirena.org.uk>
-References: <1412657745-7812-1-git-send-email-jack.yoo@skyworksinc.com>
- <1413179262-27636-1-git-send-email-jack.yoo@skyworksinc.com>
- <1413179262-27636-8-git-send-email-jack.yoo@skyworksinc.com>
- <20141013103512.GJ27755@sirena.org.uk>
- <20141014011112.GB2751@jack-ThinkPad-T520>
- <20141014075606.GN27755@sirena.org.uk>
- <20141017091950.GA3233@jack-ThinkPad-T520>
- <20141017101734.GB1820@sirena.org.uk>
- <20141017104309.GA3136@jack-ThinkPad-T520>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8KmZJhJMEENkOiL3"
-Content-Disposition: inline
-In-Reply-To: <20141017104309.GA3136@jack-ThinkPad-T520>
-X-Cookie: Excellent day to have a rotten day.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 62.156.150.204
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RESUBMIT PATCH v4 7/8] regulator: sky81452: Add compatible
- string for device binding
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Fri, 17 Oct 2014 10:28:29 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: David Airlie <airlied@linux.ie>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        patches@linaro.org, linaro-kernel@lists.linaro.org,
+        Rob Clark <robdclark@gmail.com>
+Subject: [PATCH 3.17] drm/msm: Fix fbdev for 16- and 24-bit modes.
+Date: Fri, 17 Oct 2014 15:28:08 +0100
+Message-Id: <1413556088-30194-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Currently forcing the video mode from the kernel command line (for example
+video=HDMI-A-1:1280x720-16@60) does not correctly set the number of bits
+per pixel. This is due to a rather aggressive override in
+msm_fbdev_create(). This is a particular problem for Android bring up
+because the software EGL fallbacks don't support 32bpp.
 
---8KmZJhJMEENkOiL3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This problem could be trivially fixed by removing the override completely.
+However to avoid regressing commit 96673ecbd7f6 ("drm/msm: default to
+XR24 rather than AR24") this patch continues to override the depth if
+there are 32 bits per pixel.
 
-On Fri, Oct 17, 2014 at 07:43:09PM +0900, Gyungoh Yoo wrote:
+Change was tested by dd'ing a test image to /dev/fb0 with no video=
+(still 32bpp, DBG() message observed), video=1920x1080-32@60 (message
+observed), video=1920x1080-24@60 and video=1920x1080-16@60 .
 
-> Are you talking about simplification using of_regulator_match()?
-> This driver has only one regulator.
-> Is the API also useful for this driver?
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: David Airlie <airlied@linux.ie>
+Cc: Rob Clark <robdclark@gmail.com>
+---
+ drivers/gpu/drm/msm/msm_fbdev.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-The thing I'm seeing is that the binding for your device with the
-subnode looks very much like the device trees of devices with multiple
-regulators.  The fact that you only have one regulator is a bit
-difference but not that much.  It seems like drivers should fit into one
-of two patterns: either the regulator is described in the root node for
-the device for single purpose devices or there should be a collection of
-regulators like is supported with this helper API.  Having a collection
-with only one node doesn't seem to be a problem in any way.
+diff --git a/drivers/gpu/drm/msm/msm_fbdev.c b/drivers/gpu/drm/msm/msm_fbdev.c
+index ab5bfd2..ed0171d 100644
+--- a/drivers/gpu/drm/msm/msm_fbdev.c
++++ b/drivers/gpu/drm/msm/msm_fbdev.c
+@@ -93,8 +93,10 @@ static int msm_fbdev_create(struct drm_fb_helper *helper,
+ 	uint32_t paddr;
+ 	int ret, size;
 
-> Like reg-fixed-voltage, how about using of_get_fixed_voltage_config()?
+-	sizes->surface_bpp = 32;
+-	sizes->surface_depth = 24;
++	if (sizes->surface_bpp == 32) {
++		DBG("forcing surface depth to 24\n");
++		sizes->surface_depth = 24;
++	}
 
-The driver doesn't seem to need any property parsing of its own so it
-shoudn't need anything beyond basic calls into the core.
+ 	DBG("create fbdev: %dx%d@%d (%dx%d)", sizes->surface_width,
+ 			sizes->surface_height, sizes->surface_bpp,
+--
+1.9.3
 
---8KmZJhJMEENkOiL3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUQSb9AAoJECTWi3JdVIfQxj4H/i7w/lgspWRke5mDs2egxwpB
-FSwKzUZSTLw9B/WAdWfEnQG4daYaSmbFI79EZX8Lv8/WlGu1glq1kf6TkI6Stugi
-cIV4wjA+Kv6wcOArzxMAbE+dT6FAwPFMWFyjrVSXZ9BUq27hXYDjdrjx6/Pn9KoD
-qTHb6BuhDZap3RX/AzVZ8OaI2zTk9m4tBLL7k3Cl7DWFXRHh9HU7JLzTZV6aFtx1
-ud2j5yCwiva+/cwMJ/I3evHYjhQKsZQ5p5arxrUWq/zKXqVp8th0HjAtx/L3VB2z
-39cI0oIiwJ9CNKzuzMFnNMuKczkbYZr7vKRyjOK0HOlP9b4Rj+8b/VVejG8gnkU=
-=OfiQ
------END PGP SIGNATURE-----
-
---8KmZJhJMEENkOiL3--
