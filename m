@@ -1,109 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267AbaJQJO3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 05:14:29 -0400
-Received: from mail-bn1bbn0105.outbound.protection.outlook.com ([157.56.111.105]:32800
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S1752385AbaJQJOg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 05:14:36 -0400
+Received: from mail-bl2on0124.outbound.protection.outlook.com ([65.55.169.124]:42144
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752031AbaJQJOZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 05:14:25 -0400
-X-Greylist: delayed 879 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Oct 2014 05:14:25 EDT
-X-WSS-ID: 0NDKZNG-07-HNK-02
+	id S1752279AbaJQJOd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 05:14:33 -0400
+X-WSS-ID: 0NDKZOF-08-TNW-02
 X-M-MSG: 
 From: Huang Rui <ray.huang@amd.com>
 To: Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
-        "Bjorn Helgaas" <bhelgaas@google.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 CC: Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
         Heikki Krogerus <heikki.krogerus@linux.intel.com>,
         Vincent Wan <vincent.wan@amd.com>, Tony Li <tony.li@amd.com>,
         <linux-usb@vger.kernel.org>, <linux-pci@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, Huang Rui <ray.huang@amd.com>
-Subject: [PATCH v2 06/16] usb: dwc3: add disscramble quirk
-Date: Fri, 17 Oct 2014 16:53:31 +0800
-Message-ID: <1413536021-4886-7-git-send-email-ray.huang@amd.com>
+Subject: [PATCH v2 13/16] usb: dwc3: add lfps filter quirk
+Date: Fri, 17 Oct 2014 16:53:38 +0800
+Message-ID: <1413536021-4886-14-git-send-email-ray.huang@amd.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1413536021-4886-1-git-send-email-ray.huang@amd.com>
 References: <1413536021-4886-1-git-send-email-ray.huang@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(979002)(6009001)(428002)(199003)(189002)(85852003)(87936001)(89996001)(2171001)(87286001)(93916002)(86362001)(575784001)(92566001)(92726001)(53416004)(88136002)(50986999)(76176999)(77156001)(62966002)(36756003)(31966008)(95666004)(64706001)(77096002)(48376002)(105586002)(85306004)(107046002)(20776003)(21056001)(47776003)(97736003)(229853001)(99396003)(68736004)(19580405001)(19580395003)(101416001)(44976005)(106466001)(84676001)(102836001)(4396001)(104166001)(76482002)(120916001)(50226001)(46102003)(50466002)(80022003)(33646002)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB195;H:atltwp01.amd.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(31966008)(89996001)(97736003)(50986999)(99396003)(80022003)(21056001)(20776003)(47776003)(64706001)(53416004)(88136002)(102836001)(68736004)(87286001)(84676001)(46102003)(87936001)(50466002)(44976005)(85306004)(19580395003)(19580405001)(85852003)(93916002)(86362001)(229853001)(77156001)(106466001)(92566001)(36756003)(120916001)(76482002)(95666004)(2171001)(33646002)(62966002)(101416001)(50226001)(4396001)(92726001)(76176999)(104166001)(77096002)(48376002)(105586002)(107046002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB203;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:;
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB195;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB203;
 X-Exchange-Antispam-Report-Test: UriScan:;
 X-Forefront-PRVS: 0367A50BB1
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
  smtp.mailfrom=Ray.Huang@amd.com; 
 X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AMD NL fpga needs to enable disscramble quirk. And this quirk doesn't need on
-the true soc.
+AMD NL needs to enable lfps filter quirk.
 
 Signed-off-by: Huang Rui <ray.huang@amd.com>
 ---
- drivers/usb/dwc3/core.c          | 8 +++++++-
- drivers/usb/dwc3/dwc3-pci.c      | 5 +++++
- drivers/usb/dwc3/platform_data.h | 4 ++++
- 3 files changed, 16 insertions(+), 1 deletion(-)
+ drivers/usb/dwc3/core.c          | 3 +++
+ drivers/usb/dwc3/core.h          | 1 +
+ drivers/usb/dwc3/dwc3-pci.c      | 3 ++-
+ drivers/usb/dwc3/platform_data.h | 1 +
+ 4 files changed, 7 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-index 50c0eae..819e501 100644
+index 920a8ab..a1ee586 100644
 --- a/drivers/usb/dwc3/core.c
 +++ b/drivers/usb/dwc3/core.c
-@@ -422,7 +422,6 @@ static int dwc3_core_init(struct dwc3 *dwc)
+@@ -386,6 +386,9 @@ static void dwc3_phy_setup(struct dwc3 *dwc)
+ 	if (dwc->quirks & DWC3_QUIRK_DEPOCHANGE)
+ 		reg |= DWC3_GUSB3PIPECTL_DEPOCHANGE;
  
- 	reg = dwc3_readl(dwc->regs, DWC3_GCTL);
- 	reg &= ~DWC3_GCTL_SCALEDOWN_MASK;
--	reg &= ~DWC3_GCTL_DISSCRAMBLE;
- 
- 	switch (DWC3_GHWPARAMS1_EN_PWROPT(dwc->hwparams.hwparams1)) {
- 	case DWC3_GHWPARAMS1_EN_PWROPT_CLK:
-@@ -461,6 +460,13 @@ static int dwc3_core_init(struct dwc3 *dwc)
- 		dwc->is_fpga = true;
- 	}
- 
-+	if ((dwc->quirks & DWC3_QUIRK_AMD_NL) && dwc->is_fpga)
-+		dwc->quirks |= DWC3_QUIRK_DISSCRAMBLE;
++	if (dwc->quirks & DWC3_QUIRK_LFPSFILT)
++		reg |= DWC3_GUSB3PIPECTL_LFPSFILT;
 +
-+	if (dwc->quirks & DWC3_QUIRK_DISSCRAMBLE)
-+		reg |= DWC3_GCTL_DISSCRAMBLE;
-+	else
-+		reg &= ~DWC3_GCTL_DISSCRAMBLE;
- 	/*
- 	 * WORKAROUND: DWC3 revisions <1.90a have a bug
- 	 * where the device can fail to connect at SuperSpeed
+ 	dwc3_writel(dwc->regs, DWC3_GUSB3PIPECTL(0), reg);
+ 
+ 	mdelay(100);
+diff --git a/drivers/usb/dwc3/core.h b/drivers/usb/dwc3/core.h
+index 4c0200f..5bdd5f5 100644
+--- a/drivers/usb/dwc3/core.h
++++ b/drivers/usb/dwc3/core.h
+@@ -182,6 +182,7 @@
+ #define DWC3_GUSB3PIPECTL_DEP1P2P3(n)	((n) << 19)
+ #define DWC3_GUSB3PIPECTL_DEPOCHANGE	(1 << 18)
+ #define DWC3_GUSB3PIPECTL_SUSPHY	(1 << 17)
++#define DWC3_GUSB3PIPECTL_LFPSFILT	(1 << 9)
+ 
+ /* Global TX Fifo Size Register */
+ #define DWC3_GTXFIFOSIZ_TXFDEF(n)	((n) & 0xffff)
 diff --git a/drivers/usb/dwc3/dwc3-pci.c b/drivers/usb/dwc3/dwc3-pci.c
-index 18569a4..a89db6c 100644
+index 0eb8b2a..d1f0901 100644
 --- a/drivers/usb/dwc3/dwc3-pci.c
 +++ b/drivers/usb/dwc3/dwc3-pci.c
-@@ -146,6 +146,11 @@ static int dwc3_pci_probe(struct pci_dev *pci,
- 	res[1].name	= "dwc_usb3";
- 	res[1].flags	= IORESOURCE_IRQ;
+@@ -154,7 +154,8 @@ static int dwc3_pci_probe(struct pci_dev *pci,
+ 			| DWC3_QUIRK_U2SSINP3OK
+ 			| DWC3_QUIRK_REQP1P2P3
+ 			| DWC3_QUIRK_DEPP1P2P3
+-			| DWC3_QUIRK_DEPOCHANGE;
++			| DWC3_QUIRK_DEPOCHANGE
++			| DWC3_QUIRK_LFPSFILT;
+ 	}
  
-+	if (pci->vendor == PCI_VENDOR_ID_AMD && pci->device ==
-+			PCI_DEVICE_ID_AMD_NL) {
-+		dwc3_pdata.quirks |= DWC3_QUIRK_AMD_NL;
-+	}
-+
  	ret = platform_device_add_resources(dwc3, res, ARRAY_SIZE(res));
- 	if (ret) {
- 		dev_err(dev, "couldn't add resources to dwc3 device\n");
 diff --git a/drivers/usb/dwc3/platform_data.h b/drivers/usb/dwc3/platform_data.h
-index 1d3d65f..9c5f074 100644
+index 934c5e1..ac7860ab 100644
 --- a/drivers/usb/dwc3/platform_data.h
 +++ b/drivers/usb/dwc3/platform_data.h
-@@ -26,4 +26,8 @@ struct dwc3_platform_data {
- 	bool tx_fifo_resize;
+@@ -35,5 +35,6 @@ struct dwc3_platform_data {
+ #define DWC3_QUIRK_REQP1P2P3		(1 << 4)
+ #define DWC3_QUIRK_DEPP1P2P3		(1 << 5)
+ #define DWC3_QUIRK_DEPOCHANGE		(1 << 6)
++#define DWC3_QUIRK_LFPSFILT		(1 << 7)
  
- 	u32     quirks;
-+
-+#define DWC3_QUIRK_AMD_NL		(1 << 0)
-+#define DWC3_QUIRK_DISSCRAMBLE		(1 << 1)
-+
  };
 -- 
 1.9.1
