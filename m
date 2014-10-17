@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362AbaJQG14 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 02:27:56 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:53492 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750835AbaJQG1z (ORCPT
+	id S1752739AbaJQGhV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 02:37:21 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:64302 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750835AbaJQGhU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 02:27:55 -0400
+	Fri, 17 Oct 2014 02:37:20 -0400
 From: Kelvin Cheung <keguang.zhang@gmail.com>
 To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: rjw@rjwysocki.net, viresh.kumar@linaro.org, linux-mips@linux-mips.org,
         ralf@linux-mips.org, Kelvin Cheung <keguang.zhang@gmail.com>
 Subject: [PATCH V2 6/6] cpufreq: Loongson1: Add cpufreq driver for Loongson1B
-Date: Fri, 17 Oct 2014 14:27:33 +0800
-Message-Id: <1413527253-22632-1-git-send-email-keguang.zhang@gmail.com>
+Date: Fri, 17 Oct 2014 14:37:06 +0800
+Message-Id: <1413527826-22906-1-git-send-email-keguang.zhang@gmail.com>
 X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,6 +23,13 @@ This patch adds cpufreq driver for Loongson1B which
 is capable of changing the CPU frequency dynamically.
 
 Signed-off-by: Kelvin Cheung <keguang.zhang@gmail.com>
+
+---
+V2:
+   Use devm_clk_get() instead of clk_get().
+   Other minor fixes.
+V1:
+   Add cpufreq driver for Loongson1B.
 ---
  drivers/cpufreq/Kconfig        |  10 ++
  drivers/cpufreq/Makefile       |   1 +
