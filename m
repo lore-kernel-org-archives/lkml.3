@@ -1,52 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751541AbaJQXki (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 19:40:38 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:43495 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335AbaJQXkg (ORCPT
+	id S1751605AbaJQXlI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 19:41:08 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:48932 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751422AbaJQXlG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 19:40:36 -0400
-To: Christoph Hellwig <hch@infradead.org>
-Cc: michaelc@cs.wisc.edu, linux-scsi@vger.kernel.org,
-        target-devel@vger.kernel.org, ceph-devel@vger.kernel.org,
-        axboe@kernel.dk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] block: add function to issue compare and write
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <1413437835-13778-1-git-send-email-michaelc@cs.wisc.edu>
-	<1413437835-13778-3-git-send-email-michaelc@cs.wisc.edu>
-	<20141017095555.GA360@infradead.org>
-Date: Fri, 17 Oct 2014 19:38:37 -0400
-In-Reply-To: <20141017095555.GA360@infradead.org> (Christoph Hellwig's message
-	of "Fri, 17 Oct 2014 02:55:55 -0700")
-Message-ID: <yq1egu62rnm.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Fri, 17 Oct 2014 19:41:06 -0400
+Message-ID: <5441A900.4030001@gmail.com>
+Date: Fri, 17 Oct 2014 16:40:48 -0700
+From: Florian Fainelli <f.fainelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: Guenter Roeck <linux@roeck-us.net>,
+        "David S. Miller" <davem@davemloft.net>
+CC: Alexander Duyck <alexander.h.duyck@redhat.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dsa: Fix conversion from host device to mii bus
+References: <1413574258-21766-1-git-send-email-linux@roeck-us.net>
+In-Reply-To: <1413574258-21766-1-git-send-email-linux@roeck-us.net>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Christoph" == Christoph Hellwig <hch@infradead.org> writes:
+On 10/17/2014 12:30 PM, Guenter Roeck wrote:
+> Commit b4d2394d01bc ("dsa: Replace mii_bus with a generic host device")
+> replaces mii_bus with a generic host_dev, and introduces
+> dsa_host_dev_to_mii_bus() to support conversion from host_dev to mii_bus.
+> However, in some cases it uses to_mii_bus to perform that conversion.
+> Since host_dev is not the phy bus device but typically a platform device,
+> this fails and results in a crash with the affected drivers.
+> 
+> BUG: unable to handle kernel NULL pointer dereference at           (null)
+> IP: [<ffffffff81781d35>] __mutex_lock_slowpath+0x75/0x100
+> PGD 406783067 PUD 406784067 PMD 0
+> Oops: 0002 [#1] SMP
+> ...
+> Call Trace:
+> [<ffffffff810a538b>] ? pick_next_task_fair+0x61b/0x880
+> [<ffffffff81781de3>] mutex_lock+0x23/0x37
+> [<ffffffff81533244>] mdiobus_read+0x34/0x60
+> [<ffffffff8153b95a>] __mv88e6xxx_reg_read+0x8a/0xa0
+> [<ffffffff8153b9bc>] mv88e6xxx_reg_read+0x4c/0xa0
+> 
+> Fixes: b4d2394d01bc ("dsa: Replace mii_bus with a generic host device")
+> Cc: Alexander Duyck <alexander.h.duyck@intel.com>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 
-Christoph> We already have req->cmd_type which actually is a fairly good
-Christoph> description of what we get except for REQ_TYPE_FS, which is a
-Christoph> horrible overload using req->cmd_flags.
+Acked-by: Florian Fainelli <f.fainelli@gmail.com>
 
-Christoph> Given that you're just one of many currently ongoing patches
-Christoph> to add more flags here I think you need to byte the bullet
-Christoph> and fix this up by replacing REQ_TYPE_FS with:
+> ---
+>  drivers/net/dsa/mv88e6060.c | 16 ++++++++++++----
+>  drivers/net/dsa/mv88e6xxx.c | 14 ++++++++++----
+>  2 files changed, 22 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/net/dsa/mv88e6060.c b/drivers/net/dsa/mv88e6060.c
+> index 776e965..05b0ca3 100644
+> --- a/drivers/net/dsa/mv88e6060.c
+> +++ b/drivers/net/dsa/mv88e6060.c
+> @@ -21,8 +21,12 @@
+>  
+>  static int reg_read(struct dsa_switch *ds, int addr, int reg)
+>  {
+> -	return mdiobus_read(to_mii_bus(ds->master_dev),
+> -			    ds->pd->sw_addr + addr, reg);
+> +	struct mii_bus *bus = dsa_host_dev_to_mii_bus(ds->master_dev);
+> +
+> +	if (bus == NULL)
+> +		return -EINVAL;
+> +
+> +	return mdiobus_read(bus, ds->pd->sw_addr + addr, reg);
+>  }
+>  
+>  #define REG_READ(addr, reg)					\
+> @@ -38,8 +42,12 @@ static int reg_read(struct dsa_switch *ds, int addr, int reg)
+>  
+>  static int reg_write(struct dsa_switch *ds, int addr, int reg, u16 val)
+>  {
+> -	return mdiobus_write(to_mii_bus(ds->master_dev),
+> -			     ds->pd->sw_addr + addr, reg, val);
+> +	struct mii_bus *bus = dsa_host_dev_to_mii_bus(ds->master_dev);
+> +
+> +	if (bus == NULL)
+> +		return -EINVAL;
+> +
+> +	return mdiobus_write(bus, ds->pd->sw_addr + addr, reg, val);
+>  }
+>  
+>  #define REG_WRITE(addr, reg, val)				\
+> diff --git a/drivers/net/dsa/mv88e6xxx.c b/drivers/net/dsa/mv88e6xxx.c
+> index d6f6428..a6c90cf 100644
+> --- a/drivers/net/dsa/mv88e6xxx.c
+> +++ b/drivers/net/dsa/mv88e6xxx.c
+> @@ -75,11 +75,14 @@ int __mv88e6xxx_reg_read(struct mii_bus *bus, int sw_addr, int addr, int reg)
+>  int mv88e6xxx_reg_read(struct dsa_switch *ds, int addr, int reg)
+>  {
+>  	struct mv88e6xxx_priv_state *ps = ds_to_priv(ds);
+> +	struct mii_bus *bus = dsa_host_dev_to_mii_bus(ds->master_dev);
+>  	int ret;
+>  
+> +	if (bus == NULL)
+> +		return -EINVAL;
+> +
+>  	mutex_lock(&ps->smi_mutex);
+> -	ret = __mv88e6xxx_reg_read(to_mii_bus(ds->master_dev),
+> -				   ds->pd->sw_addr, addr, reg);
+> +	ret = __mv88e6xxx_reg_read(bus, ds->pd->sw_addr, addr, reg);
+>  	mutex_unlock(&ps->smi_mutex);
+>  
+>  	return ret;
+> @@ -119,11 +122,14 @@ int __mv88e6xxx_reg_write(struct mii_bus *bus, int sw_addr, int addr,
+>  int mv88e6xxx_reg_write(struct dsa_switch *ds, int addr, int reg, u16 val)
+>  {
+>  	struct mv88e6xxx_priv_state *ps = ds_to_priv(ds);
+> +	struct mii_bus *bus = dsa_host_dev_to_mii_bus(ds->master_dev);
+>  	int ret;
+>  
+> +	if (bus == NULL)
+> +		return -EINVAL;
+> +
+>  	mutex_lock(&ps->smi_mutex);
+> -	ret = __mv88e6xxx_reg_write(to_mii_bus(ds->master_dev),
+> -				    ds->pd->sw_addr, addr, reg, val);
+> +	ret = __mv88e6xxx_reg_write(bus, ds->pd->sw_addr, addr, reg, val);
+>  	mutex_unlock(&ps->smi_mutex);
+>  
+>  	return ret;
+> 
 
-Christoph> REQ_TYPE_WRITE REQ_TYPE_READ REQ_TYPE_FLUSH REQ_TYPE_DISCARD
-Christoph> REQ_TYPE_WRITE_SAME REQ_TYPE_CMP_AND_WRITE
-
-The problem with this is that, as it stands, a bio has no type. And it
-would suck if we couldn't keep bio rw and request flags in sync.
-
-I wonder if it would make more sense to move the remaining rq types to
-cmd_flags after I'm done with the 64-bit conversion?
-
--- 
-Martin K. Petersen	Oracle Linux Engineering
