@@ -1,55 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753216AbaJQAqX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Oct 2014 20:46:23 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:41397 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753021AbaJQAqV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Oct 2014 20:46:21 -0400
+	id S1753258AbaJQAqb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Oct 2014 20:46:31 -0400
+Received: from mga11.intel.com ([192.55.52.93]:52877 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753021AbaJQAq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Oct 2014 20:46:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,735,1406617200"; 
+   d="scan'208";a="606754635"
+Message-ID: <544065E3.4060909@linux.intel.com>
+Date: Thu, 16 Oct 2014 17:42:11 -0700
+From: sathyanarayanan kuppuswamy 
+	<sathyanarayanan.kuppuswamy@linux.intel.com>
+Reply-To: sathyanarayanan.kuppuswamy@linux.intel.com
+Organization: Intel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-In-Reply-To: <5440658D.6020504@rock-chips.com>
-References: <1412763781-31533-1-git-send-email-mark.yao@rock-chips.com>
-	<5440658D.6020504@rock-chips.com>
-Date: Fri, 17 Oct 2014 10:46:18 +1000
-Message-ID: <CAPM=9twVrmni_BRV_9-QLk+JUbcgXEjAM0g-tYH6su8=sDQ35g@mail.gmail.com>
-Subject: Re: [PATCH v11 0/3] Add drm driver for Rockchip Socs
-From: Dave Airlie <airlied@gmail.com>
-To: Mark yao <mark.yao@rock-chips.com>
-Cc: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Rob Clark <robdclark@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rom Lemarchand <romlem@google.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-doc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>, linux-api@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, dianders@chromium.org,
-        =?UTF-8?Q?St=C3=A9phane_Marchesin?= <marcheu@chromium.org>,
-        dbehr@chromium.org, Olof Johansson <olof@lixom.net>,
-        djkurtz@chromium.org, xjq@rock-chips.com, kfx@rock-chips.com,
-        cym@rock-chips.com, cf@rock-chips.com, zyw@rock-chips.com,
-        xxm@rock-chips.com, huangtao@rock-chips.com, kever.yang@rock-chips.com,
-        yxj@rock-chips.com, wxt@rock-chips.com, xw@rock-chips.com
-Content-Type: text/plain; charset=UTF-8
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@redhat.com>,
+        John Stultz <john.stultz@linaro.org>, Eric Paris <eparis@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        "x86@kernel.org" <x86@kernel.org>
+Subject: Re: [PATCH v1 02/10] x86, intel-mid: Remove "weak" from function
+ declarations
+References: <20141015165957.4063.66741.stgit@bhelgaas-glaptop2.roam.corp.google.com> <20141015170554.4063.62975.stgit@bhelgaas-glaptop2.roam.corp.google.com> <CAErSpo4sUi=75tM58_EFSFSWAHQUuAK3Yfaz4vTjCxdGWGhdug@mail.gmail.com>
+In-Reply-To: <CAErSpo4sUi=75tM58_EFSFSWAHQUuAK3Yfaz4vTjCxdGWGhdug@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 October 2014 10:40, Mark yao <mark.yao@rock-chips.com> wrote:
-> Hi
-> I think Rockchip drm driver is ready now, can it land?
+Hi Bjorn,
 
-I probably want to wait until -rc1 though I suppose since its a new
-driver and self contained we might be able to see if Linus is
-interested in squeezing it in.
+On 10/15/2014 04:26 PM, Bjorn Helgaas wrote:
+> [+cc David, Kuppuswamy, x86; sorry, I botched my "stg mail" so you
+> weren't included the first time]
+>
+> On Wed, Oct 15, 2014 at 11:05 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> For the following interfaces:
+>>
+>>    get_penwell_ops()
+>>    get_cloverview_ops()
+>>    get_tangier_ops()
+>>
+>> there is only one implementation, so they do not need to be marked "weak".
+>>
+>> Remove the "weak" attribute from their declarations.
+>>
+>> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+>> CC: David Cohen <david.a.cohen@linux.intel.com>
+>> CC: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
+>> CC: x86@kernel.org
+>> ---
+>>   arch/x86/platform/intel-mid/intel_mid_weak_decls.h |    7 +++----
+>>   1 file changed, 3 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/arch/x86/platform/intel-mid/intel_mid_weak_decls.h b/arch/x86/platform/intel-mid/intel_mid_weak_decls.h
+>> index 46aa25c8ce06..3c1c3866d82b 100644
+>> --- a/arch/x86/platform/intel-mid/intel_mid_weak_decls.h
+Please remove this file and move the contents to asm/intel-mid.h.
+>> +++ b/arch/x86/platform/intel-mid/intel_mid_weak_decls.h
+>> @@ -10,10 +10,9 @@
+>>    */
+>>
+>>
+>> -/* __attribute__((weak)) makes these declarations overridable */
+>>   /* For every CPU addition a new get_<cpuname>_ops interface needs
+>>    * to be added.
+>>    */
+>> -extern void *get_penwell_ops(void) __attribute__((weak));
+>> -extern void *get_cloverview_ops(void) __attribute__((weak));
+>> -extern void *get_tangier_ops(void) __attribute__((weak));
+>> +extern void *get_penwell_ops(void);
+>> +extern void *get_cloverview_ops(void);
+>> +extern void *get_tangier_ops(void);
+>>
 
-Can you send me a git pull request for it against drm-next or even 3.17.
+-- 
+Sathyanarayanan Kuppuswamy
+Android kernel developer
 
-Dave.
