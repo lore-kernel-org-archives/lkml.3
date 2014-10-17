@@ -1,154 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751540AbaJQVp3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 17:45:29 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:60975 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970AbaJQVp0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 17:45:26 -0400
+	id S1751372AbaJQWEs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 18:04:48 -0400
+Received: from mga03.intel.com ([134.134.136.65]:58621 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750867AbaJQWEq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 18:04:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,741,1406617200"; 
+   d="scan'208";a="591217535"
+Message-ID: <54419265.9000000@intel.com>
+Date: Fri, 17 Oct 2014 15:04:21 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-In-Reply-To: <1401975635-6162-1-git-send-email-drysdale@google.com>
-References: <1401975635-6162-1-git-send-email-drysdale@google.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 17 Oct 2014 14:45:03 -0700
-Message-ID: <CALCETrVraoD+r4zxBoGd+BV5P275AXcRV_R00SSr8fjQzRHnUg@mail.gmail.com>
-Subject: Re: [PATCHv4 RESEND 0/3] syscalls,x86: Add execveat() system call
-To: David Drysdale <drysdale@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
-        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Dominik Dingel <dingel@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Rik van Riel <riel@redhat.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Bob Liu <lliubbo@gmail.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Gleb Natapov <gleb@kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Jianyu Zhan <nasa4836@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Konstantin Weitz <konstantin.weitz@gmail.com>, kvm@vger.kernel.org,
+        linux390@de.ibm.com, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: Re: [PATCH 2/4] mm: introduce new VM_NOZEROPAGE flag
+References: <1413554990-48512-1-git-send-email-dingel@linux.vnet.ibm.com> <1413554990-48512-3-git-send-email-dingel@linux.vnet.ibm.com>
+In-Reply-To: <1413554990-48512-3-git-send-email-dingel@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Added Eric Biederman, since I think your tree might be a reasonable
-route forward for these patches.]
+On 10/17/2014 07:09 AM, Dominik Dingel wrote:
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index cd33ae2..8f09c91 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -113,7 +113,7 @@ extern unsigned int kobjsize(const void *objp);
+>  #define VM_GROWSDOWN	0x00000100	/* general info on the segment */
+>  #define VM_PFNMAP	0x00000400	/* Page-ranges managed without "struct page", just pure PFN */
+>  #define VM_DENYWRITE	0x00000800	/* ETXTBSY on write attempts.. */
+> -
+> +#define VM_NOZEROPAGE	0x00001000	/* forbid new zero page mappings */
+>  #define VM_LOCKED	0x00002000
+>  #define VM_IO           0x00004000	/* Memory mapped I/O or similar */
 
-On Thu, Jun 5, 2014 at 6:40 AM, David Drysdale <drysdale@google.com> wrote:
-> Resending, adding cc:linux-api.
->
-> Also, it may help to add a little more background -- this patch is
-> needed as a (small) part of implementing Capsicum in the Linux kernel.
->
-> Capsicum is a security framework that has been present in FreeBSD since
-> version 9.0 (Jan 2012), and is based on concepts from object-capability
-> security [1].
->
-> One of the features of Capsicum is capability mode, which locks down
-> access to global namespaces such as the filesystem hierarchy.  In
-> capability mode, /proc is thus inaccessible and so fexecve(3) doesn't
-> work -- hence the need for a kernel-space
+This seems like an awfully obscure use for a very constrained resource
+(VM_ flags).
 
-I just found myself wanting this syscall for another reason: injecting
-programs into sandboxes or otherwise heavily locked-down namespaces.
+Is there ever a time where the VMAs under an mm have mixed VM_NOZEROPAGE
+status?  Reading the patches, it _looks_ like it might be an all or
+nothing thing.
 
-For example, I want to be able to reliably do something like nsenter
---namespace-flags-here toybox sh.  Toybox's shell is unusual in that
-it is more or less fully functional, so this should Just Work (tm),
-except that the toybox binary might not exist in the namespace being
-entered.  If execveat were available, I could rig nsenter or a similar
-tool to open it with O_CLOEXEC, enter the namespace, and then call
-execveat.
-
-Is there any reason that these patches can't be merged more or less as
-is for 3.19?
-
---Andy
-
->
-> [1] http://www.cl.cam.ac.uk/research/security/capsicum/papers/2010usenix-security-capsicum-website.pdf
->
-> ------
->
-> This patch set adds execveat(2) for x86, and is derived from Meredydd
-> Luff's patch from Sept 2012 (https://lkml.org/lkml/2012/9/11/528).
->
-> The primary aim of adding an execveat syscall is to allow an
-> implementation of fexecve(3) that does not rely on the /proc
-> filesystem.  The current glibc version of fexecve(3) is implemented
-> via /proc, which causes problems in sandboxed or otherwise restricted
-> environments.
->
-> Given the desire for a /proc-free fexecve() implementation, HPA
-> suggested (https://lkml.org/lkml/2006/7/11/556) that an execveat(2)
-> syscall would be an appropriate generalization.
->
-> Also, having a new syscall means that it can take a flags argument
-> without back-compatibility concerns.  The current implementation just
-> defines the AT_SYMLINK_NOFOLLOW flag, but other flags could be added
-> in future -- for example, flags for new namespaces (as suggested at
-> https://lkml.org/lkml/2006/7/11/474).
->
-> Related history:
->  - https://lkml.org/lkml/2006/12/27/123 is an example of someone
->    realizing that fexecve() is likely to fail in a chroot environment.
->  - http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=514043 covered
->    documenting the /proc requirement of fexecve(3) in its manpage, to
->    "prevent other people from wasting their time".
->  - https://bugzilla.kernel.org/show_bug.cgi?id=74481 documented that
->    it's not possible to fexecve() a file descriptor for a script with
->    close-on-exec set (which is possible with the implementation here).
->  - https://bugzilla.redhat.com/show_bug.cgi?id=241609 described a
->    problem where a process that did setuid() could not fexecve()
->    because it no longer had access to /proc/self/fd; this has since
->    been fixed.
->
->
-> Changes since Meredydd's v3 patch:
->  - Added a selftest.
->  - Added a man page.
->  - Left open_exec() signature untouched to reduce patch impact
->    elsewhere (as suggested by Al Viro).
->  - Filled in bprm->filename with d_path() into a buffer, to avoid use
->    of potentially-ephemeral dentry->d_name.
->  - Patch against v3.14 (455c6fdbd21916).
->
->
-> David Drysdale (2):
->   syscalls,x86: implement execveat() system call
->   syscalls,x86: add selftest for execveat(2)
->
->  arch/x86/ia32/audit.c                   |   1 +
->  arch/x86/ia32/ia32entry.S               |   1 +
->  arch/x86/kernel/audit_64.c              |   1 +
->  arch/x86/kernel/entry_64.S              |  28 ++++
->  arch/x86/syscalls/syscall_32.tbl        |   1 +
->  arch/x86/syscalls/syscall_64.tbl        |   2 +
->  arch/x86/um/sys_call_table_64.c         |   1 +
->  fs/exec.c                               | 153 ++++++++++++++++---
->  include/linux/compat.h                  |   3 +
->  include/linux/sched.h                   |   4 +
->  include/linux/syscalls.h                |   4 +
->  include/uapi/asm-generic/unistd.h       |   4 +-
->  kernel/sys_ni.c                         |   3 +
->  lib/audit.c                             |   3 +
->  tools/testing/selftests/Makefile        |   1 +
->  tools/testing/selftests/exec/.gitignore |   6 +
->  tools/testing/selftests/exec/Makefile   |  32 ++++
->  tools/testing/selftests/exec/execveat.c | 251 ++++++++++++++++++++++++++++++++
->  18 files changed, 476 insertions(+), 23 deletions(-)
->  create mode 100644 tools/testing/selftests/exec/.gitignore
->  create mode 100644 tools/testing/selftests/exec/Makefile
->  create mode 100644 tools/testing/selftests/exec/execveat.c
->
-> --
-> 1.9.1.423.g4596e3a
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-api" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Full disclosure: I've got an x86-specific feature I want to steal a flag
+for.  Maybe we should just define another VM_ARCH bit.
