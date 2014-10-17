@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512AbaJQHxq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 03:53:46 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:45966 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751083AbaJQHxK (ORCPT
+	id S1753534AbaJQHyM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 03:54:12 -0400
+Received: from gate.crashing.org ([63.228.1.57]:57384 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751083AbaJQHyK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 03:53:10 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>, Chris Ball <chris@printf.net>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH 1/3] mmc: atmel-mci: move mache header to platform_data
-Date: Fri, 17 Oct 2014 09:52:44 +0200
-Message-Id: <1413532366-1317-2-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1413532366-1317-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1413532366-1317-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Fri, 17 Oct 2014 03:54:10 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH 3/3] rheap: move rheap.c from arch/powerpc/lib/ to lib/
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <1411613237-2271-2-git-send-email-B45475@freescale.com>
+Date: Fri, 17 Oct 2014 09:53:55 +0200
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>, linux-kernel@vger.kernel.org,
+        B07421@freescale.com, R63061@freescale.com,
+        pantelis.antoniou@gmail.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <57D1E2E0-077A-4CBE-8534-5B9EE5C81BAE@kernel.crashing.org>
+References: <1411613237-2271-1-git-send-email-B45475@freescale.com> <1411613237-2271-2-git-send-email-B45475@freescale.com>
+To: Zhao Qiang <B45475@freescale.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the mach header that can come either from arm/mach-at91 or avr32 to
-platform_data to be able to switch the AT91 platforms to multiplatform.
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- drivers/mmc/host/atmel-mci.c                |  2 +-
- include/linux/platform_data/mmc-atmel-mci.h | 22 ++++++++++++++++++++++
- 2 files changed, 23 insertions(+), 1 deletion(-)
- create mode 100644 include/linux/platform_data/mmc-atmel-mci.h
+On Sep 25, 2014, at 4:47 AM, Zhao Qiang <B45475@freescale.com> wrote:
 
-diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
-index bb585d940901..b1231835b031 100644
---- a/drivers/mmc/host/atmel-mci.c
-+++ b/drivers/mmc/host/atmel-mci.c
-@@ -29,11 +29,11 @@
- #include <linux/stat.h>
- #include <linux/types.h>
- #include <linux/platform_data/atmel.h>
-+#include <linux/platform_data/mmc-atmel-mci.h>
- 
- #include <linux/mmc/host.h>
- #include <linux/mmc/sdio.h>
- 
--#include <mach/atmel-mci.h>
- #include <linux/atmel-mci.h>
- #include <linux/atmel_pdc.h>
- 
-diff --git a/include/linux/platform_data/mmc-atmel-mci.h b/include/linux/platform_data/mmc-atmel-mci.h
-new file mode 100644
-index 000000000000..ebe7ae4f72e4
---- /dev/null
-+++ b/include/linux/platform_data/mmc-atmel-mci.h
-@@ -0,0 +1,22 @@
-+#ifndef __MMC_ATMEL_MCI_H
-+#define __MMC_ATMEL_MCI_H
-+
-+#include <linux/platform_data/dma-atmel.h>
-+#include <linux/dw_dmac.h>
-+
-+/**
-+ * struct mci_dma_data - DMA data for MCI interface
-+ */
-+struct mci_dma_data {
-+#ifdef CONFIG_ARM
-+	struct at_dma_slave     sdata;
-+#else
-+	struct dw_dma_slave     sdata;
-+#endif
-+};
-+
-+/* accessor macros */
-+#define	slave_data_ptr(s)	(&(s)->sdata)
-+#define find_slave_dev(s)	((s)->sdata.dma_dev)
-+
-+#endif /* __MMC_ATMEL_MCI_H */
--- 
-1.9.1
+> qe need to use the rheap, so move it to public directory.
+> 
+> Signed-off-by: Zhao Qiang <B45475@freescale.com>
+> ---
+> arch/powerpc/Kconfig                                    | 3 ---
+> arch/powerpc/include/asm/fsl_85xx_cache_sram.h          | 2 +-
+> arch/powerpc/lib/Makefile                               | 2 --
+> arch/powerpc/platforms/44x/Kconfig                      | 2 +-
+> arch/powerpc/platforms/85xx/Kconfig                     | 2 +-
+> arch/powerpc/platforms/Kconfig                          | 2 +-
+> arch/powerpc/platforms/Kconfig.cputype                  | 2 +-
+> arch/powerpc/sysdev/cpm1.c                              | 2 +-
+> arch/powerpc/sysdev/cpm2.c                              | 2 +-
+> arch/powerpc/sysdev/cpm_common.c                        | 2 +-
+> arch/powerpc/sysdev/ppc4xx_ocm.c                        | 2 +-
+> drivers/dma/bestcomm/Kconfig                            | 2 +-
+> drivers/soc/qe/Kconfig                                  | 2 +-
+> drivers/soc/qe/qe.c                                     | 2 +-
+> drivers/soc/qe/qe_common.c                              | 2 +-
+> drivers/video/Kconfig                                   | 2 +-
+> include/linux/fsl/bestcomm/sram.h                       | 2 +-
+> {arch/powerpc/include/asm => include/linux/fsl}/rheap.h | 0
+> lib/Kconfig                                             | 3 +++
+> lib/Makefile                                            | 2 ++
+> {arch/powerpc/lib => lib}/rheap.c                       | 2 +-
+> 21 files changed, 21 insertions(+), 21 deletions(-)
+> rename {arch/powerpc/include/asm => include/linux/fsl}/rheap.h (100%)
+> rename {arch/powerpc/lib => lib}/rheap.c (99%)
 
+Have you guys looked at moving to lib/genalloc.c.  If we are going to keep rheap around the include should be just in include/linux/rheap.h not include/linux/fsl/rheap.h
+
+However, I think genalloc should be used and kill off rheap usage.
+
+- k
