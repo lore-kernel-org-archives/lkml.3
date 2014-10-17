@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080AbaJQUCH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 16:02:07 -0400
-Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:1108 "EHLO
-	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753869AbaJQUCE (ORCPT
+	id S1753899AbaJQUIX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 16:08:23 -0400
+Received: from homie.mail.dreamhost.com ([208.97.132.208]:36763 "EHLO
+	homiemail-a3.g.dreamhost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753722AbaJQUIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 16:02:04 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvwSAJR0QVRXQz/c/2dsb2JhbABbgw6BK7hjAQEBAQEBBQFzmicEAoEVFwF9hDAvI4EaN4hDAb9Gjl0shiKKKx2ENQWdWZYlgUcBbIFFOy+CSwEBAQ
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org
-Subject: [PATCH 4/4 linux-next] x86, msr: use seek definitions instead of hard-coded values
-Date: Fri, 17 Oct 2014 22:01:59 +0200
-Message-Id: <1413576120-27147-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.3
+	Fri, 17 Oct 2014 16:08:21 -0400
+Message-ID: <1413576485.22256.5.camel@linux-t7sj.site>
+Subject: Re: btrfs soft lockups: locks gone crazy
+From: Davidlohr Bueso <dave@stgolabs.net>
+To: Josef Bacik <jbacik@fb.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
+Date: Fri, 17 Oct 2014 13:08:05 -0700
+In-Reply-To: <54416EF6.1050403@fb.com>
+References: <1413271664.27233.13.camel@linux-t7sj.site>
+	 <54416EF6.1050403@fb.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace 0/1 by SEEK_SET/SEEK_CUR.
+On Fri, 2014-10-17 at 15:33 -0400, Josef Bacik wrote:
+> On 10/14/2014 03:27 AM, Davidlohr Bueso wrote:
+> > Hello,
+> >
+> > I'm getting massive amounts of cpu soft lockups in Linus's tree for
+> > today. This occurs almost immediately and is very reproducible in aim7
+> > disk workloads using btrfs:
+> >
+> 
+> I'm trying to reproduce but it's not popping for me.  What is the setup 
+> of your fs?  mkfs options, mount options etc.  And how are you running 
+> aim7?  I'm using reaim with the default reaim.config and workfile,disk, 
+> is this what you are using?  If not please attach your config and 
+> workfile so I can be sure to be doing the same thing as you.  Thanks,
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- arch/x86/kernel/msr.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+The steps I used are:
 
-diff --git a/arch/x86/kernel/msr.c b/arch/x86/kernel/msr.c
-index 1c66cd0..1ed1190 100644
---- a/arch/x86/kernel/msr.c
-+++ b/arch/x86/kernel/msr.c
-@@ -52,11 +52,11 @@ static loff_t msr_seek(struct file *file, loff_t offset, int orig)
- 
- 	mutex_lock(&inode->i_mutex);
- 	switch (orig) {
--	case 0:
-+	case SEEK_SET:
- 		file->f_pos = offset;
- 		ret = file->f_pos;
- 		break;
--	case 1:
-+	case SEEK_CUR:
- 		file->f_pos += offset;
- 		ret = file->f_pos;
- 		break;
--- 
-1.9.3
+Download mmtests: https://github.com/gormanm/mmtests.git
+
+cp configs/config-global-dhp__reaim-io config
+
+edit the new config and just leave 'workfile.shared workfile.disk'
+workloads as the REAIM_WORKFILES parameter.
+
+./run-mmtests --no-monitor testname
+
+Just a few mins into the test you should start getting the lockups. fwiw
+I have not had the time to try other setups of reaim that are not
+bundled with mmtests.
+
+Thanks,
+Davidlohr
 
