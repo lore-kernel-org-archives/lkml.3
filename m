@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752883AbaJQMDi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 08:03:38 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:57029 "HELO
+	id S1752813AbaJQMDh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 08:03:37 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:53018 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752632AbaJQMDe (ORCPT
+	with SMTP id S1751922AbaJQMDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 08:03:34 -0400
+	Fri, 17 Oct 2014 08:03:30 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -19,9 +19,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Bryan Wu <cooloney@gmail.com>, Darren Hart <dvhart@linux.intel.com>,
         Mark Rutland <mark.rutland@arm.com>
-Subject: [PATCH v5 03/12] ACPI: Allow drivers to match using Device Tree compatible property
-Date: Fri, 17 Oct 2014 14:05:59 +0200
-Message-ID: <3167500.xrhugPHshV@vostro.rjw.lan>
+Subject: [PATCH v5 10/12] gpio: Support for unified device properties interface
+Date: Fri, 17 Oct 2014 14:16 +0200
+Message-ID: <1510578.dSiEYPPI9m@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
 In-Reply-To: <11223831.j9KAEfSQsY@vostro.rjw.lan>
 References: <2660541.BycO7TFnA2@vostro.rjw.lan> <11223831.j9KAEfSQsY@vostro.rjw.lan>
@@ -34,231 +34,158 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-We have lots of existing Device Tree enabled drivers and allocating
-separate _HID for each is not feasible. Instead we allocate special _HID
-"PRP0001" that means that the match should be done using Device Tree
-compatible property using driver's .of_match_table instead if the driver
-is missing .acpi_match_table.
+Some drivers need to deal with only firmware representation of its
+GPIOs. An example would be a GPIO button array driver where each button
+is described as a separate firmware node in device tree. Typically these
+child nodes do not have physical representation in the Linux device
+model.
 
-If there is a need to distinguish from where the device is enumerated
-(DT/ACPI) driver can check dev->of_node or ACPI_COMPATION(dev).
+In order to help device drivers to handle such firmware child nodes we
+add dev[m]_get_named_gpiod_from_child() that takes a child firmware
+node pointer as its second argument (the first one is the parent device
+itself), finds the GPIO using whatever is the underlying firmware
+method, and requests the GPIO properly.
 
 Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Reviewed-by: Grant Likely <grant.likely@linaro.org>
+Acked-by: Alexandre Courbot <acourbot@nvidia.com>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/acpi/property.c | 34 +++++++++++++++++
- drivers/acpi/scan.c     | 97 +++++++++++++++++++++++++++++++++++++++++++------
- include/acpi/acpi_bus.h |  1 +
- include/linux/acpi.h    |  8 +---
- 4 files changed, 123 insertions(+), 17 deletions(-)
+ drivers/gpio/devres.c         |   36 +++++++++++++++++++++++++++
+ drivers/gpio/gpiolib.c        |   56 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/gpio/consumer.h |    8 ++++++
+ 3 files changed, 100 insertions(+)
 
-diff --git a/drivers/acpi/property.c b/drivers/acpi/property.c
-index 680f7f1..ff53eb8 100644
---- a/drivers/acpi/property.c
-+++ b/drivers/acpi/property.c
-@@ -76,6 +76,37 @@ static bool acpi_properties_format_valid(const union acpi_object *properties)
- 	return true;
- }
+Index: linux-pm/drivers/gpio/devres.c
+===================================================================
+--- linux-pm.orig/drivers/gpio/devres.c
++++ linux-pm/drivers/gpio/devres.c
+@@ -109,6 +109,42 @@ struct gpio_desc *__must_check __devm_gp
+ EXPORT_SYMBOL(__devm_gpiod_get_index);
  
-+static void acpi_init_of_compatible(struct acpi_device *adev)
+ /**
++ * devm_get_named_gpiod_from_child - managed dev_get_named_gpiod_from_child()
++ * @dev:	GPIO consumer
++ * @child:	firmware node (child of @dev)
++ * @propname:	name of the firmware property
++ * @index:	index of the GPIO in the property value in case of many
++ *
++ * GPIO descriptors returned from this function are automatically disposed on
++ * driver detach.
++ */
++struct gpio_desc *devm_get_named_gpiod_from_child(struct device *dev,
++						  struct fwnode_handle *child,
++						  const char *propname,
++						  int index)
 +{
-+	const union acpi_object *of_compatible;
-+	struct acpi_hardware_id *hwid;
-+	bool acpi_of = false;
++	struct gpio_desc **dr;
++	struct gpio_desc *desc;
 +
-+	/*
-+	 * Check if the special PRP0001 ACPI ID is present and in that
-+	 * case we fill in Device Tree compatible properties for this
-+	 * device.
-+	 */
-+	list_for_each_entry(hwid, &adev->pnp.ids, list) {
-+		if (!strcmp(hwid->id, "PRP0001")) {
-+			acpi_of = true;
-+			break;
-+		}
++	dr = devres_alloc(devm_gpiod_release, sizeof(struct gpio_desc *),
++			  GFP_KERNEL);
++	if (!dr)
++		return ERR_PTR(-ENOMEM);
++
++	desc = fwnode_get_named_gpiod(child, propname, index);
++	if (IS_ERR(desc)) {
++		devres_free(dr);
++		return desc;
 +	}
 +
-+	if (!acpi_of)
-+		return;
++	*dr = desc;
++	devres_add(dev, dr);
 +
-+	if (acpi_dev_get_property_array(adev, "compatible", ACPI_TYPE_STRING,
-+					&of_compatible)) {
-+		acpi_handle_warn(adev->handle,
-+				 "PRP0001 requires compatible property\n");
-+		return;
++	return desc;
++}
++EXPORT_SYMBOL(devm_get_named_gpiod_from_child);
++
++/**
+  * devm_gpiod_get_index_optional - Resource-managed gpiod_get_index_optional()
+  * @dev: GPIO consumer
+  * @con_id: function within the GPIO consumer
+Index: linux-pm/drivers/gpio/gpiolib.c
+===================================================================
+--- linux-pm.orig/drivers/gpio/gpiolib.c
++++ linux-pm/drivers/gpio/gpiolib.c
+@@ -1735,6 +1735,62 @@ struct gpio_desc *__must_check __gpiod_g
+ EXPORT_SYMBOL_GPL(__gpiod_get_index);
+ 
+ /**
++ * fwnode_get_named_gpiod - obtain a GPIO from firmware node
++ * @fwnode:	handle of the firmware node
++ * @propname:	name of the firmware property
++ * @idx:	index of the GPIO in the property value in case of many
++ *
++ * This function can be used for drivers that get their configuration
++ * from firmware.
++ *
++ * Function properly finds the corresponding GPIO using whatever is the
++ * underlying firmware interface and then makes sure that the GPIO
++ * descriptor is requested before it is returned to the caller.
++ *
++ * In case of error an ERR_PTR() is returned.
++ */
++struct gpio_desc *fwnode_get_named_gpiod(struct fwnode_handle *fwnode,
++					 const char *propname, int index)
++{
++	struct gpio_desc *desc = ERR_PTR(-ENODEV);
++	bool active_low = false;
++	int ret;
++
++	if (!fwnode)
++		return ERR_PTR(-EINVAL);
++
++	if (is_of_node(fwnode)) {
++		enum of_gpio_flags flags;
++
++		desc = of_get_named_gpiod_flags(of_node(fwnode), propname,
++						index, &flags);
++		if (!IS_ERR(desc))
++			active_low = flags & OF_GPIO_ACTIVE_LOW;
++	} else if (is_acpi_node(fwnode)) {
++		struct acpi_gpio_info info;
++
++		desc = acpi_get_gpiod_by_index(acpi_node(fwnode), propname,
++					       index, &info);
++		if (!IS_ERR(desc))
++			active_low = info.active_low;
 +	}
 +
-+	adev->data.of_compatible = of_compatible;
++	if (IS_ERR(desc))
++		return desc;
++
++	ret = gpiod_request(desc, NULL);
++	if (ret)
++		return ERR_PTR(ret);
++
++	/* Only value flag can be set from both DT and ACPI is active_low */
++	if (active_low)
++		set_bit(FLAG_ACTIVE_LOW, &desc->flags);
++
++	return desc;
 +}
++EXPORT_SYMBOL_GPL(fwnode_get_named_gpiod);
 +
- void acpi_init_properties(struct acpi_device *adev)
- {
- 	struct acpi_buffer buf = { ACPI_ALLOCATE_BUFFER };
-@@ -119,6 +150,8 @@ void acpi_init_properties(struct acpi_device *adev)
++/**
+  * gpiod_get_index_optional - obtain an optional GPIO from a multi-index GPIO
+  *                            function
+  * @dev: GPIO consumer, can be NULL for system-global GPIOs
+Index: linux-pm/include/linux/gpio/consumer.h
+===================================================================
+--- linux-pm.orig/include/linux/gpio/consumer.h
++++ linux-pm/include/linux/gpio/consumer.h
+@@ -94,6 +94,14 @@ int gpiod_to_irq(const struct gpio_desc
+ struct gpio_desc *gpio_to_desc(unsigned gpio);
+ int desc_to_gpio(const struct gpio_desc *desc);
  
- 		adev->data.pointer = buf.pointer;
- 		adev->data.properties = properties;
++/* Child properties interface */
++struct fwnode_handle;
 +
-+		acpi_init_of_compatible(adev);
- 		return;
- 	}
++struct gpio_desc *fwnode_get_named_gpiod(struct fwnode_handle *fwnode,
++					 const char *propname, int index);
++struct gpio_desc *devm_get_named_gpiod_from_child(struct device *dev,
++						  struct fwnode_handle *child,
++						  const char *propname, int index);
+ #else /* CONFIG_GPIOLIB */
  
-@@ -130,6 +163,7 @@ void acpi_init_properties(struct acpi_device *adev)
- void acpi_free_properties(struct acpi_device *adev)
- {
- 	ACPI_FREE((void *)adev->data.pointer);
-+	adev->data.of_compatible = NULL;
- 	adev->data.pointer = NULL;
- 	adev->data.properties = NULL;
- }
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index 1979ab3..bc999f1 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -124,17 +124,51 @@ static int create_modalias(struct acpi_device *acpi_dev, char *modalias,
- 	if (list_empty(&acpi_dev->pnp.ids))
- 		return 0;
- 
--	len = snprintf(modalias, size, "acpi:");
--	size -= len;
--
--	list_for_each_entry(id, &acpi_dev->pnp.ids, list) {
--		count = snprintf(&modalias[len], size, "%s:", id->id);
--		if (count < 0)
--			return -EINVAL;
--		if (count >= size)
--			return -ENOMEM;
--		len += count;
--		size -= count;
-+	/*
-+	 * If the device has PRP0001 we expose DT compatible modalias
-+	 * instead in form of of:NnameTCcompatible.
-+	 */
-+	if (acpi_dev->data.of_compatible) {
-+		struct acpi_buffer buf = { ACPI_ALLOCATE_BUFFER };
-+		const union acpi_object *of_compatible, *obj;
-+		char *c;
-+		int i;
-+
-+		acpi_get_name(acpi_dev->handle, ACPI_SINGLE_NAME, &buf);
-+		/* DT strings are all in lower case */
-+		for (c = buf.pointer; *c != '\0'; c++)
-+			*c = tolower(*c);
-+
-+		len = snprintf(modalias, size, "of:N%sT", (char *)buf.pointer);
-+		ACPI_FREE(buf.pointer);
-+
-+		of_compatible = acpi_dev->data.of_compatible;
-+		for (i = 0; i < of_compatible->package.count; i++) {
-+			obj = &of_compatible->package.elements[i];
-+
-+			count = snprintf(&modalias[len], size, "C%s",
-+					 obj->string.pointer);
-+			if (count < 0)
-+				return -EINVAL;
-+			if (count >= size)
-+				return -ENOMEM;
-+
-+			len += count;
-+			size -= count;
-+		}
-+	} else {
-+		len = snprintf(modalias, size, "acpi:");
-+		size -= len;
-+
-+		list_for_each_entry(id, &acpi_dev->pnp.ids, list) {
-+			count = snprintf(&modalias[len], size, "%s:", id->id);
-+			if (count < 0)
-+				return -EINVAL;
-+			if (count >= size)
-+				return -ENOMEM;
-+			len += count;
-+			size -= count;
-+		}
- 	}
- 
- 	modalias[len] = '\0';
-@@ -864,6 +898,47 @@ int acpi_match_device_ids(struct acpi_device *device,
- }
- EXPORT_SYMBOL(acpi_match_device_ids);
- 
-+/* Performs match against special "PRP0001" shoehorn ACPI ID */
-+static bool acpi_of_driver_match_device(struct device *dev,
-+					const struct device_driver *drv)
-+{
-+	const union acpi_object *of_compatible;
-+	struct acpi_device *adev;
-+	int i;
-+
-+	adev = ACPI_COMPANION(dev);
-+	if (!adev)
-+		return false;
-+
-+	of_compatible = adev->data.of_compatible;
-+	if (!drv->of_match_table || !of_compatible)
-+		return false;
-+
-+	/* Now we can look for the driver DT compatible strings */
-+	for (i = 0; i < of_compatible->package.count; i++) {
-+		const struct of_device_id *id;
-+		const union acpi_object *obj;
-+
-+		obj = &of_compatible->package.elements[i];
-+
-+		for (id = drv->of_match_table; id->compatible[0]; id++)
-+			if (!strcasecmp(obj->string.pointer, id->compatible))
-+				return true;
-+	}
-+
-+	return false;
-+}
-+
-+bool acpi_driver_match_device(struct device *dev,
-+			      const struct device_driver *drv)
-+{
-+	if (!drv->acpi_match_table)
-+		return acpi_of_driver_match_device(dev, drv);
-+
-+	return !!acpi_match_device(drv->acpi_match_table, dev);
-+}
-+EXPORT_SYMBOL_GPL(acpi_driver_match_device);
-+
- static void acpi_free_power_resources_lists(struct acpi_device *device)
- {
- 	int i;
-diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-index f9734fa..98cd723 100644
---- a/include/acpi/acpi_bus.h
-+++ b/include/acpi/acpi_bus.h
-@@ -341,6 +341,7 @@ struct acpi_device_physical_node {
- struct acpi_device_data {
- 	const union acpi_object *pointer;
- 	const union acpi_object *properties;
-+	const union acpi_object *of_compatible;
- };
- 
- /* Device */
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index 18c1bc3..11aa6b8 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -424,12 +424,8 @@ extern int acpi_nvs_for_each_region(int (*func)(__u64, __u64, void *),
- const struct acpi_device_id *acpi_match_device(const struct acpi_device_id *ids,
- 					       const struct device *dev);
- 
--static inline bool acpi_driver_match_device(struct device *dev,
--					    const struct device_driver *drv)
--{
--	return !!acpi_match_device(drv->acpi_match_table, dev);
--}
--
-+extern bool acpi_driver_match_device(struct device *dev,
-+				     const struct device_driver *drv);
- int acpi_device_uevent_modalias(struct device *, struct kobj_uevent_env *);
- int acpi_device_modalias(struct device *, char *, int);
- 
--- 
-1.9.3
-
+ static inline struct gpio_desc *__must_check __gpiod_get(struct device *dev,
 
