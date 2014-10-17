@@ -1,154 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753390AbaJQQ4p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 12:56:45 -0400
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:56530 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753213AbaJQQ4n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 12:56:43 -0400
-X-IronPort-AV: E=Sophos;i="5.04,740,1406617200"; 
-   d="scan'208";a="48326580"
-Message-ID: <54414A48.9090902@broadcom.com>
-Date: Fri, 17 Oct 2014 09:56:40 -0700
-From: Ray Jui <rjui@broadcom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>, Vinod Koul <vinod.koul@intel.com>
-CC: Dan Williams <dan.j.williams@intel.com>,
-        Scott Branden <sbranden@broadcom.com>, <dmaengine@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] dmaengine: pl330: use subsys_initcall
-References: <rjui@broadcom.com> <1413506896-4536-1-git-send-email-rjui@broadcom.com> <5440C929.9050906@metafoo.de> <20141017073535.GN1638@intel.com> <5440FA6B.6040303@metafoo.de> <54414153.70804@broadcom.com> <5441464D.8040303@metafoo.de>
-In-Reply-To: <5441464D.8040303@metafoo.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753386AbaJQQ7z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 12:59:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47836 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752830AbaJQQ7y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 12:59:54 -0400
+From: Ulrich Obergfell <uobergfe@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: dzickus@redhat.com, uobergfe@redhat.com
+Subject: [PATCH v2 0/9] watchdog: parameters to control hard and soft lockup detector individually
+Date: Fri, 17 Oct 2014 19:06:19 +0200
+Message-Id: <1413565588-4144-1-git-send-email-uobergfe@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This post follows up to https://lkml.org/lkml/2014/8/11/329.
+During the discussion of that patch, Ingo Molnar commented in
+https://lkml.org/lkml/2014/8/18/577.
 
-On 10/17/2014 9:39 AM, Lars-Peter Clausen wrote:
-> On 10/17/2014 06:18 PM, Ray Jui wrote:
->> On 10/17/2014 4:15 AM, Lars-Peter Clausen wrote:
->>> On 10/17/2014 09:35 AM, Vinod Koul wrote:
->>>> On Fri, Oct 17, 2014 at 09:45:45AM +0200, Lars-Peter Clausen wrote:
->>>>> On 10/17/2014 02:48 AM, Ray Jui wrote:
->>>>>> As part of subsystem that many slave drivers depend on, it's more
->>>>>> appropriate for the pl330 DMA driver to be initialized at
->>>>>> subsys_initcall than device_initcall
->>>>>
->>>>> Well, we do have -EPROBE_DEFER these days to handle these kinds of
->>>>> dependencies so we no longer have to these kinds of manual init
->>>>> reordering tricks.
->>>> How ould that work?
->>>>
->>>> Consider for example SPI and dmanegine. SPI driver got probed, then to
->>>> start
->>>> a transaction requested a channel... while dmaengine driver is still
->>>> getting
->>>> probed/not probed yet. So SPI driver didnt get a channel.
->>>>
->>>
->>> Ideally the SPI driver requests the channel in probe function and if the
->>> DMA controller is not yet probed returns EPROBE_DEFER. If the SPI driver
->>> requests the channel in the transfer handler it needs to deal with being
->>> able to fall back to non DMA transfers anyway so this shouldn't be a
->>> problem.
->> So in the case of the spi-pl022 driver. It requests the channel in probe
->> function. And obviously DMA is not mandatory, so when the channel request
->> fails the probe won't fail and instead it falls back to PIO. In this
->> case,
->> can you recommend a different way to solve this problem without having
->> the
->> DMA driver probed earlier than its slaves?
->
->
-> dma_request_slave_channel() has the problem that we can't differentiate
-> between no channel provided and channel provided but the dma driver
-> hasn't probed yet. The function will return NULL in both cases. But
-> Stephen Warren added dma_request_slave_channel_reason() a while ago to
-> solve this problem. This function returns a ERR_PTR. If it returns
-> ERR_PTR(-EPROBE_DEFER) it means that a channel has been provided but the
-> DMA driver hasn't probed yet. In this case the SPI driver should return
-> -EPROBE_DEFER to try again later. If the function returns a different
-> error code that means that it was not possible to get the DMA channel
-> and it should fall back to PIO.
->
-Thanks for the information. This will solve our problem.
+ "The softlockup and hardlockup detection control variables 
+  should be in separate flags, inside and outside the kernel - 
+  they (should) not relate to each other."
 
->>
->>>
->>> But in any case fiddling around with the init sequences is just a quick
->>> hack and might makes the problem less likely to appear in some cases,
->>> but there is no guarantee that it works. And I think the proper solution
->>> at the moment is to use probe deferral.
->> I think it makes sense to have the DMA driver, as one of the core
->> components
->> in various SoCs that a lot of peripheral drivers depend on, to be
->> registered
->> at the level of subsys_init or somewhere close. We are not changing this
->> just to get SPI to work. We are changing this because we think DMA
->> should be
->> ready before a lot of its slaves, which are typically done at
->> device_initcall.
->
-> But if the DMA driver for example depends on a clock driver do you put
-> the clock driver at a even earlier init level? The problem with using
-> init levels for solving this problem is that there is only a small
-> amount of init levels available and representing the dependency chains
-> is neither possible with it nor were init level ever intended for
-> solving this. EPROBE_DEFER on the other hand is.
->
->>
->> I have no problem relying on EPROBE_DEFER for this, provided that it
->> works.
->> The issue is, like I mentioned above, for a lot of slave devices DMA
->> is not
->> mandatory, when DMA fails at probe they would fall back to PIO and
->> never use
->> DMA. Another disadvantage I see with EPROBE_DEFER is delayed boot time.
->>
->
-> Yea, the EPROBE_DEFER implementation is not ideal, but that is a problem
-> that should be solved rather than working around it. I think there are
-> patches somewhere for example that build a device dependency graph from
-> the phandles in the devicetree and than probe devices in the correct
-> order to reduce the number of times probe deferral is necessary.
->
-Agreed. Yes, it would be very nice if we can eventually describe the 
-dependencies of various components in a system by utilizing the device 
-tree. This way the dependencies can be customized for each individual SoC.
+Please refer to [PATCH v2 7/9] for a description of the proposed
+changes of the 'user interface' in /proc/sys/kernel and kernel
+command line parameters.
 
->>>
->>> Other subsystems have seen patches which moved drivers from using
->>> subsys_initcall to device_initcall/module_..._driver/ with the reasoning
->>> that this is no longer necessary because of EPROBE_DEFER. So I don't
->>> think we should be doing the exact opposite in DMA framework. Also if
->>> we'd apply this patch it won't take to long until somebody suggest going
->>> back to module_platform_driver() instead of subsys_initcall.
->>>
->>> - Lars
->> There are currently 12 DMA drivers under drivers/dma registering
->> themselves
->> at subsys_init. I don't see why pl330 cannot do the same. Is there any
->> concern that it may not work for some other SoCs when it's done at
->> subsys_init? So far I cannot think of any. The only dependency of
->> pl330 is
->> the ARM apb_pclk, required during AMBA bus probe. But that's usually
->> ready
->> before subsys_init.
->
-> Those other drivers should be converted to device_initcall rather than
-> converting the PL330 driver to subsys_init. Using subsys_init for device
-> drivers is a hack which was used to try to solve ordering problems. But
-> it doesn't work that great, especially if you have more than two devices
-> in your dependency chain. The solution that people have come up with to
-> solve this problem in a better way is probe deferral by the means of
-> -EPROBE_DEFER.
->
-> - Lars
->
-Thanks, Lars, for providing these information. They are very useful!
+There are no functional changes between the initial version in
+https://lkml.org/lkml/2014/10/13/313 and v2. The new version is
+merely a re-base to the following upstream commits.
 
-Ray
+commit 6e7458a6f074c71e74cda31c483114e65ea0f570
+Author: Ulrich Obergfell <uobergfe@redhat.com>
+Date:   Mon Oct 13 15:55:35 2014 -0700
+
+    kernel/watchdog.c: control hard lockup detection default
+
+commit 9919e39a17381058dd0cdef2f78dbf5619e26474
+Author: Ulrich Obergfell <uobergfe@redhat.com>
+Date:   Mon Oct 13 15:55:37 2014 -0700
+
+    kvm: ensure hard lockup detection is disabled by default
+
+Ulrich Obergfell (9):
+  watchdog: new definitions and variables, initialization
+  watchdog: introduce the proc_watchdog_update() function
+  watchdog: move definition of 'watchdog_proc_mutex' outside of
+    proc_dowatchdog()
+  watchdog: introduce the proc_watchdog_common() function
+  watchdog: introduce separate handlers for parameters in
+    /proc/sys/kernel
+  watchdog: implement error handling for failure to set up hardware
+    perf events
+  watchdog: enable the new user interface of the watchdog mechanism
+  watchdog: clean up some function names and arguments
+  watchdog: introduce the hardlockup_detector_disable() function
+
+ arch/x86/kernel/kvm.c |   2 +-
+ include/linux/nmi.h   |  21 ++--
+ kernel/sysctl.c       |  35 +++++--
+ kernel/watchdog.c     | 277 ++++++++++++++++++++++++++++++++++++--------------
+ 4 files changed, 240 insertions(+), 95 deletions(-)
+
+-- 
+1.7.11.7
+
