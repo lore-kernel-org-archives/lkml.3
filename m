@@ -1,49 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754009AbaJQI2J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 04:28:09 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:45554 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753901AbaJQI2F (ORCPT
+	id S1753972AbaJQI1w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 04:27:52 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:46199 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751345AbaJQI0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 04:28:05 -0400
-Date: Fri, 17 Oct 2014 10:28:00 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
-        Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] s390 vs. kprobes on ftrace
-Message-ID: <20141017082759.GC18203@osiris>
-References: <1413387978-984-1-git-send-email-heiko.carstens@de.ibm.com>
- <543F5C84.7090005@hitachi.com>
- <20141017081921.GA18203@osiris>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141017081921.GA18203@osiris>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14101708-0009-0000-0000-00000192004B
+	Fri, 17 Oct 2014 04:26:44 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>, Chris Ball <chris@printf.net>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv2 2/3] ARM: at91: remove mach/atmel-mci.h
+Date: Fri, 17 Oct 2014 10:26:37 +0200
+Message-Id: <1413534398-22645-3-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1413534398-22645-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1413534398-22645-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 17, 2014 at 10:19:21AM +0200, Heiko Carstens wrote:
-> +# kprobe on / ftrace on
-> +echo 1 > events/kprobes/testprobe/enable
-> +echo function > current_tracer
-> +echo > trace
-> +( echo "forked")
-> +echo > trace
-^^^ --- this line shouldn't be here, sorry.
+Use the generic platform_data header file instead of mach/atmel-mci.h
 
-If this patch is acceptable, please remove the line.. or I can resend a
-proper version.
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/mach-at91/at91sam9g45_devices.c    |  2 +-
+ arch/arm/mach-at91/include/mach/atmel-mci.h | 17 -----------------
+ 2 files changed, 1 insertion(+), 18 deletions(-)
+ delete mode 100644 arch/arm/mach-at91/include/mach/atmel-mci.h
+
+diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
+index 21ab782cc8e9..06ecbafd01ee 100644
+--- a/arch/arm/mach-at91/at91sam9g45_devices.c
++++ b/arch/arm/mach-at91/at91sam9g45_devices.c
+@@ -19,6 +19,7 @@
+ #include <linux/i2c-gpio.h>
+ #include <linux/atmel-mci.h>
+ #include <linux/platform_data/crypto-atmel.h>
++#include <linux/platform_data/mmc-atmel-mci.h>
+ 
+ #include <linux/platform_data/at91_adc.h>
+ 
+@@ -30,7 +31,6 @@
+ #include <mach/at91_matrix.h>
+ #include <mach/at91sam9_smc.h>
+ #include <linux/platform_data/dma-atmel.h>
+-#include <mach/atmel-mci.h>
+ #include <mach/hardware.h>
+ 
+ #include <media/atmel-isi.h>
+diff --git a/arch/arm/mach-at91/include/mach/atmel-mci.h b/arch/arm/mach-at91/include/mach/atmel-mci.h
+deleted file mode 100644
+index 3069e4135573..000000000000
+--- a/arch/arm/mach-at91/include/mach/atmel-mci.h
++++ /dev/null
+@@ -1,17 +0,0 @@
+-#ifndef __MACH_ATMEL_MCI_H
+-#define __MACH_ATMEL_MCI_H
+-
+-#include <linux/platform_data/dma-atmel.h>
+-
+-/**
+- * struct mci_dma_data - DMA data for MCI interface
+- */
+-struct mci_dma_data {
+-	struct at_dma_slave	sdata;
+-};
+-
+-/* accessor macros */
+-#define	slave_data_ptr(s)	(&(s)->sdata)
+-#define find_slave_dev(s)	((s)->sdata.dma_dev)
+-
+-#endif /* __MACH_ATMEL_MCI_H */
+-- 
+1.9.1
 
