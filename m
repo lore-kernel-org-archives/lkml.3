@@ -1,74 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753865AbaJQIVT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 04:21:19 -0400
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:56834 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752310AbaJQIVQ (ORCPT
+	id S1753456AbaJQIZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 04:25:57 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:48779 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750835AbaJQIZx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 04:21:16 -0400
-Date: Fri, 17 Oct 2014 10:21:12 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
-        Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] s390 vs. kprobes on ftrace
-Message-ID: <20141017082112.GB18203@osiris>
-References: <1413387978-984-1-git-send-email-heiko.carstens@de.ibm.com>
- <543F5C84.7090005@hitachi.com>
+	Fri, 17 Oct 2014 04:25:53 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Mark yao <mark.yao@rock-chips.com>
+Cc: Dave Airlie <airlied@gmail.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Rob Clark <robdclark@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-doc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>, linux-api@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, dianders@chromium.org,
+        =?ISO-8859-1?Q?St=E9phane?= Marchesin <marcheu@chromium.org>,
+        dbehr@chromium.org, Olof Johansson <olof@lixom.net>,
+        djkurtz@chromium.org, xjq@rock-chips.com, kfx@rock-chips.com,
+        cym@rock-chips.c, om@null.null, cf@rock-chips.com, zyw@rock-chips.com,
+        xxm@rock-chips.com, huangtao@rock-chips.com, kever.yang@rock-chips.com,
+        yxj@rock-chips.com, wxt@rock-chips.com, xw@rock-chips.com
+Subject: Re: [PATCH v11 0/3] Add drm driver for Rockchip Socs
+Date: Fri, 17 Oct 2014 10:25:19 +0200
+Message-ID: <4044646.m0RgIJvLdJ@phil>
+User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <5440D041.9020300@rock-chips.com>
+References: <1412763781-31533-1-git-send-email-mark.yao@rock-chips.com> <282711393.zuCWIeu2Oz@phil> <5440D041.9020300@rock-chips.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <543F5C84.7090005@hitachi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14101708-0013-0000-0000-0000017BEB04
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 02:49:56PM +0900, Masami Hiramatsu wrote:
-> I'm not sure about s390 nor have the machine, so it is very helpful if you
-> give us a command line level test and show us the result with this patch :)
-> Fortunately, we already have ftracetest under tools/tesitng/selftest/ftrace/.
-> You can add the testcase for checking co-existence of kprobes and ftrace on
-> an entry of a function.
+Am Freitag, 17. Oktober 2014, 16:16:01 schrieb Mark yao:
+> On 2014年10月17日 14:24, Heiko Stübner wrote:
+> > Hi Mark,
+> > 
+> > Am Freitag, 17. Oktober 2014, 12:22:53 schrieb Mark yao:
+> >> On 2014年10月17日 08:46, Dave Airlie wrote:
+> >>> On 17 October 2014 10:40, Mark yao <mark.yao@rock-chips.com> wrote:
+> >>>> Hi
+> >>>> I think Rockchip drm driver is ready now, can it land?
+> >>> 
+> >>> I probably want to wait until -rc1 though I suppose since its a new
+> >>> driver and self contained we might be able to see if Linus is
+> >>> interested in squeezing it in.
+> >>> 
+> >>> Can you send me a git pull request for it against drm-next or even 3.17.
+> >>> 
+> >>> Dave.
+> >> 
+> >> Hi, Dave
+> >> 
+> >>       the git pull request:
+> >> The following changes since commit 
+4db36870b92cdf5a79615aeabc68efc97df13918:
+> > I think this needs a fix. Your commit 4db36870b is the pending iommu
+> > driver. Which isn't part of neither the mainline kernel nor the drm tree
+> > Dave meant.
+> > 
+> > What Dave meant was to base your patches on top of his "drm-next" branch
+> > or
+> > the raw 3.17 release.
+> > 
+> > So either base the branch on drm-next from
+> > 
+> > 	http://cgit.freedesktop.org/~airlied/linux/log/?h=drm-next
+> > 
+> > or the 3.17 release tag from Linus Torvalds. Apply your patches on top and
+> > create pull from there.
+> > 
+> > I've just checked ... your drm patches apply cleanly against 3.17, so your
+> > branch to be pulled should probably look something like
+> > 
+> > 	https://github.com/mmind/linux-rockchip/commits/tmp/drmtest
+> > 
+> > Heiko
+> 
+> Hi Heiko
+>      thanks for you check.
+> 
+> Hi Dave
+>      I have reupload a branch cleanly against 3.17:
 
-FWIW, I was also surprised to see that the order of the ftrace testcases is
-not sorted. Maybe you might consider the patch below as well:
+sorry, but I think this might need another round. 
 
->From a659098f63f188e603316e4c4ccb435bf360987a Mon Sep 17 00:00:00 2001
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-Date: Fri, 17 Oct 2014 10:08:35 +0200
-Subject: [PATCH] ftracetest: sort testcases
+Your current base commit 0429fbc0bdc2 is already part of the current 3.18 
+merge window - which Dave won't have in his tree I guess. The commit you 
+should base your patches on is bfe01a5ba249 - the 3.17 release.
 
-Make sure the order of the executed testcases is always the same.
+Simply do a
+	git checkout v3.17
+	git checkout -b drmupstream
 
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
----
- tools/testing/selftests/ftrace/ftracetest | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+apply your patches and send the pull request with v3.17 as base.
 
-diff --git a/tools/testing/selftests/ftrace/ftracetest b/tools/testing/selftests/ftrace/ftracetest
-index a8f81c782856..2007a2cde56f 100755
---- a/tools/testing/selftests/ftrace/ftracetest
-+++ b/tools/testing/selftests/ftrace/ftracetest
-@@ -37,7 +37,7 @@ abspath() {
- }
- 
- find_testcases() { #directory
--  echo `find $1 -name \*.tc`
-+  echo `find $1 -name \*.tc | sort`
- }
- 
- parse_opts() { # opts
--- 
-1.8.5.5
+
+Heiko
+
+
+> 
+> The following changes since commit 0429fbc0bdc297d64188483ba029a23773ae07b0:
+> 
+>    Merge branch 'for-3.18-consistent-ops' of
+> git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu (2014-10-15
+> 07:48:18 +0200)
+> 
+> are available in the git repository at:
+> 
+> 
+>    https://github.com/markyzq/kernel-drm-rockchip.git drmupstream
+> 
+> for you to fetch changes up to f92714d79376a4168ea3ae0b13ccd0b90a640f35:
+> 
+>    dt-bindings: video: Add documentation for rockchip vop (2014-10-17
+> 16:09:23 +0800)
+> 
+> ----------------------------------------------------------------
+> Mark yao (3):
+>        drm: rockchip: Add basic drm driver
+>        dt-bindings: video: Add for rockchip display subsytem
+>        dt-bindings: video: Add documentation for rockchip vop
+> 
+>   .../devicetree/bindings/video/rockchip-drm.txt     |   19 +
+>   .../devicetree/bindings/video/rockchip-vop.txt     |   58 +
+>   drivers/gpu/drm/Kconfig                            |    2 +
+>   drivers/gpu/drm/Makefile                           |    1 +
+>   drivers/gpu/drm/rockchip/Kconfig                   |   17 +
+>   drivers/gpu/drm/rockchip/Makefile                  |    8 +
+>   drivers/gpu/drm/rockchip/rockchip_drm_drv.c        |  449 ++++++
+>   drivers/gpu/drm/rockchip/rockchip_drm_drv.h        |   54 +
+>   drivers/gpu/drm/rockchip/rockchip_drm_fb.c         |  200 +++
+>   drivers/gpu/drm/rockchip/rockchip_drm_fb.h         |   28 +
+>   drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c      |  210 +++
+>   drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h      |   20 +
+>   drivers/gpu/drm/rockchip/rockchip_drm_gem.c        |  293 ++++
+>   drivers/gpu/drm/rockchip/rockchip_drm_gem.h        |   54 +
+>   drivers/gpu/drm/rockchip/rockchip_drm_vop.c        | 1427
+> ++++++++++++++++++++
+>   drivers/gpu/drm/rockchip/rockchip_drm_vop.h        |  196 +++
+>   16 files changed, 3036 insertions(+)
+>   create mode 100644
+> Documentation/devicetree/bindings/video/rockchip-drm.txt
+>   create mode 100644
+> Documentation/devicetree/bindings/video/rockchip-vop.txt
+>   create mode 100644 drivers/gpu/drm/rockchip/Kconfig
+>   create mode 100644 drivers/gpu/drm/rockchip/Makefile
+>   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_drv.c
+>   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_drv.h
+>   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fb.c
+>   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fb.h
+>   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c
+>   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h
+>   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_gem.c
+>   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_gem.h
+>   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_vop.c
+>   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_vop.h
 
