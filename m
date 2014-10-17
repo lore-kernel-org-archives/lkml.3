@@ -1,89 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540AbaJQJOr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 05:14:47 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:42603 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752442AbaJQJOo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 05:14:44 -0400
-Message-ID: <5440DDDA.90502@ahsoftware.de>
-Date: Fri, 17 Oct 2014 11:14:02 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1752786AbaJQJPI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 05:15:08 -0400
+Received: from mail-by2on0104.outbound.protection.outlook.com ([207.46.100.104]:38197
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752550AbaJQJPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 05:15:00 -0400
+X-WSS-ID: 0NDKZMY-07-HMT-02
+X-M-MSG: 
+From: Huang Rui <ray.huang@amd.com>
+To: Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Vincent Wan <vincent.wan@amd.com>, Tony Li <tony.li@amd.com>,
+        <linux-usb@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Huang Rui <ray.huang@amd.com>
+Subject: [PATCH v2 02/16] pci: quirks: add quirk to avoid AMD NL to bind with xhci
+Date: Fri, 17 Oct 2014 16:53:27 +0800
+Message-ID: <1413536021-4886-3-git-send-email-ray.huang@amd.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1413536021-4886-1-git-send-email-ray.huang@amd.com>
+References: <1413536021-4886-1-git-send-email-ray.huang@amd.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: Re: [PATCH 00/27] Fix common bug in most nand drivers not showing
- a device in sysfs
-References: <1401142372-14148-1-git-send-email-holler@ahsoftware.de> <543F678E.1030401@ahsoftware.de>
-In-Reply-To: <543F678E.1030401@ahsoftware.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(68736004)(105586002)(575784001)(93916002)(229853001)(106466001)(36756003)(4396001)(77096002)(50226001)(87286001)(84676001)(89996001)(87936001)(95666004)(107046002)(102836001)(19580405001)(77156001)(92726001)(64706001)(88136002)(76482002)(2171001)(31966008)(85852003)(20776003)(47776003)(53416004)(15395725005)(15202345003)(19580395003)(104166001)(15975445006)(33646002)(48376002)(50466002)(46102003)(80022003)(120916001)(76176999)(50986999)(99396003)(44976005)(92566001)(62966002)(21056001)(97736003)(85306004)(86362001)(101416001)(6606295002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR02MB200;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB200;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 0367A50BB1
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Ray.Huang@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 16.10.2014 08:37, schrieb Alexander Holler:
-> Hello,
->
-> I wonder if anyone else will fix this in a maintainer-approved style
-> which doesn't use these evil leftovers from C666 called functions.
->
-> Or will the sysfs for most NAND drivers be knowingly broken forever?
+The dwc3 controller is the PCI-E device in AMD NL platform, but the class code
+of PCI header is 0x0c0330, the same with xHC. That's because it needs to meet
+the windows enviroment. The dwc3 controller acted as only host mode to bind with
+windows xhci driver.
+But on linux, sometimes, it would auto-bind with xhci driver as well (class code
+0x0c0330) despite it uses Pid/Vid on dwc3 driver.
 
+Heikki suggested to use the quirk to fix this issue, and the detailed discussion
+is at below thread:
+http://marc.info/?l=linux-usb&m=141197934712824&w=2
 
-To explain that a bit more:
+Suggested-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Huang Rui <ray.huang@amd.com>
+---
+ drivers/pci/quirks.c | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
-1. The reason I had to write 27 patches instead of just one is that such 
-a function didn't exist. Therefor I've implemented one.
-
-2. I was kind to write 27 patches to fix that silly bug.
-
-3. I'm no fool and I will NOT write n * 21 patches in order to brutforce 
-some maintainers prefered style.
-
-
-
->
-> Regards,
->
-> Alexander Holler
->
-> Am 27.05.2014 00:12, schrieb Alexander Holler:
->> A comment in mtdcore.c function add_mtd_device() which is called by
->> mtd_device_parse_register() made me wonder:
->>
->> "Caller should have set dev.parent to match the physical device."
->>
->> In fact this is not done by most nand drivers.
->>
->> What follows is a series which fixes this.
->>
->> Tested: orion and omap2
->> Compile-Tested: atmel, gpio, fsmc, gpmi, plat, pxa3xx, s3c2410, sh_flctl,
->>         sharpsl, tmio, docg4, davinci, lpc32xx_mlc, lpc32xx_slc, mxc
->> Not tested at all (only be view, patches 19-27): bcm47, fsl_elbc,
->> fsl_upm,
->>         fsl_ifc, jz4740, mpc5121m, ndfc, txx9ndfmx, socrates
->>
->> The overall stat is
->>
->> 27 files changed, 36 insertions(+), 80 deletions(-)
->>
->> and it fixes 21 of these bugs.
->>
->> Regards,
->>
->> Alexander Holler
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe
->> linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
->
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index 90acb32..3c911b7 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -378,6 +378,26 @@ static void quirk_ati_exploding_mce(struct pci_dev *dev)
+ }
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATI,	PCI_DEVICE_ID_ATI_RS100,   quirk_ati_exploding_mce);
+ 
++/* FIXME should define in <linux/pci_ids.h> */
++#define PCI_DEVICE_ID_AMD_NL	0x7912
++
++/*
++ * AMD NL SoC 7912 PCI device is dwc3 controller, but the class code of PCI
++ * header is 0x0c0330, the same with xHC. That's because it need to meet the
++ * windows enviroment. The dwc3 controller acted as only host mode to bind with
++ * windows xhci driver. But on linux, sometimes, we auto-bind with xhci driver
++ * as well (class code 0x0c0330) despite we use Pid/Vid on dwc3 driver. So this
++ * quirk used a dummy class code to avoid to bind with xhci driver at booting
++ * phase.
++ */
++static void quirk_amd_nl_class(struct pci_dev *pdev)
++{
++	/* Use a dummy class value instead of PCI header provided */
++	pdev->class = 0x0c03fe;
++}
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_NL,
++		quirk_amd_nl_class);
++
+ /*
+  * Let's make the southbridge information explicit instead
+  * of having to worry about people probing the ACPI areas,
+-- 
+1.9.1
 
