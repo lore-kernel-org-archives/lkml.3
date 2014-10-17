@@ -1,114 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753600AbaJQIFM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 04:05:12 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:63383 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753558AbaJQIEo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 04:04:44 -0400
-Date: Fri, 17 Oct 2014 10:04:38 +0200
-From: Lee Jones <lee.jones@linaro.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Mark Brown <broonie@kernel.org>, Doug Anderson <dianders@chromium.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Chris Zhong <zyw@rock-chips.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v2 4/7] regulator: max77802: Add header for operating
- modes
-Message-ID: <20141017080438.GE22725@lee--X1>
-References: <1413478133-2577-1-git-send-email-javier.martinez@collabora.co.uk>
- <1413478133-2577-5-git-send-email-javier.martinez@collabora.co.uk>
+	id S1753624AbaJQIFa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 04:05:30 -0400
+Received: from mail-bn1bon0133.outbound.protection.outlook.com ([157.56.111.133]:64384
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753506AbaJQIFS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 04:05:18 -0400
+Date: Fri, 17 Oct 2014 16:12:02 +0800
+From: Robin Gong <b38343@freescale.com>
+To: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <shawn.guo@linaro.com>, <kernel@pengutronix.de>,
+        <LW@KARO-electronics.de>, <sre@kernel.org>, <dbaryshkov@gmail.com>,
+        <dwmw2@infradead.org>, <grant.likely@linaro.org>,
+        <linux@arm.linux.org.uk>
+CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH v4 0/3] add power off driver for i.mx6
+Message-ID: <20141017081200.GB6691@Robin-OptiPlex-780>
+References: <1411703947-31956-1-git-send-email-b38343@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1413478133-2577-5-git-send-email-javier.martinez@collabora.co.uk>
+In-Reply-To: <1411703947-31956-1-git-send-email-b38343@freescale.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(51704005)(24454002)(189002)(84676001)(102836001)(83506001)(47776003)(20776003)(85852003)(64706001)(6806004)(19580405001)(104016003)(15202345003)(85306004)(69596002)(46406003)(21056001)(4396001)(33656002)(87936001)(92726001)(50466002)(2201001)(31966008)(92566001)(33716001)(26826002)(105606002)(106466001)(81156004)(95666004)(97736003)(107046002)(97756001)(76482002)(54356999)(15975445006)(68736004)(76176999)(44976005)(80022003)(120916001)(99396003)(23726002)(46102003)(50986999)(19580395003)(921003)(1121002)(2101003)(42262002)(83996005);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0633;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0633;
+X-Forefront-PRVS: 0367A50BB1
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=yibin.gong@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Oct 2014, Javier Martinez Canillas wrote:
-
-> Add a header file for the max77802 constants that could be shared between
-> the regulator driver and Device Tree source files. Also, remove standby
-> and off opmodes since only normal and low power are valid operating modes.
+Ping!
+On Fri, Sep 26, 2014 at 11:59:04AM +0800, Robin Gong wrote:
+> Add simple power off driver for i.mx6, including:
+> - add basic imx-snvs-poweroff driver in drivers/power/reset
+> - add device node in all dts files of i.mx6.
+> - enable in config file
 > 
-> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> ---
+> Change from v3:
+> - disable poweroff driver in soc level dts and enable it in board level dts
+> - replace 'EIO' with 'ENODEV' while of_iomap fail.
+> Change from v2:
+> - remove useless included head files
+> - split device binding doc from dts patch
+> - add description for the case that PMIC_ON_REQ not used as external power
+>   control
 > 
-> Changes since v1: None
+> Robin Gong (3):
+>   ARM: dts: imx6: add pm_power_off support for i.mx6 chips
+>   power: reset: imx-snvs-poweroff: add power off driver for i.mx6
+>   ARM: configs: imx_v6_v7_defconfig: add power off driver
 > 
->  drivers/regulator/max77802.c                   |  1 +
->  include/dt-bindings/regulator/maxim,max77802.h | 18 ++++++++++++++++++
->  include/linux/mfd/max77686.h                   |  7 -------
-
-Acked-by: Lee Jones <lee.jones@linaro.org>
-
->  3 files changed, 19 insertions(+), 7 deletions(-)
->  create mode 100644 include/dt-bindings/regulator/maxim,max77802.h
+>  arch/arm/boot/dts/imx6qdl.dtsi          |  5 +++
+>  arch/arm/boot/dts/imx6sl.dtsi           |  5 +++
+>  arch/arm/boot/dts/imx6sx.dtsi           |  5 +++
+>  arch/arm/configs/imx_v6_v7_defconfig    |  3 ++
+>  drivers/power/reset/Kconfig             |  5 +++
+>  drivers/power/reset/Makefile            |  1 +
+>  drivers/power/reset/imx-snvs-poweroff.c | 69 +++++++++++++++++++++++++++++++++
+>  7 files changed, 93 insertions(+)
+>  create mode 100644 drivers/power/reset/imx-snvs-poweroff.c
 > 
-> diff --git a/drivers/regulator/max77802.c b/drivers/regulator/max77802.c
-> index 3abf99d..5839c45 100644
-> --- a/drivers/regulator/max77802.c
-> +++ b/drivers/regulator/max77802.c
-> @@ -33,6 +33,7 @@
->  #include <linux/regulator/of_regulator.h>
->  #include <linux/mfd/max77686.h>
->  #include <linux/mfd/max77686-private.h>
-> +#include <dt-bindings/regulator/maxim,max77802.h>
->  
->  /* Default ramp delay in case it is not manually set */
->  #define MAX77802_RAMP_DELAY		100000		/* uV/us */
-> diff --git a/include/dt-bindings/regulator/maxim,max77802.h b/include/dt-bindings/regulator/maxim,max77802.h
-> new file mode 100644
-> index 0000000..cf28631
-> --- /dev/null
-> +++ b/include/dt-bindings/regulator/maxim,max77802.h
-> @@ -0,0 +1,18 @@
-> +/*
-> + * Copyright (C) 2014 Google, Inc
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * Device Tree binding constants for the Maxim 77802 PMIC regulators
-> + */
-> +
-> +#ifndef _DT_BINDINGS_REGULATOR_MAXIM_MAX77802_H
-> +#define _DT_BINDINGS_REGULATOR_MAXIM_MAX77802_H
-> +
-> +/* Regulator operating modes */
-> +#define MAX77802_OPMODE_LP	1
-> +#define MAX77802_OPMODE_NORMAL	3
-> +
-> +#endif /* _DT_BINDINGS_REGULATOR_MAXIM_MAX77802_H */
-> diff --git a/include/linux/mfd/max77686.h b/include/linux/mfd/max77686.h
-> index 7e6dc4b..553f7d0 100644
-> --- a/include/linux/mfd/max77686.h
-> +++ b/include/linux/mfd/max77686.h
-> @@ -131,13 +131,6 @@ enum max77686_opmode {
->  	MAX77686_OPMODE_STANDBY,
->  };
->  
-> -enum max77802_opmode {
-> -	MAX77802_OPMODE_OFF,
-> -	MAX77802_OPMODE_STANDBY,
-> -	MAX77802_OPMODE_LP,
-> -	MAX77802_OPMODE_NORMAL,
-> -};
-> -
->  struct max77686_opmode_data {
->  	int id;
->  	int mode;
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> -- 
+> 1.9.1
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
