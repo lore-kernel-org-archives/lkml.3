@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220AbaJQKeJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 06:34:09 -0400
-Received: from sci-ig2.spreadtrum.com ([222.66.158.135]:38755 "EHLO
+	id S1751946AbaJQKeF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 06:34:05 -0400
+Received: from sci-ig2.spreadtrum.com ([222.66.158.135]:27138 "EHLO
 	SHSQR01.spreadtrum.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751816AbaJQKdz (ORCPT
+	with ESMTP id S1751254AbaJQKdq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 06:33:55 -0400
+	Fri, 17 Oct 2014 06:33:46 -0400
 From: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
 To: <catalin.marinas@arm.com>, <gregkh@linuxfoundation.org>,
         <ijc+devicetree@hellion.org.uk>, <jslaby@suse.cz>,
@@ -17,212 +17,80 @@ To: <catalin.marinas@arm.com>, <gregkh@linuxfoundation.org>,
         <zhizhou.zhang@spreadtrum.com>
 CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>, <sprdlinux@freelists.org>
-Subject: [PATCH v2 3/5] arm64: dts: Add support for Spreadtrum Sharkl3 SoC in dts and Makefile.
-Date: Fri, 17 Oct 2014 17:54:23 +0800
-Message-ID: <1413539665-11484-4-git-send-email-chunyan.zhang@spreadtrum.com>
+Subject: [PATCH v2 0/5] Add Spreadtrum Sharkl Platform support
+Date: Fri, 17 Oct 2014 17:54:20 +0800
+Message-ID: <1413539665-11484-1-git-send-email-chunyan.zhang@spreadtrum.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1413539665-11484-1-git-send-email-chunyan.zhang@spreadtrum.com>
+In-Reply-To: <sprd-1017-v2>
 References: <sprd-1017-v2>
- <1413539665-11484-1-git-send-email-chunyan.zhang@spreadtrum.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.0.67.117]
 X-ClientProxiedBy: SHCAS02.spreadtrum.com (10.0.1.202) To
  SHMBX01.spreadtrum.com (10.0.1.203)
-X-MAIL: SHSQR01.spreadtrum.com s9H9tBud008557
+X-MAIL: SHSQR01.spreadtrum.com s9H9sxvl008191
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhizhou Zhang <zhizhou.zhang@spreadtrum.com>
+Spreadtrum is a rapid growing chip vendor providing smart phone total solutions.
 
-Adds the device tree support for Spreadtrum Sharkl3 SoC which is based on
-Sharkl platform.
+Sharkl Platform is nominated as a SoC infrastructure that supports 4G/3G/2G
+standards based on ARMv8 multiple core architecture.Now we have only one
+SoC(Sharkl3) based on this Platform in developing.
 
-Sharkl platform contains the common nodes of Spreadtrum's arm64-based SoCs.
+This patchset adds Sharkl support in arm64 device tree and implements the
+basic earlycon serial driver.
 
-Signed-off-by: Zhizhou Zhang <zhizhou.zhang@spreadtrum.com>
-Signed-off-by: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
----
- arch/arm64/boot/dts/Makefile              |    1 +
- arch/arm64/boot/dts/sprd-sharkl.dtsi      |   33 ++++++++++++++
- arch/arm64/boot/dts/sprd-sharkl3-fpga.dts |   41 +++++++++++++++++
- arch/arm64/boot/dts/sprd-sharkl3.dtsi     |   69 +++++++++++++++++++++++++++++
- 4 files changed, 144 insertions(+)
+This patchset also has patches which address "sprd" prefix and DT compatible
+strings for nodes which appear un-documented.
+
+This version code was tesed on Fast Mode successfully.
+
+Changes from v1:
+* Addressed review comments:
+	- Added "sprd" prefix to vendor-prefixes.txt
+	- Created serial/sprd-serial.txt and remove the properties for serial-sprd
+	  from of-serial.txt to it.
+	- Renamed of-serial.txt to 8250.txt according to Arnd's review comments
+	- Splited and revised .dts for Sharkl Platform
+	- Changed to PSCI method for cpu power management
+	- Revised Kconfig Makefile to match the alphabetical ordering
+	- Renamed serial-sprd-earlycon.c to serial-sprd.c
+
+Chunyan Zhang (3):
+  Documentation: DT: Renamed of-serial.txt to 8250.txt
+  Documentation: DT: Add bindings for Spreadtrum Sharkl Platform
+  tty/serial: Add earlycon support for Spreadtrum serial driver
+
+Zhizhou Zhang (2):
+  arm64: dts: Add support for Spreadtrum Sharkl3 SoC in dts and Makefile.
+  arm64: Add support for Spreadtrum's Sharkl Platform in Kconfig and defconfig
+
+ Documentation/devicetree/bindings/arm/sprd.txt     |   11 ++++
+ Documentation/devicetree/bindings/serial/8250.txt  |   50 ++++++++++++++
+ .../devicetree/bindings/serial/of-serial.txt       |   50 --------------
+ .../devicetree/bindings/serial/sprd-serial.txt     |    6 ++
+ .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+ arch/arm64/Kconfig                                 |    6 ++
+ arch/arm64/boot/dts/Makefile                       |    1 +
+ arch/arm64/boot/dts/sprd-sharkl.dtsi               |   33 ++++++++++
+ arch/arm64/boot/dts/sprd-sharkl3-fpga.dts          |   41 ++++++++++++
+ arch/arm64/boot/dts/sprd-sharkl3.dtsi              |   69 ++++++++++++++++++++
+ arch/arm64/configs/defconfig                       |    1 +
+ drivers/tty/serial/Kconfig                         |   24 +++++++
+ drivers/tty/serial/Makefile                        |    1 +
+ drivers/tty/serial/sprd-serial.c                   |   64 ++++++++++++++++++
+ 14 files changed, 308 insertions(+), 50 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/sprd.txt
+ create mode 100644 Documentation/devicetree/bindings/serial/8250.txt
+ delete mode 100644 Documentation/devicetree/bindings/serial/of-serial.txt
+ create mode 100644 Documentation/devicetree/bindings/serial/sprd-serial.txt
  create mode 100644 arch/arm64/boot/dts/sprd-sharkl.dtsi
  create mode 100644 arch/arm64/boot/dts/sprd-sharkl3-fpga.dts
  create mode 100644 arch/arm64/boot/dts/sprd-sharkl3.dtsi
+ create mode 100644 drivers/tty/serial/sprd-serial.c
 
-diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
-index c52bdb0..0030e44 100644
---- a/arch/arm64/boot/dts/Makefile
-+++ b/arch/arm64/boot/dts/Makefile
-@@ -1,3 +1,4 @@
-+dtb-$(CONFIG_ARCH_SHARKL) += sprd-sharkl3-fpga.dtb
- dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb foundation-v8.dtb
- dtb-$(CONFIG_ARCH_XGENE) += apm-mustang.dtb
- 
-diff --git a/arch/arm64/boot/dts/sprd-sharkl.dtsi b/arch/arm64/boot/dts/sprd-sharkl.dtsi
-new file mode 100644
-index 0000000..26a28c3
---- /dev/null
-+++ b/arch/arm64/boot/dts/sprd-sharkl.dtsi
-@@ -0,0 +1,33 @@
-+/*
-+ * dtsi file for Spreadtrum(sprd) Sharkl Platform based on AArch64.
-+ *
-+ * Copyright (C) 2014,  Spreadtrum Communications Inc.
-+ *
-+ * Sharkl Platform is the base of Spreadtrum arm64 SoCs whose common
-+ * nodes are listed in this file.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation; either version 2 of
-+ * the License, or (at your option) any later version.
-+ */
-+
-+/ {
-+	interrupt-parent = <&gic>;
-+	#address-cells = <2>;
-+	#size-cells = <2>;
-+
-+	uart0: serial@70000000 {
-+		compatible = "sprd,serial";
-+		reg = <0 0x70000000 0 0x100>;
-+		interrupts = <0 2 0xf04>;
-+		status = "disabled";
-+	};
-+
-+	uart1: serial@70100000 {
-+		compatible = "sprd,serial";
-+		reg = <0 0x70100000 0 0x100>;
-+		interrupts = <0 3 0xf04>;
-+		status = "disabled";
-+	};
-+};
-diff --git a/arch/arm64/boot/dts/sprd-sharkl3-fpga.dts b/arch/arm64/boot/dts/sprd-sharkl3-fpga.dts
-new file mode 100644
-index 0000000..faa0a2e
---- /dev/null
-+++ b/arch/arm64/boot/dts/sprd-sharkl3-fpga.dts
-@@ -0,0 +1,41 @@
-+/*
-+ * DTS file for Spreadtrum(sprd) Sharkl3 FPGA board based on
-+ * the Sharkl Platform.
-+ *
-+ * Copyright (C) 2014,  Spreadtrum Communications Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation; either version 2 of
-+ * the License, or (at your option) any later version.
-+ */
-+
-+/dts-v1/;
-+
-+#include "sprd-sharkl3.dtsi"
-+
-+/ {
-+        model = "Spreadtrum Sharkl3 FPGA board";
-+
-+	compatible = "sprd,sharkl3-fpga", "sprd,sharkl3";
-+
-+	aliases {
-+	};
-+
-+	memory@80000000 {
-+		device_type = "memory";
-+		reg = <0 0x80000000 0 0x20000000>;
-+	};
-+
-+	chosen {
-+		stdout-path = &uart0;
-+	};
-+
-+	uart0: serial@70000000 {
-+		status = "okay";
-+	};
-+
-+	uart1: serial@70100000 {
-+		status = "okay";
-+	};
-+};
-diff --git a/arch/arm64/boot/dts/sprd-sharkl3.dtsi b/arch/arm64/boot/dts/sprd-sharkl3.dtsi
-new file mode 100644
-index 0000000..0ab4a94
---- /dev/null
-+++ b/arch/arm64/boot/dts/sprd-sharkl3.dtsi
-@@ -0,0 +1,69 @@
-+/*
-+ * dtsi file for Spreadtrum(sprd) Sharkl3 SoC based on the Sharkl Platform.
-+ *
-+ * Copyright (C) 2014,  Spreadtrum Communications Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation; either version 2 of
-+ * the License, or (at your option) any later version.
-+ */
-+
-+#include "sprd-sharkl.dtsi"
-+
-+/ {
-+	compatible = "sprd,sharkl3";
-+
-+	gic: interrupt-controller@12001000 {
-+		compatible = "arm,cortex-a15-gic", "arm,cortex-a9-gic";
-+		#interrupt-cells = <3>;
-+		interrupt-controller;
-+		reg = <0 0x12001000 0 0x1000>,
-+		      <0 0x12002000 0 0x1000>,
-+		      <0 0x12004000 0 0x2000>,
-+		      <0 0x12006000 0 0x2000>;
-+	};
-+
-+	cpus {
-+		#address-cells = <2>;
-+		#size-cells = <0>;
-+
-+		cpu@0 {
-+			device_type = "cpu";
-+			compatible = "arm,armv8";
-+			reg = <0x0 0x0>;
-+			enable-method = "psci";
-+		};
-+		cpu@1 {
-+			device_type = "cpu";
-+			compatible = "arm,armv8";
-+			reg = <0x0 0x1>;
-+			enable-method = "psci";
-+		};
-+		cpu@2 {
-+			device_type = "cpu";
-+			compatible = "arm,armv8";
-+			reg = <0x0 0x2>;
-+			enable-method = "psci";
-+		};
-+		cpu@3 {
-+			device_type = "cpu";
-+			compatible = "arm,armv8";
-+			reg = <0x0 0x3>;
-+			enable-method = "psci";
-+		};
-+	};
-+
-+	psci {
-+		compatible = "arm,psci-0.2";
-+		method = "smc";
-+	};
-+
-+	timer {
-+		compatible = "arm,armv8-timer";
-+		interrupts = <1 13 0xff01>,
-+			     <1 14 0xff01>,
-+			     <1 11 0xff01>,
-+			     <1 10 0xff01>;
-+	};
-+};
 -- 
 1.7.9.5
 
