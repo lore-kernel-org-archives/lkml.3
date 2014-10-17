@@ -1,69 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904AbaJQMqD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 08:46:03 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33226 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752781AbaJQMp7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 08:45:59 -0400
-Date: Fri, 17 Oct 2014 14:44:59 +0200
-From: Mark Brown <broonie@kernel.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Lee Jones <lee.jones@linaro.org>, Doug Anderson <dianders@chromium.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Chris Zhong <zyw@rock-chips.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Message-ID: <20141017124459.GN1820@sirena.org.uk>
-References: <1413478133-2577-1-git-send-email-javier.martinez@collabora.co.uk>
- <1413478133-2577-4-git-send-email-javier.martinez@collabora.co.uk>
+	id S1752977AbaJQMqP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 08:46:15 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:46942 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752199AbaJQMqL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Oct 2014 08:46:11 -0400
+X-IronPort-AV: E=Sophos;i="5.04,739,1406592000"; 
+   d="scan'208";a="182321741"
+Message-ID: <54410F90.3070206@citrix.com>
+Date: Fri, 17 Oct 2014 13:46:08 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sy9WyBOsCRoUO165"
-Content-Disposition: inline
-In-Reply-To: <1413478133-2577-4-git-send-email-javier.martinez@collabora.co.uk>
-X-Cookie: Excellent day to have a rotten day.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 62.156.150.204
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 3/7] regulator: max77802: Don't treat OFF as an
- operating mode
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Martin Kelly <martin@martingkelly.com>, <david.vrabel@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <mingo@redhat.com>, Martin Kelly <martkell@amazon.com>,
+        <boris.ostrovsky@oracle.com>, <tglx@linutronix.de>
+Subject: Re: [Xen-devel] [PATCH] x86/xen: panic on bad Xen-provided memory
+ map
+References: <1413517692-17727-1-git-send-email-martin@martingkelly.com>
+In-Reply-To: <1413517692-17727-1-git-send-email-martin@martingkelly.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---sy9WyBOsCRoUO165
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Thu, Oct 16, 2014 at 06:48:49PM +0200, Javier Martinez Canillas wrote:
-> The only operating modes that are supported by the regulators in the
-> max77802 PMIC are Output ON (normal) and Output On in Low Power Mode.
-> OFF was wrongly counted as an operating mode while is only a regulator
-> status. Make clear in the code that OFF is not an operating mode.
+On 17/10/14 04:48, Martin Kelly wrote:
+> Panic if Xen provides a memory map with 0 entries. Although this is
+> unlikely, it is better to catch the error at the point of seeing the map
+> than later on as a symptom of some other crash.
 
 Applied, thanks.
 
---sy9WyBOsCRoUO165
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUQQ9LAAoJECTWi3JdVIfQQ+YH/0lPxUlhpiGB4bAmAEYteRKv
-eoRD2iBdR5RbWxNGymYUBSiPS+kMFm/1ucQv2GGVcNywjsx6wrlrlfkKVBtYyIob
-hNQ/GuEnBnQtw6ZJEpVhIq6tXiWGbcWtQUS7BMkgMe0hmy9gNkOZ2LKzmCUK/gqd
-tBKEmzj2lAJyGeePIRFMRpa4mjW61urWWimXcOSEWBkMUIGeeAfsRuTqnfwNDCzb
-qdOTgRsrllu34Vnfv2D3o9T7BQZjD3PgwSMhsMaThwEZU7rmyWG64eIX1FLgBcGR
-NW5g+gY0GtiJSfKYXcn2itNCaJe7TBeDzy+ojuve9rADCEnCOQ4hpNMBL3rBmko=
-=JRuo
------END PGP SIGNATURE-----
-
---sy9WyBOsCRoUO165--
+David
