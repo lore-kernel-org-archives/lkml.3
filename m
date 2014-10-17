@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751916AbaJQKsl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 06:48:41 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:49353 "EHLO
-	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751346AbaJQKsk (ORCPT
+	id S1752182AbaJQKwm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 06:52:42 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53010 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751878AbaJQKwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 06:48:40 -0400
-X-Greylist: delayed 386 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Oct 2014 06:48:39 EDT
-Message-ID: <5440F282.8040306@itdev.co.uk>
-Date: Fri, 17 Oct 2014 11:42:10 +0100
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Fri, 17 Oct 2014 06:52:41 -0400
+Date: Fri, 17 Oct 2014 12:51:56 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Yifan Zhang <yifan.zhangm@gmail.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, mark.rutland@arm.com,
+        lauraa@codeaurora.org, ganapatrao.kulkarni@caviumnetworks.com,
+        robh@kernel.org, leif.lindholm@linaro.org, Yalin.Wang@sonymobile.com,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-kernel@vger.kernel.org, Yifan Zhang <zhangyf@marvell.com>
+Subject: Re: [PATCH] arm64: mm: use macro instead of if judgement of ZONE_DMA
+Message-ID: <20141017105156.GF29470@pengutronix.de>
+References: <CAGZxSSRsYYNURnVB1fpGSTMA7WJMdy=Cmt1pj0Q=69ahHEsO1w@mail.gmail.com>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Greg KH <greg@kroah.com>,
-        Jonathan Cameron <jic23@kernel.org>
-CC: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Touch processing on host CPU
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGZxSSRsYYNURnVB1fpGSTMA7WJMdy=Cmt1pj0Q=69ahHEsO1w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi-
+Hello,
 
-I'm trying to find out which subsystem maintainer I should be talking to -
-apologies if I'm addressing the wrong people.
+On Thu, Oct 16, 2014 at 05:19:43PM +0800, Yifan Zhang wrote:
+> @@ -82,10 +82,10 @@ static void __init zone_sizes_init(unsigned long
+> min, unsigned long max)
+> 
+>         memset(zone_size, 0, sizeof(zone_size));
+> 
+> 
+> 
+>         /* 4GB maximum for 32-bit only capable devices */
+> 
+> -        if (IS_ENABLED(CONFIG_ZONE_DMA)) {
+> 
+> -                 max_dma = PFN_DOWN(max_zone_dma_phys());
+> 
+> -                 zone_size[ZONE_DMA] = max_dma - min;
+> 
+> -        }
+> 
+> +#ifdef CONFIG_ZONE_DMA
+> 
+> +       max_dma = PFN_DOWN(max_zone_dma_phys());
+> 
+> +       zone_size[ZONE_DMA] = max_dma - min;
+> 
+> +#endif
+Apart from your patch being broken (probably by your MUA or MTA) usually
+if (IS_ENABLED(...)) is preferred over #ifdef because it doesn't stand
+out over the other program source.
 
-There is a model for doing touch processing where the touch controller
-becomes a much simpler device which sends out raw acquisitions (over SPI 
-at up to 1Mbps + protocol overheads). All touch processing is then done in
-user space by the host CPU. An example of this is NVIDIA DirectTouch - see:
-http://blogs.nvidia.com/blog/2012/02/24/industry-adopts-nvidia-directtouch/
-
-In the spirit of "upstream first", I'm trying to figure out how to get a
-driver accepted. Obviously it's not an input device in the normal sense. Is
-it acceptable just to send the raw touch data out via a char device? Is
-there another subsystem which is a good match (eg IIO)? Does the protocol
-(there is ancillary/control data as well) need to be documented?
-
-cheers
+Best regards
+Uwe
 
 -- 
-Nick Dyer
-Senior Software Engineer, ITDev
-Fully Managed Technology Design Services
-+44 (0)23 80988855  -  http://www.itdev.co.uk
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
