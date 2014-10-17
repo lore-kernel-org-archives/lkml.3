@@ -1,74 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384AbaJQNOu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 09:14:50 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:52177 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752540AbaJQNOs (ORCPT
+	id S1753408AbaJQNP1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 09:15:27 -0400
+Received: from mail.logicbricks.com ([89.201.165.134]:17285 "EHLO
+	mail.logicbricks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752597AbaJQNMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 09:14:48 -0400
-Message-ID: <54411642.3050903@roeck-us.net>
-Date: Fri, 17 Oct 2014 06:14:42 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 17 Oct 2014 09:12:53 -0400
+From: Davor Joja <davorjoja@logicbricks.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Davor Joja <davorjoja@logicbricks.com>
+Subject: [PATCH 07/10] uapi: linux: Xylon framebuffer driver header file
+Date: Fri, 17 Oct 2014 15:06:58 +0200
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1413551221-15187-1-git-send-email-davorjoja@logicbricks.com>
+References: <1413551221-15187-1-git-send-email-davorjoja@logicbricks.com>
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>, stable@vger.kernel.org
-CC: satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.12 000/197] 3.12.31-stable review
-References: <cover.1413533329.git.jslaby@suse.cz>
-In-Reply-To: <cover.1413533329.git.jslaby@suse.cz>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020209.54411647.0286,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 1
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain
+X-Originating-IP: [192.168.0.95]
+Message-ID: <cbda282d-956b-409a-8f89-5297cd9078fb@mail.xylon.local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/2014 01:11 AM, Jiri Slaby wrote:
-> This is the start of the stable review cycle for the 3.12.31 release.
-> There are 197 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Tue Oct 21 10:08:49 CEST 2014.
-> Anything received after that time might be too late.
->
+Driver header file containing structures and IOCTLs for user space
+apps to be able to use complete logiCVC hw functionality.
 
-Jiri,
+Signed-off-by: Davor Joja <davorjoja@logicbricks.com>
+---
+ include/uapi/linux/xylonfb.h | 85 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 85 insertions(+)
+ create mode 100644 include/uapi/linux/xylonfb.h
 
-my auto-builder tries to pull the patches from branch stable-3.12-queue of
-git://git.kernel.org/pub/scm/linux/kernel/git/jirislaby/linux-stable.git.
-
-Only this time it isn't there. Do you have a new location ?
-
-Thanks,
-Guenter
+diff --git a/include/uapi/linux/xylonfb.h b/include/uapi/linux/xylonfb.h
+new file mode 100644
+index 0000000..5db8344
+--- /dev/null
++++ b/include/uapi/linux/xylonfb.h
+@@ -0,0 +1,85 @@
++/*
++ * Xylon logiCVC frame buffer driver IOCTL parameters
++ *
++ * Copyright (C) 2014 Xylon d.o.o.
++ * Author: Davor Joja <davor.joja@logicbricks.com>
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef __XYLONFB_H__
++#define __XYLONFB_H__
++
++#include <linux/types.h>
++
++struct xylonfb_hw_access {
++	__u32 offset;
++	__u32 value;
++	bool set;
++};
++
++/* Used only with logiCVC 3.x */
++struct xylonfb_layer_buffer {
++	__u8 id;
++	bool set;
++};
++
++struct xylonfb_layer_color {
++	__u32 raw_rgb;
++	__u8 use_raw;
++	__u8 r;
++	__u8 g;
++	__u8 b;
++	bool set;
++};
++
++struct xylonfb_layer_geometry {
++	__u16 x;
++	__u16 y;
++	__u16 width;
++	__u16 height;
++	__u16 x_offset;
++	__u16 y_offset;
++	bool set;
++};
++
++struct xylonfb_layer_transparency {
++	__u8 alpha;
++	bool set;
++};
++
++/* Xylon FB IOCTL's */
++#define XYLONFB_IOW(num, dtype)		_IOW('x', num, dtype)
++#define XYLONFB_IOR(num, dtype)		_IOR('x', num, dtype)
++#define XYLONFB_IOWR(num, dtype)	_IOWR('x', num, dtype)
++#define XYLONFB_IO(num)			_IO('x', num)
++
++#define XYLONFB_VSYNC_CTRL		XYLONFB_IOR(30, bool)
++#define XYLONFB_LAYER_IDX		XYLONFB_IOR(31, unsigned int)
++#define XYLONFB_LAYER_ALPHA		\
++	XYLONFB_IOR(32, struct xylonfb_layer_transparency)
++#define XYLONFB_LAYER_COLOR_TRANSP_CTRL	XYLONFB_IOW(33, bool)
++#define XYLONFB_LAYER_COLOR_TRANSP \
++	XYLONFB_IOR(34, struct xylonfb_layer_color)
++#define XYLONFB_LAYER_GEOMETRY \
++	XYLONFB_IOR(35, struct xylonfb_layer_geometry)
++#define XYLONFB_LAYER_BUFFER \
++	XYLONFB_IOR(36, struct xylonfb_layer_buffer)
++#define XYLONFB_LAYER_BUFFER_OFFSET	XYLONFB_IOR(37, unsigned int)
++#define XYLONFB_BACKGROUND_COLOR \
++	XYLONFB_IOR(38, struct xylonfb_layer_color)
++#define XYLONFB_LAYER_EXT_BUFF_SWITCH	XYLONFB_IOW(39, bool)
++#define XYLONFB_HW_ACCESS \
++	XYLONFB_IOR(40, struct xylonfb_hw_access)
++#define XYLONFB_IP_CORE_VERSION		XYLONFB_IOR(41, __u32)
++#define XYLONFB_WAIT_EDID		XYLONFB_IOW(42, unsigned int)
++#define XYLONFB_GET_EDID		XYLONFB_IOR(43, char)
++
++#endif /* __XYLONFB_H__ */
+-- 
+1.9.1
 
