@@ -1,280 +1,1569 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751544AbaJRXAc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Oct 2014 19:00:32 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:58612 "EHLO gloria.sntech.de"
+	id S1751628AbaJRXAg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Oct 2014 19:00:36 -0400
+Received: from mx1.emlix.com ([88.198.240.195]:59744 "EHLO mx1.emlix.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751214AbaJRXAb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Oct 2014 19:00:31 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Sonny Rao <sonnyrao@chromium.org>
-Cc: Kever Yang <kever.yang@rock-chips.com>,
-        Douglas Anderson <dianders@chromium.org>,
-        Addy Ke <addy.ke@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        Jianqun Xu <xjq@rock-chips.com>, han jiang <hj@rock-chips.com>,
-        Tao Huang <huangtao@rock-chips.com>,
-        linux-rockchip@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 1/6] ARM: rockchip: convert to regmap and use pmu syscon if available
-Date: Sun, 19 Oct 2014 01:03:19 +0200
-Message-ID: <1575510.y30n33AHoo@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <CAPz6YkWq4b0k1SWKZdxRKf-7VPvYDdNvbZKnq-Wfk1QxWOassA@mail.gmail.com>
-References: <1413393785-26783-1-git-send-email-kever.yang@rock-chips.com> <1413393785-26783-2-git-send-email-kever.yang@rock-chips.com> <CAPz6YkWq4b0k1SWKZdxRKf-7VPvYDdNvbZKnq-Wfk1QxWOassA@mail.gmail.com>
+	id S1751273AbaJRXAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Oct 2014 19:00:33 -0400
+From: =?UTF-8?q?Daniel=20Gl=C3=B6ckner?= <dg@emlix.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Daniel=20Gl=C3=B6ckner?= <dg@emlix.com>
+Subject: [PATCH] ASoC: s6000: remove driver
+Date: Sun, 19 Oct 2014 00:50:50 +0200
+Message-Id: <1413672650-8581-1-git-send-email-dg@emlix.com>
+In-Reply-To: <1413672385-8492-1-git-send-email-dg@emlix.com>
+References: <1413672385-8492-1-git-send-email-dg@emlix.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Organization: emlix gmbh, Goettingen, Germany
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, 17. Oktober 2014, 21:30:52 schrieb Sonny Rao:
-> On Wed, Oct 15, 2014 at 10:23 AM, Kever Yang <kever.yang@rock-chips.com> 
-wrote:
-> > From: Heiko Stuebner <heiko@sntech.de>
-> > 
-> > The pmu register space is - like the GRF - shared by quite some
-> > peripherals. On the rk3188 and rk3288 even parts of the pinctrl are
-> > living there. Therefore we normally shouldn't map it a second time when
-> > the syscon does this already.
-> > 
-> > Therefore convert the cpu power-domain handling to access the pmu via a
-> > regmap and at first try to get it via the syscon interface.
-> > Getting this syscon will only fail if the pmu node does not have the
-> > "syscon" compatible and thus does not get shared with other drivers.
-> > 
-> > In this case we map it like before and create the necessary regmap on
-> > top of it.
-> > 
-> > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> > Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-> > ---
-> > 
-> > Changes in v5: None
-> > Changes in v4: None
-> > Changes in v3:
-> > - add this patch in version 3
-> > 
-> > Changes in v2: None
-> > 
-> >  arch/arm/mach-rockchip/platsmp.c | 104
-> >  +++++++++++++++++++++++++++++---------- 1 file changed, 78
-> >  insertions(+), 26 deletions(-)
-> > 
-> > diff --git a/arch/arm/mach-rockchip/platsmp.c
-> > b/arch/arm/mach-rockchip/platsmp.c index 189684f..4c36fbf 100644
-> > --- a/arch/arm/mach-rockchip/platsmp.c
-> > +++ b/arch/arm/mach-rockchip/platsmp.c
-> > @@ -19,6 +19,8 @@
-> > 
-> >  #include <linux/io.h>
-> >  #include <linux/of.h>
-> >  #include <linux/of_address.h>
-> > 
-> > +#include <linux/regmap.h>
-> > +#include <linux/mfd/syscon.h>
-> > 
-> >  #include <asm/cacheflush.h>
-> >  #include <asm/cp15.h>
-> > 
-> > @@ -37,23 +39,42 @@ static int ncores;
-> > 
-> >  #define PMU_PWRDN_SCU          4
-> > 
-> > -static void __iomem *pmu_base_addr;
-> > +static struct regmap *pmu;
-> > 
-> > -static inline bool pmu_power_domain_is_on(int pd)
-> > +static int pmu_power_domain_is_on(int pd)
-> > 
-> >  {
-> > 
-> > -       return !(readl_relaxed(pmu_base_addr + PMU_PWRDN_ST) & BIT(pd));
-> > +       u32 val;
-> > +       int ret;
-> > +
-> > +       ret = regmap_read(pmu, PMU_PWRDN_ST, &val);
-> > +       if (ret < 0)
-> > +               return ret;
-> > +
-> > +       return !(val & BIT(pd));
-> > 
-> >  }
-> > 
-> > -static void pmu_set_power_domain(int pd, bool on)
-> > +static int pmu_set_power_domain(int pd, bool on)
-> > 
-> >  {
-> > 
-> > -       u32 val = readl_relaxed(pmu_base_addr + PMU_PWRDN_CON);
-> > -       if (on)
-> > -               val &= ~BIT(pd);
-> > -       else
-> > -               val |=  BIT(pd);
-> > -       writel(val, pmu_base_addr + PMU_PWRDN_CON);
-> > -
-> > -       while (pmu_power_domain_is_on(pd) != on) { }
-> > +       u32 val = (on) ? 0 : BIT(pd);
-> > +       int ret;
-> > +
-> > +       ret = regmap_update_bits(pmu, PMU_PWRDN_CON, BIT(pd), val);
-> > +       if (ret < 0) {
-> > +               pr_err("%s: could not update power domain\n", __func__);
-> > +               return ret;
-> > +       }
-> > +
-> > +       ret = -1;
-> > +       while (ret != on) {
-> > +               ret = pmu_power_domain_is_on(pd);
-> > +               if (ret < 0) {
-> > +                       pr_err("%s: could not read power domain state\n",
-> > +                                __func__);
-> > +                       return ret;
-> > +               }
-> > +       }
-> > +
-> > +       return 0;
-> > 
-> >  }
-> >  
-> >  /*
-> > 
-> > @@ -63,7 +84,7 @@ static void pmu_set_power_domain(int pd, bool on)
-> > 
-> >  static int __cpuinit rockchip_boot_secondary(unsigned int cpu,
-> >  
-> >                                              struct task_struct *idle)
-> >  
-> >  {
-> > 
-> > -       if (!sram_base_addr || !pmu_base_addr) {
-> > +       if (!sram_base_addr || !pmu) {
-> > 
-> >                 pr_err("%s: sram or pmu missing for cpu boot\n",
-> >                 __func__);
-> >                 return -ENXIO;
-> >         
-> >         }
-> > 
-> > @@ -75,9 +96,7 @@ static int __cpuinit rockchip_boot_secondary(unsigned
-> > int cpu,> 
-> >         }
-> >         
-> >         /* start the core */
-> > 
-> > -       pmu_set_power_domain(0 + cpu, true);
-> > -
-> > -       return 0;
-> > +       return pmu_set_power_domain(0 + cpu, true);
-> > 
-> >  }
-> >  
-> >  /**
-> > 
-> > @@ -125,6 +144,48 @@ static int __init rockchip_smp_prepare_sram(struct
-> > device_node *node)> 
-> >         return 0;
-> >  
-> >  }
-> > 
-> > +static struct regmap_config rockchip_pmu_regmap_config = {
-> > +       .reg_bits = 32,
-> > +       .val_bits = 32,
-> > +       .reg_stride = 4,
-> > +};
-> > +
-> > +static int __init rockchip_smp_prepare_pmu(void)
-> > +{
-> > +       struct device_node *node;
-> > +       void __iomem *pmu_base;
-> > +
-> > +       pmu = syscon_regmap_lookup_by_compatible("rockchip,rk3066-pmu");
-> > +       if (!IS_ERR(pmu))
-> > +               return 0;
-> > +
-> > +       /* fallback, create our own regmap for the pmu area */
-> 
-> I don't think you need this fallback, the syscon driver should take
-> care of mapping and creating the regmap for you -- assuming that the
-> pmu node has the "syscon" property.
+The s6000 Xtensa support is removed from the kernel. There are no
+other chips known to use this I2S controller.
 
-The original binding for the pmu node 
-(devicetree/bindings/arm/rockchip/pmu.txt) does not specify "syscon" as second 
-compatible.
+Signed-off-by: Daniel Glöckner <dg@emlix.com>
+---
+ sound/soc/Kconfig             |   1 -
+ sound/soc/Makefile            |   1 -
+ sound/soc/s6000/Kconfig       |  26 --
+ sound/soc/s6000/Makefile      |  11 -
+ sound/soc/s6000/s6000-i2s.c   | 617 ------------------------------------------
+ sound/soc/s6000/s6000-i2s.h   |  23 --
+ sound/soc/s6000/s6000-pcm.c   | 521 -----------------------------------
+ sound/soc/s6000/s6000-pcm.h   |  33 ---
+ sound/soc/s6000/s6105-ipcam.c | 221 ---------------
+ 9 files changed, 1454 deletions(-)
+ delete mode 100644 sound/soc/s6000/Kconfig
+ delete mode 100644 sound/soc/s6000/Makefile
+ delete mode 100644 sound/soc/s6000/s6000-i2s.c
+ delete mode 100644 sound/soc/s6000/s6000-i2s.h
+ delete mode 100644 sound/soc/s6000/s6000-pcm.c
+ delete mode 100644 sound/soc/s6000/s6000-pcm.h
+ delete mode 100644 sound/soc/s6000/s6105-ipcam.c
 
-Therefore we need this fallback to stay compatible with this. If the syscon 
-compatible is present syscon_regmap_lookup_by_compatible will already succeed. 
-If not [legacy case and also what the code did until now] we would create it 
-in the fallback.
-
-Nevertheless we should update the pmu binding to contain the "syscon" 
-compatible and deprecate the variant without.
-
-Hopefully I'll have time to do this on sunday :-)
-
-
-Heiko
-
-
-> > +       pmu = NULL;
-> > +       node = of_find_compatible_node(NULL, NULL, "rockchip,rk3066-pmu");
-> > +       if (!node) {
-> > +               pr_err("%s: could not find pmu dt node\n", __func__);
-> > +               return -ENODEV;
-> > +       }
-> > +
-> > +       pmu_base = of_iomap(node, 0);
-> > +       if (!pmu_base) {
-> > +               pr_err("%s: could not map pmu registers\n", __func__);
-> > +               return -ENOMEM;
-> > +       }
-> > +
-> > +       pmu = regmap_init_mmio(NULL, pmu_base,
-> > &rockchip_pmu_regmap_config); +       if (IS_ERR(pmu)) {
-> > +               int ret = PTR_ERR(pmu);
-> > +
-> > +               iounmap(pmu_base);
-> > +               pmu = NULL;
-> > +               pr_err("%s: regmap init failed\n", __func__);
-> > +               return ret;
-> > +       }
-> > +
-> > +       return 0;
-> > +}
-> > +
-> > 
-> >  static void __init rockchip_smp_prepare_cpus(unsigned int max_cpus)
-> >  {
-> >  
-> >         struct device_node *node;
-> > 
-> > @@ -151,17 +212,8 @@ static void __init rockchip_smp_prepare_cpus(unsigned
-> > int max_cpus)> 
-> >         if (rockchip_smp_prepare_sram(node))
-> >         
-> >                 return;
-> > 
-> > -       node = of_find_compatible_node(NULL, NULL, "rockchip,rk3066-pmu");
-> > -       if (!node) {
-> > -               pr_err("%s: could not find pmu dt node\n", __func__);
-> > +       if (rockchip_smp_prepare_pmu())
-> > 
-> >                 return;
-> > 
-> > -       }
-> > -
-> > -       pmu_base_addr = of_iomap(node, 0);
-> > -       if (!pmu_base_addr) {
-> > -               pr_err("%s: could not map pmu registers\n", __func__);
-> > -               return;
-> > -       }
-> > 
-> >         /* enable the SCU power domain */
-> >         pmu_set_power_domain(PMU_PWRDN_SCU, true);
-> > 
-> > --
-> > 1.9.1
+diff --git a/sound/soc/Kconfig b/sound/soc/Kconfig
+index 0e96233..7d5d644 100644
+--- a/sound/soc/Kconfig
++++ b/sound/soc/Kconfig
+@@ -49,7 +49,6 @@ source "sound/soc/mxs/Kconfig"
+ source "sound/soc/pxa/Kconfig"
+ source "sound/soc/rockchip/Kconfig"
+ source "sound/soc/samsung/Kconfig"
+-source "sound/soc/s6000/Kconfig"
+ source "sound/soc/sh/Kconfig"
+ source "sound/soc/sirf/Kconfig"
+ source "sound/soc/spear/Kconfig"
+diff --git a/sound/soc/Makefile b/sound/soc/Makefile
+index 534714a..d88edfc 100644
+--- a/sound/soc/Makefile
++++ b/sound/soc/Makefile
+@@ -26,7 +26,6 @@ obj-$(CONFIG_SND_SOC)	+= kirkwood/
+ obj-$(CONFIG_SND_SOC)	+= pxa/
+ obj-$(CONFIG_SND_SOC)	+= rockchip/
+ obj-$(CONFIG_SND_SOC)	+= samsung/
+-obj-$(CONFIG_SND_SOC)	+= s6000/
+ obj-$(CONFIG_SND_SOC)	+= sh/
+ obj-$(CONFIG_SND_SOC)	+= sirf/
+ obj-$(CONFIG_SND_SOC)	+= spear/
+diff --git a/sound/soc/s6000/Kconfig b/sound/soc/s6000/Kconfig
+deleted file mode 100644
+index f244a25..0000000
+--- a/sound/soc/s6000/Kconfig
++++ /dev/null
+@@ -1,26 +0,0 @@
+-config SND_S6000_SOC
+-	tristate "SoC Audio for the Stretch s6000 family"
+-	depends on XTENSA_VARIANT_S6000 || COMPILE_TEST
+-	depends on HAS_IOMEM
+-	select SND_S6000_SOC_PCM if XTENSA_VARIANT_S6000
+-	help
+-	  Say Y or M if you want to add support for codecs attached to
+-	  s6000 family chips. You will also need to select the platform
+-	  to support below.
+-
+-config SND_S6000_SOC_PCM
+-	tristate
+-
+-config SND_S6000_SOC_I2S
+-	tristate
+-
+-config SND_S6000_SOC_S6IPCAM
+-	bool "SoC Audio support for Stretch 6105 IP Camera"
+-	depends on SND_S6000_SOC=y
+-	depends on I2C=y
+-	depends on XTENSA_PLATFORM_S6105 || COMPILE_TEST
+-	select SND_S6000_SOC_I2S
+-	select SND_SOC_TLV320AIC3X
+-	help
+-	  Say Y if you want to add support for SoC audio on the
+-	  Stretch s6105 IP Camera Reference Design.
+diff --git a/sound/soc/s6000/Makefile b/sound/soc/s6000/Makefile
+deleted file mode 100644
+index 0f0ae2a..0000000
+--- a/sound/soc/s6000/Makefile
++++ /dev/null
+@@ -1,11 +0,0 @@
+-# s6000 Platform Support
+-snd-soc-s6000-objs := s6000-pcm.o
+-snd-soc-s6000-i2s-objs := s6000-i2s.o
+-
+-obj-$(CONFIG_SND_S6000_SOC_PCM) += snd-soc-s6000.o
+-obj-$(CONFIG_SND_S6000_SOC_I2S) += snd-soc-s6000-i2s.o
+-
+-# s6105 Machine Support
+-snd-soc-s6ipcam-objs := s6105-ipcam.o
+-
+-obj-$(CONFIG_SND_S6000_SOC_S6IPCAM) += snd-soc-s6ipcam.o
+diff --git a/sound/soc/s6000/s6000-i2s.c b/sound/soc/s6000/s6000-i2s.c
+deleted file mode 100644
+index 1c8d011..0000000
+--- a/sound/soc/s6000/s6000-i2s.c
++++ /dev/null
+@@ -1,617 +0,0 @@
+-/*
+- * ALSA SoC I2S Audio Layer for the Stretch S6000 family
+- *
+- * Author:      Daniel Gloeckner, <dg@emlix.com>
+- * Copyright:   (C) 2009 emlix GmbH <info@emlix.com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-#include <linux/init.h>
+-#include <linux/module.h>
+-#include <linux/device.h>
+-#include <linux/delay.h>
+-#include <linux/clk.h>
+-#include <linux/interrupt.h>
+-#include <linux/io.h>
+-#include <linux/slab.h>
+-
+-#include <sound/core.h>
+-#include <sound/pcm.h>
+-#include <sound/pcm_params.h>
+-#include <sound/initval.h>
+-#include <sound/soc.h>
+-
+-#include "s6000-i2s.h"
+-#include "s6000-pcm.h"
+-
+-struct s6000_i2s_dev {
+-	dma_addr_t sifbase;
+-	u8 __iomem *scbbase;
+-	unsigned int wide;
+-	unsigned int channel_in;
+-	unsigned int channel_out;
+-	unsigned int lines_in;
+-	unsigned int lines_out;
+-	struct s6000_pcm_dma_params dma_params;
+-};
+-
+-#define S6_I2S_INTERRUPT_STATUS	0x00
+-#define   S6_I2S_INT_OVERRUN	1
+-#define   S6_I2S_INT_UNDERRUN	2
+-#define   S6_I2S_INT_ALIGNMENT	4
+-#define S6_I2S_INTERRUPT_ENABLE	0x04
+-#define S6_I2S_INTERRUPT_RAW	0x08
+-#define S6_I2S_INTERRUPT_CLEAR	0x0C
+-#define S6_I2S_INTERRUPT_SET	0x10
+-#define S6_I2S_MODE		0x20
+-#define   S6_I2S_DUAL		0
+-#define   S6_I2S_WIDE		1
+-#define S6_I2S_TX_DEFAULT	0x24
+-#define S6_I2S_DATA_CFG(c)	(0x40 + 0x10 * (c))
+-#define   S6_I2S_IN		0
+-#define   S6_I2S_OUT		1
+-#define   S6_I2S_UNUSED		2
+-#define S6_I2S_INTERFACE_CFG(c)	(0x44 + 0x10 * (c))
+-#define   S6_I2S_DIV_MASK	0x001fff
+-#define   S6_I2S_16BIT		0x000000
+-#define   S6_I2S_20BIT		0x002000
+-#define   S6_I2S_24BIT		0x004000
+-#define   S6_I2S_32BIT		0x006000
+-#define   S6_I2S_BITS_MASK	0x006000
+-#define   S6_I2S_MEM_16BIT	0x000000
+-#define   S6_I2S_MEM_32BIT	0x008000
+-#define   S6_I2S_MEM_MASK	0x008000
+-#define   S6_I2S_CHANNELS_SHIFT	16
+-#define   S6_I2S_CHANNELS_MASK	0x030000
+-#define   S6_I2S_SCK_IN		0x000000
+-#define   S6_I2S_SCK_OUT	0x040000
+-#define   S6_I2S_SCK_DIR	0x040000
+-#define   S6_I2S_WS_IN		0x000000
+-#define   S6_I2S_WS_OUT		0x080000
+-#define   S6_I2S_WS_DIR		0x080000
+-#define   S6_I2S_LEFT_FIRST	0x000000
+-#define   S6_I2S_RIGHT_FIRST	0x100000
+-#define   S6_I2S_FIRST		0x100000
+-#define   S6_I2S_CUR_SCK	0x200000
+-#define   S6_I2S_CUR_WS		0x400000
+-#define S6_I2S_ENABLE(c)	(0x48 + 0x10 * (c))
+-#define   S6_I2S_DISABLE_IF	0x02
+-#define   S6_I2S_ENABLE_IF	0x03
+-#define   S6_I2S_IS_BUSY	0x04
+-#define   S6_I2S_DMA_ACTIVE	0x08
+-#define   S6_I2S_IS_ENABLED	0x10
+-
+-#define S6_I2S_NUM_LINES	4
+-
+-#define S6_I2S_SIF_PORT0	0x0000000
+-#define S6_I2S_SIF_PORT1	0x0000080 /* docs say 0x0000010 */
+-
+-static inline void s6_i2s_write_reg(struct s6000_i2s_dev *dev, int reg, u32 val)
+-{
+-	writel(val, dev->scbbase + reg);
+-}
+-
+-static inline u32 s6_i2s_read_reg(struct s6000_i2s_dev *dev, int reg)
+-{
+-	return readl(dev->scbbase + reg);
+-}
+-
+-static inline void s6_i2s_mod_reg(struct s6000_i2s_dev *dev, int reg,
+-				  u32 mask, u32 val)
+-{
+-	val ^= s6_i2s_read_reg(dev, reg) & ~mask;
+-	s6_i2s_write_reg(dev, reg, val);
+-}
+-
+-static void s6000_i2s_start_channel(struct s6000_i2s_dev *dev, int channel)
+-{
+-	int i, j, cur, prev;
+-
+-	/*
+-	 * Wait for WCLK to toggle 5 times before enabling the channel
+-	 * s6000 Family Datasheet 3.6.4:
+-	 *   "At least two cycles of WS must occur between commands
+-	 *    to disable or enable the interface"
+-	 */
+-	j = 0;
+-	prev = ~S6_I2S_CUR_WS;
+-	for (i = 1000000; --i && j < 6; ) {
+-		cur = s6_i2s_read_reg(dev, S6_I2S_INTERFACE_CFG(channel))
+-		       & S6_I2S_CUR_WS;
+-		if (prev != cur) {
+-			prev = cur;
+-			j++;
+-		}
+-	}
+-	if (j < 6)
+-		printk(KERN_WARNING "s6000-i2s: timeout waiting for WCLK\n");
+-
+-	s6_i2s_write_reg(dev, S6_I2S_ENABLE(channel), S6_I2S_ENABLE_IF);
+-}
+-
+-static void s6000_i2s_stop_channel(struct s6000_i2s_dev *dev, int channel)
+-{
+-	s6_i2s_write_reg(dev, S6_I2S_ENABLE(channel), S6_I2S_DISABLE_IF);
+-}
+-
+-static void s6000_i2s_start(struct snd_pcm_substream *substream)
+-{
+-	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+-	struct s6000_i2s_dev *dev = snd_soc_dai_get_drvdata(rtd->cpu_dai);
+-	int channel;
+-
+-	channel = (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) ?
+-			dev->channel_out : dev->channel_in;
+-
+-	s6000_i2s_start_channel(dev, channel);
+-}
+-
+-static void s6000_i2s_stop(struct snd_pcm_substream *substream)
+-{
+-	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+-	struct s6000_i2s_dev *dev = snd_soc_dai_get_drvdata(rtd->cpu_dai);
+-	int channel;
+-
+-	channel = (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) ?
+-			dev->channel_out : dev->channel_in;
+-
+-	s6000_i2s_stop_channel(dev, channel);
+-}
+-
+-static int s6000_i2s_trigger(struct snd_pcm_substream *substream, int cmd,
+-			     int after)
+-{
+-	switch (cmd) {
+-	case SNDRV_PCM_TRIGGER_START:
+-	case SNDRV_PCM_TRIGGER_RESUME:
+-	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+-		if ((substream->stream == SNDRV_PCM_STREAM_CAPTURE) ^ !after)
+-			s6000_i2s_start(substream);
+-		break;
+-	case SNDRV_PCM_TRIGGER_STOP:
+-	case SNDRV_PCM_TRIGGER_SUSPEND:
+-	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+-		if (!after)
+-			s6000_i2s_stop(substream);
+-	}
+-	return 0;
+-}
+-
+-static unsigned int s6000_i2s_int_sources(struct s6000_i2s_dev *dev)
+-{
+-	unsigned int pending;
+-	pending = s6_i2s_read_reg(dev, S6_I2S_INTERRUPT_RAW);
+-	pending &= S6_I2S_INT_ALIGNMENT |
+-		   S6_I2S_INT_UNDERRUN |
+-		   S6_I2S_INT_OVERRUN;
+-	s6_i2s_write_reg(dev, S6_I2S_INTERRUPT_CLEAR, pending);
+-
+-	return pending;
+-}
+-
+-static unsigned int s6000_i2s_check_xrun(struct snd_soc_dai *cpu_dai)
+-{
+-	struct s6000_i2s_dev *dev = snd_soc_dai_get_drvdata(cpu_dai);
+-	unsigned int errors;
+-	unsigned int ret;
+-
+-	errors = s6000_i2s_int_sources(dev);
+-	if (likely(!errors))
+-		return 0;
+-
+-	ret = 0;
+-	if (errors & S6_I2S_INT_ALIGNMENT)
+-		printk(KERN_ERR "s6000-i2s: WCLK misaligned\n");
+-	if (errors & S6_I2S_INT_UNDERRUN)
+-		ret |= 1 << SNDRV_PCM_STREAM_PLAYBACK;
+-	if (errors & S6_I2S_INT_OVERRUN)
+-		ret |= 1 << SNDRV_PCM_STREAM_CAPTURE;
+-	return ret;
+-}
+-
+-static void s6000_i2s_wait_disabled(struct s6000_i2s_dev *dev)
+-{
+-	int channel;
+-	int n = 50;
+-	for (channel = 0; channel < 2; channel++) {
+-		while (--n >= 0) {
+-			int v = s6_i2s_read_reg(dev, S6_I2S_ENABLE(channel));
+-			if ((v & S6_I2S_IS_ENABLED)
+-			    || !(v & (S6_I2S_DMA_ACTIVE | S6_I2S_IS_BUSY)))
+-				break;
+-			udelay(20);
+-		}
+-	}
+-	if (n < 0)
+-		printk(KERN_WARNING "s6000-i2s: timeout disabling interfaces");
+-}
+-
+-static int s6000_i2s_set_dai_fmt(struct snd_soc_dai *cpu_dai,
+-				   unsigned int fmt)
+-{
+-	struct s6000_i2s_dev *dev = snd_soc_dai_get_drvdata(cpu_dai);
+-	u32 w;
+-
+-	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
+-	case SND_SOC_DAIFMT_CBM_CFM:
+-		w = S6_I2S_SCK_IN | S6_I2S_WS_IN;
+-		break;
+-	case SND_SOC_DAIFMT_CBS_CFM:
+-		w = S6_I2S_SCK_OUT | S6_I2S_WS_IN;
+-		break;
+-	case SND_SOC_DAIFMT_CBM_CFS:
+-		w = S6_I2S_SCK_IN | S6_I2S_WS_OUT;
+-		break;
+-	case SND_SOC_DAIFMT_CBS_CFS:
+-		w = S6_I2S_SCK_OUT | S6_I2S_WS_OUT;
+-		break;
+-	default:
+-		return -EINVAL;
+-	}
+-
+-	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
+-	case SND_SOC_DAIFMT_NB_NF:
+-		w |= S6_I2S_LEFT_FIRST;
+-		break;
+-	case SND_SOC_DAIFMT_NB_IF:
+-		w |= S6_I2S_RIGHT_FIRST;
+-		break;
+-	default:
+-		return -EINVAL;
+-	}
+-
+-	s6_i2s_mod_reg(dev, S6_I2S_INTERFACE_CFG(0),
+-		       S6_I2S_FIRST | S6_I2S_WS_DIR | S6_I2S_SCK_DIR, w);
+-	s6_i2s_mod_reg(dev, S6_I2S_INTERFACE_CFG(1),
+-		       S6_I2S_FIRST | S6_I2S_WS_DIR | S6_I2S_SCK_DIR, w);
+-
+-	return 0;
+-}
+-
+-static int s6000_i2s_set_clkdiv(struct snd_soc_dai *dai, int div_id, int div)
+-{
+-	struct s6000_i2s_dev *dev = snd_soc_dai_get_drvdata(dai);
+-
+-	if (!div || (div & 1) || div > (S6_I2S_DIV_MASK + 1) * 2)
+-		return -EINVAL;
+-
+-	s6_i2s_mod_reg(dev, S6_I2S_INTERFACE_CFG(div_id),
+-		       S6_I2S_DIV_MASK, div / 2 - 1);
+-	return 0;
+-}
+-
+-static int s6000_i2s_hw_params(struct snd_pcm_substream *substream,
+-			       struct snd_pcm_hw_params *params,
+-			       struct snd_soc_dai *dai)
+-{
+-	struct s6000_i2s_dev *dev = snd_soc_dai_get_drvdata(dai);
+-	int interf;
+-	u32 w = 0;
+-
+-	if (dev->wide)
+-		interf = 0;
+-	else {
+-		w |= (((params_channels(params) - 2) / 2)
+-		      << S6_I2S_CHANNELS_SHIFT) & S6_I2S_CHANNELS_MASK;
+-		interf = (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+-				? dev->channel_out : dev->channel_in;
+-	}
+-
+-	switch (params_format(params)) {
+-	case SNDRV_PCM_FORMAT_S16_LE:
+-		w |= S6_I2S_16BIT | S6_I2S_MEM_16BIT;
+-		break;
+-	case SNDRV_PCM_FORMAT_S32_LE:
+-		w |= S6_I2S_32BIT | S6_I2S_MEM_32BIT;
+-		break;
+-	default:
+-		printk(KERN_WARNING "s6000-i2s: unsupported PCM format %x\n",
+-		       params_format(params));
+-		return -EINVAL;
+-	}
+-
+-	if (s6_i2s_read_reg(dev, S6_I2S_INTERFACE_CFG(interf))
+-	     & S6_I2S_IS_ENABLED) {
+-		printk(KERN_ERR "s6000-i2s: interface already enabled\n");
+-		return -EBUSY;
+-	}
+-
+-	s6_i2s_mod_reg(dev, S6_I2S_INTERFACE_CFG(interf),
+-		       S6_I2S_CHANNELS_MASK|S6_I2S_MEM_MASK|S6_I2S_BITS_MASK,
+-		       w);
+-
+-	return 0;
+-}
+-
+-static int s6000_i2s_dai_probe(struct snd_soc_dai *dai)
+-{
+-	struct s6000_i2s_dev *dev = snd_soc_dai_get_drvdata(dai);
+-	struct s6000_snd_platform_data *pdata = dai->dev->platform_data;
+-
+-	if (!pdata)
+-		return -EINVAL;
+-
+-	dai->capture_dma_data = &dev->dma_params;
+-	dai->playback_dma_data = &dev->dma_params;
+-
+-	dev->wide = pdata->wide;
+-	dev->channel_in = pdata->channel_in;
+-	dev->channel_out = pdata->channel_out;
+-	dev->lines_in = pdata->lines_in;
+-	dev->lines_out = pdata->lines_out;
+-
+-	s6_i2s_write_reg(dev, S6_I2S_MODE,
+-			 dev->wide ? S6_I2S_WIDE : S6_I2S_DUAL);
+-
+-	if (dev->wide) {
+-		int i;
+-
+-		if (dev->lines_in + dev->lines_out > S6_I2S_NUM_LINES)
+-			return -EINVAL;
+-
+-		dev->channel_in = 0;
+-		dev->channel_out = 1;
+-		dai->driver->capture.channels_min = 2 * dev->lines_in;
+-		dai->driver->capture.channels_max = dai->driver->capture.channels_min;
+-		dai->driver->playback.channels_min = 2 * dev->lines_out;
+-		dai->driver->playback.channels_max = dai->driver->playback.channels_min;
+-
+-		for (i = 0; i < dev->lines_out; i++)
+-			s6_i2s_write_reg(dev, S6_I2S_DATA_CFG(i), S6_I2S_OUT);
+-
+-		for (; i < S6_I2S_NUM_LINES - dev->lines_in; i++)
+-			s6_i2s_write_reg(dev, S6_I2S_DATA_CFG(i),
+-					 S6_I2S_UNUSED);
+-
+-		for (; i < S6_I2S_NUM_LINES; i++)
+-			s6_i2s_write_reg(dev, S6_I2S_DATA_CFG(i), S6_I2S_IN);
+-	} else {
+-		unsigned int cfg[2] = {S6_I2S_UNUSED, S6_I2S_UNUSED};
+-
+-		if (dev->lines_in > 1 || dev->lines_out > 1)
+-			return -EINVAL;
+-
+-		dai->driver->capture.channels_min = 2 * dev->lines_in;
+-		dai->driver->capture.channels_max = 8 * dev->lines_in;
+-		dai->driver->playback.channels_min = 2 * dev->lines_out;
+-		dai->driver->playback.channels_max = 8 * dev->lines_out;
+-
+-		if (dev->lines_in)
+-			cfg[dev->channel_in] = S6_I2S_IN;
+-		if (dev->lines_out)
+-			cfg[dev->channel_out] = S6_I2S_OUT;
+-
+-		s6_i2s_write_reg(dev, S6_I2S_DATA_CFG(0), cfg[0]);
+-		s6_i2s_write_reg(dev, S6_I2S_DATA_CFG(1), cfg[1]);
+-	}
+-
+-	if (dev->lines_out) {
+-		if (dev->lines_in) {
+-			if (!dev->dma_params.dma_out)
+-				return -ENODEV;
+-		} else {
+-			dev->dma_params.dma_out = dev->dma_params.dma_in;
+-			dev->dma_params.dma_in = 0;
+-		}
+-	}
+-	dev->dma_params.sif_in = dev->sifbase + (dev->channel_in ?
+-					S6_I2S_SIF_PORT1 : S6_I2S_SIF_PORT0);
+-	dev->dma_params.sif_out = dev->sifbase + (dev->channel_out ?
+-					S6_I2S_SIF_PORT1 : S6_I2S_SIF_PORT0);
+-	dev->dma_params.same_rate = pdata->same_rate | pdata->wide;
+-	return 0;
+-}
+-
+-#define S6000_I2S_RATES SNDRV_PCM_RATE_CONTINUOUS
+-#define S6000_I2S_FORMATS (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S32_LE)
+-
+-static const struct snd_soc_dai_ops s6000_i2s_dai_ops = {
+-	.set_fmt = s6000_i2s_set_dai_fmt,
+-	.set_clkdiv = s6000_i2s_set_clkdiv,
+-	.hw_params = s6000_i2s_hw_params,
+-};
+-
+-static struct snd_soc_dai_driver s6000_i2s_dai = {
+-	.probe = s6000_i2s_dai_probe,
+-	.playback = {
+-		.channels_min = 2,
+-		.channels_max = 8,
+-		.formats = S6000_I2S_FORMATS,
+-		.rates = S6000_I2S_RATES,
+-		.rate_min = 0,
+-		.rate_max = 1562500,
+-	},
+-	.capture = {
+-		.channels_min = 2,
+-		.channels_max = 8,
+-		.formats = S6000_I2S_FORMATS,
+-		.rates = S6000_I2S_RATES,
+-		.rate_min = 0,
+-		.rate_max = 1562500,
+-	},
+-	.ops = &s6000_i2s_dai_ops,
+-};
+-
+-static const struct snd_soc_component_driver s6000_i2s_component = {
+-	.name		= "s6000-i2s",
+-};
+-
+-static int s6000_i2s_probe(struct platform_device *pdev)
+-{
+-	struct s6000_i2s_dev *dev;
+-	struct resource *scbmem, *sifmem, *region, *dma1, *dma2;
+-	u8 __iomem *mmio;
+-	int ret;
+-
+-	scbmem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!scbmem) {
+-		dev_err(&pdev->dev, "no mem resource?\n");
+-		ret = -ENODEV;
+-		goto err_release_none;
+-	}
+-
+-	region = request_mem_region(scbmem->start, resource_size(scbmem),
+-								pdev->name);
+-	if (!region) {
+-		dev_err(&pdev->dev, "I2S SCB region already claimed\n");
+-		ret = -EBUSY;
+-		goto err_release_none;
+-	}
+-
+-	mmio = ioremap(scbmem->start, resource_size(scbmem));
+-	if (!mmio) {
+-		dev_err(&pdev->dev, "can't ioremap SCB region\n");
+-		ret = -ENOMEM;
+-		goto err_release_scb;
+-	}
+-
+-	sifmem = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+-	if (!sifmem) {
+-		dev_err(&pdev->dev, "no second mem resource?\n");
+-		ret = -ENODEV;
+-		goto err_release_map;
+-	}
+-
+-	region = request_mem_region(sifmem->start, resource_size(sifmem),
+-								pdev->name);
+-	if (!region) {
+-		dev_err(&pdev->dev, "I2S SIF region already claimed\n");
+-		ret = -EBUSY;
+-		goto err_release_map;
+-	}
+-
+-	dma1 = platform_get_resource(pdev, IORESOURCE_DMA, 0);
+-	if (!dma1) {
+-		dev_err(&pdev->dev, "no dma resource?\n");
+-		ret = -ENODEV;
+-		goto err_release_sif;
+-	}
+-
+-	region = request_mem_region(dma1->start, resource_size(dma1),
+-								pdev->name);
+-	if (!region) {
+-		dev_err(&pdev->dev, "I2S DMA region already claimed\n");
+-		ret = -EBUSY;
+-		goto err_release_sif;
+-	}
+-
+-	dma2 = platform_get_resource(pdev, IORESOURCE_DMA, 1);
+-	if (dma2) {
+-		region = request_mem_region(dma2->start, resource_size(dma2),
+-								pdev->name);
+-		if (!region) {
+-			dev_err(&pdev->dev,
+-				"I2S DMA region already claimed\n");
+-			ret = -EBUSY;
+-			goto err_release_dma1;
+-		}
+-	}
+-
+-	dev = kzalloc(sizeof(struct s6000_i2s_dev), GFP_KERNEL);
+-	if (!dev) {
+-		ret = -ENOMEM;
+-		goto err_release_dma2;
+-	}
+-	dev_set_drvdata(&pdev->dev, dev);
+-
+-	dev->sifbase = sifmem->start;
+-	dev->scbbase = mmio;
+-
+-	s6_i2s_write_reg(dev, S6_I2S_INTERRUPT_ENABLE, 0);
+-	s6_i2s_write_reg(dev, S6_I2S_INTERRUPT_CLEAR,
+-			 S6_I2S_INT_ALIGNMENT |
+-			 S6_I2S_INT_UNDERRUN |
+-			 S6_I2S_INT_OVERRUN);
+-
+-	s6000_i2s_stop_channel(dev, 0);
+-	s6000_i2s_stop_channel(dev, 1);
+-	s6000_i2s_wait_disabled(dev);
+-
+-	dev->dma_params.check_xrun = s6000_i2s_check_xrun;
+-	dev->dma_params.trigger = s6000_i2s_trigger;
+-	dev->dma_params.dma_in = dma1->start;
+-	dev->dma_params.dma_out = dma2 ? dma2->start : 0;
+-	dev->dma_params.irq = platform_get_irq(pdev, 0);
+-	if (dev->dma_params.irq < 0) {
+-		dev_err(&pdev->dev, "no irq resource?\n");
+-		ret = -ENODEV;
+-		goto err_release_dev;
+-	}
+-
+-	s6_i2s_write_reg(dev, S6_I2S_INTERRUPT_ENABLE,
+-			 S6_I2S_INT_ALIGNMENT |
+-			 S6_I2S_INT_UNDERRUN |
+-			 S6_I2S_INT_OVERRUN);
+-
+-	ret = snd_soc_register_component(&pdev->dev, &s6000_i2s_component,
+-					 &s6000_i2s_dai, 1);
+-	if (ret)
+-		goto err_release_dev;
+-
+-	return 0;
+-
+-err_release_dev:
+-	kfree(dev);
+-err_release_dma2:
+-	if (dma2)
+-		release_mem_region(dma2->start, resource_size(dma2));
+-err_release_dma1:
+-	release_mem_region(dma1->start, resource_size(dma1));
+-err_release_sif:
+-	release_mem_region(sifmem->start, resource_size(sifmem));
+-err_release_map:
+-	iounmap(mmio);
+-err_release_scb:
+-	release_mem_region(scbmem->start, resource_size(scbmem));
+-err_release_none:
+-	return ret;
+-}
+-
+-static int s6000_i2s_remove(struct platform_device *pdev)
+-{
+-	struct s6000_i2s_dev *dev = dev_get_drvdata(&pdev->dev);
+-	struct resource *region;
+-	void __iomem *mmio = dev->scbbase;
+-
+-	snd_soc_unregister_component(&pdev->dev);
+-
+-	s6000_i2s_stop_channel(dev, 0);
+-	s6000_i2s_stop_channel(dev, 1);
+-
+-	s6_i2s_write_reg(dev, S6_I2S_INTERRUPT_ENABLE, 0);
+-	kfree(dev);
+-
+-	region = platform_get_resource(pdev, IORESOURCE_DMA, 0);
+-	release_mem_region(region->start, resource_size(region));
+-
+-	region = platform_get_resource(pdev, IORESOURCE_DMA, 1);
+-	if (region)
+-		release_mem_region(region->start, resource_size(region));
+-
+-	region = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	release_mem_region(region->start, resource_size(region));
+-
+-	iounmap(mmio);
+-	region = platform_get_resource(pdev, IORESOURCE_IO, 0);
+-	release_mem_region(region->start, resource_size(region));
+-
+-	return 0;
+-}
+-
+-static struct platform_driver s6000_i2s_driver = {
+-	.probe  = s6000_i2s_probe,
+-	.remove = s6000_i2s_remove,
+-	.driver = {
+-		.name   = "s6000-i2s",
+-		.owner  = THIS_MODULE,
+-	},
+-};
+-
+-module_platform_driver(s6000_i2s_driver);
+-
+-MODULE_AUTHOR("Daniel Gloeckner");
+-MODULE_DESCRIPTION("Stretch s6000 family I2S SoC Interface");
+-MODULE_LICENSE("GPL");
+diff --git a/sound/soc/s6000/s6000-i2s.h b/sound/soc/s6000/s6000-i2s.h
+deleted file mode 100644
+index 86aa192..0000000
+--- a/sound/soc/s6000/s6000-i2s.h
++++ /dev/null
+@@ -1,23 +0,0 @@
+-/*
+- * ALSA SoC I2S Audio Layer for the Stretch s6000 family
+- *
+- * Author:      Daniel Gloeckner, <dg@emlix.com>
+- * Copyright:   (C) 2009 emlix GmbH <info@emlix.com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-#ifndef _S6000_I2S_H
+-#define _S6000_I2S_H
+-
+-struct s6000_snd_platform_data {
+-	int lines_in;
+-	int lines_out;
+-	int channel_in;
+-	int channel_out;
+-	int wide;
+-	int same_rate;
+-};
+-#endif
+diff --git a/sound/soc/s6000/s6000-pcm.c b/sound/soc/s6000/s6000-pcm.c
+deleted file mode 100644
+index fb8461e..0000000
+--- a/sound/soc/s6000/s6000-pcm.c
++++ /dev/null
+@@ -1,521 +0,0 @@
+-/*
+- * ALSA PCM interface for the Stetch s6000 family
+- *
+- * Author:      Daniel Gloeckner, <dg@emlix.com>
+- * Copyright:   (C) 2009 emlix GmbH <info@emlix.com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-#include <linux/module.h>
+-#include <linux/init.h>
+-#include <linux/platform_device.h>
+-#include <linux/slab.h>
+-#include <linux/dma-mapping.h>
+-#include <linux/interrupt.h>
+-
+-#include <sound/core.h>
+-#include <sound/pcm.h>
+-#include <sound/pcm_params.h>
+-#include <sound/soc.h>
+-
+-#include <asm/dma.h>
+-#include <variant/dmac.h>
+-
+-#include "s6000-pcm.h"
+-
+-#define S6_PCM_PREALLOCATE_SIZE (96 * 1024)
+-#define S6_PCM_PREALLOCATE_MAX  (2048 * 1024)
+-
+-static struct snd_pcm_hardware s6000_pcm_hardware = {
+-	.info = (SNDRV_PCM_INFO_INTERLEAVED | SNDRV_PCM_INFO_BLOCK_TRANSFER |
+-		 SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_MMAP_VALID |
+-		 SNDRV_PCM_INFO_PAUSE | SNDRV_PCM_INFO_JOINT_DUPLEX),
+-	.buffer_bytes_max = 0x7ffffff0,
+-	.period_bytes_min = 16,
+-	.period_bytes_max = 0xfffff0,
+-	.periods_min = 2,
+-	.periods_max = 1024, /* no limit */
+-	.fifo_size = 0,
+-};
+-
+-struct s6000_runtime_data {
+-	spinlock_t lock;
+-	int period;		/* current DMA period */
+-};
+-
+-static void s6000_pcm_enqueue_dma(struct snd_pcm_substream *substream)
+-{
+-	struct snd_pcm_runtime *runtime = substream->runtime;
+-	struct s6000_runtime_data *prtd = runtime->private_data;
+-	struct snd_soc_pcm_runtime *soc_runtime = substream->private_data;
+-	struct s6000_pcm_dma_params *par;
+-	int channel;
+-	unsigned int period_size;
+-	unsigned int dma_offset;
+-	dma_addr_t dma_pos;
+-	dma_addr_t src, dst;
+-
+-	par = snd_soc_dai_get_dma_data(soc_runtime->cpu_dai, substream);
+-
+-	period_size = snd_pcm_lib_period_bytes(substream);
+-	dma_offset = prtd->period * period_size;
+-	dma_pos = runtime->dma_addr + dma_offset;
+-
+-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+-		src = dma_pos;
+-		dst = par->sif_out;
+-		channel = par->dma_out;
+-	} else {
+-		src = par->sif_in;
+-		dst = dma_pos;
+-		channel = par->dma_in;
+-	}
+-
+-	if (!s6dmac_channel_enabled(DMA_MASK_DMAC(channel),
+-				    DMA_INDEX_CHNL(channel)))
+-		return;
+-
+-	if (s6dmac_fifo_full(DMA_MASK_DMAC(channel), DMA_INDEX_CHNL(channel))) {
+-		printk(KERN_ERR "s6000-pcm: fifo full\n");
+-		return;
+-	}
+-
+-	if (WARN_ON(period_size & 15))
+-		return;
+-	s6dmac_put_fifo(DMA_MASK_DMAC(channel), DMA_INDEX_CHNL(channel),
+-			src, dst, period_size);
+-
+-	prtd->period++;
+-	if (unlikely(prtd->period >= runtime->periods))
+-		prtd->period = 0;
+-}
+-
+-static irqreturn_t s6000_pcm_irq(int irq, void *data)
+-{
+-	struct snd_pcm *pcm = data;
+-	struct snd_soc_pcm_runtime *runtime = pcm->private_data;
+-	struct s6000_runtime_data *prtd;
+-	unsigned int has_xrun;
+-	int i, ret = IRQ_NONE;
+-
+-	for (i = 0; i < 2; ++i) {
+-		struct snd_pcm_substream *substream = pcm->streams[i].substream;
+-		struct s6000_pcm_dma_params *params =
+-					snd_soc_dai_get_dma_data(runtime->cpu_dai, substream);
+-		u32 channel;
+-		unsigned int pending;
+-
+-		if (substream == SNDRV_PCM_STREAM_PLAYBACK)
+-			channel = params->dma_out;
+-		else
+-			channel = params->dma_in;
+-
+-		has_xrun = params->check_xrun(runtime->cpu_dai);
+-
+-		if (!channel)
+-			continue;
+-
+-		if (unlikely(has_xrun & (1 << i)) &&
+-		    substream->runtime &&
+-		    snd_pcm_running(substream)) {
+-			dev_dbg(pcm->dev, "xrun\n");
+-			snd_pcm_stream_lock(substream);
+-			snd_pcm_stop(substream, SNDRV_PCM_STATE_XRUN);
+-			snd_pcm_stream_unlock(substream);
+-			ret = IRQ_HANDLED;
+-		}
+-
+-		pending = s6dmac_int_sources(DMA_MASK_DMAC(channel),
+-					     DMA_INDEX_CHNL(channel));
+-
+-		if (pending & 1) {
+-			ret = IRQ_HANDLED;
+-			if (likely(substream->runtime &&
+-				   snd_pcm_running(substream))) {
+-				snd_pcm_period_elapsed(substream);
+-				dev_dbg(pcm->dev, "period elapsed %x %x\n",
+-				       s6dmac_cur_src(DMA_MASK_DMAC(channel),
+-						   DMA_INDEX_CHNL(channel)),
+-				       s6dmac_cur_dst(DMA_MASK_DMAC(channel),
+-						   DMA_INDEX_CHNL(channel)));
+-				prtd = substream->runtime->private_data;
+-				spin_lock(&prtd->lock);
+-				s6000_pcm_enqueue_dma(substream);
+-				spin_unlock(&prtd->lock);
+-			}
+-		}
+-
+-		if (unlikely(pending & ~7)) {
+-			if (pending & (1 << 3))
+-				printk(KERN_WARNING
+-				       "s6000-pcm: DMA %x Underflow\n",
+-				       channel);
+-			if (pending & (1 << 4))
+-				printk(KERN_WARNING
+-				       "s6000-pcm: DMA %x Overflow\n",
+-				       channel);
+-			if (pending & 0x1e0)
+-				printk(KERN_WARNING
+-				       "s6000-pcm: DMA %x Master Error "
+-				       "(mask %x)\n",
+-				       channel, pending >> 5);
+-
+-		}
+-	}
+-
+-	return ret;
+-}
+-
+-static int s6000_pcm_start(struct snd_pcm_substream *substream)
+-{
+-	struct s6000_runtime_data *prtd = substream->runtime->private_data;
+-	struct snd_soc_pcm_runtime *soc_runtime = substream->private_data;
+-	struct s6000_pcm_dma_params *par;
+-	unsigned long flags;
+-	int srcinc;
+-	u32 dma;
+-
+-	par = snd_soc_dai_get_dma_data(soc_runtime->cpu_dai, substream);
+-
+-	spin_lock_irqsave(&prtd->lock, flags);
+-
+-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+-		srcinc = 1;
+-		dma = par->dma_out;
+-	} else {
+-		srcinc = 0;
+-		dma = par->dma_in;
+-	}
+-	s6dmac_enable_chan(DMA_MASK_DMAC(dma), DMA_INDEX_CHNL(dma),
+-			   1 /* priority 1 (0 is max) */,
+-			   0 /* peripheral requests w/o xfer length mode */,
+-			   srcinc /* source address increment */,
+-			   srcinc^1 /* destination address increment */,
+-			   0 /* chunksize 0 (skip impossible on this dma) */,
+-			   0 /* source skip after chunk (impossible) */,
+-			   0 /* destination skip after chunk (impossible) */,
+-			   4 /* 16 byte burst size */,
+-			   -1 /* don't conserve bandwidth */,
+-			   0 /* low watermark irq descriptor threshold */,
+-			   0 /* disable hardware timestamps */,
+-			   1 /* enable channel */);
+-
+-	s6000_pcm_enqueue_dma(substream);
+-	s6000_pcm_enqueue_dma(substream);
+-
+-	spin_unlock_irqrestore(&prtd->lock, flags);
+-
+-	return 0;
+-}
+-
+-static int s6000_pcm_stop(struct snd_pcm_substream *substream)
+-{
+-	struct s6000_runtime_data *prtd = substream->runtime->private_data;
+-	struct snd_soc_pcm_runtime *soc_runtime = substream->private_data;
+-	struct s6000_pcm_dma_params *par;
+-	unsigned long flags;
+-	u32 channel;
+-
+-	par = snd_soc_dai_get_dma_data(soc_runtime->cpu_dai, substream);
+-
+-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+-		channel = par->dma_out;
+-	else
+-		channel = par->dma_in;
+-
+-	s6dmac_set_terminal_count(DMA_MASK_DMAC(channel),
+-				  DMA_INDEX_CHNL(channel), 0);
+-
+-	spin_lock_irqsave(&prtd->lock, flags);
+-
+-	s6dmac_disable_chan(DMA_MASK_DMAC(channel), DMA_INDEX_CHNL(channel));
+-
+-	spin_unlock_irqrestore(&prtd->lock, flags);
+-
+-	return 0;
+-}
+-
+-static int s6000_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
+-{
+-	struct snd_soc_pcm_runtime *soc_runtime = substream->private_data;
+-	struct s6000_pcm_dma_params *par;
+-	int ret;
+-
+-	par = snd_soc_dai_get_dma_data(soc_runtime->cpu_dai, substream);
+-
+-	ret = par->trigger(substream, cmd, 0);
+-	if (ret < 0)
+-		return ret;
+-
+-	switch (cmd) {
+-	case SNDRV_PCM_TRIGGER_START:
+-	case SNDRV_PCM_TRIGGER_RESUME:
+-	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+-		ret = s6000_pcm_start(substream);
+-		break;
+-	case SNDRV_PCM_TRIGGER_STOP:
+-	case SNDRV_PCM_TRIGGER_SUSPEND:
+-	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+-		ret = s6000_pcm_stop(substream);
+-		break;
+-	default:
+-		ret = -EINVAL;
+-	}
+-	if (ret < 0)
+-		return ret;
+-
+-	return par->trigger(substream, cmd, 1);
+-}
+-
+-static int s6000_pcm_prepare(struct snd_pcm_substream *substream)
+-{
+-	struct s6000_runtime_data *prtd = substream->runtime->private_data;
+-
+-	prtd->period = 0;
+-
+-	return 0;
+-}
+-
+-static snd_pcm_uframes_t s6000_pcm_pointer(struct snd_pcm_substream *substream)
+-{
+-	struct snd_soc_pcm_runtime *soc_runtime = substream->private_data;
+-	struct s6000_pcm_dma_params *par;
+-	struct snd_pcm_runtime *runtime = substream->runtime;
+-	struct s6000_runtime_data *prtd = runtime->private_data;
+-	unsigned long flags;
+-	unsigned int offset;
+-	dma_addr_t count;
+-
+-	par = snd_soc_dai_get_dma_data(soc_runtime->cpu_dai, substream);
+-
+-	spin_lock_irqsave(&prtd->lock, flags);
+-
+-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+-		count = s6dmac_cur_src(DMA_MASK_DMAC(par->dma_out),
+-				       DMA_INDEX_CHNL(par->dma_out));
+-	else
+-		count = s6dmac_cur_dst(DMA_MASK_DMAC(par->dma_in),
+-				       DMA_INDEX_CHNL(par->dma_in));
+-
+-	count -= runtime->dma_addr;
+-
+-	spin_unlock_irqrestore(&prtd->lock, flags);
+-
+-	offset = bytes_to_frames(runtime, count);
+-	if (unlikely(offset >= runtime->buffer_size))
+-		offset = 0;
+-
+-	return offset;
+-}
+-
+-static int s6000_pcm_open(struct snd_pcm_substream *substream)
+-{
+-	struct snd_soc_pcm_runtime *soc_runtime = substream->private_data;
+-	struct s6000_pcm_dma_params *par;
+-	struct snd_pcm_runtime *runtime = substream->runtime;
+-	struct s6000_runtime_data *prtd;
+-	int ret;
+-
+-	par = snd_soc_dai_get_dma_data(soc_runtime->cpu_dai, substream);
+-	snd_soc_set_runtime_hwparams(substream, &s6000_pcm_hardware);
+-
+-	ret = snd_pcm_hw_constraint_step(runtime, 0,
+-					 SNDRV_PCM_HW_PARAM_PERIOD_BYTES, 16);
+-	if (ret < 0)
+-		return ret;
+-	ret = snd_pcm_hw_constraint_step(runtime, 0,
+-					 SNDRV_PCM_HW_PARAM_BUFFER_BYTES, 16);
+-	if (ret < 0)
+-		return ret;
+-	ret = snd_pcm_hw_constraint_integer(runtime,
+-					    SNDRV_PCM_HW_PARAM_PERIODS);
+-	if (ret < 0)
+-		return ret;
+-
+-	if (par->same_rate) {
+-		int rate;
+-		spin_lock(&par->lock); /* needed? */
+-		rate = par->rate;
+-		spin_unlock(&par->lock);
+-		if (rate != -1) {
+-			ret = snd_pcm_hw_constraint_minmax(runtime,
+-							SNDRV_PCM_HW_PARAM_RATE,
+-							rate, rate);
+-			if (ret < 0)
+-				return ret;
+-		}
+-	}
+-
+-	prtd = kzalloc(sizeof(struct s6000_runtime_data), GFP_KERNEL);
+-	if (prtd == NULL)
+-		return -ENOMEM;
+-
+-	spin_lock_init(&prtd->lock);
+-
+-	runtime->private_data = prtd;
+-
+-	return 0;
+-}
+-
+-static int s6000_pcm_close(struct snd_pcm_substream *substream)
+-{
+-	struct snd_pcm_runtime *runtime = substream->runtime;
+-	struct s6000_runtime_data *prtd = runtime->private_data;
+-
+-	kfree(prtd);
+-
+-	return 0;
+-}
+-
+-static int s6000_pcm_hw_params(struct snd_pcm_substream *substream,
+-				 struct snd_pcm_hw_params *hw_params)
+-{
+-	struct snd_soc_pcm_runtime *soc_runtime = substream->private_data;
+-	struct s6000_pcm_dma_params *par;
+-	int ret;
+-	ret = snd_pcm_lib_malloc_pages(substream,
+-				       params_buffer_bytes(hw_params));
+-	if (ret < 0) {
+-		printk(KERN_WARNING "s6000-pcm: allocation of memory failed\n");
+-		return ret;
+-	}
+-
+-	par = snd_soc_dai_get_dma_data(soc_runtime->cpu_dai, substream);
+-
+-	if (par->same_rate) {
+-		spin_lock(&par->lock);
+-		if (par->rate == -1 ||
+-		    !(par->in_use & ~(1 << substream->stream))) {
+-			par->rate = params_rate(hw_params);
+-			par->in_use |= 1 << substream->stream;
+-		} else if (params_rate(hw_params) != par->rate) {
+-			snd_pcm_lib_free_pages(substream);
+-			par->in_use &= ~(1 << substream->stream);
+-			ret = -EBUSY;
+-		}
+-		spin_unlock(&par->lock);
+-	}
+-	return ret;
+-}
+-
+-static int s6000_pcm_hw_free(struct snd_pcm_substream *substream)
+-{
+-	struct snd_soc_pcm_runtime *soc_runtime = substream->private_data;
+-	struct s6000_pcm_dma_params *par =
+-		snd_soc_dai_get_dma_data(soc_runtime->cpu_dai, substream);
+-
+-	spin_lock(&par->lock);
+-	par->in_use &= ~(1 << substream->stream);
+-	if (!par->in_use)
+-		par->rate = -1;
+-	spin_unlock(&par->lock);
+-
+-	return snd_pcm_lib_free_pages(substream);
+-}
+-
+-static struct snd_pcm_ops s6000_pcm_ops = {
+-	.open = 	s6000_pcm_open,
+-	.close = 	s6000_pcm_close,
+-	.ioctl = 	snd_pcm_lib_ioctl,
+-	.hw_params = 	s6000_pcm_hw_params,
+-	.hw_free = 	s6000_pcm_hw_free,
+-	.trigger =	s6000_pcm_trigger,
+-	.prepare = 	s6000_pcm_prepare,
+-	.pointer = 	s6000_pcm_pointer,
+-};
+-
+-static void s6000_pcm_free(struct snd_pcm *pcm)
+-{
+-	struct snd_soc_pcm_runtime *runtime = pcm->private_data;
+-	struct s6000_pcm_dma_params *params =
+-		snd_soc_dai_get_dma_data(runtime->cpu_dai,
+-			pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream);
+-
+-	free_irq(params->irq, pcm);
+-	snd_pcm_lib_preallocate_free_for_all(pcm);
+-}
+-
+-static int s6000_pcm_new(struct snd_soc_pcm_runtime *runtime)
+-{
+-	struct snd_card *card = runtime->card->snd_card;
+-	struct snd_pcm *pcm = runtime->pcm;
+-	struct s6000_pcm_dma_params *params;
+-	int res;
+-
+-	params = snd_soc_dai_get_dma_data(runtime->cpu_dai,
+-			pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream);
+-
+-	res = dma_coerce_mask_and_coherent(card->dev, DMA_BIT_MASK(32));
+-	if (res)
+-		return res;
+-
+-	if (params->dma_in) {
+-		s6dmac_disable_chan(DMA_MASK_DMAC(params->dma_in),
+-				    DMA_INDEX_CHNL(params->dma_in));
+-		s6dmac_int_sources(DMA_MASK_DMAC(params->dma_in),
+-				   DMA_INDEX_CHNL(params->dma_in));
+-	}
+-
+-	if (params->dma_out) {
+-		s6dmac_disable_chan(DMA_MASK_DMAC(params->dma_out),
+-				    DMA_INDEX_CHNL(params->dma_out));
+-		s6dmac_int_sources(DMA_MASK_DMAC(params->dma_out),
+-				   DMA_INDEX_CHNL(params->dma_out));
+-	}
+-
+-	res = request_irq(params->irq, s6000_pcm_irq, IRQF_SHARED,
+-			  "s6000-audio", pcm);
+-	if (res) {
+-		printk(KERN_ERR "s6000-pcm couldn't get IRQ\n");
+-		return res;
+-	}
+-
+-	res = snd_pcm_lib_preallocate_pages_for_all(pcm,
+-						    SNDRV_DMA_TYPE_DEV,
+-						    card->dev,
+-						    S6_PCM_PREALLOCATE_SIZE,
+-						    S6_PCM_PREALLOCATE_MAX);
+-	if (res)
+-		printk(KERN_WARNING "s6000-pcm: preallocation failed\n");
+-
+-	spin_lock_init(&params->lock);
+-	params->in_use = 0;
+-	params->rate = -1;
+-	return 0;
+-}
+-
+-static struct snd_soc_platform_driver s6000_soc_platform = {
+-	.ops =		&s6000_pcm_ops,
+-	.pcm_new = 	s6000_pcm_new,
+-	.pcm_free = 	s6000_pcm_free,
+-};
+-
+-static int s6000_soc_platform_probe(struct platform_device *pdev)
+-{
+-	return snd_soc_register_platform(&pdev->dev, &s6000_soc_platform);
+-}
+-
+-static int s6000_soc_platform_remove(struct platform_device *pdev)
+-{
+-	snd_soc_unregister_platform(&pdev->dev);
+-	return 0;
+-}
+-
+-static struct platform_driver s6000_pcm_driver = {
+-	.driver = {
+-			.name = "s6000-pcm-audio",
+-			.owner = THIS_MODULE,
+-	},
+-
+-	.probe = s6000_soc_platform_probe,
+-	.remove = s6000_soc_platform_remove,
+-};
+-
+-module_platform_driver(s6000_pcm_driver);
+-
+-MODULE_AUTHOR("Daniel Gloeckner");
+-MODULE_DESCRIPTION("Stretch s6000 family PCM DMA module");
+-MODULE_LICENSE("GPL");
+diff --git a/sound/soc/s6000/s6000-pcm.h b/sound/soc/s6000/s6000-pcm.h
+deleted file mode 100644
+index 09d9b88..0000000
+--- a/sound/soc/s6000/s6000-pcm.h
++++ /dev/null
+@@ -1,33 +0,0 @@
+-/*
+- * ALSA PCM interface for the Stretch s6000 family
+- *
+- * Author:      Daniel Gloeckner, <dg@emlix.com>
+- * Copyright:   (C) 2009 emlix GmbH <info@emlix.com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-#ifndef _S6000_PCM_H
+-#define _S6000_PCM_H
+-
+-struct snd_soc_dai;
+-struct snd_pcm_substream;
+-
+-struct s6000_pcm_dma_params {
+-	unsigned int (*check_xrun)(struct snd_soc_dai *cpu_dai);
+-	int (*trigger)(struct snd_pcm_substream *substream, int cmd, int after);
+-	dma_addr_t sif_in;
+-	dma_addr_t sif_out;
+-	u32 dma_in;
+-	u32 dma_out;
+-	int irq;
+-	int same_rate;
+-
+-	spinlock_t lock;
+-	int in_use;
+-	int rate;
+-};
+-
+-#endif
+diff --git a/sound/soc/s6000/s6105-ipcam.c b/sound/soc/s6000/s6105-ipcam.c
+deleted file mode 100644
+index 3510c01..0000000
+--- a/sound/soc/s6000/s6105-ipcam.c
++++ /dev/null
+@@ -1,221 +0,0 @@
+-/*
+- * ASoC driver for Stretch s6105 IP camera platform
+- *
+- * Author:      Daniel Gloeckner, <dg@emlix.com>
+- * Copyright:   (C) 2009 emlix GmbH <info@emlix.com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-#include <linux/module.h>
+-#include <linux/moduleparam.h>
+-#include <linux/timer.h>
+-#include <linux/interrupt.h>
+-#include <linux/platform_device.h>
+-#include <linux/i2c.h>
+-#include <sound/core.h>
+-#include <sound/pcm.h>
+-#include <sound/soc.h>
+-
+-#include "s6000-pcm.h"
+-#include "s6000-i2s.h"
+-
+-#define S6105_CAM_CODEC_CLOCK 12288000
+-
+-static int s6105_hw_params(struct snd_pcm_substream *substream,
+-			   struct snd_pcm_hw_params *params)
+-{
+-	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+-	struct snd_soc_dai *codec_dai = rtd->codec_dai;
+-	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
+-	int ret = 0;
+-
+-	/* set codec DAI configuration */
+-	ret = snd_soc_dai_set_fmt(codec_dai, SND_SOC_DAIFMT_I2S |
+-					     SND_SOC_DAIFMT_CBM_CFM);
+-	if (ret < 0)
+-		return ret;
+-
+-	/* set cpu DAI configuration */
+-	ret = snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_CBM_CFM |
+-					   SND_SOC_DAIFMT_NB_NF);
+-	if (ret < 0)
+-		return ret;
+-
+-	/* set the codec system clock */
+-	ret = snd_soc_dai_set_sysclk(codec_dai, 0, S6105_CAM_CODEC_CLOCK,
+-					    SND_SOC_CLOCK_OUT);
+-	if (ret < 0)
+-		return ret;
+-
+-	return 0;
+-}
+-
+-static struct snd_soc_ops s6105_ops = {
+-	.hw_params = s6105_hw_params,
+-};
+-
+-/* s6105 machine dapm widgets */
+-static const struct snd_soc_dapm_widget aic3x_dapm_widgets[] = {
+-	SND_SOC_DAPM_LINE("Audio Out Differential", NULL),
+-	SND_SOC_DAPM_LINE("Audio Out Stereo", NULL),
+-	SND_SOC_DAPM_LINE("Audio In", NULL),
+-};
+-
+-/* s6105 machine audio_mapnections to the codec pins */
+-static const struct snd_soc_dapm_route audio_map[] = {
+-	/* Audio Out connected to HPLOUT, HPLCOM, HPROUT */
+-	{"Audio Out Differential", NULL, "HPLOUT"},
+-	{"Audio Out Differential", NULL, "HPLCOM"},
+-	{"Audio Out Stereo", NULL, "HPLOUT"},
+-	{"Audio Out Stereo", NULL, "HPROUT"},
+-
+-	/* Audio In connected to LINE1L, LINE1R */
+-	{"LINE1L", NULL, "Audio In"},
+-	{"LINE1R", NULL, "Audio In"},
+-};
+-
+-static int output_type_info(struct snd_kcontrol *kcontrol,
+-			    struct snd_ctl_elem_info *uinfo)
+-{
+-	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
+-	uinfo->count = 1;
+-	uinfo->value.enumerated.items = 2;
+-	if (uinfo->value.enumerated.item) {
+-		uinfo->value.enumerated.item = 1;
+-		strcpy(uinfo->value.enumerated.name, "HPLOUT/HPROUT");
+-	} else {
+-		strcpy(uinfo->value.enumerated.name, "HPLOUT/HPLCOM");
+-	}
+-	return 0;
+-}
+-
+-static int output_type_get(struct snd_kcontrol *kcontrol,
+-			   struct snd_ctl_elem_value *ucontrol)
+-{
+-	ucontrol->value.enumerated.item[0] = kcontrol->private_value;
+-	return 0;
+-}
+-
+-static int output_type_put(struct snd_kcontrol *kcontrol,
+-			   struct snd_ctl_elem_value *ucontrol)
+-{
+-	struct snd_soc_card *card = kcontrol->private_data;
+-	struct snd_soc_dapm_context *dapm = &card->dapm;
+-	unsigned int val = (ucontrol->value.enumerated.item[0] != 0);
+-	char *differential = "Audio Out Differential";
+-	char *stereo = "Audio Out Stereo";
+-
+-	if (kcontrol->private_value == val)
+-		return 0;
+-	kcontrol->private_value = val;
+-	snd_soc_dapm_disable_pin(dapm, val ? differential : stereo);
+-	snd_soc_dapm_sync(dapm);
+-	snd_soc_dapm_enable_pin(dapm, val ? stereo : differential);
+-	snd_soc_dapm_sync(dapm);
+-
+-	return 1;
+-}
+-
+-static const struct snd_kcontrol_new audio_out_mux = {
+-	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+-	.name = "Master Output Mux",
+-	.index = 0,
+-	.access = SNDRV_CTL_ELEM_ACCESS_READWRITE,
+-	.info = output_type_info,
+-	.get = output_type_get,
+-	.put = output_type_put,
+-	.private_value = 1 /* default to stereo */
+-};
+-
+-/* Logic for a aic3x as connected on the s6105 ip camera ref design */
+-static int s6105_aic3x_init(struct snd_soc_pcm_runtime *rtd)
+-{
+-	struct snd_soc_card *card = rtd->card;
+-
+-	/* must correspond to audio_out_mux.private_value initializer */
+-	snd_soc_dapm_disable_pin(&card->dapm, "Audio Out Differential");
+-
+-	snd_ctl_add(card->snd_card, snd_ctl_new1(&audio_out_mux, card));
+-
+-	return 0;
+-}
+-
+-/* s6105 digital audio interface glue - connects codec <--> CPU */
+-static struct snd_soc_dai_link s6105_dai = {
+-	.name = "TLV320AIC31",
+-	.stream_name = "AIC31",
+-	.cpu_dai_name = "s6000-i2s",
+-	.codec_dai_name = "tlv320aic3x-hifi",
+-	.platform_name = "s6000-pcm-audio",
+-	.codec_name = "tlv320aic3x-codec.0-001a",
+-	.init = s6105_aic3x_init,
+-	.ops = &s6105_ops,
+-};
+-
+-/* s6105 audio machine driver */
+-static struct snd_soc_card snd_soc_card_s6105 = {
+-	.name = "Stretch IP Camera",
+-	.owner = THIS_MODULE,
+-	.dai_link = &s6105_dai,
+-	.num_links = 1,
+-
+-	.dapm_widgets = aic3x_dapm_widgets,
+-	.num_dapm_widgets = ARRAY_SIZE(aic3x_dapm_widgets),
+-	.dapm_routes = audio_map,
+-	.num_dapm_routes = ARRAY_SIZE(audio_map),
+-	.fully_routed = true,
+-};
+-
+-static struct s6000_snd_platform_data s6105_snd_data __initdata = {
+-	.wide		= 0,
+-	.channel_in	= 0,
+-	.channel_out	= 1,
+-	.lines_in	= 1,
+-	.lines_out	= 1,
+-	.same_rate	= 1,
+-};
+-
+-static struct platform_device *s6105_snd_device;
+-
+-/* temporary i2c device creation until this can be moved into the machine
+- * support file.
+-*/
+-static struct i2c_board_info i2c_device[] = {
+-	{ I2C_BOARD_INFO("tlv320aic33", 0x18), }
+-};
+-
+-static int __init s6105_init(void)
+-{
+-	int ret;
+-
+-	i2c_register_board_info(0, i2c_device, ARRAY_SIZE(i2c_device));
+-
+-	s6105_snd_device = platform_device_alloc("soc-audio", -1);
+-	if (!s6105_snd_device)
+-		return -ENOMEM;
+-
+-	platform_set_drvdata(s6105_snd_device, &snd_soc_card_s6105);
+-	platform_device_add_data(s6105_snd_device, &s6105_snd_data,
+-				 sizeof(s6105_snd_data));
+-
+-	ret = platform_device_add(s6105_snd_device);
+-	if (ret)
+-		platform_device_put(s6105_snd_device);
+-
+-	return ret;
+-}
+-
+-static void __exit s6105_exit(void)
+-{
+-	platform_device_unregister(s6105_snd_device);
+-}
+-
+-module_init(s6105_init);
+-module_exit(s6105_exit);
+-
+-MODULE_AUTHOR("Daniel Gloeckner");
+-MODULE_DESCRIPTION("Stretch s6105 IP camera ASoC driver");
+-MODULE_LICENSE("GPL");
+-- 
+2.1.2
 
