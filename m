@@ -1,84 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751597AbaJRPml (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Oct 2014 11:42:41 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:54221 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751186AbaJRPmh (ORCPT
+	id S1751515AbaJRQIO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Oct 2014 12:08:14 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:63774 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751186AbaJRQIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Oct 2014 11:42:37 -0400
-Date: Sat, 18 Oct 2014 17:42:11 +0200
-From: Heinz Diehl <htd+ml@fritha.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Gleb Natapov <gleb@kernel.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Marc Zyngier <marc.zyngier@arm.com>, Alexander Graf <agraf@suse.de>,
-        Avi Kivity <avi.kivity@gmail.com>, stefano.stabellini@eu.citrix.com,
-        Laszlo Ersek <lersek@redhat.com>, KVM list <kvm@vger.kernel.org>,
-        konstantin@linuxfoundation.org
-Subject: Re: new GPG key
-Message-ID: <20141018154211.GA4426@fritha.org>
-References: <432661354.65688167.1413642451475.JavaMail.zimbra@redhat.com>
+	Sat, 18 Oct 2014 12:08:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <432661354.65688167.1413642451475.JavaMail.zimbra@redhat.com>
-Organization: private site
-OpenPGP: id=60F4A92C; url=http://www.fritha.org/htd.asc;
- preference=signencrypt
-User-Agent: Mutt/1.5.23+15 (3a46874d5845) (2014-03-12)
-X-Provags-ID: V02:K0:Uqa8gyorqyJo+wQZpD3913dtzIss+3wxQGh7cRw4fNu
- PvJIg6eKSLkcJy+T4BDBrXjeO2n8/ZAc7TVEAes9iT49HVC64z
- 33x9AwZJReYGZ/JGWlhDeIQcHsQMR8emPsMwrj4fcpyNzyiG8t
- Yr468nAQOZ+ci7FjM8ftTlLMp4h+nx7UmaYg1f1zHs3lZyr4tR
- Z8SpxHDYeuOlYzkEbwbxMHxNJkOEbKwozQGSwdgpNzYwOeWSu4
- XyjGFFr+ByVmO+KuY/2Xv7Bpa/VvahouRC6cfzSXNAZZIsU7LM
- cGEE/RTcCYdQAVe6T9hdbP9lKh1nUl3scG1Mx4s2EroV56nzIy
- uEEAQrFgj+yxgwU6OUIs=
-X-UI-Out-Filterresults: notjunk:1;
+Date: Sat, 18 Oct 2014 16:08:06 +0000
+Message-ID: <CALtyatHfUijBZHBf5TcqjagE0CbahRWknOpQmXNF0e6pRbjNkw@mail.gmail.com>
+Subject: Discussion on Linus Trovalds claim of userspace cluelessness,
+ spiralling into other analysis and choice of women. Also systemd.
+From: Gregory Smith <gregorysmith1974a@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: debian-user@lists.debian.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18.10.2014, Paolo Bonzini wrote: 
+There was a discussion recently about Mr Trovalds claiming he didn't
+know anything
+about user-space at debconf '14, a stunning claim. Now since the
+discussion is likely
+to be deleted or edited at the source, well here it is:
 
-> 5) Get a smartcard or a Yubikey NEO and put the subkeys on it; replace
-> subkeys with stubs on your usual working machines, especially laptops. It
-> gives you two factor authentication for free, and can also be used for
-> SSH if you add a third subkey.
+I guess people really can't handle the obvious truth being stated.
 
-AFAICS, a lot of the lkml people use the mutt MUA, which does not have
-any password encryption natively. In this case, the smartcard
-has another advantage: you can have your email password encrypted 
-and use it without having to enter a long and complicated passphrase.
-In case your laptop gets stolen while travelling, the password to your
-email is protected.
+-----------------------------------------------------------------------------------------------------------------------
+(In response to another post)
 
-Here's what I did:
+With Trovalds there is also the recent "I don't know anything about
+userspace whatsoever" claim (debconf '14) we saw*, when not so long
+ago he was railing on various userspace projects (KDE etc). Who in the
+world would believe that the man who started linux... does nothing in
+userspace and has no clue about what goes on there. It's just a lie.
 
-1. Generate a password file and assign the password to a variable.
+*Which he used to "back up" his tacit endorsement of systemd.
 
-touch .my-pw
-echo "set my_pw_imap = \"your-long-and-random-password\"" > .my-pw
+Then yesterday there was him apologizing for his language etc, a few
+days after he said he didn't care what poettering thought, (and awhile
+after defending his style in debconf '14)
+Guess he got a call from the companies behind the linux foundation
+which pays him.
 
-2. Encrypt this file to your own public key and shred the unencrypted textfile
-3. Source the password file into .muttrc and set the imap password
-   variable by writing something like this into your .muttrc:
+Also, maybe this has nothing to do with anything but it bothers me for
+some reason: He took his life and what he did with it was... He
+married a rather large karate champ woman who was not pretty (all this
+when he married her, it wasn't a bait and switch kind of thing that is
+so common). I do not get that either. Guess he lies to himself aswell
+(or maybe his eyes do?). Really makes everyone in software look bad.
+Like: don't admit publicly you have anything to do with linux, use it,
+program for it, etc.
+Usually men want pretty girls. Usually thin girls if the man is
+white/european. Usually don't really want someone who "can beat them
+up", that's not a plus.
+-----------------------------------------------------------------------------------------------------------------------
+Response:
 
- source "gpg2 -dq $HOME/.my-pw.asc |"
- set imap_pass=$my_pw_imap
+The former post is typical of your posting style. You started with
+good arguments to criticise, or at least cast suspicion on, Torvalds
+with critical observation, then switched to criticising him for his
+choice of wife, because she is not pretty (in your eyes). Then
+finished with a bunch of crap about what kinds of women men of
+different ethnicities prefer, and using that nonsense as evidence that
+there is something wrong with Torvalds. That kind of posting is why no
+one takes you seriously any longer.
 
-Now, if you start mutt and it connects to your IMAP server, you'll be
-prompted for your smartcards PIN, and that's it. In case your
-laptop gets stolen while you're travelling and you don't have access
-to the net (because all the other things in your bag like your mobile 
-also got stolen), it will spare you the situation where the thief 
-already had logged into your email and changed your password when 
-you finally managed to connect to the net again.
+-----------------------------------------------------------------------------------------------------------------------
+I program games, record music, and work on models and levels etc.
+I'm not a serious guy. I don't program interfaces or deal
+with hardware not following the specs it claims.
 
-Sorry for being OT, but I have encountered such a situation before and
-it got me into serious trouble, so I dared to share this with you.
+Trovald's wife* is not pretty. My cuzin's
+black friend (west african decent, not east african like
+farrell) likes big asses: he was salivating while while sitting
+in a vehicle with me at the rolly pollys with extra everything.
+I don't.
 
+*(wife means woman. Can you even call her "his woman", it's
+not like he controls her, she can divorce him and
+take all he has at the drop of the hat, oh and it seems to
+have been made a point that she's a karate champion, so
+does she also imagine she could beat his ass if she so
+chose?).
+
+I think trovalds has poor tastes in women. Even RMS has come
+out in support of marrying (or some analogue there of)
+the young girls; I suspect because he likes pretty things.
+Not liking pretty things is strange in a man, atleast in
+a european-decendant man.
+
+Trovalds seems to be willing to sacrifice it all for a
+woman who is (at the time of their marraige):
+*Fat. *Not good looking in the face. *Somehow also a karate champion.
+
+To throw away a chance at happiness for what? Fitting in?
+Being respectable?
+
+Very progressive of him. He doesn't look that terrible.
+His daughters look worse than him because of his decision
+of mate. I hope the other sons of his father have chosen
+better. If he's the only one than that's the end of the
+line for that family. They're in the gutter forever now.
+
+He could have chosen a pretty woman atleast, and kicked
+things up a notch with the next generation of his family.
+Instead he chose to sqaunder his family's lineage up to
+the point where it gave life to him.
+
+What you'll do with the most important aspect of your
+life says something about you. Trovalds chose to throw
+it in the trash and tell his father and mother and his
+grandfather and grandmother and his ancestors generations
+past to go fk themselves basically.
+
+I suspect that says something about him, along with
+the other things.
+------------------------------------------------------------------------------------------------
+
+Calls for censorship ensue.
