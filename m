@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751599AbaJRQaY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Oct 2014 12:30:24 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45666 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335AbaJRQaW (ORCPT
+	id S1751534AbaJRQjL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Oct 2014 12:39:11 -0400
+Received: from mail-yk0-f182.google.com ([209.85.160.182]:33351 "EHLO
+	mail-yk0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751215AbaJRQjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Oct 2014 12:30:22 -0400
-Date: Sat, 18 Oct 2014 18:30:02 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-To: David Cohen <david.a.cohen@linux.intel.com>
-Cc: wg@grandegger.com, linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, trivial@kernel.org
-Subject: Re: [PATCH] net: m_can: add CONFIG_HAS_IOMEM dependence
-Message-ID: <20141018163001.GA24931@pengutronix.de>
-References: <1413409310-14117-1-git-send-email-david.a.cohen@linux.intel.com>
+	Sat, 18 Oct 2014 12:39:04 -0400
+Date: Sat, 18 Oct 2014 12:33:30 -0400
+From: Jon Mason <jdmason@kudzu.us>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>
+Subject: [GIT PULL] NTB bug fixes for v3.18
+Message-ID: <20141018163329.GA10668@kudzu.us>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1413409310-14117-1-git-send-email-david.a.cohen@linux.intel.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 18:29:02 up 3 days,  5:43, 40 users,  load average: 40.72, 85.40,
- 43.27
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 02:41:50PM -0700, David Cohen wrote:
-> m_can uses io memory which makes it not compilable on architectures
-> without HAS_IOMEM such as UML:
-> 
-> drivers/built-in.o: In function `m_can_plat_probe':
-> m_can.c:(.text+0x218cc5): undefined reference to `devm_ioremap_resource'
-> m_can.c:(.text+0x218df9): undefined reference to `devm_ioremap'
-> 
-> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-
-Applied to the can tree.
+Hi Linus,
+Below are a few NTB changes for v3.18. Please consider pulling them.
 
 Thanks,
-Marc
+Jon
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+
+The following changes since commit bfe01a5ba2490f299e1d2d5508cbbbadd897bbe9:
+
+  Linux 3.17 (2014-10-05 12:23:04 -0700)
+
+are available in the git repository at:
+
+  git://github.com/jonmason/ntb tags/ntb-3.18
+
+for you to fetch changes up to ab760a0c5667519b375ea9c5ab3a23501c4817ef:
+
+  ntb: Adding split BAR support for Haswell platforms (2014-10-17 07:08:51 -0400)
+
+----------------------------------------------------------------
+Add support for Haswell NTB split BARs, a debugfs entry for basic
+debugging info, and some code clean-ups.
+
+----------------------------------------------------------------
+Dave Jiang (4):
+      ntb: move platform detection to separate function
+      ntb: conslidate reading of PPD to move platform detection earlier
+      ntb: use errata flag set via DID to implement workaround
+      ntb: Adding split BAR support for Haswell platforms
+
+Jon Mason (1):
+      NTB: debugfs device entry
+
+ drivers/ntb/ntb_hw.c   | 567 +++++++++++++++++++++++++++++++++++++++----------
+ drivers/ntb/ntb_hw.h   |  19 +-
+ drivers/ntb/ntb_regs.h |  38 +++-
+ 3 files changed, 501 insertions(+), 123 deletions(-)
