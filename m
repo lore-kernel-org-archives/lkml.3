@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751534AbaJRQjL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Oct 2014 12:39:11 -0400
-Received: from mail-yk0-f182.google.com ([209.85.160.182]:33351 "EHLO
-	mail-yk0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751215AbaJRQjE (ORCPT
+	id S1751565AbaJRQsV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Oct 2014 12:48:21 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43470 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268AbaJRQsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Oct 2014 12:39:04 -0400
-Date: Sat, 18 Oct 2014 12:33:30 -0400
-From: Jon Mason <jdmason@kudzu.us>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>
-Subject: [GIT PULL] NTB bug fixes for v3.18
-Message-ID: <20141018163329.GA10668@kudzu.us>
+	Sat, 18 Oct 2014 12:48:20 -0400
+Date: Sat, 18 Oct 2014 18:48:07 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Cc: Matthias Fuchs <matthias.fuchs@esd.eu>,
+        Wolfgang Grandegger <wg@grandegger.com>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@linuxtesting.org
+Subject: Re: [PATCH] net: can: esd_usb2: fix memory leak on disconnect
+Message-ID: <20141018164806.GA27828@pengutronix.de>
+References: <1412973067-29707-1-git-send-email-khoroshilov@ispras.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1412973067-29707-1-git-send-email-khoroshilov@ispras.ru>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 18:47:40 up 3 days,  6:01, 42 users,  load average: 0.85, 2.52,
+ 13.27
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
-Below are a few NTB changes for v3.18. Please consider pulling them.
+On Sat, Oct 11, 2014 at 12:31:07AM +0400, Alexey Khoroshilov wrote:
+> It seems struct esd_usb2 dev is not deallocated on disconnect.
+> 
+> The patch adds the deallocation.
+> 
+> Found by Linux Driver Verification project (linuxtesting.org).
+> 
+> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+
+Applied to the can tree.
 
 Thanks,
-Jon
+Marc
 
-
-The following changes since commit bfe01a5ba2490f299e1d2d5508cbbbadd897bbe9:
-
-  Linux 3.17 (2014-10-05 12:23:04 -0700)
-
-are available in the git repository at:
-
-  git://github.com/jonmason/ntb tags/ntb-3.18
-
-for you to fetch changes up to ab760a0c5667519b375ea9c5ab3a23501c4817ef:
-
-  ntb: Adding split BAR support for Haswell platforms (2014-10-17 07:08:51 -0400)
-
-----------------------------------------------------------------
-Add support for Haswell NTB split BARs, a debugfs entry for basic
-debugging info, and some code clean-ups.
-
-----------------------------------------------------------------
-Dave Jiang (4):
-      ntb: move platform detection to separate function
-      ntb: conslidate reading of PPD to move platform detection earlier
-      ntb: use errata flag set via DID to implement workaround
-      ntb: Adding split BAR support for Haswell platforms
-
-Jon Mason (1):
-      NTB: debugfs device entry
-
- drivers/ntb/ntb_hw.c   | 567 +++++++++++++++++++++++++++++++++++++++----------
- drivers/ntb/ntb_hw.h   |  19 +-
- drivers/ntb/ntb_regs.h |  38 +++-
- 3 files changed, 501 insertions(+), 123 deletions(-)
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
