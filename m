@@ -1,90 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751509AbaJRSTH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Oct 2014 14:19:07 -0400
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:36604 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077AbaJRSTF convert rfc822-to-8bit (ORCPT
+	id S1751544AbaJRSWv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Oct 2014 14:22:51 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:51703 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751077AbaJRSWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Oct 2014 14:19:05 -0400
-X-AuditID: cbfec372-b7f666d000001846-e1-5442af1617b9
-Date: Sat, 18 Oct 2014 20:18:56 +0200
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: Tomas Melin <tomas.melin@iki.fi>
-Cc: james.hogan@imgtec.com,
-        Antti =?ISO-8859-1?B?U2VwcORs5A==?= <a.seppala@gmail.com>,
-        linux-media@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH resend] [media] rc-core: fix protocol_change regression in
- ir_raw_event_register
-Message-id: <20141018201856.6e7a8435.m.chehab@samsung.com>
-In-reply-to: <CACraW2pTb0avTdQCLFAZAWNm5ZuTmVDEOPgZGmY+prepLcRANg@mail.gmail.com>
-References: <1412879436-7513-1-git-send-email-tomas.melin@iki.fi>
- <20141016204920.GB16402@hardeman.nu>
- <CACraW2pTb0avTdQCLFAZAWNm5ZuTmVDEOPgZGmY+prepLcRANg@mail.gmail.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 8BIT
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrALMWRmVeSWpSXmKPExsVy+t/hIF2x9U4hBsdWG1hs/XaTzeLdvBfM
-	Fpd3zWGz6NmwldVi7vKrjA6sHjtn3WX3OPx1IYtHz84zjB6fN8kFsERx2aSk5mSWpRbp2yVw
-	ZczsvcFWsJu34nL7erYGxstcXYycHBICJhJ7WntZIGwxiQv31rN1MXJxCAksYZSYtaWDEcJp
-	ZJKYsPIyK0gVi4CqxJV7rYwgNpuAkcSrxhawuIiAisTZo3PBupkFZjNKvD06jx0kISyQJrG3
-	uQnM5hWwkthzfiUziM0pECzx+OkGdogN6xkl3t/qBurmALrDWWL+52yIekGJH5PvgZ3HLKAj
-	sb91GhuErS3x5N0F1gmMArOQlM1CUjYLSdkCRuZVjKKlxckFxUnpuYZ6xYm5xaV56XrJ+bmb
-	GCGhXLSD8dkGq0OMAhyMSjy8C046hgixJpYVV+YeYpTgYFYS4Z06GSjEm5JYWZValB9fVJqT
-	WnyIkYmDU6qB0XjzqRsfug94N96fdPVvzF0jp7d71CbtLYpSdT+oFPdbNbpq2Y7MyX8tp7/Q
-	kvZo9riSFCLNtvJKt1aT61WOHG6jWtMO2amrRDpKpdyTZ4j881v6y9Wc7ZCGGfectskRfLf4
-	p2xckbxLI2fXt1Mn1T+slrWsb0mUauN6NMNcs6m7z+WWctlfJZbijERDLeai4kQA1qZAmUMC	AAA=
+	Sat, 18 Oct 2014 14:22:49 -0400
+Date: Sat, 18 Oct 2014 19:22:41 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
+        Maxim Patlasov <mpatlasov@parallels.com>,
+        Anand Avati <avati@gluster.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michael j Theall <mtheall@us.ibm.com>,
+        fuse-devel <fuse-devel@lists.sourceforge.net>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 0/5] fuse: handle release synchronously (v4)
+Message-ID: <20141018182241.GE7996@ZenIV.linux.org.uk>
+References: <20140930191933.GC5011@tucsk.piliscsaba.szeredi.hu>
+ <CA+55aFyD2Q6tJzRUbNyNFRdbSN09SAN9CqC5BTmCtOu4W9PKGw@mail.gmail.com>
+ <542BE551.1010705@parallels.com>
+ <CAJfpegs4Up_feUbqEGxfhq+rZneTmy0qcZy-k3so7VjufQY7-w@mail.gmail.com>
+ <543F9E75.2090509@parallels.com>
+ <CAJfpegvS+rmFqGgvHq183Z-MxLAwcgEB57LQxAwy3QAe5CaVwg@mail.gmail.com>
+ <CA+55aFw68DMazGSu=YaOVVEWp=_LrD+2abah+5Tq3kpmH-r+Hg@mail.gmail.com>
+ <20141017085509.GE5011@tucsk.piliscsaba.szeredi.hu>
+ <CA+55aFyALiUbRVcxGGG79N-97pa997v9En64O9jLLBvBAO6vrA@mail.gmail.com>
+ <CA+55aFyU2NgXYZSnNBwMR_ZyFuKzHna2NBBhwd6iev0uaEdqKA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyU2NgXYZSnNBwMR_ZyFuKzHna2NBBhwd6iev0uaEdqKA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sat, 18 Oct 2014 13:10:01 +0300
-Tomas Melin <tomas.melin@iki.fi> escreveu:
-
-> On Thu, Oct 16, 2014 at 11:49 PM, David Härdeman <david@hardeman.nu> wrote:
-> > I think this is already addressed in this thread:
-> > http://www.spinics.net/lists/linux-media/msg79865.html
-> The patch in that thread would have broken things since the
-> store_protocol function is not changed at the same time. The patch I
-> sent also takes that into account.
+On Sat, Oct 18, 2014 at 08:40:05AM -0700, Linus Torvalds wrote:
+> On Sat, Oct 18, 2014 at 8:35 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > Look around for AIO. Look around for the loop driver. Look around for
+> > a number of things that do "fget()" and that you completely ignored.
 > 
-> My concern is still that user space behaviour changes.
-> In my case, lirc simply does not work anymore.
+> .. actually, there are more instances of "get_file()" than of
+> "fget()", the aio one just happened to be the latter form. Lots and
+> lots of ways to get ahold of a file descriptor that keeps it open past
+> the "last close".
 
-Yeah, lirc should be enabled by default.
+FWIW, procfs patch touches a very annoying issue: ->show_fdinfo() being
+blocking.  I would really like to get rid of that particular get_file()
+and even more so - of get_files_struct() in there.
 
-> More generically,
-> anyone now using e.g. nuvoton-cir with anything other than RC6_MCE
-> will not get their devices working without first explictly enabling
-> the correct protocol from sysfs or with ir-keytable.
+I certainly agree that anyone who expects that close() means the end of IO
+is completely misguided.  Mappings don't disappear on close(), neither does
+a descriptor returned by dup(), or one that child got over fork(),
+or something sent over in SCM_RIGHTS datagram, or, as you suggested, made
+backing store for /dev/loop, etc.
 
-The right behavior here is to enable the protocol as soon as the
-new keycode table is written by userspace.
+What's more, in the example given upthread, somebody might've spotted that
+file in /proc/<pid>/fd/* and *opened* it.  At which point umount would
+have to fail with EBUSY.  And the same lsof(8) might've done just that.
 
-Except for LIRC and the protocol of the current table enabled is
-not a good idea because:
+It's not a matter of correctness or security, especially since somebody who
+could do that, could've stopped your process, PTRACE_POKEd a fairly short
+series of syscalls that would connect to AF_UNIX socket, send the file
+over to them and clean after itself, then single-stepped through all of that,
+restored the original state and resumed your process.  
 
-	1) It misread the code from some other IR;
-	2) It will be just spending power without need, running
-	   several tasks (one for each IR type) with no reason, as the
-	   keytable won't match the codes for other IRs (and if it is
-	   currently matching, then this is a bad behavior).
+It is a QoI matter, though.  And get_files_struct() in there is a lot more
+annoying than get_file()/fput().  Suppose you catch the process during
+exit().  All of a sudden, read from /proc/<pid>/fdinfo/<n> ends up doing
+shitloads of filp_close().  It would be nice to avoid that.
 
-> Correct me if I'm wrong but the change_protocol function in struct
-> rc_dev is meant for changing hardware decoder protocols which means
-> only a few drivers actually use it.
-
-Actually, most drivers are for hardware decoders.
-
-> So the added empty function
-> change_protocol into rc-ir-raw.c doesnt really make sense in the first
-> place.
-> 
-> Tomas
-
-
--- 
-
-Cheers,
-Mauro
+Folks, how much pain would it be to make ->show_fdinfo() non-blocking?
