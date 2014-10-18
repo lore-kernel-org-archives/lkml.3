@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751593AbaJRWMJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Oct 2014 18:12:09 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:33678 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143AbaJRWMH (ORCPT
+	id S1751666AbaJRWMp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Oct 2014 18:12:45 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:57729 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621AbaJRWMo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Oct 2014 18:12:07 -0400
-Date: Sun, 19 Oct 2014 00:12:04 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Andrzej Hajda <a.hajda@samsung.com>
-Cc: "open list:SUSPEND TO RAM" <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] PM / Runtime: Rework RPM get callback routines
-Message-ID: <20141018221204.GA10843@amd>
-References: <1413543482-12748-1-git-send-email-a.hajda@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413543482-12748-1-git-send-email-a.hajda@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 18 Oct 2014 18:12:44 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Michal Januszewski <spock@gentoo.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Andi Kleen <ak@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/5] video: fbdev: uvesafb.c:  Cleaning up missing null-terminate by switching from strncpy to strzcpy
+Date: Sun, 19 Oct 2014 00:14:56 +0200
+Message-Id: <1413670496-6387-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 2014-10-17 12:58:02, Andrzej Hajda wrote:
-> PM uses three separate functions to fetch RPM callbacks.
-> These functions uses quite complicated macro in their body.
-> The patch replaces these routines with one small macro and
-> one helper function.
-> 
-> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+Ensures that the string is null-terminate in connection with the
+use of strncpy, by switching from strncpy to strzcpy.
 
-Looks good to me.
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/video/fbdev/uvesafb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Acked-by: Pavel Machek <pavel@ucw.cz>
-
+diff --git a/drivers/video/fbdev/uvesafb.c b/drivers/video/fbdev/uvesafb.c
+index 509d452..3383b34 100644
+--- a/drivers/video/fbdev/uvesafb.c
++++ b/drivers/video/fbdev/uvesafb.c
+@@ -1892,7 +1892,7 @@ static ssize_t show_v86d(struct device_driver *dev, char *buf)
+ static ssize_t store_v86d(struct device_driver *dev, const char *buf,
+ 		size_t count)
+ {
+-	strncpy(v86d_path, buf, PATH_MAX);
++	strzcpy(v86d_path, buf, sizeof(v86d_path));
+ 	return count;
+ }
+ 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.7.10.4
+
