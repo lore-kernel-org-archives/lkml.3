@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751569AbaJRQPg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Oct 2014 12:15:36 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:34942 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751408AbaJRQPf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Oct 2014 12:15:35 -0400
-Message-ID: <1413648929.5367.25.camel@marge.simpson.net>
-Subject: Re: [PATCH] futex: Ensure get_futex_key_refs() always implies a
- barrier
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matteo Franchin <Matteo.Franchin@arm.com>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Sat, 18 Oct 2014 18:15:29 +0200
-In-Reply-To: <CA+55aFydqk0NVcYHForRCXVJj_Tw+T+ZW9GikAmUXdOgdpGf5A@mail.gmail.com>
-References: <1413563929-2664-1-git-send-email-catalin.marinas@arm.com>
-	 <1413615285.5741.41.camel@marge.simpson.net>
-	 <CA+55aFydqk0NVcYHForRCXVJj_Tw+T+ZW9GikAmUXdOgdpGf5A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	id S1751520AbaJRQ2Z (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Oct 2014 12:28:25 -0400
+Received: from mga11.intel.com ([192.55.52.93]:3386 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751215AbaJRQ2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Oct 2014 12:28:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,745,1406617200"; 
+   d="scan'208";a="616581327"
+Message-ID: <54429521.80402@intel.com>
+Date: Sat, 18 Oct 2014 09:28:17 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+MIME-Version: 1.0
+To: Dominik Dingel <dingel@linux.vnet.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Bob Liu <lliubbo@gmail.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Gleb Natapov <gleb@kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Jianyu Zhan <nasa4836@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Konstantin Weitz <konstantin.weitz@gmail.com>, kvm@vger.kernel.org,
+        linux390@de.ibm.com, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: Re: [PATCH 2/4] mm: introduce new VM_NOZEROPAGE flag
+References: <1413554990-48512-1-git-send-email-dingel@linux.vnet.ibm.com>	<1413554990-48512-3-git-send-email-dingel@linux.vnet.ibm.com>	<54419265.9000000@intel.com> <20141018164928.2341415f@BR9TG4T3.de.ibm.com>
+In-Reply-To: <20141018164928.2341415f@BR9TG4T3.de.ibm.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-10-18 at 08:28 -0700, Linus Torvalds wrote: 
-> On Fri, Oct 17, 2014 at 11:54 PM, Mike Galbraith
-> <umgwanakikbuti@gmail.com> wrote:
-> >
-> > The barrier fixing up my problematic box smells a lot like evidence.
+On 10/18/2014 07:49 AM, Dominik Dingel wrote:
+> On Fri, 17 Oct 2014 15:04:21 -0700
+> Dave Hansen <dave.hansen@intel.com> wrote:
+>> Is there ever a time where the VMAs under an mm have mixed VM_NOZEROPAGE
+>> status?  Reading the patches, it _looks_ like it might be an all or
+>> nothing thing.
 > 
-> Is this a "tested-by"? Did you actuallyu verify that the patch ends up
-> fixing the problem you saw?
+> Currently it is an all or nothing thing, but for a future change we might want to just
+> tag the guest memory instead of the complete user address space.
 
-Yup, it definitely fixed it up.
+I think it's a bad idea to reserve a flag for potential future use.  If
+you _need_ it in the future, let's have the discussion then.  For now, I
+think it should probably just be stored in the mm somewhere.
 
-Weird that it didn't show at all on the 2 socket 20 core box the problem
-I was looking into was reported on, but was 100% busted on the similar 2
-socket 28 core box I borrowed to have a peek, and only that box.  My
-(crippled/slow) 64 core DL980 was perfectly happy, as were my 3 home
-boxen, not a peep from anywhere but that one 28 core box.
+>> Full disclosure: I've got an x86-specific feature I want to steal a flag
+>> for.  Maybe we should just define another VM_ARCH bit.
+>>
+> 
+> So you think of something like:
+> 
+> #if defined(CONFIG_S390)
+> # define VM_NOZEROPAGE	VM_ARCH_1
+> #endif
+> 
+> #ifndef VM_NOZEROPAGE
+> # define VM_NOZEROPAGE	VM_NONE
+> #endif
+> 
+> right?
 
-Hohum..  Tested-by: Mike Galbraith <umgwanakikbuti@gmail.com>
-
--Mike
+Yeah, something like that.
 
