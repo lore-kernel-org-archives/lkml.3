@@ -1,91 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751515AbaJRKeG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Oct 2014 06:34:06 -0400
-Received: from mail.efficios.com ([78.47.125.74]:54461 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751429AbaJRKeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Oct 2014 06:34:03 -0400
-Date: Sat, 18 Oct 2014 10:33:56 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: linux-kernel@vger.kernel.org, "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Message-ID: <495423996.11122.1413628436227.JavaMail.zimbra@efficios.com>
-In-Reply-To: <1895341174.11073.1413626706382.JavaMail.zimbra@efficios.com>
-Subject: LTTng-UST bytecode interpreter
+	id S1751459AbaJRKmI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Oct 2014 06:42:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34392 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003AbaJRKmE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Oct 2014 06:42:04 -0400
+Date: Sat, 18 Oct 2014 12:40:56 +0200
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Guenter Roeck <linux@roeck-us.net>,
+        linux-kernel@vger.kernel.org,
+        Steven Honeyman <stevenhoneyman@gmail.com>
+Subject: Re: [PATCH] i8k: Add support for Dell Latitude E6440
+Message-ID: <20141018104056.GA8607@kroah.com>
+References: <1412932368-24082-1-git-send-email-pali.rohar@gmail.com>
+ <54384817.6060102@roeck-us.net>
+ <201410180023.39473@pali>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [212.144.255.202]
-X-Mailer: Zimbra 8.0.7_GA_6021 (ZimbraWebClient - FF32 (Linux)/8.0.7_GA_6021)
-Thread-Topic: LTTng-UST bytecode interpreter
-Thread-Index: ZbCxY7uimF26QzfmBfYA0O6WD8mr+g==
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201410180023.39473@pali>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexei,
+On Sat, Oct 18, 2014 at 12:23:39AM +0200, Pali Rohár wrote:
+> On Friday 10 October 2014 22:56:55 Guenter Roeck wrote:
+> > On 10/10/2014 02:12 AM, Pali Rohár wrote:
+> > > Dell Latitude E6440 needs same settings as E6540.
+> > > 
+> > > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+> > 
+> > Acked-by: Guenter Roeck <linux@roeck-us.net>
+> > 
+> 
+> Greg, Arnd: PING
+> 
+> Can you apply also this patch for E6440? Support for E6540 is 
+> already in linus tree: 06c88b0d7ad87540405aea7f91d98ef43be04c95
 
-Following our Plumbers discussion, here are links to
-lttng-ust and lttng-tools parts that are relevant to
-the bytecode I use for tracepoint filtering:
+I can't apply anything to my trees until 3.18-rc1 is out, but will do
+this after that happens.
 
-http://git.lttng.org/?p=lttng-tools.git;a=summary
-src/lib/lttng-ctl/filter/*.[ch]
-  -> parser of filter expressions to AST, then to
-     intermediate representation, followed by
-     bytecode generation.
+thanks,
 
-The bytecode is then moved from the client to the
-application being traced through the lttng-sessiond
-daemon.
-
-http://git.lttng.org/?p=lttng-ust.git;a=summary
-liblttng-ust/lttng-filter.c:
-  filter "linker" attaching bytecode to tracepoint.
-  _lttng_filter_event_link_bytecode() has all the
-  steps required to translate a bytecode into
-  something the interpreter can use.
-
-liblttng-ust/lttng-filter-specialize.c:
-  Perform type specialization of some opcodes. This
-  is done after linking to an event fields, now that
-  we know their type.
-
-liblttng-ust/lttng-filter-validator.c
-  Validation of the bytecode: making sure typing is
-  consistent, checks there are no loops (no backward
-  jump).
-
-liblttng-ust/lttng-filter-interpreter.c
-  Bytecode interpreter, executes quickly without any
-  checks, relying on the fact that they were already
-  performed by the validator. It is a threaded
-  interpreter which has 2 registers aliasing the top
-  of its stack.
-
-My general approach is to use an interpreter to deal
-with the general case, which makes porting to new
-architectures easy. We can then have JIT phases if
-we want to eventually translate this bytecode into
-native instruction.
-
-Working with a bytecode which has a slightly higher
-level semantic allows dealing with strings as a basic
-type in addition to integers and floating point values.
-
-Please note that the current bytecode is limited to
-64-bit integers. We can eventually extend it to be
-more compact (8, 16, 32-bit integers).
-
-This is just provided as input in case some ideas
-can be useful for your work on eBPF. 
-
-Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+greg k-h
