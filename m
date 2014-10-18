@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751420AbaJRKdM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Oct 2014 06:33:12 -0400
-Received: from mail.efficios.com ([78.47.125.74]:54445 "EHLO mail.efficios.com"
+	id S1751515AbaJRKeG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Oct 2014 06:34:06 -0400
+Received: from mail.efficios.com ([78.47.125.74]:54461 "EHLO mail.efficios.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751268AbaJRKdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Oct 2014 06:33:11 -0400
-Date: Sat, 18 Oct 2014 10:31:52 +0000 (UTC)
+	id S1751429AbaJRKeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Oct 2014 06:34:03 -0400
+Date: Sat, 18 Oct 2014 10:33:56 +0000 (UTC)
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 To: Alexei Starovoitov <ast@plumgrid.com>
 Cc: linux-kernel@vger.kernel.org, "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Message-ID: <808977110.11119.1413628312625.JavaMail.zimbra@efficios.com>
+Message-ID: <495423996.11122.1413628436227.JavaMail.zimbra@efficios.com>
 In-Reply-To: <1895341174.11073.1413626706382.JavaMail.zimbra@efficios.com>
 Subject: LTTng-UST bytecode interpreter
 MIME-Version: 1.0
@@ -19,7 +19,7 @@ Content-Transfer-Encoding: 7bit
 X-Originating-IP: [212.144.255.202]
 X-Mailer: Zimbra 8.0.7_GA_6021 (ZimbraWebClient - FF32 (Linux)/8.0.7_GA_6021)
 Thread-Topic: LTTng-UST bytecode interpreter
-Thread-Index: i06C5IHZJq+FnhyH5Lh6umgw6z+52g==
+Thread-Index: ZbCxY7uimF26QzfmBfYA0O6WD8mr+g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -78,7 +78,8 @@ Please note that the current bytecode is limited to
 64-bit integers. We can eventually extend it to be
 more compact (8, 16, 32-bit integers).
 
-Thoughts ?
+This is just provided as input in case some ideas
+can be useful for your work on eBPF. 
 
 Thanks,
 
