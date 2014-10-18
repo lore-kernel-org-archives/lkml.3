@@ -1,40 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751647AbaJRDoM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Oct 2014 23:44:12 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:44318 "EHLO
+	id S1751736AbaJRDq4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Oct 2014 23:46:56 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:44337 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751456AbaJRDoL (ORCPT
+	with ESMTP id S1751627AbaJRDqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Oct 2014 23:44:11 -0400
-Date: Fri, 17 Oct 2014 23:43:58 -0400 (EDT)
-Message-Id: <20141017.234358.41209953117216295.davem@davemloft.net>
-To: haiyangz@microsoft.com
-Cc: netdev@vger.kernel.org, kys@microsoft.com, olaf@aepfle.de,
-        jasowang@redhat.com, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org
-Subject: Re: [PATCH net-next,v3] hyperv: Add handling of IP header with
- option field in netvsc_set_hash()
+	Fri, 17 Oct 2014 23:46:55 -0400
+Date: Fri, 17 Oct 2014 23:46:53 -0400 (EDT)
+Message-Id: <20141017.234653.505926640053533707.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH net] r8152: return -EBUSY for runtime suspend
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1413496078-25066-1-git-send-email-haiyangz@microsoft.com>
-References: <1413496078-25066-1-git-send-email-haiyangz@microsoft.com>
+In-Reply-To: <1394712342-15778-65-Taiwan-albertk@realtek.com>
+References: <87zjcvgn1x.fsf@nemi.mork.no>
+	<1394712342-15778-65-Taiwan-albertk@realtek.com>
 X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 17 Oct 2014 20:44:10 -0700 (PDT)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 17 Oct 2014 20:46:55 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Haiyang Zhang <haiyangz@microsoft.com>
-Date: Thu, 16 Oct 2014 14:47:58 -0700
+From: Hayes Wang <hayeswang@realtek.com>
+Date: Fri, 17 Oct 2014 16:55:08 +0800
 
-> In case that the IP header has optional field at the end, this patch will
-> get the port numbers after that field, and compute the hash. The general
-> parser skb_flow_dissect() is used here.
+> Remove calling cancel_delayed_work_sync() for runtime suspend,
+> because it would cause dead lock. Instead, return -EBUSY to
+> avoid the device enters suspending if the net is running and
+> the delayed work is pending or running. The delayed work would
+> try to wake up the device later, so the suspending is not
+> necessary.
 > 
-> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 
-Applied, thanks.
+Applied.
