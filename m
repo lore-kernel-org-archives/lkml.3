@@ -1,64 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751014AbaJRE2G (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Oct 2014 00:28:06 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:62847 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830AbaJRE2E convert rfc822-to-8bit (ORCPT
+	id S1751573AbaJREbP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Oct 2014 00:31:15 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:36148 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796AbaJREbO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Oct 2014 00:28:04 -0400
+	Sat, 18 Oct 2014 00:31:14 -0400
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <1406242820-20140-1-git-send-email-afaerber@suse.de>
-References: <1406242820-20140-1-git-send-email-afaerber@suse.de>
-Date: Fri, 17 Oct 2014 21:28:02 -0700
-Message-ID: <CAOesGMjAb5oXjauhbqjDhJXWct7qoXxy3XpA1=DioK7vPTwetA@mail.gmail.com>
-Subject: Re: [PATCH v2 00/11] ARM: dts: zynq: Prepare Parallella
-From: Olof Johansson <olof@lixom.net>
-To: =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>
-Cc: Michal Simek <michal.simek@xilinx.com>,
-        Andreas Olofsson <andreas@adapteva.com>,
-        Matteo Vit <matteo.vit@starwaredesign.com>,
-        Sean Rickerd <srickerd@suse.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+In-Reply-To: <1413393785-26783-2-git-send-email-kever.yang@rock-chips.com>
+References: <1413393785-26783-1-git-send-email-kever.yang@rock-chips.com> <1413393785-26783-2-git-send-email-kever.yang@rock-chips.com>
+From: Sonny Rao <sonnyrao@chromium.org>
+Date: Fri, 17 Oct 2014 21:30:52 -0700
+X-Google-Sender-Auth: dPDd9uRNTYve7aUXA8F3FU8454I
+Message-ID: <CAPz6YkWq4b0k1SWKZdxRKf-7VPvYDdNvbZKnq-Wfk1QxWOassA@mail.gmail.com>
+Subject: Re: [PATCH v5 1/6] ARM: rockchip: convert to regmap and use pmu
+ syscon if available
+To: Kever Yang <kever.yang@rock-chips.com>
+Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Douglas Anderson <dianders@chromium.org>,
+        Addy Ke <addy.ke@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, han jiang <hj@rock-chips.com>,
+        Tao Huang <huangtao@rock-chips.com>,
+        linux-rockchip@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Punnaiah Choudary Kalluri <punnaia@xilinx.com>,
-        Lars-Peter Clausen <lars@metafoo.de>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andreas,
-
-On Thu, Jul 24, 2014 at 4:00 PM, Andreas Färber <afaerber@suse.de> wrote:
-> Hello,
+On Wed, Oct 15, 2014 at 10:23 AM, Kever Yang <kever.yang@rock-chips.com> wrote:
+> From: Heiko Stuebner <heiko@sntech.de>
 >
-> This patch series adds an initial device tree for the Parallella board.
-> UART, SD card, Ethernet are enabled.
-> Not yet enabled are HDMI, QSPI flash and 2x USB.
+> The pmu register space is - like the GRF - shared by quite some peripherals.
+> On the rk3188 and rk3288 even parts of the pinctrl are living there.
+> Therefore we normally shouldn't map it a second time when the syscon
+> does this already.
+>
+> Therefore convert the cpu power-domain handling to access the pmu via a
+> regmap and at first try to get it via the syscon interface.
+> Getting this syscon will only fail if the pmu node does not have the
+> "syscon" compatible and thus does not get shared with other drivers.
+>
+> In this case we map it like before and create the necessary regmap on
+> top of it.
+>
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+> ---
+>
+> Changes in v5: None
+> Changes in v4: None
+> Changes in v3:
+> - add this patch in version 3
+>
+> Changes in v2: None
+>
+>  arch/arm/mach-rockchip/platsmp.c | 104 +++++++++++++++++++++++++++++----------
+>  1 file changed, 78 insertions(+), 26 deletions(-)
+>
+> diff --git a/arch/arm/mach-rockchip/platsmp.c b/arch/arm/mach-rockchip/platsmp.c
+> index 189684f..4c36fbf 100644
+> --- a/arch/arm/mach-rockchip/platsmp.c
+> +++ b/arch/arm/mach-rockchip/platsmp.c
+> @@ -19,6 +19,8 @@
+>  #include <linux/io.h>
+>  #include <linux/of.h>
+>  #include <linux/of_address.h>
+> +#include <linux/regmap.h>
+> +#include <linux/mfd/syscon.h>
+>
+>  #include <asm/cacheflush.h>
+>  #include <asm/cp15.h>
+> @@ -37,23 +39,42 @@ static int ncores;
+>
+>  #define PMU_PWRDN_SCU          4
+>
+> -static void __iomem *pmu_base_addr;
+> +static struct regmap *pmu;
+>
+> -static inline bool pmu_power_domain_is_on(int pd)
+> +static int pmu_power_domain_is_on(int pd)
+>  {
+> -       return !(readl_relaxed(pmu_base_addr + PMU_PWRDN_ST) & BIT(pd));
+> +       u32 val;
+> +       int ret;
+> +
+> +       ret = regmap_read(pmu, PMU_PWRDN_ST, &val);
+> +       if (ret < 0)
+> +               return ret;
+> +
+> +       return !(val & BIT(pd));
+>  }
+>
+> -static void pmu_set_power_domain(int pd, bool on)
+> +static int pmu_set_power_domain(int pd, bool on)
+>  {
+> -       u32 val = readl_relaxed(pmu_base_addr + PMU_PWRDN_CON);
+> -       if (on)
+> -               val &= ~BIT(pd);
+> -       else
+> -               val |=  BIT(pd);
+> -       writel(val, pmu_base_addr + PMU_PWRDN_CON);
+> -
+> -       while (pmu_power_domain_is_on(pd) != on) { }
+> +       u32 val = (on) ? 0 : BIT(pd);
+> +       int ret;
+> +
+> +       ret = regmap_update_bits(pmu, PMU_PWRDN_CON, BIT(pd), val);
+> +       if (ret < 0) {
+> +               pr_err("%s: could not update power domain\n", __func__);
+> +               return ret;
+> +       }
+> +
+> +       ret = -1;
+> +       while (ret != on) {
+> +               ret = pmu_power_domain_is_on(pd);
+> +               if (ret < 0) {
+> +                       pr_err("%s: could not read power domain state\n",
+> +                                __func__);
+> +                       return ret;
+> +               }
+> +       }
+> +
+> +       return 0;
+>  }
+>
+>  /*
+> @@ -63,7 +84,7 @@ static void pmu_set_power_domain(int pd, bool on)
+>  static int __cpuinit rockchip_boot_secondary(unsigned int cpu,
+>                                              struct task_struct *idle)
+>  {
+> -       if (!sram_base_addr || !pmu_base_addr) {
+> +       if (!sram_base_addr || !pmu) {
+>                 pr_err("%s: sram or pmu missing for cpu boot\n", __func__);
+>                 return -ENXIO;
+>         }
+> @@ -75,9 +96,7 @@ static int __cpuinit rockchip_boot_secondary(unsigned int cpu,
+>         }
+>
+>         /* start the core */
+> -       pmu_set_power_domain(0 + cpu, true);
+> -
+> -       return 0;
+> +       return pmu_set_power_domain(0 + cpu, true);
+>  }
+>
+>  /**
+> @@ -125,6 +144,48 @@ static int __init rockchip_smp_prepare_sram(struct device_node *node)
+>         return 0;
+>  }
+>
+> +static struct regmap_config rockchip_pmu_regmap_config = {
+> +       .reg_bits = 32,
+> +       .val_bits = 32,
+> +       .reg_stride = 4,
+> +};
+> +
+> +static int __init rockchip_smp_prepare_pmu(void)
+> +{
+> +       struct device_node *node;
+> +       void __iomem *pmu_base;
+> +
+> +       pmu = syscon_regmap_lookup_by_compatible("rockchip,rk3066-pmu");
+> +       if (!IS_ERR(pmu))
+> +               return 0;
+> +
+> +       /* fallback, create our own regmap for the pmu area */
 
-Andreas (Olofsson) kindly sent me a board, and I added it to the boot
-farm today, it'll be included in boot reports from here on.
+I don't think you need this fallback, the syscon driver should take
+care of mapping and creating the regmap for you -- assuming that the
+pmu node has the "syscon" property.
 
-I did a test run with yesterday's -next It looks like networking isn't
-working there at the moment, clock related. Same happens with 3.17 and
-latest mainline, config multi_v7_defconfig:
-
-[WARN] [    7.943648] macb e000b000.ethernet eth0: unable to generate
-target frequency: 125000000 Hz
-[WARN] [   10.948681] macb e000b000.ethernet eth0: unable to generate
-target frequency: 125000000 Hz
-
-Full boot log at:
-
-http://arm-soc.lixom.net/bootlogs/misc/next-20141017/parallella-arm-multi_v7_defconfig.html
-
-I'll be happy to try things, but I'm a bit short on cycles to debug
-myself. Should hopefully be easy to reproduce.
-
-
--Olof
+> +       pmu = NULL;
+> +       node = of_find_compatible_node(NULL, NULL, "rockchip,rk3066-pmu");
+> +       if (!node) {
+> +               pr_err("%s: could not find pmu dt node\n", __func__);
+> +               return -ENODEV;
+> +       }
+> +
+> +       pmu_base = of_iomap(node, 0);
+> +       if (!pmu_base) {
+> +               pr_err("%s: could not map pmu registers\n", __func__);
+> +               return -ENOMEM;
+> +       }
+> +
+> +       pmu = regmap_init_mmio(NULL, pmu_base, &rockchip_pmu_regmap_config);
+> +       if (IS_ERR(pmu)) {
+> +               int ret = PTR_ERR(pmu);
+> +
+> +               iounmap(pmu_base);
+> +               pmu = NULL;
+> +               pr_err("%s: regmap init failed\n", __func__);
+> +               return ret;
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+>  static void __init rockchip_smp_prepare_cpus(unsigned int max_cpus)
+>  {
+>         struct device_node *node;
+> @@ -151,17 +212,8 @@ static void __init rockchip_smp_prepare_cpus(unsigned int max_cpus)
+>         if (rockchip_smp_prepare_sram(node))
+>                 return;
+>
+> -       node = of_find_compatible_node(NULL, NULL, "rockchip,rk3066-pmu");
+> -       if (!node) {
+> -               pr_err("%s: could not find pmu dt node\n", __func__);
+> +       if (rockchip_smp_prepare_pmu())
+>                 return;
+> -       }
+> -
+> -       pmu_base_addr = of_iomap(node, 0);
+> -       if (!pmu_base_addr) {
+> -               pr_err("%s: could not map pmu registers\n", __func__);
+> -               return;
+> -       }
+>
+>         /* enable the SCU power domain */
+>         pmu_set_power_domain(PMU_PWRDN_SCU, true);
+> --
+> 1.9.1
+>
