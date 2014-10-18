@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751822AbaJSBrU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Oct 2014 21:47:20 -0400
-Received: from numascale.com ([213.162.240.84]:49634 "EHLO numascale.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751710AbaJSBrB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Oct 2014 21:47:01 -0400
-From: Daniel J Blueman <daniel@numascale.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>
-Cc: Daniel J Blueman <daniel@numascale.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Steffen Persvold <sp@numascale.com>
-Subject: [PATCH v2 2/5] Numachip: APIC fixes
-Date: Sun, 19 Oct 2014 09:45:49 +0800
-Message-Id: <1413683152-31302-2-git-send-email-daniel@numascale.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1413683152-31302-1-git-send-email-daniel@numascale.com>
-References: <1413683152-31302-1-git-send-email-daniel@numascale.com>
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cpanel21.proisp.no
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - numascale.com
-X-Get-Message-Sender-Via: cpanel21.proisp.no: authenticated_id: daniel@numascale.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1751930AbaJSBso (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Oct 2014 21:48:44 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38458 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751907AbaJSBsn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Oct 2014 21:48:43 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1413663590.17869.14.camel@linux-t7sj.site>
+References: <1413563929-2664-1-git-send-email-catalin.marinas@arm.com> <5442C045.2040909@linux.intel.com> <1413663590.17869.14.camel@linux-t7sj.site>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH] futex: Ensure get_futex_key_refs() always implies a barrier
+From: Darren Hart <dvhart@infradead.org>
+Date: Sat, 18 Oct 2014 13:25:07 -0700
+To: Davidlohr Bueso <dave@stgolabs.net>, Darren Hart <dvhart@linux.intel.com>
+CC: Catalin Marinas <catalin.marinas@arm.com>, linux-kernel@vger.kernel.org,
+        Matteo Franchin <Matteo.Franchin@arm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>
+Message-ID: <6F818AE2-0865-420A-B568-44A6BA934235@infradead.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix 16-bit APIC ID truncation and redundant APIC ICR idle polling for IPI
-to self (AMD64 APICs are documented in the system developer manuals to
-queue APIC writes).
 
-Signed-off-by: Daniel J Blueman <daniel@numascale.com>
----
- arch/x86/kernel/apic/apic_numachip.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
-index 81d70ba..bd083c0 100644
---- a/arch/x86/kernel/apic/apic_numachip.c
-+++ b/arch/x86/kernel/apic/apic_numachip.c
-@@ -40,7 +40,7 @@ static unsigned int get_apic_id(unsigned long x)
- 	unsigned int id;
- 
- 	rdmsrl(MSR_FAM10H_NODE_ID, value);
--	id = ((x >> 24) & 0xffU) | ((value << 2) & 0x3f00U);
-+	id = ((x >> 24) & 0xffU) | ((value << 2) & 0xff00U);
- 
- 	return id;
- }
-@@ -145,7 +145,7 @@ static void numachip_send_IPI_all(int vector)
- 
- static void numachip_send_IPI_self(int vector)
- {
--	__default_send_IPI_shortcut(APIC_DEST_SELF, vector, APIC_DEST_PHYSICAL);
-+	apic_write(APIC_SELF_IPI, vector);
- }
- 
- static int __init numachip_probe(void)
+On October 18, 2014 3:19:50 PM CDT, Davidlohr Bueso <dave@stgolabs.net> wrote:
+>On Sat, 2014-10-18 at 14:32 -0500, Darren Hart wrote:
+>> Which is not incomplete (lacking the explicit smp_mb()) added by this
+>> patch. Perhaps the MB implementation of get_futex_key_refs() need not
+>be
+>> explicitly enumerated here?
+>
+>Agreed, how about this:
+>
+>diff --git a/kernel/futex.c b/kernel/futex.c
+>index 21f7e41..7a0805a 100644
+>--- a/kernel/futex.c
+>+++ b/kernel/futex.c
+>@@ -143,9 +143,8 @@
+>  *
+>* Where (A) orders the waiters increment and the futex value read
+>through
+>* atomic operations (see hb_waiters_inc) and where (B) orders the write
+>- * to futex and the waiters read -- this is done by the barriers in
+>- * get_futex_key_refs(), through either ihold or atomic_inc, depending
+>on the
+>- * futex type.
+>+ * to futex and the waiters read -- this is done by the barriers for
+>both
+>+ * shared and private futexes in get_futex_key_refs().
+
+Works for me.
+
 -- 
-1.9.1
-
+Sent from my Android device with K-9 Mail. Please excuse my brevity.
