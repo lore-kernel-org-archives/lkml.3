@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751632AbaJRO0G (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Oct 2014 10:26:06 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:52246 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751509AbaJROZt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Oct 2014 10:25:49 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v4 00/13] Add ACPI _DSD and unified device
- =?iso-8859-1?Q?properties=0D?= support
-To: Darren Hart <dvhart@linux.intel.com>, Mark Rutland <mark.rutland@arm.com>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        "dvhart@infradead.org" <dvhart@infradead.org>
-In-Reply-To: <543E9605.6020502@linux.intel.com>
-References: <2660541.BycO7TFnA2@vostro.rjw.lan>
-	<1413378271.2762.77.camel@infradead.org>
-	<20141015131551.GC20034@leverpostej>
-	<1413379736.2762.79.camel@infradead.org>
-	<20141015134209.GD20034@leverpostej>
-	<db4038336b5e165b8b61eda064b10eeb.squirrel@twosheds.infradead.org>
-	<543E88CF.5060504@linux.intel.com> <20141015151702.GG20034@leverpostej>
-	<543E9605.6020502@linux.intel.com>
-Date: Sat, 18 Oct 2014 10:35:49 +0200
-Message-Id: <20141018083549.99F1AC408A6@trevor.secretlab.ca>
+	id S1751747AbaJRO1a (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Oct 2014 10:27:30 -0400
+Received: from mout.gmx.net ([212.227.15.19]:57472 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751287AbaJRO12 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Oct 2014 10:27:28 -0400
+Message-ID: <544277C5.9030302@gmx.at>
+Date: Sat, 18 Oct 2014 16:23:01 +0200
+From: Manfred Schlaegl <manfred.schlaegl@gmx.at>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Icedove/24.8.1
+MIME-Version: 1.0
+To: Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>
+CC: Daniel Walter <dwalter@google.com>,
+        Manfred Schlaegl <manfred.schlaegl@gmx.at>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        user-mode-linux-user@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] um: Remove unused bp stack-frame pointer
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Provags-ID: V03:K0:74uhXHUhk+y266QCr9/TxU3XDyBfIUlzJv0FSCon4GPtakBeibC
+ GwTwWtasr/ljyk1TCRM+J7/e9Ngt1FLhY2RO2VgcHOsWEYkw1l3Oalqggxy3fvO9Yb7vigh
+ ux/hAfjV/75zVQXQrCkMob2p4J341zmAXfF3jy835ju+e6NHMAce1AX6UaYEUCdPSISkePU
+ mI5ZZtaTfIkp3/jr7cbHg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Oct 2014 17:43:01 +0200
-, Darren Hart <dvhart@linux.intel.com>
- wrote:
-> 
-> 
-> On 10/15/14 17:17, Mark Rutland wrote:
-> > On Wed, Oct 15, 2014 at 03:46:39PM +0100, Darren Hart wrote:
-> 
-> >> Mark, what would you propose we do differently to enable this driver to
-> >> be firmware-type agnostic?
-> > 
-> > For this particular driver, all I'm asking for is that the
-> > "used-by-rtas" property is not moved over from of_find_property to
-> > device_get_property. It is irrelevant for all ACPI systems. Evidently my
-> > comment was unclear; I apologise for that.
-> 
-> So my objection here is that by keeping the of_* terms in the driver we
-> are required to include of, although it does safely convert to returning
-> NULL if !CONFIG_OF I suppose.
+The pointer to bp stack-frame is no longer used. Removed it.
+This also removes a corresponding compiler-warning.
 
-This shouldn't be that controversial. There will be things that only make
-sense for DT or only ACPI. Allowing the property to be processed when
-the other interface is being used may tempt firmware authors to use the
-property because it just happens to have a side effect that looks right
-to them.
+Signed-off-by: Manfred Schlaegl <manfred.schlaegl@gmx.at>
+---
+ arch/um/kernel/sysrq.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
-I don't see any problem with factoring out those bits into a function
-that is only called (or built) when the associated firmware interface is
-used. In these situations, the driver isn't 100% generic, so having
-small per-firmware hooks is absolutely okay and not a burden to
-maintain.
+diff --git a/arch/um/kernel/sysrq.c b/arch/um/kernel/sysrq.c
+index 894c8d3..aa1b56f 100644
+--- a/arch/um/kernel/sysrq.c
++++ b/arch/um/kernel/sysrq.c
+@@ -29,7 +29,7 @@ static const struct stacktrace_ops stackops = {
+  void show_stack(struct task_struct *task, unsigned long *stack)
+ {
+-	unsigned long *sp = stack, bp = 0;
++	unsigned long *sp = stack;
+ 	struct pt_regs *segv_regs = current->thread.segv_regs;
+ 	int i;
+ @@ -39,10 +39,6 @@ void show_stack(struct task_struct *task, unsigned long *stack)
+ 		return;
+ 	}
+ -#ifdef CONFIG_FRAME_POINTER
+-	bp = get_frame_pointer(task, segv_regs);
+-#endif
+-
+ 	if (!stack)
+ 		sp = get_stack_pointer(task, segv_regs);
+ -- 1.7.10.4
 
-g.
