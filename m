@@ -1,30 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751747AbaJRHII (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Oct 2014 03:08:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51674 "EHLO
+	id S1751823AbaJRHIR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Oct 2014 03:08:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51690 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933AbaJRHHw (ORCPT
+	with ESMTP id S1751750AbaJRHIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Oct 2014 03:07:52 -0400
-Date: Sat, 18 Oct 2014 00:07:10 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-b7kuymbgf0zxi5viyjjtu5hk@git.kernel.org>
-Cc: peterz@infradead.org, efault@gmx.de, mingo@kernel.org, bp@suse.de,
-        adrian.hunter@intel.com, dzickus@redhat.com, tglx@linutronix.de,
-        dsahern@gmail.com, jean.pihet@linaro.org, paulus@samba.org,
-        hpa@zytor.com, eranian@google.com, fweisbec@gmail.com,
-        jolsa@redhat.com, namhyung@kernel.org, linux-kernel@vger.kernel.org,
-        acme@redhat.com
-Reply-To: peterz@infradead.org, efault@gmx.de, dsahern@gmail.com, bp@suse.de,
-        mingo@kernel.org, tglx@linutronix.de, dzickus@redhat.com,
-        adrian.hunter@intel.com, fweisbec@gmail.com, eranian@google.com,
-        hpa@zytor.com, jean.pihet@linaro.org, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, namhyung@kernel.org,
-        jolsa@redhat.com
+	Sat, 18 Oct 2014 03:08:09 -0400
+Date: Sat, 18 Oct 2014 00:07:26 -0700
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-535aeaae7de821ba5d43ee2a204ee667ca95aae4@git.kernel.org>
+Cc: hpa@zytor.com, tglx@linutronix.de, fweisbec@gmail.com, jolsa@kernel.org,
+        andi@firstfloor.org, mingo@kernel.org, acme@redhat.com,
+        tommy24@gatech.edu, paulus@samba.org, namhyung@kernel.org,
+        cjashfor@linux.vnet.ibm.com, eranian@google.com,
+        a.p.zijlstra@chello.nl, dsahern@gmail.com,
+        linux-kernel@vger.kernel.org
+Reply-To: linux-kernel@vger.kernel.org, dsahern@gmail.com, eranian@google.com,
+        a.p.zijlstra@chello.nl, cjashfor@linux.vnet.ibm.com,
+        tommy24@gatech.edu, namhyung@kernel.org, paulus@samba.org,
+        mingo@kernel.org, andi@firstfloor.org, acme@redhat.com,
+        jolsa@kernel.org, fweisbec@gmail.com, tglx@linutronix.de,
+        hpa@zytor.com
+In-Reply-To: <1408977943-16594-9-git-send-email-jolsa@kernel.org>
+References: <1408977943-16594-9-git-send-email-jolsa@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf evsel: No need to drag util/cgroup.h
-Git-Commit-ID: f14d570785e6760284a9849f9bafd0a9825a1a25
+Subject: [tip:perf/urgent] perf script: Add period data column
+Git-Commit-ID: 535aeaae7de821ba5d43ee2a204ee667ca95aae4
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -37,95 +39,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f14d570785e6760284a9849f9bafd0a9825a1a25
-Gitweb:     http://git.kernel.org/tip/f14d570785e6760284a9849f9bafd0a9825a1a25
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Fri, 17 Oct 2014 12:17:40 -0300
+Commit-ID:  535aeaae7de821ba5d43ee2a204ee667ca95aae4
+Gitweb:     http://git.kernel.org/tip/535aeaae7de821ba5d43ee2a204ee667ca95aae4
+Author:     Jiri Olsa <jolsa@kernel.org>
+AuthorDate: Mon, 25 Aug 2014 16:45:42 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 17 Oct 2014 12:17:40 -0300
+CommitDate: Fri, 17 Oct 2014 15:21:30 -0300
 
-perf evsel: No need to drag util/cgroup.h
+perf script: Add period data column
 
-The only thing we need is a forward declaration for 'struct cgroup_sel',
-that is inside 'struct perf_evsel'.
+Adding period data column to be displayed in perf script.  It's possible
+to get period values using -f option, like:
 
-Include cgroup.h instead on the tools that support cgroups.
+  $ perf script -f comm,tid,time,period,ip,sym,dso
+          :26019 26019 52414.329088:       3707  ffffffff8105443a native_write_msr_safe ([kernel.kallsyms])
+          :26019 26019 52414.329088:         44  ffffffff8105443a native_write_msr_safe ([kernel.kallsyms])
+          :26019 26019 52414.329093:       1987  ffffffff8105443a native_write_msr_safe ([kernel.kallsyms])
+          :26019 26019 52414.329093:          6  ffffffff8105443a native_write_msr_safe ([kernel.kallsyms])
+              ls 26019 52414.329442:     537558        3407c0639c _dl_map_object_from_fd (/usr/lib64/ld-2.17.so)
+              ls 26019 52414.329442:       2099        3407c0639c _dl_map_object_from_fd (/usr/lib64/ld-2.17.so)
+              ls 26019 52414.330181:    1242100        34080917bb get_next_seq (/usr/lib64/libc-2.17.so)
+              ls 26019 52414.330181:       3774        34080917bb get_next_seq (/usr/lib64/libc-2.17.so)
+              ls 26019 52414.331427:    1083662  ffffffff810c7dc2 update_curr ([kernel.kallsyms])
+              ls 26019 52414.331427:        360  ffffffff810c7dc2 update_curr ([kernel.kallsyms])
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Borislav Petkov <bp@suse.de>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Acked-by: David Ahern <dsahern@gmail.com>
+Cc: "Jen-Cheng(Tommy) Huang" <tommy24@gatech.edu>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jen-Cheng(Tommy) Huang <tommy24@gatech.edu>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-b7kuymbgf0zxi5viyjjtu5hk@git.kernel.org
+Link: http://lkml.kernel.org/r/1408977943-16594-9-git-send-email-jolsa@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c | 1 +
- tools/perf/builtin-stat.c   | 1 +
- tools/perf/util/evsel.c     | 1 +
- tools/perf/util/evsel.h     | 3 ++-
- 4 files changed, 5 insertions(+), 1 deletion(-)
+ tools/perf/Documentation/perf-script.txt |  2 +-
+ tools/perf/builtin-script.c              | 12 +++++++++++-
+ 2 files changed, 12 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index a6b2132..2583a9b 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -15,6 +15,7 @@
- #include "util/parse-events.h"
- 
- #include "util/callchain.h"
-+#include "util/cgroup.h"
- #include "util/header.h"
- #include "util/event.h"
- #include "util/evlist.h"
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index b22c62f..055ce92 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -43,6 +43,7 @@
- 
- #include "perf.h"
- #include "builtin.h"
-+#include "util/cgroup.h"
- #include "util/util.h"
- #include "util/parse-options.h"
- #include "util/parse-events.h"
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 786ea55..2f9e680 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -16,6 +16,7 @@
- #include <sys/resource.h>
- #include "asm/bug.h"
- #include "callchain.h"
-+#include "cgroup.h"
- #include "evsel.h"
- #include "evlist.h"
- #include "util.h"
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 1d5c754..163c560 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -7,7 +7,6 @@
- #include <linux/perf_event.h>
- #include <linux/types.h>
- #include "xyarray.h"
--#include "cgroup.h"
- #include "symbol.h"
- 
- struct perf_counts_values {
-@@ -42,6 +41,8 @@ struct perf_sample_id {
- 	u64			period;
+diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
+index 5a0160d..2149480 100644
+--- a/tools/perf/Documentation/perf-script.txt
++++ b/tools/perf/Documentation/perf-script.txt
+@@ -115,7 +115,7 @@ OPTIONS
+ -f::
+ --fields::
+         Comma separated list of fields to print. Options are:
+-        comm, tid, pid, time, cpu, event, trace, ip, sym, dso, addr, symoff, srcline.
++        comm, tid, pid, time, cpu, event, trace, ip, sym, dso, addr, symoff, srcline, period.
+         Field list can be prepended with the type, trace, sw or hw,
+         to indicate to which event type the field list applies.
+         e.g., -f sw:comm,tid,time,ip,sym  and -f trace:time,cpu,trace
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 6b4925f..0659dff 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -44,6 +44,7 @@ enum perf_output_field {
+ 	PERF_OUTPUT_ADDR            = 1U << 10,
+ 	PERF_OUTPUT_SYMOFFSET       = 1U << 11,
+ 	PERF_OUTPUT_SRCLINE         = 1U << 12,
++	PERF_OUTPUT_PERIOD          = 1U << 13,
  };
  
-+struct cgroup_sel;
+ struct output_option {
+@@ -63,6 +64,7 @@ struct output_option {
+ 	{.str = "addr",  .field = PERF_OUTPUT_ADDR},
+ 	{.str = "symoff", .field = PERF_OUTPUT_SYMOFFSET},
+ 	{.str = "srcline", .field = PERF_OUTPUT_SRCLINE},
++	{.str = "period", .field = PERF_OUTPUT_PERIOD},
+ };
+ 
+ /* default set to maintain compatibility with current format */
+@@ -229,6 +231,11 @@ static int perf_evsel__check_attr(struct perf_evsel *evsel,
+ 					PERF_OUTPUT_CPU))
+ 		return -EINVAL;
+ 
++	if (PRINT_FIELD(PERIOD) &&
++		perf_evsel__check_stype(evsel, PERF_SAMPLE_PERIOD, "PERIOD",
++					PERF_OUTPUT_PERIOD))
++		return -EINVAL;
 +
- /** struct perf_evsel - event selector
-  *
-  * @name - Can be set to retain the original event name passed by the user,
+ 	return 0;
+ }
+ 
+@@ -448,6 +455,9 @@ static void process_event(union perf_event *event, struct perf_sample *sample,
+ 
+ 	print_sample_start(sample, thread, evsel);
+ 
++	if (PRINT_FIELD(PERIOD))
++		printf("%10" PRIu64 " ", sample->period);
++
+ 	if (PRINT_FIELD(EVNAME)) {
+ 		const char *evname = perf_evsel__name(evsel);
+ 		printf("%s: ", evname ? evname : "[unknown]");
+@@ -1543,7 +1553,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		     "comma separated output fields prepend with 'type:'. "
+ 		     "Valid types: hw,sw,trace,raw. "
+ 		     "Fields: comm,tid,pid,time,cpu,event,trace,ip,sym,dso,"
+-		     "addr,symoff", parse_output_fields),
++		     "addr,symoff,period", parse_output_fields),
+ 	OPT_BOOLEAN('a', "all-cpus", &system_wide,
+ 		    "system-wide collection from all CPUs"),
+ 	OPT_STRING('S', "symbols", &symbol_conf.sym_list_str, "symbol[,symbol...]",
