@@ -1,52 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751562AbaJRUga (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Oct 2014 16:36:30 -0400
+	id S1751601AbaJRUgf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Oct 2014 16:36:35 -0400
 Received: from mga02.intel.com ([134.134.136.20]:2270 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751459AbaJRUg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Oct 2014 16:36:28 -0400
+	id S1751459AbaJRUgb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Oct 2014 16:36:31 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,745,1406617200"; 
-   d="scan'208";a="621126754"
-Date: Sat, 18 Oct 2014 13:22:07 -0400
+   d="scan'208";a="621126764"
+Date: Sat, 18 Oct 2014 13:41:00 -0400
 From: Matthew Wilcox <willy@linux.intel.com>
 To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 Cc: Matthew Wilcox <willy@linux.intel.com>,
         Matthew Wilcox <matthew.r.wilcox@intel.com>,
         linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v11 04/21] mm: Allow page fault handlers to perform the
- COW
-Message-ID: <20141018172207.GN11522@wil.cx>
+        linux-kernel@vger.kernel.org,
+        Ross Zwisler <ross.zwisler@linux.intel.com>
+Subject: Re: [PATCH v11 19/21] dax: Add dax_zero_page_range
+Message-ID: <20141018174100.GO11522@wil.cx>
 References: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com>
- <1411677218-29146-5-git-send-email-matthew.r.wilcox@intel.com>
- <20141016091136.GC19075@thinkos.etherlink>
- <20141016194815.GD11522@wil.cx>
- <289646725.10903.1413560101974.JavaMail.zimbra@efficios.com>
+ <1411677218-29146-20-git-send-email-matthew.r.wilcox@intel.com>
+ <20141016123824.GQ19075@thinkos.etherlink>
+ <20141016220126.GK11522@wil.cx>
+ <1868658383.10922.1413560979310.JavaMail.zimbra@efficios.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <289646725.10903.1413560101974.JavaMail.zimbra@efficios.com>
+In-Reply-To: <1868658383.10922.1413560979310.JavaMail.zimbra@efficios.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 17, 2014 at 03:35:01PM +0000, Mathieu Desnoyers wrote:
-> > > The page fault handler being very much performance sensitive, I'm
-> > > wondering if it would not be better to move cow_page near the end of
-> > > struct vm_fault, so that the "page" field can stay on the first
-> > > cache line.
+On Fri, Oct 17, 2014 at 03:49:39PM +0000, Mathieu Desnoyers wrote:
+> > I kind of wonder if we shouldn't just declare the function.  It's called
+> > like this:
+> > 
+> >         if (IS_DAX(inode))
+> >                 return dax_zero_page_range(inode, from, length,
+> >                 ext4_get_block);
+> >         return __ext4_block_zero_page_range(handle, mapping, from, length);
+> > 
+> > and if CONFIG_DAX is not set, IS_DAX evaluates to 0 at compile time, so
+> > the compiler will optimise out the call to dax_zero_page_range() anyway.
 > 
-> Although it's pretty much always true that recent architectures L2 cache
-> lines are 64 bytes, I was more thinking about L1 cache lines, which are,
-> at least on moderately old Intel Pentium HW, 32 bytes in size (AFAIK
-> Pentium II and III).
-> 
-> It remains to be seen whether we care about performance that much on this
-> kind of HW though.
+> I strongly prefer to implement "unimplemented stub" as static inlines
+> rather than defining to 0, because the compiler can check that the types
+> passed to the function are valid, even in the #else configuration which
+> uses the stubs.
 
-Oh, I just remembered ... this data structure is on the stack, so if it's
-not cache-hot, something has gone horribly wrong.
+I think my explanation was unclear.  This is what I meant:
 
++++ b/include/linux/fs.h
+@@ -2473,7 +2473,6 @@ extern loff_t fixed_size_llseek(struct file *file, loff_t 
+offset,
+ extern int generic_file_open(struct inode * inode, struct file * filp);
+ extern int nonseekable_open(struct inode * inode, struct file * filp);
+ 
+-#ifdef CONFIG_FS_DAX
+ int dax_clear_blocks(struct inode *, sector_t block, long size);
+ int dax_zero_page_range(struct inode *, loff_t from, unsigned len, get_block_t)
+;
+ int dax_truncate_page(struct inode *, loff_t from, get_block_t);
+ #define dax_mkwrite(vma, vmf, gb)      dax_fault(vma, vmf, gb)
+-#else
+-static inline int dax_clear_blocks(struct inode *i, sector_t blk, long sz)
+-{
+-       return 0;
+-}
+-
+-static inline int dax_truncate_page(struct inode *i, loff_t frm, get_block_t gb)
+-{
+-       return 0;
+-}
+-
+-static inline int dax_zero_page_range(struct inode *i, loff_t frm,
+-                                               unsigned len, get_block_t gb)
+-{
+-       return 0;
+-}
+-
+-static inline ssize_t dax_do_io(int rw, struct kiocb *iocb,
+-               struct inode *inode, struct iov_iter *iter, loff_t pos,
+-               get_block_t get_block, dio_iodone_t end_io, int flags)
+-{
+-       return -ENOTTY;
+-}
+-#endif
+ 
+ #ifdef CONFIG_BLOCK
+ typedef void (dio_submit_t)(int rw, struct bio *bio, struct inode *inode,
+
+
+So after the preprocessor has run, the compiler will see:
+
+	if (0)
+		return dax_zero_page_range(inode, from, length, ext4_get_block);
+
+and it will still do type checking on the call, even though it will eliminate
+the call.
+
+I think what you're really complaining about is that the argument to
+IS_DAX() is not checked for being an inode.
+
+We could solve that this way:
+
+#ifdef CONFIG_FS_DAX
+#define S_DAX		8192
+#else
+#define S_DAX		0
+#endif
+...
+#define IS_DAX(inode)           ((inode)->i_flags & S_DAX)
+
+After preprocessing, the compiler than sees:
+
+	if (((inode)->i_flags & 0))
+		return dax_zero_page_range(inode, from, length, ext4_get_block);
+
+and successfully deduces that the condition evaluates to 0, and still
+elide the reference to dax_zero_page_range (checked with 'nm').
