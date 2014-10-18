@@ -1,85 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751164AbaJRVPM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Oct 2014 17:15:12 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:34775 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881AbaJRVPK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Oct 2014 17:15:10 -0400
+	id S1751334AbaJRVQd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Oct 2014 17:16:33 -0400
+Received: from mail.efficios.com ([78.47.125.74]:57875 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751210AbaJRVQb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Oct 2014 17:16:31 -0400
+Date: Sat, 18 Oct 2014 21:16:23 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Matthew Wilcox <willy@linux.intel.com>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Ross Zwisler <ross.zwisler@linux.intel.com>
+Message-ID: <1585806495.11375.1413666983187.JavaMail.zimbra@efficios.com>
+In-Reply-To: <20141018174100.GO11522@wil.cx>
+References: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com> <1411677218-29146-20-git-send-email-matthew.r.wilcox@intel.com> <20141016123824.GQ19075@thinkos.etherlink> <20141016220126.GK11522@wil.cx> <1868658383.10922.1413560979310.JavaMail.zimbra@efficios.com> <20141018174100.GO11522@wil.cx>
+Subject: Re: [PATCH v11 19/21] dax: Add dax_zero_page_range
 MIME-Version: 1.0
-In-Reply-To: <5440D2BF.8070702@samsung.com>
-References: <1413478686-6857-1-git-send-email-sonnyrao@chromium.org> <5440D2BF.8070702@samsung.com>
-From: Sonny Rao <sonnyrao@chromium.org>
-Date: Sat, 18 Oct 2014 14:14:49 -0700
-X-Google-Sender-Auth: S5bcsYT_X_8V4Repk02WWCpQjUw
-Message-ID: <CAPz6YkWgStHxDJjm0yD4L+qj=1PcB_RQBKVLKLEqLGE8B_smFg@mail.gmail.com>
-Subject: Re: [PATCH v2] mmc: dw_mmc: Reset DMA before enabling IDMAC
-To: Jaehoon Chung <jh80.chung@samsung.com>
-Cc: Alim Akhtar <alim.akhtar@gmail.com>, linux-mmc <linux-mmc@vger.kernel.org>,
-        Heiko Stuebner <heiko@sntech.de>, Seungwon Jeon <tgih.jun@samsung.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Douglas Anderson <dianders@chromium.org>,
-        Eddie Cai <eddie.cai@rock-chips.com>, Addy Ke <addy.ke@rock-chips.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [212.144.255.202]
+X-Mailer: Zimbra 8.0.7_GA_6021 (ZimbraWebClient - FF32 (Linux)/8.0.7_GA_6021)
+Thread-Topic: Add dax_zero_page_range
+Thread-Index: f5gxMclXRMMhEff6vJWpxRU8G6Nrow==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 17, 2014 at 1:26 AM, Jaehoon Chung <jh80.chung@samsung.com> wrote:
-> Hi, Sonny.
->
-> On 10/17/2014 01:58 AM, Sonny Rao wrote:
->> We've already got a reset of DMA after it's done.  Add one before we
->> start DMA too.  This fixes a data corruption on Rockchip SoCs which
->> will get bad data when doing a DMA transfer after doing a PIO transfer.
->>
->> We tested this on an Exynos 5800 with HS200 and didn't notice any
->> difference in sequential read throughput.
->
-> Didn't affect the write throughput?
+----- Original Message -----
+> From: "Matthew Wilcox" <willy@linux.intel.com>
+> To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
+> Cc: "Matthew Wilcox" <willy@linux.intel.com>, "Matthew Wilcox" <matthew.r.wilcox@intel.com>,
+> linux-fsdevel@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org, "Ross Zwisler"
+> <ross.zwisler@linux.intel.com>
+> Sent: Saturday, October 18, 2014 7:41:00 PM
+> Subject: Re: [PATCH v11 19/21] dax: Add dax_zero_page_range
+> 
+> On Fri, Oct 17, 2014 at 03:49:39PM +0000, Mathieu Desnoyers wrote:
+> > > I kind of wonder if we shouldn't just declare the function.  It's called
+> > > like this:
+> > > 
+> > >         if (IS_DAX(inode))
+> > >                 return dax_zero_page_range(inode, from, length,
+> > >                 ext4_get_block);
+> > >         return __ext4_block_zero_page_range(handle, mapping, from,
+> > >         length);
+> > > 
+> > > and if CONFIG_DAX is not set, IS_DAX evaluates to 0 at compile time, so
+> > > the compiler will optimise out the call to dax_zero_page_range() anyway.
+> > 
+> > I strongly prefer to implement "unimplemented stub" as static inlines
+> > rather than defining to 0, because the compiler can check that the types
+> > passed to the function are valid, even in the #else configuration which
+> > uses the stubs.
+> 
+> I think my explanation was unclear.  This is what I meant:
+> 
+> +++ b/include/linux/fs.h
+> @@ -2473,7 +2473,6 @@ extern loff_t fixed_size_llseek(struct file *file,
+> loff_t
+> offset,
+>  extern int generic_file_open(struct inode * inode, struct file * filp);
+>  extern int nonseekable_open(struct inode * inode, struct file * filp);
+>  
+> -#ifdef CONFIG_FS_DAX
+>  int dax_clear_blocks(struct inode *, sector_t block, long size);
+>  int dax_zero_page_range(struct inode *, loff_t from, unsigned len,
+>  get_block_t)
+> ;
+>  int dax_truncate_page(struct inode *, loff_t from, get_block_t);
+>  #define dax_mkwrite(vma, vmf, gb)      dax_fault(vma, vmf, gb)
+> -#else
+> -static inline int dax_clear_blocks(struct inode *i, sector_t blk, long sz)
+> -{
+> -       return 0;
+> -}
+> -
+> -static inline int dax_truncate_page(struct inode *i, loff_t frm, get_block_t
+> gb)
+> -{
+> -       return 0;
+> -}
+> -
+> -static inline int dax_zero_page_range(struct inode *i, loff_t frm,
+> -                                               unsigned len, get_block_t gb)
+> -{
+> -       return 0;
+> -}
+> -
+> -static inline ssize_t dax_do_io(int rw, struct kiocb *iocb,
+> -               struct inode *inode, struct iov_iter *iter, loff_t pos,
+> -               get_block_t get_block, dio_iodone_t end_io, int flags)
+> -{
+> -       return -ENOTTY;
+> -}
+> -#endif
+>  
+>  #ifdef CONFIG_BLOCK
+>  typedef void (dio_submit_t)(int rw, struct bio *bio, struct inode *inode,
+> 
+> 
+> So after the preprocessor has run, the compiler will see:
+> 
+> 	if (0)
+> 		return dax_zero_page_range(inode, from, length, ext4_get_block);
+> 
+> and it will still do type checking on the call, even though it will eliminate
+> the call.
+> 
 
-Write is usually much slower than read, but I went ahead and re-tested
-and saw no difference on writes.
+Indeed, since Linux is always compiled in O2 or Os, it will work.
 
-> I tested this on exynos3/4 with DDR50 and HS200.
->
-> Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
-> Tested-by: Jaehoon Chung <jh80.chung@samsung.com>
->
->>
->> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
->> Signed-off-by: Doug Anderson <dianders@chromium.org>
->> Tested-by: Doug Anderson <dianders@chromium.org>
->> ---
->>  drivers/mmc/host/dw_mmc.c | 5 +++++
->>  1 file changed, 5 insertions(+)
->>
->> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
->> index 69f0cc6..ca67f69 100644
->> --- a/drivers/mmc/host/dw_mmc.c
->> +++ b/drivers/mmc/host/dw_mmc.c
->> @@ -83,6 +83,7 @@ struct idmac_desc {
->>  #endif /* CONFIG_MMC_DW_IDMAC */
->>
->>  static bool dw_mci_reset(struct dw_mci *host);
->> +static bool dw_mci_ctrl_reset(struct dw_mci *host, u32 reset);
->>
->>  #if defined(CONFIG_DEBUG_FS)
->>  static int dw_mci_req_show(struct seq_file *s, void *v)
->> @@ -448,6 +449,10 @@ static void dw_mci_idmac_start_dma(struct dw_mci *host, unsigned int sg_len)
->>
->>       dw_mci_translate_sglist(host, host->data, sg_len);
->>
->> +     /* Make sure to reset DMA in case we did PIO before this */
->> +     dw_mci_ctrl_reset(host, SDMMC_CTRL_DMA_RESET);
->> +     dw_mci_idmac_reset(host);
->> +
->>       /* Select IDMAC interface */
->>       temp = mci_readl(host, CTRL);
->>       temp |= SDMMC_CTRL_USE_IDMAC;
->>
->
+> I think what you're really complaining about is that the argument to
+> IS_DAX() is not checked for being an inode.
+> 
+> We could solve that this way:
+> 
+> #ifdef CONFIG_FS_DAX
+> #define S_DAX		8192
+> #else
+> #define S_DAX		0
+> #endif
+> ...
+> #define IS_DAX(inode)           ((inode)->i_flags & S_DAX)
+> 
+> After preprocessing, the compiler than sees:
+> 
+> 	if (((inode)->i_flags & 0))
+> 		return dax_zero_page_range(inode, from, length, ext4_get_block);
+> 
+> and successfully deduces that the condition evaluates to 0, and still
+> elide the reference to dax_zero_page_range (checked with 'nm').
+
+Sounds good,
+
+Thanks,
+
+Mathieu
+
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
