@@ -1,99 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751372AbaJRLG6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Oct 2014 07:06:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22717 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750937AbaJRLG4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Oct 2014 07:06:56 -0400
-Message-ID: <544249C6.2040407@redhat.com>
-Date: Sat, 18 Oct 2014 07:06:46 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
+	id S1751298AbaJRLL3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Oct 2014 07:11:29 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:59790 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750937AbaJRLL3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Oct 2014 07:11:29 -0400
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: lkml <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] clocksource, Add warning to clocksource_delta() validation
- code
-References: <1413554226-12652-1-git-send-email-prarit@redhat.com> <CALAqxLWaVE2MG5HGigv-KJuOP1UgJrrLgOt+HueJx81h1dDX-w@mail.gmail.com> <54415E86.1090609@redhat.com> <CALAqxLVZbqOBf7Xd5k4_euPxNLztHjmEubZys8iL4U9t9CPabQ@mail.gmail.com>
-In-Reply-To: <CALAqxLVZbqOBf7Xd5k4_euPxNLztHjmEubZys8iL4U9t9CPabQ@mail.gmail.com>
+Date: Sat, 18 Oct 2014 16:41:26 +0530
+Message-ID: <CAFxy--b+j86kn6Ttc+qTTi4chDkKbrmSAxEsS7_CnzuabJAZfQ@mail.gmail.com>
+Subject: threadirqs and kthreadd_task
+From: ajay kanala <ajaykanala321@gmail.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
+I have been trying to enable "threadirqs" command line option on
+3.10.12 kernel and kernel crashes with NULL pointer access for
+kthreadd_task in wake_up_process function:
 
+[    0.000000] Call Trace:
+[    0.000000] [<8005544c>] wake_up_process+0xc/0x48
+[    0.000000] [<8004c1b8>] kthread_create_on_node+0x64/0xc4
+[    0.000000] [<8006d338>] __setup_irq+0x130/0x634
+[    0.000000] [<8006d89c>] setup_irq+0x60/0xb4
+[    0.000000] [<8050267c>] icu_of_init+0x1f8/0x2f8
+[    0.000000] [<80517b30>] of_irq_init+0x2c8/0x304
+[    0.000000] [<805007bc>] start_kernel+0x218/0x3a4
 
-On 10/17/2014 02:27 PM, John Stultz wrote:
-> On Fri, Oct 17, 2014 at 11:23 AM, Prarit Bhargava <prarit@redhat.com> wrote:
->>
->>
->> On 10/17/2014 02:17 PM, John Stultz wrote:
->>> On Fri, Oct 17, 2014 at 6:57 AM, Prarit Bhargava <prarit@redhat.com> wrote:
->>>> A bug report came in against an older kernel which output "backward time"
->>>> messages and the report noted that the upstream kernel worked.  After some
->>>> investigation it turned out that one of the sockets was bad on the system
->>>> and the "backward time" messages were caused by a real, but intermittent,
->>>> hardware failure.
->>>>
->>>> Commit 09ec54429c6d10f87d1f084de53ae2c1c3a81108 ("clocksource: Move
->>>> cycle_last validation to core code") modifies the x86 clocksource such that
->>>> if a negative delta between two reads of time is calculated the
->>>> clocksource_delta() code will return 0.  There is no warning when this
->>>> occurs and there really should be one in order to catch not only hardware
->>>> issues like the issue above, but potential coding issues as the code is
->>>> modified.  This patch introduces a WARN() which will also dump a stack
->>>> trace to the console so the exact code path can be evaluated.
->>>>
->>>> I tested this by booting on the broken hardware and left the system idle
->>>> until a negative clocksource_delta() event occurred.
->>>>
->>>> Cc: John Stultz <john.stultz@linaro.org>
->>>> Cc: Thomas Gleixner <tglx@linutronix.de>
->>>> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
->>>> ---
->>>>  kernel/time/timekeeping_internal.h |    7 ++++++-
->>>>  1 file changed, 6 insertions(+), 1 deletion(-)
->>>>
->>>> diff --git a/kernel/time/timekeeping_internal.h b/kernel/time/timekeeping_internal.h
->>>> index 4ea005a..abe6bc8 100644
->>>> --- a/kernel/time/timekeeping_internal.h
->>>> +++ b/kernel/time/timekeeping_internal.h
->>>> @@ -17,7 +17,12 @@ static inline cycle_t clocksource_delta(cycle_t now, cycle_t last, cycle_t mask)
->>>>  {
->>>>         cycle_t ret = (now - last) & mask;
->>>>
->>>> -       return (s64) ret > 0 ? ret : 0;
->>>> +       if ((s64)ret > 0)
->>>> +               return ret;
->>>> +
->>>> +       WARN(1, "Clocksource calculated negative delta, %lld.  last = %llu, now = %llu, mask = %llx\n",
->>>> +            (s64)ret, last, now, mask);
->>>> +       return 0;
->>>
->>>
->>> I realize you followed up that this wasn't finished, but just as some
->>> feedback, there's a number of types of hardware where there may be a
->>> very slight skew between cpu TSC, and this will briefly trigger right
->>> after each timekeeping update if a system is reading the clock
->>> frequently (think of the case where the update happens on the cpu
->>> thats just a little bit ahead, while a timestamping loop is running on
->>> a cpu that is a little bit behind).
->>
->> Ah, interesting.  Okay ... drop this patch then.  Thanks for the info John.
-> 
-> If you're wanting something that aids with debugging, maybe some sort
-> calmly stated warn-once in the dmesg might be ok, that or some other
-> flag exported via a debugging interface.
+But as far as i see, kthreadd_task is initialized in start_kernel -->
+rest_init function which is much later than setting up interrupts (
+init_IRQ ):
 
-IMO with the clock code I'd prefer it to be 100% accurate.  There is nothing
-more annoying than going through the rigors of debugging and discovering that it
-is a hardware issue of some sort... This can be dropped IMO.  It's really not
-that important.
+So my question is, how are systems working which enabled "threadirqs"
+command line option enabled ( the code flow seems similar even on 3.17
+kernel ). Am i missing the obvious?
 
-P.
-> 
-> thanks
-> -john
-> 
+thanks for pointers
+
+-- Ajay
