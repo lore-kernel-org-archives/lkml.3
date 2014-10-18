@@ -1,142 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751251AbaJRLmq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Oct 2014 07:42:46 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:51090 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750915AbaJRLmm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Oct 2014 07:42:42 -0400
-Message-ID: <5442522D.40203@kernel.org>
-Date: Sat, 18 Oct 2014 12:42:37 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751429AbaJRLoY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Oct 2014 07:44:24 -0400
+Received: from mail.schreyben.de ([176.9.239.78]:40403 "EHLO mail.schreyben.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750915AbaJRLoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Oct 2014 07:44:21 -0400
+X-Greylist: delayed 347 seconds by postgrey-1.27 at vger.kernel.org; Sat, 18 Oct 2014 07:44:20 EDT
+Message-ID: <5442512F.6000700@schreyben.de>
+Date: Sat, 18 Oct 2014 13:38:23 +0200
+From: "I. Schrey" <sy@schreyben.de>
+Organization: NULL
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: Lars-Peter Clausen <lars@metafoo.de>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        John Stultz <john.stultz@linaro.org>, linux-iio@vger.kernel.org,
-        svarbanov@mm-sol.com, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] iio: inkern: Add of_xlate function to struct iio_dev
-References: <1412253128-32165-1-git-send-email-iivanov@mm-sol.com>
-In-Reply-To: <1412253128-32165-1-git-send-email-iivanov@mm-sol.com>
-Content-Type: text/plain; charset=windows-1252
+To: Jiri Slaby <jslaby@suse.cz>, stable@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3.12 000/197] 3.12.31-stable review
+References: <cover.1413533329.git.jslaby@suse.cz>
+In-Reply-To: <cover.1413533329.git.jslaby@suse.cz>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10/14 13:32, Ivan T. Ivanov wrote:
-> When #iio-cells is greater than '0', the driver could provide
-> a custom of_xlate function that reads the *args* and returns
-> the appropriate index in registered IIO channels array.
-> 
-> Add simple translation function, suitable for the most 1:1
-> mapped channels in IIO chips, and use it when driver did not
-> provide custom implementation.
-> 
-> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-Any more comments on this?  Been sat a while and the discussions seems
-to have died out.
+Jiri Slaby wrote:
+> This is the start of the stable review cycle for the 3.12.31 release.
+> There are 197 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
 
-As Ivan has pointed out, very similar approaches are used
-elsewhere (gpio for example).
+Hi Jiri,
 
-> ---
->  drivers/iio/inkern.c    | 32 +++++++++++++++++++++++++++-----
->  include/linux/iio/iio.h |  8 ++++++++
->  2 files changed, 35 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
-> index f084610..6c3e478 100644
-> --- a/drivers/iio/inkern.c
-> +++ b/drivers/iio/inkern.c
-> @@ -100,6 +100,28 @@ static int iio_dev_node_match(struct device *dev, void *data)
->  	return dev->of_node == data && dev->type == &iio_device_type;
->  }
->  
-> +/**
-> + * __of_iio_simple_xlate - translate iiospec to the IIO channel index
-> + * @indio_dev:	pointer to the iio_dev structure
-> + * @iiospec:	IIO specifier as found in the device tree
-> + *
-> + * This is simple translation function, suitable for the most 1:1 mapped
-> + * channels in IIO chips. This function performs only one sanity check:
-> + * whether IIO index is less than num_channels (that is specified in the
-> + * iio_dev).
-> + */
-> +static int __of_iio_simple_xlate(struct iio_dev *indio_dev,
-> +				const struct of_phandle_args *iiospec)
-> +{
-> +	if (!iiospec->args_count)
-> +		return 0;
-> +
-> +	if (iiospec->args[0] >= indio_dev->num_channels)
-> +		return -EINVAL;
-> +
-> +	return iiospec->args[0];
-> +}
-> +
->  static int __of_iio_channel_get(struct iio_channel *channel,
->  				struct device_node *np, int index)
->  {
-> @@ -122,18 +144,18 @@ static int __of_iio_channel_get(struct iio_channel *channel,
->  
->  	indio_dev = dev_to_iio_dev(idev);
->  	channel->indio_dev = indio_dev;
-> -	index = iiospec.args_count ? iiospec.args[0] : 0;
-> -	if (index >= indio_dev->num_channels) {
-> -		err = -EINVAL;
-> +	if (!indio_dev->of_xlate)
-> +		indio_dev->of_xlate = __of_iio_simple_xlate;
-> +	index = indio_dev->of_xlate(indio_dev, &iiospec);
-> +	if (index < 0)
->  		goto err_put;
-> -	}
->  	channel->channel = &indio_dev->channels[index];
->  
->  	return 0;
->  
->  err_put:
->  	iio_device_put(indio_dev);
-> -	return err;
-> +	return index;
->  }
->  
->  static struct iio_channel *of_iio_channel_get(struct device_node *np, int index)
-> diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
-> index 15dc6bc..d5bb219 100644
-> --- a/include/linux/iio/iio.h
-> +++ b/include/linux/iio/iio.h
-> @@ -13,6 +13,7 @@
->  #include <linux/device.h>
->  #include <linux/cdev.h>
->  #include <linux/iio/types.h>
-> +#include <linux/of.h>
->  /* IIO TODO LIST */
->  /*
->   * Provide means of adjusting timer accuracy.
-> @@ -413,6 +414,11 @@ struct iio_buffer_setup_ops {
->   * @currentmode:	[DRIVER] current operating mode
->   * @dev:		[DRIVER] device structure, should be assigned a parent
->   *			and owner
-> + * @of_xlate:		[DRIVER] function pointer to obtain channel specifier
-> + *			index. When #iio-cells is greater than '0', the driver
-> + *			could provide a custom of_xlate function that reads
-> + *			the *args* and returns the appropriate index in
-> + *			registered IIO channels array.
->   * @event_interface:	[INTERN] event chrdevs associated with interrupt lines
->   * @buffer:		[DRIVER] any buffer present
->   * @buffer_list:	[INTERN] list of all buffers currently attached
-> @@ -451,6 +457,8 @@ struct iio_dev {
->  	int				currentmode;
->  	struct device			dev;
->  
-> +	int (*of_xlate)(struct iio_dev *indio_dev,
-> +			const struct of_phandle_args *iiospec);
->  	struct iio_event_interface	*event_interface;
->  
->  	struct iio_buffer		*buffer;
-> 
+the commit mentioned below has already been backported to 3.10 stable,
+can you please add it to 3.12 stable?
+
+A test build with patch-3.12.31-rc1 and the commit in question
+builds and runs fine for me.
+
+Thank you in advance.
+
+Regards
+Ingmar
+
+-------- Forwarded message --------
+Subject: 	 linux-stable: backport usb related commit to 3.10 and 3.12?
+Date: 	 Sat, 23 Aug 2014 13:19:09 +0200
+To:
+	linux-kernel@vger.kernel.org
+
+
+
+Greetings.
+
+On an administered server, I noticed that there's a constant load
+around 0.70 when running kernels 3.10 and 3.12, even if
+the system is doing nothing, and in single user mode.
+Culprit seems to be the process 'khubd'.
+No such effect when running kernels 3.4 or 3.14.
+
+I reverse bisected linux-stable and found that the following commit
+fixes it for me, for both kernel 3.10 and 3.12:
+
+[08d1dec6f4054e3613f32051d9b149d4203ce0d2] usb:hub set hub->change_bits when over-current happens
+
+
+Could that commit be backported to the stable 3.10 and 3.12 series?
+
+(Disclaimer: I'm not a programmer, but I'd be happy to help with any testing involved)
+
+Regards
+Ingmar
+
+--------------------------------------------------------------------------
+
+$ git diff ac5166bcdb43889a5bd837f5076b78049e1f8bca 08d1dec6f4054e3613f32051d9b149d4203ce0d2
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index c1422a0..babba88 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -1147,7 +1147,8 @@ static void hub_activate(struct usb_hub *hub, enum
+hub_activation_type type)
+                         /* Tell khubd to disconnect the device or
+                          * check for a new connection
+                          */
+-                       if (udev || (portstatus & USB_PORT_STAT_CONNECTION))
++                       if (udev || (portstatus & USB_PORT_STAT_CONNECTION) ||
++                           (portstatus & USB_PORT_STAT_OVERCURRENT))
+                                 set_bit(port1, hub->change_bits);
+
+                 } else if (portstatus & USB_PORT_STAT_ENABLE) {
+
+
+-- 
+
