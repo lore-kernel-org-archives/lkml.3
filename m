@@ -1,30 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751579AbaJRHHu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Oct 2014 03:07:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51666 "EHLO
+	id S1751660AbaJRHHx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Oct 2014 03:07:53 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51667 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933AbaJRHHs (ORCPT
+	with ESMTP id S1750937AbaJRHHs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 18 Oct 2014 03:07:48 -0400
-Date: Sat, 18 Oct 2014 00:06:37 -0700
+Date: Sat, 18 Oct 2014 00:06:53 -0700
 From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-n1w68pfe9m2vkhm4sqs8y1en@git.kernel.org>
-Cc: hpa@zytor.com, jean.pihet@linaro.org, efault@gmx.de, acme@redhat.com,
-        fweisbec@gmail.com, tglx@linutronix.de, dsahern@gmail.com,
-        peterz@infradead.org, adrian.hunter@intel.com, eranian@google.com,
-        dzickus@redhat.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        bp@suse.de, namhyung@kernel.org, jolsa@redhat.com, paulus@samba.org
-Reply-To: paulus@samba.org, mingo@kernel.org, bp@suse.de, jolsa@redhat.com,
-        namhyung@kernel.org, tglx@linutronix.de, peterz@infradead.org,
-        adrian.hunter@intel.com, eranian@google.com, dsahern@gmail.com,
-        linux-kernel@vger.kernel.org, dzickus@redhat.com, hpa@zytor.com,
-        efault@gmx.de, jean.pihet@linaro.org, acme@redhat.com,
-        fweisbec@gmail.com
+Message-ID: <tip-xsvxr747wkkpg1ay9dramorr@git.kernel.org>
+Cc: jean.pihet@linaro.org, mingo@kernel.org, tglx@linutronix.de,
+        paulus@samba.org, hpa@zytor.com, dzickus@redhat.com, bp@suse.de,
+        adrian.hunter@intel.com, linux-kernel@vger.kernel.org,
+        jolsa@redhat.com, namhyung@kernel.org, fweisbec@gmail.com,
+        efault@gmx.de, eranian@google.com, peterz@infradead.org,
+        dsahern@gmail.com, acme@redhat.com
+Reply-To: hpa@zytor.com, paulus@samba.org, adrian.hunter@intel.com, bp@suse.de,
+        dzickus@redhat.com, tglx@linutronix.de, jean.pihet@linaro.org,
+        mingo@kernel.org, acme@redhat.com, dsahern@gmail.com,
+        peterz@infradead.org, eranian@google.com, efault@gmx.de,
+        fweisbec@gmail.com, linux-kernel@vger.kernel.org, namhyung@kernel.org,
+        jolsa@redhat.com
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf evsel:
-  Move exit stuff from __delete to __exit
-Git-Commit-ID: 597e48c138632d1f55409dcfa5bee4e1152e7d4f
+Subject: [tip:perf/urgent] perf evlist: Add missing 'struct option'
+  forward declaration
+Git-Commit-ID: 724ce97e9f8616ffb62b940f3726685c6f31f9b9
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -37,17 +38,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  597e48c138632d1f55409dcfa5bee4e1152e7d4f
-Gitweb:     http://git.kernel.org/tip/597e48c138632d1f55409dcfa5bee4e1152e7d4f
+Commit-ID:  724ce97e9f8616ffb62b940f3726685c6f31f9b9
+Gitweb:     http://git.kernel.org/tip/724ce97e9f8616ffb62b940f3726685c6f31f9b9
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Thu, 16 Oct 2014 13:25:01 -0300
+AuthorDate: Fri, 17 Oct 2014 12:16:00 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 17 Oct 2014 11:14:15 -0300
+CommitDate: Fri, 17 Oct 2014 12:16:00 -0300
 
-perf evsel: Move exit stuff from __delete to __exit
+perf evlist: Add missing 'struct option' forward declaration
 
-So that when an evsel is embedded into other struct it can free up
-resources calling perf_evsel__exit().
+It was being found, by chance, because evsel.h needlessly includes
+util/cgroup.h, which will be sorted out in a following patch.
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: Borislav Petkov <bp@suse.de>
@@ -61,36 +62,22 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-n1w68pfe9m2vkhm4sqs8y1en@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-xsvxr747wkkpg1ay9dramorr@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evsel.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ tools/perf/util/evlist.h | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index d1ecde0..786ea55 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -850,17 +850,17 @@ void perf_evsel__exit(struct perf_evsel *evsel)
- 	assert(list_empty(&evsel->node));
- 	perf_evsel__free_fd(evsel);
- 	perf_evsel__free_id(evsel);
-+	close_cgroup(evsel->cgrp);
-+	zfree(&evsel->group_name);
-+	if (evsel->tp_format)
-+		pevent_free_format(evsel->tp_format);
-+	zfree(&evsel->name);
- 	perf_evsel__object.fini(evsel);
- }
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index bd312b0..649b0c5 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -117,6 +117,8 @@ int perf_evlist__prepare_workload(struct perf_evlist *evlist,
+ 						     void *ucontext));
+ int perf_evlist__start_workload(struct perf_evlist *evlist);
  
- void perf_evsel__delete(struct perf_evsel *evsel)
- {
- 	perf_evsel__exit(evsel);
--	close_cgroup(evsel->cgrp);
--	zfree(&evsel->group_name);
--	if (evsel->tp_format)
--		pevent_free_format(evsel->tp_format);
--	zfree(&evsel->name);
- 	free(evsel);
- }
- 
++struct option;
++
+ int perf_evlist__parse_mmap_pages(const struct option *opt,
+ 				  const char *str,
+ 				  int unset);
