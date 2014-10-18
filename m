@@ -1,97 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751360AbaJRHFJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Oct 2014 03:05:09 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:36626 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750937AbaJRHFF (ORCPT
+	id S1751579AbaJRHHu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Oct 2014 03:07:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51666 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933AbaJRHHs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Oct 2014 03:05:05 -0400
-Date: Sat, 18 Oct 2014 09:04:59 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@suse.de>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>,
-        Jen-Cheng Huang <tommy24@gatech.edu>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 0/5] perf/core improvements and fixes
-Message-ID: <20141018070459.GA4088@gmail.com>
-References: <1413575373-10787-1-git-send-email-acme@kernel.org>
+	Sat, 18 Oct 2014 03:07:48 -0400
+Date: Sat, 18 Oct 2014 00:06:37 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-n1w68pfe9m2vkhm4sqs8y1en@git.kernel.org>
+Cc: hpa@zytor.com, jean.pihet@linaro.org, efault@gmx.de, acme@redhat.com,
+        fweisbec@gmail.com, tglx@linutronix.de, dsahern@gmail.com,
+        peterz@infradead.org, adrian.hunter@intel.com, eranian@google.com,
+        dzickus@redhat.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        bp@suse.de, namhyung@kernel.org, jolsa@redhat.com, paulus@samba.org
+Reply-To: paulus@samba.org, mingo@kernel.org, bp@suse.de, jolsa@redhat.com,
+        namhyung@kernel.org, tglx@linutronix.de, peterz@infradead.org,
+        adrian.hunter@intel.com, eranian@google.com, dsahern@gmail.com,
+        linux-kernel@vger.kernel.org, dzickus@redhat.com, hpa@zytor.com,
+        efault@gmx.de, jean.pihet@linaro.org, acme@redhat.com,
+        fweisbec@gmail.com
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf evsel:
+  Move exit stuff from __delete to __exit
+Git-Commit-ID: 597e48c138632d1f55409dcfa5bee4e1152e7d4f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1413575373-10787-1-git-send-email-acme@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  597e48c138632d1f55409dcfa5bee4e1152e7d4f
+Gitweb:     http://git.kernel.org/tip/597e48c138632d1f55409dcfa5bee4e1152e7d4f
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Thu, 16 Oct 2014 13:25:01 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Fri, 17 Oct 2014 11:14:15 -0300
 
-* Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
+perf evsel: Move exit stuff from __delete to __exit
 
-> Hi Ingo,
-> 
-> 	Please consider pulling,
-> 
-> - Arnaldo
-> 
-> The following changes since commit 691286b5561aab2e1b00119bc328598c01250548:
-> 
->   kprobes/x86: Remove stale ARCH_SUPPORTS_KPROBES_ON_FTRACE define (2014-10-17 07:18:34 +0200)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-core-for-mingo
-> 
-> for you to fetch changes up to e8564b710c6df2c3aeb56c507c22f4bcfa4c0b2d:
-> 
->   perf script: Add period as a default output column (2014-10-17 15:22:19 -0300)
-> 
-> ----------------------------------------------------------------
-> perf/core improvements and fixes:
-> 
-> User visible:
-> 
-> o Add period data column and make it default in 'perf script' (Jiri Olsa)
-> 
-> Infrastructure:
-> 
-> * Move exit stuff from perf_evsel__delete to perf_evsel__exit, delete
->   should be just a front end for exit + free (Arnaldo Carvalho de Melo)
-> 
-> * Add missing 'struct option' forward declaration (Arnaldo Carvalho de Melo)
-> 
-> * No need to drag util/cgroup.h into evsel.h (Arnaldo Carvalho de Melo)
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> ----------------------------------------------------------------
-> Arnaldo Carvalho de Melo (3):
->       perf evsel: Move exit stuff from __delete to __exit
->       perf evlist: Add missing 'struct option' forward declaration
->       perf evsel: No need to drag util/cgroup.h
-> 
-> Jiri Olsa (2):
->       perf script: Add period data column
->       perf script: Add period as a default output column
-> 
->  tools/perf/Documentation/perf-script.txt |  2 +-
->  tools/perf/builtin-record.c              |  1 +
->  tools/perf/builtin-script.c              | 21 +++++++++++++++++----
->  tools/perf/builtin-stat.c                |  1 +
->  tools/perf/util/evlist.h                 |  2 ++
->  tools/perf/util/evsel.c                  | 11 ++++++-----
->  tools/perf/util/evsel.h                  |  3 ++-
->  7 files changed, 30 insertions(+), 11 deletions(-)
+So that when an evsel is embedded into other struct it can free up
+resources calling perf_evsel__exit().
 
-Pulled, thanks a lot Arnaldo!
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-n1w68pfe9m2vkhm4sqs8y1en@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/evsel.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-	Ingo
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index d1ecde0..786ea55 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -850,17 +850,17 @@ void perf_evsel__exit(struct perf_evsel *evsel)
+ 	assert(list_empty(&evsel->node));
+ 	perf_evsel__free_fd(evsel);
+ 	perf_evsel__free_id(evsel);
++	close_cgroup(evsel->cgrp);
++	zfree(&evsel->group_name);
++	if (evsel->tp_format)
++		pevent_free_format(evsel->tp_format);
++	zfree(&evsel->name);
+ 	perf_evsel__object.fini(evsel);
+ }
+ 
+ void perf_evsel__delete(struct perf_evsel *evsel)
+ {
+ 	perf_evsel__exit(evsel);
+-	close_cgroup(evsel->cgrp);
+-	zfree(&evsel->group_name);
+-	if (evsel->tp_format)
+-		pevent_free_format(evsel->tp_format);
+-	zfree(&evsel->name);
+ 	free(evsel);
+ }
+ 
