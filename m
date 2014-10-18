@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751358AbaJRJfn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Oct 2014 05:35:43 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:55231 "EHLO
+	id S1751321AbaJRJrv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Oct 2014 05:47:51 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:65199 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014AbaJRJfk (ORCPT
+	with ESMTP id S1750854AbaJRJrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Oct 2014 05:35:40 -0400
+	Sat, 18 Oct 2014 05:47:49 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
@@ -20,67 +20,85 @@ Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Bryan Wu <cooloney@gmail.com>, Darren Hart <dvhart@linux.intel.com>,
         Mark Rutland <mark.rutland@arm.com>
-Subject: Re: [PATCH v5 09/12] Driver core: Unified interface for firmware node properties
-Date: Sat, 18 Oct 2014 11:35:21 +0200
-Message-ID: <1979177.qygBOVQh8h@wuerfel>
+Subject: Re: [PATCH v5 10/12] gpio: Support for unified device properties interface
+Date: Sat, 18 Oct 2014 11:47:41 +0200
+Message-ID: <2997291.LjjH2RgEUW@wuerfel>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1628104.Ek1EGbdVha@vostro.rjw.lan>
-References: <2660541.BycO7TFnA2@vostro.rjw.lan> <11223831.j9KAEfSQsY@vostro.rjw.lan> <1628104.Ek1EGbdVha@vostro.rjw.lan>
+In-Reply-To: <E99B44D9-C9E3-4C0B-8B18-450121793EB5@arndb.de>
+References: <2660541.BycO7TFnA2@vostro.rjw.lan> <1510578.dSiEYPPI9m@vostro.rjw.lan> <E99B44D9-C9E3-4C0B-8B18-450121793EB5@arndb.de>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:vsG4t3g4h5XJM6A5RpiAdVEu5MnG/SAWpHRDbExHJmr
- nqwMHtjgkenR5Cxvp6is75zRsvjSPmBROST/gSI5pzWmkqIeTR
- TMtkKj43QyhUdJwNsIRnG2KFTn5b0sbQ7wE/Dke9XoAB4FtgNx
- QbfEU0S+ABnhIcUTUVL7zG4lgHBwyAzM735/l2MmHn4Wu4eTxQ
- 7o9gFGFc8JYFE5eX6AetJm8J9uProBhKxNxPFdusgNxziNnnbc
- 2CNvWAecBE7OKZBB4m+6laJHsKG/YG2L3BfBUFo//8NgPYALe3
- PBOEY6w0rNUwK3Gc4OHdgod4NR+ExmWdzr634zFlsol/aIjK9u
- ueXVg7glEr3zUjWDNJyA=
+X-Provags-ID: V02:K0:DaQpddX7SRVzwRZnqFnbCPPphsrwGAAZ+Btu33C94Bh
+ McTJWcC7/124uxRM07J3Iu2KIGutTmqGunwE0iNu8AUxvuFr4x
+ VOC+JGcnXSKsWtWsj8KCiEUeTFltdwfoetUTLj2mZyJTECC3js
+ EKd1ujyvN+yxHKuEWKac2AFsSG8A1H8F3YkX0wSwaymNV83J4w
+ GJtms5qyDLId8KfIx1pPTzwWO4790RiVjeSXRVrEewlhVwva1s
+ kktKDJ8+H/bEUhNCRj5eLYmyxhd08FqGIWsNrPpGTyuzyhFAvv
+ XOm1FUfwK13SHO+bphWDgkRDH6EqnVYIX+YiR6fCpKklBCmHXf
+ n4k84D2HXxkYV38zYt8M=
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 17 October 2014 14:14:53 Rafael J. Wysocki wrote:
-> +/**
-> + * fwnode_property_present - check if a property of a firmware node is present
-> + * @fwnode: Firmware node whose property to check
-> + * @propname: Name of the property
-> + */
-> +bool fwnode_property_present(struct fwnode_handle *fwnode, const char *propname)
-> +{
-> +       if (is_of_node(fwnode))
-> +               return of_property_read_bool(of_node(fwnode), propname);
-> +       else if (is_acpi_node(fwnode))
-> +               return !acpi_dev_prop_get(acpi_node(fwnode), propname, NULL);
-> +
-> +       return false;
-> +}
-> +EXPORT_SYMBOL_GPL(fwnode_property_present);
+On Friday 17 October 2014 20:09:51 Arnd Bergmann wrote:
+> On October 17, 2014 2:16:00 PM CEST, "Rafael J. Wysocki" <rjw@rjwysocki.net> wrote:
+> >From: Mika Westerberg <mika.westerberg@linux.intel.com>
+> >
+> >Some drivers need to deal with only firmware representation of its
+> >GPIOs. An example would be a GPIO button array driver where each button
+> >is described as a separate firmware node in device tree. Typically
+> >these
+> >child nodes do not have physical representation in the Linux device
+> >model.
+> >
+> >In order to help device drivers to handle such firmware child nodes we
+> >add dev[m]_get_named_gpiod_from_child() that takes a child firmware
+> >node pointer as its second argument (the first one is the parent device
+> >itself), finds the GPIO using whatever is the underlying firmware
+> >method, and requests the GPIO properly.
 > 
+> Could we also have a wrapper around this function without a "name" argument,
+> using just the index?
 
-Should this be
+Expanding on this thought: I think we should mandate for new bindings
+that they use either a name and no index, or an index but not name,
+and I also think that for named gpios, we should try to converge on a
+common naming scheme. As discussed, we will probably want to support all
+the existing ways to do this even with ACPI and with the unified
+interface, but it doesn't have to be the obvious way.
 
-		return acpi_dev_prop_get(acpi_node(fwnode), propname, NULL);
+We could do it like this:
 
-without the '!'?
-
-I'm also unsure about the '_present' vs '_read_bool' naming. IIRC we had
-a long debate about this before we decided on 'read_bool' for DT, and
-I don't really want to start a new debate, but being consistent would
-be nice.
-
-We could of course have
-
-static inline bool fwnode_property_read_bool(struct fwnode_handle *fwnode, const char *propname)
+// internal implementation, may be called from drivers with legacy bindings 
+struct gpio_desc *__fwnode_get_gpiod_from_property(struct fwnode_handle *fwnode,
+                                           const char *propname, int index)
 {
-	return fwnode_property_present(fwnode, propname);
+	... /* your current code */
 }
 
-which is completely redundant, but would help for drivers using the
-interface to document whether we are checking for bool property that
-we expect to be either empty or absent (_get_bool), vs checking for
-the presence of a non-empty property (_present).
+// recommended interface
+static inline struct gpio_desc *fwnode_get_gpiod(struct fwnode_handle *fwnode,
+						  int index)
+{
+	return __fwnode_get_gpiod_from_property(fwnode, "gpios", index);
+}
+
+// alternative interface
+struct gpio_desc *fwnode_get_gpiod(struct fwnode_handle *fwnode, const char *name)
+{
+	char propname[64];
+	int ret;
+	
+	ret = snprintf(propname, sizeof(propname), "%s-gpios", name);
+	if (ret > sizeof(propname))
+		return -EINVAL;
+
+	return __fwnode_get_gpiod_from_property(fwnode, propname, 0);
+}
+
+The above is just a suggestion, I'm hoping for the GPIO maintainers to
+provide more guidance if they have other ideas.
 
 	Arnd
