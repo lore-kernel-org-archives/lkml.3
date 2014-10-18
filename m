@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751298AbaJRLL3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Oct 2014 07:11:29 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:59790 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750937AbaJRLL3 (ORCPT
+	id S1751250AbaJRLa4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Oct 2014 07:30:56 -0400
+Received: from cassarossa.samfundet.no ([193.35.52.29]:40987 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750915AbaJRLaz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Oct 2014 07:11:29 -0400
-MIME-Version: 1.0
-Date: Sat, 18 Oct 2014 16:41:26 +0530
-Message-ID: <CAFxy--b+j86kn6Ttc+qTTi4chDkKbrmSAxEsS7_CnzuabJAZfQ@mail.gmail.com>
-Subject: threadirqs and kthreadd_task
-From: ajay kanala <ajaykanala321@gmail.com>
+	Sat, 18 Oct 2014 07:30:55 -0400
+Date: Sat, 18 Oct 2014 12:45:25 +0200
+From: "Steinar H. Gunderson" <sgunderson@bigfoot.com>
 To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Cc: Thomas Graf <tgraf@suug.ch>, "David S. Miller" <davem@davemloft.net>,
+        Nikolay Aleksandrov <nikolay@redhat.com>
+Subject: Re: getaddrinfo slowdown in 3.17.1, due to getifaddrs
+Message-ID: <20141018104525.GA15789@sesse.net>
+References: <20141017002132.GA29584@sesse.net>
+ <20141017003430.GB29584@sesse.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141017003430.GB29584@sesse.net>
+X-Operating-System: Linux 3.16.3 on a x86_64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-I have been trying to enable "threadirqs" command line option on
-3.10.12 kernel and kernel crashes with NULL pointer access for
-kthreadd_task in wake_up_process function:
+On Fri, Oct 17, 2014 at 02:34:30AM +0200, Steinar H. Gunderson wrote:
+> e341694e3eb57fcda9f1adc7bfea42fe080d8d7a looks like it might cause something
+> like this (it certainly added the synchronize_net() call). Cc-ing people on 
+> that commit; quoting the entire rest of the message for reference.
 
-[    0.000000] Call Trace:
-[    0.000000] [<8005544c>] wake_up_process+0xc/0x48
-[    0.000000] [<8004c1b8>] kthread_create_on_node+0x64/0xc4
-[    0.000000] [<8006d338>] __setup_irq+0x130/0x634
-[    0.000000] [<8006d89c>] setup_irq+0x60/0xb4
-[    0.000000] [<8050267c>] icu_of_init+0x1f8/0x2f8
-[    0.000000] [<80517b30>] of_irq_init+0x2c8/0x304
-[    0.000000] [<805007bc>] start_kernel+0x218/0x3a4
+I see there's discussion on what to do with this; thanks. :-)
 
-But as far as i see, kthreadd_task is initialized in start_kernel -->
-rest_init function which is much later than setting up interrupts (
-init_IRQ ):
+FWIW, I've verified that reverting these four patches (in that order) fixes
+the problem:
 
-So my question is, how are systems working which enabled "threadirqs"
-command line option enabled ( the code flow seems similar even on 3.17
-kernel ). Am i missing the obvious?
+  https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/patch/net/netlink/af_netlink.c?id=9ce12eb16ffb143f3a509da86283ddd0b10bcdb3
+  https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/patch/net/netlink/af_netlink.c?id=6c8f7e70837468da4e658080d4448930fb597e1b
+  https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/patch/net/netlink/af_netlink.c?id=67a24ac18b0262178ba9f05501b2c6e6731d449a
+  https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/patch/net/netlink/af_netlink.c?id=e341694e3eb57fcda9f1adc7bfea42fe080d8d7a
 
-thanks for pointers
+My Perl script is seemingly not the only affected program on the system;
+witness the average page load times for our PHP-based home page:
 
--- Ajay
+  http://home.samfundet.no/~sesse/web_load_time_samfundet_no-week.png
+
+/* Steinar */
+-- 
+Homepage: http://www.sesse.net/
