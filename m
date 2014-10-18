@@ -1,42 +1,3257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751632AbaJRWuE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Oct 2014 18:50:04 -0400
-Received: from smtp-out003.kontent.com ([81.88.40.217]:37786 "EHLO
-	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751177AbaJRWuD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Oct 2014 18:50:03 -0400
-X-Greylist: delayed 533 seconds by postgrey-1.27 at vger.kernel.org; Sat, 18 Oct 2014 18:50:02 EDT
-Message-ID: <1413661699.19391.2.camel@linux-0dmf.site>
-Subject: Re: [PATCH net] r8152: use cancel_delayed_work for runtime suspend
-From: Oliver Neukum <oliver@neukum.org>
-To: Hayes Wang <hayeswang@realtek.com>
-Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-In-Reply-To: <1394712342-15778-64-Taiwan-albertk@realtek.com>
-References: <1394712342-15778-64-Taiwan-albertk@realtek.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 18 Oct 2014 21:48:19 +0200
-Mime-Version: 1.0
-X-Mailer: Evolution 3.10.4 
-Content-Transfer-Encoding: 7bit
+	id S1751545AbaJRWzi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Oct 2014 18:55:38 -0400
+Received: from mx1.emlix.com ([88.198.240.195]:59741 "EHLO mx1.emlix.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751184AbaJRWzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Oct 2014 18:55:33 -0400
+X-Greylist: delayed 469 seconds by postgrey-1.27 at vger.kernel.org; Sat, 18 Oct 2014 18:55:32 EDT
+From: =?UTF-8?q?Daniel=20Gl=C3=B6ckner?= <dg@emlix.com>
+To: Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>
+Cc: linux-xtensa@linux-xtensa.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Daniel=20Gl=C3=B6ckner?= <dg@emlix.com>
+Subject: [PATCH] xtensa: remove s6000 variant and s6105 platform
+Date: Sun, 19 Oct 2014 00:46:25 +0200
+Message-Id: <1413672385-8492-1-git-send-email-dg@emlix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Organization: emlix gmbh, Goettingen, Germany
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-10-17 at 13:55 +0800, Hayes Wang wrote:
-> It would cause dead lock for runtime suspend, when the workqueue
-> is running and runtime suspend occurs before the workqueue wakes
-> up the device. The rtl8152_suspend() waits the workqueue to finish
-> because of calling cancel_delayed_work_sync(). The workqueue waits
-> the suspend function to finish for waking up the device because of
-> calling usb_autopm_get_interface().
+The Stretch s6000 family support has been merged into mainline 5 years
+ago. There appear to be no users of this code since nobody complained
+that there is a merge error preventing compilation.
 
-The diagnosis is good, the fix is not good. It opens a race
-during which the queued work can touch a suspended device.
+Apart from the s6105 IP camera reference design there are no s6000 devices
+known to ever have run Linux and as the chips are out of production there
+probably never will be. The successor s7000 no longer uses an Xtensa core
+for the OS.
 
-	Regards
-		Oliver
+Let's remove the code until someone is found who actually needs it.
 
+Signed-off-by: Daniel Glöckner <dg@emlix.com>
+---
+ arch/xtensa/Kconfig                                |  13 -
+ arch/xtensa/Makefile                               |   1 -
+ arch/xtensa/configs/iss_defconfig                  |   2 -
+ arch/xtensa/configs/s6105_defconfig                | 615 ---------------------
+ arch/xtensa/platforms/s6105/Makefile               |   3 -
+ arch/xtensa/platforms/s6105/device.c               | 161 ------
+ .../xtensa/platforms/s6105/include/platform/gpio.h |  27 -
+ .../platforms/s6105/include/platform/hardware.h    |  11 -
+ .../platforms/s6105/include/platform/serial.h      |   8 -
+ arch/xtensa/platforms/s6105/setup.c                |  73 ---
+ arch/xtensa/variants/s6000/Makefile                |   4 -
+ arch/xtensa/variants/s6000/delay.c                 |  25 -
+ arch/xtensa/variants/s6000/dmac.c                  | 173 ------
+ arch/xtensa/variants/s6000/gpio.c                  | 230 --------
+ arch/xtensa/variants/s6000/include/variant/core.h  | 431 ---------------
+ arch/xtensa/variants/s6000/include/variant/dmac.h  | 387 -------------
+ arch/xtensa/variants/s6000/include/variant/gpio.h  |   6 -
+ .../variants/s6000/include/variant/hardware.h      | 259 ---------
+ arch/xtensa/variants/s6000/include/variant/irq.h   |   8 -
+ .../variants/s6000/include/variant/tie-asm.h       | 304 ----------
+ arch/xtensa/variants/s6000/include/variant/tie.h   | 191 -------
+ arch/xtensa/variants/s6000/irq.c                   |  74 ---
+ 22 files changed, 3006 deletions(-)
+ delete mode 100644 arch/xtensa/configs/s6105_defconfig
+ delete mode 100644 arch/xtensa/platforms/s6105/Makefile
+ delete mode 100644 arch/xtensa/platforms/s6105/device.c
+ delete mode 100644 arch/xtensa/platforms/s6105/include/platform/gpio.h
+ delete mode 100644 arch/xtensa/platforms/s6105/include/platform/hardware.h
+ delete mode 100644 arch/xtensa/platforms/s6105/include/platform/serial.h
+ delete mode 100644 arch/xtensa/platforms/s6105/setup.c
+ delete mode 100644 arch/xtensa/variants/s6000/Makefile
+ delete mode 100644 arch/xtensa/variants/s6000/delay.c
+ delete mode 100644 arch/xtensa/variants/s6000/dmac.c
+ delete mode 100644 arch/xtensa/variants/s6000/gpio.c
+ delete mode 100644 arch/xtensa/variants/s6000/include/variant/core.h
+ delete mode 100644 arch/xtensa/variants/s6000/include/variant/dmac.h
+ delete mode 100644 arch/xtensa/variants/s6000/include/variant/gpio.h
+ delete mode 100644 arch/xtensa/variants/s6000/include/variant/hardware.h
+ delete mode 100644 arch/xtensa/variants/s6000/include/variant/irq.h
+ delete mode 100644 arch/xtensa/variants/s6000/include/variant/tie-asm.h
+ delete mode 100644 arch/xtensa/variants/s6000/include/variant/tie.h
+ delete mode 100644 arch/xtensa/variants/s6000/irq.c
+
+diff --git a/arch/xtensa/Kconfig b/arch/xtensa/Kconfig
+index 49c6c3d..2d4c95f 100644
+--- a/arch/xtensa/Kconfig
++++ b/arch/xtensa/Kconfig
+@@ -98,12 +98,6 @@ config XTENSA_VARIANT_DC233C
+ 	help
+ 	  This variant refers to Tensilica's Diamond 233L Standard core Rev.C (LE).
+ 
+-config XTENSA_VARIANT_S6000
+-	bool "s6000 - Stretch software configurable processor"
+-	select VARIANT_IRQ_SWITCH
+-	select ARCH_REQUIRE_GPIOLIB
+-	select XTENSA_CALIBRATE_CCOUNT
+-
+ config XTENSA_VARIANT_CUSTOM
+ 	bool "Custom Xtensa processor configuration"
+ 	select MAY_HAVE_SMP
+@@ -126,7 +120,6 @@ config XTENSA_VARIANT_NAME
+ 	default "dc232b"			if XTENSA_VARIANT_DC232B
+ 	default "dc233c"			if XTENSA_VARIANT_DC233C
+ 	default "fsf"				if XTENSA_VARIANT_FSF
+-	default "s6000"				if XTENSA_VARIANT_S6000
+ 	default XTENSA_VARIANT_CUSTOM_NAME	if XTENSA_VARIANT_CUSTOM
+ 
+ config XTENSA_VARIANT_MMU
+@@ -311,12 +304,6 @@ config XTENSA_PLATFORM_XT2000
+ 	  XT2000 is the name of Tensilica's feature-rich emulation platform.
+ 	  This hardware is capable of running a full Linux distribution.
+ 
+-config XTENSA_PLATFORM_S6105
+-	bool "S6105"
+-	select HAVE_IDE
+-	select SERIAL_CONSOLE
+-	select NO_IOPORT_MAP
+-
+ config XTENSA_PLATFORM_XTFPGA
+ 	bool "XTFPGA"
+ 	select SERIAL_CONSOLE
+diff --git a/arch/xtensa/Makefile b/arch/xtensa/Makefile
+index 4725330..f9e6a06 100644
+--- a/arch/xtensa/Makefile
++++ b/arch/xtensa/Makefile
+@@ -35,7 +35,6 @@ endif
+ 
+ platform-$(CONFIG_XTENSA_PLATFORM_XT2000)	:= xt2000
+ platform-$(CONFIG_XTENSA_PLATFORM_ISS)		:= iss
+-platform-$(CONFIG_XTENSA_PLATFORM_S6105)	:= s6105
+ platform-$(CONFIG_XTENSA_PLATFORM_XTFPGA)	:= xtfpga
+ 
+ PLATFORM = $(platform-y)
+diff --git a/arch/xtensa/configs/iss_defconfig b/arch/xtensa/configs/iss_defconfig
+index b966baf..6a7593b 100644
+--- a/arch/xtensa/configs/iss_defconfig
++++ b/arch/xtensa/configs/iss_defconfig
+@@ -143,7 +143,6 @@ CONFIG_MMU=y
+ #
+ CONFIG_XTENSA_VARIANT_FSF=y
+ # CONFIG_XTENSA_VARIANT_DC232B is not set
+-# CONFIG_XTENSA_VARIANT_S6000 is not set
+ # CONFIG_XTENSA_UNALIGNED_USER is not set
+ # CONFIG_PREEMPT is not set
+ CONFIG_XTENSA_CALIBRATE_CCOUNT=y
+@@ -161,7 +160,6 @@ CONFIG_XTENSA_ISS_NETWORK=y
+ #
+ CONFIG_XTENSA_PLATFORM_ISS=y
+ # CONFIG_XTENSA_PLATFORM_XT2000 is not set
+-# CONFIG_XTENSA_PLATFORM_S6105 is not set
+ # CONFIG_GENERIC_CALIBRATE_DELAY is not set
+ CONFIG_CMDLINE_BOOL=y
+ CONFIG_CMDLINE="console=ttyS0,38400 eth0=tuntap,,tap0 ip=192.168.168.5:192.168.168.1 root=nfs nfsroot=192.168.168.1:/opt/montavista/pro/devkit/xtensa/linux_be/target"
+diff --git a/arch/xtensa/configs/s6105_defconfig b/arch/xtensa/configs/s6105_defconfig
+deleted file mode 100644
+index 9471265..0000000
+--- a/arch/xtensa/configs/s6105_defconfig
++++ /dev/null
+@@ -1,615 +0,0 @@
+-#
+-# Automatically generated make config: don't edit
+-# Linux kernel version: 2.6.29-rc7-s6
+-# Tue Mar 10 11:09:26 2009
+-#
+-# CONFIG_FRAME_POINTER is not set
+-CONFIG_ZONE_DMA=y
+-CONFIG_XTENSA=y
+-CONFIG_RWSEM_XCHGADD_ALGORITHM=y
+-CONFIG_GENERIC_FIND_NEXT_BIT=y
+-CONFIG_GENERIC_HWEIGHT=y
+-# CONFIG_ARCH_HAS_ILOG2_U32 is not set
+-# CONFIG_ARCH_HAS_ILOG2_U64 is not set
+-CONFIG_NO_IOPORT_MAP=y
+-CONFIG_HZ=100
+-CONFIG_DEFCONFIG_LIST="/lib/modules/$UNAME_RELEASE/.config"
+-
+-#
+-# General setup
+-#
+-CONFIG_EXPERIMENTAL=y
+-CONFIG_BROKEN_ON_SMP=y
+-CONFIG_INIT_ENV_ARG_LIMIT=32
+-CONFIG_LOCALVERSION=""
+-CONFIG_LOCALVERSION_AUTO=y
+-CONFIG_SYSVIPC=y
+-CONFIG_SYSVIPC_SYSCTL=y
+-# CONFIG_POSIX_MQUEUE is not set
+-# CONFIG_BSD_PROCESS_ACCT is not set
+-# CONFIG_TASKSTATS is not set
+-# CONFIG_AUDIT is not set
+-
+-#
+-# RCU Subsystem
+-#
+-# CONFIG_CLASSIC_RCU is not set
+-# CONFIG_TREE_RCU is not set
+-CONFIG_PREEMPT_RCU=y
+-# CONFIG_RCU_TRACE is not set
+-# CONFIG_TREE_RCU_TRACE is not set
+-# CONFIG_PREEMPT_RCU_TRACE is not set
+-CONFIG_IKCONFIG=y
+-CONFIG_IKCONFIG_PROC=y
+-CONFIG_LOG_BUF_SHIFT=16
+-# CONFIG_GROUP_SCHED is not set
+-# CONFIG_CGROUPS is not set
+-# CONFIG_SYSFS_DEPRECATED_V2 is not set
+-# CONFIG_RELAY is not set
+-# CONFIG_NAMESPACES is not set
+-CONFIG_BLK_DEV_INITRD=y
+-CONFIG_INITRAMFS_SOURCE=""
+-CONFIG_CC_OPTIMIZE_FOR_SIZE=y
+-CONFIG_SYSCTL=y
+-CONFIG_EXPERT=y
+-CONFIG_SYSCTL_SYSCALL=y
+-CONFIG_KALLSYMS=y
+-# CONFIG_KALLSYMS_ALL is not set
+-# CONFIG_KALLSYMS_EXTRA_PASS is not set
+-# CONFIG_HOTPLUG is not set
+-CONFIG_PRINTK=y
+-CONFIG_BUG=y
+-CONFIG_ELF_CORE=y
+-# CONFIG_COMPAT_BRK is not set
+-CONFIG_BASE_FULL=y
+-CONFIG_FUTEX=y
+-CONFIG_ANON_INODES=y
+-CONFIG_EPOLL=y
+-CONFIG_SIGNALFD=y
+-CONFIG_TIMERFD=y
+-CONFIG_EVENTFD=y
+-CONFIG_AIO=y
+-CONFIG_VM_EVENT_COUNTERS=y
+-CONFIG_SLAB=y
+-# CONFIG_SLUB is not set
+-# CONFIG_SLOB is not set
+-# CONFIG_PROFILING is not set
+-# CONFIG_HAVE_GENERIC_DMA_COHERENT is not set
+-CONFIG_SLABINFO=y
+-CONFIG_RT_MUTEXES=y
+-CONFIG_BASE_SMALL=0
+-# CONFIG_MODULES is not set
+-CONFIG_BLOCK=y
+-# CONFIG_LBD is not set
+-# CONFIG_BLK_DEV_IO_TRACE is not set
+-# CONFIG_BLK_DEV_BSG is not set
+-# CONFIG_BLK_DEV_INTEGRITY is not set
+-
+-#
+-# IO Schedulers
+-#
+-CONFIG_IOSCHED_NOOP=y
+-# CONFIG_IOSCHED_AS is not set
+-# CONFIG_IOSCHED_DEADLINE is not set
+-CONFIG_IOSCHED_CFQ=y
+-# CONFIG_DEFAULT_AS is not set
+-# CONFIG_DEFAULT_DEADLINE is not set
+-CONFIG_DEFAULT_CFQ=y
+-# CONFIG_DEFAULT_NOOP is not set
+-CONFIG_DEFAULT_IOSCHED="cfq"
+-# CONFIG_FREEZER is not set
+-# CONFIG_MMU is not set
+-CONFIG_VARIANT_IRQ_SWITCH=y
+-
+-#
+-# Processor type and features
+-#
+-# CONFIG_XTENSA_VARIANT_FSF is not set
+-# CONFIG_XTENSA_VARIANT_DC232B is not set
+-CONFIG_XTENSA_VARIANT_S6000=y
+-# CONFIG_XTENSA_UNALIGNED_USER is not set
+-CONFIG_PREEMPT=y
+-# CONFIG_HIGHMEM is not set
+-CONFIG_XTENSA_CALIBRATE_CCOUNT=y
+-CONFIG_SERIAL_CONSOLE=y
+-# CONFIG_XTENSA_ISS_NETWORK is not set
+-
+-#
+-# Bus options
+-#
+-# CONFIG_PCI is not set
+-# CONFIG_ARCH_SUPPORTS_MSI is not set
+-
+-#
+-# Platform options
+-#
+-# CONFIG_XTENSA_PLATFORM_ISS is not set
+-# CONFIG_XTENSA_PLATFORM_XT2000 is not set
+-CONFIG_XTENSA_PLATFORM_S6105=y
+-CONFIG_GENERIC_CALIBRATE_DELAY=y
+-CONFIG_CMDLINE_BOOL=y
+-CONFIG_CMDLINE="console=ttyS1,38400 debug bootmem_debug loglevel=7"
+-CONFIG_SELECT_MEMORY_MODEL=y
+-CONFIG_FLATMEM_MANUAL=y
+-# CONFIG_DISCONTIGMEM_MANUAL is not set
+-# CONFIG_SPARSEMEM_MANUAL is not set
+-CONFIG_FLATMEM=y
+-CONFIG_FLAT_NODE_MEM_MAP=y
+-CONFIG_PAGEFLAGS_EXTENDED=y
+-CONFIG_SPLIT_PTLOCK_CPUS=4
+-# CONFIG_PHYS_ADDR_T_64BIT is not set
+-CONFIG_ZONE_DMA_FLAG=1
+-CONFIG_VIRT_TO_BUS=y
+-
+-#
+-# Executable file formats
+-#
+-CONFIG_KCORE_ELF=y
+-CONFIG_BINFMT_FLAT=y
+-# CONFIG_BINFMT_ZFLAT is not set
+-# CONFIG_BINFMT_SHARED_FLAT is not set
+-# CONFIG_HAVE_AOUT is not set
+-# CONFIG_BINFMT_MISC is not set
+-CONFIG_NET=y
+-
+-#
+-# Networking options
+-#
+-CONFIG_COMPAT_NET_DEV_OPS=y
+-CONFIG_PACKET=y
+-# CONFIG_PACKET_MMAP is not set
+-CONFIG_UNIX=y
+-# CONFIG_NET_KEY is not set
+-CONFIG_INET=y
+-# CONFIG_IP_MULTICAST is not set
+-# CONFIG_IP_ADVANCED_ROUTER is not set
+-CONFIG_IP_FIB_HASH=y
+-# CONFIG_IP_PNP is not set
+-# CONFIG_NET_IPIP is not set
+-# CONFIG_NET_IPGRE is not set
+-# CONFIG_ARPD is not set
+-# CONFIG_SYN_COOKIES is not set
+-# CONFIG_INET_AH is not set
+-# CONFIG_INET_ESP is not set
+-# CONFIG_INET_IPCOMP is not set
+-# CONFIG_INET_XFRM_TUNNEL is not set
+-# CONFIG_INET_TUNNEL is not set
+-# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
+-# CONFIG_INET_XFRM_MODE_TUNNEL is not set
+-# CONFIG_INET_XFRM_MODE_BEET is not set
+-# CONFIG_INET_LRO is not set
+-# CONFIG_INET_DIAG is not set
+-# CONFIG_TCP_CONG_ADVANCED is not set
+-CONFIG_TCP_CONG_CUBIC=y
+-CONFIG_DEFAULT_TCP_CONG="cubic"
+-# CONFIG_TCP_MD5SIG is not set
+-# CONFIG_IPV6 is not set
+-# CONFIG_NETWORK_SECMARK is not set
+-# CONFIG_NETFILTER is not set
+-# CONFIG_IP_DCCP is not set
+-# CONFIG_IP_SCTP is not set
+-# CONFIG_TIPC is not set
+-# CONFIG_ATM is not set
+-# CONFIG_BRIDGE is not set
+-# CONFIG_NET_DSA is not set
+-# CONFIG_VLAN_8021Q is not set
+-# CONFIG_DECNET is not set
+-# CONFIG_LLC2 is not set
+-# CONFIG_IPX is not set
+-# CONFIG_ATALK is not set
+-# CONFIG_X25 is not set
+-# CONFIG_LAPB is not set
+-# CONFIG_ECONET is not set
+-# CONFIG_WAN_ROUTER is not set
+-# CONFIG_NET_SCHED is not set
+-# CONFIG_DCB is not set
+-
+-#
+-# Network testing
+-#
+-# CONFIG_NET_PKTGEN is not set
+-# CONFIG_HAMRADIO is not set
+-# CONFIG_CAN is not set
+-# CONFIG_IRDA is not set
+-# CONFIG_BT is not set
+-# CONFIG_AF_RXRPC is not set
+-# CONFIG_PHONET is not set
+-# CONFIG_WIRELESS is not set
+-# CONFIG_WIMAX is not set
+-# CONFIG_RFKILL is not set
+-# CONFIG_NET_9P is not set
+-
+-#
+-# Device Drivers
+-#
+-
+-#
+-# Generic Driver Options
+-#
+-CONFIG_STANDALONE=y
+-CONFIG_PREVENT_FIRMWARE_BUILD=y
+-# CONFIG_DEBUG_DRIVER is not set
+-# CONFIG_DEBUG_DEVRES is not set
+-# CONFIG_SYS_HYPERVISOR is not set
+-# CONFIG_CONNECTOR is not set
+-# CONFIG_MTD is not set
+-# CONFIG_PARPORT is not set
+-CONFIG_BLK_DEV=y
+-# CONFIG_BLK_DEV_COW_COMMON is not set
+-# CONFIG_BLK_DEV_LOOP is not set
+-# CONFIG_BLK_DEV_NBD is not set
+-CONFIG_BLK_DEV_RAM=y
+-CONFIG_BLK_DEV_RAM_COUNT=16
+-CONFIG_BLK_DEV_RAM_SIZE=4096
+-# CONFIG_BLK_DEV_XIP is not set
+-# CONFIG_CDROM_PKTCDVD is not set
+-# CONFIG_ATA_OVER_ETH is not set
+-# CONFIG_BLK_DEV_HD is not set
+-# CONFIG_MISC_DEVICES is not set
+-CONFIG_HAVE_IDE=y
+-# CONFIG_IDE is not set
+-
+-#
+-# SCSI device support
+-#
+-# CONFIG_RAID_ATTRS is not set
+-# CONFIG_SCSI is not set
+-# CONFIG_SCSI_DMA is not set
+-# CONFIG_SCSI_NETLINK is not set
+-# CONFIG_ATA is not set
+-# CONFIG_MD is not set
+-CONFIG_NETDEVICES=y
+-# CONFIG_DUMMY is not set
+-# CONFIG_BONDING is not set
+-# CONFIG_MACVLAN is not set
+-# CONFIG_EQUALIZER is not set
+-# CONFIG_TUN is not set
+-# CONFIG_VETH is not set
+-CONFIG_PHYLIB=y
+-
+-#
+-# MII PHY device drivers
+-#
+-# CONFIG_MARVELL_PHY is not set
+-# CONFIG_DAVICOM_PHY is not set
+-# CONFIG_QSEMI_PHY is not set
+-# CONFIG_LXT_PHY is not set
+-# CONFIG_CICADA_PHY is not set
+-# CONFIG_VITESSE_PHY is not set
+-CONFIG_SMSC_PHY=y
+-# CONFIG_BROADCOM_PHY is not set
+-# CONFIG_ICPLUS_PHY is not set
+-# CONFIG_REALTEK_PHY is not set
+-# CONFIG_NATIONAL_PHY is not set
+-# CONFIG_STE10XP is not set
+-# CONFIG_LSI_ET1011C_PHY is not set
+-# CONFIG_FIXED_PHY is not set
+-# CONFIG_MDIO_BITBANG is not set
+-# CONFIG_NET_ETHERNET is not set
+-CONFIG_NETDEV_1000=y
+-CONFIG_S6GMAC=y
+-# CONFIG_NETDEV_10000 is not set
+-
+-#
+-# Wireless LAN
+-#
+-# CONFIG_WLAN_PRE80211 is not set
+-# CONFIG_WLAN_80211 is not set
+-# CONFIG_IWLWIFI_LEDS is not set
+-
+-#
+-# Enable WiMAX (Networking options) to see the WiMAX drivers
+-#
+-# CONFIG_WAN is not set
+-# CONFIG_PPP is not set
+-# CONFIG_SLIP is not set
+-# CONFIG_NETCONSOLE is not set
+-# CONFIG_NETPOLL is not set
+-# CONFIG_NET_POLL_CONTROLLER is not set
+-# CONFIG_ISDN is not set
+-# CONFIG_PHONE is not set
+-
+-#
+-# Input device support
+-#
+-# CONFIG_INPUT is not set
+-
+-#
+-# Hardware I/O ports
+-#
+-# CONFIG_SERIO is not set
+-# CONFIG_GAMEPORT is not set
+-
+-#
+-# Character devices
+-#
+-# CONFIG_VT is not set
+-# CONFIG_DEVKMEM is not set
+-# CONFIG_SERIAL_NONSTANDARD is not set
+-
+-#
+-# Serial drivers
+-#
+-CONFIG_SERIAL_8250=y
+-CONFIG_SERIAL_8250_CONSOLE=y
+-CONFIG_SERIAL_8250_NR_UARTS=2
+-CONFIG_SERIAL_8250_RUNTIME_UARTS=2
+-# CONFIG_SERIAL_8250_EXTENDED is not set
+-
+-#
+-# Non-8250 serial port support
+-#
+-CONFIG_SERIAL_CORE=y
+-CONFIG_SERIAL_CORE_CONSOLE=y
+-CONFIG_UNIX98_PTYS=y
+-# CONFIG_DEVPTS_MULTIPLE_INSTANCES is not set
+-# CONFIG_LEGACY_PTYS is not set
+-# CONFIG_IPMI_HANDLER is not set
+-# CONFIG_HW_RANDOM is not set
+-# CONFIG_R3964 is not set
+-# CONFIG_RAW_DRIVER is not set
+-# CONFIG_TCG_TPM is not set
+-# CONFIG_I2C is not set
+-# CONFIG_SPI is not set
+-CONFIG_ARCH_REQUIRE_GPIOLIB=y
+-CONFIG_GPIOLIB=y
+-# CONFIG_DEBUG_GPIO is not set
+-# CONFIG_GPIO_SYSFS is not set
+-
+-#
+-# Memory mapped GPIO expanders:
+-#
+-
+-#
+-# I2C GPIO expanders:
+-#
+-
+-#
+-# PCI GPIO expanders:
+-#
+-
+-#
+-# SPI GPIO expanders:
+-#
+-# CONFIG_W1 is not set
+-# CONFIG_POWER_SUPPLY is not set
+-# CONFIG_HWMON is not set
+-# CONFIG_THERMAL is not set
+-# CONFIG_THERMAL_HWMON is not set
+-# CONFIG_WATCHDOG is not set
+-CONFIG_SSB_POSSIBLE=y
+-
+-#
+-# Sonics Silicon Backplane
+-#
+-# CONFIG_SSB is not set
+-
+-#
+-# Multifunction device drivers
+-#
+-# CONFIG_MFD_CORE is not set
+-# CONFIG_MFD_SM501 is not set
+-# CONFIG_HTC_PASIC3 is not set
+-# CONFIG_MFD_TMIO is not set
+-# CONFIG_REGULATOR is not set
+-
+-#
+-# Multimedia devices
+-#
+-
+-#
+-# Multimedia core support
+-#
+-# CONFIG_VIDEO_DEV is not set
+-# CONFIG_DVB_CORE is not set
+-# CONFIG_VIDEO_MEDIA is not set
+-
+-#
+-# Multimedia drivers
+-#
+-# CONFIG_DAB is not set
+-
+-#
+-# Graphics support
+-#
+-# CONFIG_VGASTATE is not set
+-# CONFIG_VIDEO_OUTPUT_CONTROL is not set
+-# CONFIG_FB is not set
+-# CONFIG_BACKLIGHT_LCD_SUPPORT is not set
+-
+-#
+-# Display device support
+-#
+-# CONFIG_DISPLAY_SUPPORT is not set
+-# CONFIG_SOUND is not set
+-# CONFIG_USB_SUPPORT is not set
+-# CONFIG_MMC is not set
+-# CONFIG_MEMSTICK is not set
+-# CONFIG_NEW_LEDS is not set
+-# CONFIG_ACCESSIBILITY is not set
+-CONFIG_RTC_LIB=y
+-CONFIG_RTC_CLASS=y
+-CONFIG_RTC_HCTOSYS=y
+-CONFIG_RTC_HCTOSYS_DEVICE="rtc0"
+-# CONFIG_RTC_DEBUG is not set
+-
+-#
+-# RTC interfaces
+-#
+-# CONFIG_RTC_INTF_SYSFS is not set
+-# CONFIG_RTC_INTF_PROC is not set
+-# CONFIG_RTC_INTF_DEV is not set
+-# CONFIG_RTC_DRV_TEST is not set
+-
+-#
+-# I2C RTC drivers
+-#
+-# CONFIG_RTC_DRV_DS1307 is not set
+-# CONFIG_RTC_DRV_DS1374 is not set
+-# CONFIG_RTC_DRV_DS1672 is not set
+-# CONFIG_RTC_DRV_MAX6900 is not set
+-# CONFIG_RTC_DRV_RS5C372 is not set
+-# CONFIG_RTC_DRV_ISL1208 is not set
+-# CONFIG_RTC_DRV_X1205 is not set
+-# CONFIG_RTC_DRV_PCF8563 is not set
+-# CONFIG_RTC_DRV_PCF8583 is not set
+-CONFIG_RTC_DRV_M41T80=y
+-# CONFIG_RTC_DRV_M41T80_WDT is not set
+-# CONFIG_RTC_DRV_S35390A is not set
+-# CONFIG_RTC_DRV_FM3130 is not set
+-# CONFIG_RTC_DRV_RX8581 is not set
+-
+-#
+-# SPI RTC drivers
+-#
+-
+-#
+-# Platform RTC drivers
+-#
+-# CONFIG_RTC_DRV_DS1286 is not set
+-# CONFIG_RTC_DRV_DS1511 is not set
+-# CONFIG_RTC_DRV_DS1553 is not set
+-# CONFIG_RTC_DRV_DS1742 is not set
+-# CONFIG_RTC_DRV_STK17TA8 is not set
+-# CONFIG_RTC_DRV_M48T86 is not set
+-# CONFIG_RTC_DRV_M48T35 is not set
+-# CONFIG_RTC_DRV_M48T59 is not set
+-# CONFIG_RTC_DRV_BQ4802 is not set
+-# CONFIG_RTC_DRV_V3020 is not set
+-
+-#
+-# on-CPU RTC drivers
+-#
+-# CONFIG_DMADEVICES is not set
+-# CONFIG_UIO is not set
+-# CONFIG_STAGING is not set
+-
+-#
+-# File systems
+-#
+-# CONFIG_EXT2_FS is not set
+-# CONFIG_EXT3_FS is not set
+-# CONFIG_EXT4_FS is not set
+-# CONFIG_REISERFS_FS is not set
+-# CONFIG_JFS_FS is not set
+-# CONFIG_FS_POSIX_ACL is not set
+-CONFIG_FILE_LOCKING=y
+-# CONFIG_XFS_FS is not set
+-# CONFIG_OCFS2_FS is not set
+-# CONFIG_BTRFS_FS is not set
+-# CONFIG_DNOTIFY is not set
+-# CONFIG_INOTIFY is not set
+-# CONFIG_QUOTA is not set
+-# CONFIG_AUTOFS_FS is not set
+-# CONFIG_AUTOFS4_FS is not set
+-# CONFIG_FUSE_FS is not set
+-
+-#
+-# CD-ROM/DVD Filesystems
+-#
+-# CONFIG_ISO9660_FS is not set
+-# CONFIG_UDF_FS is not set
+-
+-#
+-# DOS/FAT/NT Filesystems
+-#
+-# CONFIG_MSDOS_FS is not set
+-# CONFIG_VFAT_FS is not set
+-# CONFIG_NTFS_FS is not set
+-
+-#
+-# Pseudo filesystems
+-#
+-CONFIG_PROC_FS=y
+-CONFIG_PROC_SYSCTL=y
+-CONFIG_SYSFS=y
+-# CONFIG_TMPFS is not set
+-# CONFIG_HUGETLB_PAGE is not set
+-# CONFIG_CONFIGFS_FS is not set
+-# CONFIG_MISC_FILESYSTEMS is not set
+-# CONFIG_NETWORK_FILESYSTEMS is not set
+-
+-#
+-# Partition Types
+-#
+-# CONFIG_PARTITION_ADVANCED is not set
+-CONFIG_MSDOS_PARTITION=y
+-# CONFIG_NLS is not set
+-# CONFIG_DLM is not set
+-
+-#
+-# Kernel hacking
+-#
+-CONFIG_PRINTK_TIME=y
+-# CONFIG_ENABLE_WARN_DEPRECATED is not set
+-# CONFIG_ENABLE_MUST_CHECK is not set
+-CONFIG_FRAME_WARN=1024
+-# CONFIG_MAGIC_SYSRQ is not set
+-# CONFIG_UNUSED_SYMBOLS is not set
+-# CONFIG_DEBUG_FS is not set
+-# CONFIG_HEADERS_CHECK is not set
+-CONFIG_DEBUG_KERNEL=y
+-CONFIG_DEBUG_SHIRQ=y
+-CONFIG_DETECT_SOFTLOCKUP=y
+-# CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC is not set
+-CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC_VALUE=0
+-# CONFIG_SCHED_DEBUG is not set
+-# CONFIG_SCHEDSTATS is not set
+-# CONFIG_TIMER_STATS is not set
+-# CONFIG_DEBUG_OBJECTS is not set
+-# CONFIG_DEBUG_SLAB is not set
+-# CONFIG_DEBUG_RT_MUTEXES is not set
+-# CONFIG_RT_MUTEX_TESTER is not set
+-CONFIG_DEBUG_SPINLOCK=y
+-CONFIG_DEBUG_MUTEXES=y
+-CONFIG_DEBUG_SPINLOCK_SLEEP=y
+-# CONFIG_DEBUG_LOCKING_API_SELFTESTS is not set
+-# CONFIG_DEBUG_KOBJECT is not set
+-# CONFIG_DEBUG_INFO is not set
+-# CONFIG_DEBUG_VM is not set
+-CONFIG_DEBUG_NOMMU_REGIONS=y
+-# CONFIG_DEBUG_MEMORY_INIT is not set
+-# CONFIG_DEBUG_LIST is not set
+-# CONFIG_DEBUG_SG is not set
+-# CONFIG_DEBUG_NOTIFIERS is not set
+-# CONFIG_BOOT_PRINTK_DELAY is not set
+-# CONFIG_RCU_TORTURE_TEST is not set
+-# CONFIG_BACKTRACE_SELF_TEST is not set
+-# CONFIG_DEBUG_BLOCK_EXT_DEVT is not set
+-# CONFIG_FAULT_INJECTION is not set
+-# CONFIG_SYSCTL_SYSCALL_CHECK is not set
+-
+-#
+-# Tracers
+-#
+-# CONFIG_PREEMPT_TRACER is not set
+-# CONFIG_SCHED_TRACER is not set
+-# CONFIG_CONTEXT_SWITCH_TRACER is not set
+-# CONFIG_BOOT_TRACER is not set
+-# CONFIG_TRACE_BRANCH_PROFILING is not set
+-# CONFIG_DYNAMIC_DEBUG is not set
+-# CONFIG_SAMPLES is not set
+-
+-#
+-# Security options
+-#
+-# CONFIG_KEYS is not set
+-# CONFIG_SECURITY is not set
+-# CONFIG_SECURITYFS is not set
+-# CONFIG_SECURITY_FILE_CAPABILITIES is not set
+-# CONFIG_CRYPTO is not set
+-
+-#
+-# Library routines
+-#
+-CONFIG_GENERIC_FIND_LAST_BIT=y
+-# CONFIG_CRC_CCITT is not set
+-# CONFIG_CRC16 is not set
+-# CONFIG_CRC_T10DIF is not set
+-# CONFIG_CRC_ITU_T is not set
+-# CONFIG_CRC32 is not set
+-# CONFIG_CRC7 is not set
+-# CONFIG_LIBCRC32C is not set
+-CONFIG_PLIST=y
+-CONFIG_HAS_IOMEM=y
+-CONFIG_HAS_DMA=y
+diff --git a/arch/xtensa/platforms/s6105/Makefile b/arch/xtensa/platforms/s6105/Makefile
+deleted file mode 100644
+index 0be6194..0000000
+--- a/arch/xtensa/platforms/s6105/Makefile
++++ /dev/null
+@@ -1,3 +0,0 @@
+-# Makefile for the Stretch S6105 eval board
+-
+-obj-y		:= setup.o device.o
+diff --git a/arch/xtensa/platforms/s6105/device.c b/arch/xtensa/platforms/s6105/device.c
+deleted file mode 100644
+index 4f4fc97..0000000
+--- a/arch/xtensa/platforms/s6105/device.c
++++ /dev/null
+@@ -1,161 +0,0 @@
+-/*
+- * s6105 platform devices
+- *
+- * Copyright (c) 2009 emlix GmbH
+- */
+-
+-#include <linux/kernel.h>
+-#include <linux/gpio.h>
+-#include <linux/init.h>
+-#include <linux/irq.h>
+-#include <linux/phy.h>
+-#include <linux/platform_device.h>
+-#include <linux/serial.h>
+-#include <linux/serial_8250.h>
+-
+-#include <variant/hardware.h>
+-#include <variant/dmac.h>
+-
+-#include <platform/gpio.h>
+-
+-#define GPIO3_INTNUM		3
+-#define UART_INTNUM		4
+-#define GMAC_INTNUM		5
+-
+-static const signed char gpio3_irq_mappings[] = {
+-	S6_INTC_GPIO(3),
+-	-1
+-};
+-
+-static const signed char uart_irq_mappings[] = {
+-	S6_INTC_UART(0),
+-	S6_INTC_UART(1),
+-	-1,
+-};
+-
+-static const signed char gmac_irq_mappings[] = {
+-	S6_INTC_GMAC_STAT,
+-	S6_INTC_GMAC_ERR,
+-	S6_INTC_DMA_HOSTTERMCNT(0),
+-	S6_INTC_DMA_HOSTTERMCNT(1),
+-	-1
+-};
+-
+-const signed char *platform_irq_mappings[NR_IRQS] = {
+-	[GPIO3_INTNUM] = gpio3_irq_mappings,
+-	[UART_INTNUM] = uart_irq_mappings,
+-	[GMAC_INTNUM] = gmac_irq_mappings,
+-};
+-
+-static struct plat_serial8250_port serial_platform_data[] = {
+-	{
+-		.membase = (void *)S6_REG_UART + 0x0000,
+-		.mapbase = S6_REG_UART + 0x0000,
+-		.irq = UART_INTNUM,
+-		.uartclk = S6_SCLK,
+-		.regshift = 2,
+-		.iotype = SERIAL_IO_MEM,
+-		.flags = ASYNC_BOOT_AUTOCONF | ASYNC_SKIP_TEST,
+-	},
+-	{
+-		.membase = (void *)S6_REG_UART + 0x1000,
+-		.mapbase = S6_REG_UART + 0x1000,
+-		.irq = UART_INTNUM,
+-		.uartclk = S6_SCLK,
+-		.regshift = 2,
+-		.iotype = SERIAL_IO_MEM,
+-		.flags = ASYNC_BOOT_AUTOCONF | ASYNC_SKIP_TEST,
+-	},
+-	{ },
+-};
+-
+-static struct resource s6_gmac_resource[] = {
+-	{
+-		.name   = "mem",
+-		.start  = (resource_size_t)S6_REG_GMAC,
+-		.end    = (resource_size_t)S6_REG_GMAC + 0x10000 - 1,
+-		.flags  = IORESOURCE_MEM,
+-	},
+-	{
+-		.name   = "dma",
+-		.start  = (resource_size_t)
+-			DMA_CHNL(S6_REG_HIFDMA, S6_HIFDMA_GMACTX),
+-		.end    = (resource_size_t)
+-			DMA_CHNL(S6_REG_HIFDMA, S6_HIFDMA_GMACTX) + 0x100 - 1,
+-		.flags  = IORESOURCE_DMA,
+-	},
+-	{
+-		.name   = "dma",
+-		.start  = (resource_size_t)
+-			DMA_CHNL(S6_REG_HIFDMA, S6_HIFDMA_GMACRX),
+-		.end    = (resource_size_t)
+-			DMA_CHNL(S6_REG_HIFDMA, S6_HIFDMA_GMACRX) + 0x100 - 1,
+-		.flags  = IORESOURCE_DMA,
+-	},
+-	{
+-		.name   = "io",
+-		.start  = (resource_size_t)S6_MEM_GMAC,
+-		.end    = (resource_size_t)S6_MEM_GMAC + 0x2000000 - 1,
+-		.flags  = IORESOURCE_IO,
+-	},
+-	{
+-		.name   = "irq",
+-		.start  = (resource_size_t)GMAC_INTNUM,
+-		.flags  = IORESOURCE_IRQ,
+-	},
+-	{
+-		.name   = "irq",
+-		.start  = (resource_size_t)PHY_POLL,
+-		.flags  = IORESOURCE_IRQ,
+-	},
+-};
+-
+-static int __init prepare_phy_irq(int pin)
+-{
+-	int irq;
+-	if (gpio_request(pin, "s6gmac_phy") < 0)
+-		goto fail;
+-	if (gpio_direction_input(pin) < 0)
+-		goto free;
+-	irq = gpio_to_irq(pin);
+-	if (irq < 0)
+-		goto free;
+-	if (irq_set_irq_type(irq, IRQ_TYPE_LEVEL_LOW) < 0)
+-		goto free;
+-	return irq;
+-free:
+-	gpio_free(pin);
+-fail:
+-	return PHY_POLL;
+-}
+-
+-static struct platform_device platform_devices[] = {
+-	{
+-		.name = "serial8250",
+-		.id = PLAT8250_DEV_PLATFORM,
+-		.dev = {
+-			.platform_data = serial_platform_data,
+-		},
+-	},
+-	{
+-		.name = "s6gmac",
+-		.id = 0,
+-		.resource = s6_gmac_resource,
+-		.num_resources = ARRAY_SIZE(s6_gmac_resource),
+-	},
+-	{
+-		I2C_BOARD_INFO("m41t62", S6I2C_ADDR_M41T62),
+-	},
+-};
+-
+-static int __init device_init(void)
+-{
+-	int i;
+-
+-	s6_gmac_resource[5].start = prepare_phy_irq(GPIO_PHY_IRQ);
+-
+-	for (i = 0; i < ARRAY_SIZE(platform_devices); i++)
+-		platform_device_register(&platform_devices[i]);
+-	return 0;
+-}
+-arch_initcall_sync(device_init);
+diff --git a/arch/xtensa/platforms/s6105/include/platform/gpio.h b/arch/xtensa/platforms/s6105/include/platform/gpio.h
+deleted file mode 100644
+index fa11aa4..0000000
+--- a/arch/xtensa/platforms/s6105/include/platform/gpio.h
++++ /dev/null
+@@ -1,27 +0,0 @@
+-#ifndef __ASM_XTENSA_S6105_GPIO_H
+-#define __ASM_XTENSA_S6105_GPIO_H
+-
+-#define GPIO_BP_TEMP_ALARM	0
+-#define GPIO_PB_RESET_IN	1
+-#define GPIO_EXP_IRQ		2
+-#define GPIO_TRIGGER_IRQ	3
+-#define GPIO_RTC_IRQ		4
+-#define GPIO_PHY_IRQ		5
+-#define GPIO_IMAGER_RESET	6
+-#define GPIO_SD_IRQ		7
+-#define GPIO_MINI_BOOT_INH	8
+-#define GPIO_BOARD_RESET	9
+-#define GPIO_EXP_PRESENT	10
+-#define GPIO_LED1_NGREEN	12
+-#define GPIO_LED1_RED		13
+-#define GPIO_LED0_NGREEN	14
+-#define GPIO_LED0_NRED		15
+-#define GPIO_SPI_CS0		16
+-#define GPIO_SPI_CS1		17
+-#define GPIO_SPI_CS3		19
+-#define GPIO_SPI_CS4		20
+-#define GPIO_SD_WP		21
+-#define GPIO_BP_RESET		22
+-#define GPIO_ALARM_OUT		23
+-
+-#endif /* __ASM_XTENSA_S6105_GPIO_H */
+diff --git a/arch/xtensa/platforms/s6105/include/platform/hardware.h b/arch/xtensa/platforms/s6105/include/platform/hardware.h
+deleted file mode 100644
+index d628efa..0000000
+--- a/arch/xtensa/platforms/s6105/include/platform/hardware.h
++++ /dev/null
+@@ -1,11 +0,0 @@
+-#ifndef __XTENSA_S6105_HARDWARE_H
+-#define __XTENSA_S6105_HARDWARE_H
+-
+-#define PLATFORM_DEFAULT_MEM_START	0x40000000
+-#define PLATFORM_DEFAULT_MEM_SIZE	0x08000000
+-
+-#define MAX_DMA_ADDRESS			0
+-
+-#define KERNELOFFSET			(PLATFORM_DEFAULT_MEM_START + 0x1000)
+-
+-#endif /* __XTENSA_S6105_HARDWARE_H */
+diff --git a/arch/xtensa/platforms/s6105/include/platform/serial.h b/arch/xtensa/platforms/s6105/include/platform/serial.h
+deleted file mode 100644
+index c8a771e..0000000
+--- a/arch/xtensa/platforms/s6105/include/platform/serial.h
++++ /dev/null
+@@ -1,8 +0,0 @@
+-#ifndef __ASM_XTENSA_S6105_SERIAL_H
+-#define __ASM_XTENSA_S6105_SERIAL_H
+-
+-#include <variant/hardware.h>
+-
+-#define BASE_BAUD (S6_SCLK / 16)
+-
+-#endif /* __ASM_XTENSA_S6105_SERIAL_H */
+diff --git a/arch/xtensa/platforms/s6105/setup.c b/arch/xtensa/platforms/s6105/setup.c
+deleted file mode 100644
+index 86ce730..0000000
+--- a/arch/xtensa/platforms/s6105/setup.c
++++ /dev/null
+@@ -1,73 +0,0 @@
+-/*
+- * s6105 control routines
+- *
+- * Copyright (c) 2009 emlix GmbH
+- */
+-#include <linux/irq.h>
+-#include <linux/io.h>
+-#include <linux/gpio.h>
+-
+-#include <asm/bootparam.h>
+-
+-#include <variant/hardware.h>
+-#include <variant/gpio.h>
+-
+-#include <platform/gpio.h>
+-
+-void platform_halt(void)
+-{
+-	local_irq_disable();
+-	while (1)
+-		;
+-}
+-
+-void platform_power_off(void)
+-{
+-	platform_halt();
+-}
+-
+-void platform_restart(void)
+-{
+-	platform_halt();
+-}
+-
+-void __init platform_setup(char **cmdline)
+-{
+-	unsigned long reg;
+-
+-	reg = readl(S6_REG_GREG1 + S6_GREG1_PLLSEL);
+-	reg &= ~(S6_GREG1_PLLSEL_GMAC_MASK << S6_GREG1_PLLSEL_GMAC |
+-		S6_GREG1_PLLSEL_GMII_MASK << S6_GREG1_PLLSEL_GMII);
+-	reg |= S6_GREG1_PLLSEL_GMAC_125MHZ << S6_GREG1_PLLSEL_GMAC |
+-		S6_GREG1_PLLSEL_GMII_125MHZ << S6_GREG1_PLLSEL_GMII;
+-	writel(reg, S6_REG_GREG1 + S6_GREG1_PLLSEL);
+-
+-	reg = readl(S6_REG_GREG1 + S6_GREG1_CLKGATE);
+-	reg &= ~(1 << S6_GREG1_BLOCK_SB);
+-	reg &= ~(1 << S6_GREG1_BLOCK_GMAC);
+-	writel(reg, S6_REG_GREG1 + S6_GREG1_CLKGATE);
+-
+-	reg = readl(S6_REG_GREG1 + S6_GREG1_BLOCKENA);
+-	reg |= 1 << S6_GREG1_BLOCK_SB;
+-	reg |= 1 << S6_GREG1_BLOCK_GMAC;
+-	writel(reg, S6_REG_GREG1 + S6_GREG1_BLOCKENA);
+-
+-	printk(KERN_NOTICE "S6105 on Stretch S6000 - "
+-		"Copyright (C) 2009 emlix GmbH <info@emlix.com>\n");
+-}
+-
+-void __init platform_init(bp_tag_t *first)
+-{
+-	s6_gpio_init(0);
+-	gpio_request(GPIO_LED1_NGREEN, "led1_green");
+-	gpio_request(GPIO_LED1_RED, "led1_red");
+-	gpio_direction_output(GPIO_LED1_NGREEN, 1);
+-}
+-
+-void platform_heartbeat(void)
+-{
+-	static unsigned int c;
+-
+-	if (!(++c & 0x4F))
+-		gpio_direction_output(GPIO_LED1_RED, !(c & 0x10));
+-}
+diff --git a/arch/xtensa/variants/s6000/Makefile b/arch/xtensa/variants/s6000/Makefile
+deleted file mode 100644
+index 3e7ef0a..0000000
+--- a/arch/xtensa/variants/s6000/Makefile
++++ /dev/null
+@@ -1,4 +0,0 @@
+-# s6000 Makefile
+-
+-obj-y		+= irq.o gpio.o dmac.o
+-obj-$(CONFIG_XTENSA_CALIBRATE_CCOUNT)	+= delay.o
+diff --git a/arch/xtensa/variants/s6000/delay.c b/arch/xtensa/variants/s6000/delay.c
+deleted file mode 100644
+index 3915456..0000000
+--- a/arch/xtensa/variants/s6000/delay.c
++++ /dev/null
+@@ -1,25 +0,0 @@
+-#include <asm/timex.h>
+-#include <asm/io.h>
+-#include <variant/hardware.h>
+-
+-#define LOOPS 10
+-void platform_calibrate_ccount(void)
+-{
+-	u32 uninitialized_var(a);
+-	u32 uninitialized_var(u);
+-	u32 b;
+-	u32 tstamp = S6_REG_GREG1 + S6_GREG1_GLOBAL_TIMER;
+-	int i = LOOPS+1;
+-	do {
+-		u32 t = u;
+-		asm volatile(
+-		"1:	l32i %0, %2, 0 ;"
+-		"	beq %0, %1, 1b ;"
+-		: "=&a"(u) : "a"(t), "a"(tstamp));
+-		b = get_ccount();
+-		if (i == LOOPS)
+-			a = b;
+-	} while (--i >= 0);
+-	b -= a;
+-	ccount_freq = b * (100000UL / LOOPS);
+-}
+diff --git a/arch/xtensa/variants/s6000/dmac.c b/arch/xtensa/variants/s6000/dmac.c
+deleted file mode 100644
+index 340f5bb..0000000
+--- a/arch/xtensa/variants/s6000/dmac.c
++++ /dev/null
+@@ -1,173 +0,0 @@
+-/*
+- * Authors:	Oskar Schirmer <oskar@scara.com>
+- *		Daniel Gloeckner <dg@emlix.com>
+- * (c) 2008 emlix GmbH http://www.emlix.com
+- *
+- * This program is free software; you can redistribute  it and/or modify it
+- * under  the terms of  the GNU General  Public License as published by the
+- * Free Software Foundation;  either version 2 of the  License, or (at your
+- * option) any later version.
+- */
+-
+-#include <linux/kernel.h>
+-#include <linux/io.h>
+-#include <linux/types.h>
+-#include <linux/errno.h>
+-#include <linux/spinlock.h>
+-#include <asm/cacheflush.h>
+-#include <variant/dmac.h>
+-
+-/* DMA engine lookup */
+-
+-struct s6dmac_ctrl s6dmac_ctrl[S6_DMAC_NB];
+-
+-
+-/* DMA control, per engine */
+-
+-void s6dmac_put_fifo_cache(u32 dmac, int chan, u32 src, u32 dst, u32 size)
+-{
+-	if (xtensa_need_flush_dma_source(src)) {
+-		u32 base = src;
+-		u32 span = size;
+-		u32 chunk = readl(DMA_CHNL(dmac, chan) + S6_DMA_CMONCHUNK);
+-		if (chunk && (size > chunk)) {
+-			s32 skip =
+-				readl(DMA_CHNL(dmac, chan) + S6_DMA_SRCSKIP);
+-			u32 gaps = (size+chunk-1)/chunk - 1;
+-			if (skip >= 0) {
+-				span += gaps * skip;
+-			} else if (-skip > chunk) {
+-				s32 decr = gaps * (chunk + skip);
+-				base += decr;
+-				span = chunk - decr;
+-			} else {
+-				span = max(span + gaps * skip,
+-					(chunk + skip) * gaps - skip);
+-			}
+-		}
+-		flush_dcache_unaligned(base, span);
+-	}
+-	if (xtensa_need_invalidate_dma_destination(dst)) {
+-		u32 base = dst;
+-		u32 span = size;
+-		u32 chunk = readl(DMA_CHNL(dmac, chan) + S6_DMA_CMONCHUNK);
+-		if (chunk && (size > chunk)) {
+-			s32 skip =
+-				readl(DMA_CHNL(dmac, chan) + S6_DMA_DSTSKIP);
+-			u32 gaps = (size+chunk-1)/chunk - 1;
+-			if (skip >= 0) {
+-				span += gaps * skip;
+-			} else if (-skip > chunk) {
+-				s32 decr = gaps * (chunk + skip);
+-				base += decr;
+-				span = chunk - decr;
+-			} else {
+-				span = max(span + gaps * skip,
+-					(chunk + skip) * gaps - skip);
+-			}
+-		}
+-		invalidate_dcache_unaligned(base, span);
+-	}
+-	s6dmac_put_fifo(dmac, chan, src, dst, size);
+-}
+-
+-void s6dmac_disable_error_irqs(u32 dmac, u32 mask)
+-{
+-	unsigned long flags;
+-	spinlock_t *spinl = &s6dmac_ctrl[_dmac_addr_index(dmac)].lock;
+-	spin_lock_irqsave(spinl, flags);
+-	_s6dmac_disable_error_irqs(dmac, mask);
+-	spin_unlock_irqrestore(spinl, flags);
+-}
+-
+-u32 s6dmac_int_sources(u32 dmac, u32 channel)
+-{
+-	u32 mask, ret, tmp;
+-	mask = 1 << channel;
+-
+-	tmp = readl(dmac + S6_DMA_TERMCNTIRQSTAT);
+-	tmp &= mask;
+-	writel(tmp, dmac + S6_DMA_TERMCNTIRQCLR);
+-	ret = tmp >> channel;
+-
+-	tmp = readl(dmac + S6_DMA_PENDCNTIRQSTAT);
+-	tmp &= mask;
+-	writel(tmp, dmac + S6_DMA_PENDCNTIRQCLR);
+-	ret |= (tmp >> channel) << 1;
+-
+-	tmp = readl(dmac + S6_DMA_LOWWMRKIRQSTAT);
+-	tmp &= mask;
+-	writel(tmp, dmac + S6_DMA_LOWWMRKIRQCLR);
+-	ret |= (tmp >> channel) << 2;
+-
+-	tmp = readl(dmac + S6_DMA_INTRAW0);
+-	tmp &= (mask << S6_DMA_INT0_OVER) | (mask << S6_DMA_INT0_UNDER);
+-	writel(tmp, dmac + S6_DMA_INTCLEAR0);
+-
+-	if (tmp & (mask << S6_DMA_INT0_UNDER))
+-		ret |= 1 << 3;
+-	if (tmp & (mask << S6_DMA_INT0_OVER))
+-		ret |= 1 << 4;
+-
+-	tmp = readl(dmac + S6_DMA_MASTERERRINFO);
+-	mask <<= S6_DMA_INT1_CHANNEL;
+-	if (((tmp >> S6_DMA_MASTERERR_CHAN(0)) & S6_DMA_MASTERERR_CHAN_MASK)
+-			== channel)
+-		mask |= 1 << S6_DMA_INT1_MASTER;
+-	if (((tmp >> S6_DMA_MASTERERR_CHAN(1)) & S6_DMA_MASTERERR_CHAN_MASK)
+-			== channel)
+-		mask |= 1 << (S6_DMA_INT1_MASTER + 1);
+-	if (((tmp >> S6_DMA_MASTERERR_CHAN(2)) & S6_DMA_MASTERERR_CHAN_MASK)
+-			== channel)
+-		mask |= 1 << (S6_DMA_INT1_MASTER + 2);
+-
+-	tmp = readl(dmac + S6_DMA_INTRAW1) & mask;
+-	writel(tmp, dmac + S6_DMA_INTCLEAR1);
+-	ret |= ((tmp >> channel) & 1) << 5;
+-	ret |= ((tmp >> S6_DMA_INT1_MASTER) & S6_DMA_INT1_MASTER_MASK) << 6;
+-
+-	return ret;
+-}
+-
+-void s6dmac_release_chan(u32 dmac, int chan)
+-{
+-	if (chan >= 0)
+-		s6dmac_disable_chan(dmac, chan);
+-}
+-
+-
+-/* global init */
+-
+-static inline void __init dmac_init(u32 dmac, u8 chan_nb)
+-{
+-	s6dmac_ctrl[S6_DMAC_INDEX(dmac)].dmac = dmac;
+-	spin_lock_init(&s6dmac_ctrl[S6_DMAC_INDEX(dmac)].lock);
+-	s6dmac_ctrl[S6_DMAC_INDEX(dmac)].chan_nb = chan_nb;
+-	writel(S6_DMA_INT1_MASTER_MASK << S6_DMA_INT1_MASTER,
+-		dmac + S6_DMA_INTCLEAR1);
+-}
+-
+-static inline void __init dmac_master(u32 dmac,
+-	u32 m0start, u32 m0end, u32 m1start, u32 m1end)
+-{
+-	writel(m0start, dmac + S6_DMA_MASTER0START);
+-	writel(m0end - 1, dmac + S6_DMA_MASTER0END);
+-	writel(m1start, dmac + S6_DMA_MASTER1START);
+-	writel(m1end - 1, dmac + S6_DMA_MASTER1END);
+-}
+-
+-static void __init s6_dmac_init(void)
+-{
+-	dmac_init(S6_REG_LMSDMA, S6_LMSDMA_NB);
+-	dmac_master(S6_REG_LMSDMA,
+-		S6_MEM_DDR, S6_MEM_PCIE_APER, S6_MEM_EFI, S6_MEM_GMAC);
+-	dmac_init(S6_REG_NIDMA, S6_NIDMA_NB);
+-	dmac_init(S6_REG_DPDMA, S6_DPDMA_NB);
+-	dmac_master(S6_REG_DPDMA,
+-		S6_MEM_DDR, S6_MEM_PCIE_APER, S6_REG_DP, S6_REG_DPDMA);
+-	dmac_init(S6_REG_HIFDMA, S6_HIFDMA_NB);
+-	dmac_master(S6_REG_HIFDMA,
+-		S6_MEM_GMAC, S6_MEM_PCIE_CFG, S6_MEM_PCIE_APER, S6_MEM_AUX);
+-}
+-
+-arch_initcall(s6_dmac_init);
+diff --git a/arch/xtensa/variants/s6000/gpio.c b/arch/xtensa/variants/s6000/gpio.c
+deleted file mode 100644
+index da9e85c..0000000
+--- a/arch/xtensa/variants/s6000/gpio.c
++++ /dev/null
+@@ -1,230 +0,0 @@
+-/*
+- * s6000 gpio driver
+- *
+- * Copyright (c) 2009 emlix GmbH
+- * Authors:	Oskar Schirmer <oskar@scara.com>
+- *		Johannes Weiner <hannes@cmpxchg.org>
+- *		Daniel Gloeckner <dg@emlix.com>
+- */
+-#include <linux/bitops.h>
+-#include <linux/kernel.h>
+-#include <linux/module.h>
+-#include <linux/init.h>
+-#include <linux/io.h>
+-#include <linux/irq.h>
+-#include <linux/gpio.h>
+-
+-#include <variant/hardware.h>
+-
+-#define IRQ_BASE XTENSA_NR_IRQS
+-
+-#define S6_GPIO_DATA		0x000
+-#define S6_GPIO_IS		0x404
+-#define S6_GPIO_IBE		0x408
+-#define S6_GPIO_IEV		0x40C
+-#define S6_GPIO_IE		0x410
+-#define S6_GPIO_RIS		0x414
+-#define S6_GPIO_MIS		0x418
+-#define S6_GPIO_IC		0x41C
+-#define S6_GPIO_AFSEL		0x420
+-#define S6_GPIO_DIR		0x800
+-#define S6_GPIO_BANK(nr)	((nr) * 0x1000)
+-#define S6_GPIO_MASK(nr)	(4 << (nr))
+-#define S6_GPIO_OFFSET(nr) \
+-		(S6_GPIO_BANK((nr) >> 3) + S6_GPIO_MASK((nr) & 7))
+-
+-static int direction_input(struct gpio_chip *chip, unsigned int off)
+-{
+-	writeb(0, S6_REG_GPIO + S6_GPIO_DIR + S6_GPIO_OFFSET(off));
+-	return 0;
+-}
+-
+-static int get(struct gpio_chip *chip, unsigned int off)
+-{
+-	return readb(S6_REG_GPIO + S6_GPIO_DATA + S6_GPIO_OFFSET(off));
+-}
+-
+-static int direction_output(struct gpio_chip *chip, unsigned int off, int val)
+-{
+-	unsigned rel = S6_GPIO_OFFSET(off);
+-	writeb(~0, S6_REG_GPIO + S6_GPIO_DIR + rel);
+-	writeb(val ? ~0 : 0, S6_REG_GPIO + S6_GPIO_DATA + rel);
+-	return 0;
+-}
+-
+-static void set(struct gpio_chip *chip, unsigned int off, int val)
+-{
+-	writeb(val ? ~0 : 0, S6_REG_GPIO + S6_GPIO_DATA + S6_GPIO_OFFSET(off));
+-}
+-
+-static int to_irq(struct gpio_chip *chip, unsigned offset)
+-{
+-	if (offset < 8)
+-		return offset + IRQ_BASE;
+-	return -EINVAL;
+-}
+-
+-static struct gpio_chip gpiochip = {
+-	.owner = THIS_MODULE,
+-	.direction_input = direction_input,
+-	.get = get,
+-	.direction_output = direction_output,
+-	.set = set,
+-	.to_irq = to_irq,
+-	.base = 0,
+-	.ngpio = 24,
+-	.can_sleep = 0, /* no blocking io needed */
+-	.exported = 0, /* no exporting to userspace */
+-};
+-
+-int s6_gpio_init(u32 afsel)
+-{
+-	writeb(afsel, S6_REG_GPIO + S6_GPIO_BANK(0) + S6_GPIO_AFSEL);
+-	writeb(afsel >> 8, S6_REG_GPIO + S6_GPIO_BANK(1) + S6_GPIO_AFSEL);
+-	writeb(afsel >> 16, S6_REG_GPIO + S6_GPIO_BANK(2) + S6_GPIO_AFSEL);
+-	return gpiochip_add(&gpiochip);
+-}
+-
+-static void ack(struct irq_data *d)
+-{
+-	writeb(1 << (d->irq - IRQ_BASE), S6_REG_GPIO + S6_GPIO_IC);
+-}
+-
+-static void mask(struct irq_data *d)
+-{
+-	u8 r = readb(S6_REG_GPIO + S6_GPIO_IE);
+-	r &= ~(1 << (d->irq - IRQ_BASE));
+-	writeb(r, S6_REG_GPIO + S6_GPIO_IE);
+-}
+-
+-static void unmask(struct irq_data *d)
+-{
+-	u8 m = readb(S6_REG_GPIO + S6_GPIO_IE);
+-	m |= 1 << (d->irq - IRQ_BASE);
+-	writeb(m, S6_REG_GPIO + S6_GPIO_IE);
+-}
+-
+-static int set_type(struct irq_data *d, unsigned int type)
+-{
+-	const u8 m = 1 << (d->irq - IRQ_BASE);
+-	irq_flow_handler_t handler;
+-	u8 reg;
+-
+-	if (type == IRQ_TYPE_PROBE) {
+-		if ((readb(S6_REG_GPIO + S6_GPIO_BANK(0) + S6_GPIO_AFSEL) & m)
+-		    || (readb(S6_REG_GPIO + S6_GPIO_BANK(0) + S6_GPIO_IE) & m)
+-		    || readb(S6_REG_GPIO + S6_GPIO_BANK(0) + S6_GPIO_DIR
+-			      + S6_GPIO_MASK(irq - IRQ_BASE)))
+-			return 0;
+-		type = IRQ_TYPE_EDGE_BOTH;
+-	}
+-
+-	reg = readb(S6_REG_GPIO + S6_GPIO_BANK(0) + S6_GPIO_IS);
+-	if (type & (IRQ_TYPE_LEVEL_LOW | IRQ_TYPE_LEVEL_HIGH)) {
+-		reg |= m;
+-		handler = handle_level_irq;
+-	} else {
+-		reg &= ~m;
+-		handler = handle_edge_irq;
+-	}
+-	writeb(reg, S6_REG_GPIO + S6_GPIO_BANK(0) + S6_GPIO_IS);
+-	__irq_set_handler_locked(irq, handler);
+-
+-	reg = readb(S6_REG_GPIO + S6_GPIO_BANK(0) + S6_GPIO_IEV);
+-	if (type & (IRQ_TYPE_LEVEL_HIGH | IRQ_TYPE_EDGE_RISING))
+-		reg |= m;
+-	else
+-		reg &= ~m;
+-	writeb(reg, S6_REG_GPIO + S6_GPIO_BANK(0) + S6_GPIO_IEV);
+-
+-	reg = readb(S6_REG_GPIO + S6_GPIO_BANK(0) + S6_GPIO_IBE);
+-	if ((type & IRQ_TYPE_EDGE_BOTH) == IRQ_TYPE_EDGE_BOTH)
+-		reg |= m;
+-	else
+-		reg &= ~m;
+-	writeb(reg, S6_REG_GPIO + S6_GPIO_BANK(0) + S6_GPIO_IBE);
+-	return 0;
+-}
+-
+-static struct irq_chip gpioirqs = {
+-	.name = "GPIO",
+-	.irq_ack = ack,
+-	.irq_mask = mask,
+-	.irq_unmask = unmask,
+-	.irq_set_type = set_type,
+-};
+-
+-static u8 demux_masks[4];
+-
+-static void demux_irqs(unsigned int irq, struct irq_desc *desc)
+-{
+-	struct irq_chip *chip = irq_desc_get_chip(desc);
+-	u8 *mask = irq_desc_get_handler_data(desc);
+-	u8 pending;
+-	int cirq;
+-
+-	chip->irq_mask(&desc->irq_data);
+-	chip->irq_ack(&desc->irq_data);
+-	pending = readb(S6_REG_GPIO + S6_GPIO_BANK(0) + S6_GPIO_MIS) & *mask;
+-	cirq = IRQ_BASE - 1;
+-	while (pending) {
+-		int n = ffs(pending);
+-		cirq += n;
+-		pending >>= n;
+-		generic_handle_irq(cirq);
+-	}
+-	chip->irq_unmask(&desc->irq_data);
+-}
+-
+-extern const signed char *platform_irq_mappings[XTENSA_NR_IRQS];
+-
+-void __init variant_init_irq(void)
+-{
+-	int irq, n;
+-	writeb(0, S6_REG_GPIO + S6_GPIO_BANK(0) + S6_GPIO_IE);
+-	for (irq = n = 0; irq < XTENSA_NR_IRQS; irq++) {
+-		const signed char *mapping = platform_irq_mappings[irq];
+-		int alone = 1;
+-		u8 mask;
+-		if (!mapping)
+-			continue;
+-		for(mask = 0; *mapping != -1; mapping++)
+-			switch (*mapping) {
+-			case S6_INTC_GPIO(0):
+-				mask |= 1 << 0;
+-				break;
+-			case S6_INTC_GPIO(1):
+-				mask |= 1 << 1;
+-				break;
+-			case S6_INTC_GPIO(2):
+-				mask |= 1 << 2;
+-				break;
+-			case S6_INTC_GPIO(3):
+-				mask |= 0x1f << 3;
+-				break;
+-			default:
+-				alone = 0;
+-			}
+-		if (mask) {
+-			int cirq, i;
+-			if (!alone) {
+-				printk(KERN_ERR "chained irq chips can't share"
+-					" parent irq %i\n", irq);
+-				continue;
+-			}
+-			demux_masks[n] = mask;
+-			cirq = IRQ_BASE - 1;
+-			do {
+-				i = ffs(mask);
+-				cirq += i;
+-				mask >>= i;
+-				irq_set_chip(cirq, &gpioirqs);
+-				irq_set_irq_type(irq, IRQ_TYPE_LEVEL_LOW);
+-			} while (mask);
+-			irq_set_handler_data(irq, demux_masks + n);
+-			irq_set_chained_handler(irq, demux_irqs);
+-			if (++n == ARRAY_SIZE(demux_masks))
+-				break;
+-		}
+-	}
+-}
+diff --git a/arch/xtensa/variants/s6000/include/variant/core.h b/arch/xtensa/variants/s6000/include/variant/core.h
+deleted file mode 100644
+index af00795..0000000
+--- a/arch/xtensa/variants/s6000/include/variant/core.h
++++ /dev/null
+@@ -1,431 +0,0 @@
+-/*
+- * Xtensa processor core configuration information.
+- *
+- * This file is subject to the terms and conditions of the GNU General Public
+- * License.  See the file "COPYING" in the main directory of this archive
+- * for more details.
+- *
+- * Copyright (c) 1999-2008 Tensilica Inc.
+- */
+-
+-#ifndef _XTENSA_CORE_CONFIGURATION_H
+-#define _XTENSA_CORE_CONFIGURATION_H
+-
+-
+-/****************************************************************************
+-	    Parameters Useful for Any Code, USER or PRIVILEGED
+- ****************************************************************************/
+-
+-/*
+- *  Note:  Macros of the form XCHAL_HAVE_*** have a value of 1 if the option is
+- *  configured, and a value of 0 otherwise.  These macros are always defined.
+- */
+-
+-
+-/*----------------------------------------------------------------------
+-				ISA
+-  ----------------------------------------------------------------------*/
+-
+-#define XCHAL_HAVE_BE			0	/* big-endian byte ordering */
+-#define XCHAL_HAVE_WINDOWED		1	/* windowed registers option */
+-#define XCHAL_NUM_AREGS			64	/* num of physical addr regs */
+-#define XCHAL_NUM_AREGS_LOG2		6	/* log2(XCHAL_NUM_AREGS) */
+-#define XCHAL_MAX_INSTRUCTION_SIZE	8	/* max instr bytes (3..8) */
+-#define XCHAL_HAVE_DEBUG		1	/* debug option */
+-#define XCHAL_HAVE_DENSITY		1	/* 16-bit instructions */
+-#define XCHAL_HAVE_LOOPS		1	/* zero-overhead loops */
+-#define XCHAL_HAVE_NSA			1	/* NSA/NSAU instructions */
+-#define XCHAL_HAVE_MINMAX		1	/* MIN/MAX instructions */
+-#define XCHAL_HAVE_SEXT			1	/* SEXT instruction */
+-#define XCHAL_HAVE_CLAMPS		1	/* CLAMPS instruction */
+-#define XCHAL_HAVE_MUL16		1	/* MUL16S/MUL16U instructions */
+-#define XCHAL_HAVE_MUL32		1	/* MULL instruction */
+-#define XCHAL_HAVE_MUL32_HIGH		1	/* MULUH/MULSH instructions */
+-#define XCHAL_HAVE_DIV32		0	/* QUOS/QUOU/REMS/REMU instructions */
+-#define XCHAL_HAVE_L32R			1	/* L32R instruction */
+-#define XCHAL_HAVE_ABSOLUTE_LITERALS	1	/* non-PC-rel (extended) L32R */
+-#define XCHAL_HAVE_CONST16		0	/* CONST16 instruction */
+-#define XCHAL_HAVE_ADDX			1	/* ADDX#/SUBX# instructions */
+-#define XCHAL_HAVE_WIDE_BRANCHES	0	/* B*.W18 or B*.W15 instr's */
+-#define XCHAL_HAVE_PREDICTED_BRANCHES	0	/* B[EQ/EQZ/NE/NEZ]T instr's */
+-#define XCHAL_HAVE_CALL4AND12		1	/* (obsolete option) */
+-#define XCHAL_HAVE_ABS			1	/* ABS instruction */
+-/*#define XCHAL_HAVE_POPC		0*/	/* POPC instruction */
+-/*#define XCHAL_HAVE_CRC		0*/	/* CRC instruction */
+-#define XCHAL_HAVE_RELEASE_SYNC		0	/* L32AI/S32RI instructions */
+-#define XCHAL_HAVE_S32C1I		0	/* S32C1I instruction */
+-#define XCHAL_HAVE_SPECULATION		0	/* speculation */
+-#define XCHAL_HAVE_FULL_RESET		0	/* all regs/state reset */
+-#define XCHAL_NUM_CONTEXTS		1	/* */
+-#define XCHAL_NUM_MISC_REGS		4	/* num of scratch regs (0..4) */
+-#define XCHAL_HAVE_TAP_MASTER		0	/* JTAG TAP control instr's */
+-#define XCHAL_HAVE_PRID			0	/* processor ID register */
+-#define XCHAL_HAVE_THREADPTR		0	/* THREADPTR register */
+-#define XCHAL_HAVE_BOOLEANS		1	/* boolean registers */
+-#define XCHAL_HAVE_CP			1	/* CPENABLE reg (coprocessor) */
+-#define XCHAL_CP_MAXCFG			8	/* max allowed cp id plus one */
+-#define XCHAL_HAVE_MAC16		0	/* MAC16 package */
+-#define XCHAL_HAVE_VECTORFPU2005	0	/* vector floating-point pkg */
+-#define XCHAL_HAVE_FP			1	/* floating point pkg */
+-#define XCHAL_HAVE_VECTRA1		0	/* Vectra I  pkg */
+-#define XCHAL_HAVE_VECTRALX		0	/* Vectra LX pkg */
+-#define XCHAL_HAVE_HIFI2		0	/* HiFi2 Audio Engine pkg */
+-
+-
+-/*----------------------------------------------------------------------
+-				MISC
+-  ----------------------------------------------------------------------*/
+-
+-#define XCHAL_NUM_WRITEBUFFER_ENTRIES	8	/* size of write buffer */
+-#define XCHAL_INST_FETCH_WIDTH		8	/* instr-fetch width in bytes */
+-#define XCHAL_DATA_WIDTH		16	/* data width in bytes */
+-/*  In T1050, applies to selected core load and store instructions (see ISA): */
+-#define XCHAL_UNALIGNED_LOAD_EXCEPTION	1	/* unaligned loads cause exc. */
+-#define XCHAL_UNALIGNED_STORE_EXCEPTION	1	/* unaligned stores cause exc.*/
+-
+-#define XCHAL_SW_VERSION		701001	/* sw version of this header */
+-
+-#define XCHAL_CORE_ID			"stretch_bali"	/* alphanum core name
+-						   (CoreID) set in the Xtensa
+-						   Processor Generator */
+-
+-#define XCHAL_BUILD_UNIQUE_ID		0x000104B9	/* 22-bit sw build ID */
+-
+-/*
+- *  These definitions describe the hardware targeted by this software.
+- */
+-#define XCHAL_HW_CONFIGID0		0xC2F3F9FE	/* ConfigID hi 32 bits*/
+-#define XCHAL_HW_CONFIGID1		0x054104B9	/* ConfigID lo 32 bits*/
+-#define XCHAL_HW_VERSION_NAME		"LX1.0.2"	/* full version name */
+-#define XCHAL_HW_VERSION_MAJOR		2100	/* major ver# of targeted hw */
+-#define XCHAL_HW_VERSION_MINOR		2	/* minor ver# of targeted hw */
+-#define XCHAL_HW_VERSION		210002	/* major*100+minor */
+-#define XCHAL_HW_REL_LX1		1
+-#define XCHAL_HW_REL_LX1_0		1
+-#define XCHAL_HW_REL_LX1_0_2		1
+-#define XCHAL_HW_CONFIGID_RELIABLE	1
+-/*  If software targets a *range* of hardware versions, these are the bounds: */
+-#define XCHAL_HW_MIN_VERSION_MAJOR	2100	/* major v of earliest tgt hw */
+-#define XCHAL_HW_MIN_VERSION_MINOR	2	/* minor v of earliest tgt hw */
+-#define XCHAL_HW_MIN_VERSION		210002	/* earliest targeted hw */
+-#define XCHAL_HW_MAX_VERSION_MAJOR	2100	/* major v of latest tgt hw */
+-#define XCHAL_HW_MAX_VERSION_MINOR	2	/* minor v of latest tgt hw */
+-#define XCHAL_HW_MAX_VERSION		210002	/* latest targeted hw */
+-
+-
+-/*----------------------------------------------------------------------
+-				CACHE
+-  ----------------------------------------------------------------------*/
+-
+-#define XCHAL_ICACHE_LINESIZE		16	/* I-cache line size in bytes */
+-#define XCHAL_DCACHE_LINESIZE		16	/* D-cache line size in bytes */
+-#define XCHAL_ICACHE_LINEWIDTH		4	/* log2(I line size in bytes) */
+-#define XCHAL_DCACHE_LINEWIDTH		4	/* log2(D line size in bytes) */
+-
+-#define XCHAL_ICACHE_SIZE		32768	/* I-cache size in bytes or 0 */
+-#define XCHAL_DCACHE_SIZE		32768	/* D-cache size in bytes or 0 */
+-
+-#define XCHAL_DCACHE_IS_WRITEBACK	1	/* writeback feature */
+-
+-
+-
+-
+-/****************************************************************************
+-    Parameters Useful for PRIVILEGED (Supervisory or Non-Virtualized) Code
+- ****************************************************************************/
+-
+-
+-#ifndef XTENSA_HAL_NON_PRIVILEGED_ONLY
+-
+-/*----------------------------------------------------------------------
+-				CACHE
+-  ----------------------------------------------------------------------*/
+-
+-#define XCHAL_HAVE_PIF			1	/* any outbound PIF present */
+-
+-/*  If present, cache size in bytes == (ways * 2^(linewidth + setwidth)).  */
+-
+-/*  Number of cache sets in log2(lines per way):  */
+-#define XCHAL_ICACHE_SETWIDTH		9
+-#define XCHAL_DCACHE_SETWIDTH		10
+-
+-/*  Cache set associativity (number of ways):  */
+-#define XCHAL_ICACHE_WAYS		4
+-#define XCHAL_DCACHE_WAYS		2
+-
+-/*  Cache features:  */
+-#define XCHAL_ICACHE_LINE_LOCKABLE	1
+-#define XCHAL_DCACHE_LINE_LOCKABLE	0
+-#define XCHAL_ICACHE_ECC_PARITY		0
+-#define XCHAL_DCACHE_ECC_PARITY		0
+-
+-/*  Number of encoded cache attr bits (see <xtensa/hal.h> for decoded bits):  */
+-#define XCHAL_CA_BITS			4
+-
+-
+-/*----------------------------------------------------------------------
+-			INTERNAL I/D RAM/ROMs and XLMI
+-  ----------------------------------------------------------------------*/
+-
+-#define XCHAL_NUM_INSTROM		0	/* number of core instr. ROMs */
+-#define XCHAL_NUM_INSTRAM		0	/* number of core instr. RAMs */
+-#define XCHAL_NUM_DATAROM		0	/* number of core data ROMs */
+-#define XCHAL_NUM_DATARAM		1	/* number of core data RAMs */
+-#define XCHAL_NUM_URAM			0	/* number of core unified RAMs*/
+-#define XCHAL_NUM_XLMI			1	/* number of core XLMI ports */
+-
+-/*  Data RAM 0:  */
+-#define XCHAL_DATARAM0_VADDR		0x3FFF0000
+-#define XCHAL_DATARAM0_PADDR		0x3FFF0000
+-#define XCHAL_DATARAM0_SIZE		65536
+-#define XCHAL_DATARAM0_ECC_PARITY	0
+-
+-/*  XLMI Port 0:  */
+-#define XCHAL_XLMI0_VADDR		0x37F80000
+-#define XCHAL_XLMI0_PADDR		0x37F80000
+-#define XCHAL_XLMI0_SIZE		262144
+-#define XCHAL_XLMI0_ECC_PARITY	0
+-
+-
+-/*----------------------------------------------------------------------
+-			INTERRUPTS and TIMERS
+-  ----------------------------------------------------------------------*/
+-
+-#define XCHAL_HAVE_INTERRUPTS		1	/* interrupt option */
+-#define XCHAL_HAVE_HIGHPRI_INTERRUPTS	1	/* med/high-pri. interrupts */
+-#define XCHAL_HAVE_NMI			1	/* non-maskable interrupt */
+-#define XCHAL_HAVE_CCOUNT		1	/* CCOUNT reg. (timer option) */
+-#define XCHAL_NUM_TIMERS		3	/* number of CCOMPAREn regs */
+-#define XCHAL_NUM_INTERRUPTS		27	/* number of interrupts */
+-#define XCHAL_NUM_INTERRUPTS_LOG2	5	/* ceil(log2(NUM_INTERRUPTS)) */
+-#define XCHAL_NUM_EXTINTERRUPTS		20	/* num of external interrupts */
+-#define XCHAL_NUM_INTLEVELS		4	/* number of interrupt levels
+-						   (not including level zero) */
+-#define XCHAL_EXCM_LEVEL		1	/* level masked by PS.EXCM */
+-	/* (always 1 in XEA1; levels 2 .. EXCM_LEVEL are "medium priority") */
+-
+-/*  Masks of interrupts at each interrupt level:  */
+-#define XCHAL_INTLEVEL1_MASK		0x01F07FFF
+-#define XCHAL_INTLEVEL2_MASK		0x02018000
+-#define XCHAL_INTLEVEL3_MASK		0x04060000
+-#define XCHAL_INTLEVEL4_MASK		0x00000000
+-#define XCHAL_INTLEVEL5_MASK		0x00080000
+-#define XCHAL_INTLEVEL6_MASK		0x00000000
+-#define XCHAL_INTLEVEL7_MASK		0x00000000
+-
+-/*  Masks of interrupts at each range 1..n of interrupt levels:  */
+-#define XCHAL_INTLEVEL1_ANDBELOW_MASK	0x01F07FFF
+-#define XCHAL_INTLEVEL2_ANDBELOW_MASK	0x03F1FFFF
+-#define XCHAL_INTLEVEL3_ANDBELOW_MASK	0x07F7FFFF
+-#define XCHAL_INTLEVEL4_ANDBELOW_MASK	0x07F7FFFF
+-#define XCHAL_INTLEVEL5_ANDBELOW_MASK	0x07FFFFFF
+-#define XCHAL_INTLEVEL6_ANDBELOW_MASK	0x07FFFFFF
+-#define XCHAL_INTLEVEL7_ANDBELOW_MASK	0x07FFFFFF
+-
+-/*  Level of each interrupt:  */
+-#define XCHAL_INT0_LEVEL		1
+-#define XCHAL_INT1_LEVEL		1
+-#define XCHAL_INT2_LEVEL		1
+-#define XCHAL_INT3_LEVEL		1
+-#define XCHAL_INT4_LEVEL		1
+-#define XCHAL_INT5_LEVEL		1
+-#define XCHAL_INT6_LEVEL		1
+-#define XCHAL_INT7_LEVEL		1
+-#define XCHAL_INT8_LEVEL		1
+-#define XCHAL_INT9_LEVEL		1
+-#define XCHAL_INT10_LEVEL		1
+-#define XCHAL_INT11_LEVEL		1
+-#define XCHAL_INT12_LEVEL		1
+-#define XCHAL_INT13_LEVEL		1
+-#define XCHAL_INT14_LEVEL		1
+-#define XCHAL_INT15_LEVEL		2
+-#define XCHAL_INT16_LEVEL		2
+-#define XCHAL_INT17_LEVEL		3
+-#define XCHAL_INT18_LEVEL		3
+-#define XCHAL_INT19_LEVEL		5
+-#define XCHAL_INT20_LEVEL		1
+-#define XCHAL_INT21_LEVEL		1
+-#define XCHAL_INT22_LEVEL		1
+-#define XCHAL_INT23_LEVEL		1
+-#define XCHAL_INT24_LEVEL		1
+-#define XCHAL_INT25_LEVEL		2
+-#define XCHAL_INT26_LEVEL		3
+-#define XCHAL_DEBUGLEVEL		4	/* debug interrupt level */
+-#define XCHAL_HAVE_DEBUG_EXTERN_INT	1	/* OCD external db interrupt */
+-#define XCHAL_NMILEVEL			5	/* NMI "level" (for use with
+-						   EXCSAVE/EPS/EPC_n, RFI n) */
+-
+-/*  Type of each interrupt:  */
+-#define XCHAL_INT0_TYPE 	XTHAL_INTTYPE_EXTERN_LEVEL
+-#define XCHAL_INT1_TYPE 	XTHAL_INTTYPE_EXTERN_LEVEL
+-#define XCHAL_INT2_TYPE 	XTHAL_INTTYPE_EXTERN_LEVEL
+-#define XCHAL_INT3_TYPE 	XTHAL_INTTYPE_EXTERN_LEVEL
+-#define XCHAL_INT4_TYPE 	XTHAL_INTTYPE_EXTERN_LEVEL
+-#define XCHAL_INT5_TYPE 	XTHAL_INTTYPE_EXTERN_LEVEL
+-#define XCHAL_INT6_TYPE 	XTHAL_INTTYPE_EXTERN_LEVEL
+-#define XCHAL_INT7_TYPE 	XTHAL_INTTYPE_EXTERN_LEVEL
+-#define XCHAL_INT8_TYPE 	XTHAL_INTTYPE_EXTERN_LEVEL
+-#define XCHAL_INT9_TYPE 	XTHAL_INTTYPE_EXTERN_LEVEL
+-#define XCHAL_INT10_TYPE 	XTHAL_INTTYPE_EXTERN_LEVEL
+-#define XCHAL_INT11_TYPE 	XTHAL_INTTYPE_EXTERN_LEVEL
+-#define XCHAL_INT12_TYPE 	XTHAL_INTTYPE_EXTERN_LEVEL
+-#define XCHAL_INT13_TYPE 	XTHAL_INTTYPE_EXTERN_LEVEL
+-#define XCHAL_INT14_TYPE 	XTHAL_INTTYPE_EXTERN_LEVEL
+-#define XCHAL_INT15_TYPE 	XTHAL_INTTYPE_EXTERN_LEVEL
+-#define XCHAL_INT16_TYPE 	XTHAL_INTTYPE_EXTERN_LEVEL
+-#define XCHAL_INT17_TYPE 	XTHAL_INTTYPE_EXTERN_LEVEL
+-#define XCHAL_INT18_TYPE 	XTHAL_INTTYPE_EXTERN_LEVEL
+-#define XCHAL_INT19_TYPE 	XTHAL_INTTYPE_NMI
+-#define XCHAL_INT20_TYPE 	XTHAL_INTTYPE_SOFTWARE
+-#define XCHAL_INT21_TYPE 	XTHAL_INTTYPE_SOFTWARE
+-#define XCHAL_INT22_TYPE 	XTHAL_INTTYPE_SOFTWARE
+-#define XCHAL_INT23_TYPE 	XTHAL_INTTYPE_SOFTWARE
+-#define XCHAL_INT24_TYPE 	XTHAL_INTTYPE_TIMER
+-#define XCHAL_INT25_TYPE 	XTHAL_INTTYPE_TIMER
+-#define XCHAL_INT26_TYPE 	XTHAL_INTTYPE_TIMER
+-
+-/*  Masks of interrupts for each type of interrupt:  */
+-#define XCHAL_INTTYPE_MASK_UNCONFIGURED	0xF8000000
+-#define XCHAL_INTTYPE_MASK_SOFTWARE	0x00F00000
+-#define XCHAL_INTTYPE_MASK_EXTERN_EDGE	0x00000000
+-#define XCHAL_INTTYPE_MASK_EXTERN_LEVEL	0x0007FFFF
+-#define XCHAL_INTTYPE_MASK_TIMER	0x07000000
+-#define XCHAL_INTTYPE_MASK_NMI		0x00080000
+-#define XCHAL_INTTYPE_MASK_WRITE_ERROR	0x00000000
+-
+-/*  Interrupt numbers assigned to specific interrupt sources:  */
+-#define XCHAL_TIMER0_INTERRUPT		24	/* CCOMPARE0 */
+-#define XCHAL_TIMER1_INTERRUPT		25	/* CCOMPARE1 */
+-#define XCHAL_TIMER2_INTERRUPT		26	/* CCOMPARE2 */
+-#define XCHAL_TIMER3_INTERRUPT		XTHAL_TIMER_UNCONFIGURED
+-#define XCHAL_NMI_INTERRUPT		19	/* non-maskable interrupt */
+-
+-/*  Interrupt numbers for levels at which only one interrupt is configured:  */
+-#define XCHAL_INTLEVEL5_NUM		19
+-/*  (There are many interrupts each at level(s) 1, 2, 3.)  */
+-
+-
+-/*
+- *  External interrupt vectors/levels.
+- *  These macros describe how Xtensa processor interrupt numbers
+- *  (as numbered internally, eg. in INTERRUPT and INTENABLE registers)
+- *  map to external BInterrupt<n> pins, for those interrupts
+- *  configured as external (level-triggered, edge-triggered, or NMI).
+- *  See the Xtensa processor databook for more details.
+- */
+-
+-/*  Core interrupt numbers mapped to each EXTERNAL interrupt number:  */
+-#define XCHAL_EXTINT0_NUM		0	/* (intlevel 1) */
+-#define XCHAL_EXTINT1_NUM		1	/* (intlevel 1) */
+-#define XCHAL_EXTINT2_NUM		2	/* (intlevel 1) */
+-#define XCHAL_EXTINT3_NUM		3	/* (intlevel 1) */
+-#define XCHAL_EXTINT4_NUM		4	/* (intlevel 1) */
+-#define XCHAL_EXTINT5_NUM		5	/* (intlevel 1) */
+-#define XCHAL_EXTINT6_NUM		6	/* (intlevel 1) */
+-#define XCHAL_EXTINT7_NUM		7	/* (intlevel 1) */
+-#define XCHAL_EXTINT8_NUM		8	/* (intlevel 1) */
+-#define XCHAL_EXTINT9_NUM		9	/* (intlevel 1) */
+-#define XCHAL_EXTINT10_NUM		10	/* (intlevel 1) */
+-#define XCHAL_EXTINT11_NUM		11	/* (intlevel 1) */
+-#define XCHAL_EXTINT12_NUM		12	/* (intlevel 1) */
+-#define XCHAL_EXTINT13_NUM		13	/* (intlevel 1) */
+-#define XCHAL_EXTINT14_NUM		14	/* (intlevel 1) */
+-#define XCHAL_EXTINT15_NUM		15	/* (intlevel 2) */
+-#define XCHAL_EXTINT16_NUM		16	/* (intlevel 2) */
+-#define XCHAL_EXTINT17_NUM		17	/* (intlevel 3) */
+-#define XCHAL_EXTINT18_NUM		18	/* (intlevel 3) */
+-#define XCHAL_EXTINT19_NUM		19	/* (intlevel 5) */
+-
+-
+-/*----------------------------------------------------------------------
+-			EXCEPTIONS and VECTORS
+-  ----------------------------------------------------------------------*/
+-
+-#define XCHAL_XEA_VERSION		2	/* Xtensa Exception Architecture
+-						   number: 1 == XEA1 (old)
+-							   2 == XEA2 (new)
+-							   0 == XEAX (extern) */
+-#define XCHAL_HAVE_XEA1			0	/* Exception Architecture 1 */
+-#define XCHAL_HAVE_XEA2			1	/* Exception Architecture 2 */
+-#define XCHAL_HAVE_XEAX			0	/* External Exception Arch. */
+-#define XCHAL_HAVE_EXCEPTIONS		1	/* exception option */
+-#define XCHAL_HAVE_MEM_ECC_PARITY	0	/* local memory ECC/parity */
+-#define XCHAL_HAVE_VECTOR_SELECT	0	/* relocatable vectors */
+-#define XCHAL_HAVE_VECBASE		0	/* relocatable vectors */
+-
+-#define XCHAL_RESET_VECOFS		0x00000000
+-#define XCHAL_RESET_VECTOR_VADDR	0x3FFE03D0
+-#define XCHAL_RESET_VECTOR_PADDR	0x3FFE03D0
+-#define XCHAL_USER_VECOFS		0x00000000
+-#define XCHAL_USER_VECTOR_VADDR		0x40000220
+-#define XCHAL_USER_VECTOR_PADDR		0x40000220
+-#define XCHAL_KERNEL_VECOFS		0x00000000
+-#define XCHAL_KERNEL_VECTOR_VADDR	0x40000200
+-#define XCHAL_KERNEL_VECTOR_PADDR	0x40000200
+-#define XCHAL_DOUBLEEXC_VECOFS		0x00000000
+-#define XCHAL_DOUBLEEXC_VECTOR_VADDR	0x400002A0
+-#define XCHAL_DOUBLEEXC_VECTOR_PADDR	0x400002A0
+-#define XCHAL_WINDOW_OF4_VECOFS		0x00000000
+-#define XCHAL_WINDOW_UF4_VECOFS		0x00000040
+-#define XCHAL_WINDOW_OF8_VECOFS		0x00000080
+-#define XCHAL_WINDOW_UF8_VECOFS		0x000000C0
+-#define XCHAL_WINDOW_OF12_VECOFS	0x00000100
+-#define XCHAL_WINDOW_UF12_VECOFS	0x00000140
+-#define XCHAL_WINDOW_VECTORS_VADDR	0x40000000
+-#define XCHAL_WINDOW_VECTORS_PADDR	0x40000000
+-#define XCHAL_INTLEVEL2_VECOFS		0x00000000
+-#define XCHAL_INTLEVEL2_VECTOR_VADDR	0x40000240
+-#define XCHAL_INTLEVEL2_VECTOR_PADDR	0x40000240
+-#define XCHAL_INTLEVEL3_VECOFS		0x00000000
+-#define XCHAL_INTLEVEL3_VECTOR_VADDR	0x40000260
+-#define XCHAL_INTLEVEL3_VECTOR_PADDR	0x40000260
+-#define XCHAL_INTLEVEL4_VECOFS		0x00000000
+-#define XCHAL_INTLEVEL4_VECTOR_VADDR	0x40000390
+-#define XCHAL_INTLEVEL4_VECTOR_PADDR	0x40000390
+-#define XCHAL_DEBUG_VECOFS		XCHAL_INTLEVEL4_VECOFS
+-#define XCHAL_DEBUG_VECTOR_VADDR	XCHAL_INTLEVEL4_VECTOR_VADDR
+-#define XCHAL_DEBUG_VECTOR_PADDR	XCHAL_INTLEVEL4_VECTOR_PADDR
+-#define XCHAL_NMI_VECOFS		0x00000000
+-#define XCHAL_NMI_VECTOR_VADDR		0x400003B0
+-#define XCHAL_NMI_VECTOR_PADDR		0x400003B0
+-#define XCHAL_INTLEVEL5_VECOFS		XCHAL_NMI_VECOFS
+-#define XCHAL_INTLEVEL5_VECTOR_VADDR	XCHAL_NMI_VECTOR_VADDR
+-#define XCHAL_INTLEVEL5_VECTOR_PADDR	XCHAL_NMI_VECTOR_PADDR
+-
+-
+-/*----------------------------------------------------------------------
+-				DEBUG
+-  ----------------------------------------------------------------------*/
+-
+-#define XCHAL_HAVE_OCD			1	/* OnChipDebug option */
+-#define XCHAL_NUM_IBREAK		2	/* number of IBREAKn regs */
+-#define XCHAL_NUM_DBREAK		2	/* number of DBREAKn regs */
+-#define XCHAL_HAVE_OCD_DIR_ARRAY	1	/* faster OCD option */
+-
+-
+-/*----------------------------------------------------------------------
+-				MMU
+-  ----------------------------------------------------------------------*/
+-
+-/*  See core-matmap.h header file for more details.  */
+-
+-#define XCHAL_HAVE_TLBS			1	/* inverse of HAVE_CACHEATTR */
+-#define XCHAL_HAVE_SPANNING_WAY		1	/* one way maps I+D 4GB vaddr */
+-#define XCHAL_HAVE_IDENTITY_MAP		1	/* vaddr == paddr always */
+-#define XCHAL_HAVE_CACHEATTR		0	/* CACHEATTR register present */
+-#define XCHAL_HAVE_MIMIC_CACHEATTR	1	/* region protection */
+-#define XCHAL_HAVE_XLT_CACHEATTR	0	/* region prot. w/translation */
+-#define XCHAL_HAVE_PTP_MMU		0	/* full MMU (with page table
+-						   [autorefill] and protection)
+-						   usable for an MMU-based OS */
+-/*  If none of the above last 4 are set, it's a custom TLB configuration.  */
+-
+-#define XCHAL_MMU_ASID_BITS		0	/* number of bits in ASIDs */
+-#define XCHAL_MMU_RINGS			1	/* number of rings (1..4) */
+-#define XCHAL_MMU_RING_BITS		0	/* num of bits in RING field */
+-
+-#endif /* !XTENSA_HAL_NON_PRIVILEGED_ONLY */
+-
+-
+-#endif /* _XTENSA_CORE_CONFIGURATION_H */
+-
+diff --git a/arch/xtensa/variants/s6000/include/variant/dmac.h b/arch/xtensa/variants/s6000/include/variant/dmac.h
+deleted file mode 100644
+index 3f88d9f..0000000
+--- a/arch/xtensa/variants/s6000/include/variant/dmac.h
++++ /dev/null
+@@ -1,387 +0,0 @@
+-/*
+- * include/asm-xtensa/variant-s6000/dmac.h
+- *
+- * This file is subject to the terms and conditions of the GNU General Public
+- * License.  See the file "COPYING" in the main directory of this archive
+- * for more details.
+- *
+- * Copyright (C) 2006 Tensilica Inc.
+- * Copyright (C) 2008 Emlix GmbH <info@emlix.com>
+- * Authors:	Fabian Godehardt <fg@emlix.com>
+- *		Oskar Schirmer <oskar@scara.com>
+- *		Daniel Gloeckner <dg@emlix.com>
+- */
+-
+-#ifndef __ASM_XTENSA_S6000_DMAC_H
+-#define __ASM_XTENSA_S6000_DMAC_H
+-#include <linux/io.h>
+-#include <variant/hardware.h>
+-
+-/* DMA global */
+-
+-#define S6_DMA_INTSTAT0		0x000
+-#define S6_DMA_INTSTAT1		0x004
+-#define S6_DMA_INTENABLE0	0x008
+-#define S6_DMA_INTENABLE1	0x00C
+-#define S6_DMA_INTRAW0		0x010
+-#define S6_DMA_INTRAW1		0x014
+-#define S6_DMA_INTCLEAR0	0x018
+-#define S6_DMA_INTCLEAR1	0x01C
+-#define S6_DMA_INTSET0		0x020
+-#define S6_DMA_INTSET1		0x024
+-#define S6_DMA_INT0_UNDER		0
+-#define S6_DMA_INT0_OVER		16
+-#define S6_DMA_INT1_CHANNEL		0
+-#define S6_DMA_INT1_MASTER		16
+-#define S6_DMA_INT1_MASTER_MASK			7
+-#define S6_DMA_TERMCNTIRQSTAT	0x028
+-#define S6_DMA_TERMCNTIRQCLR	0x02C
+-#define S6_DMA_TERMCNTIRQSET	0x030
+-#define S6_DMA_PENDCNTIRQSTAT	0x034
+-#define S6_DMA_PENDCNTIRQCLR	0x038
+-#define S6_DMA_PENDCNTIRQSET	0x03C
+-#define S6_DMA_LOWWMRKIRQSTAT	0x040
+-#define S6_DMA_LOWWMRKIRQCLR	0x044
+-#define S6_DMA_LOWWMRKIRQSET	0x048
+-#define S6_DMA_MASTERERRINFO	0x04C
+-#define S6_DMA_MASTERERR_CHAN(n)	(4*(n))
+-#define S6_DMA_MASTERERR_CHAN_MASK		0xF
+-#define S6_DMA_DESCRFIFO0	0x050
+-#define S6_DMA_DESCRFIFO1	0x054
+-#define S6_DMA_DESCRFIFO2	0x058
+-#define S6_DMA_DESCRFIFO2_AUTODISABLE	24
+-#define S6_DMA_DESCRFIFO3	0x05C
+-#define S6_DMA_MASTER0START	0x060
+-#define S6_DMA_MASTER0END	0x064
+-#define S6_DMA_MASTER1START	0x068
+-#define S6_DMA_MASTER1END	0x06C
+-#define S6_DMA_NEXTFREE		0x070
+-#define S6_DMA_NEXTFREE_CHAN		0
+-#define S6_DMA_NEXTFREE_CHAN_MASK	0x1F
+-#define S6_DMA_NEXTFREE_ENA		16
+-#define S6_DMA_NEXTFREE_ENA_MASK	((1 << 16) - 1)
+-#define S6_DMA_DPORTCTRLGRP(p)	((p) * 4 + 0x074)
+-#define S6_DMA_DPORTCTRLGRP_FRAMEREP	0
+-#define S6_DMA_DPORTCTRLGRP_NRCHANS	1
+-#define S6_DMA_DPORTCTRLGRP_NRCHANS_1		0
+-#define S6_DMA_DPORTCTRLGRP_NRCHANS_3		1
+-#define S6_DMA_DPORTCTRLGRP_NRCHANS_4		2
+-#define S6_DMA_DPORTCTRLGRP_NRCHANS_2		3
+-#define S6_DMA_DPORTCTRLGRP_ENA		31
+-
+-
+-/* DMA per channel */
+-
+-#define DMA_CHNL(dmac, n)	((dmac) + 0x1000 + (n) * 0x100)
+-#define DMA_INDEX_CHNL(addr)	(((addr) >> 8) & 0xF)
+-#define DMA_MASK_DMAC(addr)	((addr) & 0xFFFF0000)
+-#define S6_DMA_CHNCTRL		0x000
+-#define S6_DMA_CHNCTRL_ENABLE		0
+-#define S6_DMA_CHNCTRL_PAUSE		1
+-#define S6_DMA_CHNCTRL_PRIO		2
+-#define S6_DMA_CHNCTRL_PRIO_MASK		3
+-#define S6_DMA_CHNCTRL_PERIPHXFER	4
+-#define S6_DMA_CHNCTRL_PERIPHENA	5
+-#define S6_DMA_CHNCTRL_SRCINC		6
+-#define S6_DMA_CHNCTRL_DSTINC		7
+-#define S6_DMA_CHNCTRL_BURSTLOG		8
+-#define S6_DMA_CHNCTRL_BURSTLOG_MASK		7
+-#define S6_DMA_CHNCTRL_DESCFIFODEPTH	12
+-#define S6_DMA_CHNCTRL_DESCFIFODEPTH_MASK	0x1F
+-#define S6_DMA_CHNCTRL_DESCFIFOFULL	17
+-#define S6_DMA_CHNCTRL_BWCONSEL		18
+-#define S6_DMA_CHNCTRL_BWCONENA		19
+-#define S6_DMA_CHNCTRL_PENDGCNTSTAT	20
+-#define S6_DMA_CHNCTRL_PENDGCNTSTAT_MASK	0x3F
+-#define S6_DMA_CHNCTRL_LOWWMARK		26
+-#define S6_DMA_CHNCTRL_LOWWMARK_MASK		0xF
+-#define S6_DMA_CHNCTRL_TSTAMP		30
+-#define S6_DMA_TERMCNTNB	0x004
+-#define S6_DMA_TERMCNTNB_MASK			0xFFFF
+-#define S6_DMA_TERMCNTTMO	0x008
+-#define S6_DMA_TERMCNTSTAT	0x00C
+-#define S6_DMA_TERMCNTSTAT_MASK		0xFF
+-#define S6_DMA_CMONCHUNK	0x010
+-#define S6_DMA_SRCSKIP		0x014
+-#define S6_DMA_DSTSKIP		0x018
+-#define S6_DMA_CUR_SRC		0x024
+-#define S6_DMA_CUR_DST		0x028
+-#define S6_DMA_TIMESTAMP	0x030
+-
+-/* DMA channel lists */
+-
+-#define S6_DPDMA_CHAN(stream, channel)	(4 * (stream) + (channel))
+-#define S6_DPDMA_NB	16
+-
+-#define S6_HIFDMA_GMACTX	0
+-#define S6_HIFDMA_GMACRX	1
+-#define S6_HIFDMA_I2S0		2
+-#define S6_HIFDMA_I2S1		3
+-#define S6_HIFDMA_EGIB		4
+-#define S6_HIFDMA_PCITX		5
+-#define S6_HIFDMA_PCIRX		6
+-#define S6_HIFDMA_NB	7
+-
+-#define S6_NIDMA_NB	4
+-
+-#define S6_LMSDMA_NB	12
+-
+-/* controller access */
+-
+-#define S6_DMAC_NB	4
+-#define S6_DMAC_INDEX(dmac)	(((unsigned)(dmac) >> 18) % S6_DMAC_NB)
+-
+-struct s6dmac_ctrl {
+-	u32 dmac;
+-	spinlock_t lock;
+-	u8 chan_nb;
+-};
+-
+-extern struct s6dmac_ctrl s6dmac_ctrl[S6_DMAC_NB];
+-
+-
+-/* DMA control, per channel */
+-
+-static inline int s6dmac_fifo_full(u32 dmac, int chan)
+-{
+-	return (readl(DMA_CHNL(dmac, chan) + S6_DMA_CHNCTRL)
+-		& (1 << S6_DMA_CHNCTRL_DESCFIFOFULL)) && 1;
+-}
+-
+-static inline int s6dmac_termcnt_irq(u32 dmac, int chan)
+-{
+-	u32 m = 1 << chan;
+-	int r = (readl(dmac + S6_DMA_TERMCNTIRQSTAT) & m) && 1;
+-	if (r)
+-		writel(m, dmac + S6_DMA_TERMCNTIRQCLR);
+-	return r;
+-}
+-
+-static inline int s6dmac_pendcnt_irq(u32 dmac, int chan)
+-{
+-	u32 m = 1 << chan;
+-	int r = (readl(dmac + S6_DMA_PENDCNTIRQSTAT) & m) && 1;
+-	if (r)
+-		writel(m, dmac + S6_DMA_PENDCNTIRQCLR);
+-	return r;
+-}
+-
+-static inline int s6dmac_lowwmark_irq(u32 dmac, int chan)
+-{
+-	int r = (readl(dmac + S6_DMA_LOWWMRKIRQSTAT) & (1 << chan)) ? 1 : 0;
+-	if (r)
+-		writel(1 << chan, dmac + S6_DMA_LOWWMRKIRQCLR);
+-	return r;
+-}
+-
+-static inline u32 s6dmac_pending_count(u32 dmac, int chan)
+-{
+-	return (readl(DMA_CHNL(dmac, chan) + S6_DMA_CHNCTRL)
+-			>> S6_DMA_CHNCTRL_PENDGCNTSTAT)
+-		& S6_DMA_CHNCTRL_PENDGCNTSTAT_MASK;
+-}
+-
+-static inline void s6dmac_set_terminal_count(u32 dmac, int chan, u32 n)
+-{
+-	n &= S6_DMA_TERMCNTNB_MASK;
+-	n |= readl(DMA_CHNL(dmac, chan) + S6_DMA_TERMCNTNB)
+-	      & ~S6_DMA_TERMCNTNB_MASK;
+-	writel(n, DMA_CHNL(dmac, chan) + S6_DMA_TERMCNTNB);
+-}
+-
+-static inline u32 s6dmac_get_terminal_count(u32 dmac, int chan)
+-{
+-	return (readl(DMA_CHNL(dmac, chan) + S6_DMA_TERMCNTNB))
+-		& S6_DMA_TERMCNTNB_MASK;
+-}
+-
+-static inline u32 s6dmac_timestamp(u32 dmac, int chan)
+-{
+-	return readl(DMA_CHNL(dmac, chan) + S6_DMA_TIMESTAMP);
+-}
+-
+-static inline u32 s6dmac_cur_src(u32 dmac, int chan)
+-{
+-	return readl(DMA_CHNL(dmac, chan) + S6_DMA_CUR_SRC);
+-}
+-
+-static inline u32 s6dmac_cur_dst(u32 dmac, int chan)
+-{
+-	return readl(DMA_CHNL(dmac, chan) + S6_DMA_CUR_DST);
+-}
+-
+-static inline void s6dmac_disable_chan(u32 dmac, int chan)
+-{
+-	u32 ctrl;
+-	writel(readl(DMA_CHNL(dmac, chan) + S6_DMA_CHNCTRL)
+-		& ~(1 << S6_DMA_CHNCTRL_ENABLE),
+-		DMA_CHNL(dmac, chan) + S6_DMA_CHNCTRL);
+-	do
+-		ctrl = readl(DMA_CHNL(dmac, chan) + S6_DMA_CHNCTRL);
+-	while (ctrl & (1 << S6_DMA_CHNCTRL_ENABLE));
+-}
+-
+-static inline void s6dmac_set_stride_skip(u32 dmac, int chan,
+-	int comchunk,		/* 0: disable scatter/gather */
+-	int srcskip, int dstskip)
+-{
+-	writel(comchunk, DMA_CHNL(dmac, chan) + S6_DMA_CMONCHUNK);
+-	writel(srcskip, DMA_CHNL(dmac, chan) + S6_DMA_SRCSKIP);
+-	writel(dstskip, DMA_CHNL(dmac, chan) + S6_DMA_DSTSKIP);
+-}
+-
+-static inline void s6dmac_enable_chan(u32 dmac, int chan,
+-	int prio,               /* 0 (highest) .. 3 (lowest) */
+-	int periphxfer,         /* <0: disable p.req.line, 0..1: mode */
+-	int srcinc, int dstinc, /* 0: dont increment src/dst address */
+-	int comchunk,		/* 0: disable scatter/gather */
+-	int srcskip, int dstskip,
+-	int burstsize,		/* 4 for I2S, 7 for everything else */
+-	int bandwidthconserve,  /* <0: disable, 0..1: select */
+-	int lowwmark,           /* 0..15 */
+-	int timestamp,		/* 0: disable timestamp */
+-	int enable)		/* 0: disable for now */
+-{
+-	writel(1, DMA_CHNL(dmac, chan) + S6_DMA_TERMCNTNB);
+-	writel(0, DMA_CHNL(dmac, chan) + S6_DMA_TERMCNTTMO);
+-	writel(lowwmark << S6_DMA_CHNCTRL_LOWWMARK,
+-		DMA_CHNL(dmac, chan) + S6_DMA_CHNCTRL);
+-	s6dmac_set_stride_skip(dmac, chan, comchunk, srcskip, dstskip);
+-	writel(((enable ? 1 : 0) << S6_DMA_CHNCTRL_ENABLE) |
+-		(prio << S6_DMA_CHNCTRL_PRIO) |
+-		(((periphxfer > 0) ? 1 : 0) << S6_DMA_CHNCTRL_PERIPHXFER) |
+-		(((periphxfer < 0) ? 0 : 1) << S6_DMA_CHNCTRL_PERIPHENA) |
+-		((srcinc ? 1 : 0) << S6_DMA_CHNCTRL_SRCINC) |
+-		((dstinc ? 1 : 0) << S6_DMA_CHNCTRL_DSTINC) |
+-		(burstsize << S6_DMA_CHNCTRL_BURSTLOG) |
+-		(((bandwidthconserve > 0) ? 1 : 0) << S6_DMA_CHNCTRL_BWCONSEL) |
+-		(((bandwidthconserve < 0) ? 0 : 1) << S6_DMA_CHNCTRL_BWCONENA) |
+-		(lowwmark << S6_DMA_CHNCTRL_LOWWMARK) |
+-		((timestamp ? 1 : 0) << S6_DMA_CHNCTRL_TSTAMP),
+-		DMA_CHNL(dmac, chan) + S6_DMA_CHNCTRL);
+-}
+-
+-
+-/* DMA control, per engine */
+-
+-static inline unsigned _dmac_addr_index(u32 dmac)
+-{
+-	unsigned i = S6_DMAC_INDEX(dmac);
+-	if (s6dmac_ctrl[i].dmac != dmac)
+-		BUG();
+-	return i;
+-}
+-
+-static inline void _s6dmac_disable_error_irqs(u32 dmac, u32 mask)
+-{
+-	writel(mask, dmac + S6_DMA_TERMCNTIRQCLR);
+-	writel(mask, dmac + S6_DMA_PENDCNTIRQCLR);
+-	writel(mask, dmac + S6_DMA_LOWWMRKIRQCLR);
+-	writel(readl(dmac + S6_DMA_INTENABLE0)
+-		& ~((mask << S6_DMA_INT0_UNDER) | (mask << S6_DMA_INT0_OVER)),
+-		dmac + S6_DMA_INTENABLE0);
+-	writel(readl(dmac + S6_DMA_INTENABLE1) & ~(mask << S6_DMA_INT1_CHANNEL),
+-		dmac + S6_DMA_INTENABLE1);
+-	writel((mask << S6_DMA_INT0_UNDER) | (mask << S6_DMA_INT0_OVER),
+-		dmac + S6_DMA_INTCLEAR0);
+-	writel(mask << S6_DMA_INT1_CHANNEL, dmac + S6_DMA_INTCLEAR1);
+-}
+-
+-/*
+- * request channel from specified engine
+- * with chan<0, accept any channel
+- * further parameters see s6dmac_enable_chan
+- * returns < 0 upon error, channel nb otherwise
+- */
+-static inline int s6dmac_request_chan(u32 dmac, int chan,
+-	int prio,
+-	int periphxfer,
+-	int srcinc, int dstinc,
+-	int comchunk,
+-	int srcskip, int dstskip,
+-	int burstsize,
+-	int bandwidthconserve,
+-	int lowwmark,
+-	int timestamp,
+-	int enable)
+-{
+-	int r = chan;
+-	unsigned long flags;
+-	spinlock_t *spinl = &s6dmac_ctrl[_dmac_addr_index(dmac)].lock;
+-	spin_lock_irqsave(spinl, flags);
+-	if (r < 0) {
+-		r = (readl(dmac + S6_DMA_NEXTFREE) >> S6_DMA_NEXTFREE_CHAN)
+-			& S6_DMA_NEXTFREE_CHAN_MASK;
+-	}
+-	if (r >= s6dmac_ctrl[_dmac_addr_index(dmac)].chan_nb) {
+-		if (chan < 0)
+-			r = -EBUSY;
+-		else
+-			r = -ENXIO;
+-	} else if (((readl(dmac + S6_DMA_NEXTFREE) >> S6_DMA_NEXTFREE_ENA)
+-			>> r) & 1) {
+-		r = -EBUSY;
+-	} else {
+-		s6dmac_enable_chan(dmac, r, prio, periphxfer,
+-			srcinc, dstinc, comchunk, srcskip, dstskip, burstsize,
+-			bandwidthconserve, lowwmark, timestamp, enable);
+-	}
+-	spin_unlock_irqrestore(spinl, flags);
+-	return r;
+-}
+-
+-static inline void s6dmac_put_fifo(u32 dmac, int chan,
+-	u32 src, u32 dst, u32 size)
+-{
+-	unsigned long flags;
+-	spinlock_t *spinl = &s6dmac_ctrl[_dmac_addr_index(dmac)].lock;
+-	spin_lock_irqsave(spinl, flags);
+-	writel(src, dmac + S6_DMA_DESCRFIFO0);
+-	writel(dst, dmac + S6_DMA_DESCRFIFO1);
+-	writel(size, dmac + S6_DMA_DESCRFIFO2);
+-	writel(chan, dmac + S6_DMA_DESCRFIFO3);
+-	spin_unlock_irqrestore(spinl, flags);
+-}
+-
+-static inline u32 s6dmac_channel_enabled(u32 dmac, int chan)
+-{
+-	return readl(DMA_CHNL(dmac, chan) + S6_DMA_CHNCTRL) &
+-			(1 << S6_DMA_CHNCTRL_ENABLE);
+-}
+-
+-/*
+- * group 1-4 data port channels
+- * with port=0..3, nrch=1-4 channels,
+- * frrep=0/1 (dis- or enable frame repeat)
+- */
+-static inline void s6dmac_dp_setup_group(u32 dmac, int port,
+-			int nrch, int frrep)
+-{
+-	static const u8 mask[4] = {0, 3, 1, 2};
+-	BUG_ON(dmac != S6_REG_DPDMA);
+-	if ((port < 0) || (port > 3) || (nrch < 1) || (nrch > 4))
+-		return;
+-	writel((mask[nrch - 1] << S6_DMA_DPORTCTRLGRP_NRCHANS)
+-		| ((frrep ? 1 : 0) << S6_DMA_DPORTCTRLGRP_FRAMEREP),
+-		dmac + S6_DMA_DPORTCTRLGRP(port));
+-}
+-
+-static inline void s6dmac_dp_switch_group(u32 dmac, int port, int enable)
+-{
+-	u32 tmp;
+-	BUG_ON(dmac != S6_REG_DPDMA);
+-	tmp = readl(dmac + S6_DMA_DPORTCTRLGRP(port));
+-	if (enable)
+-		tmp |= (1 << S6_DMA_DPORTCTRLGRP_ENA);
+-	else
+-		tmp &= ~(1 << S6_DMA_DPORTCTRLGRP_ENA);
+-	writel(tmp, dmac + S6_DMA_DPORTCTRLGRP(port));
+-}
+-
+-extern void s6dmac_put_fifo_cache(u32 dmac, int chan,
+-	u32 src, u32 dst, u32 size);
+-extern void s6dmac_disable_error_irqs(u32 dmac, u32 mask);
+-extern u32 s6dmac_int_sources(u32 dmac, u32 channel);
+-extern void s6dmac_release_chan(u32 dmac, int chan);
+-
+-#endif /* __ASM_XTENSA_S6000_DMAC_H */
+diff --git a/arch/xtensa/variants/s6000/include/variant/gpio.h b/arch/xtensa/variants/s6000/include/variant/gpio.h
+deleted file mode 100644
+index 8484ab0..0000000
+--- a/arch/xtensa/variants/s6000/include/variant/gpio.h
++++ /dev/null
+@@ -1,6 +0,0 @@
+-#ifndef _XTENSA_VARIANT_S6000_GPIO_H
+-#define _XTENSA_VARIANT_S6000_GPIO_H
+-
+-extern int s6_gpio_init(u32 afsel);
+-
+-#endif /* _XTENSA_VARIANT_S6000_GPIO_H */
+diff --git a/arch/xtensa/variants/s6000/include/variant/hardware.h b/arch/xtensa/variants/s6000/include/variant/hardware.h
+deleted file mode 100644
+index 5d9ba09..0000000
+--- a/arch/xtensa/variants/s6000/include/variant/hardware.h
++++ /dev/null
+@@ -1,259 +0,0 @@
+-#ifndef __XTENSA_S6000_HARDWARE_H
+-#define __XTENSA_S6000_HARDWARE_H
+-
+-#define S6_SCLK			1843200
+-
+-#define S6_MEM_REG              0x20000000
+-#define S6_MEM_EFI              0x33F00000
+-#define S6_MEM_PCIE_DATARAM1    0x34000000
+-#define S6_MEM_XLMI             0x37F80000
+-#define S6_MEM_PIF_DATARAM1     0x37FFC000
+-#define S6_MEM_GMAC             0x38000000
+-#define S6_MEM_I2S              0x3A000000
+-#define S6_MEM_EGIB             0x3C000000
+-#define S6_MEM_PCIE_CFG         0x3E000000
+-#define S6_MEM_PIF_DATARAM      0x3FFE0000
+-#define S6_MEM_XLMI_DATARAM     0x3FFF0000
+-#define S6_MEM_DDR              0x40000000
+-#define S6_MEM_PCIE_APER        0xC0000000
+-#define S6_MEM_AUX              0xF0000000
+-
+-/* Device addresses */
+-
+-#define S6_REG_SCB              S6_MEM_REG
+-#define S6_REG_NB               (S6_REG_SCB + 0x10000)
+-#define S6_REG_LMSDMA           (S6_REG_SCB + 0x20000)
+-#define S6_REG_NI               (S6_REG_SCB + 0x30000)
+-#define S6_REG_NIDMA            (S6_REG_SCB + 0x40000)
+-#define S6_REG_NS               (S6_REG_SCB + 0x50000)
+-#define S6_REG_DDR              (S6_REG_SCB + 0x60000)
+-#define S6_REG_GREG1            (S6_REG_SCB + 0x70000)
+-#define S6_REG_DP               (S6_REG_SCB + 0x80000)
+-#define S6_REG_DPDMA            (S6_REG_SCB + 0x90000)
+-#define S6_REG_EGIB             (S6_REG_SCB + 0xA0000)
+-#define S6_REG_PCIE             (S6_REG_SCB + 0xB0000)
+-#define S6_REG_I2S              (S6_REG_SCB + 0xC0000)
+-#define S6_REG_GMAC             (S6_REG_SCB + 0xD0000)
+-#define S6_REG_HIFDMA           (S6_REG_SCB + 0xE0000)
+-#define S6_REG_GREG2            (S6_REG_SCB + 0xF0000)
+-
+-#define S6_REG_APB              S6_REG_SCB
+-#define S6_REG_UART             (S6_REG_APB + 0x0000)
+-#define S6_REG_INTC             (S6_REG_APB + 0x2000)
+-#define S6_REG_SPI              (S6_REG_APB + 0x3000)
+-#define S6_REG_I2C              (S6_REG_APB + 0x4000)
+-#define S6_REG_GPIO             (S6_REG_APB + 0x8000)
+-
+-/* Global register block */
+-
+-#define S6_GREG1_PLL_LOCKCLEAR	0x000
+-#define S6_GREG1_PLL_LOCK_SYS		0
+-#define S6_GREG1_PLL_LOCK_IO		1
+-#define S6_GREG1_PLL_LOCK_AIM		2
+-#define S6_GREG1_PLL_LOCK_DP0		3
+-#define S6_GREG1_PLL_LOCK_DP2		4
+-#define S6_GREG1_PLL_LOCK_DDR		5
+-#define S6_GREG1_PLL_LOCKSTAT	0x004
+-#define S6_GREG1_PLL_LOCKSTAT_CURLOCK	0
+-#define S6_GREG1_PLL_LOCKSTAT_EVERUNLCK	8
+-#define S6_GREG1_PLLSEL		0x010
+-#define S6_GREG1_PLLSEL_AIM		0
+-#define S6_GREG1_PLLSEL_AIM_DDR2		0
+-#define S6_GREG1_PLLSEL_AIM_300MHZ		1
+-#define S6_GREG1_PLLSEL_AIM_240MHZ		2
+-#define S6_GREG1_PLLSEL_AIM_200MHZ		3
+-#define S6_GREG1_PLLSEL_AIM_150MHZ		4
+-#define S6_GREG1_PLLSEL_AIM_120MHZ		5
+-#define S6_GREG1_PLLSEL_AIM_40MHZ		6
+-#define S6_GREG1_PLLSEL_AIM_PLLAIMREF		7
+-#define S6_GREG1_PLLSEL_AIM_MASK		7
+-#define S6_GREG1_PLLSEL_DDR		8
+-#define S6_GREG1_PLLSEL_DDR_HS			0
+-#define S6_GREG1_PLLSEL_DDR_333MHZ		1
+-#define S6_GREG1_PLLSEL_DDR_250MHZ		2
+-#define S6_GREG1_PLLSEL_DDR_200MHZ		3
+-#define S6_GREG1_PLLSEL_DDR_167MHZ		4
+-#define S6_GREG1_PLLSEL_DDR_100MHZ		5
+-#define S6_GREG1_PLLSEL_DDR_33MHZ		6
+-#define S6_GREG1_PLLSEL_DDR_PLLIOREF		7
+-#define S6_GREG1_PLLSEL_DDR_MASK		7
+-#define S6_GREG1_PLLSEL_GMAC		16
+-#define S6_GREG1_PLLSEL_GMAC_125MHZ		0
+-#define S6_GREG1_PLLSEL_GMAC_25MHZ		1
+-#define S6_GREG1_PLLSEL_GMAC_2500KHZ		2
+-#define S6_GREG1_PLLSEL_GMAC_EXTERN		3
+-#define S6_GREG1_PLLSEL_GMAC_MASK		3
+-#define S6_GREG1_PLLSEL_GMII		18
+-#define S6_GREG1_PLLSEL_GMII_111MHZ		0
+-#define S6_GREG1_PLLSEL_GMII_IOREF		1
+-#define S6_GREG1_PLLSEL_GMII_NONE		2
+-#define S6_GREG1_PLLSEL_GMII_125MHZ		3
+-#define S6_GREG1_PLLSEL_GMII_MASK		3
+-#define S6_GREG1_SYSUNLOCKCNT	0x020
+-#define S6_GREG1_IOUNLOCKCNT	0x024
+-#define S6_GREG1_AIMUNLOCKCNT	0x028
+-#define S6_GREG1_DP0UNLOCKCNT	0x02C
+-#define S6_GREG1_DP2UNLOCKCNT	0x030
+-#define S6_GREG1_DDRUNLOCKCNT	0x034
+-#define S6_GREG1_CLKBAL0	0x040
+-#define S6_GREG1_CLKBAL0_LSGB		0
+-#define S6_GREG1_CLKBAL0_LSPX		8
+-#define S6_GREG1_CLKBAL0_MEMDO		16
+-#define S6_GREG1_CLKBAL0_HSXT1		24
+-#define S6_GREG1_CLKBAL1	0x044
+-#define S6_GREG1_CLKBAL1_HSISEF		0
+-#define S6_GREG1_CLKBAL1_HSNI		8
+-#define S6_GREG1_CLKBAL1_HSNS		16
+-#define S6_GREG1_CLKBAL1_HSISEFCFG	24
+-#define S6_GREG1_CLKBAL2	0x048
+-#define S6_GREG1_CLKBAL2_LSNB		0
+-#define S6_GREG1_CLKBAL2_LSSB		8
+-#define S6_GREG1_CLKBAL2_LSREST		24
+-#define S6_GREG1_CLKBAL3	0x04C
+-#define S6_GREG1_CLKBAL3_ISEFXAD	0
+-#define S6_GREG1_CLKBAL3_ISEFLMS	8
+-#define S6_GREG1_CLKBAL3_ISEFISEF	16
+-#define S6_GREG1_CLKBAL3_DDRDD		24
+-#define S6_GREG1_CLKBAL4	0x050
+-#define S6_GREG1_CLKBAL4_DDRDP		0
+-#define S6_GREG1_CLKBAL4_DDRDO		8
+-#define S6_GREG1_CLKBAL4_DDRNB		16
+-#define S6_GREG1_CLKBAL4_DDRLMS		24
+-#define S6_GREG1_BLOCKENA	0x100
+-#define S6_GREG1_BLOCK_DDR		0
+-#define S6_GREG1_BLOCK_DP		1
+-#define S6_GREG1_BLOCK_NSNI		2
+-#define S6_GREG1_BLOCK_PCIE		3
+-#define S6_GREG1_BLOCK_GMAC		4
+-#define S6_GREG1_BLOCK_I2S		5
+-#define S6_GREG1_BLOCK_EGIB		6
+-#define S6_GREG1_BLOCK_SB		7
+-#define S6_GREG1_BLOCK_XT1		8
+-#define S6_GREG1_CLKGATE	0x104
+-#define S6_GREG1_BGATE_AIMNORTH		9
+-#define S6_GREG1_BGATE_AIMEAST		10
+-#define S6_GREG1_BGATE_AIMWEST		11
+-#define S6_GREG1_BGATE_AIMSOUTH		12
+-#define S6_GREG1_CHIPRES	0x108
+-#define S6_GREG1_CHIPRES_SOFTRES	0
+-#define S6_GREG1_CHIPRES_LOSTLOCK	1
+-#define S6_GREG1_RESETCAUSE	0x10C
+-#define S6_GREG1_RESETCAUSE_RESETN	0
+-#define S6_GREG1_RESETCAUSE_GLOBAL	1
+-#define S6_GREG1_RESETCAUSE_WDOGTIMER	2
+-#define S6_GREG1_RESETCAUSE_SWCHIP	3
+-#define S6_GREG1_RESETCAUSE_PLLSYSLOSS	4
+-#define S6_GREG1_RESETCAUSE_PCIE	5
+-#define S6_GREG1_RESETCAUSE_CREATEDGLOB	6
+-#define S6_GREG1_REFCLOCKCNT	0x110
+-#define S6_GREG1_RESETTIMER	0x114
+-#define S6_GREG1_NMITIMER	0x118
+-#define S6_GREG1_GLOBAL_TIMER	0x11C
+-#define S6_GREG1_TIMER0		0x180
+-#define S6_GREG1_TIMER1		0x184
+-#define S6_GREG1_UARTCLOCKSEL	0x204
+-#define S6_GREG1_CHIPVERSPACKG	0x208
+-#define S6_GREG1_CHIPVERSPACKG_CHIPVID	0
+-#define S6_GREG1_CHIPVERSPACKG_PACKSEL	8
+-#define S6_GREG1_ONDIETERMCTRL	0x20C
+-#define S6_GREG1_ONDIETERMCTRL_WEST	0
+-#define S6_GREG1_ONDIETERMCTRL_NORTH	2
+-#define S6_GREG1_ONDIETERMCTRL_EAST	4
+-#define S6_GREG1_ONDIETERMCTRL_SOUTH	6
+-#define S6_GREG1_ONDIETERMCTRL_NONE		0
+-#define S6_GREG1_ONDIETERMCTRL_75OHM		2
+-#define S6_GREG1_ONDIETERMCTRL_MASK		3
+-#define S6_GREG1_BOOT_CFG0	0x210
+-#define S6_GREG1_BOOT_CFG0_AIMSTRONG	1
+-#define S6_GREG1_BOOT_CFG0_MINIBOOTDL	2
+-#define S6_GREG1_BOOT_CFG0_OCDGPIO8SET	5
+-#define S6_GREG1_BOOT_CFG0_OCDGPIOENA	6
+-#define S6_GREG1_BOOT_CFG0_DOWNSTREAM	7
+-#define S6_GREG1_BOOT_CFG0_PLLSYSDIV	8
+-#define S6_GREG1_BOOT_CFG0_PLLSYSDIV_300MHZ	1
+-#define S6_GREG1_BOOT_CFG0_PLLSYSDIV_240MHZ	2
+-#define S6_GREG1_BOOT_CFG0_PLLSYSDIV_200MHZ	3
+-#define S6_GREG1_BOOT_CFG0_PLLSYSDIV_150MHZ	4
+-#define S6_GREG1_BOOT_CFG0_PLLSYSDIV_120MHZ	5
+-#define S6_GREG1_BOOT_CFG0_PLLSYSDIV_40MHZ	6
+-#define S6_GREG1_BOOT_CFG0_PLLSYSDIV_MASK	7
+-#define S6_GREG1_BOOT_CFG0_BALHSLMS	12
+-#define S6_GREG1_BOOT_CFG0_BALHSNB	18
+-#define S6_GREG1_BOOT_CFG0_BALHSXAD	24
+-#define S6_GREG1_BOOT_CFG1	0x214
+-#define S6_GREG1_BOOT_CFG1_PCIE1LANE	1
+-#define S6_GREG1_BOOT_CFG1_MPLLPRESCALE	2
+-#define S6_GREG1_BOOT_CFG1_MPLLNCY	4
+-#define S6_GREG1_BOOT_CFG1_MPLLNCY5	9
+-#define S6_GREG1_BOOT_CFG1_BALHSREST	14
+-#define S6_GREG1_BOOT_CFG1_BALHSPSMEMS	20
+-#define S6_GREG1_BOOT_CFG1_BALLSGI	26
+-#define S6_GREG1_BOOT_CFG2	0x218
+-#define S6_GREG1_BOOT_CFG2_PEID		0
+-#define S6_GREG1_BOOT_CFG3	0x21C
+-#define S6_GREG1_DRAMBUSYHOLDOF	0x220
+-#define S6_GREG1_DRAMBUSYHOLDOF_XT0	0
+-#define S6_GREG1_DRAMBUSYHOLDOF_XT1	4
+-#define S6_GREG1_DRAMBUSYHOLDOF_XT_MASK		7
+-#define S6_GREG1_PCIEBAR1SIZE	0x224
+-#define S6_GREG1_PCIEBAR2SIZE	0x228
+-#define S6_GREG1_PCIEVENDOR	0x22C
+-#define S6_GREG1_PCIEDEVICE	0x230
+-#define S6_GREG1_PCIEREV	0x234
+-#define S6_GREG1_PCIECLASS	0x238
+-#define S6_GREG1_XT1DCACHEMISS	0x240
+-#define S6_GREG1_XT1ICACHEMISS	0x244
+-#define S6_GREG1_HWSEMAPHORE(n)	(0x400 + 4 * (n))
+-#define S6_GREG1_HWSEMAPHORE_NB		16
+-
+-/* peripheral interrupt numbers */
+-
+-#define S6_INTC_GPIO(n)			(n)		/* 0..3 */
+-#define S6_INTC_I2C			4
+-#define S6_INTC_SPI			5
+-#define S6_INTC_NB_ERR			6
+-#define S6_INTC_DMA_LMSERR		7
+-#define S6_INTC_DMA_LMSLOWWMRK(n)	(8 + (n))	/* 0..11 */
+-#define S6_INTC_DMA_LMSPENDCNT(n)	(20 + (n))	/* 0..11 */
+-#define S6_INTC_DMA HOSTLOWWMRK(n)	(32 + (n))	/* 0..6 */
+-#define S6_INTC_DMA_HOSTPENDCNT(n)	(39 + (n))	/* 0..6 */
+-#define S6_INTC_DMA_HOSTERR		46
+-#define S6_INTC_UART(n)			(47 + (n))	/* 0..1 */
+-#define S6_INTC_XAD			49
+-#define S6_INTC_NI_ERR			50
+-#define S6_INTC_NI_INFIFOFULL		51
+-#define S6_INTC_DMA_NIERR		52
+-#define S6_INTC_DMA_NILOWWMRK(n)	(53 + (n))	/* 0..3 */
+-#define S6_INTC_DMA_NIPENDCNT(n)	(57 + (n))	/* 0..3 */
+-#define S6_INTC_DDR			61
+-#define S6_INTC_NS_ERR			62
+-#define S6_INTC_EFI_CFGERR		63
+-#define S6_INTC_EFI_ISEFTEST		64
+-#define S6_INTC_EFI_WRITEERR		65
+-#define S6_INTC_NMI_TIMER		66
+-#define S6_INTC_PLLLOCK_SYS		67
+-#define S6_INTC_PLLLOCK_IO		68
+-#define S6_INTC_PLLLOCK_AIM		69
+-#define S6_INTC_PLLLOCK_DP0		70
+-#define S6_INTC_PLLLOCK_DP2		71
+-#define S6_INTC_I2S_ERR			72
+-#define S6_INTC_GMAC_STAT		73
+-#define S6_INTC_GMAC_ERR		74
+-#define S6_INTC_GIB_ERR			75
+-#define S6_INTC_PCIE_ERR		76
+-#define S6_INTC_PCIE_MSI(n)		(77 + (n))	/* 0..3 */
+-#define S6_INTC_PCIE_INTA		81
+-#define S6_INTC_PCIE_INTB		82
+-#define S6_INTC_PCIE_INTC		83
+-#define S6_INTC_PCIE_INTD		84
+-#define S6_INTC_SW(n)			(85 + (n))	/* 0..9 */
+-#define S6_INTC_SW_ENABLE(n)		(85 + 256 + (n))
+-#define S6_INTC_DMA_DP_ERR		95
+-#define S6_INTC_DMA_DPLOWWMRK(n)	(96 + (n))	/* 0..3 */
+-#define S6_INTC_DMA_DPPENDCNT(n)	(100 + (n))	/* 0..3 */
+-#define S6_INTC_DMA_DPTERMCNT(n)	(104 + (n))	/* 0..3 */
+-#define S6_INTC_TIMER0			108
+-#define S6_INTC_TIMER1			109
+-#define S6_INTC_DMA_HOSTTERMCNT(n)	(110 + (n))	/* 0..6 */
+-
+-#endif /* __XTENSA_S6000_HARDWARE_H */
+diff --git a/arch/xtensa/variants/s6000/include/variant/irq.h b/arch/xtensa/variants/s6000/include/variant/irq.h
+deleted file mode 100644
+index 39ca751..0000000
+--- a/arch/xtensa/variants/s6000/include/variant/irq.h
++++ /dev/null
+@@ -1,8 +0,0 @@
+-#ifndef _XTENSA_S6000_IRQ_H
+-#define _XTENSA_S6000_IRQ_H
+-
+-#define VARIANT_NR_IRQS 8 /* GPIO interrupts */
+-
+-extern void variant_irq_enable(unsigned int irq);
+-
+-#endif /* __XTENSA_S6000_IRQ_H */
+diff --git a/arch/xtensa/variants/s6000/include/variant/tie-asm.h b/arch/xtensa/variants/s6000/include/variant/tie-asm.h
+deleted file mode 100644
+index f02d0a3..0000000
+--- a/arch/xtensa/variants/s6000/include/variant/tie-asm.h
++++ /dev/null
+@@ -1,304 +0,0 @@
+-/*
+- * This header file contains assembly-language definitions (assembly
+- * macros, etc.) for this specific Xtensa processor's TIE extensions
+- * and options.  It is customized to this Xtensa processor configuration.
+- *
+- * This file is subject to the terms and conditions of the GNU General Public
+- * License.  See the file "COPYING" in the main directory of this archive
+- * for more details.
+- *
+- * Copyright (C) 1999-2008 Tensilica Inc.
+- */
+-
+-#ifndef _XTENSA_CORE_TIE_ASM_H
+-#define _XTENSA_CORE_TIE_ASM_H
+-
+-/*  Selection parameter values for save-area save/restore macros:  */
+-/*  Option vs. TIE:  */
+-#define XTHAL_SAS_TIE	0x0001	/* custom extension or coprocessor */
+-#define XTHAL_SAS_OPT	0x0002	/* optional (and not a coprocessor) */
+-/*  Whether used automatically by compiler:  */
+-#define XTHAL_SAS_NOCC	0x0004	/* not used by compiler w/o special opts/code */
+-#define XTHAL_SAS_CC	0x0008	/* used by compiler without special opts/code */
+-/*  ABI handling across function calls:  */
+-#define XTHAL_SAS_CALR	0x0010	/* caller-saved */
+-#define XTHAL_SAS_CALE	0x0020	/* callee-saved */
+-#define XTHAL_SAS_GLOB	0x0040	/* global across function calls (in thread) */
+-/*  Misc  */
+-#define XTHAL_SAS_ALL	0xFFFF	/* include all default NCP contents */
+-
+-
+-
+-/* Macro to save all non-coprocessor (extra) custom TIE and optional state
+- * (not including zero-overhead loop registers).
+- * Save area ptr (clobbered):  ptr  (16 byte aligned)
+- * Scratch regs  (clobbered):  at1..at4  (only first XCHAL_NCP_NUM_ATMPS needed)
+- */
+-	.macro xchal_ncp_store  ptr at1 at2 at3 at4  continue=0 ofs=-1 select=XTHAL_SAS_ALL
+-	xchal_sa_start	\continue, \ofs
+-	.ifeq (XTHAL_SAS_OPT | XTHAL_SAS_NOCC | XTHAL_SAS_CALR) & ~\select
+-	xchal_sa_align	\ptr, 0, 1024-4, 4, 4
+-	rsr	\at1, BR		// boolean option
+-	s32i	\at1, \ptr, .Lxchal_ofs_ + 0
+-	.set	.Lxchal_ofs_, .Lxchal_ofs_ + 4
+-	.endif
+-	.endm	// xchal_ncp_store
+-
+-/* Macro to save all non-coprocessor (extra) custom TIE and optional state
+- * (not including zero-overhead loop registers).
+- * Save area ptr (clobbered):  ptr  (16 byte aligned)
+- * Scratch regs  (clobbered):  at1..at4  (only first XCHAL_NCP_NUM_ATMPS needed)
+- */
+-	.macro xchal_ncp_load  ptr at1 at2 at3 at4  continue=0 ofs=-1 select=XTHAL_SAS_ALL
+-	xchal_sa_start	\continue, \ofs
+-	.ifeq (XTHAL_SAS_OPT | XTHAL_SAS_NOCC | XTHAL_SAS_CALR) & ~\select
+-	xchal_sa_align	\ptr, 0, 1024-4, 4, 4
+-	l32i	\at1, \ptr, .Lxchal_ofs_ + 0
+-	wsr	\at1, BR		// boolean option
+-	.set	.Lxchal_ofs_, .Lxchal_ofs_ + 4
+-	.endif
+-	.endm	// xchal_ncp_load
+-
+-
+-
+-#define XCHAL_NCP_NUM_ATMPS	1
+-
+-
+-
+-/* Macro to save the state of TIE coprocessor FPU.
+- * Save area ptr (clobbered):  ptr  (16 byte aligned)
+- * Scratch regs  (clobbered):  at1..at4  (only first XCHAL_CP0_NUM_ATMPS needed)
+- */
+-#define xchal_cp_FPU_store	xchal_cp0_store
+-/* #define xchal_cp_FPU_store_a2	xchal_cp0_store a2 a3 a4 a5 a6 */
+-	.macro	xchal_cp0_store  ptr at1 at2 at3 at4  continue=0 ofs=-1 select=XTHAL_SAS_ALL
+-	xchal_sa_start \continue, \ofs
+-	.ifeq (XTHAL_SAS_TIE | XTHAL_SAS_NOCC | XTHAL_SAS_CALR) & ~\select
+-	xchal_sa_align	\ptr, 0, 0, 1, 16
+-	rur232	\at1		// FCR
+-	s32i	\at1, \ptr, 0
+-	rur233	\at1		// FSR
+-	s32i	\at1, \ptr, 4
+-	SSI f0, \ptr,  8
+-	SSI f1, \ptr,  12
+-	SSI f2, \ptr,  16
+-	SSI f3, \ptr,  20
+-	SSI f4, \ptr,  24
+-	SSI f5, \ptr,  28
+-	SSI f6, \ptr,  32
+-	SSI f7, \ptr,  36
+-	SSI f8, \ptr,  40
+-	SSI f9, \ptr,  44
+-	SSI f10, \ptr,  48
+-	SSI f11, \ptr,  52
+-	SSI f12, \ptr,  56
+-	SSI f13, \ptr,  60
+-	SSI f14, \ptr,  64
+-	SSI f15, \ptr,  68
+-	.set	.Lxchal_ofs_, .Lxchal_ofs_ + 72
+-	.endif
+-	.endm	// xchal_cp0_store
+-
+-/* Macro to restore the state of TIE coprocessor FPU.
+- * Save area ptr (clobbered):  ptr  (16 byte aligned)
+- * Scratch regs  (clobbered):  at1..at4  (only first XCHAL_CP0_NUM_ATMPS needed)
+- */
+-#define xchal_cp_FPU_load	xchal_cp0_load
+-/* #define xchal_cp_FPU_load_a2	xchal_cp0_load a2 a3 a4 a5 a6 */
+-	.macro	xchal_cp0_load  ptr at1 at2 at3 at4  continue=0 ofs=-1 select=XTHAL_SAS_ALL
+-	xchal_sa_start \continue, \ofs
+-	.ifeq (XTHAL_SAS_TIE | XTHAL_SAS_NOCC | XTHAL_SAS_CALR) & ~\select
+-	xchal_sa_align	\ptr, 0, 0, 1, 16
+-	l32i	\at1, \ptr, 0
+-	wur232	\at1		// FCR
+-	l32i	\at1, \ptr, 4
+-	wur233	\at1		// FSR
+-	LSI f0, \ptr,  8
+-	LSI f1, \ptr,  12
+-	LSI f2, \ptr,  16
+-	LSI f3, \ptr,  20
+-	LSI f4, \ptr,  24
+-	LSI f5, \ptr,  28
+-	LSI f6, \ptr,  32
+-	LSI f7, \ptr,  36
+-	LSI f8, \ptr,  40
+-	LSI f9, \ptr,  44
+-	LSI f10, \ptr,  48
+-	LSI f11, \ptr,  52
+-	LSI f12, \ptr,  56
+-	LSI f13, \ptr,  60
+-	LSI f14, \ptr,  64
+-	LSI f15, \ptr,  68
+-	.set	.Lxchal_ofs_, .Lxchal_ofs_ + 72
+-	.endif
+-	.endm	// xchal_cp0_load
+-
+-#define XCHAL_CP0_NUM_ATMPS	1
+-
+-/* Macro to save the state of TIE coprocessor XAD.
+- * Save area ptr (clobbered):  ptr  (16 byte aligned)
+- * Scratch regs  (clobbered):  at1..at4  (only first XCHAL_CP6_NUM_ATMPS needed)
+- */
+-#define xchal_cp_XAD_store	xchal_cp6_store
+-/* #define xchal_cp_XAD_store_a2	xchal_cp6_store a2 a3 a4 a5 a6 */
+-	.macro	xchal_cp6_store  ptr at1 at2 at3 at4  continue=0 ofs=-1 select=XTHAL_SAS_ALL
+-	xchal_sa_start \continue, \ofs
+-	.ifeq (XTHAL_SAS_TIE | XTHAL_SAS_NOCC | XTHAL_SAS_CALR) & ~\select
+-	xchal_sa_align	\ptr, 0, 0, 1, 16
+-	rur0	\at1		// LDCBHI
+-	s32i	\at1, \ptr, 0
+-	rur1	\at1		// LDCBLO
+-	s32i	\at1, \ptr, 4
+-	rur2	\at1		// STCBHI
+-	s32i	\at1, \ptr, 8
+-	rur3	\at1		// STCBLO
+-	s32i	\at1, \ptr, 12
+-	rur8	\at1		// LDBRBASE
+-	s32i	\at1, \ptr, 16
+-	rur9	\at1		// LDBROFF
+-	s32i	\at1, \ptr, 20
+-	rur10	\at1		// LDBRINC
+-	s32i	\at1, \ptr, 24
+-	rur11	\at1		// STBRBASE
+-	s32i	\at1, \ptr, 28
+-	rur12	\at1		// STBROFF
+-	s32i	\at1, \ptr, 32
+-	rur13	\at1		// STBRINC
+-	s32i	\at1, \ptr, 36
+-	rur24	\at1		// SCRATCH0
+-	s32i	\at1, \ptr, 40
+-	rur25	\at1		// SCRATCH1
+-	s32i	\at1, \ptr, 44
+-	rur26	\at1		// SCRATCH2
+-	s32i	\at1, \ptr, 48
+-	rur27	\at1		// SCRATCH3
+-	s32i	\at1, \ptr, 52
+-	WRAS128I wra0, \ptr,  64
+-	WRAS128I wra1, \ptr,  80
+-	WRAS128I wra2, \ptr,  96
+-	WRAS128I wra3, \ptr,  112
+-	WRAS128I wra4, \ptr,  128
+-	WRAS128I wra5, \ptr,  144
+-	WRAS128I wra6, \ptr,  160
+-	WRAS128I wra7, \ptr,  176
+-	WRAS128I wra8, \ptr,  192
+-	WRAS128I wra9, \ptr,  208
+-	WRAS128I wra10, \ptr,  224
+-	WRAS128I wra11, \ptr,  240
+-	WRAS128I wra12, \ptr,  256
+-	WRAS128I wra13, \ptr,  272
+-	WRAS128I wra14, \ptr,  288
+-	WRAS128I wra15, \ptr,  304
+-	WRBS128I wrb0, \ptr,  320
+-	WRBS128I wrb1, \ptr,  336
+-	WRBS128I wrb2, \ptr,  352
+-	WRBS128I wrb3, \ptr,  368
+-	WRBS128I wrb4, \ptr,  384
+-	WRBS128I wrb5, \ptr,  400
+-	WRBS128I wrb6, \ptr,  416
+-	WRBS128I wrb7, \ptr,  432
+-	WRBS128I wrb8, \ptr,  448
+-	WRBS128I wrb9, \ptr,  464
+-	WRBS128I wrb10, \ptr,  480
+-	WRBS128I wrb11, \ptr,  496
+-	WRBS128I wrb12, \ptr,  512
+-	WRBS128I wrb13, \ptr,  528
+-	WRBS128I wrb14, \ptr,  544
+-	WRBS128I wrb15, \ptr,  560
+-	.set	.Lxchal_ofs_, .Lxchal_ofs_ + 576
+-	.endif
+-	.endm	// xchal_cp6_store
+-
+-/* Macro to restore the state of TIE coprocessor XAD.
+- * Save area ptr (clobbered):  ptr  (16 byte aligned)
+- * Scratch regs  (clobbered):  at1..at4  (only first XCHAL_CP6_NUM_ATMPS needed)
+- */
+-#define xchal_cp_XAD_load	xchal_cp6_load
+-/* #define xchal_cp_XAD_load_a2	xchal_cp6_load a2 a3 a4 a5 a6 */
+-	.macro	xchal_cp6_load  ptr at1 at2 at3 at4  continue=0 ofs=-1 select=XTHAL_SAS_ALL
+-	xchal_sa_start \continue, \ofs
+-	.ifeq (XTHAL_SAS_TIE | XTHAL_SAS_NOCC | XTHAL_SAS_CALR) & ~\select
+-	xchal_sa_align	\ptr, 0, 0, 1, 16
+-	l32i	\at1, \ptr, 0
+-	wur0	\at1		// LDCBHI
+-	l32i	\at1, \ptr, 4
+-	wur1	\at1		// LDCBLO
+-	l32i	\at1, \ptr, 8
+-	wur2	\at1		// STCBHI
+-	l32i	\at1, \ptr, 12
+-	wur3	\at1		// STCBLO
+-	l32i	\at1, \ptr, 16
+-	wur8	\at1		// LDBRBASE
+-	l32i	\at1, \ptr, 20
+-	wur9	\at1		// LDBROFF
+-	l32i	\at1, \ptr, 24
+-	wur10	\at1		// LDBRINC
+-	l32i	\at1, \ptr, 28
+-	wur11	\at1		// STBRBASE
+-	l32i	\at1, \ptr, 32
+-	wur12	\at1		// STBROFF
+-	l32i	\at1, \ptr, 36
+-	wur13	\at1		// STBRINC
+-	l32i	\at1, \ptr, 40
+-	wur24	\at1		// SCRATCH0
+-	l32i	\at1, \ptr, 44
+-	wur25	\at1		// SCRATCH1
+-	l32i	\at1, \ptr, 48
+-	wur26	\at1		// SCRATCH2
+-	l32i	\at1, \ptr, 52
+-	wur27	\at1		// SCRATCH3
+-	WRBL128I wrb0, \ptr,  320
+-	WRBL128I wrb1, \ptr,  336
+-	WRBL128I wrb2, \ptr,  352
+-	WRBL128I wrb3, \ptr,  368
+-	WRBL128I wrb4, \ptr,  384
+-	WRBL128I wrb5, \ptr,  400
+-	WRBL128I wrb6, \ptr,  416
+-	WRBL128I wrb7, \ptr,  432
+-	WRBL128I wrb8, \ptr,  448
+-	WRBL128I wrb9, \ptr,  464
+-	WRBL128I wrb10, \ptr,  480
+-	WRBL128I wrb11, \ptr,  496
+-	WRBL128I wrb12, \ptr,  512
+-	WRBL128I wrb13, \ptr,  528
+-	WRBL128I wrb14, \ptr,  544
+-	WRBL128I wrb15, \ptr,  560
+-	WRAL128I wra0, \ptr,  64
+-	WRAL128I wra1, \ptr,  80
+-	WRAL128I wra2, \ptr,  96
+-	WRAL128I wra3, \ptr,  112
+-	WRAL128I wra4, \ptr,  128
+-	WRAL128I wra5, \ptr,  144
+-	WRAL128I wra6, \ptr,  160
+-	WRAL128I wra7, \ptr,  176
+-	WRAL128I wra8, \ptr,  192
+-	WRAL128I wra9, \ptr,  208
+-	WRAL128I wra10, \ptr,  224
+-	WRAL128I wra11, \ptr,  240
+-	WRAL128I wra12, \ptr,  256
+-	WRAL128I wra13, \ptr,  272
+-	WRAL128I wra14, \ptr,  288
+-	WRAL128I wra15, \ptr,  304
+-	.set	.Lxchal_ofs_, .Lxchal_ofs_ + 576
+-	.endif
+-	.endm	// xchal_cp6_load
+-
+-#define XCHAL_CP6_NUM_ATMPS	1
+-#define XCHAL_SA_NUM_ATMPS	1
+-
+-	/*  Empty macros for unconfigured coprocessors:  */
+-	.macro xchal_cp1_store	p a b c d continue=0 ofs=-1 select=-1 ; .endm
+-	.macro xchal_cp1_load	p a b c d continue=0 ofs=-1 select=-1 ; .endm
+-	.macro xchal_cp2_store	p a b c d continue=0 ofs=-1 select=-1 ; .endm
+-	.macro xchal_cp2_load	p a b c d continue=0 ofs=-1 select=-1 ; .endm
+-	.macro xchal_cp3_store	p a b c d continue=0 ofs=-1 select=-1 ; .endm
+-	.macro xchal_cp3_load	p a b c d continue=0 ofs=-1 select=-1 ; .endm
+-	.macro xchal_cp4_store	p a b c d continue=0 ofs=-1 select=-1 ; .endm
+-	.macro xchal_cp4_load	p a b c d continue=0 ofs=-1 select=-1 ; .endm
+-	.macro xchal_cp5_store	p a b c d continue=0 ofs=-1 select=-1 ; .endm
+-	.macro xchal_cp5_load	p a b c d continue=0 ofs=-1 select=-1 ; .endm
+-	.macro xchal_cp7_store	p a b c d continue=0 ofs=-1 select=-1 ; .endm
+-	.macro xchal_cp7_load	p a b c d continue=0 ofs=-1 select=-1 ; .endm
+-
+-#endif /*_XTENSA_CORE_TIE_ASM_H*/
+-
+diff --git a/arch/xtensa/variants/s6000/include/variant/tie.h b/arch/xtensa/variants/s6000/include/variant/tie.h
+deleted file mode 100644
+index be7ea84..0000000
+--- a/arch/xtensa/variants/s6000/include/variant/tie.h
++++ /dev/null
+@@ -1,191 +0,0 @@
+-/*
+- * This header file describes this specific Xtensa processor's TIE extensions
+- * that extend basic Xtensa core functionality.  It is customized to this
+- * Xtensa processor configuration.
+- *
+- * This file is subject to the terms and conditions of the GNU General Public
+- * License.  See the file "COPYING" in the main directory of this archive
+- * for more details.
+- *
+- * Copyright (C) 1999-2008 Tensilica Inc.
+- */
+-
+-#ifndef _XTENSA_CORE_TIE_H
+-#define _XTENSA_CORE_TIE_H
+-
+-#define XCHAL_CP_NUM			2	/* number of coprocessors */
+-#define XCHAL_CP_MAX			7	/* max CP ID + 1 (0 if none) */
+-#define XCHAL_CP_MASK			0x41	/* bitmask of all CPs by ID */
+-#define XCHAL_CP_PORT_MASK		0x00	/* bitmask of only port CPs */
+-
+-/*  Basic parameters of each coprocessor:  */
+-#define XCHAL_CP0_NAME			"FPU"
+-#define XCHAL_CP0_IDENT			FPU
+-#define XCHAL_CP0_SA_SIZE		72	/* size of state save area */
+-#define XCHAL_CP0_SA_ALIGN		4	/* min alignment of save area */
+-#define XCHAL_CP_ID_FPU			0	/* coprocessor ID (0..7) */
+-#define XCHAL_CP6_NAME			"XAD"
+-#define XCHAL_CP6_IDENT			XAD
+-#define XCHAL_CP6_SA_SIZE		576	/* size of state save area */
+-#define XCHAL_CP6_SA_ALIGN		16	/* min alignment of save area */
+-#define XCHAL_CP_ID_XAD			6	/* coprocessor ID (0..7) */
+-
+-/*  Filler info for unassigned coprocessors, to simplify arrays etc:  */
+-#define XCHAL_CP1_SA_SIZE		0
+-#define XCHAL_CP1_SA_ALIGN		1
+-#define XCHAL_CP2_SA_SIZE		0
+-#define XCHAL_CP2_SA_ALIGN		1
+-#define XCHAL_CP3_SA_SIZE		0
+-#define XCHAL_CP3_SA_ALIGN		1
+-#define XCHAL_CP4_SA_SIZE		0
+-#define XCHAL_CP4_SA_ALIGN		1
+-#define XCHAL_CP5_SA_SIZE		0
+-#define XCHAL_CP5_SA_ALIGN		1
+-#define XCHAL_CP7_SA_SIZE		0
+-#define XCHAL_CP7_SA_ALIGN		1
+-
+-/*  Save area for non-coprocessor optional and custom (TIE) state:  */
+-#define XCHAL_NCP_SA_SIZE		4
+-#define XCHAL_NCP_SA_ALIGN		4
+-
+-/*  Total save area for optional and custom state (NCP + CPn):  */
+-#define XCHAL_TOTAL_SA_SIZE		672	/* with 16-byte align padding */
+-#define XCHAL_TOTAL_SA_ALIGN		16	/* actual minimum alignment */
+-
+-/*
+- * Detailed contents of save areas.
+- * NOTE:  caller must define the XCHAL_SA_REG macro (not defined here)
+- * before expanding the XCHAL_xxx_SA_LIST() macros.
+- *
+- * XCHAL_SA_REG(s,ccused,abikind,kind,opt,name,galign,align,asize,
+- *		dbnum,base,regnum,bitsz,gapsz,reset,x...)
+- *
+- *	s = passed from XCHAL_*_LIST(s), eg. to select how to expand
+- *	ccused = set if used by compiler without special options or code
+- *	abikind = 0 (caller-saved), 1 (callee-saved), or 2 (thread-global)
+- *	kind = 0 (special reg), 1 (TIE user reg), or 2 (TIE regfile reg)
+- *	opt = 0 (custom TIE extension or coprocessor), or 1 (optional reg)
+- *	name = lowercase reg name (no quotes)
+- *	galign = group byte alignment (power of 2) (galign >= align)
+- *	align = register byte alignment (power of 2)
+- *	asize = allocated size in bytes (asize*8 == bitsz + gapsz + padsz)
+- *	  (not including any pad bytes required to galign this or next reg)
+- *	dbnum = unique target number f/debug (see <xtensa-libdb-macros.h>)
+- *	base = reg shortname w/o index (or sr=special, ur=TIE user reg)
+- *	regnum = reg index in regfile, or special/TIE-user reg number
+- *	bitsz = number of significant bits (regfile width, or ur/sr mask bits)
+- *	gapsz = intervening bits, if bitsz bits not stored contiguously
+- *	(padsz = pad bits at end [TIE regfile] or at msbits [ur,sr] of asize)
+- *	reset = register reset value (or 0 if undefined at reset)
+- *	x = reserved for future use (0 until then)
+- *
+- *  To filter out certain registers, e.g. to expand only the non-global
+- *  registers used by the compiler, you can do something like this:
+- *
+- *  #define XCHAL_SA_REG(s,ccused,p...)	SELCC##ccused(p)
+- *  #define SELCC0(p...)
+- *  #define SELCC1(abikind,p...)	SELAK##abikind(p)
+- *  #define SELAK0(p...)		REG(p)
+- *  #define SELAK1(p...)		REG(p)
+- *  #define SELAK2(p...)
+- *  #define REG(kind,tie,name,galn,aln,asz,csz,dbnum,base,rnum,bsz,rst,x...) \
+- *		...what you want to expand...
+- */
+-
+-#define XCHAL_NCP_SA_NUM	1
+-#define XCHAL_NCP_SA_LIST(s)	\
+- XCHAL_SA_REG(s,0,0,0,1,             br, 4, 4, 4,0x0204,  sr,4  , 16,0,0,0)
+-
+-#define XCHAL_CP0_SA_NUM	18
+-#define XCHAL_CP0_SA_LIST(s)	\
+- XCHAL_SA_REG(s,0,0,1,0,            fcr, 4, 4, 4,0x03E8,  ur,232, 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,1,0,            fsr, 4, 4, 4,0x03E9,  ur,233, 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,             f0, 4, 4, 4,0x0030,   f,0  , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,             f1, 4, 4, 4,0x0031,   f,1  , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,             f2, 4, 4, 4,0x0032,   f,2  , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,             f3, 4, 4, 4,0x0033,   f,3  , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,             f4, 4, 4, 4,0x0034,   f,4  , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,             f5, 4, 4, 4,0x0035,   f,5  , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,             f6, 4, 4, 4,0x0036,   f,6  , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,             f7, 4, 4, 4,0x0037,   f,7  , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,             f8, 4, 4, 4,0x0038,   f,8  , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,             f9, 4, 4, 4,0x0039,   f,9  , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,            f10, 4, 4, 4,0x003A,   f,10 , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,            f11, 4, 4, 4,0x003B,   f,11 , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,            f12, 4, 4, 4,0x003C,   f,12 , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,            f13, 4, 4, 4,0x003D,   f,13 , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,            f14, 4, 4, 4,0x003E,   f,14 , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,            f15, 4, 4, 4,0x003F,   f,15 , 32,0,0,0)
+-
+-#define XCHAL_CP1_SA_NUM	0
+-#define XCHAL_CP1_SA_LIST(s)	/* empty */
+-
+-#define XCHAL_CP2_SA_NUM	0
+-#define XCHAL_CP2_SA_LIST(s)	/* empty */
+-
+-#define XCHAL_CP3_SA_NUM	0
+-#define XCHAL_CP3_SA_LIST(s)	/* empty */
+-
+-#define XCHAL_CP4_SA_NUM	0
+-#define XCHAL_CP4_SA_LIST(s)	/* empty */
+-
+-#define XCHAL_CP5_SA_NUM	0
+-#define XCHAL_CP5_SA_LIST(s)	/* empty */
+-
+-#define XCHAL_CP6_SA_NUM	46
+-#define XCHAL_CP6_SA_LIST(s)	\
+- XCHAL_SA_REG(s,0,0,1,0,         ldcbhi,16, 4, 4,0x0300,  ur,0  , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,1,0,         ldcblo, 4, 4, 4,0x0301,  ur,1  , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,1,0,         stcbhi, 4, 4, 4,0x0302,  ur,2  , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,1,0,         stcblo, 4, 4, 4,0x0303,  ur,3  , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,1,0,       ldbrbase, 4, 4, 4,0x0308,  ur,8  , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,1,0,        ldbroff, 4, 4, 4,0x0309,  ur,9  , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,1,0,        ldbrinc, 4, 4, 4,0x030A,  ur,10 , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,1,0,       stbrbase, 4, 4, 4,0x030B,  ur,11 , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,1,0,        stbroff, 4, 4, 4,0x030C,  ur,12 , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,1,0,        stbrinc, 4, 4, 4,0x030D,  ur,13 , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,1,0,       scratch0, 4, 4, 4,0x0318,  ur,24 , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,1,0,       scratch1, 4, 4, 4,0x0319,  ur,25 , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,1,0,       scratch2, 4, 4, 4,0x031A,  ur,26 , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,1,0,       scratch3, 4, 4, 4,0x031B,  ur,27 , 32,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,           wra0,16,16,16,0x1010, wra,0  ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,           wra1,16,16,16,0x1011, wra,1  ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,           wra2,16,16,16,0x1012, wra,2  ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,           wra3,16,16,16,0x1013, wra,3  ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,           wra4,16,16,16,0x1014, wra,4  ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,           wra5,16,16,16,0x1015, wra,5  ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,           wra6,16,16,16,0x1016, wra,6  ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,           wra7,16,16,16,0x1017, wra,7  ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,           wra8,16,16,16,0x1018, wra,8  ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,           wra9,16,16,16,0x1019, wra,9  ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,          wra10,16,16,16,0x101A, wra,10 ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,          wra11,16,16,16,0x101B, wra,11 ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,          wra12,16,16,16,0x101C, wra,12 ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,          wra13,16,16,16,0x101D, wra,13 ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,          wra14,16,16,16,0x101E, wra,14 ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,          wra15,16,16,16,0x101F, wra,15 ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,           wrb0,16,16,16,0x1020, wrb,0  ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,           wrb1,16,16,16,0x1021, wrb,1  ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,           wrb2,16,16,16,0x1022, wrb,2  ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,           wrb3,16,16,16,0x1023, wrb,3  ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,           wrb4,16,16,16,0x1024, wrb,4  ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,           wrb5,16,16,16,0x1025, wrb,5  ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,           wrb6,16,16,16,0x1026, wrb,6  ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,           wrb7,16,16,16,0x1027, wrb,7  ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,           wrb8,16,16,16,0x1028, wrb,8  ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,           wrb9,16,16,16,0x1029, wrb,9  ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,          wrb10,16,16,16,0x102A, wrb,10 ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,          wrb11,16,16,16,0x102B, wrb,11 ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,          wrb12,16,16,16,0x102C, wrb,12 ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,          wrb13,16,16,16,0x102D, wrb,13 ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,          wrb14,16,16,16,0x102E, wrb,14 ,128,0,0,0) \
+- XCHAL_SA_REG(s,0,0,2,0,          wrb15,16,16,16,0x102F, wrb,15 ,128,0,0,0)
+-
+-#define XCHAL_CP7_SA_NUM	0
+-#define XCHAL_CP7_SA_LIST(s)	/* empty */
+-
+-/* Byte length of instruction from its first nibble (op0 field), per FLIX.  */
+-#define XCHAL_OP0_FORMAT_LENGTHS	3,3,3,3,3,3,3,3,2,2,2,2,2,2,8,8
+-
+-#endif /*_XTENSA_CORE_TIE_H*/
+-
+diff --git a/arch/xtensa/variants/s6000/irq.c b/arch/xtensa/variants/s6000/irq.c
+deleted file mode 100644
+index 81a241e..0000000
+--- a/arch/xtensa/variants/s6000/irq.c
++++ /dev/null
+@@ -1,74 +0,0 @@
+-/*
+- * s6000 irq crossbar
+- *
+- * Copyright (c) 2009 emlix GmbH
+- * Authors:	Johannes Weiner <hannes@cmpxchg.org>
+- *		Oskar Schirmer <oskar@scara.com>
+- */
+-#include <linux/io.h>
+-#include <asm/irq.h>
+-#include <variant/hardware.h>
+-
+-/* S6_REG_INTC */
+-#define INTC_STATUS	0x000
+-#define INTC_RAW	0x010
+-#define INTC_STATUS_AG	0x100
+-#define INTC_CFG(n)	(0x200 + 4 * (n))
+-
+-/*
+- * The s6000 has a crossbar that multiplexes interrupt output lines
+- * from the peripherals to input lines on the xtensa core.
+- *
+- * We leave the mapping decisions to the platform as it depends on the
+- * actually connected peripherals which distribution makes sense.
+- */
+-extern const signed char *platform_irq_mappings[NR_IRQS];
+-
+-static unsigned long scp_to_intc_enable[] = {
+-#define	TO_INTC_ENABLE(n)	(((n) << 1) + 1)
+-	TO_INTC_ENABLE(0),
+-	TO_INTC_ENABLE(1),
+-	TO_INTC_ENABLE(2),
+-	TO_INTC_ENABLE(3),
+-	TO_INTC_ENABLE(4),
+-	TO_INTC_ENABLE(5),
+-	TO_INTC_ENABLE(6),
+-	TO_INTC_ENABLE(7),
+-	TO_INTC_ENABLE(8),
+-	TO_INTC_ENABLE(9),
+-	TO_INTC_ENABLE(10),
+-	TO_INTC_ENABLE(11),
+-	TO_INTC_ENABLE(12),
+-	-1,
+-	-1,
+-	TO_INTC_ENABLE(13),
+-	-1,
+-	TO_INTC_ENABLE(14),
+-	-1,
+-	TO_INTC_ENABLE(15),
+-#undef	TO_INTC_ENABLE
+-};
+-
+-static void irq_set(unsigned int irq, int enable)
+-{
+-	unsigned long en;
+-	const signed char *m = platform_irq_mappings[irq];
+-
+-	if (!m)
+-		return;
+-	en = enable ? scp_to_intc_enable[irq] : 0;
+-	while (*m >= 0) {
+-		writel(en, S6_REG_INTC + INTC_CFG(*m));
+-		m++;
+-	}
+-}
+-
+-void variant_irq_enable(unsigned int irq)
+-{
+-	irq_set(irq, 1);
+-}
+-
+-void variant_irq_disable(unsigned int irq)
+-{
+-	irq_set(irq, 0);
+-}
+-- 
+2.1.2
 
