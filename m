@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751560AbaJRPQp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Oct 2014 11:16:45 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:56534 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042AbaJRPQn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Oct 2014 11:16:43 -0400
-Date: Sat, 18 Oct 2014 08:16:39 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: michaelc@cs.wisc.edu, linux-scsi@vger.kernel.org,
-        target-devel@vger.kernel.org, ceph-devel@vger.kernel.org,
-        axboe@kernel.dk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] block: add function to issue compare and write
-Message-ID: <20141018151639.GF30355@infradead.org>
-References: <1413437835-13778-1-git-send-email-michaelc@cs.wisc.edu>
- <1413437835-13778-3-git-send-email-michaelc@cs.wisc.edu>
- <20141017095555.GA360@infradead.org>
- <yq1egu62rnm.fsf@sermon.lab.mkp.net>
+	id S1751621AbaJRPTf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Oct 2014 11:19:35 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751054AbaJRPTd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Oct 2014 11:19:33 -0400
+Message-ID: <54428500.6020304@nod.at>
+Date: Sat, 18 Oct 2014 17:19:28 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <yq1egu62rnm.fsf@sermon.lab.mkp.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Manfred Schlaegl <manfred.schlaegl@gmx.at>, Jeff Dike <jdike@addtoit.com>
+CC: Daniel Walter <dwalter@google.com>, Randy Dunlap <rdunlap@infradead.org>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        user-mode-linux-user@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] um: Remove unused bp stack-frame pointer
+References: <544277C5.9030302@gmx.at> <54427C48.9050608@nod.at> <54428348.2050209@gmx.at>
+In-Reply-To: <54428348.2050209@gmx.at>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 17, 2014 at 07:38:37PM -0400, Martin K. Petersen wrote:
-> The problem with this is that, as it stands, a bio has no type. And it
-> would suck if we couldn't keep bio rw and request flags in sync.
+Am 18.10.2014 um 17:12 schrieb Manfred Schlaegl:
+> On 2014-10-18 16:42, Richard Weinberger wrote:
+>> Am 18.10.2014 um 16:23 schrieb Manfred Schlaegl:
+>>> The pointer to bp stack-frame is no longer used. Removed it.
+>>
+>> Good catch!
+> Thank you.
 > 
-> I wonder if it would make more sense to move the remaining rq types to
-> cmd_flags after I'm done with the 64-bit conversion?
+>>
+>>> This also removes a corresponding compiler-warning.
+>>
+>> Which warning exactly?
+> 
+> On "normal" (defconfig) builds the warning does not show up because CONFIG_FRAME_POINTER is set.
+> I've found the unused bp because CONFIG_FRAME_POINTER was not set in my configuration.
+> 
+>   CC      arch/um/kernel/sysrq.o
+> arch/um/kernel/sysrq.c: In function ‘show_stack’:
+> arch/um/kernel/sysrq.c:32:29: warning: unused variable ‘bp’ [-Wunused-variable]
 
-I'd prefer adding a cmd_type to the bio as well and avoid the 64-bit
-flag conversion.  While we'll probably grow more types of I/Os (e.g.
-copy offload) I hope we can actually reduce the number of real flags,
-and it's easier to read for sure if we can switch on the command type
-in the driver.
+Looks like my gcc need's an upgrade. :D
 
+Thanks,
+//richard
