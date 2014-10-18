@@ -1,67 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751302AbaJRMOW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Oct 2014 08:14:22 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:51251 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750915AbaJRMOU (ORCPT
+	id S1751408AbaJRM42 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Oct 2014 08:56:28 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:42073 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988AbaJRM4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Oct 2014 08:14:20 -0400
-Message-ID: <54425998.7060808@kernel.org>
-Date: Sat, 18 Oct 2014 13:14:16 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: Sachin Kamat <sachin.kamat@linaro.org>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        John Stultz <john.stultz@linaro.org>, linux-iio@vger.kernel.org,
-        svarbanov@mm-sol.com, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] iio: inkern: Add of_xlate function to struct iio_dev
-References: <1412253128-32165-1-git-send-email-iivanov@mm-sol.com> <5442522D.40203@kernel.org> <544253F3.9060002@metafoo.de>
-In-Reply-To: <544253F3.9060002@metafoo.de>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Sat, 18 Oct 2014 08:56:25 -0400
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 1/3] mfd: stmpe: add pull up/down register offsets for STMPE
+Date: Sat, 18 Oct 2014 14:56:14 +0200
+Message-Id: <1413636974-3244-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/10/14 12:50, Lars-Peter Clausen wrote:
-> On 10/18/2014 01:42 PM, Jonathan Cameron wrote:
->> On 02/10/14 13:32, Ivan T. Ivanov wrote:
->>> When #iio-cells is greater than '0', the driver could provide
->>> a custom of_xlate function that reads the *args* and returns
->>> the appropriate index in registered IIO channels array.
->>>
->>> Add simple translation function, suitable for the most 1:1
->>> mapped channels in IIO chips, and use it when driver did not
->>> provide custom implementation.
->>>
->>> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
->> Any more comments on this?  Been sat a while and the discussions seems
->> to have died out.
->>
->> As Ivan has pointed out, very similar approaches are used
->> elsewhere (gpio for example).
-> 
-> Looks good to me:
-> 
-> Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
-> 
-> When we initially added the DT support to IIO I was hoping that we can get away
-> with just using the simple and generic xlate function for all devices. But it
-> looks as if some more complex devices need to overwrite it. We should be careful
-> about adding new driver specific xlate implementations and make sure that it is
-> actually needed.
-> 
-> One thing we might want to consider though is instead of adding the xlate
-> callback to the iio_dev struct add it to the iio_info struct since it should be
-> the same for different device instances of the same driver. And this is also
-> where all the other callbacks are.
-Good point - would definitely prefer that.
+This adds the register offsets for pull up/down for the STMPE
+1601, 1801 and 24xx expanders. This is used to bias GPIO lines
+and keypad lines.
 
-J
-> 
-> - Lars
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+Hi Sam, Lee: I think you should just ACK this so Dmitry can take the
+patch series through the input tree, where the registers need to be
+used to enable the keypad on the STMPE2401.
+---
+ drivers/mfd/stmpe.c       | 4 ++++
+ drivers/mfd/stmpe.h       | 3 +++
+ include/linux/mfd/stmpe.h | 2 ++
+ 3 files changed, 9 insertions(+)
+
+diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
+index 3004d5ba0b82..497505bad4c4 100644
+--- a/drivers/mfd/stmpe.c
++++ b/drivers/mfd/stmpe.c
+@@ -547,6 +547,7 @@ static const u8 stmpe1601_regs[] = {
+ 	[STMPE_IDX_GPDR_LSB]	= STMPE1601_REG_GPIO_SET_DIR_LSB,
+ 	[STMPE_IDX_GPRER_LSB]	= STMPE1601_REG_GPIO_RE_LSB,
+ 	[STMPE_IDX_GPFER_LSB]	= STMPE1601_REG_GPIO_FE_LSB,
++	[STMPE_IDX_GPPUR_LSB]	= STMPE1601_REG_GPIO_PU_LSB,
+ 	[STMPE_IDX_GPAFR_U_MSB]	= STMPE1601_REG_GPIO_AF_U_MSB,
+ 	[STMPE_IDX_IEGPIOR_LSB]	= STMPE1601_REG_INT_EN_GPIO_MASK_LSB,
+ 	[STMPE_IDX_ISGPIOR_MSB]	= STMPE1601_REG_INT_STA_GPIO_MSB,
+@@ -695,6 +696,7 @@ static const u8 stmpe1801_regs[] = {
+ 	[STMPE_IDX_GPDR_LSB]	= STMPE1801_REG_GPIO_SET_DIR_LOW,
+ 	[STMPE_IDX_GPRER_LSB]	= STMPE1801_REG_GPIO_RE_LOW,
+ 	[STMPE_IDX_GPFER_LSB]	= STMPE1801_REG_GPIO_FE_LOW,
++	[STMPE_IDX_GPPUR_LSB]	= STMPE1801_REG_GPIO_PULL_UP_LOW,
+ 	[STMPE_IDX_IEGPIOR_LSB]	= STMPE1801_REG_INT_EN_GPIO_MASK_LOW,
+ 	[STMPE_IDX_ISGPIOR_LSB]	= STMPE1801_REG_INT_STA_GPIO_LOW,
+ };
+@@ -778,6 +780,8 @@ static const u8 stmpe24xx_regs[] = {
+ 	[STMPE_IDX_GPDR_LSB]	= STMPE24XX_REG_GPDR_LSB,
+ 	[STMPE_IDX_GPRER_LSB]	= STMPE24XX_REG_GPRER_LSB,
+ 	[STMPE_IDX_GPFER_LSB]	= STMPE24XX_REG_GPFER_LSB,
++	[STMPE_IDX_GPPUR_LSB]	= STMPE24XX_REG_GPPUR_LSB,
++	[STMPE_IDX_GPPDR_LSB]	= STMPE24XX_REG_GPPDR_LSB,
+ 	[STMPE_IDX_GPAFR_U_MSB]	= STMPE24XX_REG_GPAFR_U_MSB,
+ 	[STMPE_IDX_IEGPIOR_LSB]	= STMPE24XX_REG_IEGPIOR_LSB,
+ 	[STMPE_IDX_ISGPIOR_MSB]	= STMPE24XX_REG_ISGPIOR_MSB,
+diff --git a/drivers/mfd/stmpe.h b/drivers/mfd/stmpe.h
+index bee0abf82040..84adb46b3e2f 100644
+--- a/drivers/mfd/stmpe.h
++++ b/drivers/mfd/stmpe.h
+@@ -188,6 +188,7 @@ int stmpe_remove(struct stmpe *stmpe);
+ #define STMPE1601_REG_GPIO_ED_MSB		0x8A
+ #define STMPE1601_REG_GPIO_RE_LSB		0x8D
+ #define STMPE1601_REG_GPIO_FE_LSB		0x8F
++#define STMPE1601_REG_GPIO_PU_LSB		0x91
+ #define STMPE1601_REG_GPIO_AF_U_MSB		0x92
+ 
+ #define STMPE1601_SYS_CTRL_ENABLE_GPIO		(1 << 3)
+@@ -276,6 +277,8 @@ int stmpe_remove(struct stmpe *stmpe);
+ #define STMPE24XX_REG_GPEDR_MSB		0x8C
+ #define STMPE24XX_REG_GPRER_LSB		0x91
+ #define STMPE24XX_REG_GPFER_LSB		0x94
++#define STMPE24XX_REG_GPPUR_LSB		0x97
++#define STMPE24XX_REG_GPPDR_LSB		0x9a
+ #define STMPE24XX_REG_GPAFR_U_MSB	0x9B
+ 
+ #define STMPE24XX_SYS_CTRL_ENABLE_GPIO		(1 << 3)
+diff --git a/include/linux/mfd/stmpe.h b/include/linux/mfd/stmpe.h
+index af9e1b07a630..976e1a390177 100644
+--- a/include/linux/mfd/stmpe.h
++++ b/include/linux/mfd/stmpe.h
+@@ -50,6 +50,8 @@ enum {
+ 	STMPE_IDX_GPEDR_MSB,
+ 	STMPE_IDX_GPRER_LSB,
+ 	STMPE_IDX_GPFER_LSB,
++	STMPE_IDX_GPPUR_LSB,
++	STMPE_IDX_GPPDR_LSB,
+ 	STMPE_IDX_GPAFR_U_MSB,
+ 	STMPE_IDX_IEGPIOR_LSB,
+ 	STMPE_IDX_ISGPIOR_LSB,
+-- 
+1.9.3
+
