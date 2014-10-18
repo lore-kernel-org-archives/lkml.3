@@ -1,51 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751250AbaJRLa4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Oct 2014 07:30:56 -0400
-Received: from cassarossa.samfundet.no ([193.35.52.29]:40987 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750915AbaJRLaz (ORCPT
+	id S1751251AbaJRLmq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Oct 2014 07:42:46 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:51090 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750915AbaJRLmm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Oct 2014 07:30:55 -0400
-Date: Sat, 18 Oct 2014 12:45:25 +0200
-From: "Steinar H. Gunderson" <sgunderson@bigfoot.com>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Graf <tgraf@suug.ch>, "David S. Miller" <davem@davemloft.net>,
-        Nikolay Aleksandrov <nikolay@redhat.com>
-Subject: Re: getaddrinfo slowdown in 3.17.1, due to getifaddrs
-Message-ID: <20141018104525.GA15789@sesse.net>
-References: <20141017002132.GA29584@sesse.net>
- <20141017003430.GB29584@sesse.net>
+	Sat, 18 Oct 2014 07:42:42 -0400
+Message-ID: <5442522D.40203@kernel.org>
+Date: Sat, 18 Oct 2014 12:42:37 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20141017003430.GB29584@sesse.net>
-X-Operating-System: Linux 3.16.3 on a x86_64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: Lars-Peter Clausen <lars@metafoo.de>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        John Stultz <john.stultz@linaro.org>, linux-iio@vger.kernel.org,
+        svarbanov@mm-sol.com, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH] iio: inkern: Add of_xlate function to struct iio_dev
+References: <1412253128-32165-1-git-send-email-iivanov@mm-sol.com>
+In-Reply-To: <1412253128-32165-1-git-send-email-iivanov@mm-sol.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 17, 2014 at 02:34:30AM +0200, Steinar H. Gunderson wrote:
-> e341694e3eb57fcda9f1adc7bfea42fe080d8d7a looks like it might cause something
-> like this (it certainly added the synchronize_net() call). Cc-ing people on 
-> that commit; quoting the entire rest of the message for reference.
+On 02/10/14 13:32, Ivan T. Ivanov wrote:
+> When #iio-cells is greater than '0', the driver could provide
+> a custom of_xlate function that reads the *args* and returns
+> the appropriate index in registered IIO channels array.
+> 
+> Add simple translation function, suitable for the most 1:1
+> mapped channels in IIO chips, and use it when driver did not
+> provide custom implementation.
+> 
+> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+Any more comments on this?  Been sat a while and the discussions seems
+to have died out.
 
-I see there's discussion on what to do with this; thanks. :-)
+As Ivan has pointed out, very similar approaches are used
+elsewhere (gpio for example).
 
-FWIW, I've verified that reverting these four patches (in that order) fixes
-the problem:
-
-  https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/patch/net/netlink/af_netlink.c?id=9ce12eb16ffb143f3a509da86283ddd0b10bcdb3
-  https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/patch/net/netlink/af_netlink.c?id=6c8f7e70837468da4e658080d4448930fb597e1b
-  https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/patch/net/netlink/af_netlink.c?id=67a24ac18b0262178ba9f05501b2c6e6731d449a
-  https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/patch/net/netlink/af_netlink.c?id=e341694e3eb57fcda9f1adc7bfea42fe080d8d7a
-
-My Perl script is seemingly not the only affected program on the system;
-witness the average page load times for our PHP-based home page:
-
-  http://home.samfundet.no/~sesse/web_load_time_samfundet_no-week.png
-
-/* Steinar */
--- 
-Homepage: http://www.sesse.net/
+> ---
+>  drivers/iio/inkern.c    | 32 +++++++++++++++++++++++++++-----
+>  include/linux/iio/iio.h |  8 ++++++++
+>  2 files changed, 35 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
+> index f084610..6c3e478 100644
+> --- a/drivers/iio/inkern.c
+> +++ b/drivers/iio/inkern.c
+> @@ -100,6 +100,28 @@ static int iio_dev_node_match(struct device *dev, void *data)
+>  	return dev->of_node == data && dev->type == &iio_device_type;
+>  }
+>  
+> +/**
+> + * __of_iio_simple_xlate - translate iiospec to the IIO channel index
+> + * @indio_dev:	pointer to the iio_dev structure
+> + * @iiospec:	IIO specifier as found in the device tree
+> + *
+> + * This is simple translation function, suitable for the most 1:1 mapped
+> + * channels in IIO chips. This function performs only one sanity check:
+> + * whether IIO index is less than num_channels (that is specified in the
+> + * iio_dev).
+> + */
+> +static int __of_iio_simple_xlate(struct iio_dev *indio_dev,
+> +				const struct of_phandle_args *iiospec)
+> +{
+> +	if (!iiospec->args_count)
+> +		return 0;
+> +
+> +	if (iiospec->args[0] >= indio_dev->num_channels)
+> +		return -EINVAL;
+> +
+> +	return iiospec->args[0];
+> +}
+> +
+>  static int __of_iio_channel_get(struct iio_channel *channel,
+>  				struct device_node *np, int index)
+>  {
+> @@ -122,18 +144,18 @@ static int __of_iio_channel_get(struct iio_channel *channel,
+>  
+>  	indio_dev = dev_to_iio_dev(idev);
+>  	channel->indio_dev = indio_dev;
+> -	index = iiospec.args_count ? iiospec.args[0] : 0;
+> -	if (index >= indio_dev->num_channels) {
+> -		err = -EINVAL;
+> +	if (!indio_dev->of_xlate)
+> +		indio_dev->of_xlate = __of_iio_simple_xlate;
+> +	index = indio_dev->of_xlate(indio_dev, &iiospec);
+> +	if (index < 0)
+>  		goto err_put;
+> -	}
+>  	channel->channel = &indio_dev->channels[index];
+>  
+>  	return 0;
+>  
+>  err_put:
+>  	iio_device_put(indio_dev);
+> -	return err;
+> +	return index;
+>  }
+>  
+>  static struct iio_channel *of_iio_channel_get(struct device_node *np, int index)
+> diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
+> index 15dc6bc..d5bb219 100644
+> --- a/include/linux/iio/iio.h
+> +++ b/include/linux/iio/iio.h
+> @@ -13,6 +13,7 @@
+>  #include <linux/device.h>
+>  #include <linux/cdev.h>
+>  #include <linux/iio/types.h>
+> +#include <linux/of.h>
+>  /* IIO TODO LIST */
+>  /*
+>   * Provide means of adjusting timer accuracy.
+> @@ -413,6 +414,11 @@ struct iio_buffer_setup_ops {
+>   * @currentmode:	[DRIVER] current operating mode
+>   * @dev:		[DRIVER] device structure, should be assigned a parent
+>   *			and owner
+> + * @of_xlate:		[DRIVER] function pointer to obtain channel specifier
+> + *			index. When #iio-cells is greater than '0', the driver
+> + *			could provide a custom of_xlate function that reads
+> + *			the *args* and returns the appropriate index in
+> + *			registered IIO channels array.
+>   * @event_interface:	[INTERN] event chrdevs associated with interrupt lines
+>   * @buffer:		[DRIVER] any buffer present
+>   * @buffer_list:	[INTERN] list of all buffers currently attached
+> @@ -451,6 +457,8 @@ struct iio_dev {
+>  	int				currentmode;
+>  	struct device			dev;
+>  
+> +	int (*of_xlate)(struct iio_dev *indio_dev,
+> +			const struct of_phandle_args *iiospec);
+>  	struct iio_event_interface	*event_interface;
+>  
+>  	struct iio_buffer		*buffer;
+> 
