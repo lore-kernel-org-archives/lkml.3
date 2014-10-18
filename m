@@ -1,109 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751273AbaJRVw3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Oct 2014 17:52:29 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:33826 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178AbaJRVw1 (ORCPT
+	id S1751273AbaJRWBL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Oct 2014 18:01:11 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:49990 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750980AbaJRWBJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Oct 2014 17:52:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAH2r5mtsh9KsVYJJWebJffvdQxOVTzM4cNM30q8hYOG=Bwj8eA@mail.gmail.com>
-References: <CAH2r5mvBOJHLbRXHMt50E97_1E2Q8F_=PH9=u6N3yuuqSQVmDg@mail.gmail.com>
- <20141017234445.GA28891@saruman> <CAH2r5mtsh9KsVYJJWebJffvdQxOVTzM4cNM30q8hYOG=Bwj8eA@mail.gmail.com>
-From: Steve French <smfrench@gmail.com>
-Date: Sat, 18 Oct 2014 16:52:06 -0500
-Message-ID: <CAH2r5msu+=8Ae_OCP92oRT1UnybBBYLKpx-YbVUe8hhifxouaA@mail.gmail.com>
-Subject: Re: current mainline doesn't boot
-To: balbi@ti.com
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 18 Oct 2014 18:01:09 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Grant Likely <grant.likely@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Andi Kleen <ak@linux.intel.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/5] lib: string.c:  Added a function strzcpy
+Date: Sun, 19 Oct 2014 00:03:20 +0200
+Message-Id: <1413669800-6058-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Same thing happened after pulling newly updated mainline kernel
-changes a few minutes ago.
+Added a function strzcpy which works the same as strncpy,
+but guaranteed to produce the trailing null character.
 
-Black screen on boot just when you would expect x to be starting.
-Hung. Ctl-alt-F1 doesn't do anything.
+There are many places in the code where strncpy used although it
+must be zero terminated, and switching to strlcpy is not an option
+because the string must nonetheless be fyld with zero characters.
 
-arch is x86_64.
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ include/linux/string.h |    1 +
+ lib/string.c           |   31 +++++++++++++++++++++++++++++++
+ 2 files changed, 32 insertions(+)
 
-3.17.1 works.  When I get time I will see if I can figure out more
-useful info but this looks like a pretty boring setup:
-
-sfrench@ubuntu:~$ glxinfo | grep -i "vendor"
-server glx vendor string: SGI
-client glx vendor string: Mesa Project and SGI
-OpenGL vendor string: VMware, Inc.
-sfrench@ubuntu:~$ grep LoadModule /var/log/Xorg.0.log
-[    18.271] (II) LoadModule: "glx"
-[    18.288] (II) LoadModule: "vmware"
-[    18.352] (II) LoadModule: "modesetting"
-[    18.355] (II) LoadModule: "fbdev"
-[    18.360] (II) LoadModule: "vesa"
-[    18.369] (II) LoadModule: "fbdevhw"
-[    18.372] (II) LoadModule: "fb"
-[    18.379] (II) LoadModule: "dri2"
-[    18.479] (II) LoadModule: "evdev"
-[    18.484] (II) LoadModule: "vmmouse"
-
-On Fri, Oct 17, 2014 at 6:52 PM, Steve French <smfrench@gmail.com> wrote:
-> This is vmware guest
->
-> sfrench@ubuntu:~/xfstests$ cat /proc/cpuinfo
-> processor    : 0
-> vendor_id    : GenuineIntel
-> cpu family    : 6
-> model        : 70
-> model name    : Intel(R) Core(TM) i7-4750HQ CPU @ 2.00GHz
->
-> (and using 64 bit kernel build) ...
->
-> I don't have the Ubuntu config for their mainline kernel test builds
-> any more (deleted the kernel since it didn't work) but they post their
-> .config diffs at
-> http://kernel.ubuntu.com/~kernel-ppa/mainline/daily/current/
->
-> I could not get to a console so assumed it died in kernel as x was
-> coming up.  I will have to reinstall current mainline to see if I can
-> hook up a serial console (I had maximum kernel boot verbose in the
-> grub.cfg but nothing interesting before the black screen)
->
-> On Fri, Oct 17, 2014 at 6:44 PM, Felipe Balbi <balbi@ti.com> wrote:
->> Hi,
->>
->> On Fri, Oct 17, 2014 at 05:44:02PM -0500, Steve French wrote:
->>> Anyone know a workaround for the problem booting current mainline?
->>> 3.17 works fine for me, but recent mainline since 3.17 goes to a black
->>> screen near the end of boot as X is about to start.
->>>
->>> I also tried the Ubuntu build of the day (which also is based on
->>> current mainline but with the Ubuntu config just in case it was some
->>> driver issue) which fails the same way.
->>
->> you need to provide more information, here are a few queries which might
->> help:
->>
->> 1. which architecture ?
->> 2. Can you get a serial console to get some dmesg output ?
->> 3. after screen is black, can you ctrl + alt + F1 and get a console ?
->> 4. where's you .config ?
->>
->> --
->> balbi
->
->
->
-> --
-> Thanks,
->
-> Steve
-
-
-
+diff --git a/include/linux/string.h b/include/linux/string.h
+index d36977e..d789ee5e 100644
+--- a/include/linux/string.h
++++ b/include/linux/string.h
+@@ -22,6 +22,7 @@ extern char * strcpy(char *,const char *);
+ #ifndef __HAVE_ARCH_STRNCPY
+ extern char * strncpy(char *,const char *, __kernel_size_t);
+ #endif
++extern char *strzcpy(char *, const char *, __kernel_size_t);
+ #ifndef __HAVE_ARCH_STRLCPY
+ size_t strlcpy(char *, const char *, size_t);
+ #endif
+diff --git a/lib/string.c b/lib/string.c
+index f3c6ff5..582a832 100644
+--- a/lib/string.c
++++ b/lib/string.c
+@@ -134,6 +134,37 @@ char *strncpy(char *dest, const char *src, size_t count)
+ EXPORT_SYMBOL(strncpy);
+ #endif
+ 
++/**
++ * strzcpy - Copy a length-limited, C-string
++ * @dest: Where to copy the string to
++ * @src: Where to copy the string from
++ * @count: The maximum number of bytes to copy
++ *
++ * The result is %NUL-terminated,
++ * as long as count is greater than zero.
++ *
++ * In the case where the length of @src is less than  that  of
++ * count, the remainder of @dest will be padded with %NUL.
++ *
++ */
++char *strzcpy(char *dest, const char *src, size_t count)
++{
++	char *tmp = dest;
++
++	while (count) {
++		if ((*tmp = *src) != 0)
++			src++;
++		tmp++;
++		count--;
++	}
++
++	if (dest != tmp)
++		*--tmp = '\0';
++
++	return dest;
++}
++EXPORT_SYMBOL(strzcpy);
++
+ #ifndef __HAVE_ARCH_STRLCPY
+ /**
+  * strlcpy - Copy a C-string into a sized buffer
 -- 
-Thanks,
+1.7.10.4
 
-Steve
