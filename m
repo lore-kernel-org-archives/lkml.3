@@ -1,79 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752391AbaJTAes (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 20:34:48 -0400
-Received: from ozlabs.org ([103.22.144.67]:45492 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752249AbaJTAen convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752303AbaJTAen (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 19 Oct 2014 20:34:43 -0400
+Received: from ozlabs.org ([103.22.144.67]:36252 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752089AbaJTAem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Oct 2014 20:34:42 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Barry Davis <barry_davis@stormagic.com>
-Cc: Tom Gundersen <teg@jklm.no>, "lkml" <linux-kernel@vger.kernel.org>
-Subject: Re: 0003-module-remove-MODULE_GENERIC_TABLE.patch
-In-Reply-To: <EF6418FA9E2C4C238A5A1FB4BE9FF408@vWin7>
-References: <EF6418FA9E2C4C238A5A1FB4BE9FF408@vWin7>
+To: "Denis V. Lunev" <den@openvz.org>
+Cc: virtualization@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Raushaniya Maksudova <rmaksudova@parallels.com>,
+        "Denis V. Lunev" <den@openvz.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: [PATCH 2/2] virtio_balloon: free some memory from balloon on OOM
+In-Reply-To: <1413388064-5354-3-git-send-email-den@openvz.org>
+References: <1413388064-5354-1-git-send-email-den@openvz.org> <1413388064-5354-3-git-send-email-den@openvz.org>
 User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 20 Oct 2014 10:58:17 +1030
-Message-ID: <87y4sb8tzy.fsf@rustcorp.com.au>
+Date: Mon, 20 Oct 2014 10:01:37 +1030
+Message-ID: <87d29nab6u.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Barry Davis <barry_davis@stormagic.com> writes:
-> Hi Rusty,
->
-> I’ve just been looking at a change that this patch says you introduced:
->
-> https://github.com/jumpstarter-io/pkgbuilds/blob/master/linux/0003-module-remove-MODULE_GENERIC_TABLE.patch
->
-> In previous kernels we had this defined:
->     chroot:# nm kernel/drivers/scsi/vmw_pvscsi.ko | grep _device_table
->     000000e0 R __mod_pci_device_table
->
-> Now we have:
->     chroot:# nm kernel/drivers/scsi/vmw_pvscsi.ko | grep _device_table
->     000000e0 R __mod_pci__pvscsi_pci_tbl_device_table
->
-> This results in depmod from module-init-tools not being able to find the __mod_pci_device_table.
-> This leads to modules.pcimap being generated with no entries, which breaks anything that uses modules.pcimap to decide if it should insert a module or not.
->
-> Was this unintentional, or is there another way to successfully generate modules.pcimap?
->
-> See https://github.com/vadmium/module-init-tools/blob/master/elfops_core.c#L351 for details of depmods expectations.
+"Denis V. Lunev" <den@openvz.org> writes:
 
-Hi Barry,
+> From: Raushaniya Maksudova <rmaksudova@parallels.com>
+>
+> Excessive virtio_balloon inflation can cause invocation of OOM-killer,
+> when Linux is under severe memory pressure. Various mechanisms are
+> responsible for correct virtio_balloon memory management. Nevertheless
+> it is often the case that these control tools does not have enough time
+> to react on fast changing memory load. As a result OS runs out of memory
+> and invokes OOM-killer. The balancing of memory by use of the virtio
+> balloon should not cause the termination of processes while there are
+> pages in the balloon. Now there is no way for virtio balloon driver to
+> free some memory at the last moment before some process will be get
+> killed by OOM-killer.
+>
+> This does not provide a security breach as balloon itself is running
+> inside guest OS and is working in the cooperation with the host. Thus
+> some improvements from guest side should be considered as normal.
+>
+> To solve the problem, introduce a virtio_balloon callback which is
+> expected to be called from the oom notifier call chain in out_of_memory()
+> function. If virtio balloon could release some memory, it will make
+> the system to return and retry the allocation that forced the out of
+> memory killer to run.
+>
+> Allocate virtio  feature bit for this: it is not set by default,
+> the the guest will not deflate virtio balloon on OOM without explicit
+> permission from host.
+>
+> Signed-off-by: Raushaniya Maksudova <rmaksudova@parallels.com>
+> Signed-off-by: Denis V. Lunev <den@openvz.org>
+> CC: Rusty Russell <rusty@rustcorp.com.au>
+> CC: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  drivers/virtio/virtio_balloon.c     | 52 +++++++++++++++++++++++++++++++++++++
+>  include/uapi/linux/virtio_balloon.h |  1 +
+>  2 files changed, 53 insertions(+)
+>
+> diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
+> index 66cac10..88d73a0 100644
+> --- a/drivers/virtio/virtio_balloon.c
+> +++ b/drivers/virtio/virtio_balloon.c
+> @@ -28,6 +28,7 @@
+>  #include <linux/slab.h>
+>  #include <linux/module.h>
+>  #include <linux/balloon_compaction.h>
+> +#include <linux/oom.h>
+>  
+>  /*
+>   * Balloon device works in 4K page units.  So each page is pointed to by
+> @@ -36,6 +37,12 @@
+>   */
+>  #define VIRTIO_BALLOON_PAGES_PER_PAGE (unsigned)(PAGE_SIZE >> VIRTIO_BALLOON_PFN_SHIFT)
+>  #define VIRTIO_BALLOON_ARRAY_PFNS_MAX 256
+> +#define OOM_VBALLOON_DEFAULT_PAGES 256
+> +#define VIRTBALLOON_OOM_NOTIFY_PRIORITY 80
+> +
+> +static int oom_pages = OOM_VBALLOON_DEFAULT_PAGES;
+> +module_param(oom_pages, int, S_IRUSR | S_IWUSR);
+> +MODULE_PARM_DESC(oom_pages, "pages to free on OOM");
+>  
+>  struct virtio_balloon
+>  {
+> @@ -71,6 +78,9 @@ struct virtio_balloon
+>  	/* Memory statistics */
+>  	int need_stats_update;
+>  	struct virtio_balloon_stat stats[VIRTIO_BALLOON_S_NR];
+> +
+> +	/* To register callback in oom notifier call chain */
+> +	struct notifier_block nb;
+>  };
+>  
+>  static struct virtio_device_id id_table[] = {
+> @@ -290,6 +300,38 @@ static void update_balloon_size(struct virtio_balloon *vb)
+>  		      &actual);
+>  }
+>  
+> +/*
+> + * virtballoon_oom_notify - release pages when system is under severe
+> + *			    memory pressure (called from out_of_memory())
+> + * @self : notifier block struct
+> + * @dummy: not used
+> + * @parm : returned - number of freed pages
+> + *
+> + * The balancing of memory by use of the virtio balloon should not cause
+> + * the termination of processes while there are pages in the balloon.
+> + * If virtio balloon manages to release some memory, it will make the
+> + * system return and retry the allocation that forced the OOM killer
+> + * to run.
+> + */
+> +static int virtballoon_oom_notify(struct notifier_block *self,
+> +				  unsigned long dummy, void *parm)
+> +{
+> +	struct virtio_balloon *vb;
+> +	unsigned long *freed;
+> +	unsigned num_freed_pages;
+> +
+> +	vb = container_of(self, struct virtio_balloon, nb);
+> +	if (!virtio_has_feature(vb->vdev, VIRTIO_BALLOON_F_DEFLATE_ON_OOM))
+> +		return NOTIFY_OK;
+> +
+> +	freed = parm;
+> +	num_freed_pages = leak_balloon(vb, oom_pages);
+> +	update_balloon_size(vb);
+> +	*freed += num_freed_pages;
+> +
+> +	return NOTIFY_OK;
+> +}
+> +
+>  static int balloon(void *_vballoon)
+>  {
+>  	struct virtio_balloon *vb = _vballoon;
 
-        Not intentional at all!  You're the first to report this though:
-are you still using the (deprecated) modules.pcimap?  The *map files are
-not supported by kmod, and were only inserted as a nod to the older
-modutils.
+OK, I applied these.  I thought it a bit weird that you're checking the
+feature in the callback, rather than only registering the callback
+if the feature exists.  But it's clear enough.
 
-Because it's really hard to fix: we now allow multiple tables, so the
-names are now unique.
-
-commit cff26a51da5d206d3baf871e75778da44710219d is the one that broke
-this, but commit 21bdd17b21b45ea48e06e23918d681afbe0622e9 relies on it:
-
-commit 21bdd17b21b45ea48e06e23918d681afbe0622e9
-Author: Tom Gundersen <teg@jklm.no>
-Date:   Mon Feb 3 11:14:13 2014 +1030
-
-    module: allow multiple calls to MODULE_DEVICE_TABLE() per module
-    
-    Commit 78551277e4df5: "Input: i8042 - add PNP modaliases" had a bug, where the
-    second call to MODULE_DEVICE_TABLE() overrode the first resulting in not all
-    the modaliases being exposed.
-    
-    This fixes the problem by including the name of the device_id table in the
-    __mod_*_device_table alias, allowing us to export several device_id tables
-    per module.
-    
-    Suggested-by: Kay Sievers <kay@vrfy.org>
-    Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-    Signed-off-by: Tom Gundersen <teg@jklm.no>
-    Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Thanks,
+Rusty.
