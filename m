@@ -1,109 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751972AbaJSN1L (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 09:27:11 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:35088 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871AbaJSN1H (ORCPT
+	id S1751985AbaJSNs7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 09:48:59 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:33771 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916AbaJSNs6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 09:27:07 -0400
-Date: Sun, 19 Oct 2014 15:27:00 +0200
-From: Konrad Zapalowicz <bergo.torino@gmail.com>
-To: Chen Weixiang <weixiangchen@gmail.com>
-Cc: Marek Belisko <marek.belisko@gmail.com>,
+	Sun, 19 Oct 2014 09:48:58 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Sun, 19 Oct 2014 15:45:51 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Nix <nix@esperi.org.uk>
+Cc: Johan Hovold <johan@kernel.org>, Paul Martin <pm@debian.org>,
+        Oliver Neukum <oliver@neukum.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Chen Weixiang <weixiang.chen@gmail.com>,
-        Greg Donald <gdonald@gmail.com>, Chen Gang <gang.chen.5i5j@gmail.com>,
-        Artem Fetishev <wwctrsrx@gmail.com>,
-        Andrey Utkin <andrey.krieger.utkin@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/7] staging: ft1000: space required after that ','
-Message-ID: <20141019132700.GA3632@t400>
-References: <1413723590-19690-1-git-send-email-weixiang.chen@gmail.com>
- <1413723590-19690-4-git-send-email-weixiang.chen@gmail.com>
+        linux-kernel@vger.kernel.org
+Subject: Re: [3.16.1 BISECTED REGRESSION]: Simtec Entropy Key (cdc-acm)
+ broken in 3.16
+Message-ID: <20141019134551.GA2206@localhost>
+References: <878um4tg09.fsf@spindle.srvr.nix>
+ <1409569752.24385.12.camel@linux-fkkt.site>
+ <874mwnosz1.fsf@spindle.srvr.nix>
+ <871tqe2zqt.fsf_-_@spindle.srvr.nix>
+ <20141011195108.GA8275@thinkpad.nowster.org.uk>
+ <87y4smz1l0.fsf@spindle.srvr.nix>
+ <20141012185845.GB2786@localhost>
+ <878uklynq9.fsf@spindle.srvr.nix>
+ <20141014083432.GB7958@localhost>
+ <87k33yx25c.fsf@spindle.srvr.nix>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1413723590-19690-4-git-send-email-weixiang.chen@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87k33yx25c.fsf@spindle.srvr.nix>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19, Chen Weixiang wrote:
-> Remove code style error from ft1000/ft1000-usb/ft1000_debug.c:
-> ERROR: space required after that ',' (ctx:VxV)
+On Fri, Oct 17, 2014 at 02:21:35PM +0100, Nix wrote:
+> On 14 Oct 2014, Johan Hovold outgrape:
+> > Another thing you could try is to add back the 
+> >
+> > 	acm_set_control(acm, 0);
+> >
+> > just after the dev_info message in probe.
 > 
-> Signed-off-by: Chen Weixiang <weixiang.chen@gmail.com>
-> ---
->  drivers/staging/ft1000/ft1000-usb/ft1000_debug.c | 18 +++++++++---------
->  1 file changed, 9 insertions(+), 9 deletions(-)
+> "Add back" suggests that this line existed before this change. It
+> didn't, as far as I can see. Probing has
 > 
-> diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_debug.c b/drivers/staging/ft1000/ft1000-usb/ft1000_debug.c
-> index 47dc0c0..183128c 100644
-> --- a/drivers/staging/ft1000/ft1000-usb/ft1000_debug.c
-> +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_debug.c
-> @@ -301,7 +301,7 @@ static int ft1000_open(struct inode *inode, struct file *file)
->  {
->  	struct ft1000_info *info;
->  	struct ft1000_usb *dev = (struct ft1000_usb *)inode->i_private;
-> -    int i,num;
-> +    int i, num;
->  
->      DEBUG("%s called\n", __func__);
->      num = (MINOR(inode->i_rdev) & 0xf);
-> @@ -419,12 +419,12 @@ static long ft1000_ioctl(struct file *file, unsigned int command,
->      struct timeval tv;
->  	struct IOCTL_GET_VER get_ver_data;
->  	struct IOCTL_GET_DSP_STAT get_stat_data;
-> -    u8 ConnectionMsg[] = {0x00,0x44,0x10,0x20,0x80,0x00,0x00,0x00,0x00,0x00,0x03,0x00,0x00,0x00,0x93,0x64,
-> -                          0x00,0x00,0x02,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x05,0x00,0x00,0x00,0x0a,
-> -                          0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x02,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-> -                          0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x12,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-> -                          0x00,0x00,0x02,0x37,0x00,0x00,0x00,0x08,0x00,0x00,0x00,0x01,0x00,0x01,0x7f,0x00,
-> -                          0x00,0x01,0x00,0x00};
-> +    u8 ConnectionMsg[] = {0x00, 0x44, 0x10, 0x20, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x93, 0x64,
-> +                          0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x0a,
-> +                          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-> +                          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x12, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-> +                          0x00, 0x00, 0x02, 0x37, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x7f, 0x00,
-> +                          0x00, 0x01, 0x00, 0x00};
-
-Nice, however it still violates the 80 characters a line rule. Please
-redo this patch.
-
-You can use the checkpatch to validate each patch befor sending and
-generally you should aim towards sending patches with 0 checkpatch
-warnings/errors. There is also the --strict option to the checkpatch
-which is also worth uisng as some kernel subsystems use it as a default.
-
-Thanks,
-Konrad
-  
->      unsigned short ledStat = 0;
->      unsigned short conStat = 0;
-> @@ -475,7 +475,7 @@ static long ft1000_ioctl(struct file *file, unsigned int command,
->              break;
->          }
->  
-> -        DEBUG("FT1000:ft1000_ioctl:driver version = 0x%x\n",(unsigned int)get_ver_data.drv_ver);
-> +        DEBUG("FT1000:ft1000_ioctl:driver version = 0x%x\n", (unsigned int)get_ver_data.drv_ver);
->  
->          break;
->      case IOCTL_CONNECT:
-> @@ -652,7 +652,7 @@ static long ft1000_ioctl(struct file *file, unsigned int command,
->                              }
->                              pmsg++;
->  				ppseudo_hdr = (struct pseudo_hdr *)pmsg;
-> -                           result = card_send_command(ft1000dev,(unsigned short*)dpram_data,total_len+2);
-> +                           result = card_send_command(ft1000dev, (unsigned short*)dpram_data, total_len+2);
->  
->  
->                              ft1000dev->app_info[app_index].nTxMsg++;
-> -- 
-> 2.1.1
+> acm_set_control(acm, acm->ctrlout);
 > 
-> _______________________________________________
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
+> *shutdown* has
+> 
+> acm_set_control(acm, acm->ctrlout = 0);
+> 
+> Did you mean that I should try adding back the acm_set_control() during
+> shutdown, or the one during probe?
+
+After the dev_info in probe as I wrote. acm->ctrlout will always be 0 at
+that point, could have been more clear about that.
+
+Johan
