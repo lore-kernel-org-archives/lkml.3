@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115AbaJSS2i (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 14:28:38 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:53365 "EHLO
+	id S1752181AbaJSS2t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 14:28:49 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:53374 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751583AbaJSS2f (ORCPT
+	with ESMTP id S1752026AbaJSS2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 14:28:35 -0400
+	Sun, 19 Oct 2014 14:28:37 -0400
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: Thierry Reding <thierry.reding@gmail.com>
 Cc: Maxime Ripard <maxime.ripard@free-electrons.com>, jonsmirl@gmail.com,
         Simon <longsleep@gmail.com>, linux-pwm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv8 0/2] Add Allwinner SoCs PWM support
-Date: Sun, 19 Oct 2014 20:28:23 +0200
-Message-Id: <1413743305-1979-1-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCHv8 2/2] pwm: sunxi: document OF bindings
+Date: Sun, 19 Oct 2014 20:28:25 +0200
+Message-Id: <1413743305-1979-3-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1413743305-1979-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1413743305-1979-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This is the documentation for the Allwinner SoCs PWM bindings.
 
-This patch series adds support for the PWM controller found on the Allwinner
-SoCs.
-
-The first patch adds the driver itself.
-The second patch adds the DT binding documentation
-
-Changes in v8:
- - renamed the driver sun4i as the PWM IP is different in the next sunxi SoCs
- - Took into account comments from Thierry
-
-Alexandre Belloni (2):
-  pwm: Add Allwinner SoC support
-  pwm: sunxi: document OF bindings
-
- .../devicetree/bindings/pwm/pwm-sun4i.txt          |  20 ++
- drivers/pwm/Kconfig                                |   9 +
- drivers/pwm/Makefile                               |   1 +
- drivers/pwm/pwm-sun4i.c                            | 371 +++++++++++++++++++++
- 4 files changed, 401 insertions(+)
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ Documentation/devicetree/bindings/pwm/pwm-sun4i.txt | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/pwm/pwm-sun4i.txt
- create mode 100644 drivers/pwm/pwm-sun4i.c
 
+diff --git a/Documentation/devicetree/bindings/pwm/pwm-sun4i.txt b/Documentation/devicetree/bindings/pwm/pwm-sun4i.txt
+new file mode 100644
+index 000000000000..ae0273e19506
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pwm/pwm-sun4i.txt
+@@ -0,0 +1,20 @@
++Allwinner sun4i and sun7i SoC PWM controller
++
++Required properties:
++  - compatible: should be one of:
++    - "allwinner,sun4i-a10-pwm"
++    - "allwinner,sun7i-a20-pwm"
++  - reg: physical base address and length of the controller's registers
++  - #pwm-cells: should be 3. See pwm.txt in this directory for a description of
++    the cells format.
++  - clocks: From common clock binding, handle to the parent clock.
++
++Example:
++
++	pwm: pwm@01c20e00 {
++		compatible = "allwinner,sun7i-a20-pwm";
++		reg = <0x01c20e00 0xc>;
++		clocks = <&osc24M>;
++		#pwm-cells = <3>;
++		status = "disabled";
++	};
 -- 
 1.9.1
 
