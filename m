@@ -1,87 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751710AbaJSWCW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 18:02:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43325 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413AbaJSWCT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 18:02:19 -0400
-Date: Mon, 20 Oct 2014 06:01:13 +0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: John Stultz <john.stultz@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
-        devel@driverdev.osuosl.org, Linux API <linux-api@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Anup Patel <anup.patel@linaro.org>
-Subject: Re: [PATCH] staging: android: binder: move to the "real" part of the
- kernel
-Message-ID: <20141019220113.GA3780@kroah.com>
-References: <20141016124741.GA3832@kroah.com>
- <CALAqxLU05D8qQA47E77PiuuN7eVt66WEq1qn+PqdE-tpEUzFpw@mail.gmail.com>
- <20141016231221.GA13592@kroah.com>
- <20141018223630.497988fa@alan.etchedpixels.co.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141018223630.497988fa@alan.etchedpixels.co.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751887AbaJSWFX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 18:05:23 -0400
+Received: from mga11.intel.com ([192.55.52.93]:25572 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751413AbaJSWFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Oct 2014 18:05:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="402644422"
+From: Kan Liang <kan.liang@intel.com>
+To: a.p.zijlstra@chello.nl, eranian@google.com
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
+        acme@kernel.org, jolsa@redhat.com, ak@linux.intel.com,
+        Kan Liang <kan.liang@intel.com>
+Subject: [PATCH V6 00/17] perf, x86: Haswell LBR call stack support
+Date: Sun, 19 Oct 2014 17:54:55 -0400
+Message-Id: <1413755712-8259-1-git-send-email-kan.liang@intel.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 18, 2014 at 10:36:30PM +0100, One Thousand Gnomes wrote:
-> > Do we really need someone to do more work that has been done on it in
-> > the past as an official "maintainer"?  I'll be glad to do it, as I doubt
-> > it will require any time at all.
-> 
-> Well every time in the past that Al Viro looked in its direction he broke
-> it so probably. Someone is going to have to clean up or fix the fact it
-> pokes around in the depths of the low level fd I/O code and calls stuff
-> like __fd_install and __alloc_fd directly, or mend it if it breaks.
+(The kernel part of haswell LBR call stack patch set is original from
+Yan, Zheng. I only did some modification based on his work. The perf
+tool part is from me. The patches have been tested on Haswell platform.)
 
-As it is, it is ok, but bad things happen if you allow more than one
-process to open the device node.  In android systems, that doesn't
-happen, so all should be acceptable.
+For many profiling tasks we need the callgraph. For example we often
+need to see the caller of a lock or the caller of a memcpy or other
+library function to actually tune the program. Frame pointer unwinding
+is efficient and works well. But frame pointers are off by default on
+64bit code (and on modern 32bit gccs), so there are many binaries around
+that do not use frame pointers. Profiling unchanged production code is
+very useful in practice. On some CPUs frame pointer also has a high
+cost. Dwarf2 unwinding also does not always work and is extremely slow
+(upto 20% overhead).
 
-> I'm curious what Al Viro thinks of it
+Haswell has a new feature that utilizes the existing Last Branch Record
+facility to record call chains. When the feature is enabled, function
+call will be collected as normal, but as return instructions are
+executed the last captured branch record is popped from the on-chip LBR
+registers. The LBR call stack facility provides an alternative to get
+callgraph. It has some limitations too, but should work in most cases
+and is significantly faster than dwarf. Frame pointer unwinding is still
+the best default, but LBR call stack is a good alternative when nothing
+else works.
 
-His last comments were along the lines of "don't let anything open that
-device node other than libbinder".
+In the implementation, both Frame pointer and LBR call stack data are
+collected by kernel, and expose to user space. The frame pointer is
+still output as PERF_SAMPLE_CALLCHAIN data format. The LBR call stack
+data will be output as PERF_SAMPLE_BRANCH_STACK data format. A callahain
+source extension of perf report call-graph option is introduced. So user
+can choose call chain from either FP or LBR call stack.
 
-> > > Currently in the android space no one but libbinder should use the
-> > > kernel interface.
-> > 
-> > That is correct.  If you do that, you deserve all of the pain and
-> > suffering and rooted machines you will get.
-> 
-> So what is the Android side model for its security. That probably also
-> should be described so nobody goes off and uses it for something like
-> systemd because "it looked neat".
+When profiling bc(1) on Fedora 19:
+echo 'scale=2000; 4*a(1)' > cmd; perf record --call-graph fp bc -l < cmd
+If this feature is enabled, perf report with lbr output looks like:
+    50.36%       bc  bc                 [.] bc_divide
+                 |
+                 --- bc_divide
+                     execute
+                     run_code
+                     yyparse
+                     main
+                     __libc_start_main
+                     _start
+    33.66%       bc  bc                 [.] _one_mult
+                 |
+                 --- _one_mult
+                     bc_divide
+                     execute
+                     run_code
+                     yyparse
+                     main
+                     __libc_start_main
+                     _start
+     7.62%       bc  bc                 [.] _bc_do_add
+                 |
+                 --- _bc_do_add
+                    |
+                    |--99.89%-- 0x2000186a8
+                     --0.11%-- [...]
+     6.83%       bc  bc                 [.] _bc_do_sub
+                 |
+                 --- _bc_do_sub
+                    |
+                    |--99.94%-- bc_add
+                    |          execute
+                    |          run_code
+                    |          yyparse
+                    |          main
+                    |          __libc_start_main
+                    |          _start
+                     --0.06%-- [...]
+     0.46%       bc  libc-2.17.so       [.] __memset_sse2
+                 |
+                 --- __memset_sse2
+                    |
+                    |--54.13%-- bc_new_num
+                    |          |
+                    |          |--51.00%-- bc_divide
+                    |          |          execute
+                    |          |          run_code
+                    |          |          yyparse
+                    |          |          main
+                    |          |          __libc_start_main
+                    |          |          _start
+                    |          |
+                    |          |--30.46%-- _bc_do_sub
+                    |          |          bc_add
+                    |          |          execute
+                    |          |          run_code
+                    |          |          yyparse
+                    |          |          main
+                    |          |          __libc_start_main
+                    |          |          _start
+                    |          |
+                    |           --18.55%-- _bc_do_add
+                    |                     bc_add
+                    |                     execute
+                    |                     run_code
+                    |                     yyparse
+                    |                     main
+                    |                     __libc_start_main
+                    |                     _start
+                    |
+                     --45.87%-- bc_divide
+                               execute
+                               run_code
+                               yyparse
+                               main
+                               __libc_start_main
+                               _start
+If this feature is disabled, perf report output looks like:
+    50.49%       bc  bc                 [.] bc_divide
+                 |
+                 --- bc_divide
+    33.57%       bc  bc                 [.] _one_mult
+                 |
+                 --- _one_mult
+     7.61%       bc  bc                 [.] _bc_do_add
+                 |
+                 --- _bc_do_add
+                     0x2000186a8
+     6.88%       bc  bc                 [.] _bc_do_sub
+                 |
+                 --- _bc_do_sub
+     0.42%       bc  libc-2.17.so       [.] __memcpy_ssse3_back
+                 |
+                 --- __memcpy_ssse3_back
 
-The side model is "one owner that knows what they are doing as they have
-root privileges".  I don't know a way to codify that, and we all know no
-one reads documentation...
+Another example is to demo the extension of perf report.
+If both fp and lbr are available, we can dump either them by fp or lbr
+option as below.
 
-> > But all of the changes will be in new code.  Be it kdbus, or something
-> > else if that doesn't work out.  This existing binder.c file will not be
-> > changing at all.  This existing ABI, and codebase, is something that we
-> > have to maintain forever for those millions of devices out there in the
-> > real world today. 
-> 
-> 95% of those devices are locked down, most of them have non replaceable
-> batteries that will dead and irreplacable (sanely anyway) in 3-5 years.
-> "Forever" in the phone world is mercifully rather short.
+$ perf record --call-graph fp ./a.out
+[ perf record: Woken up 18 times to write data ]
+[ perf record: Captured and wrote 4.322 MB perf.data (~188824 samples) ]
 
-I still see brand new devices with 2 year old Android userspace being
-shipped today.  With a total mis-mash of random kernel versions,
-depending on what the SoC supported.  If we can delete this in 2-5
-years, I would be really happy.
+$ perf report --call-graph fractal,0.5,callee,function,fp -D | wc -l
+605688
+$ perf report --call-graph fractal,0.5,callee,function,lbr -D | wc -l
+605730
 
-thanks,
+The LBR call stack has following known limitations
+ - Zero length calls are not filtered out by hardware
+ - Exception handing such as setjmp/longjmp will have calls/returns not
+   match
+ - Pushing different return address onto the stack will have calls/returns
+   not match
+ - If callstack is deeper than the LBR, only the last entries are captured
 
-greg k-h
+Changes since v1
+ - split change into more patches
+ - introduce context switch callback and use it to flush LBR
+ - use the context switch callback to save/restore LBR
+ - dynamic allocate memory area for storing LBR stack, always switch the
+   memory area during context switch
+ - disable this feature by default
+ - more description in change logs
+
+Changes since v2
+ - don't use xchg to switch PMU specific data
+ - remove nr_branch_stack from struct perf_event_context
+ - simplify the save/restore LBR stack logical
+ - remove unnecessary 'has_branch_stack -> needs_branch_stack'
+   conversion
+ - more description in change logs
+
+Changes since v3
+ - remove sysfs attribute file that disable this feature
+
+Changes since v4
+ - re-organize code that save/resotre LBR stack
+ - allocate pmu specific data when it's needed
+ - update code comments
+
+Changes since v5
+ - Expose LBR call stack data to user perf tool
+ - Add option for perf report to support LBR call stack
+ - Some minor changes according to comments
+
+
+Yan, Zheng (15):
+  perf, x86: Reduce lbr_sel_map size
+  perf, core: introduce pmu context switch callback
+  perf, x86: use context switch callback to flush LBR stack
+  perf, x86: Basic Haswell LBR call stack support
+  perf, core: pmu specific data for perf task context
+  perf, core: always switch pmu specific data during context switch
+  perf, x86: allocate space for storing LBR stack
+  perf, x86: track number of events that use LBR callstack
+  perf, x86: Save/resotre LBR stack during context switch
+  perf, core: simplify need branch stack check
+  perf, core: expose LBR call stack to user perf tool
+  perf, x86: re-organize code that implicitly enables LBR/PEBS
+  perf, x86: enable LBR callstack when recording callchain
+  perf, x86: disable FREEZE_LBRS_ON_PMI when LBR operates in callstack  
+      mode
+  perf, x86: Discard zero length call entries in LBR call stack
+
+Kan Liang (2):
+  perf tools: handle LBR call stack data
+  perf tools: choose to dump callchain from LBR and FP
+
+ arch/x86/kernel/cpu/perf_event.c           |  90 ++++++---
+ arch/x86/kernel/cpu/perf_event.h           |  28 ++-
+ arch/x86/kernel/cpu/perf_event_intel.c     |  38 +---
+ arch/x86/kernel/cpu/perf_event_intel_ds.c  |   2 +-
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c | 310 ++++++++++++++++++++++-------
+ include/linux/perf_event.h                 |  34 +++-
+ include/uapi/linux/perf_event.h            |  49 +++--
+ kernel/events/callchain.c                  |   1 +
+ kernel/events/core.c                       | 200 +++++++++++--------
+ tools/perf/builtin-report.c                |   8 +-
+ tools/perf/util/callchain.c                |  18 +-
+ tools/perf/util/callchain.h                |   6 +
+ tools/perf/util/event.h                    |   8 +
+ tools/perf/util/evsel.c                    |  21 +-
+ tools/perf/util/machine.c                  | 198 ++++++++++++------
+ tools/perf/util/session.c                  |  34 +++-
+ 16 files changed, 728 insertions(+), 317 deletions(-)
+
+-- 
+1.8.3.2
+
