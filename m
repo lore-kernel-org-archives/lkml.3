@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751843AbaJSKWp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 06:22:45 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:58253 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751795AbaJSKWl (ORCPT
+	id S1751737AbaJSKkI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 06:40:08 -0400
+Received: from mail.sigma-star.at ([95.130.255.111]:14385 "EHLO
+	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751295AbaJSKkF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 06:22:41 -0400
-From: Tomas Melin <tomas.melin@iki.fi>
-To: m.chehab@samsung.com, david@hardeman.nu
-Cc: james.hogan@imgtec.com, a.seppala@gmail.com, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tomas Melin <tomas.melin@iki.fi>
-Subject: [PATCH 2/2] [media] rc-core: change enabled_protocol default setting
-Date: Sun, 19 Oct 2014 13:21:53 +0300
-Message-Id: <1413714113-7456-2-git-send-email-tomas.melin@iki.fi>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1413714113-7456-1-git-send-email-tomas.melin@iki.fi>
-References: <1413714113-7456-1-git-send-email-tomas.melin@iki.fi>
+	Sun, 19 Oct 2014 06:40:05 -0400
+From: Richard Weinberger <richard@nod.at>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        ocfs2-devel@oss.oracle.com
+Subject: [PATCH 2/2] ocfs2: Fix d_splice_alias() return code checking
+Date: Sun, 19 Oct 2014 12:39:44 +0200
+Message-Id: <1413715184-30196-2-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1413715184-30196-1-git-send-email-richard@nod.at>
+References: <1413715184-30196-1-git-send-email-richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change default setting for enabled protocols.
-Instead of enabling all protocols, disable all except lirc during registration.
-Reduces overhead since all protocols not handled by default.
-Protocol to use will be enabled when keycode table is written by userspace.
+d_splice_alias() can return a valid dentry, NULL or an ERR_PTR.
+Currently the code checks not for ERR_PTR and my oops in
+ocfs2_dentry_attach_lock().
+Fix this by using IS_ERR_OR_NULL().
 
-Signed-off-by: Tomas Melin <tomas.melin@iki.fi>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: ocfs2-devel@oss.oracle.com
+Signed-off-by: Richard Weinberger <richard@nod.at>
 ---
- drivers/media/rc/rc-ir-raw.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/ocfs2/namei.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/media/rc/rc-ir-raw.c b/drivers/media/rc/rc-ir-raw.c
-index a118539..63d23d0 100644
---- a/drivers/media/rc/rc-ir-raw.c
-+++ b/drivers/media/rc/rc-ir-raw.c
-@@ -256,7 +256,8 @@ int ir_raw_event_register(struct rc_dev *dev)
- 		return -ENOMEM;
+diff --git a/fs/ocfs2/namei.c b/fs/ocfs2/namei.c
+index 8add6f1..b931e04 100644
+--- a/fs/ocfs2/namei.c
++++ b/fs/ocfs2/namei.c
+@@ -158,7 +158,7 @@ bail_add:
+ 		 * NOTE: This dentry already has ->d_op set from
+ 		 * ocfs2_get_parent() and ocfs2_get_dentry()
+ 		 */
+-		if (ret)
++		if (!IS_ERR_OR_NULL(ret))
+ 			dentry = ret;
  
- 	dev->raw->dev = dev;
--	dev->enabled_protocols = ~0;
-+	/* by default, disable all but lirc*/
-+	dev->enabled_protocols = RC_BIT_LIRC;
- 	rc = kfifo_alloc(&dev->raw->kfifo,
- 			 sizeof(struct ir_raw_event) * MAX_IR_EVENT_SIZE,
- 			 GFP_KERNEL);
+ 		status = ocfs2_dentry_attach_lock(dentry, inode,
 -- 
-1.7.10.4
+2.1.0
 
