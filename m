@@ -1,52 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751142AbaJSGFA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 02:05:00 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:34169 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828AbaJSGE6 (ORCPT
+	id S1751194AbaJSGRy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 02:17:54 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:55281 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807AbaJSGRx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 02:04:58 -0400
-Message-ID: <1413698696.27176.37.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: Upstream kernel build failures in include/net/tcp.h
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Sat, 18 Oct 2014 23:04:56 -0700
-In-Reply-To: <54434016.2070209@roeck-us.net>
-References: <54434016.2070209@roeck-us.net>
+	Sun, 19 Oct 2014 02:17:53 -0400
+Message-ID: <1413699468.5743.19.camel@marge.simpson.net>
+Subject: Re: current mainline doesn't boot
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Steve French <smfrench@gmail.com>
+Cc: balbi@ti.com, LKML <linux-kernel@vger.kernel.org>
+Date: Sun, 19 Oct 2014 08:17:48 +0200
+In-Reply-To: <CAH2r5mtsh9KsVYJJWebJffvdQxOVTzM4cNM30q8hYOG=Bwj8eA@mail.gmail.com>
+References: <CAH2r5mvBOJHLbRXHMt50E97_1E2Q8F_=PH9=u6N3yuuqSQVmDg@mail.gmail.com>
+	 <20141017234445.GA28891@saruman>
+	 <CAH2r5mtsh9KsVYJJWebJffvdQxOVTzM4cNM30q8hYOG=Bwj8eA@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-10-18 at 21:37 -0700, Guenter Roeck wrote:
-> Hi,
-> 
-> I am getting lots of build failures with the latest upstream kernel.
-> 
-> In file included from net/core/sock.c:140:0:
-> include/net/tcp.h: In function 'tcp_v6_iif':
-> include/net/tcp.h:738:32: error: 'union <anonymous>' has no member named 'h6'
-> 
-> This may have been introduced by 870c3151382 ("ipv6: introduce tcp_v6_iif()").
->  From the context, it looks like it happens if CONFIG_IPV6 is not enabled.
-> 
-> For details and failed configurations see the 'master' column at
-> http://server.roeck-us.net:8010/builders.
-> 
-> Guenter
+On Fri, 2014-10-17 at 18:52 -0500, Steve French wrote: 
+> This is vmware guest
 
-I sent the fix this morning, and it is in David net tree
+Take this with a grain of salt, but you might need to manually update
+their glue.
 
-http://git.kernel.org/cgit/linux/kernel/git/davem/net.git/commit/?id=815afe1785da727ee48cd8e63ac4a3ec6c7459b3
+I was given a gratis copy of the thing with a license for a year.  Not
+being willing to pay to keep the license of a toy I have no real use for
+alive, I had to do the manual adjust/rebuild thing if I wanted play with
+a kernel newer kernel than the last update handled.  No idea if that's
+still needed, I trashed the thing when the entertainment value of
+watching vaporite box "performance" wore off.
 
-Thanks
-
+-Mike
 
