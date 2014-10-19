@@ -1,138 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751795AbaJSL1E (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 07:27:04 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:45959 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751295AbaJSL1A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 07:27:00 -0400
-To: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Replacing unexpected machine restart with kernel panic using SystemTap?
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Message-Id: <201410192026.AFG70955.OMQFtJOOFHSFLV@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Sun, 19 Oct 2014 20:26:55 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751846AbaJSLif (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 07:38:35 -0400
+Received: from mga03.intel.com ([134.134.136.65]:55847 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751740AbaJSLib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Oct 2014 07:38:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,749,1406617200"; 
+   d="scan'208";a="591789675"
+Message-ID: <5443A1F3.7020500@linux.intel.com>
+Date: Sun, 19 Oct 2014 19:35:15 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+MIME-Version: 1.0
+To: Prarit Bhargava <prarit@redhat.com>, Myron Stowe <mstowe@redhat.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Alexander Duyck <alexander.h.duyck@redhat.com>
+Subject: Re: [PATCH] pci, add sysfs numa_node write function
+References: <1413399924-599-1-git-send-email-prarit@redhat.com>  <CAErSpo6Oy1S1OECirp6=tz+pQWUtkFE6p1LTzNaYtzxoX73FWw@mail.gmail.com>  <543ECF6F.2030705@redhat.com>  <CAErSpo76g-EPsUsMjhBpnnbKD3QufHz1xkvYaqXd8hYtgQ5u1g@mail.gmail.com>  <543FBAEF.7030905@redhat.com> <1413488723.2539.72.camel@zim.stowe> <544104BC.4000104@redhat.com>
+In-Reply-To: <544104BC.4000104@redhat.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
 
-Since I hear a few dozens of cases every year from users that their servers
-rebooted unexpectedly, I'm trying to find out the reason of rebooting.
 
-At first, I suggested users to try serial console or netconsole to see
-if any kernel messages are printed just before rebooting.
-
-For servers that are using heartbeat software, watchdog's timeout might be
-the reason of unexpected reboots. Therefore, I started suggesting those who
-are using softdog ( drivers/watchdog/softdog.ko ) as watchdog driver to try
-soft_panic=1 module option so that softdog's timeout will trigger kernel panic
-rather than unexpected reboots.
-
-However, there would be other means to trigger unexpected reboots. Heartbeat
-and/or clustering software might issue reboot(LINUX_REBOOT_CMD_RESTART)
-syscall (which /sbin/reboot -f command does) for immediate rebooting.
-System call auditing will not help for recording immediate rebooting.
-
-Therefore, I came up with an idea that I can catch almost all cases by
-inserting SystemTap probe so that any call to a function for restarting
-a machine is replaced with kernel panic. For example, by inserting SystemTap
-probe at native_machine_emergency_restart() in arch/x86/kernel/reboot.c
-
----------- Command line start ----------
-# stap -p4 -m reboot2panic -g -e '
-function call_panic() %{ panic("Calling panic() due to machine restart\n"); %}
-probe kernel.function("native_machine_emergency_restart") { call_panic(); }'
-# staprun reboot2panic.ko
----------- Command line end ----------
-
-I can obtain
-
----------- Example of kernel messages start ----------
-<2>SoftDog: Initiating system reboot.
-<0>Kernel panic - not syncing: Calling panic() due to machine restart
-<0>
-<4>Pid: 0, comm: swapper Not tainted 2.6.32-431.29.2.el6.i686 #1
-<4>Call Trace:
-<4> [<c085dffc>] ? panic+0x6e/0x122
-<4> [<f7ed2196>] ? probe_2069+0x26/0x50 [reboot2panic]
-<4> [<f7ed4729>] ? enter_kprobe_probe+0x159/0x320 [reboot2panic]
-<4> [<c042dea8>] ? local_apic_timer_interrupt+0x28/0x60
-<4> [<c042aa10>] ? native_machine_emergency_restart+0x0/0x230
-<4> [<c08639ab>] ? kprobe_exceptions_notify+0x32b/0x3a0
-<4> [<c042aa11>] ? native_machine_emergency_restart+0x1/0x230
-<4> [<c0863bc4>] ? notifier_call_chain+0x44/0x60
-<4> [<c0863c0a>] ? atomic_notifier_call_chain+0x1a/0x20
-<4> [<c04833e0>] ? notify_die+0x30/0x40
-<4> [<c08618dd>] ? do_int3+0x2d/0x90
-<4> [<c0861780>] ? int3+0x30/0x38
-<4> [<f7e800e0>] ? mirror_status+0x50/0x2e0 [dm_mirror]
-<4> [<c042aa10>] ? native_machine_emergency_restart+0x0/0x230
-<4> [<c042a6c0>] ? machine_emergency_restart+0x10/0x20
-<4> [<f7e8f056>] ? watchdog_fire+0x36/0x80 [softdog]
-<4> [<c046b391>] ? run_timer_softirq+0x131/0x2b0
-<4> [<f7e8f020>] ? watchdog_fire+0x0/0x80 [softdog]
-<4> [<c046237a>] ? __do_softirq+0x8a/0x1a0
-<4> [<c04624cd>] ? do_softirq+0x3d/0x50
-<4> [<c0462625>] ? irq_exit+0x65/0x70
-<4> [<c042df15>] ? smp_apic_timer_interrupt+0x35/0x50
-<4> [<c0861205>] ? apic_timer_interrupt+0x31/0x38
-<4> [<c0437482>] ? native_safe_halt+0x2/0x10
-<4> [<c041255d>] ? default_idle+0x4d/0xc0
-<4> [<c0408884>] ? cpu_idle+0x94/0xd0
-<4> [<c085a27e>] ? start_secondary+0x2af/0x2f4
----------- Example of kernel messages end ----------
-
-for softdog's timeout cases,
-
----------- Example of kernel messages start ----------
-<0>Restarting system.
-<4>machine restart
-<0>Kernel panic - not syncing: Calling panic() due to machine restart
-<0>
-<4>Pid: 1381, comm: reboot Not tainted 2.6.32-431.29.2.el6.i686 #1
-<4>Call Trace:
-<4> [<c085dffc>] ? panic+0x6e/0x122
-<4> [<f7ed2196>] ? probe_2069+0x26/0x50 [reboot2panic]
-<4> [<f7ed4729>] ? enter_kprobe_probe+0x159/0x320 [reboot2panic]
-<4> [<c042aa10>] ? native_machine_emergency_restart+0x0/0x230
-<4> [<c08639ab>] ? kprobe_exceptions_notify+0x32b/0x3a0
-<4> [<c042aa11>] ? native_machine_emergency_restart+0x1/0x230
-<4> [<c0863bc4>] ? notifier_call_chain+0x44/0x60
-<4> [<c0863c0a>] ? atomic_notifier_call_chain+0x1a/0x20
-<4> [<c04833e0>] ? notify_die+0x30/0x40
-<4> [<c08618dd>] ? do_int3+0x2d/0x90
-<4> [<c0861780>] ? int3+0x30/0x38
-<4> [<c04200d8>] ? uncore_pmu_event_add+0x2d8/0x3f0
-<4> [<c04200e0>] ? uncore_pmu_event_add+0x2e0/0x3f0
-<4> [<c042aa10>] ? native_machine_emergency_restart+0x0/0x230
-<4> [<c042a77e>] ? native_machine_restart+0x2e/0x40
-<4> [<c042a6d6>] ? machine_restart+0x6/0x10
-<4> [<c0476cb4>] ? sys_reboot+0x184/0x220
-<4> [<c043fb80>] ? kmap_atomic_prot+0x120/0x150
-<4> [<c050e3b1>] ? handle_mm_fault+0x131/0x1d0
-<4> [<c04399aa>] ? __do_page_fault+0x1aa/0x410
-<4> [<c054cd56>] ? d_kill+0x36/0x50
-<4> [<c054e22d>] ? dput+0x5d/0x110
-<4> [<c05385d4>] ? __fput+0x164/0x1f0
-<4> [<c0553ac5>] ? mntput_no_expire+0x15/0xd0
-<4> [<c04b9dee>] ? audit_syscall_entry+0x1be/0x1e0
-<4> [<c0863b1a>] ? do_page_fault+0x2a/0x90
-<4> [<c04099bf>] ? sysenter_do_call+0x12/0x28
----------- Example of kernel messages end ----------
-
-for /sbin/reboot -f cases, and regular reboot sequence remains
-unchanged because the probe by staprun process is removed by
-regular reboot sequence.
-
-But I'm not sure whether it is appropriate to insert this probe at
-native_machine_emergency_restart(). Could you give me suggestions
-about where to insert this probe?
-
-Regards.
+On 2014/10/17 19:59, Prarit Bhargava wrote:
+> 
+> 
+> On 10/16/2014 03:45 PM, Myron Stowe wrote:
+>> On Thu, 2014-10-16 at 08:32 -0400, Prarit Bhargava wrote:
+>>>
+>>> On 10/15/2014 05:20 PM, Bjorn Helgaas wrote:
+>>>> On Wed, Oct 15, 2014 at 1:47 PM, Prarit Bhargava <prarit@redhat.com> wrote:
+>>>>> On 10/15/2014 03:23 PM, Bjorn Helgaas wrote:
+>>>>>> Hi Prarit,
+>>>>>>
+>>>>>> On Wed, Oct 15, 2014 at 1:05 PM, Prarit Bhargava <prarit@redhat.com> wrote:
+>>>>>>> Consider a multi-node, multiple pci root bridge system which can be
+>>>>>>> configured into one large node or one node/socket.  When configuring the
+>>>>>>> system the numa_node value for each PCI root bridge is always set
+>>>>>>> incorrectly to -1, or NUMA_NO_NODE, rather than to the node value of each
+>>>>>>> socket.  Each PCI device inherits the numa value directly from it's parent
+>>>>>>> device, so that the NUMA_NO_NODE value is passed through the entire PCI
+>>>>>>> tree.
+>>>>>>>
+>>>>>>> Some new drivers, such as the Intel QAT driver, drivers/crypto/qat,
+>>>>>>> require that a specific node be assigned to the device in order to
+>>>>>>> achieve maximum performance for the device, and will fail to load if the
+>>>>>>> device has NUMA_NO_NODE.
+>>>>>>
+>>>>>> It seems ... unfriendly for a driver to fail to load just because it
+>>>>>> can't guarantee maximum performance.  Out of curiosity, where does
+>>>>>> this actually happen?  I had a quick look for NUMA_NO_NODE and
+>>>>>> module_init() functions in drivers/crypto/qat, and I didn't see the
+>>>>>> spot.
+>>>>>
+>>>>> The whole point of the Intel QAT driver is to guarantee max performance.  If
+>>>>> that is not possible the driver should not load (according to the thread
+>>>>> mentioned below)
+>>>>>
+>>>>>>
+>>>>>>> The driver would load if the numa_node value
+>>>>>>> was equal to or greater than -1 and quickly hacking the driver results in
+>>>>>>> a functional QAT driver.
+>>>>>>>
+>>>>>>> Using lspci and numactl it is easy to determine what the numa value should
+>>>>>>> be.  The problem is that there is no way to set it.  This patch adds a
+>>>>>>> store function for the PCI device's numa_node value.
+>>>>>>
+>>>>>> I'm not familiar with numactl.  It sounds like it can show you the
+>>>>>> NUMA topology?  Where does that information come from?
+> 
+> numactl simply determines the number of nodes on the system by traversing
+> 
+> /sys/devices/system/node
+> 
+> For example, the output of 'numactl --hardware'
+> 
+> available: 2 nodes (0-1)
+> node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 24 25 26 27 28 29 30 31 32 33 34 35
+> node 0 size: 32075 MB
+> node 0 free: 30862 MB
+> node 1 cpus: 12 13 14 15 16 17 18 19 20 21 22 23 36 37 38 39 40 41 42 43 44 45 46 47
+> node 1 size: 32239 MB
+> node 1 free: 31251 MB
+> node distances:
+> node   0   1
+>   0:  10  21
+>   1:  21  10
+> 
+> I then use lpsci to determine what pci root nodes there are, and knowing a
+> little bit about the system architecture (are the IOHs shared between sockets,
+> are they 1/socket, etc.) I can make an educated guess on what the numa_node
+> value should be.
+Hi Prarit,
+	It may be a little hard for normal users to figure out NUMA node
+id from [segment:bus]. [segment:bus] for PCIe host bridge are under
+control of BIOS/firmware. For example, one a four socket system, I have
+observed one vender putting all four PCIe host brdiges into PCI segment
+0, another vender assigning different segment for each PCIe host bridge.
+And socket hotplug may also make the scenario more complex.
+	Actually I ran into the same issue when trying to optimize
+interrupt vector allocation according to NUMA affinity. So it will
+be great if we could find an acceptable solution here:)
+Regard!
+Gerry
+> 
+> I thought about hardcoding something similar in the kernel ... but there are
+> some significant issues (which Myron points out as well).  The code would have
+> to be constantly maintained.  That is not something we can do long term.  Every
+> new processor & chipset would have to be added to the code to determine exactly
+> how the pci root bridge was connected.  Even then, it is entirely possible (as
+> in the case with some cpu hotplug systems) that IOH-less sockets were populated
+> [1] which would severely hamper any assumptions in a calculation.
+> 
+> That also doesn't take into account systems where the manufacturer *wants*
+> NUMA_NO_NODE, and doesn't want per-node allocations.
+> 
+> Alexander has suggested that modifying my original patch to do (sorry for the
+> cut-and-paste)
+> 
+> static ssize_t numa_node_store(struct device *dev,
+>                                struct device_attribute *attr,
+>                                const char *buf, size_t count)
+> {
+>         int node, ret;
+> 
+>         if (!capable(CAP_SYS_ADMIN))
+>                 return -EPERM;
+> 
+>         ret = kstrtoint(buf, 0, &node);
+>         if (ret)
+>                 return ret;
+> 
+>         if (!node_online(node))
+>                 return -EINVAL;
+> 
+>         WARN_TAINT(1, TAINT_FIRMWARE_WORKAROUND,
+>                    FW_BUG "ACPI _PXM should have set this device's root bridge
+> numa_node to %d but set it to %d.  Please contact your hardware vendor for
+> updates.",
+>                    node, dev->numa_node);
+> 
+>         dev->numa_node = node;
+> 
+>         return count;
+> }
+> 
+> *might* be amenable to everyone.  I think it nicely handles Bjorn's concern
+> about being loud when overriding the _PXM entries ...
+> 
+> P.
+> 
+> [1] These sockets really aren't IOH-less.  The IOH has been disabled in BIOS.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
