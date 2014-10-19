@@ -1,187 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752204AbaJSWFn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 18:05:43 -0400
-Received: from mga11.intel.com ([192.55.52.93]:48491 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752037AbaJSWFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 18:05:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="402644475"
-From: Kan Liang <kan.liang@intel.com>
-To: a.p.zijlstra@chello.nl, eranian@google.com
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
-        acme@kernel.org, jolsa@redhat.com, ak@linux.intel.com,
-        Kan Liang <kan.liang@intel.com>, "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH V6 05/17] perf, core: pmu specific data for perf task context
-Date: Sun, 19 Oct 2014 17:55:00 -0400
-Message-Id: <1413755712-8259-6-git-send-email-kan.liang@intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1413755712-8259-1-git-send-email-kan.liang@intel.com>
-References: <1413755712-8259-1-git-send-email-kan.liang@intel.com>
+	id S1752306AbaJSWF7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 18:05:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43339 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752260AbaJSWF4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Oct 2014 18:05:56 -0400
+Date: Mon, 20 Oct 2014 06:04:50 +0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: devel@driverdev.osuosl.org, Anup Patel <anup.patel@linaro.org>,
+        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arve Hj?nnev?g <arve@android.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>
+Subject: Re: [PATCH] staging: android: binder: move to the "real" part of the
+ kernel
+Message-ID: <20141019220450.GB3780@kroah.com>
+References: <20141016124741.GA3832@kroah.com>
+ <20141017094329.GB18015@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141017094329.GB18015@infradead.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a new flag PERF_ATTACH_TASK_DATA for perf event's attach
-stata. The flag is set by PMU's event_init() callback, it indicates
-that perf event needs PMU specific data.
+On Fri, Oct 17, 2014 at 02:43:29AM -0700, Christoph Hellwig wrote:
+> On Thu, Oct 16, 2014 at 02:47:41PM +0200, Greg Kroah-Hartman wrote:
+> > From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > 
+> > The Android binder code has been "stable" for many years now.  No matter
+> > what comes in the future, we are going to have to support this API, so
+> > might as well move it to the "real" part of the kernel as there's no
+> > real work that needs to be done to the existing code.
+> 
+> NAK.  It's complete rubbish and does things to the FD code that it
+> really shouldn't.  Android needs to completely redo the interface, and
+> there's been absolutely no work towards that.
 
-The PMU specific data are initialized to zeros. Later patches will
-use PMU specific data to save LBR stack.
+There is now work to resolve the interface, it requires someone who has
+the rights to push to Android userspace.  But that is going to be a
+"total rewrite", and until then, this code needs to be used, no matter
+how much we hate this.
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-Signed-off-by: Kan Liang <kan.liang@intel.com>
----
- include/linux/perf_event.h |  6 ++++++
- kernel/events/core.c       | 40 ++++++++++++++++++++++++++++++++++++----
- 2 files changed, 42 insertions(+), 4 deletions(-)
+> This is exactly the sort of attitude I feared about when you started the
+> whole staging concepts, and it sounds like a good reason to disband
+> staging entirely, given that it's been mostly useless except for
+> boasting peoples commit statistics.
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index c392fd5..159e092 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -264,6 +264,10 @@ struct pmu {
- 	 */
- 	void (*sched_task)		(struct perf_event_context *ctx,
- 					bool sched_in);
-+	/*
-+	 * PMU specific data size
-+	 */
-+	size_t				task_ctx_size;
- 
- };
- 
-@@ -300,6 +304,7 @@ struct swevent_hlist {
- #define PERF_ATTACH_CONTEXT	0x01
- #define PERF_ATTACH_GROUP	0x02
- #define PERF_ATTACH_TASK	0x04
-+#define PERF_ATTACH_TASK_DATA	0x08
- 
- struct perf_cgroup;
- struct ring_buffer;
-@@ -509,6 +514,7 @@ struct perf_event_context {
- 	u64				generation;
- 	int				pin_count;
- 	int				nr_cgroups;	 /* cgroup evts */
-+	void				*task_ctx_data; /* pmu specific data */
- 	struct rcu_head			rcu_head;
- 
- 	struct delayed_work		orphans_remove;
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 5971e7d..a7c0d5c 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -895,6 +895,15 @@ static void get_ctx(struct perf_event_context *ctx)
- 	WARN_ON(!atomic_inc_not_zero(&ctx->refcount));
- }
- 
-+static void free_ctx(struct rcu_head *head)
-+{
-+	struct perf_event_context *ctx;
-+
-+	ctx = container_of(head, struct perf_event_context, rcu_head);
-+	kfree(ctx->task_ctx_data);
-+	kfree(ctx);
-+}
-+
- static void put_ctx(struct perf_event_context *ctx)
- {
- 	if (atomic_dec_and_test(&ctx->refcount)) {
-@@ -902,7 +911,7 @@ static void put_ctx(struct perf_event_context *ctx)
- 			put_ctx(ctx->parent_ctx);
- 		if (ctx->task)
- 			put_task_struct(ctx->task);
--		kfree_rcu(ctx, rcu_head);
-+		call_rcu(&ctx->rcu_head, free_ctx);
- 	}
- }
- 
-@@ -3188,12 +3197,15 @@ errout:
-  * Returns a matching context with refcount and pincount.
-  */
- static struct perf_event_context *
--find_get_context(struct pmu *pmu, struct task_struct *task, int cpu)
-+find_get_context(struct pmu *pmu, struct task_struct *task,
-+		struct perf_event *event)
- {
- 	struct perf_event_context *ctx, *clone_ctx = NULL;
- 	struct perf_cpu_context *cpuctx;
-+	void *task_ctx_data = NULL;
- 	unsigned long flags;
- 	int ctxn, err;
-+	int cpu = event->cpu;
- 
- 	if (!task) {
- 		/* Must be root to operate on a CPU event: */
-@@ -3221,11 +3233,24 @@ find_get_context(struct pmu *pmu, struct task_struct *task, int cpu)
- 	if (ctxn < 0)
- 		goto errout;
- 
-+	if (event->attach_state & PERF_ATTACH_TASK_DATA) {
-+		task_ctx_data = kzalloc(pmu->task_ctx_size, GFP_KERNEL);
-+		if (!task_ctx_data) {
-+			err = -ENOMEM;
-+			goto errout;
-+		}
-+	}
-+
- retry:
- 	ctx = perf_lock_task_context(task, ctxn, &flags);
- 	if (ctx) {
- 		clone_ctx = unclone_ctx(ctx);
- 		++ctx->pin_count;
-+
-+		if (task_ctx_data && !ctx->task_ctx_data) {
-+			ctx->task_ctx_data = task_ctx_data;
-+			task_ctx_data = NULL;
-+		}
- 		raw_spin_unlock_irqrestore(&ctx->lock, flags);
- 
- 		if (clone_ctx)
-@@ -3236,6 +3261,11 @@ retry:
- 		if (!ctx)
- 			goto errout;
- 
-+		if (task_ctx_data) {
-+			ctx->task_ctx_data = task_ctx_data;
-+			task_ctx_data = NULL;
-+		}
-+
- 		err = 0;
- 		mutex_lock(&task->perf_event_mutex);
- 		/*
-@@ -3262,9 +3292,11 @@ retry:
- 		}
- 	}
- 
-+	kfree(task_ctx_data);
- 	return ctx;
- 
- errout:
-+	kfree(task_ctx_data);
- 	return ERR_PTR(err);
- }
- 
-@@ -7344,7 +7376,7 @@ SYSCALL_DEFINE5(perf_event_open,
- 	/*
- 	 * Get the target context (task or percpu):
- 	 */
--	ctx = find_get_context(pmu, task, event->cpu);
-+	ctx = find_get_context(pmu, task, event);
- 	if (IS_ERR(ctx)) {
- 		err = PTR_ERR(ctx);
- 		goto err_alloc;
-@@ -7513,7 +7545,7 @@ perf_event_create_kernel_counter(struct perf_event_attr *attr, int cpu,
- 
- 	account_event(event);
- 
--	ctx = find_get_context(event->pmu, task, cpu);
-+	ctx = find_get_context(event->pmu, task, event);
- 	if (IS_ERR(ctx)) {
- 		err = PTR_ERR(ctx);
- 		goto err_free;
--- 
-1.8.3.2
+I know you hate staging, which is fine, it's not there for you.  It's
+there for others, and so much good stuff has happened with it, that I'm
+not going to give it up.
 
+But this code is different.  It's something like a random driver that a
+distro has been carrying for 5+ years that it has to ship due to
+userspace that relies on it, so the api can't be changed.  We accept
+drivers like that at times, and we don't drop really old and crappy
+drivers either, as long as someone is using it, and it is
+self-contained.
+
+I'll step up to maintain this and handle the interactions between grumpy
+kernel developers who look at the code, and the Android developers who
+are stuck with this monstrosity.
+
+thanks,
+
+greg k-h
