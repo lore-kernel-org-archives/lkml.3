@@ -1,118 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751964AbaJSS0z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 14:26:55 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:59856 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751583AbaJSS0v (ORCPT
+	id S1752115AbaJSS2i (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 14:28:38 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:53365 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751583AbaJSS2f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 14:26:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <87iojgmy3o.fsf@x220.int.ebiederm.org>
-References: <1413235430-22944-1-git-send-email-adityakali@google.com>
- <1413235430-22944-8-git-send-email-adityakali@google.com> <20141016211236.GA4308@mail.hallyn.com>
- <CAGr1F2EH0ynfFihTh1dv=n1faxUh0zS3ggk303bwGnDnW2PUCw@mail.gmail.com>
- <20141016214710.GA4759@mail.hallyn.com> <87iojgmy3o.fsf@x220.int.ebiederm.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Sun, 19 Oct 2014 11:26:29 -0700
-Message-ID: <CALCETrUC=yW72d2hDzjESmZAt85x1WcGz4L-DrtY5YXAQxbpMA@mail.gmail.com>
-Subject: Re: [PATCHv1 7/8] cgroup: cgroup namespace setns support
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, Aditya Kali <adityakali@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 19 Oct 2014 14:28:35 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>, jonsmirl@gmail.com,
+        Simon <longsleep@gmail.com>, linux-pwm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv8 0/2] Add Allwinner SoCs PWM support
+Date: Sun, 19 Oct 2014 20:28:23 +0200
+Message-Id: <1413743305-1979-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 18, 2014 at 10:23 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> "Serge E. Hallyn" <serge@hallyn.com> writes:
->
->> Quoting Aditya Kali (adityakali@google.com):
->>> On Thu, Oct 16, 2014 at 2:12 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
->>> > Quoting Aditya Kali (adityakali@google.com):
->>> >> setns on a cgroup namespace is allowed only if
->>> >> * task has CAP_SYS_ADMIN in its current user-namespace and
->>> >>   over the user-namespace associated with target cgroupns.
->>> >> * task's current cgroup is descendent of the target cgroupns-root
->>> >>   cgroup.
->>> >
->>> > What is the point of this?
->>> >
->>> > If I'm a user logged into
->>> > /lxc/c1/user.slice/user-1000.slice/session-c12.scope and I start
->>> > a container which is in
->>> > /lxc/c1/user.slice/user-1000.slice/session-c12.scope/x1
->>> > then I will want to be able to enter the container's cgroup.
->>> > The container's cgroup root is under my own (satisfying the
->>> > below condition0 but my cgroup is not a descendent of the
->>> > container's cgroup.
->>> >
->>> This condition is there because we don't want to do implicit cgroup
->>> changes when a process attaches to another cgroupns. cgroupns tries to
->>> preserve the invariant that at any point, your current cgroup is
->>> always under the cgroupns-root of your cgroup namespace. But in your
->>> example, if we allow a process in "session-c12.scope" container to
->>> attach to cgroupns root'ed at "session-c12.scope/x1" container
->>> (without implicitly moving its cgroup), then this invariant won't
->>> hold.
->>
->> Oh, I see.  Guess that should be workable.  Thanks.
->
-> Which has me looking at what the rules are for moving through
-> the cgroup hierarchy.
->
-> As long as we have write access to cgroup.procs and are allowed
-> to open the file for write, we can move any of our own tasks
-> into the cgroup.  So the cgroup namespace rules don't seem
-> to be a problem.
->
-> Andy can you please take a look at the permission checks in
-> __cgroup_procs_write.
+Hi,
 
-The actual requirements for calling that function haven't changed,
-right?  IOW, what does this have to do with cgroupns?  Is the idea
-that you want a privileged user wrt a cgroupns's userns to be able to
-use this?  If so:
+This patch series adds support for the PWM controller found on the Allwinner
+SoCs.
 
-Yes, that current_cred() thing is bogus.  (Actually, this is probably
-exploitable right now if any cgroup.procs inode anywhere on the system
-lets non-root write.)  (Can we have some kernel debugging option that
-makes any use of current_cred() in write(2) warn?)
+The first patch adds the driver itself.
+The second patch adds the DT binding documentation
 
-We really need a weaker version of may_ptrace for this kind of stuff.
-Maybe the existing may_ptrace stuff is okay, actually.  But this is
-completely missing group checks, cap checks, capabilities wrt the
-userns, etc.
+Changes in v8:
+ - renamed the driver sun4i as the PWM IP is different in the next sunxi SoCs
+ - Took into account comments from Thierry
 
-Also, I think that, if this version of the patchset allows non-init
-userns to unshare cgroupns, then the issue of what permission is
-needed to lock the cgroup hierarchy like that needs to be addressed,
-because unshare(CLONE_NEWUSER|CLONE_NEWCGROUP) will effectively pin
-the calling task with no permission required.  Bolting on a fix later
-will be a mess.
+Alexandre Belloni (2):
+  pwm: Add Allwinner SoC support
+  pwm: sunxi: document OF bindings
 
---Andy
-
->
-> As I read the code I see 3 security gaffaws in the permssion check.
-> - Using current->cred instead of file->f_cred.
-> - Not checking tcred->euid.
-> - Checking GLOBAL_ROOT_UID instead of having a capable call.
->
-> The file permission on cgroup.procs seem just sufficient to keep
-> to keep those bugs from being easily exploitable.
->
-> Eric
-
-
+ .../devicetree/bindings/pwm/pwm-sun4i.txt          |  20 ++
+ drivers/pwm/Kconfig                                |   9 +
+ drivers/pwm/Makefile                               |   1 +
+ drivers/pwm/pwm-sun4i.c                            | 371 +++++++++++++++++++++
+ 4 files changed, 401 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pwm/pwm-sun4i.txt
+ create mode 100644 drivers/pwm/pwm-sun4i.c
 
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+1.9.1
+
