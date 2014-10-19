@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751975AbaJSWbE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 18:31:04 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:53546 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751544AbaJSWbB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 18:31:01 -0400
-Date: Mon, 20 Oct 2014 00:30:43 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: sre@debian.org, sre@ring0.de, kernel list <linux-kernel@vger.kernel.org>,
-        balbi@ti.com, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org
-Subject: Re: USB Ethernet gadget on Nokia n900
-Message-ID: <20141019223043.GA12938@amd>
-References: <20141019090107.GA19132@amd>
- <201410191658.45851@pali>
- <20141019205033.GA4738@amd>
- <201410192300.20625@pali>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201410192300.20625@pali>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752072AbaJSWcH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 18:32:07 -0400
+Received: from mx.culm.net ([79.188.239.84]:43172 "EHLO centaur.culm.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751544AbaJSWcE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Oct 2014 18:32:04 -0400
+X-Greylist: delayed 351 seconds by postgrey-1.27 at vger.kernel.org; Sun, 19 Oct 2014 18:32:04 EDT
+From: Witold Krecicki <wpk+lkml@culm.net>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>, linux-media@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Witold Krecicki <wpk+lkml@culm.net>
+Subject: [PATCH 1/1] em28xx: add support for Leadtek VC100 USB capture device
+Date: Mon, 20 Oct 2014 00:25:59 +0200
+Message-Id: <1413757559-12268-1-git-send-email-wpk+lkml@culm.net>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Leadtek VC100 is a simple USB capture stick, similar to
+Yakumo Movie Mixer.
 
-> > > > omap_musb_mailbox: musb core is not yet ready
-> > > > 
-> > > > message. It looks related...?
-> > > 
-> > > Can you try tree
-> > > https://gitorious.org/linux-n900/linux-n900/ ?
-> > > 
-> > > I think with rx51_defconfig from above tree it worked fine
-> > > for 3.10 - 3.13 versions.
-> > 
-> > From your tree, I am trying
-> > 815039686baffff6432b45028dd405b1981a9112 (3.16 based). I
-> > attempted to make gadget drivers build-in and enabled
-> > nfsroot. I could not detect nokia on USB after bootup.
-> > 
-> > Are you sure about defconfig? AFAICT defconfig will always be
-> > unsuitable for nfsroot, as it will not contain nfs support
-> > built-in...
-> > 
-> > I am trying c089e5f8ba2d44afd2db2c2042d43ca70205c536 (3.13
-> > based). Same result :-(.
-> > 
-> > Do you have any tree where usb gadget works for you?
-> 
-> My N900 can boot kernel from v3.12-rc5-n900 branch compiled with 
-> arch/arm/configs/rx51_defconfig. Also it can boot full Maemo5 
-> system (with CSSU and some minor system changes) and usb network 
-> via g_nokia.ko gadget working fine...
+Signed-off-by: Witold Krecicki <wpk+lkml@culm.net>
+---
+ drivers/media/usb/em28xx/em28xx-cards.c | 16 ++++++++++++++++
+ drivers/media/usb/em28xx/em28xx.h       |  1 +
+ 2 files changed, 17 insertions(+)
 
-Thanks for the info. Network seems to work on this one.
-
-> So if it does not working for you then kernel usb subsystem could 
-> have problems with using gadgets directly from zimage.
-
-It seems to work with 3.12, but not with 3.13 (in similar config). If
-you could test USB networking in 3.13, that would help...
-
-Thanks,
-
-									Pavel
+diff --git a/drivers/media/usb/em28xx/em28xx-cards.c b/drivers/media/usb/em28xx/em28xx-cards.c
+index 71fa51e..3c97bf1 100644
+--- a/drivers/media/usb/em28xx/em28xx-cards.c
++++ b/drivers/media/usb/em28xx/em28xx-cards.c
+@@ -2243,6 +2243,20 @@ struct em28xx_board em28xx_boards[] = {
+ 		.has_dvb       = 1,
+ 		.ir_codes      = RC_MAP_PINNACLE_PCTV_HD,
+ 	},
++	[EM2861_BOARD_LEADTEK_VC100] = {
++		.name          = "Leadtek VC100",
++		.tuner_type    = TUNER_ABSENT,	/* Capture only device */
++		.decoder       = EM28XX_TVP5150,
++		.input         = { {
++			.type     = EM28XX_VMUX_COMPOSITE1,
++			.vmux     = TVP5150_COMPOSITE1,
++			.amux     = EM28XX_AMUX_LINE_IN,
++		}, {
++			.type     = EM28XX_VMUX_SVIDEO,
++			.vmux     = TVP5150_SVIDEO,
++			.amux     = EM28XX_AMUX_LINE_IN,
++		} },
++	},
+ };
+ EXPORT_SYMBOL_GPL(em28xx_boards);
+ 
+@@ -2424,6 +2438,8 @@ struct usb_device_id em28xx_id_table[] = {
+ 			.driver_info = EM28178_BOARD_PCTV_461E },
+ 	{ USB_DEVICE(0x2013, 0x025f),
+ 			.driver_info = EM28178_BOARD_PCTV_292E },
++	{ USB_DEVICE(0x0413, 0x6f07),
++			.driver_info = EM2861_BOARD_LEADTEK_VC100 },
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(usb, em28xx_id_table);
+diff --git a/drivers/media/usb/em28xx/em28xx.h b/drivers/media/usb/em28xx/em28xx.h
+index a21a746..05e7f7c 100644
+--- a/drivers/media/usb/em28xx/em28xx.h
++++ b/drivers/media/usb/em28xx/em28xx.h
+@@ -141,6 +141,7 @@
+ #define EM28178_BOARD_PCTV_461E                   92
+ #define EM2874_BOARD_KWORLD_UB435Q_V3		  93
+ #define EM28178_BOARD_PCTV_292E                   94
++#define EM2861_BOARD_LEADTEK_VC100                95
+ 
+ /* Limits minimum and default number of buffers */
+ #define EM28XX_MIN_BUF 4
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.9.1
+
