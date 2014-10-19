@@ -1,57 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108AbaJSOQh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 10:16:37 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:54955 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752066AbaJSOQc (ORCPT
+	id S1752193AbaJSORk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 10:17:40 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:53835 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752038AbaJSORg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 10:16:32 -0400
-From: LABBE Corentin <clabbe.montjoie@gmail.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        maxime.ripard@free-electrons.com, linux@arm.linux.org.uk,
-        herbert@gondor.apana.org.au, davem@davemloft.net,
-        grant.likely@linaro.org, akpm@linux-foundation.org,
-        gregkh@linuxfoundation.org, joe@perches.com, mchehab@osg.samsung.com,
-        crope@iki.fi
-Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        linux-sunxi@googlegroups.com,
-        LABBE Corentin <clabbe.montjoie@gmail.com>
-Subject: [PATCH v5 2/4] ARM: sunxi: dt: Add DT bindings documentation for SUNXI Security System
-Date: Sun, 19 Oct 2014 16:16:20 +0200
-Message-Id: <1413728182-13569-3-git-send-email-clabbe.montjoie@gmail.com>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1413728182-13569-1-git-send-email-clabbe.montjoie@gmail.com>
-References: <1413728182-13569-1-git-send-email-clabbe.montjoie@gmail.com>
+	Sun, 19 Oct 2014 10:17:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <1413652166.5367.49.camel@marge.simpson.net>
+References: <CALtyatHfUijBZHBf5TcqjagE0CbahRWknOpQmXNF0e6pRbjNkw@mail.gmail.com>
+	<1413652166.5367.49.camel@marge.simpson.net>
+Date: Sun, 19 Oct 2014 14:17:34 +0000
+Message-ID: <CALtyatGzto7f3bNpjN2+b-R=Wm_SXBekbmDRnaPd6Aq5FDWjbQ@mail.gmail.com>
+Subject: Re: Discussion on Linus Trovalds claim of userspace cluelessness,
+ spiralling into other analysis and choice of women. Also systemd.
+From: Gregory Smith <gregorysmith1974a@gmail.com>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds documentation for Device-Tree bindings for the Security System cryptographic accelerator driver.
+"Those who do not support my world view are insane"
 
-Signed-off-by: LABBE Corentin <clabbe.montjoie@gmail.com>
----
- Documentation/devicetree/bindings/crypto/sunxi-ss.txt | 9 +++++++++
- 1 file changed, 9 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/crypto/sunxi-ss.txt
+"Enemies do not exist, only the sane and the insane, I am sane, they
+are the insane"
 
-diff --git a/Documentation/devicetree/bindings/crypto/sunxi-ss.txt b/Documentation/devicetree/bindings/crypto/sunxi-ss.txt
-new file mode 100644
-index 0000000..a566803
---- /dev/null
-+++ b/Documentation/devicetree/bindings/crypto/sunxi-ss.txt
-@@ -0,0 +1,9 @@
-+* Allwinner Security System found on A20 SoC
-+
-+Required properties:
-+- compatible : Should be "allwinner,sun7i-a20-crypto".
-+- reg: Should contain the Security System register location and length.
-+- interrupts: Should contain the IRQ line for the Security System.
-+- clocks : A phandle to the functional clock node of the Security System module
-+- clock-names : Name of the functional clock, should be "ahb" and "mod".
-+
--- 
-2.0.4
 
+
+On 10/18/14, Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
+> On Sat, 2014-10-18 at 16:08 +0000, Gregory Smith wrote:
+> ramble ramble.. lalala.. butterflies, wheee
+>
+> If you're taking drugs, and the container doesn't have _your_ name on
+> it, stop that, maybe your mind will find its way home.  If you're not
+> taking anything, talk to a health professional about getting some NOW.
+>
+> -Mike
+>
+>
