@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751908AbaJSRTB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 13:19:01 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:54936 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751582AbaJSRS7 (ORCPT
+	id S1751995AbaJSRTY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 13:19:24 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:36055 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751929AbaJSRTX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 13:18:59 -0400
-Date: Sun, 19 Oct 2014 13:18:55 -0400 (EDT)
-Message-Id: <20141019.131855.1429160564158795766.davem@davemloft.net>
-To: mroos@linux.ee
-Cc: iamjoonsoo.kim@lge.com, linux-kernel@vger.kernel.org, cl@linux.com,
-        penberg@kernel.org, rientjes@google.com, akpm@linux-foundation.org,
-        linux-mm@kvack.org, sparclinux@vger.kernel.org
-Subject: Re: unaligned accesses in SLAB etc.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LRH.2.11.1410192011410.32417@adalberg.ut.ee>
-References: <20141018.142335.1935310766779155342.davem@davemloft.net>
-	<alpine.LRH.2.11.1410191459210.32417@adalberg.ut.ee>
-	<alpine.LRH.2.11.1410192011410.32417@adalberg.ut.ee>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 19 Oct 2014 10:18:59 -0700 (PDT)
+	Sun, 19 Oct 2014 13:19:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <1413672385-8492-1-git-send-email-dg@emlix.com>
+References: <1413672385-8492-1-git-send-email-dg@emlix.com>
+Date: Sun, 19 Oct 2014 21:19:23 +0400
+Message-ID: <CAMo8Bf+o6o489UQ0ss18MWAX80pM0yLwJdykAtXXTFRLmb8XnQ@mail.gmail.com>
+Subject: Re: [PATCH] xtensa: remove s6000 variant and s6105 platform
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: =?UTF-8?Q?Daniel_Gl=C3=B6ckner?= <dg@emlix.com>
+Cc: Chris Zankel <chris@zankel.net>,
+        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Meelis Roos <mroos@linux.ee>
-Date: Sun, 19 Oct 2014 20:12:43 +0300 (EEST)
+On Sun, Oct 19, 2014 at 2:46 AM, Daniel Glöckner <dg@emlix.com> wrote:
+> The Stretch s6000 family support has been merged into mainline 5 years
+> ago. There appear to be no users of this code since nobody complained
+> that there is a merge error preventing compilation.
+>
+> Apart from the s6105 IP camera reference design there are no s6000 devices
+> known to ever have run Linux and as the chips are out of production there
+> probably never will be. The successor s7000 no longer uses an Xtensa core
+> for the OS.
+>
+> Let's remove the code until someone is found who actually needs it.
+>
+> Signed-off-by: Daniel Glöckner <dg@emlix.com>
 
->> > > I don't want to define the array size of the fpregs save area
->> > > explicitly and thereby placing an artificial limit there.
->> > 
->> > Nevermind, it seems we have a hard limit of 7 FPU save areas anyways.
->> > 
->> > Meelis, please try this patch:
->> 
->> Works fine with 3.17.0-09670-g0429fbc + fault patch.
->> 
->> Will try current git next to find any new problems :)
-> 
-> Works on all 3 machines, with latest git (only had to apply the no-ipv6 
-> patch on one of them). Thank you for the good work!
+Applied to my fixes tree. Thanks!
 
-Thanks for testing.
-
-Hopefully we can kill the gcc-4.9 bug next, and then see if that
-exit_mmap() crash is still happening.
+-- Max
