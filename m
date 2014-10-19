@@ -1,123 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752308AbaJSTaf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 15:30:35 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:37730 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752259AbaJSTa3 (ORCPT
+	id S1752173AbaJSTex (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 15:34:53 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:54645 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751582AbaJSTet convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 15:30:29 -0400
-From: Fabio Falzoi <fabio.falzoi84@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: micky_ching@realsil.com.cn, joe@perches.com,
-        giedrius.statkevicius@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Fabio Falzoi <fabio.falzoi84@gmail.com>
-Subject: [PATCH v2 1/2] Staging: rts5208: helper function to manage aspm during reset
-Date: Sun, 19 Oct 2014 21:30:02 +0200
-Message-Id: <1413747003-13655-2-git-send-email-fabio.falzoi84@gmail.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1413747003-13655-1-git-send-email-fabio.falzoi84@gmail.com>
-References: <1413747003-13655-1-git-send-email-fabio.falzoi84@gmail.com>
+	Sun, 19 Oct 2014 15:34:49 -0400
+MIME-Version: 1.0
+Date: Sun, 19 Oct 2014 21:34:47 +0200
+X-Google-Sender-Auth: tg0ZIDkk5Nw9qwK9dhLmnjfvKIM
+Message-ID: <CAMuHMdUnEZ35U3Qby1OFuFYnAysf9JhHxbDxcUMiFuMefy9idQ@mail.gmail.com>
+Subject: btrfs extent_state.private compiler warning (Re: Btrfs: cleanup the
+ read failure record after write or when the inode is freeing)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Miao Xie <miaox@cn.fujitsu.com>, Chris Mason <clm@fb.com>,
+        Josef Bacik <jbacik@fb.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define the helper function rtsx_reset_aspm to shorten the
-rtsx_reset_chip code and get rid of the LONG_LINE checkpatch warnings.
+On Sat, Oct 11, 2014 at 2:08 PM, Linux Kernel Mailing List
+<linux-kernel@vger.kernel.org> wrote:
+> Gitweb:     http://git.kernel.org/linus/;a=commit;h=f612496bca664bff6a09a99a9a7506410b6e876e
+> Commit:     f612496bca664bff6a09a99a9a7506410b6e876e
 
-Signed-off-by: Fabio Falzoi <fabio.falzoi84@gmail.com>
----
- drivers/staging/rts5208/rtsx_chip.c | 70 +++++++++++++++++++++----------------
- 1 file changed, 39 insertions(+), 31 deletions(-)
+>     Btrfs: cleanup the read failure record after write or when the inode is freeing
+>
+>     After the data is written successfully, we should cleanup the read failure record
+>     in that range because
+>     - If we set data COW for the file, the range that the failure record pointed to is
+>       mapped to a new place, so it is invalid.
+>     - If we set no data COW for the file, and if there is no error during writting,
+>       the corrupted data is corrected, so the failure record can be removed. And if
+>       some errors happen on the mirrors, we also needn't worry about it because the
+>       failure record will be recreated if we read the same place again.
+>
+>     Sometimes, we may fail to correct the data, so the failure records will be left
+>     in the tree, we need free them when we free the inode or the memory leak happens.
 
-diff --git a/drivers/staging/rts5208/rtsx_chip.c b/drivers/staging/rts5208/rtsx_chip.c
-index ffcf5de..ea6cfd1 100644
---- a/drivers/staging/rts5208/rtsx_chip.c
-+++ b/drivers/staging/rts5208/rtsx_chip.c
-@@ -227,6 +227,42 @@ static int rtsx_pre_handle_sdio_new(struct rtsx_chip *chip)
- }
- #endif
- 
-+static int rtsx_reset_aspm(struct rtsx_chip *chip)
-+{
-+	int ret;
-+
-+	if (chip->dynamic_aspm) {
-+		if (!CHK_SDIO_EXIST(chip) || !CHECK_PID(chip, 0x5288))
-+			return STATUS_SUCCESS;
-+
-+		ret = rtsx_write_cfg_dw(chip, 2, 0xC0, 0xFF,
-+					chip->aspm_l0s_l1_en);
-+		if (ret != STATUS_SUCCESS)
-+			TRACE_RET(chip, STATUS_FAIL);
-+
-+		return STATUS_SUCCESS;
-+	}
-+
-+	if (CHECK_PID(chip, 0x5208))
-+		RTSX_WRITE_REG(chip, ASPM_FORCE_CTL, 0xFF, 0x3F);
-+	ret = rtsx_write_config_byte(chip, LCTLR, chip->aspm_l0s_l1_en);
-+	if (ret != STATUS_SUCCESS)
-+		TRACE_RET(chip, STATUS_FAIL);
-+
-+	chip->aspm_level[0] = chip->aspm_l0s_l1_en;
-+	if (CHK_SDIO_EXIST(chip)) {
-+		chip->aspm_level[1] = chip->aspm_l0s_l1_en;
-+		ret = rtsx_write_cfg_dw(chip, CHECK_PID(chip, 0x5288) ? 2 : 1,
-+					0xC0, 0xFF, chip->aspm_l0s_l1_en);
-+		if (ret != STATUS_SUCCESS)
-+			TRACE_RET(chip, STATUS_FAIL);
-+	}
-+
-+	chip->aspm_enabled = 1;
-+
-+	return STATUS_SUCCESS;
-+}
-+
- int rtsx_reset_chip(struct rtsx_chip *chip)
- {
- 	int retval;
-@@ -289,37 +325,9 @@ int rtsx_reset_chip(struct rtsx_chip *chip)
- 
- 	/* Enable ASPM */
- 	if (chip->aspm_l0s_l1_en) {
--		if (chip->dynamic_aspm) {
--			if (CHK_SDIO_EXIST(chip) && CHECK_PID(chip, 0x5288)) {
--				retval = rtsx_write_cfg_dw(chip, 2, 0xC0, 0xFF,
--						chip->aspm_l0s_l1_en);
--				if (retval != STATUS_SUCCESS)
--					TRACE_RET(chip, STATUS_FAIL);
--			}
--		} else {
--			if (CHECK_PID(chip, 0x5208))
--				RTSX_WRITE_REG(chip, ASPM_FORCE_CTL,
--					       0xFF, 0x3F);
--
--			retval = rtsx_write_config_byte(chip, LCTLR,
--							chip->aspm_l0s_l1_en);
--			if (retval != STATUS_SUCCESS)
--				TRACE_RET(chip, STATUS_FAIL);
--
--			chip->aspm_level[0] = chip->aspm_l0s_l1_en;
--			if (CHK_SDIO_EXIST(chip)) {
--				chip->aspm_level[1] = chip->aspm_l0s_l1_en;
--				retval = rtsx_write_cfg_dw(chip,
--						CHECK_PID(chip, 0x5288) ? 2 : 1,
--						0xC0, 0xFF,
--						chip->aspm_l0s_l1_en);
--
--				if (retval != STATUS_SUCCESS)
--					TRACE_RET(chip, STATUS_FAIL);
--			}
--
--			chip->aspm_enabled = 1;
--		}
-+		retval = rtsx_reset_aspm(chip);
-+		if (retval != STATUS_SUCCESS)
-+			TRACE_RET(chip, STATUS_FAIL);
- 	} else {
- 		if (chip->asic_code && CHECK_PID(chip, 0x5208)) {
- 			retval = rtsx_write_phy_register(chip, 0x07, 0x0129);
--- 
-2.1.1
+> --- a/fs/btrfs/extent_io.c
+> +++ b/fs/btrfs/extent_io.c
 
+> +void btrfs_free_io_failure_record(struct inode *inode, u64 start, u64 end)
+> +{
+> +       struct extent_io_tree *failure_tree = &BTRFS_I(inode)->io_failure_tree;
+> +       struct io_failure_record *failrec;
+> +       struct extent_state *state, *next;
+
+> +               failrec = (struct io_failure_record *)state->private;
+
+On 32-bit:
+
+fs/btrfs/extent_io.c: In function ‘btrfs_free_io_failure_record’:
+fs/btrfs/extent_io.c:2166: warning: cast to pointer from integer of
+different size
+
+Is there any specific reason extend_state.private is "u64", and not
+"unsigned long", or better "void *", or even better
+"struct io_failure_record *"?
+
+That would get rid of the (double) cast tricks.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
