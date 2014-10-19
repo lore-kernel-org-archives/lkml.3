@@ -1,41 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752023AbaJSR0K (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 13:26:10 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:45934 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495AbaJSR0G convert rfc822-to-8bit (ORCPT
+	id S1752144AbaJSR1C (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 13:27:02 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:55001 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752077AbaJSR1A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 13:26:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141019.124542.141206969262552652.davem@davemloft.net>
-References: <1413672385-8492-1-git-send-email-dg@emlix.com>
-	<1413672545-8535-1-git-send-email-dg@emlix.com>
-	<20141019.124542.141206969262552652.davem@davemloft.net>
-Date: Sun, 19 Oct 2014 21:26:05 +0400
-Message-ID: <CAMo8BfJ-wvDoDmm+HLHvC3VRUshdqU4eJchOGYt_YJsUktap8Q@mail.gmail.com>
-Subject: Re: [PATCH] net: s6gmac: remove driver
-From: Max Filippov <jcmvbkbc@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: =?UTF-8?Q?Daniel_Gl=C3=B6ckner?= <dg@emlix.com>,
-        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 19 Oct 2014 13:27:00 -0400
+Date: Sun, 19 Oct 2014 13:26:58 -0400 (EDT)
+Message-Id: <20141019.132658.178402001080955021.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Sparc
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 19 Oct 2014 10:26:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 19, 2014 at 8:45 PM, David Miller <davem@davemloft.net> wrote:
-> From: Daniel Glöckner <dg@emlix.com>
-> Date: Sun, 19 Oct 2014 00:49:05 +0200
->
->> The s6000 Xtensa support is removed from the kernel. There are no
->> other chips using this driver.
->
-> That's not what I see in Linus's current tree:
 
-David, s6000 removal is queued for 3.18.
+Here we have two bug fixes:
 
--- 
-Thanks.
--- Max
+1) The current thread's fault_code is not setup properly upon entry to
+   do_sparc64_fault() in some paths, leading to spurious SIGBUS.
+
+2) Don't use a zero length array at the end of thread_info on sparc64,
+   otherwise end_of_stack() isn't right.
+
+Please pull, thanks!
+
+The following changes since commit 52d589a01d4545ce1dc5c3892bb8c7b55edfe714:
+
+  Merge branch 'for-linus' of git://git.infradead.org/users/vkoul/slave-dma (2014-10-18 18:11:04 -0700)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc.git master
+
+for you to fetch changes up to e2653143d7d79a49f1a961aeae1d82612838b12c:
+
+  sparc64: Do not define thread fpregs save area as zero-length array. (2014-10-18 23:12:33 -0400)
+
+----------------------------------------------------------------
+David S. Miller (2):
+      sparc64: Fix corrupted thread fault code.
+      sparc64: Do not define thread fpregs save area as zero-length array.
+
+ arch/sparc/include/asm/thread_info_64.h | 3 ++-
+ arch/sparc/kernel/dtlb_prot.S           | 6 +++---
+ arch/sparc/kernel/tsb.S                 | 6 +++---
+ 3 files changed, 8 insertions(+), 7 deletions(-)
