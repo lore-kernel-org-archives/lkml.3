@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751953AbaJSRnb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 13:43:31 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:44786 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751490AbaJSRn3 (ORCPT
+	id S1752066AbaJSRqz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 13:46:55 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:41586 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751495AbaJSRqx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 13:43:29 -0400
-From: Stefan Hengelein <stefan.hengelein@fau.de>
-To: linux-mips@linux-mips.org
-Cc: linux-kernel@vger.kernel.org, ralf@linux-mips.org,
-        Stefan Hengelein <stefan.hengelein@fau.de>
-Subject: [PATCH] MIPS: ath79: fix compilation error when CONFIG_PCI is disabled
-Date: Sun, 19 Oct 2014 19:43:14 +0200
-Message-Id: <1413740594-15579-1-git-send-email-stefan.hengelein@fau.de>
-X-Mailer: git-send-email 1.9.1
+	Sun, 19 Oct 2014 13:46:53 -0400
+Message-ID: <5443F90A.4030606@plexistor.com>
+Date: Sun, 19 Oct 2014 20:46:50 +0300
+From: Boaz Harrosh <boaz@plexistor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+MIME-Version: 1.0
+To: Jens Axboe <axboe@fb.com>, Matthew Wilcox <willy@linux.intel.com>,
+        Dmitry Monakhov <dmonakhov@openvz.org>
+CC: Ross Zwisler <ross.zwisler@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCHSET 0/5 v2] brd: partition fixes
+References: <53FDF7AD.5000709@plexistor.com> <54044759.9080103@gmail.com> <540EEE2C.1090801@plexistor.com> <540F0DDF.3010907@fb.com>
+In-Reply-To: <540F0DDF.3010907@fb.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When CONFIG_PCI is disabled, 'db120_pci_init()' had a different
-signature than when was enabled. Therefore, compilation failed when
-CONFIG_PCI was not present.
+On 09/09/2014 05:25 PM, Jens Axboe wrote:
+> On 09/09/2014 06:10 AM, Boaz Harrosh wrote:
+<>
+>> Please tell me what you want to do with these patches. They must go into this Kernel
+>> cycle before brd is released with wrong user-mode visible nub
+>>
+<> 
+> I will drop the 3/5 patch (do that one separately) and queue up and test.
+> 
 
-arch/mips/ath79/mach-db120.c:132: error: too many arguments to function 'db120_pci_init'
+Hi Jens
 
-Signed-off-by: Stefan Hengelein <stefan.hengelein@fau.de>
----
- arch/mips/ath79/mach-db120.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+So the Kernel closed with a wrong knob and Even with the new merge window
+these patches are not merged.
 
-diff --git a/arch/mips/ath79/mach-db120.c b/arch/mips/ath79/mach-db120.c
-index 4d661a1..d1a783d 100644
---- a/arch/mips/ath79/mach-db120.c
-+++ b/arch/mips/ath79/mach-db120.c
-@@ -112,8 +112,6 @@ static void __init db120_pci_init(u8 *eeprom)
- 	ath79_pci_set_plat_dev_init(db120_pci_plat_dev_init);
- 	ath79_register_pci();
- }
--#else
--static inline void db120_pci_init(void) {}
- #endif /* CONFIG_PCI */
- 
- static void __init db120_setup(void)
-@@ -129,7 +127,9 @@ static void __init db120_setup(void)
- 			   ARRAY_SIZE(db120_spi_info));
- 	ath79_register_usb();
- 	ath79_register_wmac(art + DB120_WMAC_CALDATA_OFFSET);
-+#ifdef CONFIG_PCI
- 	db120_pci_init(art + DB120_PCIE_CALDATA_OFFSET);
-+#endif
- }
- 
- MIPS_MACHINE(ATH79_MACH_DB120, "DB120", "Atheros DB120 reference board",
--- 
-1.9.1
+Could you at least tell me what you do not like about them so I can fix
+it?
+
+Thanks
+Boaz
 
