@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752286AbaJSUIq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 16:08:46 -0400
-Received: from mx1.scotdoyle.com ([23.226.141.211]:45450 "EHLO
-	mx1.scotdoyle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495AbaJSUIp (ORCPT
+	id S1752515AbaJSUQK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 16:16:10 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:60970 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621AbaJSUQI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 16:08:45 -0400
-Date: Sun, 19 Oct 2014 20:08:07 +0000 (UTC)
-From: Scot Doyle <lkml14@scotdoyle.com>
-To: =?ISO-8859-15?Q?Peter_H=FCwe?= <PeterHuewe@gmx.de>
-cc: Ashley Lai <ashley@ashleylai.com>, Marcel Selhorst <tpmdd@selhorst.net>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Stefan Berger <stefanb@linux.vnet.ibm.com>,
-        Luigi Semenzato <semenzato@google.com>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v8] tpm_tis: verify interrupt during init
-In-Reply-To: <201409222101.19297.PeterHuewe@gmx.de>
-Message-ID: <alpine.DEB.2.11.1410192003420.1938@localhost.localdomain>
-References: <20140827214743.GC11183@obsidianresearch.com> <alpine.LNX.2.11.1409110010290.700@localhost.localdomain> <20140922171338.GB28082@obsidianresearch.com> <201409222101.19297.PeterHuewe@gmx.de>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Sun, 19 Oct 2014 16:16:08 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, Chris Ball <chris@printf.net>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org
+Subject: Re: [PATCHv2 0/3] Remove mach/atmel-mci.h
+Date: Sun, 19 Oct 2014 22:15:51 +0200
+Message-ID: <2020417.En5p6XBEWH@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1413534398-22645-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1413534398-22645-1-git-send-email-alexandre.belloni@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-629582874-1413749295=:1938"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:7jWAdmZ8sEiiIaMxzDGZ5SolSTiY9gEeFX53Qr2mkEP
+ xbHGRzBGxg28KV5NxTTRx8DfGVLWPCtklEuTk/QLQByyBjXTtm
+ zFYDzBom2I58HyTHXWkefZaVruRt5V18AzUGZ00K6WLLqa3KW1
+ zP+eEUNMDXZImosddna4DORfUM3uNVwIbF+i+0m41B7Owuy5uD
+ 4JSsycPOj02dSRQyI2ntgKp+aCFjhZseOMENNOQk+RPb5OfLla
+ sKGF6AvEuAAK9im2eNWZ3Uku/alS6s9Fu7zOIZByzaZX509M9N
+ yYmAXqWQFkQDHYV1SG13BVdtwsjVoqawR1u1Z2ZvbI4ookvntc
+ eOau3Uu06xVn8JPFhvfw=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---8323328-629582874-1413749295=:1938
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-
-On Mon, 22 Sep 2014, Peter Hüwe wrote:
-
-> Am Montag, 22. September 2014, 19:13:38 schrieb Jason Gunthorpe:
+On Friday 17 October 2014 10:26:35 Alexandre Belloni wrote:
+> This patch series removes the uses of mach/atmel-mci.h and the files themselves.
+> The final goal is to be able to switch AT91 to multiplatform.
 > 
-> > 
-> > This does look much nicer, lets use this version.
-> > 
-> > I think Peter were prefer a new clean patch that superceeds the
-> > original.
-> > 
-> > > +	if (!priv->irq_tested) {
-> > 
-> > I think the sleep and check is still needed here, the IRQ delivery
-> > could race relative to the MMIO read of completion, a sleep is the
-> > only way we could attempt to synchronize them..
-> > 
+> The first patch introduces a new platform_data file and uses it in the driver.
+> The two following patches remove the uses of mach/atmel-mci.h and the header
+> itself from avR32 and ARM/at91.
 > 
-> So will there be a v9?
+> Changes in v2:
+>  - include back linux/atmel-mci.h and really remove mach/atmel-mci.h in at91sam9g45_devices.c
 > 
-> Merge Window is coming up shortly, so I would like to have this sorted out 
-> soon ;)
 > 
-> Thanks,
-> Peter
 
-Hi Peter,
-
-The v10 patch was reviewed by Jason and is ready to go. Will you be asking 
-James to pull this week?
-
-Thanks,
-Scot
---8323328-629582874-1413749295=:1938--
+Acked-by: Arnd Bergmann <arnd@arndb.de>
