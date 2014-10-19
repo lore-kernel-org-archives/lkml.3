@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751695AbaJSKHo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 06:07:44 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:53674 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751395AbaJSKHm (ORCPT
+	id S1751635AbaJSKOO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 06:14:14 -0400
+Received: from mail-yh0-f52.google.com ([209.85.213.52]:46771 "EHLO
+	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274AbaJSKOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 06:07:42 -0400
-Date: Sun, 19 Oct 2014 12:07:39 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
-        kernel list <linux-kernel@vger.kernel.org>, balbi@ti.com,
-        linux-arm-kernel@lists.infradead.org
-Cc: linux-omap@vger.kernel.org
-Subject: Re: USB Ethernet gadget on Nokia n900
-Message-ID: <20141019100739.GA2547@amd>
-References: <20141019090107.GA19132@amd>
+	Sun, 19 Oct 2014 06:14:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141019090107.GA19132@amd>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141018201856.6e7a8435.m.chehab@samsung.com>
+References: <1412879436-7513-1-git-send-email-tomas.melin@iki.fi>
+	<20141016204920.GB16402@hardeman.nu>
+	<CACraW2pTb0avTdQCLFAZAWNm5ZuTmVDEOPgZGmY+prepLcRANg@mail.gmail.com>
+	<20141018201856.6e7a8435.m.chehab@samsung.com>
+Date: Sun, 19 Oct 2014 13:14:11 +0300
+X-Google-Sender-Auth: dTSpUuK8weOhx8L3kfrnFy56R1g
+Message-ID: <CACraW2o3A2vr-a+_47=tL22uUP8h+M5-aGb5Vdq5xsQekN1waQ@mail.gmail.com>
+Subject: Re: [PATCH resend] [media] rc-core: fix protocol_change regression in ir_raw_event_register
+From: Tomas Melin <tomas.melin@iki.fi>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: james.hogan@imgtec.com,
+        =?UTF-8?B?QW50dGkgU2VwcMOkbMOk?= <a.seppala@gmail.com>,
+        linux-media@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        =?UTF-8?Q?David_H=C3=A4rdeman?= <david@hardeman.nu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 2014-10-19 11:01:07, Pavel Machek wrote:
-> Hi!
-> 
-> From 3.6 to 3.10, USB networking works on Nokia N900. With 3.11, it
-> fails with messages on the host. I also tried to get it to work on
-> 3.14 and 3.17, with no luck.
-> 
-> Any ideas? Does it work for you? Any config options to watch for?
+On Sat, Oct 18, 2014 at 9:18 PM, Mauro Carvalho Chehab
+<m.chehab@samsung.com> wrote:
+>
+> The right behavior here is to enable the protocol as soon as the
+> new keycode table is written by userspace.
+>
+> Except for LIRC and the protocol of the current table enabled is
+> not a good idea because:
+>
+>         1) It misread the code from some other IR;
+>         2) It will be just spending power without need, running
+>            several tasks (one for each IR type) with no reason, as the
+>            keytable won't match the codes for other IRs (and if it is
+>            currently matching, then this is a bad behavior).
+>
+I agree, it sounds overkill to have all protocols enabled by default.
+I'll make a new patch that enables lirc but disables other protocols
+during registration.
 
-With 3.17, I get
-
-omap_musb_mailbox: musb core is not yet ready
-
-message. It looks related...?
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Tomas
