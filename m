@@ -1,122 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752102AbaJSSKw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 14:10:52 -0400
-Received: from karr.yath.de ([144.76.4.50]:44567 "EHLO karr.yath.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751902AbaJSSKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 14:10:50 -0400
-X-Greylist: delayed 321 seconds by postgrey-1.27 at vger.kernel.org; Sun, 19 Oct 2014 14:10:49 EDT
-Date: Sun, 19 Oct 2014 20:05:15 +0200
-From: Sebastian Schmidt <yath@yath.de>
-To: Anton Vorontsov <anton@enomsg.org>, Colin Cross <ccross@android.com>,
-        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] pstore: honor dmesg_restrict sysctl on dmesg dumps
-Message-ID: <20141019180515.GA14661@moniac.lan.yath.de>
+	id S1751964AbaJSS0z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 14:26:55 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:59856 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751583AbaJSS0v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Oct 2014 14:26:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <87iojgmy3o.fsf@x220.int.ebiederm.org>
+References: <1413235430-22944-1-git-send-email-adityakali@google.com>
+ <1413235430-22944-8-git-send-email-adityakali@google.com> <20141016211236.GA4308@mail.hallyn.com>
+ <CAGr1F2EH0ynfFihTh1dv=n1faxUh0zS3ggk303bwGnDnW2PUCw@mail.gmail.com>
+ <20141016214710.GA4759@mail.hallyn.com> <87iojgmy3o.fsf@x220.int.ebiederm.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Sun, 19 Oct 2014 11:26:29 -0700
+Message-ID: <CALCETrUC=yW72d2hDzjESmZAt85x1WcGz4L-DrtY5YXAQxbpMA@mail.gmail.com>
+Subject: Re: [PATCHv1 7/8] cgroup: cgroup namespace setns support
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, Aditya Kali <adityakali@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the kernel.dmesg_restrict restriction is in place, only users with
-CAP_SYSLOG should be able to access crash dumps (like: attacker is
-trying to exploit a bug, watchdog reboots, attacker can happily read
-crash dumps and logs).
+On Sat, Oct 18, 2014 at 10:23 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> "Serge E. Hallyn" <serge@hallyn.com> writes:
+>
+>> Quoting Aditya Kali (adityakali@google.com):
+>>> On Thu, Oct 16, 2014 at 2:12 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
+>>> > Quoting Aditya Kali (adityakali@google.com):
+>>> >> setns on a cgroup namespace is allowed only if
+>>> >> * task has CAP_SYS_ADMIN in its current user-namespace and
+>>> >>   over the user-namespace associated with target cgroupns.
+>>> >> * task's current cgroup is descendent of the target cgroupns-root
+>>> >>   cgroup.
+>>> >
+>>> > What is the point of this?
+>>> >
+>>> > If I'm a user logged into
+>>> > /lxc/c1/user.slice/user-1000.slice/session-c12.scope and I start
+>>> > a container which is in
+>>> > /lxc/c1/user.slice/user-1000.slice/session-c12.scope/x1
+>>> > then I will want to be able to enter the container's cgroup.
+>>> > The container's cgroup root is under my own (satisfying the
+>>> > below condition0 but my cgroup is not a descendent of the
+>>> > container's cgroup.
+>>> >
+>>> This condition is there because we don't want to do implicit cgroup
+>>> changes when a process attaches to another cgroupns. cgroupns tries to
+>>> preserve the invariant that at any point, your current cgroup is
+>>> always under the cgroupns-root of your cgroup namespace. But in your
+>>> example, if we allow a process in "session-c12.scope" container to
+>>> attach to cgroupns root'ed at "session-c12.scope/x1" container
+>>> (without implicitly moving its cgroup), then this invariant won't
+>>> hold.
+>>
+>> Oh, I see.  Guess that should be workable.  Thanks.
+>
+> Which has me looking at what the rules are for moving through
+> the cgroup hierarchy.
+>
+> As long as we have write access to cgroup.procs and are allowed
+> to open the file for write, we can move any of our own tasks
+> into the cgroup.  So the cgroup namespace rules don't seem
+> to be a problem.
+>
+> Andy can you please take a look at the permission checks in
+> __cgroup_procs_write.
 
-This puts the restriction on console-* types as well as sensitive
-information could have been leaked there.
+The actual requirements for calling that function haven't changed,
+right?  IOW, what does this have to do with cgroupns?  Is the idea
+that you want a privileged user wrt a cgroupns's userns to be able to
+use this?  If so:
 
-Other log types are unaffected.
+Yes, that current_cred() thing is bogus.  (Actually, this is probably
+exploitable right now if any cgroup.procs inode anywhere on the system
+lets non-root write.)  (Can we have some kernel debugging option that
+makes any use of current_cred() in write(2) warn?)
 
-Signed-off-by: Sebastian Schmidt <yath@yath.de>
----
- fs/pstore/inode.c      | 22 ++++++++++++++++++++++
- include/linux/syslog.h |  1 +
- kernel/printk/printk.c |  2 +-
- 3 files changed, 24 insertions(+), 1 deletion(-)
+We really need a weaker version of may_ptrace for this kind of stuff.
+Maybe the existing may_ptrace stuff is okay, actually.  But this is
+completely missing group checks, cap checks, capabilities wrt the
+userns, etc.
 
-diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
-index fafb7a0..5041660 100644
---- a/fs/pstore/inode.c
-+++ b/fs/pstore/inode.c
-@@ -36,6 +36,7 @@
- #include <linux/slab.h>
- #include <linux/spinlock.h>
- #include <linux/uaccess.h>
-+#include <linux/syslog.h>
- 
- #include "internal.h"
- 
-@@ -120,6 +121,18 @@ static const struct seq_operations pstore_ftrace_seq_ops = {
- 	.show	= pstore_ftrace_seq_show,
- };
- 
-+static int pstore_check_syslog_permissions(struct pstore_private *ps)
-+{
-+	switch (ps->type) {
-+	case PSTORE_TYPE_DMESG:
-+	case PSTORE_TYPE_CONSOLE:
-+		return check_syslog_permissions(SYSLOG_ACTION_READ_ALL,
-+			SYSLOG_FROM_READER);
-+	default:
-+		return 0;
-+	}
-+}
-+
- static ssize_t pstore_file_read(struct file *file, char __user *userbuf,
- 						size_t count, loff_t *ppos)
- {
-@@ -138,6 +151,10 @@ static int pstore_file_open(struct inode *inode, struct file *file)
- 	int err;
- 	const struct seq_operations *sops = NULL;
- 
-+	err = pstore_check_syslog_permissions(ps);
-+	if (err)
-+		return err;
-+
- 	if (ps->type == PSTORE_TYPE_FTRACE)
- 		sops = &pstore_ftrace_seq_ops;
- 
-@@ -174,6 +191,11 @@ static const struct file_operations pstore_file_operations = {
- static int pstore_unlink(struct inode *dir, struct dentry *dentry)
- {
- 	struct pstore_private *p = dentry->d_inode->i_private;
-+	int err;
-+
-+	err = pstore_check_syslog_permissions(p);
-+	if (err)
-+		return err;
- 
- 	if (p->psi->erase)
- 		p->psi->erase(p->type, p->id, p->count,
-diff --git a/include/linux/syslog.h b/include/linux/syslog.h
-index 98a3153..9def529 100644
---- a/include/linux/syslog.h
-+++ b/include/linux/syslog.h
-@@ -48,5 +48,6 @@
- #define SYSLOG_FROM_PROC             1
- 
- int do_syslog(int type, char __user *buf, int count, bool from_file);
-+int check_syslog_permissions(int type, bool from_file);
- 
- #endif /* _LINUX_SYSLOG_H */
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index ced2b84..c8755e7 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -480,7 +480,7 @@ static int syslog_action_restricted(int type)
- 	       type != SYSLOG_ACTION_SIZE_BUFFER;
- }
- 
--static int check_syslog_permissions(int type, bool from_file)
-+int check_syslog_permissions(int type, bool from_file)
- {
- 	/*
- 	 * If this is from /proc/kmsg and we've already opened it, then we've
+Also, I think that, if this version of the patchset allows non-init
+userns to unshare cgroupns, then the issue of what permission is
+needed to lock the cgroup hierarchy like that needs to be addressed,
+because unshare(CLONE_NEWUSER|CLONE_NEWCGROUP) will effectively pin
+the calling task with no permission required.  Bolting on a fix later
+will be a mess.
+
+--Andy
+
+>
+> As I read the code I see 3 security gaffaws in the permssion check.
+> - Using current->cred instead of file->f_cred.
+> - Not checking tcred->euid.
+> - Checking GLOBAL_ROOT_UID instead of having a capable call.
+>
+> The file permission on cgroup.procs seem just sufficient to keep
+> to keep those bugs from being easily exploitable.
+>
+> Eric
+
+
+
 -- 
-2.1.1
-
+Andy Lutomirski
+AMA Capital Management, LLC
