@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751924AbaJSUsQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 16:48:16 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:46120 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092AbaJSUsM (ORCPT
+	id S1752161AbaJSUuo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 16:50:44 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:50226 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751263AbaJSUun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 16:48:12 -0400
+	Sun, 19 Oct 2014 16:50:43 -0400
+Date: Sun, 19 Oct 2014 22:50:36 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: sre@debian.org, sre@ring0.de, kernel list <linux-kernel@vger.kernel.org>,
+        balbi@ti.com, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org
+Subject: Re: USB Ethernet gadget on Nokia n900
+Message-ID: <20141019205033.GA4738@amd>
+References: <20141019090107.GA19132@amd>
+ <20141019100739.GA2547@amd>
+ <201410191658.45851@pali>
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <20141019152801.GC5189@saruman>
-References: <20141009210715.GH25729@saruman>
-	<20141010135743.GB31348@saruman>
-	<20141010162531.GL12379@n2100.arm.linux.org.uk>
-	<54388B81.5020306@mentor.com>
-	<063D6719AE5E284EB5DD2968C1650D6D174C996E@AcuExch.aculab.com>
-	<20141013114307.GO12379@n2100.arm.linux.org.uk>
-	<20141014020640.GB25433@kroah.com>
-	<20141015212310.GP12379@n2100.arm.linux.org.uk>
-	<20141015212513.GA3247@n2100.arm.linux.org.uk>
-	<20141019095416.GT12379@n2100.arm.linux.org.uk>
-	<20141019152801.GC5189@saruman>
-Date: Sun, 19 Oct 2014 13:48:12 -0700
-Message-ID: <CAOesGMhokPjb8eU67t9NFOqPU=dBTuFBJ=aC+99i2UvdX_D8Hw@mail.gmail.com>
-Subject: Re: RCU bug with v3.17-rc3 ?
-From: Olof Johansson <olof@lixom.net>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Greg KH <greg@kroah.com>, Rik van Riel <riel@redhat.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        Nathan Lynch <Nathan_Lynch@mentor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "josh@joshtriplett.org" <josh@joshtriplett.org>,
-        Rabin Vincent <rabin@rab.in>, David Laight <David.Laight@aculab.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201410191658.45851@pali>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 19, 2014 at 8:28 AM, Felipe Balbi <balbi@ti.com> wrote:
-> Hi,
->
-> On Sun, Oct 19, 2014 at 10:54:16AM +0100, Russell King - ARM Linux wrote:
->> On Wed, Oct 15, 2014 at 10:25:13PM +0100, Russell King - ARM Linux wrote:
->> > On Wed, Oct 15, 2014 at 10:23:10PM +0100, Russell King - ARM Linux wrote:
->> > > As I said, I have a patch in progress, but it seems that there needed
->> > > to be some discussion about exactly which compiler versions are affected.
->> > > It seems that it's not as trivial as looking at the GCC bug entry.
->> >
->> > ... and in any case, it has been a known bug for well over a year now,
->> > and it seems that it doesn't affect _that_ many people.  So taking some
->> > extra time to get it properly correct is the _right_ thing to do.
->>
->> Well, this is just great.  Pushing out the change which blacklists these
->> compilers takes out Olof's kernel build system...
->>
->> Things are not as trivial as they seem.
->
-> Maybe Olof just needs to update his compiler. Olof ?
+On Sun 2014-10-19 16:58:45, Pali Rohár wrote:
+> On Sunday 19 October 2014 12:07:39 Pavel Machek wrote:
+> > On Sun 2014-10-19 11:01:07, Pavel Machek wrote:
+> > > Hi!
+> > > 
+> > > From 3.6 to 3.10, USB networking works on Nokia N900. With
+> > > 3.11, it fails with messages on the host. I also tried to
+> > > get it to work on 3.14 and 3.17, with no luck.
+> > > 
+> > > Any ideas? Does it work for you? Any config options to watch
+> > > for?
+> > 
+> > With 3.17, I get
+> > 
+> > omap_musb_mailbox: musb core is not yet ready
+> > 
+> > message. It looks related...?
+> 
+> Can you try tree https://gitorious.org/linux-n900/linux-n900/ ?
+> 
+> I think with rx51_defconfig from above tree it worked fine for 
+> 3.10 - 3.13 versions.
 
-Yep, doing a run with 4.9.1 to see how it looks. In the past, 4.9 has
-been really noisy with warnings, maybe most of them have been fixed by
-now.
+>From your tree, I am trying 815039686baffff6432b45028dd405b1981a9112
+(3.16 based). I attempted to make gadget drivers build-in and enabled
+nfsroot. I could not detect nokia on USB after bootup.
 
+Are you sure about defconfig? AFAICT defconfig will always be
+unsuitable for nfsroot, as it will not contain nfs support built-in...
 
--Olof
+I am trying c089e5f8ba2d44afd2db2c2042d43ca70205c536 (3.13
+based). Same result :-(.
+
+Do you have any tree where usb gadget works for you?
+
+Thanks,
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
