@@ -1,78 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752072AbaJSWcH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 18:32:07 -0400
-Received: from mx.culm.net ([79.188.239.84]:43172 "EHLO centaur.culm.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751544AbaJSWcE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 18:32:04 -0400
-X-Greylist: delayed 351 seconds by postgrey-1.27 at vger.kernel.org; Sun, 19 Oct 2014 18:32:04 EDT
-From: Witold Krecicki <wpk+lkml@culm.net>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>, linux-media@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Witold Krecicki <wpk+lkml@culm.net>
-Subject: [PATCH 1/1] em28xx: add support for Leadtek VC100 USB capture device
-Date: Mon, 20 Oct 2014 00:25:59 +0200
-Message-Id: <1413757559-12268-1-git-send-email-wpk+lkml@culm.net>
-X-Mailer: git-send-email 1.9.1
+	id S1751883AbaJSWhK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 18:37:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9921 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751116AbaJSWhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Oct 2014 18:37:08 -0400
+Message-ID: <1413758192.2985.43.camel@deneb.redhat.com>
+Subject: Re: [PATCH] clocksource: arm_arch_timer: fix system hang
+From: Mark Salter <msalter@redhat.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Sun, 19 Oct 2014 18:36:32 -0400
+In-Reply-To: <20141019194055.GA24830@leverpostej>
+References: <1413732164-19545-1-git-send-email-msalter@redhat.com>
+	 <20141019194055.GA24830@leverpostej>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Leadtek VC100 is a simple USB capture stick, similar to
-Yakumo Movie Mixer.
+On Sun, 2014-10-19 at 20:40 +0100, Mark Rutland wrote:
+> Hi Mark,
+> 
+> On Sun, Oct 19, 2014 at 04:22:44PM +0100, Mark Salter wrote:
+> > Arm allows for two possible architectural clock sources. One memory mapped
+> > and the other coprocessor based. If both timers exist, then the driver waits
+> > for both to be probed before registering a clocksource.
+> > 
+> > Commit c387f07e6205 ("clocksource: arm_arch_timer: Discard unavailable timers
+> > correctly") attempted to fix a hang occurring when one of the two possible
+> > timers had a device node, but was disabled. In that case, the second probe
+> > would never occur and the system would hang without a clocksource being
+> > registered.
+> > 
+> > Unfortunately, incorrect logic in that commit made things worse such that
+> > a hang would occur unless both timers had a device node and were enabled.
+> > This patch fixes the logic so that we don't wait to probe a second timer
+> > unless it exists and is enabled.
+> > 
+> > Signed-off-by: Mark Salter <msalter@redhat.com>
+> 
+> Marc Zyngier had a similar fix for this issue a few days ago [1].
+> 
+> > ---
+> >  drivers/clocksource/arm_arch_timer.c | 11 ++++++-----
+> >  1 file changed, 6 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+> > index d1a5e35..b73392b 100644
+> > --- a/drivers/clocksource/arm_arch_timer.c
+> > +++ b/drivers/clocksource/arm_arch_timer.c
+> > @@ -666,13 +666,14 @@ static bool __init
+> >  arch_timer_probed(int type, const struct of_device_id *matches)
+> >  {
+> >  	struct device_node *dn;
+> > -	bool probed = false;
+> > +	bool probed = true;
+> >  
+> >  	dn = of_find_matching_node(NULL, matches);
+> > -	if (dn && of_device_is_available(dn) && (arch_timers_present & type))
+> > -		probed = true;
+> > -	of_node_put(dn);
+> > -
+> > +	if (dn) {
+> > +		if (of_device_is_available(dn) && !(arch_timers_present & type))
+> > +			probed = false;
+> > +		of_node_put(dn);
+> > +	}
+> 
+> Other than the addition of the NULL check, this looks identical to
+> Marc's fix. There's already a NULL check in of_device_is_available, so I
+> don't think it's necessary to add one here. Are you seeing some failure
+> with a NULL np?
 
-Signed-off-by: Witold Krecicki <wpk+lkml@culm.net>
----
- drivers/media/usb/em28xx/em28xx-cards.c | 16 ++++++++++++++++
- drivers/media/usb/em28xx/em28xx.h       |  1 +
- 2 files changed, 17 insertions(+)
+No. It just looked weird to do the of_node_put unconditionally even
+though of_node_put does check for NULL also.
 
-diff --git a/drivers/media/usb/em28xx/em28xx-cards.c b/drivers/media/usb/em28xx/em28xx-cards.c
-index 71fa51e..3c97bf1 100644
---- a/drivers/media/usb/em28xx/em28xx-cards.c
-+++ b/drivers/media/usb/em28xx/em28xx-cards.c
-@@ -2243,6 +2243,20 @@ struct em28xx_board em28xx_boards[] = {
- 		.has_dvb       = 1,
- 		.ir_codes      = RC_MAP_PINNACLE_PCTV_HD,
- 	},
-+	[EM2861_BOARD_LEADTEK_VC100] = {
-+		.name          = "Leadtek VC100",
-+		.tuner_type    = TUNER_ABSENT,	/* Capture only device */
-+		.decoder       = EM28XX_TVP5150,
-+		.input         = { {
-+			.type     = EM28XX_VMUX_COMPOSITE1,
-+			.vmux     = TVP5150_COMPOSITE1,
-+			.amux     = EM28XX_AMUX_LINE_IN,
-+		}, {
-+			.type     = EM28XX_VMUX_SVIDEO,
-+			.vmux     = TVP5150_SVIDEO,
-+			.amux     = EM28XX_AMUX_LINE_IN,
-+		} },
-+	},
- };
- EXPORT_SYMBOL_GPL(em28xx_boards);
- 
-@@ -2424,6 +2438,8 @@ struct usb_device_id em28xx_id_table[] = {
- 			.driver_info = EM28178_BOARD_PCTV_461E },
- 	{ USB_DEVICE(0x2013, 0x025f),
- 			.driver_info = EM28178_BOARD_PCTV_292E },
-+	{ USB_DEVICE(0x0413, 0x6f07),
-+			.driver_info = EM2861_BOARD_LEADTEK_VC100 },
- 	{ },
- };
- MODULE_DEVICE_TABLE(usb, em28xx_id_table);
-diff --git a/drivers/media/usb/em28xx/em28xx.h b/drivers/media/usb/em28xx/em28xx.h
-index a21a746..05e7f7c 100644
---- a/drivers/media/usb/em28xx/em28xx.h
-+++ b/drivers/media/usb/em28xx/em28xx.h
-@@ -141,6 +141,7 @@
- #define EM28178_BOARD_PCTV_461E                   92
- #define EM2874_BOARD_KWORLD_UB435Q_V3		  93
- #define EM28178_BOARD_PCTV_292E                   94
-+#define EM2861_BOARD_LEADTEK_VC100                95
- 
- /* Limits minimum and default number of buffers */
- #define EM28XX_MIN_BUF 4
--- 
-1.9.1
+> 
+> Thanks,
+> Mark.
+> 
+> [1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/294744.html
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+
 
