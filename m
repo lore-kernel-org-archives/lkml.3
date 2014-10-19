@@ -1,43 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995AbaJSRTY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 13:19:24 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:36055 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751929AbaJSRTX convert rfc822-to-8bit (ORCPT
+	id S1752039AbaJSRVh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 13:21:37 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41155 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751560AbaJSRVd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 13:19:23 -0400
+	Sun, 19 Oct 2014 13:21:33 -0400
+Message-ID: <5443F319.4000303@infradead.org>
+Date: Sun, 19 Oct 2014 10:21:29 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-In-Reply-To: <1413672385-8492-1-git-send-email-dg@emlix.com>
-References: <1413672385-8492-1-git-send-email-dg@emlix.com>
-Date: Sun, 19 Oct 2014 21:19:23 +0400
-Message-ID: <CAMo8Bf+o6o489UQ0ss18MWAX80pM0yLwJdykAtXXTFRLmb8XnQ@mail.gmail.com>
-Subject: Re: [PATCH] xtensa: remove s6000 variant and s6105 platform
-From: Max Filippov <jcmvbkbc@gmail.com>
-To: =?UTF-8?Q?Daniel_Gl=C3=B6ckner?= <dg@emlix.com>
-Cc: Chris Zankel <chris@zankel.net>,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Mariusz Gorski <marius.gorski@gmail.com>, linux-kernel@vger.kernel.org,
+        Linux-Sparse <linux-sparse@vger.kernel.org>
+Subject: Re: Sparse warning: "initializer entry defined twice" - sparse can't
+ handle bool?
+References: <CABbAP1QWTorBt+f-nCmw1Q_DPe1CLecXYGUJFAcQkuw0Rk6d2g@mail.gmail.com>
+In-Reply-To: <CABbAP1QWTorBt+f-nCmw1Q_DPe1CLecXYGUJFAcQkuw0Rk6d2g@mail.gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 19, 2014 at 2:46 AM, Daniel Glöckner <dg@emlix.com> wrote:
-> The Stretch s6000 family support has been merged into mainline 5 years
-> ago. There appear to be no users of this code since nobody complained
-> that there is a merge error preventing compilation.
->
-> Apart from the s6105 IP camera reference design there are no s6000 devices
-> known to ever have run Linux and as the chips are out of production there
-> probably never will be. The successor s7000 no longer uses an Xtensa core
-> for the OS.
->
-> Let's remove the code until someone is found who actually needs it.
->
-> Signed-off-by: Daniel Glöckner <dg@emlix.com>
+[adding linux-sparse mailing list]
 
-Applied to my fixes tree. Thanks!
+On 10/19/14 02:46, Mariusz Gorski wrote:
+> Sparse throws the following warning, which I can't really understand:
+> 
+> $ make drivers/staging/vt6655/ C=2
+> [...]
+>   CHECK   drivers/staging/vt6655/datarate.c
+> drivers/staging/vt6655/datarate.c:302:40: warning: Initializer entry
+> defined twice
+> drivers/staging/vt6655/datarate.c:302:46:   also defined here
+> 
+> The code looks fine to me:
+> bool bAutoRate[MAX_RATE]    = {true, true, true, true, false, false,
+> true, true, true, true, true, true};
+> 
+> I've googled it and found only this LKML discussion:
+> https://lkml.org/lkml/2010/5/7/31
+> 
+> I've tested the suggested code sample and here are the results:
+> $ cat foo.c
+> typedef _Bool bool;
+> enum {
+>      false = 0,
+>      true = 1
+> };
+> static const bool foo[10] = {
+>        true,
+>        true,
+>        false,
+>        false,
+> };
+> 
+> $ sparse foo.c
+> foo.c:7:8: warning: Initializer entry defined twice
+> foo.c:8:8:   also defined here
+> 
+> It this a sparse problem?
+> 
+> Thanks,
+> Mariusz
+> --
 
--- Max
+
+-- 
+~Randy
