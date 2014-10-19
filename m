@@ -1,94 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752079AbaJSTvt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 15:51:49 -0400
-Received: from dehamd003.servertools24.de ([31.47.254.18]:50740 "EHLO
-	dehamd003.servertools24.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751495AbaJSTvs (ORCPT
+	id S1752267AbaJSTwJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 15:52:09 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:63650 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752125AbaJSTv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 15:51:48 -0400
-Message-ID: <5444166E.1020000@ladisch.de>
-Date: Sun, 19 Oct 2014 21:52:14 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64;
-	rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Sun, 19 Oct 2014 15:51:57 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Marek Belisko <marek@goldelico.com>
+Cc: gregkh@linuxfoundation.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, grant.likely@linaro.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        NeilBrown <neilb@suse.de>, "H. Nikolaus Schaller" <hns@goldelico.com>
+Subject: Re: [PATCH 1/2] misc: Add Wi2Wi w2sc0004 gps driver
+Date: Sun, 19 Oct 2014 21:51:27 +0200
+Message-ID: <9266107.dnSTmzxRsf@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1413491183-15018-1-git-send-email-marek@goldelico.com>
+References: <1413491183-15018-1-git-send-email-marek@goldelico.com>
 MIME-Version: 1.0
-To: Vlad Catoi <vladcatoi@gmail.com>, Takashi Iwai <tiwai@suse.de>
-CC: Jaroslav Kysela <perex@perex.cz>, Daniel Mack <zonque@gmail.com>,
-        Eduard Gilmutdinov <edgilmutdinov@gmail.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] snd-usb-audio: Add support for Steinberg UR22 USB
-	interface
-References: <1413672341-3703-1-git-send-email-vladcatoi@gmail.com>
-In-Reply-To: <1413672341-3703-1-git-send-email-vladcatoi@gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-PPP-Message-ID: <20141019195045.578261.19380@dehamd003.servertools24.de>
-X-PPP-Vhost: ladisch.de
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:I1bXDxYTiYq7FvxzMzLgkZoa+ZLDkTKUGCS+FSDA71r
+ 5+2sQ8Vt228WCEnzKmNi5Set/NnitlJMMwUSHKqbjZUBhnl34r
+ HB5vw9imQrvldYxf08k66NXbXhNXz9Lbj1iLWxMvtpTcWjjxVE
+ mH7GgB2BeoOFGRaKNbcBnC6gjHC1r/DSOZtwf/hDn9x7vzb77A
+ dpmYOnWggXfsCq3Km1jhVv1jBpc6vjV0wEj1ZmtcwRkZ+zZtCC
+ uT8DrM1MECL0+hoXBOejv28c9cW4DnwXMyZNuhXFPyeRLRCRXG
+ D1kRGh+63Xtb0Y3zzNP56cVri2vC4b9yuNglThto8y+ybAe/RF
+ Od2EQegtNjTFzz70+www=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vlad Catoi wrote:
-> Adding support for Steinberg UR22 USB interface via quirks table patch
->
-> See Ubuntu bug report:
-> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1317244
-> Also see threads:
-> http://linux-audio.4202.n7.nabble.com/Support-for-Steinberg-UR22-Yamaha-USB-chipset-0499-1509-tc82888.html#a82917
-> http://www.steinberg.net/forums/viewtopic.php?t=62290
->
-> Tested by at least 4 people judging by the threads.
-> Did not test MIDI interface, but audio output and capture both are
-> functional. Built 3.17 kernel with this driver on Ubuntu 14.04 & tested with mpg123
-> Patch applied to 3.13 Ubuntu kernel works well enough for daily use.
->
-> Signed-off-by: Vlad Catoi <vladcatoi@gmail.com>
+On Thursday 16 October 2014 22:26:22 Marek Belisko wrote:
+> This is a driver for the Wi2Wi GPS modules connected through an UART.
+> The tricky part is that the module is turned on or off by an impulse
+> on the control line - but it is only possible to get the real state by monitoring
+> the UART RX input. Since the kernel can't know in which status the module
+> is brought e.g. by a boot loader or after suspend, we need some logic to handle
+> this.
+> 
+> The driver allows two different methods to enable (and power up) GPS:
+> a) through rfkill
+> b) as a GPIO
+> 
+> The GPIO enable can be plumbed to other drivers that expect to be able to control
+> a GPIO. On the GTA04 board this is the DTR-gpio of the connected UART so that
+> opening the UART device enables the receiver and closing it shuts the receiver down.
+> 
+> Original implementation by Neil Brown, fixes + DT bindings by H. Nikolaus Schaller
 
-Acked-by: Clemens Ladisch <clemens@ladisch.de>
+I'm not sure if this is a good way to model the device. You say that it's
+connected to a UART, but the code itself has no reference to the tty layer
+at all. I assume the actual driver is in user space and it would open the
+UART and this control device as separate instances handles and then try
+to coordinate them. Is that right?
 
-> ---
->  sound/usb/quirks-table.h | 30 ++++++++++++++++++++++++++++++
->  1 file changed, 30 insertions(+)
->
-> diff --git a/sound/usb/quirks-table.h b/sound/usb/quirks-table.h
-> index 223c47b..c657752 100644
-> --- a/sound/usb/quirks-table.h
-> +++ b/sound/usb/quirks-table.h
-> @@ -385,6 +385,36 @@ YAMAHA_DEVICE(0x105d, NULL),
->  	}
->  },
->  {
-> +	USB_DEVICE(0x0499, 0x1509),
-> +	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
-> +		/* .vendor_name = "Yamaha", */
-> +		/* .product_name = "Steinberg UR22", */
-> +		.ifnum = QUIRK_ANY_INTERFACE,
-> +		.type = QUIRK_COMPOSITE,
-> +		.data = (const struct snd_usb_audio_quirk[]) {
-> +			{
-> +				.ifnum = 1,
-> +				.type = QUIRK_AUDIO_STANDARD_INTERFACE
-> +			},
-> +			{
-> +				.ifnum = 2,
-> +				.type = QUIRK_AUDIO_STANDARD_INTERFACE
-> +			},
-> +			{
-> +				.ifnum = 3,
-> +				.type = QUIRK_MIDI_YAMAHA
-> +			},
-> +			{
-> +				.ifnum = 4,
-> +				.type = QUIRK_IGNORE_INTERFACE
-> +			},
-> +			{
-> +				.ifnum = -1
-> +			}
-> +		}
-> +	}
-> +},
-> +{
->  	USB_DEVICE(0x0499, 0x150a),
->  	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
->  		/* .vendor_name = "Yamaha", */
+What is the protocol for the GPS driver itself? Is it standardized?
+Would it help to have a TTY line discipline for the GPS mode instead
+so the power management and startup could be integrated into the serial
+port management instead?
+
+	Arnd
