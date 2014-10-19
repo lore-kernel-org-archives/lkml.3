@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751985AbaJSNs7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 09:48:59 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:33771 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751916AbaJSNs6 (ORCPT
+	id S1751998AbaJSN55 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 09:57:57 -0400
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:47280 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916AbaJSN5y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 09:48:58 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Sun, 19 Oct 2014 15:45:51 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Nix <nix@esperi.org.uk>
-Cc: Johan Hovold <johan@kernel.org>, Paul Martin <pm@debian.org>,
-        Oliver Neukum <oliver@neukum.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [3.16.1 BISECTED REGRESSION]: Simtec Entropy Key (cdc-acm)
- broken in 3.16
-Message-ID: <20141019134551.GA2206@localhost>
-References: <878um4tg09.fsf@spindle.srvr.nix>
- <1409569752.24385.12.camel@linux-fkkt.site>
- <874mwnosz1.fsf@spindle.srvr.nix>
- <871tqe2zqt.fsf_-_@spindle.srvr.nix>
- <20141011195108.GA8275@thinkpad.nowster.org.uk>
- <87y4smz1l0.fsf@spindle.srvr.nix>
- <20141012185845.GB2786@localhost>
- <878uklynq9.fsf@spindle.srvr.nix>
- <20141014083432.GB7958@localhost>
- <87k33yx25c.fsf@spindle.srvr.nix>
+	Sun, 19 Oct 2014 09:57:54 -0400
+X-IronPort-AV: E=Sophos;i="5.04,749,1406617200"; 
+   d="scan'208";a="48584596"
+Message-ID: <5443C357.6050309@broadcom.com>
+Date: Sun, 19 Oct 2014 15:57:43 +0200
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87k33yx25c.fsf@spindle.srvr.nix>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] debugfs: add helper function to create device related
+ seq_file
+References: <1413043315-22332-1-git-send-email-arend@broadcom.com> <20141011201723.GA29439@kroah.com> <543A382F.5060608@broadcom.com>
+In-Reply-To: <543A382F.5060608@broadcom.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 17, 2014 at 02:21:35PM +0100, Nix wrote:
-> On 14 Oct 2014, Johan Hovold outgrape:
-> > Another thing you could try is to add back the 
-> >
-> > 	acm_set_control(acm, 0);
-> >
-> > just after the dev_info message in probe.
+On 12-10-14 10:13, Arend van Spriel wrote:
+> On 11-10-14 22:17, Greg Kroah-Hartman wrote:
+>> On Sat, Oct 11, 2014 at 06:01:55PM +0200, Arend van Spriel wrote:
+>>> This patch adds a helper function that simplifies adding a
+>>> sequence file for device drivers. The calling device driver
+>>> needs to provide a read function and a device pointer. The
+>>> field struct seq_file::private will reference the device
+>>> pointer upon call to the read function so the driver can
+>>> obtain his data from it and do its seq_printf() calls.
+>>>
+>>> Signed-off-by: Arend van Spriel <arend@broadcom.com>
+>>> ---
+>>>  fs/debugfs/file.c       | 54 +++++++++++++++++++++++++++++++++++++++++++++++++
+>>>  include/linux/debugfs.h | 16 ++++++++++++++-
+>>>  2 files changed, 69 insertions(+), 1 deletion(-)
+>>
+>> Do you have some kernel code pending that needs this change?  Or can
+>> existing users be moved to it, saving them code?
 > 
-> "Add back" suggests that this line existed before this change. It
-> didn't, as far as I can see. Probing has
-> 
-> acm_set_control(acm, acm->ctrlout);
-> 
-> *shutdown* has
-> 
-> acm_set_control(acm, acm->ctrlout = 0);
-> 
-> Did you mean that I should try adding back the acm_set_control() during
-> shutdown, or the one during probe?
+> Yes and maybe. I made a similar change in our brcm80211 drivers, but
+> figured it may be useful for other device drivers. So when this gets in
+> the kernel I want to align the brcm80211 drivers. I will also have a
+> quick look at the wireless drivers and get some metrics about code savings.
 
-After the dev_info in probe as I wrote. acm->ctrlout will always be 0 at
-that point, could have been more clear about that.
+Hi, Greg
 
-Johan
+Killed a bit of time between lpc sessions in dusseldorf. I picked the
+ath9k wireless driver as a test case. I made the changes in two steps.
+First step was changing to use seq_file api and second step made use of
+the helper function:
+
+		original	seq_file	helper
+logstat		-		173+/255-	32+/96-
+ath9k.o		115968		113224		111024	(.text size)
+
+I am considering to make an attempt at capturing the transition in a
+SmPL script so it can be applied to other drivers as well. Have to do a
+bit of self-study for that ;-)
+
+Regards,
+Arend
+
