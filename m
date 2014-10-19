@@ -1,100 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751883AbaJSWhK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 18:37:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9921 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751116AbaJSWhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 18:37:08 -0400
-Message-ID: <1413758192.2985.43.camel@deneb.redhat.com>
-Subject: Re: [PATCH] clocksource: arm_arch_timer: fix system hang
-From: Mark Salter <msalter@redhat.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
+	id S1751851AbaJSWnF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 18:43:05 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:53217 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751116AbaJSWnD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Oct 2014 18:43:03 -0400
+Date: Sun, 19 Oct 2014 23:42:51 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: David Drysdale <drysdale@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Meredydd Luff <meredydd@senatehouse.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Sun, 19 Oct 2014 18:36:32 -0400
-In-Reply-To: <20141019194055.GA24830@leverpostej>
-References: <1413732164-19545-1-git-send-email-msalter@redhat.com>
-	 <20141019194055.GA24830@leverpostej>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
+        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>
+Subject: Re: [PATCHv4 RESEND 0/3] syscalls,x86: Add execveat() system call
+Message-ID: <20141019224251.GJ7996@ZenIV.linux.org.uk>
+References: <1401975635-6162-1-git-send-email-drysdale@google.com>
+ <CALCETrVraoD+r4zxBoGd+BV5P275AXcRV_R00SSr8fjQzRHnUg@mail.gmail.com>
+ <20141019202034.GH7996@ZenIV.linux.org.uk>
+ <CALCETrVZUW2iPtfFJtGnWd2RsYLwjGRGYuujrVqcOsO5oBB8Cg@mail.gmail.com>
+ <20141019212921.GI7996@ZenIV.linux.org.uk>
+ <CALCETrVTiO6YKRYAAe-eBgQvpUqrtE0=KrKJj2T_XJ9iSRDtmA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrVTiO6YKRYAAe-eBgQvpUqrtE0=KrKJj2T_XJ9iSRDtmA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-10-19 at 20:40 +0100, Mark Rutland wrote:
-> Hi Mark,
-> 
-> On Sun, Oct 19, 2014 at 04:22:44PM +0100, Mark Salter wrote:
-> > Arm allows for two possible architectural clock sources. One memory mapped
-> > and the other coprocessor based. If both timers exist, then the driver waits
-> > for both to be probed before registering a clocksource.
-> > 
-> > Commit c387f07e6205 ("clocksource: arm_arch_timer: Discard unavailable timers
-> > correctly") attempted to fix a hang occurring when one of the two possible
-> > timers had a device node, but was disabled. In that case, the second probe
-> > would never occur and the system would hang without a clocksource being
-> > registered.
-> > 
-> > Unfortunately, incorrect logic in that commit made things worse such that
-> > a hang would occur unless both timers had a device node and were enabled.
-> > This patch fixes the logic so that we don't wait to probe a second timer
-> > unless it exists and is enabled.
-> > 
-> > Signed-off-by: Mark Salter <msalter@redhat.com>
-> 
-> Marc Zyngier had a similar fix for this issue a few days ago [1].
-> 
-> > ---
-> >  drivers/clocksource/arm_arch_timer.c | 11 ++++++-----
-> >  1 file changed, 6 insertions(+), 5 deletions(-)
-> > 
-> > diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-> > index d1a5e35..b73392b 100644
-> > --- a/drivers/clocksource/arm_arch_timer.c
-> > +++ b/drivers/clocksource/arm_arch_timer.c
-> > @@ -666,13 +666,14 @@ static bool __init
-> >  arch_timer_probed(int type, const struct of_device_id *matches)
-> >  {
-> >  	struct device_node *dn;
-> > -	bool probed = false;
-> > +	bool probed = true;
-> >  
-> >  	dn = of_find_matching_node(NULL, matches);
-> > -	if (dn && of_device_is_available(dn) && (arch_timers_present & type))
-> > -		probed = true;
-> > -	of_node_put(dn);
-> > -
-> > +	if (dn) {
-> > +		if (of_device_is_available(dn) && !(arch_timers_present & type))
-> > +			probed = false;
-> > +		of_node_put(dn);
-> > +	}
-> 
-> Other than the addition of the NULL check, this looks identical to
-> Marc's fix. There's already a NULL check in of_device_is_available, so I
-> don't think it's necessary to add one here. Are you seeing some failure
-> with a NULL np?
+On Sun, Oct 19, 2014 at 03:16:03PM -0700, Andy Lutomirski wrote:
 
-No. It just looked weird to do the of_node_put unconditionally even
-though of_node_put does check for NULL also.
+> Oh, you mean that #!/usr/bin/make -f would turn into /usr/bin/make
+> /dev/fd/3?  That could be interesting, although I can imagine it
+> breaking things, especially if /dev/fd/3 isn't set up like that, e.g.
+> early in boot.
 
-> 
-> Thanks,
-> Mark.
-> 
-> [1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/294744.html
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+Sigh...  What I mean is that fexecve(fd, ...) would have to put _something_
+into argv when it execs the interpreter of #! file.  Simply because the
+interpreter (which can be anything whatsoever) has no fscking idea what
+to do with some descriptor it has before execve().  Hell, it doesn't have
+any idea *which* descriptor had it been.
 
+You need to put some pathname that would yield your script upon open(2).
+If you bothered to read those patches, you'd see that they do supply
+one, generating it with d_path().  Which isn't particulary reliable.
 
+I'm not sure there's any point putting any of that in the kernel - if
+you *do* have that pathname, you can just pass it.
+
+> Aside from the general scariness of allowing one process to actually
+> dup another process's fds, I feel like this is asking for trouble wrt
+> the various types of file locks.
+
+Who said anything about another process's fds?  That, indeed, would be
+a recipe for serious trouble.  It's a filesystem with one directory,
+not with one directory for each process...
+
+FWIW, they (Plan 9) do have procfs and there they have /proc/<pid>/fd.
+Which is a regular file, with contents consisting of \n-terminated
+lines (one per descriptor in <pid>'s descriptor table>) in the same
+format as in *ctl (they put descriptor number as the first field in
+those).
+
+Unlike our solution, they do not allow to get to any process' files via
+procfs.  They do allow /dev/stdin-style access to your own files via
+dupfs.  And yes, for /dev/stdin and friends dup-style semantics is better -
+you get consistent behaviours for pipes and redirects from file that way.
+See the example I've posted upthread.  Besides, for things like sockets
+our semantics simply fails - they really depend on having only one
+struct file for given socket; it's dup or nothing there.  The same goes
+for a lot of things like eventfd, etc.
