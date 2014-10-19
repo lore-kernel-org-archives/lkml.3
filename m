@@ -1,53 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751757AbaJSVb2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 17:31:28 -0400
-Received: from smtprelay0009.hostedemail.com ([216.40.44.9]:54762 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751120AbaJSVb1 (ORCPT
+	id S1751874AbaJSVds (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 17:33:48 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41946 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187AbaJSVdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 17:31:27 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3868:3870:3871:3872:3874:4321:5007:6119:6226:6261:7903:8700:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13160:13229:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: sand97_297b517ebed06
-X-Filterd-Recvd-Size: 1674
-Message-ID: <1413754284.7076.1.camel@perches.com>
-Subject: Re: [PATCH] kernel: use the gnu89 standard explicitly
-From: Joe Perches <joe@perches.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>
-Date: Sun, 19 Oct 2014 14:31:24 -0700
-In-Reply-To: <CA+55aFwbq4TtQXC9PTjOF3UPP7u8XH1mSYjvT7pevKcQBfy25A@mail.gmail.com>
-References: <1413734862-13510-1-git-send-email-sasha.levin@oracle.com>
-	 <CA+55aFyDECoy4s6oO=PFZSyNS_F9EagxFiNm1X95Fu0cdSTeXQ@mail.gmail.com>
-	 <1413750239.14629.17.camel@perches.com>
-	 <CA+55aFwbq4TtQXC9PTjOF3UPP7u8XH1mSYjvT7pevKcQBfy25A@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 19 Oct 2014 17:33:47 -0400
+Date: Sun, 19 Oct 2014 23:33:41 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Erik Bosman <ebn310@few.vu.nl>
+Subject: Re: [RFC 5/5] x86,perf: Only allow rdpmc if a perf_event is mapped
+Message-ID: <20141019213341.GF23531@worktop.programming.kicks-ass.net>
+References: <cover.1413323611.git.luto@amacapital.net>
+ <b6c264b3bb064658af498763e234e3cb4f9db4e2.1413323612.git.luto@amacapital.net>
+ <CALCETrXRGNeUipujcGiT30SV+MDHCFpTxG7LOTXj4Z4CbtxdJQ@mail.gmail.com>
+ <CALCETrXv=bWUqVWhCekjq3UQeLFgGcbocKFjtNiNqm6DhyPmzA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrXv=bWUqVWhCekjq3UQeLFgGcbocKFjtNiNqm6DhyPmzA@mail.gmail.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-10-19 at 13:46 -0700, Linus Torvalds wrote:
-> On Oct 19, o2014 1:24 PM, "Joe Perches" <joe@perches.com> wrote:
+On Sun, Oct 19, 2014 at 01:23:17PM -0700, Andy Lutomirski wrote:
+> On Thu, Oct 16, 2014 at 5:00 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> > The current cap_user_rdpmc code seems rather confused to me.  On x86,
+> > *all* events set cap_user_rdpmc if the global rdpmc control is set.
+> > But only x86_pmu events define .event_idx, so amd uncore events won't
+> > actually expose their rdpmc index to userspace.
 > >
-> > I think it'd be moderately painful.
+> > Would it make more sense to add a flag PERF_X86_EVENT_RDPMC_PERMITTED
+> > that gets set on all events created while rdpmc == 1, to change
+> > x86_pmu_event_idx to do something like:
 > >
-> > There are ~1000 uses of variables like "<some_type> new" in the kernel.
+> > if (event->hw.flags & PERF_X86_EVENT_RDPMC_PERMITTED)
+> >   return event->hw.event_base_rdpmc + 1;
+> > else
+> >   return 0;
+> >
+> > and to change arch_perf_update_userpage cap_user_rdpmc to match
+> > PERF_X86_EVENT_RDPMC_PERMITTED?
+> >
+> > Then we could ditch the static key and greatly simplify writes to the
+> > rdpmc flag by just counting PERF_X86_EVENT_RDPMC_PERMITTED events.
+> >
+> > This would be a user-visible change on AMD, and I can't test it.
+> >
+> >
+> > On a semi-related note: would this all be nicer if there were vdso
+> > function __u64 __vdso_perf_event__read_count(int fd, void *userpage)?
+> > This is very easy to do nowadays.  If we got *really* fancy, it would
+> > be possible to have an rdpmc_safe in the vdso, which has some
+> > benefits, although it would be a bit evil and wouldn't work if
+> > userspace tracers like pin are in use.
+> >
 > 
-> So? That's not a C11 violation last I saw. The whole "new" keyword is still
-> just a C++ problem AFAIK.
-> 
-> And if that is some stupid gcc5 thing, maybe just turning off that
-> particular gcc  bug is possible?
+> Also, I don't understand the purpose of cap_user_time.  Wouldn't it be
+> easier to just record the last CLOCK_MONOTONIC time and let the user
+> call __vdso_clock_gettime if they need an updated time?
 
-My mistake, false premise.
+Because perf doesn't use CLOCK_MONOTONIC. Due to performance
+considerations we used the sched_clock stuff, which tries its best to
+make the best of the TSC without reverting to HPET and the like.
 
-Use of the <some_type> new is not an issue with
-gcc 4.9 -std=gnu11.
+Not to mention that CLOCK_MONOTONIC was not available from NMI context
+until very recently.
+
+Also, things like c73deb6aecda ("perf/x86: Add ability to calculate TSC
+from perf sample timestamps") seem to suggest people actually use TSC
+for things as well.
+
+Now we might change to using the new NMI safe CLOCK_MONOTONIC (with a
+fallback to use the sched_clock stuff on time challenged hardware) in
+order to ease the correlation between other trace thingies, but even
+then it makes sense to have this, having it here and reading the TSC
+within the seqcount loop ensures you've got consistent data and touch
+less cachelines for reading.
 
 
