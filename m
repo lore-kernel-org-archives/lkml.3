@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752241AbaJSXR0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 19:17:26 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:53257 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751659AbaJSXRY (ORCPT
+	id S1752290AbaJSXTS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 19:19:18 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:53263 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751757AbaJSXTR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 19:17:24 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>, devicetree@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Darren Hart <dvhart@linux.intel.com>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: Re: [PATCH v5 09/12] Driver core: Unified interface for firmware node properties
-Date: Mon, 20 Oct 2014 01:31:07 +0200
-Message-ID: <5096037.ea1oJYRcOC@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141019221434.GA7674@kroah.com>
-References: <2660541.BycO7TFnA2@vostro.rjw.lan> <1628104.Ek1EGbdVha@vostro.rjw.lan> <20141019221434.GA7674@kroah.com>
+	Sun, 19 Oct 2014 19:19:17 -0400
+Date: Mon, 20 Oct 2014 00:19:08 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Andrew Pinski <pinskia@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel: use the gnu89 standard explicitly
+Message-ID: <20141019231908.GK7996@ZenIV.linux.org.uk>
+References: <1413734862-13510-1-git-send-email-sasha.levin@oracle.com>
+ <CA+55aFyDECoy4s6oO=PFZSyNS_F9EagxFiNm1X95Fu0cdSTeXQ@mail.gmail.com>
+ <20141019210348.GA28144@drone.musicnaut.iki.fi>
+ <CA+55aFzOYL-2WT2bf5C5ODAJnd=qVgpZGb-6o7z56Vu14wavJg@mail.gmail.com>
+ <20141019231031.GB9319@node.dhcp.inet.fi>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141019231031.GB9319@node.dhcp.inet.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, October 20, 2014 06:14:34 AM Greg Kroah-Hartman wrote:
-> On Fri, Oct 17, 2014 at 02:14:53PM +0200, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Mon, Oct 20, 2014 at 02:10:31AM +0300, Kirill A. Shutemov wrote:
+> On Sun, Oct 19, 2014 at 04:05:25PM -0700, Linus Torvalds wrote:
+> > On Sun, Oct 19, 2014 at 2:03 PM, Aaro Koskinen <aaro.koskinen@iki.fi> wrote:
+> > >
+> > > Here's one example how it fails: http://marc.info/?l=gcc&m=141349914632010&w=2
 > > 
-> > Add new generic routines are provided for retrieving properties from
-> > device description objects in the platform firmware in case there are
-> > no struct device objects for them (either those objects have not been
-> > created yet or they do not exist at all).
+> > Ok, that just looks like a gnu11 bug, then. Not being able to
+> > initialize structures because some sub-structure has a volatile member
+> > is just pure BS.
 > > 
-> > The following functions are provided:
+> > Has anybody reported this as a gcc bug? That email may be on the gcc
+> > list, but I'm not seeing anybody acknowledge it as a bug..
 > > 
-> > fwnode_property_present()
-> > fwnode_property_read_u8()
-> > fwnode_property_read_u16()
-> > fwnode_property_read_u32()
-> > fwnode_property_read_u64()
-> > fwnode_property_read_string()
-> > fwnode_property_read_u8_array()
-> > fwnode_property_read_u16_array()
-> > fwnode_property_read_u32_array()
-> > fwnode_property_read_u64_array()
-> > fwnode_property_read_string_array()
-> > 
-> > in analogy with the corresponding functions for struct device added
-> > previously.  For all of them, the first argument is a pointer to struct
-> > fwnode_handle (new type) that allows a device description object
-> > (depending on what platform firmware interface is in use) to be
-> > obtained.
-> > 
-> > Add a new macro device_for_each_child_node() for iterating over the
-> > children of the device description object associated with a given
-> > device and a new function device_get_child_node_count() returning the
-> > number of a given device's child nodes.
-> > 
-> > The interface covers both ACPI and Device Trees.
-> > 
-> > Suggested-by: Grant Likely <grant.likely@linaro.org>
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > I cannot imagine that anybody sane claims that this is *wanted*
+> > behavior from "gnu11".
 > 
-> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> IIUC, it's nothing to do with volatile. C11 and above reads
+> 
+> 	(rwlock_t) { .raw_lock = { 0 }, }
+> 
+> as compound literal (which is not constant) rather than constant
+> initalizer plus a cast.
 
-Thanks!
-
+Ah...  They hadn't even pulled it into gnu99; IIRC, they even tried to
+remove it in gnu89, but Linus' complaints had stopped that attempt.
