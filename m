@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616AbaJSWJd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 18:09:33 -0400
-Received: from mga11.intel.com ([192.55.52.93]:48491 "EHLO mga11.intel.com"
+	id S1752648AbaJSWJv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 18:09:51 -0400
+Received: from mga11.intel.com ([192.55.52.93]:9411 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751811AbaJSWFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 18:05:36 -0400
+	id S1752038AbaJSWFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Oct 2014 18:05:35 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="402644488"
+   d="scan'208";a="402644482"
 From: Kan Liang <kan.liang@intel.com>
 To: a.p.zijlstra@chello.nl, eranian@google.com
 Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
         acme@kernel.org, jolsa@redhat.com, ak@linux.intel.com,
         Kan Liang <kan.liang@intel.com>, "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH V6 08/17] perf, x86: track number of events that use LBR callstack
-Date: Sun, 19 Oct 2014 17:55:03 -0400
-Message-Id: <1413755712-8259-9-git-send-email-kan.liang@intel.com>
+Subject: [PATCH V6 06/17] perf, core: always switch pmu specific data during context switch
+Date: Sun, 19 Oct 2014 17:55:01 -0400
+Message-Id: <1413755712-8259-7-git-send-email-kan.liang@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1413755712-8259-1-git-send-email-kan.liang@intel.com>
 References: <1413755712-8259-1-git-send-email-kan.liang@intel.com>
@@ -24,68 +24,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When enabling/disabling an event, check if the event uses the LBR
-callstack feature, adjust the LBR callstack usage count accordingly.
-Later patch will use the usage count to decide if LBR stack should
-be saved/restored.
+If two tasks were both forked from the same parent task, Events in
+their perf task contexts can be the same. Perf core may leave out
+switching the perf event contexts.
+
+Previous patch inroduces pmu specific data. The data is for saving
+the LBR stack, it is task specific. So we need to switch the data
+even when context switch is optimized out.
 
 Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 Signed-off-by: Kan Liang <kan.liang@intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_lbr.c | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+ kernel/events/core.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index e0ba9c0..f9b9f2b 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -204,9 +204,15 @@ void intel_pmu_lbr_sched_task(struct perf_event_context *ctx, bool sched_in)
- 	}
- }
- 
-+static inline bool branch_user_callstack(unsigned br_sel)
-+{
-+	return (br_sel & X86_BR_USER) && (br_sel & X86_BR_CALL_STACK);
-+}
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index a7c0d5c..5b5f143 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -2420,6 +2420,9 @@ static void perf_event_context_sched_out(struct task_struct *task, int ctxn,
+ 			next->perf_event_ctxp[ctxn] = ctx;
+ 			ctx->task = next;
+ 			next_ctx->task = task;
 +
- void intel_pmu_lbr_enable(struct perf_event *event)
- {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct x86_perf_task_context *task_ctx;
- 
- 	if (!x86_pmu.lbr_nr)
- 		return;
-@@ -220,6 +226,12 @@ void intel_pmu_lbr_enable(struct perf_event *event)
- 	}
- 	cpuc->br_sel = event->hw.branch_reg.reg;
- 
-+	if (branch_user_callstack(cpuc->br_sel) && event->ctx &&
-+					event->ctx->task_ctx_data) {
-+		task_ctx = event->ctx->task_ctx_data;
-+		task_ctx->lbr_callstack_users++;
-+	}
++			swap(ctx->task_ctx_data, next_ctx->task_ctx_data);
 +
- 	cpuc->lbr_users++;
- 	perf_sched_cb_inc(event->ctx->pmu);
- }
-@@ -227,10 +239,17 @@ void intel_pmu_lbr_enable(struct perf_event *event)
- void intel_pmu_lbr_disable(struct perf_event *event)
- {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct x86_perf_task_context *task_ctx;
+ 			do_switch = 0;
  
- 	if (!x86_pmu.lbr_nr)
- 		return;
- 
-+	if (branch_user_callstack(cpuc->br_sel) && event->ctx &&
-+					event->ctx->task_ctx_data) {
-+		task_ctx = event->ctx->task_ctx_data;
-+		task_ctx->lbr_callstack_users--;
-+	}
-+
- 	cpuc->lbr_users--;
- 	WARN_ON_ONCE(cpuc->lbr_users < 0);
- 	perf_sched_cb_dec(event->ctx->pmu);
+ 			perf_event_sync_stat(ctx, next_ctx);
 -- 
 1.8.3.2
 
