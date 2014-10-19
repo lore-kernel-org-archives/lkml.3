@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889AbaJSMbX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 08:31:23 -0400
-Received: from smtp2.it.da.ut.ee ([193.40.5.67]:44683 "EHLO smtp2.it.da.ut.ee"
+	id S1751925AbaJSMb7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 08:31:59 -0400
+Received: from smtp1.it.da.ut.ee ([193.40.5.66]:51793 "EHLO smtp1.it.da.ut.ee"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751810AbaJSMbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 08:31:21 -0400
-Date: Sun, 19 Oct 2014 15:31:19 +0300 (EEST)
+	id S1751810AbaJSMb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Oct 2014 08:31:57 -0400
+Date: Sun, 19 Oct 2014 15:31:56 +0300 (EEST)
 From: Meelis Roos <mroos@linux.ee>
-To: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: kernel BUG at kernel/sched/core.c:2702!
-In-Reply-To: <alpine.LRH.2.11.1410171401110.25429@adalberg.ut.ee>
-Message-ID: <alpine.LRH.2.11.1410191515150.32417@adalberg.ut.ee>
-References: <alpine.LRH.2.11.1410171401110.25429@adalberg.ut.ee>
+To: David Miller <davem@davemloft.net>
+cc: iamjoonsoo.kim@lge.com, linux-kernel@vger.kernel.org, cl@linux.com,
+        penberg@kernel.org, rientjes@google.com, akpm@linux-foundation.org,
+        linux-mm@kvack.org, sparclinux@vger.kernel.org
+Subject: Re: unaligned accesses in SLAB etc.
+In-Reply-To: <20141018.142335.1935310766779155342.davem@davemloft.net>
+Message-ID: <alpine.LRH.2.11.1410191459210.32417@adalberg.ut.ee>
+References: <20141016.165017.1151349565275102498.davem@davemloft.net> <alpine.LRH.2.11.1410171410210.25429@adalberg.ut.ee> <20141018.135907.356113264227709132.davem@davemloft.net> <20141018.142335.1935310766779155342.davem@davemloft.net>
 User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -21,16 +23,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I am seeing this BUG on 3 different sparc64 machines with yesterdays 
-> git. sparc64-specific known problems were just fixed before, 
-> 3.17.0-07551-g052db7e + slab alignment fix patch + sparc64 SIGBUS fix 
-> patch is working stable for me, whereas 3.17.0-09670-g0429fbc + SIGBUS 
-> patch fails on 3 machines (all I tried). Will try bisecting later if I 
-> get time.
+> > I don't want to define the array size of the fpregs save area
+> > explicitly and thereby placing an artificial limit there.
+> 
+> Nevermind, it seems we have a hard limit of 7 FPU save areas anyways.
+> 
+> Meelis, please try this patch:
 
-Dave Miller identified it as a sparc64-specific problem with 
-CONFIG_SCHED_STACK_END_CHECK in another thread and his fix is working 
-for me.
+Works fine with 3.17.0-09670-g0429fbc + fault patch.
+
+Will try current git next to find any new problems :)
 
 -- 
 Meelis Roos (mroos@linux.ee)
