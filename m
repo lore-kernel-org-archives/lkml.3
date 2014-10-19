@@ -1,109 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751908AbaJSP5P (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 11:57:15 -0400
-Received: from mail-bn1bon0086.outbound.protection.outlook.com ([157.56.111.86]:56915
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751606AbaJSP5M convert rfc822-to-8bit (ORCPT
+	id S1752214AbaJSP5m (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 11:57:42 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40791 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751919AbaJSP5i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 11:57:12 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Olof Johansson <olof@lixom.net>,
-        =?iso-8859-1?Q?Andreas_F=E4rber?= <afaerber@suse.de>
-CC: Michal Simek <michals@xilinx.com>, Andreas Olofsson <andreas@adapteva.com>,
-        Matteo Vit <matteo.vit@starwaredesign.com>,
-        "Sean Rickerd" <srickerd@suse.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Punnaiah Choudary Kalluri <punnaia@xilinx.com>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: RE: [PATCH v2 00/11] ARM: dts: zynq: Prepare Parallella
-Thread-Topic: [PATCH v2 00/11] ARM: dts: zynq: Prepare Parallella
-Thread-Index: AQHPp5MsFb0sap2zPkuGYoaeW+pqmZw2PgEAgAHaMFY=
-Date: Sun, 19 Oct 2014 15:57:06 +0000
-References: <1406242820-20140-1-git-send-email-afaerber@suse.de>,<CAOesGMjAb5oXjauhbqjDhJXWct7qoXxy3XpA1=DioK7vPTwetA@mail.gmail.com>
-In-Reply-To: <CAOesGMjAb5oXjauhbqjDhJXWct7qoXxy3XpA1=DioK7vPTwetA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.19.116.98]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21036.005
-X-TM-AS-User-Approved-Sender: Yes;Yes
-Message-ID: <30e1a5024949427cb08f5c1c8b4ac87f@BY2FFO11FD031.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(164054003)(24454002)(199003)(377454003)(189002)(51704005)(4396001)(6806004)(19580395003)(95666004)(106466001)(21056001)(85852003)(44976005)(107046002)(77096002)(31966008)(76176999)(54356999)(50986999)(53416004)(47776003)(15202345003)(20776003)(64706001)(19580405001)(566704002)(92566001)(106116001)(15975445006)(23756003)(104016003)(87936001)(2656002)(86362001)(74316001)(76482002)(46102003)(120916001)(85306004)(108616004)(99396003)(80022003)(50466002)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2FFO11HUB045;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB045;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 0369E8196C
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
-X-OriginatorOrg: xilinx.com
+	Sun, 19 Oct 2014 11:57:38 -0400
+From: Christoph Hellwig <hch@lst.de>
+To: Chandra Seetharaman <sekharan@us.ibm.com>, Hannes Reinecke <hare@suse.de>,
+        Mike Christie <michaelc@cs.wisc.edu>
+Cc: Sean Stewart <Sean.Stewart@netapp.com>,
+        Bart Van Assche <bvanassche@acm.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/6] scsi_dh: get module reference outside of device handler
+Date: Sun, 19 Oct 2014 17:59:59 +0200
+Message-Id: <1413734404-1426-2-git-send-email-hch@lst.de>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1413734404-1426-1-git-send-email-hch@lst.de>
+References: <1413734404-1426-1-git-send-email-hch@lst.de>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, for top-posting, but I currently just have Outlook webmail.
-The cause for this issue is relatively easily identified. The ethernet drivers sets the Ethernet clock according to the negotioated link speed. For this adjustment a 6-bit divider in the clock path is used. In this case, it seems, the input to the 6-bit divider doesn't allow generating the full range of required frequencies for all supported link speeds.
+We need to grab a reference to the module before calling the attach
+routines to avoid a small race vs module removal.  It also cleans up
+the code significantly as a side effect.
 
-I guess this could be solved in multiple ways.
-1. Disable 1G mode/auto negotiation, the other modes are probably fine (yeah, not a solution, but might give you a working ethernet link)
-2. Ensure the divider input allows to generate all required frequencies. This essentially means to go back into Xilinx tools and play around with the clock/PLL setup and re-generating a bootloader that sets things up with the updated values.
-3. Support to run-time-adust the PLLs in Zynq. This is definitely the most complex one. I never seriously pursued this, since it seemed close to impossible to change the PLLs at run-time without crashing pretty much every downstream user except for the one that requested the frequency change. And even if every driver would be able to handle such a change, I could imagine that frequency constraints from  all the drivers together would still prevent any change.
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+---
+ drivers/scsi/device_handler/scsi_dh.c       | 31 ++++++++++++++++++++---------
+ drivers/scsi/device_handler/scsi_dh_alua.c  |  4 ----
+ drivers/scsi/device_handler/scsi_dh_emc.c   |  4 ----
+ drivers/scsi/device_handler/scsi_dh_hp_sw.c |  4 ----
+ drivers/scsi/device_handler/scsi_dh_rdac.c  |  4 ----
+ 5 files changed, 22 insertions(+), 25 deletions(-)
 
-        Thanks,
-        Sören
-
-________________________________________
-From: devicetree-owner@vger.kernel.org [devicetree-owner@vger.kernel.org] on behalf of Olof Johansson [olof@lixom.net]
-Sent: Friday, October 17, 2014 9:28 PM
-To: Andreas Färber
-Cc: Michal Simek; Andreas Olofsson; Matteo Vit; Sean Rickerd; devicetree@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org; Punnaiah Choudary Kalluri; Lars-Peter Clausen
-Subject: Re: [PATCH v2 00/11] ARM: dts: zynq: Prepare Parallella
-
-Hi Andreas,
-
-On Thu, Jul 24, 2014 at 4:00 PM, Andreas Färber <afaerber@suse.de> wrote:
-> Hello,
->
-> This patch series adds an initial device tree for the Parallella board.
-> UART, SD card, Ethernet are enabled.
-> Not yet enabled are HDMI, QSPI flash and 2x USB.
-
-Andreas (Olofsson) kindly sent me a board, and I added it to the boot
-farm today, it'll be included in boot reports from here on.
-
-I did a test run with yesterday's -next It looks like networking isn't
-working there at the moment, clock related. Same happens with 3.17 and
-latest mainline, config multi_v7_defconfig:
-
-[WARN] [    7.943648] macb e000b000.ethernet eth0: unable to generate
-target frequency: 125000000 Hz
-[WARN] [   10.948681] macb e000b000.ethernet eth0: unable to generate
-target frequency: 125000000 Hz
-
-Full boot log at:
-
-http://arm-soc.lixom.net/bootlogs/misc/next-20141017/parallella-arm-multi_v7_defconfig.html
-
-I'll be happy to try things, but I'm a bit short on cycles to debug
-myself. Should hopefully be easy to reproduce.
-
-
--Olof
---
-To unsubscribe from this list: send the line "unsubscribe devicetree" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
+diff --git a/drivers/scsi/device_handler/scsi_dh.c b/drivers/scsi/device_handler/scsi_dh.c
+index 33e422e..1a8dbf3 100644
+--- a/drivers/scsi/device_handler/scsi_dh.c
++++ b/drivers/scsi/device_handler/scsi_dh.c
+@@ -102,23 +102,36 @@ static int scsi_dh_handler_attach(struct scsi_device *sdev,
+ 
+ 	if (sdev->scsi_dh_data) {
+ 		if (sdev->scsi_dh_data->scsi_dh != scsi_dh)
+-			err = -EBUSY;
+-		else
+-			kref_get(&sdev->scsi_dh_data->kref);
+-	} else if (scsi_dh->attach) {
++			return -EBUSY;
++
++		kref_get(&sdev->scsi_dh_data->kref);
++		return 0;
++	}
++
++	if (scsi_dh->attach) {
++		if (!try_module_get(scsi_dh->module))
++			return -EINVAL;
++
+ 		err = scsi_dh->attach(sdev);
+-		if (!err) {
+-			kref_init(&sdev->scsi_dh_data->kref);
+-			sdev->scsi_dh_data->sdev = sdev;
++		if (err) {
++			module_put(scsi_dh->module);
++			return err;
+ 		}
++
++		kref_init(&sdev->scsi_dh_data->kref);
++		sdev->scsi_dh_data->sdev = sdev;
+ 	}
+ 	return err;
+ }
+ 
+ static void __detach_handler (struct kref *kref)
+ {
+-	struct scsi_dh_data *scsi_dh_data = container_of(kref, struct scsi_dh_data, kref);
+-	scsi_dh_data->scsi_dh->detach(scsi_dh_data->sdev);
++	struct scsi_dh_data *scsi_dh_data =
++		container_of(kref, struct scsi_dh_data, kref);
++	struct scsi_device_handler *scsi_dh = scsi_dh_data->scsi_dh;
++
++	scsi_dh->detach(scsi_dh_data->sdev);
++	module_put(scsi_dh->module);
+ }
+ 
+ /*
+diff --git a/drivers/scsi/device_handler/scsi_dh_alua.c b/drivers/scsi/device_handler/scsi_dh_alua.c
+index e99507e..45b1795 100644
+--- a/drivers/scsi/device_handler/scsi_dh_alua.c
++++ b/drivers/scsi/device_handler/scsi_dh_alua.c
+@@ -866,9 +866,6 @@ static int alua_bus_attach(struct scsi_device *sdev)
+ 	if ((err != SCSI_DH_OK) && (err != SCSI_DH_DEV_OFFLINED))
+ 		goto failed;
+ 
+-	if (!try_module_get(THIS_MODULE))
+-		goto failed;
+-
+ 	spin_lock_irqsave(sdev->request_queue->queue_lock, flags);
+ 	sdev->scsi_dh_data = scsi_dh_data;
+ 	spin_unlock_irqrestore(sdev->request_queue->queue_lock, flags);
+@@ -901,7 +898,6 @@ static void alua_bus_detach(struct scsi_device *sdev)
+ 	if (h->buff && h->inq != h->buff)
+ 		kfree(h->buff);
+ 	kfree(scsi_dh_data);
+-	module_put(THIS_MODULE);
+ 	sdev_printk(KERN_NOTICE, sdev, "%s: Detached\n", ALUA_DH_NAME);
+ }
+ 
+diff --git a/drivers/scsi/device_handler/scsi_dh_emc.c b/drivers/scsi/device_handler/scsi_dh_emc.c
+index 8476538..153b4c3 100644
+--- a/drivers/scsi/device_handler/scsi_dh_emc.c
++++ b/drivers/scsi/device_handler/scsi_dh_emc.c
+@@ -692,9 +692,6 @@ static int clariion_bus_attach(struct scsi_device *sdev)
+ 	if (err != SCSI_DH_OK)
+ 		goto failed;
+ 
+-	if (!try_module_get(THIS_MODULE))
+-		goto failed;
+-
+ 	spin_lock_irqsave(sdev->request_queue->queue_lock, flags);
+ 	sdev->scsi_dh_data = scsi_dh_data;
+ 	spin_unlock_irqrestore(sdev->request_queue->queue_lock, flags);
+@@ -728,7 +725,6 @@ static void clariion_bus_detach(struct scsi_device *sdev)
+ 		    CLARIION_NAME);
+ 
+ 	kfree(scsi_dh_data);
+-	module_put(THIS_MODULE);
+ }
+ 
+ static int __init clariion_init(void)
+diff --git a/drivers/scsi/device_handler/scsi_dh_hp_sw.c b/drivers/scsi/device_handler/scsi_dh_hp_sw.c
+index 4ee2759..367e6f5 100644
+--- a/drivers/scsi/device_handler/scsi_dh_hp_sw.c
++++ b/drivers/scsi/device_handler/scsi_dh_hp_sw.c
+@@ -377,9 +377,6 @@ static int hp_sw_bus_attach(struct scsi_device *sdev)
+ 	if (ret != SCSI_DH_OK || h->path_state == HP_SW_PATH_UNINITIALIZED)
+ 		goto failed;
+ 
+-	if (!try_module_get(THIS_MODULE))
+-		goto failed;
+-
+ 	spin_lock_irqsave(sdev->request_queue->queue_lock, flags);
+ 	sdev->scsi_dh_data = scsi_dh_data;
+ 	spin_unlock_irqrestore(sdev->request_queue->queue_lock, flags);
+@@ -406,7 +403,6 @@ static void hp_sw_bus_detach( struct scsi_device *sdev )
+ 	scsi_dh_data = sdev->scsi_dh_data;
+ 	sdev->scsi_dh_data = NULL;
+ 	spin_unlock_irqrestore(sdev->request_queue->queue_lock, flags);
+-	module_put(THIS_MODULE);
+ 
+ 	sdev_printk(KERN_NOTICE, sdev, "%s: Detached\n", HP_SW_NAME);
+ 
+diff --git a/drivers/scsi/device_handler/scsi_dh_rdac.c b/drivers/scsi/device_handler/scsi_dh_rdac.c
+index 1b5bc92..b850954 100644
+--- a/drivers/scsi/device_handler/scsi_dh_rdac.c
++++ b/drivers/scsi/device_handler/scsi_dh_rdac.c
+@@ -878,9 +878,6 @@ static int rdac_bus_attach(struct scsi_device *sdev)
+ 	if (err != SCSI_DH_OK)
+ 		goto clean_ctlr;
+ 
+-	if (!try_module_get(THIS_MODULE))
+-		goto clean_ctlr;
+-
+ 	spin_lock_irqsave(sdev->request_queue->queue_lock, flags);
+ 	sdev->scsi_dh_data = scsi_dh_data;
+ 	spin_unlock_irqrestore(sdev->request_queue->queue_lock, flags);
+@@ -924,7 +921,6 @@ static void rdac_bus_detach( struct scsi_device *sdev )
+ 		kref_put(&h->ctlr->kref, release_controller);
+ 	spin_unlock(&list_lock);
+ 	kfree(scsi_dh_data);
+-	module_put(THIS_MODULE);
+ 	sdev_printk(KERN_NOTICE, sdev, "%s: Detached\n", RDAC_NAME);
+ }
+ 
+-- 
+1.9.1
 
