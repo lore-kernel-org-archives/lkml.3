@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751949AbaJSSEf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 14:04:35 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:44887 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751490AbaJSSEd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 14:04:33 -0400
-From: Stefan Hengelein <stefan.hengelein@fau.de>
-To: linux-mips@linux-mips.org
-Cc: linux-kernel@vger.kernel.org, ralf@linux-mips.org,
-        Stefan Hengelein <stefan.hengelein@fau.de>
-Subject: [PATCH] MIPS: MSP71xx: remove compilation error
-Date: Sun, 19 Oct 2014 20:04:26 +0200
-Message-Id: <1413741866-48496-1-git-send-email-stefan.hengelein@fau.de>
-X-Mailer: git-send-email 1.9.1
+	id S1751920AbaJSSIl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 14:08:41 -0400
+Received: from mout.gmx.net ([212.227.15.18]:64317 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751495AbaJSSIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Oct 2014 14:08:38 -0400
+Message-ID: <5443FD47.7040003@gmx.at>
+Date: Sun, 19 Oct 2014 20:04:55 +0200
+From: Manfred Schlaegl <manfred.schlaegl@gmx.at>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Icedove/24.8.1
 MIME-Version: 1.0
+To: "David S. Miller" <davem@davemloft.net>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Manfred Schlaegl <manfred.schlaegl@ginzinger.com>
+Subject: [PATCH] ipv6: tcp_v6_iff: fix compilation error on CONFIG_IPV6=n
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:9wAcTJmfUgTuqr4/y2Mu6K8uIrXVJjtXPaYkkf1lEKP/4svIVMX
+ /JtvdSU+4vxnro1J86D1EkEGxJLOq4SmZ9JsWUCRsyzmvysMGmuTYuQ7gHj6+7KMycqvjW6
+ jJoHY1HkgthItVLmmnhu4Q2yuUFEXNN9QQV8Hi78l81RGa5C562jgyxW065HnC8VBoZZPrj
+ 9eiONjRQ92OedbnPeP71Q==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When CONFIG_MIPS_MT_SMP is enabled, the following compilation error
-occurs:
+If CONFIG_IPV6=n, then h6 in struct tcp_skb_cb.header is missing which
+leads to compilation-errors on tcp_v6_iff like:
 
-arch/mips/pmcs-msp71xx/msp_irq_cic.c:134: error: ‘irq’ undeclared
+In file included from net/core/sock.c:140:0:
+include/net/tcp.h: In function ‘tcp_v6_iif’:
+include/net/tcp.h:738:32: error: ‘union <anonymous>’ has no member named
+‘h6’
 
-This code clearly never saw a compiler.
-The surrounding code suggests, that 'd->irq' was intended, not
-'irq'.
+This fix solves the problem by removing tcp_v6_iif, in case of
+CONFIG_IPV6=n.
 
-This error was found with vampyr.
-
-Signed-off-by: Stefan Hengelein <stefan.hengelein@fau.de>
+Signed-off-by: Manfred Schlaegl <manfred.schlaegl@gmx.at>
 ---
- arch/mips/pmcs-msp71xx/msp_irq_cic.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/net/tcp.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/mips/pmcs-msp71xx/msp_irq_cic.c b/arch/mips/pmcs-msp71xx/msp_irq_cic.c
-index b8df2f7..1207ec4 100644
---- a/arch/mips/pmcs-msp71xx/msp_irq_cic.c
-+++ b/arch/mips/pmcs-msp71xx/msp_irq_cic.c
-@@ -131,11 +131,11 @@ static int msp_cic_irq_set_affinity(struct irq_data *d,
- 	int cpu;
- 	unsigned long flags;
- 	unsigned int  mtflags;
--	unsigned long imask = (1 << (irq - MSP_CIC_INTBASE));
-+	unsigned long imask = (1 << (d->irq - MSP_CIC_INTBASE));
- 	volatile u32 *cic_mask = (volatile u32 *)CIC_VPE0_MSK_REG;
- 
- 	/* timer balancing should be disabled in kernel code */
--	BUG_ON(irq == MSP_INT_VPE0_TIMER || irq == MSP_INT_VPE1_TIMER);
-+	BUG_ON(d->irq == MSP_INT_VPE0_TIMER || d->irq == MSP_INT_VPE1_TIMER);
- 
- 	LOCK_CORE(flags, mtflags);
- 	/* enable if any of each VPE's TCs require this IRQ */
+diff --git a/include/net/tcp.h b/include/net/tcp.h
+index c9766f8..4062b4f 100644
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -730,6 +730,7 @@ struct tcp_skb_cb {
+ #define TCP_SKB_CB(__skb)      ((struct tcp_skb_cb *)&((__skb)->cb[0]))
+
+
++#if IS_ENABLED(CONFIG_IPV6)
+ /* This is the variant of inet6_iif() that must be used by TCP,
+  * as TCP moves IP6CB into a different location in skb->cb[]
+  */
+@@ -737,6 +738,7 @@ static inline int tcp_v6_iif(const struct sk_buff *skb)
+ {
+        return TCP_SKB_CB(skb)->header.h6.iif;
+ }
++#endif
+
+ /* Due to TSO, an SKB can be composed of multiple actual
+  * packets.  To keep these tracked properly, we use this.
 -- 
-1.9.1
+1.7.10.4
 
