@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752407AbaJSWGp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 18:06:45 -0400
-Received: from mga11.intel.com ([192.55.52.93]:48491 "EHLO mga11.intel.com"
+	id S1752102AbaJSWFh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 18:05:37 -0400
+Received: from mga11.intel.com ([192.55.52.93]:9411 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752127AbaJSWFj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 18:05:39 -0400
+	id S1752031AbaJSWFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Oct 2014 18:05:34 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="402644519"
+   d="scan'208";a="402644464"
 From: Kan Liang <kan.liang@intel.com>
 To: a.p.zijlstra@chello.nl, eranian@google.com
 Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
         acme@kernel.org, jolsa@redhat.com, ak@linux.intel.com,
-        Kan Liang <kan.liang@intel.com>
-Subject: [PATCH V6 17/17] perf tools: choose to dump callchain from LBR and FP
-Date: Sun, 19 Oct 2014 17:55:12 -0400
-Message-Id: <1413755712-8259-18-git-send-email-kan.liang@intel.com>
+        Kan Liang <kan.liang@intel.com>, "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: [PATCH V6 04/17] perf, x86: Basic Haswell LBR call stack support
+Date: Sun, 19 Oct 2014 17:54:59 -0400
+Message-Id: <1413755712-8259-5-git-send-email-kan.liang@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1413755712-8259-1-git-send-email-kan.liang@intel.com>
 References: <1413755712-8259-1-git-send-email-kan.liang@intel.com>
@@ -24,405 +24,246 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Extend call-graph option in perf report to support callchain source (fp
-or lbr).
-The default value is fp. It means that frame pointers is preferred call
-chain source. If it isn't available, lbr data will be used then.
-If the value is set to lbr, it means lbr data is preferred call chain
-source. If lbr data isn't available, try fp data then.
+Haswell has a new feature that utilizes the existing LBR facility to
+record call chains. To enable this feature, bits (JCC, NEAR_IND_JMP,
+NEAR_REL_JMP, FAR_BRANCH, EN_CALLSTACK) in LBR_SELECT must be set to 1,
+bits (NEAR_REL_CALL, NEAR-IND_CALL, NEAR_RET) must be cleared. Due to
+a hardware bug of Haswell, this feature doesn't work well with
+FREEZE_LBRS_ON_PMI.
 
+When the call stack feature is enabled, the LBR stack will capture
+unfiltered call data normally, but as return instructions are executed,
+the last captured branch record is flushed from the on-chip registers
+in a last-in first-out (LIFO) manner. Thus, branch information relative
+to leaf functions will not be captured, while preserving the call stack
+information of the main line execution path.
+
+This patch defines a separate lbr_sel map for Haswell. The map contains
+a new entry for the call stack feature.
+
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 Signed-off-by: Kan Liang <kan.liang@intel.com>
 ---
- tools/perf/builtin-report.c |   8 +-
- tools/perf/util/callchain.c |  18 +++-
- tools/perf/util/callchain.h |   6 ++
- tools/perf/util/machine.c   | 198 ++++++++++++++++++++++++++++++--------------
- tools/perf/util/session.c   |  34 +++++++-
- 5 files changed, 194 insertions(+), 70 deletions(-)
+ arch/x86/kernel/cpu/perf_event.h           | 14 ++++-
+ arch/x86/kernel/cpu/perf_event_intel.c     |  2 +-
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c | 91 ++++++++++++++++++++++--------
+ 3 files changed, 83 insertions(+), 24 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 140a6cd..23fad5a 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -575,7 +575,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	struct stat st;
- 	bool has_br_stack = false;
- 	int branch_mode = -1;
--	char callchain_default_opt[] = "fractal,0.5,callee";
-+	char callchain_default_opt[] = "fractal,0.5,callee,function,fp";
- 	const char * const report_usage[] = {
- 		"perf report [<options>]",
- 		NULL
-@@ -637,9 +637,9 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 		   "regex filter to identify parent, see: '--sort parent'"),
- 	OPT_BOOLEAN('x', "exclude-other", &symbol_conf.exclude_other,
- 		    "Only display entries with parent-match"),
--	OPT_CALLBACK_DEFAULT('g', "call-graph", &report, "output_type,min_percent[,print_limit],call_order",
--		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit, callchain order, key (function or address). "
--		     "Default: fractal,0.5,callee,function", &report_parse_callchain_opt, callchain_default_opt),
-+	OPT_CALLBACK_DEFAULT('g', "call-graph", &report, "output_type,min_percent[,print_limit],call_order,source",
-+		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit, callchain order, key (function or address), callchain source(fp or lbr). "
-+		     "Default: fractal,0.5,callee,function,fp", &report_parse_callchain_opt, callchain_default_opt),
- 	OPT_BOOLEAN(0, "children", &symbol_conf.cumulate_callchain,
- 		    "Accumulate callchains of children and show total overhead as well"),
- 	OPT_INTEGER(0, "max-stack", &report.max_stack,
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index c84d3f8..281ba14 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -152,6 +152,19 @@ static int parse_callchain_sort_key(const char *value)
- 	return -1;
- }
- 
-+static int parse_callchain_source(const char *value)
-+{
-+	if (!strncmp(value, "fp", strlen(value))) {
-+		callchain_param.source = SOURCE_FP;
-+		return 0;
-+	}
-+	if (!strncmp(value, "lbr", strlen(value))) {
-+		callchain_param.source = SOURCE_LBR;
-+		return 0;
-+	}
-+	return -1;
-+}
-+
- int
- parse_callchain_report_opt(const char *arg)
- {
-@@ -173,7 +186,8 @@ parse_callchain_report_opt(const char *arg)
- 
- 		if (!parse_callchain_mode(tok) ||
- 		    !parse_callchain_order(tok) ||
--		    !parse_callchain_sort_key(tok)) {
-+		    !parse_callchain_sort_key(tok) ||
-+		    !parse_callchain_source(tok)) {
- 			/* parsing ok - move on to the next */
- 		} else if (!minpcnt_set) {
- 			/* try to get the min percent */
-@@ -225,6 +239,8 @@ int perf_callchain_config(const char *var, const char *value)
- 		return parse_callchain_order(value);
- 	if (!strcmp(var, "sort-key"))
- 		return parse_callchain_sort_key(value);
-+	if (!strcmp(var, "source"))
-+		return parse_callchain_source(value);
- 	if (!strcmp(var, "threshold")) {
- 		callchain_param.min_percent = strtod(value, &endptr);
- 		if (value == endptr)
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index 94cfefd..6b3ba57 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -53,6 +53,11 @@ enum chain_key {
- 	CCKEY_ADDRESS
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index c84378b..21e03ed 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -512,7 +512,11 @@ struct x86_pmu {
  };
  
-+enum chain_source {
-+	SOURCE_FP,
-+	SOURCE_LBR
-+};
+ enum {
+-	PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE = PERF_SAMPLE_BRANCH_MAX_SHIFT,
++	PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT = PERF_SAMPLE_BRANCH_MAX_SHIFT,
++	PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE,
 +
- struct callchain_param {
- 	bool			enabled;
- 	enum perf_call_graph_mode record_mode;
-@@ -63,6 +68,7 @@ struct callchain_param {
- 	sort_chain_func_t	sort;
- 	enum chain_order	order;
- 	enum chain_key		key;
-+	enum chain_source	source;
++	PERF_SAMPLE_BRANCH_CALL_STACK =
++				1U << PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT,
  };
  
- extern struct callchain_param callchain_param;
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 34fc7c8..9fc5fd9 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -1371,19 +1371,81 @@ struct branch_info *sample__resolve_bstack(struct perf_sample *sample,
- 	return bi;
- }
+ #define x86_add_quirk(func_)						\
+@@ -546,6 +550,12 @@ static struct perf_pmu_events_attr event_attr_##v = {			\
  
-+static inline int __machine__resolve_callchain_sample(struct machine *machine,
-+			struct thread *thread,
-+			u64 ip,
-+			u8 *cpumode,
-+			struct symbol **parent,
-+			struct addr_location *root_al,
-+			struct addr_location *al)
+ extern struct x86_pmu x86_pmu __read_mostly;
+ 
++static inline bool x86_pmu_has_lbr_callstack(void)
 +{
-+	int err;
-+
-+	if (ip >= PERF_CONTEXT_MAX) {
-+		switch (ip) {
-+		case PERF_CONTEXT_HV:
-+			*cpumode = PERF_RECORD_MISC_HYPERVISOR;
-+			break;
-+		case PERF_CONTEXT_KERNEL:
-+			*cpumode = PERF_RECORD_MISC_KERNEL;
-+			break;
-+		case PERF_CONTEXT_USER:
-+			*cpumode = PERF_RECORD_MISC_USER;
-+			break;
-+		default:
-+			pr_debug("invalid callchain context: "
-+				 "%"PRId64"\n", (s64) ip);
-+			/*
-+			 * It seems the callchain is corrupted.
-+			 * Discard all.
-+			 */
-+			callchain_cursor_reset(&callchain_cursor);
-+			return 1;
-+		}
-+		return 0;
-+	}
-+
-+	al->filtered = 0;
-+	thread__find_addr_location(thread, machine, *cpumode,
-+				   MAP__FUNCTION, ip, al);
-+	if (al->sym != NULL) {
-+		if (sort__has_parent && !*parent &&
-+		    symbol__match_regex(al->sym, &parent_regex))
-+			*parent = al->sym;
-+		else if (have_ignore_callees && root_al &&
-+		  symbol__match_regex(al->sym, &ignore_callees_regex)) {
-+			/* Treat this symbol as the root,
-+			   forgetting its callees. */
-+			*root_al = *al;
-+			callchain_cursor_reset(&callchain_cursor);
-+		}
-+	}
-+
-+	err = callchain_cursor_append(&callchain_cursor,
-+				      ip, al->map, al->sym);
-+	if (err)
-+		return err;
-+	return 0;
++	return  x86_pmu.lbr_sel_map &&
++		x86_pmu.lbr_sel_map[PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT] > 0;
 +}
 +
- static int machine__resolve_callchain_sample(struct machine *machine,
- 					     struct thread *thread,
--					     struct ip_callchain *chain,
-+					     struct perf_sample *sample,
- 					     struct symbol **parent,
- 					     struct addr_location *root_al,
- 					     int max_stack)
- {
-+	struct ip_callchain *chain = sample->callchain;
- 	u8 cpumode = PERF_RECORD_MISC_USER;
- 	int chain_nr = min(max_stack, (int)chain->nr);
--	int i;
--	int j;
--	int err;
-+	int i, j, err;
- 	int skip_idx __maybe_unused;
-+	int use_fp = (callchain_param.source == SOURCE_FP) ? 1 : 0;
-+	u64 ip;
+ DECLARE_PER_CPU(struct cpu_hw_events, cpu_hw_events);
+ 
+ int x86_perf_event_set_period(struct perf_event *event);
+@@ -749,6 +759,8 @@ void intel_pmu_lbr_init_atom(void);
+ 
+ void intel_pmu_lbr_init_snb(void);
+ 
++void intel_pmu_lbr_init_hsw(void);
 +
-+	/* If there isn't user fp callchain available, try LBR */
-+	if (!(chain->source & PERF_FP_CALLCHAIN))
-+		use_fp = 0;
+ int intel_pmu_setup_lbr_filter(struct perf_event *event);
  
- 	callchain_cursor_reset(&callchain_cursor);
+ int p4_pmu_init(void);
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 38042e3..e8c690e 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -2683,7 +2683,7 @@ __init int intel_pmu_init(void)
+ 		memcpy(hw_cache_event_ids, hsw_hw_cache_event_ids, sizeof(hw_cache_event_ids));
+ 		memcpy(hw_cache_extra_regs, hsw_hw_cache_extra_regs, sizeof(hw_cache_extra_regs));
  
-@@ -1392,73 +1454,83 @@ static int machine__resolve_callchain_sample(struct machine *machine,
- 		return 0;
- 	}
+-		intel_pmu_lbr_init_snb();
++		intel_pmu_lbr_init_hsw();
  
--	/*
--	 * Based on DWARF debug information, some architectures skip
--	 * a callchain entry saved by the kernel.
--	 */
--	skip_idx = arch_skip_callchain_idx(machine, thread, chain);
+ 		x86_pmu.event_constraints = intel_hsw_event_constraints;
+ 		x86_pmu.pebs_constraints = intel_hsw_pebs_event_constraints;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index 18d13ca..e0ba9c0 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -39,6 +39,7 @@ static enum {
+ #define LBR_IND_JMP_BIT		6 /* do not capture indirect jumps */
+ #define LBR_REL_JMP_BIT		7 /* do not capture relative jumps */
+ #define LBR_FAR_BIT		8 /* do not capture far branches */
++#define LBR_CALL_STACK_BIT	9 /* enable call stack */
+ 
+ #define LBR_KERNEL	(1 << LBR_KERNEL_BIT)
+ #define LBR_USER	(1 << LBR_USER_BIT)
+@@ -49,6 +50,7 @@ static enum {
+ #define LBR_REL_JMP	(1 << LBR_REL_JMP_BIT)
+ #define LBR_IND_JMP	(1 << LBR_IND_JMP_BIT)
+ #define LBR_FAR		(1 << LBR_FAR_BIT)
++#define LBR_CALL_STACK	(1 << LBR_CALL_STACK_BIT)
+ 
+ #define LBR_PLM (LBR_KERNEL | LBR_USER)
+ 
+@@ -74,24 +76,25 @@ static enum {
+  * x86control flow changes include branches, interrupts, traps, faults
+  */
+ enum {
+-	X86_BR_NONE     = 0,      /* unknown */
 -
--	for (i = 0; i < chain_nr; i++) {
--		u64 ip;
--		struct addr_location al;
-+again:
-+	/* try LBR */
-+	if (!use_fp && (chain->source & PERF_LBR_CALLCHAIN)) {
-+		struct branch_stack *lbr_stack = sample->branch_stack;
-+		int lbr_nr = lbr_stack->nr;
-+		int mix_chain_nr;
- 
--		if (callchain_param.order == ORDER_CALLEE)
--			j = i;
--		else
--			j = chain->nr - i - 1;
-+		for (i = 0; i < chain_nr; i++) {
-+			if (chain->ips[i] == PERF_CONTEXT_USER)
-+				break;
-+		}
- 
--#ifdef HAVE_SKIP_CALLCHAIN_IDX
--		if (j == skip_idx)
--			continue;
--#endif
--		ip = chain->ips[j];
-+		/* LBR only affects the user callchain */
-+		if (i == chain_nr) {
-+			use_fp = 1;
-+			goto again;
-+		}
- 
--		if (ip >= PERF_CONTEXT_MAX) {
--			switch (ip) {
--			case PERF_CONTEXT_HV:
--				cpumode = PERF_RECORD_MISC_HYPERVISOR;
--				break;
--			case PERF_CONTEXT_KERNEL:
--				cpumode = PERF_RECORD_MISC_KERNEL;
--				break;
--			case PERF_CONTEXT_USER:
--				cpumode = PERF_RECORD_MISC_USER;
--				break;
--			default:
--				pr_debug("invalid callchain context: "
--					 "%"PRId64"\n", (s64) ip);
--				/*
--				 * It seems the callchain is corrupted.
--				 * Discard all.
--				 */
--				callchain_cursor_reset(&callchain_cursor);
--				return 0;
--			}
--			continue;
-+		mix_chain_nr = i + 2 + lbr_nr;
-+		if (mix_chain_nr > PERF_MAX_STACK_DEPTH) {
-+			pr_warning("corrupted callchain. skipping...\n");
-+			return 0;
- 		}
- 
--		al.filtered = 0;
--		thread__find_addr_location(thread, machine, cpumode,
--					   MAP__FUNCTION, ip, &al);
--		if (al.sym != NULL) {
--			if (sort__has_parent && !*parent &&
--			    symbol__match_regex(al.sym, &parent_regex))
--				*parent = al.sym;
--			else if (have_ignore_callees && root_al &&
--			  symbol__match_regex(al.sym, &ignore_callees_regex)) {
--				/* Treat this symbol as the root,
--				   forgetting its callees. */
--				*root_al = al;
--				callchain_cursor_reset(&callchain_cursor);
-+		for (j = 0; j < mix_chain_nr; j++) {
-+			struct addr_location al;
+-	X86_BR_USER     = 1 << 0, /* branch target is user */
+-	X86_BR_KERNEL   = 1 << 1, /* branch target is kernel */
+-
+-	X86_BR_CALL     = 1 << 2, /* call */
+-	X86_BR_RET      = 1 << 3, /* return */
+-	X86_BR_SYSCALL  = 1 << 4, /* syscall */
+-	X86_BR_SYSRET   = 1 << 5, /* syscall return */
+-	X86_BR_INT      = 1 << 6, /* sw interrupt */
+-	X86_BR_IRET     = 1 << 7, /* return from interrupt */
+-	X86_BR_JCC      = 1 << 8, /* conditional */
+-	X86_BR_JMP      = 1 << 9, /* jump */
+-	X86_BR_IRQ      = 1 << 10,/* hw interrupt or trap or fault */
+-	X86_BR_IND_CALL = 1 << 11,/* indirect calls */
+-	X86_BR_ABORT    = 1 << 12,/* transaction abort */
+-	X86_BR_IN_TX    = 1 << 13,/* in transaction */
+-	X86_BR_NO_TX    = 1 << 14,/* not in transaction */
++	X86_BR_NONE		= 0,      /* unknown */
 +
-+			if (callchain_param.order == ORDER_CALLEE) {
-+				if (j < i + 2)
-+					ip = chain->ips[j];
-+				else
-+					ip = lbr_stack->entries[j - i - 2].from;
-+			} else {
-+				if (j < lbr_nr)
-+					ip = lbr_stack->entries[lbr_nr - j - 1].from;
-+				else
-+					ip = chain->ips[i + 1 - (j - lbr_nr)];
- 			}
-+			err = __machine__resolve_callchain_sample(machine,
-+				thread, ip, &cpumode, parent, root_al, &al);
-+			/* Discard all when the callchain is corrupted */
-+			if (err > 0)
-+				return 0;
-+			else if (err)
-+				return err;
- 		}
-+	} else {
++	X86_BR_USER		= 1 << 0, /* branch target is user */
++	X86_BR_KERNEL		= 1 << 1, /* branch target is kernel */
++
++	X86_BR_CALL		= 1 << 2, /* call */
++	X86_BR_RET		= 1 << 3, /* return */
++	X86_BR_SYSCALL		= 1 << 4, /* syscall */
++	X86_BR_SYSRET		= 1 << 5, /* syscall return */
++	X86_BR_INT		= 1 << 6, /* sw interrupt */
++	X86_BR_IRET		= 1 << 7, /* return from interrupt */
++	X86_BR_JCC		= 1 << 8, /* conditional */
++	X86_BR_JMP		= 1 << 9, /* jump */
++	X86_BR_IRQ		= 1 << 10,/* hw interrupt or trap or fault */
++	X86_BR_IND_CALL		= 1 << 11,/* indirect calls */
++	X86_BR_ABORT		= 1 << 12,/* transaction abort */
++	X86_BR_IN_TX		= 1 << 13,/* in transaction */
++	X86_BR_NO_TX		= 1 << 14,/* not in transaction */
++	X86_BR_CALL_STACK	= 1 << 15,/* call stack */
+ };
  
--		err = callchain_cursor_append(&callchain_cursor,
--					      ip, al.map, al.sym);
--		if (err)
--			return err;
--	}
-+		/*
-+		 * Based on DWARF debug information, some architectures skip
-+		 * a callchain entry saved by the kernel.
-+		 */
-+		skip_idx = arch_skip_callchain_idx(machine, thread, chain);
-+
-+		for (i = 0; i < chain_nr; i++) {
-+			struct addr_location al;
-+
-+			if (callchain_param.order == ORDER_CALLEE)
-+				j = i;
-+			else
-+				j = chain->nr - i - 1;
-+
-+#ifdef HAVE_SKIP_CALLCHAIN_IDX
-+			if (j == skip_idx)
-+				continue;
-+#endif
-+			ip = chain->ips[j];
-+			err = __machine__resolve_callchain_sample(machine,
-+				thread, ip, &cpumode, parent, root_al, &al);
+ #define X86_BR_PLM (X86_BR_USER | X86_BR_KERNEL)
+@@ -371,7 +374,7 @@ void intel_pmu_lbr_read(void)
+  * - in case there is no HW filter
+  * - in case the HW filter has errata or limitations
+  */
+-static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
++static int intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
+ {
+ 	u64 br_type = event->attr.branch_sample_type;
+ 	int mask = 0;
+@@ -408,11 +411,21 @@ static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
+ 	if (br_type & PERF_SAMPLE_BRANCH_COND)
+ 		mask |= X86_BR_JCC;
  
-+			/* Discard all when the callchain is corrupted */
-+			if (err > 0)
-+				return 0;
-+			else if (err)
-+				return err;
-+		}
++	if (br_type & PERF_SAMPLE_BRANCH_CALL_STACK) {
++		if (!x86_pmu_has_lbr_callstack())
++			return -EOPNOTSUPP;
++		if (mask & ~(X86_BR_USER | X86_BR_KERNEL))
++			return -EINVAL;
++		mask |= X86_BR_CALL | X86_BR_IND_CALL | X86_BR_RET |
++			X86_BR_CALL_STACK;
 +	}
++
+ 	/*
+ 	 * stash actual user request into reg, it may
+ 	 * be used by fixup code for some CPU
+ 	 */
+ 	event->hw.branch_reg.reg = mask;
++	return 0;
+ }
+ 
+ /*
+@@ -441,8 +454,12 @@ static int intel_pmu_setup_hw_lbr_filter(struct perf_event *event)
+ 	reg = &event->hw.branch_reg;
+ 	reg->idx = EXTRA_REG_LBR;
+ 
+-	/* LBR_SELECT operates in suppress mode so invert mask */
+-	reg->config = ~mask & x86_pmu.lbr_sel_mask;
++	/*
++	 * The first 9 bits (LBR_SEL_MASK) in LBR_SELECT operate
++	 * in suppress mode. So LBR_SELECT should be set to
++	 * (~mask & LBR_SEL_MASK) | (mask & ~LBR_SEL_MASK)
++	 */
++	reg->config = mask ^ x86_pmu.lbr_sel_mask;
+ 
  	return 0;
  }
+@@ -460,7 +477,9 @@ int intel_pmu_setup_lbr_filter(struct perf_event *event)
+ 	/*
+ 	 * setup SW LBR filter
+ 	 */
+-	intel_pmu_setup_sw_lbr_filter(event);
++	ret = intel_pmu_setup_sw_lbr_filter(event);
++	if (ret)
++		return ret;
  
-@@ -1480,7 +1552,7 @@ int machine__resolve_callchain(struct machine *machine,
- 	int ret;
+ 	/*
+ 	 * setup HW LBR filter, if any
+@@ -717,6 +736,20 @@ static const int snb_lbr_sel_map[PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE] = {
+ 	[PERF_SAMPLE_BRANCH_COND_SHIFT]		= LBR_JCC,
+ };
  
- 	ret = machine__resolve_callchain_sample(machine, thread,
--						sample->callchain, parent,
-+						sample, parent,
- 						root_al, max_stack);
- 	if (ret)
- 		return ret;
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 6702ac2..75fa183 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -548,12 +548,42 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
- static void callchain__printf(struct perf_sample *sample)
++static const int hsw_lbr_sel_map[PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE] = {
++	[PERF_SAMPLE_BRANCH_ANY_SHIFT]		= LBR_ANY,
++	[PERF_SAMPLE_BRANCH_USER_SHIFT]		= LBR_USER,
++	[PERF_SAMPLE_BRANCH_KERNEL_SHIFT]	= LBR_KERNEL,
++	[PERF_SAMPLE_BRANCH_HV_SHIFT]		= LBR_IGN,
++	[PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT]	= LBR_RETURN | LBR_FAR,
++	[PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT]	= LBR_REL_CALL | LBR_IND_CALL
++						| LBR_FAR,
++	[PERF_SAMPLE_BRANCH_IND_CALL_SHIFT]	= LBR_IND_CALL,
++	[PERF_SAMPLE_BRANCH_COND_SHIFT]		= LBR_JCC,
++	[PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT]	= LBR_REL_CALL | LBR_IND_CALL
++						| LBR_RETURN | LBR_CALL_STACK,
++};
++
+ /* core */
+ void __init intel_pmu_lbr_init_core(void)
  {
- 	unsigned int i;
-+	u64 total_nr, callchain_nr;
-+	int use_fp = (callchain_param.source == SOURCE_FP) ? 1 : 0;
- 
--	printf("... chain: nr:%" PRIu64 "\n", sample->callchain->nr);
-+	total_nr = callchain_nr = sample->callchain->nr;
- 
--	for (i = 0; i < sample->callchain->nr; i++)
-+	/* If there isn't user fp callchain available, try LBR */
-+	if (!(sample->callchain->source & PERF_FP_CALLCHAIN))
-+		use_fp = 0;
-+
-+	if (!use_fp && (sample->callchain->source & PERF_LBR_CALLCHAIN)) {
-+		struct branch_stack *lbr_stack = sample->branch_stack;
-+
-+		for (i = 0; i < callchain_nr; i++) {
-+			if (sample->callchain->ips[i] == PERF_CONTEXT_USER)
-+				break;
-+		}
-+
-+		if (i != callchain_nr) {
-+			total_nr = i + 1 + lbr_stack->nr;
-+			callchain_nr = i + 1;
-+		}
-+	}
-+
-+	printf("... chain: nr:%" PRIu64 "\n", total_nr);
-+
-+	for (i = 0; i < callchain_nr + 1; i++)
- 		printf("..... %2d: %016" PRIx64 "\n",
- 		       i, sample->callchain->ips[i]);
-+
-+	if (total_nr > callchain_nr) {
-+		struct branch_stack *lbr_stack = sample->branch_stack;
-+
-+		for (i = 0; i < lbr_stack->nr; i++)
-+			printf("..... %2d: %016" PRIx64 "\n",
-+				(int)(i + callchain_nr + 1), lbr_stack->entries[i].from);
-+	}
+@@ -773,6 +806,20 @@ void __init intel_pmu_lbr_init_snb(void)
+ 	pr_cont("16-deep LBR, ");
  }
  
- static void branch_stack__printf(struct perf_sample *sample)
++/* haswell */
++void intel_pmu_lbr_init_hsw(void)
++{
++	x86_pmu.lbr_nr	 = 16;
++	x86_pmu.lbr_tos	 = MSR_LBR_TOS;
++	x86_pmu.lbr_from = MSR_LBR_NHM_FROM;
++	x86_pmu.lbr_to   = MSR_LBR_NHM_TO;
++
++	x86_pmu.lbr_sel_mask = LBR_SEL_MASK;
++	x86_pmu.lbr_sel_map  = hsw_lbr_sel_map;
++
++	pr_cont("16-deep LBR, ");
++}
++
+ /* atom */
+ void __init intel_pmu_lbr_init_atom(void)
+ {
 -- 
 1.8.3.2
 
