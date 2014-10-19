@@ -1,88 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751654AbaJSJux (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 05:50:53 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59957 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751123AbaJSJut (ORCPT
+	id S1751723AbaJSJyp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 05:54:45 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:37706 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751580AbaJSJyn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 05:50:49 -0400
-Date: Sun, 19 Oct 2014 02:49:21 -0700
-From: tip-bot for Ingo Molnar <tipbot@zytor.com>
-Message-ID: <tip-db6a00b4bed3abbb038077ba4fdc5be481fe5559@git.kernel.org>
-Cc: prarit@redhat.com, mingo@kernel.org, tianyu.lan@intel.com,
-        peterz@infradead.org, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, bp@suse.de, tglx@linutronix.de,
-        hpa@zytor.com
-Reply-To: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        hpa@zytor.com, tglx@linutronix.de, bp@suse.de, tianyu.lan@intel.com,
-        prarit@redhat.com, mingo@kernel.org, peterz@infradead.org
-In-Reply-To: <1409039025-32310-1-git-send-email-tianyu.lan@intel.com>
-References: <1409039025-32310-1-git-send-email-tianyu.lan@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/smpboot:
-  Move data structure to its primary usage scope
-Git-Commit-ID: db6a00b4bed3abbb038077ba4fdc5be481fe5559
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sun, 19 Oct 2014 05:54:43 -0400
+Date: Sun, 19 Oct 2014 10:54:16 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Greg KH <greg@kroah.com>
+Cc: Rik van Riel <riel@redhat.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "'Nathan Lynch'" <Nathan_Lynch@mentor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>,
+        "josh@joshtriplett.org" <josh@joshtriplett.org>,
+        Rabin Vincent <rabin@rab.in>, David Laight <David.Laight@ACULAB.COM>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: RCU bug with v3.17-rc3 ?
+Message-ID: <20141019095416.GT12379@n2100.arm.linux.org.uk>
+References: <20141009204637.GE25729@saruman> <20141009210715.GH25729@saruman> <20141010135743.GB31348@saruman> <20141010162531.GL12379@n2100.arm.linux.org.uk> <54388B81.5020306@mentor.com> <063D6719AE5E284EB5DD2968C1650D6D174C996E@AcuExch.aculab.com> <20141013114307.GO12379@n2100.arm.linux.org.uk> <20141014020640.GB25433@kroah.com> <20141015212310.GP12379@n2100.arm.linux.org.uk> <20141015212513.GA3247@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20141015212513.GA3247@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  db6a00b4bed3abbb038077ba4fdc5be481fe5559
-Gitweb:     http://git.kernel.org/tip/db6a00b4bed3abbb038077ba4fdc5be481fe5559
-Author:     Ingo Molnar <mingo@kernel.org>
-AuthorDate: Sun, 19 Oct 2014 11:41:52 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sun, 19 Oct 2014 11:44:49 +0200
+On Wed, Oct 15, 2014 at 10:25:13PM +0100, Russell King - ARM Linux wrote:
+> On Wed, Oct 15, 2014 at 10:23:10PM +0100, Russell King - ARM Linux wrote:
+> > As I said, I have a patch in progress, but it seems that there needed
+> > to be some discussion about exactly which compiler versions are affected.
+> > It seems that it's not as trivial as looking at the GCC bug entry.
+> 
+> ... and in any case, it has been a known bug for well over a year now,
+> and it seems that it doesn't affect _that_ many people.  So taking some
+> extra time to get it properly correct is the _right_ thing to do.
 
-x86/smpboot: Move data structure to its primary usage scope
+Well, this is just great.  Pushing out the change which blacklists these
+compilers takes out Olof's kernel build system...
 
-Makes the code more readable by moving variable and usage closer
-to each other, which also avoids this build warning in the
-!CONFIG_HOTPLUG_CPU case:
+Things are not as trivial as they seem.
 
-  arch/x86/kernel/smpboot.c:105:42: warning: ‘die_complete’ defined but not used [-Wunused-variable]
-
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Lan Tianyu <tianyu.lan@intel.com>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: srostedt@redhat.com
-Cc: toshi.kani@hp.com
-Cc: imammedo@redhat.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1409039025-32310-1-git-send-email-tianyu.lan@intel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/smpboot.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 2d5200e..4d2128a 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -102,8 +102,6 @@ DEFINE_PER_CPU_READ_MOSTLY(cpumask_var_t, cpu_llc_shared_map);
- DEFINE_PER_CPU_SHARED_ALIGNED(struct cpuinfo_x86, cpu_info);
- EXPORT_PER_CPU_SYMBOL(cpu_info);
- 
--static DEFINE_PER_CPU(struct completion, die_complete);
--
- atomic_t init_deasserted;
- 
- /*
-@@ -1318,6 +1316,8 @@ void cpu_disable_common(void)
- 	fixup_irqs();
- }
- 
-+static DEFINE_PER_CPU(struct completion, die_complete);
-+
- int native_cpu_disable(void)
- {
- 	int ret;
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
