@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751732AbaJSCP7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Oct 2014 22:15:59 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:44965 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751632AbaJSCP6 (ORCPT
+	id S1751815AbaJSCQg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Oct 2014 22:16:36 -0400
+Received: from homie.mail.dreamhost.com ([208.97.132.208]:35121 "EHLO
+	homiemail-a62.g.dreamhost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751757AbaJSCQf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Oct 2014 22:15:58 -0400
-Date: Sun, 19 Oct 2014 04:15:54 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: David Miller <davem@davemloft.net>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT] Networking
-Message-ID: <20141019021554.GD22068@x4>
-References: <20141018.001844.1317443518545745039.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141018.001844.1317443518545745039.davem@davemloft.net>
+	Sat, 18 Oct 2014 22:16:35 -0400
+Message-ID: <1413684978.17869.18.camel@linux-t7sj.site>
+Subject: Re: [PATCH] futex: Ensure get_futex_key_refs() always implies a
+ barrier
+From: Davidlohr Bueso <dave@stgolabs.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Matteo Franchin <Matteo.Franchin@arm.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>
+Date: Sat, 18 Oct 2014 19:16:18 -0700
+In-Reply-To: <CA+55aFzmsF4F-SOO4OzZDbreaQ4X4RUCQksv_ONu59BbyZ8Ocg@mail.gmail.com>
+References: <1413563929-2664-1-git-send-email-catalin.marinas@arm.com>
+	 <1413617580.29249.9.camel@linux-t7sj.site>
+	 <1413662314.17869.11.camel@linux-t7sj.site>
+	 <CA+55aFzmsF4F-SOO4OzZDbreaQ4X4RUCQksv_ONu59BbyZ8Ocg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014.10.18 at 00:18 -0400, David Miller wrote:
+On Sat, 2014-10-18 at 13:50 -0700, Linus Torvalds wrote:
+> On Sat, Oct 18, 2014 at 12:58 PM, Davidlohr Bueso <dave@stgolabs.net> wrote:
+> >
+> > And [get/put]_futex_keys() shouldn't even be called for private futexes.
+> > The following patch had some very minor testing on a 60 core box last
+> > night, but passes both Darren's and perf's tests. So I *think* this is
+> > right, but lack of sleep and I overall just don't trust them futexes!
 > 
-> Please pull, thanks a lot.
+> Hmm. I don't see the advantage of making the code more complex in
+> order to avoid the functions that are no-ops for the !fshared case?
+> 
+> IOW, as far as I can tell, this patch doesn't actually really *change*
+> anything. Am I missing something?
 
-In file included from net/core/sock.c:140:0:
-include/net/tcp.h: In function ‘tcp_v6_iif’:
-include/net/tcp.h:738:32: error: ‘union <anonymous>’ has no member named ‘h6’
-  return TCP_SKB_CB(skb)->header.h6.iif;
-                                ^
-scripts/Makefile.build:257: recipe for target 'net/core/sock.o' failed
-make[2]: *** [net/core/sock.o] Error 1
-scripts/Makefile.build:402: recipe for target 'net/core' failed
-make[1]: *** [net/core] Error 2
-Makefile:936: recipe for target 'net' failed
-make: *** [net] Error 2
+Right, all we do is avoid a NOP, but I don't see how this patch makes
+the code more complex. In fact, the whole idea is to make it easier to
+read and makes the key referencing differences between shared and
+private futexes crystal clear, hoping to mitigate future bugs. 
 
- │ Symbol: IPV6 [=n]                                                                                                                                                       │
- │ Type  : tristate                                                                                                                                                        │
- │ Prompt: The IPv6 protocol                                                                                                                                               │
- │   Location:                                                                                                                                                             │
- │     -> Networking support (NET [=y])                                                                                                                                    │
- │       -> Networking options                                                                                                                                             │
- │         -> TCP/IP networking (INET [=y])                                                                                                                                │
- │   Defined at net/ipv6/Kconfig:6                                                                                                                                         │
- │   Depends on: NET [=y] && INET [=y]
+Thanks,
+Davidlohr
 
--- 
-Markus
