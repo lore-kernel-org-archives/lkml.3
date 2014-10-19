@@ -1,70 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751998AbaJSN55 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 09:57:57 -0400
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:47280 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751916AbaJSN5y (ORCPT
+	id S1752009AbaJSONB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 10:13:01 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:54453 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916AbaJSOM7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 09:57:54 -0400
-X-IronPort-AV: E=Sophos;i="5.04,749,1406617200"; 
-   d="scan'208";a="48584596"
-Message-ID: <5443C357.6050309@broadcom.com>
-Date: Sun, 19 Oct 2014 15:57:43 +0200
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Sun, 19 Oct 2014 10:12:59 -0400
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] debugfs: add helper function to create device related
- seq_file
-References: <1413043315-22332-1-git-send-email-arend@broadcom.com> <20141011201723.GA29439@kroah.com> <543A382F.5060608@broadcom.com>
-In-Reply-To: <543A382F.5060608@broadcom.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+Date: Sun, 19 Oct 2014 14:12:57 +0000
+Message-ID: <CALtyatHuhsZiVN6aeFDc8ZpDSbA_V1aAxgrHXnk+9nb2nxxmDg@mail.gmail.com>
+Subject: Debian("FOSS") all about "women in tech" now, and systemd.
+From: Gregory Smith <gregorysmith1974a@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-10-14 10:13, Arend van Spriel wrote:
-> On 11-10-14 22:17, Greg Kroah-Hartman wrote:
->> On Sat, Oct 11, 2014 at 06:01:55PM +0200, Arend van Spriel wrote:
->>> This patch adds a helper function that simplifies adding a
->>> sequence file for device drivers. The calling device driver
->>> needs to provide a read function and a device pointer. The
->>> field struct seq_file::private will reference the device
->>> pointer upon call to the read function so the driver can
->>> obtain his data from it and do its seq_printf() calls.
->>>
->>> Signed-off-by: Arend van Spriel <arend@broadcom.com>
->>> ---
->>>  fs/debugfs/file.c       | 54 +++++++++++++++++++++++++++++++++++++++++++++++++
->>>  include/linux/debugfs.h | 16 ++++++++++++++-
->>>  2 files changed, 69 insertions(+), 1 deletion(-)
->>
->> Do you have some kernel code pending that needs this change?  Or can
->> existing users be moved to it, saving them code?
-> 
-> Yes and maybe. I made a similar change in our brcm80211 drivers, but
-> figured it may be useful for other device drivers. So when this gets in
-> the kernel I want to align the brcm80211 drivers. I will also have a
-> quick look at the wireless drivers and get some metrics about code savings.
+Debian is all about "women in tech" now, and systemd.
 
-Hi, Greg
+If you look at planet.debian.org many of the posts are about
+promoting women in tech, embezzling contributed money of FOSS
+projects to give to women in tech. Many of the "developers"
+contributions have been to 1) Package something and then
+2) promoting women in tech.
 
-Killed a bit of time between lpc sessions in dusseldorf. I picked the
-ath9k wireless driver as a test case. I made the changes in two steps.
-First step was changing to use seq_file api and second step made use of
-the helper function:
+Lots of talk about "transgender" this, "women in tech" that:
+*Trans Gender Moves - Rhonda D'Vine:
+      bla bla bla lives of three people: A transman,
+       a transwoman and an intersexual person.
+      bla bla bla
 
-		original	seq_file	helper
-logstat		-		173+/255-	32+/96-
-ath9k.o		115968		113224		111024	(.text size)
+*Beware of trolls - do not feed - Erich Schubert:
+      bla bla anti-feminist hate for 10 years bla bla
 
-I am considering to make an attempt at capturing the transition in a
-SmPL script so it can be applied to other drivers as well. Have to do a
-bit of self-study for that ;-)
+*Help empower the Debian Outreach Program for Women -
+     bla bla bla took money give to women bla bla bla
 
-Regards,
-Arend
+*Switching to systemd-networkd - retarded picture of some guy
+     bla bla bla systemd awsome bla bla bla
 
+Basically: "Thanks men for what you did in the past,
+fuck you. Women are going to be running things now.
+Fuck you again" "Oh look a woman who hates men, pour
+contributors money on her" "Oh look a man who writes
+free software whom is against our social politics -
+delete his stuff, report him to the police"
+
+There are pictures of people with bolts through their face
+everywhere. Pictures of chubby feminist women. Pictures of
+women with very short hair, bolts through their faces,
+apple computers, and fat. Hell of alot of talk and praise
+for systemd too.
+
+
+
+Why do these things go together? When did the freesoftware
+movement become about feminist women, packaging, and systemd?
+
+It used to be about software freedom. Now it's about
+women's freedom and deleting any freesoftware who's author
+is against women's freedom.
+
+It used to be a, as they say, "male space", now it is a
+"space" where undesirable "males" have been run out.
+
+All that's left are the guys with bolts through their face,
+women with bolts through their face and short hair (and fat),
+and alot of talk of taking things and putting them in ar
+archives in a certain manner. Oh and getting rid of undesirable
+males, regardless of what "software" or "media" they
+produce under freesoftware licenses: what matters is conforming
+to the correct opinion: women's rights!*
+
+
+
+Someone who writes freesoftware but hates feminism == troll.
+Calls for imprisonment ensue. Deletion of work occurs.
+(Those who dislike systemd are also trolls)
+
+Woman who does not write freesoftware but supports feminism
+== should be paied (community building!). Loves systemd for
+some reason too.
+
+
+
+If you do nothing but support feminism and attempt to
+make sure every man in opensource does too: you are a great
+boon to the "opensource community"
+
+If you write freesoftware, release free media of every type
+and in quantity, but hate feminism, you are a "plague"
+on the "opensource community".
+
+
+
+What happened?
+
+*(Said men are skinny as a rail, and the women are as big as
+a small car)
+
+These people are just using what productive men built for
+their own devices: to promote freaks and fucks, while contributing
+little or nothing back and ruling the roost.
