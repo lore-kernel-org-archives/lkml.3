@@ -1,155 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751769AbaJSLHs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 07:07:48 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:55128 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751295AbaJSLHp (ORCPT
+	id S1751795AbaJSL1E (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 07:27:04 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:45959 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751295AbaJSL1A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 07:07:45 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH 1/3] input: alps: Reset mouse before identifying it
-Date: Sun, 19 Oct 2014 13:07:41 +0200
-User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.14.1; x86_64; ; )
-Cc: Tommy Will <tommywill2011@gmail.com>, Hans de Goede <hdegoede@redhat.com>,
-        Yunkang Tang <yunkang.tang@cn.alps.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1412329392-5580-1-git-send-email-pali.rohar@gmail.com> <201410152010.39507@pali> <20141015182256.GE8625@dtor-ws>
-In-Reply-To: <20141015182256.GE8625@dtor-ws>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart3145018.YlQBc0RxdZ";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201410191307.41313@pali>
+	Sun, 19 Oct 2014 07:27:00 -0400
+To: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Replacing unexpected machine restart with kernel panic using SystemTap?
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Message-Id: <201410192026.AFG70955.OMQFtJOOFHSFLV@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Sun, 19 Oct 2014 20:26:55 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart3145018.YlQBc0RxdZ
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+Hello.
 
-On Wednesday 15 October 2014 20:22:56 Dmitry Torokhov wrote:
-> On Wed, Oct 15, 2014 at 08:10:39PM +0200, Pali Roh=C3=A1r wrote:
-> > On Wednesday 15 October 2014 20:00:11 Dmitry Torokhov wrote:
-> > > On Wed, Oct 15, 2014 at 07:57:37PM +0200, Pali Roh=C3=A1r wrote:
-> > > > On Wednesday 15 October 2014 19:43:15 Dmitry Torokhov=20
-wrote:
-> > > > > On Wed, Oct 15, 2014 at 02:53:11PM +0200, Pali Roh=C3=A1r=20
-wrote:
-> > > > > > On Tuesday 14 October 2014 08:08:34 Dmitry Torokhov
-> >=20
-> > wrote:
-> > > > > > > On Fri, Oct 03, 2014 at 11:47:59AM +0200, Hans de
-> > > > > > > Goede
-> > > >=20
-> > > > wrote:
-> > > > > > > > Hi,
-> > > > > > > >=20
-> > > > > > > > Thanks for working on this!
-> > > > > > > >=20
-> > > > > > > > On 10/03/2014 11:43 AM, Pali Roh=C3=A1r wrote:
-> > > > > > > > > On some systems after starting computer
-> > > > > > > > > function alps_identify() does not detect dual
-> > > > > > > > > ALPS touchpad+trackstick device correctly and
-> > > > > > > > > detect only touchpad.
-> > > > > > > > >=20
-> > > > > > > > > Resetting ALPS device before identifiying it
-> > > > > > > > > fixing this problem and both parts touchpad
-> > > > > > > > > and trackstick are detected.
-> > > > > > > > >=20
-> > > > > > > > > Signed-off-by: Pali Roh=C3=A1r
-> > > > > > > > > <pali.rohar@gmail.com> Tested-by: Pali Roh=C3=A1r
-> > > > > > > > > <pali.rohar@gmail.com>
-> > > > > > > >=20
-> > > > > > > > Looks good and seems sensible:
-> > > > > > > >=20
-> > > > > > > > Acked-by: Hans de Goede <hdegoede@redhat.com>
-> > > > > > >=20
-> > > > > > > *sigh* I am not really happy about this, as we
-> > > > > > > making boot longer and longer for people without
-> > > > > > > ALPS touchpads. It would be better if we only
-> > > > > > > reset the mouse when we knew we are dealing with
-> > > > > > > ALPS, and even better if we only reset it when we
-> > > > > > > suspected that we missed trackstick. Any chance
-> > > > > > > of doing this?
-> > > > > > >=20
-> > > > > > > Thanks.
-> > > > > >=20
-> > > > > > Dmitry, problem is that function check which
-> > > > > > detecting trackstick does not working when I start
-> > > > > > my laptop from power-off state and do not reset
-> > > > > > PS/2 device. But detecting ALPS touchpad looks like
-> > > > > > working. So if do not like this idea, what about
-> > > > > > doing something like this in alps_dectect function?
-> > > > > >=20
-> > > > > > int alps_detect(...)
-> > > > > > {
-> > > > > > ...
-> > > > > > /* detect if device is ALPS */
-> > > > > > if (alps_identify(...) < 0)
-> > > > > > return -1;
-> > > > > > /* now we know that device is ALPS */
-> > > > > > if (!(flags & ALPS_DUALPOINT)) {
-> > > > > > /* reset it and identify again, maybe there is
-> > > > > > trackstick */ psmouse_reset(...);
-> > > > > > alps_identify(...);
-> > > > > > }
-> > > > > > ...
-> > > > > > }
-> > > > > >=20
-> > > > > > It will does not affect non ALPS devices (because
-> > > > > > first identify call will fail), but will affect
-> > > > > > ALPS devices without trackstick (because identify
-> > > > > > will be called twice and reset too).
-> > > > >=20
-> > > > > I think this is a step in right direction. Do you know
-> > > > > what exactly fails in alps_identify() on your box if
-> > > > > you do not call psmouse_reset?
-> > > > >=20
-> > > > > Thanks.
-> > > >=20
-> > > > Yes, I know. It is failing in
-> > > > alps_probe_trackstick_v3(). It calls
-> > > > alps_command_mode_read_reg(...) and it returns 0 which
-> > > > means trackstick is not there.
-> > >=20
-> > > OK, so can we try sticking psmouse_reset() there? This
-> > > will limit the exposure of the new delay.
-> > >=20
-> > > Thanks.
-> >=20
-> > Sorry, but I think this is not safe. Function psmouse_reset
-> > will reset device (set it to relative mode, etc...) and
-> > before and after alps_probe_trackstick_v3() are called
-> > other functions. So it could break something else.
->=20
-> We might need to repeat bits of alps_identify() after
-> resetting the mouse, you are right. It should still be doable
-> though.
+Since I hear a few dozens of cases every year from users that their servers
+rebooted unexpectedly, I'm trying to find out the reason of rebooting.
 
-What about checking "E6 report" and if that pass reset device and=20
-do full alps_identify? With check for "E6 report" we can filter=20
-probably all PS/2 devices which are not ALPS.
+At first, I suggested users to try serial console or netconsole to see
+if any kernel messages are printed just before rebooting.
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+For servers that are using heartbeat software, watchdog's timeout might be
+the reason of unexpected reboots. Therefore, I started suggesting those who
+are using softdog ( drivers/watchdog/softdog.ko ) as watchdog driver to try
+soft_panic=1 module option so that softdog's timeout will trigger kernel panic
+rather than unexpected reboots.
 
---nextPart3145018.YlQBc0RxdZ
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+However, there would be other means to trigger unexpected reboots. Heartbeat
+and/or clustering software might issue reboot(LINUX_REBOOT_CMD_RESTART)
+syscall (which /sbin/reboot -f command does) for immediate rebooting.
+System call auditing will not help for recording immediate rebooting.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Therefore, I came up with an idea that I can catch almost all cases by
+inserting SystemTap probe so that any call to a function for restarting
+a machine is replaced with kernel panic. For example, by inserting SystemTap
+probe at native_machine_emergency_restart() in arch/x86/kernel/reboot.c
 
-iEYEABECAAYFAlRDm30ACgkQi/DJPQPkQ1IqDgCgu1/fRMgKZ/BBMlLET+aNMhQp
-NWYAn2zDrY+4QV2gSNAWulr8QyiGKhGi
-=atxq
------END PGP SIGNATURE-----
+---------- Command line start ----------
+# stap -p4 -m reboot2panic -g -e '
+function call_panic() %{ panic("Calling panic() due to machine restart\n"); %}
+probe kernel.function("native_machine_emergency_restart") { call_panic(); }'
+# staprun reboot2panic.ko
+---------- Command line end ----------
 
---nextPart3145018.YlQBc0RxdZ--
+I can obtain
+
+---------- Example of kernel messages start ----------
+<2>SoftDog: Initiating system reboot.
+<0>Kernel panic - not syncing: Calling panic() due to machine restart
+<0>
+<4>Pid: 0, comm: swapper Not tainted 2.6.32-431.29.2.el6.i686 #1
+<4>Call Trace:
+<4> [<c085dffc>] ? panic+0x6e/0x122
+<4> [<f7ed2196>] ? probe_2069+0x26/0x50 [reboot2panic]
+<4> [<f7ed4729>] ? enter_kprobe_probe+0x159/0x320 [reboot2panic]
+<4> [<c042dea8>] ? local_apic_timer_interrupt+0x28/0x60
+<4> [<c042aa10>] ? native_machine_emergency_restart+0x0/0x230
+<4> [<c08639ab>] ? kprobe_exceptions_notify+0x32b/0x3a0
+<4> [<c042aa11>] ? native_machine_emergency_restart+0x1/0x230
+<4> [<c0863bc4>] ? notifier_call_chain+0x44/0x60
+<4> [<c0863c0a>] ? atomic_notifier_call_chain+0x1a/0x20
+<4> [<c04833e0>] ? notify_die+0x30/0x40
+<4> [<c08618dd>] ? do_int3+0x2d/0x90
+<4> [<c0861780>] ? int3+0x30/0x38
+<4> [<f7e800e0>] ? mirror_status+0x50/0x2e0 [dm_mirror]
+<4> [<c042aa10>] ? native_machine_emergency_restart+0x0/0x230
+<4> [<c042a6c0>] ? machine_emergency_restart+0x10/0x20
+<4> [<f7e8f056>] ? watchdog_fire+0x36/0x80 [softdog]
+<4> [<c046b391>] ? run_timer_softirq+0x131/0x2b0
+<4> [<f7e8f020>] ? watchdog_fire+0x0/0x80 [softdog]
+<4> [<c046237a>] ? __do_softirq+0x8a/0x1a0
+<4> [<c04624cd>] ? do_softirq+0x3d/0x50
+<4> [<c0462625>] ? irq_exit+0x65/0x70
+<4> [<c042df15>] ? smp_apic_timer_interrupt+0x35/0x50
+<4> [<c0861205>] ? apic_timer_interrupt+0x31/0x38
+<4> [<c0437482>] ? native_safe_halt+0x2/0x10
+<4> [<c041255d>] ? default_idle+0x4d/0xc0
+<4> [<c0408884>] ? cpu_idle+0x94/0xd0
+<4> [<c085a27e>] ? start_secondary+0x2af/0x2f4
+---------- Example of kernel messages end ----------
+
+for softdog's timeout cases,
+
+---------- Example of kernel messages start ----------
+<0>Restarting system.
+<4>machine restart
+<0>Kernel panic - not syncing: Calling panic() due to machine restart
+<0>
+<4>Pid: 1381, comm: reboot Not tainted 2.6.32-431.29.2.el6.i686 #1
+<4>Call Trace:
+<4> [<c085dffc>] ? panic+0x6e/0x122
+<4> [<f7ed2196>] ? probe_2069+0x26/0x50 [reboot2panic]
+<4> [<f7ed4729>] ? enter_kprobe_probe+0x159/0x320 [reboot2panic]
+<4> [<c042aa10>] ? native_machine_emergency_restart+0x0/0x230
+<4> [<c08639ab>] ? kprobe_exceptions_notify+0x32b/0x3a0
+<4> [<c042aa11>] ? native_machine_emergency_restart+0x1/0x230
+<4> [<c0863bc4>] ? notifier_call_chain+0x44/0x60
+<4> [<c0863c0a>] ? atomic_notifier_call_chain+0x1a/0x20
+<4> [<c04833e0>] ? notify_die+0x30/0x40
+<4> [<c08618dd>] ? do_int3+0x2d/0x90
+<4> [<c0861780>] ? int3+0x30/0x38
+<4> [<c04200d8>] ? uncore_pmu_event_add+0x2d8/0x3f0
+<4> [<c04200e0>] ? uncore_pmu_event_add+0x2e0/0x3f0
+<4> [<c042aa10>] ? native_machine_emergency_restart+0x0/0x230
+<4> [<c042a77e>] ? native_machine_restart+0x2e/0x40
+<4> [<c042a6d6>] ? machine_restart+0x6/0x10
+<4> [<c0476cb4>] ? sys_reboot+0x184/0x220
+<4> [<c043fb80>] ? kmap_atomic_prot+0x120/0x150
+<4> [<c050e3b1>] ? handle_mm_fault+0x131/0x1d0
+<4> [<c04399aa>] ? __do_page_fault+0x1aa/0x410
+<4> [<c054cd56>] ? d_kill+0x36/0x50
+<4> [<c054e22d>] ? dput+0x5d/0x110
+<4> [<c05385d4>] ? __fput+0x164/0x1f0
+<4> [<c0553ac5>] ? mntput_no_expire+0x15/0xd0
+<4> [<c04b9dee>] ? audit_syscall_entry+0x1be/0x1e0
+<4> [<c0863b1a>] ? do_page_fault+0x2a/0x90
+<4> [<c04099bf>] ? sysenter_do_call+0x12/0x28
+---------- Example of kernel messages end ----------
+
+for /sbin/reboot -f cases, and regular reboot sequence remains
+unchanged because the probe by staprun process is removed by
+regular reboot sequence.
+
+But I'm not sure whether it is appropriate to insert this probe at
+native_machine_emergency_restart(). Could you give me suggestions
+about where to insert this probe?
+
+Regards.
