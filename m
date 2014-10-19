@@ -1,106 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752009AbaJSONB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 10:13:01 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:54453 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751916AbaJSOM7 (ORCPT
+	id S1752079AbaJSOQc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 10:16:32 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:61882 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916AbaJSOQ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 10:12:59 -0400
-MIME-Version: 1.0
-Date: Sun, 19 Oct 2014 14:12:57 +0000
-Message-ID: <CALtyatHuhsZiVN6aeFDc8ZpDSbA_V1aAxgrHXnk+9nb2nxxmDg@mail.gmail.com>
-Subject: Debian("FOSS") all about "women in tech" now, and systemd.
-From: Gregory Smith <gregorysmith1974a@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Sun, 19 Oct 2014 10:16:28 -0400
+From: LABBE Corentin <clabbe.montjoie@gmail.com>
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        maxime.ripard@free-electrons.com, linux@arm.linux.org.uk,
+        herbert@gondor.apana.org.au, davem@davemloft.net,
+        grant.likely@linaro.org, akpm@linux-foundation.org,
+        gregkh@linuxfoundation.org, joe@perches.com, mchehab@osg.samsung.com,
+        crope@iki.fi
+Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        linux-sunxi@googlegroups.com
+Subject: [PATCH v5] crypto: Add Allwinner Security System crypto accelerator
+Date: Sun, 19 Oct 2014 16:16:18 +0200
+Message-Id: <1413728182-13569-1-git-send-email-clabbe.montjoie@gmail.com>
+X-Mailer: git-send-email 2.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Debian is all about "women in tech" now, and systemd.
+Hello
 
-If you look at planet.debian.org many of the posts are about
-promoting women in tech, embezzling contributed money of FOSS
-projects to give to women in tech. Many of the "developers"
-contributions have been to 1) Package something and then
-2) promoting women in tech.
+This is the driver for the Security System included in Allwinner SoC A20.
+The Security System (SS for short) is a hardware cryptographic accelerator that support AES/MD5/SHA1/DES/3DES/PRNG algorithms.
+It could be found on others Allwinner SoC: 
+- A10s, A33 and A31 diagram speak about it with precisions (AES/DES/3DES/Md5/SHA1/PRNG)
+- A10 and A13 manual give the same datasheet for SS than A20
+- A23 speak about a security system but without precisions
+- A80 datasheet speak about a security system with more functions (SHA224/SHA256/RSA/CRC) but without precisions
+But I do not have access on any of those hardware, tests are welcome.
 
-Lots of talk about "transgender" this, "women in tech" that:
-*Trans Gender Moves - Rhonda D'Vine:
-      bla bla bla lives of three people: A transman,
-       a transwoman and an intersexual person.
-      bla bla bla
+This driver currently supports:
+- MD5 and SHA1 hash algorithms
+- AES block cipher in CBC mode with 128/196/256bits keys.
+- DES and 3DES block cipher in CBC mode
+The driver exposes all those algorithms through the kernel cryptographic API.
 
-*Beware of trolls - do not feed - Erich Schubert:
-      bla bla anti-feminist hate for 10 years bla bla
+The driver support only CPU driven (aka poll mode) transfer mode since the DMA engine of the A20 does not have a mainline driver yet.
 
-*Help empower the Debian Outreach Program for Women -
-     bla bla bla took money give to women bla bla bla
+Changes since v4:
+- Rework all mutex path
+- Use ahash_request_ctx() in hash functions
+- Major rework of hash functions for solving mutex problems
+- Split sunxi_req_ctx in two since ciphers now use struct sunxi_tfm_ctx
+- Hash functions now test FIFO space register
 
-*Switching to systemd-networkd - retarded picture of some guy
-     bla bla bla systemd awsome bla bla bla
+Changes since v3:
+- Remove all algorithms options from Kconfig, so now only one module is used
+- Add the sunxi_ss_cipher function to unify mode calculation
+- Remove the sunxi_cipher_exit empty function
+- Add some missing mutex_unlock()
+- Drop PRNG support, I wait for more comment on its results before re-enabling it.
 
-Basically: "Thanks men for what you did in the past,
-fuck you. Women are going to be running things now.
-Fuck you again" "Oh look a woman who hates men, pour
-contributors money on her" "Oh look a man who writes
-free software whom is against our social politics -
-delete his stuff, report him to the police"
+Changes since v2:
+- Fix Makefile and Kconfig for static kernel.
 
-There are pictures of people with bolts through their face
-everywhere. Pictures of chubby feminist women. Pictures of
-women with very short hair, bolts through their faces,
-apple computers, and fat. Hell of alot of talk and praise
-for systemd too.
-
-
-
-Why do these things go together? When did the freesoftware
-movement become about feminist women, packaging, and systemd?
-
-It used to be about software freedom. Now it's about
-women's freedom and deleting any freesoftware who's author
-is against women's freedom.
-
-It used to be a, as they say, "male space", now it is a
-"space" where undesirable "males" have been run out.
-
-All that's left are the guys with bolts through their face,
-women with bolts through their face and short hair (and fat),
-and alot of talk of taking things and putting them in ar
-archives in a certain manner. Oh and getting rid of undesirable
-males, regardless of what "software" or "media" they
-produce under freesoftware licenses: what matters is conforming
-to the correct opinion: women's rights!*
-
-
-
-Someone who writes freesoftware but hates feminism == troll.
-Calls for imprisonment ensue. Deletion of work occurs.
-(Those who dislike systemd are also trolls)
-
-Woman who does not write freesoftware but supports feminism
-== should be paied (community building!). Loves systemd for
-some reason too.
+Changes since v1:
+- annotate ss->base as __iomem
+- regroup all mutex in the ss_ctx structure
+- splited driver in 7 modules (core md5 sha1 aes des 3des prng) in sunxi-ss directory
+- use dev_exit_p() for .remove
+- added missing CRYPTO_BLKCIPHER dep in Kconfig
+- use ahash instead of shash
+- use ablkcipher instead of blkcipher
+- use crypto_rng_ctx instead of crypto_tfm_ctx
+- set seed as an u32
+- drop useless comment decoration
+- drop useless debug
+- ss_ctx is now a static pointer and whole structure being allocated
+- fix the platform_get_resource/devm_ioremap_resource pattern
+- invert getting die id and configuring clock
+- set clock value as a const unsigned long
+- add MODULE_ALIAS
+- use define names more consistency (SS_xxx)
+- fix PRNG errors
+- respell SS to Security System in DT documentation
 
 
-
-If you do nothing but support feminism and attempt to
-make sure every man in opensource does too: you are a great
-boon to the "opensource community"
-
-If you write freesoftware, release free media of every type
-and in quantity, but hate feminism, you are a "plague"
-on the "opensource community".
-
-
-
-What happened?
-
-*(Said men are skinny as a rail, and the women are as big as
-a small car)
-
-These people are just using what productive men built for
-their own devices: to promote freaks and fucks, while contributing
-little or nothing back and ruling the roost.
