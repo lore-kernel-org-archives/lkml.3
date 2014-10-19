@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751596AbaJRX5S (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Oct 2014 19:57:18 -0400
-Received: from roy.gaast.net ([80.101.33.21]:59354 "EHLO mail.gaast.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751505AbaJRX5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Oct 2014 19:57:17 -0400
-Message-ID: <5442FE58.5020700@gaast.net>
-Date: Sun, 19 Oct 2014 00:57:12 +0100
-From: Wilmer van der Gaast <wilmer@gaast.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130112 Icedove/17.0.2
+	id S1751618AbaJSAL7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Oct 2014 20:11:59 -0400
+Received: from mx02b.posteo.de ([89.146.230.120]:50729 "EHLO mx02.posteo.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751544AbaJSAL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Oct 2014 20:11:58 -0400
+Message-ID: <54430160.6020503@posteo.de>
+Date: Sun, 19 Oct 2014 02:10:08 +0200
+From: Martin Kepplinger <martink@posteo.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Icedove/24.8.1
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+To: rusty@rustcorp.com.au
+CC: lguest@lists.ozlabs.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Machine crashes right *after* ~successful resume
-References: <54347520.3050109@gaast.net> <543AA2FE.20105@gaast.net> <20141012204032.GA11171@amd> <9751497.0fL0kvsyX7@vostro.rjw.lan> <20141015111641.GC7792@gaast.net> <CAErSpo5A+nHTu2Y6KrXowBBCBsNw_hO0SRsnc6YRdJChCUmO6w@mail.gmail.com> <CAE9FiQV9t0bCfUy5Fichdk=04ruEVxGv-LUK1xxZjCrasAOACg@mail.gmail.com> <543F049F.5090605@gaast.net> <CAE9FiQWDHq5esSt4UvE5AkHR-=XMvrzaNFwLg+0xKisTNOtcsQ@mail.gmail.com> <543F9182.9000004@gaast.net> <CAE9FiQVNZHTxpNCnn+YPtqjWrQjFmtTh06sbBawqFonMFwSZ-w@mail.gmail.com> <544033CF.3080104@gaast.net> <CAE9FiQW0x5uy_osjvVDOOMDaz2=2KL+TusQ8QqcHL5dWTPrK2w@mail.gmail.com>
-In-Reply-To: <CAE9FiQW0x5uy_osjvVDOOMDaz2=2KL+TusQ8QqcHL5dWTPrK2w@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Subject: lguest: lguest_user.c is open() called by the user?
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Resending, forgot to hit reply-to-all.)
+hi
 
-Hello Yinghai,
+Just a question for understanding: open() is not implemented in
+lguest_user.c's miscdevice. The miscdevice core, in this case, does
+_not_ set file->private_data on a user's open() call. Is open() called
+by the user here? and do you here _depend_ on file->private_data being
+NULL after open()? (could you even?)
 
-On 18-10-14 22:28, Yinghai Lu wrote:
- >
- > Please apply attached debug patch on top of v3.17 and boot with
- > "debug ignore_loglevel initcall_debug no_console_suspend".
- >
- > Hope we can find out which nb notifier cause problem.
- >
-Did that. Strangely, or better said, quite annoyingly, I'm now getting 
-no output anymore at all on the third resume! :-(
-
-I could try non-serial instead if you think that's worth a shot, but the 
-most annoying thing is that my video doesn't get initialised properly 
-after resume unless I have the tainting nvidia driver loaded. I could 
-try if nouveau helps.
-
-I've dropped all the debugging output in the same directory like before, 
-look for files named like 
-http://roy.gaast.net/~wilmer/.lkml/bad3.17-patched-initcall.txt
+Would the following force to NULL be necessary if the miscdevice core
+_would_ set private_data?
 
 
-Thanks,
+diff --git a/drivers/lguest/lguest_user.c b/drivers/lguest/lguest_user.c
+index 4263f4c..3d472ea 100644
+--- a/drivers/lguest/lguest_user.c
++++ b/drivers/lguest/lguest_user.c
+@@ -497,6 +497,12 @@ static int close(struct inode *inode, struct file
+*file)
+        return 0;
+ }
 
-Wilmer v/d Gaast.
-
++static int open(struct inode *inode, struct file *file)
++{
++       /* assuming the miscdevice core sets private_data on open() */
++       file->private_data = NULL;
++}
++
+ /*L:000
+  * Welcome to our journey through the Launcher!
+  *
+@@ -514,6 +520,7 @@ static int close(struct inode *inode, struct file *file)
+  */
+ static const struct file_operations lguest_fops = {
+        .owner   = THIS_MODULE,
++       .open    = open,
+        .release = close,
+        .write   = write,
+        .read    = read,
 -- 
-+-------- .''`.     - -- ---+  +        - -- --- ---- ----- ------+
-| wilmer : :'  :  gaast.net |  | OSS Programmer   www.bitlbee.org |
-| lintux `. `~'  debian.org |  | Full-time geek  wilmer.gaast.net |
-+--- -- -  ` ---------------+  +------ ----- ---- --- -- -        +
+
+thanks
+                               martin
