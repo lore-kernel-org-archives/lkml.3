@@ -1,99 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144AbaJSPFt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 11:05:49 -0400
-Received: from smtprelay0027.hostedemail.com ([216.40.44.27]:54786 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752001AbaJSPFr (ORCPT
+	id S1752206AbaJSPLi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 11:11:38 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40621 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752001AbaJSPLe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 11:05:47 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:967:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2393:2525:2560:2563:2682:2685:2692:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3354:3622:3865:3867:3868:3870:3871:3872:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:4470:4605:5007:6117:6119:6261:6691:7903:9025:10004:10400:10848:11232:11233:11658:11914:12043:12517:12519:12740:13019:13069:13161:13229:13311:13357:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: glove60_15345ab2c884a
-X-Filterd-Recvd-Size: 3019
-Message-ID: <1413731134.14629.13.camel@perches.com>
-Subject: Re: [PATCH 1/5] lib: string.c: Added a function strzcpy
-From: Joe Perches <joe@perches.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sun, 19 Oct 2014 08:05:34 -0700
-In-Reply-To: <CAFo99gaLyzQoLAyBw9uEU=qiDnESH-rP1NL_+w8JLDw6BQMhaw@mail.gmail.com>
-References: <1413669800-6058-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	 <1413682735.14629.11.camel@perches.com>
-	 <CAFo99gaLyzQoLAyBw9uEU=qiDnESH-rP1NL_+w8JLDw6BQMhaw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 19 Oct 2014 11:11:34 -0400
+From: Christoph Hellwig <hch@lst.de>
+To: Jens Axboe <axboe@kernel.dk>, Meelis Roos <mroos@linux.ee>
+Cc: David Miller <davem@davemloft.net>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: [PATCH 2/2] scsi: set REQ_QUEUE for the blk-mq case
+Date: Sun, 19 Oct 2014 17:13:58 +0200
+Message-Id: <1413731638-28305-3-git-send-email-hch@lst.de>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1413731638-28305-1-git-send-email-hch@lst.de>
+References: <1413731638-28305-1-git-send-email-hch@lst.de>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-10-19 at 14:19 +0200, Rickard Strandqvist wrote:
-> 2014-10-19 3:38 GMT+02:00 Joe Perches <joe@perches.com>:
-> > On Sun, 2014-10-19 at 00:03 +0200, Rickard Strandqvist wrote:
-> >> Added a function strzcpy which works the same as strncpy,
-> >> but guaranteed to produce the trailing null character.
-> >>
-> >> There are many places in the code where strncpy used although it
-> >> must be zero terminated, and switching to strlcpy is not an option
-> >> because the string must nonetheless be fyld with zero characters.
-> > []
-> >> diff --git a/lib/string.c b/lib/string.c
-> > []
-> >> +char *strzcpy(char *dest, const char *src, size_t count)
-> >> +{
-> >> +     char *tmp = dest;
-> >> +
-> >> +     while (count) {
-> >> +             if ((*tmp = *src) != 0)
-> >> +                     src++;
-> >> +             tmp++;
-> >> +             count--;
-> >> +     }
-> >> +
-> >> +     if (dest != tmp)
-> >> +             *--tmp = '\0';
-> >> +
-> >> +     return dest;
-> >> +}
-> >
-> > why not
-> >
-> > char *strzcpy(char *dest, const char *src, size_t count)
-> > {
-> >         strncpy(dest, src, count)
-> >         if (count)
-> >                 dest[count - 1] = 0; /* or '\0' or whatever */
-> >
-> >         return dest;
-> > }
-> >
-> > maybe use static inline too.
-> >
-> 
-> Hi Joe
-> 
-> Yes this solution have also been discussed.
-> https://lkml.org/lkml/2014/10/16/682
-> 
-> Very possible that it is a better solution.
-> The code that I use in strzcpy is not the way I'd written it, but is
-> the same as in strncpy now.
-> 
-> But as I understand it the real strncpy code is normally highly
-> optimized for the hardware it runs on.
-> Ex: arch/x86/lib/string_32.c
+To generate the right SPI tag messages we need to properly set
+QUEUE_FLAG_QUEUED in the request_queue and mirror it to the
+request.
 
-The fact that optimized strncpy variants exist
-for any platform is the argument _for_ using it
-in strzcpy.
+Reported-by: Meelis Roos <mroos@linux.ee>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Cc: stable@vger.kernel.org
+---
+ drivers/scsi/scsi_lib.c | 5 +++++
+ include/scsi/scsi_tcq.h | 8 ++++----
+ 2 files changed, 9 insertions(+), 4 deletions(-)
 
-> But missing for x86 64 bit and Arm..?
-
-
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index 9eff8a3..50a6e1a 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -1893,6 +1893,11 @@ static int scsi_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req,
+ 		blk_mq_start_request(req);
+ 	}
+ 
++	if (blk_queue_tagged(q))
++		req->cmd_flags |= REQ_QUEUED;
++	else
++		req->cmd_flags &= ~REQ_QUEUED;
++
+ 	scsi_init_cmd_errh(cmd);
+ 	cmd->scsi_done = scsi_mq_done;
+ 
+diff --git a/include/scsi/scsi_tcq.h b/include/scsi/scsi_tcq.h
+index e645835..56ed843 100644
+--- a/include/scsi/scsi_tcq.h
++++ b/include/scsi/scsi_tcq.h
+@@ -67,8 +67,9 @@ static inline void scsi_activate_tcq(struct scsi_device *sdev, int depth)
+ 	if (!sdev->tagged_supported)
+ 		return;
+ 
+-	if (!shost_use_blk_mq(sdev->host) &&
+-	    !blk_queue_tagged(sdev->request_queue))
++	if (shost_use_blk_mq(sdev->host))
++		queue_flag_set_unlocked(QUEUE_FLAG_QUEUED, sdev->request_queue);
++	else if (!blk_queue_tagged(sdev->request_queue))
+ 		blk_queue_init_tags(sdev->request_queue, depth,
+ 				    sdev->host->bqt);
+ 
+@@ -81,8 +82,7 @@ static inline void scsi_activate_tcq(struct scsi_device *sdev, int depth)
+  **/
+ static inline void scsi_deactivate_tcq(struct scsi_device *sdev, int depth)
+ {
+-	if (!shost_use_blk_mq(sdev->host) &&
+-	    blk_queue_tagged(sdev->request_queue))
++	if (blk_queue_tagged(sdev->request_queue))
+ 		blk_queue_free_tags(sdev->request_queue);
+ 	scsi_adjust_queue_depth(sdev, 0, depth);
+ }
+-- 
+1.9.1
 
