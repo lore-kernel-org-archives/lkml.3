@@ -1,109 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751860AbaJTMFA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 08:05:00 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:50544 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750957AbaJTME5 (ORCPT
+	id S1751862AbaJTMH6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 08:07:58 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44970 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119AbaJTMH4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 08:04:57 -0400
-Message-ID: <5444F9AF.5000104@gmail.com>
-Date: Mon, 20 Oct 2014 17:31:51 +0530
-From: Varka Bhadram <varkabhadram@gmail.com>
-Organization: CDAC-HYD
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 20 Oct 2014 08:07:56 -0400
+Date: Mon, 20 Oct 2014 13:07:50 +0100
+From: Thomas Graf <tgraf@suug.ch>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, linux-scsi@vger.kernel.org,
+        linux-s390@vger.kernel.org, v9fs-developer@lists.sourceforge.net,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
+        Amit Shah <amit.shah@redhat.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Paolo Bonzini <pbonzini@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v4 13/25] virtio_console: enable VQs early
+Message-ID: <20141020120750.GA18561@casper.infradead.org>
+References: <1413114332-626-1-git-send-email-mst-v4@redhat.com>
+ <1413114332-626-14-git-send-email-mst-v4@redhat.com>
 MIME-Version: 1.0
-To: Boris Brezillon <boris.brezillon@free-electrons.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        linux-mtd@lists.infradead.org
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-sunxi@googlegroups.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Yassin Jaffer <yassinjaffer@gmail.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: Re: [PATCH v6 1/2] mtd: nand: add sunxi NAND flash controller support
-References: <1413805520-14947-1-git-send-email-boris.brezillon@free-electrons.com> <1413805520-14947-2-git-send-email-boris.brezillon@free-electrons.com>
-In-Reply-To: <1413805520-14947-2-git-send-email-boris.brezillon@free-electrons.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413114332-626-14-git-send-email-mst-v4@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/20/2014 05:15 PM, Boris Brezillon wrote:
-> Add support for the sunxi NAND Flash Controller (NFC).
->
-(...)
+On 10/13/14 at 10:50am, Michael S. Tsirkin wrote:
+> virtio spec requires drivers to set DRIVER_OK before using VQs.
+> This is set automatically after probe returns, virtio console violated this
+> rule by adding inbufs, which causes the VQ to be used directly within
+> probe.
+> 
+> To fix, call virtio_device_ready before using VQs.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  drivers/char/virtio_console.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+> index b585b47..6ebe8f6 100644
+> --- a/drivers/char/virtio_console.c
+> +++ b/drivers/char/virtio_console.c
+> @@ -1449,6 +1449,8 @@ static int add_port(struct ports_device *portdev, u32 id)
+>  	spin_lock_init(&port->outvq_lock);
+>  	init_waitqueue_head(&port->waitqueue);
+>  
+> +	virtio_device_ready(portdev->vdev);
+> +
+>  	/* Fill the in_vq with buffers so the host can send us data. */
+>  	nr_added_bufs = fill_queue(port->in_vq, &port->inbuf_lock);
+>  	if (!nr_added_bufs) {
 
-> +
-> +static int sunxi_nfc_dev_ready(struct mtd_info *mtd)
-> +{
-> +	struct nand_chip *nand = mtd->priv;
-> +	struct sunxi_nand_chip *sunxi_nand = to_sunxi_nand(nand);
-> +	struct sunxi_nfc *nfc = to_sunxi_nfc(sunxi_nand->nand.controller);
-> +	struct sunxi_nand_rb *rb;
-> +	unsigned long timeo = (sunxi_nand->nand.state == FL_ERASING ? 400 : 20);
-> +	int ret;
-> +
-> +	if (sunxi_nand->selected < 0)
-> +		return 0;
-> +
-> +	rb = &sunxi_nand->sels[sunxi_nand->selected].rb;
-> +
-> +	switch (rb->type) {
-> +	case RB_NATIVE:
-> +		ret = !!(readl(nfc->regs + NFC_REG_ST) &
-> +			 (NFC_RB_STATE0 << rb->info.nativeid));
-> +		if (ret)
-> +			break;
-> +
-> +		sunxi_nfc_wait_int(nfc, NFC_RB_B2R, timeo);
-> +		ret = !!(readl(nfc->regs + NFC_REG_ST) &
-> +			 (NFC_RB_STATE0 << rb->info.nativeid));
-> +		break;
-> +	case RB_GPIO:
-> +		ret = gpio_get_value(rb->info.gpio);
-> +		break;
-> +	case RB_NONE:
-> +	default:
-> +		ret = 0;
-> +		pr_err("cannot check R/B NAND status!");
+Seems like probe and add_port() now both set VIRTIO_CONFIG_S_DRIVER_OK
 
-Missed terminating  new line...  :-)
-
-> +		break;
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +
-
-(...)
-
-> +static struct platform_driver sunxi_nfc_driver = {
-> +	.driver = {
-> +		.name = "sunxi_nand",
-> +		.owner = THIS_MODULE,
-
-This field updated by module_platform_driver()..
-
-> +		.of_match_table = sunxi_nfc_ids,
-> +	},
-> +	.probe = sunxi_nfc_probe,
-> +	.remove = sunxi_nfc_remove,
-> +};
-> +module_platform_driver(sunxi_nfc_driver);
-> +
-> +MODULE_LICENSE("GPL v2");
-> +MODULE_AUTHOR("Boris BREZILLON");
-> +MODULE_DESCRIPTION("Allwinner NAND Flash Controller driver");
-> +MODULE_ALIAS("platform:sunxi_nand");
-
--- 
-Regards,
-Varka Bhadram.
+    1.839658] kernel BUG at include/linux/virtio_config.h:125!
+[    1.839995] invalid opcode: 0000 [#1] SMP 
+[    1.840169] Modules linked in: serio_raw virtio_balloon pcspkr virtio_net virtio_console soundcore parport_pc floppy pvpanic parport i2c_piix4 nfsd auth_rpcgss nfs_acl lockd grace sunrpc qxl drm_kms_helper ttm drm virtio_blk i2c_core virtio_pci ata_generic virtio_ring virtio pata_acpi
+[    1.840169] CPU: 2 PID: 266 Comm: kworker/2:2 Not tainted 3.17.0+ #1
+[    1.840169] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[    1.840169] Workqueue: events control_work_handler [virtio_console]
+[    1.840169] task: ffff8800364bc840 ti: ffff880078490000 task.ti: ffff880078490000
+[    1.840169] RIP: 0010:[<ffffffffa01d92c6>]  [<ffffffffa01d92c6>] virtio_device_ready.part.12+0x4/0x6 [virtio_console]
+[    1.840169] RSP: 0018:ffff880078493c78  EFLAGS: 00010202
+[    1.840169] RAX: 0000000000000007 RBX: ffff880036406200 RCX: 0000000000006e39
+[    1.840169] RDX: 000000000000c0b2 RSI: 0000000000000000 RDI: 000000000001c0b2
+[    1.840169] RBP: ffff880078493c78 R08: ffffffff81d2c6f8 R09: 0000000000000000
+[    1.840169] R10: 0000000000000001 R11: ffff8800364bd000 R12: ffff880036618400
+[    1.840169] R13: 0000000000000001 R14: ffff8800368c6800 R15: ffff880036406220
+[    1.840169] FS:  0000000000000000(0000) GS:ffff88007fd00000(0000) knlGS:0000000000000000
+[    1.840169] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[    1.840169] CR2: 00007f1c31c90000 CR3: 0000000001c14000 CR4: 00000000000006e0
+[    1.840169] Stack:
+[    1.840169]  ffff880078493ce8 ffffffffa01d886a ffff880000000001 ffffffff810e20cd
+[    1.840169]  ffff880078493cb8 0000000000000282 0000000000000000 0000000087f90194
+[    1.840169]  ffff880078493ce8 ffff88007ab1d4e0 ffff880036618498 ffff880036618410
+[    1.840169] Call Trace:
+[    1.840169]  [<ffffffffa01d886a>] add_port+0x40a/0x440 [virtio_console]
+[    1.840169]  [<ffffffff810e20cd>] ? trace_hardirqs_on+0xd/0x10
+[    1.840169]  [<ffffffffa01d8c6a>] control_work_handler+0x3ca/0x420 [virtio_console]
+[    1.840169]  [<ffffffff810b0e7b>] ? process_one_work+0x15b/0x530
+[    1.840169]  [<ffffffff810b0ef4>] process_one_work+0x1d4/0x530
+[    1.840169]  [<ffffffff810b0e7b>] ? process_one_work+0x15b/0x530
+[    1.840169]  [<ffffffff810b136b>] worker_thread+0x11b/0x490
+[    1.840169]  [<ffffffff810b1250>] ? process_one_work+0x530/0x530
+[    1.840169]  [<ffffffff810b67c3>] kthread+0xf3/0x110
+[    1.840169]  [<ffffffff81788f00>] ? _raw_spin_unlock_irq+0x30/0x50
+[    1.840169]  [<ffffffff810b66d0>] ? kthread_create_on_node+0x240/0x240
+[    1.840169]  [<ffffffff81789a7c>] ret_from_fork+0x7c/0xb0
+[    1.840169]  [<ffffffff810b66d0>] ? kthread_create_on_node+0x240/0x240
+[    1.840169] Code: ff 49 89 c4 4d 85 e4 0f 8f 25 ff ff ff eb ad 48 c7 c0 f4 ff ff ff e9 17 ff ff ff e8 f5 cd eb e0 90 55 48 89 e5 0f 0b 55 48 89 e5 <0f> 0b 55 48 89 e5 0f 0b 55 48 89 e5 e8 99 e2 ff ff 48 c7 c7 c0 
+[    1.840169] RIP  [<ffffffffa01d92c6>] virtio_device_ready.part.12+0x4/0x6 [virtio_console]
+[    1.840169]  RSP <ffff880078493c78>
 
