@@ -1,34 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885AbaJTSdS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 14:33:18 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:62699 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511AbaJTSdP (ORCPT
+	id S1752320AbaJTSkv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 14:40:51 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55140 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499AbaJTSku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 14:33:15 -0400
-Message-ID: <54455564.5090209@redhat.com>
-Date: Mon, 20 Oct 2014 20:33:08 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 20 Oct 2014 14:40:50 -0400
+Date: Mon, 20 Oct 2014 20:40:46 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Thomas Shao <huishao@microsoft.com>
+cc: gregkh@linuxfoundation.org, LKML <linux-kernel@vger.kernel.org>,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com, kys@microsoft.com,
+        John Stultz <john.stultz@linaro.org>,
+        Richard Cochran <rcochran@linutronix.de>
+Subject: Re: [PATCH v2 1/2] timekeeping: add EXPORT_SYMBOL_GPL for
+ do_adjtimex()
+In-Reply-To: <alpine.DEB.2.11.1410202027220.5308@nanos>
+Message-ID: <alpine.DEB.2.11.1410202034150.5308@nanos>
+References: <1413362372-16236-1-git-send-email-huishao@microsoft.com> <alpine.DEB.2.11.1410202027220.5308@nanos>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-To: Heinz Diehl <htd+ml@fritha.org>, linux-kernel@vger.kernel.org
-CC: KVM list <kvm@vger.kernel.org>
-Subject: Re: new GPG key
-References: <432661354.65688167.1413642451475.JavaMail.zimbra@redhat.com> <20141018154211.GA4426@fritha.org>
-In-Reply-To: <20141018154211.GA4426@fritha.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 20 Oct 2014, Thomas Gleixner wrote:
 
+> On Wed, 15 Oct 2014, Thomas Shao wrote:
+> 
+> And again you forgot to cc John Stultz on this....
+> 
+> > Export do_adjtimex function for hyper-v Time Synchronization component
 
-On 10/18/2014 05:42 PM, Heinz Diehl wrote:
-> Sorry for being OT, but I have encountered such a situation before and
-> it got me into serious trouble, so I dared to share this with you.
+Aside of that, we really want to see the use case for this and how you
+addressed the problems which were pointed out by various folks.
 
-That's actually a pretty interesting tip!
+I still do not have a consistent argument from you WHY you need to
+abuse do_adjtimex() to do that host - guest synchronization in the
+first place.
 
-Paolo
+Thanks,
+
+	tglx
