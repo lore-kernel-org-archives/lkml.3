@@ -1,94 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752257AbaJTQ0P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 12:26:15 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:36996 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752008AbaJTQ0J (ORCPT
+	id S1752372AbaJTQ0h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 12:26:37 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:62983 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752088AbaJTQZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 12:26:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <1413454410-23396-3-git-send-email-javier.martinez@collabora.co.uk>
-References: <1413454410-23396-1-git-send-email-javier.martinez@collabora.co.uk>
-	<1413454410-23396-3-git-send-email-javier.martinez@collabora.co.uk>
-Date: Mon, 20 Oct 2014 09:26:08 -0700
-X-Google-Sender-Auth: 4nzFc2olIhFrcKL6Z9SEi07jBJE
-Message-ID: <CAD=FV=UtwNjyx56QtRrEo=jbX_PeMRAYZJVXzxqeS-vs4JyGRg@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] ARM: EXYNOS: Call regulator core suspend prepare
- and finish functions
-From: Doug Anderson <dianders@chromium.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Lee Jones <lee.jones@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 20 Oct 2014 12:25:56 -0400
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+To: rjw@rjwysocki.net
+Cc: peterz@infradead.org, nicolas.pitre@linaro.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
+Subject: [PATCH 3/5] cpuidle: idle: menu: Don't reflect when a state selection failed
+Date: Mon, 20 Oct 2014 18:25:41 +0200
+Message-Id: <1413822343-1972-3-git-send-email-daniel.lezcano@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1413822343-1972-1-git-send-email-daniel.lezcano@linaro.org>
+References: <1413822343-1972-1-git-send-email-daniel.lezcano@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Javier,
+In the current code, the check to reflect or not the outcoming state is done
+against the idle state which has been choose and its value.
 
-On Thu, Oct 16, 2014 at 3:13 AM, Javier Martinez Canillas
-<javier.martinez@collabora.co.uk> wrote:
-> The regulator framework has a set of helpers functions to be used when
-> the system is entering and leaving from suspend but these are not called
-> on Exynos platforms. This means that the .set_suspend_* function handlers
-> defined by regulator drivers are not called when the system is suspended.
->
-> Suggested-by: Doug Anderson <dianders@chromium.org>
-> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> ---
->  arch/arm/mach-exynos/suspend.c | 18 ++++++++++++++++++
->  1 file changed, 18 insertions(+)
->
-> diff --git a/arch/arm/mach-exynos/suspend.c b/arch/arm/mach-exynos/suspend.c
-> index cc8d237..ee9a8e0 100644
-> --- a/arch/arm/mach-exynos/suspend.c
-> +++ b/arch/arm/mach-exynos/suspend.c
-> @@ -20,6 +20,7 @@
->  #include <linux/io.h>
->  #include <linux/irqchip/arm-gic.h>
->  #include <linux/err.h>
-> +#include <linux/regulator/machine.h>
->
->  #include <asm/cacheflush.h>
->  #include <asm/hardware/cache-l2x0.h>
-> @@ -443,6 +444,22 @@ static int exynos_suspend_enter(suspend_state_t state)
->
->  static int exynos_suspend_prepare(void)
->  {
-> +       int ret;
-> +
-> +       /*
-> +        * REVISIT: It would be better if struct platform_suspend_ops
-> +        * .prepare handler get the suspend_state_t as a parameter to
-> +        * avoid hard-coding the suspend to mem state. It's safe to do
-> +        * it now only because the suspend_valid_only_mem function is
-> +        * used as the .valid callback used to check if a given state
-> +        * is supported by the platform anyways.
-> +        */
-> +       ret = regulator_suspend_prepare(PM_SUSPEND_MEM);
-> +       if (ret) {
-> +               pr_err("Failed to prepare regulators for system suspend\n");
-> +               return ret;
-> +       }
-> +
->         s3c_pm_check_prepare();
->
->         return 0;
-> @@ -451,6 +468,7 @@ static int exynos_suspend_prepare(void)
->  static void exynos_suspend_finish(void)
->  {
->         s3c_pm_check_cleanup();
-> +       regulator_suspend_finish();
+Instead of doing a check in each of the reflect functions, just don't call reflect
+if something went wrong in the idle path.
 
-It turns out that regulator_suspend_finish() actually returns an error
-code.  Could you print a warning if you see it?
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+---
+ drivers/cpuidle/governors/ladder.c | 3 +--
+ drivers/cpuidle/governors/menu.c   | 4 +---
+ kernel/sched/idle.c                | 3 ++-
+ 3 files changed, 4 insertions(+), 6 deletions(-)
 
-Other than that, feel free to add my Reviewed-by.  Thanks!
+diff --git a/drivers/cpuidle/governors/ladder.c b/drivers/cpuidle/governors/ladder.c
+index fb396d6..c0b36a8 100644
+--- a/drivers/cpuidle/governors/ladder.c
++++ b/drivers/cpuidle/governors/ladder.c
+@@ -165,8 +165,7 @@ static int ladder_enable_device(struct cpuidle_driver *drv,
+ static void ladder_reflect(struct cpuidle_device *dev, int index)
+ {
+ 	struct ladder_device *ldev = &__get_cpu_var(ladder_devices);
+-	if (index > 0)
+-		ldev->last_state_idx = index;
++	ldev->last_state_idx = index;
+ }
+ 
+ static struct cpuidle_governor ladder_governor = {
+diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+index a17515f..3907301 100644
+--- a/drivers/cpuidle/governors/menu.c
++++ b/drivers/cpuidle/governors/menu.c
+@@ -365,9 +365,7 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev,
+ static void menu_reflect(struct cpuidle_device *dev, int index)
+ {
+ 	struct menu_device *data = &__get_cpu_var(menu_devices);
+-	data->last_state_idx = index;
+-	if (index >= 0)
+-		data->needs_update = 1;
++	data->needs_update = 1;
+ }
+ 
+ /**
+diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
+index f439161..9ac7322 100644
+--- a/kernel/sched/idle.c
++++ b/kernel/sched/idle.c
+@@ -162,7 +162,8 @@ use_default:
+ 	/*
+ 	 * Give the governor an opportunity to reflect on the outcome
+ 	 */
+-	cpuidle_reflect(dev, entered_state);
++	if (entered_state >= 0)
++		cpuidle_reflect(dev, entered_state);
+ 
+ exit_idle:
+ 	__current_set_polling();
+-- 
+1.9.1
 
--Doug
