@@ -1,83 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753731AbaJTLDk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 07:03:40 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:51658 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752909AbaJTLDh (ORCPT
+	id S1753767AbaJTLFZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 07:05:25 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:5724 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753060AbaJTLFX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 07:03:37 -0400
-X-AuditID: cbfec7f4-b7f6c6d00000120b-04-5444ec06b15d
-Message-id: <5444EBFA.5030103@samsung.com>
-Date: Mon, 20 Oct 2014 15:03:22 +0400
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.8.1
-MIME-version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, Michal Marek <mmarek@suse.cz>,
-        Sasha Levin <sasha.levin@oracle.com>, x86@kernel.org,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>
-Subject: drivers: random: Shift out-of-bounds in _mix_pool_bytes
-References: <1413802499-17928-1-git-send-email-a.ryabinin@samsung.com>
-In-reply-to: <1413802499-17928-1-git-send-email-a.ryabinin@samsung.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplkeLIzCtJLcpLzFFi42I5/e/4NV22Ny4hBkt+W1t8/dLBYjFn/Ro2
-	iwkP29gtpm0Ut1jZ+YDV4s+uHUwWl3fNYbO4dGABk0XLvgtMFsd7DzBZLD5ym9li86apzBat
-	PT/ZLX5seMzqwOfRsrncY+esu+weCzaVemxeoeWxaVUnm8e7c+fYPU7M+M3i0XTmKLPHx6e3
-	WDze77vK5nFmwRF2j8+b5DxOtHxhDeCN4rJJSc3JLEst0rdL4MqYumArS8F1iYql17eyNzCu
-	FO1i5OSQEDCR+PzjAROELSZx4d56ti5GLg4hgaWMEis6nzJCOM1MEr8uHWEEqeIV0JI4cusi
-	cxcjBweLgKrE0/5ikDCbgJ7Ev1nb2UBsUYEIiY3rd0CVC0r8mHyPBcQWEVCUuNXyhRlkJrPA
-	JWaJS7NPgiWEBRwk5jW9BWsWEnCT6L50COwiTgF3iQvz9jKD2MwC6hKT5i2CsuUlNq95yzyB
-	UWAWkh2zkJTNQlK2gJF5FaNoamlyQXFSeq6hXnFibnFpXrpecn7uJkZI1H3Zwbj4mNUhRgEO
-	RiUeXgFLlxAh1sSy4srcQ4wSHMxKIrzdt4FCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGDNXvhb9
-	ZcZkXHcmV5OHV/OqzEqJtXu5jzm/fiWpeXvN2pttl20sbhkpdij/8DGeMFui5EpY7k3fT9q3
-	+ev2vmizOFlZ077povT/lcyHREU1TF/t+Kb14abxNba1czu3qmf6hitaJs7LWj9ve7RSeesf
-	pSPn1y9Y9nDeyy8Xmv4dO+CQNOnpET0lluKMREMt5qLiRADiPOcRmAIAAA==
+	Mon, 20 Oct 2014 07:05:23 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 20 Oct 2014 04:01:45 -0700
+From: Vidya Sagar <vidyas@nvidia.com>
+To: <thierry.reding@gmail.com>, <bhelgaas@google.com>, <swarren@wwwdotorg.org>
+CC: <kthota@nvidia.com>, <linux-tegra@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Vidya Sagar <vidyas@nvidia.com>
+Subject: [PATCH v2] PCI: tegra: Enable root port specific features
+Date: Mon, 20 Oct 2014 16:34:51 +0530
+Message-ID: <1413803091-10824-1-git-send-email-vidyas@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Theodore.
+Enables root port to advertise its ASPM-L1 capability
+resulting in possible link entry to L1 when an ASPM-L1 capable
+device is connected
+Enables per-controller & per-TMS clock clamping by default
+Enabling above features result in more power saving
 
-I've got this while booting kernel with ubsan:
+It also avoids PM message truncation by waiting for DLLP to finish
+before entering into L1 or L2
 
-    [    0.000000] ================================================================================
-    [    0.000000] UBSan: Undefined behaviour in ../include/linux/bitops.h:107:33
-    [    0.000000] shift exponent 32 is to large for 32-bit type 'unsigned int'
-    [    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted 3.18.0-rc1+ #64
-    [    0.000000]  0000000000000020 0000000000000000 0000000000000000 ffffffff83003c68
-    [    0.000000]  ffffffff82add58a 000000000000009f 0000000000000020 ffffffff83003c78
-    [    0.000000]  ffffffff819a4519 ffffffff83003d28 ffffffff819a4a05 ffffffff82df889d
-    [    0.000000] Call Trace:
-    [    0.000000] dump_stack (/home/andrew/linux/ubsan_x86//lib/dump_stackc:52)
-    [    0.000000] ubsan_epilogue (/home/andrew/linux/ubsan_x86//lib/ubsanc:159)
-    [    0.000000] __ubsan_handle_shift_out_of_bounds (/home/andrew/linux/ubsan_x86//lib/ubsanc:458)
-    [    0.000000] ? dmi_string_nosave (/home/andrew/linux/ubsan_x86//drivers/firmware/dmi_scanc:51)
-    [    0.000000] ? dmi_string (/home/andrew/linux/ubsan_x86//drivers/firmware/dmi_scanc:72)
-    [    0.000000] ? dmi_save_ident (/home/andrew/linux/ubsan_x86//drivers/firmware/dmi_scanc:159)
-    [    0.000000] _mix_pool_bytes (/home/andrew/linux/ubsan_x86//include/linux/bitopsh:107 /home/andrew/linux/ubsan_x86//drivers/char/randomc:509)
-    [    0.000000] ? dmi_decode (/home/andrew/linux/ubsan_x86//drivers/firmware/dmi_scanc:376)
-    [    0.000000] ? dmi_walk_early (/home/andrew/linux/ubsan_x86//drivers/firmware/dmi_scanc:127)
-    [    0.000000] add_device_randomness (/home/andrew/linux/ubsan_x86//drivers/char/randomc:747)
-    [    0.000000] ? dmi_save_one_device (/home/andrew/linux/ubsan_x86//drivers/firmware/dmi_scanc:375)
-    [    0.000000] ? dmi_save_one_device (/home/andrew/linux/ubsan_x86//drivers/firmware/dmi_scanc:375)
-    [    0.000000] dmi_walk_early (/home/andrew/linux/ubsan_x86//drivers/firmware/dmi_scanc:127)
-    [    0.000000] dmi_present (/home/andrew/linux/ubsan_x86//drivers/firmware/dmi_scanc:497)
-    [    0.000000] dmi_scan_machine (/home/andrew/linux/ubsan_x86//drivers/firmware/dmi_scanc:555)
-    [    0.000000] setup_arch (/home/andrew/linux/ubsan_x86//arch/x86/kernel/setupc:1022)
-    [    0.000000] ? printk (/home/andrew/linux/ubsan_x86//kernel/printk/printkc:1849)
-    [    0.000000] ? early_idt_handlers (/home/andrew/linux/ubsan_x86//arch/x86/kernel/head_64S:344)
-    [    0.000000] start_kernel (/home/andrew/linux/ubsan_x86//include/linux/bitmaph:162 /home/andrew/linux/ubsan_x86//include/linux/cpumaskh:333
-/home/andrew/linux/ubsan_x86//include/linux/mm_typesh:464 /home/andrew/linux/ubsan_x86//init/mainc:532)
-    [    0.000000] ? early_idt_handlers (/home/andrew/linux/ubsan_x86//arch/x86/kernel/head_64S:344)
-    [    0.000000] x86_64_start_reservations (/home/andrew/linux/ubsan_x86//arch/x86/kernel/head64c:194)
-    [    0.000000] x86_64_start_kernel (/home/andrew/linux/ubsan_x86//arch/x86/kernel/head64c:183)
-    [    0.000000] ================================================================================
+Signed-off-by: Vidya Sagar <vidyas@nvidia.com>
+---
+v2:
+ Removed rp_read() & rp_write() as they seem to be redundant
+ Moved port disable code under error condition i.e. it the link
+  is down, corresponding port will be disabled
+
+ drivers/pci/host/pci-tegra.c | 50 +++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 45 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/pci/host/pci-tegra.c b/drivers/pci/host/pci-tegra.c
+index 3d43874..7f32b07 100644
+--- a/drivers/pci/host/pci-tegra.c
++++ b/drivers/pci/host/pci-tegra.c
+@@ -237,6 +237,18 @@
+ 		(0xf  << PADS_REFCLK_CFG_DRVI_SHIFT)     \
+ 	)
+ 
++#define NV_PCIE2_RP_VEND_XP1			0x00000F04
++#define NV_PCIE2_RP_VEND_XP_LINK_PVT_CTL_L1_ASPM_SUPPORT	(1 << 21)
++
++#define NV_PCIE2_RP_VEND_XP_BIST		0x00000F4C
++#define PCIE2_RP_VEND_XP_BIST_GOTO_L1_L2_AFTER_DLLP_DONE	(1 << 28)
++
++#define NV_PCIE2_RP_PRIV_MISC			0x00000FE0
++#define PCIE2_RP_PRIV_MISC_CTLR_CLK_CLAMP_THRESHOLD	(0xF << 16)
++#define PCIE2_RP_PRIV_MISC_CTLR_CLK_CLAMP_ENABLE	(1 << 23)
++#define PCIE2_RP_PRIV_MISC_TMS_CLK_CLAMP_THRESHOLD	(0xF << 24)
++#define PCIE2_RP_PRIV_MISC_TMS_CLK_CLAMP_ENABLE		(1 << 31)
++
+ struct tegra_msi {
+ 	struct msi_chip chip;
+ 	DECLARE_BITMAP(used, INT_PCI_MSI_NR);
+@@ -1859,6 +1871,32 @@ retry:
+ 	return false;
+ }
+ 
++/* Enable various features of root port */
++static void tegra_pcie_enable_rp_features(struct tegra_pcie_port *port)
++{
++	unsigned int data;
++
++	/* Power mangagement settings */
++	/* Enable clock clamping by default */
++	data = readl(port->base + NV_PCIE2_RP_PRIV_MISC);
++	data |= PCIE2_RP_PRIV_MISC_CTLR_CLK_CLAMP_THRESHOLD |
++		PCIE2_RP_PRIV_MISC_CTLR_CLK_CLAMP_ENABLE |
++		PCIE2_RP_PRIV_MISC_TMS_CLK_CLAMP_THRESHOLD |
++		PCIE2_RP_PRIV_MISC_TMS_CLK_CLAMP_ENABLE;
++	writel(data, port->base + NV_PCIE2_RP_PRIV_MISC);
++
++	/* Enable rootport to advertise its ASPM - L1 capability */
++	data = readl(port->base + NV_PCIE2_RP_VEND_XP1);
++	data |= NV_PCIE2_RP_VEND_XP_LINK_PVT_CTL_L1_ASPM_SUPPORT;
++	writel(data, port->base + NV_PCIE2_RP_VEND_XP1);
++
++	/* LTSSM : wait for DLLP to finish before entering L1 or L2/L3 */
++	/* to avoid truncating PM messages resulting in receiver errors */
++	data = readl(port->base + NV_PCIE2_RP_VEND_XP_BIST);
++	data |= PCIE2_RP_VEND_XP_BIST_GOTO_L1_L2_AFTER_DLLP_DONE;
++	writel(data, port->base + NV_PCIE2_RP_VEND_XP_BIST);
++}
++
+ static int tegra_pcie_enable(struct tegra_pcie *pcie)
+ {
+ 	struct tegra_pcie_port *port, *tmp;
+@@ -1870,13 +1908,15 @@ static int tegra_pcie_enable(struct tegra_pcie *pcie)
+ 
+ 		tegra_pcie_port_enable(port);
+ 
+-		if (tegra_pcie_port_check_link(port))
++		if (!tegra_pcie_port_check_link(port)) {
++			dev_info(pcie->dev, "link %u down, ignoring\n",
++				port->index);
++			tegra_pcie_port_disable(port);
++			tegra_pcie_port_free(port);
+ 			continue;
++		}
+ 
+-		dev_info(pcie->dev, "link %u down, ignoring\n", port->index);
+-
+-		tegra_pcie_port_disable(port);
+-		tegra_pcie_port_free(port);
++		tegra_pcie_enable_rp_features(port);
+ 	}
+ 
+ 	memset(&hw, 0, sizeof(hw));
+-- 
+1.8.1.5
+
