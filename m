@@ -1,181 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753248AbaJTTyC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 15:54:02 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47209 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751524AbaJTTyA (ORCPT
+	id S1753088AbaJTT4w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 15:56:52 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:60659 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751697AbaJTT4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 15:54:00 -0400
-Date: Mon, 20 Oct 2014 20:53:55 +0100
-From: Thomas Graf <tgraf@suug.ch>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, paulmck@linux.vnet.ibm.com,
-        Nikolay Aleksandrov <nikolay@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ursula Braun <braunu@de.ibm.com>
-Subject: [PATCH] netlink: Re-add locking to netlink_lookup() and seq walker
-Message-ID: <20141020195355.GA2299@casper.infradead.org>
-References: <20141011083627.GB5074@osiris>
- <1413055964.9362.50.camel@edumazet-glaptop2.roam.corp.google.com>
- <20141011222514.GA14186@casper.infradead.org>
- <20141020082107.GB4268@osiris>
+	Mon, 20 Oct 2014 15:56:48 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Scott Branden <sbranden@broadcom.com>
+Cc: Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        bcm-kernel-feedback-list@broadcom.com,
+        Mike Turquette <mturquette@linaro.org>, Alex Elder <elder@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joe Perches <joe@perches.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Antti Palosaari <crope@iki.fi>, JD Zheng <jdzheng@broadcom.com>,
+        Ray Jui <rjui@broadcom.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Jonathan Richardson <jonathar@broadcom.com>
+Subject: Re: [PATCH v5 1/6] ARM: cygnus: Initial support for Broadcom Cygnus SoC
+Date: Mon, 20 Oct 2014 21:55:57 +0200
+Message-ID: <4779079.vI0gT0iWvg@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1413341936-17606-2-git-send-email-sbranden@broadcom.com>
+References: <1413341936-17606-2-git-send-email-sbranden@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141020082107.GB4268@osiris>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:K1XfhD7DcUXmvEwo5FIc8/5htFoqWuOPP+x/i+hEtrD
+ I8sYp/yFIsILpaE9mWw3aCpEl+pZE5O2teF5XLUifr9zqbWWro
+ QfQJTa3pePCpAB5QOGOAGa2YaP1wEEBpzNwIoJGzA/W8SH2Vtt
+ qg69OZKvyjhTAqIF7i6SincGWXEDNH1/iA9QidaKQq/AZgTEg3
+ t1sSvBgTuwbExxs+8wySeAny3w0DW+mKqlsz901Dv0s5I/JZWI
+ ZIKu9nlUzXN/RXHv2H/EuAGelLlSq+iz2SKQD+Wta6KLh4HqUE
+ Bn9c0QjSmcg7wXB4mhEBQsDxeF0Qgw/uz4qAUag5yK2H+9nzr0
+ yto0WtBEgITSykx/RNkc=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Heiko,
+On Tuesday 14 October 2014 19:58:51 Scott Branden wrote:
+>  if ARCH_BCM
+>  
+> +menu "iProc SoC based Machine types"
+> +       config ARCH_BCM_IPROC
+> +               bool
+> +               select ARM_GIC
+> +               select CACHE_L2X0
+> +               select HAVE_ARM_SCU if SMP
+> +               select HAVE_ARM_TWD if SMP
+> +               select ARM_GLOBAL_TIMER
+> +
+> +               select CLKSRC_MMIO
+> +               select ARCH_REQUIRE_GPIOLIB
+> +               select ARM_AMBA
+> +               select PINCTRL
+> +               help
+> +                 This enables support for systems based on Broadcom IPROC architected SoCs.
+> +                 The IPROC complex contains one or more ARM CPUs along with common
+> +                 core periperals. Application specific SoCs are created by adding a
+> +                 uArchitecture containing peripherals outside of the IPROC complex.
+> +                 Currently supported SoCs are Cygnus.
+> +
+> +       config ARCH_BCM_CYGNUS
+> +               bool "Broadcom Cygnus Support" if ARCH_MULTI_V7
 
-Can you test the following patch:
+You still have a three-level menu structure. Please fix.
 
-The synchronize_rcu() in netlink_release() introduces unacceptable
-latency. Reintroduce minimal lookup so we can drop the
-synchronize_rcu() until socket destruction has been RCUfied.
+> +static const char const *bcm_cygnus_dt_compat[] = {
+> +       "brcm,cygnus",
+> +       NULL,
+> +};
+> +
+> +DT_MACHINE_START(BCM_CYGNUS_DT, "Broadcom Cygnus SoC")
+> +       .l2c_aux_val    = 0,
+> +       .l2c_aux_mask   = ~0,
+> +       .dt_compat = bcm_cygnus_dt_compat,
+> +MACHINE_END
+> 
+This looks good.
 
-Signed-off-by: Thomas Graf <tgraf@suug.ch>
----
- net/netlink/af_netlink.c | 37 +++++++++++++++++++++++++------------
- 1 file changed, 25 insertions(+), 12 deletions(-)
-
-diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
-index 7a186e7..f1de72d 100644
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -96,6 +96,14 @@ static DECLARE_WAIT_QUEUE_HEAD(nl_table_wait);
- static int netlink_dump(struct sock *sk);
- static void netlink_skb_destructor(struct sk_buff *skb);
- 
-+/* nl_table locking explained:
-+ * Lookup and traversal are protected with nl_sk_hash_lock or nl_table_lock
-+ * combined with an RCU read-side lock. Insertion and removal are protected
-+ * with nl_sk_hash_lock while using RCU list modification primitives and may
-+ * run in parallel to nl_table_lock protected lookups. Destruction of the
-+ * Netlink socket may only occur *after* nl_table_lock has been acquired
-+ * either during or after the socket has been removed from the list.
-+ */
- DEFINE_RWLOCK(nl_table_lock);
- EXPORT_SYMBOL_GPL(nl_table_lock);
- static atomic_t nl_table_users = ATOMIC_INIT(0);
-@@ -109,10 +117,10 @@ EXPORT_SYMBOL_GPL(nl_sk_hash_lock);
- static int lockdep_nl_sk_hash_is_held(void)
- {
- #ifdef CONFIG_LOCKDEP
--	return (debug_locks) ? lockdep_is_held(&nl_sk_hash_lock) : 1;
--#else
--	return 1;
-+	if (debug_locks)
-+		return lockdep_is_held(&nl_sk_hash_lock) || lockdep_is_held(&nl_table_lock);
- #endif
-+	return 1;
- }
- 
- static ATOMIC_NOTIFIER_HEAD(netlink_chain);
-@@ -1028,11 +1036,13 @@ static struct sock *netlink_lookup(struct net *net, int protocol, u32 portid)
- 	struct netlink_table *table = &nl_table[protocol];
- 	struct sock *sk;
- 
-+	read_lock(&nl_table_lock);
- 	rcu_read_lock();
- 	sk = __netlink_lookup(table, portid, net);
- 	if (sk)
- 		sock_hold(sk);
- 	rcu_read_unlock();
-+	read_unlock(&nl_table_lock);
- 
- 	return sk;
- }
-@@ -1257,9 +1267,6 @@ static int netlink_release(struct socket *sock)
- 	}
- 	netlink_table_ungrab();
- 
--	/* Wait for readers to complete */
--	synchronize_net();
--
- 	kfree(nlk->groups);
- 	nlk->groups = NULL;
- 
-@@ -1281,6 +1288,7 @@ static int netlink_autobind(struct socket *sock)
- 
- retry:
- 	cond_resched();
-+	netlink_table_grab();
- 	rcu_read_lock();
- 	if (__netlink_lookup(table, portid, net)) {
- 		/* Bind collision, search negative portid values. */
-@@ -1288,9 +1296,11 @@ retry:
- 		if (rover > -4097)
- 			rover = -4097;
- 		rcu_read_unlock();
-+		netlink_table_ungrab();
- 		goto retry;
- 	}
- 	rcu_read_unlock();
-+	netlink_table_ungrab();
- 
- 	err = netlink_insert(sk, net, portid);
- 	if (err == -EADDRINUSE)
-@@ -2921,14 +2931,16 @@ static struct sock *netlink_seq_socket_idx(struct seq_file *seq, loff_t pos)
- }
- 
- static void *netlink_seq_start(struct seq_file *seq, loff_t *pos)
--	__acquires(RCU)
-+	__acquires(nl_table_lock) __acquires(RCU)
- {
-+	read_lock(&nl_table_lock);
- 	rcu_read_lock();
- 	return *pos ? netlink_seq_socket_idx(seq, *pos - 1) : SEQ_START_TOKEN;
- }
- 
- static void *netlink_seq_next(struct seq_file *seq, void *v, loff_t *pos)
- {
-+	struct rhashtable *ht;
- 	struct netlink_sock *nlk;
- 	struct nl_seq_iter *iter;
- 	struct net *net;
-@@ -2943,19 +2955,19 @@ static void *netlink_seq_next(struct seq_file *seq, void *v, loff_t *pos)
- 	iter = seq->private;
- 	nlk = v;
- 
--	rht_for_each_entry_rcu(nlk, nlk->node.next, node)
-+	i = iter->link;
-+	ht = &nl_table[i].hash;
-+	rht_for_each_entry(nlk, nlk->node.next, ht, node)
- 		if (net_eq(sock_net((struct sock *)nlk), net))
- 			return nlk;
- 
--	i = iter->link;
- 	j = iter->hash_idx + 1;
- 
- 	do {
--		struct rhashtable *ht = &nl_table[i].hash;
- 		const struct bucket_table *tbl = rht_dereference_rcu(ht->tbl, ht);
- 
- 		for (; j < tbl->size; j++) {
--			rht_for_each_entry_rcu(nlk, tbl->buckets[j], node) {
-+			rht_for_each_entry(nlk, tbl->buckets[j], ht, node) {
- 				if (net_eq(sock_net((struct sock *)nlk), net)) {
- 					iter->link = i;
- 					iter->hash_idx = j;
-@@ -2971,9 +2983,10 @@ static void *netlink_seq_next(struct seq_file *seq, void *v, loff_t *pos)
- }
- 
- static void netlink_seq_stop(struct seq_file *seq, void *v)
--	__releases(RCU)
-+	__releases(RCU) __releases(nl_table_lock)
- {
- 	rcu_read_unlock();
-+	read_unlock(&nl_table_lock);
- }
- 
- 
--- 
-1.9.3
-
+	Arnd
