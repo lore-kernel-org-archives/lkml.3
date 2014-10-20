@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821AbaJTSR4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 14:17:56 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:43137 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752689AbaJTSRr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 14:17:47 -0400
-From: Kevin Hilman <khilman@kernel.org>
-To: Wenyou Yang <wenyou.yang@atmel.com>
-Cc: <wsa@the-dreams.de>, <ludovic.desroches@atmel.com>,
-        <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <nicolas.ferre@atmel.com>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 3/3] i2c/at91: adopt pinctrl support
-References: <1413776535-10123-1-git-send-email-wenyou.yang@atmel.com>
-	<1413776535-10123-4-git-send-email-wenyou.yang@atmel.com>
-Date: Mon, 20 Oct 2014 11:17:43 -0700
-In-Reply-To: <1413776535-10123-4-git-send-email-wenyou.yang@atmel.com> (Wenyou
-	Yang's message of "Mon, 20 Oct 2014 11:42:14 +0800")
-Message-ID: <7h4muyfvw8.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1752868AbaJTSSR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 14:18:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20269 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751233AbaJTSSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 14:18:15 -0400
+Date: Mon, 20 Oct 2014 20:17:55 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 5/8] perf, tools: Support source line numbers in annotate
+Message-ID: <20141020181755.GA5851@krava.brq.redhat.com>
+References: <1411774636-6870-1-git-send-email-andi@firstfloor.org>
+ <1411774636-6870-6-git-send-email-andi@firstfloor.org>
+ <20141020180605.GC9913@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141020180605.GC9913@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wenyou Yang <wenyou.yang@atmel.com> writes:
+On Mon, Oct 20, 2014 at 08:06:05PM +0200, Jiri Olsa wrote:
 
-> Amend the i2c at91 pin controller to optionally take a pin control
-> handle and set the state of the pins to:
->
-> - "default" on boot, resume and before performing an transfer
-> - "sleep" on suspend()
->
-> This should make it possible to optimize energy usage for the pins
-> both for the suspend/resume cycle
->
-> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+SNIP
 
-This patch is a good example of why you should just have the ->suspend
-function call the same function as ->runtime_suspend.
+> > +		if (dl->line_nr && annotate_browser__opts.show_linenr)
+> > +			printed = scnprintf(bf, sizeof(bf), "%*s %-5d ",
+> > +					ab->addr_width, " ", dl->line_nr);
+> > +		else
+> > +			printed = scnprintf(bf, sizeof(bf), "%*s  ",
+> >  				    ab->addr_width, " ");
+> >  		slsmg_write_nstring(bf, printed);
+> >  		slsmg_write_nstring(dl->line, width - printed - pcnt_width + 1);
+> > @@ -733,6 +738,7 @@ static int annotate_browser__run(struct annotate_browser *browser,
+> >  		"o             Toggle disassembler output/simplified view\n"
+> >  		"s             Toggle source code view\n"
+> >  		"/             Search string\n"
+> > +		"k	       Toggle line numbers\n"
+> 
+> extra tab --------^^^^^^ making the text misaligned in the help box
 
-If you do that, rather than having to add the pinctrl_pm* calls bo both
-system PM and runtime PM functions, you could've just added them to the
-runtime PM functions.
+also by pressing 'k' the current line jumps to
+the hottest line, which does not seem right
 
-Kevin
+jirka
