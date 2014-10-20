@@ -1,85 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751953AbaJTPk2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 11:40:28 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:13298 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751231AbaJTPkX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 11:40:23 -0400
-Date: Mon, 20 Oct 2014 11:40:13 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, <linux-rt-users@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 3/7] wait.[ch]: Introduce the simple waitqueue (swait)
- implementation
-Message-ID: <20141020114013.31e5137c@gandalf.local.home>
-In-Reply-To: <20141020152144.GF24595@windriver.com>
-References: <1413591782-23453-1-git-send-email-paul.gortmaker@windriver.com>
-	<1413591782-23453-4-git-send-email-paul.gortmaker@windriver.com>
-	<20141018213417.GE23531@worktop.programming.kicks-ass.net>
-	<1413673519.30326.11.camel@pippen.local.home>
-	<20141020152144.GF24595@windriver.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	id S1752122AbaJTPkk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 11:40:40 -0400
+Received: from mail-bn1on0058.outbound.protection.outlook.com ([157.56.110.58]:22064
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751222AbaJTPkg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 11:40:36 -0400
+Date: Mon, 20 Oct 2014 17:24:25 +0200
+From: Robert Richter <robert.richter@caviumnetworks.com>
+To: Abhilash Kesavan <kesavan.abhilash@gmail.com>
+CC: Robert Richter <rric@kernel.org>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Andrew Bresticker <abrestic@google.com>, Michal Marek <mmarek@suse.cz>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [GIT PULL] dts, kbuild: Implement support for dtb vendor subdirs
+Message-ID: <20141020152425.GY31556@rric.localhost>
+References: <1409899692-1455-1-git-send-email-rric@kernel.org>
+ <CAL1qeaGCeRyeKLo70E264bZcamOfBKoN9Y8_NDCjV5j4DoOw1Q@mail.gmail.com>
+ <20140919123056.GC20170@rric.localhost>
+ <20140919140856.GG2295@e104818-lin.cambridge.arm.com>
+ <20140923112619.GG20170@rric.localhost>
+ <20141002150804.GP20170@rric.localhost>
+ <CAM4voakQnY1JMnjrXfTSNTyzA6_f6jtUgJZXXz2N0YRjq3kXRg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CAM4voakQnY1JMnjrXfTSNTyzA6_f6jtUgJZXXz2N0YRjq3kXRg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [78.53.85.16]
+X-ClientProxiedBy: DB4PR07CA019.eurprd07.prod.outlook.com (10.242.229.29) To
+ SN2PR0701MB815.namprd07.prod.outlook.com (25.160.16.149)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:SN2PR0701MB815;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 03706074BC
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(6069001)(51704005)(189002)(199003)(24454002)(80022003)(93886004)(85306004)(42186005)(76176999)(46102003)(50466002)(77096002)(76506005)(110136001)(40100003)(15202345003)(21056001)(31966008)(97756001)(83506001)(4396001)(86362001)(46406003)(66066001)(64706001)(20776003)(47776003)(23726002)(54356999)(97736003)(122386002)(87976001)(15975445006)(92726001)(92566001)(101416001)(102836001)(19580395003)(33656002)(85852003)(95666004)(120916001)(106356001)(50986999)(76482002)(105586002)(107046002)(99396003);DIR:OUT;SFP:1101;SCL:1;SRVR:SN2PR0701MB815;H:rric.localhost;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-OriginatorOrg: caviumnetworks.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Oct 2014 11:21:44 -0400
-Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
+On 20.10.14 19:26:32, Abhilash Kesavan wrote:
 
-> > Right, and we should slap Paul for not showing up for it ;-)
+> >> > > > > Robert Richter (6):
+> >> > > > >   dts, arm64: Add dtbs_install make target
+> >> > > > >   dts, kbuild: Factor out dtbs install rules to Makefile.dtbinst
+> >> > > > >   dts, arm/arm64: Remove dtbs build rules in sub-makes
+> >> > > > >   dts, kbuild: Implement support for dtb vendor subdirs
+> >> > > > >   dts, arm64: Move dts files to vendor subdirs
+> >> > > > >   dts, arm: Remove $(MACHINE) variable from dtbs make recipes
+
+> > you may want to pull from here alternatively.
 > 
-> And miss turkey day?  ;-)
+> I have been using your patchset as the base for my new arm64 SoC
+> support (http://www.spinics.net/lists/linux-samsung-soc/msg37047.html).
+> Are you planning to rebase and send this again as some of the patches
+> did not apply cleanly for me on linux-next.
 
-Replace it with Alt Beer day!
+Yes, I will rebase it and resend the pull request this week.
 
-
-> I'd like to hear more details on what you had in mind here, so I don't
-> go chasing down the wrong road.  So the local list head gets all the
-> items (via list_cut or moves?) and then that local list is spliced onto
-> the (now temporarily empty) main list head? (presumably all under lock)
-
-No. You move the items off the main list head and add it to the local
-list and they never go back. Just start processing that local list.
-Anything added to the main list after that will not get woken up by
-that current wake_all call. It will need to be woken by another wake_up.
-
-> 
-> What would need to be done as an unwind at the end of processing the
-> local list head before it disappears from existence?  Anything?
-
-Not sure what you mean here.
-
-> 
-> > 
-> > > 
-> > > Also, I'm not entirely sure we want to do the cwait thing, it looks
-> > > painful.
-> > 
-> > Yeah, I have to think about that some more too. I'm currently sitting in
-> > the airport waiting for my final leg of my flight. After 18 hours of
-> > travel, it is probably not too wise to review this work in my current
-> > state ;-)
-> 
-> The alignment/parallel of existing mainline wait code seemed like the
-> consensus back ages ago when this was being discussed on IRC, but if
-> that has since changed, then I can adapt or abandon as required.  I long
-> ago learned that the time spent on something has no correlation to its
-> fitness or probability of being ready for addition to mainline.  :-)
-
-heh, yeah. I'm guessing the point of all that is that anyone using the
-wake_queue() will default to the simple version? And then one would
-have to specify the complex version explicitly? But to do that we make
-all these funny steps?  May be OK, I still haven't spent much thought
-on it.
-
--- Steve
+-Robert
