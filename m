@@ -1,48 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344AbaJTUqn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 16:46:43 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	id S1753236AbaJTUxm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 16:53:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47355 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751885AbaJTUqm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 16:46:42 -0400
-Message-ID: <544574AD.6070509@nod.at>
-Date: Mon, 20 Oct 2014 22:46:37 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1752835AbaJTUxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 16:53:39 -0400
+Date: Mon, 20 Oct 2014 22:50:06 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kirill Tkhai <tkhai@yandex.ru>
+Cc: Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Vladimir Davydov <vdavydov@parallels.com>
+Subject: Re: [PATCH v3] sched/numa: fix unsafe get_task_struct() in
+	task_numa_assign()
+Message-ID: <20141020205006.GA2500@redhat.com>
+References: <1413800145.19914.23.camel@tkhai> <20141020144757.GA10939@redhat.com> <20141020165614.GA16373@redhat.com> <20141020182748.GA20424@redhat.com> <54456E26.2000103@yandex.ru>
 MIME-Version: 1.0
-To: dedekind1@gmail.com
-CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] UBI: Fastmap: Care about the protection queue
-References: <1412029248-22454-1-git-send-email-richard@nod.at>						 <1412029248-22454-4-git-send-email-richard@nod.at>					 <1412346676.3795.62.camel@sauron.fi.intel.com>	 <542EF3BF.1070401@nod.at>			 <1413206263.7906.18.camel@sauron.fi.intel.com>	 <543BE21F.5020504@nod.at>		 <1413213803.7906.45.camel@sauron.fi.intel.com>	 <543C3E60.4080507@nod.at>	 <1413282203.7906.72.camel@sauron.fi.intel.com>	 <543F9895.7010502@nod.at> <1413816389.7906.336.camel@sauron.fi.intel.com>	 <544527A3.7030508@nod.at> <1413819635.7906.369.camel@sauron.fi.intel.com>
-In-Reply-To: <1413819635.7906.369.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54456E26.2000103@yandex.ru>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 20.10.2014 um 17:40 schrieb Artem Bityutskiy:
-> Also, say, PEB X is in the work queue waiting for erasure. Fastmap comes
-> along and saves it as "must be erased" in the fastmap. Fastmap finishes
-> its job, PEB X gets erased, and I write my data there, so PEB X is
-> referred to by LEB Y. Now I have power cut. Then I attach the flash
-> again. Surely it is not that fastmap just erases PEB X and I lose the
-> contents of LEB Y?
+On 10/21, Kirill Tkhai wrote:
+>
+> I think generic helper is a good idea. The prototype looks OK.
+>
+> But I'm a little doubt about retry loop. If this helper is generic and
+> one day it may move to ./include directory,
 
-After reading my mail again, I think my answer was not clear.
-Please let me explain in detail.
+Well, if we add a generic helper I think it should be exported even if
+it has a single caller. But I agree this probably needs a justification
+too.
 
-PEB X waits for erasure. In this state it can get erased and will be moved into
-the free RB tree.
-If a new PEB is requested from UBI it will not get served from the free RB tree,
-instead it will come from the pool. I.e. There is no way that the freshly erased PEB
-will immediately used. If a a fastmap was written while PEB was queued for erasure
-and a power cut happens after the erasure it will be erased again. This does not harm.
-But it can never ever happen that the same PEB will be in a pool (and therefore maybe used)
-and scheduled for erase. A freshly erased PEB can only be used after wandering into the pool.
-But this would require a refill-pool operation first an a write of the fastmap, the said PEB
-cannot be listed as erase work in the fastmap then.
+> isn't there a probability
+> people will use it wrong? This loop may bring delays or something bad.
 
-Thanks,
-//richard
+Yes, I thought about livelock too. OK, we can remove it, just
+s/goto retry/return NULL/. Or, perhaps better, return ERR_PTR(-EAGAIN)
+so that the caller can know that retry is possible.
+
+I do not really mind, and we can reconsider this later. And I will not
+argue if you prefer to add the rq->curr specific hack (like your patch
+does).
+
+> And since we still depends on RCU, I'd suggest to add its lockdep assert.
+
+Agreed.
+
+Let me explain what I personally dislike in v3:
+
+	- I think that we do not have enough reasons for
+	  SLAB_DESTROY_BY_RCU. This is the serious change.
+
+	  probe_kernel_read() looks better to me, and hopefully
+	  IS_ENABLED(DEBUG_PAGEALLOC) can make it conditional.
+
+	- PF_EXITING was fine in task_numa_compare(), but if we
+	  move this logic into a helper (even if it is not exported)
+	  then I think we need a more specific check. sighand == NULL
+	  looks better to me because it clearly connects to
+	  release_task() which makes this task_struct "rcu-unsafe".
+
+	- Again, perhaps we should start we a simple and stupid fix.
+	  We can do get_task_struct() under rq->lock or, if nothing
+	  else, just
+
+	  	raw_spin_lock_irq(&rq->lock);
+	  	cur = rq->curr;
+	  	if (is_idle_task(cur) || (cur->flags & PF_EXITING))
+	  		cur = NULL;
+	  	raw_spin_unlock_irq(&rq->lock);
+
+Either way, I hope you will send v4 ;)
+
+But probably you should wait for for Peter's opinion first.
+
+Oleg.
+
