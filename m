@@ -1,88 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751879AbaJTPuV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 11:50:21 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:59171 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751053AbaJTPuS (ORCPT
+	id S1751483AbaJTP4J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 11:56:09 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:41624 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005AbaJTP4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 11:50:18 -0400
-X-IronPort-AV: E=Sophos;i="5.04,756,1406592000"; 
-   d="scan'208";a="184208420"
-Message-ID: <1413820211.29506.9.camel@citrix.com>
-Subject: Re: [PATCH v4 7/7] xen/arm: introduce GNTTABOP_cache_flush
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
-        <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Date: Mon, 20 Oct 2014 16:50:11 +0100
-In-Reply-To: <1412941908-5850-7-git-send-email-stefano.stabellini@eu.citrix.com>
-References: <alpine.DEB.2.02.1410101244090.17038@kaball.uk.xensource.com>
-	 <1412941908-5850-7-git-send-email-stefano.stabellini@eu.citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
+	Mon, 20 Oct 2014 11:56:04 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] memcg: simplify unreclaimable groups handling in soft limit reclaim
+Date: Mon, 20 Oct 2014 19:55:54 +0400
+Message-ID: <1413820554-15611-1-git-send-email-vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-10-10 at 12:51 +0100, Stefano Stabellini wrote:
-> Introduce support for new hypercall GNTTABOP_cache_flush.
-> Use it to perform cache flashing on pages used for dma when necessary.
-> 
-> If GNTTABOP_cache_flush is supported by the hypervisor, we don't need to
-> bounce dma map operations that involve foreign grants and non-coherent
-> devices.
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> 
-> ---
-> 
-> Changes in v4:
-> - add comment;
-> - avoid bouncing dma map operations that involve foreign grants and
-> non-coherent devices if GNTTABOP_cache_flush is provided by Xen.
-> 
-> Changes in v3:
-> - fix the cache maintenance op call to match what Linux does natively;
-> - update the hypercall interface to match Xen.
-> 
-> Changes in v2:
-> - update the hypercall interface to match Xen;
-> - call the interface on a single page at a time.
-> ---
->  arch/arm/xen/mm.c                   |   41 ++++++++++++++++++++++++++++++-----
->  include/xen/interface/grant_table.h |   19 ++++++++++++++++
->  2 files changed, 54 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
-> index 0c2a75a..21db123 100644
-> --- a/arch/arm/xen/mm.c
-> +++ b/arch/arm/xen/mm.c
-> @@ -11,6 +11,7 @@
->  #include <linux/swiotlb.h>
->  
->  #include <xen/xen.h>
-> +#include <xen/interface/grant_table.h>
->  #include <xen/interface/memory.h>
->  #include <xen/swiotlb-xen.h>
->  
-> @@ -44,6 +45,8 @@ static inline void *kmap_high_get(struct page *page)
->  static inline void kunmap_high(struct page *page) {}
->  #endif
->  
-> +static bool hypercall_flush = false;
+If we fail to reclaim anything from a cgroup during a soft reclaim pass
+we want to get the next largest cgroup exceeding its soft limit. To
+achieve this, we should obviously remove the current group from the tree
+and then pick the largest group. Currently we have a weird loop instead.
+Let's simplify it.
 
-Would be nice to include the word "cache" (or at least cflush) in this.
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+---
+ mm/memcontrol.c |   26 ++++----------------------
+ 1 file changed, 4 insertions(+), 22 deletions(-)
 
-> -arch_initcall(xen_mm_init);
-> +arch_initcall(xen_mm_init)
-
-I think this is stray?
-
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index e957f0c80c6e..53393e27ff03 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3507,34 +3507,16 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+ 		nr_reclaimed += reclaimed;
+ 		*total_scanned += nr_scanned;
+ 		spin_lock_irq(&mctz->lock);
++		__mem_cgroup_remove_exceeded(mz, mctz);
+ 
+ 		/*
+ 		 * If we failed to reclaim anything from this memory cgroup
+ 		 * it is time to move on to the next cgroup
+ 		 */
+ 		next_mz = NULL;
+-		if (!reclaimed) {
+-			do {
+-				/*
+-				 * Loop until we find yet another one.
+-				 *
+-				 * By the time we get the soft_limit lock
+-				 * again, someone might have aded the
+-				 * group back on the RB tree. Iterate to
+-				 * make sure we get a different mem.
+-				 * mem_cgroup_largest_soft_limit_node returns
+-				 * NULL if no other cgroup is present on
+-				 * the tree
+-				 */
+-				next_mz =
+-				__mem_cgroup_largest_soft_limit_node(mctz);
+-				if (next_mz == mz)
+-					css_put(&next_mz->memcg->css);
+-				else /* next_mz == NULL or other memcg */
+-					break;
+-			} while (1);
+-		}
+-		__mem_cgroup_remove_exceeded(mz, mctz);
++		if (!reclaimed)
++			next_mz = __mem_cgroup_largest_soft_limit_node(mctz);
++
+ 		excess = soft_limit_excess(mz->memcg);
+ 		/*
+ 		 * One school of thought says that we should not add
+-- 
+1.7.10.4
 
