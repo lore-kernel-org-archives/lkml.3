@@ -1,98 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753597AbaJTTKe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 15:10:34 -0400
-Received: from mail-vc0-f202.google.com ([209.85.220.202]:53454 "EHLO
-	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751044AbaJTTEK (ORCPT
+	id S1753631AbaJTTKq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 15:10:46 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:34129 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753320AbaJTTKj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 15:04:10 -0400
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Ralf Baechle <ralf@linux-mips.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Bresticker <abrestic@chromium.org>,
-        Paul Burton <paul.burton@imgtec.com>,
-        Qais Yousef <qais.yousef@imgtec.com>,
-        John Crispin <blogic@openwrt.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 02/19] irqchip: mips-gic: Export function to read counter width
-Date: Mon, 20 Oct 2014 12:03:49 -0700
-Message-Id: <1413831846-32100-3-git-send-email-abrestic@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1413831846-32100-1-git-send-email-abrestic@chromium.org>
-References: <1413831846-32100-1-git-send-email-abrestic@chromium.org>
+	Mon, 20 Oct 2014 15:10:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <1413830994.2985.55.camel@deneb.redhat.com>
+References: <1413829782-12891-1-git-send-email-mark.rutland@arm.com>
+	<1413830994.2985.55.camel@deneb.redhat.com>
+Date: Mon, 20 Oct 2014 12:10:38 -0700
+Message-ID: <CAFECyb9tcrk6NuO9OR9v0ysYeWhZ8cz+xoJwmtu28_UwpTfQ5A@mail.gmail.com>
+Subject: Re: [PATCH] efi: efi-stub: notify on DTB absence
+From: Roy Franz <roy.franz@linaro.org>
+To: Mark Salter <msalter@redhat.com>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Matt Fleming <matt.fleming@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Export the function gic_get_count_width to read the width of
-the GIC global counter from GIC_SH_CONFIG.  Update the GIC
-clocksource driver to use this new function.
+On Mon, Oct 20, 2014 at 11:49 AM, Mark Salter <msalter@redhat.com> wrote:
+> On Mon, 2014-10-20 at 19:29 +0100, Mark Rutland wrote:
+>> In the absence of an DTB configuration table, the EFI stub will happily
+>> continue attempting to boot a kernel, despite the fact that this kernel
+>> may not function without a description of the hardware. In this case, as
+>> with a typo'd "dtb=" option (e.g. "dbt=") or many other possible
+>> failures, the only output seen by the user will be the rather terse
+>> output from the EFI stub:
+>>
+>> EFI stub: Booting Linux Kernel...
+>>
+>> To aid those attempting to debug such failures, this patch adds a notice
+>> when no DTB is found, making the output more helpful:
+>>
+>> EFI stub: Booting Linux Kernel...
+>> EFI stub: Generating empty DTB
+>>
+>> Similarly, a positive acknowledgement is added when a user-specified DTB
+>> is in use:
+>>
+>> EFI stub: Booting Linux Kernel...
+>> EFI stub: Using DTB from command line
+>
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
----
- arch/mips/include/asm/gic.h    |  1 +
- arch/mips/kernel/csrc-gic.c    |  9 +--------
- drivers/irqchip/irq-mips-gic.c | 11 +++++++++++
- 3 files changed, 13 insertions(+), 8 deletions(-)
+Acked-by: Roy Franz <roy.franz@linaro.org>
 
-diff --git a/arch/mips/include/asm/gic.h b/arch/mips/include/asm/gic.h
-index 727b7bf..c88e1fa 100644
---- a/arch/mips/include/asm/gic.h
-+++ b/arch/mips/include/asm/gic.h
-@@ -370,6 +370,7 @@ extern void gic_init(unsigned long gic_base_addr,
- 	unsigned int irqbase);
- extern void gic_clocksource_init(unsigned int);
- extern cycle_t gic_read_count(void);
-+extern unsigned int gic_get_count_width(void);
- extern cycle_t gic_read_compare(void);
- extern void gic_write_compare(cycle_t cnt);
- extern void gic_write_cpu_compare(cycle_t cnt, int cpu);
-diff --git a/arch/mips/kernel/csrc-gic.c b/arch/mips/kernel/csrc-gic.c
-index e026209..ab615c6 100644
---- a/arch/mips/kernel/csrc-gic.c
-+++ b/arch/mips/kernel/csrc-gic.c
-@@ -23,15 +23,8 @@ static struct clocksource gic_clocksource = {
- 
- void __init gic_clocksource_init(unsigned int frequency)
- {
--	unsigned int config, bits;
--
--	/* Calculate the clocksource mask. */
--	GICREAD(GIC_REG(SHARED, GIC_SH_CONFIG), config);
--	bits = 32 + ((config & GIC_SH_CONFIG_COUNTBITS_MSK) >>
--		(GIC_SH_CONFIG_COUNTBITS_SHF - 2));
--
- 	/* Set clocksource mask. */
--	gic_clocksource.mask = CLOCKSOURCE_MASK(bits);
-+	gic_clocksource.mask = CLOCKSOURCE_MASK(gic_get_count_width());
- 
- 	/* Calculate a somewhat reasonable rating value. */
- 	gic_clocksource.rating = 200 + frequency / 10000000;
-diff --git a/drivers/irqchip/irq-mips-gic.c b/drivers/irqchip/irq-mips-gic.c
-index 02c7d2a..83dde6f 100644
---- a/drivers/irqchip/irq-mips-gic.c
-+++ b/drivers/irqchip/irq-mips-gic.c
-@@ -63,6 +63,17 @@ cycle_t gic_read_count(void)
- 	return (((cycle_t) hi) << 32) + lo;
- }
- 
-+unsigned int gic_get_count_width(void)
-+{
-+	unsigned int bits, config;
-+
-+	GICREAD(GIC_REG(SHARED, GIC_SH_CONFIG), config);
-+	bits = 32 + 4 * ((config & GIC_SH_CONFIG_COUNTBITS_MSK) >>
-+			 GIC_SH_CONFIG_COUNTBITS_SHF);
-+
-+	return bits;
-+}
-+
- void gic_write_compare(cycle_t cnt)
- {
- 	GICWRITE(GIC_REG(VPE_LOCAL, GIC_VPE_COMPARE_HI),
--- 
-2.1.0.rc2.206.gedb03e5
 
+> Should we also include a positive acknowledgement of loader-provided
+> DTB? This could be UEFI itself or grub devicetree command or grub
+> generated minimal tree.
+
+I could go either way on this.  We now identify the source of the DTB for 2 of
+the 3 sources, so there is some nice symmetry in always identifying where
+it is coming from.  I think that firmware or GRUB (ie from an EFI
+configuration table)
+will be the common/normal case, so I think it's also reasonable to
+just notify the user
+when something unusual is being done.
+
+>
+>>
+>> Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+>> Acked-by: Leif Lindholm <leif.lindholm@linaro.org>
+>> Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+>> Cc: Mark Salter <msalter@redhat.com>
+>> Cc: Matt Fleming <matt.fleming@intel.com>
+>> Cc: Roy Franz <roy.franz@linaro.org>
+>> ---
+>>  drivers/firmware/efi/libstub/arm-stub.c | 9 ++++++++-
+>>  1 file changed, 8 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/firmware/efi/libstub/arm-stub.c b/drivers/firmware/efi/libstub/arm-stub.c
+>> index 480339b..10abf24 100644
+>> --- a/drivers/firmware/efi/libstub/arm-stub.c
+>> +++ b/drivers/firmware/efi/libstub/arm-stub.c
+>> @@ -243,9 +243,16 @@ unsigned long __init efi_entry(void *handle, efi_system_table_t *sys_table,
+>>                       goto fail_free_cmdline;
+>>               }
+>>       }
+>> -     if (!fdt_addr)
+>> +
+>> +     if (fdt_addr) {
+>> +             pr_efi(sys_table, "Using DTB from command line\n");
+>> +     } else {
+>>               /* Look for a device tree configuration table entry. */
+>>               fdt_addr = (uintptr_t)get_fdt(sys_table);
+>> +     }
+>> +
+>> +     if (!fdt_addr)
+>> +             pr_efi(sys_table, "Generating empty DTB\n");
+>>
+>>       status = handle_cmdline_files(sys_table, image, cmdline_ptr,
+>>                                     "initrd=", dram_base + SZ_512M,
+>
+>
