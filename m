@@ -1,63 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752672AbaJTGwP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 02:52:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59911 "EHLO mx1.redhat.com"
+	id S1752811AbaJTGyA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 02:54:00 -0400
+Received: from verein.lst.de ([213.95.11.211]:47104 "EHLO newverein.lst.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752480AbaJTGwN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 02:52:13 -0400
-Date: Mon, 20 Oct 2014 09:55:41 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Denis V. Lunev" <den@openvz.org>
-Cc: virtualization@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Raushaniya Maksudova <rmaksudova@parallels.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH v3 0/2] shrink virtio baloon on OOM in guest
-Message-ID: <20141020065541.GA16212@redhat.com>
-References: <1413388064-5354-1-git-send-email-den@openvz.org>
+	id S1752583AbaJTGx7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 02:53:59 -0400
+Date: Mon, 20 Oct 2014 08:53:55 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Hannes Reinecke <hare@suse.de>
+Cc: Mike Christie <michaelc@cs.wisc.edu>,
+        Sean Stewart <Sean.Stewart@netapp.com>,
+        Bart Van Assche <bvanassche@acm.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6] scsi_dh: get module reference outside of device
+	handler
+Message-ID: <20141020065355.GA6675@lst.de>
+References: <1413734404-1426-1-git-send-email-hch@lst.de> <1413734404-1426-2-git-send-email-hch@lst.de> <5444A530.3080204@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1413388064-5354-1-git-send-email-den@openvz.org>
+In-Reply-To: <5444A530.3080204@suse.de>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 07:47:42PM +0400, Denis V. Lunev wrote:
-> Excessive virtio_balloon inflation can cause invocation of OOM-killer, when
-> Linux is under severe memory pressure. Various mechanisms are responsible for
-> correct virtio_balloon memory management. Nevertheless it is often the case
-> that these control tools does not have enough time to react on fast changing
-> memory load. As a result OS runs out of memory and invokes OOM-killer.
-> The balancing of memory by use of the virtio balloon should not cause the
-> termination of processes while there are pages in the balloon. Now there is
-> no way for virtio balloon driver to free memory at the last moment before
-> some process get killed by OOM-killer.
+On Mon, Oct 20, 2014 at 08:01:20AM +0200, Hannes Reinecke wrote:
+> Is it guaranteed that you cannot call ->attach() for devices which
+> already have a device_handler attached?
+> You've skipped the case
 > 
-> This does not provide a security breach as baloon itself is running
-> inside guest OS and is working in the cooperation with the host. Thus
-> some improvements from guest side should be considered as normal.
-> 
-> To solve the problem, introduce a virtio_balloon callback which is expected
-> to be called from the oom notifier call chain in out_of_memory() function.
-> If virtio balloon could release some memory, it will make the system to
-> return and retry the allocation that forced the out of memory killer to run.
-> 
-> Patch 1 of this series adds support for implementation of virtio_balloon
-> callback, so now leak_balloon() function returns number of freed pages.
-> Patch 2 implements virtio_balloon callback itself.
-> 
-> Changes from v2:
-> - added feature bit to control OOM baloon behavior from host
-> Changes from v1:
-> - minor cosmetic tweaks suggested by rusty@
-> 
-> Signed-off-by: Raushaniya Maksudova <rmaksudova@parallels.com>
-> Signed-off-by: Denis V. Lunev <den@openvz.org>
-> CC: Rusty Russell <rusty@rustcorp.com.au>
-> CC: Michael S. Tsirkin <mst@redhat.com>
+> scsi_dh != sdev->scsi_dh_data->scsi_dh
 
-With the feature bit, I think it's fine.
-
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
+No.  Just instead of an if / else it's an if with an early return in the
+new code.
 
