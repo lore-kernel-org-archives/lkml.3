@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752939AbaJTNum (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 09:50:42 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:50235 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751962AbaJTNug (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 09:50:36 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Chunyan Zhang <chunyan.zhang@spreadtrum.com>, catalin.marinas@arm.com,
-        gregkh@linuxfoundation.org, ijc+devicetree@hellion.org.uk,
-        jslaby@suse.cz, galak@codeaurora.org, broonie@linaro.org,
-        mark.rutland@arm.com, m-karicheri2@ti.com, pawel.moll@arm.com,
-        artagnon@gmail.com, rrichter@cavium.com, robh+dt@kernel.org,
-        will.deacon@arm.com, orsonzhai@gmail.com, geng.ren@spreadtrum.com,
-        zhizhou.zhang@spreadtrum.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sprdlinux@freelists.org
-Subject: Re: [PATCH v2 2/5] Documentation: DT: Add bindings for Spreadtrum Sharkl Platform
-Date: Mon, 20 Oct 2014 15:48:46 +0200
-Message-ID: <9863286.bSvbeP9S6p@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1413539665-11484-3-git-send-email-chunyan.zhang@spreadtrum.com>
-References: <1413539665-11484-3-git-send-email-chunyan.zhang@spreadtrum.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:riRGPxHOJzPmPnbjOt7ddqdtztcd0UMrf4CWyWd5a/F
- pgU6Ibf8Qg+qvMqVQ/y6Y8zMtoPuceeBybI1voQM06KxCRHdmY
- 1edOLXlYXB/zE5yr2cMRi5/YT9hoLie6YW1Ph5hYD2+1qcOFsI
- PBPtVaezjSs61SSCSafStme0sP+4Jl1myD9NJ9idaHj27ew48v
- 3Bk1yb9MyMkQgED9qoCejPeTWjlIM9+oUULItr1qO4NtQzgk8Y
- btfNXh5MK+LWWq22P4NHBU7rH+zwZYVdARj6CkP8saswSpq00X
- I/TSdkmYy8HeZFZar1Vs/2EgSw8WgV8J02so+fFZeUw757Hfqb
- 1QcrvtTHl+tP5R2+qwWg=
-X-UI-Out-Filterresults: notjunk:1;
+	id S1753027AbaJTNv3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 09:51:29 -0400
+Received: from mga14.intel.com ([192.55.52.115]:25037 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752536AbaJTNv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 09:51:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="402946998"
+Message-ID: <1413813074.7906.294.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH v4] mtd: ubi: Extend UBI layer debug/messaging
+ capabilities
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Joe Perches <joe@perches.com>
+Cc: Tanya Brokhman <tlinder@codeaurora.org>,
+        ezequiel.garcia@free-electrons.com, linux-mtd@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Richard Weinberger <richard@nod.at>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Mon, 20 Oct 2014 16:51:14 +0300
+In-Reply-To: <1413302724.3269.18.camel@joe-AO725>
+References: <1413296037-22346-1-git-send-email-tlinder@codeaurora.org>
+	 <543D304C.5000607@codeaurora.org> <1413297205.3269.11.camel@joe-AO725>
+	 <1413299231.7906.101.camel@sauron.fi.intel.com>
+	 <1413302724.3269.18.camel@joe-AO725>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 17 October 2014 17:54:22 Chunyan Zhang wrote:
-> Adds Spreadtrum's prefix "sprd" to vendor-prefixes file.
-> Adds the devicetree binding documentation for Spreadtrum's serial
-> and Sharkl3 SoC based on the Sharkl Platform which is the 64-bit
-> SoC Platform of Spreadtrum.
-> 
-> Signed-off-by: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
-> 
+On Tue, 2014-10-14 at 09:05 -0700, Joe Perches wrote:
+> It's pretty trivial when all the lines are already
+> being touched.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+OK, but then the same change should done in UBIFS, because it's
+ubifs_msg() and so on macros are consistent with UBI macros. So I think
+if this is done, then it is done separately for both UBI and UBIFS.
+
+Artem.
+
