@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753890AbaJTVzJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 17:55:09 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:53759 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753316AbaJTVzH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 17:55:07 -0400
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Daniel Borkmann <dborkman@redhat.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH net] bpf: fix bug in eBPF verifier
-Date: Mon, 20 Oct 2014 14:54:57 -0700
-Message-Id: <1413842097-4380-1-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753896AbaJTV5a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 17:57:30 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:33862 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751490AbaJTV52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 17:57:28 -0400
+Date: Mon, 20 Oct 2014 14:57:08 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH] rtlwifi: prevent format string usage from leaking
+Message-ID: <20141020215708.GA32650@www.outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-while comparing for verifier state equivalency the comparison
-was missing a check for uninitialized register.
-Make sure it does so and add a testcase.
+Use "%s" in the workqueue allocation to make sure the rtl_hal_cfg name
+can never accidentally leak information via a format string.
 
-Fixes: f1bca824dabb ("bpf: add search pruning optimization to verifier")
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
+ drivers/net/wireless/rtlwifi/base.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-while we were staring at the verifier code with Hannes during LPC
-something felt odd in this spot. Yes. It was a bug. Fix it.
-
- kernel/bpf/verifier.c       |    3 ++-
- samples/bpf/test_verifier.c |   11 +++++++++++
- 2 files changed, 13 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/bpf/verifier.c b/kernel/bpf/verifier.c
-index 801f5f3..9f81818 100644
---- a/kernel/bpf/verifier.c
-+++ b/kernel/bpf/verifier.c
-@@ -1409,7 +1409,8 @@ static bool states_equal(struct verifier_state *old, struct verifier_state *cur)
- 		if (memcmp(&old->regs[i], &cur->regs[i],
- 			   sizeof(old->regs[0])) != 0) {
- 			if (old->regs[i].type == NOT_INIT ||
--			    old->regs[i].type == UNKNOWN_VALUE)
-+			    (old->regs[i].type == UNKNOWN_VALUE &&
-+			     cur->regs[i].type != NOT_INIT))
- 				continue;
- 			return false;
- 		}
-diff --git a/samples/bpf/test_verifier.c b/samples/bpf/test_verifier.c
-index f44ef11..eb4bec0 100644
---- a/samples/bpf/test_verifier.c
-+++ b/samples/bpf/test_verifier.c
-@@ -209,6 +209,17 @@ static struct bpf_test tests[] = {
- 		.result = REJECT,
- 	},
- 	{
-+		"program doesn't init R0 before exit in all branches",
-+		.insns = {
-+			BPF_JMP_IMM(BPF_JGE, BPF_REG_1, 0, 2),
-+			BPF_MOV64_IMM(BPF_REG_0, 1),
-+			BPF_ALU64_IMM(BPF_ADD, BPF_REG_0, 2),
-+			BPF_EXIT_INSN(),
-+		},
-+		.errstr = "R0 !read_ok",
-+		.result = REJECT,
-+	},
-+	{
- 		"stack out of bounds",
- 		.insns = {
- 			BPF_ST_MEM(BPF_DW, BPF_REG_10, 8, 0),
+diff --git a/drivers/net/wireless/rtlwifi/base.c b/drivers/net/wireless/rtlwifi/base.c
+index 58ba71830886..40b6d1d006d7 100644
+--- a/drivers/net/wireless/rtlwifi/base.c
++++ b/drivers/net/wireless/rtlwifi/base.c
+@@ -467,7 +467,7 @@ static void _rtl_init_deferred_work(struct ieee80211_hw *hw)
+ 		    rtl_easy_concurrent_retrytimer_callback, (unsigned long)hw);
+ 	/* <2> work queue */
+ 	rtlpriv->works.hw = hw;
+-	rtlpriv->works.rtl_wq = alloc_workqueue(rtlpriv->cfg->name, 0, 0);
++	rtlpriv->works.rtl_wq = alloc_workqueue("%s", 0, 0, rtlpriv->cfg->name);
+ 	INIT_DELAYED_WORK(&rtlpriv->works.watchdog_wq,
+ 			  (void *)rtl_watchdog_wq_callback);
+ 	INIT_DELAYED_WORK(&rtlpriv->works.ips_nic_off_wq,
 -- 
-1.7.9.5
+1.9.1
 
+
+-- 
+Kees Cook
+Chrome OS Security
