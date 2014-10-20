@@ -1,101 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752671AbaJTNMY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 09:12:24 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45240 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751725AbaJTNMW (ORCPT
+	id S1752714AbaJTNMo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 09:12:44 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:52428 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751725AbaJTNMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 09:12:22 -0400
-Date: Mon, 20 Oct 2014 14:12:20 +0100
-From: Thomas Graf <tgraf@suug.ch>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, linux-scsi@vger.kernel.org,
-        linux-s390@vger.kernel.org, v9fs-developer@lists.sourceforge.net,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        Amit Shah <amit.shah@redhat.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paolo Bonzini <pbonzini@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v4 13/25] virtio_console: enable VQs early
-Message-ID: <20141020131220.GC18561@casper.infradead.org>
-References: <1413114332-626-1-git-send-email-mst-v4@redhat.com>
- <1413114332-626-14-git-send-email-mst-v4@redhat.com>
- <20141020120750.GA18561@casper.infradead.org>
- <20141020131016.GA20489@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141020131016.GA20489@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 20 Oct 2014 09:12:43 -0400
+From: Stefan Hengelein <stefan.hengelein@fau.de>
+To: linux-mips@linux-mips.org
+Cc: linux-kernel@vger.kernel.org, ralf@linux-mips.org, geert@linux-m68k.org,
+        Stefan Hengelein <stefan.hengelein@fau.de>
+Subject: [PATCH] MIPS: ath79: fix compilation error when CONFIG_PCI is disabled
+Date: Mon, 20 Oct 2014 15:11:39 +0200
+Message-Id: <1413810699-44465-1-git-send-email-stefan.hengelein@fau.de>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <CAMuHMdV3cGsW3iONgHHsMgVcoOqjLDoiE5u-+62M=6+fOYsj4Q@mail.gmail.com>
+References: <CAMuHMdV3cGsW3iONgHHsMgVcoOqjLDoiE5u-+62M=6+fOYsj4Q@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/20/14 at 04:10pm, Michael S. Tsirkin wrote:
-> On Mon, Oct 20, 2014 at 01:07:50PM +0100, Thomas Graf wrote:
-> > On 10/13/14 at 10:50am, Michael S. Tsirkin wrote:
-> > > virtio spec requires drivers to set DRIVER_OK before using VQs.
-> > > This is set automatically after probe returns, virtio console violated this
-> > > rule by adding inbufs, which causes the VQ to be used directly within
-> > > probe.
-> > > 
-> > > To fix, call virtio_device_ready before using VQs.
-> > > 
-> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > > ---
-> > >  drivers/char/virtio_console.c | 2 ++
-> > >  1 file changed, 2 insertions(+)
-> > > 
-> > > diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-> > > index b585b47..6ebe8f6 100644
-> > > --- a/drivers/char/virtio_console.c
-> > > +++ b/drivers/char/virtio_console.c
-> > > @@ -1449,6 +1449,8 @@ static int add_port(struct ports_device *portdev, u32 id)
-> > >  	spin_lock_init(&port->outvq_lock);
-> > >  	init_waitqueue_head(&port->waitqueue);
-> > >  
-> > > +	virtio_device_ready(portdev->vdev);
-> > > +
-> > >  	/* Fill the in_vq with buffers so the host can send us data. */
-> > >  	nr_added_bufs = fill_queue(port->in_vq, &port->inbuf_lock);
-> > >  	if (!nr_added_bufs) {
-> 
-> I see Cornelia sent a patch already.
-> I'd like to reproduce this though - could you send me
-> the command line please?
+When CONFIG_PCI is disabled, 'db120_pci_init()' had a different
+signature than when was enabled. Therefore, compilation failed when
+CONFIG_PCI was not present.
 
-1. Invoke qemu:
+arch/mips/ath79/mach-db120.c:132: error: too many arguments to function 'db120_pci_init'
 
-/usr/bin/qemu-system-x86_64 -machine accel=kvm -name f20-2 -S -machine
-pc-i440fx-1.4,accel=kvm,usb=off -m 2048 -realtime mlock=off -smp
-4,sockets=4,cores=1,threads=1 -uuid
-dd45ec4c-7c26-4b73-9b6b-81f2912c5235 -no-user-config -nodefaults
--chardev
-socket,id=charmonitor,path=/var/lib/libvirt/qemu/f20-2.monitor,server,nowait
--mon chardev=charmonitor,id=monitor,mode=control -rtc base=utc
--no-shutdown -device piix3-usb-uhci,id=usb,bus=pci.0,addr=0x1.0x2
--device virtio-serial-pci,id=virtio-serial0,bus=pci.0,addr=0x5 -drive
-file=/virt/f20n2-clone,if=none,id=drive-virtio-disk0,format=raw
--device
-virtio-blk-pci,scsi=off,bus=pci.0,addr=0x6,drive=drive-virtio-disk0,id=virtio-disk0,bootindex=1
--netdev tap,fd=24,id=hostnet0,vhost=on,vhostfd=25 -device
-virtio-net-pci,netdev=hostnet0,id=net0,mac=52:54:00:ef:72:4e,bus=pci.0,addr=0x3
--chardev pty,id=charserial0 -device
-isa-serial,chardev=charserial0,id=serial0 -chardev
-spicevmc,id=charchannel0,name=vdagent -device
-virtserialport,bus=virtio-serial0.0,nr=1,chardev=charchannel0,id=channel0,name=com.redhat.spice.0
--device usb-tablet,id=input0 -spice
-port=5900,addr=127.0.0.1,disable-ticketing,seamless-migration=on
--device
-qxl-vga,id=video0,ram_size=67108864,vram_size=67108864,bus=pci.0,addr=0x2
--device intel-hda,id=sound0,bus=pci.0,addr=0x4 -device
-hda-duplex,id=sound0-codec0,bus=sound0.0,cad=0 -device
-virtio-balloon-pci,id=balloon0,bus=pci.0,addr=0x7
+This error was found with vampyr.
 
-2. Attach console right away: virsh console f20-2
+Signed-off-by: Stefan Hengelein <stefan.hengelein@fau.de>
+
+---
+Changelog:
+v2: fix prototype instead of removing the caller
+---
+ arch/mips/ath79/mach-db120.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/mips/ath79/mach-db120.c b/arch/mips/ath79/mach-db120.c
+index 4d661a1..9423f5a 100644
+--- a/arch/mips/ath79/mach-db120.c
++++ b/arch/mips/ath79/mach-db120.c
+@@ -113,7 +113,7 @@ static void __init db120_pci_init(u8 *eeprom)
+ 	ath79_register_pci();
+ }
+ #else
+-static inline void db120_pci_init(void) {}
++static inline void db120_pci_init(u8 *eeprom) {}
+ #endif /* CONFIG_PCI */
+ 
+ static void __init db120_setup(void)
+-- 
+1.9.1
+
