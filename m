@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752122AbaJTPkk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 11:40:40 -0400
-Received: from mail-bn1on0058.outbound.protection.outlook.com ([157.56.110.58]:22064
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751222AbaJTPkg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 11:40:36 -0400
-Date: Mon, 20 Oct 2014 17:24:25 +0200
-From: Robert Richter <robert.richter@caviumnetworks.com>
-To: Abhilash Kesavan <kesavan.abhilash@gmail.com>
-CC: Robert Richter <rric@kernel.org>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Andrew Bresticker <abrestic@google.com>, Michal Marek <mmarek@suse.cz>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [GIT PULL] dts, kbuild: Implement support for dtb vendor subdirs
-Message-ID: <20141020152425.GY31556@rric.localhost>
-References: <1409899692-1455-1-git-send-email-rric@kernel.org>
- <CAL1qeaGCeRyeKLo70E264bZcamOfBKoN9Y8_NDCjV5j4DoOw1Q@mail.gmail.com>
- <20140919123056.GC20170@rric.localhost>
- <20140919140856.GG2295@e104818-lin.cambridge.arm.com>
- <20140923112619.GG20170@rric.localhost>
- <20141002150804.GP20170@rric.localhost>
- <CAM4voakQnY1JMnjrXfTSNTyzA6_f6jtUgJZXXz2N0YRjq3kXRg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CAM4voakQnY1JMnjrXfTSNTyzA6_f6jtUgJZXXz2N0YRjq3kXRg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [78.53.85.16]
-X-ClientProxiedBy: DB4PR07CA019.eurprd07.prod.outlook.com (10.242.229.29) To
- SN2PR0701MB815.namprd07.prod.outlook.com (25.160.16.149)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:SN2PR0701MB815;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 03706074BC
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(6069001)(51704005)(189002)(199003)(24454002)(80022003)(93886004)(85306004)(42186005)(76176999)(46102003)(50466002)(77096002)(76506005)(110136001)(40100003)(15202345003)(21056001)(31966008)(97756001)(83506001)(4396001)(86362001)(46406003)(66066001)(64706001)(20776003)(47776003)(23726002)(54356999)(97736003)(122386002)(87976001)(15975445006)(92726001)(92566001)(101416001)(102836001)(19580395003)(33656002)(85852003)(95666004)(120916001)(106356001)(50986999)(76482002)(105586002)(107046002)(99396003);DIR:OUT;SFP:1101;SCL:1;SRVR:SN2PR0701MB815;H:rric.localhost;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-OriginatorOrg: caviumnetworks.com
+	id S1752133AbaJTPlv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 11:41:51 -0400
+Received: from mga14.intel.com ([192.55.52.115]:45580 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751092AbaJTPlt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 11:41:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,756,1406617200"; 
+   d="scan'208";a="608165511"
+Message-ID: <1413819635.7906.369.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 3/4] UBI: Fastmap: Care about the protection queue
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Mon, 20 Oct 2014 18:40:35 +0300
+In-Reply-To: <544527A3.7030508@nod.at>
+References: <1412029248-22454-1-git-send-email-richard@nod.at>
+						 <1412029248-22454-4-git-send-email-richard@nod.at>
+					 <1412346676.3795.62.camel@sauron.fi.intel.com>
+	 <542EF3BF.1070401@nod.at>			 <1413206263.7906.18.camel@sauron.fi.intel.com>
+	 <543BE21F.5020504@nod.at>		 <1413213803.7906.45.camel@sauron.fi.intel.com>
+	 <543C3E60.4080507@nod.at>	 <1413282203.7906.72.camel@sauron.fi.intel.com>
+	 <543F9895.7010502@nod.at> <1413816389.7906.336.camel@sauron.fi.intel.com>
+	 <544527A3.7030508@nod.at>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20.10.14 19:26:32, Abhilash Kesavan wrote:
-
-> >> > > > > Robert Richter (6):
-> >> > > > >   dts, arm64: Add dtbs_install make target
-> >> > > > >   dts, kbuild: Factor out dtbs install rules to Makefile.dtbinst
-> >> > > > >   dts, arm/arm64: Remove dtbs build rules in sub-makes
-> >> > > > >   dts, kbuild: Implement support for dtb vendor subdirs
-> >> > > > >   dts, arm64: Move dts files to vendor subdirs
-> >> > > > >   dts, arm: Remove $(MACHINE) variable from dtbs make recipes
-
-> > you may want to pull from here alternatively.
+On Mon, 2014-10-20 at 17:17 +0200, Richard Weinberger wrote:
+> > That's just fastmap code not doing the right thing. We should not touch
+> > the work queue directly at all. What we _should_ do instead is to make
+> > it empty by asking the subsystem which manages it to flush it.
+> > 
+> > 1. Lock the work queue to prevent anyone from submitting new jobs while
+> > we are in process of writing the fastmap.
+> > 2. Flush all works
+> > 3. do all the fastmap write stuff
+> > 4. Unlock
 > 
-> I have been using your patchset as the base for my new arm64 SoC
-> support (http://www.spinics.net/lists/linux-samsung-soc/msg37047.html).
-> Are you planning to rebase and send this again as some of the patches
-> did not apply cleanly for me on linux-next.
+> Are you sure? Flushing all works before every fastmap write will slow UBI down.
+> The fastmap write is not cheap. The goal should be to make it faster.
 
-Yes, I will rebase it and resend the pull request this week.
+Yes, you are right. So instead, we wanna "freeze" it, and save all PEBs
+the jobs in fastmap too.
 
--Robert
+Why 'ubi_write_fastmap()' only cares about the erase jobs, and saves the
+PEBs from the job as "must be erased".
+
+What about the "move" jobs?
+
+Also, say, PEB X is in the work queue waiting for erasure. Fastmap comes
+along and saves it as "must be erased" in the fastmap. Fastmap finishes
+its job, PEB X gets erased, and I write my data there, so PEB X is
+referred to by LEB Y. Now I have power cut. Then I attach the flash
+again. Surely it is not that fastmap just erases PEB X and I lose the
+contents of LEB Y?
+
