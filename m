@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158AbaJTTOE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 15:14:04 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:63385 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180AbaJTTOA (ORCPT
+	id S1751995AbaJTTTc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 15:19:32 -0400
+Received: from www17.your-server.de ([213.133.104.17]:55741 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176AbaJTTTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 15:14:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141020182818.GE9913@krava.brq.redhat.com>
-References: <1411774636-6870-1-git-send-email-andi@firstfloor.org>
-	<1411774636-6870-9-git-send-email-andi@firstfloor.org>
-	<20141020182818.GE9913@krava.brq.redhat.com>
-Date: Mon, 20 Oct 2014 21:13:58 +0200
-X-Google-Sender-Auth: YRoRJHFDPrK0Hs8tjCdNSuz9OKM
-Message-ID: <CAMuHMdUdSK=ibgLowJcsduWykcfS7JacHO8wOcYb0hMLtKCwpQ@mail.gmail.com>
-Subject: Re: [PATCH 8/8] tools, perf: Add asprintf replacement
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        namhyung@kernel.org, acme@kernel.org, Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 20 Oct 2014 15:19:30 -0400
+Message-ID: <1413832768.2991.39.camel@localhost.localdomain>
+Subject: Re: [uml-devel] [UM] Long loop in __getnsdayoftime() after resume
+ from ram
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Richard Weinberger <richard@nod.at>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel <user-mode-linux-devel@lists.sourceforge.net>
+Date: Mon, 20 Oct 2014 21:19:28 +0200
+In-Reply-To: <5444DC3F.20601@nod.at>
+References: <E1Xg9cr-0007LK-S6@www17.your-server.de> <5444DC3F.20601@nod.at>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 20, 2014 at 8:28 PM, Jiri Olsa <jolsa@redhat.com> wrote:
->> +int vasprintf(char **str, const char *fmt, va_list ap)
->> +{
->> +     char buf[1024];
->
-> could you please make it work for generic buf len?
+Am Montag, den 20.10.2014, 11:56 +0200 schrieb Richard Weinberger:
+> Am 20.10.2014 um 11:51 schrieb Thomas Meyer:
+> >> Hmm, does this always happen?
+> > 
+> > Yes, my single core system seems to trigger this every time after resume from ram.
+> 
+> What is your host kernel?
 
-The actual size above doesn't matter, except for stack usage.
-It could be 1 (are there any bugs triggered when using zero? ;-).
-The real buffer is allocated by malloc() below.
+The standard Fedora kernel: 3.16.4-200.fc20.x86_64
 
->> +     int len = vsnprintf(buf, sizeof buf, fmt, ap);
->
-> WARNING: sizeof buf should be sizeof(buf)
->
->> +
->> +     *str = malloc(len + 1);
->> +     if (!*str)
->> +             return -1;
->> +     strcpy(*str, buf);
->> +     return len;
->> +}
+> 
+> >> At least on my notebook it did not happen. I've started an UML yesterday 
+> >> suspended it and after more than 12h it worked fine today. 
+> >>
+> >> BTW: Do you see the issue also then freezing UML using the freezer cgroup?
+> > 
+> > I'm not sure what do you mean by this. Do I need to enable some special configs for this in the host or uml kernel?
+> 
+> Create on the host side a new freezer cgroup, put UML into it and freeze/thaw it.
+> i.e. mkdir /sys/fs/cgroup/freezer/uml ; echo <pid of a shell> >  /sys/fs/cgroup/freezer/uml/tasks.
+> In the said shell run UML and then freeze it using echo FROZEN > /sys/fs/cgroup/freezer/uml/freezer.state.
+> Later thaw it: echo THAWED > /sys/fs/cgroup/freezer/uml/freezer.state
+> 
 
-Gr{oetje,eeting}s,
+I'll try this.
+Thanks for this tip.
 
-                        Geert
+with kind regards
+thomas
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
