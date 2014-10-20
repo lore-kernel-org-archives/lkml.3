@@ -1,105 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751862AbaJTMH6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 08:07:58 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44970 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119AbaJTMH4 (ORCPT
+	id S1751945AbaJTMIw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 08:08:52 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:17062 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751143AbaJTMIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 08:07:56 -0400
-Date: Mon, 20 Oct 2014 13:07:50 +0100
-From: Thomas Graf <tgraf@suug.ch>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, linux-scsi@vger.kernel.org,
-        linux-s390@vger.kernel.org, v9fs-developer@lists.sourceforge.net,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        Amit Shah <amit.shah@redhat.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paolo Bonzini <pbonzini@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v4 13/25] virtio_console: enable VQs early
-Message-ID: <20141020120750.GA18561@casper.infradead.org>
-References: <1413114332-626-1-git-send-email-mst-v4@redhat.com>
- <1413114332-626-14-git-send-email-mst-v4@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413114332-626-14-git-send-email-mst-v4@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 20 Oct 2014 08:08:48 -0400
+X-AuditID: cbfee68f-f791c6d000004834-ce-5444fb4ed2d3
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: viresh.kumar@linaro.org, tomasz.figa@gmail.com
+Cc: kgene.kim@samsung.com, thomas.ab@samsung.com, kyungmin.park@samsung.com,
+        inki.dae@samsung.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [PATCHv4 0/4] cpufreq: Use cpufreq-dt driver for Exynos3250
+Date: Mon, 20 Oct 2014 21:08:38 +0900
+Message-id: <1413806922-22722-1-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsWyRsSkQNfvt0uIwe797BbXvzxntZh0fwKL
+	Re+Cq2wWZ5vesFtsenyN1eLyrjlsFp97jzBazDi/j8miYxmjxapdfxgtNn71cOD22DnrLrvH
+	nWt72Dw2L6n36NuyitHj8ya5ANYoLpuU1JzMstQifbsEroyp34+zFnTzVPzYd4O1gfEHZxcj
+	B4eEgIlE76KILkZOIFNM4sK99WxdjFwcQgJLGSW+XLjBDpEwkejpmMICkZjOKPFj5lEop4lJ
+	4uSW7cwgVWwCWhL7X9xgA7FFBIwkVu1cygpSxCzQxyTxf/ETdpB1wgIuEkdv24PUsAioSpy+
+	1s0EEuYVcJWY904MYpmcxIc9j9hBWiUE5rFLPF50mB2iXkDi2+RDLBBXy0psOsAMUS8pcXDF
+	DZYJjIILGBlWMYqmFiQXFCelFxnrFSfmFpfmpesl5+duYgSG9el/z/p3MN49YH2IUYCDUYmH
+	d4eZS4gQa2JZcWXuIUZToA0TmaVEk/OB0ZNXEm9obGZkYWpiamxkbmmmJM67UOpnsJBAemJJ
+	anZqakFqUXxRaU5q8SFGJg5OqQbGSjfl3gtTJQ2eKp7cdMNepibW2ym8rq/oVPEC9SVvNVm3
+	qxhvzf62bb/AppNbchbtypy57cvSU9885gb03RTfcGvP7Pwj7wRT9pVvPvhQULf9VOvSr8Xl
+	Rr9nqt1VtJz+I+H2h8Vzf2y2F58aPu/ghi0qAfHPjzN829jwe3rS3rc/06wZu2fcjlRiKc5I
+	NNRiLipOBADp/Cr5ZgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHIsWRmVeSWpSXmKPExsVy+t9jQV3f3y4hBiu7bSyuf3nOajHp/gQW
+	i94FV9kszja9YbfY9Pgaq8XlXXPYLD73HmG0mHF+H5NFxzJGi1W7/jBabPzq4cDtsXPWXXaP
+	O9f2sHlsXlLv0bdlFaPH501yAaxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW
+	5koKeYm5qbZKLj4Bum6ZOUCHKSmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ
+	axgzpn4/zlrQzVPxY98N1gbGH5xdjJwcEgImEj0dU1ggbDGJC/fWs3UxcnEICUxnlPgx8ygL
+	hNPEJHFyy3ZmkCo2AS2J/S9usIHYIgJGEqt2LmUFKWIW6GOS+L/4CXsXIweHsICLxNHb9iA1
+	LAKqEqevdTOBhHkFXCXmvRODWCYn8WHPI/YJjNwLGBlWMYqmFiQXFCel5xrqFSfmFpfmpesl
+	5+duYgTHzTOpHYwrGywOMQpwMCrx8O4wcwkRYk0sK67MPcQowcGsJMIb9Q0oxJuSWFmVWpQf
+	X1Sak1p8iNEUaPlEZinR5HxgTOeVxBsam5gZWRqZG1oYGZsrifMeaLUOFBJITyxJzU5NLUgt
+	gulj4uCUamA0spb6vzhSUFTq8KTo7MS4jdtfdP5eVRLzZw7rh1L3OY4fUk5++nC4rKFKsS44
+	eUHtFHnrKrud8588/Dmh4cW2p1q7X83x3XP/2n2RpBaTwH3VxxTmLjZRj+yxCjqi/3OS8M6F
+	zYoOGfqKDvtfhN9auXeuhtvK/NuLYnS50ttvfFPSfiTvvlJRiaU4I9FQi7moOBEA5GLWIbEC	AAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/13/14 at 10:50am, Michael S. Tsirkin wrote:
-> virtio spec requires drivers to set DRIVER_OK before using VQs.
-> This is set automatically after probe returns, virtio console violated this
-> rule by adding inbufs, which causes the VQ to be used directly within
-> probe.
-> 
-> To fix, call virtio_device_ready before using VQs.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  drivers/char/virtio_console.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-> index b585b47..6ebe8f6 100644
-> --- a/drivers/char/virtio_console.c
-> +++ b/drivers/char/virtio_console.c
-> @@ -1449,6 +1449,8 @@ static int add_port(struct ports_device *portdev, u32 id)
->  	spin_lock_init(&port->outvq_lock);
->  	init_waitqueue_head(&port->waitqueue);
->  
-> +	virtio_device_ready(portdev->vdev);
-> +
->  	/* Fill the in_vq with buffers so the host can send us data. */
->  	nr_added_bufs = fill_queue(port->in_vq, &port->inbuf_lock);
->  	if (!nr_added_bufs) {
+This patchset use cpufreq-dt driver to support Exynos3250 cpufreq and tested it
+on Exynos3250-based Rinato board.
 
-Seems like probe and add_port() now both set VIRTIO_CONFIG_S_DRIVER_OK
+Changes from v3:
+- This patchset is based on 3.18-rc1 with new patchset[3] of Thomas Abraham
+  [3] [PATCH v11 0/6] cpufreq: use generic cpufreq drivers for exynos platforms
+  - http://www.spinics.net/lists/arm-kernel/msg370412.html
 
-    1.839658] kernel BUG at include/linux/virtio_config.h:125!
-[    1.839995] invalid opcode: 0000 [#1] SMP 
-[    1.840169] Modules linked in: serio_raw virtio_balloon pcspkr virtio_net virtio_console soundcore parport_pc floppy pvpanic parport i2c_piix4 nfsd auth_rpcgss nfs_acl lockd grace sunrpc qxl drm_kms_helper ttm drm virtio_blk i2c_core virtio_pci ata_generic virtio_ring virtio pata_acpi
-[    1.840169] CPU: 2 PID: 266 Comm: kworker/2:2 Not tainted 3.17.0+ #1
-[    1.840169] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[    1.840169] Workqueue: events control_work_handler [virtio_console]
-[    1.840169] task: ffff8800364bc840 ti: ffff880078490000 task.ti: ffff880078490000
-[    1.840169] RIP: 0010:[<ffffffffa01d92c6>]  [<ffffffffa01d92c6>] virtio_device_ready.part.12+0x4/0x6 [virtio_console]
-[    1.840169] RSP: 0018:ffff880078493c78  EFLAGS: 00010202
-[    1.840169] RAX: 0000000000000007 RBX: ffff880036406200 RCX: 0000000000006e39
-[    1.840169] RDX: 000000000000c0b2 RSI: 0000000000000000 RDI: 000000000001c0b2
-[    1.840169] RBP: ffff880078493c78 R08: ffffffff81d2c6f8 R09: 0000000000000000
-[    1.840169] R10: 0000000000000001 R11: ffff8800364bd000 R12: ffff880036618400
-[    1.840169] R13: 0000000000000001 R14: ffff8800368c6800 R15: ffff880036406220
-[    1.840169] FS:  0000000000000000(0000) GS:ffff88007fd00000(0000) knlGS:0000000000000000
-[    1.840169] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[    1.840169] CR2: 00007f1c31c90000 CR3: 0000000001c14000 CR4: 00000000000006e0
-[    1.840169] Stack:
-[    1.840169]  ffff880078493ce8 ffffffffa01d886a ffff880000000001 ffffffff810e20cd
-[    1.840169]  ffff880078493cb8 0000000000000282 0000000000000000 0000000087f90194
-[    1.840169]  ffff880078493ce8 ffff88007ab1d4e0 ffff880036618498 ffff880036618410
-[    1.840169] Call Trace:
-[    1.840169]  [<ffffffffa01d886a>] add_port+0x40a/0x440 [virtio_console]
-[    1.840169]  [<ffffffff810e20cd>] ? trace_hardirqs_on+0xd/0x10
-[    1.840169]  [<ffffffffa01d8c6a>] control_work_handler+0x3ca/0x420 [virtio_console]
-[    1.840169]  [<ffffffff810b0e7b>] ? process_one_work+0x15b/0x530
-[    1.840169]  [<ffffffff810b0ef4>] process_one_work+0x1d4/0x530
-[    1.840169]  [<ffffffff810b0e7b>] ? process_one_work+0x15b/0x530
-[    1.840169]  [<ffffffff810b136b>] worker_thread+0x11b/0x490
-[    1.840169]  [<ffffffff810b1250>] ? process_one_work+0x530/0x530
-[    1.840169]  [<ffffffff810b67c3>] kthread+0xf3/0x110
-[    1.840169]  [<ffffffff81788f00>] ? _raw_spin_unlock_irq+0x30/0x50
-[    1.840169]  [<ffffffff810b66d0>] ? kthread_create_on_node+0x240/0x240
-[    1.840169]  [<ffffffff81789a7c>] ret_from_fork+0x7c/0xb0
-[    1.840169]  [<ffffffff810b66d0>] ? kthread_create_on_node+0x240/0x240
-[    1.840169] Code: ff 49 89 c4 4d 85 e4 0f 8f 25 ff ff ff eb ad 48 c7 c0 f4 ff ff ff e9 17 ff ff ff e8 f5 cd eb e0 90 55 48 89 e5 0f 0b 55 48 89 e5 <0f> 0b 55 48 89 e5 0f 0b 55 48 89 e5 e8 99 e2 ff ff 48 c7 c7 c0 
-[    1.840169] RIP  [<ffffffffa01d92c6>] virtio_device_ready.part.12+0x4/0x6 [virtio_console]
-[    1.840169]  RSP <ffff880078493c78>
+Changes from v2:
+- Rebased on new patchset of Thomas Abraham
+  and for-next branch of samsunc-clk.git of Tomasz Figa
+
+Changes from v1:
+- Rebased on new patchset[1] by Thomas Abraham
+  [1] [PATCH v10 0/6] cpufreq: use generic cpufreq drivers for exynos platforms
+  - http://www.spinics.net/lists/arm-kernel/msg364790.html
+- Modify clk-cpu.c to support Exynos3250
+- Drop documentation patch on previous patchset[2]
+  [2] http://www.spinics.net/lists/cpufreq/msg10265.html
+- Add only operating-points for Exynos3250 without armclk-divider-table
+
+Chanwoo Choi (4):
+  clk: samsung: exynos3250: Add cpu clock configuration data and instaniate cpu clock
+  clk: samsung: exynos3250: Update clock flags related to CPU to use cpu-clock type
+  ARM: exynos: Add exynos3250 compatible to use generic cpufreq driver
+  ARM: dts: Add CPU OPP and regulator supply property for Exynos3250
+
+ arch/arm/boot/dts/exynos3250.dtsi    | 15 +++++++++++
+ arch/arm/mach-exynos/exynos.c        |  1 +
+ drivers/clk/samsung/clk-cpu.h        |  4 +++
+ drivers/clk/samsung/clk-exynos3250.c | 49 ++++++++++++++++++++++++++++--------
+ 4 files changed, 59 insertions(+), 10 deletions(-)
+
+-- 
+1.8.0
 
