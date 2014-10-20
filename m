@@ -1,73 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753188AbaJTIzZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 04:55:25 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:47862 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753038AbaJTIzP (ORCPT
+	id S1753204AbaJTIz3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 04:55:29 -0400
+Received: from relay.parallels.com ([195.214.232.42]:34568 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753140AbaJTIzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 04:55:15 -0400
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        linux-mtd@lists.infradead.org, Huang Shijie <shijie8@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Mike Voytovich <mvoytovich@paypal.com>, Roy Lee <roylee@paypal.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>
-Subject: [PATCH v4 1/4] mtd: nand: provide detailed description for raw read/write page methods
-Date: Mon, 20 Oct 2014 10:46:14 +0200
-Message-Id: <1413794777-32220-2-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1413794777-32220-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1413794777-32220-1-git-send-email-boris.brezillon@free-electrons.com>
+	Mon, 20 Oct 2014 04:55:21 -0400
+Message-ID: <1413795316.19914.13.camel@tkhai>
+Subject: [PATCH v2] sched/numa: fix unsafe get_task_struct() in
+ task_numa_assign()
+From: Kirill Tkhai <ktkhai@parallels.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Kirill Tkhai <tkhai@yandex.ru>
+Date: Mon, 20 Oct 2014 12:55:16 +0400
+Organization: Parallels
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.26.172]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-read_page_raw and write_page_raw method description is not clear enough.
-It clearly specifies that ECC correction should not be involved but does
-not talk about specific layout (by layout I mean where in-band and
-out-of-band data are stored on the NAND media) used by NAND/ECC
-controllers.
 
-Those specific layouts might impact MTD users and thus should be hidden (as
-already done in the standard NAND_ECC_HW_SYNDROME implementation).
+Unlocked access to dst_rq->curr in task_numa_compare() is racy.
+If curr task is exiting this may be a reason of use-after-free:
 
-Clearly state this constraint in the nand_ecc_ctrl struct documentation.
+task_numa_compare()                    do_exit()
+    rcu_read_lock()                        schedule()
+    cur = ACCESS_ONCE(dst_rq->curr)        ...
+        ...                                rq->curr = next;
+        ...                                    context_switch()
+        ...                                        finish_task_switch()
+        ...                                            put_task_struct()
+        ...                                                __put_task_struct()
+        ...                                                    free_task_struct()
+        task_numa_assign()                                     ...
+            get_task_struct()                                  ...
 
-Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+As noted by Oleg:
+
+  <<The lockless get_task_struct(tsk) is only safe if tsk == current
+    and didn't pass exit_notify(), or if this tsk was found on a rcu
+    protected list (say, for_each_process() or find_task_by_vpid()).
+    IOW, it is only safe if release_task() was not called before we
+    take rcu_read_lock(), in this case we can rely on the fact that
+    delayed_put_pid() can not drop the (potentially) last reference
+    until rcu_read_unlock().
+
+    And as Kirill pointed out task_numa_compare()->task_numa_assign()
+    path does get_task_struct(dst_rq->curr) and this is not safe. The
+    task_struct itself can't go away, but rcu_read_lock() can't save
+    us from the final put_task_struct() in finish_task_switch(); this
+    reference goes away without rcu gp>>
+
+The patch makes 3-stage check of dst_rq->curr; it ensures we've taken
+the curr before delayed_put_task_struct() is called to put it. If so,
+we may use the cur like we'd taken it from RCU-protected list.
+
+Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+Suggested-by: Oleg Nesterov <oleg@redhat.com>
 ---
- include/linux/mtd/nand.h | 17 +++++++++++++++--
- 1 file changed, 15 insertions(+), 2 deletions(-)
+ kernel/sched/fair.c |   43 +++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 41 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
-index e4d451e..b14d190 100644
---- a/include/linux/mtd/nand.h
-+++ b/include/linux/mtd/nand.h
-@@ -455,8 +455,21 @@ struct nand_hw_control {
-  *		be provided if an hardware ECC is available
-  * @calculate:	function for ECC calculation or readback from ECC hardware
-  * @correct:	function for ECC correction, matching to ECC generator (sw/hw)
-- * @read_page_raw:	function to read a raw page without ECC
-- * @write_page_raw:	function to write a raw page without ECC
-+ * @read_page_raw:	function to read a raw page without ECC. This function
-+ *			should hide the specific layout used by the ECC
-+ *			controller and always return contiguous in-band and
-+ *			out-of-band data even if they're not stored
-+ *			contiguously on the NAND chip (e.g.
-+ *			NAND_ECC_HW_SYNDROME interleaves in-band and
-+ *			out-of-band data).
-+ * @write_page_raw:	function to write a raw page without ECC. This function
-+ *			should hide the specific layout used by the ECC
-+ *			controller and consider the passed data as contiguous
-+ *			in-band and out-of-band data. ECC controller is
-+ *			responsible for doing the appropriate transformations
-+ *			to adapt to its specific layout (e.g.
-+ *			NAND_ECC_HW_SYNDROME interleaves in-band and
-+ *			out-of-band data).
-  * @read_page:	function to read a page according to the ECC generator
-  *		requirements; returns maximum number of bitflips corrected in
-  *		any single ECC step, 0 if bitflips uncorrectable, -EIO hw error
--- 
-1.9.1
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 0b069bf..ffc7c3b 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1147,6 +1147,44 @@ static bool load_too_imbalanced(long src_load, long dst_load,
+ }
+ 
+ /*
++ * Return rq->curr if it is not exiting (delayed_put_task_struct() for it
++ * hasn't been called yet). If result is not NULL, it's safe to use it
++ * like it'd be picked from RCU-protected list (use get_task_struct() etc).
++ */
++static struct task_struct *rq_curr_if_not_exiting(struct rq *rq)
++{
++	struct task_struct *cur = ACCESS_ONCE(rq->curr);
++	unsigned int flags;
++
++	rcu_lockdep_assert(rcu_read_lock_held(), "RCU lock must be held");
++
++	/* This memory may become unmapped, so we can't read it directly */
++	if (probe_kernel_read(&flags, &cur->flags, sizeof(flags)) < 0)
++		return NULL;
++
++	if (flags & PF_EXITING)
++		return NULL;
++
++	smp_rmb(); /* Pairs with smp_mb() in do_exit() */
++
++	/*
++	 * We've reached here. Three situations are possible:
++	 * 1)cur has gone, and dst_rq->curr is pointing to other memory.
++	 *   In this case the check will fail;
++	 * 2)cur is pointing to a new task, which is using the memory of
++	 *   just gone and freed cur (and it is new dst_rq->curr). It is
++	 *   OK, because we've locked RCU even before the new task has been
++	 *   created (so delayed_put_task_struct() hasn't been called yet);
++	 * 3)we've taken a not exiting task (likely case). No need to worry.
++	 *   The above checks are necessary only for this case.
++	 */
++	if (cur != ACCESS_ONCE(rq->curr))
++		cur = NULL;
++
++	return cur;
++}
++
++/*
+  * This checks if the overall compute and NUMA accesses of the system would
+  * be improved if the source tasks was migrated to the target dst_cpu taking
+  * into account that it might be best if task running on the dst_cpu should
+@@ -1164,8 +1202,9 @@ static void task_numa_compare(struct task_numa_env *env,
+ 	long moveimp = imp;
+ 
+ 	rcu_read_lock();
+-	cur = ACCESS_ONCE(dst_rq->curr);
+-	if (cur->pid == 0) /* idle */
++	cur = rq_curr_if_not_exiting(dst_rq);
++
++	if (cur && is_idle_task(cur))
+ 		cur = NULL;
+ 
+ 	/*
+
+
 
