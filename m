@@ -1,174 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308AbaJTORq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 10:17:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38839 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751467AbaJTORp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 10:17:45 -0400
-Date: Mon, 20 Oct 2014 17:21:13 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Subject: Re: Virtio_config BUG with 3.18-rc1
-Message-ID: <20141020142113.GC11062@redhat.com>
-References: <CA+5PVA60zVwO=3ENHVgML4y_eP614XvZp98pN9rT03eLvzG1Fg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+5PVA60zVwO=3ENHVgML4y_eP614XvZp98pN9rT03eLvzG1Fg@mail.gmail.com>
+	id S1753334AbaJTOSL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 10:18:11 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:64766 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752151AbaJTOSH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 10:18:07 -0400
+X-AuditID: cbfec7f4-b7f6c6d00000120b-96-5445199b785d
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Anton Vorontsov <anton@enomsg.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>, stable@vger.kernel.org
+Subject: [PATCH] power: charger-manager: Fix accessing invalidated thermal zone
+ device after its unbind
+Date: Mon, 20 Oct 2014 16:17:52 +0200
+Message-id: <1413814672-22938-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmluLIzCtJLcpLzFFi42I5/e/4Zd3Zkq4hBgebZC0ObtW02DhjPavF
+	9S/PWS0mPXnPbDFx5WRmi86zT5gtXr8wtDjb9Ibd4vKuOWwWn3uPMFqsPXKX3eJ24wo2i9O7
+	SywWbHzE6MDnMaH/E6PHzll32T02r9Dy2LSqk82jb8sqRo/Pm+QC2KK4bFJSczLLUov07RK4
+	Mr5eWcxcMM2o4uavbsYGxiXaXYycHBICJhK7+s4yQthiEhfurWfrYuTiEBJYyiixc+EUFgin
+	j0ni7eW9zCBVbALGEpuXLwGrEhG4xSSxd+8GsCpmgbuMEs1334PNEhbIlLh//isLiM0ioCrx
+	bOtDpi5GDg5eAXeJE48dIdbJSZw8Npl1AiP3AkaGVYyiqaXJBcVJ6bmGesWJucWleel6yfm5
+	mxghAfdlB+PiY1aHGAU4GJV4eAUsXUKEWBPLiitzDzFKcDArifCeEnQNEeJNSaysSi3Kjy8q
+	zUktPsTIxMEp1cA4MUDEV9Z/qa2pqHxQT4LtxEOWZcY7d6XseM7w8a9M4gTJO7GKa1T+B740
+	32o73THY3n2lC59exW2BxSvnewQpLf3I+46ZV2ZugFHAQmsT2wW+Lr3/NMTq+b6kHmRU07ZN
+	KVhw7E1W+OS/ef4nSu+tXbqoq3Xx/P37b71eFyu/aPeyja/zXk1VYinOSDTUYi4qTgQAwUcQ
+	ShYCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 20, 2014 at 10:11:22AM -0400, Josh Boyer wrote:
-> Hi All,
-> 
-> Booting my local KVM guest with a build of 3.18-rc1 this morning, it
-> hangs during the normal dracut splash screen  When I configured the
-> guest to use a serial console, I got the output below.  The guest is a
-> typical KVM guest created with virt-manager, using QXL as the display
-> driver.  Nothing fancy about it.
-> 
-> I'll try and do a bisect or some other experimentation today, but I
-> thought I would send this out now in case someone had an idea or was
-> already aware of it.
+Lock corruption happened after unbinding a driver which provided thermal
+zone for charger manager.
 
-Thanks for the report.
+The charger manager obtained in probe a reference to thermal zone device.
+This device was used to report temperature in its own thermal zone and
+get_temp call.
 
-Yes, multiqueue serial causes this.  Unfortunately I didn't test with MQ :(
+The thermal zone's reference was not updated even if device providing it was
+unregistered (e.g. by unbinding a driver providing that thermal zone).  If such
+driver was re-binded then charger manager would still use the old reference.
 
-Here's the fix:
+Reproduction:
+1. 'cm-thermal-zone' present in DTS.
+2. Fuel gauge driver not exporting temperature property.
+$ echo "12-0036" > /sys/bus/i2c/drivers/max17042/unbind
+$ cat /sys/devices/virtual/power_supply/battery/temp_ambient
 
-mid.gmane.org/1413813529-11044-1-git-send-email-cornelia.huck@de.ibm.com
+[  153.450663] ------------[ cut here ]------------
+[  153.455274] WARNING: CPU: 3 PID: 6 at kernel/locking/mutex.c:511 mutex_lock_nested+0x3c4/0x458()
+[  153.464022] DEBUG_LOCKS_WARN_ON(l->magic != l)
+[  153.468275] Modules linked in:
+[  153.471493] CPU: 3 PID: 6 Comm: kworker/u8:0 Tainted: G        W      3.17.0-next-20141020-00047-g54f3de817616-dirty #374
+[  153.482432] Workqueue: charger_manager cm_monitor_poller
+[  153.487752] [<c0014d2c>] (unwind_backtrace) from [<c0011c98>] (show_stack+0x10/0x14)
+[  153.495457] [<c0011c98>] (show_stack) from [<c04da6dc>] (dump_stack+0x70/0xbc)
+[  153.502670] [<c04da6dc>] (dump_stack) from [<c0022e94>] (warn_slowpath_common+0x64/0x88)
+[  153.510732] [<c0022e94>] (warn_slowpath_common) from [<c0022f4c>] (warn_slowpath_fmt+0x30/0x40)
+[  153.519413] [<c0022f4c>] (warn_slowpath_fmt) from [<c04dd8a8>] (mutex_lock_nested+0x3c4/0x458)
+[  153.528006] [<c04dd8a8>] (mutex_lock_nested) from [<c03944e4>] (thermal_zone_get_temp+0x38/0x68)
+[  153.536768] [<c03944e4>] (thermal_zone_get_temp) from [<c038fe68>] (cm_get_battery_temperature+0x3c/0xb4)
+[  153.546314] [<c038fe68>] (cm_get_battery_temperature) from [<c0390640>] (cm_monitor+0x78/0x31c)
+[  153.554993] [<c0390640>] (cm_monitor) from [<c03908ec>] (cm_monitor_poller+0x8/0x28)
+[  153.562727] [<c03908ec>] (cm_monitor_poller) from [<c00396b4>] (process_one_work+0x180/0x3f4)
+[  153.571229] [<c00396b4>] (process_one_work) from [<c003998c>] (worker_thread+0x30/0x458)
+[  153.579300] [<c003998c>] (worker_thread) from [<c003f374>] (kthread+0xd8/0xf4)
+[  153.586506] [<c003f374>] (kthread) from [<c000f268>] (ret_from_fork+0x14/0x2c)
+[  153.593703] ---[ end trace b421d57d48f82c7d ]---
+[  360.487375] INFO: task kworker/u8:0:6 blocked for more than 120 seconds.
+[  360.492655]       Tainted: G        W      3.17.0-next-20141020-00047-g54f3de817616-dirty #374
+[  360.501236] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[  360.509047] kworker/u8:0    D c04dbcc8     0     6      2 0x00000000
+[  360.515357] Workqueue: charger_manager cm_monitor_poller
+[  360.520665] [<c04dbcc8>] (__schedule) from [<c04dc4d4>] (schedule_preempt_disabled+0x14/0x20)
+[  360.529203] [<c04dc4d4>] (schedule_preempt_disabled) from [<c04dd6a0>] (mutex_lock_nested+0x1bc/0x458)
+[  360.538493] [<c04dd6a0>] (mutex_lock_nested) from [<c028fbb4>] (regmap_read+0x30/0x60)
+[  360.546405] [<c028fbb4>] (regmap_read) from [<c038eae8>] (max17042_get_property+0x30c/0x350)
+[  360.554808] [<c038eae8>] (max17042_get_property) from [<c038c2cc>] (power_supply_read_temp+0x28/0x58)
+[  360.564008] [<c038c2cc>] (power_supply_read_temp) from [<c03944f8>] (thermal_zone_get_temp+0x4c/0x68)
+[  360.573203] [<c03944f8>] (thermal_zone_get_temp) from [<c038fe68>] (cm_get_battery_temperature+0x3c/0xb4)
+[  360.582749] [<c038fe68>] (cm_get_battery_temperature) from [<c0390640>] (cm_monitor+0x78/0x31c)
+[  360.591428] [<c0390640>] (cm_monitor) from [<c03908ec>] (cm_monitor_poller+0x8/0x28)
+[  360.599165] [<c03908ec>] (cm_monitor_poller) from [<c00396b4>] (process_one_work+0x180/0x3f4)
+[  360.607669] [<c00396b4>] (process_one_work) from [<c003998c>] (worker_thread+0x30/0x458)
+[  360.615733] [<c003998c>] (worker_thread) from [<c003f374>] (kthread+0xd8/0xf4)
+[  360.622946] [<c003f374>] (kthread) from [<c000f268>] (ret_from_fork+0x14/0x2c)
 
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: <stable@vger.kernel.org>
+Fixes: 5c49a6256bed ("charger-manager: Modify the way of checking battery's temperature")
+---
+ drivers/power/charger-manager.c       | 21 +++++++++++++++------
+ include/linux/power/charger-manager.h |  4 +---
+ 2 files changed, 16 insertions(+), 9 deletions(-)
 
+diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
+index 60688c20594d..d5bdcda8dc5f 100644
+--- a/drivers/power/charger-manager.c
++++ b/drivers/power/charger-manager.c
+@@ -627,8 +627,14 @@ static int cm_get_battery_temperature(struct charger_manager *cm,
+ 		return -ENODEV;
+ 
+ #ifdef CONFIG_THERMAL
+-	if (cm->tzd_batt) {
+-		ret = thermal_zone_get_temp(cm->tzd_batt, (unsigned long *)temp);
++	if (cm->use_external_tzd) {
++		struct thermal_zone_device *tzd;
++
++		tzd = thermal_zone_get_zone_by_name(cm->desc->thermal_zone);
++		if (IS_ERR(tzd))
++			return PTR_ERR(tzd);
++
++		ret = thermal_zone_get_temp(tzd, (unsigned long *)temp);
+ 		if (!ret)
+ 			/* Calibrate temperature unit */
+ 			*temp /= 100;
+@@ -1590,12 +1596,15 @@ static int cm_init_thermal_data(struct charger_manager *cm,
+ 	}
+ #ifdef CONFIG_THERMAL
+ 	if (ret && desc->thermal_zone) {
+-		cm->tzd_batt =
+-			thermal_zone_get_zone_by_name(desc->thermal_zone);
+-		if (IS_ERR(cm->tzd_batt))
+-			return PTR_ERR(cm->tzd_batt);
++		struct thermal_zone_device *tzd;
++
++		/* Just check if we want to export TEMP_AMBIENT */
++		tzd = thermal_zone_get_zone_by_name(desc->thermal_zone);
++		if (IS_ERR(tzd))
++			return PTR_ERR(tzd);
+ 
+ 		/* Use external thermometer */
++		cm->use_external_tzd = true;
+ 		cm->charger_psy.properties[cm->charger_psy.num_properties] =
+ 				POWER_SUPPLY_PROP_TEMP_AMBIENT;
+ 		cm->charger_psy.num_properties++;
+diff --git a/include/linux/power/charger-manager.h b/include/linux/power/charger-manager.h
+index e97fc656a058..f3000d850995 100644
+--- a/include/linux/power/charger-manager.h
++++ b/include/linux/power/charger-manager.h
+@@ -253,9 +253,7 @@ struct charger_manager {
+ 	struct device *dev;
+ 	struct charger_desc *desc;
+ 
+-#ifdef CONFIG_THERMAL
+-	struct thermal_zone_device *tzd_batt;
+-#endif
++	bool use_external_tzd;
+ 	bool charger_enabled;
+ 
+ 	unsigned long fullbatt_vchk_jiffies_at;
+-- 
+1.9.1
 
-> josh
-> 
-> [    2.048706] piix4_smbus 0000:00:01.3: SMBus Host Controller at
-> 0xb100, revision 0
-> [    2.069574] parport_pc 00:04: reported by Plug and Play ACPI
-> [    2.200079] ------------[ cut here ]------------
-> [    2.200661] kernel BUG at include/linux/virtio_config.h:125!
-> [    2.201004] invalid opcode: 0000 [#1] SMP
-> [    2.201004] Modules linked in: snd_timer snd virtio_balloon
-> virtio_console serio_raw parport_pc parport i2c_piix4 soundcore
-> pvpanic btrfs qxl xor raid6_pq drm_kms_helper ttm drm 8139too
-> virtio_pci virtio_rini
-> [    2.201004] CPU: 0 PID: 71 Comm: kworker/0:2 Not tainted
-> 3.18.0-0.rc1.git0.1.fc22.x86_64 #1
-> [    2.201004] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> [    2.201004] Workqueue: events control_work_handler [virtio_console]
-> [    2.201004] task: ffff88003a83f5c0 ti: ffff88003a98c000 task.ti:
-> ffff88003a98c000
-> [    2.201004] RIP: 0010:[<ffffffffa0210032>]  [<ffffffffa0210032>]
-> virtio_device_ready.part.12+0x4/0x6 [virtio_console]
-> [    2.201004] RSP: 0018:ffff88003a98fd18  EFLAGS: 00010202
-> [    2.201004] RAX: 0000000000000007 RBX: ffff88003c9b3200 RCX: 0000000000000000
-> [    2.201004] RDX: 000000000000c192 RSI: ffffffffa02111b7 RDI: 000000000001c192
-> [    2.201004] RBP: ffff88003a98fd18 R08: ffff88003c9f82b0 R09: 00007f78ee144e90
-> [    2.201004] R10: 00000000ffffffff R11: 0000000000000246 R12: ffff880036cdd540
-> [    2.201004] R13: 0000000000000001 R14: ffff880036d1a800 R15: 0000000000000000
-> [    2.201004] FS:  0000000000000000(0000) GS:ffff88003fc00000(0000)
-> knlGS:0000000000000000
-> [    2.201004] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [    2.201004] CR2: 00007f78ee204a50 CR3: 000000003d6f9000 CR4: 00000000000406f0
-> [    2.201004] Stack:
-> [    2.201004]  ffff88003a98fd88 ffffffffa020f757 ffff880000000001
-> ffff8800367ae600
-> [    2.201004]  ffff88003fc14900 ffff88003a83f628 ffff88003a98fdc8
-> 000000003a0d7984
-> [    2.201004]  ffff88003a98fd88 ffff88003c831b40 ffff880036cdd584
-> ffff880036cdd550
-> [    2.201004] Call Trace:
-> [    2.201004]  [<ffffffffa020f757>] add_port+0x3b7/0x3e0 [virtio_console]
-> [    2.201004]  [<ffffffffa020ffdc>] control_work_handler+0x39c/0x3e8
-> [virtio_console]
-> [    2.201004]  [<ffffffff810af9e9>] process_one_work+0x149/0x3d0
-> [    2.201004]  [<ffffffff810b006b>] worker_thread+0x11b/0x490
-> [    2.201004]  [<ffffffff810aff50>] ? rescuer_thread+0x2e0/0x2e0
-> [    2.201004]  [<ffffffff810b5218>] kthread+0xd8/0xf0
-> [    2.201004]  [<ffffffff810b5140>] ? kthread_create_on_node+0x1b0/0x1b0
-> [    2.201004]  [<ffffffff8174b53c>] ret_from_fork+0x7c/0xb0
-> [    2.201004]  [<ffffffff810b5140>] ? kthread_create_on_node+0x1b0/0x1b0
-> [    2.201004] Code: 00 00 48 c7 c2 fc 11 21 a0 48 c7 c7 48 22 21 a0
-> 48 8d 70 10 31 c0 e8 ee 83 19 e1 e9 3e fe ff ff 90 55 48 89 e5 0f 0b
-> 55 48 89 e5 <0f> 0b 55 48 89 e5 0f 0b 55 48 89 e5 e8 5d e1 ff ff 48 c7
-> c
-> [    2.201004] RIP  [<ffffffffa0210032>]
-> virtio_device_ready.part.12+0x4/0x6 [virtio_console]
-> [    2.201004]  RSP <ffff88003a98fd18>
-> [    2.232148] ---[ end trace a926e61ef6020bee ]---
-> [    2.233075] BUG: unable to handle kernel paging request at ffffffffffffffd8
-> [    2.233944] IP: [<ffffffff810b5850>] kthread_data+0x10/0x20
-> [    2.234004] PGD 1c17067 PUD 1c19067 PMD 0
-> [    2.234004] Oops: 0000 [#2] SMP
-> [    2.234004] Modules linked in: snd_timer snd virtio_balloon
-> virtio_console serio_raw parport_pc parport i2c_piix4 soundcore
-> pvpanic btrfs qxl xor raid6_pq drm_kms_helper ttm drm 8139too
-> virtio_pci virtio_rini
-> [    2.234004] CPU: 0 PID: 71 Comm: kworker/0:2 Tainted: G      D
->   3.18.0-0.rc1.git0.1.fc22.x86_64 #1
-> [    2.234004] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> [    2.234004] task: ffff88003a83f5c0 ti: ffff88003a98c000 task.ti:
-> ffff88003a98c000
-> [    2.234004] RIP: 0010:[<ffffffff810b5850>]  [<ffffffff810b5850>]
-> kthread_data+0x10/0x20
-> [    2.234004] RSP: 0000:ffff88003a98f968  EFLAGS: 00010096
-> [    2.234004] RAX: 0000000000000000 RBX: 0000000000000000 RCX: 000000000000000f
-> [    2.234004] RDX: 000000000000000b RSI: 0000000000000000 RDI: ffff88003a83f5c0
-> [    2.234004] RBP: ffff88003a98f968 R08: ffff88003a83f650 R09: 000000018011000a
-> [    2.234004] R10: ffffffff813786bb R11: ffffea0000ea6a40 R12: ffff88003fc14880
-> [    2.234004] R13: 0000000000000000 R14: 0000000000000000 R15: ffff88003a83f5c0
-> [    2.234004] FS:  0000000000000000(0000) GS:ffff88003fc00000(0000)
-> knlGS:0000000000000000
-> [    2.234004] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [    2.234004] CR2: 0000000000000028 CR3: 000000003cb85000 CR4: 00000000000406f0
-> [    2.234004] Stack:
-> [    2.234004]  ffff88003a98f988 ffffffff810b0465 ffff88003a98f988
-> ffff88003a83f5c0
-> [    2.234004]  ffff88003a98f9f8 ffffffff81747299 ffff88003a83f5c0
-> 0000000000014880
-> [    2.234004]  ffff88003a98ffd8 0000000000014880 ffff88003a98f9e8
-> ffff88003a83f5c0
-> [    2.234004] Call Trace:
-> [    2.234004]  [<ffffffff810b0465>] wq_worker_sleeping+0x15/0xa0
-> [    2.234004]  [<ffffffff81747299>] __schedule+0x509/0x7d0
-> [    2.234004]  [<ffffffff81747589>] schedule+0x29/0x70
-> [    2.234004]  [<ffffffff81099ab7>] do_exit+0x6e7/0xa60
-> [    2.234004]  [<ffffffff81740516>] ? printk+0x70/0x86
-> [    2.234004]  [<ffffffff81017710>] oops_end+0xa0/0xe0
-> [    2.234004]  [<ffffffff81017bcb>] die+0x4b/0x70
-> [    2.234004]  [<ffffffff81013f90>] do_trap+0xb0/0x150
-> [    2.234004]  [<ffffffff810143f6>] do_error_trap+0xa6/0x180
-> [    2.234004]  [<ffffffffa0210032>] ?
-> virtio_device_ready.part.12+0x4/0x6 [virtio_console]
-> [    2.234004]  [<ffffffff81736032>] ? klist_add_tail+0x32/0x40
-> [    2.234004]  [<ffffffff81495149>] ? device_add+0x219/0x630
-> [    2.234004]  [<ffffffff81014d10>] do_invalid_op+0x20/0x30
-> [    2.234004]  [<ffffffff8174cf9e>] invalid_op+0x1e/0x30
-> [    2.234004]  [<ffffffffa0210032>] ?
-> virtio_device_ready.part.12+0x4/0x6 [virtio_console]
-> [    2.234004]  [<ffffffffa0031109>] ? vp_get_status+0x19/0x20 [virtio_pci]
-> [    2.234004]  [<ffffffffa020f757>] add_port+0x3b7/0x3e0 [virtio_console]
-> [    2.234004]  [<ffffffffa020ffdc>] control_work_handler+0x39c/0x3e8
-> [virtio_console]
-> [    2.234004]  [<ffffffff810af9e9>] process_one_work+0x149/0x3d0
-> [    2.234004]  [<ffffffff810b006b>] worker_thread+0x11b/0x490
-> [    2.234004]  [<ffffffff810aff50>] ? rescuer_thread+0x2e0/0x2e0
-> [    2.234004]  [<ffffffff810b5218>] kthread+0xd8/0xf0
-> [    2.234004]  [<ffffffff810b5140>] ? kthread_create_on_node+0x1b0/0x1b0
-> [    2.234004]  [<ffffffff8174b53c>] ret_from_fork+0x7c/0xb0
-> [    2.234004]  [<ffffffff810b5140>] ? kthread_create_on_node+0x1b0/0x1b0
-> [    2.234004] Code: 00 48 89 e5 5d 48 8b 40 c8 48 c1 e8 02 83 e0 01
-> c3 66 2e 0f 1f 84 00 00 00 00 00 66 66 66 66 90 48 8b 87 68 04 00 00
-> 55 48 89 e5 <48> 8b 40 d8 5d c3 66 2e 0f 1f 84 00 00 00 00 00 66 66 66
-> 6
-> [    2.234004] RIP  [<ffffffff810b5850>] kthread_data+0x10/0x20
-> [    2.234004]  RSP <ffff88003a98f968>
-> [    2.234004] CR2: ffffffffffffffd8
-> [    2.234004] ---[ end trace a926e61ef6020bef ]---
-> [    2.234004] Fixing recursive fault but reboot is needed!
