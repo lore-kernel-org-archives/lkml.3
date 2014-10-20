@@ -1,105 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753AbaJTP2V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 11:28:21 -0400
-Received: from mail-yh0-f43.google.com ([209.85.213.43]:60769 "EHLO
-	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331AbaJTP2T (ORCPT
+	id S1750842AbaJTPcG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 11:32:06 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:36153 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751092AbaJTPcD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 11:28:19 -0400
-From: Greg Donald <gdonald@gmail.com>
-To: Greg Kroah-Hartman <greg@kroah.com>,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        Oleg Drokin <oleg.drokin@intel.com>, linux-kernel@vger.kernel.org
-Cc: Greg Donald <gdonald@gmail.com>
-Subject: [PATCH] drivers: staging: lustre: Fix "space prohibited before that close parenthesis ')'" errors
-Date: Mon, 20 Oct 2014 10:27:40 -0500
-Message-Id: <1413818860-19981-1-git-send-email-gdonald@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Mon, 20 Oct 2014 11:32:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <20141020104926.GD23751@e104818-lin.cambridge.arm.com>
+References: <1413563929-2664-1-git-send-email-catalin.marinas@arm.com>
+	<1413617580.29249.9.camel@linux-t7sj.site>
+	<1413662314.17869.11.camel@linux-t7sj.site>
+	<CA+55aFzmsF4F-SOO4OzZDbreaQ4X4RUCQksv_ONu59BbyZ8Ocg@mail.gmail.com>
+	<1413684978.17869.18.camel@linux-t7sj.site>
+	<alpine.DEB.2.11.1410201106260.4121@nanos>
+	<20141020104926.GD23751@e104818-lin.cambridge.arm.com>
+Date: Mon, 20 Oct 2014 08:32:00 -0700
+X-Google-Sender-Auth: tc3ZYkbQCEZcmzPDOYujWNYSPcY
+Message-ID: <CA+55aFxjFpPWMn=w1orFk3k7-ZaWwFoLsv7y37X5zamd428BsQ@mail.gmail.com>
+Subject: Re: [PATCH] futex: Ensure get_futex_key_refs() always implies a barrier
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Davidlohr Bueso <dave@stgolabs.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Matteo Franchin <Matteo.Franchin@arm.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch.pl "space prohibited before that close parenthesis ')'" errors
+On Mon, Oct 20, 2014 at 3:49 AM, Catalin Marinas
+<catalin.marinas@arm.com> wrote:
+>
+> Since you mention symmetry, something like below makes the barriers more
+> explicit.
 
-Signed-off-by: Greg Donald <gdonald@gmail.com>
----
- drivers/staging/lustre/lustre/include/lustre_capa.h | 2 +-
- drivers/staging/lustre/lustre/llite/dir.c           | 2 +-
- drivers/staging/lustre/lustre/llite/vvp_io.c        | 2 +-
- drivers/staging/lustre/lustre/obdclass/capa.c       | 6 +++---
- 4 files changed, 6 insertions(+), 6 deletions(-)
+Borken, for two reasons:
 
-diff --git a/drivers/staging/lustre/lustre/include/lustre_capa.h b/drivers/staging/lustre/lustre/include/lustre_capa.h
-index ab6b9ea..fe19534 100644
---- a/drivers/staging/lustre/lustre/include/lustre_capa.h
-+++ b/drivers/staging/lustre/lustre/include/lustre_capa.h
-@@ -154,7 +154,7 @@ static inline __u32 capa_expiry(struct lustre_capa *capa)
- }
- 
- void _debug_capa(struct lustre_capa *, struct libcfs_debug_msg_data *,
--		 const char *fmt, ... );
-+		 const char *fmt, ...);
- #define DEBUG_CAPA(level, capa, fmt, args...)				  \
- do {									   \
- 	if (((level) & D_CANTMASK) != 0 ||				     \
-diff --git a/drivers/staging/lustre/lustre/llite/dir.c b/drivers/staging/lustre/lustre/llite/dir.c
-index 9e8bfdc..50fef90 100644
---- a/drivers/staging/lustre/lustre/llite/dir.c
-+++ b/drivers/staging/lustre/lustre/llite/dir.c
-@@ -1384,7 +1384,7 @@ lmv_out_free:
- 		if (copy_from_user(lumv1, lumv1p, sizeof(*lumv1)))
- 			return -EFAULT;
- 
--		if ((lumv1->lmm_magic == LOV_USER_MAGIC_V3) ) {
-+		if (lumv1->lmm_magic == LOV_USER_MAGIC_V3) {
- 			if (copy_from_user(&lumv3, lumv3p, sizeof(lumv3)))
- 				return -EFAULT;
- 		}
-diff --git a/drivers/staging/lustre/lustre/llite/vvp_io.c b/drivers/staging/lustre/lustre/llite/vvp_io.c
-index d3f967a..168aafb 100644
---- a/drivers/staging/lustre/lustre/llite/vvp_io.c
-+++ b/drivers/staging/lustre/lustre/llite/vvp_io.c
-@@ -709,7 +709,7 @@ static int vvp_io_fault_start(const struct lu_env *env,
- 	}
- 
- 
--	if (fio->ft_mkwrite ) {
-+	if (fio->ft_mkwrite) {
- 		pgoff_t last_index;
- 		/*
- 		 * Capture the size while holding the lli_trunc_sem from above
-diff --git a/drivers/staging/lustre/lustre/obdclass/capa.c b/drivers/staging/lustre/lustre/obdclass/capa.c
-index cd1abce..8d80ea4 100644
---- a/drivers/staging/lustre/lustre/obdclass/capa.c
-+++ b/drivers/staging/lustre/lustre/obdclass/capa.c
-@@ -302,7 +302,7 @@ int capa_encrypt_id(__u32 *d, __u32 *s, __u8 *key, int keylen)
- 
- 	/* passing "aes" in a variable instead of a constant string keeps gcc
- 	 * 4.3.2 happy */
--	tfm = crypto_alloc_blkcipher(alg, 0, 0 );
-+	tfm = crypto_alloc_blkcipher(alg, 0, 0);
- 	if (IS_ERR(tfm)) {
- 		CERROR("failed to load transform for aes\n");
- 		return PTR_ERR(tfm);
-@@ -355,7 +355,7 @@ int capa_decrypt_id(__u32 *d, __u32 *s, __u8 *key, int keylen)
- 
- 	/* passing "aes" in a variable instead of a constant string keeps gcc
- 	 * 4.3.2 happy */
--	tfm = crypto_alloc_blkcipher(alg, 0, 0 );
-+	tfm = crypto_alloc_blkcipher(alg, 0, 0);
- 	if (IS_ERR(tfm)) {
- 		CERROR("failed to load transform for aes\n");
- 		return PTR_ERR(tfm);
-@@ -407,7 +407,7 @@ EXPORT_SYMBOL(capa_cpy);
- 
- void _debug_capa(struct lustre_capa *c,
- 		 struct libcfs_debug_msg_data *msgdata,
--		 const char *fmt, ... )
-+		 const char *fmt, ...)
- {
- 	va_list args;
- 	va_start(args, fmt);
--- 
-1.9.1
+> diff --git a/kernel/futex.c b/kernel/futex.c
+> index f3a3a071283c..5b9d857d0816 100644
+> --- a/kernel/futex.c
+> +++ b/kernel/futex.c
+> @@ -143,9 +143,7 @@
+>  static inline void futex_get_mm(union futex_key *key)
+>  {
+>         atomic_inc(&key->private.mm->mm_count);
+> -       /*
+> -        * Ensure futex_get_mm() implies a full barrier such that
+> -        * get_futex_key() implies a full barrier. This is relied upon
+> -        * as full barrier (B), see the ordering comment above.
+> -        */
+> -       smp_mb__after_atomic();
+>  }
 
+So the thing is, this means that we can't take advantage of the fact
+that "atomic_inc" is already an atomic. So this is just a performance
+breakage. But:
+
+>
+>  static inline int hb_waiters_pending(struct futex_hash_bucket *hb)
+>  {
+> +       /*
+> +        * Full barrier (B), see the ordering comment above.
+> +        */
+> +       smp_mb__before_atomic();
+>  #ifdef CONFIG_SMP
+>         return atomic_read(&hb->waiters);
+
+This is just entirely broken.
+
+"atomic_read()" isn't really an "atomic op" at all. despite the name,
+it's just a read that is basically ACCESS_ONCE.
+
+So smp_mb__before_atomic() doesn't work for atomic_read(), and the
+code is nonsensical and doesn't work. It would need to be a full
+memory barrier.
+
+                   Linus
