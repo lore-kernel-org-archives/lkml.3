@@ -1,126 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753767AbaJTLFZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 07:05:25 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:5724 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753060AbaJTLFX (ORCPT
+	id S1753791AbaJTLH7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 07:07:59 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:55718 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753542AbaJTLHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 07:05:23 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 20 Oct 2014 04:01:45 -0700
-From: Vidya Sagar <vidyas@nvidia.com>
-To: <thierry.reding@gmail.com>, <bhelgaas@google.com>, <swarren@wwwdotorg.org>
-CC: <kthota@nvidia.com>, <linux-tegra@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Vidya Sagar <vidyas@nvidia.com>
-Subject: [PATCH v2] PCI: tegra: Enable root port specific features
-Date: Mon, 20 Oct 2014 16:34:51 +0530
-Message-ID: <1413803091-10824-1-git-send-email-vidyas@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 20 Oct 2014 07:07:54 -0400
+X-AuditID: cbfec7f5-b7f956d000005ed7-bf-5444ed07cc09
+Message-id: <5444ED06.6030008@samsung.com>
+Date: Mon, 20 Oct 2014 15:07:50 +0400
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.8.1
+MIME-version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, Michal Marek <mmarek@suse.cz>,
+        Sasha Levin <sasha.levin@oracle.com>, x86@kernel.org,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>
+Subject: kernel: clockevents: shift out-of-bounds
+References: <1413802499-17928-1-git-send-email-a.ryabinin@samsung.com>
+In-reply-to: <1413802499-17928-1-git-send-email-a.ryabinin@samsung.com>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplkeLIzCtJLcpLzFFi42I5/e/4VV32ty4hBpdf6lt8/dLBYjFn/Ro2
+	iwkP29gtpm0Ut1jZ+YDV4s+uHUwWl3fNYbO4dGABk0XLvgtMFsd7DzBZLD5ym9li86apzBat
+	PT/ZLX5seMzqwOfRsrncY+esu+weCzaVemxeoeWxaVUnm8e7c+fYPU7M+M3i0XTmKLPHx6e3
+	WDze77vK5nFmwRF2j8+b5DxOtHxhDeCN4rJJSc3JLEst0rdL4Mo4+vwMS8Ek/oqbxxoYGxj/
+	8XQxcnJICJhIXD+ygQnCFpO4cG89G4gtJLCUUeLd4pIuRi4gu5lJYtvsLYwgCV4BLYmuc+tZ
+	QGwWAVWJ87t2M4PYbAJ6Ev9mbQdrFhWIkNi4fgdUvaDEj8n3wOpFBDQkNl66xQwylFngJLPE
+	kj172EESwgKGEtMvz2OB2Owm0X3pENhFnALuEhfm7QVbwCygLjFp3iIoW15i85q3zBMYBWYh
+	2TELSdksJGULGJlXMYqmliYXFCel5xrpFSfmFpfmpesl5+duYoRE3dcdjEuPWR1iFOBgVOLh
+	3WHmEiLEmlhWXJl7iFGCg1lJhLf7NlCINyWxsiq1KD++qDQntfgQIxMHp1QDY5+Z2v8ziYs3
+	rH4w73J4x437Gp6Fh8Mj3jTU6b9+907zRcwWFycZp5pX16O2zV2seuJa1GyP7BDGd7OFFGrF
+	0kvc1HYoqws8tMt8P23h0gO3v/0ptOf6sn6yqWkS5yqBiadE1i/mTe9dO1tiwlK++VnSm2/v
+	qp/29vtm1tQW2Xv/Te6Wrj0v9ECJpTgj0VCLuag4EQBFQWjJmAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enables root port to advertise its ASPM-L1 capability
-resulting in possible link entry to L1 when an ASPM-L1 capable
-device is connected
-Enables per-controller & per-TMS clock clamping by default
-Enabling above features result in more power saving
 
-It also avoids PM message truncation by waiting for DLLP to finish
-before entering into L1 or L2
+On kernel with UBSan enabled I've got following:
 
-Signed-off-by: Vidya Sagar <vidyas@nvidia.com>
----
-v2:
- Removed rp_read() & rp_write() as they seem to be redundant
- Moved port disable code under error condition i.e. it the link
-  is down, corresponding port will be disabled
+     UBSan: Undefined behaviour in ../kernel/time/clockevents.c:75:34
+     shift exponent 32 is to large for 32-bit type 'unsigned int'
+     CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.17.0-rc7+ #39
+     Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS rel-1.7.5-0-ge51488c-20140602_164612-nilsson.home.kraxel.org 04/01/2014
+      0000000000000000 0000000000000000 0000000000000001 ffffffff83003db0
+      ffffffff82a30940 0000000000000020 ffffffff83003dc0 ffffffff819502e9
+      ffffffff83003e40 ffffffff81950735 ffff88013f003233 0000000000000000
+     Call Trace:
+     dump_stack (/home/andrew/linux/lib/dump_stack.c:52)
+     ubsan_epilogue (/home/andrew/linux/lib/ubsan.c:122)
+     __ubsan_handle_shift_out_of_bounds (/home/andrew/linux/lib/ubsan.c:390)
+     ? hpet_enable (/home/andrew/linux/arch/x86/kernel/hpet.c:862)
+     cev_delta2ns (/home/andrew/linux/kernel/time/clockevents.c:75 (discriminator 1))
+     clockevents_config.part.2 (/home/andrew/linux/kernel/time/clockevents.c:421)
+     ? __clocksource_select (/home/andrew/linux/kernel/time/clocksource.c:607 /home/andrew/linux/kernel/time/clocksource.c:631)
+     clockevents_config_and_register (/home/andrew/linux/kernel/time/clockevents.c:440)
+     hpet_enable (/home/andrew/linux/arch/x86/kernel/hpet.c:305 /home/andrew/linux/arch/x86/kernel/hpet.c:891)
+     hpet_time_init (/home/andrew/linux/arch/x86/kernel/time.c:79)
+     x86_late_time_init (/home/andrew/linux/arch/x86/kernel/time.c:87)
+     start_kernel (/home/andrew/linux/init/main.c:637)
+     ? early_idt_handlers (/home/andrew/linux/arch/x86/kernel/head_64.S:344)
+     x86_64_start_reservations (/home/andrew/linux/arch/x86/kernel/head64.c:194)
+     x86_64_start_kernel (/home/andrew/linux/arch/x86/kernel/head64.c:183)
 
- drivers/pci/host/pci-tegra.c | 50 +++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 45 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/pci/host/pci-tegra.c b/drivers/pci/host/pci-tegra.c
-index 3d43874..7f32b07 100644
---- a/drivers/pci/host/pci-tegra.c
-+++ b/drivers/pci/host/pci-tegra.c
-@@ -237,6 +237,18 @@
- 		(0xf  << PADS_REFCLK_CFG_DRVI_SHIFT)     \
- 	)
- 
-+#define NV_PCIE2_RP_VEND_XP1			0x00000F04
-+#define NV_PCIE2_RP_VEND_XP_LINK_PVT_CTL_L1_ASPM_SUPPORT	(1 << 21)
-+
-+#define NV_PCIE2_RP_VEND_XP_BIST		0x00000F4C
-+#define PCIE2_RP_VEND_XP_BIST_GOTO_L1_L2_AFTER_DLLP_DONE	(1 << 28)
-+
-+#define NV_PCIE2_RP_PRIV_MISC			0x00000FE0
-+#define PCIE2_RP_PRIV_MISC_CTLR_CLK_CLAMP_THRESHOLD	(0xF << 16)
-+#define PCIE2_RP_PRIV_MISC_CTLR_CLK_CLAMP_ENABLE	(1 << 23)
-+#define PCIE2_RP_PRIV_MISC_TMS_CLK_CLAMP_THRESHOLD	(0xF << 24)
-+#define PCIE2_RP_PRIV_MISC_TMS_CLK_CLAMP_ENABLE		(1 << 31)
-+
- struct tegra_msi {
- 	struct msi_chip chip;
- 	DECLARE_BITMAP(used, INT_PCI_MSI_NR);
-@@ -1859,6 +1871,32 @@ retry:
- 	return false;
- }
- 
-+/* Enable various features of root port */
-+static void tegra_pcie_enable_rp_features(struct tegra_pcie_port *port)
-+{
-+	unsigned int data;
-+
-+	/* Power mangagement settings */
-+	/* Enable clock clamping by default */
-+	data = readl(port->base + NV_PCIE2_RP_PRIV_MISC);
-+	data |= PCIE2_RP_PRIV_MISC_CTLR_CLK_CLAMP_THRESHOLD |
-+		PCIE2_RP_PRIV_MISC_CTLR_CLK_CLAMP_ENABLE |
-+		PCIE2_RP_PRIV_MISC_TMS_CLK_CLAMP_THRESHOLD |
-+		PCIE2_RP_PRIV_MISC_TMS_CLK_CLAMP_ENABLE;
-+	writel(data, port->base + NV_PCIE2_RP_PRIV_MISC);
-+
-+	/* Enable rootport to advertise its ASPM - L1 capability */
-+	data = readl(port->base + NV_PCIE2_RP_VEND_XP1);
-+	data |= NV_PCIE2_RP_VEND_XP_LINK_PVT_CTL_L1_ASPM_SUPPORT;
-+	writel(data, port->base + NV_PCIE2_RP_VEND_XP1);
-+
-+	/* LTSSM : wait for DLLP to finish before entering L1 or L2/L3 */
-+	/* to avoid truncating PM messages resulting in receiver errors */
-+	data = readl(port->base + NV_PCIE2_RP_VEND_XP_BIST);
-+	data |= PCIE2_RP_VEND_XP_BIST_GOTO_L1_L2_AFTER_DLLP_DONE;
-+	writel(data, port->base + NV_PCIE2_RP_VEND_XP_BIST);
-+}
-+
- static int tegra_pcie_enable(struct tegra_pcie *pcie)
- {
- 	struct tegra_pcie_port *port, *tmp;
-@@ -1870,13 +1908,15 @@ static int tegra_pcie_enable(struct tegra_pcie *pcie)
- 
- 		tegra_pcie_port_enable(port);
- 
--		if (tegra_pcie_port_check_link(port))
-+		if (!tegra_pcie_port_check_link(port)) {
-+			dev_info(pcie->dev, "link %u down, ignoring\n",
-+				port->index);
-+			tegra_pcie_port_disable(port);
-+			tegra_pcie_port_free(port);
- 			continue;
-+		}
- 
--		dev_info(pcie->dev, "link %u down, ignoring\n", port->index);
--
--		tegra_pcie_port_disable(port);
--		tegra_pcie_port_free(port);
-+		tegra_pcie_enable_rp_features(port);
- 	}
- 
- 	memset(&hw, 0, sizeof(hw));
--- 
-1.8.1.5
+I guess it should be 1ULL here instead of 1U:
+            (!ismax || evt->mult <= (1U << evt->shift)))
 
