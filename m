@@ -1,108 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422AbaJTVCH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 17:02:07 -0400
-Received: from relay6-d.mail.gandi.net ([217.70.183.198]:43924 "EHLO
-	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753211AbaJTVCE (ORCPT
+	id S1753352AbaJTVFf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 17:05:35 -0400
+Received: from forward10l.mail.yandex.net ([84.201.143.143]:33407 "EHLO
+	forward10l.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752835AbaJTVFe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 17:02:04 -0400
-X-Originating-IP: 173.246.103.110
-Date: Mon, 20 Oct 2014 14:01:55 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rob Landley <rob@landley.net>,
-        Frank Rowand <frowand.list@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chuck Ebbert <cebbert.lkml@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH v5] init: Disable defaults if init= fails
-Message-ID: <20141020210155.GD29486@jtriplet-mobl1>
-References: <5c6381879bea68aebb13530442f1cf8a052be97f.1411958379.git.luto@amacapital.net>
- <542B4DA3.5080105@gmail.com>
- <542B519B.6010001@landley.net>
- <542B5E44.40303@gmail.com>
- <542B7200.6030902@landley.net>
- <CALCETrWr--A26UEv_7DeZa-Te1fTBDQgCdZt24n5LWkAnOa6jQ@mail.gmail.com>
- <20141001180510.GA28540@cloud>
- <CALCETrUK07j8+iQ8oSW70sgePxg_GJY3ASBBS+U9fvp_f2Rz5w@mail.gmail.com>
- <20141014140052.2f114c158ffe6cd953020f1c@linux-foundation.org>
- <CALCETrVg_rFmSCSnyztRtvANQLd9k_G+bU8FiQB_5O5ecUd99w@mail.gmail.com>
+	Mon, 20 Oct 2014 17:05:34 -0400
+X-Yandex-Uniq: b4604cd8-83fb-4117-b02c-d2fc520eb08c
+Authentication-Results: smtp2h.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Message-ID: <54457918.8090006@yandex.ru>
+Date: Tue, 21 Oct 2014 01:05:28 +0400
+From: Kirill Tkhai <tkhai@yandex.ru>
+Reply-To: tkhai@yandex.ru
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrVg_rFmSCSnyztRtvANQLd9k_G+bU8FiQB_5O5ecUd99w@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Vladimir Davydov <vdavydov@parallels.com>
+Subject: Re: [PATCH v3] sched/numa: fix unsafe get_task_struct() in task_numa_assign()
+References: <1413800145.19914.23.camel@tkhai> <20141020144757.GA10939@redhat.com> <20141020165614.GA16373@redhat.com> <20141020182748.GA20424@redhat.com> <54456E26.2000103@yandex.ru> <20141020205006.GA2500@redhat.com>
+In-Reply-To: <20141020205006.GA2500@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 20, 2014 at 01:14:54PM -0700, Andy Lutomirski wrote:
-> On Tue, Oct 14, 2014 at 2:00 PM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
-> > On Wed, 1 Oct 2014 11:13:14 -0700 Andy Lutomirski <luto@amacapital.net> wrote:
-> >
-> >> On Wed, Oct 1, 2014 at 11:05 AM,  <josh@joshtriplett.org> wrote:
-> >> > On Tue, Sep 30, 2014 at 09:53:56PM -0700, Andy Lutomirski wrote:
-> >> >> I significantly prefer default N.  Scripts that play with init= really
-> >> >> don't want the fallback, and I can imagine contexts in which it could
-> >> >> be a security problem.
-> >> >
-> >> > While I certainly would prefer the non-fallback behavior for init as
-> >> > well, standard kernel practice has typically been to use "default y" for
-> >> > previously built-in features that become configurable.  And I'd
-> >> > certainly prefer a compile-time configuration option like this (even
-> >> > with default y) over a "strictinit" kernel command-line option.
-> >> >
-> >>
-> >> Fair enough.
-> >>
-> >> So: "default y" for a release or two, then switch the default?  Having
-> >> default y will annoy virtme, though it's not the end of the world.
-> >> Virtme is intended to work with more-or-less-normal kernels.
-> >>
-> >
-> > Adding another Kconfig option is tiresome.  What was wrong with strictinit=?
+On 21.10.2014 00:50, Oleg Nesterov wrote:
+> On 10/21, Kirill Tkhai wrote:
+>>
+>> I think generic helper is a good idea. The prototype looks OK.
+>>
+>> But I'm a little doubt about retry loop. If this helper is generic and
+>> one day it may move to ./include directory,
 > 
-> Now that this thread has gotten absurdly wrong, any thoughts?
+> Well, if we add a generic helper I think it should be exported even if
+> it has a single caller. But I agree this probably needs a justification
+> too.
 > 
-> My preference order is:
+>> isn't there a probability
+>> people will use it wrong? This loop may bring delays or something bad.
 > 
-> 1. The patch as is.
-> 2. The patch, minus the config option (i.e. making it unconditional).
-> 3. Something else.
-
-Agreed.
-
-> I would very much prefer to get *something* merged.  The current
-> behavior is problematic for scripted kernel boots that don't use
-> initramfs.
+> Yes, I thought about livelock too. OK, we can remove it, just
+> s/goto retry/return NULL/. Or, perhaps better, return ERR_PTR(-EAGAIN)
+> so that the caller can know that retry is possible.
 > 
-> I can be flexible on the something else.  One option would be to allow
-> a whole list of commands in init=, but that has compatibility issues.
-> Another would be adding an option like init_fallback=/bin/sh.  A third
-> is the original strictinit mechanism.  I don't really like any of
-> them, because they're all more complex.
+> I do not really mind, and we can reconsider this later. And I will not
+> argue if you prefer to add the rq->curr specific hack (like your patch
+> does).
+> 
+>> And since we still depends on RCU, I'd suggest to add its lockdep assert.
+> 
+> Agreed.
+> 
+> Let me explain what I personally dislike in v3:
+> 
+> 	- I think that we do not have enough reasons for
+> 	  SLAB_DESTROY_BY_RCU. This is the serious change.
+> 
+> 	  probe_kernel_read() looks better to me, and hopefully
+> 	  IS_ENABLED(DEBUG_PAGEALLOC) can make it conditional.
+> 
+> 	- PF_EXITING was fine in task_numa_compare(), but if we
+> 	  move this logic into a helper (even if it is not exported)
+> 	  then I think we need a more specific check. sighand == NULL
+> 	  looks better to me because it clearly connects to
+> 	  release_task() which makes this task_struct "rcu-unsafe".
+> 
+> 	- Again, perhaps we should start we a simple and stupid fix.
+> 	  We can do get_task_struct() under rq->lock or, if nothing
+> 	  else, just
+> 
+> 	  	raw_spin_lock_irq(&rq->lock);
+> 	  	cur = rq->curr;
+> 	  	if (is_idle_task(cur) || (cur->flags & PF_EXITING))
+> 	  		cur = NULL;
+> 	  	raw_spin_unlock_irq(&rq->lock);
+> 
+> Either way, I hope you will send v4 ;)
 
-I agree, particularly because they *add* more logic rather than
-*removing* logic.  In this case, I think a Kconfig option makes sense,
-because it controls additional behavior (the init fallback mechanism).
+No, I won't send. Please do this. Your idea and your patch is almost
+ready. Thanks :)
 
-Plus, adding more code to control init fallback at runtime then means I
-have more code to compile out to make the kernel smaller, so I'd end up
-adding that Kconfig option anyway. :)
+> But probably you should wait for for Peter's opinion first.
 
-> IOW, the no-fallback behavior is easy to implement, easy to
-> understand, and has extremely predictable behavior.  The fallback
-> behavior is more user friendly if you consider having a chance of
-> booting to something useful if you typo your init= option (but also a
-> chance of booting to something actively undesirable).
+Yeah.
 
-Here's an alternative proposal: how about we change the default
-*without* a Kconfig option, see if anyone screams, and if they do, we
-add that code back in under a Kconfig option as in your current patch?
-
-Would that make your Kconfig senses stop tingling, Andrew? :)
-
-- Josh Triplett
+Kirill
