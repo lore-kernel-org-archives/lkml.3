@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493AbaJTTIh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 15:08:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37557 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752812AbaJTTI3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 15:08:29 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Kamal Mostafa <kamal@canonical.com>,
-        Andreas Noever <andreas.noever@gmail.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH] Revert duplicate "PCI: pciehp: Prevent NULL dereference during probe"
-Date: Mon, 20 Oct 2014 12:08:10 -0700
-Message-Id: <1413832091-28752-1-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
+	id S1753508AbaJTTIz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 15:08:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36624 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751003AbaJTTIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 15:08:34 -0400
+Date: Mon, 20 Oct 2014 21:08:30 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Paul Bolle <pebolle@tiscali.nl>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>
+Subject: Re: [GIT PULL] doc for 3.18 merge window
+In-Reply-To: <1413809129.17703.13.camel@x41>
+Message-ID: <alpine.LNX.2.00.1410202106330.24255@pobox.suse.cz>
+References: <alpine.LNX.2.00.1410070008540.31343@pobox.suse.cz> <1413809129.17703.13.camel@x41>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit bceee4a97eb58bd0e80e39eff11b506ddd9e7ad3.
 
-This patch was applied twice (identical patch, different descriptions):
-    62e4492 PCI: Prevent NULL dereference during pciehp probe
-    bceee4a PCI: pciehp: Prevent NULL dereference during probe
+[ adding Jonathan to CC ]
 
-Revert the latter to dispose of the duplicated code block.
+On Mon, 20 Oct 2014, Paul Bolle wrote:
 
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
-Cc: Andreas Noever <andreas.noever@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: stable@vger.kernel.org  # v3.2+
----
- drivers/pci/hotplug/pciehp_core.c | 7 -------
- 1 file changed, 7 deletions(-)
+> > Peter Foley (12):
+> >       Documentation: use subdir-y to avoid unnecessary built-in.o files
+> >       Documentation: add makefiles for more targets
+> >       Documentation: make functions static to avoid prototype warnings
+> >       Documentation: fix misc. warnings
+> >       Documentation: support glibc versions without htole macros
+> >       Documentation: update .gitignore files
+> >       Documentation: update vDSO makefile to build portable examples
+> >       Documentation: disable vdso_test to avoid breakage with old glibc
+> >       Make Documenation depend on headers_install
+> >       tools: add more endian.h macros
+> >       Documentation: remove networking/.gitignore
+> >       Documentation: update include path for mpssd
+> 
+> This series is included in v3.18-rc1. It broke the build of 32 bit x86
+> (if CONFIG_BUILD_DOCSRC is set):
+>     Documentation/vDSO/vdso_standalone_test_x86.o: In function `to_base10':
+>     vdso_standalone_test_x86.c:(.text+0x101): undefined reference to `__umoddi3'
+>     vdso_standalone_test_x86.c:(.text+0x12d): undefined reference to `__udivdi3'
+>     collect2: error: ld returned 1 exit status
+>     make[2]: *** [Documentation/vDSO/vdso_standalone_test_x86] Error 1
+>     make[1]: *** [Documentation/vDSO] Error 2
+>     make[1]: *** Waiting for unfinished jobs....
+>     make: *** [vmlinux] Error 2
+> 
+> A possible fix is discussed in https://lkml.org/lkml/2014/10/8/538 .
 
-diff --git a/drivers/pci/hotplug/pciehp_core.c b/drivers/pci/hotplug/pciehp_core.c
-index 3a5e7e2..07aa722 100644
---- a/drivers/pci/hotplug/pciehp_core.c
-+++ b/drivers/pci/hotplug/pciehp_core.c
-@@ -262,13 +262,6 @@ static int pciehp_probe(struct pcie_device *dev)
- 		goto err_out_none;
- 	}
- 
--	if (!dev->port->subordinate) {
--		/* Can happen if we run out of bus numbers during probe */
--		dev_err(&dev->device,
--			"Hotplug bridge without secondary bus, ignoring\n");
--		goto err_out_none;
--	}
--
- 	ctrl = pcie_init(dev);
- 	if (!ctrl) {
- 		dev_err(&dev->device, "Controller initialization failed\n");
+Jonathan, will you take care of this (now that ad3118b9861 is in)?
+
+BTW, I am not sure whether vdso_standalone_test_x86.c wouldn't fit better 
+in samples/ anyway ...
+
 -- 
-1.9.1
-
+Jiri Kosina
+SUSE Labs
