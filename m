@@ -1,53 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752314AbaJTROA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 13:14:00 -0400
-Received: from lists.s-osg.org ([54.187.51.154]:41397 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750935AbaJTRNz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 13:13:55 -0400
-Message-ID: <544542CA.4060309@osg.samsung.com>
-Date: Mon, 20 Oct 2014 11:13:46 -0600
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752097AbaJTRRh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 13:17:37 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:49661 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751181AbaJTRRc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 13:17:32 -0400
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>, stable@vger.kernel.org
-CC: linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.12 000/197] 3.12.31-stable review
-References: <cover.1413533329.git.jslaby@suse.cz>
-In-Reply-To: <cover.1413533329.git.jslaby@suse.cz>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <54454199.3070702@infradead.org>
+References: <544475D5.6080903@infradead.org> <CAP_ceTxY945D6vuPDz3gPUXN-YwnXX5zG6=GpBuohCcd+YTb=g@mail.gmail.com>
+ <54454199.3070702@infradead.org>
+From: Vincent Palatin <vpalatin@chromium.org>
+Date: Mon, 20 Oct 2014 10:17:11 -0700
+X-Google-Sender-Auth: z7D1qx7sI2k7cJXD5XrrCKj9hUc
+Message-ID: <CAP_ceTw++2LVPsiM4em7bCg1T8RbDNHdKyLLNELPv9zHRjb-Og@mail.gmail.com>
+Subject: Re: [PATCH] DocBook: fix media build error
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Jonathan Corbet <corbet@lwn.net>,
+        linux-media <linux-media@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/2014 02:11 AM, Jiri Slaby wrote:
-> This is the start of the stable review cycle for the 3.12.31 release.
-> There are 197 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
-> 
-> Responses should be made by Tue Oct 21 10:08:49 CEST 2014.
-> Anything received after that time might be too late.
-> 
-> The whole patch series can be found in one patch at:
-> 	http://kernel.org/pub/linux/kernel/people/jirislaby/stable-review/patch-3.12.31-rc1.xz
-> and the diffstat can be found below.
-> 
-> thanks,
-> js
-> 
+On Mon, Oct 20, 2014 at 10:08 AM, Randy Dunlap <rdunlap@infradead.org> wrote:
+> On 10/20/14 09:06, Vincent Palatin wrote:
+>> On Sun, Oct 19, 2014 at 7:39 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+>>> From: Randy Dunlap <rdunlap@infradead.org>
+>>>
+>>> Fix media DocBook build errors by making the orderedlist balanced.
+>>>
+>>> DOC1/Documentation/DocBook/compat.xml:2576: parser error : Opening and ending tag mismatch: orderedlist line 2560 and section
+>>> DOC1/Documentation/DocBook/compat.xml:2726: parser error : Premature end of data in tag section line 884
+>>> DOC1/Documentation/DocBook/compat.xml:2726: parser error : chunk is not well balanced
+>>>
+>>> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+>>> Cc: Vincent Palatin <vpalatin@chromium.org>
+>>> ---
+>>>  Documentation/DocBook/media/v4l/compat.xml |    1 +
+>>>  1 file changed, 1 insertion(+)
+>>>
+>>> --- lnx-318-rc1.orig/Documentation/DocBook/media/v4l/compat.xml
+>>> +++ lnx-318-rc1/Documentation/DocBook/media/v4l/compat.xml
+>>> @@ -2566,6 +2566,7 @@ fields changed from _s32 to _u32.
+>>>           <para>Added compound control types and &VIDIOC-QUERY-EXT-CTRL;.
+>>>           </para>
+>>>          </listitem>
+>>> +      </orderedlist>
+>>>        <title>V4L2 in Linux 3.18</title>
+>>>        <orderedlist>
+>>>         <listitem>
+>>
+>> Compared to the original patch, it's actually also missing the
+>>  </section>
+>>
+>> <section>
+>> which were lost in the merge.
+>>
+>>
+>
+> Would you please send a complete fix for it?
+> then Mauro can drop my patch.
 
-Compiled and booted on my test system. No dmesg regressions.
-
--- Shuah
-
+Sure, I will send it in 5 minutes,
+the docs are currently rebuilding with the patch ...
 
 -- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+Vincent
