@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001AbaJTQbj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 12:31:39 -0400
-Received: from mout.gmx.com ([74.208.4.201]:59910 "EHLO mout.gmx.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750993AbaJTQbi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 12:31:38 -0400
-MIME-Version: 1.0
-Message-ID: <trinity-1c8c3bfe-2db1-4453-bde2-77c94530307c-1413822696254@3capp-mailcom-lxa02>
-From: "John Garret" <johngarret2014@mail.com>
-To: linux-kernel@vger.kernel.org, debian-vote@lists.debian.org,
-        debian-devel@lists.debian.org, debian-user@lists.debian.org
-Subject: To torpedo Debian and leave RHEL as the only stable option.
-Content-Type: text/plain; charset=UTF-8
-Date: Mon, 20 Oct 2014 18:31:37 +0200
-Importance: normal
-Sensitivity: Normal
-X-Priority: 3
-X-Provags-ID: V03:K0:tHMKeomgGMx5uwATSjxeQdVJvX1dlBEWct4JaQHESHH
- wPXYmwWI1KWgeQCFuy5js9Hdk2A4yLRRf/JpBrDIFZxWQ24TWW
- Bubgra8fufwohCSuPXf8bZOXCYL3wJgZ814R8vlWnOnbWdr98W
- 2MviPAEuvqdxY+Ow1BHoA/kkW22z4lXVJ+miFMKSjSHRbHEZOS
- dZoNxVI1V2dh5fr3MoPve6o8hToBYDpgA+hIi2a1KI8HVTlQNQ
- NG8S4DEcA4DO6d3Tm3zLy73vnbyo1QJ+0jBOk9DzFAe7pV+XHN
- O5epGd9OVV8xIh0LHEk4bTuoZp2
-X-UI-Out-Filterresults: notjunk:1;
+	id S1752037AbaJTQeM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 12:34:12 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:53683 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751272AbaJTQeJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 12:34:09 -0400
+From: Stefan Hengelein <stefan.hengelein@fau.de>
+To: linux-mips@linux-mips.org
+Cc: linux-kernel@vger.kernel.org, ryazanov.s.a@gmail.com, ralf@linux-mips.org,
+        Stefan Hengelein <stefan.hengelein@fau.de>
+Subject: [PATCH] MIPS: MSP71xx: remove compilation error when CONFIG_MIPS_MT is present
+Date: Mon, 20 Oct 2014 18:33:39 +0200
+Message-Id: <1413822819-8827-1-git-send-email-stefan.hengelein@fau.de>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Debian backports security patches (etc) to its stable distribution, which can be used for years and years.
-RHEL does too, but this costs subscription money.
-If debian becomes unstable (via systemd etc) and ever more subject to churn, that's some competition out of the way.
+When CONFIG_MIPS_MT is defined, code is enabled that tries to call
+'set_vi_handler()'. This function is declared in <asm/setup.h> but the
+header is never included. Therefore, the compilation breaks.
 
-Future: if you want stability RHEL is the only option, because debian has been
-subverted and is being torpedoed.
+arch/mips/pmcs-msp71xx/msp_irq.c:133: error: implicit declaration of function 'set_vi_handler'
 
-If you want something without churn you'll only have redhat to turn to.
-That's one reason why this is being done.
-(Most establishments like stability, why go with RHEL when Debian is free)
+This error was found with vampyr.
+
+Signed-off-by: Stefan Hengelein <stefan.hengelein@fau.de>
+---
+ arch/mips/pmcs-msp71xx/msp_irq.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/mips/pmcs-msp71xx/msp_irq.c b/arch/mips/pmcs-msp71xx/msp_irq.c
+index f914c75..8d53d7a 100644
+--- a/arch/mips/pmcs-msp71xx/msp_irq.c
++++ b/arch/mips/pmcs-msp71xx/msp_irq.c
+@@ -16,6 +16,7 @@
+ #include <linux/time.h>
+ 
+ #include <asm/irq_cpu.h>
++#include <asm/setup.h>
+ 
+ #include <msp_int.h>
+ 
+-- 
+1.9.1
+
