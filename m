@@ -1,132 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752578AbaJTOvh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 10:51:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55863 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751467AbaJTOvg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 10:51:36 -0400
-Date: Mon, 20 Oct 2014 16:47:57 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kirill Tkhai <ktkhai@parallels.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Kirill Tkhai <tkhai@yandex.ru>
-Subject: Re: [PATCH v3] sched/numa: fix unsafe get_task_struct() in
-	task_numa_assign()
-Message-ID: <20141020144757.GA10939@redhat.com>
-References: <1413800145.19914.23.camel@tkhai>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413800145.19914.23.camel@tkhai>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752781AbaJTOxc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 10:53:32 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:54227 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752141AbaJTOxb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 10:53:31 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: airlied@linux.ie, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, rdunlap@infradead.org, corbet@lwn.net,
+        trivial@kernel.org
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] gpu:drm: Fix typo in Documentation/DocBook/drm.xml
+Date: Mon, 20 Oct 2014 23:53:13 +0900
+Message-Id: <1413816793-14690-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 2.1.2.451.g98349e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kirill,
+This patch fix spelling typos found in drm.xml.
+It is because the file is generated from comments in
+source codes, I have to fix the typos within source files.
 
-I leave this to you and Peter, but...
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ drivers/gpu/drm/drm_crtc.c             | 2 +-
+ drivers/gpu/drm/drm_irq.c              | 4 ++--
+ drivers/gpu/drm/drm_modes.c            | 2 +-
+ drivers/gpu/drm/drm_prime.c            | 4 ++--
+ drivers/gpu/drm/i915/i915_cmd_parser.c | 4 ++--
+ drivers/gpu/drm/i915/i915_reg.h        | 2 +-
+ drivers/gpu/drm/i915/intel_lrc.c       | 2 +-
+ include/drm/drm_dp_mst_helper.h        | 2 +-
+ 8 files changed, 11 insertions(+), 11 deletions(-)
 
-On 10/20, Kirill Tkhai wrote:
->
-> @@ -259,10 +259,15 @@ void __init fork_init(unsigned long mempages)
->  #ifndef ARCH_MIN_TASKALIGN
->  #define ARCH_MIN_TASKALIGN	L1_CACHE_BYTES
->  #endif
-> -	/* create a slab on which task_structs can be allocated */
-> +	/*
-> +	 * Create a slab on which task_structs can be allocated.
-> +	 * Note, we need SLAB_DESTROY_BY_RCU flag, when we access
-> +	 * rq::curr under RCU read lock. See scheduler code.
-> +	 */
->  	task_struct_cachep =
->  		kmem_cache_create("task_struct", sizeof(struct task_struct),
-> -			ARCH_MIN_TASKALIGN, SLAB_PANIC | SLAB_NOTRACK, NULL);
-> +			ARCH_MIN_TASKALIGN,
-> +			SLAB_PANIC | SLAB_NOTRACK | SLAB_DESTROY_BY_RCU, NULL);
-
-to me this change needs more justification.
-
-Again, perhaps we will need to change the lifetime rules for task_struct
-anyway, if we have more problems like this. But until then this looks like
-an overkill to me. Plus rq_curr_if_not_put() looks too subtle, and it is
-not generic.
-
-May be we should start with something simple and stupid?
-
-(it seems we can remove rcu_read_lock() with this patch, but I am not
- sure).
-
-Oleg.
-
-
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1087,9 +1087,6 @@ static void task_numa_assign(struct task_numa_env *env,
- {
- 	if (env->best_task)
- 		put_task_struct(env->best_task);
--	if (p)
--		get_task_struct(p);
--
- 	env->best_task = p;
- 	env->best_imp = imp;
- 	env->best_cpu = env->dst_cpu;
-@@ -1139,6 +1136,18 @@ static bool load_too_imbalanced(long src_load, long dst_load,
- 	return (imb > old_imb);
- }
+diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
+index e79c8d3..7f94989 100644
+--- a/drivers/gpu/drm/drm_crtc.c
++++ b/drivers/gpu/drm/drm_crtc.c
+@@ -3611,7 +3611,7 @@ static struct drm_property *property_create_range(struct drm_device *dev,
+  * object with drm_object_attach_property. The returned property object must be
+  * freed with drm_property_destroy.
+  *
+- * Userspace is allowed to set any interger value in the (min, max) range
++ * Userspace is allowed to set any integer value in the (min, max) range
+  * inclusive.
+  *
+  * Returns:
+diff --git a/drivers/gpu/drm/drm_irq.c b/drivers/gpu/drm/drm_irq.c
+index 5ef03c2..3e6b582 100644
+--- a/drivers/gpu/drm/drm_irq.c
++++ b/drivers/gpu/drm/drm_irq.c
+@@ -1190,7 +1190,7 @@ EXPORT_SYMBOL(drm_crtc_vblank_off);
+  *
+  * This functions restores the vblank interrupt state captured with
+  * drm_vblank_off() again. Note that calls to drm_vblank_on() and
+- * drm_vblank_off() can be unbalanced and so can also be unconditionaly called
++ * drm_vblank_off() can be unbalanced and so can also be unconditionally called
+  * in driver load code to reflect the current hardware state of the crtc.
+  *
+  * This is the legacy version of drm_crtc_vblank_on().
+@@ -1237,7 +1237,7 @@ EXPORT_SYMBOL(drm_vblank_on);
+  *
+  * This functions restores the vblank interrupt state captured with
+  * drm_vblank_off() again. Note that calls to drm_vblank_on() and
+- * drm_vblank_off() can be unbalanced and so can also be unconditionaly called
++ * drm_vblank_off() can be unbalanced and so can also be unconditionally called
+  * in driver load code to reflect the current hardware state of the crtc.
+  *
+  * This is the native kms version of drm_vblank_on().
+diff --git a/drivers/gpu/drm/drm_modes.c b/drivers/gpu/drm/drm_modes.c
+index d1b7d20..6d8b941 100644
+--- a/drivers/gpu/drm/drm_modes.c
++++ b/drivers/gpu/drm/drm_modes.c
+@@ -914,7 +914,7 @@ EXPORT_SYMBOL(drm_mode_equal_no_clocks_no_stereo);
+  *
+  * This function is a helper which can be used to validate modes against size
+  * limitations of the DRM device/connector. If a mode is too big its status
+- * memeber is updated with the appropriate validation failure code. The list
++ * member is updated with the appropriate validation failure code. The list
+  * itself is not changed.
+  */
+ void drm_mode_validate_size(struct drm_device *dev,
+diff --git a/drivers/gpu/drm/drm_prime.c b/drivers/gpu/drm/drm_prime.c
+index 78ca308..6872eca 100644
+--- a/drivers/gpu/drm/drm_prime.c
++++ b/drivers/gpu/drm/drm_prime.c
+@@ -328,7 +328,7 @@ static const struct dma_buf_ops drm_gem_prime_dmabuf_ops =  {
+  */
  
-+struct task_struct *get_rq_curr(struct rq *rq)
-+{
-+	struct task_struct *curr;
-+
-+	raw_spin_lock_irq(&rq->lock);
-+	curr = rq->curr;
-+	get_task_struct(curr);
-+	raw_spin_unlock_irq(&rq->lock);
-+
-+	return curr;
-+}
-+
- /*
-  * This checks if the overall compute and NUMA accesses of the system would
-  * be improved if the source tasks was migrated to the target dst_cpu taking
-@@ -1156,11 +1165,9 @@ static void task_numa_compare(struct task_numa_env *env,
- 	long imp = env->p->numa_group ? groupimp : taskimp;
- 	long moveimp = imp;
+ /**
+- * drm_gem_prime_export - helper library implemention of the export callback
++ * drm_gem_prime_export - helper library implementation of the export callback
+  * @dev: drm_device to export from
+  * @obj: GEM object to export
+  * @flags: flags like DRM_CLOEXEC
+@@ -483,7 +483,7 @@ out_unlock:
+ EXPORT_SYMBOL(drm_gem_prime_handle_to_fd);
  
--	rcu_read_lock();
--	cur = ACCESS_ONCE(dst_rq->curr);
--	if (cur->pid == 0) /* idle */
--		cur = NULL;
-+	cur = get_rq_curr(dst_rq);
+ /**
+- * drm_gem_prime_import - helper library implemention of the import callback
++ * drm_gem_prime_import - helper library implementation of the import callback
+  * @dev: drm_device to import into
+  * @dma_buf: dma-buf object to import
+  *
+diff --git a/drivers/gpu/drm/i915/i915_cmd_parser.c b/drivers/gpu/drm/i915/i915_cmd_parser.c
+index 593b657..ee60bd4 100644
+--- a/drivers/gpu/drm/i915/i915_cmd_parser.c
++++ b/drivers/gpu/drm/i915/i915_cmd_parser.c
+@@ -73,7 +73,7 @@
+  * those commands required by the parser. This generally works because command
+  * opcode ranges have standard command length encodings. So for commands that
+  * the parser does not need to check, it can easily skip them. This is
+- * implementated via a per-ring length decoding vfunc.
++ * implemented via a per-ring length decoding vfunc.
+  *
+  * Unfortunately, there are a number of commands that do not follow the standard
+  * length encoding for their opcode range, primarily amongst the MI_* commands.
+@@ -838,7 +838,7 @@ finish:
+  * @ring: the ring in question
+  *
+  * Only certain platforms require software batch buffer command parsing, and
+- * only when enabled via module paramter.
++ * only when enabled via module parameter.
+  *
+  * Return: true if the ring requires software command parsing
+  */
+diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
+index c01e5f3..0404fe1 100644
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -672,7 +672,7 @@ enum punit_power_well {
+  * need to be accessed during AUX communication,
+  *
+  * Generally the common lane corresponds to the pipe and
+- * the spline (PCS/TX) correponds to the port.
++ * the spline (PCS/TX) corresponds to the port.
+  *
+  * For dual channel PHY (VLV/CHV):
+  *
+diff --git a/drivers/gpu/drm/i915/intel_lrc.c b/drivers/gpu/drm/i915/intel_lrc.c
+index bafd38b..06b3e85 100644
+--- a/drivers/gpu/drm/i915/intel_lrc.c
++++ b/drivers/gpu/drm/i915/intel_lrc.c
+@@ -1660,7 +1660,7 @@ static uint32_t get_lr_context_size(struct intel_engine_cs *ring)
+  * the creation is a deferred call: it's better to make sure first that we need to use
+  * a given ring with the context.
+  *
+- * Return: non-zero on eror.
++ * Return: non-zero on error.
+  */
+ int intel_lr_context_deferred_create(struct intel_context *ctx,
+ 				     struct intel_engine_cs *ring)
+diff --git a/include/drm/drm_dp_mst_helper.h b/include/drm/drm_dp_mst_helper.h
+index 338fc10..05e85ee 100644
+--- a/include/drm/drm_dp_mst_helper.h
++++ b/include/drm/drm_dp_mst_helper.h
+@@ -28,7 +28,7 @@
+ struct drm_dp_mst_branch;
  
-+	rcu_read_lock();
- 	/*
- 	 * "imp" is the fault differential for the source task between the
- 	 * source and destination node. Calculate the total differential for
-@@ -1235,6 +1242,7 @@ balance:
- 		 */
- 		if (!load_too_imbalanced(src_load, dst_load, env)) {
- 			imp = moveimp - 1;
-+			put_task_struct(cur);
- 			cur = NULL;
- 			goto assign;
- 		}
-@@ -1254,8 +1262,12 @@ balance:
- 
- assign:
- 	task_numa_assign(env, cur, imp);
-+	cur = NULL;
- unlock:
- 	rcu_read_unlock();
-+
-+	if (cur)
-+		put_task_struct(cur);
- }
- 
- static void task_numa_find_cpu(struct task_numa_env *env,
+ /**
+- * struct drm_dp_vcpi - Virtual Channel Payload Identifer
++ * struct drm_dp_vcpi - Virtual Channel Payload Identifier
+  * @vcpi: Virtual channel ID.
+  * @pbn: Payload Bandwidth Number for this channel
+  * @aligned_pbn: PBN aligned with slot size
+-- 
+2.1.2.451.g98349e5
 
