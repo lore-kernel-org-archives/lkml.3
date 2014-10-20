@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807AbaJTVi7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 17:38:59 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:39996 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753391AbaJTVi5 (ORCPT
+	id S1753528AbaJTVkq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 17:40:46 -0400
+Received: from mail-yh0-f45.google.com ([209.85.213.45]:64465 "EHLO
+	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751505AbaJTVko (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 17:38:57 -0400
-Message-ID: <544580ED.3050604@hurleysoftware.com>
-Date: Mon, 20 Oct 2014 17:38:53 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 20 Oct 2014 17:40:44 -0400
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>, Kumar Gala <galak@codeaurora.org>
-CC: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, Rob Herring <robh@kernel.org>
-Subject: Re: [PATCH] tty: serial: msm: Fix lock init issue with earlycon
-References: <1413551588-14877-1-git-send-email-galak@codeaurora.org> <544553F6.1020409@codeaurora.org>
-In-Reply-To: <544553F6.1020409@codeaurora.org>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+In-Reply-To: <1413839151-10875-3-git-send-email-javier.martinez@collabora.co.uk>
+References: <1413839151-10875-1-git-send-email-javier.martinez@collabora.co.uk>
+	<1413839151-10875-3-git-send-email-javier.martinez@collabora.co.uk>
+Date: Mon, 20 Oct 2014 14:40:43 -0700
+X-Google-Sender-Auth: JVaRWfdzOEMXVsfPQgvJLJNWoEk
+Message-ID: <CAD=FV=XnBWWKbrey1zmxtAzGYviJJad4pWOC4=bbf2e2OBgaeQ@mail.gmail.com>
+Subject: Re: [PATCH v3 2/2] ARM: EXYNOS: Call regulator core suspend prepare
+ and finish functions
+From: Doug Anderson <dianders@chromium.org>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Mark Brown <broonie@kernel.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/20/2014 02:27 PM, Stephen Boyd wrote:
-> On 10/17/2014 06:13 AM, Kumar Gala wrote:
->> With CONFIG_DEBUG_SPINLOCK enabled we see:
->>
->> BUG: spinlock bad magic on CPU#0, swapper/0
->>   lock: early_console_dev+0x8/0x160, .magic: 00000000, .owner: <none>/-1, .owner_cpu: 0
->> CPU: 0 PID: 0 Comm: swapper Not tainted 3.17.0-09733-gb446b33-dirty #18
-> 
-> [...]
-> 
->> diff --git a/drivers/tty/serial/msm_serial.c b/drivers/tty/serial/msm_serial.c
->> index 4b6c783..8ab27c9 100644
->> --- a/drivers/tty/serial/msm_serial.c
->> +++ b/drivers/tty/serial/msm_serial.c
->> @@ -973,6 +973,8 @@ msm_serial_early_console_setup(struct earlycon_device *device, const char *opt)
->>       if (!device->port.membase)
->>           return -ENODEV;
->>   +    spin_lock_init(&device->port.lock);
->> +
->>       device->con->write = msm_serial_early_write;
->>       return 0;
->>   }
->> @@ -995,6 +997,8 @@ msm_serial_early_console_setup_dm(struct earlycon_device *device,
->>       if (!device->port.membase)
->>           return -ENODEV;
->>   +    spin_lock_init(&device->port.lock);
->> +
->>       device->con->write = msm_serial_early_write_dm;
->>       return 0;
->>   }
-> 
-> Could this be done in the tty core instead?
+Javier,
 
-Or even better: refactor __msm_console_write() so no spin_lock() is required
-for the earlycon write.
+On Mon, Oct 20, 2014 at 2:05 PM, Javier Martinez Canillas
+<javier.martinez@collabora.co.uk> wrote:
+> The regulator framework has a set of helpers functions to be used when
+> the system is entering and leaving from suspend but these are not called
+> on Exynos platforms. This means that the .set_suspend_* function handlers
+> defined by regulator drivers are not called when the system is suspended.
+>
+> Suggested-by: Doug Anderson <dianders@chromium.org>
+> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> Reviewed-by: Doug Anderson <dianders@chromium.org>
 
-FWIW, __msm_console_write() is a deadlock-waiting-to_happen since it does
-not disable interrupts with spin_lock_irqsave().
+I think you forgot to carry Chanwoo's review:
 
-Regards,
-Peter Hurley
+Reviewed-by: Chanwoo Choi<cw00.choi@samsung.com>
+
+I don't think you've made any changes that would need to invalidate his review.
