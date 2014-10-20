@@ -1,104 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751621AbaJTBzj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 21:55:39 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:39556 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751120AbaJTBzi (ORCPT
+	id S1751872AbaJTB6M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 21:58:12 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:40967 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194AbaJTB6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 21:55:38 -0400
-Message-ID: <54446B92.1040507@hitachi.com>
-Date: Mon, 20 Oct 2014 10:55:30 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Sun, 19 Oct 2014 21:58:11 -0400
 MIME-Version: 1.0
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
-        Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] kprobes: introduce ARCH_HANDLES_KPROBES_ON_FTRACE
-References: <1413387978-984-1-git-send-email-heiko.carstens@de.ibm.com> <1413387978-984-2-git-send-email-heiko.carstens@de.ibm.com>
-In-Reply-To: <1413387978-984-2-git-send-email-heiko.carstens@de.ibm.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20141017132801.GH10873@e104818-lin.cambridge.arm.com>
+References: <CAGZxSSSBpCvJt=PFbihTmPneJqiocU8VZSDHpXgkf5dhWZ850Q@mail.gmail.com>
+	<20141016171012.GE5252@e104818-lin.cambridge.arm.com>
+	<CAGZxSSSZ+b28rcHYRi5EWV9K4izHZBkO3fJTdang5XTaNMRTrw@mail.gmail.com>
+	<20141017132801.GH10873@e104818-lin.cambridge.arm.com>
+Date: Mon, 20 Oct 2014 09:58:10 +0800
+Message-ID: <CAGZxSSSPcfEWVhwisPder1j55uibJneJAZYyMR7=2OLgpGYM6Q@mail.gmail.com>
+Subject: Re: [PATCH v2] arm64: mm: use macro instead of if judgement of ZONE_DMA
+From: Yifan Zhang <yifan.zhangm@gmail.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Will Deacon <Will.Deacon@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
+        "lauraa@codeaurora.org" <lauraa@codeaurora.org>,
+        "ganapatrao.kulkarni@caviumnetworks.com" 
+	<ganapatrao.kulkarni@caviumnetworks.com>,
+        "robh@kernel.org" <robh@kernel.org>,
+        "leif.lindholm@linaro.org" <leif.lindholm@linaro.org>,
+        "Yalin.Wang@sonymobile.com" <Yalin.Wang@sonymobile.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yifan Zhang <zhangyf@marvell.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/10/16 0:46), Heiko Carstens wrote:
-> Allow architectures to implement handling of kprobes on function
-> tracer call sites on their own, without depending on common code.
-> 
-> This patch removes the kprobes check if a kprobe is being placed
-> on a function tracer call site and therefore gives full responsibility
-> of handling this correctly to the architecture.
-> 
-> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-> ---
->  arch/Kconfig     | 8 ++++++++
->  kernel/kprobes.c | 3 ++-
->  2 files changed, 10 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/Kconfig b/arch/Kconfig
-> index 05d7a8a458d5..e1a8e0edf03f 100644
-> --- a/arch/Kconfig
-> +++ b/arch/Kconfig
-> @@ -85,6 +85,14 @@ config KPROBES_ON_FTRACE
->  	 passing of pt_regs to function tracing, then kprobes can
->  	 optimize on top of function tracing.
->  
-> +config ARCH_HANDLES_KPROBES_ON_FTRACE
-> +	def_bool n
-> +	help
-> +	 If an architecture can handle kprobes on function tracer call
-> +	 sites on own, then this option should be selected. This option
-> +	 removes the check which otherwise prevents to set kprobes on
-> +	 function tracer call sites.
-> +
->  config UPROBES
->  	def_bool n
->  	select PERCPU_RWSEM
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> index 3995f546d0f3..4cc48aa67635 100644
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -1428,7 +1428,8 @@ static int check_kprobe_address_safe(struct kprobe *p,
->  			return -EILSEQ;
->  		p->flags |= KPROBE_FLAG_FTRACE;
->  #else	/* !CONFIG_KPROBES_ON_FTRACE */
-> -		return -EINVAL;
-> +		if (!IS_ENABLED(CONFIG_ARCH_HANDLES_KPROBES_ON_FTRACE))
-> +			return -EINVAL;
->  #endif
->  	}
+Catalin,
 
-Hmm, this looks a bit not straight. Maybe we'd better introduce a local
-check_ftrace_location() function which always returns 0 if
-CONFIG_ARCH_HANDLES_KPROBES_ON_FTRACE(with a comment! :)) as below.
+No, we don't have any issues w/ current configuration. I'm just
+confused why normal zone is empty in arm64 when I dumped zone info. If
+it is on purpose, then I'm fine.
 
-int check_ftrace_location(kp)
-{
-	unsigned long ftrace_address;
+THX all for feedback!
 
-	/* If an architecture handles kprobes on ftrace, we don't check it */
-	if (IS_ENABLED(CONFIG_ARCH_HANDLES_KPROBES_ON_FTRACE))
-		return 0;
+BR,
+Yifan
 
-	...
-}
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+On Fri, Oct 17, 2014 at 9:28 PM, Catalin Marinas
+<catalin.marinas@arm.com> wrote:
+> On Fri, Oct 17, 2014 at 04:08:43AM +0100, Yifan Zhang wrote:
+>> I found In current arm64 code, there is no normal zone, only DMA zone.
+>>
+>> Number of blocks type     Unmovable  Reclaimable      Movable
+>> Reserve          CMA      Isolate
+>>
+>> Node 0, zone    DMA          142           12           69
+>> 1           28            0
+>>
+>> When zone_sizes_init, zone_size[ZONE_NORMAL] is initialized to 0. (it
+>> is 3.10, I didn't try the latest code base)
+> [...]
+>> Is this ZONE_DMA cover full memory and ZONE_NORMAL = 0 strategy on
+>> purpose ? We will not use ZONE_NORMAL on arm64 ?
+>
+> The normal zone is still there, only that it doesn't have any pages. The
+> page allocator falls back to the DMA zone, so you would not see any
+> problems with normal page allocation.
+>
+> Are you trying to solve anything (performance?) or just what the kernel
+> shows as part of the normal zone?
+>
+> --
+> Catalin
