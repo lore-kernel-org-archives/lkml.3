@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236AbaJTUxm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 16:53:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47355 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752835AbaJTUxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 16:53:39 -0400
-Date: Mon, 20 Oct 2014 22:50:06 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kirill Tkhai <tkhai@yandex.ru>
-Cc: Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Vladimir Davydov <vdavydov@parallels.com>
-Subject: Re: [PATCH v3] sched/numa: fix unsafe get_task_struct() in
-	task_numa_assign()
-Message-ID: <20141020205006.GA2500@redhat.com>
-References: <1413800145.19914.23.camel@tkhai> <20141020144757.GA10939@redhat.com> <20141020165614.GA16373@redhat.com> <20141020182748.GA20424@redhat.com> <54456E26.2000103@yandex.ru>
+	id S1753351AbaJTUyE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 16:54:04 -0400
+Received: from 75-148-32-185-Colorado.hfc.comcastbusiness.net ([75.148.32.185]:44517
+	"EHLO mail.scrye.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1752835AbaJTUyB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 16:54:01 -0400
+Date: Mon, 20 Oct 2014 14:53:59 -0600
+From: Kevin Fenzi <kevin@scrye.com>
+To: Dave Jones <davej@redhat.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
+Message-ID: <20141020145359.565fe5e6@voldemort.scrye.com>
+In-Reply-To: <20141020204326.GA25668@redhat.com>
+References: <20141020141515.0688bf33@voldemort.scrye.com>
+	<20141020204326.GA25668@redhat.com>
+Organization: Scrye, INC
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54456E26.2000103@yandex.ru>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ boundary="Sig_/CWmk_C.B8yfFdG+vV4mMMgc"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/21, Kirill Tkhai wrote:
->
-> I think generic helper is a good idea. The prototype looks OK.
->
-> But I'm a little doubt about retry loop. If this helper is generic and
-> one day it may move to ./include directory,
+--Sig_/CWmk_C.B8yfFdG+vV4mMMgc
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Well, if we add a generic helper I think it should be exported even if
-it has a single caller. But I agree this probably needs a justification
-too.
+On Mon, 20 Oct 2014 16:43:26 -0400
+Dave Jones <davej@redhat.com> wrote:
 
-> isn't there a probability
-> people will use it wrong? This loop may bring delays or something bad.
+> I've seen similar soft lockup traces from the sys_unshare path when
+> running my fuzz tester.  It seems that if you create enough network
+> namespaces, it can take a huge amount of time for them to be iterated.
+> (Running trinity with '-c unshare' you can see the slow down happen.
+> In some cases, it takes so long that the watchdog process kills it --
+>  though the SIGKILL won't get delivered until the unshare() completes)
+>=20
+> Any idea what this machine had been doing prior to this that may have
+> involved creating lots of namespaces ?
 
-Yes, I thought about livelock too. OK, we can remove it, just
-s/goto retry/return NULL/. Or, perhaps better, return ERR_PTR(-EAGAIN)
-so that the caller can know that retry is possible.
+That was right after boot. ;)=20
 
-I do not really mind, and we can reconsider this later. And I will not
-argue if you prefer to add the rq->curr specific hack (like your patch
-does).
+This is my main rawhide running laptop.
 
-> And since we still depends on RCU, I'd suggest to add its lockdep assert.
+A 'ip netns list' shows nothing.
 
-Agreed.
+kevin
 
-Let me explain what I personally dislike in v3:
+--Sig_/CWmk_C.B8yfFdG+vV4mMMgc
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-	- I think that we do not have enough reasons for
-	  SLAB_DESTROY_BY_RCU. This is the serious change.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-	  probe_kernel_read() looks better to me, and hopefully
-	  IS_ENABLED(DEBUG_PAGEALLOC) can make it conditional.
+iQIcBAEBCgAGBQJURXZnAAoJEEs3sNgP+7teqmMQAL3/ZMJpSBj0A7EhePGt5t/J
+4TQhLmj4I4k2bT/HGBbFaWAM/n/6S8CRF5yIBMwlb2XsiBYBOtZDpinmjK6/Scub
+hSNC08tWT7ZbdJFVAaqW1y9mKEHq+GAg1vhYjqTnncU7EO/y/MD9SrGUfFm9zfDH
+hJ8M6EtqHfGprj48wom2l0Ec5T12L2qioNqW5UyFC3ygpsawmeaok6zoOAZCJAb4
+M3Jsty8L8U+NLcMYaTe3su/ax45zY60Kk1b8yu+K4qI9hEeGlrVFpFdZO+5D77Me
+N1V8KR1OKtxH+fomwdi8Vegt9b9JPR69j7YnuMxVG9CZMGUGvX/xdFcmBm/ij0ea
+9kYE0doteCTjGhCptYEF4d6zqLip1SuvDVNNs2P+DBIf907PXZr+3aPz3H08BASY
+ydu1tsz8m+eoivZoLHq7Knw4iog/4AyQOKfoCwN/PU7eBNWCY56Vxm7u4d9CSEtJ
+VAVV60+29bBGjlgTeZbOlwxvUitq/4667vMJ9j8mNBmd0/UHnFPXgNxJDvqAI+JN
+AAC86tDscMdoEu4lhIFkgfma6jAmrZmUlTQTPcYNcROjSSFj/BSeejC/GpqUr71Y
+bwC3TFxLA9Ltn62dExDDhgGnNm/4xrKH7SGyObegdyvwWBMc3Nvko0XAr4BXxSnl
+cON3fSGC2+/Fv8MFIROJ
+=sHf9
+-----END PGP SIGNATURE-----
 
-	- PF_EXITING was fine in task_numa_compare(), but if we
-	  move this logic into a helper (even if it is not exported)
-	  then I think we need a more specific check. sighand == NULL
-	  looks better to me because it clearly connects to
-	  release_task() which makes this task_struct "rcu-unsafe".
-
-	- Again, perhaps we should start we a simple and stupid fix.
-	  We can do get_task_struct() under rq->lock or, if nothing
-	  else, just
-
-	  	raw_spin_lock_irq(&rq->lock);
-	  	cur = rq->curr;
-	  	if (is_idle_task(cur) || (cur->flags & PF_EXITING))
-	  		cur = NULL;
-	  	raw_spin_unlock_irq(&rq->lock);
-
-Either way, I hope you will send v4 ;)
-
-But probably you should wait for for Peter's opinion first.
-
-Oleg.
-
+--Sig_/CWmk_C.B8yfFdG+vV4mMMgc--
