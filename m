@@ -1,82 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932180AbaJTX3Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 19:29:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50375 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753385AbaJTX3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 19:29:07 -0400
-Message-ID: <1413847716.6046.1.camel@redhat.com>
-Subject: Re: [GIT PULL] please pull infiniband.git
-From: Doug Ledford <dledford@redhat.com>
-To: Roland Dreier <roland@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 20 Oct 2014 19:28:36 -0400
-In-Reply-To: <1413499938-2378-1-git-send-email-roland@kernel.org>
-References: <1413499938-2378-1-git-send-email-roland@kernel.org>
-Organization: Red Hat, Inc.
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-pz5klfjjbivPCJeG1xlw"
-Mime-Version: 1.0
+	id S1753366AbaJTXcz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 19:32:55 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:36424 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192AbaJTXcx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 19:32:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <20141020092049.GJ23154@mwanda>
+References: <20141016124741.GA3832@kroah.com>
+	<20141017092601.GH23154@mwanda>
+	<20141019220547.GC3780@kroah.com>
+	<20141020092049.GJ23154@mwanda>
+Date: Mon, 20 Oct 2014 16:32:51 -0700
+Message-ID: <CAMP5Xgcm-sxd3rf3VA1ZO44bUT1+u_QG1AAdjzK39q0ynfsZGQ@mail.gmail.com>
+Subject: Re: [PATCH] staging: android: binder: move to the "real" part of the kernel
+From: =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Anup Patel <anup.patel@linaro.org>, linux-api@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Oct 20, 2014 at 2:20 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> On Mon, Oct 20, 2014 at 06:05:47AM +0800, Greg Kroah-Hartman wrote:
+>> On Fri, Oct 17, 2014 at 12:26:01PM +0300, Dan Carpenter wrote:
+>> > The code isn't very beautiful and there are lots of details wrong like
+>> > the error codes.
+>>
+>> Really, what is wrong with the existing error code usages?
+>>
+>
+> I guess I was mostly looking at binder_ioctl(), the rest of the code
+> seems better.
+>
+> I feel like we went directly from "This code is never going in so there
+> is no need to look at it." to "This code is going in in one week so
+> there is no time to look at it."
+>
+> How often do people rely on proc_no_lock=1 to make this work?  People
+> are saying on the internet that you don't need acurate information so
+> you should disable locking as a speed up.
+> http://www.programdevelop.com/1821706/.  It seems like a bad idea to
+> provide provide the "run fast and crash" option.
 
---=-pz5klfjjbivPCJeG1xlw
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+That is not what this switch is for. It is only there to debug the
+driver if it gets stuck with the lock held. I would not object to
+adding a config option to remove this param by default.
 
-On Thu, 2014-10-16 at 15:52 -0700, Roland Dreier wrote:
-> Hi Linus,
->=20
-> Please pull from
->=20
->     git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git t=
-ags/rdma-for-linus
->=20
-> ----------------------------------------------------------------
-> Main set of InfiniBand/RDMA updates for 3.18 merge window:
->=20
->  - Large set of iSER initiator improvements
->  - Hardware driver fixes for cxgb4, mlx5 and ocrdma
->  - Small fixes to core midlayer
+>
+> Why is binder_set_nice needed?  Some comments would help here.
 
-The IPoIB multicast locking fixes I submitted for 3.17 that you put off
-until 3.18 are missing from this list.  The set can be found here in
-case you've lost them:
+The driver has some support for priority inheritance.
 
-https://patchwork.kernel.org/bundle/dledford/IPoIB%20Locking%20Fixes/
+>
+>    434  static void binder_set_nice(long nice)
+>    435  {
+>    436          long min_nice;
+>    437
+>    438          if (can_nice(current, nice)) {
+>    439                  set_user_nice(current, nice);
+>    440                  return;
+>    441          }
+>    442          min_nice = rlimit_to_nice(current->signal->rlim[RLIMIT_NICE].rlim_cur);
+>    443          binder_debug(BINDER_DEBUG_PRIORITY_CAP,
+>    444                       "%d: nice value %ld not allowed use %ld instead\n",
+>    445                        current->pid, nice, min_nice);
+>    446          set_user_nice(current, min_nice);
+>    447          if (min_nice <= MAX_NICE)
+>    448                  return;
+>
+> It's harmless but wierd to check if min_nice is valid after we already
+> called set_user_nice().
 
---=20
-Doug Ledford <dledford@redhat.com>
-              GPG KeyID: 0E572FDD
+I don't remember why I did this, but I agree it is weird.
 
+>
+>    449          binder_user_error("%d RLIMIT_NICE not set\n", current->pid);
+>    450  }
+>
+> Random comment:
+>
+>    709          has_page_addr =
+>    710                  (void *)(((uintptr_t)buffer->data + buffer_size) & PAGE_MASK);
+>
+> The casting on "buffer->data" ugly and inconsistent.  There should be
+> a function:
 
+Other code in the kernel seems to do this the same way (although most
+cast to unsigned long instead of uintptr_t). This code rounds down to
+the start of of the page, and needs to cast to an integer type for
+this. Adding a global kernel helper for this would be better than a
+binder specific one. The existing PAGE_ALIGN function, which rounds
+up, still needs casts to use with pointer types though.
 
---=-pz5klfjjbivPCJeG1xlw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+> void *buffer_data(struct binder_buffer *buffer)
+> {
+>         return buffer.data;
+> }
+>
+> That way this becomes:
+>                 has_page_addr = (buffer_data(buffer) + buffer_size) & PAGE_MASK);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+I don't think this will compile.
 
-iQIcBAABAgAGBQJURZq/AAoJELgmozMOVy/dISEP/jLXutqB1nnWfYX0572X2DYA
-Zfb4VBEbqb03gc47s26vMOeO8GF/UAAyWdM/oZ3yEBq8MoS0JMAUHoWd+7RCfThF
-NbdQFkBhdzE83PDc9ZIMyvLngCiRsQ1LmtP/7bxwLsMhmxVes5NRECFQTmXOMZwe
-PJ7okFE9jOnLaYFNTBOXOEaRli+ThE0aYzcC9c/UCAWC0sHnDJssvgAg5ZKfDuTP
-uYKWD3N+vU4pQZ30NiE742pOjBqgUjnEypSovdLG+9F4WJxPvNc9S15BpdV+sE/z
-xbggA8tpFv66FEBmm1O26oZzz6Be8JD3lQ4QjrL829e50x4ui/F1jHOzMM/0gqcS
-Zeh3ahxr/a972EMP7B9GCV1L+VkSyj9zDGuR/RNJ8ml0rVMc+R3szno9CWW1letI
-R0IACEJfFwl7acJOVJ38sPqO694RK+btBNinjGCH8OnH7wNxloVpv6X9dW/n2B4R
-2UdO3/peQ7EqlvejurDTALBgN+ycJ+AQ/QK76h2Ha7J+ou0wt9wveTvvOkyA0OmP
-byaZnCtsCufRywKBhJzXMttkVjdL4y69Db2rENjR41pBNxSLZp640KfU1CgeYAUP
-w/SU8e5/IOOi79nkg1WluXerJl0AO5Vi5dEy2i0QZd6m04v+BrB+112dnrdVU/42
-oNInYDgjBAyASmYreRNH
-=gkV1
------END PGP SIGNATURE-----
+>
+> The "has_page_addr" variable name is misleading, because we're not
+> storing true/false.  We're storing the last page address.
 
---=-pz5klfjjbivPCJeG1xlw--
+It is the address of a page we already have mapped, not the last
+address of the new allocation.
 
+>
+>    711          if (n == NULL) {
+>    712                  if (size + sizeof(struct binder_buffer) + 4 >= buffer_size)
+>    713                          buffer_size = size; /* no room for other buffers */
+>    714                  else
+>    715                          buffer_size = size + sizeof(struct binder_buffer);
+>    716          }
+>    717          end_page_addr =
+>    718                  (void *)PAGE_ALIGN((uintptr_t)buffer->data + buffer_size);
+>    719          if (end_page_addr > has_page_addr)
+>    720                  end_page_addr = has_page_addr;
+>    721          if (binder_update_page_range(proc, 1,
+>    722              (void *)PAGE_ALIGN((uintptr_t)buffer->data), end_page_addr, NULL))
+>    723                  return NULL;
+>
+> The alignment here is confusing because we don't align buffer->data
+> below.
+
+binder_update_page_range allocates and maps pages. buffer->data will
+point to a range within the allocated pages.
+
+>
+>    724
+>    725          rb_erase(best_fit, &proc->free_buffers);
+>    726          buffer->free = 0;
+>    727          binder_insert_allocated_buffer(proc, buffer);
+>    728          if (buffer_size != size) {
+>    729                  struct binder_buffer *new_buffer = (void *)buffer->data + size;
+>                                                            ^^^^^^^^^^^^^^^^^^^^
+> I don't really understand when buffer->data has to be page aligned and
+> when not.  This code has very few comments.
+>
+
+buffer->data never needs to be page aligned. The code above rounds to
+page boundaries to allocate new pages as needed.
+
+>    730
+>    731                  list_add(&new_buffer->entry, &buffer->entry);
+>    732                  new_buffer->free = 1;
+>    733                  binder_insert_free_buffer(proc, new_buffer);
+>    734          }
+>
+> Does the stop_on_user_error option work?  There should be some
+> documentation for this stuff.
+>
+
+Yes.
+
+> regards,
+> dan carpenter
+>
+
+-- 
+Arve Hjønnevåg
