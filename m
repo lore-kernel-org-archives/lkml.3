@@ -1,67 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751840AbaJTRGM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 13:06:12 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:51383 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750807AbaJTRGJ (ORCPT
+	id S1752181AbaJTRGn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 13:06:43 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:58085 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807AbaJTRGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 13:06:09 -0400
-Date: Mon, 20 Oct 2014 19:06:04 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Vladimir Zapolskiy <vz@mleia.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>, jonsmirl@gmail.com,
-        Simon <longsleep@gmail.com>, linux-pwm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv8 1/2] pwm: Add Allwinner SoC support
-Message-ID: <20141020170603.GG10616@piout.net>
-References: <1413743305-1979-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1413743305-1979-2-git-send-email-alexandre.belloni@free-electrons.com>
- <54442BB1.1080403@mleia.com>
- <20141020102939.GB10616@piout.net>
- <544509C7.9010309@mleia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <544509C7.9010309@mleia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 20 Oct 2014 13:06:42 -0400
+From: Ebru Akagunduz <ebru.akagunduz@gmail.com>
+To: arnd@arndb.de
+Cc: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, opw-kernel@googlegroups.com,
+        Ebru Akagunduz <ebru.akagunduz@gmail.com>
+Subject: [PATCH v2] scsi: ips.c: Use jiffies comparison instead of do_gettimeofday()
+Date: Mon, 20 Oct 2014 20:06:01 +0300
+Message-Id: <1413824761-21426-1-git-send-email-ebru.akagunduz@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/10/2014 at 16:10:31 +0300, Vladimir Zapolskiy wrote :
-> Hi Alexandre,
-> 
-> On 20.10.2014 13:29, Alexandre Belloni wrote:
-> > Hi,
-> > 
-> > On 20/10/2014 at 00:22:57 +0300, Vladimir Zapolskiy wrote :
-> >>> +struct sun4i_pwm_chip {
-> >>> +	struct pwm_chip chip;
-> >>> +	struct clk *clk;
-> >>> +	void __iomem *base;
-> >>> +	struct mutex ctrl_lock;
-> >>
-> >> why do you use mutex? I haven't found any blocking subcalls under
-> >> protection, a spinlock seems to fit better here.
-> >>
-> > 
-> > A mutex here will do the right thing. The lock is never taken in
-> > interrupt context and a mutex is spinning for a few cycles before
-> > putting the thread to sleep.
-> 
-> and why do you want to put a thread to sleep in context of the driver?
-> 
+do_gettimeofday() only can get 32-bit time types
+but the driver should be able to use dates that are
+after January 2038.
 
-Because the PWM is getting configured from either a kernel thread or a
-userspace thread accessing /sys. So you probably want the current thread
-to sleep so the other thread accessing the register can finish. Unless
-you are on smp and then, the mutex will spin for some time and your
-other cpu will be finished by then.
+Remove do_gettimeofday() and use
+jiffies comparison to supply 64-bit time types.
 
+Signed-off-by: Ebru Akagunduz <ebru.akagunduz@gmail.com>
+---
+ drivers/scsi/ips.c | 25 +++++++++++++------------
+ drivers/scsi/ips.h |  2 +-
+ 2 files changed, 14 insertions(+), 13 deletions(-)
 
+diff --git a/drivers/scsi/ips.c b/drivers/scsi/ips.c
+index e5afc38..6d27024 100644
+--- a/drivers/scsi/ips.c
++++ b/drivers/scsi/ips.c
+@@ -162,6 +162,7 @@
+  */
+ 
+ #include <asm/io.h>
++#include <linux/jiffies.h>
+ #include <asm/byteorder.h>
+ #include <asm/page.h>
+ #include <linux/stddef.h>
+@@ -297,7 +298,7 @@ static void ips_freescb(ips_ha_t *, ips_scb_t *);
+ static void ips_setup_funclist(ips_ha_t *);
+ static void ips_statinit(ips_ha_t *);
+ static void ips_statinit_memio(ips_ha_t *);
+-static void ips_fix_ffdc_time(ips_ha_t *, ips_scb_t *, time_t);
++static void ips_fix_ffdc_time(ips_ha_t *, ips_scb_t *, unsigned long);
+ static void ips_ffdc_reset(ips_ha_t *, int);
+ static void ips_ffdc_time(ips_ha_t *);
+ static uint32_t ips_statupd_copperhead(ips_ha_t *);
+@@ -993,10 +994,10 @@ static int __ips_eh_reset(struct scsi_cmnd *SC)
+ 
+ 	/* FFDC */
+ 	if (le32_to_cpu(ha->subsys->param[3]) & 0x300000) {
+-		struct timeval tv;
++		unsigned long now;
+ 
+-		do_gettimeofday(&tv);
+-		ha->last_ffdc = tv.tv_sec;
++		now = jiffies;
++		ha->last_ffdc = jiffies;
+ 		ha->reset_count++;
+ 		ips_ffdc_reset(ha, IPS_INTR_IORL);
+ 	}
+@@ -2404,7 +2405,7 @@ static int
+ ips_hainit(ips_ha_t * ha)
+ {
+ 	int i;
+-	struct timeval tv;
++	unsigned long now;
+ 
+ 	METHOD_TRACE("ips_hainit", 1);
+ 
+@@ -2419,8 +2420,8 @@ ips_hainit(ips_ha_t * ha)
+ 
+ 	/* Send FFDC */
+ 	ha->reset_count = 1;
+-	do_gettimeofday(&tv);
+-	ha->last_ffdc = tv.tv_sec;
++	now = jiffies;
++	ha->last_ffdc = jiffies;
+ 	ips_ffdc_reset(ha, IPS_INTR_IORL);
+ 
+ 	if (!ips_read_config(ha, IPS_INTR_IORL)) {
+@@ -2560,12 +2561,12 @@ ips_next(ips_ha_t * ha, int intr)
+ 
+ 	if ((ha->subsys->param[3] & 0x300000)
+ 	    && (ha->scb_activelist.count == 0)) {
+-		struct timeval tv;
++		unsigned long now;
+ 
+-		do_gettimeofday(&tv);
++		now = jiffies;
+ 
+-		if (tv.tv_sec - ha->last_ffdc > IPS_SECS_8HOURS) {
+-			ha->last_ffdc = tv.tv_sec;
++		if (time_after(now, ha->last_ffdc + IPS_SECS_8HOURS * HZ)) {
++			ha->last_ffdc = now;
+ 			ips_ffdc_time(ha);
+ 		}
+ 	}
+@@ -6000,7 +6001,7 @@ ips_ffdc_time(ips_ha_t * ha)
+ /*                                                                          */
+ /****************************************************************************/
+ static void
+-ips_fix_ffdc_time(ips_ha_t * ha, ips_scb_t * scb, time_t current_time)
++ips_fix_ffdc_time(ips_ha_t * ha, ips_scb_t * scb, unsigned long current_time)
+ {
+ 	long days;
+ 	long rem;
+diff --git a/drivers/scsi/ips.h b/drivers/scsi/ips.h
+index 45b9566..250beea 100644
+--- a/drivers/scsi/ips.h
++++ b/drivers/scsi/ips.h
+@@ -1054,7 +1054,7 @@ typedef struct ips_ha {
+    uint8_t            active;
+    int                ioctl_reset;        /* IOCTL Requested Reset Flag */
+    uint16_t           reset_count;        /* number of resets           */
+-   time_t             last_ffdc;          /* last time we sent ffdc info*/
++   unsigned long      last_ffdc;          /* last time we sent ffdc info*/
+    uint8_t            slot_num;           /* PCI Slot Number            */
+    int                ioctl_len;          /* size of ioctl buffer       */
+    dma_addr_t         ioctl_busaddr;      /* dma address of ioctl buffer*/
 -- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+1.9.1
+
