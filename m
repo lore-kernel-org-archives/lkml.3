@@ -1,84 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932140AbaJTWsc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 18:48:32 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:61411 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753616AbaJTWs2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 18:48:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAHse=S-Xyk7CFn=tAGzo+tuUFt+04aBw+mGQmi=kWAaBJGALBw@mail.gmail.com>
-References: <1401975635-6162-1-git-send-email-drysdale@google.com>
- <CALCETrVraoD+r4zxBoGd+BV5P275AXcRV_R00SSr8fjQzRHnUg@mail.gmail.com>
- <87zjcszz8y.fsf@x220.int.ebiederm.org> <CAHse=S-Xyk7CFn=tAGzo+tuUFt+04aBw+mGQmi=kWAaBJGALBw@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 20 Oct 2014 15:48:06 -0700
-Message-ID: <CALCETrXBjLZTWVJfcsE4NA-JP9zSSgn=6ND0=cZ9BTy=CoN7pA@mail.gmail.com>
-Subject: Re: [PATCHv4 RESEND 0/3] syscalls,x86: Add execveat() system call
-To: David Drysdale <drysdale@google.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
-        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1754033AbaJTWtr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 18:49:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13748 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751233AbaJTWtq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 18:49:46 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Andy Whitcroft <apw@canonical.com>,
+        Joe Perches <joe@perches.com>
+Subject: [PATCH] scripts, checkpatch.pl, provide a better output message for commit id format [v2]
+Date: Mon, 20 Oct 2014 18:49:36 -0400
+Message-Id: <1413845376-2128-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 20, 2014 at 6:48 AM, David Drysdale <drysdale@google.com> wrote:
-> On Sun, Oct 19, 2014 at 1:20 AM, Eric W. Biederman
-> <ebiederm@xmission.com> wrote:
->> Andy Lutomirski <luto@amacapital.net> writes:
->>
->>> [Added Eric Biederman, since I think your tree might be a reasonable
->>> route forward for these patches.]
->>>
->>> On Thu, Jun 5, 2014 at 6:40 AM, David Drysdale <drysdale@google.com> wrote:
->>>> Resending, adding cc:linux-api.
->>>>
->>>> Also, it may help to add a little more background -- this patch is
->>>> needed as a (small) part of implementing Capsicum in the Linux kernel.
->>>>
->>>> Capsicum is a security framework that has been present in FreeBSD since
->>>> version 9.0 (Jan 2012), and is based on concepts from object-capability
->>>> security [1].
->>>>
->>>> One of the features of Capsicum is capability mode, which locks down
->>>> access to global namespaces such as the filesystem hierarchy.  In
->>>> capability mode, /proc is thus inaccessible and so fexecve(3) doesn't
->>>> work -- hence the need for a kernel-space
->>>
->>> I just found myself wanting this syscall for another reason: injecting
->>> programs into sandboxes or otherwise heavily locked-down namespaces.
->>>
->>> For example, I want to be able to reliably do something like nsenter
->>> --namespace-flags-here toybox sh.  Toybox's shell is unusual in that
->>> it is more or less fully functional, so this should Just Work (tm),
->>> except that the toybox binary might not exist in the namespace being
->>> entered.  If execveat were available, I could rig nsenter or a similar
->>> tool to open it with O_CLOEXEC, enter the namespace, and then call
->>> execveat.
->>>
->>> Is there any reason that these patches can't be merged more or less as
->>> is for 3.19?
->>
->> Yes.  There is a silliness in how it implements fexecve.  The fexecve
->> case should be use the empty string "" not a NULL pointer to indication
->> that.  That change will then harmonize execveat with the other ...at
->> system calls and simplify the code and remove a special case.  I believe
->> using the empty string "" requires implementing the AT_EMPTY_PATH flag.
->
-> Good point -- I'll shift to "" + AT_EMPTY_PATH.
+I tested this using both lower and upper case 'c' with the following commit
+text:
 
-Pending a better idea, I would also see if the patches can be changed
-to return an error if d_path ends up with an "(unreachable)" thing
-rather than failing inexplicably later on.
+Derp, derpy derp.   Derps derpy derpy derp derp derp derp.
+Some other text besides derp.
+Stuff.
 
---Andy
+11 chars, SHOULD FAIL
+commit 1234567890a
+
+12 chars
+commit 1234567890ab
+
+13 chars
+commit 1234567890abc
+
+14 chars
+commit 1234567890abcd
+
+commit 1234567890f
+("11 chars, separated into two lines SHOULD FAIL")
+
+commit 1234567890af
+("12 chars, separated into two lines")
+
+commit 1234567890abf
+("13 chars, separated into two lines")
+
+commit 1234567890abcf
+("14 chars, separated into two lines")
+
+commit 1234567890f ("11 chars, one line SHOULD FAIL")
+
+commit 1234567890af ("12 chars, one line")
+
+commit 1234567890abf ("13 chars, one line")
+
+commit 1234567890abcf ("14 chars, one line")
+
+The output, as expected is 6 errors:
+
+ERROR: Please use 12 or more chars for the git commit ID
+commit 1234567890a
+
+ERROR: Please use 12 or more chars for the git commit ID
+commit 1234567890f
+
+ERROR: Please format the git commit ID like: 'commit 01234567890ab ("commit description")'
+commit 1234567890af
+
+ERROR: Please format the git commit ID like: 'commit 01234567890ab ("commit description")'
+commit 1234567890abf
+
+ERROR: Please format the git commit ID like: 'commit 01234567890ab ("commit description")'
+commit 1234567890abcf
+
+ERROR: Please use 12 or more chars for the git commit ID
+commit 1234567890f ("11 chars, one line SHOULD FAIL")
+
+P.
+----8<----
+
+I put together a patch with an incorrect format and the following error
+was returned by checkpatch.pl:
+
+ERROR: Please use 12 or more chars for the git commit ID like: 'Commit
+09ec54429c6d ("clocksource: Move cycle_last validation to core code")'
+Commit 09ec54429c6d10f87d1f084de53ae2c1c3a81108, clocksource: Move
+
+As can be seen by the output the commit ID length is accurate, and it is the
+formatting that is generating an error.  The message is confusing and should
+be separated into two warnings, one for the git commit ID length, and the other
+for the format.
+
+Cc: Andy Whitcroft <apw@canonical.com>
+Cc: Joe Perches <joe@perches.com>
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+
+[v2]: Add separate messages for warnings instead of one global format
+warning.
+---
+ scripts/checkpatch.pl |   24 ++++++++++++++----------
+ 1 file changed, 14 insertions(+), 10 deletions(-)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 374abf4..f81d7a8 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2160,21 +2160,25 @@ sub process {
+ 			      "Remove Gerrit Change-Id's before submitting upstream.\n" . $herecurr);
+ 		}
+ 
+-# Check for improperly formed commit descriptions
++# Check for git id commit length and improperly formed commit descriptions
+ 		if ($in_commit_log &&
+-		    $line =~ /\bcommit\s+[0-9a-f]{5,}/i &&
+-		    !($line =~ /\b[Cc]ommit [0-9a-f]{12,40} \("/ ||
+-		      ($line =~ /\b[Cc]ommit [0-9a-f]{12,40}\s*$/ &&
+-		       defined $rawlines[$linenr] &&
+-		       $rawlines[$linenr] =~ /^\s*\("/))) {
+-			$line =~ /\b(c)ommit\s+([0-9a-f]{5,})/i;
++		    $line =~ /\b[Cc]ommit\s+[0-9a-f]{5,}/i &&
++		    !($line =~ /\b[Cc]ommit [0-9a-f]{12,40}/ )) {
++			ERROR("GIT_COMMIT_ID_12_CHARS",
++			      "Please use 12 or more chars for the git commit ID\n" . $herecurr);
++		} elsif ($in_commit_log &&
++			 $line =~ /\b[Cc]ommit [0-9a-f]{12,40}\s*$/ &&
++			 defined $rawlines[$linenr] &&
++			 $rawlines[$linenr] =~ /^\s*\("/) {
++			$line =~ /\b(c)ommit\s+([0-9a-f]{12,40})/i;
+ 			my $init_char = $1;
+ 			my $orig_commit = lc($2);
+ 			my $id = '01234567890ab';
+ 			my $desc = 'commit description';
+-		        ($id, $desc) = git_commit_info($orig_commit, $id, $desc);
+-			ERROR("GIT_COMMIT_ID",
+-			      "Please use 12 or more chars for the git commit ID like: '${init_char}ommit $id (\"$desc\")'\n" . $herecurr);
++			($id, $desc) = git_commit_info($orig_commit,
++						       $id, $desc);
++			ERROR("GIT_COMMIT_ID_DESCRIPTION",
++			      "Please format the git commit ID like: '${init_char}ommit $id (\"$desc\")'\n" . $herecurr);
+ 		}
+ 
+ # Check for added, moved or deleted files
+-- 
+1.7.9.3
+
