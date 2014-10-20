@@ -1,56 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932145AbaJTWmR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 18:42:17 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:36353 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753949AbaJTWmP (ORCPT
+	id S932090AbaJTWl6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 18:41:58 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:44257 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753949AbaJTWl4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 18:42:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <544586AD.30407@zytor.com>
-References: <cover.1411494540.git.luto@amacapital.net> <54458199.1000607@zytor.com>
- <CALCETrXcTwOQLQX0Tx8XgDPaWit9P5ut1p8mDehAcAah9V17wQ@mail.gmail.com> <544586AD.30407@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 20 Oct 2014 15:41:53 -0700
-Message-ID: <CALCETrXHR+ieAxxsPAEO-V2x70VVfp3TDLTJ7jNX5g9tvwqwgQ@mail.gmail.com>
-Subject: Re: [PATCH 0/8] x86: Disentangle the vdso and clean it up
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 20 Oct 2014 18:41:56 -0400
+Message-Id: <20141020215633.717315139@infradead.org>
+User-Agent: quilt/0.61-1
+Date: Mon, 20 Oct 2014 23:56:33 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        tglx@linutronix.de, akpm@linux-foundation.org, riel@redhat.com,
+        mgorman@suse.de, oleg@redhat.com, mingo@redhat.com, minchan@kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
+        laijs@cn.fujitsu.com, dave@stgolabs.net
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        "Peter Zijlstra" <peterz@infradead.org>
+Subject: [RFC][PATCH 0/6] Another go at speculative page faults
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 20, 2014 at 3:03 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 10/20/2014 02:57 PM, Andy Lutomirski wrote:
->>
->> Should I send a replacement for patch 8 or should I let you merge 1-7
->> and fold this into the followup series?
->>
->
-> Please send a replacement.
+Hi,
 
-Sending in a sec.
+I figured I'd give my 2010 speculative fault series another spin:
 
-Also, this is really weird.  Unless I'm completely nuts, lsl is faster
-in KVM than it is on bare metal.  This makes me wonder whether
-something's suboptimal about the way that the GDT is set up.  sgdt is
-faster, too.  This is Sandy Bridge E, one socket.  The difference is
-big enough that tracking it down might be a significant win on context
-switches.  Any hints?
+  https://lkml.org/lkml/2010/1/4/257
 
---Andy
+Since then I think many of the outstanding issues have changed sufficiently to
+warrant another go. In particular Al Viro's delayed fput seems to have made it
+entirely 'normal' to delay fput(). Lai Jiangshan's SRCU rewrite provided us
+with call_srcu() and my preemptible mmu_gather removed the TLB flushes from
+under the PTL.
 
->
->         -hpa
->
->
+The code needs way more attention but builds a kernel and runs the
+micro-benchmark so I figured I'd post it before sinking more time into it.
+
+I realize the micro-bench is about as good as it gets for this series and not
+very realistic otherwise, but I think it does show the potential benefit the
+approach has.
+
+(patches go against .18-rc1+)
+
+---
+
+Using Kamezawa's multi-fault micro-bench from: https://lkml.org/lkml/2010/1/6/28
+
+My Ivy Bridge EP (2*10*2) has a ~58% improvement in pagefault throughput:
+
+PRE:
+
+root@ivb-ep:~# perf stat -e page-faults,cache-misses --repeat 5 ./multi-fault 20
+
+ Performance counter stats for './multi-fault 20' (5 runs):
+
+       149,441,555      page-faults                  ( +-  1.25% )
+     2,153,651,828      cache-misses                 ( +-  1.09% )
+
+      60.003082014 seconds time elapsed              ( +-  0.00% )
+
+POST:
+
+root@ivb-ep:~# perf stat -e page-faults,cache-misses --repeat 5 ./multi-fault 20
+
+ Performance counter stats for './multi-fault 20' (5 runs):
+
+       236,442,626      page-faults                  ( +-  0.08% )
+     2,796,353,939      cache-misses                 ( +-  1.01% )
+
+      60.002792431 seconds time elapsed              ( +-  0.00% )
 
 
+My Ivy Bridge EX (4*15*2) has a ~78% improvement in pagefault throughput:
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+PRE:
+
+root@ivb-ex:~# perf stat -e page-faults,cache-misses --repeat 5 ./multi-fault 60
+
+ Performance counter stats for './multi-fault 60' (5 runs):
+
+       105,789,078      page-faults                 ( +-  2.24% )
+     1,314,072,090      cache-misses                ( +-  1.17% )
+
+      60.009243533 seconds time elapsed             ( +-  0.00% )
+
+POST:
+
+root@ivb-ex:~# perf stat -e page-faults,cache-misses --repeat 5 ./multi-fault 60
+
+ Performance counter stats for './multi-fault 60' (5 runs):
+
+       187,751,767      page-faults                 ( +-  2.24% )
+     1,792,758,664      cache-misses                ( +-  2.30% )
+
+      60.011611579 seconds time elapsed             ( +-  0.00% )
+
+(I've not yet looked at why the EX sucks chunks compared to the EP box, I
+ suspect we contend on other locks, but it could be anything.)
+
+---
+
+ arch/x86/mm/fault.c      |  35 ++-
+ include/linux/mm.h       |  19 +-
+ include/linux/mm_types.h |   5 +
+ kernel/fork.c            |   1 +
+ mm/init-mm.c             |   1 +
+ mm/internal.h            |  18 ++
+ mm/memory.c              | 672 ++++++++++++++++++++++++++++-------------------
+ mm/mmap.c                | 101 +++++--
+ 8 files changed, 544 insertions(+), 308 deletions(-)
+
