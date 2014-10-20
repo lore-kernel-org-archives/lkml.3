@@ -1,60 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753453AbaJTVei (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 17:34:38 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:48233 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753163AbaJTVeh (ORCPT
+	id S1753498AbaJTVfc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 17:35:32 -0400
+Received: from filtteri2.pp.htv.fi ([213.243.153.185]:41772 "EHLO
+	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753163AbaJTVf2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 17:34:37 -0400
+	Mon, 20 Oct 2014 17:35:28 -0400
+Date: Tue, 21 Oct 2014 00:35:18 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Felipe Balbi <balbi@ti.com>, pali.rohar@gmail.com, sre@debian.org,
+        sre@ring0.de, kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
+Subject: Re: USB Ethernet gadget on Nokia n900
+Message-ID: <20141020213518.GB28144@drone.musicnaut.iki.fi>
+References: <20141019090107.GA19132@amd>
+ <20141019100739.GA2547@amd>
+ <20141019152414.GB5189@saruman>
+ <20141019191937.GA6438@amd>
 MIME-Version: 1.0
-In-Reply-To: <20141020142836.fcea4aa8dd7bb5cfe9ede423@linux-foundation.org>
-References: <5c6381879bea68aebb13530442f1cf8a052be97f.1411958379.git.luto@amacapital.net>
- <542B4DA3.5080105@gmail.com> <542B519B.6010001@landley.net>
- <542B5E44.40303@gmail.com> <542B7200.6030902@landley.net> <CALCETrWr--A26UEv_7DeZa-Te1fTBDQgCdZt24n5LWkAnOa6jQ@mail.gmail.com>
- <20141001180510.GA28540@cloud> <CALCETrUK07j8+iQ8oSW70sgePxg_GJY3ASBBS+U9fvp_f2Rz5w@mail.gmail.com>
- <20141014140052.2f114c158ffe6cd953020f1c@linux-foundation.org>
- <CALCETrVg_rFmSCSnyztRtvANQLd9k_G+bU8FiQB_5O5ecUd99w@mail.gmail.com>
- <20141020210155.GD29486@jtriplet-mobl1> <20141020142836.fcea4aa8dd7bb5cfe9ede423@linux-foundation.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 20 Oct 2014 14:34:14 -0700
-Message-ID: <CALCETrX9icyrFyhdH4d=ijds5DMr4N1-wRmz_nBOipUwaee4ag@mail.gmail.com>
-Subject: Re: [PATCH v5] init: Disable defaults if init= fails
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Josh Triplett <josh@joshtriplett.org>, Rob Landley <rob@landley.net>,
-        Frank Rowand <frowand.list@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chuck Ebbert <cebbert.lkml@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Shuah Khan <shuah.kh@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141019191937.GA6438@amd>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 20, 2014 at 2:28 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Mon, 20 Oct 2014 14:01:55 -0700 Josh Triplett <josh@joshtriplett.org> wrote:
->
->> > IOW, the no-fallback behavior is easy to implement, easy to
->> > understand, and has extremely predictable behavior.  The fallback
->> > behavior is more user friendly if you consider having a chance of
->> > booting to something useful if you typo your init= option (but also a
->> > chance of booting to something actively undesirable).
->>
->> Here's an alternative proposal: how about we change the default
->> *without* a Kconfig option, see if anyone screams, and if they do, we
->> add that code back in under a Kconfig option as in your current patch?
->>
->> Would that make your Kconfig senses stop tingling, Andrew? :)
->
-> Mumble.  I suppose we can run with it as-is: at least the config option
-> is there to allow people to repair any damage easily.
->
-> However we don't have any way of remembering to remove the config
-> option later coz someone removed feature-removal-schedule.txt, which
-> was a useful feature.
+Hi,
 
-Does -mm have a next+1 section?  If so, you could queue it up now :)
+On Sun, Oct 19, 2014 at 09:19:37PM +0200, Pavel Machek wrote:
+> I am trying to use nfsroot, so I can't use modules.
 
---Andy
+Why not?
+
+> (I am attaching full config, in case I missed something important).
+
+I'm using the below config with 3.17 and g_ether works OK.
+
+(My initramfs modprobes g_ether, runs busybox ifconfig for usb0
+and launches sshd.)
+
+A.
+
+---
+
+CONFIG_LOCALVERSION="-omap3"
+CONFIG_KERNEL_LZMA=y
+CONFIG_SYSVIPC=y
+# CONFIG_CROSS_MEMORY_ATTACH is not set
+CONFIG_NO_HZ=y
+CONFIG_HIGH_RES_TIMERS=y
+CONFIG_BSD_PROCESS_ACCT=y
+CONFIG_IKCONFIG=y
+CONFIG_IKCONFIG_PROC=y
+CONFIG_LOG_BUF_SHIFT=20
+CONFIG_BLK_DEV_INITRD=y
+# CONFIG_RD_GZIP is not set
+CONFIG_EXPERT=y
+CONFIG_KALLSYMS_ALL=y
+CONFIG_PROFILING=y
+CONFIG_OPROFILE=m
+CONFIG_MODULES=y
+CONFIG_MODULE_FORCE_LOAD=y
+CONFIG_MODULE_UNLOAD=y
+CONFIG_MODULE_FORCE_UNLOAD=y
+# CONFIG_BLK_DEV_BSG is not set
+CONFIG_PARTITION_ADVANCED=y
+# CONFIG_EFI_PARTITION is not set
+# CONFIG_IOSCHED_DEADLINE is not set
+CONFIG_OMAP_RESET_CLOCKS=y
+CONFIG_OMAP_MUX_DEBUG=y
+CONFIG_ARCH_OMAP3=y
+# CONFIG_SOC_TI81XX is not set
+# CONFIG_MACH_OMAP3_BEAGLE is not set
+# CONFIG_MACH_DEVKIT8000 is not set
+# CONFIG_MACH_OMAP_LDP is not set
+# CONFIG_MACH_OMAP3530_LV_SOM is not set
+# CONFIG_MACH_OMAP3_TORPEDO is not set
+# CONFIG_MACH_OVERO is not set
+# CONFIG_MACH_OMAP3517EVM is not set
+# CONFIG_MACH_OMAP3_PANDORA is not set
+# CONFIG_MACH_TOUCHBOOK is not set
+# CONFIG_MACH_OMAP_3430SDP is not set
+# CONFIG_MACH_NOKIA_RX51 is not set
+# CONFIG_MACH_CM_T35 is not set
+# CONFIG_MACH_CM_T3517 is not set
+# CONFIG_MACH_SBC3530 is not set
+CONFIG_ARM_THUMBEE=y
+CONFIG_PREEMPT=y
+# CONFIG_ATAGS is not set
+CONFIG_ZBOOT_ROM_TEXT=0x0
+CONFIG_ZBOOT_ROM_BSS=0x0
+CONFIG_ARM_APPENDED_DTB=y
+CONFIG_CMDLINE="console=ttyO2,115200 console=tty"
+CONFIG_KEXEC=y
+CONFIG_BINFMT_MISC=y
+CONFIG_PM_DEBUG=y
+CONFIG_NET=y
+CONFIG_PACKET=y
+CONFIG_INET=y
+# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
+# CONFIG_INET_XFRM_MODE_TUNNEL is not set
+# CONFIG_INET_XFRM_MODE_BEET is not set
+# CONFIG_INET_LRO is not set
+# CONFIG_INET_DIAG is not set
+# CONFIG_IPV6 is not set
+# CONFIG_WIRELESS is not set
+CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
+CONFIG_DEVTMPFS=y
+CONFIG_MTD=y
+CONFIG_MTD_BLOCK=y
+CONFIG_MTD_OOPS=y
+CONFIG_MTD_CFI=y
+CONFIG_MTD_CFI_INTELEXT=y
+CONFIG_MTD_NAND=y
+CONFIG_MTD_NAND_OMAP2=y
+CONFIG_MTD_ONENAND=y
+CONFIG_MTD_ONENAND_VERIFY_WRITE=y
+CONFIG_MTD_ONENAND_OMAP2=y
+CONFIG_MTD_UBI=y
+# CONFIG_BLK_DEV is not set
+CONFIG_EEPROM_93CX6=y
+CONFIG_SENSORS_LIS3_I2C=m
+CONFIG_SCSI=y
+CONFIG_BLK_DEV_SD=y
+CONFIG_SCSI_SCAN_ASYNC=y
+CONFIG_INPUT_POLLDEV=y
+CONFIG_INPUT_JOYDEV=y
+CONFIG_INPUT_EVDEV=y
+CONFIG_KEYBOARD_GPIO=y
+CONFIG_KEYBOARD_TWL4030=y
+CONFIG_INPUT_TOUCHSCREEN=y
+CONFIG_TOUCHSCREEN_ADS7846=y
+CONFIG_TOUCHSCREEN_TSC2005=y
+CONFIG_INPUT_MISC=y
+CONFIG_INPUT_TWL4030_PWRBUTTON=y
+CONFIG_INPUT_UINPUT=y
+# CONFIG_LEGACY_PTYS is not set
+CONFIG_SERIAL_OMAP=y
+CONFIG_SERIAL_OMAP_CONSOLE=y
+CONFIG_HW_RANDOM=y
+CONFIG_I2C_CHARDEV=y
+CONFIG_SPI=y
+CONFIG_SPI_OMAP24XX=y
+CONFIG_PINCTRL_SINGLE=y
+CONFIG_DEBUG_GPIO=y
+CONFIG_GPIO_SYSFS=y
+CONFIG_GPIO_TWL4030=y
+CONFIG_POWER_SUPPLY=y
+CONFIG_WATCHDOG=y
+CONFIG_OMAP_WATCHDOG=y
+CONFIG_TWL4030_WATCHDOG=y
+CONFIG_REGULATOR_FIXED_VOLTAGE=y
+CONFIG_REGULATOR_TPS65023=y
+CONFIG_REGULATOR_TPS6507X=y
+CONFIG_REGULATOR_TWL4030=y
+CONFIG_FB=y
+CONFIG_FIRMWARE_EDID=y
+CONFIG_FB_MODE_HELPERS=y
+CONFIG_FB_TILEBLITTING=y
+CONFIG_OMAP2_DSS=y
+# CONFIG_OMAP2_DSS_DPI is not set
+CONFIG_OMAP2_DSS_SDI=y
+CONFIG_FB_OMAP2=y
+# CONFIG_FB_OMAP2_DEBUG_SUPPORT is not set
+CONFIG_DISPLAY_PANEL_SONY_ACX565AKM=y
+CONFIG_BACKLIGHT_LCD_SUPPORT=y
+CONFIG_LCD_CLASS_DEVICE=y
+CONFIG_LCD_PLATFORM=y
+CONFIG_BACKLIGHT_CLASS_DEVICE=y
+CONFIG_FRAMEBUFFER_CONSOLE=y
+CONFIG_FRAMEBUFFER_CONSOLE_ROTATION=y
+CONFIG_LOGO=y
+# CONFIG_LOGO_LINUX_VGA16 is not set
+# CONFIG_LOGO_LINUX_CLUT224 is not set
+CONFIG_USB=y
+CONFIG_USB_ANNOUNCE_NEW_DEVICES=y
+CONFIG_USB_MUSB_HDRC=y
+CONFIG_USB_MUSB_OMAP2PLUS=y
+CONFIG_NOP_USB_XCEIV=y
+CONFIG_USB_GADGET=y
+CONFIG_USB_GADGET_DEBUG=y
+CONFIG_USB_GADGET_DEBUG_FILES=y
+CONFIG_USB_ETH=m
+# CONFIG_USB_ETH_RNDIS is not set
+CONFIG_MMC=y
+CONFIG_SDIO_UART=y
+CONFIG_MMC_OMAP_HS=y
+CONFIG_RTC_CLASS=y
+CONFIG_RTC_DRV_TWL4030=y
+CONFIG_DMADEVICES=y
+CONFIG_DMA_OMAP=y
+CONFIG_TWL4030_USB=y
+CONFIG_EXT4_FS=y
+# CONFIG_FILE_LOCKING is not set
+# CONFIG_DNOTIFY is not set
+# CONFIG_INOTIFY_USER is not set
+CONFIG_TMPFS=y
+# CONFIG_MISC_FILESYSTEMS is not set
+# CONFIG_NETWORK_FILESYSTEMS is not set
+CONFIG_NLS_CODEPAGE_437=y
+CONFIG_NLS_ISO8859_1=y
+CONFIG_PRINTK_TIME=y
+CONFIG_DEBUG_INFO=y
+CONFIG_DEBUG_FS=y
+CONFIG_MAGIC_SYSRQ=y
+# CONFIG_SCHED_DEBUG is not set
+# CONFIG_DEBUG_BUGVERBOSE is not set
+# CONFIG_FTRACE is not set
+# CONFIG_ARM_UNWIND is not set
+CONFIG_DEBUG_LL=y
+CONFIG_DEBUG_OMAP3UART3=y
+CONFIG_EARLY_PRINTK=y
+CONFIG_FONTS=y
+CONFIG_FONT_8x8=y
+CONFIG_FONT_8x16=y
