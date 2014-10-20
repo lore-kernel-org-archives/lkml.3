@@ -1,105 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752128AbaJTA5O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 20:57:14 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:57394 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888AbaJTA5M (ORCPT
+	id S1752204AbaJTBDS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 21:03:18 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:56987 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751888AbaJTBDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 20:57:12 -0400
-From: Jerry Stralko <gerb.stralko@gmail.com>
-To: gregkh@linuxfoundation.org, oleg.drokin@intel.com,
-        andreas.dilger@intel.com, linux-kernel@vger.kernel.org
-Cc: Jerry Stralko <gerb.stralko@gmail.com>
-Subject: [PATCH] staging : lustre : Fixed static symbol sparse warnings
-Date: Sun, 19 Oct 2014 20:56:44 -0400
-Message-Id: <1413766604-3658-1-git-send-email-gerb.stralko@gmail.com>
-X-Mailer: git-send-email 1.9.3
+	Sun, 19 Oct 2014 21:03:16 -0400
+Date: Sun, 19 Oct 2014 21:03:14 -0400 (EDT)
+Message-Id: <20141019.210314.1388340101577924200.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+Cc: pablo@netfilter.org, akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CA+55aFz4UdVbZKPKwkesj0=1Yu7jLDP3Q3-jwe45b7gRU+0rog@mail.gmail.com>
+References: <20141019.132314.264021750039480460.davem@davemloft.net>
+	<CA+55aFz4UdVbZKPKwkesj0=1Yu7jLDP3Q3-jwe45b7gRU+0rog@mail.gmail.com>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 19 Oct 2014 18:03:15 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jerry Stralko <gerb.stralko@gmail.com>
----
- drivers/staging/lustre/lnet/lnet/lib-move.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 19 Oct 2014 17:32:15 -0700
 
-diff --git a/drivers/staging/lustre/lnet/lnet/lib-move.c b/drivers/staging/lustre/lnet/lnet/lib-move.c
-index 4b9567d..5754725 100644
---- a/drivers/staging/lustre/lnet/lnet/lib-move.c
-+++ b/drivers/staging/lustre/lnet/lnet/lib-move.c
-@@ -561,7 +561,7 @@ lnet_extract_kiov(int dst_niov, lnet_kiov_t *dst,
- }
- EXPORT_SYMBOL(lnet_extract_kiov);
- 
--void
-+static void
- lnet_ni_recv(lnet_ni_t *ni, void *private, lnet_msg_t *msg, int delayed,
- 	     unsigned int offset, unsigned int mlen, unsigned int rlen)
- {
-@@ -599,7 +599,7 @@ lnet_ni_recv(lnet_ni_t *ni, void *private, lnet_msg_t *msg, int delayed,
- 		lnet_finalize(ni, msg, rc);
- }
- 
--void
-+static void
- lnet_setpayloadbuffer(lnet_msg_t *msg)
- {
- 	lnet_libmd_t *md = msg->msg_md;
-@@ -639,7 +639,7 @@ lnet_prep_send(lnet_msg_t *msg, int type, lnet_process_id_t target,
- 	msg->msg_hdr.payload_length = cpu_to_le32(len);
- }
- 
--void
-+static void
- lnet_ni_send(lnet_ni_t *ni, lnet_msg_t *msg)
- {
- 	void   *priv = msg->msg_private;
-@@ -654,7 +654,7 @@ lnet_ni_send(lnet_ni_t *ni, lnet_msg_t *msg)
- 		lnet_finalize(ni, msg, rc);
- }
- 
--int
-+static int
- lnet_ni_eager_recv(lnet_ni_t *ni, lnet_msg_t *msg)
- {
- 	int	rc;
-@@ -679,7 +679,7 @@ lnet_ni_eager_recv(lnet_ni_t *ni, lnet_msg_t *msg)
- }
- 
- /* NB: caller shall hold a ref on 'lp' as I'd drop lnet_net_lock */
--void
-+static void
- lnet_ni_query_locked(lnet_ni_t *ni, lnet_peer_t *lp)
- {
- 	unsigned long last_alive = 0;
-@@ -731,7 +731,7 @@ lnet_peer_is_alive(lnet_peer_t *lp, unsigned long now)
- 
- /* NB: returns 1 when alive, 0 when dead, negative when error;
-  *     may drop the lnet_net_lock */
--int
-+static int
- lnet_peer_alive_locked(lnet_peer_t *lp)
- {
- 	unsigned long now = cfs_time_current();
-@@ -871,7 +871,7 @@ lnet_post_send_locked(lnet_msg_t *msg, int do_send)
- }
- 
- 
--lnet_rtrbufpool_t *
-+static lnet_rtrbufpool_t *
- lnet_msg2bufpool(lnet_msg_t *msg)
- {
- 	lnet_rtrbufpool_t	*rbp;
-@@ -891,7 +891,7 @@ lnet_msg2bufpool(lnet_msg_t *msg)
- 	return rbp;
- }
- 
--int
-+static int
- lnet_post_routed_recv_locked(lnet_msg_t *msg, int do_recv)
- {
- 	/* lnet_parse is going to lnet_net_unlock immediately after this, so it
--- 
-1.9.3
+> Looks like the module license issue was just overlooked when moving
+> the code out in commit c8d7b98bec43 ("netfilter: move nf_send_resetX()
+> code to nf_reject_ipvX modules").
 
+I think Pablo has a patch pending to address this, and indeed he does:
+
+	http://marc.info/?l=linux-netdev&m=141293491712312&w=2
+
+Pablo please push this to me soon, thanks.
