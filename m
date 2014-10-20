@@ -1,94 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490AbaJTKFm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 06:05:42 -0400
-Received: from 8bytes.org ([81.169.241.247]:48648 "EHLO theia.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753064AbaJTKFk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 06:05:40 -0400
-Date: Mon, 20 Oct 2014 12:05:38 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        intel-gfx@lists.freedesktop.org
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>
-Subject: Re: dmar messages caused by graphics.
-Message-ID: <20141020100537.GA10074@8bytes.org>
-References: <20141017211716.GA9149@redhat.com>
+	id S1753517AbaJTKGt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 06:06:49 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:41369 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753333AbaJTKGs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 06:06:48 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <5444DE75.6010206@jp.fujitsu.com>
+Date: Mon, 20 Oct 2014 19:05:41 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141017211716.GA9149@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <zhenzhang.zhang@huawei.com>, <wangnan0@huawei.com>,
+        <tangchen@cn.fujitsu.com>, <toshi.kani@hp.com>,
+        <dave.hansen@intel.com>, <rientjes@google.com>
+Subject: [PATCH] memory-hotplug: Clear pgdat which is allocated by bootmem
+ in try_offline_node()
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding David and Jiang, they might have an idea whats going wrong.
+When hot adding the same memory after hot removing a memory,
+the following messages are shown:
 
-On Fri, Oct 17, 2014 at 05:17:16PM -0400, Dave Jones wrote:
-> Just hit this while fuzz-testing, (curiously, no graphics
-> related stuff was happening, X isn't even loaded on that box).
-> 
-> dmar: DRHD: handling fault status reg 2
-> dmar: DMAR:[DMA Write] Request device [00:02.0] fault addr 7ffffff000
-> DMAR:[fault reason 05] PTE Write access is not set
-> 
-> 
-> 00:02:0 is..
-> 
-> 00:02.0 VGA compatible controller: Intel Corporation Xeon E3-1200 v3/4th
-> Gen Core Processor Integrated Graphics Controller (rev 06) (prog-if 00
-> 		[VGA controller])
-> 
-> 00: 86 80 12 04 07 04 90 00 06 00 00 03 00 00 00 00
-> 10: 04 00 00 c0 00 00 00 00 0c 00 00 b0 00 00 00 00
-> 20: 01 30 00 00 00 00 00 00 00 00 00 00 86 80 12 22
-> 30: 00 00 00 00 90 00 00 00 00 00 00 00 0b 01 00 00
-> 
-> 
-> So then I rebooted, and noticed it spewed the exact same message on boot up too.
-> 
-> I power cycled, and this time got
-> 
-> [    0.576231] dmar: Host address width 39
-> [    0.576336] dmar: DRHD base: 0x000000fed90000 flags: 0x0
-> [    0.576491] dmar: IOMMU 0: reg_base_addr fed90000 ver 1:0 cap c0000020660462 ecap f0101a
-> [    0.576659] dmar: DRHD base: 0x000000fed91000 flags: 0x1
-> [    0.576793] dmar: IOMMU 1: reg_base_addr fed91000 ver 1:0 cap d2008020660462 ecap f010da
-> [    0.576961] dmar: RMRR base: 0x000000a2a1f000 end: 0x000000a2a32fff
-> [    0.577075] dmar: RMRR base: 0x000000ad800000 end: 0x000000af9fffff
-> [    6.715745] DMAR: No ATSR found
-> [    8.081845] [drm] DMAR active, disabling use of stolen memory
-> [    9.927343] dmar: DRHD: handling fault status reg 2
-> [    9.928335] dmar: DMAR:[DMA Write] Request device [00:02.0] fault addr 3c11284000 
-> DMAR:[fault reason 05] PTE Write access is not set
-> [   11.916211] dmar: DRHD: handling fault status reg 2
-> [   11.917105] dmar: DMAR:[DMA Write] Request device [00:02.0] fault addr 3c11284000 
-> DMAR:[fault reason 05] PTE Write access is not set
-> 
-> 
-> Same thing, different fault address.  It seems to change every time I boot.
-> 
-> 
-> Looking in the logs, this started happening on the 15th. The first instance
-> was this during boot..
-> 
-> [    9.917240] dmar: DRHD: handling fault status reg 2
-> [    9.918150] dmar: DMAR:[DMA Write] Request device [00:02.0] fault addr 7300000000 
-> [    9.918150] DMAR:[fault reason 05] PTE Write access is not set
-> [    9.919582] dmar: DMAR:[DMA Write] Request device [00:02.0] fault addr 7ffffff000 
-> [    9.919582] DMAR:[fault reason 05] PTE Write access is not set
-> [   10.157240] dmar: DRHD: handling fault status reg 3
-> [   10.158017] dmar: DMAR:[DMA Write] Request device [00:02.0] fault addr 3579736000 
-> [   10.158017] DMAR:[fault reason 05] PTE Write access is not set
-> [   11.926114] dmar: DRHD: handling fault status reg 3
-> [   11.927117] dmar: DMAR:[DMA Write] Request device [00:02.0] fault addr 7300000000 
-> [   11.927117] DMAR:[fault reason 05] PTE Write access is not set
-> 
-> That time, the 'reg 3' showed up.
-> 
-> Dying hardware ? Or bug ?
-> 
-> 	Dave
-> 
+WARNING: CPU: 20 PID: 6 at mm/page_alloc.c:4968 free_area_init_node+0x3fe/0x426()
+...
+Call Trace:
+ [<...>] dump_stack+0x46/0x58
+ [<...>] warn_slowpath_common+0x81/0xa0
+ [<...>] warn_slowpath_null+0x1a/0x20
+ [<...>] free_area_init_node+0x3fe/0x426
+ [<...>] ? up+0x32/0x50
+ [<...>] hotadd_new_pgdat+0x90/0x110
+ [<...>] add_memory+0xd4/0x200
+ [<...>] acpi_memory_device_add+0x1aa/0x289
+ [<...>] acpi_bus_attach+0xfd/0x204
+ [<...>] ? device_register+0x1e/0x30
+ [<...>] acpi_bus_attach+0x178/0x204
+ [<...>] acpi_bus_scan+0x6a/0x90
+ [<...>] ? acpi_bus_get_status+0x2d/0x5f
+ [<...>] acpi_device_hotplug+0xe8/0x418
+ [<...>] acpi_hotplug_work_fn+0x1f/0x2b
+ [<...>] process_one_work+0x14e/0x3f0
+ [<...>] worker_thread+0x11b/0x510
+ [<...>] ? rescuer_thread+0x350/0x350
+ [<...>] kthread+0xe1/0x100
+ [<...>] ? kthread_create_on_node+0x1b0/0x1b0
+ [<...>] ret_from_fork+0x7c/0xb0
+ [<...>] ? kthread_create_on_node+0x1b0/0x1b0
+
+The detaled explanation is as follows:
+
+When hot removing memory, pgdat is set to 0 in try_offline_node().
+But if the pgdat is allocated by bootmem allocator, the clearing
+step is skipped. And when hot adding the same memory, the uninitialized
+pgdat is reused. But free_area_init_node() chacks wether pgdat is set
+to zero. As a result, free_area_init_node() hits WARN_ON().
+
+This patch clears pgdat which is allocated by bootmem allocator
+in try_offline_node().
+
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: Zhang Zhen <zhenzhang.zhang@huawei.com>
+CC: Wang Nan <wangnan0@huawei.com>
+CC: Tang Chen <tangchen@cn.fujitsu.com>
+CC: Toshi Kani <toshi.kani@hp.com>
+CC: Dave Hansen <dave.hansen@intel.com>
+CC: David Rientjes <rientjes@google.com>
+
+---
+ mm/memory_hotplug.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 29d8693..7649f7c 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -1943,7 +1943,7 @@ void try_offline_node(int nid)
+
+ 	if (!PageSlab(pgdat_page) && !PageCompound(pgdat_page))
+ 		/* node data is allocated from boot memory */
+-		return;
++		goto out;
+
+ 	/* free waittable in each zone */
+ 	for (i = 0; i < MAX_NR_ZONES; i++) {
+@@ -1957,6 +1957,7 @@ void try_offline_node(int nid)
+ 			vfree(zone->wait_table);
+ 	}
+
++out:
+ 	/*
+ 	 * Since there is no way to guarentee the address of pgdat/zone is not
+ 	 * on stack of any kernel threads or used by other kernel objects
+-- 
+1.8.3.1
+
+
