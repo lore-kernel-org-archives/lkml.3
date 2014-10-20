@@ -1,81 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752346AbaJTDYD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 23:24:03 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:52536 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752302AbaJTDX6 (ORCPT
+	id S1752031AbaJTD3S (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 23:29:18 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:11634 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750807AbaJTD3Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 23:23:58 -0400
-From: Howard Chen <ibanezchen@gmail.com>
-To: matthias.bgg@gmail.com
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
-        linux-kernel@vger.kernel.org (open list),
-        linux-arm-kernel@lists.infradead.org (moderated list:ARM/Mediatek
-	SoC...)
-Subject: [PATCH v4 3/3] dt-bindings: add documentation for Mediatek SoC
-Date: Mon, 20 Oct 2014 11:23:19 +0800
-Message-Id: <1413775401-4501-3-git-send-email-ibanezchen@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1413775401-4501-1-git-send-email-ibanezchen@gmail.com>
-References: <1413775401-4501-1-git-send-email-ibanezchen@gmail.com>
+	Sun, 19 Oct 2014 23:29:16 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>
+CC: Neil Zhang <zhangwm@marvell.com>
+Subject: [PATCH] drivers: base: update cpu offline info when do hotplug
+Date: Mon, 20 Oct 2014 11:29:08 +0800
+Message-ID: <1413775748-22478-1-git-send-email-zhangwm@marvell.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-10-19_03:2014-10-17,2014-10-19,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1410200037
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a DT binding documentation for the MT6592 SoC from Mediatek.
+The current per-cpu offline info won't be updated if it is
+hotplugged in/out by a kernel governer.
+Let's update it via cpu notifier.
 
-Signed-off-by: Howard Chen <ibanezchen@gmail.com>
+Signed-off-by: Neil Zhang <zhangwm@marvell.com>
 ---
- Documentation/devicetree/bindings/arm/mediatek.txt    | 7 +++++--
- Documentation/devicetree/bindings/serial/mtk-uart.txt | 3 ++-
- 2 files changed, 7 insertions(+), 3 deletions(-)
+ drivers/base/cpu.c |   25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/arm/mediatek.txt b/Documentation/devicetree/bindings/arm/mediatek.txt
-index fa25226..1d2d151 100644
---- a/Documentation/devicetree/bindings/arm/mediatek.txt
-+++ b/Documentation/devicetree/bindings/arm/mediatek.txt
-@@ -1,10 +1,10 @@
- Mediatek MT6589 Platforms Device Tree Bindings
+diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+index 006b1bc..9d61824 100644
+--- a/drivers/base/cpu.c
++++ b/drivers/base/cpu.c
+@@ -418,10 +418,35 @@ static void __init cpu_dev_register_generic(void)
+ #endif
+ }
  
--Boards with a SoC of the Mediatek MT6589 shall have the following property:
-+Boards with a SoC from Mediatek shall have the following property:
- 
- Required root node property:
- 
--compatible: must contain "mediatek,mt6589"
-+compatible: must contain one of "mediatek,mt6589", "mediatek,mt6592"
- 
- 
- Supported boards:
-@@ -12,3 +12,6 @@ Supported boards:
- - bq Aquaris5 smart phone:
-     Required root node properties:
-       - compatible = "mundoreader,bq-aquaris5", "mediatek,mt6589";
++static int device_hotplug_notifier(struct notifier_block *nfb,
++				      unsigned long action, void *hcpu)
++{
++	unsigned int cpu = (unsigned long)hcpu;
++	struct device *dev = get_cpu_device(cpu);
++	int ret;
 +
-+- Evaluation board for MT6592:
-+      - compatible = "mediatek,mt6592-evb", "mediatek,mt6592";
-diff --git a/Documentation/devicetree/bindings/serial/mtk-uart.txt b/Documentation/devicetree/bindings/serial/mtk-uart.txt
-index 48358a3..e2864b7 100644
---- a/Documentation/devicetree/bindings/serial/mtk-uart.txt
-+++ b/Documentation/devicetree/bindings/serial/mtk-uart.txt
-@@ -2,9 +2,10 @@
++	switch (action & ~CPU_TASKS_FROZEN) {
++	case CPU_ONLINE:
++		dev->offline = false;
++		ret = NOTIFY_OK;
++		break;
++	case CPU_DYING:
++		dev->offline = true;
++		ret = NOTIFY_OK;
++		break;
++	default:
++		ret = NOTIFY_DONE;
++		break;
++	}
++
++	return ret;
++}
++
+ void __init cpu_dev_init(void)
+ {
+ 	if (subsys_system_register(&cpu_subsys, cpu_root_attr_groups))
+ 		panic("Failed to register CPU subsystem");
  
- Required properties:
- - compatible should contain:
-+  * "mediatek,mt6592-uart" for MT6592 compatible UARTS
-   * "mediatek,mt6589-uart" for MT6589 compatible UARTS
-   * "mediatek,mt6582-uart" for MT6582 compatible UARTS
--  * "mediatek,mt6577-uart" for all compatible UARTS (MT6589, MT6582, MT6577)
-+  * "mediatek,mt6577-uart" for all compatible UARTS on MT65xx
- 
- - reg: The base address of the UART register bank.
- 
+ 	cpu_dev_register_generic();
++	cpu_notifier(device_hotplug_notifier, 0);
+ }
 -- 
-1.9.1
+1.7.9.5
 
