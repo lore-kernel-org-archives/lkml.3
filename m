@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639AbaJTK5K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 06:57:10 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:34676 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753290AbaJTK5G (ORCPT
+	id S1753780AbaJTK5Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 06:57:25 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:51188 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753359AbaJTK5H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 06:57:06 -0400
-X-AuditID: cbfec7f5-b7f956d000005ed7-bd-5444ea7e8171
+	Mon, 20 Oct 2014 06:57:07 -0400
+X-AuditID: cbfec7f4-b7f6c6d00000120b-34-5444ea80ac19
 From: Andrey Ryabinin <a.ryabinin@samsung.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -19,46 +19,45 @@ Cc: Andrey Ryabinin <a.ryabinin@samsung.com>, "Theodore Ts'o" <tytso@mit.edu>,
         Andreas Dilger <adilger.kernel@dilger.ca>,
         Dmitry Vyukov <dvyukov@google.com>,
         Konstantin Khlebnikov <koct9i@gmail.com>
-Subject: [RFC] UBSan: run-time undefined behavior sanity checker
-Date: Mon, 20 Oct 2014 14:54:58 +0400
-Message-id: <1413802499-17928-1-git-send-email-a.ryabinin@samsung.com>
+Subject: [RFC PATCH] UBSan: run-time undefined behavior sanity checker
+Date: Mon, 20 Oct 2014 14:54:59 +0400
+Message-id: <1413802499-17928-2-git-send-email-a.ryabinin@samsung.com>
 X-Mailer: git-send-email 2.1.2
+In-reply-to: <1413802499-17928-1-git-send-email-a.ryabinin@samsung.com>
+References: <1413802499-17928-1-git-send-email-a.ryabinin@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=UTF-8
 Content-transfer-encoding: 8bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOLMWRmVeSWpSXmKPExsVy+t/xq7p1r1xCDHb1mFps+/WIzeLrlw4W
-	iznr17BZTHjYxm4xbaO4xcrOB6wWf3btYLK4vGsOm8WlAwuYLFr2XWCyON57gMli8ZHbzBab
-	N01ltmjt+clu8WPDY1YHfo+WzeUeO2fdZfdYsKnUY/MKLY9NqzrZPN6dO8fucWLGbxaPpjNH
-	mT0+Pr3F4vF+31U2j74tqxg9ziw4wu7xeZOcx4mWL6wBfFFcNimpOZllqUX6dglcGQ03/zAV
-	dAlVzGk5zdLA+Ieni5GTQ0LAROLMokZWCFtM4sK99WxdjFwcQgJLGSW+f/3ECuH0MUl0XD7G
-	DFLFJqAn8W/WdqAqDg4RgatMEp3eIDXMAicYJf63dTOC1AgLOEic2fiQBcRmEVCVWPh8AjuI
-	zSvgJnFjw34miG1yEtP33mWBiAtK/Jh8D8xmFlCXmDRvETOELS9x8MpzlgmMfLOQlM1CUjYL
-	SdkCRuZVjKKppckFxUnpuUZ6xYm5xaV56XrJ+bmbGCGR9XUH49JjVocYBTgYlXh4d5i5hAix
-	JpYVV+YeYpTgYFYS4e2+DRTiTUmsrEotyo8vKs1JLT7EyMTBKdXAePS16t9djTWTiq+v6Gt7
-	KGtQ0D9/OvetrQlmB48qZ4u/3Cc0ey6/QtC8XwJFF3fy3MxXWLzhxMnWLXVV91M/P9CJvbS7
-	7r6eb9Hplzelyzvm8jOunfow2uamy66tJquVIk+q9dxrnPJh97VzUck7z7+2/v26NCpnETfX
-	+cy8rwztJ57Gmp1fuECJpTgj0VCLuag4EQDnw5xRigIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIIsWRmVeSWpSXmKPExsVy+t/xq7oNr1xCDLZ9YLTY9usRm8XXLx0s
+	FnPWr2GzmPCwjd1i2kZxi5WdD1gt/uzawWRxedccNotLBxYwWbTsu8Bkcbz3AJPF4iO3mS02
+	b5rKbNHa85Pd4seGx6wO/B4tm8s9ds66y+6xYFOpx+YVWh6bVnWyebw7d47d48SM3yweTWeO
+	Mnt8fHqLxeP9vqtsHn1bVjF6nFlwhN3j8yY5jxMtX1gD+KK4bFJSczLLUov07RK4MlZ0P2Ep
+	2LKfsWIu0JAGxoVzGbsYOTkkBEwkvl74wA5hi0lcuLeerYuRi0NIYCmjxMKmy4wQTh+TxIHO
+	f2wgVWwCehL/Zm0Hsjk4RASuMkl0eoPUMAucYJT439YNNlVYwE3i/bTPLCA2i4CqxI5nV1hB
+	bF6g+MEVt9kgtslJTN97F6yGU8Bd4sK8vcwgthBQTfelQ0wQ9YISPybfA6thFlCXmDRvETOE
+	LS9x8MpzlgmMArOQlM1CUjYLSdkCRuZVjKKppckFxUnpuYZ6xYm5xaV56XrJ+bmbGCHR+GUH
+	4+JjVocYBTgYlXh4BSxdQoRYE8uKK3MPMUpwMCuJ8HbfBgrxpiRWVqUW5ccXleakFh9iZOLg
+	lGpgdDnxK3zb9+BrmyRPfDjK8qdWwuBm4s7Ph9oYQ1tfx9Q4JmRUntiUf/X6Urawo+xGjQs5
+	FUq/Tf8kWKusfJ/ljoLO8v4Tl/6XeopMmKPIPVN265kUQ+1Kr9V8M65KFcx6cu5Mc71z9ayP
+	/g9ziq4E9v7fsLl157cPNcdO6QQWzFvgOvFH5Zzsa0osxRmJhlrMRcWJAGZmS8KkAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
 
-This is yet another sanitizer for linux kernel.
-
-UBSan uses copile-time instumentation to catch undefined behavior (UB).
+UBSan uses compile-time instrumentation to catch undefined behavior (UB).
 Compiler inserts code that perform certain kinds of
 checks before operations that could cause UB.
 If check fails (i.e. UB detected) __ubsan_handle_* function called.
 to print error message.
 
-Patch is also available via git:
-	git://github.com/aryabinin/linux --branch ubsan/v1
+So the most of the work is done by compiler.
+This patch just implements ubsan handlers printing errors.
 
 GCC supports this since 4.9, however upcoming GCC 5.0 has
 more checkers implemented.
 
-Different kinds of checkers could be enabled via boot parameter:
+Different kinds of checks could be enabled via boot parameter:
 ubsan_handle=OEAINVBSLF.
 If ubsan_handle not present in cmdline default options are used: ELNVBSLF
 
@@ -67,19 +66,20 @@ If ubsan_handle not present in cmdline default options are used: ELNVBSLF
 	A - misaligned memory access.
 	I - load from/store to an object with insufficient space.
 	N - null argument declared with nonnull attribute,
-		returned null from function which never returns null, null ptr dereference.
+	  returned null from function which never returns null, null ptr dereference.
 	V - variable size array with non-positive length
-	B - out-of-bounds memory accesses.
+	B - out-of-bounds accesses.
 	S - shifting out-of-bounds.
 	L - load of invalid value (value out of range for the enum type, loading other then 0/1 to bool type)
 	F - call to function through pointer with incorrect function type
-		(AFAIK this is not implemented in gcc yet, probably works with clang,
-		though I didn't check it).
+	    (AFAIK this is not implemented in gcc yet, probably works with clang, though
+	    	   I didn't check ubsan with clang at all).
 
+Instrumentation in kernel/printk/printk.c is disabled because struct printk_log is not properly aligned,
+therefore we are recursively taking logbuf_lock while trying to print error in __ubsan_handle*().
 
-Andrey Ryabinin (1):
-  UBSan: run-time undefined behavior sanity checker
-
+Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+---
  Makefile                              |  12 +-
  arch/x86/Kconfig                      |   1 +
  arch/x86/boot/Makefile                |   1 +
@@ -98,6 +98,853 @@ Andrey Ryabinin (1):
  create mode 100644 lib/ubsan.c
  create mode 100644 lib/ubsan.h
 
+diff --git a/Makefile b/Makefile
+index 05d67af..d3e23f9 100644
+--- a/Makefile
++++ b/Makefile
+@@ -377,6 +377,9 @@ LDFLAGS_MODULE  =
+ CFLAGS_KERNEL	=
+ AFLAGS_KERNEL	=
+ CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
++CFLAGS_UBSAN	= $(call cc-option, -fsanitize=undefined) \
++			$(call cc-option, -fno-sanitize=unreachable) \
++			$(call cc-option, -fno-sanitize=float-cast-overflow)
+ 
+ 
+ # Use USERINCLUDE when you must reference the UAPI directories only.
+@@ -421,7 +424,7 @@ export MAKE AWK GENKSYMS INSTALLKERNEL PERL PYTHON UTS_MACHINE
+ export HOSTCXX HOSTCXXFLAGS LDFLAGS_MODULE CHECK CHECKFLAGS
+ 
+ export KBUILD_CPPFLAGS NOSTDINC_FLAGS LINUXINCLUDE OBJCOPYFLAGS LDFLAGS
+-export KBUILD_CFLAGS CFLAGS_KERNEL CFLAGS_MODULE CFLAGS_GCOV
++export KBUILD_CFLAGS CFLAGS_KERNEL CFLAGS_MODULE CFLAGS_GCOV CFLAGS_UBSAN
+ export KBUILD_AFLAGS AFLAGS_KERNEL AFLAGS_MODULE
+ export KBUILD_AFLAGS_MODULE KBUILD_CFLAGS_MODULE KBUILD_LDFLAGS_MODULE
+ export KBUILD_AFLAGS_KERNEL KBUILD_CFLAGS_KERNEL
+@@ -670,6 +673,13 @@ endif
+ endif
+ KBUILD_CFLAGS += $(stackp-flag)
+ 
++ifdef CONFIG_UBSAN
++  ifeq ($(strip $(CFLAGS_UBSAN)),)
++    $(warning Cannot use CONFIG_UBSAN: \
++             -fsanitize=undefined not supported by compiler)
++  endif
++endif
++
+ ifeq ($(COMPILER),clang)
+ KBUILD_CPPFLAGS += $(call cc-option,-Qunused-arguments,)
+ KBUILD_CPPFLAGS += $(call cc-option,-Wno-unknown-warning-option,)
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index f2327e8..b318fe8 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -55,6 +55,7 @@ config X86
+ 	select HAVE_FUNCTION_TRACER
+ 	select HAVE_FUNCTION_GRAPH_TRACER
+ 	select HAVE_FUNCTION_GRAPH_FP_TEST
++	select HAVE_ARCH_UBSAN_SANTIZE_ALL
+ 	select HAVE_SYSCALL_TRACEPOINTS
+ 	select SYSCTL_EXCEPTION_TRACE
+ 	select HAVE_KVM
+diff --git a/arch/x86/boot/Makefile b/arch/x86/boot/Makefile
+index 5b016e2..95bf522 100644
+--- a/arch/x86/boot/Makefile
++++ b/arch/x86/boot/Makefile
+@@ -57,6 +57,7 @@ endif
+ KBUILD_CFLAGS	:= $(USERINCLUDE) $(REALMODE_CFLAGS) -D_SETUP
+ KBUILD_AFLAGS	:= $(KBUILD_CFLAGS) -D__ASSEMBLY__
+ GCOV_PROFILE := n
++UBSAN_SANITIZE := n
+ 
+ $(obj)/bzImage: asflags-y  := $(SVGA_MODE)
+ 
+diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
+index 704f58a..16940f8 100644
+--- a/arch/x86/boot/compressed/Makefile
++++ b/arch/x86/boot/compressed/Makefile
+@@ -19,6 +19,7 @@ KBUILD_CFLAGS += $(call cc-option,-fno-stack-protector)
+ 
+ KBUILD_AFLAGS  := $(KBUILD_CFLAGS) -D__ASSEMBLY__
+ GCOV_PROFILE := n
++UBSAN_SANITIZE :=n
+ 
+ LDFLAGS := -m elf_$(UTS_MACHINE)
+ LDFLAGS_vmlinux := -T
+diff --git a/arch/x86/realmode/rm/Makefile b/arch/x86/realmode/rm/Makefile
+index 7c0d7be..5c48444 100644
+--- a/arch/x86/realmode/rm/Makefile
++++ b/arch/x86/realmode/rm/Makefile
+@@ -69,3 +69,4 @@ KBUILD_CFLAGS	:= $(LINUXINCLUDE) $(REALMODE_CFLAGS) -D_SETUP -D_WAKEUP \
+ 		   -I$(srctree)/arch/x86/boot
+ KBUILD_AFLAGS	:= $(KBUILD_CFLAGS) -D__ASSEMBLY__
+ GCOV_PROFILE := n
++UBSAN_SANITIZE := n
+diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
+index 5a4affe..3054473 100644
+--- a/arch/x86/vdso/Makefile
++++ b/arch/x86/vdso/Makefile
+@@ -4,6 +4,8 @@
+ 
+ KBUILD_CFLAGS += $(DISABLE_LTO)
+ 
++UBSAN_SANITIZE := n
++
+ VDSO64-$(CONFIG_X86_64)		:= y
+ VDSOX32-$(CONFIG_X86_X32_ABI)	:= y
+ VDSO32-$(CONFIG_X86_32)		:= y
+diff --git a/drivers/firmware/efi/libstub/Makefile b/drivers/firmware/efi/libstub/Makefile
+index b14bc2b..7b07624 100644
+--- a/drivers/firmware/efi/libstub/Makefile
++++ b/drivers/firmware/efi/libstub/Makefile
+@@ -19,6 +19,7 @@ KBUILD_CFLAGS			:= $(cflags-y) \
+ 				   $(call cc-option,-fno-stack-protector)
+ 
+ GCOV_PROFILE			:= n
++UBSAN_SANITIZE			:= n
+ 
+ lib-y				:= efi-stub-helper.o
+ lib-$(CONFIG_EFI_ARMSTUB)	+= arm-stub.o fdt.o
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 5e344bb..cfba635 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1661,6 +1661,10 @@ struct task_struct {
+ 	unsigned int	sequential_io;
+ 	unsigned int	sequential_io_avg;
+ #endif
++
++#ifdef CONFIG_UBSAN
++	unsigned int in_ubsan;
++#endif
+ };
+ 
+ /* Future-safe accessor for struct task_struct's cpus_allowed. */
+diff --git a/kernel/printk/Makefile b/kernel/printk/Makefile
+index 85405bd..36461b5 100644
+--- a/kernel/printk/Makefile
++++ b/kernel/printk/Makefile
+@@ -1,2 +1,3 @@
+ obj-y	= printk.o
+ obj-$(CONFIG_A11Y_BRAILLE_CONSOLE)	+= braille.o
++UBSAN_SANITIZE := n
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 4e35a5d..7dc9b89 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -646,6 +646,29 @@ config DEBUG_SHIRQ
+ 	  Drivers ought to be able to handle interrupts coming in at those
+ 	  points; some don't and need to be caught.
+ 
++config HAVE_ARCH_UBSAN_SANTIZE_ALL
++	bool
++
++config UBSAN
++	bool "Undefined behaviour sanity checker"
++	help
++	  This option enables undefined behaviour sanity checker
++	  Compile-time instrumentataion used to detect various undefined
++	  behaviours in runtime. Different kinds of checks could be enabled
++	  via boot parameter ubsan_handle (see: Documentation/ubsan.txt).
++	  (TODO: write docs).
++
++config UBSAN_SANITIZE_ALL
++	bool "Enable instrumentation for the entire kernel"
++	depends on UBSAN
++	depends on HAVE_ARCH_UBSAN_SANTIZE_ALL
++	default y
++	help
++	  This option acitivates instrumentation for the entire kernel.
++	  If you don't enable this option, you have to explicitly specify
++	  UBSAN_SANITIZE := y for the files/directories you want to check for UB.
++
++
+ menu "Debug Lockups and Hangs"
+ 
+ config LOCKUP_DETECTOR
+diff --git a/lib/Makefile b/lib/Makefile
+index 7512dc9..d8c05c68 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -196,3 +196,6 @@ quiet_cmd_build_OID_registry = GEN     $@
+ clean-files	+= oid_registry_data.c
+ 
+ obj-$(CONFIG_UCS2_STRING) += ucs2_string.o
++obj-$(CONFIG_UBSAN) += ubsan.o
++
++UBSAN_SANITIZE_ubsan.o := n
+diff --git a/lib/ubsan.c b/lib/ubsan.c
+new file mode 100644
+index 0000000..7788f47
+--- /dev/null
++++ b/lib/ubsan.c
+@@ -0,0 +1,559 @@
++#include <linux/bug.h>
++#include <linux/ctype.h>
++#include <linux/types.h>
++#include <linux/sched.h>
++
++#include "ubsan.h"
++
++const char *type_check_kinds[] = {
++	"load of",
++	"store to",
++	"reference binding to",
++	"member access within",
++	"member call on",
++	"constructor call on",
++	"downcast of",
++	"downcast of"
++};
++
++enum {
++	SUM_OVERFLOW,
++	SUB_OVERFLOW,
++	MUL_OVERFLOW,
++	NEG_OVERFLOW,
++	DIVREM_OVERFLOW,
++	ALIGNMENT,
++	OBJECT_SIZE,
++	NONNULL_ARG,
++	NONNULL_RET,
++	NULL_PTR,
++	VLA_BOUND,
++	OUT_OF_BOUNDS,
++	SHIFT_OUT_OF_BOUNDS,
++	INVALID_LOAD,
++	FUNC_TYPE_MISMATCH,
++	HANDLERS_END,
++};
++
++/* By default enable everything except signed overflows and
++ * misaligned accesses
++ */
++static unsigned long ubsan_handle = GENMASK(HANDLERS_END, 0) &
++	~(BIT_MASK(SUM_OVERFLOW) | BIT_MASK(SUB_OVERFLOW) |
++		BIT_MASK(NEG_OVERFLOW) | BIT_MASK(ALIGNMENT));
++
++static void enable_handler(unsigned int handler)
++{
++	set_bit(handler, &ubsan_handle);
++}
++
++static bool handler_enabled(unsigned int handler)
++{
++	return test_bit(handler, &ubsan_handle);
++}
++
++#define REPORTED_BIT 31
++#define COLUMN_MASK (~(1U << REPORTED_BIT))
++
++static bool is_disabled(struct source_location *location)
++{
++	return test_and_set_bit(REPORTED_BIT,
++				(unsigned long *)&location->column);
++}
++
++static void print_source_location(const char *prefix, struct source_location *loc)
++{
++	pr_err("%s %s:%d:%d\n", prefix, loc->file_name,
++		loc->line, loc->column & COLUMN_MASK);
++}
++
++static bool type_is_int(struct type_descriptor *type)
++{
++	return type->type_kind == type_kind_int;
++}
++
++static bool type_is_signed(struct type_descriptor *type)
++{
++	return type_is_int(type) && (type->type_info & 1);
++}
++
++static unsigned type_bit_width(struct type_descriptor *type)
++{
++	return 1 << (type->type_info >> 1);
++}
++
++static bool is_inline_int(struct type_descriptor *type)
++{
++	unsigned inline_bits = sizeof(unsigned long)*8;
++	unsigned bits = type_bit_width(type);
++
++	return bits <= inline_bits;
++}
++
++static s_max get_signed_val(struct type_descriptor *type, unsigned long val)
++{
++	if (is_inline_int(type)) {
++		unsigned extra_bits = sizeof(s_max)*8 - type_bit_width(type);
++		return ((s_max)val) << extra_bits >> extra_bits;
++	}
++
++	if (type_bit_width(type) == 64)
++		return *(s64 *)val;
++
++	return *(s_max *)val;
++}
++
++static bool val_is_negative(struct type_descriptor *type, unsigned long val)
++{
++	return type_is_signed(type) && get_signed_val(type, val) < 0;
++}
++
++static u_max get_unsigned_val(struct type_descriptor *type, unsigned long val)
++{
++	if (is_inline_int(type))
++		return val;
++
++	if (type_bit_width(type) == 64)
++		return *(u64 *)val;
++
++	return *(u_max *)val;
++}
++
++static void val_to_string(char *str, size_t size, struct type_descriptor *type,
++	unsigned long value)
++{
++	u_max val = get_unsigned_val(type, value);
++
++	if (type_is_int(type)) {
++		if (type_bit_width(type) == 128)
++			scnprintf(str, size, "0x%08x%08x%08x%08x",
++				(u32)(val >> 96),
++				(u32)(val >> 64),
++				(u32)(val >> 32),
++				(u32)(val));
++		else if (type_is_signed(type))
++			scnprintf(str, size, "%lld",
++				(s64)get_signed_val(type, value));
++		else
++			scnprintf(str, size, "%llu",
++				(u64)get_unsigned_val(type, value));
++	}
++}
++
++static bool location_is_valid(struct source_location *loc)
++{
++	return loc->file_name != NULL;
++}
++
++static void ubsan_prologue(struct source_location *location)
++{
++	current->in_ubsan++;
++	pr_err("========================================"
++		"========================================\n");
++	print_source_location("UBSan: Undefined behaviour in", location);
++}
++
++static void ubsan_epilogue(void)
++{
++	dump_stack();
++	pr_err("========================================"
++		"========================================\n");
++	current->in_ubsan--;
++}
++
++static void handle_overflow(struct overflow_data *data, unsigned long lhs,
++			unsigned long rhs, char op)
++{
++
++	struct type_descriptor *type = data->type;
++	char lhs_val_str[60];
++	char rhs_val_str[60];
++
++	if (current->in_ubsan)
++		return;
++
++	if (is_disabled(&data->location))
++		return;
++
++	ubsan_prologue(&data->location);
++
++	val_to_string(lhs_val_str, sizeof(lhs_val_str), type, lhs);
++	val_to_string(rhs_val_str, sizeof(rhs_val_str), type, rhs);
++	pr_err("%s integer overflow:\n",
++		type_is_signed(type) ? "signed" : "unsigned");
++	pr_err("%s %c %s cannot be represented in type %s\n",
++		lhs_val_str,
++		op,
++		rhs_val_str,
++		type->type_name);
++
++	ubsan_epilogue();
++}
++
++void __ubsan_handle_add_overflow(struct overflow_data *data,
++				unsigned long lhs,
++				unsigned long rhs)
++{
++
++	if (handler_enabled(SUM_OVERFLOW))
++		handle_overflow(data, lhs, rhs, '+');
++}
++EXPORT_SYMBOL(__ubsan_handle_add_overflow);
++
++void __ubsan_handle_sub_overflow(struct overflow_data *data,
++				unsigned long lhs,
++				unsigned long rhs)
++{
++	if (handler_enabled(SUB_OVERFLOW))
++		handle_overflow(data, lhs, rhs, '-');
++}
++EXPORT_SYMBOL(__ubsan_handle_sub_overflow);
++
++void __ubsan_handle_mul_overflow(struct overflow_data *data,
++				unsigned long lhs,
++				unsigned long rhs)
++{
++	if (handler_enabled(MUL_OVERFLOW))
++		handle_overflow(data, lhs, rhs, '*');
++}
++EXPORT_SYMBOL(__ubsan_handle_mul_overflow);
++
++void __ubsan_handle_negate_overflow(struct overflow_data *data,
++				unsigned long old_val)
++{
++
++	char old_val_str[60];
++
++	if (!handler_enabled(NEG_OVERFLOW))
++		return;
++
++	if (current->in_ubsan)
++		return;
++
++	if (is_disabled(&data->location))
++		return;
++
++	ubsan_prologue(&data->location);
++
++	val_to_string(old_val_str, sizeof(old_val_str), data->type, old_val);
++
++	pr_err("negation of %s cannot be represented in type %s:\n",
++		old_val_str, data->type->type_name);
++
++	ubsan_epilogue();
++}
++EXPORT_SYMBOL(__ubsan_handle_negate_overflow);
++
++
++void __ubsan_handle_divrem_overflow(struct overflow_data *data,
++				unsigned long lhs,
++				unsigned long rhs)
++{
++	char rhs_val_str[60];
++
++	if (!handler_enabled(DIVREM_OVERFLOW))
++		return;
++
++	if (current->in_ubsan)
++		return;
++
++	if (is_disabled(&data->location))
++		return;
++
++	ubsan_prologue(&data->location);
++
++	val_to_string(rhs_val_str, sizeof(rhs_val_str), data->type, rhs);
++
++	if (type_is_signed(data->type) && get_signed_val(data->type, rhs) == -1)
++		pr_err("division of %s by -1 cannot be represented in type %s\n",
++			rhs_val_str, data->type->type_name);
++	else
++		pr_err("division by zero\n");
++
++	ubsan_epilogue();
++}
++EXPORT_SYMBOL(__ubsan_handle_divrem_overflow);
++
++void __ubsan_handle_type_mismatch(struct type_mismatch_data *data,
++				unsigned long ptr)
++{
++
++	if (current->in_ubsan)
++		return;
++
++	if (is_disabled(&data->location))
++		return;
++
++	if (!ptr) {
++		if (!handler_enabled(NULL_PTR))
++			return;
++
++		ubsan_prologue(&data->location);
++
++		pr_err("%s null pointer of type %s\n",
++			type_check_kinds[data->type_check_kind],
++			data->type->type_name);
++	} else if (data->alignment && (ptr & (data->alignment - 1))) {
++		if (!handler_enabled(ALIGNMENT))
++			return;
++
++		ubsan_prologue(&data->location);
++		pr_err("%s misaligned address %p for type %s "
++			"which requires %ld byte alignment\n",
++			type_check_kinds[data->type_check_kind],
++			(void *)ptr, data->type->type_name, data->alignment);
++	} else {
++		if (!handler_enabled(OBJECT_SIZE))
++			return;
++
++		ubsan_prologue(&data->location);
++		pr_err("%s address %pk with insufficient space\n",
++			type_check_kinds[data->type_check_kind],
++			(void *) ptr);
++		pr_err("for an object of type %s\n", data->type->type_name);
++	}
++
++	ubsan_epilogue();
++}
++EXPORT_SYMBOL(__ubsan_handle_type_mismatch);
++
++void __ubsan_handle_nonnull_arg(struct nonnull_arg_data *data)
++{
++
++	if (!handler_enabled(NONNULL_ARG))
++		return;
++
++	if (current->in_ubsan)
++		return;
++
++	if (is_disabled(&data->location))
++		return;
++
++	ubsan_prologue(&data->location);
++
++	pr_err("null pointer passed as argument %d, declared with nonnull attribute\n",
++		data->arg_index);
++
++	if (location_is_valid(&data->attr_location))
++		print_source_location("nonnull attribute declared in ",
++				&data->attr_location);
++
++	ubsan_epilogue();
++}
++EXPORT_SYMBOL(__ubsan_handle_nonnull_arg);
++
++void __ubsan_handle_nonnull_return(struct nonnull_return_data *data)
++{
++	if (!handler_enabled(NONNULL_RET))
++		return;
++
++	if (current->in_ubsan)
++		return;
++
++	if (is_disabled(&data->location))
++		return;
++
++	ubsan_prologue(&data->location);
++
++	pr_err("null pointer returned from function declared to never return null\n");
++
++	if (location_is_valid(&data->attr_location))
++		print_source_location("returns_nonnull attribute specified in",
++				&data->attr_location);
++
++	ubsan_epilogue();
++}
++EXPORT_SYMBOL(__ubsan_handle_nonnull_return);
++
++void __ubsan_handle_vla_bound_not_positive(struct vla_bound_data *data,
++					unsigned long bound)
++{
++	char bound_str[60];
++
++	if (!handler_enabled(VLA_BOUND))
++		return;
++
++	if (current->in_ubsan)
++		return;
++
++	if (is_disabled(&data->location))
++		return;
++
++	ubsan_prologue(&data->location);
++
++	val_to_string(bound_str, sizeof(bound_str), data->type, bound);
++	pr_err("variable length array bound value %s <= 0\n", bound_str);
++
++	ubsan_epilogue();
++}
++EXPORT_SYMBOL(__ubsan_handle_vla_bound_not_positive);
++
++void __ubsan_handle_out_of_bounds(struct out_of_bounds_data *data,
++				unsigned long index)
++{
++	char index_str[60];
++
++	if (!handler_enabled(OUT_OF_BOUNDS))
++		return;
++
++	if (current->in_ubsan)
++		return;
++
++	if (is_disabled(&data->location))
++		return;
++
++	ubsan_prologue(&data->location);
++
++	val_to_string(index_str, sizeof(index_str), data->index_type, index);
++	pr_err("index %s out of bounds for type %s\n", index_str,
++		data->array_type->type_name);
++
++	ubsan_epilogue();
++}
++EXPORT_SYMBOL(__ubsan_handle_out_of_bounds);
++
++void __ubsan_handle_shift_out_of_bounds(
++	struct shift_out_of_bounds_data *data,
++	unsigned long lhs,
++	unsigned long rhs)
++{
++	struct type_descriptor *rhs_type = data->rhs_type;
++	struct type_descriptor *lhs_type = data->lhs_type;
++	char rhs_str[60];
++	char lhs_str[60];
++
++	if (!handler_enabled(SHIFT_OUT_OF_BOUNDS))
++		return;
++
++	if (current->in_ubsan)
++		return;
++
++	if (is_disabled(&data->location))
++		return;
++
++	ubsan_prologue(&data->location);
++
++	val_to_string(rhs_str, sizeof(rhs_str), rhs_type, rhs);
++	val_to_string(lhs_str, sizeof(lhs_str), lhs_type, lhs);
++
++	if (val_is_negative(rhs_type, rhs))
++		pr_err("shift exponent %s is negative\n", rhs_str);
++
++	else if (get_unsigned_val(rhs_type, rhs) >=
++		type_bit_width(lhs_type))
++		pr_err("shift exponent %s is to large for %u-bit type %s\n",
++			rhs_str,
++			type_bit_width(lhs_type),
++			lhs_type->type_name);
++	else if (val_is_negative(lhs_type, lhs))
++		pr_err("left shift of negative value %s\n",
++			lhs_str);
++	else
++		pr_err("left shift of %s by %s places cannot be"
++			"represented in type %s\n",
++			lhs_str, rhs_str,
++			lhs_type->type_name);
++
++	ubsan_epilogue();
++}
++EXPORT_SYMBOL(__ubsan_handle_shift_out_of_bounds);
++
++void __ubsan_handle_load_invalid_value(struct invalid_value_data *data,
++				unsigned long val)
++{
++	char val_str[60];
++
++	if (!handler_enabled(INVALID_LOAD))
++		return;
++
++	if (current->in_ubsan)
++		return;
++
++	if (is_disabled(&data->location))
++		return;
++
++	ubsan_prologue(&data->location);
++
++	val_to_string(val_str, sizeof(val_str), data->type, val);
++
++	pr_err("load of value %s is not a valid value for type %s\n",
++		val_str, data->type->type_name);
++
++	ubsan_epilogue();
++}
++EXPORT_SYMBOL(__ubsan_handle_load_invalid_value);
++
++
++void __ubsan_handle_function_type_mismatch(struct func_type_mismatch_data *data,
++					unsigned long function)
++{
++
++	if (!handler_enabled(FUNC_TYPE_MISMATCH))
++		return;
++
++	if (current->in_ubsan)
++		return;
++
++	if (is_disabled(&data->location))
++		return;
++
++	ubsan_prologue(&data->location);
++
++	pr_err("call to function %pF through pointer to incorrect function type %s\n",
++		(void *)function, data->type->type_name);
++
++	ubsan_epilogue();
++}
++EXPORT_SYMBOL(__ubsan_handle_function_type_mismatch);
++
++static int __init setup_ubsan_handlers(char *str)
++{
++	ubsan_handle = 0;
++
++	for (; *str; str++) {
++		switch (tolower(*str)) {
++		case 'o':
++			enable_handler(SUM_OVERFLOW);
++			enable_handler(SUB_OVERFLOW);
++			enable_handler(MUL_OVERFLOW);
++			break;
++		case 'e':
++			enable_handler(NEG_OVERFLOW);
++			enable_handler(DIVREM_OVERFLOW);
++			break;
++		case 'a':
++			enable_handler(ALIGNMENT);
++			break;
++		case 'i':
++			enable_handler(OBJECT_SIZE);
++			break;
++		case 'n':
++			enable_handler(NONNULL_ARG);
++			enable_handler(NONNULL_RET);
++			enable_handler(NULL_PTR);
++			break;
++		case 'v':
++			enable_handler(VLA_BOUND);
++			break;
++		case 'b':
++			enable_handler(OUT_OF_BOUNDS);
++			break;
++		case 's':
++			enable_handler(SHIFT_OUT_OF_BOUNDS);
++			break;
++		case 'l':
++			enable_handler(INVALID_LOAD);
++			break;
++		case 'f':
++			enable_handler(FUNC_TYPE_MISMATCH);
++			break;
++		default:
++			pr_err("skipping unknown option '%c'\n", *str);
++			break;
++		}
++	}
++
++	return 0;
++}
++
++early_param("ubsan_handle", setup_ubsan_handlers);
+diff --git a/lib/ubsan.h b/lib/ubsan.h
+new file mode 100644
+index 0000000..e2d8634
+--- /dev/null
++++ b/lib/ubsan.h
+@@ -0,0 +1,84 @@
++#ifndef _LIB_UBSAN_H
++#define _LIB_UBSAN_H
++
++enum {
++	type_kind_int = 0,
++	type_kind_float = 1,
++	type_unknown = 0xffff
++};
++
++struct type_descriptor {
++	u16 type_kind;
++	u16 type_info;
++	char type_name[1];
++};
++
++struct source_location {
++	const char *file_name;
++	u32 line;
++	u32 column;
++};
++
++struct overflow_data {
++	struct source_location location;
++	struct type_descriptor *type;
++};
++
++struct type_mismatch_data {
++	struct source_location location;
++	struct type_descriptor *type;
++	unsigned long alignment;
++	unsigned char type_check_kind;
++};
++
++struct nonnull_arg_data {
++	struct source_location location;
++	struct source_location attr_location;
++	int arg_index;
++};
++
++struct nonnull_return_data {
++	struct source_location location;
++	struct source_location attr_location;
++};
++
++struct vla_bound_data {
++	struct source_location location;
++	struct type_descriptor *type;
++};
++
++struct out_of_bounds_data {
++	struct source_location location;
++	struct type_descriptor *array_type;
++	struct type_descriptor *index_type;
++};
++
++struct shift_out_of_bounds_data {
++	struct source_location location;
++	struct type_descriptor *lhs_type;
++	struct type_descriptor *rhs_type;
++};
++
++struct unreachable_data {
++	struct source_location location;
++};
++
++struct invalid_value_data {
++	struct source_location location;
++	struct type_descriptor *type;
++};
++
++struct func_type_mismatch_data {
++	struct source_location location;
++	struct type_descriptor *type;
++};
++
++#ifdef CONFIG_ARCH_SUPPORTS_INT128
++typedef __int128 s_max;
++typedef unsigned __int128 u_max;
++#else
++typedef s64 s_max;
++typedef u64 u_max;
++#endif
++
++#endif
+diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
+index 54be19a..3f631b9 100644
+--- a/scripts/Makefile.lib
++++ b/scripts/Makefile.lib
+@@ -119,6 +119,12 @@ _c_flags += $(if $(patsubst n%,, \
+ 		$(CFLAGS_GCOV))
+ endif
+ 
++ifeq ($(CONFIG_UBSAN),y)
++_c_flags += $(if $(patsubst n%,, \
++		$(UBSAN_SANITIZE_$(basetarget).o)$(UBSAN_SANITIZE)$(CONFIG_UBSAN_SANITIZE_ALL)), \
++		$(CFLAGS_UBSAN))
++endif
++
+ # If building the kernel in a separate objtree expand all occurrences
+ # of -Idir to -I$(srctree)/dir except for absolute paths (starting with '/').
+ 
 -- 
 2.1.2
 
