@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751850AbaJTMWt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 08:22:49 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:54285 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751763AbaJTMWq (ORCPT
+	id S1751889AbaJTMXe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 08:23:34 -0400
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:53805 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751427AbaJTMXd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 08:22:46 -0400
-Date: Mon, 20 Oct 2014 14:22:45 +0200
-From: Ludovic Desroches <ludovic.desroches@atmel.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>, Chris Ball <chris@printf.net>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mmc@vger.kernel.org>
-Subject: Re: [PATCHv2 0/3] Remove mach/atmel-mci.h
-Message-ID: <20141020122245.GA7443@ldesroches-Latitude-E6320>
-Mail-Followup-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-	Nicolas Ferre <nicolas.ferre@atmel.com>,
-	Chris Ball <chris@printf.net>,
-	Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-	Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-	Haavard Skinnemoen <hskinnemoen@gmail.com>,
-	linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-	linux-mmc@vger.kernel.org
-References: <1413534398-22645-1-git-send-email-alexandre.belloni@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1413534398-22645-1-git-send-email-alexandre.belloni@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 20 Oct 2014 08:23:33 -0400
+Message-ID: <1413807810.17703.6.camel@x41>
+Subject: Re: [PATCH] Documentation: fix vdso_standalone_test_x86 on 32-bit
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Peter Foley <pefoley2@pefoley.com>
+Cc: linux-kernel@vger.kernel.org, rdunlap@infradead.org, jkosina@suse.cz,
+        luto@amacapital.net, hpa@zytor.com, jwboyer@fedoraproject.org,
+        linux-doc@vger.kernel.org
+Date: Mon, 20 Oct 2014 14:23:30 +0200
+In-Reply-To: <1412797764-11466-1-git-send-email-pefoley2@pefoley.com>
+References: <1412797764-11466-1-git-send-email-pefoley2@pefoley.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 20 Oct 2014 12:23:30.0335 (UTC) FILETIME=[A866AAF0:01CFEC60]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 17, 2014 at 10:26:35AM +0200, Alexandre Belloni wrote:
-> This patch series removes the uses of mach/atmel-mci.h and the files themselves.
-> The final goal is to be able to switch AT91 to multiplatform.
+Peter Foley schreef op wo 08-10-2014 om 15:49 [-0400]:
+> vdso_standalone_test_x86 needs -lgcc_s to build succesfully on 32bit.
 > 
-> The first patch introduces a new platform_data file and uses it in the driver.
-> The two following patches remove the uses of mach/atmel-mci.h and the header
-> itself from avR32 and ARM/at91.
+> Signed-off-by: Peter Foley <pefoley2@pefoley.com>
+> ---
+>  Documentation/vDSO/Makefile | 3 +++
+>  1 file changed, 3 insertions(+)
 > 
-> Changes in v2:
->  - include back linux/atmel-mci.h and really remove mach/atmel-mci.h in at91sam9g45_devices.c
+> diff --git a/Documentation/vDSO/Makefile b/Documentation/vDSO/Makefile
+> index 2b99e57..5e5ad9f 100644
+> --- a/Documentation/vDSO/Makefile
+> +++ b/Documentation/vDSO/Makefile
+> @@ -10,3 +10,6 @@ always := $(hostprogs-y)
+>  HOSTCFLAGS := -I$(objtree)/usr/include -std=gnu99
+>  HOSTCFLAGS_vdso_standalone_test_x86.o := -fno-asynchronous-unwind-tables -fno-stack-protector
+>  HOSTLOADLIBES_vdso_standalone_test_x86 := -nostdlib
+> +ifeq($(CONFIG_X86_32),y)
+> +HOSTLOADLIBES_vdso_standalone_test_x86 += -lgcc_s
+> +endif
 
-s/move mache header/move mach header. Otherwise, for the whole series:
+Applying this patch on top of v3.18-rc1 to get it to build for 32 bit
+x86 triggers this build error (when calling "make -s mrproper", which is
+done early in the build of a Fedora kernel rpm):
+    Documentation/vDSO/Makefile:13: *** missing separator.  Stop.
+    make[1]: *** [Documentation/vDSO] Error 2
+    make: *** [_clean_Documentation] Error 2
 
-Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Using 
+    ifeq ($(CONFIG_X86_32),y)
 
-> 
-> Alexandre Belloni (3):
->   mmc: atmel-mci: move mache header to platform_data
->   ARM: at91: remove mach/atmel-mci.h
->   avr32: remove mach/atmel-mci.h
-> 
->  arch/arm/mach-at91/at91sam9g45_devices.c        |  2 +-
->  arch/arm/mach-at91/include/mach/atmel-mci.h     | 17 -----------------
->  arch/avr32/mach-at32ap/at32ap700x.c             |  2 +-
->  arch/avr32/mach-at32ap/include/mach/atmel-mci.h | 17 -----------------
->  drivers/mmc/host/atmel-mci.c                    |  2 +-
->  include/linux/platform_data/mmc-atmel-mci.h     | 22 ++++++++++++++++++++++
->  6 files changed, 25 insertions(+), 37 deletions(-)
->  delete mode 100644 arch/arm/mach-at91/include/mach/atmel-mci.h
->  delete mode 100644 arch/avr32/mach-at32ap/include/mach/atmel-mci.h
->  create mode 100644 include/linux/platform_data/mmc-atmel-mci.h
-> 
-> -- 
-> 1.9.1
-> 
+fixes that error. And with that space added this patch unbreaks the
+build of v3.18-rc1 for 32 bit x86.
+
+Thanks,
+
+
+Paul Bolle
+
