@@ -1,117 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751260AbaJTQPk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 12:15:40 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:47788 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750798AbaJTQPi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 12:15:38 -0400
+	id S1751554AbaJTQRT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 12:17:19 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751053AbaJTQRS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 12:17:18 -0400
+Message-ID: <54453589.50507@nod.at>
+Date: Mon, 20 Oct 2014 18:17:13 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-In-Reply-To: <20141017014128.GA4513@psi-dev26.jf.intel.com>
-References: <20141015165957.4063.66741.stgit@bhelgaas-glaptop2.roam.corp.google.com>
- <20141015170554.4063.62975.stgit@bhelgaas-glaptop2.roam.corp.google.com>
- <CAErSpo4sUi=75tM58_EFSFSWAHQUuAK3Yfaz4vTjCxdGWGhdug@mail.gmail.com>
- <544065E3.4060909@linux.intel.com> <20141017014128.GA4513@psi-dev26.jf.intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 20 Oct 2014 10:15:17 -0600
-Message-ID: <CAErSpo4L=A5wE_UxwQea5ZHbPWOj8WWkaXJO7gXqvKb=Cc5VZg@mail.gmail.com>
-Subject: Re: [PATCH v1 02/10] x86, intel-mid: Remove "weak" from function declarations
-To: David Cohen <david.a.cohen@linux.intel.com>
-Cc: sathyanarayanan kuppuswamy 
-	<sathyanarayanan.kuppuswamy@linux.intel.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@redhat.com>,
-        John Stultz <john.stultz@linaro.org>, Eric Paris <eparis@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] UBI: Fastmap: Care about the protection queue
+References: <1412029248-22454-1-git-send-email-richard@nod.at>							 <1412029248-22454-4-git-send-email-richard@nod.at>						 <1412346676.3795.62.camel@sauron.fi.intel.com>		 <542EF3BF.1070401@nod.at>				 <1413206263.7906.18.camel@sauron.fi.intel.com>		 <543BE21F.5020504@nod.at>		 <1413213803.7906.45.camel@sauron.fi.intel.com>		 <543C3E60.4080507@nod.at>	 <1413282203.7906.72.camel@sauron.fi.intel.com>		 <543F9895.7010502@nod.at> <1413816389.7906.336.camel@sauron.fi.intel.com>		 <544527A3.7030508@nod.at> <1413819635.7906.369.camel@sauron.fi.intel.com>	 <54453178.3050903@nod.at> <1413821350.7906.392.camel@sauron.fi.intel.com>
+In-Reply-To: <1413821350.7906.392.camel@sauron.fi.intel.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 7:41 PM, David Cohen
-<david.a.cohen@linux.intel.com> wrote:
-> Hi Bjorn and Sathya,
->
-> On Thu, Oct 16, 2014 at 05:42:11PM -0700, sathyanarayanan kuppuswamy wrote:
->> Hi Bjorn,
+Am 20.10.2014 um 18:09 schrieb Artem Bityutskiy:
+> On Mon, 2014-10-20 at 17:59 +0200, Richard Weinberger wrote:
+>>> Also, say, PEB X is in the work queue waiting for erasure. Fastmap comes
+>>> along and saves it as "must be erased" in the fastmap. Fastmap finishes
+>>> its job, PEB X gets erased, and I write my data there, so PEB X is
+>>> referred to by LEB Y. Now I have power cut. Then I attach the flash
+>>> again. Surely it is not that fastmap just erases PEB X and I lose the
+>>> contents of LEB Y?
 >>
->> On 10/15/2014 04:26 PM, Bjorn Helgaas wrote:
->> >[+cc David, Kuppuswamy, x86; sorry, I botched my "stg mail" so you
->> >weren't included the first time]
->> >
->> >On Wed, Oct 15, 2014 at 11:05 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> >>For the following interfaces:
->> >>
->> >>   get_penwell_ops()
->> >>   get_cloverview_ops()
->> >>   get_tangier_ops()
->> >>
->> >>there is only one implementation, so they do not need to be marked "weak".
->> >>
->> >>Remove the "weak" attribute from their declarations.
->> >>
->> >>Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
->> >>CC: David Cohen <david.a.cohen@linux.intel.com>
->> >>CC: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
->> >>CC: x86@kernel.org
->> >>---
->> >>  arch/x86/platform/intel-mid/intel_mid_weak_decls.h |    7 +++----
->> >>  1 file changed, 3 insertions(+), 4 deletions(-)
->> >>
->> >>diff --git a/arch/x86/platform/intel-mid/intel_mid_weak_decls.h b/arch/x86/platform/intel-mid/intel_mid_weak_decls.h
->> >>index 46aa25c8ce06..3c1c3866d82b 100644
->> >>--- a/arch/x86/platform/intel-mid/intel_mid_weak_decls.h
->> Please remove this file and move the contents to asm/intel-mid.h.
+>> This cannot happen. If X is erased you cannot write data do it. I must first go
+>> thought the pool and the pool is scanned while attaching.
+> 
+> Just noticed from the code that we first add PEBs to the erase list, and
+> then we go an scan the pools.
 
-I don't know or care enough about intel-mid to do this myself.  Right
-now, I'm just trying to remove unnecessary and incorrect usage of
-"weak" in header files.
+In the attach code, yes. But this does not matter.
+It cannot happen that a fastmap is written with a PEB being in a pool
+and the erase job list.
 
-> I partially agree :)
->
-> Historically, this file was created because we could not build all intel
-> mid variants at once. So we have to select only one during compilation
-> time, which was fixed already.
->
-> But we don't need to expose those functions outside intel-mid's
-> directory, which means asm/intel-mid.h isn't the best option IMHO.
->
-> If you want, I can send a small re-work instead: we get rid of this
-> header file completely and simplify a bit what is exposed by
-> asm/intel-mid.h. Or you can keep this patch and then I send the re-work
-> on top of it. Anyway I'm fine.
+If you figure out such a state, please tell me. I'll fix it. :-)
 
-It's fine with me if you want to rework this to remove the header
-completely.  When I pointed this out in January [1], you mentioned
-plans for that.  But I think we should merge this patch in the interim
-to remove the use of "weak" in a header file.  If we leave bad
-examples in the tree, they just proliferate.
-
-[1] http://lkml.kernel.org/r/20140128013013.GA31626@psi-dev26.jf.intel.com
-
-
->> >>+++ b/arch/x86/platform/intel-mid/intel_mid_weak_decls.h
->> >>@@ -10,10 +10,9 @@
->> >>   */
->> >>
->> >>
->> >>-/* __attribute__((weak)) makes these declarations overridable */
->> >>  /* For every CPU addition a new get_<cpuname>_ops interface needs
->> >>   * to be added.
->> >>   */
->> >>-extern void *get_penwell_ops(void) __attribute__((weak));
->> >>-extern void *get_cloverview_ops(void) __attribute__((weak));
->> >>-extern void *get_tangier_ops(void) __attribute__((weak));
->> >>+extern void *get_penwell_ops(void);
->> >>+extern void *get_cloverview_ops(void);
->> >>+extern void *get_tangier_ops(void);
->> >>
->>
->> --
->> Sathyanarayanan Kuppuswamy
->> Android kernel developer
->>
+Thanks,
+//richard
