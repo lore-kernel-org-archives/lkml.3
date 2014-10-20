@@ -1,114 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751572AbaJTMAq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 08:00:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65318 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750716AbaJTMAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 08:00:42 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Fabian Frederick <fabf@skynet.be>, linux-doc@vger.kernel.org
-Subject: [PATCH] kernel, add bug_on_warn
-Date: Mon, 20 Oct 2014 08:00:20 -0400
-Message-Id: <1413806420-31828-1-git-send-email-prarit@redhat.com>
+	id S1751696AbaJTMCv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 08:02:51 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:52626 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751526AbaJTMCt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 08:02:49 -0400
+Date: Mon, 20 Oct 2014 14:02:43 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Daniel J Blueman <daniel@numascale.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, Steffen Persvold <sp@numascale.com>
+Subject: Re: [PATCH v2 5/5] Numachip: use 2GB memory block size
+Message-ID: <20141020120243.GA13186@gmail.com>
+References: <1413683152-31302-1-git-send-email-daniel@numascale.com>
+ <1413683152-31302-5-git-send-email-daniel@numascale.com>
+ <20141019092324.GA10027@gmail.com>
+ <5444B3DC.90709@numascale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5444B3DC.90709@numascale.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There have been several times where I have had to rebuild a kernel to
-cause a panic when hitting a WARN() in the code in order to get a crash
-dump from a system.  Sometimes this is easy to do, other times (such as
-in the case of a remote admin) it is not trivial to send new images to the
-user.
 
-A much easier method would be a switch to change the WARN() over to a
-BUG().  This makes debugging easier in that I can now test the actual
-image the WARN() was seen on and I do not have to engage in remote
-debugging.
+* Daniel J Blueman <daniel@numascale.com> wrote:
 
-This patch adds a bug_on_warn kernel parameter, which calls BUG() in the
-warn_slowpath_common() path.  The function will still print out the
-location of the warning.
+> On 19/10/2014 17:23, Ingo Molnar wrote:
+> >
+> >* Daniel J Blueman <daniel@numascale.com> wrote:
+> >
+> >>Use appropriate memory block size to reduce sysfs entry creation time
+> >>by 16x.
+> >>
+> >>Boot-tested with the four permutations of X86_UV and X86_NUMACHIP.
+> >>
+> >>Signed-off-by: Daniel J Blueman <daniel@numascale.com>
+> >>---
+> >>  arch/x86/mm/init_64.c | 7 ++++---
+> >>  1 file changed, 4 insertions(+), 3 deletions(-)
+> >>
+> >>diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+> >>index 5621c47..22ea6de 100644
+> >>--- a/arch/x86/mm/init_64.c
+> >>+++ b/arch/x86/mm/init_64.c
+> >>@@ -53,6 +53,7 @@
+> >>  #include <asm/cacheflush.h>
+> >>  #include <asm/init.h>
+> >>  #include <asm/uv/uv.h>
+> >>+#include <asm/numachip/numachip.h>
+> >>  #include <asm/setup.h>
+> >>
+> >>  #include "mm_internal.h"
+> >>@@ -1235,9 +1236,9 @@ static unsigned long probe_memory_block_size(void)
+> >>  	/* start from 2g */
+> >>  	unsigned long bz = 1UL<<31;
+> >>
+> >>-#ifdef CONFIG_X86_UV
+> >>-	if (is_uv_system()) {
+> >>-		printk(KERN_INFO "UV: memory block size 2GB\n");
+> >>+#ifdef CONFIG_X86_64
+> >>+	if (is_uv_system() || is_numachip_system()) {
+> >>+		pr_info("Memory block size 2GB for large-SMP system\n");
+> >>  		return 2UL * 1024 * 1024 * 1024;
+> >
+> >It would be a lot cleaner and more robust to have a more
+> >intelligent decision here.
+> >
+> >Is there a reliable indicator for large 'sysfs entry creation
+> >time', such as a lot of RAM present?
+> 
+> Yes, agreed exactly.
+> 
+> > Also, it would be nice to list the pros/cons of this change, 
+> > an advantage is reduced overhead - what are the 
+> > disadvantages?
+> 
+> The single disadvantage is that small-memory systems won't be 
+> able to have finer control of memory offlining, though the 
+> impact of that depend on why the user is offlining memory of 
+> course.
+> 
+> If it seems reasonable for x86-64 systems with >64GB memory to 
+> have 2GB memory block sizes, I could prepare that change 
+> instead and document the above if preferred?
 
-Successfully tested by me.
+I'd make it >= 64GB, but yes, that sounds like a good limit.
 
-Cc: Jonathan Corbet <corbet@lwn.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Fabian Frederick <fabf@skynet.be>
-Cc: linux-doc@vger.kernel.org
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
----
- Documentation/kernel-parameters.txt |    2 ++
- kernel/panic.c                      |   16 +++++++++++++++-
- 2 files changed, 17 insertions(+), 1 deletion(-)
+Thanks,
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 7dbe5ec..2967542 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -553,6 +553,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	bttv.pll=	See Documentation/video4linux/bttv/Insmod-options
- 	bttv.tuner=
- 
-+	bug_on_warn	BUG() instead of WARN()
-+
- 	bulk_remove=off	[PPC]  This parameter disables the use of the pSeries
- 			firmware feature for flushing multiple hpte entries
- 			at a time.
-diff --git a/kernel/panic.c b/kernel/panic.c
-index d09dc5c..258a7be 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -33,6 +33,7 @@ static int pause_on_oops;
- static int pause_on_oops_flag;
- static DEFINE_SPINLOCK(pause_on_oops_lock);
- static bool crash_kexec_post_notifiers;
-+static bool bug_on_warn;
- 
- int panic_timeout = CONFIG_PANIC_TIMEOUT;
- EXPORT_SYMBOL_GPL(panic_timeout);
-@@ -420,13 +421,19 @@ static void warn_slowpath_common(const char *file, int line, void *caller,
- {
- 	disable_trace_on_warning();
- 
--	pr_warn("------------[ cut here ]------------\n");
-+	if (!bug_on_warn)
-+		pr_warn("------------[ cut here ]------------\n");
- 	pr_warn("WARNING: CPU: %d PID: %d at %s:%d %pS()\n",
- 		raw_smp_processor_id(), current->pid, file, line, caller);
- 
- 	if (args)
- 		vprintk(args->fmt, args->args);
- 
-+	if (bug_on_warn) {
-+		pr_warn("bug_on_warn set, calling BUG()...\n");
-+		BUG();
-+	}
-+
- 	print_modules();
- 	dump_stack();
- 	print_oops_end_marker();
-@@ -501,3 +508,10 @@ static int __init oops_setup(char *s)
- 	return 0;
- }
- early_param("oops", oops_setup);
-+
-+static int __init bug_on_warn_setup(char *s)
-+{
-+	bug_on_warn = true;
-+	return 0;
-+}
-+early_param("bug_on_warn", bug_on_warn_setup);
--- 
-1.7.9.3
-
+	Ingo
