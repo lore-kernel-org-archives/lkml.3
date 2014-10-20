@@ -1,73 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751874AbaJTRnb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 13:43:31 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:49545 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102AbaJTRn2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 13:43:28 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: opw-kernel@googlegroups.com
-Cc: Ebru Akagunduz <ebru.akagunduz@gmail.com>, JBottomley@parallels.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [OPW kernel] [PATCH v2] scsi: ips.c: Use jiffies comparison instead of do_gettimeofday()
-Date: Mon, 20 Oct 2014 19:43:18 +0200
-Message-ID: <2045799.tHXb4Zp5JS@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1413824761-21426-1-git-send-email-ebru.akagunduz@gmail.com>
-References: <1413824761-21426-1-git-send-email-ebru.akagunduz@gmail.com>
+	id S1752550AbaJTRoK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 13:44:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24930 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752165AbaJTRoF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 13:44:05 -0400
+Date: Mon, 20 Oct 2014 19:40:43 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -v2] freezer: check OOM kill while being frozen
+Message-ID: <20141020174043.GA17089@redhat.com>
+References: <CAM_iQpUyCR3Bv1QhFkVmii9vB=fjMAUiWZ4T+mj60=FUZOXS+A@mail.gmail.com> <20141016211136.GA27468@redhat.com> <CAM_iQpXM6eUnvofOq0c71Nx3HygzriKKpN6Vc1+fY=dzFR08ig@mail.gmail.com> <20141016213512.GA28099@redhat.com> <CAM_iQpUFBDscS2n41FdE3S016c_jkb4HaKomy14G7Ez9x4w3+g@mail.gmail.com> <20141016222237.GA30063@redhat.com> <CAM_iQpVZtOCzWA3wWuG5y7AyOBUx41-81jrt+dSeHvr6eHY4RA@mail.gmail.com> <20141017074654.GD8076@dhcp22.suse.cz> <20141017161021.GC7227@redhat.com> <20141020151723.GA4603@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:OBYEEkgnzyqXXbz7LzeF6Mr0QhX2I6GZvuNls8rCC9V
- ns36WISKO/hcwqKcgBoIjTVMVzfjRjU3v2zXo45fOaCLR/DbIk
- OtIohY0WT9OCljS230ySUpTOVi8pB8i0r+WGnHoTwjSRieMK3P
- FdbgEWaO6qi2diq3HbqkEQnx+of1DUkhoa1UWYZwbpLlaQFn66
- lTL7ynYKz14xyaJfQTEPFZYUR//vSiAI0BeQCKDCJxUjyuu87k
- ZkaZ42p3gliHVPMkyI5AJgAh1YfxWnY/TIN6CaO98oUyCN22Z3
- 2Vwacnp65PGNpMTNtAyZ3fLodQeOp2b7MHpb4TQjZjATLOzQ0i
- eS3M7c+mJzlt5KUJ0qGY=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141020151723.GA4603@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 20 October 2014 20:06:01 Ebru Akagunduz wrote:
-> do_gettimeofday() only can get 32-bit time types
-> but the driver should be able to use dates that are
-> after January 2038.
+On 10/20, Michal Hocko wrote:
+>
+> On Fri 17-10-14 18:10:21, Oleg Nesterov wrote:
+>
+> > And if this is not safe, it is not clear how/why cgroup_freezing() can
+> > save us, both pm_freezing and CGROUP_FREEZING can be true?
+>
+> You mean that the pm_freezer would race with cgroup one?
+
+Yes, so if we actually want this check we should probably check
+!pm_freezing or update the comment.
+
+Nevermind, you removed this check and I agree. Even if we add it back
+for some reason, it can come in a separate patch with the detailed
+explanation.
+
+> > And I think that this TIF_MEMDIE should go into freezing_slow_path(),
+> > so we do not even need should_thaw_current().
+>
+> OK, it would make the patch simpler. On the other hand having the check
+> in the __refrigerator makes it easier to follow. freezing is called from
+> too many places. But I see your point, I guess. It really doesn't make
+> sense to go into fridge when it is clear that the task wouldn't get
+> frozen anyway. Some users even check the return value of freezing and do
+> different things in two paths. Those seem to be mostly kernel threads
+> but I haven't checked all the places. Anyway this should be irrelevant
+> to the OOM POV.
+
+Yes, thanks.
+
+> > This also looks more safe to me. Suppose that a task does
+> >
+> > 	while (try_to_freeze())
+> > 		;
+> >
+> > Yes, this is pointless but correct. And in fact I think this pattern
+> > is possible. If this task is killed by OOM, it will spin forever.
+>
+> I am really not sure what such a code would be supposed to do.
+
+and I actually meant
+
+	while (freezing())
+		try_to_freeze();
+
+yes, sure, this looks strange and pointless. But still correct. And you
+never know what some driver can do. This pattern can be hidden in a more
+complex code, say,
+
+	for (;;) {
+		lock_something();
+		// we can't use wait_event_freezable() under the lock
+		wait_event_interruptible(condition() || freezing());
+		// check this before signal_pending() to avoid the restart,
+		// or we can't restart, or it was just written this way for
+		// no reason.
+		if (freezing()) {
+			unlock_something();
+			try_to_freeze();
+			continue;
+		}
+		unlock_something();
+
+		if (signal_pending())
+			break;
+
+		...
+	}
+
+sure, most probably the code like this asks for cleanups, but it is easy
+to notice that it is actually wrong if try_to_freeze() could return with
+freezing() == T. But I agree, this issue is minor.
+
+> Does it make more sense to you now, Oleg?
+
+Thanks!
+
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+
+
+
+
+
+> From 6e8b92e7133307e30afe35c6a0637cb58c0fc147 Mon Sep 17 00:00:00 2001
+> From: Cong Wang <xiyou.wangcong@gmail.com>
+> Date: Mon, 20 Oct 2014 17:16:01 +0200
+> Subject: [PATCH] freezer: check OOM kill while being frozen
 > 
-> Remove do_gettimeofday() and use
-> jiffies comparison to supply 64-bit time types.
+> Since f660daac474c6f (oom: thaw threads if oom killed thread is frozen
+> before deferring) OOM killer relies on being able to thaw a frozen task
+> to handle OOM situation but a3201227f803 (freezer: make freezing() test
+> freeze conditions in effect instead of TIF_FREEZE) has reorganized the
+> code and stopped clearing freeze flag in __thaw_task. This means that
+> the target task only wakes up and goes into the fridge again because the
+> freezing condition hasn't changed for it. This reintroduces the bug
+> fixed by f660daac474c6f.
+> 
+> Fix the issue by checking for TIF_MEMDIE thread flag in
+> freezing_slow_path and exclude the task from freezing completely. If a
+> task was already frozen it would get woken by __thaw_task from OOM killer
+> and get out of freezer after rechecking freezing().
+> 
+> Changes since v1
+> - put TIF_MEMDIE check into freezing_slowpath rather than in __refrigerator
+>   as per Oleg
+> - return __thaw_task into oom_scan_process_thread because
+>   oom_kill_process will not wake task in the fridge because it is
+>   sleeping uninterruptible
+> 
+> [mhocko@suse.cz: rewrote the changelog]
+> Fixes: a3201227f803 (freezer: make freezing() test freeze conditions in effect instead of TIF_FREEZE)
+> Cc: stable@vger.kernel.org # 3.3+
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Acked-by: Michal Hocko <mhocko@suse.cz>
+> Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> ---
+>  kernel/freezer.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/kernel/freezer.c b/kernel/freezer.c
+> index aa6a8aadb911..8f9279b9c6d7 100644
+> --- a/kernel/freezer.c
+> +++ b/kernel/freezer.c
+> @@ -42,6 +42,9 @@ bool freezing_slow_path(struct task_struct *p)
+>  	if (p->flags & (PF_NOFREEZE | PF_SUSPEND_TASK))
+>  		return false;
+>  
+> +	if (test_thread_flag(TIF_MEMDIE))
+> +		return false;
+> +
+>  	if (pm_nosig_freezing || cgroup_freezing(p))
+>  		return true;
+>  
+> -- 
+> 2.1.1
+> 
+> -- 
+> Michal Hocko
+> SUSE Labs
 
-The description doesn't seem to match what you are doing:
-
-- the use of 'struct timeval' in this driver is not actually unsafe
-- using jiffies does not make it use a 64-bit time type.
-- you do not mention that using jiffies makes the driver more
-  efficient, which is what James was interested in
-- The ips_fix_ffdc_time that needs to be changed for 64-bit time
-  does not get changed in this patch. As discussed on IRC, that
-  should be a separate patch.
-
-> @@ -6000,7 +6001,7 @@ ips_ffdc_time(ips_ha_t * ha)
->  /*                                                                          */
->  /****************************************************************************/
->  static void
-> -ips_fix_ffdc_time(ips_ha_t * ha, ips_scb_t * scb, time_t current_time)
-> +ips_fix_ffdc_time(ips_ha_t * ha, ips_scb_t * scb, unsigned long current_time)
->  {
->  	long days;
->  	long rem;
-
-Using 'unsigned long' for a jiffies value also breaks the function, which
-makes calculations based on the assumption that you are dealing with a
-time_t. I think the best fix here is to use rtc_ktime_to_tm(ktime_get())
-to get a 'struct rtc_time' describing the current time, and then removing
-most of the code.
-
-You will have to change Kconfig to 'select RTC_LIB' from the ips driver
-in order to do this.
-
-	Arnd
