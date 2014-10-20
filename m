@@ -1,219 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753498AbaJTVfc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 17:35:32 -0400
-Received: from filtteri2.pp.htv.fi ([213.243.153.185]:41772 "EHLO
-	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753163AbaJTVf2 (ORCPT
+	id S1753513AbaJTVgQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 17:36:16 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:54805 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752836AbaJTVgO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 17:35:28 -0400
-Date: Tue, 21 Oct 2014 00:35:18 +0300
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Felipe Balbi <balbi@ti.com>, pali.rohar@gmail.com, sre@debian.org,
-        sre@ring0.de, kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
-Subject: Re: USB Ethernet gadget on Nokia n900
-Message-ID: <20141020213518.GB28144@drone.musicnaut.iki.fi>
-References: <20141019090107.GA19132@amd>
- <20141019100739.GA2547@amd>
- <20141019152414.GB5189@saruman>
- <20141019191937.GA6438@amd>
+	Mon, 20 Oct 2014 17:36:14 -0400
+From: Kevin Hilman <khilman@kernel.org>
+To: Kever Yang <kever.yang@rock-chips.com>
+Cc: heiko@sntech.de, dianders@chromium.org, sonnyrao@chromium.org,
+        addy.ke@rock-chips.com, cf@rock-chips.com, xjq@rock-chips.com,
+        hj@rock-chips.com, huangtao@rock-chips.com,
+        linux-rockchip@lists.infradead.org,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>, Rohit Vaswani <rvaswani@codeaurora.org>,
+        devicetree@vger.kernel.org, Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org, Marc Carino <marc.ceeeee@gmail.com>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v5 0/6] add basic rk3288 smp support
+References: <1413393785-26783-1-git-send-email-kever.yang@rock-chips.com>
+Date: Mon, 20 Oct 2014 14:36:09 -0700
+In-Reply-To: <1413393785-26783-1-git-send-email-kever.yang@rock-chips.com>
+	(Kever Yang's message of "Wed, 15 Oct 2014 10:22:59 -0700")
+Message-ID: <7hh9yye852.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141019191937.GA6438@amd>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Kever Yang <kever.yang@rock-chips.com> writes:
 
-On Sun, Oct 19, 2014 at 09:19:37PM +0200, Pavel Machek wrote:
-> I am trying to use nfsroot, so I can't use modules.
+> rk3288 is qual-core CPU Soc, we enable the smp in this patch.
+>
+> In version 3 we use regmap and pmu syscon for cpu power on/off.
+> This should be work after Pankaj Dubey's patch applied:
+> "syscon: Decouple syscon interface from platform devices"
+> (https://lkml.org/lkml/2014/9/30/156)
 
-Why not?
+Tested on top of linux-next (next-20141020) along with above syscon
+dependency, and verifed that 4 CPUs boot up on my rk3288-evb-rk808.
 
-> (I am attaching full config, in case I missed something important).
+Tested-by: Kevin Hilman <khilman@linaro.org>
 
-I'm using the below config with 3.17 and g_ether works OK.
-
-(My initramfs modprobes g_ether, runs busybox ifconfig for usb0
-and launches sshd.)
-
-A.
-
----
-
-CONFIG_LOCALVERSION="-omap3"
-CONFIG_KERNEL_LZMA=y
-CONFIG_SYSVIPC=y
-# CONFIG_CROSS_MEMORY_ATTACH is not set
-CONFIG_NO_HZ=y
-CONFIG_HIGH_RES_TIMERS=y
-CONFIG_BSD_PROCESS_ACCT=y
-CONFIG_IKCONFIG=y
-CONFIG_IKCONFIG_PROC=y
-CONFIG_LOG_BUF_SHIFT=20
-CONFIG_BLK_DEV_INITRD=y
-# CONFIG_RD_GZIP is not set
-CONFIG_EXPERT=y
-CONFIG_KALLSYMS_ALL=y
-CONFIG_PROFILING=y
-CONFIG_OPROFILE=m
-CONFIG_MODULES=y
-CONFIG_MODULE_FORCE_LOAD=y
-CONFIG_MODULE_UNLOAD=y
-CONFIG_MODULE_FORCE_UNLOAD=y
-# CONFIG_BLK_DEV_BSG is not set
-CONFIG_PARTITION_ADVANCED=y
-# CONFIG_EFI_PARTITION is not set
-# CONFIG_IOSCHED_DEADLINE is not set
-CONFIG_OMAP_RESET_CLOCKS=y
-CONFIG_OMAP_MUX_DEBUG=y
-CONFIG_ARCH_OMAP3=y
-# CONFIG_SOC_TI81XX is not set
-# CONFIG_MACH_OMAP3_BEAGLE is not set
-# CONFIG_MACH_DEVKIT8000 is not set
-# CONFIG_MACH_OMAP_LDP is not set
-# CONFIG_MACH_OMAP3530_LV_SOM is not set
-# CONFIG_MACH_OMAP3_TORPEDO is not set
-# CONFIG_MACH_OVERO is not set
-# CONFIG_MACH_OMAP3517EVM is not set
-# CONFIG_MACH_OMAP3_PANDORA is not set
-# CONFIG_MACH_TOUCHBOOK is not set
-# CONFIG_MACH_OMAP_3430SDP is not set
-# CONFIG_MACH_NOKIA_RX51 is not set
-# CONFIG_MACH_CM_T35 is not set
-# CONFIG_MACH_CM_T3517 is not set
-# CONFIG_MACH_SBC3530 is not set
-CONFIG_ARM_THUMBEE=y
-CONFIG_PREEMPT=y
-# CONFIG_ATAGS is not set
-CONFIG_ZBOOT_ROM_TEXT=0x0
-CONFIG_ZBOOT_ROM_BSS=0x0
-CONFIG_ARM_APPENDED_DTB=y
-CONFIG_CMDLINE="console=ttyO2,115200 console=tty"
-CONFIG_KEXEC=y
-CONFIG_BINFMT_MISC=y
-CONFIG_PM_DEBUG=y
-CONFIG_NET=y
-CONFIG_PACKET=y
-CONFIG_INET=y
-# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
-# CONFIG_INET_XFRM_MODE_TUNNEL is not set
-# CONFIG_INET_XFRM_MODE_BEET is not set
-# CONFIG_INET_LRO is not set
-# CONFIG_INET_DIAG is not set
-# CONFIG_IPV6 is not set
-# CONFIG_WIRELESS is not set
-CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
-CONFIG_DEVTMPFS=y
-CONFIG_MTD=y
-CONFIG_MTD_BLOCK=y
-CONFIG_MTD_OOPS=y
-CONFIG_MTD_CFI=y
-CONFIG_MTD_CFI_INTELEXT=y
-CONFIG_MTD_NAND=y
-CONFIG_MTD_NAND_OMAP2=y
-CONFIG_MTD_ONENAND=y
-CONFIG_MTD_ONENAND_VERIFY_WRITE=y
-CONFIG_MTD_ONENAND_OMAP2=y
-CONFIG_MTD_UBI=y
-# CONFIG_BLK_DEV is not set
-CONFIG_EEPROM_93CX6=y
-CONFIG_SENSORS_LIS3_I2C=m
-CONFIG_SCSI=y
-CONFIG_BLK_DEV_SD=y
-CONFIG_SCSI_SCAN_ASYNC=y
-CONFIG_INPUT_POLLDEV=y
-CONFIG_INPUT_JOYDEV=y
-CONFIG_INPUT_EVDEV=y
-CONFIG_KEYBOARD_GPIO=y
-CONFIG_KEYBOARD_TWL4030=y
-CONFIG_INPUT_TOUCHSCREEN=y
-CONFIG_TOUCHSCREEN_ADS7846=y
-CONFIG_TOUCHSCREEN_TSC2005=y
-CONFIG_INPUT_MISC=y
-CONFIG_INPUT_TWL4030_PWRBUTTON=y
-CONFIG_INPUT_UINPUT=y
-# CONFIG_LEGACY_PTYS is not set
-CONFIG_SERIAL_OMAP=y
-CONFIG_SERIAL_OMAP_CONSOLE=y
-CONFIG_HW_RANDOM=y
-CONFIG_I2C_CHARDEV=y
-CONFIG_SPI=y
-CONFIG_SPI_OMAP24XX=y
-CONFIG_PINCTRL_SINGLE=y
-CONFIG_DEBUG_GPIO=y
-CONFIG_GPIO_SYSFS=y
-CONFIG_GPIO_TWL4030=y
-CONFIG_POWER_SUPPLY=y
-CONFIG_WATCHDOG=y
-CONFIG_OMAP_WATCHDOG=y
-CONFIG_TWL4030_WATCHDOG=y
-CONFIG_REGULATOR_FIXED_VOLTAGE=y
-CONFIG_REGULATOR_TPS65023=y
-CONFIG_REGULATOR_TPS6507X=y
-CONFIG_REGULATOR_TWL4030=y
-CONFIG_FB=y
-CONFIG_FIRMWARE_EDID=y
-CONFIG_FB_MODE_HELPERS=y
-CONFIG_FB_TILEBLITTING=y
-CONFIG_OMAP2_DSS=y
-# CONFIG_OMAP2_DSS_DPI is not set
-CONFIG_OMAP2_DSS_SDI=y
-CONFIG_FB_OMAP2=y
-# CONFIG_FB_OMAP2_DEBUG_SUPPORT is not set
-CONFIG_DISPLAY_PANEL_SONY_ACX565AKM=y
-CONFIG_BACKLIGHT_LCD_SUPPORT=y
-CONFIG_LCD_CLASS_DEVICE=y
-CONFIG_LCD_PLATFORM=y
-CONFIG_BACKLIGHT_CLASS_DEVICE=y
-CONFIG_FRAMEBUFFER_CONSOLE=y
-CONFIG_FRAMEBUFFER_CONSOLE_ROTATION=y
-CONFIG_LOGO=y
-# CONFIG_LOGO_LINUX_VGA16 is not set
-# CONFIG_LOGO_LINUX_CLUT224 is not set
-CONFIG_USB=y
-CONFIG_USB_ANNOUNCE_NEW_DEVICES=y
-CONFIG_USB_MUSB_HDRC=y
-CONFIG_USB_MUSB_OMAP2PLUS=y
-CONFIG_NOP_USB_XCEIV=y
-CONFIG_USB_GADGET=y
-CONFIG_USB_GADGET_DEBUG=y
-CONFIG_USB_GADGET_DEBUG_FILES=y
-CONFIG_USB_ETH=m
-# CONFIG_USB_ETH_RNDIS is not set
-CONFIG_MMC=y
-CONFIG_SDIO_UART=y
-CONFIG_MMC_OMAP_HS=y
-CONFIG_RTC_CLASS=y
-CONFIG_RTC_DRV_TWL4030=y
-CONFIG_DMADEVICES=y
-CONFIG_DMA_OMAP=y
-CONFIG_TWL4030_USB=y
-CONFIG_EXT4_FS=y
-# CONFIG_FILE_LOCKING is not set
-# CONFIG_DNOTIFY is not set
-# CONFIG_INOTIFY_USER is not set
-CONFIG_TMPFS=y
-# CONFIG_MISC_FILESYSTEMS is not set
-# CONFIG_NETWORK_FILESYSTEMS is not set
-CONFIG_NLS_CODEPAGE_437=y
-CONFIG_NLS_ISO8859_1=y
-CONFIG_PRINTK_TIME=y
-CONFIG_DEBUG_INFO=y
-CONFIG_DEBUG_FS=y
-CONFIG_MAGIC_SYSRQ=y
-# CONFIG_SCHED_DEBUG is not set
-# CONFIG_DEBUG_BUGVERBOSE is not set
-# CONFIG_FTRACE is not set
-# CONFIG_ARM_UNWIND is not set
-CONFIG_DEBUG_LL=y
-CONFIG_DEBUG_OMAP3UART3=y
-CONFIG_EARLY_PRINTK=y
-CONFIG_FONTS=y
-CONFIG_FONT_8x8=y
-CONFIG_FONT_8x16=y
+Kevin
