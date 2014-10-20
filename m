@@ -1,87 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753864AbaJTLXK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 07:23:10 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:36346 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753404AbaJTLXH (ORCPT
+	id S1753690AbaJTLan (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 07:30:43 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:62732 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164AbaJTLak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 07:23:07 -0400
-X-AuditID: cbfec7f5-b7f956d000005ed7-2e-5444f098fcee
-Message-id: <5444F096.3010703@samsung.com>
-Date: Mon, 20 Oct 2014 15:23:02 +0400
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.8.1
-MIME-version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-ext4@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, Michal Marek <mmarek@suse.cz>,
-        Sasha Levin <sasha.levin@oracle.com>, x86@kernel.org,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>
-Subject: jbd2: revoke: negative shift exponent in hash()
-References: <1413802499-17928-1-git-send-email-a.ryabinin@samsung.com>
-In-reply-to: <1413802499-17928-1-git-send-email-a.ryabinin@samsung.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmkeLIzCtJLcpLzFFi42I5/e/4Vd0ZH1xCDL4dErP4+qWDxWLO+jVs
-	FhMetrFbTNsobrGy8wGrxcx5d9gs/uzawWRxedccNotLBxYwWbTsu8Bkcbz3AJPF4iO3mS02
-	b5rKbNHa85Pd4seGx6wO/B4tm8s9ds66y+6xYFOpx+YVWh6bVnWyebw7d47d48SM3yweTWeO
-	Mnt8fHqLxeP9vqtsHmcWHGH3+LxJzuNEyxfWAN4oLpuU1JzMstQifbsErowFfYeYCjaJVGxZ
-	uomxgbFbuIuRk0NCwETi17QNjBC2mMSFe+vZuhi5OIQEljJKLN7Szg7hNDNJ/Os8zApSxSug
-	JXHq3hVmEJtFQFVi5eNzYHE2AT2Jf7O2s4HYogIREhvX72CEqBeU+DH5HguILSKQJTHp1D0m
-	kKHMAkuZJZq6zoI1CAtYSNz4/YYJxBYScJPovnQIzOYUcJe4MG8v2DJmAXWJSfMWQdnyEpvX
-	vGWewCgwC8mOWUjKZiEpW8DIvIpRNLU0uaA4KT3XSK84Mbe4NC9dLzk/dxMjJAK/7mBceszq
-	EKMAB6MSD+8OM5cQIdbEsuLK3EOMEhzMSiK8Dm+AQrwpiZVVqUX58UWlOanFhxiZODilGhhd
-	PzV18jZdmKVzevX6gB3JLp+CbEpicxb/n3099seRyEpry73Tm7sUjr1y121dn7TzZqqaeaGJ
-	R8EPqaOHnpRIW7vs6L06Ne9CIYP3brmywJ1qbrdjwpv5/3D5lE/Ynvas0DFqv4TTBRWn7Ohj
-	Kau0Hp13VDqkfuR8UY+Kdfw6de9Fr7Yv41BiKc5INNRiLipOBAAbz5LYngIAAA==
+	Mon, 20 Oct 2014 07:30:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <CABuKBeL1v=E4ZSM2iq+zC2G=a1g4RT3DmJ16ra_RwQ_9ARZkZg@mail.gmail.com>
+References: <1412871811-5986-1-git-send-email-matthias.bgg@gmail.com>
+	<20141009215228.GA23507@kroah.com>
+	<CABuKBeL1v=E4ZSM2iq+zC2G=a1g4RT3DmJ16ra_RwQ_9ARZkZg@mail.gmail.com>
+Date: Mon, 20 Oct 2014 13:30:38 +0200
+Message-ID: <CABuKBeKUdzZ0oxiHyo8q82qTg+fGbnJuPz1uhWQaZbou=LQg0Q@mail.gmail.com>
+Subject: Re: [PATCH] tty: serial: 8250_mtk: Fix quot calculation
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        jslaby@suse.cz, =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        Yingjoe Chen <yingjoe.chen@gmail.com>,
+        Howard Chen <ibanezchen@gmail.com>, linux-serial@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And one more negative shift, this time in jbd2/revoke.c in hash() function:
+Hi Greg,
 
-================================================================================
-UBSan: Undefined behaviour in ../fs/jbd2/revoke.c:142:9
-shift exponent -4 is negative
-CPU: 3 PID: 1314 Comm: runscript.sh Not tainted 3.18.0-rc1+ #65
-Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS rel-1.7.5-0-ge51488c-20140602_164612-nilsson.home.kraxel.org 04/01/2014
- 0000000000000010 0000000000000000 0000000000000000 ffff8800baba3868
- ffffffff82ade70a 000000000000004a fffffffffffffffc ffff8800baba3878
- ffffffff819a5339 ffff8800baba3928 ffffffff819a5825 ffff8800baba38b8
-Call Trace:
-dump_stack (/home/andrew/linux/ubsan_x86//lib/dump_stackc:52)
-ubsan_epilogue (/home/andrew/linux/ubsan_x86//lib/ubsanc:159)
-__ubsan_handle_shift_out_of_bounds (/home/andrew/linux/ubsan_x86//lib/ubsanc:458)
-find_revoke_record (/home/andrew/linux/ubsan_x86//fs/jbd2/revokec:142 /home/andrew/linux/ubsan_x86//fs/jbd2/revokec:180)
-jbd2_journal_cancel_revoke (/home/andrew/linux/ubsan_x86//fs/jbd2/revokec:449)
-do_get_write_access (/home/andrew/linux/ubsan_x86//fs/jbd2/transactionc:992)
-jbd2_journal_get_write_access (/home/andrew/linux/ubsan_x86//fs/jbd2/transactionc:1022)
-__ext4_journal_get_write_access (/home/andrew/linux/ubsan_x86//fs/ext4/ext4_jbd2c:159)
-ext4_file_open (/home/andrew/linux/ubsan_x86//fs/ext4/filec:238)
-do_dentry_open (/home/andrew/linux/ubsan_x86//fs/openc:722)
-? __inode_permission (/home/andrew/linux/ubsan_x86//fs/nameic:418)
-? ext4_check_all_de (/home/andrew/linux/ubsan_x86//fs/ext4/filec:209)
-finish_open (/home/andrew/linux/ubsan_x86//fs/openc:784)
-? may_open (/home/andrew/linux/ubsan_x86//fs/nameic:2572)
-do_last (/home/andrew/linux/ubsan_x86//fs/nameic:3069)
-? link_path_walk (/home/andrew/linux/ubsan_x86//fs/nameic:1495 /home/andrew/linux/ubsan_x86//fs/nameic:1757)
-? inode_has_perm (/home/andrew/linux/ubsan_x86//security/selinux/hooksc:1620)
-path_openat (/home/andrew/linux/ubsan_x86//fs/nameic:699 /home/andrew/linux/ubsan_x86//fs/nameic:3229)
-do_filp_open (/home/andrew/linux/ubsan_x86//fs/nameic:3260)
-? prepare_creds (/home/andrew/linux/ubsan_x86//kernel/credc:269)
-do_open_exec (/home/andrew/linux/ubsan_x86//fs/execc:762)
-do_execve_common.isra.21 (/home/andrew/linux/ubsan_x86//fs/execc:1476)
-? getname_flags (/home/andrew/linux/ubsan_x86//fs/nameic:160)
-SyS_execve (/home/andrew/linux/ubsan_x86//fs/execc:1604)
-stub_execve (/home/andrew/linux/ubsan_x86//arch/x86/kernel/entry_64S:649)
-================================================================================
+2014-10-10 10:10 GMT+02:00 Matthias Brugger <matthias.bgg@gmail.com>:
+> 2014-10-09 23:52 GMT+02:00 Greg KH <gregkh@linuxfoundation.org>:
+>> On Thu, Oct 09, 2014 at 06:23:31PM +0200, Matthias Brugger wrote:
+>>> The calculation of value quot for highspeed register set to three
+>>> was wrong. This patch fixes the calculation so that the serial port
+>>> for baudrates bigger then 576000 baud is working correctly.
+>>>
+>>> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+>>> ---
+>>>  drivers/tty/serial/8250/8250_mtk.c | 2 +-
+>>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>>
+>>> diff --git a/drivers/tty/serial/8250/8250_mtk.c b/drivers/tty/serial/8250/8250_mtk.c
+>>> index 1c4b4bf..4376c48 100644
+>>> --- a/drivers/tty/serial/8250/8250_mtk.c
+>>> +++ b/drivers/tty/serial/8250/8250_mtk.c
+>>> @@ -81,7 +81,7 @@ mtk8250_set_termios(struct uart_port *port, struct ktermios *termios,
+>>>               /* Set to highest baudrate supported */
+>>>               if (baud >= 1152000)
+>>>                       baud = 921600;
+>>> -             quot = DIV_ROUND_CLOSEST(port->uartclk, 256 * baud);
+>>> +             quot = (port->uartclk / (256 * baud)) + 1;
+>>>       }
+>>>
+>>>       /*
+>>
+>> Has this always been incorrect, or was it caused by a specific patch?
+>
+> It has always been incorrect :o
+>
+>> Should it go to the stable kernels?  If so, how far back?
+>
+> No need to go to the stable kernels. The driver is only in linux-next.
+
+Any comments on that?
+
+Thanks,
+Matthias
+
+>
+> Cheers,
+> Matthias Brugger
+>
+>>
+>> thanks,
+>>
+>> greg k-h
+>
+>
+>
+> --
+> motzblog.wordpress.com
 
 
 
+-- 
+motzblog.wordpress.com
