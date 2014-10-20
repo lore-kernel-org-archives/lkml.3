@@ -1,107 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775AbaJTHWV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 03:22:21 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:60368 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752606AbaJTHWS (ORCPT
+	id S1752706AbaJTH12 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 03:27:28 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:55245 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751493AbaJTH10 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 03:22:18 -0400
-Date: Mon, 20 Oct 2014 08:22:11 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Cc: Kumar Gala <galak@codeaurora.org>, Andy Gross <agross@codeaurora.org>,
-        Arnd Bergmann <arnd@arndb.de>,
+	Mon, 20 Oct 2014 03:27:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <20141017130354.GC5587@leverpostej>
+References: <1413539665-11484-1-git-send-email-chunyan.zhang@spreadtrum.com>
+	<1413539665-11484-6-git-send-email-chunyan.zhang@spreadtrum.com>
+	<20141017130354.GC5587@leverpostej>
+Date: Mon, 20 Oct 2014 15:27:24 +0800
+Message-ID: <CAAfSe-sJxVZ46aQfGyOh+eTepiXwPhQPQCX-3yZ0Ew30n+oP+w@mail.gmail.com>
+Subject: Re: [PATCH v2 5/5] tty/serial: Add earlycon support for Spreadtrum
+ serial driver
+From: Lyra Zhang <zhang.lyra@gmail.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "jslaby@suse.cz" <jslaby@suse.cz>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "broonie@linaro.org" <broonie@linaro.org>,
+        "m-karicheri2@ti.com" <m-karicheri2@ti.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "artagnon@gmail.com" <artagnon@gmail.com>,
+        "rrichter@cavium.com" <rrichter@cavium.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "orsonzhai@gmail.com" <orsonzhai@gmail.com>,
+        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
+        "zhizhou.zhang@spreadtrum.com" <zhizhou.zhang@spreadtrum.com>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [RFC 6/7] mfd: qcom-smd-rpm: Driver for the Qualcomm RPM over SMD
-Message-ID: <20141020072211.GC25349@x1>
-References: <1412037291-16880-1-git-send-email-bjorn.andersson@sonymobile.com>
- <1412037291-16880-7-git-send-email-bjorn.andersson@sonymobile.com>
- <20141008084017.GD20647@lee--X1>
- <20141017135553.GA28882@sonymobile.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141017135553.GA28882@sonymobile.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        "sprdlinux@freelists.org" <sprdlinux@freelists.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Oct 2014, Bjorn Andersson wrote:
-> On Wed 08 Oct 01:40 PDT 2014, Lee Jones wrote:
+2014-10-17 21:03 GMT+08:00 Mark Rutland <mark.rutland@arm.com>:
+> On Fri, Oct 17, 2014 at 10:54:25AM +0100, Chunyan Zhang wrote:
+>> Add serial driver for spreadtrum sharkl platform with earlycon
+>> support at first.
+>>
+>> Signed-off-by: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
+>> ---
+>>  drivers/tty/serial/Kconfig       |   24 ++++++++++++++
+>>  drivers/tty/serial/Makefile      |    1 +
+>>  drivers/tty/serial/sprd-serial.c |   64 ++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 89 insertions(+)
+>>  create mode 100644 drivers/tty/serial/sprd-serial.c
+>>
+>> diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+>> index 26cec64..33b8f90 100644
+>> --- a/drivers/tty/serial/Kconfig
+>> +++ b/drivers/tty/serial/Kconfig
+>> @@ -113,6 +113,30 @@ config SERIAL_SB1250_DUART_CONSOLE
+>>
+>>         If unsure, say Y.
+>>
+>> +config SERIAL_SPRD
+>> +     tristate "Support for SPRD serial"
+>> +     depends on ARM || ARM64
+>> +     select SERIAL_CORE
+>> +     help
+>> +          This enables the driver for the Spreadtrum's serial.
+>> +
+>> +config SERIAL_SPRD_NR
+>> +        int "Maximum number of sprd serial ports"
+>> +        depends on SERIAL_SPRD
+>> +        default "4"
+>
+> This is not used below.
+>
+Ok, I'll remove it in v3.
 
-[...]
+>> +
+>> +config SERIAL_SPRD_CONSOLE
+>> +        bool "SPRD UART console support"
+>> +        depends on SERIAL_SPRD=y
+>> +        select SERIAL_CORE_CONSOLE
+>> +     select SERIAL_EARLYCON
+>> +        help
+>> +       Support for early debug console using Spreadtrum's serial. This enables
+>> +       the console before standard serial driver is probed. This is enabled
+>> +       with "earlycon=serial_sprd" on the kernel command line. The console is
+>> +       enabled when early_param is processed.
+>
+> There only appears to be an earlycon driver, and not "standard serial
+> driver".
+>
+> What happens after earlycon?
+>
+> Surely there should be a real driver to take ownership of the UART?
+>
+> As far as I can see it won't be possible to boot your platform to a
+> prompt, because earlycon will have gone before that.
+>
+> Thanks,
+> Mark.
+>
 
-> > > +static struct qcom_smd_driver qcom_smd_rpm_driver = {
-> > > +	.probe = qcom_smd_rpm_probe,
-> > > +	.remove = qcom_smd_rpm_remove,
-> > > +	.callback = qcom_smd_rpm_callback,
-> > > +	.driver  = {
-> > > +		.name  = "qcom_smd_rpm",
-> > > +		.owner = THIS_MODULE,
-> > > +		.of_match_table = qcom_smd_rpm_of_match,
-> > > +	},
-> > > +};
-> > > +
-> > > +module_qcom_smd_driver(qcom_smd_rpm_driver);
-> > 
-> > I don't like this.  What's wrong with the existing platform driver
-> > code?
-> > 
-> 
-> I started off with having smd child devices as platform drivers and had some
-> accessor functions to find the open handles that triggered the probe() and
-> register the callback with those. But this didn't feel very sane, so I did
-> implemented a custom driver struct and probe prototype to simplify writing
-> drivers.
-> 
-> May I ask why you dislike this? This is how it's done in so many other places
-> in the kernel...
+We are planed to add standard serial driver after this patch-set is approved.
+In the first patch we contribute to the upstream, I'd like to add
+architecture related code of
+Spreadtrum's Sharkl, and then we will add more functions about Sharkl3
+SoC step by step.
 
-I don't believe that's the case.  All owners of their own
-module_*_driver() registration calls are busses (see below), whereas
-'qcom_smd' is just a driver.  Things would soon get out of control if
-we allowed every driver in the kernel to supply their own driver
-registration information variants.
+I'm very glad to read your comments, if you have any suggestions, feel
+free to tell us.
 
-$ git grep "^module_.*_driver(" | \
-  cut -d: -f2 | cut -d'(' -f1 | sort | uniq
-
-module_acpi_driver
-module_amba_driver
-module_comedi_driver
-module_comedi_pci_driver
-module_comedi_pcmcia_driver
-module_comedi_usb_driver
-module_gameport_driver
-module_hid_driver
-module_i2c_driver
-module_mcb_driver
-module_mipi_dsi_driver
-module_pci_driver
-module_pcmcia_driver
-module_platform_driver
-module_serio_driver
-module_spi_driver
-module_spmi_driver
-module_usb_composite_driver
-module_usb_driver
-module_usb_serial_driver
-module_virtio_driver
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Thanks,
+Chunyan
