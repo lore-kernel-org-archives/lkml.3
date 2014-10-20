@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752938AbaJTIbt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 04:31:49 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:50959 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752606AbaJTIbs (ORCPT
+	id S1752997AbaJTIdg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 04:33:36 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43963 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752764AbaJTIdc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 04:31:48 -0400
-Message-ID: <1413793905.16435.6.camel@x220>
-Subject: Re: [GIT PULL for v3.18-rc1] media updates
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 20 Oct 2014 10:31:45 +0200
-In-Reply-To: <20141009141849.137e738d@recife.lan>
-References: <20141009141849.137e738d@recife.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 20 Oct 2014 08:31:46.0150 (UTC) FILETIME=[48DC6860:01CFEC40]
-X-RcptDomain: vger.kernel.org
+	Mon, 20 Oct 2014 04:33:32 -0400
+Date: Mon, 20 Oct 2014 10:33:26 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Erik Bosman <ebn310@few.vu.nl>, Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Kees Cook <keescook@chromium.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Subject: Re: [RFC 5/5] x86,perf: Only allow rdpmc if a perf_event is mapped
+Message-ID: <20141020083326.GA3219@twins.programming.kicks-ass.net>
+References: <cover.1413323611.git.luto@amacapital.net>
+ <b6c264b3bb064658af498763e234e3cb4f9db4e2.1413323612.git.luto@amacapital.net>
+ <CALCETrXRGNeUipujcGiT30SV+MDHCFpTxG7LOTXj4Z4CbtxdJQ@mail.gmail.com>
+ <CALCETrXv=bWUqVWhCekjq3UQeLFgGcbocKFjtNiNqm6DhyPmzA@mail.gmail.com>
+ <20141019213341.GF23531@worktop.programming.kicks-ass.net>
+ <CALCETrVT9vHjBRRvhTayqfOEebMjyVU9Yw7v80D6EPAmcyREZw@mail.gmail.com>
+ <20141019222004.GI23531@worktop.programming.kicks-ass.net>
+ <CALCETrXzwA3JH8xYLFcLdUSXAJi05Q62dZP3yOjZJTxgVugDrQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrXzwA3JH8xYLFcLdUSXAJi05Q62dZP3yOjZJTxgVugDrQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mauro,
-
-On Thu, 2014-10-09 at 14:18 -0300, Mauro Carvalho Chehab wrote:
-> Please pull from:
->   git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media tags/media/v3.18-rc1
+On Sun, Oct 19, 2014 at 03:57:54PM -0700, Andy Lutomirski wrote:
+> > Maybe, but at that point we commit to yet another ABI... I'd rather just
+> > put a 'sane' implementation in a library or so.
 > 
->[...]
->
-> Mauro Carvalho Chehab (180):
->      [...]
->       [media] omap: be sure that MMU is there for COMPILE_TEST
+> This cuts both ways, though.  For vdso timekeeping, the underlying
+> data structure has changed repeatedly, sometimes to add features, and
+> sometimes for performance, and the vdso has done a good job insulating
+> userspace from it.  (In fact, until 3.16, even the same exact kernel
+> version couldn't be relied on to have the same data structure with
+> different configs, and even now, no one really wants to teach user
+> libraries how to parse the pvclock data structures.)
 
-This became commit 38a073116525 ("[media] omap: be sure that MMU is
-there for COMPILE_TEST").
+Fair enough, but as it stands we've already committed to the data
+structure exposed to userspace.
 
-As I reported in
-http://article.gmane.org/gmane.linux.drivers.video-input-infrastructure/82299 it adds an (optional) test for a Kconfig symbol HAS_MMU. There's no such symbol. So that test will always fail. Did you perhaps mean simply "MMU"?
+> I would certainly not suggest putting anything beyond the bare minimum
+> into the vdso.
 
+Depends on what you really want to do I suppose, if you've got a pinned
+event and know there cannot be multiplexing, not doing the time reads
+the multiplications and all that saves a ton of cycles. But in generic I
+suppose you have to do all that.
 
-Paul Bolle
+> FWIW, something should probably specify exactly when it's safe to try
+> a userspace rdpmc.  I think that the answer is that, for a perf event
+> watching a pid, only that pid can do it (in particular, other threads
+> must not try).  For a perf event monitoring a whole cpu, the answer is
+> less clear to me.
 
+This all was really only meant to be used for self-monitoring, so where
+an event is attached to the very same task, anything else and I'm find
+disabling it.
