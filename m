@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752587AbaJTGD3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 02:03:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50442 "EHLO mx2.suse.de"
+	id S1752610AbaJTGES (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 02:04:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50456 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750945AbaJTGDZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 02:03:25 -0400
-Message-ID: <5444A5AB.3020008@suse.de>
-Date: Mon, 20 Oct 2014 08:03:23 +0200
+	id S1752381AbaJTGER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 02:04:17 -0400
+Message-ID: <5444A5E0.3080006@suse.de>
+Date: Mon, 20 Oct 2014 08:04:16 +0200
 From: Hannes Reinecke <hare@suse.de>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
@@ -15,9 +15,10 @@ To: Christoph Hellwig <hch@lst.de>, Chandra Seetharaman <sekharan@us.ibm.com>,
         Mike Christie <michaelc@cs.wisc.edu>
 CC: Sean Stewart <Sean.Stewart@netapp.com>,
         Bart Van Assche <bvanassche@acm.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/6] scsi: remove struct scsi_dh_devlist
-References: <1413734404-1426-1-git-send-email-hch@lst.de> <1413734404-1426-4-git-send-email-hch@lst.de>
-In-Reply-To: <1413734404-1426-4-git-send-email-hch@lst.de>
+Subject: Re: [PATCH 4/6] scsi: device handlers must have attach and detach
+ methods
+References: <1413734404-1426-1-git-send-email-hch@lst.de> <1413734404-1426-5-git-send-email-hch@lst.de>
+In-Reply-To: <1413734404-1426-5-git-send-email-hch@lst.de>
 Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -25,120 +26,69 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 10/19/2014 06:00 PM, Christoph Hellwig wrote:
-> All drivers now do their own matching, so there is no more need to expose
-> a device list as part of the interface.
-> 
 > Signed-off-by: Christoph Hellwig <hch@lst.de>
 > ---
->  drivers/scsi/device_handler/scsi_dh_emc.c   | 6 ++++--
->  drivers/scsi/device_handler/scsi_dh_hp_sw.c | 6 ++++--
->  drivers/scsi/device_handler/scsi_dh_rdac.c  | 6 ++++--
->  include/scsi/scsi_device.h                  | 6 ------
->  4 files changed, 12 insertions(+), 12 deletions(-)
+>  drivers/scsi/device_handler/scsi_dh.c | 25 +++++++++++++------------
+>  1 file changed, 13 insertions(+), 12 deletions(-)
 > 
-> diff --git a/drivers/scsi/device_handler/scsi_dh_emc.c b/drivers/scsi/device_handler/scsi_dh_emc.c
-> index c2e26cd..800deb7 100644
-> --- a/drivers/scsi/device_handler/scsi_dh_emc.c
-> +++ b/drivers/scsi/device_handler/scsi_dh_emc.c
-> @@ -622,7 +622,10 @@ done:
->  	return result;
->  }
+> diff --git a/drivers/scsi/device_handler/scsi_dh.c b/drivers/scsi/device_handler/scsi_dh.c
+> index 1a8dbf3..d8a8aac 100644
+> --- a/drivers/scsi/device_handler/scsi_dh.c
+> +++ b/drivers/scsi/device_handler/scsi_dh.c
+> @@ -108,19 +108,17 @@ static int scsi_dh_handler_attach(struct scsi_device *sdev,
+>  		return 0;
+>  	}
 >  
-> -static const struct scsi_dh_devlist clariion_dev_list[] = {
-> +static const struct {
-> +	char *vendor;
-> +	char *model;
-> +} clariion_dev_list[] = {
->  	{"DGC", "RAID"},
->  	{"DGC", "DISK"},
->  	{"DGC", "VRAID"},
-> @@ -653,7 +656,6 @@ static void clariion_bus_detach(struct scsi_device *sdev);
->  static struct scsi_device_handler clariion_dh = {
->  	.name		= CLARIION_NAME,
->  	.module		= THIS_MODULE,
-> -	.devlist	= clariion_dev_list,
->  	.attach		= clariion_bus_attach,
->  	.detach		= clariion_bus_detach,
->  	.check_sense	= clariion_check_sense,
-> diff --git a/drivers/scsi/device_handler/scsi_dh_hp_sw.c b/drivers/scsi/device_handler/scsi_dh_hp_sw.c
-> index 040998c..aa40fcb 100644
-> --- a/drivers/scsi/device_handler/scsi_dh_hp_sw.c
-> +++ b/drivers/scsi/device_handler/scsi_dh_hp_sw.c
-> @@ -311,7 +311,10 @@ static int hp_sw_activate(struct scsi_device *sdev,
->  	return 0;
->  }
->  
-> -static const struct scsi_dh_devlist hp_sw_dh_data_list[] = {
-> +static const struct {
-> +	char *vendor;
-> +	char *model;
-> +} hp_sw_dh_data_list[] = {
->  	{"COMPAQ", "MSA1000 VOLUME"},
->  	{"COMPAQ", "HSV110"},
->  	{"HP", "HSV100"},
-> @@ -343,7 +346,6 @@ static void hp_sw_bus_detach(struct scsi_device *sdev);
->  static struct scsi_device_handler hp_sw_dh = {
->  	.name		= HP_SW_NAME,
->  	.module		= THIS_MODULE,
-> -	.devlist	= hp_sw_dh_data_list,
->  	.attach		= hp_sw_bus_attach,
->  	.detach		= hp_sw_bus_detach,
->  	.activate	= hp_sw_activate,
-> diff --git a/drivers/scsi/device_handler/scsi_dh_rdac.c b/drivers/scsi/device_handler/scsi_dh_rdac.c
-> index ef8caaa..8b09528 100644
-> --- a/drivers/scsi/device_handler/scsi_dh_rdac.c
-> +++ b/drivers/scsi/device_handler/scsi_dh_rdac.c
-> @@ -778,7 +778,10 @@ static int rdac_check_sense(struct scsi_device *sdev,
->  	return SCSI_RETURN_NOT_HANDLED;
->  }
->  
-> -static const struct scsi_dh_devlist rdac_dev_list[] = {
-> +static const struct {
-> +	char *vendor;
-> +	char *model;
-> +} rdac_dev_list[] = {
->  	{"IBM", "1722"},
->  	{"IBM", "1724"},
->  	{"IBM", "1726"},
-> @@ -830,7 +833,6 @@ static void rdac_bus_detach(struct scsi_device *sdev);
->  static struct scsi_device_handler rdac_dh = {
->  	.name = RDAC_NAME,
->  	.module = THIS_MODULE,
-> -	.devlist = rdac_dev_list,
->  	.prep_fn = rdac_prep_fn,
->  	.check_sense = rdac_check_sense,
->  	.attach = rdac_bus_attach,
-> diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
-> index fb46864..ba6c9b7 100644
-> --- a/include/scsi/scsi_device.h
-> +++ b/include/scsi/scsi_device.h
-> @@ -201,11 +201,6 @@ struct scsi_device {
->  	unsigned long		sdev_data[0];
->  } __attribute__((aligned(sizeof(unsigned long))));
->  
-> -struct scsi_dh_devlist {
-> -	char *vendor;
-> -	char *model;
-> -};
+> -	if (scsi_dh->attach) {
+> -		if (!try_module_get(scsi_dh->module))
+> -			return -EINVAL;
 > -
->  typedef void (*activate_complete)(void *, int);
->  struct scsi_device_handler {
->  	/* Used by the infrastructure */
-> @@ -214,7 +209,6 @@ struct scsi_device_handler {
->  	/* Filled by the hardware handler */
->  	struct module *module;
->  	const char *name;
-> -	const struct scsi_dh_devlist *devlist;
->  	int (*check_sense)(struct scsi_device *, struct scsi_sense_hdr *);
->  	int (*attach)(struct scsi_device *);
->  	void (*detach)(struct scsi_device *);
+> -		err = scsi_dh->attach(sdev);
+> -		if (err) {
+> -			module_put(scsi_dh->module);
+> -			return err;
+> -		}
+> +	if (!try_module_get(scsi_dh->module))
+> +		return -EINVAL;
+>  
+> -		kref_init(&sdev->scsi_dh_data->kref);
+> -		sdev->scsi_dh_data->sdev = sdev;
+> +	err = scsi_dh->attach(sdev);
+> +	if (err) {
+> +		module_put(scsi_dh->module);
+> +		return err;
+>  	}
+> +
+> +	kref_init(&sdev->scsi_dh_data->kref);
+> +	sdev->scsi_dh_data->sdev = sdev;
+>  	return err;
+>  }
+>  
+> @@ -154,7 +152,7 @@ static void scsi_dh_handler_detach(struct scsi_device *sdev,
+>  	if (!scsi_dh)
+>  		scsi_dh = sdev->scsi_dh_data->scsi_dh;
+>  
+> -	if (scsi_dh && scsi_dh->detach)
+> +	if (scsi_dh)
+>  		kref_put(&sdev->scsi_dh_data->kref, __detach_handler);
+>  }
+>  
+> @@ -343,6 +341,9 @@ int scsi_register_device_handler(struct scsi_device_handler *scsi_dh)
+>  	if (get_device_handler(scsi_dh->name))
+>  		return -EBUSY;
+>  
+> +	if (!scsi_dh->attach || !scsi_dh->detach)
+> +		return -EINVAL;
+> +
+>  	spin_lock(&list_lock);
+>  	list_add(&scsi_dh->list, &scsi_dh_list);
+>  	spin_unlock(&list_lock);
 > 
 Reviewed-by: Hannes Reinecke <hare@suse.de>
 
 Cheers,
 
 Hannes
-
 -- 
 Dr. Hannes Reinecke		      zSeries & Storage
 hare@suse.de			      +49 911 74053 688
