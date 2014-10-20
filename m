@@ -1,118 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752103AbaJTQ6c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 12:58:32 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:40075 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751187AbaJTQ6a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 12:58:30 -0400
-Message-ID: <54453F2E.1080401@collabora.co.uk>
-Date: Mon, 20 Oct 2014 18:58:22 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	id S1752123AbaJTQ7t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 12:59:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31873 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750935AbaJTQ7s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 12:59:48 -0400
+Date: Mon, 20 Oct 2014 18:56:14 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kirill Tkhai <ktkhai@parallels.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Kirill Tkhai <tkhai@yandex.ru>
+Subject: Re: [PATCH v3] sched/numa: fix unsafe get_task_struct() in
+	task_numa_assign()
+Message-ID: <20141020165614.GA16373@redhat.com>
+References: <1413800145.19914.23.camel@tkhai> <20141020144757.GA10939@redhat.com>
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: Kukjin Kim <kgene.kim@samsung.com>, Lee Jones <lee.jones@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Zhong <zyw@rock-chips.com>
-Subject: Re: [PATCH v2 2/2] ARM: EXYNOS: Call regulator core suspend prepare
- and finish functions
-References: <1413454410-23396-1-git-send-email-javier.martinez@collabora.co.uk>	<1413454410-23396-3-git-send-email-javier.martinez@collabora.co.uk> <CAD=FV=UtwNjyx56QtRrEo=jbX_PeMRAYZJVXzxqeS-vs4JyGRg@mail.gmail.com>
-In-Reply-To: <CAD=FV=UtwNjyx56QtRrEo=jbX_PeMRAYZJVXzxqeS-vs4JyGRg@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141020144757.GA10939@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[adding Chris Zong as cc who posted a similar patch for Rockchip]
+On 10/20, Oleg Nesterov wrote:
+>
+> Again, perhaps we will need to change the lifetime rules for task_struct
+> anyway, if we have more problems like this. But until then this looks like
+> an overkill to me. Plus rq_curr_if_not_put() looks too subtle, and it is
+> not generic.
 
-Hello Doug,
+Yes... otoh, perhaps we can do something more generic? Something like
 
-On 10/20/2014 06:26 PM, Doug Anderson wrote:
-> Javier,
-> 
-> On Thu, Oct 16, 2014 at 3:13 AM, Javier Martinez Canillas
-> <javier.martinez@collabora.co.uk> wrote:
->> The regulator framework has a set of helpers functions to be used when
->> the system is entering and leaving from suspend but these are not called
->> on Exynos platforms. This means that the .set_suspend_* function handlers
->> defined by regulator drivers are not called when the system is suspended.
->>
->> Suggested-by: Doug Anderson <dianders@chromium.org>
->> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
->> ---
->>  arch/arm/mach-exynos/suspend.c | 18 ++++++++++++++++++
->>  1 file changed, 18 insertions(+)
->>
->> diff --git a/arch/arm/mach-exynos/suspend.c b/arch/arm/mach-exynos/suspend.c
->> index cc8d237..ee9a8e0 100644
->> --- a/arch/arm/mach-exynos/suspend.c
->> +++ b/arch/arm/mach-exynos/suspend.c
->> @@ -20,6 +20,7 @@
->>  #include <linux/io.h>
->>  #include <linux/irqchip/arm-gic.h>
->>  #include <linux/err.h>
->> +#include <linux/regulator/machine.h>
->>
->>  #include <asm/cacheflush.h>
->>  #include <asm/hardware/cache-l2x0.h>
->> @@ -443,6 +444,22 @@ static int exynos_suspend_enter(suspend_state_t state)
->>
->>  static int exynos_suspend_prepare(void)
->>  {
->> +       int ret;
->> +
->> +       /*
->> +        * REVISIT: It would be better if struct platform_suspend_ops
->> +        * .prepare handler get the suspend_state_t as a parameter to
->> +        * avoid hard-coding the suspend to mem state. It's safe to do
->> +        * it now only because the suspend_valid_only_mem function is
->> +        * used as the .valid callback used to check if a given state
->> +        * is supported by the platform anyways.
->> +        */
->> +       ret = regulator_suspend_prepare(PM_SUSPEND_MEM);
->> +       if (ret) {
->> +               pr_err("Failed to prepare regulators for system suspend\n");
->> +               return ret;
->> +       }
->> +
->>         s3c_pm_check_prepare();
->>
->>         return 0;
->> @@ -451,6 +468,7 @@ static int exynos_suspend_prepare(void)
->>  static void exynos_suspend_finish(void)
->>  {
->>         s3c_pm_check_cleanup();
->> +       regulator_suspend_finish();
-> 
-> It turns out that regulator_suspend_finish() actually returns an error
-> code.  Could you print a warning if you see it?
-> 
+	struct task_struct *xxx(struct task_struct **ptask)
+	{
+		struct task_struct *task;
+		void *sighand;
+	retry:
+		task = ACCESS_ONCE(*ptask);
+		if (!task)
+			return NULL;
 
-Yes, I noticed this when looking at Chris patch for Rockchip but didn't re-spin
-because I'm not sure anymore if this is the right solution. I mean, if is
-correct to add the same calls on every platform or if the regulator suspend
-prepare and finish functions should be called from the suspend core instead.
+		if (IS_ENABLED(CONFIG_DEBUG_PAGEALLOC)) {
+			if (probe_kernel_read(&sighand, &task->sighand, sizeof(sighand)))
+				goto retry;
+		} else {
+			sighand = task->sighand;
+		}
 
-For example calling regulator_suspend_prepare() from platform_suspend_prepare()
-[0] will have the advantage of passing the correct suspend_state_t state instead
-of hard-coding PM_SUSPEND_MEM and will make the regulator suspend states to work
-on all platforms.
+		if (!sighand)
+			return NULL;
+		/*
+		 * Pairs with atomic_dec_and_test() in put_task_struct(task).
+		 * If we have read the freed/reused memory, we must see that
+		 * the pointer was updated.
+		 */
+		smp_rmb();
+		if (task != ACCESS_ONCE(*ptask))
+			goto retry;
 
-> Other than that, feel free to add my Reviewed-by.  Thanks!
-> 
-> -Doug
-> 
+		return task;
+	}
 
-Best regards,
-Javier
+task_numa_compare() can do cur = xxx(&rc->curr), but this helper can work
+with any "task_struct *" pointer assuming that somehow this pointer is
+cleared or changed before the final put_task_struct().
 
-[0]: http://lxr.free-electrons.com/source/kernel/power/suspend.c#L141
+What do you think? Peter?
+
+Oleg.
 
