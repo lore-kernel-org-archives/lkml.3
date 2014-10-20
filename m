@@ -1,242 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752313AbaJTM5K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 08:57:10 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52822 "EHLO arroyo.ext.ti.com"
+	id S1752057AbaJTNHn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 09:07:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38263 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752110AbaJTM4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 08:56:46 -0400
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-To: <ssantosh@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        <khilman@linaro.org>
-CC: Geert Uytterhoeven <geert+renesas@glider.be>, <linux-pm@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, <grant.likely@secretlab.ca>,
-        <ulf.hansson@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: [PATCH v2 2/3] ARM: keystone: pm: switch to use generic pm domains
-Date: Mon, 20 Oct 2014 15:56:03 +0300
-Message-ID: <1413809764-21995-3-git-send-email-grygorii.strashko@ti.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1413809764-21995-1-git-send-email-grygorii.strashko@ti.com>
-References: <1413809764-21995-1-git-send-email-grygorii.strashko@ti.com>
+	id S1751273AbaJTNHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 09:07:40 -0400
+Date: Mon, 20 Oct 2014 16:10:16 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Thomas Graf <tgraf@suug.ch>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, linux-scsi@vger.kernel.org,
+        linux-s390@vger.kernel.org, v9fs-developer@lists.sourceforge.net,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
+        Amit Shah <amit.shah@redhat.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Paolo Bonzini <pbonzini@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v4 13/25] virtio_console: enable VQs early
+Message-ID: <20141020131016.GA20489@redhat.com>
+References: <1413114332-626-1-git-send-email-mst-v4@redhat.com>
+ <1413114332-626-14-git-send-email-mst-v4@redhat.com>
+ <20141020120750.GA18561@casper.infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141020120750.GA18561@casper.infradead.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch switches Keystone 2 PM code to use Generic PM domains
-instead of PM clock domains because of the lack of DT support
-for the last.
+On Mon, Oct 20, 2014 at 01:07:50PM +0100, Thomas Graf wrote:
+> On 10/13/14 at 10:50am, Michael S. Tsirkin wrote:
+> > virtio spec requires drivers to set DRIVER_OK before using VQs.
+> > This is set automatically after probe returns, virtio console violated this
+> > rule by adding inbufs, which causes the VQ to be used directly within
+> > probe.
+> > 
+> > To fix, call virtio_device_ready before using VQs.
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> >  drivers/char/virtio_console.c | 2 ++
+> >  1 file changed, 2 insertions(+)
+> > 
+> > diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+> > index b585b47..6ebe8f6 100644
+> > --- a/drivers/char/virtio_console.c
+> > +++ b/drivers/char/virtio_console.c
+> > @@ -1449,6 +1449,8 @@ static int add_port(struct ports_device *portdev, u32 id)
+> >  	spin_lock_init(&port->outvq_lock);
+> >  	init_waitqueue_head(&port->waitqueue);
+> >  
+> > +	virtio_device_ready(portdev->vdev);
+> > +
+> >  	/* Fill the in_vq with buffers so the host can send us data. */
+> >  	nr_added_bufs = fill_queue(port->in_vq, &port->inbuf_lock);
+> >  	if (!nr_added_bufs) {
 
-Reviewed-by: Kevin Hilman <khilman@linaro.org>
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
----
- .../bindings/power/ti,keystone-powerdomain.txt     |  31 ++++++
- arch/arm/mach-keystone/Kconfig                     |   1 +
- arch/arm/mach-keystone/pm_domain.c                 | 112 ++++++++++++++-------
- 3 files changed, 107 insertions(+), 37 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/power/ti,keystone-powerdomain.txt
+I see Cornelia sent a patch already.
+I'd like to reproduce this though - could you send me
+the command line please?
 
-diff --git a/Documentation/devicetree/bindings/power/ti,keystone-powerdomain.txt b/Documentation/devicetree/bindings/power/ti,keystone-powerdomain.txt
-new file mode 100644
-index 0000000..4bbf2aa
---- /dev/null
-+++ b/Documentation/devicetree/bindings/power/ti,keystone-powerdomain.txt
-@@ -0,0 +1,31 @@
-+* TI Keystone 2 Generic PM Controller
-+
-+The TI Keystone 2 Generic PM Controller is responsible for Clock gating
-+for each controlled IP module.
-+
-+Required properties:
-+- compatible: Should be "ti,keystone-powerdomain"
-+- #power-domain-cells: Should be 0, see below:
-+
-+The gpc node is a power-controller as documented by the generic power domain
-+bindings in Documentation/devicetree/bindings/power/power_domain.txt.
-+
-+Example:
-+
-+	pm_controller: pm-controller {
-+		compatible = "ti,keystone-powerdomain";
-+		#power-domain-cells = <0>;
-+	};
-+
-+	netcp: netcp@2090000 {
-+		reg = <0x2620110 0x8>;
-+		reg-names = "efuse";
-+		...
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges;
-+		power-domains = <&pm_controller>;
-+
-+		clocks = <&clkpa>, <&clkcpgmac>, <&chipclk12>;
-+		dma-coherent;
-+	}
-diff --git a/arch/arm/mach-keystone/Kconfig b/arch/arm/mach-keystone/Kconfig
-index 98a156a..de43107 100644
---- a/arch/arm/mach-keystone/Kconfig
-+++ b/arch/arm/mach-keystone/Kconfig
-@@ -9,6 +9,7 @@ config ARCH_KEYSTONE
- 	select COMMON_CLK_KEYSTONE
- 	select ARCH_SUPPORTS_BIG_ENDIAN
- 	select ZONE_DMA if ARM_LPAE
-+	select PM_GENERIC_DOMAINS if PM
- 	help
- 	  Support for boards based on the Texas Instruments Keystone family of
- 	  SoCs.
-diff --git a/arch/arm/mach-keystone/pm_domain.c b/arch/arm/mach-keystone/pm_domain.c
-index ca79dda..d58759d 100644
---- a/arch/arm/mach-keystone/pm_domain.c
-+++ b/arch/arm/mach-keystone/pm_domain.c
-@@ -12,69 +12,107 @@
-  * version 2, as published by the Free Software Foundation.
-  */
- 
-+#include <linux/clk.h>
- #include <linux/init.h>
--#include <linux/pm_runtime.h>
- #include <linux/pm_clock.h>
-+#include <linux/pm_domain.h>
- #include <linux/platform_device.h>
--#include <linux/clk-provider.h>
- #include <linux/of.h>
- 
--#ifdef CONFIG_PM_RUNTIME
--static int keystone_pm_runtime_suspend(struct device *dev)
-+#ifdef CONFIG_PM_GENERIC_DOMAINS
-+
-+struct keystone_domain {
-+	struct generic_pm_domain genpd;
-+	struct device	*dev;
-+};
-+
-+void keystone_pm_domain_attach_dev(struct device *dev)
- {
-+	struct clk *clk;
- 	int ret;
-+	int i = 0;
- 
- 	dev_dbg(dev, "%s\n", __func__);
- 
--	ret = pm_generic_runtime_suspend(dev);
--	if (ret)
--		return ret;
--
--	ret = pm_clk_suspend(dev);
-+	ret = pm_clk_create(dev);
- 	if (ret) {
--		pm_generic_runtime_resume(dev);
--		return ret;
-+		dev_err(dev, "pm_clk_create failed %d\n", ret);
-+		return;
-+	};
-+
-+	while ((clk = of_clk_get(dev->of_node, i++)) && !IS_ERR(clk)) {
-+		ret = pm_clk_add_clk(dev, clk);
-+		if (ret) {
-+			dev_err(dev, "pm_clk_add_clk failed %d\n", ret);
-+			goto clk_err;
-+		};
- 	}
- 
--	return 0;
-+	if (!IS_ENABLED(CONFIG_PM_RUNTIME)) {
-+		ret = pm_clk_resume(dev);
-+		if (ret) {
-+			dev_err(dev, "pm_clk_resume failed %d\n", ret);
-+			goto clk_err;
-+		};
-+	}
-+	return;
-+
-+clk_err:
-+	pm_clk_destroy(dev);
- }
- 
--static int keystone_pm_runtime_resume(struct device *dev)
-+void keystone_pm_domain_detach_dev(struct device *dev)
- {
- 	dev_dbg(dev, "%s\n", __func__);
--
--	pm_clk_resume(dev);
--
--	return pm_generic_runtime_resume(dev);
-+	pm_clk_destroy(dev);
- }
--#endif
- 
--static struct dev_pm_domain keystone_pm_domain = {
--	.ops = {
--		SET_RUNTIME_PM_OPS(keystone_pm_runtime_suspend,
--				   keystone_pm_runtime_resume, NULL)
--		USE_PLATFORM_PM_SLEEP_OPS
-+static const struct keystone_domain keystone_domain = {
-+	.genpd = {
-+		.name = "keystone",
-+		.attach_dev = keystone_pm_domain_attach_dev,
-+		.detach_dev = keystone_pm_domain_detach_dev,
-+		.dev_ops = {
-+			.stop = pm_clk_suspend,
-+			.start = pm_clk_resume,
-+		},
- 	},
- };
- 
--static struct pm_clk_notifier_block platform_domain_notifier = {
--	.pm_domain = &keystone_pm_domain,
-+static int keystone_pm_domain_probe(struct platform_device *pdev)
-+{
-+	struct keystone_domain *domain;
-+
-+	domain = devm_kzalloc(&pdev->dev,
-+			      sizeof(struct keystone_domain), GFP_KERNEL);
-+	if (!domain)
-+		return -ENOMEM;
-+
-+	domain->genpd = keystone_domain.genpd;
-+	domain->dev = &pdev->dev;
-+
-+	pm_genpd_init(&domain->genpd, NULL, false);
-+	return of_genpd_add_provider_simple(pdev->dev.of_node, &domain->genpd);
-+}
-+
-+static struct of_device_id keystone_pm_domain_dt_ids[] = {
-+	{ .compatible = "ti,keystone-powerdomain" },
-+	{ }
- };
- 
--static struct of_device_id of_keystone_table[] = {
--	{.compatible = "ti,keystone"},
--	{ /* end of list */ },
-+static struct platform_driver keystone_pm_domain_driver = {
-+	.driver = {
-+		.name = "ti,keystone-powerdomain",
-+		.owner = THIS_MODULE,
-+		.of_match_table = keystone_pm_domain_dt_ids,
-+	},
-+	.probe = keystone_pm_domain_probe,
- };
- 
- int __init keystone_pm_runtime_init(void)
- {
--	struct device_node *np;
--
--	np = of_find_matching_node(NULL, of_keystone_table);
--	if (!np)
--		return 0;
--
--	pm_clk_add_notifier(&platform_bus_type, &platform_domain_notifier);
--
--	return 0;
-+	return platform_driver_register(&keystone_pm_domain_driver);
- }
-+#else
-+int __init keystone_pm_runtime_init(void) { return 0; }
-+#endif /* CONFIG_PM_GENERIC_DOMAINS */
--- 
-1.9.1
 
+> Seems like probe and add_port() now both set VIRTIO_CONFIG_S_DRIVER_OK
+> 
+>     1.839658] kernel BUG at include/linux/virtio_config.h:125!
+> [    1.839995] invalid opcode: 0000 [#1] SMP 
+> [    1.840169] Modules linked in: serio_raw virtio_balloon pcspkr virtio_net virtio_console soundcore parport_pc floppy pvpanic parport i2c_piix4 nfsd auth_rpcgss nfs_acl lockd grace sunrpc qxl drm_kms_helper ttm drm virtio_blk i2c_core virtio_pci ata_generic virtio_ring virtio pata_acpi
+> [    1.840169] CPU: 2 PID: 266 Comm: kworker/2:2 Not tainted 3.17.0+ #1
+> [    1.840169] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> [    1.840169] Workqueue: events control_work_handler [virtio_console]
+> [    1.840169] task: ffff8800364bc840 ti: ffff880078490000 task.ti: ffff880078490000
+> [    1.840169] RIP: 0010:[<ffffffffa01d92c6>]  [<ffffffffa01d92c6>] virtio_device_ready.part.12+0x4/0x6 [virtio_console]
+> [    1.840169] RSP: 0018:ffff880078493c78  EFLAGS: 00010202
+> [    1.840169] RAX: 0000000000000007 RBX: ffff880036406200 RCX: 0000000000006e39
+> [    1.840169] RDX: 000000000000c0b2 RSI: 0000000000000000 RDI: 000000000001c0b2
+> [    1.840169] RBP: ffff880078493c78 R08: ffffffff81d2c6f8 R09: 0000000000000000
+> [    1.840169] R10: 0000000000000001 R11: ffff8800364bd000 R12: ffff880036618400
+> [    1.840169] R13: 0000000000000001 R14: ffff8800368c6800 R15: ffff880036406220
+> [    1.840169] FS:  0000000000000000(0000) GS:ffff88007fd00000(0000) knlGS:0000000000000000
+> [    1.840169] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [    1.840169] CR2: 00007f1c31c90000 CR3: 0000000001c14000 CR4: 00000000000006e0
+> [    1.840169] Stack:
+> [    1.840169]  ffff880078493ce8 ffffffffa01d886a ffff880000000001 ffffffff810e20cd
+> [    1.840169]  ffff880078493cb8 0000000000000282 0000000000000000 0000000087f90194
+> [    1.840169]  ffff880078493ce8 ffff88007ab1d4e0 ffff880036618498 ffff880036618410
+> [    1.840169] Call Trace:
+> [    1.840169]  [<ffffffffa01d886a>] add_port+0x40a/0x440 [virtio_console]
+> [    1.840169]  [<ffffffff810e20cd>] ? trace_hardirqs_on+0xd/0x10
+> [    1.840169]  [<ffffffffa01d8c6a>] control_work_handler+0x3ca/0x420 [virtio_console]
+> [    1.840169]  [<ffffffff810b0e7b>] ? process_one_work+0x15b/0x530
+> [    1.840169]  [<ffffffff810b0ef4>] process_one_work+0x1d4/0x530
+> [    1.840169]  [<ffffffff810b0e7b>] ? process_one_work+0x15b/0x530
+> [    1.840169]  [<ffffffff810b136b>] worker_thread+0x11b/0x490
+> [    1.840169]  [<ffffffff810b1250>] ? process_one_work+0x530/0x530
+> [    1.840169]  [<ffffffff810b67c3>] kthread+0xf3/0x110
+> [    1.840169]  [<ffffffff81788f00>] ? _raw_spin_unlock_irq+0x30/0x50
+> [    1.840169]  [<ffffffff810b66d0>] ? kthread_create_on_node+0x240/0x240
+> [    1.840169]  [<ffffffff81789a7c>] ret_from_fork+0x7c/0xb0
+> [    1.840169]  [<ffffffff810b66d0>] ? kthread_create_on_node+0x240/0x240
+> [    1.840169] Code: ff 49 89 c4 4d 85 e4 0f 8f 25 ff ff ff eb ad 48 c7 c0 f4 ff ff ff e9 17 ff ff ff e8 f5 cd eb e0 90 55 48 89 e5 0f 0b 55 48 89 e5 <0f> 0b 55 48 89 e5 0f 0b 55 48 89 e5 e8 99 e2 ff ff 48 c7 c7 c0 
+> [    1.840169] RIP  [<ffffffffa01d92c6>] virtio_device_ready.part.12+0x4/0x6 [virtio_console]
+> [    1.840169]  RSP <ffff880078493c78>
