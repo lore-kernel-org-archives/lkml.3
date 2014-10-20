@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528AbaJTVkq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 17:40:46 -0400
-Received: from mail-yh0-f45.google.com ([209.85.213.45]:64465 "EHLO
-	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751505AbaJTVko (ORCPT
+	id S1753843AbaJTVlQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 17:41:16 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:38747 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753316AbaJTVlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 17:40:44 -0400
+	Mon, 20 Oct 2014 17:41:13 -0400
+Date: Mon, 20 Oct 2014 22:40:29 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Kevin Hilman <khilman@kernel.org>
+Cc: "jinkun.hong" <jinkun.hong@rock-chips.com>, linus.walleij@linaro.org,
+        linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
+        linux-doc@vger.kernel.org, dianders@chromium.org,
+        Heiko Stuebner <heiko@sntech.de>, linux-rockchip@lists.infradead.org,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Jack Dai <jack.dai@rock-chips.com>
+Subject: Re: [PATCH v4 1/3] power-domain: add power domain drivers for
+ Rockchip platform
+Message-ID: <20141020214029.GY27405@n2100.arm.linux.org.uk>
+References: <1413795824-3453-1-git-send-email-jinkun.hong@rock-chips.com>
+ <1413795824-3453-2-git-send-email-jinkun.hong@rock-chips.com>
+ <7hppdme8d6.fsf@deeprootsystems.com>
 MIME-Version: 1.0
-In-Reply-To: <1413839151-10875-3-git-send-email-javier.martinez@collabora.co.uk>
-References: <1413839151-10875-1-git-send-email-javier.martinez@collabora.co.uk>
-	<1413839151-10875-3-git-send-email-javier.martinez@collabora.co.uk>
-Date: Mon, 20 Oct 2014 14:40:43 -0700
-X-Google-Sender-Auth: JVaRWfdzOEMXVsfPQgvJLJNWoEk
-Message-ID: <CAD=FV=XnBWWKbrey1zmxtAzGYviJJad4pWOC4=bbf2e2OBgaeQ@mail.gmail.com>
-Subject: Re: [PATCH v3 2/2] ARM: EXYNOS: Call regulator core suspend prepare
- and finish functions
-From: Doug Anderson <dianders@chromium.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Mark Brown <broonie@kernel.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7hppdme8d6.fsf@deeprootsystems.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Javier,
+On Mon, Oct 20, 2014 at 02:31:17PM -0700, Kevin Hilman wrote:
+> "jinkun.hong" <jinkun.hong@rock-chips.com> writes:
+> > +	spin_lock_irqsave(&pd->idle_lock, flags);
+> > +	val = (idle) ? mask : 0;
+> > +	regmap_update_bits(pd->regmap_pmu, REQ_OFFSET, mask, val);
+> > +	dsb();
+> 
+> A summary of the locking and barriers here (or in changelog) would be
+> helpful for reviewers to verify you're protecting what you need to
+> protect.
 
-On Mon, Oct 20, 2014 at 2:05 PM, Javier Martinez Canillas
-<javier.martinez@collabora.co.uk> wrote:
-> The regulator framework has a set of helpers functions to be used when
-> the system is entering and leaving from suspend but these are not called
-> on Exynos platforms. This means that the .set_suspend_* function handlers
-> defined by regulator drivers are not called when the system is suspended.
->
-> Suggested-by: Doug Anderson <dianders@chromium.org>
-> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> Reviewed-by: Doug Anderson <dianders@chromium.org>
+It's also worth saying that the Linux specific barrier names should be
+used unless there is a pressing reason to use the ARM specific barrier
+names.
 
-I think you forgot to carry Chanwoo's review:
-
-Reviewed-by: Chanwoo Choi<cw00.choi@samsung.com>
-
-I don't think you've made any changes that would need to invalidate his review.
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
