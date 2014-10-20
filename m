@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753183AbaJTTqm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 15:46:42 -0400
-Received: from gum.cmpxchg.org ([85.214.110.215]:42423 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752517AbaJTTqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 15:46:40 -0400
-Date: Mon, 20 Oct 2014 15:46:34 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcontrol: update mem_cgroup_page_lruvec()
- documentation
-Message-ID: <20141020194634.GA12120@phnom.home.cmpxchg.org>
-References: <1413732616-15962-1-git-send-email-hannes@cmpxchg.org>
- <20141020191256.GD505@dhcp22.suse.cz>
+	id S1752965AbaJTTvG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 15:51:06 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:40258 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176AbaJTTvD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 15:51:03 -0400
+Message-ID: <544567A1.2060006@collabora.co.uk>
+Date: Mon, 20 Oct 2014 21:50:57 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141020191256.GD505@dhcp22.suse.cz>
+To: Doug Anderson <dianders@chromium.org>
+CC: Kukjin Kim <kgene.kim@samsung.com>, Lee Jones <lee.jones@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Tomasz Figa <tomasz.figa@gmail.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Zhong <zyw@rock-chips.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Subject: Re: [PATCH v2 2/2] ARM: EXYNOS: Call regulator core suspend prepare
+ and finish functions
+References: <1413454410-23396-1-git-send-email-javier.martinez@collabora.co.uk>	<1413454410-23396-3-git-send-email-javier.martinez@collabora.co.uk>	<CAD=FV=UtwNjyx56QtRrEo=jbX_PeMRAYZJVXzxqeS-vs4JyGRg@mail.gmail.com>	<54453F2E.1080401@collabora.co.uk> <CAD=FV=WJfjhb9pfNhQwpToddR67NpA+m6kkj5oUVE5ewEhzvVQ@mail.gmail.com>
+In-Reply-To: <CAD=FV=WJfjhb9pfNhQwpToddR67NpA+m6kkj5oUVE5ewEhzvVQ@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 20, 2014 at 09:12:56PM +0200, Michal Hocko wrote:
-> On Sun 19-10-14 11:30:16, Johannes Weiner wrote:
-> > 7512102cf64d ("memcg: fix GPF when cgroup removal races with last
-> > exit") added a pc->mem_cgroup reset into mem_cgroup_page_lruvec() to
-> > prevent a crash where an anon page gets uncharged on unmap, the memcg
-> > is released, and then the final LRU isolation on free dereferences the
-> > stale pc->mem_cgroup pointer.
-> > 
-> > But since 0a31bc97c80c ("mm: memcontrol: rewrite uncharge API"), pages
-> > are only uncharged AFTER that final LRU isolation, which guarantees
-> > the memcg's lifetime until then.  pc->mem_cgroup now only needs to be
-> > reset for swapcache readahead pages.
+[adding Rafael Wysocki to cc as Suspend-to-RAM maintainer]
+
+On 10/20/2014 07:36 PM, Doug Anderson wrote:
+> Javier,
 > 
-> Do we want VM_BUG_ON_PAGE(!PageSwapCache, page) into the fixup path?
-
-While that is what we expect as of right now, it's not really a
-requirement for this function.  Should somebody later add other page
-types they might trigger this assertion and scratch their head about
-it and wonder if they're missing some non-obvious dependency.
-
-> > Update the comment and callsite requirements accordingly.
-> > 
-> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> On Mon, Oct 20, 2014 at 9:58 AM, Javier Martinez Canillas
+> <javier.martinez@collabora.co.uk> wrote:
+>>> It turns out that regulator_suspend_finish() actually returns an error
+>>> code.  Could you print a warning if you see it?
+>>>
+>>
+>> Yes, I noticed this when looking at Chris patch for Rockchip but didn't re-spin
+>> because I'm not sure anymore if this is the right solution. I mean, if is
+>> correct to add the same calls on every platform or if the regulator suspend
+>> prepare and finish functions should be called from the suspend core instead.
+>>
+>> For example calling regulator_suspend_prepare() from platform_suspend_prepare()
+>> [0] will have the advantage of passing the correct suspend_state_t state instead
+>> of hard-coding PM_SUSPEND_MEM and will make the regulator suspend states to work
+>> on all platforms.
 > 
-> Acked-by: Michal Hocko <mhocko@suse.cz>
+> Yes.  If we can get this added to the core that would be better.
+> 
 
-Thanks!
+Agreed, let's see what Rafael says about it.
+
+> I guess I was just trying to follow the suggestion that was in the
+> regulator code:
+> http://lxr.free-electrons.com/source/drivers/regulator/core.c#L3699
+> that says "This will usually be called by machine suspend code prior
+> to supending."
+> 
+> -Doug
+> 
+
+I see, but still I feel as if it may be a lot of duplication since most
+platforms will likely want to call the regulator core suspend prepare
+and finish functions. Maybe it can be added as a Kconfig option so each
+platform can choose at the config level if they want those to be called?
+
+Best regard,
+Javier
