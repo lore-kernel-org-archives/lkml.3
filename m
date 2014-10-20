@@ -1,79 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752513AbaJTSJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 14:09:27 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:36052 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102AbaJTSJX (ORCPT
+	id S1752381AbaJTSOA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 14:14:00 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:55771 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751511AbaJTSN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 14:09:23 -0400
-From: Kevin Hilman <khilman@kernel.org>
-To: "Yang\, Wenyou" <Wenyou.Yang@atmel.com>
-Cc: Mark Brown <broonie@kernel.org>,
-        "linux-spi\@vger.kernel.org" <linux-spi@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ferre\, Nicolas" <Nicolas.FERRE@atmel.com>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] spi/atmel: add support for runtime PM
-References: <1413424160-21180-1-git-send-email-wenyou.yang@atmel.com>
-	<7hk33yhms4.fsf@deeprootsystems.com>
-	<20141017135716.GS1820@sirena.org.uk>
-	<7hd29qhj3i.fsf@deeprootsystems.com>
-	<B256D81BAE5131468A838E5D7A243641BF594F37@penmbx01>
-Date: Mon, 20 Oct 2014 11:09:19 -0700
-In-Reply-To: <B256D81BAE5131468A838E5D7A243641BF594F37@penmbx01> (Wenyou
-	Yang's message of "Mon, 20 Oct 2014 02:05:42 +0000")
-Message-ID: <7hd29mfwa8.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Mon, 20 Oct 2014 14:13:59 -0400
+Date: Mon, 20 Oct 2014 11:13:55 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Will Deacon <Will.Deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH] arm64: Fix compile error seen in non-SMP builds
+Message-ID: <20141020181355.GA26798@roeck-us.net>
+References: <1412990134-31186-1-git-send-email-linux@roeck-us.net>
+ <20141020172208.GL23751@e104818-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141020172208.GL23751@e104818-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Yang, Wenyou" <Wenyou.Yang@atmel.com> writes:
+On Mon, Oct 20, 2014 at 06:22:09PM +0100, Catalin Marinas wrote:
+> On Sat, Oct 11, 2014 at 02:15:34AM +0100, Guenter Roeck wrote:
+> > Fix:
+> > 
+> > In file included from ./arch/arm64/include/asm/irq_work.h:4:0,
+> >         from include/linux/irq_work.h:46,
+> >         from include/linux/perf_event.h:49,
+> >         from include/linux/ftrace_event.h:9,
+> >         from include/trace/syscall.h:6,
+> >         from include/linux/syscalls.h:81,
+> >         from init/main.c:18:
+> > ./arch/arm64/include/asm/smp.h:24:3:
+> > 	error: #error "<asm/smp.h> included in non-SMP build"
+> >  # error "<asm/smp.h> included in non-SMP build"
+> >    ^
+> > ./arch/arm64/include/asm/smp.h:27:0: warning: "raw_smp_processor_id" redefined
+> >  #define raw_smp_processor_id() (current_thread_info()->cpu)
+> >  ^
+> > 
+> > and:
+> > 
+> > In file included from ./arch/arm64/include/asm/irq_work.h:4:0,
+> >         from include/linux/irq_work.h:46,
+> >         from kernel/irq_work.c:11:
+> > ./arch/arm64/include/asm/smp_plat.h:56:30:
+> >         error: ‘NR_CPUS’ undeclared here (not in a function)
+> >         extern u64 __cpu_logical_map[NR_CPUS];
+> > 
+> > by providing a helper function in smp_plat.h, similar to the arm implementation,
+> > and by removing NR_CPUS from smp_plat.h.
+> > 
+> > Fixes: 3631073659d0 ("arm64: Tell irq work about self IPI support")
+> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> 
+> Isn't something like this simpler:
+> 
 
->> -----Original Message-----
->> From: Kevin Hilman [mailto:khilman@kernel.org]
->> Sent: Friday, October 17, 2014 10:22 PM
->> To: Mark Brown
->> Cc: Yang, Wenyou; linux-spi@vger.kernel.org; linux-kernel@vger.kernel.org; Ferre,
->> Nicolas; linux-arm-kernel@lists.infradead.org
->> Subject: Re: [PATCH] spi/atmel: add support for runtime PM
->> 
->> Mark Brown <broonie@kernel.org> writes:
->> 
->> > On Fri, Oct 17, 2014 at 06:02:35AM -0700, Kevin Hilman wrote:
->> >> Wenyou Yang <wenyou.yang@atmel.com> writes:
->> >
->> >> > +	if (!pm_runtime_suspended(dev)) {
->> >> > +		clk_disable_unprepare(as->clk);
->> >> > +		pinctrl_pm_select_sleep_state(dev);
->> >> > +	}
->> >
->> >> a.k.a. pm_runtime_put_sync() since the ->runtime_suspend() callback
->> >> does the same thing.
->> >
->> > Will that do the right thing when runtime PM is disabled in Kconfig?
->> 
->> Good point.
->> 
->> Then the way to make this cleaner, and obvious on inspection that system
->> suspend/resume are doing the same thing as runtime suspend/resume is to have -
->> >suspend call the runtime_suspend function.
->> 
->> The runtime suspend/resume functions then should be wrapped in CONFIG_PM
->> instead of CONFIG_PM_RUNTIME.
-> But if the runtime PM is disabled, __pm_runtime_idle() return -ENOSYS,
-> which invoked by pm_runtime_put_sync(), in spite of the runtime
-> suspend/resume functions wrapper,
+Yes, that works as well.
 
-You won't be calling _put_sync(), instead you'll just directly call
-atmel_spi_runtime_suspend().
+Feel free to add my Tested-by: if you want to take that patch.
 
-The goal is to make it obvious upon reading that ->suspend and
-->runtime_suspend are doing exactly the same thing.
+Thanks,
+Guenter
 
-Kevin
-
+> diff --git a/arch/arm64/include/asm/irq_work.h b/arch/arm64/include/asm/irq_work.h
+> index 8e24ef3f7c82..b4f6b19a8a68 100644
+> --- a/arch/arm64/include/asm/irq_work.h
+> +++ b/arch/arm64/include/asm/irq_work.h
+> @@ -1,6 +1,8 @@
+>  #ifndef __ASM_IRQ_WORK_H
+>  #define __ASM_IRQ_WORK_H
+>  
+> +#ifdef CONFIG_SMP
+> +
+>  #include <asm/smp.h>
+>  
+>  static inline bool arch_irq_work_has_interrupt(void)
+> @@ -8,4 +10,13 @@ static inline bool arch_irq_work_has_interrupt(void)
+>  	return !!__smp_cross_call;
+>  }
+>  
+> +#else
+> +
+> +static inline bool arch_irq_work_has_interrupt(void)
+> +{
+> +	return false;
+> +}
+> +
+> +#endif
+> +
+>  #endif /* __ASM_IRQ_WORK_H */
