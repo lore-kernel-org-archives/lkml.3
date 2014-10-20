@@ -1,119 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834AbaJTOtt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 10:49:49 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:39917 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752144AbaJTOsl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 10:48:41 -0400
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-To: Mark Brown <broonie@kernel.org>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Chris Zhong <zyw@rock-chips.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v3 4/5] regulator: max77802: Parse regulator operating mode properties
-Date: Mon, 20 Oct 2014 16:47:51 +0200
-Message-Id: <1413816472-1895-5-git-send-email-javier.martinez@collabora.co.uk>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1413816472-1895-1-git-send-email-javier.martinez@collabora.co.uk>
-References: <1413816472-1895-1-git-send-email-javier.martinez@collabora.co.uk>
+	id S1752578AbaJTOvh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 10:51:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55863 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751467AbaJTOvg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 10:51:36 -0400
+Date: Mon, 20 Oct 2014 16:47:57 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kirill Tkhai <ktkhai@parallels.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Kirill Tkhai <tkhai@yandex.ru>
+Subject: Re: [PATCH v3] sched/numa: fix unsafe get_task_struct() in
+	task_numa_assign()
+Message-ID: <20141020144757.GA10939@redhat.com>
+References: <1413800145.19914.23.camel@tkhai>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413800145.19914.23.camel@tkhai>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The max77802 PMIC regulators output can be configured in one of two
-modes: Output ON (normal) and Output ON in Low Power Mode. Some of
-the regulators support their operating mode to be changed on startup
-or by consumers when the system is running while others only support
-their operating mode to be changed while the system has entered in a
-suspend state.
+Kirill,
 
-The regulator Device Tree binding documents a set of properties to
-configure the regulators operating modes from a FDT. This patch parse
-those properties and fills the regulator constraints so the regulator
-core can call the suspend handlers when the system enters into sleep.
+I leave this to you and Peter, but...
 
-Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
----
+On 10/20, Kirill Tkhai wrote:
+>
+> @@ -259,10 +259,15 @@ void __init fork_init(unsigned long mempages)
+>  #ifndef ARCH_MIN_TASKALIGN
+>  #define ARCH_MIN_TASKALIGN	L1_CACHE_BYTES
+>  #endif
+> -	/* create a slab on which task_structs can be allocated */
+> +	/*
+> +	 * Create a slab on which task_structs can be allocated.
+> +	 * Note, we need SLAB_DESTROY_BY_RCU flag, when we access
+> +	 * rq::curr under RCU read lock. See scheduler code.
+> +	 */
+>  	task_struct_cachep =
+>  		kmem_cache_create("task_struct", sizeof(struct task_struct),
+> -			ARCH_MIN_TASKALIGN, SLAB_PANIC | SLAB_NOTRACK, NULL);
+> +			ARCH_MIN_TASKALIGN,
+> +			SLAB_PANIC | SLAB_NOTRACK | SLAB_DESTROY_BY_RCU, NULL);
 
-Changes since v2:
- - Use the standard suspend states binding instead of custom properties.
-   Suggested by Mark Brown.
+to me this change needs more justification.
 
-Changes since v1:
- - Use the static inline max77802_map_mode() function instead of a macro.
-   Suggested by Mark Brown.
+Again, perhaps we will need to change the lifetime rules for task_struct
+anyway, if we have more problems like this. But until then this looks like
+an overkill to me. Plus rq_curr_if_not_put() looks too subtle, and it is
+not generic.
 
- drivers/regulator/max77802.c | 44 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 44 insertions(+)
+May be we should start with something simple and stupid?
 
-diff --git a/drivers/regulator/max77802.c b/drivers/regulator/max77802.c
-index 5839c45..2cbf980 100644
---- a/drivers/regulator/max77802.c
-+++ b/drivers/regulator/max77802.c
-@@ -518,6 +518,48 @@ static struct regulator_desc regulators[] = {
- };
+(it seems we can remove rcu_read_lock() with this patch, but I am not
+ sure).
+
+Oleg.
+
+
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1087,9 +1087,6 @@ static void task_numa_assign(struct task_numa_env *env,
+ {
+ 	if (env->best_task)
+ 		put_task_struct(env->best_task);
+-	if (p)
+-		get_task_struct(p);
+-
+ 	env->best_task = p;
+ 	env->best_imp = imp;
+ 	env->best_cpu = env->dst_cpu;
+@@ -1139,6 +1136,18 @@ static bool load_too_imbalanced(long src_load, long dst_load,
+ 	return (imb > old_imb);
+ }
  
- #ifdef CONFIG_OF
-+
-+static void max77802_parse_opmodes(struct device_node *np,
-+				   struct regulation_constraints *cons)
++struct task_struct *get_rq_curr(struct rq *rq)
 +{
-+	u32 pval;
-+	int i;
-+	char *states[PM_SUSPEND_MAX + 1] = {
-+		[PM_SUSPEND_MEM] = "regulator-state-mem",
-+		[PM_SUSPEND_MAX] = "regulator-state-disk",
-+	};
-+	struct regulator_state *state;
-+	struct device_node *state_np;
++	struct task_struct *curr;
 +
-+	if (!of_property_read_u32(np, "regulator-initial-mode", &pval))
-+		cons->initial_mode = max77802_map_mode(pval);
++	raw_spin_lock_irq(&rq->lock);
++	curr = rq->curr;
++	get_task_struct(curr);
++	raw_spin_unlock_irq(&rq->lock);
 +
-+	for (i = 0; i < ARRAY_SIZE(states); i++) {
-+		switch (i) {
-+		case PM_SUSPEND_MEM:
-+			state = &cons->state_mem;
-+			break;
-+		case PM_SUSPEND_MAX:
-+			state = &cons->state_disk;
-+			break;
-+		default:
-+			continue;
-+		};
-+
-+		state_np = of_get_child_by_name(np, states[i]);
-+		if (!state_np || !state)
-+			continue;
-+
-+		if (!of_property_read_u32(np, "regulator-mode", &pval))
-+			state->mode = max77802_map_mode(pval);
-+
-+		of_node_put(state_np);
-+
-+		state = NULL;
-+		state_np = NULL;
-+	};
++	return curr;
 +}
 +
- static int max77802_pmic_dt_parse_pdata(struct platform_device *pdev,
- 					struct max77686_platform_data *pdata)
- {
-@@ -555,6 +597,8 @@ static int max77802_pmic_dt_parse_pdata(struct platform_device *pdev,
- 		rdata[i].initdata = rmatch.init_data;
- 		rdata[i].of_node = rmatch.of_node;
- 		rdata[i].id = regulators[i].id;
-+		max77802_parse_opmodes(rdata[i].of_node,
-+				       &rdata[i].initdata->constraints);
- 	}
+ /*
+  * This checks if the overall compute and NUMA accesses of the system would
+  * be improved if the source tasks was migrated to the target dst_cpu taking
+@@ -1156,11 +1165,9 @@ static void task_numa_compare(struct task_numa_env *env,
+ 	long imp = env->p->numa_group ? groupimp : taskimp;
+ 	long moveimp = imp;
  
- 	pdata->regulators = rdata;
--- 
-2.1.0
+-	rcu_read_lock();
+-	cur = ACCESS_ONCE(dst_rq->curr);
+-	if (cur->pid == 0) /* idle */
+-		cur = NULL;
++	cur = get_rq_curr(dst_rq);
+ 
++	rcu_read_lock();
+ 	/*
+ 	 * "imp" is the fault differential for the source task between the
+ 	 * source and destination node. Calculate the total differential for
+@@ -1235,6 +1242,7 @@ balance:
+ 		 */
+ 		if (!load_too_imbalanced(src_load, dst_load, env)) {
+ 			imp = moveimp - 1;
++			put_task_struct(cur);
+ 			cur = NULL;
+ 			goto assign;
+ 		}
+@@ -1254,8 +1262,12 @@ balance:
+ 
+ assign:
+ 	task_numa_assign(env, cur, imp);
++	cur = NULL;
+ unlock:
+ 	rcu_read_unlock();
++
++	if (cur)
++		put_task_struct(cur);
+ }
+ 
+ static void task_numa_find_cpu(struct task_numa_env *env,
 
