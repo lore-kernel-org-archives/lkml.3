@@ -1,171 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089AbaJTQqJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 12:46:09 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:35018 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331AbaJTQqE (ORCPT
+	id S1752145AbaJTQrD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 12:47:03 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:64774 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750962AbaJTQrB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 12:46:04 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Subject: Re: [PATCH] i8k: Ignore temperature sensors which report invalid values
-Date: Mon, 20 Oct 2014 18:46:00 +0200
-User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.14.1; x86_64; ; )
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Steven Honeyman <stevenhoneyman@gmail.com>
-References: <1413730014-30945-1-git-send-email-pali.rohar@gmail.com> <5443D519.1090408@roeck-us.net>
-In-Reply-To: <5443D519.1090408@roeck-us.net>
+	Mon, 20 Oct 2014 12:47:01 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+K2PTXWE7Fs6kNmdeWaw0y
+Date: Mon, 20 Oct 2014 09:45:42 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>, sre@debian.org,
+        sre@ring0.de, kernel list <linux-kernel@vger.kernel.org>, balbi@ti.com,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        kishon@ti.com, s.nawrocki@samsung.com
+Subject: Re: USB Ethernet gadget on Nokia n900
+Message-ID: <20141020164542.GD5192@atomide.com>
+References: <20141019090107.GA19132@amd>
+ <201410191658.45851@pali>
+ <20141019205033.GA4738@amd>
+ <201410192300.20625@pali>
+ <20141020130855.GA1067@amd>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2411996.bfefM0gB7K";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201410201846.00586@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141020130855.GA1067@amd>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2411996.bfefM0gB7K
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+* Pavel Machek <pavel@ucw.cz> [141020 06:10]:
+> Hi!
+> 
+> > My N900 can boot kernel from v3.12-rc5-n900 branch compiled with 
+> > arch/arm/configs/rx51_defconfig. Also it can boot full Maemo5 
+> > system (with CSSU and some minor system changes) and usb network 
+> > via g_nokia.ko gadget working fine...
+> > 
+> > So if it does not working for you then kernel usb subsystem could 
+> > have problems with using gadgets directly from zimage.
+> 
+> After some hand-bisecting and real-bisecting, I found two commits that
+> cause problems for 3.13: With these reverted, I get usb networking
+> back in 3.13 on nokia n900.
+> 
+> (Pali, if you revert these, you should get working usb networking in
+> your 3.13 branch, too.)
+> 
+> Any ideas?
 
-Ok, I will describe my problem. Guenter, maybe you can find=20
-another solution/fix for it.
+Hmm maybe check if current stable kernels work for you without
+reverting anything ? Few weeks ago I did the the following two fixes
+with cc stable v3.13+:
 
-Calling i8k_get_temp(3) on my laptop without I8K_TEMPERATURE_BUG=20
-always returns value 193 (which is above I8K_MAX_TEMP).
+96be39ab34b7 usb: phy: twl4030-usb: Fix regressions to runtime PM on omaps
+85601b8d81e2 usb: phy: twl4030-usb: Fix lost interrupts after ID pin goes down
 
-When I8K_TEMPERATURE_BUG is enabled (by default) then=20
-i8k_get_temp(3) returns value from prev[3] and store new value=20
-I8K_TEMPERATURE_BUG to prev[3]. Value in prev[3] is initialized=20
-to 0.
+Regards,
 
-What I want to achieve is: when i8k_get_temp() for particular=20
-sensor id always returns invalid value (> I8K_MAX_TEMP) then we=20
-should totally ignore sensor with that id and do not export it=20
-via hwmon.
-
-My solution is: initialize prev[id] to I8K_MAX_TEMP, so on=20
-invalid data first call to i8k_get_temp(id) returns I8K_MAX_TEMP.=20
-Then in i8k_init_hwmon check if value is < I8K_MAX_TEMP and if=20
-not ignore sensor id.
-
-Guenter, it is clear now? Are you ok that we should ignore sensor=20
-if always report value above I8K_MAX_TEMP? If you do not like my=20
-solution/patch for it, can you specify how other can it be fixed?
-
-On Sunday 19 October 2014 17:13:29 Guenter Roeck wrote:
-> On 10/19/2014 07:46 AM, Pali Roh=C3=A1r wrote:
-> > On some machines some temperature sensors report too high
-> > values which are
->=20
-> What is "too high", and what is "some machines" ?
-> Would be great if you can be more specific.
->=20
-> > invalid. When value is invalid function i8k_get_temp()
-> > returns previous value and at next call it returns
-> > I8K_MAX_TEMP.
-> >=20
-> > With this patch also firt i8k_get_temp() call returns
-> > I8K_MAX_TEMP and
->=20
-> fix ? Also, I am not entirely sure I understand what exactly
-> you are fixing here.
->=20
-> > i8k_init_hwmon() will ignore all sensor ids which report
-> > incorrect values.
-> >=20
-> > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
-> > ---
-> >=20
-> >   drivers/char/i8k.c |   10 +++++-----
-> >   1 file changed, 5 insertions(+), 5 deletions(-)
-> >=20
-> > diff --git a/drivers/char/i8k.c b/drivers/char/i8k.c
-> > index 7272b08..bc327fa 100644
-> > --- a/drivers/char/i8k.c
-> > +++ b/drivers/char/i8k.c
-> > @@ -298,7 +298,7 @@ static int i8k_get_temp(int sensor)
-> >=20
-> >   	int temp;
-> >  =20
-> >   #ifdef I8K_TEMPERATURE_BUG
-> >=20
-> > -	static int prev[4];
-> > +	static int prev[4] =3D { I8K_MAX_TEMP, I8K_MAX_TEMP,
-> > I8K_MAX_TEMP, I8K_MAX_TEMP };
->=20
-> I am not sure I understand what this change is expected to
-> accomplish. Please explain.
->=20
-> >   #endif
-> >  =20
-> >   	regs.ebx =3D sensor & 0xff;
-> >   	rc =3D i8k_smm(&regs);
-> >=20
-> > @@ -610,17 +610,17 @@ static int __init i8k_init_hwmon(void)
-> >=20
-> >   	/* CPU temperature attributes, if temperature reading is
-> >   	OK */ err =3D i8k_get_temp(0);
-> >=20
-> > -	if (err >=3D 0)
-> > +	if (err >=3D 0 && err < I8K_MAX_TEMP)
->=20
-> I8K_MAX_TEMP is, at least in theory, a valid temperature, so
-> this should be "<=3D".
->=20
-> It would be important to understand what the "too high"
-> temperature is to possibly be able to distinguish it from the
-> buggy temperature that the code is trying to fix.
->=20
-> Thanks,
-> Guenter
->=20
-> >   		i8k_hwmon_flags |=3D I8K_HWMON_HAVE_TEMP1;
-> >   =09
-> >   	/* check for additional temperature sensors */
-> >   	err =3D i8k_get_temp(1);
-> >=20
-> > -	if (err >=3D 0)
-> > +	if (err >=3D 0 && err < I8K_MAX_TEMP)
-> >=20
-> >   		i8k_hwmon_flags |=3D I8K_HWMON_HAVE_TEMP2;
-> >   =09
-> >   	err =3D i8k_get_temp(2);
-> >=20
-> > -	if (err >=3D 0)
-> > +	if (err >=3D 0 && err < I8K_MAX_TEMP)
-> >=20
-> >   		i8k_hwmon_flags |=3D I8K_HWMON_HAVE_TEMP3;
-> >   =09
-> >   	err =3D i8k_get_temp(3);
-> >=20
-> > -	if (err >=3D 0)
-> > +	if (err >=3D 0 && err < I8K_MAX_TEMP)
-> >=20
-> >   		i8k_hwmon_flags |=3D I8K_HWMON_HAVE_TEMP4;
-> >   =09
-> >   	/* Left fan attributes, if left fan is present */
-
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart2411996.bfefM0gB7K
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlRFPEgACgkQi/DJPQPkQ1LM4gCgkBuIR3wzH5RcewE4knKjpLOI
-VaYAoK0Kmxi4e3v42zO/1Vz84v1dTYKT
-=H9ny
------END PGP SIGNATURE-----
-
---nextPart2411996.bfefM0gB7K--
+Tony 
