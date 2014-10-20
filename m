@@ -1,130 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023AbaJTWsS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 18:48:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57609 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753961AbaJTWsR (ORCPT
+	id S932140AbaJTWsc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 18:48:32 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:61411 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753616AbaJTWs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 18:48:17 -0400
-Date: Mon, 20 Oct 2014 15:48:16 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Pintu Kumar <pintu.k@samsung.com>
-Cc: hannes@cmpxchg.org, riel@redhat.com, mgorman@suse.de,
-        vdavydov@parallels.com, nasa4836@gmail.com, ddstreet@ieee.org,
-        m.szyprowski@samsung.com, mina86@mina86.com, iamjoonsoo.kim@lge.com,
-        aneesh.kumar@linux.vnet.ibm.com, lauraa@codeaurora.org,
-        gioh.kim@lge.com, rientjes@google.com, vbabka@suse.cz,
-        sasha.levin@oracle.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, cpgs@samsung.com, pintu_agarwal@yahoo.com,
-        vishnu.ps@samsung.com, rohit.kr@samsung.com, ed.savinay@samsung.com
-Subject: Re: [PATCH] mm: cma: split cma-reserved in dmesg log
-Message-Id: <20141020154816.9403d8684639d968948b7134@linux-foundation.org>
-In-Reply-To: <1413790391-31686-1-git-send-email-pintu.k@samsung.com>
-References: <1413790391-31686-1-git-send-email-pintu.k@samsung.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 20 Oct 2014 18:48:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAHse=S-Xyk7CFn=tAGzo+tuUFt+04aBw+mGQmi=kWAaBJGALBw@mail.gmail.com>
+References: <1401975635-6162-1-git-send-email-drysdale@google.com>
+ <CALCETrVraoD+r4zxBoGd+BV5P275AXcRV_R00SSr8fjQzRHnUg@mail.gmail.com>
+ <87zjcszz8y.fsf@x220.int.ebiederm.org> <CAHse=S-Xyk7CFn=tAGzo+tuUFt+04aBw+mGQmi=kWAaBJGALBw@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 20 Oct 2014 15:48:06 -0700
+Message-ID: <CALCETrXBjLZTWVJfcsE4NA-JP9zSSgn=6ND0=cZ9BTy=CoN7pA@mail.gmail.com>
+Subject: Re: [PATCHv4 RESEND 0/3] syscalls,x86: Add execveat() system call
+To: David Drysdale <drysdale@google.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
+        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Oct 2014 13:03:10 +0530 Pintu Kumar <pintu.k@samsung.com> wrote:
-
-> When the system boots up, in the dmesg logs we can see
-> the memory statistics along with total reserved as below.
-> Memory: 458840k/458840k available, 65448k reserved, 0K highmem
-> 
-> When CMA is enabled, still the total reserved memory remains the same.
-> However, the CMA memory is not considered as reserved.
-> But, when we see /proc/meminfo, the CMA memory is part of free memory.
-> This creates confusion.
-> This patch corrects the problem by properly substracting the CMA reserved
-> memory from the total reserved memory in dmesg logs.
-> 
-> Below is the dmesg snaphot from an arm based device with 512MB RAM and
-> 12MB single CMA region.
-> 
-> Before this change:
-> Memory: 458840k/458840k available, 65448k reserved, 0K highmem
-> 
-> After this change:
-> Memory: 458840k/458840k available, 53160k reserved, 12288k cma-reserved, 0K highmem
-> 
-> ...
+On Mon, Oct 20, 2014 at 6:48 AM, David Drysdale <drysdale@google.com> wrote:
+> On Sun, Oct 19, 2014 at 1:20 AM, Eric W. Biederman
+> <ebiederm@xmission.com> wrote:
+>> Andy Lutomirski <luto@amacapital.net> writes:
+>>
+>>> [Added Eric Biederman, since I think your tree might be a reasonable
+>>> route forward for these patches.]
+>>>
+>>> On Thu, Jun 5, 2014 at 6:40 AM, David Drysdale <drysdale@google.com> wrote:
+>>>> Resending, adding cc:linux-api.
+>>>>
+>>>> Also, it may help to add a little more background -- this patch is
+>>>> needed as a (small) part of implementing Capsicum in the Linux kernel.
+>>>>
+>>>> Capsicum is a security framework that has been present in FreeBSD since
+>>>> version 9.0 (Jan 2012), and is based on concepts from object-capability
+>>>> security [1].
+>>>>
+>>>> One of the features of Capsicum is capability mode, which locks down
+>>>> access to global namespaces such as the filesystem hierarchy.  In
+>>>> capability mode, /proc is thus inaccessible and so fexecve(3) doesn't
+>>>> work -- hence the need for a kernel-space
+>>>
+>>> I just found myself wanting this syscall for another reason: injecting
+>>> programs into sandboxes or otherwise heavily locked-down namespaces.
+>>>
+>>> For example, I want to be able to reliably do something like nsenter
+>>> --namespace-flags-here toybox sh.  Toybox's shell is unusual in that
+>>> it is more or less fully functional, so this should Just Work (tm),
+>>> except that the toybox binary might not exist in the namespace being
+>>> entered.  If execveat were available, I could rig nsenter or a similar
+>>> tool to open it with O_CLOEXEC, enter the namespace, and then call
+>>> execveat.
+>>>
+>>> Is there any reason that these patches can't be merged more or less as
+>>> is for 3.19?
+>>
+>> Yes.  There is a silliness in how it implements fexecve.  The fexecve
+>> case should be use the empty string "" not a NULL pointer to indication
+>> that.  That change will then harmonize execveat with the other ...at
+>> system calls and simplify the code and remove a special case.  I believe
+>> using the empty string "" requires implementing the AT_EMPTY_PATH flag.
 >
-> --- a/include/linux/swap.h
-> +++ b/include/linux/swap.h
-> @@ -295,6 +295,9 @@ static inline void workingset_node_shadows_dec(struct radix_tree_node *node)
->  /* linux/mm/page_alloc.c */
->  extern unsigned long totalram_pages;
->  extern unsigned long totalreserve_pages;
-> +#ifdef CONFIG_CMA
-> +extern unsigned long totalcma_pages;
-> +#endif
+> Good point -- I'll shift to "" + AT_EMPTY_PATH.
 
-We don't actually need the ifdefs here - the kernel will compile OK
-without them.  This means that a programming error will result in a
-link-time error rather than a compile-time error but that's a pretty
-small cost to pay for keeping the header files neater.
+Pending a better idea, I would also see if the patches can be changed
+to return an error if d_path ends up with an "(unreachable)" thing
+rather than failing inexplicably later on.
 
->  extern unsigned long dirty_balance_reserve;
->  extern unsigned long nr_free_buffer_pages(void);
->  extern unsigned long nr_free_pagecache_pages(void);
-> diff --git a/mm/cma.c b/mm/cma.c
-> index 963bc4a..73fe7be 100644
-> --- a/mm/cma.c
-> +++ b/mm/cma.c
-> @@ -45,6 +45,7 @@ struct cma {
->  static struct cma cma_areas[MAX_CMA_AREAS];
->  static unsigned cma_area_count;
->  static DEFINE_MUTEX(cma_mutex);
-> +unsigned long totalcma_pages __read_mostly;
-
-This could+should be __initdata.
-
->  phys_addr_t cma_get_base(struct cma *cma)
->  {
-> @@ -288,6 +289,7 @@ int __init cma_declare_contiguous(phys_addr_t base,
->  	if (ret)
->  		goto err;
->  
-> +	totalcma_pages += (size / PAGE_SIZE);
->  	pr_info("Reserved %ld MiB at %08lx\n", (unsigned long)size / SZ_1M,
->  		(unsigned long)base);
->  	return 0;
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index dd73f9a..c6165ac 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -5521,6 +5521,9 @@ void __init mem_init_print_info(const char *str)
->  	pr_info("Memory: %luK/%luK available "
->  	       "(%luK kernel code, %luK rwdata, %luK rodata, "
->  	       "%luK init, %luK bss, %luK reserved"
-> +#ifdef CONFIG_CMA
-> +		", %luK cma-reserved"
-> +#endif
->  #ifdef	CONFIG_HIGHMEM
->  	       ", %luK highmem"
->  #endif
-> @@ -5528,7 +5531,12 @@ void __init mem_init_print_info(const char *str)
->  	       nr_free_pages() << (PAGE_SHIFT-10), physpages << (PAGE_SHIFT-10),
->  	       codesize >> 10, datasize >> 10, rosize >> 10,
->  	       (init_data_size + init_code_size) >> 10, bss_size >> 10,
-> +#ifdef CONFIG_CMA
-> +	       (physpages - totalram_pages - totalcma_pages) << (PAGE_SHIFT-10),
-> +	       totalcma_pages << (PAGE_SHIFT-10),
-> +#else
->  	       (physpages - totalram_pages) << (PAGE_SHIFT-10),
-> +#endif
->  #ifdef	CONFIG_HIGHMEM
->  	       totalhigh_pages << (PAGE_SHIFT-10),
->  #endif
-
-Do we really need any of the ifdefs?  A non-CMA kernel will print "0K
-cma-reserved" but is that harmful?
-
-This is all __init code so the additional code bloat isn't a
-significant issue.
-
+--Andy
