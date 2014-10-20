@@ -1,68 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682AbaJTNgX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 09:36:23 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:49303 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752114AbaJTNgU (ORCPT
+	id S1752318AbaJTNlQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 09:41:16 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:48545 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751986AbaJTNlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 09:36:20 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Michal Simek <michal.simek@xilinx.com>,
-        Josh Cartwright <josh.cartwright@ni.com>, monstr@monstr.eu,
-        Russell King <linux@arm.linux.org.uk>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        linux-kernel@vger.kernel.org,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>
-Subject: Re: [PATCH v2 1/3] ARM: zynq: Move common.h to generic location
-Date: Mon, 20 Oct 2014 15:36:06 +0200
-Message-ID: <3225036.9QQDRKvzZS@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <742a19eb987f3f99b42ba4b7e7ebc27bf19d7d72.1413811526.git.michal.simek@xilinx.com>
-References: <742a19eb987f3f99b42ba4b7e7ebc27bf19d7d72.1413811526.git.michal.simek@xilinx.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:PpeMchHIVKakIRPv4pb0ocUPcs51L7iI7afmEJenDhe
- e7K1Iy0N2ZoDLhh1oio1EnYTYx8F/a6vmFj5KySI5WNnG+7bZF
- zYmUsI/+BZNYzYYaGf4dUKDcbFXYfMDG5oc7ndNHSxUuxX35O/
- oO+dq0qbH1OdSh+sblGR/Vz2KgCDqO2RpZaI3d2bDFK19NhrWi
- 7AERKuJbqpcNDw6IgaQY+bu03dVcstcGQ0qQA5Omxs+mjxCXFH
- 6tqRU3IHZjFaA6GIK6Y9bzdRDz82ywa71lT8hHdLq2B01khF6h
- /X/GNhTPAPJjPKdSuSHMLJIT0D3Zoan6WAy6Y4yHUwzyxfEt5N
- yoUx8uEGear6gAWkQjXo=
-X-UI-Out-Filterresults: notjunk:1;
+	Mon, 20 Oct 2014 09:41:13 -0400
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Alex Elder <elder@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-omap@vger.kernel.org, Manuel Lauss <manuel.lauss@gmail.com>,
+        Matt Porter <mporter@linaro.org>, Ralf Baechle <ralf@linux-mips.org>,
+        Tim Kryger <tim.kryger@linaro.org>,
+        Zhangfei Gao <zhangfei.gao@linaro.org>
+Subject: [PATCH v4 0/8] Per-user clock constraints
+Date: Mon, 20 Oct 2014 15:40:00 +0200
+Message-Id: <1413812442-24956-1-git-send-email-tomeu.vizoso@collabora.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 20 October 2014 15:25:31 Michal Simek wrote:
-> include/soc/zynq/ is the right location for this header
-> to be able to share information from this header with other
-> drivers which require it.
-> 
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-> ---
-> 
-> Changes in v2:
-> - Update pm.c added in 3.17 too - Soren pointed on it
-> 
->  arch/arm/mach-zynq/common.c                       |  2 +-
->  arch/arm/mach-zynq/hotplug.c                      | 14 --------------
->  arch/arm/mach-zynq/platsmp.c                      |  2 +-
->  arch/arm/mach-zynq/pm.c                           |  2 +-
->  arch/arm/mach-zynq/slcr.c                         |  2 +-
->  {arch/arm/mach-zynq => include/soc/zynq}/common.h |  0
->  6 files changed, 4 insertions(+), 18 deletions(-)
->  delete mode 100644 arch/arm/mach-zynq/hotplug.c
->  rename {arch/arm/mach-zynq => include/soc/zynq}/common.h (100%)
-> 
+Hello,
 
-NAK
+this fourth version of the series is mainly intended to address many good
+comments from Stephen Boyd, most notably:
 
-Most (if not all) of that header should not be visible to drivers.
-If you need to share some symbols, make a proper header file for those,
-not one called 'common.h'.
+* Make sure that best_parent_p is populated with the current parent before
+calling clk_ops.determine_rate()
 
-	Arnd
+* Make sure we don't lose information about the caller in of_clk_get_*
+
+* Refresh the effective rate after a per-user clk is removed
+
+* Store requested rate and re-apply it when constraints are updated
+
+The first six patches are just cleanups that should be desirable on their own,
+and that should make easier to review the actual per-user clock patch.
+
+The seventh patch actually moves the per-clock data that was stored in struct
+clk to a new struct clk_core and adds references to it from both struct clk and
+struct clk_hw. struct clk is now ready to contain information that is specific
+to a given clk consumer.
+
+The eighth patch adds API for setting floor and ceiling constraints and stores
+that information on the per-user struct clk, which is iterable from struct
+clk_core.
+
+They are based on top of 3.18-rc1.
+
+http://cgit.collabora.com/git/user/tomeu/linux.git/log/?h=per-user-clk-constraints-v4
+
+Thanks,
+
+Tomeu
+
+Tomeu Vizoso (8):
+  MIPS: Alchemy: Remove direct access to prepare_count field of struct
+    clk
+  clk: Remove unused function __clk_get_prepare_count
+  clk: Don't try to use a struct clk* after it could have been freed
+  clk: Don't expose __clk_get_accuracy
+  clk: change clk_debugfs_add_file to take a struct clk_hw
+  clk: Change clk_ops->determine_rate to return a clk_hw as the best
+    parent
+  clk: Make clk API return per-user struct clk instances
+  clk: Add floor and ceiling constraints to clock rates
+
+ Documentation/clk.txt                   |   2 +-
+ arch/arm/mach-omap2/cclock3xxx_data.c   | 108 +++--
+ arch/arm/mach-omap2/clock.h             |  11 +-
+ arch/arm/mach-omap2/clock_common_data.c |   5 +-
+ arch/mips/alchemy/common/clock.c        |  17 +-
+ drivers/clk/at91/clk-programmable.c     |   4 +-
+ drivers/clk/bcm/clk-kona.c              |   4 +-
+ drivers/clk/clk-composite.c             |   9 +-
+ drivers/clk/clk.c                       | 788 +++++++++++++++++++++-----------
+ drivers/clk/clk.h                       |   5 +
+ drivers/clk/clkdev.c                    |  73 ++-
+ drivers/clk/hisilicon/clk-hi3620.c      |   2 +-
+ drivers/clk/qcom/clk-rcg.c              |  20 +-
+ drivers/clk/qcom/clk-rcg2.c             |  28 +-
+ drivers/clk/sunxi/clk-factors.c         |   4 +-
+ drivers/clk/sunxi/clk-sun6i-ar100.c     |   4 +-
+ include/linux/clk-private.h             |  41 +-
+ include/linux/clk-provider.h            |  17 +-
+ include/linux/clk.h                     |  18 +
+ 19 files changed, 771 insertions(+), 389 deletions(-)
+
+-- 
+1.9.3
+
