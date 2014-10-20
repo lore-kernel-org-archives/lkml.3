@@ -1,87 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752214AbaJTAAT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 20:00:19 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:28222 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888AbaJTAAP (ORCPT
+	id S1752128AbaJTAIb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 20:08:31 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:61774 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751888AbaJTAIa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 20:00:15 -0400
-Message-ID: <54445079.4000803@oracle.com>
-Date: Sun, 19 Oct 2014 19:59:53 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Sun, 19 Oct 2014 20:08:30 -0400
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: Aaro Koskinen <aaro.koskinen@iki.fi>, Andrew Pinski <pinskia@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel: use the gnu89 standard explicitly
-References: <1413734862-13510-1-git-send-email-sasha.levin@oracle.com>	<CA+55aFyDECoy4s6oO=PFZSyNS_F9EagxFiNm1X95Fu0cdSTeXQ@mail.gmail.com>	<20141019210348.GA28144@drone.musicnaut.iki.fi>	<CA+55aFzOYL-2WT2bf5C5ODAJnd=qVgpZGb-6o7z56Vu14wavJg@mail.gmail.com>	<20141019231031.GB9319@node.dhcp.inet.fi> <CA+55aFxf6_cA5hTtDGqPU4=DkKz_6OUizhiqge+Xf5u34RxeXw@mail.gmail.com>
-In-Reply-To: <CA+55aFxf6_cA5hTtDGqPU4=DkKz_6OUizhiqge+Xf5u34RxeXw@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <20141019213534.GG23531@worktop.programming.kicks-ass.net>
+References: <cover.1413323611.git.luto@amacapital.net> <b6c264b3bb064658af498763e234e3cb4f9db4e2.1413323612.git.luto@amacapital.net>
+ <CALCETrXRGNeUipujcGiT30SV+MDHCFpTxG7LOTXj4Z4CbtxdJQ@mail.gmail.com> <20141019213534.GG23531@worktop.programming.kicks-ass.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Sun, 19 Oct 2014 17:08:08 -0700
+Message-ID: <CALCETrX3XYGd+2x_W89wq5tkuMBNF5NxDa02ha=UzQhU2r6Khg@mail.gmail.com>
+Subject: Re: [RFC 5/5] x86,perf: Only allow rdpmc if a perf_event is mapped
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Erik Bosman <ebn310@few.vu.nl>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19/2014 07:49 PM, Linus Torvalds wrote:
-> On Sun, Oct 19, 2014 at 4:10 PM, Kirill A. Shutemov
-> <kirill@shutemov.name> wrote:
->> >
->> > IIUC, it's nothing to do with volatile. C11 and above reads
->> >
->> >         (rwlock_t) { .raw_lock = { 0 }, }
->> >
->> > as compound literal (which is not constant) rather than constant
->> > initalizer plus a cast.
-> Ahh. I thought it was the volatile, just because of the "constant"
-> part and the fact that it looked like the test-case was minimal. But
-> apparently that was just a red herring.
-> 
-> So it's just the fact that C11 hasn't got the useful GNU extension of
-> a cast-with-initializer, and then that extension got removed (probably
-> just an oversight) because people thought that the "standard" C11
-> initializers were good enough.
-> 
-> And it sounds like this will get fixed (perhaps already is) in gcc anyway.
+On Sun, Oct 19, 2014 at 2:35 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, Oct 16, 2014 at 05:00:56PM -0700, Andy Lutomirski wrote:
+>> The current cap_user_rdpmc code seems rather confused to me.  On x86,
+>> *all* events set cap_user_rdpmc if the global rdpmc control is set.
+>> But only x86_pmu events define .event_idx, so amd uncore events won't
+>> actually expose their rdpmc index to userspace.
+>>
+>> Would it make more sense to add a flag PERF_X86_EVENT_RDPMC_PERMITTED
+>> that gets set on all events created while rdpmc == 1, to change
+>> x86_pmu_event_idx to do something like:
+>>
+>> if (event->hw.flags & PERF_X86_EVENT_RDPMC_PERMITTED)
+>>   return event->hw.event_base_rdpmc + 1;
+>> else
+>>   return 0;
+>>
+>> and to change arch_perf_update_userpage cap_user_rdpmc to match
+>> PERF_X86_EVENT_RDPMC_PERMITTED?
+>>
+>> Then we could ditch the static key and greatly simplify writes to the
+>> rdpmc flag by just counting PERF_X86_EVENT_RDPMC_PERMITTED events.
+>>
+>> This would be a user-visible change on AMD, and I can't test it.
+>
+> I have AMD hardware to test this. But yes something like that seems
+> fine.
 
-It was already fixed in gcc (I've reported it here:
-https://gcc.gnu.org/bugzilla/show_bug.cgi?id=63567)
+Before I totally screw this up: is .event_idx used for anything except
+userspace rdpmc?  There are a whole bunch of implementations of that
+callback:
 
-> So maybe we need to do that "--std=gnu89" as a temporary workaround,
-> but not as long long-term "newer versions are broken".
+ - perf_event_idx_default seems fishy
+ - power_pmu_event_idx seems even fishier
+ - cpumsf_pmu_event_idx is the same as power_pmu_event_idx.
+ - perf_swevent_event_idx returns 0.
 
-Agreed, I could send patches to fix the build issues resulting from c11,
-but I'm afraid that it'll need real good testing to uncover things that don't
-show up during the build.
+etc.
 
-> That doesn't sound too bad. My main objection to the patch was a
-> "let's try to fix this properly instead", but if the breakage is just
-> a temporary problem, there's no issue with "properly". Although it
-> does look like the *placement* of the --std=gnu89 was incorrect in
-> that original patch, so it needs updating regardless.
+x86 is the only implementation of arch_perf_update_userpage, which
+makes me think that the .event_idx callback should just be removed and
+that arch_perf_update_userpage should be responsible for filling it in
+if needed.
 
-Apologies. It seemed like the right place to me and it worked fine when
-I tested it.
+--Andy
 
-> AndrewP, mind explaing the other difference you mentioned (ie wrt
-> "extern inline")? I thought we had already long since ended up
-> following the gcc semantics (ie use "static inline" if we don't have
-> an external version somehwre), what exactly changed?
-
-(Stolen from gcc changelog:)
-
-gnu89: extern inline: Will not generate an out-of-line version, but
-	might call one.
-gnu99: extern inline: like GNU "inline", externally visible code is
-	emitted.
-
-(So what happens is that with gnu99 you end up with multiple definitions
-of the symbol since it was externed from multiple compilation units).
-
-
-Thanks,
-Sasha
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
