@@ -1,118 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426AbaJTJyP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 05:54:15 -0400
-Received: from regular1.263xmail.com ([211.150.99.134]:52809 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753318AbaJTJyK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 05:54:10 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: wxt@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: wxt@rock-chips.com
-X-UNIQUE-TAG: <28763a0aa6ef63f741c32864b7356d4d>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Caesar Wang <caesar.wang@rock-chips.com>
-To: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com
-Cc: zyf@rock-chips.com, dianders@chromium.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        cf@rock-chips.com, dmitry.torokhov@gmail.com, dbasehore@chromium.org,
-        huangtao@rock-chips.com, cjf@rock-chips.com, zhengsq@rock-chips.com,
-        vladimir_zapolskiy@mentor.com,
-        Caesar Wang <caesar.wang@rock-chips.com>
-Subject: [PATCH v12 3/5] ARM: dts: add RK3288 Thermal data
-Date: Mon, 20 Oct 2014 17:53:48 +0800
-Message-Id: <1413798830-23435-4-git-send-email-caesar.wang@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1413798830-23435-1-git-send-email-caesar.wang@rock-chips.com>
-References: <1413798830-23435-1-git-send-email-caesar.wang@rock-chips.com>
+	id S1753266AbaJTJ4W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 05:56:22 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753374AbaJTJ4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 05:56:18 -0400
+Message-ID: <5444DC3F.20601@nod.at>
+Date: Mon, 20 Oct 2014 11:56:15 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+MIME-Version: 1.0
+To: Thomas Meyer <thomas@m3y3r.de>
+CC: user-mode-linux-devel <user-mode-linux-devel@lists.sourceforge.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [uml-devel] [UM] Long loop in __getnsdayoftime() after resume
+ from ram
+References: <E1Xg9cr-0007LK-S6@www17.your-server.de>
+In-Reply-To: <E1Xg9cr-0007LK-S6@www17.your-server.de>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes a dtsi file to contain the thermal data
-on RK3288 and later SoCs. This data will
-enable a thermal shutdown over 125C.
+Am 20.10.2014 um 11:51 schrieb Thomas Meyer:
+>> Hmm, does this always happen?
+> 
+> Yes, my single core system seems to trigger this every time after resume from ram.
 
-Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
----
- arch/arm/boot/dts/rk3288-thermal.dtsi | 57 +++++++++++++++++++++++++++++++++++
- 1 file changed, 57 insertions(+)
- create mode 100644 arch/arm/boot/dts/rk3288-thermal.dtsi
+What is your host kernel?
 
-diff --git a/arch/arm/boot/dts/rk3288-thermal.dtsi b/arch/arm/boot/dts/rk3288-thermal.dtsi
-new file mode 100644
-index 0000000..c68c090
---- /dev/null
-+++ b/arch/arm/boot/dts/rk3288-thermal.dtsi
-@@ -0,0 +1,57 @@
-+/*
-+ * Device Tree Source for RK3288 SoC thermal
-+ *
-+ * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
-+ *
-+ * This file is licensed under the terms of the GNU General Public License
-+ * version 2.  This program is licensed "as is" without any warranty of any
-+ * kind, whether express or implied.
-+ */
-+
-+#include <dt-bindings/thermal/thermal.h>
-+
-+reserve_thermal: reserve_thermal {
-+	polling-delay-passive = <500>; /* milliseconds */
-+	polling-delay = <1000>; /* milliseconds */
-+
-+			/* sensor	ID */
-+	thermal-sensors = <&tsadc	0>;
-+
-+};
-+
-+cpu_thermal: cpu_thermal {
-+	polling-delay-passive = <500>; /* milliseconds */
-+	polling-delay = <1000>; /* milliseconds */
-+
-+			/* sensor	ID */
-+	thermal-sensors = <&tsadc	1>;
-+
-+	trips {
-+		cpu_alert0: cpu_alert0 {
-+			temperature = <80000>; /* millicelsius */
-+			hysteresis = <2000>; /* millicelsius */
-+			type = "passive";
-+		};
-+		cpu_crit: cpu_crit {
-+			temperature = <125000>; /* millicelsius */
-+			hysteresis = <2000>; /* millicelsius */
-+			type = "critical";
-+		};
-+	};
-+};
-+
-+gpu_thermal: gpu_thermal {
-+	polling-delay-passive = <500>; /* milliseconds */
-+	polling-delay = <1000>; /* milliseconds */
-+
-+			/* sensor	ID */
-+	thermal-sensors = <&tsadc	2>;
-+
-+	trips {
-+		gpu_crit: gpu_crit {
-+			temperature = <125000>; /* millicelsius */
-+			hysteresis = <2000>; /* millicelsius */
-+			type = "critical";
-+		};
-+	};
-+};
--- 
-1.9.1
+>> At least on my notebook it did not happen. I've started an UML yesterday 
+>> suspended it and after more than 12h it worked fine today. 
+>>
+>> BTW: Do you see the issue also then freezing UML using the freezer cgroup?
+> 
+> I'm not sure what do you mean by this. Do I need to enable some special configs for this in the host or uml kernel?
 
+Create on the host side a new freezer cgroup, put UML into it and freeze/thaw it.
+i.e. mkdir /sys/fs/cgroup/freezer/uml ; echo <pid of a shell> >  /sys/fs/cgroup/freezer/uml/tasks.
+In the said shell run UML and then freeze it using echo FROZEN > /sys/fs/cgroup/freezer/uml/freezer.state.
+Later thaw it: echo THAWED > /sys/fs/cgroup/freezer/uml/freezer.state
 
+Thanks,
+//richard
