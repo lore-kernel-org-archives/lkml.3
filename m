@@ -1,224 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753316AbaJTI47 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 04:56:59 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:47861 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753025AbaJTIzP (ORCPT
+	id S1753183AbaJTJAY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 05:00:24 -0400
+Received: from relay.parallels.com ([195.214.232.42]:35594 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752816AbaJTJAW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 04:55:15 -0400
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        linux-mtd@lists.infradead.org, Huang Shijie <shijie8@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Mike Voytovich <mvoytovich@paypal.com>, Roy Lee <roylee@paypal.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>
-Subject: [PATCH v4 3/4] mtd: nand: gpmi: add proper raw access support
-Date: Mon, 20 Oct 2014 10:46:16 +0200
-Message-Id: <1413794777-32220-4-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1413794777-32220-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1413794777-32220-1-git-send-email-boris.brezillon@free-electrons.com>
+	Mon, 20 Oct 2014 05:00:22 -0400
+Message-ID: <1413795620.19914.18.camel@tkhai>
+Subject: Re: [PATCH] sched/numa: fix unsafe get_task_struct() in
+ task_numa_assign()
+From: Kirill Tkhai <ktkhai@parallels.com>
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Kirill Tkhai <tkhai@yandex.ru>, Peter Zijlstra <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        "Vladimir Davydov" <vdavydov@parallels.com>
+Date: Mon, 20 Oct 2014 13:00:20 +0400
+In-Reply-To: <20141019192437.GA842@redhat.com>
+References: <1413376300.24793.55.camel@tkhai>
+	 <20141017213641.GB32576@redhat.com> <4323181413620101@web21o.yandex.ru>
+	 <20141018205614.GA15934@redhat.com> <33631413674011@web7o.yandex.ru>
+	 <20141019192437.GA842@redhat.com>
+Organization: Parallels
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.26.172]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Several MTD users (either in user or kernel space) expect a valid raw
-access support to NAND chip devices.
-This is particularly true for testing tools which are often touching the
-data stored in a NAND chip in raw mode to artificially generate errors.
+В Вс, 19/10/2014 в 21:24 +0200, Oleg Nesterov пишет:
+> On 10/19, Kirill Tkhai wrote:
+> >
+> > 19.10.2014, 00:59, "Oleg Nesterov" <oleg@redhat.com>:
+> >
+> > >  No, I don't think this can work. Let's look at the current code:
+> > >
+> > >          rcu_read_lock();
+> > >          cur = ACCESS_ONCE(dst_rq->curr);
+> > >          if (cur->pid == 0) /* idle */
+> > >
+> > >  And any dereference, even reading ->pid is not safe. This memory can be
+> > >  freed, unmapped, reused, etc.
+> > >
+> > >  Looks like, task_numa_compare() needs to take dst_rq->lock and get the
+> > >  refernce first.
+> >
+> > Yeah, detection of idle is not save. If we reorder the checks almost all
+> > problems will be gone. All except unmapping. JFI, is it possible with
+> > such kernel structures as task_struct?
+> 
+> Yes, if DEBUG_PAGEALLOC. See kernel_map_pages() in arch/x86/mm/pageattr.c
+> kernel_map_pages(enable => false) clears PAGE_PRESENT if slab returns the
+> pages to system.
 
-The GPMI drivers do not implemenent raw access functions, and thus rely on
-default HW_ECC scheme implementation.
-The default implementation consider the data and OOB area as properly
-separated in their respective NAND section, which is not true for the GPMI
-controller.
-In this driver/controller some OOB data are stored at the beginning of the
-NAND data area (these data are called metadata in the driver), then ECC
-bytes are interleaved with data chunk (which is similar to the
-HW_ECC_SYNDROME scheme), and eventually the remaining bytes are used as
-OOB data.
+Thanks, Oleg!
 
-Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
----
- drivers/mtd/nand/gpmi-nand/gpmi-nand.c | 128 +++++++++++++++++++++++++++++++++
- drivers/mtd/nand/gpmi-nand/gpmi-nand.h |   2 +
- 2 files changed, 130 insertions(+)
+> 
+> > --- a/kernel/sched/fair.c
+> > +++ b/kernel/sched/fair.c
+> > @@ -1165,7 +1165,30 @@ static void task_numa_compare(struct task_numa_env *env,
+> >
+> >  	rcu_read_lock();
+> >  	cur = ACCESS_ONCE(dst_rq->curr);
+> > -	if (cur->pid == 0) /* idle */
+> > +	/*
+> > +	 * No need to move the exiting task, and this ensures that ->curr
+> > +	 * wasn't reaped and thus get_task_struct() in task_numa_assign()
+> > +	 * is safe; note that rcu_read_lock() can't protect from the final
+> > +	 * put_task_struct() after the last schedule().
+> > +	 */
+> > +	if (cur->flags & PF_EXITING)
+> > +		cur = NULL;
+> 
+> so this needs probe_kernel_read(&cur->flags).
+> 
+> > +	if (cur != ACCESS_ONCE(dst_rq->curr))
+> > +		cur = NULL;
+> 
+> Yes, if this task_struct was freed in between we do not care if this memory
+> was reused (except PF_EXITING can be false positive). If it was freed and
+> now the same memory is ->curr again we know that delayed_put_task_struct()
+> can't be called until we drop rcu lock, even if PF_EXITING is already set
+> again.
+> 
+> I won't argue, but you need to convince Peter to accept this hack ;)
 
-diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-index 959cb9b..bd4dedc 100644
---- a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-+++ b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-@@ -791,6 +791,7 @@ static void gpmi_free_dma_buffer(struct gpmi_nand_data *this)
- 					this->page_buffer_phys);
- 	kfree(this->cmd_buffer);
- 	kfree(this->data_buffer_dma);
-+	kfree(this->raw_buffer);
- 
- 	this->cmd_buffer	= NULL;
- 	this->data_buffer_dma	= NULL;
-@@ -837,6 +838,9 @@ static int gpmi_alloc_dma_buffer(struct gpmi_nand_data *this)
- 	if (!this->page_buffer_virt)
- 		goto error_alloc;
- 
-+	this->raw_buffer = kzalloc(mtd->writesize + mtd->oobsize, GFP_KERNEL);
-+	if (!this->raw_buffer)
-+		goto error_alloc;
- 
- 	/* Slice up the page buffer. */
- 	this->payload_virt = this->page_buffer_virt;
-@@ -1347,6 +1351,128 @@ gpmi_ecc_write_oob(struct mtd_info *mtd, struct nand_chip *chip, int page)
- 	return status & NAND_STATUS_FAIL ? -EIO : 0;
- }
- 
-+static int gpmi_ecc_read_page_raw(struct mtd_info *mtd,
-+				  struct nand_chip *chip, uint8_t *buf,
-+				  int oob_required, int page)
-+{
-+	struct gpmi_nand_data *this = chip->priv;
-+	struct bch_geometry *nfc_geo = &this->bch_geometry;
-+	int eccsize = nfc_geo->ecc_chunk_size;
-+	int eccbits = nfc_geo->ecc_strength * nfc_geo->gf_len;
-+	u8 *tmp_buf = this->raw_buffer;
-+	size_t src_bit_off;
-+	size_t oob_bit_off;
-+	size_t oob_byte_off;
-+	uint8_t *oob = chip->oob_poi;
-+	int step;
-+
-+	chip->read_buf(mtd, tmp_buf,
-+		       mtd->writesize + mtd->oobsize);
-+
-+	if (this->swap_block_mark) {
-+		u8 swap = tmp_buf[0];
-+
-+		tmp_buf[0] = tmp_buf[mtd->writesize];
-+		tmp_buf[mtd->writesize] = swap;
-+	}
-+
-+	if (oob_required)
-+		memcpy(oob, tmp_buf, nfc_geo->metadata_size);
-+
-+	oob_bit_off = nfc_geo->metadata_size * 8;
-+	src_bit_off = oob_bit_off;
-+
-+	for (step = 0; step < nfc_geo->ecc_chunk_count; step++) {
-+		if (buf)
-+			gpmi_move_bits(buf, step * eccsize * 8,
-+				       tmp_buf, src_bit_off,
-+				       eccsize * 8);
-+		src_bit_off += eccsize * 8;
-+
-+		if (oob_required)
-+			gpmi_move_bits(oob, oob_bit_off,
-+				       tmp_buf, src_bit_off,
-+				       eccbits);
-+
-+		src_bit_off += eccbits;
-+		oob_bit_off += eccbits;
-+	}
-+
-+	if (oob_required) {
-+		if (oob_bit_off % 8)
-+			oob[oob_bit_off / 8] &= GENMASK(oob_bit_off - 1, 0);
-+
-+		oob_byte_off = DIV_ROUND_UP(oob_bit_off, 8);
-+
-+		if (oob_byte_off  < mtd->oobsize)
-+			memcpy(oob + oob_byte_off,
-+			       tmp_buf + mtd->writesize + oob_byte_off,
-+			       mtd->oobsize - oob_byte_off);
-+	}
-+
-+	return 0;
-+}
-+
-+static int gpmi_ecc_write_page_raw(struct mtd_info *mtd,
-+				   struct nand_chip *chip,
-+				   const uint8_t *buf,
-+				   int oob_required)
-+{
-+	struct gpmi_nand_data *this = chip->priv;
-+	struct bch_geometry *nfc_geo = &this->bch_geometry;
-+	int eccsize = nfc_geo->ecc_chunk_size;
-+	int eccbits = nfc_geo->ecc_strength * nfc_geo->gf_len;
-+	u8 *tmp_buf = this->raw_buffer;
-+	uint8_t *oob = chip->oob_poi;
-+	size_t dst_bit_off;
-+	size_t oob_bit_off;
-+	size_t oob_byte_off;
-+	int step;
-+
-+	if (!buf || !oob_required)
-+		memset(tmp_buf, 0xff, mtd->writesize + mtd->oobsize);
-+
-+	memcpy(tmp_buf, oob, nfc_geo->metadata_size);
-+	oob_bit_off = nfc_geo->metadata_size * 8;
-+	dst_bit_off = oob_bit_off;
-+
-+	for (step = 0; step < nfc_geo->ecc_chunk_count; step++) {
-+		if (buf)
-+			gpmi_move_bits(tmp_buf, dst_bit_off,
-+				       buf, step * eccsize * 8, eccsize * 8);
-+		dst_bit_off += eccsize * 8;
-+
-+		/* Pad last ECC block to align following data on a byte */
-+		if (step == nfc_geo->ecc_chunk_count - 1 &&
-+		    (oob_bit_off + eccbits) % 8)
-+			eccbits += 8 - ((oob_bit_off + eccbits) % 8);
-+
-+		if (oob_required)
-+			gpmi_move_bits(tmp_buf, dst_bit_off,
-+				       oob, oob_bit_off, eccbits);
-+
-+		dst_bit_off += eccbits;
-+		oob_bit_off += eccbits;
-+	}
-+
-+	oob_byte_off = oob_bit_off / 8;
-+
-+	if (oob_required && oob_byte_off < mtd->oobsize)
-+		memcpy(tmp_buf + mtd->writesize + oob_byte_off,
-+		       oob + oob_byte_off, mtd->oobsize - oob_byte_off);
-+
-+	if (this->swap_block_mark) {
-+		u8 swap = tmp_buf[0];
-+
-+		tmp_buf[0] = tmp_buf[mtd->writesize];
-+		tmp_buf[mtd->writesize] = swap;
-+	}
-+
-+	chip->write_buf(mtd, tmp_buf, mtd->writesize + mtd->oobsize);
-+
-+	return 0;
-+}
-+
- static int gpmi_block_markbad(struct mtd_info *mtd, loff_t ofs)
- {
- 	struct nand_chip *chip = mtd->priv;
-@@ -1664,6 +1790,8 @@ static int gpmi_init_last(struct gpmi_nand_data *this)
- 	ecc->write_page	= gpmi_ecc_write_page;
- 	ecc->read_oob	= gpmi_ecc_read_oob;
- 	ecc->write_oob	= gpmi_ecc_write_oob;
-+	ecc->read_page_raw = gpmi_ecc_read_page_raw;
-+	ecc->write_page_raw = gpmi_ecc_write_page_raw;
- 	ecc->mode	= NAND_ECC_HW;
- 	ecc->size	= bch_geo->ecc_chunk_size;
- 	ecc->strength	= bch_geo->ecc_strength;
-diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-nand.h b/drivers/mtd/nand/gpmi-nand/gpmi-nand.h
-index 17d0736..89ab5c8 100644
---- a/drivers/mtd/nand/gpmi-nand/gpmi-nand.h
-+++ b/drivers/mtd/nand/gpmi-nand/gpmi-nand.h
-@@ -189,6 +189,8 @@ struct gpmi_nand_data {
- 	void			*auxiliary_virt;
- 	dma_addr_t		auxiliary_phys;
- 
-+	void			*raw_buffer;
-+
- 	/* DMA channels */
- #define DMA_CHANS		8
- 	struct dma_chan		*dma_chans[DMA_CHANS];
--- 
-1.9.1
+Just sent a new version with all of you suggestions :) Thanks!
+
+> 
+> > >  Or, perhaps, we need to change the rules to ensure that any "task_struct *"
+> > >  pointer is rcu-safe. Perhaps we have more similar problems... I'd like to
+> > >  avoid this if possible.
+> >
+> > RT tree has:
+> >
+> > https://git.kernel.org/cgit/linux/kernel/git/paulg/3.10-rt-patches.git/
+> > tree/patches/sched-delay-put-task.patch
+> 
+> Yes, and this obviously implies more rcu callbacks in flight, and another
+> gp before __put_task_struct(). but may be we will need to do this anyway...
+
+Kirill
 
