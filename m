@@ -1,356 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932116AbaJTWqJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 18:46:09 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:46177 "EHLO smtp.gentoo.org"
+	id S1754006AbaJTWra (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 18:47:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51839 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753380AbaJTWqG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 18:46:06 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org
-Subject: [PATCH 1/2 v2] binfmt_misc: add comments & debug logs
-Date: Mon, 20 Oct 2014 18:45:59 -0400
-Message-Id: <1413845160-22497-1-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1413759826-11958-1-git-send-email-vapier@gentoo.org>
-References: <1413759826-11958-1-git-send-email-vapier@gentoo.org>
+	id S1753961AbaJTWr3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 18:47:29 -0400
+Message-ID: <1413845247.30946.49.camel@localhost>
+Subject: Re: [PATCH V5 0/5] audit by executable name
+From: Eric Paris <eparis@redhat.com>
+To: Steve Grubb <sgrubb@redhat.com>
+Cc: Richard Guy Briggs <rgb@redhat.com>, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org, aviro@redhat.com, pmoore@redhat.com
+Date: Mon, 20 Oct 2014 18:47:27 -0400
+In-Reply-To: <2527124.XNMpLdSfeq@x2>
+References: <cover.1412303728.git.rgb@redhat.com> <2527124.XNMpLdSfeq@x2>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When trying to develop a custom format handler, the errors returned all
-effectively get bucketed as EINVAL with no kernel messages.  The other
-errors (ENOMEM/EFAULT) are internal/obvious and basic.  Thus any time a
-bad handler is rejected, the developer has to walk the dense code and
-try to guess where it went wrong.  Needing to dive into kernel code is
-itself a fairly high barrier for a lot of people.
+On Mon, 2014-10-20 at 16:25 -0400, Steve Grubb wrote:
+> On Thursday, October 02, 2014 11:06:51 PM Richard Guy Briggs wrote:
+> > This is a part of Peter Moody, my and Eric Paris' work to implement
+> > audit by executable name.
+> 
+> Does this patch set define an AUDIT_VERSION_SOMETHING and then set 
+> AUDIT_VERSION_LATEST to it? If not, I need one to tell if the kernel supports 
+> it when issuing commands. Also, if its conceivable that kernels may pick and 
+> choose what features could be backported to a curated kernel, should 
+> AUDIT_VERSION_ be a number that is incremented or a bit mask?
 
-To improve this situation, let's deploy extensive pr_debug markers at
-logical parse points, and add comments to the dense parsing logic.  It
-let's you see exactly where the parsing aborts, the string the kernel
-received (useful when dealing with shell code), how it translated the
-buffers to binary data, and how it will apply the mask at runtime.
+Right now the value is 2. So this is your last hope if you want to make
+it a bitmask. I'll leave that up to paul/richard to (over) design.
 
-Some example output:
-$ echo ':qemu-foo:M::\x7fELF\xAD\xAD\x01\x00:\xff\xff\xff\xff\xff\x00\xff\x00:/usr/bin/qemu-foo:POC' > register
-$ dmesg
-binfmt_misc: register: received 92 bytes
-binfmt_misc: register: delim: 0x3a {:}
-binfmt_misc: register: name: {qemu-foo}
-binfmt_misc: register: type: M (magic)
-binfmt_misc: register: offset: 0x0
-binfmt_misc: register: magic[raw]: 5c 78 37 66 45 4c 46 5c 78 41 44 5c 78 41 44 5c  \x7fELF\xAD\xAD\
-binfmt_misc: register: magic[raw]: 78 30 31 5c 78 30 30 00                          x01\x00.
-binfmt_misc: register:  mask[raw]: 5c 78 66 66 5c 78 66 66 5c 78 66 66 5c 78 66 66  \xff\xff\xff\xff
-binfmt_misc: register:  mask[raw]: 5c 78 66 66 5c 78 30 30 5c 78 66 66 5c 78 30 30  \xff\x00\xff\x00
-binfmt_misc: register:  mask[raw]: 00                                               .
-binfmt_misc: register: magic/mask length: 8
-binfmt_misc: register: magic[decoded]: 7f 45 4c 46 ad ad 01 00                          .ELF....
-binfmt_misc: register:  mask[decoded]: ff ff ff ff ff 00 ff 00                          ........
-binfmt_misc: register:  magic[masked]: 7f 45 4c 46 ad 00 01 00                          .ELF....
-binfmt_misc: register: interpreter: {/usr/bin/qemu-foo}
-binfmt_misc: register: flag: P (preserve argv0)
-binfmt_misc: register: flag: O (open binary)
-binfmt_misc: register: flag: C (preserve creds)
+Support for by EXEC should probably be noted somehow. Especially since
+audit_netlink_ok() sucks and return EINVAL for unknown message types. We
+wouldn't need the bump to version if that returned EOPNOTSUP and
+userspace could actually tell what was going on...
 
-The [raw] lines show us exactly what was received from userspace.
-The lines after that show us how the kernel has decoded things.
+> 
+> -Steve
+> 
+> 
+> > Please see the accompanying userspace patch:
+> > 	https://www.redhat.com/archives/linux-audit/2014-May/msg00019.html
+> > The userspace interface is not expected to change appreciably unless
+> > something important has been overlooked.  Setting and deleting rules works
+> > as expected.
+> > 
+> > If the path does not exist at rule creation time, it will be re-evaluated
+> > every time there is a change to the parent directory at which point the
+> > change in device and inode will be noted.
+> > 
+> > 
+> > Here's a sample run:
+> > 
+> > # /usr/local/sbin/auditctl -a always,exit -F dir=/tmp -F exe=/bin/touch -F
+> > key=touch_tmp # /usr/local/sbin/ausearch --start recent -k touch_tmp
+> > time->Mon Jun 30 14:15:06 2014
+> > type=CONFIG_CHANGE msg=audit(1404152106.683:149): auid=0 ses=1
+> > subj=unconfined_u :unconfined_r:auditctl_t:s0-s0:c0.c1023 op="add_rule"
+> > key="touch_tmp" list=4 res =1
+> > 
+> > # /usr/local/sbin/auditctl -l
+> > -a always,exit -S all -F dir=/tmp -F exe=/bin/touch -F key=touch_tmp
+> > 
+> > # touch /tmp/test
+> > 
+> > # /usr/local/sbin/ausearch --start recent -k touch_tmp
+> > time->Wed Jul  2 12:18:47 2014
+> > type=UNKNOWN[1327] msg=audit(1404317927.319:132):
+> > proctitle=746F756368002F746D702F74657374 type=PATH
+> > msg=audit(1404317927.319:132): item=1 name="/tmp/test" inode=25997
+> > dev=00:20 mode=0100644 ouid=0 ogid=0 rdev=00:00
+> > obj=unconfined_u:object_r:user_tmp_t:s0 nametype=CREATE type=PATH
+> > msg=audit(1404317927.319:132): item=0 name="/tmp/" inode=11144 dev=00:20
+> > mode=041777 ouid=0 ogid=0 rdev=00:00 obj=system_u:object_r:tmp_t:s0
+> > nametype=PARENT type=CWD msg=audit(1404317927.319:132):  cwd="/root"
+> > type=SYSCALL msg=audit(1404317927.319:132): arch=c000003e syscall=2
+> > success=yes exit=3 a0=7ffffa403dd5 a1=941 a2=1b6 a3=34b65b2c6c items=2
+> > ppid=4321 pid=6436 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0
+> > fsgid=0 tty=ttyS0 ses=1 comm="touch" exe="/usr/bin/touch"
+> > subj=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023 key="touch_tmp"
+> > 
+> > 
+> > Revision history:
+> > v5: Revert patch "Let audit_free_rule() take care of calling
+> >     audit_remove_mark()." since it caused a group mark deadlock.
+> > 
+> > v4: Re-order and squash down fixups
+> >     Fix audit_dup_exe() to copy pathname string before calling
+> > audit_alloc_mark().
+> > 
+> > v3: Rationalize and rename some function names and clean up get/put and free
+> > code. Rename several "watch" references to "mark".
+> >     Rename audit_remove_rule() to audit_remove_mark_rule().
+> >     Let audit_free_rule() take care of calling audit_remove_mark().
+> >     Put audit_alloc_mark() arguments in same order as watch, tree and inode.
+> > Move the access to the entry for audit_match_signal() to the beginning of
+> > the function in case the entry found is the same one passed in. This will
+> > enable it to be used by audit_remove_mark_rule().
+> >     https://www.redhat.com/archives/linux-audit/2014-July/msg00000.html
+> > 
+> > v2: Misguided attempt to add in audit_exe similar to watches
+> >     https://www.redhat.com/archives/linux-audit/2014-June/msg00066.html
+> > 
+> > v1.5: eparis' switch to fsnotify
+> >     https://www.redhat.com/archives/linux-audit/2014-May/msg00046.html
+> >     https://www.redhat.com/archives/linux-audit/2014-May/msg00066.html
+> > 
+> > v1: Change to path interface instead of inode
+> >     https://www.redhat.com/archives/linux-audit/2014-May/msg00017.html
+> > 
+> > v0: Peter Moodie's original patches
+> >     https://www.redhat.com/archives/linux-audit/2012-August/msg00033.html
+> > 
+> > 
+> > Next step:
+> > Get full-path notify working.
+> > 
+> > 
+> > Eric Paris (3):
+> >   audit: implement audit by executable
+> >   audit: clean simple fsnotify implementation
+> >   audit: convert audit_exe to audit_fsnotify
+> > 
+> > Richard Guy Briggs (2):
+> >   audit: avoid double copying the audit_exe path string
+> >   Revert "fixup! audit: clean simple fsnotify implementation"
+> > 
+> >  include/linux/audit.h      |    1 +
+> >  include/uapi/linux/audit.h |    2 +
+> >  kernel/Makefile            |    2 +-
+> >  kernel/audit.h             |   39 +++++++
+> >  kernel/audit_exe.c         |   49 +++++++++
+> >  kernel/audit_fsnotify.c    |  237
+> > ++++++++++++++++++++++++++++++++++++++++++++ kernel/auditfilter.c       |  
+> > 52 +++++++++-
+> >  kernel/auditsc.c           |   16 +++
+> >  8 files changed, 395 insertions(+), 3 deletions(-)
+> >  create mode 100644 kernel/audit_exe.c
+> >  create mode 100644 kernel/audit_fsnotify.c
+> 
 
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
----
-v2:
-	- add explicit trailing \n to all the pr_debug lines
-
- fs/binfmt_misc.c | 136 +++++++++++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 121 insertions(+), 15 deletions(-)
-
-diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
-index fd8beb9..5670b17 100644
---- a/fs/binfmt_misc.c
-+++ b/fs/binfmt_misc.c
-@@ -16,6 +16,8 @@
-  *  2001-02-28 AV: rewritten into something that resembles C. Original didn't.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/sched.h>
-@@ -30,8 +32,13 @@
- #include <linux/mount.h>
- #include <linux/syscalls.h>
- #include <linux/fs.h>
-+#include <linux/uaccess.h>
- 
--#include <asm/uaccess.h>
-+#ifdef DEBUG
-+# define USE_DEBUG 1
-+#else
-+# define USE_DEBUG 0
-+#endif
- 
- enum {
- 	VERBOSE_STATUS = 1 /* make it zero to save 400 bytes kernel memory */
-@@ -87,20 +94,24 @@ static Node *check_file(struct linux_binprm *bprm)
- 	char *p = strrchr(bprm->interp, '.');
- 	struct list_head *l;
- 
-+	/* Walk all the registered handlers. */
- 	list_for_each(l, &entries) {
- 		Node *e = list_entry(l, Node, list);
- 		char *s;
- 		int j;
- 
-+		/* Make sure this one is currently enabled. */
- 		if (!test_bit(Enabled, &e->flags))
- 			continue;
- 
-+		/* Do matching based on extension if applicable. */
- 		if (!test_bit(Magic, &e->flags)) {
- 			if (p && !strcmp(e->magic, p + 1))
- 				return e;
- 			continue;
- 		}
- 
-+		/* Do matching based on magic & mask. */
- 		s = bprm->buf + e->offset;
- 		if (e->mask) {
- 			for (j = 0; j < e->size; j++)
-@@ -259,14 +270,17 @@ static char * check_special_flags (char * sfs, Node * e)
- 	while (cont) {
- 		switch (*p) {
- 			case 'P':
-+				pr_debug("register: flag: P (preserve argv0)\n");
- 				p++;
- 				e->flags |= MISC_FMT_PRESERVE_ARGV0;
- 				break;
- 			case 'O':
-+				pr_debug("register: flag: O (open binary)\n");
- 				p++;
- 				e->flags |= MISC_FMT_OPEN_BINARY;
- 				break;
- 			case 'C':
-+				pr_debug("register: flag: C (preserve creds)\n");
- 				p++;
- 				/* this flags also implies the
- 				   open-binary flag */
-@@ -292,6 +306,8 @@ static Node *create_entry(const char __user *buffer, size_t count)
- 	char *buf, *p;
- 	char del;
- 
-+	pr_debug("register: received %zu bytes\n", count);
-+
- 	/* some sanity checks */
- 	err = -EINVAL;
- 	if ((count < 11) || (count > MAX_REGISTER_LENGTH))
-@@ -311,8 +327,12 @@ static Node *create_entry(const char __user *buffer, size_t count)
- 
- 	del = *p++;	/* delimeter */
- 
-+	pr_debug("register: delim: %#x {%c}\n", del, del);
-+
-+	/* Pad the buffer with the delim to simplify parsing below. */
- 	memset(buf+count, del, 8);
- 
-+	/* Parse the 'name' field. */
- 	e->name = p;
- 	p = strchr(p, del);
- 	if (!p)
-@@ -323,46 +343,113 @@ static Node *create_entry(const char __user *buffer, size_t count)
- 	    !strcmp(e->name, "..") ||
- 	    strchr(e->name, '/'))
- 		goto Einval;
-+
-+	pr_debug("register: name: {%s}\n", e->name);
-+
-+	/* Parse the 'type' field. */
- 	switch (*p++) {
--		case 'E': e->flags = 1<<Enabled; break;
--		case 'M': e->flags = (1<<Enabled) | (1<<Magic); break;
--		default: goto Einval;
-+	case 'E':
-+		pr_debug("register: type: E (extension)\n");
-+		e->flags = 1 << Enabled;
-+		break;
-+	case 'M':
-+		pr_debug("register: type: M (magic)\n");
-+		e->flags = (1 << Enabled) | (1 << Magic);
-+		break;
-+	default:
-+		goto Einval;
- 	}
- 	if (*p++ != del)
- 		goto Einval;
-+
- 	if (test_bit(Magic, &e->flags)) {
--		char *s = strchr(p, del);
-+		/* Handle the 'M' (magic) format. */
-+		char *s;
-+
-+		/* Parse the 'offset' field. */
-+		s = strchr(p, del);
- 		if (!s)
- 			goto Einval;
- 		*s++ = '\0';
- 		e->offset = simple_strtoul(p, &p, 10);
- 		if (*p++)
- 			goto Einval;
-+		pr_debug("register: offset: %#x\n", e->offset);
-+
-+		/* Parse the 'magic' field. */
- 		e->magic = p;
- 		p = scanarg(p, del);
- 		if (!p)
- 			goto Einval;
- 		p[-1] = '\0';
--		if (!e->magic[0])
-+		if (p == e->magic)
- 			goto Einval;
-+		if (USE_DEBUG)
-+			print_hex_dump_bytes(
-+				KBUILD_MODNAME ": register: magic[raw]: ",
-+				DUMP_PREFIX_NONE, e->magic, p - e->magic);
-+
-+		/* Parse the 'mask' field. */
- 		e->mask = p;
- 		p = scanarg(p, del);
- 		if (!p)
- 			goto Einval;
- 		p[-1] = '\0';
--		if (!e->mask[0])
-+		if (p == e->mask) {
- 			e->mask = NULL;
-+			pr_debug("register:  mask[raw]: none\n");
-+		} else if (USE_DEBUG)
-+			print_hex_dump_bytes(
-+				KBUILD_MODNAME ": register:  mask[raw]: ",
-+				DUMP_PREFIX_NONE, e->mask, p - e->mask);
-+
-+		/*
-+		 * Decode the magic & mask fields.
-+		 * Note: while we might have accepted embedded NUL bytes from
-+		 * above, the unescape helpers here will stop at the first one
-+		 * it encounters.
-+		 */
- 		e->size = string_unescape_inplace(e->magic, UNESCAPE_HEX);
- 		if (e->mask &&
- 		    string_unescape_inplace(e->mask, UNESCAPE_HEX) != e->size)
- 			goto Einval;
- 		if (e->size + e->offset > BINPRM_BUF_SIZE)
- 			goto Einval;
-+		pr_debug("register: magic/mask length: %i\n", e->size);
-+		if (USE_DEBUG) {
-+			print_hex_dump_bytes(
-+				KBUILD_MODNAME ": register: magic[decoded]: ",
-+				DUMP_PREFIX_NONE, e->magic, e->size);
-+
-+			if (e->mask) {
-+				int i;
-+				char *masked = kmalloc(e->size, GFP_USER);
-+
-+				print_hex_dump_bytes(
-+					KBUILD_MODNAME ": register:  mask[decoded]: ",
-+					DUMP_PREFIX_NONE, e->mask, e->size);
-+
-+				if (masked) {
-+					for (i = 0; i < e->size; ++i)
-+						masked[i] = e->magic[i] & e->mask[i];
-+					print_hex_dump_bytes(
-+						KBUILD_MODNAME ": register:  magic[masked]: ",
-+						DUMP_PREFIX_NONE, masked, e->size);
-+
-+					kfree(masked);
-+				}
-+			}
-+		}
- 	} else {
-+		/* Handle the 'E' (extension) format. */
-+
-+		/* Skip the 'offset' field. */
- 		p = strchr(p, del);
- 		if (!p)
- 			goto Einval;
- 		*p++ = '\0';
-+
-+		/* Parse the 'magic' field. */
- 		e->magic = p;
- 		p = strchr(p, del);
- 		if (!p)
-@@ -370,11 +457,16 @@ static Node *create_entry(const char __user *buffer, size_t count)
- 		*p++ = '\0';
- 		if (!e->magic[0] || strchr(e->magic, '/'))
- 			goto Einval;
-+		pr_debug("register: extension: {%s}\n", e->magic);
-+
-+		/* Skip the 'mask' field. */
- 		p = strchr(p, del);
- 		if (!p)
- 			goto Einval;
- 		*p++ = '\0';
- 	}
-+
-+	/* Parse the 'interpreter' field. */
- 	e->interpreter = p;
- 	p = strchr(p, del);
- 	if (!p)
-@@ -382,10 +474,10 @@ static Node *create_entry(const char __user *buffer, size_t count)
- 	*p++ = '\0';
- 	if (!e->interpreter[0])
- 		goto Einval;
-+	pr_debug("register: interpreter: {%s}\n", e->interpreter);
- 
--
-+	/* Parse the 'flags' field. */
- 	p = check_special_flags (p, e);
--
- 	if (*p == '\n')
- 		p++;
- 	if (p != buf + count)
-@@ -553,11 +645,17 @@ static ssize_t bm_entry_write(struct file *file, const char __user *buffer,
- 	int res = parse_command(buffer, count);
- 
- 	switch (res) {
--		case 1: clear_bit(Enabled, &e->flags);
-+		case 1:
-+			/* Disable this handler. */
-+			clear_bit(Enabled, &e->flags);
- 			break;
--		case 2: set_bit(Enabled, &e->flags);
-+		case 2:
-+			/* Enable this handler. */
-+			set_bit(Enabled, &e->flags);
- 			break;
--		case 3: root = dget(file->f_path.dentry->d_sb->s_root);
-+		case 3:
-+			/* Delete this handler. */
-+			root = dget(file->f_path.dentry->d_sb->s_root);
- 			mutex_lock(&root->d_inode->i_mutex);
- 
- 			kill_node(e);
-@@ -661,9 +759,17 @@ static ssize_t bm_status_write(struct file * file, const char __user * buffer,
- 	struct dentry *root;
- 
- 	switch (res) {
--		case 1: enabled = 0; break;
--		case 2: enabled = 1; break;
--		case 3: root = dget(file->f_path.dentry->d_sb->s_root);
-+		case 1:
-+			/* Disable all handlers. */
-+			enabled = 0;
-+			break;
-+		case 2:
-+			/* Enable all handlers. */
-+			enabled = 1;
-+			break;
-+		case 3:
-+			/* Delete all handlers. */
-+			root = dget(file->f_path.dentry->d_sb->s_root);
- 			mutex_lock(&root->d_inode->i_mutex);
- 
- 			while (!list_empty(&entries))
--- 
-2.1.2
 
