@@ -1,69 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753279AbaJTV35 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 17:29:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9421 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751178AbaJTV3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 17:29:55 -0400
-Message-ID: <1413840583.4202.111.camel@ul30vt.home>
-Subject: Re: [PATCH 2/5] vfio: introduce the VFIO_DMA_MAP_FLAG_NOEXEC flag
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Antonios Motakis <a.motakis@virtualopensystems.com>
-Cc: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
-        will.deacon@arm.com, tech@virtualopensystems.com,
-        christoffer.dall@linaro.org, eric.auger@linaro.org,
-        kim.phillips@freescale.com, marc.zyngier@arm.com,
-        "open list:VFIO DRIVER" <kvm@vger.kernel.org>,
-        "open list:ABI/API" <linux-api@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Mon, 20 Oct 2014 15:29:43 -0600
-In-Reply-To: <1413205748-6300-3-git-send-email-a.motakis@virtualopensystems.com>
-References: <1413205748-6300-1-git-send-email-a.motakis@virtualopensystems.com>
-	 <1413205748-6300-3-git-send-email-a.motakis@virtualopensystems.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753383AbaJTVbY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 17:31:24 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:65098 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752835AbaJTVbV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 17:31:21 -0400
+From: Kevin Hilman <khilman@kernel.org>
+To: "jinkun.hong" <jinkun.hong@rock-chips.com>
+Cc: linus.walleij@linaro.org, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
+        linux-doc@vger.kernel.org, dianders@chromium.org,
+        Heiko Stuebner <heiko@sntech.de>, linux-rockchip@lists.infradead.org,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Jack Dai <jack.dai@rock-chips.com>
+Subject: Re: [PATCH v4 1/3] power-domain: add power domain drivers for Rockchip platform
+References: <1413795824-3453-1-git-send-email-jinkun.hong@rock-chips.com>
+	<1413795824-3453-2-git-send-email-jinkun.hong@rock-chips.com>
+Date: Mon, 20 Oct 2014 14:31:17 -0700
+In-Reply-To: <1413795824-3453-2-git-send-email-jinkun.hong@rock-chips.com>
+	(jinkun hong's message of "Mon, 20 Oct 2014 02:03:41 -0700")
+Message-ID: <7hppdme8d6.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-10-13 at 15:09 +0200, Antonios Motakis wrote:
-> We introduce the VFIO_DMA_MAP_FLAG_NOEXEC flag to the VFIO dma map call,
-> and expose its availability via the capability VFIO_DMA_NOEXEC_IOMMU.
-> This way the user can control whether the XN flag will be set on the
-> requested mappings. The IOMMU_NOEXEC flag needs to be available for all
-> the IOMMUs of the container used.
-> 
-> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
-> ---
->  include/uapi/linux/vfio.h | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
-> index 6612974..111b5e8 100644
-> --- a/include/uapi/linux/vfio.h
-> +++ b/include/uapi/linux/vfio.h
-> @@ -29,6 +29,7 @@
->   * capability is subject to change as groups are added or removed.
->   */
->  #define VFIO_DMA_CC_IOMMU		4
-> +#define VFIO_DMA_NOEXEC_IOMMU		5
->  
->  /* Check if EEH is supported */
->  #define VFIO_EEH			5
-                                    ^^
-5 is still already used.  Feel free to convert to enum so we stop making
-this mistake.
+"jinkun.hong" <jinkun.hong@rock-chips.com> writes:
 
-> @@ -401,6 +402,7 @@ struct vfio_iommu_type1_dma_map {
->  	__u32	flags;
->  #define VFIO_DMA_MAP_FLAG_READ (1 << 0)		/* readable from device */
->  #define VFIO_DMA_MAP_FLAG_WRITE (1 << 1)	/* writable from device */
-> +#define VFIO_DMA_MAP_FLAG_NOEXEC (1 << 2)	/* not executable from device */
->  	__u64	vaddr;				/* Process virtual address */
->  	__u64	iova;				/* IO virtual address */
->  	__u64	size;				/* Size of mapping (bytes) */
+> From: "jinkun.hong" <jinkun.hong@rock-chips.com>
+>
+> Add power domain drivers based on generic power domain for Rockchip platform,
+> and support RK3288.
+>
+> Signed-off-by: Jack Dai <jack.dai@rock-chips.com>
+> Signed-off-by: jinkun.hong <jinkun.hong@rock-chips.com>
 
+[...]
 
+> +static int rockchip_pmu_set_idle_request(struct rockchip_domain *pd,
+> +					 bool idle)
+> +{
+> +	u32 idle_mask = BIT(pd->idle_shift);
+> +	u32 idle_target = idle << (pd->idle_shift);
+> +	u32 ack_mask = BIT(pd->ack_shift);
+> +	u32 ack_target = idle << (pd->ack_shift);
+> +	unsigned int mask = BIT(pd->req_shift);
+> +	unsigned int val;
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&pd->idle_lock, flags);
+> +	val = (idle) ? mask : 0;
+> +	regmap_update_bits(pd->regmap_pmu, REQ_OFFSET, mask, val);
+> +	dsb();
 
+A summary of the locking and barriers here (or in changelog) would be
+helpful for reviewers to verify you're protecting what you need to
+protect.
+
+> +	do {
+> +		regmap_read(pd->regmap_pmu, ACK_OFFSET, &val);
+> +	} while ((val & ack_mask) != ack_target);
+> +
+> +	do {
+> +		regmap_read(pd->regmap_pmu, IDLE_OFFSET, &val);
+> +	} while ((val & idle_mask) != idle_target);
+> +
+> +	spin_unlock_irqrestore(&pd->idle_lock, flags);
+
+These IRQ-disabled while loops look like opportunities to lockup the
+system.  Maybe add a timeout or a maximum number of tries?
+
+> +	return 0;
+> +}
+
+Kevin
