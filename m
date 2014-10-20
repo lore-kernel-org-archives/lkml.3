@@ -1,51 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932107AbaJTWUI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 18:20:08 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:33063 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753430AbaJTWUF (ORCPT
+	id S1753618AbaJTWYd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 18:24:33 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:50982 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751680AbaJTWYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 18:20:05 -0400
-Date: Mon, 20 Oct 2014 15:20:03 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Kumar Gala <galak@codeaurora.org>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, Rob Herring <robh@kernel.org>
-Subject: Re: [PATCH] tty: serial: msm: Fix lock init issue with earlycon
-Message-ID: <20141020222003.GD12469@codeaurora.org>
-References: <1413551588-14877-1-git-send-email-galak@codeaurora.org>
- <544553F6.1020409@codeaurora.org>
- <544580ED.3050604@hurleysoftware.com>
- <20141020221656.GC12469@codeaurora.org>
+	Mon, 20 Oct 2014 18:24:31 -0400
+Date: Mon, 20 Oct 2014 15:24:22 -0700
+From: josh@joshtriplett.org
+To: Pieter Smith <pieter@boesman.nl>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Paris <eparis@redhat.com>, Matt Turner <mattst88@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Fabian Frederick <fabf@skynet.be>, Tejun Heo <tj@kernel.org>,
+        =?utf-8?B?6JSh5q2j6b6Z?= <zhenglong.cai@cs2c.com.cn>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Peter Foley <pefoley2@pefoley.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Oleg Nesterov <oleg@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Kees Cook <keescook@chromium.org>, linux-fsdevel@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:ABI/API" <linux-api@vger.kernel.org>
+Subject: Re: [PATCH 2/2] fs: Support compiling out sendfile
+Message-ID: <20141020222421.GE8929@cloud>
+References: <1413841728-1313-1-git-send-email-pieter@boesman.nl>
+ <1413841728-1313-2-git-send-email-pieter@boesman.nl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141020221656.GC12469@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1413841728-1313-2-git-send-email-pieter@boesman.nl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/20, Stephen Boyd wrote:
-> On 10/20, Peter Hurley wrote:
-> > 
-> > FWIW, __msm_console_write() is a deadlock-waiting-to_happen since it does
-> > not disable interrupts with spin_lock_irqsave().
-> > 
+On Mon, Oct 20, 2014 at 11:48:37PM +0200, Pieter Smith wrote:
+> Many embedded systems will not need this syscall, and omitting it
+> saves space.  Add a new EXPERT config option CONFIG_SENDFILE_SYSCALL
+> (default y) to support compiling it out.
+
+Nice work, thanks!
+
+If there are no objections, and nobody has a tree they'd rather carry
+this through, I'll take the series through the tiny tree when it's ready
+to merge.
+
+> bloat-o-meter:
+> add/remove: 0/4 grow/shrink: 5/0 up/down: 23/-751 (-728)
+> function                                     old     new   delta
+> sys_pwritev                                  115     122      +7
+> sys_preadv                                   115     122      +7
+> fdput_pos                                     29      36      +7
+> sys_pwrite64                                 115     116      +1
+> sys_pread64                                  115     116      +1
+> fdput                                         11       -     -11
+> sys_sendfile                                 122       -    -122
+> sys_sendfile64                               126       -    -126
+> do_sendfile                                  492       -    -492
+
+Interesting inlining decisions by GCC here.  Got a bloat-o-meter for the
+two-patch series, by any chance?  (Also, is this with tinyconfig?  In
+particular, with OPTIMIZE_INLINING and OPTIMIZE_FOR_SIZE?)  I'm
+wondering if moving sendfile to a separate file made GCC put fdput
+out-of-line, and compiling it out reversed that again.
+
+> Signed-off-by: Pieter Smith <pieter@boesman.nl>
+
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+
+> ---
+>  fs/Makefile     |  3 ++-
+>  init/Kconfig    | 10 ++++++++++
+>  kernel/sys_ni.c |  4 ++++
+>  3 files changed, 16 insertions(+), 1 deletion(-)
 > 
-> Yeah we should fix that. As far as I can tell we've never used
-> the irqsave variant of the lock in the console path. Did this
-> become necessary at some point since this driver was introduced?
-> I'm wondering how many stable trees need the fix.
+> diff --git a/fs/Makefile b/fs/Makefile
+> index 1e3423f..1bbfea7 100644
+> --- a/fs/Makefile
+> +++ b/fs/Makefile
+> @@ -5,7 +5,7 @@
+>  # Rewritten to use lists instead of if-statements.
+>  # 
+>  
+> -obj-y :=	open.o read_write.o sendfile.o file_table.o super.o \
+> +obj-y :=	open.o read_write.o file_table.o super.o \
+>  		char_dev.o stat.o exec.o pipe.o namei.o fcntl.o \
+>  		ioctl.o readdir.o select.o dcache.o inode.o \
+>  		attr.o bad_inode.o file.o filesystems.o namespace.o \
+> @@ -38,6 +38,7 @@ obj-$(CONFIG_COMPAT_BINFMT_ELF)	+= compat_binfmt_elf.o
+>  obj-$(CONFIG_BINFMT_ELF_FDPIC)	+= binfmt_elf_fdpic.o
+>  obj-$(CONFIG_BINFMT_SOM)	+= binfmt_som.o
+>  obj-$(CONFIG_BINFMT_FLAT)	+= binfmt_flat.o
+> +obj-$(CONFIG_SENDFILE_SYSCALL)	+= sendfile.o
+>  
+>  obj-$(CONFIG_FS_MBCACHE)	+= mbcache.o
+>  obj-$(CONFIG_FS_POSIX_ACL)	+= posix_acl.o
+> diff --git a/init/Kconfig b/init/Kconfig
+> index 782a65b..df6785c 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -1547,6 +1547,16 @@ config ADVISE_SYSCALLS
+>  	  applications use these syscalls, you can disable this option to save
+>  	  space.
+>  
+> +config SENDFILE_SYSCALL
+> +	bool "Enable sendfile syscall" if EXPERT
+> +	default y
+> +	help
+> +	  This option enables the sendfile syscall, used by applications to copy
+> +	  data between file descriptors. Because sendfile performs the copying
+> +	  within the kernel, it is more efficient than the combination of read
+> +	  and write.  If building an embedded system where no applications use
+> +	  the sendfile syscall, you can disable this option to save space.
+> +
 
-Actually I don't see this case. It looks like the console is
-always called in call_console_drivers() with irqs saved and
-disabled via the logbuf_lock in console_cont_flush() or
-console_unlock().
+I'm thinking of adding a submenu to group config FOO_SYSCALL options. :)
+I'll probably push that as part of the 3.19 merge window, as a patch on
+top of all of the individual tinification options.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-a Linux Foundation Collaborative Project
+>  config PCI_QUIRKS
+>  	default y
+>  	bool "Enable PCI quirk workarounds" if EXPERT
+> diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
+> index d4709d4..b068de7 100644
+> --- a/kernel/sys_ni.c
+> +++ b/kernel/sys_ni.c
+> @@ -159,6 +159,10 @@ cond_syscall(sys_uselib);
+>  cond_syscall(sys_fadvise64);
+>  cond_syscall(sys_fadvise64_64);
+>  cond_syscall(sys_madvise);
+> +cond_syscall(sys_sendfile);
+> +cond_syscall(sys_sendfile64);
+> +cond_syscall(compat_sys_sendfile);
+> +cond_syscall(compat_sys_sendfile64);
+>  
+>  /* arch-specific weak syscall entries */
+>  cond_syscall(sys_pciconfig_read);
+> -- 
+> 1.9.1
+> 
