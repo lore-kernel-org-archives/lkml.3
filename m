@@ -1,111 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829AbaJTWbX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 18:31:23 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:41586 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751233AbaJTWbV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 18:31:21 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18Jfd8bTaQPF6Y21U6TgaPM
-Date: Mon, 20 Oct 2014 15:29:43 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>, sre@debian.org,
-        sre@ring0.de, kernel list <linux-kernel@vger.kernel.org>, balbi@ti.com,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        kishon@ti.com, s.nawrocki@samsung.com
-Subject: Re: USB Ethernet gadget on Nokia n900
-Message-ID: <20141020222942.GA2560@atomide.com>
-References: <20141019090107.GA19132@amd>
- <201410191658.45851@pali>
- <20141019205033.GA4738@amd>
- <201410192300.20625@pali>
- <20141020130855.GA1067@amd>
- <20141020164542.GD5192@atomide.com>
- <20141020220338.GA19314@amd>
+	id S1753840AbaJTWh3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 18:37:29 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:45796 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751233AbaJTWh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 18:37:27 -0400
+Date: Mon, 20 Oct 2014 18:37:22 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 1/2] binfmt_misc: add comments & debug logs
+Message-ID: <20141020223722.GA15168@vapier>
+References: <1413759826-11958-1-git-send-email-vapier@gentoo.org>
+ <1413765718.7076.3.camel@perches.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FL5UXtIhxfXey3p5"
 Content-Disposition: inline
-In-Reply-To: <20141020220338.GA19314@amd>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1413765718.7076.3.camel@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Pavel Machek <pavel@ucw.cz> [141020 15:04]:
-> On Mon 2014-10-20 09:45:42, Tony Lindgren wrote:
-> > * Pavel Machek <pavel@ucw.cz> [141020 06:10]:
-> > > Hi!
-> > > 
-> > > > My N900 can boot kernel from v3.12-rc5-n900 branch compiled with 
-> > > > arch/arm/configs/rx51_defconfig. Also it can boot full Maemo5 
-> > > > system (with CSSU and some minor system changes) and usb network 
-> > > > via g_nokia.ko gadget working fine...
-> > > > 
-> > > > So if it does not working for you then kernel usb subsystem could 
-> > > > have problems with using gadgets directly from zimage.
-> > > 
-> > > After some hand-bisecting and real-bisecting, I found two commits that
-> > > cause problems for 3.13: With these reverted, I get usb networking
-> > > back in 3.13 on nokia n900.
-> > > 
-> > > (Pali, if you revert these, you should get working usb networking in
-> > > your 3.13 branch, too.)
-> > > 
-> > > Any ideas?
-> > 
-> > Hmm maybe check if current stable kernels work for you without
-> > reverting anything ? Few weeks ago I did the the following two fixes
-> > with cc stable v3.13+:
-> > 
-> > 96be39ab34b7 usb: phy: twl4030-usb: Fix regressions to runtime PM on omaps
-> > 85601b8d81e2 usb: phy: twl4030-usb: Fix lost interrupts after ID pin goes down
-> 
-> I tried these on top of 3.14 (where my revert fixes stuff) and no, it
-> does not seem to help. (Trying stable would be a bit more work).
-> 
-> Do you want me to try on 3.13, too?
 
-Sounds like there's something else missing too then. Maybe give
-v3.18-rc1 and device tree based boot a try?
+--FL5UXtIhxfXey3p5
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-FYI, there's some PM support there too since v3.16-rc7, so using
-anything pre v3.17 is probably not fun on the battery. Well it works
-with omap2plus_defconfig long as serial port timeouts are configured,
-no USB cable is connected and and the screen is blanked. When it works,
-both keyboard debug LEDs will go off during idle, which really should
-be most of the time if you plan to use it as a phone. The left debug
-LED goes off for retention idle, when both go off it's hitting
-off-idle.
+On 19 Oct 2014 17:41, Joe Perches wrote:
+> On Sun, 2014-10-19 at 19:03 -0400, Mike Frysinger wrote:
+> > let's deploy extensive pr_debug markers at
+> > logical parse points, and add comments to the dense parsing logic.
+> []
+> > diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
+> []
+> > @@ -259,14 +270,17 @@ static char * check_special_flags (char * sfs, No=
+de * e)
+> >  	while (cont) {
+> >  		switch (*p) {
+> >  			case 'P':
+> > +				pr_debug("register: flag: P (preserve argv0)");
+>=20
+> Missing '\n' newline.
+> Can you please add them as appropriate?
 
-I'm using the following test script here, if it does not idle for
-you, there are probably some other drivers loaded that currently
-block deeper idle states.
+hmm, guess i was relying on pr_cont behavior to do the right thing.  will d=
+o.
+-mike
 
-Regards,
+--FL5UXtIhxfXey3p5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Tony
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-8< ---------------
-#!/bin/bash
+iQIcBAEBAgAGBQJURY6iAAoJEEFjO5/oN/WBdJEP/jYUcRl3TrTUJV1VUmQ2WRkS
+IWKe7rrFcHcpN17qoIQ7yA/aasQxV52GpEGyAOx0e9JF2EOFho40a4KHoHYoyvDF
+6/0UlgZb3GsFOzdoMQsyoB6+k+pO/6cbx6AAxI/whGu8YMos4Tql+xxPBGYZjPVN
++g6Wug7ySU6aDbSU++1XH8MbXKcgIJy35NujK37KPVBzCSsd5f+tagTP3/3nbBwt
+KFmF215IOnG2jLbsD0pG0iPMPfM2IiPRK1vFD/Kv56hGpZ5/qkTIH+aSKGv/XHw+
+lS0obq7vG29kihVnekwoDKU/IjIxmroJaD3KQKRbUW1GkulkYQeugUd8jCDd2VCM
+eo4qYdoitfUmfsuToDlz4f8tiUIEJephGSTUODpvUG1hNSed24710cAPzNMnsz9d
+aNZLRGiconxO/d3M5CJNJA8R4EtSvb3z+/dhHzT1awy4A3zdIl6PVGdr/1vpvvsM
+QJZu70MrQ0ypxPANlrR67Wq/w9kjnuOmq+lBwx7Egh+bYOkUrSrXHozc40WVBWHe
+nK5GUKW/KadKcOolDX3FjqbIkg1RXNswXKhm41tprhhAFG//xa32MB33qqS8I0SZ
+VAlkZO5V+x2+5fuCyiQn4RosekCpko2mIKzufI8jNHqHWKWs+9SF1zfpE0/FTK2I
+a5Xj4hxtCwkqv6dyKseG
+=knjt
+-----END PGP SIGNATURE-----
 
-uarts=$(find /sys/class/tty/ttyO*/device/power/ -type d)
-for uart in $uarts; do
-        echo 3000 > $uart/autosuspend_delay_ms
-        #echo -1 > $uart/autosuspend_delay_ms
-done
-
-uarts=$(find /sys/class/tty/ttyO*/power/ -type d)
-for uart in $uarts; do
-        echo enabled > $uart/wakeup
-        echo auto > $uart/control
-done
-
-echo 255 > /sys/devices/68000000.ocp/48098000.spi/spi_master/spi1/spi1.2/backlight/acx565akm/brightness
-echo 1 > /sys/devices/platform/omapfb/graphics/fb0/blank
-
-echo 1 > /sys/kernel/debug/pm_debug/enable_off_mode
+--FL5UXtIhxfXey3p5--
