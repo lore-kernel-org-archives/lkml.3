@@ -1,93 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149AbaJTRWW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 13:22:22 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:46133 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347AbaJTRWT (ORCPT
+	id S1752295AbaJTR05 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 13:26:57 -0400
+Received: from mail-qc0-f202.google.com ([209.85.216.202]:42017 "EHLO
+	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751874AbaJTR0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 13:22:19 -0400
-Date: Mon, 20 Oct 2014 18:22:09 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH] arm64: Fix compile error seen in non-SMP builds
-Message-ID: <20141020172208.GL23751@e104818-lin.cambridge.arm.com>
-References: <1412990134-31186-1-git-send-email-linux@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1412990134-31186-1-git-send-email-linux@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 20 Oct 2014 13:26:52 -0400
+From: Vincent Palatin <vpalatin@chromium.org>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Jonathan Corbet <corbet@lwn.net>,
+        linux-media@vger.kernel.org
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vincent Palatin <vpalatin@chromium.org>
+Subject: [PATCH] [media] v4l: DocBook: fix media build error
+Date: Mon, 20 Oct 2014 10:26:43 -0700
+Message-Id: <1413826003-1237-1-git-send-email-vpalatin@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <54454199.3070702@infradead.org>
+References: <54454199.3070702@infradead.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 11, 2014 at 02:15:34AM +0100, Guenter Roeck wrote:
-> Fix:
-> 
-> In file included from ./arch/arm64/include/asm/irq_work.h:4:0,
->         from include/linux/irq_work.h:46,
->         from include/linux/perf_event.h:49,
->         from include/linux/ftrace_event.h:9,
->         from include/trace/syscall.h:6,
->         from include/linux/syscalls.h:81,
->         from init/main.c:18:
-> ./arch/arm64/include/asm/smp.h:24:3:
-> 	error: #error "<asm/smp.h> included in non-SMP build"
->  # error "<asm/smp.h> included in non-SMP build"
->    ^
-> ./arch/arm64/include/asm/smp.h:27:0: warning: "raw_smp_processor_id" redefined
->  #define raw_smp_processor_id() (current_thread_info()->cpu)
->  ^
-> 
-> and:
-> 
-> In file included from ./arch/arm64/include/asm/irq_work.h:4:0,
->         from include/linux/irq_work.h:46,
->         from kernel/irq_work.c:11:
-> ./arch/arm64/include/asm/smp_plat.h:56:30:
->         error: ‘NR_CPUS’ undeclared here (not in a function)
->         extern u64 __cpu_logical_map[NR_CPUS];
-> 
-> by providing a helper function in smp_plat.h, similar to the arm implementation,
-> and by removing NR_CPUS from smp_plat.h.
-> 
-> Fixes: 3631073659d0 ("arm64: Tell irq work about self IPI support")
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Fix media DocBook build errors by re-adding the orderedlist tag
+and putting back the section tags lost during merge.
 
-Isn't something like this simpler:
+Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
+---
+ Documentation/DocBook/media/v4l/compat.xml | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/arm64/include/asm/irq_work.h b/arch/arm64/include/asm/irq_work.h
-index 8e24ef3f7c82..b4f6b19a8a68 100644
---- a/arch/arm64/include/asm/irq_work.h
-+++ b/arch/arm64/include/asm/irq_work.h
-@@ -1,6 +1,8 @@
- #ifndef __ASM_IRQ_WORK_H
- #define __ASM_IRQ_WORK_H
- 
-+#ifdef CONFIG_SMP
+diff --git a/Documentation/DocBook/media/v4l/compat.xml b/Documentation/DocBook/media/v4l/compat.xml
+index 07ffc76..0a2debf 100644
+--- a/Documentation/DocBook/media/v4l/compat.xml
++++ b/Documentation/DocBook/media/v4l/compat.xml
+@@ -2566,6 +2566,10 @@ fields changed from _s32 to _u32.
+ 	  <para>Added compound control types and &VIDIOC-QUERY-EXT-CTRL;.
+ 	  </para>
+         </listitem>
++      </orderedlist>
++    </section>
 +
- #include <asm/smp.h>
- 
- static inline bool arch_irq_work_has_interrupt(void)
-@@ -8,4 +10,13 @@ static inline bool arch_irq_work_has_interrupt(void)
- 	return !!__smp_cross_call;
- }
- 
-+#else
-+
-+static inline bool arch_irq_work_has_interrupt(void)
-+{
-+	return false;
-+}
-+
-+#endif
-+
- #endif /* __ASM_IRQ_WORK_H */
++    <section>
+       <title>V4L2 in Linux 3.18</title>
+       <orderedlist>
+ 	<listitem>
+-- 
+2.1.0.rc2.206.gedb03e5
+
