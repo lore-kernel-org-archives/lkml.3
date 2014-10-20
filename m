@@ -1,112 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752395AbaJTSxO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 14:53:14 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:59051 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751914AbaJTSxK (ORCPT
+	id S1752862AbaJTSxZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 14:53:25 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:52896 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752561AbaJTSxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 14:53:10 -0400
-Date: Mon, 20 Oct 2014 20:53:06 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+	Mon, 20 Oct 2014 14:53:24 -0400
+Date: Mon, 20 Oct 2014 14:53:21 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ingo Molnar <mingo@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
+        Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm] memcg: remove activate_kmem_mutex
-Message-ID: <20141020185306.GB505@dhcp22.suse.cz>
-References: <1413817889-13915-1-git-send-email-vdavydov@parallels.com>
+Subject: Re: [PATCH 1/2] kprobes: introduce ARCH_HANDLES_KPROBES_ON_FTRACE
+Message-ID: <20141020145321.0af7a4dd@gandalf.local.home>
+In-Reply-To: <54446B92.1040507@hitachi.com>
+References: <1413387978-984-1-git-send-email-heiko.carstens@de.ibm.com>
+	<1413387978-984-2-git-send-email-heiko.carstens@de.ibm.com>
+	<54446B92.1040507@hitachi.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413817889-13915-1-git-send-email-vdavydov@parallels.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 20-10-14 19:11:29, Vladimir Davydov wrote:
-> The activate_kmem_mutex is used to serialize memcg.kmem.limit updates,
-> but we already serialize them with memcg_limit_mutex so let's remove the
-> former.
+On Mon, 20 Oct 2014 10:55:30 +0900
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+
+
+> Hmm, this looks a bit not straight. Maybe we'd better introduce a local
+> check_ftrace_location() function which always returns 0 if
+> CONFIG_ARCH_HANDLES_KPROBES_ON_FTRACE(with a comment! :)) as below.
 > 
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-
-Is this the case since bd67314586a3 (memcg, slab: simplify
-synchronization scheme)?
-
-Anyway Looks good to me.
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  mm/memcontrol.c |   24 +++++-------------------
->  1 file changed, 5 insertions(+), 19 deletions(-)
+> int check_ftrace_location(kp)
+> {
+> 	unsigned long ftrace_address;
 > 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 3a203c7ec6c7..e957f0c80c6e 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2618,8 +2618,6 @@ static void commit_charge(struct page *page, struct mem_cgroup *memcg,
->   */
->  static DEFINE_MUTEX(memcg_slab_mutex);
->  
-> -static DEFINE_MUTEX(activate_kmem_mutex);
-> -
->  /*
->   * This is a bit cumbersome, but it is rarely used and avoids a backpointer
->   * in the memcg_cache_params struct.
-> @@ -3756,9 +3754,8 @@ static u64 mem_cgroup_read_u64(struct cgroup_subsys_state *css,
->  }
->  
->  #ifdef CONFIG_MEMCG_KMEM
-> -/* should be called with activate_kmem_mutex held */
-> -static int __memcg_activate_kmem(struct mem_cgroup *memcg,
-> -				 unsigned long nr_pages)
-> +static int memcg_activate_kmem(struct mem_cgroup *memcg,
-> +			       unsigned long nr_pages)
->  {
->  	int err = 0;
->  	int memcg_id;
-> @@ -3820,17 +3817,6 @@ out:
->  	return err;
->  }
->  
-> -static int memcg_activate_kmem(struct mem_cgroup *memcg,
-> -			       unsigned long nr_pages)
-> -{
-> -	int ret;
-> -
-> -	mutex_lock(&activate_kmem_mutex);
-> -	ret = __memcg_activate_kmem(memcg, nr_pages);
-> -	mutex_unlock(&activate_kmem_mutex);
-> -	return ret;
-> -}
-> -
->  static int memcg_update_kmem_limit(struct mem_cgroup *memcg,
->  				   unsigned long limit)
->  {
-> @@ -3853,14 +3839,14 @@ static int memcg_propagate_kmem(struct mem_cgroup *memcg)
->  	if (!parent)
->  		return 0;
->  
-> -	mutex_lock(&activate_kmem_mutex);
-> +	mutex_lock(&memcg_limit_mutex);
->  	/*
->  	 * If the parent cgroup is not kmem-active now, it cannot be activated
->  	 * after this point, because it has at least one child already.
->  	 */
->  	if (memcg_kmem_is_active(parent))
-> -		ret = __memcg_activate_kmem(memcg, PAGE_COUNTER_MAX);
-> -	mutex_unlock(&activate_kmem_mutex);
-> +		ret = memcg_activate_kmem(memcg, PAGE_COUNTER_MAX);
-> +	mutex_unlock(&memcg_limit_mutex);
->  	return ret;
->  }
->  #else
-> -- 
-> 1.7.10.4
+> 	/* If an architecture handles kprobes on ftrace, we don't check it */
+> 	if (IS_ENABLED(CONFIG_ARCH_HANDLES_KPROBES_ON_FTRACE))
+> 		return 0;
 > 
+> 	...
+> }
 
--- 
-Michal Hocko
-SUSE Labs
+We can also just make that function weak, and let the archs override
+the default behavior?
+
+-- Steve
