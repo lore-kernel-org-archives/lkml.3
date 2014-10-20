@@ -1,124 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752801AbaJTHmu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 03:42:50 -0400
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.161]:28262 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752556AbaJTHmt (ORCPT
+	id S1752839AbaJTHnE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 03:43:04 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:20780 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752556AbaJTHm7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 03:42:49 -0400
-X-Env-Sender: Andreas.Werner@men.de
-X-Msg-Ref: server-8.tower-39.messagelabs.com!1413790956!21346052!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.12.3; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Mon, 20 Oct 2014 09:42:36 +0200
-Date: Mon, 20 Oct 2014 10:33:45 +0200
-From: Andreas Werner <andreas.werner@men.de>
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: Andreas Werner <andreas.werner@men.de>, <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
-        <johannes.thumshirn@men.de>
-Subject: Re: [PATCH 1/2] drivers/misc/eeprom/men_eeprod: Introduce MEN Board
- Information EEPROM driver
-Message-ID: <20141020083344.GA523@awelinux>
-References: <cover.1413416105.git.andreas.werner@men.de>
- <d169930cfe45d4c05c79f7dd00471d732441529d.1413416105.git.andreas.werner@men.de>
- <20141016085835.GA1273@katana>
- <20141016102126.GB23256@awelinux>
- <20141016095910.GC1273@katana>
- <20141016114401.GA22506@awelinux>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20141016114401.GA22506@awelinux>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [192.1.1.171]
+	Mon, 20 Oct 2014 03:42:59 -0400
+X-AuditID: cbfec7f5-b7f956d000005ed7-7a-5444bd00806a
+Message-id: <5444BCFF.8030803@samsung.com>
+Date: Mon, 20 Oct 2014 09:42:55 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101
+ Thunderbird/31.2.0
+MIME-version: 1.0
+To: Stefan Hengelein <stefan.hengelein@fau.de>, linux-kernel@vger.kernel.org
+Cc: linux@arm.linux.org.uk, akpm@linux-foundation.org, lauraa@codeaurora.org,
+        linux-arm-kernel@lists.infradead.org, andreas.herrmann@calxeda.com
+Subject: Re: [PATCH] arm: dma-mapping: fix compilation error when CONFIG_MMU is
+ not present
+References: <1413734340-53108-1-git-send-email-stefan.hengelein@fau.de>
+In-reply-to: <1413734340-53108-1-git-send-email-stefan.hengelein@fau.de>
+Content-type: text/plain; charset=utf-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t/xy7oMe11CDK73W1rMWb+GzWLxkRiL
+	7Z0z2C02Pb7GanF51xw2i9uXeS26709ic2D3aGnuYfNY8PkKu8flvl4mj/Pts1k8Tsz4zeKx
+	eUm9x+dNcgHsUVw2Kak5mWWpRfp2CVwZ/xd8ZSn4yVOxbUZiA+NRri5GTg4JAROJv/dnMEPY
+	YhIX7q1n62Lk4hASWMoo8X32DSjnE6PE070TGEGqeAW0JBo7FrCC2CwCqhKn5s4Gs9kEDCW6
+	3naxgdiiAjES93euZoOoF5T4MfkeC4gtIuAj0XngOyPIUGaBSYwSC7/sBCsSFoiVWNl3iAnE
+	FhJwl3g7dTXYUE4BD4neOyfYQWxmATOJLy8Ps0LY8hKb17xlnsAoMAvJjllIymYhKVvAyLyK
+	UTS1NLmgOCk910ivODG3uDQvXS85P3cTIyTov+5gXHrM6hCjAAejEg/vDjOXECHWxLLiytxD
+	jBIczEoivP8ygEK8KYmVValF+fFFpTmpxYcYmTg4pRoYWz40agWzCbn+ceB17Sp67vPU+yJz
+	/TlRPn6hn/lK2zhMzH9mCdhc+SVWYaDdrHp0M5vZbe4Lftvc+X/uZ3ob1nGs5G3/9dAzd3sc
+	pX0mJnsvuXzi81FX6xgzoZhZdi/UCngfLm9eV5n/Y++3LxvLrkw8IC76ecWlHBPX7RmLvl5P
+	e5/dfemNEktxRqKhFnNRcSIAOlCLRVgCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 01:44:02PM +0200, Andreas Werner wrote:
-> On Thu, Oct 16, 2014 at 11:59:10AM +0200, Wolfram Sang wrote:
-> > * PGP Signed by an unknown key
-> > 
-> > 
-> > > I do not want to parse the things in userspace because this EEPROM data
-> > > are related to the hardware and i want to give our customer the easiest way
-> > > to access the data without installing any tool.
-> > 
-> > I understand that point of view. From an upstream point of view, things
-> > may look different, though.
-> > 
-> 
-> I also understand your point of view :-).
-> Most customers wants just to have a running system without installing anything.
-> And for me an EEPROM is so simple and should not need a complicated way
-> to access it.
-> 
-> > > The current state to read the eeprom data is, that customer needs to install a big
-> > > environment where the tool is integrated to have access to those kind of simple
-> > > data or they have to write their own code.
-> > 
-> > i2cget from i2c-tools? You could do a simple shell script to parse the
-> > data. Or do a board specific hook which reads the data and prints it to
-> > the logfiles...
-> > 
-> 
-> Yes of course there are a lot of possibilities. This was just an example
-> what we currently use and what was developed years ago.
-> 
-> With a driver like this you can also define read only attributes to prevent customer
-> to write or modify the data in the production section. With i2ctools you can just
-> write any data to it you want.
-> 
-> > > > Consider how bloated the sysfs-ABI might get if every vendor who uses an
-> > > > eeprom wants to expose the data this way?
-> > > > 
-> > > 
-> > > Yes and no. The possible sysfs entries gets bloated if every vendor will do it
-> > > like this way, but normally there is just one Board EEPROM on the board, therefore
-> > > only one driver gets loaded.
-> > 
-> > I am not talking about runtime here, I don't care about that. I am
-> > talking about the ABI we create and we have to maintain basically
-> > forever. And with vendor specific configuartion data I have doubts with
-> > that being stable.
-> > 
-> 
-> Ok, but i do not think that we can make a "general" ABI definition for those kind
-> of devices because every vendor will have its own data in the EEPROM which he want
-> to have.
-> 
-> > > I mean its the same for every i2c device like a temperature sensor, I can also
-> > > read it from userspace without any special hwmon driver.
-> > 
-> > These is a HUGE difference. If I read tempX_input, I don't need to care
-> > if the sensor is I2C or SPI or whatever. The kernel abstracts that away.
-> > The files you create are for your I2C EEPROM only. Data gets
-> > "reformatted" and access gets hidden, but nothing is abstracted away.
-> > It would be different if we had a generic convention for "serial_id" or
-> > stuff like that. But as configuration data is highly specific I don't
-> > see this coming.
-> > 
-> 
-> For a standard sysfs interface it is a huge difference yes. At the point
-> of few from the EEPROM device it is a device like a temp sensor which
-> could be different from vendor to vendor.
-> 
-> Regards
-> Andy
+Hello,
+
+On 2014-10-19 17:59, Stefan Hengelein wrote:
+> When CONFIG_MMU is not present, the variable 'atomic_pool' and the
+> function '__in_atomic_pool' are undeclared but used in part of the
+> code. Therefore, the compilation breaks.
+> Now, they are defined to dummy values when CONFIG_MMU is undefined.
 >
+> This error was found with vampyr.
 
-Greg what do you think about that driver as a Maintainer of the sysfs?
-To we have other ways to get those kind of drivers in the mainline kernel?
+Frankly, those variables are used only when CONFIG_MMU or
+CONFIG_ARM_DMA_USE_IOMMU are set. The latter imho makes only sense
+together with CONFIG_MMU, so the issue reported here doesn't really
+happen in real world.
 
-Regards
-Andy
+> Signed-off-by: Stefan Hengelein <stefan.hengelein@fau.de>
+> ---
+>   arch/arm/mm/dma-mapping.c | 2 ++
+>   1 file changed, 2 insertions(+)
+>
+> diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+> index c245d90..7d04cf7 100644
+> --- a/arch/arm/mm/dma-mapping.c
+> +++ b/arch/arm/mm/dma-mapping.c
+> @@ -573,12 +573,14 @@ static inline pgprot_t __get_dma_pgprot(struct dma_attrs *attrs, pgprot_t prot)
+>   #else	/* !CONFIG_MMU */
+>   
+>   #define nommu() 1
+> +#define atomic_pool 0
+>   
+>   #define __get_dma_pgprot(attrs, prot)	__pgprot(0)
+>   #define __alloc_remap_buffer(dev, size, gfp, prot, ret, c)	NULL
+>   #define __alloc_from_pool(size, ret_page)			NULL
+>   #define __alloc_from_contiguous(dev, size, prot, ret, c)	NULL
+>   #define __free_from_pool(cpu_addr, size)			0
+> +#define __in_atomic_pool(start, size)				0
+>   #define __free_from_contiguous(dev, page, cpu_addr, size)	do { } while (0)
+>   #define __dma_free_remap(cpu_addr, size)			do { } while (0)
+>   
 
- 
-> > 
-> > * Unknown Key
-> > * 0x14A029B6
+Best regards
+-- 
+Marek Szyprowski, PhD
+Samsung R&D Institute Poland
+
