@@ -1,130 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752888AbaJTTAz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 15:00:55 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:61750 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751250AbaJTTAx (ORCPT
+	id S1752378AbaJTTEL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 15:04:11 -0400
+Received: from mail-oi0-f74.google.com ([209.85.218.74]:44083 "EHLO
+	mail-oi0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003AbaJTTEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 15:00:53 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lyra Zhang <zhang.lyra@gmail.com>
-Cc: catalin.marinas@arm.com, gregkh@linuxfoundation.org,
-        ijc+devicetree@hellion.org.uk, jslaby@suse.cz,
-        Kumar Gala <galak@codeaurora.org>, Mark Brown <broonie@linaro.org>,
-        mark.rutland@arm.com, m-karicheri2@ti.com, pawel.moll@arm.com,
-        Ramkumar Ramachandra <artagnon@gmail.com>, rrichter@cavium.com,
-        robh+dt@kernel.org, will.deacon@arm.com,
-        Orson Zhai <orsonzhai@gmail.com>, geng.ren@spreadtrum.com,
-        "zhizhou.zhang" <zhizhou.zhang@spreadtrum.com>,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        "chunyan.zhang" <chunyan.zhang@spreadtrum.com>
-Subject: Re: [PATCH 2/6] arm64: Add DTS support for Spreadtrum's Shark64 SoC
-Date: Mon, 20 Oct 2014 21:00:19 +0200
-Message-ID: <1799842.6CvQjvbUTo@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAAfSe-tPynLarYRzsTw3vncp8CB0EnoaR_Z6tPQNA7DEV7+w9Q@mail.gmail.com>
-References: <1411992293-7729-1-git-send-email-zhang.lyra@gmail.com> <4004425.NZAxCnE0qr@wuerfel> <CAAfSe-tPynLarYRzsTw3vncp8CB0EnoaR_Z6tPQNA7DEV7+w9Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:b4eCDtJ0IdMNryxJH301ZDqV3CPzuz4HeL+EFxzjIQr
- M41dB4qrO87UYi5qnXy0ao+AdIo3KTq95MpxN5nBnDh8mULED0
- X9a0vQ3swzG2v0VXmdgUECsksDa6CmX+J9ukTxPUTts3VRp/wC
- kRLEha49SdpGtXrII819A/OQg50QrZjnGDraQ8xS/YNTGMthJP
- 9l+r0zC2d96ZkD6tv81EQsUhhjX7ulM1dM3g+3P9MC9z5QPMFK
- 32xkBEwDGjNmWW5vZk3fUZXyqhlJHEBrjbtlp5X286n0lF/6hQ
- sA6SlAOXe8M0iTIpTVvLs84sIfweSlrhumAAOOCoQDIIFVekYy
- 8ln+u9z14/ceCb8gp5do=
-X-UI-Out-Filterresults: notjunk:1;
+	Mon, 20 Oct 2014 15:04:09 -0400
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Ralf Baechle <ralf@linux-mips.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Bresticker <abrestic@chromium.org>,
+        Paul Burton <paul.burton@imgtec.com>,
+        Qais Yousef <qais.yousef@imgtec.com>,
+        John Crispin <blogic@openwrt.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 00/19] MIPS GIC cleanup, part 2
+Date: Mon, 20 Oct 2014 12:03:47 -0700
+Message-Id: <1413831846-32100-1-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 15 October 2014 11:17:07 Lyra Zhang wrote:
-> Hi, Arnd
+Second round of cleanups for the MIPS GIC drivers:
+ - Patches 1 through 5 get rid of the ugly REG() macros and instead use
+   proper iomem accessors.
+ - Patches 6 and 7 move the GIC header to linux/irqchip/ and clean it up.
+ - Patches 8 through 10 are misc. GIC irqchip cleanups.
+ - Patches 11 and 12 combine the GIC clocksource and clockevent drivers and
+   move them to drivers/clocksource/.
+ - Patches 13 through 19 are various cleanups for the GIC clocksource driver.
 
-Hi Lyra,
+Boot tested on Malta and (with additional out-of-tree patches) a platform
+based on the IMG Pistachio SoC.  Build tested for SEAD-3.
 
-Sorry for the late reply, I've been away travelling and am just
-now catching up on email. Have you found a solution or do
-you still need help with this?
+Based on 3.18-rc1 + part 1 of my GIC cleanup series [0].  A tree with both
+series is available at:
+  https://github.com/abrestic/linux/commits/mips-gic-cleanup-pt2-v1
 
-	Arnd
+[0] https://lkml.org/lkml/2014/9/18/487
 
-> 2014-09-29 21:47 GMT+08:00 Arnd Bergmann <arnd@arndb.de>:
-> > On Monday 29 September 2014 20:04:49 zhang.lyra@gmail.com wrote:
-> >> +
-> >> +/memreserve/ 0x80000000 0x00010000;
-> >
-> > Maybe add a comment explaining why it is reserved?
-> >
-> >> +     chosen {
-> >> +             bootargs = "earlycon=serial_sprd,0x70000000";
-> >> +      };
-> >
-> > Just remove this for now, the command line should really be set by the
-> > boot loader, not hardcoded in the dts file.
-> >
-> > IIRC, the earlycon=... syntax is not recommended on DT based systems,
-> > better use the "stdout-path" syntax instead.
-> >
-> 
-> I have tried to use  "stdout-path" instead of "bootargs= "earlycon=
-> ..." like below :
-> 
-> / {
->      ...
-> 
->      chosen {
->              stdout-path = "/serial@70000000";
->       };
-> 
->      uart0: serial@70000000 {
->              status="okay";
->      };
->       ...
-> };
-> 
-> But then there is nothing output information on serial console.(I have
-> been testing in Fast Model)
-> 
-> 
-> I saw the below code in init/main.c
-> 
-> /* Check for early params. */
-> static int __init do_early_param(char *param, char *val, const char *unused)
-> {
-> const struct obs_kernel_param *p;
-> 
-> for (p = __setup_start; p < __setup_end; p++) {
-> if ((p->early && parameq(param, p->str)) ||
->    (strcmp(param, "console") == 0 &&
->     strcmp(p->str, "earlycon") == 0)
-> ) {
-> if (p->setup_func(val) != 0)
-> pr_warn("Malformed early option '%s'\n", param);
-> }
-> }
-> /* We accept everything at this stage. */
-> return 0;
-> }
-> 
-> And I saw a patch from Grant Likely, he had a comment in it :
-> "If the devicetree specifies a serial port as a stdout device, then the
-> kernel can use it as the default console if nothing else was selected on
-> the command line. For any serial port that uses the uart_add_one_port()
-> feature, the uart_add_one_port() has all the information needed to
-> automatically enable the console device, which is what this patch does."
-> 
-> So, I guess that the reason why I can't see any output information on
-> console after using "stdout-path" instead of "earlycon" is that I
-> haven't a driver of Spreadtrum's serial, and dose not use  the
-> uart_add_one_port() feature.
-> 
-> I don't know is correct what I guess.
-> 
-> Could you give me some suggestions to solve this problem?
-> 
+Andrew Bresticker (19):
+  MIPS: Malta: Use gic_read_count() to read GIC timer
+  irqchip: mips-gic: Export function to read counter width
+  MIPS: sead3: Stop using GIC REG macros
+  MIPS: Malta: Stop using GIC REG macros
+  irqchip: mips-gic: Use proper iomem accessors
+  MIPS: Move gic.h to include/linux/irqchip/mips-gic.h
+  irqchip: mips-gic: Clean up header file
+  irqchip: mips-gic: Clean up #includes
+  irqchip: mips-gic: Remove gic_{pending,itrmask}_regs
+  irqchip: mips-gic: Use GIC_SH_WEDGE_{SET,CLR} macros
+  MIPS: Move GIC clocksource driver to drivers/clocksource/
+  clocksource: mips-gic: Combine with GIC clockevent driver
+  clocksource: mips-gic: Staticize local symbols
+  clocksource: mips-gic: Move gic_frequency to clocksource driver
+  clocksource: mips-gic: Remove gic_event_handler
+  clocksource: mips-gic: Use percpu_dev_id
+  clocksource: mips-gic: Use CPU notifiers to setup the timer
+  clocksource: mips-gic: Use clockevents_config_and_register
+  clocksource: mips-gic: Bump up rating of GIC timer
+
+ arch/mips/Kconfig                                  |  21 +-
+ arch/mips/include/asm/mips-boards/maltaint.h       |   2 +-
+ arch/mips/include/asm/mips-boards/sead3int.h       |   2 +-
+ arch/mips/include/asm/time.h                       |   5 +-
+ arch/mips/kernel/Makefile                          |   2 -
+ arch/mips/kernel/cevt-gic.c                        | 103 ---------
+ arch/mips/kernel/cevt-r4k.c                        |   2 +-
+ arch/mips/kernel/csrc-gic.c                        |  40 ----
+ arch/mips/kernel/smp-cmp.c                         |   2 +-
+ arch/mips/kernel/smp-cps.c                         |   2 +-
+ arch/mips/kernel/smp-gic.c                         |   2 +-
+ arch/mips/kernel/smp-mt.c                          |   2 +-
+ arch/mips/mti-malta/malta-int.c                    |  15 +-
+ arch/mips/mti-malta/malta-time.c                   |  20 +-
+ arch/mips/mti-sead3/sead3-ehci.c                   |   2 +-
+ arch/mips/mti-sead3/sead3-int.c                    |   9 +-
+ arch/mips/mti-sead3/sead3-net.c                    |   2 +-
+ arch/mips/mti-sead3/sead3-platform.c               |   2 +-
+ arch/mips/mti-sead3/sead3-time.c                   |   2 +-
+ drivers/clocksource/Kconfig                        |   4 +
+ drivers/clocksource/Makefile                       |   1 +
+ drivers/clocksource/mips-gic-timer.c               | 139 ++++++++++++
+ drivers/irqchip/irq-mips-gic.c                     | 243 +++++++++++++--------
+ .../asm/gic.h => include/linux/irqchip/mips-gic.h  | 203 +++--------------
+ 24 files changed, 363 insertions(+), 464 deletions(-)
+ delete mode 100644 arch/mips/kernel/cevt-gic.c
+ delete mode 100644 arch/mips/kernel/csrc-gic.c
+ create mode 100644 drivers/clocksource/mips-gic-timer.c
+ rename arch/mips/include/asm/gic.h => include/linux/irqchip/mips-gic.h (61%)
+
+-- 
+2.1.0.rc2.206.gedb03e5
 
