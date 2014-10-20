@@ -1,132 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181AbaJTRGn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 13:06:43 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:58085 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750807AbaJTRGm (ORCPT
+	id S1752286AbaJTRHY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 13:07:24 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:59870 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238AbaJTRHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 13:06:42 -0400
-From: Ebru Akagunduz <ebru.akagunduz@gmail.com>
-To: arnd@arndb.de
-Cc: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, opw-kernel@googlegroups.com,
-        Ebru Akagunduz <ebru.akagunduz@gmail.com>
-Subject: [PATCH v2] scsi: ips.c: Use jiffies comparison instead of do_gettimeofday()
-Date: Mon, 20 Oct 2014 20:06:01 +0300
-Message-Id: <1413824761-21426-1-git-send-email-ebru.akagunduz@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Mon, 20 Oct 2014 13:07:21 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-api@vger.kernel.org,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Anup Patel <anup.patel@linaro.org>
+Subject: Re: [PATCH] staging: android: binder: move to the "real" part of the kernel
+Date: Mon, 20 Oct 2014 19:06:47 +0200
+Message-ID: <2166528.FFdzTaR0kp@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141016124741.GA3832@kroah.com>
+References: <20141016124741.GA3832@kroah.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:u5mRGVEfxSZSF2CROxDoP5FysmGdbotA3RxSxi1qMt3
+ 6AhLp6Me3zIqmhu05jyBFtlerq6L3A0GYCedTOXq+zx6e6YxoW
+ BR2tmvDT90lclni9wmnFI75zA6DdmpcGXWOBURfIQRc+Sfio5x
+ uDXolDQ6zRjNnO3tVj2ktZCYG3IyIDD6sSrwAbIlaRXH9acroB
+ BhHUyV6IjhxyHCWEgJMujDt0MQgTcR+L7fANW3TOXMgZ/EhbCQ
+ 8GnIgJl3BSMOyixIapNWT+lPQvq3Q3SHeNgpV9cc2OQ5KjYLeP
+ flXQ3mzLlEIUPh3i0YgPVIDsTW/muqVdSSwDQFdqWuiuOoj4f6
+ Br9OXS+yVV/qu5J9jyhc=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-do_gettimeofday() only can get 32-bit time types
-but the driver should be able to use dates that are
-after January 2038.
+On Thursday 16 October 2014 14:47:41 Greg Kroah-Hartman wrote:
+> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> The Android binder code has been "stable" for many years now.  No matter
+> what comes in the future, we are going to have to support this API, so
+> might as well move it to the "real" part of the kernel as there's no
+> real work that needs to be done to the existing code.
+> 
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> ---
+> 
+> This was discussed in the Android miniconf at the Plumbers conference.
+> If anyone has any objections to this, please let me know, otherwise I'm
+> queueing this up for 3.19-rc1
 
-Remove do_gettimeofday() and use
-jiffies comparison to supply 64-bit time types.
+I'm worried about the user interface: since graduating binder out of
+staging with the existing ioctl interface has never been discussed
+as a real option and (I assume) everybody expected the way forward
+would be to have a replacement, I don't think it ever received the
+attention it should have. Specific concerns are:
 
-Signed-off-by: Ebru Akagunduz <ebru.akagunduz@gmail.com>
----
- drivers/scsi/ips.c | 25 +++++++++++++------------
- drivers/scsi/ips.h |  2 +-
- 2 files changed, 14 insertions(+), 13 deletions(-)
+- I don't think there has been an audit of which subset of the API
+  is actually required. IIRC, it was said initially that actual
+  applications don't use all the features, and that we should have
+  a smaller attack surface.
 
-diff --git a/drivers/scsi/ips.c b/drivers/scsi/ips.c
-index e5afc38..6d27024 100644
---- a/drivers/scsi/ips.c
-+++ b/drivers/scsi/ips.c
-@@ -162,6 +162,7 @@
-  */
- 
- #include <asm/io.h>
-+#include <linux/jiffies.h>
- #include <asm/byteorder.h>
- #include <asm/page.h>
- #include <linux/stddef.h>
-@@ -297,7 +298,7 @@ static void ips_freescb(ips_ha_t *, ips_scb_t *);
- static void ips_setup_funclist(ips_ha_t *);
- static void ips_statinit(ips_ha_t *);
- static void ips_statinit_memio(ips_ha_t *);
--static void ips_fix_ffdc_time(ips_ha_t *, ips_scb_t *, time_t);
-+static void ips_fix_ffdc_time(ips_ha_t *, ips_scb_t *, unsigned long);
- static void ips_ffdc_reset(ips_ha_t *, int);
- static void ips_ffdc_time(ips_ha_t *);
- static uint32_t ips_statupd_copperhead(ips_ha_t *);
-@@ -993,10 +994,10 @@ static int __ips_eh_reset(struct scsi_cmnd *SC)
- 
- 	/* FFDC */
- 	if (le32_to_cpu(ha->subsys->param[3]) & 0x300000) {
--		struct timeval tv;
-+		unsigned long now;
- 
--		do_gettimeofday(&tv);
--		ha->last_ffdc = tv.tv_sec;
-+		now = jiffies;
-+		ha->last_ffdc = jiffies;
- 		ha->reset_count++;
- 		ips_ffdc_reset(ha, IPS_INTR_IORL);
- 	}
-@@ -2404,7 +2405,7 @@ static int
- ips_hainit(ips_ha_t * ha)
- {
- 	int i;
--	struct timeval tv;
-+	unsigned long now;
- 
- 	METHOD_TRACE("ips_hainit", 1);
- 
-@@ -2419,8 +2420,8 @@ ips_hainit(ips_ha_t * ha)
- 
- 	/* Send FFDC */
- 	ha->reset_count = 1;
--	do_gettimeofday(&tv);
--	ha->last_ffdc = tv.tv_sec;
-+	now = jiffies;
-+	ha->last_ffdc = jiffies;
- 	ips_ffdc_reset(ha, IPS_INTR_IORL);
- 
- 	if (!ips_read_config(ha, IPS_INTR_IORL)) {
-@@ -2560,12 +2561,12 @@ ips_next(ips_ha_t * ha, int intr)
- 
- 	if ((ha->subsys->param[3] & 0x300000)
- 	    && (ha->scb_activelist.count == 0)) {
--		struct timeval tv;
-+		unsigned long now;
- 
--		do_gettimeofday(&tv);
-+		now = jiffies;
- 
--		if (tv.tv_sec - ha->last_ffdc > IPS_SECS_8HOURS) {
--			ha->last_ffdc = tv.tv_sec;
-+		if (time_after(now, ha->last_ffdc + IPS_SECS_8HOURS * HZ)) {
-+			ha->last_ffdc = now;
- 			ips_ffdc_time(ha);
- 		}
- 	}
-@@ -6000,7 +6001,7 @@ ips_ffdc_time(ips_ha_t * ha)
- /*                                                                          */
- /****************************************************************************/
- static void
--ips_fix_ffdc_time(ips_ha_t * ha, ips_scb_t * scb, time_t current_time)
-+ips_fix_ffdc_time(ips_ha_t * ha, ips_scb_t * scb, unsigned long current_time)
- {
- 	long days;
- 	long rem;
-diff --git a/drivers/scsi/ips.h b/drivers/scsi/ips.h
-index 45b9566..250beea 100644
---- a/drivers/scsi/ips.h
-+++ b/drivers/scsi/ips.h
-@@ -1054,7 +1054,7 @@ typedef struct ips_ha {
-    uint8_t            active;
-    int                ioctl_reset;        /* IOCTL Requested Reset Flag */
-    uint16_t           reset_count;        /* number of resets           */
--   time_t             last_ffdc;          /* last time we sent ffdc info*/
-+   unsigned long      last_ffdc;          /* last time we sent ffdc info*/
-    uint8_t            slot_num;           /* PCI Slot Number            */
-    int                ioctl_len;          /* size of ioctl buffer       */
-    dma_addr_t         ioctl_busaddr;      /* dma address of ioctl buffer*/
--- 
-1.9.1
+- Using kernel pointers in user space interfaces is an information
+  leak that can be used to construct an exploit. (I don't know if
+  this is still used that way, I think it was doing it last
+  time I checked).
 
+- The driver supports two versions of the user interface (v7 and
+  v8), but only one of them can be selected at compile-time, and
+  an 'allmodconfig' kernel will only include the deprecated one
+  on 32-bit machines.
+
+- The implementation is not namespace-aware and will cause
+  information to be shared across containers in a potentially
+  harmful way.
+  If we graduate the driver from staging, it should IMHO at least
+  be useful in containers to run Android user space safely.
+
+	Arnd
