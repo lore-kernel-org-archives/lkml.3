@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753513AbaJTVgQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 17:36:16 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:54805 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752836AbaJTVgO (ORCPT
+	id S1753565AbaJTVhm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 17:37:42 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:45840 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751704AbaJTVhj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 17:36:14 -0400
-From: Kevin Hilman <khilman@kernel.org>
-To: Kever Yang <kever.yang@rock-chips.com>
-Cc: heiko@sntech.de, dianders@chromium.org, sonnyrao@chromium.org,
-        addy.ke@rock-chips.com, cf@rock-chips.com, xjq@rock-chips.com,
-        hj@rock-chips.com, huangtao@rock-chips.com,
-        linux-rockchip@lists.infradead.org,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>, Rohit Vaswani <rvaswani@codeaurora.org>,
-        devicetree@vger.kernel.org, Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org, Marc Carino <marc.ceeeee@gmail.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 0/6] add basic rk3288 smp support
-References: <1413393785-26783-1-git-send-email-kever.yang@rock-chips.com>
-Date: Mon, 20 Oct 2014 14:36:09 -0700
-In-Reply-To: <1413393785-26783-1-git-send-email-kever.yang@rock-chips.com>
-	(Kever Yang's message of "Wed, 15 Oct 2014 10:22:59 -0700")
-Message-ID: <7hh9yye852.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Mon, 20 Oct 2014 17:37:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1413205748-6300-3-git-send-email-a.motakis@virtualopensystems.com>
+References: <1413205748-6300-1-git-send-email-a.motakis@virtualopensystems.com>
+ <1413205748-6300-3-git-send-email-a.motakis@virtualopensystems.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 20 Oct 2014 14:37:17 -0700
+Message-ID: <CALCETrWzxjpKrou6J63_T75x=ZEGWCGbc4KEWT_AMvzSQNn1eg@mail.gmail.com>
+Subject: Re: [PATCH 2/5] vfio: introduce the VFIO_DMA_MAP_FLAG_NOEXEC flag
+To: Antonios Motakis <a.motakis@virtualopensystems.com>
+Cc: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Will Deacon <will.deacon@arm.com>, tech@virtualopensystems.com,
+        christoffer.dall@linaro.org, eric.auger@linaro.org,
+        kim.phillips@freescale.com, marc.zyngier@arm.com,
+        "open list:VFIO DRIVER" <kvm@vger.kernel.org>,
+        "open list:ABI/API" <linux-api@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kever Yang <kever.yang@rock-chips.com> writes:
+On Mon, Oct 13, 2014 at 6:09 AM, Antonios Motakis
+<a.motakis@virtualopensystems.com> wrote:
+> We introduce the VFIO_DMA_MAP_FLAG_NOEXEC flag to the VFIO dma map call,
+> and expose its availability via the capability VFIO_DMA_NOEXEC_IOMMU.
+> This way the user can control whether the XN flag will be set on the
+> requested mappings. The IOMMU_NOEXEC flag needs to be available for all
+> the IOMMUs of the container used.
 
-> rk3288 is qual-core CPU Soc, we enable the smp in this patch.
->
-> In version 3 we use regmap and pmu syscon for cpu power on/off.
-> This should be work after Pankaj Dubey's patch applied:
-> "syscon: Decouple syscon interface from platform devices"
-> (https://lkml.org/lkml/2014/9/30/156)
+Since you sent this to the linux-api list, I'll bite: what's the XN
+flag?  I know what PROT_EXEC does when you mmap something, and I
+presume that vfio is mmappable, but I don't actually have any clue
+what this patch does.
 
-Tested on top of linux-next (next-20141020) along with above syscon
-dependency, and verifed that 4 CPUs boot up on my rk3288-evb-rk808.
+I assume that this does not have anything to do with a non-CPU DMA
+master executing code in main memory, because that makes rather little
+sense.  (Or maybe it really does, in which case: weird.)
 
-Tested-by: Kevin Hilman <khilman@linaro.org>
-
-Kevin
+--Andy
