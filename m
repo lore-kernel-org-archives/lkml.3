@@ -1,154 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484AbaJTNdS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 09:33:18 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:42368 "EHLO mail.skyhub.de"
+	id S1752642AbaJTNd1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 09:33:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47417 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751986AbaJTNdQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 09:33:16 -0400
-Date: Mon, 20 Oct 2014 15:32:52 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: linux-kernel@vger.kernel.org, H Peter Anvin <hpa@zytor.com>
-Subject: Re: [PATCH 2/8] x86, microcode, intel: don't update each HT core
- twice
-Message-ID: <20141020133252.GC3524@pd.tnic>
-References: <1410197875-19252-1-git-send-email-hmh@hmh.eng.br>
- <1410197875-19252-3-git-send-email-hmh@hmh.eng.br>
+	id S1752500AbaJTNdV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 09:33:21 -0400
+Date: Mon, 20 Oct 2014 16:35:55 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Cornelia Huck <cornelia.huck@de.ibm.com>
+Cc: Thomas Graf <tgraf@suug.ch>, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, linux-scsi@vger.kernel.org,
+        linux-s390@vger.kernel.org, v9fs-developer@lists.sourceforge.net,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
+        Amit Shah <amit.shah@redhat.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Paolo Bonzini <pbonzini@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v4 13/25] virtio_console: enable VQs early
+Message-ID: <20141020133555.GA27111@redhat.com>
+References: <1413114332-626-1-git-send-email-mst-v4@redhat.com>
+ <1413114332-626-14-git-send-email-mst-v4@redhat.com>
+ <20141020120750.GA18561@casper.infradead.org>
+ <20141020144223.5655dcbc.cornelia.huck@de.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410197875-19252-3-git-send-email-hmh@hmh.eng.br>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141020144223.5655dcbc.cornelia.huck@de.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 02:37:48PM -0300, Henrique de Moraes Holschuh wrote:
-> Fix a regression introduced by 506ed6b53e00ba303ad778122f08e1fca7cf5efb,
-> "x86, intel: Output microcode revision in /proc/cpuinfo", which added a
-> cache of the thread microcode revision to cpu_data()->microcode and
-> switched the microcode driver to using the cached value.
+On Mon, Oct 20, 2014 at 02:42:23PM +0200, Cornelia Huck wrote:
+> On Mon, 20 Oct 2014 13:07:50 +0100
+> Thomas Graf <tgraf@suug.ch> wrote:
 > 
-> This caused the driver to needlessly update each processor core twice
-> when hyper-threading is enabled (once per hardware thread).  The early
-> microcode update code that runs during BSP/AP setup does not have this
-> problem.
+> > On 10/13/14 at 10:50am, Michael S. Tsirkin wrote:
+> > > virtio spec requires drivers to set DRIVER_OK before using VQs.
+> > > This is set automatically after probe returns, virtio console violated this
+> > > rule by adding inbufs, which causes the VQ to be used directly within
+> > > probe.
+> > > 
+> > > To fix, call virtio_device_ready before using VQs.
+> > > 
+> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > ---
+> > >  drivers/char/virtio_console.c | 2 ++
+> > >  1 file changed, 2 insertions(+)
+> > > 
+> > > diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+> > > index b585b47..6ebe8f6 100644
+> > > --- a/drivers/char/virtio_console.c
+> > > +++ b/drivers/char/virtio_console.c
+> > > @@ -1449,6 +1449,8 @@ static int add_port(struct ports_device *portdev, u32 id)
+> > >  	spin_lock_init(&port->outvq_lock);
+> > >  	init_waitqueue_head(&port->waitqueue);
+> > >  
+> > > +	virtio_device_ready(portdev->vdev);
+> > > +
+> > >  	/* Fill the in_vq with buffers so the host can send us data. */
+> > >  	nr_added_bufs = fill_queue(port->in_vq, &port->inbuf_lock);
+> > >  	if (!nr_added_bufs) {
+> > 
+> > Seems like probe and add_port() now both set VIRTIO_CONFIG_S_DRIVER_OK
 > 
-> Intel microcode update operations are extremely expensive.  The WRMSR
-> 79H instruction could take anywhere from a hundred-thousand to several
-> million cycles to successfully apply a microcode update, depending on
-> processor model and microcode update size.
+> I think we need to set this in the probe function instead, otherwise we
+> fail for multiqueue (which also wants to use the control queue early).
 > 
-> To avoid updating the same core twice per microcode update run, refresh
-> the microcode revision of each CPU (hardware thread) before deciding
-> whether it needs an update or not.
+> Completely untested patch below; I can send this with proper s-o-b if
+> it helps.
 > 
-> A silent version of collect_cpu_info() is required for this fix,
-> otherwise the logs produced by a microcode update run would be twice as
-> long and very confusing.
-> 
-> Signed-off-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-> ---
->  arch/x86/kernel/cpu/microcode/intel.c |   39 ++++++++++++++++++++++-----------
->  1 file changed, 26 insertions(+), 13 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/microcode/intel.c b/arch/x86/kernel/cpu/microcode/intel.c
-> index c6826d1..2c629d1 100644
-> --- a/arch/x86/kernel/cpu/microcode/intel.c
-> +++ b/arch/x86/kernel/cpu/microcode/intel.c
-> @@ -87,7 +87,7 @@ MODULE_DESCRIPTION("Microcode Update Driver");
->  MODULE_AUTHOR("Tigran Aivazian <tigran@aivazian.fsnet.co.uk>");
->  MODULE_LICENSE("GPL");
+> diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+> index bfa6400..cf7a561 100644
+> --- a/drivers/char/virtio_console.c
+> +++ b/drivers/char/virtio_console.c
+> @@ -1449,8 +1449,6 @@ static int add_port(struct ports_device *portdev, u32 id)
+>  	spin_lock_init(&port->outvq_lock);
+>  	init_waitqueue_head(&port->waitqueue);
 >  
-> -static int collect_cpu_info(int cpu_num, struct cpu_signature *csig)
-> +static void __collect_cpu_info(int cpu_num, struct cpu_signature *csig)
->  {
->  	struct cpuinfo_x86 *c = &cpu_data(cpu_num);
->  	unsigned int val[2];
-> @@ -102,7 +102,19 @@ static int collect_cpu_info(int cpu_num, struct cpu_signature *csig)
->  		csig->pf = 1 << ((val[1] >> 18) & 7);
->  	}
->  
-> -	csig->rev = c->microcode;
-> +	/* get the current microcode revision from MSR 0x8B */
-> +	wrmsr(MSR_IA32_UCODE_REV, 0, 0);
-> +	sync_core();
-> +	rdmsr(MSR_IA32_UCODE_REV, val[0], val[1]);
-> +
-> +	csig->rev = val[1];
-> +	c->microcode = val[1];  /* re-sync */
-> +}
-> +
-> +static int collect_cpu_info(int cpu_num, struct cpu_signature *csig)
-> +{
-> +	__collect_cpu_info(cpu_num, csig);
-> +
->  	pr_info("CPU%d sig=0x%x, pf=0x%x, revision=0x%x\n",
->  		cpu_num, csig->sig, csig->pf, csig->rev);
-
-We probably should downgrade this to pr_debug and use collect_cpu_info()
-everywhere instead of having a __ version.
-
->  
-> @@ -118,7 +130,10 @@ static int get_matching_mc(struct microcode_intel *mc_intel, int cpu)
->  	struct cpu_signature cpu_sig;
->  	unsigned int csig, cpf, crev;
->  
-> -	collect_cpu_info(cpu, &cpu_sig);
-> +	/* NOTE: cpu_data()->microcode will be outdated on HT
-> +	 * processors during an update run, it must be refreshed
-> +	 * from MSR 0x8B */
-> +	__collect_cpu_info(cpu, &cpu_sig);
->  
->  	csig = cpu_sig.sig;
->  	cpf = cpu_sig.pf;
-> @@ -145,23 +160,21 @@ static int apply_microcode_intel(int cpu)
->  		return 0;
->  
->  	/*
-> -	 * Microcode on this CPU could be updated earlier. Only apply the
-> -	 * microcode patch in mc_intel when it is newer than the one on this
-> -	 * CPU.
-> +	 * Microcode on this CPU might be already up-to-date.  Only apply
-> +	 * the microcode patch in mc_intel when it is newer than the one
-> +	 * on this CPU.
->  	 */
->  	if (get_matching_mc(mc_intel, cpu) == 0)
->  		return 0;
->  
-> -	/* write microcode via MSR 0x79 */
-> +	/* write microcode via MSR 0x79. THIS IS VERY EXPENSIVE */
-
-No need for screaming here - we know MSR accesses are expensive. This
-comment is totally useless here so drop it altogether.
-
->  	wrmsr(MSR_IA32_UCODE_WRITE,
-> -	      (unsigned long) mc_intel->bits,
-> -	      (unsigned long) mc_intel->bits >> 16 >> 16);
-> -	wrmsr(MSR_IA32_UCODE_REV, 0, 0);
+> -	virtio_device_ready(portdev->vdev);
 > -
-> -	/* As documented in the SDM: Do a CPUID 1 here */
-> -	sync_core();
-> +		lower_32_bits((unsigned long) mc_intel->bits),
-> +		upper_32_bits((unsigned long) mc_intel->bits));
-
-wrmsrl() takes u64 directly - no need for the splitting.
-
->  	/* get the current revision from MSR 0x8B */
-> +	wrmsr(MSR_IA32_UCODE_REV, 0, 0);
-> +	sync_core();
->  	rdmsr(MSR_IA32_UCODE_REV, val[0], val[1]);
+>  	/* Fill the in_vq with buffers so the host can send us data. */
+>  	nr_added_bufs = fill_queue(port->in_vq, &port->inbuf_lock);
+>  	if (!nr_added_bufs) {
+> @@ -2026,6 +2024,8 @@ static int virtcons_probe(struct virtio_device *vdev)
+>  	spin_lock_init(&portdev->ports_lock);
+>  	INIT_LIST_HEAD(&portdev->ports);
 >  
->  	if (val[1] != mc_intel->hdr.rev) {
-> -- 
-> 1.7.10.4
-> 
-> 
+> +	virtio_device_ready(portdev->vdev);
+> +
+>  	if (multiport) {
+>  		unsigned int nr_added_bufs;
+>  
+
+I wanted to set DRIVER_OK as late as possible, to both reduce
+the chance it can fail after DRIVER_OK and to reduce  the risk of
+introducing a regression since old qemu might only start sending
+interrupts after DRIVER_OK is set.
+
+So I wanted everything completely initialized before DRIVER_OK.
+
+You patch makes sense to me since nothing can fail,
+and we won't get interrupts before we add inbufs.
+
+Reviewed-by: Michael S. Tsirkin <mst@redhat.com>
+
+Testig will report shortly, pls send with sob line.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+MST
