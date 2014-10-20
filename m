@@ -1,262 +1,693 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666AbaJTGN3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 02:13:29 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:35051 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752473AbaJTGN0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 02:13:26 -0400
-Message-ID: <5444A802.9030504@gmail.com>
-Date: Mon, 20 Oct 2014 08:13:22 +0200
-From: poma <pomidorabelisima@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752688AbaJTGOJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 02:14:09 -0400
+Received: from mail-bn1on0133.outbound.protection.outlook.com ([157.56.110.133]:19089
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752455AbaJTGOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 02:14:04 -0400
+From: Jaiprakash Singh <b44839@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Jaiprakash Singh <b44839@freescale.com>
+Subject: [PATCH 1/1][v2] IFC: Change IO accessor based on endianness
+Date: Mon, 20 Oct 2014 11:43:50 +0530
+Message-ID: <1413785630-484-1-git-send-email-b44839@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(43544003)(199003)(189002)(69596002)(19580395003)(36756003)(6806004)(19580405001)(44976005)(68736004)(77156001)(88136002)(85306004)(87286001)(87936001)(78352002)(46102003)(85852003)(80022003)(84676001)(89996001)(104166001)(31966008)(42382002)(76482002)(95666004)(99396003)(120916001)(33646002)(92726001)(92566001)(104016003)(93916002)(62966002)(50986999)(97736003)(50466002)(48376002)(20776003)(47776003)(102836001)(64706001)(21056001)(551934003)(4396001)(229853001)(50226001)(107046002)(2351001)(105586002)(110136001)(81156004)(26826002)(106466001)(101416001)(88662002)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB471;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:0;MX:0;LANG:en;
 MIME-Version: 1.0
-To: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>
-CC: Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>
-Subject: INFO: task echo:622 blocked for more than 120 seconds. - 3.18.0-0.rc0.git
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB471;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 03706074BC
+Authentication-Results: spf=none (sender IP is 192.88.158.2) smtp.mailfrom=<>; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Jaiprakash Singh <b44839@freescale.com>
 
-02:00.0 VGA compatible controller: 
-NVIDIA Corporation G98 [GeForce 8400 GS Rev. 2] (rev a1)
-Chipset: G98 (NV98)
-Family : NV50
+IFC registers can be of type Little Endian
+or big Endian depending upon Freescale SoC.
+Here SoC defines the register type of
+IFC IP.So update accessors functions with
+common IFC accessors functions to take
+care both type of endianness.
 
-The same for all four kernel:
-- 3.18.0-0.rc0.git8.1.fc22.x86_64
-- 3.18.0-0.rc0.git9.1.fc22.x86_64
-- 3.18.0-0.rc0.git9.3.fc22.x86_64
-- 3.18.0-0.rc0.git9.4.fc22.x86_64
-after
-"fb: switching to nouveaufb from VESA VGA"
-display is powered off.
-The magic SysRq key sequence is necessary to reboot.
+IFC IO accressor are set at run time based
+on IFC IP registers endianness.IFC node in
+DTS file contains information about
+endianness.
 
-Yet reached this this one recital:
-...
-[    5.860996] [drm] Initialized nouveau 1.2.1 20120801 for 0000:02:00.0 on minor 0
-...
-[  240.229058] INFO: task echo:622 blocked for more than 120 seconds.
-[  240.229594]       Not tainted 3.18.0-0.rc0.git9.3.fc22.x86_64 #1
-[  240.230149] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[  240.230661] echo            D ffff8800c82a3480 12472   622      1 0x00000004
-[  240.231230]  ffff8800ca2e3ac8 0000000000000096 ffff8800c82a3480 00000000001d5f00
-[  240.231784]  ffff8800ca2e3fd8 00000000001d5f00 ffff880128bf0000 ffff8800c82a3480
-[  240.232344]  ffffffff82c30990 7fffffffffffffff ffffffff81ee2698 ffffffff81ee2690
-[  240.232931] Call Trace:
-[  240.233467]  [<ffffffff8185baf9>] schedule+0x29/0x70
-[  240.234025]  [<ffffffff81860d1c>] schedule_timeout+0x26c/0x410
-[  240.234562]  [<ffffffff81028c4a>] ? native_sched_clock+0x2a/0xa0
-[  240.235118]  [<ffffffff811078bc>] ? mark_held_locks+0x7c/0xb0
-[  240.235645]  [<ffffffff81861da0>] ? _raw_spin_unlock_irq+0x30/0x50
-[  240.236198]  [<ffffffff81107a4d>] ? trace_hardirqs_on_caller+0x15d/0x200
-[  240.236729]  [<ffffffff8185d52c>] wait_for_completion+0x10c/0x150
-[  240.237290]  [<ffffffff810e51f0>] ? wake_up_state+0x20/0x20
-[  240.237842]  [<ffffffff8112a559>] _rcu_barrier+0x159/0x200
-[  240.238375]  [<ffffffff8112a655>] rcu_barrier+0x15/0x20
-[  240.238913]  [<ffffffff8171813f>] netdev_run_todo+0x6f/0x310
-[  240.239449]  [<ffffffff817251ae>] rtnl_unlock+0xe/0x10
-[  240.239999]  [<ffffffff8170ea35>] unregister_netdev+0x25/0x30
-[  240.240546]  [<ffffffffa00222d2>] rtl_remove_one+0x62/0x230 [r8169]
-[  240.241104]  [<ffffffff814682cf>] pci_device_remove+0x3f/0xc0
-[  240.241642]  [<ffffffff8155b34f>] __device_release_driver+0x7f/0xf0
-[  240.242180]  [<ffffffff8155b3e5>] device_release_driver+0x25/0x40
-[  240.242712]  [<ffffffff8146234c>] pci_stop_bus_device+0x9c/0xb0
-[  240.243259]  [<ffffffff8146248e>] pci_stop_and_remove_bus_device_locked+0x1e/0x40
-[  240.243785]  [<ffffffff8146b44c>] remove_store+0x7c/0x90
-[  240.244321]  [<ffffffff81555f98>] dev_attr_store+0x18/0x30
-[  240.244858]  [<ffffffff81302789>] sysfs_kf_write+0x49/0x60
-[  240.245375]  [<ffffffff81301ac9>] kernfs_fop_write+0xf9/0x180
-[  240.245921]  [<ffffffff8127305a>] vfs_write+0xba/0x200
-[  240.246439]  [<ffffffff8186379c>] ? retint_swapgs+0x13/0x1b
-[  240.246978]  [<ffffffff81273bac>] SyS_write+0x5c/0xd0
-[  240.247491]  [<ffffffff81862b69>] system_call_fastpath+0x12/0x17
-[  240.248025] 6 locks held by echo/622:
-[  240.248532]  #0:  (sb_writers#3){.+.+.+}, at: [<ffffffff81273143>] vfs_write+0x1a3/0x200
-[  240.249104]  #1:  (&of->mutex){+.+.+.}, at: [<ffffffff81301a97>] kernfs_fop_write+0xc7/0x180
-[  240.249651]  #2:  (s_active#131){++++++}, at: [<ffffffff81300ce4>] kernfs_remove_self+0xf4/0x170
-[  240.250229]  #3:  (pci_rescan_remove_lock){+.+.+.}, at: [<ffffffff8145f167>] pci_lock_rescan_remove+0x17/0x20
-[  240.250779]  #4:  (&dev->mutex){......}, at: [<ffffffff8155b3dd>] device_release_driver+0x1d/0x40
-[  240.251358]  #5:  (rcu_sched_state.barrier_mutex){+.+...}, at: [<ffffffff8112a435>] _rcu_barrier+0x35/0x200
-[  241.303095] systemd[1]: start request repeated too quickly for lightdm.service
-[  241.323052] systemd[1]: Unit lightdm.service entered failed state.
-[  241.333101] systemd[1]: lightdm.service failed.
-[  359.038325] INFO: task kworker/u16:2:81 blocked for more than 120 seconds.
-[  359.039475]       Not tainted 3.18.0-0.rc0.git9.3.fc22.x86_64 #1
-[  359.040004] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[  359.040571] kworker/u16:2   D ffff880128131a40 10896    81      2 0x00000000
-[  359.041162] Workqueue: netns cleanup_net
-[  359.041701]  ffff8801275bba88 0000000000000096 ffff880128131a40 00000000001d5f00
-[  359.042280]  ffff8801275bbfd8 00000000001d5f00 ffff880128bf3480 ffff880128131a40
-[  359.042856]  ffff880128131a40 ffffffff81ee25e8 0000000000000246 ffff880128131a40
-[  359.043436] Call Trace:
-[  359.043975]  [<ffffffff8185c0a1>] schedule_preempt_disabled+0x31/0x80
-[  359.044542]  [<ffffffff8185d8f3>] mutex_lock_nested+0x183/0x440
-[  359.045108]  [<ffffffff8112a435>] ? _rcu_barrier+0x35/0x200
-[  359.045647]  [<ffffffff81028c4a>] ? native_sched_clock+0x2a/0xa0
-[  359.046218]  [<ffffffff8112a435>] ? _rcu_barrier+0x35/0x200
-[  359.046767]  [<ffffffff8185f914>] ? __mutex_unlock_slowpath+0xc4/0x1c0
-[  359.047333]  [<ffffffff8112a435>] _rcu_barrier+0x35/0x200
-[  359.047875]  [<ffffffff8112a655>] rcu_barrier+0x15/0x20
-[  359.048433]  [<ffffffff8171813f>] netdev_run_todo+0x6f/0x310
-[  359.048969]  [<ffffffff8170cd35>] ? rollback_registered_many+0x265/0x2e0
-[  359.049528]  [<ffffffff817251ae>] rtnl_unlock+0xe/0x10
-[  359.050062]  [<ffffffff8170eb96>] default_device_exit_batch+0x156/0x180
-[  359.050624]  [<ffffffff810fd6b0>] ? abort_exclusive_wait+0xb0/0xb0
-[  359.051185]  [<ffffffff81706c43>] ops_exit_list.isra.1+0x53/0x60
-[  359.051720]  [<ffffffff817077f0>] cleanup_net+0x100/0x1f0
-[  359.052271]  [<ffffffff810ccdb8>] process_one_work+0x218/0x850
-[  359.052806]  [<ffffffff810ccd1f>] ? process_one_work+0x17f/0x850
-[  359.053356]  [<ffffffff810cd4d7>] ? worker_thread+0xe7/0x4a0
-[  359.053891]  [<ffffffff810cd45b>] worker_thread+0x6b/0x4a0
-[  359.054444]  [<ffffffff810cd3f0>] ? process_one_work+0x850/0x850
-[  359.054977]  [<ffffffff810d37ab>] kthread+0x10b/0x130
-[  359.055521]  [<ffffffff81028cc9>] ? sched_clock+0x9/0x10
-[  359.056054]  [<ffffffff810d36a0>] ? kthread_create_on_node+0x250/0x250
-[  359.056600]  [<ffffffff81862abc>] ret_from_fork+0x7c/0xb0
-[  359.057145]  [<ffffffff810d36a0>] ? kthread_create_on_node+0x250/0x250
-[  359.057668] 4 locks held by kworker/u16:2/81:
-[  359.058212]  #0:  ("%s""netns"){.+.+.+}, at: [<ffffffff810ccd1f>] process_one_work+0x17f/0x850
-[  359.058784]  #1:  (net_cleanup_work){+.+.+.}, at: [<ffffffff810ccd1f>] process_one_work+0x17f/0x850
-[  359.059376]  #2:  (net_mutex){+.+.+.}, at: [<ffffffff8170777c>] cleanup_net+0x8c/0x1f0
-[  359.059949]  #3:  (rcu_sched_state.barrier_mutex){+.+...}, at: [<ffffffff8112a435>] _rcu_barrier+0x35/0x200
-[  359.060566] INFO: task echo:622 blocked for more than 120 seconds.
-[  359.061131]       Not tainted 3.18.0-0.rc0.git9.3.fc22.x86_64 #1
-[  359.061666] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[  359.062218] echo            D ffff8800c82a3480 12472   622      1 0x00000004
-[  359.062783]  ffff8800ca2e3ac8 0000000000000096 ffff8800c82a3480 00000000001d5f00
-[  359.063365]  ffff8800ca2e3fd8 00000000001d5f00 ffff880128bf0000 ffff8800c82a3480
-[  359.063915]  ffffffff82c30990 7fffffffffffffff ffffffff81ee2698 ffffffff81ee2690
-[  359.064499] Call Trace:
-[  359.065029]  [<ffffffff8185baf9>] schedule+0x29/0x70
-[  359.065590]  [<ffffffff81860d1c>] schedule_timeout+0x26c/0x410
-[  359.066141]  [<ffffffff81028c4a>] ? native_sched_clock+0x2a/0xa0
-[  359.066664]  [<ffffffff811078bc>] ? mark_held_locks+0x7c/0xb0
-[  359.067208]  [<ffffffff81861da0>] ? _raw_spin_unlock_irq+0x30/0x50
-[  359.067723]  [<ffffffff81107a4d>] ? trace_hardirqs_on_caller+0x15d/0x200
-[  359.068265]  [<ffffffff8185d52c>] wait_for_completion+0x10c/0x150
-[  359.068789]  [<ffffffff810e51f0>] ? wake_up_state+0x20/0x20
-[  359.069334]  [<ffffffff8112a559>] _rcu_barrier+0x159/0x200
-[  359.069846]  [<ffffffff8112a655>] rcu_barrier+0x15/0x20
-[  359.070378]  [<ffffffff8171813f>] netdev_run_todo+0x6f/0x310
-[  359.070890]  [<ffffffff817251ae>] rtnl_unlock+0xe/0x10
-[  359.071417]  [<ffffffff8170ea35>] unregister_netdev+0x25/0x30
-[  359.071951]  [<ffffffffa00222d2>] rtl_remove_one+0x62/0x230 [r8169]
-[  359.072499]  [<ffffffff814682cf>] pci_device_remove+0x3f/0xc0
-[  359.073015]  [<ffffffff8155b34f>] __device_release_driver+0x7f/0xf0
-[  359.073557]  [<ffffffff8155b3e5>] device_release_driver+0x25/0x40
-[  359.074067]  [<ffffffff8146234c>] pci_stop_bus_device+0x9c/0xb0
-[  359.074602]  [<ffffffff8146248e>] pci_stop_and_remove_bus_device_locked+0x1e/0x40
-[  359.075141]  [<ffffffff8146b44c>] remove_store+0x7c/0x90
-[  359.075658]  [<ffffffff81555f98>] dev_attr_store+0x18/0x30
-[  359.076192]  [<ffffffff81302789>] sysfs_kf_write+0x49/0x60
-[  359.076710]  [<ffffffff81301ac9>] kernfs_fop_write+0xf9/0x180
-[  359.077249]  [<ffffffff8127305a>] vfs_write+0xba/0x200
-[  359.077758]  [<ffffffff8186379c>] ? retint_swapgs+0x13/0x1b
-[  359.078283]  [<ffffffff81273bac>] SyS_write+0x5c/0xd0
-[  359.078796]  [<ffffffff81862b69>] system_call_fastpath+0x12/0x17
-[  359.079326] 6 locks held by echo/622:
-[  359.079829]  #0:  (sb_writers#3){.+.+.+}, at: [<ffffffff81273143>] vfs_write+0x1a3/0x200
-[  359.080405]  #1:  (&of->mutex){+.+.+.}, at: [<ffffffff81301a97>] kernfs_fop_write+0xc7/0x180
-[  359.080957]  #2:  (s_active#131){++++++}, at: [<ffffffff81300ce4>] kernfs_remove_self+0xf4/0x170
-[  359.081531]  #3:  (pci_rescan_remove_lock){+.+.+.}, at: [<ffffffff8145f167>] pci_lock_rescan_remove+0x17/0x20
-[  359.082133]  #4:  (&dev->mutex){......}, at: [<ffffffff8155b3dd>] device_release_driver+0x1d/0x40
-[  359.082699]  #5:  (rcu_sched_state.barrier_mutex){+.+...}, at: [<ffffffff8112a435>] _rcu_barrier+0x35/0x200
-[  380.911219] systemd-journald[386]: Received request to flush runtime journal from PID 1
-[  383.238185] systemd-journald[386]: Received request to flush runtime journal from PID 1
-[  383.559763] systemd[1]: Unit lightdm.service entered failed state.
-[  383.569825] systemd[1]: lightdm.service failed.
-[  385.570803] systemd[1]: lightdm.service failed.
-[  479.091518] INFO: task kworker/u16:2:81 blocked for more than 120 seconds.
-[  479.092050]       Not tainted 3.18.0-0.rc0.git9.3.fc22.x86_64 #1
-[  479.092608] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[  479.093093] kworker/u16:2   D ffff880128131a40 10896    81      2 0x00000000
-[  479.093650] Workqueue: netns cleanup_net
-[  479.094110]  ffff8801275bba88 0000000000000096 ffff880128131a40 00000000001d5f00
-[  479.094594]  ffff8801275bbfd8 00000000001d5f00 ffff880128bf3480 ffff880128131a40
-[  479.095040]  ffff880128131a40 ffffffff81ee25e8 0000000000000246 ffff880128131a40
-[  479.095485] Call Trace:
-[  479.095874]  [<ffffffff8185c0a1>] schedule_preempt_disabled+0x31/0x80
-[  479.096246]  [<ffffffff8185d8f3>] mutex_lock_nested+0x183/0x440
-[  479.096634]  [<ffffffff8112a435>] ? _rcu_barrier+0x35/0x200
-[  479.096986]  [<ffffffff81028c4a>] ? native_sched_clock+0x2a/0xa0
-[  479.097367]  [<ffffffff8112a435>] ? _rcu_barrier+0x35/0x200
-[  479.097712]  [<ffffffff8185f914>] ? __mutex_unlock_slowpath+0xc4/0x1c0
-[  479.098061]  [<ffffffff8112a435>] _rcu_barrier+0x35/0x200
-[  479.098425]  [<ffffffff8112a655>] rcu_barrier+0x15/0x20
-[  479.098771]  [<ffffffff8171813f>] netdev_run_todo+0x6f/0x310
-[  479.099109]  [<ffffffff8170cd35>] ? rollback_registered_many+0x265/0x2e0
-[  479.099485]  [<ffffffff817251ae>] rtnl_unlock+0xe/0x10
-[  479.099828]  [<ffffffff8170eb96>] default_device_exit_batch+0x156/0x180
-[  479.100181]  [<ffffffff810fd6b0>] ? abort_exclusive_wait+0xb0/0xb0
-[  479.100572]  [<ffffffff81706c43>] ops_exit_list.isra.1+0x53/0x60
-[  479.100935]  [<ffffffff817077f0>] cleanup_net+0x100/0x1f0
-[  479.101323]  [<ffffffff810ccdb8>] process_one_work+0x218/0x850
-[  479.101689]  [<ffffffff810ccd1f>] ? process_one_work+0x17f/0x850
-[  479.102039]  [<ffffffff810cd4d7>] ? worker_thread+0xe7/0x4a0
-[  479.102420]  [<ffffffff810cd45b>] worker_thread+0x6b/0x4a0
-[  479.102773]  [<ffffffff810cd3f0>] ? process_one_work+0x850/0x850
-[  479.103138]  [<ffffffff810d37ab>] kthread+0x10b/0x130
-[  479.103529]  [<ffffffff81028cc9>] ? sched_clock+0x9/0x10
-[  479.103912]  [<ffffffff810d36a0>] ? kthread_create_on_node+0x250/0x250
-[  479.104315]  [<ffffffff81862abc>] ret_from_fork+0x7c/0xb0
-[  479.104714]  [<ffffffff810d36a0>] ? kthread_create_on_node+0x250/0x250
-[  479.105111] 4 locks held by kworker/u16:2/81:
-[  479.105543]  #0:  ("%s""netns"){.+.+.+}, at: [<ffffffff810ccd1f>] process_one_work+0x17f/0x850
-[  479.105997]  #1:  (net_cleanup_work){+.+.+.}, at: [<ffffffff810ccd1f>] process_one_work+0x17f/0x850
-[  479.106485]  #2:  (net_mutex){+.+.+.}, at: [<ffffffff8170777c>] cleanup_net+0x8c/0x1f0
-[  479.106966]  #3:  (rcu_sched_state.barrier_mutex){+.+...}, at: [<ffffffff8112a435>] _rcu_barrier+0x35/0x200
-[  479.107496] INFO: task echo:622 blocked for more than 120 seconds.
-[  479.107958]       Not tainted 3.18.0-0.rc0.git9.3.fc22.x86_64 #1
-[  479.108450] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[  479.108941] echo            D ffff8800c82a3480 12472   622      1 0x00000004
-[  479.109494]  ffff8800ca2e3ac8 0000000000000096 ffff8800c82a3480 00000000001d5f00
-[  479.110038]  ffff8800ca2e3fd8 00000000001d5f00 ffff880128bf0000 ffff8800c82a3480
-[  479.110596]  ffffffff82c30990 7fffffffffffffff ffffffff81ee2698 ffffffff81ee2690
-[  479.111143] Call Trace:
-[  479.111694]  [<ffffffff8185baf9>] schedule+0x29/0x70
-[  479.112236]  [<ffffffff81860d1c>] schedule_timeout+0x26c/0x410
-[  479.112786]  [<ffffffff81028c4a>] ? native_sched_clock+0x2a/0xa0
-[  479.113331]  [<ffffffff811078bc>] ? mark_held_locks+0x7c/0xb0
-[  479.113853]  [<ffffffff81861da0>] ? _raw_spin_unlock_irq+0x30/0x50
-[  479.114393]  [<ffffffff81107a4d>] ? trace_hardirqs_on_caller+0x15d/0x200
-[  479.114917]  [<ffffffff8185d52c>] wait_for_completion+0x10c/0x150
-[  479.115459]  [<ffffffff810e51f0>] ? wake_up_state+0x20/0x20
-[  479.115975]  [<ffffffff8112a559>] _rcu_barrier+0x159/0x200
-[  479.116510]  [<ffffffff8112a655>] rcu_barrier+0x15/0x20
-[  479.117028]  [<ffffffff8171813f>] netdev_run_todo+0x6f/0x310
-[  479.117553]  [<ffffffff817251ae>] rtnl_unlock+0xe/0x10
-[  479.118067]  [<ffffffff8170ea35>] unregister_netdev+0x25/0x30
-[  479.118617]  [<ffffffffa00222d2>] rtl_remove_one+0x62/0x230 [r8169]
-[  479.119140]  [<ffffffff814682cf>] pci_device_remove+0x3f/0xc0
-[  479.119688]  [<ffffffff8155b34f>] __device_release_driver+0x7f/0xf0
-[  479.120196]  [<ffffffff8155b3e5>] device_release_driver+0x25/0x40
-[  479.120722]  [<ffffffff8146234c>] pci_stop_bus_device+0x9c/0xb0
-[  479.121243]  [<ffffffff8146248e>] pci_stop_and_remove_bus_device_locked+0x1e/0x40
-[  479.121782]  [<ffffffff8146b44c>] remove_store+0x7c/0x90
-[  479.122323]  [<ffffffff81555f98>] dev_attr_store+0x18/0x30
-[  479.122838]  [<ffffffff81302789>] sysfs_kf_write+0x49/0x60
-[  479.123364]  [<ffffffff81301ac9>] kernfs_fop_write+0xf9/0x180
-[  479.123882]  [<ffffffff8127305a>] vfs_write+0xba/0x200
-[  479.124416]  [<ffffffff8186379c>] ? retint_swapgs+0x13/0x1b
-[  479.124928]  [<ffffffff81273bac>] SyS_write+0x5c/0xd0
-[  479.125460]  [<ffffffff81862b69>] system_call_fastpath+0x12/0x17
-[  479.125968] 6 locks held by echo/622:
-[  479.126498]  #0:  (sb_writers#3){.+.+.+}, at: [<ffffffff81273143>] vfs_write+0x1a3/0x200
-[  479.127054]  #1:  (&of->mutex){+.+.+.}, at: [<ffffffff81301a97>] kernfs_fop_write+0xc7/0x180
-[  479.127624]  #2:  (s_active#131){++++++}, at: [<ffffffff81300ce4>] kernfs_remove_self+0xf4/0x170
-[  479.128192]  #3:  (pci_rescan_remove_lock){+.+.+.}, at: [<ffffffff8145f167>] pci_lock_rescan_remove+0x17/0x20
-[  479.128773]  #4:  (&dev->mutex){......}, at: [<ffffffff8155b3dd>] device_release_driver+0x1d/0x40
-[  479.129361]  #5:  (rcu_sched_state.barrier_mutex){+.+...}, at: [<ffffffff8112a435>] _rcu_barrier+0x35/0x200
-...
+Signed-off-by: Jaiprakash Singh <b44839@freescale.com>
+---
+Changes for v2
+	- Moved IFC accessor function to fsl_ifc.h
+	from fsl_ifc.c and make them inline static
 
-Ref.
-http://koji.fedoraproject.org/koji/packageinfo?packageID=8
+.../bindings/memory-controllers/fsl/ifc.txt        |    2 +
+ drivers/memory/fsl_ifc.c                           |   72 ++++++----
+ drivers/mtd/nand/fsl_ifc_nand.c                    |  151 +++++++++++---------
+ include/linux/fsl_ifc.h                            |   42 ++++++
+ 4 files changed, 167 insertions(+), 100 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/memory-controllers/fsl/ifc.txt b/Documentation/devicetree/bindings/memory-controllers/fsl/ifc.txt
+index d5e3704..ee6226b 100644
+--- a/Documentation/devicetree/bindings/memory-controllers/fsl/ifc.txt
++++ b/Documentation/devicetree/bindings/memory-controllers/fsl/ifc.txt
+@@ -18,6 +18,8 @@ Properties:
+               interrupt (NAND_EVTER_STAT).  If there is only one,
+               that interrupt reports both types of event.
+ 
++- little-endian : If this property is absent, the big-endian mode will
++                  be in use as default for registers.
+ 
+ - ranges : Each range corresponds to a single chipselect, and covers
+            the entire access window as configured.
+diff --git a/drivers/memory/fsl_ifc.c b/drivers/memory/fsl_ifc.c
+index 3d5d792..5689e9b 100644
+--- a/drivers/memory/fsl_ifc.c
++++ b/drivers/memory/fsl_ifc.c
+@@ -62,7 +62,8 @@ int fsl_ifc_find(phys_addr_t addr_base)
+ 		return -ENODEV;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(fsl_ifc_ctrl_dev->regs->cspr_cs); i++) {
+-		u32 cspr = in_be32(&fsl_ifc_ctrl_dev->regs->cspr_cs[i].cspr);
++		u32 cspr = ifc_in32(
++				&fsl_ifc_ctrl_dev->regs->cspr_cs[i].cspr);
+ 		if (cspr & CSPR_V && (cspr & CSPR_BA) ==
+ 				convert_ifc_address(addr_base))
+ 			return i;
+@@ -79,16 +80,16 @@ static int fsl_ifc_ctrl_init(struct fsl_ifc_ctrl *ctrl)
+ 	/*
+ 	 * Clear all the common status and event registers
+ 	 */
+-	if (in_be32(&ifc->cm_evter_stat) & IFC_CM_EVTER_STAT_CSER)
+-		out_be32(&ifc->cm_evter_stat, IFC_CM_EVTER_STAT_CSER);
++	if (ifc_in32(&ifc->cm_evter_stat) & IFC_CM_EVTER_STAT_CSER)
++		ifc_out32(IFC_CM_EVTER_STAT_CSER, &ifc->cm_evter_stat);
+ 
+ 	/* enable all error and events */
+-	out_be32(&ifc->cm_evter_en, IFC_CM_EVTER_EN_CSEREN);
++	ifc_out32(IFC_CM_EVTER_EN_CSEREN, &ifc->cm_evter_en);
+ 
+ 	/* enable all error and event interrupts */
+-	out_be32(&ifc->cm_evter_intr_en, IFC_CM_EVTER_INTR_EN_CSERIREN);
+-	out_be32(&ifc->cm_erattr0, 0x0);
+-	out_be32(&ifc->cm_erattr1, 0x0);
++	ifc_out32(IFC_CM_EVTER_INTR_EN_CSERIREN, &ifc->cm_evter_intr_en);
++	ifc_out32(0x0, &ifc->cm_erattr0);
++	ifc_out32(0x0, &ifc->cm_erattr1);
+ 
+ 	return 0;
+ }
+@@ -127,9 +128,9 @@ static u32 check_nand_stat(struct fsl_ifc_ctrl *ctrl)
+ 
+ 	spin_lock_irqsave(&nand_irq_lock, flags);
+ 
+-	stat = in_be32(&ifc->ifc_nand.nand_evter_stat);
++	stat = ifc_in32(&ifc->ifc_nand.nand_evter_stat);
+ 	if (stat) {
+-		out_be32(&ifc->ifc_nand.nand_evter_stat, stat);
++		ifc_out32(stat, &ifc->ifc_nand.nand_evter_stat);
+ 		ctrl->nand_stat = stat;
+ 		wake_up(&ctrl->nand_wait);
+ 	}
+@@ -161,36 +162,37 @@ static irqreturn_t fsl_ifc_ctrl_irq(int irqno, void *data)
+ 	irqreturn_t ret = IRQ_NONE;
+ 
+ 	/* read for chip select error */
+-	cs_err = in_be32(&ifc->cm_evter_stat);
++	cs_err = ifc_in32(&ifc->cm_evter_stat);
+ 	if (cs_err) {
+-		dev_err(ctrl->dev, "transaction sent to IFC is not mapped to"
+-				"any memory bank 0x%08X\n", cs_err);
++		dev_err(ctrl->dev, "transaction sent to IFC is not mapped to");
++		dev_err(ctrl->dev, " any memory bank 0x%08X\n", cs_err);
++
+ 		/* clear the chip select error */
+-		out_be32(&ifc->cm_evter_stat, IFC_CM_EVTER_STAT_CSER);
++		ifc_out32(IFC_CM_EVTER_STAT_CSER, &ifc->cm_evter_stat);
+ 
+ 		/* read error attribute registers print the error information */
+-		status = in_be32(&ifc->cm_erattr0);
+-		err_addr = in_be32(&ifc->cm_erattr1);
+-
+-		if (status & IFC_CM_ERATTR0_ERTYP_READ)
+-			dev_err(ctrl->dev, "Read transaction error"
+-				"CM_ERATTR0 0x%08X\n", status);
+-		else
+-			dev_err(ctrl->dev, "Write transaction error"
+-				"CM_ERATTR0 0x%08X\n", status);
+-
++		status = ifc_in32(&ifc->cm_erattr0);
++		err_addr = ifc_in32(&ifc->cm_erattr1);
++
++		if (status & IFC_CM_ERATTR0_ERTYP_READ) {
++			dev_err(ctrl->dev, "Read transaction error");
++			dev_err(ctrl->dev, " CM_ERATTR0 0x%08X\n", status);
++		} else {
++			dev_err(ctrl->dev, "Write transaction error");
++			dev_err(ctrl->dev, " CM_ERATTR0 0x%08X\n", status);
++		}
+ 		err_axiid = (status & IFC_CM_ERATTR0_ERAID) >>
+ 					IFC_CM_ERATTR0_ERAID_SHIFT;
+-		dev_err(ctrl->dev, "AXI ID of the error"
+-					"transaction 0x%08X\n", err_axiid);
++		dev_err(ctrl->dev, "AXI ID of the erro");
++		dev_err(ctrl->dev, " transaction 0x%08X\n", err_axiid);
+ 
+ 		err_srcid = (status & IFC_CM_ERATTR0_ESRCID) >>
+ 					IFC_CM_ERATTR0_ESRCID_SHIFT;
+-		dev_err(ctrl->dev, "SRC ID of the error"
+-					"transaction 0x%08X\n", err_srcid);
++		dev_err(ctrl->dev, "SRC ID of the error");
++		dev_err(ctrl->dev, " transaction 0x%08X\n", err_srcid);
+ 
+-		dev_err(ctrl->dev, "Transaction Address corresponding to error"
+-					"ERADDR 0x%08X\n", err_addr);
++		dev_err(ctrl->dev, "Transaction Address corresponding to error");
++		dev_err(ctrl->dev, " ERADDR 0x%08X\n", err_addr);
+ 
+ 		ret = IRQ_HANDLED;
+ 	}
+@@ -231,11 +233,19 @@ static int fsl_ifc_ctrl_probe(struct platform_device *dev)
+ 		goto err;
+ 	}
+ 
++	if (of_property_read_bool(dev->dev.of_node, "little-endian"))
++		fsl_ifc_ctrl_dev->little_endian = true;
++	else
++		fsl_ifc_ctrl_dev->little_endian = false;
++
++	dev_dbg(&dev->dev, "IFC REGISTERS are %s endian\n",
++			fsl_ifc_ctrl_dev->little_endian ? "LITTLE" : "BIG");
+ 	/* get the Controller level irq */
+ 	fsl_ifc_ctrl_dev->irq = irq_of_parse_and_map(dev->dev.of_node, 0);
+ 	if (fsl_ifc_ctrl_dev->irq == NO_IRQ) {
+-		dev_err(&dev->dev, "failed to get irq resource "
+-							"for IFC\n");
++		dev_err(&dev->dev, "failed to get irq resource ");
++		dev_err(&dev->dev, "for IFC\n");
++
+ 		ret = -ENODEV;
+ 		goto err;
+ 	}
+diff --git a/drivers/mtd/nand/fsl_ifc_nand.c b/drivers/mtd/nand/fsl_ifc_nand.c
+index 2338124..e902d24 100644
+--- a/drivers/mtd/nand/fsl_ifc_nand.c
++++ b/drivers/mtd/nand/fsl_ifc_nand.c
+@@ -239,8 +239,9 @@ static void set_addr(struct mtd_info *mtd, int column, int page_addr, int oob)
+ 
+ 	ifc_nand_ctrl->page = page_addr;
+ 	/* Program ROW0/COL0 */
+-	iowrite32be(page_addr, &ifc->ifc_nand.row0);
+-	iowrite32be((oob ? IFC_NAND_COL_MS : 0) | column, &ifc->ifc_nand.col0);
++	ifc_out32(page_addr, &ifc->ifc_nand.row0);
++	ifc_out32((oob ? IFC_NAND_COL_MS : 0) | column,
++			&ifc->ifc_nand.col0);
+ 
+ 	buf_num = page_addr & priv->bufnum_mask;
+ 
+@@ -302,19 +303,20 @@ static void fsl_ifc_run_command(struct mtd_info *mtd)
+ 	int i;
+ 
+ 	/* set the chip select for NAND Transaction */
+-	iowrite32be(priv->bank << IFC_NAND_CSEL_SHIFT,
++	ifc_out32(priv->bank << IFC_NAND_CSEL_SHIFT,
+ 		    &ifc->ifc_nand.nand_csel);
+ 
+ 	dev_vdbg(priv->dev,
+ 			"%s: fir0=%08x fcr0=%08x\n",
+ 			__func__,
+-			ioread32be(&ifc->ifc_nand.nand_fir0),
+-			ioread32be(&ifc->ifc_nand.nand_fcr0));
++			ifc_in32(&ifc->ifc_nand.nand_fir0),
++			ifc_in32(&ifc->ifc_nand.nand_fcr0));
+ 
+ 	ctrl->nand_stat = 0;
+ 
+ 	/* start read/write seq */
+-	iowrite32be(IFC_NAND_SEQ_STRT_FIR_STRT, &ifc->ifc_nand.nandseq_strt);
++	ifc_out32(IFC_NAND_SEQ_STRT_FIR_STRT,
++			&ifc->ifc_nand.nandseq_strt);
+ 
+ 	/* wait for command complete flag or timeout */
+ 	wait_event_timeout(ctrl->nand_wait, ctrl->nand_stat,
+@@ -337,7 +339,8 @@ static void fsl_ifc_run_command(struct mtd_info *mtd)
+ 		int sector_end = sector + chip->ecc.steps - 1;
+ 
+ 		for (i = sector / 4; i <= sector_end / 4; i++)
+-			eccstat[i] = ioread32be(&ifc->ifc_nand.nand_eccstat[i]);
++			eccstat[i] = ifc_in32(
++					&ifc->ifc_nand.nand_eccstat[i]);
+ 
+ 		for (i = sector; i <= sector_end; i++) {
+ 			errors = check_read_ecc(mtd, ctrl, eccstat, i);
+@@ -377,31 +380,31 @@ static void fsl_ifc_do_read(struct nand_chip *chip,
+ 
+ 	/* Program FIR/IFC_NAND_FCR0 for Small/Large page */
+ 	if (mtd->writesize > 512) {
+-		iowrite32be((IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
++		ifc_out32((IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
+ 			    (IFC_FIR_OP_CA0 << IFC_NAND_FIR0_OP1_SHIFT) |
+ 			    (IFC_FIR_OP_RA0 << IFC_NAND_FIR0_OP2_SHIFT) |
+ 			    (IFC_FIR_OP_CMD1 << IFC_NAND_FIR0_OP3_SHIFT) |
+ 			    (IFC_FIR_OP_RBCD << IFC_NAND_FIR0_OP4_SHIFT),
+ 			    &ifc->ifc_nand.nand_fir0);
+-		iowrite32be(0x0, &ifc->ifc_nand.nand_fir1);
++		ifc_out32(0x0, &ifc->ifc_nand.nand_fir1);
+ 
+-		iowrite32be((NAND_CMD_READ0 << IFC_NAND_FCR0_CMD0_SHIFT) |
++		ifc_out32((NAND_CMD_READ0 << IFC_NAND_FCR0_CMD0_SHIFT) |
+ 			    (NAND_CMD_READSTART << IFC_NAND_FCR0_CMD1_SHIFT),
+ 			    &ifc->ifc_nand.nand_fcr0);
+ 	} else {
+-		iowrite32be((IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
++		ifc_out32((IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
+ 			    (IFC_FIR_OP_CA0 << IFC_NAND_FIR0_OP1_SHIFT) |
+ 			    (IFC_FIR_OP_RA0  << IFC_NAND_FIR0_OP2_SHIFT) |
+ 			    (IFC_FIR_OP_RBCD << IFC_NAND_FIR0_OP3_SHIFT),
+ 			    &ifc->ifc_nand.nand_fir0);
+-		iowrite32be(0x0, &ifc->ifc_nand.nand_fir1);
++		ifc_out32(0x0, &ifc->ifc_nand.nand_fir1);
+ 
+ 		if (oob)
+-			iowrite32be(NAND_CMD_READOOB <<
++			ifc_out32(NAND_CMD_READOOB <<
+ 				    IFC_NAND_FCR0_CMD0_SHIFT,
+ 				    &ifc->ifc_nand.nand_fcr0);
+ 		else
+-			iowrite32be(NAND_CMD_READ0 <<
++			ifc_out32(NAND_CMD_READ0 <<
+ 				    IFC_NAND_FCR0_CMD0_SHIFT,
+ 				    &ifc->ifc_nand.nand_fcr0);
+ 	}
+@@ -423,7 +426,7 @@ static void fsl_ifc_cmdfunc(struct mtd_info *mtd, unsigned int command,
+ 	switch (command) {
+ 	/* READ0 read the entire buffer to use hardware ECC. */
+ 	case NAND_CMD_READ0:
+-		iowrite32be(0, &ifc->ifc_nand.nand_fbcr);
++		ifc_out32(0, &ifc->ifc_nand.nand_fbcr);
+ 		set_addr(mtd, 0, page_addr, 0);
+ 
+ 		ifc_nand_ctrl->read_bytes = mtd->writesize + mtd->oobsize;
+@@ -438,7 +441,8 @@ static void fsl_ifc_cmdfunc(struct mtd_info *mtd, unsigned int command,
+ 
+ 	/* READOOB reads only the OOB because no ECC is performed. */
+ 	case NAND_CMD_READOOB:
+-		iowrite32be(mtd->oobsize - column, &ifc->ifc_nand.nand_fbcr);
++		ifc_out32(mtd->oobsize - column,
++				&ifc->ifc_nand.nand_fbcr);
+ 		set_addr(mtd, column, page_addr, 1);
+ 
+ 		ifc_nand_ctrl->read_bytes = mtd->writesize + mtd->oobsize;
+@@ -454,19 +458,19 @@ static void fsl_ifc_cmdfunc(struct mtd_info *mtd, unsigned int command,
+ 		if (command == NAND_CMD_PARAM)
+ 			timing = IFC_FIR_OP_RBCD;
+ 
+-		iowrite32be((IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
++		ifc_out32((IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
+ 			    (IFC_FIR_OP_UA  << IFC_NAND_FIR0_OP1_SHIFT) |
+ 			    (timing << IFC_NAND_FIR0_OP2_SHIFT),
+ 			    &ifc->ifc_nand.nand_fir0);
+-		iowrite32be(command << IFC_NAND_FCR0_CMD0_SHIFT,
++		ifc_out32(command << IFC_NAND_FCR0_CMD0_SHIFT,
+ 			    &ifc->ifc_nand.nand_fcr0);
+-		iowrite32be(column, &ifc->ifc_nand.row3);
++		ifc_out32(column, &ifc->ifc_nand.row3);
+ 
+ 		/*
+ 		 * although currently it's 8 bytes for READID, we always read
+ 		 * the maximum 256 bytes(for PARAM)
+ 		 */
+-		iowrite32be(256, &ifc->ifc_nand.nand_fbcr);
++		ifc_out32(256, &ifc->ifc_nand.nand_fbcr);
+ 		ifc_nand_ctrl->read_bytes = 256;
+ 
+ 		set_addr(mtd, 0, 0, 0);
+@@ -481,16 +485,16 @@ static void fsl_ifc_cmdfunc(struct mtd_info *mtd, unsigned int command,
+ 
+ 	/* ERASE2 uses the block and page address from ERASE1 */
+ 	case NAND_CMD_ERASE2:
+-		iowrite32be((IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
++		ifc_out32((IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
+ 			    (IFC_FIR_OP_RA0 << IFC_NAND_FIR0_OP1_SHIFT) |
+ 			    (IFC_FIR_OP_CMD1 << IFC_NAND_FIR0_OP2_SHIFT),
+ 			    &ifc->ifc_nand.nand_fir0);
+ 
+-		iowrite32be((NAND_CMD_ERASE1 << IFC_NAND_FCR0_CMD0_SHIFT) |
++		ifc_out32((NAND_CMD_ERASE1 << IFC_NAND_FCR0_CMD0_SHIFT) |
+ 			    (NAND_CMD_ERASE2 << IFC_NAND_FCR0_CMD1_SHIFT),
+ 			    &ifc->ifc_nand.nand_fcr0);
+ 
+-		iowrite32be(0, &ifc->ifc_nand.nand_fbcr);
++		ifc_out32(0, &ifc->ifc_nand.nand_fbcr);
+ 		ifc_nand_ctrl->read_bytes = 0;
+ 		fsl_ifc_run_command(mtd);
+ 		return;
+@@ -507,14 +511,14 @@ static void fsl_ifc_cmdfunc(struct mtd_info *mtd, unsigned int command,
+ 				(NAND_CMD_STATUS << IFC_NAND_FCR0_CMD1_SHIFT) |
+ 				(NAND_CMD_PAGEPROG << IFC_NAND_FCR0_CMD2_SHIFT);
+ 
+-			iowrite32be(
++			ifc_out32(
+ 				 (IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
+ 				 (IFC_FIR_OP_CA0 << IFC_NAND_FIR0_OP1_SHIFT) |
+ 				 (IFC_FIR_OP_RA0 << IFC_NAND_FIR0_OP2_SHIFT) |
+ 				 (IFC_FIR_OP_WBCD  << IFC_NAND_FIR0_OP3_SHIFT) |
+ 				 (IFC_FIR_OP_CMD2 << IFC_NAND_FIR0_OP4_SHIFT),
+ 				 &ifc->ifc_nand.nand_fir0);
+-			iowrite32be(
++			ifc_out32(
+ 				 (IFC_FIR_OP_CW1 << IFC_NAND_FIR1_OP5_SHIFT) |
+ 				 (IFC_FIR_OP_RDSTAT <<
+ 					IFC_NAND_FIR1_OP6_SHIFT) |
+@@ -528,14 +532,14 @@ static void fsl_ifc_cmdfunc(struct mtd_info *mtd, unsigned int command,
+ 				    (NAND_CMD_STATUS <<
+ 					IFC_NAND_FCR0_CMD3_SHIFT));
+ 
+-			iowrite32be(
++			ifc_out32(
+ 				(IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
+ 				(IFC_FIR_OP_CMD2 << IFC_NAND_FIR0_OP1_SHIFT) |
+ 				(IFC_FIR_OP_CA0 << IFC_NAND_FIR0_OP2_SHIFT) |
+ 				(IFC_FIR_OP_RA0 << IFC_NAND_FIR0_OP3_SHIFT) |
+ 				(IFC_FIR_OP_WBCD << IFC_NAND_FIR0_OP4_SHIFT),
+ 				&ifc->ifc_nand.nand_fir0);
+-			iowrite32be(
++			ifc_out32(
+ 				 (IFC_FIR_OP_CMD1 << IFC_NAND_FIR1_OP5_SHIFT) |
+ 				 (IFC_FIR_OP_CW3 << IFC_NAND_FIR1_OP6_SHIFT) |
+ 				 (IFC_FIR_OP_RDSTAT <<
+@@ -556,7 +560,7 @@ static void fsl_ifc_cmdfunc(struct mtd_info *mtd, unsigned int command,
+ 			column -= mtd->writesize;
+ 			ifc_nand_ctrl->oob = 1;
+ 		}
+-		iowrite32be(nand_fcr0, &ifc->ifc_nand.nand_fcr0);
++		ifc_out32(nand_fcr0, &ifc->ifc_nand.nand_fcr0);
+ 		set_addr(mtd, column, page_addr, ifc_nand_ctrl->oob);
+ 		return;
+ 	}
+@@ -564,11 +568,11 @@ static void fsl_ifc_cmdfunc(struct mtd_info *mtd, unsigned int command,
+ 	/* PAGEPROG reuses all of the setup from SEQIN and adds the length */
+ 	case NAND_CMD_PAGEPROG: {
+ 		if (ifc_nand_ctrl->oob) {
+-			iowrite32be(ifc_nand_ctrl->index -
++			ifc_out32(ifc_nand_ctrl->index -
+ 				    ifc_nand_ctrl->column,
+ 				    &ifc->ifc_nand.nand_fbcr);
+ 		} else {
+-			iowrite32be(0, &ifc->ifc_nand.nand_fbcr);
++			ifc_out32(0, &ifc->ifc_nand.nand_fbcr);
+ 		}
+ 
+ 		fsl_ifc_run_command(mtd);
+@@ -576,12 +580,12 @@ static void fsl_ifc_cmdfunc(struct mtd_info *mtd, unsigned int command,
+ 	}
+ 
+ 	case NAND_CMD_STATUS:
+-		iowrite32be((IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
++		ifc_out32((IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
+ 			    (IFC_FIR_OP_RB << IFC_NAND_FIR0_OP1_SHIFT),
+ 			    &ifc->ifc_nand.nand_fir0);
+-		iowrite32be(NAND_CMD_STATUS << IFC_NAND_FCR0_CMD0_SHIFT,
++		ifc_out32(NAND_CMD_STATUS << IFC_NAND_FCR0_CMD0_SHIFT,
+ 			    &ifc->ifc_nand.nand_fcr0);
+-		iowrite32be(1, &ifc->ifc_nand.nand_fbcr);
++		ifc_out32(1, &ifc->ifc_nand.nand_fbcr);
+ 		set_addr(mtd, 0, 0, 0);
+ 		ifc_nand_ctrl->read_bytes = 1;
+ 
+@@ -592,15 +596,21 @@ static void fsl_ifc_cmdfunc(struct mtd_info *mtd, unsigned int command,
+ 		 * write-protected, even when it is not.
+ 		 */
+ 		if (chip->options & NAND_BUSWIDTH_16)
+-			setbits16(ifc_nand_ctrl->addr, NAND_STATUS_WP);
++			ifc_out16(
++			(ifc_in16(ifc_nand_ctrl->addr)
++			| (NAND_STATUS_WP)),
++			ifc_nand_ctrl->addr);
+ 		else
+-			setbits8(ifc_nand_ctrl->addr, NAND_STATUS_WP);
++			ifc_out8(
++			(ifc_in8(ifc_nand_ctrl->addr)
++			| (NAND_STATUS_WP)),
++			ifc_nand_ctrl->addr);
+ 		return;
+ 
+ 	case NAND_CMD_RESET:
+-		iowrite32be(IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT,
++		ifc_out32(IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT,
+ 			    &ifc->ifc_nand.nand_fir0);
+-		iowrite32be(NAND_CMD_RESET << IFC_NAND_FCR0_CMD0_SHIFT,
++		ifc_out32(NAND_CMD_RESET << IFC_NAND_FCR0_CMD0_SHIFT,
+ 			    &ifc->ifc_nand.nand_fcr0);
+ 		fsl_ifc_run_command(mtd);
+ 		return;
+@@ -651,16 +661,14 @@ static uint8_t fsl_ifc_read_byte(struct mtd_info *mtd)
+ {
+ 	struct nand_chip *chip = mtd->priv;
+ 	struct fsl_ifc_mtd *priv = chip->priv;
+-	unsigned int offset;
+ 
+ 	/*
+ 	 * If there are still bytes in the IFC buffer, then use the
+ 	 * next byte.
+ 	 */
+-	if (ifc_nand_ctrl->index < ifc_nand_ctrl->read_bytes) {
+-		offset = ifc_nand_ctrl->index++;
+-		return in_8(ifc_nand_ctrl->addr + offset);
+-	}
++	if (ifc_nand_ctrl->index < ifc_nand_ctrl->read_bytes)
++		return ifc_in8(
++				&ifc_nand_ctrl->addr[ifc_nand_ctrl->index++]);
+ 
+ 	dev_err(priv->dev, "%s: beyond end of buffer\n", __func__);
+ 	return ERR_BYTE;
+@@ -681,7 +689,8 @@ static uint8_t fsl_ifc_read_byte16(struct mtd_info *mtd)
+ 	 * next byte.
+ 	 */
+ 	if (ifc_nand_ctrl->index < ifc_nand_ctrl->read_bytes) {
+-		data = in_be16(ifc_nand_ctrl->addr + ifc_nand_ctrl->index);
++		data = ifc_in16((uint16_t __iomem *)&ifc_nand_ctrl->
++			       addr[ifc_nand_ctrl->index]);
+ 		ifc_nand_ctrl->index += 2;
+ 		return (uint8_t) data;
+ 	}
+@@ -727,18 +736,18 @@ static int fsl_ifc_wait(struct mtd_info *mtd, struct nand_chip *chip)
+ 	u32 nand_fsr;
+ 
+ 	/* Use READ_STATUS command, but wait for the device to be ready */
+-	iowrite32be((IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
++	ifc_out32((IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
+ 		    (IFC_FIR_OP_RDSTAT << IFC_NAND_FIR0_OP1_SHIFT),
+ 		    &ifc->ifc_nand.nand_fir0);
+-	iowrite32be(NAND_CMD_STATUS << IFC_NAND_FCR0_CMD0_SHIFT,
++	ifc_out32(NAND_CMD_STATUS << IFC_NAND_FCR0_CMD0_SHIFT,
+ 		    &ifc->ifc_nand.nand_fcr0);
+-	iowrite32be(1, &ifc->ifc_nand.nand_fbcr);
++	ifc_out32(1, &ifc->ifc_nand.nand_fbcr);
+ 	set_addr(mtd, 0, 0, 0);
+ 	ifc_nand_ctrl->read_bytes = 1;
+ 
+ 	fsl_ifc_run_command(mtd);
+ 
+-	nand_fsr = ioread32be(&ifc->ifc_nand.nand_fsr);
++	nand_fsr = ifc_in32(&ifc->ifc_nand.nand_fsr);
+ 
+ 	/*
+ 	 * The chip always seems to report that it is
+@@ -830,34 +839,36 @@ static void fsl_ifc_sram_init(struct fsl_ifc_mtd *priv)
+ 	uint32_t cs = priv->bank;
+ 
+ 	/* Save CSOR and CSOR_ext */
+-	csor = ioread32be(&ifc->csor_cs[cs].csor);
+-	csor_ext = ioread32be(&ifc->csor_cs[cs].csor_ext);
++	csor = ifc_in32(&ifc->csor_cs[cs].csor);
++	csor_ext = ifc_in32(&ifc->csor_cs[cs].csor_ext);
+ 
+ 	/* chage PageSize 8K and SpareSize 1K*/
+ 	csor_8k = (csor & ~(CSOR_NAND_PGS_MASK)) | 0x0018C000;
+-	iowrite32be(csor_8k, &ifc->csor_cs[cs].csor);
+-	iowrite32be(0x0000400, &ifc->csor_cs[cs].csor_ext);
++	ifc_out32(csor_8k, &ifc->csor_cs[cs].csor);
++	ifc_out32(0x0000400, &ifc->csor_cs[cs].csor_ext);
+ 
+ 	/* READID */
+-	iowrite32be((IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
++	ifc_out32((IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
+ 		    (IFC_FIR_OP_UA  << IFC_NAND_FIR0_OP1_SHIFT) |
+ 		    (IFC_FIR_OP_RB << IFC_NAND_FIR0_OP2_SHIFT),
+ 		    &ifc->ifc_nand.nand_fir0);
+-	iowrite32be(NAND_CMD_READID << IFC_NAND_FCR0_CMD0_SHIFT,
++	ifc_out32(NAND_CMD_READID << IFC_NAND_FCR0_CMD0_SHIFT,
+ 		    &ifc->ifc_nand.nand_fcr0);
+-	iowrite32be(0x0, &ifc->ifc_nand.row3);
++	ifc_out32(0x0, &ifc->ifc_nand.row3);
+ 
+-	iowrite32be(0x0, &ifc->ifc_nand.nand_fbcr);
++	ifc_out32(0x0, &ifc->ifc_nand.nand_fbcr);
+ 
+ 	/* Program ROW0/COL0 */
+-	iowrite32be(0x0, &ifc->ifc_nand.row0);
+-	iowrite32be(0x0, &ifc->ifc_nand.col0);
++	ifc_out32(0x0, &ifc->ifc_nand.row0);
++	ifc_out32(0x0, &ifc->ifc_nand.col0);
+ 
+ 	/* set the chip select for NAND Transaction */
+-	iowrite32be(cs << IFC_NAND_CSEL_SHIFT, &ifc->ifc_nand.nand_csel);
++	ifc_out32(cs << IFC_NAND_CSEL_SHIFT,
++			&ifc->ifc_nand.nand_csel);
+ 
+ 	/* start read seq */
+-	iowrite32be(IFC_NAND_SEQ_STRT_FIR_STRT, &ifc->ifc_nand.nandseq_strt);
++	ifc_out32(IFC_NAND_SEQ_STRT_FIR_STRT,
++			&ifc->ifc_nand.nandseq_strt);
+ 
+ 	/* wait for command complete flag or timeout */
+ 	wait_event_timeout(ctrl->nand_wait, ctrl->nand_stat,
+@@ -867,8 +878,8 @@ static void fsl_ifc_sram_init(struct fsl_ifc_mtd *priv)
+ 		printk(KERN_ERR "fsl-ifc: Failed to Initialise SRAM\n");
+ 
+ 	/* Restore CSOR and CSOR_ext */
+-	iowrite32be(csor, &ifc->csor_cs[cs].csor);
+-	iowrite32be(csor_ext, &ifc->csor_cs[cs].csor_ext);
++	ifc_out32(csor, &ifc->csor_cs[cs].csor);
++	ifc_out32(csor_ext, &ifc->csor_cs[cs].csor_ext);
+ }
+ 
+ static int fsl_ifc_chip_init(struct fsl_ifc_mtd *priv)
+@@ -885,7 +896,8 @@ static int fsl_ifc_chip_init(struct fsl_ifc_mtd *priv)
+ 
+ 	/* fill in nand_chip structure */
+ 	/* set up function call table */
+-	if ((ioread32be(&ifc->cspr_cs[priv->bank].cspr)) & CSPR_PORT_SIZE_16)
++	if ((ifc_in32(&ifc->cspr_cs[priv->bank].cspr)) &
++			CSPR_PORT_SIZE_16)
+ 		chip->read_byte = fsl_ifc_read_byte16;
+ 	else
+ 		chip->read_byte = fsl_ifc_read_byte;
+@@ -899,13 +911,14 @@ static int fsl_ifc_chip_init(struct fsl_ifc_mtd *priv)
+ 	chip->bbt_td = &bbt_main_descr;
+ 	chip->bbt_md = &bbt_mirror_descr;
+ 
+-	iowrite32be(0x0, &ifc->ifc_nand.ncfgr);
++	ifc_out32(0x0, &ifc->ifc_nand.ncfgr);
+ 
+ 	/* set up nand options */
+ 	chip->bbt_options = NAND_BBT_USE_FLASH;
+ 	chip->options = NAND_NO_SUBPAGE_WRITE;
+ 
+-	if (ioread32be(&ifc->cspr_cs[priv->bank].cspr) & CSPR_PORT_SIZE_16) {
++	if (ifc_in32(&ifc->cspr_cs[priv->bank].cspr)
++		& CSPR_PORT_SIZE_16) {
+ 		chip->read_byte = fsl_ifc_read_byte16;
+ 		chip->options |= NAND_BUSWIDTH_16;
+ 	} else {
+@@ -918,7 +931,7 @@ static int fsl_ifc_chip_init(struct fsl_ifc_mtd *priv)
+ 	chip->ecc.read_page = fsl_ifc_read_page;
+ 	chip->ecc.write_page = fsl_ifc_write_page;
+ 
+-	csor = ioread32be(&ifc->csor_cs[priv->bank].csor);
++	csor = ifc_in32(&ifc->csor_cs[priv->bank].csor);
+ 
+ 	/* Hardware generates ECC per 512 Bytes */
+ 	chip->ecc.size = 512;
+@@ -984,7 +997,7 @@ static int fsl_ifc_chip_init(struct fsl_ifc_mtd *priv)
+ 		chip->ecc.mode = NAND_ECC_SOFT;
+ 	}
+ 
+-	ver = ioread32be(&ifc->ifc_rev);
++	ver = ifc_in32(&ifc->ifc_rev);
+ 	if (ver == FSL_IFC_V1_1_0)
+ 		fsl_ifc_sram_init(priv);
+ 
+@@ -1008,7 +1021,7 @@ static int fsl_ifc_chip_remove(struct fsl_ifc_mtd *priv)
+ static int match_bank(struct fsl_ifc_regs __iomem *ifc, int bank,
+ 		      phys_addr_t addr)
+ {
+-	u32 cspr = ioread32be(&ifc->cspr_cs[bank].cspr);
++	u32 cspr = ifc_in32(&ifc->cspr_cs[bank].cspr);
+ 
+ 	if (!(cspr & CSPR_V))
+ 		return 0;
+@@ -1094,13 +1107,13 @@ static int fsl_ifc_nand_probe(struct platform_device *dev)
+ 
+ 	dev_set_drvdata(priv->dev, priv);
+ 
+-	iowrite32be(IFC_NAND_EVTER_EN_OPC_EN |
++	ifc_out32(IFC_NAND_EVTER_EN_OPC_EN |
+ 		    IFC_NAND_EVTER_EN_FTOER_EN |
+ 		    IFC_NAND_EVTER_EN_WPER_EN,
+ 		    &ifc->ifc_nand.nand_evter_en);
+ 
+ 	/* enable NAND Machine Interrupts */
+-	iowrite32be(IFC_NAND_EVTER_INTR_OPCIR_EN |
++	ifc_out32(IFC_NAND_EVTER_INTR_OPCIR_EN |
+ 		    IFC_NAND_EVTER_INTR_FTOERIR_EN |
+ 		    IFC_NAND_EVTER_INTR_WPERIR_EN,
+ 		    &ifc->ifc_nand.nand_evter_intr_en);
+diff --git a/include/linux/fsl_ifc.h b/include/linux/fsl_ifc.h
+index f49ddb1..0530b47 100644
+--- a/include/linux/fsl_ifc.h
++++ b/include/linux/fsl_ifc.h
+@@ -830,9 +830,51 @@ struct fsl_ifc_ctrl {
+ 
+ 	u32 nand_stat;
+ 	wait_queue_head_t nand_wait;
++	bool little_endian;
+ };
+ 
+ extern struct fsl_ifc_ctrl *fsl_ifc_ctrl_dev;
+ 
++static inline u32 ifc_in32(void __iomem *addr)
++{
++	if (fsl_ifc_ctrl_dev->little_endian)
++		return ioread32(addr);
++	else
++		return ioread32be(addr);
++}
++
++static inline u16 ifc_in16(void __iomem *addr)
++{
++	if (fsl_ifc_ctrl_dev->little_endian)
++		return ioread16(addr);
++	else
++		return ioread16be(addr);
++}
++
++static inline u8 ifc_in8(void __iomem *addr)
++{
++	return ioread8(addr);
++}
++
++static inline void ifc_out32(u32 val, void __iomem *addr)
++{
++	if (fsl_ifc_ctrl_dev->little_endian)
++		return iowrite32(val, addr);
++	else
++		return iowrite32be(val, addr);
++}
++
++static inline void ifc_out16(u16 val, void __iomem *addr)
++{
++	if (fsl_ifc_ctrl_dev->little_endian)
++		return iowrite16(val, addr);
++	else
++		return iowrite16be(val, addr);
++}
++
++static inline void ifc_out8(u8 val, void __iomem *addr)
++{
++	return iowrite8(val, addr);
++}
+ 
+ #endif /* __ASM_FSL_IFC_H */
+-- 
+1.7.9.5
 
 
