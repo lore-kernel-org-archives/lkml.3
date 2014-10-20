@@ -1,119 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501AbaJTPKW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 11:10:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36451 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751619AbaJTPKT (ORCPT
+	id S1752592AbaJTPKp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 11:10:45 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:50714 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752529AbaJTPKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 11:10:19 -0400
-Message-ID: <544525D6.8090408@canonical.com>
-Date: Mon, 20 Oct 2014 10:10:14 -0500
-From: Chris J Arges <chris.j.arges@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Mon, 20 Oct 2014 11:10:44 -0400
+Date: Mon, 20 Oct 2014 17:10:28 +0200
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFT 0/8] Marvell PXA168 libphy handling and Berlin
+ Ethernet
+Message-ID: <20141020151028.GA17117@kwain>
+References: <1412858346-11334-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20141016095323.GA1061@kwain>
+ <54451E3F.1030700@gmail.com>
 MIME-Version: 1.0
-To: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Petr Vandrovec <petr@vmware.com>
-CC: Jens Axboe <axboe@kernel.dk>, Arvind Kumar <arvindkumar@vmware.com>,
-        Christoph Hellwig <hch@lst.de>, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Do not silently discard WRITE_SAME requests
-References: <20141011063053.GB18215@petr-dev3.eng.vmware.com>	<yq1lhomahwt.fsf@sermon.lab.mkp.net> <543A1D1A.8090808@vmware.com>	<yq1h9z687zd.fsf@sermon.lab.mkp.net> <543E1407.7020509@vmware.com> <yq1a94u2ra9.fsf@sermon.lab.mkp.net>
-In-Reply-To: <yq1a94u2ra9.fsf@sermon.lab.mkp.net>
-Content-Type: text/plain; charset=windows-1252
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <54451E3F.1030700@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/2014 06:46 PM, Martin K. Petersen wrote:
->>>>>> "Petr" == Petr Vandrovec <petr@vmware.com> writes:
-> 
-> Petr> is there any reason to do blacklisting?  Why not let first request
-> Petr> fail, and switch to non-write-same code path once that happens?
-> 
-> Well, we do. But we try to avoid confusing users with error messages if
-> we can avoid it. And if we know it's not going to work we might as avoid
-> trying.
-> 
+Sebastian,
 
-In addition it seems that after blkdev_issue_write_same fails and we try
-to zero with __blkdev_issue_zeroout, we have issues where data is not
-being zeroed properly as seem by the test case.
+On Mon, Oct 20, 2014 at 04:37:51PM +0200, Sebastian Hesselbarth wrote:
+> On 16.10.2014 11:53, Antoine Tenart wrote:
+> >On Thu, Oct 09, 2014 at 02:38:58PM +0200, Sebastian Hesselbarth wrote:
+> >>This patch series deals with a removing a IP feature that can be found
+> >>on all currently supported Marvell Ethernet IP (pxa168_eth, mv643xx_eth,
+> >>mvneta). The MAC IP allows to automatically perform PHY auto-negotiation
+> >>without software interaction.
+> >>
+> >>However, this feature (a) fundamentally clashes with the way libphy works
+> >>and (b) is unable to deal with quirky PHYs that require special treatment.
+> >>In this series, pxa168_eth driver is rewritten to completely disable that
+> >>feature and properly deal with libphy provided PHYs. The other two drivers
+> >>are suspect to future patch sets, also removing the code related with it.
+> >>
+> >>Currently, the patches are based on next-20141009 and will be resent once
+> >>v3.18-rc1 drops. This is a Request-For-Test on both BG2Q and MMP/gplug as
+> >
+> >I tested the series on a BG2Q, it worked well.
+> 
+> Thanks for testing! I assume you have added a phy-connection-type
+> property to BG2Q's ethernet node?
 
-> 
-> SCSI: Only blacklist WRITE SAME for VMware virtual disks
-> 
-> Commit 4089b71cc820 blacklisted WRITE SAME for all VMware disks.
-> However, the WRITE SAME commands are supported for passthrough
-> disks. Change the heuristic so we only blacklist virtual disks.
-> 
-> Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
-> Reported-by: Petr Vandrovec <petr@vmware.com>
-> 
+Yes, I added the following property to the ethernet-phy node:
 
-I've tested with this patch applied and the original test case for the
-bug does not fail. I only verified this with VMWare workstation. Feel
-free to add:
+	phy-connection-type = "mii";
 
-Tested-by: Chris J Arges <chris.j.arges@canonical.com>
+Feel free to add this to your series, or I can also send a patch.
 
-Thanks,
---chris j arges
 
-> 
-> diff --git a/drivers/message/fusion/mptspi.c b/drivers/message/fusion/mptspi.c
-> index 613231c16194..787933d43d32 100644
-> --- a/drivers/message/fusion/mptspi.c
-> +++ b/drivers/message/fusion/mptspi.c
-> @@ -1419,11 +1419,6 @@ mptspi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
->  		goto out_mptspi_probe;
->          }
->  
-> -	/* VMWare emulation doesn't properly implement WRITE_SAME
-> -	 */
-> -	if (pdev->subsystem_vendor == 0x15AD)
-> -		sh->no_write_same = 1;
-> -
->  	spin_lock_irqsave(&ioc->FreeQlock, flags);
->  
->  	/* Attach the SCSI Host to the IOC structure
-> diff --git a/drivers/scsi/scsi_devinfo.c b/drivers/scsi/scsi_devinfo.c
-> index 49014a143c6a..8c228e049bb6 100644
-> --- a/drivers/scsi/scsi_devinfo.c
-> +++ b/drivers/scsi/scsi_devinfo.c
-> @@ -249,6 +249,8 @@ static struct {
->  	{"TOSHIBA", "CD-ROM", NULL, BLIST_ISROM},
->  	{"Traxdata", "CDR4120", NULL, BLIST_NOLUN},	/* locks up */
->  	{"USB2.0", "SMARTMEDIA/XD", NULL, BLIST_FORCELUN | BLIST_INQUIRY_36},
-> +	{"VMware", "Virtual disk", "1.0", BLIST_NO_WRITE_SAME }, /* ESX */
-> +	{"VMware,", "VMware Virtual S", "1.0", BLIST_NO_WRITE_SAME }, /* WS,Fusion */
->  	{"WangDAT", "Model 2600", "01.7", BLIST_SELECT_NO_ATN},
->  	{"WangDAT", "Model 3200", "02.2", BLIST_SELECT_NO_ATN},
->  	{"WangDAT", "Model 1300", "02.4", BLIST_SELECT_NO_ATN},
-> diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-> index ba3f1e8d0d57..c57daffe57af 100644
-> --- a/drivers/scsi/scsi_scan.c
-> +++ b/drivers/scsi/scsi_scan.c
-> @@ -955,6 +955,9 @@ static int scsi_add_lun(struct scsi_device *sdev, unsigned char *inq_result,
->  	if (*bflags & BLIST_NO_DIF)
->  		sdev->no_dif = 1;
->  
-> +	if (*bflags & BLIST_NO_WRITE_SAME)
-> +		sdev->no_write_same = 1;
-> +
->  	sdev->eh_timeout = SCSI_DEFAULT_EH_TIMEOUT;
->  
->  	if (*bflags & BLIST_TRY_VPD_PAGES)
-> diff --git a/include/scsi/scsi_devinfo.h b/include/scsi/scsi_devinfo.h
-> index 183eaab7c380..1a24efb4b1d6 100644
-> --- a/include/scsi/scsi_devinfo.h
-> +++ b/include/scsi/scsi_devinfo.h
-> @@ -36,5 +36,6 @@
->  					     for sequential scan */
->  #define BLIST_TRY_VPD_PAGES	0x10000000 /* Attempt to read VPD pages */
->  #define BLIST_NO_RSOC		0x20000000 /* don't try to issue RSOC */
-> +#define BLIST_NO_WRITE_SAME	0x40000000 /* don't try to issue WRITE SAME */
->  
->  #endif
-> 
+Antoine
+
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
