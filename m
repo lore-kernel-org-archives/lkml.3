@@ -1,75 +1,276 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190AbaJTOCM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 10:02:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23011 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752673AbaJTOCK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 10:02:10 -0400
-Date: Mon, 20 Oct 2014 17:05:08 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Cornelia Huck <cornelia.huck@de.ibm.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Thomas Graf <tgraf@suug.ch>,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org
-Subject: Re: [PATCH] virtio_console: move early VQ enablement
-Message-ID: <20141020140508.GA11004@redhat.com>
-References: <20141020133555.GA27111@redhat.com>
- <1413813529-11044-1-git-send-email-cornelia.huck@de.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413813529-11044-1-git-send-email-cornelia.huck@de.ibm.com>
+	id S1753053AbaJTOFT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 10:05:19 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:55154 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752345AbaJTOFR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 10:05:17 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v5 03/12] ACPI: Allow drivers to match using Device Tree
+ compatible property
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>, devicetree@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Darren Hart <dvhart@linux.intel.com>,
+        Mark Rutland <mark.rutland@arm.com>
+In-Reply-To: <3167500.xrhugPHshV@vostro.rjw.lan>
+References: <2660541.BycO7TFnA2@vostro.rjw.lan>
+	<11223831.j9KAEfSQsY@vostro.rjw.lan> <3167500.xrhugPHshV@vostro.rjw.lan>
+Date: Mon, 20 Oct 2014 16:05:01 +0200
+Message-Id: <20141020140501.D10A5C40982@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 20, 2014 at 03:58:49PM +0200, Cornelia Huck wrote:
-> Commit f5866db6 (virtio_console: enable VQs early) tried to make
-> sure that DRIVER_OK was set when virtio_console started using its
-> virtqueues. Doing this in add_port(), however, means that we try
-> to set DRIVER_OK again when when a port is dynamically added after
-> the probe function is done.
+On Fri, 17 Oct 2014 14:05:59 +0200
+, "Rafael J. Wysocki" <rjw@rjwysocki.net>
+ wrote:
+> From: Mika Westerberg <mika.westerberg@linux.intel.com>
 > 
-> Let's move virtio_device_ready() to the probe function just before
-> trying to use the virtqueues instead. This is fine as nothing can
-> fail inbetween.
+> We have lots of existing Device Tree enabled drivers and allocating
+> separate _HID for each is not feasible. Instead we allocate special _HID
+> "PRP0001" that means that the match should be done using Device Tree
+> compatible property using driver's .of_match_table instead if the driver
+> is missing .acpi_match_table.
+
+(Not a critique of this patch, but merely a helpful comment; my previous
+ack remains intact) :-)
+
+It would be useful for the code to point at some document that describes
+the semantics of the PRP0001 binding.
+
+g.
+
 > 
-> Reported-by: Thomas Graf <tgraf@suug.ch>
-> Reviewed-by: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-
-Thanks!
-
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Tested-by: Michael S. Tsirkin <mst@redhat.com>
-
-
+> If there is a need to distinguish from where the device is enumerated
+> (DT/ACPI) driver can check dev->of_node or ACPI_COMPATION(dev).
+> 
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Reviewed-by: Grant Likely <grant.likely@linaro.org>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > ---
->  drivers/char/virtio_console.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+>  drivers/acpi/property.c | 34 +++++++++++++++++
+>  drivers/acpi/scan.c     | 97 +++++++++++++++++++++++++++++++++++++++++++------
+>  include/acpi/acpi_bus.h |  1 +
+>  include/linux/acpi.h    |  8 +---
+>  4 files changed, 123 insertions(+), 17 deletions(-)
 > 
-> diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-> index bfa6400..cf7a561 100644
-> --- a/drivers/char/virtio_console.c
-> +++ b/drivers/char/virtio_console.c
-> @@ -1449,8 +1449,6 @@ static int add_port(struct ports_device *portdev, u32 id)
->  	spin_lock_init(&port->outvq_lock);
->  	init_waitqueue_head(&port->waitqueue);
+> diff --git a/drivers/acpi/property.c b/drivers/acpi/property.c
+> index 680f7f1..ff53eb8 100644
+> --- a/drivers/acpi/property.c
+> +++ b/drivers/acpi/property.c
+> @@ -76,6 +76,37 @@ static bool acpi_properties_format_valid(const union acpi_object *properties)
+>  	return true;
+>  }
 >  
-> -	virtio_device_ready(portdev->vdev);
-> -
->  	/* Fill the in_vq with buffers so the host can send us data. */
->  	nr_added_bufs = fill_queue(port->in_vq, &port->inbuf_lock);
->  	if (!nr_added_bufs) {
-> @@ -2026,6 +2024,8 @@ static int virtcons_probe(struct virtio_device *vdev)
->  	spin_lock_init(&portdev->ports_lock);
->  	INIT_LIST_HEAD(&portdev->ports);
->  
-> +	virtio_device_ready(portdev->vdev);
+> +static void acpi_init_of_compatible(struct acpi_device *adev)
+> +{
+> +	const union acpi_object *of_compatible;
+> +	struct acpi_hardware_id *hwid;
+> +	bool acpi_of = false;
 > +
->  	if (multiport) {
->  		unsigned int nr_added_bufs;
+> +	/*
+> +	 * Check if the special PRP0001 ACPI ID is present and in that
+> +	 * case we fill in Device Tree compatible properties for this
+> +	 * device.
+> +	 */
+> +	list_for_each_entry(hwid, &adev->pnp.ids, list) {
+> +		if (!strcmp(hwid->id, "PRP0001")) {
+> +			acpi_of = true;
+> +			break;
+> +		}
+> +	}
+> +
+> +	if (!acpi_of)
+> +		return;
+> +
+> +	if (acpi_dev_get_property_array(adev, "compatible", ACPI_TYPE_STRING,
+> +					&of_compatible)) {
+> +		acpi_handle_warn(adev->handle,
+> +				 "PRP0001 requires compatible property\n");
+> +		return;
+> +	}
+> +
+> +	adev->data.of_compatible = of_compatible;
+> +}
+> +
+>  void acpi_init_properties(struct acpi_device *adev)
+>  {
+>  	struct acpi_buffer buf = { ACPI_ALLOCATE_BUFFER };
+> @@ -119,6 +150,8 @@ void acpi_init_properties(struct acpi_device *adev)
+>  
+>  		adev->data.pointer = buf.pointer;
+>  		adev->data.properties = properties;
+> +
+> +		acpi_init_of_compatible(adev);
+>  		return;
+>  	}
+>  
+> @@ -130,6 +163,7 @@ void acpi_init_properties(struct acpi_device *adev)
+>  void acpi_free_properties(struct acpi_device *adev)
+>  {
+>  	ACPI_FREE((void *)adev->data.pointer);
+> +	adev->data.of_compatible = NULL;
+>  	adev->data.pointer = NULL;
+>  	adev->data.properties = NULL;
+>  }
+> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> index 1979ab3..bc999f1 100644
+> --- a/drivers/acpi/scan.c
+> +++ b/drivers/acpi/scan.c
+> @@ -124,17 +124,51 @@ static int create_modalias(struct acpi_device *acpi_dev, char *modalias,
+>  	if (list_empty(&acpi_dev->pnp.ids))
+>  		return 0;
+>  
+> -	len = snprintf(modalias, size, "acpi:");
+> -	size -= len;
+> -
+> -	list_for_each_entry(id, &acpi_dev->pnp.ids, list) {
+> -		count = snprintf(&modalias[len], size, "%s:", id->id);
+> -		if (count < 0)
+> -			return -EINVAL;
+> -		if (count >= size)
+> -			return -ENOMEM;
+> -		len += count;
+> -		size -= count;
+> +	/*
+> +	 * If the device has PRP0001 we expose DT compatible modalias
+> +	 * instead in form of of:NnameTCcompatible.
+> +	 */
+> +	if (acpi_dev->data.of_compatible) {
+> +		struct acpi_buffer buf = { ACPI_ALLOCATE_BUFFER };
+> +		const union acpi_object *of_compatible, *obj;
+> +		char *c;
+> +		int i;
+> +
+> +		acpi_get_name(acpi_dev->handle, ACPI_SINGLE_NAME, &buf);
+> +		/* DT strings are all in lower case */
+> +		for (c = buf.pointer; *c != '\0'; c++)
+> +			*c = tolower(*c);
+> +
+> +		len = snprintf(modalias, size, "of:N%sT", (char *)buf.pointer);
+> +		ACPI_FREE(buf.pointer);
+> +
+> +		of_compatible = acpi_dev->data.of_compatible;
+> +		for (i = 0; i < of_compatible->package.count; i++) {
+> +			obj = &of_compatible->package.elements[i];
+> +
+> +			count = snprintf(&modalias[len], size, "C%s",
+> +					 obj->string.pointer);
+> +			if (count < 0)
+> +				return -EINVAL;
+> +			if (count >= size)
+> +				return -ENOMEM;
+> +
+> +			len += count;
+> +			size -= count;
+> +		}
+> +	} else {
+> +		len = snprintf(modalias, size, "acpi:");
+> +		size -= len;
+> +
+> +		list_for_each_entry(id, &acpi_dev->pnp.ids, list) {
+> +			count = snprintf(&modalias[len], size, "%s:", id->id);
+> +			if (count < 0)
+> +				return -EINVAL;
+> +			if (count >= size)
+> +				return -ENOMEM;
+> +			len += count;
+> +			size -= count;
+> +		}
+>  	}
+>  
+>  	modalias[len] = '\0';
+> @@ -864,6 +898,47 @@ int acpi_match_device_ids(struct acpi_device *device,
+>  }
+>  EXPORT_SYMBOL(acpi_match_device_ids);
+>  
+> +/* Performs match against special "PRP0001" shoehorn ACPI ID */
+> +static bool acpi_of_driver_match_device(struct device *dev,
+> +					const struct device_driver *drv)
+> +{
+> +	const union acpi_object *of_compatible;
+> +	struct acpi_device *adev;
+> +	int i;
+> +
+> +	adev = ACPI_COMPANION(dev);
+> +	if (!adev)
+> +		return false;
+> +
+> +	of_compatible = adev->data.of_compatible;
+> +	if (!drv->of_match_table || !of_compatible)
+> +		return false;
+> +
+> +	/* Now we can look for the driver DT compatible strings */
+> +	for (i = 0; i < of_compatible->package.count; i++) {
+> +		const struct of_device_id *id;
+> +		const union acpi_object *obj;
+> +
+> +		obj = &of_compatible->package.elements[i];
+> +
+> +		for (id = drv->of_match_table; id->compatible[0]; id++)
+> +			if (!strcasecmp(obj->string.pointer, id->compatible))
+> +				return true;
+> +	}
+> +
+> +	return false;
+> +}
+> +
+> +bool acpi_driver_match_device(struct device *dev,
+> +			      const struct device_driver *drv)
+> +{
+> +	if (!drv->acpi_match_table)
+> +		return acpi_of_driver_match_device(dev, drv);
+> +
+> +	return !!acpi_match_device(drv->acpi_match_table, dev);
+> +}
+> +EXPORT_SYMBOL_GPL(acpi_driver_match_device);
+> +
+>  static void acpi_free_power_resources_lists(struct acpi_device *device)
+>  {
+>  	int i;
+> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+> index f9734fa..98cd723 100644
+> --- a/include/acpi/acpi_bus.h
+> +++ b/include/acpi/acpi_bus.h
+> @@ -341,6 +341,7 @@ struct acpi_device_physical_node {
+>  struct acpi_device_data {
+>  	const union acpi_object *pointer;
+>  	const union acpi_object *properties;
+> +	const union acpi_object *of_compatible;
+>  };
+>  
+>  /* Device */
+> diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+> index 18c1bc3..11aa6b8 100644
+> --- a/include/linux/acpi.h
+> +++ b/include/linux/acpi.h
+> @@ -424,12 +424,8 @@ extern int acpi_nvs_for_each_region(int (*func)(__u64, __u64, void *),
+>  const struct acpi_device_id *acpi_match_device(const struct acpi_device_id *ids,
+>  					       const struct device *dev);
+>  
+> -static inline bool acpi_driver_match_device(struct device *dev,
+> -					    const struct device_driver *drv)
+> -{
+> -	return !!acpi_match_device(drv->acpi_match_table, dev);
+> -}
+> -
+> +extern bool acpi_driver_match_device(struct device *dev,
+> +				     const struct device_driver *drv);
+>  int acpi_device_uevent_modalias(struct device *, struct kobj_uevent_env *);
+>  int acpi_device_modalias(struct device *, char *, int);
 >  
 > -- 
-> 1.8.5.5
+> 1.9.3
+> 
+> 
+
