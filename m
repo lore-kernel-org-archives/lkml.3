@@ -1,63 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752238AbaJTAmF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 20:42:05 -0400
-Received: from smtprelay0180.hostedemail.com ([216.40.44.180]:41437 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751851AbaJTAmD (ORCPT
+	id S1752128AbaJTA5O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 20:57:14 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:57394 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751888AbaJTA5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 20:42:03 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3873:4321:5007:7652:7904:10004:10400:10848:11026:11473:11658:11914:12296:12438:12517:12519:12740:13019:13069:13311:13357:13972:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: fear97_68dfb26f1a155
-X-Filterd-Recvd-Size: 1718
-Message-ID: <1413765718.7076.3.camel@perches.com>
-Subject: Re: [PATCH 1/2] binfmt_misc: add comments & debug logs
-From: Joe Perches <joe@perches.com>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org
-Date: Sun, 19 Oct 2014 17:41:58 -0700
-In-Reply-To: <1413759826-11958-1-git-send-email-vapier@gentoo.org>
-References: <1413759826-11958-1-git-send-email-vapier@gentoo.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 19 Oct 2014 20:57:12 -0400
+From: Jerry Stralko <gerb.stralko@gmail.com>
+To: gregkh@linuxfoundation.org, oleg.drokin@intel.com,
+        andreas.dilger@intel.com, linux-kernel@vger.kernel.org
+Cc: Jerry Stralko <gerb.stralko@gmail.com>
+Subject: [PATCH] staging : lustre : Fixed static symbol sparse warnings
+Date: Sun, 19 Oct 2014 20:56:44 -0400
+Message-Id: <1413766604-3658-1-git-send-email-gerb.stralko@gmail.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-10-19 at 19:03 -0400, Mike Frysinger wrote:
-> let's deploy extensive pr_debug markers at
-> logical parse points, and add comments to the dense parsing logic.
-[]
-> diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
-[]
-> @@ -259,14 +270,17 @@ static char * check_special_flags (char * sfs, Node * e)
->  	while (cont) {
->  		switch (*p) {
->  			case 'P':
-> +				pr_debug("register: flag: P (preserve argv0)");
+Signed-off-by: Jerry Stralko <gerb.stralko@gmail.com>
+---
+ drivers/staging/lustre/lnet/lnet/lib-move.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-Missing '\n' newline.
-Can you please add them as appropriate?
-
->  				p++;
->  				e->flags |= MISC_FMT_PRESERVE_ARGV0;
->  				break;
->  			case 'O':
-> +				pr_debug("register: flag: O (open binary)");
-
-etc...
-
-> @@ -292,6 +306,8 @@ static Node *create_entry(const char __user *buffer, size_t count)
->  	char *buf, *p;
->  	char del;
->  
-> +	pr_debug("register: received %zu bytes", count);
-
-etc...
-
-
+diff --git a/drivers/staging/lustre/lnet/lnet/lib-move.c b/drivers/staging/lustre/lnet/lnet/lib-move.c
+index 4b9567d..5754725 100644
+--- a/drivers/staging/lustre/lnet/lnet/lib-move.c
++++ b/drivers/staging/lustre/lnet/lnet/lib-move.c
+@@ -561,7 +561,7 @@ lnet_extract_kiov(int dst_niov, lnet_kiov_t *dst,
+ }
+ EXPORT_SYMBOL(lnet_extract_kiov);
+ 
+-void
++static void
+ lnet_ni_recv(lnet_ni_t *ni, void *private, lnet_msg_t *msg, int delayed,
+ 	     unsigned int offset, unsigned int mlen, unsigned int rlen)
+ {
+@@ -599,7 +599,7 @@ lnet_ni_recv(lnet_ni_t *ni, void *private, lnet_msg_t *msg, int delayed,
+ 		lnet_finalize(ni, msg, rc);
+ }
+ 
+-void
++static void
+ lnet_setpayloadbuffer(lnet_msg_t *msg)
+ {
+ 	lnet_libmd_t *md = msg->msg_md;
+@@ -639,7 +639,7 @@ lnet_prep_send(lnet_msg_t *msg, int type, lnet_process_id_t target,
+ 	msg->msg_hdr.payload_length = cpu_to_le32(len);
+ }
+ 
+-void
++static void
+ lnet_ni_send(lnet_ni_t *ni, lnet_msg_t *msg)
+ {
+ 	void   *priv = msg->msg_private;
+@@ -654,7 +654,7 @@ lnet_ni_send(lnet_ni_t *ni, lnet_msg_t *msg)
+ 		lnet_finalize(ni, msg, rc);
+ }
+ 
+-int
++static int
+ lnet_ni_eager_recv(lnet_ni_t *ni, lnet_msg_t *msg)
+ {
+ 	int	rc;
+@@ -679,7 +679,7 @@ lnet_ni_eager_recv(lnet_ni_t *ni, lnet_msg_t *msg)
+ }
+ 
+ /* NB: caller shall hold a ref on 'lp' as I'd drop lnet_net_lock */
+-void
++static void
+ lnet_ni_query_locked(lnet_ni_t *ni, lnet_peer_t *lp)
+ {
+ 	unsigned long last_alive = 0;
+@@ -731,7 +731,7 @@ lnet_peer_is_alive(lnet_peer_t *lp, unsigned long now)
+ 
+ /* NB: returns 1 when alive, 0 when dead, negative when error;
+  *     may drop the lnet_net_lock */
+-int
++static int
+ lnet_peer_alive_locked(lnet_peer_t *lp)
+ {
+ 	unsigned long now = cfs_time_current();
+@@ -871,7 +871,7 @@ lnet_post_send_locked(lnet_msg_t *msg, int do_send)
+ }
+ 
+ 
+-lnet_rtrbufpool_t *
++static lnet_rtrbufpool_t *
+ lnet_msg2bufpool(lnet_msg_t *msg)
+ {
+ 	lnet_rtrbufpool_t	*rbp;
+@@ -891,7 +891,7 @@ lnet_msg2bufpool(lnet_msg_t *msg)
+ 	return rbp;
+ }
+ 
+-int
++static int
+ lnet_post_routed_recv_locked(lnet_msg_t *msg, int do_recv)
+ {
+ 	/* lnet_parse is going to lnet_net_unlock immediately after this, so it
+-- 
+1.9.3
 
