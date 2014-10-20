@@ -1,66 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751791AbaJTMDH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 08:03:07 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:52044 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751732AbaJTMDD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 08:03:03 -0400
-Content-Type: text/plain; charset=US-ASCII
-Mime-Version: 1.0 (Mac OS X Mail 8.0 \(1990.1\))
-Subject: Re: [linux-sunxi] [PATCH v5 2/4] ARM: sunxi: dt: Add DT bindings documentation for SUNXI Security System
-From: Koen Kooi <koen@dominion.thruhere.net>
-In-Reply-To: <1413728182-13569-3-git-send-email-clabbe.montjoie@gmail.com>
-Date: Mon, 20 Oct 2014 14:02:59 +0200
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        "linux@arm.linux.org.uk King" <linux@arm.linux.org.uk>,
-        herbert@gondor.apana.org.au, Miller Miller <davem@davemloft.net>,
-        Grant Likely <grant.likely@linaro.org>, akpm@linux-foundation.org,
-        gregkh@linuxfoundation.org, joe@perches.com, mchehab@osg.samsung.com,
-        crope@iki.fi, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org,
-        LABBE Corentin <clabbe.montjoie@gmail.com>
-Content-Transfer-Encoding: 7BIT
-Message-Id: <EC763015-19F7-4F25-8694-B1F6798E3B7B@dominion.thruhere.net>
-References: <1413728182-13569-1-git-send-email-clabbe.montjoie@gmail.com> <1413728182-13569-3-git-send-email-clabbe.montjoie@gmail.com>
-To: linux-sunxi@googlegroups.com
-X-Mailer: Apple Mail (2.1990.1)
+	id S1751792AbaJTMEQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 08:04:16 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:43755 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750716AbaJTMEO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 08:04:14 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Kever Yang <kever.yang@rock-chips.com>
+Cc: dianders@chromium.org, cf@rock-chips.com, dkl@rock-chips.com,
+        huangtao@rock-chips.com, linux-rockchip@lists.infradead.org,
+        Mike Turquette <mturquette@linaro.org>,
+        Derek Basehore <dbasehore@chromium.org>,
+        Guenter Roeck <linux@roeck-us.net>, Jianqun <jay.xu@rock-chips.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] clk: rockchip: add npll to source of sclk_gpu
+Date: Mon, 20 Oct 2014 14:03:55 +0200
+Message-ID: <1597385.dcyynQU2fv@phil>
+User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <1413499597-23908-1-git-send-email-kever.yang@rock-chips.com>
+References: <1413499597-23908-1-git-send-email-kever.yang@rock-chips.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Kever,
 
-> Op 19 okt. 2014, om 16:16 heeft LABBE Corentin <clabbe.montjoie@gmail.com> het volgende geschreven:
+Am Donnerstag, 16. Oktober 2014, 15:46:36 schrieb Kever Yang:
+> This patch make a common source for uart0 pll src and sclk_gpu,
+> so that gpu can get its cloc from npll.
 > 
-> This patch adds documentation for Device-Tree bindings for the Security System cryptographic accelerator driver.
-> 
-> Signed-off-by: LABBE Corentin <clabbe.montjoie@gmail.com>
+> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+
+I've added this to my v3.19-clk/next branch [after adding a small paragraph to 
+the commit message, explaining why the gpu now also uses the npl].
+
+Thanks
+Heiko
+
+
 > ---
-> Documentation/devicetree/bindings/crypto/sunxi-ss.txt | 9 +++++++++
-> 1 file changed, 9 insertions(+)
-> create mode 100644 Documentation/devicetree/bindings/crypto/sunxi-ss.txt
 > 
-> diff --git a/Documentation/devicetree/bindings/crypto/sunxi-ss.txt b/Documentation/devicetree/bindings/crypto/sunxi-ss.txt
-> new file mode 100644
-> index 0000000..a566803
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/crypto/sunxi-ss.txt
-> @@ -0,0 +1,9 @@
-> +* Allwinner Security System found on A20 SoC
-> +
-> +Required properties:
-> +- compatible : Should be "allwinner,sun7i-a20-crypto".
-> +- reg: Should contain the Security System register location and length.
-> +- interrupts: Should contain the IRQ line for the Security System.
-> +- clocks : A phandle to the functional clock node of the Security System module
-> +- clock-names : Name of the functional clock, should be "ahb" and "mod".
+>  drivers/clk/rockchip/clk-rk3288.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/clk/rockchip/clk-rk3288.c
+> b/drivers/clk/rockchip/clk-rk3288.c index 504b6c2a..3f839cf 100644
+> --- a/drivers/clk/rockchip/clk-rk3288.c
+> +++ b/drivers/clk/rockchip/clk-rk3288.c
+> @@ -174,14 +174,14 @@ PNAME(mux_aclk_cpu_src_p)	= { "cpll_aclk_cpu",
+> "gpll_aclk_cpu" }; PNAME(mux_pll_src_cpll_gpll_p)		= { "cpll", "gpll" };
+>  PNAME(mux_pll_src_npll_cpll_gpll_p)	= { "npll", "cpll", "gpll" };
+>  PNAME(mux_pll_src_cpll_gpll_npll_p)	= { "cpll", "gpll", "npll" };
+> -PNAME(mux_pll_src_cpll_gpll_usb480m_p)	= { "cpll", "gpll", "usb480m" };
+> +PNAME(mux_pll_src_cpll_gpll_usb480m_p)	= { "cpll", "gpll", "usbphy480m_src"
+> }; +PNAME(mux_pll_src_cpll_gll_usb_npll_p)	= { "cpll", "gpll",
+> "usbphy480m_src", "npll" };
+> 
+>  PNAME(mux_mmc_src_p)	= { "cpll", "gpll", "xin24m", "xin24m" };
+>  PNAME(mux_i2s_pre_p)	= { "i2s_src", "i2s_frac", "ext_i2s", "xin12m" };
+>  PNAME(mux_i2s_clkout_p)	= { "i2s_pre", "xin12m" };
+>  PNAME(mux_spdif_p)	= { "spdif_pre", "spdif_frac", "xin12m" };
+>  PNAME(mux_spdif_8ch_p)	= { "spdif_8ch_pre", "spdif_8ch_frac", "xin12m" };
+> -PNAME(mux_uart0_pll_p)	= { "cpll", "gpll", "usbphy_480m_src", "npll" };
+>  PNAME(mux_uart0_p)	= { "uart0_src", "uart0_frac", "xin24m" };
+>  PNAME(mux_uart1_p)	= { "uart1_src", "uart1_frac", "xin24m" };
+>  PNAME(mux_uart2_p)	= { "uart2_src", "uart2_frac", "xin24m" };
+> @@ -427,7 +427,7 @@ static struct rockchip_clk_branch rk3288_clk_branches[]
+> __initdata = { RK3288_CLKSEL_CON(33), 0, 5, DFLAGS,
+>  			RK3288_CLKGATE_CON(5), 8, GFLAGS),
+> 
+> -	COMPOSITE(SCLK_GPU, "sclk_gpu", mux_pll_src_cpll_gpll_usb480m_p, 0,
+> +	COMPOSITE(SCLK_GPU, "sclk_gpu", mux_pll_src_cpll_gll_usb_npll_p, 0,
+>  			RK3288_CLKSEL_CON(34), 6, 2, MFLAGS, 0, 5, DFLAGS,
+>  			RK3288_CLKGATE_CON(5), 7, GFLAGS),
+> 
+> @@ -504,7 +504,7 @@ static struct rockchip_clk_branch rk3288_clk_branches[]
+> __initdata = { RK3288_CLKSEL_CON(38), 15, 1, MFLAGS, 8, 5, DFLAGS,
+>  			RK3288_CLKGATE_CON(5), 6, GFLAGS),
+> 
+> -	COMPOSITE(0, "uart0_src", mux_uart0_pll_p, 0,
+> +	COMPOSITE(0, "uart0_src", mux_pll_src_cpll_gll_usb_npll_p, 0,
+>  			RK3288_CLKSEL_CON(13), 13, 2, MFLAGS, 0, 7, DFLAGS,
+>  			RK3288_CLKGATE_CON(1), 8, GFLAGS),
+>  	COMPOSITE_FRAC(0, "uart0_frac", "uart0_src", 0,
 
-It would be nice to have a copy/paste ready example node in here, like Boris did in "[PATCH v6 2/2] mtd: nand: add sunxi NFC dt bindings doc".
-
-regards,
-
-Koen
