@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968AbaJTXpp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 19:45:45 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:57366 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752156AbaJTXpo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 19:45:44 -0400
-Date: Mon, 20 Oct 2014 16:45:39 -0700
-From: josh@joshtriplett.org
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-        Aristeu Rozanski <aris@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tiny: reverse logic for DISABLE_DEV_COREDUMP
-Message-ID: <20141020234539.GF8929@cloud>
-References: <20141016133658.GP5930@redhat.com>
- <20141016134430.GB7664@thin>
- <20141016154949.GR5930@redhat.com>
- <1413798151.10246.10.camel@jlt4.sipsolutions.net>
- <20141020115511.GA28133@thin>
- <20141020221800.GB2101@kroah.com>
+	id S1753838AbaJTXtN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 19:49:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27614 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751192AbaJTXtM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 19:49:12 -0400
+From: Steve Grubb <sgrubb@redhat.com>
+To: linux-audit@redhat.com
+Cc: Paul Moore <pmoore@redhat.com>, Richard Guy Briggs <rgb@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V5 0/5] audit by executable name
+Date: Mon, 20 Oct 2014 19:49:12 -0400
+Message-ID: <13863680.WTabxyvHIP@x2>
+Organization: Red Hat
+User-Agent: KMail/4.14.2 (Linux/3.16.6-200.fc20.x86_64; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <4185398.VpQETdPFDe@x2>
+References: <cover.1412303728.git.rgb@redhat.com> <2652562.S2IH3gqS0u@sifl> <4185398.VpQETdPFDe@x2>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141020221800.GB2101@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 06:18:00AM +0800, Greg Kroah-Hartman wrote:
-> On Mon, Oct 20, 2014 at 04:55:11AM -0700, Josh Triplett wrote:
-> > On Mon, Oct 20, 2014 at 11:42:31AM +0200, Johannes Berg wrote:
-> > > On Thu, 2014-10-16 at 11:49 -0400, Aristeu Rozanski wrote:
-> > > > It's desirable for allnconfig and tinyconfig targets to result in the
-> > > > least amount of code possible. DISABLE_DEV_COREDUMP exists as a way to
-> > > > switch off DEV_COREDUMP regardless if any drivers select
-> > > > WANT_DEV_COREDUMP.
+On Monday, October 20, 2014 07:33:39 PM Steve Grubb wrote:
+> On Monday, October 20, 2014 07:02:33 PM Paul Moore wrote:
+> > On Monday, October 20, 2014 06:47:27 PM Eric Paris wrote:
+> > > On Mon, 2014-10-20 at 16:25 -0400, Steve Grubb wrote:
+> > > > On Thursday, October 02, 2014 11:06:51 PM Richard Guy Briggs wrote:
+> > > > > This is a part of Peter Moody, my and Eric Paris' work to implement
+> > > > > audit by executable name.
 > > > > 
-> > > > This patch renames the option to ENABLE_DEV_COREDUMP and setting it to
-> > > > 'n' (as in allnconfig or tinyconfig) will effectively disable device
-> > > > coredump.
-> > > > 
-> > > > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > > > Cc: Josh Triplett <josh@joshtriplett.org>
-> > > > Cc: Johannes Berg <johannes@sipsolutions.net>
+> > > > Does this patch set define an AUDIT_VERSION_SOMETHING and then set
+> > > > AUDIT_VERSION_LATEST to it? If not, I need one to tell if the kernel
+> > > > supports it when issuing commands. Also, if its conceivable that
+> > > > kernels
+> > > > may pick and choose what features could be backported to a curated
+> > > > kernel, should AUDIT_VERSION_ be a number that is incremented or a bit
+> > > > mask?
 > > > 
-> > > Reviewed-by: Johannes Berg <johannes@sipsolutions.net>
-> > > Acked-by: Johannes Berg <johannes@sipsolutions.net>
-> > > 
-> > > Yeah, looks sensible, and should work.
+> > > Right now the value is 2. So this is your last hope if you want to make
+> > > it a bitmask. I'll leave that up to paul/richard to (over) design.
 > > 
-> > Thanks.
+> > Audit is nothing if not over-designed.  I want to make sure we're
+> > consistent with the previous design methodologies ;)
 > > 
-> > I've added this to the tiny/reverse-dev-coredump branch of my
-> > tinification tree at
-> > https://git.kernel.org/cgit/linux/kernel/git/josh/linux.git/ , with
-> > Johannes' review, and I'll push it upstream during the 3.19 merge
-> > window.
+> > I've been thinking about this for about the past half-hour while I've been
+> > going through some other mail and I'm not really enthused about using the
+> > version number to encode capabilities.  What sort of problems would we
+> > have
+> > if we introduced a new audit netlink command to query the kernel for audit
+> > capabilities?
 > 
-> I'll take it through the same tree this original came in and will get it
-> into 3.18 so we don't confuse anyone with an odd config option.
+> I thought that is what we were getting in this patch:
+> https://www.redhat.com/archives/linux-audit/2014-January/msg00054.html
+> 
+> As I understood it, I send an AUDIT_GET command on netlink and then look in
+> status.version to see what we have. I really think that in the mainline
+> kernel, there will be a steady increment of capabilities. However, for
+> distributions, they may want to pick and choose which capabilities to
+> backport to their shipping kernel. Meaning in practice, a bitmap may be
+> better to allow cherry picking capabilities and user space being able to
+> make informed decisions.
+> 
+> I really don't mind if this is done by a new netlink command (but if we do,
+> what happens to status.version?) or if we just keep going with
+> status.version. Just tell me which it is.
 
-Excellent, dropped from tiny then.
+Further to the point of status.version, its declared as a __u32. So if it were 
+a bit map, we can have 32 different features userspace needs to make support 
+decisions on. I have a feeling that will last many years because I really 
+can't see audit gaining too many more capabilities.
 
-- Josh Triplett
+-Steve
