@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752320AbaJTSkv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 14:40:51 -0400
-Received: from www.linutronix.de ([62.245.132.108]:55140 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499AbaJTSku (ORCPT
+	id S1752509AbaJTSpk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 14:45:40 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:50361 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807AbaJTSph convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 14:40:50 -0400
-Date: Mon, 20 Oct 2014 20:40:46 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Thomas Shao <huishao@microsoft.com>
-cc: gregkh@linuxfoundation.org, LKML <linux-kernel@vger.kernel.org>,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com, kys@microsoft.com,
-        John Stultz <john.stultz@linaro.org>,
-        Richard Cochran <rcochran@linutronix.de>
-Subject: Re: [PATCH v2 1/2] timekeeping: add EXPORT_SYMBOL_GPL for
- do_adjtimex()
-In-Reply-To: <alpine.DEB.2.11.1410202027220.5308@nanos>
-Message-ID: <alpine.DEB.2.11.1410202034150.5308@nanos>
-References: <1413362372-16236-1-git-send-email-huishao@microsoft.com> <alpine.DEB.2.11.1410202027220.5308@nanos>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Mon, 20 Oct 2014 14:45:37 -0400
+Message-ID: <5445587B.8090203@arm.com>
+Date: Mon, 20 Oct 2014 19:46:19 +0100
+From: Sudeep Holla <sudeep.holla@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>
+Subject: Re: [PATCH v5 00/11] drivers: cacheinfo support
+References: <1412084912-2767-1-git-send-email-sudeep.holla@arm.com>
+In-Reply-To: <1412084912-2767-1-git-send-email-sudeep.holla@arm.com>
+X-OriginalArrivalTime: 20 Oct 2014 18:45:35.0439 (UTC) FILETIME=[08D3EDF0:01CFEC96]
+X-MC-Unique: 114102019453503801
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Oct 2014, Thomas Gleixner wrote:
+Hi Greg,
 
-> On Wed, 15 Oct 2014, Thomas Shao wrote:
-> 
-> And again you forgot to cc John Stultz on this....
-> 
-> > Export do_adjtimex function for hyper-v Time Synchronization component
+On 30/09/14 14:48, Sudeep Holla wrote:
+> This series adds a generic cacheinfo support similar to topology. The
+> implementation is based on x86 cacheinfo support. Currently x86, powerpc,
+> ia64 and s390 have their own implementations. While adding similar support
+> to ARM and ARM64, here is the attempt to make it generic quite similar to
+> topology info support. It also adds the missing ABI documentation for
+> the cacheinfo sysfs which is already being used.
+>
+> It moves all the existing different implementations on x86, ia64, powerpc
+> and s390 to use the generic cacheinfo infrastructure introduced here.
+> These changes on non-ARM platforms are only compile tested and tested on x86.
+>
+> This series also adds support for ARM and ARM64 architectures based on
+> the generic support.
+>
+> The code can be fetched from:
+>   git://linux-arm.org/linux-skn cacheinfo
+>
 
-Aside of that, we really want to see the use case for this and how you
-addressed the problems which were pointed out by various folks.
+I am hoping to target this for v3.19 if possible, it would be good if
+you can review and provide feedback.
 
-I still do not have a consistent argument from you WHY you need to
-abuse do_adjtimex() to do that host - guest synchronization in the
-first place.
+Regards,
+Sudeep
 
-Thanks,
-
-	tglx
