@@ -1,103 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752381AbaJTSOA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 14:14:00 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:55771 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511AbaJTSN7 (ORCPT
+	id S1752601AbaJTSPE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 14:15:04 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:34383 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751102AbaJTSPB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 14:13:59 -0400
-Date: Mon, 20 Oct 2014 11:13:55 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH] arm64: Fix compile error seen in non-SMP builds
-Message-ID: <20141020181355.GA26798@roeck-us.net>
-References: <1412990134-31186-1-git-send-email-linux@roeck-us.net>
- <20141020172208.GL23751@e104818-lin.cambridge.arm.com>
+	Mon, 20 Oct 2014 14:15:01 -0400
+Message-ID: <5445511D.1090603@redhat.com>
+Date: Mon, 20 Oct 2014 20:14:53 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141020172208.GL23751@e104818-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dave Hansen <dave.hansen@intel.com>,
+        Dominik Dingel <dingel@linux.vnet.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Bob Liu <lliubbo@gmail.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Gleb Natapov <gleb@kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Jianyu Zhan <nasa4836@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Konstantin Weitz <konstantin.weitz@gmail.com>, kvm@vger.kernel.org,
+        linux390@de.ibm.com, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: Re: [PATCH 2/4] mm: introduce new VM_NOZEROPAGE flag
+References: <1413554990-48512-1-git-send-email-dingel@linux.vnet.ibm.com>	<1413554990-48512-3-git-send-email-dingel@linux.vnet.ibm.com>	<54419265.9000000@intel.com> <20141018164928.2341415f@BR9TG4T3.de.ibm.com> <54429521.80402@intel.com>
+In-Reply-To: <54429521.80402@intel.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 20, 2014 at 06:22:09PM +0100, Catalin Marinas wrote:
-> On Sat, Oct 11, 2014 at 02:15:34AM +0100, Guenter Roeck wrote:
-> > Fix:
-> > 
-> > In file included from ./arch/arm64/include/asm/irq_work.h:4:0,
-> >         from include/linux/irq_work.h:46,
-> >         from include/linux/perf_event.h:49,
-> >         from include/linux/ftrace_event.h:9,
-> >         from include/trace/syscall.h:6,
-> >         from include/linux/syscalls.h:81,
-> >         from init/main.c:18:
-> > ./arch/arm64/include/asm/smp.h:24:3:
-> > 	error: #error "<asm/smp.h> included in non-SMP build"
-> >  # error "<asm/smp.h> included in non-SMP build"
-> >    ^
-> > ./arch/arm64/include/asm/smp.h:27:0: warning: "raw_smp_processor_id" redefined
-> >  #define raw_smp_processor_id() (current_thread_info()->cpu)
-> >  ^
-> > 
-> > and:
-> > 
-> > In file included from ./arch/arm64/include/asm/irq_work.h:4:0,
-> >         from include/linux/irq_work.h:46,
-> >         from kernel/irq_work.c:11:
-> > ./arch/arm64/include/asm/smp_plat.h:56:30:
-> >         error: ‘NR_CPUS’ undeclared here (not in a function)
-> >         extern u64 __cpu_logical_map[NR_CPUS];
-> > 
-> > by providing a helper function in smp_plat.h, similar to the arm implementation,
-> > and by removing NR_CPUS from smp_plat.h.
-> > 
-> > Fixes: 3631073659d0 ("arm64: Tell irq work about self IPI support")
-> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> 
-> Isn't something like this simpler:
-> 
+On 10/18/2014 06:28 PM, Dave Hansen wrote:
+> > Currently it is an all or nothing thing, but for a future change we might want to just
+> > tag the guest memory instead of the complete user address space.
+>
+> I think it's a bad idea to reserve a flag for potential future use.  If
+> you_need_  it in the future, let's have the discussion then.  For now, I
+> think it should probably just be stored in the mm somewhere.
 
-Yes, that works as well.
+I agree with Dave (I thought I disagreed, but I changed my mind while 
+writing down my thoughts).  Just define mm_forbids_zeropage in 
+arch/s390/include/asm, and make it return mm->context.use_skey---with a 
+comment explaining how this is only for processes that use KVM, and then 
+only for guests that use storage keys.
 
-Feel free to add my Tested-by: if you want to take that patch.
-
-Thanks,
-Guenter
-
-> diff --git a/arch/arm64/include/asm/irq_work.h b/arch/arm64/include/asm/irq_work.h
-> index 8e24ef3f7c82..b4f6b19a8a68 100644
-> --- a/arch/arm64/include/asm/irq_work.h
-> +++ b/arch/arm64/include/asm/irq_work.h
-> @@ -1,6 +1,8 @@
->  #ifndef __ASM_IRQ_WORK_H
->  #define __ASM_IRQ_WORK_H
->  
-> +#ifdef CONFIG_SMP
-> +
->  #include <asm/smp.h>
->  
->  static inline bool arch_irq_work_has_interrupt(void)
-> @@ -8,4 +10,13 @@ static inline bool arch_irq_work_has_interrupt(void)
->  	return !!__smp_cross_call;
->  }
->  
-> +#else
-> +
-> +static inline bool arch_irq_work_has_interrupt(void)
-> +{
-> +	return false;
-> +}
-> +
-> +#endif
-> +
->  #endif /* __ASM_IRQ_WORK_H */
+Paolo (who was just taught what storage keys really are)
