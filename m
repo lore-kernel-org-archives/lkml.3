@@ -1,108 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753710AbaJTVid (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 17:38:33 -0400
-Received: from p3plex2out02.prod.phx3.secureserver.net ([184.168.131.14]:42708
-	"EHLO p3plex2out02.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753671AbaJTVi2 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 17:38:28 -0400
-From: Hartley Sweeten <HartleyS@visionengravers.com>
-To: Ian Abbott <abbotti@mev.co.uk>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: RE: [PATCH] staging: comedi: fix memory leak / bad pointer freeing
- for chanlist
-Thread-Topic: [PATCH] staging: comedi: fix memory leak / bad pointer freeing
- for chanlist
-Thread-Index: AQHP7G+rXRnBcBAewE+DE6Migp8ASZw5gRbQ
-Date: Mon, 20 Oct 2014 21:38:27 +0000
-Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825FF1FC4@P3PWEX4MB008.ex4.secureserver.net>
-References: <1413814240-3094-1-git-send-email-abbotti@mev.co.uk>
-In-Reply-To: <1413814240-3094-1-git-send-email-abbotti@mev.co.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [184.183.19.121]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753807AbaJTVi7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 17:38:59 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:39996 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753391AbaJTVi5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 17:38:57 -0400
+Message-ID: <544580ED.3050604@hurleysoftware.com>
+Date: Mon, 20 Oct 2014 17:38:53 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
+To: Stephen Boyd <sboyd@codeaurora.org>, Kumar Gala <galak@codeaurora.org>
+CC: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, Rob Herring <robh@kernel.org>
+Subject: Re: [PATCH] tty: serial: msm: Fix lock init issue with earlycon
+References: <1413551588-14877-1-git-send-email-galak@codeaurora.org> <544553F6.1020409@codeaurora.org>
+In-Reply-To: <544553F6.1020409@codeaurora.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, October 20, 2014 7:11 AM, Ian Abbott wrote:
-> As a follow-up to commit 6cab7a37f5c04 ("staging: comedi: (regression)
-> channel list must be set for COMEDI_CMD ioctl"), Hartley Sweeten pointed
-> out another couple of bugs stemming from commit 6cab7a37f5c04 ("staging:
-> comedi: comedi_fops: introduce __comedi_get_user_chanlist()").
->
-> Firstly, `do_cmdtest_ioctl()` never frees the kernel copy of the user
-> chanlist allocated by `__comedi_get_user_chanlist()`, so that memory is
-> leaked.  Fix it by freeing the allocated kernel memory pointed to by
-> `cmd.chanlist` before that pointer is overwritten with its original
-> pointer to user memory before `cmd` is copied back to user-space.
->
-> Secondly, if `__comedi_get_user_chanlist()` returns an error,
-> `cmd->chanlist` is left unchanged and in fact will be a pointer to user
-> memory.  This causes `do_cmd_ioctl()` to `goto cleanup` and call
-> `do_become_nonbusy()` which would attempt to free the memory pointed to
-> by the user-space pointer.  Fix it by setting `cmd->chanlist` to NULL at
-> the start of `__comedi_get_user_chanlist()`.
->
-> Fixes: c6cd0eefb27b ("staging: comedi: comedi_fops: introduce __comedi_get_user_chanlist()")
-> Reported-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: <stable@vger.kernel.org> # 3.15.y 3.16.y 3.17.y: 6cab7a37f5c04
-> Cc: <stable@vger.kernel.org> # 3.15.y 3.16.y 3.17.y
-> ---
-> Greg, this patch applies to your "staging-linus" branch.
-> ---
->  drivers/staging/comedi/comedi_fops.c | 3 +++
->  1 file changed, 3 insertions(+)
->
-> diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
-> index a9b7fe5..a1788e8 100644
-> --- a/drivers/staging/comedi/comedi_fops.c
-> +++ b/drivers/staging/comedi/comedi_fops.c
-> @@ -1462,6 +1462,7 @@ static int __comedi_get_user_chanlist(struct comedi_device *dev,
->  	unsigned int *chanlist;
->  	int ret;
->  
-> +	cmd->chanlist = NULL;
->  	chanlist = memdup_user(user_chanlist,
->  			       cmd->chanlist_len * sizeof(unsigned int));
->  	if (IS_ERR(chanlist))
+On 10/20/2014 02:27 PM, Stephen Boyd wrote:
+> On 10/17/2014 06:13 AM, Kumar Gala wrote:
+>> With CONFIG_DEBUG_SPINLOCK enabled we see:
+>>
+>> BUG: spinlock bad magic on CPU#0, swapper/0
+>>   lock: early_console_dev+0x8/0x160, .magic: 00000000, .owner: <none>/-1, .owner_cpu: 0
+>> CPU: 0 PID: 0 Comm: swapper Not tainted 3.17.0-09733-gb446b33-dirty #18
+> 
+> [...]
+> 
+>> diff --git a/drivers/tty/serial/msm_serial.c b/drivers/tty/serial/msm_serial.c
+>> index 4b6c783..8ab27c9 100644
+>> --- a/drivers/tty/serial/msm_serial.c
+>> +++ b/drivers/tty/serial/msm_serial.c
+>> @@ -973,6 +973,8 @@ msm_serial_early_console_setup(struct earlycon_device *device, const char *opt)
+>>       if (!device->port.membase)
+>>           return -ENODEV;
+>>   +    spin_lock_init(&device->port.lock);
+>> +
+>>       device->con->write = msm_serial_early_write;
+>>       return 0;
+>>   }
+>> @@ -995,6 +997,8 @@ msm_serial_early_console_setup_dm(struct earlycon_device *device,
+>>       if (!device->port.membase)
+>>           return -ENODEV;
+>>   +    spin_lock_init(&device->port.lock);
+>> +
+>>       device->con->write = msm_serial_early_write_dm;
+>>       return 0;
+>>   }
+> 
+> Could this be done in the tty core instead?
 
-I don't think this covers all the problems in your second issue above.
+Or even better: refactor __msm_console_write() so no spin_lock() is required
+for the earlycon write.
 
-It does fix the attempt to free the memory pointed to by the user-space pointer
-if the memdub_user() fails.
-
-But in do_cmd_ioctl() we still have an issue if the s->do_cmdtest() fails or
-the CMDF_BOGUS flag is set. There we restore the users cmd.chanlist
-pointer to allow copy_to_user() to return the cmd/ But the kernel allocated
-chanlist is not freed. The goto cleanup will again try to free the user-space
-pointer.
-
-The remaining goto cleanup jumps will correctly free the kernel allocated
-pointer stored in cmd.chanlist.
-
-> @@ -1615,6 +1616,8 @@ static int do_cmdtest_ioctl(struct comedi_device *dev,
->  
->  	ret = s->do_cmdtest(dev, s, &cmd);
->  
-> +	kfree(cmd.chanlist);	/* free kernel copy of user chanlist */
-> +
->  	/* restore chanlist pointer before copying back */
->  	cmd.chanlist = (unsigned int __force *)user_chanlist;
->  
-
-This one does fix the issue in do_cmdtest_ioctl().
+FWIW, __msm_console_write() is a deadlock-waiting-to_happen since it does
+not disable interrupts with spin_lock_irqsave().
 
 Regards,
-Hartley
-
+Peter Hurley
