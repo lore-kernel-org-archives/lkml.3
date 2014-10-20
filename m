@@ -1,193 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751935AbaJTMjQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 08:39:16 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:55983 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751273AbaJTMjO (ORCPT
+	id S1752026AbaJTMlr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 08:41:47 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:28310 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194AbaJTMlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 08:39:14 -0400
-Date: Mon, 20 Oct 2014 14:39:14 +0200
-From: Ludovic Desroches <ludovic.desroches@atmel.com>
-To: Wenyou Yang <wenyou.yang@atmel.com>
-CC: <wsa@the-dreams.de>, <ludovic.desroches@atmel.com>,
-        <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <nicolas.ferre@atmel.com>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/3] i2c/at91: add support for runtime PM
-Message-ID: <20141020123914.GC7443@ldesroches-Latitude-E6320>
-Mail-Followup-To: Wenyou Yang <wenyou.yang@atmel.com>, wsa@the-dreams.de,
-	linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-	nicolas.ferre@atmel.com, linux-arm-kernel@lists.infradead.org
-References: <1413776535-10123-1-git-send-email-wenyou.yang@atmel.com>
- <1413776535-10123-2-git-send-email-wenyou.yang@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1413776535-10123-2-git-send-email-wenyou.yang@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 20 Oct 2014 08:41:45 -0400
+X-AuditID: cbfee61a-f79c06d000004e71-d6-544503065830
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] thermal: exynos: use correct offset for TMU_CONTROL
+ register on Exynos5260
+Date: Mon, 20 Oct 2014 14:41:07 +0200
+Message-id: <17456984.pRSEMqiSfL@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <1594947.1Ri7fFnV5h@amdc1032>
+References: <1594947.1Ri7fFnV5h@amdc1032>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDLMWRmVeSWpSXmKPExsVy+t9jAV02ZtcQg7NdGhYNV0Ms5l+5xmpx
+	tukNu8Wbh5sZLS7vmsNm8bn3CKPFjPP7mCyePOxjc+Dw2DnrLrvH4j0vmTz6tqxi9Pi8SS6A
+	JYrLJiU1J7MstUjfLoEr4/rWw8wFU0Uq5i9YzNbAuFawi5GTQ0LAROLZ5COMELaYxIV769m6
+	GLk4hAQWMUo8nDKXEcJpYZK4/e4gC0gVm4CVxMT2VWAdIgJaEicubWcCKWIW6GCSaH29gQkk
+	ISyQKPH0XAMbiM0ioCrxZsUPsGZeoIafx7+wg9iiAp4SO7avBKvhBIp/6uwHs4UENCUOnn7O
+	ClEvKPFj8j2wXmYBeYl9+6eyQthaEut3HmeawCgwC0nZLCRls5CULWBkXsUomlqQXFCclJ5r
+	qFecmFtcmpeul5yfu4kRHObPpHYwrmywOMQowMGoxMO7w8wlRIg1say4MvcQowQHs5IIr8t/
+	oBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXHeA63WgUIC6YklqdmpqQWpRTBZJg5OqQbGg5/9Xqas
+	/X1CdOLTzewZ9okrpou7svBonRSwFFP/vLfgfsYFDu3b5SKKzPfWd+rqu2w7Hn/W9GFB76mg
+	wwdM/tQkmyq7HvaQ2vVdt+mV15ql5hP5tk+4HMUUu9nqflQqt8gXWR95s3+fDQ86LJALdHj/
+	Sm+95fzGYzvDRbYrfGkTPxMSkJmtxFKckWioxVxUnAgAN2jH+W8CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wenyou,
 
-On Mon, Oct 20, 2014 at 11:42:12AM +0800, Wenyou Yang wrote:
-> Drivers should put the device into low power states proactively whenever the
-> device is not in use. Thus implement support for runtime PM and use the
-> autosuspend feature to make sure that we can still perform well in case we see
-> lots of i2c traffic within short period of time.
+Hi,
+
+Eduardo, could you please merge this patch?
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
+
+On Thursday, September 11, 2014 03:00:49 PM Bartlomiej Zolnierkiewicz wrote:
+> In exynos5260_tmu_registers tmu_ctrl entry is erroneously
+> assigned twice.  The second assignment (to EXYNOS_TMU_REG_CONTROL1
+> define which represents 0x24 value) overrides the first one
+> (to EXYNOS_TMU_REG_CONTROL define which represents 0x20 value)
+> which results in the wrong (according to the Exynos5260 SoC
+> documentation that I have) offset being used for TMU_CONTROL
+> register.  Fix it by removing the wrong assignment and then
+> remove no longer used EXYNOS_TMU_REG_CONTROL1 define.
 > 
-> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+> Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> Cc: Lukasz Majewski <l.majewski@samsung.com>
+> Cc: Eduardo Valentin <edubezval@gmail.com>
+> Cc: Zhang Rui <rui.zhang@intel.com>
+> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 > ---
->  drivers/i2c/busses/i2c-at91.c |   48 ++++++++++++++++++++++++++++++++---------
->  1 file changed, 38 insertions(+), 10 deletions(-)
+>  drivers/thermal/samsung/exynos_tmu_data.c |    1 -
+>  drivers/thermal/samsung/exynos_tmu_data.h |    1 -
+>  2 files changed, 2 deletions(-)
 > 
-> diff --git a/drivers/i2c/busses/i2c-at91.c b/drivers/i2c/busses/i2c-at91.c
-> index 917d545..03b9f48 100644
-> --- a/drivers/i2c/busses/i2c-at91.c
-> +++ b/drivers/i2c/busses/i2c-at91.c
-> @@ -31,10 +31,12 @@
->  #include <linux/platform_device.h>
->  #include <linux/slab.h>
->  #include <linux/platform_data/dma-atmel.h>
-> +#include <linux/pm_runtime.h>
+> Index: b/drivers/thermal/samsung/exynos_tmu_data.c
+> ===================================================================
+> --- a/drivers/thermal/samsung/exynos_tmu_data.c	2014-09-11 14:41:12.567347442 +0200
+> +++ b/drivers/thermal/samsung/exynos_tmu_data.c	2014-09-11 14:43:00.211350284 +0200
+> @@ -273,7 +273,6 @@ struct exynos_tmu_init_data const exynos
+>  static const struct exynos_tmu_registers exynos5260_tmu_registers = {
+>  	.triminfo_data = EXYNOS_TMU_REG_TRIMINFO,
+>  	.tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
+> -	.tmu_ctrl = EXYNOS_TMU_REG_CONTROL1,
+>  	.therm_trip_mode_shift = EXYNOS_TMU_TRIP_MODE_SHIFT,
+>  	.therm_trip_mode_mask = EXYNOS_TMU_TRIP_MODE_MASK,
+>  	.therm_trip_en_shift = EXYNOS_TMU_THERM_TRIP_EN_SHIFT,
+> Index: b/drivers/thermal/samsung/exynos_tmu_data.h
+> ===================================================================
+> --- a/drivers/thermal/samsung/exynos_tmu_data.h	2014-09-11 14:41:12.243347433 +0200
+> +++ b/drivers/thermal/samsung/exynos_tmu_data.h	2014-09-11 14:43:36.167351233 +0200
+> @@ -83,7 +83,6 @@
+>  #define EXYNOS_MAX_TRIGGER_PER_REG	4
 >  
->  #define DEFAULT_TWI_CLK_HZ		100000		/* max 400 Kbits/s */
->  #define AT91_I2C_TIMEOUT	msecs_to_jiffies(100)	/* transfer timeout */
->  #define AT91_I2C_DMA_THRESHOLD	8			/* enable DMA if transfer size is bigger than this threshold */
-> +#define AUTOSUSPEND_TIMEOUT		2000
->  
->  /* AT91 TWI register definitions */
->  #define	AT91_TWI_CR		0x0000	/* Control Register */
-> @@ -475,12 +477,16 @@ error:
->  static int at91_twi_xfer(struct i2c_adapter *adap, struct i2c_msg *msg, int num)
->  {
->  	struct at91_twi_dev *dev = i2c_get_adapdata(adap);
-> -	int ret;
-> +	int ret = 0;
-
-Not necessary.
-
->  	unsigned int_addr_flag = 0;
->  	struct i2c_msg *m_start = msg;
->  
->  	dev_dbg(&adap->dev, "at91_xfer: processing %d messages:\n", num);
->  
-> +	ret = pm_runtime_get_sync(dev->dev);
-> +	if (ret < 0)
-> +		goto out;
-> +
->  	/*
->  	 * The hardware can handle at most two messages concatenated by a
->  	 * repeated start via it's internal address feature.
-> @@ -488,18 +494,21 @@ static int at91_twi_xfer(struct i2c_adapter *adap, struct i2c_msg *msg, int num)
->  	if (num > 2) {
->  		dev_err(dev->dev,
->  			"cannot handle more than two concatenated messages.\n");
-> -		return 0;
-> +		ret = 0;
-> +		goto out;
->  	} else if (num == 2) {
->  		int internal_address = 0;
->  		int i;
->  
->  		if (msg->flags & I2C_M_RD) {
->  			dev_err(dev->dev, "first transfer must be write.\n");
-> -			return -EINVAL;
-> +			ret = -EINVAL;
-> +			goto out;
->  		}
->  		if (msg->len > 3) {
->  			dev_err(dev->dev, "first message size must be <= 3.\n");
-> -			return -EINVAL;
-> +			ret = -EINVAL;
-> +			goto out;
->  		}
->  
->  		/* 1st msg is put into the internal address, start with 2nd */
-> @@ -523,7 +532,13 @@ static int at91_twi_xfer(struct i2c_adapter *adap, struct i2c_msg *msg, int num)
->  
->  	ret = at91_do_twi_transfer(dev);
->  
-> -	return (ret < 0) ? ret : num;
-> +	if (ret == 0)
-
-I don't figure out why you've changed this condition.
-
-> +		ret = num;
-> +out:
-> +	pm_runtime_mark_last_busy(dev->dev);
-> +	pm_runtime_put_autosuspend(dev->dev);
-> +
-> +	return ret;
->  }
->  
->  static u32 at91_twi_func(struct i2c_adapter *adapter)
-> @@ -795,11 +810,20 @@ static int at91_twi_probe(struct platform_device *pdev)
->  	dev->adapter.timeout = AT91_I2C_TIMEOUT;
->  	dev->adapter.dev.of_node = pdev->dev.of_node;
->  
-> +	pm_runtime_set_autosuspend_delay(dev->dev, AUTOSUSPEND_TIMEOUT);
-> +	pm_runtime_use_autosuspend(dev->dev);
-> +	pm_runtime_set_active(dev->dev);
-> +	pm_runtime_enable(dev->dev);
-> +
->  	rc = i2c_add_numbered_adapter(&dev->adapter);
->  	if (rc) {
->  		dev_err(dev->dev, "Adapter %s registration failed\n",
->  			dev->adapter.name);
->  		clk_disable_unprepare(dev->clk);
-> +
-> +		pm_runtime_disable(dev->dev);
-> +		pm_runtime_set_suspended(dev->dev);
-> +
->  		return rc;
->  	}
->  
-> @@ -814,16 +838,19 @@ static int at91_twi_remove(struct platform_device *pdev)
->  	i2c_del_adapter(&dev->adapter);
->  	clk_disable_unprepare(dev->clk);
->  
-> +	pm_runtime_disable(dev->dev);
-> +	pm_runtime_set_suspended(dev->dev);
-> +
->  	return 0;
->  }
->  
->  #ifdef CONFIG_PM
-> -
-> +#ifdef CONFIG_PM_RUNTIME
->  static int at91_twi_runtime_suspend(struct device *dev)
->  {
->  	struct at91_twi_dev *twi_dev = dev_get_drvdata(dev);
->  
-> -	clk_disable(twi_dev->clk);
-> +	clk_disable_unprepare(twi_dev->clk);
->  
->  	return 0;
->  }
-> @@ -832,12 +859,13 @@ static int at91_twi_runtime_resume(struct device *dev)
->  {
->  	struct at91_twi_dev *twi_dev = dev_get_drvdata(dev);
->  
-> -	return clk_enable(twi_dev->clk);
-> +	return clk_prepare_enable(twi_dev->clk);
->  }
-> +#endif
->  
->  static const struct dev_pm_ops at91_twi_pm = {
-> -	.runtime_suspend	= at91_twi_runtime_suspend,
-> -	.runtime_resume		= at91_twi_runtime_resume,
-> +	SET_RUNTIME_PM_OPS(at91_twi_runtime_suspend,
-> +				at91_twi_runtime_resume, NULL)
->  };
->  
->  #define at91_twi_pm_ops (&at91_twi_pm)
-> -- 
-> 1.7.9.5
-> 
-
-
-Regards
-
-Ludovic
+>  /* Exynos5260 specific */
+> -#define EXYNOS_TMU_REG_CONTROL1			0x24
+>  #define EXYNOS5260_TMU_REG_INTEN		0xC0
+>  #define EXYNOS5260_TMU_REG_INTSTAT		0xC4
+>  #define EXYNOS5260_TMU_REG_INTCLEAR		0xC8
