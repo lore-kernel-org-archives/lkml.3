@@ -1,88 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752085AbaJTMf0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 08:35:26 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:41066 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750957AbaJTMfV (ORCPT
+	id S1752176AbaJTMgI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 08:36:08 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:55688 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813AbaJTMgD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 08:35:21 -0400
-X-AuditID: cbfec7f4-b7f6c6d00000120b-5f-54450186a2c1
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, linux-api@vger.kernel.org,
-        devicetree@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v2 0/5] power/mfd: Add max77693 charger driver
-Date: Mon, 20 Oct 2014 14:34:44 +0200
-Message-id: <1413808489-3524-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpiluLIzCtJLcpLzFFi42I5/e/4Nd02RtcQg1vbuS02zljPajHpyXtm
-	i/lHzrFaTFw5mdni9QtDi7NNb9gt7n89ymix+XsHm8XlXXPYLD73HmG0WHvkLrvF6W5Wi9O7
-	Sxx4PXbOusvusXmFlsemVZ1sHneu7WHzmHcy0KNvyypGj8+b5ALYo7hsUlJzMstSi/TtErgy
-	fu54wlSwnqdiy/0vjA2MPZxdjJwcEgImEqfnr2CEsMUkLtxbzwZiCwksZZQ49zGni5ELyO5j
-	kmj485AdJMEmYCyxefkSNpCEiMA+JolTz98ygzjMAkcZJab3vmUCqRIWsJNYsWMaC4jNIqAq
-	sWwFRJxXwE3i/uInLBDr5CROHpvMOoGRewEjwypG0dTS5ILipPRcQ73ixNzi0rx0veT83E2M
-	kHD7soNx8TGrQ4wCHIxKPLwCli4hQqyJZcWVuYcYJTiYlUR4Xf4DhXhTEiurUovy44tKc1KL
-	DzEycXBKNTBy7OuKv+JT8nX7eq8EvhsyHL7bv75fsPj6o4sfamXOvbbNkOazvzrdjPne5OJz
-	U+Ms5lsL8p2rvrD92oE/U9f8LauwbLrK/3KLuWTyjPOT3jsvO9Hh1Ls7cWJvj9LW4HrD0q19
-	q1V1ciO0TNWLXbrXTm4Mf3lQ1+Gglk+bVIpzzJNMU4+gPh0lluKMREMt5qLiRAD5PYt8FQIA	AA==
+	Mon, 20 Oct 2014 08:36:03 -0400
+Message-ID: <544501AE.7030706@atmel.com>
+Date: Mon, 20 Oct 2014 14:35:58 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Alessandro Zummo <a.zummo@towertech.it>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        "Alexandre Belloni" <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>, <rtc-linux@googlegroups.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Johan Hovold <jhovold@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v9 00/10] rtc: at91sam9: add DT support
+References: <1411483725-31532-1-git-send-email-boris.brezillon@free-electrons.com> <20141020141748.063d6835@bbrezillon>
+In-Reply-To: <20141020141748.063d6835@bbrezillon>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 20/10/2014 14:17, Boris Brezillon :
+> Hi Alessandro,
+> 
+> On Tue, 23 Sep 2014 16:48:35 +0200
+> Boris BREZILLON <boris.brezillon@free-electrons.com> wrote:
+> 
+>> Hello,
+>>
+>> This patch series adds DT support to the atmel at91sam9 RTC driver.
+>>
+>> It also removes any machine specific inclusions to prepare the migration
+>> to multi platform kernel support, and retain the slow clock to prevent
+>> the CCF from disabling it at the end of boot.
+> 
+> Nicolas was planning to take this series (except for patch 10 which was
+> already applied by Lee) in his tree for 3.19, but if you prefer to take
+> it into yours just let us know.
 
-Hi,
+Absolutely, I'll happily take them for at91-3.19-drivers and push them
+through arm-soc tree unless Alessandro says otherwise.
 
-
-Changes since v1
-================
-1. Add patch 2/5: mfd: max77693: Map charger device to its own of_node
-   (forgot to send it in v1)
-2. Remove patches for DTS and configs. I'll send them later.
-3. Add ack from Lee Jones (patch 3/5).
-
-
-Description
-===========
-The patchset adds max77693 charger driver present on Trats2 board
-(and Galaxy S III). The driver configures battery charger and exposes
-power supply interface.
-
-Driver is necessary to provide full charging stack on Trats2 device
-(extcon, charger-manager etc.).
-
-Everything rebased on next-20141020.
-
-
-Best regards,
-Krzysztof
-
-
-Krzysztof Kozlowski (5):
-  devicetree: mfd: max77693: Document new bindings for charger
-  mfd: max77693: Map charger device to its own of_node
-  mfd: max77693: Add defines for MAX77693 charger driver
-  power: max77693: Add charger driver for Maxim 77693
-  Documentation: charger: max77693: Document exported sysfs entry
-
- Documentation/ABI/testing/sysfs-class-power        |  42 ++
- Documentation/devicetree/bindings/mfd/max77693.txt |  46 ++
- drivers/mfd/max77693.c                             |   5 +-
- drivers/power/Kconfig                              |   6 +
- drivers/power/Makefile                             |   1 +
- drivers/power/max77693_charger.c                   | 763 +++++++++++++++++++++
- include/linux/mfd/max77693-private.h               | 108 +++
- include/linux/mfd/max77693.h                       |   8 +
- 8 files changed, 978 insertions(+), 1 deletion(-)
- create mode 100644 drivers/power/max77693_charger.c
-
+Bye,
 -- 
-1.9.1
-
+Nicolas Ferre
