@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753157AbaJTIsf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 04:48:35 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:32945 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753088AbaJTIsd (ORCPT
+	id S1753172AbaJTIzV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 04:55:21 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:47859 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753001AbaJTIzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 04:48:33 -0400
-Date: Mon, 20 Oct 2014 10:48:13 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Erik Bosman <ebn310@few.vu.nl>,
-        mpe@ellerman.id.au, anton@samba.org, brueckner@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com
-Subject: Re: [RFC 5/5] x86,perf: Only allow rdpmc if a perf_event is mapped
-Message-ID: <20141020084813.GB3219@twins.programming.kicks-ass.net>
-References: <cover.1413323611.git.luto@amacapital.net>
- <b6c264b3bb064658af498763e234e3cb4f9db4e2.1413323612.git.luto@amacapital.net>
- <CALCETrXRGNeUipujcGiT30SV+MDHCFpTxG7LOTXj4Z4CbtxdJQ@mail.gmail.com>
- <20141019213534.GG23531@worktop.programming.kicks-ass.net>
- <CALCETrX3XYGd+2x_W89wq5tkuMBNF5NxDa02ha=UzQhU2r6Khg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrX3XYGd+2x_W89wq5tkuMBNF5NxDa02ha=UzQhU2r6Khg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Mon, 20 Oct 2014 04:55:14 -0400
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        linux-mtd@lists.infradead.org, Huang Shijie <shijie8@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Mike Voytovich <mvoytovich@paypal.com>, Roy Lee <roylee@paypal.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: [PATCH v4 0/4] mtd: nand: gpmi: add proper raw access support
+Date: Mon, 20 Oct 2014 10:46:13 +0200
+Message-Id: <1413794777-32220-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 19, 2014 at 05:08:08PM -0700, Andy Lutomirski wrote:
-> Before I totally screw this up: is .event_idx used for anything except
-> userspace rdpmc? 
+Hello,
 
-It should only be used for that.
+This series provides an implementation for raw accesses taking care of
+hidding the specific layout used by the GPMI controller.
 
-> There are a whole bunch of implementations of that
-> callback:
-> 
->  - perf_event_idx_default seems fishy
+I also updated the nand_ecc_ctrl struct documentation to clearly state that
+specific layouts should be hidden when accessing the NAND chip in raw mode.
 
-I suppose I did that to encode the rule that 0 := disabled, figuring
-that if there is no actual instruction to access the data, all of this
-would be pointless anyhow.
+Best Regards,
 
->  - power_pmu_event_idx seems even fishier
+Boris
 
-Agreed, I preserved behaviour in 35edc2a5095e ("perf, arch: Rework
-perf_event_index()") and at that time asked about why this is. Nobody
-replied, lets try again.
+Changes since v3:
+ - add comments to the gpmi_move_bits function
+ - extend raw read/write documentation
+ - move last part of the raw_page_read function into a conditional block
 
-Michael, Anton?
+Changes since v2:
+ - fixed a bug in gpmi_move_bits
+ - add a raw_buffer field to be used when using raw access methods
+   (experienced memory corruptions when directly using page_buffer_virt
+   buffer)
+ - add raw OOB access functions
 
->  - cpumsf_pmu_event_idx is the same as power_pmu_event_idx.
 
-Oh cute, lets ask the s390 people, do you guys have a userspace
-instruction to read the actual counter value?
+Boris Brezillon (4):
+  mtd: nand: provide detailed description for raw read/write page
+    methods
+  mtd: nand: gpmi: add gpmi_move_bits function
+  mtd: nand: gpmi: add proper raw access support
+  mtd: nand: gpmi: add raw oob access functions
 
->  - perf_swevent_event_idx returns 0.
+ drivers/mtd/nand/gpmi-nand/gpmi-lib.c  | 129 +++++++++++++++++++++++++++++
+ drivers/mtd/nand/gpmi-nand/gpmi-nand.c | 146 +++++++++++++++++++++++++++++++++
+ drivers/mtd/nand/gpmi-nand/gpmi-nand.h |   6 ++
+ include/linux/mtd/nand.h               |  17 +++-
+ 4 files changed, 296 insertions(+), 2 deletions(-)
 
-Right, guaranteed no way to access any of that, maybe we should make
-the default like that too.
+-- 
+1.9.1
 
-> etc.
-> 
-> x86 is the only implementation of arch_perf_update_userpage, which
-> makes me think that the .event_idx callback should just be removed and
-> that arch_perf_update_userpage should be responsible for filling it in
-> if needed.
-
-Its a per pmu thing, with the x86 hardware pmu being the only one that's
-actually 'known' working to me.
-
-All the other x86 pmus like the software, uncore, etc. don't support
-this.
-
-That said, there's definitely room for improvement here.
