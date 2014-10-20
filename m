@@ -1,95 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560AbaJTP0g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 11:26:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40758 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511AbaJTP0d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 11:26:33 -0400
-Date: Mon, 20 Oct 2014 08:25:55 -0700
-From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-961b6a7003acec4f9d70dabc1a253b783cb74272@git.kernel.org>
-Cc: bhelgaas@google.com, rjw@rjwysocki.net, jiang.liu@linux.intel.com,
-        thor@math.tu-berlin.de, mingo@kernel.org, tony.luck@intel.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, tglx@linutronix.de
-Reply-To: hpa@zytor.com, tony.luck@intel.com, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, jiang.liu@linux.intel.com,
-        bhelgaas@google.com, rjw@rjwysocki.net, mingo@kernel.org,
-        thor@math.tu-berlin.de
-In-Reply-To: <1413816327-12850-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1413816327-12850-1-git-send-email-jiang.liu@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: ACPI:
-  Do not translate GSI number if IOAPIC is disabled
-Git-Commit-ID: 961b6a7003acec4f9d70dabc1a253b783cb74272
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1752554AbaJTP1T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 11:27:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27545 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751272AbaJTP1S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 11:27:18 -0400
+Message-ID: <544529C0.5080205@redhat.com>
+Date: Mon, 20 Oct 2014 11:26:56 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+To: Vlastimil Babka <vbabka@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH 4/5] mm, compaction: always update cached scanner positions
+References: <1412696019-21761-1-git-send-email-vbabka@suse.cz> <1412696019-21761-5-git-send-email-vbabka@suse.cz>
+In-Reply-To: <1412696019-21761-5-git-send-email-vbabka@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  961b6a7003acec4f9d70dabc1a253b783cb74272
-Gitweb:     http://git.kernel.org/tip/961b6a7003acec4f9d70dabc1a253b783cb74272
-Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Mon, 20 Oct 2014 22:45:27 +0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 20 Oct 2014 17:23:00 +0200
+On 10/07/2014 11:33 AM, Vlastimil Babka wrote:
+> Compaction caches the migration and free scanner positions between compaction
+> invocations, so that the whole zone gets eventually scanned and there is no
+> bias towards the initial scanner positions at the beginning/end of the zone.
+>
+> The cached positions are continuously updated as scanners progress and the
+> updating stops as soon as a page is successfully isolated. The reasoning
+> behind this is that a pageblock where isolation succeeded is likely to succeed
+> again in near future and it should be worth revisiting it.
+>
+> However, the downside is that potentially many pages are rescanned without
+> successful isolation. At worst, there might be a page where isolation from LRU
+> succeeds but migration fails (potentially always). So upon encountering this
+> page, cached position would always stop being updated for no good reason.
+> It might have been useful to let such page be rescanned with sync compaction
+> after async one failed, but this is now handled by caching scanner position
+> for async and sync mode separately since commit 35979ef33931 ("mm, compaction:
+> add per-zone migration pfn cache for async compaction").
+>
+> After this patch, cached positions are updated unconditionally. In
+> stress-highalloc benchmark, this has decreased the numbers of scanned pages
+> by few percent, without affecting allocation success rates.
+>
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Cc: Michal Nazarewicz <mina86@mina86.com>
+> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: David Rientjes <rientjes@google.com>
 
-x86: ACPI: Do not translate GSI number if IOAPIC is disabled
+Acked-by: Rik van Riel <riel@redhat.com>
 
-When IOAPIC is disabled, acpi_gsi_to_irq() should return gsi directly
-instead of calling mp_map_gsi_to_irq() to translate gsi to IRQ by IOAPIC.
-It fixes https://bugzilla.kernel.org/show_bug.cgi?id=84381.
-
-This regression was introduced with commit 6b9fb7082409 "x86, ACPI,
-irq: Consolidate algorithm of mapping (ioapic, pin) to IRQ number"
-
-Reported-and-Tested-by: Thomas Richter <thor@math.tu-berlin.de>
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Thomas Richter <thor@math.tu-berlin.de>
-Cc: rui.zhang@intel.com
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: <stable@vger.kernel.org> # 3.17
-Link: http://lkml.kernel.org/r/1413816327-12850-1-git-send-email-jiang.liu@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/kernel/acpi/boot.c | 14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index b436fc7..d5c8872 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -604,14 +604,18 @@ void __init acpi_pic_sci_set_trigger(unsigned int irq, u16 trigger)
- 
- int acpi_gsi_to_irq(u32 gsi, unsigned int *irqp)
- {
--	int irq = mp_map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC | IOAPIC_MAP_CHECK);
-+	int irq;
- 
--	if (irq >= 0) {
-+	if (acpi_irq_model == ACPI_IRQ_MODEL_PIC) {
-+		*irqp = gsi;
-+	} else {
-+		irq = mp_map_gsi_to_irq(gsi,
-+					IOAPIC_MAP_ALLOC | IOAPIC_MAP_CHECK);
-+		if (irq < 0)
-+			return -1;
- 		*irqp = irq;
--		return 0;
- 	}
--
--	return -1;
-+	return 0;
- }
- EXPORT_SYMBOL_GPL(acpi_gsi_to_irq);
- 
