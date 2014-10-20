@@ -1,57 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809AbaJTPTK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 11:19:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64541 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752141AbaJTPTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 11:19:04 -0400
-Message-ID: <544527CE.8090607@redhat.com>
-Date: Mon, 20 Oct 2014 11:18:38 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1752843AbaJTPTP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 11:19:15 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:49517 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752044AbaJTPTM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 11:19:12 -0400
+X-IronPort-AV: E=Sophos;i="5.04,756,1406592000"; 
+   d="scan'208";a="184194510"
+Message-ID: <1413818345.29506.4.camel@citrix.com>
+Subject: Re: [PATCH v4 5/7] xen/arm/arm64: merge xen/mm32.c into xen/mm.c
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
+        <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Date: Mon, 20 Oct 2014 16:19:05 +0100
+In-Reply-To: <1412941908-5850-5-git-send-email-stefano.stabellini@eu.citrix.com>
+References: <alpine.DEB.2.02.1410101244090.17038@kaball.uk.xensource.com>
+	 <1412941908-5850-5-git-send-email-stefano.stabellini@eu.citrix.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-1 
 MIME-Version: 1.0
-To: Vlastimil Babka <vbabka@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH 3/5] mm, compaction: defer only on COMPACT_COMPLETE
-References: <1412696019-21761-1-git-send-email-vbabka@suse.cz> <1412696019-21761-4-git-send-email-vbabka@suse.cz>
-In-Reply-To: <1412696019-21761-4-git-send-email-vbabka@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2014 11:33 AM, Vlastimil Babka wrote:
-> Deferred compaction is employed to avoid compacting zone where sync direct
-> compaction has recently failed. As such, it makes sense to only defer when
-> a full zone was scanned, which is when compact_zone returns with
-> COMPACT_COMPLETE. It's less useful to defer when compact_zone returns with
-> apparent success (COMPACT_PARTIAL), followed by a watermark check failure,
-> which can happen due to parallel allocation activity. It also does not make
-> much sense to defer compaction which was completely skipped (COMPACT_SKIP) for
-> being unsuitable in the first place.
->
-> This patch therefore makes deferred compaction trigger only when
-> COMPACT_COMPLETE is returned from compact_zone(). Results of stress-highalloc
-> becnmark show the difference is within measurement error, so the issue is
-> rather cosmetic.
->
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> Cc: Minchan Kim <minchan@kernel.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> Cc: Michal Nazarewicz <mina86@mina86.com>
-> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: David Rientjes <rientjes@google.com>
+On Fri, 2014-10-10 at 12:51 +0100, Stefano Stabellini wrote:
+> Merge xen/mm32.c into xen/mm.c.
+> As a consequence the code gets compiled on arm64 too: introduce a few
+> compat functions to actually be able to compile it.
+> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
+
 
