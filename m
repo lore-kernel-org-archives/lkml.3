@@ -1,77 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752578AbaJTGKl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 02:10:41 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:46706 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752492AbaJTGKh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 02:10:37 -0400
-Date: Mon, 20 Oct 2014 15:10:24 +0900
-From: Gyungoh Yoo <gyungoh@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: sameo@linux.intel.com, lee.jones@linaro.org, jg1.han@samsung.com,
-        cooloney@gmail.com, lgirdwood@gmail.com, jack.yoo@skyworksinc.com,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        grant.likely@linaro.org, robh+dt@kernel.org, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
-        shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
-        trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
-        jic23@kernel.org
-Subject: Re: [RESUBMIT PATCH v4 7/8] regulator: sky81452: Add compatible
- string for device binding
-Message-ID: <20141020061024.GA9406@jack-ThinkPad-T520>
-References: <1412657745-7812-1-git-send-email-jack.yoo@skyworksinc.com>
- <1413179262-27636-1-git-send-email-jack.yoo@skyworksinc.com>
- <1413179262-27636-8-git-send-email-jack.yoo@skyworksinc.com>
- <20141013103512.GJ27755@sirena.org.uk>
- <20141014011112.GB2751@jack-ThinkPad-T520>
- <20141014075606.GN27755@sirena.org.uk>
- <20141017091950.GA3233@jack-ThinkPad-T520>
- <20141017101734.GB1820@sirena.org.uk>
- <20141017104309.GA3136@jack-ThinkPad-T520>
- <20141017142605.GU1820@sirena.org.uk>
+	id S1752592AbaJTGLz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 02:11:55 -0400
+Received: from mout.gmx.com ([74.208.4.201]:60786 "EHLO mout.gmx.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752159AbaJTGLx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 02:11:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20141017142605.GU1820@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-ID: <trinity-75f9483c-c589-42c1-9694-f8ad0c90c13a-1413785510871@3capp-mailcom-lxa02>
+From: "Tom Collins" <tomcollins224@mail.com>
+To: linux-kernel@vger.kernel.org
+Subject: To Erich Schubert of Debian: What have you done? Male-Fminist fggt.
+Content-Type: text/plain; charset=UTF-8
+Date: Mon, 20 Oct 2014 08:11:51 +0200
+Importance: normal
+Sensitivity: Normal
+X-Priority: 3
+X-Provags-ID: V03:K0:OP7/AXK4yUOhnB7tfXlwxSnm71qh9+yv0FJyC9hPem4
+ TCWiJwK8aYwfeQcEC0m9SKjiIMA0/Rw4uLncPWFBjGJ1aLMI/C
+ Au29/8GwgFrWpVfy0pizkEHki/X2GwuMJi+F95oHpKeQsrx7+K
+ 74Fj5gb/1k7gBlAhY58y1xhfh/mKWXTCo08Corg3QiMnBH+ZoF
+ dqP0ZfG5CCfI+SQZXgCzbtJab9xCmfnU7STVNo32LPBATJfSg4
+ rZ9nHN9eI8LtIBfJuqVeej6Y+k47niO/WRx2jTWeSzTbWwi8ay
+ nCc+1/1m2OupM5JGJSyaIK7cdU3
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 17, 2014 at 04:26:05PM +0200, Mark Brown wrote:
-> On Fri, Oct 17, 2014 at 07:43:09PM +0900, Gyungoh Yoo wrote:
-> 
-> > Are you talking about simplification using of_regulator_match()?
-> > This driver has only one regulator.
-> > Is the API also useful for this driver?
-> 
-> The thing I'm seeing is that the binding for your device with the
-> subnode looks very much like the device trees of devices with multiple
-> regulators.  The fact that you only have one regulator is a bit
-> difference but not that much.  It seems like drivers should fit into one
-> of two patterns: either the regulator is described in the root node for
-> the device for single purpose devices or there should be a collection of
-> regulators like is supported with this helper API.  Having a collection
-> with only one node doesn't seem to be a problem in any way.
-> 
-> > Like reg-fixed-voltage, how about using of_get_fixed_voltage_config()?
-> 
-> The driver doesn't seem to need any property parsing of its own so it
-> shoudn't need anything beyond basic calls into the core.
+A few thousands of downloads of packages larger than some linux distros say otherwise.
+Testimony of those who have enjoyed my work aswell.
+But you don't know the half of it.
+You've created a few scripts, small programs.
+Atleast it's more than your female co-patriots.
 
-Thank you for your kind comments.
-My understanding is getting better.
+How many terabytes have you moved?
+Of that which is your own.
 
-For my clear understanding:
-I think the original designed which I wanted to design is similar
-with arizona-ldo1.c
-It seems that this is 1st pattern your explained above.
-Can I ask what is different between arizona-ldo1.c and
-this sky81452-regulator.c?
-I think both are designed under root node.
-
-Thank you.
-
+----------------
+>"""Erich Schubert
+> 
+>Your "contributions" are useless crap. Nobody is interested in them, and that's why you have these >mental issues.\ufeff"""
