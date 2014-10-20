@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951AbaJTOUM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 10:20:12 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:58481 "EHLO
+	id S1752109AbaJTOWZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 10:22:25 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:54902 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaJTOUK (ORCPT
+	with ESMTP id S1751372AbaJTOWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 10:20:10 -0400
+	Mon, 20 Oct 2014 10:22:22 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         Aaron Lu <aaron.lu@intel.com>, devicetree@vger.kernel.org,
@@ -20,83 +20,45 @@ Cc: Grant Likely <grant.likely@linaro.org>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Bryan Wu <cooloney@gmail.com>, Darren Hart <dvhart@linux.intel.com>,
         Mark Rutland <mark.rutland@arm.com>
-Subject: Re: [PATCH v5 09/12] Driver core: Unified interface for firmware node properties
-Date: Mon, 20 Oct 2014 16:19:57 +0200
-Message-ID: <3213594.3tCDm06Aee@wuerfel>
+Subject: Re: [PATCH v5 10/12] gpio: Support for unified device properties interface
+Date: Mon, 20 Oct 2014 16:22:15 +0200
+Message-ID: <15256871.WGP3V2Kd9r@wuerfel>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <7821406.D7i8JfDpzX@vostro.rjw.lan>
-References: <2660541.BycO7TFnA2@vostro.rjw.lan> <20141018145520.6039FC40591@trevor.secretlab.ca> <7821406.D7i8JfDpzX@vostro.rjw.lan>
+In-Reply-To: <25715349.xM7UOyLcLb@vostro.rjw.lan>
+References: <2660541.BycO7TFnA2@vostro.rjw.lan> <2997291.LjjH2RgEUW@wuerfel> <25715349.xM7UOyLcLb@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:jikinc/ff8bKDJsbd4Y2PdMlfm+zhHcV18Cl2lVKyv8
- 6IcgNnoY4B6Svy1Mj5eudsD4W9JswC4gbBxi8fFiPLHIAGsKf+
- CNBHPqR66h+YQrPwFxpVzz6caFWd4Bij4hHwI4SwjIjPWXc+Lp
- FWiS2zXras4XXHV9XtMLilGbvUyN+8kMk/d+WTrQmHk31Q8pSG
- KyuZBABuKBwvSfL+2UQMQElSKnqlGyy/qISxnW7OfEvQXCrEgd
- XfkDj4DqLT6Zn/RhSg+aTpNtoW/kGR/PeGyOu/f0kDJArZ6zvL
- CELN6sJ2s0Emu8AN558kM5ujB5UvTr7QrW7oyc9556GBrs9R09
- QdPTd/mYdnj064VaxzRI=
+X-Provags-ID: V02:K0:Uo0sx/l6IfwrE1UDz3MKBKgK61wxu+3lrPud7Y8RCzp
+ lfCcdy/SaCfez0C6FSKPFPJbr9pYFKpWCSuoOX6xpC5Sj4X13Q
+ /2m+ADdnzLLKBOeckm2L8vIt8wuRsRn4US+LYhnjU+od5xqY7c
+ pEourmk4+qUxZoiQu/AMD51OZ2sdB1qqtoiVheV+uOmYreNylY
+ Z2fMEWqxZBAkQh8lE6x46VueNAANzLZH00IxGwRk1Nekc5TxPH
+ J5YcupUZnBHU9jVVM6oqoxttYuD+XdKxP4GYzrJNShHfX8vKD+
+ GiDPHDNyo4Kdm/de1dLyCZV/dlgCzAOoGaLV02uoCrPgQP3kDX
+ +yzclTr813wmJWxC1h+M=
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 20 October 2014 01:46:00 Rafael J. Wysocki wrote:
+On Monday 20 October 2014 01:58:57 Rafael J. Wysocki wrote:
 > 
-> > Something like:
-> > 
-> > #define define_fwnode_accessors(__type, __devprop_type) \
-> > int device_property_read_##__type(struct device *dev, \
-> >                               const char *propname, __type *val) \
-> > { \
-> >       if (IS_ENABLED(CONFIG_OF) && dev->of_node) \
-> >               return of_property_read_##__type(dev->of_node, propname, val); \
-> >       return acpi_dev_prop_read(ACPI_COMPANION(dev), propname, \
-> >                                 __devprop_type, val); \
-> > } \
-> > int fwnode_property_read_##__type(struct fwnode_handle *fwnode, \
-> >                               const char *propname, __type *val) \
-> > { \
-> >       if (IS_ENABLED(CONFIG_OF) && is_of_node(fwnode)) \
-> >               return of_property_read_##__type(of_node(fwnode), propname, val); \
-> >       else if (IS_ENABLED(CONFIG_ACPI) && is_acpi_node(fwnode)) \
-> >               return acpi_dev_prop_read(acpi_node(fwnode), propname, \
-> >                                         __devprop_type, val); \
-> >       return -ENXIO; \
-> > }
-> > 
-> > define_fwnode_accessors(u8, DEV_PROP_U8);
-> > define_fwnode_accessors(u16, DEV_PROP_U16);
-> > define_fwnode_accessors(u32, DEV_PROP_U32);
-> > define_fwnode_accessors(u64, DEV_PROP_U64);
-> > 
-> > That significantly reduces the code size for these things.
+> Actually, since the two last patches in the series, which currently are
+> the only users of these new functions, both pass "gpios" as the property
+> name and 0 as the index, I can simplify the functions so that (a)
+> fwnode_get_gpiod() takes fwnode and name and then simply passes 0 as the
+> index to either of_get_named_gpiod_flags() or acpi_get_gpiod_by_index()
+> and (b) devm_get_named_gpiod_from_child() takes only dev and fwnode (child)
+> and passes "gpios" as the property name to fwnode_get_gpiod().  The name
+> of devm_get_named_gpiod_from_child() could then be changed to something
+> like devm_get_gpiod_from_child() even.
 > 
-> So I was considering to do that, but eventually decided not to, because (1)
-> adding kerneldoc comments to such things looks odd and (2) (which IMO is
-> more important) this breaks LXR (for example, the thing at lxr.free-electrons.com
-> that some people, including me in particular, occasionally use to check how things
-> are defined).  And even if you used the old good grep to look for a definition of
-> fwnode_property_read_u8, say, this wouldn't work exactly as expected I'm afraid. 
-
-Agreed, I'd also prefer your proposed code over Grant's macros.
-
-> I would very much like to retain the headers at least for this reason, if that's
-> not a big deal.
+> If anyone in the future needs anything more general, they can simply
+> add more complexity to that code, but for now we can go for a simplified
+> interface just fine.
 > 
-> What I can do, however, is to use macros for generating the bodies of those
-> functions.
 
-Yes, just don't do any concatenation to generate the names of the called
-functions, i.e.
-
-	return fwnode_call(of_property_read_u32, acpi_dev_prop_read, DEV_PROP_U32, node, propname, val);
-
-is better than
-
-	return fwnode_call(u32, DEV_PROP_U32, node, propname, val);
-
-because it's easier to understand the call chain.
+That sounds good, yes.
 
 	Arnd
