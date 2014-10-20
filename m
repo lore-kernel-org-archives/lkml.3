@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751547AbaJTQnR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 12:43:17 -0400
-Received: from mail-yh0-f51.google.com ([209.85.213.51]:49087 "EHLO
-	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750962AbaJTQnO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 12:43:14 -0400
-From: Greg Donald <gdonald@gmail.com>
-To: Greg Kroah-Hartman <greg@kroah.com>,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        Oleg Drokin <oleg.drokin@intel.com>, linux-kernel@vger.kernel.org
-Cc: Greg Donald <gdonald@gmail.com>
-Subject: [PATCH] drivers: staging: lustre: Fix "spaces required around that '='" errors
-Date: Mon, 20 Oct 2014 11:42:36 -0500
-Message-Id: <1413823356-13779-1-git-send-email-gdonald@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S1751839AbaJTQpH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 12:45:07 -0400
+Received: from mga02.intel.com ([134.134.136.20]:37467 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750716AbaJTQpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 12:45:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,757,1406617200"; 
+   d="scan'208";a="592512204"
+From: Vinod Koul <vinod.koul@intel.com>
+To: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Josh Wu <Josh.wu@atmel.com>, Jingoo Han <jg1.han@samsung.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Mark Brown <broonie@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Herve Codina <Herve.CODINA@celad.com>, Bo Shen <voice.shen@atmel.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michael Grzeschik <m.grzeschik@pengutronix.de>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Huang Shijie <shijie8@gmail.com>,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
+        Vinod Koul <vinod.koul@intel.com>
+Subject: [PATCH 2/2] mtd: mxc_nand: use __iowrite32_copy for 32 bit copy
+Date: Mon, 20 Oct 2014 21:36:13 +0530
+Message-Id: <1413821173-18347-2-git-send-email-vinod.koul@intel.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1413821173-18347-1-git-send-email-vinod.koul@intel.com>
+References: <1413821173-18347-1-git-send-email-vinod.koul@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch.pl "spaces required around that '='" errors
+The driver was also using own method to do 32bit copy, turns out
+we have a kernel API so use that instead
 
-Signed-off-by: Greg Donald <gdonald@gmail.com>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
 ---
- drivers/staging/lustre/lustre/llite/super25.c   | 2 +-
- drivers/staging/lustre/lustre/obdclass/genops.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/mtd/nand/mxc_nand.c |   10 +++-------
+ 1 files changed, 3 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/staging/lustre/lustre/llite/super25.c b/drivers/staging/lustre/lustre/llite/super25.c
-index e61dbed..6aff155 100644
---- a/drivers/staging/lustre/lustre/llite/super25.c
-+++ b/drivers/staging/lustre/lustre/llite/super25.c
-@@ -162,7 +162,7 @@ static int __init init_lustre_lite(void)
+diff --git a/drivers/mtd/nand/mxc_nand.c b/drivers/mtd/nand/mxc_nand.c
+index dba262b..3794cd7 100644
+--- a/drivers/mtd/nand/mxc_nand.c
++++ b/drivers/mtd/nand/mxc_nand.c
+@@ -280,14 +280,10 @@ static void memcpy32_fromio(void *trg, const void __iomem  *src, size_t size)
+ 		*t++ = __raw_readl(s++);
+ }
  
- 	/* Nodes with small feet have little entropy
- 	 * the NID for this node gives the most entropy in the low bits */
--	for (i=0; ; i++) {
-+	for (i = 0; ; i++) {
- 		if (LNetGetId(i, &lnet_id) == -ENOENT) {
- 			break;
- 		}
-diff --git a/drivers/staging/lustre/lustre/obdclass/genops.c b/drivers/staging/lustre/lustre/obdclass/genops.c
-index c314e9c..540ff4e 100644
---- a/drivers/staging/lustre/lustre/obdclass/genops.c
-+++ b/drivers/staging/lustre/lustre/obdclass/genops.c
-@@ -317,7 +317,7 @@ struct obd_device *class_newdev(const char *type_name, const char *name)
- 					 result->obd_minor, new_obd_minor);
+-static void memcpy32_toio(void __iomem *trg, const void *src, int size)
++static inline void memcpy32_toio(void __iomem *trg, const void *src, int size)
+ {
+-	int i;
+-	u32 __iomem *t = trg;
+-	const u32 *s = src;
+-
+-	for (i = 0; i < (size >> 2); i++)
+-		__raw_writel(*s++, t++);
++	/* __iowrite32_copy use 32bit size values so divide by 4 */
++	__iowrite32_copy(trg, src, size/4);
+ }
  
- 				obd_devs[result->obd_minor] = NULL;
--				result->obd_name[0]='\0';
-+				result->obd_name[0] = '\0';
- 			 }
- 			result = ERR_PTR(-EEXIST);
- 			break;
+ static int check_int_v3(struct mxc_nand_host *host)
 -- 
-1.9.1
+1.7.0.4
 
