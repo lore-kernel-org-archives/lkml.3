@@ -1,65 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752554AbaJTP1T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 11:27:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27545 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751272AbaJTP1S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 11:27:18 -0400
-Message-ID: <544529C0.5080205@redhat.com>
-Date: Mon, 20 Oct 2014 11:26:56 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Vlastimil Babka <vbabka@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH 4/5] mm, compaction: always update cached scanner positions
-References: <1412696019-21761-1-git-send-email-vbabka@suse.cz> <1412696019-21761-5-git-send-email-vbabka@suse.cz>
-In-Reply-To: <1412696019-21761-5-git-send-email-vbabka@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752753AbaJTP2V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 11:28:21 -0400
+Received: from mail-yh0-f43.google.com ([209.85.213.43]:60769 "EHLO
+	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331AbaJTP2T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 11:28:19 -0400
+From: Greg Donald <gdonald@gmail.com>
+To: Greg Kroah-Hartman <greg@kroah.com>,
+        Andreas Dilger <andreas.dilger@intel.com>,
+        Oleg Drokin <oleg.drokin@intel.com>, linux-kernel@vger.kernel.org
+Cc: Greg Donald <gdonald@gmail.com>
+Subject: [PATCH] drivers: staging: lustre: Fix "space prohibited before that close parenthesis ')'" errors
+Date: Mon, 20 Oct 2014 10:27:40 -0500
+Message-Id: <1413818860-19981-1-git-send-email-gdonald@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2014 11:33 AM, Vlastimil Babka wrote:
-> Compaction caches the migration and free scanner positions between compaction
-> invocations, so that the whole zone gets eventually scanned and there is no
-> bias towards the initial scanner positions at the beginning/end of the zone.
->
-> The cached positions are continuously updated as scanners progress and the
-> updating stops as soon as a page is successfully isolated. The reasoning
-> behind this is that a pageblock where isolation succeeded is likely to succeed
-> again in near future and it should be worth revisiting it.
->
-> However, the downside is that potentially many pages are rescanned without
-> successful isolation. At worst, there might be a page where isolation from LRU
-> succeeds but migration fails (potentially always). So upon encountering this
-> page, cached position would always stop being updated for no good reason.
-> It might have been useful to let such page be rescanned with sync compaction
-> after async one failed, but this is now handled by caching scanner position
-> for async and sync mode separately since commit 35979ef33931 ("mm, compaction:
-> add per-zone migration pfn cache for async compaction").
->
-> After this patch, cached positions are updated unconditionally. In
-> stress-highalloc benchmark, this has decreased the numbers of scanned pages
-> by few percent, without affecting allocation success rates.
->
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> Cc: Minchan Kim <minchan@kernel.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> Cc: Michal Nazarewicz <mina86@mina86.com>
-> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: David Rientjes <rientjes@google.com>
+Fix checkpatch.pl "space prohibited before that close parenthesis ')'" errors
 
-Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Greg Donald <gdonald@gmail.com>
+---
+ drivers/staging/lustre/lustre/include/lustre_capa.h | 2 +-
+ drivers/staging/lustre/lustre/llite/dir.c           | 2 +-
+ drivers/staging/lustre/lustre/llite/vvp_io.c        | 2 +-
+ drivers/staging/lustre/lustre/obdclass/capa.c       | 6 +++---
+ 4 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/staging/lustre/lustre/include/lustre_capa.h b/drivers/staging/lustre/lustre/include/lustre_capa.h
+index ab6b9ea..fe19534 100644
+--- a/drivers/staging/lustre/lustre/include/lustre_capa.h
++++ b/drivers/staging/lustre/lustre/include/lustre_capa.h
+@@ -154,7 +154,7 @@ static inline __u32 capa_expiry(struct lustre_capa *capa)
+ }
+ 
+ void _debug_capa(struct lustre_capa *, struct libcfs_debug_msg_data *,
+-		 const char *fmt, ... );
++		 const char *fmt, ...);
+ #define DEBUG_CAPA(level, capa, fmt, args...)				  \
+ do {									   \
+ 	if (((level) & D_CANTMASK) != 0 ||				     \
+diff --git a/drivers/staging/lustre/lustre/llite/dir.c b/drivers/staging/lustre/lustre/llite/dir.c
+index 9e8bfdc..50fef90 100644
+--- a/drivers/staging/lustre/lustre/llite/dir.c
++++ b/drivers/staging/lustre/lustre/llite/dir.c
+@@ -1384,7 +1384,7 @@ lmv_out_free:
+ 		if (copy_from_user(lumv1, lumv1p, sizeof(*lumv1)))
+ 			return -EFAULT;
+ 
+-		if ((lumv1->lmm_magic == LOV_USER_MAGIC_V3) ) {
++		if (lumv1->lmm_magic == LOV_USER_MAGIC_V3) {
+ 			if (copy_from_user(&lumv3, lumv3p, sizeof(lumv3)))
+ 				return -EFAULT;
+ 		}
+diff --git a/drivers/staging/lustre/lustre/llite/vvp_io.c b/drivers/staging/lustre/lustre/llite/vvp_io.c
+index d3f967a..168aafb 100644
+--- a/drivers/staging/lustre/lustre/llite/vvp_io.c
++++ b/drivers/staging/lustre/lustre/llite/vvp_io.c
+@@ -709,7 +709,7 @@ static int vvp_io_fault_start(const struct lu_env *env,
+ 	}
+ 
+ 
+-	if (fio->ft_mkwrite ) {
++	if (fio->ft_mkwrite) {
+ 		pgoff_t last_index;
+ 		/*
+ 		 * Capture the size while holding the lli_trunc_sem from above
+diff --git a/drivers/staging/lustre/lustre/obdclass/capa.c b/drivers/staging/lustre/lustre/obdclass/capa.c
+index cd1abce..8d80ea4 100644
+--- a/drivers/staging/lustre/lustre/obdclass/capa.c
++++ b/drivers/staging/lustre/lustre/obdclass/capa.c
+@@ -302,7 +302,7 @@ int capa_encrypt_id(__u32 *d, __u32 *s, __u8 *key, int keylen)
+ 
+ 	/* passing "aes" in a variable instead of a constant string keeps gcc
+ 	 * 4.3.2 happy */
+-	tfm = crypto_alloc_blkcipher(alg, 0, 0 );
++	tfm = crypto_alloc_blkcipher(alg, 0, 0);
+ 	if (IS_ERR(tfm)) {
+ 		CERROR("failed to load transform for aes\n");
+ 		return PTR_ERR(tfm);
+@@ -355,7 +355,7 @@ int capa_decrypt_id(__u32 *d, __u32 *s, __u8 *key, int keylen)
+ 
+ 	/* passing "aes" in a variable instead of a constant string keeps gcc
+ 	 * 4.3.2 happy */
+-	tfm = crypto_alloc_blkcipher(alg, 0, 0 );
++	tfm = crypto_alloc_blkcipher(alg, 0, 0);
+ 	if (IS_ERR(tfm)) {
+ 		CERROR("failed to load transform for aes\n");
+ 		return PTR_ERR(tfm);
+@@ -407,7 +407,7 @@ EXPORT_SYMBOL(capa_cpy);
+ 
+ void _debug_capa(struct lustre_capa *c,
+ 		 struct libcfs_debug_msg_data *msgdata,
+-		 const char *fmt, ... )
++		 const char *fmt, ...)
+ {
+ 	va_list args;
+ 	va_start(args, fmt);
+-- 
+1.9.1
 
