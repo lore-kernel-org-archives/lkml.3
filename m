@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753709AbaJTKMj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 06:12:39 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:64753 "EHLO
+	id S1753664AbaJTKMc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 06:12:32 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:64810 "EHLO
 	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753404AbaJTKLs (ORCPT
+	with ESMTP id S1753487AbaJTKLt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 06:11:48 -0400
+	Mon, 20 Oct 2014 06:11:49 -0400
 X-Original-SENDERIP: 10.177.220.156
 X-Original-MAILFROM: minchan@kernel.org
 From: Minchan Kim <minchan@kernel.org>
@@ -19,11 +19,15 @@ Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
         zhangyanfei@cn.fujitsu.com,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Minchan Kim <minchan@kernel.org>, sparclinux@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH v17 3/7] sparc: add pmd_[dirty|mkclean] for THP
-Date: Mon, 20 Oct 2014 19:12:00 +0900
-Message-Id: <1413799924-17946-4-git-send-email-minchan@kernel.org>
+        Minchan Kim <minchan@kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        Will Deacon <will.deacon@arm.com>,
+        Steve Capper <steve.capper@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH v17 6/7] arm64: add pmd_[dirty|mkclean] for THP
+Date: Mon, 20 Oct 2014 19:12:03 +0900
+Message-Id: <1413799924-17946-7-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1413799924-17946-1-git-send-email-minchan@kernel.org>
 References: <1413799924-17946-1-git-send-email-minchan@kernel.org>
@@ -38,47 +42,33 @@ THP page.
 This patch adds pmd_dirty and pmd_mkclean for THP page MADV_FREE
 support.
 
-Acked-by: David S. Miller <davem@davemloft.net>
-Cc: sparclinux@vger.kernel.org
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org
+Acked-by: Will Deacon <will.deacon@arm.com>
+Acked-by: Steve Capper <steve.capper@linaro.org>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- arch/sparc/include/asm/pgtable_64.h | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ arch/arm64/include/asm/pgtable.h | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/sparc/include/asm/pgtable_64.h b/arch/sparc/include/asm/pgtable_64.h
-index 3770bf5c6e1b..b80a309d7e00 100644
---- a/arch/sparc/include/asm/pgtable_64.h
-+++ b/arch/sparc/include/asm/pgtable_64.h
-@@ -666,6 +666,13 @@ static inline unsigned long pmd_young(pmd_t pmd)
- 	return pte_young(pte);
- }
+diff --git a/arch/arm64/include/asm/pgtable.h b/arch/arm64/include/asm/pgtable.h
+index 6d81471183ee..effc859084bc 100644
+--- a/arch/arm64/include/asm/pgtable.h
++++ b/arch/arm64/include/asm/pgtable.h
+@@ -275,10 +275,12 @@ void pmdp_splitting_flush(struct vm_area_struct *vma, unsigned long address,
+ #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
  
-+static inline int pmd_dirty(pmd_t pmd)
-+{
-+	pte_t pte = __pte(pmd_val(pmd));
-+
-+	return pte_dirty(pte);
-+}
-+
- static inline unsigned long pmd_write(pmd_t pmd)
- {
- 	pte_t pte = __pte(pmd_val(pmd));
-@@ -723,6 +730,15 @@ static inline pmd_t pmd_mkdirty(pmd_t pmd)
- 	return __pmd(pte_val(pte));
- }
- 
-+static inline pmd_t pmd_mkclean(pmd_t pmd)
-+{
-+	pte_t pte = __pte(pmd_val(pmd));
-+
-+	pte = pte_mkclean(pte);
-+
-+	return __pmd(pte_val(pte));
-+}
-+
- static inline pmd_t pmd_mkyoung(pmd_t pmd)
- {
- 	pte_t pte = __pte(pmd_val(pmd));
+ #define pmd_young(pmd)		pte_young(pmd_pte(pmd))
++#define pmd_dirty(pmd)		pte_dirty(pmd_pte(pmd))
+ #define pmd_wrprotect(pmd)	pte_pmd(pte_wrprotect(pmd_pte(pmd)))
+ #define pmd_mksplitting(pmd)	pte_pmd(pte_mkspecial(pmd_pte(pmd)))
+ #define pmd_mkold(pmd)		pte_pmd(pte_mkold(pmd_pte(pmd)))
+ #define pmd_mkwrite(pmd)	pte_pmd(pte_mkwrite(pmd_pte(pmd)))
++#define pmd_mkclean(pmd)	pte_pmd(pte_mkclean(pmd_pte(pmd)))
+ #define pmd_mkdirty(pmd)	pte_pmd(pte_mkdirty(pmd_pte(pmd)))
+ #define pmd_mkyoung(pmd)	pte_pmd(pte_mkyoung(pmd_pte(pmd)))
+ #define pmd_mknotpresent(pmd)	(__pmd(pmd_val(pmd) & ~PMD_TYPE_MASK))
 -- 
 2.0.0
 
