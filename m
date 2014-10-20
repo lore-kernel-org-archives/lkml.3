@@ -1,128 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752543AbaJTGif (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 02:38:35 -0400
-Received: from mail-bn1on0148.outbound.protection.outlook.com ([157.56.110.148]:32428
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752322AbaJTGic (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 02:38:32 -0400
-X-WSS-ID: 0NDQD3Z-08-KNB-02
-X-M-MSG: 
-Date: Mon, 20 Oct 2014 14:38:28 +0800
-From: Huang Rui <ray.huang@amd.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Alan Stern <stern@rowland.harvard.edu>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Paul Zimmerman" <Paul.Zimmerman@synopsys.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Vincent Wan <vincent.wan@amd.com>, Tony Li <tony.li@amd.com>,
-        <linux-usb@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 06/16] usb: dwc3: add disscramble quirk
-Message-ID: <20141020063827.GB24357@hr-slim.amd.com>
-References: <1413536021-4886-1-git-send-email-ray.huang@amd.com>
- <1413536021-4886-7-git-send-email-ray.huang@amd.com>
- <20141017144532.GB26260@saruman>
+	id S1752600AbaJTGja (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 02:39:30 -0400
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:3191 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752322AbaJTGj2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 02:39:28 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Sun, 19 Oct 2014 23:39:23 -0700
+Subject: RE: [PATCH] drivers: base: update cpu offline info when do hotplug
+Thread-Topic: [PATCH] drivers: base: update cpu offline info when do hotplug
+Thread-Index: Ac/sIJbTXQKvxjX5QRq/D/vomZ1YNwAD4nzA
+Message-ID: <9034CBD80F070943B59700D7F8149ED9024EB81CAF@SC-VEXCH4.marvell.com>
+References: <1413775748-22478-1-git-send-email-zhangwm@marvell.com>
+ <20141020044340.GA9589@kroah.com>
+In-Reply-To: <20141020044340.GA9589@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20141017144532.GB26260@saruman>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(164054003)(24454002)(199003)(51704005)(77096002)(95666004)(105586002)(84676001)(33656002)(97736003)(102836001)(21056001)(31966008)(80022003)(46102003)(99396003)(107046002)(106466001)(76482002)(47776003)(20776003)(120916001)(53416004)(87936001)(97756001)(575784001)(86362001)(19580395003)(19580405001)(50466002)(68736004)(4396001)(110136001)(46406003)(92726001)(92566001)(44976005)(50986999)(76176999)(85306004)(101416001)(83506001)(54356999)(85852003)(23726002);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB194;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB194;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 03706074BC
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Ray.Huang@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-10-19_03:2014-10-17,2014-10-19,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1410200073
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9K6dac1022584
 
-On Fri, Oct 17, 2014 at 09:45:32AM -0500, Felipe Balbi wrote:
-> Hi,
-> 
-> On Fri, Oct 17, 2014 at 04:53:31PM +0800, Huang Rui wrote:
-> > AMD NL fpga needs to enable disscramble quirk. And this quirk doesn't need on
-> > the true soc.
-> > 
-> > Signed-off-by: Huang Rui <ray.huang@amd.com>
-> > ---
-> >  drivers/usb/dwc3/core.c          | 8 +++++++-
-> >  drivers/usb/dwc3/dwc3-pci.c      | 5 +++++
-> >  drivers/usb/dwc3/platform_data.h | 4 ++++
-> >  3 files changed, 16 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-> > index 50c0eae..819e501 100644
-> > --- a/drivers/usb/dwc3/core.c
-> > +++ b/drivers/usb/dwc3/core.c
-> > @@ -422,7 +422,6 @@ static int dwc3_core_init(struct dwc3 *dwc)
-> >  
-> >  	reg = dwc3_readl(dwc->regs, DWC3_GCTL);
-> >  	reg &= ~DWC3_GCTL_SCALEDOWN_MASK;
-> > -	reg &= ~DWC3_GCTL_DISSCRAMBLE;
-> >  
-> >  	switch (DWC3_GHWPARAMS1_EN_PWROPT(dwc->hwparams.hwparams1)) {
-> >  	case DWC3_GHWPARAMS1_EN_PWROPT_CLK:
-> > @@ -461,6 +460,13 @@ static int dwc3_core_init(struct dwc3 *dwc)
-> >  		dwc->is_fpga = true;
-> >  	}
-> >  
-> > +	if ((dwc->quirks & DWC3_QUIRK_AMD_NL) && dwc->is_fpga)
-> > +		dwc->quirks |= DWC3_QUIRK_DISSCRAMBLE;
-> > +
-> > +	if (dwc->quirks & DWC3_QUIRK_DISSCRAMBLE)
-> 
-> this should only be set if is_fpga, and this quirk should be a 1-bit
-> flag, so here's what you should do:
-> 
-> 	WARN_ONCE(dwc->disable_scramble_quirk && !dwc->is_fpga,
-> 		"disable_scramble cannot be used on non-FPGA builds\n");
-> 
-> 	if (dwc->disable_scramble && dwc->is_fpga)
-> 		reg |= DWC3_GCTL_DISSCRAMBLE;
-> 	else
-> 		reg &= ~DWC3_GCTL_DISSCRAMBLE;
-> 
+Greg,
 
-OK, will update it in V3.
+-----Original Message-----
+From: Greg KH [mailto:gregkh@linuxfoundation.org] 
+Sent: 2014Äê10ÔÂ20ÈÕ 12:44
+To: Neil Zhang
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: base: update cpu offline info when do hotplug
 
-> > +		reg |= DWC3_GCTL_DISSCRAMBLE;
-> > +	else
-> > +		reg &= ~DWC3_GCTL_DISSCRAMBLE;
+On Mon, Oct 20, 2014 at 11:29:08AM +0800, Neil Zhang wrote:
+> The current per-cpu offline info won't be updated if it is hotplugged 
+> in/out by a kernel governer.
+> Let's update it via cpu notifier.
 > 
-> add a blank line here, to aid readability.
+> Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+> ---
+>  drivers/base/cpu.c |   25 +++++++++++++++++++++++++
+>  1 file changed, 25 insertions(+)
 > 
+> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c index 
+> 006b1bc..9d61824 100644
+> --- a/drivers/base/cpu.c
+> +++ b/drivers/base/cpu.c
+> @@ -418,10 +418,35 @@ static void __init 
+> cpu_dev_register_generic(void)  #endif  }
+>  
+> +static int device_hotplug_notifier(struct notifier_block *nfb,
+> +				      unsigned long action, void *hcpu) {
+> +	unsigned int cpu = (unsigned long)hcpu;
+> +	struct device *dev = get_cpu_device(cpu);
+> +	int ret;
+> +
+> +	switch (action & ~CPU_TASKS_FROZEN) {
+> +	case CPU_ONLINE:
+> +		dev->offline = false;
+> +		ret = NOTIFY_OK;
+> +		break;
+> +	case CPU_DYING:
+> +		dev->offline = true;
+> +		ret = NOTIFY_OK;
+> +		break;
+> +	default:
+> +		ret = NOTIFY_DONE;
+> +		break;
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+>  void __init cpu_dev_init(void)
+>  {
+>  	if (subsys_system_register(&cpu_subsys, cpu_root_attr_groups))
+>  		panic("Failed to register CPU subsystem");
+>  
+>  	cpu_dev_register_generic();
+> +	cpu_notifier(device_hotplug_notifier, 0);
+>  }
 
-OK, will add it.
+How much noise is this going to cause on a big/little system that constantly hot unplug/plugs processors all of the time?
 
-> >  	/*
-> >  	 * WORKAROUND: DWC3 revisions <1.90a have a bug
-> >  	 * where the device can fail to connect at SuperSpeed
-> > diff --git a/drivers/usb/dwc3/dwc3-pci.c b/drivers/usb/dwc3/dwc3-pci.c
-> > index 18569a4..a89db6c 100644
-> > --- a/drivers/usb/dwc3/dwc3-pci.c
-> > +++ b/drivers/usb/dwc3/dwc3-pci.c
-> > @@ -146,6 +146,11 @@ static int dwc3_pci_probe(struct pci_dev *pci,
-> >  	res[1].name	= "dwc_usb3";
-> >  	res[1].flags	= IORESOURCE_IRQ;
-> >  
-> > +	if (pci->vendor == PCI_VENDOR_ID_AMD && pci->device ==
-> > +			PCI_DEVICE_ID_AMD_NL) {
-> > +		dwc3_pdata.quirks |= DWC3_QUIRK_AMD_NL;
-> > +	}
-> 
-> should be part of another patch and the quirk is
-> "disable_scramble_quirk", not AMD.
-> 
+Can you explain more what kind of noise will be introduced on a big/little system?
+As I know IKS on arm will use cpu_suspend way to power down a core.
+But I don't know well about other architectures.
+Please give your suggestions.
+Thanks!
 
-Got it, you would like to keep this patch just for fpga disscramble
-quirk and do not add any 3rd platform info, right?
+greg k-h
 
-Thanks,
-Rui
+Best Regards,
+Neil Zhang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
