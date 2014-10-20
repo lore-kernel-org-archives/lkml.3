@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752919AbaJTV2j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 17:28:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57052 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751505AbaJTV2g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 17:28:36 -0400
-Date: Mon, 20 Oct 2014 14:28:36 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
-        Frank Rowand <frowand.list@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chuck Ebbert <cebbert.lkml@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH v5] init: Disable defaults if init= fails
-Message-Id: <20141020142836.fcea4aa8dd7bb5cfe9ede423@linux-foundation.org>
-In-Reply-To: <20141020210155.GD29486@jtriplet-mobl1>
-References: <5c6381879bea68aebb13530442f1cf8a052be97f.1411958379.git.luto@amacapital.net>
-	<542B4DA3.5080105@gmail.com>
-	<542B519B.6010001@landley.net>
-	<542B5E44.40303@gmail.com>
-	<542B7200.6030902@landley.net>
-	<CALCETrWr--A26UEv_7DeZa-Te1fTBDQgCdZt24n5LWkAnOa6jQ@mail.gmail.com>
-	<20141001180510.GA28540@cloud>
-	<CALCETrUK07j8+iQ8oSW70sgePxg_GJY3ASBBS+U9fvp_f2Rz5w@mail.gmail.com>
-	<20141014140052.2f114c158ffe6cd953020f1c@linux-foundation.org>
-	<CALCETrVg_rFmSCSnyztRtvANQLd9k_G+bU8FiQB_5O5ecUd99w@mail.gmail.com>
-	<20141020210155.GD29486@jtriplet-mobl1>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	id S1753279AbaJTV35 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 17:29:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9421 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751178AbaJTV3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 17:29:55 -0400
+Message-ID: <1413840583.4202.111.camel@ul30vt.home>
+Subject: Re: [PATCH 2/5] vfio: introduce the VFIO_DMA_MAP_FLAG_NOEXEC flag
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Antonios Motakis <a.motakis@virtualopensystems.com>
+Cc: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
+        will.deacon@arm.com, tech@virtualopensystems.com,
+        christoffer.dall@linaro.org, eric.auger@linaro.org,
+        kim.phillips@freescale.com, marc.zyngier@arm.com,
+        "open list:VFIO DRIVER" <kvm@vger.kernel.org>,
+        "open list:ABI/API" <linux-api@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Mon, 20 Oct 2014 15:29:43 -0600
+In-Reply-To: <1413205748-6300-3-git-send-email-a.motakis@virtualopensystems.com>
+References: <1413205748-6300-1-git-send-email-a.motakis@virtualopensystems.com>
+	 <1413205748-6300-3-git-send-email-a.motakis@virtualopensystems.com>
+Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Oct 2014 14:01:55 -0700 Josh Triplett <josh@joshtriplett.org> wrote:
-
-> > IOW, the no-fallback behavior is easy to implement, easy to
-> > understand, and has extremely predictable behavior.  The fallback
-> > behavior is more user friendly if you consider having a chance of
-> > booting to something useful if you typo your init= option (but also a
-> > chance of booting to something actively undesirable).
+On Mon, 2014-10-13 at 15:09 +0200, Antonios Motakis wrote:
+> We introduce the VFIO_DMA_MAP_FLAG_NOEXEC flag to the VFIO dma map call,
+> and expose its availability via the capability VFIO_DMA_NOEXEC_IOMMU.
+> This way the user can control whether the XN flag will be set on the
+> requested mappings. The IOMMU_NOEXEC flag needs to be available for all
+> the IOMMUs of the container used.
 > 
-> Here's an alternative proposal: how about we change the default
-> *without* a Kconfig option, see if anyone screams, and if they do, we
-> add that code back in under a Kconfig option as in your current patch?
+> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+> ---
+>  include/uapi/linux/vfio.h | 2 ++
+>  1 file changed, 2 insertions(+)
 > 
-> Would that make your Kconfig senses stop tingling, Andrew? :)
+> diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
+> index 6612974..111b5e8 100644
+> --- a/include/uapi/linux/vfio.h
+> +++ b/include/uapi/linux/vfio.h
+> @@ -29,6 +29,7 @@
+>   * capability is subject to change as groups are added or removed.
+>   */
+>  #define VFIO_DMA_CC_IOMMU		4
+> +#define VFIO_DMA_NOEXEC_IOMMU		5
+>  
+>  /* Check if EEH is supported */
+>  #define VFIO_EEH			5
+                                    ^^
+5 is still already used.  Feel free to convert to enum so we stop making
+this mistake.
 
-Mumble.  I suppose we can run with it as-is: at least the config option
-is there to allow people to repair any damage easily.
+> @@ -401,6 +402,7 @@ struct vfio_iommu_type1_dma_map {
+>  	__u32	flags;
+>  #define VFIO_DMA_MAP_FLAG_READ (1 << 0)		/* readable from device */
+>  #define VFIO_DMA_MAP_FLAG_WRITE (1 << 1)	/* writable from device */
+> +#define VFIO_DMA_MAP_FLAG_NOEXEC (1 << 2)	/* not executable from device */
+>  	__u64	vaddr;				/* Process virtual address */
+>  	__u64	iova;				/* IO virtual address */
+>  	__u64	size;				/* Size of mapping (bytes) */
 
-However we don't have any way of remembering to remove the config
-option later coz someone removed feature-removal-schedule.txt, which
-was a useful feature.
+
+
