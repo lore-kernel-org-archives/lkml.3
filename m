@@ -1,88 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250AbaJTT52 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 15:57:28 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38474 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751531AbaJTT50 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 15:57:26 -0400
-Date: Mon, 20 Oct 2014 20:56:41 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Doug Anderson <dianders@chromium.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Zhong <zyw@rock-chips.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Message-ID: <20141020195641.GT18557@sirena.org.uk>
-References: <1413454410-23396-1-git-send-email-javier.martinez@collabora.co.uk>
- <1413454410-23396-3-git-send-email-javier.martinez@collabora.co.uk>
- <CAD=FV=UtwNjyx56QtRrEo=jbX_PeMRAYZJVXzxqeS-vs4JyGRg@mail.gmail.com>
- <54453F2E.1080401@collabora.co.uk>
- <CAD=FV=WJfjhb9pfNhQwpToddR67NpA+m6kkj5oUVE5ewEhzvVQ@mail.gmail.com>
- <544567A1.2060006@collabora.co.uk>
+	id S1753253AbaJTT7k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 15:59:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32628 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751680AbaJTT7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 15:59:38 -0400
+Date: Mon, 20 Oct 2014 21:56:18 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: oom && coredump
+Message-ID: <20141020195618.GA606@redhat.com>
+References: <20141017171904.GA12263@redhat.com> <20141020184657.GA505@dhcp22.suse.cz> <20141020190620.GA21882@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Sosn/fv6aiTyEgxl"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <544567A1.2060006@collabora.co.uk>
-X-Cookie: FORCE YOURSELF TO RELAX!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 2/2] ARM: EXYNOS: Call regulator core suspend prepare
- and finish functions
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20141020190620.GA21882@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/20, Oleg Nesterov wrote:
+>
+> And I agree that it
+> is hardly possible to close this race, and this patch makes the things
+> better.
 
---Sosn/fv6aiTyEgxl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+speaking of "partial" fixes for oom problems...
 
-On Mon, Oct 20, 2014 at 09:50:57PM +0200, Javier Martinez Canillas wrote:
-> On 10/20/2014 07:36 PM, Doug Anderson wrote:
+Perhaps the patch below makes sense? Sure, it is racy, but probably
+better than nothing. And in any case (imo) this SIGNAL_GROUP_COREDUMP
+check doesn't look bad, the coredumping task can consume more memory,
+and we can't assume it is going to actually exit soon.
 
-> > I guess I was just trying to follow the suggestion that was in the
-> > regulator code:
-> > http://lxr.free-electrons.com/source/drivers/regulator/core.c#L3699
-> > that says "This will usually be called by machine suspend code prior
-> > to supending."
+And at least we can kill that ugly and wrong ptrace check.
 
-> I see, but still I feel as if it may be a lot of duplication since most
-> platforms will likely want to call the regulator core suspend prepare
+What do you think?
 
-Note that architectures are an example of a platform.  It really depends
-what's responsible for final poweroff, we want this called as late as we
-possibly can.
+Oleg.
 
-> and finish functions. Maybe it can be added as a Kconfig option so each
-> platform can choose at the config level if they want those to be called?
+--- x/mm/oom_kill.c
++++ x/mm/oom_kill.c
+@@ -254,6 +254,12 @@ static enum oom_constraint constrained_alloc(struct zonelist *zonelist,
+ }
+ #endif
+ 
++static inline bool task_will_free_mem(struct task_struct *task)
++{
++	return (task->flags & PF_EXITING) &&
++		!(task->signal->flags & SIGNAL_GROUP_COREDUMP);
++}
++
+ enum oom_scan_t oom_scan_process_thread(struct task_struct *task,
+ 		unsigned long totalpages, const nodemask_t *nodemask,
+ 		bool force_kill)
+@@ -281,14 +287,9 @@ enum oom_scan_t oom_scan_process_thread(struct task_struct *task,
+ 	if (oom_task_origin(task))
+ 		return OOM_SCAN_SELECT;
+ 
+-	if (task->flags & PF_EXITING && !force_kill) {
+-		/*
+-		 * If this task is not being ptraced on exit, then wait for it
+-		 * to finish before killing some other task unnecessarily.
+-		 */
+-		if (!(task->group_leader->ptrace & PT_TRACE_EXIT))
+-			return OOM_SCAN_ABORT;
+-	}
++	if (task_will_free_mem(task) && !force_kill)
++		return OOM_SCAN_ABORT;
++
+ 	return OOM_SCAN_OK;
+ }
+ 
+@@ -426,7 +427,7 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 	 * If the task is already exiting, don't alarm the sysadmin or kill
+ 	 * its children or threads, just set TIF_MEMDIE so it can die quickly
+ 	 */
+-	if (p->flags & PF_EXITING) {
++	if (task_will_free_mem(p)) {
+ 		set_tsk_thread_flag(p, TIF_MEMDIE);
+ 		put_task_struct(p);
+ 		return;
+@@ -632,7 +633,7 @@ void out_of_memory(struct zonelist *zonelist, gfp_t gfp_mask,
+ 	 * select it.  The goal is to allow it to allocate so that it may
+ 	 * quickly exit and free its memory.
+ 	 */
+-	if (fatal_signal_pending(current) || current->flags & PF_EXITING) {
++	if (fatal_signal_pending(current) || task_will_free_mem(current)) {
+ 		set_thread_flag(TIF_MEMDIE);
+ 		return;
+ 	}
 
-No, that's obviously not going to do anything useful for multiplatform.
-
---Sosn/fv6aiTyEgxl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJURWj4AAoJECTWi3JdVIfQlTsH/RfUqb+3xLWmk7MxF0pVO4kb
-yFP8aLnW4rl/6W4zV5UbSs0TTpAJlUMOvVmAXd33A4qM3cpdIlLT4Da4X/kxh9dL
-oCrz7lMXq1WjMyiZzDok2fC02vK1zbi1s6JE/SsUXm0nYbZZ78E/QSgvu3Eq7mdU
-ptWKfyUJxnlXMGCmf8PXXSlmij8e28xSmS3WyGmykaWLNMto5Bswvu5q1TZUsJkY
-G58S8oCPwtKyJlZ161o/qwja8o8L0tvQiTtBHuYWc2hK8SJZjdtaZbEGw0lBQppI
-ISFQPC5UgV0JRLdcmq+oTx3dlIlQ5OmWMJky6bws/9eiGUMcW/B1qDD3N5Tjau0=
-=ELdq
------END PGP SIGNATURE-----
-
---Sosn/fv6aiTyEgxl--
