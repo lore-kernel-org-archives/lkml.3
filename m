@@ -1,87 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753690AbaJTLan (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 07:30:43 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:62732 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164AbaJTLak (ORCPT
+	id S1751683AbaJTLhN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 07:37:13 -0400
+Received: from smtp121.ord1c.emailsrvr.com ([108.166.43.121]:39563 "EHLO
+	smtp121.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750798AbaJTLhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 07:30:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <CABuKBeL1v=E4ZSM2iq+zC2G=a1g4RT3DmJ16ra_RwQ_9ARZkZg@mail.gmail.com>
-References: <1412871811-5986-1-git-send-email-matthias.bgg@gmail.com>
-	<20141009215228.GA23507@kroah.com>
-	<CABuKBeL1v=E4ZSM2iq+zC2G=a1g4RT3DmJ16ra_RwQ_9ARZkZg@mail.gmail.com>
-Date: Mon, 20 Oct 2014 13:30:38 +0200
-Message-ID: <CABuKBeKUdzZ0oxiHyo8q82qTg+fGbnJuPz1uhWQaZbou=LQg0Q@mail.gmail.com>
-Subject: Re: [PATCH] tty: serial: 8250_mtk: Fix quot calculation
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        jslaby@suse.cz, =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Yingjoe Chen <yingjoe.chen@gmail.com>,
-        Howard Chen <ibanezchen@gmail.com>, linux-serial@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 20 Oct 2014 07:37:11 -0400
+X-Sender-Id: pramod.gurav@smartplayin.com
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org
+Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Subject: [PATCH] ARM: DT: apq8064: Add Support for SD Card Detect for ifc6410 board
+Date: Mon, 20 Oct 2014 17:09:54 +0530
+Message-Id: <1413805194-4360-1-git-send-email-pramod.gurav@smartplayin.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+This changes muxes in gpio26 pin to function as gpio and adds support
+for sd card detect for apq8064 based IFC6410 board.
 
-2014-10-10 10:10 GMT+02:00 Matthias Brugger <matthias.bgg@gmail.com>:
-> 2014-10-09 23:52 GMT+02:00 Greg KH <gregkh@linuxfoundation.org>:
->> On Thu, Oct 09, 2014 at 06:23:31PM +0200, Matthias Brugger wrote:
->>> The calculation of value quot for highspeed register set to three
->>> was wrong. This patch fixes the calculation so that the serial port
->>> for baudrates bigger then 576000 baud is working correctly.
->>>
->>> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
->>> ---
->>>  drivers/tty/serial/8250/8250_mtk.c | 2 +-
->>>  1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> diff --git a/drivers/tty/serial/8250/8250_mtk.c b/drivers/tty/serial/8250/8250_mtk.c
->>> index 1c4b4bf..4376c48 100644
->>> --- a/drivers/tty/serial/8250/8250_mtk.c
->>> +++ b/drivers/tty/serial/8250/8250_mtk.c
->>> @@ -81,7 +81,7 @@ mtk8250_set_termios(struct uart_port *port, struct ktermios *termios,
->>>               /* Set to highest baudrate supported */
->>>               if (baud >= 1152000)
->>>                       baud = 921600;
->>> -             quot = DIV_ROUND_CLOSEST(port->uartclk, 256 * baud);
->>> +             quot = (port->uartclk / (256 * baud)) + 1;
->>>       }
->>>
->>>       /*
->>
->> Has this always been incorrect, or was it caused by a specific patch?
->
-> It has always been incorrect :o
->
->> Should it go to the stable kernels?  If so, how far back?
->
-> No need to go to the stable kernels. The driver is only in linux-next.
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 
-Any comments on that?
+Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
 
-Thanks,
-Matthias
+---
+ arch/arm/boot/dts/qcom-apq8064-ifc6410.dts |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
->
-> Cheers,
-> Matthias Brugger
->
->>
->> thanks,
->>
->> greg k-h
->
->
->
-> --
-> motzblog.wordpress.com
-
-
-
+diff --git a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+index b396c83..bf6262f 100644
+--- a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
++++ b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+@@ -12,6 +12,14 @@
+ 					function = "gsbi1";
+ 				};
+ 			};
++
++			card_detect: card_detect {
++				mux {
++					pins = "gpio26";
++					function = "gpio";
++					bias-disable;
++				};
++			};
+ 		};
+ 
+ 		gsbi@12440000 {
+@@ -49,6 +57,9 @@
+ 			/* External micro SD card */
+ 			sdcc3: sdcc@12180000 {
+ 				status = "okay";
++				pinctrl-names	= "default";
++				pinctrl-0	= <&card_detect>;
++				cd-gpios	= <&tlmm_pinmux 26 1>;
+ 			};
+ 			/* WLAN */
+ 			sdcc4: sdcc@121c0000 {
 -- 
-motzblog.wordpress.com
+1.7.9.5
+
