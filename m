@@ -1,94 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752423AbaJTRwD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 13:52:03 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:49530 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233AbaJTRwA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 13:52:00 -0400
+	id S1752530AbaJTRwJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 13:52:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23604 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751233AbaJTRwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 13:52:04 -0400
+Date: Mon, 20 Oct 2014 19:51:46 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/8] perf, tools: Add --branch-history option to report
+Message-ID: <20141020175146.GA9913@krava.brq.redhat.com>
+References: <1411774636-6870-1-git-send-email-andi@firstfloor.org>
+ <1411774636-6870-3-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-From: Bryan Wu <cooloney@gmail.com>
-Date: Mon, 20 Oct 2014 10:51:39 -0700
-Message-ID: <CAK5ve-+RmcoQGD=jz8gHUjWHn1_TnUwZ3kBJrYT2tu_HY+WeVA@mail.gmail.com>
-Subject: [GIT PULL] LED subsystem for 3.18 merge window
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411774636-6870-3-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, Sep 26, 2014 at 04:37:10PM -0700, Andi Kleen wrote:
 
-Sorry for the delay, hope I can still make this merge window.
+SNIP
 
-Basically we have some bug fixing and clean up and one big thing is we
-start to merge patch to add support LED Flash class. So Please
-consider the following changes since commit
-2ce7598c9a453e0acd0e07be7be3f5eb39608ebd:
+> @@ -564,7 +575,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+>  	struct perf_session *session;
+>  	struct stat st;
+>  	bool has_br_stack = false;
+> -	int branch_mode = -1;
+> +	int branch_mode = -1, branch_call_mode = -1;
+>  	int ret = -1;
+>  	char callchain_default_opt[] = "fractal,0.5,callee";
+>  	const char * const report_usage[] = {
+> @@ -675,7 +686,11 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+>  	OPT_BOOLEAN(0, "group", &symbol_conf.event_group,
+>  		    "Show event group information together"),
+>  	OPT_CALLBACK_NOOPT('b', "branch-stack", &branch_mode, "",
+> -		    "use branch records for histogram filling", parse_branch_mode),
+> +		    "use branch records for per branch histogram filling",
+> +		    parse_branch_mode),
+> +	OPT_CALLBACK_NOOPT(0, "branch-history", &branch_call_mode, "",
+> +		    "add last branch records to call history",
+> +		    parse_branch_call_mode),
 
-  Linux 3.17-rc4 (2014-09-07 16:09:43 -0700)
+I think we've been through this before, but why's not
+branch_mode and branch_call_mode bools? sry if we already
+sorted this out, but I couldnt find it
 
-are available in the git repository at:
+>  	OPT_STRING(0, "objdump", &objdump_path, "path",
+>  		   "objdump binary to use for disassembly and annotations"),
+>  	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
+> @@ -732,10 +747,20 @@ repeat:
+>  	has_br_stack = perf_header__has_feat(&session->header,
+>  					     HEADER_BRANCH_STACK);
+>  
+> -	if ((branch_mode == -1 && has_br_stack) || branch_mode == 1) {
+> +	if (((branch_mode == -1 && has_br_stack) || branch_mode == 1) &&
+> +	    branch_call_mode == -1) {
+>  		sort__mode = SORT_MODE__BRANCH;
+>  		symbol_conf.cumulate_callchain = false;
+>  	}
+> +	if (branch_call_mode != -1) {
+> +		callchain_param.branch_callstack = 1;
+> +		callchain_param.key = CCKEY_ADDRESS;
+> +		symbol_conf.use_callchain = true;
+> +		callchain_register_param(&callchain_param);
+> +		if (sort_order == default_sort_order)
+> +			sort_order = "srcline,symbol,dso";
+> +		branch_mode = 0;
+> +	}
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cooloney/linux-leds.git for-next
+also why set branch_mode if there's no further usage of it?
 
-for you to fetch changes up to a4c84e6aafda0ddd8cb004c464cd11e47e211049:
-
-  leds: gpio: cleanup the leds-gpio driver (2014-09-29 10:22:26 -0700)
-
-----------------------------------------------------------------
-Andreas Werner (4):
-      mfd: menf21bmc: Introduce MEN 14F021P00 BMC MFD Core driver
-      watchdog: menf21bmc_wdt: Introduce MEN 14F021P00 BMC Watchdog driver
-      leds: leds-menf21bmc: Introduce MEN 14F021P00 BMC LED driver
-      hwmon: (menf21bmc) Introduce MEN14F021P00 BMC HWMON driver
-
-Bryan Wu (1):
-      Merge tag 'mfd-hwmon-leds-watchdog-v3.18' into devel
-
-Jacek Anaszewski (5):
-      leds: Reorder include directives
-      leds: make brightness type consistent across whole subsystem
-      leds: avoid using DEVICE_ATTR macro for max_brightness attribute
-      leds: lp3944: fix sparse warning
-      leds: Improve and export led_update_brightness
-
-Lothar Waßmann (1):
-      leds: trigger: gpio: fix warning in gpio trigger for gpios whose
-accessor function may sleep
-
-Xiubo Li (3):
-      led: gpio: Sort include headers alphabetically
-      led: gpio: Fix possible ZERO_SIZE_PTR pointer dereferencing error.
-      leds: gpio: cleanup the leds-gpio driver
-
- Documentation/hwmon/menf21bmc       |  50 ++++++++
- drivers/hwmon/Kconfig               |  10 ++
- drivers/hwmon/Makefile              |   1 +
- drivers/hwmon/menf21bmc_hwmon.c     | 230 ++++++++++++++++++++++++++++++++++++
- drivers/leds/Kconfig                |   9 ++
- drivers/leds/Makefile               |   1 +
- drivers/leds/led-class.c            |  23 ++--
- drivers/leds/led-core.c             |  19 ++-
- drivers/leds/leds-gpio-register.c   |   5 +-
- drivers/leds/leds-gpio.c            |  14 +--
- drivers/leds/leds-lp3944.c          |   3 +-
- drivers/leds/leds-menf21bmc.c       | 131 ++++++++++++++++++++
- drivers/leds/trigger/ledtrig-gpio.c |   2 +-
- drivers/mfd/Kconfig                 |  15 +++
- drivers/mfd/Makefile                |   1 +
- drivers/mfd/menf21bmc.c             | 132 +++++++++++++++++++++
- drivers/watchdog/Kconfig            |  10 ++
- drivers/watchdog/Makefile           |   1 +
- drivers/watchdog/menf21bmc_wdt.c    | 203 +++++++++++++++++++++++++++++++
- include/linux/leds.h                |  16 ++-
- 20 files changed, 847 insertions(+), 29 deletions(-)
- create mode 100644 Documentation/hwmon/menf21bmc
- create mode 100644 drivers/hwmon/menf21bmc_hwmon.c
- create mode 100644 drivers/leds/leds-menf21bmc.c
- create mode 100644 drivers/mfd/menf21bmc.c
- create mode 100644 drivers/watchdog/menf21bmc_wdt.c
+thanks,
+jirka
