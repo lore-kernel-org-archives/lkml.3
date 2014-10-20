@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752232AbaJTQrW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 12:47:22 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:4096 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751331AbaJTQrU (ORCPT
+	id S1751761AbaJTQtw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 12:49:52 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:40475 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750798AbaJTQtu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 12:47:20 -0400
-Date: Mon, 20 Oct 2014 12:47:16 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, <linux-rt-users@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 3/7] wait.[ch]: Introduce the simple waitqueue (swait)
- implementation
-Message-ID: <20141020124716.465dce45@gandalf.local.home>
-In-Reply-To: <20141020160542.GG24595@windriver.com>
-References: <1413591782-23453-1-git-send-email-paul.gortmaker@windriver.com>
-	<1413591782-23453-4-git-send-email-paul.gortmaker@windriver.com>
-	<20141018213417.GE23531@worktop.programming.kicks-ass.net>
-	<1413673519.30326.11.camel@pippen.local.home>
-	<20141020152144.GF24595@windriver.com>
-	<20141020114013.31e5137c@gandalf.local.home>
-	<20141020160542.GG24595@windriver.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	Mon, 20 Oct 2014 12:49:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+In-Reply-To: <20141020083326.GA3219@twins.programming.kicks-ass.net>
+References: <cover.1413323611.git.luto@amacapital.net> <b6c264b3bb064658af498763e234e3cb4f9db4e2.1413323612.git.luto@amacapital.net>
+ <CALCETrXRGNeUipujcGiT30SV+MDHCFpTxG7LOTXj4Z4CbtxdJQ@mail.gmail.com>
+ <CALCETrXv=bWUqVWhCekjq3UQeLFgGcbocKFjtNiNqm6DhyPmzA@mail.gmail.com>
+ <20141019213341.GF23531@worktop.programming.kicks-ass.net>
+ <CALCETrVT9vHjBRRvhTayqfOEebMjyVU9Yw7v80D6EPAmcyREZw@mail.gmail.com>
+ <20141019222004.GI23531@worktop.programming.kicks-ass.net>
+ <CALCETrXzwA3JH8xYLFcLdUSXAJi05Q62dZP3yOjZJTxgVugDrQ@mail.gmail.com> <20141020083326.GA3219@twins.programming.kicks-ass.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 20 Oct 2014 09:49:28 -0700
+Message-ID: <CALCETrVHw54Yc0qiTUP7+SiWK4Ch362m=jO8szCkpt8U7_h_dA@mail.gmail.com>
+Subject: Re: [RFC 5/5] x86,perf: Only allow rdpmc if a perf_event is mapped
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Erik Bosman <ebn310@few.vu.nl>, Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Kees Cook <keescook@chromium.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Oct 2014 12:05:42 -0400
-Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
- 
-> > No. You move the items off the main list head and add it to the local
-> > list and they never go back. Just start processing that local list.
-> > Anything added to the main list after that will not get woken up by
-> > that current wake_all call. It will need to be woken by another wake_up.
-> 
-> OK.  But we may not run all of the wakeups, because of:
-> 
-> +                       if (++woken == nr_exclusive)
-> +                               break;
-> 
-> > 
-> > > 
-> > > What would need to be done as an unwind at the end of processing the
-> > > local list head before it disappears from existence?  Anything?
-> > 
-> > Not sure what you mean here.
-> 
-> Per above -- can't there be "orphaned" entries that only exist on the
-> local list head that didn't get processed?  What happens to those?
-> 
+On Mon, Oct 20, 2014 at 1:33 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Sun, Oct 19, 2014 at 03:57:54PM -0700, Andy Lutomirski wrote:
+>> > Maybe, but at that point we commit to yet another ABI... I'd rather just
+>> > put a 'sane' implementation in a library or so.
+>>
+>> This cuts both ways, though.  For vdso timekeeping, the underlying
+>> data structure has changed repeatedly, sometimes to add features, and
+>> sometimes for performance, and the vdso has done a good job insulating
+>> userspace from it.  (In fact, until 3.16, even the same exact kernel
+>> version couldn't be relied on to have the same data structure with
+>> different configs, and even now, no one really wants to teach user
+>> libraries how to parse the pvclock data structures.)
+>
+> Fair enough, but as it stands we've already committed to the data
+> structure exposed to userspace.
 
-Why not just take off nr_exclusive tasks off the main list and add
-those to the local list, and then wake up all on the local list?
+True.
 
--- Steve
+OTOH, if a vdso function gets added, a few releases go by, and all the
+userspace tools get updated, then the old data structure could be
+dropped if needed by clearing cap_user_rdpmc.
+
+Anyway, this is so far out of scope for the current project that I'm
+going to ignore it.
+
+>> FWIW, something should probably specify exactly when it's safe to try
+>> a userspace rdpmc.  I think that the answer is that, for a perf event
+>> watching a pid, only that pid can do it (in particular, other threads
+>> must not try).  For a perf event monitoring a whole cpu, the answer is
+>> less clear to me.
+>
+> This all was really only meant to be used for self-monitoring, so where
+> an event is attached to the very same task, anything else and I'm find
+> disabling it.
+
+Actually implementing this might be a touch awkward.  I can check
+whether an event has a task context that matches the creating task,
+but that's not necessarily the same thing as the task that mmaps it.
+
+--Andy
