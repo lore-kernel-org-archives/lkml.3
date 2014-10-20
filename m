@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896AbaJTPWY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 11:22:24 -0400
-Received: from gum.cmpxchg.org ([85.214.110.215]:42363 "EHLO gum.cmpxchg.org"
+	id S1752930AbaJTPW3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 11:22:29 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:42372 "EHLO gum.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752612AbaJTPWW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 11:22:22 -0400
+	id S1751836AbaJTPWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 11:22:25 -0400
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Hugh Dickins <hughd@google.com>, Michal Hocko <mhocko@suse.cz>,
         Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
         cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [patch 2/4] mm: memcontrol: remove unnecessary PCG_MEMSW memory+swap charge flag
-Date: Mon, 20 Oct 2014 11:22:10 -0400
-Message-Id: <1413818532-11042-3-git-send-email-hannes@cmpxchg.org>
+Subject: [patch 4/4] mm: memcontrol: remove unnecessary PCG_USED pc->mem_cgroup valid flag
+Date: Mon, 20 Oct 2014 11:22:12 -0400
+Message-Id: <1413818532-11042-5-git-send-email-hannes@cmpxchg.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <1413818532-11042-1-git-send-email-hannes@cmpxchg.org>
 References: <1413818532-11042-1-git-send-email-hannes@cmpxchg.org>
@@ -21,141 +21,369 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that mem_cgroup_swapout() fully uncharges the page, every page
-that is still in use when reaching mem_cgroup_uncharge() is known to
-carry both the memory and the memory+swap charge.  Simplify the
-uncharge path and remove the PCG_MEMSW page flag accordingly.
+pc->mem_cgroup had to be left intact after uncharge for the final LRU
+removal, and !PCG_USED indicated whether the page was uncharged.  But
+since 0a31bc97c80c ("mm: memcontrol: rewrite uncharge API") pages are
+uncharged after the final LRU removal.  Uncharge can simply clear the
+pointer and the PCG_USED/PageCgroupUsed sites can test that instead.
+
+Because this is the last page_cgroup flag, this patch reduces the
+memcg per-page overhead to a single pointer.
 
 Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- include/linux/page_cgroup.h |  1 -
- mm/memcontrol.c             | 34 ++++++++++++----------------------
- 2 files changed, 12 insertions(+), 23 deletions(-)
+ include/linux/page_cgroup.h |  10 -----
+ mm/memcontrol.c             | 107 +++++++++++++++++---------------------------
+ 2 files changed, 42 insertions(+), 75 deletions(-)
 
 diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
-index 5c831f1eca79..da62ee2be28b 100644
+index 97536e685843..1289be6b436c 100644
 --- a/include/linux/page_cgroup.h
 +++ b/include/linux/page_cgroup.h
-@@ -5,7 +5,6 @@ enum {
- 	/* flags for mem_cgroup */
- 	PCG_USED = 0x01,	/* This page is charged to a memcg */
- 	PCG_MEM = 0x02,		/* This page holds a memory charge */
--	PCG_MEMSW = 0x04,	/* This page holds a memory+swap charge */
+@@ -1,11 +1,6 @@
+ #ifndef __LINUX_PAGE_CGROUP_H
+ #define __LINUX_PAGE_CGROUP_H
+ 
+-enum {
+-	/* flags for mem_cgroup */
+-	PCG_USED = 0x01,	/* This page is charged to a memcg */
+-};
+-
+ struct pglist_data;
+ 
+ #ifdef CONFIG_MEMCG
+@@ -19,7 +14,6 @@ struct mem_cgroup;
+  * then the page cgroup for pfn always exists.
+  */
+ struct page_cgroup {
+-	unsigned long flags;
+ 	struct mem_cgroup *mem_cgroup;
  };
  
- struct pglist_data;
+@@ -39,10 +33,6 @@ static inline void page_cgroup_init(void)
+ 
+ struct page_cgroup *lookup_page_cgroup(struct page *page);
+ 
+-static inline int PageCgroupUsed(struct page_cgroup *pc)
+-{
+-	return !!(pc->flags & PCG_USED);
+-}
+ #else /* !CONFIG_MEMCG */
+ struct page_cgroup;
+ 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 7709f17347f3..9bab35fc3e9e 100644
+index 1d66ac49e702..48d49c6b08d1 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -2606,7 +2606,7 @@ static void commit_charge(struct page *page, struct mem_cgroup *memcg,
+@@ -1284,14 +1284,12 @@ struct lruvec *mem_cgroup_page_lruvec(struct page *page, struct zone *zone)
+ 
+ 	pc = lookup_page_cgroup(page);
+ 	memcg = pc->mem_cgroup;
+-
+ 	/*
+ 	 * Swapcache readahead pages are added to the LRU - and
+-	 * possibly migrated - before they are charged.  Ensure
+-	 * pc->mem_cgroup is sane.
++	 * possibly migrated - before they are charged.
+ 	 */
+-	if (!PageLRU(page) && !PageCgroupUsed(pc) && memcg != root_mem_cgroup)
+-		pc->mem_cgroup = memcg = root_mem_cgroup;
++	if (!memcg)
++		memcg = root_mem_cgroup;
+ 
+ 	mz = mem_cgroup_page_zoneinfo(memcg, page);
+ 	lruvec = &mz->lruvec;
+@@ -2141,7 +2139,7 @@ void __mem_cgroup_begin_update_page_stat(struct page *page,
+ 	pc = lookup_page_cgroup(page);
+ again:
+ 	memcg = pc->mem_cgroup;
+-	if (unlikely(!memcg || !PageCgroupUsed(pc)))
++	if (unlikely(!memcg))
+ 		return;
+ 	/*
+ 	 * If this memory cgroup is not under account moving, we don't
+@@ -2154,7 +2152,7 @@ again:
+ 		return;
+ 
+ 	move_lock_mem_cgroup(memcg, flags);
+-	if (memcg != pc->mem_cgroup || !PageCgroupUsed(pc)) {
++	if (memcg != pc->mem_cgroup) {
+ 		move_unlock_mem_cgroup(memcg, flags);
+ 		goto again;
+ 	}
+@@ -2186,7 +2184,7 @@ void mem_cgroup_update_page_stat(struct page *page,
+ 
+ 	pc = lookup_page_cgroup(page);
+ 	memcg = pc->mem_cgroup;
+-	if (unlikely(!memcg || !PageCgroupUsed(pc)))
++	if (unlikely(!memcg))
+ 		return;
+ 
+ 	this_cpu_add(memcg->stat->count[idx], val);
+@@ -2525,9 +2523,10 @@ struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
+ 	VM_BUG_ON_PAGE(!PageLocked(page), page);
+ 
+ 	pc = lookup_page_cgroup(page);
+-	if (PageCgroupUsed(pc)) {
+-		memcg = pc->mem_cgroup;
+-		if (memcg && !css_tryget_online(&memcg->css))
++	memcg = pc->mem_cgroup;
++
++	if (memcg) {
++		if (!css_tryget_online(&memcg->css))
+ 			memcg = NULL;
+ 	} else if (PageSwapCache(page)) {
+ 		ent.val = page_private(page);
+@@ -2578,7 +2577,7 @@ static void commit_charge(struct page *page, struct mem_cgroup *memcg,
+ 	struct page_cgroup *pc = lookup_page_cgroup(page);
+ 	int isolated;
+ 
+-	VM_BUG_ON_PAGE(PageCgroupUsed(pc), page);
++	VM_BUG_ON_PAGE(pc->mem_cgroup, page);
+ 	/*
+ 	 * we don't need page_cgroup_lock about tail pages, becase they are not
+ 	 * accessed by any other context at this point.
+@@ -2593,7 +2592,7 @@ static void commit_charge(struct page *page, struct mem_cgroup *memcg,
+ 
+ 	/*
+ 	 * Nobody should be changing or seriously looking at
+-	 * pc->mem_cgroup and pc->flags at this point:
++	 * pc->mem_cgroup at this point:
+ 	 *
+ 	 * - the page is uncharged
+ 	 *
+@@ -2606,7 +2605,6 @@ static void commit_charge(struct page *page, struct mem_cgroup *memcg,
  	 *   have the page locked
  	 */
  	pc->mem_cgroup = memcg;
--	pc->flags = PCG_USED | PCG_MEM | (do_swap_account ? PCG_MEMSW : 0);
-+	pc->flags = PCG_USED | PCG_MEM;
+-	pc->flags = PCG_USED;
  
  	if (lrucare)
  		unlock_page_lru(page, isolated);
-@@ -5815,7 +5815,6 @@ void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
- 	if (!PageCgroupUsed(pc))
+@@ -3120,37 +3118,22 @@ void __memcg_kmem_commit_charge(struct page *page, struct mem_cgroup *memcg,
+ 		memcg_uncharge_kmem(memcg, 1 << order);
+ 		return;
+ 	}
+-	/*
+-	 * The page is freshly allocated and not visible to any
+-	 * outside callers yet.  Set up pc non-atomically.
+-	 */
+ 	pc = lookup_page_cgroup(page);
+ 	pc->mem_cgroup = memcg;
+-	pc->flags = PCG_USED;
+ }
+ 
+ void __memcg_kmem_uncharge_pages(struct page *page, int order)
+ {
+-	struct mem_cgroup *memcg = NULL;
+-	struct page_cgroup *pc;
+-
+-
+-	pc = lookup_page_cgroup(page);
+-	if (!PageCgroupUsed(pc))
+-		return;
+-
+-	memcg = pc->mem_cgroup;
+-	pc->flags = 0;
++	struct page_cgroup *pc = lookup_page_cgroup(page);
++	struct mem_cgroup *memcg = pc->mem_cgroup;
+ 
+-	/*
+-	 * We trust that only if there is a memcg associated with the page, it
+-	 * is a valid allocation
+-	 */
+ 	if (!memcg)
  		return;
  
--	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEMSW), page);
- 	memcg = pc->mem_cgroup;
- 
- 	oldid = swap_cgroup_record(entry, mem_cgroup_id(memcg));
-@@ -6010,17 +6009,16 @@ void mem_cgroup_cancel_charge(struct page *page, struct mem_cgroup *memcg)
+ 	VM_BUG_ON_PAGE(mem_cgroup_is_root(memcg), page);
++
+ 	memcg_uncharge_kmem(memcg, 1 << order);
++	pc->mem_cgroup = NULL;
  }
- 
- static void uncharge_batch(struct mem_cgroup *memcg, unsigned long pgpgout,
--			   unsigned long nr_mem, unsigned long nr_memsw,
- 			   unsigned long nr_anon, unsigned long nr_file,
- 			   unsigned long nr_huge, struct page *dummy_page)
+ #else
+ static inline void memcg_unregister_all_caches(struct mem_cgroup *memcg)
+@@ -3168,21 +3151,16 @@ static inline void memcg_unregister_all_caches(struct mem_cgroup *memcg)
+  */
+ void mem_cgroup_split_huge_fixup(struct page *head)
  {
-+	unsigned long nr_pages = nr_anon + nr_file;
- 	unsigned long flags;
+-	struct page_cgroup *head_pc = lookup_page_cgroup(head);
+-	struct page_cgroup *pc;
+-	struct mem_cgroup *memcg;
++	struct page_cgroup *pc = lookup_page_cgroup(head);
+ 	int i;
  
- 	if (!mem_cgroup_is_root(memcg)) {
--		if (nr_mem)
--			page_counter_uncharge(&memcg->memory, nr_mem);
--		if (nr_memsw)
--			page_counter_uncharge(&memcg->memsw, nr_memsw);
-+		page_counter_uncharge(&memcg->memory, nr_pages);
-+		if (do_swap_account)
-+			page_counter_uncharge(&memcg->memsw, nr_pages);
- 		memcg_oom_recover(memcg);
- 	}
+ 	if (mem_cgroup_disabled())
+ 		return;
  
-@@ -6029,23 +6027,21 @@ static void uncharge_batch(struct mem_cgroup *memcg, unsigned long pgpgout,
- 	__this_cpu_sub(memcg->stat->count[MEM_CGROUP_STAT_CACHE], nr_file);
- 	__this_cpu_sub(memcg->stat->count[MEM_CGROUP_STAT_RSS_HUGE], nr_huge);
- 	__this_cpu_add(memcg->stat->events[MEM_CGROUP_EVENTS_PGPGOUT], pgpgout);
--	__this_cpu_add(memcg->stat->nr_page_events, nr_anon + nr_file);
-+	__this_cpu_add(memcg->stat->nr_page_events, nr_pages);
- 	memcg_check_events(memcg, dummy_page);
- 	local_irq_restore(flags);
+-	memcg = head_pc->mem_cgroup;
+-	for (i = 1; i < HPAGE_PMD_NR; i++) {
+-		pc = head_pc + i;
+-		pc->mem_cgroup = memcg;
+-		pc->flags = head_pc->flags;
+-	}
+-	__this_cpu_sub(memcg->stat->count[MEM_CGROUP_STAT_RSS_HUGE],
++	for (i = 1; i < HPAGE_PMD_NR; i++)
++		pc[i].mem_cgroup = pc[0].mem_cgroup;
++
++	__this_cpu_sub(pc[0].mem_cgroup->stat->count[MEM_CGROUP_STAT_RSS_HUGE],
+ 		       HPAGE_PMD_NR);
+ }
+ #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+@@ -3232,7 +3210,7 @@ static int mem_cgroup_move_account(struct page *page,
+ 		goto out;
+ 
+ 	ret = -EINVAL;
+-	if (!PageCgroupUsed(pc) || pc->mem_cgroup != from)
++	if (pc->mem_cgroup != from)
+ 		goto out_unlock;
+ 
+ 	move_lock_mem_cgroup(from, &flags);
+@@ -3342,7 +3320,7 @@ static struct page_cgroup *lookup_page_cgroup_used(struct page *page)
+ 	 * the first time, i.e. during boot or memory hotplug;
+ 	 * or when mem_cgroup_disabled().
+ 	 */
+-	if (likely(pc) && PageCgroupUsed(pc))
++	if (likely(pc) && pc->mem_cgroup)
+ 		return pc;
+ 	return NULL;
+ }
+@@ -3360,10 +3338,8 @@ void mem_cgroup_print_bad_page(struct page *page)
+ 	struct page_cgroup *pc;
+ 
+ 	pc = lookup_page_cgroup_used(page);
+-	if (pc) {
+-		pr_alert("pc:%p pc->flags:%lx pc->mem_cgroup:%p\n",
+-			 pc, pc->flags, pc->mem_cgroup);
+-	}
++	if (pc)
++		pr_alert("pc:%p pc->mem_cgroup:%p\n", pc, pc->mem_cgroup);
+ }
+ #endif
+ 
+@@ -5330,7 +5306,7 @@ static enum mc_target_type get_mctgt_type(struct vm_area_struct *vma,
+ 		 * mem_cgroup_move_account() checks the pc is valid or
+ 		 * not under LRU exclusion.
+ 		 */
+-		if (PageCgroupUsed(pc) && pc->mem_cgroup == mc.from) {
++		if (pc->mem_cgroup == mc.from) {
+ 			ret = MC_TARGET_PAGE;
+ 			if (target)
+ 				target->page = page;
+@@ -5366,7 +5342,7 @@ static enum mc_target_type get_mctgt_type_thp(struct vm_area_struct *vma,
+ 	if (!move_anon())
+ 		return ret;
+ 	pc = lookup_page_cgroup(page);
+-	if (PageCgroupUsed(pc) && pc->mem_cgroup == mc.from) {
++	if (pc->mem_cgroup == mc.from) {
+ 		ret = MC_TARGET_PAGE;
+ 		if (target) {
+ 			get_page(page);
+@@ -5810,18 +5786,17 @@ void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
+ 		return;
+ 
+ 	pc = lookup_page_cgroup(page);
++	memcg = pc->mem_cgroup;
+ 
+ 	/* Readahead page, never charged */
+-	if (!PageCgroupUsed(pc))
++	if (!memcg)
+ 		return;
+ 
+-	memcg = pc->mem_cgroup;
+-
+ 	oldid = swap_cgroup_record(entry, mem_cgroup_id(memcg));
+ 	VM_BUG_ON_PAGE(oldid, page);
+ 	mem_cgroup_swap_statistics(memcg, true);
+ 
+-	pc->flags = 0;
++	pc->mem_cgroup = NULL;
  
  	if (!mem_cgroup_is_root(memcg))
--		css_put_many(&memcg->css, max(nr_mem, nr_memsw));
-+		css_put_many(&memcg->css, nr_pages);
- }
+ 		page_counter_uncharge(&memcg->memory, 1);
+@@ -5895,7 +5870,7 @@ int mem_cgroup_try_charge(struct page *page, struct mm_struct *mm,
+ 		 * the page lock, which serializes swap cache removal, which
+ 		 * in turn serializes uncharging.
+ 		 */
+-		if (PageCgroupUsed(pc))
++		if (pc->mem_cgroup)
+ 			goto out;
+ 	}
  
- static void uncharge_list(struct list_head *page_list)
- {
- 	struct mem_cgroup *memcg = NULL;
--	unsigned long nr_memsw = 0;
- 	unsigned long nr_anon = 0;
- 	unsigned long nr_file = 0;
- 	unsigned long nr_huge = 0;
- 	unsigned long pgpgout = 0;
--	unsigned long nr_mem = 0;
- 	struct list_head *next;
- 	struct page *page;
+@@ -6057,13 +6032,13 @@ static void uncharge_list(struct list_head *page_list)
+ 		VM_BUG_ON_PAGE(page_count(page), page);
  
-@@ -6072,10 +6068,9 @@ static void uncharge_list(struct list_head *page_list)
+ 		pc = lookup_page_cgroup(page);
+-		if (!PageCgroupUsed(pc))
++		if (!pc->mem_cgroup)
+ 			continue;
+ 
+ 		/*
+ 		 * Nobody should be changing or seriously looking at
+-		 * pc->mem_cgroup and pc->flags at this point, we have
+-		 * fully exclusive access to the page.
++		 * pc->mem_cgroup at this point, we have fully
++		 * exclusive access to the page.
+ 		 */
  
  		if (memcg != pc->mem_cgroup) {
- 			if (memcg) {
--				uncharge_batch(memcg, pgpgout, nr_mem, nr_memsw,
--					       nr_anon, nr_file, nr_huge, page);
--				pgpgout = nr_mem = nr_memsw = 0;
--				nr_anon = nr_file = nr_huge = 0;
-+				uncharge_batch(memcg, pgpgout, nr_anon, nr_file,
-+					       nr_huge, page);
-+				pgpgout = nr_anon = nr_file = nr_huge = 0;
- 			}
- 			memcg = pc->mem_cgroup;
- 		}
-@@ -6091,18 +6086,14 @@ static void uncharge_list(struct list_head *page_list)
+@@ -6086,7 +6061,7 @@ static void uncharge_list(struct list_head *page_list)
  		else
  			nr_file += nr_pages;
  
--		if (pc->flags & PCG_MEM)
--			nr_mem += nr_pages;
--		if (pc->flags & PCG_MEMSW)
--			nr_memsw += nr_pages;
- 		pc->flags = 0;
+-		pc->flags = 0;
++		pc->mem_cgroup = NULL;
  
  		pgpgout++;
  	} while (next != page_list);
+@@ -6112,7 +6087,7 @@ void mem_cgroup_uncharge(struct page *page)
  
- 	if (memcg)
--		uncharge_batch(memcg, pgpgout, nr_mem, nr_memsw,
--			       nr_anon, nr_file, nr_huge, page);
-+		uncharge_batch(memcg, pgpgout, nr_anon, nr_file,
-+			       nr_huge, page);
- }
- 
- /**
-@@ -6187,7 +6178,6 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
+ 	/* Don't touch page->lru of any random page, pre-check: */
+ 	pc = lookup_page_cgroup(page);
+-	if (!PageCgroupUsed(pc))
++	if (!pc->mem_cgroup)
  		return;
  
- 	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM), oldpage);
--	VM_BUG_ON_PAGE(do_swap_account && !(pc->flags & PCG_MEMSW), oldpage);
+ 	INIT_LIST_HEAD(&page->lru);
+@@ -6148,6 +6123,7 @@ void mem_cgroup_uncharge_list(struct list_head *page_list)
+ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
+ 			bool lrucare)
+ {
++	struct mem_cgroup *memcg;
+ 	struct page_cgroup *pc;
+ 	int isolated;
+ 
+@@ -6164,7 +6140,7 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
+ 
+ 	/* Page cache replacement: new page already charged? */
+ 	pc = lookup_page_cgroup(newpage);
+-	if (PageCgroupUsed(pc))
++	if (pc->mem_cgroup)
+ 		return;
+ 
+ 	/*
+@@ -6174,18 +6150,19 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
+ 	 * reclaim just put back on the LRU but has not released yet.
+ 	 */
+ 	pc = lookup_page_cgroup(oldpage);
+-	if (!PageCgroupUsed(pc))
++	memcg = pc->mem_cgroup;
++	if (!memcg)
+ 		return;
  
  	if (lrucare)
  		lock_page_lru(oldpage, &isolated);
+ 
+-	pc->flags = 0;
++	pc->mem_cgroup = NULL;
+ 
+ 	if (lrucare)
+ 		unlock_page_lru(oldpage, isolated);
+ 
+-	commit_charge(newpage, pc->mem_cgroup, lrucare);
++	commit_charge(newpage, memcg, lrucare);
+ }
+ 
+ /*
 -- 
 2.1.2
 
