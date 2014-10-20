@@ -1,65 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224AbaJTJvp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 05:51:45 -0400
-Received: from www17.your-server.de ([213.133.104.17]:41704 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752874AbaJTJvo (ORCPT
+	id S1753313AbaJTJxm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 05:53:42 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:56177 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752951AbaJTJxj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 05:51:44 -0400
-Date: Mon, 20 Oct 2014 11:51:33 +0200
-Subject: Re: [uml-devel] [UM] Long loop in __getnsdayoftime() after resume
- from ram
-From: Thomas Meyer <thomas@m3y3r.de>
-To: Richard Weinberger <richard.weinberger@gmail.com>
-Cc: user-mode-linux-devel <user-mode-linux-devel@lists.sourceforge.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+	Mon, 20 Oct 2014 05:53:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Message-Id: <E1Xg9cr-0007LK-S6@www17.your-server.de>
-X-Authenticated-Sender: thomas@m3y3r.de
+In-Reply-To: <CAJe_Zhf73TXxAjBq_cCJB_oBC1Ff_ErN7TP4HsO-_BzhiPZkGQ@mail.gmail.com>
+References: <CAJe_Zhf73TXxAjBq_cCJB_oBC1Ff_ErN7TP4HsO-_BzhiPZkGQ@mail.gmail.com>
+Date: Mon, 20 Oct 2014 15:23:38 +0530
+Message-ID: <CAJe_ZhcXTp6phuS=8nYuXTD3yUHsu7QKap85iVgfcZsrmOK59g@mail.gmail.com>
+Subject: Re: [GIT PULL] New Mailbox framework for 3.18
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: torvalds@linux-foundation.org
+Cc: Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        "ks.giri@samsung.com" <ks.giri@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, Matt Porter <mporter@linaro.org>,
+        LeyFoon Tan <lftan.linux@gmail.com>, "Anna, Suman" <s-anna@ti.com>,
+        Bjorn Andersson <bjorn@kryo.se>, Mark Brown <broonie@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>, Andy Green <andy.green@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Sudeep Holla <sudeep.holla@arm.com>,
+        "Ira W. Snyder" <iws@ovro.caltech.edu>,
+        Alexandre Torgue <alexandre.torgue@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9K9pp6J023498
 
-Am 20.10.2014 10:27 schrieb Richard Weinberger <richard.weinberger@gmail.com>:
+On 8 October 2014 11:09, Jassi Brar <jaswinder.singh@linaro.org> wrote:
+> Hi Linus,
 >
-> On Sun, Oct 19, 2014 at 2:39 PM, Thomas Meyer <thomas@m3y3r.de> wrote: 
-> > Hello, 
-> > 
-> > in UML kernel I get a long cpu using loop in __getnstimeofday() 
-> > (kernel/time/timekeeping.c:315) in the call of timespec_add_ns(), 
-> > when I left the host kernel suspended to ram for a few hours and resume 
-> > again. 
-> > this is because it seems like the tk->xtime_sec wasn't updated yet, but 
-> > the nsecs were. nsecs can be as high as 8111000111000111000l 
-> > 
-> > the function timespec_add_ns() (include/linux/time.h:266) will call 
-> > __iter_div_u64_rem() which has an optimized loop for the case 
-> > that the dividend is not much bigger as the divisior. 
-> > but this isn't the case for resume from ram on the host kernel. 
-> > 
-> > any ideas how to fix this? is it possible to intercept the resume from 
-> > ram and update the timekeeper->xtime_sec somehow? 
-> > or can the um arch somehow overwrite timespec_add_ns() to always use 
-> > div_u64_rem() instead? 
+> A framework for Mailbox controllers and clients have been cooking for
+> more than a year now. Everybody in the CC list had been copied on
+> patchset revisions and most of them have made sounds of approval,
+> though just one concrete Reviewed-by. The patchset has also been in
+> linux-next for a couple of weeks now and no conflict has been
+> reported. The framework has the backing of at least 5 platforms,
+> though I can't say if/when they upstream their drivers (some
+> businesses have 'changed').
 >
-> Hmm, does this always happen?
-
-Yes, my single core system seems to trigger this every time after resume from ram.
-
-> At least on my notebook it did not happen. I've started an UML yesterday 
-> suspended it and after more than 12h it worked fine today. 
 >
-> BTW: Do you see the issue also then freezing UML using the freezer cgroup?
-
-I'm not sure what do you mean by this. Do I need to enable some special configs for this in the host or uml kernel?
-
-> Would be easier to debug. :) 
+> The following changes since commit 9a50aaefc1b896e734bf7faf3d085f71a360ce97:
 >
-> -- 
-> Thanks, 
-> //richard 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+>   Merge tag 'scsi-for-linus' of
+> git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi (2014-10-07
+> 21:29:18 -0400)
+>
+> are available in the git repository at:
+>
+>
+>   git://git.linaro.org/landing-teams/working/fujitsu/integration.git
+> mailbox-for-linus
+>
+> for you to fetch changes up to 9f3e3cacb2ffdefe28c7cf490bf543e4dcb2770a:
+>
+>   dt: mailbox: add generic bindings (2014-10-08 10:39:42 +0530)
+>
+> ----------------------------------------------------------------
+> Jassi Brar (3):
+>       mailbox: Introduce framework for mailbox
+>       doc: add documentation for mailbox framework
+>       dt: mailbox: add generic bindings
+>
+> Suman Anna (1):
+>       mailbox: rename pl320-ipc specific mailbox.h
+>
+>  .../devicetree/bindings/mailbox/mailbox.txt        |  38 ++
+>  Documentation/mailbox.txt                          | 122 ++++++
+>  MAINTAINERS                                        |   8 +
+>  arch/arm/mach-highbank/highbank.c                  |   2 +-
+>  drivers/cpufreq/highbank-cpufreq.c                 |   2 +-
+>  drivers/mailbox/Makefile                           |   4 +
+>  drivers/mailbox/mailbox.c                          | 465 +++++++++++++++++++++
+>  drivers/mailbox/pl320-ipc.c                        |   2 +-
+>  include/linux/mailbox_client.h                     |  46 ++
+>  include/linux/mailbox_controller.h                 | 133 ++++++
+>  include/linux/{mailbox.h => pl320-ipc.h}           |   0
+>  11 files changed, 819 insertions(+), 3 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/mailbox/mailbox.txt
+>  create mode 100644 Documentation/mailbox.txt
+>  create mode 100644 drivers/mailbox/mailbox.c
+>  create mode 100644 include/linux/mailbox_client.h
+>  create mode 100644 include/linux/mailbox_controller.h
+>  rename include/linux/{mailbox.h => pl320-ipc.h} (100%)
+>
+Hi Linus,
+  While I was speculating on the reasons why you were not merging the
+patchset - not enough Acked-Bys, you want it via asoc, my git server
+down (I am not aware) or you just forgot in the unlikely case - I
+missed the window.
+ There are couple of platforms waiting for the api to get upstream and
+now I have the devs on my back. Assuming I messed up the pull request
+somehow, may I know how?
+
+Thanks
+-Jassi
