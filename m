@@ -1,59 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752489AbaJTNKj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 09:10:39 -0400
-Received: from li271-223.members.linode.com ([178.79.152.223]:40021 "EHLO
-	mail.mleia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752436AbaJTNKf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 09:10:35 -0400
-Message-ID: <544509C7.9010309@mleia.com>
-Date: Mon, 20 Oct 2014 16:10:31 +0300
-From: Vladimir Zapolskiy <vz@mleia.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Icedove/31.1.2
+	id S1752542AbaJTNK5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 09:10:57 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45228 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751627AbaJTNKz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 09:10:55 -0400
+Date: Mon, 20 Oct 2014 14:10:52 +0100
+From: Thomas Graf <tgraf@suug.ch>
+To: Cornelia Huck <cornelia.huck@de.ibm.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, linux-scsi@vger.kernel.org,
+        linux-s390@vger.kernel.org, v9fs-developer@lists.sourceforge.net,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
+        Amit Shah <amit.shah@redhat.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Paolo Bonzini <pbonzini@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v4 13/25] virtio_console: enable VQs early
+Message-ID: <20141020131052.GB18561@casper.infradead.org>
+References: <1413114332-626-1-git-send-email-mst-v4@redhat.com>
+ <1413114332-626-14-git-send-email-mst-v4@redhat.com>
+ <20141020120750.GA18561@casper.infradead.org>
+ <20141020144223.5655dcbc.cornelia.huck@de.ibm.com>
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Thierry Reding <thierry.reding@gmail.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>, jonsmirl@gmail.com,
-        Simon <longsleep@gmail.com>, linux-pwm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv8 1/2] pwm: Add Allwinner SoC support
-References: <1413743305-1979-1-git-send-email-alexandre.belloni@free-electrons.com> <1413743305-1979-2-git-send-email-alexandre.belloni@free-electrons.com> <54442BB1.1080403@mleia.com> <20141020102939.GB10616@piout.net>
-In-Reply-To: <20141020102939.GB10616@piout.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-CRM114-Version: 20100106-BlameMichelson ( TRE 0.8.0 (BSD) ) MR-49551924 
-X-CRM114-CacheID: sfid-20141020_141033_454691_845A3024 
-X-CRM114-Status: GOOD (  12.28  )
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141020144223.5655dcbc.cornelia.huck@de.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexandre,
-
-On 20.10.2014 13:29, Alexandre Belloni wrote:
-> Hi,
+On 10/20/14 at 02:42pm, Cornelia Huck wrote:
+> On Mon, 20 Oct 2014 13:07:50 +0100
+> Thomas Graf <tgraf@suug.ch> wrote:
 > 
-> On 20/10/2014 at 00:22:57 +0300, Vladimir Zapolskiy wrote :
->>> +struct sun4i_pwm_chip {
->>> +	struct pwm_chip chip;
->>> +	struct clk *clk;
->>> +	void __iomem *base;
->>> +	struct mutex ctrl_lock;
->>
->> why do you use mutex? I haven't found any blocking subcalls under
->> protection, a spinlock seems to fit better here.
->>
+> > On 10/13/14 at 10:50am, Michael S. Tsirkin wrote:
+> > > virtio spec requires drivers to set DRIVER_OK before using VQs.
+> > > This is set automatically after probe returns, virtio console violated this
+> > > rule by adding inbufs, which causes the VQ to be used directly within
+> > > probe.
+> > > 
+> > > To fix, call virtio_device_ready before using VQs.
+> > > 
+> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > ---
+> > >  drivers/char/virtio_console.c | 2 ++
+> > >  1 file changed, 2 insertions(+)
+> > > 
+> > > diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+> > > index b585b47..6ebe8f6 100644
+> > > --- a/drivers/char/virtio_console.c
+> > > +++ b/drivers/char/virtio_console.c
+> > > @@ -1449,6 +1449,8 @@ static int add_port(struct ports_device *portdev, u32 id)
+> > >  	spin_lock_init(&port->outvq_lock);
+> > >  	init_waitqueue_head(&port->waitqueue);
+> > >  
+> > > +	virtio_device_ready(portdev->vdev);
+> > > +
+> > >  	/* Fill the in_vq with buffers so the host can send us data. */
+> > >  	nr_added_bufs = fill_queue(port->in_vq, &port->inbuf_lock);
+> > >  	if (!nr_added_bufs) {
+> > 
+> > Seems like probe and add_port() now both set VIRTIO_CONFIG_S_DRIVER_OK
 > 
-> A mutex here will do the right thing. The lock is never taken in
-> interrupt context and a mutex is spinning for a few cycles before
-> putting the thread to sleep.
-
-and why do you want to put a thread to sleep in context of the driver?
-
-> I'm not sure why you feel a spinlock would be better here.
+> I think we need to set this in the probe function instead, otherwise we
+> fail for multiqueue (which also wants to use the control queue early).
 > 
+> Completely untested patch below; I can send this with proper s-o-b if
+> it helps.
 
-Only because a spinlock is lighter than a mutex.
-
-With best wishes,
-Vladimir
+virtio_dev_probe() already sets DRIVER_OK if ->probe() returned
+without an error. I assume Michael added it to add_port() because
+probing doesn't always occur first. Can we just remove the BUG_ON()?
