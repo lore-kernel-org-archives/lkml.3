@@ -1,46 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542AbaJTNK5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 09:10:57 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45228 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751627AbaJTNKz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 09:10:55 -0400
-Date: Mon, 20 Oct 2014 14:10:52 +0100
-From: Thomas Graf <tgraf@suug.ch>
-To: Cornelia Huck <cornelia.huck@de.ibm.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
+	id S1752594AbaJTNLh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 09:11:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38849 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751627AbaJTNLe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 09:11:34 -0400
+Date: Mon, 20 Oct 2014 16:14:05 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Thomas Graf <tgraf@suug.ch>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
         virtualization@lists.linux-foundation.org, linux-scsi@vger.kernel.org,
         linux-s390@vger.kernel.org, v9fs-developer@lists.sourceforge.net,
         netdev@vger.kernel.org, kvm@vger.kernel.org,
         Amit Shah <amit.shah@redhat.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
         Christian Borntraeger <borntraeger@de.ibm.com>,
         "David S. Miller" <davem@davemloft.net>,
         Paolo Bonzini <pbonzini@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Subject: Re: [PATCH v4 13/25] virtio_console: enable VQs early
-Message-ID: <20141020131052.GB18561@casper.infradead.org>
+Message-ID: <20141020131405.GA20582@redhat.com>
 References: <1413114332-626-1-git-send-email-mst-v4@redhat.com>
  <1413114332-626-14-git-send-email-mst-v4@redhat.com>
  <20141020120750.GA18561@casper.infradead.org>
- <20141020144223.5655dcbc.cornelia.huck@de.ibm.com>
+ <20141020131016.GA20489@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141020144223.5655dcbc.cornelia.huck@de.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20141020131016.GA20489@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/20/14 at 02:42pm, Cornelia Huck wrote:
-> On Mon, 20 Oct 2014 13:07:50 +0100
-> Thomas Graf <tgraf@suug.ch> wrote:
-> 
+On Mon, Oct 20, 2014 at 04:10:16PM +0300, Michael S. Tsirkin wrote:
+> On Mon, Oct 20, 2014 at 01:07:50PM +0100, Thomas Graf wrote:
 > > On 10/13/14 at 10:50am, Michael S. Tsirkin wrote:
 > > > virtio spec requires drivers to set DRIVER_OK before using VQs.
 > > > This is set automatically after probe returns, virtio console violated this
@@ -67,15 +61,17 @@ On 10/20/14 at 02:42pm, Cornelia Huck wrote:
 > > >  	/* Fill the in_vq with buffers so the host can send us data. */
 > > >  	nr_added_bufs = fill_queue(port->in_vq, &port->inbuf_lock);
 > > >  	if (!nr_added_bufs) {
-> > 
-> > Seems like probe and add_port() now both set VIRTIO_CONFIG_S_DRIVER_OK
 > 
-> I think we need to set this in the probe function instead, otherwise we
-> fail for multiqueue (which also wants to use the control queue early).
-> 
-> Completely untested patch below; I can send this with proper s-o-b if
-> it helps.
+> I see Cornelia sent a patch already.
+> I'd like to reproduce this though - could you send me
+> the command line please?
 
-virtio_dev_probe() already sets DRIVER_OK if ->probe() returned
-without an error. I assume Michael added it to add_port() because
-probing doesn't always occur first. Can we just remove the BUG_ON()?
+Nevermind, the trick is to add a port it seems:
+
+-device virtio-serial -chardev socket,path=/tmp/c1,server,nowait,id=foo
+-device virtserialport,chardev=foo,name=org.fedoraproject.port.0
+
+works fine without -device virtserialport.
+
+-- 
+MST
