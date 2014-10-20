@@ -1,156 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751967AbaJTCvQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 22:51:16 -0400
-Received: from [207.46.100.139] ([207.46.100.139]:15152 "EHLO
-	na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751846AbaJTCvO convert rfc822-to-8bit (ORCPT
+	id S1751961AbaJTDXV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 23:23:21 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:13530 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807AbaJTDXS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 22:51:14 -0400
-X-Greylist: delayed 5735 seconds by postgrey-1.27 at vger.kernel.org; Sun, 19 Oct 2014 22:51:14 EDT
-From: Dudley Du <dudl@cypress.com>
-To: Dudley Du <dudley.dulixin@gmail.com>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "rydberg@euromail.se" <rydberg@euromail.se>
-CC: "bleung@google.com" <bleung@google.com>,
-        "patrikf@google.com" <patrikf@google.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+	Sun, 19 Oct 2014 23:23:18 -0400
+X-AuditID: cbfee691-f79b86d000004a5a-98-544480239a26
+Message-id: <54448023.1050008@samsung.com>
+Date: Mon, 20 Oct 2014 12:23:15 +0900
+From: Jaehoon Chung <jh80.chung@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Alim Akhtar <alim.akhtar@gmail.com>, Doug Anderson <dianders@chromium.org>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>, Seungwon Jeon <tgih.jun@samsung.com>,
+        Addy Ke <addy.ke@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Chris Ball <chris@printf.net>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 00/13] input: cyapa: intruction of cyapa patches
-Thread-Topic: [PATCH 00/13] input: cyapa: intruction of cyapa patches
-Thread-Index: AQHP6EhzzShZjRDUpkyrt2Qcfutix5w4Nd0w
-Date: Mon, 20 Oct 2014 01:15:34 +0000
-Message-ID: <7360f60b5cb6448bbc260fa1907b6a6c@BN1PR06MB070.namprd06.prod.outlook.com>
-References: <1413357567-26177-1-git-send-email-dudl@cypress.com>
-In-Reply-To: <1413357567-26177-1-git-send-email-dudl@cypress.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [140.207.206.26]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR06MB069;UriScan:;
-x-exchange-antispam-report-test: UriScan:;
-x-forefront-prvs: 03706074BC
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(51164003)(164054003)(13464003)(51704005)(74316001)(77096002)(2501002)(99396003)(33646002)(2201001)(92566001)(120916001)(54356999)(50986999)(76176999)(99286002)(86362001)(105586002)(40100003)(4396001)(107046002)(106116001)(106356001)(101416001)(20776003)(66066001)(21056001)(64706001)(2656002)(85306004)(19580405001)(122556002)(19580395003)(76576001)(31966008)(95666004)(76482002)(108616004)(87936001)(85852003)(46102003)(80022003)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR06MB069;H:BN1PR06MB070.namprd06.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR06MB295;
-X-OriginatorOrg: cypress.com
+Subject: Re: [PATCH] mmc: dw_mmc: Remove old card detect infrastructure
+References: <1413304389-6580-1-git-send-email-dianders@chromium.org>
+ <CAGOxZ507j5QjnT_hW2y0KPZsw6WDJWRPLdesTBm4+C8D2EznWw@mail.gmail.com>
+ <CAD=FV=X+q2ymbB0EZkjj_tip9_PLdFV+Tfee+MkeUDSfD3E-ig@mail.gmail.com>
+ <CAGOxZ51x8cd9XmNg49aaUdZQkw-hhEA-mC=34ZSjLf0XF8Zbvw@mail.gmail.com>
+In-reply-to: <CAGOxZ51x8cd9XmNg49aaUdZQkw-hhEA-mC=34ZSjLf0XF8Zbvw@mail.gmail.com>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAIsWRmVeSWpSXmKPExsWyRsSkQFe5wSXEYFavhcXK938ZLZb9/85k
+	sfRWtcWDedvYLCZc3s5ocXbZQTaLy7vmsFkc+d/PaPHkzExGiw/3LzJbHF8b7sDtMbvhIovH
+	zll32T3uXNvD5nHj1UImj7+z9rN49G1ZxejxeZNcAHsUl01Kak5mWWqRvl0CV0bfgkusBZMl
+	Ko6+2sLSwPhdqIuRk0NCwETi8q0FrBC2mMSFe+vZuhi5OIQEljJKtP5qZOpi5AAr2vuqACI+
+	nVFiXvMrNpAGIYHXjBJXlweA2LwCWhLP22ezgNgsAqoSD04uBbPZBHQktn87zgRiiwqESRxq
+	m8cEUS8o8WPyPbAaEQE/ictLboMtZhZoY5bY+PUk2AJhAXeJrXePM0Jsnskk0br5P1gHp0Cw
+	xInJF8FsZgF1iUnzFjFD2PISm9e8ZQZpkBD4yS4xseMdG8RJAhLfJh9igXhHVmLTAWaIlyUl
+	Dq64wTKBUWwWkqNmIRk7C8nYBYzMqxhFUwuSC4qT0otM9YoTc4tL89L1kvNzNzECI/b0v2cT
+	dzDeP2B9iFGAg1GJh3eHmUuIEGtiWXFl7iFGU6ArJjJLiSbnA9NCXkm8obGZkYWpiamxkbml
+	mZI4r470z2AhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjIL//26pWeestW7vkt9FHUdM80O9
+	F5aJu6zsccre9fGBlN0inr9pvpncXodvvL3ecK9Bxl08j/m7gJVj4V+fU8ZtCblCZ8MkWWKn
+	MTjdumEa6qtfXrKp+UnAoqcTHYKDX3qva2Y88bvGRXmi66r6Zau+aZiatiT+Co86fjE9+Exs
+	5KdZf2oOKrEUZyQaajEXFScCAIngJynTAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupileLIzCtJLcpLzFFi42I5/e+xoK5yg0uIwdEr+hYr3/9ltFj2/zuT
+	xdJb1RYP5m1js5hweTujxdllB9ksLu+aw2Zx5H8/o8WTMzMZLT7cv8hscXxtuAO3x+yGiywe
+	O2fdZfe4c20Pm8eNVwuZPP7O2s/i0bdlFaPH501yAexRDYw2GamJKalFCql5yfkpmXnptkre
+	wfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA3KimUJeaUAoUCEouLlfTtME0IDXHTtYBp
+	jND1DQmC6zEyQAMJaxgz+hZcYi2YLFFx9NUWlgbG70JdjBwcEgImEntfFXQxcgKZYhIX7q1n
+	62Lk4hASmM4oMa/5FRtIQkjgNaPE1eUBIDavgJbE8/bZLCA2i4CqxIOTS8FsNgEdie3fjjOB
+	2KICYRKH2uYxQdQLSvyYfA+sRkTAT+LykttgC5gF2pglNn49CbZAWMBdYuvd44wQm2cySbRu
+	/g/WwSkQLHFi8kUwm1lAXWLSvEXMELa8xOY1b5knMArMQrJkFpKyWUjKFjAyr2IUTS1ILihO
+	Ss810itOzC0uzUvXS87P3cQITgfPpHcwrmqwOMQowMGoxMO7w8wlRIg1say4MvcQowQHs5II
+	778MoBBvSmJlVWpRfnxRaU5q8SFGU2AYTGSWEk3OB6aqvJJ4Q2MTMyNLI3NDCyNjcyVx3oOt
+	1oFCAumJJanZqakFqUUwfUwcnFINjFP0Xv80Zslde5gt49p3i66faTeWnO/bH/9BPFqCIZmh
+	TVrKRGQv95qLxeVPj136dUDm2pn9J9LSg2XWpkfK58o3b9/8nUtH9LabiXWa/wMlqwVZ8j8u
+	mq4zbkn+9q3+Su3Zy7c+yPHcnqWsoR9amGA4J3ZDk8zDLKYW77jjMStzczhFlbO7lFiKMxIN
+	tZiLihMBirDIzx0DAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+Hi.
 
-Is there any update the v8 patchs for input cyapa trackpad drivers?
+On 10/17/2014 09:44 PM, Alim Akhtar wrote:
+> Hi Doug,
+> 
+> On Thu, Oct 16, 2014 at 9:40 PM, Doug Anderson <dianders@chromium.org> wrote:
+>> Alim,
+>>
+>> On Thu, Oct 16, 2014 at 5:57 AM, Alim Akhtar <alim.akhtar@gmail.com> wrote:
+>>> Hi Doug,
+>>>
+>>> On Tue, Oct 14, 2014 at 10:03 PM, Doug Anderson <dianders@chromium.org> wrote:
+>>>> The dw_mmc driver had a bunch of code that ran whenever a card was
+>>>> ejected and inserted.  However, this code was old and crufty and
+>>>> should be removed.  Some evidence that it's really not needed:
+>>>>
+>>>> 1. Is is supposed to be legal to use 'cd-gpio' on dw_mmc instead of
+>>>>    using the built-in card detect mechanism.  The 'cd-gpio' code
+>>>>    doesn't run any of the crufty old code but yet still works.
+>>>>
+>>>> 2. While looking at this, I realized that my old change (369ac86 mmc:
+>>>>    dw_mmc: don't queue up a card detect at slot startup) actually
+>>>>    castrated the old code a little bit already and nobody noticed.
+>>>>    Specifically "last_detect_state" was left as 0 at bootup.  That
+>>>>    means that on the first card removal none of the crufty code ran.
+>>>>
+>>> Yes, right most of these codes are _almost_ never call. But I see
+>>> dw_mci_reset() being called on card removal (after first
+>>> insert/removal).
+>>
+>> Right.  The old crufty code was called on the 2nd removal, not the
+>> 1st.  That meant that the two were accidentally different.  My point
+>> was that if the old code was really required that someone would have
+>> noticed crashes on the 1st removal after each boot.  Since nobody is
+>> reporting crashes with that then it means it can't be too terrible.
+>>
+>> One thing to note: I remember in the last Chromebook project you were
+>> trying to track down crashes associated with constant eject / insert
+>> of SD Cards.  I wonder if my patch will fix these crashes?
+>>
+> Ah, yes, reproducing that and checking with this patch will be really
+> interesting.
+> 
+>>
+>>> I tested this on exynos5800 and this looks working fine. We need to
+>>> test once cross suspend/resume as well.
+>>
+>> Good idea.  Can you test that?  I know that there's been lots of flux
+>> with suspend/resume on exynos and I'm not sure I have all the latest
+>> patches, but I'll search for them if you are unable to test easily.
+>>
+> Sure, I will do that..but probably sometime next week, as I will out
+> of office for few days.
+>>
+>>> And as Jaehoon pointed out,probably lets look in TRM if there are some
+>>> recommended  steps for cd-detect.
+>>> Otherwise this looks good to me.
+>>
+>> If you see some other requirement than the one I addressed in my email
+>> to Jaehoon, please let me know.
 
-Thanks,
-Dudley
+I know there is no other requirement for detecting card. 
+So this patch can be applied after testing the above case(suspend/resume).
 
-> -----Original Message-----
-> From: Dudley Du [mailto:dudley.dulixin@gmail.com]
-> Sent: 2014?10?15? 15:19
-> To: dmitry.torokhov@gmail.com; rydberg@euromail.se
-> Cc: Dudley Du; bleung@google.com; patrikf@google.com;
-> linux-input@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: [PATCH 00/13] input: cyapa: intruction of cyapa patches
->
-> Based on Dmitry's comments, I made v8 patches of cyapa trackpad device
-> with below updates compared with v7 patches:
-> 1) [PATCH v8 01/13] - Remove the async thread for device detect in
->    proble routine, now the device detect process is completly done within
->    the device proble routine.
-> 2) [PATCH v8 01/13] - Split the irq cmd hander function to separated
->    function cyapa_default_irq_cmd_handler() and set it to interface
->    cyapa_default_ops.irq_cmd_handler.
-> 3) [PATCH v8 06/13] - Add cyapa->gen check in cyapa_gen3_irq_cmd_handler()
->    to avoid miss-enter when device protocol is still in detecting.
->
->
-> V7 patches have below updates compared with v6 patches:
-> 1) [PATCH v7 01/13] - Split the irq cmd hander function to separated
->    function cyapa_default_irq_cmd_handler() and set it to interface
->    cyapa_default_ops.irq_cmd_handler.
-> 2) [PATCH v7 06/13] - Add cyapa->gen check in cyapa_gen3_irq_cmd_handler()
->    to avoid miss-enter when device protocol is still in detecting.
->
->
-> V6 patches have below updates compared with v5 patches:
-> 1) Remove patch 14 of the lid filtering from the cyapa driver.
->
-> V5 patches have below updates compared with v4 patches:
-> 1) Uses get_device()/put_device() instead of kobject_get()/kobject_put();
-> 2) Fix memories freed before debugfs entries issue;
-> 3) Make cyapa_debugs_root valid in driver module level
->    in module_init()/moudle_exit() ;
-> 4) Fix i2c_transfer() may return partial transfer issues.
-> 5) Add cyapa->removed flag to avoid detecting thread may still running
->    when driver module is removed.
-> 6) Fix the meanings of some comments and return error code not clear issue.
->
-> This patch set is aimed to re-architecture the cyapa driver to support
-> old gen3 trackpad device and new gen5 trackpad device in one
-> cyapa driver for easily productions support based on
-> customers' requirements, and add sysfs functions and interfaces
-> supported that required by users and customers.
-> Because the earlier gen3 and the latest gen5 trackpad devies using
-> two different chipsets, and have different protocol and interfaces.
-> If supported these two trackpad devices in two different drivers, then
-> it will be difficult to manage productions and later firmware updates.
-> it will cause customer don't know which one to use and update
-> because these two trackpad devices have been used and integrated
-> in same one productions at a time, so must to support these two trackpad
-> devices in same on driver.
->
-> The new architecture is made of:
-> cyapa.c - the core of the architecture, supply interfaces and
-> functions to system and read trackpad devices.
-> cyapa.h - header file including macros and data structure definitions.
-> cyapa_gen3.c - functions support for gen3 trackpad devices,
-> cyapa_gen5.c - functions support for gen5 trackpad devices.
->
-> Beside this introduction patch, it has 14 patches listed as below.
-> For these patches each one is patched based on previous one.
->
-> patch 1/13: re-architecture cyapa driver with core functions,
-> and applying the device detecting function in async thread to speed
-> up system boot time.
->
-> patch 2/13: add cyapa driver power management interfaces support.
->
-> patch 3/13: add cyapa driver runtime power management interfaces support.
->
-> patch 4/13: add cyapa key function interfaces in sysfs system.
-> Including read firmware version, get production ID, read baseline,
-> re-calibrate trackpad baselines and do trackpad firmware update.
->
-> patch 5/13: add read firmware image and read raw trackpad device'
-> sensors' raw data interface in debugfs system.
->
-> patch 6/13: add gen3 trackpad device basic functions support.
->
-> patch 7/13: add gen3 trackpad device firmware update function support.
->
-> patch 8/13: add gen3 trackpad device report baseline and do force
-> re-calibrate functions support.
->
-> patch 9/13: add gen3 trackpad device read firmware image function support.
->
-> patch 10/13: add gen5 trackpad device basic functions support.
->
-> patch 11/13: add gen5 trackpad device firmware update function support.
->
-> patch 12/13: add gen5 trackpad device report baseline and do force
-> re-calibrate functions support.
->
-> patch 13/13: add gen5 trackpad device read firmware image and report
-> sensors' raw data values functions support.
->
-> This message and any attachments may contain Cypress (or its subsidiaries)
-> confidential information. If it has been received in error, please advise the sender
-> and immediately delete this message.
+Best Regards,
+Jaehoon Chung
 
-This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
+>>
+> Well, as most of the current CD detect code are dead code, so lets see
+> more test results, specially across a suspend/resume and warm reboot
+> test and take this forward.
+>>
+>> -Doug
+> 
+> 
+> 
+
