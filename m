@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541AbaJTRkO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 13:40:14 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:48144 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752500AbaJTRkJ (ORCPT
+	id S1751874AbaJTRnb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 13:43:31 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:49545 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751102AbaJTRn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 13:40:09 -0400
+	Mon, 20 Oct 2014 13:43:28 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: opw-kernel@googlegroups.com
+Cc: Ebru Akagunduz <ebru.akagunduz@gmail.com>, JBottomley@parallels.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [OPW kernel] [PATCH v2] scsi: ips.c: Use jiffies comparison instead of do_gettimeofday()
+Date: Mon, 20 Oct 2014 19:43:18 +0200
+Message-ID: <2045799.tHXb4Zp5JS@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1413824761-21426-1-git-send-email-ebru.akagunduz@gmail.com>
+References: <1413824761-21426-1-git-send-email-ebru.akagunduz@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CALCETrVHw54Yc0qiTUP7+SiWK4Ch362m=jO8szCkpt8U7_h_dA@mail.gmail.com>
-References: <cover.1413323611.git.luto@amacapital.net> <b6c264b3bb064658af498763e234e3cb4f9db4e2.1413323612.git.luto@amacapital.net>
- <CALCETrXRGNeUipujcGiT30SV+MDHCFpTxG7LOTXj4Z4CbtxdJQ@mail.gmail.com>
- <CALCETrXv=bWUqVWhCekjq3UQeLFgGcbocKFjtNiNqm6DhyPmzA@mail.gmail.com>
- <20141019213341.GF23531@worktop.programming.kicks-ass.net>
- <CALCETrVT9vHjBRRvhTayqfOEebMjyVU9Yw7v80D6EPAmcyREZw@mail.gmail.com>
- <20141019222004.GI23531@worktop.programming.kicks-ass.net>
- <CALCETrXzwA3JH8xYLFcLdUSXAJi05Q62dZP3yOjZJTxgVugDrQ@mail.gmail.com>
- <20141020083326.GA3219@twins.programming.kicks-ass.net> <CALCETrVHw54Yc0qiTUP7+SiWK4Ch362m=jO8szCkpt8U7_h_dA@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 20 Oct 2014 10:39:48 -0700
-Message-ID: <CALCETrW5M+p4FZ6YPdNVVtXKomkEYRWyNpGGB1ZPbJMkQgU50g@mail.gmail.com>
-Subject: Re: [RFC 5/5] x86,perf: Only allow rdpmc if a perf_event is mapped
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Erik Bosman <ebn310@few.vu.nl>, Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Kees Cook <keescook@chromium.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:OBYEEkgnzyqXXbz7LzeF6Mr0QhX2I6GZvuNls8rCC9V
+ ns36WISKO/hcwqKcgBoIjTVMVzfjRjU3v2zXo45fOaCLR/DbIk
+ OtIohY0WT9OCljS230ySUpTOVi8pB8i0r+WGnHoTwjSRieMK3P
+ FdbgEWaO6qi2diq3HbqkEQnx+of1DUkhoa1UWYZwbpLlaQFn66
+ lTL7ynYKz14xyaJfQTEPFZYUR//vSiAI0BeQCKDCJxUjyuu87k
+ ZkaZ42p3gliHVPMkyI5AJgAh1YfxWnY/TIN6CaO98oUyCN22Z3
+ 2Vwacnp65PGNpMTNtAyZ3fLodQeOp2b7MHpb4TQjZjATLOzQ0i
+ eS3M7c+mJzlt5KUJ0qGY=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 20, 2014 at 9:49 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Mon, Oct 20, 2014 at 1:33 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->> On Sun, Oct 19, 2014 at 03:57:54PM -0700, Andy Lutomirski wrote:
->>> > Maybe, but at that point we commit to yet another ABI... I'd rather just
->>> > put a 'sane' implementation in a library or so.
->>>
->>> This cuts both ways, though.  For vdso timekeeping, the underlying
->>> data structure has changed repeatedly, sometimes to add features, and
->>> sometimes for performance, and the vdso has done a good job insulating
->>> userspace from it.  (In fact, until 3.16, even the same exact kernel
->>> version couldn't be relied on to have the same data structure with
->>> different configs, and even now, no one really wants to teach user
->>> libraries how to parse the pvclock data structures.)
->>
->> Fair enough, but as it stands we've already committed to the data
->> structure exposed to userspace.
->
-> True.
->
-> OTOH, if a vdso function gets added, a few releases go by, and all the
-> userspace tools get updated, then the old data structure could be
-> dropped if needed by clearing cap_user_rdpmc.
->
-> Anyway, this is so far out of scope for the current project that I'm
-> going to ignore it.
+On Monday 20 October 2014 20:06:01 Ebru Akagunduz wrote:
+> do_gettimeofday() only can get 32-bit time types
+> but the driver should be able to use dates that are
+> after January 2038.
+> 
+> Remove do_gettimeofday() and use
+> jiffies comparison to supply 64-bit time types.
 
-OK, I lied.
+The description doesn't seem to match what you are doing:
 
-I haven't tested it, but it looks like any existing users of
-cap_user_rdpmc may have serious issues.  That flag is set to 1 for
-essentially all perf_events on x86, even events that aren't part of
-the x86_pmu.  Since the default .event_idx callback doesn't return
-zero, lots of other events will appear to be rdpmcable.  This includes
-the AMD uncore pmu, which looks like it actually supports rdpmc, but
-hwc->idx seems to be missing an offset.
+- the use of 'struct timeval' in this driver is not actually unsafe
+- using jiffies does not make it use a 64-bit time type.
+- you do not mention that using jiffies makes the driver more
+  efficient, which is what James was interested in
+- The ips_fix_ffdc_time that needs to be changed for 64-bit time
+  does not get changed in this patch. As discussed on IRC, that
+  should be a separate patch.
 
-If this is the case, then user code can't reliably use the userpage
-rdpmc mechanism, so maybe it should be deprecated (or at least get a
-new flag bit).
+> @@ -6000,7 +6001,7 @@ ips_ffdc_time(ips_ha_t * ha)
+>  /*                                                                          */
+>  /****************************************************************************/
+>  static void
+> -ips_fix_ffdc_time(ips_ha_t * ha, ips_scb_t * scb, time_t current_time)
+> +ips_fix_ffdc_time(ips_ha_t * ha, ips_scb_t * scb, unsigned long current_time)
+>  {
+>  	long days;
+>  	long rem;
 
---Andy
+Using 'unsigned long' for a jiffies value also breaks the function, which
+makes calculations based on the assumption that you are dealing with a
+time_t. I think the best fix here is to use rtc_ktime_to_tm(ktime_get())
+to get a 'struct rtc_time' describing the current time, and then removing
+most of the code.
+
+You will have to change Kconfig to 'select RTC_LIB' from the ips driver
+in order to do this.
+
+	Arnd
