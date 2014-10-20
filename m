@@ -1,123 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751872AbaJTO0h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 10:26:37 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:64675 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaJTO0f (ORCPT
+	id S1751882AbaJTOh7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 10:37:59 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:48003 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954AbaJTOh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 10:26:35 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Darren Hart <dvhart@linux.intel.com>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: Re: [PATCH v5 10/12] gpio: Support for unified device properties interface
-Date: Mon, 20 Oct 2014 16:26:30 +0200
-Message-ID: <12255408.hd0Fqgc3mD@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAAVeFuKoGfkUXPZWt0Xy1jW-zGCUEzbzQ8W7_RVyetG9++uDHw@mail.gmail.com>
-References: <2660541.BycO7TFnA2@vostro.rjw.lan> <2997291.LjjH2RgEUW@wuerfel> <CAAVeFuKoGfkUXPZWt0Xy1jW-zGCUEzbzQ8W7_RVyetG9++uDHw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:9Mo4SS6BOmZr7y6UWEkQiZqsVzvDXEpjN/VgEj/f/LG
- /uI85zVt5qQv6NDJ8CFlr8Pztk6/4XfOGzHcQsnq5lEZGmpJLO
- V3LXDUDJHrXkkRb9dbWkO0TnEYS5qSwGiJGsQXCZHePDMLKeBk
- uOAsFjmKDYNUc9WdV0LqLFMEzTAkBZ1mRLY7/EQhggIqS/Hoky
- WVlehrT6qGBlB9SR2YpqsdexNeSMDaaHuSLtlxcDfD+k1v83YH
- +YIe/qsOVh17o8DFz+EOlr2Esg5OqnyGoqRiS2xLW7QuJNeups
- BPZg9xUl0iCuX7OUbhBl8DFZtdF9OtjPPHQp+vJLiVgMVl5CNh
- hS3UdSPYpNe7h9RIwEOM=
-X-UI-Out-Filterresults: notjunk:1;
+	Mon, 20 Oct 2014 10:37:57 -0400
+Message-ID: <54451E3F.1030700@gmail.com>
+Date: Mon, 20 Oct 2014 16:37:51 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+To: Antoine Tenart <antoine.tenart@free-electrons.com>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFT 0/8] Marvell PXA168 libphy handling and Berlin Ethernet
+References: <1412858346-11334-1-git-send-email-sebastian.hesselbarth@gmail.com> <20141016095323.GA1061@kwain>
+In-Reply-To: <20141016095323.GA1061@kwain>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 20 October 2014 15:12:50 Alexandre Courbot wrote:
-> On Sat, Oct 18, 2014 at 6:47 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > On Friday 17 October 2014 20:09:51 Arnd Bergmann wrote:
-> >> On October 17, 2014 2:16:00 PM CEST, "Rafael J. Wysocki" <rjw@rjwysocki.net> wrote:
-> >> >From: Mika Westerberg <mika.westerberg@linux.intel.com>
-> >> >
-> >> >Some drivers need to deal with only firmware representation of its
-> >> >GPIOs. An example would be a GPIO button array driver where each button
-> >> >is described as a separate firmware node in device tree. Typically
-> >> >these
-> >> >child nodes do not have physical representation in the Linux device
-> >> >model.
-> >> >
-> >> >In order to help device drivers to handle such firmware child nodes we
-> >> >add dev[m]_get_named_gpiod_from_child() that takes a child firmware
-> >> >node pointer as its second argument (the first one is the parent device
-> >> >itself), finds the GPIO using whatever is the underlying firmware
-> >> >method, and requests the GPIO properly.
-> >>
-> >> Could we also have a wrapper around this function without a "name" argument,
-> >> using just the index?
-> >
-> > Expanding on this thought: I think we should mandate for new bindings
-> > that they use either a name and no index, or an index but not name,
-> 
-> I'm afraid this could forbid some useful use-cases, namely the ones
-> where several GPIOs serve the same function (and are typically set
-> together). We had a few patch proposals to handle such GPIO groups,
-> and even though one was in pretty good shape the submitter did not
-> push it until the end. :/
-> 
-> But my concern is that instead of having this:
-> 
-> enable-gpio = <&gpio 0 GPIO_ACTIVE_HIGH>;
-> value-gpios = <&gpio 1 GPIO_ACTIVE_HIGH ... &gpio 8 GPIO_ACTIVE_HIGH>;
-> 
-> We would force this:
-> 
-> enable-gpio = <&gpio 0 GPIO_ACTIVE_HIGH>;
-> value0-gpio = <&gpio 1 GPIO_ACTIVE_HIGH>;
-> ...
-> value7-gpio = <&gpio 8 GPIO_ACTIVE_HIGH>;
-> 
-> Or this:
-> 
-> // First GPIO is enable, other GPIOs are value
-> gpios = <&gpio 0 GPIO_ACTIVE_HIGH &gpio 1 GPIO_ACTIVE_HIGH ... &gpio 8
-> GPIO_ACTIVE_HIGH>;
-> 
-> Most bindings don't need that much sophistication, and for these we
-> should indeed make sure that they stick to using either the names or
-> index (and in a consistent manner), but closing the possibility to use
-> both together may bite us in the end.
+On 16.10.2014 11:53, Antoine Tenart wrote:
+> On Thu, Oct 09, 2014 at 02:38:58PM +0200, Sebastian Hesselbarth wrote:
+>> This patch series deals with a removing a IP feature that can be found
+>> on all currently supported Marvell Ethernet IP (pxa168_eth, mv643xx_eth,
+>> mvneta). The MAC IP allows to automatically perform PHY auto-negotiation
+>> without software interaction.
+>>
+>> However, this feature (a) fundamentally clashes with the way libphy works
+>> and (b) is unable to deal with quirky PHYs that require special treatment.
+>> In this series, pxa168_eth driver is rewritten to completely disable that
+>> feature and properly deal with libphy provided PHYs. The other two drivers
+>> are suspect to future patch sets, also removing the code related with it.
+>>
+>> Currently, the patches are based on next-20141009 and will be resent once
+>> v3.18-rc1 drops. This is a Request-For-Test on both BG2Q and MMP/gplug as
+>
+> I tested the series on a BG2Q, it worked well.
 
-I would actually prefer the single-property case here, but I see your
-point. Could we make it a strong suggestion rather than a mandatory
-requirement for new bindings then?
+Antoine,
 
-> > and I also think that for named gpios, we should try to converge on a
-> > common naming scheme. As discussed, we will probably want to support all
-> > the existing ways to do this even with ACPI and with the unified
-> > interface, but it doesn't have to be the obvious way.
-> 
-> Personally, I like the idea that each GPIO has a function, so now that
-> ACPI fully supports this I'd suggest the policy of using names for
-> each GPIO (e.g. never use the fallback "gpios" or "gpio" property),
-> and only ressort to indexes if several GPIOs happen to serve the same
-> function. I know we haven't reached consensus about this so far, but
-> it would be nice it we could discuss this point again in the light of
-> the new ACPI capabilities and come with something to write as a
-> guideline in the GPIO documentation.
+Thanks for testing! I assume you have added a phy-connection-type
+property to BG2Q's ethernet node?
 
-We have enforced naming things for the dmaengine binding, which has
-just led to everyone calling things "rx" and "tx". My fear is that
-if we start to enforce giving a name, we'd end up with lots of
-drivers that use a "gpio-gpios" property or something silly.
+I doubt there will be any Tested-by from MMP guys anytime soon, so
+I'll resend this with the minor remarks to be merged for 3.19.
 
-	Arnd
+Sebastian
