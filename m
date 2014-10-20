@@ -1,80 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726AbaJTSaZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 14:30:25 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33392 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751109AbaJTSaY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 14:30:24 -0400
-From: Mark Rutland <mark.rutland@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Mark Salter <msalter@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Roy Franz <roy.franz@linaro.org>
-Subject: [PATCH] efi: efi-stub: notify on DTB absence
-Date: Mon, 20 Oct 2014 19:29:42 +0100
-Message-Id: <1413829782-12891-1-git-send-email-mark.rutland@arm.com>
-X-Mailer: git-send-email 1.9.1
+	id S1752852AbaJTSbY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 14:31:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39552 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751180AbaJTSbX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 14:31:23 -0400
+Date: Mon, 20 Oct 2014 20:27:48 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kirill Tkhai <ktkhai@parallels.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Kirill Tkhai <tkhai@yandex.ru>
+Subject: Re: [PATCH v3] sched/numa: fix unsafe get_task_struct() in
+	task_numa_assign()
+Message-ID: <20141020182748.GA20424@redhat.com>
+References: <1413800145.19914.23.camel@tkhai> <20141020144757.GA10939@redhat.com> <20141020165614.GA16373@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141020165614.GA16373@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the absence of an DTB configuration table, the EFI stub will happily
-continue attempting to boot a kernel, despite the fact that this kernel
-may not function without a description of the hardware. In this case, as
-with a typo'd "dtb=" option (e.g. "dbt=") or many other possible
-failures, the only output seen by the user will be the rather terse
-output from the EFI stub:
+On 10/20, Oleg Nesterov wrote:
+>
+> On 10/20, Oleg Nesterov wrote:
+> >
+> > Again, perhaps we will need to change the lifetime rules for task_struct
+> > anyway, if we have more problems like this. But until then this looks like
+> > an overkill to me. Plus rq_curr_if_not_put() looks too subtle, and it is
+> > not generic.
+>
+> Yes... otoh, perhaps we can do something more generic? Something like
+>
+> 	struct task_struct *xxx(struct task_struct **ptask)
+> 	{
+> 		struct task_struct *task;
+> 		void *sighand;
+> 	retry:
+> 		task = ACCESS_ONCE(*ptask);
+> 		if (!task)
+> 			return NULL;
+>
+> 		if (IS_ENABLED(CONFIG_DEBUG_PAGEALLOC)) {
+> 			if (probe_kernel_read(&sighand, &task->sighand, sizeof(sighand)))
+> 				goto retry;
+> 		} else {
+> 			sighand = task->sighand;
+> 		}
+>
+> 		if (!sighand)
+> 			return NULL;
+> 		/*
+> 		 * Pairs with atomic_dec_and_test() in put_task_struct(task).
+> 		 * If we have read the freed/reused memory, we must see that
+> 		 * the pointer was updated.
+> 		 */
+> 		smp_rmb();
+> 		if (task != ACCESS_ONCE(*ptask))
+> 			goto retry;
+>
+> 		return task;
+> 	}
+>
+> task_numa_compare() can do cur = xxx(&rc->curr), but this helper can work
+> with any "task_struct *" pointer assuming that somehow this pointer is
+> cleared or changed before the final put_task_struct().
+>
+> What do you think? Peter?
 
-EFI stub: Booting Linux Kernel...
+And if we introduce this helper, it would better to check "sighand != NULL"
+after "task != *ptask":
 
-To aid those attempting to debug such failures, this patch adds a notice
-when no DTB is found, making the output more helpful:
+	struct task_struct *xxx(struct task_struct **ptask)
+	{
+		struct task_struct *task;
+		struct sighand_struct *sighand;
 
-EFI stub: Booting Linux Kernel...
-EFI stub: Generating empty DTB
+	retry:
+		task = ACCESS_ONCE(*ptask);
+		if (!task)
+			return task;
 
-Similarly, a positive acknowledgement is added when a user-specified DTB
-is in use:
+		if (IS_ENABLED(CONFIG_DEBUG_PAGEALLOC)) {
+			if (probe_kernel_read(&sighand, &task->sighand, sizeof(sighand)))
+				goto retry;
+		} else {
+			sighand = task->sighand;
+		}
+		/*
+		 * Pairs with atomic_dec_and_test() in put_task_struct(task).
+		 * If we have read the freed/reused memory, we must see that
+		 * the pointer was updated.
+		 */
+		smp_rmb();
+		if (unlikely(task != ACCESS_ONCE(*ptask)))
+			goto retry;
+		/*
+		 * release_task(task) was already called, potentially before
+		 * the caller took rcu_read_lock() and in this case it can be
+		 * freed before rcu_read_unlock().
+		 */
+		if (!sighand)
+			return NULL;
+		return task;
+	}
 
-EFI stub: Booting Linux Kernel...
-EFI stub: Using DTB from command line
+Of course, task_numa_compare() do not really need "retry", and task == NULL
+is not possible. But this way the new helper can (probably) have more users,
+and this just looks better imo.
 
-Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-Acked-by: Leif Lindholm <leif.lindholm@linaro.org>
-Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Cc: Mark Salter <msalter@redhat.com>
-Cc: Matt Fleming <matt.fleming@intel.com>
-Cc: Roy Franz <roy.franz@linaro.org>
----
- drivers/firmware/efi/libstub/arm-stub.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/firmware/efi/libstub/arm-stub.c b/drivers/firmware/efi/libstub/arm-stub.c
-index 480339b..10abf24 100644
---- a/drivers/firmware/efi/libstub/arm-stub.c
-+++ b/drivers/firmware/efi/libstub/arm-stub.c
-@@ -243,9 +243,16 @@ unsigned long __init efi_entry(void *handle, efi_system_table_t *sys_table,
- 			goto fail_free_cmdline;
- 		}
- 	}
--	if (!fdt_addr)
-+
-+	if (fdt_addr) {
-+		pr_efi(sys_table, "Using DTB from command line\n");
-+	} else {
- 		/* Look for a device tree configuration table entry. */
- 		fdt_addr = (uintptr_t)get_fdt(sys_table);
-+	}
-+
-+	if (!fdt_addr)
-+		pr_efi(sys_table, "Generating empty DTB\n");
- 
- 	status = handle_cmdline_files(sys_table, image, cmdline_ptr,
- 				      "initrd=", dram_base + SZ_512M,
--- 
-1.9.1
+Oleg.
 
