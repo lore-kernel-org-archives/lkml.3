@@ -1,459 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620AbaJTVxw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 17:53:52 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:58134 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753023AbaJTVxu (ORCPT
+	id S1753753AbaJTVy3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 17:54:29 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:59424 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753254AbaJTVy1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 17:53:50 -0400
-Date: Mon, 20 Oct 2014 14:53:45 -0700
-From: josh@joshtriplett.org
-To: Pieter Smith <pieter@boesman.nl>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        open list <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 1/2] fs: Moved sendfile syscall to own source file
-Message-ID: <20141020215345.GA8929@cloud>
-References: <1413841443-1165-1-git-send-email-pieter@boesman.nl>
+	Mon, 20 Oct 2014 17:54:27 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>, devicetree@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Darren Hart <dvhart@linux.intel.com>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH v5 09/12] Driver core: Unified interface for firmware node properties
+Date: Tue, 21 Oct 2014 00:14:51 +0200
+Message-ID: <2924920.AIFmfW74hs@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141020141818.3DC65C40982@trevor.secretlab.ca>
+References: <2660541.BycO7TFnA2@vostro.rjw.lan> <7821406.D7i8JfDpzX@vostro.rjw.lan> <20141020141818.3DC65C40982@trevor.secretlab.ca>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413841443-1165-1-git-send-email-pieter@boesman.nl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 20, 2014 at 11:43:01PM +0200, Pieter Smith wrote:
-> Part of the tinification effort. Splitting out the sendfile syscall
-> allows optional compilation in the succeeding patch.
+On Monday, October 20, 2014 04:18:18 PM Grant Likely wrote:
+> On Mon, 20 Oct 2014 01:46 +0200
+> , "Rafael J. Wysocki" <rjw@rjwysocki.net>
+>  wrote:
+> > On Saturday, October 18, 2014 04:55:20 PM Grant Likely wrote:
+> > > On Fri, 17 Oct 2014 14:14:53 +0200
+
+[cut]
+
+> > 
+> > No, that wouldn't work for ACPI (if I understand your idea correctly), because
+> > acpi_dev_prop_read(adev, propname, DEV_PROP_U8, val) will look for a single-value
+> > int property, whereas acpi_dev_prop_read_array(adev, propname, DEV_PROP_U8, val, 1)
+> > will look for a list (package) property and will attempt to retrieve the first
+> > element of that.
 > 
-> Signed-off-by: Pieter Smith <pieter@boesman.nl>
+> That's a problem. There are certainly cases of DT code that use the
+> non-array version to read something that could also be read as an array
+> when the code only want the first value. It is a completely valid thing
+> to do. The ACPI accessors should be completely okay with either a single
+> value, or the first item(s) in a package when doing either a single read or
+> an array read.
 
-Seems fine in general.  One minor nit below, and with that,
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Yeah.
 
->  fs/Makefile     |   3 +-
->  fs/read_write.c | 176 -------------------------------------------------
->  fs/sendfile.c   | 200 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 201 insertions(+), 178 deletions(-)
->  create mode 100644 fs/sendfile.c
+So I have a new version of the patchset in which that is implemented as
+you are describing.  Fortunately, the differences are limited to patches #2,
+#3 (for the "compatible" property to behave this way too) and #9 and are not
+too big.
+
+I'd prefer that to pass the Mika's tests before posting it, though, which will
+take some time I suppose.
+
+> so, if it is encoded as a singl values, then return that value, and the
+> largest size of array it will return is 1 element.
 > 
-> diff --git a/fs/Makefile b/fs/Makefile
-> index 90c8852..1e3423f 100644
-> --- a/fs/Makefile
-> +++ b/fs/Makefile
-> @@ -5,7 +5,7 @@
->  # Rewritten to use lists instead of if-statements.
->  # 
->  
-> -obj-y :=	open.o read_write.o file_table.o super.o \
-> +obj-y :=	open.o read_write.o sendfile.o file_table.o super.o \
->  		char_dev.o stat.o exec.o pipe.o namei.o fcntl.o \
->  		ioctl.o readdir.o select.o dcache.o inode.o \
->  		attr.o bad_inode.o file.o filesystems.o namespace.o \
-> @@ -18,7 +18,6 @@ obj-y +=	buffer.o block_dev.o direct-io.o mpage.o
->  else
->  obj-y +=	no-block.o
->  endif
-> -
+> If it is encoded as a package, then a single read should return the
+> first element, and an array read should return up to the number of
+> values in the package.
 
-Unrelated whitespace change.
+Rafael
 
->  obj-$(CONFIG_PROC_FS) += proc_namespace.o
->  
->  obj-y				+= notify/
-> diff --git a/fs/read_write.c b/fs/read_write.c
-> index 009d854..fc27a01 100644
-> --- a/fs/read_write.c
-> +++ b/fs/read_write.c
-> @@ -1188,179 +1188,3 @@ COMPAT_SYSCALL_DEFINE5(pwritev, compat_ulong_t, fd,
->  	return __compat_sys_pwritev64(fd, vec, vlen, pos);
->  }
->  #endif
-> -
-> -static ssize_t do_sendfile(int out_fd, int in_fd, loff_t *ppos,
-> -		  	   size_t count, loff_t max)
-> -{
-> -	struct fd in, out;
-> -	struct inode *in_inode, *out_inode;
-> -	loff_t pos;
-> -	loff_t out_pos;
-> -	ssize_t retval;
-> -	int fl;
-> -
-> -	/*
-> -	 * Get input file, and verify that it is ok..
-> -	 */
-> -	retval = -EBADF;
-> -	in = fdget(in_fd);
-> -	if (!in.file)
-> -		goto out;
-> -	if (!(in.file->f_mode & FMODE_READ))
-> -		goto fput_in;
-> -	retval = -ESPIPE;
-> -	if (!ppos) {
-> -		pos = in.file->f_pos;
-> -	} else {
-> -		pos = *ppos;
-> -		if (!(in.file->f_mode & FMODE_PREAD))
-> -			goto fput_in;
-> -	}
-> -	retval = rw_verify_area(READ, in.file, &pos, count);
-> -	if (retval < 0)
-> -		goto fput_in;
-> -	count = retval;
-> -
-> -	/*
-> -	 * Get output file, and verify that it is ok..
-> -	 */
-> -	retval = -EBADF;
-> -	out = fdget(out_fd);
-> -	if (!out.file)
-> -		goto fput_in;
-> -	if (!(out.file->f_mode & FMODE_WRITE))
-> -		goto fput_out;
-> -	retval = -EINVAL;
-> -	in_inode = file_inode(in.file);
-> -	out_inode = file_inode(out.file);
-> -	out_pos = out.file->f_pos;
-> -	retval = rw_verify_area(WRITE, out.file, &out_pos, count);
-> -	if (retval < 0)
-> -		goto fput_out;
-> -	count = retval;
-> -
-> -	if (!max)
-> -		max = min(in_inode->i_sb->s_maxbytes, out_inode->i_sb->s_maxbytes);
-> -
-> -	if (unlikely(pos + count > max)) {
-> -		retval = -EOVERFLOW;
-> -		if (pos >= max)
-> -			goto fput_out;
-> -		count = max - pos;
-> -	}
-> -
-> -	fl = 0;
-> -#if 0
-> -	/*
-> -	 * We need to debate whether we can enable this or not. The
-> -	 * man page documents EAGAIN return for the output at least,
-> -	 * and the application is arguably buggy if it doesn't expect
-> -	 * EAGAIN on a non-blocking file descriptor.
-> -	 */
-> -	if (in.file->f_flags & O_NONBLOCK)
-> -		fl = SPLICE_F_NONBLOCK;
-> -#endif
-> -	file_start_write(out.file);
-> -	retval = do_splice_direct(in.file, &pos, out.file, &out_pos, count, fl);
-> -	file_end_write(out.file);
-> -
-> -	if (retval > 0) {
-> -		add_rchar(current, retval);
-> -		add_wchar(current, retval);
-> -		fsnotify_access(in.file);
-> -		fsnotify_modify(out.file);
-> -		out.file->f_pos = out_pos;
-> -		if (ppos)
-> -			*ppos = pos;
-> -		else
-> -			in.file->f_pos = pos;
-> -	}
-> -
-> -	inc_syscr(current);
-> -	inc_syscw(current);
-> -	if (pos > max)
-> -		retval = -EOVERFLOW;
-> -
-> -fput_out:
-> -	fdput(out);
-> -fput_in:
-> -	fdput(in);
-> -out:
-> -	return retval;
-> -}
-> -
-> -SYSCALL_DEFINE4(sendfile, int, out_fd, int, in_fd, off_t __user *, offset, size_t, count)
-> -{
-> -	loff_t pos;
-> -	off_t off;
-> -	ssize_t ret;
-> -
-> -	if (offset) {
-> -		if (unlikely(get_user(off, offset)))
-> -			return -EFAULT;
-> -		pos = off;
-> -		ret = do_sendfile(out_fd, in_fd, &pos, count, MAX_NON_LFS);
-> -		if (unlikely(put_user(pos, offset)))
-> -			return -EFAULT;
-> -		return ret;
-> -	}
-> -
-> -	return do_sendfile(out_fd, in_fd, NULL, count, 0);
-> -}
-> -
-> -SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd, loff_t __user *, offset, size_t, count)
-> -{
-> -	loff_t pos;
-> -	ssize_t ret;
-> -
-> -	if (offset) {
-> -		if (unlikely(copy_from_user(&pos, offset, sizeof(loff_t))))
-> -			return -EFAULT;
-> -		ret = do_sendfile(out_fd, in_fd, &pos, count, 0);
-> -		if (unlikely(put_user(pos, offset)))
-> -			return -EFAULT;
-> -		return ret;
-> -	}
-> -
-> -	return do_sendfile(out_fd, in_fd, NULL, count, 0);
-> -}
-> -
-> -#ifdef CONFIG_COMPAT
-> -COMPAT_SYSCALL_DEFINE4(sendfile, int, out_fd, int, in_fd,
-> -		compat_off_t __user *, offset, compat_size_t, count)
-> -{
-> -	loff_t pos;
-> -	off_t off;
-> -	ssize_t ret;
-> -
-> -	if (offset) {
-> -		if (unlikely(get_user(off, offset)))
-> -			return -EFAULT;
-> -		pos = off;
-> -		ret = do_sendfile(out_fd, in_fd, &pos, count, MAX_NON_LFS);
-> -		if (unlikely(put_user(pos, offset)))
-> -			return -EFAULT;
-> -		return ret;
-> -	}
-> -
-> -	return do_sendfile(out_fd, in_fd, NULL, count, 0);
-> -}
-> -
-> -COMPAT_SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd,
-> -		compat_loff_t __user *, offset, compat_size_t, count)
-> -{
-> -	loff_t pos;
-> -	ssize_t ret;
-> -
-> -	if (offset) {
-> -		if (unlikely(copy_from_user(&pos, offset, sizeof(loff_t))))
-> -			return -EFAULT;
-> -		ret = do_sendfile(out_fd, in_fd, &pos, count, 0);
-> -		if (unlikely(put_user(pos, offset)))
-> -			return -EFAULT;
-> -		return ret;
-> -	}
-> -
-> -	return do_sendfile(out_fd, in_fd, NULL, count, 0);
-> -}
-> -#endif
-> diff --git a/fs/sendfile.c b/fs/sendfile.c
-> new file mode 100644
-> index 0000000..4ceccd4
-> --- /dev/null
-> +++ b/fs/sendfile.c
-> @@ -0,0 +1,200 @@
-> +/*
-> + *  linux/fs/sendfile.c
-> + *
-> + *  Copyright (C) 1991, 1992  Linus Torvalds
-> + */
-> +
-> +#include <linux/slab.h>
-> +#include <linux/stat.h>
-> +#include <linux/fcntl.h>
-> +#include <linux/file.h>
-> +#include <linux/uio.h>
-> +#include <linux/aio.h>
-> +#include <linux/fsnotify.h>
-> +#include <linux/security.h>
-> +#include <linux/export.h>
-> +#include <linux/syscalls.h>
-> +#include <linux/pagemap.h>
-> +#include <linux/splice.h>
-> +#include <linux/compat.h>
-> +#include "internal.h"
-> +
-> +#include <linux/uaccess.h>
-> +#include <asm/unistd.h>
-> +
-> +
-> +static ssize_t do_sendfile(int out_fd, int in_fd, loff_t *ppos,
-> +			   size_t count, loff_t max)
-> +{
-> +	struct fd in, out;
-> +	struct inode *in_inode, *out_inode;
-> +	loff_t pos;
-> +	loff_t out_pos;
-> +	ssize_t retval;
-> +	int fl;
-> +
-> +	/*
-> +	 * Get input file, and verify that it is ok..
-> +	 */
-> +	retval = -EBADF;
-> +	in = fdget(in_fd);
-> +	if (!in.file)
-> +		goto out;
-> +	if (!(in.file->f_mode & FMODE_READ))
-> +		goto fput_in;
-> +	retval = -ESPIPE;
-> +	if (!ppos) {
-> +		pos = in.file->f_pos;
-> +	} else {
-> +		pos = *ppos;
-> +		if (!(in.file->f_mode & FMODE_PREAD))
-> +			goto fput_in;
-> +	}
-> +	retval = rw_verify_area(READ, in.file, &pos, count);
-> +	if (retval < 0)
-> +		goto fput_in;
-> +	count = retval;
-> +
-> +	/*
-> +	 * Get output file, and verify that it is ok..
-> +	 */
-> +	retval = -EBADF;
-> +	out = fdget(out_fd);
-> +	if (!out.file)
-> +		goto fput_in;
-> +	if (!(out.file->f_mode & FMODE_WRITE))
-> +		goto fput_out;
-> +	retval = -EINVAL;
-> +	in_inode = file_inode(in.file);
-> +	out_inode = file_inode(out.file);
-> +	out_pos = out.file->f_pos;
-> +	retval = rw_verify_area(WRITE, out.file, &out_pos, count);
-> +	if (retval < 0)
-> +		goto fput_out;
-> +	count = retval;
-> +
-> +	if (!max)
-> +		max = min(in_inode->i_sb->s_maxbytes, out_inode->i_sb->s_maxbytes);
-> +
-> +	if (unlikely(pos + count > max)) {
-> +		retval = -EOVERFLOW;
-> +		if (pos >= max)
-> +			goto fput_out;
-> +		count = max - pos;
-> +	}
-> +
-> +	fl = 0;
-> +#if 0
-> +	/*
-> +	 * We need to debate whether we can enable this or not. The
-> +	 * man page documents EAGAIN return for the output at least,
-> +	 * and the application is arguably buggy if it doesn't expect
-> +	 * EAGAIN on a non-blocking file descriptor.
-> +	 */
-> +	if (in.file->f_flags & O_NONBLOCK)
-> +		fl = SPLICE_F_NONBLOCK;
-> +#endif
-> +	file_start_write(out.file);
-> +	retval = do_splice_direct(in.file, &pos, out.file, &out_pos, count, fl);
-> +	file_end_write(out.file);
-> +
-> +	if (retval > 0) {
-> +		add_rchar(current, retval);
-> +		add_wchar(current, retval);
-> +		fsnotify_access(in.file);
-> +		fsnotify_modify(out.file);
-> +		out.file->f_pos = out_pos;
-> +		if (ppos)
-> +			*ppos = pos;
-> +		else
-> +			in.file->f_pos = pos;
-> +	}
-> +
-> +	inc_syscr(current);
-> +	inc_syscw(current);
-> +	if (pos > max)
-> +		retval = -EOVERFLOW;
-> +
-> +fput_out:
-> +	fdput(out);
-> +fput_in:
-> +	fdput(in);
-> +out:
-> +	return retval;
-> +}
-> +
-> +SYSCALL_DEFINE4(sendfile, int, out_fd, int, in_fd, off_t __user *, offset, size_t, count)
-> +{
-> +	loff_t pos;
-> +	off_t off;
-> +	ssize_t ret;
-> +
-> +	if (offset) {
-> +		if (unlikely(get_user(off, offset)))
-> +			return -EFAULT;
-> +		pos = off;
-> +		ret = do_sendfile(out_fd, in_fd, &pos, count, MAX_NON_LFS);
-> +		if (unlikely(put_user(pos, offset)))
-> +			return -EFAULT;
-> +		return ret;
-> +	}
-> +
-> +	return do_sendfile(out_fd, in_fd, NULL, count, 0);
-> +}
-> +
-> +SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd, loff_t __user *, offset, size_t, count)
-> +{
-> +	loff_t pos;
-> +	ssize_t ret;
-> +
-> +	if (offset) {
-> +		if (unlikely(copy_from_user(&pos, offset, sizeof(loff_t))))
-> +			return -EFAULT;
-> +		ret = do_sendfile(out_fd, in_fd, &pos, count, 0);
-> +		if (unlikely(put_user(pos, offset)))
-> +			return -EFAULT;
-> +		return ret;
-> +	}
-> +
-> +	return do_sendfile(out_fd, in_fd, NULL, count, 0);
-> +}
-> +
-> +#ifdef CONFIG_COMPAT
-> +COMPAT_SYSCALL_DEFINE4(sendfile, int, out_fd, int, in_fd,
-> +		compat_off_t __user *, offset, compat_size_t, count)
-> +{
-> +	loff_t pos;
-> +	off_t off;
-> +	ssize_t ret;
-> +
-> +	if (offset) {
-> +		if (unlikely(get_user(off, offset)))
-> +			return -EFAULT;
-> +		pos = off;
-> +		ret = do_sendfile(out_fd, in_fd, &pos, count, MAX_NON_LFS);
-> +		if (unlikely(put_user(pos, offset)))
-> +			return -EFAULT;
-> +		return ret;
-> +	}
-> +
-> +	return do_sendfile(out_fd, in_fd, NULL, count, 0);
-> +}
-> +
-> +COMPAT_SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd,
-> +		compat_loff_t __user *, offset, compat_size_t, count)
-> +{
-> +	loff_t pos;
-> +	ssize_t ret;
-> +
-> +	if (offset) {
-> +		if (unlikely(copy_from_user(&pos, offset, sizeof(loff_t))))
-> +			return -EFAULT;
-> +		ret = do_sendfile(out_fd, in_fd, &pos, count, 0);
-> +		if (unlikely(put_user(pos, offset)))
-> +			return -EFAULT;
-> +		return ret;
-> +	}
-> +
-> +	return do_sendfile(out_fd, in_fd, NULL, count, 0);
-> +}
-> +#endif
-> -- 
-> 1.9.1
-> 
