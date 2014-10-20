@@ -1,96 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753347AbaJTTIb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 15:08:31 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:57017 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003AbaJTTHH (ORCPT
+	id S1753493AbaJTTIh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 15:08:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37557 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752812AbaJTTI3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 15:07:07 -0400
-Message-ID: <54455D55.6030003@monstr.eu>
-Date: Mon, 20 Oct 2014 21:07:01 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
-CC: Michal Simek <michal.simek@xilinx.com>,
-        Josh Cartwright <josh.cartwright@ni.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        linux-kernel@vger.kernel.org,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>
-Subject: Re: [PATCH v2 1/3] ARM: zynq: Move common.h to generic location
-References: <742a19eb987f3f99b42ba4b7e7ebc27bf19d7d72.1413811526.git.michal.simek@xilinx.com> <3225036.9QQDRKvzZS@wuerfel>
-In-Reply-To: <3225036.9QQDRKvzZS@wuerfel>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="vqpllCpkx3K9iVkw9uwjQFFMhose05C28"
+	Mon, 20 Oct 2014 15:08:29 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Kamal Mostafa <kamal@canonical.com>,
+        Andreas Noever <andreas.noever@gmail.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH] Revert duplicate "PCI: pciehp: Prevent NULL dereference during probe"
+Date: Mon, 20 Oct 2014 12:08:10 -0700
+Message-Id: <1413832091-28752-1-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---vqpllCpkx3K9iVkw9uwjQFFMhose05C28
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+This reverts commit bceee4a97eb58bd0e80e39eff11b506ddd9e7ad3.
 
-On 10/20/2014 03:36 PM, Arnd Bergmann wrote:
-> On Monday 20 October 2014 15:25:31 Michal Simek wrote:
->> include/soc/zynq/ is the right location for this header
->> to be able to share information from this header with other
->> drivers which require it.
->>
->> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
->> ---
->>
->> Changes in v2:
->> - Update pm.c added in 3.17 too - Soren pointed on it
->>
->>  arch/arm/mach-zynq/common.c                       |  2 +-
->>  arch/arm/mach-zynq/hotplug.c                      | 14 --------------=
+This patch was applied twice (identical patch, different descriptions):
+    62e4492 PCI: Prevent NULL dereference during pciehp probe
+    bceee4a PCI: pciehp: Prevent NULL dereference during probe
 
->>  arch/arm/mach-zynq/platsmp.c                      |  2 +-
->>  arch/arm/mach-zynq/pm.c                           |  2 +-
->>  arch/arm/mach-zynq/slcr.c                         |  2 +-
->>  {arch/arm/mach-zynq =3D> include/soc/zynq}/common.h |  0
->>  6 files changed, 4 insertions(+), 18 deletions(-)
->>  delete mode 100644 arch/arm/mach-zynq/hotplug.c
->>  rename {arch/arm/mach-zynq =3D> include/soc/zynq}/common.h (100%)
->>
->=20
-> NAK
->=20
-> Most (if not all) of that header should not be visible to drivers.
-> If you need to share some symbols, make a proper header file for those,=
+Revert the latter to dispose of the duplicated code block.
 
-> not one called 'common.h'.
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Cc: Andreas Noever <andreas.noever@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: stable@vger.kernel.org  # v3.2+
+---
+ drivers/pci/hotplug/pciehp_core.c | 7 -------
+ 1 file changed, 7 deletions(-)
 
-Ok. I will split it to more files - no problem to do it.
+diff --git a/drivers/pci/hotplug/pciehp_core.c b/drivers/pci/hotplug/pciehp_core.c
+index 3a5e7e2..07aa722 100644
+--- a/drivers/pci/hotplug/pciehp_core.c
++++ b/drivers/pci/hotplug/pciehp_core.c
+@@ -262,13 +262,6 @@ static int pciehp_probe(struct pcie_device *dev)
+ 		goto err_out_none;
+ 	}
+ 
+-	if (!dev->port->subordinate) {
+-		/* Can happen if we run out of bus numbers during probe */
+-		dev_err(&dev->device,
+-			"Hotplug bridge without secondary bus, ignoring\n");
+-		goto err_out_none;
+-	}
+-
+ 	ctrl = pcie_init(dev);
+ 	if (!ctrl) {
+ 		dev_err(&dev->device, "Controller initialization failed\n");
+-- 
+1.9.1
 
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---vqpllCpkx3K9iVkw9uwjQFFMhose05C28
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAlRFXVYACgkQykllyylKDCErPwCeKV6FCUooxcucrkZoOXftD5ah
-DdkAoJV21aafW7oXnTZcYRfTLH+HdMap
-=NYL1
------END PGP SIGNATURE-----
-
---vqpllCpkx3K9iVkw9uwjQFFMhose05C28--
