@@ -1,99 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753253AbaJTT7k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 15:59:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32628 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751680AbaJTT7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 15:59:38 -0400
-Date: Mon, 20 Oct 2014 21:56:18 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Cong Wang <xiyou.wangcong@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: oom && coredump
-Message-ID: <20141020195618.GA606@redhat.com>
-References: <20141017171904.GA12263@redhat.com> <20141020184657.GA505@dhcp22.suse.cz> <20141020190620.GA21882@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141020190620.GA21882@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753151AbaJTUBu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 16:01:50 -0400
+Received: from www17.your-server.de ([213.133.104.17]:59054 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192AbaJTUBt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 16:01:49 -0400
+Message-ID: <1413835305.2991.46.camel@localhost.localdomain>
+Subject: Re: [uml-devel] kernel stalls in balance_dirty_pages_ratelimited()
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Anton Ivanov <anton.ivanov@kot-begemot.co.uk>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net
+Date: Mon, 20 Oct 2014 22:01:45 +0200
+In-Reply-To: <1413747337.2991.36.camel@localhost.localdomain>
+References: <1413236904.13916.13.camel@localhost.localdomain>
+	 <543CB6BA.9030907@kot-begemot.co.uk>	<543CC5FE.4000601@kot-begemot.co.uk>
+	 <1413271301.13744.13.camel@localhost.localdomain>
+	 <543CD148.7010904@kot-begemot.co.uk>
+	 <1413730776.2991.16.camel@localhost.localdomain>
+	 <5443E097.2000801@kot-begemot.co.uk>
+	 <1413747337.2991.36.camel@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/20, Oleg Nesterov wrote:
->
-> And I agree that it
-> is hardly possible to close this race, and this patch makes the things
-> better.
+Am Sonntag, den 19.10.2014, 21:35 +0200 schrieb Thomas Meyer:
+> Am Sonntag, den 19.10.2014, 17:02 +0100 schrieb Anton Ivanov:
+> > On 19/10/14 15:59, Thomas Meyer wrote:
+> > > Am Dienstag, den 14.10.2014, 08:31 +0100 schrieb Anton Ivanov:
+> > >> I see a very similar stall on writeout to ubd with my patches (easy) and 
+> > >> without (difficult - takes running an IO soak for a few days).
+> > >>
+> > >> It stalls (usually) when trying to flush the journal file of ext4.
+> > > any ideas?
+> > 
+> > I had some suspicion of a race somewhere in the UML VM subsystem. I
+> > sprinked barrier() all over it, nope not the case.
+> > 
 
-speaking of "partial" fixes for oom problems...
+I added this patch to the uml kernel:
 
-Perhaps the patch below makes sense? Sure, it is racy, but probably
-better than nothing. And in any case (imo) this SIGNAL_GROUP_COREDUMP
-check doesn't look bad, the coredumping task can consume more memory,
-and we can't assume it is going to actually exit soon.
-
-And at least we can kill that ugly and wrong ptrace check.
-
-What do you think?
-
-Oleg.
-
---- x/mm/oom_kill.c
-+++ x/mm/oom_kill.c
-@@ -254,6 +254,12 @@ static enum oom_constraint constrained_alloc(struct zonelist *zonelist,
+diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
+index 82e7db7..7f35fa4 100644
+--- a/include/linux/vmstat.h
++++ b/include/linux/vmstat.h
+@@ -241,6 +241,10 @@ static inline void __inc_zone_state(struct zone *zone, enum zone_stat_item item)
+ static inline void __dec_zone_state(struct zone *zone, enum zone_stat_item item)
+ {
+        atomic_long_dec(&zone->vm_stat[item]);
++       if (&vm_stat[item] == &vm_stat[NR_FILE_DIRTY] &&
++               atomic_long_read(&vm_stat[item]) < 0) {
++               asm("int3");
++       }
+        atomic_long_dec(&vm_stat[item]);
  }
- #endif
- 
-+static inline bool task_will_free_mem(struct task_struct *task)
-+{
-+	return (task->flags & PF_EXITING) &&
-+		!(task->signal->flags & SIGNAL_GROUP_COREDUMP);
-+}
-+
- enum oom_scan_t oom_scan_process_thread(struct task_struct *task,
- 		unsigned long totalpages, const nodemask_t *nodemask,
- 		bool force_kill)
-@@ -281,14 +287,9 @@ enum oom_scan_t oom_scan_process_thread(struct task_struct *task,
- 	if (oom_task_origin(task))
- 		return OOM_SCAN_SELECT;
- 
--	if (task->flags & PF_EXITING && !force_kill) {
--		/*
--		 * If this task is not being ptraced on exit, then wait for it
--		 * to finish before killing some other task unnecessarily.
--		 */
--		if (!(task->group_leader->ptrace & PT_TRACE_EXIT))
--			return OOM_SCAN_ABORT;
--	}
-+	if (task_will_free_mem(task) && !force_kill)
-+		return OOM_SCAN_ABORT;
-+
- 	return OOM_SCAN_OK;
- }
- 
-@@ -426,7 +427,7 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 	 * If the task is already exiting, don't alarm the sysadmin or kill
- 	 * its children or threads, just set TIF_MEMDIE so it can die quickly
- 	 */
--	if (p->flags & PF_EXITING) {
-+	if (task_will_free_mem(p)) {
- 		set_tsk_thread_flag(p, TIF_MEMDIE);
- 		put_task_struct(p);
- 		return;
-@@ -632,7 +633,7 @@ void out_of_memory(struct zonelist *zonelist, gfp_t gfp_mask,
- 	 * select it.  The goal is to allow it to allocate so that it may
- 	 * quickly exit and free its memory.
- 	 */
--	if (fatal_signal_pending(current) || current->flags & PF_EXITING) {
-+	if (fatal_signal_pending(current) || task_will_free_mem(current)) {
- 		set_thread_flag(TIF_MEMDIE);
- 		return;
- 	}
+
+
+And this is the backtrace leading to the negative nr_dirty value:
+
+Program received signal SIGTRAP, Trace/breakpoint trap.
+__dec_zone_state (item=<optimized out>, zone=<optimized out>) at include/linux/vmstat.h:248
+(gdb) bt
+#0  __dec_zone_state (item=<optimized out>, zone=<optimized out>) at include/linux/vmstat.h:248
+#1  __dec_zone_page_state (item=<optimized out>, page=<optimized out>) at include/linux/vmstat.h:260
+#2  clear_page_dirty_for_io (page=0x628b7308) at mm/page-writeback.c:2333
+#3  0x0000000060188c36 in mpage_submit_page (mpd=0x808ebb90, page=<optimized out>) at fs/ext4/inode.c:1785
+#4  0x000000006018917e in mpage_map_and_submit_buffers (mpd=0x808ebb90) at fs/ext4/inode.c:1981
+#5  0x000000006018d64a in mpage_map_and_submit_extent (give_up_on_write=<optimized out>, mpd=<optimized out>, handle=<optimized out>) at fs/ext4/inode.c:2123
+#6  ext4_writepages (mapping=<optimized out>, wbc=<optimized out>) at fs/ext4/inode.c:2428
+#7  0x00000000600f0838 in do_writepages	(mapping=<optimized out>, wbc=<optimized out>) at mm/page-writeback.c:2043
+#8  0x0000000060143d29 in __writeback_single_inode (inode=0x75e191a8, wbc=0x808ebcb8) at fs/fs-writeback.c:461
+#9  0x0000000060144c00 in writeback_sb_inodes (sb=<optimized out>, wb=0x80a92330, work=0x808ebe00) at fs/fs-writeback.c:688
+#10 0x0000000060144e0e in __writeback_inodes_wb (wb=0x808eb990,	work=0x628b7308) at fs/fs-writeback.c:733
+#11 0x0000000060144f8d in wb_writeback (wb=0x80a92330, work=0x808ebe00) at fs/fs-writeback.c:864
+#12 0x0000000060145375 in wb_check_old_data_flush (wb=<optimized out>) at fs/fs-writeback.c:979
+#13 wb_do_writeback (wb=<optimized out>) at fs/fs-writeback.c:1014
+#14 bdi_writeback_workfn (work=0x808eb990) at fs/fs-writeback.c:1044
+#15 0x00000000600690a2 in process_one_work (worker=0x808c3700, work=0x80a92340)	at kernel/workqueue.c:2023
+#16 0x0000000060069b5e in worker_thread	(__worker=0x808eb990) at kernel/workqueue.c:2155
+#17 0x000000006006dd9f in kthread (_create=0x80822040) at kernel/kthread.c:207
+#18 0x000000006003ab59 in new_thread_handler ()	at arch/um/kernel/process.c:129
+#19 0x0000000000000000 in ?? ()
+
+
 
