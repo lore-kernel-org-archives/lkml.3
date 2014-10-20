@@ -1,143 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751961AbaJTDXV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 23:23:21 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:13530 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750807AbaJTDXS (ORCPT
+	id S1752198AbaJTDXm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 23:23:42 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:57298 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751993AbaJTDXi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 23:23:18 -0400
-X-AuditID: cbfee691-f79b86d000004a5a-98-544480239a26
-Message-id: <54448023.1050008@samsung.com>
-Date: Mon, 20 Oct 2014 12:23:15 +0900
-From: Jaehoon Chung <jh80.chung@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-To: Alim Akhtar <alim.akhtar@gmail.com>, Doug Anderson <dianders@chromium.org>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>, Seungwon Jeon <tgih.jun@samsung.com>,
-        Addy Ke <addy.ke@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Chris Ball <chris@printf.net>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mmc: dw_mmc: Remove old card detect infrastructure
-References: <1413304389-6580-1-git-send-email-dianders@chromium.org>
- <CAGOxZ507j5QjnT_hW2y0KPZsw6WDJWRPLdesTBm4+C8D2EznWw@mail.gmail.com>
- <CAD=FV=X+q2ymbB0EZkjj_tip9_PLdFV+Tfee+MkeUDSfD3E-ig@mail.gmail.com>
- <CAGOxZ51x8cd9XmNg49aaUdZQkw-hhEA-mC=34ZSjLf0XF8Zbvw@mail.gmail.com>
-In-reply-to: <CAGOxZ51x8cd9XmNg49aaUdZQkw-hhEA-mC=34ZSjLf0XF8Zbvw@mail.gmail.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAIsWRmVeSWpSXmKPExsWyRsSkQFe5wSXEYFavhcXK938ZLZb9/85k
-	sfRWtcWDedvYLCZc3s5ocXbZQTaLy7vmsFkc+d/PaPHkzExGiw/3LzJbHF8b7sDtMbvhIovH
-	zll32T3uXNvD5nHj1UImj7+z9rN49G1ZxejxeZNcAHsUl01Kak5mWWqRvl0CV0bfgkusBZMl
-	Ko6+2sLSwPhdqIuRk0NCwETi8q0FrBC2mMSFe+vZuhi5OIQEljJKtP5qZOpi5AAr2vuqACI+
-	nVFiXvMrNpAGIYHXjBJXlweA2LwCWhLP22ezgNgsAqoSD04uBbPZBHQktn87zgRiiwqESRxq
-	m8cEUS8o8WPyPbAaEQE/ictLboMtZhZoY5bY+PUk2AJhAXeJrXePM0Jsnskk0br5P1gHp0Cw
-	xInJF8FsZgF1iUnzFjFD2PISm9e8ZQZpkBD4yS4xseMdG8RJAhLfJh9igXhHVmLTAWaIlyUl
-	Dq64wTKBUWwWkqNmIRk7C8nYBYzMqxhFUwuSC4qT0otM9YoTc4tL89L1kvNzNzECI/b0v2cT
-	dzDeP2B9iFGAg1GJh3eHmUuIEGtiWXFl7iFGU6ArJjJLiSbnA9NCXkm8obGZkYWpiamxkbml
-	mZI4r470z2AhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjIL//26pWeestW7vkt9FHUdM80O9
-	F5aJu6zsccre9fGBlN0inr9pvpncXodvvL3ecK9Bxl08j/m7gJVj4V+fU8ZtCblCZ8MkWWKn
-	MTjdumEa6qtfXrKp+UnAoqcTHYKDX3qva2Y88bvGRXmi66r6Zau+aZiatiT+Co86fjE9+Exs
-	5KdZf2oOKrEUZyQaajEXFScCAIngJynTAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupileLIzCtJLcpLzFFi42I5/e+xoK5yg0uIwdEr+hYr3/9ltFj2/zuT
-	xdJb1RYP5m1js5hweTujxdllB9ksLu+aw2Zx5H8/o8WTMzMZLT7cv8hscXxtuAO3x+yGiywe
-	O2fdZfe4c20Pm8eNVwuZPP7O2s/i0bdlFaPH501yAexRDYw2GamJKalFCql5yfkpmXnptkre
-	wfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA3KimUJeaUAoUCEouLlfTtME0IDXHTtYBp
-	jND1DQmC6zEyQAMJaxgz+hZcYi2YLFFx9NUWlgbG70JdjBwcEgImEntfFXQxcgKZYhIX7q1n
-	62Lk4hASmM4oMa/5FRtIQkjgNaPE1eUBIDavgJbE8/bZLCA2i4CqxIOTS8FsNgEdie3fjjOB
-	2KICYRKH2uYxQdQLSvyYfA+sRkTAT+LykttgC5gF2pglNn49CbZAWMBdYuvd44wQm2cySbRu
-	/g/WwSkQLHFi8kUwm1lAXWLSvEXMELa8xOY1b5knMArMQrJkFpKyWUjKFjAyr2IUTS1ILihO
-	Ss810itOzC0uzUvXS87P3cQITgfPpHcwrmqwOMQowMGoxMO7w8wlRIg1say4MvcQowQHs5II
-	778MoBBvSmJlVWpRfnxRaU5q8SFGU2AYTGSWEk3OB6aqvJJ4Q2MTMyNLI3NDCyNjcyVx3oOt
-	1oFCAumJJanZqakFqUUwfUwcnFINjFP0Xv80Zslde5gt49p3i66faTeWnO/bH/9BPFqCIZmh
-	TVrKRGQv95qLxeVPj136dUDm2pn9J9LSg2XWpkfK58o3b9/8nUtH9LabiXWa/wMlqwVZ8j8u
-	mq4zbkn+9q3+Su3Zy7c+yPHcnqWsoR9amGA4J3ZDk8zDLKYW77jjMStzczhFlbO7lFiKMxIN
-	tZiLihMBirDIzx0DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sun, 19 Oct 2014 23:23:38 -0400
+From: Howard Chen <ibanezchen@gmail.com>
+To: matthias.bgg@gmail.com
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org (moderated list:ARM/Mediatek
+	SoC...),
+        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH v4 1/3] ARM: mediatek: Add basic support for mt6592
+Date: Mon, 20 Oct 2014 11:23:17 +0800
+Message-Id: <1413775401-4501-1-git-send-email-ibanezchen@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+* A dtsi for boards based on Mediatek MT6592 SoCs
+* Compatible string in arch/arm/mach-mediatek/mediatek.c
 
-On 10/17/2014 09:44 PM, Alim Akhtar wrote:
-> Hi Doug,
-> 
-> On Thu, Oct 16, 2014 at 9:40 PM, Doug Anderson <dianders@chromium.org> wrote:
->> Alim,
->>
->> On Thu, Oct 16, 2014 at 5:57 AM, Alim Akhtar <alim.akhtar@gmail.com> wrote:
->>> Hi Doug,
->>>
->>> On Tue, Oct 14, 2014 at 10:03 PM, Doug Anderson <dianders@chromium.org> wrote:
->>>> The dw_mmc driver had a bunch of code that ran whenever a card was
->>>> ejected and inserted.  However, this code was old and crufty and
->>>> should be removed.  Some evidence that it's really not needed:
->>>>
->>>> 1. Is is supposed to be legal to use 'cd-gpio' on dw_mmc instead of
->>>>    using the built-in card detect mechanism.  The 'cd-gpio' code
->>>>    doesn't run any of the crufty old code but yet still works.
->>>>
->>>> 2. While looking at this, I realized that my old change (369ac86 mmc:
->>>>    dw_mmc: don't queue up a card detect at slot startup) actually
->>>>    castrated the old code a little bit already and nobody noticed.
->>>>    Specifically "last_detect_state" was left as 0 at bootup.  That
->>>>    means that on the first card removal none of the crufty code ran.
->>>>
->>> Yes, right most of these codes are _almost_ never call. But I see
->>> dw_mci_reset() being called on card removal (after first
->>> insert/removal).
->>
->> Right.  The old crufty code was called on the 2nd removal, not the
->> 1st.  That meant that the two were accidentally different.  My point
->> was that if the old code was really required that someone would have
->> noticed crashes on the 1st removal after each boot.  Since nobody is
->> reporting crashes with that then it means it can't be too terrible.
->>
->> One thing to note: I remember in the last Chromebook project you were
->> trying to track down crashes associated with constant eject / insert
->> of SD Cards.  I wonder if my patch will fix these crashes?
->>
-> Ah, yes, reproducing that and checking with this patch will be really
-> interesting.
-> 
->>
->>> I tested this on exynos5800 and this looks working fine. We need to
->>> test once cross suspend/resume as well.
->>
->> Good idea.  Can you test that?  I know that there's been lots of flux
->> with suspend/resume on exynos and I'm not sure I have all the latest
->> patches, but I'll search for them if you are unable to test easily.
->>
-> Sure, I will do that..but probably sometime next week, as I will out
-> of office for few days.
->>
->>> And as Jaehoon pointed out,probably lets look in TRM if there are some
->>> recommended  steps for cd-detect.
->>> Otherwise this looks good to me.
->>
->> If you see some other requirement than the one I addressed in my email
->> to Jaehoon, please let me know.
+Signed-off-by: Howard Chen <ibanezchen@gmail.com>
+---
+ arch/arm/boot/dts/mt6592.dtsi     | 138 ++++++++++++++++++++++++++++++++++++++
+ arch/arm/mach-mediatek/mediatek.c |   1 +
+ 2 files changed, 139 insertions(+)
+ create mode 100644 arch/arm/boot/dts/mt6592.dtsi
 
-I know there is no other requirement for detecting card. 
-So this patch can be applied after testing the above case(suspend/resume).
-
-Best Regards,
-Jaehoon Chung
-
->>
-> Well, as most of the current CD detect code are dead code, so lets see
-> more test results, specially across a suspend/resume and warm reboot
-> test and take this forward.
->>
->> -Doug
-> 
-> 
-> 
+diff --git a/arch/arm/boot/dts/mt6592.dtsi b/arch/arm/boot/dts/mt6592.dtsi
+new file mode 100644
+index 0000000..367ba8f
+--- /dev/null
++++ b/arch/arm/boot/dts/mt6592.dtsi
+@@ -0,0 +1,138 @@
++/*
++ * Copyright (c) 2014 MediaTek Inc.
++ * Author: Howard Chen <ibanezchen@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <dt-bindings/interrupt-controller/irq.h>
++#include <dt-bindings/interrupt-controller/arm-gic.h>
++#include "skeleton.dtsi"
++
++/ {
++	compatible = "mediatek,mt6592";
++	interrupt-parent = <&gic>;
++
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		cpu@0 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a7";
++			reg = <0x0>;
++		};
++		cpu@1 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a7";
++			reg = <0x1>;
++		};
++		cpu@2 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a7";
++			reg = <0x2>;
++		};
++		cpu@3 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a7";
++			reg = <0x3>;
++		};
++		cpu@4 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a7";
++			reg = <0x4>;
++		};
++		cpu@5 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a7";
++			reg = <0x5>;
++		};
++		cpu@6 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a7";
++			reg = <0x6>;
++		};
++		cpu@7 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a7";
++			reg = <0x7>;
++		};
++	};
++
++	system_clk: dummy13m {
++		compatible = "fixed-clock";
++		clock-frequency = <13000000>;
++		#clock-cells = <0>;
++	};
++
++	rtc_clk: dummy32k {
++		compatible = "fixed-clock";
++		clock-frequency = <32000>;
++		#clock-cells = <0>;
++	};
++
++	uart_clk: uart_clk {
++		compatible = "fixed-clock";
++		clock-frequency = <26000000>;
++		#clock-cells = <0>;
++	};
++
++	timer: timer@10008000 {
++		compatible = "mediatek,mt6577-timer";
++		reg = <0x10008000 0x80>;
++		interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&system_clk>, <&rtc_clk>;
++		clock-names = "system-clk", "rtc-clk";
++	};
++
++	gic: interrupt-controller@10211000 {
++		compatible = "arm,cortex-a9-gic";
++		interrupt-controller;
++		#interrupt-cells = <3>;
++		reg = <0x10211000 0x1000>,
++			  <0x10212000 0x1000>;
++	};
++
++	uart0: serial@11002000 {
++		compatible = "mediatek,mt6592-uart", "mediatek,mt6577-uart";
++		reg = <0x11002000 0x400>;
++		reg-shift = <2>;
++		interrupts = <GIC_SPI 83 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&uart_clk>;
++		status = "disabled";
++	};
++
++	uart1: serial@11003000 {
++		compatible = "mediatek,mt6592-uart", "mediatek,mt6577-uart";
++		reg = <0x11003000 0x400>;
++		reg-shift = <2>;
++		interrupts = <GIC_SPI 84 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&uart_clk>;
++		status = "disabled";
++	};
++
++	uart2: serial@11004000 {
++		compatible = "mediatek,mt6592-uart", "mediatek,mt6577-uart";
++		reg = <0x11004000 0x400>;
++		reg-shift = <2>;
++		interrupts = <GIC_SPI 85 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&uart_clk>;
++		status = "disabled";
++	};
++
++	uart3: serial@11005000 {
++		compatible = "mediatek,mt6592-uart", "mediatek,mt6577-uart";
++		reg = <0x11005000 0x400>;
++		reg-shift = <2>;
++		interrupts = <GIC_SPI 86 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&uart_clk>;
++		status = "disabled";
++	};
++};
+diff --git a/arch/arm/mach-mediatek/mediatek.c b/arch/arm/mach-mediatek/mediatek.c
+index f2acf07..88e4626 100644
+--- a/arch/arm/mach-mediatek/mediatek.c
++++ b/arch/arm/mach-mediatek/mediatek.c
+@@ -19,6 +19,7 @@
+ 
+ static const char * const mediatek_board_dt_compat[] = {
+ 	"mediatek,mt6589",
++	"mediatek,mt6592",
+ 	NULL,
+ };
+ 
+-- 
+1.9.1
 
