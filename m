@@ -1,55 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309AbaJTJUY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 05:20:24 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57473 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752901AbaJTJUV (ORCPT
+	id S1753415AbaJTJVL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 05:21:11 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:42698 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752912AbaJTJVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 05:20:21 -0400
-Date: Mon, 20 Oct 2014 10:20:05 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Sudeep Holla <Sudeep.Holla@arm.com>
-Cc: Neil Zhang <zhangwm@marvell.com>,
-        "'linux@arm.linux.org.uk'" <linux@arm.linux.org.uk>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'devicetree@vger.kernel.org'" <devicetree@vger.kernel.org>,
-        mathieu.poirier@linaro.org
-Subject: Re: [PATCH v4] ARM: perf: save/restore pmu registers in pm notifier
-Message-ID: <20141020092005.GD4370@arm.com>
-References: <6106CAF835F351419ADA79E4836E6EC71B6A53C826@SC-VEXCH4.marvell.com>
- <9034CBD80F070943B59700D7F8149ED9A0875730@SC-VEXCH4.marvell.com>
- <20140513184503.GF16388@arm.com>
- <9034CBD80F070943B59700D7F8149ED9A087573F@SC-VEXCH4.marvell.com>
- <537337F3.4080300@arm.com>
- <9034CBD80F070943B59700D7F8149ED9A0875776@SC-VEXCH4.marvell.com>
- <9034CBD80F070943B59700D7F8149ED90182308172@SC-VEXCH4.marvell.com>
- <20140703175706.GI17372@arm.com>
- <9034CBD80F070943B59700D7F8149ED9024EB81CD8@SC-VEXCH4.marvell.com>
- <5444D2E0.9070205@arm.com>
+	Mon, 20 Oct 2014 05:21:07 -0400
+Date: Mon, 20 Oct 2014 12:20:49 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, Anup Patel <anup.patel@linaro.org>,
+        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>
+Subject: Re: [PATCH] staging: android: binder: move to the "real" part of the
+ kernel
+Message-ID: <20141020092049.GJ23154@mwanda>
+References: <20141016124741.GA3832@kroah.com>
+ <20141017092601.GH23154@mwanda>
+ <20141019220547.GC3780@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5444D2E0.9070205@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141019220547.GC3780@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 20, 2014 at 10:16:16AM +0100, Sudeep Holla wrote:
-> On 20/10/14 09:46, Neil Zhang wrote:
-> > Will, I prefer to check always-on field under PMU node to check
-> > whether we need Save/restore them.
-> >
-> But how do you handle it for different idle states. e.g. if CPU is in
-> retention, PMU's *might be* retained. Also I don't think PMUs will be
-> placed in "always-on" power domain like timers. So using "always-on"
-> sounds incorrect to me.
+On Mon, Oct 20, 2014 at 06:05:47AM +0800, Greg Kroah-Hartman wrote:
+> On Fri, Oct 17, 2014 at 12:26:01PM +0300, Dan Carpenter wrote:
+> > The code isn't very beautiful and there are lots of details wrong like
+> > the error codes.
+> 
+> Really, what is wrong with the existing error code usages?
+> 
 
-Adding Mathieu to CC, since I spoke to him at LPC about this and he was
-talking about implementing proper PM domain descriptions for coresight
-components.
+I guess I was mostly looking at binder_ioctl(), the rest of the code
+seems better.
 
-Will
+I feel like we went directly from "This code is never going in so there
+is no need to look at it." to "This code is going in in one week so
+there is no time to look at it."
+
+How often do people rely on proc_no_lock=1 to make this work?  People
+are saying on the internet that you don't need acurate information so
+you should disable locking as a speed up.
+http://www.programdevelop.com/1821706/.  It seems like a bad idea to
+provide provide the "run fast and crash" option.
+
+Why is binder_set_nice needed?  Some comments would help here.
+
+   434  static void binder_set_nice(long nice)
+   435  {
+   436          long min_nice;
+   437  
+   438          if (can_nice(current, nice)) {
+   439                  set_user_nice(current, nice);
+   440                  return;
+   441          }
+   442          min_nice = rlimit_to_nice(current->signal->rlim[RLIMIT_NICE].rlim_cur);
+   443          binder_debug(BINDER_DEBUG_PRIORITY_CAP,
+   444                       "%d: nice value %ld not allowed use %ld instead\n",
+   445                        current->pid, nice, min_nice);
+   446          set_user_nice(current, min_nice);
+   447          if (min_nice <= MAX_NICE)
+   448                  return;
+
+It's harmless but wierd to check if min_nice is valid after we already
+called set_user_nice().
+
+   449          binder_user_error("%d RLIMIT_NICE not set\n", current->pid);
+   450  }
+
+Random comment:
+
+   709          has_page_addr =
+   710                  (void *)(((uintptr_t)buffer->data + buffer_size) & PAGE_MASK);
+
+The casting on "buffer->data" ugly and inconsistent.  There should be
+a function:
+void *buffer_data(struct binder_buffer *buffer)
+{
+	return buffer.data;
+}
+
+That way this becomes:
+		has_page_addr = (buffer_data(buffer) + buffer_size) & PAGE_MASK);
+
+The "has_page_addr" variable name is misleading, because we're not
+storing true/false.  We're storing the last page address.
+
+   711          if (n == NULL) {
+   712                  if (size + sizeof(struct binder_buffer) + 4 >= buffer_size)
+   713                          buffer_size = size; /* no room for other buffers */
+   714                  else
+   715                          buffer_size = size + sizeof(struct binder_buffer);
+   716          }
+   717          end_page_addr =
+   718                  (void *)PAGE_ALIGN((uintptr_t)buffer->data + buffer_size);
+   719          if (end_page_addr > has_page_addr)
+   720                  end_page_addr = has_page_addr;
+   721          if (binder_update_page_range(proc, 1,
+   722              (void *)PAGE_ALIGN((uintptr_t)buffer->data), end_page_addr, NULL))
+   723                  return NULL;
+
+The alignment here is confusing because we don't align buffer->data
+below.
+
+   724  
+   725          rb_erase(best_fit, &proc->free_buffers);
+   726          buffer->free = 0;
+   727          binder_insert_allocated_buffer(proc, buffer);
+   728          if (buffer_size != size) {
+   729                  struct binder_buffer *new_buffer = (void *)buffer->data + size;
+                                                           ^^^^^^^^^^^^^^^^^^^^
+I don't really understand when buffer->data has to be page aligned and
+when not.  This code has very few comments.
+
+   730  
+   731                  list_add(&new_buffer->entry, &buffer->entry);
+   732                  new_buffer->free = 1;
+   733                  binder_insert_free_buffer(proc, new_buffer);
+   734          }
+
+Does the stop_on_user_error option work?  There should be some
+documentation for this stuff.
+
+regards,
+dan carpenter
+
