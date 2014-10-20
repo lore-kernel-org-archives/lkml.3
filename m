@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692AbaJTS1W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 14:27:22 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:51860 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752500AbaJTS1U (ORCPT
+	id S1752769AbaJTS2K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 14:28:10 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55088 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751511AbaJTS2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 14:27:20 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH] power: reset: at91-reset: fix power down register
-Date: Mon, 20 Oct 2014 20:27:09 +0200
-Message-Id: <1413829629-8705-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
+	Mon, 20 Oct 2014 14:28:07 -0400
+Date: Mon, 20 Oct 2014 20:28:01 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Thomas Shao <huishao@microsoft.com>
+cc: gregkh@linuxfoundation.org, LKML <linux-kernel@vger.kernel.org>,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com, kys@microsoft.com,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH v2 1/2] timekeeping: add EXPORT_SYMBOL_GPL for
+ do_adjtimex()
+In-Reply-To: <1413362372-16236-1-git-send-email-huishao@microsoft.com>
+Message-ID: <alpine.DEB.2.11.1410202027220.5308@nanos>
+References: <1413362372-16236-1-git-send-email-huishao@microsoft.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the case of at91sam9g45_restart(), the driver is writing
-AT91_DDRSDRC_LPCB_POWER_DOWN to AT91_DDRSDRC_RTR, this should actually be
-AT91_DDRSDRC_LPR.
+On Wed, 15 Oct 2014, Thomas Shao wrote:
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- drivers/power/reset/at91-reset.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+And again you forgot to cc John Stultz on this....
 
-diff --git a/drivers/power/reset/at91-reset.c b/drivers/power/reset/at91-reset.c
-index 3611806c9cfd..3cb36693343a 100644
---- a/drivers/power/reset/at91-reset.c
-+++ b/drivers/power/reset/at91-reset.c
-@@ -100,11 +100,11 @@ static void at91sam9g45_restart(enum reboot_mode mode, const char *cmd)
- 		/* Disable SDRAM0 accesses */
- 		"1:	str	%3, [%0, #" __stringify(AT91_DDRSDRC_RTR) "]\n\t"
- 		/* Power down SDRAM0 */
--		"	str	%4, [%0, #" __stringify(AT91_DDRSDRC_RTR) "]\n\t"
-+		"	str	%4, [%0, #" __stringify(AT91_DDRSDRC_LPR) "]\n\t"
- 		/* Disable SDRAM1 accesses */
- 		"	strne	%3, [%1, #" __stringify(AT91_DDRSDRC_RTR) "]\n\t"
- 		/* Power down SDRAM1 */
--		"	strne	%4, [%1, #" __stringify(AT91_DDRSDRC_RTR) "]\n\t"
-+		"	strne	%4, [%1, #" __stringify(AT91_DDRSDRC_LPR) "]\n\t"
- 		/* Reset CPU */
- 		"	str	%5, [%2, #" __stringify(AT91_RSTC_CR) "]\n\t"
- 
--- 
-1.9.1
-
+> Export do_adjtimex function for hyper-v Time Synchronization component
+> 
+> Signed-off-by: Thomas Shao <huishao@microsoft.com>
+> ---
+>  kernel/time/timekeeping.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+> index ec1791f..205a4b3 100644
+> --- a/kernel/time/timekeeping.c
+> +++ b/kernel/time/timekeeping.c
+> @@ -1786,6 +1786,7 @@ int do_adjtimex(struct timex *txc)
+>  
+>  	return ret;
+>  }
+> +EXPORT_SYMBOL_GPL(do_adjtimex);
+>  
+>  #ifdef CONFIG_NTP_PPS
+>  /**
+> -- 
+> 1.7.1
+> 
+> 
