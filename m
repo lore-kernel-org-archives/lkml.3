@@ -1,125 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932161AbaJTX3I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 19:29:08 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:61472 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751524AbaJTX2K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 19:28:10 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Linus Walleij <linus.walleij@linaro.org>, Heiko Stuebner <heiko@sntech.de>
-Cc: Chris Zhong <zyw@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>,
-        linux-rockchip@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org,
-        Doug Anderson <dianders@chromium.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] pinctrl: rockchip: Don't call pinctrl_gpio_direction_output() in pin_config_set()
-Date: Mon, 20 Oct 2014 16:27:48 -0700
-Message-Id: <1413847670-12245-2-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1413847670-12245-1-git-send-email-dianders@chromium.org>
-References: <1413847670-12245-1-git-send-email-dianders@chromium.org>
+	id S932180AbaJTX3Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 19:29:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50375 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753385AbaJTX3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 19:29:07 -0400
+Message-ID: <1413847716.6046.1.camel@redhat.com>
+Subject: Re: [GIT PULL] please pull infiniband.git
+From: Doug Ledford <dledford@redhat.com>
+To: Roland Dreier <roland@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-rdma@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 20 Oct 2014 19:28:36 -0400
+In-Reply-To: <1413499938-2378-1-git-send-email-roland@kernel.org>
+References: <1413499938-2378-1-git-send-email-roland@kernel.org>
+Organization: Red Hat, Inc.
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-pz5klfjjbivPCJeG1xlw"
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Rockchip pinctrl driver was calling
-rockchip_gpio_direction_output() in the pin_config_set() callback.
-This was just a shortcut for:
-* rockchip_gpio_set()
-* pinctrl_gpio_direction_output()
 
-Unfortunately it's not so good to call pinctrl_gpio_direction_output()
-from pin_config_set().  Specifically when initting hogs you'll get an
-error.
+--=-pz5klfjjbivPCJeG1xlw
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Let's refactor a little so we can call
-_rockchip_pmx_gpio_set_direction() directly.
+On Thu, 2014-10-16 at 15:52 -0700, Roland Dreier wrote:
+> Hi Linus,
+>=20
+> Please pull from
+>=20
+>     git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git t=
+ags/rdma-for-linus
+>=20
+> ----------------------------------------------------------------
+> Main set of InfiniBand/RDMA updates for 3.18 merge window:
+>=20
+>  - Large set of iSER initiator improvements
+>  - Hardware driver fixes for cxgb4, mlx5 and ocrdma
+>  - Small fixes to core midlayer
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- drivers/pinctrl/pinctrl-rockchip.c | 42 +++++++++++++++++++++++---------------
- 1 file changed, 26 insertions(+), 16 deletions(-)
+The IPoIB multicast locking fixes I submitted for 3.17 that you put off
+until 3.18 are missing from this list.  The set can be found here in
+case you've lost them:
 
-diff --git a/drivers/pinctrl/pinctrl-rockchip.c b/drivers/pinctrl/pinctrl-rockchip.c
-index 230d8f3..65efb88 100644
---- a/drivers/pinctrl/pinctrl-rockchip.c
-+++ b/drivers/pinctrl/pinctrl-rockchip.c
-@@ -856,22 +856,16 @@ static int rockchip_pmx_set(struct pinctrl_dev *pctldev, unsigned selector,
-  * leads to this function call (via the pinctrl_gpio_direction_{input|output}()
-  * function called from the gpiolib interface).
-  */
--static int rockchip_pmx_gpio_set_direction(struct pinctrl_dev *pctldev,
--					      struct pinctrl_gpio_range *range,
--					      unsigned offset, bool input)
-+static int _rockchip_pmx_gpio_set_direction(struct gpio_chip *gc,
-+					    unsigned offset, bool input)
- {
--	struct rockchip_pinctrl *info = pinctrl_dev_get_drvdata(pctldev);
- 	struct rockchip_pin_bank *bank;
--	struct gpio_chip *chip;
- 	int pin, ret;
-+	unsigned long flags;
- 	u32 data;
- 
--	chip = range->gc;
--	bank = gc_to_pin_bank(chip);
--	pin = offset - chip->base;
--
--	dev_dbg(info->dev, "gpio_direction for pin %u as %s-%d to %s\n",
--		 offset, range->name, pin, input ? "input" : "output");
-+	bank = gc_to_pin_bank(gc);
-+	pin = offset - gc->base;
- 
- 	ret = rockchip_set_mux(bank, pin, RK_FUNC_GPIO);
- 	if (ret < 0)
-@@ -888,6 +882,22 @@ static int rockchip_pmx_gpio_set_direction(struct pinctrl_dev *pctldev,
- 	return 0;
- }
- 
-+static int rockchip_pmx_gpio_set_direction(struct pinctrl_dev *pctldev,
-+					      struct pinctrl_gpio_range *range,
-+					      unsigned offset, bool input)
-+{
-+	struct rockchip_pinctrl *info = pinctrl_dev_get_drvdata(pctldev);
-+	struct gpio_chip *chip;
-+	int pin;
-+
-+	chip = range->gc;
-+	pin = offset - chip->base;
-+	dev_dbg(info->dev, "gpio_direction for pin %u as %s-%d to %s\n",
-+		 offset, range->name, pin, input ? "input" : "output");
-+
-+	return _rockchip_pmx_gpio_set_direction(range->gc, offset, input);
-+}
-+
- static const struct pinmux_ops rockchip_pmx_ops = {
- 	.get_functions_count	= rockchip_pmx_get_funcs_count,
- 	.get_function_name	= rockchip_pmx_get_func_name,
-@@ -917,8 +927,7 @@ static bool rockchip_pinconf_pull_valid(struct rockchip_pin_ctrl *ctrl,
- 	return false;
- }
- 
--static int rockchip_gpio_direction_output(struct gpio_chip *gc,
--					  unsigned offset, int value);
-+static void rockchip_gpio_set(struct gpio_chip *gc, unsigned offset, int value);
- static int rockchip_gpio_get(struct gpio_chip *gc, unsigned offset);
- 
- /* set the pin config settings for a specified pin */
-@@ -959,9 +968,10 @@ static int rockchip_pinconf_set(struct pinctrl_dev *pctldev, unsigned int pin,
- 				return rc;
- 			break;
- 		case PIN_CONFIG_OUTPUT:
--			rc = rockchip_gpio_direction_output(&bank->gpio_chip,
--							    pin - bank->pin_base,
--							    arg);
-+			rockchip_gpio_set(&bank->gpio_chip,
-+					  pin - bank->pin_base, arg);
-+			rc = _rockchip_pmx_gpio_set_direction(&bank->gpio_chip,
-+					  pin - bank->pin_base, false);
- 			if (rc)
- 				return rc;
- 			break;
--- 
-2.1.0.rc2.206.gedb03e5
+https://patchwork.kernel.org/bundle/dledford/IPoIB%20Locking%20Fixes/
+
+--=20
+Doug Ledford <dledford@redhat.com>
+              GPG KeyID: 0E572FDD
+
+
+
+--=-pz5klfjjbivPCJeG1xlw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAABAgAGBQJURZq/AAoJELgmozMOVy/dISEP/jLXutqB1nnWfYX0572X2DYA
+Zfb4VBEbqb03gc47s26vMOeO8GF/UAAyWdM/oZ3yEBq8MoS0JMAUHoWd+7RCfThF
+NbdQFkBhdzE83PDc9ZIMyvLngCiRsQ1LmtP/7bxwLsMhmxVes5NRECFQTmXOMZwe
+PJ7okFE9jOnLaYFNTBOXOEaRli+ThE0aYzcC9c/UCAWC0sHnDJssvgAg5ZKfDuTP
+uYKWD3N+vU4pQZ30NiE742pOjBqgUjnEypSovdLG+9F4WJxPvNc9S15BpdV+sE/z
+xbggA8tpFv66FEBmm1O26oZzz6Be8JD3lQ4QjrL829e50x4ui/F1jHOzMM/0gqcS
+Zeh3ahxr/a972EMP7B9GCV1L+VkSyj9zDGuR/RNJ8ml0rVMc+R3szno9CWW1letI
+R0IACEJfFwl7acJOVJ38sPqO694RK+btBNinjGCH8OnH7wNxloVpv6X9dW/n2B4R
+2UdO3/peQ7EqlvejurDTALBgN+ycJ+AQ/QK76h2Ha7J+ou0wt9wveTvvOkyA0OmP
+byaZnCtsCufRywKBhJzXMttkVjdL4y69Db2rENjR41pBNxSLZp640KfU1CgeYAUP
+w/SU8e5/IOOi79nkg1WluXerJl0AO5Vi5dEy2i0QZd6m04v+BrB+112dnrdVU/42
+oNInYDgjBAyASmYreRNH
+=gkV1
+-----END PGP SIGNATURE-----
+
+--=-pz5klfjjbivPCJeG1xlw--
 
