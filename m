@@ -1,70 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617AbaJTRoR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 13:44:17 -0400
-Received: from li271-223.members.linode.com ([178.79.152.223]:40814 "EHLO
-	mail.mleia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752553AbaJTRoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 13:44:14 -0400
-Message-ID: <544549E9.7060702@mleia.com>
-Date: Mon, 20 Oct 2014 20:44:09 +0300
-From: Vladimir Zapolskiy <vz@mleia.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Icedove/31.1.2
+	id S1752651AbaJTRoh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 13:44:37 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:61175 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490AbaJTRoe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 13:44:34 -0400
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Thierry Reding <thierry.reding@gmail.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>, jonsmirl@gmail.com,
-        Simon <longsleep@gmail.com>, linux-pwm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv8 1/2] pwm: Add Allwinner SoC support
-References: <1413743305-1979-1-git-send-email-alexandre.belloni@free-electrons.com> <1413743305-1979-2-git-send-email-alexandre.belloni@free-electrons.com> <54442BB1.1080403@mleia.com> <20141020102939.GB10616@piout.net> <544509C7.9010309@mleia.com> <20141020170603.GG10616@piout.net>
-In-Reply-To: <20141020170603.GG10616@piout.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-CRM114-Version: 20100106-BlameMichelson ( TRE 0.8.0 (BSD) ) MR-49551924 
-X-CRM114-CacheID: sfid-20141020_184411_311024_E3FC6547 
-X-CRM114-Status: GOOD (  15.99  )
+In-Reply-To: <cover.1411494540.git.luto@amacapital.net>
+References: <cover.1411494540.git.luto@amacapital.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 20 Oct 2014 10:44:13 -0700
+Message-ID: <CALCETrWxeNGZCgh5ZTh5552eDQ_Bwf8TXxnuh7R1k9PTM3HbLA@mail.gmail.com>
+Subject: Re: [PATCH 0/8] x86: Disentangle the vdso and clean it up
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20.10.2014 20:06, Alexandre Belloni wrote:
-> On 20/10/2014 at 16:10:31 +0300, Vladimir Zapolskiy wrote :
->> Hi Alexandre,
->>
->> On 20.10.2014 13:29, Alexandre Belloni wrote:
->>> Hi,
->>>
->>> On 20/10/2014 at 00:22:57 +0300, Vladimir Zapolskiy wrote :
->>>>> +struct sun4i_pwm_chip {
->>>>> +	struct pwm_chip chip;
->>>>> +	struct clk *clk;
->>>>> +	void __iomem *base;
->>>>> +	struct mutex ctrl_lock;
->>>>
->>>> why do you use mutex? I haven't found any blocking subcalls under
->>>> protection, a spinlock seems to fit better here.
->>>>
->>>
->>> A mutex here will do the right thing. The lock is never taken in
->>> interrupt context and a mutex is spinning for a few cycles before
->>> putting the thread to sleep.
->>
->> and why do you want to put a thread to sleep in context of the driver?
->>
-> 
-> Because the PWM is getting configured from either a kernel thread or a
-> userspace thread accessing /sys. So you probably want the current thread
-> to sleep so the other thread accessing the register can finish. Unless
-> you are on smp and then, the mutex will spin for some time and your
-> other cpu will be finished by then.
-> 
+On Tue, Sep 23, 2014 at 10:50 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> Hi Ingo and Thomas,
 
-You answer why a thread sleeps, if you use a mutex in the driver. But
-you don't answer my question why do you want to put a thread to sleep.
+Now that the merge window is closed, can you take a look at these?
+There are a few more that follow (tidying up vsyscall emulation and
+adding a config flag for the tiny folks), too, but I'd rather not keep
+resending these in an ever-growing form.
 
-As for me you introduce the excessive heaviness for no reason. There is
-no need to sleep while waiting for completion of a register writing.
+Thanks,
+Andy
 
-With best wishes,
-Vladimir
+>
+> This should all be straightforward.  It's primarily a cleanup, but it
+> fixes what is arguably a bug in the PER_CPU mechanism.
+>
+> The first two patches just rearrange code to disentangle the vdso from
+> the vsyscall emulation code.
+>
+> The next three patches are tiny.  Patch 3 rewrites the PER_CPU setup
+> code to make it comprehensible; it has no effect other than clarify.
+> Patches 4 and 5 fix two problems with the PER_CPU segment that are
+> apparent after the code has been cleaned up.  (Patch 5 fixes a glitch
+> that that is almost, but not quote, a security bug.)
+>
+> Patches 6 and 7 are just cleanups.  Patch 6 removes the "jiffies" vvar,
+> which has been unused for years.  Patch 7 cleans up some initialization
+> code.
+>
+> Patch 8 removes the vvar that selects the getcpu mode.  That vvar
+> has been unnecessary for a couple of years, ever since alternative
+> patching has worked in the vdso.
+>
+> There is a small but non quote zero chance that I will want to revert
+> patch 8 at some point.  Reverting it will be needed to be able to
+> disable the TSC (in the CR4.TSC sense) without breaking the vdso, unless
+> we patch the vdso text.  That being said, I think it'll be a lot less
+> messy to just patch the vdso text if we do that.
+>
+> Please consider applying these, or at least applying patches 1-7,
+> to tip/x86/vdso for 3.18.
+>
+> Thanks,
+> Andy
+>
+>
+> Changes from way back when: This has been floating around since June in
+> some form. See:
+> http://lkml.kernel.org/g/cover.1404164803.git.luto@amacapital.net
+>
+> This version just disentangles the vdso and vsyscall code and does the
+> vdso cleanups/fixes.  It does *not* contain the PER_CPU removal on
+> RDTSCP systems, since hpa mentioned that this is potentially
+> problematic, and, if we were to try it, it should soak in -next for a
+> *long* time.  It is also heavily cleaned up since last time.
+>
+>
+> Andy Lutomirski (8):
+>   x86_64,vsyscall: Move all of the gate_area code to vsyscall_64.c
+>   x86_64: Move getcpu code from vsyscall_64.c to vdso/vma.c
+>   x86,vdso: Change the PER_CPU segment to use struct desc_struct
+>   x86,vdso: Make the PER_CPU segment start out accessed
+>   x86,vdso: Make the PER_CPU segment 32 bits
+>   x86_64,vdso: Remove jiffies from the vvar page
+>   x86_64,vdso: Clean up vgetcpu init and merge the vdso initcalls
+>   x86,vdso: Replace vgetcpu_mode with static_cpu_has
+>
+>  arch/x86/include/asm/vgtod.h    | 21 ++++++++++
+>  arch/x86/include/asm/vsyscall.h | 29 --------------
+>  arch/x86/include/asm/vvar.h     |  2 -
+>  arch/x86/kernel/cpu/common.c    | 10 -----
+>  arch/x86/kernel/time.c          |  2 +-
+>  arch/x86/kernel/vsyscall_64.c   | 84 ++++++++++++++++++----------------------
+>  arch/x86/mm/init_64.c           | 49 ------------------------
+>  arch/x86/vdso/vclock_gettime.c  |  3 ++
+>  arch/x86/vdso/vgetcpu.c         |  5 ++-
+>  arch/x86/vdso/vma.c             | 85 ++++++++++++++++++++++++++++++++---------
+>  10 files changed, 132 insertions(+), 158 deletions(-)
+>
+> --
+> 1.9.3
+>
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
