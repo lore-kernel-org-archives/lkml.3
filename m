@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752658AbaJTOsn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 10:48:43 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:39905 "EHLO
+	id S1752834AbaJTOtt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 10:49:49 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:39917 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752030AbaJTOsh (ORCPT
+	with ESMTP id S1752144AbaJTOsl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 10:48:37 -0400
+	Mon, 20 Oct 2014 10:48:41 -0400
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 To: Mark Brown <broonie@kernel.org>
 Cc: Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>,
@@ -16,9 +16,9 @@ Cc: Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>,
         linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v3 2/5] regulator: core: Add regulator mode and initial mode properties
-Date: Mon, 20 Oct 2014 16:47:49 +0200
-Message-Id: <1413816472-1895-3-git-send-email-javier.martinez@collabora.co.uk>
+Subject: [PATCH v3 4/5] regulator: max77802: Parse regulator operating mode properties
+Date: Mon, 20 Oct 2014 16:47:51 +0200
+Message-Id: <1413816472-1895-5-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1413816472-1895-1-git-send-email-javier.martinez@collabora.co.uk>
 References: <1413816472-1895-1-git-send-email-javier.martinez@collabora.co.uk>
@@ -26,51 +26,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some regulators can run on different operating modes (opmodes). This
-allows systems to choose the most efficient opmode for each regulator.
+The max77802 PMIC regulators output can be configured in one of two
+modes: Output ON (normal) and Output ON in Low Power Mode. Some of
+the regulators support their operating mode to be changed on startup
+or by consumers when the system is running while others only support
+their operating mode to be changed while the system has entered in a
+suspend state.
 
-This patch adds a "regulator-initial-mode" property to configure at
-startup the operating mode for the regulators that support changing
-its mode during normal operation and a "regulator-mode" to be used as
-a property of the suspend states "regulator-state-[mem/disk]" nodes
-for the regulators that supports changing its operating mode when the
-system enters in a suspend state.
-
-The set of possible modes that a regulator can operate depends on
-the hardware capabilities so a list of generic operating modes can't
-be provided. Instead, each hardware should define the list of valid
-operating modes for the regulators found on that device.
+The regulator Device Tree binding documents a set of properties to
+configure the regulators operating modes from a FDT. This patch parse
+those properties and fills the regulator constraints so the regulator
+core can call the suspend handlers when the system enters into sleep.
 
 Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 ---
- Documentation/devicetree/bindings/regulator/regulator.txt | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/regulator/regulator.txt b/Documentation/devicetree/bindings/regulator/regulator.txt
-index aaad615..8b54be1 100644
---- a/Documentation/devicetree/bindings/regulator/regulator.txt
-+++ b/Documentation/devicetree/bindings/regulator/regulator.txt
-@@ -28,6 +28,20 @@ Optional properties:
- - regulator-state-[mem/disk] node has following common properties:
- 	- regulator-on-in-suspend: regulator should be on in suspend state.
- 	- regulator-off-in-suspend: regulator should be off in suspend state.
-+	- regulator-mode: operating mode in the given suspend state.
-+	  The set of possible operating modes depends on the capabilities of
-+	  every hardware so the valid modes are documented on each regulator
-+	  device tree binding document.
-+	  The "regulator-mode" property only takes effect if the regulator is
-+	  enabled for the given suspend state using "regulator-on-in-suspend".
-+	  If the regulator has not been explicitly disabled for the given state
-+	  with "regulator-off-in-suspend", then setting the operating mode
-+	  will also have no effect.
-+- regulator-initial-mode: initial operating mode. The set of possible operating
-+  modes is the same used for the regulator-mode property and the device binding
-+  documentation explains which property each regulator supports.
-+If no mode is defined, then the OS will not manage the modes and the hardware
-+default values will be used instead.
+Changes since v2:
+ - Use the standard suspend states binding instead of custom properties.
+   Suggested by Mark Brown.
+
+Changes since v1:
+ - Use the static inline max77802_map_mode() function instead of a macro.
+   Suggested by Mark Brown.
+
+ drivers/regulator/max77802.c | 44 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
+
+diff --git a/drivers/regulator/max77802.c b/drivers/regulator/max77802.c
+index 5839c45..2cbf980 100644
+--- a/drivers/regulator/max77802.c
++++ b/drivers/regulator/max77802.c
+@@ -518,6 +518,48 @@ static struct regulator_desc regulators[] = {
+ };
  
- Deprecated properties:
- - regulator-compatible: If a regulator chip contains multiple
+ #ifdef CONFIG_OF
++
++static void max77802_parse_opmodes(struct device_node *np,
++				   struct regulation_constraints *cons)
++{
++	u32 pval;
++	int i;
++	char *states[PM_SUSPEND_MAX + 1] = {
++		[PM_SUSPEND_MEM] = "regulator-state-mem",
++		[PM_SUSPEND_MAX] = "regulator-state-disk",
++	};
++	struct regulator_state *state;
++	struct device_node *state_np;
++
++	if (!of_property_read_u32(np, "regulator-initial-mode", &pval))
++		cons->initial_mode = max77802_map_mode(pval);
++
++	for (i = 0; i < ARRAY_SIZE(states); i++) {
++		switch (i) {
++		case PM_SUSPEND_MEM:
++			state = &cons->state_mem;
++			break;
++		case PM_SUSPEND_MAX:
++			state = &cons->state_disk;
++			break;
++		default:
++			continue;
++		};
++
++		state_np = of_get_child_by_name(np, states[i]);
++		if (!state_np || !state)
++			continue;
++
++		if (!of_property_read_u32(np, "regulator-mode", &pval))
++			state->mode = max77802_map_mode(pval);
++
++		of_node_put(state_np);
++
++		state = NULL;
++		state_np = NULL;
++	};
++}
++
+ static int max77802_pmic_dt_parse_pdata(struct platform_device *pdev,
+ 					struct max77686_platform_data *pdata)
+ {
+@@ -555,6 +597,8 @@ static int max77802_pmic_dt_parse_pdata(struct platform_device *pdev,
+ 		rdata[i].initdata = rmatch.init_data;
+ 		rdata[i].of_node = rmatch.of_node;
+ 		rdata[i].id = regulators[i].id;
++		max77802_parse_opmodes(rdata[i].of_node,
++				       &rdata[i].initdata->constraints);
+ 	}
+ 
+ 	pdata->regulators = rdata;
 -- 
 2.1.0
 
