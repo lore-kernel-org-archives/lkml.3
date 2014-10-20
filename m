@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986AbaJTIKT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 04:10:19 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:47634 "EHLO
+	id S1753029AbaJTIK2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 04:10:28 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:47636 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752764AbaJTIKO (ORCPT
+	with ESMTP id S1752951AbaJTIKO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 20 Oct 2014 04:10:14 -0400
 From: Antoine Tenart <antoine.tenart@free-electrons.com>
 To: linus.walleij@linaro.org, sebastian.hesselbarth@gmail.com
 Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] pinctrl: add a generic way to map node to map for group based drivers
-Date: Mon, 20 Oct 2014 10:04:19 +0200
-Message-Id: <1413792260-4265-4-git-send-email-antoine.tenart@free-electrons.com>
+Subject: [PATCH 2/4] pinctrl: add helpers for group based drivers
+Date: Mon, 20 Oct 2014 10:04:18 +0200
+Message-Id: <1413792260-4265-3-git-send-email-antoine.tenart@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1413792260-4265-1-git-send-email-antoine.tenart@free-electrons.com>
 References: <1413792260-4265-1-git-send-email-antoine.tenart@free-electrons.com>
@@ -21,81 +21,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add a generic function to use a standard callback to
-.dt_node_to_map for group based pinctrl drivers.
+Since the group based drivers have their dt properties documented in the
+generic pinctrl documentation, add generic helpers to avoid duplicating
+code and to be sure new drivers won't use specific bindings for a known
+purpose.
 
-It parses nodes of the form:
-
-	foo_pmux: foo-pmux {
-		function = "foo";
-		groups = "g0", "g1", "g2";
-	}
+This patch add two functions to help group based drivers map their
+nodes:
+- of_pinctrl_utils_read_function(): reads the function name of a
+  specified node, and gets the number of groups it should be
+  applied to.
+- of_pinctrl_for_each_function_group(): navigates through the groups of
+  a specified node, reading at each iteration the name of the current
+  group.
 
 Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
 ---
- drivers/pinctrl/pinconf-generic.c       | 36 +++++++++++++++++++++++++++++++++
- include/linux/pinctrl/pinconf-generic.h |  3 +++
- 2 files changed, 39 insertions(+)
+ drivers/pinctrl/pinctrl-utils.c | 26 ++++++++++++++++++++++++++
+ drivers/pinctrl/pinctrl-utils.h |  9 +++++++++
+ 2 files changed, 35 insertions(+)
 
-diff --git a/drivers/pinctrl/pinconf-generic.c b/drivers/pinctrl/pinconf-generic.c
-index 29ff77f90fcb..456902150226 100644
---- a/drivers/pinctrl/pinconf-generic.c
-+++ b/drivers/pinctrl/pinconf-generic.c
-@@ -336,4 +336,40 @@ int pinconf_generic_dt_node_to_map(struct pinctrl_dev *pctldev,
+diff --git a/drivers/pinctrl/pinctrl-utils.c b/drivers/pinctrl/pinctrl-utils.c
+index d77693f2cc1b..0ce44ff70197 100644
+--- a/drivers/pinctrl/pinctrl-utils.c
++++ b/drivers/pinctrl/pinctrl-utils.c
+@@ -140,3 +140,29 @@ void pinctrl_utils_dt_free_map(struct pinctrl_dev *pctldev,
+ 	kfree(map);
  }
- EXPORT_SYMBOL_GPL(pinconf_generic_dt_node_to_map);
- 
-+int pinconf_generic_function_groups_dt_node_to_map(struct pinctrl_dev *pctldev,
-+		struct device_node *node, struct pinctrl_map **map,
-+		unsigned *num_maps)
+ EXPORT_SYMBOL_GPL(pinctrl_utils_dt_free_map);
++
++#ifdef CONFIG_OF
++int of_pinctrl_utils_read_function(struct pinctrl_dev *pctldev,
++		struct device_node *node, const char **function_name,
++		int *ngroups)
 +{
-+	struct property *prop;
-+	unsigned reserved_maps = 0;
-+	const char *function_name, *group_name;
-+	int ngroups, ret;
++	int ret;
 +
-+	*map = NULL;
-+	*num_maps = 0;
++	ret = of_property_read_string(node, "function", function_name);
++	if (ret) {
++		dev_err(pctldev->dev, "missing function property in node %s\n",
++			node->name);
++		return -EINVAL;
++	}
 +
-+	ret = of_pinctrl_utils_read_function(pctldev, node, &function_name,
-+					     &ngroups);
-+	if (ret)
-+		return ret;
-+
-+	ret = pinctrl_utils_reserve_map(pctldev, map, &reserved_maps, num_maps,
-+					ngroups);
-+	if (ret)
-+		return ret;
-+
-+	of_pinctrl_for_each_function_group(node, prop, group_name) {
-+		ret = pinctrl_utils_add_map_mux(pctldev, map, &reserved_maps,
-+						num_maps, group_name,
-+						function_name);
-+		if (ret) {
-+			dev_err(pctldev->dev, "cannot add map: %d\n", ret);
-+			return ret;
-+		}
++	*ngroups = of_property_count_strings(node, "groups");
++	if (ngroups <= 0) {
++		dev_err(pctldev->dev, "missing groups property in node %s\n",
++			node->name);
++		return -EINVAL;
 +	}
 +
 +	return 0;
 +}
-+EXPORT_SYMBOL_GPL(pinconf_generic_function_groups_dt_node_to_map);
-+
- #endif
-diff --git a/include/linux/pinctrl/pinconf-generic.h b/include/linux/pinctrl/pinconf-generic.h
-index a15f10727eb8..acda4b89596d 100644
---- a/include/linux/pinctrl/pinconf-generic.h
-+++ b/include/linux/pinctrl/pinconf-generic.h
-@@ -157,6 +157,9 @@ int pinconf_generic_dt_subnode_to_map(struct pinctrl_dev *pctldev,
- int pinconf_generic_dt_node_to_map(struct pinctrl_dev *pctldev,
- 		struct device_node *np_config, struct pinctrl_map **map,
- 		unsigned *num_maps, enum pinctrl_map_type type);
-+int pinconf_generic_function_groups_dt_node_to_map(struct pinctrl_dev *pctldev,
-+		struct device_node *node, struct pinctrl_map **map,
-+		unsigned *num_maps);
++EXPORT_SYMBOL_GPL(of_pinctrl_utils_read_function);
++#endif
+diff --git a/drivers/pinctrl/pinctrl-utils.h b/drivers/pinctrl/pinctrl-utils.h
+index d0ffe1ce200f..d768dfe5daee 100644
+--- a/drivers/pinctrl/pinctrl-utils.h
++++ b/drivers/pinctrl/pinctrl-utils.h
+@@ -40,4 +40,13 @@ int pinctrl_utils_add_config(struct pinctrl_dev *pctldev,
+ void pinctrl_utils_dt_free_map(struct pinctrl_dev *pctldev,
+ 		struct pinctrl_map *map, unsigned num_maps);
  
- static inline int pinconf_generic_dt_node_to_map_group(
- 		struct pinctrl_dev *pctldev, struct device_node *np_config,
++#ifdef CONFIG_OF
++int of_pinctrl_utils_read_function(struct pinctrl_dev *pctrldev,
++		struct device_node *node, const char **function_name,
++		int *ngroups);
++
++#define of_pinctrl_for_each_function_group(node, prop, group_name)	\
++		of_property_for_each_string(node, "groups", prop, group_name)
++#endif
++
+ #endif /* __PINCTRL_UTILS_H__ */
 -- 
 1.9.1
 
