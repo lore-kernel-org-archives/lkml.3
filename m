@@ -1,90 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752606AbaJTPAP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 11:00:15 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:65496 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495AbaJTPAN (ORCPT
+	id S1752729AbaJTPBf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 11:01:35 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:52230 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752620AbaJTPBb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 11:00:13 -0400
-From: Dan Aloni <dan@kernelim.com>
-To: Steve French <smfrench@gmail.com>
-Cc: linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] [CIFS] fix auth_key cleanup in SMB2_sess_setup() for possible crash
-Date: Mon, 20 Oct 2014 18:00:05 +0300
-Message-Id: <1413817205-6319-1-git-send-email-dan@kernelim.com>
-X-Mailer: git-send-email 1.9.3
+	Mon, 20 Oct 2014 11:01:31 -0400
+From: Kevin Hilman <khilman@kernel.org>
+To: Sudhir Sreedharan <ssreedharan@mvista.com>
+Cc: peter@hurleysoftware.com, gregkh@linuxfoundation.org,
+        linux-serial@vger.kernel.org, jslaby@suse.cz,
+        linux-kernel@vger.kernel.org, olof@lixom.net,
+        linux-arm-kernel@lists.infradead.org, geert@linux-m68k.org
+Subject: Re: [PATCH v1] tty: serial: 8250_core: restore the LCR register in set_sleep
+References: <CAJJ77WsAi5jmnDxY45ipu3a94D6+yoHJNHgExhFsVoirV3NoyQ@mail.gmail.com>
+	<1413549558-24227-1-git-send-email-ssreedharan@mvista.com>
+Date: Mon, 20 Oct 2014 08:01:27 -0700
+In-Reply-To: <1413549558-24227-1-git-send-email-ssreedharan@mvista.com>
+	(Sudhir Sreedharan's message of "Fri, 17 Oct 2014 18:09:18 +0530")
+Message-ID: <7hppdmg4zc.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ses->auth_key.len field should be zeroed out during error paths,
-along with the 'response' field.
+Sudhir Sreedharan <ssreedharan@mvista.com> writes:
 
-Rationale:
+> In ST16650V2 based serial uarts, while initalizing the PM state,
+> LCR registers are being initialized to 0 in serial8250_set_sleep().
+> If console port is already initialized and being used, this will
+> throws garbage in the console.
+>
+> Signed-off-by: Sudhir Sreedharan <ssreedharan@mvista.com>
 
-It is possible with a specially crafted SMB2 server to cause the setup
-to free the key but keep the session. When the session is recovered
-(after a connection drop, for example), the following condition turn
-out to be true:
+Tested-by: Kevin Hilman <khilman@linaro.org>
 
-     ses->auth_key.len != 0  &&  ses->auth_key.response == NULL
+I boot tested this on a bunch of ARM boards and don't see any
+more failures/regressions.
 
-This will cause the following memcpy() in setup_ntlmv2_rsp() to GPF,
-because tiblob == NULL and tilen != 0 (these are the old auth_key values):
-
-     memcpy(ses->auth_key.response + baselen, tiblob, tilen);
-
-As seen here (Fedora 20 kernel build 3.16.3-200.fc20.x86_64):
-
-[985673.540019] BUG: unable to handle kernel NULL pointer dereference at           (null)
-[985673.540049] IP: [<ffffffff8136b7a6>] memcpy+0x6/0x110
-[...]
-[985673.540957]  [<ffffffffa09d28e5>] ? setup_ntlmv2_rsp+0x235/0x9d0 [cifs]
-[985673.540980]  [<ffffffffa09ccc8a>] ? cifs_small_buf_get+0x1a/0x30 [cifs]
-[985673.541003]  [<ffffffffa09dfe05>] ? small_smb2_init+0x285/0x510 [cifs]
-[985673.541025]  [<ffffffffa09d5331>] build_ntlmssp_auth_blob+0x91/0x290 [cifs]
-[985673.541047]  [<ffffffffa09e06a0>] SMB2_sess_setup+0x1f0/0x590 [cifs]
-[...]
-
-Commit applies to 3.18-rc1 and various preceding stable versions.
-
-Signed-off-by: Dan Aloni <dan@kernelim.com>
-CC: Steve French <smfrench@gmail.com>
-CC: linux-cifs@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
----
- fs/cifs/smb2pdu.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/fs/cifs/smb2pdu.c b/fs/cifs/smb2pdu.c
-index 8f1672bb82d5..e0304f258533 100644
---- a/fs/cifs/smb2pdu.c
-+++ b/fs/cifs/smb2pdu.c
-@@ -551,6 +551,7 @@ SMB2_sess_setup(const unsigned int xid, struct cifs_ses *ses,
- 	 */
- 	kfree(ses->auth_key.response);
- 	ses->auth_key.response = NULL;
-+	ses->auth_key.len = 0;
- 
- 	/*
- 	 * If memory allocation is successful, caller of this function
-@@ -713,6 +714,7 @@ ssetup_exit:
- 			rc = server->ops->generate_signingkey(ses);
- 			kfree(ses->auth_key.response);
- 			ses->auth_key.response = NULL;
-+			ses->auth_key.len = 0;
- 			if (rc) {
- 				cifs_dbg(FYI,
- 					"SMB3 session key generation failed\n");
-@@ -737,6 +739,7 @@ keygen_exit:
- 	if (!server->sign) {
- 		kfree(ses->auth_key.response);
- 		ses->auth_key.response = NULL;
-+		ses->auth_key.len = 0;
- 	}
- 	kfree(ses->ntlmssp);
- 
--- 
-1.9.3
-
+Kevin
