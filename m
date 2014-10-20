@@ -1,87 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213AbaJTOiz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 10:38:55 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:43377 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750954AbaJTOiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 10:38:52 -0400
-Message-ID: <54451E72.6060900@mm-sol.com>
-Date: Mon, 20 Oct 2014 17:38:42 +0300
-From: Stanimir Varbanov <svarbanov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1752510AbaJTOlk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 10:41:40 -0400
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:39246 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752299AbaJTOlj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 10:41:39 -0400
+From: Vince Weaver <vincent.weaver@maine.edu>
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Mon, 20 Oct 2014 10:48:21 -0400 (EDT)
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+Subject: Re: perf: 3.17 another perf_fuzzer lockup
+In-Reply-To: <alpine.DEB.2.11.1410200045530.19577@vincent-weaver-1.umelst.maine.edu>
+Message-ID: <alpine.DEB.2.11.1410201047300.19981@vincent-weaver-1.umelst.maine.edu>
+References: <alpine.DEB.2.11.1410061130100.11293@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.11.1410061151400.12313@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.11.1410151418570.3151@vincent-weaver-1.umelst.maine.edu>
+ <alpine.DEB.2.11.1410161723220.9124@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.11.1410171015540.15673@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.11.1410171118090.15673@vincent-weaver-1.umelst.maine.edu>
+ <alpine.DEB.2.11.1410200045530.19577@vincent-weaver-1.umelst.maine.edu>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-To: Pramod Gurav <pramod.gurav@smartplayin.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH] ARM: DT: apq8064: Add Support for SD Card Detect for
- ifc6410 board
-References: <1413805194-4360-1-git-send-email-pramod.gurav@smartplayin.com> <5444F62D.1090801@smartplayin.com>
-In-Reply-To: <5444F62D.1090801@smartplayin.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/20/2014 02:46 PM, Pramod Gurav wrote:
-> +linux-arm-msm
-> 
-> On Monday 20 October 2014 05:09 PM, Pramod Gurav wrote:
->> This changes muxes in gpio26 pin to function as gpio and adds support
->> for sd card detect for apq8064 based IFC6410 board.
->>
->> Cc: Rob Herring <robh+dt@kernel.org>
->> Cc: Pawel Moll <pawel.moll@arm.com>
->> Cc: Mark Rutland <mark.rutland@arm.com>
->> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
->> Cc: Kumar Gala <galak@codeaurora.org>
->> Cc: Russell King <linux@arm.linux.org.uk>
->> Cc: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->>
->> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
->>
->> ---
->>  arch/arm/boot/dts/qcom-apq8064-ifc6410.dts |   11 +++++++++++
->>  1 file changed, 11 insertions(+)
->>
->> diff --git a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
->> index b396c83..bf6262f 100644
->> --- a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
->> +++ b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
->> @@ -12,6 +12,14 @@
->>  					function = "gsbi1";
->>  				};
->>  			};
->> +
->> +			card_detect: card_detect {
->> +				mux {
->> +					pins = "gpio26";
->> +					function = "gpio";
->> +					bias-disable;
->> +				};
->> +			};
->>  		};
->>  
->>  		gsbi@12440000 {
->> @@ -49,6 +57,9 @@
->>  			/* External micro SD card */
->>  			sdcc3: sdcc@12180000 {
->>  				status = "okay";
->> +				pinctrl-names	= "default";
->> +				pinctrl-0	= <&card_detect>;
->> +				cd-gpios	= <&tlmm_pinmux 26 1>;
+On Mon, 20 Oct 2014, Vince Weaver wrote:
 
-pls use the defines in gpio.h.
+> nope.  Wasted 3 days trying to bisect this.  Something during the 3.17 
+> merge window changed enough to make the perf_fuzzer results 
+> non-deterministic, and that makes it nearly impossibe to reproduce the
+> issue properly.  Ugh.  I might be reduced to sprinkling printks around 
+> unless anyone chimes in with better advice.
 
-<&tlmm_pinmux 26 GPIO_ACTIVE_LOW>;
+yes, so 3 different bisects from 3 different starting points and it 
+bisects each time to:
 
--- 
-regards,
-Stan
+	commit 29b88e23a9212136d39b0161a39afe587d0170a5
+	Merge: 2521129 4e3a25b
+	Author: Linus Torvalds <torvalds@linux-foundation.org>
+	Date:   Mon Aug 4 18:34:04 2014 -0700
+
+    	Merge tag 'driver-core-3.17-rc1' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/dri
+    
+	Pull driver core updates from Greg KH:
+		"Here's the big driver-core pull request for 3.17-rc1.
+
+which makes no sense at all :(
+
+Vince
