@@ -1,109 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600AbaJTGja (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 02:39:30 -0400
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:3191 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752322AbaJTGj2 (ORCPT
+	id S1752647AbaJTGlh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 02:41:37 -0400
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:40119 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752322AbaJTGle (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 02:39:28 -0400
-From: Neil Zhang <zhangwm@marvell.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sun, 19 Oct 2014 23:39:23 -0700
-Subject: RE: [PATCH] drivers: base: update cpu offline info when do hotplug
-Thread-Topic: [PATCH] drivers: base: update cpu offline info when do hotplug
-Thread-Index: Ac/sIJbTXQKvxjX5QRq/D/vomZ1YNwAD4nzA
-Message-ID: <9034CBD80F070943B59700D7F8149ED9024EB81CAF@SC-VEXCH4.marvell.com>
-References: <1413775748-22478-1-git-send-email-zhangwm@marvell.com>
- <20141020044340.GA9589@kroah.com>
-In-Reply-To: <20141020044340.GA9589@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="gb2312"
+	Mon, 20 Oct 2014 02:41:34 -0400
+Date: Mon, 20 Oct 2014 08:41:28 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ingo Molnar <mingo@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
+        Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] s390 vs. kprobes on ftrace
+Message-ID: <20141020064128.GA4268@osiris>
+References: <1413387978-984-1-git-send-email-heiko.carstens@de.ibm.com>
+ <543F5C84.7090005@hitachi.com>
+ <20141017081921.GA18203@osiris>
+ <54446D49.1030208@hitachi.com>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-10-19_03:2014-10-17,2014-10-19,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1410200073
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54446D49.1030208@hitachi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102006-0025-0000-0000-000001F4A445
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9K6dac1022584
 
-Greg,
+Hi Masami,
 
------Original Message-----
-From: Greg KH [mailto:gregkh@linuxfoundation.org] 
-Sent: 2014Äê10ÔÂ20ÈÕ 12:44
-To: Neil Zhang
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: base: update cpu offline info when do hotplug
-
-On Mon, Oct 20, 2014 at 11:29:08AM +0800, Neil Zhang wrote:
-> The current per-cpu offline info won't be updated if it is hotplugged 
-> in/out by a kernel governer.
-> Let's update it via cpu notifier.
+On Mon, Oct 20, 2014 at 11:02:49AM +0900, Masami Hiramatsu wrote:
+> (2014/10/17 17:19), Heiko Carstens wrote:
+> > On Thu, Oct 16, 2014 at 02:49:56PM +0900, Masami Hiramatsu wrote:
+> >> Hi Heiko,
+> >>
+> >> (2014/10/16 0:46), Heiko Carstens wrote:
+> >>> Hi all,
+> >>>
+> >>> we would like to implement an architecture specific variant of "kprobes
+> >>> on ftrace" without using the current HAVE_KPROBES_ON_FTRACE infrastructure
+> >>> which is currently only used by x86.
+> > 
+> > [...]
+> > 
+> >> I'm not sure about s390 nor have the machine, so it is very helpful if you
+> >> give us a command line level test and show us the result with this patch :)
+> >> Fortunately, we already have ftracetest under tools/tesitng/selftest/ftrace/.
+> >> You can add the testcase for checking co-existence of kprobes and ftrace on
+> >> an entry of a function.
+> > 
+> > So how about something like below?
 > 
-> Signed-off-by: Neil Zhang <zhangwm@marvell.com>
-> ---
->  drivers/base/cpu.c |   25 +++++++++++++++++++++++++
->  1 file changed, 25 insertions(+)
-> 
-> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c index 
-> 006b1bc..9d61824 100644
-> --- a/drivers/base/cpu.c
-> +++ b/drivers/base/cpu.c
-> @@ -418,10 +418,35 @@ static void __init 
-> cpu_dev_register_generic(void)  #endif  }
->  
-> +static int device_hotplug_notifier(struct notifier_block *nfb,
-> +				      unsigned long action, void *hcpu) {
-> +	unsigned int cpu = (unsigned long)hcpu;
-> +	struct device *dev = get_cpu_device(cpu);
-> +	int ret;
-> +
-> +	switch (action & ~CPU_TASKS_FROZEN) {
-> +	case CPU_ONLINE:
-> +		dev->offline = false;
-> +		ret = NOTIFY_OK;
-> +		break;
-> +	case CPU_DYING:
-> +		dev->offline = true;
-> +		ret = NOTIFY_OK;
-> +		break;
-> +	default:
-> +		ret = NOTIFY_DONE;
-> +		break;
-> +	}
-> +
-> +	return ret;
-> +}
-> +
->  void __init cpu_dev_init(void)
->  {
->  	if (subsys_system_register(&cpu_subsys, cpu_root_attr_groups))
->  		panic("Failed to register CPU subsystem");
->  
->  	cpu_dev_register_generic();
-> +	cpu_notifier(device_hotplug_notifier, 0);
->  }
+> Yes! :) And could you add the results before and after to patch 2/2,
+> so that we can see what it changes on s390 ?
 
-How much noise is this going to cause on a big/little system that constantly hot unplug/plugs processors all of the time?
+The output of the testcase is identical before and after patch 2/2. Maybe I
+didn't explain my intention good enough.
+Just to explain how mcount/ftrace works on s390 today: if we pass the "-pg"
+flag to the compiler a 24 byte(!) block will be added in front of every
+function. We patch that block to match the ftrace needs. So an ftrace "nop"
+looks like this (simplified):
 
-Can you explain more what kind of noise will be introduced on a big/little system?
-As I know IKS on arm will use cpu_suspend way to power down a core.
-But I don't know well about other architectures.
-Please give your suggestions.
-Thanks!
+ 0: load return address "24" into register
+ 6: jump to 24
+12: nop
+18: nop
+24: <function code>
 
-greg k-h
+If the function gets enabled for ftrace we will patch the instruction at
+offset 6:
 
-Best Regards,
-Neil Zhang
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+ 0: load return address "24" into register
+ 6: jump to ftrace_caller
+12: nop
+18: nop
+24: <function code>
+
+So in fact kprobes and ftrace do work nicely together, since we only patch
+the second instruction, while kprobes will put a breakpoint on the first
+instruction.
+
+However, what I want to achieve with patch 2/2 is that the code will look
+like this:
+
+ftrace disabled:
+
+ 0: jump to 24
+ 6: nop
+12: nop
+18: nop
+24: <function code>
+
+ftrace enabled:
+
+ 0: branch to ftrace_caller and save return address into register
+ 6: nop
+12: nop
+18: nop
+24: <function code>
+
+So, with patch 2/2 the ftrace location of a function now matches the first
+instruction of a function and the check within kprobes.c which prevents
+putting a kprobe on an ftrace location triggers.
+
+So kprobes and ftrace work with and without patch 2/2, all I want to achieve
+is that the overhead of the mcount block gets reduced to a single instruction.
+Ultimately we want also a compiler change which only emits a single
+instruction, which we can patch; probably similar to "-pg -mfentry" on x86.
+
