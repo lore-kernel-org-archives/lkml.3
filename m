@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752128AbaJTAIb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Oct 2014 20:08:31 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:61774 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888AbaJTAIa (ORCPT
+	id S1752125AbaJTAXK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Oct 2014 20:23:10 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:39108 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751659AbaJTAXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Oct 2014 20:08:30 -0400
+	Sun, 19 Oct 2014 20:23:06 -0400
 MIME-Version: 1.0
-In-Reply-To: <20141019213534.GG23531@worktop.programming.kicks-ass.net>
-References: <cover.1413323611.git.luto@amacapital.net> <b6c264b3bb064658af498763e234e3cb4f9db4e2.1413323612.git.luto@amacapital.net>
- <CALCETrXRGNeUipujcGiT30SV+MDHCFpTxG7LOTXj4Z4CbtxdJQ@mail.gmail.com> <20141019213534.GG23531@worktop.programming.kicks-ass.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Sun, 19 Oct 2014 17:08:08 -0700
-Message-ID: <CALCETrX3XYGd+2x_W89wq5tkuMBNF5NxDa02ha=UzQhU2r6Khg@mail.gmail.com>
-Subject: Re: [RFC 5/5] x86,perf: Only allow rdpmc if a perf_event is mapped
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Erik Bosman <ebn310@few.vu.nl>
+In-Reply-To: <54445079.4000803@oracle.com>
+References: <1413734862-13510-1-git-send-email-sasha.levin@oracle.com>
+	<CA+55aFyDECoy4s6oO=PFZSyNS_F9EagxFiNm1X95Fu0cdSTeXQ@mail.gmail.com>
+	<20141019210348.GA28144@drone.musicnaut.iki.fi>
+	<CA+55aFzOYL-2WT2bf5C5ODAJnd=qVgpZGb-6o7z56Vu14wavJg@mail.gmail.com>
+	<20141019231031.GB9319@node.dhcp.inet.fi>
+	<CA+55aFxf6_cA5hTtDGqPU4=DkKz_6OUizhiqge+Xf5u34RxeXw@mail.gmail.com>
+	<54445079.4000803@oracle.com>
+Date: Sun, 19 Oct 2014 17:23:04 -0700
+X-Google-Sender-Auth: rHY3t-8mKrLkbGRrKJ-0DKPkr-E
+Message-ID: <CA+55aFwGWbRcrRxnmc7JrEZh+25zNVw7_PqQiCThHr1An=C4_g@mail.gmail.com>
+Subject: Re: [PATCH] kernel: use the gnu89 standard explicitly
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Andrew Pinski <pinskia@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 19, 2014 at 2:35 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, Oct 16, 2014 at 05:00:56PM -0700, Andy Lutomirski wrote:
->> The current cap_user_rdpmc code seems rather confused to me.  On x86,
->> *all* events set cap_user_rdpmc if the global rdpmc control is set.
->> But only x86_pmu events define .event_idx, so amd uncore events won't
->> actually expose their rdpmc index to userspace.
->>
->> Would it make more sense to add a flag PERF_X86_EVENT_RDPMC_PERMITTED
->> that gets set on all events created while rdpmc == 1, to change
->> x86_pmu_event_idx to do something like:
->>
->> if (event->hw.flags & PERF_X86_EVENT_RDPMC_PERMITTED)
->>   return event->hw.event_base_rdpmc + 1;
->> else
->>   return 0;
->>
->> and to change arch_perf_update_userpage cap_user_rdpmc to match
->> PERF_X86_EVENT_RDPMC_PERMITTED?
->>
->> Then we could ditch the static key and greatly simplify writes to the
->> rdpmc flag by just counting PERF_X86_EVENT_RDPMC_PERMITTED events.
->>
->> This would be a user-visible change on AMD, and I can't test it.
+On Sun, Oct 19, 2014 at 4:59 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
 >
-> I have AMD hardware to test this. But yes something like that seems
-> fine.
+>> AndrewP, mind explaing the other difference you mentioned (ie wrt
+>> "extern inline")? I thought we had already long since ended up
+>> following the gcc semantics (ie use "static inline" if we don't have
+>> an external version somehwre), what exactly changed?
+>
+> (Stolen from gcc changelog:)
+>
+> gnu89: extern inline: Will not generate an out-of-line version, but
+>         might call one.
+> gnu99: extern inline: like GNU "inline", externally visible code is
+>         emitted.
+>
+> (So what happens is that with gnu99 you end up with multiple definitions
+> of the symbol since it was externed from multiple compilation units).
 
-Before I totally screw this up: is .event_idx used for anything except
-userspace rdpmc?  There are a whole bunch of implementations of that
-callback:
+Oh Christ. So this got broken yet again, even *after* they had
+documented the old behavior?
 
- - perf_event_idx_default seems fishy
- - power_pmu_event_idx seems even fishier
- - cpumsf_pmu_event_idx is the same as power_pmu_event_idx.
- - perf_swevent_event_idx returns 0.
+Originally, gcc documented that "extern inline" is a good replacement
+for a macro. Then, that changed, and "static inline" became the
+replacement for a macro, and "extern inline" was to mean that *if* it
+gets inlined, that definition is used, but otherwise there's supposed
+to be an external non-inlined copy somewhere else (so the inline
+definition of the function is basically entirely ignored when not
+inlining for one reason or another).
 
-etc.
+So now we have a *third* semantic of "extern inline", and one that
+seems to be entirely inappropriate to *ever* be used in a header file
+due to duplicate symbol problems. What a mess.
 
-x86 is the only implementation of arch_perf_update_userpage, which
-makes me think that the .event_idx callback should just be removed and
-that arch_perf_update_userpage should be responsible for filling it in
-if needed.
+Maybe we should just specify "gnu89" to avoid these kinds of insane
+semantic changes.
 
---Andy
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+                     Linus
