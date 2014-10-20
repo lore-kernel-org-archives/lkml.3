@@ -1,94 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178AbaJTN6e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 09:58:34 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:46930 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752345AbaJTN6a (ORCPT
+	id S1753285AbaJTN7E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 09:59:04 -0400
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:45687 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752496AbaJTN7A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 09:58:30 -0400
-X-AuditID: cbfec7f5-b7f956d000005ed7-cf-5445150396cd
-Message-id: <54451501.2070700@samsung.com>
-Date: Mon, 20 Oct 2014 17:58:25 +0400
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.8.1
-MIME-version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, Michal Marek <mmarek@suse.cz>,
-        Sasha Levin <sasha.levin@oracle.com>, x86@kernel.org,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>
-Subject: Re: drivers: random: Shift out-of-bounds in _mix_pool_bytes
-References: <1413802499-17928-1-git-send-email-a.ryabinin@samsung.com>
- <5444EBFA.5030103@samsung.com> <20141020124929.GA23177@thunk.org>
-In-reply-to: <20141020124929.GA23177@thunk.org>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjkeLIzCtJLcpLzFFi42I5/e/4NV1mUdcQg0l7RSy+fulgsZizfg2b
-	xYSHbewW0zaKW6zsfMBq8WfXDiaLy7vmsFlcOrCAyaJl3wUmi+O9B5gsFh+5zWyxedNUZovW
-	np/sFj82PGZ14PNo2VzusXPWXXaPBZtKPTav0PLYtKqTzePduXPsHidm/GbxaDpzlNnj49Nb
-	LB7v911l8ziz4Ai7x+dNch4nWr6wBvBGcdmkpOZklqUW6dslcGWcW7uWueAKT8WE1dwNjG84
-	uxg5OSQETCQOf3/HBmGLSVy4tx7I5uIQEljKKPF663RGCKeZSeJC9xRGkCpeAS2JO9+WgNks
-	AqoSU7ovM4HYbAJ6Ev9mbQebJCoQIbFx/Q6oekGJH5PvsYDYIgKKErdavjCDDGUWuMQscWn2
-	SbCEsICLxKl7j9ghtnUxSjw9vI0ZJMEpoC/Rtfs22AZmAR2J/a3T2CBseYnNa94yT2AUmIVk
-	ySwkZbOQlC1gZF7FKJpamlxQnJSea6RXnJhbXJqXrpecn7uJERJ3X3cwLj1mdYhRgINRiYd3
-	h5lLiBBrYllxZe4hRgkOZiUR3lOCriFCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGHftz86fGP9V
-	13Kze84Gd5+je6eZGs+P+JTYZjxzAyvX1QsJz84ccpbtbCw0m7hUZz1r2z2BJZMmaTdvaxFK
-	Z0hv+Hkz9F+DXrYCj/KNV1m579Nczulb3DkVlPkgfXJDkMPTHbInzYPXb6rTurT+836z33cm
-	nbbMT/ZdG6yUbKo26/2T3KyzrEosxRmJhlrMRcWJABWfjSSZAgAA
+	Mon, 20 Oct 2014 09:59:00 -0400
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Cc: Thomas Graf <tgraf@suug.ch>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        Cornelia Huck <cornelia.huck@de.ibm.com>
+Subject: [PATCH] virtio_console: move early VQ enablement
+Date: Mon, 20 Oct 2014 15:58:49 +0200
+Message-Id: <1413813529-11044-1-git-send-email-cornelia.huck@de.ibm.com>
+X-Mailer: git-send-email 1.8.5.5
+In-Reply-To: <20141020133555.GA27111@redhat.com>
+References: <20141020133555.GA27111@redhat.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102013-0025-0000-0000-000001F7AC56
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/20/2014 04:49 PM, Theodore Ts'o wrote:
-> On Mon, Oct 20, 2014 at 03:03:22PM +0400, Andrey Ryabinin wrote:
->> Hi, Theodore.
->>
->> I've got this while booting kernel with ubsan:
->>
->>     [    0.000000] ================================================================================
->>     [    0.000000] UBSan: Undefined behaviour in ../include/linux/bitops.h:107:33
->>     [    0.000000] shift exponent 32 is to large for 32-bit type 'unsigned int'
->       ...
->>     [    0.000000] _mix_pool_bytes (/home/andrew/linux/ubsan_x86//include/linux/bitopsh:107 /home/andrew/linux/ubsan_x86//drivers/char/randomc:509)
-> 
-> So this doesn't make any sense to me.   This is triggering here:
-> 
-> 	w = rol32(*bytes++, input_rotate);
-> 
-> .... but input_rotate should never be >= 32, since it is set this way:
-> 
+Commit f5866db6 (virtio_console: enable VQs early) tried to make
+sure that DRIVER_OK was set when virtio_console started using its
+virtqueues. Doing this in add_port(), however, means that we try
+to set DRIVER_OK again when when a port is dynamically added after
+the probe function is done.
 
-It's triggering when input_rotate == 0, so UBSan complains about right shift in rol32()
+Let's move virtio_device_ready() to the probe function just before
+trying to use the virtqueues instead. This is fine as nothing can
+fail inbetween.
 
-static inline __u32 rol32(__u32 word, unsigned int shift)
-{
-	return (word << shift) | (word >> (32 - shift));
-}
+Reported-by: Thomas Graf <tgraf@suug.ch>
+Reviewed-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+---
+ drivers/char/virtio_console.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-
-> 	input_rotate = (input_rotate + (i ? 7 : 14)) & 31;
-> 
-> Just to be sure I've tried adding a:
-> 
-> 	WARN_ON(input_rotate >= 32);
-> 
-> before the rol32 line, and it's not triggering for me after booting
-> under kvm using an i386 kernel.
-> 
-> Is this something you can reliably reproduce?  Can you try putting a
-> WARN_ON before the rol32() on a kernel w/o usbsan, just to make sure
-> this isn't some kind of false positive?  And then can you tell me
-> something more about the .config you are using to build your test kernel?
-> 
-> Thanks,
-> 
-> 						- Ted
-> 
+diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+index bfa6400..cf7a561 100644
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -1449,8 +1449,6 @@ static int add_port(struct ports_device *portdev, u32 id)
+ 	spin_lock_init(&port->outvq_lock);
+ 	init_waitqueue_head(&port->waitqueue);
+ 
+-	virtio_device_ready(portdev->vdev);
+-
+ 	/* Fill the in_vq with buffers so the host can send us data. */
+ 	nr_added_bufs = fill_queue(port->in_vq, &port->inbuf_lock);
+ 	if (!nr_added_bufs) {
+@@ -2026,6 +2024,8 @@ static int virtcons_probe(struct virtio_device *vdev)
+ 	spin_lock_init(&portdev->ports_lock);
+ 	INIT_LIST_HEAD(&portdev->ports);
+ 
++	virtio_device_ready(portdev->vdev);
++
+ 	if (multiport) {
+ 		unsigned int nr_added_bufs;
+ 
+-- 
+1.8.5.5
 
