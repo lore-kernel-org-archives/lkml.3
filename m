@@ -1,52 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802AbaJUGF4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 02:05:56 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:42244 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750750AbaJUGFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 02:05:55 -0400
-Date: Tue, 21 Oct 2014 08:05:31 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Erik Bosman <ebn310@few.vu.nl>
-Subject: Re: [RFC 3/5] x86: Add a comment clarifying LDT context switching
-Message-ID: <20141021060531.GB4420@pd.tnic>
-References: <cover.1413323611.git.luto@amacapital.net>
- <93ffc13d9e829f3ded9776fec62385bccb7439e1.1413323612.git.luto@amacapital.net>
- <20141016154914.GD30314@nazgul.tnic>
- <CALCETrVmS+ZNj+iXNTy5zC8araMH=x=jUBNDMUNPDJwu0huMMQ@mail.gmail.com>
- <20141021054118.GA4420@pd.tnic>
- <CALCETrV-2h1H-c7GTzNXvjmT6yzmGzzP6R6hce5QhZbCEi0oKw@mail.gmail.com>
+	id S1753410AbaJUGHz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 02:07:55 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:45242 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901AbaJUGHx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 02:07:53 -0400
+Message-ID: <5445F781.7010804@gmail.com>
+Date: Tue, 21 Oct 2014 11:34:49 +0530
+From: Varka Bhadram <varkabhadram@gmail.com>
+Organization: CDAC-HYD
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CALCETrV-2h1H-c7GTzNXvjmT6yzmGzzP6R6hce5QhZbCEi0oKw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Ankit Jindal <ankit.jindal@linaro.org>, linux-kernel@vger.kernel.org
+CC: "Hans J. Koch" <hjk@hansjkoch.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, patches@apm.com,
+        linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
+        Tushar Jagad <tushar.jagad@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        devicetree@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
+Subject: Re: [PATCH v3 4/6] uio: Add X-Gene QMTM UIO driver
+References: <1413871011-4101-1-git-send-email-ankit.jindal@linaro.org> <1413871011-4101-5-git-send-email-ankit.jindal@linaro.org>
+In-Reply-To: <1413871011-4101-5-git-send-email-ankit.jindal@linaro.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 20, 2014 at 10:44:18PM -0700, Andy Lutomirski wrote:
-> You're exactly correct, or at least you seem to understand it the way I do :)
+On 10/21/2014 11:26 AM, Ankit Jindal wrote:
+> The Applied Micro X-Gene SOC has on-chip QMTM (Queue manager
+> and Traffic manager) which is hardware based Queue or Ring
+> manager. This QMTM device can be used in conjunction with
+> other devices such as DMA Engine, Ethernet, Security Engine,
+> etc to assign work based on queues or rings.
+>
+> This patch allows user space access to X-Gene QMTM device.
+>
+> Signed-off-by: Ankit Jindal <ankit.jindal@linaro.org>
+> Signed-off-by: Tushar Jagad <tushar.jagad@linaro.org>
 
-Ok, cool.
+(...)
 
-Now, if I had more time, I'd take a guest and add some debugging
-code to see when exactly that happens and how prev->context.ldt and
-next->context.ldt look... Maybe later. :-)
+> +
+> +static int qmtm_probe(struct platform_device *pdev)
+> +{
+> +	struct uio_info *info;
+> +	struct uio_qmtm_dev *qmtm_dev;
+> +	struct resource *csr;
+> +	struct resource *fabric;
+> +	struct resource qpool;
+> +	unsigned int num_queues;
+> +	unsigned int devid;
+> +	phandle qpool_phandle;
+> +	struct device_node *qpool_node;
+> +	int ret;
+> +
+> +	qmtm_dev = devm_kzalloc(&pdev->dev, sizeof(struct uio_qmtm_dev),
+> +				GFP_KERNEL);
+> +	if (!qmtm_dev)
+> +		return -ENOMEM;
+> +
+> +	qmtm_dev->info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
+> +	if (!qmtm_dev->info)
+> +		return -ENOMEM;
+> +
+> +	/* Power on qmtm in case its not done as part of boot-loader */
+> +	qmtm_dev->qmtm_clk = devm_clk_get(&pdev->dev, NULL);
+> +	if (IS_ERR(qmtm_dev->qmtm_clk)) {
+> +		dev_err(&pdev->dev, "Failed to get clock\n");
+> +		ret = PTR_ERR(qmtm_dev->qmtm_clk);
+> +		return ret;
+> +	}
+> +
+> +	csr = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (!csr) {
+> +		ret = -ENODEV;
+> +		dev_err(&pdev->dev, "No QMTM CSR resource specified\n");
+> +		goto out_err;
+> +	}
+> +
 
-Thanks.
+This error check is not required. *csr* is checked in devm_ioremap_resource().
+
+> +	if (!csr->start) {
+> +		ret = -EINVAL;
+> +		dev_err(&pdev->dev, "Invalid CSR resource\n");
+> +		goto out_err;
+> +	}
+> +
+> +	fabric = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+> +	if (!fabric) {
+> +		ret = -ENODEV;
+> +		dev_err(&pdev->dev, "No QMTM Fabric resource specified\n");
+> +		goto out_err;
+> +	}
+> +
+
+same
+
+> +	if (!fabric->start) {
+> +		ret = -EINVAL;
+> +		dev_err(&pdev->dev, "Invalid Fabric resource\n");
+> +		goto out_err;
+> +	}
+> +
+> +	ret = of_property_read_u32(pdev->dev.of_node, "qpool", &qpool_phandle);
+> +	if (ret < 0) {
+> +		dev_err(&pdev->dev, "No qpool resource specified\n");
+> +		goto out_err;
+> +	}
+> +
+> +	qpool_node = of_find_node_by_phandle(qpool_phandle);
+> +	if (IS_ERR_OR_NULL(qpool_node)) {
+> +		ret = PTR_ERR(qpool_node);
+> +		dev_err(&pdev->dev, "Failed to get node by phandle\n");
+> +		goto out_err;
+> +	}
+> +
+> +	ret = of_address_to_resource(qpool_node, 0, &qpool);
+> +
+> +	of_node_put(qpool_node);
+> +
+> +	if (ret < 0) {
+> +		dev_err(&pdev->dev, "Failed to get qpool resource from node\n");
+> +		goto out_err;
+> +	}
+> +
+> +	if (!qpool.start) {
+> +		ret = -EINVAL;
+> +		dev_err(&pdev->dev, "Invalid qpool resource\n");
+> +		goto out_err;
+> +	}
+> +
+> +	ret = of_property_read_u32(pdev->dev.of_node, "num-queues",
+> +			&num_queues);
+> +	if (ret < 0) {
+> +		dev_err(&pdev->dev, "No num-queues resource specified\n");
+> +		goto out_err;
+> +	}
+> +
+> +	/* check whether sufficient memory is provided for the given queues */
+> +	if (num_queues * QMTM_DEFAULT_QSIZE > resource_size(&qpool)) {
+> +		ret = -ENOSPC;
+> +		dev_err(&pdev->dev, "Insufficient Qpool for the given queues\n");
+> +		goto out_err;
+> +	}
+> +
+> +	ret = of_property_read_u32(pdev->dev.of_node, "devid", &devid);
+> +	if (ret < 0) {
+> +		dev_err(&pdev->dev, "No devid resource specified\n");
+> +		goto out_err;
+> +	}
+> +
+> +	info = qmtm_dev->info;
+> +	info->mem[0].name = "csr";
+> +	info->mem[0].addr = csr->start;
+> +	info->mem[0].size = resource_size(csr);
+> +	info->mem[0].memtype = UIO_MEM_PHYS;
+> +	info->mem[0].internal_addr = devm_ioremap_resource(&pdev->dev, csr);
+> +
+> +	if (IS_ERR(info->mem[0].internal_addr)) {
+> +		ret = PTR_ERR(info->mem[0].internal_addr);
+> +		dev_err(&pdev->dev, "Failed to ioremap CSR region\n");
+> +		goto out_err;
+> +	}
+> +
+> +	info->mem[1].name = "fabric";
+> +	info->mem[1].addr = fabric->start;
+> +	info->mem[1].size = resource_size(fabric);
+> +	info->mem[1].memtype = UIO_MEM_PHYS;
+> +
+> +	info->mem[2].name = "qpool";
+> +	info->mem[2].addr = qpool.start;
+> +	info->mem[2].size = resource_size(&qpool);
+> +	info->mem[2].memtype = UIO_MEM_PHYS_CACHE;
+> +
+> +	info->name = devm_kasprintf(&pdev->dev, GFP_KERNEL, "qmtm%d", devid);
+> +	info->version = DRV_VERSION;
+> +
+> +	info->priv = qmtm_dev;
+> +
+> +	/* enable the clock */
+> +	clk_prepare_enable(qmtm_dev->qmtm_clk);
+> +
+> +	/* get the qmtm out of reset */
+> +	ret = qmtm_reset(qmtm_dev);
+> +	if (ret < 0) {
+> +		dev_err(&pdev->dev, "Failed to reset QMTM\n");
+> +		goto out_clk;
+> +	}
+> +
+> +	/* register with uio framework */
+> +	ret = uio_register_device(&pdev->dev, info);
+> +	if (ret < 0)
+> +		goto out_clk;
+> +
+> +	platform_set_drvdata(pdev, qmtm_dev);
+> +	return 0;
+> +
+> +out_clk:
+> +	clk_disable_unprepare(qmtm_dev->qmtm_clk);
+> +
+> +out_err:
+> +	return ret;
+> +}
+>
+
 
 -- 
-Regards/Gruss,
-    Boris.
+Regards,
+Varka Bhadram.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
