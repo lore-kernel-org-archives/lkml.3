@@ -1,100 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933727AbaJUVkp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 17:40:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12562 "EHLO mx1.redhat.com"
+	id S933757AbaJUVkv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 17:40:51 -0400
+Received: from roy.gaast.net ([80.101.33.21]:53097 "EHLO mail.gaast.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933458AbaJUVkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 17:40:43 -0400
-From: Steve Grubb <sgrubb@redhat.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: Eric Paris <eparis@redhat.com>, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org, pmoore@redhat.com
-Subject: Re: [RFC][PATCH] audit: log join and part events to the read-only multicast log socket
-Date: Tue, 21 Oct 2014 17:40:43 -0400
-Message-ID: <4932303.9AV80g4J8S@x2>
-Organization: Red Hat
-User-Agent: KMail/4.14.2 (Linux/3.16.6-200.fc20.x86_64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <20141021210511.GL15532@madcap2.tricolour.ca>
-References: <30ef5c1ba42b52953e5684a0322975c3f0fadc77.1412706089.git.rgb@redhat.com> <2131923.Byl8GhZuQt@x2> <20141021210511.GL15532@madcap2.tricolour.ca>
+	id S933458AbaJUVkr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 17:40:47 -0400
+Message-ID: <5446D2D8.2090203@gaast.net>
+Date: Tue, 21 Oct 2014 22:40:40 +0100
+From: Wilmer van der Gaast <wilmer@gaast.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130112 Icedove/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Machine crashes right *after* ~successful resume
+References: <54347520.3050109@gaast.net> <543AA2FE.20105@gaast.net> <20141012204032.GA11171@amd> <9751497.0fL0kvsyX7@vostro.rjw.lan> <20141015111641.GC7792@gaast.net> <CAErSpo5A+nHTu2Y6KrXowBBCBsNw_hO0SRsnc6YRdJChCUmO6w@mail.gmail.com> <CAE9FiQV9t0bCfUy5Fichdk=04ruEVxGv-LUK1xxZjCrasAOACg@mail.gmail.com> <543F049F.5090605@gaast.net> <CAE9FiQWDHq5esSt4UvE5AkHR-=XMvrzaNFwLg+0xKisTNOtcsQ@mail.gmail.com> <543F9182.9000004@gaast.net> <CAE9FiQVNZHTxpNCnn+YPtqjWrQjFmtTh06sbBawqFonMFwSZ-w@mail.gmail.com> <544033CF.3080104@gaast.net> <CAE9FiQW0x5uy_osjvVDOOMDaz2=2KL+TusQ8QqcHL5dWTPrK2w@mail.gmail.com> <5442FE58.5020700@gaast.net> <CAE9FiQWugqXZdZDhDyKofKRXH6EgVq6DJ0JphM6DZSdS5nMhbw@mail.gmail.com>
+In-Reply-To: <CAE9FiQWugqXZdZDhDyKofKRXH6EgVq6DJ0JphM6DZSdS5nMhbw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 21, 2014 05:08:22 PM Richard Guy Briggs wrote:
-> On 14/10/21, Steve Grubb wrote:
-> > > super crazy yuck.  audit_log_task_info() ??
-> > 
-> > audit_log_task_info logs too much information for typical use. There are
-> > times when you might want to know everything about what's connecting. But
-> > in this case, we don't need anything about groups, saved uids, fsuid, or
-> > ppid.
-> > 
-> > Its a shame we don't have a audit_log_task_info_light function which only
-> > records:
-> > 
-> > pid= auid= uid= subj= comm= exe=  ses= tty=
-> 
-> We already have audit_log_task() which gives:
-> 	auid=
-> 	uid=
-> 	gid=
-> 	ses=
-> 	subj=
-> 	pid=
-> 	comm=
-> 	exe=
-> This is missing tty=, but has gid=.  Can we please use that function
-> instead and add tty=?
+Hello,
 
-gid is important for things that might allow access by file permissions. But 
-the syscall logging is going to have that and much more. In this case, access 
-is granted by having a posix capability. So, all we want is what's the 
-process, who's the user, which session/tty is this coming from to find all 
-events that might be related.
+Sorry for the delay, finally poked at this again. It looks like the 
+no_console_suspend flag was causing troubles, which I didn't really need 
+anyway with logging going to my serial port.
+
+This is what I get now on the failing resume:
+
+[  112.879390] PM: resume of devices complete after 2239.905 msecs
+[  112.880068] r8169 0000:07:00.0 eth0: link up
+[  112.880078] Switched to clocksource hpet
+[  116.069248] PM: Finishing wakeup.
+[  116.072574] Restarting tasks ... done.
+[  116.076664] PM: calling nb rcu_pm_notify+0x0/0x60
+[  116.081439] PM: ... nb rcu_pm_notify+0x0/0x60 done
+[  116.086267] PM: calling nb cpu_hotplug_pm_callback+0x0/0x50
+[  116.088526] systemd[1]: Got notification message for unit 
+systemd-journald.service
+[  116.099442] PM: ... nb cpu_hotplug_pm_callback+0x0/0x50 done
+[  116.105099] PM: calling nb fw_pm_notify+0x0/0x150
+[  116.109812] PM: ... nb fw_pm_notify+0x0/0x150 done
+[  116.114623] PM: calling nb bsp_pm_callback+0x0/0x50
+[  116.119504] PM: ... nb bsp_pm_callback+0x0/0x50 done
+
+And then nothing, and it's hung. Looks the same to me (apart from the 
+tsc issues + hpet switch) as a successful resume:
+
+[   95.499513] PM: resume of devices complete after 1240.115 msecs
+[   96.368940] r8169 0000:07:00.0 eth0: link up
+[   98.676455] PM: Finishing wakeup.
+[   98.679765] Restarting tasks ... done.
+[   98.683821] PM: calling nb rcu_pm_notify+0x0/0x60
+[   98.688524] PM: ... nb rcu_pm_notify+0x0/0x60 done
+[   98.692044] systemd[1]: Got notification message for unit 
+systemd-journald.service
+[   98.700897] PM: calling nb cpu_hotplug_pm_callback+0x0/0x50
+[   98.706470] PM: ... nb cpu_hotplug_pm_callback+0x0/0x50 done
+[   98.712132] PM: calling nb fw_pm_notify+0x0/0x150
+[   98.716848] PM: ... nb fw_pm_notify+0x0/0x150 done
+[   98.721644] PM: calling nb bsp_pm_callback+0x0/0x50
+[   98.726536] PM: ... nb bsp_pm_callback+0x0/0x50 done
+
+Full logs in http://gaast.net/~wilmer/.lkml/bad3.17-patched-megadebug.txt
 
 
-> And while we are at it, refactor audit_log_task_info() to call
-> audit_log_task()?
+Wilmer v/d Gaast.
 
-That will cause problems at this point.
-
-> Is this standard set above what should be used for certain classes of
-> log messages?
-
-Its hard to say if that is sufficient for all cases. When access is granted by 
-posix capability, sure. This is probably good for most kernel originating 
-events. But there are times extra info is needed.
-
-> Yes, it will be in a different order because we don't have a canonical
-> order yet.  Can we accept two orders of keywords so we can start
-> canonicalizing, please?
-
-I don't understand what you are getting at.
-
--Steve
-
-> > > > +     audit_log_format(ab, " group=%d", group);
-> > > 
-> > > group seems like too easily confused a name.
-> > 
-> > nlnk-grp is better if its what I think it is.
-> 
-> Where did you find that name?  That could work and it is shorter, but it
-> seems awkwardly optimized.  "nlnk" doesn't appear once in the kernel.
-> "nl" is already recognized for netlink, "mcgrp" is already used for
-> "multicast group(s)", so I would suggest "nl-mcgrp".
-> 
-> > -Steve
-> 
-> - RGB
-> 
-> --
-> Richard Guy Briggs <rbriggs@redhat.com>
-> Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems,
-> Red Hat Remote, Ottawa, Canada
-> Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
-
+-- 
++-------- .''`.     - -- ---+  +        - -- --- ---- ----- ------+
+| wilmer : :'  :  gaast.net |  | OSS Programmer   www.bitlbee.org |
+| lintux `. `~'  debian.org |  | Full-time geek  wilmer.gaast.net |
++--- -- -  ` ---------------+  +------ ----- ---- --- -- -        +
