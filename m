@@ -1,162 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910AbaJUDte (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 23:49:34 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:42025 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014AbaJUDtd (ORCPT
+	id S1753129AbaJUDvG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 23:51:06 -0400
+Received: from smtprelay0205.hostedemail.com ([216.40.44.205]:36828 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751490AbaJUDvE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 23:49:33 -0400
-Message-ID: <5445D7C5.1080006@hitachi.com>
-Date: Tue, 21 Oct 2014 12:49:25 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
-        Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] kprobes: introduce ARCH_HANDLES_KPROBES_ON_FTRACE
-References: <1413802794-38998-1-git-send-email-heiko.carstens@de.ibm.com> <1413802794-38998-2-git-send-email-heiko.carstens@de.ibm.com>
-In-Reply-To: <1413802794-38998-2-git-send-email-heiko.carstens@de.ibm.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+	Mon, 20 Oct 2014 23:51:04 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3865:3867:3871:3872:4321:5007:6261:9592:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12555:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: key94_432e9f4318f01
+X-Filterd-Recvd-Size: 2797
+Message-ID: <1413863460.5407.10.camel@perches.com>
+Subject: [PATCH] usb: storage: Convert usb_stor_dbg to return void
+From: Joe Perches <joe@perches.com>
+To: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        usb-storage@lists.one-eyed-alien.net, linux-kernel@vger.kernel.org
+Date: Mon, 20 Oct 2014 20:51:00 -0700
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/10/20 19:59), Heiko Carstens wrote:
-> Allow architectures to implement handling of kprobes on function
-> tracer call sites on their own, without depending on common code.
-> 
-> This patch removes the kprobes check if a kprobe is being placed
-> on a function tracer call site and therefore gives full responsibility
-> of handling this correctly to the architecture.
-> 
-> This patch also introduces a user space visible change: if a kprobe
-> is placed into the middle of an ftrace instruction the return value
-> is changed from -EINVAL to -EILSEQ also for architectures which do
-> not support KPROBES_ON_FTRACE.
-> However in reality this change shouldn't matter at all.
+No caller or macro uses the return value so make it void.
 
-Could you try to remove new kconfig by using a weak function?
-This could be done with below functions:
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+This change is associated to a desire to eventually
+change printk to return void.
 
-In kernel/kprobes.c:
+ drivers/usb/storage/debug.c |  7 ++-----
+ drivers/usb/storage/debug.h | 10 ++++++----
+ 2 files changed, 8 insertions(+), 9 deletions(-)
 
-int __weak arch_check_ftrace_location(struct kprobe *p)
-{
-	unsigned long ftrace_addr = ftrace_location((unsigned long)p->addr);
-	if (ftrace_addr) {
-		...
-}
-
-And in arch/s390/kernel/kprobes.c:
-int arch_check_ftrace_location(struct kprobe *p)
-{
-	return 0;
-}
-
-And in include/linux/kprobes.h
-int arch_check_ftrace_location(struct kprobe *p);
-
-Then, we don't need to add any macros or kconfigs.
-
-Thank you,
-
-> 
-> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-> ---
->  arch/Kconfig     |  8 ++++++++
->  kernel/kprobes.c | 36 +++++++++++++++++++++---------------
->  2 files changed, 29 insertions(+), 15 deletions(-)
-> 
-> diff --git a/arch/Kconfig b/arch/Kconfig
-> index 05d7a8a458d5..e1a8e0edf03f 100644
-> --- a/arch/Kconfig
-> +++ b/arch/Kconfig
-> @@ -85,6 +85,14 @@ config KPROBES_ON_FTRACE
->  	 passing of pt_regs to function tracing, then kprobes can
->  	 optimize on top of function tracing.
->  
-> +config ARCH_HANDLES_KPROBES_ON_FTRACE
-> +	def_bool n
-> +	help
-> +	 If an architecture can handle kprobes on function tracer call
-> +	 sites on own, then this option should be selected. This option
-> +	 removes the check which otherwise prevents to set kprobes on
-> +	 function tracer call sites.
-> +
->  config UPROBES
->  	def_bool n
->  	select PERCPU_RWSEM
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> index 3995f546d0f3..4b57fe9fbeb7 100644
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -1410,28 +1410,34 @@ static inline int check_kprobe_rereg(struct kprobe *p)
->  	return ret;
->  }
->  
-> -static int check_kprobe_address_safe(struct kprobe *p,
-> -				     struct module **probed_mod)
-> +static int check_ftrace_location(struct kprobe *p)
->  {
-> -	int ret = 0;
->  	unsigned long ftrace_addr;
->  
-> -	/*
-> -	 * If the address is located on a ftrace nop, set the
-> -	 * breakpoint to the following instruction.
-> -	 */
->  	ftrace_addr = ftrace_location((unsigned long)p->addr);
-> -	if (ftrace_addr) {
-> -#ifdef CONFIG_KPROBES_ON_FTRACE
-> -		/* Given address is not on the instruction boundary */
-> -		if ((unsigned long)p->addr != ftrace_addr)
-> -			return -EILSEQ;
-> +	if (!ftrace_addr)
-> +		return 0;
-> +	/* Given address is not on the instruction boundary */
-> +	if ((unsigned long)p->addr != ftrace_addr)
-> +		return -EILSEQ;
-> +	/* If an architecture handles kprobes on ftrace, we're done */
-> +	if (IS_ENABLED(CONFIG_ARCH_HANDLES_KPROBES_ON_FTRACE))
-> +		return 0;
-> +	if (IS_ENABLED(CONFIG_KPROBES_ON_FTRACE)) {
->  		p->flags |= KPROBE_FLAG_FTRACE;
-> -#else	/* !CONFIG_KPROBES_ON_FTRACE */
-> -		return -EINVAL;
-> -#endif
-> +		return 0;
->  	}
-> +	return -EINVAL;
-> +}
-> +
-> +static int check_kprobe_address_safe(struct kprobe *p,
-> +				     struct module **probed_mod)
-> +{
-> +	int ret;
->  
-> +	ret = check_ftrace_location(p);
-> +	if (ret)
-> +		return ret;
->  	jump_label_lock();
->  	preempt_disable();
->  
-> 
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+diff --git a/drivers/usb/storage/debug.c b/drivers/usb/storage/debug.c
+index e08f647..05bc379 100644
+--- a/drivers/usb/storage/debug.c
++++ b/drivers/usb/storage/debug.c
+@@ -179,17 +179,14 @@ void usb_stor_show_sense(const struct us_data *us,
+ 	US_DEBUGPX("\n");
+ }
+ 
+-int usb_stor_dbg(const struct us_data *us, const char *fmt, ...)
++void usb_stor_dbg(const struct us_data *us, const char *fmt, ...)
+ {
+ 	va_list args;
+-	int r;
+ 
+ 	va_start(args, fmt);
+ 
+-	r = dev_vprintk_emit(7, &us->pusb_dev->dev, fmt, args);
++	dev_vprintk_emit(7, &us->pusb_dev->dev, fmt, args);
+ 
+ 	va_end(args);
+-
+-	return r;
+ }
+ EXPORT_SYMBOL_GPL(usb_stor_dbg);
+diff --git a/drivers/usb/storage/debug.h b/drivers/usb/storage/debug.h
+index b1273f0..f525203 100644
+--- a/drivers/usb/storage/debug.h
++++ b/drivers/usb/storage/debug.h
+@@ -50,15 +50,17 @@
+ void usb_stor_show_command(const struct us_data *us, struct scsi_cmnd *srb);
+ void usb_stor_show_sense(const struct us_data *us, unsigned char key,
+ 			 unsigned char asc, unsigned char ascq);
+-__printf(2, 3) int usb_stor_dbg(const struct us_data *us,
+-				const char *fmt, ...);
++__printf(2, 3) void usb_stor_dbg(const struct us_data *us,
++				 const char *fmt, ...);
+ 
+ #define US_DEBUGPX(fmt, ...)	printk(fmt, ##__VA_ARGS__)
+ #define US_DEBUG(x)		x
+ #else
+ __printf(2, 3)
+-static inline int _usb_stor_dbg(const struct us_data *us,
+-				const char *fmt, ...) {return 1;}
++static inline void _usb_stor_dbg(const struct us_data *us,
++				 const char *fmt, ...)
++{
++}
+ #define usb_stor_dbg(us, fmt, ...)				\
+ 	do { if (0) _usb_stor_dbg(us, fmt, ##__VA_ARGS__); } while (0)
+ #define US_DEBUGPX(fmt, ...)					\
 
 
