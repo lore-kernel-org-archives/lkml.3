@@ -1,78 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752833AbaJUJCO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 05:02:14 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:43666 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754698AbaJUJCL (ORCPT
+	id S1754987AbaJUJC0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 05:02:26 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:48780 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754763AbaJUJCU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 05:02:11 -0400
+	Tue, 21 Oct 2014 05:02:20 -0400
+Message-ID: <544620C8.4040001@atmel.com>
+Date: Tue, 21 Oct 2014 17:00:56 +0800
+From: Bo Shen <voice.shen@atmel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-In-Reply-To: <20141006071841.GN4992@pengutronix.de>
-References: <1411443545-24951-1-git-send-email-srv_hongzhou.yang@mediatek.com>
-	<1411443545-24951-5-git-send-email-srv_hongzhou.yang@mediatek.com>
-	<CACRpkda-K7w-bY0uSdnZvzEKEeQg38oExoHPSW61kEv9Wv20mA@mail.gmail.com>
-	<20140924124044.GC4992@pengutronix.de>
-	<CACRpkdbtN-BDEwpJO2swnOjCe3UJhD5WOXXKBV0hPOe2M2=k7Q@mail.gmail.com>
-	<20141006071841.GN4992@pengutronix.de>
-Date: Tue, 21 Oct 2014 11:02:10 +0200
-Message-ID: <CACRpkdbEmo1GePLnE4YvtaeBLKqhn_WsmdQKnArFthKCVPNKvg@mail.gmail.com>
-Subject: Re: [PATCH v2 4/4] ARM: dts: mt8135: Add pinctrl node for mt8135.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: "Hongzhou.Yang" <srv_hongzhou.yang@mediatek.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>, srv_heupstream@mediatek.com,
-        Sascha Hauer <kernel@pengutronix.de>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Hongzhou Yang <hongzhou.yang@mediatek.com>,
-        "Joe.C" <yingjoe.chen@mediatek.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Vladimir Murzin <vladimir.murzin@arm.com>,
-        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        dandan.he@mediatek.com
-Content-Type: text/plain; charset=UTF-8
+To: Peter Rosin <peda@axentia.se>
+CC: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        "'alsa-devel@alsa-project.org'" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH] ASoC: atmel_ssc_dai: Track playback and
+ capture CMR dividers separately.
+References: <a541333cf46b4c61b790df927d4b315d@EMAIL.axentia.se> <5445BCBF.5090002@atmel.com> <dc4461593ddb4d539f2db74b69bab98c@EMAIL.axentia.se>
+In-Reply-To: <dc4461593ddb4d539f2db74b69bab98c@EMAIL.axentia.se>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 6, 2014 at 9:18 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> On Thu, Oct 02, 2014 at 04:02:58PM +0200, Linus Walleij wrote:
+Hi Peter,
 
->> What is the alternative? Device Tree is very much about strings,
->> as is shown by the pin config bindings.
+On 10/21/2014 03:55 PM, Peter Rosin wrote:
+> Hi!
 >
-> The alternative is to use numbers. The majority of SoCs have a bit field
-> per pad which is used for muxing the pad to different functions. The
-> natural way to describe this is a pair of numbers: <pad-number>
-> <function-number>.  The pad number can normally be directly translated
-> into a register offset and the function number to a value written to
-> that register. This is true for most SoCs I know of and makes it very
-> easy to generate code for and to prove for correctness of both the code
-> and the device tree.
+> (and thank you for the pointer to the example with the ssc-dai in master mode)
+>
+>> Hi Peter,
+>>
+>> On 10/20/2014 09:45 PM, Peter Rosin wrote:
+>>>   From 1e5621d7b9887c648d1a66238dc82d715c1e2cad Mon Sep 17 00:00:00
+>>> 2001
+>>> From: Peter Rosin <peda@axentia.se>
+>>> Date: Mon, 20 Oct 2014 14:38:04 +0200
+>>> Subject: [PATCH] ASoC: atmel_ssc_dai: Track playback and capture CMR
+>> dividers
+>>>    separately.
+>>>
+>>> The CMR divider register is shared by playback and capture. The SSC
+>>> driver therefore tries to enforce rules so that the needed register
+>>> content do not conflict during simultaneous playback/capture. However,
+>>> the implementation also prevents changing the register content in a
+>>> half-duplex scenario, which is needed when changing sample rates.
+>>
+>> I am not fully get what you mean here, do you mean:
+>>     - when playback, first playback 48kHz, and then playback 8Khz, the 8Khz still
+>> playback in 48kHz mode?
+>>
+>> or other things?
+>
+> I do not know exactly why the problem occurs, but it might be connected to
+> the library (proprietary) we are using. It apparently uses the OSS interface
+> and somehow it opens a stream and changes the playback sample-rate a
+> couple of time before it settles on something. I don't know why this is
+> done, and I have no control over it. The end result is that without this patch,
+> the ssc-dai driver returns -EBUSY when the library changes the playback
+> sample-rate (the driver returns -EBUSY because it thinks that the new
+> sample rate does not match a previously given capture sample-rate, but
+> that is of course bogus when no capture is going on at all).
 
-To me this sounds more like a discussion on how to set up a good
-firmware (BIOS) that the kernel can call into.
+If this issue is caused by your proprietary library, please fix in the 
+library.
 
-We have had many times the discussion whether DT should contain
-"jam tables" and such things, i.e. stuff that basically translate
-DT directly to register writes.
+I don't know how this code can fix your issue and also there is no 
+improvement to the code and it absolutely increase work (choose which 
+clock to configure: tcmr or rcmr) for the SSC work in master. And also 
+this patch may confuse the end user, let them thinking the clock for 
+tcmr and rcmr can configure seperately.
 
-The one exception we have for this is pinctrl-single.c which uses a
-single word to configure a pin. I'm even not sure that was a good
-idea but it was a compromise.
+So, I think keep the code as is (without this patch applied), what's 
+your opinion?
 
-If someone wants the above, they should use pinctrl-single.c
-(OMAP and HiSilicon uses it already), if they need another necessarily
-different driver I'm very reluctant.
+>>> Thus, keep track of the desired playback and capture clock dividers
+>>> separately, and allow changing rates without closing the stream.
+>>>
+>>> Signed-off-by: Peter Rosin <peda@axentia.se>
+>>> ---
+>>>    sound/soc/atmel/atmel_ssc_dai.c |   31 ++++++++++++++++++++++------
+>> ---
+>>>    sound/soc/atmel/atmel_ssc_dai.h |   10 ++++++----
+>>>    2 files changed, 28 insertions(+), 13 deletions(-)
+>>>
+>>> diff --git a/sound/soc/atmel/atmel_ssc_dai.c
+>>> b/sound/soc/atmel/atmel_ssc_dai.c index f403f39..fec14fb 100644
+>>> --- a/sound/soc/atmel/atmel_ssc_dai.c
+>>> +++ b/sound/soc/atmel/atmel_ssc_dai.c
+>>> @@ -277,7 +277,8 @@ static void atmel_ssc_shutdown(struct
+>> snd_pcm_substream *substream,
+>>>    		/* Reset the SSC */
+>>>    		ssc_writel(ssc_p->ssc->regs, CR, SSC_BIT(CR_SWRST));
+>>>    		/* Clear the SSC dividers */
+>>> -		ssc_p->cmr_div = ssc_p->tcmr_period = ssc_p->rcmr_period
+>> = 0;
+>>> +		ssc_p->tcmr_div = ssc_p->rcmr_div = 0;
+>>> +		ssc_p->tcmr_period = ssc_p->rcmr_period = 0;
+>>>    	}
+>>>    	spin_unlock_irq(&ssc_p->lock);
+>>>    }
+>>> @@ -304,17 +305,27 @@ static int atmel_ssc_set_dai_clkdiv(struct
+>> snd_soc_dai *cpu_dai,
+>>>    	struct atmel_ssc_info *ssc_p = &ssc_info[cpu_dai->id];
+>>>
+>>>    	switch (div_id) {
+>>> -	case ATMEL_SSC_CMR_DIV:
+>>> +	case ATMEL_SSC_TCMR_DIV:
+>>>    		/*
+>>>    		 * The same master clock divider is used for both
+>>>    		 * transmit and receive, so if a value has already
+>>> -		 * been set, it must match this value.
+>>> +		 * been set for the other direction, it must match
+>>> +		 * this value.
+>>>    		 */
+>>> -		if (ssc_p->cmr_div == 0)
+>>> -			ssc_p->cmr_div = div;
+>>> -		else
+>>> -			if (div != ssc_p->cmr_div)
+>>> -				return -EBUSY;
+>>> +		if (ssc_p->rcmr_div == 0)
+>>> +			ssc_p->tcmr_div = div;
+>>> +		else if (div != ssc_p->rcmr_div)
+>>> +			return -EBUSY;
+>>> +		break;
+>>> +
+>>> +	case ATMEL_SSC_RCMR_DIV:
+>>> +		/*
+>>> +		 * See ATMEL_SSC_TCMR_DIV.
+>>> +		 */
+>>> +		if (ssc_p->tcmr_div == 0)
+>>> +			ssc_p->rcmr_div = div;
+>>> +		else if (div != ssc_p->tcmr_div)
+>>> +			return -EBUSY;
+>>>    		break;
+>>>
+>>>    	case ATMEL_SSC_TCMR_PERIOD:
+>>> @@ -345,6 +356,7 @@ static int atmel_ssc_hw_params(struct
+>> snd_pcm_substream *substream,
+>>>    	struct atmel_pcm_dma_params *dma_params;
+>>>    	int dir, channels, bits;
+>>>    	u32 tfmr, rfmr, tcmr, rcmr;
+>>> +	u16 cmr;
+>>
+>> should be u32.
+>
+> Ok, I'll send an updated patch later.
+>
+>>>    	int start_event;
+>>>    	int ret;
+>>>    	int fslen, fslen_ext;
+>>> @@ -626,7 +638,8 @@ static int atmel_ssc_hw_params(struct
+>> snd_pcm_substream *substream,
+>>>    	}
+>>>
+>>>    	/* set SSC clock mode register */
+>>> -	ssc_writel(ssc_p->ssc->regs, CMR, ssc_p->cmr_div);
+>>> +	cmr = ssc_p->tcmr_div ? ssc_p->tcmr_div : ssc_p->rcmr_div;
+>>> +	ssc_writel(ssc_p->ssc->regs, CMR, cmr);
+>>>
+>>>    	/* set receive clock mode and format */
+>>>    	ssc_writel(ssc_p->ssc->regs, RCMR, rcmr); diff --git
+>>> a/sound/soc/atmel/atmel_ssc_dai.h b/sound/soc/atmel/atmel_ssc_dai.h
+>>> index b1f08d5..a25df7a 100644
+>>> --- a/sound/soc/atmel/atmel_ssc_dai.h
+>>> +++ b/sound/soc/atmel/atmel_ssc_dai.h
+>>> @@ -39,9 +39,10 @@
+>>>    #define ATMEL_SYSCLK_MCK	0 /* SSC uses AT91 MCK as system
+>> clock */
+>>>
+>>>    /* SSC divider ids */
+>>> -#define ATMEL_SSC_CMR_DIV	0 /* MCK divider for BCLK */
+>>> -#define ATMEL_SSC_TCMR_PERIOD	1 /* BCLK divider for transmit FS */
+>>> -#define ATMEL_SSC_RCMR_PERIOD	2 /* BCLK divider for receive FS */
+>>> +#define ATMEL_SSC_TCMR_DIV	0 /* MCK divider for transmit BCLK */
+>>> +#define ATMEL_SSC_RCMR_DIV	1 /* MCK divider for receive BCLK */
+>>> +#define ATMEL_SSC_TCMR_PERIOD	2 /* BCLK divider for transmit
+>> FS */
+>>> +#define ATMEL_SSC_RCMR_PERIOD	3 /* BCLK divider for receive
+>> FS */
+>>>    /*
+>>>     * SSC direction masks
+>>>     */
+>>> @@ -110,7 +111,8 @@ struct atmel_ssc_info {
+>>>    	unsigned short dir_mask;	/* 0=unused, 1=playback, 2=capture
+>> */
+>>>    	unsigned short initialized;	/* true if SSC has been initialized */
+>>>    	unsigned short daifmt;
+>>> -	unsigned short cmr_div;
+>>> +	unsigned short tcmr_div;
+>>> +	unsigned short rcmr_div;
+>>>    	unsigned short tcmr_period;
+>>>    	unsigned short rcmr_period;
+>>>    	struct atmel_pcm_dma_params *dma_params[2];
+>>>
+>>
+>> Best Regards,
+>> Bo Shen
+>
+> Cheers,
+> Peter
+>
 
-Yours,
-Linus Walleij
+Best Regards,
+Bo Shen
+
