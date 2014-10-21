@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932306AbaJUKSK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 06:18:10 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:62462 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932256AbaJUKSG (ORCPT
+	id S932325AbaJUKT7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 06:19:59 -0400
+Received: from www.linutronix.de ([62.245.132.108]:58430 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753120AbaJUKT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 06:18:06 -0400
-Date: Tue, 21 Oct 2014 11:17:59 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-api@vger.kernel.org, devicetree@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v2 2/5] mfd: max77693: Map charger device to its own
- of_node
-Message-ID: <20141021101759.GG26842@x1>
-References: <1413808489-3524-1-git-send-email-k.kozlowski@samsung.com>
- <1413808489-3524-3-git-send-email-k.kozlowski@samsung.com>
+	Tue, 21 Oct 2014 06:19:58 -0400
+Date: Tue, 21 Oct 2014 12:19:55 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "pang.xunlei" <pang.xunlei@linaro.org>
+cc: linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH 1/2] time: Fix NTP adjustment mult overflow.
+In-Reply-To: <1412838271-11175-1-git-send-email-pang.xunlei@linaro.org>
+Message-ID: <alpine.DEB.2.11.1410211210000.5308@nanos>
+References: <1412838271-11175-1-git-send-email-pang.xunlei@linaro.org>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1413808489-3524-3-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Oct 2014, Krzysztof Kozlowski wrote:
+On Thu, 9 Oct 2014, pang.xunlei wrote:
 
-> Add a "maxim,max77693-charger" of_compatible to the mfd_cell so the MFD
-> child device (the charger) will have its own of_node set. This will be
-> used by the max77693 charger driver in next patches to obtain battery
-> configuration from DTS.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> ---
->  drivers/mfd/max77693.c | 5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
+First of all: Please use proper line breaks in the changelog.
 
-Applied, thanks.
+> The mult memember of struct clocksource should always be a large u32
+> number when calculated through __clocksource_updatefreq_scale(). The
+> value of (cs->mult+cs->maxadj) may have a chance to reach very near
+> 0xFFFFFFFF.
 
-> diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
-> index cf008f45968c..2277a11b6629 100644
-> --- a/drivers/mfd/max77693.c
-> +++ b/drivers/mfd/max77693.c
-> @@ -43,7 +43,10 @@
->  
->  static const struct mfd_cell max77693_devs[] = {
->  	{ .name = "max77693-pmic", },
-> -	{ .name = "max77693-charger", },
-> +	{
-> +		.name = "max77693-charger",
-> +		.of_compatible = "maxim,max77693-charger",
-> +	},
->  	{ .name = "max77693-muic", },
->  	{ .name = "max77693-haptic", },
->  	{
+And what's the actual problem with reaching a value near 0xFFFFFFFF?
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> For instance, 555MHz oscillator: cs->mult is 0xE6A17102,
+> cs->maxadj is 0x195E8EFD, cs->mult+cs->maxadj is 0xFFFFFFFF. Such
+> oscillators would probably exist on some processors like MIPS which
+> use CP0 compare/count CPU clock as the clock source.
+
+Again, what's the problem?
+
+> Clocksource might encounter large frequency adjustment due to the
+> hardware unstability, environment temperature, software deviation,
+> NTP algorithm accuracy, etc. When NTP slewes the clock, kernel goes
+> through update_wall_time()->...->timekeeping_apply_adjustment():
+> tk->tkr.mult += mult_adj; Unfortunately, tk->tkr.mult may overflow
+> after this operation, though such cases are next to impossible to
+> happen in practice.
+
+So you adding this just for correctness reasons, not because you
+observed the problem in practice?
+
+Thanks,
+
+	tglx
