@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753810AbaJUJVV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 05:21:21 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:58554 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752415AbaJUJVR (ORCPT
+	id S1754471AbaJUJWY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 05:22:24 -0400
+Received: from [82.79.55.74] ([82.79.55.74]:40592 "EHLO
+	server-servicii.uvvgsm.ro" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751091AbaJUJWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 05:21:17 -0400
-Date: Tue, 21 Oct 2014 11:21:12 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: mingo@redhat.com, kernellwp@gmail.com, riel@redhat.com, tkhai@yandex.ru,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] sched/fair: Care divide error in
- update_task_scan_period()
-Message-ID: <20141021092112.GO23531@worktop.programming.kicks-ass.net>
-References: <543F945F.4020303@jp.fujitsu.com>
+	Tue, 21 Oct 2014 05:22:23 -0400
+X-Greylist: delayed 3983 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Oct 2014 05:22:22 EDT
+Message-ID: <d17386bc7e86b85c62f4c77a3099092c.squirrel@82.79.55.74>
+Date: Tue, 21 Oct 2014 13:08:18 +0300 (EEST)
+Subject: Claims Requirements
+From: "British Online Co-Ordinators" <info@bnl.co.uk>
+Reply-To: ukldraw_1@yahoo.co.uk
+User-Agent: SquirrelMail/1.4.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <543F945F.4020303@jp.fujitsu.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 06:48:15PM +0900, Yasuaki Ishimatsu wrote:
-> +++ b/kernel/sched/fair.c
-> @@ -1466,6 +1466,7 @@ static void update_task_scan_period(struct task_struct *p,
-> 
->  	unsigned long remote = p->numa_faults_locality[0];
->  	unsigned long local = p->numa_faults_locality[1];
-> +	unsigned long total_faults = shared + private;
-> 
->  	/*
->  	 * If there were no record hinting faults then either the task is
-> @@ -1496,6 +1497,14 @@ static void update_task_scan_period(struct task_struct *p,
->  			slot = 1;
->  		diff = slot * period_slot;
->  	} else {
-> +		/*
-> +		 * This is a rare case. total_faults might become 0 after
-> +		 * offlining node. In this case, total_faults is set to 1
-> +		 * for avoiding divide error.
-> +		 */
-> +		if (unlikely(total_faults == 0))
-> +			total_faults = 1;
-> +
->  		diff = -(NUMA_PERIOD_THRESHOLD - ratio) * period_slot;
-> 
->  		/*
-> @@ -1506,7 +1515,7 @@ static void update_task_scan_period(struct task_struct *p,
->  		 * scanning faster if shared accesses dominate as it may
->  		 * simply bounce migrations uselessly
->  		 */
-> -		ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared));
-> +		ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (total_faults));
->  		diff = (diff * ratio) / NUMA_PERIOD_SLOTS;
+1,000,000 (British Pounds)  held on the  20th of October 2014 in
+London(United Kingdom).The selection process was carried out through
+random selection in Our computerized email selection system (ESS) London
+UK. For claims,
 
-So what was wrong with the 'normal' unconditional +1 approach? Also
-you've got superfluous parenthese.
+Fill the below:
+
+1.Full Name
+2.Full Address
+3.Marital Status
+4.Occupation
+5.Age
+6.Sex
+7.Nationality
+8.Country Of Residence
+9.Telephone Number
+
+Agent Name: Mr. Fred Peters
+Tel: +447024077948
+Email: mr.fredpetersclaimsagent037@y7mail.com
+
