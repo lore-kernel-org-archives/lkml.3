@@ -1,121 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933131AbaJUUVt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 16:21:49 -0400
-Received: from gum.cmpxchg.org ([85.214.110.215]:42521 "EHLO gum.cmpxchg.org"
+	id S933240AbaJUUVx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 16:21:53 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:42531 "EHLO gum.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932500AbaJUUVs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 16:21:48 -0400
+	id S932500AbaJUUVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 16:21:51 -0400
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Michal Hocko <mhocko@suse.cz>, Vladimir Davydov <vdavydov@parallels.com>,
         linux-mm@kvack.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [patch 1/4] mm: memcontrol: inline memcg->move_lock locking
-Date: Tue, 21 Oct 2014 16:21:33 -0400
-Message-Id: <1413922896-29042-1-git-send-email-hannes@cmpxchg.org>
+Subject: [patch 3/4] mm: page-writeback: inline account_page_dirtied() into single caller
+Date: Tue, 21 Oct 2014 16:21:35 -0400
+Message-Id: <1413922896-29042-3-git-send-email-hannes@cmpxchg.org>
 X-Mailer: git-send-email 2.1.2
+In-Reply-To: <1413922896-29042-1-git-send-email-hannes@cmpxchg.org>
+References: <1413922896-29042-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The wrappers around taking and dropping the memcg->move_lock spinlock
-add nothing of value.  Inline the spinlock calls into the callsites.
+A follow-up patch would have changed the call signature.  To save the
+trouble, just fold it instead.
 
 Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- mm/memcontrol.c | 34 +++++++++-------------------------
- 1 file changed, 9 insertions(+), 25 deletions(-)
+ include/linux/mm.h  |  1 -
+ mm/page-writeback.c | 23 ++++-------------------
+ 2 files changed, 4 insertions(+), 20 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 293db8234179..1ff125d2a427 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1507,23 +1507,6 @@ static bool mem_cgroup_wait_acct_move(struct mem_cgroup *memcg)
- 	return false;
- }
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 27eb1bfbe704..b46461116cd2 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1235,7 +1235,6 @@ int __set_page_dirty_no_writeback(struct page *page);
+ int redirty_page_for_writepage(struct writeback_control *wbc,
+ 				struct page *page);
+ void account_page_dirtied(struct page *page, struct address_space *mapping);
+-void account_page_writeback(struct page *page);
+ int set_page_dirty(struct page *page);
+ int set_page_dirty_lock(struct page *page);
+ int clear_page_dirty_for_io(struct page *page);
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index ff24c9d83112..ff6a5b07211e 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -2116,23 +2116,6 @@ void account_page_dirtied(struct page *page, struct address_space *mapping)
+ EXPORT_SYMBOL(account_page_dirtied);
  
--/*
-- * Take this lock when
-- * - a code tries to modify page's memcg while it's USED.
-- * - a code tries to modify page state accounting in a memcg.
+ /*
+- * Helper function for set_page_writeback family.
+- *
+- * The caller must hold mem_cgroup_begin/end_update_page_stat() lock
+- * while calling this function.
+- * See test_set_page_writeback for example.
+- *
+- * NOTE: Unlike account_page_dirtied this does not rely on being atomic
+- * wrt interrupts.
 - */
--static void move_lock_mem_cgroup(struct mem_cgroup *memcg,
--				  unsigned long *flags)
+-void account_page_writeback(struct page *page)
 -{
--	spin_lock_irqsave(&memcg->move_lock, *flags);
+-	mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_WRITEBACK);
+-	inc_zone_page_state(page, NR_WRITEBACK);
 -}
+-EXPORT_SYMBOL(account_page_writeback);
 -
--static void move_unlock_mem_cgroup(struct mem_cgroup *memcg,
--				unsigned long *flags)
--{
--	spin_unlock_irqrestore(&memcg->move_lock, *flags);
--}
--
- #define K(x) ((x) << (PAGE_SHIFT-10))
- /**
-  * mem_cgroup_print_oom_info: Print OOM information relevant to memory controller.
-@@ -2013,7 +1996,7 @@ again:
- 		return;
- 	/*
- 	 * If this memory cgroup is not under account moving, we don't
--	 * need to take move_lock_mem_cgroup(). Because we already hold
-+	 * need to take &memcg->move_lock. Because we already hold
- 	 * rcu_read_lock(), any calls to move_account will be delayed until
- 	 * rcu_read_unlock().
- 	 */
-@@ -2021,9 +2004,9 @@ again:
- 	if (atomic_read(&memcg->moving_account) <= 0)
- 		return;
- 
--	move_lock_mem_cgroup(memcg, flags);
-+	spin_lock_irqsave(&memcg->move_lock, *flags);
- 	if (memcg != pc->mem_cgroup) {
--		move_unlock_mem_cgroup(memcg, flags);
-+		spin_unlock_irqrestore(&memcg->move_lock, *flags);
- 		goto again;
+-/*
+  * For address_spaces which do not use buffers.  Just tag the page as dirty in
+  * its radix tree.
+  *
+@@ -2410,8 +2393,10 @@ int __test_set_page_writeback(struct page *page, bool keep_write)
+ 	} else {
+ 		ret = TestSetPageWriteback(page);
  	}
- 	*locked = true;
-@@ -2038,7 +2021,7 @@ void __mem_cgroup_end_update_page_stat(struct page *page, unsigned long *flags)
- 	 * lock is held because a routine modifies pc->mem_cgroup
- 	 * should take move_lock_mem_cgroup().
- 	 */
--	move_unlock_mem_cgroup(pc->mem_cgroup, flags);
-+	spin_unlock_irqrestore(&pc->mem_cgroup->move_lock, *flags);
- }
+-	if (!ret)
+-		account_page_writeback(page);
++	if (!ret) {
++		mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_WRITEBACK);
++		inc_zone_page_state(page, NR_WRITEBACK);
++	}
+ 	mem_cgroup_end_update_page_stat(page, &locked, &memcg_flags);
+ 	return ret;
  
- void mem_cgroup_update_page_stat(struct page *page,
-@@ -3083,7 +3066,7 @@ static int mem_cgroup_move_account(struct page *page,
- 	if (pc->mem_cgroup != from)
- 		goto out_unlock;
- 
--	move_lock_mem_cgroup(from, &flags);
-+	spin_lock_irqsave(&from->move_lock, flags);
- 
- 	if (!PageAnon(page) && page_mapped(page)) {
- 		__this_cpu_sub(from->stat->count[MEM_CGROUP_STAT_FILE_MAPPED],
-@@ -3107,7 +3090,8 @@ static int mem_cgroup_move_account(struct page *page,
- 
- 	/* caller should have done css_get */
- 	pc->mem_cgroup = to;
--	move_unlock_mem_cgroup(from, &flags);
-+	spin_unlock_irqrestore(&from->move_lock, flags);
-+
- 	ret = 0;
- 
- 	local_irq_disable();
-@@ -6033,9 +6017,9 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
- 	 * but there might still be references, e.g. from finishing
- 	 * writeback.  Follow the charge moving protocol here.
- 	 */
--	move_lock_mem_cgroup(memcg, &flags);
-+	spin_lock_irqsave(&memcg->move_lock, flags);
- 	pc->mem_cgroup = NULL;
--	move_unlock_mem_cgroup(memcg, &flags);
-+	spin_unlock_irqrestore(&memcg->move_lock, flags);
- 
- 	if (lrucare)
- 		unlock_page_lru(oldpage, isolated);
 -- 
 2.1.2
 
