@@ -1,68 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932598AbaJUNPK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 09:15:10 -0400
-Received: from plane.gmane.org ([80.91.229.3]:55230 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932300AbaJUNPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 09:15:08 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Sergey <sergey@elementaryos.org>
-Subject: Re: A desktop environment[1] kernel wishlist
-Date: Tue, 21 Oct 2014 13:11:07 +0000 (UTC)
-Message-ID: <loom.20141021T140216-28@post.gmane.org>
-References: <1413881397.30379.7.camel@hadess.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 46.39.229.17 (Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:33.0) Gecko/20100101 Firefox/33.0)
+	id S932640AbaJUNPj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 09:15:39 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:38135 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932170AbaJUNPi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 09:15:38 -0400
+Message-ID: <54465C77.8070209@arm.com>
+Date: Tue, 21 Oct 2014 14:15:35 +0100
+From: Juri Lelli <juri.lelli@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Wanpeng Li <kernellwp@gmail.com>,
+        "peterz@infradead.org" <peterz@infradead.org>
+CC: "mingo@redhat.com" <mingo@redhat.com>,
+        "juri.lelli@gmail.com" <juri.lelli@gmail.com>,
+        "raistlin@linux.it" <raistlin@linux.it>,
+        "michael@amarulasolutions.com" <michael@amarulasolutions.com>,
+        "fchecconi@gmail.com" <fchecconi@gmail.com>,
+        "daniel.wagner@bmw-carit.de" <daniel.wagner@bmw-carit.de>,
+        "vincent@legout.info" <vincent@legout.info>,
+        "luca.abeni@unitn.it" <luca.abeni@unitn.it>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] sched/deadline: clear dl_entity params when setscheduling
+ to different class
+References: <1411118561-26323-1-git-send-email-juri.lelli@arm.com> <1411118561-26323-2-git-send-email-juri.lelli@arm.com> <54352ECB.5030507@gmail.com> <54464E79.2050601@gmail.com>
+In-Reply-To: <54464E79.2050601@gmail.com>
+X-OriginalArrivalTime: 21 Oct 2014 13:15:34.0949 (UTC) FILETIME=[193AAD50:01CFED31]
+X-MC-Unique: 114102114153601401
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey everyone,
+Hi,
 
-I'm glad we're having some discussion on this, because we have almost
-exactly the same kernel wishlist internally for elementary OS / Pantheon DE.
+On 21/10/14 13:15, Wanpeng Li wrote:
+> ping,
+> 
+> 于 10/8/14, 8:32 PM, Wanpeng Li 写道:
+>> Hi Juri,
+>>
+>> 于 9/19/14, 5:22 PM, Juri Lelli 写道:
+>>> When a task is using SCHED_DEADLINE and the user setschedules it to a 
+>>> different
+>>> class its sched_dl_entity static parameters are not cleaned up. This 
+>>> causes a
+>>> bug if the user sets it back to SCHED_DEADLINE with the same 
+>>> parameters again.
+>>> The problem resides in the check we perform at the very beginning of
+>>> dl_overflow():
+>>>
+>>>     if (new_bw == p->dl.dl_bw)
+>>>         return 0;
+>>>
+>>> This condition is met in the case depicted above, so the function 
+>>> returns and
+>>> dl_b->total_bw is not updated (the p->dl.dl_bw is not added to it). 
+>>> After this,
+>>
+>> As you know there is no static parameter clear before this patch, so 
+>> if p->dl.dl_bw will decrease from dl_b->total_bw when the user 
+>> setschedules to a different class instead of dl?
+>>
 
-I believe I can further elaborate on the VFS monitoring part. We need a file
-monitoring facility that's scalable (unlike inotify) and can provide a
-decent level of detail (unlike fanotify). In particular, we need to be able
-to detect file/directory creation, renaming and removal events, as well as
-close_write event. And, in an ideal world, all of that without requiring
-root permissions.
+We remove p->dl.dl_bw from dl_b->total_bw in dl_overflow(). Then this
+patch introduces the clearing of p->dl params.
 
-This can be almost accomplished by combining output of fanotify with that of
-a custom LSM module that just reports events to userspace (e.g. rlocate uses
-such a thing). There are two problems with this: first, it's a hideous hack,
-and second, it doesn't detect deletions.
+Thanks,
 
-This is a big deal because without it we're stuck with always presenting the
-user with the filesystem. If you've seen library-based music players like
-Rhythmbox or Banshee, you know that they group and sort all your music by
-artist and album, but not by directory and file name, and that you can
-efficiently search all that metadata. We're trying to get the same thing
-into more applications, but the absence of VFS features described above is
-blocking us. Even after moving all the database management to a single
-daemon that does all the monitoring and very rarely has to rescan anything,
-the system either slows to a crawl (inotify) or the database gets out of
-date quickly (fanotify+LSM). 
-In case I didn't make myself clear, a more detailed writeup on the design
-can be found here: http://tiny.cc/tearing-up-files
+- Juri
 
-Regarding the other items, AFAIK the kernel implements mechanism, not
-policy, so instead of "zswap selectively enabled by default" we just want
-"stable reliable zswap". We had to give up on zram previously (in pre-3.10
-days) because of kernel regressions leading to panics when zram was enabled.
-And we don't have the "Power management" part on our list because we haven't
-really delved in that yet. But our lists are identical in all the other
-areas, so that's not "just GNOME".
-
-PS: I'm not subscribed to LKML either, so please CC me.
-
-Cheers!
+>> Regards,
+>> Wanpeng Li
+>>
+>>> admission control is broken.
+>>>
+>>> This patch fixes the thing, properly clearing static parameters for a 
+>>> task
+>>> that ceases to use SCHED_DEADLINE.
+>>>
+>>> Reported-by: Daniele Alessandrelli <daniele.alessandrelli@gmail.com>
+>>> Reported-by: Daniel Wagner <daniel.wagner@bmw-carit.de>
+>>> Reported-by: Vincent Legout <vincent@legout.info>
+>>> Tested-by: Luca Abeni <luca.abeni@unitn.it>
+>>> Signed-off-by: Juri Lelli <juri.lelli@arm.com>
+>>> Cc: Ingo Molnar <mingo@redhat.com>
+>>> Cc: Peter Zijlstra <peterz@infradead.org>
+>>> Cc: Juri Lelli <juri.lelli@gmail.com>
+>>> Cc: Dario Faggioli <raistlin@linux.it>
+>>> Cc: Michael Trimarchi <michael@amarulasolutions.com>
+>>> Cc: Fabio Checconi <fchecconi@gmail.com>
+>>> Cc: linux-kernel@vger.kernel.org
+>>> ---
+>>>   kernel/sched/core.c     | 19 +++++++++++++++----
+>>>   kernel/sched/deadline.c |  2 ++
+>>>   kernel/sched/sched.h    |  3 +++
+>>>   3 files changed, 20 insertions(+), 4 deletions(-)
+>>>
+>>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>>> index ec1a286..581a429 100644
+>>> --- a/kernel/sched/core.c
+>>> +++ b/kernel/sched/core.c
+>>> @@ -1776,6 +1776,20 @@ int wake_up_state(struct task_struct *p, 
+>>> unsigned int state)
+>>>   }
+>>>     /*
+>>> + * This function clears the sched_dl_entity static params.
+>>> + */
+>>> +void __dl_clear_params(struct task_struct *p)
+>>> +{
+>>> +    struct sched_dl_entity *dl_se = &p->dl;
+>>> +
+>>> +    dl_se->dl_runtime = 0;
+>>> +    dl_se->dl_deadline = 0;
+>>> +    dl_se->dl_period = 0;
+>>> +    dl_se->flags = 0;
+>>> +    dl_se->dl_bw = 0;
+>>> +}
+>>> +
+>>> +/*
+>>>    * Perform scheduler related setup for a newly forked process p.
+>>>    * p is forked by current.
+>>>    *
+>>> @@ -1799,10 +1813,7 @@ static void __sched_fork(unsigned long 
+>>> clone_flags, struct task_struct *p)
+>>>         RB_CLEAR_NODE(&p->dl.rb_node);
+>>>       hrtimer_init(&p->dl.dl_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+>>> -    p->dl.dl_runtime = p->dl.runtime = 0;
+>>> -    p->dl.dl_deadline = p->dl.deadline = 0;
+>>> -    p->dl.dl_period = 0;
+>>> -    p->dl.flags = 0;
+>>> +    __dl_clear_params(p);
+>>>         INIT_LIST_HEAD(&p->rt.run_list);
+>>>   diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+>>> index 255ce13..4a51b14 100644
+>>> --- a/kernel/sched/deadline.c
+>>> +++ b/kernel/sched/deadline.c
+>>> @@ -1569,6 +1569,8 @@ static void switched_from_dl(struct rq *rq, 
+>>> struct task_struct *p)
+>>>       if (hrtimer_active(&p->dl.dl_timer) && !dl_policy(p->policy))
+>>>           hrtimer_try_to_cancel(&p->dl.dl_timer);
+>>>   +    __dl_clear_params(p);
+>>> +
+>>>   #ifdef CONFIG_SMP
+>>>       /*
+>>>        * Since this might be the only -deadline task on the rq,
+>>> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+>>> index 579712f..4890484 100644
+>>> --- a/kernel/sched/sched.h
+>>> +++ b/kernel/sched/sched.h
+>>> @@ -126,6 +126,9 @@ struct rt_bandwidth {
+>>>       u64            rt_runtime;
+>>>       struct hrtimer        rt_period_timer;
+>>>   };
+>>> +
+>>> +void __dl_clear_params(struct task_struct *p);
+>>> +
+>>>   /*
+>>>    * To keep the bandwidth of -deadline tasks and groups under control
+>>>    * we need some place where:
+>>
+> 
+> 
 
