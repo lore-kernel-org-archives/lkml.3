@@ -1,92 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755448AbaJUMOi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 08:14:38 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:38192 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755181AbaJUMOh (ORCPT
+	id S1755476AbaJUMPE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 08:15:04 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:36995 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755181AbaJUMPB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 08:14:37 -0400
-Message-ID: <54464E10.8060604@gmail.com>
-Date: Tue, 21 Oct 2014 20:14:08 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Juri Lelli <juri.lelli@arm.com>, Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-CC: Kirill V Tkhai <tkhai@yandex.ru>, Steven Rostedt <rostedt@goodmis.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND v2] sched/deadline: do not try to push tasks if
- pinned task switches to dl
-References: <1412989095-7507-1-git-send-email-wanpeng.li@linux.intel.com> <5446316B.4070707@arm.com>
-In-Reply-To: <5446316B.4070707@arm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Tue, 21 Oct 2014 08:15:01 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] mm/cma: Make kmemleak ignore CMA regions
+Date: Tue, 21 Oct 2014 14:14:56 +0200
+Message-Id: <1413893696-25484-1-git-send-email-thierry.reding@gmail.com>
+X-Mailer: git-send-email 2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Thierry Reding <treding@nvidia.com>
 
-于 10/21/14, 6:11 PM, Juri Lelli 写道:
-> Hi,
->
-> On 11/10/14 01:58, Wanpeng Li wrote:
->> As Kirill mentioned(https://lkml.org/lkml/2013/1/29/118):
->> | If rq has already had 2 or more pushable tasks and we try to add a
->> | pinned task then call of push_rt_task will just waste a time.
->>
->> Just switched pinned task is not able to be pushed. If the rq had had
->                                                                   ^
->                                                                  has
->> several dl tasks before they have already been considered as candidates
->> to be pushed (or pulled). This patch done the same behavior as rt class
->                                          ^
->                                      implements? aligns to...
->
->> which introduced by commit 10447917551e ("sched/rt: Do not try to push
->> tasks if pinned task switches to RT").
->>
->> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
->> ---
->> v1 -> v2:
->>   * use 12 or more chars for the git commit ID
->>
->>   kernel/sched/deadline.c | 3 ++-
->>   1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
->> index abfaf3d..cf7c9b6 100644
->> --- a/kernel/sched/deadline.c
->> +++ b/kernel/sched/deadline.c
->> @@ -1603,7 +1603,8 @@ static void switched_to_dl(struct rq *rq, struct task_struct *p)
->>   
->>   	if (task_on_rq_queued(p) && rq->curr != p) {
->>   #ifdef CONFIG_SMP
->> -		if (rq->dl.overloaded && push_dl_task(rq) && rq != task_rq(p))
->> +		if (p->nr_cpus_allowed > 1 && rq->dl.overloaded
->> +				&& push_dl_task(rq) && rq != task_rq(p))
-> I'd personally align this && to p->nr_cpus_allowed, but that's just my
-> personal taste, though. :)
+kmemleak will add allocations as objects to a pool. The memory allocated
+for each object in this pool is periodically searched for pointers to
+other allocated objects. This only works for memory that is mapped into
+the kernel's virtual address space, which happens not to be the case for
+most CMA regions.
 
-Ah, ok, I will send out a newer version tomorrow. ;-)
+Furthermore, CMA regions are typically used to store data transferred to
+or from a device and therefore don't contain pointers to other objects.
 
-Regards,
-Wanpeng Li
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+---
+Note: I'm not sure this is really the right fix. But without this, the
+kernel crashes on the first execution of the scan_gray_list() because
+it tries to access highmem. Perhaps a more appropriate fix would be to
+reject any object that can't map to a kernel virtual address?
+---
+ mm/cma.c | 1 +
+ 1 file changed, 1 insertion(+)
 
->
->>   			/* Only reschedule if pushing failed */
->>   			check_resched = 0;
->>   #endif /* CONFIG_SMP */
->>
-> Anyway, the change looks good, thanks!
->
-> Best,
->
-> - Juri
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+diff --git a/mm/cma.c b/mm/cma.c
+index 963bc4add9af..349f9266f6d3 100644
+--- a/mm/cma.c
++++ b/mm/cma.c
+@@ -280,6 +280,7 @@ int __init cma_declare_contiguous(phys_addr_t base,
+ 			ret = -ENOMEM;
+ 			goto err;
+ 		} else {
++			kmemleak_ignore(phys_to_virt(addr));
+ 			base = addr;
+ 		}
+ 	}
+-- 
+2.1.2
 
