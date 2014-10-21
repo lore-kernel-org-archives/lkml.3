@@ -1,94 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201AbaJUCiG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 22:38:06 -0400
-Received: from mail-by2on0126.outbound.protection.outlook.com ([207.46.100.126]:9311
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753835AbaJUCiE convert rfc822-to-8bit (ORCPT
+	id S1754237AbaJUCic (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 22:38:32 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:49160 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753835AbaJUCia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 22:38:04 -0400
-From: Thomas Shao <huishao@microsoft.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        KY Srinivasan <kys@microsoft.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: RE: [PATCH v2 1/2] timekeeping: add EXPORT_SYMBOL_GPL for
- do_adjtimex()
-Thread-Topic: [PATCH v2 1/2] timekeeping: add EXPORT_SYMBOL_GPL for
- do_adjtimex()
-Thread-Index: AQHP6EpL5oa00nhAzECMXNpwI49m+pw5VpSAgACIOoA=
-Date: Tue, 21 Oct 2014 02:37:26 +0000
-Message-ID: <CD2CABCB2C0A0D4682C5F8AD840141540D26C3@HKXPRD3002MB006.064d.mgd.msft.net>
-References: <1413362372-16236-1-git-send-email-huishao@microsoft.com>
- <alpine.DEB.2.11.1410202027220.5308@nanos>
-In-Reply-To: <alpine.DEB.2.11.1410202027220.5308@nanos>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [141.251.55.4]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(438002)(377454003)(51704005)(189002)(24454002)(199003)(13464003)(46406003)(87936001)(86146001)(55846006)(106116001)(86362001)(76176999)(54356999)(66066001)(23726002)(4396001)(106466001)(81156004)(85852003)(97736003)(77096002)(92566001)(47776003)(20776003)(46102003)(107046002)(2656002)(16796002)(64706001)(31966008)(80022003)(99396003)(120916001)(76482002)(85306004)(21056001)(110136001)(50466002)(50986999)(69596002)(6806004)(19580405001)(26826002)(95666004)(92726001)(86612001)(44976005)(19580395003)(84676001)(97756001)(33656002)(68736004);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR03MB283;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR03MB283;
-X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 0371762FE7
-Authentication-Results: spf=pass (sender IP is 131.107.125.37)
- smtp.mailfrom=huishao@microsoft.com; 
-X-OriginatorOrg: microsoft.onmicrosoft.com
+	Mon, 20 Oct 2014 22:38:30 -0400
+From: Martin Kelly <martin@martingkelly.com>
+To: linux-kernel@vger.kernel.org, x86@kernel.org
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        akpm@linux-foundation.org, rientjes@google.com,
+        david.vrabel@citrix.com, Martin Kelly <martin@martingkelly.com>,
+        Martin Kelly <martkell@amazon.com>
+Subject: [PATCH v2] x86, e820: panic on sanitizing invalid memory map
+Date: Mon, 20 Oct 2014 19:37:42 -0700
+Message-Id: <1413859062-26594-1-git-send-email-martin@martingkelly.com>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+sanitize_e820_map returns two possible values:
+-1: Returned when either the provided memory map has length 1 (ok) or
+    when the provided memory map is invalid (not ok).
+0:  Returned when the memory map was correctly sanitized.
 
-> -----Original Message-----
-> From: Thomas Gleixner [mailto:tglx@linutronix.de]
-> Sent: Tuesday, October 21, 2014 2:28 AM
-> To: Thomas Shao
-> Cc: gregkh@linuxfoundation.org; LKML; devel@linuxdriverproject.org;
-> olaf@aepfle.de; apw@canonical.com; jasowang@redhat.com; KY Srinivasan;
-> John Stultz
-> Subject: Re: [PATCH v2 1/2] timekeeping: add EXPORT_SYMBOL_GPL for
-> do_adjtimex()
-> 
-> On Wed, 15 Oct 2014, Thomas Shao wrote:
-> 
-> And again you forgot to cc John Stultz on this....
+In addition, most code ignores the returned value, and none actually
+handles it (except possibly by panicking).
 
-I'll cc John Stultz in the future. Sorry for that.
+This patch changes the behavior so that sanitize_e820_map is a void
+function. When the provided memory map has length 1 or it is sanitized
+(both ok cases), it returns nothing. If the provided memory map is
+invalid, then it panics.
 
-> 
-> > Export do_adjtimex function for hyper-v Time Synchronization component
-> >
-> > Signed-off-by: Thomas Shao <huishao@microsoft.com>
-> > ---
-> >  kernel/time/timekeeping.c |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-> > index ec1791f..205a4b3 100644
-> > --- a/kernel/time/timekeeping.c
-> > +++ b/kernel/time/timekeeping.c
-> > @@ -1786,6 +1786,7 @@ int do_adjtimex(struct timex *txc)
-> >
-> >  	return ret;
-> >  }
-> > +EXPORT_SYMBOL_GPL(do_adjtimex);
-> >
-> >  #ifdef CONFIG_NTP_PPS
-> >  /**
-> > --
-> > 1.7.1
-> >
-> >
+Signed-off-by: Martin Kelly <martkell@amazon.com>
+---
+Changes in v2:
+  - Fixed compiler warnings:
+    * return 0 from void function
+    * early_panic declared but not used
+---
+---
+ arch/x86/include/asm/e820.h |   2 +-
+ arch/x86/kernel/e820.c      | 103 ++++++++++++++++++++------------------------
+ 2 files changed, 47 insertions(+), 58 deletions(-)
+
+diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
+index 779c2ef..739f8db 100644
+--- a/arch/x86/include/asm/e820.h
++++ b/arch/x86/include/asm/e820.h
+@@ -18,7 +18,7 @@ extern int e820_any_mapped(u64 start, u64 end, unsigned type);
+ extern int e820_all_mapped(u64 start, u64 end, unsigned type);
+ extern void e820_add_region(u64 start, u64 size, int type);
+ extern void e820_print_map(char *who);
+-extern int
++extern void
+ sanitize_e820_map(struct e820entry *biosmap, int max_nr_map, u32 *pnr_map);
+ extern u64 e820_update_range(u64 start, u64 size, unsigned old_type,
+ 			       unsigned new_type);
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index 49f8864..7ca23fb 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -188,47 +188,48 @@ void __init e820_print_map(char *who)
+  * be updated on return, with the new number of valid entries
+  * (something no more than max_nr_map.)
+  *
+- * The return value from sanitize_e820_map() is zero if it
+- * successfully 'sanitized' the map entries passed in, and is -1
+- * if it did nothing, which can happen if either of (1) it was
+- * only passed one map entry, or (2) any of the input map entries
+- * were invalid (start + size < start, meaning that the size was
+- * so big the described memory range wrapped around through zero.)
++ * There are three possible actions that sanitize_e820_map() can take:
++ *	(1) If the map entry count is 1, do nothing and return.
++ *	(2) If any of the input map entries were invalid
++ *          (start + size < start), then the size was so big that the described
++ *          memory range wrapped around through zero. In this case, panic.
++ *	(3) If the map entry count is greater than 1 and the map is valid,
++ *          sanitize the map and return.
+  *
+- *	Visually we're performing the following
+- *	(1,2,3,4 = memory types)...
++ * Visually we're performing the following
++ * (1,2,3,4 = memory types)...
+  *
+- *	Sample memory map (w/overlaps):
+- *	   ____22__________________
+- *	   ______________________4_
+- *	   ____1111________________
+- *	   _44_____________________
+- *	   11111111________________
+- *	   ____________________33__
+- *	   ___________44___________
+- *	   __________33333_________
+- *	   ______________22________
+- *	   ___________________2222_
+- *	   _________111111111______
+- *	   _____________________11_
+- *	   _________________4______
++ * Sample memory map (w/overlaps):
++ *    ____22__________________
++ *    ______________________4_
++ *    ____1111________________
++ *    _44_____________________
++ *    11111111________________
++ *    ____________________33__
++ *    ___________44___________
++ *    __________33333_________
++ *    ______________22________
++ *    ___________________2222_
++ *    _________111111111______
++ *    _____________________11_
++ *    _________________4______
+  *
+- *	Sanitized equivalent (no overlap):
+- *	   1_______________________
+- *	   _44_____________________
+- *	   ___1____________________
+- *	   ____22__________________
+- *	   ______11________________
+- *	   _________1______________
+- *	   __________3_____________
+- *	   ___________44___________
+- *	   _____________33_________
+- *	   _______________2________
+- *	   ________________1_______
+- *	   _________________4______
+- *	   ___________________2____
+- *	   ____________________33__
+- *	   ______________________4_
++ * Sanitized equivalent (no overlap):
++ *    1_______________________
++ *    _44_____________________
++ *    ___1____________________
++ *    ____22__________________
++ *    ______11________________
++ *    _________1______________
++ *    __________3_____________
++ *    ___________44___________
++ *    _____________33_________
++ *    _______________2________
++ *    ________________1_______
++ *    _________________4______
++ *    ___________________2____
++ *    ____________________33__
++ *    ______________________4_
+  */
+ struct change_member {
+ 	struct e820entry *pbios; /* pointer to original bios entry */
+@@ -252,7 +253,7 @@ static int __init cpcompare(const void *a, const void *b)
+ 	return (ap->addr != ap->pbios->addr) - (bp->addr != bp->pbios->addr);
+ }
+ 
+-int __init sanitize_e820_map(struct e820entry *biosmap, int max_nr_map,
++void __init sanitize_e820_map(struct e820entry *biosmap, int max_nr_map,
+ 			     u32 *pnr_map)
+ {
+ 	static struct change_member change_point_list[2*E820_X_MAX] __initdata;
+@@ -269,15 +270,14 @@ int __init sanitize_e820_map(struct e820entry *biosmap, int max_nr_map,
+ 
+ 	/* if there's only one memory region, don't bother */
+ 	if (*pnr_map < 2)
+-		return -1;
++		return;
+ 
+ 	old_nr = *pnr_map;
+ 	BUG_ON(old_nr > max_nr_map);
+ 
+-	/* bail out if we find any unreasonable addresses in bios map */
++	/* panic if we find any unreasonable addresses in bios map */
+ 	for (i = 0; i < old_nr; i++)
+-		if (biosmap[i].addr + biosmap[i].size < biosmap[i].addr)
+-			return -1;
++		BUG_ON(biosmap[i].addr + biosmap[i].size < biosmap[i].addr);
+ 
+ 	/* create pointers for initial change-point information (for sorting) */
+ 	for (i = 0; i < 2 * old_nr; i++)
+@@ -374,8 +374,6 @@ int __init sanitize_e820_map(struct e820entry *biosmap, int max_nr_map,
+ 	/* copy new bios mapping into original location */
+ 	memcpy(biosmap, new_bios, new_nr * sizeof(struct e820entry));
+ 	*pnr_map = new_nr;
+-
+-	return 0;
+ }
+ 
+ static int __init __append_e820_map(struct e820entry *biosmap, int nr_map)
+@@ -564,8 +562,7 @@ void __init update_e820(void)
+ 	u32 nr_map;
+ 
+ 	nr_map = e820.nr_map;
+-	if (sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr_map))
+-		return;
++	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr_map);
+ 	e820.nr_map = nr_map;
+ 	printk(KERN_INFO "e820: modified physical RAM map:\n");
+ 	e820_print_map("modified");
+@@ -575,8 +572,7 @@ static void __init update_e820_saved(void)
+ 	u32 nr_map;
+ 
+ 	nr_map = e820_saved.nr_map;
+-	if (sanitize_e820_map(e820_saved.map, ARRAY_SIZE(e820_saved.map), &nr_map))
+-		return;
++	sanitize_e820_map(e820_saved.map, ARRAY_SIZE(e820_saved.map), &nr_map);
+ 	e820_saved.nr_map = nr_map;
+ }
+ #define MAX_GAP_END 0x100000000ull
+@@ -800,12 +796,6 @@ unsigned long __init e820_end_of_low_ram_pfn(void)
+ 	return e820_end_pfn(1UL<<(32 - PAGE_SHIFT), E820_RAM);
+ }
+ 
+-static void early_panic(char *msg)
+-{
+-	early_printk(msg);
+-	panic(msg);
+-}
+-
+ static int userdef __initdata;
+ 
+ /* "mem=nopentium" disables the 4MB page tables. */
+@@ -900,8 +890,7 @@ void __init finish_e820_parsing(void)
+ 	if (userdef) {
+ 		u32 nr = e820.nr_map;
+ 
+-		if (sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr) < 0)
+-			early_panic("Invalid user supplied memory map");
++		sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr);
+ 		e820.nr_map = nr;
+ 
+ 		printk(KERN_INFO "e820: user-defined physical RAM map:\n");
+-- 
+2.1.1
+
