@@ -1,129 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755680AbaJUPhq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 11:37:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52268 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753395AbaJUPho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 11:37:44 -0400
-Date: Tue, 21 Oct 2014 17:37:41 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] memcg: remove mem_cgroup_reclaimable check from soft
- reclaim
-Message-ID: <20141021153741.GI9415@dhcp22.suse.cz>
-References: <1413897350-32553-1-git-send-email-vdavydov@parallels.com>
+	id S932431AbaJUPsA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 11:48:00 -0400
+Received: from smtp-vbr10.xs4all.nl ([194.109.24.30]:1536 "EHLO
+	smtp-vbr10.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754512AbaJUPr7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 11:47:59 -0400
+Message-ID: <54467EFB.7050800@xs4all.nl>
+Date: Tue, 21 Oct 2014 17:42:51 +0200
+From: Hans Verkuil <hverkuil@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413897350-32553-1-git-send-email-vdavydov@parallels.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Takashi Iwai <tiwai@suse.de>, Shuah Khan <shuahkh@osg.samsung.com>
+CC: Lars-Peter Clausen <lars@metafoo.de>, m.chehab@samsung.com,
+        akpm@linux-foundation.org, gregkh@linuxfoundation.org, crope@iki.fi,
+        olebowle@gmx.com, dheitmueller@kernellabs.com, ramakrmu@cisco.com,
+        sakari.ailus@linux.intel.com, laurent.pinchart@ideasonboard.com,
+        perex@perex.cz, prabhakar.csengg@gmail.com, tim.gardner@canonical.com,
+        linux@eikelenboom.it, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, linux-media@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH v2 5/6] sound/usb: pcm changes to use media
+ token api
+References: <cover.1413246370.git.shuahkh@osg.samsung.com>	<cf1059cc2606f20d921e5691e3d59945a19a7871.1413246372.git.shuahkh@osg.samsung.com>	<543FB374.8020604@metafoo.de>	<543FC3CD.8050805@osg.samsung.com>	<s5h38aow1ub.wl-tiwai@suse.de>	<543FD1EC.5010206@osg.samsung.com>	<s5hy4sgumjo.wl-tiwai@suse.de>	<543FD892.6010209@osg.samsung.com> <s5htx34ul3w.wl-tiwai@suse.de>
+In-Reply-To: <s5htx34ul3w.wl-tiwai@suse.de>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 21-10-14 17:15:50, Vladimir Davydov wrote:
-> mem_cgroup_reclaimable() checks whether a cgroup has reclaimable pages
-> on *any* NUMA node. However, the only place where it's called is
-> mem_cgroup_soft_reclaim(), which tries to reclaim memory from a
-> *specific* zone. So the way how it's used is incorrect - it will return
-> true even if the cgroup doesn't have pages on the zone we're scanning.
-> 
-> I think we can get rid of this check completely, because
-> mem_cgroup_shrink_node_zone(), which is called by
-> mem_cgroup_soft_reclaim() if mem_cgroup_reclaimable() returns true, is
-> equivalent to shrink_lruvec(), which exits almost immediately if the
-> lruvec passed to it is empty. So there's no need to optimize anything
-> here. Besides, we don't have such a check in the general scan path
-> (shrink_zone) either.
-> 
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 
-yeah, let's ditch it. It doesn't make any sense without checking the
-target zone and even then it is dubious bevause get_scan_count will give
-us 0 target on an empty lru list.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+On 10/16/2014 04:48 PM, Takashi Iwai wrote:
+> At Thu, 16 Oct 2014 08:39:14 -0600,
+> Shuah Khan wrote:
+>>
+>> On 10/16/2014 08:16 AM, Takashi Iwai wrote:
+>>> At Thu, 16 Oct 2014 08:10:52 -0600,
+>>> Shuah Khan wrote:
+>>>>
+>>>> On 10/16/2014 08:01 AM, Takashi Iwai wrote:
+>>>>> At Thu, 16 Oct 2014 07:10:37 -0600,
+>>>>> Shuah Khan wrote:
+>>>>>>
+>>>>>> On 10/16/2014 06:00 AM, Lars-Peter Clausen wrote:
+>>>>>>> On 10/14/2014 04:58 PM, Shuah Khan wrote:
+>>>>>>> [...]
+>>>>>>>>        switch (cmd) {
+>>>>>>>>        case SNDRV_PCM_TRIGGER_START:
+>>>>>>>> +        err = media_get_audio_tkn(&subs->dev->dev);
+>>>>>>>> +        if (err == -EBUSY) {
+>>>>>>>> +            dev_info(&subs->dev->dev, "%s device is busy\n",
+>>>>>>>> +                    __func__);
+>>>>>>>
+>>>>>>> In my opinion this should not dev_info() as this is out of band error
+>>>>>>> signaling and also as the potential to spam the log. The userspace
+>>>>>>> application is already properly notified by the return code.
+>>>>>>>
+>>>>>>
+>>>>>> Yes it has the potential to flood the dmesg especially with alsa,
+>>>>>> I will remove the dev_info().
+>>>>>
+>>>>> Yes.  And, I think doing this in the trigger isn't the best.
+>>>>> Why not in open & close?
+>>>>
+>>>> My first cut of this change was in open and close. I saw pulseaudio
+>>>> application go into this loop trying to open the device. To avoid
+>>>> such problems, I went with trigger stat and stop. That made all the
+>>>> pulseaudio continues attempts to open problems go away.
+>>>
+>>> But now starting the stream gives the error, and PA would loop it
+>>> again, no?
+>>>
+>>>
+>>>>> Also, is this token restriction needed only for PCM?  No mixer or
+>>>>> other controls?
+>>>>
+>>>> snd_pcm_ops are the only ones media drivers implement and use. So
+>>>> I don't think mixer is needed. If it is needed, it is not to hard
+>>>> to add for that case.
+>>>
+>>> Well, then I wonder what resource does actually conflict with
+>>> usb-audio and media drivers at all...?
+>>>
+>>
+>> audio for dvb/v4l apps gets disrupted when audio app starts. For
+>> example, dvb or v4l app tuned to a channel, and when an audio app
+>> starts. audio path needs protected to avoid conflicts between
+>> digital and analog applications as well.
+>
+> OK, then concentrating on only PCM is fine.
+>
+> But, I'm still not convinced about doing the token management in the
+> trigger.  The reason -EBUSY doesn't work is that it's the very same
+> error code when a PCM device is blocked by other processes.  And
+> -EAGAIN is interpreted by PCM core to -EBUSY for historical reasons.
+>
+> How applications (e.g. PA) should behave if the token get fails?
+> Shouldn't it retry or totally give up?
 
-Thanks
+Quite often media apps open the alsa device at the start and then switch
+between TV, radio or DVB mode. If the alsa device would claim the tuner
+just by being opened (as opposed to actually using the tuner, which happens
+when you start streaming), then that would make it impossible for the
+application to switch tuner mode. In general you want to avoid that open()
+will start configuring hardware since that can quite often be slow. Tuner
+configuration in particular can be slow since several common tuners need
+to load firmware over i2c. You only want to do that when it is really needed,
+and not when some application (udev!) opens the device just to examine what
+sort of device it is.
 
-> ---
->  mm/memcontrol.c |   43 -------------------------------------------
->  1 file changed, 43 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 53393e27ff03..833b6a696aab 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1799,52 +1799,11 @@ int mem_cgroup_select_victim_node(struct mem_cgroup *memcg)
->  	memcg->last_scanned_node = node;
->  	return node;
->  }
-> -
-> -/*
-> - * Check all nodes whether it contains reclaimable pages or not.
-> - * For quick scan, we make use of scan_nodes. This will allow us to skip
-> - * unused nodes. But scan_nodes is lazily updated and may not cotain
-> - * enough new information. We need to do double check.
-> - */
-> -static bool mem_cgroup_reclaimable(struct mem_cgroup *memcg, bool noswap)
-> -{
-> -	int nid;
-> -
-> -	/*
-> -	 * quick check...making use of scan_node.
-> -	 * We can skip unused nodes.
-> -	 */
-> -	if (!nodes_empty(memcg->scan_nodes)) {
-> -		for (nid = first_node(memcg->scan_nodes);
-> -		     nid < MAX_NUMNODES;
-> -		     nid = next_node(nid, memcg->scan_nodes)) {
-> -
-> -			if (test_mem_cgroup_node_reclaimable(memcg, nid, noswap))
-> -				return true;
-> -		}
-> -	}
-> -	/*
-> -	 * Check rest of nodes.
-> -	 */
-> -	for_each_node_state(nid, N_MEMORY) {
-> -		if (node_isset(nid, memcg->scan_nodes))
-> -			continue;
-> -		if (test_mem_cgroup_node_reclaimable(memcg, nid, noswap))
-> -			return true;
-> -	}
-> -	return false;
-> -}
-> -
->  #else
->  int mem_cgroup_select_victim_node(struct mem_cgroup *memcg)
->  {
->  	return 0;
->  }
-> -
-> -static bool mem_cgroup_reclaimable(struct mem_cgroup *memcg, bool noswap)
-> -{
-> -	return test_mem_cgroup_node_reclaimable(memcg, 0, noswap);
-> -}
->  #endif
->  
->  static int mem_cgroup_soft_reclaim(struct mem_cgroup *root_memcg,
-> @@ -1888,8 +1847,6 @@ static int mem_cgroup_soft_reclaim(struct mem_cgroup *root_memcg,
->  			}
->  			continue;
->  		}
-> -		if (!mem_cgroup_reclaimable(victim, false))
-> -			continue;
->  		total += mem_cgroup_shrink_node_zone(victim, gfp_mask, false,
->  						     zone, &nr_scanned);
->  		*total_scanned += nr_scanned;
-> -- 
-> 1.7.10.4
-> 
+So claiming the tuner in the trigger seems to be the right place. If
+returning EBUSY is a poor error code for alsa, then we can use something else
+for that. EACCES perhaps?
 
--- 
-Michal Hocko
-SUSE Labs
+Regards,
+
+	Hans
