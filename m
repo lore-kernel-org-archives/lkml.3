@@ -1,137 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079AbaJURru (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 13:47:50 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:48751 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756062AbaJURrr (ORCPT
+	id S932973AbaJURsH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 13:48:07 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:52933 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755490AbaJURsC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 13:47:47 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Linus Walleij <linus.walleij@linaro.org>, Heiko Stuebner <heiko@sntech.de>
-Cc: Chris Zhong <zyw@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>,
-        linux-rockchip@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org,
-        Doug Anderson <dianders@chromium.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 4/4] pinctrl: rockchip: Protect read-modify-write with the spinlock
-Date: Tue, 21 Oct 2014 10:47:35 -0700
-Message-Id: <1413913655-22351-4-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1413913655-22351-1-git-send-email-dianders@chromium.org>
-References: <1413913655-22351-1-git-send-email-dianders@chromium.org>
+	Tue, 21 Oct 2014 13:48:02 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+From: Johan Hovold <johan@kernel.org>
+To: Alessandro Zummo <a.zummo@towertech.it>, Tony Lindgren <tony@atomide.com>,
+        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
+        Felipe Balbi <balbi@ti.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Lokesh Vutla <lokeshvutla@ti.com>, Guenter Roeck <linux@roeck-us.net>,
+        nsekhar@ti.com, t-kristo@ti.com, j-keerthy@ti.com,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org, Johan Hovold <johan@kernel.org>
+Subject: [PATCH v2 11/20] rtc: omap: add structured device-type info
+Date: Tue, 21 Oct 2014 19:37:57 +0200
+Message-Id: <1413913086-12730-12-git-send-email-johan@kernel.org>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1413913086-12730-1-git-send-email-johan@kernel.org>
+References: <1412881594-25678-1-git-send-email-johan@kernel.org>
+ <1413913086-12730-1-git-send-email-johan@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There were a few instances where the rockchip pinctrl driver would do
-read-modify-write with no spinlock.  Add a spinlock for these cases.
+Add structured device-type info to encode IP-block revision differences.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 ---
-Changes in v2:
-- Made sure to release the lock in an error condition.
+ drivers/rtc/rtc-omap.c | 103 ++++++++++++++++++++++++-------------------------
+ 1 file changed, 51 insertions(+), 52 deletions(-)
 
- drivers/pinctrl/pinctrl-rockchip.c | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
-
-diff --git a/drivers/pinctrl/pinctrl-rockchip.c b/drivers/pinctrl/pinctrl-rockchip.c
-index 6c14f6c..59a5461 100644
---- a/drivers/pinctrl/pinctrl-rockchip.c
-+++ b/drivers/pinctrl/pinctrl-rockchip.c
-@@ -861,6 +861,7 @@ static int _rockchip_pmx_gpio_set_direction(struct gpio_chip *chip,
- {
- 	struct rockchip_pin_bank *bank;
- 	int ret;
-+	unsigned long flags;
- 	u32 data;
+diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
+index f70ae660368b..1abd88e24c22 100644
+--- a/drivers/rtc/rtc-omap.c
++++ b/drivers/rtc/rtc-omap.c
+@@ -102,19 +102,11 @@
+ #define	KICK0_VALUE			0x83e70b13
+ #define	KICK1_VALUE			0x95a4f1e0
  
- 	bank = gc_to_pin_bank(chip);
-@@ -869,6 +870,8 @@ static int _rockchip_pmx_gpio_set_direction(struct gpio_chip *chip,
- 	if (ret < 0)
- 		return ret;
+-#define	OMAP_RTC_HAS_KICKER		BIT(0)
+-
+-/*
+- * Few RTC IP revisions has special WAKE-EN Register to enable Wakeup
+- * generation for event Alarm.
+- */
+-#define	OMAP_RTC_HAS_IRQWAKEEN		BIT(1)
+-
+-/*
+- * Some RTC IP revisions (like those in AM335x and DRA7x) need
+- * the 32KHz clock to be explicitly enabled.
+- */
+-#define OMAP_RTC_HAS_32KCLK_EN		BIT(2)
++struct omap_rtc_device_type {
++	bool has_32kclk_en;
++	bool has_kicker;
++	bool has_irqwakeen;
++};
  
-+	spin_lock_irqsave(&bank->slock, flags);
+ struct omap_rtc {
+ 	struct rtc_device *rtc;
+@@ -122,7 +114,7 @@ struct omap_rtc {
+ 	int irq_alarm;
+ 	int irq_timer;
+ 	u8 interrupts_reg;
+-	unsigned long flags;
++	const struct omap_rtc_device_type *type;
+ };
+ 
+ static inline u8 rtc_read(struct omap_rtc *rtc, unsigned int reg)
+@@ -190,7 +182,7 @@ static int omap_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
+ 	local_irq_disable();
+ 	rtc_wait_not_busy(rtc);
+ 	reg = rtc_read(rtc, OMAP_RTC_INTERRUPTS_REG);
+-	if (rtc->flags & OMAP_RTC_HAS_IRQWAKEEN)
++	if (rtc->type->has_irqwakeen)
+ 		irqwake_reg = rtc_read(rtc, OMAP_RTC_IRQWAKEEN);
+ 
+ 	if (enabled) {
+@@ -202,7 +194,7 @@ static int omap_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
+ 	}
+ 	rtc_wait_not_busy(rtc);
+ 	rtc_write(rtc, OMAP_RTC_INTERRUPTS_REG, reg);
+-	if (rtc->flags & OMAP_RTC_HAS_IRQWAKEEN)
++	if (rtc->type->has_irqwakeen)
+ 		rtc_write(rtc, OMAP_RTC_IRQWAKEEN, irqwake_reg);
+ 	local_irq_enable();
+ 
+@@ -326,7 +318,7 @@ static int omap_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alm)
+ 	rtc_write(rtc, OMAP_RTC_ALARM_SECONDS_REG, alm->time.tm_sec);
+ 
+ 	reg = rtc_read(rtc, OMAP_RTC_INTERRUPTS_REG);
+-	if (rtc->flags & OMAP_RTC_HAS_IRQWAKEEN)
++	if (rtc->type->has_irqwakeen)
+ 		irqwake_reg = rtc_read(rtc, OMAP_RTC_IRQWAKEEN);
+ 
+ 	if (alm->enabled) {
+@@ -337,7 +329,7 @@ static int omap_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alm)
+ 		irqwake_reg &= ~OMAP_RTC_IRQWAKEEN_ALARM_WAKEEN;
+ 	}
+ 	rtc_write(rtc, OMAP_RTC_INTERRUPTS_REG, reg);
+-	if (rtc->flags & OMAP_RTC_HAS_IRQWAKEEN)
++	if (rtc->type->has_irqwakeen)
+ 		rtc_write(rtc, OMAP_RTC_IRQWAKEEN, irqwake_reg);
+ 
+ 	local_irq_enable();
+@@ -353,34 +345,45 @@ static struct rtc_class_ops omap_rtc_ops = {
+ 	.alarm_irq_enable = omap_rtc_alarm_irq_enable,
+ };
+ 
+-#define	OMAP_RTC_DATA_AM3352_IDX	1
+-#define	OMAP_RTC_DATA_DA830_IDX		2
++static const struct omap_rtc_device_type omap_rtc_default_type = {
++};
 +
- 	data = readl_relaxed(bank->reg_base + GPIO_SWPORT_DDR);
- 	/* set bit to 1 for output, 0 for input */
- 	if (!input)
-@@ -877,6 +880,8 @@ static int _rockchip_pmx_gpio_set_direction(struct gpio_chip *chip,
- 		data &= ~BIT(pin);
- 	writel_relaxed(data, bank->reg_base + GPIO_SWPORT_DDR);
- 
-+	spin_unlock_irqrestore(&bank->slock, flags);
++static const struct omap_rtc_device_type omap_rtc_am3352_type = {
++	.has_32kclk_en	= true,
++	.has_kicker	= true,
++	.has_irqwakeen	= true,
++};
 +
- 	return 0;
- }
++static const struct omap_rtc_device_type omap_rtc_da830_type = {
++	.has_kicker	= true,
++};
  
-@@ -1394,6 +1399,7 @@ static void rockchip_irq_demux(unsigned int irq, struct irq_desc *desc)
- 	u32 polarity = 0, data = 0;
- 	u32 pend;
- 	bool edge_changed = false;
-+	unsigned long flags;
+-static const struct platform_device_id omap_rtc_devtype[] = {
++static const struct platform_device_id omap_rtc_id_table[] = {
+ 	{
+ 		.name	= "omap_rtc",
+-	},
+-	[OMAP_RTC_DATA_AM3352_IDX] = {
++		.driver_data = (kernel_ulong_t)&omap_rtc_default_type,
++	}, {
+ 		.name	= "am3352-rtc",
+-		.driver_data = OMAP_RTC_HAS_KICKER | OMAP_RTC_HAS_IRQWAKEEN |
+-			       OMAP_RTC_HAS_32KCLK_EN,
+-	},
+-	[OMAP_RTC_DATA_DA830_IDX] = {
++		.driver_data = (kernel_ulong_t)&omap_rtc_am3352_type,
++	}, {
+ 		.name	= "da830-rtc",
+-		.driver_data = OMAP_RTC_HAS_KICKER,
+-	},
+-	{},
++		.driver_data = (kernel_ulong_t)&omap_rtc_da830_type,
++	}, {
++		/* sentinel */
++	}
+ };
+-MODULE_DEVICE_TABLE(platform, omap_rtc_devtype);
++MODULE_DEVICE_TABLE(platform, omap_rtc_id_table);
  
- 	dev_dbg(bank->drvdata->dev, "got irq for bank %s\n", bank->name);
+ static const struct of_device_id omap_rtc_of_match[] = {
+-	{	.compatible	= "ti,da830-rtc",
+-		.data		= &omap_rtc_devtype[OMAP_RTC_DATA_DA830_IDX],
+-	},
+-	{	.compatible	= "ti,am3352-rtc",
+-		.data		= &omap_rtc_devtype[OMAP_RTC_DATA_AM3352_IDX],
+-	},
+-	{},
++	{
++		.compatible	= "ti,am3352-rtc",
++		.data		= &omap_rtc_am3352_type,
++	}, {
++		.compatible	= "ti,da830-rtc",
++		.data		= &omap_rtc_da830_type,
++	}, {
++		/* sentinel */
++	}
+ };
+ MODULE_DEVICE_TABLE(of, omap_rtc_of_match);
  
-@@ -1439,10 +1445,14 @@ static void rockchip_irq_demux(unsigned int irq, struct irq_desc *desc)
+@@ -398,17 +401,13 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
  
- 	if (bank->toggle_edge_mode && edge_changed) {
- 		/* Interrupt params should only be set with ints disabled */
-+		spin_lock_irqsave(&bank->slock, flags);
-+
- 		data = readl_relaxed(bank->reg_base + GPIO_INTEN);
- 		writel_relaxed(0, bank->reg_base + GPIO_INTEN);
- 		writel(polarity, bank->reg_base + GPIO_INT_POLARITY);
- 		writel(data, bank->reg_base + GPIO_INTEN);
-+
-+		spin_unlock_irqrestore(&bank->slock, flags);
+ 	of_id = of_match_device(omap_rtc_of_match, &pdev->dev);
+-	if (of_id)
+-		pdev->id_entry = of_id->data;
+-
+-	id_entry = platform_get_device_id(pdev);
+-	if (!id_entry) {
+-		dev_err(&pdev->dev, "no matching device entry\n");
+-		return -ENODEV;
++	if (of_id) {
++		rtc->type = of_id->data;
++	} else {
++		id_entry = platform_get_device_id(pdev);
++		rtc->type = (void *)id_entry->driver_data;
  	}
  
- 	chained_irq_exit(chip, desc);
-@@ -1456,6 +1466,7 @@ static int rockchip_irq_set_type(struct irq_data *d, unsigned int type)
- 	u32 polarity;
- 	u32 level;
- 	u32 data;
-+	unsigned long flags;
- 	int ret;
+-	rtc->flags = id_entry->driver_data;
+-
+ 	rtc->irq_timer = platform_get_irq(pdev, 0);
+ 	if (rtc->irq_timer <= 0)
+ 		return -ENOENT;
+@@ -428,7 +427,7 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
+ 	pm_runtime_enable(&pdev->dev);
+ 	pm_runtime_get_sync(&pdev->dev);
  
- 	/* make sure the pin is configured as gpio input */
-@@ -1463,15 +1474,20 @@ static int rockchip_irq_set_type(struct irq_data *d, unsigned int type)
- 	if (ret < 0)
- 		return ret;
- 
-+	spin_lock_irqsave(&bank->slock, flags);
-+
- 	data = readl_relaxed(bank->reg_base + GPIO_SWPORT_DDR);
- 	data &= ~mask;
- 	writel_relaxed(data, bank->reg_base + GPIO_SWPORT_DDR);
- 
-+	spin_unlock_irqrestore(&bank->slock, flags);
-+
- 	if (type & IRQ_TYPE_EDGE_BOTH)
- 		__irq_set_handler_locked(d->irq, handle_edge_irq);
- 	else
- 		__irq_set_handler_locked(d->irq, handle_level_irq);
- 
-+	spin_lock_irqsave(&bank->slock, flags);
- 	irq_gc_lock(gc);
- 
- 	level = readl_relaxed(gc->reg_base + GPIO_INTTYPE_LEVEL);
-@@ -1514,6 +1530,7 @@ static int rockchip_irq_set_type(struct irq_data *d, unsigned int type)
- 		break;
- 	default:
- 		irq_gc_unlock(gc);
-+		spin_unlock_irqrestore(&bank->slock, flags);
- 		return -EINVAL;
+-	if (rtc->flags & OMAP_RTC_HAS_KICKER) {
++	if (rtc->type->has_kicker) {
+ 		rtc_writel(rtc, OMAP_RTC_KICK0_REG, KICK0_VALUE);
+ 		rtc_writel(rtc, OMAP_RTC_KICK1_REG, KICK1_VALUE);
  	}
+@@ -441,7 +440,7 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
+ 	rtc_writel(rtc, OMAP_RTC_INTERRUPTS_REG, 0);
  
-@@ -1521,6 +1538,7 @@ static int rockchip_irq_set_type(struct irq_data *d, unsigned int type)
- 	writel_relaxed(polarity, gc->reg_base + GPIO_INT_POLARITY);
+ 	/* enable RTC functional clock */
+-	if (rtc->flags & OMAP_RTC_HAS_32KCLK_EN) {
++	if (rtc->type->has_32kclk_en) {
+ 		reg = rtc_read(rtc, OMAP_RTC_OSC_REG);
+ 		rtc_writel(rtc, OMAP_RTC_OSC_REG,
+ 				reg | OMAP_RTC_OSC_32KCLK_EN);
+@@ -511,7 +510,7 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
  
- 	irq_gc_unlock(gc);
-+	spin_unlock_irqrestore(&bank->slock, flags);
+ err:
+ 	device_init_wakeup(&pdev->dev, false);
+-	if (rtc->flags & OMAP_RTC_HAS_KICKER)
++	if (rtc->type->has_kicker)
+ 		rtc_writel(rtc, OMAP_RTC_KICK0_REG, 0);
+ 	pm_runtime_put_sync(&pdev->dev);
+ 	pm_runtime_disable(&pdev->dev);
+@@ -528,7 +527,7 @@ static int __exit omap_rtc_remove(struct platform_device *pdev)
+ 	/* leave rtc running, but disable irqs */
+ 	rtc_write(rtc, OMAP_RTC_INTERRUPTS_REG, 0);
  
- 	return 0;
- }
+-	if (rtc->flags & OMAP_RTC_HAS_KICKER)
++	if (rtc->type->has_kicker)
+ 		rtc_writel(rtc, OMAP_RTC_KICK0_REG, 0);
+ 
+ 	/* Disable the clock/module */
+@@ -594,7 +593,7 @@ static struct platform_driver omap_rtc_driver = {
+ 		.pm	= &omap_rtc_pm_ops,
+ 		.of_match_table = omap_rtc_of_match,
+ 	},
+-	.id_table	= omap_rtc_devtype,
++	.id_table	= omap_rtc_id_table,
+ };
+ 
+ module_platform_driver_probe(omap_rtc_driver, omap_rtc_probe);
 -- 
-2.1.0.rc2.206.gedb03e5
+2.0.4
 
