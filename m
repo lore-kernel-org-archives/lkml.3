@@ -1,181 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933045AbaJUQYH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 12:24:07 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:41804 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932389AbaJUQYD convert rfc822-to-8bit (ORCPT
+	id S933098AbaJUQYT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 12:24:19 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:58376 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932389AbaJUQYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 12:24:03 -0400
-Message-ID: <544688A1.7010403@arm.com>
-Date: Tue, 21 Oct 2014 17:24:01 +0100
-From: Juri Lelli <juri.lelli@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 21 Oct 2014 12:24:13 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Tony Lindgren <tony@atomide.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        Jiri Slaby <jslaby@suse.cz>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        "Franklin Cooper Jr." <fcooper@ti.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Nishanth Menon <nm@ti.com>
+Subject: [PATCH] tty: serial: omap: increase max consoles to 10
+Date: Tue, 21 Oct 2014 11:23:36 -0500
+Message-ID: <1413908616-843-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Kirill Tkhai <ktkhai@parallels.com>, Peter Zijlstra <peterz@infradead.org>
-CC: Kirill Tkhai <tkhai@yandex.ru>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Juri Lelli <juri.lelli@gmail.com>
-Subject: Re: [PATCH v2 2/3] sched/dl: Cleanup prio_changed_dl()
-References: <20140930210412.5258.35299.stgit@localhost>	 <20140930210428.5258.32223.stgit@localhost>	 <20141002093600.GC2849@worktop.programming.kicks-ass.net> <1412243541.20287.28.camel@tkhai>
-In-Reply-To: <1412243541.20287.28.camel@tkhai>
-X-OriginalArrivalTime: 21 Oct 2014 16:24:01.0002 (UTC) FILETIME=[6C2974A0:01CFED4B]
-X-MC-Unique: 114102117240101901
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kirill,
+Increase the maximum number of consoles possible to 10 since DRA7 now
+has the maximum number of consoles possible. without doing this, for
+example, enabling DRA7 UART10 results in internal data structures and
+console cannot match up and we endup with a crash as follows:
 
-On 02/10/14 10:52, Kirill Tkhai wrote:
-> В Чт, 02/10/2014 в 11:36 +0200, Peter Zijlstra пишет:
->> On Wed, Oct 01, 2014 at 01:04:35AM +0400, Kirill Tkhai wrote:
->>> From: Kirill Tkhai <ktkhai@parallels.com>
->>>
->>> rq->curr task can't be in "dequeued" state in prio_changed_dl().
->>> (The only place we can have that is __schedule()). So, we delete
->>> rq->curr check.
->>
->> the CBS timer can throttle it right?
-> 
-> Yeah, it's better to check for on_dl_rq():
-> 
-> [PATCH]sched/dl: Cleanup prio_changed_dl()
->     
-> rq->curr task can't be in "dequeued" state in prio_changed_dl().
-> (The only place we can have that is __schedule()). So, we delete
-> rq->curr check.
-> 
-> We shouldn't do balancing if deadline task is throttled too.
-> 
-> Also delete "else" branch which is dead code (switched_to_dl()
-> is not interested in dequeued tasks and we are not interested
-> in balancing in this case).
-> 
+[    1.903503] omap_uart 48424000.serial: [UART-1]: failure [serial_omap_probe]: -22
+[    1.911437] omap_uart: probe of 48424000.serial failed with error -22
+[    1.920379] Unable to handle kernel NULL pointer dereference at virtual address 00000004
+[    1.928894] pgd = c0004000
+[    1.931732] [00000004] *pgd=00000000
+[    1.935485] Internal error: Oops: 5 [#1] SMP ARM
+[    1.940338] Modules linked in:
+[    1.943542] CPU: 1 PID: 12 Comm: kworker/1:0 Tainted: G        W      3.18.0-rc1-00001-g8821bc4-dirty #6
+[    1.953521] task: ed8a2d00 ti: ed8a4000 task.ti: ed8a4000
+[    1.959197] PC is at process_one_work+0x38/0x4a4
+[    1.964050] LR is at 0x0
+[    1.966705] pc : [<c00548e0>]    lr : [<00000000>]    psr: 40000093
+[    1.966705] sp : ed8a5ea8  ip : ed8a5ec8  fp : eeb9abc0
+[    1.978759] r10: ed8a4000  r9 : 00000008  r8 : ed842458
+[    1.984252] r7 : 00000000  r6 : eeb9abc0  r5 : ed842440  r4 : edbf26a8
+[    1.991119] r3 : 00000000  r2 : 00000000  r1 : 00000000  r0 : 00000000
+[    1.997985] Flags: nZcv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+[    2.005767] Control: 10c5387d  Table: 8000406a  DAC: 00000015
+[    2.011810] Process kworker/1:0 (pid: 12, stack limit = 0xed8a4248)
+[    2.018371] Stack: (0xed8a5ea8 to 0xed8a6000)
+[    2.022949] 5ea0:                   00000001 00000000 60000093 c008346c 00000001 ed8a5ec8
+[    2.031555] 5ec0: c0054de4 eeb9abc0 ed8a4000 ed842458 00000008 ed8a4000 eeb9abc0 ed842440
+[    2.040161] 5ee0: eeb9abc0 eeb9abf0 ed8a4000 ed842458 00000008 ed8a4000 eeb9abc0 c0054ec4
+[    2.048767] 5f00: ed8a4000 eeb9ac4c a0000053 00000000 ed845bc0 ed842440 c0054d80 00000000
+[    2.057342] 5f20: 00000000 00000000 00000000 c005999c 00000001 00000000 c05eaa64 ed842440
+[    2.065948] 5f40: 00000000 00000000 dead4ead ffffffff ffffffff c097c680 00000000 00000000
+[    2.074554] 5f60: c078acd4 ed8a5f64 ed8a5f64 00000000 00000000 dead4ead ffffffff ffffffff
+[    2.083160] 5f80: c097c680 00000000 00000000 c078acd4 ed8a5f90 ed8a5f90 600000d3 ed845bc0
+[    2.091766] 5fa0: c00598d4 00000000 00000000 c000e668 00000000 00000000 00000000 00000000
+[    2.100341] 5fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+[    2.108947] 5fe0: 00000000 00000000 00000000 00000000 00000013 00000000 90005148 11010482
+[    2.117553] [<c00548e0>] (process_one_work) from [<c0054ec4>] (worker_thread+0x144/0x498)
+[    2.126159] [<c0054ec4>] (worker_thread) from [<c005999c>] (kthread+0xc8/0xe4)
+[    2.133758] [<c005999c>] (kthread) from [<c000e668>] (ret_from_fork+0x14/0x2c)
+[    2.141357] Code: e1a04001 e1a05000 e893000f e31e0004 (e5978004)
+[    2.147766] ---[ end trace 5798e2803311b69f ]---
+<snip>
 
-So, I agree that calling switched_to_dl() makes little sense,
-but don't we have to deal with updates to not running tasks as
-in rt.c? Something like this maybe?
+The final solution is to transition off to use 8250 driver and no
+dependency on console structures and move away from omap-serial driver,
+hence no major cleanups are done for this driver.
 
->From 75ee75a5fd76526baaed3ba8a58f3ff7daa89cd6 Mon Sep 17 00:00:00 2001
-From: Juri Lelli <juri.lelli@arm.com>
-Date: Tue, 21 Oct 2014 17:15:15 +0100
-Subject: [PATCH] sched/deadline: cleanup prio_changed_dl()
-
+Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- kernel/sched/deadline.c | 16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index 28d6088..1e62e31 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -1661,7 +1661,10 @@ static void switched_to_dl(struct rq *rq, struct task_struct *p)
- static void prio_changed_dl(struct rq *rq, struct task_struct *p,
- 			    int oldprio)
- {
--	if (task_on_rq_queued(p) || rq->curr == p) {
-+	if (!on_dl_rq(&p->dl))
-+		return;
-+
-+	if (rq->curr == p) {
- #ifdef CONFIG_SMP
- 		/*
- 		 * This might be too much, but unfortunately
-@@ -1688,8 +1691,15 @@ static void prio_changed_dl(struct rq *rq, struct task_struct *p,
- 		 */
- 		resched_curr(rq);
- #endif /* CONFIG_SMP */
--	} else
--		switched_to_dl(rq, p);
-+	} else {
-+		/*
-+		 * This task is not running, so if its deadline is
-+		 * now more imminent than that of the current running
-+		 * task then reschedule.
-+		 */
-+		if (dl_time_before(p->dl.deadline, rq->curr->dl.deadline))
-+			resched_curr(rq);
-+	}
- }
+Ref: eventual 8250 driver to transition to: http://marc.info/?l=linux-kernel&m=141201409108078&w=2
+
+ drivers/tty/serial/omap-serial.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
+index 18c30ca..4f9cbb6 100644
+--- a/drivers/tty/serial/omap-serial.c
++++ b/drivers/tty/serial/omap-serial.c
+@@ -46,7 +46,7 @@
  
- const struct sched_class dl_sched_class = {
+ #include <dt-bindings/gpio/gpio.h>
+ 
+-#define OMAP_MAX_HSUART_PORTS	6
++#define OMAP_MAX_HSUART_PORTS	10
+ 
+ #define UART_BUILD_REVISION(x, y)	(((x) << 8) | (y))
+ 
 -- 
-2.1.0
-
-Thanks,
-
-- Juri
-
-> Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-> 
-> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-> index 63f8b4a..ccea917 100644
-> --- a/kernel/sched/deadline.c
-> +++ b/kernel/sched/deadline.c
-> @@ -1638,35 +1638,33 @@ static void switched_to_dl(struct rq *rq, struct task_struct *p)
->  static void prio_changed_dl(struct rq *rq, struct task_struct *p,
->  			    int oldprio)
->  {
-> -	if (task_on_rq_queued(p) || rq->curr == p) {
-> +	if (!on_dl_rq(&p->dl))
-> +		return;
->  #ifdef CONFIG_SMP
-> -		/*
-> -		 * This might be too much, but unfortunately
-> -		 * we don't have the old deadline value, and
-> -		 * we can't argue if the task is increasing
-> -		 * or lowering its prio, so...
-> -		 */
-> -		if (!rq->dl.overloaded)
-> -			pull_dl_task(rq);
-> -
-> -		/*
-> -		 * If we now have a earlier deadline task than p,
-> -		 * then reschedule, provided p is still on this
-> -		 * runqueue.
-> -		 */
-> -		if (dl_time_before(rq->dl.earliest_dl.curr, p->dl.deadline) &&
-> -		    rq->curr == p)
-> -			resched_curr(rq);
-> -#else
-> -		/*
-> -		 * Again, we don't know if p has a earlier
-> -		 * or later deadline, so let's blindly set a
-> -		 * (maybe not needed) rescheduling point.
-> -		 */
-> +	/*
-> +	 * This might be too much, but unfortunately
-> +	 * we don't have the old deadline value, and
-> +	 * we can't argue if the task is increasing
-> +	 * or lowering its prio, so...
-> +	 */
-> +	if (!rq->dl.overloaded)
-> +		pull_dl_task(rq);
-> +	/*
-> +	 * If we now have a earlier deadline task than p,
-> +	 * then reschedule, provided p is still on this
-> +	 * runqueue.
-> +	 */
-> +	if (dl_time_before(rq->dl.earliest_dl.curr, p->dl.deadline) &&
-> +	    rq->curr == p)
->  		resched_curr(rq);
-> +#else
-> +	/*
-> +	 * Again, we don't know if p has a earlier
-> +	 * or later deadline, so let's blindly set a
-> +	 * (maybe not needed) rescheduling point.
-> +	 */
-> +	resched_curr(rq);
->  #endif /* CONFIG_SMP */
-> -	} else
-> -		switched_to_dl(rq, p);
->  }
->  
->  const struct sched_class dl_sched_class = {
-> 
-> 
-> 
+1.7.9.5
 
