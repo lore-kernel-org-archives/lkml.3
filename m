@@ -1,107 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933651AbaJUVMb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 17:12:31 -0400
-Received: from scrye.com ([75.148.32.185]:42236 "EHLO mail.scrye.com"
+	id S933580AbaJUVOX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 17:14:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48592 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932998AbaJUVM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 17:12:29 -0400
-X-Greylist: delayed 89464 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Oct 2014 17:12:29 EDT
-Date: Tue, 21 Oct 2014 15:12:25 -0600
-From: Kevin Fenzi <kevin@scrye.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
-Message-ID: <20141021151225.5df96645@voldemort.scrye.com>
-In-Reply-To: <20141020145359.565fe5e6@voldemort.scrye.com>
-References: <20141020141515.0688bf33@voldemort.scrye.com>
- <20141020204326.GA25668@redhat.com>
- <20141020145359.565fe5e6@voldemort.scrye.com>
-Organization: Scrye, INC
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
+	id S933014AbaJUVOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 17:14:22 -0400
+Date: Tue, 21 Oct 2014 16:14:09 -0500
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        linux-kernel@vger.kernel.org, Seth Jennings <sjenning@redhat.com>
+Subject: Re: [PATCH] kprobes: add kprobe_is_function_probed()
+Message-ID: <20141021211409.GA28989@treble.redhat.com>
+References: <alpine.LNX.2.00.1410211744550.24255@pobox.suse.cz>
+ <20141021164328.GG3978@treble.redhat.com>
+ <alpine.LNX.2.00.1410212209560.22681@pobox.suse.cz>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
- boundary="Sig_/8EpoeABSFT5aSPRhbEEQiaj"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1410212209560.22681@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/8EpoeABSFT5aSPRhbEEQiaj
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, Oct 21, 2014 at 10:19:30PM +0200, Jiri Kosina wrote:
+> On Tue, 21 Oct 2014, Josh Poimboeuf wrote:
+> 
+> > > Add a function that allows external users (such as live patching 
+> > > mechanisms) to check whether a given function (identified by symbol name) 
+> > > has a kprobe installed in it.
+> > 
+> > Functions aren't uniquely identifiable by name.  Perhaps it should be
+> > something like kprobe_is_addr_range_probed()?
+> 
+> Hi Josh,
+> 
+> first, thanks a lot for the review.
+> 
+> This is a rather difficult call actually. I am of course aware of the fact 
+> that kernel fucntions can't be uniquely identified by name, but when 
+> thinking about this, one has to consider:
+> 
+> - ftrace primary userspace interface (set_ftrace_filter) is based on 
+>   function names
+> - kprobe tracer and uprobe trace primary userspace interface 
+>   (/sys/kernel/debug/tracing/kprobe_events and uprobe_events respectively)
+>   are primarily based on function names
 
-On Mon, 20 Oct 2014 14:53:59 -0600
-Kevin Fenzi <kevin@scrye.com> wrote:
+True, the user space interfaces are done by name, but the kernel
+interfaces aren't necessarily so (see ftrace_set_filter_ip and struct
+kprobe.addr).  This is a kernel interface so we can be more precise.
 
-> On Mon, 20 Oct 2014 16:43:26 -0400
-> Dave Jones <davej@redhat.com> wrote:
->=20
-> > I've seen similar soft lockup traces from the sys_unshare path when
-> > running my fuzz tester.  It seems that if you create enough network
-> > namespaces, it can take a huge amount of time for them to be
-> > iterated. (Running trinity with '-c unshare' you can see the slow
-> > down happen. In some cases, it takes so long that the watchdog
-> > process kills it -- though the SIGKILL won't get delivered until
-> > the unshare() completes)
-> >=20
-> > Any idea what this machine had been doing prior to this that may
-> > have involved creating lots of namespaces ?
->=20
-> That was right after boot. ;)=20
->=20
-> This is my main rawhide running laptop.
->=20
-> A 'ip netns list' shows nothing.
+> - the number of conflicts is probably zero, or very close to zero. Try to 
+>   run this 
+> 
+> 	cut -f3 -d' ' /proc/kallsyms | sort  | uniq -c
+> 
+>   So it's questionable whether all the back and forth name->address->name 
+>   translations all over the place are worth all the trouble.
 
-Some more information:=20
+On my kernel:
 
-The problem started between:=20
+$ grep ' t \| T ' /proc/kallsyms | awk '{print $3}' |sort |uniq -d |wc -l
+395
 
-v3.17-7872-g5ff0b9e1a1da and v3.17-8307-gf1d0d14120a8
+So there are at least 395 places where this could go wrong...
 
-(I can try and do a bisect, but have to head out on a trip tomorrow)
+With kpatch, we're setting the ftrace filter by address so we don't
+patch the wrong function.  So we already have the address.  We also have
+the function length, which is needed for our backtrace safety checks.
 
-In all the kernels with the problem, there is a kworker process in D.=20
+I'm guessing kGraft doesn't have the address + length?  I think you
+could call kallsyms_lookup() to get both values.
 
-sysrq-t says:=20
-                                            Showing all locks held in the s=
-ystem:
-Oct 21 15:06:31 voldemort.scrye.com kernel: 4 locks held by kworker/u16:0/6:
-Oct 21 15:06:31 voldemort.scrye.com kernel:  #0:  ("%s""netns"){.+.+.+}, at=
-: [<ffffffff810ccbff>] process_one_work+0x17f/0x850
-Oct 21 15:06:31 voldemort.scrye.com kernel:  #1:  (net_cleanup_work){+.+.+.=
-}, at: [<ffffffff810ccbff>] process_one_work+0x17f/0x850
-Oct 21 15:06:31 voldemort.scrye.com kernel:  #2:  (net_mutex){+.+.+.}, at: =
-[<ffffffff817069fc>] cleanup_net+0x8c/0x1f0
-Oct 21 15:06:31 voldemort.scrye.com kernel:  #3:
-(rcu_sched_state.barrier_mutex){+.+...}, at: [<ffffffff8112a395>]
-_rcu_barrier+0x35/0x200
+Maybe we should see what our unified live patching code ends up looking
+like before deciding what interface(s) we need here?
 
-On first running any of the systemd units that use PrivateNetwork, then
-run ok, but they are also set to timeout after a minute. On sucessive
-runs they hang in D also.
+> 
+>   I do agree though that we should make it obvious that the lookup 
+>   interface works on symbol names only ... perhaps by adding '_by_name()' 
+>   or so?
+> 
+> > Should we refuse to patch a function which has a kprobe installed inside 
+> > it?  
+> 
+> I think warning about it is a good thing to do.
 
-kevin
+I think that's probably ok.
 
---Sig_/8EpoeABSFT5aSPRhbEEQiaj
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+> 
+> > Is there a race-free way to do that?
+> 
+> Do we need to be race-free here? If userspace is both instantiating new 
+> krpobe and initiating live kernel patching at the "same time", I don't 
+> think kernel should try to solve such race ... it's simply there by 
+> definition, depending on, for example, scheduling decisions.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+If we're not preventing it, but instead just printing a warning, then
+yeah, that sounds fine to me.
 
-iQIcBAEBCgAGBQJURsw8AAoJEEs3sNgP+7te26UQALzAA3CzNnsuGPbEcKl96MYi
-fU/INHD/fr1WL5cHQDVfUvhCQsdTNve3fgNxrlhoBSbTEgLFvoAnc0uyM9VKloYR
-TSXfVk7Uwo1BW0Y9Pi0Ezp23O2yRaUyPLpO0T/tk58E+wAb7aKENr+vRykfxJsQ8
-5g1hesLMlCb7Qwd7Es1/zdk3FSnXb+9VhP7WrOdktJnM4KmtP9YSM0O13MLtVOM0
-fjPDYOf2RpqLSX+UC7uOzDsACTuSBjOoilFQ34mx33Mm/3hgmyGI6LBTDt5B1Av3
-tAGYDSqS7WExy1wD2r+DwZpZBs9xGb8yA7I2iLLJJcu+fjL8PBcqWuf6AL/oxFGu
-XXfLFCqryM2R4yURLSvBdX07lieLs8DsMwr9Qp91yMwc48VLKuDj8o7Qz0XZ5tUn
-+zJooaoIRY5IcNff9jQmwD27XfiObhkMNaoyFYHVhZeeAtNuXDx8XfUzEWfIU8eq
-FWluQzcDt/HZdavrf5YbtxD07SPIOw1jPWT+2DFwU5I0jAiqQw8/SEqn835B8NhI
-/d0Tqqf3dREkWoFzsrQGwd1L6DC8FH0oDT5f4wJwT9HkpWZRAzTdJpUgwPPz05t/
-M236oJ+sMaXw9f264EKJN68Zyh+Tl8vbTmugExewcJwb7UjeSMJv/ta9+EP8sxLi
-jw9OTAxtWJOzTrW4dV/b
-=yqgX
------END PGP SIGNATURE-----
+I think it would also be nice to do the reverse, i.e. have kprobes emit
+a warning if someone tries to probe a replaced function.
 
---Sig_/8EpoeABSFT5aSPRhbEEQiaj--
+-- 
+Josh
