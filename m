@@ -1,97 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933595AbaJUVCd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 17:02:33 -0400
-Received: from mail-bn1bon0070.outbound.protection.outlook.com ([157.56.111.70]:10304
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932723AbaJUVCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 17:02:31 -0400
-Date: Tue, 21 Oct 2014 14:00:28 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Andreas =?utf-8?Q?F=C3=A4rber?= <afaerber@suse.de>
-CC: Olof Johansson <olof@lixom.net>, Michal Simek <michal.simek@xilinx.com>,
-        Andreas Olofsson <andreas@adapteva.com>,
-        Matteo Vit <matteo.vit@starwaredesign.com>,
-        Sean Rickerd <srickerd@suse.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Punnaiah Choudary Kalluri <punnaia@xilinx.com>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: Re: [PATCH v2 00/11] ARM: dts: zynq: Prepare Parallella
-References: <1406242820-20140-1-git-send-email-afaerber@suse.de>
- <CAOesGMjAb5oXjauhbqjDhJXWct7qoXxy3XpA1=DioK7vPTwetA@mail.gmail.com>
- <5446C775.3030707@suse.de>
+	id S933606AbaJUVDl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 17:03:41 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:42548 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754405AbaJUVDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 17:03:39 -0400
+Date: Tue, 21 Oct 2014 17:03:28 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/4] mm: memcontrol: uncharge pages on swapout
+Message-ID: <20141021210328.GB29116@phnom.home.cmpxchg.org>
+References: <1413818532-11042-1-git-send-email-hannes@cmpxchg.org>
+ <1413818532-11042-2-git-send-email-hannes@cmpxchg.org>
+ <20141021125252.GN16496@esperanza>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5446C775.3030707@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21040.005
-X-TM-AS-User-Approved-Sender: Yes;Yes
-Message-ID: <10cbd78315a84262bc3f7474dc970bd4@BN1BFFO11FD015.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(377454003)(51704005)(377424004)(199003)(24454002)(189002)(74316001)(86362001)(575784001)(104016003)(50986999)(76176999)(102836001)(54356999)(47776003)(20776003)(21056001)(50466002)(108616004)(107046002)(23676002)(85306004)(99396003)(110136001)(33646002)(120916001)(76482002)(46102003)(80022003)(64706001)(31966008)(85202003)(106466001)(4396001)(95666004)(53416004)(77096002)(85852003)(85182001)(92566001)(6806004)(44976005)(19580405001)(87936001)(83506001)(19580395003)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1BFFO11HUB039;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:3;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB039;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 0371762FE7
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
-X-OriginatorOrg: xilinx.com
+In-Reply-To: <20141021125252.GN16496@esperanza>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-10-21 at 10:52PM +0200, Andreas Färber wrote:
-> Hi Olof and Sören,
-> 
-> Am 18.10.2014 um 06:28 schrieb Olof Johansson:
-> > On Thu, Jul 24, 2014 at 4:00 PM, Andreas Färber <afaerber@suse.de> wrote:
-> >> Hello,
-> >>
-> >> This patch series adds an initial device tree for the Parallella board.
-> >> UART, SD card, Ethernet are enabled.
-> >> Not yet enabled are HDMI, QSPI flash and 2x USB.
+On Tue, Oct 21, 2014 at 04:52:52PM +0400, Vladimir Davydov wrote:
+> On Mon, Oct 20, 2014 at 11:22:09AM -0400, Johannes Weiner wrote:
+> > mem_cgroup_swapout() is called with exclusive access to the page at
+> > the end of the page's lifetime.  Instead of clearing the PCG_MEMSW
+> > flag and deferring the uncharge, just do it right away.  This allows
+> > follow-up patches to simplify the uncharge code.
 > > 
-> > Andreas (Olofsson) kindly sent me a board, and I added it to the boot
-> > farm today, it'll be included in boot reports from here on.
-> 
-> Good to hear.
-> 
-> > I did a test run with yesterday's -next It looks like networking isn't
-> > working there at the moment, clock related. Same happens with 3.17 and
-> > latest mainline, config multi_v7_defconfig:
+> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> > ---
+> >  mm/memcontrol.c | 17 +++++++++++++----
+> >  1 file changed, 13 insertions(+), 4 deletions(-)
 > > 
-> > [WARN] [    7.943648] macb e000b000.ethernet eth0: unable to generate
-> > target frequency: 125000000 Hz
-> > [WARN] [   10.948681] macb e000b000.ethernet eth0: unable to generate
-> > target frequency: 125000000 Hz
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index bea3fddb3372..7709f17347f3 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -5799,6 +5799,7 @@ static void __init enable_swap_cgroup(void)
+> >   */
+> >  void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
+> >  {
+> > +	struct mem_cgroup *memcg;
+> >  	struct page_cgroup *pc;
+> >  	unsigned short oldid;
+> >  
+> > @@ -5815,13 +5816,21 @@ void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
+> >  		return;
+> >  
+> >  	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEMSW), page);
+> > +	memcg = pc->mem_cgroup;
+> >  
+> > -	oldid = swap_cgroup_record(entry, mem_cgroup_id(pc->mem_cgroup));
+> > +	oldid = swap_cgroup_record(entry, mem_cgroup_id(memcg));
+> >  	VM_BUG_ON_PAGE(oldid, page);
+> > +	mem_cgroup_swap_statistics(memcg, true);
+> >  
+> > -	pc->flags &= ~PCG_MEMSW;
+> > -	css_get(&pc->mem_cgroup->css);
+> > -	mem_cgroup_swap_statistics(pc->mem_cgroup, true);
+> > +	pc->flags = 0;
+> > +
+> > +	if (!mem_cgroup_is_root(memcg))
+> > +		page_counter_uncharge(&memcg->memory, 1);
 > 
-> I am unable to reproduce this in my setup - at Linus' tip
-> c2661b806092d8ea2dccb7b02b65776555e0ee47 (v3.18-rc1-68-gc2661b8), make
-> oldconfig'ing my /proc/config.gz.
+> AFAIU it removes batched uncharge of swapped out pages, doesn't it? Will
+> it affect performance?
+
+During swapout and with lockless page counters?  I don't think so.
+
+> Besides, it looks asymmetric with respect to the page cache uncharge
+> path, where we still defer uncharge to mem_cgroup_uncharge_list(), and I
+> personally rather dislike this asymmetry.
+
+The asymmetry is inherent in the fact that we mave memory and
+memory+swap accounting, and here a memory charge is transferred out to
+swap.  Before, the asymmetry was in mem_cgroup_uncharge_list() where
+we separate out memory and memsw pages (which the next patch fixes).
+
+So nothing changed, the ugliness was just moved around.  I actually
+like it better now that it's part of the swap controller, because
+that's where the nastiness actually comes from.  This will all go away
+when we account swap separately.  Then, swapped pages can keep their
+memory charge until mem_cgroup_uncharge() again and the swap charge
+will be completely independent from it.  This reshuffling is just
+necessary because it allows us to get rid of the per-page flag.
+
+> > +	local_irq_disable();
+> > +	mem_cgroup_charge_statistics(memcg, page, -1);
+> > +	memcg_check_events(memcg, page);
+> > +	local_irq_enable();
 > 
-> Sören, in light of your explanations, should I be expecting problems
-> with 1GbE or with 100MbE? My board is connected to a 1GbE switch.
+> AFAICT mem_cgroup_swapout() is called under mapping->tree_lock with irqs
+> disabled, so we should use irq_save/restore here.
 
-Not in general. As I said, I haven't seen that on our boards yet and I
-did a little bit of testing making sure that the fundamental code to
-switch between frequencies works. I.e. on our zc706 and zc702 boards I
-usually can use ethtool to force a certain speed on the interface and
-Zynq adjusts to it just fine.
+Good catch!  I don't think this function actually needs to be called
+under the tree_lock, so I'd rather send a follow-up that moves it out.
+For now, this should be sufficient:
 
-But as I said, it does rely on the divider being sourced with a
-frequency that allows generating the required Ethernet clock by
-adjusting the 6-bit divider only. If this requirement is not met,
-I expect you may see issues like Olof posted.
+---
 
-Are you (Andreas/Olof) using the same bootloaders?
+>From 3a40bd3b85a70db104ade873007dbb84b5117993 Mon Sep 17 00:00:00 2001
+From: Johannes Weiner <hannes@cmpxchg.org>
+Date: Tue, 21 Oct 2014 16:53:14 -0400
+Subject: [patch] mm: memcontrol: uncharge pages on swapout fix
 
-I hope that helps.
+Vladimir notes:
 
-	Sören
+> > +   local_irq_disable();
+> > +   mem_cgroup_charge_statistics(memcg, page, -1);
+> > +   memcg_check_events(memcg, page);
+> > +   local_irq_enable();
+>
+> AFAICT mem_cgroup_swapout() is called under mapping->tree_lock with irqs
+> disabled, so we should use irq_save/restore here.
+
+But this function doesn't actually need to be called under the tree
+lock.  So for now, simply remove the irq-disabling altogether and rely
+on the caller's IRQ state.  Later on, we'll move it out from there and
+add back the simple, non-saving IRQ-disabling.
+
+Reported-by: Vladimir Davydov <vdavydov@parallels.com>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/memcontrol.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 8dc46aa9ae8f..c688fb73ff35 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -5806,6 +5806,9 @@ void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
+ 	VM_BUG_ON_PAGE(PageLRU(page), page);
+ 	VM_BUG_ON_PAGE(page_count(page), page);
+ 
++	/* XXX: caller holds IRQ-safe mapping->tree_lock */
++	VM_BUG_ON(!irqs_disabled());
++
+ 	if (!do_swap_account)
+ 		return;
+ 
+@@ -5827,10 +5830,8 @@ void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
+ 	if (!mem_cgroup_is_root(memcg))
+ 		page_counter_uncharge(&memcg->memory, 1);
+ 
+-	local_irq_disable();
+ 	mem_cgroup_charge_statistics(memcg, page, -1);
+ 	memcg_check_events(memcg, page);
+-	local_irq_enable();
+ }
+ 
+ /**
+-- 
+2.1.2
