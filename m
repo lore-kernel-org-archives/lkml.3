@@ -1,79 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753957AbaJUAF3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 20:05:29 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:38925 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753216AbaJUAF2 (ORCPT
+	id S1754069AbaJUAHI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 20:07:08 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:53723 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753867AbaJUAHG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 20:05:28 -0400
-Message-ID: <5445A345.7010401@codeaurora.org>
-Date: Mon, 20 Oct 2014 17:05:25 -0700
-From: Laura Abbott <lauraa@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 20 Oct 2014 20:07:06 -0400
+Message-ID: <5445A3A6.2@amacapital.net>
+Date: Mon, 20 Oct 2014 17:07:02 -0700
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-To: Stefan Hengelein <stefan.hengelein@fau.de>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-CC: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-        akpm@linux-foundation.org, linux-arm-kernel@lists.infradead.org,
-        andreas.herrmann@calxeda.com,
-        Valentin Rothberg <valentinrothberg@gmail.com>
-Subject: Re: [PATCH] arm: dma-mapping: fix compilation error when CONFIG_MMU
- is not present
-References: <1413734340-53108-1-git-send-email-stefan.hengelein@fau.de>	<5444BCFF.8030803@samsung.com> <CABv5NL_GdtZegpw8wxau9oD6xXWdX3GUySLqCaoaoa549Kg_GQ@mail.gmail.com>
-In-Reply-To: <CABv5NL_GdtZegpw8wxau9oD6xXWdX3GUySLqCaoaoa549Kg_GQ@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Peter Zijlstra <peterz@infradead.org>, torvalds@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
+        akpm@linux-foundation.org, riel@redhat.com, mgorman@suse.de,
+        oleg@redhat.com, mingo@redhat.com, minchan@kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
+        laijs@cn.fujitsu.com, dave@stgolabs.net
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC][PATCH 0/6] Another go at speculative page faults
+References: <20141020215633.717315139@infradead.org>
+In-Reply-To: <20141020215633.717315139@infradead.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/20/2014 6:50 AM, Stefan Hengelein wrote:
-> Well,
->
-> arch/arm/mm/dma-mapping.c: In function ‘__atomic_get_pages’:
-> arch/arm/mm/dma-mapping.c:1265:31: error: ‘atomic_pool’ undeclared
-> (first use in this function)
->
-> arch/arm/mm/dma-mapping.c: In function ‘__iommu_get_pages’:
-> arch/arm/mm/dma-mapping.c:1275:2: error: implicit declaration of
-> function ‘__in_atomic_pool’ [-Werror=implicit-function-declaration]
->
->
-> others:
-> arch/arm/mm/dma-mapping.c: In function ‘__iommu_alloc_remap’:
-> arch/arm/mm/dma-mapping.c:1200:4: error: ‘VM_ARM_DMA_CONSISTENT’
-> undeclared (first use in this function)
-> arch/arm/mm/dma-mapping.c:1200:4: note: each undeclared identifier is
-> reported only once for each function it appears in
->
-> arch/arm/mm/dma-mapping.c: In function ‘__iommu_get_pages’:
-> arch/arm/mm/dma-mapping.c:1282:29: error: ‘VM_ARM_DMA_CONSISTENT’
-> undeclared (first use in this function)
-> arch/arm/mm/dma-mapping.c: In function ‘arm_iommu_free_attrs’:
-> arch/arm/mm/dma-mapping.c:1411:4: error: ‘VM_ARM_DMA_CONSISTENT’
-> undeclared (first use in this function)
->
->
-> i've attached a configuration where it happens.
-> when you place the configuration in your tree and compile the file,
-> the errors should show up.
->
-> However, within the configuration CONFIG_ARM_DMA_USE_IOMMU is defined
-> and CONFIG_MMU is not. AFAIUI, if both should be enabled together, it
-> should be mapped in Kconfig somewhere, right?
->
-> Best Regards,
-> Stefan
->
+On 10/20/2014 02:56 PM, Peter Zijlstra wrote:
+> Hi,
+> 
+> I figured I'd give my 2010 speculative fault series another spin:
+> 
+>   https://lkml.org/lkml/2010/1/4/257
+> 
+> Since then I think many of the outstanding issues have changed sufficiently to
+> warrant another go. In particular Al Viro's delayed fput seems to have made it
+> entirely 'normal' to delay fput(). Lai Jiangshan's SRCU rewrite provided us
+> with call_srcu() and my preemptible mmu_gather removed the TLB flushes from
+> under the PTL.
+> 
+> The code needs way more attention but builds a kernel and runs the
+> micro-benchmark so I figured I'd post it before sinking more time into it.
+> 
+> I realize the micro-bench is about as good as it gets for this series and not
+> very realistic otherwise, but I think it does show the potential benefit the
+> approach has.
 
-There isn't a nice way to fixup the dma consistent flags so I would
-say this option should just depend on MMU.
+Does this mean that an entire fault can complete without ever taking
+mmap_sem at all?  If so, that's a *huge* win.
 
-Thanks,
-Laura
+I'm a bit concerned about drivers that assume that the vma is unchanged
+during .fault processing.  In particular, is there a race between .close
+and .fault?  Would it make sense to add a per-vma rw lock and hold it
+during vma modification and .fault calls?
 
--- 
-Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, a 
-Linux Foundation Collaborative Project
+--Andy
+
+> 
+> (patches go against .18-rc1+)
+> 
+> ---
+> 
+> Using Kamezawa's multi-fault micro-bench from: https://lkml.org/lkml/2010/1/6/28
+> 
+> My Ivy Bridge EP (2*10*2) has a ~58% improvement in pagefault throughput:
+> 
+> PRE:
+> 
+> root@ivb-ep:~# perf stat -e page-faults,cache-misses --repeat 5 ./multi-fault 20
+> 
+>  Performance counter stats for './multi-fault 20' (5 runs):
+> 
+>        149,441,555      page-faults                  ( +-  1.25% )
+>      2,153,651,828      cache-misses                 ( +-  1.09% )
+> 
+>       60.003082014 seconds time elapsed              ( +-  0.00% )
+> 
+> POST:
+> 
+> root@ivb-ep:~# perf stat -e page-faults,cache-misses --repeat 5 ./multi-fault 20
+> 
+>  Performance counter stats for './multi-fault 20' (5 runs):
+> 
+>        236,442,626      page-faults                  ( +-  0.08% )
+>      2,796,353,939      cache-misses                 ( +-  1.01% )
+> 
+>       60.002792431 seconds time elapsed              ( +-  0.00% )
+> 
+> 
+> My Ivy Bridge EX (4*15*2) has a ~78% improvement in pagefault throughput:
+> 
+> PRE:
+> 
+> root@ivb-ex:~# perf stat -e page-faults,cache-misses --repeat 5 ./multi-fault 60
+> 
+>  Performance counter stats for './multi-fault 60' (5 runs):
+> 
+>        105,789,078      page-faults                 ( +-  2.24% )
+>      1,314,072,090      cache-misses                ( +-  1.17% )
+> 
+>       60.009243533 seconds time elapsed             ( +-  0.00% )
+> 
+> POST:
+> 
+> root@ivb-ex:~# perf stat -e page-faults,cache-misses --repeat 5 ./multi-fault 60
+> 
+>  Performance counter stats for './multi-fault 60' (5 runs):
+> 
+>        187,751,767      page-faults                 ( +-  2.24% )
+>      1,792,758,664      cache-misses                ( +-  2.30% )
+> 
+>       60.011611579 seconds time elapsed             ( +-  0.00% )
+> 
+> (I've not yet looked at why the EX sucks chunks compared to the EP box, I
+>  suspect we contend on other locks, but it could be anything.)
+> 
+> ---
+> 
+>  arch/x86/mm/fault.c      |  35 ++-
+>  include/linux/mm.h       |  19 +-
+>  include/linux/mm_types.h |   5 +
+>  kernel/fork.c            |   1 +
+>  mm/init-mm.c             |   1 +
+>  mm/internal.h            |  18 ++
+>  mm/memory.c              | 672 ++++++++++++++++++++++++++++-------------------
+>  mm/mmap.c                | 101 +++++--
+>  8 files changed, 544 insertions(+), 308 deletions(-)
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+
