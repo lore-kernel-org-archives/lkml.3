@@ -1,60 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585AbaJUIwv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 04:52:51 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:42229 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751707AbaJUIws (ORCPT
+	id S1754640AbaJUIyB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 04:54:01 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:45556 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751707AbaJUIx6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 04:52:48 -0400
-Message-ID: <54461EDB.6020100@codeaurora.org>
-Date: Tue, 21 Oct 2014 11:52:43 +0300
-From: Tanya Brokhman <tlinder@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: dedekind1@gmail.com
-CC: ezequiel.garcia@free-electrons.com, linux-mtd@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Richard Weinberger <richard@nod.at>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V5] mtd: ubi: Extend UBI layer debug/messaging capabilities
-References: <1413824221-31235-1-git-send-email-tlinder@codeaurora.org> <1413878186.7906.405.camel@sauron.fi.intel.com>
-In-Reply-To: <1413878186.7906.405.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 21 Oct 2014 04:53:58 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/9] phy: marvell: Add support for 88E3016 FastEthernet PHY
+Date: Tue, 21 Oct 2014 10:53:39 +0200
+Message-Id: <1413881627-21639-2-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1413881627-21639-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1413881627-21639-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/21/2014 10:56 AM, Artem Bityutskiy wrote:
-> On Mon, 2014-10-20 at 19:57 +0300, Tanya Brokhman wrote:
->> If there is more then one UBI device mounted, there is no way to
->> distinguish between messages from different UBI devices.
->> Add device number to all ubi layer message types.
->>
->> The R/O block driver messages were replaced by pr_* since
->> ubi_device structure is not used by it.
->>
->> Signed-off-by: Tanya Brokhman <tlinder@codeaurora.org>
->
-> Pushed to linux-ubifs.git, thanks.
->
-> You did not get indentations right, though, so I amended your patch.
-> Also, some lines were split unnecessarily. My amendments are in the diff
-> below. Please, take this into account for the similar UBIFS patch which
-> you was going to send. Thank you!
+Marvell 88E3016 is a FastEthernet PHY that also can be found in Marvell
+Berlin SoCs as integrated PHY.
 
-Thanks Artem and sorry for the extra work for you. I was trying to find 
-the balance between pleasing checkpatch and your request to have the 
-message in the same line :)
-Will be extra careful about the indentation next time (guess my editor 
-needs re-configuration). Sorry about that.
+Tested-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: "Antoine Ténart" <antoine.tenart@free-electrons.com>
+Cc: Florian Fainelli <f.fainelli@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/net/phy/marvell.c   | 46 +++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/marvell_phy.h |  1 +
+ 2 files changed, 47 insertions(+)
 
-
-Thanks,
-Tanya Brokhman
+diff --git a/drivers/net/phy/marvell.c b/drivers/net/phy/marvell.c
+index bd37e45c89c0..d2b2f2f795d5 100644
+--- a/drivers/net/phy/marvell.c
++++ b/drivers/net/phy/marvell.c
+@@ -118,6 +118,9 @@
+ 
+ #define MII_M1116R_CONTROL_REG_MAC	21
+ 
++#define MII_88E3016_PHY_SPEC_CTRL	0x10
++#define MII_88E3016_DISABLE_SCRAMBLER	0x0200
++#define MII_88E3016_AUTO_MDIX_CROSSOVER	0x0030
+ 
+ MODULE_DESCRIPTION("Marvell PHY driver");
+ MODULE_AUTHOR("Andy Fleming");
+@@ -434,6 +437,25 @@ static int m88e1116r_config_init(struct phy_device *phydev)
+ 	return 0;
+ }
+ 
++static int m88e3016_config_init(struct phy_device *phydev)
++{
++	int reg;
++
++	/* Enable Scrambler and Auto-Crossover */
++	reg = phy_read(phydev, MII_88E3016_PHY_SPEC_CTRL);
++	if (reg < 0)
++		return reg;
++
++	reg &= ~MII_88E3016_DISABLE_SCRAMBLER;
++	reg |= MII_88E3016_AUTO_MDIX_CROSSOVER;
++
++	reg = phy_write(phydev, MII_88E3016_PHY_SPEC_CTRL, reg);
++	if (reg < 0)
++		return reg;
++
++	return 0;
++}
++
+ static int m88e1111_config_init(struct phy_device *phydev)
+ {
+ 	int err;
+@@ -770,6 +792,12 @@ static int marvell_read_status(struct phy_device *phydev)
+ 	return 0;
+ }
+ 
++static int marvell_aneg_done(struct phy_device *phydev)
++{
++	int retval = phy_read(phydev, MII_M1011_PHY_STATUS);
++	return (retval < 0) ? retval : (retval & MII_M1011_PHY_STATUS_RESOLVED);
++}
++
+ static int m88e1121_did_interrupt(struct phy_device *phydev)
+ {
+ 	int imask;
+@@ -1050,6 +1078,23 @@ static struct phy_driver marvell_drivers[] = {
+ 		.suspend = &genphy_suspend,
+ 		.driver = { .owner = THIS_MODULE },
+ 	},
++	{
++		.phy_id = MARVELL_PHY_ID_88E3016,
++		.phy_id_mask = MARVELL_PHY_ID_MASK,
++		.name = "Marvell 88E3016",
++		.features = PHY_BASIC_FEATURES,
++		.flags = PHY_HAS_INTERRUPT,
++		.config_aneg = &genphy_config_aneg,
++		.config_init = &m88e3016_config_init,
++		.aneg_done = &marvell_aneg_done,
++		.read_status = &marvell_read_status,
++		.ack_interrupt = &marvell_ack_interrupt,
++		.config_intr = &marvell_config_intr,
++		.did_interrupt = &m88e1121_did_interrupt,
++		.resume = &genphy_resume,
++		.suspend = &genphy_suspend,
++		.driver = { .owner = THIS_MODULE },
++	},
+ };
+ 
+ static int __init marvell_init(void)
+@@ -1079,6 +1124,7 @@ static struct mdio_device_id __maybe_unused marvell_tbl[] = {
+ 	{ MARVELL_PHY_ID_88E1318S, MARVELL_PHY_ID_MASK },
+ 	{ MARVELL_PHY_ID_88E1116R, MARVELL_PHY_ID_MASK },
+ 	{ MARVELL_PHY_ID_88E1510, MARVELL_PHY_ID_MASK },
++	{ MARVELL_PHY_ID_88E3016, MARVELL_PHY_ID_MASK },
+ 	{ }
+ };
+ 
+diff --git a/include/linux/marvell_phy.h b/include/linux/marvell_phy.h
+index 8e9a029e093d..e6982ac3200d 100644
+--- a/include/linux/marvell_phy.h
++++ b/include/linux/marvell_phy.h
+@@ -16,6 +16,7 @@
+ #define MARVELL_PHY_ID_88E1318S		0x01410e90
+ #define MARVELL_PHY_ID_88E1116R		0x01410e40
+ #define MARVELL_PHY_ID_88E1510		0x01410dd0
++#define MARVELL_PHY_ID_88E3016		0x01410e60
+ 
+ /* struct phy_device dev_flags definitions */
+ #define MARVELL_PHY_M1145_FLAGS_RESISTANCE	0x00000001
 -- 
-Qualcomm Israel, on behalf of Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora 
-Forum, a Linux Foundation Collaborative Project
+2.1.1
+
