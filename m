@@ -1,86 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933275AbaJURKN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 13:10:13 -0400
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:58756 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932913AbaJURKL (ORCPT
+	id S933292AbaJUROn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 13:14:43 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:34002 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932570AbaJUROm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 13:10:11 -0400
-Message-ID: <1413910581.12798.25.camel@misato.fc.hp.com>
-Subject: Re: [PATCH] memory-hotplug: Clear pgdat which is allocated by
- bootmem in try_offline_node()
-From: Toshi Kani <toshi.kani@hp.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, zhenzhang.zhang@huawei.com,
-        wangnan0@huawei.com, tangchen@cn.fujitsu.com, dave.hansen@intel.com,
-        rientjes@google.com
-Date: Tue, 21 Oct 2014 10:56:21 -0600
-In-Reply-To: <5444DE75.6010206@jp.fujitsu.com>
-References: <5444DE75.6010206@jp.fujitsu.com>
+	Tue, 21 Oct 2014 13:14:42 -0400
+X-Originating-IP: 83.155.44.161
+Message-ID: <1413911644.30379.12.camel@hadess.net>
+Subject: Re: A desktop environment[1] kernel wishlist
+From: Bastien Nocera <hadess@hadess.net>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Tue, 21 Oct 2014 19:14:04 +0200
+In-Reply-To: <CANcMJZA=7FNNCrMpz-mC4FaJMKi8hEhqGtO_bv7iJdWVC_GpWA@mail.gmail.com>
+References: <1413881397.30379.7.camel@hadess.net>
+	 <CANcMJZA=7FNNCrMpz-mC4FaJMKi8hEhqGtO_bv7iJdWVC_GpWA@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+X-Mailer: Evolution 3.12.7 (3.12.7-1.fc21) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-10-20 at 19:05 +0900, Yasuaki Ishimatsu wrote:
- :
-> When hot removing memory, pgdat is set to 0 in try_offline_node().
-> But if the pgdat is allocated by bootmem allocator, the clearing
-> step is skipped. And when hot adding the same memory, the uninitialized
-> pgdat is reused. But free_area_init_node() chacks wether pgdat is set
+Hey,
 
-s/chacks/checks
-
-
-> to zero. As a result, free_area_init_node() hits WARN_ON().
+On Tue, 2014-10-21 at 10:04 -0700, John Stultz wrote:
+> On Tue, Oct 21, 2014 at 1:49 AM, Bastien Nocera <hadess@hadess.net> wrote:
+> > Hey,
+> >
+> > GNOME has had discussions with kernel developers in the past, and,
+> > fortunately, in some cases we were able to make headway.
+> >
+> > There are however a number of items that we still don't have solutions
+> > for, items that kernel developers might not realise we'd like to rely
+> > on, or don't know that we'd make use of if merged.
+> >
+> > I've posted this list at:
+> > https://wiki.gnome.org/BastienNocera/KernelWishlist
+> >
+> > Let me know on-list or off-list if you have any comments about those, so
+> > I can update the list.
 > 
-> This patch clears pgdat which is allocated by bootmem allocator
-> in try_offline_node().
+> As for: 'Export of "wake reason" when the system wakes up (rtc alarm,
+> lid open, etc.) and wakealarm (/sys/class/rtc/foo/wakealarm)
+> documentation'
 > 
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> CC: Zhang Zhen <zhenzhang.zhang@huawei.com>
-> CC: Wang Nan <wangnan0@huawei.com>
-> CC: Tang Chen <tangchen@cn.fujitsu.com>
-> CC: Toshi Kani <toshi.kani@hp.com>
-> CC: Dave Hansen <dave.hansen@intel.com>
-> CC: David Rientjes <rientjes@google.com>
-> 
-> ---
->  mm/memory_hotplug.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-> index 29d8693..7649f7c 100644
-> --- a/mm/memory_hotplug.c
-> +++ b/mm/memory_hotplug.c
-> @@ -1943,7 +1943,7 @@ void try_offline_node(int nid)
-> 
->  	if (!PageSlab(pgdat_page) && !PageCompound(pgdat_page))
->  		/* node data is allocated from boot memory */
-> -		return;
-> +		goto out;
+> Can you expand more on the rational for the need here? Is this for UI
+> for power debugging, or something else?
 
-Do we still need this if-statement?  That is, do we have to skip the
-for-loop below even though it checks with is_vmalloc_addr()?
+No, it would be used for automating backups, or implementing
+suspend->hibernation transitions. For example, right before the machine
+suspends, I would schedule it to wake up in a hour. If I get woken up by
+the rtc alarm (and not by the user through a lid open), I might:
+- check that I'm plugged into the AC, it's night, and in the vicinity of
+the server that handles my backups and so backup the system.
+- check whether the battery is low, and hibernate the machine (if it
+supports it, obviously).
 
-Thanks,
--Toshi
+We cannot do that if we can't make out whether the wake-up came from a
+user action, or the alarm we set.
 
-
->  	/* free waittable in each zone */
->  	for (i = 0; i < MAX_NR_ZONES; i++) {
-> @@ -1957,6 +1957,7 @@ void try_offline_node(int nid)
->  			vfree(zone->wait_table);
->  	}
-> 
-> +out:
->  	/*
->  	 * Since there is no way to guarentee the address of pgdat/zone is not
->  	 * on stack of any kernel threads or used by other kernel objects
-
+Cheers
 
