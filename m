@@ -1,133 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932867AbaJUT4R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 15:56:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44637 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932478AbaJUT4P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 15:56:15 -0400
-From: Steve Grubb <sgrubb@redhat.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: Richard Guy Briggs <rgb@redhat.com>, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org, pmoore@redhat.com, ebiederm@xmission.com,
-        serge@hallyn.com, keescook@chromium.org
-Subject: Re: [RFC][PATCH] audit: log join and part events to the read-only multicast log socket
-Date: Tue, 21 Oct 2014 15:56:10 -0400
-Message-ID: <2131923.Byl8GhZuQt@x2>
-Organization: Red Hat
-User-Agent: KMail/4.14.2 (Linux/3.16.6-200.fc20.x86_64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <1412708594.3333.94.camel@localhost>
-References: <30ef5c1ba42b52953e5684a0322975c3f0fadc77.1412706089.git.rgb@redhat.com> <1412708594.3333.94.camel@localhost>
+	id S933051AbaJUT5u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 15:57:50 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:53337 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932478AbaJUT5s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 15:57:48 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Nishanth Menon <nm@ti.com>, Tony Lindgren <tony@atomide.com>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, "Franklin Cooper Jr." <fcooper@ti.com>
+Subject: Re: [PATCH] ARM: dts: DRA7: Add aliases for all serial ports
+Date: Tue, 21 Oct 2014 21:57:35 +0200
+Message-ID: <3461773.MMIsJQMVIu@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1413908295-699-1-git-send-email-nm@ti.com>
+References: <1413908295-699-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:futqVkXYAkYuS+blcp5Tww4IZoufILwfKSQHAdYCQcg
+ uiJ1i3TFF0sTGoGxu7IDz8J03XIihHK1UhIQ6xtGpI4vJi1N16
+ 1L/bfSYt4pHM7i4GnjYCMMKi37MW6+tUYx8390Xu2IpPGgc09j
+ 1IAmTHnmMsz9VNmp4+gwaV/T6Y1FlMhftD39oY94zO+SSZ8K3W
+ hKZylP9wON4p6gjBrWgHWzo8TjJVgfcaZEMQaof2ZB03cSjQ8X
+ v68irnSDQj54izw+AkMZDwN/VqUPmsnrWl5N38xwFPkHl7xPC3
+ YxvDSUocSWXvfz4lMBXkBQ97haiPTVb/llIsAhcMwBguIEyp3H
+ j+woh1lkdgbsuKtJmhFI=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 07, 2014 03:03:14 PM Eric Paris wrote:
-> On Tue, 2014-10-07 at 14:23 -0400, Richard Guy Briggs wrote:
-> > Log the event when a client attempts to connect to the netlink audit
-> > multicast socket, requiring CAP_AUDIT_READ capability, binding to the
-> > AUDIT_NLGRP_READLOG group.  Log the disconnect too.
-> >
-> > 
-> >
-> > Sample output:
-> > time->Tue Oct  7 14:15:19 2014
-> > type=UNKNOWN[1348] msg=audit(1412705719.316:117): auid=0 uid=0 gid=0 ses=1
-> > pid=3552 comm="audit-multicast"
-> > exe="/home/rgb/rgb/git/audit-multicast-listen/audit-multicast-listen"
-> > subj=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023 group=0
-> > op=connect res=1>
-> > 
-> >
-> > Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-> > ---
-> > For some reason unbind isn't being called on disconnect.  I suspect
-> > missing
-> > plumbing in netlink.  Investigation needed...
-> >
-> > 
-> >  include/uapi/linux/audit.h |    1 +
-> >  kernel/audit.c             |   46
-> >++++++++++++++++++++++++++++++++++++++++++- 2 files changed, 45
-> >insertions(+), 2 deletions(-)
-> > 
-> >
-> > diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
-> > index 4d100c8..7fa6e8f 100644
-> > --- a/include/uapi/linux/audit.h
-> > +++ b/include/uapi/linux/audit.h
-> > @@ -110,6 +110,7 @@
-> >
-> >  #define AUDIT_SECCOMP                1326    /* Secure Computing event */
-> >  #define AUDIT_PROCTITLE              1327    /* Proctitle emit event */
-> >  #define AUDIT_FEATURE_CHANGE 1328    /* audit log listing feature changes
-> >*/>
-> > +#define AUDIT_EVENT_LISTENER 1348    /* task joined multicast read socket
-> > */>
-> >  
-> >  #define AUDIT_AVC            1400    /* SE Linux avc denial or grant */
-> >  #define AUDIT_SELINUX_ERR    1401    /* Internal SE Linux Errors */
-> >
-> > diff --git a/kernel/audit.c b/kernel/audit.c
-> > index 53bb39b..74c81a7 100644
-> > --- a/kernel/audit.c
-> > +++ b/kernel/audit.c
-> > @@ -1108,13 +1108,54 @@ static void audit_receive(struct sk_buff  *skb)
-> >
-> >       mutex_unlock(&audit_cmd_mutex);
-> >  }
-> >  
-> >
-> > +static void audit_log_bind(int group, char *op, int err)
-> > +{
-> > +     struct audit_buffer *ab;
-> > +     char comm[sizeof(current->comm)];
-> > +     struct mm_struct *mm = current->mm;
-> > +
-> > +     ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_EVENT_LISTENER);
-> > +     if (!ab)
-> > +             return;
-> > +
-> > +     audit_log_format(ab, "auid=%d",
-> > +                     from_kuid(&init_user_ns,
-> > audit_get_loginuid(current))); +     audit_log_format(ab, " uid=%d",
-> > +                      from_kuid(&init_user_ns, current_uid()));
-> > +     audit_log_format(ab, " gid=%d",
-> > +                      from_kgid(&init_user_ns, current_gid()));
-> > +     audit_log_format(ab, " ses=%d", audit_get_sessionid(current));
-> > +     audit_log_format(ab, " pid=%d", task_pid_nr(current));
-> > +     audit_log_format(ab, " comm=");
-> > +     audit_log_untrustedstring(ab, get_task_comm(comm, current));
-> > +     if (mm) {
-> > +             down_read(&mm->mmap_sem);
-> > +             if (mm->exe_file)
-> > +                     audit_log_d_path(ab, " exe=",
-> > &mm->exe_file->f_path);
-> > +             up_read(&mm->mmap_sem);
-> > +     } else 
-> > +             audit_log_format(ab, " exe=(null)");
-> > +     audit_log_task_context(ab); /* subj= */
+On Tuesday 21 October 2014 11:18:15 Nishanth Menon wrote:
+> Add serial port aliases for consoles > 6.
 > 
-> super crazy yuck.  audit_log_task_info() ??
-
-audit_log_task_info logs too much information for typical use. There are times 
-when you might want to know everything about what's connecting. But in this 
-case, we don't need anything about groups, saved uids, fsuid, or ppid.
-
-Its a shame we don't have a audit_log_task_info_light function which only 
-records:
-
-pid= auid= uid= subj= comm= exe=  ses= tty=
-
-
-
-> > +     audit_log_format(ab, " group=%d", group);
+> Signed-off-by: Nishanth Menon <nm@ti.com>
+> ---
+>  arch/arm/boot/dts/dra7.dtsi |    4 ++++
+>  1 file changed, 4 insertions(+)
 > 
-> group seems like too easily confused a name.
+> diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+> index 9cc9843..208dd83 100644
+> --- a/arch/arm/boot/dts/dra7.dtsi
+> +++ b/arch/arm/boot/dts/dra7.dtsi
+> @@ -34,6 +34,10 @@
+>                 serial3 = &uart4;
+>                 serial4 = &uart5;
+>                 serial5 = &uart6;
+> +               serial6 = &uart7;
+> +               serial7 = &uart8;
+> +               serial8 = &uart9;
+> +               serial9 = &uart10;
+> 
 
-nlnk-grp is better if its what I think it is.
+I think this was wrong to start with: The aliases should be in the per-board
+.dts file and only list the ones that are actually connected to the outside.
 
--Steve
+Otherwise the numbering won't match what's written on the board.
+
+	Arnd
