@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754884AbaJUJXA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 05:23:00 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:42179 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754048AbaJUJWx (ORCPT
+	id S1755071AbaJUJYd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 05:24:33 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:54365 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754759AbaJUJW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 05:22:53 -0400
+	Tue, 21 Oct 2014 05:22:58 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
@@ -14,72 +14,22 @@ Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
 	<antoine.tenart@free-electrons.com>,
         linux-mmc@vger.kernel.org, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND 00/12] SDHCI PXA cleanup and clocks
-Date: Tue, 21 Oct 2014 11:22:32 +0200
-Message-Id: <1413883364-681-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH RESEND 06/12] mmc: sdhci-pxav3: Move I/O clock to private data
+Date: Tue, 21 Oct 2014 11:22:38 +0200
+Message-Id: <1413883364-681-7-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1413883364-681-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1413883364-681-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set does a little cleanup on PXA v2/v3 drivers and
-adds an additional, optional core clock to v3 driver that is
-required on Marvell Berlin BG2 and BG2CD SoCs.
+As we are using references to the I/O clock throughout the driver,
+move it to the private data. Also, in preparation for core clock,
+rename it to clk_io.
 
-This is a resend of the patches are rebased on v3.18-rc1. As usual
-a branch with the patches applied on top of v3.18-rc1 can be found at
-
-git://git.infradead.org/users/hesselba/linux-berlin.git devel/bg2-bg2cd-sdhci-v1
-
-Patches 1-9 should go through Chris' mmc tree, I'll pick up the DT
-patches 10-12.
-
-Patch 1 removes the unused private driver data from pxav2 driver.
-
-Patch 2 is a fix for pxav3 driver to honor MMC_DDR52 timing on
-uhs signaling. AFAICS, up to now there was no user affected by it
-but Sony NSZ-GS7 will be.
-
-Patch 3 moves struct sdhci_pxa from global include to the only
-driver using it now. Patch 4 removes the unused clk_enable from
-it.
-
-Patch 5 removes some wrong and unnecessary checks on struct clk
-from v3 driver. Patch 6 moves the struct clk for I/O clock to
-the private driver data, while Patch 7 prepares the driver for
-named clocks.
-
-Patch 8 adds support for an additional, optional core clock that
-is now also documented in the binding with Patch 9.
-
-Patches 10-12 finally add corresponding sdhci nodes to berlin2
-and berlin2cd, Chromecast and NSZ-GS7 DT files.
-
-Sebastian Hesselbarth (12):
-  mmc: sdhci-pxav2: Drop unused struct sdhci_pxa
-  mmc: sdhci-pxav3: Respect MMC_DDR52 timing on uhs signaling
-  mmc: sdhci-pxav3: Move private driver data to driver source
-  mmc: sdhci-pxav3: Remove unused clk_enable from sdhci_pxa
-  mmc: sdhci-pxav3: Remove checks for mandatory host clock
-  mmc: sdhci-pxav3: Move I/O clock to private data
-  mmc: sdhci-pxav3: Try to get named I/O clock first
-  mmc: sdhci-pxav3: Get optional core clock
-  mmc: sdhci-pxav3: Document clocks and additional clock-names property
-  ARM: dts: berlin: Add SDHCI controller nodes to BG2/BG2CD
-  ARM: dts: berlin: Enable WiFi on Google Chromecast
-  ARM: dts: berlin: Enable eMMC on Sony NSZ-GS7
-
- .../devicetree/bindings/mmc/sdhci-pxa.txt          |  7 +++
- arch/arm/boot/dts/berlin2-sony-nsz-gs7.dts         |  7 +++
- arch/arm/boot/dts/berlin2.dtsi                     | 34 ++++++++++++
- arch/arm/boot/dts/berlin2cd-google-chromecast.dts  |  9 ++++
- arch/arm/boot/dts/berlin2cd.dtsi                   |  9 ++++
- drivers/mmc/host/sdhci-pxav2.c                     | 15 ++----
- drivers/mmc/host/sdhci-pxav3.c                     | 60 ++++++++++++++--------
- include/linux/platform_data/pxa_sdhci.h            |  5 --
- 8 files changed, 108 insertions(+), 38 deletions(-)
-
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
 Cc: Chris Ball <chris@printf.net>
 Cc: Ulf Hansson <ulf.hansson@linaro.org>
@@ -88,6 +38,104 @@ Cc: linux-mmc@vger.kernel.org
 Cc: devicetree@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
+---
+ drivers/mmc/host/sdhci-pxav3.c | 24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/mmc/host/sdhci-pxav3.c b/drivers/mmc/host/sdhci-pxav3.c
+index e52bbbb09d88..a34a589670e6 100644
+--- a/drivers/mmc/host/sdhci-pxav3.c
++++ b/drivers/mmc/host/sdhci-pxav3.c
+@@ -59,6 +59,7 @@
+ #define SDCE_MISC_INT_EN	(1<<1)
+ 
+ struct sdhci_pxa {
++	struct clk *clk_io;
+ 	u8	power_mode;
+ };
+ 
+@@ -288,9 +289,7 @@ static int sdhci_pxav3_probe(struct platform_device *pdev)
+ 	struct sdhci_host *host = NULL;
+ 	struct sdhci_pxa *pxa = NULL;
+ 	const struct of_device_id *match;
+-
+ 	int ret;
+-	struct clk *clk;
+ 
+ 	pxa = devm_kzalloc(&pdev->dev, sizeof(struct sdhci_pxa), GFP_KERNEL);
+ 	if (!pxa)
+@@ -310,14 +309,14 @@ static int sdhci_pxav3_probe(struct platform_device *pdev)
+ 	pltfm_host = sdhci_priv(host);
+ 	pltfm_host->priv = pxa;
+ 
+-	clk = devm_clk_get(dev, NULL);
+-	if (IS_ERR(clk)) {
++	pxa->clk_io = devm_clk_get(dev, NULL);
++	if (IS_ERR(pxa->clk_io)) {
+ 		dev_err(dev, "failed to get io clock\n");
+-		ret = PTR_ERR(clk);
++		ret = PTR_ERR(pxa->clk_io);
+ 		goto err_clk_get;
+ 	}
+-	pltfm_host->clk = clk;
+-	clk_prepare_enable(clk);
++	pltfm_host->clk = pxa->clk_io;
++	clk_prepare_enable(pxa->clk_io);
+ 
+ 	/* enable 1/8V DDR capable */
+ 	host->mmc->caps |= MMC_CAP_1_8V_DDR;
+@@ -390,7 +389,7 @@ err_add_host:
+ 	pm_runtime_disable(&pdev->dev);
+ err_of_parse:
+ err_cd_req:
+-	clk_disable_unprepare(clk);
++	clk_disable_unprepare(pxa->clk_io);
+ err_clk_get:
+ err_mbus_win:
+ 	sdhci_pltfm_free(pdev);
+@@ -401,12 +400,13 @@ static int sdhci_pxav3_remove(struct platform_device *pdev)
+ {
+ 	struct sdhci_host *host = platform_get_drvdata(pdev);
+ 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
++	struct sdhci_pxa *pxa = pltfm_host->priv;
+ 
+ 	pm_runtime_get_sync(&pdev->dev);
+ 	sdhci_remove_host(host, 1);
+ 	pm_runtime_disable(&pdev->dev);
+ 
+-	clk_disable_unprepare(pltfm_host->clk);
++	clk_disable_unprepare(pxa->clk_io);
+ 
+ 	sdhci_pltfm_free(pdev);
+ 
+@@ -446,13 +446,14 @@ static int sdhci_pxav3_runtime_suspend(struct device *dev)
+ {
+ 	struct sdhci_host *host = dev_get_drvdata(dev);
+ 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
++	struct sdhci_pxa *pxa = pltfm_host->priv;
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&host->lock, flags);
+ 	host->runtime_suspended = true;
+ 	spin_unlock_irqrestore(&host->lock, flags);
+ 
+-	clk_disable_unprepare(pltfm_host->clk);
++	clk_disable_unprepare(pxa->clk_io);
+ 
+ 	return 0;
+ }
+@@ -461,9 +462,10 @@ static int sdhci_pxav3_runtime_resume(struct device *dev)
+ {
+ 	struct sdhci_host *host = dev_get_drvdata(dev);
+ 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
++	struct sdhci_pxa *pxa = pltfm_host->priv;
+ 	unsigned long flags;
+ 
+-	clk_prepare_enable(pltfm_host->clk);
++	clk_prepare_enable(pxa->clk_io);
+ 
+ 	spin_lock_irqsave(&host->lock, flags);
+ 	host->runtime_suspended = false;
 -- 
 2.1.1
 
