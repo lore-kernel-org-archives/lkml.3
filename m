@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754471AbaJUJWY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 05:22:24 -0400
-Received: from [82.79.55.74] ([82.79.55.74]:40592 "EHLO
-	server-servicii.uvvgsm.ro" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751091AbaJUJWX (ORCPT
+	id S1754624AbaJUJWs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 05:22:48 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57980 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752877AbaJUJWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 05:22:23 -0400
-X-Greylist: delayed 3983 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Oct 2014 05:22:22 EDT
-Message-ID: <d17386bc7e86b85c62f4c77a3099092c.squirrel@82.79.55.74>
-Date: Tue, 21 Oct 2014 13:08:18 +0300 (EEST)
-Subject: Claims Requirements
-From: "British Online Co-Ordinators" <info@bnl.co.uk>
-Reply-To: ukldraw_1@yahoo.co.uk
-User-Agent: SquirrelMail/1.4.15
+	Tue, 21 Oct 2014 05:22:47 -0400
+Date: Tue, 21 Oct 2014 11:22:40 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Bjorn Andersson <bjorn@kryo.se>
+cc: Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>
+Subject: Re: [PATCH] genirq: Introduce irq_read_line()
+In-Reply-To: <CAJAp7OgGPZZuCgC8iUiW2jrEVubK=KCATxd6eazdT1x1sSrffg@mail.gmail.com>
+Message-ID: <alpine.DEB.2.11.1410211120430.5308@nanos>
+References: <1408479811-26088-1-git-send-email-bjorn.andersson@sonymobile.com> <CAJAp7OgGPZZuCgC8iUiW2jrEVubK=KCATxd6eazdT1x1sSrffg@mail.gmail.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1,000,000 (British Pounds)  held on the  20th of October 2014 in
-London(United Kingdom).The selection process was carried out through
-random selection in Our computerized email selection system (ESS) London
-UK. For claims,
+On Thu, 4 Sep 2014, Bjorn Andersson wrote:
 
-Fill the below:
+> On Tue, Aug 19, 2014 at 1:23 PM, Bjorn Andersson
+> <bjorn.andersson@sonymobile.com> wrote:
+> > Introduce the irq_read_line() function to allow device drivers to read
+> > the current logical state of an input when the hardware only exposes
+> > this through status bits in the interrupt controller.
+> >
+> > The new function is backed by a new callback function in the irq_chip -
+> > irq_read_line() - that can be implemented by irq_chips that owns such
+> > status bits.
+> >
+> > Based on rfc patch from April 2011 by Abhijeet.
+> >
+> > Cc: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+> > Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+> 
+> ping?
 
-1.Full Name
-2.Full Address
-3.Marital Status
-4.Occupation
-5.Age
-6.Sex
-7.Nationality
-8.Country Of Residence
-9.Telephone Number
+Sorry, slipped through the cracks. I was talking about this to Marc
+last week and he needs it for yet another reason. He had some thoughts
+about the state representation, so I wait for him to comment.
 
-Agent Name: Mr. Fred Peters
-Tel: +447024077948
-Email: mr.fredpetersclaimsagent037@y7mail.com
+Thanks,
+
+	tglx
 
