@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755558AbaJUMwu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 08:52:50 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:39730 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755274AbaJUMws (ORCPT
+	id S1755579AbaJUMww (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 08:52:52 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:36046 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755524AbaJUMwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 08:52:48 -0400
-Date: Tue, 21 Oct 2014 14:52:40 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: Markos Chandras <Markos.Chandras@imgtec.com>
-Cc: linux-mips@linux-mips.org, Jonathan Corbet <corbet@lwn.net>,
-        netdev@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Foley <pefoley2@pefoley.com>
-Subject: Re: [PATCH] Documentation: ptp: Fix build failure on MIPS cross
- builds
-Message-ID: <20141021125240.GB16479@netboy>
-References: <1413794538-28465-1-git-send-email-markos.chandras@imgtec.com>
- <20141021110724.GA16479@netboy>
- <54464D6A.5000501@imgtec.com>
+	Tue, 21 Oct 2014 08:52:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54464D6A.5000501@imgtec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141020092005.GD4370@arm.com>
+References: <6106CAF835F351419ADA79E4836E6EC71B6A53C826@SC-VEXCH4.marvell.com>
+	<9034CBD80F070943B59700D7F8149ED9A0875730@SC-VEXCH4.marvell.com>
+	<20140513184503.GF16388@arm.com>
+	<9034CBD80F070943B59700D7F8149ED9A087573F@SC-VEXCH4.marvell.com>
+	<537337F3.4080300@arm.com>
+	<9034CBD80F070943B59700D7F8149ED9A0875776@SC-VEXCH4.marvell.com>
+	<9034CBD80F070943B59700D7F8149ED90182308172@SC-VEXCH4.marvell.com>
+	<20140703175706.GI17372@arm.com>
+	<9034CBD80F070943B59700D7F8149ED9024EB81CD8@SC-VEXCH4.marvell.com>
+	<5444D2E0.9070205@arm.com>
+	<20141020092005.GD4370@arm.com>
+Date: Tue, 21 Oct 2014 14:52:49 +0200
+Message-ID: <CANLsYkziaqnVkOGpnzEHLiS35JHc2Sd_yTz_ruWpwE=JMZyvxw@mail.gmail.com>
+Subject: Re: [PATCH v4] ARM: perf: save/restore pmu registers in pm notifier
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Sudeep Holla <Sudeep.Holla@arm.com>, Neil Zhang <zhangwm@marvell.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(adding Peter Foley to CC ...)
+On 20 October 2014 11:20, Will Deacon <will.deacon@arm.com> wrote:
+> On Mon, Oct 20, 2014 at 10:16:16AM +0100, Sudeep Holla wrote:
+>> On 20/10/14 09:46, Neil Zhang wrote:
+>> > Will, I prefer to check always-on field under PMU node to check
+>> > whether we need Save/restore them.
+>> >
+>> But how do you handle it for different idle states. e.g. if CPU is in
+>> retention, PMU's *might be* retained. Also I don't think PMUs will be
+>> placed in "always-on" power domain like timers. So using "always-on"
+>> sounds incorrect to me.
+>
+> Adding Mathieu to CC, since I spoke to him at LPC about this and he was
+> talking about implementing proper PM domain descriptions for coresight
+> components.
+>
+> Will
 
-On Tue, Oct 21, 2014 at 01:11:22PM +0100, Markos Chandras wrote:
-> On 10/21/2014 12:07 PM, Richard Cochran wrote:
-> > On Mon, Oct 20, 2014 at 09:42:18AM +0100, Markos Chandras wrote:
-> >> diff --git a/Documentation/ptp/Makefile b/Documentation/ptp/Makefile
-> >> index 293d6c09a11f..397c1cd2eda7 100644
-> >> --- a/Documentation/ptp/Makefile
-> >> +++ b/Documentation/ptp/Makefile
-> >> @@ -1,5 +1,15 @@
-> >>  # List of programs to build
-> >> +ifndef CROSS_COMPILE
-> >>  hostprogs-y := testptp
-> >> +else
-> >> +# MIPS system calls are defined based on the -mabi that is passed
-> >> +# to the toolchain which may or may not be a valid option
-> >> +# for the host toolchain. So disable testptp if target architecture
-> >> +# is MIPS but the host isn't.
-> >> +ifndef CONFIG_MIPS
-> >> +hostprogs-y := testptp
-> >> +endif
-> >> +endif
-> > 
-> > It seems like a shame to simply give up and not compile this at all.
-> > Is there no way to correctly cross compile this for MIPS?
-> > 
-> > Thanks,
-> > Richard
-> > 
-> 
-> As far as I can see you don't cross-compile the file. You use the host
-> toolchain.
-
-Look at Documentation/ptp/testptp.mk. There I do use $CROSS_COMPILE.
-
-> There is no clean way to build it for host if you have your
-> kernel configured for MIPS. Perhaps maybe you could define
-> __MIPS_SIM_{ABI64, ABI32, NABI32} in the gcc command line (-D...) but
-> this is a bit ugly. Or maybe use the host headers instead of the ones in
-> the kernel source.
-
-Your patch is for the file, Documentation/ptp/Makefile. I did not
-write that file. Maybe Peter knows how to fix it?
-
-Thanks,
-Richard
-
+Will is correct - it's in the pipeline now.  Just hang tight.
