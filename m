@@ -1,53 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932449AbaJUL7f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 07:59:35 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:41037 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932283AbaJUL7d (ORCPT
+	id S932462AbaJUL74 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 07:59:56 -0400
+Received: from smtp-vbr12.xs4all.nl ([194.109.24.32]:4070 "EHLO
+	smtp-vbr12.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932125AbaJUL7z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 07:59:33 -0400
-Date: Tue, 21 Oct 2014 13:59:28 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ftracetest: add kprobes on ftrace testcase
-Message-ID: <20141021115928.GB4161@osiris>
-References: <1413802323-5297-1-git-send-email-heiko.carstens@de.ibm.com>
- <1413802323-5297-2-git-send-email-heiko.carstens@de.ibm.com>
- <54462581.4050505@hitachi.com>
+	Tue, 21 Oct 2014 07:59:55 -0400
+Message-ID: <54464A83.7090706@xs4all.nl>
+Date: Tue, 21 Oct 2014 13:58:59 +0200
+From: Hans Verkuil <hverkuil@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54462581.4050505@hitachi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102111-0009-0000-0000-0000019F4F3C
+To: Takashi Iwai <tiwai@suse.de>
+CC: Shuah Khan <shuahkh@osg.samsung.com>, m.chehab@samsung.com,
+        akpm@linux-foundation.org, gregkh@linuxfoundation.org, crope@iki.fi,
+        olebowle@gmx.com, dheitmueller@kernellabs.com,
+        sakari.ailus@linux.intel.com, laurent.pinchart@ideasonboard.com,
+        perex@perex.cz, prabhakar.csengg@gmail.com, tim.gardner@canonical.com,
+        linux@eikelenboom.it, linux-media@vger.kernel.org,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/6] media: add media token device resource framework
+References: <cover.1413246370.git.shuahkh@osg.samsung.com>	<c8bae1d475b1086302fcb83bc463ec01437c3f95.1413246372.git.shuahkh@osg.samsung.com>	<5446396B.9010709@xs4all.nl> <s5h1tq1ljxj.wl-tiwai@suse.de>
+In-Reply-To: <s5h1tq1ljxj.wl-tiwai@suse.de>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 06:21:05PM +0900, Masami Hiramatsu wrote:
-> (2014/10/20 19:52), Heiko Carstens wrote:
-> > Add a kprobes on ftrace testcase. The testcase verifies that
-> > - enabling and disabling function tracing works on a function which
-> >   already contains a dynamic kprobe
-> > - adding and removing a dynamic kprobe works on a function which is
-> >   already enabled for function tracing
-> > 
-> 
-> Looks good to me.
-> 
-> > Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-> 
-> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Hi Masami,
 
-thanks! How should these two patches go upstream?
+On 10/21/2014 01:51 PM, Takashi Iwai wrote:
+> At Tue, 21 Oct 2014 12:46:03 +0200,
+> Hans Verkuil wrote:
+>>
+>> Hi Shuah,
+>>
+>> As promised, here is my review for this patch series.
+>>
+>> On 10/14/2014 04:58 PM, Shuah Khan wrote:
+>>> Add media token device resource framework to allow sharing
+>>> resources such as tuner, dma, audio etc. across media drivers
+>>> and non-media sound drivers that control media hardware. The
+>>> Media token resource is created at the main struct device that
+>>> is common to all drivers that claim various pieces of the main
+>>> media device, which allows them to find the resource using the
+>>> main struct device. As an example, digital, analog, and
+>>> snd-usb-audio drivers can use the media token resource API
+>>> using the main struct device for the interface the media device
+>>> is attached to.
+>>>
+>>> A shared media tokens resource is created using devres framework
+>>> for drivers to find and lock/unlock. Creating a shared devres
+>>> helps avoid creating data structure dependencies between drivers.
+>>> This media token resource contains media token for tuner, and
+>>> audio. When tuner token is requested, audio token is issued.
+>>
+>> Did you mean: 'tuner token is issued' instead of audio token?
+>>
+>> I also have the same question as Takashi: why do we have an audio
+>> token in the first place? While you are streaming audio over alsa
+>> the underlying tuner must be marked as being in use. It's all about
+>> the tuner, since that's the resource that is being shared, not about
+>> audio as such.
+>>
+>> For the remainder of my review I will ignore the audio-related code
+>> and concentrate only on the tuner part.
+>>
+>>> Subsequent token (for tuner and audio) gets from the same task
+>>> and task in the same tgid succeed. This allows applications that
+>>> make multiple v4l2 ioctls to work with the first call acquiring
+>>> the token and applications that create separate threads to handle
+>>> video and audio functions.
+>>>
+>>> Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
+>>> ---
+>>>    MAINTAINERS                  |    2 +
+>>>    include/linux/media_tknres.h |   50 +++++++++
+>>>    lib/Makefile                 |    2 +
+>>>    lib/media_tknres.c           |  237 ++++++++++++++++++++++++++++++++++++++++++
+>>
+>> I am still not convinced myself that this should be a generic API.
+>> The only reason we need it today is for sharing tuners. Which is almost
+>> a purely media thing with USB audio as the single non-media driver that
+>> will be affected. Today I see no use case outside of tuners. I would
+>> probably want to keep this inside drivers/media.
+>>
+>> If this is going to be expanded it can always be moved to lib later.
+>
+> Well, my argument is that it should be more generic if it were
+> intended to be put in lib.  It'd be fine to put into drivers/media,
+> but this code snippet must be a separate module.  Otherwise usb-audio
+> would grab the whole media stuff even if not needed at all.
 
-Thanks,
-Heiko
+Certainly.
 
+>
+> (snip)
+>> I also discovered that you are missing MODULE_AUTHOR, MODULE_DESCRIPTION
+>> and above all MODULE_LICENSE. Without the MODULE_LICENSE it won't link this
+>> module to the GPL devres_* functions. It took me some time to figure that
+>> out.
+>
+> It was a code in lib, so it cannot be a module at all :)
+
+Well, it depends on CONFIG_MEDIA_SUPPORT which is 'm' in my case, so it
+compiles as a module :-)
+
+Regards,
+
+	Hans
