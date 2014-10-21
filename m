@@ -1,155 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932714AbaJUNVL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 09:21:11 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:56684 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932527AbaJUNUK (ORCPT
+	id S932737AbaJUNWA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 09:22:00 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:64442 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932518AbaJUNV6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 09:20:10 -0400
-X-AuditID: cbfec7f5-b7f956d000005ed7-98-54465d87b716
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v3 2/4] regulator: max77686: Implement suspend disable for some
- LDOs
-Date: Tue, 21 Oct 2014 15:19:53 +0200
-Message-id: <1413897595-28752-3-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1413897595-28752-1-git-send-email-k.kozlowski@samsung.com>
-References: <1413897595-28752-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBLMWRmVeSWpSXmKPExsVy+t/xy7rtsW4hBl9P6FhsnLGe1WLSugNM
-	FlMfPmGzuP7lOavF/CPnWC2O/i6weP3C0KJ3wVU2i7NNb9gt7n89ymjx7UoHk8Wmx9dYLS7v
-	msNmMeP8PiaL25d5LdYeuctucbqb1UHQo6W5h83j7/PrLB5/V71g9tg56y67x6ZVnWwed67t
-	YfOYdzLQY/OSeo++LasYPT5vkgvgiuKySUnNySxLLdK3S+DK2L11DVPBQsWKyas2MzYwLpPp
-	YuTkkBAwkbjXeIsVwhaTuHBvPRuILSSwlFHi7UQOCLuPSeJAN1icTcBYYvPyJWC2iEAns8SX
-	7wFdjFwczAKrmSR+XjnF3MXIwSEsECbxY442SA2LgKrE2RXrGUFsXgF3ibvLmtkgdslJnDw2
-	GWwvp4CHxO/dexlBWoWAaq59Tp3AyLuAkWEVo2hqaXJBcVJ6rpFecWJucWleul5yfu4mRkho
-	f93BuPSY1SFGAQ5GJR7eiCWuIUKsiWXFlbmHGCU4mJVEeHOF3UKEeFMSK6tSi/Lji0pzUosP
-	MTJxcEo1MB64zHh17Vu7DLlrL/NnG7zY+X6ajWtq1+eso18TFxxND7T2yFm/ojL01lQTbtNT
-	yzjZWlTeuRavW/vAW89Sz0HRUrTmbUqDabLueecJO6ssHTusmfZ+n81z/NfPx9wawaK8XNdj
-	vhiu3/04+NemjBbHVpuMf6svVs2bYi11cOHTWzlFyYeYs5RYijMSDbWYi4oTAZHOr3BLAgAA
+	Tue, 21 Oct 2014 09:21:58 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        David Rientjes <rientjes@google.com>, Tejun Heo <tj@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 3/4] OOM, PM: OOM killed task shouldn't escape PM suspend
+Date: Tue, 21 Oct 2014 15:42:23 +0200
+Message-ID: <2156351.pWp6MNRoWm@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141021131445.GC9415@dhcp22.suse.cz>
+References: <1413876435-11720-1-git-send-email-mhocko@suse.cz> <3778374.avm26S62SZ@vostro.rjw.lan> <20141021131445.GC9415@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some LDOs of Maxim 77686 PMIC support disabling during system suspend
-(LDO{2,6,7,8,10,11,12,14,15,16}). This was already implemented as part
-of set_suspend_mode function. In that case the mode was one of:
- - disable,
- - normal mode,
- - low power mode.
-However there are no bindings for setting the mode during suspend.
+On Tuesday, October 21, 2014 03:14:45 PM Michal Hocko wrote:
+> On Tue 21-10-14 14:09:27, Rafael J. Wysocki wrote:
+> [...]
+> > > @@ -131,12 +132,40 @@ int freeze_processes(void)
+> > >  
+> > >  	printk("Freezing user space processes ... ");
+> > >  	pm_freezing = true;
+> > > +	oom_kills_saved = oom_kills_count();
+> > >  	error = try_to_freeze_tasks(true);
+> > >  	if (!error) {
+> > > -		printk("done.");
+> > >  		__usermodehelper_set_disable_depth(UMH_DISABLED);
+> > >  		oom_killer_disable();
+> > > +
+> > > +		/*
+> > > +		 * There might have been an OOM kill while we were
+> > > +		 * freezing tasks and the killed task might be still
+> > > +		 * on the way out so we have to double check for race.
+> > > +		 */
+> > > +		if (oom_kills_count() != oom_kills_saved) {
+> > > +			struct task_struct *g, *p;
+> > > +
+> > > +			read_lock(&tasklist_lock);
+> > > +			for_each_process_thread(g, p) {
+> > > +				if (p == current || freezer_should_skip(p) ||
+> > > +				    frozen(p))
+> > > +					continue;
+> > > +				error = -EBUSY;
+> > > +				goto out_loop;
+> > > +			}
+> > > +out_loop:
+> > 
+> > Well, it looks like this will work here too:
+> > 
+> > 			for_each_process_thread(g, p)
+> > 				if (p != current && !frozen(p) &&
+> > 				    !freezer_should_skip(p)) {
+> > 					error = -EBUSY;
+> > 					break;
+> > 				}
+> > 
+> > or I am helplessly misreading the code.
+> 
+> break will not work because for_each_process_thread is a double loop.
 
-Add suspend disable for LDO regulators supporting this to the existing
-max77686_buck_set_suspend_disable() function. This helps reducing
-energy consumption during system sleep.
+I see.  In that case I'd do:
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
----
- drivers/regulator/max77686.c | 43 +++++++++++++++++++++++++++++++++++--------
- 1 file changed, 35 insertions(+), 8 deletions(-)
+                        for_each_process_thread(g, p)
+                                if (p != current && !frozen(p) &&
+                                    !freezer_should_skip(p)) {
 
-diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
-index 3d0922051488..81f4b69adc82 100644
---- a/drivers/regulator/max77686.c
-+++ b/drivers/regulator/max77686.c
-@@ -87,18 +87,31 @@ struct max77686_data {
- 	unsigned int opmode[MAX77686_REGULATORS];
- };
- 
--/* Some BUCKS supports Normal[ON/OFF] mode during suspend */
--static int max77686_buck_set_suspend_disable(struct regulator_dev *rdev)
-+/* Some BUCKs and LDOs supports Normal[ON/OFF] mode during suspend */
-+static int max77686_set_suspend_disable(struct regulator_dev *rdev)
- {
- 	unsigned int val;
- 	struct max77686_data *max77686 = rdev_get_drvdata(rdev);
- 	int ret, id = rdev_get_id(rdev);
- 
--	if (id == MAX77686_BUCK1)
-+	switch (id) {
-+	case MAX77686_BUCK1:
- 		val = MAX77686_BUCK_OFF_PWRREQ;
--	else
--		val = MAX77686_BUCK_OFF_PWRREQ
--			<< MAX77686_OPMODE_BUCK234_SHIFT;
-+		break;
-+	case MAX77686_BUCK2 ...	MAX77686_BUCK4:
-+		val = MAX77686_BUCK_OFF_PWRREQ << MAX77686_OPMODE_BUCK234_SHIFT;
-+		break;
-+	case MAX77686_LDO2:
-+	case MAX77686_LDO6 ... MAX77686_LDO8:
-+	case MAX77686_LDO10 ... MAX77686_LDO12:
-+	case MAX77686_LDO14 ... MAX77686_LDO16:
-+		val = MAX77686_LDO_OFF_PWRREQ << MAX77686_OPMODE_SHIFT;
-+		break;
-+	default:
-+		pr_warn("%s: regulator_suspend_disable not supported\n",
-+			rdev->desc->name);
-+		return -EINVAL;
-+	}
- 
- 	ret = regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
- 				 rdev->desc->enable_mask, val);
-@@ -180,6 +193,16 @@ static int max77686_enable(struct regulator_dev *rdev)
- {
- 	struct max77686_data *max77686 = rdev_get_drvdata(rdev);
- 
-+	/*
-+	 * One enable function is used for LDO and bucks. Assuming
-+	 * the same values are used for enable registers.
-+	 */
-+	BUILD_BUG_ON(MAX77686_LDO_OFF_PWRREQ != MAX77686_BUCK_OFF_PWRREQ);
-+	BUILD_BUG_ON(MAX77686_LDO_NORMAL != MAX77686_BUCK_NORMAL);
-+
-+	if (max77686->opmode[rdev_get_id(rdev)] == MAX77686_LDO_OFF_PWRREQ)
-+		max77686->opmode[rdev_get_id(rdev)] = MAX77686_LDO_NORMAL;
-+
- 	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
- 				  rdev->desc->enable_mask,
- 				  max77686->opmode[rdev_get_id(rdev)]);
-@@ -232,6 +255,8 @@ static struct regulator_ops max77686_ldo_ops = {
- 	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
- 	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
- 	.set_suspend_mode	= max77686_ldo_set_suspend_mode,
-+	.set_suspend_disable	= max77686_set_suspend_disable,
-+	.set_suspend_enable	= max77686_enable,
- };
- 
- static struct regulator_ops max77686_buck1_ops = {
-@@ -243,7 +268,8 @@ static struct regulator_ops max77686_buck1_ops = {
- 	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
- 	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
- 	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
--	.set_suspend_disable	= max77686_buck_set_suspend_disable,
-+	.set_suspend_disable	= max77686_set_suspend_disable,
-+	.set_suspend_enable	= max77686_enable,
- };
- 
- static struct regulator_ops max77686_buck_dvs_ops = {
-@@ -256,7 +282,8 @@ static struct regulator_ops max77686_buck_dvs_ops = {
- 	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
- 	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
- 	.set_ramp_delay		= max77686_set_ramp_delay,
--	.set_suspend_disable	= max77686_buck_set_suspend_disable,
-+	.set_suspend_disable	= max77686_set_suspend_disable,
-+	.set_suspend_enable	= max77686_enable,
- };
- 
- #define regulator_desc_ldo(num)		{				\
+					read_unlock(&tasklist_lock);
+
+					__usermodehelper_set_disable_depth(UMH_ENABLED);
+					printk("OOM in progress.");
+                                        error = -EBUSY;
+                                        goto done;
+                                }
+
+to avoid adding the new label that looks odd.
+
 -- 
-1.9.1
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
