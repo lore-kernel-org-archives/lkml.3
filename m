@@ -1,55 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230AbaJUKNK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 06:13:10 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:56596 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754553AbaJUKNI (ORCPT
+	id S1755243AbaJUKOT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 06:14:19 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:41607 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754827AbaJUKOR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 06:13:08 -0400
-Date: Tue, 21 Oct 2014 12:13:04 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Alexandre FOURNIER <alexandre.fournier@wisp-e.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Marcin Wojtas <mw@semihalf.com>,
-        Gregory =?UTF-8?B?Q2zDqW1lbnQ=?= 
-	<gregory.clement@free-electrons.com>
-Subject: Re: RCU stall in af_unix.c, should use spin_lock_irqsave?
-Message-ID: <20141021121304.076d5acd@free-electrons.com>
-In-Reply-To: <1413886132.32553.14.camel@localhost>
-References: <20141021100313.397f4962@free-electrons.com>
-	<1413886132.32553.14.camel@localhost>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Tue, 21 Oct 2014 06:14:17 -0400
+Date: Tue, 21 Oct 2014 12:14:12 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
+        Borislav Petkov <bp@suse.de>,
+        "open list:X86 ARCHITECTURE..." <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cmpxchg: Discard unnecessary cast to volatile
+Message-ID: <20141021101412.GS23531@worktop.programming.kicks-ass.net>
+References: <1412186248-18672-1-git-send-email-bobby.prani@gmail.com>
+ <CAJhHMCDhhoxj25pmkxO2AhLwj6ur9ga3yRcViuH+DU-8K+Ch5g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJhHMCDhhoxj25pmkxO2AhLwj6ur9ga3yRcViuH+DU-8K+Ch5g@mail.gmail.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Hannes Frederic Sowa,
+On Mon, Oct 20, 2014 at 04:22:27PM -0400, Pranith Kumar wrote:
+> > Generating a volatile pointer is really not necessary here. This is the only
+> > location where a volatile pointer is being generated for use in asm.
+> >
+> > This commit removes the unnecessary volatile pointer being created.
+> >
+> > Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 
-On Tue, 21 Oct 2014 12:08:52 +0200, Hannes Frederic Sowa wrote:
-> On Di, 2014-10-21 at 10:03 +0200, Thomas Petazzoni wrote:
-> > So, the question is: is this patch the correct solution (but then other
-> > usage of spin_lock in af_unix.c might also need fixing) ? Or is the
-> > network driver at fault?
-> 
-> It feels like a false positive. Do you see one core spinning tightly on
-> a lock? Does the system get unusable?
-
-Interrupts are still enabled (for example, sysrq are still working),
-but scheduling no longer takes place (all processes are blocked).
-
-Best regards,
-
-Thomas
--- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Seems sane enough to me.
