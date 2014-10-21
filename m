@@ -1,35 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754859AbaJUE1a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 00:27:30 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:35322 "EHLO
+	id S1754868AbaJUE1q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 00:27:46 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:33484 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754841AbaJUE11 (ORCPT
+	with ESMTP id S1752731AbaJUENM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 00:27:27 -0400
-Message-ID: <5445E0AB.1090306@roeck-us.net>
-Date: Mon, 20 Oct 2014 21:27:23 -0700
+	Tue, 21 Oct 2014 00:13:12 -0400
 From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+To: linux-kernel@vger.kernel.org
+Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
+        Alan Cox <gnomes@lxorguk.ukuu.org.uk>, Alexander Graf <agraf@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Heiko Stuebner <heiko@sntech.de>, Lee Jones <lee.jones@linaro.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        =?UTF-8?q?Philippe=20R=C3=A9tornaz?= <philippe.retornaz@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Romain Perier <romain.perier@gmail.com>
+Subject: [PATCH v2 01/47] kernel: Add support for poweroff handler call chain
+Date: Mon, 20 Oct 2014 21:12:17 -0700
+Message-Id: <1413864783-3271-2-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1413864783-3271-1-git-send-email-linux@roeck-us.net>
+References: <1413864783-3271-1-git-send-email-linux@roeck-us.net>
 MIME-Version: 1.0
-To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Steven Honeyman <stevenhoneyman@gmail.com>
-Subject: Re: [PATCH] i8k: Ignore temperature sensors which report invalid
- values
-References: <1413730014-30945-1-git-send-email-pali.rohar@gmail.com> <5443D519.1090408@roeck-us.net> <201410201846.00586@pali>
-In-Reply-To: <201410201846.00586@pali>
-Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-Authenticated_sender: linux@roeck-us.net
+X-Authenticated_sender: guenter@roeck-us.net
 X-OutGoing-Spam-Status: No, score=-1.0
 X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020206.5445E0AE.0137,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020209.5445DD58.00BB,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.000
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
@@ -55,141 +59,362 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/20/2014 09:46 AM, Pali Rohár wrote:
-> Ok, I will describe my problem. Guenter, maybe you can find
-> another solution/fix for it.
->
-> Calling i8k_get_temp(3) on my laptop without I8K_TEMPERATURE_BUG
-> always returns value 193 (which is above I8K_MAX_TEMP).
->
-> When I8K_TEMPERATURE_BUG is enabled (by default) then
-> i8k_get_temp(3) returns value from prev[3] and store new value
-> I8K_TEMPERATURE_BUG to prev[3]. Value in prev[3] is initialized
-> to 0.
->
-> What I want to achieve is: when i8k_get_temp() for particular
-> sensor id always returns invalid value (> I8K_MAX_TEMP) then we
-> should totally ignore sensor with that id and do not export it
-> via hwmon.
->
-> My solution is: initialize prev[id] to I8K_MAX_TEMP, so on
-> invalid data first call to i8k_get_temp(id) returns I8K_MAX_TEMP.
-> Then in i8k_init_hwmon check if value is < I8K_MAX_TEMP and if
-> not ignore sensor id.
->
-> Guenter, it is clear now? Are you ok that we should ignore sensor
-> if always report value above I8K_MAX_TEMP? If you do not like my
-> solution/patch for it, can you specify how other can it be fixed?
->
+Various drivers implement architecture and/or device specific means to
+remove power from the system.  For the most part, those drivers set the
+global variable pm_power_off to point to a function within the driver.
 
-I still don't see the point in initializing prev[].
+This mechanism has a number of drawbacks.  Typically only one scheme
+to remove power is supported (at least if pm_power_off is used).
+At least in theory there can be multiple means remove power, some of
+which may be less desirable. For example, some mechanisms may only
+power off the CPU or the CPU card, while another may power off the
+entire system.  Others may really just execute a restart sequence
+or drop into the ROM monitor. Using pm_power_off can also be racy
+if the function pointer is set from a driver built as module, as the
+driver may be in the process of being unloaded when pm_power_off is
+called. If there are multiple poweroff handlers in the system, removing
+a module with such a handler may inadvertently reset the pointer to
+pm_power_off to NULL, leaving the system with no means to remove power.
 
-Yes, I am ok with ignoring sensor values if the reported temperature
-is above I8K_MAX_TEMP. I am just not sure if we should check against
-I8K_MAX_TEMP or against, say, 192. Reason is that we do know that
-the sensor can erroneously return 0x99 on some systems once in a
-while. We would not want to ignore those sensors just because they
-happen to report 0x99 during initialization.
+Introduce a system poweroff handler call chain to solve the described
+problems.  This call chain is expected to be executed from the
+architecture specific machine_power_off() function.  Drivers providing
+system poweroff functionality are expected to register with this call chain.
+By using the priority field in the notifier block, callers can control
+poweroff handler execution sequence and thus ensure that the poweroff
+handler with the optimal capabilities to remove power for a given system
+is called first.
 
-So maybe make it
-	if (err >= 0 && err < 192)
-and add a note before the first if(), explaining that higher values
-suggest that there is no sensor attached.
+Cc: Alan Cox <gnomes@lxorguk.ukuu.org.uk>
+Cc: Alexander Graf <agraf@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+cc: Heiko Stuebner <heiko@sntech.de>
+Cc: Lee Jones <lee.jones@linaro.org>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Pavel Machek <pavel@ucw.cz>
+Cc: Philippe Rétornaz <philippe.retornaz@gmail.com>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Romain Perier <romain.perier@gmail.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+v2:
+- poweroff -> power_off
+- Add defines for default priorities
+- Use raw notifiers protected by spinlocks instead of atomic notifiers
+- Add register_poweroff_handler_simple
+- Add devm_register_power_off_handler
 
-Thanks,
-Guenter
+ include/linux/pm.h              |  22 ++++
+ kernel/power/Makefile           |   1 +
+ kernel/power/poweroff_handler.c | 252 ++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 275 insertions(+)
+ create mode 100644 kernel/power/poweroff_handler.c
 
-> On Sunday 19 October 2014 17:13:29 Guenter Roeck wrote:
->> On 10/19/2014 07:46 AM, Pali Rohár wrote:
->>> On some machines some temperature sensors report too high
->>> values which are
->>
->> What is "too high", and what is "some machines" ?
->> Would be great if you can be more specific.
->>
->>> invalid. When value is invalid function i8k_get_temp()
->>> returns previous value and at next call it returns
->>> I8K_MAX_TEMP.
->>>
->>> With this patch also firt i8k_get_temp() call returns
->>> I8K_MAX_TEMP and
->>
->> fix ? Also, I am not entirely sure I understand what exactly
->> you are fixing here.
->>
->>> i8k_init_hwmon() will ignore all sensor ids which report
->>> incorrect values.
->>>
->>> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
->>> ---
->>>
->>>    drivers/char/i8k.c |   10 +++++-----
->>>    1 file changed, 5 insertions(+), 5 deletions(-)
->>>
->>> diff --git a/drivers/char/i8k.c b/drivers/char/i8k.c
->>> index 7272b08..bc327fa 100644
->>> --- a/drivers/char/i8k.c
->>> +++ b/drivers/char/i8k.c
->>> @@ -298,7 +298,7 @@ static int i8k_get_temp(int sensor)
->>>
->>>    	int temp;
->>>
->>>    #ifdef I8K_TEMPERATURE_BUG
->>>
->>> -	static int prev[4];
->>> +	static int prev[4] = { I8K_MAX_TEMP, I8K_MAX_TEMP,
->>> I8K_MAX_TEMP, I8K_MAX_TEMP };
->>
->> I am not sure I understand what this change is expected to
->> accomplish. Please explain.
->>
->>>    #endif
->>>
->>>    	regs.ebx = sensor & 0xff;
->>>    	rc = i8k_smm(&regs);
->>>
->>> @@ -610,17 +610,17 @@ static int __init i8k_init_hwmon(void)
->>>
->>>    	/* CPU temperature attributes, if temperature reading is
->>>    	OK */ err = i8k_get_temp(0);
->>>
->>> -	if (err >= 0)
->>> +	if (err >= 0 && err < I8K_MAX_TEMP)
->>
->> I8K_MAX_TEMP is, at least in theory, a valid temperature, so
->> this should be "<=".
->>
->> It would be important to understand what the "too high"
->> temperature is to possibly be able to distinguish it from the
->> buggy temperature that the code is trying to fix.
->>
->> Thanks,
->> Guenter
->>
->>>    		i8k_hwmon_flags |= I8K_HWMON_HAVE_TEMP1;
->>>    	
->>>    	/* check for additional temperature sensors */
->>>    	err = i8k_get_temp(1);
->>>
->>> -	if (err >= 0)
->>> +	if (err >= 0 && err < I8K_MAX_TEMP)
->>>
->>>    		i8k_hwmon_flags |= I8K_HWMON_HAVE_TEMP2;
->>>    	
->>>    	err = i8k_get_temp(2);
->>>
->>> -	if (err >= 0)
->>> +	if (err >= 0 && err < I8K_MAX_TEMP)
->>>
->>>    		i8k_hwmon_flags |= I8K_HWMON_HAVE_TEMP3;
->>>    	
->>>    	err = i8k_get_temp(3);
->>>
->>> -	if (err >= 0)
->>> +	if (err >= 0 && err < I8K_MAX_TEMP)
->>>
->>>    		i8k_hwmon_flags |= I8K_HWMON_HAVE_TEMP4;
->>>    	
->>>    	/* Left fan attributes, if left fan is present */
->
+diff --git a/include/linux/pm.h b/include/linux/pm.h
+index 383fd68..7e0cb36 100644
+--- a/include/linux/pm.h
++++ b/include/linux/pm.h
+@@ -34,7 +34,29 @@
+ extern void (*pm_power_off)(void);
+ extern void (*pm_power_off_prepare)(void);
+ 
++/*
++ * Callbacks to manage poweroff handlers
++ */
++
++struct notifier_block;
+ struct device; /* we have a circular dep with device.h */
++
++int register_power_off_handler(struct notifier_block *);
++int devm_register_power_off_handler(struct device *, struct notifier_block *);
++int register_power_off_handler_simple(void (*function)(void), int priority);
++int unregister_power_off_handler(struct notifier_block *);
++void do_kernel_power_off(void);
++bool have_kernel_power_off(void);
++
++/*
++ * Pre-defined poweroff handler priorities
++ */
++#define POWEROFF_PRIORITY_FALLBACK	0
++#define POWEROFF_PRIORITY_LOW		64
++#define POWEROFF_PRIORITY_DEFAULT	128
++#define POWEROFF_PRIORITY_HIGH		192
++#define POWEROFF_PRIORITY_HIGHEST	255
++
+ #ifdef CONFIG_VT_CONSOLE_SLEEP
+ extern void pm_vt_switch_required(struct device *dev, bool required);
+ extern void pm_vt_switch_unregister(struct device *dev);
+diff --git a/kernel/power/Makefile b/kernel/power/Makefile
+index 29472bf..4d9f0c7 100644
+--- a/kernel/power/Makefile
++++ b/kernel/power/Makefile
+@@ -2,6 +2,7 @@
+ ccflags-$(CONFIG_PM_DEBUG)	:= -DDEBUG
+ 
+ obj-y				+= qos.o
++obj-y				+= poweroff_handler.o
+ obj-$(CONFIG_PM)		+= main.o
+ obj-$(CONFIG_VT_CONSOLE_SLEEP)	+= console.o
+ obj-$(CONFIG_FREEZER)		+= process.o
+diff --git a/kernel/power/poweroff_handler.c b/kernel/power/poweroff_handler.c
+new file mode 100644
+index 0000000..aeb4736
+--- /dev/null
++++ b/kernel/power/poweroff_handler.c
+@@ -0,0 +1,252 @@
++/*
++ * linux/kernel/power/poweroff_handler.c - Poweroff handling functions
++ *
++ * Copyright (c) 2014 Guenter Roeck
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
++
++#define pr_fmt(fmt)	"poweroff: " fmt
++
++#include <linux/ctype.h>
++#include <linux/device.h>
++#include <linux/export.h>
++#include <linux/kallsyms.h>
++#include <linux/notifier.h>
++#include <linux/pm.h>
++#include <linux/slab.h>
++#include <linux/spinlock.h>
++#include <linux/types.h>
++
++/*
++ *	Notifier list for kernel code which wants to be called
++ *	to power off the system.
++ */
++static RAW_NOTIFIER_HEAD(power_off_handler_list);
++static DEFINE_SPINLOCK(power_off_handler_lock);
++
++/*
++ * Internal function to register poweroff notifier.
++ * Must be called with poweroff spinlock acquired.
++ */
++static int _register_power_off_handler(struct notifier_block *nb)
++{
++	return raw_notifier_chain_register(&power_off_handler_list, nb);
++}
++
++/**
++ *	register_power_off_handler - Register function to be called to power off
++ *				     the system
++ *	@nb: Info about handler function to be called
++ *	@nb->priority:	Handler priority. Handlers should follow the
++ *			following guidelines for setting priorities.
++ *			0:	Poweroff handler of last resort,
++ *				with limited poweroff capabilities,
++ *				such as poweroff handlers which
++ *				do not really power off the system
++ *				but loop forever or stop the CPU.
++ *			128:	Default poweroff handler; use if no other
++ *				poweroff handler is expected to be available,
++ *				and/or if poweroff functionality is
++ *				sufficient to power off the entire system
++ *			255:	Highest priority poweroff handler, will
++ *				preempt all other poweroff handlers
++ *
++ *	Registers a function with code to be called to power off the
++ *	system.
++ *
++ *	Registered functions will be called from machine_power_off as last
++ *	step of the poweroff sequence. Registered functions are expected
++ *	to power off the system immediately. If more than one function is
++ *	registered, the poweroff handler priority selects which function
++ *	will be called first.
++ *
++ *	Poweroff handlers may be registered from architecture code or from
++ *	drivers. A typical use case would be a system where power off
++ *	functionality is provided through a multi-function chip or through
++ *	a programmable power controller. Multiple poweroff handlers may exist;
++ *	for example, one poweroff handler might power off the entire system,
++ *	while another only powers off the CPU card. In such cases, the
++ *	poweroff handler which only powers off part of the hardware is
++ *	expected to register with low priority to ensure that it only
++ *	runs if no other means to power off the system are available.
++ *
++ *	Currently always returns zero, as raw_notifier_chain_register()
++ *	always returns zero.
++ */
++int register_power_off_handler(struct notifier_block *nb)
++{
++	int ret;
++
++	spin_lock(&power_off_handler_lock);
++	ret = _register_power_off_handler(nb);
++	spin_unlock(&power_off_handler_lock);
++
++	return ret;
++}
++EXPORT_SYMBOL(register_power_off_handler);
++
++/**
++ *	unregister_power_off_handler - Unregister previously registered
++ *				       poweroff handler
++ *	@nb: Hook to be unregistered
++ *
++ *	Unregisters a previously registered poweroff handler function.
++ *
++ *	Returns zero on success, or %-ENOENT on failure.
++ */
++int unregister_power_off_handler(struct notifier_block *nb)
++{
++	int ret;
++
++	spin_lock(&power_off_handler_lock);
++	ret = raw_notifier_chain_unregister(&power_off_handler_list, nb);
++	spin_unlock(&power_off_handler_lock);
++
++	return ret;
++}
++EXPORT_SYMBOL(unregister_power_off_handler);
++
++struct _power_off_handler_data {
++	void (*handler)(void);
++	struct notifier_block poweroff_nb;
++};
++
++static int _power_off_handler(struct notifier_block *this,
++			      unsigned long _unused1, void *_unused2)
++{
++	struct _power_off_handler_data *poh =
++		container_of(this, struct _power_off_handler_data, poweroff_nb);
++
++	poh->handler();
++
++	return NOTIFY_DONE;
++}
++
++static struct _power_off_handler_data power_off_handler_data;
++
++/**
++ *	register_power_off_handler_simple - Register function to be called
++ *					    to power off the system
++ *	@handler:	Function to be called to power off the system
++ *	@priority:	Handler priority. For priority guidelines see
++ *			register_power_off_handler.
++ *
++ *	This is a simplified version of register_power_off_handler. It does
++ *	not take a notifier as argument, but a function pointer. The function
++ *	registers a poweroff handler with specified priority. Poweroff
++ *	handlers registered with this function can not be unregistered,
++ *	and only a single poweroff handler can be installed using it.
++ *
++ *	This function must not be called from modules and is therefore
++ *	not exported.
++ *
++ *	Returns -EBUSY if a poweroff handler has already been registered
++ *	using register_power_off_handler_simple. Otherwise returns zero,
++ *	since raw_notifier_chain_register() currently always returns zero.
++ */
++int register_power_off_handler_simple(void (*handler)(void), int priority)
++{
++	int ret;
++
++	spin_lock(&power_off_handler_lock);
++
++	if (power_off_handler_data.handler) {
++		pr_warn("Poweroff function already registered (%ps), cannot register %ps",
++			power_off_handler_data.handler, handler);
++		ret = -EBUSY;
++		goto abort;
++	}
++
++	power_off_handler_data.handler = handler;
++	power_off_handler_data.poweroff_nb.notifier_call = _power_off_handler;
++	power_off_handler_data.poweroff_nb.priority = priority;
++
++	ret = _register_power_off_handler(&power_off_handler_data.poweroff_nb);
++abort:
++	spin_unlock(&power_off_handler_lock);
++	return ret;
++}
++
++/* Device managed poweroff handler registration */
++
++static void devm_poweroff_release(struct device *dev, void *res)
++{
++	struct notifier_block *nb = *(struct notifier_block **)res;
++
++	unregister_power_off_handler(nb);
++}
++
++/**
++ *	devm_register_power_off_handler - Register function to be called
++ *					  to power off the system
++ *	@dev:		The device registering the poweroff handler.
++ *	@handler:	Function to be called to power off the system
++ *	@priority:	Handler priority. For priority guidelines see
++ *			register_power_off_handler.
++ *
++ *	This is the device managed version of register_power_off_handler.
++ *
++ *	Returns -EINVAL if dev is NULL. Returns -ENOMEM if the system is out
++ *	of memory. Otherwise returns zero, since raw_notifier_chain_register()
++ *	currently always returns zero.
++ */
++int devm_register_power_off_handler(struct device *dev,
++				    struct notifier_block *nb)
++{
++	struct notifier_block **ptr;
++	int ret;
++
++	if (!dev)
++		return -EINVAL;
++
++	ptr = devres_alloc(devm_poweroff_release, sizeof(*ptr), GFP_KERNEL);
++	if (!ptr)
++		return -ENOMEM;
++
++	spin_lock(&power_off_handler_lock);
++	ret = _register_power_off_handler(nb);
++	spin_unlock(&power_off_handler_lock);
++	if (ret)
++		goto error;
++
++	*ptr = nb;
++	devres_add(dev, ptr);
++	return 0;
++error:
++	devres_free(ptr);
++	return ret;
++}
++EXPORT_SYMBOL(devm_register_power_off_handler);
++
++/**
++ *	do_kernel_power_off - Execute kernel poweroff handler call chain
++ *
++ *	Calls functions registered with register_power_off_handler.
++ *
++ *	Expected to be called from machine_power_off as last step of
++ *	the poweroff sequence.
++ *
++ *	Powers off the system immediately if a poweroff handler function
++ *	has been registered. Otherwise does nothing.
++ */
++void do_kernel_power_off(void)
++{
++	spin_lock(&power_off_handler_lock);
++	raw_notifier_call_chain(&power_off_handler_list, 0, NULL);
++	spin_unlock(&power_off_handler_lock);
++}
++
++/**
++ * have_kernel_power_off() - Check if kernel poweroff handler is available
++ *
++ * Returns true is a kernel poweroff handler is available, false otherwise.
++ */
++bool have_kernel_power_off(void)
++{
++	return pm_power_off != NULL || power_off_handler_list.head != NULL;
++}
++EXPORT_SYMBOL(have_kernel_power_off);
+-- 
+1.9.1
 
