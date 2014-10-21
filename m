@@ -1,162 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932488AbaJUMkZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 08:40:25 -0400
-Received: from mail-oi0-f41.google.com ([209.85.218.41]:41344 "EHLO
-	mail-oi0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932425AbaJUMkY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 08:40:24 -0400
+	id S932513AbaJUMlE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 08:41:04 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:54499 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932423AbaJUMlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 08:41:01 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, Alan Cox <gnomes@lxorguk.ukuu.org.uk>,
+        Alexander Graf <agraf@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Lee Jones <lee.jones@linaro.org>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>,
+        Philippe =?ISO-8859-1?Q?R=E9tornaz?= 
+	<philippe.retornaz@gmail.com>,
+        Romain Perier <romain.perier@gmail.com>
+Subject: Re: [PATCH v2 01/47] kernel: Add support for poweroff handler call chain
+Date: Tue, 21 Oct 2014 14:44 +0200
+Message-ID: <1752920.2kdbbr5GW9@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <41603148.RJg26vx0Wv@vostro.rjw.lan>
+References: <1413864783-3271-1-git-send-email-linux@roeck-us.net> <1413864783-3271-2-git-send-email-linux@roeck-us.net> <41603148.RJg26vx0Wv@vostro.rjw.lan>
 MIME-Version: 1.0
-X-Originating-IP: [2a01:e35:2434:4600:6596:22b6:3872:9902]
-In-Reply-To: <1413839603.4202.108.camel@ul30vt.home>
-References: <1413205748-6300-1-git-send-email-a.motakis@virtualopensystems.com>
- <1413205748-6300-6-git-send-email-a.motakis@virtualopensystems.com> <1413839603.4202.108.camel@ul30vt.home>
-From: Antonios Motakis <a.motakis@virtualopensystems.com>
-Date: Tue, 21 Oct 2014 14:40:03 +0200
-Message-ID: <CAG8rG2wca4w8LaDSVbgNwfd=e077UaVdpaFhFkMphmyH62Dm3w@mail.gmail.com>
-Subject: Re: [PATCH 5/5] vfio/iommu_type1: implement the VFIO_DMA_MAP_FLAG_NOEXEC
- flag
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: kvm-arm <kvmarm@lists.cs.columbia.edu>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Will Deacon <will.deacon@arm.com>,
-        VirtualOpenSystems Technical Team <tech@virtualopensystems.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Eric Auger <eric.auger@linaro.org>,
-        Kim Phillips <kim.phillips@freescale.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        "open list:VFIO DRIVER" <kvm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 20, 2014 at 11:13 PM, Alex Williamson
-<alex.williamson@redhat.com> wrote:
-> On Mon, 2014-10-13 at 15:09 +0200, Antonios Motakis wrote:
->> Some IOMMU drivers, such as the ARM SMMU driver, make available the
->> IOMMU_NOEXEC flag, to set the page tables for a device as XN (execute never).
->> This affects devices such as the ARM PL330 DMA Controller, which respects
->> this flag and will refuse to fetch DMA instructions from memory where the
->> XN flag has been set.
->>
->> The flag can be used only if all IOMMU domains behind the container support
->> the IOMMU_NOEXEC flag. Also, if any mappings are created with the flag, any
->> new domains with devices will have to support it as well.
->>
->> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
->> ---
->>  drivers/vfio/vfio_iommu_type1.c | 25 ++++++++++++++++++++++++-
->>  1 file changed, 24 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/vfio/vfio_iommu_type1.c b/drivers/vfio/vfio_iommu_type1.c
->> index 8b4202a..e225e8f 100644
->> --- a/drivers/vfio/vfio_iommu_type1.c
->> +++ b/drivers/vfio/vfio_iommu_type1.c
->> @@ -569,6 +569,12 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
->>       if (map->flags & VFIO_DMA_MAP_FLAG_READ)
->>               prot |= IOMMU_READ;
->>
->> +     if (map->flags & VFIO_DMA_MAP_FLAG_NOEXEC) {
->> +             if (!vfio_domains_have_iommu_cap(iommu, IOMMU_CAP_NOEXEC))
->> +                     return -EINVAL;
->> +             prot |= IOMMU_NOEXEC;
->> +     }
->> +
->>       if (!prot || !size || (size | iova | vaddr) & mask)
->>               return -EINVAL;
->
-> I think this test needs to move above adding the NOEXEC flag, otherwise
-> we now allow mappings without read or write, which is an ABI change.
->
+Am Dienstag, 21. Oktober 2014, 14:26:10 schrieb Rafael J. Wysocki:
+> On Monday, October 20, 2014 09:12:17 PM Guenter Roeck wrote:
+> > Various drivers implement architecture and/or device specific means to
+> > remove power from the system.  For the most part, those drivers set the
+> > global variable pm_power_off to point to a function within the driver.
+> > 
+> > This mechanism has a number of drawbacks.  Typically only one scheme
+> > to remove power is supported (at least if pm_power_off is used).
+> > At least in theory there can be multiple means remove power, some of
+> > which may be less desirable. For example, some mechanisms may only
+> > power off the CPU or the CPU card, while another may power off the
+> > entire system.  Others may really just execute a restart sequence
+> > or drop into the ROM monitor. Using pm_power_off can also be racy
+> > if the function pointer is set from a driver built as module, as the
+> > driver may be in the process of being unloaded when pm_power_off is
+> > called. If there are multiple poweroff handlers in the system, removing
+> > a module with such a handler may inadvertently reset the pointer to
+> > pm_power_off to NULL, leaving the system with no means to remove power.
+> > 
+> > Introduce a system poweroff handler call chain to solve the described
+> > problems.  This call chain is expected to be executed from the
+> > architecture specific machine_power_off() function.  Drivers providing
+> > system poweroff functionality are expected to register with this call
+> > chain. By using the priority field in the notifier block, callers can
+> > control poweroff handler execution sequence and thus ensure that the
+> > poweroff handler with the optimal capabilities to remove power for a
+> > given system is called first.
+> 
+> Well, I must admit to having second thoughts regarding this particular
+> mechanism.  Namely, notifiers don't seem to be the best way of expressing
+> what's needed from the design standpoint.
+> 
+> It looks like we need a list of power off methods and a way to select one
+> of them, so it seems that using a plist would be a natural choice here?
 
-Ack.
-
->>
->> @@ -662,6 +668,14 @@ static int vfio_iommu_replay(struct vfio_iommu *iommu,
->>               dma = rb_entry(n, struct vfio_dma, node);
->>               iova = dma->iova;
->>
->> +             /*
->> +              * if any of the mappings to be replayed has the NOEXEC flag
->> +              * set, then the new iommu domain must support it
->> +              */
->> +             if ((dma->prot | IOMMU_NOEXEC) &&
->
-> I think you mean
->
-> & IOMMU_NOEXEC
-
-Ack.
-
->
->> +                             !(domain->caps & IOMMU_CAP_NOEXEC))
->> +                     return -EINVAL;
->> +
->
-> In patch 2/5 you stated:
->
->         The IOMMU_NOEXEC flag needs to be available for all the IOMMUs
->         of the container used.
->
-> But here you'll create heterogeneous containers so long as there are no
-> NOEXEC mappings.  Is that intentional or a side effect of the above
-> masking bug?
->
-
-Yeah, my intention was to not stop the user of having heterogeneous
-containers, as long as he doesn't care about using the NOEXEC flag. As
-soon as the user tries to apply this flag however, then it should be
-supported by all the IOMMUs behind the container - otherwise it is not
-enforceable.
-
-Do you think we should change this behavior? I think most users will
-not care about using this flag, and we should not stop them from
-mixing containers.
-
->>               while (iova < dma->iova + dma->size) {
->>                       phys_addr_t phys = iommu_iova_to_phys(d->domain, iova);
->>                       size_t size;
->> @@ -749,6 +763,9 @@ static int vfio_iommu_type1_attach_group(void *iommu_data,
->>       if (iommu_capable(bus, IOMMU_CAP_CACHE_COHERENCY))
->>               domain->caps |= IOMMU_CAP_CACHE_COHERENCY;
->>
->> +     if (iommu_capable(bus, IOMMU_CAP_NOEXEC))
->> +             domain->caps |= IOMMU_CAP_NOEXEC;
->> +
->>       /*
->>        * Try to match an existing compatible domain.  We don't want to
->>        * preclude an IOMMU driver supporting multiple bus_types and being
->> @@ -900,6 +917,11 @@ static long vfio_iommu_type1_ioctl(void *iommu_data,
->>                               return 0;
->>                       return vfio_domains_have_iommu_cap(iommu,
->>                                                 IOMMU_CAP_CACHE_COHERENCY);
->> +             case VFIO_DMA_NOEXEC_IOMMU:
->> +                     if (!iommu)
->> +                             return 0;
->> +                     return vfio_domains_have_iommu_cap(iommu,
->> +                                                        IOMMU_CAP_NOEXEC);
->>               default:
->>                       return 0;
->>               }
->> @@ -923,7 +945,8 @@ static long vfio_iommu_type1_ioctl(void *iommu_data,
->>       } else if (cmd == VFIO_IOMMU_MAP_DMA) {
->>               struct vfio_iommu_type1_dma_map map;
->>               uint32_t mask = VFIO_DMA_MAP_FLAG_READ |
->> -                             VFIO_DMA_MAP_FLAG_WRITE;
->> +                             VFIO_DMA_MAP_FLAG_WRITE |
->> +                             VFIO_DMA_MAP_FLAG_NOEXEC;
->>
->>               minsz = offsetofend(struct vfio_iommu_type1_dma_map, size);
->>
->
->
->
+I actually like Guenter's approach of traversing a sorted list of poweroff 
+methods until one of them really turns off the device.
 
 
+For example, one device I work on has this strange mechanism where the device 
+stays powered on while either a gpio is high or the device is connected to a 
+host via usb - it cannot be turned off at all while it is connected via usb.
 
--- 
-Antonios Motakis
-Virtual Open Systems
+So the established way of handling poweroff there is to check the usb 
+connection and either shutdown or restart [where the bootloader will enter a 
+charging cycle and really poweroff the device once it gets disconnected].
+
+If there is only one method to shutdown possible this device-specific behaviour 
+would need to be encoded in some sort of poweroff driver, while with Guenter's 
+current approach I could just register the gpio-poweroff at a higher priority 
+which would then fall down to the lower priority restart if the device stays 
+powered due to the usb connection.
+
+
+Heiko
