@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933382AbaJUUW2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 16:22:28 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:48669 "EHLO smtp.outflux.net"
+	id S933426AbaJUUWv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 16:22:51 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:42526 "EHLO gum.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933160AbaJUUWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 16:22:25 -0400
-Date: Tue, 21 Oct 2014 13:21:37 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        Aaron Tomlin <atomlin@redhat.com>, Dario Faggioli <raistlin@linux.it>,
-        Andi Kleen <ak@linux.intel.com>, Peter Zijlstra <peterz@infradead.org>,
-        Jens Axboe <axboe@fb.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH] sysctl: terminate strings also on \r
-Message-ID: <20141021202137.GA20114@www.outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+	id S932935AbaJUUVt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 16:21:49 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Vladimir Davydov <vdavydov@parallels.com>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch 2/4] mm: memcontrol: don't pass a NULL memcg to mem_cgroup_end_move()
+Date: Tue, 21 Oct 2014 16:21:34 -0400
+Message-Id: <1413922896-29042-2-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <1413922896-29042-1-git-send-email-hannes@cmpxchg.org>
+References: <1413922896-29042-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul Wise <pabs3@bonedaddy.net>
+mem_cgroup_end_move() checks if the passed memcg is NULL, along with a
+lengthy comment to explain why this seemingly non-sensical situation
+is even possible.
 
-This partially mitigates a common strategy used by attackers for hiding
-the full contents of strings in procfs from naive sysadmins who use cat,
-more or sysctl to inspect the contents of strings in procfs.
+Check in cancel_attach() itself whether can_attach() set up the move
+context or not, it's a lot more obvious from there.  Then remove the
+check and comment in mem_cgroup_end_move().
 
-References: http://www.jakoblell.com/blog/2014/05/07/hacking-contest-hiding-stuff-from-the-terminal/
-Signed-off-by: Paul Wise <pabs3@bonedaddy.net>
-Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- kernel/sysctl.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/memcontrol.c | 13 ++++---------
+ 1 file changed, 4 insertions(+), 9 deletions(-)
 
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 4aada6d9fe74..c34c9414caac 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1739,7 +1739,7 @@ static int _proc_do_string(char *data, int maxlen, int write,
- 		while ((p - buffer) < *lenp && len < maxlen - 1) {
- 			if (get_user(c, p++))
- 				return -EFAULT;
--			if (c == 0 || c == '\n')
-+			if (c == 0 || c == '\n' || c == '\r')
- 				break;
- 			data[len++] = c;
- 		}
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 1ff125d2a427..c1fe774d712a 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1452,14 +1452,8 @@ static void mem_cgroup_start_move(struct mem_cgroup *memcg)
+ 
+ static void mem_cgroup_end_move(struct mem_cgroup *memcg)
+ {
+-	/*
+-	 * Now, mem_cgroup_clear_mc() may call this function with NULL.
+-	 * We check NULL in callee rather than caller.
+-	 */
+-	if (memcg) {
+-		atomic_dec(&memcg_moving);
+-		atomic_dec(&memcg->moving_account);
+-	}
++	atomic_dec(&memcg_moving);
++	atomic_dec(&memcg->moving_account);
+ }
+ 
+ /*
+@@ -5383,7 +5377,8 @@ static int mem_cgroup_can_attach(struct cgroup_subsys_state *css,
+ static void mem_cgroup_cancel_attach(struct cgroup_subsys_state *css,
+ 				     struct cgroup_taskset *tset)
+ {
+-	mem_cgroup_clear_mc();
++	if (mc.to)
++		mem_cgroup_clear_mc();
+ }
+ 
+ static int mem_cgroup_move_charge_pte_range(pmd_t *pmd,
 -- 
-1.9.1
+2.1.2
 
-
--- 
-Kees Cook
-Chrome OS Security
