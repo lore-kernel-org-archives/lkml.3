@@ -1,108 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566AbaJUMaM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 08:30:12 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:34979 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755346AbaJUMaK (ORCPT
+	id S932413AbaJUMeL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 08:34:11 -0400
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:36144 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932304AbaJUMeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 08:30:10 -0400
-Date: Tue, 21 Oct 2014 13:30:01 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Gyungoh Yoo <gyungoh@gmail.com>
-Cc: sameo@linux.intel.com, jg1.han@samsung.com, cooloney@gmail.com,
-        broonie@kernel.org, lgirdwood@gmail.com, jack.yoo@skyworksinc.com,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        grant.likely@linaro.org, robh+dt@kernel.org, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
-        shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
-        trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
-        jic23@kernel.org
-Subject: Re: [RESUBMIT PATCH v4 1/8] mfd: Add support for Skyworks SKY81452
- driver
-Message-ID: <20141021123001.GA4939@x1>
-References: <1412657745-7812-1-git-send-email-jack.yoo@skyworksinc.com>
- <1413179262-27636-1-git-send-email-jack.yoo@skyworksinc.com>
- <1413179262-27636-2-git-send-email-jack.yoo@skyworksinc.com>
+	Tue, 21 Oct 2014 08:34:09 -0400
+Date: Tue, 21 Oct 2014 13:26:30 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Orson Zhai <orsonzhai@gmail.com>
+Cc: Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "jslaby@suse.cz" <jslaby@suse.cz>, Kumar Gala <galak@codeaurora.org>,
+        Mark Brown <broonie@linaro.org>, Mark Rutland <mark.rutland@arm.com>,
+        "m-karicheri2@ti.com" <m-karicheri2@ti.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ramkumar Ramachandra <artagnon@gmail.com>,
+        "rrichter@cavium.com" <rrichter@cavium.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Will Deacon <will.deacon@arm.com>,
+        "Geng Ren ( =?UTF-8?B?5Lu76LWT?=)" <geng.ren@spreadtrum.com>,
+        "Zhizhou Zhang ( =?UTF-8?B?5byg5rK75rSy?=)" 
+	<zhizhou.zhang@spreadtrum.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        sprdlinux <sprdlinux@freelists.org>
+Subject: Re: [PATCH v2 5/5] tty/serial: Add earlycon support for Spreadtrum
+ serial driver
+Message-ID: <20141021132630.79ce15ba@alan.etchedpixels.co.uk>
+In-Reply-To: <CA+H2tpH2dKFHxHUaGtr-vEqxZDtQ_MVTmQTnu5kn-zzUFyXk4Q@mail.gmail.com>
+References: <1413539665-11484-1-git-send-email-chunyan.zhang@spreadtrum.com>
+	<1413539665-11484-6-git-send-email-chunyan.zhang@spreadtrum.com>
+	<20141018220615.33643542@alan.etchedpixels.co.uk>
+	<CA+H2tpH2dKFHxHUaGtr-vEqxZDtQ_MVTmQTnu5kn-zzUFyXk4Q@mail.gmail.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1413179262-27636-2-git-send-email-jack.yoo@skyworksinc.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Oct 2014, Gyungoh Yoo wrote:
+On Mon, 20 Oct 2014 18:23:38 +0800
+Orson Zhai <orsonzhai@gmail.com> wrote:
 
-> Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
-> ---
-> Changes v4:
-> Removed MODULE_VERSION()
-> Modified license to GPLv2
+> On Sun, Oct 19, 2014 at 5:06 AM, One Thousand Gnomes
+> <gnomes@lxorguk.ukuu.org.uk> wrote:
+> > On Fri, 17 Oct 2014 17:54:25 +0800
+> > Chunyan Zhang <chunyan.zhang@spreadtrum.com> wrote:
+> >
+> >> Add serial driver for spreadtrum sharkl platform with earlycon
+> >> support at first.
+> >
+> >> +#define UART_TXD     0x0000
+> >> +#define UART_RXD     0x0004
+> >> +#define UART_STS0    0x0008
+> >> +#define UART_STS1    0x000C
+> >> +#define UART_IEN     0x0010
+> >> +#define UART_ICLR    0x0014
+> >> +#define UART_CTL0    0x0018
+> >> +#define UART_CTL1    0x001C
+> >> +#define UART_CTL2    0x0020
+> >> +#define UART_CLKD0   0x0024
+> >> +#define UART_CLKD1   0x0028
+> >> +#define UART_STS2    0x002C
+> >> +
+> >> +/*line status */
+> >> +#define UART_LSR_TX_OVER     (0x1<<15)
+> >
+> > Given we use UART_ for all the 8250 defines it might be better to use
+> > something else - SHARK_LSR_TX_OVER etc to avoid future confusion
+> >
 > 
-> Changes v3:
-> Fixed the backlight name from 'sky81452-bl' to 'sky81452-backlight'
-> Assigned mfd_cell.of_compatible for binding device node
-> Modified error messages
-> 
-> Changes v2:
-> Renamed CONFIG_SKY81452 to CONFIG_MFD_SKY81452
-> Changed the dependency from I2C=y to I2C, for CONFIG_MFD_SKY81452
-> Added message for exception or errors
-> 
->  drivers/mfd/Kconfig          |  12 +++++
->  drivers/mfd/Makefile         |   1 +
->  drivers/mfd/sky81452.c       | 110 +++++++++++++++++++++++++++++++++++++++++++
->  include/linux/mfd/sky81452.h |  32 +++++++++++++
->  4 files changed, 155 insertions(+)
->  create mode 100644 drivers/mfd/sky81452.c
->  create mode 100644 include/linux/mfd/sky81452.h
+> Does it matter if those macro are only used in the specific c file?
+> >From my point of  view, private register macro could be treated as
+> static definitions like static variable or functions in C file.
+> I also noted that many people use a prefix for the other
+> manufacturers' macro definition in source file .
+> I have no intention to break the habit of kernel but just for discussion.
 
-[...]
+Your problem is this. In the kernel headers are definitions like
 
-> +++ b/include/linux/mfd/sky81452.h
-> @@ -0,0 +1,32 @@
-> +/*
-> + * sky81452.h	SKY81452 MFD driver
-> + *
-> + * Copyright 2014 Skyworks Solutions Inc.
-> + * Author : Gyungoh Yoo <jack.yoo@skyworksinc.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License as published by the
-> + * Free Software Foundation; either version 2, or (at your option) any
-> + * later version.
-> + *
-> + * This program is distributed in the hope that it will be useful, but
-> + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-> + * General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License along
-> + * with this program; if not, see <http://www.gnu.org/licenses/>.
-> + */
-> +
-> +#ifndef _SKY81452_H
-> +#define _SKY81452_H
-> +
-> +#include <linux/sky81452-backlight.h>
+include/uapi/linux/serial_reg.h:#define UART_TX 0	/* Out: Transmit
+buffer */
 
-Shouldn't this live in linux/platform_data?
+you are adding identical (but conflicting in places) defines. If some
+random change in the include files causes serial_reg.h to be included by
+a header you include then it will break.
 
-> +#include <linux/regulator/machine.h>
-> +
-> +struct sky81452_platform_data {
-> +	struct sky81452_bl_platform_data *bl_pdata;
-> +	struct regulator_init_data *regulator_init_data;
-> +};
-> +
-> +#endif
+In addition people habitually use tools like LXR to figure out where
+defines and functions are. Having these conflicting definitions will
+cause confusion. Better they have prefixes.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Alan
+
