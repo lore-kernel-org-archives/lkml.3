@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755057AbaJUKHh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 06:07:37 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:51523 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752877AbaJUKHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 06:07:35 -0400
-Message-ID: <54463063.80207@ti.com>
-Date: Tue, 21 Oct 2014 15:37:31 +0530
-From: Mugunthan V N <mugunthanvnm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>
-CC: <bcousson@baylibre.com>, <tony@atomide.com>, <devicetree@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 0/2] Add DRA7xx CPSW Ethernet support in Device Tree
-References: <1413885661-4850-1-git-send-email-mugunthanvnm@ti.com>
-In-Reply-To: <1413885661-4850-1-git-send-email-mugunthanvnm@ti.com>
-Content-Type: text/plain; charset="windows-1252"
+	id S1754907AbaJUKI5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 06:08:57 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:43987 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751283AbaJUKIz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 06:08:55 -0400
+X-Sasl-enc: usDHosPNY6NThobSUXrOhYX6hPOGgGZasB4chry8ccc4 1413886134
+Message-ID: <1413886132.32553.14.camel@localhost>
+Subject: Re: RCU stall in af_unix.c, should use spin_lock_irqsave?
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Alexandre FOURNIER <alexandre.fournier@wisp-e.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Marcin Wojtas <mw@semihalf.com>,
+        Gregory =?ISO-8859-1?Q?Cl=E9ment?= 
+	<gregory.clement@free-electrons.com>
+Date: Tue, 21 Oct 2014 12:08:52 +0200
+In-Reply-To: <20141021100313.397f4962@free-electrons.com>
+References: <20141021100313.397f4962@free-electrons.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nishanth
+On Di, 2014-10-21 at 10:03 +0200, Thomas Petazzoni wrote:
+> So, the question is: is this patch the correct solution (but then other
+> usage of spin_lock in af_unix.c might also need fixing) ? Or is the
+> network driver at fault?
 
-On Tuesday 21 October 2014 03:30 PM, Mugunthan V N wrote:
-> Adding device tree entry for CPSW to make it work in Dual EMAC mode.
-> These patches were tested with DRA7 hwmod patches on top of linux-next.
-> Patches are tested on top of Nishanth's PM tree for v3.17 [1] and pushed
-> my tree to [2].
-> 
-> Did a boot test with CPSW and ping test with suspend/resume, the boot logs
-> on DRA7xx EVM are posted at [3]
-> 
-> [1] git://github.com/nmenon/linux-2.6-playground.git testing/v3.17/cpu-idle-suspend-dra7-omap5-framework
-> [2] git://git.ti.com/~mugunthanvnm/ti-linux-kernel/linux.git v3.17/dra7-evm-cpsw-v3
-> [3] http://pastebin.ubuntu.com/8613072/
-> 
-> Changes from v2:
-> * Changed pinctrl comments to hold mode0-name.mode-selected-name
-> * Changes slave numbers in the pinctrl comments
-> * Added cpsw and cpts clocks
-> 
+It feels like a false positive. Do you see one core spinning tightly on
+a lock? Does the system get unusable?
 
-I have not added support for dra72x-evm as it has only slave no 2 pinned
-out and having issues with bringing up the interface, need some more
-time to submit the patch, in the mean time I have submitted dra7-evm
-support only so that people can use dra7-evm on linux-next.
+Bye,
+Hannes
 
-Regards
-Mugunthan V N
+
