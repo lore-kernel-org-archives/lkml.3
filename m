@@ -1,31 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755522AbaJUMG6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 08:06:58 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:45872 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755498AbaJUMG4 (ORCPT
+	id S1755544AbaJUMHI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 08:07:08 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:55381 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755498AbaJUMHA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 08:06:56 -0400
-Date: Tue, 21 Oct 2014 05:06:53 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Boaz Harrosh <ooo@electrozaur.com>, Jeff Garzik <jgarzik@pobox.com>
-Cc: linux-kernel@vger.kernel.org, osd-dev@open-osd.org
-Subject: state of the osdblk driver?
-Message-ID: <20141021120653.GA9530@infradead.org>
+	Tue, 21 Oct 2014 08:07:00 -0400
+Date: Tue, 21 Oct 2014 13:06:54 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH v2 3/4] mfd/regulator: dt-bindings: max77686: Document
+ regulators off in suspend
+Message-ID: <20141021120654.GB4127@x1>
+References: <1413890597-31037-1-git-send-email-k.kozlowski@samsung.com>
+ <1413890597-31037-4-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1413890597-31037-4-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The osdblk driver hsa seen literally no change except for global
-API changes since it was merged, and I've never heard of a user.
+On Tue, 21 Oct 2014, Krzysztof Kozlowski wrote:
 
-Is this something we want to keep around?  I just noticed it because
-it's the only non-SCSI user of some of the old block layer tagging
-functions.
+> Add information which regulators can be disabled during system suspend.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Suggested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> ---
+>  Documentation/devicetree/bindings/mfd/max77686.txt | 6 ++++++
+>  1 file changed, 6 insertions(+)
+
+I don't think this requires a DT Ack.
+
+Applied with the extra '\n' removed.
+
+> diff --git a/Documentation/devicetree/bindings/mfd/max77686.txt b/Documentation/devicetree/bindings/mfd/max77686.txt
+> index 678f3cf0b8f0..75fdfaf41831 100644
+> --- a/Documentation/devicetree/bindings/mfd/max77686.txt
+> +++ b/Documentation/devicetree/bindings/mfd/max77686.txt
+> @@ -34,6 +34,12 @@ to get matched with their hardware counterparts as follow:
+>  	-BUCKn 	:	for BUCKs, where n can lie in range 1 to 9.
+>  			example: BUCK1, BUCK5, BUCK9.
+>  
+> +  Regulators which can be turned off during system suspend:
+> +	-LDOn	:	2, 6-8, 10-12, 14-16,
+> +	-BUCKn	:	1-4.
+> +  Use standard regulator bindings for it ('regulator-off-in-suspend').
+> +
+> +
+>  Example:
+>  
+>  	max77686@09 {
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
