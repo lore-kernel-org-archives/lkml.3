@@ -1,111 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933087AbaJUUEF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 16:04:05 -0400
-Received: from forward4l.mail.yandex.net ([84.201.143.137]:48663 "EHLO
-	forward4l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932569AbaJUUED (ORCPT
+	id S933196AbaJUUEP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 16:04:15 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:64935 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933066AbaJUUEM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 16:04:03 -0400
-X-Yandex-Uniq: 37833c59-7560-4654-9bcb-4f399f2d4a55
-Authentication-Results: smtp4m.mail.yandex.net; dkim=pass header.i=@yandex.ru
-Message-ID: <5446BC2D.1030909@yandex.ru>
-Date: Wed, 22 Oct 2014 00:03:57 +0400
-From: Kirill Tkhai <tkhai@yandex.ru>
-Reply-To: tkhai@yandex.ru
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Tue, 21 Oct 2014 16:04:12 -0400
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-CC: Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Vladimir Davydov <vdavydov@parallels.com>
-Subject: Re: [PATCH v3] sched/numa: fix unsafe get_task_struct() in task_numa_assign()
-References: <1413800145.19914.23.camel@tkhai> <20141020144757.GA10939@redhat.com> <20141020165614.GA16373@redhat.com> <20141020182748.GA20424@redhat.com> <54456E26.2000103@yandex.ru> <20141020205006.GA2500@redhat.com> <20141021094558.GQ23531@worktop.programming.kicks-ass.net> <20141021190335.GA12851@redhat.com>
-In-Reply-To: <20141021190335.GA12851@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAErSpo6KnNKz8z1dcHqKTO6450MfGRm0nLk65sTvAcnUmGqiQQ@mail.gmail.com>
+References: <20141015165957.4063.66741.stgit@bhelgaas-glaptop2.roam.corp.google.com>
+ <20141015170602.4063.5577.stgit@bhelgaas-glaptop2.roam.corp.google.com>
+ <CAErSpo7K2dhNWz7HL_JCrB6pvq5+aeOYCwD2YV1_DLtcVcAKfA@mail.gmail.com> <CAErSpo6KnNKz8z1dcHqKTO6450MfGRm0nLk65sTvAcnUmGqiQQ@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 21 Oct 2014 14:03:50 -0600
+Message-ID: <CAErSpo5=SH9Ld72bXx4OeTPhd46CBRUsadZtqQu3ATb=8ZOMeQ@mail.gmail.com>
+Subject: Re: [PATCH v1 03/10] MIPS: CPC: Make mips_cpc_phys_base() static
+To: Jason Wessel <jason.wessel@windriver.com>,
+        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@redhat.com>,
+        John Stultz <john.stultz@linaro.org>, Eric Paris <eparis@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21.10.2014 23:03, Oleg Nesterov wrote:
-> On 10/21, Peter Zijlstra wrote:
+On Wed, Oct 15, 2014 at 5:28 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> [+cc linux-mips for real this time.  sheesh]
+>
+> On Wed, Oct 15, 2014 at 5:27 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> [+cc linux-mips@linux-mips.org]
 >>
->> On Mon, Oct 20, 2014 at 10:50:06PM +0200, Oleg Nesterov wrote:
->>> Let me explain what I personally dislike in v3:
+>> On Wed, Oct 15, 2014 at 11:06 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>> There's only one implementation of mips_cpc_phys_base(), and it's only used
+>>> within the same file, so it doesn't need to be weak, and it doesn't need an
+>>> extern declaration.
 >>>
->>> 	- I think that we do not have enough reasons for
->>> 	  SLAB_DESTROY_BY_RCU. This is the serious change.
->>
->> What exactly would the downsides be? SDBR has very limited space
->> overhead iirc.
-> 
-> Yes, SDBR is nice (and it could probably have more users), but my
-> concern is not overhead. Please see below.
-> 
->>> 	- Again, perhaps we should start we a simple and stupid fix.
->>> 	  We can do get_task_struct() under rq->lock or, if nothing
->>> 	  else, just
+>>> Remove the extern mips_cpc_phys_base() declaration and make it static.
 >>>
->>> 	  	raw_spin_lock_irq(&rq->lock);
->>> 	  	cur = rq->curr;
->>> 	  	if (is_idle_task(cur) || (cur->flags & PF_EXITING))
->>> 	  		cur = NULL;
->>> 	  	raw_spin_unlock_irq(&rq->lock);
->>
->> I think I agree with you, this is the simple safe option and is
->> something we can easily backport. After that we can add creative bits on
->> top.
-> 
-> Agreed.
-> 
-> Kirill, could you please make a patch?
+>>> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+>>> CC: linux-mips@linux-mips.org
 
-Yeah, I'll send it tomorrow.
+I'm dropping this patch from my series because I haven't seen any
+response from the MIPS folks.
 
->> I think I prefer the SLAB_DESTROY_BY_RCU thing over the probe_kernel
->> thing
-> 
-> I won't really insist, but let me try to explain why I dislike it in
-> this particular case.
-> 
-> - It is not clear who else (except task_numa_compare) will need it.
->   And it looks at bit strange to make task_struct SLAB_DESTROY_BY_RCU
->   just to read a word in task_numa_compare().
-> 
-> - In some sense, the usage of SDBR looks simply "wrong" in this case.
->   IOW, I agree that probe_kernel_read() is ugly, but in this case
->   SDBR acts exactly the same way as probe_kernel_read().
-> 
->   SDBR does not make the object rcu-safe, it only protects the object
->   type plus ensures that this memory can't go away. It was designed
->   for the case when you read the stable members initialized in ctor
->   (usually a lock) and verify/lock the object.
-> 
->   But in this case we can not detect that the object is still alive
->   without the additional trick, so when you read ->sighand or ->flags,
->   the fact that this memory is still "struct task_struct" doesn't help
->   and doesn't matter at all. Only the subsequent "task == rq->curr"
->   check proves that yes, this is task_struct.
-> 
->   OTOH, (afaics) we only need probe_kernel_read() if CONFIG_DEBUG_SLAB.
->   And in fact I think that "read the valid but potentially freed kernel
->   pointer" deserves another helper, it can have more users. For example,
->   please look at get_freepointer_safe().
-> 
->   What if we add get_kernel(x, ptr) macro to factor out the IS_ENABLED()
->   of ifdef hack? Or inline function... This way the new xxx() helper we
->   discussed won't look that bad.
-> 
-> But again, I agree that this subjective, I won't really argue.
-
-So this patch we fix task_numa_compare(). We need remember to fix
-remaining later:
-
-$ git grep ACCESS_ONCE kernel/sched/ | grep "\->curr"
-kernel/sched/deadline.c:	curr = ACCESS_ONCE(rq->curr); /*
-kernel/sched/fair.c:	cur = ACCESS_ONCE(dst_rq->curr);
-kernel/sched/fair.c:	tsk = ACCESS_ONCE(cpu_rq(cpu)->curr);
-kernel/sched/rt.c:	curr = ACCESS_ONCE(rq->curr); /* unlocked
-
-Kirill
+>>> ---
+>>>  arch/mips/include/asm/mips-cpc.h |   10 ----------
+>>>  arch/mips/kernel/mips-cpc.c      |    2 +-
+>>>  2 files changed, 1 insertion(+), 11 deletions(-)
+>>>
+>>> diff --git a/arch/mips/include/asm/mips-cpc.h b/arch/mips/include/asm/mips-cpc.h
+>>> index e139a534e0fd..8ff92cd74bde 100644
+>>> --- a/arch/mips/include/asm/mips-cpc.h
+>>> +++ b/arch/mips/include/asm/mips-cpc.h
+>>> @@ -28,16 +28,6 @@ extern void __iomem *mips_cpc_base;
+>>>  extern phys_t mips_cpc_default_phys_base(void);
+>>>
+>>>  /**
+>>> - * mips_cpc_phys_base - retrieve the physical base address of the CPC
+>>> - *
+>>> - * This function returns the physical base address of the Cluster Power
+>>> - * Controller memory mapped registers, or 0 if no Cluster Power Controller
+>>> - * is present. It may be overriden by individual platforms which determine
+>>> - * this address in a different way.
+>>> - */
+>>> -extern phys_t __weak mips_cpc_phys_base(void);
+>>> -
+>>> -/**
+>>>   * mips_cpc_probe - probe for a Cluster Power Controller
+>>>   *
+>>>   * Attempt to detect the presence of a Cluster Power Controller. Returns 0 if
+>>> diff --git a/arch/mips/kernel/mips-cpc.c b/arch/mips/kernel/mips-cpc.c
+>>> index ba473608a347..36c20ae509d8 100644
+>>> --- a/arch/mips/kernel/mips-cpc.c
+>>> +++ b/arch/mips/kernel/mips-cpc.c
+>>> @@ -21,7 +21,7 @@ static DEFINE_PER_CPU_ALIGNED(spinlock_t, cpc_core_lock);
+>>>
+>>>  static DEFINE_PER_CPU_ALIGNED(unsigned long, cpc_core_lock_flags);
+>>>
+>>> -phys_t __weak mips_cpc_phys_base(void)
+>>> +static phys_t mips_cpc_phys_base(void)
+>>>  {
+>>>         u32 cpc_base;
+>>>
+>>>
