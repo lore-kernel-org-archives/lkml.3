@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933262AbaJUQpt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 12:45:49 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:39202 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932373AbaJUQpr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 12:45:47 -0400
-Date: Tue, 21 Oct 2014 22:18:35 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        linux-kernel@vger.kernel.org, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Seth Jennings <sjenning@redhat.com>
-Subject: Re: [PATCH] kprobes: add kprobe_is_function_probed()
-Message-ID: <20141021164835.GB10290@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <alpine.LNX.2.00.1410211744550.24255@pobox.suse.cz>
+	id S933291AbaJUQrQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 12:47:16 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:7845 "EHLO
+	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932373AbaJUQrP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 12:47:15 -0400
+Message-ID: <54468E0D.2010200@itdev.co.uk>
+Date: Tue, 21 Oct 2014 17:47:09 +0100
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1410211744550.24255@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102116-0029-0000-0000-000000D323F3
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jonathan Cameron <jic23@kernel.org>
+CC: Greg KH <greg@kroah.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Touch processing on host CPU
+References: <5440F282.8040306@itdev.co.uk>	<20141017171756.GA22238@dtor-ws> <20141021132229.37a1197c@alan.etchedpixels.co.uk>
+In-Reply-To: <20141021132229.37a1197c@alan.etchedpixels.co.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 05:48:30PM +0200, Jiri Kosina wrote:
-
->  kernel/kprobes.c        | 28 ++++++++++++++++++++++++++++
->  2 files changed, 33 insertions(+)
+On 21/10/14 13:22, One Thousand Gnomes wrote:
+>> If you will have touch processing in a binary blob, you'll also be going
+>> to ages "Works with Ubuntu 12.04 on x86_32!" (and nothing else), or
+>> "Android 5.1.2 on Tegra Blah (build 78912KT)" (and nothing else).
 > 
-> diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
-> index f7296e5..f760555 100644
-> --- a/include/linux/kprobes.h
-> +++ b/include/linux/kprobes.h
-> @@ -384,6 +384,7 @@ int disable_kprobe(struct kprobe *kp);
->  int enable_kprobe(struct kprobe *kp);
+> As well as not going upstream because there is no way anyone else can
+> test changes to the code, or support it. Plus of course there are those
+> awkward questions around derivative work boundaries that it is best the
+> base kernel keeps well clear of.
 > 
->  void dump_kprobe(struct kprobe *kp);
-> +bool kprobe_is_function_probed(const char *name);
+> If the data format is documented to the point someone can go write their
+> own touch processor for the bitstream then that really deals with it
+> anyway. Given the number of these things starting to pop up it would
+> probably be good if someone did produce an open source processing engine
+> for touch sensor streams as it shouldn't take long before its better than
+> all the non-free ones 8).
 
-Better name? function_is_kprobed() or such?
+Thank you for this input, I will feed it back.
 
-...
+> Given how latency sensitive touch is and the continual data stream I
+> would be inclined to think that the basic processing might be better in
+> kernel and then as an input device - providing it can be simple enough to
+> want to put kernel side.
 
-> +bool kprobe_is_function_probed(const char *name)
-> +{
-> +	struct hlist_head *head;
-> +	struct kprobe *p, *kp;
+I would think that a touch processing algorithm (including aspects such as
+noise and false touch suppression, etc) would be too complex to live
+in-kernel. Getting decent performance on a particular device requires a lot
+of tuning/customisation.
 
-kp not used
+> Otherwise I'd say your bitstream is probably something like ADC data and
+> belongs in IIO (which should also help people to have one processing
+> agent for multiple designs of touch, SPI controllers etc)
 
-> +	const char *sym = NULL;
-> +	unsigned long offset = 0;
-> +	unsigned int i;
-> +	char *modname, namebuf[KSYM_NAME_LEN];
-> +
-> +	preempt_disable();
-> +	for (i = 0; i < KPROBE_TABLE_SIZE; i++) {
-> +		head = &kprobe_table[i];
-> +		hlist_for_each_entry_rcu(p, head, hlist) {
-> +			sym = kallsyms_lookup((unsigned long)p->addr,
-> +					NULL, &offset, &modname,
-> +					namebuf);
-> +			if (!strcmp(sym, name))
-
-Don't you want a strncmp instead?
-
-Ananth
-
+This sounds promising. The only sticking point I can see is that a touch
+frontend has many more channels (possibly thousands), which would seem to
+impose a lot of overhead when put into the IIO framework. I will certainly
+take a closer look at it.
