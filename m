@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438AbaJUMrm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 08:47:42 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:38719 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755274AbaJUMrl (ORCPT
+	id S1755503AbaJUMs1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 08:48:27 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:58462 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755274AbaJUMsZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 08:47:41 -0400
-Message-ID: <544655E8.8070004@electrozaur.com>
-Date: Tue, 21 Oct 2014 15:47:36 +0300
-From: Boaz Harrosh <ooo@electrozaur.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Tue, 21 Oct 2014 08:48:25 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Felipe Balbi <balbi@ti.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        linux-usb@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [resend PATCH 1/3] ACPI / platform: provide default DMA mask
+Date: Tue, 21 Oct 2014 15:08:44 +0200
+Message-ID: <1885056.A9IZAntn96@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <54465141.1080408@intel.com>
+References: <1411545639-18741-1-git-send-email-heikki.krogerus@linux.intel.com> <2261149.pJ2DW810R9@vostro.rjw.lan> <54465141.1080408@intel.com>
 MIME-Version: 1.0
-To: Jeff Garzik <jgpobox@gmail.com>, Christoph Hellwig <hch@infradead.org>
-CC: Jeff Garzik <jgarzik@pobox.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        osd-dev@open-osd.org
-Subject: Re: state of the osdblk driver?
-References: <20141021120653.GA9530@infradead.org> <CAFtxgO5cPNTMqyY5Foqp_Y+pqCH=zTiatREn-4xRCTm8o5GLwA@mail.gmail.com>
-In-Reply-To: <CAFtxgO5cPNTMqyY5Foqp_Y+pqCH=zTiatREn-4xRCTm8o5GLwA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/21/2014 03:21 PM, Jeff Garzik wrote:
-> On Tue, Oct 21, 2014 at 8:06 AM, Christoph Hellwig <hch@infradead.org> wrote:
->> The osdblk driver hsa seen literally no change except for global
->> API changes since it was merged, and I've never heard of a user.
->>
->> Is this something we want to keep around?  I just noticed it because
->> it's the only non-SCSI user of some of the old block layer tagging
->> functions.
+On Tuesday, October 21, 2014 03:27:45 PM Adrian Hunter wrote:
+> On 24/09/14 16:49, Rafael J. Wysocki wrote:
+> > On Wednesday, September 24, 2014 11:00:37 AM Heikki Krogerus wrote:
+> >> Most devices are configured for 32-bit DMA addresses.
+> >> Setting the mask to 32-bit here removes the need for the
+> >> drivers to do it separately.
+> >>
+> >> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> >> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+> > 
+> > ACK
 > 
-> Drop it, if there are no users.
+> Hi
 > 
-> It was simulating an OSD, but there did not seem to be much beyond
-> academic interest, and some interest in the use of aforementioned
-> block functions as a useful exercise in block driver writing.
+> I need this for another driver.  Did this patch go anywhere?
+
+It's not in 3.18-rc1 as far as I can say.
+
+> Note Heikki is away at the moment.
+
+That's OK.  I guess I can queue up this one for you.
+
+When do you need this to get into the Linus' tree?
+
+
+> >> ---
+> >>  drivers/acpi/acpi_platform.c | 2 ++
+> >>  1 file changed, 2 insertions(+)
+> >>
+> >> diff --git a/drivers/acpi/acpi_platform.c b/drivers/acpi/acpi_platform.c
+> >> index 2bf9082..8d099e6 100644
+> >> --- a/drivers/acpi/acpi_platform.c
+> >> +++ b/drivers/acpi/acpi_platform.c
+> >> @@ -16,6 +16,7 @@
+> >>  #include <linux/err.h>
+> >>  #include <linux/kernel.h>
+> >>  #include <linux/module.h>
+> >> +#include <linux/dma-mapping.h>
+> >>  #include <linux/platform_device.h>
+> >>  
+> >>  #include "internal.h"
+> >> @@ -102,6 +103,7 @@ struct platform_device *acpi_create_platform_device(struct acpi_device *adev)
+> >>  	pdevinfo.res = resources;
+> >>  	pdevinfo.num_res = count;
+> >>  	pdevinfo.acpi_node.companion = adev;
+> >> +	pdevinfo.dma_mask = DMA_BIT_MASK(32);
+> >>  	pdev = platform_device_register_full(&pdevinfo);
+> >>  	if (IS_ERR(pdev))
+> >>  		dev_err(&adev->dev, "platform device creation failed: %ld\n",
+> >>
+> > 
 > 
-> 
 
-It is used in testing, its a good way to compare ext4 over objects
-vs exofs over objects, kind of compare apples with apples.
-(Also at the get go it was a good test that found some bugs in the
- bring up of the osd target)
-
-If there is an old tagging API need removing its fine to just drop
-the support, and/or do the minimal change possible. What was the
-tag used for anyway?
-
-If it bothers you very much then please remove it, send a patch
-and I'll ACK it.
-
-[Just that I thought we don't do that. I can show you a dozen
- ISA scsi LLD controllers which are a complete pain in the neck
- with a all subsection core support. There is not a single system
- on the planet that has this even possible, yet we do not remove
- them nor the ISA bus crap. osdblk at least is a SW only exercise
- that can be very much valid in any system.
-]
-
-Your call sir, I'm with you on this
-Thanks
-Boaz
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
