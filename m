@@ -1,37 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754329AbaJUENq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 00:13:46 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:33606 "EHLO
+	id S1754206AbaJUENo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 00:13:44 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:33596 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754026AbaJUENm (ORCPT
+	with ESMTP id S1753760AbaJUENj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 00:13:42 -0400
+	Tue, 21 Oct 2014 00:13:39 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2 12/47] mfd: ab8500-sysctrl: Register with kernel poweroff handler
-Date: Mon, 20 Oct 2014 21:12:28 -0700
-Message-Id: <1413864783-3271-13-git-send-email-linux@roeck-us.net>
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
+Subject: [PATCH v2 11/47] mfd: retu: Register with kernel poweroff handler
+Date: Mon, 20 Oct 2014 21:12:27 -0700
+Message-Id: <1413864783-3271-12-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1413864783-3271-1-git-send-email-linux@roeck-us.net>
 References: <1413864783-3271-1-git-send-email-linux@roeck-us.net>
 X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=1.5
+X-OutGoing-Spam-Status: No, score=-1.0
 X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A02020A.5445DD75.0194,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020209.5445DD73.00C8,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.000
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 66
+X-CTCH-SenderID-TotalMessages: 59
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -55,16 +53,6 @@ Register with kernel poweroff handler instead of setting pm_power_off
 directly. Register with low priority to reflect that the original code
 only sets pm_power_off if it was not already set.
 
-sysctrl_dev is set prior to poweroff handler registration, and the
-poweroff handler is unregistered prior to clearing sysrctrl_dev.
-It is therefore not necessary to check if sysctrl_dev is NULL in the
-poweroff handler, and the check was removed. Setting sysctrl_dev to NULL
-in the remove function was also removed as unnecessary. With those changes,
-devm_register_power_off_handler can be used to register the poeroff handler.
-The now empty remove function was retained since the ab8500_restart function,
-which is currently unused, would likely need some cleanup if it was ever used.
-
-Cc: Linus Walleij <linus.walleij@linaro.org>
 Cc: Lee Jones <lee.jones@linaro.org>
 Cc: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
@@ -73,89 +61,98 @@ v2:
 - Use define to specify poweroff handler priority
 - Use devm_register_power_off_handler
 - Use dev_warn instead of dev_err
-- Since we use devm_register_power_off_handler,
-  we need to check if sysctrl_dev in the poweroff handler to avoid
-  a race condition on unload, so this check is no longer removed
 
- drivers/mfd/ab8500-sysctrl.c | 22 +++++++++++++++-------
- 1 file changed, 15 insertions(+), 7 deletions(-)
+ drivers/mfd/retu-mfd.c | 33 +++++++++++++++++++--------------
+ 1 file changed, 19 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/mfd/ab8500-sysctrl.c b/drivers/mfd/ab8500-sysctrl.c
-index 8e0dae5..dc634d5 100644
---- a/drivers/mfd/ab8500-sysctrl.c
-+++ b/drivers/mfd/ab8500-sysctrl.c
-@@ -6,6 +6,7 @@
- 
- #include <linux/err.h>
+diff --git a/drivers/mfd/retu-mfd.c b/drivers/mfd/retu-mfd.c
+index 663f8a3..3c720cb 100644
+--- a/drivers/mfd/retu-mfd.c
++++ b/drivers/mfd/retu-mfd.c
+@@ -22,6 +22,8 @@
+ #include <linux/slab.h>
+ #include <linux/mutex.h>
  #include <linux/module.h>
 +#include <linux/notifier.h>
- #include <linux/platform_device.h>
- #include <linux/pm.h>
- #include <linux/reboot.h>
-@@ -23,7 +24,8 @@
++#include <linux/pm.h>
+ #include <linux/regmap.h>
+ #include <linux/mfd/core.h>
+ #include <linux/mfd/retu.h>
+@@ -43,6 +45,7 @@ struct retu_dev {
+ 	struct device			*dev;
+ 	struct mutex			mutex;
+ 	struct regmap_irq_chip_data	*irq_data;
++	struct notifier_block		poweroff_nb;
+ };
  
- static struct device *sysctrl_dev;
+ static struct resource retu_pwrbutton_res[] = {
+@@ -81,9 +84,6 @@ static struct regmap_irq_chip retu_irq_chip = {
+ 	.ack_base	= RETU_REG_IDR,
+ };
  
--static void ab8500_power_off(void)
-+static int ab8500_power_off(struct notifier_block *this, unsigned long unused1,
-+			    void *unused2)
+-/* Retu device registered for the power off. */
+-static struct retu_dev *retu_pm_power_off;
+-
+ static struct resource tahvo_usb_res[] = {
+ 	{
+ 		.name	= "tahvo-usb",
+@@ -165,12 +165,14 @@ int retu_write(struct retu_dev *rdev, u8 reg, u16 data)
+ }
+ EXPORT_SYMBOL_GPL(retu_write);
+ 
+-static void retu_power_off(void)
++static int retu_power_off(struct notifier_block *this, unsigned long unused1,
++			  void *unused2)
  {
- 	sigset_t old;
- 	sigset_t all;
-@@ -36,7 +38,7 @@ static void ab8500_power_off(void)
+-	struct retu_dev *rdev = retu_pm_power_off;
++	struct retu_dev *rdev = container_of(this, struct retu_dev,
++					     poweroff_nb);
+ 	int reg;
  
- 	if (sysctrl_dev == NULL) {
- 		pr_err("%s: sysctrl not initialized\n", __func__);
--		return;
-+		return NOTIFY_DONE;
- 	}
+-	mutex_lock(&retu_pm_power_off->mutex);
++	mutex_lock(&rdev->mutex);
  
- 	/*
-@@ -83,8 +85,15 @@ shutdown:
- 					 AB8500_STW4500CTRL1_SWRESET4500N);
- 		(void)sigprocmask(SIG_SETMASK, &old, NULL);
- 	}
+ 	/* Ignore power button state */
+ 	regmap_read(rdev->regmap, RETU_REG_CC1, &reg);
+@@ -183,7 +185,9 @@ static void retu_power_off(void)
+ 	for (;;)
+ 		cpu_relax();
+ 
+-	mutex_unlock(&retu_pm_power_off->mutex);
++	mutex_unlock(&rdev->mutex);
 +
 +	return NOTIFY_DONE;
  }
  
-+static struct notifier_block ab8500_poweroff_nb = {
-+	.notifier_call = ab8500_power_off,
-+	.priority = POWEROFF_PRIORITY_LOW,
-+};
-+
- /*
-  * Use the AB WD to reset the platform. It will perform a hard
-  * reset instead of a soft reset. Write the reset reason to
-@@ -185,6 +194,7 @@ static int ab8500_sysctrl_probe(struct platform_device *pdev)
- 	struct ab8500 *ab8500 = dev_get_drvdata(pdev->dev.parent);
- 	struct ab8500_platform_data *plat;
- 	struct ab8500_sysctrl_platform_data *pdata;
-+	int err;
+ static int retu_regmap_read(void *context, const void *reg, size_t reg_size,
+@@ -279,9 +283,14 @@ static int retu_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
+ 		return ret;
+ 	}
  
- 	plat = dev_get_platdata(pdev->dev.parent);
+-	if (i2c->addr == 1 && !pm_power_off) {
+-		retu_pm_power_off = rdev;
+-		pm_power_off	  = retu_power_off;
++	if (i2c->addr == 1) {
++		rdev->poweroff_nb.notifier_call = retu_power_off;
++		rdev->poweroff_nb.priority = POWEROFF_PRIORITY_LOW;
++		ret = devm_register_power_off_handler(rdev->dev,
++						      &rdev->poweroff_nb);
++		if (ret)
++			dev_warn(rdev->dev,
++				 "Failed to register poweroff handler\n");
+ 	}
  
-@@ -193,8 +203,9 @@ static int ab8500_sysctrl_probe(struct platform_device *pdev)
- 
- 	sysctrl_dev = &pdev->dev;
- 
--	if (!pm_power_off)
--		pm_power_off = ab8500_power_off;
-+	err = devm_register_power_off_handler(sysctrl_dev, &ab8500_poweroff_nb);
-+	if (err)
-+		dev_warn(&pdev->dev, "Failed to register poweroff handler\n");
- 
- 	pdata = plat->sysctrl;
- 	if (pdata) {
-@@ -228,9 +239,6 @@ static int ab8500_sysctrl_remove(struct platform_device *pdev)
- {
- 	sysctrl_dev = NULL;
- 
--	if (pm_power_off == ab8500_power_off)
--		pm_power_off = NULL;
--
  	return 0;
- }
+@@ -291,10 +300,6 @@ static int retu_remove(struct i2c_client *i2c)
+ {
+ 	struct retu_dev *rdev = i2c_get_clientdata(i2c);
+ 
+-	if (retu_pm_power_off == rdev) {
+-		pm_power_off	  = NULL;
+-		retu_pm_power_off = NULL;
+-	}
+ 	mfd_remove_devices(rdev->dev);
+ 	regmap_del_irq_chip(i2c->irq, rdev->irq_data);
  
 -- 
 1.9.1
