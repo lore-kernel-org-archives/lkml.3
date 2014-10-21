@@ -1,140 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933562AbaJUUz6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 16:55:58 -0400
-Received: from x35.xmailserver.org ([64.71.152.41]:45951 "EHLO
-	x35.xmailserver.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933014AbaJUUz5 (ORCPT
+	id S933498AbaJUU7K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 16:59:10 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:60290 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933014AbaJUU7H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 16:55:57 -0400
-X-Greylist: delayed 491 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Oct 2014 16:55:56 EDT
-X-AuthUser: davidel@xmailserver.org
-Date: Tue, 21 Oct 2014 13:47:44 -0700 (PDT)
-From: Davide Libenzi <davidel@xmailserver.org>
-X-X-Sender: davide@davide-lnx3
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Davide Libenzi <davidel@xmailserver.org>
-Subject: [patch] MAP_HUGETLB munmap fails with size not 2MB aligned
-Message-ID: <alpine.DEB.2.10.1410211047300.16997@davide-lnx3>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-X-GPG-FINGRPRINT: CFAE 5BEE FD36 F65E E640  56FE 0974 BF23 270F 474E
-X-GPG-PUBLIC_KEY: http://www.xmailserver.org/davidel.asc
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 21 Oct 2014 16:59:07 -0400
+From: Milosz Tanski <milosz@adfin.com>
+To: linux-kernel@vger.kernel.org
+Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
+        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-api@vger.kernel.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>, linux-man@vger.kernel.org
+Subject: [PATCH] Add preadv2/pwritev2 documentation.
+Date: Tue, 21 Oct 2014 16:59:02 -0400
+Message-Id: <1413925142-68031-1-git-send-email-milosz@adfin.com>
+X-Mailer: git-send-email 1.8.5.2 (Apple Git-48)
+In-Reply-To: <cover.1413923420.git.milosz@adfin.com>
+References: <cover.1413923420.git.milosz@adfin.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calling mmap with MAP_HUGETLB and a size which is not 2MB aligned, causes 
-mmap to fail. Tested on 3.13.x but tracking back to 3.2.x.
-In do_munmap() we forcibly want a 4KB default page, and we wrongly calculate
-the end of the map, by doing a split right in the middle of a huge page, 
-which will result in EINVAL.
-Tentative (untested) patch and test case attached (be sure you have a few 
-huge pages available via /proc/sys/vm/nr_hugepages tinkering).
+New syscalls that are a variation on the preadv/pwritev but support an extra
+flag argument.
 
+Signed-off-by: Milosz Tanski <milosz@adfin.com>
+Suggested-by: Jeff Moyer <jmoyer@redhat.com>
+Fixes: Jeff Moyer <jmoyer@redhat.com>
+---
+ man2/readv.2 | 71 +++++++++++++++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 61 insertions(+), 10 deletions(-)
 
-Signed-Off-By: Davide Libenzi <davidel@xmailserver.org>
-
-
-- Davide
-
-
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 7f85520..6dba257 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -2528,10 +2528,6 @@ int do_munmap(struct mm_struct *mm, unsigned long start, size_t len)
- 	if ((start & ~PAGE_MASK) || start > TASK_SIZE || len > TASK_SIZE-start)
- 		return -EINVAL;
- 
--	len = PAGE_ALIGN(len);
--	if (len == 0)
--		return -EINVAL;
--
- 	/* Find the first overlapping VMA */
- 	vma = find_vma(mm, start);
- 	if (!vma)
-@@ -2539,6 +2535,16 @@ int do_munmap(struct mm_struct *mm, unsigned long start, size_t len)
- 	prev = vma->vm_prev;
- 	/* we have  start < vma->vm_end  */
- 
-+	if (likely(!is_vm_hugetlb_page(vma)))
-+		len = PAGE_ALIGN(len);
-+	else {
-+		unsigned long hpage_size = huge_page_size(hstate_vma(vma));
+diff --git a/man2/readv.2 b/man2/readv.2
+index 8748efa..31b3870 100644
+--- a/man2/readv.2
++++ b/man2/readv.2
+@@ -45,6 +45,12 @@ readv, writev, preadv, pwritev \- read or write data into multiple buffers
+ .sp
+ .BI "ssize_t pwritev(int " fd ", const struct iovec *" iov ", int " iovcnt ,
+ .BI "                off_t " offset );
++.sp
++.BI "ssize_t preadv2(int " fd ", const struct iovec *" iov ", int " iovcnt ,
++.BI "                off_t " offset ", int " flags );
++.sp
++.BI "ssize_t pwritev2(int " fd ", const struct iovec *" iov ", int " iovcnt ,
++.BI "                 off_t " offset ", int " flags );
+ .fi
+ .sp
+ .in -4n
+@@ -162,9 +168,9 @@ The
+ system call combines the functionality of
+ .BR writev ()
+ and
+-.BR pwrite (2).
++.BR pwrite (2) "."
+ It performs the same task as
+-.BR writev (),
++.BR writev () ","
+ but adds a fourth argument,
+ .IR offset ,
+ which specifies the file offset at which the output operation
+@@ -174,15 +180,41 @@ The file offset is not changed by these system calls.
+ The file referred to by
+ .I fd
+ must be capable of seeking.
++.SS preadv2() and pwritev2()
 +
-+		len = ALIGN(len, hpage_size);
-+	}
-+	if (unlikely(len == 0))
-+		return -EINVAL;
++This pair of system calls has similar functionality to the
++.BR preadv ()
++and
++.BR pwritev ()
++calls, but adds a fifth argument, \fIflags\fP, which modifies the behavior on a per call basis.
 +
- 	/* if it doesn't overlap, we have nothing.. */
- 	end = start + len;
- 	if (vma->vm_start >= end)
-
-
-
-
-
-[hugebug.c]
-
-#include <sys/mman.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-
-static void test(int flags, size_t size)
-{
-    void* addr = mmap(NULL, size, PROT_READ | PROT_WRITE,
-                      flags | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-
-    if (addr == MAP_FAILED)
-    {
-        perror("mmap");
-        exit(1);
-    }
-    *(char*) addr = 17;
-
-    if (munmap(addr, size) != 0)
-    {
-        perror("munmap");
-        exit(1);
-    }
-}
-
-int main(int ac, const char** av)
-{
-    static const size_t hugepage_size = 2 * 1024 * 1024;
-
-    printf("Testing normal pages with 2MB size ...\n");
-    test(0, hugepage_size);
-    printf("OK\n");
-
-    printf("Testing huge pages with 2MB size ...\n");
-    test(MAP_HUGETLB, hugepage_size);
-    printf("OK\n");
-
-
-    printf("Testing normal pages with 4KB byte size ...\n");
-    test(0, 4096);
-    printf("OK\n");
-
-    printf("Testing huge pages with 4KB byte size ...\n");
-    test(MAP_HUGETLB, 4096);
-    printf("OK\n");
-
-
-    printf("Testing normal pages with 1 byte size ...\n");
-    test(0, 1);
-    printf("OK\n");
-
-    printf("Testing huge pages with 1 byte size ...\n");
-    test(MAP_HUGETLB, 1);
-    printf("OK\n");
-
-    return 0;
-}
++Like the
++.BR preadv ()
++and
++.BR pwritev ()
++calls, they accept an \fIoffset\fP argument. Unlike those calls, if the \fIoffset\fP argument is set to -1 then the current file offset is used and updated.
++
++The \fIflags\fP arguments to
++.BR preadv2 ()
++and
++.BR pwritev2 ()
++contains a bitwise OR of one or more of the following flags:
++.TP
++.BR RWF_NONBLOCK " (only " preadv2() " since Linux 3.19)"
++Performs a non-blocking operation for regular files (not sockets) opened in buffered mode (not
++.BR O_DIRECT ")."
++
+ .SH RETURN VALUE
+ On success,
+-.BR readv ()
+-and
++.BR readv () ","
+ .BR preadv ()
+-return the number of bytes read;
+-.BR writev ()
+ and
++.BR preadv2 ()
++return the number of bytes read;
++.BR writev () ","
+ .BR pwritev ()
++and
++.BR pwritev2 ()
+ return the number of bytes written.
+ On error, \-1 is returned, and \fIerrno\fP is set appropriately.
+ .SH ERRORS
+@@ -191,12 +223,22 @@ The errors are as given for
+ and
+ .BR write (2).
+ Furthermore,
+-.BR preadv ()
+-and
++.BR preadv () ","
++.BR preadv2 () ","
+ .BR pwritev ()
++and
++.BR pwritev2 ()
+ can also fail for the same reasons as
+ .BR lseek (2).
+-Additionally, the following error is defined:
++Additionally, the following errors are defined:
++.TP
++.B EAGAIN
++The operation would block. This is possible if the file descriptor \fIfd\fP refers to a socket and has been marked nonblocking
++.RB ( O_NONBLOCK ),
++or the operation is a
++.BR preadv2
++and the \fIflags\fP argument is set to
++.BR RWF_NONBLOCK.
+ .TP
+ .B EINVAL
+ The sum of the
+@@ -205,12 +247,17 @@ values overflows an
+ .I ssize_t
+ value.
+ Or, the vector count \fIiovcnt\fP is less than zero or greater than the
+-permitted maximum.
++permitted maximum. Or, an unknown flag is specified in \fIflags\fP.
+ .SH VERSIONS
+ .BR preadv ()
+ and
+ .BR pwritev ()
+ first appeared in Linux 2.6.30; library support was added in glibc 2.10.
++.sp
++.BR preadv2 ()
++and
++.BR pwritev2 ()
++first appeared in Linux 3.19 (if we're lucky);
+ .SH CONFORMING TO
+ .BR readv (),
+ .BR writev ():
+@@ -223,6 +270,10 @@ first appeared in Linux 2.6.30; library support was added in glibc 2.10.
+ .BR preadv (),
+ .BR pwritev ():
+ nonstandard, but present also on the modern BSDs.
++.sp
++.BR preadv2 (),
++.BR pwritev2 ():
++nonstandard, Linux extension.
+ .SH NOTES
+ .SS C library/kernel ABI differences
+ POSIX.1-2001 allows an implementation to place a limit on
+-- 
+1.9.1
 
