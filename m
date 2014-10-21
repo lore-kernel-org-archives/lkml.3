@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755308AbaJULbT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 07:31:19 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:55642 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755179AbaJULbR (ORCPT
+	id S1755338AbaJULcP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 07:32:15 -0400
+Received: from va-smtp01.263.net ([54.88.144.211]:34061 "EHLO
+	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755040AbaJULcN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 07:31:17 -0400
-Message-ID: <54464401.20900@cogentembedded.com>
-Date: Tue, 21 Oct 2014 15:31:13 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
-	<antoine.tenart@free-electrons.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 8/9] ARM: berlin: Add phy-connection-type to BG2Q PHY
-References: <1413881627-21639-1-git-send-email-sebastian.hesselbarth@gmail.com> <1413881627-21639-9-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1413881627-21639-9-git-send-email-sebastian.hesselbarth@gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Tue, 21 Oct 2014 07:32:13 -0400
+X-RL-SENDER: jay.xu@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: jay.xu@rock-chips.com
+X-UNIQUE-TAG: <b7917f226db86becc66acd70c7335f92>
+X-DNS-TYPE: 1
+From: Jianqun <jay.xu@rock-chips.com>
+To: heiko@sntech.de, lgirdwood@gmail.com, broonie@kernel.org, perex@perex.cz,
+        tiwai@suse.de, linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org
+Cc: huangtao@rock-chips.com, cf@rock-chips.com,
+        Jianqun <jay.xu@rock-chips.com>
+Subject: [PATCH] ASoC: rockchip-i2s: add rockchip-max98090 driver support
+Date: Tue, 21 Oct 2014 19:31:50 +0800
+Message-Id: <1413891110-21059-1-git-send-email-jay.xu@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+This patch is to add support for rockchip board with max98090 codec.
+It also needs sound node in dt file.
 
-On 10/21/2014 12:53 PM, Sebastian Hesselbarth wrote:
+Tested on rockchip board based on rk3288.
 
-> From: Antoine Ténart <antoine.tenart@free-electrons.com>
+Signed-off-by: Jianqun <jay.xu@rock-chips.com>
+---
+ sound/soc/rockchip/Kconfig | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-> Internal FastEthernet PHY on BG2Q is connected via MII, add a
-> corresponding phy-connection-type property.
-
-> Tested-by: Antoine Ténart <antoine.tenart@free-electrons.com>
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: "Antoine Ténart" <antoine.tenart@free-electrons.com>
-> Cc: Florian Fainelli <f.fainelli@gmail.com>
-> Cc: Eric Miao <eric.y.miao@gmail.com>
-> Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: netdev@vger.kernel.org
-> Cc: devicetree@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->   arch/arm/boot/dts/berlin2q.dtsi | 1 +
->   1 file changed, 1 insertion(+)
-
-> diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
-> index 891d56b03922..6dbc520bddc1 100644
-> --- a/arch/arm/boot/dts/berlin2q.dtsi
-> +++ b/arch/arm/boot/dts/berlin2q.dtsi
-> @@ -127,6 +127,7 @@
->   			status = "disabled";
->
->   			ethphy0: ethernet-phy@0 {
-> +				phy-connection-type = "mii";
-
-    You're adding this prop to the PHY node? That's very weird... normally, 
-it's a property of a MDIO bus node.
-
-[...]
-
-WBR, Sergei
+diff --git a/sound/soc/rockchip/Kconfig b/sound/soc/rockchip/Kconfig
+index 78fc159..482cbba 100644
+--- a/sound/soc/rockchip/Kconfig
++++ b/sound/soc/rockchip/Kconfig
+@@ -9,3 +9,16 @@ config SND_SOC_ROCKCHIP
+ 
+ config SND_SOC_ROCKCHIP_I2S
+ 	tristate
++	depends on CLKDEV_LOOKUP && SND_SOC_ROCKCHIP
++	help
++	  Say Y or M if you want to add support for I2S driver for Rockchip
++	  I2S device.
++
++config SND_SOC_ROCKCHIP_MAX98090
++	tristate "ASoC support Rockchip board with max98090"
++	depends on I2C && GPIOLIB
++	select SND_SOC_ROCKCHIP_I2S
++	select SND_SOC_MAX98090
++	help
++	  Say Y or M here if you want to add support for Rockchio board using
++	  a max98090 codec.
+-- 
+1.9.1
 
