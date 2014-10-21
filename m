@@ -1,58 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932743AbaJUTmK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 15:42:10 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:45134 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932382AbaJUTmJ (ORCPT
+	id S932810AbaJUTnn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 15:43:43 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:58725 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755026AbaJUTnm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 15:42:09 -0400
-X-Greylist: delayed 79391 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Oct 2014 15:42:08 EDT
-Message-ID: <5446B708.6070404@hurleysoftware.com>
-Date: Tue, 21 Oct 2014 15:42:00 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 21 Oct 2014 15:43:42 -0400
+Date: Tue, 21 Oct 2014 20:43:40 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Bastien Nocera <hadess@hadess.net>, linux-kernel@vger.kernel.org
+Subject: Re: A desktop environment[1] kernel wishlist
+Message-ID: <20141021194340.GT7996@ZenIV.linux.org.uk>
+References: <1413881397.30379.7.camel@hadess.net>
+ <5446B3CC.1080904@amacapital.net>
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: Kumar Gala <galak@codeaurora.org>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, Rob Herring <robh@kernel.org>
-Subject: Re: [PATCH] tty: serial: msm: Fix lock init issue with earlycon
-References: <1413551588-14877-1-git-send-email-galak@codeaurora.org> <544553F6.1020409@codeaurora.org> <544580ED.3050604@hurleysoftware.com> <20141020221656.GC12469@codeaurora.org> <20141020222003.GD12469@codeaurora.org>
-In-Reply-To: <20141020222003.GD12469@codeaurora.org>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5446B3CC.1080904@amacapital.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/20/2014 06:20 PM, Stephen Boyd wrote:
-> On 10/20, Stephen Boyd wrote:
->> On 10/20, Peter Hurley wrote:
->>>
->>> FWIW, __msm_console_write() is a deadlock-waiting-to_happen since it does
->>> not disable interrupts with spin_lock_irqsave().
->>>
->>
->> Yeah we should fix that. As far as I can tell we've never used
->> the irqsave variant of the lock in the console path. Did this
->> become necessary at some point since this driver was introduced?
->> I'm wondering how many stable trees need the fix.
-> 
-> Actually I don't see this case. It looks like the console is
-> always called in call_console_drivers() with irqs saved and
-> disabled via the logbuf_lock in console_cont_flush() or
-> console_unlock().
+On Tue, Oct 21, 2014 at 12:28:12PM -0700, Andy Lutomirski wrote:
 
-Thanks for bringing that to my attention.
+> Why is kdbus needed?
 
-That looks like a vestige of the initial transition away from BKL.
-I might look into just disabling preemption; even that might not
-really be necessary.
-
-Regards,
-Peter Hurley
-
+Presumably because freedesktop crowd has made an architectural mistake and
+pushed dbus as solution to all problems.  And ran into limitations of
+that, er, solution.  Then, instead of perhaps reconsidering the wisdom of
+their inspired decision, went for "let's push it kernelwards, it might
+somewhat reduce the overhead and problems will be easier to chalk up to
+something wrong being done by the kernel".
