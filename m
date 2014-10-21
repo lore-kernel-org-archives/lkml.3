@@ -1,139 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754109AbaJUB2t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 21:28:49 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:45096 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751493AbaJUB2r (ORCPT
+	id S1754143AbaJUBdF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 21:33:05 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:12680 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490AbaJUBc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 21:28:47 -0400
+	Mon, 20 Oct 2014 21:32:59 -0400
+Message-ID: <5445B794.30601@huawei.com>
+Date: Tue, 21 Oct 2014 09:32:04 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-In-Reply-To: <1799842.6CvQjvbUTo@wuerfel>
-References: <1411992293-7729-1-git-send-email-zhang.lyra@gmail.com>
-	<4004425.NZAxCnE0qr@wuerfel>
-	<CAAfSe-tPynLarYRzsTw3vncp8CB0EnoaR_Z6tPQNA7DEV7+w9Q@mail.gmail.com>
-	<1799842.6CvQjvbUTo@wuerfel>
-Date: Tue, 21 Oct 2014 09:28:45 +0800
-Message-ID: <CAAfSe-vKoAdZVtAaokzCy6jkubsDQhV14jwA=QpucMtcaUbu5g@mail.gmail.com>
-Subject: Re: [PATCH 2/6] arm64: Add DTS support for Spreadtrum's Shark64 SoC
-From: Lyra Zhang <zhang.lyra@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "jslaby@suse.cz" <jslaby@suse.cz>, Kumar Gala <galak@codeaurora.org>,
-        Mark Brown <broonie@linaro.org>, Mark Rutland <mark.rutland@arm.com>,
-        "m-karicheri2@ti.com" <m-karicheri2@ti.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        "rrichter@cavium.com" <rrichter@cavium.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Will Deacon <will.deacon@arm.com>, Orson Zhai <orsonzhai@gmail.com>,
-        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
-        "zhizhou.zhang" <zhizhou.zhang@spreadtrum.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "huxinwei@huawei.com" <huxinwei@huawei.com>,
+        Wuyun <wuyun.wu@huawei.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "chunyan.zhang" <chunyan.zhang@spreadtrum.com>
-Content-Type: text/plain; charset=UTF-8
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "arnab.basu@freescale.com" <arnab.basu@freescale.com>,
+        "Bharat.Bhushan@freescale.com" <Bharat.Bhushan@freescale.com>,
+        "x86@kernel.org" <x86@kernel.org>, "Arnd Bergmann" <arnd@arndb.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        Joerg Roedel <joro@8bytes.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        "Tony Luck" <tony.luck@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "sparclinux@vger.kernel.org" <sparclinux@vger.kernel.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "Sergei Shtylyov" <sergei.shtylyov@cogentembedded.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
+        Liviu Dudau <liviu@dudau.co.uk>
+Subject: Re: [PATCH v3 04/27] arm/MSI: Save MSI chip in pci_sys_data
+References: <1413342435-7876-1-git-send-email-wangyijing@huawei.com> <1413342435-7876-5-git-send-email-wangyijing@huawei.com> <20141020172158.GA8017@e102568-lin.cambridge.arm.com>
+In-Reply-To: <20141020172158.GA8017@e102568-lin.cambridge.arm.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Arnd
+On 2014/10/21 1:21, Lorenzo Pieralisi wrote:
+> On Wed, Oct 15, 2014 at 04:06:52AM +0100, Yijing Wang wrote:
+>> Saving msi chip in pci_sys_data can make pci bus and
+>> devices don't need to know msi chip detail, it also
+>> make pci enumeration code be decoupled from msi chip.
+>> In fact, all pci devices under the same pci hostbridge
+>> share same msi chip. So msi chip should be seen as one
+>> of resources or attributes to be initialized in pci host
+>> bridge driver. Currently, pci hostbridge drivers create
+>> pci_host_bridge in pci_create_root_bus(), and pass arch
+>> specific pci sysdata to core pci scan functions. So pci
+>> arch sysdata is good place to save msi chip.
+>>
+>> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+>> ---
+>>  arch/arm/include/asm/mach/pci.h |    6 ++++++
+>>  arch/arm/include/asm/pci.h      |    9 +++++++++
+>>  arch/arm/kernel/bios32.c        |    3 +++
+>>  drivers/pci/msi.c               |    6 ++++++
+>>  include/linux/pci.h             |    9 +++++++++
+>>  5 files changed, 33 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/arm/include/asm/mach/pci.h b/arch/arm/include/asm/mach/pci.h
+>> index 7fc4278..59b0d87 100644
+>> --- a/arch/arm/include/asm/mach/pci.h
+>> +++ b/arch/arm/include/asm/mach/pci.h
+>> @@ -22,6 +22,9 @@ struct hw_pci {
+>>  #ifdef CONFIG_PCI_DOMAINS
+>>  	int		domain;
+>>  #endif
+>> +#ifdef CONFIG_PCI_MSI
+>> +	struct msi_chip *msi_chip;
+>> +#endif
+>>  	struct pci_ops	*ops;
+>>  	int		nr_controllers;
+>>  	void		**private_data;
+>> @@ -47,6 +50,9 @@ struct pci_sys_data {
+>>  #ifdef CONFIG_PCI_DOMAINS
+>>  	int		domain;
+>>  #endif
+>> +#ifdef CONFIG_PCI_MSI
+>> +	struct msi_chip *msi_chip;
+>> +#endif
+> 
+> This struct is defined for ARM only. We are trying to remove dependency on it
+> so that we can have a single driver for ARM32 and ARM64 systems without
+> pcibios dependency. Why can't we add this msi chip data to the host
+> bridge struct instead ? I understand it is all a matter of how to pass
+> the pointer to pci_scan_root_bus(), where the bridge is created.
+> We could initialize the msi chip on the bridge through the bus pointer
+> returned by the pci_scan_root_bus() function.
 
-This problem have been solved, and was submitted in v2.
-Thanks for your answer to the question(which Orson asked for me) about
-this on Freenode.
+As mentioned in Patch 0, I will refactor generic pci hostbridge in another series,
+We need not only save msi_chip into pci_host_bridge, and other common info, like domain_nr,
+resources.
 
-Best regards,
-Lyra
+Thanks!
+Yijing.
 
-2014-10-21 3:00 GMT+08:00 Arnd Bergmann <arnd@arndb.de>:
-> On Wednesday 15 October 2014 11:17:07 Lyra Zhang wrote:
->> Hi, Arnd
->
-> Hi Lyra,
->
-> Sorry for the late reply, I've been away travelling and am just
-> now catching up on email. Have you found a solution or do
-> you still need help with this?
->
->         Arnd
->
->> 2014-09-29 21:47 GMT+08:00 Arnd Bergmann <arnd@arndb.de>:
->> > On Monday 29 September 2014 20:04:49 zhang.lyra@gmail.com wrote:
->> >> +
->> >> +/memreserve/ 0x80000000 0x00010000;
->> >
->> > Maybe add a comment explaining why it is reserved?
->> >
->> >> +     chosen {
->> >> +             bootargs = "earlycon=serial_sprd,0x70000000";
->> >> +      };
->> >
->> > Just remove this for now, the command line should really be set by the
->> > boot loader, not hardcoded in the dts file.
->> >
->> > IIRC, the earlycon=... syntax is not recommended on DT based systems,
->> > better use the "stdout-path" syntax instead.
->> >
+> 
+> Thanks,
+> Lorenzo
+> 
+>>  	struct list_head node;
+>>  	int		busnr;		/* primary bus number			*/
+>>  	u64		mem_offset;	/* bus->cpu memory mapping offset	*/
+>> diff --git a/arch/arm/include/asm/pci.h b/arch/arm/include/asm/pci.h
+>> index 7e95d85..b562c09 100644
+>> --- a/arch/arm/include/asm/pci.h
+>> +++ b/arch/arm/include/asm/pci.h
+>> @@ -31,6 +31,15 @@ static inline int pci_proc_domain(struct pci_bus *bus)
+>>  }
+>>  #endif /* CONFIG_PCI_DOMAINS */
+>>  
+>> +#ifdef CONFIG_PCI_MSI
+>> +static inline struct msi_chip *pci_msi_chip(struct pci_bus *bus)
+>> +{
+>> +	struct pci_sys_data *root = bus->sysdata;
+>> +
+>> +	return root->msi_chip;
+>> +}
+>> +#endif
+>> +
+>>  /*
+>>   * The PCI address space does equal the physical memory address space.
+>>   * The networking and block device layers use this boolean for bounce
+>> diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
+>> index 17a26c1..a19038d 100644
+>> --- a/arch/arm/kernel/bios32.c
+>> +++ b/arch/arm/kernel/bios32.c
+>> @@ -471,6 +471,9 @@ static void pcibios_init_hw(struct device *parent, struct hw_pci *hw,
+>>  #ifdef CONFIG_PCI_DOMAINS
+>>  		sys->domain  = hw->domain;
+>>  #endif
+>> +#ifdef CONFIG_PCI_MSI
+>> +		sys->msi_chip = hw->msi_chip;
+>> +#endif
+>>  		sys->busnr   = busnr;
+>>  		sys->swizzle = hw->swizzle;
+>>  		sys->map_irq = hw->map_irq;
+>> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+>> index 22e413c..f11108c 100644
+>> --- a/drivers/pci/msi.c
+>> +++ b/drivers/pci/msi.c
+>> @@ -35,6 +35,9 @@ int __weak arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
+>>  	struct msi_chip *chip = dev->bus->msi;
+>>  	int err;
+>>  
+>> +	if (!chip)
+>> +		chip = pci_msi_chip(dev->bus);
+>> +
+>>  	if (!chip || !chip->setup_irq)
+>>  		return -EINVAL;
+>>  
+>> @@ -50,6 +53,9 @@ void __weak arch_teardown_msi_irq(unsigned int irq)
+>>  	struct msi_desc *entry = irq_get_msi_desc(irq);
+>>  	struct msi_chip *chip = entry->dev->bus->msi;
+>>  
+>> +	if (!chip)
+>> +		chip = pci_msi_chip(entry->dev->bus);
+>> +
+>>  	if (!chip || !chip->teardown_irq)
+>>  		return;
+>>  
+>> diff --git a/include/linux/pci.h b/include/linux/pci.h
+>> index 9cd2721..7a48b40 100644
+>> --- a/include/linux/pci.h
+>> +++ b/include/linux/pci.h
+>> @@ -1433,6 +1433,15 @@ static inline int pci_get_new_domain_nr(void) { return -ENOSYS; }
+>>  
+>>  #include <asm/pci.h>
+>>  
+>> +/* Just avoid compile error, will be clean up later */
+>> +#ifdef CONFIG_PCI_MSI
+>> +
+>> +#ifndef pci_msi_chip
+>> +#define pci_msi_chip(bus)	NULL
+>> +#endif
+>> +
+>> +#endif
+>> +
+>>  /* these helpers provide future and backwards compatibility
+>>   * for accessing popular PCI BAR info */
+>>  #define pci_resource_start(dev, bar)	((dev)->resource[(bar)].start)
+>> -- 
+>> 1.7.1
 >>
->> I have tried to use  "stdout-path" instead of "bootargs= "earlycon=
->> ..." like below :
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
 >>
->> / {
->>      ...
->>
->>      chosen {
->>              stdout-path = "/serial@70000000";
->>       };
->>
->>      uart0: serial@70000000 {
->>              status="okay";
->>      };
->>       ...
->> };
->>
->> But then there is nothing output information on serial console.(I have
->> been testing in Fast Model)
->>
->>
->> I saw the below code in init/main.c
->>
->> /* Check for early params. */
->> static int __init do_early_param(char *param, char *val, const char *unused)
->> {
->> const struct obs_kernel_param *p;
->>
->> for (p = __setup_start; p < __setup_end; p++) {
->> if ((p->early && parameq(param, p->str)) ||
->>    (strcmp(param, "console") == 0 &&
->>     strcmp(p->str, "earlycon") == 0)
->> ) {
->> if (p->setup_func(val) != 0)
->> pr_warn("Malformed early option '%s'\n", param);
->> }
->> }
->> /* We accept everything at this stage. */
->> return 0;
->> }
->>
->> And I saw a patch from Grant Likely, he had a comment in it :
->> "If the devicetree specifies a serial port as a stdout device, then the
->> kernel can use it as the default console if nothing else was selected on
->> the command line. For any serial port that uses the uart_add_one_port()
->> feature, the uart_add_one_port() has all the information needed to
->> automatically enable the console device, which is what this patch does."
->>
->> So, I guess that the reason why I can't see any output information on
->> console after using "stdout-path" instead of "earlycon" is that I
->> haven't a driver of Spreadtrum's serial, and dose not use  the
->> uart_add_one_port() feature.
->>
->> I don't know is correct what I guess.
->>
->> Could you give me some suggestions to solve this problem?
->>
->
+> 
+> 
+> .
+> 
+
+
+-- 
+Thanks!
+Yijing
+
