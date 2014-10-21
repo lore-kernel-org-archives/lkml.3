@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624AbaJUJWs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 05:22:48 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57980 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752877AbaJUJWr (ORCPT
+	id S1754959AbaJUJXF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 05:23:05 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:45824 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754662AbaJUJW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 05:22:47 -0400
-Date: Tue, 21 Oct 2014 11:22:40 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Bjorn Andersson <bjorn@kryo.se>
-cc: Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
-        Marc Zyngier <marc.zyngier@arm.com>
-Subject: Re: [PATCH] genirq: Introduce irq_read_line()
-In-Reply-To: <CAJAp7OgGPZZuCgC8iUiW2jrEVubK=KCATxd6eazdT1x1sSrffg@mail.gmail.com>
-Message-ID: <alpine.DEB.2.11.1410211120430.5308@nanos>
-References: <1408479811-26088-1-git-send-email-bjorn.andersson@sonymobile.com> <CAJAp7OgGPZZuCgC8iUiW2jrEVubK=KCATxd6eazdT1x1sSrffg@mail.gmail.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+	Tue, 21 Oct 2014 05:22:56 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        linux-mmc@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH RESEND 09/12] mmc: sdhci-pxav3: Document clocks and additional clock-names property
+Date: Tue, 21 Oct 2014 11:22:41 +0200
+Message-Id: <1413883364-681-10-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1413883364-681-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1413883364-681-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Sep 2014, Bjorn Andersson wrote:
+Now that sdhci-pxav3 driver allows to have more than one IP clock defined,
+document both clocks and clock-names properties.
 
-> On Tue, Aug 19, 2014 at 1:23 PM, Bjorn Andersson
-> <bjorn.andersson@sonymobile.com> wrote:
-> > Introduce the irq_read_line() function to allow device drivers to read
-> > the current logical state of an input when the hardware only exposes
-> > this through status bits in the interrupt controller.
-> >
-> > The new function is backed by a new callback function in the irq_chip -
-> > irq_read_line() - that can be implemented by irq_chips that owns such
-> > status bits.
-> >
-> > Based on rfc patch from April 2011 by Abhijeet.
-> >
-> > Cc: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-> > Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-> 
-> ping?
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Cc: Chris Ball <chris@printf.net>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: "Antoine Ténart" <antoine.tenart@free-electrons.com>
+Cc: linux-mmc@vger.kernel.org
+Cc: devicetree@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ Documentation/devicetree/bindings/mmc/sdhci-pxa.txt | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-Sorry, slipped through the cracks. I was talking about this to Marc
-last week and he needs it for yet another reason. He had some thoughts
-about the state representation, so I wait for him to comment.
-
-Thanks,
-
-	tglx
+diff --git a/Documentation/devicetree/bindings/mmc/sdhci-pxa.txt b/Documentation/devicetree/bindings/mmc/sdhci-pxa.txt
+index 86223c3eda90..4dd6deb90719 100644
+--- a/Documentation/devicetree/bindings/mmc/sdhci-pxa.txt
++++ b/Documentation/devicetree/bindings/mmc/sdhci-pxa.txt
+@@ -12,6 +12,10 @@ Required properties:
+   * for "marvell,armada-380-sdhci", two register areas. The first one
+     for the SDHCI registers themselves, and the second one for the
+     AXI/Mbus bridge registers of the SDHCI unit.
++- clocks: Array of clocks required for SDHCI; requires at least one for
++    I/O clock.
++- clock-names: Array of names corresponding to clocks property; shall be
++    "io" for I/O clock and "core" for optional core clock.
+ 
+ Optional properties:
+ - mrvl,clk-delay-cycles: Specify a number of cycles to delay for tuning.
+@@ -23,6 +27,8 @@ sdhci@d4280800 {
+ 	reg = <0xd4280800 0x800>;
+ 	bus-width = <8>;
+ 	interrupts = <27>;
++	clocks = <&chip CLKID_SDIO1XIN>, <&chip CLKID_SDIO1>;
++	clock-names = "io", "core";
+ 	non-removable;
+ 	mrvl,clk-delay-cycles = <31>;
+ };
+@@ -32,5 +38,6 @@ sdhci@d8000 {
+ 	reg = <0xd8000 0x1000>, <0xdc000 0x100>;
+ 	interrupts = <0 25 0x4>;
+ 	clocks = <&gateclk 17>;
++	clock-names = "io";
+ 	mrvl,clk-delay-cycles = <0x1F>;
+ };
+-- 
+2.1.1
 
