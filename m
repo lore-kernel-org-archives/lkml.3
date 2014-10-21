@@ -1,60 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090AbaJUArH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 20:47:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26196 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753038AbaJUArF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 20:47:05 -0400
-Message-ID: <5445AD03.6000901@redhat.com>
-Date: Mon, 20 Oct 2014 20:46:59 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
+	id S1754113AbaJUArS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 20:47:18 -0400
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:20070 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753038AbaJUArP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 20:47:15 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: Dan Streetman <ddstreet@ieee.org>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 20 Oct 2014 17:47:09 -0700
+Subject: RE: [PATCH] drivers: base: update cpu offline info when do hotplug
+Thread-Topic: [PATCH] drivers: base: update cpu offline info when do hotplug
+Thread-Index: Ac/sh7aCR8NyL9U0QrWhIyu5ivXqegAQLhTg
+Message-ID: <9034CBD80F070943B59700D7F8149ED9024EB81D3A@SC-VEXCH4.marvell.com>
+References: <1413775748-22478-1-git-send-email-zhangwm@marvell.com>
+ <20141020044340.GA9589@kroah.com>
+ <9034CBD80F070943B59700D7F8149ED9024EB81CAF@SC-VEXCH4.marvell.com>
+ <20141020064826.GA4064@kroah.com>
+ <9034CBD80F070943B59700D7F8149ED9024EB81CC6@SC-VEXCH4.marvell.com>
+ <CALZtONDEdFbx+zTWYdmz3HsfCnV+RtTPAuY4p-RK1DN3g2CwrQ@mail.gmail.com>
+In-Reply-To: <CALZtONDEdFbx+zTWYdmz3HsfCnV+RtTPAuY4p-RK1DN3g2CwrQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>
-Subject: Re: [PATCH] scripts, checkpatch.pl, provide a better output message
- for commit id format [v2]
-References: <1413845376-2128-1-git-send-email-prarit@redhat.com> <1413846680.5407.4.camel@perches.com>
-In-Reply-To: <1413846680.5407.4.camel@perches.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-10-20_05:2014-10-20,2014-10-20,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1410210007
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9L0lMV0028108
+
+Dan,
+
+> -----Original Message-----
+> From: ddstreet@gmail.com [mailto:ddstreet@gmail.com] On Behalf Of Dan
+> Streetman
+> Sent: 2014å¹´10æœˆ21æ—¥ 1:03
+> To: Neil Zhang
+> Cc: Greg KH; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] drivers: base: update cpu offline info when do
+> hotplug
+> 
+> On Mon, Oct 20, 2014 at 3:40 AM, Neil Zhang <zhangwm@marvell.com> wrote:
+> > Greg,
+> >
+> >
+> > -----Original Message-----
+> > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > Sent: 2014å¹´10æœˆ20æ—¥ 14:48
+> > To: Neil Zhang
+> > Cc: linux-kernel@vger.kernel.org
+> > Subject: Re: [PATCH] drivers: base: update cpu offline info when do
+> > hotplug
+> >
+> > On Sun, Oct 19, 2014 at 11:39:23PM -0700, Neil Zhang wrote:
+> >>> How much noise is this going to cause on a big/little system that
+> >>> constantly hot unplug/plugs processors all of the time?
+> >>
+> >> Can you explain more what kind of noise will be introduced on a
+> big/little system?
+> >
+> > Have you tested this on such a machine?
+> >
+> > I didn't have such kind of machine on hand.
+> > Can anyone has such machine to verify it?
+> > Thanks!
+> 
+> I tested this on a ppc PowerVM system, using dlpar operations to
+> remove/add cpus.
+> 
+> Without this patch the cpu online nodes get out of sync with the main
+> online node (and the actual state of the cpus), because they aren't
+> updated as the cpus are brought up/down:
+> 
+> [root@br10p02 cpu]$ pwd
+> /sys/devices/system/cpu
+> [root@br10p02 cpu]$ cat online
+> 0-39
+> [root@br10p02 cpu]$ for n in {0..47} ; do test $( cat cpu$n/online ) -
+> eq 1 && echo -n "$n " ; done ; echo ""
+> 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
+> 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47
+> 
+> 
+> While with the patch, the cpu online nodes are kept up to date as the
+> cpus are brought up/down:
+> 
+> [root@br10p02 cpu]$ pwd
+> /sys/devices/system/cpu
+> [root@br10p02 cpu]$ cat online
+> 0-39
+> [root@br10p02 cpu]$ for n in {0..47} ; do test $( cat cpu$n/online ) -
+> eq 1 && echo -n "$n " ; done ; echo ""
+> 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
+> 27 28 29 30 31 32 33 34 35 36 37 38 39
+> 
+> 
+> Feel free to add
+
+Thanks for your kindly test!
+
+> 
+> Tested-by: Dan Streetman <ddstreet@ieee.org>
+> 
+> >
+> >> As I know IKS on arm will use cpu_suspend way to power down a core.
+> >
+> > Are you sure that it also doesn't use that same functionality to drop
+> a processor to save power?
+> >
+> > As I know it use cpu_suspend to switch out a processor in IKS and
+> there is no cpu hotplug notifier in this procedure.
+> >
+> >
+> > Why do you need/want this notification?  What are you going to do
+> with this information that you don't already have?
+> >
+> > The offline won't be updated if an in kernel hotplug governor plug in
+> / out a core which cause the sysfs interface report a wrong status.
+> >
+> >
+> > thanks,
+> >
+> > greg k-h
+> >
+> >
+> > Best Regards,
+> > Neil Zhang
 
 
-
-On 10/20/2014 07:11 PM, Joe Perches wrote:
-> On Mon, 2014-10-20 at 18:49 -0400, Prarit Bhargava wrote:
->> I tested this using both lower and upper case 'c' with the following commit
->> text:
-> []
-> 
-> I think the patch subject be something like:
-> 
-> "[PATCH] checkpatch: improve commit id/desc style checking in commit message"
-> 
-> The [v2] goes in the subject like this:
-> 
-> "[PATCH V2] checkpatch: ..."
-> 
->> 11 chars, SHOULD FAIL
->> commit 1234567890a
-> 
-> []
-> 
->> ERROR: Please use 12 or more chars for the git commit ID
->> commit 1234567890a
-> 
-> I'd expect these messages to mention something about the
-> missing commit description too.
-
-Hmm ... is that a requirement here?  Currently checkpatch.pl doesn't complain
-about that.  I can do it but I'd hate to find out that I'm ERRORing on something
-that is considered okay to do.
-
-P.
-
-> 
-> 
+Best Regards,
+Neil Zhang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
