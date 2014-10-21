@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932893AbaJUOMz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 10:12:55 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:47624 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932874AbaJUOMu (ORCPT
+	id S932909AbaJUONB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 10:13:01 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:34382 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932874AbaJUOM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 10:12:50 -0400
+	Tue, 21 Oct 2014 10:12:58 -0400
 From: Xia Kaixu <kaixu.xia@linaro.org>
 To: rmk+kernel@arm.linux.org.uk, arm@kernel.org
 Cc: kaixu.xia@linaro.org, arnd@arndb.de, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 2/4] ARM: change the corresponding arm/mach defconfigs
-Date: Tue, 21 Oct 2014 22:11:32 +0800
-Message-Id: <1413900694-29571-3-git-send-email-kaixu.xia@linaro.org>
+Subject: [PATCH 4/4] ARM: allow errata and XIP options to be enabled without ARCH_MULTIPLATFORM_STRICT
+Date: Tue, 21 Oct 2014 22:11:34 +0800
+Message-Id: <1413900694-29571-5-git-send-email-kaixu.xia@linaro.org>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1413900694-29571-1-git-send-email-kaixu.xia@linaro.org>
 References: <1413900694-29571-1-git-send-email-kaixu.xia@linaro.org>
@@ -21,66 +21,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DEBUG_LL will get a dependency on !ARCH_MULTIPLATFORM_STRICT.
-So change the corresponding arm/mach defconfigs to disable 
-ARCH_MULTIPLATFORM_STRICT and avoid break them.
+With the ARCH_MULTIPLATFORM_STRICT option, it becomes much easier to 
+enable the ERRATA options when we know at configuration time that we
+don't care about the generic case. The previous configuration makes
+XIP_KERNEL option fundamentally non-MULTIPLATFORM, but it's still
+valid to select it when building for !ARCH_MULTIPLATFORM_STRICT and
+selecting only the one machine that you want to run on.
+
+So allow ARM_ERRATA and XIP_KERNEL options to be enabled without
+ARCH_MULTIPLATFORM_STRICT.
 
 Signed-off-by: Xia Kaixu <kaixu.xia@linaro.org>
 ---
- arch/arm/configs/bcm2835_defconfig | 1 +
- arch/arm/configs/moxart_defconfig  | 1 +
- arch/arm/configs/s5pv210_defconfig | 1 +
- arch/arm/configs/tegra_defconfig   | 1 +
- 4 files changed, 4 insertions(+)
+ arch/arm/Kconfig | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/arch/arm/configs/bcm2835_defconfig b/arch/arm/configs/bcm2835_defconfig
-index 31cb073..e644c8b 100644
---- a/arch/arm/configs/bcm2835_defconfig
-+++ b/arch/arm/configs/bcm2835_defconfig
-@@ -135,6 +135,7 @@ CONFIG_TEST_KSTRTOX=y
- CONFIG_KGDB=y
- CONFIG_KGDB_KDB=y
- CONFIG_STRICT_DEVMEM=y
-+# CONFIG_ARCH_MULTIPLATFORM_STRICT is not set
- CONFIG_DEBUG_LL=y
- CONFIG_EARLY_PRINTK=y
- # CONFIG_XZ_DEC_ARM is not set
-diff --git a/arch/arm/configs/moxart_defconfig b/arch/arm/configs/moxart_defconfig
-index a3cb76c..7ba9343 100644
---- a/arch/arm/configs/moxart_defconfig
-+++ b/arch/arm/configs/moxart_defconfig
-@@ -140,6 +140,7 @@ CONFIG_DETECT_HUNG_TASK=y
- CONFIG_PROVE_LOCKING=y
- CONFIG_DMA_API_DEBUG=y
- CONFIG_KGDB=y
-+# CONFIG_ARCH_MULTIPLATFORM_STRICT is not set
- CONFIG_DEBUG_LL=y
- CONFIG_DEBUG_LL_UART_8250=y
- CONFIG_DEBUG_UART_PHYS=0x98200000
-diff --git a/arch/arm/configs/s5pv210_defconfig b/arch/arm/configs/s5pv210_defconfig
-index fa98990..bc0cad4 100644
---- a/arch/arm/configs/s5pv210_defconfig
-+++ b/arch/arm/configs/s5pv210_defconfig
-@@ -67,6 +67,7 @@ CONFIG_DEBUG_INFO=y
- CONFIG_SYSCTL_SYSCALL_CHECK=y
- CONFIG_DEBUG_USER=y
- CONFIG_DEBUG_ERRORS=y
-+# CONFIG_ARCH_MULTIPLATFORM_STRICT is not set
- CONFIG_DEBUG_LL=y
- CONFIG_EARLY_PRINTK=y
- CONFIG_DEBUG_S3C_UART=1
-diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
-index 888fc15..851b80b 100644
---- a/arch/arm/configs/tegra_defconfig
-+++ b/arch/arm/configs/tegra_defconfig
-@@ -291,6 +291,7 @@ CONFIG_TIMER_STATS=y
- # CONFIG_DEBUG_PREEMPT is not set
- CONFIG_DEBUG_MUTEXES=y
- CONFIG_DEBUG_SG=y
-+# CONFIG_ARCH_MULTIPLATFORM_STRICT is not set
- CONFIG_DEBUG_LL=y
- CONFIG_EARLY_PRINTK=y
- CONFIG_CRYPTO_TWOFISH=y
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 50762cc..14d0dce 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1091,7 +1091,7 @@ config ARM_ERRATA_430973
+ config ARM_ERRATA_458693
+ 	bool "ARM errata: Processor deadlock when a false hazard is created"
+ 	depends on CPU_V7
+-	depends on !ARCH_MULTIPLATFORM
++	depends on !ARCH_MULTIPLATFORM_STRICT
+ 	help
+ 	  This option enables the workaround for the 458693 Cortex-A8 (r2p0)
+ 	  erratum. For very specific sequences of memory operations, it is
+@@ -1105,7 +1105,7 @@ config ARM_ERRATA_458693
+ config ARM_ERRATA_460075
+ 	bool "ARM errata: Data written to the L2 cache can be overwritten with stale data"
+ 	depends on CPU_V7
+-	depends on !ARCH_MULTIPLATFORM
++	depends on !ARCH_MULTIPLATFORM_STRICT
+ 	help
+ 	  This option enables the workaround for the 460075 Cortex-A8 (r2p0)
+ 	  erratum. Any asynchronous access to the L2 cache may encounter a
+@@ -1118,7 +1118,7 @@ config ARM_ERRATA_460075
+ config ARM_ERRATA_742230
+ 	bool "ARM errata: DMB operation may be faulty"
+ 	depends on CPU_V7 && SMP
+-	depends on !ARCH_MULTIPLATFORM
++	depends on !ARCH_MULTIPLATFORM_STRICT
+ 	help
+ 	  This option enables the workaround for the 742230 Cortex-A9
+ 	  (r1p0..r2p2) erratum. Under rare circumstances, a DMB instruction
+@@ -1131,7 +1131,7 @@ config ARM_ERRATA_742230
+ config ARM_ERRATA_742231
+ 	bool "ARM errata: Incorrect hazard handling in the SCU may lead to data corruption"
+ 	depends on CPU_V7 && SMP
+-	depends on !ARCH_MULTIPLATFORM
++	depends on !ARCH_MULTIPLATFORM_STRICT
+ 	help
+ 	  This option enables the workaround for the 742231 Cortex-A9
+ 	  (r2p0..r2p2) erratum. Under certain conditions, specific to the
+@@ -1168,7 +1168,7 @@ config ARM_ERRATA_720789
+ config ARM_ERRATA_743622
+ 	bool "ARM errata: Faulty hazard checking in the Store Buffer may lead to data corruption"
+ 	depends on CPU_V7
+-	depends on !ARCH_MULTIPLATFORM
++	depends on !ARCH_MULTIPLATFORM_STRICT
+ 	help
+ 	  This option enables the workaround for the 743622 Cortex-A9
+ 	  (r2p*) erratum. Under very rare conditions, a faulty
+@@ -1182,7 +1182,7 @@ config ARM_ERRATA_743622
+ config ARM_ERRATA_751472
+ 	bool "ARM errata: Interrupted ICIALLUIS may prevent completion of broadcasted operation"
+ 	depends on CPU_V7
+-	depends on !ARCH_MULTIPLATFORM
++	depends on !ARCH_MULTIPLATFORM_STRICT
+ 	help
+ 	  This option enables the workaround for the 751472 Cortex-A9 (prior
+ 	  to r3p0) erratum. An interrupted ICIALLUIS operation may prevent the
+@@ -1987,7 +1987,7 @@ endchoice
+ 
+ config XIP_KERNEL
+ 	bool "Kernel Execute-In-Place from ROM"
+-	depends on !ARM_LPAE && !ARCH_MULTIPLATFORM
++	depends on !ARM_LPAE && !ARCH_MULTIPLATFORM_STRICT
+ 	help
+ 	  Execute-In-Place allows the kernel to run from non-volatile storage
+ 	  directly addressable by the CPU, such as NOR flash. This saves RAM
 -- 
 2.1.1
 
