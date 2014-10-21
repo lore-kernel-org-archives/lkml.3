@@ -1,153 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934081AbaJUV6d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 17:58:33 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:52066 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933738AbaJUV4J (ORCPT
+	id S933903AbaJUWDz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 18:03:55 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:60567 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933598AbaJUWDw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 17:56:09 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Sebastian Reichel <sre@kernel.org>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH 3/8] ARM: at91: sam9: probe the RAMC driver from pdata
-Date: Tue, 21 Oct 2014 23:55:35 +0200
-Message-Id: <1413928540-27099-4-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1413928540-27099-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1413928540-27099-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Tue, 21 Oct 2014 18:03:52 -0400
+Message-ID: <5446D833.1030702@gmail.com>
+Date: Tue, 21 Oct 2014 15:03:31 -0700
+From: Florian Fainelli <f.fainelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: "David S. Miller" <davem@davemloft.net>,
+        =?UTF-8?B?QW50b2luZSBUw6luYXI=?= =?UTF-8?B?dA==?= 
+	<antoine.tenart@free-electrons.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/9] Marvell PXA168 libphy handling and Berlin Ethernet
+References: <1413881627-21639-1-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1413881627-21639-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Probe the atmel-sdramc driver from the board files, using platform_data.
+Hi Sebastian,
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- arch/arm/mach-at91/Kconfig       |  2 +-
- arch/arm/mach-at91/at91sam9260.c | 15 +++++++++++++++
- arch/arm/mach-at91/at91sam9261.c | 15 +++++++++++++++
- arch/arm/mach-at91/at91sam9263.c | 15 +++++++++++++++
- 4 files changed, 46 insertions(+), 1 deletion(-)
+On 10/21/2014 01:53 AM, Sebastian Hesselbarth wrote:
+> This patch series deals with a removing a IP feature that can be found
+> on all currently supported Marvell Ethernet IP (pxa168_eth, mv643xx_eth,
+> mvneta). The MAC IP allows to automatically perform PHY auto-negotiation
+> without software interaction.
+> 
+> However, this feature (a) fundamentally clashes with the way libphy works
+> and (b) is unable to deal with quirky PHYs that require special treatment.
+> In this series, pxa168_eth driver is rewritten to completely disable that
+> feature and properly deal with libphy provided PHYs.
+> 
+> This is the real patch set after an RFT sent earlier. Unfortunately, there
+> was no testing from MMP/gplug but there was for BG2Q. However, it still
+> would be great to get a Tested-by on gplug. Also, this patch set is now
+> rebased on v3.18-rc1. As usual, a branch on top of v3.18-rc1 can be found at
+> 
+> git://git.infradead.org/users/hesselba/linux-berlin.git devel/bg2-bg2cd-eth-v1
+> 
+> Patches 1-5 should go through David's net tree, I'll pick up the DT patches
+> 6-9.
+> 
+> Compared to the RFT, there have been some changes:
+> - added phy-connection-type property to BG2Q PHY DT node
+> - bail out from pxa168_eth_adjust_link when there is no change in
+>   PHY parameters. Also, add a call to phy_print_status.
+> 
+> Patch 1 adds support for Marvell 88E3016 FastEthernet PHY that is also
+> integrated in Marvell Berlin BG2/BG2CD SoCs.
+> 
+> Patch 2 allows to pass phy_interface_t on pxa168_eth platform_data that
+> is only used by mach-mmp/gplug. From the board setup, I guessed gplug's
+> PHY is connected via RMII. The patch still isn't even compile tested.
+> 
+> Patches 3-5 prepare proper libphy handling and finally remove all in-driver
+> PHY mangling related to the feature explained above.
+> 
+> Patches 6-9 add corresponding ethernet DT nodes to BG2, BG2CD, add a
+> phy-connection-type property to BG2Q and enable ethernet on BG2-based Sony
+> NSZ-GS7. I have tested all this on GS7 successfully with ip=dhcp on 100M FD.
 
-diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-index 0e6d548b70d9..db38e1d4b4fa 100644
---- a/arch/arm/mach-at91/Kconfig
-+++ b/arch/arm/mach-at91/Kconfig
-@@ -48,7 +48,7 @@ config SOC_AT91SAM9
- 	select CPU_ARM926T
- 	select GENERIC_CLOCKEVENTS
- 	select MEMORY if USE_OF
--	select ATMEL_SDRAMC if USE_OF
-+	select ATMEL_SDRAMC
- 
- config SOC_SAMA5
- 	bool
-diff --git a/arch/arm/mach-at91/at91sam9260.c b/arch/arm/mach-at91/at91sam9260.c
-index aab1f969a7c3..d5a6df9ce570 100644
---- a/arch/arm/mach-at91/at91sam9260.c
-+++ b/arch/arm/mach-at91/at91sam9260.c
-@@ -378,6 +378,20 @@ static struct platform_device rstc_device = {
- 	.num_resources  = ARRAY_SIZE(rstc_resources),
- };
- 
-+static struct resource ramc_resources[] = {
-+	[0] = {
-+		.start  = AT91SAM9260_BASE_SDRAMC,
-+		.end    = AT91SAM9260_BASE_SDRAMC + SZ_512 - 1,
-+		.flags  = IORESOURCE_MEM,
-+	},
-+};
-+
-+static struct platform_device ramc_device = {
-+	.name           = "at91-sam9260-ramc",
-+	.resource       = ramc_resources,
-+	.num_resources  = ARRAY_SIZE(ramc_resources),
-+};
-+
- static struct resource shdwc_resources[] = {
- 	[0] = {
- 		.start  = AT91SAM9260_BASE_SHDWC,
-@@ -394,6 +408,7 @@ static struct platform_device shdwc_device = {
- 
- static void __init at91sam9260_register_devices(void)
- {
-+	platform_device_register(&ramc_device);
- 	platform_device_register(&rstc_device);
- 	platform_device_register(&shdwc_device);
- }
-diff --git a/arch/arm/mach-at91/at91sam9261.c b/arch/arm/mach-at91/at91sam9261.c
-index a8bd35963332..1b23a023cca6 100644
---- a/arch/arm/mach-at91/at91sam9261.c
-+++ b/arch/arm/mach-at91/at91sam9261.c
-@@ -337,6 +337,20 @@ static struct platform_device rstc_device = {
- 	.num_resources  = ARRAY_SIZE(rstc_resources),
- };
- 
-+static struct resource ramc_resources[] = {
-+	[0] = {
-+		.start  = AT91SAM9261_BASE_SDRAMC,
-+		.end    = AT91SAM9261_BASE_SDRAMC + SZ_512 - 1,
-+		.flags  = IORESOURCE_MEM,
-+	},
-+};
-+
-+static struct platform_device ramc_device = {
-+	.name           = "at91-sam9260-ramc",
-+	.resource       = ramc_resources,
-+	.num_resources  = ARRAY_SIZE(ramc_resources),
-+};
-+
- static struct resource shdwc_resources[] = {
- 	[0] = {
- 		.start  = AT91SAM9261_BASE_SHDWC,
-@@ -353,6 +367,7 @@ static struct platform_device shdwc_device = {
- 
- static void __init at91sam9261_register_devices(void)
- {
-+	platform_device_register(&ramc_device);
- 	platform_device_register(&rstc_device);
- 	platform_device_register(&shdwc_device);
- }
-diff --git a/arch/arm/mach-at91/at91sam9263.c b/arch/arm/mach-at91/at91sam9263.c
-index fbff228cc63e..55c0c212fde1 100644
---- a/arch/arm/mach-at91/at91sam9263.c
-+++ b/arch/arm/mach-at91/at91sam9263.c
-@@ -360,6 +360,20 @@ static struct platform_device rstc_device = {
- 	.num_resources  = ARRAY_SIZE(rstc_resources),
- };
- 
-+static struct resource ramc_resources[] = {
-+	[0] = {
-+		.start  = AT91SAM9263_BASE_SDRAMC0,
-+		.end    = AT91SAM9263_BASE_SDRAMC0 + SZ_512 - 1,
-+		.flags  = IORESOURCE_MEM,
-+	},
-+};
-+
-+static struct platform_device ramc_device = {
-+	.name           = "at91-sam9260-ramc",
-+	.resource       = ramc_resources,
-+	.num_resources  = ARRAY_SIZE(ramc_resources),
-+};
-+
- static struct resource shdwc_resources[] = {
- 	[0] = {
- 		.start  = AT91SAM9263_BASE_SHDWC,
-@@ -376,6 +390,7 @@ static struct platform_device shdwc_device = {
- 
- static void __init at91sam9263_register_devices(void)
- {
-+	platform_device_register(&ramc_device);
- 	platform_device_register(&rstc_device);
- 	platform_device_register(&shdwc_device);
- }
--- 
-1.9.1
+Besides the misplacement of the 'phy-connection-type' as reported by
+Sergei, this looks good to me:
+
+Reviewed-by: Florian Fainelli <f.fainelli@gmail.com>
+
+Thanks!
+
+> 
+> Antoine Ténart (1):
+>   ARM: berlin: Add phy-connection-type to BG2Q PHY
+> 
+> Sebastian Hesselbarth (8):
+>   phy: marvell: Add support for 88E3016 FastEthernet PHY
+>   net: pxa168_eth: Provide phy_interface mode on platform_data
+>   net: pxa168_eth: Prepare proper libphy handling
+>   net: pxa168_eth: Remove HW auto-negotiaion
+>   net: pxa168_eth: Remove in-driver PHY mangling
+>   ARM: berlin: Add BG2 ethernet DT nodes
+>   ARM: berlin: Add BG2CD ethernet DT nodes
+>   ARM: berlin: Enable ethernet on Sony NSZ-GS7
+> 
+>  arch/arm/boot/dts/berlin2-sony-nsz-gs7.dts |   2 +
+>  arch/arm/boot/dts/berlin2.dtsi             |  36 +++++
+>  arch/arm/boot/dts/berlin2cd.dtsi           |  36 +++++
+>  arch/arm/boot/dts/berlin2q.dtsi            |   1 +
+>  arch/arm/mach-mmp/gplugd.c                 |   2 +
+>  drivers/net/ethernet/marvell/pxa168_eth.c  | 248 ++++++++++++-----------------
+>  drivers/net/phy/marvell.c                  |  46 ++++++
+>  include/linux/marvell_phy.h                |   1 +
+>  include/linux/pxa168_eth.h                 |   1 +
+>  9 files changed, 225 insertions(+), 148 deletions(-)
+> 
+> ---
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: "Antoine Ténart" <antoine.tenart@free-electrons.com>
+> Cc: Florian Fainelli <f.fainelli@gmail.com>
+> Cc: Eric Miao <eric.y.miao@gmail.com>
+> Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: netdev@vger.kernel.org
+> Cc: devicetree@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> 
 
