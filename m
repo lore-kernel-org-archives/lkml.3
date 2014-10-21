@@ -1,45 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755568AbaJUPte (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 11:49:34 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48410 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755155AbaJUPtd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 11:49:33 -0400
-Message-ID: <54468063.4070408@zytor.com>
-Date: Tue, 21 Oct 2014 08:48:51 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1755715AbaJUPtu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 11:49:50 -0400
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:62010 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755658AbaJUPts (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 11:49:48 -0400
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>,
-        Pranith Kumar <bobby.prani@gmail.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
-        Borislav Petkov <bp@suse.de>,
-        "open list:X86 ARCHITECTURE..." <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cmpxchg: Discard unnecessary cast to volatile
-References: <1412186248-18672-1-git-send-email-bobby.prani@gmail.com> <CAJhHMCDhhoxj25pmkxO2AhLwj6ur9ga3yRcViuH+DU-8K+Ch5g@mail.gmail.com> <20141021101412.GS23531@worktop.programming.kicks-ass.net>
-In-Reply-To: <20141021101412.GS23531@worktop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <544637A3.8010002@ti.com>
+References: <1411721657-9924-1-git-send-email-gabriel.fernandez@linaro.org>
+	<1411721657-9924-3-git-send-email-gabriel.fernandez@linaro.org>
+	<544637A3.8010002@ti.com>
+Date: Tue, 21 Oct 2014 17:49:46 +0200
+Message-ID: <CAG374jCq1b14N_k3_j4WY-yGcXm7ChFQat5mUqgs6ZQ=UP397g@mail.gmail.com>
+Subject: Re: [PATCH v3 2/8] phy: miphy28lp: Add MiPHY28lp header file for DT x
+ Driver defines
+From: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kernel@stlinux.com" <kernel@stlinux.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        alexandre torgue <alexandre.torgue@st.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/21/2014 03:14 AM, Peter Zijlstra wrote:
-> On Mon, Oct 20, 2014 at 04:22:27PM -0400, Pranith Kumar wrote:
->>> Generating a volatile pointer is really not necessary here. This is the only
->>> location where a volatile pointer is being generated for use in asm.
->>>
->>> This commit removes the unnecessary volatile pointer being created.
->>>
->>> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-> 
-> Seems sane enough to me.
-> 
+Hi Kishon,
 
-However, it seems like unnecessary churn.  Does the volatile hurt in any
-way?
+To be sure, if i rename MIPHY_TYPE_SATA into PHY_TYPE_SATA, i have to
+rename the filename also ?
 
-	-hpa
+include/dt-bindings/phy/phy-miphy.h into include/dt-bindings/phy/phy.h
 
+am I right?
+
+Best Regards
+
+Gabriel
+
+On 21 October 2014 12:38, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+> Hi Gabriel,
+>
+> On Friday 26 September 2014 02:24 PM, Gabriel FERNANDEZ wrote:
+>> This provides the shared header file which will be reference from both
+>> the MiPHY28lp driver and its associated Device Tree node(s).
+>>
+>> Signed-off-by: alexandre torgue <alexandre.torgue@st.com>
+>> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+>> ---
+>>  include/dt-bindings/phy/phy-miphy.h | 12 ++++++++++++
+>>  1 file changed, 12 insertions(+)
+>>  create mode 100644 include/dt-bindings/phy/phy-miphy.h
+>>
+>> diff --git a/include/dt-bindings/phy/phy-miphy.h b/include/dt-bindings/phy/phy-miphy.h
+>> new file mode 100644
+>> index 0000000..9bc49b9
+>> --- /dev/null
+>> +++ b/include/dt-bindings/phy/phy-miphy.h
+>> @@ -0,0 +1,12 @@
+>> +/*
+>> + * This header provides constants for the phy framework
+>> + * based on the STMicroelectronics miphxxxx.
+>> + */
+>> +#ifndef _DT_BINDINGS_PHY_MIPHY
+>> +#define _DT_BINDINGS_PHY_MIPHY
+>> +
+>> +#define MIPHY_TYPE_SATA              1
+>> +#define MIPHY_TYPE_PCIE              2
+>> +#define MIPHY_TYPE_USB               3
+>
+> Since these PHY types are common across SoCs, we can have something like
+> PHY_TYPE_SATA, PHY_TYPE_PCIE so that each SoCs don't have to create a separate
+> header file.
+>
+> Cheers
+> Kishon
