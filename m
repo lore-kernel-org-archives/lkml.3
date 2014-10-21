@@ -1,92 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755260AbaJUKOm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 06:14:42 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:44435 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754797AbaJUKOk (ORCPT
+	id S1754996AbaJUKRO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 06:17:14 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:57403 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751718AbaJUKRM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 06:14:40 -0400
-X-AuditID: cbfec7f5-b7f956d000005ed7-40-5446320e8dd7
-Message-id: <1413886476.26980.16.camel@AMDC1943>
-Subject: Re: [PATCH 2/2] ARM: dts: exynos4412-trats: Add suspend configuration
- for max77686 regulators
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Tue, 21 Oct 2014 06:17:12 -0400
+Date: Tue, 21 Oct 2014 11:17:05 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-api@vger.kernel.org, devicetree@vger.kernel.org,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>
-Date: Tue, 21 Oct 2014 12:14:36 +0200
-In-reply-to: <54462EB2.2070302@collabora.co.uk>
-References: <1413879912-26606-1-git-send-email-k.kozlowski@samsung.com>
- <1413879912-26606-3-git-send-email-k.kozlowski@samsung.com>
- <54461FC0.9020904@samsung.com> <1413883424.26980.7.camel@AMDC1943>
- <54462EB2.2070302@collabora.co.uk>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu2
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFLMWRmVeSWpSXmKPExsVy+t/xq7p8Rm4hBhf3C1hsnLGe1WLSugNM
-	FlMfPmGzuP7lOavF0d8FFr0LrrJZnG16w27x7UoHk8Wmx9dYLS7vmsNmMeP8PiaL25d5LdYe
-	uctusWrXH0YHPo+W5h42j7/Pr7N4/F31gtlj56y77B6bVnWyeWxeUu/Rt2UVo8fnTXIBHFFc
-	NimpOZllqUX6dglcGa3bX7MW/OGuuHlFt4FxGWcXIyeHhICJxN3naxkhbDGJC/fWs3UxcnEI
-	CSxllGh9tIQVJCEk8JlRYt7c+C5GDg5eAQOJjptKIKawQIZE32stkAo2AWOJzcuXsIHYIgJ2
-	EjdWP2QGGcMs0MQi0XTzCQtIgkVAVeL0qjawkZwC+hLbvm5igdj1nlFiVv96dpAEs4C6xKR5
-	i5hBFkgIKEs09ruBhHkFBCV+TL7HAlEiL7F5zVvmCYwCs5B0zEJSNgtJ2QJG5lWMoqmlyQXF
-	Sem5RnrFibnFpXnpesn5uZsYIfHzdQfj0mNWhxgFOBiVeHgjlriGCLEmlhVX5h5ilOBgVhLh
-	zRV2CxHiTUmsrEotyo8vKs1JLT7EyMTBKdXAGK2eNX0h/4FPi8/Nmv+IU1SG5//L9RoC6yTv
-	ZDU8WmfDuaTt/mrHhq1ti778mvvo/7ME2aTpwU9uhpb+tPpsZxC3ZsOHJ2/7dBk3mXAH7FxR
-	n7NmTfP9XKv9B9/wTW+Nfne69dDaGyyRUuKSDJyS+os+84i6S5ktse5LFQ9ZIpT63W/Nt8Co
-	BCWW4oxEQy3mouJEAP0VJSp9AgAA
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH v2 2/5] mfd: max77693: Map charger device to its own
+ of_node
+Message-ID: <20141021101705.GF26842@x1>
+References: <1413808489-3524-1-git-send-email-k.kozlowski@samsung.com>
+ <1413808489-3524-3-git-send-email-k.kozlowski@samsung.com>
+ <20141020150630.GB26784@x1>
+ <1413817781.11298.0.camel@AMDC1943>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1413817781.11298.0.camel@AMDC1943>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On wto, 2014-10-21 at 12:00 +0200, Javier Martinez Canillas wrote:
-> Hello Krzysztof,
+On Mon, 20 Oct 2014, Krzysztof Kozlowski wrote:
+
+> On pon, 2014-10-20 at 16:06 +0100, Lee Jones wrote:
+> > On Mon, 20 Oct 2014, Krzysztof Kozlowski wrote:
+> > 
+> > > Add a "maxim,max77693-charger" of_compatible to the mfd_cell so the MFD
+> > > child device (the charger) will have its own of_node set. This will be
+> > > used by the max77693 charger driver in next patches to obtain battery
+> > > configuration from DTS.
+> > > 
+> > > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > > ---
+> > >  drivers/mfd/max77693.c | 5 ++++-
+> > >  1 file changed, 4 insertions(+), 1 deletion(-)
+> > > 
+> > > diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
+> > > index cf008f45968c..2277a11b6629 100644
+> > > --- a/drivers/mfd/max77693.c
+> > > +++ b/drivers/mfd/max77693.c
+> > > @@ -43,7 +43,10 @@
+> > >  
+> > >  static const struct mfd_cell max77693_devs[] = {
+> > >  	{ .name = "max77693-pmic", },
+> > > -	{ .name = "max77693-charger", },
+> > > +	{
+> > > +		.name = "max77693-charger",
+> > > +		.of_compatible = "maxim,max77693-charger",
+> > > +	},
+> > >  	{ .name = "max77693-muic", },
+> > >  	{ .name = "max77693-haptic", },
+> > >  	{
+> > 
+> > I'm guessing this can be applied separately?
 > 
-> On 10/21/2014 11:23 AM, Krzysztof Kozlowski wrote:
-> >> >  
-> >> >  				ldo9_reg: ldo9 {
-> >> > @@ -295,7 +311,9 @@
-> >> >  					regulator-name = "CAM_ISP_MIPI_1.2V";
-> >> >  					regulator-min-microvolt = <1200000>;
-> >> >  					regulator-max-microvolt = <1200000>;
-> >> > -					regulator-mem-idle;
-> >> > +					regulator-state-mem {
-> >> > +						regulator-on-in-suspend;
-> >> 
-> >> CAM_ISP_MIPI_1.2V is used for camera, I think this regulator should turn off in suspend state
-> >> because camear could not be used in suspend state.
-> > 
-> > LDO9 does not support off in suspend mode controlled by PWRREQ. It
-> > supports only switching to low power mode if PWRREQ level goes low.
-> > 
-> > Thus the driver does not provide set_suspend_enable or
-> > set_suspend_disable for LDO0. Do you want to add such function to the
-> > max77686 driver which will explicitly disable the regulator (write 0x0
-> > to control reg)?
-> > 
-> > 
-> 
-> I think for those regulators you can just use regulator_disable_regmap()
-> as the .set_suspend_disable function handler?
+> Yes. Patch 3/5 also (it adds necessary defines and symbols for
+> chargers).
 
-Sure... but this does not solve the philosophical problem - this is not
-a special suspend configuration. It is disabling the regulator manually,
-from regulator core code. Instead probably the camera driver should
-disable the regulator in suspend callback.
+I'll take this patch, but I think 3/5 is required by some of the other
+patches in the set, no?
 
-Another point - I think none of other regulators do this way.
-
-Best regards,
-Krzysztof
-
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
