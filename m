@@ -1,53 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932421AbaJUMTq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 08:19:46 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:64461 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932125AbaJUMTo (ORCPT
+	id S932444AbaJUMVP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 08:21:15 -0400
+Received: from mail-yh0-f43.google.com ([209.85.213.43]:58275 "EHLO
+	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932125AbaJUMVO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 08:19:44 -0400
-Message-ID: <54464F59.3000100@gmail.com>
-Date: Tue, 21 Oct 2014 20:19:37 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 21 Oct 2014 08:21:14 -0400
 MIME-Version: 1.0
-To: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: linux-kernel@vger.kernel.org, Juri Lelli <juri.lelli@arm.com>
-Subject: Re: [PATCH 2/2] sched/deadline: don't need to balance during wakeup
- if wakee is pinned
-References: <1413253360-5318-1-git-send-email-wanpeng.li@linux.intel.com> <1413253360-5318-2-git-send-email-wanpeng.li@linux.intel.com>
-In-Reply-To: <1413253360-5318-2-git-send-email-wanpeng.li@linux.intel.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141021120653.GA9530@infradead.org>
+References: <20141021120653.GA9530@infradead.org>
+Date: Tue, 21 Oct 2014 08:21:13 -0400
+Message-ID: <CAFtxgO5cPNTMqyY5Foqp_Y+pqCH=zTiatREn-4xRCTm8o5GLwA@mail.gmail.com>
+Subject: Re: state of the osdblk driver?
+From: Jeff Garzik <jgpobox@gmail.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Boaz Harrosh <ooo@electrozaur.com>, Jeff Garzik <jgarzik@pobox.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        osd-dev@open-osd.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc Juri,
+Drop it, if there are no users.
 
-ÓÚ 10/14/14, 10:22 AM, Wanpeng Li Ð´µÀ:
-> Use nr_cpus_allowed to bail from select_task_rq() when only one cpu 
-> can be used, and saves some cycles for pinned tasks.
->
-> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-> ---
->  kernel/sched/deadline.c | 3 +++
->  1 file changed, 3 insertions(+)
->
-> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-> index f46b7f1..5874bf8 100644
-> --- a/kernel/sched/deadline.c
-> +++ b/kernel/sched/deadline.c
-> @@ -914,6 +914,9 @@ select_task_rq_dl(struct task_struct *p, int cpu, int sd_flag, int flags)
->  	struct task_struct *curr;
->  	struct rq *rq;
->  
-> +	if (p->nr_cpus_allowed == 1)
-> +		goto out;
-> +
->  	if (sd_flag != SD_BALANCE_WAKE)
->  		goto out;
->  
+It was simulating an OSD, but there did not seem to be much beyond
+academic interest, and some interest in the use of aforementioned
+block functions as a useful exercise in block driver writing.
 
+
+On Tue, Oct 21, 2014 at 8:06 AM, Christoph Hellwig <hch@infradead.org> wrote:
+> The osdblk driver hsa seen literally no change except for global
+> API changes since it was merged, and I've never heard of a user.
+>
+> Is this something we want to keep around?  I just noticed it because
+> it's the only non-SCSI user of some of the old block layer tagging
+> functions.
