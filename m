@@ -1,74 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932783AbaJUNlK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 09:41:10 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:40617 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932766AbaJUNlH (ORCPT
+	id S932792AbaJUNmm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 09:42:42 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:35211 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932510AbaJUNml convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 09:41:07 -0400
-Date: Tue, 21 Oct 2014 14:40:58 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: Re: [PATCH v3 3/4] mfd/regulator: dt-bindings: max77686: Document
- regulators off in suspend
-Message-ID: <20141021134058.GE4939@x1>
-References: <1413897595-28752-1-git-send-email-k.kozlowski@samsung.com>
- <1413897595-28752-4-git-send-email-k.kozlowski@samsung.com>
+	Tue, 21 Oct 2014 09:42:41 -0400
+Message-ID: <544662CD.5070501@arm.com>
+Date: Tue, 21 Oct 2014 14:42:37 +0100
+From: Juri Lelli <juri.lelli@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1413897595-28752-4-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wanpeng Li <kernellwp@gmail.com>, Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] sched/deadline: don't need to balance during wakeup
+ if wakee is pinned
+References: <1413253360-5318-1-git-send-email-wanpeng.li@linux.intel.com> <1413253360-5318-2-git-send-email-wanpeng.li@linux.intel.com> <54464F59.3000100@gmail.com> <54465FB6.1060800@arm.com> <5446620E.4020700@gmail.com>
+In-Reply-To: <5446620E.4020700@gmail.com>
+X-OriginalArrivalTime: 21 Oct 2014 13:42:37.0392 (UTC) FILETIME=[E047D500:01CFED34]
+X-MC-Unique: 114102114423702601
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Oct 2014, Krzysztof Kozlowski wrote:
-
-> Add information which regulators can be disabled during system suspend.
+On 21/10/14 14:39, Wanpeng Li wrote:
+> Hi Juri,
 > 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Suggested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> ---
->  Documentation/devicetree/bindings/mfd/max77686.txt | 6 ++++++
->  1 file changed, 6 insertions(+)
+> 于 10/21/14, 9:29 PM, Juri Lelli 写道:
+>> Hi,
+>>
+>> On 21/10/14 13:19, Wanpeng Li wrote:
+>>> Cc Juri,
+>>>
+>>> 于 10/14/14, 10:22 AM, Wanpeng Li 写道:
+>>>> Use nr_cpus_allowed to bail from select_task_rq() when only one cpu
+>>>> can be used, and saves some cycles for pinned tasks.
+>>>>
+>>>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+>>>> ---
+>>>>   kernel/sched/deadline.c | 3 +++
+>>>>   1 file changed, 3 insertions(+)
+>>>>
+>>>> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+>>>> index f46b7f1..5874bf8 100644
+>>>> --- a/kernel/sched/deadline.c
+>>>> +++ b/kernel/sched/deadline.c
+>>>> @@ -914,6 +914,9 @@ select_task_rq_dl(struct task_struct *p, int cpu, int sd_flag, int flags)
+>>>>   	struct task_struct *curr;
+>>>>   	struct rq *rq;
+>>>>   
+>>>> +	if (p->nr_cpus_allowed == 1)
+>>>> +		goto out;
+>>>> +
+>>>>   	if (sd_flag != SD_BALANCE_WAKE)
+>>>>   		goto out;
+>>>>
+>> Apart from the encoding of the resend, it looks good, thanks!
+> 
+> What's your meaning of resend? Do you mean this one?
 
-This has been applied already.
+Nope. I just meant that I received your "Cc Juri" encoded as Chinese
+Simplified. But, I guess the original lkml patch looks good. Sorry for
+the confusion :).
 
-> diff --git a/Documentation/devicetree/bindings/mfd/max77686.txt b/Documentation/devicetree/bindings/mfd/max77686.txt
-> index 678f3cf0b8f0..75fdfaf41831 100644
-> --- a/Documentation/devicetree/bindings/mfd/max77686.txt
-> +++ b/Documentation/devicetree/bindings/mfd/max77686.txt
-> @@ -34,6 +34,11 @@ to get matched with their hardware counterparts as follow:
->  	-BUCKn 	:	for BUCKs, where n can lie in range 1 to 9.
->  			example: BUCK1, BUCK5, BUCK9.
->  
-> +  Regulators which can be turned off during system suspend:
-> +	-LDOn	:	2, 6-8, 10-12, 14-16,
-> +	-BUCKn	:	1-4.
-> +  Use standard regulator bindings for it ('regulator-off-in-suspend').
-> +
->  Example:
->  
->  	max77686@09 {
+Best,
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+- Juri
+
+> 
+> https://lkml.org/lkml/2014/10/10/425
+> 
+> I'm afraid they are different patches.
+> 
+> Regards,
+> Wanpeng Li
+> 
+>>
+>> Best,
+>>
+>> - Juri
+>>
+> 
+> 
+
