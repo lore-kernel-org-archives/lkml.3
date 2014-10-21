@@ -1,109 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754725AbaJUIFb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 04:05:31 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:11300 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754664AbaJUIFN (ORCPT
+	id S932172AbaJUIFu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 04:05:50 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:61704 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754702AbaJUIFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 04:05:13 -0400
-From: "Li, Zhen-Hua" <zhen-hual@hp.com>
-To: <dwmw2@infradead.org>, <indou.takao@jp.fujitsu.com>, <bhe@redhat.com>,
-        <joro@8bytes.org>, <vgoyal@redhat.com>, <dyoung@redhat.com>
-Cc: <iommu@lists.linux-foundation.org>, <kexec@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <alex.williamson@redhat.com>, <ddutile@redhat.com>,
-        <ishii.hironobu@jp.fujitsu.com>, <bhelgaas@google.com>,
-        <doug.hatch@hp.com>, <jerry.hoemann@hp.com>, <tom.vaden@hp.com>,
-        <li.zhang6@hp.com>, <lisa.mitchell@hp.com>,
-        "Li, Zhen-Hua" <zhen-hual@hp.com>
-Subject: [PATCH 4/5] iommu/vt-d: Add domain-id functions
-Date: Tue, 21 Oct 2014 16:04:18 +0800
-Message-Id: <1413878659-1383-5-git-send-email-zhen-hual@hp.com>
-X-Mailer: git-send-email 2.0.0-rc0
-In-Reply-To: <1413878659-1383-1-git-send-email-zhen-hual@hp.com>
-References: <1413878659-1383-1-git-send-email-zhen-hual@hp.com>
+	Tue, 21 Oct 2014 04:05:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <1413795888-18559-3-git-send-email-k.kozlowski@samsung.com>
+References: <1413795888-18559-1-git-send-email-k.kozlowski@samsung.com>
+	<1413795888-18559-3-git-send-email-k.kozlowski@samsung.com>
+Date: Tue, 21 Oct 2014 10:05:27 +0200
+Message-ID: <CAPDyKFqZ9mwgCFaHctdhWPW018ir6Y8rEhAN_Euz3EFUPkuwWA@mail.gmail.com>
+Subject: Re: [PATCH v8 2/5] amba: Add helpers for (un)preparing AMBA clock
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Jonathan Corbet <corbet@lwn.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        dmaengine@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Interfaces for when a new domain in the crashdump kernel needs some
-values from the panicked kernel's context entries.
+On 20 October 2014 11:04, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
+> Add amba_pclk_prepare() and amba_pclk_unprepare() inline functions for
+> handling the AMBA bus clock by device drivers.
+>
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-Signed-off-by: Bill Sumner 
----
- drivers/iommu/intel-iommu.c | 46 +++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 46 insertions(+)
+Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 73afed4..bde8f22 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -348,6 +348,7 @@ static inline int first_pte_in_page(struct dma_pte *pte)
- 
- 
- #ifdef CONFIG_CRASH_DUMP
-+
- /*
-  * Fix Crashdump failure caused by leftover DMA through a hardware IOMMU
-  *
-@@ -437,6 +438,16 @@ static int intel_iommu_copy_translation_tables(struct dmar_drhd_unit *drhd,
- 		struct root_entry **root_new_virt_p,
- 		int g_num_of_iommus);
- 
-+static struct domain_values_entry *intel_iommu_did_to_domain_values_entry(
-+		int did, struct intel_iommu *iommu);
-+
-+static int intel_iommu_get_dids_from_old_kernel(struct intel_iommu *iommu);
-+
-+static struct domain_values_entry *intel_iommu_did_to_domain_values_entry(
-+		int did, struct intel_iommu *iommu);
-+
-+static int intel_iommu_get_dids_from_old_kernel(struct intel_iommu *iommu);
-+
- #endif /* CONFIG_CRASH_DUMP */
- 
- /*
-@@ -5230,4 +5241,39 @@ static int intel_iommu_copy_translation_tables(struct dmar_drhd_unit *drhd,
- 	return 0;
- }
- 
-+/*
-+ * Interfaces for when a new domain in the crashdump kernel needs some
-+ * values from the panicked kernel's context entries
-+ *
-+ */
-+static struct domain_values_entry *intel_iommu_did_to_domain_values_entry(
-+		int did, struct intel_iommu *iommu)
-+{
-+	struct domain_values_entry *dve;	/* iterator */
-+
-+	list_for_each_entry(dve, &domain_values_list[iommu->seq_id], link)
-+		if (dve->did == did)
-+			return dve;
-+	return NULL;
-+}
-+
-+/* Mark domain-id's from old kernel as in-use on this iommu so that a new
-+ * domain-id is allocated in the case where there is a device in the new kernel
-+ * that was not in the old kernel -- and therefore a new domain-id is needed.
-+ */
-+static int intel_iommu_get_dids_from_old_kernel(struct intel_iommu *iommu)
-+{
-+	struct domain_values_entry *dve;	/* iterator */
-+
-+	pr_info("IOMMU:%d Domain ids from panicked kernel:\n", iommu->seq_id);
-+
-+	list_for_each_entry(dve, &domain_values_list[iommu->seq_id], link) {
-+		set_bit(dve->did, iommu->domain_ids);
-+		pr_info("DID did:%d(0x%4.4x)\n", dve->did, dve->did);
-+	}
-+
-+	pr_info("----------------------------------------\n");
-+	return 0;
-+}
-+
- #endif /* CONFIG_CRASH_DUMP */
--- 
-2.0.0-rc0
-
+> ---
+>  include/linux/amba/bus.h | 10 ++++++++++
+>  1 file changed, 10 insertions(+)
+>
+> diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
+> index c324f5700d1a..ac02f9bd63dc 100644
+> --- a/include/linux/amba/bus.h
+> +++ b/include/linux/amba/bus.h
+> @@ -97,6 +97,16 @@ void amba_release_regions(struct amba_device *);
+>  #define amba_pclk_disable(d)   \
+>         do { if (!IS_ERR((d)->pclk)) clk_disable((d)->pclk); } while (0)
+>
+> +static inline int amba_pclk_prepare(struct amba_device *dev)
+> +{
+> +       return clk_prepare(dev->pclk);
+> +}
+> +
+> +static inline void amba_pclk_unprepare(struct amba_device *dev)
+> +{
+> +       clk_unprepare(dev->pclk);
+> +}
+> +
+>  /* Some drivers don't use the struct amba_device */
+>  #define AMBA_CONFIG_BITS(a) (((a) >> 24) & 0xff)
+>  #define AMBA_REV_BITS(a) (((a) >> 20) & 0x0f)
+> --
+> 1.9.1
+>
