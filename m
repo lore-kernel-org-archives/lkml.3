@@ -1,74 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755364AbaJULlS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 07:41:18 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:51777 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755196AbaJULlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 07:41:15 -0400
-Message-ID: <1413891687.30282.4.camel@mm-sol.com>
-Subject: Re: [PATCH v5 0/4] Qualcomm SPMI PMIC pin controller drivers
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Date: Tue, 21 Oct 2014 14:41:27 +0300
-In-Reply-To: <CACRpkdaZ8o=Kmbez3iA_-0euuWQKwKyNNYPjnx1fBZOns0yN6A@mail.gmail.com>
-References: <1412181058-29179-1-git-send-email-iivanov@mm-sol.com>
-	 <CACRpkdaZ8o=Kmbez3iA_-0euuWQKwKyNNYPjnx1fBZOns0yN6A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.13.5-fta1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1755376AbaJULnj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 07:43:39 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:50122 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755167AbaJULnh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 07:43:37 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        David Rientjes <rientjes@google.com>, Tejun Heo <tj@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 1/4] freezer: Do not freeze tasks killed by OOM killer
+Date: Tue, 21 Oct 2014 14:04 +0200
+Message-ID: <9905383.BtpdXJVm1V@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1413876435-11720-2-git-send-email-mhocko@suse.cz>
+References: <1413876435-11720-1-git-send-email-mhocko@suse.cz> <1413876435-11720-2-git-send-email-mhocko@suse.cz>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Tue, 2014-10-21 at 12:59 +0200, Linus Walleij wrote:
-> On Wed, Oct 1, 2014 at 6:30 PM, Ivan T. Ivanov <iivanov@mm-sol.com> 
-> wrote:
+On Tuesday, October 21, 2014 09:27:12 AM Michal Hocko wrote:
+> From: Cong Wang <xiyou.wangcong@gmail.com>
 > 
-> >  Changes since v4:
-> > >
-> >  - Use PMIC name in compatible string.
-> >  - PINCTRL_QCOM_SPMI_PMIC from Kconfig symbol.
-> >  - Remove pmic string from drivers file names.
-> >  - Fixed coding style issues.
-> >  - Use qcom-spmi-gpio and qcom-spmi-mpp from dirver names,
-> >    to be similar to qcom-spmi-iadc, qcom-spmi-vadc and
-> >    qcom-spmi-temp-alarm drivers.
-> > >
-> >  Short description:
-> > >
-> >  Patches adds pin control drivers for Multi-Purpose Pin (MPP) and
-> >  General-purpose pin (GPIO) controllers found in Qualcomm SPMI 
-> > based
-> >  PMIC chips.
-> > >
-> >  MPP's are enhanced GPIO's with analog circuits, which support
-> >  analog and digital input/output.
+> Since f660daac474c6f (oom: thaw threads if oom killed thread is frozen
+> before deferring) OOM killer relies on being able to thaw a frozen task
+> to handle OOM situation but a3201227f803 (freezer: make freezing() test
+> freeze conditions in effect instead of TIF_FREEZE) has reorganized the
+> code and stopped clearing freeze flag in __thaw_task. This means that
+> the target task only wakes up and goes into the fridge again because the
+> freezing condition hasn't changed for it. This reintroduces the bug
+> fixed by f660daac474c6f.
 > 
-> I think I'm happy to apply this for v3.19 now that I have Björn's
-> ACK on it too (or is it even Reviewed-by..?)
+> Fix the issue by checking for TIF_MEMDIE thread flag in
+> freezing_slow_path and exclude the task from freezing completely. If a
+> task was already frozen it would get woken by __thaw_task from OOM killer
+> and get out of freezer after rechecking freezing().
 > 
-> But I can't find these patches in my mailbox, do you have
-> a branch based off v3.18-rc1 I can pull from?
-
-They are prepared but not sent. Will try to send them shortly. 
-
-Thank you.
-Ivan
-
+> Changes since v1
+> - put TIF_MEMDIE check into freezing_slowpath rather than in __refrigerator
+>   as per Oleg
+> - return __thaw_task into oom_scan_process_thread because
+>   oom_kill_process will not wake task in the fridge because it is
+>   sleeping uninterruptible
 > 
-> Yours,
-> Linus Walleij
+> [mhocko@suse.cz: rewrote the changelog]
+> Fixes: a3201227f803 (freezer: make freezing() test freeze conditions in effect instead of TIF_FREEZE)
+> Cc: stable@vger.kernel.org # 3.3+
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> Acked-by: Oleg Nesterov <oleg@redhat.com>
+
+ACK
+
+> ---
+>  kernel/freezer.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/kernel/freezer.c b/kernel/freezer.c
+> index aa6a8aadb911..8f9279b9c6d7 100644
+> --- a/kernel/freezer.c
+> +++ b/kernel/freezer.c
+> @@ -42,6 +42,9 @@ bool freezing_slow_path(struct task_struct *p)
+>  	if (p->flags & (PF_NOFREEZE | PF_SUSPEND_TASK))
+>  		return false;
+>  
+> +	if (test_thread_flag(TIF_MEMDIE))
+> +		return false;
+> +
+>  	if (pm_nosig_freezing || cgroup_freezing(p))
+>  		return true;
+>  
 > 
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
