@@ -1,113 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815AbaJUJbH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 05:31:07 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:56895 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031AbaJUJbF (ORCPT
+	id S1754730AbaJUJb2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 05:31:28 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:53074 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753232AbaJUJb1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 05:31:05 -0400
-Message-ID: <544627D0.60309@hitachi.com>
-Date: Tue, 21 Oct 2014 18:30:56 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 21 Oct 2014 05:31:27 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Bjorn Andersson <bjorn@kryo.se>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>, Y Vo <yvo@apm.com>,
+        Tin Huynh <tnhuynh@apm.com>, patches@apm.com, Toan Le <toanle@apm.com>,
+        Phong Vo <pvo@apm.com>
+Subject: Re: [PATCH] genirq: Introduce irq_read_line()
+Date: Tue, 21 Oct 2014 11:30:35 +0200
+Message-ID: <1894914.TrPC3AEWES@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <alpine.DEB.2.11.1410211120430.5308@nanos>
+References: <1408479811-26088-1-git-send-email-bjorn.andersson@sonymobile.com> <CAJAp7OgGPZZuCgC8iUiW2jrEVubK=KCATxd6eazdT1x1sSrffg@mail.gmail.com> <alpine.DEB.2.11.1410211120430.5308@nanos>
 MIME-Version: 1.0
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
-        Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/2] kprobes: introduce weak arch_check_ftrace_location()
- helper function
-References: <1413880229-4796-1-git-send-email-heiko.carstens@de.ibm.com> <1413880229-4796-2-git-send-email-heiko.carstens@de.ibm.com>
-In-Reply-To: <1413880229-4796-2-git-send-email-heiko.carstens@de.ibm.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:vZ16q0qNdMK/CU1yHNClBPJD8/ulkgdROwQ2AAyHoBK
+ tH0tMy/zVW+YGTioaP6zSTgX+I60ys93FMcC2yVqn5Sv/WjeQ0
+ hSk2di8X29horJ07pY5iOZuAYYOGPg0lxQmXp199516rB0xfGe
+ ysRX1pcS8kxyQDQL4lixhtrZNx2gAv83/z6NNo9jN2+QYtpL/x
+ 9xSY+QdV31VuDxv8e4QPaoX7U5gr4Z2SZL6210oY6KUCvNCfTh
+ vNNuGvKOEjNrGZBobFJ5vZ9Vg4WMxopV52hQz9LMR4TUG208Jq
+ rKkD7v+XnIVsPftsHKUHVG9wfxwmQ0Zq2XxDIUQ8yBOK2u3/nI
+ UdNx0dIJS5VgTA2ZOli8=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/10/21 17:30), Heiko Carstens wrote:
-> Introduce weak arch_check_ftrace_location() helper function which
-> architectures can override in order to implement handling of kprobes
-> on function tracer call sites on their own, without depending on
-> common code or implementing the KPROBES_ON_FTRACE feature.
+On Tuesday 21 October 2014 11:22:40 Thomas Gleixner wrote:
+> On Thu, 4 Sep 2014, Bjorn Andersson wrote:
 > 
-> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-Thanks!
-
-> ---
->  include/linux/kprobes.h |  1 +
->  kernel/kprobes.c        | 18 +++++++++++-------
->  2 files changed, 12 insertions(+), 7 deletions(-)
+> > On Tue, Aug 19, 2014 at 1:23 PM, Bjorn Andersson
+> > <bjorn.andersson@sonymobile.com> wrote:
+> > > Introduce the irq_read_line() function to allow device drivers to read
+> > > the current logical state of an input when the hardware only exposes
+> > > this through status bits in the interrupt controller.
+> > >
+> > > The new function is backed by a new callback function in the irq_chip -
+> > > irq_read_line() - that can be implemented by irq_chips that owns such
+> > > status bits.
+> > >
+> > > Based on rfc patch from April 2011 by Abhijeet.
+> > >
+> > > Cc: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+> > > Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+> > 
+> > ping?
 > 
-> diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
-> index f7296e57d614..5297f9fa0ef2 100644
-> --- a/include/linux/kprobes.h
-> +++ b/include/linux/kprobes.h
-> @@ -335,6 +335,7 @@ extern void kprobe_ftrace_handler(unsigned long ip, unsigned long parent_ip,
->  extern int arch_prepare_kprobe_ftrace(struct kprobe *p);
->  #endif
->  
-> +int arch_check_ftrace_location(struct kprobe *p);
->  
->  /* Get the kprobe at this addr (if any) - called with preemption disabled */
->  struct kprobe *get_kprobe(void *addr);
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> index 3995f546d0f3..317eb8ad28dd 100644
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -1410,16 +1410,10 @@ static inline int check_kprobe_rereg(struct kprobe *p)
->  	return ret;
->  }
->  
-> -static int check_kprobe_address_safe(struct kprobe *p,
-> -				     struct module **probed_mod)
-> +int __weak arch_check_ftrace_location(struct kprobe *p)
->  {
-> -	int ret = 0;
->  	unsigned long ftrace_addr;
->  
-> -	/*
-> -	 * If the address is located on a ftrace nop, set the
-> -	 * breakpoint to the following instruction.
-> -	 */
->  	ftrace_addr = ftrace_location((unsigned long)p->addr);
->  	if (ftrace_addr) {
->  #ifdef CONFIG_KPROBES_ON_FTRACE
-> @@ -1431,7 +1425,17 @@ static int check_kprobe_address_safe(struct kprobe *p,
->  		return -EINVAL;
->  #endif
->  	}
-> +	return 0;
-> +}
->  
-> +static int check_kprobe_address_safe(struct kprobe *p,
-> +				     struct module **probed_mod)
-> +{
-> +	int ret;
-> +
-> +	ret = arch_check_ftrace_location(p);
-> +	if (ret)
-> +		return ret;
->  	jump_label_lock();
->  	preempt_disable();
->  
-> 
+> Sorry, slipped through the cracks. I was talking about this to Marc
+> last week and he needs it for yet another reason. He had some thoughts
+> about the state representation, so I wait for him to comment.
 
+I looked up my older email as well and found which gpio driver had the
+requirement to get the irq status from the upstream controller. It was
+"gpio: Add APM X-Gene standby GPIO controller driver". I'm adding the
+APM developers on Cc here so they can participate in the discussion.
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+As a brief summary: APM have a GPIO driver that needs to read the status
+from the ARM GIC in order to implement gpio_get_value. The KVM hypervisor
+needs multiple bits from the GIC in order to implement suspend/resume,
+and Qualcomm MSM (as Bjorn wrote above) also needs to expose the status
+of the IRQ line like APM does.
 
+These should all use the same interface for the interrupt controller,
+but the interface still needs to be added.
 
+	Arnd
