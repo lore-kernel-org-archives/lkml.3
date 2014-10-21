@@ -1,93 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932542AbaJUNOs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 09:14:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50003 "EHLO mx2.suse.de"
+	id S932598AbaJUNPK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 09:15:10 -0400
+Received: from plane.gmane.org ([80.91.229.3]:55230 "EHLO plane.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932300AbaJUNOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 09:14:47 -0400
-Date: Tue, 21 Oct 2014 15:14:45 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        David Rientjes <rientjes@google.com>, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH 3/4] OOM, PM: OOM killed task shouldn't escape PM suspend
-Message-ID: <20141021131445.GC9415@dhcp22.suse.cz>
-References: <1413876435-11720-1-git-send-email-mhocko@suse.cz>
- <1413876435-11720-4-git-send-email-mhocko@suse.cz>
- <3778374.avm26S62SZ@vostro.rjw.lan>
-MIME-Version: 1.0
+	id S932300AbaJUNPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 09:15:08 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Sergey <sergey@elementaryos.org>
+Subject: Re: A desktop environment[1] kernel wishlist
+Date: Tue, 21 Oct 2014 13:11:07 +0000 (UTC)
+Message-ID: <loom.20141021T140216-28@post.gmane.org>
+References: <1413881397.30379.7.camel@hadess.net>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3778374.avm26S62SZ@vostro.rjw.lan>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 46.39.229.17 (Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:33.0) Gecko/20100101 Firefox/33.0)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 21-10-14 14:09:27, Rafael J. Wysocki wrote:
-[...]
-> > @@ -131,12 +132,40 @@ int freeze_processes(void)
-> >  
-> >  	printk("Freezing user space processes ... ");
-> >  	pm_freezing = true;
-> > +	oom_kills_saved = oom_kills_count();
-> >  	error = try_to_freeze_tasks(true);
-> >  	if (!error) {
-> > -		printk("done.");
-> >  		__usermodehelper_set_disable_depth(UMH_DISABLED);
-> >  		oom_killer_disable();
-> > +
-> > +		/*
-> > +		 * There might have been an OOM kill while we were
-> > +		 * freezing tasks and the killed task might be still
-> > +		 * on the way out so we have to double check for race.
-> > +		 */
-> > +		if (oom_kills_count() != oom_kills_saved) {
-> > +			struct task_struct *g, *p;
-> > +
-> > +			read_lock(&tasklist_lock);
-> > +			for_each_process_thread(g, p) {
-> > +				if (p == current || freezer_should_skip(p) ||
-> > +				    frozen(p))
-> > +					continue;
-> > +				error = -EBUSY;
-> > +				goto out_loop;
-> > +			}
-> > +out_loop:
-> 
-> Well, it looks like this will work here too:
-> 
-> 			for_each_process_thread(g, p)
-> 				if (p != current && !frozen(p) &&
-> 				    !freezer_should_skip(p)) {
-> 					error = -EBUSY;
-> 					break;
-> 				}
-> 
-> or I am helplessly misreading the code.
+Hey everyone,
 
-break will not work because for_each_process_thread is a double loop.
-Except for that the negated condition is OK as well. I can change that
-if you prefer.
+I'm glad we're having some discussion on this, because we have almost
+exactly the same kernel wishlist internally for elementary OS / Pantheon DE.
 
-> > +			read_unlock(&tasklist_lock);
-> > +
-> > +			if (error) {
-> > +				__usermodehelper_set_disable_depth(UMH_ENABLED);
-> > +				printk("OOM in progress.");
-> > +				goto done;
-> > +			}
-> > +		}
-> > +		printk("done.");
-> >  	}
-> > +done:
-> >  	printk("\n");
-> >  	BUG_ON(in_atomic());
-> >  
--- 
-Michal Hocko
-SUSE Labs
+I believe I can further elaborate on the VFS monitoring part. We need a file
+monitoring facility that's scalable (unlike inotify) and can provide a
+decent level of detail (unlike fanotify). In particular, we need to be able
+to detect file/directory creation, renaming and removal events, as well as
+close_write event. And, in an ideal world, all of that without requiring
+root permissions.
+
+This can be almost accomplished by combining output of fanotify with that of
+a custom LSM module that just reports events to userspace (e.g. rlocate uses
+such a thing). There are two problems with this: first, it's a hideous hack,
+and second, it doesn't detect deletions.
+
+This is a big deal because without it we're stuck with always presenting the
+user with the filesystem. If you've seen library-based music players like
+Rhythmbox or Banshee, you know that they group and sort all your music by
+artist and album, but not by directory and file name, and that you can
+efficiently search all that metadata. We're trying to get the same thing
+into more applications, but the absence of VFS features described above is
+blocking us. Even after moving all the database management to a single
+daemon that does all the monitoring and very rarely has to rescan anything,
+the system either slows to a crawl (inotify) or the database gets out of
+date quickly (fanotify+LSM). 
+In case I didn't make myself clear, a more detailed writeup on the design
+can be found here: http://tiny.cc/tearing-up-files
+
+Regarding the other items, AFAIK the kernel implements mechanism, not
+policy, so instead of "zswap selectively enabled by default" we just want
+"stable reliable zswap". We had to give up on zram previously (in pre-3.10
+days) because of kernel regressions leading to panics when zram was enabled.
+And we don't have the "Power management" part on our list because we haven't
+really delved in that yet. But our lists are identical in all the other
+areas, so that's not "just GNOME".
+
+PS: I'm not subscribed to LKML either, so please CC me.
+
+Cheers!
+
