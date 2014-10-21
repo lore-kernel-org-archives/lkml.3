@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932821AbaJUN6q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 09:58:46 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:58394 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932609AbaJUN6o (ORCPT
+	id S932869AbaJUN7B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 09:59:01 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:61300 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932609AbaJUN67 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 09:58:44 -0400
-Date: Tue, 21 Oct 2014 15:58:41 +0200
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Ezaul Zillmer <ezaulzillmer@gmail.com>
-Cc: linux-sunxi@googlegroups.com, computersforpeace@gmail.com,
-        dwmw2@infradead.org, linux-mtd@lists.infradead.org, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, yassinjaffer@gmail.com,
-        maxime.ripard@free-electrons.com
-Subject: Re: [PATCH v6 2/2] mtd: nand: add sunxi NFC dt bindings doc
-Message-ID: <20141021155841.180861d0@bbrezillon>
-In-Reply-To: <62d54110-9c7f-4342-9201-a1ae23194620@googlegroups.com>
-References: <1413805520-14947-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1413805520-14947-3-git-send-email-boris.brezillon@free-electrons.com>
-	<20141021024134.GC1193@ld-irv-0074>
-	<20141021145344.575b19e6@bbrezillon>
-	<62d54110-9c7f-4342-9201-a1ae23194620@googlegroups.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 21 Oct 2014 09:58:59 -0400
+From: Dmitry Voytik <voytikd@gmail.com>
+To: Shawn Guo <shawn.guo@freescale.com>
+Cc: Sascha Hauer <kernel@pengutronix.de>, linux-kernel@vger.kernel.org,
+        Dmitry Voytik <voytikd@gmail.com>
+Subject: [PATCH] ARM: imx: simplify clk_pllv3_prepare()
+Date: Tue, 21 Oct 2014 17:58:54 +0400
+Message-Id: <1413899934-16227-1-git-send-email-voytikd@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Oct 2014 06:13:16 -0700 (PDT)
-Ezaul Zillmer <ezaulzillmer@gmail.com> wrote:
+ret variable is redundant. Call clk_pllv3_wait_lock() in the end
+return.
 
-> Hello everyone 
-> 
-> Boris Brezillon 
-> 
-> downloaded sunxi-nand-v6 now compiled for Cubieboard2 
-> https://github.com/bbrezillon/linux-sunxi.git sunxi b-nand-v6 
-> 
-> u-boot 
-> git clone https://github.com/jwrdegoede/u-boot-b sunxi.git sunxi-wip 
-> 
-> 
-> [1.143903] nand: Could not find valid JEDEC parameter page; aborting 
-> [1.150369] nand: device found, Manufacturer ID: 0xec, Chip ID: 0xd7 
-> [1.156766] nand: Samsung NAND 4GiB 3.3V 8-bit 
-> [1.161214] nand: 4096MiB, MLC, page size: 8192, OOB size: 640 
-> [1.167167] sunxi_nand 1c03000.nand: ECC init failed: -22 
-> [1.172588] sunxi_nand 1c03000.nand: failed to init nand chips 
-> [1.178502] sunxi_nand: probe of 1c03000.nand failed with error -22 
-> 
-> need some more data?
-> 
+Signed-off-by: Dmitry Voytik <voytikd@gmail.com>
+---
+ arch/arm/mach-imx/clk-pllv3.c | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
-Can you try to apply this patch [1] ?
-
-[1]http://code.bulix.org/26bi35-87234
-
-
-
+diff --git a/arch/arm/mach-imx/clk-pllv3.c b/arch/arm/mach-imx/clk-pllv3.c
+index 57de74d..0ad6e54 100644
+--- a/arch/arm/mach-imx/clk-pllv3.c
++++ b/arch/arm/mach-imx/clk-pllv3.c
+@@ -69,7 +69,6 @@ static int clk_pllv3_prepare(struct clk_hw *hw)
+ {
+ 	struct clk_pllv3 *pll = to_clk_pllv3(hw);
+ 	u32 val;
+-	int ret;
+ 
+ 	val = readl_relaxed(pll->base);
+ 	if (pll->powerup_set)
+@@ -78,11 +77,7 @@ static int clk_pllv3_prepare(struct clk_hw *hw)
+ 		val &= ~BM_PLL_POWER;
+ 	writel_relaxed(val, pll->base);
+ 
+-	ret = clk_pllv3_wait_lock(pll);
+-	if (ret)
+-		return ret;
+-
+-	return 0;
++	return clk_pllv3_wait_lock(pll);
+ }
+ 
+ static void clk_pllv3_unprepare(struct clk_hw *hw)
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+1.9.1
+
