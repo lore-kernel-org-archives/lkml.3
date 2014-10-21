@@ -1,75 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755110AbaJUKKR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 06:10:17 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:56577 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751023AbaJUKKP (ORCPT
+	id S1755211AbaJUKLP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 06:11:15 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:63812 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753120AbaJUKLN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 06:10:15 -0400
-Date: Tue, 21 Oct 2014 12:10:11 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Alexandre FOURNIER <alexandre.fournier@wisp-e.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Marcin Wojtas <mw@semihalf.com>,
-        Gregory =?UTF-8?B?Q2zDqW1lbnQ=?= 
-	<gregory.clement@free-electrons.com>
-Subject: Re: RCU stall in af_unix.c, should use spin_lock_irqsave?
-Message-ID: <20141021121011.53686d5f@free-electrons.com>
-In-Reply-To: <1413885874.23173.11.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <20141021100313.397f4962@free-electrons.com>
-	<1413885874.23173.11.camel@edumazet-glaptop2.roam.corp.google.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Tue, 21 Oct 2014 06:11:13 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Jingchang Lu <jingchang.lu@freescale.com>, gregkh@linuxfoundation.org,
+        peter@hurleysoftware.com, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, josephl@nvidia.com
+Subject: Re: [PATCH] serial: of-serial: fix uninitialized kmalloc variable
+Date: Tue, 21 Oct 2014 12:11:08 +0200
+Message-ID: <2601201.5ptAsr65zc@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1413881421-9554-1-git-send-email-jingchang.lu@freescale.com>
+References: <1413881421-9554-1-git-send-email-jingchang.lu@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:cvLQCrR1SV/MEj+oO7t+gbWo538RSyGhxQF/GJwl7PD
+ lqXP7gRjLyQGlyrFlJbqMtb14X8P8ulzg9WyqB1PdXdYrXNIil
+ tfJ/k7IL17fOcDpe/2N9skLRGSHGlcxIeoK/th2WkRScz3hJuV
+ CnK2jYczrrl0JLr/ixoQtiNM4PZ8FntJs8Q887+xP3DhmYNBTr
+ OfkNw8vOXWGQ+T/JaUoSRpvS2JpdlwLdDDFkmhUAYeRc9aqsi4
+ LJy2ZsfUksusAc1tFE9V1hccl6QSihATIVA3T9/yykqbpFZoZ1
+ mXGcQIHhWzCzKUw66QDkBggu/4sKILpdMq+wjIpe5LZmAIkaHC
+ KfiEc1RRj3Sng8z6vIVs=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Eric Dumazet,
-
-On Tue, 21 Oct 2014 03:04:34 -0700, Eric Dumazet wrote:
-
-> > So, the question is: is this patch the correct solution (but then other
-> > usage of spin_lock in af_unix.c might also need fixing) ? Or is the
-> > network driver at fault?
-> > 
-> > Thanks for your input,
-> > 
-> > Thomas
+On Tuesday 21 October 2014 16:50:21 Jingchang Lu wrote:
+> The info pointer points to an uninitialized kmalloced space.
+> If a device doesn't have clk property, then info->clk may
+> have unpredicated value and cause call trace. So use kzalloc
+> to make sure it is NULL initialized.
 > 
-> Locks in af_unix do not need to mask irqs. Ever.
+> Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
 > 
-> skb_queue_tail() uses an irqsave variant because its a generic function,
-> and _some_ skb list might be manipulated from hard irq handlers in pre
-> NAPI drivers. But af_unix does not have an interrupt handler that could
-> potentially try to lock sk_receive_queue.lock
 
-Ok. So it's actually safe to mix spin_lock() and spin_lock_irqsave() on
-the same lock, if you know that this lock will never ever be taken in
-an interrupt context?
-
-> mvpp2 is seriously brain damaged : on_each_cpu() cannot be used from
-> a bottom half handler.
-
-That's what I thought. Back to the drawing board then, to fix mvpp2.
-
-Do you think there is a place where we can write down those
-assumptions? It isn't easy to spot whether on_each_cpu() is safe to use
-in a bottom half or not.
-
-Anyway, thanks a lot for your quick feedback!
-
-Best regards,
-
-Thomas
--- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Acked-by: Arnd Bergmann <arnd@arndb.de
