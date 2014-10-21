@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933816AbaJUVSh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 17:18:37 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:56324 "HELO
+	id S933830AbaJUVSz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 17:18:55 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:61498 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933755AbaJUVRz (ORCPT
+	with SMTP id S933754AbaJUVRz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 21 Oct 2014 17:17:55 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>
 Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Darren Hart <darren.hart@intel.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>, Grant Likely <grant.likely@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, devicetree@vger.kernel.org,
+        Aaron Lu <aaron.lu@intel.com>, devicetree@vger.kernel.org,
         Linus Walleij <linus.walleij@linaro.org>,
         Alexandre Courbot <gnurou@gmail.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Bryan Wu <cooloney@gmail.com>
-Subject: [PATCH v6 01/12] ACPI: Add support for device specific properties
-Date: Tue, 21 Oct 2014 23:09:43 +0200
-Message-ID: <5482244.xscPyWdqaY@vostro.rjw.lan>
+Subject: [PATCH v6 02/12] Driver core: Unified device properties interface for platform firmware
+Date: Tue, 21 Oct 2014 23:15:50 +0200
+Message-ID: <2127128.VT1Iq03xz1@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
 In-Reply-To: <13750506.S2yVlRRDa2@vostro.rjw.lan>
 References: <13750506.S2yVlRRDa2@vostro.rjw.lan>
@@ -32,557 +32,810 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-Device Tree is used in many embedded systems to describe the system
-configuration to the OS. It supports attaching properties or name-value
-pairs to the devices it describe. With these properties one can pass
-additional information to the drivers that would not be available
-otherwise.
+Add a uniform interface by which device drivers can request device
+properties from the platform firmware by providing a property name
+and the corresponding data type.  The purpose of it is to help to
+write portable code that won't depend on any particular platform
+firmware interface.
 
-ACPI is another configuration mechanism (among other things) typically
-seen, but not limited to, x86 machines. ACPI allows passing arbitrary
-data from methods but there has not been mechanism equivalent to Device
-Tree until the introduction of _DSD in the recent publication of the
-ACPI 5.1 specification.
+The following general helper functions are added:
 
-In order to facilitate ACPI usage in systems where Device Tree is
-typically used, it would be beneficial to standardize a way to retrieve
-Device Tree style properties from ACPI devices, which is what we do in
-this patch.
+device_property_present()
+device_property_read_u8()
+device_property_read_u16()
+device_property_read_u32()
+device_property_read_u64()
+device_property_read_string()
+device_property_read_u8_array()
+device_property_read_u16_array()
+device_property_read_u32_array()
+device_property_read_u64_array()
+device_property_read_string_array()
 
-If a given device described in ACPI namespace wants to export properties it
-must implement _DSD method (Device Specific Data, introduced with ACPI 5.1)
-that returns the properties in a package of packages. For example:
+The first one allows the caller to check if the given property is
+present.  The next 5 of them allow single-valued properties of
+various types to be retrieved in a uniform way.  The remaining 5 are
+for reading properties with multiple values (arrays of either numbers
+or strings).
 
-	Name (_DSD, Package () {
-		ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-		Package () {
-			Package () {"name1", <VALUE1>},
-			Package () {"name2", <VALUE2>},
-			...
-		}
-	})
+The interface covers both ACPI and Device Trees.
 
-The UUID reserved for properties is daffd814-6eba-4d8c-8a91-bc9bbf4aa301
-and is documented in the ACPI 5.1 companion document called "_DSD
-Implementation Guide" [1], [2].
+This change set includes material from Mika Westerberg and Aaron Lu.
 
-We add several helper functions that can be used to extract these
-properties and convert them to different Linux data types.
-
-The ultimate goal is that we only have one device property API that
-retrieves the requested properties from Device Tree or from ACPI
-transparent to the caller.
-
-[1] http://www.uefi.org/sites/default/files/resources/_DSD-implementation-guide-toplevel.htm
-[2] http://www.uefi.org/sites/default/files/resources/_DSD-device-properties-UUID.pdf
-
-Reviewed-by: Hanjun Guo <hanjun.guo@linaro.org>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-Reviewed-by: Grant Likely <grant.likely@linaro.org>
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
 Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/acpi/Makefile   |    1 
- drivers/acpi/internal.h |    6 
- drivers/acpi/property.c |  364 ++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/acpi/scan.c     |    2 
- include/acpi/acpi_bus.h |    7 
- include/linux/acpi.h    |   40 +++++
- 6 files changed, 420 insertions(+)
- create mode 100644 drivers/acpi/property.c
 
-Index: linux-pm/drivers/acpi/Makefile
-===================================================================
---- linux-pm.orig/drivers/acpi/Makefile
-+++ linux-pm/drivers/acpi/Makefile
-@@ -46,6 +46,7 @@ acpi-y				+= acpi_pnp.o
- acpi-y				+= power.o
- acpi-y				+= event.o
- acpi-y				+= sysfs.o
-+acpi-y				+= property.o
- acpi-$(CONFIG_X86)		+= acpi_cmos_rtc.o
- acpi-$(CONFIG_DEBUG_FS)		+= debugfs.o
- acpi-$(CONFIG_ACPI_NUMA)	+= numa.o
-Index: linux-pm/drivers/acpi/internal.h
-===================================================================
---- linux-pm.orig/drivers/acpi/internal.h
-+++ linux-pm/drivers/acpi/internal.h
-@@ -181,4 +181,10 @@ struct platform_device *acpi_create_plat
- bool acpi_osi_is_win8(void);
- #endif
- 
-+/*--------------------------------------------------------------------------
-+				Device properties
-+  -------------------------------------------------------------------------- */
-+void acpi_init_properties(struct acpi_device *adev);
-+void acpi_free_properties(struct acpi_device *adev);
-+
- #endif /* _ACPI_INTERNAL_H_ */
-Index: linux-pm/drivers/acpi/property.c
+Changes from v5:
+- acpi_dev_prop_read() can now handle both list (package) and single-value
+  properties (the latter are tried first for the last argument equal to 1).
+- There is a new macro to generate the bodies of device_property_read_u*_array().
+- device_property_read_u*() are implemented using device_property_read_u*_array().
+- device_property_read_bool() is a new static inline wrapper around
+  device_property_present().
+
+---
+ drivers/acpi/property.c  |  178 +++++++++++++++++++++++++++++++++++
+ drivers/base/Makefile    |    2 
+ drivers/base/property.c  |  233 +++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/of/base.c        |  106 ++++++++++++++++++---
+ include/linux/acpi.h     |   32 ++++++
+ include/linux/of.h       |   22 ++++
+ include/linux/property.h |   53 ++++++++++
+ 7 files changed, 609 insertions(+), 17 deletions(-)
+ create mode 100644 drivers/base/property.c
+ create mode 100644 include/linux/property.h
+
+Index: linux-pm/include/linux/property.h
 ===================================================================
 --- /dev/null
-+++ linux-pm/drivers/acpi/property.c
-@@ -0,0 +1,364 @@
++++ linux-pm/include/linux/property.h
+@@ -0,0 +1,53 @@
 +/*
-+ * ACPI device specific properties support.
++ * property.h - Unified device property interface.
 + *
 + * Copyright (C) 2014, Intel Corporation
-+ * All rights reserved.
-+ *
-+ * Authors: Mika Westerberg <mika.westerberg@linux.intel.com>
-+ *          Darren Hart <dvhart@linux.intel.com>
-+ *          Rafael J. Wysocki <rafael.j.wysocki@intel.com>
++ * Authors: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
++ *          Mika Westerberg <mika.westerberg@linux.intel.com>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + */
 +
-+#include <linux/acpi.h>
-+#include <linux/device.h>
-+#include <linux/export.h>
++#ifndef _LINUX_PROPERTY_H_
++#define _LINUX_PROPERTY_H_
 +
-+#include "internal.h"
++#include <linux/types.h>
 +
-+/* ACPI _DSD device properties UUID: daffd814-6eba-4d8c-8a91-bc9bbf4aa301 */
-+static const u8 prp_uuid[16] = {
-+	0x14, 0xd8, 0xff, 0xda, 0xba, 0x6e, 0x8c, 0x4d,
-+	0x8a, 0x91, 0xbc, 0x9b, 0xbf, 0x4a, 0xa3, 0x01
++struct device;
++
++enum dev_prop_type {
++	DEV_PROP_U8,
++	DEV_PROP_U16,
++	DEV_PROP_U32,
++	DEV_PROP_U64,
++	DEV_PROP_STRING,
++	DEV_PROP_MAX,
 +};
 +
-+static bool acpi_property_value_ok(const union acpi_object *value)
++bool device_property_present(struct device *dev, const char *propname);
++int device_property_read_u8_array(struct device *dev, const char *propname,
++				  u8 *val, size_t nval);
++int device_property_read_u16_array(struct device *dev, const char *propname,
++				   u16 *val, size_t nval);
++int device_property_read_u32_array(struct device *dev, const char *propname,
++				   u32 *val, size_t nval);
++int device_property_read_u64_array(struct device *dev, const char *propname,
++				   u64 *val, size_t nval);
++int device_property_read_string_array(struct device *dev, const char *propname,
++				      char **val, size_t nval);
++int device_property_read_u8(struct device *dev, const char *propname, u8 *val);
++int device_property_read_u16(struct device *dev, const char *propname, u16 *val);
++int device_property_read_u32(struct device *dev, const char *propname, u32 *val);
++int device_property_read_u64(struct device *dev, const char *propname, u64 *val);
++int device_property_read_string(struct device *dev, const char *propname,
++				const char **val);
++
++static inline bool device_property_read_bool(struct device *dev,
++					     const char *propname)
 +{
-+	int j;
-+
-+	/*
-+	 * The value must be an integer, a string, a reference, or a package
-+	 * whose every element must be an integer, a string, or a reference.
-+	 */
-+	switch (value->type) {
-+	case ACPI_TYPE_INTEGER:
-+	case ACPI_TYPE_STRING:
-+	case ACPI_TYPE_LOCAL_REFERENCE:
-+		return true;
-+
-+	case ACPI_TYPE_PACKAGE:
-+		for (j = 0; j < value->package.count; j++)
-+			switch (value->package.elements[j].type) {
-+			case ACPI_TYPE_INTEGER:
-+			case ACPI_TYPE_STRING:
-+			case ACPI_TYPE_LOCAL_REFERENCE:
-+				continue;
-+
-+			default:
-+				return false;
-+			}
-+
-+		return true;
-+	}
-+	return false;
++	return device_property_present(dev, propname);
 +}
 +
-+static bool acpi_properties_format_valid(const union acpi_object *properties)
-+{
-+	int i;
-+
-+	for (i = 0; i < properties->package.count; i++) {
-+		const union acpi_object *property;
-+
-+		property = &properties->package.elements[i];
-+		/*
-+		 * Only two elements allowed, the first one must be a string and
-+		 * the second one has to satisfy certain conditions.
-+		 */
-+		if (property->package.count != 2
-+		    || property->package.elements[0].type != ACPI_TYPE_STRING
-+		    || !acpi_property_value_ok(&property->package.elements[1]))
-+			return false;
-+	}
-+	return true;
-+}
-+
-+void acpi_init_properties(struct acpi_device *adev)
-+{
-+	struct acpi_buffer buf = { ACPI_ALLOCATE_BUFFER };
-+	const union acpi_object *desc;
-+	acpi_status status;
-+	int i;
-+
-+	status = acpi_evaluate_object_typed(adev->handle, "_DSD", NULL, &buf,
-+					    ACPI_TYPE_PACKAGE);
-+	if (ACPI_FAILURE(status))
-+		return;
-+
-+	desc = buf.pointer;
-+	if (desc->package.count % 2)
-+		goto fail;
-+
-+	/* Look for the device properties UUID. */
-+	for (i = 0; i < desc->package.count; i += 2) {
-+		const union acpi_object *uuid, *properties;
-+
-+		uuid = &desc->package.elements[i];
-+		properties = &desc->package.elements[i + 1];
-+
-+		/*
-+		 * The first element must be a UUID and the second one must be
-+		 * a package.
-+		 */
-+		if (uuid->type != ACPI_TYPE_BUFFER || uuid->buffer.length != 16
-+		    || properties->type != ACPI_TYPE_PACKAGE)
-+			break;
-+
-+		if (memcmp(uuid->buffer.pointer, prp_uuid, sizeof(prp_uuid)))
-+			continue;
-+
-+		/*
-+		 * We found the matching UUID. Now validate the format of the
-+		 * package immediately following it.
-+		 */
-+		if (!acpi_properties_format_valid(properties))
-+			break;
-+
-+		adev->data.pointer = buf.pointer;
-+		adev->data.properties = properties;
-+		return;
-+	}
-+
-+ fail:
-+	dev_warn(&adev->dev, "Returned _DSD data is not valid, skipping\n");
-+	ACPI_FREE(buf.pointer);
-+}
-+
-+void acpi_free_properties(struct acpi_device *adev)
-+{
-+	ACPI_FREE((void *)adev->data.pointer);
-+	adev->data.pointer = NULL;
-+	adev->data.properties = NULL;
-+}
-+
-+/**
-+ * acpi_dev_get_property - return an ACPI property with given name
-+ * @adev: ACPI device to get property
-+ * @name: Name of the property
-+ * @type: Expected property type
-+ * @obj: Location to store the property value (if not %NULL)
-+ *
-+ * Look up a property with @name and store a pointer to the resulting ACPI
-+ * object at the location pointed to by @obj if found.
-+ *
-+ * Callers must not attempt to free the returned objects.  These objects will be
-+ * freed by the ACPI core automatically during the removal of @adev.
-+ *
-+ * Return: %0 if property with @name has been found (success),
-+ *         %-EINVAL if the arguments are invalid,
-+ *         %-ENODATA if the property doesn't exist,
-+ *         %-EPROTO if the property value type doesn't match @type.
-+ */
-+int acpi_dev_get_property(struct acpi_device *adev, const char *name,
-+			  acpi_object_type type, const union acpi_object **obj)
-+{
-+	const union acpi_object *properties;
-+	int i;
-+
-+	if (!adev || !name)
-+		return -EINVAL;
-+
-+	if (!adev->data.pointer || !adev->data.properties)
-+		return -ENODATA;
-+
-+	properties = adev->data.properties;
-+	for (i = 0; i < properties->package.count; i++) {
-+		const union acpi_object *propname, *propvalue;
-+		const union acpi_object *property;
-+
-+		property = &properties->package.elements[i];
-+
-+		propname = &property->package.elements[0];
-+		propvalue = &property->package.elements[1];
-+
-+		if (!strcmp(name, propname->string.pointer)) {
-+			if (type != ACPI_TYPE_ANY && propvalue->type != type)
-+				return -EPROTO;
-+			else if (obj)
-+				*obj = propvalue;
-+
-+			return 0;
-+		}
-+	}
-+	return -ENODATA;
-+}
-+EXPORT_SYMBOL_GPL(acpi_dev_get_property);
-+
-+/**
-+ * acpi_dev_get_property_array - return an ACPI array property with given name
-+ * @adev: ACPI device to get property
-+ * @name: Name of the property
-+ * @type: Expected type of array elements
-+ * @obj: Location to store a pointer to the property value (if not NULL)
-+ *
-+ * Look up an array property with @name and store a pointer to the resulting
-+ * ACPI object at the location pointed to by @obj if found.
-+ *
-+ * Callers must not attempt to free the returned objects.  Those objects will be
-+ * freed by the ACPI core automatically during the removal of @adev.
-+ *
-+ * Return: %0 if array property (package) with @name has been found (success),
-+ *         %-EINVAL if the arguments are invalid,
-+ *         %-ENODATA if the property doesn't exist,
-+ *         %-EPROTO if the property is not a package or the type of its elements
-+ *           doesn't match @type.
-+ */
-+int acpi_dev_get_property_array(struct acpi_device *adev, const char *name,
-+				acpi_object_type type,
-+				const union acpi_object **obj)
-+{
-+	const union acpi_object *prop;
-+	int ret, i;
-+
-+	ret = acpi_dev_get_property(adev, name, ACPI_TYPE_PACKAGE, &prop);
-+	if (ret)
-+		return ret;
-+
-+	if (type != ACPI_TYPE_ANY) {
-+		/* Check that all elements are of correct type. */
-+		for (i = 0; i < prop->package.count; i++)
-+			if (prop->package.elements[i].type != type)
-+				return -EPROTO;
-+	}
-+	if (obj)
-+		*obj = prop;
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(acpi_dev_get_property_array);
-+
-+/**
-+ * acpi_dev_get_property_reference - returns handle to the referenced object
-+ * @adev: ACPI device to get property
-+ * @name: Name of the property
-+ * @size_prop: Name of the "size" property in referenced object
-+ * @index: Index of the reference to return
-+ * @args: Location to store the returned reference with optional arguments
-+ *
-+ * Find property with @name, verifify that it is a package containing at least
-+ * one object reference and if so, store the ACPI device object pointer to the
-+ * target object in @args->adev.
-+ *
-+ * If the reference includes arguments (@size_prop is not %NULL) follow the
-+ * reference and check whether or not there is an integer property @size_prop
-+ * under the target object and if so, whether or not its value matches the
-+ * number of arguments that follow the reference.  If there's more than one
-+ * reference in the property value package, @index is used to select the one to
-+ * return.
-+ *
-+ * Return: %0 on success, negative error code on failure.
-+ */
-+int acpi_dev_get_property_reference(struct acpi_device *adev, const char *name,
-+				    const char *size_prop, size_t index,
-+				    struct acpi_reference_args *args)
-+{
-+	const union acpi_object *element, *end;
-+	const union acpi_object *obj;
-+	struct acpi_device *device;
-+	int ret, idx = 0;
-+
-+	ret = acpi_dev_get_property(adev, name, ACPI_TYPE_ANY, &obj);
-+	if (ret)
-+		return ret;
-+
-+	/*
-+	 * The simplest case is when the value is a single reference.  Just
-+	 * return that reference then.
-+	 */
-+	if (obj->type == ACPI_TYPE_LOCAL_REFERENCE) {
-+		if (size_prop || index)
-+			return -EINVAL;
-+
-+		ret = acpi_bus_get_device(obj->reference.handle, &device);
-+		if (ret)
-+			return ret;
-+
-+		args->adev = device;
-+		args->nargs = 0;
-+		return 0;
-+	}
-+
-+	/*
-+	 * If it is not a single reference, then it is a package of
-+	 * references followed by number of ints as follows:
-+	 *
-+	 *  Package () { REF, INT, REF, INT, INT }
-+	 *
-+	 * The index argument is then used to determine which reference
-+	 * the caller wants (along with the arguments).
-+	 */
-+	if (obj->type != ACPI_TYPE_PACKAGE || index >= obj->package.count)
-+		return -EPROTO;
-+
-+	element = obj->package.elements;
-+	end = element + obj->package.count;
-+
-+	while (element < end) {
-+		u32 nargs, i;
-+
-+		if (element->type != ACPI_TYPE_LOCAL_REFERENCE)
-+			return -EPROTO;
-+
-+		ret = acpi_bus_get_device(element->reference.handle, &device);
-+		if (ret)
-+			return -ENODEV;
-+
-+		element++;
-+		nargs = 0;
-+
-+		if (size_prop) {
-+			const union acpi_object *prop;
-+
-+			/*
-+			 * Find out how many arguments the refenced object
-+			 * expects by reading its size_prop property.
-+			 */
-+			ret = acpi_dev_get_property(device, size_prop,
-+						    ACPI_TYPE_INTEGER, &prop);
-+			if (ret)
-+				return ret;
-+
-+			nargs = prop->integer.value;
-+			if (nargs > MAX_ACPI_REFERENCE_ARGS
-+			    || element + nargs > end)
-+				return -EPROTO;
-+
-+			/*
-+			 * Skip to the start of the arguments and verify
-+			 * that they all are in fact integers.
-+			 */
-+			for (i = 0; i < nargs; i++)
-+				if (element[i].type != ACPI_TYPE_INTEGER)
-+					return -EPROTO;
-+		} else {
-+			/* assume following integer elements are all args */
-+			for (i = 0; element + i < end; i++) {
-+				int type = element[i].type;
-+
-+				if (type == ACPI_TYPE_INTEGER)
-+					nargs++;
-+				else if (type == ACPI_TYPE_LOCAL_REFERENCE)
-+					break;
-+				else
-+					return -EPROTO;
-+			}
-+		}
-+
-+		if (idx++ == index) {
-+			args->adev = device;
-+			args->nargs = nargs;
-+			for (i = 0; i < nargs; i++)
-+				args->args[i] = element[i].integer.value;
-+
-+			return 0;
-+		}
-+
-+		element += nargs;
-+	}
-+
-+	return -EPROTO;
-+}
-+EXPORT_SYMBOL_GPL(acpi_dev_get_property_reference);
-Index: linux-pm/drivers/acpi/scan.c
++#endif /* _LINUX_PROPERTY_H_ */
+Index: linux-pm/include/linux/of.h
 ===================================================================
---- linux-pm.orig/drivers/acpi/scan.c
-+++ linux-pm/drivers/acpi/scan.c
-@@ -884,6 +884,7 @@ static void acpi_device_release(struct d
+--- linux-pm.orig/include/linux/of.h
++++ linux-pm/include/linux/of.h
+@@ -23,6 +23,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/topology.h>
+ #include <linux/notifier.h>
++#include <linux/property.h>
+ 
+ #include <asm/byteorder.h>
+ #include <asm/errno.h>
+@@ -263,6 +264,10 @@ extern int of_property_read_u32_array(co
+ 				      size_t sz);
+ extern int of_property_read_u64(const struct device_node *np,
+ 				const char *propname, u64 *out_value);
++extern int of_property_read_u64_array(const struct device_node *np,
++				      const char *propname,
++				      u64 *out_values,
++				      size_t sz);
+ 
+ extern int of_property_read_string(struct device_node *np,
+ 				   const char *propname,
+@@ -275,6 +280,9 @@ extern int of_property_match_string(stru
+ 				    const char *string);
+ extern int of_property_count_strings(struct device_node *np,
+ 				     const char *propname);
++extern int of_property_read_string_array(struct device_node *np,
++					      const char *propname,
++					      char **out_strs, size_t sz);
+ extern int of_device_is_compatible(const struct device_node *device,
+ 				   const char *);
+ extern int of_device_is_available(const struct device_node *device);
+@@ -479,6 +487,13 @@ static inline int of_property_read_u32_a
+ 	return -ENOSYS;
+ }
+ 
++static inline int of_property_read_u64_array(const struct device_node *np,
++					     const char *propname,
++					     u64 *out_values, size_t sz)
++{
++	return -ENOSYS;
++}
++
+ static inline int of_property_read_string(struct device_node *np,
+ 					  const char *propname,
+ 					  const char **out_string)
+@@ -498,6 +513,13 @@ static inline int of_property_count_stri
  {
- 	struct acpi_device *acpi_dev = to_acpi_device(dev);
- 
-+	acpi_free_properties(acpi_dev);
- 	acpi_free_pnp_ids(&acpi_dev->pnp);
- 	acpi_free_power_resources_lists(acpi_dev);
- 	kfree(acpi_dev);
-@@ -1888,6 +1889,7 @@ void acpi_init_device_object(struct acpi
- 	acpi_set_device_status(device, sta);
- 	acpi_device_get_busid(device);
- 	acpi_set_pnp_ids(handle, &device->pnp, type);
-+	acpi_init_properties(device);
- 	acpi_bus_get_flags(device);
- 	device->flags.match_driver = false;
- 	device->flags.initialized = true;
-Index: linux-pm/include/acpi/acpi_bus.h
-===================================================================
---- linux-pm.orig/include/acpi/acpi_bus.h
-+++ linux-pm/include/acpi/acpi_bus.h
-@@ -337,6 +337,12 @@ struct acpi_device_physical_node {
- 	bool put_online:1;
- };
- 
-+/* ACPI Device Specific Data (_DSD) */
-+struct acpi_device_data {
-+	const union acpi_object *pointer;
-+	const union acpi_object *properties;
-+};
+ 	return -ENOSYS;
+ }
 +
- /* Device */
- struct acpi_device {
- 	int device_type;
-@@ -353,6 +359,7 @@ struct acpi_device {
- 	struct acpi_device_wakeup wakeup;
- 	struct acpi_device_perf performance;
- 	struct acpi_device_dir dir;
-+	struct acpi_device_data data;
- 	struct acpi_scan_handler *handler;
- 	struct acpi_hotplug_context *hp;
- 	struct acpi_driver *driver;
++static inline int of_property_read_string_array(struct device_node *np,
++						 const char *propname,
++						 char **out_strs, size_t sz)
++{
++	return -ENOSYS;
++}
+ 
+ static inline const void *of_get_property(const struct device_node *node,
+ 				const char *name,
 Index: linux-pm/include/linux/acpi.h
 ===================================================================
 --- linux-pm.orig/include/linux/acpi.h
 +++ linux-pm/include/linux/acpi.h
-@@ -658,4 +658,44 @@ do {									\
- #endif
+@@ -28,6 +28,7 @@
+ #include <linux/errno.h>
+ #include <linux/ioport.h>	/* for struct resource */
+ #include <linux/device.h>
++#include <linux/property.h>
+ 
+ #ifndef _LINUX
+ #define _LINUX
+@@ -676,6 +677,13 @@ int acpi_dev_get_property_array(struct a
+ int acpi_dev_get_property_reference(struct acpi_device *adev, const char *name,
+ 				    const char *cells_name, size_t index,
+ 				    struct acpi_reference_args *args);
++
++int acpi_dev_prop_get(struct acpi_device *adev, const char *propname,
++		      void **valptr);
++int acpi_dev_prop_read_single(struct acpi_device *adev, const char *propname,
++			      enum dev_prop_type proptype, void *val);
++int acpi_dev_prop_read(struct acpi_device *adev, const char *propname,
++		       enum dev_prop_type proptype, void *val, size_t nval);
+ #else
+ static inline int acpi_dev_get_property(struct acpi_device *adev,
+ 					const char *name, acpi_object_type type,
+@@ -696,6 +704,30 @@ static inline int acpi_dev_get_property_
+ {
+ 	return -ENXIO;
+ }
++
++static inline int acpi_dev_prop_get(struct acpi_device *adev,
++				    const char *propname,
++				    void **valptr)
++{
++	return -ENXIO;
++}
++
++static inline int acpi_dev_prop_read_single(struct acpi_device *adev,
++					    const char *propname,
++					    enum dev_prop_type proptype,
++					    void *val)
++{
++	return -ENXIO;
++}
++
++static inline int acpi_dev_prop_read(struct acpi_device *adev,
++				     const char *propname,
++				     enum dev_prop_type proptype,
++				     void *val, size_t nval)
++{
++	return -ENXIO;
++}
++
  #endif
  
-+/* Device properties */
-+
-+#define MAX_ACPI_REFERENCE_ARGS	8
-+struct acpi_reference_args {
-+	struct acpi_device *adev;
-+	size_t nargs;
-+	u64 args[MAX_ACPI_REFERENCE_ARGS];
-+};
-+
-+#ifdef CONFIG_ACPI
-+int acpi_dev_get_property(struct acpi_device *adev, const char *name,
-+			  acpi_object_type type, const union acpi_object **obj);
-+int acpi_dev_get_property_array(struct acpi_device *adev, const char *name,
-+				acpi_object_type type,
-+				const union acpi_object **obj);
-+int acpi_dev_get_property_reference(struct acpi_device *adev, const char *name,
-+				    const char *cells_name, size_t index,
-+				    struct acpi_reference_args *args);
-+#else
-+static inline int acpi_dev_get_property(struct acpi_device *adev,
-+					const char *name, acpi_object_type type,
-+					const union acpi_object **obj)
-+{
-+	return -ENXIO;
-+}
-+static inline int acpi_dev_get_property_array(struct acpi_device *adev,
-+					      const char *name,
-+					      acpi_object_type type,
-+					      const union acpi_object **obj)
-+{
-+	return -ENXIO;
-+}
-+static inline int acpi_dev_get_property_reference(struct acpi_device *adev,
-+				const char *name, const char *cells_name,
-+				size_t index, struct acpi_reference_args *args)
-+{
-+	return -ENXIO;
-+}
-+#endif
-+
  #endif	/*_LINUX_ACPI_H*/
+Index: linux-pm/drivers/base/Makefile
+===================================================================
+--- linux-pm.orig/drivers/base/Makefile
++++ linux-pm/drivers/base/Makefile
+@@ -4,7 +4,7 @@ obj-y			:= component.o core.o bus.o dd.o
+ 			   driver.o class.o platform.o \
+ 			   cpu.o firmware.o init.o map.o devres.o \
+ 			   attribute_container.o transport_class.o \
+-			   topology.o container.o
++			   topology.o container.o property.o
+ obj-$(CONFIG_DEVTMPFS)	+= devtmpfs.o
+ obj-$(CONFIG_DMA_CMA) += dma-contiguous.o
+ obj-y			+= power/
+Index: linux-pm/drivers/base/property.c
+===================================================================
+--- /dev/null
++++ linux-pm/drivers/base/property.c
+@@ -0,0 +1,233 @@
++/*
++ * property.c - Unified device property interface.
++ *
++ * Copyright (C) 2014, Intel Corporation
++ * Authors: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
++ *          Mika Westerberg <mika.westerberg@linux.intel.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/property.h>
++#include <linux/export.h>
++#include <linux/acpi.h>
++#include <linux/of.h>
++
++/**
++ * device_property_present - check if a property of a device is present
++ * @dev: Device whose property is being checked
++ * @propname: Name of the property
++ *
++ * Check if property @propname is present in the device firmware description.
++ */
++bool device_property_present(struct device *dev, const char *propname)
++{
++	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
++		return of_property_read_bool(dev->of_node, propname);
++
++	return !acpi_dev_prop_get(ACPI_COMPANION(dev), propname, NULL);
++}
++EXPORT_SYMBOL_GPL(device_property_present);
++
++#define OF_DEV_PROP_READ_ARRAY(node, propname, type, val, nval) \
++	(val) ? of_property_read_##type##_array((node), (propname), (val), (nval)) \
++	      : of_property_count_elems_of_size((node), (propname), sizeof(type))
++
++#define DEV_PROP_READ_ARRAY(_dev_, _propname_, _type_, _proptype_, _val_, _nval_) \
++	IS_ENABLED(CONFIG_OF) && _dev_->of_node ? \
++		(OF_DEV_PROP_READ_ARRAY(_dev_->of_node, _propname_, _type_, \
++					_val_, _nval_)) : \
++		acpi_dev_prop_read(ACPI_COMPANION(_dev_), _propname_, \
++				   _proptype_, _val_, _nval_)
++
++/**
++ * device_property_read_u8_array - return a u8 array property of a device
++ * @dev: Device to get the property of
++ * @propname: Name of the property
++ * @val: The values are stored here
++ * @nval: Size of the @val array
++ *
++ * Function reads an array of u8 properties with @propname from the device
++ * firmware description and stores them to @val if found.
++ *
++ * Return: %0 if the property was found (success),
++ *	   %-EINVAL if given arguments are not valid,
++ *	   %-ENODATA if the property does not have a value,
++ *	   %-EPROTO if the property is not an array of numbers,
++ *	   %-EOVERFLOW if the size of the property is not as expected.
++ */
++int device_property_read_u8_array(struct device *dev, const char *propname,
++				  u8 *val, size_t nval)
++{
++	return DEV_PROP_READ_ARRAY(dev, propname, u8, DEV_PROP_U8, val, nval);
++}
++EXPORT_SYMBOL_GPL(device_property_read_u8_array);
++
++/**
++ * device_property_read_u16_array - return a u16 array property of a device
++ * @dev: Device to get the property of
++ * @propname: Name of the property
++ * @val: The values are stored here
++ * @nval: Size of the @val array
++ *
++ * Function reads an array of u16 properties with @propname from the device
++ * firmware description and stores them to @val if found.
++ *
++ * Return: %0 if the property was found (success),
++ *	   %-EINVAL if given arguments are not valid,
++ *	   %-ENODATA if the property does not have a value,
++ *	   %-EPROTO if the property is not an array of numbers,
++ *	   %-EOVERFLOW if the size of the property is not as expected.
++ */
++int device_property_read_u16_array(struct device *dev, const char *propname,
++				   u16 *val, size_t nval)
++{
++	return DEV_PROP_READ_ARRAY(dev, propname, u16, DEV_PROP_U16, val, nval);
++}
++EXPORT_SYMBOL_GPL(device_property_read_u16_array);
++
++/**
++ * device_property_read_u32_array - return a u32 array property of a device
++ * @dev: Device to get the property of
++ * @propname: Name of the property
++ * @val: The values are stored here
++ * @nval: Size of the @val array
++ *
++ * Function reads an array of u32 properties with @propname from the device
++ * firmware description and stores them to @val if found.
++ *
++ * Return: %0 if the property was found (success),
++ *	   %-EINVAL if given arguments are not valid,
++ *	   %-ENODATA if the property does not have a value,
++ *	   %-EPROTO if the property is not an array of numbers,
++ *	   %-EOVERFLOW if the size of the property is not as expected.
++ */
++int device_property_read_u32_array(struct device *dev, const char *propname,
++				   u32 *val, size_t nval)
++{
++	return DEV_PROP_READ_ARRAY(dev, propname, u32, DEV_PROP_U32, val, nval);
++}
++EXPORT_SYMBOL_GPL(device_property_read_u32_array);
++
++/**
++ * device_property_read_u64_array - return a u64 array property of a device
++ * @dev: Device to get the property of
++ * @propname: Name of the property
++ * @val: The values are stored here
++ * @nval: Size of the @val array
++ *
++ * Function reads an array of u64 properties with @propname from the device
++ * firmware description and stores them to @val if found.
++ *
++ * Return: %0 if the property was found (success),
++ *	   %-EINVAL if given arguments are not valid,
++ *	   %-ENODATA if the property does not have a value,
++ *	   %-EPROTO if the property is not an array of numbers,
++ *	   %-EOVERFLOW if the size of the property is not as expected.
++ */
++int device_property_read_u64_array(struct device *dev, const char *propname,
++				   u64 *val, size_t nval)
++{
++	return DEV_PROP_READ_ARRAY(dev, propname, u64, DEV_PROP_U64, val, nval);
++}
++EXPORT_SYMBOL_GPL(device_property_read_u64_array);
++
++/**
++ * device_property_read_string_array - return a string array property of device
++ * @dev: Device to get the property of
++ * @propname: Name of the property
++ * @val: The values are stored here
++ * @nval: Size of the @val array
++ *
++ * Function reads an array of string properties with @propname from the device
++ * firmware description and stores them to @val if found.
++ *
++ * Return: %0 if the property was found (success),
++ *	   %-EINVAL if given arguments are not valid,
++ *	   %-ENODATA if the property does not have a value,
++ *	   %-EPROTO or %-EILSEQ if the property is not an array of strings,
++ *	   %-EOVERFLOW if the size of the property is not as expected.
++ */
++int device_property_read_string_array(struct device *dev, const char *propname,
++				      char **val, size_t nval)
++{
++	return IS_ENABLED(CONFIG_OF) && dev->of_node ?
++		of_property_read_string_array(dev->of_node, propname, val, nval) :
++		acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
++				   DEV_PROP_STRING, val, nval);
++}
++EXPORT_SYMBOL_GPL(device_property_read_string_array);
++
++/**
++ * device_property_read_u8 - return a u8 property of a device
++ * @dev: Device to get the property of
++ * @propname: Name of the property
++ * @val: The value is stored here
++ */
++int device_property_read_u8(struct device *dev, const char *propname, u8 *val)
++{
++	return device_property_read_u8_array(dev, propname, val, 1);
++}
++EXPORT_SYMBOL_GPL(device_property_read_u8);
++
++/**
++ * device_property_read_u16 - return a u16 property of a device
++ * @dev: Device to get the property of
++ * @propname: Name of the property
++ * @val: The value is stored here
++ */
++int device_property_read_u16(struct device *dev, const char *propname, u16 *val)
++{
++	return device_property_read_u16_array(dev, propname, val, 1);
++}
++EXPORT_SYMBOL_GPL(device_property_read_u16);
++
++/**
++ * device_property_read_u32 - return a u32 property of a device
++ * @dev: Device to get the property of
++ * @propname: Name of the property
++ * @val: The value is stored here
++ */
++int device_property_read_u32(struct device *dev, const char *propname, u32 *val)
++{
++	return device_property_read_u32_array(dev, propname, val, 1);
++}
++EXPORT_SYMBOL_GPL(device_property_read_u32);
++
++/**
++ * device_property_read_u64 - return a u64 property of a device
++ * @dev: Device to get the property of
++ * @propname: Name of the property
++ * @val: The value is stored here
++ */
++int device_property_read_u64(struct device *dev, const char *propname, u64 *val)
++{
++	return device_property_read_u64_array(dev, propname, val, 1);
++}
++EXPORT_SYMBOL_GPL(device_property_read_u64);
++
++/**
++ * device_property_read_string - return a string property of a device
++ * @dev: Device to get the property of
++ * @propname: Name of the property
++ * @val: The value is stored here
++ *
++ * Function reads property @propname from the device firmware description and
++ * stores the value into @val if found. The value is checked to be a string.
++ *
++ * Return: %0 if the property was found (success),
++ *	   %-EINVAL if given arguments are not valid,
++ *	   %-ENODATA if the property does not have a value,
++ *	   %-EPROTO or %-EILSEQ if the property type is not a string.
++ */
++int device_property_read_string(struct device *dev, const char *propname,
++				const char **val)
++{
++	return IS_ENABLED(CONFIG_OF) && dev->of_node ?
++		of_property_read_string(dev->of_node, propname, val) :
++		acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
++				   DEV_PROP_STRING, val, 1);
++}
++EXPORT_SYMBOL_GPL(device_property_read_string);
+Index: linux-pm/drivers/of/base.c
+===================================================================
+--- linux-pm.orig/drivers/of/base.c
++++ linux-pm/drivers/of/base.c
+@@ -1250,6 +1250,39 @@ int of_property_read_u64(const struct de
+ EXPORT_SYMBOL_GPL(of_property_read_u64);
+ 
+ /**
++ * of_property_read_u64_array - Find and read an array of 64 bit integers
++ * from a property.
++ *
++ * @np:		device node from which the property value is to be read.
++ * @propname:	name of the property to be searched.
++ * @out_values:	pointer to return value, modified only if return value is 0.
++ * @sz:		number of array elements to read
++ *
++ * Search for a property in a device node and read 64-bit value(s) from
++ * it. Returns 0 on success, -EINVAL if the property does not exist,
++ * -ENODATA if property does not have a value, and -EOVERFLOW if the
++ * property data isn't large enough.
++ *
++ * The out_values is modified only if a valid u64 value can be decoded.
++ */
++int of_property_read_u64_array(const struct device_node *np,
++			       const char *propname, u64 *out_values,
++			       size_t sz)
++{
++	const __be32 *val = of_find_property_value_of_size(np, propname,
++						(sz * sizeof(*out_values)));
++
++	if (IS_ERR(val))
++		return PTR_ERR(val);
++
++	while (sz--) {
++		*out_values++ = of_read_number(val, 2);
++		val += 2;
++	}
++	return 0;
++}
++
++/**
+  * of_property_read_string - Find and read a string from a property
+  * @np:		device node from which the property value is to be read.
+  * @propname:	name of the property to be searched.
+@@ -1362,24 +1395,11 @@ int of_property_match_string(struct devi
+ }
+ EXPORT_SYMBOL_GPL(of_property_match_string);
+ 
+-/**
+- * of_property_count_strings - Find and return the number of strings from a
+- * multiple strings property.
+- * @np:		device node from which the property value is to be read.
+- * @propname:	name of the property to be searched.
+- *
+- * Search for a property in a device tree node and retrieve the number of null
+- * terminated string contain in it. Returns the number of strings on
+- * success, -EINVAL if the property does not exist, -ENODATA if property
+- * does not have a value, and -EILSEQ if the string is not null-terminated
+- * within the length of the property data.
+- */
+-int of_property_count_strings(struct device_node *np, const char *propname)
++static int property_count_strings(struct property *prop)
+ {
+-	struct property *prop = of_find_property(np, propname, NULL);
+-	int i = 0;
+-	size_t l = 0, total = 0;
+ 	const char *p;
++	size_t l = 0, total = 0;
++	int i = 0;
+ 
+ 	if (!prop)
+ 		return -EINVAL;
+@@ -1395,8 +1415,62 @@ int of_property_count_strings(struct dev
+ 
+ 	return i;
+ }
++
++/**
++ * of_property_count_strings - Find and return the number of strings from a
++ * multiple strings property.
++ * @np:		device node from which the property value is to be read.
++ * @propname:	name of the property to be searched.
++ *
++ * Search for a property in a device tree node and retrieve the number of null
++ * terminated string contain in it. Returns the number of strings on
++ * success, -EINVAL if the property does not exist, -ENODATA if property
++ * does not have a value, and -EILSEQ if the string is not null-terminated
++ * within the length of the property data.
++ */
++int of_property_count_strings(struct device_node *np, const char *propname)
++{
++	return property_count_strings(of_find_property(np, propname, NULL));
++}
+ EXPORT_SYMBOL_GPL(of_property_count_strings);
+ 
++/**
++ * of_property_read_string_array - Read an array of strings from a multiple
++ * strings property.
++ * @np:		device node from which the property value is to be read.
++ * @propname:	name of the property to be searched.
++ * @out_strs:	output array of string pointers.
++ * @sz:		number of array elements to read.
++ *
++ * Search for a property in a device tree node and retrieve a list of
++ * terminated string values (pointer to data, not a copy) in that property.
++ *
++ * If @out_strs is NULL, the number of strings in the property is returned.
++ */
++int of_property_read_string_array(struct device_node *np, const char *propname,
++				  char **out_strs, size_t sz)
++{
++	struct property *prop = of_find_property(np, propname, NULL);
++	char *p = prop->value;
++	size_t total = 0;
++	int i;
++
++	i = property_count_strings(prop);
++	if (!out_strs || i < 0)
++		return i;
++
++	if (i < sz)
++		return -EOVERFLOW;
++
++	while (total < prop->length && i < sz) {
++		size_t l = strlen(p) + 1;
++
++		out_strs[i++] = p;
++		total += l;
++		p += l;
++	}
++}
++
+ void of_print_phandle_args(const char *msg, const struct of_phandle_args *args)
+ {
+ 	int i;
+Index: linux-pm/drivers/acpi/property.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/property.c
++++ linux-pm/drivers/acpi/property.c
+@@ -362,3 +362,181 @@ int acpi_dev_get_property_reference(stru
+ 	return -EPROTO;
+ }
+ EXPORT_SYMBOL_GPL(acpi_dev_get_property_reference);
++
++int acpi_dev_prop_get(struct acpi_device *adev, const char *propname,
++		      void **valptr)
++{
++	return acpi_dev_get_property(adev, propname, ACPI_TYPE_ANY,
++				     (const union acpi_object **)valptr);
++}
++
++int acpi_dev_prop_read_single(struct acpi_device *adev, const char *propname,
++			      enum dev_prop_type proptype, void *val)
++{
++	const union acpi_object *obj;
++	int ret;
++
++	if (!val)
++		return -EINVAL;
++
++	if (proptype >= DEV_PROP_U8 && proptype <= DEV_PROP_U64) {
++		ret = acpi_dev_get_property(adev, propname, ACPI_TYPE_INTEGER, &obj);
++		if (ret)
++			return ret;
++
++		switch (proptype) {
++		case DEV_PROP_U8:
++			if (obj->integer.value > U8_MAX)
++				return -EOVERFLOW;
++			*(u8 *)val = obj->integer.value;
++			break;
++		case DEV_PROP_U16:
++			if (obj->integer.value > U16_MAX)
++				return -EOVERFLOW;
++			*(u16 *)val = obj->integer.value;
++			break;
++		case DEV_PROP_U32:
++			if (obj->integer.value > U32_MAX)
++				return -EOVERFLOW;
++			*(u32 *)val = obj->integer.value;
++			break;
++		default:
++			*(u64 *)val = obj->integer.value;
++			break;
++		}
++	} else if (proptype == DEV_PROP_STRING) {
++		ret = acpi_dev_get_property(adev, propname, ACPI_TYPE_STRING, &obj);
++		if (ret)
++			return ret;
++
++		*(char **)val = obj->string.pointer;
++	} else {
++		ret = -EINVAL;
++	}
++	return ret;
++}
++
++static int acpi_copy_property_array_u8(const union acpi_object *items, u8 *val,
++				       size_t nval)
++{
++	int i;
++
++	for (i = 0; i < nval; i++) {
++		if (items[i].type != ACPI_TYPE_INTEGER)
++			return -EPROTO;
++		if (items[i].integer.value > U8_MAX)
++			return -EOVERFLOW;
++
++		val[i] = items[i].integer.value;
++	}
++	return 0;
++}
++
++static int acpi_copy_property_array_u16(const union acpi_object *items,
++					u16 *val, size_t nval)
++{
++	int i;
++
++	for (i = 0; i < nval; i++) {
++		if (items[i].type != ACPI_TYPE_INTEGER)
++			return -EPROTO;
++		if (items[i].integer.value > U16_MAX)
++			return -EOVERFLOW;
++
++		val[i] = items[i].integer.value;
++	}
++	return 0;
++}
++
++static int acpi_copy_property_array_u32(const union acpi_object *items,
++					u32 *val, size_t nval)
++{
++	int i;
++
++	for (i = 0; i < nval; i++) {
++		if (items[i].type != ACPI_TYPE_INTEGER)
++			return -EPROTO;
++		if (items[i].integer.value > U32_MAX)
++			return -EOVERFLOW;
++
++		val[i] = items[i].integer.value;
++	}
++	return 0;
++}
++
++static int acpi_copy_property_array_u64(const union acpi_object *items,
++					u64 *val, size_t nval)
++{
++	int i;
++
++	for (i = 0; i < nval; i++) {
++		if (items[i].type != ACPI_TYPE_INTEGER)
++			return -EPROTO;
++
++		val[i] = items[i].integer.value;
++	}
++	return 0;
++}
++
++static int acpi_copy_property_array_string(const union acpi_object *items,
++					   char **val, size_t nval)
++{
++	int i;
++
++	for (i = 0; i < nval; i++) {
++		if (items[i].type != ACPI_TYPE_STRING)
++			return -EPROTO;
++
++		val[i] = items[i].string.pointer;
++	}
++	return 0;
++}
++
++int acpi_dev_prop_read(struct acpi_device *adev, const char *propname,
++		       enum dev_prop_type proptype, void *val, size_t nval)
++{
++	const union acpi_object *obj;
++	const union acpi_object *items;
++	int ret;
++
++	if (val && nval == 1) {
++		ret = acpi_dev_prop_read_single(adev, propname, proptype, val);
++		if (!ret)
++			return ret;
++	}
++
++	ret = acpi_dev_get_property_array(adev, propname, ACPI_TYPE_ANY, &obj);
++	if (ret)
++		return ret;
++
++	if (!val)
++		return obj->package.count;
++	else if (nval <= 0)
++		return -EINVAL;
++
++	if (nval > obj->package.count)
++		return -EOVERFLOW;
++
++	items = obj->package.elements;
++	switch (proptype) {
++	case DEV_PROP_U8:
++		ret = acpi_copy_property_array_u8(items, (u8 *)val, nval);
++		break;
++	case DEV_PROP_U16:
++		ret = acpi_copy_property_array_u16(items, (u16 *)val, nval);
++		break;
++	case DEV_PROP_U32:
++		ret = acpi_copy_property_array_u32(items, (u32 *)val, nval);
++		break;
++	case DEV_PROP_U64:
++		ret = acpi_copy_property_array_u64(items, (u64 *)val, nval);
++		break;
++	case DEV_PROP_STRING:
++		ret = acpi_copy_property_array_string(items, (char **)val, nval);
++		break;
++	default:
++		ret = -EINVAL;
++		break;
++	}
++	return ret;
++}
 
