@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753316AbaJUENW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 00:13:22 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:33493 "EHLO
+	id S1754654AbaJUE1D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 00:27:03 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:33519 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753074AbaJUENP (ORCPT
+	with ESMTP id S1753080AbaJUENU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 00:13:15 -0400
+	Tue, 21 Oct 2014 00:13:20 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Santosh Shilimkar <ssantosh@kernel.org>
-Subject: [PATCH v2 02/47] memory: emif: Use API function to determine poweroff capability
-Date: Mon, 20 Oct 2014 21:12:18 -0700
-Message-Id: <1413864783-3271-3-git-send-email-linux@roeck-us.net>
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Greg Ungerer <gerg@uclinux.org>, Joshua Thompson <funaho@jurai.org>,
+        linux-m68k@vger.kernel.org
+Subject: [PATCH v2 04/47] m68k: Replace mach_power_off with pm_power_off
+Date: Mon, 20 Oct 2014 21:12:20 -0700
+Message-Id: <1413864783-3271-5-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1413864783-3271-1-git-send-email-linux@roeck-us.net>
 References: <1413864783-3271-1-git-send-email-linux@roeck-us.net>
@@ -24,13 +25,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020209.5445DD5A.00FD,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A02020A.5445DD60.00CF,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.000
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 6
+X-CTCH-SenderID-TotalMessages: 14
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -50,35 +51,125 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use have_kernel_power_off() to determine if the kernel is able
-to power off the system.
+Replace mach_power_off with pm_power_off to simplify the subsequent
+move of pm_power_off to generic code.
 
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Greg Ungerer <gerg@uclinux.org>
+Cc: Joshua Thompson <funaho@jurai.org>
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
 v2:
-- poweroff -> power_off
+- have_kernel_poweroff -> have_kernel_power_off
 
- drivers/memory/emif.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/m68k/emu/natfeat.c         | 3 ++-
+ arch/m68k/include/asm/machdep.h | 1 -
+ arch/m68k/kernel/process.c      | 5 +++--
+ arch/m68k/kernel/setup_mm.c     | 1 -
+ arch/m68k/kernel/setup_no.c     | 1 -
+ arch/m68k/mac/config.c          | 3 ++-
+ 6 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/memory/emif.c b/drivers/memory/emif.c
-index 04644e7..874403a 100644
---- a/drivers/memory/emif.c
-+++ b/drivers/memory/emif.c
-@@ -1053,10 +1053,10 @@ static irqreturn_t emif_threaded_isr(int irq, void *dev_id)
- 		dev_emerg(emif->dev, "SDRAM temperature exceeds operating limit.. Needs shut down!!!\n");
+diff --git a/arch/m68k/emu/natfeat.c b/arch/m68k/emu/natfeat.c
+index 71b78ec..91e2ae7 100644
+--- a/arch/m68k/emu/natfeat.c
++++ b/arch/m68k/emu/natfeat.c
+@@ -15,6 +15,7 @@
+ #include <linux/string.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
++#include <linux/pm.h>
+ #include <linux/io.h>
+ #include <asm/machdep.h>
+ #include <asm/natfeat.h>
+@@ -90,5 +91,5 @@ void __init nf_init(void)
+ 	pr_info("NatFeats found (%s, %lu.%lu)\n", buf, version >> 16,
+ 		version & 0xffff);
  
- 		/* If we have Power OFF ability, use it, else try restarting */
--		if (pm_power_off) {
-+		if (have_kernel_power_off()) {
- 			kernel_power_off();
- 		} else {
--			WARN(1, "FIXME: NO pm_power_off!!! trying restart\n");
-+			WARN(1, "FIXME: NO kernel poweroff capability!!! trying restart\n");
- 			kernel_restart("SDRAM Over-temp Emergency restart");
- 		}
- 		return IRQ_HANDLED;
+-	mach_power_off = nf_poweroff;
++	pm_power_off = nf_poweroff;
+ }
+diff --git a/arch/m68k/include/asm/machdep.h b/arch/m68k/include/asm/machdep.h
+index 953ca21..f9fac51 100644
+--- a/arch/m68k/include/asm/machdep.h
++++ b/arch/m68k/include/asm/machdep.h
+@@ -24,7 +24,6 @@ extern int (*mach_set_rtc_pll)(struct rtc_pll_info *);
+ extern int (*mach_set_clock_mmss)(unsigned long);
+ extern void (*mach_reset)( void );
+ extern void (*mach_halt)( void );
+-extern void (*mach_power_off)( void );
+ extern unsigned long (*mach_hd_init) (unsigned long, unsigned long);
+ extern void (*mach_hd_setup)(char *, int *);
+ extern long mach_max_dma_address;
+diff --git a/arch/m68k/kernel/process.c b/arch/m68k/kernel/process.c
+index c55ff71..afe3d6e 100644
+--- a/arch/m68k/kernel/process.c
++++ b/arch/m68k/kernel/process.c
+@@ -22,6 +22,7 @@
+ #include <linux/unistd.h>
+ #include <linux/ptrace.h>
+ #include <linux/user.h>
++#include <linux/pm.h>
+ #include <linux/reboot.h>
+ #include <linux/init_task.h>
+ #include <linux/mqueue.h>
+@@ -77,8 +78,8 @@ void machine_halt(void)
+ 
+ void machine_power_off(void)
+ {
+-	if (mach_power_off)
+-		mach_power_off();
++	if (pm_power_off)
++		pm_power_off();
+ 	for (;;);
+ }
+ 
+diff --git a/arch/m68k/kernel/setup_mm.c b/arch/m68k/kernel/setup_mm.c
+index 5b8ec4d..002fea6 100644
+--- a/arch/m68k/kernel/setup_mm.c
++++ b/arch/m68k/kernel/setup_mm.c
+@@ -96,7 +96,6 @@ EXPORT_SYMBOL(mach_get_rtc_pll);
+ EXPORT_SYMBOL(mach_set_rtc_pll);
+ void (*mach_reset)( void );
+ void (*mach_halt)( void );
+-void (*mach_power_off)( void );
+ long mach_max_dma_address = 0x00ffffff; /* default set to the lower 16MB */
+ #ifdef CONFIG_HEARTBEAT
+ void (*mach_heartbeat) (int);
+diff --git a/arch/m68k/kernel/setup_no.c b/arch/m68k/kernel/setup_no.c
+index 88c27d9..1520156 100644
+--- a/arch/m68k/kernel/setup_no.c
++++ b/arch/m68k/kernel/setup_no.c
+@@ -55,7 +55,6 @@ int (*mach_hwclk) (int, struct rtc_time*);
+ /* machine dependent reboot functions */
+ void (*mach_reset)(void);
+ void (*mach_halt)(void);
+-void (*mach_power_off)(void);
+ 
+ #ifdef CONFIG_M68000
+ #if defined(CONFIG_M68328)
+diff --git a/arch/m68k/mac/config.c b/arch/m68k/mac/config.c
+index a471eab..677913ff 100644
+--- a/arch/m68k/mac/config.c
++++ b/arch/m68k/mac/config.c
+@@ -16,6 +16,7 @@
+ #include <linux/tty.h>
+ #include <linux/console.h>
+ #include <linux/interrupt.h>
++#include <linux/pm.h>
+ /* keyb */
+ #include <linux/random.h>
+ #include <linux/delay.h>
+@@ -159,7 +160,7 @@ void __init config_mac(void)
+ 	mach_set_clock_mmss = mac_set_clock_mmss;
+ 	mach_reset = mac_reset;
+ 	mach_halt = mac_poweroff;
+-	mach_power_off = mac_poweroff;
++	pm_power_off = mac_poweroff;
+ 	mach_max_dma_address = 0xffffffff;
+ #if defined(CONFIG_INPUT_M68K_BEEP) || defined(CONFIG_INPUT_M68K_BEEP_MODULE)
+ 	mach_beep = mac_mksound;
 -- 
 1.9.1
 
