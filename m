@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755285AbaJUK7m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 06:59:42 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:37208 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754948AbaJUK7l (ORCPT
+	id S1755268AbaJUK7k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 06:59:40 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:43128 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754948AbaJUK7i convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 06:59:41 -0400
-Date: Tue, 21 Oct 2014 12:59:34 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Alex Thorlton <athorlton@sgi.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, Bob Liu <lliubbo@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org
-Subject: Re: [BUG] mm, thp: khugepaged can't allocate on requested node when
- confined to a cpuset
-Message-ID: <20141021105934.GV23531@worktop.programming.kicks-ass.net>
-References: <20141008191050.GK3778@sgi.com>
- <20141010092052.GU4750@worktop.programming.kicks-ass.net>
- <20141010185620.GA3745@sgi.com>
- <54385635.5020709@suse.cz>
+	Tue, 21 Oct 2014 06:59:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54385635.5020709@suse.cz>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <1412181058-29179-1-git-send-email-iivanov@mm-sol.com>
+References: <1412181058-29179-1-git-send-email-iivanov@mm-sol.com>
+Date: Tue, 21 Oct 2014 12:59:38 +0200
+Message-ID: <CACRpkdaZ8o=Kmbez3iA_-0euuWQKwKyNNYPjnx1fBZOns0yN6A@mail.gmail.com>
+Subject: Re: [PATCH v5 0/4] Qualcomm SPMI PMIC pin controller drivers
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 10, 2014 at 11:57:09PM +0200, Vlastimil Babka wrote:
-> Hm I haven't seen the code yet, but is perhaps the NUMA scanning working
-> similarly enough that a single scanner could handle both the NUMA and THP
-> bits to save time?
+On Wed, Oct 1, 2014 at 6:30 PM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
 
-IIRC the THP thing doesn't need the fault thing, which makes it an
-entirely different beast. Then again, we do walk the actual page-tables
-through change_protection, but changing that means we have to duplicate
-all that code, then again, maybe the current THP stuff already carries
-something like that.
+> Changes since v4:
+>
+> - Use PMIC name in compatible string.
+> - PINCTRL_QCOM_SPMI_PMIC from Kconfig symbol.
+> - Remove pmic string from drivers file names.
+> - Fixed coding style issues.
+> - Use qcom-spmi-gpio and qcom-spmi-mpp from dirver names,
+>   to be similar to qcom-spmi-iadc, qcom-spmi-vadc and
+>   qcom-spmi-temp-alarm drivers.
+>
+> Short description:
+>
+> Patches adds pin control drivers for Multi-Purpose Pin (MPP) and
+> General-purpose pin (GPIO) controllers found in Qualcomm SPMI based
+> PMIC chips.
+>
+> MPP's are enhanced GPIO's with analog circuits, which support
+> analog and digital input/output.
 
+I think I'm happy to apply this for v3.19 now that I have Björn's
+ACK on it too (or is it even Reviewed-by..?)
 
+But I can't find these patches in my mailbox, do you have
+a branch based off v3.18-rc1 I can pull from?
+
+Yours,
+Linus Walleij
