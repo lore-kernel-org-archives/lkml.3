@@ -1,122 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765AbaJUJeA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 05:34:00 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:37105 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751479AbaJUJd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 05:33:58 -0400
-Message-ID: <54462865.6000205@ti.com>
-Date: Tue, 21 Oct 2014 15:03:25 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1754804AbaJUJfF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 05:35:05 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:39006 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751143AbaJUJfC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 05:35:02 -0400
+Message-ID: <544628BF.8010809@arm.com>
+Date: Tue, 21 Oct 2014 10:34:55 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
-	<antoine.tenart@free-electrons.com>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/5] phy: berlin-sata: Move PHY_BASE into private data
- struct
-References: <1413882477-27922-1-git-send-email-sebastian.hesselbarth@gmail.com> <1413882477-27922-2-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1413882477-27922-2-git-send-email-sebastian.hesselbarth@gmail.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+To: Thomas Gleixner <tglx@linutronix.de>, Bjorn Andersson <bjorn@kryo.se>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+Subject: Re: [PATCH] genirq: Introduce irq_read_line()
+References: <1408479811-26088-1-git-send-email-bjorn.andersson@sonymobile.com> <CAJAp7OgGPZZuCgC8iUiW2jrEVubK=KCATxd6eazdT1x1sSrffg@mail.gmail.com> <alpine.DEB.2.11.1410211120430.5308@nanos>
+In-Reply-To: <alpine.DEB.2.11.1410211120430.5308@nanos>
+X-Enigmail-Version: 1.4.6
+X-OriginalArrivalTime: 21 Oct 2014 09:34:56.0118 (UTC) FILETIME=[46456160:01CFED12]
+X-MC-Unique: 114102110350002701
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi all,
 
-
-On Tuesday 21 October 2014 02:37 PM, Sebastian Hesselbarth wrote:
-> Currently, Berlin SATA PHY driver assumes PHY_BASE address being
-> constant. While this PHY_BASE is correct for BG2Q, older BG2 PHY_BASE
-> is different. Prepare the driver for BG2 support by moving the phy_base
-> into private driver data.
+On 21/10/14 10:22, Thomas Gleixner wrote:
+> On Thu, 4 Sep 2014, Bjorn Andersson wrote:
 > 
-> Acked-by: Antoine Ténart <antoine.tenart@free-electrons.com>
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Cc: Kishon Vijay Abraham I <kishon@ti.com> 
-> Cc: "Antoine Ténart" <antoine.tenart@free-electrons.com>
-> Cc: devicetree@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org 
-> ---
->  drivers/phy/phy-berlin-sata.c | 42 ++++++++++++++++++++++++++++--------------
->  1 file changed, 28 insertions(+), 14 deletions(-)
+>> On Tue, Aug 19, 2014 at 1:23 PM, Bjorn Andersson
+>> <bjorn.andersson@sonymobile.com> wrote:
+>>> Introduce the irq_read_line() function to allow device drivers to read
+>>> the current logical state of an input when the hardware only exposes
+>>> this through status bits in the interrupt controller.
+>>>
+>>> The new function is backed by a new callback function in the irq_chip -
+>>> irq_read_line() - that can be implemented by irq_chips that owns such
+>>> status bits.
+>>>
+>>> Based on rfc patch from April 2011 by Abhijeet.
+>>>
+>>> Cc: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+>>> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+>>
+>> ping?
 > 
-> diff --git a/drivers/phy/phy-berlin-sata.c b/drivers/phy/phy-berlin-sata.c
-> index 69ced52d72aa..9682b0f66177 100644
-> --- a/drivers/phy/phy-berlin-sata.c
-> +++ b/drivers/phy/phy-berlin-sata.c
-> @@ -30,7 +30,7 @@
->  #define MBUS_WRITE_REQUEST_SIZE_128	(BIT(2) << 16)
->  #define MBUS_READ_REQUEST_SIZE_128	(BIT(2) << 19)
->  
-> -#define PHY_BASE		0x200
-> +#define BG2Q_PHY_BASE		0x200
->  
->  /* register 0x01 */
->  #define REF_FREF_SEL_25		BIT(0)
-> @@ -61,15 +61,16 @@ struct phy_berlin_priv {
->  	struct clk		*clk;
->  	struct phy_berlin_desc	**phys;
->  	unsigned		nphys;
-> +	u32			phy_base;
->  };
->  
-> -static inline void phy_berlin_sata_reg_setbits(void __iomem *ctrl_reg, u32 reg,
-> -					       u32 mask, u32 val)
-> +static inline void phy_berlin_sata_reg_setbits(void __iomem *ctrl_reg,
-> +			       u32 phy_base, u32 reg, u32 mask, u32 val)
->  {
->  	u32 regval;
->  
->  	/* select register */
-> -	writel(PHY_BASE + reg, ctrl_reg + PORT_VSR_ADDR);
-> +	writel(phy_base + reg, ctrl_reg + PORT_VSR_ADDR);
->  
->  	/* set bits */
->  	regval = readl(ctrl_reg + PORT_VSR_DATA);
-> @@ -103,17 +104,20 @@ static int phy_berlin_sata_power_on(struct phy *phy)
->  	writel(regval, priv->base + HOST_VSA_DATA);
->  
->  	/* set PHY mode and ref freq to 25 MHz */
-> -	phy_berlin_sata_reg_setbits(ctrl_reg, 0x1, 0xff,
-> -				    REF_FREF_SEL_25 | PHY_MODE_SATA);
-> +	phy_berlin_sata_reg_setbits(ctrl_reg, priv->phy_base, 0x01,
-> +				    0x00ff, REF_FREF_SEL_25 | PHY_MODE_SATA);
->  
->  	/* set PHY up to 6 Gbps */
-> -	phy_berlin_sata_reg_setbits(ctrl_reg, 0x25, 0xc00, PHY_GEN_MAX_6_0);
-> +	phy_berlin_sata_reg_setbits(ctrl_reg, priv->phy_base, 0x25,
-> +				    0x0c00, PHY_GEN_MAX_6_0);
->  
->  	/* set 40 bits width */
-> -	phy_berlin_sata_reg_setbits(ctrl_reg, 0x23,  0xc00, DATA_BIT_WIDTH_40);
-> +	phy_berlin_sata_reg_setbits(ctrl_reg, priv->phy_base, 0x23,
-> +				    0x0c00, DATA_BIT_WIDTH_40);
->  
->  	/* use max pll rate */
-> -	phy_berlin_sata_reg_setbits(ctrl_reg, 0x2, 0x0, USE_MAX_PLL_RATE);
-> +	phy_berlin_sata_reg_setbits(ctrl_reg, priv->phy_base, 0x02,
-> +				    0x0000, USE_MAX_PLL_RATE);
->  
->  	/* set Gen3 controller speed */
->  	regval = readl(ctrl_reg + PORT_SCR_CTL);
-> @@ -182,9 +186,22 @@ static u32 phy_berlin_power_down_bits[] = {
->  	POWER_DOWN_PHY1,
->  };
->  
-> +static u32 bg2q_sata_phy_base = BG2Q_PHY_BASE;
-> +
-> +static const struct of_device_id phy_berlin_sata_of_match[] = {
-> +	{
-> +		.compatible = "marvell,berlin2q-sata-phy",
-> +		.data = &bg2q_sata_phy_base,
+> Sorry, slipped through the cracks. I was talking about this to Marc
+> last week and he needs it for yet another reason. He had some thoughts
+> about the state representation, so I wait for him to comment.
 
-Can't the base directly come from dt?
+Thanks for putting me in the loop. For the record, here's the RFC I
+posted back in June:
 
-Thanks
-Kishon
+http://lists.infradead.org/pipermail/linux-arm-kernel/2014-June/266328.html
+
+and the patch implementing a similar concept:
+http://lists.infradead.org/pipermail/linux-arm-kernel/2014-June/266331.html
+
+Basic idea is that you can read (and possibly write back) various
+low-level attributes (pending, masked, active) that an interrupt
+controller may implement. Given your use case, we should loose the
+checks on the interrupt being forwarded, as this makes little sense
+outside of virtualization.
+
+I'm planning to respin the series this week, as I have a number of
+changes (there is hardly any need for the various states to be reported
+atomically, for example), and a number of bugs have been found.
+
+Thanks,
+
+	M.
+-- 
+Jazz is not dead. It just smells funny...
+
