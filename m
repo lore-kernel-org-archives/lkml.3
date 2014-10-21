@@ -1,55 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932694AbaJUN3n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 09:29:43 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:62414 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932471AbaJUN3l (ORCPT
+	id S932719AbaJUNaA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 09:30:00 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:52632 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932471AbaJUN35 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 09:29:41 -0400
-Message-ID: <54465FC2.1030106@martingkelly.com>
-Date: Tue, 21 Oct 2014 06:29:38 -0700
-From: Martin Kelly <martin@martingkelly.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Tue, 21 Oct 2014 09:29:57 -0400
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: linux-kernel@vger.kernel.org, x86@kernel.org, mingo@redhat.com,
-        hpa@zytor.com, akpm@linux-foundation.org, rientjes@google.com,
-        david.vrabel@citrix.com, Martin Kelly <martkell@amazon.com>
-Subject: Re: [PATCH v2] x86, e820: panic on sanitizing invalid memory map
-References: <1413859062-26594-1-git-send-email-martin@martingkelly.com> <alpine.DEB.2.11.1410211043150.5308@nanos>
-In-Reply-To: <alpine.DEB.2.11.1410211043150.5308@nanos>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CABgxDo+9Dx7h+KXo+YYVLb3snimNV1PDxv+d1iQ2pY8P395pdQ@mail.gmail.com>
+References: <1413268273-15151-1-git-send-email-romain.perier@gmail.com>
+	<20141015140337.GI27755@sirena.org.uk>
+	<CABgxDoKen1Ub1ptG85-oMhUcRkX7tsZ6o51OJcOX2jZkZi0JGg@mail.gmail.com>
+	<8037374.M9KdRGnRWV@phil>
+	<CABgxDo+9Dx7h+KXo+YYVLb3snimNV1PDxv+d1iQ2pY8P395pdQ@mail.gmail.com>
+Date: Tue, 21 Oct 2014 15:29:56 +0200
+Message-ID: <CABgxDoJwLQ6+4=04oVsDA2tsLssO4-GDTgUcWnX76N7nr5TYgQ@mail.gmail.com>
+Subject: Re: [RFC v3 PATCH 1/5] of: Add standard property for poweroff capability
+From: PERIER Romain <romain.perier@gmail.com>
+To: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
+Cc: Mark Brown <broonie@kernel.org>, Grant Likely <grant.likely@linaro.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        robh <robh@kernel.org>, mark.rutland@arm.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/21/2014 01:56 AM, Thomas Gleixner wrote:
->> This patch changes the behavior so that sanitize_e820_map is a void
->> function. When the provided memory map has length 1 or it is sanitized
->> (both ok cases), it returns nothing. If the provided memory map is
->> invalid, then it panics.
-> 
-> So you break wilfully default_machine_specific_memory_setup() and
-> probably some other places. Are you sure about that?
-> 
+Hi all,
 
-I was concerned about exactly that kind of breakage, so my first patch
-merely separated out the return values and added some appropriate error
-checking:
-https://lkml.org/lkml/2014/10/13/514
+Do I need to rebase my patches onto the regulator tree or it's okay ?
 
-I then asked whether there are valid cases for ignoring an invalid map
-and continuing on, but I didn't receive a reply, so I took my best
-guess. It appears I missed some fallback code
-(default_machine_specific_memory_setup). That said, most cases don't
-appear to have fallback code and will hit issues later on if the BIOS
-map is invalid (e.g. Xen).
+Have a nice day,
+Romain
 
-Thomas, do you see any issues with a revision that separates out the
-return values (0 for a map with 1 entry, -1 for a map with invalid
-entries) and adds checks in the callers, where appropriate?
-
-Thanks,
-Martin
+2014-10-17 9:23 GMT+02:00 PERIER Romain <romain.perier@gmail.com>:
+> Hi Heiko,
+>
+> Oh sure, no problem. It was just to understand better how things will happen ;)
+> If my patches needs to be rebased, will do, of course.
+>
+> Have a nice day,
+> Romain
+>
+> 2014-10-17 8:06 GMT+02:00 Heiko Stübner <heiko@sntech.de>:
+>> Hi Romain,
+>>
+>> Am Freitag, 17. Oktober 2014, 08:01:31 schrieb PERIER Romain:
+>>> Hi all,
+>>>
+>>> I am just curious but where do you plan to merge this serie ? in
+>>> git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git ?
+>>
+>> The single dts patch will be going into my dts branch and the rest will go
+>> through Mark's regulator tree. As Mark said, he'll try to apply these again
+>> once 3.18-rc1 is released and if it still doesn't apply then, he'll probably
+>> ask you to rebase them onto the regulator tree [which will at the time include
+>> everything that is in -rc1].
+>>
+>>
+>> Heiko
+>>
+>>
+>>
+>>> 2014-10-15 16:03 GMT+02:00 Mark Brown <broonie@kernel.org>:
+>>> > On Wed, Oct 15, 2014 at 03:56:03PM +0200, Heiko Stübner wrote:
+>>> >> Am Mittwoch, 15. Oktober 2014, 15:42:45 schrieb Mark Brown:
+>>> >> > I guess I should apply these (except the DTS update) since the first
+>>> >> > user that's being added is a regulator driver?
+>>> >>
+>>> >> I'd think so.
+>>> >> In any case, I'll take the "ARM: dts: ..." patch if you take the others.
+>>> >
+>>> > Sounds like a plan.  I just tried applying and got some conflicts but
+>>> > I'm guessing that this is due to changes that are landing in the merge
+>>> > window so I'll try again once -rc1 is out.
+>>
