@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932698AbaJUNUs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 09:20:48 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:56684 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932582AbaJUNUL (ORCPT
+	id S932728AbaJUNVN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 09:21:13 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:18140 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932452AbaJUNUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 09:20:11 -0400
-X-AuditID: cbfec7f5-b7f956d000005ed7-99-54465d884f8c
+	Tue, 21 Oct 2014 09:20:10 -0400
+X-AuditID: cbfec7f4-b7f6c6d00000120b-cc-54465d86368c
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
         linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
@@ -22,53 +22,112 @@ Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         Chanwoo Choi <cw00.choi@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v3 3/4] mfd/regulator: dt-bindings: max77686: Document
- regulators off in suspend
-Date: Tue, 21 Oct 2014 15:19:54 +0200
-Message-id: <1413897595-28752-4-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH v3 1/4] regulator: max77686: Replace hard-coded opmode values
+ with defines
+Date: Tue, 21 Oct 2014 15:19:52 +0200
+Message-id: <1413897595-28752-2-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1413897595-28752-1-git-send-email-k.kozlowski@samsung.com>
 References: <1413897595-28752-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFLMWRmVeSWpSXmKPExsVy+t/xy7odsW4hBh9nS1lsnLGe1WLSugNM
-	FlMfPmGzuP7lOavF/CPnWC2O/i6weP3C0KJ3wVU2i7NNb9gt7n89ymjx7UoHk8Wmx9dYLS7v
-	msNmMeP8PiaL25d5LdYeuctucbqb1UHQo6W5h83j7/PrLB5/V71g9tg56y67x6ZVnWwed67t
-	YfOYdzLQY/OSeo++LasYPT5vkgvgiuKySUnNySxLLdK3S+DKWPqHv2A9R8WThbPYGxj72bsY
-	OTkkBEwk1t9+zQRhi0lcuLeerYuRi0NIYCmjxPQZu9khnD4miTeXPjODVLEJGEtsXr6EDcQW
-	EehklvjyPQCkiFlgNZPEzyunwIqEBZIk5p39DLaCRUBV4lzTA1YQm1fAXeLHh89sEOvkJE4e
-	mwwW5xTwkPi9ey9jFyMH0DZ3iWufUycw8i5gZFjFKJpamlxQnJSea6RXnJhbXJqXrpecn7uJ
-	ERLeX3cwLj1mdYhRgINRiYc3YolriBBrYllxZe4hRgkOZiUR3lxhtxAh3pTEyqrUovz4otKc
-	1OJDjEwcnFINjIcD3uWYr13Xf0iH5dnGTdt8BKv9tbQ0Qtn3Cpad29iUfdv2qttLy7Kd11Is
-	fsrtd7R4qTIn3uLMpT6jQuvIr/tkiuPMFtw4tnCiEEtkUChz6A6dHfNM3k/iDiqesMjKvMBy
-	7maxmf8CTm5/u7R97tIN8vwLefiEZns2LJdYuWKj5SK9TxdiSpRYijMSDbWYi4oTAexOylZN	AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJLMWRmVeSWpSXmKPExsVy+t/xy7rtsW4hBrM9LDbOWM9qMWndASaL
+	qQ+fsFlc//Kc1WL+kXOsFkd/F1i8fmFo0bvgKpvF2aY37Bb3vx5ltPh2pYPJYtPja6wWl3fN
+	YbOYcX4fk8Xty7wWa4/cZbc43c3qIOjR0tzD5vH3+XUWj7+rXjB77Jx1l91j06pONo871/aw
+	ecw7GeixeUm9R9+WVYwenzfJBXBFcdmkpOZklqUW6dslcGVMbjMt6JGoePBrN2sD42vhLkZO
+	DgkBE4lTBy+yQNhiEhfurWfrYuTiEBJYyijx9/JKdginj0ni16YZzCBVbALGEpuXL2EDsUUE
+	OpklvnwPACliFljNJPHzyimwImGBGIk52w4wgdgsAqoSn8/PYgSxeQXcJaaf+s8IsU5O4uSx
+	yawgNqeAh8Tv3XuB4hxA29wlrn1OncDIu4CRYRWjaGppckFxUnquoV5xYm5xaV66XnJ+7iZG
+	SHB/2cG4+JjVIUYBDkYlHt4Ny1xDhFgTy4orcw8xSnAwK4nw5gq7hQjxpiRWVqUW5ccXleak
+	Fh9iZOLglGpglJl9bOom29OVJQazvq1J9uTa95+/Z1rv5e89i5/MPfzP5cNbKZ/FJQf37u5b
+	mXWZ00mwPENEuV2z7uF1a26ZGeeF1NK3PJeyag6fWvszdp5+752IGt1T4u9fd1S3/exceb3m
+	10+JA9sDH1gmylyP36tRk9PIfn52pcGZml9r1iX9unHSlTmGSYmlOCPRUIu5qDgRAAUYB51M	AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add information which regulators can be disabled during system suspend.
+Add defines for regulator operating modes which should be more readable,
+especially if one does not have Maxim 77686 datasheet.
+
+The patch does not introduce any functional change.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Suggested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 ---
- Documentation/devicetree/bindings/mfd/max77686.txt | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/regulator/max77686.c | 34 +++++++++++++++++++++++++++-------
+ 1 file changed, 27 insertions(+), 7 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/mfd/max77686.txt b/Documentation/devicetree/bindings/mfd/max77686.txt
-index 678f3cf0b8f0..75fdfaf41831 100644
---- a/Documentation/devicetree/bindings/mfd/max77686.txt
-+++ b/Documentation/devicetree/bindings/mfd/max77686.txt
-@@ -34,6 +34,11 @@ to get matched with their hardware counterparts as follow:
- 	-BUCKn 	:	for BUCKs, where n can lie in range 1 to 9.
- 			example: BUCK1, BUCK5, BUCK9.
+diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
+index ef1af2debbd2..3d0922051488 100644
+--- a/drivers/regulator/max77686.c
++++ b/drivers/regulator/max77686.c
+@@ -45,6 +45,25 @@
+ #define MAX77686_DVS_MINUV	600000
+ #define MAX77686_DVS_UVSTEP	12500
  
-+  Regulators which can be turned off during system suspend:
-+	-LDOn	:	2, 6-8, 10-12, 14-16,
-+	-BUCKn	:	1-4.
-+  Use standard regulator bindings for it ('regulator-off-in-suspend').
++/* Values used for configuring Buck[1234] */
++#define MAX77686_BUCK_OFF_PWRREQ	0x1
++#define MAX77686_BUCK_LOWPOWER		0x2
++#define MAX77686_BUCK_NORMAL		0x3
 +
- Example:
++/*
++ * Values used for configuring LDOn:
++ *  - LDO1, 3-5, 9, 13, 17-26: forcing low power mode
++ */
++#define MAX77686_LDO_LOWPOWER		0x1
++/*
++ * In the same time for LDOn:
++ *  - LDO2, 6-8, 10-12, 14-16: on/off controlled by PWRREQ
++ */
++#define MAX77686_LDO_OFF_PWRREQ		0x1
++/* Low power mode controlled by PWRREQ */
++#define MAX77686_LDO_LOWPOWER_PWRREQ	0x2
++#define MAX77686_LDO_NORMAL		0x3
++
+ #define MAX77686_OPMODE_SHIFT	6
+ #define MAX77686_OPMODE_BUCK234_SHIFT	4
+ #define MAX77686_OPMODE_MASK	0x3
+@@ -76,9 +95,10 @@ static int max77686_buck_set_suspend_disable(struct regulator_dev *rdev)
+ 	int ret, id = rdev_get_id(rdev);
  
- 	max77686@09 {
+ 	if (id == MAX77686_BUCK1)
+-		val = 0x1;
++		val = MAX77686_BUCK_OFF_PWRREQ;
+ 	else
+-		val = 0x1 << MAX77686_OPMODE_BUCK234_SHIFT;
++		val = MAX77686_BUCK_OFF_PWRREQ
++			<< MAX77686_OPMODE_BUCK234_SHIFT;
+ 
+ 	ret = regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
+ 				 rdev->desc->enable_mask, val);
+@@ -103,10 +123,10 @@ static int max77686_set_suspend_mode(struct regulator_dev *rdev,
+ 
+ 	switch (mode) {
+ 	case REGULATOR_MODE_IDLE:			/* ON in LP Mode */
+-		val = 0x2 << MAX77686_OPMODE_SHIFT;
++		val = MAX77686_LDO_LOWPOWER_PWRREQ << MAX77686_OPMODE_SHIFT;
+ 		break;
+ 	case REGULATOR_MODE_NORMAL:			/* ON in Normal Mode */
+-		val = 0x3 << MAX77686_OPMODE_SHIFT;
++		val = MAX77686_LDO_NORMAL << MAX77686_OPMODE_SHIFT;
+ 		break;
+ 	default:
+ 		pr_warn("%s: regulator_suspend_mode : 0x%x not supported\n",
+@@ -133,13 +153,13 @@ static int max77686_ldo_set_suspend_mode(struct regulator_dev *rdev,
+ 
+ 	switch (mode) {
+ 	case REGULATOR_MODE_STANDBY:			/* switch off */
+-		val = 0x1 << MAX77686_OPMODE_SHIFT;
++		val = MAX77686_LDO_OFF_PWRREQ << MAX77686_OPMODE_SHIFT;
+ 		break;
+ 	case REGULATOR_MODE_IDLE:			/* ON in LP Mode */
+-		val = 0x2 << MAX77686_OPMODE_SHIFT;
++		val = MAX77686_LDO_LOWPOWER_PWRREQ << MAX77686_OPMODE_SHIFT;
+ 		break;
+ 	case REGULATOR_MODE_NORMAL:			/* ON in Normal Mode */
+-		val = 0x3 << MAX77686_OPMODE_SHIFT;
++		val = MAX77686_LDO_NORMAL << MAX77686_OPMODE_SHIFT;
+ 		break;
+ 	default:
+ 		pr_warn("%s: regulator_suspend_mode : 0x%x not supported\n",
 -- 
 1.9.1
 
