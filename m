@@ -1,78 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755879AbaJUQAm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 12:00:42 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:48765 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755483AbaJUQAk (ORCPT
+	id S1755917AbaJUQBK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 12:01:10 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:59156 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755877AbaJUQBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 12:00:40 -0400
-Date: Tue, 21 Oct 2014 09:00:29 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Dave Jones <davej@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: lockdep splat in CPU hotplug
-Message-ID: <20141021160029.GH4977@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <alpine.LNX.2.00.1410211255531.24255@pobox.suse.cz>
- <20141021151043.GA11800@redhat.com>
- <alpine.LNX.2.00.1410211717210.24255@pobox.suse.cz>
+	Tue, 21 Oct 2014 12:01:08 -0400
+Date: Tue, 21 Oct 2014 18:01:03 +0200
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Ezaul Zillmer <ezaulzillmer@gmail.com>
+Cc: linux-sunxi@googlegroups.com, computersforpeace@gmail.com,
+        dwmw2@infradead.org, linux-mtd@lists.infradead.org, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, yassinjaffer@gmail.com,
+        maxime.ripard@free-electrons.com
+Subject: Re: [PATCH v6 2/2] mtd: nand: add sunxi NFC dt bindings doc
+Message-ID: <20141021180103.37ca7357@bbrezillon>
+In-Reply-To: <89bb5f8e-2fb0-4012-a8b2-fdd618da8f11@googlegroups.com>
+References: <1413805520-14947-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1413805520-14947-3-git-send-email-boris.brezillon@free-electrons.com>
+	<20141021024134.GC1193@ld-irv-0074>
+	<20141021145344.575b19e6@bbrezillon>
+	<62d54110-9c7f-4342-9201-a1ae23194620@googlegroups.com>
+	<20141021155841.180861d0@bbrezillon>
+	<89bb5f8e-2fb0-4012-a8b2-fdd618da8f11@googlegroups.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1410211717210.24255@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102116-0017-0000-0000-000005BB66B8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 05:21:21PM +0200, Jiri Kosina wrote:
-> On Tue, 21 Oct 2014, Dave Jones wrote:
+On Tue, 21 Oct 2014 08:03:57 -0700 (PDT)
+Ezaul Zillmer <ezaulzillmer@gmail.com> wrote:
+
+> results 
+> {"K9GBG08U0A 32G 3.3V 8-bit",
+> { .id = {0xec, 0xd7, 0x94, 0x7a, 0x54, 0x43} },
+>   SZ_8K, SZ_4K, SZ_1M, 0, 6, 640, NAND_ECC_INFO(24, SZ_1K) },
 > 
-> >  > I am seeing the lockdep report below when resuming from suspend-to-disk 
-> >  > with current Linus' tree (c2661b80609).
-> >  > 
-> >  > The reason for CCing Ingo and Peter is that I can't make any sense of one 
-> >  > of the stacktraces lockdep is providing.
-> >  > 
-> >  > Please have a look at the very first stacktrace in the dump, where lockdep 
-> >  > is trying to explain where cpu_hotplug.lock#2 has been acquired. It seems 
-> >  > to imply that cpuidle_pause() is taking cpu_hotplug.lock, but that's not 
-> >  > the case at all.
-> > 
-> > Could inlining be confusing the trace here ?
-> > 
-> > You can get from cpuidle_pause to cpuidle_uninstall_idle_handler -> synchronize_rcu
-> >  -> synchronize_sched -> synchronize_sched_expedited which
-> > does a try_get_online_cpus which will take the cpu_hotplug.lock
 > 
-> Looks like this indeed is something that lockdep *should* report (*), 
-> although I would be suprised that stack unwinder would be so confused by 
-> this -- there is no way for synchronize_sched_expedited() to be inlined 
-> all the way to cpuidle_pause().
-
-I think that if synchronize_sched_expedited() was in fact called, it
-had already returned by the time we hit this problem.  But I must confess
-that I am not seeing how cpuidle_uninstall_idle_handler() gets to
-synchronize_rcu().
-
-> (*) there are multiple places where cpu_hotplug.lock -> cpuidle_lock lock 
->     dependency is assumed. The patch that Dave pointed out adds 
->     cpuidle_lock -> cpu_hotplug.lock dependency.
+> Start this in the attached image
+> ..................................................................
 > 
-> Still not clear whether this is what's happening here ... anyway, adding 
-> Paul to CC.
+> [   20.127045] Bad eraseblock 2900 at 0x0000b54fe000
+> [   20.134025] Bad eraseblock 2901 at 0x0000b55fe000
+> [   20.140993] Bad eraseblock 2902 at 0x0000b56fe000
+> [   20.147973] Bad eraseblock 2903 at 0x0000b57fe000
+> [   20.154952] Bad eraseblock 2904 at 0x0000b58fe000
+> [   20.161932] Bad eraseblock 2905 at 0x0000b59fe000
+> [   20.168900] Bad eraseblock 2906 at 0x0000b5afe000
+> [   20.175878] Bad eraseblock 2907 at 0x0000b5bfe000
+> [   20.182861] Bad eraseblock 2908 at 0x0000b5cfe000
+> [   20.189828] Bad eraseblock 2909 at 0x0000b5dfe000
+> [   20.196810] Bad eraseblock 2910 at 0x0000b5efe000
+> [   20.203790] Bad eraseblock 2911 at 0x0000b5ffe000
+> [   20.210758] Bad eraseblock 2912 at 0x0000b60fe000
+> [   20.217742] Bad eraseblock 2913 at 0x0000b61fe000
+> [   20.224723] Bad eraseblock 2914 at 0x0000b62fe000
+> [   20.231702] Bad eraseblock 2915 at 0x0000b63fe000
+> [   20.238669] Bad eraseblock 2916 at 0x0000b64fe000
+> [   20.245649] Bad eraseblock 2917 at 0x0000b65fe000
+> [   20.252618] Bad eraseblock 2918 at 0x0000b66fe000
+> [   20.259585] Bad eraseblock 2919 at 0x0000b67fe000
+> [   20.266565] Bad eraseblock 2920 at 0x0000b68fe000
+> [   20.273546] Bad eraseblock 2921 at 0x0000b69fe000
+> [   20.280512] Bad eraseblock 2922 at 0x0000b6afe000
+> [   20.287490] Bad eraseblock 2923 at 0x0000b6bfe000
+> [   20.294468] Bad eraseblock 2924 at 0x0000b6cfe000
+> [   20.301437] Bad eraseblock 2925 at 0x0000b6dfe000
+> [   20.312741] Bad eraseblock 2928 at 0x000. ok
+> 
+> 
+> I thought this docs of this samsung nand "K9GBG08U0A" that talves be useful 
+> since you have more knowledge about it! so I can help you make the tests of 
+> your support in nand cubieboard2.
 
-Hmmm...
 
-Both cpuidle_pause() and cpuidle_pause_and_lock() acquire cpuidle_lock,
-and are at the top of both stacks.  Which was the original confusion.  ;-)
+You have to force bad block erasure to get rid of AW's libnand layout
+(which is overriding bad block markers).
 
-							Thanx, Paul
+Please follow these steps:
+1) apply this patch [1]
+2) boot on your new kernel and launch
+$ flash_erase /dev/mtd0 0 0
+3) revert the patch
+4) Boot on your new kernel
 
+Most of your bad blocks should be gone after that...
+
+[1]http://code.bulix.org/k2v1hx-87237
+
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
