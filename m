@@ -1,195 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932636AbaJUNbs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 09:31:48 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51799 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932400AbaJUNbr (ORCPT
+	id S932677AbaJUNdo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 09:33:44 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:41343 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932507AbaJUNdm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 09:31:47 -0400
-Date: Tue, 21 Oct 2014 14:31:44 +0100
-From: Thomas Graf <tgraf@suug.ch>
-To: "Steinar H. Gunderson" <sgunderson@bigfoot.com>
-Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Nikolay Aleksandrov <nikolay@redhat.com>
-Subject: Re: getaddrinfo slowdown in 3.17.1, due to getifaddrs
-Message-ID: <20141021133144.GA8802@casper.infradead.org>
-References: <20141017002132.GA29584@sesse.net>
- <20141017003430.GB29584@sesse.net>
- <20141017062517.GA11584@casper.infradead.org>
- <20141021132557.GA9440@sesse.net>
+	Tue, 21 Oct 2014 09:33:42 -0400
+Message-ID: <544660AE.8030903@collabora.co.uk>
+Date: Tue, 21 Oct 2014 15:33:34 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141021132557.GA9440@sesse.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+CC: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: Re: [PATCH v3 1/4] regulator: max77686: Replace hard-coded opmode
+ values with defines
+References: <1413897595-28752-1-git-send-email-k.kozlowski@samsung.com> <1413897595-28752-2-git-send-email-k.kozlowski@samsung.com>
+In-Reply-To: <1413897595-28752-2-git-send-email-k.kozlowski@samsung.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/21/14 at 03:25pm, Steinar H. Gunderson wrote:
-> On Fri, Oct 17, 2014 at 07:25:17AM +0100, Thomas Graf wrote:
-> > I think the only option at this point is to re-add the nltable lock to
-> > netlink_lookup() so we can drop the synchronize_net() until we find a
-> > way to RCUify socket destruction. I will cook up a patch today unless
-> > somebody can come up with a smarter way to work around needing the
-> > synchronize_net().
+Hello Krzysztof,
+
+On 10/21/2014 03:19 PM, Krzysztof Kozlowski wrote:
+> Add defines for regulator operating modes which should be more readable,
+> especially if one does not have Maxim 77686 datasheet.
 > 
-> Did you end up with a patch? We'd like to reboot the server in question
-> soon-ish, but it's an open question whether we should go to 3.16.x, revert
-> exactly the patches in question or something else.
+> The patch does not introduce any functional change.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Suggested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> ---
+>  drivers/regulator/max77686.c | 34 +++++++++++++++++++++++++++-------
+>  1 file changed, 27 insertions(+), 7 deletions(-)
+> 
 
-I'm currently testing the patch below and will submit with proper
-tested by attributions later today.
+Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 
->From 3605e498c0b025054d17cc2943cae70d3df2a427 Mon Sep 17 00:00:00 2001
-Message-Id: <3605e498c0b025054d17cc2943cae70d3df2a427.1413834710.git.tgraf@suug.ch>
-From: Thomas Graf <tgraf@suug.ch>
-Date: Fri, 17 Oct 2014 11:33:44 +0200
-Subject: [PATCH] netlink: Re-add locking to netlink_lookup() and seq walker
-
-The synchronize_rcu() in netlink_release() introduces unacceptable
-latency. Reintroduce minimal lookup so we can drop the
-synchronize_rcu() until socket destruction has been RCUfied.
-
-Signed-off-by: Thomas Graf <tgraf@suug.ch>
----
- net/netlink/af_netlink.c | 37 +++++++++++++++++++++++++------------
- 1 file changed, 25 insertions(+), 12 deletions(-)
-
-diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
-index 7a186e7..f1de72d 100644
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -96,6 +96,14 @@ static DECLARE_WAIT_QUEUE_HEAD(nl_table_wait);
- static int netlink_dump(struct sock *sk);
- static void netlink_skb_destructor(struct sk_buff *skb);
- 
-+/* nl_table locking explained:
-+ * Lookup and traversal are protected with nl_sk_hash_lock or nl_table_lock
-+ * combined with an RCU read-side lock. Insertion and removal are protected
-+ * with nl_sk_hash_lock while using RCU list modification primitives and may
-+ * run in parallel to nl_table_lock protected lookups. Destruction of the
-+ * Netlink socket may only occur *after* nl_table_lock has been acquired
-+ * either during or after the socket has been removed from the list.
-+ */
- DEFINE_RWLOCK(nl_table_lock);
- EXPORT_SYMBOL_GPL(nl_table_lock);
- static atomic_t nl_table_users = ATOMIC_INIT(0);
-@@ -109,10 +117,10 @@ EXPORT_SYMBOL_GPL(nl_sk_hash_lock);
- static int lockdep_nl_sk_hash_is_held(void)
- {
- #ifdef CONFIG_LOCKDEP
--	return (debug_locks) ? lockdep_is_held(&nl_sk_hash_lock) : 1;
--#else
--	return 1;
-+	if (debug_locks)
-+		return lockdep_is_held(&nl_sk_hash_lock) || lockdep_is_held(&nl_table_lock);
- #endif
-+	return 1;
- }
- 
- static ATOMIC_NOTIFIER_HEAD(netlink_chain);
-@@ -1028,11 +1036,13 @@ static struct sock *netlink_lookup(struct net *net, int protocol, u32 portid)
- 	struct netlink_table *table = &nl_table[protocol];
- 	struct sock *sk;
- 
-+	read_lock(&nl_table_lock);
- 	rcu_read_lock();
- 	sk = __netlink_lookup(table, portid, net);
- 	if (sk)
- 		sock_hold(sk);
- 	rcu_read_unlock();
-+	read_unlock(&nl_table_lock);
- 
- 	return sk;
- }
-@@ -1257,9 +1267,6 @@ static int netlink_release(struct socket *sock)
- 	}
- 	netlink_table_ungrab();
- 
--	/* Wait for readers to complete */
--	synchronize_net();
--
- 	kfree(nlk->groups);
- 	nlk->groups = NULL;
- 
-@@ -1281,6 +1288,7 @@ static int netlink_autobind(struct socket *sock)
- 
- retry:
- 	cond_resched();
-+	netlink_table_grab();
- 	rcu_read_lock();
- 	if (__netlink_lookup(table, portid, net)) {
- 		/* Bind collision, search negative portid values. */
-@@ -1288,9 +1296,11 @@ retry:
- 		if (rover > -4097)
- 			rover = -4097;
- 		rcu_read_unlock();
-+		netlink_table_ungrab();
- 		goto retry;
- 	}
- 	rcu_read_unlock();
-+	netlink_table_ungrab();
- 
- 	err = netlink_insert(sk, net, portid);
- 	if (err == -EADDRINUSE)
-@@ -2921,14 +2931,16 @@ static struct sock *netlink_seq_socket_idx(struct seq_file *seq, loff_t pos)
- }
- 
- static void *netlink_seq_start(struct seq_file *seq, loff_t *pos)
--	__acquires(RCU)
-+	__acquires(nl_table_lock) __acquires(RCU)
- {
-+	read_lock(&nl_table_lock);
- 	rcu_read_lock();
- 	return *pos ? netlink_seq_socket_idx(seq, *pos - 1) : SEQ_START_TOKEN;
- }
- 
- static void *netlink_seq_next(struct seq_file *seq, void *v, loff_t *pos)
- {
-+	struct rhashtable *ht;
- 	struct netlink_sock *nlk;
- 	struct nl_seq_iter *iter;
- 	struct net *net;
-@@ -2943,19 +2955,19 @@ static void *netlink_seq_next(struct seq_file *seq, void *v, loff_t *pos)
- 	iter = seq->private;
- 	nlk = v;
- 
--	rht_for_each_entry_rcu(nlk, nlk->node.next, node)
-+	i = iter->link;
-+	ht = &nl_table[i].hash;
-+	rht_for_each_entry(nlk, nlk->node.next, ht, node)
- 		if (net_eq(sock_net((struct sock *)nlk), net))
- 			return nlk;
- 
--	i = iter->link;
- 	j = iter->hash_idx + 1;
- 
- 	do {
--		struct rhashtable *ht = &nl_table[i].hash;
- 		const struct bucket_table *tbl = rht_dereference_rcu(ht->tbl, ht);
- 
- 		for (; j < tbl->size; j++) {
--			rht_for_each_entry_rcu(nlk, tbl->buckets[j], node) {
-+			rht_for_each_entry(nlk, tbl->buckets[j], ht, node) {
- 				if (net_eq(sock_net((struct sock *)nlk), net)) {
- 					iter->link = i;
- 					iter->hash_idx = j;
-@@ -2971,9 +2983,10 @@ static void *netlink_seq_next(struct seq_file *seq, void *v, loff_t *pos)
- }
- 
- static void netlink_seq_stop(struct seq_file *seq, void *v)
--	__releases(RCU)
-+	__releases(RCU) __releases(nl_table_lock)
- {
- 	rcu_read_unlock();
-+	read_unlock(&nl_table_lock);
- }
- 
- 
--- 
-1.9.3
-
+Best regards,
+Javier
