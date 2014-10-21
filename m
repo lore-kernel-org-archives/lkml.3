@@ -1,97 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933331AbaJUUFg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 16:05:36 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:50844 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932529AbaJUUFd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 16:05:33 -0400
+	id S933403AbaJUUFq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 16:05:46 -0400
+Received: from mailsec111.isp.belgacom.be ([195.238.20.107]:45029 "EHLO
+	mailsec111.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932529AbaJUUFn convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 16:05:43 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=1oN0sfwJalOpr2aHay7Qy/p3C2/DrgK1QE5UNNaX0S8= c=1 sm=2
+ a=IkcTkHD0fZMA:10 a=stkexhm8AAAA:8 a=dUc_3phmnXrYhPl9RqEA:9
+ a=QEXdDO2ut3YA:10 a=DV8Pb4sAe4kA:10
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnMLAMC7RlTD7hTT/2dsb2JhbABcgw6BK4MGthABAQEBAQEGmysCgRYWAX2EAgEBAQMBI1YFCwUGGAICGA4CAlcGExGIJgyyE4cAjW0BAQEHAQEBAR6BLIR5iX8zB4J3gVQFqkCJP4I0gUY7L4JLAQEB
+Date: Tue, 21 Oct 2014 22:05:41 +0200 (CEST)
+From: Fabian Frederick <fabf@skynet.be>
+Reply-To: Fabian Frederick <fabf@skynet.be>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Message-ID: <1473755457.212484.1413921941002.open-xchange@webmail.nmp.skynet.be>
+In-Reply-To: <1413918366.1998.10.camel@jlt4.sipsolutions.net>
+References: <1413908412-5177-1-git-send-email-fabf@skynet.be> <1413918366.1998.10.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH 1/1 net-next] mac80211: remove unnecessary null test
+ before debugfs_remove
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo6978-uGD6Mq+tESXVZsmZSLWCuAwyBzO9pKHg_foNZPg@mail.gmail.com>
-References: <20141015165957.4063.66741.stgit@bhelgaas-glaptop2.roam.corp.google.com>
- <20141015170617.4063.2807.stgit@bhelgaas-glaptop2.roam.corp.google.com>
- <CAErSpo45JNAFM7gYM39hsAw=O+Pe2FLJYpj3WV0p2rDe-_t+xg@mail.gmail.com> <CAErSpo6978-uGD6Mq+tESXVZsmZSLWCuAwyBzO9pKHg_foNZPg@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 21 Oct 2014 14:05:10 -0600
-Message-ID: <CAErSpo7D_vHMebzhTfGKyyX=dtg+H0GiJV3fw2VaMTfdkDfa8g@mail.gmail.com>
-Subject: Re: [PATCH v1 05/10] MIPS: MT: Move "weak" from vpe_run() declaration
- to definition
-To: Jason Wessel <jason.wessel@windriver.com>,
-        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@redhat.com>,
-        John Stultz <john.stultz@linaro.org>, Eric Paris <eparis@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Priority: 3
+Importance: Medium
+X-Mailer: Open-Xchange Mailer v7.2.2-Rev27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 7:49 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> [+cc Stephen]
->
-> On Wed, Oct 15, 2014 at 5:28 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> [+cc linux-mips]
->>
->> On Wed, Oct 15, 2014 at 11:06 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->>> When the "weak" attribute is on a declaration in a header file, every
->>> definition where the header is included becomes weak, and the linker
->>> chooses one definition based on link order (see 10629d711ed7 ("PCI: Remove
->>> __weak annotation from pcibios_get_phb_of_node decl")).
->>>
->>> Move the "weak" attribute from the declaration to the default definition so
->>> we always prefer a non-weak definition over the weak one, independent of
->>> link order.
->>>
->>> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
->>> CC: linux-mips@linux-mips.org
 
-Dropping this permanently since I haven't heard from any MIPS folks.
 
->>> ---
->>>  arch/mips/include/asm/vpe.h |    2 +-
->>>  arch/mips/kernel/vpe-mt.c   |    2 +-
->>>  2 files changed, 2 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/arch/mips/include/asm/vpe.h b/arch/mips/include/asm/vpe.h
->>> index 7849f3978fea..80e70dbd1f64 100644
->>> --- a/arch/mips/include/asm/vpe.h
->>> +++ b/arch/mips/include/asm/vpe.h
->>> @@ -122,7 +122,7 @@ void release_vpe(struct vpe *v);
->>>  void *alloc_progmem(unsigned long len);
->>>  void release_progmem(void *ptr);
->>>
->>> -int __weak vpe_run(struct vpe *v);
->>> +int vpe_run(struct vpe *v);
->>>  void cleanup_tc(struct tc *tc);
->>>
->>>  int __init vpe_module_init(void);
->>> diff --git a/arch/mips/kernel/vpe-mt.c b/arch/mips/kernel/vpe-mt.c
->>> index 2e003b11a098..0e5899a2cd96 100644
->>> --- a/arch/mips/kernel/vpe-mt.c
->>> +++ b/arch/mips/kernel/vpe-mt.c
->>> @@ -23,7 +23,7 @@ static int major;
->>>  static int hw_tcs, hw_vpes;
->>>
->>>  /* We are prepared so configure and start the VPE... */
->>> -int vpe_run(struct vpe *v)
->>> +int __weak vpe_run(struct vpe *v)
->>>  {
->>>         unsigned long flags, val, dmt_flag;
->>>         struct vpe_notifications *notifier;
->>>
+> On 21 October 2014 at 21:06 Johannes Berg <johannes@sipsolutions.net> wrote:
 >
-> Just FYI, this patch was in linux-next today, but I dropped it
-> temporarily because Fengguang's auto-builder found the following issue
-> with it:
 >
-> All error/warnings:
+> On Tue, 2014-10-21 at 18:20 +0200, Fabian Frederick wrote:
+> > Fix checkpatch warnings:
+> >
+> >     WARNING: debugfs_remove(NULL) is safe this check is probably not
+> >required
 >
->    arch/mips/kernel/vpe.c: In function 'vpe_release':
->>> arch/mips/kernel/vpe.c:830:29: error: the address of 'vpe_run' will always evaluate as 'true' [-Werror=address]
->       if ((vpe_elfload(v) >= 0) && vpe_run) {
->                                 ^
->    cc1: all warnings being treated as errors
+> I'll apply this; however, I think that checkpatch is a just tool, and
+> the commit message should reflect why you're changing the code.
+> Presumably you're not doing it to make the tool happy, but to address an
+> issue that the tool pointed out, so I think in most cases the commit
+> message should state the former, not the latter.
+>
+> Note that in this particular case the NULL check check could be there to
+> avoid a memory write (which can be significant depending on the context)
+> so blindly doing what the tool suggested wouldn't always be a good idea.
+>
+> johannes
+>
+
+Thanks Johannes,
+
+Maybe you can replace commit message with:
+"
+This patch removes NULL check before debugfs_remove.
+That function already does that check and is
+only called during key management so we can add some memory writes.
+"
+
+I can also resubmit patch if necessary.
+
+Regards,
+Fabian
