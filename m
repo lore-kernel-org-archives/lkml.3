@@ -1,101 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933906AbaJUVwz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 17:52:55 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:41266 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933759AbaJUVwx (ORCPT
+	id S933977AbaJUV4O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 17:56:14 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:52084 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933908AbaJUV4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 17:52:53 -0400
-Date: Tue, 21 Oct 2014 23:52:50 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>, sre@debian.org,
-        sre@ring0.de, kernel list <linux-kernel@vger.kernel.org>, balbi@ti.com,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        kishon@ti.com, s.nawrocki@samsung.com
-Subject: Re: USB Ethernet gadget on Nokia n900
-Message-ID: <20141021215250.GA20087@amd>
-References: <20141019090107.GA19132@amd>
- <201410191658.45851@pali>
- <20141019205033.GA4738@amd>
- <201410192300.20625@pali>
- <20141020130855.GA1067@amd>
- <20141020164542.GD5192@atomide.com>
- <20141020220338.GA19314@amd>
- <20141020222942.GA2560@atomide.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141020222942.GA2560@atomide.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 21 Oct 2014 17:56:11 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Sebastian Reichel <sre@kernel.org>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH 5/8] power: reset: at91-reset: use at91_ramc_shutdown
+Date: Tue, 21 Oct 2014 23:55:37 +0200
+Message-Id: <1413928540-27099-6-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1413928540-27099-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1413928540-27099-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Now that all SoCs are registering the atmel-sdramc driver, use the
+at91_ramc_shutdown() function to shutdown the sdram.
 
-> > > > After some hand-bisecting and real-bisecting, I found two commits that
-> > > > cause problems for 3.13: With these reverted, I get usb networking
-> > > > back in 3.13 on nokia n900.
-> > > > 
-> > > > (Pali, if you revert these, you should get working usb networking in
-> > > > your 3.13 branch, too.)
-> > > > 
-> > > > Any ideas?
-> > > 
-> > > Hmm maybe check if current stable kernels work for you without
-> > > reverting anything ? Few weeks ago I did the the following two fixes
-> > > with cc stable v3.13+:
-> > > 
-> > > 96be39ab34b7 usb: phy: twl4030-usb: Fix regressions to runtime PM on omaps
-> > > 85601b8d81e2 usb: phy: twl4030-usb: Fix lost interrupts after ID pin goes down
-> > 
-> > I tried these on top of 3.14 (where my revert fixes stuff) and no, it
-> > does not seem to help. (Trying stable would be a bit more work).
-> > 
-> > Do you want me to try on 3.13, too?
-> 
-> Sounds like there's something else missing too then. Maybe give
-> v3.18-rc1 and device tree based boot a try?
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ drivers/power/reset/at91-reset.c | 116 +++++----------------------------------
+ 1 file changed, 14 insertions(+), 102 deletions(-)
 
-Ok, I tried 3.18-rc1 (with dt appended to the zImage) and this should
-be the logs from that attempt (on PC).
-
-[205583.689477] usb 4-1: Product: Nokia N900 (Update mode)
-[205583.689480] usb 4-1: Manufacturer: Nokia
-[205583.689483] usb 4-1: SerialNumber: 4D554D363434323537
-[205584.467273] usb 4-1: USB disconnect, device number 72
-[205590.120043] usb 4-1: new high-speed USB device number 73 using
-ehci-pci
-[205605.232034] usb 4-1: device descriptor read/64, error -110
-[205620.448036] usb 4-1: device descriptor read/64, error -110
-[205620.664032] usb 4-1: new high-speed USB device number 74 using
-ehci-pci
-[205635.776032] usb 4-1: device descriptor read/64, error -110
-[205650.992032] usb 4-1: device descriptor read/64, error -110
-[205651.208030] usb 4-1: new high-speed USB device number 75 using
-ehci-pci
-[205661.616025] usb 4-1: device not accepting address 75, error -110
-
-IOW usb gadget driver loaded (or there would be no "new high-speed USB
-device" message, but communication does not work.
-
-I'm attaching the config.
-
-> FYI, there's some PM support there too since v3.16-rc7, so using
-> anything pre v3.17 is probably not fun on the battery. Well it works
-
-My goal is to get nfsroot to work, and then I can play with bluetooth,
-userland and power management. For now, power consumption is not
-important, as I'm unable to boot useful system.
-
-(I could boot from MMC, but that's too cumbersome to use due to lack
-of space, hard communication, and constant fiddling with device
-cover).
-
-Best regards,
-									Pavel
+diff --git a/drivers/power/reset/at91-reset.c b/drivers/power/reset/at91-reset.c
+index 3cb36693343a..ec1ef9b113d4 100644
+--- a/drivers/power/reset/at91-reset.c
++++ b/drivers/power/reset/at91-reset.c
+@@ -19,8 +19,7 @@
+ 
+ #include <asm/system_misc.h>
+ 
+-#include <mach/at91sam9_ddrsdr.h>
+-#include <mach/at91sam9_sdramc.h>
++#include <soc/atmel/memory.h>
+ 
+ #define AT91_RSTC_CR	0x00		/* Reset Controller Control Register */
+ #define AT91_RSTC_PROCRST	BIT(0)		/* Processor Reset */
+@@ -47,78 +46,28 @@ enum reset_type {
+ 	RESET_TYPE_USER		= 4,
+ };
+ 
+-static void __iomem *at91_ramc_base[2], *at91_rstc_base;
++static void __iomem *at91_rstc_base;
+ 
+ /*
+ * unless the SDRAM is cleanly shutdown before we hit the
+ * reset register it can be left driving the data bus and
+ * killing the chance of a subsequent boot from NAND
+ */
+-static void at91sam9260_restart(enum reboot_mode mode, const char *cmd)
++static void at91_restart(enum reboot_mode mode, const char *cmd)
+ {
+-	asm volatile(
+-		/* Align to cache lines */
+-		".balign 32\n\t"
+-
+-		/* Disable SDRAM accesses */
+-		"str	%2, [%0, #" __stringify(AT91_SDRAMC_TR) "]\n\t"
+-
+-		/* Power down SDRAM */
+-		"str	%3, [%0, #" __stringify(AT91_SDRAMC_LPR) "]\n\t"
++	if (at91_ramc_shutdown)
++		at91_ramc_shutdown();
+ 
++	asm volatile(
+ 		/* Reset CPU */
+-		"str	%4, [%1, #" __stringify(AT91_RSTC_CR) "]\n\t"
++		"str	%1, [%0, #" __stringify(AT91_RSTC_CR) "]\n\t"
+ 
+ 		"b	.\n\t"
+ 		:
+-		: "r" (at91_ramc_base[0]),
+-		  "r" (at91_rstc_base),
+-		  "r" (1),
+-		  "r" (AT91_SDRAMC_LPCB_POWER_DOWN),
++		: "r" (at91_rstc_base),
+ 		  "r" (AT91_RSTC_KEY | AT91_RSTC_PERRST | AT91_RSTC_PROCRST));
+ }
+ 
+-static void at91sam9g45_restart(enum reboot_mode mode, const char *cmd)
+-{
+-	asm volatile(
+-		/*
+-		 * Test wether we have a second RAM controller to care
+-		 * about.
+-		 *
+-		 * First, test that we can dereference the virtual address.
+-		 */
+-		"cmp	%1, #0\n\t"
+-		"beq	1f\n\t"
+-
+-		/* Then, test that the RAM controller is enabled */
+-		"ldr	r0, [%1]\n\t"
+-		"cmp	r0, #0\n\t"
+-
+-		/* Align to cache lines */
+-		".balign 32\n\t"
+-
+-		/* Disable SDRAM0 accesses */
+-		"1:	str	%3, [%0, #" __stringify(AT91_DDRSDRC_RTR) "]\n\t"
+-		/* Power down SDRAM0 */
+-		"	str	%4, [%0, #" __stringify(AT91_DDRSDRC_LPR) "]\n\t"
+-		/* Disable SDRAM1 accesses */
+-		"	strne	%3, [%1, #" __stringify(AT91_DDRSDRC_RTR) "]\n\t"
+-		/* Power down SDRAM1 */
+-		"	strne	%4, [%1, #" __stringify(AT91_DDRSDRC_LPR) "]\n\t"
+-		/* Reset CPU */
+-		"	str	%5, [%2, #" __stringify(AT91_RSTC_CR) "]\n\t"
+-
+-		"	b	.\n\t"
+-		:
+-		: "r" (at91_ramc_base[0]),
+-		  "r" (at91_ramc_base[1]),
+-		  "r" (at91_rstc_base),
+-		  "r" (1),
+-		  "r" (AT91_DDRSDRC_LPCB_POWER_DOWN),
+-		  "r" (AT91_RSTC_KEY | AT91_RSTC_PERRST | AT91_RSTC_PROCRST)
+-		: "r0");
+-}
+-
+ static void __init at91_reset_status(struct platform_device *pdev)
+ {
+ 	u32 reg = readl(at91_rstc_base + AT91_RSTC_SR);
+@@ -148,51 +97,27 @@ static void __init at91_reset_status(struct platform_device *pdev)
+ 	pr_info("AT91: Starting after %s\n", reason);
+ }
+ 
+-static struct of_device_id at91_ramc_of_match[] = {
+-	{ .compatible = "atmel,at91sam9260-sdramc", },
+-	{ .compatible = "atmel,at91sam9g45-ddramc", },
+-	{ .compatible = "atmel,sama5d3-ddramc", },
+-	{ /* sentinel */ }
+-};
+-
+ static struct of_device_id at91_reset_of_match[] = {
+-	{ .compatible = "atmel,at91sam9260-rstc", .data = at91sam9260_restart },
+-	{ .compatible = "atmel,at91sam9g45-rstc", .data = at91sam9g45_restart },
++	{ .compatible = "atmel,at91sam9260-rstc", },
++	{ .compatible = "atmel,at91sam9g45-rstc", },
+ 	{ /* sentinel */ }
+ };
+ 
+ static int at91_reset_of_probe(struct platform_device *pdev)
+ {
+-	const struct of_device_id *match;
+-	struct device_node *np;
+-	int idx = 0;
+-
+ 	at91_rstc_base = of_iomap(pdev->dev.of_node, 0);
+ 	if (!at91_rstc_base) {
+ 		dev_err(&pdev->dev, "Could not map reset controller address\n");
+ 		return -ENODEV;
+ 	}
+ 
+-	for_each_matching_node(np, at91_ramc_of_match) {
+-		at91_ramc_base[idx] = of_iomap(np, 0);
+-		if (!at91_ramc_base[idx]) {
+-			dev_err(&pdev->dev, "Could not map ram controller address\n");
+-			return -ENODEV;
+-		}
+-		idx++;
+-	}
+-
+-	match = of_match_node(at91_reset_of_match, pdev->dev.of_node);
+-	arm_pm_restart = match->data;
+-
+ 	return 0;
+ }
+ 
++
+ static int at91_reset_platform_probe(struct platform_device *pdev)
+ {
+-	const struct platform_device_id *match;
+ 	struct resource *res;
+-	int idx = 0;
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	at91_rstc_base = devm_ioremap_resource(&pdev->dev, res);
+@@ -201,20 +126,6 @@ static int at91_reset_platform_probe(struct platform_device *pdev)
+ 		return PTR_ERR(at91_rstc_base);
+ 	}
+ 
+-	for (idx = 0; idx < 2; idx++) {
+-		res = platform_get_resource(pdev, IORESOURCE_MEM, idx + 1 );
+-		at91_ramc_base[idx] = devm_ioremap(&pdev->dev, res->start,
+-						   resource_size(res));
+-		if (IS_ERR(at91_ramc_base[idx])) {
+-			dev_err(&pdev->dev, "Could not map ram controller address\n");
+-			return PTR_ERR(at91_ramc_base[idx]);
+-		}
+-	}
+-
+-	match = platform_get_device_id(pdev);
+-	arm_pm_restart = (void (*)(enum reboot_mode, const char*))
+-		match->driver_data;
+-
+ 	return 0;
+ }
+ 
+@@ -230,14 +141,15 @@ static int at91_reset_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		return ret;
+ 
++	arm_pm_restart = at91_restart;
+ 	at91_reset_status(pdev);
+ 
+ 	return 0;
+ }
+ 
+ static struct platform_device_id at91_reset_plat_match[] = {
+-	{ "at91-sam9260-reset", (unsigned long)at91sam9260_restart },
+-	{ "at91-sam9g45-reset", (unsigned long)at91sam9g45_restart },
++	{ "at91-sam9260-reset",  },
++	{ "at91-sam9g45-reset",  },
+ 	{ /* sentinel */ }
+ };
+ 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.9.1
+
