@@ -1,71 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493AbaJUIvV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 04:51:21 -0400
-Received: from mailout.micron.com ([137.201.242.129]:15646 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752815AbaJUIvS convert rfc822-to-8bit (ORCPT
+	id S1754505AbaJUIwQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 04:52:16 -0400
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:56094 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751824AbaJUIwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 04:51:18 -0400
-From: bpqw <bpqw@micron.com>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-CC: Jason Cooper <jason@lakedaemon.net>, Mark Brown <broonie@kernel.org>,
-        Heiko Stuebner <heiko@sntech.de>, Thierry Reding <treding@nvidia.com>,
-        Florian Vaussard <florian.vaussard@epfl.ch>,
-        Andrew Lunn <andrew@lunn.ch>, Silvio F <silvio.fricke@gmail.com>,
-        Hayato Suzuki <hytszk@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/1] devicetree: bindings: Add vendor prefix for Micron
- Technology Co., Ltd.
-Thread-Topic: [PATCH 1/1] devicetree: bindings: Add vendor prefix for Micron
- Technology Co., Ltd.
-Thread-Index: Ac/tDA2V70hMLzyhQH+xOy9U8dubsg==
-Date: Tue, 21 Oct 2014 08:50:24 +0000
-Message-ID: <A765B125120D1346A63912DDE6D8B6315E745D@NTXXIAMBX02.xacn.micron.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.84.5]
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-21040.005
-X-TM-AS-Result: No--4.014400-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-x-mt-checkinternalsenderrule: True
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Tue, 21 Oct 2014 04:52:13 -0400
 MIME-Version: 1.0
+In-Reply-To: <1412160393-5848-1-git-send-email-pramod.gurav@smartplayin.com>
+References: <1412160393-5848-1-git-send-email-pramod.gurav@smartplayin.com>
+Date: Tue, 21 Oct 2014 10:52:12 +0200
+Message-ID: <CACRpkdZ1XM4ztKBO1aKWmFtQHp+6j9jJL8wuPVJ2mvQWR2cM5A@mail.gmail.com>
+Subject: Re: [PATCH] gpio: Switch to using managed resources with devm_
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Pramod Gurav <pramod.gurav@smartplayin.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is used to add vendor prefix for Micron Technology Inc in the vendor-prefixes.txt file.
+On Wed, Oct 1, 2014 at 12:46 PM, Pramod Gurav
+<pramod.gurav@smartplayin.com> wrote:
 
-Micron Technology, Inc. is an American multinational corporation
-based in Boise, Idaho, best known for producing many forms of
-semiconductor devices. This includes DRAM, SDRAM, flash memory,
-eMMC and SSDs.
+> This change switches to devm_request_region to request region
+> and hence simplifies the module unload and does away with
+> release_region in remove function.
+>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: Alexandre Courbot <gnurou@gmail.com>
+> Cc: linux-gpio@vger.kernel.org
+> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
 
-Signed-off-by: bean huo <beanhuo@micron.com>
----
- .../devicetree/bindings/vendor-prefixes.txt        |    1 +
- 1 file changed, 1 insertion(+)
+Patch applied with augmented subject.
 
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index 723999d..a7bbf6e 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -92,6 +92,7 @@ maxim	Maxim Integrated Products
- mediatek	MediaTek Inc.
- micrel	Micrel Inc.
- microchip	Microchip Technology Inc.
-+micron	Micron Technology Inc.
- mitsubishi	Mitsubishi Electric Corporation
- mosaixtech	Mosaix Technologies, Inc.
- moxa	Moxa
--- 
-1.7.9.5
+Yours,
+Linus Walleij
