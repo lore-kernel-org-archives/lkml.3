@@ -1,99 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933098AbaJUQYT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 12:24:19 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:58376 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932389AbaJUQYN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 12:24:13 -0400
-From: Nishanth Menon <nm@ti.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tony Lindgren <tony@atomide.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        "Franklin Cooper Jr." <fcooper@ti.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Nishanth Menon <nm@ti.com>
-Subject: [PATCH] tty: serial: omap: increase max consoles to 10
-Date: Tue, 21 Oct 2014 11:23:36 -0500
-Message-ID: <1413908616-843-1-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S933142AbaJUQYt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 12:24:49 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:36096 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932304AbaJUQYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 12:24:47 -0400
+Date: Tue, 21 Oct 2014 11:25:09 -0500
+From: Alex Thorlton <athorlton@sgi.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Alex Thorlton <athorlton@sgi.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, Bob Liu <lliubbo@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org
+Subject: Re: [BUG] mm, thp: khugepaged can't allocate on requested node when
+ confined to a cpuset
+Message-ID: <20141021162509.GY3745@sgi.com>
+References: <20141008191050.GK3778@sgi.com>
+ <20141010092052.GU4750@worktop.programming.kicks-ass.net>
+ <20141010185620.GA3745@sgi.com>
+ <20141021105542.GU23531@worktop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141021105542.GU23531@worktop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Increase the maximum number of consoles possible to 10 since DRA7 now
-has the maximum number of consoles possible. without doing this, for
-example, enabling DRA7 UART10 results in internal data structures and
-console cannot match up and we endup with a crash as follows:
+On Tue, Oct 21, 2014 at 12:55:42PM +0200, Peter Zijlstra wrote:
+> On Fri, Oct 10, 2014 at 01:56:20PM -0500, Alex Thorlton wrote:
+> > On Fri, Oct 10, 2014 at 11:20:52AM +0200, Peter Zijlstra wrote:
+> > > So for the numa thing we do everything from the affected tasks context.
+> > > There was a lot of arguments early on that that could never really work,
+> > > but here we are.
+> > >
+> > > Should we convert khugepaged to the same? Drive the whole thing from
+> > > task_work? That would make this issue naturally go away.
+> > 
+> > That seems like a reasonable idea to me, but that will change the way
+> > that the compaction scans work right now, by quite a bit.  As I'm sure
+> > you're aware, the way it works now is we tack our mm onto the
+> > khugepagd_scan list in do_huge_pmd_anonymous_page (there might be some
+> > other ways to get on there - I can't remember), then when khugepaged
+> > wakes up it scans through each mm on the list until it hits the maximum
+> > number of pages to scan on each pass.
+> > 
+> > If we move the compaction scan over to a task_work style function, we'll
+> > only be able to scan the one task's mm at a time.  While the underlying
+> > compaction infrastructure can function more or less the same, the timing
+> > of when these scans occur, and exactly what the scans cover, will have
+> > to change.  If we go for the most rudimentary approach, the scans will
+> > occur each time a thread is about to return to userland after faulting
+> > in a THP (we'll just replace the khugepaged_enter call with a
+> > task_work_add), and will cover the mm for the current task.  A slightly
+> > more advanced approach would involve a timer to ensure that scans don't
+> > occur too often, as is currently handled by
+> > khugepaged_scan_sleep_millisecs. In any case, I don't see a way around
+> > the fact that we'll lose the multi-mm scanning functionality our
+> > khugepaged_scan list provides, but maybe that's not a huge issue.
+> 
+> Right, can't see that being a problem, in fact its a bonus, because
+> we'll stop scanning completely if there's no tasks running what so ever,
+> so we get the power aware thing for free.
 
-[    1.903503] omap_uart 48424000.serial: [UART-1]: failure [serial_omap_probe]: -22
-[    1.911437] omap_uart: probe of 48424000.serial failed with error -22
-[    1.920379] Unable to handle kernel NULL pointer dereference at virtual address 00000004
-[    1.928894] pgd = c0004000
-[    1.931732] [00000004] *pgd=00000000
-[    1.935485] Internal error: Oops: 5 [#1] SMP ARM
-[    1.940338] Modules linked in:
-[    1.943542] CPU: 1 PID: 12 Comm: kworker/1:0 Tainted: G        W      3.18.0-rc1-00001-g8821bc4-dirty #6
-[    1.953521] task: ed8a2d00 ti: ed8a4000 task.ti: ed8a4000
-[    1.959197] PC is at process_one_work+0x38/0x4a4
-[    1.964050] LR is at 0x0
-[    1.966705] pc : [<c00548e0>]    lr : [<00000000>]    psr: 40000093
-[    1.966705] sp : ed8a5ea8  ip : ed8a5ec8  fp : eeb9abc0
-[    1.978759] r10: ed8a4000  r9 : 00000008  r8 : ed842458
-[    1.984252] r7 : 00000000  r6 : eeb9abc0  r5 : ed842440  r4 : edbf26a8
-[    1.991119] r3 : 00000000  r2 : 00000000  r1 : 00000000  r0 : 00000000
-[    1.997985] Flags: nZcv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-[    2.005767] Control: 10c5387d  Table: 8000406a  DAC: 00000015
-[    2.011810] Process kworker/1:0 (pid: 12, stack limit = 0xed8a4248)
-[    2.018371] Stack: (0xed8a5ea8 to 0xed8a6000)
-[    2.022949] 5ea0:                   00000001 00000000 60000093 c008346c 00000001 ed8a5ec8
-[    2.031555] 5ec0: c0054de4 eeb9abc0 ed8a4000 ed842458 00000008 ed8a4000 eeb9abc0 ed842440
-[    2.040161] 5ee0: eeb9abc0 eeb9abf0 ed8a4000 ed842458 00000008 ed8a4000 eeb9abc0 c0054ec4
-[    2.048767] 5f00: ed8a4000 eeb9ac4c a0000053 00000000 ed845bc0 ed842440 c0054d80 00000000
-[    2.057342] 5f20: 00000000 00000000 00000000 c005999c 00000001 00000000 c05eaa64 ed842440
-[    2.065948] 5f40: 00000000 00000000 dead4ead ffffffff ffffffff c097c680 00000000 00000000
-[    2.074554] 5f60: c078acd4 ed8a5f64 ed8a5f64 00000000 00000000 dead4ead ffffffff ffffffff
-[    2.083160] 5f80: c097c680 00000000 00000000 c078acd4 ed8a5f90 ed8a5f90 600000d3 ed845bc0
-[    2.091766] 5fa0: c00598d4 00000000 00000000 c000e668 00000000 00000000 00000000 00000000
-[    2.100341] 5fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-[    2.108947] 5fe0: 00000000 00000000 00000000 00000000 00000013 00000000 90005148 11010482
-[    2.117553] [<c00548e0>] (process_one_work) from [<c0054ec4>] (worker_thread+0x144/0x498)
-[    2.126159] [<c0054ec4>] (worker_thread) from [<c005999c>] (kthread+0xc8/0xe4)
-[    2.133758] [<c005999c>] (kthread) from [<c000e668>] (ret_from_fork+0x14/0x2c)
-[    2.141357] Code: e1a04001 e1a05000 e893000f e31e0004 (e5978004)
-[    2.147766] ---[ end trace 5798e2803311b69f ]---
-<snip>
+Good point.  Another plus to runninng the scans from the current task's
+context.
 
-The final solution is to transition off to use 8250 driver and no
-dependency on console structures and move away from omap-serial driver,
-hence no major cleanups are done for this driver.
+> Also if you drive it like the numa scanning, you end up scanning tasks
+> proportional to their runtime, there's no point scanning and collapsing
+> pages for tasks than hardly ever run anyhow, that only sucks limited
+> resources (large page allocations) for no win.
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
+Yep - it's currently driven somewhat similar to numa scanning, but there
+might be a bit more overhead to the way I'm doing it now vs. the numa
+scans.  What currently happens is __khugepaged_enter makes a call to
+task_work_add in the places where it used to add the current tasks mm to
+the khugepaged_scan list/mm_slot hash, throttled by a timer similar to
+alloc_sleep_millisecs.  The reason I say there may be more overhead is
+because we potentially make the call to __khugepaged_enter and check the
+timer once per page fault, which could definitely slow things down.
 
-Ref: eventual 8250 driver to transition to: http://marc.info/?l=linux-kernel&m=141201409108078&w=2
+> > Before I run off and start writing patches, here's a brief summary of
+> > what I think we could do here:
+> > 
+> > 1) Dissolve the khugepaged thread and related structs/timers (I'm
+> >    expecting some backlash on this one).
+> > 2) Replace khugepged_enter calls with calls to task_work_add(work,
+> >    our_new_scan_function) - new scan function will look almost exactly
+> >    like khugepaged_scan_mm_slot.
+> > 3) Set up a timer similar to khugepaged_scan_sleep_millisecs that gets
+> >    checked during/before our_new_scan_function to ensure that we're not
+> >    scanning more often than necessary.  Also, set up progress markers to
+> >    limit the number of pages scanned in a single pass.
+> > 
+> > By doing this, scans will get triggered each time a thread that has
+> > faulted THPs is about to return to userland execution, throttled by our
+> > new timer/progress indicators.  The major benefit here is that scans
+> > will now occur in the desired task's context.
+> > 
+> > Let me know if you anybody sees any major flaws in this approach.
+> 
+> I would suggest you have a look at task_tick_numa(), maybe we can make
+> something that works for both.
 
- drivers/tty/serial/omap-serial.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I originally looked at task_tick_numa when I started working on my new
+code, but I think what's happening in there is fundamentally different
+from what we're trying to achieve here.  In
+task_tick_numa/task_numa_work, we're marking pages as inaccessible so
+that they trigger a minor fault later on, i.e. generating some
+information that will result in an action later on.  Whereas, from the
+page collapse point of view, our task_work function is taking an action
+based on some information that was generated during a page fault.  Sort
+of an opposite action, right?  Not saying that there isn't a way that
+they can work together, but the end goals of the two processes are
+different enough that I wonder if it's appropriate to try to merge them
+together.
 
-diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-index 18c30ca..4f9cbb6 100644
---- a/drivers/tty/serial/omap-serial.c
-+++ b/drivers/tty/serial/omap-serial.c
-@@ -46,7 +46,7 @@
- 
- #include <dt-bindings/gpio/gpio.h>
- 
--#define OMAP_MAX_HSUART_PORTS	6
-+#define OMAP_MAX_HSUART_PORTS	10
- 
- #define UART_BUILD_REVISION(x, y)	(((x) << 8) | (y))
- 
--- 
-1.7.9.5
+I've got a rough draft of this code up and running now.  I'm gathering
+some information on how it performs vs. the standard khugepaged.  Once
+I've got all the information put together I'll post the code and the
+test results so that we can compare, and start looking into areas that
+can be improved.
 
+Thanks, Peter!
+
+- Alex
