@@ -1,70 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932102AbaJTX5T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 19:57:19 -0400
-Received: from mail-yh0-f50.google.com ([209.85.213.50]:35272 "EHLO
-	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752598AbaJTX5S (ORCPT
+	id S1753957AbaJUAF3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 20:05:29 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:38925 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753216AbaJUAF2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 19:57:18 -0400
+	Mon, 20 Oct 2014 20:05:28 -0400
+Message-ID: <5445A345.7010401@codeaurora.org>
+Date: Mon, 20 Oct 2014 17:05:25 -0700
+From: Laura Abbott <lauraa@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <1413847670-12245-4-git-send-email-dianders@chromium.org>
-References: <1413847670-12245-1-git-send-email-dianders@chromium.org>
-	<1413847670-12245-4-git-send-email-dianders@chromium.org>
-Date: Mon, 20 Oct 2014 16:57:17 -0700
-X-Google-Sender-Auth: CXPQtKVSY2h8qjIXLtr_S6XnbyA
-Message-ID: <CAD=FV=XJ1VWy0JvD5-kJ611mgxKGZ8hK-7uu9GyAWbmER_UZhQ@mail.gmail.com>
-Subject: Re: [PATCH 4/4] pinctrl: rockchip: Protect read-modify-write with the spinlock
-From: Doug Anderson <dianders@chromium.org>
-To: Linus Walleij <linus.walleij@linaro.org>, Heiko Stuebner <heiko@sntech.de>
-Cc: Chris Zhong <zyw@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>,
-        linux-rockchip@lists.infradead.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Doug Anderson <dianders@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Stefan Hengelein <stefan.hengelein@fau.de>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+CC: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        akpm@linux-foundation.org, linux-arm-kernel@lists.infradead.org,
+        andreas.herrmann@calxeda.com,
+        Valentin Rothberg <valentinrothberg@gmail.com>
+Subject: Re: [PATCH] arm: dma-mapping: fix compilation error when CONFIG_MMU
+ is not present
+References: <1413734340-53108-1-git-send-email-stefan.hengelein@fau.de>	<5444BCFF.8030803@samsung.com> <CABv5NL_GdtZegpw8wxau9oD6xXWdX3GUySLqCaoaoa549Kg_GQ@mail.gmail.com>
+In-Reply-To: <CABv5NL_GdtZegpw8wxau9oD6xXWdX3GUySLqCaoaoa549Kg_GQ@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 10/20/2014 6:50 AM, Stefan Hengelein wrote:
+> Well,
+>
+> arch/arm/mm/dma-mapping.c: In function ‘__atomic_get_pages’:
+> arch/arm/mm/dma-mapping.c:1265:31: error: ‘atomic_pool’ undeclared
+> (first use in this function)
+>
+> arch/arm/mm/dma-mapping.c: In function ‘__iommu_get_pages’:
+> arch/arm/mm/dma-mapping.c:1275:2: error: implicit declaration of
+> function ‘__in_atomic_pool’ [-Werror=implicit-function-declaration]
+>
+>
+> others:
+> arch/arm/mm/dma-mapping.c: In function ‘__iommu_alloc_remap’:
+> arch/arm/mm/dma-mapping.c:1200:4: error: ‘VM_ARM_DMA_CONSISTENT’
+> undeclared (first use in this function)
+> arch/arm/mm/dma-mapping.c:1200:4: note: each undeclared identifier is
+> reported only once for each function it appears in
+>
+> arch/arm/mm/dma-mapping.c: In function ‘__iommu_get_pages’:
+> arch/arm/mm/dma-mapping.c:1282:29: error: ‘VM_ARM_DMA_CONSISTENT’
+> undeclared (first use in this function)
+> arch/arm/mm/dma-mapping.c: In function ‘arm_iommu_free_attrs’:
+> arch/arm/mm/dma-mapping.c:1411:4: error: ‘VM_ARM_DMA_CONSISTENT’
+> undeclared (first use in this function)
+>
+>
+> i've attached a configuration where it happens.
+> when you place the configuration in your tree and compile the file,
+> the errors should show up.
+>
+> However, within the configuration CONFIG_ARM_DMA_USE_IOMMU is defined
+> and CONFIG_MMU is not. AFAIUI, if both should be enabled together, it
+> should be mapped in Kconfig somewhere, right?
+>
+> Best Regards,
+> Stefan
+>
 
-On Mon, Oct 20, 2014 at 4:27 PM, Doug Anderson <dianders@chromium.org> wrote:
-> @@ -1464,15 +1474,20 @@ static int rockchip_irq_set_type(struct irq_data *d, unsigned int type)
->         if (ret < 0)
->                 return ret;
->
-> +       spin_lock_irqsave(&bank->slock, flags);
-> +
->         data = readl_relaxed(bank->reg_base + GPIO_SWPORT_DDR);
->         data &= ~mask;
->         writel_relaxed(data, bank->reg_base + GPIO_SWPORT_DDR);
->
-> +       spin_unlock_irqrestore(&bank->slock, flags);
-> +
->         if (type & IRQ_TYPE_EDGE_BOTH)
->                 __irq_set_handler_locked(d->irq, handle_edge_irq);
->         else
->                 __irq_set_handler_locked(d->irq, handle_level_irq);
->
-> +       spin_lock_irqsave(&bank->slock, flags);
->         irq_gc_lock(gc);
->
->         level = readl_relaxed(gc->reg_base + GPIO_INTTYPE_LEVEL);
-> @@ -1522,6 +1537,7 @@ static int rockchip_irq_set_type(struct irq_data *d, unsigned int type)
->         writel_relaxed(polarity, gc->reg_base + GPIO_INT_POLARITY);
->
->         irq_gc_unlock(gc);
-> +       spin_unlock_irqrestore(&bank->slock, flags);
+There isn't a nice way to fixup the dma consistent flags so I would
+say this option should just depend on MMU.
 
-I just reviewed this again myself and I realized that there was an
-error path case that I missed.  I'll plan to spin tomorrow and include
-any extra feedback people have.
+Thanks,
+Laura
 
-I'll also note that I'd love any extra scrutiny people have on this
-patch.  I'm submitting it totally based on code inspection and am
-nowhere near an expert on this driver.  I mostly just looked for all
-of the read/modify/wites using writel and added the lock...
-
--Doug
+-- 
+Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, a 
+Linux Foundation Collaborative Project
