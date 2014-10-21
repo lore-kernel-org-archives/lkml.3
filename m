@@ -1,109 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933369AbaJURIj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 13:08:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20361 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932913AbaJURIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 13:08:38 -0400
-Date: Tue, 21 Oct 2014 11:43:28 -0500
-From: Josh Poimboeuf <jpoimboe@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        linux-kernel@vger.kernel.org, Seth Jennings <sjenning@redhat.com>
-Subject: Re: [PATCH] kprobes: add kprobe_is_function_probed()
-Message-ID: <20141021164328.GG3978@treble.redhat.com>
-References: <alpine.LNX.2.00.1410211744550.24255@pobox.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1410211744550.24255@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S933275AbaJURKN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 13:10:13 -0400
+Received: from g9t1613g.houston.hp.com ([15.240.0.71]:58756 "EHLO
+	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932913AbaJURKL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 13:10:11 -0400
+Message-ID: <1413910581.12798.25.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] memory-hotplug: Clear pgdat which is allocated by
+ bootmem in try_offline_node()
+From: Toshi Kani <toshi.kani@hp.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, zhenzhang.zhang@huawei.com,
+        wangnan0@huawei.com, tangchen@cn.fujitsu.com, dave.hansen@intel.com,
+        rientjes@google.com
+Date: Tue, 21 Oct 2014 10:56:21 -0600
+In-Reply-To: <5444DE75.6010206@jp.fujitsu.com>
+References: <5444DE75.6010206@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 05:48:30PM +0200, Jiri Kosina wrote:
-> Add a function that allows external users (such as live patching 
-> mechanisms) to check whether a given function (identified by symbol name) 
-> has a kprobe installed in it.
+On Mon, 2014-10-20 at 19:05 +0900, Yasuaki Ishimatsu wrote:
+ :
+> When hot removing memory, pgdat is set to 0 in try_offline_node().
+> But if the pgdat is allocated by bootmem allocator, the clearing
+> step is skipped. And when hot adding the same memory, the uninitialized
+> pgdat is reused. But free_area_init_node() chacks wether pgdat is set
 
-Functions aren't uniquely identifiable by name.  Perhaps it should be
-something like kprobe_is_addr_range_probed()?
+s/chacks/checks
 
-Should we refuse to patch a function which has a kprobe installed inside
-it?  Is there a race-free way to do that?
 
+> to zero. As a result, free_area_init_node() hits WARN_ON().
 > 
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> This patch clears pgdat which is allocated by bootmem allocator
+> in try_offline_node().
+> 
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> CC: Zhang Zhen <zhenzhang.zhang@huawei.com>
+> CC: Wang Nan <wangnan0@huawei.com>
+> CC: Tang Chen <tangchen@cn.fujitsu.com>
+> CC: Toshi Kani <toshi.kani@hp.com>
+> CC: Dave Hansen <dave.hansen@intel.com>
+> CC: David Rientjes <rientjes@google.com>
+> 
 > ---
->  include/linux/kprobes.h |  5 +++++
->  kernel/kprobes.c        | 28 ++++++++++++++++++++++++++++
->  2 files changed, 33 insertions(+)
+>  mm/memory_hotplug.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 > 
-> diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
-> index f7296e5..f760555 100644
-> --- a/include/linux/kprobes.h
-> +++ b/include/linux/kprobes.h
-> @@ -384,6 +384,7 @@ int disable_kprobe(struct kprobe *kp);
->  int enable_kprobe(struct kprobe *kp);
->  
->  void dump_kprobe(struct kprobe *kp);
-> +bool kprobe_is_function_probed(const char *name);
->  
->  #else /* !CONFIG_KPROBES: */
->  
-> @@ -459,6 +460,10 @@ static inline int enable_kprobe(struct kprobe *kp)
->  {
->  	return -ENOSYS;
->  }
-> +static inline bool kprobe_is_function_probed(const char *name)
-> +{
-> +	return false;
-> +}
->  #endif /* CONFIG_KPROBES */
->  static inline int disable_kretprobe(struct kretprobe *rp)
->  {
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> index 3995f54..27e8ddb 100644
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -2036,6 +2036,34 @@ void dump_kprobe(struct kprobe *kp)
->  NOKPROBE_SYMBOL(dump_kprobe);
->  
->  /*
-> + * Check whether a given symbol is a probed function
-> + */
-> +bool kprobe_is_function_probed(const char *name)
-> +{
-> +	struct hlist_head *head;
-> +	struct kprobe *p, *kp;
-> +	const char *sym = NULL;
-> +	unsigned long offset = 0;
-> +	unsigned int i;
-> +	char *modname, namebuf[KSYM_NAME_LEN];
-> +
-> +	preempt_disable();
-> +	for (i = 0; i < KPROBE_TABLE_SIZE; i++) {
-> +		head = &kprobe_table[i];
-> +		hlist_for_each_entry_rcu(p, head, hlist) {
-> +			sym = kallsyms_lookup((unsigned long)p->addr,
-> +					NULL, &offset, &modname,
-> +					namebuf);
-> +			if (!strcmp(sym, name))
-> +				return true;
-> +		}
-> +	}
-> +	preempt_enable();
-> +	return false;
-> +}
-> +EXPORT_SYMBOL_GPL(kprobe_is_function_probed);
-> +
-> +/*
->   * Lookup and populate the kprobe_blacklist.
->   *
->   * Unlike the kretprobe blacklist, we'll need to determine
-> -- 
-> 1.9.2
+> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> index 29d8693..7649f7c 100644
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -1943,7 +1943,7 @@ void try_offline_node(int nid)
+> 
+>  	if (!PageSlab(pgdat_page) && !PageCompound(pgdat_page))
+>  		/* node data is allocated from boot memory */
+> -		return;
+> +		goto out;
+
+Do we still need this if-statement?  That is, do we have to skip the
+for-loop below even though it checks with is_vmalloc_addr()?
+
+Thanks,
+-Toshi
+
+
+>  	/* free waittable in each zone */
+>  	for (i = 0; i < MAX_NR_ZONES; i++) {
+> @@ -1957,6 +1957,7 @@ void try_offline_node(int nid)
+>  			vfree(zone->wait_table);
+>  	}
+> 
+> +out:
+>  	/*
+>  	 * Since there is no way to guarentee the address of pgdat/zone is not
+>  	 * on stack of any kernel threads or used by other kernel objects
+
+
