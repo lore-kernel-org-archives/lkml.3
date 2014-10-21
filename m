@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932200AbaJUJxI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 05:53:08 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:59071 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751332AbaJUJxG (ORCPT
+	id S932278AbaJUJyZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 05:54:25 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:41060 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753120AbaJUJyX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 05:53:06 -0400
+	Tue, 21 Oct 2014 05:54:23 -0400
+Message-ID: <54462D48.2070702@collabora.co.uk>
+Date: Tue, 21 Oct 2014 11:54:16 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-In-Reply-To: <a6b3d86db6f5d19f7130b8dba2703dda68cb14d5.1413842560.git.luto@amacapital.net>
-References: <20141020144448.59e2e067d632c70353296e56@linux-foundation.org>
-	<a6b3d86db6f5d19f7130b8dba2703dda68cb14d5.1413842560.git.luto@amacapital.net>
-Date: Tue, 21 Oct 2014 11:53:04 +0200
-X-Google-Sender-Auth: X9iLRf653rj3GvMSSmkFzIebx6g
-Message-ID: <CAMuHMdWrXaJnfuyxOP-4zQyYJwrho6XvbTcjtwNK4pgoSH9PFw@mail.gmail.com>
-Subject: Re: [PATCH] init: Remove CONFIG_INIT_FALLBACK
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>, Rob Landley <rob@landley.net>,
-        Frank Rowand <frowand.list@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chuck Ebbert <cebbert.lkml@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Shuah Khan <shuah.kh@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+CC: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: Re: [PATCH 1/2] regulator: max77686: Implement suspend disable for
+ some LDOs
+References: <1413879912-26606-1-git-send-email-k.kozlowski@samsung.com> <1413879912-26606-2-git-send-email-k.kozlowski@samsung.com> <54462304.8050602@collabora.co.uk> <1413884182.26980.12.camel@AMDC1943>
+In-Reply-To: <1413884182.26980.12.camel@AMDC1943>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 12:04 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> CONFIG_INIT_FALLBACK adds config bloat without an obvious use case
-> that makes it worth keeping around.  Delete it.
->
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
->
-> Bring on the blame :)
->
->  init/Kconfig | 16 ----------------
->  init/main.c  |  5 -----
->  2 files changed, 21 deletions(-)
->
-> diff --git a/init/Kconfig b/init/Kconfig
-> index ebbd5846478e..e84c6423a2e5 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -1299,22 +1299,6 @@ source "usr/Kconfig"
->
->  endif
->
-> -config INIT_FALLBACK
-> -       bool "Fall back to defaults if init= parameter is bad"
-> -       default y
-> -       help
+Hello Krzysztof,
 
-The above is not in mainline, nor in -next?
-Seems it only exists in a patch series you sent yourself?
+On 10/21/2014 11:36 AM, Krzysztof Kozlowski wrote:
+> On wto, 2014-10-21 at 11:10 +0200, Javier Martinez Canillas wrote:
+>> 
+>> In general, could you please take a look to the latest patches I posted for the
+>> max77802? They are in a topic branch in Mark's regulator tree [1]. I would like
+>> both 77686 and 77802 drivers to handle things similarly even though I know that
+>> the PMICs don't behave identically and that's why we decided to have different
+>> drivers (although maybe that was a mistake and makes more sense to merge them).
+> 
+> I looked at them. In this patchset I didn't want to implement fully the
+> whole suspend-mode-thing. Just the first, easier part - set suspend
+> disable.
+> 
 
-Confused...
+Agreed, incremental support makes sense to me as well.
 
-Gr{oetje,eeting}s,
+I also want to configure the regulator modes in suspend for the Snow Chromebook
+using the same modes that are in the downstream Chrome OS tree and I think your
+changes will be enough for that too.
 
-                        Geert
+> In general I would like to do it similar to your solution but that is
+> work for future. Especially as I would like to wait for merging your
+> "Add max77802 regulator operating mode support".
+> 
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Perfect, thanks a lot for working on this!
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> Best regards,
+> Krzysztof
+> 
+
+Best regards,
+Javier
+
