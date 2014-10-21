@@ -1,82 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932455AbaJUMfy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 08:35:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32670 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932304AbaJUMfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 08:35:53 -0400
-Message-ID: <54464B93.3090808@redhat.com>
-Date: Tue, 21 Oct 2014 08:03:31 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
+	id S932465AbaJUMj1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 08:39:27 -0400
+Received: from smtp-out-023.synserver.de ([212.40.185.23]:1103 "EHLO
+	smtp-out-021.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932170AbaJUMj0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 08:39:26 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 32412
+Message-ID: <544653ED.8000304@metafoo.de>
+Date: Tue, 21 Oct 2014 14:39:09 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.8.1
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>
-Subject: Re: [PATCH] scripts, checkpatch.pl, provide a better output message
- for commit id format [v2]
-References: <1413845376-2128-1-git-send-email-prarit@redhat.com>  <1413846680.5407.4.camel@perches.com> <5445AD03.6000901@redhat.com> <1413857461.5407.8.camel@perches.com>
-In-Reply-To: <1413857461.5407.8.camel@perches.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jianqun <jay.xu@rock-chips.com>, heiko@sntech.de, lgirdwood@gmail.com,
+        broonie@kernel.org, perex@perex.cz, tiwai@suse.de,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org
+CC: huangtao@rock-chips.com, cf@rock-chips.com
+Subject: Re: [alsa-devel] [PATCH] ASoC: rockchip-i2s: add rockchip-max98090
+ driver support
+References: <1413891110-21059-1-git-send-email-jay.xu@rock-chips.com>
+In-Reply-To: <1413891110-21059-1-git-send-email-jay.xu@rock-chips.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/21/2014 01:31 PM, Jianqun wrote:
+> This patch is to add support for rockchip board with max98090 codec.
+> It also needs sound node in dt file.
+>
+> Tested on rockchip board based on rk3288.
+>
+> Signed-off-by: Jianqun <jay.xu@rock-chips.com>
+> ---
+>   sound/soc/rockchip/Kconfig | 13 +++++++++++++
+>   1 file changed, 13 insertions(+)
+>
+> diff --git a/sound/soc/rockchip/Kconfig b/sound/soc/rockchip/Kconfig
+> index 78fc159..482cbba 100644
+> --- a/sound/soc/rockchip/Kconfig
+> +++ b/sound/soc/rockchip/Kconfig
+> @@ -9,3 +9,16 @@ config SND_SOC_ROCKCHIP
+>
+>   config SND_SOC_ROCKCHIP_I2S
+>   	tristate
+> +	depends on CLKDEV_LOOKUP && SND_SOC_ROCKCHIP
+> +	help
+> +	  Say Y or M if you want to add support for I2S driver for Rockchip
+> +	  I2S device.
+> +
+> +config SND_SOC_ROCKCHIP_MAX98090
+> +	tristate "ASoC support Rockchip board with max98090"
+> +	depends on I2C && GPIOLIB
+> +	select SND_SOC_ROCKCHIP_I2S
+> +	select SND_SOC_MAX98090
+> +	help
+> +	  Say Y or M here if you want to add support for Rockchio board using
+> +	  a max98090 codec.
+>
 
+Just make the max98090 driver directly selectable. That's what we typically 
+do for DT based designs.
 
-On 10/20/2014 10:11 PM, Joe Perches wrote:
-> On Mon, 2014-10-20 at 20:46 -0400, Prarit Bhargava wrote:
->>
->> On 10/20/2014 07:11 PM, Joe Perches wrote:
->>> On Mon, 2014-10-20 at 18:49 -0400, Prarit Bhargava wrote:
->>>> I tested this using both lower and upper case 'c' with the following commit
->>>> text:
->>> []
->>>
->>> I think the patch subject be something like:
->>>
->>> "[PATCH] checkpatch: improve commit id/desc style checking in commit message"
->>>
->>> The [v2] goes in the subject like this:
->>>
->>> "[PATCH V2] checkpatch: ..."
->>>
->>>> 11 chars, SHOULD FAIL
->>>> commit 1234567890a
->>>
->>> []
->>>
->>>> ERROR: Please use 12 or more chars for the git commit ID
->>>> commit 1234567890a
->>>
->>> I'd expect these messages to mention something about the
->>> missing commit description too.
->>
->> Hmm ... is that a requirement here?
-> 
-> Yes
-> 
->> Currently checkpatch.pl doesn't complain about that.
-> 
-> Yes, it does
-> 
-> $ ./scripts/checkpatch.pl 0001-part-1.patch
-> ERROR: Please use 12 or more chars for the git commit ID like: 'commit 01234567890ab ("commit description")'
-> #9: 
-> commit 1234567, asdf
-> 
-> ERROR: Please use 12 or more chars for the git commit ID like: 'commit 01234567890ab ("commit description")'
-> #11: 
-> commit 123457
-
-Oh I see.  I was completely confused by the message.  This is a better example FWIW:
-
-ERROR: Please use 12 or more chars for the git commit ID like: 'commit
-01234567890ab ("commit description")'
-#13:
-commit 1234567890abc
-
-ie) the commit ID is 13 chars, but is missing a description ...
-
-P.
+- Lars
