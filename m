@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933900AbaJUVUq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 17:20:46 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:63621 "HELO
+	id S933913AbaJUVVF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 17:21:05 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:63635 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933733AbaJUVRw (ORCPT
+	with SMTP id S933726AbaJUVRv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 17:17:52 -0400
+	Tue, 21 Oct 2014 17:17:51 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
@@ -19,9 +19,9 @@ Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         Alexandre Courbot <gnurou@gmail.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Bryan Wu <cooloney@gmail.com>
-Subject: [PATCH v6 05/12] gpio / ACPI: Add support for _DSD device properties
-Date: Tue, 21 Oct 2014 23:20:28 +0200
-Message-ID: <3648524.GAzUEzjLmI@vostro.rjw.lan>
+Subject: [PATCH v6 06/12] gpio: sch: Consolidate core and resume banks
+Date: Tue, 21 Oct 2014 23:21:07 +0200
+Message-ID: <2191670.HstTAR5ZMU@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
 In-Reply-To: <13750506.S2yVlRRDa2@vostro.rjw.lan>
 References: <13750506.S2yVlRRDa2@vostro.rjw.lan>
@@ -34,332 +34,429 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-With release of ACPI 5.1 and _DSD method we can finally name GPIOs (and
-other things as well) returned by _CRS. Previously we were only able to
-use integer index to find the corresponding GPIO, which is pretty error
-prone if the order changes.
+This is actually a single device with two sets of identical registers,
+which just happen to start from a different offset. Instead of having
+separate GPIO chips created we consolidate them to be single GPIO chip.
 
-With _DSD we can now query GPIOs using name instead of an integer index,
-like the below example shows:
-
-  // Bluetooth device with reset and shutdown GPIOs
-  Device (BTH)
-  {
-      Name (_HID, ...)
-
-      Name (_CRS, ResourceTemplate ()
-      {
-          GpioIo (Exclusive, PullUp, 0, 0, IoRestrictionInputOnly,
-                  "\\_SB.GPO0", 0, ResourceConsumer) {15}
-          GpioIo (Exclusive, PullUp, 0, 0, IoRestrictionInputOnly,
-                  "\\_SB.GPO0", 0, ResourceConsumer) {27, 31}
-      })
-
-      Name (_DSD, Package ()
-      {
-          ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-          Package ()
-	  {
-              Package () {"reset-gpio", Package() {^BTH, 1, 1, 0 }},
-              Package () {"shutdown-gpio", Package() {^BTH, 0, 0, 0 }},
-          }
-      })
-  }
-
-The format of the supported GPIO property is:
-
-  Package () { "name", Package () { ref, index, pin, active_low }}
-
-  ref - The device that has _CRS containing GpioIo()/GpioInt() resources,
-        typically this is the device itself (BTH in our case).
-  index - Index of the GpioIo()/GpioInt() resource in _CRS starting from zero.
-  pin - Pin in the GpioIo()/GpioInt() resource. Typically this is zero.
-  active_low - If 1 the GPIO is marked as active_low.
-
-Since ACPI GpioIo() resource does not have field saying whether it is
-active low or high, the "active_low" argument can be used here. Setting
-it to 1 marks the GPIO as active low.
-
-In our Bluetooth example the "reset-gpio" refers to the second GpioIo()
-resource, second pin in that resource with the GPIO number of 31.
-
-This patch implements necessary support to gpiolib for extracting GPIOs
-using _DSD device properties.
+In addition having a single GPIO chip allows us to handle ACPI GPIO
+translation in the core in a more generic way, since the two GPIO chips
+share the same parent ACPI device.
 
 Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- Documentation/acpi/gpio-properties.txt |   52 ++++++++++++++++++++++
- drivers/gpio/gpiolib-acpi.c            |   78 +++++++++++++++++++++++++++------
- drivers/gpio/gpiolib.c                 |   30 +++++++++++-
- drivers/gpio/gpiolib.h                 |    7 +-
- 4 files changed, 146 insertions(+), 21 deletions(-)
+ drivers/gpio/gpio-sch.c | 293 ++++++++++++++++++------------------------------
+ 1 file changed, 112 insertions(+), 181 deletions(-)
 
-Index: linux-pm/drivers/gpio/gpiolib-acpi.c
-===================================================================
---- linux-pm.orig/drivers/gpio/gpiolib-acpi.c
-+++ linux-pm/drivers/gpio/gpiolib-acpi.c
-@@ -290,6 +290,7 @@ void acpi_gpiochip_free_interrupts(struc
- struct acpi_gpio_lookup {
- 	struct acpi_gpio_info info;
- 	int index;
-+	int pin_index;
- 	struct gpio_desc *desc;
- 	int n;
+diff --git a/drivers/gpio/gpio-sch.c b/drivers/gpio/gpio-sch.c
+index 41e91d7..99720c8 100644
+--- a/drivers/gpio/gpio-sch.c
++++ b/drivers/gpio/gpio-sch.c
+@@ -29,290 +29,221 @@
+ 
+ #include <linux/gpio.h>
+ 
+-static DEFINE_SPINLOCK(gpio_lock);
+-
+-#define CGEN	(0x00)
+-#define CGIO	(0x04)
+-#define CGLV	(0x08)
+-
+-#define RGEN	(0x20)
+-#define RGIO	(0x24)
+-#define RGLV	(0x28)
+-
+-static unsigned short gpio_ba;
+-
+-static int sch_gpio_core_direction_in(struct gpio_chip *gc, unsigned  gpio_num)
+-{
+-	u8 curr_dirs;
+-	unsigned short offset, bit;
+-
+-	spin_lock(&gpio_lock);
+-
+-	offset = CGIO + gpio_num / 8;
+-	bit = gpio_num % 8;
+-
+-	curr_dirs = inb(gpio_ba + offset);
+-
+-	if (!(curr_dirs & (1 << bit)))
+-		outb(curr_dirs | (1 << bit), gpio_ba + offset);
++#define GEN	0x00
++#define GIO	0x04
++#define GLV	0x08
++
++struct sch_gpio {
++	struct gpio_chip chip;
++	spinlock_t lock;
++	unsigned short iobase;
++	unsigned short core_base;
++	unsigned short resume_base;
++};
+ 
+-	spin_unlock(&gpio_lock);
+-	return 0;
+-}
++#define to_sch_gpio(c)	container_of(c, struct sch_gpio, chip)
+ 
+-static int sch_gpio_core_get(struct gpio_chip *gc, unsigned gpio_num)
++static unsigned sch_gpio_offset(struct sch_gpio *sch, unsigned gpio,
++				unsigned reg)
+ {
+-	int res;
+-	unsigned short offset, bit;
++	unsigned base = 0;
+ 
+-	offset = CGLV + gpio_num / 8;
+-	bit = gpio_num % 8;
++	if (gpio >= sch->resume_base) {
++		gpio -= sch->resume_base;
++		base += 0x20;
++	}
+ 
+-	res = !!(inb(gpio_ba + offset) & (1 << bit));
+-	return res;
++	return base + reg + gpio / 8;
+ }
+ 
+-static void sch_gpio_core_set(struct gpio_chip *gc, unsigned gpio_num, int val)
++static unsigned sch_gpio_bit(struct sch_gpio *sch, unsigned gpio)
+ {
+-	u8 curr_vals;
+-	unsigned short offset, bit;
+-
+-	spin_lock(&gpio_lock);
+-
+-	offset = CGLV + gpio_num / 8;
+-	bit = gpio_num % 8;
+-
+-	curr_vals = inb(gpio_ba + offset);
+-
+-	if (val)
+-		outb(curr_vals | (1 << bit), gpio_ba + offset);
+-	else
+-		outb((curr_vals & ~(1 << bit)), gpio_ba + offset);
+-	spin_unlock(&gpio_lock);
++	if (gpio >= sch->resume_base)
++		gpio -= sch->resume_base;
++	return gpio % 8;
+ }
+ 
+-static int sch_gpio_core_direction_out(struct gpio_chip *gc,
+-					unsigned gpio_num, int val)
++static void sch_gpio_enable(struct sch_gpio *sch, unsigned gpio)
+ {
+-	u8 curr_dirs;
+ 	unsigned short offset, bit;
++	u8 enable;
+ 
+-	spin_lock(&gpio_lock);
++	spin_lock(&sch->lock);
+ 
+-	offset = CGIO + gpio_num / 8;
+-	bit = gpio_num % 8;
+-
+-	curr_dirs = inb(gpio_ba + offset);
+-	if (curr_dirs & (1 << bit))
+-		outb(curr_dirs & ~(1 << bit), gpio_ba + offset);
++	offset = sch_gpio_offset(sch, gpio, GEN);
++	bit = sch_gpio_bit(sch, gpio);
+ 
+-	spin_unlock(&gpio_lock);
++	enable = inb(sch->iobase + offset);
++	if (!(enable & (1 << bit)))
++		outb(enable | (1 << bit), sch->iobase + offset);
+ 
+-	/*
+-	 * according to the datasheet, writing to the level register has no
+-	 * effect when GPIO is programmed as input.
+-	 * Actually the the level register is read-only when configured as input.
+-	 * Thus presetting the output level before switching to output is _NOT_ possible.
+-	 * Hence we set the level after configuring the GPIO as output.
+-	 * But we cannot prevent a short low pulse if direction is set to high
+-	 * and an external pull-up is connected.
+-	 */
+-	sch_gpio_core_set(gc, gpio_num, val);
+-	return 0;
++	spin_unlock(&sch->lock);
+ }
+ 
+-static struct gpio_chip sch_gpio_core = {
+-	.label			= "sch_gpio_core",
+-	.owner			= THIS_MODULE,
+-	.direction_input	= sch_gpio_core_direction_in,
+-	.get			= sch_gpio_core_get,
+-	.direction_output	= sch_gpio_core_direction_out,
+-	.set			= sch_gpio_core_set,
+-};
+-
+-static int sch_gpio_resume_direction_in(struct gpio_chip *gc,
+-					unsigned gpio_num)
++static int sch_gpio_direction_in(struct gpio_chip *gc, unsigned  gpio_num)
+ {
++	struct sch_gpio *sch = to_sch_gpio(gc);
+ 	u8 curr_dirs;
+ 	unsigned short offset, bit;
+ 
+-	spin_lock(&gpio_lock);
++	spin_lock(&sch->lock);
+ 
+-	offset = RGIO + gpio_num / 8;
+-	bit = gpio_num % 8;
++	offset = sch_gpio_offset(sch, gpio_num, GIO);
++	bit = sch_gpio_bit(sch, gpio_num);
+ 
+-	curr_dirs = inb(gpio_ba + offset);
++	curr_dirs = inb(sch->iobase + offset);
+ 
+ 	if (!(curr_dirs & (1 << bit)))
+-		outb(curr_dirs | (1 << bit), gpio_ba + offset);
++		outb(curr_dirs | (1 << bit), sch->iobase + offset);
+ 
+-	spin_unlock(&gpio_lock);
++	spin_unlock(&sch->lock);
+ 	return 0;
+ }
+ 
+-static int sch_gpio_resume_get(struct gpio_chip *gc, unsigned gpio_num)
++static int sch_gpio_get(struct gpio_chip *gc, unsigned gpio_num)
+ {
++	struct sch_gpio *sch = to_sch_gpio(gc);
++	int res;
+ 	unsigned short offset, bit;
+ 
+-	offset = RGLV + gpio_num / 8;
+-	bit = gpio_num % 8;
++	offset = sch_gpio_offset(sch, gpio_num, GLV);
++	bit = sch_gpio_bit(sch, gpio_num);
++
++	res = !!(inb(sch->iobase + offset) & (1 << bit));
+ 
+-	return !!(inb(gpio_ba + offset) & (1 << bit));
++	return res;
+ }
+ 
+-static void sch_gpio_resume_set(struct gpio_chip *gc,
+-				unsigned gpio_num, int val)
++static void sch_gpio_set(struct gpio_chip *gc, unsigned gpio_num, int val)
+ {
++	struct sch_gpio *sch = to_sch_gpio(gc);
+ 	u8 curr_vals;
+ 	unsigned short offset, bit;
+ 
+-	spin_lock(&gpio_lock);
++	spin_lock(&sch->lock);
+ 
+-	offset = RGLV + gpio_num / 8;
+-	bit = gpio_num % 8;
++	offset = sch_gpio_offset(sch, gpio_num, GLV);
++	bit = sch_gpio_bit(sch, gpio_num);
+ 
+-	curr_vals = inb(gpio_ba + offset);
++	curr_vals = inb(sch->iobase + offset);
+ 
+ 	if (val)
+-		outb(curr_vals | (1 << bit), gpio_ba + offset);
++		outb(curr_vals | (1 << bit), sch->iobase + offset);
+ 	else
+-		outb((curr_vals & ~(1 << bit)), gpio_ba + offset);
++		outb((curr_vals & ~(1 << bit)), sch->iobase + offset);
+ 
+-	spin_unlock(&gpio_lock);
++	spin_unlock(&sch->lock);
+ }
+ 
+-static int sch_gpio_resume_direction_out(struct gpio_chip *gc,
+-					unsigned gpio_num, int val)
++static int sch_gpio_direction_out(struct gpio_chip *gc, unsigned gpio_num,
++				  int val)
+ {
++	struct sch_gpio *sch = to_sch_gpio(gc);
+ 	u8 curr_dirs;
+ 	unsigned short offset, bit;
+ 
+-	offset = RGIO + gpio_num / 8;
+-	bit = gpio_num % 8;
++	spin_lock(&sch->lock);
+ 
+-	spin_lock(&gpio_lock);
++	offset = sch_gpio_offset(sch, gpio_num, GIO);
++	bit = sch_gpio_bit(sch, gpio_num);
+ 
+-	curr_dirs = inb(gpio_ba + offset);
++	curr_dirs = inb(sch->iobase + offset);
+ 	if (curr_dirs & (1 << bit))
+-		outb(curr_dirs & ~(1 << bit), gpio_ba + offset);
++		outb(curr_dirs & ~(1 << bit), sch->iobase + offset);
+ 
+-	spin_unlock(&gpio_lock);
++	spin_unlock(&sch->lock);
+ 
+ 	/*
+-	* according to the datasheet, writing to the level register has no
+-	* effect when GPIO is programmed as input.
+-	* Actually the the level register is read-only when configured as input.
+-	* Thus presetting the output level before switching to output is _NOT_ possible.
+-	* Hence we set the level after configuring the GPIO as output.
+-	* But we cannot prevent a short low pulse if direction is set to high
+-	* and an external pull-up is connected.
+-	*/
+-	sch_gpio_resume_set(gc, gpio_num, val);
++	 * according to the datasheet, writing to the level register has no
++	 * effect when GPIO is programmed as input.
++	 * Actually the the level register is read-only when configured as input.
++	 * Thus presetting the output level before switching to output is _NOT_ possible.
++	 * Hence we set the level after configuring the GPIO as output.
++	 * But we cannot prevent a short low pulse if direction is set to high
++	 * and an external pull-up is connected.
++	 */
++	sch_gpio_set(gc, gpio_num, val);
+ 	return 0;
+ }
+ 
+-static struct gpio_chip sch_gpio_resume = {
+-	.label			= "sch_gpio_resume",
++static struct gpio_chip sch_gpio_chip = {
++	.label			= "sch_gpio",
+ 	.owner			= THIS_MODULE,
+-	.direction_input	= sch_gpio_resume_direction_in,
+-	.get			= sch_gpio_resume_get,
+-	.direction_output	= sch_gpio_resume_direction_out,
+-	.set			= sch_gpio_resume_set,
++	.direction_input	= sch_gpio_direction_in,
++	.get			= sch_gpio_get,
++	.direction_output	= sch_gpio_direction_out,
++	.set			= sch_gpio_set,
  };
-@@ -303,13 +304,24 @@ static int acpi_find_gpio(struct acpi_re
  
- 	if (lookup->n++ == lookup->index && !lookup->desc) {
- 		const struct acpi_resource_gpio *agpio = &ares->data.gpio;
-+		int pin_index = lookup->pin_index;
-+
-+		if (pin_index >= agpio->pin_table_length)
-+			return 1;
+ static int sch_gpio_probe(struct platform_device *pdev)
+ {
++	struct sch_gpio *sch;
+ 	struct resource *res;
+-	int err, id;
  
- 		lookup->desc = acpi_get_gpiod(agpio->resource_source.string_ptr,
--					      agpio->pin_table[0]);
-+					      agpio->pin_table[pin_index]);
- 		lookup->info.gpioint =
- 			agpio->connection_type == ACPI_RESOURCE_GPIO_TYPE_INT;
--		lookup->info.active_low =
--			agpio->polarity == ACPI_ACTIVE_LOW;
+-	id = pdev->id;
+-	if (!id)
+-		return -ENODEV;
++	sch = devm_kzalloc(&pdev->dev, sizeof(*sch), GFP_KERNEL);
++	if (!sch)
++		return -ENOMEM;
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
+ 	if (!res)
+ 		return -EBUSY;
+ 
+-	if (!request_region(res->start, resource_size(res), pdev->name))
++	if (!devm_request_region(&pdev->dev, res->start, resource_size(res),
++				 pdev->name))
+ 		return -EBUSY;
+ 
+-	gpio_ba = res->start;
++	spin_lock_init(&sch->lock);
++	sch->iobase = res->start;
++	sch->chip = sch_gpio_chip;
++	sch->chip.label = dev_name(&pdev->dev);
++	sch->chip.dev = &pdev->dev;
+ 
+-	switch (id) {
++	switch (pdev->id) {
+ 	case PCI_DEVICE_ID_INTEL_SCH_LPC:
+-		sch_gpio_core.base = 0;
+-		sch_gpio_core.ngpio = 10;
+-		sch_gpio_resume.base = 10;
+-		sch_gpio_resume.ngpio = 4;
++		sch->core_base = 0;
++		sch->resume_base = 10;
++		sch->chip.ngpio = 14;
 +
-+		/*
-+		 * ActiveLow is only specified for GpioInt resource. If
-+		 * GpioIo is used then the only way to set the flag is
-+		 * to use _DSD "gpios" property.
-+		 */
-+		if (lookup->info.gpioint)
-+			lookup->info.active_low =
-+				agpio->polarity == ACPI_ACTIVE_LOW;
+ 		/*
+ 		 * GPIO[6:0] enabled by default
+ 		 * GPIO7 is configured by the CMC as SLPIOVR
+ 		 * Enable GPIO[9:8] core powered gpios explicitly
+ 		 */
+-		outb(0x3, gpio_ba + CGEN + 1);
++		sch_gpio_enable(sch, 8);
++		sch_gpio_enable(sch, 9);
+ 		/*
+ 		 * SUS_GPIO[2:0] enabled by default
+ 		 * Enable SUS_GPIO3 resume powered gpio explicitly
+ 		 */
+-		outb(0x8, gpio_ba + RGEN);
++		sch_gpio_enable(sch, 13);
+ 		break;
+ 
+ 	case PCI_DEVICE_ID_INTEL_ITC_LPC:
+-		sch_gpio_core.base = 0;
+-		sch_gpio_core.ngpio = 5;
+-		sch_gpio_resume.base = 5;
+-		sch_gpio_resume.ngpio = 9;
++		sch->core_base = 0;
++		sch->resume_base = 5;
++		sch->chip.ngpio = 14;
+ 		break;
+ 
+ 	case PCI_DEVICE_ID_INTEL_CENTERTON_ILB:
+-		sch_gpio_core.base = 0;
+-		sch_gpio_core.ngpio = 21;
+-		sch_gpio_resume.base = 21;
+-		sch_gpio_resume.ngpio = 9;
++		sch->core_base = 0;
++		sch->resume_base = 21;
++		sch->chip.ngpio = 30;
+ 		break;
+ 
+ 	default:
+-		err = -ENODEV;
+-		goto err_sch_gpio_core;
++		return -ENODEV;
  	}
  
- 	return 1;
-@@ -317,40 +329,75 @@ static int acpi_find_gpio(struct acpi_re
- 
- /**
-  * acpi_get_gpiod_by_index() - get a GPIO descriptor from device resources
-- * @dev: pointer to a device to get GPIO from
-+ * @adev: pointer to a ACPI device to get GPIO from
-+ * @propname: Property name of the GPIO (optional)
-  * @index: index of GpioIo/GpioInt resource (starting from %0)
-  * @info: info pointer to fill in (optional)
-  *
-- * Function goes through ACPI resources for @dev and based on @index looks
-+ * Function goes through ACPI resources for @adev and based on @index looks
-  * up a GpioIo/GpioInt resource, translates it to the Linux GPIO descriptor,
-  * and returns it. @index matches GpioIo/GpioInt resources only so if there
-  * are total %3 GPIO resources, the index goes from %0 to %2.
-  *
-+ * If @propname is specified the GPIO is looked using device property. In
-+ * that case @index is used to select the GPIO entry in the property value
-+ * (in case of multiple).
-+ *
-  * If the GPIO cannot be translated or there is an error an ERR_PTR is
-  * returned.
-  *
-  * Note: if the GPIO resource has multiple entries in the pin list, this
-  * function only returns the first.
-  */
--struct gpio_desc *acpi_get_gpiod_by_index(struct device *dev, int index,
-+struct gpio_desc *acpi_get_gpiod_by_index(struct acpi_device *adev,
-+					  const char *propname, int index,
- 					  struct acpi_gpio_info *info)
- {
- 	struct acpi_gpio_lookup lookup;
- 	struct list_head resource_list;
--	struct acpi_device *adev;
--	acpi_handle handle;
-+	bool active_low = false;
- 	int ret;
- 
--	if (!dev)
--		return ERR_PTR(-EINVAL);
+-	sch_gpio_core.dev = &pdev->dev;
+-	sch_gpio_resume.dev = &pdev->dev;
 -
--	handle = ACPI_HANDLE(dev);
--	if (!handle || acpi_bus_get_device(handle, &adev))
-+	if (!adev)
- 		return ERR_PTR(-ENODEV);
+-	err = gpiochip_add(&sch_gpio_core);
+-	if (err < 0)
+-		goto err_sch_gpio_core;
++	platform_set_drvdata(pdev, sch);
  
- 	memset(&lookup, 0, sizeof(lookup));
- 	lookup.index = index;
- 
-+	if (propname) {
-+		struct acpi_reference_args args;
-+
-+		dev_dbg(&adev->dev, "GPIO: looking up %s\n", propname);
-+
-+		memset(&args, 0, sizeof(args));
-+		ret = acpi_dev_get_property_reference(adev, propname, NULL,
-+						      index, &args);
-+		if (ret)
-+			return ERR_PTR(ret);
-+
-+		/*
-+		 * The property was found and resolved so need to
-+		 * lookup the GPIO based on returned args instead.
-+		 */
-+		adev = args.adev;
-+		if (args.nargs >= 2) {
-+			lookup.index = args.args[0];
-+			lookup.pin_index = args.args[1];
-+			/*
-+			 * 3rd argument, if present is used to
-+			 * specify active_low.
-+			 */
-+			if (args.nargs >= 3)
-+				active_low = !!args.args[2];
-+		}
-+
-+		dev_dbg(&adev->dev, "GPIO: _DSD returned %s %zd %llu %llu %llu\n",
-+			dev_name(&adev->dev), args.nargs,
-+			args.args[0], args.args[1], args.args[2]);
-+	} else {
-+		dev_dbg(&adev->dev, "GPIO: looking up %d in _CRS\n", index);
-+	}
-+
- 	INIT_LIST_HEAD(&resource_list);
- 	ret = acpi_dev_get_resources(adev, &resource_list, acpi_find_gpio,
- 				     &lookup);
-@@ -359,8 +406,11 @@ struct gpio_desc *acpi_get_gpiod_by_inde
- 
- 	acpi_dev_free_resource_list(&resource_list);
- 
--	if (lookup.desc && info)
-+	if (lookup.desc && info) {
- 		*info = lookup.info;
-+		if (active_low)
-+			info->active_low = active_low;
-+	}
- 
- 	return lookup.desc ? lookup.desc : ERR_PTR(-ENOENT);
+-	err = gpiochip_add(&sch_gpio_resume);
+-	if (err < 0)
+-		goto err_sch_gpio_resume;
+-
+-	return 0;
+-
+-err_sch_gpio_resume:
+-	gpiochip_remove(&sch_gpio_core);
+-
+-err_sch_gpio_core:
+-	release_region(res->start, resource_size(res));
+-	gpio_ba = 0;
+-
+-	return err;
++	return gpiochip_add(&sch->chip);
  }
-Index: linux-pm/drivers/gpio/gpiolib.c
-===================================================================
---- linux-pm.orig/drivers/gpio/gpiolib.c
-+++ linux-pm/drivers/gpio/gpiolib.c
-@@ -1505,14 +1505,36 @@ static struct gpio_desc *acpi_find_gpio(
- 					unsigned int idx,
- 					enum gpio_lookup_flags *flags)
+ 
+ static int sch_gpio_remove(struct platform_device *pdev)
  {
-+	static const char * const suffixes[] = { "gpios", "gpio" };
-+	struct acpi_device *adev = ACPI_COMPANION(dev);
- 	struct acpi_gpio_info info;
- 	struct gpio_desc *desc;
-+	char propname[32];
-+	int i;
+-	struct resource *res;
+-	if (gpio_ba) {
+-
+-		gpiochip_remove(&sch_gpio_core);
+-		gpiochip_remove(&sch_gpio_resume);
+-
+-		res = platform_get_resource(pdev, IORESOURCE_IO, 0);
+-
+-		release_region(res->start, resource_size(res));
+-		gpio_ba = 0;
+-	}
++	struct sch_gpio *sch = platform_get_drvdata(pdev);
  
--	desc = acpi_get_gpiod_by_index(dev, idx, &info);
--	if (IS_ERR(desc))
--		return desc;
-+	/* Try first from _DSD */
-+	for (i = 0; i < ARRAY_SIZE(suffixes); i++) {
-+		if (con_id && strcmp(con_id, "gpios")) {
-+			snprintf(propname, sizeof(propname), "%s-%s",
-+				 con_id, suffixes[i]);
-+		} else {
-+			snprintf(propname, sizeof(propname), "%s",
-+				 suffixes[i]);
-+		}
- 
--	if (info.gpioint && info.active_low)
-+		desc = acpi_get_gpiod_by_index(adev, propname, 0, &info);
-+		if (!IS_ERR(desc) || (PTR_ERR(desc) == -EPROBE_DEFER))
-+			break;
-+	}
-+
-+	/* Then from plain _CRS GPIOs */
-+	if (IS_ERR(desc)) {
-+		desc = acpi_get_gpiod_by_index(adev, NULL, idx, &info);
-+		if (IS_ERR(desc))
-+			return desc;
-+	}
-+
-+	if (info.active_low)
- 		*flags |= GPIO_ACTIVE_LOW;
- 
- 	return desc;
-Index: linux-pm/drivers/gpio/gpiolib.h
-===================================================================
---- linux-pm.orig/drivers/gpio/gpiolib.h
-+++ linux-pm/drivers/gpio/gpiolib.h
-@@ -34,7 +34,8 @@ void acpi_gpiochip_remove(struct gpio_ch
- void acpi_gpiochip_request_interrupts(struct gpio_chip *chip);
- void acpi_gpiochip_free_interrupts(struct gpio_chip *chip);
- 
--struct gpio_desc *acpi_get_gpiod_by_index(struct device *dev, int index,
-+struct gpio_desc *acpi_get_gpiod_by_index(struct acpi_device *adev,
-+					  const char *propname, int index,
- 					  struct acpi_gpio_info *info);
- #else
- static inline void acpi_gpiochip_add(struct gpio_chip *chip) { }
-@@ -47,8 +48,8 @@ static inline void
- acpi_gpiochip_free_interrupts(struct gpio_chip *chip) { }
- 
- static inline struct gpio_desc *
--acpi_get_gpiod_by_index(struct device *dev, int index,
--			struct acpi_gpio_info *info)
-+acpi_get_gpiod_by_index(struct acpi_device *adev, const char *propname,
-+			int index, struct acpi_gpio_info *info)
- {
- 	return ERR_PTR(-ENOSYS);
++	gpiochip_remove(&sch->chip);
+ 	return 0;
  }
-Index: linux-pm/Documentation/acpi/gpio-properties.txt
-===================================================================
---- /dev/null
-+++ linux-pm/Documentation/acpi/gpio-properties.txt
-@@ -0,0 +1,52 @@
-+_DSD Device Properties Related to GPIO
-+--------------------------------------
-+
-+With the release of ACPI 5.1 and the _DSD configuration objecte names
-+can finally be given to GPIOs (and other things as well) returned by
-+_CRS.  Previously, we were only able to use an integer index to find
-+the corresponding GPIO, which is pretty error prone (it depends on
-+the _CRS output ordering, for example).
-+
-+With _DSD we can now query GPIOs using a name instead of an integer
-+index, like the ASL example below shows:
-+
-+  // Bluetooth device with reset and shutdown GPIOs
-+  Device (BTH)
-+  {
-+      Name (_HID, ...)
-+
-+      Name (_CRS, ResourceTemplate ()
-+      {
-+          GpioIo (Exclusive, PullUp, 0, 0, IoRestrictionInputOnly,
-+                  "\\_SB.GPO0", 0, ResourceConsumer) {15}
-+          GpioIo (Exclusive, PullUp, 0, 0, IoRestrictionInputOnly,
-+                  "\\_SB.GPO0", 0, ResourceConsumer) {27, 31}
-+      })
-+
-+      Name (_DSD, Package ()
-+      {
-+          ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-+          Package ()
-+	  {
-+              Package () {"reset-gpio", Package() {^BTH, 1, 1, 0 }},
-+              Package () {"shutdown-gpio", Package() {^BTH, 0, 0, 0 }},
-+          }
-+      })
-+  }
-+
-+The format of the supported GPIO property is:
-+
-+  Package () { "name", Package () { ref, index, pin, active_low }}
-+
-+  ref - The device that has _CRS containing GpioIo()/GpioInt() resources,
-+        typically this is the device itself (BTH in our case).
-+  index - Index of the GpioIo()/GpioInt() resource in _CRS starting from zero.
-+  pin - Pin in the GpioIo()/GpioInt() resource. Typically this is zero.
-+  active_low - If 1 the GPIO is marked as active_low.
-+
-+Since ACPI GpioIo() resource does not have a field saying whether it is
-+active low or high, the "active_low" argument can be used here.  Setting
-+it to 1 marks the GPIO as active low.
-+
-+In our Bluetooth example the "reset-gpio" refers to the second GpioIo()
-+resource, second pin in that resource with the GPIO number of 31.
+ 
+-- 
+1.9.3
+
 
