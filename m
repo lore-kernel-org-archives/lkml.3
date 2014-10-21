@@ -1,55 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754440AbaJUHEc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 03:04:32 -0400
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:48691 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162AbaJUHEb (ORCPT
+	id S1754486AbaJUHFr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 03:05:47 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:56017 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688AbaJUHFp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 03:04:31 -0400
-Date: Tue, 21 Oct 2014 09:04:24 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Thomas Graf <tgraf@suug.ch>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, paulmck@linux.vnet.ibm.com,
-        Nikolay Aleksandrov <nikolay@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ursula Braun <braunu@de.ibm.com>
-Subject: Re: [PATCH] netlink: Re-add locking to netlink_lookup() and seq
- walker
-Message-ID: <20141021070424.GA4161@osiris>
-References: <20141011083627.GB5074@osiris>
- <1413055964.9362.50.camel@edumazet-glaptop2.roam.corp.google.com>
- <20141011222514.GA14186@casper.infradead.org>
- <20141020082107.GB4268@osiris>
- <20141020195355.GA2299@casper.infradead.org>
+	Tue, 21 Oct 2014 03:05:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141020195355.GA2299@casper.infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102107-0025-0000-0000-000001FB648A
+Date: Tue, 21 Oct 2014 00:05:44 -0700
+Message-ID: <CAAVjN7cpGzokOntyyGVBksdvAw7rGt8zvggpCeMqr+g1yHEyzg@mail.gmail.com>
+Subject: [PATCH] i2c: mpc: Report correct I2C error codes on Freescale MPC i2c
+ bus driver
+From: Danielle Costantino <danielle.costantino@gmail.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-i2c <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 20, 2014 at 08:53:55PM +0100, Thomas Graf wrote:
-> Heiko,
-> 
-> Can you test the following patch:
-> 
-> The synchronize_rcu() in netlink_release() introduces unacceptable
-> latency. Reintroduce minimal lookup so we can drop the
-> synchronize_rcu() until socket destruction has been RCUfied.
-> 
-> Signed-off-by: Thomas Graf <tgraf@suug.ch>
-> ---
->  net/netlink/af_netlink.c | 37 +++++++++++++++++++++++++------------
->  1 file changed, 25 insertions(+), 12 deletions(-)
+From: Danielle Costantino <danielle.costantino@gmail.com>
 
-Thanks a lot! Your patch fixes the issue for me.
+This patch enforces correct I2C error returned codes from Freescale's
+MPC i2c bus driver, allowing for proper user-space/kernel error
+handling.
 
-Reported-and-tested-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Danielle Costantino <danielle.costantino@gmail.com>
+---
+diff --git a/drivers/i2c/busses/i2c-mpc.c b/drivers/i2c/busses/i2c-mpc.c
+index 0edf630..66bef28 100644
+--- a/drivers/i2c/busses/i2c-mpc.c
++++ b/drivers/i2c/busses/i2c-mpc.c
+@@ -124,7 +124,7 @@
+ static int i2c_wait(struct mpc_i2c *i2c, unsigned timeout, int writing)
+ {
+  unsigned long orig_jiffies = jiffies;
+- u32 x;
++ u32 cmd_err;
+  int result = 0;
 
+  if (!i2c->irq) {
+@@ -137,7 +137,7 @@
+  break;
+  }
+  }
+- x = readb(i2c->base + MPC_I2C_SR);
++ cmd_err = readb(i2c->base + MPC_I2C_SR);
+  writeb(0, i2c->base + MPC_I2C_SR);
+  } else {
+  /* Interrupt mode */
+@@ -150,30 +150,30 @@
+  result = -ETIMEDOUT;
+  }
+
+- x = i2c->interrupt;
++ cmd_err = i2c->interrupt;
+  i2c->interrupt = 0;
+  }
+
+- if (result < 0)
+- return result;
++    if (result < 0)
++        return result;
+
+- if (!(x & CSR_MCF)) {
+- dev_dbg(i2c->dev, "unfinished\n");
+- return -EIO;
+- }
++    if (!(cmd_err & CSR_MCF)) {
++        dev_dbg(i2c->dev, "unfinished\n");
++        return -EIO;
++    }
+
+- if (x & CSR_MAL) {
+- dev_dbg(i2c->dev, "MAL\n");
+- return -EIO;
+- }
++    if (cmd_err & CSR_MAL) {
++        dev_dbg(i2c->dev, "MAL\n");
++        return -EAGAIN;
++    }
+
+- if (writing && (x & CSR_RXAK)) {
+- dev_dbg(i2c->dev, "No RXAK\n");
+- /* generate stop */
+- writeccr(i2c, CCR_MEN);
+- return -EIO;
+- }
+- return 0;
++    if (writing && (cmd_err & CSR_RXAK)) {
++        dev_dbg(i2c->dev, "No RXAK\n");
++        /* generate stop */
++        writeccr(i2c, CCR_MEN);
++        return -ENXIO;
++    }
++    return 0;
+ }
+
+ #if defined(CONFIG_PPC_MPC52xx) || defined(CONFIG_PPC_MPC512x)
+
+-- 
+- Danielle Costantino
