@@ -1,313 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933004AbaJUOVv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 10:21:51 -0400
-Received: from relay.parallels.com ([195.214.232.42]:49678 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932702AbaJUOVt (ORCPT
+	id S932991AbaJUOXF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 10:23:05 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:51404 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932834AbaJUOXC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 10:21:49 -0400
-Message-ID: <1413901305.19914.113.camel@tkhai>
-Subject: Re: [PATCH v2 1/3] sched/dl: Implement cancel_dl_timer() to use in
- switched_from_dl()
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: Juri Lelli <juri.lelli@arm.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Kirill Tkhai <tkhai@yandex.ru>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Juri Lelli <juri.lelli@gmail.com>
-Date: Tue, 21 Oct 2014 18:21:45 +0400
-In-Reply-To: <54464657.1060000@arm.com>
-References: <20140930210412.5258.35299.stgit@localhost>
-			 <20141002093408.GB2849@worktop.programming.kicks-ass.net>
-		 <1412244310.20287.34.camel@tkhai> <544635CA.7040200@arm.com>
-	 <1413888481.19914.45.camel@tkhai> <54464657.1060000@arm.com>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
+	Tue, 21 Oct 2014 10:23:02 -0400
+Message-ID: <54466C3B.4010800@atmel.com>
+Date: Tue, 21 Oct 2014 16:22:51 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.26.172]
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] pinctrl: at91: use own header
+References: <1413539380-7046-1-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1413539380-7046-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-В Вт, 21/10/2014 в 12:41 +0100, Juri Lelli пишет:
-> On 21/10/14 11:48, Kirill Tkhai wrote:
-> > В Вт, 21/10/2014 в 11:30 +0100, Juri Lelli пишет:
-> >> Hi Kirill,
-> >>
-> >> sorry for the late reply, but I was busy doing other stuff and then
-> >> travelling.
-> >>
-> >> On 02/10/14 11:05, Kirill Tkhai wrote:
-> >>> В Чт, 02/10/2014 в 11:34 +0200, Peter Zijlstra пишет:
-> >>>> On Wed, Oct 01, 2014 at 01:04:22AM +0400, Kirill Tkhai wrote:
-> >>>>> From: Kirill Tkhai <ktkhai@parallels.com>
-> >>>>>
-> >>>>> hrtimer_try_to_cancel() may bring a suprise, its call may fail.
-> >>>>
-> >>>> Well, not really a surprise that, its a _try_ operation after all.
-> >>>>
-> >>>>> raw_spin_lock(&rq->lock)
-> >>>>> ...                            dl_task_timer                 raw_spin_lock(&rq->lock)
-> >>>>> ...                               raw_spin_lock(&rq->lock)   ...
-> >>>>>    switched_from_dl()             ...                        ...
-> >>>>>       hrtimer_try_to_cancel()     ...                        ...
-> >>>>>    switched_to_fair()             ...                        ...
-> >>>>> ...                               ...                        ...
-> >>>>> ...                               ...                        ...
-> >>>>> raw_spin_unlock(&rq->lock)        ...                        (asquired)
-> >>>>> ...                               ...                        ...
-> >>>>> ...                               ...                        ...
-> >>>>> do_exit()                         ...                        ...
-> >>>>>    schedule()                     ...                        ...
-> >>>>>       raw_spin_lock(&rq->lock)    ...                        raw_spin_unlock(&rq->lock)
-> >>>>>       ...                         ...                        ...
-> >>>>>       raw_spin_unlock(&rq->lock)  ...                        raw_spin_lock(&rq->lock)
-> >>>>>       ...                         ...                        (asquired)
-> >>>>>       put_task_struct()           ...                        ...
-> >>>>>           free_task_struct()      ...                        ...
-> >>>>>       ...                         ...                        raw_spin_unlock(&rq->lock)
-> >>>>> ...                               (asquired)                 ...
-> >>>>> ...                               ...                        ...
-> >>>>> ...                               Surprise!!!                ...
-> >>>>>
-> >>>>> So, let's implement 100% guaranteed way to cancel the timer and let's
-> >>>>> be sure we are safe even in very unlikely situations.
-> >>>>>
-> >>>>> We do not create any problem with rq unlocking, because it already
-> >>>>> may happed below in pull_dl_task(). No problem with deadline tasks
-> >>>>> balancing too.
-> >>>>
-> >>>> That doesn't sound right. pull_dl_task() is an entirely different
-> >>>> callchain than switched_from(). Now it might still be fine, but you
-> >>>> cannot compare it with pull_dl_task.
-> >>>
-> >>> I mean that caller of switched_from_dl() already knows about this situation,
-> >>> and we do not limit the area of its use.
-> >>>
-> >>
-> >> Not sure what you mean with "the caller already knows...". Also, can you
-> >> detail more about the different callchains?
-> > 
-> > We have only caller of switched_from_dl(). It's check_class_changed().
-> > This function doesn't suppose that lock is always locked during its call.
-> > 
-> > What other details you want?
-> > 
+On 17/10/2014 11:49, Alexandre Belloni :
+> Copy the mach/at91_pio.h header locally and use it for pinctrl-at91.c. This
+> allows to remove the dependency on mach/at91_pio.h to be able to move at91 to
+> multiplatform.
 > 
-> Ok, now is more clear, thanks. I was just wondering about what Peter
-> asked. If you can detail more about why we are still fine with it,
-> instead that just "it already was possible in pull_dl_task() below",
-> that would be nice to have.
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+
+Yes:
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+
+Thanks.
+
+> ---
+> Note that mach/at91_pio.h should go away soon hopefully as the remaining board
+> files in mach-at91 are schedulded to be removed.
 > 
-> Also, check_class_changed() is called from several places
-> (rt_mutex_setprio() for example), are we fine with all this callplaces
-> as well?
-
-Yeah. New code in the patch is working when hrtimer_try_to_cancel() fails.
-This means the callback is running. In this case hrtimer_cancel() is just
-waiting till the callback is finished.
-
-Since we are in switched_from_dl(), new class is not dl_sched_class and
-new prio is not less MAX_DL_PRIO. So, the callback returns early just
-after !dl_task() check. After that hrtimer_cancel() returns back too.
-
-The above is:
-
-raw_spin_lock(rq->lock);                  ...
-...                                       dl_task_timer()
-...                                          raw_spin_lock(rq->lock);
-   switched_from_dl()                        ...
-       hrtimer_try_to_cancel()               ...
-          raw_spin_unlock(rq->lock);         ...  
-          hrtimer_cancel()                   ...
-          ...                                raw_spin_unlock(rq->lock);
-          ...                                return HRTIMER_NORESTART;
-          ...                             ...
-          raw_spin_lock(rq->lock);        ...   
-
-
-But the below is also possible:
-                                   dl_task_timer()
-                                      raw_spin_lock(rq->lock);
-                                      ...
-                                      raw_spin_unlock(rq->lock);
-raw_spin_lock(rq->lock);              ...
-   switched_from_dl()                 ...
-       hrtimer_try_to_cancel()        ...
-       ...                            return HRTIMER_NORESTART;
-       raw_spin_unlock(rq->lock);  ...
-       hrtimer_cancel();           ...
-       raw_spin_lock(rq->lock);    ...
-
-In this case hrtimer_cancel() returns immediately. Very unlikely case,
-just to mention.
-
-
-Nobody can manipulate the task, because check_class_changed() is
-always called with pi_lock locked. Nobody can force the task to
-participate in (concurrent) priority inheritance schemes (the same reason).
-
-All concurrent task operations require pi_lock, which is held by us.
-No deadlocks with dl_task_timer() are possible, because it returns
-right after !dl_task() check (it does nothing).
-
-> >>
-> >> Do you have any test for this situation? Do you experienced any crash?
-> >> As you know, the replenishment timer is of key importance for us, and
-> >> I'd like to be 100% sure we don't introduce any problems with this
-> >> change :).
-> > 
-> > No, I haven't written any tests to reproduce namely this situation.
-> > I found it by code analyzing. The same way we fixed the problem
-> > with rq change in dl_task_timer():
-> > 
-> >     http://www.spinics.net/lists/stable/msg49080.html
-> >
+>  MAINTAINERS                    |  2 +-
+>  drivers/pinctrl/pinctrl-at91.c |  4 +--
+>  drivers/pinctrl/pinctrl-at91.h | 66 ++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 68 insertions(+), 4 deletions(-)
+>  create mode 100644 drivers/pinctrl/pinctrl-at91.h
 > 
-> Yeah, but I did write a test for that race:
-> 
->  "Juri Lelli reports he got this race when dl_bandwidth_enabled()
->   was not set."
-> 
-> And after that I felt more confident about the change :).
-
-Ok, good. I forgot.
-
-> > Are you agree the race is here? It's my fix, and if brings a problem
-> > please clarify it.
-> > 
-> 
-> Yeah, it seems that the race may happen. I'm just saying that it would
-> be nice to see it happening before we fix the thing. I wish I have some
-> time to try to setup a test. Even if I can't spot any problems with your
-> patch, apart from small comments below, not being completely confident
-> that this doesn't introduce regression elsewhere brought me to ask from
-> more details.
-
-Sadly, I have no time to write a test for this bug. I can change the comment
-and add the description I posted above. Or I can add more description
-if you say what should be added else.
-
-> 
-> > I'm waiting for your reply.
-> > 
-> > Thanks,
-> > Kirill
-> > 
-> >>> Does this sound better?
-> >>>
-> >>> [PATCH] sched/dl: Implement cancel_dl_timer() to use in switched_from_dl()
-> >>>     
-> >>> Currently used hrtimer_try_to_cancel() is racy:
-> >>>
-> >>> raw_spin_lock(&rq->lock)
-> >>> ...                            dl_task_timer                 raw_spin_lock(&rq->lock)
-> >>> ...                               raw_spin_lock(&rq->lock)   ...
-> >>>    switched_from_dl()             ...                        ...
-> >>>       hrtimer_try_to_cancel()     ...                        ...
-> >>>    switched_to_fair()             ...                        ...
-> >>> ...                               ...                        ...
-> >>> ...                               ...                        ...
-> >>> raw_spin_unlock(&rq->lock)        ...                        (asquired)
-> >>> ...                               ...                        ...
-> >>> ...                               ...                        ...
-> >>> do_exit()                         ...                        ...
-> >>>    schedule()                     ...                        ...
-> >>>       raw_spin_lock(&rq->lock)    ...                        raw_spin_unlock(&rq->lock)
-> >>>       ...                         ...                        ...
-> >>>       raw_spin_unlock(&rq->lock)  ...                        raw_spin_lock(&rq->lock)
-> >>>       ...                         ...                        (asquired)
-> >>>       put_task_struct()           ...                        ...
-> >>>           free_task_struct()      ...                        ...
-> >>>       ...                         ...                        raw_spin_unlock(&rq->lock)
-> >>> ...                               (asquired)                 ...
-> >>> ...                               ...                        ...
-> >>> ...                               (use after free)           ...
-> >>>
-> >>>     
-> >>> So, let's implement 100% guaranteed way to cancel the timer and let's
-> >>> be sure we are safe even in very unlikely situations.
-> >>>
-> >>> rq unlocking does not limit the area of switched_from_dl() use, because
-> >>> it already was possible in pull_dl_task() below.
-> >>>
-> >>> Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-> >>>
-> >>> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-> >>> index abfaf3d..63f8b4a 100644
-> >>> --- a/kernel/sched/deadline.c
-> >>> +++ b/kernel/sched/deadline.c
-> >>> @@ -555,11 +555,6 @@ void init_dl_task_timer(struct sched_dl_entity *dl_se)
-> >>>  {
-> >>>  	struct hrtimer *timer = &dl_se->dl_timer;
-> >>>  
-> >>> -	if (hrtimer_active(timer)) {
-> >>> -		hrtimer_try_to_cancel(timer);
-> >>> -		return;
-> >>> -	}
-> >>> -
-> >>>  	hrtimer_init(timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-> >>>  	timer->function = dl_task_timer;
-> >>>  }
-> >>> @@ -1567,10 +1562,34 @@ void init_sched_dl_class(void)
-> >>>  
-> >>>  #endif /* CONFIG_SMP */
-> >>>  
-> >>> +/*
-> >>> + *  Surely cancel task's dl_timer. May drop rq->lock.
-> >>> + */
-> 
-> Maybe we can add comments explaining why we are fine releasing the lock
-> here.
-> 
-> >>> +static void cancel_dl_timer(struct rq *rq, struct task_struct *p)
-> >>> +{
-> >>> +	struct hrtimer *dl_timer = &p->dl.dl_timer;
-> >>> +
-> >>> +	/* Nobody will change task's class if pi_lock is held */
-> >>> +	lockdep_assert_held(&p->pi_lock);
-> >>> +
-> >>> +	if (hrtimer_active(dl_timer)) {
-> >>> +		int ret = hrtimer_try_to_cancel(dl_timer);
-> >>> +
-> >>> +		if (unlikely(ret == -1)) {
-> >>> +			/*
-> >>> +			 * Note, p may migrate OR new deadline tasks
-> >>> +			 * may appear in rq when we are unlocking it.
-> >>> +			 */
-> 
-> Yeah, some comments also here on why this is all good?
-> 
-> Thanks a lot Kirill!
-> 
-> Best,
-> 
-> - Juri
-> 
-> >>> +			raw_spin_unlock(&rq->lock);
-> >>> +			hrtimer_cancel(dl_timer);
-> >>> +			raw_spin_lock(&rq->lock);
-> >>> +		}
-> >>> +	}
-> >>> +}
-> >>> +
-> >>>  static void switched_from_dl(struct rq *rq, struct task_struct *p)
-> >>>  {
-> >>> -	if (hrtimer_active(&p->dl.dl_timer) && !dl_policy(p->policy))
-> >>> -		hrtimer_try_to_cancel(&p->dl.dl_timer);
-> >>> +	cancel_dl_timer(rq, p);
-> >>>  
-> >>>  	__dl_clear_params(p);
-> >>>  
-> >>>
-> >>>
-> >>>
-> >>
-> > 
-> > 
-> > 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index f10ed3914ea8..37c98aa5fb77 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -7049,7 +7049,7 @@ PIN CONTROLLER - ATMEL AT91
+>  M:	Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+>  L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+>  S:	Maintained
+> -F:	drivers/pinctrl/pinctrl-at91.c
+> +F:	drivers/pinctrl/pinctrl-at91.*
+>  
+>  PIN CONTROLLER - RENESAS
+>  M:	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
+> index 60464a2648aa..0058817b12fd 100644
+> --- a/drivers/pinctrl/pinctrl-at91.c
+> +++ b/drivers/pinctrl/pinctrl-at91.c
+> @@ -25,9 +25,7 @@
+>  /* Since we request GPIOs from ourself */
+>  #include <linux/pinctrl/consumer.h>
+>  
+> -#include <mach/hardware.h>
+> -#include <mach/at91_pio.h>
+> -
+> +#include "pinctrl-at91.h"
+>  #include "core.h"
+>  
+>  #define MAX_GPIO_BANKS		5
+> diff --git a/drivers/pinctrl/pinctrl-at91.h b/drivers/pinctrl/pinctrl-at91.h
+> new file mode 100644
+> index 000000000000..c837c66ea360
+> --- /dev/null
+> +++ b/drivers/pinctrl/pinctrl-at91.h
+> @@ -0,0 +1,66 @@
+> +/*
+> + * Copyright (C) 2005 Ivan Kokshaysky
+> + * Copyright (C) SAN People
+> + *
+> + * Parallel I/O Controller (PIO) - System peripherals registers.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + */
+> +
+> +#ifndef __PINCTRL_AT91_H
+> +#define __PINCTRL_AT91_H
+> +
+> +#define PIO_PER		0x00	/* Enable Register */
+> +#define PIO_PDR		0x04	/* Disable Register */
+> +#define PIO_PSR		0x08	/* Status Register */
+> +#define PIO_OER		0x10	/* Output Enable Register */
+> +#define PIO_ODR		0x14	/* Output Disable Register */
+> +#define PIO_OSR		0x18	/* Output Status Register */
+> +#define PIO_IFER	0x20	/* Glitch Input Filter Enable */
+> +#define PIO_IFDR	0x24	/* Glitch Input Filter Disable */
+> +#define PIO_IFSR	0x28	/* Glitch Input Filter Status */
+> +#define PIO_SODR	0x30	/* Set Output Data Register */
+> +#define PIO_CODR	0x34	/* Clear Output Data Register */
+> +#define PIO_ODSR	0x38	/* Output Data Status Register */
+> +#define PIO_PDSR	0x3c	/* Pin Data Status Register */
+> +#define PIO_IER		0x40	/* Interrupt Enable Register */
+> +#define PIO_IDR		0x44	/* Interrupt Disable Register */
+> +#define PIO_IMR		0x48	/* Interrupt Mask Register */
+> +#define PIO_ISR		0x4c	/* Interrupt Status Register */
+> +#define PIO_MDER	0x50	/* Multi-driver Enable Register */
+> +#define PIO_MDDR	0x54	/* Multi-driver Disable Register */
+> +#define PIO_MDSR	0x58	/* Multi-driver Status Register */
+> +#define PIO_PUDR	0x60	/* Pull-up Disable Register */
+> +#define PIO_PUER	0x64	/* Pull-up Enable Register */
+> +#define PIO_PUSR	0x68	/* Pull-up Status Register */
+> +#define PIO_ASR		0x70	/* Peripheral A Select Register */
+> +#define PIO_ABCDSR1	0x70	/* Peripheral ABCD Select Register 1 [some sam9 only] */
+> +#define PIO_BSR		0x74	/* Peripheral B Select Register */
+> +#define PIO_ABCDSR2	0x74	/* Peripheral ABCD Select Register 2 [some sam9 only] */
+> +#define PIO_ABSR	0x78	/* AB Status Register */
+> +#define PIO_IFSCDR	0x80	/* Input Filter Slow Clock Disable Register */
+> +#define PIO_IFSCER	0x84	/* Input Filter Slow Clock Enable Register */
+> +#define PIO_IFSCSR	0x88	/* Input Filter Slow Clock Status Register */
+> +#define PIO_SCDR	0x8c	/* Slow Clock Divider Debouncing Register */
+> +#define		PIO_SCDR_DIV	(0x3fff <<  0)		/* Slow Clock Divider Mask */
+> +#define PIO_PPDDR	0x90	/* Pad Pull-down Disable Register */
+> +#define PIO_PPDER	0x94	/* Pad Pull-down Enable Register */
+> +#define PIO_PPDSR	0x98	/* Pad Pull-down Status Register */
+> +#define PIO_OWER	0xa0	/* Output Write Enable Register */
+> +#define PIO_OWDR	0xa4	/* Output Write Disable Register */
+> +#define PIO_OWSR	0xa8	/* Output Write Status Register */
+> +#define PIO_AIMER	0xb0	/* Additional Interrupt Modes Enable Register */
+> +#define PIO_AIMDR	0xb4	/* Additional Interrupt Modes Disable Register */
+> +#define PIO_AIMMR	0xb8	/* Additional Interrupt Modes Mask Register */
+> +#define PIO_ESR		0xc0	/* Edge Select Register */
+> +#define PIO_LSR		0xc4	/* Level Select Register */
+> +#define PIO_ELSR	0xc8	/* Edge/Level Status Register */
+> +#define PIO_FELLSR	0xd0	/* Falling Edge/Low Level Select Register */
+> +#define PIO_REHLSR	0xd4	/* Rising Edge/ High Level Select Register */
+> +#define PIO_FRLHSR	0xd8	/* Fall/Rise - Low/High Status Register */
+> +#define PIO_SCHMITT	0x100	/* Schmitt Trigger Register */
+> +
+> +#endif
 > 
 
 
+-- 
+Nicolas Ferre
