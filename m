@@ -1,92 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932592AbaJUNJD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 09:09:03 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:57948 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932477AbaJUNIt (ORCPT
+	id S932634AbaJUNK3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 09:10:29 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:52530 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932402AbaJUNK1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 09:08:49 -0400
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        linux-mtd@lists.infradead.org
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-sunxi@googlegroups.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Yassin Jaffer <yassinjaffer@gmail.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>
-Subject: [PATCH v7 2/2] mtd: nand: add sunxi NFC dt bindings doc
-Date: Tue, 21 Oct 2014 15:08:42 +0200
-Message-Id: <1413896922-11680-3-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1413896922-11680-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1413896922-11680-1-git-send-email-boris.brezillon@free-electrons.com>
+	Tue, 21 Oct 2014 09:10:27 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+Cc: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cpufreq: intel_pstate: Fix setting max_perf_pct in performance policy
+Date: Tue, 21 Oct 2014 15:30:52 +0200
+Message-ID: <25726997.FVACNx9Uy9@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <543FDEC8.1080102@gmail.com>
+References: <1413415011-31290-1-git-send-email-pali.rohar@gmail.com> <543FDEC8.1080102@gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the sunxi NAND Flash Controller dt bindings documentation.
+On Thursday, October 16, 2014 08:05:44 AM Dirk Brandewie wrote:
+> On 10/15/2014 04:16 PM, Pali Rohár wrote:
+> > Code which changes policy to powersave changes also max_policy_pct based on
+> > max_freq. Code which change max_perf_pct has upper limit base on value
+> > max_policy_pct. When policy is changing from powersave back to performance
+> > then max_policy_pct is not changed. Which means that changing max_perf_pct is
+> > not possible to high values if max_freq was too low in powersave policy.
+> >
+> > Test case:
+> >
+> > $ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
+> > 800000
+> > $ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
+> > 3300000
+> > $ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+> > performance
+> > $ cat /sys/devices/system/cpu/intel_pstate/max_perf_pct
+> > 100
+> >
+> > $ echo powersave > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+> > $ echo 800000 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
+> > $ echo 20 > /sys/devices/system/cpu/intel_pstate/max_perf_pct
+> >
+> > $ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+> > powersave
+> > $ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
+> > 800000
+> > $ cat /sys/devices/system/cpu/intel_pstate/max_perf_pct
+> > 20
+> >
+> > $ echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+> > $ echo 3300000 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
+> > $ echo 100 > /sys/devices/system/cpu/intel_pstate/max_perf_pct
+> >
+> > $ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+> > performance
+> > $ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
+> > 3300000
+> > $ cat /sys/devices/system/cpu/intel_pstate/max_perf_pct
+> > 24
+> >
+> > And now intel_pstate driver allows to set maximal value for max_perf_pct based
+> > on max_policy_pct which is 24 for previous powersave max_freq 800000.
+> >
+> > This patch will set default value for max_policy_pct when setting policy to
+> > performance so it will allow to set also max value for max_perf_pct.
+> >
+> > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+> 
+> Acked-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
 
-Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
----
- .../devicetree/bindings/mtd/sunxi-nand.txt         | 45 ++++++++++++++++++++++
- 1 file changed, 45 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mtd/sunxi-nand.txt
+Applied, thanks!
 
-diff --git a/Documentation/devicetree/bindings/mtd/sunxi-nand.txt b/Documentation/devicetree/bindings/mtd/sunxi-nand.txt
-new file mode 100644
-index 0000000..0273adb
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mtd/sunxi-nand.txt
-@@ -0,0 +1,45 @@
-+Allwinner NAND Flash Controller (NFC)
-+
-+Required properties:
-+- compatible : "allwinner,sun4i-a10-nand".
-+- reg : shall contain registers location and length for data and reg.
-+- interrupts : shall define the nand controller interrupt.
-+- #address-cells: shall be set to 1. Encode the nand CS.
-+- #size-cells : shall be set to 0.
-+- clocks : shall reference nand controller clocks.
-+- clock-names : nand controller internal clock names. Shall contain :
-+    * "ahb" : AHB gating clock
-+    * "mod" : nand controller clock
-+
-+Optional children nodes:
-+Children nodes represent the available nand chips.
-+
-+Optional properties:
-+- allwinner,rb : shall contain the native Ready/Busy ids.
-+ or
-+- rb-gpios : shall contain the gpios used as R/B pins.
-+- nand-ecc-mode : one of the supported ECC modes ("hw", "hw_syndrome", "soft",
-+  "soft_bch" or "none")
-+
-+see Documentation/devicetree/mtd/nand.txt for generic bindings.
-+
-+
-+Examples:
-+nfc: nand@01c03000 {
-+	compatible = "allwinner,sun4i-a10-nand";
-+	reg = <0x01c03000 0x1000>;
-+	interrupts = <0 37 1>;
-+	clocks = <&ahb_gates 13>, <&nand_clk>;
-+	clock-names = "ahb", "mod";
-+	#address-cells = <1>;
-+	#size-cells = <0>;
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&nand_pins_a &nand_cs0_pins_a &nand_rb0_pins_a>;
-+	status = "okay";
-+
-+	nand@0 {
-+		reg = <0>;
-+		allwinner,rb = <0>;
-+		nand-ecc-mode = "soft_bch";
-+	};
-+};
 -- 
-1.9.1
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
