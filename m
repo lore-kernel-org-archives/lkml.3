@@ -1,127 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932863AbaJUTDF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 15:03:05 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:60213 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932367AbaJUTDB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 15:03:01 -0400
+	id S932907AbaJUTDX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 15:03:23 -0400
+Received: from mail.efficios.com ([78.47.125.74]:58452 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754564AbaJUTDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 15:03:20 -0400
+Date: Tue, 21 Oct 2014 19:03:14 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org,
+        rp@svcs.cs.pdx.edu
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Message-ID: <1040424434.13102.1413918194641.JavaMail.zimbra@efficios.com>
+In-Reply-To: <2058152560.13097.1413917644377.JavaMail.zimbra@efficios.com>
+Subject: [RELEASE] Userspace RCU 0.7.13
 MIME-Version: 1.0
-In-Reply-To: <CAGr1F2Ee2MCKOwALR2YV7ppDmyHxO6+EsHqSc1+WcwKFPPQB0w@mail.gmail.com>
-References: <1413235430-22944-1-git-send-email-adityakali@google.com>
- <1413235430-22944-8-git-send-email-adityakali@google.com> <20141016211236.GA4308@mail.hallyn.com>
- <CAGr1F2EH0ynfFihTh1dv=n1faxUh0zS3ggk303bwGnDnW2PUCw@mail.gmail.com>
- <20141016214710.GA4759@mail.hallyn.com> <87iojgmy3o.fsf@x220.int.ebiederm.org>
- <CALCETrUC=yW72d2hDzjESmZAt85x1WcGz4L-DrtY5YXAQxbpMA@mail.gmail.com>
- <44072106-c0f3-46b8-b2b5-9b1cbd1b7d88@email.android.com> <CALCETrXhGnBM_xx=Auz3WRQXkqhGGTWuZN=PU+A9HZ7Ek27FLA@mail.gmail.com>
- <87zjcq10ya.fsf@x220.int.ebiederm.org> <CALCETrVkMtsnEh57jFZrdx5vHbz97BdO7OuupT+xVNnWpJjxng@mail.gmail.com>
- <87lhoayo59.fsf@x220.int.ebiederm.org> <CALCETrVFKvtHpTfY3kuE5ZTrwQAzuDmk6dm-mbQffDHAZmq-KQ@mail.gmail.com>
- <CAGr1F2Ee2MCKOwALR2YV7ppDmyHxO6+EsHqSc1+WcwKFPPQB0w@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 21 Oct 2014 12:02:37 -0700
-Message-ID: <CALCETrWXDMRsexfvmh2CiMW4WX0ZLJ4pJvzHU55PEBk=NmnyZg@mail.gmail.com>
-Subject: Re: [PATCHv1 7/8] cgroup: cgroup namespace setns support
-To: Aditya Kali <adityakali@google.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [173.246.22.116]
+X-Mailer: Zimbra 8.0.7_GA_6021 (ZimbraWebClient - FF32 (Linux)/8.0.7_GA_6021)
+Thread-Topic: Userspace RCU 0.7.13
+Thread-Index: X52DT8qlJbcISpNLFDKGxxzYr/EswA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 11:49 AM, Aditya Kali <adityakali@google.com> wrote:
-> On Mon, Oct 20, 2014 at 10:49 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On Mon, Oct 20, 2014 at 10:42 PM, Eric W. Biederman
->> <ebiederm@xmission.com> wrote:
->>>
->>> I do wonder if we think of this as chcgrouproot if there is a simpler
->>> implementation.
->>
->> Could be.  I'll defer to Aditya for that one.
->>
->
-> More than chcgrouproot, its probably closer to pivot_cgroup_root. In
-> addition to restricting the process to a cgroup-root, new processes
-> entering the container should also be implicitly contained within the
-> cgroup-root of that container.
+liburcu is a LGPLv2.1 userspace RCU (read-copy-update) library. This
+data synchronization library provides read-side access which scales
+linearly with the number of cores. It does so by allowing multiples
+copies of a given data structure to live at the same time, and by
+monitoring the data structure accesses to detect grace periods after
+which memory reclamation is possible.
 
-Why?  Concretely, why should this be in the kernel namespace code
-instead of in userspace?
+liburcu-cds provides efficient data structures based on RCU and
+lock-free algorithms. Those structures include hash tables, queues,
+stacks, and doubly-linked lists.
 
-> Implementing pivot_cgroup_root would
-> probably involve overloading mount-namespace to now understand cgroup
-> filesystem too. I did attempt combining cgroupns-root with mntns
-> earlier (not via a new syscall though), but came to the conclusion
-> that its just simpler to have a separate cgroup namespace and get
-> clear semantics. One of the issues was that implicitly changing cgroup
-> on setns to mntns seemed like a huge undesirable side-effect.
->
-> About pinning: I really feel that it should be OK to pin processes
-> within cgroupns-root. I think thats one of the most important feature
-> of cgroup-namespace since its most common usecase is to containerize
-> un-trusted processes - processes that, for their entire lifetime, need
-> to remain inside their container.
+This is a bugfix release.
 
-So don't let them out.  None of the other namespaces have this kind of
-constraint:
+Changelog:
+2014-10-21 Userspace RCU 0.7.13
+        * rculfhash: remove duplicated code
+        * rculfhash: handle pthread_create failures
+        * rculfhash: fall back to single-threaded resize on calloc failure
+        * x86: drop extra semi-colon in caa_cpu_relax
+        * call_rcu threads should clear their PAUSED flag when they unpause
+        * Fix: bring back dummy rcu_bp_exit symbol
 
- - If you're in a mntns, you can still use fds from outside.
- - If you're in a netns, you can still use sockets from outside the namespace.
- - If you're in an ipcns, you can still use ipc handles from outside.
+Project website: http://urcu.so
+Git repository: git://git.urcu.so/urcu.git
 
-etc.
-
-> And with explicit permission from
-> cgroup subsystem (something like cgroup.may_unshare as you had
-> suggested previously), we can make sure that unprivileged processes
-> cannot pin themselves. Also, maintaining this invariant (your current
-> cgroup is always under your cgroupns-root) keeps the code and the
-> semantics simple.
-
-I actually think it makes the semantics more complex.  The less policy
-you stick in the kernel, the easier it is to understand the impact of
-that policy.
-
->
-> If we ditch the pinning requirement and allow the containarized
-> process to move outside of its cgroupns-root, we will have to address
-> atleast the following:
-> * what does its /proc/self/cgroup  (and /proc/<pid>/cgroup in general)
-> look like? We might need to just not show anything in
-> /proc/<pid>/cgroup in such case (for default hierarchy).
-
-The process should see the cgroup path relative to its cgroup ns.
-Whether this requires a new /proc mount or happens automatically is an
-open question.  (I *hate* procfs for reasons like this.)
-
-> * how should future setns() and unshare() by such process behave?
-
-Open question.
-
-> * 'mount -t cgroup cgroup <mnt>' by such a process will yield unexpected result
-
-You could disallow that and instead require 'mount -t cgroup -o
-cgrouproot=. cgroup mnt' where '.' will be resolved at mount time
-relative to the caller's cgroupns.
-
-> * container will not remain migratable
-
-Why not?
-
-> * added code complexity to handle above scenarios
->
-> I understand that having process pinned to a cgroup hierarchy might
-> seem inconvenient. But even today (without cgroup namespaces), moving
-> a task from one cgroup to another can fail for reasons outside of
-> control of the task attempting the move (even if its privileged). So
-> the userspace should already handle this scenario. I feel its not
-> worth to add complexity in the kernel for this.
-
---Andy
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
