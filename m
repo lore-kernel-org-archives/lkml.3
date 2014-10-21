@@ -1,80 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730AbaJUJb2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 05:31:28 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:53074 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753232AbaJUJb1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 05:31:27 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Bjorn Andersson <bjorn@kryo.se>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Abhijeet Dharmapurikar <adharmap@codeaurora.org>, Y Vo <yvo@apm.com>,
-        Tin Huynh <tnhuynh@apm.com>, patches@apm.com, Toan Le <toanle@apm.com>,
-        Phong Vo <pvo@apm.com>
-Subject: Re: [PATCH] genirq: Introduce irq_read_line()
-Date: Tue, 21 Oct 2014 11:30:35 +0200
-Message-ID: <1894914.TrPC3AEWES@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <alpine.DEB.2.11.1410211120430.5308@nanos>
-References: <1408479811-26088-1-git-send-email-bjorn.andersson@sonymobile.com> <CAJAp7OgGPZZuCgC8iUiW2jrEVubK=KCATxd6eazdT1x1sSrffg@mail.gmail.com> <alpine.DEB.2.11.1410211120430.5308@nanos>
+	id S1754765AbaJUJeA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 05:34:00 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:37105 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751479AbaJUJd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 05:33:58 -0400
+Message-ID: <54462865.6000205@ti.com>
+Date: Tue, 21 Oct 2014 15:03:25 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:vZ16q0qNdMK/CU1yHNClBPJD8/ulkgdROwQ2AAyHoBK
- tH0tMy/zVW+YGTioaP6zSTgX+I60ys93FMcC2yVqn5Sv/WjeQ0
- hSk2di8X29horJ07pY5iOZuAYYOGPg0lxQmXp199516rB0xfGe
- ysRX1pcS8kxyQDQL4lixhtrZNx2gAv83/z6NNo9jN2+QYtpL/x
- 9xSY+QdV31VuDxv8e4QPaoX7U5gr4Z2SZL6210oY6KUCvNCfTh
- vNNuGvKOEjNrGZBobFJ5vZ9Vg4WMxopV52hQz9LMR4TUG208Jq
- rKkD7v+XnIVsPftsHKUHVG9wfxwmQ0Zq2XxDIUQ8yBOK2u3/nI
- UdNx0dIJS5VgTA2ZOli8=
-X-UI-Out-Filterresults: notjunk:1;
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
+	<antoine.tenart@free-electrons.com>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/5] phy: berlin-sata: Move PHY_BASE into private data
+ struct
+References: <1413882477-27922-1-git-send-email-sebastian.hesselbarth@gmail.com> <1413882477-27922-2-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1413882477-27922-2-git-send-email-sebastian.hesselbarth@gmail.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 21 October 2014 11:22:40 Thomas Gleixner wrote:
-> On Thu, 4 Sep 2014, Bjorn Andersson wrote:
+
+
+On Tuesday 21 October 2014 02:37 PM, Sebastian Hesselbarth wrote:
+> Currently, Berlin SATA PHY driver assumes PHY_BASE address being
+> constant. While this PHY_BASE is correct for BG2Q, older BG2 PHY_BASE
+> is different. Prepare the driver for BG2 support by moving the phy_base
+> into private driver data.
 > 
-> > On Tue, Aug 19, 2014 at 1:23 PM, Bjorn Andersson
-> > <bjorn.andersson@sonymobile.com> wrote:
-> > > Introduce the irq_read_line() function to allow device drivers to read
-> > > the current logical state of an input when the hardware only exposes
-> > > this through status bits in the interrupt controller.
-> > >
-> > > The new function is backed by a new callback function in the irq_chip -
-> > > irq_read_line() - that can be implemented by irq_chips that owns such
-> > > status bits.
-> > >
-> > > Based on rfc patch from April 2011 by Abhijeet.
-> > >
-> > > Cc: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-> > > Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-> > 
-> > ping?
+> Acked-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Cc: Kishon Vijay Abraham I <kishon@ti.com> 
+> Cc: "Antoine Ténart" <antoine.tenart@free-electrons.com>
+> Cc: devicetree@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org 
+> ---
+>  drivers/phy/phy-berlin-sata.c | 42 ++++++++++++++++++++++++++++--------------
+>  1 file changed, 28 insertions(+), 14 deletions(-)
 > 
-> Sorry, slipped through the cracks. I was talking about this to Marc
-> last week and he needs it for yet another reason. He had some thoughts
-> about the state representation, so I wait for him to comment.
+> diff --git a/drivers/phy/phy-berlin-sata.c b/drivers/phy/phy-berlin-sata.c
+> index 69ced52d72aa..9682b0f66177 100644
+> --- a/drivers/phy/phy-berlin-sata.c
+> +++ b/drivers/phy/phy-berlin-sata.c
+> @@ -30,7 +30,7 @@
+>  #define MBUS_WRITE_REQUEST_SIZE_128	(BIT(2) << 16)
+>  #define MBUS_READ_REQUEST_SIZE_128	(BIT(2) << 19)
+>  
+> -#define PHY_BASE		0x200
+> +#define BG2Q_PHY_BASE		0x200
+>  
+>  /* register 0x01 */
+>  #define REF_FREF_SEL_25		BIT(0)
+> @@ -61,15 +61,16 @@ struct phy_berlin_priv {
+>  	struct clk		*clk;
+>  	struct phy_berlin_desc	**phys;
+>  	unsigned		nphys;
+> +	u32			phy_base;
+>  };
+>  
+> -static inline void phy_berlin_sata_reg_setbits(void __iomem *ctrl_reg, u32 reg,
+> -					       u32 mask, u32 val)
+> +static inline void phy_berlin_sata_reg_setbits(void __iomem *ctrl_reg,
+> +			       u32 phy_base, u32 reg, u32 mask, u32 val)
+>  {
+>  	u32 regval;
+>  
+>  	/* select register */
+> -	writel(PHY_BASE + reg, ctrl_reg + PORT_VSR_ADDR);
+> +	writel(phy_base + reg, ctrl_reg + PORT_VSR_ADDR);
+>  
+>  	/* set bits */
+>  	regval = readl(ctrl_reg + PORT_VSR_DATA);
+> @@ -103,17 +104,20 @@ static int phy_berlin_sata_power_on(struct phy *phy)
+>  	writel(regval, priv->base + HOST_VSA_DATA);
+>  
+>  	/* set PHY mode and ref freq to 25 MHz */
+> -	phy_berlin_sata_reg_setbits(ctrl_reg, 0x1, 0xff,
+> -				    REF_FREF_SEL_25 | PHY_MODE_SATA);
+> +	phy_berlin_sata_reg_setbits(ctrl_reg, priv->phy_base, 0x01,
+> +				    0x00ff, REF_FREF_SEL_25 | PHY_MODE_SATA);
+>  
+>  	/* set PHY up to 6 Gbps */
+> -	phy_berlin_sata_reg_setbits(ctrl_reg, 0x25, 0xc00, PHY_GEN_MAX_6_0);
+> +	phy_berlin_sata_reg_setbits(ctrl_reg, priv->phy_base, 0x25,
+> +				    0x0c00, PHY_GEN_MAX_6_0);
+>  
+>  	/* set 40 bits width */
+> -	phy_berlin_sata_reg_setbits(ctrl_reg, 0x23,  0xc00, DATA_BIT_WIDTH_40);
+> +	phy_berlin_sata_reg_setbits(ctrl_reg, priv->phy_base, 0x23,
+> +				    0x0c00, DATA_BIT_WIDTH_40);
+>  
+>  	/* use max pll rate */
+> -	phy_berlin_sata_reg_setbits(ctrl_reg, 0x2, 0x0, USE_MAX_PLL_RATE);
+> +	phy_berlin_sata_reg_setbits(ctrl_reg, priv->phy_base, 0x02,
+> +				    0x0000, USE_MAX_PLL_RATE);
+>  
+>  	/* set Gen3 controller speed */
+>  	regval = readl(ctrl_reg + PORT_SCR_CTL);
+> @@ -182,9 +186,22 @@ static u32 phy_berlin_power_down_bits[] = {
+>  	POWER_DOWN_PHY1,
+>  };
+>  
+> +static u32 bg2q_sata_phy_base = BG2Q_PHY_BASE;
+> +
+> +static const struct of_device_id phy_berlin_sata_of_match[] = {
+> +	{
+> +		.compatible = "marvell,berlin2q-sata-phy",
+> +		.data = &bg2q_sata_phy_base,
 
-I looked up my older email as well and found which gpio driver had the
-requirement to get the irq status from the upstream controller. It was
-"gpio: Add APM X-Gene standby GPIO controller driver". I'm adding the
-APM developers on Cc here so they can participate in the discussion.
+Can't the base directly come from dt?
 
-As a brief summary: APM have a GPIO driver that needs to read the status
-from the ARM GIC in order to implement gpio_get_value. The KVM hypervisor
-needs multiple bits from the GIC in order to implement suspend/resume,
-and Qualcomm MSM (as Bjorn wrote above) also needs to expose the status
-of the IRQ line like APM does.
-
-These should all use the same interface for the interrupt controller,
-but the interface still needs to be added.
-
-	Arnd
+Thanks
+Kishon
