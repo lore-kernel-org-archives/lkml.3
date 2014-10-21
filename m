@@ -1,87 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755306AbaJUSQW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 14:16:22 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:47675 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755191AbaJUSQU (ORCPT
+	id S1755431AbaJUSRO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 14:17:14 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:65271 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755191AbaJUSRM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 14:16:20 -0400
-Message-ID: <5446A2D8.3070204@linaro.org>
-Date: Tue, 21 Oct 2014 19:15:52 +0100
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Tue, 21 Oct 2014 14:17:12 -0400
 MIME-Version: 1.0
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>
-CC: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v5 3/4] pinctrl: Qualcomm SPMI PMIC GPIO pin controller
- driver
-References: <1412181058-29179-1-git-send-email-iivanov@mm-sol.com> <1412181058-29179-4-git-send-email-iivanov@mm-sol.com>
-In-Reply-To: <1412181058-29179-4-git-send-email-iivanov@mm-sol.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1413915046-32485-1-git-send-email-geert+renesas@glider.be>
+References: <1413915046-32485-1-git-send-email-geert+renesas@glider.be>
+Date: Tue, 21 Oct 2014 20:17:11 +0200
+X-Google-Sender-Auth: mctUv9Pt4bHYNKQmFNQ3FkAny7g
+Message-ID: <CAMuHMdWTOzvDGjtkQkw5ZnF+6HmHppj7P6-BdkOhB=xwxn7f-w@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v3.18-rc1
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ivan,
-
-Just realized that this patch can generate compiler errors due to 3.18 
-changes in pinmux_ops struct and gpiochip_remove returns void now.
-
-Same with drivers/pinctrl/qcom/pinctrl-spmi-pmic-mpp.c
-
-
-
-On 01/10/14 17:30, Ivan T. Ivanov wrote:
-> +	.enable			= pmic_gpio_pinmux_enable,
-> +};
-
+On Tue, Oct 21, 2014 at 8:10 PM, Geert Uytterhoeven
+<geert+renesas@glider.be> wrote:
+> Below is the list of build error/warning regressions/improvements in
+> v3.18-rc1[1] compared to v3.17[2].
 >
-> +static int pmic_gpio_remove(struct platform_device *pdev)
-> +{
-> +	struct pmic_gpio_state *state = platform_get_drvdata(pdev);
-> +	int ret;
-> +
-> +	ret = gpiochip_remove(&state->chip);
-> +	if (ret < 0)
-> +		return ret;
+> Summarized:
+>   - build errors: +21/-15
 
+> [1] http://kisskb.ellerman.id.au/kisskb/head/8002/ (all 119 configs)
+> [2] http://kisskb.ellerman.id.au/kisskb/head/7938/ (118 out of 119 configs)
 
-diff --git a/drivers/pinctrl/qcom/pinctrl-spmi-pmic-gpio.c 
-b/drivers/pinctrl/qcom/pinctrl-spmi-pmic-gpio.c
-index 493f0d3..0d69758 100644
---- a/drivers/pinctrl/qcom/pinctrl-spmi-pmic-gpio.c
-+++ b/drivers/pinctrl/qcom/pinctrl-spmi-pmic-gpio.c
-@@ -378,7 +378,7 @@ static const struct pinmux_ops pmic_gpio_pinmux_ops = {
-  	.get_functions_count	= pmic_gpio_get_functions_count,
-  	.get_function_name	= pmic_gpio_get_function_name,
-  	.get_function_groups	= pmic_gpio_get_function_groups,
--	.enable			= pmic_gpio_pinmux_enable,
-+	.set_mux		= pmic_gpio_pinmux_enable,
-  };
+>   + /scratch/kisskb/src/arch/powerpc/kernel/cacheinfo.c: error: 'size_kb' may be used uninitialized in this function [-Werror=uninitialized]:  => 525:2
+>   + /scratch/kisskb/src/arch/powerpc/lib/rheap.c: error: 'be' may be used uninitialized in this function [-Werror=uninitialized]:  => 417:2
+>   + /scratch/kisskb/src/arch/powerpc/lib/rheap.c: error: 'bs' may be used uninitialized in this function [-Werror=uninitialized]:  => 424:17
+>   + /scratch/kisskb/src/arch/powerpc/lib/rheap.c: error: 'start' may be used uninitialized in this function [-Werror=uninitialized]:  => 497:22
+>   + /scratch/kisskb/src/arch/powerpc/lib/sstep.c: error: 'do_lfd' undeclared (first use in this function):  => 1874:29
+>   + /scratch/kisskb/src/arch/powerpc/lib/sstep.c: error: 'do_lfs' undeclared (first use in this function):  => 1872:29
+>   + /scratch/kisskb/src/arch/powerpc/lib/sstep.c: error: 'do_stfd' undeclared (first use in this function):  => 1928:30
+>   + /scratch/kisskb/src/arch/powerpc/lib/sstep.c: error: 'do_stfs' undeclared (first use in this function):  => 1926:30
+>   + /scratch/kisskb/src/arch/powerpc/lib/sstep.c: error: implicit declaration of function 'do_fp_load' [-Werror=implicit-function-declaration]:  => 1872:4
+>   + /scratch/kisskb/src/arch/powerpc/lib/sstep.c: error: implicit declaration of function 'do_fp_store' [-Werror=implicit-function-declaration]:  => 1926:4
+>   + /scratch/kisskb/src/arch/powerpc/xmon/xmon.c: error: unused variable 'badaddr' [-Werror=unused-variable]:  => 1141:13
+>   + /scratch/kisskb/src/arch/powerpc/xmon/xmon.c: error: unused variable 'mode' [-Werror=unused-variable]:  => 1139:6
 
-  static int pmic_gpio_config_get(struct pinctrl_dev *pctldev,
-@@ -907,12 +907,8 @@ err_chip:
-  static int pmic_gpio_remove(struct platform_device *pdev)
-  {
-  	struct pmic_gpio_state *state = platform_get_drvdata(pdev);
--	int ret;
--
--	ret = gpiochip_remove(&state->chip);
--	if (ret < 0)
--		return ret;
+powerpc-randconfig
 
-+	gpiochip_remove(&state->chip);
-  	pinctrl_unregister(state->ctrl);
-  	return 0;
+sstep.c lacks some #ifdef CONFIG_PPC_FPU
 
+>   + /scratch/kisskb/src/drivers/bcma/main.c: error: implicit declaration of function 'of_translate_address' [-Werror=implicit-function-declaration]:  => 150:3
 
+sparc64-allmodconfig, sparc-allmodconfig
 
-Thanks,
-srini
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
