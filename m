@@ -1,46 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933623AbaJUWMX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 18:12:23 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:55132 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933014AbaJUWMW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 18:12:22 -0400
-Message-ID: <5446DA45.6050603@infradead.org>
-Date: Tue, 21 Oct 2014 15:12:21 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: Masanari Iida <standby24x7@gmail.com>, trivial@kernel.org, corbet@lwn.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] treewide: Fix typo in Documentation/DocBook/device-drivers
-References: <1413903614-20775-1-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1413903614-20775-1-git-send-email-standby24x7@gmail.com>
-Content-Type: text/plain; charset=windows-1252
+	id S933729AbaJUWMs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 18:12:48 -0400
+Received: from matrix.voodoobox.net ([75.127.97.206]:49331 "EHLO voodoobox.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932998AbaJUWMr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 18:12:47 -0400
+X-Greylist: delayed 2617 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Oct 2014 18:12:47 EDT
+Message-ID: <1413926943.8038.0.camel@dillow0.mtv.corp.google.com>
+Subject: Re: [PATCH] net: typhoon: Remove redundant casts
+From: David Dillow <dave@thedillows.org>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 21 Oct 2014 14:29:03 -0700
+In-Reply-To: <1413903103-3047-1-git-send-email-linux@rasmusvillemoes.dk>
+References: <1413903103-3047-1-git-send-email-linux@rasmusvillemoes.dk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/21/14 08:00, Masanari Iida wrote:
-> This patch fix speeling typo found in html files within
-> Documentation/DocBook/device-drivers.
-> It is because html files are generated from comments in source,
-> so I have to fix comments in the source.
+On Tue, 2014-10-21 at 16:51 +0200, Rasmus Villemoes wrote:
+> Both image_data and typhoon_fw->data are const u8*, so the cast to u8*
+> is unnecessary and confusing.
 > 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
+Acked-by: David Dillow <dave@thedillows.org>
 
-Thanks.
-
-> ---
->  drivers/dma-buf/fence.c | 2 +-
->  include/linux/fence.h   | 4 ++--
->  include/linux/i2c.h     | 2 +-
->  3 files changed, 4 insertions(+), 4 deletions(-)
-
-
--- 
-~Randy
