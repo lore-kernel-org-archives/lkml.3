@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554AbaJUIZd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 04:25:33 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:16270 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754382AbaJUIZ2 (ORCPT
+	id S1751993AbaJUI0G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 04:26:06 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57565 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750964AbaJUI0B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 04:25:28 -0400
-X-AuditID: cbfec7f4-b7f6c6d00000120b-dc-5446187479fe
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 0/2] regulator: max77686/trats2: Disable some regulators in
- suspend
-Date: Tue, 21 Oct 2014 10:25:10 +0200
-Message-id: <1413879912-26606-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprELMWRmVeSWpSXmKPExsVy+t/xy7olEm4hBv/faltsnLGe1WLSugNM
-	FlMfPmGzuP7lOavF0d8FFq9fGFr0LrjKZnG26Q27xbcrHUwWmx5fY7W4vGsOm8WM8/uYLG5f
-	5rVYe+Quu8WqXX8YHfg9Wpp72Dz+Pr/O4vF31Qtmj52z7rJ7bFrVyeaxeUm9R9+WVYwenzfJ
-	BXBEcdmkpOZklqUW6dslcGW8WjiBteA8a8XGK+/ZGhgPsnQxcnJICJhI/Gi8CWWLSVy4t54N
-	xBYSWMoo8X4SaxcjF5DdxyTxZekLdpAEm4CxxOblS9hAEiICC5kkju/8zQTiMAtcYJLY9OwP
-	2ChhgVCJdSuPM4HYLAKqEp9OT2cEsXkF3CV+dZ9lhFgnJ3Hy2GTWCYzcCxgZVjGKppYmFxQn
-	peca6hUn5haX5qXrJefnbmKEhOOXHYyLj1kdYhTgYFTi4d2wzDVEiDWxrLgy9xCjBAezkghv
-	rrBbiBBvSmJlVWpRfnxRaU5q8SFGJg5OqQZG7ewTs3V13s6vOLT14N19Fzzel7DPXO7JcnC2
-	0Rdl/1W3T9wud/591nqDvF36r7DPP+f86/+z98J6rXPXL73j0p7D+KxOrcHz66u5PsusC9wf
-	Lpu+YJbevHmdV/PzfDeLvuH//2iJ88Ri9dXRr3UPbHglobBqymopGXn9qi8zL09/m16YEp2g
-	6KbEUpyRaKjFXFScCAAEzQHQJQIAAA==
+	Tue, 21 Oct 2014 04:26:01 -0400
+Date: Tue, 21 Oct 2014 10:25:57 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Thomas Shao <huishao@microsoft.com>
+cc: Jeff Epler <jepler@unpythonic.net>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        KY Srinivasan <kys@microsoft.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Richard Cochran <rcochran@linutronix.de>
+Subject: RE: [PATCH v2 1/2] timekeeping: add EXPORT_SYMBOL_GPL for
+ do_adjtimex()
+In-Reply-To: <CD2CABCB2C0A0D4682C5F8AD840141540D2AEF@HKXPRD3002MB006.064d.mgd.msft.net>
+Message-ID: <alpine.DEB.2.11.1410211024220.5308@nanos>
+References: <1413362372-16236-1-git-send-email-huishao@microsoft.com> <alpine.DEB.2.11.1410202027220.5308@nanos> <alpine.DEB.2.11.1410202034150.5308@nanos> <CD2CABCB2C0A0D4682C5F8AD840141540D27B9@HKXPRD3002MB006.064d.mgd.msft.net> <20141021040212.GA6278@unpythonic.net>
+ <CD2CABCB2C0A0D4682C5F8AD840141540D2AEF@HKXPRD3002MB006.064d.mgd.msft.net>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 21 Oct 2014, Thomas Shao wrote:
 
-This patchset makes use of Javier Martinez Cainllas changes [1].
-It allows disabling some of the regulators during suspend to RAM.
+> I'm also thinking if NTPd could expose some interface to allow other
+> application to directly provide time source for it to consume. In my
+> opinion, emulating the ntp source should be very hard and error
+> prone.
 
-Javier's patchset is necessary only to test it.
+Well, if done right it would be pretty precise. At least way better
+than the random number you feed into do_adjtimex().
 
-[1] [PATCH v3 0/2] ARM: EXYNOS: Call regulator suspend prepare/finish
-    https://lkml.org/lkml/2014/10/20/545
+Thanks,
 
-Best regards,
-Krzysztof
-
-Krzysztof Kozlowski (2):
-  regulator: max77686: Implement suspend disable for some LDOs
-  ARM: dts: exynos4412-trats: Add suspend configuration for max77686
-    regulators
-
- arch/arm/boot/dts/exynos4412-trats2.dts | 135 +++++++++++++++++++++++++-------
- drivers/regulator/max77686.c            |  19 +++++
- 2 files changed, 124 insertions(+), 30 deletions(-)
-
--- 
-1.9.1
-
+	tglx
+ 
