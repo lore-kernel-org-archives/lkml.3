@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755140AbaJUKib (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 06:38:31 -0400
-Received: from smtprelay02.ispgateway.de ([80.67.18.44]:46107 "EHLO
-	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754574AbaJUKia (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 06:38:30 -0400
-X-Greylist: delayed 411 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Oct 2014 06:38:30 EDT
-References: <1398561815-22033-1-git-send-email-peter@piie.net> <1406043436-17068-1-git-send-email-peter@piie.net> <1406043436-17068-4-git-send-email-peter@piie.net> <cone.1406384086.541895.7413.1000@galar> <1406514389.14109.7.camel@rzhang1-toshiba>
-Message-ID: <cone.1413887350.971616.2744.1000@mups>
-X-Mailer: http://www.courier-mta.org/cone/
-From: Peter Feuerer <peter@piie.net>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: linux-pm@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Mohr <andi@lisas.de>, Borislav Petkov <bp@suse.de>,
-        Javi Merino <javi.merino@arm.com>
-Subject: Re: [PATCH v5 3/6] thermal: Added Bang-bang thermal governor
-Date: Tue, 21 Oct 2014 12:29:10 +0200
-Mime-Version: 1.0
-Content-Type: text/plain; format=flowed; charset="US-ASCII"
-Content-Disposition: inline
+	id S1755198AbaJUKjq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 06:39:46 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:52800 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751283AbaJUKjp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 06:39:45 -0400
+Message-ID: <544637A3.8010002@ti.com>
+Date: Tue, 21 Oct 2014 16:08:27 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>
+CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <kernel@stlinux.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
+        alexandre torgue <alexandre.torgue@st.com>
+Subject: Re: [PATCH v3 2/8] phy: miphy28lp: Add MiPHY28lp header file for
+ DT x Driver defines
+References: <1411721657-9924-1-git-send-email-gabriel.fernandez@linaro.org> <1411721657-9924-3-git-send-email-gabriel.fernandez@linaro.org>
+In-Reply-To: <1411721657-9924-3-git-send-email-gabriel.fernandez@linaro.org>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 7bit
-X-Df-Sender: NDA0MDk0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rui,
+Hi Gabriel,
 
-Zhang Rui writes:
-
-> On Sat, 2014-07-26 at 16:14 +0200, Peter Feuerer wrote:
->> Hi Rui,
->> 
->> Peter Feuerer writes:
->> 
->> > The bang-bang thermal governor uses a hysteresis to switch abruptly on
->> > or off a cooling device.  It is intended to control fans, which can
->> > not be throttled but just switched on or off.
->> > Bang-bang cannot be set as default governor as it is intended for
->> > special devices only.  For those special devices the driver needs to
->> > explicitely request it.
->> > 
->> > Cc: Andrew Morton <akpm@linux-foundation.org>
->> > Cc: Zhang Rui <rui.zhang@intel.com>
->> 
->> Anything that prevents you from giving your acked-by?
->> 
-> NO.
+On Friday 26 September 2014 02:24 PM, Gabriel FERNANDEZ wrote:
+> This provides the shared header file which will be reference from both
+> the MiPHY28lp driver and its associated Device Tree node(s).
 > 
-> I'll queue them for 3.18.
+> Signed-off-by: alexandre torgue <alexandre.torgue@st.com>
+> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+> ---
+>  include/dt-bindings/phy/phy-miphy.h | 12 ++++++++++++
+>  1 file changed, 12 insertions(+)
+>  create mode 100644 include/dt-bindings/phy/phy-miphy.h
+> 
+> diff --git a/include/dt-bindings/phy/phy-miphy.h b/include/dt-bindings/phy/phy-miphy.h
+> new file mode 100644
+> index 0000000..9bc49b9
+> --- /dev/null
+> +++ b/include/dt-bindings/phy/phy-miphy.h
+> @@ -0,0 +1,12 @@
+> +/*
+> + * This header provides constants for the phy framework
+> + * based on the STMicroelectronics miphxxxx.
+> + */
+> +#ifndef _DT_BINDINGS_PHY_MIPHY
+> +#define _DT_BINDINGS_PHY_MIPHY
+> +
+> +#define MIPHY_TYPE_SATA		1
+> +#define MIPHY_TYPE_PCIE		2
+> +#define MIPHY_TYPE_USB		3
 
-Are all 6 patches in for 3.18 as you promissed?
+Since these PHY types are common across SoCs, we can have something like
+PHY_TYPE_SATA, PHY_TYPE_PCIE so that each SoCs don't have to create a separate
+header file.
 
-kind regards,
---peter;
+Cheers
+Kishon
