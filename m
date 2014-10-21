@@ -1,321 +1,433 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933310AbaJUQxu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 12:53:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63218 "EHLO mx1.redhat.com"
+	id S933325AbaJUQxz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 12:53:55 -0400
+Received: from sauhun.de ([89.238.76.85]:37695 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932373AbaJUQxq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 12:53:46 -0400
-From: Prarit Bhargava <prarit@redhat.com>
+	id S933178AbaJUQxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 12:53:50 -0400
+Date: Tue, 21 Oct 2014 18:54:41 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
 To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Fabian Frederick <fabf@skynet.be>, vgoyal@redhat.com,
-        isimatu.yasuaki@jp.fujitsu.com, linux-doc@vger.kernel.org,
-        kexec@lists.infradead.org, linux-api@vger.kernel.org
-Subject: [PATCH V2] kernel, add bug_on_warn
-Date: Tue, 21 Oct 2014 12:47:57 -0400
-Message-Id: <1413910077-9464-1-git-send-email-prarit@redhat.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>
+Subject: [PULL REQUEST] remove .owner for most platform_drivers
+Message-ID: <20141021165441.GA1619@katana>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="M9NhX3UHpAaciwkO"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There have been several times where I have had to rebuild a kernel to
-cause a panic when hitting a WARN() in the code in order to get a crash
-dump from a system.  Sometimes this is easy to do, other times (such as
-in the case of a remote admin) it is not trivial to send new images to the
-user.
 
-A much easier method would be a switch to change the WARN() over to a
-BUG().  This makes debugging easier in that I can now test the actual
-image the WARN() was seen on and I do not have to engage in remote
-debugging.
+--M9NhX3UHpAaciwkO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This patch adds a bug_on_warn kernel parameter, which calls BUG() in the
-warn_slowpath_common() path.  The function will still print out the
-location of the warning.
+Hi Greg,
 
-An example of the bug_on_warn output:
+as discussed at ELCE, here is my pull request for cleaning up all unneeded
+assignment of .owner for platform drivers. I used the following semantic patch
+to check that it only removes it when .owner gets initialized by the call to
+register the driver:
 
-The first line below is from the WARN_ON() to output the WARN_ON()'s location.
-After that the new BUG() call is displayed.
-
- WARNING: CPU: 27 PID: 3204 at
-/home/rhel7/redhat/debug/dummy-module/dummy-module.c:25 init_dummy+0x28/0x30
-[dummy_module]()
- bug_on_warn set, calling BUG()...
- ------------[ cut here ]------------
- kernel BUG at kernel/panic.c:434!
- invalid opcode: 0000 [#1] SMP
- Modules linked in: dummy_module(OE+) sg nfsv3 rpcsec_gss_krb5 nfsv4
-dns_resolver nfs fscache cfg80211 rfkill x86_pkg_temp_thermal intel_powerclamp
-coretemp kvm_intel kvm crct10dif_pclmul crc32_pclmul crc32c_intel
-ghash_clmulni_intel igb iTCO_wdt aesni_intel iTCO_vendor_support lrw gf128mul
-sb_edac ptp edac_core glue_helper lpc_ich ioatdma pcspkr ablk_helper pps_core
-i2c_i801 mfd_core cryptd dca shpchp ipmi_si wmi ipmi_msghandler acpi_cpufreq
-nfsd auth_rpcgss nfs_acl lockd grace sunrpc xfs libcrc32c sr_mod cdrom sd_mod
-mgag200 syscopyarea sysfillrect sysimgblt i2c_algo_bit drm_kms_helper isci ttm
-drm libsas ahci libahci scsi_transport_sas libata i2c_core dm_mirror
-dm_region_hash dm_log dm_mod
- CPU: 27 PID: 3204 Comm: insmod Tainted: G           OE  3.17.0+ #19
- Hardware name: Intel Corporation S2600CP/S2600CP, BIOS
-RMLSDP.86I.00.29.D696.1311111329 11/11/2013
- task: ffff880034e75160 ti: ffff8807fc5ac000 task.ti: ffff8807fc5ac000
- RIP: 0010:[<ffffffff81076b81>]  [<ffffffff81076b81>] warn_slowpath_common+0xc1/0xd0
- RSP: 0018:ffff8807fc5afc68  EFLAGS: 00010246
- RAX: 0000000000000021 RBX: ffff8807fc5afcb0 RCX: 0000000000000000
- RDX: 0000000000000000 RSI: ffff88081efee5f8 RDI: ffff88081efee5f8
- RBP: ffff8807fc5afc98 R08: 0000000000000096 R09: 0000000000000000
- R10: 0000000000000711 R11: ffff8807fc5af93e R12: ffffffffa0424070
- R13: 0000000000000019 R14: ffffffffa0423068 R15: 0000000000000009
- FS:  00007f2d4b034740(0000) GS:ffff88081efe0000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
- CR2: 00007f2d4a99f3c0 CR3: 00000007fd88b000 CR4: 00000000001407e0
- Stack:
-  ffff8807fc5afcb8 ffffffff8199f020 ffff88080e396160 0000000000000000
-  ffffffffa0423040 ffffffffa0425000 ffff8807fc5afd08 ffffffff81076be5
-  0000000000000008 ffffffffa0424053 ffff880700000018 ffff8807fc5afd18
- Call Trace:
-  [<ffffffffa0423040>] ? dummy_greetings+0x40/0x40 [dummy_module]
-  [<ffffffff81076be5>] warn_slowpath_fmt+0x55/0x70
-  [<ffffffffa0423068>] init_dummy+0x28/0x30 [dummy_module]
-  [<ffffffff81002144>] do_one_initcall+0xd4/0x210
-  [<ffffffff811b52c2>] ? __vunmap+0xc2/0x110
-  [<ffffffff810f8889>] load_module+0x16a9/0x1b30
-  [<ffffffff810f3d30>] ? store_uevent+0x70/0x70
-  [<ffffffff810f49b9>] ? copy_module_from_fd.isra.44+0x129/0x180
-  [<ffffffff810f8ec6>] SyS_finit_module+0xa6/0xd0
-  [<ffffffff8166ce29>] system_call_fastpath+0x12/0x17
- Code: c4 08 5b 41 5c 41 5d 41 5e 41 5f 5d c3 48 c7 c7 20 42 8a 81 31 c0 e8 fc
-80 5e 00 eb 80 48 c7 c7 78 42 8a 81 31 c0 e8 ec 80 5e 00 <0f> 0b 66 66 66 66 2e
-0f 1f 84 00 00 00 00 00 0f 1f 44 00 00 55
- RIP  [<ffffffff81076b81>] warn_slowpath_common+0xc1/0xd0
-  RSP <ffff8807fc5afc68>
- ---[ end trace 428218934a12088b ]---
-
-Successfully tested by me.
-
-Cc: Jonathan Corbet <corbet@lwn.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Fabian Frederick <fabf@skynet.be>
-Cc: vgoyal@redhat.com
-Cc: isimatu.yasuaki@jp.fujitsu.com
-Cc: linux-doc@vger.kernel.org
-Cc: kexec@lists.infradead.org
-Cc: linux-api@vger.kernel.org
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-
-[v2]: add /proc/sys/kernel/bug_on_warn, additional documentation, modify
-      !slowpath cases
 ---
- Documentation/kdump/kdump.txt       |    7 +++++++
- Documentation/kernel-parameters.txt |    3 +++
- Documentation/sysctl/kernel.txt     |   12 ++++++++++++
- include/asm-generic/bug.h           |   12 ++++++++++--
- include/linux/kernel.h              |    1 +
- include/uapi/linux/sysctl.h         |    1 +
- kernel/panic.c                      |   21 ++++++++++++++++++++-
- kernel/sysctl.c                     |    7 +++++++
- kernel/sysctl_binary.c              |    1 +
- 9 files changed, 62 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/kdump/kdump.txt b/Documentation/kdump/kdump.txt
-index 6c0b9f2..a04ed72 100644
---- a/Documentation/kdump/kdump.txt
-+++ b/Documentation/kdump/kdump.txt
-@@ -471,6 +471,13 @@ format. Crash is available on Dave Anderson's site at the following URL:
- 
-    http://people.redhat.com/~anderson/
- 
-+Trigger Kdump on WARN()
-+=======================
-+
-+The kernel parameter, bug_on_warn, calls BUG() in all WARN() paths.  This
-+will cause a kdump to occur at the BUG() call.  In cases where a user
-+wants to specify this during runtime, /proc/sys/kernel/bug_on_warn can be
-+set to 1 to achieve the same behaviour.
- 
- Contact
- =======
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 988160a..3890a3a 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -553,6 +553,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	bttv.pll=	See Documentation/video4linux/bttv/Insmod-options
- 	bttv.tuner=
- 
-+	bug_on_warn	BUG() instead of WARN().  Useful to cause kdump
-+			on a WARN().
-+
- 	bulk_remove=off	[PPC]  This parameter disables the use of the pSeries
- 			firmware feature for flushing multiple hpte entries
- 			at a time.
-diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index 57baff5..dcadcdc 100644
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -23,6 +23,7 @@ show up in /proc/sys/kernel:
- - auto_msgmni
- - bootloader_type	     [ X86 only ]
- - bootloader_version	     [ X86 only ]
-+- bug_on_warn
- - callhome		     [ S390 only ]
- - cap_last_cap
- - core_pattern
-@@ -152,6 +153,17 @@ Documentation/x86/boot.txt for additional information.
- 
- ==============================================================
- 
-+bug_on_warn:
-+
-+Calls BUG() in the WARN() path when set to 1.  This is useful to avoid
-+a kernel rebuild when attempting to kdump at the location of a WARN().
-+
-+0: only WARN(), default behaviour.
-+
-+1: call BUG() after printing out WARN() location.
-+
-+==============================================================
-+
- callhome:
- 
- Controls the kernel's callhome behavior in case of a kernel panic.
-diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
-index 630dd23..4d0c763 100644
---- a/include/asm-generic/bug.h
-+++ b/include/asm-generic/bug.h
-@@ -75,10 +75,18 @@ extern void warn_slowpath_null(const char *file, const int line);
- #define __WARN_printf_taint(taint, arg...)				\
- 	warn_slowpath_fmt_taint(__FILE__, __LINE__, taint, arg)
- #else
--#define __WARN()		__WARN_TAINT(TAINT_WARN)
-+#define check_bug_on_warn()						\
-+	do {								\
-+		if (bug_on_warn)					\
-+			BUG();						\
-+	} while (0)
-+
-+#define __WARN()							\
-+	do { __WARN_TAINT(TAINT_WARN); check_bug_on_warn(); } while (0)
-+
- #define __WARN_printf(arg...)	do { printk(arg); __WARN(); } while (0)
- #define __WARN_printf_taint(taint, arg...)				\
--	do { printk(arg); __WARN_TAINT(taint); } while (0)
-+	do { printk(arg); __WARN_TAINT(taint); check_bug_on_warn(); } while (0)
- #endif
- 
- #ifndef WARN_ON
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 40728cf..4094a60 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -422,6 +422,7 @@ extern int panic_on_oops;
- extern int panic_on_unrecovered_nmi;
- extern int panic_on_io_nmi;
- extern int sysctl_panic_on_stackoverflow;
-+extern int bug_on_warn;
- /*
-  * Only to be used by arch init code. If the user over-wrote the default
-  * CONFIG_PANIC_TIMEOUT, honor it.
-diff --git a/include/uapi/linux/sysctl.h b/include/uapi/linux/sysctl.h
-index 43aaba1..2ba0a58 100644
---- a/include/uapi/linux/sysctl.h
-+++ b/include/uapi/linux/sysctl.h
-@@ -153,6 +153,7 @@ enum
- 	KERN_MAX_LOCK_DEPTH=74, /* int: rtmutex's maximum lock depth */
- 	KERN_NMI_WATCHDOG=75, /* int: enable/disable nmi watchdog */
- 	KERN_PANIC_ON_NMI=76, /* int: whether we will panic on an unrecovered */
-+	KERN_BUG_ON_WARN=77, /* int: call BUG() in WARN() functions */
- };
- 
- 
-diff --git a/kernel/panic.c b/kernel/panic.c
-index d09dc5c..a6d2e2f 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -33,6 +33,7 @@ static int pause_on_oops;
- static int pause_on_oops_flag;
- static DEFINE_SPINLOCK(pause_on_oops_lock);
- static bool crash_kexec_post_notifiers;
-+int bug_on_warn;
- 
- int panic_timeout = CONFIG_PANIC_TIMEOUT;
- EXPORT_SYMBOL_GPL(panic_timeout);
-@@ -420,13 +421,24 @@ static void warn_slowpath_common(const char *file, int line, void *caller,
- {
- 	disable_trace_on_warning();
- 
--	pr_warn("------------[ cut here ]------------\n");
-+	if (!bug_on_warn)
-+		pr_warn("------------[ cut here ]------------\n");
- 	pr_warn("WARNING: CPU: %d PID: %d at %s:%d %pS()\n",
- 		raw_smp_processor_id(), current->pid, file, line, caller);
- 
- 	if (args)
- 		vprintk(args->fmt, args->args);
- 
-+	if (bug_on_warn) {
-+		pr_warn("bug_on_warn set, calling BUG()...\n");
-+		/*
-+		 * A flood of WARN()s may occur.  Prevent further WARN()s
-+		 * from panicking the system.
-+		 */
-+		bug_on_warn = 0;
-+		BUG();
-+	}
-+
- 	print_modules();
- 	dump_stack();
- 	print_oops_end_marker();
-@@ -501,3 +513,10 @@ static int __init oops_setup(char *s)
- 	return 0;
- }
- early_param("oops", oops_setup);
-+
-+static int __init bug_on_warn_setup(char *s)
-+{
-+	bug_on_warn = 1;
-+	return 0;
-+}
-+early_param("bug_on_warn", bug_on_warn_setup);
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 4aada6d..030bb5d 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1103,6 +1103,13 @@ static struct ctl_table kern_table[] = {
- 		.proc_handler	= proc_dointvec,
- 	},
- #endif
-+	{
-+		.procname	= "bug_on_warn",
-+		.data		= &bug_on_warn,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
- 	{ }
- };
- 
-diff --git a/kernel/sysctl_binary.c b/kernel/sysctl_binary.c
-index 9a4f750..28376bf 100644
---- a/kernel/sysctl_binary.c
-+++ b/kernel/sysctl_binary.c
-@@ -137,6 +137,7 @@ static const struct bin_table bin_kern_table[] = {
- 	{ CTL_INT,	KERN_COMPAT_LOG,		"compat-log" },
- 	{ CTL_INT,	KERN_MAX_LOCK_DEPTH,		"max_lock_depth" },
- 	{ CTL_INT,	KERN_PANIC_ON_NMI,		"panic_on_unrecovered_nmi" },
-+	{ CTL_INT,	KERN_BUG_ON_WARN,		"bug_on_warn" },
- 	{}
- };
- 
--- 
-1.7.9.3
+@match1@
+declarer name module_platform_driver;
+declarer name module_platform_driver_probe;
+identifier __driver;
+@@
+(
+	module_platform_driver(__driver);
+|
+	module_platform_driver_probe(__driver, ...);
+)
 
+@fix1 depends on match1@
+identifier match1.__driver;
+@@
+	static struct platform_driver __driver = {
+		.driver = {
+-			.owner = THIS_MODULE,
+		}
+	};
+
+@match2@
+identifier __driver;
+@@
+(
+	platform_driver_register(&__driver)
+|
+	platform_driver_probe(&__driver, ...)
+|
+	platform_create_bundle(&__driver, ...)
+)
+
+@fix2 depends on match2@
+identifier match2.__driver;
+@@
+	static struct platform_driver __driver = {
+		.driver = {
+-			.owner = THIS_MODULE,
+		}
+	};
+
+---
+
+@all: The granularity level is per-directory. Greg was okay with that, speak up
+if you strongly disagree. I am really going for consistency here, not patch
+count (and to avoid patches on per-driver level which I already got a few for
+my subsystem). Also, I have not CCed all the mailing lists, since Greg
+suggested that he'd pull this series. If people prefer, I can resend this mail
+with all lists on CC.
+
+Thanks,
+
+   Wolfram
+
+
+The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
+
+  Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux.git platform/remove_owner
+
+for you to fetch changes up to 79cd1762933153237731585f0901eec368e54bae:
+
+  ALSA: sparc: drop owner assignment from platform_drivers (2014-10-20 16:22:16 +0200)
+
+----------------------------------------------------------------
+Wolfram Sang (299):
+      ARM: common: drop owner assignment from platform_drivers
+      ARM: mach-davinci: drop owner assignment from platform_drivers
+      ARM: mach-imx: drop owner assignment from platform_drivers
+      ARM: mach-msm: drop owner assignment from platform_drivers
+      ARM: mach-omap2: drop owner assignment from platform_drivers
+      ARM: mach-prima2: drop owner assignment from platform_drivers
+      ARM: mach-pxa: drop owner assignment from platform_drivers
+      ARM: mach-s3c24xx: drop owner assignment from platform_drivers
+      ARM: mach-sa1100: drop owner assignment from platform_drivers
+      ARM: mach-u300: drop owner assignment from platform_drivers
+      ARM: plat-pxa: drop owner assignment from platform_drivers
+      ARM: plat-samsung: drop owner assignment from platform_drivers
+      mips: lantiq: xway: drop owner assignment from platform_drivers
+      mips: mti-sead3: drop owner assignment from platform_drivers
+      mips: pci: drop owner assignment from platform_drivers
+      mips: ralink: drop owner assignment from platform_drivers
+      mips: txx9: rbtx4939: drop owner assignment from platform_drivers
+      powerpc: kernel: drop owner assignment from platform_drivers
+      powerpc: platforms: 52xx: drop owner assignment from platform_drivers
+      powerpc: platforms: 82xx: drop owner assignment from platform_drivers
+      powerpc: platforms: 83xx: drop owner assignment from platform_drivers
+      powerpc: platforms: 85xx: drop owner assignment from platform_drivers
+      powerpc: platforms: cell: drop owner assignment from platform_drivers
+      powerpc: platforms: pasemi: drop owner assignment from platform_drivers
+      powerpc: sysdev: drop owner assignment from platform_drivers
+      powerpc: sysdev: qe_lib: drop owner assignment from platform_drivers
+      s390: appldata: drop owner assignment from platform_drivers
+      sparc: include: asm: drop owner assignment from platform_drivers
+      sparc: kernel: drop owner assignment from platform_drivers
+      x86: platform: iris: drop owner assignment from platform_drivers
+      x86: platform: olpc: drop owner assignment from platform_drivers
+      acpi: apei: drop owner assignment from platform_drivers
+      amba: drop owner assignment from platform_drivers
+      ata: drop owner assignment from platform_drivers
+      atm: drop owner assignment from platform_drivers
+      block: drop owner assignment from platform_drivers
+      bluetooth: drop owner assignment from platform_drivers
+      bus: drop owner assignment from platform_drivers
+      char: drop owner assignment from platform_drivers
+      char: hw_random: drop owner assignment from platform_drivers
+      char: ipmi: drop owner assignment from platform_drivers
+      char: tpm: drop owner assignment from platform_drivers
+      char: xillybus: drop owner assignment from platform_drivers
+      clk: drop owner assignment from platform_drivers
+      clk: qcom: drop owner assignment from platform_drivers
+      clk: samsung: drop owner assignment from platform_drivers
+      clk: ux500: drop owner assignment from platform_drivers
+      clk: x86: drop owner assignment from platform_drivers
+      cpufreq: drop owner assignment from platform_drivers
+      cpuidle: drop owner assignment from platform_drivers
+      crypto: drop owner assignment from platform_drivers
+      crypto: amcc: drop owner assignment from platform_drivers
+      crypto: caam: drop owner assignment from platform_drivers
+      crypto: ccp: drop owner assignment from platform_drivers
+      crypto: qce: drop owner assignment from platform_drivers
+      crypto: ux500: cryp: drop owner assignment from platform_drivers
+      crypto: ux500: hash: drop owner assignment from platform_drivers
+      devfreq: exynos: drop owner assignment from platform_drivers
+      dma: drop owner assignment from platform_drivers
+      dma: bestcomm: drop owner assignment from platform_drivers
+      dma: ipu: drop owner assignment from platform_drivers
+      dma: ppc4xx: drop owner assignment from platform_drivers
+      dma: sh: drop owner assignment from platform_drivers
+      edac: drop owner assignment from platform_drivers
+      extcon: drop owner assignment from platform_drivers
+      firmware: drop owner assignment from platform_drivers
+      gpio: drop owner assignment from platform_drivers
+      gpu: drm: armada: drop owner assignment from platform_drivers
+      gpu: drm: exynos: drop owner assignment from platform_drivers
+      gpu: drm: msm: drop owner assignment from platform_drivers
+      gpu: drm: omapdrm: drop owner assignment from platform_drivers
+      gpu: drm: panel: drop owner assignment from platform_drivers
+      gpu: drm: rcar-du: drop owner assignment from platform_drivers
+      gpu: drm: shmobile: drop owner assignment from platform_drivers
+      gpu: drm: sti: drop owner assignment from platform_drivers
+      gpu: drm: tilcdc: drop owner assignment from platform_drivers
+      hsi: controllers: drop owner assignment from platform_drivers
+      hwmon: drop owner assignment from platform_drivers
+      hwspinlock: drop owner assignment from platform_drivers
+      i2c: busses: drop owner assignment from platform_drivers
+      i2c: muxes: drop owner assignment from platform_drivers
+      ide: drop owner assignment from platform_drivers
+      iio: adc: drop owner assignment from platform_drivers
+      input: keyboard: drop owner assignment from platform_drivers
+      input: misc: drop owner assignment from platform_drivers
+      input: mouse: drop owner assignment from platform_drivers
+      input: serio: drop owner assignment from platform_drivers
+      input: touchscreen: drop owner assignment from platform_drivers
+      iommu: drop owner assignment from platform_drivers
+      irqchip: drop owner assignment from platform_drivers
+      leds: drop owner assignment from platform_drivers
+      macintosh: drop owner assignment from platform_drivers
+      mailbox: drop owner assignment from platform_drivers
+      media: platform: drop owner assignment from platform_drivers
+      media: platform: blackfin: drop owner assignment from platform_drivers
+      media: platform: coda: drop owner assignment from platform_drivers
+      media: platform: davinci: drop owner assignment from platform_drivers
+      media: platform: exynos4-is: drop owner assignment from platform_drivers
+      media: platform: exynos-gsc: drop owner assignment from platform_drivers
+      media: platform: marvell-ccic: drop owner assignment from platform_drivers
+      media: platform: omap3isp: drop owner assignment from platform_drivers
+      media: platform: s3c-camif: drop owner assignment from platform_drivers
+      media: platform: s5p-g2d: drop owner assignment from platform_drivers
+      media: platform: s5p-jpeg: drop owner assignment from platform_drivers
+      media: platform: s5p-mfc: drop owner assignment from platform_drivers
+      media: platform: s5p-tv: drop owner assignment from platform_drivers
+      media: platform: soc_camera: drop owner assignment from platform_drivers
+      media: platform: ti-vpe: drop owner assignment from platform_drivers
+      media: platform: vsp1: drop owner assignment from platform_drivers
+      media: radio: drop owner assignment from platform_drivers
+      media: radio: si4713: drop owner assignment from platform_drivers
+      media: rc: drop owner assignment from platform_drivers
+      media: rc: img-ir: drop owner assignment from platform_drivers
+      memory: drop owner assignment from platform_drivers
+      memstick: host: drop owner assignment from platform_drivers
+      mfd: drop owner assignment from platform_drivers
+      misc: drop owner assignment from platform_drivers
+      misc: carma: drop owner assignment from platform_drivers
+      misc: eeprom: drop owner assignment from platform_drivers
+      misc: mic: card: drop owner assignment from platform_drivers
+      misc: ti-st: drop owner assignment from platform_drivers
+      mmc: host: drop owner assignment from platform_drivers
+      mtd: devices: drop owner assignment from platform_drivers
+      mtd: maps: drop owner assignment from platform_drivers
+      mtd: nand: drop owner assignment from platform_drivers
+      mtd: nand: bcm47xxnflash: drop owner assignment from platform_drivers
+      mtd: onenand: drop owner assignment from platform_drivers
+      mtd: spi-nor: drop owner assignment from platform_drivers
+      net: can: drop owner assignment from platform_drivers
+      net: can: cc770: drop owner assignment from platform_drivers
+      net: can: c_can: drop owner assignment from platform_drivers
+      net: can: mscan: drop owner assignment from platform_drivers
+      net: can: sja1000: drop owner assignment from platform_drivers
+      net: can: softing: drop owner assignment from platform_drivers
+      net: ethernet: drop owner assignment from platform_drivers
+      net: ethernet: 8390: drop owner assignment from platform_drivers
+      net: ethernet: adi: drop owner assignment from platform_drivers
+      net: ethernet: aeroflex: drop owner assignment from platform_drivers
+      net: ethernet: altera: drop owner assignment from platform_drivers
+      net: ethernet: amd: drop owner assignment from platform_drivers
+      net: ethernet: apple: drop owner assignment from platform_drivers
+      net: ethernet: broadcom: drop owner assignment from platform_drivers
+      net: ethernet: broadcom: genet: drop owner assignment from platform_drivers
+      net: ethernet: cadence: drop owner assignment from platform_drivers
+      net: ethernet: cirrus: drop owner assignment from platform_drivers
+      net: ethernet: davicom: drop owner assignment from platform_drivers
+      net: ethernet: faraday: drop owner assignment from platform_drivers
+      net: ethernet: freescale: drop owner assignment from platform_drivers
+      net: ethernet: freescale: fs_enet: drop owner assignment from platform_drivers
+      net: ethernet: i825xx: drop owner assignment from platform_drivers
+      net: ethernet: ibm: emac: drop owner assignment from platform_drivers
+      net: ethernet: marvell: drop owner assignment from platform_drivers
+      net: ethernet: micrel: drop owner assignment from platform_drivers
+      net: ethernet: moxa: drop owner assignment from platform_drivers
+      net: ethernet: natsemi: drop owner assignment from platform_drivers
+      net: ethernet: nuvoton: drop owner assignment from platform_drivers
+      net: ethernet: octeon: drop owner assignment from platform_drivers
+      net: ethernet: samsung: sxgbe: drop owner assignment from platform_drivers
+      net: ethernet: seeq: drop owner assignment from platform_drivers
+      net: ethernet: sgi: drop owner assignment from platform_drivers
+      net: ethernet: smsc: drop owner assignment from platform_drivers
+      net: ethernet: sun: drop owner assignment from platform_drivers
+      net: ethernet: tundra: drop owner assignment from platform_drivers
+      net: ethernet: via: drop owner assignment from platform_drivers
+      net: ethernet: wiznet: drop owner assignment from platform_drivers
+      net: ieee802154: drop owner assignment from platform_drivers
+      net: irda: drop owner assignment from platform_drivers
+      net: phy: drop owner assignment from platform_drivers
+      net: wireless: drop owner assignment from platform_drivers
+      net: wireless: ath: ath9k: drop owner assignment from platform_drivers
+      net: wireless: ath: wcn36xx: drop owner assignment from platform_drivers
+      net: wireless: brcm80211: brcmfmac: drop owner assignment from platform_drivers
+      net: wireless: rt2x00: drop owner assignment from platform_drivers
+      net: wireless: ti: wl12xx: drop owner assignment from platform_drivers
+      net: wireless: ti: wl18xx: drop owner assignment from platform_drivers
+      nfc: drop owner assignment from platform_drivers
+      parport: drop owner assignment from platform_drivers
+      pci: host: drop owner assignment from platform_drivers
+      pcmcia: drop owner assignment from platform_drivers
+      pinctrl: drop owner assignment from platform_drivers
+      pinctrl: berlin: drop owner assignment from platform_drivers
+      pinctrl: freescale: drop owner assignment from platform_drivers
+      pinctrl: mvebu: drop owner assignment from platform_drivers
+      pinctrl: nomadik: drop owner assignment from platform_drivers
+      pinctrl: qcom: drop owner assignment from platform_drivers
+      pinctrl: samsung: drop owner assignment from platform_drivers
+      pinctrl: sh-pfc: drop owner assignment from platform_drivers
+      pinctrl: sirf: drop owner assignment from platform_drivers
+      pinctrl: spear: drop owner assignment from platform_drivers
+      pinctrl: sunxi: drop owner assignment from platform_drivers
+      pinctrl: vt8500: drop owner assignment from platform_drivers
+      platform: chrome: drop owner assignment from platform_drivers
+      platform: x86: drop owner assignment from platform_drivers
+      power: drop owner assignment from platform_drivers
+      power: reset: drop owner assignment from platform_drivers
+      pps: clients: drop owner assignment from platform_drivers
+      pwm: drop owner assignment from platform_drivers
+      regulator: drop owner assignment from platform_drivers
+      remoteproc: drop owner assignment from platform_drivers
+      reset: drop owner assignment from platform_drivers
+      reset: sti: drop owner assignment from platform_drivers
+      rtc: drop owner assignment from platform_drivers
+      s390: block: drop owner assignment from platform_drivers
+      s390: char: drop owner assignment from platform_drivers
+      sbus: char: drop owner assignment from platform_drivers
+      scsi: drop owner assignment from platform_drivers
+      scsi: ufs: drop owner assignment from platform_drivers
+      soc: qcom: drop owner assignment from platform_drivers
+      soc: tegra: fuse: drop owner assignment from platform_drivers
+      soc: ti: drop owner assignment from platform_drivers
+      spi: drop owner assignment from platform_drivers
+      spmi: drop owner assignment from platform_drivers
+      staging: android: drop owner assignment from platform_drivers
+      staging: emxx_udc: drop owner assignment from platform_drivers
+      staging: iio: adc: drop owner assignment from platform_drivers
+      staging: iio: trigger: drop owner assignment from platform_drivers
+      staging: imx-drm: drop owner assignment from platform_drivers
+      staging: media: davinci_vpfe: drop owner assignment from platform_drivers
+      staging: media: lirc: drop owner assignment from platform_drivers
+      staging: media: omap24xx: drop owner assignment from platform_drivers
+      staging: media: omap4iss: drop owner assignment from platform_drivers
+      staging: netlogic: drop owner assignment from platform_drivers
+      staging: nvec: drop owner assignment from platform_drivers
+      staging: octeon: drop owner assignment from platform_drivers
+      staging: octeon-usb: drop owner assignment from platform_drivers
+      staging: ozwpan: drop owner assignment from platform_drivers
+      thermal: drop owner assignment from platform_drivers
+      thermal: samsung: drop owner assignment from platform_drivers
+      thermal: st: drop owner assignment from platform_drivers
+      tty: drop owner assignment from platform_drivers
+      tty: hvc: drop owner assignment from platform_drivers
+      tty: serial: drop owner assignment from platform_drivers
+      tty: serial: 8250: drop owner assignment from platform_drivers
+      tty: serial: cpm_uart: drop owner assignment from platform_drivers
+      uio: drop owner assignment from platform_drivers
+      usb: c67x00: drop owner assignment from platform_drivers
+      usb: chipidea: drop owner assignment from platform_drivers
+      usb: dwc2: drop owner assignment from platform_drivers
+      usb: gadget: legacy: drop owner assignment from platform_drivers
+      usb: gadget: udc: drop owner assignment from platform_drivers
+      usb: host: drop owner assignment from platform_drivers
+      usb: misc: drop owner assignment from platform_drivers
+      usb: musb: drop owner assignment from platform_drivers
+      usb: phy: drop owner assignment from platform_drivers
+      usb: usbip: drop owner assignment from platform_drivers
+      video: fbdev: drop owner assignment from platform_drivers
+      video: fbdev: exynos: drop owner assignment from platform_drivers
+      video: fbdev: mb862xx: drop owner assignment from platform_drivers
+      video: fbdev: mmp: fb: drop owner assignment from platform_drivers
+      video: fbdev: mmp: hw: drop owner assignment from platform_drivers
+      video: fbdev: omap: drop owner assignment from platform_drivers
+      video: fbdev: omap2: displays-new: drop owner assignment from platform_drivers
+      video: fbdev: omap2: dss: drop owner assignment from platform_drivers
+      video: fbdev: omap2: omapfb: drop owner assignment from platform_drivers
+      virtio: drop owner assignment from platform_drivers
+      w1: masters: drop owner assignment from platform_drivers
+      watchdog: drop owner assignment from platform_drivers
+      zorro: drop owner assignment from platform_drivers
+      pstore: drop owner assignment from platform_drivers
+      net: dsa: drop owner assignment from platform_drivers
+      net: rfkill: drop owner assignment from platform_drivers
+      ALSA: arm: drop owner assignment from platform_drivers
+      ALSA: atmel: drop owner assignment from platform_drivers
+      ALSA: drivers: drop owner assignment from platform_drivers
+      ALSA: drivers: mpu401: drop owner assignment from platform_drivers
+      ALSA: drivers: pcsp: drop owner assignment from platform_drivers
+      ALSA: mips: drop owner assignment from platform_drivers
+      OSS: dmasound: drop owner assignment from platform_drivers
+      ALSA: ppc: drop owner assignment from platform_drivers
+      ALSA: sh: drop owner assignment from platform_drivers
+      ASoC: : drop owner assignment from platform_drivers
+      ASoC: adi: drop owner assignment from platform_drivers
+      ASoC: atmel: drop owner assignment from platform_drivers
+      ASoC: au1x: drop owner assignment from platform_drivers
+      ASoC: bcm: drop owner assignment from platform_drivers
+      ASoC: blackfin: drop owner assignment from platform_drivers
+      ASoC: cirrus: drop owner assignment from platform_drivers
+      ASoC: codecs: drop owner assignment from platform_drivers
+      ASoC: davinci: drop owner assignment from platform_drivers
+      ASoC: dwc: drop owner assignment from platform_drivers
+      ASoC: fsl: drop owner assignment from platform_drivers
+      ASoC: generic: drop owner assignment from platform_drivers
+      ASoC: intel: drop owner assignment from platform_drivers
+      ASoC: jz4740: drop owner assignment from platform_drivers
+      ASoC: kirkwood: drop owner assignment from platform_drivers
+      ASoC: mxs: drop owner assignment from platform_drivers
+      ASoC: nuc900: drop owner assignment from platform_drivers
+      ASoC: omap: drop owner assignment from platform_drivers
+      ASoC: pxa: drop owner assignment from platform_drivers
+      ASoC: rockchip: drop owner assignment from platform_drivers
+      ASoC: s6000: drop owner assignment from platform_drivers
+      ASoC: samsung: drop owner assignment from platform_drivers
+      ASoC: sh: drop owner assignment from platform_drivers
+      ASoC: sirf: drop owner assignment from platform_drivers
+      ASoC: spear: drop owner assignment from platform_drivers
+      ASoC: tegra: drop owner assignment from platform_drivers
+      ASoC: txx9: drop owner assignment from platform_drivers
+      ASoC: ux500: drop owner assignment from platform_drivers
+      ALSA: sparc: drop owner assignment from platform_drivers
+
+ arch/arm/common/sa1111.c                                         | 1 -
+... removed a lot of lines ...
+ sound/sparc/dbri.c                                               | 1 -
+ 1687 files changed, 1717 deletions(-)
+
+--M9NhX3UHpAaciwkO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJURo/RAAoJEBQN5MwUoCm2KK0QAKL78I46hdb8gKJbsL5N4fq4
+np3did7hmoxAIgYGQaoNGxerPLYtDu2KI8RBIYtB1CjV3vBk/fin5Y2pnBNH2xGj
+BpifIG8l/9AcOPBZrutl8anJ2u9whMYuFIih/SP2UECMNGUnFfyJhzAbFwka4Sg7
+y5t5B/PEZtE+c+GVBGuD+q2H6F5NOEVu8D23jyb+m2lPki2vsVYmxnkd/qVNeBhk
+4wF4IF1LO3fuRMwK9V2wBcQ0nhLhi8h2EY+DOsqnN//ndBTevbeFlLO8O7WCmi6p
+6gDbUpUyG8DDkJ8hgzLU5aigXsLg0bENf/9eaGgoSNJgt+e1S8b6DtIXfINJnlER
+nPj0FY5rkyLt1X/3I2v/MA1IA4myObg0lTwr/W7FEcI6XbyWlXDsGzYKR6QLoGrb
+sPJspwXuemKZQTE+pwupLUEUnp3T3T1h+Wi0JpWxcU2SORo6k5A+Kp54dvrn8cgQ
+1Kl6tH6jQ9PqKhYGK1FSgZ4VFnM9TvhExdjwJtL889uroozg5mYum5f6hQMBwzly
+sA4fu5bBnkW/IL+hsd0rrgvNoq8+B3awxtPqoxoj6kqBlW2R/H7zhqZauDyO7aUp
+4dLXpREOrsZlPIiVMTcXiCjvPZ+sWZuI1FRBBc+a2ftCvnOtpMRXltN8ECUgjIxJ
+UMQhiYMQtIe6bWANvZHj
+=htMg
+-----END PGP SIGNATURE-----
+
+--M9NhX3UHpAaciwkO--
