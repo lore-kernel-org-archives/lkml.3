@@ -1,115 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933149AbaJUOjg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 10:39:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37634 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932863AbaJUOjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 10:39:33 -0400
-Message-ID: <5446690D.3000909@redhat.com>
-Date: Tue, 21 Oct 2014 16:09:17 +0200
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S933021AbaJUOmN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 10:42:13 -0400
+Received: from mail-oi0-f45.google.com ([209.85.218.45]:54609 "EHLO
+	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932825AbaJUOmL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 10:42:11 -0400
 MIME-Version: 1.0
-To: karam.lee@lge.com, minchan@kernel.org, ngupta@vflare.org,
-        linux-kernel@vger.kernel.org
-CC: matthew.r.wilcox@intel.com, seungho1.park@lge.com
-Subject: Re: [PATCH v3 2/3] zram: change parameter from vaild_io_request()
-References: <1413876458-19279-1-git-send-email-karam.lee@lge.com> <1413876458-19279-3-git-send-email-karam.lee@lge.com>
-In-Reply-To: <1413876458-19279-3-git-send-email-karam.lee@lge.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="WR1VbgDsmpbanwpaDOAIQIgC8iHD2hfJo"
+X-Originating-IP: [80.15.154.115]
+In-Reply-To: <1413902274.4202.113.camel@ul30vt.home>
+References: <1413205748-6300-1-git-send-email-a.motakis@virtualopensystems.com>
+ <1413205748-6300-6-git-send-email-a.motakis@virtualopensystems.com>
+ <1413839603.4202.108.camel@ul30vt.home> <CAG8rG2wca4w8LaDSVbgNwfd=e077UaVdpaFhFkMphmyH62Dm3w@mail.gmail.com>
+ <1413902274.4202.113.camel@ul30vt.home>
+From: Antonios Motakis <a.motakis@virtualopensystems.com>
+Date: Tue, 21 Oct 2014 16:41:51 +0200
+Message-ID: <CAG8rG2w6z=P=jc1n+Ay9-iBOKSFXsfdfmuyZeEJWKJM9kSdVMA@mail.gmail.com>
+Subject: Re: [PATCH 5/5] vfio/iommu_type1: implement the VFIO_DMA_MAP_FLAG_NOEXEC
+ flag
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: kvm-arm <kvmarm@lists.cs.columbia.edu>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Will Deacon <will.deacon@arm.com>,
+        VirtualOpenSystems Technical Team <tech@virtualopensystems.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Eric Auger <eric.auger@linaro.org>,
+        Kim Phillips <kim.phillips@freescale.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        "open list:VFIO DRIVER" <kvm@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---WR1VbgDsmpbanwpaDOAIQIgC8iHD2hfJo
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+On Tue, Oct 21, 2014 at 4:37 PM, Alex Williamson
+<alex.williamson@redhat.com> wrote:
+> On Tue, 2014-10-21 at 14:40 +0200, Antonios Motakis wrote:
+>> On Mon, Oct 20, 2014 at 11:13 PM, Alex Williamson
+>> <alex.williamson@redhat.com> wrote:
+>> > On Mon, 2014-10-13 at 15:09 +0200, Antonios Motakis wrote:
+>> >> Some IOMMU drivers, such as the ARM SMMU driver, make available the
+>> >> IOMMU_NOEXEC flag, to set the page tables for a device as XN (execute never).
+>> >> This affects devices such as the ARM PL330 DMA Controller, which respects
+>> >> this flag and will refuse to fetch DMA instructions from memory where the
+>> >> XN flag has been set.
+>> >>
+>> >> The flag can be used only if all IOMMU domains behind the container support
+>> >> the IOMMU_NOEXEC flag. Also, if any mappings are created with the flag, any
+>> >> new domains with devices will have to support it as well.
+>> >>
+>> >> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+>> >> ---
+>> >>  drivers/vfio/vfio_iommu_type1.c | 25 ++++++++++++++++++++++++-
+>> >>  1 file changed, 24 insertions(+), 1 deletion(-)
+>> >>
+>> >> diff --git a/drivers/vfio/vfio_iommu_type1.c b/drivers/vfio/vfio_iommu_type1.c
+>> >> index 8b4202a..e225e8f 100644
+>> >> --- a/drivers/vfio/vfio_iommu_type1.c
+>> >> +++ b/drivers/vfio/vfio_iommu_type1.c
+>> >> @@ -569,6 +569,12 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
+>> >>       if (map->flags & VFIO_DMA_MAP_FLAG_READ)
+>> >>               prot |= IOMMU_READ;
+>> >>
+>> >> +     if (map->flags & VFIO_DMA_MAP_FLAG_NOEXEC) {
+>> >> +             if (!vfio_domains_have_iommu_cap(iommu, IOMMU_CAP_NOEXEC))
+>> >> +                     return -EINVAL;
+>> >> +             prot |= IOMMU_NOEXEC;
+>> >> +     }
+>> >> +
+>> >>       if (!prot || !size || (size | iova | vaddr) & mask)
+>> >>               return -EINVAL;
+>> >
+>> > I think this test needs to move above adding the NOEXEC flag, otherwise
+>> > we now allow mappings without read or write, which is an ABI change.
+>> >
+>>
+>> Ack.
+>>
+>> >>
+>> >> @@ -662,6 +668,14 @@ static int vfio_iommu_replay(struct vfio_iommu *iommu,
+>> >>               dma = rb_entry(n, struct vfio_dma, node);
+>> >>               iova = dma->iova;
+>> >>
+>> >> +             /*
+>> >> +              * if any of the mappings to be replayed has the NOEXEC flag
+>> >> +              * set, then the new iommu domain must support it
+>> >> +              */
+>> >> +             if ((dma->prot | IOMMU_NOEXEC) &&
+>> >
+>> > I think you mean
+>> >
+>> > & IOMMU_NOEXEC
+>>
+>> Ack.
+>>
+>> >
+>> >> +                             !(domain->caps & IOMMU_CAP_NOEXEC))
+>> >> +                     return -EINVAL;
+>> >> +
+>> >
+>> > In patch 2/5 you stated:
+>> >
+>> >         The IOMMU_NOEXEC flag needs to be available for all the IOMMUs
+>> >         of the container used.
+>> >
+>> > But here you'll create heterogeneous containers so long as there are no
+>> > NOEXEC mappings.  Is that intentional or a side effect of the above
+>> > masking bug?
+>> >
+>>
+>> Yeah, my intention was to not stop the user of having heterogeneous
+>> containers, as long as he doesn't care about using the NOEXEC flag. As
+>> soon as the user tries to apply this flag however, then it should be
+>> supported by all the IOMMUs behind the container - otherwise it is not
+>> enforceable.
+>>
+>> Do you think we should change this behavior? I think most users will
+>> not care about using this flag, and we should not stop them from
+>> mixing containers.
+>
+> I think that's a reasonable way to go, but let's add a comment in uapi
+> vfio.h describing that expectation.  Thanks,
 
-On 10/21/2014 09:27 AM, karam.lee@lge.com wrote:
-> From: "karam.lee" <karam.lee@lge.com>
->=20
-> This patch changes parameter of valid_io_request for common usage.
-> The purpose of valid_io_request() is to determine if bio request is
-> valid or not.
-> This patch use  I/O start address and size instead of a BIO parameter
-> for common usage.
->=20
-> Signed-off-by: karam.lee <karam.lee@lge.com>
+Ok, will do.
 
-Acked-by: Jerome Marchand <jmarchan@redhat.com>
-
-> ---
->  drivers/block/zram/zram_drv.c |   16 ++++++++--------
->  1 file changed, 8 insertions(+), 8 deletions(-)
->=20
-> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_dr=
-v.c
-> index 54da18a..4565fdc 100644
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -206,19 +206,18 @@ static inline int is_partial_io(struct bio_vec *b=
-vec)
->  /*
->   * Check if request is within bounds and aligned on zram logical block=
-s.
->   */
-> -static inline int valid_io_request(struct zram *zram, struct bio *bio)=
-
-> +static inline int valid_io_request(struct zram *zram,
-> +		sector_t start, unsigned int size)
->  {
-> -	u64 start, end, bound;
-> +	u64 end, bound;
-> =20
->  	/* unaligned request */
-> -	if (unlikely(bio->bi_iter.bi_sector &
-> -		     (ZRAM_SECTOR_PER_LOGICAL_BLOCK - 1)))
-> +	if (unlikely(start & (ZRAM_SECTOR_PER_LOGICAL_BLOCK - 1)))
->  		return 0;
-> -	if (unlikely(bio->bi_iter.bi_size & (ZRAM_LOGICAL_BLOCK_SIZE - 1)))
-> +	if (unlikely(size & (ZRAM_LOGICAL_BLOCK_SIZE - 1)))
->  		return 0;
-> =20
-> -	start =3D bio->bi_iter.bi_sector;
-> -	end =3D start + (bio->bi_iter.bi_size >> SECTOR_SHIFT);
-> +	end =3D start + (size >> SECTOR_SHIFT);
->  	bound =3D zram->disksize >> SECTOR_SHIFT;
->  	/* out of range range */
->  	if (unlikely(start >=3D bound || end > bound || start > end))
-> @@ -780,7 +779,8 @@ static void zram_make_request(struct request_queue =
-*queue, struct bio *bio)
->  	if (unlikely(!init_done(zram)))
->  		goto error;
-> =20
-> -	if (!valid_io_request(zram, bio)) {
-> +	if (!valid_io_request(zram, bio->bi_iter.bi_sector,
-> +					bio->bi_iter.bi_size)) {
->  		atomic64_inc(&zram->stats.invalid_io);
->  		goto error;
->  	}
->=20
+>
+> Alex
+>
+>> >>               while (iova < dma->iova + dma->size) {
+>> >>                       phys_addr_t phys = iommu_iova_to_phys(d->domain, iova);
+>> >>                       size_t size;
+>> >> @@ -749,6 +763,9 @@ static int vfio_iommu_type1_attach_group(void *iommu_data,
+>> >>       if (iommu_capable(bus, IOMMU_CAP_CACHE_COHERENCY))
+>> >>               domain->caps |= IOMMU_CAP_CACHE_COHERENCY;
+>> >>
+>> >> +     if (iommu_capable(bus, IOMMU_CAP_NOEXEC))
+>> >> +             domain->caps |= IOMMU_CAP_NOEXEC;
+>> >> +
+>> >>       /*
+>> >>        * Try to match an existing compatible domain.  We don't want to
+>> >>        * preclude an IOMMU driver supporting multiple bus_types and being
+>> >> @@ -900,6 +917,11 @@ static long vfio_iommu_type1_ioctl(void *iommu_data,
+>> >>                               return 0;
+>> >>                       return vfio_domains_have_iommu_cap(iommu,
+>> >>                                                 IOMMU_CAP_CACHE_COHERENCY);
+>> >> +             case VFIO_DMA_NOEXEC_IOMMU:
+>> >> +                     if (!iommu)
+>> >> +                             return 0;
+>> >> +                     return vfio_domains_have_iommu_cap(iommu,
+>> >> +                                                        IOMMU_CAP_NOEXEC);
+>> >>               default:
+>> >>                       return 0;
+>> >>               }
+>> >> @@ -923,7 +945,8 @@ static long vfio_iommu_type1_ioctl(void *iommu_data,
+>> >>       } else if (cmd == VFIO_IOMMU_MAP_DMA) {
+>> >>               struct vfio_iommu_type1_dma_map map;
+>> >>               uint32_t mask = VFIO_DMA_MAP_FLAG_READ |
+>> >> -                             VFIO_DMA_MAP_FLAG_WRITE;
+>> >> +                             VFIO_DMA_MAP_FLAG_WRITE |
+>> >> +                             VFIO_DMA_MAP_FLAG_NOEXEC;
+>> >>
+>> >>               minsz = offsetofend(struct vfio_iommu_type1_dma_map, size);
+>> >>
+>> >
+>> >
+>> >
+>>
+>>
+>>
+>
+>
+>
 
 
 
---WR1VbgDsmpbanwpaDOAIQIgC8iHD2hfJo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQEcBAEBAgAGBQJURmkNAAoJEHTzHJCtsuoCoKMIAI5Q69JOxKqk5o+v0oHdlCCD
-jHmA8+h2QrwNXq71YCsnRvXfdI4GvPiYFlf0iW1+8eYwz+zSNoAWbyfffSqtSzUu
-HsZGrCjVAyIw8fzSeNjYpgSwMWl0ftf5tKL+N2XThLHc29xLCIldxn9rgTpb7RvX
-xv/rDDSGETDi7SuUbfCuxlJYXmVXAtgxySteYgXsdZszbLRi4bPv7+Es3M82e1cW
-oAXE0mHw5nVX8lwsMpFtyEnB9rTl2wjiOAFwH5eZww7M6JHVIEqG+5VMLJdrUzMi
-Pn5djwYyuiqE/U4Q5OXguCybl/1n9BI3FzyogpiwCiodmLv2WeVD5P2Bu4iOy/Y=
-=YsPG
------END PGP SIGNATURE-----
-
---WR1VbgDsmpbanwpaDOAIQIgC8iHD2hfJo--
+-- 
+Antonios Motakis
+Virtual Open Systems
