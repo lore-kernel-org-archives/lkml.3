@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754895AbaJUJzk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 05:55:40 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:16822 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754533AbaJUJzj (ORCPT
+	id S1754613AbaJUKA1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 06:00:27 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:41077 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751023AbaJUKA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 05:55:39 -0400
-X-IronPort-AV: E=Sophos;i="5.04,761,1406563200"; 
-   d="scan'208";a="37652687"
-From: "Chen, Hanxiao" <chenhanxiao@cn.fujitsu.com>
-To: "Chen, Hanxiao" <chenhanxiao@cn.fujitsu.com>,
-        "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Richard Weinberger <richard.weinberger@gmail.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Oleg Nesterov <oleg@redhat.com>, Mateusz Guzik <mguzik@redhat.com>,
-        David Howells <dhowells@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: RE: [PATCHv5] procfs: show hierarchy of pid namespace
-Thread-Topic: [PATCHv5] procfs: show hierarchy of pid namespace
-Thread-Index: AQHP6TkKDEPssT3zDUibRSbqcVIu2Jw6Ud4A
-Date: Tue, 21 Oct 2014 09:55:39 +0000
-Message-ID: <5871495633F38949900D2BF2DC04883E5F6039@G08CNEXMBPEKD02.g08.fujitsu.local>
-References: <1413460916-2852-1-git-send-email-chenhanxiao@cn.fujitsu.com>
-In-Reply-To: <1413460916-2852-1-git-send-email-chenhanxiao@cn.fujitsu.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.226.240]
-Content-Type: text/plain; charset="utf-8"
+	Tue, 21 Oct 2014 06:00:26 -0400
+Message-ID: <54462EB2.2070302@collabora.co.uk>
+Date: Tue, 21 Oct 2014 12:00:18 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>
+CC: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>
+Subject: Re: [PATCH 2/2] ARM: dts: exynos4412-trats: Add suspend configuration
+ for max77686 regulators
+References: <1413879912-26606-1-git-send-email-k.kozlowski@samsung.com> <1413879912-26606-3-git-send-email-k.kozlowski@samsung.com> <54461FC0.9020904@samsung.com> <1413883424.26980.7.camel@AMDC1943>
+In-Reply-To: <1413883424.26980.7.camel@AMDC1943>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9L9tjfJ030936
 
+Hello Krzysztof,
 
-
-> -----Original Message-----
-> From: containers-bounces@lists.linux-foundation.org
-> [mailto:containers-bounces@lists.linux-foundation.org] On Behalf Of Chen
-> Hanxiao
-> Sent: Thursday, October 16, 2014 8:02 PM
-> To: containers@lists.linux-foundation.org; linux-kernel@vger.kernel.org
-> Cc: Richard Weinberger; Serge Hallyn; Oleg Nesterov; Mateusz Guzik; David Howells;
-> Eric W. Biederman
-> Subject: [PATCHv5] procfs: show hierarchy of pid namespace
+On 10/21/2014 11:23 AM, Krzysztof Kozlowski wrote:
+>> >  
+>> >  				ldo9_reg: ldo9 {
+>> > @@ -295,7 +311,9 @@
+>> >  					regulator-name = "CAM_ISP_MIPI_1.2V";
+>> >  					regulator-min-microvolt = <1200000>;
+>> >  					regulator-max-microvolt = <1200000>;
+>> > -					regulator-mem-idle;
+>> > +					regulator-state-mem {
+>> > +						regulator-on-in-suspend;
+>> 
+>> CAM_ISP_MIPI_1.2V is used for camera, I think this regulator should turn off in suspend state
+>> because camear could not be used in suspend state.
 > 
-> We lack of pid hierarchy information, and this will lead to:
-> a) we don't know pids' relationship, who is whose child:
->    /proc/PID/ns/pid only tell us whether two pids live in same ns;
-> b) bring trouble to nested lxc container check/restore/migration
-> c) bring trouble to pid translation between containers;
+> LDO9 does not support off in suspend mode controlled by PWRREQ. It
+> supports only switching to low power mode if PWRREQ level goes low.
 > 
-> This patch will show the hierarchy of pid namespace
-> by pidns_hierarchy like:
+> Thus the driver does not provide set_suspend_enable or
+> set_suspend_disable for LDO0. Do you want to add such function to the
+> max77686 driver which will explicitly disable the regulator (write 0x0
+> to control reg)?
+> 
 > 
 
-Any comments?
+I think for those regulators you can just use regulator_disable_regmap()
+as the .set_suspend_disable function handler?
 
-Thanks,
-- Chen
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Best regards,
+Javier
