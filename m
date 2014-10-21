@@ -1,226 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313AbaJUEs1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 00:48:27 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46494 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818AbaJUEs0 (ORCPT
+	id S1753517AbaJUEuj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 00:50:39 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:34088 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751102AbaJUEug (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 00:48:26 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <5445E571.30107@jp.fujitsu.com>
-Date: Tue, 21 Oct 2014 13:47:45 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 21 Oct 2014 00:50:36 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, Aditya Kali <adityakali@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>
+References: <1413235430-22944-1-git-send-email-adityakali@google.com>
+	<1413235430-22944-8-git-send-email-adityakali@google.com>
+	<20141016211236.GA4308@mail.hallyn.com>
+	<CAGr1F2EH0ynfFihTh1dv=n1faxUh0zS3ggk303bwGnDnW2PUCw@mail.gmail.com>
+	<20141016214710.GA4759@mail.hallyn.com>
+	<87iojgmy3o.fsf@x220.int.ebiederm.org>
+	<CALCETrUC=yW72d2hDzjESmZAt85x1WcGz4L-DrtY5YXAQxbpMA@mail.gmail.com>
+	<44072106-c0f3-46b8-b2b5-9b1cbd1b7d88@email.android.com>
+	<CALCETrXhGnBM_xx=Auz3WRQXkqhGGTWuZN=PU+A9HZ7Ek27FLA@mail.gmail.com>
+Date: Mon, 20 Oct 2014 21:49:49 -0700
+In-Reply-To: <CALCETrXhGnBM_xx=Auz3WRQXkqhGGTWuZN=PU+A9HZ7Ek27FLA@mail.gmail.com>
+	(Andy Lutomirski's message of "Mon, 20 Oct 2014 17:20:44 -0700")
+Message-ID: <87zjcq10ya.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Neil Zhang <zhangwm@marvell.com>, Dan Streetman <ddstreet@ieee.org>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers: base: update cpu offline info when do hotplug
-References: <1413775748-22478-1-git-send-email-zhangwm@marvell.com> <20141020044340.GA9589@kroah.com> <9034CBD80F070943B59700D7F8149ED9024EB81CAF@SC-VEXCH4.marvell.com> <20141020064826.GA4064@kroah.com> <9034CBD80F070943B59700D7F8149ED9024EB81CC6@SC-VEXCH4.marvell.com> <CALZtONDEdFbx+zTWYdmz3HsfCnV+RtTPAuY4p-RK1DN3g2CwrQ@mail.gmail.com> <5445CB94.1090302@jp.fujitsu.com> <9034CBD80F070943B59700D7F8149ED9024EB81D55@SC-VEXCH4.marvell.com> <5445D27D.1080505@jp.fujitsu.com> <9034CBD80F070943B59700D7F8149ED9024EB81D5A@SC-VEXCH4.marvell.com>
-In-Reply-To: <9034CBD80F070943B59700D7F8149ED9024EB81D5A@SC-VEXCH4.marvell.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
-X-TM-AS-MML: No
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+Vw2r3Domi4h+s82LZOFVHy8/+Mk2fdM8=
+X-SA-Exim-Connect-IP: 68.113.178.29
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 TVD_RCVD_IP Message was received from an IP address
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4987]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Andy Lutomirski <luto@amacapital.net>
+X-Spam-Relay-Country: 
+X-Spam-Timing: total 768 ms - load_scoreonly_sql: 0.09 (0.0%),
+	signal_user_changed: 7 (0.9%), b_tie_ro: 5 (0.7%), parse: 2.1 (0.3%),
+	extract_message_metadata: 35 (4.5%), get_uri_detail_list: 4.2 (0.5%),
+	tests_pri_-1000: 12 (1.6%), tests_pri_-950: 2.7 (0.3%), tests_pri_-900: 1.97
+	(0.3%), tests_pri_-400: 38 (5.0%), check_bayes: 36 (4.6%), b_tokenize: 14
+	(1.9%), b_tok_get_all: 10 (1.3%), b_comp_prob: 5 (0.7%), b_tok_touch_all: 2.4
+	(0.3%), b_finish: 0.96 (0.1%), tests_pri_0: 651 (84.8%), tests_pri_500: 11
+	(1.5%), rewrite_mail: 0.00 (0.0%)
+Subject: Re: [PATCHv1 7/8] cgroup: cgroup namespace setns support
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/10/21 12:36), Neil Zhang wrote:
->
->
->> -----Original Message-----
->> From: Yasuaki Ishimatsu [mailto:isimatu.yasuaki@jp.fujitsu.com]
->> Sent: 2014年10月21日 11:27
->> To: Neil Zhang; Dan Streetman
->> Cc: Greg KH; linux-kernel@vger.kernel.org
->> Subject: Re: [PATCH] drivers: base: update cpu offline info when do hotplug
+Andy Lutomirski <luto@amacapital.net> writes:
+
+> On Sun, Oct 19, 2014 at 9:55 PM, Eric W.Biederman <ebiederm@xmission.com> wrote:
 >>
->> (2014/10/21 12:18), Neil Zhang wrote:
->>> Yasuaki,
+>>
+>> On October 19, 2014 1:26:29 PM CDT, Andy Lutomirski <luto@amacapital.net> wrote:
+
+>>> Is the idea
+>>>that you want a privileged user wrt a cgroupns's userns to be able to
+>>>use this?  If so:
 >>>
->>>> -----Original Message-----
->>>> From: Yasuaki Ishimatsu [mailto:isimatu.yasuaki@jp.fujitsu.com]
->>>> Sent: 2014年10月21日 10:57
->>>> To: Dan Streetman; Neil Zhang
->>>> Cc: Greg KH; linux-kernel@vger.kernel.org
->>>> Subject: Re: [PATCH] drivers: base: update cpu offline info when do
->>>> hotplug
->>>>
->>>> Hi Neil and Dan,
->>>>
->>>> (2014/10/21 2:02), Dan Streetman wrote:
->>>>> On Mon, Oct 20, 2014 at 3:40 AM, Neil Zhang <zhangwm@marvell.com> wrote:
->>>>>> Greg,
->>>>>>
->>>>>>
->>>>>> -----Original Message-----
->>>>>> From: Greg KH [mailto:gregkh@linuxfoundation.org]
->>>>>> Sent: 2014年10月20日 14:48
->>>>>> To: Neil Zhang
->>>>>> Cc: linux-kernel@vger.kernel.org
->>>>>> Subject: Re: [PATCH] drivers: base: update cpu offline info when do
->>>>>> hotplug
->>>>>>
->>>>>> On Sun, Oct 19, 2014 at 11:39:23PM -0700, Neil Zhang wrote:
->>>>>>>> How much noise is this going to cause on a big/little system that
->>>>>>>> constantly hot unplug/plugs processors all of the time?
->>>>>>>
->>>>>>> Can you explain more what kind of noise will be introduced on a
->>>>>>> big/little
->>>> system?
->>>>>>
->>>>>> Have you tested this on such a machine?
->>>>>>
->>>>>> I didn't have such kind of machine on hand.
->>>>>> Can anyone has such machine to verify it?
->>>>>> Thanks!
->>>>>
->>>>> I tested this on a ppc PowerVM system, using dlpar operations to
->>>>> remove/add cpus.
->>>>>
->>>>> Without this patch the cpu online nodes get out of sync with the
->>>>> main online node (and the actual state of the cpus), because they
->>>>> aren't updated as the cpus are brought up/down:
->>>>>
->>>>
->>>>> [root@br10p02 cpu]$ pwd
->>>>> /sys/devices/system/cpu
->>>>> [root@br10p02 cpu]$ cat online
->>>>> 0-39
->>>>> [root@br10p02 cpu]$ for n in {0..47} ; do test $( cat cpu$n/online )
->>>>> -eq 1 && echo -n "$n " ; done ; echo ""
->>>>> 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
->>>>> 26
->>>>> 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47
->>>>
->>>> How is the issue reproduced.
->>>>
->>>> Here is a result on my x86 box with linux-3.18-rc1.
->>>>
->>>> - before offline CPU
->>>> # cd /sys/devices/system/cpu/
->>>> # cat online
->>>> 0-59
->>>> # for n in {0..59} ; do test $( cat cpu$n/online ) -eq 1 && echo -n
->>>> "$n " ; done ; echo ""
->>>> 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
->>>> 26 27 28
->>>> 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51
->>>> 52 53 54
->>>> 55
->>>> 56 57 58 59
->>>>
->>>> - after offline CPU{1..59}
->>>> # for n in {1..59} ; do echo 0 > cpu$n/online; done # cat online
->>>> 0
->>>> # for n in {0..59} ; do test $( cat cpu$n/online ) -eq 1 && echo -n
->>>> "$n " ; done ; echo ""
->>>> 0
->>>>
->>>> It seems that dev->offline is set to correct valute.
->>>>
+>>>Yes, that current_cred() thing is bogus.  (Actually, this is probably
+>>>exploitable right now if any cgroup.procs inode anywhere on the system
+>>>lets non-root write.)  (Can we have some kernel debugging option that
+>>>makes any use of current_cred() in write(2) warn?)
 >>>
->>
->>> Please use an in kernel governor to up / down a core instead of sysfs
->> interface.
->>
->> Thank you for the information. But I don't know the in kernel governor?
->> Could you point a documentation of it?
->>
->
-
-> Simply means that you call cpu_down / cpu_up directly in kernel base on the profiler.
-
-I understood it.
-When using sysfs, device_online/offline() changes dev->offline.
-Therefore, this problem did not occur in my previous test.
-
-Thanks,
-Yasuaki Ishimatsu
-
-
->
->> Thanks,
->> Yasuaki Ishimatsu
->>
+>>>We really need a weaker version of may_ptrace for this kind of stuff.
+>>>Maybe the existing may_ptrace stuff is okay, actually.  But this is
+>>>completely missing group checks, cap checks, capabilities wrt the
+>>>userns, etc.
 >>>
->>>> Thanks,
->>>> Yasuaki Ishimatsu
->>>>
->>>>>
->>>>>
->>>>> While with the patch, the cpu online nodes are kept up to date as
->>>>> the cpus are brought up/down:
->>>>>
->>>>> [root@br10p02 cpu]$ pwd
->>>>> /sys/devices/system/cpu
->>>>> [root@br10p02 cpu]$ cat online
->>>>> 0-39
->>>>> [root@br10p02 cpu]$ for n in {0..47} ; do test $( cat cpu$n/online )
->>>>> -eq 1 && echo -n "$n " ; done ; echo ""
->>>>> 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
->>>>> 26
->>>>> 27 28 29 30 31 32 33 34 35 36 37 38 39
->>>>>
->>>>>
->>>>> Feel free to add
->>>>>
->>>>> Tested-by: Dan Streetman <ddstreet@ieee.org>
->>>>>
->>>>>>
->>>>>>> As I know IKS on arm will use cpu_suspend way to power down a core.
->>>>>>
->>>>>> Are you sure that it also doesn't use that same functionality to
->>>>>> drop a
->>>> processor to save power?
->>>>>>
->>>>>> As I know it use cpu_suspend to switch out a processor in IKS and
->>>>>> there is
->>>> no cpu hotplug notifier in this procedure.
->>>>>>
->>>>>>
->>>>>> Why do you need/want this notification?  What are you going to do
->>>>>> with this
->>>> information that you don't already have?
->>>>>>
->>>>>> The offline won't be updated if an in kernel hotplug governor plug
->>>>>> in / out
->>>> a core which cause the sysfs interface report a wrong status.
->>>>>>
->>>>>>
->>>>>> thanks,
->>>>>>
->>>>>> greg k-h
->>>>>>
->>>>>>
->>>>>> Best Regards,
->>>>>> Neil Zhang
->>>>> --
->>>>> To unsubscribe from this list: send the line "unsubscribe
->>>>> linux-kernel" in the body of a message to majordomo@vger.kernel.org
->>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>>> Please read the FAQ at  http://www.tux.org/lkml/
->>>>>
->>>>
->>>
->>>
->>> Best Regards,
->>> Neil Zhang
->>>  {.n +       +%  lzwm  b 맲  r  zX   w  {ay ʇڙ ,j
->>>    f   h   z  w
+>>>Also, I think that, if this version of the patchset allows non-init
+>>>userns to unshare cgroupns, then the issue of what permission is
+>>>needed to lock the cgroup hierarchy like that needs to be addressed,
+>>>because unshare(CLONE_NEWUSER|CLONE_NEWCGROUP) will effectively pin
+>>>the calling task with no permission required.  Bolting on a fix later
+>>>will be a mess.
 >>
->>     j:+v   w j m         zZ+     ݢj"  ! iO  z  v ^ m
->> nƊ  Y&
->>>
+>> I imagine the pinning would be like the userns.
 >>
+>> Ah but there is a potentially serious issue with the pinning.
+>> With pinning we can make it impossible for root to move us to a different cgroup.
+>>
+>> I am not certain how serious that is but it bears thinking about.
+>> If we don't implement pinning we should be able to implent everything with just filesystem mount options, and no new namespace required.
+>>
+>> Sigh.
+>>
+>> I am too tired tonight to see the end game in this.
 >
+> Possible solution:
 >
-> Best Regards,
-> Neil Zhang
-> ��칻�&�~�&���+-��ݶ��w��˛���m�b��dz�ޖ)���w*jg��������ݢj/���z�ޖ��2�ޙ���&�)ߡ�a�����G���h��j:+v���w�٥>W����i�axPj�m����-�+��d�_
->
+> Ditch the pinning.  That is, if you're outside a cgroupns (or you have
+> a non-ns-confined cgroupfs mounted), then you can move a task in a
+> cgroupns outside of its root cgroup.  If you do this, then the task
+> thinks its cgroup is something like "../foo" or "../../foo".
 
+Of the possible solutions that seems attractive to me, simply because
+we sometimes want to allow clever things to occur.
 
+Does anyone know of a reason (beyond pretty printing) why we need
+cgroupns to restrict the subset of cgroups processes can be in?
+
+I would expect permissions on the cgroup directories themselves, and
+limited visiblilty would be (in general) to achieve the desired
+visiblity.
+
+> While we're at it, consider making setns for a cgroupns *not* change
+> the caller's cgroup.  Is there any reason it really needs to?
+
+setns doesn't but nsenter is going to need to change the cgroup 
+if the pinning requirement is kept.  nsenenter is going to want to
+change the cgroup if the pinning requirement is dropped.
+
+Eric
