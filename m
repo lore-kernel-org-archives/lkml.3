@@ -1,60 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755611AbaJUNB1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 09:01:27 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:49599 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755428AbaJUNBZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 09:01:25 -0400
-Date: Tue, 21 Oct 2014 06:01:18 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Boaz Harrosh <ooo@electrozaur.com>
-Cc: Jeff Garzik <jgpobox@gmail.com>, Jeff Garzik <jgarzik@pobox.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        osd-dev@open-osd.org
-Subject: Re: state of the osdblk driver?
-Message-ID: <20141021130118.GA6122@infradead.org>
-References: <20141021120653.GA9530@infradead.org>
- <CAFtxgO5cPNTMqyY5Foqp_Y+pqCH=zTiatREn-4xRCTm8o5GLwA@mail.gmail.com>
- <544655E8.8070004@electrozaur.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <544655E8.8070004@electrozaur.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S932419AbaJUNC0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 09:02:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21912 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755351AbaJUNCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 09:02:25 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Andy Whitcroft <apw@canonical.com>,
+        Joe Perches <joe@perches.com>
+Subject: [PATCH V3] scripts, checkpatch.pl, provide a better output message for commit id format
+Date: Tue, 21 Oct 2014 09:02:17 -0400
+Message-Id: <1413896537-8045-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 03:47:36PM +0300, Boaz Harrosh wrote:
-> It is used in testing, its a good way to compare ext4 over objects
-> vs exofs over objects, kind of compare apples with apples.
-> (Also at the get go it was a good test that found some bugs in the
->  bring up of the osd target)
-> 
-> If there is an old tagging API need removing its fine to just drop
-> the support, and/or do the minimal change possible. What was the
-> tag used for anyway?
-> 
-> If it bothers you very much then please remove it, send a patch
-> and I'll ACK it.
+I tested this using both lower and upper case 'c' with the following commit
+text:
 
-I'm mostly just trying to figure out if anyone cares.  Would you be
-willing to sign up as a maintainer, and maybe even look into a blk-mq
-conversion?  I'd be happy to help to answer questions and review it.
+Derp, derpy derp.   Derps derpy derpy derp derp derp derp.
+Some other text besides derp.
+Stuff.
 
-> [Just that I thought we don't do that. I can show you a dozen
->  ISA scsi LLD controllers which are a complete pain in the neck
->  with a all subsection core support. There is not a single system
->  on the planet that has this even possible, yet we do not remove
->  them nor the ISA bus crap. osdblk at least is a SW only exercise
->  that can be very much valid in any system.
-> ]
+11 chars, SHOULD FAIL due to size
+commit 1234567890a
 
-Not sure what exactly you mean, but I'm open to any serious proposal to
-get rid of not actually usable cruft in old SCSI HBA drivers.  Feel
-free to send a proposal to linux-scsi - I was planning to come up with
-one of my own, but never got to it.
+12 chars, SHOULD FAIL with missing commit info warning
+commit 1234567890ab
+
+13 chars, SHOULD FAIL with missing commit info warning
+commit 1234567890abc
+
+14 chars, SHOULD FAIL with missing commit info warning
+commit 1234567890abcd
+
+11 chars, SHOULD FAIL due to size
+commit 1234567890a, xxxx
+
+12 chars, SHOULD FAIL with missing commit info warning
+commit 1234567890ab, yyyy
+
+13 chars, SHOULD FAIL with missing commit info warning
+commit 1234567890abc, yyyy
+
+14 chars, SHOULD FAIL with missing commit info warning
+commit 1234567890abcd, yyyy
+
+commit 1234567890f
+("11 chars, separated into two lines SHOULD FAIL")
+
+commit 1234567890af
+("12 chars, separated into two lines")
+
+commit 1234567890abf
+("13 chars, separated into two lines")
+
+commit 1234567890abcf
+("14 chars, separated into two lines")
+
+commit 1234567890f ("11 chars, one line SHOULD FAIL")
+
+commit 1234567890af ("12 chars, one line")
+
+commit 1234567890abf ("13 chars, one line")
+
+commit 1234567890abcf ("14 chars, one line")
+
+P.
+----8<----
+
+I put together a patch with an incorrect format and the following error
+was returned by checkpatch.pl:
+
+ERROR: Please use 12 or more chars for the git commit ID like: 'Commit
+09ec54429c6d ("clocksource: Move cycle_last validation to core code")'
+Commit 09ec54429c6d10f87d1f084de53ae2c1c3a81108, clocksource: Move
+
+As can be seen by the output the commit ID length is accurate, and it is the
+formatting that is generating an error.  The message is confusing and should
+be separated into two warnings, one for the git commit ID length, and the other
+for the format.
+
+Cc: Andy Whitcroft <apw@canonical.com>
+Cc: Joe Perches <joe@perches.com>
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+
+[v2]: Add separate messages for warnings instead of one global format
+warning.
+[v3]: Add check for improperly formatted git ids as well.
+---
+ scripts/checkpatch.pl |   26 ++++++++++++++++----------
+ 1 file changed, 16 insertions(+), 10 deletions(-)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 374abf4..5bdbadd 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2160,21 +2160,27 @@ sub process {
+ 			      "Remove Gerrit Change-Id's before submitting upstream.\n" . $herecurr);
+ 		}
+ 
+-# Check for improperly formed commit descriptions
++# Check for git id commit length and improperly formed commit descriptions
+ 		if ($in_commit_log &&
+-		    $line =~ /\bcommit\s+[0-9a-f]{5,}/i &&
+-		    !($line =~ /\b[Cc]ommit [0-9a-f]{12,40} \("/ ||
+-		      ($line =~ /\b[Cc]ommit [0-9a-f]{12,40}\s*$/ &&
+-		       defined $rawlines[$linenr] &&
+-		       $rawlines[$linenr] =~ /^\s*\("/))) {
+-			$line =~ /\b(c)ommit\s+([0-9a-f]{5,})/i;
++		    $line =~ /\b[Cc]ommit\s+[0-9a-f]{5,}/i &&
++		    !($line =~ /\b[Cc]ommit [0-9a-f]{12,40}/ )) {
++			ERROR("GIT_COMMIT_ID_12_CHARS",
++			      "Please use 12 or more chars for the git commit ID\n" . $herecurr);
++		} elsif ($in_commit_log &&
++			 $line =~ /\b[Cc]ommit [0-9a-f]{12,40}/ &&
++			 !($line =~ /\b[Cc]ommit [0-9a-f]{12,40} \("/ ||
++			   ($line =~ /\b[Cc]ommit [0-9a-f]{12,40}\s*$/ &&
++			    defined $rawlines[$linenr] &&
++			    $rawlines[$linenr] =~ /^\s*\("/))) {
++			$line =~ /\b(c)ommit\s+([0-9a-f]{12,40})/i;
+ 			my $init_char = $1;
+ 			my $orig_commit = lc($2);
+ 			my $id = '01234567890ab';
+ 			my $desc = 'commit description';
+-		        ($id, $desc) = git_commit_info($orig_commit, $id, $desc);
+-			ERROR("GIT_COMMIT_ID",
+-			      "Please use 12 or more chars for the git commit ID like: '${init_char}ommit $id (\"$desc\")'\n" . $herecurr);
++			($id, $desc) = git_commit_info($orig_commit,
++						       $id, $desc);
++			ERROR("GIT_COMMIT_ID_DESCRIPTION_FORMAT",
++			      "Please format the git commit ID like: '${init_char}ommit $id (\"$desc\")'\n" . $herecurr);
+ 		}
+ 
+ # Check for added, moved or deleted files
+-- 
+1.7.9.3
+
