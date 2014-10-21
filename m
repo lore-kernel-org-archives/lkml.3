@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933773AbaJUWZP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 18:25:15 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:35128 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751451AbaJUWZN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 18:25:13 -0400
-X-Auth-Info: nHgjfcgxMmPazTOPPwsaH7j1M/WFfQqQaBPkvmNkP5g=
-From: Marek Vasut <marex@denx.de>
-To: =?utf-8?q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
-Subject: Re: [PATCH] mtd: spi-nor: Add support for SST spi flash
-Date: Wed, 22 Oct 2014 00:08:51 +0200
-User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
-Cc: Michal Simek <michal.simek@xilinx.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        monstr@monstr.eu, Harini Katakam <harini.katakam@xilinx.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Huang Shijie <b32955@freescale.com>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
-References: <29606567142da0d52c462ef0aebacc2b91fe2508.1413891469.git.michal.simek@xilinx.com> <CACna6rzp1anqhLc-CfYmD4QA4ghYMWWjXmO9DnHHo824QobaMQ@mail.gmail.com>
-In-Reply-To: <CACna6rzp1anqhLc-CfYmD4QA4ghYMWWjXmO9DnHHo824QobaMQ@mail.gmail.com>
+	id S933711AbaJUWab (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 18:30:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22744 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933387AbaJUWaa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 18:30:30 -0400
+From: Paul Moore <pmoore@redhat.com>
+To: Steve Grubb <sgrubb@redhat.com>
+Cc: Eric Paris <eparis@redhat.com>, Richard Guy Briggs <rgb@redhat.com>,
+        linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, serge@hallyn.com, keescook@chromium.org
+Subject: Re: [RFC][PATCH] audit: log join and part events to the read-only multicast log socket
+Date: Tue, 21 Oct 2014 18:30:24 -0400
+Message-ID: <1645943.LlOpH1gJUB@sifl>
+Organization: Red Hat
+User-Agent: KMail/4.14.1 (Linux/3.16.1-gentoo; KDE/4.14.1; x86_64; ; )
+In-Reply-To: <2131923.Byl8GhZuQt@x2>
+References: <30ef5c1ba42b52953e5684a0322975c3f0fadc77.1412706089.git.rgb@redhat.com> <1412708594.3333.94.camel@localhost> <2131923.Byl8GhZuQt@x2>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201410220008.51848.marex@denx.de>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 21, 2014 at 06:43:50 PM, Rafał Miłecki wrote:
-> On 21 October 2014 13:37, Michal Simek <michal.simek@xilinx.com> wrote:
-> > From: Harini Katakam <harini.katakam@xilinx.com>
-> > 
-> > Add sst25wf080 to the spi-nor device id table.
+On Tuesday, October 21, 2014 03:56:10 PM Steve Grubb wrote:
+> audit_log_task_info logs too much information for typical use. There are
+> times when you might want to know everything about what's connecting. But
+> in this case, we don't need anything about groups, saved uids, fsuid, or
+> ppid.
 > 
-> I guess commit message could include some details. We already support
-> plenty of SST flashes without this patch, don't we?
+> Its a shame we don't have a audit_log_task_info_light function which only
+> records:
+> 
+> pid= auid= uid= subj= comm= exe=  ses= tty=
 
-This change is so trivial that saying "we're adding this new flash chip ID to 
-the ID table", which is what Michal did, is completely sufficient in my opinion.
+This is getting back to my earlier concerns/questions about field ordering, or 
+at the very least I'm going to hijack this conversation and steer it towards 
+field ordering ;)
 
-Best regards,
-Marek Vasut
+Before we go to much farther, I'd really like us to agree that ordering is not 
+important, can we do that?  As a follow up, what do we need to do to make that 
+happen in the userspace tools?
+
+-- 
+paul moore
+security and virtualization @ redhat
+
