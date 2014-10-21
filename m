@@ -1,70 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106AbaJUAdX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 20:33:23 -0400
-Received: from ozlabs.org ([103.22.144.67]:59195 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752177AbaJUAdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 20:33:22 -0400
-Date: Tue, 21 Oct 2014 11:33:14 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Oder Chiou <oder_chiou@realtek.com>
-Subject: linux-next: build failure after merge of the sound-asoc tree
-Message-ID: <20141021113314.7d335e3a@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1754084AbaJUAnW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 20:43:22 -0400
+Received: from regular1.263xmail.com ([211.150.99.135]:52524 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753038AbaJUAnU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Oct 2014 20:43:20 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: mark.yao@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: mark.yao@rock-chips.com
+X-UNIQUE-TAG: <9af849e15fa4dc58ef7c291329c1549b>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <5445AC1D.8010007@rock-chips.com>
+Date: Tue, 21 Oct 2014 08:43:09 +0800
+From: Mark yao <mark.yao@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/QvyAVVOSIts1rD.7_C3RzFS"; protocol="application/pgp-signature"
+To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        Daniel Vetter <daniel@ffwll.ch>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>
+CC: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        dianders@chromium.org, marcheu@chromium.org, dbehr@chromium.org,
+        olof@lixom.net, djkurtz@chromium.org, xjq@rock-chips.com,
+        kfx@rock-chips.com, cym@rock-chips.com, cf@rock-chips.com,
+        zyw@rock-chips.com, xxm@rock-chips.com, huangtao@rock-chips.com,
+        kever.yang@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
+        xw@rock-chips.com, Mark Yao <mark.yao@rock-chips.com>
+Subject: [GIT PULL] core drm support for Rockchip SoCs
+References: <1412763781-31533-1-git-send-email-mark.yao@rock-chips.com>
+In-Reply-To: <1412763781-31533-1-git-send-email-mark.yao@rock-chips.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/QvyAVVOSIts1rD.7_C3RzFS
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi, Dave
 
-Hi all,
+The following changes since commit bfe01a5ba2490f299e1d2d5508cbbbadd897bbe9:
 
-After merging the sound-asoc tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+    Linux 3.17 (2014-10-05 12:23:04 -0700)
 
-sound/soc/codecs/rt5677-spi.o: In function `rt5677_spi_driver_init':
-rt5677-spi.c:(.init.text+0x0): multiple definition of `init_module'
-sound/soc/codecs/rt5677.o:rt5677.c:(.init.text+0x0): first defined here
-sound/soc/codecs/rt5677-spi.o: In function `rt5677_spi_driver_exit':
-rt5677-spi.c:(.exit.text+0x0): multiple definition of `cleanup_module'
-sound/soc/codecs/rt5677.o:rt5677.c:(.exit.text+0x0): first defined here
+are available in the git repository at:
 
-Probably caused by commit af48f1d08a54 ("ASoC: rt5677: Support DSP
-function for VAD application").
+    https://github.com/markyzq/kernel-drm-rockchip.git  drmrockchip
 
-I have used the sound-asoc tree from next-20141020 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+for you to fetch changes up to 45bb5f4e7e82b30e9e7069c73441413680c9a59f:
 
---Sig_/QvyAVVOSIts1rD.7_C3RzFS
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+    dt-bindings: video: Add documentation for rockchip vop (2014-10-17
+16:39:31 +0800)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+----------------------------------------------------------------
+Mark yao (3):
+        drm: rockchip: Add basic drm driver
+        dt-bindings: video: Add for rockchip display subsytem
+        dt-bindings: video: Add documentation for rockchip vop
 
-iQIcBAEBCAAGBQJURanOAAoJEMDTa8Ir7ZwVMwwQAI2T+Ip/FTWKpKr3XUl3Xlow
-C0Dy03A4EBQ2hUb/bScdzaUEjekEl72nolS/zF07Cx3wr4yvNVvAU3QI4WfY7/Pw
-+1ire4o2sGkbZUEe12q4xhU0CKcdayghDwLIEqP9aErD1dp39RLLsyneysXjjqJ4
-YsYyKbIajHARq0bMyT5UIrY9vXg1diCw6NwUMNMp2X0SIIlH08JXVz7p5IkIpfJ2
-Lm7xXYr/g5Qd4dJly65VLH98ezHgryZOjS3O0eDVZ+zcPLtXUGsdorAjSNFXBn/n
-u7Wb3je5O7KJOjRUem7jvhCk/wncdgEKfO77NrK99L92jn1S5y+dfyZziZbcAbaE
-ytCxYNE7wurHnKE+vbYHwyFD3Ro5u39kXdBsl5VQN09V0vWZeyMTYPdZqdlgmAl5
-xeWnBYJOyfO7dLZsf5f1+4qni1tFlsL413ffYCAjKDKtjCDCIiajFzqLFDz4debW
-o8y4/FgvO3kwsJ0DgJ+2N4oE+u+P7e6zzs6en6xuzr8iVatXG6O6GIjw9p7fChAK
-YtpU3/IRIVK5nBwZGvqPeR+EKS0TxsIC2L1XOm6j2eHTALiCybOX+A2cLoUQN6lo
-5/wSuf14rqCoezEkl8IXh+/YYF72KxExHb1hVljdPx+lrEChy3ILwtBPCt9C0a1i
-Z6yqP9269Qri/pEFt/zh
-=BrRl
------END PGP SIGNATURE-----
+   .../devicetree/bindings/video/rockchip-drm.txt     |   19 +
+   .../devicetree/bindings/video/rockchip-vop.txt     |   58 +
+   drivers/gpu/drm/Kconfig                            |    2 +
+   drivers/gpu/drm/Makefile                           |    1 +
+   drivers/gpu/drm/rockchip/Kconfig                   |   17 +
+   drivers/gpu/drm/rockchip/Makefile                  |    8 +
+   drivers/gpu/drm/rockchip/rockchip_drm_drv.c        |  449 ++++++
+   drivers/gpu/drm/rockchip/rockchip_drm_drv.h        |   54 +
+   drivers/gpu/drm/rockchip/rockchip_drm_fb.c         |  200 +++
+   drivers/gpu/drm/rockchip/rockchip_drm_fb.h         |   28 +
+   drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c      |  210 +++
+   drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h      |   20 +
+   drivers/gpu/drm/rockchip/rockchip_drm_gem.c        |  293 ++++
+   drivers/gpu/drm/rockchip/rockchip_drm_gem.h        |   54 +
+   drivers/gpu/drm/rockchip/rockchip_drm_vop.c        | 1427 ++++++++++++++++++++
+   drivers/gpu/drm/rockchip/rockchip_drm_vop.h        |  196 +++
+   16 files changed, 3036 insertions(+)
+   create mode 100644 Documentation/devicetree/bindings/video/rockchip-drm.txt
+   create mode 100644 Documentation/devicetree/bindings/video/rockchip-vop.txt
+   create mode 100644 drivers/gpu/drm/rockchip/Kconfig
+   create mode 100644 drivers/gpu/drm/rockchip/Makefile
+   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_drv.c
+   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_drv.h
+   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fb.c
+   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fb.h
+   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c
+   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h
+   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_gem.c
+   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_gem.h
+   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_vop.c
+   create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_vop.h
 
---Sig_/QvyAVVOSIts1rD.7_C3RzFS--
+
