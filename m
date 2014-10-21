@@ -1,86 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933760AbaJUVuL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 17:50:11 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:58082 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933656AbaJUVuJ (ORCPT
+	id S933838AbaJUVwT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 17:52:19 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:34421 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933759AbaJUVwR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 17:50:09 -0400
-Date: Tue, 21 Oct 2014 14:50:19 -0700
-From: Darren Hart <dvhart@infradead.org>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: Darren Hart <dvhart@linux.intel.com>, Mark Rutland <mark.rutland@arm.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v4 00/13] Add ACPI _DSD and unified device properties?
- support
-Message-ID: <20141021215019.GG20951@vmdeb7>
-References: <2660541.BycO7TFnA2@vostro.rjw.lan>
- <1413378271.2762.77.camel@infradead.org>
- <20141015131551.GC20034@leverpostej>
- <1413379736.2762.79.camel@infradead.org>
- <20141015134209.GD20034@leverpostej>
- <db4038336b5e165b8b61eda064b10eeb.squirrel@twosheds.infradead.org>
- <543E88CF.5060504@linux.intel.com>
- <20141015151702.GG20034@leverpostej>
- <543E9605.6020502@linux.intel.com>
- <20141018083549.99F1AC408A6@trevor.secretlab.ca>
+	Tue, 21 Oct 2014 17:52:17 -0400
+Message-ID: <54465FBA.8070007@roeck-us.net>
+Date: Tue, 21 Oct 2014 06:29:30 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141018083549.99F1AC408A6@trevor.secretlab.ca>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: =?UTF-8?B?UGhpbGlwcGUgUsOpdG9ybmF6?= <philippe.retornaz@gmail.com>,
+        linux-kernel@vger.kernel.org
+CC: linux-pm@vger.kernel.org, Alan Cox <gnomes@lxorguk.ukuu.org.uk>,
+        Alexander Graf <agraf@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Heiko Stuebner <heiko@sntech.de>, Lee Jones <lee.jones@linaro.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Romain Perier <romain.perier@gmail.com>
+Subject: Re: [PATCH v2 01/47] kernel: Add support for poweroff handler call
+ chain
+References: <1413864783-3271-1-git-send-email-linux@roeck-us.net> <1413864783-3271-2-git-send-email-linux@roeck-us.net> <54460140.50805@gmail.com>
+In-Reply-To: <54460140.50805@gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Suspect
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 512
+X-CTCH-RefID: str=0001.0A020207.5446D591.01A0,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=512,sb=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 9
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 9
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 18, 2014 at 10:35:49AM +0200, Grant Likely wrote:
-> On Wed, 15 Oct 2014 17:43:01 +0200
-> , Darren Hart <dvhart@linux.intel.com>
->  wrote:
-> > 
-> > 
-> > On 10/15/14 17:17, Mark Rutland wrote:
-> > > On Wed, Oct 15, 2014 at 03:46:39PM +0100, Darren Hart wrote:
-> > 
-> > >> Mark, what would you propose we do differently to enable this driver to
-> > >> be firmware-type agnostic?
-> > > 
-> > > For this particular driver, all I'm asking for is that the
-> > > "used-by-rtas" property is not moved over from of_find_property to
-> > > device_get_property. It is irrelevant for all ACPI systems. Evidently my
-> > > comment was unclear; I apologise for that.
-> > 
-> > So my objection here is that by keeping the of_* terms in the driver we
-> > are required to include of, although it does safely convert to returning
-> > NULL if !CONFIG_OF I suppose.
-> 
-> This shouldn't be that controversial. There will be things that only make
-> sense for DT or only ACPI. Allowing the property to be processed when
-> the other interface is being used may tempt firmware authors to use the
-> property because it just happens to have a side effect that looks right
-> to them.
-> 
-> I don't see any problem with factoring out those bits into a function
-> that is only called (or built) when the associated firmware interface is
-> used. In these situations, the driver isn't 100% generic, so having
-> small per-firmware hooks is absolutely okay and not a burden to
-> maintain.
+On 10/20/2014 11:46 PM, Philippe Rétornaz wrote:
+> Hello
+>
+> [...]
+>> - Use raw notifiers protected by spinlocks instead of atomic notifiers
+> [...]
+>
+>> +/**
+>> + *    do_kernel_power_off - Execute kernel poweroff handler call chain
+>> + *
+>> + *    Calls functions registered with register_power_off_handler.
+>> + *
+>> + *    Expected to be called from machine_power_off as last step of
+>> + *    the poweroff sequence.
+>> + *
+>> + *    Powers off the system immediately if a poweroff handler function
+>> + *    has been registered. Otherwise does nothing.
+>> + */
+>> +void do_kernel_power_off(void)
+>> +{
+>> +    spin_lock(&power_off_handler_lock);
+>> +    raw_notifier_call_chain(&power_off_handler_list, 0, NULL);
+>> +    spin_unlock(&power_off_handler_lock);
+>> +}
+>
+> I don't get it. You are still in atomic context inside the poweroff callback
+> since you lock it with a spinlock.
+>
+> It does not change much from the atomic notifier which was doing exactly the
+> same thing but with RCU:
+>
+>     rcu_read_lock();
+>     ret = notifier_call_chain(&nh->head, val, v, nr_to_call, nr_calls);
+>     rcu_read_unlock();
+>
+> Why not using the blocking_notifier_* family ?
+> It will lock with a read-write semaphore under which you can sleep.
+>
+> For instance, twl4030_power_off will sleep, since it is doing I2C access.
+> So you cannot call it in atomic context.
+>
 
-Hrm... well, I suppose this isn't a hill I want to die on. I can disagree and
-commit here :-)
+Learning something new all the time. I assumed that spin_lock (unlike
+spin_lock_irqsafe) would not run in atomic context.
 
--- 
-Darren Hart
-Intel Open Source Technology Center
+I did not want to use a sleeping lock because I am not sure if that
+works for all architectures; some disable (local) interrupts before
+calling the function (eg arm and arm64), and I don't want to change
+that semantics.
+
+I have another idea how to get there without changing the lock situation
+while executing the call chain - just set a flag indicating that it is
+running and execute it without lock. Would that work ?
+
+Guenter
+
