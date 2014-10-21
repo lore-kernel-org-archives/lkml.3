@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932914AbaJUT2R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 15:28:17 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:50582 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932569AbaJUT2Q (ORCPT
+	id S1755672AbaJUTfM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 15:35:12 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33095 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755139AbaJUTfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 15:28:16 -0400
-Message-ID: <5446B3CC.1080904@amacapital.net>
-Date: Tue, 21 Oct 2014 12:28:12 -0700
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Tue, 21 Oct 2014 15:35:10 -0400
+Date: Tue, 21 Oct 2014 21:35:08 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: John Stultz <john.stultz@linaro.org>
+cc: "pang.xunlei" <pang.xunlei@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] time: Fix NTP adjustment mult overflow.
+In-Reply-To: <CALAqxLVtYeHX0qBkOFjf58opp9ympxbjFa2DsaYx-KOthqQS=w@mail.gmail.com>
+Message-ID: <alpine.DEB.2.11.1410212133450.5308@nanos>
+References: <1412838271-11175-1-git-send-email-pang.xunlei@linaro.org> <alpine.DEB.2.11.1410211210000.5308@nanos> <CALAqxLVtYeHX0qBkOFjf58opp9ympxbjFa2DsaYx-KOthqQS=w@mail.gmail.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-To: Bastien Nocera <hadess@hadess.net>, linux-kernel@vger.kernel.org
-Subject: Re: A desktop environment[1] kernel wishlist
-References: <1413881397.30379.7.camel@hadess.net>
-In-Reply-To: <1413881397.30379.7.camel@hadess.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/21/2014 01:49 AM, Bastien Nocera wrote:
-> Hey,
+On Tue, 21 Oct 2014, John Stultz wrote:
+> On Tue, Oct 21, 2014 at 3:19 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > So you adding this just for correctness reasons, not because you
+> > observed the problem in practice?
 > 
-> GNOME has had discussions with kernel developers in the past, and,
-> fortunately, in some cases we were able to make headway.
+> This is my understanding.
 > 
-> There are however a number of items that we still don't have solutions
-> for, items that kernel developers might not realise we'd like to rely
-> on, or don't know that we'd make use of if merged.
-> 
-> I've posted this list at:
-> https://wiki.gnome.org/BastienNocera/KernelWishlist
-> 
-> Let me know on-list or off-list if you have any comments about those, so
-> I can update the list.
+> I'll work with Xunlei to make further clarifications to the changelog
+> to make this more explicit.
 
-I don't know much about desktop environment infrastructure, but I think
-the kernel probably already has a lot of what's needed for LinuxApps.
+Ok. I have no objections to the patch itself, just the changelog made
+my brain go into spiral mode ...
 
-Tools like Sandstorm [1] (shameless plug, but it's a good example here)
-can already sandbox normal-ish programs, and those sandboxes can be
-launched without privilege [2].
+Thanks,
 
-Why is kdbus needed?  Why are overlays better than, say, btrfs
-lightweight copies here?  Also, overlayfs might actually make it for 3.19.
-
-[1] sandstorm.io
-[2]
-https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/supervisor-main.c%2B%2B
-
-As for childfs, I implemented procfs polling a couple years ago, but it
-never went anywhere:
-
-http://lkml.kernel.org/g/1840e47fc4113af16989a4250d98bed62a9bce53.1354559528.git.luto@amacapital.net
-
-If that would help, I can try to dust it off and get it in to the kernel.
-
---Andy
+	tglx
