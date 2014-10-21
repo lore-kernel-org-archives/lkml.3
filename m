@@ -1,77 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933034AbaJUUTh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 16:19:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56458 "EHLO mx2.suse.de"
+	id S933131AbaJUUVt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 16:21:49 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:42521 "EHLO gum.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932529AbaJUUTf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 16:19:35 -0400
-Date: Tue, 21 Oct 2014 22:19:30 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Josh Poimboeuf <jpoimboe@redhat.com>
-cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        linux-kernel@vger.kernel.org, Seth Jennings <sjenning@redhat.com>
-Subject: Re: [PATCH] kprobes: add kprobe_is_function_probed()
-In-Reply-To: <20141021164328.GG3978@treble.redhat.com>
-Message-ID: <alpine.LNX.2.00.1410212209560.22681@pobox.suse.cz>
-References: <alpine.LNX.2.00.1410211744550.24255@pobox.suse.cz> <20141021164328.GG3978@treble.redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932500AbaJUUVs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 16:21:48 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Vladimir Davydov <vdavydov@parallels.com>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch 1/4] mm: memcontrol: inline memcg->move_lock locking
+Date: Tue, 21 Oct 2014 16:21:33 -0400
+Message-Id: <1413922896-29042-1-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Oct 2014, Josh Poimboeuf wrote:
+The wrappers around taking and dropping the memcg->move_lock spinlock
+add nothing of value.  Inline the spinlock calls into the callsites.
 
-> > Add a function that allows external users (such as live patching 
-> > mechanisms) to check whether a given function (identified by symbol name) 
-> > has a kprobe installed in it.
-> 
-> Functions aren't uniquely identifiable by name.  Perhaps it should be
-> something like kprobe_is_addr_range_probed()?
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/memcontrol.c | 34 +++++++++-------------------------
+ 1 file changed, 9 insertions(+), 25 deletions(-)
 
-Hi Josh,
-
-first, thanks a lot for the review.
-
-This is a rather difficult call actually. I am of course aware of the fact 
-that kernel fucntions can't be uniquely identified by name, but when 
-thinking about this, one has to consider:
-
-- ftrace primary userspace interface (set_ftrace_filter) is based on 
-  function names
-- kprobe tracer and uprobe trace primary userspace interface 
-  (/sys/kernel/debug/tracing/kprobe_events and uprobe_events respectively)
-  are primarily based on function names
-- the number of conflicts is probably zero, or very close to zero. Try to 
-  run this 
-
-	cut -f3 -d' ' /proc/kallsyms | sort  | uniq -c
-
-  So it's questionable whether all the back and forth name->address->name 
-  translations all over the place are worth all the trouble.
-
-  I do agree though that we should make it obvious that the lookup 
-  interface works on symbol names only ... perhaps by adding '_by_name()' 
-  or so?
-
-> Should we refuse to patch a function which has a kprobe installed inside 
-> it?  
-
-I think warning about it is a good thing to do.
-
-> Is there a race-free way to do that?
-
-Do we need to be race-free here? If userspace is both instantiating new 
-krpobe and initiating live kernel patching at the "same time", I don't 
-think kernel should try to solve such race ... it's simply there by 
-definition, depending on, for example, scheduling decisions.
-
-Thanks,
-
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 293db8234179..1ff125d2a427 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1507,23 +1507,6 @@ static bool mem_cgroup_wait_acct_move(struct mem_cgroup *memcg)
+ 	return false;
+ }
+ 
+-/*
+- * Take this lock when
+- * - a code tries to modify page's memcg while it's USED.
+- * - a code tries to modify page state accounting in a memcg.
+- */
+-static void move_lock_mem_cgroup(struct mem_cgroup *memcg,
+-				  unsigned long *flags)
+-{
+-	spin_lock_irqsave(&memcg->move_lock, *flags);
+-}
+-
+-static void move_unlock_mem_cgroup(struct mem_cgroup *memcg,
+-				unsigned long *flags)
+-{
+-	spin_unlock_irqrestore(&memcg->move_lock, *flags);
+-}
+-
+ #define K(x) ((x) << (PAGE_SHIFT-10))
+ /**
+  * mem_cgroup_print_oom_info: Print OOM information relevant to memory controller.
+@@ -2013,7 +1996,7 @@ again:
+ 		return;
+ 	/*
+ 	 * If this memory cgroup is not under account moving, we don't
+-	 * need to take move_lock_mem_cgroup(). Because we already hold
++	 * need to take &memcg->move_lock. Because we already hold
+ 	 * rcu_read_lock(), any calls to move_account will be delayed until
+ 	 * rcu_read_unlock().
+ 	 */
+@@ -2021,9 +2004,9 @@ again:
+ 	if (atomic_read(&memcg->moving_account) <= 0)
+ 		return;
+ 
+-	move_lock_mem_cgroup(memcg, flags);
++	spin_lock_irqsave(&memcg->move_lock, *flags);
+ 	if (memcg != pc->mem_cgroup) {
+-		move_unlock_mem_cgroup(memcg, flags);
++		spin_unlock_irqrestore(&memcg->move_lock, *flags);
+ 		goto again;
+ 	}
+ 	*locked = true;
+@@ -2038,7 +2021,7 @@ void __mem_cgroup_end_update_page_stat(struct page *page, unsigned long *flags)
+ 	 * lock is held because a routine modifies pc->mem_cgroup
+ 	 * should take move_lock_mem_cgroup().
+ 	 */
+-	move_unlock_mem_cgroup(pc->mem_cgroup, flags);
++	spin_unlock_irqrestore(&pc->mem_cgroup->move_lock, *flags);
+ }
+ 
+ void mem_cgroup_update_page_stat(struct page *page,
+@@ -3083,7 +3066,7 @@ static int mem_cgroup_move_account(struct page *page,
+ 	if (pc->mem_cgroup != from)
+ 		goto out_unlock;
+ 
+-	move_lock_mem_cgroup(from, &flags);
++	spin_lock_irqsave(&from->move_lock, flags);
+ 
+ 	if (!PageAnon(page) && page_mapped(page)) {
+ 		__this_cpu_sub(from->stat->count[MEM_CGROUP_STAT_FILE_MAPPED],
+@@ -3107,7 +3090,8 @@ static int mem_cgroup_move_account(struct page *page,
+ 
+ 	/* caller should have done css_get */
+ 	pc->mem_cgroup = to;
+-	move_unlock_mem_cgroup(from, &flags);
++	spin_unlock_irqrestore(&from->move_lock, flags);
++
+ 	ret = 0;
+ 
+ 	local_irq_disable();
+@@ -6033,9 +6017,9 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
+ 	 * but there might still be references, e.g. from finishing
+ 	 * writeback.  Follow the charge moving protocol here.
+ 	 */
+-	move_lock_mem_cgroup(memcg, &flags);
++	spin_lock_irqsave(&memcg->move_lock, flags);
+ 	pc->mem_cgroup = NULL;
+-	move_unlock_mem_cgroup(memcg, &flags);
++	spin_unlock_irqrestore(&memcg->move_lock, flags);
+ 
+ 	if (lrucare)
+ 		unlock_page_lru(oldpage, isolated);
 -- 
-Jiri Kosina
-SUSE Labs
+2.1.2
+
