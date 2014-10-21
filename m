@@ -1,190 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756115AbaJURsp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 13:48:45 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:36655 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755489AbaJURsF (ORCPT
+	id S1756139AbaJURtH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 13:49:07 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:43354 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756045AbaJURrq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 13:48:05 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-From: Johan Hovold <johan@kernel.org>
-To: Alessandro Zummo <a.zummo@towertech.it>, Tony Lindgren <tony@atomide.com>,
-        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
-        Felipe Balbi <balbi@ti.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Lokesh Vutla <lokeshvutla@ti.com>, Guenter Roeck <linux@roeck-us.net>,
-        nsekhar@ti.com, t-kristo@ti.com, j-keerthy@ti.com,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org, Johan Hovold <johan@kernel.org>
-Subject: [PATCH v2 17/20] rtc: omap: fix minor coding style issues
-Date: Tue, 21 Oct 2014 19:38:03 +0200
-Message-Id: <1413913086-12730-18-git-send-email-johan@kernel.org>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1413913086-12730-1-git-send-email-johan@kernel.org>
-References: <1412881594-25678-1-git-send-email-johan@kernel.org>
- <1413913086-12730-1-git-send-email-johan@kernel.org>
+	Tue, 21 Oct 2014 13:47:46 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Linus Walleij <linus.walleij@linaro.org>, Heiko Stuebner <heiko@sntech.de>
+Cc: Chris Zhong <zyw@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>,
+        linux-rockchip@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org,
+        Doug Anderson <dianders@chromium.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 3/4] pinctrl: rockchip: Parse pin groups before calling pinctrl_register()
+Date: Tue, 21 Oct 2014 10:47:34 -0700
+Message-Id: <1413913655-22351-3-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1413913655-22351-1-git-send-email-dianders@chromium.org>
+References: <1413913655-22351-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix minor coding style issues like comment style, indentation and remove
-a few unnecessary casts.
+Just like in (529301c pinctrl: samsung: Parse pin groups before
+calling pinctrl_register()), Rockchip also needs to parse pin groups
+earlier to make hogs work.
 
-Also drop the 1 from OMAP1 in the driver description.
-
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Tested-by: Chris Zhong <zyw@rock-chips.com>
 ---
- drivers/rtc/rtc-omap.c | 46 +++++++++++++++++++++++++++-------------------
- 1 file changed, 27 insertions(+), 19 deletions(-)
+Changes in v2: None
 
-diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
-index cb5ef3c845d1..4278421183e5 100644
---- a/drivers/rtc/rtc-omap.c
-+++ b/drivers/rtc/rtc-omap.c
-@@ -1,5 +1,5 @@
- /*
-- * TI OMAP1 Real Time Clock interface for Linux
-+ * TI OMAP Real Time Clock interface for Linux
-  *
-  * Copyright (C) 2003 MontaVista Software, Inc.
-  * Author: George G. Davis <gdavis@mvista.com> or <source@mvista.com>
-@@ -25,7 +25,8 @@
- #include <linux/pm_runtime.h>
- #include <linux/io.h>
- 
--/* The OMAP1 RTC is a year/month/day/hours/minutes/seconds BCD clock
-+/*
-+ * The OMAP RTC is a year/month/day/hours/minutes/seconds BCD clock
-  * with century-range alarm matching, driven by the 32kHz clock.
-  *
-  * The main user-visible ways it differs from PC RTCs are by omitting
-@@ -154,19 +155,20 @@ static inline void rtc_writel(struct omap_rtc *rtc, unsigned int reg, u32 val)
- 	writel(val, rtc->base + reg);
- }
- 
--/* we rely on the rtc framework to handle locking (rtc->ops_lock),
-+/*
-+ * We rely on the rtc framework to handle locking (rtc->ops_lock),
-  * so the only other requirement is that register accesses which
-  * require BUSY to be clear are made with IRQs locally disabled
-  */
- static void rtc_wait_not_busy(struct omap_rtc *rtc)
- {
--	int	count = 0;
--	u8	status;
-+	int count;
-+	u8 status;
- 
- 	/* BUSY may stay active for 1/32768 second (~30 usec) */
- 	for (count = 0; count < 50; count++) {
- 		status = rtc_read(rtc, OMAP_RTC_STATUS_REG);
--		if ((status & (u8)OMAP_RTC_STATUS_BUSY) == 0)
-+		if (!(status & OMAP_RTC_STATUS_BUSY))
- 			break;
- 		udelay(1);
+ drivers/pinctrl/pinctrl-rockchip.c | 10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/pinctrl/pinctrl-rockchip.c b/drivers/pinctrl/pinctrl-rockchip.c
+index 8a3c582..6c14f6c 100644
+--- a/drivers/pinctrl/pinctrl-rockchip.c
++++ b/drivers/pinctrl/pinctrl-rockchip.c
+@@ -1262,6 +1262,10 @@ static int rockchip_pinctrl_register(struct platform_device *pdev,
+ 		}
  	}
-@@ -175,9 +177,9 @@ static void rtc_wait_not_busy(struct omap_rtc *rtc)
  
- static irqreturn_t rtc_irq(int irq, void *dev_id)
- {
--	struct omap_rtc		*rtc = dev_id;
--	unsigned long		events = 0;
--	u8			irq_data;
-+	struct omap_rtc	*rtc = dev_id;
-+	unsigned long events = 0;
-+	u8 irq_data;
- 
- 	irq_data = rtc_read(rtc, OMAP_RTC_STATUS_REG);
- 
-@@ -276,6 +278,7 @@ static int omap_rtc_read_time(struct device *dev, struct rtc_time *tm)
- 	local_irq_enable();
- 
- 	bcd2tm(tm);
++	ret = rockchip_pinctrl_parse_dt(pdev, info);
++	if (ret)
++		return ret;
 +
+ 	info->pctl_dev = pinctrl_register(ctrldesc, &pdev->dev, info);
+ 	if (!info->pctl_dev) {
+ 		dev_err(&pdev->dev, "could not register pinctrl driver\n");
+@@ -1279,12 +1283,6 @@ static int rockchip_pinctrl_register(struct platform_device *pdev,
+ 		pinctrl_add_gpio_range(info->pctl_dev, &pin_bank->grange);
+ 	}
+ 
+-	ret = rockchip_pinctrl_parse_dt(pdev, info);
+-	if (ret) {
+-		pinctrl_unregister(info->pctl_dev);
+-		return ret;
+-	}
+-
  	return 0;
  }
  
-@@ -285,6 +288,7 @@ static int omap_rtc_set_time(struct device *dev, struct rtc_time *tm)
- 
- 	if (tm2bcd(tm) < 0)
- 		return -EINVAL;
-+
- 	local_irq_disable();
- 	rtc_wait_not_busy(rtc);
- 
-@@ -303,6 +307,7 @@ static int omap_rtc_set_time(struct device *dev, struct rtc_time *tm)
- static int omap_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alm)
- {
- 	struct omap_rtc *rtc = dev_get_drvdata(dev);
-+	u8 interrupts;
- 
- 	local_irq_disable();
- 	rtc_wait_not_busy(rtc);
-@@ -317,8 +322,9 @@ static int omap_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alm)
- 	local_irq_enable();
- 
- 	bcd2tm(&alm->time);
--	alm->enabled = !!(rtc_read(rtc, OMAP_RTC_INTERRUPTS_REG)
--			& OMAP_RTC_INTERRUPTS_IT_ALARM);
-+
-+	interrupts = rtc_read(rtc, OMAP_RTC_INTERRUPTS_REG);
-+	alm->enabled = !!(interrupts & OMAP_RTC_INTERRUPTS_IT_ALARM);
- 
- 	return 0;
- }
-@@ -472,9 +478,9 @@ MODULE_DEVICE_TABLE(of, omap_rtc_of_match);
- 
- static int __init omap_rtc_probe(struct platform_device *pdev)
- {
--	struct omap_rtc		*rtc;
--	struct resource		*res;
--	u8			reg, mask, new_ctrl;
-+	struct omap_rtc	*rtc;
-+	struct resource	*res;
-+	u8 reg, mask, new_ctrl;
- 	const struct platform_device_id *id_entry;
- 	const struct of_device_id *of_id;
- 	int ret;
-@@ -551,14 +557,15 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
- 
- 	/* On boards with split power, RTC_ON_NOFF won't reset the RTC */
- 	reg = rtc_read(rtc, OMAP_RTC_CTRL_REG);
--	if (reg & (u8) OMAP_RTC_CTRL_STOP)
-+	if (reg & OMAP_RTC_CTRL_STOP)
- 		dev_info(&pdev->dev, "already running\n");
- 
- 	/* force to 24 hour mode */
--	new_ctrl = reg & (OMAP_RTC_CTRL_SPLIT|OMAP_RTC_CTRL_AUTO_COMP);
-+	new_ctrl = reg & (OMAP_RTC_CTRL_SPLIT | OMAP_RTC_CTRL_AUTO_COMP);
- 	new_ctrl |= OMAP_RTC_CTRL_STOP;
- 
--	/* BOARD-SPECIFIC CUSTOMIZATION CAN GO HERE:
-+	/*
-+	 * BOARD-SPECIFIC CUSTOMIZATION CAN GO HERE:
- 	 *
- 	 *  - Device wake-up capability setting should come through chip
- 	 *    init logic. OMAP1 boards should initialize the "wakeup capable"
-@@ -572,7 +579,7 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
- 	 *    is write-only, and always reads as zero...)
- 	 */
- 
--	if (new_ctrl & (u8) OMAP_RTC_CTRL_SPLIT)
-+	if (new_ctrl & OMAP_RTC_CTRL_SPLIT)
- 		dev_info(&pdev->dev, "split power mode\n");
- 
- 	if (reg != new_ctrl)
-@@ -651,7 +658,8 @@ static int omap_rtc_suspend(struct device *dev)
- 
- 	rtc->interrupts_reg = rtc_read(rtc, OMAP_RTC_INTERRUPTS_REG);
- 
--	/* FIXME the RTC alarm is not currently acting as a wakeup event
-+	/*
-+	 * FIXME: the RTC alarm is not currently acting as a wakeup event
- 	 * source on some platforms, and in fact this enable() call is just
- 	 * saving a flag that's never used...
- 	 */
 -- 
-2.0.4
+2.1.0.rc2.206.gedb03e5
 
