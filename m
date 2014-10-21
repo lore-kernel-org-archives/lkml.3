@@ -1,68 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932343AbaJUKfr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 06:35:47 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:57915 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754408AbaJUKfp (ORCPT
+	id S1754982AbaJUKg1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 06:36:27 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:33866 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754408AbaJUKgZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 06:35:45 -0400
-X-Sasl-enc: w9F5adr88vn+YBSz7COsBNatn4n/odtlutzssUThVLxz 1413887744
-Message-ID: <1413887742.32553.18.camel@localhost>
-Subject: Re: [PATCH net] bpf: fix bug in eBPF verifier
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 21 Oct 2014 12:35:42 +0200
-In-Reply-To: <1413842097-4380-1-git-send-email-ast@plumgrid.com>
-References: <1413842097-4380-1-git-send-email-ast@plumgrid.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 21 Oct 2014 06:36:25 -0400
+Date: Tue, 21 Oct 2014 12:36:22 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, viro@zeniv.linux.org.uk
+Cc: John Stultz <john.stultz@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
+        devel@driverdev.osuosl.org, Linux API <linux-api@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Anup Patel <anup.patel@linaro.org>
+Subject: Re: [PATCH] staging: android: binder: move to the "real" part of the
+ kernel
+Message-ID: <20141021103622.GB23161@amd>
+References: <20141016124741.GA3832@kroah.com>
+ <CALAqxLU05D8qQA47E77PiuuN7eVt66WEq1qn+PqdE-tpEUzFpw@mail.gmail.com>
+ <20141016231221.GA13592@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141016231221.GA13592@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mo, 2014-10-20 at 14:54 -0700, Alexei Starovoitov wrote:
-> while comparing for verifier state equivalency the comparison
-> was missing a check for uninitialized register.
-> Make sure it does so and add a testcase.
+On Fri 2014-10-17 01:12:21, Greg Kroah-Hartman wrote:
+> On Thu, Oct 16, 2014 at 10:09:04AM -0700, John Stultz wrote:
+> > On Thu, Oct 16, 2014 at 5:47 AM, Greg Kroah-Hartman
+> > <gregkh@linuxfoundation.org> wrote:
+> > > From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+> > Are the Android guys comfortable with the ABI stability rules they'll
+> > now face?
 > 
-> Fixes: f1bca824dabb ("bpf: add search pruning optimization to verifier")
-> Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
-> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
-> ---
-> 
-> while we were staring at the verifier code with Hannes during LPC
-> something felt odd in this spot. Yes. It was a bug. Fix it.
-> 
->  kernel/bpf/verifier.c       |    3 ++-
->  samples/bpf/test_verifier.c |   11 +++++++++++
->  2 files changed, 13 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/bpf/verifier.c b/kernel/bpf/verifier.c
-> index 801f5f3..9f81818 100644
-> --- a/kernel/bpf/verifier.c
-> +++ b/kernel/bpf/verifier.c
-> @@ -1409,7 +1409,8 @@ static bool states_equal(struct verifier_state *old, struct verifier_state *cur)
->  		if (memcmp(&old->regs[i], &cur->regs[i],
->  			   sizeof(old->regs[0])) != 0) {
->  			if (old->regs[i].type == NOT_INIT ||
-> -			    old->regs[i].type == UNKNOWN_VALUE)
-> +			    (old->regs[i].type == UNKNOWN_VALUE &&
-> +			     cur->regs[i].type != NOT_INIT))
->  				continue;
->  			return false;
->  		}
+> Just because something is in staging, doesn't mean you don't have to
+> follow the same ABI stability rules as the rest of the kernel.  If a
+> change had happened to this code that broke userspace in the past, I
+> would have reverted it.  So this should not be anything different from
+> what has been happening inthe past.
 
-That makes sense.
+Actually, there's big difference.
 
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+If Al Viro changes core filesystem in a way that breaks
+staging/binder, binder is broken, and if it can't be fixed... well it
+can't be fixed.
 
-Thanks,
-Hannes
+If Al Viro changes core filesystem in a way that breaks
+drivers/binder, Al's change is going to be reverted.
 
+It is really hard to review without API documentation. Normally, API
+documentation is required for stuff like this.
 
+For example: does it add new files in /proc?
+
+Given that it is stable, can we get rid of binder_debug() and
+especially BINDER_DEBUG_ENTRY stuff?
+
+Checkpatch warns about 98 too long lines. Some of them could be fixed
+easily.
+
+This looks scary:
+
+                        trace_binder_transaction_fd(t, fp->handle,
+                        target_fd);
+			                binder_debug(BINDER_DEBUG_TRANSACTION,
+                                     "        fd %d -> %d\n",
+                        fp->handle, target_fd);
+                        /* TODO: fput? */
+                        fp->handle = target_fd;
+			        } break;
+
+Could binder_transcation() be split to smaller functions according to
+CodingStyle? 17 goto targets at the end of function are not exactly
+easy to read.
+
+ginder_thread_read/write also needs splitting.
+
+binder_ioctl_write_read: just use direct return, no need to goto out
+if it just returns.
+
+   proc->user_buffer_offset = vma->vm_start - (uintptr_t)proc->buffer;
+        mutex_unlock(&binder_mmap_lock);
+
+#ifdef CONFIG_CPU_CACHE_VIPT
+        if (cache_is_vipt_aliasing()) {
+                while (CACHE_COLOUR((vma->vm_start ^
+        (uint32_t)proc->buffer))) {
+
+Should this be (uintptr_t)?
+
+        /*pr_info("binder_mmap: %d %lx-%lx maps %p\n",                                   
+
+Delete the code, don't comment it out. It is on more than one place.
+
+static void print_binder_thread(struct seq_file *m,
+                                struct binder_thread *thread,
+                                int print_always)
+{
+        struct binder_transaction *t;
+	struct binder_work *w;
+        size_t start_pos = m->count;
+	size_t header_pos;
+
+        seq_printf(m, "  thread %d: l %02x\n", thread->pid,
+        thread->looper);
+        header_pos = m->count;
+        t = thread->transaction_stack;
+	while (t) {
+ 	        if (t->from == thread) {
+                        print_binder_transaction(m,
+				                                 "
+        outgoing transaction", t);
+                        t = t->from_parent;
+
+Is anyone depending on the debugfs files? Can it be deleted?
+
+Code indentation is "interesting" in binder_thread_read(). See the "}
+break;" lines. {}s should not be needed...?
+
+I don't think this code would get merged if it was submitted for
+normal inclusion in kernel. I don't think it is good idea to push it
+through the back door, without documenting what it does and without
+patches even going to the lists.
+
+									Pavel
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
