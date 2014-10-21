@@ -1,73 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933289AbaJUQlQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 12:41:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60891 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932644AbaJUQlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 12:41:15 -0400
-Date: Tue, 21 Oct 2014 12:41:09 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Steve Grubb <sgrubb@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-audit@redhat.com,
-        ebiederm@xmission.com, serge@hallyn.com,
-        Eric Paris <eparis@redhat.com>
-Subject: Re: [RFC][PATCH] audit: log join and part events to the read-only
- multicast log socket
-Message-ID: <20141021164109.GL26201@madcap2.tricolour.ca>
-References: <30ef5c1ba42b52953e5684a0322975c3f0fadc77.1412706089.git.rgb@redhat.com>
- <1412708594.3333.94.camel@localhost>
- <20141007193951.GZ1992@madcap2.tricolour.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141007193951.GZ1992@madcap2.tricolour.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933302AbaJUQlj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 12:41:39 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:43618 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932644AbaJUQli (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 12:41:38 -0400
+X-Originating-IP: 83.155.44.161
+Message-ID: <1413909661.30379.10.camel@hadess.net>
+Subject: Re: Re: A desktop environment[1] kernel wishlist
+From: Bastien Nocera <hadess@hadess.net>
+To: Patrik Lundquist <patrik.lundquist@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Sergey <sergey@elementaryos.org>,
+        Ryan Lortie <desrt@desrt.ca>
+Date: Tue, 21 Oct 2014 18:41:01 +0200
+In-Reply-To: <CAA7pwKODrr7g=u75ALujrVHq5cXNsAf=QtGVCh+rKCrqd7UKUg@mail.gmail.com>
+References: <E1XgbTy-00072R-N3@feisty.vs19.net>
+	 <CAA7pwKODrr7g=u75ALujrVHq5cXNsAf=QtGVCh+rKCrqd7UKUg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7 (3.12.7-1.fc21) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/10/07, Richard Guy Briggs wrote:
-> On 14/10/07, Eric Paris wrote:
-> > On Tue, 2014-10-07 at 14:23 -0400, Richard Guy Briggs wrote:
-> > > Log the event when a client attempts to connect to the netlink audit multicast
-> > > socket, requiring CAP_AUDIT_READ capability, binding to the AUDIT_NLGRP_READLOG
-> > > group.  Log the disconnect too.
-
-> > super crazy yuck.  audit_log_task_info() ??
+On Tue, 2014-10-21 at 17:48 +0200, Patrik Lundquist wrote:
+> Bastien Nocera wrote:
+> > I've posted this list at:
+> > https://wiki.gnome.org/BastienNocera/KernelWishlist
 > 
-> I agree.  I already suggested that a while ago.  I'd love to.  sgrubb
-> thinks it dumps way too much info.  We still haven't got a definitive
-> answer about what is enough and what is too much info for any given type
-> of record.
-> 
-> I also thought of moving audit_log_task() from auditsc.c to audit.c
-> and using that.  For that matter, both audit_log_task() and
-> audit_log_task_info() could use audit_log_session_info(), but they are
-> in slightly different order of keywords which will upset sgrubb's
-> parser.
-> 
-> What to do?
-> 
-> Another paragraph I'd like to see added to
-> 	http://people.redhat.com/sgrubb/audit/audit-parse.txt
-> would be a "canonical order" of keywords.  However, that discussion went
-> nowhere.  Would it be reasonable to suggest only two possible orders
-> instead of the almost infinite iterations possible and declare a
-> standard order of keywords and gradually move to it?
+> I think what you want from epoll_wait() can be done with timerfd.
 
-Steve,
+Ryan added that one to the Wiki, so CC:ing him. And he tells me:
+"
+It's true, but I don't want to have to do a separate call to setup my
+timerfd every time I enter the kernel to sleep.
+Nor do I particularly care to have a separate fd for every maincontext.
+epoll in general suffers from being _way_ too chatty about the syscalls
+that you have to do.
+"
 
-Can we agree to *two* orders (instead of the full set of iterations) for
-these keywords so that we can start to sort things in a canonical order?
-This random order per type of audit log message is chaos.
+Cheers
 
-> - RGB
-
-- RGB
-
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
