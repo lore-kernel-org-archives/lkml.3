@@ -1,48 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755478AbaJUMGX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 08:06:23 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:41519 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755191AbaJUMGW (ORCPT
+	id S1755495AbaJUMGg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 08:06:36 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:58948 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755191AbaJUMGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 08:06:22 -0400
-X-Auth-Info: wi0oQD+s/+m+psL5t49PhXaWtOfu2j/4E7qZ7cJZav4=
-From: Marek Vasut <marex@denx.de>
-To: Michal Simek <michal.simek@xilinx.com>
-Subject: Re: [PATCH] mtd: spi-nor: Add support for SST spi flash
-Date: Tue, 21 Oct 2014 13:57:20 +0200
-User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, monstr@monstr.eu,
-        Harini Katakam <harini.katakam@xilinx.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Huang Shijie <b32955@freescale.com>,
-        =?utf-8?q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        linux-mtd@lists.infradead.org
-References: <29606567142da0d52c462ef0aebacc2b91fe2508.1413891469.git.michal.simek@xilinx.com>
-In-Reply-To: <29606567142da0d52c462ef0aebacc2b91fe2508.1413891469.git.michal.simek@xilinx.com>
+	Tue, 21 Oct 2014 08:06:35 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v2 34/47] acpi: Register poweroff handler with kernel poweroff handler
+Date: Tue, 21 Oct 2014 14:27 +0200
+Message-ID: <1453445.HGtlG6JTvO@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1413864783-3271-35-git-send-email-linux@roeck-us.net>
+References: <1413864783-3271-1-git-send-email-linux@roeck-us.net> <1413864783-3271-35-git-send-email-linux@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201410211357.20314.marex@denx.de>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 21, 2014 at 01:37:59 PM, Michal Simek wrote:
-> From: Harini Katakam <harini.katakam@xilinx.com>
+On Monday, October 20, 2014 09:12:50 PM Guenter Roeck wrote:
+> Register with kernel poweroff handler instead of setting pm_power_off
+> directly. Register with high priority to reflect that the driver explicitly
+> overrides existing poweroff handlers.
 > 
-> Add sst25wf080 to the spi-nor device id table.
+> Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+> Cc: Len Brown <lenb@kernel.org>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+> v2:
+> - Use define to specify poweroff handler priority
+> - Use pr_warn instead of pr_err
 > 
-> Signed-off-by: Harini Katakam <harinik@xilinx.com>
-> Reviewed-by: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+>  drivers/acpi/sleep.c | 15 +++++++++++++--
+>  1 file changed, 13 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
+> index 05a31b5..1eba563 100644
+> --- a/drivers/acpi/sleep.c
+> +++ b/drivers/acpi/sleep.c
+> @@ -16,6 +16,8 @@
+>  #include <linux/device.h>
+>  #include <linux/interrupt.h>
+>  #include <linux/suspend.h>
+> +#include <linux/notifier.h>
+> +#include <linux/pm.h>
+>  #include <linux/reboot.h>
+>  #include <linux/acpi.h>
+>  #include <linux/module.h>
+> @@ -827,14 +829,22 @@ static void acpi_power_off_prepare(void)
+>  	acpi_disable_all_gpes();
+>  }
+>  
+> -static void acpi_power_off(void)
+> +static int acpi_power_off(struct notifier_block *this,
+> +			  unsigned long unused1, void *unused2)
+>  {
+>  	/* acpi_sleep_prepare(ACPI_STATE_S5) should have already been called */
+>  	printk(KERN_DEBUG "%s called\n", __func__);
+>  	local_irq_disable();
+>  	acpi_enter_sleep_state(ACPI_STATE_S5);
+> +
+> +	return NOTIFY_DONE;
+>  }
+>  
+> +static struct notifier_block acpi_poweroff_nb = {
+> +	.notifier_call = acpi_power_off,
+> +	.priority = POWEROFF_PRIORITY_HIGH,
+> +};
+> +
+>  int __init acpi_sleep_init(void)
+>  {
+>  	char supported[ACPI_S_STATE_COUNT * 3 + 1];
+> @@ -851,7 +861,8 @@ int __init acpi_sleep_init(void)
+>  	if (acpi_sleep_state_supported(ACPI_STATE_S5)) {
+>  		sleep_states[ACPI_STATE_S5] = 1;
+>  		pm_power_off_prepare = acpi_power_off_prepare;
+> -		pm_power_off = acpi_power_off;
+> +		if (register_power_off_handler(&acpi_poweroff_nb))
+> +			pr_warn("acpi: Failed to register poweroff handler\n");
 
-Acked-by: Marek Vasut <marex@denx.de>
+Please always spell "ACPI" in capitals in kernel messages.
 
-Best regards,
-Marek Vasut
+>  	}
+>  
+>  	supported[0] = 0;
+> 
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
