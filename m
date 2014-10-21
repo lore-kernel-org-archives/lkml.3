@@ -1,35 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933276AbaJUQoH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 12:44:07 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:47415 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932769AbaJUQoF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 12:44:05 -0400
+	id S933262AbaJUQpt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 12:45:49 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:39202 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932373AbaJUQpr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 12:45:47 -0400
+Date: Tue, 21 Oct 2014 22:18:35 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        linux-kernel@vger.kernel.org, Josh Poimboeuf <jpoimboe@redhat.com>,
+        Seth Jennings <sjenning@redhat.com>
+Subject: Re: [PATCH] kprobes: add kprobe_is_function_probed()
+Message-ID: <20141021164835.GB10290@in.ibm.com>
+Reply-To: ananth@in.ibm.com
+References: <alpine.LNX.2.00.1410211744550.24255@pobox.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <1413909608.12828.5.camel@perches.com>
-References: <1413902024-2932-1-git-send-email-fabio.estevam@freescale.com>
-	<1413909608.12828.5.camel@perches.com>
-Date: Tue, 21 Oct 2014 14:44:03 -0200
-Message-ID: <CAOMZO5BjP=o0EsQJoA_ddYYPGJhY1tUVy6mbA1_tGhd2VUJFEw@mail.gmail.com>
-Subject: Re: [PATCH] checkpatch: Improve warning message for "needless if" case
-From: Fabio Estevam <festevam@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Fabio Estevam <fabio.estevam@freescale.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1410211744550.24255@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102116-0029-0000-0000-000000D323F3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 2:40 PM, Joe Perches <joe@perches.com> wrote:
+On Tue, Oct 21, 2014 at 05:48:30PM +0200, Jiri Kosina wrote:
 
->
-> Mixing sentences with and without periods is jarring.
-> I'd prefer a comma or a dash.
+>  kernel/kprobes.c        | 28 ++++++++++++++++++++++++++++
+>  2 files changed, 33 insertions(+)
+> 
+> diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
+> index f7296e5..f760555 100644
+> --- a/include/linux/kprobes.h
+> +++ b/include/linux/kprobes.h
+> @@ -384,6 +384,7 @@ int disable_kprobe(struct kprobe *kp);
+>  int enable_kprobe(struct kprobe *kp);
+> 
+>  void dump_kprobe(struct kprobe *kp);
+> +bool kprobe_is_function_probed(const char *name);
 
-Or what about?
+Better name? function_is_kprobed() or such?
 
-"is safe and this check is probably not required"
+...
+
+> +bool kprobe_is_function_probed(const char *name)
+> +{
+> +	struct hlist_head *head;
+> +	struct kprobe *p, *kp;
+
+kp not used
+
+> +	const char *sym = NULL;
+> +	unsigned long offset = 0;
+> +	unsigned int i;
+> +	char *modname, namebuf[KSYM_NAME_LEN];
+> +
+> +	preempt_disable();
+> +	for (i = 0; i < KPROBE_TABLE_SIZE; i++) {
+> +		head = &kprobe_table[i];
+> +		hlist_for_each_entry_rcu(p, head, hlist) {
+> +			sym = kallsyms_lookup((unsigned long)p->addr,
+> +					NULL, &offset, &modname,
+> +					namebuf);
+> +			if (!strcmp(sym, name))
+
+Don't you want a strncmp instead?
+
+Ananth
+
