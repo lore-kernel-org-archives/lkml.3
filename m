@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755274AbaJUO44 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 10:56:56 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:58986 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191AbaJUO4z (ORCPT
+	id S1754872AbaJUO6h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 10:58:37 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:63453 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750AbaJUO6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 10:56:55 -0400
-Date: Tue, 21 Oct 2014 16:56:52 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yuyang Du <yuyang.du@intel.com>
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, pjt@google.com,
-        bsegall@google.com, arjan.van.de.ven@intel.com, len.brown@intel.com,
-        rafael.j.wysocki@intel.com, alan.cox@intel.com, mark.gross@intel.com,
-        fengguang.wu@intel.com
-Subject: Re: [RESEND PATCH 2/3 v5] sched: Rewrite per entity runnable load
- average tracking
-Message-ID: <20141021145652.GB23531@worktop.programming.kicks-ass.net>
-References: <1412907717-2871-1-git-send-email-yuyang.du@intel.com>
- <1412907717-2871-3-git-send-email-yuyang.du@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412907717-2871-3-git-send-email-yuyang.du@intel.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	Tue, 21 Oct 2014 10:58:36 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Larry Finger <Larry.Finger@lwfinger.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Subject: [PATCH] staging: rtl8712: Remove redundant cast
+Date: Tue, 21 Oct 2014 16:58:26 +0200
+Message-Id: <1413903507-3256-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 2.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 10, 2014 at 10:21:56AM +0800, Yuyang Du wrote:
->  static inline long calc_tg_weight(struct task_group *tg, struct cfs_rq *cfs_rq)
->  {
-> -	long tg_weight;
-> -
-> -	/*
-> -	 * Use this CPU's actual weight instead of the last load_contribution
-> -	 * to gain a more accurate current total weight. See
-> -	 * update_cfs_rq_load_contribution().
-> -	 */
-> -	tg_weight = atomic_long_read(&tg->load_avg);
-> -	tg_weight -= cfs_rq->tg_load_contrib;
-> -	tg_weight += cfs_rq->load.weight;
-> -
-> -	return tg_weight;
-> +	return atomic_long_read(&tg->load_avg);
+struct firmware::data has type const u8*, as does *ppmappedfw, so the
+cast to u8* is unnecessary and slightly confusing.
 
-Since you're now also delaying updating load_avg, why not retain this
-slightly better approximation?
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+---
+ drivers/staging/rtl8712/hal_init.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/staging/rtl8712/hal_init.c b/drivers/staging/rtl8712/hal_init.c
+index 1d6ade0..cc6b390 100644
+--- a/drivers/staging/rtl8712/hal_init.c
++++ b/drivers/staging/rtl8712/hal_init.c
+@@ -86,7 +86,7 @@ static u32 rtl871x_open_fw(struct _adapter *padapter, const u8 **ppmappedfw)
+ 			(int)padapter->fw->size);
+ 		return 0;
+ 	}
+-	*ppmappedfw = (u8 *)((*praw)->data);
++	*ppmappedfw = ((*praw)->data);
+ 	return (*praw)->size;
+ }
+ 
+-- 
+2.0.4
+
