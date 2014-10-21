@@ -1,75 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932960AbaJUOSm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 10:18:42 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:49048 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932711AbaJUOSl (ORCPT
+	id S932887AbaJUOUo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 10:20:44 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:61235 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932702AbaJUOUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 10:18:41 -0400
-Message-ID: <54466B3A.5030005@atmel.com>
-Date: Tue, 21 Oct 2014 16:18:34 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 21 Oct 2014 10:20:42 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        David Rientjes <rientjes@google.com>, Tejun Heo <tj@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 3/4] OOM, PM: OOM killed task shouldn't escape PM suspend
+Date: Tue, 21 Oct 2014 16:41:07 +0200
+Message-ID: <4766859.KSKPTm3b0x@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141021141159.GE9415@dhcp22.suse.cz>
+References: <1413876435-11720-1-git-send-email-mhocko@suse.cz> <2156351.pWp6MNRoWm@vostro.rjw.lan> <20141021141159.GE9415@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        "Dmitry Eremin-Solenikov" <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] power: reset: at91-reset: fix power down register
-References: <1413829629-8705-1-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1413829629-8705-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/10/2014 20:27, Alexandre Belloni :
-> In the case of at91sam9g45_restart(), the driver is writing
-> AT91_DDRSDRC_LPCB_POWER_DOWN to AT91_DDRSDRC_RTR, this should actually be
-> AT91_DDRSDRC_LPR.
+On Tuesday, October 21, 2014 04:11:59 PM Michal Hocko wrote:
+> On Tue 21-10-14 15:42:23, Rafael J. Wysocki wrote:
+> > On Tuesday, October 21, 2014 03:14:45 PM Michal Hocko wrote:
+> > > On Tue 21-10-14 14:09:27, Rafael J. Wysocki wrote:
+> > > [...]
+> > > > > @@ -131,12 +132,40 @@ int freeze_processes(void)
+> > > > >  
+> > > > >  	printk("Freezing user space processes ... ");
+> > > > >  	pm_freezing = true;
+> > > > > +	oom_kills_saved = oom_kills_count();
+> > > > >  	error = try_to_freeze_tasks(true);
+> > > > >  	if (!error) {
+> > > > > -		printk("done.");
+> > > > >  		__usermodehelper_set_disable_depth(UMH_DISABLED);
+> > > > >  		oom_killer_disable();
+> > > > > +
+> > > > > +		/*
+> > > > > +		 * There might have been an OOM kill while we were
+> > > > > +		 * freezing tasks and the killed task might be still
+> > > > > +		 * on the way out so we have to double check for race.
+> > > > > +		 */
+> > > > > +		if (oom_kills_count() != oom_kills_saved) {
+> > > > > +			struct task_struct *g, *p;
+> > > > > +
+> > > > > +			read_lock(&tasklist_lock);
+> > > > > +			for_each_process_thread(g, p) {
+> > > > > +				if (p == current || freezer_should_skip(p) ||
+> > > > > +				    frozen(p))
+> > > > > +					continue;
+> > > > > +				error = -EBUSY;
+> > > > > +				goto out_loop;
+> > > > > +			}
+> > > > > +out_loop:
+> > > > 
+> > > > Well, it looks like this will work here too:
+> > > > 
+> > > > 			for_each_process_thread(g, p)
+> > > > 				if (p != current && !frozen(p) &&
+> > > > 				    !freezer_should_skip(p)) {
+> > > > 					error = -EBUSY;
+> > > > 					break;
+> > > > 				}
+> > > > 
+> > > > or I am helplessly misreading the code.
+> > > 
+> > > break will not work because for_each_process_thread is a double loop.
+> > 
+> > I see.  In that case I'd do:
+> > 
+> >                         for_each_process_thread(g, p)
+> >                                 if (p != current && !frozen(p) &&
+> >                                     !freezer_should_skip(p)) {
+> > 
+> > 					read_unlock(&tasklist_lock);
+> > 
+> > 					__usermodehelper_set_disable_depth(UMH_ENABLED);
+> > 					printk("OOM in progress.");
+> >                                         error = -EBUSY;
+> >                                         goto done;
+> >                                 }
+> > 
+> > to avoid adding the new label that looks odd.
 > 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> OK, incremental diff on top. I will post the complete patch if you are
+> happier with this change
 
-Absolutely:
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-If you don't mind Dmitry, I'll take this patch through the at91/arm-soc
-git trees in my next at91-3.18-fixes branch.
-
-Thanks Alex, bye,
+Yes, I am.
 
 > ---
->  drivers/power/reset/at91-reset.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/power/reset/at91-reset.c b/drivers/power/reset/at91-reset.c
-> index 3611806c9cfd..3cb36693343a 100644
-> --- a/drivers/power/reset/at91-reset.c
-> +++ b/drivers/power/reset/at91-reset.c
-> @@ -100,11 +100,11 @@ static void at91sam9g45_restart(enum reboot_mode mode, const char *cmd)
->  		/* Disable SDRAM0 accesses */
->  		"1:	str	%3, [%0, #" __stringify(AT91_DDRSDRC_RTR) "]\n\t"
->  		/* Power down SDRAM0 */
-> -		"	str	%4, [%0, #" __stringify(AT91_DDRSDRC_RTR) "]\n\t"
-> +		"	str	%4, [%0, #" __stringify(AT91_DDRSDRC_LPR) "]\n\t"
->  		/* Disable SDRAM1 accesses */
->  		"	strne	%3, [%1, #" __stringify(AT91_DDRSDRC_RTR) "]\n\t"
->  		/* Power down SDRAM1 */
-> -		"	strne	%4, [%1, #" __stringify(AT91_DDRSDRC_RTR) "]\n\t"
-> +		"	strne	%4, [%1, #" __stringify(AT91_DDRSDRC_LPR) "]\n\t"
->  		/* Reset CPU */
->  		"	str	%5, [%2, #" __stringify(AT91_RSTC_CR) "]\n\t"
+> diff --git a/kernel/power/process.c b/kernel/power/process.c
+> index a397fa161d11..7a37cf3eb1a2 100644
+> --- a/kernel/power/process.c
+> +++ b/kernel/power/process.c
+> @@ -108,6 +108,28 @@ static int try_to_freeze_tasks(bool user_only)
+>  	return todo ? -EBUSY : 0;
+>  }
 >  
+> +/*
+> + * Returns true if all freezable tasks (except for current) are frozen already
+> + */
+> +static bool check_frozen_processes(void)
+> +{
+> +	struct task_struct *g, *p;
+> +	bool ret = true;
+> +
+> +	read_lock(&tasklist_lock);
+> +	for_each_process_thread(g, p) {
+> +		if (p != current && !freezer_should_skip(p) &&
+> +		    !frozen(p)) {
+> +			ret = false;
+> +			goto done;
+> +		}
+> +	}
+> +done:
+> +	read_unlock(&tasklist_lock);
+> +
+> +	return ret;
+> +}
+> +
+>  /**
+>   * freeze_processes - Signal user space processes to enter the refrigerator.
+>   * The current thread will not be frozen.  The same process that calls
+> @@ -143,25 +165,12 @@ int freeze_processes(void)
+>  		 * freezing tasks and the killed task might be still
+>  		 * on the way out so we have to double check for race.
+>  		 */
+> -		if (oom_kills_count() != oom_kills_saved) {
+> -			struct task_struct *g, *p;
+> -
+> -			read_lock(&tasklist_lock);
+> -			for_each_process_thread(g, p) {
+> -				if (p == current || freezer_should_skip(p) ||
+> -				    frozen(p))
+> -					continue;
+> -				error = -EBUSY;
+> -				goto out_loop;
+> -			}
+> -out_loop:
+> -			read_unlock(&tasklist_lock);
+> -
+> -			if (error) {
+> -				__usermodehelper_set_disable_depth(UMH_ENABLED);
+> -				printk("OOM in progress.");
+> -				goto done;
+> -			}
+> +		if (oom_kills_count() != oom_kills_saved &&
+> +				!check_frozen_processes()) {
+> +			__usermodehelper_set_disable_depth(UMH_ENABLED);
+> +			printk("OOM in progress.");
+> +			error = -EBUSY;
+> +			goto done;
+>  		}
+>  		printk("done.");
+>  	}
 > 
-
 
 -- 
-Nicolas Ferre
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
