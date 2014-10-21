@@ -1,139 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754875AbaJUJhN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 05:37:13 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:33825 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031AbaJUJhL (ORCPT
+	id S1754909AbaJUJhr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 05:37:47 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:40656 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751614AbaJUJhp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 05:37:11 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Tue, 21 Oct 2014 11:34:05 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Alan Cox <gnomes@lxorguk.ukuu.org.uk>, Alexander Graf <agraf@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Heiko Stuebner <heiko@sntech.de>, Lee Jones <lee.jones@linaro.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Philippe =?iso-8859-1?Q?R=E9tornaz?= 
-	<philippe.retornaz@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Romain Perier <romain.perier@gmail.com>
-Subject: Re: [PATCH v2 01/47] kernel: Add support for poweroff handler call
- chain
-Message-ID: <20141021093405.GA2113@localhost>
-References: <1413864783-3271-1-git-send-email-linux@roeck-us.net>
- <1413864783-3271-2-git-send-email-linux@roeck-us.net>
+	Tue, 21 Oct 2014 05:37:45 -0400
+Message-ID: <54462960.3080006@hitachi.com>
+Date: Tue, 21 Oct 2014 18:37:36 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413864783-3271-2-git-send-email-linux@roeck-us.net>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ingo Molnar <mingo@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
+        Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] s390 vs. kprobes on ftrace
+References: <1413387978-984-1-git-send-email-heiko.carstens@de.ibm.com> <543F5C84.7090005@hitachi.com> <20141016105709.GA11072@osiris>
+In-Reply-To: <20141016105709.GA11072@osiris>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 20, 2014 at 09:12:17PM -0700, Guenter Roeck wrote:
-
-> v2:
-> - poweroff -> power_off
-
-Do you want to stick to power[-_ ]off consistently throughout?
-
-> - Add defines for default priorities
-> - Use raw notifiers protected by spinlocks instead of atomic notifiers
-> - Add register_poweroff_handler_simple
-> - Add devm_register_power_off_handler
+(2014/10/16 19:57), Heiko Carstens wrote:
+> Hi Masami,
 > 
->  include/linux/pm.h              |  22 ++++
->  kernel/power/Makefile           |   1 +
->  kernel/power/poweroff_handler.c | 252 ++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 275 insertions(+)
->  create mode 100644 kernel/power/poweroff_handler.c
+> thank you for your comments!
 > 
-> diff --git a/include/linux/pm.h b/include/linux/pm.h
-> index 383fd68..7e0cb36 100644
-> --- a/include/linux/pm.h
-> +++ b/include/linux/pm.h
-> @@ -34,7 +34,29 @@
->  extern void (*pm_power_off)(void);
->  extern void (*pm_power_off_prepare)(void);
->  
-> +/*
-> + * Callbacks to manage poweroff handlers
+> On Thu, Oct 16, 2014 at 02:49:56PM +0900, Masami Hiramatsu wrote:
+>> (2014/10/16 0:46), Heiko Carstens wrote:
+>>> we would like to implement an architecture specific variant of "kprobes
+>>> on ftrace" without using the current HAVE_KPROBES_ON_FTRACE infrastructure
+>>> which is currently only used by x86.
+>>>
+>>> The rationale for these two patches is:
+>>> - we want to patch the first instruction of the mcount code block to
+>>>   reduce the overhead of the function tracer
+>>> - we'd like to keep the ftrace_caller function as simple as possible and
+>>>   not require it to generate a 100% valid pt_regs structure as required
+>>>   by the combination of DYNAMIC_FTRACE_WITH_REGS and HAVE_KPROBES_ON_FTRACE.
+>>>   This allows us to not generate the psw mask field in the pt_regs
+>>>   structure on each function tracer enabled function, which otherwise would
+>>>   be very expensive. Besides that program check generated pt_regs contents
+>>>   are "more" accurate than program generated ones and don't require any
+>>>   maintenance.
+>>>   And also we can keep the ftrace and kprobes backends quite separated.
+>>
+>> I'm not sure about s390 nor have the machine, so it is very helpful if you
+>> give us a command line level test and show us the result with this patch :)
+>> Fortunately, we already have ftracetest under tools/tesitng/selftest/ftrace/.
+>> You can add the testcase for checking co-existence of kprobes and ftrace on
+>> an entry of a function.
+> 
+> Ok, my personal test case was just a kernel module, that added/removed a kprobe
+> while also enabling/disabling function tracing and verifying that both the
+> kprobes handler got called correctly and correct entries were added to the
+> function trace buffer.
+> Everything worked as expected, however I think I can come up with a test case
+> that will fit into the ftrace selftests.
+> I just need to get familiar with the kprobe dynamic event interface (again) ;)
+> 
+>> And also, since ftrace is now supporting assembly trampoline code for each
+>> handler, performance overhead can be reduced if we save registers only when
+>> the kprobes enabled on the function. I'm not sure it can implement on s390,
+>> but your requirement looks similar. What would you think about that?
+> 
+> Yes, Vojtech Pavlik did send patches which implemented that. But that resulted
+> in a lot of asm code duplication which I didn't feel comfortable with.
+> Right now the s390 variant of ftrace_regs_caller() is an alias to
+> ftrace_caller() which means we only have one piece of code which handles both
+> variants.
+> I'm still thinking of a different solution which handles the creation of the
+> pt_regs contents 100% correct with an own trampoline for ftrace_regs_caller(),
+> but that's a different story.
+> 
+> However, this is more or less independently to the question of what you think
+> about allowing an architecture to handle kprobes on ftrace completely in the
+> architecture backend.
+> 
+>>From a pure technical point of view both versions can be implemented and would
+> also work on s390:
+> - either handling kprobes on ftrace completely by the architecture
+> - or implement a "full" version of DYNAMIC_FTRACE_WITH_REGS and then also
+>   implement a similar HAVE_KPROBES_ON_FTRACE backend like x86 already has
+> 
+> Personally I'd prefer handling kprobes on ftrace completely by the
+> architecture backend, because both Martin and I think this simply looks
+> better, and keeps things more separated.
+> Given that this preference only requires removal of a sanity check in
+> kprobes.c ("don't put a kprobe on an ftrace location") I'd say this shouldn't
+> be a problem, no?
 
-power-off
+>From the functional point of view, if we can set the kprobes on
+ftrace site, that is OK for me. And I'm sure your series doesn't
+make change according to your test case. So I think it's OK :)
 
-> + */
-> +
-> +struct notifier_block;
->  struct device; /* we have a circular dep with device.h */
-> +
-> +int register_power_off_handler(struct notifier_block *);
-> +int devm_register_power_off_handler(struct device *, struct notifier_block *);
-> +int register_power_off_handler_simple(void (*function)(void), int priority);
-> +int unregister_power_off_handler(struct notifier_block *);
-> +void do_kernel_power_off(void);
-> +bool have_kernel_power_off(void);
-> +
-> +/*
-> + * Pre-defined poweroff handler priorities
+Thank you,
 
-power-off
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-> + */
-> +#define POWEROFF_PRIORITY_FALLBACK	0
-> +#define POWEROFF_PRIORITY_LOW		64
-> +#define POWEROFF_PRIORITY_DEFAULT	128
-> +#define POWEROFF_PRIORITY_HIGH		192
-> +#define POWEROFF_PRIORITY_HIGHEST	255
 
-I think at least these ones should match the interface function and have
-a POWER_OFF_PRIORITY_ prefix.
-
-> +
->  #ifdef CONFIG_VT_CONSOLE_SLEEP
->  extern void pm_vt_switch_required(struct device *dev, bool required);
->  extern void pm_vt_switch_unregister(struct device *dev);
-> diff --git a/kernel/power/Makefile b/kernel/power/Makefile
-> index 29472bf..4d9f0c7 100644
-> --- a/kernel/power/Makefile
-> +++ b/kernel/power/Makefile
-> @@ -2,6 +2,7 @@
->  ccflags-$(CONFIG_PM_DEBUG)	:= -DDEBUG
->  
->  obj-y				+= qos.o
-> +obj-y				+= poweroff_handler.o
->  obj-$(CONFIG_PM)		+= main.o
->  obj-$(CONFIG_VT_CONSOLE_SLEEP)	+= console.o
->  obj-$(CONFIG_FREEZER)		+= process.o
-> diff --git a/kernel/power/poweroff_handler.c b/kernel/power/poweroff_handler.c
-> new file mode 100644
-> index 0000000..aeb4736
-> --- /dev/null
-> +++ b/kernel/power/poweroff_handler.c
-
-power_off_handler.c?
-
-> @@ -0,0 +1,252 @@
-> +/*
-> + * linux/kernel/power/poweroff_handler.c - Poweroff handling functions
-> + *
-> + * Copyright (c) 2014 Guenter Roeck
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public Licence
-> + * as published by the Free Software Foundation; either version
-> + * 2 of the Licence, or (at your option) any later version.
-> + */
-> +
-> +#define pr_fmt(fmt)	"poweroff: " fmt
-
-power-off:?
-
-There's a bunch of these introduced by the driver patches as well (e.g.
-poweroff_nb).
-
-Johan
