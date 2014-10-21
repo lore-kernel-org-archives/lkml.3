@@ -1,91 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753129AbaJUDvG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 23:51:06 -0400
-Received: from smtprelay0205.hostedemail.com ([216.40.44.205]:36828 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751490AbaJUDvE (ORCPT
+	id S1752716AbaJUD5Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 23:57:16 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:39913 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751539AbaJUD5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 23:51:04 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3865:3867:3871:3872:4321:5007:6261:9592:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12555:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: key94_432e9f4318f01
-X-Filterd-Recvd-Size: 2797
-Message-ID: <1413863460.5407.10.camel@perches.com>
-Subject: [PATCH] usb: storage: Convert usb_stor_dbg to return void
-From: Joe Perches <joe@perches.com>
-To: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        usb-storage@lists.one-eyed-alien.net, linux-kernel@vger.kernel.org
-Date: Mon, 20 Oct 2014 20:51:00 -0700
+	Mon, 20 Oct 2014 23:57:14 -0400
+Message-ID: <5445D978.5060609@huawei.com>
+Date: Tue, 21 Oct 2014 11:56:40 +0800
+From: Wang Nan <wangnan0@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, <linux-kernel@vger.kernel.org>,
+        <zhangzhiqiang.zhang@huawei.com>, <peifeiyue@huawei.com>
+Subject: Re: [PATCH] perf tools: fix incorrect header string
+References: <1413343733-7973-1-git-send-email-wangnan0@huawei.com> <20141015151358.GK3198@kernel.org> <543F39A9.3030308@huawei.com> <20141016145504.GW3198@kernel.org>
+In-Reply-To: <20141016145504.GW3198@kernel.org>
 Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.90]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No caller or macro uses the return value so make it void.
+On 2014/10/16 22:55, Arnaldo Carvalho de Melo wrote:
+> Em Thu, Oct 16, 2014 at 11:21:13AM +0800, Wang Nan escreveu:
+>> On 2014/10/15 23:13, Arnaldo Carvalho de Melo wrote:
+>>> Em Wed, Oct 15, 2014 at 11:28:53AM +0800, Wang Nan escreveu:
+>>>> Commit fbe96f29 (perf tools: Make perf.data more self-descriptive)
+>>>> read '/proc/cpuinfo' to form cpu descriptor. For ARM, it finds
+>>>> 'Processor' field. It is correct when the patch merged, but due to
+>>>> commit b4b8f770 (ARM: kernel: update cpuinfo to print all online CPUs
+>>>> features), the corresponding information becomes 'model name' field.
+>>>>
+>>>> This patch simply corrects it.
+>>>
+>>> It doesn't :-)
+>>>
+>>> It makes it work with kernels >= b4b8f770, and fail with older kernels.
+>>>
+>>> We need to somehow figure out where the right information is regardless
+>>> of the kernel.
+>>>
+>>> - Arnaldo
+>>>  
+>>
+>> However it is a real problem. Look at output on arm platform at the
+>> bottom of this mail, especially  "cpudesc", "total memory" and "cmdline" field.
+> 
+> Yeah, I haven't said it wasn't a problem, just that the proposed fix
+> wasn't enough.
+> 
+> - Arnaldo
+>  
+>> By further debugging I found that the real problem resides in return value checking
+>> when write header error. Please see my other patches:
+>>
+>> https://lkml.org/lkml/2014/10/15/612
+>> https://lkml.org/lkml/2014/10/15/611
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
-This change is associated to a desire to eventually
-change printk to return void.
+So what's your opinion on these two patches?
 
- drivers/usb/storage/debug.c |  7 ++-----
- drivers/usb/storage/debug.h | 10 ++++++----
- 2 files changed, 8 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/usb/storage/debug.c b/drivers/usb/storage/debug.c
-index e08f647..05bc379 100644
---- a/drivers/usb/storage/debug.c
-+++ b/drivers/usb/storage/debug.c
-@@ -179,17 +179,14 @@ void usb_stor_show_sense(const struct us_data *us,
- 	US_DEBUGPX("\n");
- }
- 
--int usb_stor_dbg(const struct us_data *us, const char *fmt, ...)
-+void usb_stor_dbg(const struct us_data *us, const char *fmt, ...)
- {
- 	va_list args;
--	int r;
- 
- 	va_start(args, fmt);
- 
--	r = dev_vprintk_emit(7, &us->pusb_dev->dev, fmt, args);
-+	dev_vprintk_emit(7, &us->pusb_dev->dev, fmt, args);
- 
- 	va_end(args);
--
--	return r;
- }
- EXPORT_SYMBOL_GPL(usb_stor_dbg);
-diff --git a/drivers/usb/storage/debug.h b/drivers/usb/storage/debug.h
-index b1273f0..f525203 100644
---- a/drivers/usb/storage/debug.h
-+++ b/drivers/usb/storage/debug.h
-@@ -50,15 +50,17 @@
- void usb_stor_show_command(const struct us_data *us, struct scsi_cmnd *srb);
- void usb_stor_show_sense(const struct us_data *us, unsigned char key,
- 			 unsigned char asc, unsigned char ascq);
--__printf(2, 3) int usb_stor_dbg(const struct us_data *us,
--				const char *fmt, ...);
-+__printf(2, 3) void usb_stor_dbg(const struct us_data *us,
-+				 const char *fmt, ...);
- 
- #define US_DEBUGPX(fmt, ...)	printk(fmt, ##__VA_ARGS__)
- #define US_DEBUG(x)		x
- #else
- __printf(2, 3)
--static inline int _usb_stor_dbg(const struct us_data *us,
--				const char *fmt, ...) {return 1;}
-+static inline void _usb_stor_dbg(const struct us_data *us,
-+				 const char *fmt, ...)
-+{
-+}
- #define usb_stor_dbg(us, fmt, ...)				\
- 	do { if (0) _usb_stor_dbg(us, fmt, ##__VA_ARGS__); } while (0)
- #define US_DEBUGPX(fmt, ...)					\
+>>
+>> I think at least one of them is required.
+>>
+>> Thanks.
+>>
+>>>> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+>>>> ---
+>>>>  tools/perf/perf-sys.h | 2 +-
+>>>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/tools/perf/perf-sys.h b/tools/perf/perf-sys.h
+>>>> index 937e432..4293970 100644
+>>>> --- a/tools/perf/perf-sys.h
+>>>> +++ b/tools/perf/perf-sys.h
+>>>> @@ -113,7 +113,7 @@
+>>>>  #define mb()		((void(*)(void))0xffff0fa0)()
+>>>>  #define wmb()		((void(*)(void))0xffff0fa0)()
+>>>>  #define rmb()		((void(*)(void))0xffff0fa0)()
+>>>> -#define CPUINFO_PROC	"Processor"
+>>>> +#define CPUINFO_PROC	"model name"
+>>>>  #endif
+>>>>  
+>>>>  #ifdef __aarch64__
+>>>> -- 
+>>>> 1.8.4
+>>
+>>
+>>
+>> bash-4.2# perf record ls
+>> ...
+>> [ perf record: Woken up 1 times to write data ]
+>> [ perf record: Captured and wrote 0.001 MB perf.data (~36 samples) ]
+>> bash-4.2# perf report --stdio --header
+>> Error:
+>> The perf.data file has no samples!
+>> # ========
+>> # captured on: Fri Sep 12 10:09:10 2014
+>> # hostname : arma15el
+>> # os release : 3.17.0+
+>> # perf version : 3.10.53
+>> # arch : armv7l
+>> # nrcpus online : 4
+>> # nrcpus avail : 1
+>> # cpudesc : (null)
+>> # total memory : 0 kB
+>> # cmdline :
+>> # event : name = cycles, type = 0, config = 0x0, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, excl_host = 0, excl_guest = 1, precise_ip = 0
+>> # pmu mappings: not available
+>> # ========
+>> #
+>>
+>>
 
 
