@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755334AbaJUPJi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 11:09:38 -0400
-Received: from ring0.de ([5.45.105.125]:54015 "EHLO ring0.de"
+	id S1755774AbaJUPL1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 11:11:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59811 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755697AbaJUPHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 11:07:49 -0400
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-From: Sebastian Reichel <sre@kernel.org>
-To: Hans Verkuil <hans.verkuil@cisco.com>, linux-media@vger.kernel.org
-Cc: Tony Lindgren <tony@atomide.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Sebastian Reichel <sre@kernel.org>
-Subject: [RFCv2 4/8] [media] si4713: use managed irq request
-Date: Tue, 21 Oct 2014 17:07:03 +0200
-Message-Id: <1413904027-16767-5-git-send-email-sre@kernel.org>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1413904027-16767-1-git-send-email-sre@kernel.org>
-References: <1413904027-16767-1-git-send-email-sre@kernel.org>
+	id S1753403AbaJUPLZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 11:11:25 -0400
+Date: Tue, 21 Oct 2014 11:10:43 -0400
+From: Dave Jones <davej@redhat.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: lockdep splat in CPU hotplug
+Message-ID: <20141021151043.GA11800@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Jiri Kosina <jkosina@suse.cz>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Ingo Molnar <mingo@redhat.com>,
+	"Rafael J. Wysocki" <rjw@rjwysocki.net>,
+	Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org,
+	linux-pm@vger.kernel.org
+References: <alpine.LNX.2.00.1410211255531.24255@pobox.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1410211255531.24255@pobox.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce the usage of managed irq request to
-simplify the code slightly.
+On Tue, Oct 21, 2014 at 01:09:04PM +0200, Jiri Kosina wrote:
+ > Hi,
+ > 
+ > I am seeing the lockdep report below when resuming from suspend-to-disk 
+ > with current Linus' tree (c2661b80609).
+ > 
+ > The reason for CCing Ingo and Peter is that I can't make any sense of one 
+ > of the stacktraces lockdep is providing.
+ > 
+ > Please have a look at the very first stacktrace in the dump, where lockdep 
+ > is trying to explain where cpu_hotplug.lock#2 has been acquired. It seems 
+ > to imply that cpuidle_pause() is taking cpu_hotplug.lock, but that's not 
+ > the case at all.
 
-Signed-off-by: Sebastian Reichel <sre@kernel.org>
----
- drivers/media/radio/si4713/si4713.c | 10 ++--------
- 1 file changed, 2 insertions(+), 8 deletions(-)
+Could inlining be confusing the trace here ?
 
-diff --git a/drivers/media/radio/si4713/si4713.c b/drivers/media/radio/si4713/si4713.c
-index efc5d6b..ebec16d 100644
---- a/drivers/media/radio/si4713/si4713.c
-+++ b/drivers/media/radio/si4713/si4713.c
-@@ -1590,7 +1590,7 @@ static int si4713_probe(struct i2c_client *client,
- 	sdev->sd.ctrl_handler = hdl;
- 
- 	if (client->irq) {
--		rval = request_irq(client->irq,
-+		rval = devm_request_irq(&client->dev, client->irq,
- 			si4713_handler, IRQF_TRIGGER_FALLING,
- 			client->name, sdev);
- 		if (rval < 0) {
-@@ -1605,14 +1605,11 @@ static int si4713_probe(struct i2c_client *client,
- 	rval = si4713_initialize(sdev);
- 	if (rval < 0) {
- 		v4l2_err(&sdev->sd, "Failed to probe device information.\n");
--		goto free_irq;
-+		goto free_ctrls;
- 	}
- 
- 	return 0;
- 
--free_irq:
--	if (client->irq)
--		free_irq(client->irq, sdev);
- free_ctrls:
- 	v4l2_ctrl_handler_free(hdl);
- exit:
-@@ -1628,9 +1625,6 @@ static int si4713_remove(struct i2c_client *client)
- 	if (sdev->power_state)
- 		si4713_set_power_state(sdev, POWER_DOWN);
- 
--	if (client->irq > 0)
--		free_irq(client->irq, sdev);
--
- 	v4l2_device_unregister_subdev(sd);
- 	v4l2_ctrl_handler_free(sd->ctrl_handler);
- 
--- 
-2.1.1
+You can get from cpuidle_pause to cpuidle_uninstall_idle_handler -> synchronize_rcu
+ -> synchronize_sched -> synchronize_sched_expedited which
+does a try_get_online_cpus which will take the cpu_hotplug.lock
+
+	Dave
 
