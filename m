@@ -1,44 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932261AbaJVH1z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 03:27:55 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:52653 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932076AbaJVH1y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 03:27:54 -0400
-X-Original-SENDERIP: 10.177.220.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Wed, 22 Oct 2014 16:28:13 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: karam.lee@lge.com
-Cc: ngupta@vflare.org, linux-kernel@vger.kernel.org,
-        matthew.r.wilcox@intel.com, jmarchan@redhat.com, seungho1.park@lge.com
-Subject: Re: [PATCH v4 2/3] zram: change parameter from vaild_io_request()
-Message-ID: <20141022072813.GG21620@bbox>
-References: <1413961454-13479-1-git-send-email-karam.lee@lge.com>
- <1413961454-13479-3-git-send-email-karam.lee@lge.com>
+	id S1753562AbaJVHdl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 03:33:41 -0400
+Received: from mga01.intel.com ([192.55.52.88]:18056 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751022AbaJVHdk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 03:33:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,767,1406617200"; 
+   d="scan'208";a="618364942"
+Date: Wed, 22 Oct 2014 07:33:31 +0800
+From: Yuyang Du <yuyang.du@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, pjt@google.com,
+        bsegall@google.com, arjan.van.de.ven@intel.com, len.brown@intel.com,
+        rafael.j.wysocki@intel.com, alan.cox@intel.com, mark.gross@intel.com,
+        fengguang.wu@intel.com
+Subject: Re: [RESEND PATCH 2/3 v5] sched: Rewrite per entity runnable load
+ average tracking
+Message-ID: <20141021233330.GA2577@intel.com>
+References: <1412907717-2871-1-git-send-email-yuyang.du@intel.com>
+ <1412907717-2871-3-git-send-email-yuyang.du@intel.com>
+ <20141021143221.GZ23531@worktop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1413961454-13479-3-git-send-email-karam.lee@lge.com>
+In-Reply-To: <20141021143221.GZ23531@worktop.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 04:04:13PM +0900, karam.lee@lge.com wrote:
-> From: "karam.lee" <karam.lee@lge.com>
-> 
-> This patch changes parameter of valid_io_request for common usage.
-> The purpose of valid_io_request() is to determine if bio request is
-> valid or not.
-> This patch use  I/O start address and size instead of a BIO parameter
-> for common usage.
-> 
-> Signed-off-by: karam.lee <karam.lee@lge.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
+On Tue, Oct 21, 2014 at 04:32:21PM +0200, Peter Zijlstra wrote:
 
--- 
-Kind regards,
-Minchan Kim
+> +	val = mul_u64_u32_shr(val, runnable_avg_yN_inv[local_n], 32);
+> +	return val;
+
+Brilliant!
