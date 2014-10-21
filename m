@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753375AbaJUFlo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 01:41:44 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:34702 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751233AbaJUFlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 01:41:42 -0400
-Date: Tue, 21 Oct 2014 07:41:18 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Erik Bosman <ebn310@few.vu.nl>
-Subject: Re: [RFC 3/5] x86: Add a comment clarifying LDT context switching
-Message-ID: <20141021054118.GA4420@pd.tnic>
-References: <cover.1413323611.git.luto@amacapital.net>
- <93ffc13d9e829f3ded9776fec62385bccb7439e1.1413323612.git.luto@amacapital.net>
- <20141016154914.GD30314@nazgul.tnic>
- <CALCETrVmS+ZNj+iXNTy5zC8araMH=x=jUBNDMUNPDJwu0huMMQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CALCETrVmS+ZNj+iXNTy5zC8araMH=x=jUBNDMUNPDJwu0huMMQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753571AbaJUFmG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 01:42:06 -0400
+Received: from xarax-vm-209-198-22-247.xarix.net ([209.198.22.247]:58715 "EHLO
+	localhost" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751233AbaJUFmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 01:42:05 -0400
+X-Greylist: delayed 579 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Oct 2014 01:42:04 EDT
+From: Jeff Leung <jleung@v10networks.ca>
+To: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org
+Cc: kys@microsoft.com, James.Bottomley@HansenPartnership.com,
+        Jeff Leung <jleung@v10networks.ca>
+Subject: [PATCH] scsi: storvsc: Force SPC-3 for Win8 Hosts or Later
+Date: Tue, 21 Oct 2014 05:32:03 +0000
+Message-Id: <1413869523-38783-1-git-send-email-jleung@v10networks.ca>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 09:21:42AM -0700, Andy Lutomirski wrote:
-> I think it's the same as in the other case in switch_mm. leave_mm does
-> cpumask_clear_cpu(cpu, mm_cpumask(active_mm)), and, once that has
-> happened, modify_ldt won't send an IPI to this CPU. So, if leave_mm
-> runs, and then another CPU calls modify_ldt on the mm that is in lazy
-> mode here, it won't update our LDT register, so the LDT register and
-> prev->context.ldt might not match.
+This patch forces SPC-3 for Hyper-V disks on the VMBus. As Windows 10's
+virtual SAS bus is SPC-3 compliant and there are no negative side effects
+on forcing SPC-3 compliance for Win8 hosts, this patch enables SPC-3
+compliance by forcing it on for hosts with versions later than Win8.
 
-Ok, let me see if I can follow with an example:
+Forcing SPC-3 compliance for hosts earlier than Win10 also enables
+TRIM support.
 
-We call leave_mm() on, say, cpu 3 and mm_cpumask(active_mm) has cpu 3 and
-4 set. Then, on cpu 4 we call modify_ldt on that same mm and there in
-alloc_ldt() we have this:
+Suggested by: James Bottomley <James.Bottomley@HansenPartnership.com>
+Signed-off-by: Jeff Leung <jleung@v10networks.ca>
+---
+ drivers/scsi/storvsc_drv.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-                if (!cpumask_equal(mm_cpumask(current->mm),
-                                   cpumask_of(smp_processor_id())))
-                        smp_call_function(flush_ldt, current->mm, 1);
-
-and since we've cleared cpu 3 from the cpumask, we don't flush_ldt()
-on it and there you have the difference.
-
-Am I close?
-
-Thanks.
-
+diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
+index ed0f899..afcc68e 100644
+--- a/drivers/scsi/storvsc_drv.c
++++ b/drivers/scsi/storvsc_drv.c
+@@ -1449,6 +1449,15 @@ static int storvsc_device_configure(struct scsi_device *sdevice)
+ 
+ 	sdevice->no_write_same = 1;
+ 
++	/*
++	 * If the host is Win2k12 or later, we pretend to be SPC-3 compliant
++	 * and send RC16 which activates TRIM. We will only enable this on a
++	 * host with levels greater than VERSION_WIN8
++	 */
++	if (vmbus_proto_version >= VERSION_WIN8) {
++		sdevice->scsi_level = SCSI_SPC_3;
++	}
++
+ 	return 0;
+ }
+ 
 -- 
-Regards/Gruss,
-    Boris.
+1.7.2.5
 
-Sent from a fat crate under my desk. Formatting is fine.
---
