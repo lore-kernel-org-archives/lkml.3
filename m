@@ -1,101 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552AbaJUM3e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 08:29:34 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:41267 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755320AbaJUM3d (ORCPT
+	id S1755566AbaJUMaM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 08:30:12 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:34979 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755346AbaJUMaK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 08:29:33 -0400
-Message-ID: <544651A5.8080601@collabora.co.uk>
-Date: Tue, 21 Oct 2014 14:29:25 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Tue, 21 Oct 2014 08:30:10 -0400
+Date: Tue, 21 Oct 2014 13:30:01 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Gyungoh Yoo <gyungoh@gmail.com>
+Cc: sameo@linux.intel.com, jg1.han@samsung.com, cooloney@gmail.com,
+        broonie@kernel.org, lgirdwood@gmail.com, jack.yoo@skyworksinc.com,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        grant.likely@linaro.org, robh+dt@kernel.org, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
+        shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
+        trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
+        jic23@kernel.org
+Subject: Re: [RESUBMIT PATCH v4 1/8] mfd: Add support for Skyworks SKY81452
+ driver
+Message-ID: <20141021123001.GA4939@x1>
+References: <1412657745-7812-1-git-send-email-jack.yoo@skyworksinc.com>
+ <1413179262-27636-1-git-send-email-jack.yoo@skyworksinc.com>
+ <1413179262-27636-2-git-send-email-jack.yoo@skyworksinc.com>
 MIME-Version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-CC: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: Re: [PATCH v2 1/4] regulator: max77686: Replace hard-coded opmode
- values with defines
-References: <1413890597-31037-1-git-send-email-k.kozlowski@samsung.com> <1413890597-31037-2-git-send-email-k.kozlowski@samsung.com> <54464A37.6060701@collabora.co.uk> <1413894170.31665.9.camel@AMDC1943>
-In-Reply-To: <1413894170.31665.9.camel@AMDC1943>
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1413179262-27636-2-git-send-email-jack.yoo@skyworksinc.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Krzysztof,
+On Mon, 13 Oct 2014, Gyungoh Yoo wrote:
 
-On 10/21/2014 02:22 PM, Krzysztof Kozlowski wrote:
-> On wto, 2014-10-21 at 13:57 +0200, Javier Martinez Canillas wrote:
->> >  
->> > +/* On/off controlled by PWRREQ */
->> > +#define MAX77686_OPMODE_OFF_PWRREQ	0x1
->> 
->> Minor nit: maybe this should be called MAX77802_OFF_PWRREQ (without the OPMODE)?
->> Since afaiu from a conceptual pov the regulators only supports two modes: normal
->> and low power mode.
->> 
->> If a regulator is disabled or put in low power mode by PWRREQ on suspend, then
->> is not really an operating mode (the regulator output will still be normal until
->> suspend) but an enable pin to switch a regulator mode automatically by the SoC.
+> Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+> ---
+> Changes v4:
+> Removed MODULE_VERSION()
+> Modified license to GPLv2
 > 
-> No problem. This is just a define for value used in register. However
-> OPMODE is used in other places in that driver:
-> #define MAX77686_OPMODE_SHIFT   6
-> #define MAX77686_OPMODE_BUCK234_SHIFT   4
-> #define MAX77686_OPMODE_MASK    0x3
->
-> So this would be a little inconsistent...
+> Changes v3:
+> Fixed the backlight name from 'sky81452-bl' to 'sky81452-backlight'
+> Assigned mfd_cell.of_compatible for binding device node
+> Modified error messages
+> 
+> Changes v2:
+> Renamed CONFIG_SKY81452 to CONFIG_MFD_SKY81452
+> Changed the dependency from I2C=y to I2C, for CONFIG_MFD_SKY81452
+> Added message for exception or errors
+> 
+>  drivers/mfd/Kconfig          |  12 +++++
+>  drivers/mfd/Makefile         |   1 +
+>  drivers/mfd/sky81452.c       | 110 +++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/sky81452.h |  32 +++++++++++++
+>  4 files changed, 155 insertions(+)
+>  create mode 100644 drivers/mfd/sky81452.c
+>  create mode 100644 include/linux/mfd/sky81452.h
 
-Indeed, although I think there is a difference between talking about the OPMODE
-field of the regulators control register (which the shift and mask refer to)
-and the semantics of the value that is written (whether is an mode or an enable
-pin).
+[...]
 
-But yeah, I agree the Maxim documentation is confusing and confused me too
-before Mark explained to me that only two operating modes exist for this device.
+> +++ b/include/linux/mfd/sky81452.h
+> @@ -0,0 +1,32 @@
+> +/*
+> + * sky81452.h	SKY81452 MFD driver
+> + *
+> + * Copyright 2014 Skyworks Solutions Inc.
+> + * Author : Gyungoh Yoo <jack.yoo@skyworksinc.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License as published by the
+> + * Free Software Foundation; either version 2, or (at your option) any
+> + * later version.
+> + *
+> + * This program is distributed in the hope that it will be useful, but
+> + * WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> + * General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along
+> + * with this program; if not, see <http://www.gnu.org/licenses/>.
+> + */
+> +
+> +#ifndef _SKY81452_H
+> +#define _SKY81452_H
+> +
+> +#include <linux/sky81452-backlight.h>
 
-> 
->> 
->> > +/*
->> > + * For some regulators this means:
->> > + *  - forcing low power mode.
->> > + *  - low power mode controlled by PWRREQ.
->> > + */
->> > +#define MAX77686_OPMODE_LOWPOWER	0x2
->> 
->> Can you also add a #define MAX77686_LP_PWRREQ 0x2 and use each one when
->> appropriate? That will better document when 0x2 means low power by PWRREQ
->> and when it means change regulator mode to low power.
-> 
-> Actually I made mistake in that comment. The 0x2 means force low power
-> mode only for buck1-4... but there is no set_suspend_mode for these
-> bucks. So this #define has only one semantic value.
-> 
->> Also, are you sure that forcing low power mode is 0x2 and not 0x1?
-> 
-> You're right, for other LDOs, low power mode may be forced with 0x1. For
-> such regulators the max77686_set_suspend_mode() is used which does not
-> set value 0x1. This means that each define has only one semantic
-> meaning.
-> 
-> I'll re-spin and fix the documentation to reflect both device
-> capabilities and how the driver currently works.
-> 
-> Thanks for pointing this.
-> 
+Shouldn't this live in linux/platform_data?
 
-You are welcome.
+> +#include <linux/regulator/machine.h>
+> +
+> +struct sky81452_platform_data {
+> +	struct sky81452_bl_platform_data *bl_pdata;
+> +	struct regulator_init_data *regulator_init_data;
+> +};
+> +
+> +#endif
 
-Best regards,
-Javier 
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
