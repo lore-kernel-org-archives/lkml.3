@@ -1,75 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932740AbaJUNjg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 09:39:36 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:33948 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932509AbaJUNje (ORCPT
+	id S932763AbaJUNkK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 09:40:10 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:54156 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932556AbaJUNkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 09:39:34 -0400
-Message-ID: <5446620E.4020700@gmail.com>
-Date: Tue, 21 Oct 2014 21:39:26 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 21 Oct 2014 09:40:08 -0400
+Date: Tue, 21 Oct 2014 15:39:59 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Markos Chandras <Markos.Chandras@imgtec.com>
+Cc: linux-mips@linux-mips.org, Jonathan Corbet <corbet@lwn.net>,
+        netdev@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Foley <pefoley2@pefoley.com>
+Subject: Re: [PATCH] Documentation: ptp: Fix build failure on MIPS cross
+ builds
+Message-ID: <20141021133959.GC16479@netboy>
+References: <1413794538-28465-1-git-send-email-markos.chandras@imgtec.com>
+ <20141021110724.GA16479@netboy>
+ <54464D6A.5000501@imgtec.com>
+ <20141021125240.GB16479@netboy>
+ <544659B1.6070509@imgtec.com>
 MIME-Version: 1.0
-To: Juri Lelli <juri.lelli@arm.com>, Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] sched/deadline: don't need to balance during wakeup
- if wakee is pinned
-References: <1413253360-5318-1-git-send-email-wanpeng.li@linux.intel.com> <1413253360-5318-2-git-send-email-wanpeng.li@linux.intel.com> <54464F59.3000100@gmail.com> <54465FB6.1060800@arm.com>
-In-Reply-To: <54465FB6.1060800@arm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <544659B1.6070509@imgtec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Juri,
+On Tue, Oct 21, 2014 at 02:03:45PM +0100, Markos Chandras wrote:
+> 
+> Hmm I can't see this testptp.mk file in the mainline. What tree are you
+> referring to?
 
-于 10/21/14, 9:29 PM, Juri Lelli 写道:
-> Hi,
->
-> On 21/10/14 13:19, Wanpeng Li wrote:
->> Cc Juri,
->>
->> 于 10/14/14, 10:22 AM, Wanpeng Li 写道:
->>> Use nr_cpus_allowed to bail from select_task_rq() when only one cpu
->>> can be used, and saves some cycles for pinned tasks.
->>>
->>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
->>> ---
->>>   kernel/sched/deadline.c | 3 +++
->>>   1 file changed, 3 insertions(+)
->>>
->>> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
->>> index f46b7f1..5874bf8 100644
->>> --- a/kernel/sched/deadline.c
->>> +++ b/kernel/sched/deadline.c
->>> @@ -914,6 +914,9 @@ select_task_rq_dl(struct task_struct *p, int cpu, int sd_flag, int flags)
->>>   	struct task_struct *curr;
->>>   	struct rq *rq;
->>>   
->>> +	if (p->nr_cpus_allowed == 1)
->>> +		goto out;
->>> +
->>>   	if (sd_flag != SD_BALANCE_WAKE)
->>>   		goto out;
->>>
-> Apart from the encoding of the resend, it looks good, thanks!
+Sorry, I have net-next open in front of me. The same guy who added
+the buggy Makefile deleted my working makefile...
 
-What's your meaning of resend? Do you mean this one?
-
-https://lkml.org/lkml/2014/10/10/425
-
-I'm afraid they are different patches.
-
-Regards,
-Wanpeng Li
-
->
-> Best,
->
-> - Juri
->
-
+Thanks,
+Richard
