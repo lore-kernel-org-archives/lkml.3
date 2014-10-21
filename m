@@ -1,66 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933991AbaJUV42 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 17:56:28 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:52079 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933954AbaJUV4N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 17:56:13 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Sebastian Reichel <sre@kernel.org>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH 8/8] MAINTAINERS: add at91 power and memory entries
-Date: Tue, 21 Oct 2014 23:55:40 +0200
-Message-Id: <1413928540-27099-9-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1413928540-27099-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1413928540-27099-1-git-send-email-alexandre.belloni@free-electrons.com>
+	id S934006AbaJUV4j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 17:56:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50286 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933808AbaJUV4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 17:56:38 -0400
+From: Paul Moore <pmoore@redhat.com>
+To: Steve Grubb <sgrubb@redhat.com>
+Cc: Eric Paris <eparis@redhat.com>, Richard Guy Briggs <rgb@redhat.com>,
+        linux-audit@redhat.com, linux-kernel@vger.kernel.org, aviro@redhat.com
+Subject: Re: [PATCH V5 0/5] audit by executable name
+Date: Tue, 21 Oct 2014 17:56:36 -0400
+Message-ID: <3623738.X9Kq6ePK5C@sifl>
+Organization: Red Hat
+User-Agent: KMail/4.14.1 (Linux/3.16.1-gentoo; KDE/4.14.1; x86_64; ; )
+In-Reply-To: <4185398.VpQETdPFDe@x2>
+References: <cover.1412303728.git.rgb@redhat.com> <2652562.S2IH3gqS0u@sifl> <4185398.VpQETdPFDe@x2>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- MAINTAINERS | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+On Monday, October 20, 2014 07:33:39 PM Steve Grubb wrote:
+> On Monday, October 20, 2014 07:02:33 PM Paul Moore wrote:
+> > On Monday, October 20, 2014 06:47:27 PM Eric Paris wrote:
+> > > On Mon, 2014-10-20 at 16:25 -0400, Steve Grubb wrote:
+> > > > On Thursday, October 02, 2014 11:06:51 PM Richard Guy Briggs wrote:
+> > > > > This is a part of Peter Moody, my and Eric Paris' work to implement
+> > > > > audit by executable name.
+> > > > 
+> > > > Does this patch set define an AUDIT_VERSION_SOMETHING and then set
+> > > > AUDIT_VERSION_LATEST to it? If not, I need one to tell if the kernel
+> > > > supports it when issuing commands. Also, if its conceivable that
+> > > > kernels
+> > > > may pick and choose what features could be backported to a curated
+> > > > kernel, should AUDIT_VERSION_ be a number that is incremented or a bit
+> > > > mask?
+> > > 
+> > > Right now the value is 2. So this is your last hope if you want to make
+> > > it a bitmask. I'll leave that up to paul/richard to (over) design.
+> > 
+> > Audit is nothing if not over-designed.  I want to make sure we're
+> > consistent with the previous design methodologies ;)
+> > 
+> > I've been thinking about this for about the past half-hour while I've been
+> > going through some other mail and I'm not really enthused about using the
+> > version number to encode capabilities.  What sort of problems would we
+> > have if we introduced a new audit netlink command to query the kernel for
+> > audit capabilities?
+> 
+> I thought that is what we were getting in this patch:
+> https://www.redhat.com/archives/linux-audit/2014-January/msg00054.html
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index a20df9bf8ab0..e325c81ee2fa 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -871,6 +871,25 @@ M:	Boris Brezillon <boris.brezillon@free-electrons.com>
- S:	Maintained
- F:	drivers/clk/at91
- 
-+ARM/ATMEL AT91 Poweroff driver
-+M:	Alexandre Belloni <alexandre.belloni@free-electrons.com>
-+L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-+S:	Maintained
-+F:	drivers/power/reset/at91-poweroff.c
-+
-+ARM/ATMEL AT91 Reset driver
-+M:	Alexandre Belloni <alexandre.belloni@free-electrons.com>
-+L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-+S:	Maintained
-+F:	drivers/power/reset/at91-reset.c
-+
-+ARM/ATMEL AT91 SDRAM Controlller driver
-+M:	Alexandre Belloni <alexandre.belloni@free-electrons.com>
-+L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-+S:	Maintained
-+F:	drivers/memory/atmel-sdramc.c
-+F:	include/soc/atmel/memory.h
-+
- ARM/CALXEDA HIGHBANK ARCHITECTURE
- M:	Rob Herring <robh@kernel.org>
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+That patch, and the simple name "version", looks more like a version number 
+and not a capabilities bitmap.  However, as Eric previously pointed out, since 
+we are only at version 2, all is not lost.
+
+> As I understood it, I send an AUDIT_GET command on netlink and then look in
+> status.version to see what we have. I really think that in the mainline
+> kernel, there will be a steady increment of capabilities. However, for
+> distributions, they may want to pick and choose which capabilities to
+> backport to their shipping kernel. Meaning in practice, a bitmap may be
+> better to allow cherry picking capabilities and user space being able to
+> make informed decisions.
+
+If we are intending to use this as a way of checking for functionality then it 
+really should be a bitmap and not a version number.  Regardless of if we are 
+talking about an upstream or distribution kernel.
+
+> I really don't mind if this is done by a new netlink command (but if we do,
+> what happens to status.version?) or if we just keep going with
+> status.version. Just tell me which it is.
+
+No, let's stick with what we have now.  I mistakenly assumed that since the 
+struct field and userspace #defines included "version" that the value was 
+actually a version number ... silly me, I have no idea why I thought that.
+
+So, with this in mind, I think a couple of small tweaks are in order (sorry 
+Richard), in no particular order:
+
+* Change the audit_status.version field comment in include/uapi/linux/audit.h 
+to "/* audit functionality bitmap */", or similar.  We can't really change the 
+structure now, but the comment is fair game.
+
+* Change AUDIT_VERSION_LATEST to a bitmask instead of a number.  For example, 
+it should be 3 given the current code, not 2.  In a perfect world this 
+wouldn't even be in the uapi header, but it is so we need to keep it updated.  
+Bumping it higher should be backwards compatible.
+
+Can anyone think of anything else that might be affected by this?
+
 -- 
-1.9.1
+paul moore
+security and virtualization @ redhat
 
