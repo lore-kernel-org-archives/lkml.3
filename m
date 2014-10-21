@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815AbaJUIyQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 04:54:16 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:51989 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754644AbaJUIyC (ORCPT
+	id S1754779AbaJUIyO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 04:54:14 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:64498 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754615AbaJUIyC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 21 Oct 2014 04:54:02 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
@@ -17,9 +17,9 @@ Cc: "David S. Miller" <davem@davemloft.net>,
         Haojian Zhuang <haojian.zhuang@gmail.com>,
         linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 7/9] ARM: berlin: Add BG2CD ethernet DT nodes
-Date: Tue, 21 Oct 2014 10:53:45 +0200
-Message-Id: <1413881627-21639-8-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 6/9] ARM: berlin: Add BG2 ethernet DT nodes
+Date: Tue, 21 Oct 2014 10:53:44 +0200
+Message-Id: <1413881627-21639-7-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1413881627-21639-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1413881627-21639-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Content-Type: text/plain; charset=UTF-8
@@ -28,7 +28,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marvell BG2CD has two fast ethernet controllers with internal PHY,
+Marvell BG2 has two fast ethernet controllers with internal PHY,
 add the corresponding nodes to SoC dtsi.
 
 Tested-by: Antoine Ténart <antoine.tenart@free-electrons.com>
@@ -44,14 +44,14 @@ Cc: netdev@vger.kernel.org
 Cc: devicetree@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/arm/boot/dts/berlin2cd.dtsi | 36 ++++++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/berlin2.dtsi | 36 ++++++++++++++++++++++++++++++++++++
  1 file changed, 36 insertions(+)
 
-diff --git a/arch/arm/boot/dts/berlin2cd.dtsi b/arch/arm/boot/dts/berlin2cd.dtsi
-index cc1df65da504..8ce73a0a23a3 100644
---- a/arch/arm/boot/dts/berlin2cd.dtsi
-+++ b/arch/arm/boot/dts/berlin2cd.dtsi
-@@ -66,6 +66,42 @@
+diff --git a/arch/arm/boot/dts/berlin2.dtsi b/arch/arm/boot/dts/berlin2.dtsi
+index 9d7c810ebd0b..31d5922263d7 100644
+--- a/arch/arm/boot/dts/berlin2.dtsi
++++ b/arch/arm/boot/dts/berlin2.dtsi
+@@ -79,11 +79,47 @@
  			clocks = <&chip CLKID_TWD>;
  		};
  
@@ -73,6 +73,11 @@ index cc1df65da504..8ce73a0a23a3 100644
 +			};
 +		};
 +
+ 		cpu-ctrl@dd0000 {
+ 			compatible = "marvell,berlin-cpu-ctrl";
+ 			reg = <0xdd0000 0x10000>;
+ 		};
+ 
 +		eth0: ethernet@e50000 {
 +			compatible = "marvell,pxa168-eth";
 +			reg = <0xe50000 0x10000>;
