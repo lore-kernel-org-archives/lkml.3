@@ -1,171 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933498AbaJUU7K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 16:59:10 -0400
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:60290 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933014AbaJUU7H (ORCPT
+	id S933465AbaJUVBe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 17:01:34 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:39764 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754756AbaJUVBc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 16:59:07 -0400
-From: Milosz Tanski <milosz@adfin.com>
-To: linux-kernel@vger.kernel.org
-Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
-        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-api@vger.kernel.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>, linux-man@vger.kernel.org
-Subject: [PATCH] Add preadv2/pwritev2 documentation.
-Date: Tue, 21 Oct 2014 16:59:02 -0400
-Message-Id: <1413925142-68031-1-git-send-email-milosz@adfin.com>
-X-Mailer: git-send-email 1.8.5.2 (Apple Git-48)
-In-Reply-To: <cover.1413923420.git.milosz@adfin.com>
-References: <cover.1413923420.git.milosz@adfin.com>
+	Tue, 21 Oct 2014 17:01:32 -0400
+MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:157d:3592:c0b0:1605:7f56]
+In-Reply-To: <5446C775.3030707@suse.de>
+References: <1406242820-20140-1-git-send-email-afaerber@suse.de>
+	<CAOesGMjAb5oXjauhbqjDhJXWct7qoXxy3XpA1=DioK7vPTwetA@mail.gmail.com>
+	<5446C775.3030707@suse.de>
+Date: Tue, 21 Oct 2014 14:01:31 -0700
+Message-ID: <CAOesGMhSuvbWpM5CC_5Hy6BskM6sbrw0SCR90aKHvfk1Qm1_Ng@mail.gmail.com>
+Subject: Re: [PATCH v2 00/11] ARM: dts: zynq: Prepare Parallella
+From: Olof Johansson <olof@lixom.net>
+To: =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>
+Cc: =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Andreas Olofsson <andreas@adapteva.com>,
+        Matteo Vit <matteo.vit@starwaredesign.com>,
+        Sean Rickerd <srickerd@suse.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Punnaiah Choudary Kalluri <punnaia@xilinx.com>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New syscalls that are a variation on the preadv/pwritev but support an extra
-flag argument.
+On Tue, Oct 21, 2014 at 1:52 PM, Andreas Färber <afaerber@suse.de> wrote:
+> Hi Olof and Sören,
+>
+> Am 18.10.2014 um 06:28 schrieb Olof Johansson:
+>> On Thu, Jul 24, 2014 at 4:00 PM, Andreas Färber <afaerber@suse.de> wrote:
+>>> Hello,
+>>>
+>>> This patch series adds an initial device tree for the Parallella board.
+>>> UART, SD card, Ethernet are enabled.
+>>> Not yet enabled are HDMI, QSPI flash and 2x USB.
+>>
+>> Andreas (Olofsson) kindly sent me a board, and I added it to the boot
+>> farm today, it'll be included in boot reports from here on.
+>
+> Good to hear.
+>
+>> I did a test run with yesterday's -next It looks like networking isn't
+>> working there at the moment, clock related. Same happens with 3.17 and
+>> latest mainline, config multi_v7_defconfig:
+>>
+>> [WARN] [    7.943648] macb e000b000.ethernet eth0: unable to generate
+>> target frequency: 125000000 Hz
+>> [WARN] [   10.948681] macb e000b000.ethernet eth0: unable to generate
+>> target frequency: 125000000 Hz
+>
+> I am unable to reproduce this in my setup - at Linus' tip
+> c2661b806092d8ea2dccb7b02b65776555e0ee47 (v3.18-rc1-68-gc2661b8), make
+> oldconfig'ing my /proc/config.gz.
+>
+> Sören, in light of your explanations, should I be expecting problems
+> with 1GbE or with 100MbE? My board is connected to a 1GbE switch.
 
-Signed-off-by: Milosz Tanski <milosz@adfin.com>
-Suggested-by: Jeff Moyer <jmoyer@redhat.com>
-Fixes: Jeff Moyer <jmoyer@redhat.com>
----
- man2/readv.2 | 71 +++++++++++++++++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 61 insertions(+), 10 deletions(-)
+My board might have old firmware/bitstream on it? It reports as:
 
-diff --git a/man2/readv.2 b/man2/readv.2
-index 8748efa..31b3870 100644
---- a/man2/readv.2
-+++ b/man2/readv.2
-@@ -45,6 +45,12 @@ readv, writev, preadv, pwritev \- read or write data into multiple buffers
- .sp
- .BI "ssize_t pwritev(int " fd ", const struct iovec *" iov ", int " iovcnt ,
- .BI "                off_t " offset );
-+.sp
-+.BI "ssize_t preadv2(int " fd ", const struct iovec *" iov ", int " iovcnt ,
-+.BI "                off_t " offset ", int " flags );
-+.sp
-+.BI "ssize_t pwritev2(int " fd ", const struct iovec *" iov ", int " iovcnt ,
-+.BI "                 off_t " offset ", int " flags );
- .fi
- .sp
- .in -4n
-@@ -162,9 +168,9 @@ The
- system call combines the functionality of
- .BR writev ()
- and
--.BR pwrite (2).
-+.BR pwrite (2) "."
- It performs the same task as
--.BR writev (),
-+.BR writev () ","
- but adds a fourth argument,
- .IR offset ,
- which specifies the file offset at which the output operation
-@@ -174,15 +180,41 @@ The file offset is not changed by these system calls.
- The file referred to by
- .I fd
- must be capable of seeking.
-+.SS preadv2() and pwritev2()
-+
-+This pair of system calls has similar functionality to the
-+.BR preadv ()
-+and
-+.BR pwritev ()
-+calls, but adds a fifth argument, \fIflags\fP, which modifies the behavior on a per call basis.
-+
-+Like the
-+.BR preadv ()
-+and
-+.BR pwritev ()
-+calls, they accept an \fIoffset\fP argument. Unlike those calls, if the \fIoffset\fP argument is set to -1 then the current file offset is used and updated.
-+
-+The \fIflags\fP arguments to
-+.BR preadv2 ()
-+and
-+.BR pwritev2 ()
-+contains a bitwise OR of one or more of the following flags:
-+.TP
-+.BR RWF_NONBLOCK " (only " preadv2() " since Linux 3.19)"
-+Performs a non-blocking operation for regular files (not sockets) opened in buffered mode (not
-+.BR O_DIRECT ")."
-+
- .SH RETURN VALUE
- On success,
--.BR readv ()
--and
-+.BR readv () ","
- .BR preadv ()
--return the number of bytes read;
--.BR writev ()
- and
-+.BR preadv2 ()
-+return the number of bytes read;
-+.BR writev () ","
- .BR pwritev ()
-+and
-+.BR pwritev2 ()
- return the number of bytes written.
- On error, \-1 is returned, and \fIerrno\fP is set appropriately.
- .SH ERRORS
-@@ -191,12 +223,22 @@ The errors are as given for
- and
- .BR write (2).
- Furthermore,
--.BR preadv ()
--and
-+.BR preadv () ","
-+.BR preadv2 () ","
- .BR pwritev ()
-+and
-+.BR pwritev2 ()
- can also fail for the same reasons as
- .BR lseek (2).
--Additionally, the following error is defined:
-+Additionally, the following errors are defined:
-+.TP
-+.B EAGAIN
-+The operation would block. This is possible if the file descriptor \fIfd\fP refers to a socket and has been marked nonblocking
-+.RB ( O_NONBLOCK ),
-+or the operation is a
-+.BR preadv2
-+and the \fIflags\fP argument is set to
-+.BR RWF_NONBLOCK.
- .TP
- .B EINVAL
- The sum of the
-@@ -205,12 +247,17 @@ values overflows an
- .I ssize_t
- value.
- Or, the vector count \fIiovcnt\fP is less than zero or greater than the
--permitted maximum.
-+permitted maximum. Or, an unknown flag is specified in \fIflags\fP.
- .SH VERSIONS
- .BR preadv ()
- and
- .BR pwritev ()
- first appeared in Linux 2.6.30; library support was added in glibc 2.10.
-+.sp
-+.BR preadv2 ()
-+and
-+.BR pwritev2 ()
-+first appeared in Linux 3.19 (if we're lucky);
- .SH CONFORMING TO
- .BR readv (),
- .BR writev ():
-@@ -223,6 +270,10 @@ first appeared in Linux 2.6.30; library support was added in glibc 2.10.
- .BR preadv (),
- .BR pwritev ():
- nonstandard, but present also on the modern BSDs.
-+.sp
-+.BR preadv2 (),
-+.BR pwritev2 ():
-+nonstandard, Linux extension.
- .SH NOTES
- .SS C library/kernel ABI differences
- POSIX.1-2001 allows an implementation to place a limit on
--- 
-1.9.1
+U-Boot 2012.10-00003-g792c31c (Jan 03 2014 - 12:24:08)
 
+
+-Olof
