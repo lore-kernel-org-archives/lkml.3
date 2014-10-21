@@ -1,204 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754549AbaJUH5W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 03:57:22 -0400
-Received: from axentia.se ([87.96.186.132]:50536 "EHLO EMAIL.axentia.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754482AbaJUH5T convert rfc822-to-8bit (ORCPT
+	id S1754532AbaJUID3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 04:03:29 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:55233 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754460AbaJUIDR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 03:57:19 -0400
-From: Peter Rosin <peda@axentia.se>
-To: Bo Shen <voice.shen@atmel.com>
-CC: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        "'alsa-devel@alsa-project.org'" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [alsa-devel] [PATCH] ASoC: atmel_ssc_dai: Track playback and
- capture CMR dividers separately.
-Thread-Topic: [alsa-devel] [PATCH] ASoC: atmel_ssc_dai: Track playback and
- capture CMR dividers separately.
-Thread-Index: Ac/saz/Ebhtl/6cSQtuv8Muf3bNWIgAVeLOAAA3ODdA=
-Date: Tue, 21 Oct 2014 07:55:28 +0000
-Message-ID: <dc4461593ddb4d539f2db74b69bab98c@EMAIL.axentia.se>
-References: <a541333cf46b4c61b790df927d4b315d@EMAIL.axentia.se>
- <5445BCBF.5090002@atmel.com>
-In-Reply-To: <5445BCBF.5090002@atmel.com>
-Accept-Language: en-US, sv-SE
-Content-Language: sv-SE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [217.210.101.82]
-x-gfi-smtp-submission: 1
-x-gfi-smtp-hellodomain: EMAIL.axentia.se
-x-gfi-smtp-remoteip: 192.168.2.5
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 21 Oct 2014 04:03:17 -0400
+Date: Tue, 21 Oct 2014 10:03:13 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexandre FOURNIER <alexandre.fournier@wisp-e.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Marcin Wojtas <mw@semihalf.com>,
+        Gregory =?UTF-8?B?Q2zDqW1lbnQ=?= 
+	<gregory.clement@free-electrons.com>
+Subject: RCU stall in af_unix.c, should use spin_lock_irqsave?
+Message-ID: <20141021100313.397f4962@free-electrons.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hello,
 
-(and thank you for the pointer to the example with the ssc-dai in master mode)
+I stumbled across a reproducible RCU stall related to the AF_UNIX code
+(on 3.17, on an ARM SMP system), and I'm not sure whether the problem
+is caused by:
 
-> Hi Peter,
-> 
-> On 10/20/2014 09:45 PM, Peter Rosin wrote:
-> >  From 1e5621d7b9887c648d1a66238dc82d715c1e2cad Mon Sep 17 00:00:00
-> > 2001
-> > From: Peter Rosin <peda@axentia.se>
-> > Date: Mon, 20 Oct 2014 14:38:04 +0200
-> > Subject: [PATCH] ASoC: atmel_ssc_dai: Track playback and capture CMR
-> dividers
-> >   separately.
-> >
-> > The CMR divider register is shared by playback and capture. The SSC
-> > driver therefore tries to enforce rules so that the needed register
-> > content do not conflict during simultaneous playback/capture. However,
-> > the implementation also prevents changing the register content in a
-> > half-duplex scenario, which is needed when changing sample rates.
-> 
-> I am not fully get what you mean here, do you mean:
->    - when playback, first playback 48kHz, and then playback 8Khz, the 8Khz still
-> playback in 48kHz mode?
-> 
-> or other things?
+ * The af_unix.c code using spin_lock() on sk->sk_receive_queue.lock
+   while it should be using spin_lock_irqsave().
 
-I do not know exactly why the problem occurs, but it might be connected to
-the library (proprietary) we are using. It apparently uses the OSS interface
-and somehow it opens a stream and changes the playback sample-rate a
-couple of time before it settles on something. I don't know why this is
-done, and I have no control over it. The end result is that without this patch,
-the ssc-dai driver returns -EBUSY when the library changes the playback
-sample-rate (the driver returns -EBUSY because it thinks that the new
-sample rate does not match a previously given capture sample-rate, but
-that is of course bogus when no capture is going on at all).
+OR
 
-> > Thus, keep track of the desired playback and capture clock dividers
-> > separately, and allow changing rates without closing the stream.
-> >
-> > Signed-off-by: Peter Rosin <peda@axentia.se>
-> > ---
-> >   sound/soc/atmel/atmel_ssc_dai.c |   31 ++++++++++++++++++++++------
-> ---
-> >   sound/soc/atmel/atmel_ssc_dai.h |   10 ++++++----
-> >   2 files changed, 28 insertions(+), 13 deletions(-)
-> >
-> > diff --git a/sound/soc/atmel/atmel_ssc_dai.c
-> > b/sound/soc/atmel/atmel_ssc_dai.c index f403f39..fec14fb 100644
-> > --- a/sound/soc/atmel/atmel_ssc_dai.c
-> > +++ b/sound/soc/atmel/atmel_ssc_dai.c
-> > @@ -277,7 +277,8 @@ static void atmel_ssc_shutdown(struct
-> snd_pcm_substream *substream,
-> >   		/* Reset the SSC */
-> >   		ssc_writel(ssc_p->ssc->regs, CR, SSC_BIT(CR_SWRST));
-> >   		/* Clear the SSC dividers */
-> > -		ssc_p->cmr_div = ssc_p->tcmr_period = ssc_p->rcmr_period
-> = 0;
-> > +		ssc_p->tcmr_div = ssc_p->rcmr_div = 0;
-> > +		ssc_p->tcmr_period = ssc_p->rcmr_period = 0;
-> >   	}
-> >   	spin_unlock_irq(&ssc_p->lock);
-> >   }
-> > @@ -304,17 +305,27 @@ static int atmel_ssc_set_dai_clkdiv(struct
-> snd_soc_dai *cpu_dai,
-> >   	struct atmel_ssc_info *ssc_p = &ssc_info[cpu_dai->id];
-> >
-> >   	switch (div_id) {
-> > -	case ATMEL_SSC_CMR_DIV:
-> > +	case ATMEL_SSC_TCMR_DIV:
-> >   		/*
-> >   		 * The same master clock divider is used for both
-> >   		 * transmit and receive, so if a value has already
-> > -		 * been set, it must match this value.
-> > +		 * been set for the other direction, it must match
-> > +		 * this value.
-> >   		 */
-> > -		if (ssc_p->cmr_div == 0)
-> > -			ssc_p->cmr_div = div;
-> > -		else
-> > -			if (div != ssc_p->cmr_div)
-> > -				return -EBUSY;
-> > +		if (ssc_p->rcmr_div == 0)
-> > +			ssc_p->tcmr_div = div;
-> > +		else if (div != ssc_p->rcmr_div)
-> > +			return -EBUSY;
-> > +		break;
-> > +
-> > +	case ATMEL_SSC_RCMR_DIV:
-> > +		/*
-> > +		 * See ATMEL_SSC_TCMR_DIV.
-> > +		 */
-> > +		if (ssc_p->tcmr_div == 0)
-> > +			ssc_p->rcmr_div = div;
-> > +		else if (div != ssc_p->tcmr_div)
-> > +			return -EBUSY;
-> >   		break;
-> >
-> >   	case ATMEL_SSC_TCMR_PERIOD:
-> > @@ -345,6 +356,7 @@ static int atmel_ssc_hw_params(struct
-> snd_pcm_substream *substream,
-> >   	struct atmel_pcm_dma_params *dma_params;
-> >   	int dir, channels, bits;
-> >   	u32 tfmr, rfmr, tcmr, rcmr;
-> > +	u16 cmr;
-> 
-> should be u32.
+ * The mvpp2 Ethernet driver using on_each_cpu() in a softirq context.
 
-Ok, I'll send an updated patch later.
+At least, switching to use spin_lock_irqsave() instead of spin_lock()
+has proven to fix the issue (see patch below). The spinlock validator
+complains that a lockup has been detected, which might indicate that
+something is indeed wrong with the spinlock handling.
 
-> >   	int start_event;
-> >   	int ret;
-> >   	int fslen, fslen_ext;
-> > @@ -626,7 +638,8 @@ static int atmel_ssc_hw_params(struct
-> snd_pcm_substream *substream,
-> >   	}
-> >
-> >   	/* set SSC clock mode register */
-> > -	ssc_writel(ssc_p->ssc->regs, CMR, ssc_p->cmr_div);
-> > +	cmr = ssc_p->tcmr_div ? ssc_p->tcmr_div : ssc_p->rcmr_div;
-> > +	ssc_writel(ssc_p->ssc->regs, CMR, cmr);
-> >
-> >   	/* set receive clock mode and format */
-> >   	ssc_writel(ssc_p->ssc->regs, RCMR, rcmr); diff --git
-> > a/sound/soc/atmel/atmel_ssc_dai.h b/sound/soc/atmel/atmel_ssc_dai.h
-> > index b1f08d5..a25df7a 100644
-> > --- a/sound/soc/atmel/atmel_ssc_dai.h
-> > +++ b/sound/soc/atmel/atmel_ssc_dai.h
-> > @@ -39,9 +39,10 @@
-> >   #define ATMEL_SYSCLK_MCK	0 /* SSC uses AT91 MCK as system
-> clock */
-> >
-> >   /* SSC divider ids */
-> > -#define ATMEL_SSC_CMR_DIV	0 /* MCK divider for BCLK */
-> > -#define ATMEL_SSC_TCMR_PERIOD	1 /* BCLK divider for transmit FS */
-> > -#define ATMEL_SSC_RCMR_PERIOD	2 /* BCLK divider for receive FS */
-> > +#define ATMEL_SSC_TCMR_DIV	0 /* MCK divider for transmit BCLK */
-> > +#define ATMEL_SSC_RCMR_DIV	1 /* MCK divider for receive BCLK */
-> > +#define ATMEL_SSC_TCMR_PERIOD	2 /* BCLK divider for transmit
-> FS */
-> > +#define ATMEL_SSC_RCMR_PERIOD	3 /* BCLK divider for receive
-> FS */
-> >   /*
-> >    * SSC direction masks
-> >    */
-> > @@ -110,7 +111,8 @@ struct atmel_ssc_info {
-> >   	unsigned short dir_mask;	/* 0=unused, 1=playback, 2=capture
-> */
-> >   	unsigned short initialized;	/* true if SSC has been initialized */
-> >   	unsigned short daifmt;
-> > -	unsigned short cmr_div;
-> > +	unsigned short tcmr_div;
-> > +	unsigned short rcmr_div;
-> >   	unsigned short tcmr_period;
-> >   	unsigned short rcmr_period;
-> >   	struct atmel_pcm_dma_params *dma_params[2];
-> >
-> 
-> Best Regards,
-> Bo Shen
+Now, to the gory details. When stress-testing a lighttpd web server
+that does a lot of CGI calls and therefore a lot of Unix socket
+traffic, I get typically after couple of minutes the following RCU
+stall:
 
-Cheers,
-Peter
+INFO: rcu_sched self-detected stall on CPU { 0}  (t=2100 jiffies g=14665 c=14664 q=1352)
+Task dump for CPU 0:
+lighttpd        R running      0  1549      1 0x00000002
+[<c0014f94>] (unwind_backtrace) from [<c001130c>] (show_stack+0x10/0x14)
+[<c001130c>] (show_stack) from [<c0059688>] (rcu_dump_cpu_stacks+0x98/0xd4)
+[<c0059688>] (rcu_dump_cpu_stacks) from [<c005c3ec>] (rcu_check_callbacks+0x424/0x740)
+[<c005c3ec>] (rcu_check_callbacks) from [<c005e7c8>] (update_process_times+0x40/0x60)
+[<c005e7c8>] (update_process_times) from [<c006ce70>] (tick_sched_timer+0x70/0x210)
+[<c006ce70>] (tick_sched_timer) from [<c005efc4>] (__run_hrtimer.isra.35+0x6c/0x128)
+[<c005efc4>] (__run_hrtimer.isra.35) from [<c005f600>] (hrtimer_interrupt+0x11c/0x2d0)
+[<c005f600>] (hrtimer_interrupt) from [<c00148f8>] (twd_handler+0x34/0x44)
+[<c00148f8>] (twd_handler) from [<c00557ec>] (handle_percpu_devid_irq+0x6c/0x84)
+[<c00557ec>] (handle_percpu_devid_irq) from [<c0051c80>] (generic_handle_irq+0x2c/0x3c)
+[<c0051c80>] (generic_handle_irq) from [<c000eafc>] (handle_IRQ+0x40/0x90)
+[<c000eafc>] (handle_IRQ) from [<c00086d0>] (gic_handle_irq+0x2c/0x5c)
+[<c00086d0>] (gic_handle_irq) from [<c0011e40>] (__irq_svc+0x40/0x54)
+Exception stack(0xde0c1ce8 to 0xde0c1d30)
+1ce0:                   c073a684 20010113 c06e30fc 00000003 de0c1d30 00000001
+1d00: 00000001 0000012c dfbdcc40 ffffe70c dfbdcc48 df5bd800 00000002 de0c1d30
+1d20: c00712d4 c00712bc 20010113 ffffffff
+[<c0011e40>] (__irq_svc) from [<c00712bc>] (generic_exec_single+0x10c/0x180)
+[<c00712bc>] (generic_exec_single) from [<c00713d0>] (smp_call_function_single+0xa0/0xcc)
+[<c00713d0>] (smp_call_function_single) from [<c0071818>] (on_each_cpu+0x2c/0x48)
+[<c0071818>] (on_each_cpu) from [<c03312dc>] (mvpp2_poll+0x30/0x594)
+[<c03312dc>] (mvpp2_poll) from [<c041d024>] (net_rx_action+0xb0/0x170)
+[<c041d024>] (net_rx_action) from [<c00220c4>] (__do_softirq+0x120/0x274)
+[<c00220c4>] (__do_softirq) from [<c0022468>] (irq_exit+0x78/0xb0)
+[<c0022468>] (irq_exit) from [<c000eb00>] (handle_IRQ+0x44/0x90)
+[<c000eb00>] (handle_IRQ) from [<c00086d0>] (gic_handle_irq+0x2c/0x5c)
+[<c00086d0>] (gic_handle_irq) from [<c0011e40>] (__irq_svc+0x40/0x54)
+Exception stack(0xde0c1eb8 to 0xde0c1f00)
+1ea0:                                                       de1b986c 00000000
+1ec0: 00000420 de1b986c de1b9800 d761c080 be913a34 be913a34 00000007 de0c0000
+1ee0: d761c0a0 be913a34 00000010 de0c1f00 c0491898 c0491918 60010013 ffffffff
+[<c0011e40>] (__irq_svc) from [<c0491918>] (unix_inq_len+0x9c/0xa8)
+[<c0491918>] (unix_inq_len) from [<c049194c>] (unix_ioctl+0x28/0x88)
+[<c049194c>] (unix_ioctl) from [<c0407ccc>] (sock_ioctl+0x124/0x280)
+[<c0407ccc>] (sock_ioctl) from [<c00c11bc>] (do_vfs_ioctl+0x3fc/0x5c0)
+[<c00c11bc>] (do_vfs_ioctl) from [<c00c13b4>] (SyS_ioctl+0x34/0x5c)
+[<c00c13b4>] (SyS_ioctl) from [<c000e220>] (ret_fast_syscall+0x0/0x30)
+Task dump for CPU 1:
+kiplink_admin.f R running      0  1932   1549 0x00000000
+[<c0513a04>] (__schedule) from [<00000007>] (0x7)
 
+If my analysis is correct, what happens on CPU0 is that:
+
+ * lighttpd does an ioctl() on a socket, which ends up calling
+   unix_inq_len(), which tries to get a spinlock using spin_lock(). The
+   lock is probably taken.
+
+ * while waiting for this lock, we get a network RX interrupt, which
+   schedules the network RX softirq, which ends up calling the ->poll()
+   function of the network driver, in our case mvpp2_poll().
+
+ * since the network hardware has some per-CPU registers that we need
+   to read on all CPUs, the network driver does a on_each_cpu() call.
+   This apparently leads nowhere, as after a while, the timer interrupt
+   kicks in and decides we're not making progress anymore.
+
+After enabling spinlock debugging, I get the following right before the
+RCU stall (note how the RCU stall happens on CPU0, while the spinlock
+lockup suspected happens on CPU1) :
+
+BUG: spinlock lockup suspected on CPU#1, kiplink_admin.f/1938
+ lock: 0xde4998c0, .magic: dead4ead, .owner: lighttpd/1910, .owner_cpu: 0
+CPU: 1 PID: 1938 Comm: kiplink_admin.f Tainted: G        W  O   3.17.0-00017-g53fa061 #2
+[<c00154d8>] (unwind_backtrace) from [<c001183c>] (show_stack+0x10/0x14)
+[<c001183c>] (show_stack) from [<c053f560>] (dump_stack+0x9c/0xbc)
+[<c053f560>] (dump_stack) from [<c0057338>] (do_raw_spin_lock+0x118/0x18c)
+[<c0057338>] (do_raw_spin_lock) from [<c05466fc>] (_raw_spin_lock_irqsave+0x60/0x6c)
+[<c05466fc>] (_raw_spin_lock_irqsave) from [<c042a7d4>] (skb_queue_tail+0x18/0x48)
+[<c042a7d4>] (skb_queue_tail) from [<c04b9f58>] (unix_stream_sendmsg+0x1c8/0x36c)
+[<c04b9f58>] (unix_stream_sendmsg) from [<c0422eb8>] (sock_aio_write+0xcc/0xec)
+[<c0422eb8>] (sock_aio_write) from [<c00bf414>] (do_sync_write+0x80/0xa8)
+[<c00bf414>] (do_sync_write) from [<c00bfe60>] (vfs_write+0x108/0x1b0)
+[<c00bfe60>] (vfs_write) from [<c00c0418>] (SyS_write+0x40/0x94)
+[<c00c0418>] (SyS_write) from [<c000e3a0>] (ret_fast_syscall+0x0/0x48)
+
+And interestingly, skb_queue_tail() is also taking the same spinlock as
+unix_inq_len(), except that it does so with spin_lock_irqsave(). And
+this is causing the issue: since this spin_lock_irqsave() takes place
+on CPU1, the interupts are disabled, and therefore we're not getting
+the IPI that allows the on_each_cpu() call coming from CPU0 to make
+progress, causing the lockup.
+
+The patch below has proven to fix the issue: I was able to reproduce
+the issue in maximum 5 to 10 minutes, and with the patch the system has
+survived an entire night of testing.
+
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index e968843..c60205a 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -2124,11 +2124,12 @@ long unix_inq_len(struct sock *sk)
+ {
+        struct sk_buff *skb;
+        long amount = 0;
++       unsigned long flags;
+ 
+        if (sk->sk_state == TCP_LISTEN)
+                return -EINVAL;
+ 
+-       spin_lock(&sk->sk_receive_queue.lock);
++       spin_lock_irqsave(&sk->sk_receive_queue.lock, flags);
+        if (sk->sk_type == SOCK_STREAM ||
+            sk->sk_type == SOCK_SEQPACKET) {
+                skb_queue_walk(&sk->sk_receive_queue, skb)
+@@ -2138,7 +2139,7 @@ long unix_inq_len(struct sock *sk)
+                if (skb)
+                        amount = skb->len;
+        }
+-       spin_unlock(&sk->sk_receive_queue.lock);
++       spin_unlock_irqrestore(&sk->sk_receive_queue.lock, flags);
+ 
+        return amount;
+ }
+
+So, the question is: is this patch the correct solution (but then other
+usage of spin_lock in af_unix.c might also need fixing) ? Or is the
+network driver at fault?
+
+Thanks for your input,
+
+Thomas
+-- 
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
