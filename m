@@ -1,173 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756034AbaJUQSJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 12:18:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8722 "EHLO mx1.redhat.com"
+	id S1756052AbaJUQSY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 12:18:24 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:56881 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755656AbaJUQSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 12:18:06 -0400
-Message-ID: <1413908269.4202.135.camel@ul30vt.home>
-Subject: Re: [PATCH v8 02/18] vfio: platform: probe to devices on the
- platform bus
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Antonios Motakis <a.motakis@virtualopensystems.com>
-Cc: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
-        will.deacon@arm.com, tech@virtualopensystems.com,
-        christoffer.dall@linaro.org, eric.auger@linaro.org,
-        kim.phillips@freescale.com, marc.zyngier@arm.com,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:VFIO DRIVER" <kvm@vger.kernel.org>,
-        "open list:ABI/API" <linux-api@vger.kernel.org>
-Date: Tue, 21 Oct 2014 10:17:49 -0600
-In-Reply-To: <1413205825-6370-3-git-send-email-a.motakis@virtualopensystems.com>
-References: <1413205825-6370-1-git-send-email-a.motakis@virtualopensystems.com>
-	 <1413205825-6370-3-git-send-email-a.motakis@virtualopensystems.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755656AbaJUQSS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 12:18:18 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+CC: <nm@ti.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        "Franklin Cooper Jr." <fcooper@ti.com>
+Subject: [PATCH] ARM: DRA7: hwmod data: Add missing UART hwmod data
+Date: Tue, 21 Oct 2014 11:17:51 -0500
+Message-ID: <1413908271-666-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-10-13 at 15:10 +0200, Antonios Motakis wrote:
-> Driver to bind to Linux platform devices, and callbacks to discover their
-> resources to be used by the main VFIO PLATFORM code.
-> 
-> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
-> ---
->  drivers/vfio/platform/vfio_platform.c | 107 ++++++++++++++++++++++++++++++++++
->  include/uapi/linux/vfio.h             |   1 +
->  2 files changed, 108 insertions(+)
->  create mode 100644 drivers/vfio/platform/vfio_platform.c
-> 
-> diff --git a/drivers/vfio/platform/vfio_platform.c b/drivers/vfio/platform/vfio_platform.c
-> new file mode 100644
-> index 0000000..baeb7da
-> --- /dev/null
-> +++ b/drivers/vfio/platform/vfio_platform.c
-> @@ -0,0 +1,107 @@
-> +/*
-> + * Copyright (C) 2013 - Virtual Open Systems
-> + * Author: Antonios Motakis <a.motakis@virtualopensystems.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License, version 2, as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/device.h>
-> +#include <linux/eventfd.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/iommu.h>
-> +#include <linux/module.h>
-> +#include <linux/mutex.h>
-> +#include <linux/notifier.h>
-> +#include <linux/pm_runtime.h>
-> +#include <linux/slab.h>
-> +#include <linux/types.h>
-> +#include <linux/uaccess.h>
-> +#include <linux/vfio.h>
-> +#include <linux/io.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/irq.h>
-> +
-> +#include "vfio_platform_private.h"
-> +
-> +#define DRIVER_VERSION  "0.8"
-> +#define DRIVER_AUTHOR   "Antonios Motakis <a.motakis@virtualopensystems.com>"
-> +#define DRIVER_DESC     "VFIO for platform devices - User Level meta-driver"
-> +
-> +/* probing devices from the linux platform bus */
-> +
-> +static struct resource *get_platform_resource(struct vfio_platform_device *vdev,
-> +						int num)
-> +{
-> +	struct platform_device *dev = (struct platform_device *) vdev->opaque;
-> +	int i;
-> +
-> +	for (i = 0; i < dev->num_resources; i++) {
-> +		struct resource *r = &dev->resource[i];
-> +
-> +		if (resource_type(r) & (IORESOURCE_MEM|IORESOURCE_IO)) {
-> +			num--;
-> +
-> +			if (!num)
-> +				return r;
+From: Ambresh K <ambresh@ti.com>
 
-Has this been tested?  What happens when we call this with num = 0?
+We had constrainted hwmod entries to entries in dts which were present
+only for default mapped interrupts, the ones such as UARTs > 6 which
+needed IRQ crossbar configured were never added to hwmod database.
 
-> +		}
-> +	}
-> +	return NULL;
-> +}
-> +
-> +static int get_platform_irq(struct vfio_platform_device *vdev, int i)
-> +{
-> +	struct platform_device *pdev = (struct platform_device *) vdev->opaque;
-> +
-> +	return platform_get_irq(pdev, i);
-> +}
-> +
-> +
-> +static int vfio_platform_probe(struct platform_device *pdev)
-> +{
-> +	struct vfio_platform_device *vdev;
-> +	int ret;
-> +
-> +	vdev = kzalloc(sizeof(*vdev), GFP_KERNEL);
-> +	if (!vdev)
-> +		return -ENOMEM;
-> +
-> +	vdev->opaque = (void *) pdev;
-> +	vdev->name = pdev->name;
-> +	vdev->flags = VFIO_DEVICE_FLAGS_PLATFORM;
-> +	vdev->get_resource = get_platform_resource;
-> +	vdev->get_irq = get_platform_irq;
-> +
-> +	ret = vfio_platform_probe_common(vdev, &pdev->dev);
-> +	if (ret)
-> +		kfree(vdev);
-> +
-> +	return ret;
-> +}
-> +
-> +static int vfio_platform_remove(struct platform_device *pdev)
-> +{
-> +	return vfio_platform_remove_common(&pdev->dev);
-> +}
-> +
-> +static struct platform_driver vfio_platform_driver = {
-> +	.probe		= vfio_platform_probe,
-> +	.remove		= vfio_platform_remove,
-> +	.driver	= {
-> +		.name	= "vfio-platform",
-> +		.owner	= THIS_MODULE,
-> +	},
-> +};
-> +
-> +module_platform_driver(vfio_platform_driver);
-> +
-> +MODULE_VERSION(DRIVER_VERSION);
-> +MODULE_LICENSE("GPL v2");
-> +MODULE_AUTHOR(DRIVER_AUTHOR);
-> +MODULE_DESCRIPTION(DRIVER_DESC);
-> diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
-> index 111b5e8..aca6d3e 100644
-> --- a/include/uapi/linux/vfio.h
-> +++ b/include/uapi/linux/vfio.h
-> @@ -158,6 +158,7 @@ struct vfio_device_info {
->  	__u32	flags;
->  #define VFIO_DEVICE_FLAGS_RESET	(1 << 0)	/* Device supports reset */
->  #define VFIO_DEVICE_FLAGS_PCI	(1 << 1)	/* vfio-pci device */
-> +#define VFIO_DEVICE_FLAGS_PLATFORM (1 << 2)	/* vfio-platform device */
->  	__u32	num_regions;	/* Max region index + 1 */
->  	__u32	num_irqs;	/* Max IRQ index + 1 */
->  };
+Add them now that IRQ crossbar is functional
 
+Without this, enabling UARTs7 to 10 in dts results in the following crash:
+[    1.893829] omap_uart 48420000.serial: _od_fail_runtime_resume: FIXME: missing hwmod/omap_dev info
+[    1.903381] Unhandled fault: imprecise external abort (0x1406) at 0x00000000
+[    1.903381] ------------[ cut here ]------------
+[    1.903381] WARNING: CPU: 0 PID: 0 at drivers/bus/omap_l3_noc.c:147 l3_interrupt_handler+0x2ac/0x32c()
+[    1.903411] 44000000.ocp:L3 Custom Error: MASTER MPU TARGET L4_PER2_P3 (Read): Data Access in User mode during Functional access
+[    1.903411] Modules linked in:
+[    1.903411] CPU: 0 PID: 0 Comm: swapper/0 Tainted: G        W      3.18.0-rc1-dirty #3
+[    1.903442] [<c0015270>] (unwind_backtrace) from [<c00119b4>] (show_stack+0x10/0x14)
+[    1.903442] [<c00119b4>] (show_stack) from [<c05e4afc>] (dump_stack+0x78/0x94)
+[    1.903472] [<c05e4afc>] (dump_stack) from [<c003fed0>] (warn_slowpath_common+0x6c/0x8c)
+[    1.903472] [<c003fed0>] (warn_slowpath_common) from [<c003ff84>] (warn_slowpath_fmt+0x30/0x40)
+[    1.903472] [<c003ff84>] (warn_slowpath_fmt) from [<c0333bfc>] (l3_interrupt_handler+0x2ac/0x32c)
+[    1.903503] [<c0333bfc>] (l3_interrupt_handler) from [<c008d6f8>] (handle_irq_event_percpu+0x60/0x230)
+[    1.903503] [<c008d6f8>] (handle_irq_event_percpu) from [<c008d904>] (handle_irq_event+0x3c/0x5c)
+[    1.903503] [<c008d904>] (handle_irq_event) from [<c00903b0>] (handle_fasteoi_irq+0xc4/0x190)
+[    1.903503] [<c00903b0>] (handle_fasteoi_irq) from [<c008d01c>] (generic_handle_irq+0x20/0x30)
+[    1.903533] [<c008d01c>] (generic_handle_irq) from [<c008d114>] (__handle_domain_irq+0x64/0xb8)
+[    1.903533] [<c008d114>] (__handle_domain_irq) from [<c00086e4>] (gic_handle_irq+0x20/0x60)
+[    1.903533] [<c00086e4>] (gic_handle_irq) from [<c05eb124>] (__irq_svc+0x44/0x5c)
+[    1.903533] Exception stack(0xc08d1f60 to 0xc08d1fa8)
+[    1.903564] 1f60: 00000001 00000001 00000000 c08dc930 c08d0000 00000000 00000000 00000000
+[    1.903564] 1f80: ffffffed c0978028 c08d89dc c08d8978 00000000 c08d1fa8 c0083fc0 c000f160
+[    1.903564] 1fa0: 20000013 ffffffff
+[    1.903564] [<c05eb124>] (__irq_svc) from [<c000f160>] (arch_cpu_idle+0x20/0x3c)
+[    1.903594] [<c000f160>] (arch_cpu_idle) from [<c0077c54>] (cpu_startup_entry+0x198/0x338)
+[    1.903594] [<c0077c54>] (cpu_startup_entry) from [<c0869be0>] (start_kernel+0x358/0x3c4)
+[    1.903594] [<c0869be0>] (start_kernel) from [<80008074>] (0x80008074)
+[    1.903594] ---[ end trace 293fc95d463cff71 ]---
+[    2.117553] Internal error: : 1406 [#1] SMP ARM
+[    2.122314] Modules linked in:
+[    2.125518] CPU: 1 PID: 1 Comm: swapper/0 Tainted: G        W      3.18.0-rc1-dirty #3
+[    2.133850] task: ed868b80 ti: ed86a000 task.ti: ed86a000
+[    2.139526] PC is at serial_omap_probe+0x2fc/0x514
+[    2.144561] LR is at trace_hardirqs_on_caller+0xec/0x1c4
+[    2.150146] pc : [<c038f0f0>]    lr : [<c0083fc0>]    psr: 40000013
+[    2.150146] sp : ed86be18  ip : ed9bb57c  fp : f005e000
+[    2.162231] r10: 0000012a  r9 : ed9b4f80  r8 : edc5bdcd
+[    2.167724] r7 : edc58810  r6 : ed9bb400  r5 : ed9bb410  r4 : edc5bc10
+[    2.174560] r3 : 00000000  r2 : 00000000  r1 : 00000014  r0 : ffffffed
+[    2.181427] Flags: nZcv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+[    2.189117] Control: 10c5387d  Table: 8000406a  DAC: 00000015
+[    2.195159] Process swapper/0 (pid: 1, stack limit = 0xed86a248)
+[    2.201477] Stack: (0xed86be18 to 0xed86c000)
+[    2.206054] be00:                                                       ed9ba2d0 00000000
+[    2.214660] be20: edc50150 00000001 c08cba58 00000000 00000000 ed9bb410 ffffffed c09481d8
+[    2.223236] be40: 00000000 c09481d8 c08cba58 00000000 00000000 c039bcfc c1170958 ed9bb410
+[    2.231842] be60: ed9bb444 c039a6f4 00000000 ed9bb410 c09481d8 ed9bb444 00000000 c08dc698
+[    2.240447] be80: edc4a100 c039a8b0 c09481d8 c039a81c 00000000 c0399060 ed8afaa8 ed92c110
+[    2.249053] bea0: c09481d8 edc482c0 c0949308 c0399ee0 c077f80c c09481d8 ed86a000 c09481d8
+[    2.257659] bec0: ed86a000 c08dc698 00000000 c039b088 00000000 00000000 ed86a000 c08a1924
+[    2.266235] bee0: c08a1904 c00089c4 00000000 00000000 00000000 00000000 60000093 00000000
+[    2.274841] bf00: 00000004 00000000 ed868b80 00000004 00000000 60000053 00000000 00000001
+[    2.283447] bf20: 00000000 c0083ea8 00000001 ed86a000 c08334bc ef7fc307 000000b2 c0059358
+[    2.292053] bf40: c07e176c c083299c 00000006 00000006 c08cb588 c08b69cc 00000006 c08b69ac
+[    2.300659] bf60: c097a280 000000b2 c08cba58 c0869588 00000000 c0869e04 00000006 00000006
+[    2.309234] bf80: c0869588 00000000 00000000 c05dfd7c 00000000 00000000 00000000 00000000
+[    2.317840] bfa0: 00000000 c05dfd84 00000000 c000e668 00000000 00000000 00000000 00000000
+[    2.326446] bfc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+[    2.335052] bfe0: 00000000 00000000 00000000 00000000 00000013 00000000 020405d0 00090c40
+[    2.343658] [<c038f0f0>] (serial_omap_probe) from [<c039bcfc>] (platform_drv_probe+0x48/0x98)
+[    2.352630] [<c039bcfc>] (platform_drv_probe) from [<c039a6f4>] (driver_probe_device+0x10c/0x234)
+[    2.361968] [<c039a6f4>] (driver_probe_device) from [<c039a8b0>] (__driver_attach+0x94/0x98)
+[    2.370819] [<c039a8b0>] (__driver_attach) from [<c0399060>] (bus_for_each_dev+0x54/0x88)
+[    2.379425] [<c0399060>] (bus_for_each_dev) from [<c0399ee0>] (bus_add_driver+0xdc/0x1d4)
+[    2.388031] [<c0399ee0>] (bus_add_driver) from [<c039b088>] (driver_register+0x78/0xf4)
+[    2.396453] [<c039b088>] (driver_register) from [<c08a1924>] (serial_omap_init+0x20/0x40)
+[    2.405059] [<c08a1924>] (serial_omap_init) from [<c00089c4>] (do_one_initcall+0x80/0x1cc)
+[    2.413757] [<c00089c4>] (do_one_initcall) from [<c0869e04>] (kernel_init_freeable+0x1b8/0x28c)
+[    2.422912] [<c0869e04>] (kernel_init_freeable) from [<c05dfd84>] (kernel_init+0x8/0xe4)
+[    2.431396] [<c05dfd84>] (kernel_init) from [<c000e668>] (ret_from_fork+0x14/0x2c)
+[    2.439361] Code: e1b02f23 020320f0 0203300f 01a02222 (0a000021)
+[    2.445770] ---[ end trace 293fc95d463cff72 ]---
+[    2.450683] Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
+[    2.450683]
+[    2.460296] CPU0: stopping
+[    2.463134] CPU: 0 PID: 0 Comm: swapper/0 Tainted: G      D W      3.18.0-rc1-dirty #3
+[    2.471405] [<c0015270>] (unwind_backtrace) from [<c00119b4>] (show_stack+0x10/0x14)
+[    2.479522] [<c00119b4>] (show_stack) from [<c05e4afc>] (dump_stack+0x78/0x94)
+[    2.487060] [<c05e4afc>] (dump_stack) from [<c001394c>] (handle_IPI+0x190/0x264)
+[    2.494781] [<c001394c>] (handle_IPI) from [<c000871c>] (gic_handle_irq+0x58/0x60)
+[    2.502716] [<c000871c>] (gic_handle_irq) from [<c05eb124>] (__irq_svc+0x44/0x5c)
+[    2.510528] Exception stack(0xc08d1f60 to 0xc08d1fa8)
+[    2.515808] 1f60: c000f15c 00000000 00000000 00000000 c08d0000 00000000 00000000 00000000
+[    2.524353] 1f80: ffffffed c0978028 c08d89dc c08d8978 00000000 c08d1fa8 c000f15c c000f160
+[    2.532897] 1fa0: 60000013 ffffffff
+[    2.536529] [<c05eb124>] (__irq_svc) from [<c000f160>] (arch_cpu_idle+0x20/0x3c)
+[    2.544281] [<c000f160>] (arch_cpu_idle) from [<c0077c54>] (cpu_startup_entry+0x198/0x338)
+[    2.552917] [<c0077c54>] (cpu_startup_entry) from [<c0869be0>] (start_kernel+0x358/0x3c4)
+[    2.561462] [<c0869be0>] (start_kernel) from [<80008074>] (0x80008074)
+[    2.568298] ---[ end Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
+[
 
+Reported-by: Franklin Cooper Jr. <fcooper@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Ambresh K <ambresh@ti.com>
+---
+ arch/arm/mach-omap2/omap_hwmod_7xx_data.c |  100 +++++++++++++++++++++++++++++
+ 1 file changed, 100 insertions(+)
+
+diff --git a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+index 5684f11..e2a7043 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+@@ -2075,6 +2075,70 @@ static struct omap_hwmod dra7xx_uart6_hwmod = {
+ 	},
+ };
+ 
++/* uart7 */
++static struct omap_hwmod dra7xx_uart7_hwmod = {
++	.name		= "uart7",
++	.class		= &dra7xx_uart_hwmod_class,
++	.clkdm_name	= "l4per2_clkdm",
++	.main_clk	= "uart7_gfclk_mux",
++	.flags		= HWMOD_SWSUP_SIDLE_ACT,
++	.prcm = {
++		.omap4 = {
++			.clkctrl_offs = DRA7XX_CM_L4PER2_UART7_CLKCTRL_OFFSET,
++			.context_offs = DRA7XX_RM_L4PER2_UART7_CONTEXT_OFFSET,
++			.modulemode   = MODULEMODE_SWCTRL,
++		},
++	},
++};
++
++/* uart8 */
++static struct omap_hwmod dra7xx_uart8_hwmod = {
++	.name		= "uart8",
++	.class		= &dra7xx_uart_hwmod_class,
++	.clkdm_name	= "l4per2_clkdm",
++	.main_clk	= "uart8_gfclk_mux",
++	.flags		= HWMOD_SWSUP_SIDLE_ACT,
++	.prcm = {
++		.omap4 = {
++			.clkctrl_offs = DRA7XX_CM_L4PER2_UART8_CLKCTRL_OFFSET,
++			.context_offs = DRA7XX_RM_L4PER2_UART8_CONTEXT_OFFSET,
++			.modulemode   = MODULEMODE_SWCTRL,
++		},
++	},
++};
++
++/* uart9 */
++static struct omap_hwmod dra7xx_uart9_hwmod = {
++	.name		= "uart9",
++	.class		= &dra7xx_uart_hwmod_class,
++	.clkdm_name	= "l4per2_clkdm",
++	.main_clk	= "uart9_gfclk_mux",
++	.flags		= HWMOD_SWSUP_SIDLE_ACT,
++	.prcm = {
++		.omap4 = {
++			.clkctrl_offs = DRA7XX_CM_L4PER2_UART9_CLKCTRL_OFFSET,
++			.context_offs = DRA7XX_RM_L4PER2_UART9_CONTEXT_OFFSET,
++			.modulemode   = MODULEMODE_SWCTRL,
++		},
++	},
++};
++
++/* uart10 */
++static struct omap_hwmod dra7xx_uart10_hwmod = {
++	.name		= "uart10",
++	.class		= &dra7xx_uart_hwmod_class,
++	.clkdm_name	= "wkupaon_clkdm",
++	.main_clk	= "uart10_gfclk_mux",
++	.flags		= HWMOD_SWSUP_SIDLE_ACT,
++	.prcm = {
++		.omap4 = {
++			.clkctrl_offs = DRA7XX_CM_WKUPAON_UART10_CLKCTRL_OFFSET,
++			.context_offs = DRA7XX_RM_WKUPAON_UART10_CONTEXT_OFFSET,
++			.modulemode   = MODULEMODE_SWCTRL,
++		},
++	},
++};
++
+ /*
+  * 'usb_otg_ss' class
+  *
+@@ -3095,6 +3159,38 @@ static struct omap_hwmod_ocp_if dra7xx_l4_per1__uart6 = {
+ 	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+ };
+ 
++/* l4_per2 -> uart7 */
++static struct omap_hwmod_ocp_if dra7xx_l4_per2__uart7 = {
++	.master		= &dra7xx_l4_per2_hwmod,
++	.slave		= &dra7xx_uart7_hwmod,
++	.clk		= "l3_iclk_div",
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++/* l4_per2 -> uart8 */
++static struct omap_hwmod_ocp_if dra7xx_l4_per2__uart8 = {
++	.master		= &dra7xx_l4_per2_hwmod,
++	.slave		= &dra7xx_uart8_hwmod,
++	.clk		= "l3_iclk_div",
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++/* l4_per2 -> uart9 */
++static struct omap_hwmod_ocp_if dra7xx_l4_per2__uart9 = {
++	.master		= &dra7xx_l4_per2_hwmod,
++	.slave		= &dra7xx_uart9_hwmod,
++	.clk		= "l3_iclk_div",
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++/* l4_wkup -> uart10 */
++static struct omap_hwmod_ocp_if dra7xx_l4_wkup__uart10 = {
++	.master		= &dra7xx_l4_wkup_hwmod,
++	.slave		= &dra7xx_uart10_hwmod,
++	.clk		= "wkupaon_iclk_mux",
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
+ /* l4_per3 -> usb_otg_ss1 */
+ static struct omap_hwmod_ocp_if dra7xx_l4_per3__usb_otg_ss1 = {
+ 	.master		= &dra7xx_l4_per3_hwmod,
+@@ -3259,6 +3355,10 @@ static struct omap_hwmod_ocp_if *dra7xx_hwmod_ocp_ifs[] __initdata = {
+ 	&dra7xx_l4_per1__uart4,
+ 	&dra7xx_l4_per1__uart5,
+ 	&dra7xx_l4_per1__uart6,
++	&dra7xx_l4_per2__uart7,
++	&dra7xx_l4_per2__uart8,
++	&dra7xx_l4_per2__uart9,
++	&dra7xx_l4_wkup__uart10,
+ 	&dra7xx_l4_per3__usb_otg_ss1,
+ 	&dra7xx_l4_per3__usb_otg_ss2,
+ 	&dra7xx_l4_per3__usb_otg_ss3,
+-- 
+1.7.9.5
 
