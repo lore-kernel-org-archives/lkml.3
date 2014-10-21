@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933203AbaJUQ1p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 12:27:45 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:63180 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932390AbaJUQ1n (ORCPT
+	id S933213AbaJUQ2R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 12:28:17 -0400
+Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:4406 "EHLO
+	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932390AbaJUQ2Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 12:27:43 -0400
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: grant.likely@linaro.org, robh+dt@kernel.org
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux@rempel-privat.de, Matthias Brugger <matthias.bgg@gmail.com>
-Subject: [PATCH] of: Request and map make argument name constant
-Date: Tue, 21 Oct 2014 18:27:25 +0200
-Message-Id: <1413908845-11526-1-git-send-email-matthias.bgg@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Tue, 21 Oct 2014 12:28:16 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjAOADJxRlRbslJR/2dsb2JhbABcgw6BK7kQBQEBAQEBAQUBc5lhgRIXAX2EMC8jgRo3iEMBtROOXyyGI4ouHYQ1BZFZjAGMZIk+gUcBgjE7L4JLAQEB
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/1 linux-next] fs/affs/file.c: adding support to O_DIRECT
+Date: Tue, 21 Oct 2014 18:28:11 +0200
+Message-Id: <1413908891-6038-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes the name argument from of_io_request_and_map constant.
+Based on ext2_direct_IO
 
-Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- drivers/of/address.c       | 2 +-
- include/linux/of_address.h | 4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ fs/affs/file.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
-diff --git a/drivers/of/address.c b/drivers/of/address.c
-index afdb782..e02828f 100644
---- a/drivers/of/address.c
-+++ b/drivers/of/address.c
-@@ -871,7 +871,7 @@ EXPORT_SYMBOL(of_iomap);
-  *		return PTR_ERR(base);
+diff --git a/fs/affs/file.c b/fs/affs/file.c
+index 8e51085..05005bd 100644
+--- a/fs/affs/file.c
++++ b/fs/affs/file.c
+@@ -12,6 +12,7 @@
+  *  affs regular file handling primitives
   */
- void __iomem *of_io_request_and_map(struct device_node *np, int index,
--					char *name)
-+					const char *name)
- {
- 	struct resource res;
- 	void __iomem *mem;
-diff --git a/include/linux/of_address.h b/include/linux/of_address.h
-index 8cb14eb..d88e81b 100644
---- a/include/linux/of_address.h
-+++ b/include/linux/of_address.h
-@@ -106,7 +106,7 @@ extern int of_address_to_resource(struct device_node *dev, int index,
- 				  struct resource *r);
- void __iomem *of_iomap(struct device_node *node, int index);
- void __iomem *of_io_request_and_map(struct device_node *device,
--					int index, char *name);
-+					int index, const char *name);
- #else
  
- #include <linux/io.h>
-@@ -123,7 +123,7 @@ static inline void __iomem *of_iomap(struct device_node *device, int index)
++#include <linux/aio.h>
+ #include "affs.h"
+ 
+ #if PAGE_SIZE < 4096
+@@ -392,6 +393,22 @@ static void affs_write_failed(struct address_space *mapping, loff_t to)
+ 	}
  }
  
- static inline void __iomem *of_io_request_and_map(struct device_node *device,
--					int index, char *name)
-+					int index, const char *name)
- {
- 	return IOMEM_ERR_PTR(-EINVAL);
- }
++static ssize_t
++affs_direct_IO(int rw, struct kiocb *iocb, struct iov_iter *iter,
++	       loff_t offset)
++{
++	struct file *file = iocb->ki_filp;
++	struct address_space *mapping = file->f_mapping;
++	struct inode *inode = mapping->host;
++	size_t count = iov_iter_count(iter);
++	ssize_t ret;
++
++	ret = blockdev_direct_IO(rw, iocb, inode, iter, offset, affs_get_block);
++	if (ret < 0 && (rw & WRITE))
++		affs_write_failed(mapping, offset + count);
++	return ret;
++}
++
+ static int affs_write_begin(struct file *file, struct address_space *mapping,
+ 			loff_t pos, unsigned len, unsigned flags,
+ 			struct page **pagep, void **fsdata)
+@@ -418,6 +435,7 @@ const struct address_space_operations affs_aops = {
+ 	.writepage = affs_writepage,
+ 	.write_begin = affs_write_begin,
+ 	.write_end = generic_write_end,
++	.direct_IO = affs_direct_IO,
+ 	.bmap = _affs_bmap
+ };
+ 
 -- 
-1.9.1
+1.9.3
 
