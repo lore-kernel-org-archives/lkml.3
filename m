@@ -1,132 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936AbaJUEp4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 00:45:56 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:56739 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750730AbaJUEpy convert rfc822-to-8bit (ORCPT
+	id S1753313AbaJUEs1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 00:48:27 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46494 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818AbaJUEs0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 00:45:54 -0400
-Date: Tue, 21 Oct 2014 05:45:50 +0100
-From: Sitsofe Wheeler <sitsofe@gmail.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Jeff Leung <jleung@v10networks.ca>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>, Christoph Hellwig <hch@lst.de>,
-        Hannes Reinecke <hare@suse.de>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: Re: [PATCH 0/3] scsi: Add Hyper-V logical block provisioning quirks
-Message-ID: <20141021044550.GC11691@sucs.org>
-References: <20141010074901.GA32028@sucs.org>
- <20141011173902.GA1946@infradead.org>
- <1413049313.2068.48.camel@jarvis.lan>
- <b0069f11bbe64ebc8c9981ea90429014@BY2PR0301MB0711.namprd03.prod.outlook.com>
- <A70AC0C1B7E7FD478A6BF19705461AA01109B3@IMBER.smb.curriegrad2004.ca>
- <da5106ddc725481784ed12bccb594980@BY2PR0301MB0711.namprd03.prod.outlook.com>
+	Tue, 21 Oct 2014 00:48:26 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <5445E571.30107@jp.fujitsu.com>
+Date: Tue, 21 Oct 2014 13:47:45 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <da5106ddc725481784ed12bccb594980@BY2PR0301MB0711.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Neil Zhang <zhangwm@marvell.com>, Dan Streetman <ddstreet@ieee.org>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers: base: update cpu offline info when do hotplug
+References: <1413775748-22478-1-git-send-email-zhangwm@marvell.com> <20141020044340.GA9589@kroah.com> <9034CBD80F070943B59700D7F8149ED9024EB81CAF@SC-VEXCH4.marvell.com> <20141020064826.GA4064@kroah.com> <9034CBD80F070943B59700D7F8149ED9024EB81CC6@SC-VEXCH4.marvell.com> <CALZtONDEdFbx+zTWYdmz3HsfCnV+RtTPAuY4p-RK1DN3g2CwrQ@mail.gmail.com> <5445CB94.1090302@jp.fujitsu.com> <9034CBD80F070943B59700D7F8149ED9024EB81D55@SC-VEXCH4.marvell.com> <5445D27D.1080505@jp.fujitsu.com> <9034CBD80F070943B59700D7F8149ED9024EB81D5A@SC-VEXCH4.marvell.com>
+In-Reply-To: <9034CBD80F070943B59700D7F8149ED9024EB81D5A@SC-VEXCH4.marvell.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 12, 2014 at 01:21:01AM +0000, KY Srinivasan wrote:
-> 
-> > -----Original Message-----
-> > From: Jeff Leung [mailto:jleung@v10networks.ca]
-> > Sent: Saturday, October 11, 2014 1:22 PM
-> > 
-> > > On the current release of Windows (windows 10), we are advertising
-> > > SPC3 compliance.
-> > > We are ok with declaring compliance to SPC3 in our drivers.
-> > If you are going to declare SPC3 compliance in the drivers, are you going to
-> > put in checks to ensure that SPC-3 compliance doesn't get accidentally
-> > enabled for hypervisors below Win10?
-> > 
-> > I do know for a fact that Ubuntu's kernels already force SPC3 compliance to
-> > enable specific features such as TRIM on earlier versions of Hyper-V (Namely
-> > Hyper-V 2012 and 2012 R2).
-> You are right; Ubuntu has been carrying a patch  that was doing just
-> this and this has been working without any issues on many earlier
-> versions of Windows. (2012 and 2012 R2).  On windows 10 we don't need
-> any changes in the Linux driver as the host itself is advertising SPC3
-> compliance. Based on the testing we have done with Ubuntu, we are
-> comfortable picking up that patch.
+(2014/10/21 12:36), Neil Zhang wrote:
+>
+>
+>> -----Original Message-----
+>> From: Yasuaki Ishimatsu [mailto:isimatu.yasuaki@jp.fujitsu.com]
+>> Sent: 2014年10月21日 11:27
+>> To: Neil Zhang; Dan Streetman
+>> Cc: Greg KH; linux-kernel@vger.kernel.org
+>> Subject: Re: [PATCH] drivers: base: update cpu offline info when do hotplug
+>>
+>> (2014/10/21 12:18), Neil Zhang wrote:
+>>> Yasuaki,
+>>>
+>>>> -----Original Message-----
+>>>> From: Yasuaki Ishimatsu [mailto:isimatu.yasuaki@jp.fujitsu.com]
+>>>> Sent: 2014年10月21日 10:57
+>>>> To: Dan Streetman; Neil Zhang
+>>>> Cc: Greg KH; linux-kernel@vger.kernel.org
+>>>> Subject: Re: [PATCH] drivers: base: update cpu offline info when do
+>>>> hotplug
+>>>>
+>>>> Hi Neil and Dan,
+>>>>
+>>>> (2014/10/21 2:02), Dan Streetman wrote:
+>>>>> On Mon, Oct 20, 2014 at 3:40 AM, Neil Zhang <zhangwm@marvell.com> wrote:
+>>>>>> Greg,
+>>>>>>
+>>>>>>
+>>>>>> -----Original Message-----
+>>>>>> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+>>>>>> Sent: 2014年10月20日 14:48
+>>>>>> To: Neil Zhang
+>>>>>> Cc: linux-kernel@vger.kernel.org
+>>>>>> Subject: Re: [PATCH] drivers: base: update cpu offline info when do
+>>>>>> hotplug
+>>>>>>
+>>>>>> On Sun, Oct 19, 2014 at 11:39:23PM -0700, Neil Zhang wrote:
+>>>>>>>> How much noise is this going to cause on a big/little system that
+>>>>>>>> constantly hot unplug/plugs processors all of the time?
+>>>>>>>
+>>>>>>> Can you explain more what kind of noise will be introduced on a
+>>>>>>> big/little
+>>>> system?
+>>>>>>
+>>>>>> Have you tested this on such a machine?
+>>>>>>
+>>>>>> I didn't have such kind of machine on hand.
+>>>>>> Can anyone has such machine to verify it?
+>>>>>> Thanks!
+>>>>>
+>>>>> I tested this on a ppc PowerVM system, using dlpar operations to
+>>>>> remove/add cpus.
+>>>>>
+>>>>> Without this patch the cpu online nodes get out of sync with the
+>>>>> main online node (and the actual state of the cpus), because they
+>>>>> aren't updated as the cpus are brought up/down:
+>>>>>
+>>>>
+>>>>> [root@br10p02 cpu]$ pwd
+>>>>> /sys/devices/system/cpu
+>>>>> [root@br10p02 cpu]$ cat online
+>>>>> 0-39
+>>>>> [root@br10p02 cpu]$ for n in {0..47} ; do test $( cat cpu$n/online )
+>>>>> -eq 1 && echo -n "$n " ; done ; echo ""
+>>>>> 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
+>>>>> 26
+>>>>> 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47
+>>>>
+>>>> How is the issue reproduced.
+>>>>
+>>>> Here is a result on my x86 box with linux-3.18-rc1.
+>>>>
+>>>> - before offline CPU
+>>>> # cd /sys/devices/system/cpu/
+>>>> # cat online
+>>>> 0-59
+>>>> # for n in {0..59} ; do test $( cat cpu$n/online ) -eq 1 && echo -n
+>>>> "$n " ; done ; echo ""
+>>>> 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
+>>>> 26 27 28
+>>>> 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51
+>>>> 52 53 54
+>>>> 55
+>>>> 56 57 58 59
+>>>>
+>>>> - after offline CPU{1..59}
+>>>> # for n in {1..59} ; do echo 0 > cpu$n/online; done # cat online
+>>>> 0
+>>>> # for n in {0..59} ; do test $( cat cpu$n/online ) -eq 1 && echo -n
+>>>> "$n " ; done ; echo ""
+>>>> 0
+>>>>
+>>>> It seems that dev->offline is set to correct valute.
+>>>>
+>>>
+>>
+>>> Please use an in kernel governor to up / down a core instead of sysfs
+>> interface.
+>>
+>> Thank you for the information. But I don't know the in kernel governor?
+>> Could you point a documentation of it?
+>>
+>
 
-OK this seems to be the patch currently carried by Ubuntu:
+> Simply means that you call cpu_down / cpu_up directly in kernel base on the profiler.
 
->From ff2c5fa3fa9adf0b919b9425e71a8ba044c31a7d Mon Sep 17 00:00:00 2001
-From: Andy Whitcroft <apw@canonical.com>
-Date: Fri, 13 Sep 2013 17:49:16 +0100
-Subject: [PATCH] scsi: hyper-v storsvc switch up to SPC-3
+I understood it.
+When using sysfs, device_online/offline() changes dev->offline.
+Therefore, this problem did not occur in my previous test.
 
-Suggested-By: James Bottomley <James.Bottomley@HansenPartnership.com>
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
----
- drivers/scsi/storvsc_drv.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+Thanks,
+Yasuaki Ishimatsu
 
-diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
-index 9969fa1..3903c8a 100644
---- a/drivers/scsi/storvsc_drv.c
-+++ b/drivers/scsi/storvsc_drv.c
-@@ -1441,6 +1441,14 @@ static int storvsc_device_configure(struct scsi_device *sdevice)
- 
- 	sdevice->no_write_same = 1;
- 
-+	/*
-+	 * hyper-v lies about its capabilities indicating it is only SPC-2
-+	 * compliant, but actually implements the core SPC-3 features.
-+	 * If we pretend to be SPC-3, we send RC16 which activates trim and
-+	 * will query the appropriate VPD pages to enable trim.
-+	 */
-+	sdevice->scsi_level = SCSI_SPC_3;
-+
- 	return 0;
- }
- 
--- 
-1.7.9.5
 
-(Downloaded from
-http://kernel.ubuntu.com/git?p=jsalisbury/stable/trusty/ubuntu-trusty.git;a=patch;h=ff2c5fa3fa9adf0b919b9425e71a8ba044c31a7d
-).
+>
+>> Thanks,
+>> Yasuaki Ishimatsu
+>>
+>>>
+>>>> Thanks,
+>>>> Yasuaki Ishimatsu
+>>>>
+>>>>>
+>>>>>
+>>>>> While with the patch, the cpu online nodes are kept up to date as
+>>>>> the cpus are brought up/down:
+>>>>>
+>>>>> [root@br10p02 cpu]$ pwd
+>>>>> /sys/devices/system/cpu
+>>>>> [root@br10p02 cpu]$ cat online
+>>>>> 0-39
+>>>>> [root@br10p02 cpu]$ for n in {0..47} ; do test $( cat cpu$n/online )
+>>>>> -eq 1 && echo -n "$n " ; done ; echo ""
+>>>>> 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
+>>>>> 26
+>>>>> 27 28 29 30 31 32 33 34 35 36 37 38 39
+>>>>>
+>>>>>
+>>>>> Feel free to add
+>>>>>
+>>>>> Tested-by: Dan Streetman <ddstreet@ieee.org>
+>>>>>
+>>>>>>
+>>>>>>> As I know IKS on arm will use cpu_suspend way to power down a core.
+>>>>>>
+>>>>>> Are you sure that it also doesn't use that same functionality to
+>>>>>> drop a
+>>>> processor to save power?
+>>>>>>
+>>>>>> As I know it use cpu_suspend to switch out a processor in IKS and
+>>>>>> there is
+>>>> no cpu hotplug notifier in this procedure.
+>>>>>>
+>>>>>>
+>>>>>> Why do you need/want this notification?  What are you going to do
+>>>>>> with this
+>>>> information that you don't already have?
+>>>>>>
+>>>>>> The offline won't be updated if an in kernel hotplug governor plug
+>>>>>> in / out
+>>>> a core which cause the sysfs interface report a wrong status.
+>>>>>>
+>>>>>>
+>>>>>> thanks,
+>>>>>>
+>>>>>> greg k-h
+>>>>>>
+>>>>>>
+>>>>>> Best Regards,
+>>>>>> Neil Zhang
+>>>>> --
+>>>>> To unsubscribe from this list: send the line "unsubscribe
+>>>>> linux-kernel" in the body of a message to majordomo@vger.kernel.org
+>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>>>
+>>>>
+>>>
+>>>
+>>> Best Regards,
+>>> Neil Zhang
+>>>  {.n +       +%  lzwm  b 맲  r  zX   w  {ay ʇڙ ,j
+>>>    f   h   z  w
+>>
+>>     j:+v   w j m         zZ+     ݢj"  ! iO  z  v ^ m
+>> nƊ  Y&
+>>>
+>>
+>
+>
+> Best Regards,
+> Neil Zhang
+> ��칻�&�~�&���+-��ݶ��w��˛���m�b��dz�ޖ)���w*jg��������ݢj/���z�ޖ��2�ޙ���&�)ߡ�a�����G���h��j:+v���w�٥>W����i�axPj�m����-�+��d�_
+>
 
-I think it's unwise to override the scsi_level at this particular point
-because you are going to do it for ALL Hyper-V "disks" (perhaps all
-Hyper-V SCSI devices?)...
 
-Here's the SCSI inquiry information reported by a USB 2 hard disk being
-passed passed-through by one of my 2012 R2 hosts:
-
-# sg_inq /dev/sdc
-standard INQUIRY:
-  PQual=0  Device_type=0  RMB=0  version=0x02  [SCSI-2]
-  [AERC=0]  [TrmTsk=0]  NormACA=0  HiSUP=0  Resp_data_format=1
-  SCCS=0  ACC=0  TPGS=0  3PC=0  Protect=0  [BQue=0]
-  EncServ=0  MultiP=0  [MChngr=0]  [ACKREQQ=0]  Addr16=0
-  [RelAdr=0]  WBus16=0  Sync=0  Linked=0  [TranDis=0]  CmdQue=0
-    length=36 (0x24)   Peripheral device type: disk
- Vendor identification: MDT MD50
- Product identification: 00AAKS-00TMA0   
- Product revision level: 
-
-Is it OK to replace a scsi_level of SCSI-2 with SCSI_SPC_3? Additionally
-is it also OK to force SCSI_SPC_3 on Hyper-V 2008?
-
-> > > NryزXvؖ){nǉ{zX}zj:v zZzf~zwڢ)jyA
-> > >
-> > > i
-> N?????r??y????b?X??ǧv?^?)޺{.n?+????{????zX????ܨ}???Ơz?&j:+v???????zZ+??+zf???h???~????i???z??w?????????&?)ߢf??^jǫy?m??@A?a???0??h???i
-
-^^^ Where do these characters come from? I've occasionally seen them on
-emails from other Microsoft folks posting to LKML too...
-
--- 
-Sitsofe | http://sucs.org/~sits/
