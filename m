@@ -1,75 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755544AbaJUMHI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 08:07:08 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:55381 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755498AbaJUMHA (ORCPT
+	id S1755547AbaJUMIp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 08:08:45 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:35302 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755293AbaJUMIn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 08:07:00 -0400
-Date: Tue, 21 Oct 2014 13:06:54 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH v2 3/4] mfd/regulator: dt-bindings: max77686: Document
- regulators off in suspend
-Message-ID: <20141021120654.GB4127@x1>
-References: <1413890597-31037-1-git-send-email-k.kozlowski@samsung.com>
- <1413890597-31037-4-git-send-email-k.kozlowski@samsung.com>
+	Tue, 21 Oct 2014 08:08:43 -0400
+Message-ID: <54464CC3.2050408@cogentembedded.com>
+Date: Tue, 21 Oct 2014 16:08:35 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
+	<antoine.tenart@free-electrons.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 8/9] ARM: berlin: Add phy-connection-type to BG2Q PHY
+References: <1413881627-21639-1-git-send-email-sebastian.hesselbarth@gmail.com> <1413881627-21639-9-git-send-email-sebastian.hesselbarth@gmail.com> <54464401.20900@cogentembedded.com> <54464796.90804@gmail.com>
+In-Reply-To: <54464796.90804@gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1413890597-31037-4-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Oct 2014, Krzysztof Kozlowski wrote:
+On 10/21/2014 3:46 PM, Sebastian Hesselbarth wrote:
 
-> Add information which regulators can be disabled during system suspend.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Suggested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> ---
->  Documentation/devicetree/bindings/mfd/max77686.txt | 6 ++++++
->  1 file changed, 6 insertions(+)
+>>> From: Antoine Ténart <antoine.tenart@free-electrons.com>
 
-I don't think this requires a DT Ack.
+>>> Internal FastEthernet PHY on BG2Q is connected via MII, add a
+>>> corresponding phy-connection-type property.
 
-Applied with the extra '\n' removed.
+>>> Tested-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+>>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>>> ---
+>>> Cc: "David S. Miller" <davem@davemloft.net>
+>>> Cc: "Antoine Ténart" <antoine.tenart@free-electrons.com>
+>>> Cc: Florian Fainelli <f.fainelli@gmail.com>
+>>> Cc: Eric Miao <eric.y.miao@gmail.com>
+>>> Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
+>>> Cc: linux-arm-kernel@lists.infradead.org
+>>> Cc: netdev@vger.kernel.org
+>>> Cc: devicetree@vger.kernel.org
+>>> Cc: linux-kernel@vger.kernel.org
+>>> ---
+>>>   arch/arm/boot/dts/berlin2q.dtsi | 1 +
+>>>   1 file changed, 1 insertion(+)
 
-> diff --git a/Documentation/devicetree/bindings/mfd/max77686.txt b/Documentation/devicetree/bindings/mfd/max77686.txt
-> index 678f3cf0b8f0..75fdfaf41831 100644
-> --- a/Documentation/devicetree/bindings/mfd/max77686.txt
-> +++ b/Documentation/devicetree/bindings/mfd/max77686.txt
-> @@ -34,6 +34,12 @@ to get matched with their hardware counterparts as follow:
->  	-BUCKn 	:	for BUCKs, where n can lie in range 1 to 9.
->  			example: BUCK1, BUCK5, BUCK9.
->  
-> +  Regulators which can be turned off during system suspend:
-> +	-LDOn	:	2, 6-8, 10-12, 14-16,
-> +	-BUCKn	:	1-4.
-> +  Use standard regulator bindings for it ('regulator-off-in-suspend').
-> +
-> +
->  Example:
->  
->  	max77686@09 {
+>>> diff --git a/arch/arm/boot/dts/berlin2q.dtsi
+>>> b/arch/arm/boot/dts/berlin2q.dtsi
+>>> index 891d56b03922..6dbc520bddc1 100644
+>>> --- a/arch/arm/boot/dts/berlin2q.dtsi
+>>> +++ b/arch/arm/boot/dts/berlin2q.dtsi
+>>> @@ -127,6 +127,7 @@
+>>>               status = "disabled";
+>>>
+>>>               ethphy0: ethernet-phy@0 {
+>>> +                phy-connection-type = "mii";
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+>>     You're adding this prop to the PHY node? That's very weird...
+>> normally, it's a property of a MDIO bus node.
+
+> Sergei,
+
+> How can this be a property of the MDIO bus node? Just think of an MDIO
+> bus with two PHYs where one is connected via GMII and the other via
+> RGMII? How should this work?
+
+    Hm, this is an unexpected case...
+
+> But you are right that the property should not be part of the PHY node
+> but the controller node instead. I'll rework and send an update, thanks
+> for the hint.
+
+    Oh, not at all. :-)
+
+> Sebastian
+
+WBR, Sergei
+
