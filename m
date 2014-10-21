@@ -1,66 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933220AbaJUUE4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 16:04:56 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:39699 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932842AbaJUUEy (ORCPT
+	id S933285AbaJUUF3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 16:05:29 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:35805 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932842AbaJUUFZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 16:04:54 -0400
+	Tue, 21 Oct 2014 16:05:25 -0400
+Date: Tue, 21 Oct 2014 22:05:22 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, viro@zeniv.linux.org.uk,
+        John Stultz <john.stultz@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
+        Linux API <linux-api@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Anup Patel <anup.patel@linaro.org>
+Subject: Re: [PATCH] staging: android: binder: move to the "real" part of the
+ kernel
+Message-ID: <20141021200522.GB2969@amd>
+References: <20141016124741.GA3832@kroah.com>
+ <20141016231221.GA13592@kroah.com>
+ <20141021103622.GB23161@amd>
+ <4227199.e5u61J7jtX@wuerfel>
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo4ZhxFxRT9=ww8F8bKkfQe5jQTtfSvw2XfxAPvHzArKTQ@mail.gmail.com>
-References: <20141015165957.4063.66741.stgit@bhelgaas-glaptop2.roam.corp.google.com>
- <20141015170609.4063.10668.stgit@bhelgaas-glaptop2.roam.corp.google.com> <CAErSpo4ZhxFxRT9=ww8F8bKkfQe5jQTtfSvw2XfxAPvHzArKTQ@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 21 Oct 2014 14:04:31 -0600
-Message-ID: <CAErSpo5MCzoSaUtYOBrO4qg48USqg+9YRMWhVLx7vEY3hdab-Q@mail.gmail.com>
-Subject: Re: [PATCH v1 04/10] MIPS: Remove "weak" from platform_maar_init() declaration
-To: Jason Wessel <jason.wessel@windriver.com>,
-        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@redhat.com>,
-        John Stultz <john.stultz@linaro.org>, Eric Paris <eparis@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4227199.e5u61J7jtX@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 5:27 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> [+cc linux-mips]
->
-> On Wed, Oct 15, 2014 at 11:06 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> arch/mips/mm/init.c provides a default platform_maar_init() definition
->> explicitly marked "weak".  arch/mips/mti-malta/malta-memory.c provides its
->> own definition intended to override the default, but the "weak" attribute
->> on the declaration applied to this as well, so the linker chose one based
->> on link order (see 10629d711ed7 ("PCI: Remove __weak annotation from
->> pcibios_get_phb_of_node decl")).
->>
->> Remove the "weak" attribute from the declaration so we always prefer a
->> non-weak definition over the weak one, independent of link order.
->>
->> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
->> CC: linux-mips@linux-mips.org
+On Tue 2014-10-21 16:12:24, Arnd Bergmann wrote:
+> On Tuesday 21 October 2014 12:36:22 Pavel Machek wrote:
+> > On Fri 2014-10-17 01:12:21, Greg Kroah-Hartman wrote:
+> > > On Thu, Oct 16, 2014 at 10:09:04AM -0700, John Stultz wrote:
+> > > > On Thu, Oct 16, 2014 at 5:47 AM, Greg Kroah-Hartman
+> > > > <gregkh@linuxfoundation.org> wrote:
+> > > > > From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > 
+> > > > Are the Android guys comfortable with the ABI stability rules they'll
+> > > > now face?
+> > > 
+> > > Just because something is in staging, doesn't mean you don't have to
+> > > follow the same ABI stability rules as the rest of the kernel.  If a
+> > > change had happened to this code that broke userspace in the past, I
+> > > would have reverted it.  So this should not be anything different from
+> > > what has been happening inthe past.
+> > 
+> > Actually, there's big difference.
+> > 
+> > If Al Viro changes core filesystem in a way that breaks
+> > staging/binder, binder is broken, and if it can't be fixed... well it
+> > can't be fixed.
+> > 
+> > If Al Viro changes core filesystem in a way that breaks
+> > drivers/binder, Al's change is going to be reverted.
+> 
+> One might have argued that we'd have to do that already, but the reasons
+> for doing that with binder in the main kernel are certainly stronger.
+> 
+> > It is really hard to review without API documentation. Normally, API
+> > documentation is required for stuff like this.
+> > 
+> > For example: does it add new files in /proc?
+> > 
+> > Given that it is stable, can we get rid of binder_debug() and
+> > especially BINDER_DEBUG_ENTRY stuff?
+> 
+> Good point. We require documentation for every single sysfs attribute
+> that gets added to a driver (some escape the review, but that doesn't
+> change the rule), so we should not make an exception for a new procfs
+> file here.
 
-Dropping this because no MIPS folks responded.
+Actually, it looked like it is debugfs file. Code was messy enough
+that I was not sure.
 
->> ---
->>  arch/mips/include/asm/maar.h |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/arch/mips/include/asm/maar.h b/arch/mips/include/asm/maar.h
->> index 6c62b0f899c0..b02891f9caaf 100644
->> --- a/arch/mips/include/asm/maar.h
->> +++ b/arch/mips/include/asm/maar.h
->> @@ -26,7 +26,7 @@
->>   *
->>   * Return:     The number of MAAR pairs configured.
->>   */
->> -unsigned __weak platform_maar_init(unsigned num_pairs);
->> +unsigned platform_maar_init(unsigned num_pairs);
->>
->>  /**
->>   * write_maar_pair() - write to a pair of MAARs
->>
+> > Could binder_transcation() be split to smaller functions according to
+> > CodingStyle? 17 goto targets at the end of function are not exactly
+> > easy to read.
+> > 
+> > ginder_thread_read/write also needs splitting.
+> 
+> Yes, in principle, but this is still a detail that would mainly serve
+> to simplify review. The problem is more the lack of review and
+> documentation of the API.
+
+Yes, the problem is that code is impossible to review without API
+documentation.
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
