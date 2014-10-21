@@ -1,104 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159AbaJUFto (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 01:49:44 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:49485 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236AbaJUFtX (ORCPT
+	id S1754244AbaJUFtw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 01:49:52 -0400
+Received: from smtp105.ord1c.emailsrvr.com ([108.166.43.105]:54161 "EHLO
+	smtp105.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751236AbaJUFtu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 01:49:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <87lhoayo59.fsf@x220.int.ebiederm.org>
-References: <1413235430-22944-1-git-send-email-adityakali@google.com>
- <1413235430-22944-8-git-send-email-adityakali@google.com> <20141016211236.GA4308@mail.hallyn.com>
- <CAGr1F2EH0ynfFihTh1dv=n1faxUh0zS3ggk303bwGnDnW2PUCw@mail.gmail.com>
- <20141016214710.GA4759@mail.hallyn.com> <87iojgmy3o.fsf@x220.int.ebiederm.org>
- <CALCETrUC=yW72d2hDzjESmZAt85x1WcGz4L-DrtY5YXAQxbpMA@mail.gmail.com>
- <44072106-c0f3-46b8-b2b5-9b1cbd1b7d88@email.android.com> <CALCETrXhGnBM_xx=Auz3WRQXkqhGGTWuZN=PU+A9HZ7Ek27FLA@mail.gmail.com>
- <87zjcq10ya.fsf@x220.int.ebiederm.org> <CALCETrVkMtsnEh57jFZrdx5vHbz97BdO7OuupT+xVNnWpJjxng@mail.gmail.com>
- <87lhoayo59.fsf@x220.int.ebiederm.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 20 Oct 2014 22:49:02 -0700
-Message-ID: <CALCETrVFKvtHpTfY3kuE5ZTrwQAzuDmk6dm-mbQffDHAZmq-KQ@mail.gmail.com>
-Subject: Re: [PATCHv1 7/8] cgroup: cgroup namespace setns support
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, Aditya Kali <adityakali@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 21 Oct 2014 01:49:50 -0400
+X-Sender-Id: pramod.gurav@smartplayin.com
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Subject: [PATCH v2] ARM: DT: apq8064: Add Support for SD Card Detect for ifc6410 board
+Date: Tue, 21 Oct 2014 11:23:19 +0530
+Message-Id: <1413870799-8608-1-git-send-email-pramod.gurav@smartplayin.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 20, 2014 at 10:42 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> Andy Lutomirski <luto@amacapital.net> writes:
->
->> On Mon, Oct 20, 2014 at 9:49 PM, Eric W. Biederman
->> <ebiederm@xmission.com> wrote:
->>> Andy Lutomirski <luto@amacapital.net> writes:
->>>> Possible solution:
->>>>
->>>> Ditch the pinning.  That is, if you're outside a cgroupns (or you have
->>>> a non-ns-confined cgroupfs mounted), then you can move a task in a
->>>> cgroupns outside of its root cgroup.  If you do this, then the task
->>>> thinks its cgroup is something like "../foo" or "../../foo".
->>>
->>> Of the possible solutions that seems attractive to me, simply because
->>> we sometimes want to allow clever things to occur.
->>>
->>> Does anyone know of a reason (beyond pretty printing) why we need
->>> cgroupns to restrict the subset of cgroups processes can be in?
->>>
->>> I would expect permissions on the cgroup directories themselves, and
->>> limited visiblilty would be (in general) to achieve the desired
->>> visiblity.
->>
->> This makes the security impact of cgroupns very easy to understand,
->> right?  Because there really won't be any -- cgroupns only affects
->> reads from /proc and what cgroupfs shows, but it doesn't change any
->> actual cgroups, nor does it affect any cgroup *changes*.
->
-> It seems like what we have described is chcgrouproot aka chroot for
-> cgroups.  At which point I think there are potentially similar security
-> issues as for chroot.  Can we confuse a setuid root process if we make
-> it's cgroup names look different.
->
-> Of course the confusing root concern is handled by the usual namespace
-> security checks that are already present.
+This changes muxes in gpio26 pin to function as gpio and adds support
+for sd card detect for apq8064 based IFC6410 board.
 
-I think that the chroot issues are mostly in two categories: setuid
-confusion (not an issue here as you described) and chroot escapes.
-cgroupns escapes aren't a big deal, I think -- admins should deny the
-confined task the right to write to cgroupfs outside its hierarchy, by
-setting cgroupfs permissions appropriately and/or avoiding mounting
-cgroupfs outside the hierarchy.
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 
->
-> I do wonder if we think of this as chcgrouproot if there is a simpler
-> implementation.
+Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+---
 
-Could be.  I'll defer to Aditya for that one.
+Changes since v2:
+ - Replaced hardcode value with GPIO_ACTIVE_LOW
 
->
->>>> While we're at it, consider making setns for a cgroupns *not* change
->>>> the caller's cgroup.  Is there any reason it really needs to?
->>>
->>> setns doesn't but nsenter is going to need to change the cgroup
->>> if the pinning requirement is kept.  nsenenter is going to want to
->>> change the cgroup if the pinning requirement is dropped.
->>>
->>
->> It seems easy enough for nsenter to change the cgroup all by itself.
->
-> Again.  I don't think anyone has suggested or implemented anything
-> different.
+ arch/arm/boot/dts/qcom-apq8064-ifc6410.dts |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-The current patchset seems to punt on this decision by just failing
-the setns call if the caller is outside the cgroup in question.
+diff --git a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+index b396c83..e641001 100644
+--- a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
++++ b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+@@ -1,4 +1,5 @@
+ #include "qcom-apq8064-v2.0.dtsi"
++#include <dt-bindings/gpio/gpio.h>
+ 
+ / {
+ 	model = "Qualcomm APQ8064/IFC6410";
+@@ -12,6 +13,14 @@
+ 					function = "gsbi1";
+ 				};
+ 			};
++
++			card_detect: card_detect {
++				mux {
++					pins = "gpio26";
++					function = "gpio";
++					bias-disable;
++				};
++			};
+ 		};
+ 
+ 		gsbi@12440000 {
+@@ -49,6 +58,9 @@
+ 			/* External micro SD card */
+ 			sdcc3: sdcc@12180000 {
+ 				status = "okay";
++				pinctrl-names	= "default";
++				pinctrl-0	= <&card_detect>;
++				cd-gpios	= <&tlmm_pinmux 26 GPIO_ACTIVE_LOW>;
+ 			};
+ 			/* WLAN */
+ 			sdcc4: sdcc@121c0000 {
+-- 
+1.7.9.5
 
---Andy
