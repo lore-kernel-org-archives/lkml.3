@@ -1,39 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932321AbaJULSL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 07:18:11 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51082 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754757AbaJULSK (ORCPT
+	id S1755291AbaJULUo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 07:20:44 -0400
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:34269 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755039AbaJULUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 07:18:10 -0400
-Date: Tue, 21 Oct 2014 13:18:06 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, ak@linux.intel.com,
-        jolsa@redhat.com, kan.liang@intel.com, bp@alien8.de,
-        maria.n.dimakopoulou@gmail.com
-Subject: Re: [PATCH v2 05/12] perf/x86: add cross-HT counter exclusion
- infrastructure
-Message-ID: <20141021111806.GX23531@worktop.programming.kicks-ass.net>
-References: <1412872486-2930-1-git-send-email-eranian@google.com>
- <1412872486-2930-6-git-send-email-eranian@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412872486-2930-6-git-send-email-eranian@google.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	Tue, 21 Oct 2014 07:20:42 -0400
+Date: Tue, 21 Oct 2014 13:20:25 +0200
+From: Dominik Dingel <dingel@linux.vnet.ibm.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Bob Liu <lliubbo@gmail.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Gleb Natapov <gleb@kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Jianyu Zhan <nasa4836@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Konstantin Weitz <konstantin.weitz@gmail.com>, kvm@vger.kernel.org,
+        linux390@de.ibm.com, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: Re: [PATCH 2/4] mm: introduce new VM_NOZEROPAGE flag
+Message-ID: <20141021132025.60dd3390@BR9TG4T3.de.ibm.com>
+In-Reply-To: <5446153F.6030407@redhat.com>
+References: <1413554990-48512-1-git-send-email-dingel@linux.vnet.ibm.com>
+	<1413554990-48512-3-git-send-email-dingel@linux.vnet.ibm.com>
+	<54419265.9000000@intel.com>
+	<20141018164928.2341415f@BR9TG4T3.de.ibm.com>
+	<54429521.80402@intel.com>
+	<5445511D.1090603@redhat.com>
+	<20141021081131.641c6104@mschwide>
+	<5446153F.6030407@redhat.com>
+Organization: IBM
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102111-0041-0000-0000-000001C0F3C2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 09, 2014 at 06:34:39PM +0200, Stephane Eranian wrote:
-> +++ b/arch/x86/kernel/cpu/perf_event.h
-> @@ -71,6 +71,7 @@ struct event_constraint {
->  #define PERF_X86_EVENT_COMMITTED	0x8 /* event passed commit_txn */
->  #define PERF_X86_EVENT_PEBS_LD_HSW	0x10 /* haswell style datala, load */
->  #define PERF_X86_EVENT_PEBS_NA_HSW	0x20 /* haswell style datala, unknown */
-> +#define PERF_X86_EVENT_EXCL		0x40 /* HT exclusivity on counter */
->  
+On Tue, 21 Oct 2014 10:11:43 +0200
+Paolo Bonzini <pbonzini@redhat.com> wrote:
 
-lkml.kernel.org/r/CAHzUATgam8qrma+B-d=9jOHpmmiwNwk-717roNY=ndbJAZefjw@mail.gmail.com
+> 
+> 
+> On 10/21/2014 08:11 AM, Martin Schwidefsky wrote:
+> >> I agree with Dave (I thought I disagreed, but I changed my mind while
+> >> writing down my thoughts).  Just define mm_forbids_zeropage in
+> >> arch/s390/include/asm, and make it return mm->context.use_skey---with a
+> >> comment explaining how this is only for processes that use KVM, and then
+> >> only for guests that use storage keys.
+> >
+> > The mm_forbids_zeropage() sure will work for now, but I think a vma flag
+> > is the better solution. This is analog to VM_MERGEABLE or VM_NOHUGEPAGE,
+> > the best solution would be to only mark those vmas that are mapped to
+> > the guest. That we have not found a way to do that yet in a sensible way
+> > does not change the fact that "no-zero-page" is a per-vma property, no?
+> 
+> I agree it should be per-VMA.  However, right now the code is 
+> complicated unnecessarily by making it a per-VMA flag.  Also, setting 
+> the flag per VMA should probably be done in 
+> kvm_arch_prepare_memory_region together with some kind of storage key 
+> notifier.  This is not very much like Dominik's patch.  All in all, 
+> mm_forbids_zeropage() provides a non-intrusive and non-controversial way 
+> to fix the bug.  Later on, switching to vma_forbids_zeropage() will be 
+> trivial as far as mm/ code is concerned.
+> 
+
+Thank you for all the feedback, will cook up a new version.
+
