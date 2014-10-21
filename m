@@ -1,148 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755195AbaJUKtf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 06:49:35 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34608 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754577AbaJUKtd (ORCPT
+	id S1755095AbaJUKza (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 06:55:30 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:38683 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754940AbaJUKz2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 06:49:33 -0400
-Date: Tue, 21 Oct 2014 12:49:31 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Marek Belisko <marek@goldelico.com>
-Cc: arnd@arndb.de, gregkh@linuxfoundation.org, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        grant.likely@linaro.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, NeilBrown <neilb@suse.de>,
-        "H. Nikolaus Schaller" <hns@goldelico.com>
-Subject: Re: [PATCH 1/2] misc: Add Wi2Wi w2sc0004 gps driver
-Message-ID: <20141021104931.GC23161@amd>
-References: <1413491183-15018-1-git-send-email-marek@goldelico.com>
+	Tue, 21 Oct 2014 06:55:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413491183-15018-1-git-send-email-marek@goldelico.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141006153736.GB973@ti.com>
+References: <CACRpkdb47TFJX=7kEM-D3+HB1JvBe1y+D10ohTqa5D=brp1dfQ@mail.gmail.com>
+	<20141006153736.GB973@ti.com>
+Date: Tue, 21 Oct 2014 12:55:28 +0200
+Message-ID: <CACRpkdYNbhd-cJgXCR2Kb0zSw8+DsuYAVHAKzZOuCtG5316Ahg@mail.gmail.com>
+Subject: Re: [RFC PATCH] gpio: add GPIO hogging mechanism
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Benoit Parrot <bparrot@ti.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Mon, Oct 6, 2014 at 5:37 PM, Benoit Parrot <bparrot@ti.com> wrote:
 
-> --- a/drivers/misc/Kconfig
-> +++ b/drivers/misc/Kconfig
-> @@ -515,6 +515,16 @@ config VEXPRESS_SYSCFG
->  	  bus. System Configuration interface is one of the possible means
->  	  of generating transactions on this bus.
->  
-> +config W2SG0004
-> +	tristate "W2SG0004 on/off control"
+> I do have a modified version of Boris' first patch addressing your original
+> comments which I am planning to submit if you it is still a valid idea.
 
-                           ~~ insert GPS here.
-And make it bool if it can't be a module.
+Please do whatever we end up merging or not, sharing code is always
+a good idea. Don't forget the device tree bindings.
 
-> +	depends on GPIOLIB
-> +	help
-> +	  Enable on/off control of W2SG0004 GPS using a virtual GPIO.
-> +	  The virtual GPIO can be connected to a DTR line of a serial
-> +	  interface to allow powering up if the /dev/tty$n is opened.
-> +	  It also provides a rfkill gps node to control the LNA power.
-> +	  NOTE: can't currently be compiled as module, so please choose Y.
-> +
+I have a system of my own (the Nomadik) that needs it can be tested
+on.
 
-> +++ b/drivers/misc/w2sg0004.c
-> @@ -0,0 +1,512 @@
-> +/*
-> + * w2sg0004.c
-> + * Virtual GPIO of controlling the w2sg0004 GPS receiver.
-> + *
-> + * Copyright (C) 2011 Neil Brown <neil@brown.name>
-> + *
-> + * This receiver has an ON/OFF pin which must be toggled to
-> + * turn the device 'on' or 'off'.  A high->low->high toggle
-> + * will switch the device on if it is off, and off if it is on.
-> + * It is not possible to directly detect the state of the device.
-> + * However when it is on it will send characters on a UART line
-> + * regularly.
-> + * On the OMAP3, the UART line can also be programmed as a GPIO
-> + * on which we can receive interrupts.
-> + * So when we want the device to be 'off' we can reprogram
-> + * the line, toggle the ON/OFF pin and hope that it is off.
-> + * However if an interrupt arrives we know that it is really on
-> + * and can toggle again.
-> + *
-> + * To enable receiving on/off requests we create a gpio_chip
-> + * with a single 'output' GPIO.  When it is low, the
-> + * GPS is turned off.  When it is high, it is turned on.
-> + * This can be configured as the DTR GPIO on the UART which
-> + * connects the GPS.  Then whenever the tty is open, the GPS
-> + * will be switched on, and whenever it is closed, the GPS will
-> + * be switched off.
-> + *
-> + * In addition we register as a rfkill client so that we can
-> + * control the LNA power.
-> + *
-> + */
-
-GPL?
-
-> +/*
-> + * There seems to restrictions on how quickly we can toggle the
-> + * on/off line.  data sheets says "two rtc ticks", whatever that means.
-
-"seems to"? data -> Data?
-
-> +enum w2sg_state {
-> +	W2SG_IDLE,	/* is not changing state */
-> +	W2SG_PULSE,	/* activate on/off impulse */
-> +	W2SG_NOPULSE	/* desctivate on/off impulse */
-> +};
-
-deactivate.
-
-> +
-> +struct gpio_w2sg {
-> +	struct		rfkill *rf_kill;
-> +	struct		regulator *lna_regulator;
-> +	int		lna_blocked;	/* rfkill block gps active */
-> +	int		lna_is_off;	/* LNA is currently off */
-> +	int		is_on;		/* current state (0/1) */
-> +	unsigned long	last_toggle;
-> +	unsigned long	backoff;	/* time to wait since last_toggle */
-> +	int		on_off_gpio;
-> +	int		rx_irq;
-> +
-> +	struct pinctrl *p;
-> +	struct pinctrl_state *default_state;	/* should be UART mode */
-> +	struct pinctrl_state *monitor_state;	/* monitor RX as GPIO */
-> +	enum w2sg_state	state;
-> +	int		requested;	/* requested state (0/1) */
-> +	int		suspended;
-> +	int		rx_redirected;
-> +	spinlock_t	lock;
-> +#ifdef CONFIG_GPIOLIB
-> +	struct gpio_chip gpio;
-> +	const char	*gpio_name[1];
-> +#endif
-
-Depends on gpiolib, why ifdef?
-
-Array of names?
-
-
-> +	rf_kill = rfkill_alloc("GPS", &pdev->dev, RFKILL_TYPE_GPS,
-> +				&gpio_w2sg0004_rfkill_ops, gw2sg);
-
-Actually, is rfkill interface right one on GPS? GPS is not supposed to
-transmit...
-
-> +	int	gpio_base;	/* (not used by DT) - defines the  gpio.base */
-
-
-Is non-device tree path still usefull?
-
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Yours,
+Linus Walleij
