@@ -1,83 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754359AbaJUCcN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 22:32:13 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:32454 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753128AbaJUCcM (ORCPT
+	id S1754201AbaJUCiG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 22:38:06 -0400
+Received: from mail-by2on0126.outbound.protection.outlook.com ([207.46.100.126]:9311
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753835AbaJUCiE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 22:32:12 -0400
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <wsa@the-dreams.de>, <ludovic.desroches@atmel.com>
-CC: <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <nicolas.ferre@atmel.com>, <khilman@kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <wenyou.yang@atmel.com>
-Subject: [PATCH v2 3/3] i2c/at91: adopt pinctrl support
-Date: Tue, 21 Oct 2014 10:26:19 +0800
-Message-ID: <1413858379-22865-4-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1413858379-22865-1-git-send-email-wenyou.yang@atmel.com>
-References: <1413858379-22865-1-git-send-email-wenyou.yang@atmel.com>
+	Mon, 20 Oct 2014 22:38:04 -0400
+From: Thomas Shao <huishao@microsoft.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        KY Srinivasan <kys@microsoft.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: RE: [PATCH v2 1/2] timekeeping: add EXPORT_SYMBOL_GPL for
+ do_adjtimex()
+Thread-Topic: [PATCH v2 1/2] timekeeping: add EXPORT_SYMBOL_GPL for
+ do_adjtimex()
+Thread-Index: AQHP6EpL5oa00nhAzECMXNpwI49m+pw5VpSAgACIOoA=
+Date: Tue, 21 Oct 2014 02:37:26 +0000
+Message-ID: <CD2CABCB2C0A0D4682C5F8AD840141540D26C3@HKXPRD3002MB006.064d.mgd.msft.net>
+References: <1413362372-16236-1-git-send-email-huishao@microsoft.com>
+ <alpine.DEB.2.11.1410202027220.5308@nanos>
+In-Reply-To: <alpine.DEB.2.11.1410202027220.5308@nanos>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [141.251.55.4]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(438002)(377454003)(51704005)(189002)(24454002)(199003)(13464003)(46406003)(87936001)(86146001)(55846006)(106116001)(86362001)(76176999)(54356999)(66066001)(23726002)(4396001)(106466001)(81156004)(85852003)(97736003)(77096002)(92566001)(47776003)(20776003)(46102003)(107046002)(2656002)(16796002)(64706001)(31966008)(80022003)(99396003)(120916001)(76482002)(85306004)(21056001)(110136001)(50466002)(50986999)(69596002)(6806004)(19580405001)(26826002)(95666004)(92726001)(86612001)(44976005)(19580395003)(84676001)(97756001)(33656002)(68736004);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR03MB283;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR03MB283;
+X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 0371762FE7
+Authentication-Results: spf=pass (sender IP is 131.107.125.37)
+ smtp.mailfrom=huishao@microsoft.com; 
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Amend the i2c at91 pin controller to optionally take a pin control
-handle and set the state of the pins to:
 
-- "default" on boot, resume and before performing an transfer
-- "sleep" on suspend()
+> -----Original Message-----
+> From: Thomas Gleixner [mailto:tglx@linutronix.de]
+> Sent: Tuesday, October 21, 2014 2:28 AM
+> To: Thomas Shao
+> Cc: gregkh@linuxfoundation.org; LKML; devel@linuxdriverproject.org;
+> olaf@aepfle.de; apw@canonical.com; jasowang@redhat.com; KY Srinivasan;
+> John Stultz
+> Subject: Re: [PATCH v2 1/2] timekeeping: add EXPORT_SYMBOL_GPL for
+> do_adjtimex()
+> 
+> On Wed, 15 Oct 2014, Thomas Shao wrote:
+> 
+> And again you forgot to cc John Stultz on this....
 
-This should make it possible to optimize energy usage for the pins
-both for the suspend/resume cycle
+I'll cc John Stultz in the future. Sorry for that.
 
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
----
- drivers/i2c/busses/i2c-at91.c |    7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/drivers/i2c/busses/i2c-at91.c b/drivers/i2c/busses/i2c-at91.c
-index 8f8fd2a..7075834 100644
---- a/drivers/i2c/busses/i2c-at91.c
-+++ b/drivers/i2c/busses/i2c-at91.c
-@@ -32,6 +32,7 @@
- #include <linux/slab.h>
- #include <linux/platform_data/dma-atmel.h>
- #include <linux/pm_runtime.h>
-+#include <linux/pinctrl/consumer.h>
- 
- #define DEFAULT_TWI_CLK_HZ		100000		/* max 400 Kbits/s */
- #define AT91_I2C_TIMEOUT	msecs_to_jiffies(100)	/* transfer timeout */
-@@ -747,6 +748,8 @@ static int at91_twi_probe(struct platform_device *pdev)
- 	u32 phy_addr;
- 	u32 bus_clk_rate;
- 
-+	pinctrl_pm_select_default_state(&pdev->dev);
-+
- 	dev = devm_kzalloc(&pdev->dev, sizeof(*dev), GFP_KERNEL);
- 	if (!dev)
- 		return -ENOMEM;
-@@ -851,6 +854,8 @@ static int at91_twi_runtime_suspend(struct device *dev)
- 
- 	clk_disable_unprepare(twi_dev->clk);
- 
-+	pinctrl_pm_select_sleep_state(dev);
-+
- 	return 0;
- }
- 
-@@ -858,6 +863,8 @@ static int at91_twi_runtime_resume(struct device *dev)
- {
- 	struct at91_twi_dev *twi_dev = dev_get_drvdata(dev);
- 
-+	pinctrl_pm_select_default_state(dev);
-+
- 	return clk_prepare_enable(twi_dev->clk);
- }
- 
--- 
-1.7.9.5
-
+> 
+> > Export do_adjtimex function for hyper-v Time Synchronization component
+> >
+> > Signed-off-by: Thomas Shao <huishao@microsoft.com>
+> > ---
+> >  kernel/time/timekeeping.c |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+> > index ec1791f..205a4b3 100644
+> > --- a/kernel/time/timekeeping.c
+> > +++ b/kernel/time/timekeeping.c
+> > @@ -1786,6 +1786,7 @@ int do_adjtimex(struct timex *txc)
+> >
+> >  	return ret;
+> >  }
+> > +EXPORT_SYMBOL_GPL(do_adjtimex);
+> >
+> >  #ifdef CONFIG_NTP_PPS
+> >  /**
+> > --
+> > 1.7.1
+> >
+> >
