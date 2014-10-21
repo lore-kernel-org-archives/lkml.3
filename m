@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754436AbaJUH1Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 03:27:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43402 "EHLO mx2.suse.de"
+	id S1754500AbaJUH1g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 03:27:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43404 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753121AbaJUH1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 03:27:23 -0400
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        "\\\"Rafael J. Wysocki\\\"" <rjw@rjwysocki.net>
-Cc: Cong Wang <xiyou.wangcong@gmail.com>, David Rientjes <rientjes@google.com>,
-        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: [PATCH 0/4 -v2] OOM vs. freezer interaction fixes
-Date: Tue, 21 Oct 2014 09:27:11 +0200
-Message-Id: <1413876435-11720-1-git-send-email-mhocko@suse.cz>
-X-Mailer: git-send-email 2.1.1
+	id S1754470AbaJUH1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 03:27:34 -0400
+Date: Tue, 21 Oct 2014 18:27:25 +1100
+From: NeilBrown <neilb@suse.de>
+To: Ronny Egner <ronnyegner@ronnyegner-consulting.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: What happened with the Patch "New RAID library supporting up to
+ six parities"
+Message-ID: <20141021182725.016ec0e1@notabene.brown>
+In-Reply-To: <D06BCADE.40140%ronnyegner@ronnyegner-consulting.de>
+References: <D06BCADE.40140%ronnyegner@ronnyegner-consulting.de>
+X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.23; x86_64-suse-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/FErkfV56yid2c/KMS6NA=_J"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew, Rafael,
+--Sig_/FErkfV56yid2c/KMS6NA=_J
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-this has been originally discussed here [1] and previously posted here [2].
-I have updated patches according to feedback from Oleg.
+On Tue, 21 Oct 2014 06:33:47 +0000 Ronny Egner
+<ronnyegner@ronnyegner-consulting.de> wrote:
 
-The first and third patch are regression fixes and they are a stable
-material IMO. The second and fourth patch are simple cleanups.
+> Dear All,
+>=20
+> i was wondering what happened with the patch posted by Andrea Mazzoleni
+> back in Februrary 2014 (this Thread:
+> http://thread.gmane.org/gmane.linux.kernel/1654735).
+>=20
+> Why wash=C2=B4t it added to the code? Something missing/wrong?
+>=20
+> In my opinion the posted patch is awesome and would enable a unique
+> feature that no other UNIX-like operating system currently has.
+>=20
 
-The 1st patch is fixing a regression introduced in 3.3 since when OOM
-killer is not able to kill any frozen task and live lock as a result.
-The fix gets us back to the 3.2. As it turned out during the discussion [3]
-this was still not 100% sufficient and that's why we need the 3rd patch.
+Could you report your test results please.
 
-I was thinking about the proper 1st vs. 3rd patch ordering because
-the 1st patch basically opens a race window considerably reduced by the
-later patch. This path is hard to do completely race free without a complete
-synchronization of OOM path (including the allocator) and freezer which is not
-worth the trouble.
+NeilBrown
 
-Original patch from Cong Wang has covered this by checking
-cgroup_freezing(current) in __refrigarator path [4]. But this approach
-still suffers from OOM vs. PM freezer interaction (OOM killer would
-still live lock waiting for a PM frozen task this time).
+--Sig_/FErkfV56yid2c/KMS6NA=_J
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
-So I think the most straight forward way is to address only OOM vs.
-frozen task interaction in the first patch, mark it for stable 3.3+ and
-leave the race to a separate follow up patch which is applicable to
-stable 3.2+ (before a3201227f803 made it inefficient).
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Switching 1st and 3rd patches would make some sense as well but then
-it might end up even more confusing because we would be fixing a
-non-existent issue in upstream first...
+iQIVAwUBVEYK3Tnsnt1WYoG5AQLvThAAuOyYmflYe4NoG9EsHzSShOiG0h5d2ubI
+SEnvRcSQ18/3+QSmh8KT9/l3CVUpODi8tM3vmqPao+Rd3S/nMKaSQLPTCr72gWBr
+CFPNnqJk+cAGZ/b6sbs+MHtQUmhkPRx6y06G06CDK0OL91MA0kg88pnqe35MTlrI
+aGK73DypoUFx4SKYO/beJjEweXsheALCfj2CU4XTKO0cJGv98LreqM63lIhD1nXB
+ZM0ewuPIzPngL2qFSX9WHW0SE+Xnnb34feOxO/4vUYsyBDnf5/Wkm3slNoI8sjMY
+324Cq7r3mHFYnA4/Hv6kSPnDu6asdpO1cx01dRGa8n7XAHsao5cx61vpC2TQX34+
+O8lg+VNrcpobA1yOK4OzypBCJmhmHWK6tcV2uSwNx8pgnZU03akpsCndjZZO8lBG
+H2RVoR0ZY6k4DAQpzBWkNoFBu6+YTOhX96j+wWJ0bbFNVEif52kGFJXaodvlqu8t
+rl9E4hJnCKihkf8ERq83gf6SruCkhLp0sLplFVUdTuOvM1v20amXIMDQJL9v2jJV
+ckJ8PK/yWO2J/y+w0TpoPTEf0ZXRs1Q0g1mLeruGIvY3iC+VcDiGdnfDe7yAlBmu
+f9uidwo+mB3sgDAm7Fl8iWwMVMJ+BQ7SUoWf0NEQlHeZjEfPcHNZSSGyJsxcW/AO
+ES3QOwOj0Gw=
+=6hwM
+-----END PGP SIGNATURE-----
 
-Cong Wang (2):
-      freezer: Do not freeze tasks killed by OOM killer
-      freezer: remove obsolete comments in __thaw_task()
-
-Michal Hocko (2):
-      OOM, PM: OOM killed task shouldn't escape PM suspend
-      PM: convert do_each_thread to for_each_process_thread
-
-And diffstat says:
- include/linux/oom.h    |  3 +++
- kernel/freezer.c       |  9 +++------
- kernel/power/process.c | 47 ++++++++++++++++++++++++++++++++++++++---------
- mm/oom_kill.c          | 17 +++++++++++++++++
- mm/page_alloc.c        |  8 ++++++++
- 5 files changed, 69 insertions(+), 15 deletions(-)
-
----
-[1] http://marc.info/?l=linux-kernel&m=140986986423092
-[2] http://marc.info/?l=linux-mm&m=141277728508500&w=2
-[3] http://marc.info/?l=linux-kernel&m=141074263721166
-[4] http://marc.info/?l=linux-kernel&m=140986986423092
+--Sig_/FErkfV56yid2c/KMS6NA=_J--
