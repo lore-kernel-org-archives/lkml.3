@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933445AbaJURpD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 13:45:03 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:52144 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933356AbaJURox (ORCPT
+	id S1755893AbaJURrA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 13:47:00 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:40512 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933416AbaJURo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 13:44:53 -0400
+	Tue, 21 Oct 2014 13:44:59 -0400
 X-Google-Original-Sender: <johan@hovold.com>
 From: Johan Hovold <johan@kernel.org>
 To: Alessandro Zummo <a.zummo@towertech.it>, Tony Lindgren <tony@atomide.com>,
@@ -17,11 +17,10 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         nsekhar@ti.com, t-kristo@ti.com, j-keerthy@ti.com,
         linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         devicetree@vger.kernel.org, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org, Johan Hovold <johan@kernel.org>,
-        stable <stable@vger.kernel.org>
-Subject: [PATCH v2 02/20] rtc: omap: fix missing wakealarm attribute
-Date: Tue, 21 Oct 2014 19:37:48 +0200
-Message-Id: <1413913086-12730-3-git-send-email-johan@kernel.org>
+        linux-kernel@vger.kernel.org, Johan Hovold <johan@kernel.org>
+Subject: [PATCH v2 19/20] ARM: dts: am33xx: update rtc-node compatible property
+Date: Tue, 21 Oct 2014 19:38:05 +0200
+Message-Id: <1413913086-12730-20-git-send-email-johan@kernel.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <1413913086-12730-1-git-send-email-johan@kernel.org>
 References: <1412881594-25678-1-git-send-email-johan@kernel.org>
@@ -30,50 +29,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The platform device must be registered as wakeup capable before
-registering the class device, or the wakealarm attribute will not be
-created.
+Enable am33xx specific RTC features (e.g. PMIC control) by adding
+"ti,am3352-rtc" to the compatible property of the rtc node.
 
-Also make sure to unregister the wakeup source on probe errors.
-
-Fixes: 1d2e2b65d098 ("rtc: omap: restore back (hard-code) wakeup support")
-Cc: stable <stable@vger.kernel.org>
 Reviewed-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Johan Hovold <johan@kernel.org>
 ---
- drivers/rtc/rtc-omap.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/arm/boot/dts/am33xx.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
-index f842c216f2dd..828cb9983cc2 100644
---- a/drivers/rtc/rtc-omap.c
-+++ b/drivers/rtc/rtc-omap.c
-@@ -416,6 +416,8 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
- 		rtc_writel(KICK1_VALUE, OMAP_RTC_KICK1_REG);
- 	}
+diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+index 3a0a161342ba..098e53602d5c 100644
+--- a/arch/arm/boot/dts/am33xx.dtsi
++++ b/arch/arm/boot/dts/am33xx.dtsi
+@@ -411,7 +411,7 @@
+ 		};
  
-+	device_init_wakeup(&pdev->dev, true);
-+
- 	rtc = devm_rtc_device_register(&pdev->dev, pdev->name,
- 			&omap_rtc_ops, THIS_MODULE);
- 	if (IS_ERR(rtc)) {
-@@ -484,8 +486,6 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
- 	 *    is write-only, and always reads as zero...)
- 	 */
- 
--	device_init_wakeup(&pdev->dev, true);
--
- 	if (new_ctrl & (u8) OMAP_RTC_CTRL_SPLIT)
- 		pr_info("%s: split power mode\n", pdev->name);
- 
-@@ -495,6 +495,7 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
- 	return 0;
- 
- fail0:
-+	device_init_wakeup(&pdev->dev, false);
- 	if (id_entry->driver_data & OMAP_RTC_HAS_KICKER)
- 		rtc_writel(0, OMAP_RTC_KICK0_REG);
- 	pm_runtime_put_sync(&pdev->dev);
+ 		rtc: rtc@44e3e000 {
+-			compatible = "ti,da830-rtc";
++			compatible = "ti,am3352-rtc", "ti,da830-rtc";
+ 			reg = <0x44e3e000 0x1000>;
+ 			interrupts = <75
+ 				      76>;
 -- 
 2.0.4
 
