@@ -1,122 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752289AbaJUJVP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 05:21:15 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:35462 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750AbaJUJVO (ORCPT
+	id S1753810AbaJUJVV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 05:21:21 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:58554 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752415AbaJUJVR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 05:21:14 -0400
-Message-ID: <54462581.4050505@hitachi.com>
-Date: Tue, 21 Oct 2014 18:21:05 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+	Tue, 21 Oct 2014 05:21:17 -0400
+Date: Tue, 21 Oct 2014 11:21:12 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: mingo@redhat.com, kernellwp@gmail.com, riel@redhat.com, tkhai@yandex.ru,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ftracetest: add kprobes on ftrace testcase
-References: <1413802323-5297-1-git-send-email-heiko.carstens@de.ibm.com> <1413802323-5297-2-git-send-email-heiko.carstens@de.ibm.com>
-In-Reply-To: <1413802323-5297-2-git-send-email-heiko.carstens@de.ibm.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH v2] sched/fair: Care divide error in
+ update_task_scan_period()
+Message-ID: <20141021092112.GO23531@worktop.programming.kicks-ass.net>
+References: <543F945F.4020303@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <543F945F.4020303@jp.fujitsu.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/10/20 19:52), Heiko Carstens wrote:
-> Add a kprobes on ftrace testcase. The testcase verifies that
-> - enabling and disabling function tracing works on a function which
->   already contains a dynamic kprobe
-> - adding and removing a dynamic kprobe works on a function which is
->   already enabled for function tracing
+On Thu, Oct 16, 2014 at 06:48:15PM +0900, Yasuaki Ishimatsu wrote:
+> +++ b/kernel/sched/fair.c
+> @@ -1466,6 +1466,7 @@ static void update_task_scan_period(struct task_struct *p,
 > 
-
-Looks good to me.
-
-> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-Thanks!
-
-> ---
->  .../ftrace/test.d/kprobe/kprobe_ftrace.tc          | 55 ++++++++++++++++++++++
->  1 file changed, 55 insertions(+)
->  create mode 100644 tools/testing/selftests/ftrace/test.d/kprobe/kprobe_ftrace.tc
+>  	unsigned long remote = p->numa_faults_locality[0];
+>  	unsigned long local = p->numa_faults_locality[1];
+> +	unsigned long total_faults = shared + private;
 > 
-> diff --git a/tools/testing/selftests/ftrace/test.d/kprobe/kprobe_ftrace.tc b/tools/testing/selftests/ftrace/test.d/kprobe/kprobe_ftrace.tc
-> new file mode 100644
-> index 000000000000..ab41d2b29841
-> --- /dev/null
-> +++ b/tools/testing/selftests/ftrace/test.d/kprobe/kprobe_ftrace.tc
-> @@ -0,0 +1,55 @@
-> +#!/bin/sh
-> +# description: Kprobe dynamic event with function tracer
+>  	/*
+>  	 * If there were no record hinting faults then either the task is
+> @@ -1496,6 +1497,14 @@ static void update_task_scan_period(struct task_struct *p,
+>  			slot = 1;
+>  		diff = slot * period_slot;
+>  	} else {
+> +		/*
+> +		 * This is a rare case. total_faults might become 0 after
+> +		 * offlining node. In this case, total_faults is set to 1
+> +		 * for avoiding divide error.
+> +		 */
+> +		if (unlikely(total_faults == 0))
+> +			total_faults = 1;
 > +
-> +[ -f kprobe_events ] || exit_unsupported # this is configurable
-> +grep function available_tracers || exit_unsupported # this is configurable
-> +
-> +# prepare
-> +echo nop > current_tracer
-> +echo do_fork > set_ftrace_filter
-> +echo 0 > events/enable
-> +echo > kprobe_events
-> +echo 'p:testprobe do_fork' > kprobe_events
-> +
-> +# kprobe on / ftrace off
-> +echo 1 > events/kprobes/testprobe/enable
-> +echo > trace
-> +( echo "forked")
-> +grep testprobe trace
-> +! grep 'do_fork <-' trace
-
-I like this technique :)
-
-> +
-> +# kprobe on / ftrace on
-> +echo function > current_tracer
-> +echo > trace
-> +( echo "forked")
-> +grep testprobe trace
-> +grep 'do_fork <-' trace
-> +
-> +# kprobe off / ftrace on
-> +echo 0 > events/kprobes/testprobe/enable
-> +echo > trace
-> +( echo "forked")
-> +! grep testprobe trace
-> +grep 'do_fork <-' trace
-> +
-> +# kprobe on / ftrace on
-> +echo 1 > events/kprobes/testprobe/enable
-> +echo function > current_tracer
-> +echo > trace
-> +( echo "forked")
-> +grep testprobe trace
-> +grep 'do_fork <-' trace
-> +
-> +# kprobe on / ftrace off
-> +echo nop > current_tracer
-> +echo > trace
-> +( echo "forked")
-> +grep testprobe trace
-> +! grep 'do_fork <-' trace
-> +
-> +# cleanup
-> +echo nop > current_tracer
-> +echo > set_ftrace_filter
-> +echo 0 > events/kprobes/testprobe/enable
-> +echo > kprobe_events
-> +echo > trace
+>  		diff = -(NUMA_PERIOD_THRESHOLD - ratio) * period_slot;
 > 
+>  		/*
+> @@ -1506,7 +1515,7 @@ static void update_task_scan_period(struct task_struct *p,
+>  		 * scanning faster if shared accesses dominate as it may
+>  		 * simply bounce migrations uselessly
+>  		 */
+> -		ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared));
+> +		ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (total_faults));
+>  		diff = (diff * ratio) / NUMA_PERIOD_SLOTS;
 
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+So what was wrong with the 'normal' unconditional +1 approach? Also
+you've got superfluous parenthese.
