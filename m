@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754525AbaJUIRv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 04:17:51 -0400
-Received: from smtprelay0211.hostedemail.com ([216.40.44.211]:57719 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750964AbaJUIRt (ORCPT
+	id S1754392AbaJUITM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 04:19:12 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57492 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192AbaJUITJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 04:17:49 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:69:355:379:421:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3867:4321:5007:6261:10004:10400:10450:10455:10848:11026:11232:11473:11658:11914:12043:12438:12517:12519:12555:12740:13069:13095:13311:13357:19904:19999:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: ocean46_43ff12f035617
-X-Filterd-Recvd-Size: 2574
-Message-ID: <1413879465.12828.1.camel@perches.com>
-Subject: Re: [PATCH 2/2] jffs2: fix buffer dump debug output
-From: Joe Perches <joe@perches.com>
-To: Cyrille Pitchen <cyrille.pitchen@atmel.com>
-Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
-        nicolas.ferre@atmel.com, linux-kernel@vger.kernel.org
-Date: Tue, 21 Oct 2014 01:17:45 -0700
-In-Reply-To: <21ad981db8c65d3f00be3d9a254cae78cf40b96d.1413878259.git.cyrille.pitchen@atmel.com>
-References: <cover.1413878259.git.cyrille.pitchen@atmel.com>
-	 <21ad981db8c65d3f00be3d9a254cae78cf40b96d.1413878259.git.cyrille.pitchen@atmel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 21 Oct 2014 04:19:09 -0400
+Date: Tue, 21 Oct 2014 10:19:06 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Thomas Shao <huishao@microsoft.com>
+cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        KY Srinivasan <kys@microsoft.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Richard Cochran <rcochran@linutronix.de>
+Subject: RE: [PATCH v2 1/2] timekeeping: add EXPORT_SYMBOL_GPL for
+ do_adjtimex()
+In-Reply-To: <CD2CABCB2C0A0D4682C5F8AD840141540D27B9@HKXPRD3002MB006.064d.mgd.msft.net>
+Message-ID: <alpine.DEB.2.11.1410210946470.5308@nanos>
+References: <1413362372-16236-1-git-send-email-huishao@microsoft.com> <alpine.DEB.2.11.1410202027220.5308@nanos> <alpine.DEB.2.11.1410202034150.5308@nanos> <CD2CABCB2C0A0D4682C5F8AD840141540D27B9@HKXPRD3002MB006.064d.mgd.msft.net>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-10-21 at 10:05 +0200, Cyrille Pitchen wrote:
-> This patch fixes __jffs2_dbg_dump_buffer(): this function prints a message
-> claiming to dump len bytes. However, depending on the start offset, the former
-> code drops up to 31 (JFFS2_BUFDUMP_BYTES_PER_LINE - 1) bytes.
+On Tue, 21 Oct 2014, Thomas Shao wrote:
+> > I still do not have a consistent argument from you WHY you need to abuse
+> > do_adjtimex() to do that host - guest synchronization in the first place.
+> > 
 > 
-> Signed-off-by: Cyrille Pitchen <cyrille.pitchen@atmel.com>
-> ---
->  fs/jffs2/debug.c | 21 ++++++++-------------
->  1 file changed, 8 insertions(+), 13 deletions(-)
-> 
-> diff --git a/fs/jffs2/debug.c b/fs/jffs2/debug.c
-> index 07bd5bc..1b515b2 100644
-> --- a/fs/jffs2/debug.c
-> +++ b/fs/jffs2/debug.c
-> @@ -736,30 +736,25 @@ void
->  __jffs2_dbg_dump_buffer(unsigned char *buf, int len, uint32_t offs)
->  {
->  	int skip;
-> -	int i;
-> +	int i, pos;
->  
->  	printk(JFFS2_DBG_MSG_PREFIX " dump from offset %#08x to offset %#08x (%x bytes).\n",
->  		offs, offs + len, len);
-> -	i = skip = offs % JFFS2_BUFDUMP_BYTES_PER_LINE;
-> +	i = skip = offs & (JFFS2_BUFDUMP_BYTES_PER_LINE - 1);
->  	offs = offs & ~(JFFS2_BUFDUMP_BYTES_PER_LINE - 1);
->  
-> -	if (skip != 0)
-> -		printk(JFFS2_DBG "%#08x: ", offs);
-> -
-> +	printk(JFFS2_DBG "%#08x: ", offs);
->  	while (skip--)
->  		printk("   ");
->  
-> -	while (i < len) {
-> -		if ((i % JFFS2_BUFDUMP_BYTES_PER_LINE) == 0 && i != len -1) {
-> -			if (i != 0)
-> -				printk("\n");
-> +	for (pos = 0; pos < len; ++pos, ++i) {
-> +		if (i == JFFS2_BUFDUMP_BYTES_PER_LINE) {
->  			offs += JFFS2_BUFDUMP_BYTES_PER_LINE;
-> -			printk(JFFS2_DBG "%0#8x: ", offs);
-> +			printk(JFFS2_DBG "\n%0#8x: ", offs);
-> +			i = 0;
+> I need a function to gradually slew guest time. do_adjtimex() provides all the 
+> functionality. Also I could not find any other exposed func to do this. I'd like to
+> hear any feedback from you for this.
 
-print_hex_dump would be better
+As Richard and others told you already, there are various options:
 
+1) Use NTP on that private network, which does not involve any kernel
+   changes at all.
+
+   Your argument, that this is hard for IT-Admins to set up is just
+   ridiculous. If an IT-Admin is not able to set that up, then he
+   should better stay away from setting up a guest in the first place,
+   really.
+
+2) As pointed out already by others PPS/PTP might be a proper solution
+   for this.
+
+   All it takes is a pair of timestamps (host/guest) injected into the
+   proper subsystem and a controlling daemon on the guest side. That
+   would also avoid the problem of running NTPd and your kernel side
+   poor mans NTPd at the same time.
+
+   That pseudo NTP thing is just hilarious, really.
+
+   You take the host time stamp in timesync_onchannelcallback() and
+   schedule work. From the work queue you correlate the host time
+   stamp to the current time of the guest. So you correlate time
+   stamps which can be an arbitrary time apart. Brilliant solution
+   that, really.
+
+Thanks,
+
+	tglx
 
