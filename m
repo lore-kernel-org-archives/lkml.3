@@ -1,181 +1,295 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754532AbaJUID3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 04:03:29 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:55233 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754460AbaJUIDR (ORCPT
+	id S1754570AbaJUIEB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 04:04:01 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:54009 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754218AbaJUIDr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 04:03:17 -0400
-Date: Tue, 21 Oct 2014 10:03:13 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexandre FOURNIER <alexandre.fournier@wisp-e.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Marcin Wojtas <mw@semihalf.com>,
-        Gregory =?UTF-8?B?Q2zDqW1lbnQ=?= 
-	<gregory.clement@free-electrons.com>
-Subject: RCU stall in af_unix.c, should use spin_lock_irqsave?
-Message-ID: <20141021100313.397f4962@free-electrons.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 21 Oct 2014 04:03:47 -0400
+X-AuditID: cbfec7f5-b7f956d000005ed7-36-5446135f9a8a
+Message-id: <5446135E.9020101@samsung.com>
+Date: Tue, 21 Oct 2014 12:03:42 +0400
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.2.0
+MIME-version: 1.0
+To: Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, Michal Marek <mmarek@suse.cz>,
+        x86@kernel.org, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>
+Subject: Re: [RFC PATCH] UBSan: run-time undefined behavior sanity checker
+References: <1413802499-17928-1-git-send-email-a.ryabinin@samsung.com>
+ <1413802499-17928-2-git-send-email-a.ryabinin@samsung.com>
+ <5445640F.10000@oracle.com>
+In-reply-to: <5445640F.10000@oracle.com>
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplkeLIzCtJLcpLzFFi42I5/e/4Zd14YbcQg4990hZfv3SwWMxZv4bN
+	YsLDNnaLaRvFLVZ2PmC1+LNrB5PF5V1z2CwuHVjAZNGy7wKTxfHeA0wWi4/cZrbYvGkqs0Vr
+	z092ix8bHrM68Hm0bC732DnrLrvHgk2lHptXaHlsWtXJ5vHu3Dl2jxMzfrN4NJ05yuzx8ekt
+	Fo/3+66yeZxZcITd4/MmOY8TLV9YA3ijuGxSUnMyy1KL9O0SuDJm9sxiK9jiXPHqyW22Bsad
+	Jl2MnBwSAiYSBzruMkLYYhIX7q1n62Lk4hASWMoo8ebaFxYIp5lJ4sGsXywgVbwCWhIHv79m
+	72Lk4GARUJU4f1sVJMwmoCfxb9Z2NhBbVCBC4sqaOYwQ5YISPybfA5sjInCdSWJdywRWEIdZ
+	YA6jxKk3O5hBqoQFvCRe/2hlhNi2kFFixetHTCAJTgENiU2bZ7CCbGMWUJeYMiUXJMwsIC+x
+	ec1b5gmMArOQLJmFUDULSdUCRuZVjKKppckFxUnpuUZ6xYm5xaV56XrJ+bmbGCFR93UH49Jj
+	VocYBTgYlXh4I5a4hgixJpYVV+YeYpTgYFYS4f0bAxTiTUmsrEotyo8vKs1JLT7EyMTBKdXA
+	qMmVfrTFSP5aj2DZ3ENn4gRVjRQPzdIJuaQjcFT8kcf2q+p33lhVJpUvvSI1Q++At2TOGQfx
+	4MX//tadCX588r1Pzu3UWqXU+IB/qqfSjgtGh9xg22ExTctS4pT4ctnzbZsvv75zRlQjI0rp
+	cN6UhC1FPq/CJu7v6Py5WXCP4U6t9TtTLb7vUGIpzkg01GIuKk4EAB4eXxaYAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 10/20/2014 11:35 PM, Sasha Levin wrote:
+> On 10/20/2014 06:54 AM, Andrey Ryabinin wrote:
+>>
+>> UBSan uses compile-time instrumentation to catch undefined behavior (UB).
+>> Compiler inserts code that perform certain kinds of
+>> checks before operations that could cause UB.
+>> If check fails (i.e. UB detected) __ubsan_handle_* function called.
+>> to print error message.
+>>
+>> So the most of the work is done by compiler.
+>> This patch just implements ubsan handlers printing errors.
+>>
+>> GCC supports this since 4.9, however upcoming GCC 5.0 has
+>> more checkers implemented.
+>>
+>> Different kinds of checks could be enabled via boot parameter:
+>> ubsan_handle=OEAINVBSLF.
+>> If ubsan_handle not present in cmdline default options are used: ELNVBSLF
+>>
+>> 	O - different kinds of overflows
+>> 	E - negation overflow, division overflow, division by zero.
+>> 	A - misaligned memory access.
+>> 	I - load from/store to an object with insufficient space.
+>> 	N - null argument declared with nonnull attribute,
+>> 	  returned null from function which never returns null, null ptr dereference.
+>> 	V - variable size array with non-positive length
+>> 	B - out-of-bounds accesses.
+>> 	S - shifting out-of-bounds.
+>> 	L - load of invalid value (value out of range for the enum type, loading other then 0/1 to bool type)
+>> 	F - call to function through pointer with incorrect function type
+>> 	    (AFAIK this is not implemented in gcc yet, probably works with clang, though
+>> 	    	   I didn't check ubsan with clang at all).
+>>
+>> Instrumentation in kernel/printk/printk.c is disabled because struct printk_log is not properly aligned,
+>> therefore we are recursively taking logbuf_lock while trying to print error in __ubsan_handle*().
+>>
+>> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+>> ---
+>>  Makefile                              |  12 +-
+>>  arch/x86/Kconfig                      |   1 +
+>>  arch/x86/boot/Makefile                |   1 +
+>>  arch/x86/boot/compressed/Makefile     |   1 +
+>>  arch/x86/realmode/rm/Makefile         |   1 +
+>>  arch/x86/vdso/Makefile                |   2 +
+>>  drivers/firmware/efi/libstub/Makefile |   1 +
+>>  include/linux/sched.h                 |   4 +
+>>  kernel/printk/Makefile                |   1 +
+>>  lib/Kconfig.debug                     |  23 ++
+>>  lib/Makefile                          |   3 +
+>>  lib/ubsan.c                           | 559 ++++++++++++++++++++++++++++++++++
+>>  lib/ubsan.h                           |  84 +++++
+>>  scripts/Makefile.lib                  |   6 +
+>>  14 files changed, 698 insertions(+), 1 deletion(-)
+>>  create mode 100644 lib/ubsan.c
+>>  create mode 100644 lib/ubsan.h
+>>
+>> diff --git a/Makefile b/Makefile
+>> index 05d67af..d3e23f9 100644
+>> --- a/Makefile
+>> +++ b/Makefile
+>> @@ -377,6 +377,9 @@ LDFLAGS_MODULE  =
+>>  CFLAGS_KERNEL	=
+>>  AFLAGS_KERNEL	=
+>>  CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
+>> +CFLAGS_UBSAN	= $(call cc-option, -fsanitize=undefined) \
+>> +			$(call cc-option, -fno-sanitize=unreachable) \
+>> +			$(call cc-option, -fno-sanitize=float-cast-overflow)
+> 
+> What's the reason behind those two -fno-sanitize?
 
-I stumbled across a reproducible RCU stall related to the AF_UNIX code
-(on 3.17, on an ARM SMP system), and I'm not sure whether the problem
-is caused by:
+Both not implemented.
 
- * The af_unix.c code using spin_lock() on sk->sk_receive_queue.lock
-   while it should be using spin_lock_irqsave().
+float-cast-overflow is for floating point arithmetic which we don't have in kernel.
+This could be removed safely without needing to implement __ubsan_handle_float_cast_overflow().
 
-OR
+fsanitize=unreachable is for catching calls to __builtin_unreachable().
 
- * The mvpp2 Ethernet driver using on_each_cpu() in a softirq context.
 
-At least, switching to use spin_lock_irqsave() instead of spin_lock()
-has proven to fix the issue (see patch below). The spinlock validator
-complains that a lockup has been detected, which might indicate that
-something is indeed wrong with the spinlock handling.
 
-Now, to the gory details. When stress-testing a lighttpd web server
-that does a lot of CGI calls and therefore a lot of Unix socket
-traffic, I get typically after couple of minutes the following RCU
-stall:
 
-INFO: rcu_sched self-detected stall on CPU { 0}  (t=2100 jiffies g=14665 c=14664 q=1352)
-Task dump for CPU 0:
-lighttpd        R running      0  1549      1 0x00000002
-[<c0014f94>] (unwind_backtrace) from [<c001130c>] (show_stack+0x10/0x14)
-[<c001130c>] (show_stack) from [<c0059688>] (rcu_dump_cpu_stacks+0x98/0xd4)
-[<c0059688>] (rcu_dump_cpu_stacks) from [<c005c3ec>] (rcu_check_callbacks+0x424/0x740)
-[<c005c3ec>] (rcu_check_callbacks) from [<c005e7c8>] (update_process_times+0x40/0x60)
-[<c005e7c8>] (update_process_times) from [<c006ce70>] (tick_sched_timer+0x70/0x210)
-[<c006ce70>] (tick_sched_timer) from [<c005efc4>] (__run_hrtimer.isra.35+0x6c/0x128)
-[<c005efc4>] (__run_hrtimer.isra.35) from [<c005f600>] (hrtimer_interrupt+0x11c/0x2d0)
-[<c005f600>] (hrtimer_interrupt) from [<c00148f8>] (twd_handler+0x34/0x44)
-[<c00148f8>] (twd_handler) from [<c00557ec>] (handle_percpu_devid_irq+0x6c/0x84)
-[<c00557ec>] (handle_percpu_devid_irq) from [<c0051c80>] (generic_handle_irq+0x2c/0x3c)
-[<c0051c80>] (generic_handle_irq) from [<c000eafc>] (handle_IRQ+0x40/0x90)
-[<c000eafc>] (handle_IRQ) from [<c00086d0>] (gic_handle_irq+0x2c/0x5c)
-[<c00086d0>] (gic_handle_irq) from [<c0011e40>] (__irq_svc+0x40/0x54)
-Exception stack(0xde0c1ce8 to 0xde0c1d30)
-1ce0:                   c073a684 20010113 c06e30fc 00000003 de0c1d30 00000001
-1d00: 00000001 0000012c dfbdcc40 ffffe70c dfbdcc48 df5bd800 00000002 de0c1d30
-1d20: c00712d4 c00712bc 20010113 ffffffff
-[<c0011e40>] (__irq_svc) from [<c00712bc>] (generic_exec_single+0x10c/0x180)
-[<c00712bc>] (generic_exec_single) from [<c00713d0>] (smp_call_function_single+0xa0/0xcc)
-[<c00713d0>] (smp_call_function_single) from [<c0071818>] (on_each_cpu+0x2c/0x48)
-[<c0071818>] (on_each_cpu) from [<c03312dc>] (mvpp2_poll+0x30/0x594)
-[<c03312dc>] (mvpp2_poll) from [<c041d024>] (net_rx_action+0xb0/0x170)
-[<c041d024>] (net_rx_action) from [<c00220c4>] (__do_softirq+0x120/0x274)
-[<c00220c4>] (__do_softirq) from [<c0022468>] (irq_exit+0x78/0xb0)
-[<c0022468>] (irq_exit) from [<c000eb00>] (handle_IRQ+0x44/0x90)
-[<c000eb00>] (handle_IRQ) from [<c00086d0>] (gic_handle_irq+0x2c/0x5c)
-[<c00086d0>] (gic_handle_irq) from [<c0011e40>] (__irq_svc+0x40/0x54)
-Exception stack(0xde0c1eb8 to 0xde0c1f00)
-1ea0:                                                       de1b986c 00000000
-1ec0: 00000420 de1b986c de1b9800 d761c080 be913a34 be913a34 00000007 de0c0000
-1ee0: d761c0a0 be913a34 00000010 de0c1f00 c0491898 c0491918 60010013 ffffffff
-[<c0011e40>] (__irq_svc) from [<c0491918>] (unix_inq_len+0x9c/0xa8)
-[<c0491918>] (unix_inq_len) from [<c049194c>] (unix_ioctl+0x28/0x88)
-[<c049194c>] (unix_ioctl) from [<c0407ccc>] (sock_ioctl+0x124/0x280)
-[<c0407ccc>] (sock_ioctl) from [<c00c11bc>] (do_vfs_ioctl+0x3fc/0x5c0)
-[<c00c11bc>] (do_vfs_ioctl) from [<c00c13b4>] (SyS_ioctl+0x34/0x5c)
-[<c00c13b4>] (SyS_ioctl) from [<c000e220>] (ret_fast_syscall+0x0/0x30)
-Task dump for CPU 1:
-kiplink_admin.f R running      0  1932   1549 0x00000000
-[<c0513a04>] (__schedule) from [<00000007>] (0x7)
+>> +config HAVE_ARCH_UBSAN_SANTIZE_ALL
+>> +	bool
+>> +
+>> +config UBSAN
+>> +	bool "Undefined behaviour sanity checker"
+>> +	help
+>> +	  This option enables undefined behaviour sanity checker
+>> +	  Compile-time instrumentataion used to detect various undefined
+> 		       instrumentation
+>> +	  behaviours in runtime. Different kinds of checks could be enabled
+>> +	  via boot parameter ubsan_handle (see: Documentation/ubsan.txt).
+>> +	  (TODO: write docs).
+>> +
+>> +config UBSAN_SANITIZE_ALL
+>> +	bool "Enable instrumentation for the entire kernel"
+>> +	depends on UBSAN
+>> +	depends on HAVE_ARCH_UBSAN_SANTIZE_ALL
+>> +	default y
+>> +	help
+>> +	  This option acitivates instrumentation for the entire kernel.
+>                       activates
+>> +	  If you don't enable this option, you have to explicitly specify
+>> +	  UBSAN_SANITIZE := y for the files/directories you want to check for UB.
+>> +
+>> +
+> [snip
+> 
+>> +/* By default enable everything except signed overflows and
+>> + * misaligned accesses
+>> + */
+> 
+> Why those two are disabled? Maybe we should be fixing them rather
+> than ignoring?
+> 
 
-If my analysis is correct, what happens on CPU0 is that:
+Signed overflows are disabled because they are allowed in linux kernel. Using -fno-strict-alliasing
+disables compiler's optimization based on assumption that signed overflow never happens. Though this
+option doesn't make signed overflows defined, it was proven by years that it just works.
+There is -fwrapv option which make signed overflows defined, but it's not used because it bogus on
+some versions of compilers.
 
- * lighttpd does an ioctl() on a socket, which ends up calling
-   unix_inq_len(), which tries to get a spinlock using spin_lock(). The
-   lock is probably taken.
 
- * while waiting for this lock, we get a network RX interrupt, which
-   schedules the network RX softirq, which ends up calling the ->poll()
-   function of the network driver, in our case mvpp2_poll().
+Unaligned accesses disabled because they are allowed on some arches (see HAVE_EFFICIENT_UNALIGNED_ACCESS).
+Another reason is that there are to many reports. Not because there are lot of bugs, but because
+there are many reports for one bug.
+For example take a look at struct irqaction. It declared with ____cacheline_internodealigned_in_smp.
 
- * since the network hardware has some per-CPU registers that we need
-   to read on all CPUs, the network driver does a on_each_cpu() call.
-   This apparently leads nowhere, as after a while, the timer interrupt
-   kicks in and decides we're not making progress anymore.
+And look at the request_threaded_irq():
 
-After enabling spinlock debugging, I get the following right before the
-RCU stall (note how the RCU stall happens on CPU0, while the spinlock
-lockup suspected happens on CPU1) :
+        action = kzalloc(sizeof(struct irqaction), GFP_KERNEL);
+        if (!action)
+                return -ENOMEM;
 
-BUG: spinlock lockup suspected on CPU#1, kiplink_admin.f/1938
- lock: 0xde4998c0, .magic: dead4ead, .owner: lighttpd/1910, .owner_cpu: 0
-CPU: 1 PID: 1938 Comm: kiplink_admin.f Tainted: G        W  O   3.17.0-00017-g53fa061 #2
-[<c00154d8>] (unwind_backtrace) from [<c001183c>] (show_stack+0x10/0x14)
-[<c001183c>] (show_stack) from [<c053f560>] (dump_stack+0x9c/0xbc)
-[<c053f560>] (dump_stack) from [<c0057338>] (do_raw_spin_lock+0x118/0x18c)
-[<c0057338>] (do_raw_spin_lock) from [<c05466fc>] (_raw_spin_lock_irqsave+0x60/0x6c)
-[<c05466fc>] (_raw_spin_lock_irqsave) from [<c042a7d4>] (skb_queue_tail+0x18/0x48)
-[<c042a7d4>] (skb_queue_tail) from [<c04b9f58>] (unix_stream_sendmsg+0x1c8/0x36c)
-[<c04b9f58>] (unix_stream_sendmsg) from [<c0422eb8>] (sock_aio_write+0xcc/0xec)
-[<c0422eb8>] (sock_aio_write) from [<c00bf414>] (do_sync_write+0x80/0xa8)
-[<c00bf414>] (do_sync_write) from [<c00bfe60>] (vfs_write+0x108/0x1b0)
-[<c00bfe60>] (vfs_write) from [<c00c0418>] (SyS_write+0x40/0x94)
-[<c00c0418>] (SyS_write) from [<c000e3a0>] (ret_fast_syscall+0x0/0x48)
+        action->handler = handler;
+        action->thread_fn = thread_fn;
+        action->flags = irqflags;
+        action->name = devname;
+        action->dev_id = dev_id;
 
-And interestingly, skb_queue_tail() is also taking the same spinlock as
-unix_inq_len(), except that it does so with spin_lock_irqsave(). And
-this is causing the issue: since this spin_lock_irqsave() takes place
-on CPU1, the interupts are disabled, and therefore we're not getting
-the IPI that allows the on_each_cpu() call coming from CPU0 to make
-progress, causing the lockup.
+This struct allocated via kmalloc which is wrong because in general kmalloc guaranties only sizeof(void *) alignment.
+UBSan print report only once per source location, but there are many places where 'action' from above referenced.
+Just after allocation where we fill struct's fields there will be 5 reports.
 
-The patch below has proven to fix the issue: I was able to reproduce
-the issue in maximum 5 to 10 minutes, and with the patch the system has
-survived an entire night of testing.
 
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index e968843..c60205a 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -2124,11 +2124,12 @@ long unix_inq_len(struct sock *sk)
- {
-        struct sk_buff *skb;
-        long amount = 0;
-+       unsigned long flags;
- 
-        if (sk->sk_state == TCP_LISTEN)
-                return -EINVAL;
- 
--       spin_lock(&sk->sk_receive_queue.lock);
-+       spin_lock_irqsave(&sk->sk_receive_queue.lock, flags);
-        if (sk->sk_type == SOCK_STREAM ||
-            sk->sk_type == SOCK_SEQPACKET) {
-                skb_queue_walk(&sk->sk_receive_queue, skb)
-@@ -2138,7 +2139,7 @@ long unix_inq_len(struct sock *sk)
-                if (skb)
-                        amount = skb->len;
-        }
--       spin_unlock(&sk->sk_receive_queue.lock);
-+       spin_unlock_irqrestore(&sk->sk_receive_queue.lock, flags);
- 
-        return amount;
- }
+>> +static unsigned long ubsan_handle = GENMASK(HANDLERS_END, 0) &
+>> +	~(BIT_MASK(SUM_OVERFLOW) | BIT_MASK(SUB_OVERFLOW) |
+>> +		BIT_MASK(NEG_OVERFLOW) | BIT_MASK(ALIGNMENT));
+Oops, s/NEG_OVERFLOW/MULL_OVERFLOW
 
-So, the question is: is this patch the correct solution (but then other
-usage of spin_lock in af_unix.c might also need fixing) ? Or is the
-network driver at fault?
+>> +
+>> +static void enable_handler(unsigned int handler)
+>> +{
+>> +	set_bit(handler, &ubsan_handle);
+>> +}
+>> +
+>> +static bool handler_enabled(unsigned int handler)
+>> +{
+>> +	return test_bit(handler, &ubsan_handle);
+>> +}
+>> +
+>> +#define REPORTED_BIT 31
+>> +#define COLUMN_MASK (~(1U << REPORTED_BIT))
+>> +
+>> +static bool is_disabled(struct source_location *location)
+>> +{
+>> +	return test_and_set_bit(REPORTED_BIT,
+>> +				(unsigned long *)&location->column);
+>> +}
+>> +
+>> +static void print_source_location(const char *prefix, struct source_location *loc)
+>> +{
+>> +	pr_err("%s %s:%d:%d\n", prefix, loc->file_name,
+>> +		loc->line, loc->column & COLUMN_MASK);
+>> +}
+>> +
+>> +static bool type_is_int(struct type_descriptor *type)
+>> +{
+>> +	return type->type_kind == type_kind_int;
+>> +}
+>> +
+>> +static bool type_is_signed(struct type_descriptor *type)
+>> +{
+>> +	return type_is_int(type) && (type->type_info & 1);
+>> +}
+>> +
+>> +static unsigned type_bit_width(struct type_descriptor *type)
+>> +{
+>> +	return 1 << (type->type_info >> 1);
+>> +}
+>> +
+>> +static bool is_inline_int(struct type_descriptor *type)
+>> +{
+>> +	unsigned inline_bits = sizeof(unsigned long)*8;
+>> +	unsigned bits = type_bit_width(type);
+>> +
+> 
+> Shouldn't we check type_is_int() here as well?
+> 
 
-Thanks for your input,
+It won't hurt.
+This actually shouldn't be called for any other type than integer types,
+so it deserves WARN_ON(!type_is_int());
 
-Thomas
--- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+
+>> +	return bits <= inline_bits;
+>> +}
+> 
+> [snip]
+> 
+>> +void __ubsan_handle_negate_overflow(struct overflow_data *data,
+>> +				unsigned long old_val)
+>> +{
+>> +
+>> +	char old_val_str[60];
+>> +
+>> +	if (!handler_enabled(NEG_OVERFLOW))
+>> +		return;
+>> +
+>> +	if (current->in_ubsan)
+>> +		return;
+>> +
+>> +	if (is_disabled(&data->location))
+>> +		return;
+> 
+> This pattern of 3 if()s is repeating itself couple of times, maybe
+> it deserves a function of it's own?
+> 
+Definitely.
+
+>> +	ubsan_prologue(&data->location);
+>> +
+>> +	val_to_string(old_val_str, sizeof(old_val_str), data->type, old_val);
+>> +
+>> +	pr_err("negation of %s cannot be represented in type %s:\n",
+>> +		old_val_str, data->type->type_name);
+>> +
+>> +	ubsan_epilogue();
+>> +}
+>> +EXPORT_SYMBOL(__ubsan_handle_negate_overflow);
+> 
+> 
+> Thanks,
+> Sasha
+> 
+> 
+
