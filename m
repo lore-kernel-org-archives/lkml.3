@@ -1,54 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932969AbaJUQXu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 12:23:50 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:64866 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932389AbaJUQXs (ORCPT
+	id S933045AbaJUQYH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 12:24:07 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:41804 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932389AbaJUQYD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 12:23:48 -0400
-Date: Tue, 21 Oct 2014 18:23:40 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        tglx@linutronix.de, akpm@linux-foundation.org, riel@redhat.com,
-        mgorman@suse.de, oleg@redhat.com, mingo@redhat.com, minchan@kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
-        laijs@cn.fujitsu.com, dave@stgolabs.net, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC][PATCH 0/6] Another go at speculative page faults
-Message-ID: <20141021162340.GA5508@gmail.com>
-References: <20141020215633.717315139@infradead.org>
+	Tue, 21 Oct 2014 12:24:03 -0400
+Message-ID: <544688A1.7010403@arm.com>
+Date: Tue, 21 Oct 2014 17:24:01 +0100
+From: Juri Lelli <juri.lelli@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141020215633.717315139@infradead.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Kirill Tkhai <ktkhai@parallels.com>, Peter Zijlstra <peterz@infradead.org>
+CC: Kirill Tkhai <tkhai@yandex.ru>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Juri Lelli <juri.lelli@gmail.com>
+Subject: Re: [PATCH v2 2/3] sched/dl: Cleanup prio_changed_dl()
+References: <20140930210412.5258.35299.stgit@localhost>	 <20140930210428.5258.32223.stgit@localhost>	 <20141002093600.GC2849@worktop.programming.kicks-ass.net> <1412243541.20287.28.camel@tkhai>
+In-Reply-To: <1412243541.20287.28.camel@tkhai>
+X-OriginalArrivalTime: 21 Oct 2014 16:24:01.0002 (UTC) FILETIME=[6C2974A0:01CFED4B]
+X-MC-Unique: 114102117240101901
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Kirill,
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
-
-> My Ivy Bridge EP (2*10*2) has a ~58% improvement in pagefault throughput:
+On 02/10/14 10:52, Kirill Tkhai wrote:
+> В Чт, 02/10/2014 в 11:36 +0200, Peter Zijlstra пишет:
+>> On Wed, Oct 01, 2014 at 01:04:35AM +0400, Kirill Tkhai wrote:
+>>> From: Kirill Tkhai <ktkhai@parallels.com>
+>>>
+>>> rq->curr task can't be in "dequeued" state in prio_changed_dl().
+>>> (The only place we can have that is __schedule()). So, we delete
+>>> rq->curr check.
+>>
+>> the CBS timer can throttle it right?
 > 
-> PRE:
->        149,441,555      page-faults                  ( +-  1.25% )
->
-> POST:
->        236,442,626      page-faults                  ( +-  0.08% )
-
-> My Ivy Bridge EX (4*15*2) has a ~78% improvement in pagefault throughput:
+> Yeah, it's better to check for on_dl_rq():
 > 
-> PRE:
->        105,789,078      page-faults                 ( +-  2.24% )
->
-> POST:
->        187,751,767      page-faults                 ( +-  2.24% )
+> [PATCH]sched/dl: Cleanup prio_changed_dl()
+>     
+> rq->curr task can't be in "dequeued" state in prio_changed_dl().
+> (The only place we can have that is __schedule()). So, we delete
+> rq->curr check.
+> 
+> We shouldn't do balancing if deadline task is throttled too.
+> 
+> Also delete "else" branch which is dead code (switched_to_dl()
+> is not interested in dequeued tasks and we are not interested
+> in balancing in this case).
+> 
 
-I guess the 'PRE' and 'POST' numbers should be flipped around?
+So, I agree that calling switched_to_dl() makes little sense,
+but don't we have to deal with updates to not running tasks as
+in rt.c? Something like this maybe?
+
+>From 75ee75a5fd76526baaed3ba8a58f3ff7daa89cd6 Mon Sep 17 00:00:00 2001
+From: Juri Lelli <juri.lelli@arm.com>
+Date: Tue, 21 Oct 2014 17:15:15 +0100
+Subject: [PATCH] sched/deadline: cleanup prio_changed_dl()
+
+---
+ kernel/sched/deadline.c | 16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index 28d6088..1e62e31 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -1661,7 +1661,10 @@ static void switched_to_dl(struct rq *rq, struct task_struct *p)
+ static void prio_changed_dl(struct rq *rq, struct task_struct *p,
+ 			    int oldprio)
+ {
+-	if (task_on_rq_queued(p) || rq->curr == p) {
++	if (!on_dl_rq(&p->dl))
++		return;
++
++	if (rq->curr == p) {
+ #ifdef CONFIG_SMP
+ 		/*
+ 		 * This might be too much, but unfortunately
+@@ -1688,8 +1691,15 @@ static void prio_changed_dl(struct rq *rq, struct task_struct *p,
+ 		 */
+ 		resched_curr(rq);
+ #endif /* CONFIG_SMP */
+-	} else
+-		switched_to_dl(rq, p);
++	} else {
++		/*
++		 * This task is not running, so if its deadline is
++		 * now more imminent than that of the current running
++		 * task then reschedule.
++		 */
++		if (dl_time_before(p->dl.deadline, rq->curr->dl.deadline))
++			resched_curr(rq);
++	}
+ }
+ 
+ const struct sched_class dl_sched_class = {
+-- 
+2.1.0
 
 Thanks,
 
-	Ingo
+- Juri
+
+> Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+> 
+> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+> index 63f8b4a..ccea917 100644
+> --- a/kernel/sched/deadline.c
+> +++ b/kernel/sched/deadline.c
+> @@ -1638,35 +1638,33 @@ static void switched_to_dl(struct rq *rq, struct task_struct *p)
+>  static void prio_changed_dl(struct rq *rq, struct task_struct *p,
+>  			    int oldprio)
+>  {
+> -	if (task_on_rq_queued(p) || rq->curr == p) {
+> +	if (!on_dl_rq(&p->dl))
+> +		return;
+>  #ifdef CONFIG_SMP
+> -		/*
+> -		 * This might be too much, but unfortunately
+> -		 * we don't have the old deadline value, and
+> -		 * we can't argue if the task is increasing
+> -		 * or lowering its prio, so...
+> -		 */
+> -		if (!rq->dl.overloaded)
+> -			pull_dl_task(rq);
+> -
+> -		/*
+> -		 * If we now have a earlier deadline task than p,
+> -		 * then reschedule, provided p is still on this
+> -		 * runqueue.
+> -		 */
+> -		if (dl_time_before(rq->dl.earliest_dl.curr, p->dl.deadline) &&
+> -		    rq->curr == p)
+> -			resched_curr(rq);
+> -#else
+> -		/*
+> -		 * Again, we don't know if p has a earlier
+> -		 * or later deadline, so let's blindly set a
+> -		 * (maybe not needed) rescheduling point.
+> -		 */
+> +	/*
+> +	 * This might be too much, but unfortunately
+> +	 * we don't have the old deadline value, and
+> +	 * we can't argue if the task is increasing
+> +	 * or lowering its prio, so...
+> +	 */
+> +	if (!rq->dl.overloaded)
+> +		pull_dl_task(rq);
+> +	/*
+> +	 * If we now have a earlier deadline task than p,
+> +	 * then reschedule, provided p is still on this
+> +	 * runqueue.
+> +	 */
+> +	if (dl_time_before(rq->dl.earliest_dl.curr, p->dl.deadline) &&
+> +	    rq->curr == p)
+>  		resched_curr(rq);
+> +#else
+> +	/*
+> +	 * Again, we don't know if p has a earlier
+> +	 * or later deadline, so let's blindly set a
+> +	 * (maybe not needed) rescheduling point.
+> +	 */
+> +	resched_curr(rq);
+>  #endif /* CONFIG_SMP */
+> -	} else
+> -		switched_to_dl(rq, p);
+>  }
+>  
+>  const struct sched_class dl_sched_class = {
+> 
+> 
+> 
+
