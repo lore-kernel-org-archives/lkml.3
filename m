@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932869AbaJUN7B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 09:59:01 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:61300 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932609AbaJUN67 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 09:58:59 -0400
-From: Dmitry Voytik <voytikd@gmail.com>
-To: Shawn Guo <shawn.guo@freescale.com>
-Cc: Sascha Hauer <kernel@pengutronix.de>, linux-kernel@vger.kernel.org,
-        Dmitry Voytik <voytikd@gmail.com>
-Subject: [PATCH] ARM: imx: simplify clk_pllv3_prepare()
-Date: Tue, 21 Oct 2014 17:58:54 +0400
-Message-Id: <1413899934-16227-1-git-send-email-voytikd@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S932879AbaJUN7g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 09:59:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5433 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932685AbaJUN7e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 09:59:34 -0400
+Message-ID: <544658CE.8050704@redhat.com>
+Date: Tue, 21 Oct 2014 14:59:58 +0200
+From: =?UTF-8?B?TWF0ZWogTXXFvmlsYQ==?= <mmuzila@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+CC: kys@microsoft.com, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] tools: hv: fcopy_daemon: Check buffer limits
+References: <5446482C.1000003@redhat.com> <20141021131357.3677c4a5@alan.etchedpixels.co.uk>
+In-Reply-To: <20141021131357.3677c4a5@alan.etchedpixels.co.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ret variable is redundant. Call clk_pllv3_wait_lock() in the end
-return.
+> sizeof(__u8) is by definition 1 so it's perhaps surplus ?
+Now the size is now determined from the structure definition in
+include/uapi/linux/hyperv.h
 
-Signed-off-by: Dmitry Voytik <voytikd@gmail.com>
+> - C style comments for coding style
+Fixed
+
+> Also your patch block is devoid of a few thins like the file name...
+I'm sorry, the (missing) filename mistake occured in copy-paste process.
+
+
+Here is the patch as it (I hope) should look like:
 ---
- arch/arm/mach-imx/clk-pllv3.c | 7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+From: Matej Mužila <mmuzila@redhat.com>
 
-diff --git a/arch/arm/mach-imx/clk-pllv3.c b/arch/arm/mach-imx/clk-pllv3.c
-index 57de74d..0ad6e54 100644
---- a/arch/arm/mach-imx/clk-pllv3.c
-+++ b/arch/arm/mach-imx/clk-pllv3.c
-@@ -69,7 +69,6 @@ static int clk_pllv3_prepare(struct clk_hw *hw)
+Check if cpmsg->size is in limits of DATA_FRAGMENT
+
+Signed-off-by: Matej Mužila <mmuzila@redhat.com>
+---
+If corrupted data are read from /dev/vmbus/hv_fcopy, pwrite can
+read from memory outside of the buffer (defined at line 138).
+Added check. 
+---
+diff --git a/tools/hv/hv_fcopy_daemon.c b/tools/hv/hv_fcopy_daemon.c
+index 6f27e2f..1fc2dc2 100644
+--- a/tools/hv/hv_fcopy_daemon.c
++++ b/tools/hv/hv_fcopy_daemon.c
+@@ -104,6 +104,10 @@ static int hv_copy_data(struct hv_do_fcopy *cpmsg)
  {
- 	struct clk_pllv3 *pll = to_clk_pllv3(hw);
- 	u32 val;
--	int ret;
+ 	ssize_t bytes_written;
  
- 	val = readl_relaxed(pll->base);
- 	if (pll->powerup_set)
-@@ -78,11 +77,7 @@ static int clk_pllv3_prepare(struct clk_hw *hw)
- 		val &= ~BM_PLL_POWER;
- 	writel_relaxed(val, pll->base);
- 
--	ret = clk_pllv3_wait_lock(pll);
--	if (ret)
--		return ret;
--
--	return 0;
-+	return clk_pllv3_wait_lock(pll);
- }
- 
- static void clk_pllv3_unprepare(struct clk_hw *hw)
--- 
-1.9.1
++	/* Check if the cpmsg->size is in limits of DATA_FRAGMENT */
++	if (cpmsg->size > sizeof(cpmsg->data)) 
++		return HV_E_FAIL;
++
+ 	bytes_written = pwrite(target_fd, cpmsg->data, cpmsg->size,
+ 				cpmsg->offset);
 
