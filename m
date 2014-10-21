@@ -1,79 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333AbaJULiX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 07:38:23 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:45656 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755167AbaJULiV (ORCPT
+	id S1755342AbaJULlP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 07:41:15 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:47823 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755039AbaJULlO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 07:38:21 -0400
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-kernel@vger.kernel.org, monstr@monstr.eu
-Cc: Harini Katakam <harini.katakam@xilinx.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Huang Shijie <b32955@freescale.com>, Marek Vasut <marex@denx.de>,
-        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        linux-mtd@lists.infradead.org
-Subject: [PATCH] mtd: spi-nor: Add support for SST spi flash
-Date: Tue, 21 Oct 2014 13:37:59 +0200
-Message-Id: <29606567142da0d52c462ef0aebacc2b91fe2508.1413891469.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-32146-1413891479-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Tue, 21 Oct 2014 07:41:14 -0400
+Message-ID: <54464657.1060000@arm.com>
+Date: Tue, 21 Oct 2014 12:41:11 +0100
+From: Juri Lelli <juri.lelli@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Kirill Tkhai <ktkhai@parallels.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Kirill Tkhai <tkhai@yandex.ru>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Juri Lelli <juri.lelli@gmail.com>
+Subject: Re: [PATCH v2 1/3] sched/dl: Implement cancel_dl_timer() to use in
+ switched_from_dl()
+References: <20140930210412.5258.35299.stgit@localhost>		 <20141002093408.GB2849@worktop.programming.kicks-ass.net>	 <1412244310.20287.34.camel@tkhai> <544635CA.7040200@arm.com> <1413888481.19914.45.camel@tkhai>
+In-Reply-To: <1413888481.19914.45.camel@tkhai>
+X-OriginalArrivalTime: 21 Oct 2014 11:41:11.0070 (UTC) FILETIME=[E94B53E0:01CFED23]
+X-MC-Unique: 114102112411205401
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+On 21/10/14 11:48, Kirill Tkhai wrote:
+> В Вт, 21/10/2014 в 11:30 +0100, Juri Lelli пишет:
+>> Hi Kirill,
+>>
+>> sorry for the late reply, but I was busy doing other stuff and then
+>> travelling.
+>>
+>> On 02/10/14 11:05, Kirill Tkhai wrote:
+>>> В Чт, 02/10/2014 в 11:34 +0200, Peter Zijlstra пишет:
+>>>> On Wed, Oct 01, 2014 at 01:04:22AM +0400, Kirill Tkhai wrote:
+>>>>> From: Kirill Tkhai <ktkhai@parallels.com>
+>>>>>
+>>>>> hrtimer_try_to_cancel() may bring a suprise, its call may fail.
+>>>>
+>>>> Well, not really a surprise that, its a _try_ operation after all.
+>>>>
+>>>>> raw_spin_lock(&rq->lock)
+>>>>> ...                            dl_task_timer                 raw_spin_lock(&rq->lock)
+>>>>> ...                               raw_spin_lock(&rq->lock)   ...
+>>>>>    switched_from_dl()             ...                        ...
+>>>>>       hrtimer_try_to_cancel()     ...                        ...
+>>>>>    switched_to_fair()             ...                        ...
+>>>>> ...                               ...                        ...
+>>>>> ...                               ...                        ...
+>>>>> raw_spin_unlock(&rq->lock)        ...                        (asquired)
+>>>>> ...                               ...                        ...
+>>>>> ...                               ...                        ...
+>>>>> do_exit()                         ...                        ...
+>>>>>    schedule()                     ...                        ...
+>>>>>       raw_spin_lock(&rq->lock)    ...                        raw_spin_unlock(&rq->lock)
+>>>>>       ...                         ...                        ...
+>>>>>       raw_spin_unlock(&rq->lock)  ...                        raw_spin_lock(&rq->lock)
+>>>>>       ...                         ...                        (asquired)
+>>>>>       put_task_struct()           ...                        ...
+>>>>>           free_task_struct()      ...                        ...
+>>>>>       ...                         ...                        raw_spin_unlock(&rq->lock)
+>>>>> ...                               (asquired)                 ...
+>>>>> ...                               ...                        ...
+>>>>> ...                               Surprise!!!                ...
+>>>>>
+>>>>> So, let's implement 100% guaranteed way to cancel the timer and let's
+>>>>> be sure we are safe even in very unlikely situations.
+>>>>>
+>>>>> We do not create any problem with rq unlocking, because it already
+>>>>> may happed below in pull_dl_task(). No problem with deadline tasks
+>>>>> balancing too.
+>>>>
+>>>> That doesn't sound right. pull_dl_task() is an entirely different
+>>>> callchain than switched_from(). Now it might still be fine, but you
+>>>> cannot compare it with pull_dl_task.
+>>>
+>>> I mean that caller of switched_from_dl() already knows about this situation,
+>>> and we do not limit the area of its use.
+>>>
+>>
+>> Not sure what you mean with "the caller already knows...". Also, can you
+>> detail more about the different callchains?
+> 
+> We have only caller of switched_from_dl(). It's check_class_changed().
+> This function doesn't suppose that lock is always locked during its call.
+> 
+> What other details you want?
+> 
 
---=_mimegpg-monstr-desktop-32146-1413891479-0001
+Ok, now is more clear, thanks. I was just wondering about what Peter
+asked. If you can detail more about why we are still fine with it,
+instead that just "it already was possible in pull_dl_task() below",
+that would be nice to have.
 
-From: Harini Katakam <harini.katakam@xilinx.com>
+Also, check_class_changed() is called from several places
+(rt_mutex_setprio() for example), are we fine with all this callplaces
+as well?
 
-Add sst25wf080 to the spi-nor device id table.
+>>
+>> Do you have any test for this situation? Do you experienced any crash?
+>> As you know, the replenishment timer is of key importance for us, and
+>> I'd like to be 100% sure we don't introduce any problems with this
+>> change :).
+> 
+> No, I haven't written any tests to reproduce namely this situation.
+> I found it by code analyzing. The same way we fixed the problem
+> with rq change in dl_task_timer():
+> 
+>     http://www.spinics.net/lists/stable/msg49080.html
+>
 
-Signed-off-by: Harini Katakam <harinik@xilinx.com>
-Reviewed-by: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
----
+Yeah, but I did write a test for that race:
 
- drivers/mtd/spi-nor/spi-nor.c | 1 +
- 1 file changed, 1 insertion(+)
+ "Juri Lelli reports he got this race when dl_bandwidth_enabled()
+  was not set."
 
-diff --git a/drivers/mtd/spi-nor/spi-nor.c b/drivers/mtd/spi-nor/spi-nor.c
-index ae16aa2f6885..0786faac2920 100644
---- a/drivers/mtd/spi-nor/spi-nor.c
-+++ b/drivers/mtd/spi-nor/spi-nor.c
-@@ -575,6 +575,7 @@ const struct spi_device_id spi_nor_ids[] = {
- 	{ "sst25wf010",  INFO(0xbf2502, 0, 64 * 1024,  2, SECT_4K | SST_WRITE) },
- 	{ "sst25wf020",  INFO(0xbf2503, 0, 64 * 1024,  4, SECT_4K | SST_WRITE) },
- 	{ "sst25wf040",  INFO(0xbf2504, 0, 64 * 1024,  8, SECT_4K | SST_WRITE) },
-+	{ "sst25wf080",  INFO(0xbf2505, 0, 64 * 1024, 16, SECT_4K | SST_WRITE) },
+And after that I felt more confident about the change :).
 
- 	/* ST Microelectronics -- newer production may have feature updates */
- 	{ "m25p05",  INFO(0x202010,  0,  32 * 1024,   2, 0) },
---
-1.8.2.3
+> Are you agree the race is here? It's my fix, and if brings a problem
+> please clarify it.
+> 
 
+Yeah, it seems that the race may happen. I'm just saying that it would
+be nice to see it happening before we fix the thing. I wish I have some
+time to try to setup a test. Even if I can't spot any problems with your
+patch, apart from small comments below, not being completely confident
+that this doesn't introduce regression elsewhere brought me to ask from
+more details.
 
---=_mimegpg-monstr-desktop-32146-1413891479-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
+> I'm waiting for your reply.
+> 
+> Thanks,
+> Kirill
+> 
+>>> Does this sound better?
+>>>
+>>> [PATCH] sched/dl: Implement cancel_dl_timer() to use in switched_from_dl()
+>>>     
+>>> Currently used hrtimer_try_to_cancel() is racy:
+>>>
+>>> raw_spin_lock(&rq->lock)
+>>> ...                            dl_task_timer                 raw_spin_lock(&rq->lock)
+>>> ...                               raw_spin_lock(&rq->lock)   ...
+>>>    switched_from_dl()             ...                        ...
+>>>       hrtimer_try_to_cancel()     ...                        ...
+>>>    switched_to_fair()             ...                        ...
+>>> ...                               ...                        ...
+>>> ...                               ...                        ...
+>>> raw_spin_unlock(&rq->lock)        ...                        (asquired)
+>>> ...                               ...                        ...
+>>> ...                               ...                        ...
+>>> do_exit()                         ...                        ...
+>>>    schedule()                     ...                        ...
+>>>       raw_spin_lock(&rq->lock)    ...                        raw_spin_unlock(&rq->lock)
+>>>       ...                         ...                        ...
+>>>       raw_spin_unlock(&rq->lock)  ...                        raw_spin_lock(&rq->lock)
+>>>       ...                         ...                        (asquired)
+>>>       put_task_struct()           ...                        ...
+>>>           free_task_struct()      ...                        ...
+>>>       ...                         ...                        raw_spin_unlock(&rq->lock)
+>>> ...                               (asquired)                 ...
+>>> ...                               ...                        ...
+>>> ...                               (use after free)           ...
+>>>
+>>>     
+>>> So, let's implement 100% guaranteed way to cancel the timer and let's
+>>> be sure we are safe even in very unlikely situations.
+>>>
+>>> rq unlocking does not limit the area of switched_from_dl() use, because
+>>> it already was possible in pull_dl_task() below.
+>>>
+>>> Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+>>>
+>>> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+>>> index abfaf3d..63f8b4a 100644
+>>> --- a/kernel/sched/deadline.c
+>>> +++ b/kernel/sched/deadline.c
+>>> @@ -555,11 +555,6 @@ void init_dl_task_timer(struct sched_dl_entity *dl_se)
+>>>  {
+>>>  	struct hrtimer *timer = &dl_se->dl_timer;
+>>>  
+>>> -	if (hrtimer_active(timer)) {
+>>> -		hrtimer_try_to_cancel(timer);
+>>> -		return;
+>>> -	}
+>>> -
+>>>  	hrtimer_init(timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+>>>  	timer->function = dl_task_timer;
+>>>  }
+>>> @@ -1567,10 +1562,34 @@ void init_sched_dl_class(void)
+>>>  
+>>>  #endif /* CONFIG_SMP */
+>>>  
+>>> +/*
+>>> + *  Surely cancel task's dl_timer. May drop rq->lock.
+>>> + */
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Maybe we can add comments explaining why we are fine releasing the lock
+here.
 
-iEYEABECAAYFAlRGRZcACgkQykllyylKDCGz+QCdHSedT8f1J5UpHh7OI8+PKKX/
-1OQAn3/8RcyuNVyd7Gi5Y/BfJTh7tO+L
-=j1Rv
------END PGP SIGNATURE-----
+>>> +static void cancel_dl_timer(struct rq *rq, struct task_struct *p)
+>>> +{
+>>> +	struct hrtimer *dl_timer = &p->dl.dl_timer;
+>>> +
+>>> +	/* Nobody will change task's class if pi_lock is held */
+>>> +	lockdep_assert_held(&p->pi_lock);
+>>> +
+>>> +	if (hrtimer_active(dl_timer)) {
+>>> +		int ret = hrtimer_try_to_cancel(dl_timer);
+>>> +
+>>> +		if (unlikely(ret == -1)) {
+>>> +			/*
+>>> +			 * Note, p may migrate OR new deadline tasks
+>>> +			 * may appear in rq when we are unlocking it.
+>>> +			 */
 
---=_mimegpg-monstr-desktop-32146-1413891479-0001--
+Yeah, some comments also here on why this is all good?
+
+Thanks a lot Kirill!
+
+Best,
+
+- Juri
+
+>>> +			raw_spin_unlock(&rq->lock);
+>>> +			hrtimer_cancel(dl_timer);
+>>> +			raw_spin_lock(&rq->lock);
+>>> +		}
+>>> +	}
+>>> +}
+>>> +
+>>>  static void switched_from_dl(struct rq *rq, struct task_struct *p)
+>>>  {
+>>> -	if (hrtimer_active(&p->dl.dl_timer) && !dl_policy(p->policy))
+>>> -		hrtimer_try_to_cancel(&p->dl.dl_timer);
+>>> +	cancel_dl_timer(rq, p);
+>>>  
+>>>  	__dl_clear_params(p);
+>>>  
+>>>
+>>>
+>>>
+>>
+> 
+> 
+> 
+
