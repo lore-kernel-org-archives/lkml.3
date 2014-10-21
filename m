@@ -1,80 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755618AbaJUSTV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 14:19:21 -0400
-Received: from gum.cmpxchg.org ([85.214.110.215]:42501 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751091AbaJUSTT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 14:19:19 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch] mm: memcontrol: fix missed end-writeback accounting
-Date: Tue, 21 Oct 2014 14:19:10 -0400
-Message-Id: <1413915550-5651-1-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 2.1.2
+	id S1755639AbaJUSUz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 14:20:55 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:46583 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191AbaJUSUx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 14:20:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAJe_ZhcXTp6phuS=8nYuXTD3yUHsu7QKap85iVgfcZsrmOK59g@mail.gmail.com>
+References: <CAJe_Zhf73TXxAjBq_cCJB_oBC1Ff_ErN7TP4HsO-_BzhiPZkGQ@mail.gmail.com>
+	<CAJe_ZhcXTp6phuS=8nYuXTD3yUHsu7QKap85iVgfcZsrmOK59g@mail.gmail.com>
+Date: Tue, 21 Oct 2014 11:20:52 -0700
+X-Google-Sender-Auth: 26TX84Za3mjT3IUQR8l9WKUCfVU
+Message-ID: <CA+55aFxVVCvUvPd8xA-5nSBDZj96w0Z2QfHtjmikWicGdCZQmw@mail.gmail.com>
+Subject: Re: [GIT PULL] New Mailbox framework for 3.18
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jassi Brar <jaswinder.singh@linaro.org>
+Cc: Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        "ks.giri@samsung.com" <ks.giri@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, Matt Porter <mporter@linaro.org>,
+        LeyFoon Tan <lftan.linux@gmail.com>, "Anna, Suman" <s-anna@ti.com>,
+        Bjorn Andersson <bjorn@kryo.se>, Mark Brown <broonie@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>, Andy Green <andy.green@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Sudeep Holla <sudeep.holla@arm.com>,
+        "Ira W. Snyder" <iws@ovro.caltech.edu>,
+        Alexandre Torgue <alexandre.torgue@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-0a31bc97c80c ("mm: memcontrol: rewrite uncharge API") changed page
-migration to uncharge the old page right away.  The page is locked,
-unmapped, truncated, and off the LRU.  But it could race with a
-finishing writeback, which then doesn't get unaccounted properly:
+On Mon, Oct 20, 2014 at 2:53 AM, Jassi Brar <jaswinder.singh@linaro.org> wrote:
+> Hi Linus,
+>   While I was speculating on the reasons why you were not merging the
+> patchset - not enough Acked-Bys, you want it via asoc, my git server
+> down (I am not aware) or you just forgot in the unlikely case - I
+> missed the window.
 
-test_clear_page_writeback()              migration
-  acquire pc->mem_cgroup->move_lock
-                                           wait_on_page_writeback()
-  TestClearPageWriteback()
-                                           mem_cgroup_migrate()
-                                             clear PCG_USED
-  if (PageCgroupUsed(pc))
-    decrease memcg pages under writeback
-  release pc->mem_cgroup->move_lock
+It's good that you just resent. I wanted to get more feedback on the
+patches, but due to travels what ended up happening was that I just
+forgot about it instead.
 
-One solution for this would be to simply remove the PageCgroupUsed()
-check, as RCU protects the memcg anyway.
+There's been enough acks in this thread that I'll just pull it.
 
-However, it's more robust to acknowledge that migration is really
-modifying the charge state of alive pages in this case, and so it
-should participate in the protocol specifically designed for this.
-
-Fixes: 0a31bc97c80c ("mm: memcontrol: rewrite uncharge API")
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Cc: "3.17" <stable@vger.kernel.org>
----
- mm/memcontrol.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 3a203c7ec6c7..b35a44e9cd37 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -6148,6 +6148,7 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
- 			bool lrucare)
- {
- 	struct page_cgroup *pc;
-+	unsigned long flags;
- 	int isolated;
- 
- 	VM_BUG_ON_PAGE(!PageLocked(oldpage), oldpage);
-@@ -6177,7 +6178,14 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
- 	if (lrucare)
- 		lock_page_lru(oldpage, &isolated);
- 
-+	/*
-+	 * The page is locked, unmapped, truncated, and off the LRU,
-+	 * but there might still be references, e.g. from finishing
-+	 * writeback.  Follow the charge moving protocol here.
-+	 */
-+	move_lock_mem_cgroup(pc->mem_cgroup, &flags);
- 	pc->flags = 0;
-+	move_unlock_mem_cgroup(pc->mem_cgroup, &flags);
- 
- 	if (lrucare)
- 		unlock_page_lru(oldpage, isolated);
--- 
-2.1.2
-
+                   Linus
