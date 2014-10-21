@@ -1,213 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754987AbaJUJC0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 05:02:26 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:48780 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754763AbaJUJCU (ORCPT
+	id S1755018AbaJUJCs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 05:02:48 -0400
+Received: from mail-by2on0135.outbound.protection.outlook.com ([207.46.100.135]:33404
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754994AbaJUJCp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 05:02:20 -0400
-Message-ID: <544620C8.4040001@atmel.com>
-Date: Tue, 21 Oct 2014 17:00:56 +0800
-From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Tue, 21 Oct 2014 05:02:45 -0400
+From: Thomas Shao <huishao@microsoft.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        KY Srinivasan <kys@microsoft.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Richard Cochran <rcochran@linutronix.de>
+Subject: RE: [PATCH v2 1/2] timekeeping: add EXPORT_SYMBOL_GPL for
+ do_adjtimex()
+Thread-Topic: [PATCH v2 1/2] timekeeping: add EXPORT_SYMBOL_GPL for
+ do_adjtimex()
+Thread-Index: AQHP6EpL5oa00nhAzECMXNpwI49m+pw5VpSAgAADkACAAIUwkIAAX3MAgAALj1A=
+Date: Tue, 21 Oct 2014 09:02:26 +0000
+Message-ID: <CD2CABCB2C0A0D4682C5F8AD840141540D313F@HKXPRD3002MB006.064d.mgd.msft.net>
+References: <1413362372-16236-1-git-send-email-huishao@microsoft.com>
+ <alpine.DEB.2.11.1410202027220.5308@nanos>
+ <alpine.DEB.2.11.1410202034150.5308@nanos>
+ <CD2CABCB2C0A0D4682C5F8AD840141540D27B9@HKXPRD3002MB006.064d.mgd.msft.net>
+ <alpine.DEB.2.11.1410210946470.5308@nanos>
+In-Reply-To: <alpine.DEB.2.11.1410210946470.5308@nanos>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.94.22.158]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Peter Rosin <peda@axentia.se>
-CC: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        "'alsa-devel@alsa-project.org'" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] [PATCH] ASoC: atmel_ssc_dai: Track playback and
- capture CMR dividers separately.
-References: <a541333cf46b4c61b790df927d4b315d@EMAIL.axentia.se> <5445BCBF.5090002@atmel.com> <dc4461593ddb4d539f2db74b69bab98c@EMAIL.axentia.se>
-In-Reply-To: <dc4461593ddb4d539f2db74b69bab98c@EMAIL.axentia.se>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(438002)(13464003)(377454003)(51704005)(24454002)(189002)(164054003)(199003)(97736003)(26826002)(47776003)(92726001)(20776003)(21056001)(4396001)(92566001)(15975445006)(46102003)(50986999)(33656002)(97756001)(86362001)(93886004)(85306004)(86612001)(46406003)(64706001)(110136001)(80022003)(15202345003)(84676001)(6806004)(55846006)(19580405001)(19580395003)(44976005)(54356999)(16796002)(23726002)(87936001)(85852003)(2656002)(86146001)(31966008)(120916001)(99396003)(69596002)(76482002)(68736004)(76176999)(106466001)(106116001)(95666004)(107046002)(77096002)(50466002)(81156004);DIR:OUT;SFP:1102;SCL:1;SRVR:BN3PR0301MB1202;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1202;
+X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+X-Forefront-PRVS: 0371762FE7
+Authentication-Results: spf=pass (sender IP is 131.107.125.37)
+ smtp.mailfrom=huishao@microsoft.com; 
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB0865;
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
 
-On 10/21/2014 03:55 PM, Peter Rosin wrote:
-> Hi!
->
-> (and thank you for the pointer to the example with the ssc-dai in master mode)
->
->> Hi Peter,
->>
->> On 10/20/2014 09:45 PM, Peter Rosin wrote:
->>>   From 1e5621d7b9887c648d1a66238dc82d715c1e2cad Mon Sep 17 00:00:00
->>> 2001
->>> From: Peter Rosin <peda@axentia.se>
->>> Date: Mon, 20 Oct 2014 14:38:04 +0200
->>> Subject: [PATCH] ASoC: atmel_ssc_dai: Track playback and capture CMR
->> dividers
->>>    separately.
->>>
->>> The CMR divider register is shared by playback and capture. The SSC
->>> driver therefore tries to enforce rules so that the needed register
->>> content do not conflict during simultaneous playback/capture. However,
->>> the implementation also prevents changing the register content in a
->>> half-duplex scenario, which is needed when changing sample rates.
->>
->> I am not fully get what you mean here, do you mean:
->>     - when playback, first playback 48kHz, and then playback 8Khz, the 8Khz still
->> playback in 48kHz mode?
->>
->> or other things?
->
-> I do not know exactly why the problem occurs, but it might be connected to
-> the library (proprietary) we are using. It apparently uses the OSS interface
-> and somehow it opens a stream and changes the playback sample-rate a
-> couple of time before it settles on something. I don't know why this is
-> done, and I have no control over it. The end result is that without this patch,
-> the ssc-dai driver returns -EBUSY when the library changes the playback
-> sample-rate (the driver returns -EBUSY because it thinks that the new
-> sample rate does not match a previously given capture sample-rate, but
-> that is of course bogus when no capture is going on at all).
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> owner@vger.kernel.org] On Behalf Of Thomas Gleixner
+> Sent: Tuesday, October 21, 2014 4:19 PM
+> To: Thomas Shao
+> Cc: gregkh@linuxfoundation.org; LKML; devel@linuxdriverproject.org;
+> olaf@aepfle.de; apw@canonical.com; jasowang@redhat.com; KY Srinivasan;
+> John Stultz; Richard Cochran
+> Subject: RE: [PATCH v2 1/2] timekeeping: add EXPORT_SYMBOL_GPL for
+> do_adjtimex()
+> 
+> On Tue, 21 Oct 2014, Thomas Shao wrote:
+> > > I still do not have a consistent argument from you WHY you need to
+> > > abuse
+> > > do_adjtimex() to do that host - guest synchronization in the first place.
+> > >
+> >
+> > I need a function to gradually slew guest time. do_adjtimex() provides
+> > all the functionality. Also I could not find any other exposed func to
+> > do this. I'd like to hear any feedback from you for this.
+> 
+> As Richard and others told you already, there are various options:
+> 
+> 1) Use NTP on that private network, which does not involve any kernel
+>    changes at all.
+> 
+>    Your argument, that this is hard for IT-Admins to set up is just
+>    ridiculous. If an IT-Admin is not able to set that up, then he
+>    should better stay away from setting up a guest in the first place,
+>    really.
+> 
+> 2) As pointed out already by others PPS/PTP might be a proper solution
+>    for this.
+> 
+>    All it takes is a pair of timestamps (host/guest) injected into the
+>    proper subsystem and a controlling daemon on the guest side. That
+>    would also avoid the problem of running NTPd and your kernel side
+>    poor mans NTPd at the same time.
+> 
+>    That pseudo NTP thing is just hilarious, really.
+> 
+>    You take the host time stamp in timesync_onchannelcallback() and
+>    schedule work. From the work queue you correlate the host time
+>    stamp to the current time of the guest. So you correlate time
+>    stamps which can be an arbitrary time apart. Brilliant solution
+>    that, really.
+> 
 
-If this issue is caused by your proprietary library, please fix in the 
-library.
+OK. I'll investigate these options. Thanks.
 
-I don't know how this code can fix your issue and also there is no 
-improvement to the code and it absolutely increase work (choose which 
-clock to configure: tcmr or rcmr) for the SSC work in master. And also 
-this patch may confuse the end user, let them thinking the clock for 
-tcmr and rcmr can configure seperately.
-
-So, I think keep the code as is (without this patch applied), what's 
-your opinion?
-
->>> Thus, keep track of the desired playback and capture clock dividers
->>> separately, and allow changing rates without closing the stream.
->>>
->>> Signed-off-by: Peter Rosin <peda@axentia.se>
->>> ---
->>>    sound/soc/atmel/atmel_ssc_dai.c |   31 ++++++++++++++++++++++------
->> ---
->>>    sound/soc/atmel/atmel_ssc_dai.h |   10 ++++++----
->>>    2 files changed, 28 insertions(+), 13 deletions(-)
->>>
->>> diff --git a/sound/soc/atmel/atmel_ssc_dai.c
->>> b/sound/soc/atmel/atmel_ssc_dai.c index f403f39..fec14fb 100644
->>> --- a/sound/soc/atmel/atmel_ssc_dai.c
->>> +++ b/sound/soc/atmel/atmel_ssc_dai.c
->>> @@ -277,7 +277,8 @@ static void atmel_ssc_shutdown(struct
->> snd_pcm_substream *substream,
->>>    		/* Reset the SSC */
->>>    		ssc_writel(ssc_p->ssc->regs, CR, SSC_BIT(CR_SWRST));
->>>    		/* Clear the SSC dividers */
->>> -		ssc_p->cmr_div = ssc_p->tcmr_period = ssc_p->rcmr_period
->> = 0;
->>> +		ssc_p->tcmr_div = ssc_p->rcmr_div = 0;
->>> +		ssc_p->tcmr_period = ssc_p->rcmr_period = 0;
->>>    	}
->>>    	spin_unlock_irq(&ssc_p->lock);
->>>    }
->>> @@ -304,17 +305,27 @@ static int atmel_ssc_set_dai_clkdiv(struct
->> snd_soc_dai *cpu_dai,
->>>    	struct atmel_ssc_info *ssc_p = &ssc_info[cpu_dai->id];
->>>
->>>    	switch (div_id) {
->>> -	case ATMEL_SSC_CMR_DIV:
->>> +	case ATMEL_SSC_TCMR_DIV:
->>>    		/*
->>>    		 * The same master clock divider is used for both
->>>    		 * transmit and receive, so if a value has already
->>> -		 * been set, it must match this value.
->>> +		 * been set for the other direction, it must match
->>> +		 * this value.
->>>    		 */
->>> -		if (ssc_p->cmr_div == 0)
->>> -			ssc_p->cmr_div = div;
->>> -		else
->>> -			if (div != ssc_p->cmr_div)
->>> -				return -EBUSY;
->>> +		if (ssc_p->rcmr_div == 0)
->>> +			ssc_p->tcmr_div = div;
->>> +		else if (div != ssc_p->rcmr_div)
->>> +			return -EBUSY;
->>> +		break;
->>> +
->>> +	case ATMEL_SSC_RCMR_DIV:
->>> +		/*
->>> +		 * See ATMEL_SSC_TCMR_DIV.
->>> +		 */
->>> +		if (ssc_p->tcmr_div == 0)
->>> +			ssc_p->rcmr_div = div;
->>> +		else if (div != ssc_p->tcmr_div)
->>> +			return -EBUSY;
->>>    		break;
->>>
->>>    	case ATMEL_SSC_TCMR_PERIOD:
->>> @@ -345,6 +356,7 @@ static int atmel_ssc_hw_params(struct
->> snd_pcm_substream *substream,
->>>    	struct atmel_pcm_dma_params *dma_params;
->>>    	int dir, channels, bits;
->>>    	u32 tfmr, rfmr, tcmr, rcmr;
->>> +	u16 cmr;
->>
->> should be u32.
->
-> Ok, I'll send an updated patch later.
->
->>>    	int start_event;
->>>    	int ret;
->>>    	int fslen, fslen_ext;
->>> @@ -626,7 +638,8 @@ static int atmel_ssc_hw_params(struct
->> snd_pcm_substream *substream,
->>>    	}
->>>
->>>    	/* set SSC clock mode register */
->>> -	ssc_writel(ssc_p->ssc->regs, CMR, ssc_p->cmr_div);
->>> +	cmr = ssc_p->tcmr_div ? ssc_p->tcmr_div : ssc_p->rcmr_div;
->>> +	ssc_writel(ssc_p->ssc->regs, CMR, cmr);
->>>
->>>    	/* set receive clock mode and format */
->>>    	ssc_writel(ssc_p->ssc->regs, RCMR, rcmr); diff --git
->>> a/sound/soc/atmel/atmel_ssc_dai.h b/sound/soc/atmel/atmel_ssc_dai.h
->>> index b1f08d5..a25df7a 100644
->>> --- a/sound/soc/atmel/atmel_ssc_dai.h
->>> +++ b/sound/soc/atmel/atmel_ssc_dai.h
->>> @@ -39,9 +39,10 @@
->>>    #define ATMEL_SYSCLK_MCK	0 /* SSC uses AT91 MCK as system
->> clock */
->>>
->>>    /* SSC divider ids */
->>> -#define ATMEL_SSC_CMR_DIV	0 /* MCK divider for BCLK */
->>> -#define ATMEL_SSC_TCMR_PERIOD	1 /* BCLK divider for transmit FS */
->>> -#define ATMEL_SSC_RCMR_PERIOD	2 /* BCLK divider for receive FS */
->>> +#define ATMEL_SSC_TCMR_DIV	0 /* MCK divider for transmit BCLK */
->>> +#define ATMEL_SSC_RCMR_DIV	1 /* MCK divider for receive BCLK */
->>> +#define ATMEL_SSC_TCMR_PERIOD	2 /* BCLK divider for transmit
->> FS */
->>> +#define ATMEL_SSC_RCMR_PERIOD	3 /* BCLK divider for receive
->> FS */
->>>    /*
->>>     * SSC direction masks
->>>     */
->>> @@ -110,7 +111,8 @@ struct atmel_ssc_info {
->>>    	unsigned short dir_mask;	/* 0=unused, 1=playback, 2=capture
->> */
->>>    	unsigned short initialized;	/* true if SSC has been initialized */
->>>    	unsigned short daifmt;
->>> -	unsigned short cmr_div;
->>> +	unsigned short tcmr_div;
->>> +	unsigned short rcmr_div;
->>>    	unsigned short tcmr_period;
->>>    	unsigned short rcmr_period;
->>>    	struct atmel_pcm_dma_params *dma_params[2];
->>>
->>
->> Best Regards,
->> Bo Shen
->
-> Cheers,
-> Peter
->
-
-Best Regards,
-Bo Shen
-
+> Thanks,
+> 
+> 	tglx
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in the
+> body of a message to majordomo@vger.kernel.org More majordomo info at
+> http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
