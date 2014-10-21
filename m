@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933292AbaJUROn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 13:14:43 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:34002 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932570AbaJUROm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 13:14:42 -0400
-X-Originating-IP: 83.155.44.161
-Message-ID: <1413911644.30379.12.camel@hadess.net>
-Subject: Re: A desktop environment[1] kernel wishlist
-From: Bastien Nocera <hadess@hadess.net>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Tue, 21 Oct 2014 19:14:04 +0200
-In-Reply-To: <CANcMJZA=7FNNCrMpz-mC4FaJMKi8hEhqGtO_bv7iJdWVC_GpWA@mail.gmail.com>
-References: <1413881397.30379.7.camel@hadess.net>
-	 <CANcMJZA=7FNNCrMpz-mC4FaJMKi8hEhqGtO_bv7iJdWVC_GpWA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7 (3.12.7-1.fc21) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933320AbaJURPT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 13:15:19 -0400
+Received: from mta-out1.inet.fi ([62.71.2.194]:43489 "EHLO jenni1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932570AbaJURPR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 13:15:17 -0400
+Date: Tue, 21 Oct 2014 20:09:48 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, torvalds@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
+        akpm@linux-foundation.org, riel@redhat.com, mgorman@suse.de,
+        oleg@redhat.com, mingo@redhat.com, minchan@kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
+        laijs@cn.fujitsu.com, dave@stgolabs.net, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC][PATCH 0/6] Another go at speculative page faults
+Message-ID: <20141021170948.GA25964@node.dhcp.inet.fi>
+References: <20141020215633.717315139@infradead.org>
+ <20141021162340.GA5508@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141021162340.GA5508@gmail.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
-
-On Tue, 2014-10-21 at 10:04 -0700, John Stultz wrote:
-> On Tue, Oct 21, 2014 at 1:49 AM, Bastien Nocera <hadess@hadess.net> wrote:
-> > Hey,
-> >
-> > GNOME has had discussions with kernel developers in the past, and,
-> > fortunately, in some cases we were able to make headway.
-> >
-> > There are however a number of items that we still don't have solutions
-> > for, items that kernel developers might not realise we'd like to rely
-> > on, or don't know that we'd make use of if merged.
-> >
-> > I've posted this list at:
-> > https://wiki.gnome.org/BastienNocera/KernelWishlist
-> >
-> > Let me know on-list or off-list if you have any comments about those, so
-> > I can update the list.
+On Tue, Oct 21, 2014 at 06:23:40PM +0200, Ingo Molnar wrote:
 > 
-> As for: 'Export of "wake reason" when the system wakes up (rtc alarm,
-> lid open, etc.) and wakealarm (/sys/class/rtc/foo/wakealarm)
-> documentation'
+> * Peter Zijlstra <peterz@infradead.org> wrote:
 > 
-> Can you expand more on the rational for the need here? Is this for UI
-> for power debugging, or something else?
+> > My Ivy Bridge EP (2*10*2) has a ~58% improvement in pagefault throughput:
+> > 
+> > PRE:
+> >        149,441,555      page-faults                  ( +-  1.25% )
+> >
+> > POST:
+> >        236,442,626      page-faults                  ( +-  0.08% )
+> 
+> > My Ivy Bridge EX (4*15*2) has a ~78% improvement in pagefault throughput:
+> > 
+> > PRE:
+> >        105,789,078      page-faults                 ( +-  2.24% )
+> >
+> > POST:
+> >        187,751,767      page-faults                 ( +-  2.24% )
+> 
+> I guess the 'PRE' and 'POST' numbers should be flipped around?
 
-No, it would be used for automating backups, or implementing
-suspend->hibernation transitions. For example, right before the machine
-suspends, I would schedule it to wake up in a hour. If I get woken up by
-the rtc alarm (and not by the user through a lid open), I might:
-- check that I'm plugged into the AC, it's night, and in the vicinity of
-the server that handles my backups and so backup the system.
-- check whether the battery is low, and hibernate the machine (if it
-supports it, obviously).
+I think it's faults per second.
 
-We cannot do that if we can't make out whether the wake-up came from a
-user action, or the alarm we set.
+It would be interesting to see if the patchset affects non-condended case.
+Like a one-threaded workload.
 
-Cheers
-
+-- 
+ Kirill A. Shutemov
