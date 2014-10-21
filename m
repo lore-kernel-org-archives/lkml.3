@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933233AbaJUQkQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 12:40:16 -0400
-Received: from smtprelay0210.hostedemail.com ([216.40.44.210]:43787 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933074AbaJUQkO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 12:40:14 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:966:968:973:982:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2194:2196:2197:2199:2200:2201:2393:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3653:3865:3868:3871:3872:3874:4321:4385:5007:6261:10004:10400:10848:11026:11232:11658:11914:12043:12517:12519:12740:13069:13141:13230:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: river51_58ce1eb3a7962
-X-Filterd-Recvd-Size: 1610
-Message-ID: <1413909608.12828.5.camel@perches.com>
-Subject: Re: [PATCH] checkpatch: Improve warning message for "needless if"
- case
-From: Joe Perches <joe@perches.com>
-To: Fabio Estevam <fabio.estevam@freescale.com>
-Cc: festevam@gmail.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 21 Oct 2014 09:40:08 -0700
-In-Reply-To: <1413902024-2932-1-git-send-email-fabio.estevam@freescale.com>
-References: <1413902024-2932-1-git-send-email-fabio.estevam@freescale.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933289AbaJUQlQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 12:41:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60891 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932644AbaJUQlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 12:41:15 -0400
+Date: Tue, 21 Oct 2014 12:41:09 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Steve Grubb <sgrubb@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-audit@redhat.com,
+        ebiederm@xmission.com, serge@hallyn.com,
+        Eric Paris <eparis@redhat.com>
+Subject: Re: [RFC][PATCH] audit: log join and part events to the read-only
+ multicast log socket
+Message-ID: <20141021164109.GL26201@madcap2.tricolour.ca>
+References: <30ef5c1ba42b52953e5684a0322975c3f0fadc77.1412706089.git.rgb@redhat.com>
+ <1412708594.3333.94.camel@localhost>
+ <20141007193951.GZ1992@madcap2.tricolour.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141007193951.GZ1992@madcap2.tricolour.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-10-21 at 12:33 -0200, Fabio Estevam wrote:
-> Break the sentence so that it looks better:
+On 14/10/07, Richard Guy Briggs wrote:
+> On 14/10/07, Eric Paris wrote:
+> > On Tue, 2014-10-07 at 14:23 -0400, Richard Guy Briggs wrote:
+> > > Log the event when a client attempts to connect to the netlink audit multicast
+> > > socket, requiring CAP_AUDIT_READ capability, binding to the AUDIT_NLGRP_READLOG
+> > > group.  Log the disconnect too.
+
+> > super crazy yuck.  audit_log_task_info() ??
 > 
-> WARNING: debugfs_remove(NULL) is safe. This check is probably not required
-[]
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-[]
-> @@ -4446,7 +4446,7 @@ sub process {
->  			my $expr = '\s*\(\s*' . quotemeta($1) . '\s*\)\s*;';
->  			if ($line =~ /\b(kfree|usb_free_urb|debugfs_remove(?:_recursive)?)$expr/) {
->  				WARN('NEEDLESS_IF',
-> -				     "$1(NULL) is safe this check is probably not required\n" . $hereprev);
-> +				     "$1(NULL) is safe. This check is probably not required\n" . $hereprev);
->  			}
->  		}
->  
+> I agree.  I already suggested that a while ago.  I'd love to.  sgrubb
+> thinks it dumps way too much info.  We still haven't got a definitive
+> answer about what is enough and what is too much info for any given type
+> of record.
+> 
+> I also thought of moving audit_log_task() from auditsc.c to audit.c
+> and using that.  For that matter, both audit_log_task() and
+> audit_log_task_info() could use audit_log_session_info(), but they are
+> in slightly different order of keywords which will upset sgrubb's
+> parser.
+> 
+> What to do?
+> 
+> Another paragraph I'd like to see added to
+> 	http://people.redhat.com/sgrubb/audit/audit-parse.txt
+> would be a "canonical order" of keywords.  However, that discussion went
+> nowhere.  Would it be reasonable to suggest only two possible orders
+> instead of the almost infinite iterations possible and declare a
+> standard order of keywords and gradually move to it?
 
-Mixing sentences with and without periods is jarring.
-I'd prefer a comma or a dash.
+Steve,
 
+Can we agree to *two* orders (instead of the full set of iterations) for
+these keywords so that we can start to sort things in a canonical order?
+This random order per type of audit log message is chaos.
+
+> - RGB
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
