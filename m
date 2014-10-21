@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933805AbaJUVdx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 17:33:53 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59381 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933458AbaJUVdv (ORCPT
+	id S933854AbaJUVeG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 17:34:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40782 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933458AbaJUVeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 17:33:51 -0400
-Message-ID: <5446D13C.5020402@codeaurora.org>
-Date: Tue, 21 Oct 2014 14:33:48 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 21 Oct 2014 17:34:03 -0400
+Date: Wed, 22 Oct 2014 05:32:56 +0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, "arm@kernel.org" <arm@kernel.org>,
+        Bo Shen <voice.shen@atmel.com>, Mark Brown <broonie@kernel.org>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] MAINTAINERS: add atmel ssc driver maintainer entry
+Message-ID: <20141021213256.GA27750@kroah.com>
+References: <1411869439-2719-1-git-send-email-voice.shen@atmel.com>
+ <54291A0C.3090206@atmel.com>
+ <544672A6.9090101@atmel.com>
 MIME-Version: 1.0
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Mike Turquette <mturquette@linaro.org>
-CC: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Jonathan Corbet <corbet@lwn.net>, Ralf Baechle <ralf@linux-mips.org>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        =?windows-1252?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Manuel Lauss <manuel.lauss@gmail.com>, Alex Elder <elder@linaro.org>,
-        Matt Porter <mporter@linaro.org>, Tim Kryger <tim.kryger@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Zhangfei Gao <zhangfei.gao@linaro.org>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mips@linux-mips.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 6/8] clk: Change clk_ops->determine_rate to return
- a clk_hw as the best parent
-References: <1413812442-24956-1-git-send-email-tomeu.vizoso@collabora.com> <1413812442-24956-7-git-send-email-tomeu.vizoso@collabora.com>
-In-Reply-To: <1413812442-24956-7-git-send-email-tomeu.vizoso@collabora.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <544672A6.9090101@atmel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/20/2014 06:40 AM, Tomeu Vizoso wrote:
-> This is in preparation for clock providers to not have to deal with struct clk.
->
-> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
->
->
+On Tue, Oct 21, 2014 at 04:50:14PM +0200, Nicolas Ferre wrote:
+> On 29/09/2014 10:36, Nicolas Ferre :
+> > On 28/09/2014 03:57, Bo Shen :
+> >> Signed-off-by: Bo Shen <voice.shen@atmel.com>
+> > 
+> > Sure:
+> > Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> > 
+> > Thanks.
+> 
+> Greg or Arnd,
+> 
+> This MAINTAINER's update didn't make it during merge window (on the
+> other hand, I didn't build a pull-request with it neither...).
+> 
+> Do you want that I take it in one of my "fixes" pull-requests to arm-soc
+> for 3.18 or do you feel like taking the patch directly? I think it makes
+> sense to not wait for the 3.19 for this kind of useful information.
 
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+Feel free to take it in one of your "fixes" pull requests.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-a Linux Foundation Collaborative Project
+thanks,
 
+greg k-h
