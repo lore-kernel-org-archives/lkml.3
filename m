@@ -1,160 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933663AbaJUUsb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 16:48:31 -0400
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:38809 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933524AbaJUUrD (ORCPT
+	id S933680AbaJUUt4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 16:49:56 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:53655 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933095AbaJUUty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 16:47:03 -0400
-From: Milosz Tanski <milosz@adfin.com>
-To: linux-kernel@vger.kernel.org
-Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
-        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-api@vger.kernel.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: [PATCH 0/4] vfs: Non-blockling buffered fs read (page cache only)
-Date: Tue, 21 Oct 2014 16:46:55 -0400
-Message-Id: <cover.1413923420.git.milosz@adfin.com>
-X-Mailer: git-send-email 1.8.5.2 (Apple Git-48)
+	Tue, 21 Oct 2014 16:49:54 -0400
+Date: Tue, 21 Oct 2014 13:50:07 -0700
+From: Darren Hart <dvhart@infradead.org>
+To: Jani Nikula <jani.nikula@intel.com>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linuxppc-dev@lists.ozlabs.org, platform-driver-x86@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        Randy Dunlap <rdunlap@infradead.org>, David Airlie <airlied@linux.ie>,
+        Daniel Vetter <daniel.vetter@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jens Frederich <jfrederich@gmail.com>, Daniel Drake <dsd@laptop.org>,
+        Jon Nettleton <jon.nettleton@gmail.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: Re: [PATCH] drivers: depend on instead of select
+ BACKLIGHT_CLASS_DEVICE and ACPI_VIDEO
+Message-ID: <20141021205006.GC20951@vmdeb7>
+References: <1413580403-16225-1-git-send-email-jani.nikula@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413580403-16225-1-git-send-email-jani.nikula@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patcheset introduces an ability to perform a non-blocking read from
-regular files in buffered IO mode. This works by only for those filesystems
-that have data in the page cache.
+On Sat, Oct 18, 2014 at 12:13:23AM +0300, Jani Nikula wrote:
+> Documentation/kbuild/kconfig-language.txt warns to use select with care,
+> and in general use select only for non-visible symbols and for symbols
+> with no dependencies, because select will force a symbol to a value
+> without visiting the dependencies.
+> 
+> Select has become particularly problematic, interdependently, with the
+> BACKLIGHT_CLASS_DEVICE and ACPI_VIDEO configs. For example:
+> 
+> scripts/kconfig/conf --randconfig Kconfig
+> KCONFIG_SEED=0x48312B00
+> warning: (DRM_RADEON && DRM_NOUVEAU && DRM_I915 && DRM_GMA500 &&
+> DRM_SHMOBILE && DRM_TILCDC && FB_BACKLIGHT && FB_MX3 && USB_APPLEDISPLAY
+> && FB_OLPC_DCON && ASUS_LAPTOP && SONY_LAPTOP && THINKPAD_ACPI &&
+> EEEPC_LAPTOP && ACPI_CMPC && SAMSUNG_Q10) selects BACKLIGHT_CLASS_DEVICE
+> which has unmet direct dependencies (HAS_IOMEM && BACKLIGHT_LCD_SUPPORT)
+> warning: (DRM_RADEON && DRM_NOUVEAU && DRM_I915 && DRM_GMA500 &&
+> DRM_SHMOBILE && DRM_TILCDC && FB_BACKLIGHT && FB_MX3 && USB_APPLEDISPLAY
+> && FB_OLPC_DCON && ASUS_LAPTOP && SONY_LAPTOP && THINKPAD_ACPI &&
+> EEEPC_LAPTOP && ACPI_CMPC && SAMSUNG_Q10) selects BACKLIGHT_CLASS_DEVICE
+> which has unmet direct dependencies (HAS_IOMEM && BACKLIGHT_LCD_SUPPORT)
+> 
+> With tristates it's possible to end up selecting FOO=y depending on
+> BAR=m in the config, which gets discovered at build time, not config
+> time, like reported in the thread referenced below.
+> 
+> Do the following to fix the dependencies:
+> 
+> * Depend on instead of select BACKLIGHT_CLASS_DEVICE everywhere. Drop
+>   select BACKLIGHT_LCD_SUPPORT in such cases, as it's a dependency of
+>   BACKLIGHT_CLASS_DEVICE.
+> 
+> * Remove config FB_BACKLIGHT altogether, and replace it with a
+>   dependency on BACKLIGHT_CLASS_DEVICE. All configs selecting
+>   FB_BACKLIGHT select or depend on FB anyway, so we can simplify.
+> 
+> * Depend on (ACPI && ACPI_VIDEO) || ACPI=n in several places instead of
+>   selecting ACPI_VIDEO and a number of its dependencies if ACPI is
+>   enabled. This is tied to backlight, as ACPI_VIDEO depends on
+>   BACKLIGHT_CLASS_DEVICE.
+> 
+> * Replace a couple of select INPUT/VT with depends as it seemed to be
+>   necessary.
+> 
+> Reference: http://lkml.kernel.org/r/CA+r1ZhhmT4DrWtf6MbRQo5EqXwx+LxCqh15Vsu_d9WpftLhnxw@mail.gmail.com
+> Reported-by: Jim Davis <jim.epost@gmail.com>
+> Cc: Randy Dunlap <rdunlap@infradead.org>
+> Cc: David Airlie <airlied@linux.ie>
+> Cc: Daniel Vetter <daniel.vetter@intel.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Darren Hart <dvhart@infradead.org>
+> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Jens Frederich <jfrederich@gmail.com>
+> Cc: Daniel Drake <dsd@laptop.org>
+> Cc: Jon Nettleton <jon.nettleton@gmail.com>
+> Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+> Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
+> Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 
-It does this by introducing new syscalls new syscalls preadv2/pwritev2. These
-new syscalls behave like the network sendmsg, recvmsg syscalls that accept an
-extra flag argument (RWF_NONBLOCK).
+As for the drivers/platform/x86/Kconfig:
 
-It's a very common patern today (samba, libuv, etc..) use a large threadpool to
-perform buffered IO operations. They submit the work form another thread
-that performs network IO and epoll or other threads that perform CPU work. This
-leads to increased latency for processing, esp. in the case of data that's
-already cached in the page cache.
+Acked-by: Darren Hart <dvhart@linux.intel.com>
 
-With the new interface the applications will now be able to fetch the data in
-their network / cpu bound thread(s) and only defer to a threadpool if it's not
-there. In our own application (VLDB) we've observed a decrease in latency for
-"fast" request by avoiding unnecessary queuing and having to swap out current
-tasks in IO bound work threads.
-
-
-Version 4 highlight:
- - Updated for 3.18-rc1.
- - Performance data from our application.
- - First stab at man page with Jeff's help. Patch is in-reply to.
-
-RFC Version 3 highlights:
- - Down to 2 syscalls from 4; can user fp or argument position.
- - RWF_NONBLOCK value flag is not the same O_NONBLOCK, per Jeff.
-
-RFC Version 2 highlights:
- - Put the flags argument into kiocb (less noise), per. Al Viro
- - O_DIRECT checking early in the process, per. Jeff Moyer
- - Resolved duplicate (c&p) code in syscall code, per. Jeff
- - Included perf data in thread cover letter, per. Jeff
- - Created a new flag (not O_NONBLOCK) for readv2, perf Jeff
-
-
-Some perf data generated using fio comparing the posix aio engine to a version
-of the posix AIO engine that attempts to performs "fast" reads before
-submitting the operations to the queue. This workflow is on ext4 partition on
-raid0 (test / build-rig.) Simulating our database access patern workload using
-16kb read accesses. Our database uses a home-spun posix aio like queue (samba
-does the same thing.)
-
-f1: ~73% rand read over mostly cached data (zipf med-size dataset)
-f2: ~18% rand read over mostly un-cached data (uniform large-dataset)
-f3: ~9% seq-read over large dataset
-
-before:
-
-f1:
-    bw (KB  /s): min=   11, max= 9088, per=0.56%, avg=969.54, stdev=827.99
-    lat (msec) : 50=0.01%, 100=1.06%, 250=5.88%, 500=4.08%, 750=12.48%
-    lat (msec) : 1000=17.27%, 2000=49.86%, >=2000=9.42%
-f2:
-    bw (KB  /s): min=    2, max= 1882, per=0.16%, avg=273.28, stdev=220.26
-    lat (msec) : 250=5.65%, 500=3.31%, 750=15.64%, 1000=24.59%, 2000=46.56%
-    lat (msec) : >=2000=4.33%
-f3:
-    bw (KB  /s): min=    0, max=265568, per=99.95%, avg=174575.10,
-                 stdev=34526.89
-    lat (usec) : 2=0.01%, 4=0.01%, 10=0.02%, 20=0.27%, 50=10.82%
-    lat (usec) : 100=50.34%, 250=5.05%, 500=7.12%, 750=6.60%, 1000=4.55%
-    lat (msec) : 2=8.73%, 4=3.49%, 10=1.83%, 20=0.89%, 50=0.22%
-    lat (msec) : 100=0.05%, 250=0.02%, 500=0.01%
-total:
-   READ: io=102365MB, aggrb=174669KB/s, minb=240KB/s, maxb=173599KB/s,
-         mint=600001msec, maxt=600113msec
-
-after (with fast read using preadv2 before submit):
-
-f1:
-    bw (KB  /s): min=    3, max=14897, per=1.28%, avg=2276.69, stdev=2930.39
-    lat (usec) : 2=70.63%, 4=0.01%
-    lat (msec) : 250=0.20%, 500=2.26%, 750=1.18%, 2000=0.22%, >=2000=25.53%
-f2:
-    bw (KB  /s): min=    2, max= 2362, per=0.14%, avg=249.83, stdev=222.00
-    lat (msec) : 250=6.35%, 500=1.78%, 750=9.29%, 1000=20.49%, 2000=52.18%
-    lat (msec) : >=2000=9.99%
-f3:
-    bw (KB  /s): min=    1, max=245448, per=100.00%, avg=177366.50,
-                 stdev=35995.60
-    lat (usec) : 2=64.04%, 4=0.01%, 10=0.01%, 20=0.06%, 50=0.43%
-    lat (usec) : 100=0.20%, 250=1.27%, 500=2.93%, 750=3.93%, 1000=7.35%
-    lat (msec) : 2=14.27%, 4=2.88%, 10=1.54%, 20=0.81%, 50=0.22%
-    lat (msec) : 100=0.05%, 250=0.02%
-total:
-   READ: io=103941MB, aggrb=177339KB/s, minb=213KB/s, maxb=176375KB/s,
-         mint=600020msec, maxt=600178msec
-
-Interpreting the results you can see total bandwidth stays the same but overall
-request latency is decreased in f1 (random, mostly cached) and f3 (sequential)
-workloads. There is a slight bump in latency for since it's random data that's
-unlikely to be cached but we're always trying "fast read".
-
-In our application we have starting keeping track of "fast read" hits/misses
-and for files / requests that have a lot hit ratio we don't do "fast reads"
-mostly getting rid of extra latency in the uncached cases. In our real world
-work load we were able to reduce average response time by 20 to 30% (depends
-on amount of IO done by request).
-
-I've performed other benchmarks and I have no observed any perf regressions in
-any of the normal (old) code paths.
-
-
-I have co-developed these changes with Christoph Hellwig.
-
-Milosz Tanski (4):
-  vfs: Prepare for adding a new preadv/pwritev with user flags.
-  vfs: Define new syscalls preadv2,pwritev2
-  vfs: Export new vector IO syscalls (with flags) to userland
-  vfs: RWF_NONBLOCK flag for preadv2
-
- arch/x86/syscalls/syscall_32.tbl  |   2 +
- arch/x86/syscalls/syscall_64.tbl  |   2 +
- drivers/target/target_core_file.c |   6 +-
- fs/cifs/file.c                    |   6 ++
- fs/nfsd/vfs.c                     |   4 +-
- fs/ocfs2/file.c                   |   6 ++
- fs/pipe.c                         |   3 +-
- fs/read_write.c                   | 121 +++++++++++++++++++++++++++++---------
- fs/splice.c                       |   2 +-
- fs/xfs/xfs_file.c                 |   4 ++
- include/linux/aio.h               |   2 +
- include/linux/fs.h                |   7 ++-
- include/linux/syscalls.h          |   6 ++
- include/uapi/asm-generic/unistd.h |   6 +-
- mm/filemap.c                      |  22 ++++++-
- mm/shmem.c                        |   4 ++
- 16 files changed, 163 insertions(+), 40 deletions(-)
+Thanks,
 
 -- 
-1.9.1
-
+Darren Hart
+Intel Open Source Technology Center
