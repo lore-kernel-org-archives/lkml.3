@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933559AbaJURvF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 13:51:05 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:54710 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933382AbaJURo4 (ORCPT
+	id S933638AbaJURwk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 13:52:40 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:55037 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933373AbaJURoz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 13:44:56 -0400
+	Tue, 21 Oct 2014 13:44:55 -0400
 X-Google-Original-Sender: <johan@hovold.com>
 From: Johan Hovold <johan@kernel.org>
 To: Alessandro Zummo <a.zummo@towertech.it>, Tony Lindgren <tony@atomide.com>,
@@ -18,9 +18,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         devicetree@vger.kernel.org, rtc-linux@googlegroups.com,
         linux-kernel@vger.kernel.org, Johan Hovold <johan@kernel.org>
-Subject: [PATCH v2 13/20] rtc: omap: add helper to read raw bcd time
-Date: Tue, 21 Oct 2014 19:37:59 +0200
-Message-Id: <1413913086-12730-14-git-send-email-johan@kernel.org>
+Subject: [PATCH v2 06/20] rtc: omap: remove unused register-base define
+Date: Tue, 21 Oct 2014 19:37:52 +0200
+Message-Id: <1413913086-12730-7-git-send-email-johan@kernel.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <1413913086-12730-1-git-send-email-johan@kernel.org>
 References: <1412881594-25678-1-git-send-email-johan@kernel.org>
@@ -29,50 +29,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add helper to read raw BCD time that can be used in interrupt context.
+Remove register-base define, which is no longer used.
 
 Signed-off-by: Johan Hovold <johan@kernel.org>
 ---
- drivers/rtc/rtc-omap.c | 18 ++++++++++--------
- 1 file changed, 10 insertions(+), 8 deletions(-)
+ drivers/rtc/rtc-omap.c | 2 --
+ 1 file changed, 2 deletions(-)
 
 diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
-index ee20f2d36065..bcdf3c596214 100644
+index 813bed270867..c750678de652 100644
 --- a/drivers/rtc/rtc-omap.c
 +++ b/drivers/rtc/rtc-omap.c
-@@ -234,22 +234,24 @@ static void bcd2tm(struct rtc_time *tm)
- 	tm->tm_year = bcd2bin(tm->tm_year) + 100;
- }
+@@ -41,8 +41,6 @@
  
--
--static int omap_rtc_read_time(struct device *dev, struct rtc_time *tm)
-+static void omap_rtc_read_time_raw(struct omap_rtc *rtc, struct rtc_time *tm)
- {
--	struct omap_rtc *rtc = dev_get_drvdata(dev);
--
--	/* we don't report wday/yday/isdst ... */
--	local_irq_disable();
--	rtc_wait_not_busy(rtc);
--
- 	tm->tm_sec = rtc_read(rtc, OMAP_RTC_SECONDS_REG);
- 	tm->tm_min = rtc_read(rtc, OMAP_RTC_MINUTES_REG);
- 	tm->tm_hour = rtc_read(rtc, OMAP_RTC_HOURS_REG);
- 	tm->tm_mday = rtc_read(rtc, OMAP_RTC_DAYS_REG);
- 	tm->tm_mon = rtc_read(rtc, OMAP_RTC_MONTHS_REG);
- 	tm->tm_year = rtc_read(rtc, OMAP_RTC_YEARS_REG);
-+}
-+
-+static int omap_rtc_read_time(struct device *dev, struct rtc_time *tm)
-+{
-+	struct omap_rtc *rtc = dev_get_drvdata(dev);
+ #define	DRIVER_NAME			"omap_rtc"
  
-+	/* we don't report wday/yday/isdst ... */
-+	local_irq_disable();
-+	rtc_wait_not_busy(rtc);
-+	omap_rtc_read_time_raw(rtc, tm);
- 	local_irq_enable();
- 
- 	bcd2tm(tm);
+-#define OMAP_RTC_BASE			0xfffb4800
+-
+ /* RTC registers */
+ #define OMAP_RTC_SECONDS_REG		0x00
+ #define OMAP_RTC_MINUTES_REG		0x04
 -- 
 2.0.4
 
