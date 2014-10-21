@@ -1,184 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754304AbaJUDTN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 23:19:13 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:8744 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754165AbaJUDTM (ORCPT
+	id S1754356AbaJUDTS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 23:19:18 -0400
+Received: from mail-bn1on0145.outbound.protection.outlook.com ([157.56.110.145]:20160
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754307AbaJUDTQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 23:19:12 -0400
-From: Neil Zhang <zhangwm@marvell.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Dan Streetman <ddstreet@ieee.org>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 20 Oct 2014 20:18:59 -0700
-Subject: RE: [PATCH] drivers: base: update cpu offline info when do hotplug
-Thread-Topic: [PATCH] drivers: base: update cpu offline info when do hotplug
-Thread-Index: Ac/s2t+57wqRFcpaQc6dMoQZFj+LuQAArleQ
-Message-ID: <9034CBD80F070943B59700D7F8149ED9024EB81D55@SC-VEXCH4.marvell.com>
-References: <1413775748-22478-1-git-send-email-zhangwm@marvell.com>
- <20141020044340.GA9589@kroah.com>
- <9034CBD80F070943B59700D7F8149ED9024EB81CAF@SC-VEXCH4.marvell.com>
- <20141020064826.GA4064@kroah.com>
- <9034CBD80F070943B59700D7F8149ED9024EB81CC6@SC-VEXCH4.marvell.com>
- <CALZtONDEdFbx+zTWYdmz3HsfCnV+RtTPAuY4p-RK1DN3g2CwrQ@mail.gmail.com>
- <5445CB94.1090302@jp.fujitsu.com>
-In-Reply-To: <5445CB94.1090302@jp.fujitsu.com>
+	Mon, 20 Oct 2014 23:19:16 -0400
+From: Thomas Shao <huishao@microsoft.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        KY Srinivasan <kys@microsoft.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Richard Cochran <rcochran@linutronix.de>
+Subject: RE: [PATCH v2 1/2] timekeeping: add EXPORT_SYMBOL_GPL for
+ do_adjtimex()
+Thread-Topic: [PATCH v2 1/2] timekeeping: add EXPORT_SYMBOL_GPL for
+ do_adjtimex()
+Thread-Index: AQHP6EpL5oa00nhAzECMXNpwI49m+pw5VpSAgAADkACAAIUwkA==
+Date: Tue, 21 Oct 2014 03:18:58 +0000
+Message-ID: <CD2CABCB2C0A0D4682C5F8AD840141540D27B9@HKXPRD3002MB006.064d.mgd.msft.net>
+References: <1413362372-16236-1-git-send-email-huishao@microsoft.com>
+ <alpine.DEB.2.11.1410202027220.5308@nanos>
+ <alpine.DEB.2.11.1410202034150.5308@nanos>
+In-Reply-To: <alpine.DEB.2.11.1410202034150.5308@nanos>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+x-originating-ip: [141.251.55.4]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-10-21_02:2014-10-20,2014-10-21,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1410210035
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(438002)(13464003)(51704005)(377454003)(164054003)(24454002)(199003)(189002)(4396001)(50466002)(86612001)(2656002)(110136001)(47776003)(92726001)(92566001)(86362001)(20776003)(26826002)(68736004)(55846006)(19580405001)(19580395003)(33656002)(69596002)(6806004)(84676001)(87936001)(44976005)(15202345003)(86146001)(15975445006)(85306004)(85852003)(46406003)(76482002)(21056001)(77096002)(81156004)(106466001)(106116001)(66066001)(95666004)(50986999)(76176999)(64706001)(80022003)(107046002)(46102003)(16796002)(97736003)(120916001)(23726002)(31966008)(97756001)(54356999)(99396003);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR03MB394;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB394;
+X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+X-Forefront-PRVS: 0371762FE7
+Authentication-Results: spf=pass (sender IP is 131.107.125.37)
+ smtp.mailfrom=huishao@microsoft.com; 
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9L3JNfx028692
 
-Yasuaki,
 
 > -----Original Message-----
-> From: Yasuaki Ishimatsu [mailto:isimatu.yasuaki@jp.fujitsu.com]
-> Sent: 2014å¹´10æœˆ21æ—¥ 10:57
-> To: Dan Streetman; Neil Zhang
-> Cc: Greg KH; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] drivers: base: update cpu offline info when do hotplug
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> owner@vger.kernel.org] On Behalf Of Thomas Gleixner
+> Sent: Tuesday, October 21, 2014 2:41 AM
+> To: Thomas Shao
+> Cc: gregkh@linuxfoundation.org; LKML; devel@linuxdriverproject.org;
+> olaf@aepfle.de; apw@canonical.com; jasowang@redhat.com; KY Srinivasan;
+> John Stultz; Richard Cochran
+> Subject: Re: [PATCH v2 1/2] timekeeping: add EXPORT_SYMBOL_GPL for
+> do_adjtimex()
 > 
-> Hi Neil and Dan,
+> On Mon, 20 Oct 2014, Thomas Gleixner wrote:
 > 
-> (2014/10/21 2:02), Dan Streetman wrote:
-> > On Mon, Oct 20, 2014 at 3:40 AM, Neil Zhang <zhangwm@marvell.com> wrote:
-> >> Greg,
-> >>
-> >>
-> >> -----Original Message-----
-> >> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> >> Sent: 2014å¹´10æœˆ20æ—¥ 14:48
-> >> To: Neil Zhang
-> >> Cc: linux-kernel@vger.kernel.org
-> >> Subject: Re: [PATCH] drivers: base: update cpu offline info when do
-> >> hotplug
-> >>
-> >> On Sun, Oct 19, 2014 at 11:39:23PM -0700, Neil Zhang wrote:
-> >>>> How much noise is this going to cause on a big/little system that
-> >>>> constantly hot unplug/plugs processors all of the time?
-> >>>
-> >>> Can you explain more what kind of noise will be introduced on a big/little
-> system?
-> >>
-> >> Have you tested this on such a machine?
-> >>
-> >> I didn't have such kind of machine on hand.
-> >> Can anyone has such machine to verify it?
-> >> Thanks!
+> > On Wed, 15 Oct 2014, Thomas Shao wrote:
 > >
-> > I tested this on a ppc PowerVM system, using dlpar operations to
-> > remove/add cpus.
+> > And again you forgot to cc John Stultz on this....
 > >
-> > Without this patch the cpu online nodes get out of sync with the main
-> > online node (and the actual state of the cpus), because they aren't
-> > updated as the cpus are brought up/down:
-> >
+> > > Export do_adjtimex function for hyper-v Time Synchronization
+> > > component
 > 
-> > [root@br10p02 cpu]$ pwd
-> > /sys/devices/system/cpu
-> > [root@br10p02 cpu]$ cat online
-> > 0-39
-> > [root@br10p02 cpu]$ for n in {0..47} ; do test $( cat cpu$n/online )
-> > -eq 1 && echo -n "$n " ; done ; echo ""
-> > 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
-> > 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47
-> 
-> How is the issue reproduced.
-> 
-> Here is a result on my x86 box with linux-3.18-rc1.
-> 
-> - before offline CPU
-> # cd /sys/devices/system/cpu/
-> # cat online
-> 0-59
-> # for n in {0..59} ; do test $( cat cpu$n/online ) -eq 1 && echo -n "$n " ;
-> done ; echo ""
-> 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28
-> 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54
-> 55
-> 56 57 58 59
-> 
-> - after offline CPU{1..59}
-> # for n in {1..59} ; do echo 0 > cpu$n/online; done # cat online
-> 0
-> # for n in {0..59} ; do test $( cat cpu$n/online ) -eq 1 && echo -n "$n " ;
-> done ; echo ""
-> 0
-> 
-> It seems that dev->offline is set to correct valute.
+> Aside of that, we really want to see the use case for this and how you
+> addressed the problems which were pointed out by various folks.
 > 
 
-Please use an in kernel governor to up / down a core instead of sysfs interface.
+In some situation, the user is not able to enable guest VM to sync with external 
+time source, like NTP. But the host is still synced with a trusted time source. 
+In this case, host-guest time synchronization is useful. Hyper-v host will send time
+sample to guest VM every 5 seconds. We will use these time samples to adjust guest
+VM time. 
+
+I've got some feedbacks from Richard and Mike, including reference NTP implementation
+and do the adjustment in the host side. I've already referenced some NTP design in
+my patch. I would consider my patch as a simplified implementation. I've also considered
+the host side implementation. But in host, we can only set time but not gradually slew/adjust
+time, which is not acceptable for the time sync solution.We still recommend user to configure
+NTP on the guest, which provides better accuracy. But if NTP is not applicable, this could be 
+another option. 
+
+> I still do not have a consistent argument from you WHY you need to abuse
+> do_adjtimex() to do that host - guest synchronization in the first place.
+> 
+
+I need a function to gradually slew guest time. do_adjtimex() provides all the 
+functionality. Also I could not find any other exposed func to do this. I'd like to
+hear any feedback from you for this.
 
 > Thanks,
-> Yasuaki Ishimatsu
 > 
-> >
-> >
-> > While with the patch, the cpu online nodes are kept up to date as the
-> > cpus are brought up/down:
-> >
-> > [root@br10p02 cpu]$ pwd
-> > /sys/devices/system/cpu
-> > [root@br10p02 cpu]$ cat online
-> > 0-39
-> > [root@br10p02 cpu]$ for n in {0..47} ; do test $( cat cpu$n/online )
-> > -eq 1 && echo -n "$n " ; done ; echo ""
-> > 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
-> > 27 28 29 30 31 32 33 34 35 36 37 38 39
-> >
-> >
-> > Feel free to add
-> >
-> > Tested-by: Dan Streetman <ddstreet@ieee.org>
-> >
-> >>
-> >>> As I know IKS on arm will use cpu_suspend way to power down a core.
-> >>
-> >> Are you sure that it also doesn't use that same functionality to drop a
-> processor to save power?
-> >>
-> >> As I know it use cpu_suspend to switch out a processor in IKS and there is
-> no cpu hotplug notifier in this procedure.
-> >>
-> >>
-> >> Why do you need/want this notification?  What are you going to do with this
-> information that you don't already have?
-> >>
-> >> The offline won't be updated if an in kernel hotplug governor plug in / out
-> a core which cause the sysfs interface report a wrong status.
-> >>
-> >>
-> >> thanks,
-> >>
-> >> greg k-h
-> >>
-> >>
-> >> Best Regards,
-> >> Neil Zhang
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe
-> > linux-kernel" in the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> >
-> 
-
-
-Best Regards,
-Neil Zhang
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> 	tglx
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in the
+> body of a message to majordomo@vger.kernel.org More majordomo info at
+> http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
