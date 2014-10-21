@@ -1,84 +1,469 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933032AbaJUOqX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 10:46:23 -0400
-Received: from mail.kernel.org ([198.145.19.201]:41656 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932702AbaJUOqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 10:46:21 -0400
-Date: Tue, 21 Oct 2014 16:46:14 +0200
-From: Sebastian Reichel <sre@kernel.org>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] power: reset: at91-reset: fix power down register
-Message-ID: <20141021144613.GB12944@earth.universe>
-References: <1413829629-8705-1-git-send-email-alexandre.belloni@free-electrons.com>
- <54466B3A.5030005@atmel.com>
+	id S933062AbaJUOqj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 10:46:39 -0400
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:39457 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932702AbaJUOqh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 10:46:37 -0400
+Date: Tue, 21 Oct 2014 09:44:27 -0500
+From: Eric Rost <eric.rost@mybabylon.net>
+To: gregkh@linuxfoundation.org, jason@lakedaemon.net, jake@lwn.net,
+        antonysaraev@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] staging: skein: Loadable Module Support
+Message-ID: <20141021144427.GA31929@localhost>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="98e8jtXdkpgskNou"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54466B3A.5030005@atmel.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Adds loadable module support for Skein256, Skein512, and Skein1024 Hash
+Algorithms.
 
---98e8jtXdkpgskNou
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Eric Rost <eric.rost@mybabylon.net>
+---
+ drivers/staging/skein/Kconfig             | 12 +++++
+ drivers/staging/skein/Makefile            |  6 +++
+ drivers/staging/skein/skein.c             | 11 +++-
+ drivers/staging/skein/skein.h             |  6 +++
+ drivers/staging/skein/skein1024_generic.c | 88 +++++++++++++++++++++++++++++++
+ drivers/staging/skein/skein256_generic.c  | 88 +++++++++++++++++++++++++++++++
+ drivers/staging/skein/skein512_generic.c  | 88 +++++++++++++++++++++++++++++++
+ 7 files changed, 298 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/staging/skein/skein1024_generic.c
+ create mode 100644 drivers/staging/skein/skein256_generic.c
+ create mode 100644 drivers/staging/skein/skein512_generic.c
 
-Hi,
+diff --git a/drivers/staging/skein/Kconfig b/drivers/staging/skein/Kconfig
+index b9172bf..e260111 100644
+--- a/drivers/staging/skein/Kconfig
++++ b/drivers/staging/skein/Kconfig
+@@ -15,6 +15,18 @@ config CRYPTO_SKEIN
+ 	  for more information.  This module depends on the threefish block
+ 	  cipher module.
+ 
++config CRYPTO_SKEIN_256
++	tristate "Skein256 driver"
++	select CRYPTO_SKEIN
++
++config CRYPTO_SKEIN_512
++	tristate "Skein512 driver"
++	select CRYPTO_SKEIN
++
++config CRYPTO_SKEIN_1024
++	tristate "Skein1024 driver"
++	select CRYPTO_SKEIN
++
+ config CRYPTO_THREEFISH
+ 	bool "Threefish tweakable block cipher"
+ 	depends on (X86 || UML_X86) && 64BIT && CRYPTO
+diff --git a/drivers/staging/skein/Makefile b/drivers/staging/skein/Makefile
+index a14aadd..1be01fe 100644
+--- a/drivers/staging/skein/Makefile
++++ b/drivers/staging/skein/Makefile
+@@ -5,5 +5,11 @@ obj-$(CONFIG_CRYPTO_SKEIN) +=   skein.o \
+ 				skein_api.o \
+ 				skein_block.o
+ 
++obj-$(CONFIG_CRYPTO_SKEIN_256) += skein256_generic.o
++
++obj-$(CONFIG_CRYPTO_SKEIN_512) += skein512_generic.o
++
++obj-$(CONFIG_CRYPTO_SKEIN_1024) += skein1024_generic.o
++
+ obj-$(CONFIG_CRYPTO_THREEFISH) += threefish_block.o \
+ 				  threefish_api.o
+diff --git a/drivers/staging/skein/skein.c b/drivers/staging/skein/skein.c
+index 8cc8358..2138e22 100644
+--- a/drivers/staging/skein/skein.c
++++ b/drivers/staging/skein/skein.c
+@@ -11,6 +11,7 @@
+ #define  SKEIN_PORT_CODE /* instantiate any code in skein_port.h */
+ 
+ #include <linux/string.h>       /* get the memcpy/memset functions */
++#include <linux/export.h>
+ #include "skein.h" /* get the Skein API definitions   */
+ #include "skein_iv.h"    /* get precomputed IVs */
+ #include "skein_block.h"
+@@ -73,6 +74,7 @@ int skein_256_init(struct skein_256_ctx *ctx, size_t hash_bit_len)
+ 
+ 	return SKEIN_SUCCESS;
+ }
++EXPORT_SYMBOL(skein_256_init);
+ 
+ /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+ /* init the context for a MAC and/or tree hash operation */
+@@ -191,7 +193,7 @@ int skein_256_update(struct skein_256_ctx *ctx, const u8 *msg,
+ 
+ 	return SKEIN_SUCCESS;
+ }
+-
++EXPORT_SYMBOL(skein_256_update);
+ /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+ /* finalize the hash computation and output the result */
+ int skein_256_final(struct skein_256_ctx *ctx, u8 *hash_val)
+@@ -240,6 +242,7 @@ int skein_256_final(struct skein_256_ctx *ctx, u8 *hash_val)
+ 	}
+ 	return SKEIN_SUCCESS;
+ }
++EXPORT_SYMBOL(skein_256_final);
+ 
+ /*****************************************************************/
+ /*     512-bit Skein                                             */
+@@ -303,6 +306,7 @@ int skein_512_init(struct skein_512_ctx *ctx, size_t hash_bit_len)
+ 
+ 	return SKEIN_SUCCESS;
+ }
++EXPORT_SYMBOL(skein_512_init);
+ 
+ /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+ /* init the context for a MAC and/or tree hash operation */
+@@ -420,6 +424,7 @@ int skein_512_update(struct skein_512_ctx *ctx, const u8 *msg,
+ 
+ 	return SKEIN_SUCCESS;
+ }
++EXPORT_SYMBOL(skein_512_update);
+ 
+ /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+ /* finalize the hash computation and output the result */
+@@ -469,6 +474,7 @@ int skein_512_final(struct skein_512_ctx *ctx, u8 *hash_val)
+ 	}
+ 	return SKEIN_SUCCESS;
+ }
++EXPORT_SYMBOL(skein_512_final);
+ 
+ /*****************************************************************/
+ /*    1024-bit Skein                                             */
+@@ -526,6 +532,7 @@ int skein_1024_init(struct skein_1024_ctx *ctx, size_t hash_bit_len)
+ 
+ 	return SKEIN_SUCCESS;
+ }
++EXPORT_SYMBOL(skein_1024_init);
+ 
+ /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+ /* init the context for a MAC and/or tree hash operation */
+@@ -644,6 +651,7 @@ int skein_1024_update(struct skein_1024_ctx *ctx, const u8 *msg,
+ 
+ 	return SKEIN_SUCCESS;
+ }
++EXPORT_SYMBOL(skein_1024_update);
+ 
+ /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+ /* finalize the hash computation and output the result */
+@@ -693,6 +701,7 @@ int skein_1024_final(struct skein_1024_ctx *ctx, u8 *hash_val)
+ 	}
+ 	return SKEIN_SUCCESS;
+ }
++EXPORT_SYMBOL(skein_1024_final);
+ 
+ /**************** Functions to support MAC/tree hashing ***************/
+ /*   (this code is identical for Optimized and Reference versions)    */
+diff --git a/drivers/staging/skein/skein.h b/drivers/staging/skein/skein.h
+index e6669f1..d803458 100644
+--- a/drivers/staging/skein/skein.h
++++ b/drivers/staging/skein/skein.h
+@@ -26,8 +26,14 @@
+ **                                0: use assert()      to flag errors
+ **                                1: return SKEIN_FAIL to flag errors
+ **
++**
+ ***************************************************************************/
+ 
++/*Skein digest sizes for crypto api*/
++#define SKEIN256_DIGEST_SIZE (256)
++#define SKEIN512_DIGEST_SIZE (512)
++#define SKEIN1024_DIGEST_SIZE (1024)
++
+ #ifndef rotl_64
+ #define rotl_64(x, N)    (((x) << (N)) | ((x) >> (64-(N))))
+ #endif
+diff --git a/drivers/staging/skein/skein1024_generic.c b/drivers/staging/skein/skein1024_generic.c
+new file mode 100644
+index 0000000..b82c4f5
+--- /dev/null
++++ b/drivers/staging/skein/skein1024_generic.c
+@@ -0,0 +1,88 @@
++/*
++ * Cryptographic API.
++ *
++ * Skein1024 Hash Algorithm.
++ *
++ * Derived from cryptoapi implementation, adapted for in-place
++ * scatterlist interface.
++ *
++ * Copyright (c) Eric Rost <eric.rost@mybabylon.net>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 2 of the License, or (at your option)
++ * any later version.
++ *
++ */
++#include <crypto/internal/hash.h>
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/mm.h>
++#include <linux/cryptohash.h>
++#include <linux/types.h>
++#include "skein.h"
++#include <asm/byteorder.h>
++
++static int skein1024_init(struct shash_desc *desc)
++{
++	struct skein_1024_ctx *sctx = shash_desc_ctx(desc);
++
++	int ret = skein_1024_init(sctx, SKEIN1024_DIGEST_SIZE);
++
++	return ret;
++}
++
++int crypto_skein1024_update(struct shash_desc *desc, const u8 *data,
++			unsigned int len)
++{
++	struct skein_1024_ctx *sctx = shash_desc_ctx(desc);
++	size_t hbl = (size_t) len;
++	int ret = skein_1024_update(sctx, data, hbl);
++
++	return ret;
++}
++EXPORT_SYMBOL(crypto_skein1024_update);
++
++
++/* Add padding and return the message digest. */
++static int skein1024_final(struct shash_desc *desc, u8 *out)
++{
++	struct skein_1024_ctx *sctx = shash_desc_ctx(desc);
++	int ret = skein_1024_final(sctx, out);
++	return ret;
++}
++
++
++static struct shash_alg alg = {
++	.digestsize	=	(SKEIN1024_DIGEST_SIZE / 8),
++	.init		=	skein1024_init,
++	.update		=	crypto_skein1024_update,
++	.final		=	skein1024_final,
++	.descsize	=	sizeof(struct skein_1024_ctx),
++	.statesize	=	sizeof(struct skein_1024_ctx),
++	.base		=	{
++		.cra_name		=	"skein1024",
++		.cra_driver_name	=	"skein1024-generic",
++		.cra_flags		=	CRYPTO_ALG_TYPE_SHASH,
++		.cra_blocksize		=	SKEIN_1024_BLOCK_BYTES,
++		.cra_module		=	THIS_MODULE,
++	}
++};
++
++static int __init skein1024_generic_mod_init(void)
++{
++	return crypto_register_shash(&alg);
++}
++
++static void __exit skein1024_generic_mod_fini(void)
++{
++	crypto_unregister_shash(&alg);
++}
++
++module_init(skein1024_generic_mod_init);
++module_exit(skein1024_generic_mod_fini);
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("Skein1024 Hash Algorithm");
++
++MODULE_ALIAS("skein1024");
+diff --git a/drivers/staging/skein/skein256_generic.c b/drivers/staging/skein/skein256_generic.c
+new file mode 100644
+index 0000000..27a7a21
+--- /dev/null
++++ b/drivers/staging/skein/skein256_generic.c
+@@ -0,0 +1,88 @@
++/*
++ * Cryptographic API.
++ *
++ * Skein256 Hash Algorithm.
++ *
++ * Derived from cryptoapi implementation, adapted for in-place
++ * scatterlist interface.
++ *
++ * Copyright (c) Eric Rost <eric.rost@mybabylon.net>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 2 of the License, or (at your option)
++ * any later version.
++ *
++ */
++#include <crypto/internal/hash.h>
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/mm.h>
++#include <linux/cryptohash.h>
++#include <linux/types.h>
++#include "skein.h"
++#include <asm/byteorder.h>
++
++static int skein256_init(struct shash_desc *desc)
++{
++	struct skein_256_ctx *sctx = shash_desc_ctx(desc);
++
++	int ret = skein_256_init(sctx, SKEIN256_DIGEST_SIZE);
++
++	return ret;
++}
++
++int crypto_skein256_update(struct shash_desc *desc, const u8 *data,
++			unsigned int len)
++{
++	struct skein_256_ctx *sctx = shash_desc_ctx(desc);
++	size_t hbl = (size_t) len;
++	int ret = skein_256_update(sctx, data, hbl);
++
++	return ret;
++}
++EXPORT_SYMBOL(crypto_skein256_update);
++
++
++/* Add padding and return the message digest. */
++static int skein256_final(struct shash_desc *desc, u8 *out)
++{
++	struct skein_256_ctx *sctx = shash_desc_ctx(desc);
++	int ret = skein_256_final(sctx, out);
++	return ret;
++}
++
++
++static struct shash_alg alg = {
++	.digestsize	=	(SKEIN256_DIGEST_SIZE / 8),
++	.init		=	skein256_init,
++	.update		=	crypto_skein256_update,
++	.final		=	skein256_final,
++	.descsize	=	sizeof(struct skein_256_ctx),
++	.statesize	=	sizeof(struct skein_256_ctx),
++	.base		=	{
++		.cra_name		=	"skein256",
++		.cra_driver_name	=	"skein256-generic",
++		.cra_flags		=	CRYPTO_ALG_TYPE_SHASH,
++		.cra_blocksize		=	SKEIN_256_BLOCK_BYTES,
++		.cra_module		=	THIS_MODULE,
++	}
++};
++
++static int __init skein256_generic_mod_init(void)
++{
++	return crypto_register_shash(&alg);
++}
++
++static void __exit skein256_generic_mod_fini(void)
++{
++	crypto_unregister_shash(&alg);
++}
++
++module_init(skein256_generic_mod_init);
++module_exit(skein256_generic_mod_fini);
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("Skein256 Hash Algorithm");
++
++MODULE_ALIAS("skein256");
+diff --git a/drivers/staging/skein/skein512_generic.c b/drivers/staging/skein/skein512_generic.c
+new file mode 100644
+index 0000000..71d5a6c
+--- /dev/null
++++ b/drivers/staging/skein/skein512_generic.c
+@@ -0,0 +1,88 @@
++/*
++ * Cryptographic API.
++ *
++ * Skein512 Hash Algorithm.
++ *
++ * Derived from cryptoapi implementation, adapted for in-place
++ * scatterlist interface.
++ *
++ * Copyright (c) Eric Rost <eric.rost@mybabylon.net>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 2 of the License, or (at your option)
++ * any later version.
++ *
++ */
++#include <crypto/internal/hash.h>
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/mm.h>
++#include <linux/cryptohash.h>
++#include <linux/types.h>
++#include "skein.h"
++#include <asm/byteorder.h>
++
++static int skein512_init(struct shash_desc *desc)
++{
++	struct skein_512_ctx *sctx = shash_desc_ctx(desc);
++
++	int ret = skein_512_init(sctx, SKEIN512_DIGEST_SIZE);
++
++	return ret;
++}
++
++int crypto_skein512_update(struct shash_desc *desc, const u8 *data,
++			unsigned int len)
++{
++	struct skein_512_ctx *sctx = shash_desc_ctx(desc);
++	size_t hbl = (size_t) len;
++	int ret = skein_512_update(sctx, data, hbl);
++
++	return ret;
++}
++EXPORT_SYMBOL(crypto_skein512_update);
++
++
++/* Add padding and return the message digest. */
++static int skein512_final(struct shash_desc *desc, u8 *out)
++{
++	struct skein_512_ctx *sctx = shash_desc_ctx(desc);
++	int ret = skein_512_final(sctx, out);
++	return ret;
++}
++
++
++static struct shash_alg alg = {
++	.digestsize	=	(SKEIN512_DIGEST_SIZE / 8),
++	.init		=	skein512_init,
++	.update		=	crypto_skein512_update,
++	.final		=	skein512_final,
++	.descsize	=	sizeof(struct skein_512_ctx),
++	.statesize	=	sizeof(struct skein_512_ctx),
++	.base		=	{
++		.cra_name		=	"skein512",
++		.cra_driver_name	=	"skein512-generic",
++		.cra_flags		=	CRYPTO_ALG_TYPE_SHASH,
++		.cra_blocksize		=	SKEIN_512_BLOCK_BYTES,
++		.cra_module		=	THIS_MODULE,
++	}
++};
++
++static int __init skein512_generic_mod_init(void)
++{
++	return crypto_register_shash(&alg);
++}
++
++static void __exit skein512_generic_mod_fini(void)
++{
++	crypto_unregister_shash(&alg);
++}
++
++module_init(skein512_generic_mod_init);
++module_exit(skein512_generic_mod_fini);
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("Skein512 Hash Algorithm");
++
++MODULE_ALIAS("skein512");
+-- 
+2.1.1
 
-On Tue, Oct 21, 2014 at 04:18:34PM +0200, Nicolas Ferre wrote:
-> On 20/10/2014 20:27, Alexandre Belloni :
-> > In the case of at91sam9g45_restart(), the driver is writing
-> > AT91_DDRSDRC_LPCB_POWER_DOWN to AT91_DDRSDRC_RTR, this should actually =
-be
-> > AT91_DDRSDRC_LPR.
-> >=20
-> > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
->=20
-> Absolutely:
-> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->=20
-> If you don't mind Dmitry, I'll take this patch through the at91/arm-soc
-> git trees in my next at91-3.18-fixes branch.
-
-Acked-by: Sebastian Reichel <sre@kernel.org>
-
-P.S.: Please update your MAINTAINERS file.
-
--- Sebastian
-
---98e8jtXdkpgskNou
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJURnG1AAoJENju1/PIO/qalIsP/ikVMHzxiVzPJTBiDj9qNi4k
-gombEl+CLdnshnPVYuqxysllTzhqRueTru/G4AByj4FIsLJqA9v9BQX3HRKc4D5Q
-XgbgVgzVNyePmJMvBuIzXdpRkmY/VtieS2DJEHSphOQw+hIENjs5pEeekH2MKt5X
-GduGatE6SXjYT0nL6EhtpwhDM6XoiTE26wo5PwxS6x+hCQTS7uwtxMDlaPGfVxvx
-uzXZ11QxRng9cAFZ5UBGM89AB99wryOcqPsm5mJlnKQvM4++1eQm+f3fQBcUaFyQ
-l3FAIUX1YtBoFcnZ1bVJMOoO+h6NUWf1ew2W/dRlE1yJDdh4l97adBpTsBjpu7ph
-9FkNqockfaufPHR0uTPXtLir396SHDYrvD4UlqMh5cE4OtR4Ecu/QXvwsrKFJE5f
-r1ioAP3Om9HDnOiMvfldcgs7Q1r2t4K9PQQzP3QE5y1mXmDMP/ouKTXwDyVb7rgG
-ucXfOmdtar5TbbjNhGiyla/cuDHRrBYRChilMk80e3gtO1TsQW3ujQuiFpfMJk08
-upuDtm+bxsV9N320QUZALfsQAEYGn3asQwJSMfZ6JD4ZyxbfKCYWFRRC808pKhuD
-48vd3nH5oum/zLVcqjdpl7Ds/gFhFuBZe0oACZHaSMwlrZXswXiyr0/k71taIamq
-toDngqAWE2ttFkQgorK0
-=8YqU
------END PGP SIGNATURE-----
-
---98e8jtXdkpgskNou--
