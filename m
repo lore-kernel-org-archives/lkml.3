@@ -1,76 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076AbaJUATc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 20:19:32 -0400
-Received: from va-smtp01.263.net ([54.88.144.211]:55551 "EHLO
-	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752673AbaJUATb (ORCPT
+	id S932128AbaJUAVK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 20:21:10 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:43917 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752673AbaJUAVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 20:19:31 -0400
-X-RL-SENDER: zyw@rock-chips.com
-X-FST-TO: linux-kernel@vger.kernel.org
-X-SENDER-IP: 216.239.45.75
-X-LOGIN-NAME: zyw@rock-chips.com
-X-UNIQUE-TAG: <9e97f9728815f9b84cce72aa80540c40>
-X-DNS-TYPE: 0
-Message-ID: <5445A689.8040707@rock-chips.com>
-Date: Mon, 20 Oct 2014 17:19:21 -0700
-From: Chris Zhong <zyw@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 20 Oct 2014 20:21:07 -0400
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Heiko Stuebner <heiko@sntech.de>
-CC: Sonny Rao <sonnyrao@chromium.org>, linux-rockchip@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] pinctrl: rockchip: Parse pin groups before calling
- pinctrl_register()
-References: <1413847670-12245-1-git-send-email-dianders@chromium.org> <1413847670-12245-3-git-send-email-dianders@chromium.org>
-In-Reply-To: <1413847670-12245-3-git-send-email-dianders@chromium.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <44072106-c0f3-46b8-b2b5-9b1cbd1b7d88@email.android.com>
+References: <1413235430-22944-1-git-send-email-adityakali@google.com>
+ <1413235430-22944-8-git-send-email-adityakali@google.com> <20141016211236.GA4308@mail.hallyn.com>
+ <CAGr1F2EH0ynfFihTh1dv=n1faxUh0zS3ggk303bwGnDnW2PUCw@mail.gmail.com>
+ <20141016214710.GA4759@mail.hallyn.com> <87iojgmy3o.fsf@x220.int.ebiederm.org>
+ <CALCETrUC=yW72d2hDzjESmZAt85x1WcGz4L-DrtY5YXAQxbpMA@mail.gmail.com> <44072106-c0f3-46b8-b2b5-9b1cbd1b7d88@email.android.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 20 Oct 2014 17:20:44 -0700
+Message-ID: <CALCETrXhGnBM_xx=Auz3WRQXkqhGGTWuZN=PU+A9HZ7Ek27FLA@mail.gmail.com>
+Subject: Re: [PATCHv1 7/8] cgroup: cgroup namespace setns support
+To: "Eric W.Biederman" <ebiederm@xmission.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, Aditya Kali <adityakali@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 10/20/2014 04:27 PM, Doug Anderson wrote:
-> Just like in (529301c pinctrl: samsung: Parse pin groups before
-> calling pinctrl_register()), Rockchip also needs to parse pin groups
-> earlier to make hogs work.
+On Sun, Oct 19, 2014 at 9:55 PM, Eric W.Biederman <ebiederm@xmission.com> wrote:
 >
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
->   drivers/pinctrl/pinctrl-rockchip.c | 10 ++++------
->   1 file changed, 4 insertions(+), 6 deletions(-)
 >
-> diff --git a/drivers/pinctrl/pinctrl-rockchip.c b/drivers/pinctrl/pinctrl-rockchip.c
-> index 65efb88..14a5683 100644
-> --- a/drivers/pinctrl/pinctrl-rockchip.c
-> +++ b/drivers/pinctrl/pinctrl-rockchip.c
-> @@ -1263,6 +1263,10 @@ static int rockchip_pinctrl_register(struct platform_device *pdev,
->   		}
->   	}
->   
-> +	ret = rockchip_pinctrl_parse_dt(pdev, info);
-> +	if (ret)
-> +		return ret;
-> +
->   	info->pctl_dev = pinctrl_register(ctrldesc, &pdev->dev, info);
->   	if (!info->pctl_dev) {
->   		dev_err(&pdev->dev, "could not register pinctrl driver\n");
-> @@ -1280,12 +1284,6 @@ static int rockchip_pinctrl_register(struct platform_device *pdev,
->   		pinctrl_add_gpio_range(info->pctl_dev, &pin_bank->grange);
->   	}
->   
-> -	ret = rockchip_pinctrl_parse_dt(pdev, info);
-> -	if (ret) {
-> -		pinctrl_unregister(info->pctl_dev);
-> -		return ret;
-> -	}
-> -
->   	return 0;
->   }
->   
+> On October 19, 2014 1:26:29 PM CDT, Andy Lutomirski <luto@amacapital.net> wrote:
+>>On Sat, Oct 18, 2014 at 10:23 PM, Eric W. Biederman
+>><ebiederm@xmission.com> wrote:
+>>> "Serge E. Hallyn" <serge@hallyn.com> writes:
+>>>
+>>>> Quoting Aditya Kali (adityakali@google.com):
+>>>>> On Thu, Oct 16, 2014 at 2:12 PM, Serge E. Hallyn <serge@hallyn.com>
+>>wrote:
+>>>>> > Quoting Aditya Kali (adityakali@google.com):
+>>>>> >> setns on a cgroup namespace is allowed only if
+>>>>> >> * task has CAP_SYS_ADMIN in its current user-namespace and
+>>>>> >>   over the user-namespace associated with target cgroupns.
+>>>>> >> * task's current cgroup is descendent of the target
+>>cgroupns-root
+>>>>> >>   cgroup.
+>>>>> >
+>>>>> > What is the point of this?
+>>>>> >
+>>>>> > If I'm a user logged into
+>>>>> > /lxc/c1/user.slice/user-1000.slice/session-c12.scope and I start
+>>>>> > a container which is in
+>>>>> > /lxc/c1/user.slice/user-1000.slice/session-c12.scope/x1
+>>>>> > then I will want to be able to enter the container's cgroup.
+>>>>> > The container's cgroup root is under my own (satisfying the
+>>>>> > below condition0 but my cgroup is not a descendent of the
+>>>>> > container's cgroup.
+>>>>> >
+>>>>> This condition is there because we don't want to do implicit cgroup
+>>>>> changes when a process attaches to another cgroupns. cgroupns tries
+>>to
+>>>>> preserve the invariant that at any point, your current cgroup is
+>>>>> always under the cgroupns-root of your cgroup namespace. But in
+>>your
+>>>>> example, if we allow a process in "session-c12.scope" container to
+>>>>> attach to cgroupns root'ed at "session-c12.scope/x1" container
+>>>>> (without implicitly moving its cgroup), then this invariant won't
+>>>>> hold.
+>>>>
+>>>> Oh, I see.  Guess that should be workable.  Thanks.
+>>>
+>>> Which has me looking at what the rules are for moving through
+>>> the cgroup hierarchy.
+>>>
+>>> As long as we have write access to cgroup.procs and are allowed
+>>> to open the file for write, we can move any of our own tasks
+>>> into the cgroup.  So the cgroup namespace rules don't seem
+>>> to be a problem.
+>>>
+>>> Andy can you please take a look at the permission checks in
+>>> __cgroup_procs_write.
+>>
+>>The actual requirements for calling that function haven't changed,
+>>right?  IOW, what does this have to do with cgroupns?
+>
+> Excluding user namespaces the requirements have not changed.
+>
+> The immediate correlation is that to enter a cgroupns you must first put your process in one of it's cgroups.
+>
+> So I was examining what it would take to enter the cgroup of cgroupns.
+>
+>> Is the idea
+>>that you want a privileged user wrt a cgroupns's userns to be able to
+>>use this?  If so:
+>>
+>>Yes, that current_cred() thing is bogus.  (Actually, this is probably
+>>exploitable right now if any cgroup.procs inode anywhere on the system
+>>lets non-root write.)  (Can we have some kernel debugging option that
+>>makes any use of current_cred() in write(2) warn?)
+>>
+>>We really need a weaker version of may_ptrace for this kind of stuff.
+>>Maybe the existing may_ptrace stuff is okay, actually.  But this is
+>>completely missing group checks, cap checks, capabilities wrt the
+>>userns, etc.
+>>
+>>Also, I think that, if this version of the patchset allows non-init
+>>userns to unshare cgroupns, then the issue of what permission is
+>>needed to lock the cgroup hierarchy like that needs to be addressed,
+>>because unshare(CLONE_NEWUSER|CLONE_NEWCGROUP) will effectively pin
+>>the calling task with no permission required.  Bolting on a fix later
+>>will be a mess.
+>
+> I imagine the pinning would be like the userns.
+>
+> Ah but there is a potentially serious issue with the pinning.
+> With pinning we can make it impossible for root to move us to a different cgroup.
+>
+> I am not certain how serious that is but it bears thinking about.
+> If we don't implement pinning we should be able to implent everything with just filesystem mount options, and no new namespace required.
+>
+> Sigh.
+>
+> I am too tired tonight to see the end game in this.
 
-Tested-by: Chris Zhong <zyw@rock-chips.com>
+Possible solution:
+
+Ditch the pinning.  That is, if you're outside a cgroupns (or you have
+a non-ns-confined cgroupfs mounted), then you can move a task in a
+cgroupns outside of its root cgroup.  If you do this, then the task
+thinks its cgroup is something like "../foo" or "../../foo".
+
+While we're at it, consider making setns for a cgroupns *not* change
+the caller's cgroup.  Is there any reason it really needs to?
+
+Thoughts?
+
+--Andy
