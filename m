@@ -1,223 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932944AbaJUO3o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 10:29:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51109 "EHLO mx2.suse.de"
+	id S933058AbaJUObZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 10:31:25 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:34709 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932798AbaJUO3m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 10:29:42 -0400
-Date: Tue, 21 Oct 2014 16:29:39 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        David Rientjes <rientjes@google.com>, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH 3/4] OOM, PM: OOM killed task shouldn't escape PM suspend
-Message-ID: <20141021142939.GG9415@dhcp22.suse.cz>
-References: <1413876435-11720-1-git-send-email-mhocko@suse.cz>
- <2156351.pWp6MNRoWm@vostro.rjw.lan>
- <20141021141159.GE9415@dhcp22.suse.cz>
- <4766859.KSKPTm3b0x@vostro.rjw.lan>
+	id S932902AbaJUObU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 10:31:20 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        "Menon, Nishanth" <nm@ti.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>
+Subject: [PATCH 3/3] ARM: dts: dra72-evm: Add MMC nodes
+Date: Tue, 21 Oct 2014 09:30:48 -0500
+Message-ID: <1413901848-32268-4-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1413901848-32268-1-git-send-email-nm@ti.com>
+References: <1413901848-32268-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4766859.KSKPTm3b0x@vostro.rjw.lan>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 21-10-14 16:41:07, Rafael J. Wysocki wrote:
-> On Tuesday, October 21, 2014 04:11:59 PM Michal Hocko wrote:
-[...]
-> > OK, incremental diff on top. I will post the complete patch if you are
-> > happier with this change
-> 
-> Yes, I am.
+From: "Menon, Nishanth" <nm@ti.com>
+
+Add MMC1 and 2 nodes. MMC1 is SDcard and MMC2 is eMMC.
+
+NOTE on MMC1 card detect: Ideally, we should be using in-built SDCD
+support, but we dont have it yet. So, use the fact that control module
+of DRA7 is setup such that no matter what mode one configures it, GPIO
+option is always hardwired in - use GPIO mode for SDcard detection.
+
+[peter.ujfalusi@ti.com]
+The power line feeding the SD card is also used by other devices on the EVM.
+Use generic name instead of mmc2_3v3 so when other devices want to use the
+same regulator it will look a bit better.
+
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
->From 9ab46fe539cded8e7b6425b2cd23ba9184002fde Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Mon, 20 Oct 2014 18:12:32 +0200
-Subject: [PATCH -v2] OOM, PM: OOM killed task shouldn't escape PM suspend
+ arch/arm/boot/dts/dra72-evm.dts |   59 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 59 insertions(+)
 
-PM freezer relies on having all tasks frozen by the time devices are
-getting frozen so that no task will touch them while they are getting
-frozen. But OOM killer is allowed to kill an already frozen task in
-order to handle OOM situtation. In order to protect from late wake ups
-OOM killer is disabled after all tasks are frozen. This, however, still
-keeps a window open when a killed task didn't manage to die by the time
-freeze_processes finishes.
-
-Reduce the race window by checking all tasks after OOM killer has been
-disabled. This is still not race free completely unfortunately because
-oom_killer_disable cannot stop an already ongoing OOM killer so a task
-might still wake up from the fridge and get killed without
-freeze_processes noticing. Full synchronization of OOM and freezer is,
-however, too heavy weight for this highly unlikely case.
-
-Introduce and check oom_kills counter which gets incremented early when
-the allocator enters __alloc_pages_may_oom path and only check all the
-tasks if the counter changes during the freezing attempt. The counter
-is updated so early to reduce the race window since allocator checked
-oom_killer_disabled which is set by PM-freezing code. A false positive
-will push the PM-freezer into a slow path but that is not a big deal.
-
-Changes since v1
-- push the re-check loop out of freeze_processes into
-  check_frozen_processes and invert the condition to make the code more
-  readable as per Rafael
-
-Fixes: f660daac474c6f (oom: thaw threads if oom killed thread is frozen before deferring)
-Cc: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: stable@vger.kernel.org # 3.2+
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- include/linux/oom.h    |  3 +++
- kernel/power/process.c | 40 +++++++++++++++++++++++++++++++++++++++-
- mm/oom_kill.c          | 17 +++++++++++++++++
- mm/page_alloc.c        |  8 ++++++++
- 4 files changed, 67 insertions(+), 1 deletion(-)
-
-diff --git a/include/linux/oom.h b/include/linux/oom.h
-index 647395a1a550..e8d6e1058723 100644
---- a/include/linux/oom.h
-+++ b/include/linux/oom.h
-@@ -50,6 +50,9 @@ static inline bool oom_task_origin(const struct task_struct *p)
- extern unsigned long oom_badness(struct task_struct *p,
- 		struct mem_cgroup *memcg, const nodemask_t *nodemask,
- 		unsigned long totalpages);
+diff --git a/arch/arm/boot/dts/dra72-evm.dts b/arch/arm/boot/dts/dra72-evm.dts
+index 1242a17..945a826 100644
+--- a/arch/arm/boot/dts/dra72-evm.dts
++++ b/arch/arm/boot/dts/dra72-evm.dts
+@@ -17,6 +17,13 @@
+ 		device_type = "memory";
+ 		reg = <0x80000000 0x40000000>; /* 1024 MB */
+ 	};
 +
-+extern int oom_kills_count(void);
-+extern void note_oom_kill(void);
- extern void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 			     unsigned int points, unsigned long totalpages,
- 			     struct mem_cgroup *memcg, nodemask_t *nodemask,
-diff --git a/kernel/power/process.c b/kernel/power/process.c
-index 4ee194eb524b..7a37cf3eb1a2 100644
---- a/kernel/power/process.c
-+++ b/kernel/power/process.c
-@@ -108,6 +108,28 @@ static int try_to_freeze_tasks(bool user_only)
- 	return todo ? -EBUSY : 0;
- }
++	evm_3v3: fixedregulator-evm_3v3 {
++		compatible = "regulator-fixed";
++		regulator-name = "evm_3v3";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++	};
+ };
  
-+/*
-+ * Returns true if all freezable tasks (except for current) are frozen already
-+ */
-+static bool check_frozen_processes(void)
-+{
-+	struct task_struct *g, *p;
-+	bool ret = true;
+ &dra7_pmx_core {
+@@ -32,6 +39,33 @@
+ 			0x424 (PIN_INPUT_PULLUP | MUX_MODE1) /* wakeup3.sys_nirq1 */
+ 		>;
+ 	};
 +
-+	read_lock(&tasklist_lock);
-+	for_each_process_thread(g, p) {
-+		if (p != current && !freezer_should_skip(p) &&
-+		    !frozen(p)) {
-+			ret = false;
-+			goto done;
-+		}
-+	}
-+done:
-+	read_unlock(&tasklist_lock);
++	mmc1_pins_default: mmc1_pins_default {
++		pinctrl-single,pins = <
++			0x36c (PIN_INPUT | MUX_MODE14)	/* mmc1sdcd.gpio219 */
++			0x354 (PIN_INPUT_PULLUP | MUX_MODE0) /* mmc1_clk.clk */
++			0x358 (PIN_INPUT_PULLUP | MUX_MODE0) /* mmc1_cmd.cmd */
++			0x35c (PIN_INPUT_PULLUP | MUX_MODE0) /* mmc1_dat0.dat0 */
++			0x360 (PIN_INPUT_PULLUP | MUX_MODE0) /* mmc1_dat1.dat1 */
++			0x364 (PIN_INPUT_PULLUP | MUX_MODE0) /* mmc1_dat2.dat2 */
++			0x368 (PIN_INPUT_PULLUP | MUX_MODE0) /* mmc1_dat3.dat3 */
++		>;
++	};
 +
-+	return ret;
-+}
-+
- /**
-  * freeze_processes - Signal user space processes to enter the refrigerator.
-  * The current thread will not be frozen.  The same process that calls
-@@ -118,6 +140,7 @@ static int try_to_freeze_tasks(bool user_only)
- int freeze_processes(void)
- {
- 	int error;
-+	int oom_kills_saved;
++	mmc2_pins_default: mmc2_pins_default {
++		pinctrl-single,pins = <
++			0x9c (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_a23.mmc2_clk */
++			0xb0 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_cs1.mmc2_cmd */
++			0xa0 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_a24.mmc2_dat0 */
++			0xa4 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_a25.mmc2_dat1 */
++			0xa8 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_a26.mmc2_dat2 */
++			0xac (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_a27.mmc2_dat3 */
++			0x8c (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_a19.mmc2_dat4 */
++			0x90 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_a20.mmc2_dat5 */
++			0x94 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_a21.mmc2_dat6 */
++			0x98 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_a22.mmc2_dat7 */
++		>;
++	};
+ };
  
- 	error = __usermodehelper_disable(UMH_FREEZING);
- 	if (error)
-@@ -131,12 +154,27 @@ int freeze_processes(void)
- 
- 	printk("Freezing user space processes ... ");
- 	pm_freezing = true;
-+	oom_kills_saved = oom_kills_count();
- 	error = try_to_freeze_tasks(true);
- 	if (!error) {
--		printk("done.");
- 		__usermodehelper_set_disable_depth(UMH_DISABLED);
- 		oom_killer_disable();
+ &i2c1 {
+@@ -159,3 +193,28 @@
+ &uart1 {
+ 	status = "okay";
+ };
 +
-+		/*
-+		 * There might have been an OOM kill while we were
-+		 * freezing tasks and the killed task might be still
-+		 * on the way out so we have to double check for race.
-+		 */
-+		if (oom_kills_count() != oom_kills_saved &&
-+				!check_frozen_processes()) {
-+			__usermodehelper_set_disable_depth(UMH_ENABLED);
-+			printk("OOM in progress.");
-+			error = -EBUSY;
-+			goto done;
-+		}
-+		printk("done.");
- 	}
-+done:
- 	printk("\n");
- 	BUG_ON(in_atomic());
- 
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index bbf405a3a18f..5340f6b91312 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -404,6 +404,23 @@ static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
- 		dump_tasks(memcg, nodemask);
- }
- 
-+/*
-+ * Number of OOM killer invocations (including memcg OOM killer).
-+ * Primarily used by PM freezer to check for potential races with
-+ * OOM killed frozen task.
-+ */
-+static atomic_t oom_kills = ATOMIC_INIT(0);
++&mmc1 {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&mmc1_pins_default>;
 +
-+int oom_kills_count(void)
-+{
-+	return atomic_read(&oom_kills);
-+}
-+
-+void note_oom_kill(void)
-+{
-+	atomic_inc(&oom_kills);
-+}
-+
- #define K(x) ((x) << (PAGE_SHIFT-10))
- /*
-  * Must be called while holding a reference to p, which will be released upon
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index cb573b10af12..22f1929469ec 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2286,6 +2286,14 @@ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
- 	}
- 
- 	/*
-+	 * PM-freezer should be notified that there might be an OOM killer on
-+	 * its way to kill and wake somebody up. This is too early and we might
-+	 * end up not killing anything but false positives are acceptable.
-+	 * See freeze_processes.
-+	 */
-+	note_oom_kill();
-+
++	vmmc-supply = <&ldo1_reg>;
++	bus-width = <4>;
 +	/*
- 	 * Go through the zonelist yet one more time, keep very high watermark
- 	 * here, this is only to catch a parallel oom killing, we must fail if
- 	 * we're still under heavy pressure.
++	 * SDCD signal is not being used here - using the fact that GPIO mode
++	 * is a viable alternative
++	 */
++	cd-gpios = <&gpio6 27 0>;
++};
++
++&mmc2 {
++	/* SW5-3 in ON position */
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&mmc2_pins_default>;
++
++	vmmc-supply = <&evm_3v3>;
++	bus-width = <8>;
++	ti,non-removable;
++};
 -- 
-2.1.1
+1.7.9.5
 
--- 
-Michal Hocko
-SUSE Labs
