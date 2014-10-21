@@ -1,66 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933291AbaJUQrQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 12:47:16 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:7845 "EHLO
-	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932373AbaJUQrP (ORCPT
+	id S933154AbaJUQuV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 12:50:21 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:50030 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932304AbaJUQuS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 12:47:15 -0400
-Message-ID: <54468E0D.2010200@itdev.co.uk>
-Date: Tue, 21 Oct 2014 17:47:09 +0100
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 21 Oct 2014 12:50:18 -0400
+Date: Tue, 21 Oct 2014 09:50:13 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: zyw@rock-chips.com
+Cc: Heiko Stuebner <heiko@sntech.de>, Mike Turquette <mturquette@linaro.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>, dianders@chromium.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-rockchip@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH v3 1/6] pinctrl: rockchip: add suspend/resume functions
+Message-ID: <20141021165013.GD8609@dtor-ws>
+References: <1413862894-2623-1-git-send-email-zyw@rock-chips.com>
+ <1413862968-2691-1-git-send-email-zyw@rock-chips.com>
 MIME-Version: 1.0
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jonathan Cameron <jic23@kernel.org>
-CC: Greg KH <greg@kroah.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Touch processing on host CPU
-References: <5440F282.8040306@itdev.co.uk>	<20141017171756.GA22238@dtor-ws> <20141021132229.37a1197c@alan.etchedpixels.co.uk>
-In-Reply-To: <20141021132229.37a1197c@alan.etchedpixels.co.uk>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413862968-2691-1-git-send-email-zyw@rock-chips.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/10/14 13:22, One Thousand Gnomes wrote:
->> If you will have touch processing in a binary blob, you'll also be going
->> to ages "Works with Ubuntu 12.04 on x86_32!" (and nothing else), or
->> "Android 5.1.2 on Tegra Blah (build 78912KT)" (and nothing else).
+Hi Chris,
+
+On Mon, Oct 20, 2014 at 08:42:48PM -0700, zyw@rock-chips.com wrote:
+> From: Chris <zyw@rock-chips.com>
 > 
-> As well as not going upstream because there is no way anyone else can
-> test changes to the code, or support it. Plus of course there are those
-> awkward questions around derivative work boundaries that it is best the
-> base kernel keeps well clear of.
+> support suspend/resume of pinctrl, it allows handling sleep mode
+> for hogged pins in pinctrl
 > 
-> If the data format is documented to the point someone can go write their
-> own touch processor for the bitstream then that really deals with it
-> anyway. Given the number of these things starting to pop up it would
-> probably be good if someone did produce an open source processing engine
-> for touch sensor streams as it shouldn't take long before its better than
-> all the non-free ones 8).
+> Signed-off-by: Chris <zyw@rock-chips.com>
+> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+> ---
+> 
+> Changes in v3: None
+> Changes in v2: None
+> 
+>  drivers/pinctrl/pinctrl-rockchip.c |   29 +++++++++++++++++++++++++++++
+>  1 file changed, 29 insertions(+)
+> 
+> diff --git a/drivers/pinctrl/pinctrl-rockchip.c b/drivers/pinctrl/pinctrl-rockchip.c
+> index d0f3c18..d384d99 100644
+> --- a/drivers/pinctrl/pinctrl-rockchip.c
+> +++ b/drivers/pinctrl/pinctrl-rockchip.c
+> @@ -1795,6 +1795,31 @@ static struct rockchip_pin_ctrl *rockchip_pinctrl_get_soc_data(
+>  	return ctrl;
+>  }
+>  
+> +#ifdef CONFIG_PM
+> +static int rockchip_pinctrl_suspend(struct platform_device *pdev,
+> +				    pm_message_t state)
+> +{
+> +	struct rockchip_pinctrl *info;
+> +
+> +	info = platform_get_drvdata(pdev);
+> +	if (!info)
+> +		return -EINVAL;
 
-Thank you for this input, I will feed it back.
+I do not think info can ever be NULL here, can it?
 
-> Given how latency sensitive touch is and the continual data stream I
-> would be inclined to think that the basic processing might be better in
-> kernel and then as an input device - providing it can be simple enough to
-> want to put kernel side.
+> +
+> +	return pinctrl_force_sleep(info->pctl_dev);
+> +}
+> +
+> +static int rockchip_pinctrl_resume(struct platform_device *pdev)
+> +{
+> +	struct rockchip_pinctrl *info;
+> +
+> +	info = platform_get_drvdata(pdev);
+> +	if (!info)
+> +		return -EINVAL;
+> +
+> +	return pinctrl_force_default(info->pctl_dev);
+> +}
+> +#endif
 
-I would think that a touch processing algorithm (including aspects such as
-noise and false touch suppression, etc) would be too complex to live
-in-kernel. Getting decent performance on a particular device requires a lot
-of tuning/customisation.
+You are using legacy-style PM methods which we are trying to get away
+from. The preferred style is:
 
-> Otherwise I'd say your bitstream is probably something like ADC data and
-> belongs in IIO (which should also help people to have one processing
-> agent for multiple designs of touch, SPI controllers etc)
+static int __maybe_unused rockchip_pinctrl_suspend(struct device *dev)
+{
+	...
+}
 
-This sounds promising. The only sticking point I can see is that a touch
-frontend has many more channels (possibly thousands), which would seem to
-impose a lot of overhead when put into the IIO framework. I will certainly
-take a closer look at it.
+static in __maybe_unused rockchip_pinctrl_resume(struct device *dev)
+{
+	...
+}
+
+static SIMPLE_DE_PM_OPS(rockchip_pinctrl_pm_ops,
+			rockchip_pinctrl_suspend, rockchip_pinctrl_resume);
+
+> +
+>  static int rockchip_pinctrl_probe(struct platform_device *pdev)
+>  {
+>  	struct rockchip_pinctrl *info;
+> @@ -2010,6 +2035,10 @@ static struct platform_driver rockchip_pinctrl_driver = {
+>  		.owner	= THIS_MODULE,
+>  		.of_match_table = rockchip_pinctrl_dt_match,
+
+And here
+
+		.pm = &rockchip_pinctrl_pm_ops,
+>  	},
+
+Thanks.
+
+-- 
+Dmitry
