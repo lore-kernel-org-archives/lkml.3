@@ -1,148 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754371AbaJUG52 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 02:57:28 -0400
-Received: from softlayer.compulab.co.il ([50.23.254.55]:57881 "EHLO
-	compulab.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753945AbaJUG50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 02:57:26 -0400
-Message-ID: <544603D1.5060105@compulab.co.il>
-Date: Tue, 21 Oct 2014 09:57:21 +0300
-From: Igor Grinberg <grinberg@compulab.co.il>
-Organization: CompuLab Ltd.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.0
+	id S1754414AbaJUG75 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 02:59:57 -0400
+Received: from smtp1.it.da.ut.ee ([193.40.5.66]:60473 "EHLO smtp1.it.da.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751409AbaJUG7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 02:59:55 -0400
+Date: Tue, 21 Oct 2014 09:59:51 +0300 (EEST)
+From: Meelis Roos <mroos@linux.ee>
+To: Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-ia64@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>
+Subject: Re: kernel BUG at kernel/sched/core.c:2702!
+In-Reply-To: <alpine.LRH.2.11.1410191515150.32417@adalberg.ut.ee>
+Message-ID: <alpine.LRH.2.11.1410210956090.28680@adalberg.ut.ee>
+References: <alpine.LRH.2.11.1410171401110.25429@adalberg.ut.ee> <alpine.LRH.2.11.1410191515150.32417@adalberg.ut.ee>
+User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
 MIME-Version: 1.0
-To: Andreas Werner <andreas.werner@men.de>,
-        Greg KH <gregkh@linuxfoundation.org>
-CC: Wolfram Sang <wsa@the-dreams.de>, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org, johannes.thumshirn@men.de
-Subject: Re: [PATCH 1/2] drivers/misc/eeprom/men_eeprod: Introduce MEN Board
- Information EEPROM driver
-References: <cover.1413416105.git.andreas.werner@men.de> <d169930cfe45d4c05c79f7dd00471d732441529d.1413416105.git.andreas.werner@men.de> <20141016085835.GA1273@katana> <20141016102126.GB23256@awelinux> <20141016095910.GC1273@katana> <20141016114401.GA22506@awelinux> <20141020083344.GA523@awelinux> <20141020091141.GA15332@kroah.com> <20141020100933.GC523@awelinux>
-In-Reply-To: <20141020100933.GC523@awelinux>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
-X-Get-Message-Sender-Via: softlayer.compulab.co.il: acl_c_relayhosts_text_entry: grinberg@compulab.co.il|compulab.co.il
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/20/14 13:09, Andreas Werner wrote:
-> On Mon, Oct 20, 2014 at 05:11:41PM +0800, Greg KH wrote:
->> On Mon, Oct 20, 2014 at 10:33:45AM +0200, Andreas Werner wrote:
->>> On Thu, Oct 16, 2014 at 01:44:02PM +0200, Andreas Werner wrote:
->>>> On Thu, Oct 16, 2014 at 11:59:10AM +0200, Wolfram Sang wrote:
->>>>> * PGP Signed by an unknown key
->>>>>
->>>>>
->>>>>> I do not want to parse the things in userspace because this EEPROM data
->>>>>> are related to the hardware and i want to give our customer the easiest way
->>>>>> to access the data without installing any tool.
->>>>>
->>>>> I understand that point of view. From an upstream point of view, things
->>>>> may look different, though.
->>>>>
->>>>
->>>> I also understand your point of view :-).
->>>> Most customers wants just to have a running system without installing anything.
->>>> And for me an EEPROM is so simple and should not need a complicated way
->>>> to access it.
->>>>
->>>>>> The current state to read the eeprom data is, that customer needs to install a big
->>>>>> environment where the tool is integrated to have access to those kind of simple
->>>>>> data or they have to write their own code.
->>>>>
->>>>> i2cget from i2c-tools? You could do a simple shell script to parse the
->>>>> data. Or do a board specific hook which reads the data and prints it to
->>>>> the logfiles...
->>>>>
->>>>
->>>> Yes of course there are a lot of possibilities. This was just an example
->>>> what we currently use and what was developed years ago.
->>>>
->>>> With a driver like this you can also define read only attributes to prevent customer
->>>> to write or modify the data in the production section. With i2ctools you can just
->>>> write any data to it you want.
->>>>
->>>>>>> Consider how bloated the sysfs-ABI might get if every vendor who uses an
->>>>>>> eeprom wants to expose the data this way?
->>>>>>>
->>>>>>
->>>>>> Yes and no. The possible sysfs entries gets bloated if every vendor will do it
->>>>>> like this way, but normally there is just one Board EEPROM on the board, therefore
->>>>>> only one driver gets loaded.
->>>>>
->>>>> I am not talking about runtime here, I don't care about that. I am
->>>>> talking about the ABI we create and we have to maintain basically
->>>>> forever. And with vendor specific configuartion data I have doubts with
->>>>> that being stable.
->>>>>
->>>>
->>>> Ok, but i do not think that we can make a "general" ABI definition for those kind
->>>> of devices because every vendor will have its own data in the EEPROM which he want
->>>> to have.
->>>>
->>>>>> I mean its the same for every i2c device like a temperature sensor, I can also
->>>>>> read it from userspace without any special hwmon driver.
->>>>>
->>>>> These is a HUGE difference. If I read tempX_input, I don't need to care
->>>>> if the sensor is I2C or SPI or whatever. The kernel abstracts that away.
->>>>> The files you create are for your I2C EEPROM only. Data gets
->>>>> "reformatted" and access gets hidden, but nothing is abstracted away.
->>>>> It would be different if we had a generic convention for "serial_id" or
->>>>> stuff like that. But as configuration data is highly specific I don't
->>>>> see this coming.
->>>>>
->>>>
->>>> For a standard sysfs interface it is a huge difference yes. At the point
->>>> of few from the EEPROM device it is a device like a temp sensor which
->>>> could be different from vendor to vendor.
->>>>
->>>> Regards
->>>> Andy
->>>>
->>>
->>> Greg what do you think about that driver as a Maintainer of the sysfs?
->>
->> I maintain the sysfs core that drivers use, I don't dictate the policy
->> that those drivers create and send to userspace, that is up to the
->> maintainer of the subsystem.  There are some basic rules of sysfs (one
->> value per file), but other than that, please work with the maintainer to
->> come up with an interface that will work for all types of this device,
->> not just a one-off interface which does not scale at all, as Wolfram has
->> pointed out.
->>
+> > I am seeing this BUG on 3 different sparc64 machines with yesterdays 
+> > git. sparc64-specific known problems were just fixed before, 
+> > 3.17.0-07551-g052db7e + slab alignment fix patch + sparc64 SIGBUS fix 
+> > patch is working stable for me, whereas 3.17.0-09670-g0429fbc + SIGBUS 
+> > patch fails on 3 machines (all I tried). Will try bisecting later if I 
+> > get time.
 > 
-> Ok.
-> 
->>> To we have other ways to get those kind of drivers in the mainline kernel?
->>
->> Yes, work on a common interface that your driver can use, and it can be
->> accepted.  Why do you not want to do that?
->>
->> thanks,
->>
->> greg k-h
-> 
-> I have never talked about that I do not want to do it. I just want to discuss
-> it with you.
-> 
-> Right now we are at a point that i know that those kind of drivers can't be upstream
-> and i will try to find a way of abstraction to get it upstream.
+> Dave Miller identified it as a sparc64-specific problem with 
+> CONFIG_SCHED_STACK_END_CHECK in another thread and his fix is working 
+> for me.
 
-IMO, at24 provides you a good enough abstraction which you parse
-from user space with a help of a really small utility or a shell script...
-That is a really small effort.
+The fix commit was 
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=e2653143d7d79a49f1a961aeae1d82612838b12c 
+for sparc64 (for background).
 
-If you want to take it further, may it is worth looking at how the DMI
-stuff is exported on x86 (except that you talk to eeprom directly)?
+Now I hit the same problem on ia64 (rx2620) with 3.18-rc1 and 
+CONFIG_SCHED_STACK_END_CHECK enabled:
+
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x01000000-0x3e873fff]
+[    0.000000]   node   0: [mem 0x3eb90000-0x3ee77fff]
+[    0.000000]   node   0: [mem 0x3fc00000-0x3fe27fff]
+[    0.000000]   node   0: [mem 0x100000000-0x5ffffbfff]
+[    0.000000]   node   0: [mem 0x4040000000-0x40feffbfff]
+[    0.000000]   node   0: [mem 0x40ff000000-0x40ffc2ffff]
+[    0.000000]   node   0: [mem 0x40ffc9c000-0x40ffe03fff]
+[    0.000000]   node   0: [mem 0x40ffe80000-0x40fffe3fff]
+[    0.000000] Initmem setup node 0 [mem 0x01000000-0x40fffe3fff]
+[    0.000000] Built 1 zonelists in Node order, mobility grouping on.  Total pages: 1565221
+[    0.000000] Policy zone: Normal
+[    0.000000] Kernel command line: BOOT_IMAGE=scsi0:/EFI/gentoo/boot/vmlinuz root=/dev/sda3  ro
+[    0.000000] PID hash table entries: 4096 (order: 1, 32768 bytes)
+[    0.000000] Sorting __ex_table...
+[    0.000000] Memory: 25028864K/25129440K available (8621K kernel code, 528K rwdata, 932K rodata, 656K init, 286K bss, 100576K reserved)
+[    0.000000] SLUB: HWalign=128, Order=0-3, MinObjects=0, CPUs=2, Nodes=8
+[    0.000000] Hierarchical RCU implementation.
+[    0.000000]  RCU restricting CPUs from NR_CPUS=4 to nr_cpu_ids=2.
+[    0.000000] RCU: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=2
+[    0.000000] NR_IRQS:384
+[    0.000000] ACPI: Local APIC address c0000000fee00000
+[    0.000000] GSI 36 (level, low) -> CPU 0 (0x0000) vector 48
+[    0.000000] Console: colour VGA+ 80x25
+[    0.008000] Calibrating delay loop... 2390.01 BogoMIPS (lpj=4780032)
+[    0.016088] pid_max: default: 32768 minimum: 301
+[    0.016225] ACPI: Core revision 20140828
+[    0.020263] ACPI: All ACPI Tables successfully acquired
+[    0.021734] Dentry cache hash table entries: 4194304 (order: 11, 33554432 bytes)
+[    0.050128] Inode-cache hash table entries: 2097152 (order: 10, 16777216 bytes)
+[    0.062884] Mount-cache hash table entries: 65536 (order: 5, 524288 bytes)
+[    0.063092] Mountpoint-cache hash table entries: 65536 (order: 5, 524288 bytes)
+[    0.064677] kernel BUG at kernel/sched/core.c:2702!
+[    0.064811] swapper/0[0]: bugcheck! 0 [1]
+[    0.068000] Modules linked in:
+[    0.068000] 
+[    0.068000] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.18.0-rc1 #13
+[    0.068000] task: a000000100b40000 ti: a000000100b40cb0 task.ti: a000000100b40cb0
+[    0.068000] psr : 00001010084a6010 ifs : 80000000000015ae ip  : [<a0000001008624e0>]    Not tainted (3.18.0-rc1)
+[    0.068000] ip is at __schedule+0x1100/0x1520
+[    0.068000] unat: 0000000000000000 pfs : 00000000000015ae rsc : 0000000000000003
+[    0.068000] rnat: e000000001200880 bsps: a000000100b40000 pr  : 80000000ff509669
+[    0.068000] ldrs: 0000000000000000 ccv : 0000000003dad2c2 fpsr: 0009804c8a70433f
+[    0.068000] csd : 0000000000000000 ssd : 0000000000000000
+[    0.068000] b0  : a0000001008624e0 b6  : a000000100a50350 b7  : a00000010049ff00
+[    0.068000] f6  : 000000000000000000000 f7  : 1003e0044b82fa09b5a53
+[    0.068000] f8  : 1003e0000000000000084 f9  : 1003e00000000007b5ccd
+[    0.068000] f10 : 1003e20c49ba5e353f7cf f11 : 1003e00000000000fca57
+[    0.068000] r1  : a000000100dab340 r2  : a000000100b934d8 r3  : a000000100b934e0
+[    0.068000] r8  : 0000000000000027 r9  : 00000000000004d8 r10 : 000000000000fffe
+[    0.068000] r11 : 00000000000004d6 r12 : a000000100b47e20 r13 : a000000100b40000
+[    0.068000] r14 : a000000100babbc0 r15 : a000000100b934e0 r16 : 000000000000026b
+[    0.068000] r17 : 0000000000007fff r18 : a000000100b83ca8 r19 : 000000000000000f
+[    0.068000] r20 : 000000000000000f r21 : 0000000000000004 r22 : 0000000000000004
+[    0.068000] r23 : 0000000000000000 r24 : a000000100a10588 r25 : 0000000000000000
+[    0.068000] r26 : 0000000000000000 r27 : a000000100b69a28 r28 : a000000100b83b30
+[    0.068000] r29 : 0000000000000005 r30 : c0000000f4050000 r31 : a000000100b83b30
+[    0.068000] 
+[    0.068000] Call Trace:
+[    0.068000]  [<a000000100013090>] show_stack+0x90/0xc0
+[    0.068000]                                 sp=a000000100b47a00 bsp=a000000100b41198
+[    0.068000] Disabling lock debugging due to kernel taint
+[    0.184005] Kernel panic - not syncing: Attempted to kill the idle task!
 
 -- 
-Regards,
-Igor.
+Meelis Roos (mroos@linux.ee)
