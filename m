@@ -1,70 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755003AbaJUJ1f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 05:27:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41992 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753484AbaJUJ1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 05:27:34 -0400
-Message-ID: <544626FE.6090703@redhat.com>
-Date: Tue, 21 Oct 2014 11:27:26 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753815AbaJUJbH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 05:31:07 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:56895 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751031AbaJUJbF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 05:31:05 -0400
+Message-ID: <544627D0.60309@hitachi.com>
+Date: Tue, 21 Oct 2014 18:30:56 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Andy Whitcroft <apw@canonical.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: checkpatch false positive
-References: <54461602.4000705@redhat.com> <1413880105.12828.3.camel@perches.com>
-In-Reply-To: <1413880105.12828.3.camel@perches.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ingo Molnar <mingo@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
+        Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/2] kprobes: introduce weak arch_check_ftrace_location()
+ helper function
+References: <1413880229-4796-1-git-send-email-heiko.carstens@de.ibm.com> <1413880229-4796-2-git-send-email-heiko.carstens@de.ibm.com>
+In-Reply-To: <1413880229-4796-2-git-send-email-heiko.carstens@de.ibm.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 10/21/2014 10:28 AM, Joe Perches wrote:
-> On Tue, 2014-10-21 at 10:14 +0200, Hans de Goede wrote:
->> Hi,
->>
->> Checkpatch gives the following warning:
->>
->> WARNING: added, moved or deleted file(s), does MAINTAINERS need updating?
->> #31:
->> new file mode 100644
->>
->> total: 0 errors, 1 warnings, 352 lines checked
->>
->> 0001-input-Add-new-sun4i-lradc-keys-driver.patch has style problems, please review.
->>
->> If any of these errors are false positives, please report
->> them to the maintainer, see CHECKPATCH in MAINTAINERS.
->>
->> On a patch of mine, even though it updates MAINTAINERS properly, it would
->> be nice if checkpatch would check for a hunk updating MAINTAINERS, and then
->> would not issue this warning (note my perl-foo is way too weak to fix this
->> myself).
->>
->> I've attached the patch triggering the warning.
+(2014/10/21 17:30), Heiko Carstens wrote:
+> Introduce weak arch_check_ftrace_location() helper function which
+> architectures can override in order to implement handling of kprobes
+> on function tracer call sites on their own, without depending on
+> common code or implementing the KPROBES_ON_FTRACE feature.
 > 
-> Hi Hans.
+> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+
+Thanks!
+
+> ---
+>  include/linux/kprobes.h |  1 +
+>  kernel/kprobes.c        | 18 +++++++++++-------
+>  2 files changed, 12 insertions(+), 7 deletions(-)
 > 
-> It's not really fixable.  Of course you are welcome to
-> try though.
+> diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
+> index f7296e57d614..5297f9fa0ef2 100644
+> --- a/include/linux/kprobes.h
+> +++ b/include/linux/kprobes.h
+> @@ -335,6 +335,7 @@ extern void kprobe_ftrace_handler(unsigned long ip, unsigned long parent_ip,
+>  extern int arch_prepare_kprobe_ftrace(struct kprobe *p);
+>  #endif
+>  
+> +int arch_check_ftrace_location(struct kprobe *p);
+>  
+>  /* Get the kprobe at this addr (if any) - called with preemption disabled */
+>  struct kprobe *get_kprobe(void *addr);
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+> index 3995f546d0f3..317eb8ad28dd 100644
+> --- a/kernel/kprobes.c
+> +++ b/kernel/kprobes.c
+> @@ -1410,16 +1410,10 @@ static inline int check_kprobe_rereg(struct kprobe *p)
+>  	return ret;
+>  }
+>  
+> -static int check_kprobe_address_safe(struct kprobe *p,
+> -				     struct module **probed_mod)
+> +int __weak arch_check_ftrace_location(struct kprobe *p)
+>  {
+> -	int ret = 0;
+>  	unsigned long ftrace_addr;
+>  
+> -	/*
+> -	 * If the address is located on a ftrace nop, set the
+> -	 * breakpoint to the following instruction.
+> -	 */
+>  	ftrace_addr = ftrace_location((unsigned long)p->addr);
+>  	if (ftrace_addr) {
+>  #ifdef CONFIG_KPROBES_ON_FTRACE
+> @@ -1431,7 +1425,17 @@ static int check_kprobe_address_safe(struct kprobe *p,
+>  		return -EINVAL;
+>  #endif
+>  	}
+> +	return 0;
+> +}
+>  
+> +static int check_kprobe_address_safe(struct kprobe *p,
+> +				     struct module **probed_mod)
+> +{
+> +	int ret;
+> +
+> +	ret = arch_check_ftrace_location(p);
+> +	if (ret)
+> +		return ret;
+>  	jump_label_lock();
+>  	preempt_disable();
+>  
 > 
-> Many patches are discrete and the entire series isn't
-> visible to a single MAINTAINERS update scan by checkpatch.
 
-I understand that in that scenario it is not fixable, but in the case I was
-talking about the addition of the new file and the MAINTAINERS update
-are part of a single patch (adding a small new driver), it would be nice
-if at least in that case checkpatch would not complain. This does not even
-need to be really smart, it could just check if a patch introducing new
-files is touching MAINTAINERS at all, and if it does suppress the warning.
 
-As said my perl-foo is weak, so I will not be trying to fix this myself.
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-Regards,
 
-Hans
