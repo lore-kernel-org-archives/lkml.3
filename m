@@ -1,65 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932174AbaJUERT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 00:17:19 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:58333 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751527AbaJUERO (ORCPT
+	id S932164AbaJUERH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 00:17:07 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:33976 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754614AbaJUEOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 00:17:14 -0400
-Date: Tue, 21 Oct 2014 05:17:08 +0100
-From: Sitsofe Wheeler <sitsofe@gmail.com>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>, Christoph Hellwig <hch@lst.de>,
-        Hannes Reinecke <hare@suse.de>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: Re: [PATCH 0/3] scsi: Add Hyper-V logical block provisioning quirks
-Message-ID: <20141021041707.GA11691@sucs.org>
-References: <20141010074901.GA32028@sucs.org>
- <yq1r3ya6t0i.fsf@sermon.lab.mkp.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <yq1r3ya6t0i.fsf@sermon.lab.mkp.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 21 Oct 2014 00:14:54 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-kernel@vger.kernel.org
+Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, lguest@lists.ozlabs.org,
+        x86@kernel.org
+Subject: [PATCH v2 42/47] x86: lguest: Register with kernel poweroff handler
+Date: Mon, 20 Oct 2014 21:12:58 -0700
+Message-Id: <1413864783-3271-43-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1413864783-3271-1-git-send-email-linux@roeck-us.net>
+References: <1413864783-3271-1-git-send-email-linux@roeck-us.net>
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020209.5445DDBD.0168,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 235
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 14, 2014 at 09:06:37PM -0400, Martin K. Petersen wrote:
-> >>>>> "Sitsofe" == Sitsofe Wheeler <sitsofe@gmail.com> writes:
-> 
-> Sitsofe> A previous patch attempted to add a quirk to workaround this
-> Sitsofe> but the quirk was only enabled after the features had been
-> Sitsofe> scanned for, wouldn't work for "small" disks 
-> 
-> What does that mean, exactly?
+Register with kernel poweroff handler instead of setting pm_power_off
+directly.
 
-It means:
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+- Use define to specify poweroff handler priority
 
-1. The committed patches never worked because the running of the code to
-test whether the quirk should be enabled happened after the probing code
-the quirk would have affected ran. So roughly:
+ arch/x86/lguest/boot.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-bflag = 0;
-if (feature || bflag) {
-	do_stuff();
-}
-if (matching_dev) {
-	bflag = 1; // Too late...
-}
-
-See https://lkml.org/lkml/2014/7/23/615 for prior details.
-
-2. On top of the above, when a disk is "small" (has less than 2^32
-sectors which is typically < 2 TBytes in size) READ CAPACITY(16) won't
-be triggered. If READ CAPACITY(16) isn't triggered then the lbpme bytes
-won't be checked, thin provisioning will never be enabled and the
-committed patch would doubly not work for such disks.
-
-Apologies for the delay in replying.
-
+diff --git a/arch/x86/lguest/boot.c b/arch/x86/lguest/boot.c
+index aae9413..913a95e 100644
+--- a/arch/x86/lguest/boot.c
++++ b/arch/x86/lguest/boot.c
+@@ -1441,7 +1441,8 @@ __init void lguest_init(void)
+ 	 * the Guest routine to power off, and the reboot hook to our restart
+ 	 * routine.
+ 	 */
+-	pm_power_off = lguest_power_off;
++	register_power_off_handler_simple(lguest_power_off,
++					  POWEROFF_PRIORITY_DEFAULT);
+ 	machine_ops.restart = lguest_restart;
+ 
+ 	/*
 -- 
-Sitsofe | http://sucs.org/~sits/
+1.9.1
+
