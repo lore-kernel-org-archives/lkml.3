@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933772AbaJUVcM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 17:32:12 -0400
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:61137 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933458AbaJUVcJ (ORCPT
+	id S933805AbaJUVdx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 17:33:53 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59381 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933458AbaJUVdv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 17:32:09 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH] MAINTAINERS: Update Zynq maintainer record
-Date: Tue, 21 Oct 2014 14:31:43 -0700
-Message-Id: <1413927103-31358-1-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 2.1.2.1.g5e69ed6
+	Tue, 21 Oct 2014 17:33:51 -0400
+Message-ID: <5446D13C.5020402@codeaurora.org>
+Date: Tue, 21 Oct 2014 14:33:48 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Mike Turquette <mturquette@linaro.org>
+CC: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Jonathan Corbet <corbet@lwn.net>, Ralf Baechle <ralf@linux-mips.org>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        =?windows-1252?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Manuel Lauss <manuel.lauss@gmail.com>, Alex Elder <elder@linaro.org>,
+        Matt Porter <mporter@linaro.org>, Tim Kryger <tim.kryger@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Zhangfei Gao <zhangfei.gao@linaro.org>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 6/8] clk: Change clk_ops->determine_rate to return
+ a clk_hw as the best parent
+References: <1413812442-24956-1-git-send-email-tomeu.vizoso@collabora.com> <1413812442-24956-7-git-send-email-tomeu.vizoso@collabora.com>
+In-Reply-To: <1413812442-24956-7-git-send-email-tomeu.vizoso@collabora.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- - add myself as reviewer for Zynq
- - add entry to cover Zynq clock drivers
- - add entry to cover Xilinx DMA drivers
+On 10/20/2014 06:40 AM, Tomeu Vizoso wrote:
+> This is in preparation for clock providers to not have to deal with struct clk.
+>
+> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+>
+>
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
- MAINTAINERS | 3 +++
- 1 file changed, 3 insertions(+)
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index a20df9bf8ab0..07eecdddbe8b 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -1543,6 +1543,7 @@ F:	arch/arm/mach-pxa/include/mach/z2.h
- 
- ARM/ZYNQ ARCHITECTURE
- M:	Michal Simek <michal.simek@xilinx.com>
-+R:	Sören Brinkmann <soren.brinkmann@xilinx.com>
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
- W:	http://wiki.xilinx.com
- T:	git git://git.xilinx.com/linux-xlnx.git
-@@ -1552,7 +1553,9 @@ F:	drivers/cpuidle/cpuidle-zynq.c
- F:	drivers/block/xsysace.c
- N:	zynq
- N:	xilinx
-+F:	drivers/clk/zynq/
- F:	drivers/clocksource/cadence_ttc_timer.c
-+F:	drivers/dma/xilinx/
- F:	drivers/i2c/busses/i2c-cadence.c
- F:	drivers/mmc/host/sdhci-of-arasan.c
- 
 -- 
-2.1.2.1.g5e69ed6
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+a Linux Foundation Collaborative Project
 
