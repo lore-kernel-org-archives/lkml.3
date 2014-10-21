@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932936AbaJUORl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 10:17:41 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:21234 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932711AbaJUORk (ORCPT
+	id S933001AbaJUOR5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 10:17:57 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:57812 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932711AbaJUORz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 10:17:40 -0400
-Date: Tue, 21 Oct 2014 17:17:24 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Matej =?utf-8?Q?Mu=C5=BEila?= <mmuzila@redhat.com>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        devel@linuxdriverproject.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] tools: hv: fcopy_daemon: Check buffer limits
-Message-ID: <20141021141724.GM23154@mwanda>
-References: <5446482C.1000003@redhat.com>
- <20141021131357.3677c4a5@alan.etchedpixels.co.uk>
- <544658CE.8050704@redhat.com>
+	Tue, 21 Oct 2014 10:17:55 -0400
+Date: Tue, 21 Oct 2014 22:17:45 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Amos Kong <akong@redhat.com>
+Cc: virtualization@lists.linux-foundation.org, kvm@vger.kernel.org, m@bues.ch,
+        mpm@selenic.com, amit.shah@redhat.com, rusty@rustcorp.com.au,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/6] hw_random: fix unregister race.
+Message-ID: <20141021141745.GA18511@gondor.apana.org.au>
+References: <1411043867-21109-1-git-send-email-akong@redhat.com>
+ <1411043867-21109-5-git-send-email-akong@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <544658CE.8050704@redhat.com>
+In-Reply-To: <1411043867-21109-5-git-send-email-akong@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 02:59:58PM +0200, Matej Mužila wrote:
-> > sizeof(__u8) is by definition 1 so it's perhaps surplus ?
-> Now the size is now determined from the structure definition in
-> include/uapi/linux/hyperv.h
+On Thu, Sep 18, 2014 at 08:37:45PM +0800, Amos Kong wrote:
+> From: Rusty Russell <rusty@rustcorp.com.au>
 > 
-> > - C style comments for coding style
-> Fixed
+> The previous patch added one potential problem: we can still be
+> reading from a hwrng when it's unregistered.  Add a wait for zero
+> in the hwrng_unregister path.
 > 
-> > Also your patch block is devoid of a few thins like the file name...
-> I'm sorry, the (missing) filename mistake occured in copy-paste process.
-> 
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 
-Copy and paste is very error prone...
+You totally corrupted Rusty's patch.  If you're going to repost
+his series you better make sure that you've got the right patches.
 
-> 
-> Here is the patch as it (I hope) should look like:
+Just as well though as it made me think a little more about this
+patch :)
 
-This patch looks good, but please resend it as a proper v2 patch.
-
-https://www.google.com/search?q=how+to+send+a+v2+patch
-
-> ---
-> From: Matej Mužila <mmuzila@redhat.com>
-> 
-> Check if cpmsg->size is in limits of DATA_FRAGMENT
-> 
-> Signed-off-by: Matej Mužila <mmuzila@redhat.com>
-> ---
-> If corrupted data are read from /dev/vmbus/hv_fcopy, pwrite can
-> read from memory outside of the buffer (defined at line 138).
-> Added check. 
-
-Put this information in the patch description and not beyond the cut
-off.  That information is useful.
-
-The cut off is meant for meta comentary to say what changed between v1
-and v2 etc, which is nice to have but we don't want to preserve it.
-
-regards,
-dan carpenter
-
-
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
