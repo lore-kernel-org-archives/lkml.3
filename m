@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756111AbaJURsM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 13:48:12 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:38856 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755618AbaJURsH (ORCPT
+	id S1756115AbaJURsp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 13:48:45 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:36655 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755489AbaJURsF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 13:48:07 -0400
+	Tue, 21 Oct 2014 13:48:05 -0400
 X-Google-Original-Sender: <johan@hovold.com>
 From: Johan Hovold <johan@kernel.org>
 To: Alessandro Zummo <a.zummo@towertech.it>, Tony Lindgren <tony@atomide.com>,
@@ -18,9 +18,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         devicetree@vger.kernel.org, rtc-linux@googlegroups.com,
         linux-kernel@vger.kernel.org, Johan Hovold <johan@kernel.org>
-Subject: [PATCH v2 15/20] rtc: omap: add support for pmic_power_en
-Date: Tue, 21 Oct 2014 19:38:01 +0200
-Message-Id: <1413913086-12730-16-git-send-email-johan@kernel.org>
+Subject: [PATCH v2 17/20] rtc: omap: fix minor coding style issues
+Date: Tue, 21 Oct 2014 19:38:03 +0200
+Message-Id: <1413913086-12730-18-git-send-email-johan@kernel.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <1413913086-12730-1-git-send-email-johan@kernel.org>
 References: <1412881594-25678-1-git-send-email-johan@kernel.org>
@@ -29,233 +29,162 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add new property "ti,system-power-controller" to register the RTC as a
-power-off handler.
+Fix minor coding style issues like comment style, indentation and remove
+a few unnecessary casts.
 
-Some RTC IP revisions can control an external PMIC via the pmic_power_en
-pin, which can be configured to transition to OFF on ALARM2 events and
-back to ON on subsequent ALARM (wakealarm) events.
-
-This is based on earlier work by Colin Foe-Parker and AnilKumar Ch. [1]
-
-[1] https://www.mail-archive.com/linux-omap@vger.kernel.org/msg82127.html
+Also drop the 1 from OMAP1 in the driver description.
 
 Signed-off-by: Johan Hovold <johan@kernel.org>
 ---
- Documentation/devicetree/bindings/rtc/rtc-omap.txt |  9 ++-
- drivers/rtc/rtc-omap.c                             | 93 ++++++++++++++++++++++
- 2 files changed, 101 insertions(+), 1 deletion(-)
+ drivers/rtc/rtc-omap.c | 46 +++++++++++++++++++++++++++-------------------
+ 1 file changed, 27 insertions(+), 19 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/rtc/rtc-omap.txt b/Documentation/devicetree/bindings/rtc/rtc-omap.txt
-index 5a0f02d34d95..750efd40c72e 100644
---- a/Documentation/devicetree/bindings/rtc/rtc-omap.txt
-+++ b/Documentation/devicetree/bindings/rtc/rtc-omap.txt
-@@ -5,11 +5,17 @@ Required properties:
- 	- "ti,da830-rtc"  - for RTC IP used similar to that on DA8xx SoC family.
- 	- "ti,am3352-rtc" - for RTC IP used similar to that on AM335x SoC family.
- 			    This RTC IP has special WAKE-EN Register to enable
--			    Wakeup generation for event Alarm.
-+			    Wakeup generation for event Alarm. It can also be
-+			    used to control an external PMIC via the
-+			    pmic_power_en pin.
- - reg: Address range of rtc register set
- - interrupts: rtc timer, alarm interrupts in order
- - interrupt-parent: phandle for the interrupt controller
- 
-+Optional properties:
-+- ti,system-power-controller: whether the rtc is controlling the system power
-+  through pmic_power_en
-+
- Example:
- 
- rtc@1c23000 {
-@@ -18,4 +24,5 @@ rtc@1c23000 {
- 	interrupts = <19
- 		      19>;
- 	interrupt-parent = <&intc>;
-+	ti,system-power-controller;
- };
 diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
-index c508e45ca3ce..f6c93f877857 100644
+index cb5ef3c845d1..4278421183e5 100644
 --- a/drivers/rtc/rtc-omap.c
 +++ b/drivers/rtc/rtc-omap.c
-@@ -68,6 +68,15 @@
+@@ -1,5 +1,5 @@
+ /*
+- * TI OMAP1 Real Time Clock interface for Linux
++ * TI OMAP Real Time Clock interface for Linux
+  *
+  * Copyright (C) 2003 MontaVista Software, Inc.
+  * Author: George G. Davis <gdavis@mvista.com> or <source@mvista.com>
+@@ -25,7 +25,8 @@
+ #include <linux/pm_runtime.h>
+ #include <linux/io.h>
  
- #define OMAP_RTC_IRQWAKEEN		0x7c
+-/* The OMAP1 RTC is a year/month/day/hours/minutes/seconds BCD clock
++/*
++ * The OMAP RTC is a year/month/day/hours/minutes/seconds BCD clock
+  * with century-range alarm matching, driven by the 32kHz clock.
+  *
+  * The main user-visible ways it differs from PC RTCs are by omitting
+@@ -154,19 +155,20 @@ static inline void rtc_writel(struct omap_rtc *rtc, unsigned int reg, u32 val)
+ 	writel(val, rtc->base + reg);
+ }
  
-+#define OMAP_RTC_ALARM2_SECONDS_REG	0x80
-+#define OMAP_RTC_ALARM2_MINUTES_REG	0x84
-+#define OMAP_RTC_ALARM2_HOURS_REG	0x88
-+#define OMAP_RTC_ALARM2_DAYS_REG	0x8c
-+#define OMAP_RTC_ALARM2_MONTHS_REG	0x90
-+#define OMAP_RTC_ALARM2_YEARS_REG	0x94
+-/* we rely on the rtc framework to handle locking (rtc->ops_lock),
++/*
++ * We rely on the rtc framework to handle locking (rtc->ops_lock),
+  * so the only other requirement is that register accesses which
+  * require BUSY to be clear are made with IRQs locally disabled
+  */
+ static void rtc_wait_not_busy(struct omap_rtc *rtc)
+ {
+-	int	count = 0;
+-	u8	status;
++	int count;
++	u8 status;
+ 
+ 	/* BUSY may stay active for 1/32768 second (~30 usec) */
+ 	for (count = 0; count < 50; count++) {
+ 		status = rtc_read(rtc, OMAP_RTC_STATUS_REG);
+-		if ((status & (u8)OMAP_RTC_STATUS_BUSY) == 0)
++		if (!(status & OMAP_RTC_STATUS_BUSY))
+ 			break;
+ 		udelay(1);
+ 	}
+@@ -175,9 +177,9 @@ static void rtc_wait_not_busy(struct omap_rtc *rtc)
+ 
+ static irqreturn_t rtc_irq(int irq, void *dev_id)
+ {
+-	struct omap_rtc		*rtc = dev_id;
+-	unsigned long		events = 0;
+-	u8			irq_data;
++	struct omap_rtc	*rtc = dev_id;
++	unsigned long events = 0;
++	u8 irq_data;
+ 
+ 	irq_data = rtc_read(rtc, OMAP_RTC_STATUS_REG);
+ 
+@@ -276,6 +278,7 @@ static int omap_rtc_read_time(struct device *dev, struct rtc_time *tm)
+ 	local_irq_enable();
+ 
+ 	bcd2tm(tm);
 +
-+#define OMAP_RTC_PMIC_REG		0x98
-+
- /* OMAP_RTC_CTRL_REG bit fields: */
- #define OMAP_RTC_CTRL_SPLIT		BIT(7)
- #define OMAP_RTC_CTRL_DISABLE		BIT(6)
-@@ -80,6 +89,7 @@
- 
- /* OMAP_RTC_STATUS_REG bit fields: */
- #define OMAP_RTC_STATUS_POWER_UP	BIT(7)
-+#define OMAP_RTC_STATUS_ALARM2		BIT(7)
- #define OMAP_RTC_STATUS_ALARM		BIT(6)
- #define OMAP_RTC_STATUS_1D_EVENT	BIT(5)
- #define OMAP_RTC_STATUS_1H_EVENT	BIT(4)
-@@ -89,6 +99,7 @@
- #define OMAP_RTC_STATUS_BUSY		BIT(0)
- 
- /* OMAP_RTC_INTERRUPTS_REG bit fields: */
-+#define OMAP_RTC_INTERRUPTS_IT_ALARM2	BIT(4)
- #define OMAP_RTC_INTERRUPTS_IT_ALARM	BIT(3)
- #define OMAP_RTC_INTERRUPTS_IT_TIMER	BIT(2)
- 
-@@ -98,6 +109,9 @@
- /* OMAP_RTC_IRQWAKEEN bit fields: */
- #define OMAP_RTC_IRQWAKEEN_ALARM_WAKEEN	BIT(1)
- 
-+/* OMAP_RTC_PMIC bit fields: */
-+#define OMAP_RTC_PMIC_POWER_EN_EN	BIT(16)
-+
- /* OMAP_RTC_KICKER values */
- #define	KICK0_VALUE			0x83e70b13
- #define	KICK1_VALUE			0x95a4f1e0
-@@ -106,6 +120,7 @@ struct omap_rtc_device_type {
- 	bool has_32kclk_en;
- 	bool has_kicker;
- 	bool has_irqwakeen;
-+	bool has_pmic_mode;
- 	bool has_power_up_reset;
- };
- 
-@@ -115,6 +130,7 @@ struct omap_rtc {
- 	int irq_alarm;
- 	int irq_timer;
- 	u8 interrupts_reg;
-+	bool is_pmic_controller;
- 	const struct omap_rtc_device_type *type;
- };
- 
-@@ -345,6 +361,63 @@ static int omap_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alm)
  	return 0;
  }
  
-+static struct omap_rtc *omap_rtc_power_off_rtc;
-+
-+/*
-+ * omap_rtc_poweroff: RTC-controlled power off
-+ *
-+ * The RTC can be used to control an external PMIC via the pmic_power_en pin,
-+ * which can be configured to transition to OFF on ALARM2 events.
-+ *
-+ * Notes:
-+ * The two-second alarm offset is the shortest offset possible as the alarm
-+ * registers must be set before the next timer update and the offset
-+ * calculation is too heavy for everything to be done within a single access
-+ * period (~15us).
-+ *
-+ * Called with local interrupts disabled.
-+ */
-+static void omap_rtc_power_off(void)
-+{
-+	struct omap_rtc *rtc = omap_rtc_power_off_rtc;
-+	struct rtc_time tm;
-+	unsigned long now;
-+	u32 val;
-+
-+	/* enable pmic_power_en control */
-+	val = rtc_readl(rtc, OMAP_RTC_PMIC_REG);
-+	rtc_writel(rtc, OMAP_RTC_PMIC_REG, val | OMAP_RTC_PMIC_POWER_EN_EN);
-+
-+	/* set alarm two seconds from now */
-+	omap_rtc_read_time_raw(rtc, &tm);
-+	bcd2tm(&tm);
-+	rtc_tm_to_time(&tm, &now);
-+	rtc_time_to_tm(now + 2, &tm);
-+
-+	if (tm2bcd(&tm) < 0) {
-+		dev_err(&rtc->rtc->dev, "power off failed\n");
-+		return;
-+	}
-+
-+	rtc_wait_not_busy(rtc);
-+
-+	rtc_write(rtc, OMAP_RTC_ALARM2_SECONDS_REG, tm.tm_sec);
-+	rtc_write(rtc, OMAP_RTC_ALARM2_MINUTES_REG, tm.tm_min);
-+	rtc_write(rtc, OMAP_RTC_ALARM2_HOURS_REG, tm.tm_hour);
-+	rtc_write(rtc, OMAP_RTC_ALARM2_DAYS_REG, tm.tm_mday);
-+	rtc_write(rtc, OMAP_RTC_ALARM2_MONTHS_REG, tm.tm_mon);
-+	rtc_write(rtc, OMAP_RTC_ALARM2_YEARS_REG, tm.tm_year);
-+
-+	/*
-+	 * enable ALARM2 interrupt
-+	 *
-+	 * NOTE: this fails on AM3352 if rtc_write (writeb) is used
-+	 */
-+	val = rtc_read(rtc, OMAP_RTC_INTERRUPTS_REG);
-+	rtc_writel(rtc, OMAP_RTC_INTERRUPTS_REG,
-+			val | OMAP_RTC_INTERRUPTS_IT_ALARM2);
-+}
-+
- static struct rtc_class_ops omap_rtc_ops = {
- 	.read_time	= omap_rtc_read_time,
- 	.set_time	= omap_rtc_set_time,
-@@ -361,6 +434,7 @@ static const struct omap_rtc_device_type omap_rtc_am3352_type = {
- 	.has_32kclk_en	= true,
- 	.has_kicker	= true,
- 	.has_irqwakeen	= true,
-+	.has_pmic_mode	= true,
- };
+@@ -285,6 +288,7 @@ static int omap_rtc_set_time(struct device *dev, struct rtc_time *tm)
  
- static const struct omap_rtc_device_type omap_rtc_da830_type = {
-@@ -412,6 +486,9 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
- 	of_id = of_match_device(omap_rtc_of_match, &pdev->dev);
- 	if (of_id) {
- 		rtc->type = of_id->data;
-+		rtc->is_pmic_controller = rtc->type->has_pmic_mode &&
-+				of_property_read_bool(pdev->dev.of_node,
-+						"ti,system-power-controller");
- 	} else {
- 		id_entry = platform_get_device_id(pdev);
- 		rtc->type = (void *)id_entry->driver_data;
-@@ -460,6 +537,9 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
- 
- 	mask = OMAP_RTC_STATUS_ALARM;
- 
-+	if (rtc->type->has_pmic_mode)
-+		mask |= OMAP_RTC_STATUS_ALARM2;
+ 	if (tm2bcd(tm) < 0)
+ 		return -EINVAL;
 +
- 	if (rtc->type->has_power_up_reset) {
- 		mask |= OMAP_RTC_STATUS_POWER_UP;
- 		if (reg & OMAP_RTC_STATUS_POWER_UP)
-@@ -520,6 +600,13 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
- 			goto err;
- 	}
+ 	local_irq_disable();
+ 	rtc_wait_not_busy(rtc);
  
-+	if (rtc->is_pmic_controller) {
-+		if (!pm_power_off) {
-+			omap_rtc_power_off_rtc = rtc;
-+			pm_power_off = omap_rtc_power_off;
-+		}
-+	}
-+
- 	return 0;
- 
- err:
-@@ -536,6 +623,12 @@ static int __exit omap_rtc_remove(struct platform_device *pdev)
+@@ -303,6 +307,7 @@ static int omap_rtc_set_time(struct device *dev, struct rtc_time *tm)
+ static int omap_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alm)
  {
- 	struct omap_rtc *rtc = platform_get_drvdata(pdev);
+ 	struct omap_rtc *rtc = dev_get_drvdata(dev);
++	u8 interrupts;
  
-+	if (pm_power_off == omap_rtc_power_off &&
-+			omap_rtc_power_off_rtc == rtc) {
-+		pm_power_off = NULL;
-+		omap_rtc_power_off_rtc = NULL;
-+	}
+ 	local_irq_disable();
+ 	rtc_wait_not_busy(rtc);
+@@ -317,8 +322,9 @@ static int omap_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alm)
+ 	local_irq_enable();
+ 
+ 	bcd2tm(&alm->time);
+-	alm->enabled = !!(rtc_read(rtc, OMAP_RTC_INTERRUPTS_REG)
+-			& OMAP_RTC_INTERRUPTS_IT_ALARM);
 +
- 	device_init_wakeup(&pdev->dev, 0);
++	interrupts = rtc_read(rtc, OMAP_RTC_INTERRUPTS_REG);
++	alm->enabled = !!(interrupts & OMAP_RTC_INTERRUPTS_IT_ALARM);
  
- 	/* leave rtc running, but disable irqs */
+ 	return 0;
+ }
+@@ -472,9 +478,9 @@ MODULE_DEVICE_TABLE(of, omap_rtc_of_match);
+ 
+ static int __init omap_rtc_probe(struct platform_device *pdev)
+ {
+-	struct omap_rtc		*rtc;
+-	struct resource		*res;
+-	u8			reg, mask, new_ctrl;
++	struct omap_rtc	*rtc;
++	struct resource	*res;
++	u8 reg, mask, new_ctrl;
+ 	const struct platform_device_id *id_entry;
+ 	const struct of_device_id *of_id;
+ 	int ret;
+@@ -551,14 +557,15 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
+ 
+ 	/* On boards with split power, RTC_ON_NOFF won't reset the RTC */
+ 	reg = rtc_read(rtc, OMAP_RTC_CTRL_REG);
+-	if (reg & (u8) OMAP_RTC_CTRL_STOP)
++	if (reg & OMAP_RTC_CTRL_STOP)
+ 		dev_info(&pdev->dev, "already running\n");
+ 
+ 	/* force to 24 hour mode */
+-	new_ctrl = reg & (OMAP_RTC_CTRL_SPLIT|OMAP_RTC_CTRL_AUTO_COMP);
++	new_ctrl = reg & (OMAP_RTC_CTRL_SPLIT | OMAP_RTC_CTRL_AUTO_COMP);
+ 	new_ctrl |= OMAP_RTC_CTRL_STOP;
+ 
+-	/* BOARD-SPECIFIC CUSTOMIZATION CAN GO HERE:
++	/*
++	 * BOARD-SPECIFIC CUSTOMIZATION CAN GO HERE:
+ 	 *
+ 	 *  - Device wake-up capability setting should come through chip
+ 	 *    init logic. OMAP1 boards should initialize the "wakeup capable"
+@@ -572,7 +579,7 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
+ 	 *    is write-only, and always reads as zero...)
+ 	 */
+ 
+-	if (new_ctrl & (u8) OMAP_RTC_CTRL_SPLIT)
++	if (new_ctrl & OMAP_RTC_CTRL_SPLIT)
+ 		dev_info(&pdev->dev, "split power mode\n");
+ 
+ 	if (reg != new_ctrl)
+@@ -651,7 +658,8 @@ static int omap_rtc_suspend(struct device *dev)
+ 
+ 	rtc->interrupts_reg = rtc_read(rtc, OMAP_RTC_INTERRUPTS_REG);
+ 
+-	/* FIXME the RTC alarm is not currently acting as a wakeup event
++	/*
++	 * FIXME: the RTC alarm is not currently acting as a wakeup event
+ 	 * source on some platforms, and in fact this enable() call is just
+ 	 * saving a flag that's never used...
+ 	 */
 -- 
 2.0.4
 
