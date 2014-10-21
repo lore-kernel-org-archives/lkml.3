@@ -1,88 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932513AbaJUMlE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 08:41:04 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:54499 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932423AbaJUMlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 08:41:01 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, Alan Cox <gnomes@lxorguk.ukuu.org.uk>,
-        Alexander Graf <agraf@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Lee Jones <lee.jones@linaro.org>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>,
-        Philippe =?ISO-8859-1?Q?R=E9tornaz?= 
-	<philippe.retornaz@gmail.com>,
-        Romain Perier <romain.perier@gmail.com>
-Subject: Re: [PATCH v2 01/47] kernel: Add support for poweroff handler call chain
-Date: Tue, 21 Oct 2014 14:44 +0200
-Message-ID: <1752920.2kdbbr5GW9@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <41603148.RJg26vx0Wv@vostro.rjw.lan>
-References: <1413864783-3271-1-git-send-email-linux@roeck-us.net> <1413864783-3271-2-git-send-email-linux@roeck-us.net> <41603148.RJg26vx0Wv@vostro.rjw.lan>
+	id S1755438AbaJUMrm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 08:47:42 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:38719 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755274AbaJUMrl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 08:47:41 -0400
+Message-ID: <544655E8.8070004@electrozaur.com>
+Date: Tue, 21 Oct 2014 15:47:36 +0300
+From: Boaz Harrosh <ooo@electrozaur.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Jeff Garzik <jgpobox@gmail.com>, Christoph Hellwig <hch@infradead.org>
+CC: Jeff Garzik <jgarzik@pobox.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        osd-dev@open-osd.org
+Subject: Re: state of the osdblk driver?
+References: <20141021120653.GA9530@infradead.org> <CAFtxgO5cPNTMqyY5Foqp_Y+pqCH=zTiatREn-4xRCTm8o5GLwA@mail.gmail.com>
+In-Reply-To: <CAFtxgO5cPNTMqyY5Foqp_Y+pqCH=zTiatREn-4xRCTm8o5GLwA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 21. Oktober 2014, 14:26:10 schrieb Rafael J. Wysocki:
-> On Monday, October 20, 2014 09:12:17 PM Guenter Roeck wrote:
-> > Various drivers implement architecture and/or device specific means to
-> > remove power from the system.  For the most part, those drivers set the
-> > global variable pm_power_off to point to a function within the driver.
-> > 
-> > This mechanism has a number of drawbacks.  Typically only one scheme
-> > to remove power is supported (at least if pm_power_off is used).
-> > At least in theory there can be multiple means remove power, some of
-> > which may be less desirable. For example, some mechanisms may only
-> > power off the CPU or the CPU card, while another may power off the
-> > entire system.  Others may really just execute a restart sequence
-> > or drop into the ROM monitor. Using pm_power_off can also be racy
-> > if the function pointer is set from a driver built as module, as the
-> > driver may be in the process of being unloaded when pm_power_off is
-> > called. If there are multiple poweroff handlers in the system, removing
-> > a module with such a handler may inadvertently reset the pointer to
-> > pm_power_off to NULL, leaving the system with no means to remove power.
-> > 
-> > Introduce a system poweroff handler call chain to solve the described
-> > problems.  This call chain is expected to be executed from the
-> > architecture specific machine_power_off() function.  Drivers providing
-> > system poweroff functionality are expected to register with this call
-> > chain. By using the priority field in the notifier block, callers can
-> > control poweroff handler execution sequence and thus ensure that the
-> > poweroff handler with the optimal capabilities to remove power for a
-> > given system is called first.
+On 10/21/2014 03:21 PM, Jeff Garzik wrote:
+> On Tue, Oct 21, 2014 at 8:06 AM, Christoph Hellwig <hch@infradead.org> wrote:
+>> The osdblk driver hsa seen literally no change except for global
+>> API changes since it was merged, and I've never heard of a user.
+>>
+>> Is this something we want to keep around?  I just noticed it because
+>> it's the only non-SCSI user of some of the old block layer tagging
+>> functions.
 > 
-> Well, I must admit to having second thoughts regarding this particular
-> mechanism.  Namely, notifiers don't seem to be the best way of expressing
-> what's needed from the design standpoint.
+> Drop it, if there are no users.
 > 
-> It looks like we need a list of power off methods and a way to select one
-> of them, so it seems that using a plist would be a natural choice here?
+> It was simulating an OSD, but there did not seem to be much beyond
+> academic interest, and some interest in the use of aforementioned
+> block functions as a useful exercise in block driver writing.
+> 
+> 
 
-I actually like Guenter's approach of traversing a sorted list of poweroff 
-methods until one of them really turns off the device.
+It is used in testing, its a good way to compare ext4 over objects
+vs exofs over objects, kind of compare apples with apples.
+(Also at the get go it was a good test that found some bugs in the
+ bring up of the osd target)
 
+If there is an old tagging API need removing its fine to just drop
+the support, and/or do the minimal change possible. What was the
+tag used for anyway?
 
-For example, one device I work on has this strange mechanism where the device 
-stays powered on while either a gpio is high or the device is connected to a 
-host via usb - it cannot be turned off at all while it is connected via usb.
+If it bothers you very much then please remove it, send a patch
+and I'll ACK it.
 
-So the established way of handling poweroff there is to check the usb 
-connection and either shutdown or restart [where the bootloader will enter a 
-charging cycle and really poweroff the device once it gets disconnected].
+[Just that I thought we don't do that. I can show you a dozen
+ ISA scsi LLD controllers which are a complete pain in the neck
+ with a all subsection core support. There is not a single system
+ on the planet that has this even possible, yet we do not remove
+ them nor the ISA bus crap. osdblk at least is a SW only exercise
+ that can be very much valid in any system.
+]
 
-If there is only one method to shutdown possible this device-specific behaviour 
-would need to be encoded in some sort of poweroff driver, while with Guenter's 
-current approach I could just register the gpio-poweroff at a higher priority 
-which would then fall down to the lower priority restart if the device stays 
-powered due to the usb connection.
+Your call sir, I'm with you on this
+Thanks
+Boaz
 
-
-Heiko
