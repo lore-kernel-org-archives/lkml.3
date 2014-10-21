@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129AbaJUKFY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 06:05:24 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:49906 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754406AbaJUKFX (ORCPT
+	id S1755149AbaJUKF5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 06:05:57 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:53443 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753219AbaJUKFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 06:05:23 -0400
-X-Originating-IP: 50.43.41.112
-Date: Tue, 21 Oct 2014 03:05:11 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rob Landley <rob@landley.net>, Frank Rowand <frowand.list@gmail.com>,
+	Tue, 21 Oct 2014 06:05:55 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        Ankit Jindal <ankit.jindal@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Varka Bhadram <varkabhadram@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Guenter Roeck <linux@roeck-us.net>, "Hans J. Koch" <hjk@hansjkoch.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chuck Ebbert <cebbert.lkml@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH] init: Remove CONFIG_INIT_FALLBACK
-Message-ID: <20141021100510.GA28414@thin>
-References: <20141020144448.59e2e067d632c70353296e56@linux-foundation.org>
- <a6b3d86db6f5d19f7130b8dba2703dda68cb14d5.1413842560.git.luto@amacapital.net>
- <CAMuHMdWrXaJnfuyxOP-4zQyYJwrho6XvbTcjtwNK4pgoSH9PFw@mail.gmail.com>
+        "patches@apm.com" <patches@apm.com>, Rob Herring <robh+dt@kernel.org>,
+        Tushar Jagad <tushar.jagad@linaro.org>
+Subject: Re: [PATCH v3 5/6] Documentation: dt-bindings: Add binding info for X-Gene QMTM UIO driver
+Date: Tue, 21 Oct 2014 12:05:42 +0200
+Message-ID: <3725049.9xPbukhCva@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141021091412.GB15293@leverpostej>
+References: <1413871011-4101-1-git-send-email-ankit.jindal@linaro.org> <1413871011-4101-6-git-send-email-ankit.jindal@linaro.org> <20141021091412.GB15293@leverpostej>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdWrXaJnfuyxOP-4zQyYJwrho6XvbTcjtwNK4pgoSH9PFw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:27uoHhagJuTbG5dplru47xfIeB7JvP4EbVAagwkRBuP
+ qIeYGirOJOcYXPyrL19RwXQEb/QyNFqKF0JlC4jmpNvRQtjNrk
+ EP/ZClDPdgXdJahNJCchG3DHpePp6VP/+YiLkJwfXvJRnn8ozh
+ GJ+J+wchkV9dpsgLMJSc7MKw3I3Uwcfoiepv0kTF3lgFwSg/nn
+ 3OdQg1V9PtMhSJTkNQlGfddy7yKtxoVemTfTHQallsp1b1WkS9
+ vtCzKqZJI/8Cbe7sFoI56JOgL12xddt0sYXzK/H2CABGQl11ad
+ DF+0t6Z+Cb9UTpcG6cwGSYhVpNWOQU/EbCuRzpS8JStAZvdblv
+ CnclY860T7ajUdFFp2FM=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 11:53:04AM +0200, Geert Uytterhoeven wrote:
-> On Tue, Oct 21, 2014 at 12:04 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> > CONFIG_INIT_FALLBACK adds config bloat without an obvious use case
-> > that makes it worth keeping around.  Delete it.
-> >
-> > Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> > ---
-> >
-> > Bring on the blame :)
-> >
-> >  init/Kconfig | 16 ----------------
-> >  init/main.c  |  5 -----
-> >  2 files changed, 21 deletions(-)
-> >
-> > diff --git a/init/Kconfig b/init/Kconfig
-> > index ebbd5846478e..e84c6423a2e5 100644
-> > --- a/init/Kconfig
-> > +++ b/init/Kconfig
-> > @@ -1299,22 +1299,6 @@ source "usr/Kconfig"
-> >
-> >  endif
-> >
-> > -config INIT_FALLBACK
-> > -       bool "Fall back to defaults if init= parameter is bad"
-> > -       default y
-> > -       help
+On Tuesday 21 October 2014 10:14:12 Mark Rutland wrote:
 > 
-> The above is not in mainline, nor in -next?
-> Seems it only exists in a patch series you sent yourself?
+> > +The Applied Micro X-Gene SOC has on-chip QMTM (Queue manager
+> > +and Traffic manager). It is a device for managing hardware queues.
+> > +It also implements QoS among hardware queues hence term "traffic"
+> > +manager is present in its name. QMTM UIO nodes are defined for user
+> > +space access to this device using UIO framework.
 > 
-> Confused...
+> The binding should describe the hardware, not the software. Please drop
+> mention of UIO, userspace, etc.
 
-See the previous thread.  The previous patch adds this config option to
-make the current default behavior optional.  The removal patch then
-removes the old default behavior.  Andrew plans to push them in
-successive kernels, to give more review time.
+I have a bad feeling about the entire idea of doing the UIO driver first,
+there are too many unknowns here and we should not break the binding
+when the proper driver gets added.
 
-- Josh Triplett
+The X-Gene is meant for server workloads, so the UIO approach is not
+a good longterm solution anyway. My impression is that it would be
+better to first get the kernel driver for this hardware merged and
+the binding fixed, and then a UIO stub could get added to that driver,
+taking over the hardware by user space. This would also solve the
+arbitration between the two driver implementations. It's also possible
+that by that time, we will have a functional VFIO framework for
+platform devices.
+
+	Arnd
