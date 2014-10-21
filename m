@@ -1,84 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754865AbaJUI6U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 04:58:20 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:34899 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031AbaJUI6Q (ORCPT
+	id S1754838AbaJUI5t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 04:57:49 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:51222 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754043AbaJUIyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 04:58:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <1412260136.4875.9.camel@pengutronix.de>
-References: <1411443545-24951-1-git-send-email-srv_hongzhou.yang@mediatek.com>
-	<1411443545-24951-5-git-send-email-srv_hongzhou.yang@mediatek.com>
-	<CACRpkda-K7w-bY0uSdnZvzEKEeQg38oExoHPSW61kEv9Wv20mA@mail.gmail.com>
-	<20140924124044.GC4992@pengutronix.de>
-	<CACRpkdbtN-BDEwpJO2swnOjCe3UJhD5WOXXKBV0hPOe2M2=k7Q@mail.gmail.com>
-	<1412260136.4875.9.camel@pengutronix.de>
-Date: Tue, 21 Oct 2014 10:58:15 +0200
-Message-ID: <CACRpkdZv30EAH2vzyfaOQQ4uzEjQ8DwSSHiPr-TsbWUMDmHj7Q@mail.gmail.com>
-Subject: Re: [PATCH v2 4/4] ARM: dts: mt8135: Add pinctrl node for mt8135.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lucas Stach <l.stach@pengutronix.de>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>, Mark Rutland <mark.rutland@arm.com>,
-        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        "Hongzhou.Yang" <srv_hongzhou.yang@mediatek.com>,
-        Vladimir Murzin <vladimir.murzin@arm.com>,
-        Russell King <linux@arm.linux.org.uk>, srv_heupstream@mediatek.com,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Hongzhou Yang <hongzhou.yang@mediatek.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Sascha Hauer <kernel@pengutronix.de>,
-        Kumar Gala <galak@codeaurora.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        "Joe.C" <yingjoe.chen@mediatek.com>, dandan.he@mediatek.com,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+	Tue, 21 Oct 2014 04:54:00 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/9] net: pxa168_eth: Prepare proper libphy handling
+Date: Tue, 21 Oct 2014 10:53:41 +0200
+Message-Id: <1413881627-21639-4-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1413881627-21639-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1413881627-21639-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 2, 2014 at 4:28 PM, Lucas Stach <l.stach@pengutronix.de> wrote:
-> Am Donnerstag, den 02.10.2014, 16:02 +0200 schrieb Linus Walleij:
+Current libphy handling in pxa168_eth lacks proper phy_connect. Prepare
+to fix this by first moving phy properties from platform_data to private
+driver data.
 
->> > Agreed for standardized device tree bindings, but not for using strings.
->>
->> What is the alternative? Device Tree is very much about strings,
->> as is shown by the pin config bindings.
->>
-> Mhm, maybe we are still talking about different things but I just don't
-> get your point. Traditionally DT is more about plain numbers than
-> strings. Look at the early examples of PCI or other bus bindings,
-> defined back in the IEEE 1275 days. Almost everything back then has
-> been mapped to plain numbers.
->
-> Using strings only bloats the DT, not only in it's source form, but also
-> as a compiled DTB. (...)
+Tested-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: "Antoine Ténart" <antoine.tenart@free-electrons.com>
+Cc: Florian Fainelli <f.fainelli@gmail.com>
+Cc: Eric Miao <eric.y.miao@gmail.com>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/net/ethernet/marvell/pxa168_eth.c | 38 +++++++++++++++++++------------
+ 1 file changed, 23 insertions(+), 15 deletions(-)
 
-OK I think we have arrived (in this thread and in others) to the old
-discussion of whether to use groups or per-pin function setting in
-drivers.
+diff --git a/drivers/net/ethernet/marvell/pxa168_eth.c b/drivers/net/ethernet/marvell/pxa168_eth.c
+index c3b209cd0660..332700144d81 100644
+--- a/drivers/net/ethernet/marvell/pxa168_eth.c
++++ b/drivers/net/ethernet/marvell/pxa168_eth.c
+@@ -197,6 +197,9 @@ struct tx_desc {
+ struct pxa168_eth_private {
+ 	int port_num;		/* User Ethernet port number    */
+ 	int phy_addr;
++	int phy_speed;
++	int phy_duplex;
++	phy_interface_t phy_intf;
+ 
+ 	int rx_resource_err;	/* Rx ring resource error flag */
+ 
+@@ -1394,19 +1397,17 @@ static void phy_init(struct pxa168_eth_private *pep)
+ {
+ 	struct phy_device *phy = pep->phy;
+ 
+-	phy_attach(pep->dev, dev_name(&phy->dev), PHY_INTERFACE_MODE_MII);
++	phy_attach(pep->dev, dev_name(&phy->dev), pep->phy_intf);
+ 
+-	if (pep->pd && pep->pd->speed != 0) {
++	phy->speed = pep->phy_speed;
++	phy->duplex = pep->phy_duplex;
++	phy->autoneg = AUTONEG_ENABLE;
++	phy->supported &= PHY_BASIC_FEATURES;
++	phy->advertising = phy->supported | ADVERTISED_Autoneg;
++
++	if (pep->phy_speed != 0) {
+ 		phy->autoneg = AUTONEG_DISABLE;
+ 		phy->advertising = 0;
+-		phy->speed = pep->pd->speed;
+-		phy->duplex = pep->pd->duplex;
+-	} else {
+-		phy->autoneg = AUTONEG_ENABLE;
+-		phy->speed = 0;
+-		phy->duplex = 0;
+-		phy->supported &= PHY_BASIC_FEATURES;
+-		phy->advertising = phy->supported | ADVERTISED_Autoneg;
+ 	}
+ 
+ 	phy_start_aneg(phy);
+@@ -1416,9 +1417,6 @@ static int ethernet_phy_setup(struct net_device *dev)
+ {
+ 	struct pxa168_eth_private *pep = netdev_priv(dev);
+ 
+-	if (pep->pd && pep->pd->init)
+-		pep->pd->init();
+-
+ 	pep->phy = phy_scan(pep, pep->phy_addr & 0x1f);
+ 	if (pep->phy != NULL)
+ 		phy_init(pep);
+@@ -1552,13 +1550,23 @@ static int pxa168_eth_probe(struct platform_device *pdev)
+ 
+ 		pep->port_num = pep->pd->port_number;
+ 		pep->phy_addr = pep->pd->phy_addr;
++		pep->phy_speed = pep->pd->speed;
++		pep->phy_duplex = pep->pd->duplex;
++		pep->phy_intf = pep->pd->intf;
++
++		if (pep->pd->init)
++			pep->pd->init();
+ 	} else if (pdev->dev.of_node) {
+ 		of_property_read_u32(pdev->dev.of_node, "port-id",
+ 				     &pep->port_num);
+ 
+ 		np = of_parse_phandle(pdev->dev.of_node, "phy-handle", 0);
+-		if (np)
+-			of_property_read_u32(np, "reg", &pep->phy_addr);
++		if (!np) {
++			dev_err(&pdev->dev, "missing phy-handle\n");
++			return -EINVAL;
++		}
++		of_property_read_u32(np, "reg", &pep->phy_addr);
++		pep->phy_intf = of_get_phy_mode(np);
+ 	}
+ 
+ 	/* Hardware supports only 3 ports */
+-- 
+2.1.1
 
-Let us move forward like this:
-
-I have proposed a general binding of functions+groups (as strings)
-which will be suitable for some.
-
-What would you propose as a general binding for systems using
-per-pin configuration?
-
-My problem as a subsystem maintainer is that there are too many
-custom bindings. We need to standardize on something.
-
-For pin config we have attained some consensus, and that is indeed
-using strings "bias-pull-up" etc, simply because there is no
-sane way to enumerate them all, and it is simple to read by
-humans.
-
-Yours,
-Linus Walleij
