@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933701AbaJUR4N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 13:56:13 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53116 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933430AbaJUR4L (ORCPT
+	id S933395AbaJUSAf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 14:00:35 -0400
+Received: from mail-oi0-f46.google.com ([209.85.218.46]:34135 "EHLO
+	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755485AbaJUSAd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 13:56:11 -0400
-Date: Tue, 21 Oct 2014 19:56:03 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Ingo Molnar <mingo@kernel.org>, torvalds@linux-foundation.org,
-        paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
-        akpm@linux-foundation.org, riel@redhat.com, mgorman@suse.de,
-        oleg@redhat.com, mingo@redhat.com, minchan@kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
-        laijs@cn.fujitsu.com, dave@stgolabs.net, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC][PATCH 0/6] Another go at speculative page faults
-Message-ID: <20141021175603.GI3219@twins.programming.kicks-ass.net>
-References: <20141020215633.717315139@infradead.org>
- <20141021162340.GA5508@gmail.com>
- <20141021170948.GA25964@node.dhcp.inet.fi>
+	Tue, 21 Oct 2014 14:00:33 -0400
+Message-ID: <54469F44.4060701@gmail.com>
+Date: Tue, 21 Oct 2014 11:00:36 -0700
+From: Santosh Shilimkar <santosh.shilimkar@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141021170948.GA25964@node.dhcp.inet.fi>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Grygorii Strashko <grygorii.strashko@ti.com>, ssantosh@kernel.org,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, khilman@linaro.org
+CC: Geert Uytterhoeven <geert+renesas@glider.be>, linux-pm@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, grant.likely@secretlab.ca,
+        ulf.hansson@linaro.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] PM / clock_ops: Add pm_clk_add_clk()
+References: <1413809764-21995-1-git-send-email-grygorii.strashko@ti.com> <1413809764-21995-2-git-send-email-grygorii.strashko@ti.com>
+In-Reply-To: <1413809764-21995-2-git-send-email-grygorii.strashko@ti.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 08:09:48PM +0300, Kirill A. Shutemov wrote:
-> It would be interesting to see if the patchset affects non-condended case.
-> Like a one-threaded workload.
+Kevin, Rafael,
 
-It does, and not in a good way, I'll have to look at that... :/
+On 10/20/2014 05:56 AM, Grygorii Strashko wrote:
+> From: Geert Uytterhoeven <geert+renesas@glider.be>
+>
+> The existing pm_clk_add() allows to pass a clock by con_id. However,
+> when referring to a specific clock from DT, no con_id is available.
+>
+> Add pm_clk_add_clk(), which allows to specify the struct clk * directly.
+>
+> Reviewed-by: Kevin Hilman <khilman@linaro.org>
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> ---
+>
+>   Pay attantion pls, that there is another series of patches
+>   which have been posted already and which depends from this patch
+>     "[PATCH v4 0/3] ARM: rk3288 : Add PM Domain support"
+>     https://lkml.org/lkml/2014/10/20/105
+>
+How do you go about merging the $subject patch ?
+I see there are at least 2 series which depends on this one.
 
- Performance counter stats for './multi-fault 1' (5 runs):
+Regards,
+Santosh
 
-        73,860,251      page-faults                                                   ( +-  0.28% )
-            40,914      cache-misses                                                  ( +- 41.26% )
-
-      60.001484913 seconds time elapsed                                          ( +-  0.00% )
-
-
- Performance counter stats for './multi-fault 1' (5 runs):
-
-        70,700,838      page-faults                                                   ( +-  0.03% )
-            31,466      cache-misses                                                  ( +-  8.62% )
-
-      60.001753906 seconds time elapsed                                          ( +-  0.00% )
