@@ -1,180 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751360AbaJUD1m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 23:27:42 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47496 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769AbaJUD1k (ORCPT
+	id S1752031AbaJUDa5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 23:30:57 -0400
+Received: from mail-pa0-f73.google.com ([209.85.220.73]:32969 "EHLO
+	mail-pa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751511AbaJUDa4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 23:27:40 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <5445D27D.1080505@jp.fujitsu.com>
-Date: Tue, 21 Oct 2014 12:26:53 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Neil Zhang <zhangwm@marvell.com>, Dan Streetman <ddstreet@ieee.org>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers: base: update cpu offline info when do hotplug
-References: <1413775748-22478-1-git-send-email-zhangwm@marvell.com> <20141020044340.GA9589@kroah.com> <9034CBD80F070943B59700D7F8149ED9024EB81CAF@SC-VEXCH4.marvell.com> <20141020064826.GA4064@kroah.com> <9034CBD80F070943B59700D7F8149ED9024EB81CC6@SC-VEXCH4.marvell.com> <CALZtONDEdFbx+zTWYdmz3HsfCnV+RtTPAuY4p-RK1DN3g2CwrQ@mail.gmail.com> <5445CB94.1090302@jp.fujitsu.com> <9034CBD80F070943B59700D7F8149ED9024EB81D55@SC-VEXCH4.marvell.com>
-In-Reply-To: <9034CBD80F070943B59700D7F8149ED9024EB81D55@SC-VEXCH4.marvell.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+	Mon, 20 Oct 2014 23:30:56 -0400
+From: Ben Zhang <benzh@chromium.org>
+To: alsa-devel@alsa-project.org
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Bard Liao <bardliao@realtek.com>, Oder Chiou <oder_chiou@realtek.com>,
+        Anatol Pomozov <anatol@google.com>, flove@realtek.com,
+        linux-kernel@vger.kernel.org, Ben Zhang <benzh@chromium.org>
+Subject: [PATCH] ASoC: rt5677: fix rt5677 spi driver build
+Date: Mon, 20 Oct 2014 20:30:13 -0700
+Message-Id: <1413862213-18449-1-git-send-email-benzh@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/10/21 12:18), Neil Zhang wrote:
-> Yasuaki,
->
->> -----Original Message-----
->> From: Yasuaki Ishimatsu [mailto:isimatu.yasuaki@jp.fujitsu.com]
->> Sent: 2014年10月21日 10:57
->> To: Dan Streetman; Neil Zhang
->> Cc: Greg KH; linux-kernel@vger.kernel.org
->> Subject: Re: [PATCH] drivers: base: update cpu offline info when do hotplug
->>
->> Hi Neil and Dan,
->>
->> (2014/10/21 2:02), Dan Streetman wrote:
->>> On Mon, Oct 20, 2014 at 3:40 AM, Neil Zhang <zhangwm@marvell.com> wrote:
->>>> Greg,
->>>>
->>>>
->>>> -----Original Message-----
->>>> From: Greg KH [mailto:gregkh@linuxfoundation.org]
->>>> Sent: 2014年10月20日 14:48
->>>> To: Neil Zhang
->>>> Cc: linux-kernel@vger.kernel.org
->>>> Subject: Re: [PATCH] drivers: base: update cpu offline info when do
->>>> hotplug
->>>>
->>>> On Sun, Oct 19, 2014 at 11:39:23PM -0700, Neil Zhang wrote:
->>>>>> How much noise is this going to cause on a big/little system that
->>>>>> constantly hot unplug/plugs processors all of the time?
->>>>>
->>>>> Can you explain more what kind of noise will be introduced on a big/little
->> system?
->>>>
->>>> Have you tested this on such a machine?
->>>>
->>>> I didn't have such kind of machine on hand.
->>>> Can anyone has such machine to verify it?
->>>> Thanks!
->>>
->>> I tested this on a ppc PowerVM system, using dlpar operations to
->>> remove/add cpus.
->>>
->>> Without this patch the cpu online nodes get out of sync with the main
->>> online node (and the actual state of the cpus), because they aren't
->>> updated as the cpus are brought up/down:
->>>
->>
->>> [root@br10p02 cpu]$ pwd
->>> /sys/devices/system/cpu
->>> [root@br10p02 cpu]$ cat online
->>> 0-39
->>> [root@br10p02 cpu]$ for n in {0..47} ; do test $( cat cpu$n/online )
->>> -eq 1 && echo -n "$n " ; done ; echo ""
->>> 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
->>> 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47
->>
->> How is the issue reproduced.
->>
->> Here is a result on my x86 box with linux-3.18-rc1.
->>
->> - before offline CPU
->> # cd /sys/devices/system/cpu/
->> # cat online
->> 0-59
->> # for n in {0..59} ; do test $( cat cpu$n/online ) -eq 1 && echo -n "$n " ;
->> done ; echo ""
->> 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28
->> 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54
->> 55
->> 56 57 58 59
->>
->> - after offline CPU{1..59}
->> # for n in {1..59} ; do echo 0 > cpu$n/online; done # cat online
->> 0
->> # for n in {0..59} ; do test $( cat cpu$n/online ) -eq 1 && echo -n "$n " ;
->> done ; echo ""
->> 0
->>
->> It seems that dev->offline is set to correct valute.
->>
->
+Create a separate module for rt5677 spi driver. Without
+this patch, the build fails due to multiple defs of
+'init_module' and 'cleanup_module'. module_spi_driver()
+defines its own module, so it can't be part of the rt5677
+module.
 
-> Please use an in kernel governor to up / down a core instead of sysfs interface.
+Signed-off-by: Ben Zhang <benzh@chromium.org>
+---
+ sound/soc/codecs/Kconfig      | 4 ++++
+ sound/soc/codecs/Makefile     | 4 +++-
+ sound/soc/codecs/rt5677-spi.c | 2 ++
+ 3 files changed, 9 insertions(+), 1 deletion(-)
 
-Thank you for the information. But I don't know the in kernel governor?
-Could you point a documentation of it?
-
-Thanks,
-Yasuaki Ishimatsu
-
->
->> Thanks,
->> Yasuaki Ishimatsu
->>
->>>
->>>
->>> While with the patch, the cpu online nodes are kept up to date as the
->>> cpus are brought up/down:
->>>
->>> [root@br10p02 cpu]$ pwd
->>> /sys/devices/system/cpu
->>> [root@br10p02 cpu]$ cat online
->>> 0-39
->>> [root@br10p02 cpu]$ for n in {0..47} ; do test $( cat cpu$n/online )
->>> -eq 1 && echo -n "$n " ; done ; echo ""
->>> 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
->>> 27 28 29 30 31 32 33 34 35 36 37 38 39
->>>
->>>
->>> Feel free to add
->>>
->>> Tested-by: Dan Streetman <ddstreet@ieee.org>
->>>
->>>>
->>>>> As I know IKS on arm will use cpu_suspend way to power down a core.
->>>>
->>>> Are you sure that it also doesn't use that same functionality to drop a
->> processor to save power?
->>>>
->>>> As I know it use cpu_suspend to switch out a processor in IKS and there is
->> no cpu hotplug notifier in this procedure.
->>>>
->>>>
->>>> Why do you need/want this notification?  What are you going to do with this
->> information that you don't already have?
->>>>
->>>> The offline won't be updated if an in kernel hotplug governor plug in / out
->> a core which cause the sysfs interface report a wrong status.
->>>>
->>>>
->>>> thanks,
->>>>
->>>> greg k-h
->>>>
->>>>
->>>> Best Regards,
->>>> Neil Zhang
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe
->>> linux-kernel" in the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>>
->>
->
->
-> Best Regards,
-> Neil Zhang
-> �{.n�+�������+%��lzwm��b�맲��r��zX���w��{ay�ʇڙ�,j��f���h���z��w������j:+v���w�j�m��������zZ+�����ݢj"��!�iO��z��v�^�m����nƊ��Y&�
->
-
+diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
+index 2c7482e..6f21a76 100644
+--- a/sound/soc/codecs/Kconfig
++++ b/sound/soc/codecs/Kconfig
+@@ -504,6 +504,10 @@ config SND_SOC_RT5670
+ config SND_SOC_RT5677
+ 	tristate
+ 
++config SND_SOC_RT5677_SPI
++	tristate
++	default SND_SOC_RT5677
++
+ #Freescale sgtl5000 codec
+ config SND_SOC_SGTL5000
+ 	tristate "Freescale SGTL5000 CODEC"
+diff --git a/sound/soc/codecs/Makefile b/sound/soc/codecs/Makefile
+index 4435f9f..3e57edc 100644
+--- a/sound/soc/codecs/Makefile
++++ b/sound/soc/codecs/Makefile
+@@ -79,7 +79,8 @@ snd-soc-rt5640-objs := rt5640.o
+ snd-soc-rt5645-objs := rt5645.o
+ snd-soc-rt5651-objs := rt5651.o
+ snd-soc-rt5670-objs := rt5670.o
+-snd-soc-rt5677-objs := rt5677.o rt5677-spi.o
++snd-soc-rt5677-objs := rt5677.o
++snd-soc-rt5677-spi-objs := rt5677-spi.o
+ snd-soc-sgtl5000-objs := sgtl5000.o
+ snd-soc-alc5623-objs := alc5623.o
+ snd-soc-alc5632-objs := alc5632.o
+@@ -256,6 +257,7 @@ obj-$(CONFIG_SND_SOC_RT5645)	+= snd-soc-rt5645.o
+ obj-$(CONFIG_SND_SOC_RT5651)	+= snd-soc-rt5651.o
+ obj-$(CONFIG_SND_SOC_RT5670)	+= snd-soc-rt5670.o
+ obj-$(CONFIG_SND_SOC_RT5677)	+= snd-soc-rt5677.o
++obj-$(CONFIG_SND_SOC_RT5677_SPI)	+= snd-soc-rt5677-spi.o
+ obj-$(CONFIG_SND_SOC_SGTL5000)  += snd-soc-sgtl5000.o
+ obj-$(CONFIG_SND_SOC_SIGMADSP)	+= snd-soc-sigmadsp.o
+ obj-$(CONFIG_SND_SOC_SIGMADSP_I2C)	+= snd-soc-sigmadsp-i2c.o
+diff --git a/sound/soc/codecs/rt5677-spi.c b/sound/soc/codecs/rt5677-spi.c
+index 11c38f3..ef6348c 100644
+--- a/sound/soc/codecs/rt5677-spi.c
++++ b/sound/soc/codecs/rt5677-spi.c
+@@ -52,6 +52,7 @@ int rt5677_spi_write(u8 *txbuf, size_t len)
+ 
+ 	return status;
+ }
++EXPORT_SYMBOL_GPL(rt5677_spi_write);
+ 
+ /**
+  * rt5677_spi_burst_write - Write data to SPI by rt5677 dsp memory address.
+@@ -107,6 +108,7 @@ int rt5677_spi_burst_write(u32 addr, const struct firmware *fw)
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(rt5677_spi_burst_write);
+ 
+ static int rt5677_spi_probe(struct spi_device *spi)
+ {
+-- 
+2.1.0.rc2.206.gedb03e5
 
