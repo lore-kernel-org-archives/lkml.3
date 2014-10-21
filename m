@@ -1,222 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754082AbaJUE6y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 00:58:54 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35024 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236AbaJUE6v (ORCPT
+	id S1754186AbaJUE7d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 00:59:33 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:51679 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751102AbaJUE7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 00:58:51 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <5445E7D4.1090503@jp.fujitsu.com>
-Date: Tue, 21 Oct 2014 13:57:56 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 21 Oct 2014 00:59:32 -0400
+Message-ID: <5445E82F.2080805@amacapital.net>
+Date: Mon, 20 Oct 2014 21:59:27 -0700
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Prarit Bhargava <prarit@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, Jonathan Corbet <corbet@lwn.net>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Vivek Goyal <vgoyal@redhat.com>, <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH] kernel, add bug_on_warn
-References: <1413806420-31828-1-git-send-email-prarit@redhat.com> <20141020152448.c50fa1855d451f4bba0f6f92@linux-foundation.org> <5445AEAB.6080200@redhat.com>
-In-Reply-To: <5445AEAB.6080200@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+To: Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
+References: <CA+55aFzdq2V-Q3WUV7hQJG8jBSAvBqdYLVTNtbD4ObVZ5yDRmw@mail.gmail.com> <20140529072633.GH6677@dastard> <CA+55aFx+j4104ZFmA-YnDtyfmV4FuejwmGnD5shfY0WX4fN+Kg@mail.gmail.com> <20140529235308.GA14410@dastard> <20140530000649.GA3477@redhat.com> <20140530002113.GC14410@dastard> <20140530003219.GN10092@bbox> <20140530013414.GF14410@dastard> <5388A2D9.3080708@zytor.com> <CA+55aFycqAw2AqQGv8aTPs_RxyKZqMdoyeSxWRSDk2N-PiBZeg@mail.gmail.com> <20141021020033.GA8486@redhat.com>
+In-Reply-To: <20141021020033.GA8486@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prarit,
+On 10/20/2014 07:00 PM, Dave Jones wrote:
+> On Fri, May 30, 2014 at 08:41:00AM -0700, Linus Torvalds wrote:
+>  > On Fri, May 30, 2014 at 8:25 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>  > >
+>  > > If we removed struct thread_info from the stack allocation then one
+>  > > could do a guard page below the stack.  Of course, we'd have to use IST
+>  > > for #PF in that case, which makes it a non-production option.
 
-(2014/10/21 9:54), Prarit Bhargava wrote:
->
->
-> On 10/20/2014 06:24 PM, Andrew Morton wrote:
->> On Mon, 20 Oct 2014 08:00:20 -0400 Prarit Bhargava <prarit@redhat.com> wrote:
->>
->>> There have been several times where I have had to rebuild a kernel to
->>> cause a panic when hitting a WARN() in the code in order to get a crash
->>> dump from a system.  Sometimes this is easy to do, other times (such as
->>> in the case of a remote admin) it is not trivial to send new images to the
->>> user.
->>>
->>> A much easier method would be a switch to change the WARN() over to a
->>> BUG().  This makes debugging easier in that I can now test the actual
->>> image the WARN() was seen on and I do not have to engage in remote
->>> debugging.
->>>
->>> This patch adds a bug_on_warn kernel parameter, which calls BUG() in the
->>> warn_slowpath_common() path.  The function will still print out the
->>> location of the warning.
->>>
->>> Successfully tested by me.
->>
->> Looks nice and simple and useful.  However I suspect you're exclusively
->> focussed on "I want a crash dump" and things haven't been fully thought
->> through.
->>
->> - Do you have any example WARN->BUG console output at hand?  I'd like
->>    to check for missing or duplicated info.
->
-> Yep, here you go, with some additional annotation notes from me.  The first
-> line below is from the WARN_ON() to output the WARN_ON()'s location.  After
-> that, we hit the new BUG() call.
->
->   WARNING: CPU: 27 PID: 3204 at
-> /home/rhel7/redhat/debug/dummy-module/dummy-module.c:25 init_dummy+0x28/0x30
-> [dummy_module]()
->   bug_on_warn set, calling BUG()...
->   ------------[ cut here ]------------
->   kernel BUG at kernel/panic.c:434!
->   invalid opcode: 0000 [#1] SMP
->   Modules linked in: dummy_module(OE+) sg nfsv3 rpcsec_gss_krb5 nfsv4
-> dns_resolver nfs fscache cfg80211 rfkill x86_pkg_temp_thermal intel_powerclamp
-> coretemp kvm_intel kvm crct10dif_pclmul crc32_pclmul crc32c_intel
-> ghash_clmulni_intel igb iTCO_wdt aesni_intel iTCO_vendor_support lrw gf128mul
-> sb_edac ptp edac_core glue_helper lpc_ich ioatdma pcspkr ablk_helper pps_core
-> i2c_i801 mfd_core cryptd dca shpchp ipmi_si wmi ipmi_msghandler acpi_cpufreq
-> nfsd auth_rpcgss nfs_acl lockd grace sunrpc xfs libcrc32c sr_mod cdrom sd_mod
-> mgag200 syscopyarea sysfillrect sysimgblt i2c_algo_bit drm_kms_helper isci ttm
-> drm libsas ahci libahci scsi_transport_sas libata i2c_core dm_mirror
-> dm_region_hash dm_log dm_mod
->   CPU: 27 PID: 3204 Comm: insmod Tainted: G           OE  3.17.0+ #19
->   Hardware name: Intel Corporation S2600CP/S2600CP, BIOS
-> RMLSDP.86I.00.29.D696.1311111329 11/11/2013
->   task: ffff880034e75160 ti: ffff8807fc5ac000 task.ti: ffff8807fc5ac000
->   RIP: 0010:[<ffffffff81076b81>]  [<ffffffff81076b81>] warn_slowpath_common+0xc1/0xd0
->   RSP: 0018:ffff8807fc5afc68  EFLAGS: 00010246
->   RAX: 0000000000000021 RBX: ffff8807fc5afcb0 RCX: 0000000000000000
->   RDX: 0000000000000000 RSI: ffff88081efee5f8 RDI: ffff88081efee5f8
->   RBP: ffff8807fc5afc98 R08: 0000000000000096 R09: 0000000000000000
->   R10: 0000000000000711 R11: ffff8807fc5af93e R12: ffffffffa0424070
->   R13: 0000000000000019 R14: ffffffffa0423068 R15: 0000000000000009
->   FS:  00007f2d4b034740(0000) GS:ffff88081efe0000(0000) knlGS:0000000000000000
->   CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->   CR2: 00007f2d4a99f3c0 CR3: 00000007fd88b000 CR4: 00000000001407e0
->   Stack:
->    ffff8807fc5afcb8 ffffffff8199f020 ffff88080e396160 0000000000000000
->    ffffffffa0423040 ffffffffa0425000 ffff8807fc5afd08 ffffffff81076be5
->    0000000000000008 ffffffffa0424053 ffff880700000018 ffff8807fc5afd18
->   Call Trace:
->    [<ffffffffa0423040>] ? dummy_greetings+0x40/0x40 [dummy_module]
->    [<ffffffff81076be5>] warn_slowpath_fmt+0x55/0x70
->    [<ffffffffa0423068>] init_dummy+0x28/0x30 [dummy_module]
->    [<ffffffff81002144>] do_one_initcall+0xd4/0x210
->    [<ffffffff811b52c2>] ? __vunmap+0xc2/0x110
->    [<ffffffff810f8889>] load_module+0x16a9/0x1b30
->    [<ffffffff810f3d30>] ? store_uevent+0x70/0x70
->    [<ffffffff810f49b9>] ? copy_module_from_fd.isra.44+0x129/0x180
->    [<ffffffff810f8ec6>] SyS_finit_module+0xa6/0xd0
->    [<ffffffff8166ce29>] system_call_fastpath+0x12/0x17
->   Code: c4 08 5b 41 5c 41 5d 41 5e 41 5f 5d c3 48 c7 c7 20 42 8a 81 31 c0 e8 fc
-> 80 5e 00 eb 80 48 c7 c7 78 42 8a 81 31 c0 e8 ec 80 5e 00 <0f> 0b 66 66 66 66 2e
-> 0f 1f 84 00 00 00 00 00 0f 1f 44 00 00 55
->   RIP  [<ffffffff81076b81>] warn_slowpath_common+0xc1/0xd0
->    RSP <ffff8807fc5afc68>
->   ---[ end trace 428218934a12088b ]---
->>
->> - Did you consider permitting this to be tweaked at runtime via
->>    /proc?  Sometimes we get pesky WARNs at boot time and having runtime
->>    alteration would permit the user to prevent those from tripping a
->>    BUG.
->>
->
-> I did actually, but I was wondering how people liked the idea before I looked
-> at the /proc implementation.  It's pretty much the same as panic_on_oops, so
-> it's not difficult to do.
->
->> - Also, perhaps bug_on_warn should be single-shot: clear itself after
->>    it has triggered one BUG.  Because once the kernel has gone
->>    WARN->BUG, it's probably messed up and is likely to trigger more
->>    WARNs.  Also, the kernel might generate many WARNs for the same
->>    issue.
->
-> Okay, I'll add that.
+Why is thread_info in the stack allocation anyway?  Every time I look at
+the entry asm, one (minor) thing that contributes to general
+brain-hurtingness / sense of horrified awe is the incomprehensible (to
+me) split between task_struct and thread_info.
 
-When you update it, please CC me.
-Your patch works well as follows:
+struct thread_info is at the bottom of the stack, right?  If we don't
+want to merge it into task_struct, couldn't we stick it at the top of
+the stack instead?  Anything that can overwrite the *top* of the stack
+gives trivial user-controlled CPL0 execution regardless.
 
+>  > 
+>  > We could just have the guard page in between the stack and the
+>  > thread_info, take a double fault, and then just map it back in on
+>  > double fault.
+>  > 
+>  > That would give us 8kB of "normal" stack, with a very loud fault - and
+>  > then an extra 7kB or so of stack (whatever the size of thread-info is)
+>  > - after the first time it traps.
+>  > 
+>  > That said, it's still likely a non-production option due to the page
+>  > table games we'd have to play at fork/clone time.
 
-  WARNING: CPU: 3 PID: 468 at mm/page_alloc.c:4968 free_area_init_node+0x3fe/0x426()
-  bug_on_warn set, calling BUG()...
-  ------------[ cut here ]------------
-  kernel BUG at kernel/panic.c:434!
-  invalid opcode: 0000 [#1] SMP
-  <...>
-  Workqueue: kacpi_hotplug acpi_hotplug_work_fn
-  task: ffff880866d8c3d0 ti: ffff88086227c000 task.ti: ffff88086227c000
-  RIP: 0010:[<ffffffff81074001>]  [<ffffffff81074001>] warn_slowpath_common+0xc1/0xd0
-  RSP: 0018:ffff88086227fa68  EFLAGS: 00010246
-  RAX: 0000000000000021 RBX: 0000000000000000 RCX: 0000000000000000
-  RDX: 0000000000000000 RSI: ffff88087fa6e5f8 RDI: ffff88087fa6e5f8
-  RBP: ffff88086227fa98 R08: 0000000000000096 R09: 0000000000000000
-  R10: 0000000000000b37 R11: ffff88086227f73e R12: ffffffff818a9195
-  R13: 0000000000001368 R14: ffffffff81651b17 R15: 0000000000000009
-  FS:  0000000000000000(0000) GS:ffff88087fa60000(0000) knlGS:0000000000000000
-  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-  CR2: 00007f8301965000 CR3: 0000000001984000 CR4: 00000000001407e0
-  Stack:
-   ffff88086f00e5e8 0000000000000002 ffff8a07fffb4000 0000000040000000
-   0000000000000002 0000000000000002 ffff88086227faa8 ffffffff8107410a
-   ffff88086227fb38 ffffffff81651b17 0000000000000296 ffff88087f402120
-  Call Trace:
-   [<ffffffff8107410a>] warn_slowpath_null+0x1a/0x20
-   [<ffffffff81651b17>] free_area_init_node+0x3fe/0x426
-   [<ffffffff810b9d22>] ? up+0x32/0x50
-   [<ffffffff8164ddd0>] hotadd_new_pgdat+0x90/0x110
-   [<ffffffff8164df24>] add_memory+0xd4/0x200
-   [<ffffffff813a8329>] acpi_memory_device_add+0x1aa/0x289
-   [<ffffffff8137b486>] acpi_bus_attach+0xfd/0x204
-   [<ffffffff8140fd1e>] ? device_register+0x1e/0x30
-   [<ffffffff8137b501>] acpi_bus_attach+0x178/0x204
-   [<ffffffff8137b5f7>] acpi_bus_scan+0x6a/0x90
-   [<ffffffff813786d2>] ? acpi_bus_get_status+0x2d/0x5f
-   [<ffffffff8137b7a7>] acpi_device_hotplug+0xe8/0x418
-   [<ffffffff813750d9>] acpi_hotplug_work_fn+0x1f/0x2b
-   [<ffffffff8108cc5e>] process_one_work+0x14e/0x3f0
-   [<ffffffff8108d36b>] worker_thread+0x11b/0x510
-   [<ffffffff8108d250>] ? rescuer_thread+0x350/0x350
-   [<ffffffff81092af1>] kthread+0xe1/0x100
-   [<ffffffff81092a10>] ? kthread_create_on_node+0x1b0/0x1b0
-   [<ffffffff81663efc>] ret_from_fork+0x7c/0xb0
-   [<ffffffff81092a10>] ? kthread_create_on_node+0x1b0/0x1b0
-  Code: c4 08 5b 41 5c 41 5d 41 5e 41 5f 5d c3 48 c7 c7 60 20 89 81 31 c0 e8 5c 26 5e 00 eb 80 48 c7 c7 b8 20 89 81 31 c0 e8 4c 26 5e 00 <0f> 0b 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 0f 1f 44 00 00 55
-  RIP  [<ffffffff81074001>] warn_slowpath_common+0xc1/0xd0
-   RSP <ffff88086227fa68>
+What's wrong with vmalloc?  Doesn't it already have guard pages?
 
-Thanks,
-Yasuaki Ishimatsu
+(Also, we have a shiny hardware dirty bit, so we could relatively
+cheaply check whether we're near the limit without any weird
+#PF-in-weird-context issues.)
 
->
->>
->>> --- a/Documentation/kernel-parameters.txt
->>> +++ b/Documentation/kernel-parameters.txt
->>> @@ -553,6 +553,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->>>   	bttv.pll=	See Documentation/video4linux/bttv/Insmod-options
->>>   	bttv.tuner=
->>>
->>> +	bug_on_warn	BUG() instead of WARN()
->>
->> There's no mention here that this feature is mainly aimed at generating
->> a crash dump.  How do we tell the people who aren't reading this email
->> thread (ie: all of humanity except you and me ;)) that this feature
->> even exists?  Is there crash dump documentation that we can update?
->>
->
-> I'll look into this too.
->
-> P.
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Also, muahaha, I've infected more people with the crazy idea that
+intentional double-faults are okay.  Suckers!  Soon I'll have Linux
+returning from interrupts with lret!  (IIRC Windows used to do
+intentional *triple* faults on context switches, so this should be
+considered entirely sensible.)
 
+> 
+> [thread necrophilia]
+> 
+> So digging this back up, it occurs to me that after we bumped to 16K,
+> we never did anything like the debug stuff you suggested here.
+> 
+> The reason I'm bringing this up, is that the last few weeks, I've been
+> seeing things like..
+> 
+> [27871.793753] trinity-c386 (28793) used greatest stack depth: 7728 bytes left
+> 
+> So we're now eating past that first 8KB in some situations.
+> 
+> Do we care ? Or shall we only start worrying if it gets even deeper ?
+
+I would *love* to have an immediate, loud failure when we overrun the
+stack.  This will unavoidably increase the number of TLB misses, but
+that probably isn't so bad.
+
+--Andy
 
