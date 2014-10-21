@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755250AbaJUPVZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 11:21:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52085 "EHLO mx2.suse.de"
+	id S1755386AbaJUPaD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 11:30:03 -0400
+Received: from mail.us.es ([193.147.175.20]:52599 "EHLO mail.us.es"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751561AbaJUPVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 11:21:23 -0400
-Date: Tue, 21 Oct 2014 17:21:21 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Dave Jones <davej@redhat.com>
-cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: lockdep splat in CPU hotplug
-In-Reply-To: <20141021151043.GA11800@redhat.com>
-Message-ID: <alpine.LNX.2.00.1410211717210.24255@pobox.suse.cz>
-References: <alpine.LNX.2.00.1410211255531.24255@pobox.suse.cz> <20141021151043.GA11800@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752810AbaJUPaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 11:30:00 -0400
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus2 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.98.4/19523. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-103.2/7.5):. 
+ Processed in 2.615995 secs); 21 Oct 2014 15:29:56 -0000
+X-Spam-ASN: AS12715 87.216.0.0/16
+X-Envelope-From: pneira@us.es
+Date: Tue, 21 Oct 2014 17:31:28 +0200
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Feng Gao <gfree.wind@gmail.com>
+Cc: Patrick McHardy <kaber@trash.net>, kadlec@blackhole.kfki.hu,
+        davem@davemloft.net,
+        Netfilter Developer Mailing List 
+	<netfilter-devel@vger.kernel.org>,
+        coreteam@netfilter.org, netdev@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] netfilter: xt_hashlimit: Enhance the xt_hashlimit to
+ avoid duplicated codes
+Message-ID: <20141021153128.GA3657@salvia>
+References: <CA+6hz4o-2vSEzH+hjYAUfWRVqHQ3QfcCr8q11eoRpCTq2uTYtg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+6hz4o-2vSEzH+hjYAUfWRVqHQ3QfcCr8q11eoRpCTq2uTYtg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Oct 2014, Dave Jones wrote:
-
->  > I am seeing the lockdep report below when resuming from suspend-to-disk 
->  > with current Linus' tree (c2661b80609).
->  > 
->  > The reason for CCing Ingo and Peter is that I can't make any sense of one 
->  > of the stacktraces lockdep is providing.
->  > 
->  > Please have a look at the very first stacktrace in the dump, where lockdep 
->  > is trying to explain where cpu_hotplug.lock#2 has been acquired. It seems 
->  > to imply that cpuidle_pause() is taking cpu_hotplug.lock, but that's not 
->  > the case at all.
+On Tue, Oct 21, 2014 at 11:23:16PM +0800, Feng Gao wrote:
+> Hi all,
 > 
-> Could inlining be confusing the trace here ?
+> Enhance the functions "dsthash_alloc_init" and "hashlimit_mt" in file
+> "xt_hashlimit.c" to avoid two duplicated codes following:
 > 
-> You can get from cpuidle_pause to cpuidle_uninstall_idle_handler -> synchronize_rcu
->  -> synchronize_sched -> synchronize_sched_expedited which
-> does a try_get_online_cpus which will take the cpu_hotplug.lock
+> -           dh->expires = now + msecs_to_jiffies(hinfo->cfg.expire);
+> -           rateinfo_recalc(dh, now, hinfo->cfg.mode);
+> 
+> 
+> The whole patch is following
 
-Looks like this indeed is something that lockdep *should* report (*), 
-although I would be suprised that stack unwinder would be so confused by 
-this -- there is no way for synchronize_sched_expedited() to be inlined 
-all the way to cpuidle_pause().
+The patch seems mangled by your MUA.
 
-(*) there are multiple places where cpu_hotplug.lock -> cpuidle_lock lock 
-    dependency is assumed. The patch that Dave pointed out adds 
-    cpuidle_lock -> cpu_hotplug.lock dependency.
+BTW, you can just Cc netfilter patches to
+netfilter-devel@vger.kernel.org. No need to Cc that many people.
 
-Still not clear whether this is what's happening here ... anyway, adding 
-Paul to CC.
-
--- 
-Jiri Kosina
-SUSE Labs
