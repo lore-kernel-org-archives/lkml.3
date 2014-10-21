@@ -1,85 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100AbaJUJra (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 05:47:30 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:58714 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331AbaJUJr1 (ORCPT
+	id S1754727AbaJUJvH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 05:51:07 -0400
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:40332 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751023AbaJUJvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 05:47:27 -0400
-Message-ID: <54462BB6.5020405@atmel.com>
-Date: Tue, 21 Oct 2014 11:47:34 +0200
-From: Cyrille Pitchen <cyrille.pitchen@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 21 Oct 2014 05:51:03 -0400
+X-Originating-IP: 50.43.41.112
+Date: Tue, 21 Oct 2014 02:50:43 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Pieter Smith <pieter@boesman.nl>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Paris <eparis@redhat.com>, Matt Turner <mattst88@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Fabian Frederick <fabf@skynet.be>, Tejun Heo <tj@kernel.org>,
+        ????????? <zhenglong.cai@cs2c.com.cn>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Peter Foley <pefoley2@pefoley.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Oleg Nesterov <oleg@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Kees Cook <keescook@chromium.org>, linux-fsdevel@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:ABI/API" <linux-api@vger.kernel.org>
+Subject: Re: [PATCH 2/2] fs: Support compiling out sendfile
+Message-ID: <20141021095043.GB18167@thin>
+References: <1413841728-1313-1-git-send-email-pieter@boesman.nl>
+ <1413841728-1313-2-git-send-email-pieter@boesman.nl>
+ <20141020222421.GE8929@cloud>
+ <20141021075154.GB10020@infradead.org>
+ <20141021090421.GB17604@thin>
+ <20141021091356.GA26330@infradead.org>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: <dwmw2@infradead.org>, <linux-mtd@lists.infradead.org>,
-        <nicolas.ferre@atmel.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] jffs2: fix buffer dump debug output
-References: <cover.1413878259.git.cyrille.pitchen@atmel.com>	 <21ad981db8c65d3f00be3d9a254cae78cf40b96d.1413878259.git.cyrille.pitchen@atmel.com> <1413879465.12828.1.camel@perches.com>
-In-Reply-To: <1413879465.12828.1.camel@perches.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141021091356.GA26330@infradead.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 21/10/2014 10:17, Joe Perches a écrit :
-> On Tue, 2014-10-21 at 10:05 +0200, Cyrille Pitchen wrote:
->> This patch fixes __jffs2_dbg_dump_buffer(): this function prints a message
->> claiming to dump len bytes. However, depending on the start offset, the former
->> code drops up to 31 (JFFS2_BUFDUMP_BYTES_PER_LINE - 1) bytes.
->>
->> Signed-off-by: Cyrille Pitchen <cyrille.pitchen@atmel.com>
->> ---
->>  fs/jffs2/debug.c | 21 ++++++++-------------
->>  1 file changed, 8 insertions(+), 13 deletions(-)
->>
->> diff --git a/fs/jffs2/debug.c b/fs/jffs2/debug.c
->> index 07bd5bc..1b515b2 100644
->> --- a/fs/jffs2/debug.c
->> +++ b/fs/jffs2/debug.c
->> @@ -736,30 +736,25 @@ void
->>  __jffs2_dbg_dump_buffer(unsigned char *buf, int len, uint32_t offs)
->>  {
->>  	int skip;
->> -	int i;
->> +	int i, pos;
->>  
->>  	printk(JFFS2_DBG_MSG_PREFIX " dump from offset %#08x to offset %#08x (%x bytes).\n",
->>  		offs, offs + len, len);
->> -	i = skip = offs % JFFS2_BUFDUMP_BYTES_PER_LINE;
->> +	i = skip = offs & (JFFS2_BUFDUMP_BYTES_PER_LINE - 1);
->>  	offs = offs & ~(JFFS2_BUFDUMP_BYTES_PER_LINE - 1);
->>  
->> -	if (skip != 0)
->> -		printk(JFFS2_DBG "%#08x: ", offs);
->> -
->> +	printk(JFFS2_DBG "%#08x: ", offs);
->>  	while (skip--)
->>  		printk("   ");
->>  
->> -	while (i < len) {
->> -		if ((i % JFFS2_BUFDUMP_BYTES_PER_LINE) == 0 && i != len -1) {
->> -			if (i != 0)
->> -				printk("\n");
->> +	for (pos = 0; pos < len; ++pos, ++i) {
->> +		if (i == JFFS2_BUFDUMP_BYTES_PER_LINE) {
->>  			offs += JFFS2_BUFDUMP_BYTES_PER_LINE;
->> -			printk(JFFS2_DBG "%0#8x: ", offs);
->> +			printk(JFFS2_DBG "\n%0#8x: ", offs);
->> +			i = 0;
+On Tue, Oct 21, 2014 at 02:13:56AM -0700, Christoph Hellwig wrote:
+> On Tue, Oct 21, 2014 at 02:04:22AM -0700, Josh Triplett wrote:
+> > That's the plan, but since sendfile depends on some of the splice bits,
+> > sendfile needs to be optional as well; SENDFILE_SYSCALL will then select
+> > SPLICE_SYSCALLS.
 > 
-> print_hex_dump would be better
-> 
-> 
-Hi Joe,
+> Just include sendfile with the splice syscalls - we don't really need a
+> config option for every obscure syscall.
 
-thanks for your comment. Indeed using print_hex_dump() would be a good idea
-since it would avoid each driver to implement its own version of buffer dumps.
-Reading the source code of print_hex_dump(), the output format would change a
-little bit:
-the output would no longer be aligned to JFFS2_BUFDUMP_BYTES_PER_LINE boundary
-using leading spaces.
-If it's ok to change the output format it's good for me as well.
+No objection here.  Pieter, since you're planning to remove splice
+anyway, can you just fold the two together under the same Kconfig
+option?  That should simplify the patch series, since you won't need to
+split the two.
+
+- Josh Triplett
