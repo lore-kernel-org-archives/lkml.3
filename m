@@ -1,48 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933001AbaJUOR5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 10:17:57 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:57812 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932711AbaJUORz (ORCPT
+	id S932960AbaJUOSm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 10:18:42 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:49048 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932711AbaJUOSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 10:17:55 -0400
-Date: Tue, 21 Oct 2014 22:17:45 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Amos Kong <akong@redhat.com>
-Cc: virtualization@lists.linux-foundation.org, kvm@vger.kernel.org, m@bues.ch,
-        mpm@selenic.com, amit.shah@redhat.com, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/6] hw_random: fix unregister race.
-Message-ID: <20141021141745.GA18511@gondor.apana.org.au>
-References: <1411043867-21109-1-git-send-email-akong@redhat.com>
- <1411043867-21109-5-git-send-email-akong@redhat.com>
+	Tue, 21 Oct 2014 10:18:41 -0400
+Message-ID: <54466B3A.5030005@atmel.com>
+Date: Tue, 21 Oct 2014 16:18:34 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411043867-21109-5-git-send-email-akong@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        "Dmitry Eremin-Solenikov" <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] power: reset: at91-reset: fix power down register
+References: <1413829629-8705-1-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1413829629-8705-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 08:37:45PM +0800, Amos Kong wrote:
-> From: Rusty Russell <rusty@rustcorp.com.au>
+On 20/10/2014 20:27, Alexandre Belloni :
+> In the case of at91sam9g45_restart(), the driver is writing
+> AT91_DDRSDRC_LPCB_POWER_DOWN to AT91_DDRSDRC_RTR, this should actually be
+> AT91_DDRSDRC_LPR.
 > 
-> The previous patch added one potential problem: we can still be
-> reading from a hwrng when it's unregistered.  Add a wait for zero
-> in the hwrng_unregister path.
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+
+Absolutely:
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+
+If you don't mind Dmitry, I'll take this patch through the at91/arm-soc
+git trees in my next at91-3.18-fixes branch.
+
+Thanks Alex, bye,
+
+> ---
+>  drivers/power/reset/at91-reset.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> diff --git a/drivers/power/reset/at91-reset.c b/drivers/power/reset/at91-reset.c
+> index 3611806c9cfd..3cb36693343a 100644
+> --- a/drivers/power/reset/at91-reset.c
+> +++ b/drivers/power/reset/at91-reset.c
+> @@ -100,11 +100,11 @@ static void at91sam9g45_restart(enum reboot_mode mode, const char *cmd)
+>  		/* Disable SDRAM0 accesses */
+>  		"1:	str	%3, [%0, #" __stringify(AT91_DDRSDRC_RTR) "]\n\t"
+>  		/* Power down SDRAM0 */
+> -		"	str	%4, [%0, #" __stringify(AT91_DDRSDRC_RTR) "]\n\t"
+> +		"	str	%4, [%0, #" __stringify(AT91_DDRSDRC_LPR) "]\n\t"
+>  		/* Disable SDRAM1 accesses */
+>  		"	strne	%3, [%1, #" __stringify(AT91_DDRSDRC_RTR) "]\n\t"
+>  		/* Power down SDRAM1 */
+> -		"	strne	%4, [%1, #" __stringify(AT91_DDRSDRC_RTR) "]\n\t"
+> +		"	strne	%4, [%1, #" __stringify(AT91_DDRSDRC_LPR) "]\n\t"
+>  		/* Reset CPU */
+>  		"	str	%5, [%2, #" __stringify(AT91_RSTC_CR) "]\n\t"
+>  
+> 
 
-You totally corrupted Rusty's patch.  If you're going to repost
-his series you better make sure that you've got the right patches.
 
-Just as well though as it made me think a little more about this
-patch :)
-
-Cheers,
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Nicolas Ferre
