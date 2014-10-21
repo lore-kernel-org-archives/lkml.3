@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933334AbaJUQ4S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 12:56:18 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:36217 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932382AbaJUQ4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 12:56:17 -0400
-Date: Tue, 21 Oct 2014 10:55:51 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [tpmdd-devel] [PATCH] tpm: fix multiple race conditions in
- tpm_ppi.c
-Message-ID: <20141021165551.GA28382@obsidianresearch.com>
-References: <1413879761-25392-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+	id S933250AbaJUQ64 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 12:58:56 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:48381 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932382AbaJUQ6y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 12:58:54 -0400
+Message-ID: <544690CB.4030307@gmail.com>
+Date: Tue, 21 Oct 2014 09:58:51 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413879761-25392-1-git-send-email-jarkko.sakkinen@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+To: David Miller <davem@davemloft.net>
+CC: richardcochran@gmail.com, markos.chandras@imgtec.com,
+        linux-mips@linux-mips.org, corbet@lwn.net, netdev@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation: ptp: Fix build failure on MIPS cross builds
+References: <1413794538-28465-1-git-send-email-markos.chandras@imgtec.com>        <20141021110724.GA16479@netboy> <20141021.123544.9516812519754063.davem@davemloft.net>
+In-Reply-To: <20141021.123544.9516812519754063.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 11:22:41AM +0300, Jarkko Sakkinen wrote:
-> * Traversal of the ACPI device tree was not done right. It should lookup
->   PPI only under the ACPI device that it is associated. Otherwise, it could
->   match to a wrong PPI interface if there are two TPM devices in the device
->   tree.
-> * Removed global ACPI handle and version string from tpm_ppi.c as this
->   is racy. Instead they should be associated with the chip.
-> * Moved code just a tiny bit towards two-phase allocation to implement
->   fix for the PPI race conditions.
-> * Added missing copyright platter in tpm_ppi.c.
+On 10/21/2014 09:35 AM, David Miller wrote:
+> From: Richard Cochran <richardcochran@gmail.com>
+> Date: Tue, 21 Oct 2014 13:07:25 +0200
+>
+>> On Mon, Oct 20, 2014 at 09:42:18AM +0100, Markos Chandras wrote:
+>>> diff --git a/Documentation/ptp/Makefile b/Documentation/ptp/Makefile
+>>> index 293d6c09a11f..397c1cd2eda7 100644
+>>> --- a/Documentation/ptp/Makefile
+>>> +++ b/Documentation/ptp/Makefile
+>>> @@ -1,5 +1,15 @@
+>>>   # List of programs to build
+>>> +ifndef CROSS_COMPILE
+>>>   hostprogs-y := testptp
+>>> +else
+>>> +# MIPS system calls are defined based on the -mabi that is passed
+>>> +# to the toolchain which may or may not be a valid option
+>>> +# for the host toolchain. So disable testptp if target architecture
+>>> +# is MIPS but the host isn't.
+>>> +ifndef CONFIG_MIPS
+>>> +hostprogs-y := testptp
+>>> +endif
+>>> +endif
+>>
+>> It seems like a shame to simply give up and not compile this at all.
+>> Is there no way to correctly cross compile this for MIPS?
+>
+> Yeah seriously, we should try to make this work instead of throwing our
+> hands in the air.
+>
 
-The PPI parts of this look fine to me, and are a really nice cleanup,
-thanks!
+We cross compile things successfully all the time for all the various 
+MIPS ABIs.
 
-Personally, I'd sequence this commit right after your 'tpm: two-phase
-chip management functions' commit because it makes it much saner (no
-half step toward the new functions). I assume this is a theoretical
-problem? Or do you have a two TPM system?
+It is a simple matter of having the Makefile setup for cross compiling.
 
-Jason
+What I don't understand is why we are using hostprogs in this Makefile. 
+  Isn't this a program that would run on the target, not the build host?
+
+David Daney
