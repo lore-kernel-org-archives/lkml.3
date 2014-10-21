@@ -1,110 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933703AbaJUVR2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 17:17:28 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:58342 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933014AbaJUVR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 17:17:26 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: zyw@rock-chips.com
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>, dianders@chromium.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-rockchip@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH v3 1/6] pinctrl: rockchip: add suspend/resume functions
-Date: Tue, 21 Oct 2014 23:20:11 +0200
-Message-ID: <3477070.K1aFAOaaEU@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <1413862968-2691-1-git-send-email-zyw@rock-chips.com>
-References: <1413862894-2623-1-git-send-email-zyw@rock-chips.com> <1413862968-2691-1-git-send-email-zyw@rock-chips.com>
+	id S933784AbaJUVR6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 17:17:58 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:58257 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933764AbaJUVR4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 17:17:56 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Darren Hart <darren.hart@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>, Grant Likely <grant.likely@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, devicetree@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>
+Subject: [PATCH v6 00/12] Add ACPI _DSD and unified device properties support
+Date: Tue, 21 Oct 2014 23:08:59 +0200
+Message-ID: <13750506.S2yVlRRDa2@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+Hi Everyone,
 
-Am Montag, 20. Oktober 2014, 20:42:48 schrieb zyw@rock-chips.com:
-> From: Chris <zyw@rock-chips.com>
+This is version 6 of the unified device properties interface patchset.
 
-Please use your full name like "Chris Zhong"
+The original cover letter from Mika is here:
 
-> 
-> support suspend/resume of pinctrl, it allows handling sleep mode
-> for hogged pins in pinctrl
-> 
-> Signed-off-by: Chris <zyw@rock-chips.com>
-> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+http://marc.info/?l=devicetree&m=141087052200600&w=4
 
-also, please use only one Signed-off-by line for yourself :-)
+and my cover letters for previous iterations are at:
 
+http://marc.info/?l=linux-acpi&m=141212903816560&w=4
+http://marc.info/?l=linux-kernel&m=141354745011569&w=4
 
-> ---
-> 
-> Changes in v3: None
-> Changes in v2: None
-> 
->  drivers/pinctrl/pinctrl-rockchip.c |   29 +++++++++++++++++++++++++++++
->  1 file changed, 29 insertions(+)
-> 
-> diff --git a/drivers/pinctrl/pinctrl-rockchip.c
-> b/drivers/pinctrl/pinctrl-rockchip.c index d0f3c18..d384d99 100644
-> --- a/drivers/pinctrl/pinctrl-rockchip.c
-> +++ b/drivers/pinctrl/pinctrl-rockchip.c
-> @@ -1795,6 +1795,31 @@ static struct rockchip_pin_ctrl
-> *rockchip_pinctrl_get_soc_data( return ctrl;
->  }
-> 
-> +#ifdef CONFIG_PM
-> +static int rockchip_pinctrl_suspend(struct platform_device *pdev,
-> +				    pm_message_t state)
-> +{
-> +	struct rockchip_pinctrl *info;
-> +
-> +	info = platform_get_drvdata(pdev);
-> +	if (!info)
-> +		return -EINVAL;
-> +
-> +	return pinctrl_force_sleep(info->pctl_dev);
-> +}
-> +
-> +static int rockchip_pinctrl_resume(struct platform_device *pdev)
-> +{
-> +	struct rockchip_pinctrl *info;
-> +
-> +	info = platform_get_drvdata(pdev);
-> +	if (!info)
-> +		return -EINVAL;
-> +
-> +	return pinctrl_force_default(info->pctl_dev);
-> +}
-> +#endif
-> +
->  static int rockchip_pinctrl_probe(struct platform_device *pdev)
->  {
->  	struct rockchip_pinctrl *info;
-> @@ -2010,6 +2035,10 @@ static struct platform_driver rockchip_pinctrl_driver
-> = { .owner	= THIS_MODULE,
->  		.of_match_table = rockchip_pinctrl_dt_match,
->  	},
-> +	#ifdef CONFIG_PM
-> +	.suspend = rockchip_pinctrl_suspend,
-> +	.resume = rockchip_pinctrl_resume,
-> +	#endif
+There are a few changes with respect to v5 and the affected patches are
+[02-03/12] and [09-12/12].  The remaining ones have not been modified.
 
-as Dmitry already pointed out, this is the legacy suspend interface and should 
-not be used anymore.
+Most importantly, requesting the first element of a list (package) property
+from _DSD is now equivalent to accessing a single-value property of the
+same type, so device_property_read_u8(dev, pname, val) will now be equivalent
+to device_property_read_u8_array(dev, pname, val, 1), for example.
+Consequently, this _DSD definition:
 
+Name (_DSD, Package () {
+    ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
+    Package () {
+        Package () {"blah", "A string"},
+    }
+})
 
->  };
-> 
->  static int __init rockchip_pinctrl_drv_register(void)
+can be used instead of
 
+Name (_DSD, Package () {
+    ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
+    Package () {
+        Package () {"blah", Package () {"A string"}},
+    }
+})
+
+and the code will be able to retrieve the property value from the both of
+them just fine.
+
+This means, among other things, that accessors for single-value properties
+can be implemented in terms of the analogous "array" property accessors
+which allows the code size to be reduced somewhat.
+
+Patches [02/12] and [09/12] have been modified to achieve that and patch
+[03/12] have been modified accordingly for the "compatible" property in
+_DSD to behave in an analogous way.  Additionally, the bodies of the
+numerical property accessors in patches [02/12] and [09/12] are now
+generated using macros (string property accessors have slightly different
+rules and are simply open coded for that reason).
+
+Patch [10/12] has been modified to drop function arguments that happened to
+have the same values for both of the current users of those functions and
+patches [11-12/12] have been modified to take that change into account.  If
+the code in question needs to be made more complex in the future, there
+should not be any problems with that.
+
+Due to the nature of the changes I have retained all ACKs except for the
+Grant's Reviewed-by on patch [03/12] (if that had been Acked-by, I would have
+retained it too, but that didn't feel appropriate for the "reviewed by" thing
+to me).  If any of you think that the ACKs are not applicable any more, please
+let me know and I'll drop them.
+
+Finally, many thanks to Mika for testing the series on MinnowBoard 1 and
+MinnowBoard Max.  In case anybody else would like to test it, it is available
+from the device-properties branch of the linux-pm.git tree:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git device-properties
+
+Thanks!
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
