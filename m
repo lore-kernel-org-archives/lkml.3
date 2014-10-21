@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932230AbaJUKR7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 06:17:59 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:46051 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754800AbaJUKR5 (ORCPT
+	id S932306AbaJUKSK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 06:18:10 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:62462 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932256AbaJUKSG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 06:17:57 -0400
-Date: Tue, 21 Oct 2014 12:17:42 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Alex Thorlton <athorlton@sgi.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, Bob Liu <lliubbo@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org
-Subject: Re: [BUG] mm, thp: khugepaged can't allocate on requested node when
- confined to a cpuset
-Message-ID: <20141021101742.GT23531@worktop.programming.kicks-ass.net>
-References: <20141008191050.GK3778@sgi.com>
- <20141014114828.GA6524@node.dhcp.inet.fi>
- <20141014145435.GA7369@worktop.fdxtended.com>
- <20141014173837.GA8919@node.dhcp.inet.fi>
+	Tue, 21 Oct 2014 06:18:06 -0400
+Date: Tue, 21 Oct 2014 11:17:59 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-api@vger.kernel.org, devicetree@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH v2 2/5] mfd: max77693: Map charger device to its own
+ of_node
+Message-ID: <20141021101759.GG26842@x1>
+References: <1413808489-3524-1-git-send-email-k.kozlowski@samsung.com>
+ <1413808489-3524-3-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20141014173837.GA8919@node.dhcp.inet.fi>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1413808489-3524-3-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 14, 2014 at 08:38:37PM +0300, Kirill A. Shutemov wrote:
-> On Tue, Oct 14, 2014 at 04:54:35PM +0200, Peter Zijlstra wrote:
-> > > Is there a reason why we should respect cpuset limitation for kernel
-> > > threads?
-> > 
-> > Yes, because we want to allow isolating CPUs from 'random' activity.
-> 
-> Okay, it makes sense for cpus_allowed. But we're talking about
-> mems_allowed, right?
->  
-> > 
-> > > Should we bypass cpuset for PF_KTHREAD completely?
-> > 
-> > No. That'll break stuff.
-> 
-> Like what?
+On Mon, 20 Oct 2014, Krzysztof Kozlowski wrote:
 
-Like using cpusets for what they were designed for? We very much want to
-allow moving kernel threads into limited cpusets in order to avoid
-perturbing the 'important' work done elsewhere.
+> Add a "maxim,max77693-charger" of_compatible to the mfd_cell so the MFD
+> child device (the charger) will have its own of_node set. This will be
+> used by the max77693 charger driver in next patches to obtain battery
+> configuration from DTS.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> ---
+>  drivers/mfd/max77693.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+
+Applied, thanks.
+
+> diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
+> index cf008f45968c..2277a11b6629 100644
+> --- a/drivers/mfd/max77693.c
+> +++ b/drivers/mfd/max77693.c
+> @@ -43,7 +43,10 @@
+>  
+>  static const struct mfd_cell max77693_devs[] = {
+>  	{ .name = "max77693-pmic", },
+> -	{ .name = "max77693-charger", },
+> +	{
+> +		.name = "max77693-charger",
+> +		.of_compatible = "maxim,max77693-charger",
+> +	},
+>  	{ .name = "max77693-muic", },
+>  	{ .name = "max77693-haptic", },
+>  	{
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
