@@ -1,98 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932532AbaJUPsh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 11:48:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52455 "EHLO mx2.suse.de"
+	id S1755568AbaJUPte (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 11:49:34 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48410 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932437AbaJUPsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 11:48:36 -0400
-Date: Tue, 21 Oct 2014 17:48:30 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-cc: linux-kernel@vger.kernel.org, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Seth Jennings <sjenning@redhat.com>
-Subject: [PATCH] kprobes: add kprobe_is_function_probed()
-Message-ID: <alpine.LNX.2.00.1410211744550.24255@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755155AbaJUPtd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 11:49:33 -0400
+Message-ID: <54468063.4070408@zytor.com>
+Date: Tue, 21 Oct 2014 08:48:51 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Peter Zijlstra <peterz@infradead.org>,
+        Pranith Kumar <bobby.prani@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
+        Borislav Petkov <bp@suse.de>,
+        "open list:X86 ARCHITECTURE..." <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cmpxchg: Discard unnecessary cast to volatile
+References: <1412186248-18672-1-git-send-email-bobby.prani@gmail.com> <CAJhHMCDhhoxj25pmkxO2AhLwj6ur9ga3yRcViuH+DU-8K+Ch5g@mail.gmail.com> <20141021101412.GS23531@worktop.programming.kicks-ass.net>
+In-Reply-To: <20141021101412.GS23531@worktop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a function that allows external users (such as live patching 
-mechanisms) to check whether a given function (identified by symbol name) 
-has a kprobe installed in it.
+On 10/21/2014 03:14 AM, Peter Zijlstra wrote:
+> On Mon, Oct 20, 2014 at 04:22:27PM -0400, Pranith Kumar wrote:
+>>> Generating a volatile pointer is really not necessary here. This is the only
+>>> location where a volatile pointer is being generated for use in asm.
+>>>
+>>> This commit removes the unnecessary volatile pointer being created.
+>>>
+>>> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> 
+> Seems sane enough to me.
+> 
 
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
----
- include/linux/kprobes.h |  5 +++++
- kernel/kprobes.c        | 28 ++++++++++++++++++++++++++++
- 2 files changed, 33 insertions(+)
+However, it seems like unnecessary churn.  Does the volatile hurt in any
+way?
 
-diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
-index f7296e5..f760555 100644
---- a/include/linux/kprobes.h
-+++ b/include/linux/kprobes.h
-@@ -384,6 +384,7 @@ int disable_kprobe(struct kprobe *kp);
- int enable_kprobe(struct kprobe *kp);
- 
- void dump_kprobe(struct kprobe *kp);
-+bool kprobe_is_function_probed(const char *name);
- 
- #else /* !CONFIG_KPROBES: */
- 
-@@ -459,6 +460,10 @@ static inline int enable_kprobe(struct kprobe *kp)
- {
- 	return -ENOSYS;
- }
-+static inline bool kprobe_is_function_probed(const char *name)
-+{
-+	return false;
-+}
- #endif /* CONFIG_KPROBES */
- static inline int disable_kretprobe(struct kretprobe *rp)
- {
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 3995f54..27e8ddb 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -2036,6 +2036,34 @@ void dump_kprobe(struct kprobe *kp)
- NOKPROBE_SYMBOL(dump_kprobe);
- 
- /*
-+ * Check whether a given symbol is a probed function
-+ */
-+bool kprobe_is_function_probed(const char *name)
-+{
-+	struct hlist_head *head;
-+	struct kprobe *p, *kp;
-+	const char *sym = NULL;
-+	unsigned long offset = 0;
-+	unsigned int i;
-+	char *modname, namebuf[KSYM_NAME_LEN];
-+
-+	preempt_disable();
-+	for (i = 0; i < KPROBE_TABLE_SIZE; i++) {
-+		head = &kprobe_table[i];
-+		hlist_for_each_entry_rcu(p, head, hlist) {
-+			sym = kallsyms_lookup((unsigned long)p->addr,
-+					NULL, &offset, &modname,
-+					namebuf);
-+			if (!strcmp(sym, name))
-+				return true;
-+		}
-+	}
-+	preempt_enable();
-+	return false;
-+}
-+EXPORT_SYMBOL_GPL(kprobe_is_function_probed);
-+
-+/*
-  * Lookup and populate the kprobe_blacklist.
-  *
-  * Unlike the kretprobe blacklist, we'll need to determine
--- 
-1.9.2
+	-hpa
+
