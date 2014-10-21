@@ -1,133 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859AbaJUDrj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 23:47:39 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:48811 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181AbaJUDri (ORCPT
+	id S1752910AbaJUDte (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 23:49:34 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:42025 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014AbaJUDtd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 23:47:38 -0400
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <broonie@kernel.org>
-CC: <linux-spi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <nicolas.ferre@atmel.com>, <wenyou.yang@atmel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <khilman@kernel.org>
-Subject: [PATCH] spi/atmel: improve the system suspend/resume functions implementation
-Date: Tue, 21 Oct 2014 11:43:34 +0800
-Message-ID: <1413863014-1791-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 20 Oct 2014 23:49:33 -0400
+Message-ID: <5445D7C5.1080006@hitachi.com>
+Date: Tue, 21 Oct 2014 12:49:25 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ingo Molnar <mingo@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
+        Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] kprobes: introduce ARCH_HANDLES_KPROBES_ON_FTRACE
+References: <1413802794-38998-1-git-send-email-heiko.carstens@de.ibm.com> <1413802794-38998-2-git-send-email-heiko.carstens@de.ibm.com>
+In-Reply-To: <1413802794-38998-2-git-send-email-heiko.carstens@de.ibm.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To make it cleaner, the system suspend/resume directly call
-the runtime suspend/resume functions
-and remove the wapper of CONFIG_PM_RUNTIME, CONFIG_PM_SLEEP.
+(2014/10/20 19:59), Heiko Carstens wrote:
+> Allow architectures to implement handling of kprobes on function
+> tracer call sites on their own, without depending on common code.
+> 
+> This patch removes the kprobes check if a kprobe is being placed
+> on a function tracer call site and therefore gives full responsibility
+> of handling this correctly to the architecture.
+> 
+> This patch also introduces a user space visible change: if a kprobe
+> is placed into the middle of an ftrace instruction the return value
+> is changed from -EINVAL to -EILSEQ also for architectures which do
+> not support KPROBES_ON_FTRACE.
+> However in reality this change shouldn't matter at all.
 
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
----
- drivers/spi/spi-atmel.c |   61 ++++++++++++++++++++---------------------------
- 1 file changed, 26 insertions(+), 35 deletions(-)
+Could you try to remove new kconfig by using a weak function?
+This could be done with below functions:
 
-diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
-index 3f50014..6ed1893 100644
---- a/drivers/spi/spi-atmel.c
-+++ b/drivers/spi/spi-atmel.c
-@@ -1451,11 +1451,30 @@ static int atmel_spi_remove(struct platform_device *pdev)
- }
- 
- #ifdef CONFIG_PM
--#ifdef CONFIG_PM_SLEEP
-+static int atmel_spi_runtime_suspend(struct device *dev)
-+{
-+	struct spi_master *master = dev_get_drvdata(dev);
-+	struct atmel_spi *as = spi_master_get_devdata(master);
-+
-+	clk_disable_unprepare(as->clk);
-+	pinctrl_pm_select_sleep_state(dev);
-+
-+	return 0;
-+}
-+
-+static int atmel_spi_runtime_resume(struct device *dev)
-+{
-+	struct spi_master *master = dev_get_drvdata(dev);
-+	struct atmel_spi *as = spi_master_get_devdata(master);
-+
-+	pinctrl_pm_select_default_state(dev);
-+
-+	return clk_prepare_enable(as->clk);
-+}
-+
- static int atmel_spi_suspend(struct device *dev)
- {
--	struct spi_master	*master = dev_get_drvdata(dev);
--	struct atmel_spi	*as = spi_master_get_devdata(master);
-+	struct spi_master *master = dev_get_drvdata(dev);
- 	int ret;
- 
- 	/* Stop the queue running */
-@@ -1465,23 +1484,19 @@ static int atmel_spi_suspend(struct device *dev)
- 		return ret;
- 	}
- 
--	if (!pm_runtime_suspended(dev)) {
--		clk_disable_unprepare(as->clk);
--		pinctrl_pm_select_sleep_state(dev);
--	}
-+	if (!pm_runtime_suspended(dev))
-+		atmel_spi_runtime_suspend(dev);
- 
- 	return 0;
- }
- 
- static int atmel_spi_resume(struct device *dev)
- {
--	struct spi_master	*master = dev_get_drvdata(dev);
--	struct atmel_spi	*as = spi_master_get_devdata(master);
-+	struct spi_master *master = dev_get_drvdata(dev);
- 	int ret;
- 
- 	if (!pm_runtime_suspended(dev)) {
--		pinctrl_pm_select_default_state(dev);
--		ret = clk_prepare_enable(as->clk);
-+		ret = atmel_spi_runtime_resume(dev);
- 		if (ret)
- 			return ret;
- 	}
-@@ -1493,30 +1508,6 @@ static int atmel_spi_resume(struct device *dev)
- 
- 	return ret;
- }
--#endif
--
--#ifdef CONFIG_PM_RUNTIME
--static int atmel_spi_runtime_suspend(struct device *dev)
--{
--	struct spi_master *master = dev_get_drvdata(dev);
--	struct atmel_spi *as = spi_master_get_devdata(master);
--
--	clk_disable_unprepare(as->clk);
--	pinctrl_pm_select_sleep_state(dev);
--
--	return 0;
--}
--
--static int atmel_spi_runtime_resume(struct device *dev)
--{
--	struct spi_master *master = dev_get_drvdata(dev);
--	struct atmel_spi *as = spi_master_get_devdata(master);
--
--	pinctrl_pm_select_default_state(dev);
--
--	return clk_prepare_enable(as->clk);
--}
--#endif
- 
- static const struct dev_pm_ops atmel_spi_pm_ops = {
- 	SET_SYSTEM_SLEEP_PM_OPS(atmel_spi_suspend, atmel_spi_resume)
+In kernel/kprobes.c:
+
+int __weak arch_check_ftrace_location(struct kprobe *p)
+{
+	unsigned long ftrace_addr = ftrace_location((unsigned long)p->addr);
+	if (ftrace_addr) {
+		...
+}
+
+And in arch/s390/kernel/kprobes.c:
+int arch_check_ftrace_location(struct kprobe *p)
+{
+	return 0;
+}
+
+And in include/linux/kprobes.h
+int arch_check_ftrace_location(struct kprobe *p);
+
+Then, we don't need to add any macros or kconfigs.
+
+Thank you,
+
+> 
+> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+> ---
+>  arch/Kconfig     |  8 ++++++++
+>  kernel/kprobes.c | 36 +++++++++++++++++++++---------------
+>  2 files changed, 29 insertions(+), 15 deletions(-)
+> 
+> diff --git a/arch/Kconfig b/arch/Kconfig
+> index 05d7a8a458d5..e1a8e0edf03f 100644
+> --- a/arch/Kconfig
+> +++ b/arch/Kconfig
+> @@ -85,6 +85,14 @@ config KPROBES_ON_FTRACE
+>  	 passing of pt_regs to function tracing, then kprobes can
+>  	 optimize on top of function tracing.
+>  
+> +config ARCH_HANDLES_KPROBES_ON_FTRACE
+> +	def_bool n
+> +	help
+> +	 If an architecture can handle kprobes on function tracer call
+> +	 sites on own, then this option should be selected. This option
+> +	 removes the check which otherwise prevents to set kprobes on
+> +	 function tracer call sites.
+> +
+>  config UPROBES
+>  	def_bool n
+>  	select PERCPU_RWSEM
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+> index 3995f546d0f3..4b57fe9fbeb7 100644
+> --- a/kernel/kprobes.c
+> +++ b/kernel/kprobes.c
+> @@ -1410,28 +1410,34 @@ static inline int check_kprobe_rereg(struct kprobe *p)
+>  	return ret;
+>  }
+>  
+> -static int check_kprobe_address_safe(struct kprobe *p,
+> -				     struct module **probed_mod)
+> +static int check_ftrace_location(struct kprobe *p)
+>  {
+> -	int ret = 0;
+>  	unsigned long ftrace_addr;
+>  
+> -	/*
+> -	 * If the address is located on a ftrace nop, set the
+> -	 * breakpoint to the following instruction.
+> -	 */
+>  	ftrace_addr = ftrace_location((unsigned long)p->addr);
+> -	if (ftrace_addr) {
+> -#ifdef CONFIG_KPROBES_ON_FTRACE
+> -		/* Given address is not on the instruction boundary */
+> -		if ((unsigned long)p->addr != ftrace_addr)
+> -			return -EILSEQ;
+> +	if (!ftrace_addr)
+> +		return 0;
+> +	/* Given address is not on the instruction boundary */
+> +	if ((unsigned long)p->addr != ftrace_addr)
+> +		return -EILSEQ;
+> +	/* If an architecture handles kprobes on ftrace, we're done */
+> +	if (IS_ENABLED(CONFIG_ARCH_HANDLES_KPROBES_ON_FTRACE))
+> +		return 0;
+> +	if (IS_ENABLED(CONFIG_KPROBES_ON_FTRACE)) {
+>  		p->flags |= KPROBE_FLAG_FTRACE;
+> -#else	/* !CONFIG_KPROBES_ON_FTRACE */
+> -		return -EINVAL;
+> -#endif
+> +		return 0;
+>  	}
+> +	return -EINVAL;
+> +}
+> +
+> +static int check_kprobe_address_safe(struct kprobe *p,
+> +				     struct module **probed_mod)
+> +{
+> +	int ret;
+>  
+> +	ret = check_ftrace_location(p);
+> +	if (ret)
+> +		return ret;
+>  	jump_label_lock();
+>  	preempt_disable();
+>  
+> 
+
+
 -- 
-1.7.9.5
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
