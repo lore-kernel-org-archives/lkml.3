@@ -1,52 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933836AbaJUVpM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 17:45:12 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:38354 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933691AbaJUVox (ORCPT
+	id S933760AbaJUVuL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 17:50:11 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:58082 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933656AbaJUVuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 17:44:53 -0400
+	Tue, 21 Oct 2014 17:50:09 -0400
+Date: Tue, 21 Oct 2014 14:50:19 -0700
+From: Darren Hart <dvhart@infradead.org>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Darren Hart <dvhart@linux.intel.com>, Mark Rutland <mark.rutland@arm.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v4 00/13] Add ACPI _DSD and unified device properties?
+ support
+Message-ID: <20141021215019.GG20951@vmdeb7>
+References: <2660541.BycO7TFnA2@vostro.rjw.lan>
+ <1413378271.2762.77.camel@infradead.org>
+ <20141015131551.GC20034@leverpostej>
+ <1413379736.2762.79.camel@infradead.org>
+ <20141015134209.GD20034@leverpostej>
+ <db4038336b5e165b8b61eda064b10eeb.squirrel@twosheds.infradead.org>
+ <543E88CF.5060504@linux.intel.com>
+ <20141015151702.GG20034@leverpostej>
+ <543E9605.6020502@linux.intel.com>
+ <20141018083549.99F1AC408A6@trevor.secretlab.ca>
 MIME-Version: 1.0
-In-Reply-To: <OF497DB250.D815133A-ON86257D78.007665A1-86257D78.00767AED@us.ibm.com>
-References: <1413296756-25071-1-git-send-email-seth.forshee@canonical.com>
- <1413296756-25071-5-git-send-email-seth.forshee@canonical.com>
- <OFD40DA8DF.F78EA39D-ON86257D71.0057C4DC-86257D71.0064055D@us.ibm.com>
- <878ukis9oh.fsf@x220.int.ebiederm.org> <20141014205955.GA10908@ubuntu-mba51>
- <877g02pd7f.fsf@x220.int.ebiederm.org> <CALCETrU3Gzo-dx9uNH3Wuqa8Brk8xcxQsw7YGgVd74simXK0gw@mail.gmail.com>
- <20141015073951.GB10908@ubuntu-mba51> <CALCETrWnHfXN9VK9P-97XiVN6LkWr1nV4CxMpsRPGCOMc1xvvg@mail.gmail.com>
- <20141021212151.GB83801@ubuntu-hedt> <CALCETrWrqDAbq5uxPxZ=MjfSDetuZa94pNF2EH3abE6PhJm6=g@mail.gmail.com>
- <OF497DB250.D815133A-ON86257D78.007665A1-86257D78.00767AED@us.ibm.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 21 Oct 2014 14:44:31 -0700
-Message-ID: <CALCETrUF4v=H-BnSF1tUbcCsr+8=as_=10HCz2122WT7euU58w@mail.gmail.com>
-Subject: Re: [fuse-devel] [PATCH v4 4/5] fuse: Support privileged xattrs only
- with a mount option
-To: Michael j Theall <mtheall@us.ibm.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        fuse-devel@lists.sourceforge.net,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141018083549.99F1AC408A6@trevor.secretlab.ca>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 2:34 PM, Michael j Theall <mtheall@us.ibm.com> wrote:
-> Andy Lutomirski <luto@amacapital.net> wrote on 10/21/2014 04:27:13 PM:
->> But how does this help with FUSE at all?   Does FUSE end up calling
->> xattr_permission?
->>
->> --Andy
->>
->
-> The xattr system calls go through xattr_permission before it ever gets to
-> the FUSE ops.
+On Sat, Oct 18, 2014 at 10:35:49AM +0200, Grant Likely wrote:
+> On Wed, 15 Oct 2014 17:43:01 +0200
+> , Darren Hart <dvhart@linux.intel.com>
+>  wrote:
+> > 
+> > 
+> > On 10/15/14 17:17, Mark Rutland wrote:
+> > > On Wed, Oct 15, 2014 at 03:46:39PM +0100, Darren Hart wrote:
+> > 
+> > >> Mark, what would you propose we do differently to enable this driver to
+> > >> be firmware-type agnostic?
+> > > 
+> > > For this particular driver, all I'm asking for is that the
+> > > "used-by-rtas" property is not moved over from of_find_property to
+> > > device_get_property. It is irrelevant for all ACPI systems. Evidently my
+> > > comment was unclear; I apologise for that.
+> > 
+> > So my objection here is that by keeping the of_* terms in the driver we
+> > are required to include of, although it does safely convert to returning
+> > NULL if !CONFIG_OF I suppose.
+> 
+> This shouldn't be that controversial. There will be things that only make
+> sense for DT or only ACPI. Allowing the property to be processed when
+> the other interface is being used may tempt firmware authors to use the
+> property because it just happens to have a side effect that looks right
+> to them.
+> 
+> I don't see any problem with factoring out those bits into a function
+> that is only called (or built) when the associated firmware interface is
+> used. In these situations, the driver isn't 100% generic, so having
+> small per-firmware hooks is absolutely okay and not a burden to
+> maintain.
 
-But a malicious FUSE filesystem can just put those xattrs there by
-fiat, the same way that my old FUSE-based sploit put a setuid root
-copy of bash in the filesystem.  No setxattr calls are needed.
+Hrm... well, I suppose this isn't a hill I want to die on. I can disagree and
+commit here :-)
 
---Andy
+-- 
+Darren Hart
+Intel Open Source Technology Center
