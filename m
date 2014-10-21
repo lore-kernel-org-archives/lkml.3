@@ -1,121 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932601AbaJUNT5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 09:19:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50123 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932452AbaJUNT4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 09:19:56 -0400
-Date: Tue, 21 Oct 2014 15:19:53 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        David Rientjes <rientjes@google.com>, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH 4/4] PM: convert do_each_thread to for_each_process_thread
-Message-ID: <20141021131953.GD9415@dhcp22.suse.cz>
-References: <1413876435-11720-1-git-send-email-mhocko@suse.cz>
- <1413876435-11720-5-git-send-email-mhocko@suse.cz>
- <2670728.8H9BNSArM8@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2670728.8H9BNSArM8@vostro.rjw.lan>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S932675AbaJUNUM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 09:20:12 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:18140 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932334AbaJUNUJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 09:20:09 -0400
+X-AuditID: cbfec7f4-b7f6c6d00000120b-c7-54465d860e07
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH v3 0/4] regulator: max77686/trats2: Disable some regulators in
+ suspend
+Date: Tue, 21 Oct 2014 15:19:51 +0200
+Message-id: <1413897595-28752-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMLMWRmVeSWpSXmKPExsVy+t/xy7ptsW4hBv8+CFlsnLGe1WLSugNM
+	FlMfPmGzuP7lOavF/CPnWC2O/i6weP3C0KJ3wVU2i7NNb9gt7n89ymjx7UoHk8Wmx9dYLS7v
+	msNmMeP8PiaL25d5LdYeuctucbqb1UHQo6W5h83j7/PrLB5/V71g9tg56y67x6ZVnWwed67t
+	YfOYdzLQY/OSeo++LasYPT5vkgvgiuKySUnNySxLLdK3S+DKePvPt6CNv+L//LlsDYztPF2M
+	nBwSAiYSq6+vZIOwxSQu3FsPZHNxCAksZZRoWvQCyuljkvi1aQYzSBWbgLHE5uVLwDpEBDqZ
+	Jb58DwApYhZYzSTx88opsCJhgQiJhuVHWEFsFgFViRXXTzCC2LwC7hKPe5cyQayTkzh5bDLr
+	BEbuBYwMqxhFU0uTC4qT0nMN9YoTc4tL89L1kvNzNzFCAvbLDsbFx6wOMQpwMCrx8G5Y5hoi
+	xJpYVlyZe4hRgoNZSYQ3V9gtRIg3JbGyKrUoP76oNCe1+BAjEwenVAPjLMt5cSzyB/cHOMqL
+	PTK52nDuH0vhzt+KXWfWbC0O8uFXnfDd5chXMZ+GPcWvGjb/W5CzofFg5bFF5Rn3Tzd843C5
+	tmld9DGJ1qd1a5+vnDexsPVJXN3KlqzN813efP+cI3gx7eqDSI2iJPtim4I5bNv+MMTetTXk
+	X/lbd9XdVp1w8ysz2CYrKrEUZyQaajEXFScCAD11KEk2AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 21-10-14 14:10:18, Rafael J. Wysocki wrote:
-> On Tuesday, October 21, 2014 09:27:15 AM Michal Hocko wrote:
-> > as per 0c740d0afc3b (introduce for_each_thread() to replace the buggy
-> > while_each_thread()) get rid of do_each_thread { } while_each_thread()
-> > construct and replace it by a more error prone for_each_thread.
-> > 
-> > This patch doesn't introduce any user visible change.
-> > 
-> > Suggested-by: Oleg Nesterov <oleg@redhat.com>
-> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> 
-> ACK
-> 
-> Or do you want me to handle this series?
+Hi,
 
-I don't know, I hoped either you or Andrew to pick it up.
 
-> > ---
-> >  kernel/power/process.c | 16 ++++++++--------
-> >  1 file changed, 8 insertions(+), 8 deletions(-)
-> > 
-> > diff --git a/kernel/power/process.c b/kernel/power/process.c
-> > index a397fa161d11..7fd7b72554fe 100644
-> > --- a/kernel/power/process.c
-> > +++ b/kernel/power/process.c
-> > @@ -46,13 +46,13 @@ static int try_to_freeze_tasks(bool user_only)
-> >  	while (true) {
-> >  		todo = 0;
-> >  		read_lock(&tasklist_lock);
-> > -		do_each_thread(g, p) {
-> > +		for_each_process_thread(g, p) {
-> >  			if (p == current || !freeze_task(p))
-> >  				continue;
-> >  
-> >  			if (!freezer_should_skip(p))
-> >  				todo++;
-> > -		} while_each_thread(g, p);
-> > +		}
-> >  		read_unlock(&tasklist_lock);
-> >  
-> >  		if (!user_only) {
-> > @@ -93,11 +93,11 @@ static int try_to_freeze_tasks(bool user_only)
-> >  
-> >  		if (!wakeup) {
-> >  			read_lock(&tasklist_lock);
-> > -			do_each_thread(g, p) {
-> > +			for_each_process_thread(g, p) {
-> >  				if (p != current && !freezer_should_skip(p)
-> >  				    && freezing(p) && !frozen(p))
-> >  					sched_show_task(p);
-> > -			} while_each_thread(g, p);
-> > +			}
-> >  			read_unlock(&tasklist_lock);
-> >  		}
-> >  	} else {
-> > @@ -219,11 +219,11 @@ void thaw_processes(void)
-> >  	thaw_workqueues();
-> >  
-> >  	read_lock(&tasklist_lock);
-> > -	do_each_thread(g, p) {
-> > +	for_each_process_thread(g, p) {
-> >  		/* No other threads should have PF_SUSPEND_TASK set */
-> >  		WARN_ON((p != curr) && (p->flags & PF_SUSPEND_TASK));
-> >  		__thaw_task(p);
-> > -	} while_each_thread(g, p);
-> > +	}
-> >  	read_unlock(&tasklist_lock);
-> >  
-> >  	WARN_ON(!(curr->flags & PF_SUSPEND_TASK));
-> > @@ -246,10 +246,10 @@ void thaw_kernel_threads(void)
-> >  	thaw_workqueues();
-> >  
-> >  	read_lock(&tasklist_lock);
-> > -	do_each_thread(g, p) {
-> > +	for_each_process_thread(g, p) {
-> >  		if (p->flags & (PF_KTHREAD | PF_WQ_WORKER))
-> >  			__thaw_task(p);
-> > -	} while_each_thread(g, p);
-> > +	}
-> >  	read_unlock(&tasklist_lock);
-> >  
-> >  	schedule();
-> > 
-> 
-> -- 
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
+Changes since v2
+================
+1. Patch 1/4: Fully describe different values used for controlling
+   the regulators (low power modes, enable, disable). Remove "opmode"
+   from new defines. Suggested by Javier.
+2. Patch 2/4: minor nits after changing patch 1.
+3. Add Javier's reviewed-by to 2, 3 and 4 patch.
+4. Patch 3/4 (changes in documentation) should be picked up by Lee
+   Jones but I'm resending it anyway.
+
+Changes since v1
+================
+1. Add patch 1/4 and 3/4.
+2. Patch 2/4: Extend existing set_suspend_disable (for bucks) with
+   LDO support. Implement set_suspend_enable. Suggested by Javier.
+3. Patch 4/4: Add regulator suspend properties only to regulators
+   actually supporting this. Other regulators, not implementing
+   suspend enable/disable, will warn ("VCC_1.8V_IO: No configuration").
+4. Patch 4/4: In suspend enable VHSIC_1.0V and VHSIC_1.8V regulators.
+   Suggested by Chanwoo Choi.
+
+
+Description
+===========
+This patchset makes use of Javier Martinez Cainllas changes [1].
+It allows disabling some of the regulators during suspend to RAM.
+
+Javier's patchset is necessary only to test it.
+
+[1] [PATCH v3 0/2] ARM: EXYNOS: Call regulator suspend prepare/finish
+    https://lkml.org/lkml/2014/10/20/545
+
+
+Best regards,
+Krzysztof
+
+
+Krzysztof Kozlowski (4):
+  regulator: max77686: Replace hard-coded opmode values with defines
+  regulator: max77686: Implement suspend disable for some LDOs
+  mfd/regulator: dt-bindings: max77686: Document regulators off in
+    suspend
+  ARM: dts: exynos4412-trats: Add suspend configuration for max77686
+    regulators
+
+ Documentation/devicetree/bindings/mfd/max77686.txt |  6 ++
+ arch/arm/boot/dts/exynos4412-trats2.dts            | 72 ++++++++++++---------
+ drivers/regulator/max77686.c                       | 73 ++++++++++++++++++----
+ 3 files changed, 108 insertions(+), 43 deletions(-)
 
 -- 
-Michal Hocko
-SUSE Labs
+1.9.1
+
