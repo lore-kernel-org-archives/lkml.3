@@ -1,28 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932525AbaJUPyX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 11:54:23 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:57810 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932204AbaJUPyV (ORCPT
+	id S1755320AbaJUP6c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 11:58:32 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:46607 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754512AbaJUP6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 11:54:21 -0400
+	Tue, 21 Oct 2014 11:58:31 -0400
+Date: Tue, 21 Oct 2014 16:58:22 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm/kmemleak: Do not skip stack frames
+Message-ID: <20141021155821.GB17528@e104818-lin.cambridge.arm.com>
+References: <1413893969-25798-1-git-send-email-thierry.reding@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <E1XgbTy-00072R-N3@feisty.vs19.net>
-References: <E1XgbTy-00072R-N3@feisty.vs19.net>
-Date: Tue, 21 Oct 2014 17:48:10 +0200
-Message-ID: <CAA7pwKODrr7g=u75ALujrVHq5cXNsAf=QtGVCh+rKCrqd7UKUg@mail.gmail.com>
-Subject: Re:
-From: Patrik Lundquist <patrik.lundquist@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Bastien Nocera <hadess@hadess.net>, Sergey <sergey@elementaryos.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413893969-25798-1-git-send-email-thierry.reding@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bastien Nocera wrote:
-> I've posted this list at:
-> https://wiki.gnome.org/BastienNocera/KernelWishlist
+On Tue, Oct 21, 2014 at 01:19:29PM +0100, Thierry Reding wrote:
+> From: Thierry Reding <treding@nvidia.com>
+> 
+> Trying to chase down memory leaks is much easier when the complete stack
+> trace is available.
+> 
+> Signed-off-by: Thierry Reding <treding@nvidia.com>
+> ---
+> It seems like this was initially set to 1 when merged in commit
+> 3c7b4e6b8be4 (kmemleak: Add the base support) and later increased to 2
+> in commit fd6789675ebf (kmemleak: Save the stack trace for early
+> allocations). Perhaps there was a reason to skip the first few frames,
+> but I've certainly found it difficult to find leaks when the stack trace
+> doesn't point at the proper location.
+> ---
+>  mm/kmemleak.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/mm/kmemleak.c b/mm/kmemleak.c
+> index 3cda50c1e394..55d9ad0f40d4 100644
+> --- a/mm/kmemleak.c
+> +++ b/mm/kmemleak.c
+> @@ -503,7 +503,7 @@ static int __save_stack_trace(unsigned long *trace)
+>  	stack_trace.max_entries = MAX_TRACE;
+>  	stack_trace.nr_entries = 0;
+>  	stack_trace.entries = trace;
+> -	stack_trace.skip = 2;
+> +	stack_trace.skip = 0;
 
-I think what you want from epoll_wait() can be done with timerfd.
+The reason for this was to avoid listing some of the kmemleak internals
+(kmemleak_alloc -> create_object -> __save_stack_trace). I can see how
+inlining of __save_stack_trace() would cause some of the last frames to
+be missed. I would still prefer to keep it at 1 rather than 0?
+
+Which architecture are you testing on? What's the additional trace you
+get with this patch?
+
+-- 
+Catalin
