@@ -1,81 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932719AbaJUNaA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 09:30:00 -0400
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:52632 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932471AbaJUN35 convert rfc822-to-8bit (ORCPT
+	id S932636AbaJUNbs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 09:31:48 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51799 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932400AbaJUNbr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 09:29:57 -0400
+	Tue, 21 Oct 2014 09:31:47 -0400
+Date: Tue, 21 Oct 2014 14:31:44 +0100
+From: Thomas Graf <tgraf@suug.ch>
+To: "Steinar H. Gunderson" <sgunderson@bigfoot.com>
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Nikolay Aleksandrov <nikolay@redhat.com>
+Subject: Re: getaddrinfo slowdown in 3.17.1, due to getifaddrs
+Message-ID: <20141021133144.GA8802@casper.infradead.org>
+References: <20141017002132.GA29584@sesse.net>
+ <20141017003430.GB29584@sesse.net>
+ <20141017062517.GA11584@casper.infradead.org>
+ <20141021132557.GA9440@sesse.net>
 MIME-Version: 1.0
-In-Reply-To: <CABgxDo+9Dx7h+KXo+YYVLb3snimNV1PDxv+d1iQ2pY8P395pdQ@mail.gmail.com>
-References: <1413268273-15151-1-git-send-email-romain.perier@gmail.com>
-	<20141015140337.GI27755@sirena.org.uk>
-	<CABgxDoKen1Ub1ptG85-oMhUcRkX7tsZ6o51OJcOX2jZkZi0JGg@mail.gmail.com>
-	<8037374.M9KdRGnRWV@phil>
-	<CABgxDo+9Dx7h+KXo+YYVLb3snimNV1PDxv+d1iQ2pY8P395pdQ@mail.gmail.com>
-Date: Tue, 21 Oct 2014 15:29:56 +0200
-Message-ID: <CABgxDoJwLQ6+4=04oVsDA2tsLssO4-GDTgUcWnX76N7nr5TYgQ@mail.gmail.com>
-Subject: Re: [RFC v3 PATCH 1/5] of: Add standard property for poweroff capability
-From: PERIER Romain <romain.perier@gmail.com>
-To: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
-Cc: Mark Brown <broonie@kernel.org>, Grant Likely <grant.likely@linaro.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        robh <robh@kernel.org>, mark.rutland@arm.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141021132557.GA9440@sesse.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 10/21/14 at 03:25pm, Steinar H. Gunderson wrote:
+> On Fri, Oct 17, 2014 at 07:25:17AM +0100, Thomas Graf wrote:
+> > I think the only option at this point is to re-add the nltable lock to
+> > netlink_lookup() so we can drop the synchronize_net() until we find a
+> > way to RCUify socket destruction. I will cook up a patch today unless
+> > somebody can come up with a smarter way to work around needing the
+> > synchronize_net().
+> 
+> Did you end up with a patch? We'd like to reboot the server in question
+> soon-ish, but it's an open question whether we should go to 3.16.x, revert
+> exactly the patches in question or something else.
 
-Do I need to rebase my patches onto the regulator tree or it's okay ?
+I'm currently testing the patch below and will submit with proper
+tested by attributions later today.
 
-Have a nice day,
-Romain
+>From 3605e498c0b025054d17cc2943cae70d3df2a427 Mon Sep 17 00:00:00 2001
+Message-Id: <3605e498c0b025054d17cc2943cae70d3df2a427.1413834710.git.tgraf@suug.ch>
+From: Thomas Graf <tgraf@suug.ch>
+Date: Fri, 17 Oct 2014 11:33:44 +0200
+Subject: [PATCH] netlink: Re-add locking to netlink_lookup() and seq walker
 
-2014-10-17 9:23 GMT+02:00 PERIER Romain <romain.perier@gmail.com>:
-> Hi Heiko,
->
-> Oh sure, no problem. It was just to understand better how things will happen ;)
-> If my patches needs to be rebased, will do, of course.
->
-> Have a nice day,
-> Romain
->
-> 2014-10-17 8:06 GMT+02:00 Heiko Stübner <heiko@sntech.de>:
->> Hi Romain,
->>
->> Am Freitag, 17. Oktober 2014, 08:01:31 schrieb PERIER Romain:
->>> Hi all,
->>>
->>> I am just curious but where do you plan to merge this serie ? in
->>> git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git ?
->>
->> The single dts patch will be going into my dts branch and the rest will go
->> through Mark's regulator tree. As Mark said, he'll try to apply these again
->> once 3.18-rc1 is released and if it still doesn't apply then, he'll probably
->> ask you to rebase them onto the regulator tree [which will at the time include
->> everything that is in -rc1].
->>
->>
->> Heiko
->>
->>
->>
->>> 2014-10-15 16:03 GMT+02:00 Mark Brown <broonie@kernel.org>:
->>> > On Wed, Oct 15, 2014 at 03:56:03PM +0200, Heiko Stübner wrote:
->>> >> Am Mittwoch, 15. Oktober 2014, 15:42:45 schrieb Mark Brown:
->>> >> > I guess I should apply these (except the DTS update) since the first
->>> >> > user that's being added is a regulator driver?
->>> >>
->>> >> I'd think so.
->>> >> In any case, I'll take the "ARM: dts: ..." patch if you take the others.
->>> >
->>> > Sounds like a plan.  I just tried applying and got some conflicts but
->>> > I'm guessing that this is due to changes that are landing in the merge
->>> > window so I'll try again once -rc1 is out.
->>
+The synchronize_rcu() in netlink_release() introduces unacceptable
+latency. Reintroduce minimal lookup so we can drop the
+synchronize_rcu() until socket destruction has been RCUfied.
+
+Signed-off-by: Thomas Graf <tgraf@suug.ch>
+---
+ net/netlink/af_netlink.c | 37 +++++++++++++++++++++++++------------
+ 1 file changed, 25 insertions(+), 12 deletions(-)
+
+diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
+index 7a186e7..f1de72d 100644
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -96,6 +96,14 @@ static DECLARE_WAIT_QUEUE_HEAD(nl_table_wait);
+ static int netlink_dump(struct sock *sk);
+ static void netlink_skb_destructor(struct sk_buff *skb);
+ 
++/* nl_table locking explained:
++ * Lookup and traversal are protected with nl_sk_hash_lock or nl_table_lock
++ * combined with an RCU read-side lock. Insertion and removal are protected
++ * with nl_sk_hash_lock while using RCU list modification primitives and may
++ * run in parallel to nl_table_lock protected lookups. Destruction of the
++ * Netlink socket may only occur *after* nl_table_lock has been acquired
++ * either during or after the socket has been removed from the list.
++ */
+ DEFINE_RWLOCK(nl_table_lock);
+ EXPORT_SYMBOL_GPL(nl_table_lock);
+ static atomic_t nl_table_users = ATOMIC_INIT(0);
+@@ -109,10 +117,10 @@ EXPORT_SYMBOL_GPL(nl_sk_hash_lock);
+ static int lockdep_nl_sk_hash_is_held(void)
+ {
+ #ifdef CONFIG_LOCKDEP
+-	return (debug_locks) ? lockdep_is_held(&nl_sk_hash_lock) : 1;
+-#else
+-	return 1;
++	if (debug_locks)
++		return lockdep_is_held(&nl_sk_hash_lock) || lockdep_is_held(&nl_table_lock);
+ #endif
++	return 1;
+ }
+ 
+ static ATOMIC_NOTIFIER_HEAD(netlink_chain);
+@@ -1028,11 +1036,13 @@ static struct sock *netlink_lookup(struct net *net, int protocol, u32 portid)
+ 	struct netlink_table *table = &nl_table[protocol];
+ 	struct sock *sk;
+ 
++	read_lock(&nl_table_lock);
+ 	rcu_read_lock();
+ 	sk = __netlink_lookup(table, portid, net);
+ 	if (sk)
+ 		sock_hold(sk);
+ 	rcu_read_unlock();
++	read_unlock(&nl_table_lock);
+ 
+ 	return sk;
+ }
+@@ -1257,9 +1267,6 @@ static int netlink_release(struct socket *sock)
+ 	}
+ 	netlink_table_ungrab();
+ 
+-	/* Wait for readers to complete */
+-	synchronize_net();
+-
+ 	kfree(nlk->groups);
+ 	nlk->groups = NULL;
+ 
+@@ -1281,6 +1288,7 @@ static int netlink_autobind(struct socket *sock)
+ 
+ retry:
+ 	cond_resched();
++	netlink_table_grab();
+ 	rcu_read_lock();
+ 	if (__netlink_lookup(table, portid, net)) {
+ 		/* Bind collision, search negative portid values. */
+@@ -1288,9 +1296,11 @@ retry:
+ 		if (rover > -4097)
+ 			rover = -4097;
+ 		rcu_read_unlock();
++		netlink_table_ungrab();
+ 		goto retry;
+ 	}
+ 	rcu_read_unlock();
++	netlink_table_ungrab();
+ 
+ 	err = netlink_insert(sk, net, portid);
+ 	if (err == -EADDRINUSE)
+@@ -2921,14 +2931,16 @@ static struct sock *netlink_seq_socket_idx(struct seq_file *seq, loff_t pos)
+ }
+ 
+ static void *netlink_seq_start(struct seq_file *seq, loff_t *pos)
+-	__acquires(RCU)
++	__acquires(nl_table_lock) __acquires(RCU)
+ {
++	read_lock(&nl_table_lock);
+ 	rcu_read_lock();
+ 	return *pos ? netlink_seq_socket_idx(seq, *pos - 1) : SEQ_START_TOKEN;
+ }
+ 
+ static void *netlink_seq_next(struct seq_file *seq, void *v, loff_t *pos)
+ {
++	struct rhashtable *ht;
+ 	struct netlink_sock *nlk;
+ 	struct nl_seq_iter *iter;
+ 	struct net *net;
+@@ -2943,19 +2955,19 @@ static void *netlink_seq_next(struct seq_file *seq, void *v, loff_t *pos)
+ 	iter = seq->private;
+ 	nlk = v;
+ 
+-	rht_for_each_entry_rcu(nlk, nlk->node.next, node)
++	i = iter->link;
++	ht = &nl_table[i].hash;
++	rht_for_each_entry(nlk, nlk->node.next, ht, node)
+ 		if (net_eq(sock_net((struct sock *)nlk), net))
+ 			return nlk;
+ 
+-	i = iter->link;
+ 	j = iter->hash_idx + 1;
+ 
+ 	do {
+-		struct rhashtable *ht = &nl_table[i].hash;
+ 		const struct bucket_table *tbl = rht_dereference_rcu(ht->tbl, ht);
+ 
+ 		for (; j < tbl->size; j++) {
+-			rht_for_each_entry_rcu(nlk, tbl->buckets[j], node) {
++			rht_for_each_entry(nlk, tbl->buckets[j], ht, node) {
+ 				if (net_eq(sock_net((struct sock *)nlk), net)) {
+ 					iter->link = i;
+ 					iter->hash_idx = j;
+@@ -2971,9 +2983,10 @@ static void *netlink_seq_next(struct seq_file *seq, void *v, loff_t *pos)
+ }
+ 
+ static void netlink_seq_stop(struct seq_file *seq, void *v)
+-	__releases(RCU)
++	__releases(RCU) __releases(nl_table_lock)
+ {
+ 	rcu_read_unlock();
++	read_unlock(&nl_table_lock);
+ }
+ 
+ 
+-- 
+1.9.3
+
