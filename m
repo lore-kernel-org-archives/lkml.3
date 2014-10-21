@@ -1,56 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808AbaJUJOk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 05:14:40 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:45034 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751038AbaJUJOg (ORCPT
+	id S932287AbaJUJPL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 05:15:11 -0400
+Received: from mail-pa0-f65.google.com ([209.85.220.65]:35590 "EHLO
+	mail-pa0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754727AbaJUJOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 05:14:36 -0400
-Date: Tue, 21 Oct 2014 02:13:56 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Christoph Hellwig <hch@infradead.org>, Pieter Smith <pieter@boesman.nl>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Paris <eparis@redhat.com>, Matt Turner <mattst88@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Fabian Frederick <fabf@skynet.be>, Tejun Heo <tj@kernel.org>,
-        ????????? <zhenglong.cai@cs2c.com.cn>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Peter Foley <pefoley2@pefoley.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Oleg Nesterov <oleg@redhat.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Kees Cook <keescook@chromium.org>, linux-fsdevel@vger.kernel.org,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:ABI/API" <linux-api@vger.kernel.org>
-Subject: Re: [PATCH 2/2] fs: Support compiling out sendfile
-Message-ID: <20141021091356.GA26330@infradead.org>
-References: <1413841728-1313-1-git-send-email-pieter@boesman.nl>
- <1413841728-1313-2-git-send-email-pieter@boesman.nl>
- <20141020222421.GE8929@cloud>
- <20141021075154.GB10020@infradead.org>
- <20141021090421.GB17604@thin>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141021090421.GB17604@thin>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 21 Oct 2014 05:14:39 -0400
+From: "jinkun.hong" <jinkun.hong@rock-chips.com>
+To: linus.walleij@linaro.org, linux-arm-kernel@lists.infradead.org
+Cc: Russell King <linux@arm.linux.org.uk>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
+        linux-doc@vger.kernel.org, dianders@chromium.org,
+        Heiko Stuebner <heiko@sntech.de>, linux-rockchip@lists.infradead.org,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        "jinkun.hong" <jinkun.hong@rock-chips.com>,
+        Jack Dai <jack.dai@rock-chips.com>
+Subject: [PATCH v5 3/3] ARM: dts: add rk3288 power-domain node
+Date: Tue, 21 Oct 2014 02:13:28 -0700
+Message-Id: <1413882808-4669-4-git-send-email-jinkun.hong@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1413882808-4669-1-git-send-email-jinkun.hong@rock-chips.com>
+References: <1413882808-4669-1-git-send-email-jinkun.hong@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 02:04:22AM -0700, Josh Triplett wrote:
-> That's the plan, but since sendfile depends on some of the splice bits,
-> sendfile needs to be optional as well; SENDFILE_SYSCALL will then select
-> SPLICE_SYSCALLS.
+From: "jinkun.hong" <jinkun.hong@rock-chips.com>
 
-Just include sendfile with the splice syscalls - we don't really need a
-config option for every obscure syscall.
+Signed-off-by: Jack Dai <jack.dai@rock-chips.com>
+Signed-off-by: jinkun.hong <jinkun.hong@rock-chips.com>
+
+---
+
+Changes in v5: None
+Changes in v4: None
+Changes in v3:
+- Decomposition power-controller, changed to multiple controller
+   (gpu-power-controller, hevc-power-controller)
+
+Changes in v2:
+- make pd_vio clocks all one entry per line and alphabetize.
+- power: power-controller move back to pinctrl: pinctrl.
+
+ arch/arm/boot/dts/rk3288.dtsi |   24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
+
+diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+index 5950b0a..6a9b313 100644
+--- a/arch/arm/boot/dts/rk3288.dtsi
++++ b/arch/arm/boot/dts/rk3288.dtsi
+@@ -592,4 +592,28 @@
+ 			};
+ 		};
+ 	};
++
++	gpu_power: gpu-power-controller {
++		compatible = "rockchip,rk3288-power-gpu";
++		rockchip,pmu = <&pmu>;
++		#power-domain-cells = <0>;
++	};
++
++	hevc_power: hevc-power-controller {
++		compatible = "rockchip,rk3288-power-hevc";
++		rockchip,pmu = <&pmu>;
++		#power-domain-cells = <0>;
++	};
++
++	video_power: video-power-controller {
++		compatible = "rockchip,rk3288-power-video";
++		rockchip,pmu = <&pmu>;
++		#power-domain-cells = <0>;
++	};
++
++	vio_power: vio-power-controller {
++		compatible = "rockchip,rk3288-power-vio";
++		rockchip,pmu = <&pmu>;
++		#power-domain-cells = <0>;
++	};
+ };
+-- 
+1.7.9.5
 
