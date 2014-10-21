@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932907AbaJUTDX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 15:03:23 -0400
-Received: from mail.efficios.com ([78.47.125.74]:58452 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754564AbaJUTDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 15:03:20 -0400
-Date: Tue, 21 Oct 2014 19:03:14 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org,
-        rp@svcs.cs.pdx.edu
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Message-ID: <1040424434.13102.1413918194641.JavaMail.zimbra@efficios.com>
-In-Reply-To: <2058152560.13097.1413917644377.JavaMail.zimbra@efficios.com>
-Subject: [RELEASE] Userspace RCU 0.7.13
+	id S1755640AbaJUTF6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 15:05:58 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:60051 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755139AbaJUTF4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 15:05:56 -0400
+Message-ID: <5446AE8E.8010904@hurleysoftware.com>
+Date: Tue, 21 Oct 2014 15:05:50 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        linux-acpi <linux-acpi@vger.kernel.org>,
+        Linux kernel <linux-kernel@vger.kernel.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Subject: pnp bus disables serial console despite no_console_suspend
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [173.246.22.116]
-X-Mailer: Zimbra 8.0.7_GA_6021 (ZimbraWebClient - FF32 (Linux)/8.0.7_GA_6021)
-Thread-Topic: Userspace RCU 0.7.13
-Thread-Index: X52DT8qlJbcISpNLFDKGxxzYr/EswA==
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-liburcu is a LGPLv2.1 userspace RCU (read-copy-update) library. This
-data synchronization library provides read-side access which scales
-linearly with the number of cores. It does so by allowing multiples
-copies of a given data structure to live at the same time, and by
-monitoring the data structure accesses to detect grace periods after
-which memory reclamation is possible.
+Hi,
 
-liburcu-cds provides efficient data structures based on RCU and
-lock-free algorithms. Those structures include hash tables, queues,
-stacks, and doubly-linked lists.
+I'm looking into a cpu lockup while resuming from S3.
 
-This is a bugfix release.
+I can't paste the warning here because the serial console comes back
+scrambled. There are two issues:
+1. The 16550A serial port is a pnp device that the pnp bus disables
+on suspend, despite having no_console_suspend set, and
+2. ACPI suspend powers off the device anyway.
 
-Changelog:
-2014-10-21 Userspace RCU 0.7.13
-        * rculfhash: remove duplicated code
-        * rculfhash: handle pthread_create failures
-        * rculfhash: fall back to single-threaded resize on calloc failure
-        * x86: drop extra semi-colon in caa_cpu_relax
-        * call_rcu threads should clear their PAUSED flag when they unpause
-        * Fix: bring back dummy rcu_bp_exit symbol
+I've managed to workaround these 2 issues by brute force hack,
+but I think that it's worthwhile to consider making no_console_suspend
+work properly in mainline.
 
-Project website: http://urcu.so
-Git repository: git://git.urcu.so/urcu.git
+Not disabling the pnp device of the serial console is trivial:
+option 1 is to special case some return value from pnp_dev->suspend()
+which prevent further action by the pnp bus but does not error out
+of suspending, or
+option 2 is for the device to override pnp_dev->capabilities and
+turn off PNP_DISABLE. This option also requires a new capability to
+prevent the pnpacpi protocol from powering off the device.
+Option 2 is the workaround I'm using right now and it's pretty messy.
 
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+The second issue is less straightforward.
+
+Since ACPI powers off the device anyway, on return from
+acpi_suspend_lowlevel(), the device needs some minimal re-programming.
+The workaround right now is to re-check a device register on every
+console write, and perform the re-programming if it's been cleared.
+This is not very robust or desirable; the power-on register value is
+a valid (but unlikely) state for the device.
+
+What's needed is a way to distinguish between a console write immediately
+before and immediately after resume, before resume starts using printk :)
+Ideally, consoles would get a notification before being used; optionally,
+a system-wide value which identifies power transition states could work.
+
+Thoughts?
+
+Regards,
+Peter Hurley
+
+PS - This situation is not limited to pnpacpi on x86. Several ARM designs
+power off the serial port, and require explicit re-programming for resume
+using no_console_suspend.
