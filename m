@@ -1,124 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932926AbaJUQjx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 12:39:53 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:60372 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932390AbaJUQjv (ORCPT
+	id S933182AbaJUQkO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 12:40:14 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:42207 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932390AbaJUQkL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 12:39:51 -0400
-Message-ID: <54468C4C.3030204@gmail.com>
-Date: Tue, 21 Oct 2014 18:39:40 +0200
-From: Corentin LABBE <clabbe.montjoie@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Tue, 21 Oct 2014 12:40:11 -0400
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>, Vladimir Zapolskiy <vz@mleia.com>
-CC: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        maxime.ripard@free-electrons.com, linux@arm.linux.org.uk,
-        herbert@gondor.apana.org.au, davem@davemloft.net,
-        grant.likely@linaro.org, akpm@linux-foundation.org,
-        gregkh@linuxfoundation.org, mchehab@osg.samsung.com, crope@iki.fi,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-sunxi@googlegroups.com, linux-crypto@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 4/4] crypto: Add Allwinner Security System crypto accelerator
-References: <1413728182-13569-1-git-send-email-clabbe.montjoie@gmail.com>	 <1413728182-13569-5-git-send-email-clabbe.montjoie@gmail.com>	 <54459AA5.2030705@mleia.com> <1413849173.5407.6.camel@perches.com>
-In-Reply-To: <1413849173.5407.6.camel@perches.com>
+In-Reply-To: <5446858B.3040107@gmx.de>
+References: <5445479C.4030201@gmx.de>
+	<5446858B.3040107@gmx.de>
+Date: Tue, 21 Oct 2014 12:40:10 -0400
+X-Google-Sender-Auth: EW5CrhgvJNg4nyvDR1yJ4ElwizM
+Message-ID: <CA+5PVA5MCRhwnkbNXpMmLzeM4G=aau0kuRU_wma-5T59M+2vkA@mail.gmail.com>
+Subject: Re: v3.18-rc1 32 bit KVM hangs early in boot process
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>
+Cc: virtualization@lists.linux-foundation.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 21/10/2014 01:52, Joe Perches a écrit :
-> On Tue, 2014-10-21 at 02:28 +0300, Vladimir Zapolskiy wrote:
->> On 19.10.2014 17:16, LABBE Corentin wrote:
->>> Add support for the Security System included in Allwinner SoC A20.
->>> The Security System is a hardware cryptographic accelerator that support AES/MD5/SHA1/DES/3DES/PRNG algorithms.
-> []
->>> diff --git a/drivers/crypto/sunxi-ss/sunxi-ss-core.c b/drivers/crypto/sunxi-ss/sunxi-ss-core.c
-> []
->>> +	cr = clk_get_rate(ss->busclk);
->>> +	if (cr >= cr_ahb)
->>> +		dev_dbg(&pdev->dev, "Clock bus %lu (%lu MHz) (must be >= %lu)\n",
->>> +				cr, cr / 1000000, cr_ahb);
->>> +	else
->>> +		dev_warn(&pdev->dev, "Clock bus %lu (%lu MHz) (must be >= %lu)\n",
->>> +				cr, cr / 1000000, cr_ahb);
+On Tue, Oct 21, 2014 at 12:10 PM, Toralf Förster <toralf.foerster@gmx.de> wrote:
+> On 10/20/2014 07:34 PM, Toralf Förster wrote:
+>> I uploaded the screen shots from the virt-manager to [1] and [2]
 >>
->> See next comment.
+>> FWIW e56d9fccb was fine so the bug slipped in after that.
 >>
->>> +	cr = clk_get_rate(ss->ssclk);
->>> +	if (cr <= cr_mod)
->>> +		if (cr < cr_mod)
->>> +			dev_info(&pdev->dev, "Clock ss %lu (%lu MHz) (must be <= %lu)\n",
->>> +					cr, cr / 1000000, cr_mod);
->>> +		else
->>> +			dev_dbg(&pdev->dev, "Clock ss %lu (%lu MHz) (must be <= %lu)\n",
->>> +					cr, cr / 1000000, cr_mod);
->>> +	else
->>> +		dev_warn(&pdev->dev, "Clock ss is at %lu (%lu MHz) (must be <= %lu)\n",
->>> +				cr, cr / 1000000, cr_mod);
+>
 >>
->> The management of kernel log levels looks pretty strange. As far as I
->> understand there is no error on any clock rate, I'd recommend to keep
->> only one information message.
-> 
-> And if not, please add some braces.
-> 
->> hash_init: initialize request context */
->>> +int sunxi_hash_init(struct ahash_request *areq)
->>> +{
->>> +	const char *hash_type;
->>> +	struct sunxi_req_ctx *op = ahash_request_ctx(areq);
->>> +
->>> +	memset(op, 0, sizeof(struct sunxi_req_ctx));
->>> +
->>> +	hash_type = crypto_tfm_alg_name(areq->base.tfm);
->>> +
->>> +	if (strcmp(hash_type, "sha1") == 0)
->>> +		op->mode = SS_OP_SHA1;
->>> +	if (strcmp(hash_type, "md5") == 0)
->>> +		op->mode = SS_OP_MD5;
-> 
-> else if ?
-> 
->>> +	if (op->mode == 0)
->>> +		return -EINVAL;
-> 
-> maybe this?
-> 
-> 	if (!strcmp(hash_type, "sha1"))
-> 		op->mode = SS_OP_SHA1;
-> 	else if (!strcmp(hash_type, "md5"))
-> 		op->mode = SH_OP_MD5;
-> 	else
-> 		return -EINVAL;
-> 
+>> [1] http://www.directupload.net/file/d/3781/j9mwrtpq_jpg.htm
+>> [2] http://www.directupload.net/file/d/3781/29trc56v_jpg.htm
+>>
+> It might be virtio-console related, when the uevetns are processed:
+>
+> http://www.directupload.net/file/d/3782/6lg5yihh_jpg.htm
 
-Ok it is better
+Try
+http://mid.gmane.org/1413813529-11044-1-git-send-email-cornelia.huck@de.ibm.com
 
->>> +
->>> +	return 0;
->>> +}
-> []
->>> +int sunxi_hash_update(struct ahash_request *areq)
->>> +{
-> []
->>> +	dev_dbg(ss->dev, "%s %s bc=%llu len=%u mode=%x bw=%u ww=%u",
->>> +			__func__, crypto_tfm_alg_name(areq->base.tfm),
->>> +			op->byte_count, areq->nbytes, op->mode,
->>> +			op->nbw, op->nwait);
-> 
-> dev_dbg statements generally don't need __func__ as
-> dynamic_debug can add it.
-> 
-> If you want to keep it, the most common output form for
-> __func__ is '"%s: ...", __func__'
-> 
-
-It is a big debug that I forgot to remove but I fixed that in other dev_dbg
-
-thanks
-
+josh
