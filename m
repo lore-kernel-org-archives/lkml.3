@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755000AbaJUJiX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 05:38:23 -0400
-Received: from mga11.intel.com ([192.55.52.93]:54233 "EHLO mga11.intel.com"
+	id S1754519AbaJUJjh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 05:39:37 -0400
+Received: from mga11.intel.com ([192.55.52.93]:58652 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754928AbaJUJiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 05:38:10 -0400
+	id S1750750AbaJUJjg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 05:39:36 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,761,1406617200"; 
-   d="scan'208";a="617762575"
-Message-ID: <1413884289.2396.22.camel@linux.intel.com>
-Subject: Re: [PATCH v4 2/3] dma: imx-sdma: correct print format
+   d="scan'208";a="617763005"
+Message-ID: <1413884375.2396.23.camel@linux.intel.com>
+Subject: Re: [PATCH v4 3/3] dma: imx-sdma: reorg code to make code clean
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Robin Gong <b38343@freescale.com>
 Cc: vinod.koul@intel.com, dan.j.williams@intel.com, dmaengine@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Tue, 21 Oct 2014 12:38:09 +0300
-In-Reply-To: <1413853781-18384-3-git-send-email-b38343@freescale.com>
+Date: Tue, 21 Oct 2014 12:39:35 +0300
+In-Reply-To: <1413853781-18384-4-git-send-email-b38343@freescale.com>
 References: <1413853781-18384-1-git-send-email-b38343@freescale.com>
-	 <1413853781-18384-3-git-send-email-b38343@freescale.com>
+	 <1413853781-18384-4-git-send-email-b38343@freescale.com>
 Organization: Intel Finland Oy
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.12.6-1 
@@ -29,82 +29,209 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, 2014-10-21 at 09:09 +0800, Robin Gong wrote:
-> correct print format for 'size_t', 'dma_address_t',etc.
+> code reorg for transfer prepare and bus width check.
 
-Ah, okay, you may disregard few of my comments to previous patch.
-
-But here, please, fix the style of commit message (spaces, capital
-letters, etc).
+Fix style of commit message.
 
 > 
 > Signed-off-by: Robin Gong <b38343@freescale.com>
 > ---
->  drivers/dma/imx-sdma.c | 18 +++++++++---------
->  1 file changed, 9 insertions(+), 9 deletions(-)
+>  drivers/dma/imx-sdma.c | 127 +++++++++++++++++++++++--------------------------
+>  1 file changed, 60 insertions(+), 67 deletions(-)
 > 
 > diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-> index fc4a0df..7e8aa2d 100644
+> index 7e8aa2d..b0365c2 100644
 > --- a/drivers/dma/imx-sdma.c
 > +++ b/drivers/dma/imx-sdma.c
-> @@ -1041,7 +1041,7 @@ static struct dma_async_tx_descriptor *sdma_prep_memcpy(
+> @@ -1026,6 +1026,52 @@ static void sdma_free_chan_resources(struct dma_chan *chan)
+>  	clk_disable(sdma->clk_ahb);
+>  }
+>  
+> +static int sdma_transfer_init(struct sdma_channel *sdmac,
+> +			      enum dma_transfer_direction direction)
+> +{
+> +	int ret = 0;
+
+Redundant assignment.
+
+> +
+> +	sdmac->status = DMA_IN_PROGRESS;
+> +	sdmac->buf_tail = 0;
+> +	sdmac->flags = 0;
+> +	sdmac->direction = direction;
+> +
+> +	ret = sdma_load_context(sdmac);
+> +	if (ret)
+> +		return ret;
+> +
+> +	sdmac->chn_count = 0;
+> +
+> +	return ret;
+> +}
+> +
+> +static int check_bd_buswidth(struct sdma_buffer_descriptor *bd,
+> +			     struct sdma_channel *sdmac, int count,
+> +			     dma_addr_t dma_dst, dma_addr_t dma_src)
+> +{
+> +	int ret = 0;
+> +
+> +	switch (sdmac->word_size) {
+> +	case DMA_SLAVE_BUSWIDTH_4_BYTES:
+> +		bd->mode.command = 0;
+> +		if ((count | dma_dst | dma_src) & 3)
+> +			ret = -EINVAL;
+> +		break;
+> +	case DMA_SLAVE_BUSWIDTH_2_BYTES:
+> +		bd->mode.command = 2;
+> +		if ((count | dma_dst | dma_src) & 1)
+> +			ret = -EINVAL;
+> +		break;
+> +	case DMA_SLAVE_BUSWIDTH_1_BYTE:
+> +		 bd->mode.command = 1;
+> +		 break;
+> +	default:
+> +		 return -EINVAL;
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+>  static struct dma_async_tx_descriptor *sdma_prep_memcpy(
+>  		struct dma_chan *chan, dma_addr_t dma_dst,
+>  		dma_addr_t dma_src, size_t len, unsigned long flags)
+> @@ -1034,7 +1080,7 @@ static struct dma_async_tx_descriptor *sdma_prep_memcpy(
+>  	struct sdma_engine *sdma = sdmac->sdma;
+>  	int channel = sdmac->channel;
+>  	size_t count;
+> -	int i = 0, param, ret;
+> +	int i = 0, param;
+>  	struct sdma_buffer_descriptor *bd;
+>  
+>  	if (!chan || !len || sdmac->status == DMA_IN_PROGRESS)
+> @@ -1046,21 +1092,12 @@ static struct dma_async_tx_descriptor *sdma_prep_memcpy(
+>  		goto err_out;
+>  	}
+>  
+> -	sdmac->status = DMA_IN_PROGRESS;
+> -
+> -	sdmac->buf_tail = 0;
+> -
+>  	dev_dbg(sdma->dev, "memcpy: %pad->%pad, len=%zu, channel=%d.\n",
+>  		&dma_src, &dma_dst, len, channel);
+>  
+> -	sdmac->direction = DMA_MEM_TO_MEM;
+> -
+> -	ret = sdma_load_context(sdmac);
+> -	if (ret)
+> +	if (sdma_transfer_init(sdmac, DMA_MEM_TO_MEM))
+>  		goto err_out;
+>  
+> -	sdmac->chn_count = 0;
+> -
+>  	do {
+>  		count = min_t(size_t, len, SDMA_BD_MAX_CNT);
+>  		bd = &sdmac->bd[i];
+> @@ -1068,28 +1105,8 @@ static struct dma_async_tx_descriptor *sdma_prep_memcpy(
+>  		bd->ext_buffer_addr = dma_dst;
+>  		bd->mode.count = count;
+>  
+> -		if (sdmac->word_size > DMA_SLAVE_BUSWIDTH_4_BYTES) {
+> -			ret =  -EINVAL;
+> +		if (check_bd_buswidth(bd, sdmac, count, dma_dst, dma_src))
+>  			goto err_out;
+> -		}
+> -
+> -		switch (sdmac->word_size) {
+> -		case DMA_SLAVE_BUSWIDTH_4_BYTES:
+> -			bd->mode.command = 0;
+> -			if ((count | dma_dst | dma_src) & 3)
+> -				return NULL;
+> -			break;
+> -		case DMA_SLAVE_BUSWIDTH_2_BYTES:
+> -			bd->mode.command = 2;
+> -			if ((count | dma_dst | dma_src) & 1)
+> -				return NULL;
+> -			break;
+> -		case DMA_SLAVE_BUSWIDTH_1_BYTE:
+> -			bd->mode.command = 1;
+> -			break;
+> -		default:
+> -			return NULL;
+> -		}
+>  
+>  		dma_src += count;
+>  		dma_dst += count;
+> @@ -1141,21 +1158,10 @@ static struct dma_async_tx_descriptor *sdma_prep_sg(
+>  
+>  	if (sdmac->status == DMA_IN_PROGRESS)
 >  		return NULL;
+> -	sdmac->status = DMA_IN_PROGRESS;
+> -
+> -	sdmac->flags = 0;
+> -
+> -	sdmac->buf_tail = 0;
 >  
->  	if (len >= NUM_BD * SDMA_BD_MAX_CNT) {
-> -		dev_err(sdma->dev, "channel%d: maximum bytes exceeded:%d > %d\n"
-> +		dev_err(sdma->dev, "channel%d: maximum bytes exceeded:%zu > %d\n"
->  			, channel, len, NUM_BD * SDMA_BD_MAX_CNT);
+>  	dev_dbg(sdma->dev, "setting up %d entries for channel %d.\n",
+>  			src_nents, channel);
+>  
+> -	sdmac->direction = direction;
+> -
+> -	ret = sdma_load_context(sdmac);
+> -	if (ret)
+> -		goto err_out;
+> -
+>  	if (src_nents > NUM_BD) {
+>  		dev_err(sdma->dev, "SDMA channel %d: maximum number of sg exceeded: %d > %d\n",
+>  				channel, src_nents, NUM_BD);
+> @@ -1163,7 +1169,9 @@ static struct dma_async_tx_descriptor *sdma_prep_sg(
 >  		goto err_out;
 >  	}
-> @@ -1050,8 +1050,8 @@ static struct dma_async_tx_descriptor *sdma_prep_memcpy(
 >  
->  	sdmac->buf_tail = 0;
+> -	sdmac->chn_count = 0;
+> +	if (sdma_transfer_init(sdmac, direction))
+> +		goto err_out;
+> +
+>  	for_each_sg(src_sg, sg_src, src_nents, i) {
+>  		struct sdma_buffer_descriptor *bd = &sdmac->bd[i];
+>  		int param;
+> @@ -1187,30 +1195,15 @@ static struct dma_async_tx_descriptor *sdma_prep_sg(
+>  		bd->mode.count = count;
+>  		sdmac->chn_count += count;
 >  
-> -	dev_dbg(sdma->dev, "memcpy: %x->%x, len=%d, channel=%d.\n",
-> -		dma_src, dma_dst, len, channel);
-> +	dev_dbg(sdma->dev, "memcpy: %pad->%pad, len=%zu, channel=%d.\n",
-> +		&dma_src, &dma_dst, len, channel);
+> -		if (sdmac->word_size > DMA_SLAVE_BUSWIDTH_4_BYTES) {
+> -			ret =  -EINVAL;
+> +		if (direction == DMA_MEM_TO_MEM)
+> +			ret = check_bd_buswidth(bd, sdmac, count,
+> +						sg_dst->dma_address,
+> +						sg_src->dma_address);
+> +		else
+> +			ret = check_bd_buswidth(bd, sdmac, count, 0,
+> +						sg_src->dma_address);
+> +		if (ret)
+>  			goto err_out;
+> -		}
+> -
+> -		switch (sdmac->word_size) {
+> -		case DMA_SLAVE_BUSWIDTH_4_BYTES:
+> -			bd->mode.command = 0;
+> -			if ((count | sg_src->dma_address | (sg_dst &&
+> -				(sg_dst->dma_address))) & 3)
+> -				return NULL;
+> -			break;
+> -		case DMA_SLAVE_BUSWIDTH_2_BYTES:
+> -			bd->mode.command = 2;
+> -			if ((count | sg_src->dma_address |
+> -				(sg_dst && (sg_dst->dma_address))) & 1)
+> -				return NULL;
+> -			break;
+> -		case DMA_SLAVE_BUSWIDTH_1_BYTE:
+> -			bd->mode.command = 1;
+> -			break;
+> -		default:
+> -			return NULL;
+> -		}
 >  
->  	sdmac->direction = DMA_MEM_TO_MEM;
->  
-> @@ -1104,7 +1104,7 @@ static struct dma_async_tx_descriptor *sdma_prep_memcpy(
->  			param &= ~BD_CONT;
->  		}
->  
-> -		dev_dbg(sdma->dev, "entry %d: count: %d dma: 0x%08x %s%s\n",
-> +		dev_dbg(sdma->dev, "entry %d: count: %d dma: 0x%u %s%s\n",
->  				i, count, bd->buffer_addr,
->  				param & BD_WRAP ? "wrap" : "",
->  				param & BD_INTR ? " intr" : "");
-> @@ -1220,8 +1220,8 @@ static struct dma_async_tx_descriptor *sdma_prep_sg(
->  			param &= ~BD_CONT;
->  		}
->  
-> -		dev_dbg(sdma->dev, "entry %d: count: %d dma: 0x%08x %s%s\n",
-> -				i, count, sg_src->dma_address,
-> +		dev_dbg(sdma->dev, "entry %d: count: %d dma: 0x%pad %s%s\n",
-> +				i, count, &sg_src->dma_address,
->  				param & BD_WRAP ? "wrap" : "",
->  				param & BD_INTR ? " intr" : "");
->  
-> @@ -1291,7 +1291,7 @@ static struct dma_async_tx_descriptor *sdma_prep_dma_cyclic(
->  	}
->  
->  	if (period_len > SDMA_BD_MAX_CNT) {
-> -		dev_err(sdma->dev, "SDMA channel %d: maximum period size exceeded: %d > %d\n",
-> +		dev_err(sdma->dev, "SDMA channel %d: maximum period size exceeded: %zu > %d\n",
->  				channel, period_len, SDMA_BD_MAX_CNT);
->  		goto err_out;
->  	}
-> @@ -1315,8 +1315,8 @@ static struct dma_async_tx_descriptor *sdma_prep_dma_cyclic(
->  		if (i + 1 == num_periods)
->  			param |= BD_WRAP;
->  
-> -		dev_dbg(sdma->dev, "entry %d: count: %d dma: %#llx %s%s\n",
-> -				i, period_len, (u64)dma_addr,
-> +		dev_dbg(sdma->dev, "entry %d: count: %d dma: %pad %s%s\n",
-> +				i, period_len, &dma_addr,
->  				param & BD_WRAP ? "wrap" : "",
->  				param & BD_INTR ? " intr" : "");
+>  		param = BD_DONE | BD_EXTD | BD_CONT;
 >  
 
 
