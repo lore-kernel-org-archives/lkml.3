@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933085AbaJUOrQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 10:47:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48009 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932353AbaJUOrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 10:47:14 -0400
-Message-ID: <544671E2.3000905@redhat.com>
-Date: Tue, 21 Oct 2014 16:46:58 +0200
-From: =?UTF-8?B?TWF0ZWogTXXFvmlsYQ==?= <mmuzila@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        kys@microsoft.com
-CC: dan.carpenter@oracle.com, One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Subject: [PATCH v2 1/3] tools: hv: fcopy_daemon: Check buffer limits
-References: <544658CE.8050704@redhat.com>
-In-Reply-To: <544658CE.8050704@redhat.com>
-X-Forwarded-Message-Id: <544658CE.8050704@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S933110AbaJUOrV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 10:47:21 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:35888 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932353AbaJUOrR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 10:47:17 -0400
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+To: linux-tegra@vger.kernel.org
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 01/12] clk: tegra124: Remove old emc clock
+Date: Tue, 21 Oct 2014 16:45:33 +0200
+Message-Id: <1413902788-7727-2-git-send-email-tomeu.vizoso@collabora.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1413902788-7727-1-git-send-email-tomeu.vizoso@collabora.com>
+References: <1413902788-7727-1-git-send-email-tomeu.vizoso@collabora.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matej Mužila <mmuzila@redhat.com>
+From: Mikko Perttunen <mperttunen@nvidia.com>
 
-Check if cpmsg->size is in limits of DATA_FRAGMENT
+This clock has never been able to do anything.
 
-Signed-off-by: Matej Mužila <mmuzila@redhat.com>
+Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+
 ---
 
-If corrupted data are read from /dev/vmbus/hv_fcopy, pwrite can
-read from memory outside of the buffer (defined at line 138).
-Added check. 
+v2:	* Don't remove emc_mux as it's being used by the MC clock now
+---
+ drivers/clk/tegra/clk-tegra124.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-Changes made since v1:
-	* max value of cmesg->size is now derived from structure
-	  definition in sources/include/uapi/linux/hyperv.h
-	* Fixed comments
-
-
-diff --git a/tools/hv/hv_fcopy_daemon.c b/tools/hv/hv_fcopy_daemon.c
-index 6f27e2f..1fc2dc2 100644
---- a/tools/hv/hv_fcopy_daemon.c
-+++ b/tools/hv/hv_fcopy_daemon.c
-@@ -104,6 +104,10 @@ static int hv_copy_data(struct hv_do_fcopy *cpmsg)
- {
- 	ssize_t bytes_written;
- 
-+	/* Check if the cpmsg->size is in limits of DATA_FRAGMENT */
-+	if (cpmsg->size > sizeof(cpmsg->data)) 
-+		return HV_E_FAIL;
-+
- 	bytes_written = pwrite(target_fd, cpmsg->data, cpmsg->size,
- 				cpmsg->offset);
+diff --git a/drivers/clk/tegra/clk-tegra124.c b/drivers/clk/tegra/clk-tegra124.c
+index f5f9bac..07ec882 100644
+--- a/drivers/clk/tegra/clk-tegra124.c
++++ b/drivers/clk/tegra/clk-tegra124.c
+@@ -790,7 +790,6 @@ static struct tegra_clk tegra124_clks[tegra_clk_max] __initdata = {
+ 	[tegra_clk_i2c2] = { .dt_id = TEGRA124_CLK_I2C2, .present = true },
+ 	[tegra_clk_uartc] = { .dt_id = TEGRA124_CLK_UARTC, .present = true },
+ 	[tegra_clk_mipi_cal] = { .dt_id = TEGRA124_CLK_MIPI_CAL, .present = true },
+-	[tegra_clk_emc] = { .dt_id = TEGRA124_CLK_EMC, .present = true },
+ 	[tegra_clk_usb2] = { .dt_id = TEGRA124_CLK_USB2, .present = true },
+ 	[tegra_clk_usb3] = { .dt_id = TEGRA124_CLK_USB3, .present = true },
+ 	[tegra_clk_vde_8] = { .dt_id = TEGRA124_CLK_VDE, .present = true },
+-- 
+1.9.3
 
