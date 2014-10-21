@@ -1,86 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754784AbaJUJAL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 05:00:11 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:50380 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753256AbaJUIx7 (ORCPT
+	id S1752833AbaJUJCO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 05:02:14 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:43666 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754698AbaJUJCL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 04:53:59 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/9] net: pxa168_eth: Provide phy_interface mode on platform_data
-Date: Tue, 21 Oct 2014 10:53:40 +0200
-Message-Id: <1413881627-21639-3-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1413881627-21639-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1413881627-21639-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Tue, 21 Oct 2014 05:02:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <20141006071841.GN4992@pengutronix.de>
+References: <1411443545-24951-1-git-send-email-srv_hongzhou.yang@mediatek.com>
+	<1411443545-24951-5-git-send-email-srv_hongzhou.yang@mediatek.com>
+	<CACRpkda-K7w-bY0uSdnZvzEKEeQg38oExoHPSW61kEv9Wv20mA@mail.gmail.com>
+	<20140924124044.GC4992@pengutronix.de>
+	<CACRpkdbtN-BDEwpJO2swnOjCe3UJhD5WOXXKBV0hPOe2M2=k7Q@mail.gmail.com>
+	<20141006071841.GN4992@pengutronix.de>
+Date: Tue, 21 Oct 2014 11:02:10 +0200
+Message-ID: <CACRpkdbEmo1GePLnE4YvtaeBLKqhn_WsmdQKnArFthKCVPNKvg@mail.gmail.com>
+Subject: Re: [PATCH v2 4/4] ARM: dts: mt8135: Add pinctrl node for mt8135.
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: "Hongzhou.Yang" <srv_hongzhou.yang@mediatek.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>, srv_heupstream@mediatek.com,
+        Sascha Hauer <kernel@pengutronix.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Hongzhou Yang <hongzhou.yang@mediatek.com>,
+        "Joe.C" <yingjoe.chen@mediatek.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        dandan.he@mediatek.com
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PXA168 Ethernet IP support MII and RMII connection to its PHY.
-Currently, pxa168 platform_data does not provide a way to pass that
-and there is one user of pxa168 platform_data (mach-mmp/gplug).
-Given the pinctrl settings of gplug it uses RMII, so add and pass
-a corresponding phy_interface_t.
+On Mon, Oct 6, 2014 at 9:18 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> On Thu, Oct 02, 2014 at 04:02:58PM +0200, Linus Walleij wrote:
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: "Antoine Ténart" <antoine.tenart@free-electrons.com>
-Cc: Florian Fainelli <f.fainelli@gmail.com>
-Cc: Eric Miao <eric.y.miao@gmail.com>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/arm/mach-mmp/gplugd.c | 2 ++
- include/linux/pxa168_eth.h | 1 +
- 2 files changed, 3 insertions(+)
+>> What is the alternative? Device Tree is very much about strings,
+>> as is shown by the pin config bindings.
+>
+> The alternative is to use numbers. The majority of SoCs have a bit field
+> per pad which is used for muxing the pad to different functions. The
+> natural way to describe this is a pair of numbers: <pad-number>
+> <function-number>.  The pad number can normally be directly translated
+> into a register offset and the function number to a value written to
+> that register. This is true for most SoCs I know of and makes it very
+> easy to generate code for and to prove for correctness of both the code
+> and the device tree.
 
-diff --git a/arch/arm/mach-mmp/gplugd.c b/arch/arm/mach-mmp/gplugd.c
-index d81b2475e67e..3b5794cd0357 100644
---- a/arch/arm/mach-mmp/gplugd.c
-+++ b/arch/arm/mach-mmp/gplugd.c
-@@ -12,6 +12,7 @@
- #include <linux/platform_device.h>
- #include <linux/gpio.h>
- #include <linux/gpio-pxa.h>
-+#include <linux/phy.h>
- 
- #include <asm/mach/arch.h>
- #include <asm/mach-types.h>
-@@ -158,6 +159,7 @@ struct pxa168_eth_platform_data gplugd_eth_platform_data = {
- 	.port_number = 0,
- 	.phy_addr    = 0,
- 	.speed       = 0, /* Autonagotiation */
-+	.intf        = PHY_INTERFACE_MODE_RMII,
- 	.init        = gplugd_eth_init,
- };
- 
-diff --git a/include/linux/pxa168_eth.h b/include/linux/pxa168_eth.h
-index 18d75e795606..37c381120bc8 100644
---- a/include/linux/pxa168_eth.h
-+++ b/include/linux/pxa168_eth.h
-@@ -13,6 +13,7 @@ struct pxa168_eth_platform_data {
- 	 */
- 	int	speed;		/* 0, SPEED_10, SPEED_100 */
- 	int	duplex;		/* DUPLEX_HALF or DUPLEX_FULL */
-+	phy_interface_t intf;
- 
- 	/*
- 	 * Override default RX/TX queue sizes if nonzero.
--- 
-2.1.1
+To me this sounds more like a discussion on how to set up a good
+firmware (BIOS) that the kernel can call into.
 
+We have had many times the discussion whether DT should contain
+"jam tables" and such things, i.e. stuff that basically translate
+DT directly to register writes.
+
+The one exception we have for this is pinctrl-single.c which uses a
+single word to configure a pin. I'm even not sure that was a good
+idea but it was a compromise.
+
+If someone wants the above, they should use pinctrl-single.c
+(OMAP and HiSilicon uses it already), if they need another necessarily
+different driver I'm very reluctant.
+
+Yours,
+Linus Walleij
