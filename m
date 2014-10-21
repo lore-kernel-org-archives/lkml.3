@@ -1,88 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932157AbaJUDY1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 23:24:27 -0400
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:54779 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754206AbaJUDY0 (ORCPT
+	id S1751360AbaJUD1m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 23:27:42 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47496 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769AbaJUD1k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 23:24:26 -0400
+	Mon, 20 Oct 2014 23:27:40 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <5445D27D.1080505@jp.fujitsu.com>
+Date: Tue, 21 Oct 2014 12:26:53 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <CD2CABCB2C0A0D4682C5F8AD840141540D27B9@HKXPRD3002MB006.064d.mgd.msft.net>
-References: <1413362372-16236-1-git-send-email-huishao@microsoft.com>
-	<alpine.DEB.2.11.1410202027220.5308@nanos>
-	<alpine.DEB.2.11.1410202034150.5308@nanos>
-	<CD2CABCB2C0A0D4682C5F8AD840141540D27B9@HKXPRD3002MB006.064d.mgd.msft.net>
-Date: Mon, 20 Oct 2014 20:24:25 -0700
-Message-ID: <CALAqxLVKZKQn628ZUa1D9ev37DUz+h4y5AXhMqCg_8dJ7JkEDw@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] timekeeping: add EXPORT_SYMBOL_GPL for do_adjtimex()
-From: John Stultz <john.stultz@linaro.org>
-To: Thomas Shao <huishao@microsoft.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        KY Srinivasan <kys@microsoft.com>,
-        Richard Cochran <rcochran@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+To: Neil Zhang <zhangwm@marvell.com>, Dan Streetman <ddstreet@ieee.org>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers: base: update cpu offline info when do hotplug
+References: <1413775748-22478-1-git-send-email-zhangwm@marvell.com> <20141020044340.GA9589@kroah.com> <9034CBD80F070943B59700D7F8149ED9024EB81CAF@SC-VEXCH4.marvell.com> <20141020064826.GA4064@kroah.com> <9034CBD80F070943B59700D7F8149ED9024EB81CC6@SC-VEXCH4.marvell.com> <CALZtONDEdFbx+zTWYdmz3HsfCnV+RtTPAuY4p-RK1DN3g2CwrQ@mail.gmail.com> <5445CB94.1090302@jp.fujitsu.com> <9034CBD80F070943B59700D7F8149ED9024EB81D55@SC-VEXCH4.marvell.com>
+In-Reply-To: <9034CBD80F070943B59700D7F8149ED9024EB81D55@SC-VEXCH4.marvell.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 20, 2014 at 8:18 PM, Thomas Shao <huishao@microsoft.com> wrote:
+(2014/10/21 12:18), Neil Zhang wrote:
+> Yasuaki,
 >
 >> -----Original Message-----
->> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
->> owner@vger.kernel.org] On Behalf Of Thomas Gleixner
->> Sent: Tuesday, October 21, 2014 2:41 AM
->> To: Thomas Shao
->> Cc: gregkh@linuxfoundation.org; LKML; devel@linuxdriverproject.org;
->> olaf@aepfle.de; apw@canonical.com; jasowang@redhat.com; KY Srinivasan;
->> John Stultz; Richard Cochran
->> Subject: Re: [PATCH v2 1/2] timekeeping: add EXPORT_SYMBOL_GPL for
->> do_adjtimex()
+>> From: Yasuaki Ishimatsu [mailto:isimatu.yasuaki@jp.fujitsu.com]
+>> Sent: 2014年10月21日 10:57
+>> To: Dan Streetman; Neil Zhang
+>> Cc: Greg KH; linux-kernel@vger.kernel.org
+>> Subject: Re: [PATCH] drivers: base: update cpu offline info when do hotplug
 >>
->> On Mon, 20 Oct 2014, Thomas Gleixner wrote:
+>> Hi Neil and Dan,
 >>
->> > On Wed, 15 Oct 2014, Thomas Shao wrote:
->> >
->> > And again you forgot to cc John Stultz on this....
->> >
->> > > Export do_adjtimex function for hyper-v Time Synchronization
->> > > component
+>> (2014/10/21 2:02), Dan Streetman wrote:
+>>> On Mon, Oct 20, 2014 at 3:40 AM, Neil Zhang <zhangwm@marvell.com> wrote:
+>>>> Greg,
+>>>>
+>>>>
+>>>> -----Original Message-----
+>>>> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+>>>> Sent: 2014年10月20日 14:48
+>>>> To: Neil Zhang
+>>>> Cc: linux-kernel@vger.kernel.org
+>>>> Subject: Re: [PATCH] drivers: base: update cpu offline info when do
+>>>> hotplug
+>>>>
+>>>> On Sun, Oct 19, 2014 at 11:39:23PM -0700, Neil Zhang wrote:
+>>>>>> How much noise is this going to cause on a big/little system that
+>>>>>> constantly hot unplug/plugs processors all of the time?
+>>>>>
+>>>>> Can you explain more what kind of noise will be introduced on a big/little
+>> system?
+>>>>
+>>>> Have you tested this on such a machine?
+>>>>
+>>>> I didn't have such kind of machine on hand.
+>>>> Can anyone has such machine to verify it?
+>>>> Thanks!
+>>>
+>>> I tested this on a ppc PowerVM system, using dlpar operations to
+>>> remove/add cpus.
+>>>
+>>> Without this patch the cpu online nodes get out of sync with the main
+>>> online node (and the actual state of the cpus), because they aren't
+>>> updated as the cpus are brought up/down:
+>>>
 >>
->> Aside of that, we really want to see the use case for this and how you
->> addressed the problems which were pointed out by various folks.
+>>> [root@br10p02 cpu]$ pwd
+>>> /sys/devices/system/cpu
+>>> [root@br10p02 cpu]$ cat online
+>>> 0-39
+>>> [root@br10p02 cpu]$ for n in {0..47} ; do test $( cat cpu$n/online )
+>>> -eq 1 && echo -n "$n " ; done ; echo ""
+>>> 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
+>>> 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47
+>>
+>> How is the issue reproduced.
+>>
+>> Here is a result on my x86 box with linux-3.18-rc1.
+>>
+>> - before offline CPU
+>> # cd /sys/devices/system/cpu/
+>> # cat online
+>> 0-59
+>> # for n in {0..59} ; do test $( cat cpu$n/online ) -eq 1 && echo -n "$n " ;
+>> done ; echo ""
+>> 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28
+>> 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54
+>> 55
+>> 56 57 58 59
+>>
+>> - after offline CPU{1..59}
+>> # for n in {1..59} ; do echo 0 > cpu$n/online; done # cat online
+>> 0
+>> # for n in {0..59} ; do test $( cat cpu$n/online ) -eq 1 && echo -n "$n " ;
+>> done ; echo ""
+>> 0
+>>
+>> It seems that dev->offline is set to correct valute.
 >>
 >
-> In some situation, the user is not able to enable guest VM to sync with external
-> time source, like NTP. But the host is still synced with a trusted time source.
-> In this case, host-guest time synchronization is useful. Hyper-v host will send time
-> sample to guest VM every 5 seconds. We will use these time samples to adjust guest
-> VM time.
->
-> I've got some feedbacks from Richard and Mike, including reference NTP implementation
-> and do the adjustment in the host side. I've already referenced some NTP design in
-> my patch. I would consider my patch as a simplified implementation. I've also considered
-> the host side implementation. But in host, we can only set time but not gradually slew/adjust
-> time, which is not acceptable for the time sync solution.We still recommend user to configure
-> NTP on the guest, which provides better accuracy. But if NTP is not applicable, this could be
-> another option.
->
->> I still do not have a consistent argument from you WHY you need to abuse
->> do_adjtimex() to do that host - guest synchronization in the first place.
->>
->
-> I need a function to gradually slew guest time. do_adjtimex() provides all the
-> functionality. Also I could not find any other exposed func to do this. I'd like to
-> hear any feedback from you for this.
 
-Do you have any protections from both your kernel module trying to
-slew time if the guest is also running NTPd? That seems like it could
-cause some strange behavior.
+> Please use an in kernel governor to up / down a core instead of sysfs interface.
 
-thanks
--john
+Thank you for the information. But I don't know the in kernel governor?
+Could you point a documentation of it?
+
+Thanks,
+Yasuaki Ishimatsu
+
+>
+>> Thanks,
+>> Yasuaki Ishimatsu
+>>
+>>>
+>>>
+>>> While with the patch, the cpu online nodes are kept up to date as the
+>>> cpus are brought up/down:
+>>>
+>>> [root@br10p02 cpu]$ pwd
+>>> /sys/devices/system/cpu
+>>> [root@br10p02 cpu]$ cat online
+>>> 0-39
+>>> [root@br10p02 cpu]$ for n in {0..47} ; do test $( cat cpu$n/online )
+>>> -eq 1 && echo -n "$n " ; done ; echo ""
+>>> 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
+>>> 27 28 29 30 31 32 33 34 35 36 37 38 39
+>>>
+>>>
+>>> Feel free to add
+>>>
+>>> Tested-by: Dan Streetman <ddstreet@ieee.org>
+>>>
+>>>>
+>>>>> As I know IKS on arm will use cpu_suspend way to power down a core.
+>>>>
+>>>> Are you sure that it also doesn't use that same functionality to drop a
+>> processor to save power?
+>>>>
+>>>> As I know it use cpu_suspend to switch out a processor in IKS and there is
+>> no cpu hotplug notifier in this procedure.
+>>>>
+>>>>
+>>>> Why do you need/want this notification?  What are you going to do with this
+>> information that you don't already have?
+>>>>
+>>>> The offline won't be updated if an in kernel hotplug governor plug in / out
+>> a core which cause the sysfs interface report a wrong status.
+>>>>
+>>>>
+>>>> thanks,
+>>>>
+>>>> greg k-h
+>>>>
+>>>>
+>>>> Best Regards,
+>>>> Neil Zhang
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe
+>>> linux-kernel" in the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>
+>>
+>
+>
+> Best Regards,
+> Neil Zhang
+> �{.n�+�������+%��lzwm��b�맲��r��zX���w��{ay�ʇڙ�,j��f���h���z��w������j:+v���w�j�m��������zZ+�����ݢj"��!�iO��z��v�^�m����nƊ��Y&�
+>
+
+
