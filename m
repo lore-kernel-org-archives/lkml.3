@@ -1,106 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932709AbaJUNen (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 09:34:43 -0400
-Received: from mail-oi0-f45.google.com ([209.85.218.45]:34523 "EHLO
-	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932544AbaJUNem (ORCPT
+	id S932645AbaJUNiJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 09:38:09 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:54007 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932509AbaJUNiH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 09:34:42 -0400
+	Tue, 21 Oct 2014 09:38:07 -0400
+Message-ID: <544661BA.3040203@arm.com>
+Date: Tue, 21 Oct 2014 14:38:02 +0100
+From: Juri Lelli <juri.lelli@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141021132630.79ce15ba@alan.etchedpixels.co.uk>
-References: <1413539665-11484-1-git-send-email-chunyan.zhang@spreadtrum.com>
-	<1413539665-11484-6-git-send-email-chunyan.zhang@spreadtrum.com>
-	<20141018220615.33643542@alan.etchedpixels.co.uk>
-	<CA+H2tpH2dKFHxHUaGtr-vEqxZDtQ_MVTmQTnu5kn-zzUFyXk4Q@mail.gmail.com>
-	<20141021132630.79ce15ba@alan.etchedpixels.co.uk>
-Date: Tue, 21 Oct 2014 21:34:41 +0800
-Message-ID: <CA+H2tpGJuukXZuGwysa5Y6LvjgZj3TVDWfngpM67p3nfzdi0YQ@mail.gmail.com>
-Subject: Re: [PATCH v2 5/5] tty/serial: Add earlycon support for Spreadtrum
- serial driver
-From: Orson Zhai <orsonzhai@gmail.com>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "jslaby@suse.cz" <jslaby@suse.cz>, Kumar Gala <galak@codeaurora.org>,
-        Mark Brown <broonie@linaro.org>, Mark Rutland <mark.rutland@arm.com>,
-        "m-karicheri2@ti.com" <m-karicheri2@ti.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        "rrichter@cavium.com" <rrichter@cavium.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Will Deacon <will.deacon@arm.com>,
-        =?UTF-8?B?R2VuZyBSZW4gKCDku7votZMp?= <geng.ren@spreadtrum.com>,
-        =?UTF-8?B?WmhpemhvdSBaaGFuZyAoIOW8oOayu+a0sik=?= 
-	<zhizhou.zhang@spreadtrum.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        sprdlinux <sprdlinux@freelists.org>
+To: Wanpeng Li <kernellwp@gmail.com>, Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] sched/deadline: don't need to check SD_BALANCE_FORK
+References: <1413253360-5318-1-git-send-email-wanpeng.li@linux.intel.com> <54464F30.9000706@gmail.com>
+In-Reply-To: <54464F30.9000706@gmail.com>
+X-OriginalArrivalTime: 21 Oct 2014 13:38:02.0066 (UTC) FILETIME=[3C2C6B20:01CFED34]
+X-MC-Unique: 114102114380202801
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 8:26 PM, One Thousand Gnomes
-<gnomes@lxorguk.ukuu.org.uk> wrote:
-> On Mon, 20 Oct 2014 18:23:38 +0800
-> Orson Zhai <orsonzhai@gmail.com> wrote:
->
->> On Sun, Oct 19, 2014 at 5:06 AM, One Thousand Gnomes
->> <gnomes@lxorguk.ukuu.org.uk> wrote:
->> > On Fri, 17 Oct 2014 17:54:25 +0800
->> > Chunyan Zhang <chunyan.zhang@spreadtrum.com> wrote:
->> >
->> >> Add serial driver for spreadtrum sharkl platform with earlycon
->> >> support at first.
->> >
->> >> +#define UART_TXD     0x0000
->> >> +#define UART_RXD     0x0004
->> >> +#define UART_STS0    0x0008
->> >> +#define UART_STS1    0x000C
->> >> +#define UART_IEN     0x0010
->> >> +#define UART_ICLR    0x0014
->> >> +#define UART_CTL0    0x0018
->> >> +#define UART_CTL1    0x001C
->> >> +#define UART_CTL2    0x0020
->> >> +#define UART_CLKD0   0x0024
->> >> +#define UART_CLKD1   0x0028
->> >> +#define UART_STS2    0x002C
->> >> +
->> >> +/*line status */
->> >> +#define UART_LSR_TX_OVER     (0x1<<15)
->> >
->> > Given we use UART_ for all the 8250 defines it might be better to use
->> > something else - SHARK_LSR_TX_OVER etc to avoid future confusion
->> >
+Hi,
+
+On 21/10/14 13:18, Wanpeng Li wrote:
+> Cc Juri,
+> 
+> 于 10/14/14, 10:22 AM, Wanpeng Li 写道:
+>> There is no need to do balance during fork since SCHED_DEADLINE 
+>> tasks can't fork. This patch avoid the SD_BALANCE_FORK check.
 >>
->> Does it matter if those macro are only used in the specific c file?
->> >From my point of  view, private register macro could be treated as
->> static definitions like static variable or functions in C file.
->> I also noted that many people use a prefix for the other
->> manufacturers' macro definition in source file .
->> I have no intention to break the habit of kernel but just for discussion.
->
-> Your problem is this. In the kernel headers are definitions like
->
-> include/uapi/linux/serial_reg.h:#define UART_TX 0       /* Out: Transmit
-> buffer */
->
-> you are adding identical (but conflicting in places) defines. If some
-> random change in the include files causes serial_reg.h to be included by
-> a header you include then it will break.
->
-> In addition people habitually use tools like LXR to figure out where
-> defines and functions are.
+>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+>> ---
+>>  kernel/sched/deadline.c | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+>> index abfaf3d..f46b7f1 100644
+>> --- a/kernel/sched/deadline.c
+>> +++ b/kernel/sched/deadline.c
+>> @@ -914,7 +914,7 @@ select_task_rq_dl(struct task_struct *p, int cpu, int sd_flag, int flags)
+>>  	struct task_struct *curr;
+>>  	struct rq *rq;
+>>  
+>> -	if (sd_flag != SD_BALANCE_WAKE && sd_flag != SD_BALANCE_FORK)
+>> +	if (sd_flag != SD_BALANCE_WAKE)
+>>  		goto out;
+>>  
+>>  	rq = cpu_rq(cpu);
 
-This make much more sense, thanks for you explanation.
+Yes, makes sense.
 
-> Having these conflicting definitions will
-> cause confusion. Better they have prefixes.
->
-> Alan
->
+Thanks,
+
+- Juri
+
