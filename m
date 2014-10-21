@@ -1,255 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933366AbaJUR2B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 13:28:01 -0400
-Received: from li271-223.members.linode.com ([178.79.152.223]:44006 "EHLO
-	mail.mleia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932849AbaJUR16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 13:27:58 -0400
-Message-ID: <54469798.90001@mleia.com>
-Date: Tue, 21 Oct 2014 20:27:52 +0300
-From: Vladimir Zapolskiy <vz@mleia.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Icedove/31.1.2
-MIME-Version: 1.0
-To: Corentin LABBE <clabbe.montjoie@gmail.com>
-CC: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        maxime.ripard@free-electrons.com, linux@arm.linux.org.uk,
-        herbert@gondor.apana.org.au, davem@davemloft.net,
-        grant.likely@linaro.org, akpm@linux-foundation.org,
-        gregkh@linuxfoundation.org, joe@perches.com, mchehab@osg.samsung.com,
-        crope@iki.fi, devicetree@vger.kernel.org, linux-sunxi@googlegroups.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-crypto@vger.kernel.org
-Subject: Re: [PATCH v5 4/4] crypto: Add Allwinner Security System crypto accelerator
-References: <1413728182-13569-1-git-send-email-clabbe.montjoie@gmail.com> <1413728182-13569-5-git-send-email-clabbe.montjoie@gmail.com> <54459AA5.2030705@mleia.com> <54468902.1040802@gmail.com>
-In-Reply-To: <54468902.1040802@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-CRM114-Version: 20100106-BlameMichelson ( TRE 0.8.0 (BSD) ) MR-49551924 
-X-CRM114-CacheID: sfid-20141021_182756_766137_6BDF616D 
-X-CRM114-Status: GOOD (  35.11  )
+	id S933380AbaJURay (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 13:30:54 -0400
+Received: from laurent.telenet-ops.be ([195.130.137.89]:33013 "EHLO
+	laurent.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933075AbaJURaw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 13:30:52 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: linux-m68k@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] m68k: Wire up bpf
+Date: Tue, 21 Oct 2014 19:30:53 +0200
+Message-Id: <1413912653-3269-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Corentin,
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ arch/m68k/include/asm/unistd.h      | 2 +-
+ arch/m68k/include/uapi/asm/unistd.h | 1 +
+ arch/m68k/kernel/syscalltable.S     | 1 +
+ 3 files changed, 3 insertions(+), 1 deletion(-)
 
-On 21.10.2014 19:25, Corentin LABBE wrote:
-> On 10/21/14 01:28, Vladimir Zapolskiy wrote:
->> Hello LABBE,
->>
->> On 19.10.2014 17:16, LABBE Corentin wrote:
->>> Add support for the Security System included in Allwinner SoC A20.
->>> The Security System is a hardware cryptographic accelerator that support AES/MD5/SHA1/DES/3DES/PRNG algorithms.
->>>
-> []
->>> +
->>> +	/* If we have only one SG, we can use kmap_atomic */
->>> +	if (sg_next(in_sg) == NULL && sg_next(out_sg) == NULL)
->>> +		return sunxi_ss_aes_poll_atomic(areq);
->>
->> for clarity it might be better to move all "mutex_unlock(&ss->lock)"
->> calls from sunxi_ss_aes_poll_atomic() body right to here.
->>
-> 
-> Ok
-> I have moved all mutex_unlock/writel(0, SS_CTL) at the end of function, it is cleaner now.
+diff --git a/arch/m68k/include/asm/unistd.h b/arch/m68k/include/asm/unistd.h
+index 4ef7a54813e6b72d..75e75d7b1702fb64 100644
+--- a/arch/m68k/include/asm/unistd.h
++++ b/arch/m68k/include/asm/unistd.h
+@@ -4,7 +4,7 @@
+ #include <uapi/asm/unistd.h>
+ 
+ 
+-#define NR_syscalls		354
++#define NR_syscalls		355
+ 
+ #define __ARCH_WANT_OLD_READDIR
+ #define __ARCH_WANT_OLD_STAT
+diff --git a/arch/m68k/include/uapi/asm/unistd.h b/arch/m68k/include/uapi/asm/unistd.h
+index b419c6b7ac3739b1..2c1bec9a14b67da4 100644
+--- a/arch/m68k/include/uapi/asm/unistd.h
++++ b/arch/m68k/include/uapi/asm/unistd.h
+@@ -359,5 +359,6 @@
+ #define __NR_renameat2		351
+ #define __NR_getrandom		352
+ #define __NR_memfd_create	353
++#define __NR_bpf		354
+ 
+ #endif /* _UAPI_ASM_M68K_UNISTD_H_ */
+diff --git a/arch/m68k/kernel/syscalltable.S b/arch/m68k/kernel/syscalltable.S
+index 05b46c2b08b8d8d4..2ca219e184cd16e6 100644
+--- a/arch/m68k/kernel/syscalltable.S
++++ b/arch/m68k/kernel/syscalltable.S
+@@ -374,4 +374,5 @@ ENTRY(sys_call_table)
+ 	.long sys_renameat2
+ 	.long sys_getrandom
+ 	.long sys_memfd_create
++	.long sys_bpf
+ 
+-- 
+1.9.1
 
-please check that sunxi_ss_aes_poll_atomic() has no more mutex_unlock()
-calls inside it.
-
-With best wishes,
-Vladimir
-
->>> +
->>> +};
->>> +
->>> +static int sunxi_ss_probe(struct platform_device *pdev)
->>> +{
->>> +	struct resource *res;
->>> +	u32 v;
->>> +	int err;
->>> +	unsigned long cr;
->>> +	const unsigned long cr_ahb = 24 * 1000 * 1000;
->>> +	const unsigned long cr_mod = 150 * 1000 * 1000;
->>> +
->>> +	if (!pdev->dev.of_node)
->>> +		return -ENODEV;
->>> +
->>> +	ss = devm_kzalloc(&pdev->dev, sizeof(*ss), GFP_KERNEL);
->>> +	if (ss == NULL)
->>> +		return -ENOMEM;
->>
->> Why do you dynamically allocate memory for "struct sunxi_ss_ctx *ss"?
->> Since you have a single global pointer, it makes sense to declare
->> "struct sunxi_ss_ctx ss" statically instead.
->>
->> And even a better solution is to remove a single global pointer.
-> 
-> All other crypto driver I have read use a global structure and it made things easy.
-> Thanks to M. Ripard that pointed to me the talitos driver that solve the global device pointer by using alg template and container_of().
-> 
-> But since I think there will never 2 Security System at the same time on the same SoC, I do not know if it is worth the cost to add more complexity just to remove a pointer.
-> 
->>
->>> +
->>> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->>> +	ss->base = devm_ioremap_resource(&pdev->dev, res);
->>> +	if (IS_ERR(ss->base)) {
->>> +		dev_err(&pdev->dev, "Cannot request MMIO\n");
->>> +		return PTR_ERR(ss->base);
->>> +	}
->>> +
->>> +	ss->ssclk = devm_clk_get(&pdev->dev, "mod");
->>> +	if (IS_ERR(ss->ssclk)) {
->>> +		err = PTR_ERR(ss->ssclk);
->>> +		dev_err(&pdev->dev, "Cannot get SS clock err=%d\n", err);
->>> +		return err;
->>> +	}
->>> +	dev_dbg(&pdev->dev, "clock ss acquired\n");
->>> +
->>> +	ss->busclk = devm_clk_get(&pdev->dev, "ahb");
->>> +	if (IS_ERR(ss->busclk)) {
->>> +		err = PTR_ERR(ss->busclk);
->>> +		dev_err(&pdev->dev, "Cannot get AHB SS clock err=%d\n", err);
->>> +		return err;
->>> +	}
->>> +	dev_dbg(&pdev->dev, "clock ahb_ss acquired\n");
->>> +
->>> +	/* Enable both clocks */
->>> +	err = clk_prepare_enable(ss->busclk);
->>> +	if (err != 0) {
->>> +		dev_err(&pdev->dev, "Cannot prepare_enable busclk\n");
->>> +		return err;
->>> +	}
->>> +	err = clk_prepare_enable(ss->ssclk);
->>> +	if (err != 0) {
->>> +		dev_err(&pdev->dev, "Cannot prepare_enable ssclk\n");
->>> +		clk_disable_unprepare(ss->busclk);
->>
->> goto somewhere to the end of the function?
-> 
-> OK
-> 
->>
->>> +		return err;
->>> +	}
->>> +
->>> +	/*
->>> +	 * Check that clock have the correct rates gived in the datasheet
->>> +	 * Try to set the clock to the maximum allowed
->>> +	 */
->>> +	err = clk_set_rate(ss->ssclk, cr_mod);
->>> +	if (err != 0) {
->>> +		dev_err(&pdev->dev, "Cannot set clock rate to ssclk\n");
->>> +		clk_disable_unprepare(ss->ssclk);
->>> +		clk_disable_unprepare(ss->busclk);
->>
->> goto "error_md5"?
-> 
-> Ok
-> 
->>
->>> +		return err;
->>> +	}
->>> +
->>> +	cr = clk_get_rate(ss->busclk);
->>> +	if (cr >= cr_ahb)
->>> +		dev_dbg(&pdev->dev, "Clock bus %lu (%lu MHz) (must be >= %lu)\n",
->>> +				cr, cr / 1000000, cr_ahb);
->>> +	else
->>> +		dev_warn(&pdev->dev, "Clock bus %lu (%lu MHz) (must be >= %lu)\n",
->>> +				cr, cr / 1000000, cr_ahb);
->>
->> See next comment.
->>
->>> +	cr = clk_get_rate(ss->ssclk);
->>> +	if (cr <= cr_mod)
->>> +		if (cr < cr_mod)
->>> +			dev_info(&pdev->dev, "Clock ss %lu (%lu MHz) (must be <= %lu)\n",
->>> +					cr, cr / 1000000, cr_mod);
->>> +		else
->>> +			dev_dbg(&pdev->dev, "Clock ss %lu (%lu MHz) (must be <= %lu)\n",
->>> +					cr, cr / 1000000, cr_mod);
->>> +	else
->>> +		dev_warn(&pdev->dev, "Clock ss is at %lu (%lu MHz) (must be <= %lu)\n",
->>> +				cr, cr / 1000000, cr_mod);
->>
->> The management of kernel log levels looks pretty strange. As far as I
->> understand there is no error on any clock rate, I'd recommend to keep
->> only one information message.
->>
-> 
-> If clock rate are below the recommended value, the only impact I found was bad performance.
-> So it explain the warn and no error. (yes the info must be warn, ...fixed)
-> 
-> But I will put comment for explain that.
-> 
->>> +	/*
->>> +	 * Datasheet named it "Die Bonding ID"
->>> +	 * I expect to be a sort of Security System Revision number.
->>> +	 * Since the A80 seems to have an other version of SS
->>> +	 * this info could be useful
->>> +	 */
->>> +	writel(SS_ENABLED, ss->base + SS_CTL);
->>> +	v = readl(ss->base + SS_CTL);
->>> +	v >>= 16;
->>> +	v &= 0x07;
->>> +	dev_info(&pdev->dev, "Die ID %d\n", v);
->>> +	writel(0, ss->base + SS_CTL);
->>> +
->>> +	ss->dev = &pdev->dev;
->>> +
->>> +	mutex_init(&ss->lock);
->>> +	mutex_init(&ss->bufin_lock);
->>> +	mutex_init(&ss->bufout_lock);
->>> +
->>> +	err = crypto_register_ahash(&sunxi_md5_alg);
->>> +	if (err)
->>> +		goto error_md5;
->>> +	err = crypto_register_ahash(&sunxi_sha1_alg);
->>> +	if (err)
->>> +		goto error_sha1;
->>> +	err = crypto_register_algs(sunxi_cipher_algs,
->>> +			ARRAY_SIZE(sunxi_cipher_algs));
->>> +	if (err)
->>> +		goto error_ciphers;
->>> +
->>> +	return 0;
->>> +error_ciphers:
->>> +	crypto_unregister_ahash(&sunxi_sha1_alg);
->>> +error_sha1:
->>> +	crypto_unregister_ahash(&sunxi_md5_alg);
->>> +error_md5:
->>> +	clk_disable_unprepare(ss->ssclk);
->>> +	clk_disable_unprepare(ss->busclk);
->>> +	return err;
->>> +}
->>> +
->>> +static int __exit sunxi_ss_remove(struct platform_device *pdev)
->>> +{
->>> +	if (!pdev->dev.of_node)
->>> +		return 0;
->>
->> Redundant check.
->>
-> 
-> Ok
-> 
->>
->>
->> --
->> With best wishes,
->> Vladimir
->>
-> 
-> Thanks for the review
-> 
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
