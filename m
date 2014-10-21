@@ -1,37 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654AbaJUE1D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 00:27:03 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:33519 "EHLO
+	id S1754859AbaJUE1a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 00:27:30 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:35322 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753080AbaJUENU (ORCPT
+	with ESMTP id S1754841AbaJUE11 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 00:13:20 -0400
+	Tue, 21 Oct 2014 00:27:27 -0400
+Message-ID: <5445E0AB.1090306@roeck-us.net>
+Date: Mon, 20 Oct 2014 21:27:23 -0700
 From: Guenter Roeck <linux@roeck-us.net>
-To: linux-kernel@vger.kernel.org
-Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Greg Ungerer <gerg@uclinux.org>, Joshua Thompson <funaho@jurai.org>,
-        linux-m68k@vger.kernel.org
-Subject: [PATCH v2 04/47] m68k: Replace mach_power_off with pm_power_off
-Date: Mon, 20 Oct 2014 21:12:20 -0700
-Message-Id: <1413864783-3271-5-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1413864783-3271-1-git-send-email-linux@roeck-us.net>
-References: <1413864783-3271-1-git-send-email-linux@roeck-us.net>
-X-Authenticated_sender: guenter@roeck-us.net
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org,
+        Steven Honeyman <stevenhoneyman@gmail.com>
+Subject: Re: [PATCH] i8k: Ignore temperature sensors which report invalid
+ values
+References: <1413730014-30945-1-git-send-email-pali.rohar@gmail.com> <5443D519.1090408@roeck-us.net> <201410201846.00586@pali>
+In-Reply-To: <201410201846.00586@pali>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Authenticated_sender: linux@roeck-us.net
 X-OutGoing-Spam-Status: No, score=-1.0
 X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A02020A.5445DD60.00CF,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020206.5445E0AE.0137,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.000
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 14
+X-CTCH-SenderID-TotalMessages: 2
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -51,125 +55,141 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace mach_power_off with pm_power_off to simplify the subsequent
-move of pm_power_off to generic code.
+On 10/20/2014 09:46 AM, Pali Rohár wrote:
+> Ok, I will describe my problem. Guenter, maybe you can find
+> another solution/fix for it.
+>
+> Calling i8k_get_temp(3) on my laptop without I8K_TEMPERATURE_BUG
+> always returns value 193 (which is above I8K_MAX_TEMP).
+>
+> When I8K_TEMPERATURE_BUG is enabled (by default) then
+> i8k_get_temp(3) returns value from prev[3] and store new value
+> I8K_TEMPERATURE_BUG to prev[3]. Value in prev[3] is initialized
+> to 0.
+>
+> What I want to achieve is: when i8k_get_temp() for particular
+> sensor id always returns invalid value (> I8K_MAX_TEMP) then we
+> should totally ignore sensor with that id and do not export it
+> via hwmon.
+>
+> My solution is: initialize prev[id] to I8K_MAX_TEMP, so on
+> invalid data first call to i8k_get_temp(id) returns I8K_MAX_TEMP.
+> Then in i8k_init_hwmon check if value is < I8K_MAX_TEMP and if
+> not ignore sensor id.
+>
+> Guenter, it is clear now? Are you ok that we should ignore sensor
+> if always report value above I8K_MAX_TEMP? If you do not like my
+> solution/patch for it, can you specify how other can it be fixed?
+>
 
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Greg Ungerer <gerg@uclinux.org>
-Cc: Joshua Thompson <funaho@jurai.org>
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-v2:
-- have_kernel_poweroff -> have_kernel_power_off
+I still don't see the point in initializing prev[].
 
- arch/m68k/emu/natfeat.c         | 3 ++-
- arch/m68k/include/asm/machdep.h | 1 -
- arch/m68k/kernel/process.c      | 5 +++--
- arch/m68k/kernel/setup_mm.c     | 1 -
- arch/m68k/kernel/setup_no.c     | 1 -
- arch/m68k/mac/config.c          | 3 ++-
- 6 files changed, 7 insertions(+), 7 deletions(-)
+Yes, I am ok with ignoring sensor values if the reported temperature
+is above I8K_MAX_TEMP. I am just not sure if we should check against
+I8K_MAX_TEMP or against, say, 192. Reason is that we do know that
+the sensor can erroneously return 0x99 on some systems once in a
+while. We would not want to ignore those sensors just because they
+happen to report 0x99 during initialization.
 
-diff --git a/arch/m68k/emu/natfeat.c b/arch/m68k/emu/natfeat.c
-index 71b78ec..91e2ae7 100644
---- a/arch/m68k/emu/natfeat.c
-+++ b/arch/m68k/emu/natfeat.c
-@@ -15,6 +15,7 @@
- #include <linux/string.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
-+#include <linux/pm.h>
- #include <linux/io.h>
- #include <asm/machdep.h>
- #include <asm/natfeat.h>
-@@ -90,5 +91,5 @@ void __init nf_init(void)
- 	pr_info("NatFeats found (%s, %lu.%lu)\n", buf, version >> 16,
- 		version & 0xffff);
- 
--	mach_power_off = nf_poweroff;
-+	pm_power_off = nf_poweroff;
- }
-diff --git a/arch/m68k/include/asm/machdep.h b/arch/m68k/include/asm/machdep.h
-index 953ca21..f9fac51 100644
---- a/arch/m68k/include/asm/machdep.h
-+++ b/arch/m68k/include/asm/machdep.h
-@@ -24,7 +24,6 @@ extern int (*mach_set_rtc_pll)(struct rtc_pll_info *);
- extern int (*mach_set_clock_mmss)(unsigned long);
- extern void (*mach_reset)( void );
- extern void (*mach_halt)( void );
--extern void (*mach_power_off)( void );
- extern unsigned long (*mach_hd_init) (unsigned long, unsigned long);
- extern void (*mach_hd_setup)(char *, int *);
- extern long mach_max_dma_address;
-diff --git a/arch/m68k/kernel/process.c b/arch/m68k/kernel/process.c
-index c55ff71..afe3d6e 100644
---- a/arch/m68k/kernel/process.c
-+++ b/arch/m68k/kernel/process.c
-@@ -22,6 +22,7 @@
- #include <linux/unistd.h>
- #include <linux/ptrace.h>
- #include <linux/user.h>
-+#include <linux/pm.h>
- #include <linux/reboot.h>
- #include <linux/init_task.h>
- #include <linux/mqueue.h>
-@@ -77,8 +78,8 @@ void machine_halt(void)
- 
- void machine_power_off(void)
- {
--	if (mach_power_off)
--		mach_power_off();
-+	if (pm_power_off)
-+		pm_power_off();
- 	for (;;);
- }
- 
-diff --git a/arch/m68k/kernel/setup_mm.c b/arch/m68k/kernel/setup_mm.c
-index 5b8ec4d..002fea6 100644
---- a/arch/m68k/kernel/setup_mm.c
-+++ b/arch/m68k/kernel/setup_mm.c
-@@ -96,7 +96,6 @@ EXPORT_SYMBOL(mach_get_rtc_pll);
- EXPORT_SYMBOL(mach_set_rtc_pll);
- void (*mach_reset)( void );
- void (*mach_halt)( void );
--void (*mach_power_off)( void );
- long mach_max_dma_address = 0x00ffffff; /* default set to the lower 16MB */
- #ifdef CONFIG_HEARTBEAT
- void (*mach_heartbeat) (int);
-diff --git a/arch/m68k/kernel/setup_no.c b/arch/m68k/kernel/setup_no.c
-index 88c27d9..1520156 100644
---- a/arch/m68k/kernel/setup_no.c
-+++ b/arch/m68k/kernel/setup_no.c
-@@ -55,7 +55,6 @@ int (*mach_hwclk) (int, struct rtc_time*);
- /* machine dependent reboot functions */
- void (*mach_reset)(void);
- void (*mach_halt)(void);
--void (*mach_power_off)(void);
- 
- #ifdef CONFIG_M68000
- #if defined(CONFIG_M68328)
-diff --git a/arch/m68k/mac/config.c b/arch/m68k/mac/config.c
-index a471eab..677913ff 100644
---- a/arch/m68k/mac/config.c
-+++ b/arch/m68k/mac/config.c
-@@ -16,6 +16,7 @@
- #include <linux/tty.h>
- #include <linux/console.h>
- #include <linux/interrupt.h>
-+#include <linux/pm.h>
- /* keyb */
- #include <linux/random.h>
- #include <linux/delay.h>
-@@ -159,7 +160,7 @@ void __init config_mac(void)
- 	mach_set_clock_mmss = mac_set_clock_mmss;
- 	mach_reset = mac_reset;
- 	mach_halt = mac_poweroff;
--	mach_power_off = mac_poweroff;
-+	pm_power_off = mac_poweroff;
- 	mach_max_dma_address = 0xffffffff;
- #if defined(CONFIG_INPUT_M68K_BEEP) || defined(CONFIG_INPUT_M68K_BEEP_MODULE)
- 	mach_beep = mac_mksound;
--- 
-1.9.1
+So maybe make it
+	if (err >= 0 && err < 192)
+and add a note before the first if(), explaining that higher values
+suggest that there is no sensor attached.
+
+Thanks,
+Guenter
+
+> On Sunday 19 October 2014 17:13:29 Guenter Roeck wrote:
+>> On 10/19/2014 07:46 AM, Pali Rohár wrote:
+>>> On some machines some temperature sensors report too high
+>>> values which are
+>>
+>> What is "too high", and what is "some machines" ?
+>> Would be great if you can be more specific.
+>>
+>>> invalid. When value is invalid function i8k_get_temp()
+>>> returns previous value and at next call it returns
+>>> I8K_MAX_TEMP.
+>>>
+>>> With this patch also firt i8k_get_temp() call returns
+>>> I8K_MAX_TEMP and
+>>
+>> fix ? Also, I am not entirely sure I understand what exactly
+>> you are fixing here.
+>>
+>>> i8k_init_hwmon() will ignore all sensor ids which report
+>>> incorrect values.
+>>>
+>>> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+>>> ---
+>>>
+>>>    drivers/char/i8k.c |   10 +++++-----
+>>>    1 file changed, 5 insertions(+), 5 deletions(-)
+>>>
+>>> diff --git a/drivers/char/i8k.c b/drivers/char/i8k.c
+>>> index 7272b08..bc327fa 100644
+>>> --- a/drivers/char/i8k.c
+>>> +++ b/drivers/char/i8k.c
+>>> @@ -298,7 +298,7 @@ static int i8k_get_temp(int sensor)
+>>>
+>>>    	int temp;
+>>>
+>>>    #ifdef I8K_TEMPERATURE_BUG
+>>>
+>>> -	static int prev[4];
+>>> +	static int prev[4] = { I8K_MAX_TEMP, I8K_MAX_TEMP,
+>>> I8K_MAX_TEMP, I8K_MAX_TEMP };
+>>
+>> I am not sure I understand what this change is expected to
+>> accomplish. Please explain.
+>>
+>>>    #endif
+>>>
+>>>    	regs.ebx = sensor & 0xff;
+>>>    	rc = i8k_smm(&regs);
+>>>
+>>> @@ -610,17 +610,17 @@ static int __init i8k_init_hwmon(void)
+>>>
+>>>    	/* CPU temperature attributes, if temperature reading is
+>>>    	OK */ err = i8k_get_temp(0);
+>>>
+>>> -	if (err >= 0)
+>>> +	if (err >= 0 && err < I8K_MAX_TEMP)
+>>
+>> I8K_MAX_TEMP is, at least in theory, a valid temperature, so
+>> this should be "<=".
+>>
+>> It would be important to understand what the "too high"
+>> temperature is to possibly be able to distinguish it from the
+>> buggy temperature that the code is trying to fix.
+>>
+>> Thanks,
+>> Guenter
+>>
+>>>    		i8k_hwmon_flags |= I8K_HWMON_HAVE_TEMP1;
+>>>    	
+>>>    	/* check for additional temperature sensors */
+>>>    	err = i8k_get_temp(1);
+>>>
+>>> -	if (err >= 0)
+>>> +	if (err >= 0 && err < I8K_MAX_TEMP)
+>>>
+>>>    		i8k_hwmon_flags |= I8K_HWMON_HAVE_TEMP2;
+>>>    	
+>>>    	err = i8k_get_temp(2);
+>>>
+>>> -	if (err >= 0)
+>>> +	if (err >= 0 && err < I8K_MAX_TEMP)
+>>>
+>>>    		i8k_hwmon_flags |= I8K_HWMON_HAVE_TEMP3;
+>>>    	
+>>>    	err = i8k_get_temp(3);
+>>>
+>>> -	if (err >= 0)
+>>> +	if (err >= 0 && err < I8K_MAX_TEMP)
+>>>
+>>>    		i8k_hwmon_flags |= I8K_HWMON_HAVE_TEMP4;
+>>>    	
+>>>    	/* Left fan attributes, if left fan is present */
+>
 
