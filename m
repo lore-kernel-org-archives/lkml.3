@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932172AbaJUIFu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 04:05:50 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:61704 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754702AbaJUIFa (ORCPT
+	id S932066AbaJUIFp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 04:05:45 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:16575 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754727AbaJUIFg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 04:05:30 -0400
+	Tue, 21 Oct 2014 04:05:36 -0400
+From: Cyrille Pitchen <cyrille.pitchen@atmel.com>
+To: <dwmw2@infradead.org>, <linux-mtd@lists.infradead.org>,
+        <nicolas.ferre@atmel.com>
+CC: <linux-kernel@vger.kernel.org>,
+        Cyrille Pitchen <cyrille.pitchen@atmel.com>
+Subject: [PATCH 1/2] jffs2: fix wrong offset in an error msg from __jff2_dbg_prewrite_paranoia_check
+Date: Tue, 21 Oct 2014 10:04:59 +0200
+Message-ID: <bd8e2f299311d2e07d48377333a802a7bd944d20.1413878259.git.cyrille.pitchen@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+In-Reply-To: <cover.1413878259.git.cyrille.pitchen@atmel.com>
+References: <cover.1413878259.git.cyrille.pitchen@atmel.com>
 MIME-Version: 1.0
-In-Reply-To: <1413795888-18559-3-git-send-email-k.kozlowski@samsung.com>
-References: <1413795888-18559-1-git-send-email-k.kozlowski@samsung.com>
-	<1413795888-18559-3-git-send-email-k.kozlowski@samsung.com>
-Date: Tue, 21 Oct 2014 10:05:27 +0200
-Message-ID: <CAPDyKFqZ9mwgCFaHctdhWPW018ir6Y8rEhAN_Euz3EFUPkuwWA@mail.gmail.com>
-Subject: Re: [PATCH v8 2/5] amba: Add helpers for (un)preparing AMBA clock
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Jonathan Corbet <corbet@lwn.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dmaengine@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 October 2014 11:04, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
-> Add amba_pclk_prepare() and amba_pclk_unprepare() inline functions for
-> handling the AMBA bus clock by device drivers.
->
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+When a none 0xff character is found in the flash buffer, an error message is
+printed. This error message claims to provide the offset of the FIRST corrupted
+byte but due to a missing break in the for loop, the former code always prints
+the offset of the byte immediately after the end of the tested buffer.
 
-Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+Signed-off-by: Cyrille Pitchen <cyrille.pitchen@atmel.com>
+---
+ fs/jffs2/debug.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-> ---
->  include/linux/amba/bus.h | 10 ++++++++++
->  1 file changed, 10 insertions(+)
->
-> diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
-> index c324f5700d1a..ac02f9bd63dc 100644
-> --- a/include/linux/amba/bus.h
-> +++ b/include/linux/amba/bus.h
-> @@ -97,6 +97,16 @@ void amba_release_regions(struct amba_device *);
->  #define amba_pclk_disable(d)   \
->         do { if (!IS_ERR((d)->pclk)) clk_disable((d)->pclk); } while (0)
->
-> +static inline int amba_pclk_prepare(struct amba_device *dev)
-> +{
-> +       return clk_prepare(dev->pclk);
-> +}
-> +
-> +static inline void amba_pclk_unprepare(struct amba_device *dev)
-> +{
-> +       clk_unprepare(dev->pclk);
-> +}
-> +
->  /* Some drivers don't use the struct amba_device */
->  #define AMBA_CONFIG_BITS(a) (((a) >> 24) & 0xff)
->  #define AMBA_REV_BITS(a) (((a) >> 20) & 0x0f)
-> --
-> 1.9.1
->
+diff --git a/fs/jffs2/debug.c b/fs/jffs2/debug.c
+index 1090eb6..07bd5bc 100644
+--- a/fs/jffs2/debug.c
++++ b/fs/jffs2/debug.c
+@@ -141,12 +141,11 @@ __jffs2_dbg_prewrite_paranoia_check(struct jffs2_sb_info *c,
+ 		return;
+ 	}
+ 
+-	ret = 0;
+ 	for (i = 0; i < len; i++)
+ 		if (buf[i] != 0xff)
+-			ret = 1;
++			break;
+ 
+-	if (ret) {
++	if (i != len) {
+ 		JFFS2_ERROR("argh, about to write node to %#08x on flash, but there are data already there. The first corrupted byte is at %#08x offset.\n",
+ 			ofs, ofs + i);
+ 		__jffs2_dbg_dump_buffer(buf, len, ofs);
+-- 
+1.8.2.2
+
