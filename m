@@ -1,110 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933580AbaJUVOX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 17:14:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48592 "EHLO mx1.redhat.com"
+	id S933641AbaJUVQY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 17:16:24 -0400
+Received: from mout.gmx.net ([212.227.15.18]:65460 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933014AbaJUVOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 17:14:22 -0400
-Date: Tue, 21 Oct 2014 16:14:09 -0500
-From: Josh Poimboeuf <jpoimboe@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        linux-kernel@vger.kernel.org, Seth Jennings <sjenning@redhat.com>
-Subject: Re: [PATCH] kprobes: add kprobe_is_function_probed()
-Message-ID: <20141021211409.GA28989@treble.redhat.com>
-References: <alpine.LNX.2.00.1410211744550.24255@pobox.suse.cz>
- <20141021164328.GG3978@treble.redhat.com>
- <alpine.LNX.2.00.1410212209560.22681@pobox.suse.cz>
+	id S932998AbaJUVQW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 17:16:22 -0400
+From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: linux-kernel@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>
+Subject: .exit.text section in vmlinux ?
+Date: Tue, 21 Oct 2014 23:19:01 +0200
+User-Agent: KMail/1.13.7 (Linux/3.16.2-dirty; KDE/4.12.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1410212209560.22681@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201410212319.20340.PeterHuewe@gmx.de>
+X-Provags-ID: V03:K0:6by+VaBrWW6XmIW3+P8uXgyu8l53lgaJyGvLvFAv+7lPE1Ki2+C
+ pteAKjViEZXrgxHwwGa3Xk+tAdZotHdPrcZH+HzVri5qhEd095GMW9n5EYds8h+jfs2g3sb
+ U6OZJ5dgxFXTmGuOBXQUn+wAkNDwTGpEv1NjPyR3TG9DL3+BpnKjnm/DDZu3+klUHwIN2P3
+ HSlwMbdfJCf5Ga8B0713w==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 10:19:30PM +0200, Jiri Kosina wrote:
-> On Tue, 21 Oct 2014, Josh Poimboeuf wrote:
-> 
-> > > Add a function that allows external users (such as live patching 
-> > > mechanisms) to check whether a given function (identified by symbol name) 
-> > > has a kprobe installed in it.
-> > 
-> > Functions aren't uniquely identifiable by name.  Perhaps it should be
-> > something like kprobe_is_addr_range_probed()?
-> 
-> Hi Josh,
-> 
-> first, thanks a lot for the review.
-> 
-> This is a rather difficult call actually. I am of course aware of the fact 
-> that kernel fucntions can't be uniquely identified by name, but when 
-> thinking about this, one has to consider:
-> 
-> - ftrace primary userspace interface (set_ftrace_filter) is based on 
->   function names
-> - kprobe tracer and uprobe trace primary userspace interface 
->   (/sys/kernel/debug/tracing/kprobe_events and uprobe_events respectively)
->   are primarily based on function names
+Hi,
 
-True, the user space interfaces are done by name, but the kernel
-interfaces aren't necessarily so (see ftrace_set_filter_ip and struct
-kprobe.addr).  This is a kernel interface so we can be more precise.
+as far as I remember everything marked with __exit or __exit_data will only be 
+used/called when unloading a module, and gets moved to the .exit.text or 
+.exit.data sections.
 
-> - the number of conflicts is probably zero, or very close to zero. Try to 
->   run this 
-> 
-> 	cut -f3 -d' ' /proc/kallsyms | sort  | uniq -c
-> 
->   So it's questionable whether all the back and forth name->address->name 
->   translations all over the place are worth all the trouble.
+Why are these sections present in the vmlinux/vmlinux.bin/bzImage and not 
+dropped by the linker or at least objdump? 
+This code will never be called for everything compiled in - in an allyesconfig 
+build these sections account for ~80kb of code.
 
-On my kernel:
+Is there something I'm missing here, or can we add "--remove-section 
+.exit.data --remove-section .exit.text" to the OBJCOPYFLAGS for vmlinux?
 
-$ grep ' t \| T ' /proc/kallsyms | awk '{print $3}' |sort |uniq -d |wc -l
-395
 
-So there are at least 395 places where this could go wrong...
-
-With kpatch, we're setting the ftrace filter by address so we don't
-patch the wrong function.  So we already have the address.  We also have
-the function length, which is needed for our backtrace safety checks.
-
-I'm guessing kGraft doesn't have the address + length?  I think you
-could call kallsyms_lookup() to get both values.
-
-Maybe we should see what our unified live patching code ends up looking
-like before deciding what interface(s) we need here?
-
-> 
->   I do agree though that we should make it obvious that the lookup 
->   interface works on symbol names only ... perhaps by adding '_by_name()' 
->   or so?
-> 
-> > Should we refuse to patch a function which has a kprobe installed inside 
-> > it?  
-> 
-> I think warning about it is a good thing to do.
-
-I think that's probably ok.
-
-> 
-> > Is there a race-free way to do that?
-> 
-> Do we need to be race-free here? If userspace is both instantiating new 
-> krpobe and initiating live kernel patching at the "same time", I don't 
-> think kernel should try to solve such race ... it's simply there by 
-> definition, depending on, for example, scheduling decisions.
-
-If we're not preventing it, but instead just printing a warning, then
-yeah, that sounds fine to me.
-
-I think it would also be nice to do the reverse, i.e. have kprobes emit
-a warning if someone tries to probe a replaced function.
-
--- 
-Josh
+Thanks,
+Peter
