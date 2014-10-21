@@ -1,109 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754414AbaJUG75 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 02:59:57 -0400
-Received: from smtp1.it.da.ut.ee ([193.40.5.66]:60473 "EHLO smtp1.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751409AbaJUG7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 02:59:55 -0400
-Date: Tue, 21 Oct 2014 09:59:51 +0300 (EEST)
-From: Meelis Roos <mroos@linux.ee>
-To: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-ia64@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Subject: Re: kernel BUG at kernel/sched/core.c:2702!
-In-Reply-To: <alpine.LRH.2.11.1410191515150.32417@adalberg.ut.ee>
-Message-ID: <alpine.LRH.2.11.1410210956090.28680@adalberg.ut.ee>
-References: <alpine.LRH.2.11.1410171401110.25429@adalberg.ut.ee> <alpine.LRH.2.11.1410191515150.32417@adalberg.ut.ee>
-User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
+	id S1754440AbaJUHEc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 03:04:32 -0400
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:48691 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753162AbaJUHEb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 03:04:31 -0400
+Date: Tue, 21 Oct 2014 09:04:24 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Thomas Graf <tgraf@suug.ch>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, paulmck@linux.vnet.ibm.com,
+        Nikolay Aleksandrov <nikolay@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ursula Braun <braunu@de.ibm.com>
+Subject: Re: [PATCH] netlink: Re-add locking to netlink_lookup() and seq
+ walker
+Message-ID: <20141021070424.GA4161@osiris>
+References: <20141011083627.GB5074@osiris>
+ <1413055964.9362.50.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20141011222514.GA14186@casper.infradead.org>
+ <20141020082107.GB4268@osiris>
+ <20141020195355.GA2299@casper.infradead.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141020195355.GA2299@casper.infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102107-0025-0000-0000-000001FB648A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > I am seeing this BUG on 3 different sparc64 machines with yesterdays 
-> > git. sparc64-specific known problems were just fixed before, 
-> > 3.17.0-07551-g052db7e + slab alignment fix patch + sparc64 SIGBUS fix 
-> > patch is working stable for me, whereas 3.17.0-09670-g0429fbc + SIGBUS 
-> > patch fails on 3 machines (all I tried). Will try bisecting later if I 
-> > get time.
+On Mon, Oct 20, 2014 at 08:53:55PM +0100, Thomas Graf wrote:
+> Heiko,
 > 
-> Dave Miller identified it as a sparc64-specific problem with 
-> CONFIG_SCHED_STACK_END_CHECK in another thread and his fix is working 
-> for me.
+> Can you test the following patch:
+> 
+> The synchronize_rcu() in netlink_release() introduces unacceptable
+> latency. Reintroduce minimal lookup so we can drop the
+> synchronize_rcu() until socket destruction has been RCUfied.
+> 
+> Signed-off-by: Thomas Graf <tgraf@suug.ch>
+> ---
+>  net/netlink/af_netlink.c | 37 +++++++++++++++++++++++++------------
+>  1 file changed, 25 insertions(+), 12 deletions(-)
 
-The fix commit was 
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=e2653143d7d79a49f1a961aeae1d82612838b12c 
-for sparc64 (for background).
+Thanks a lot! Your patch fixes the issue for me.
 
-Now I hit the same problem on ia64 (rx2620) with 3.18-rc1 and 
-CONFIG_SCHED_STACK_END_CHECK enabled:
+Reported-and-tested-by: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-[    0.000000] Early memory node ranges
-[    0.000000]   node   0: [mem 0x01000000-0x3e873fff]
-[    0.000000]   node   0: [mem 0x3eb90000-0x3ee77fff]
-[    0.000000]   node   0: [mem 0x3fc00000-0x3fe27fff]
-[    0.000000]   node   0: [mem 0x100000000-0x5ffffbfff]
-[    0.000000]   node   0: [mem 0x4040000000-0x40feffbfff]
-[    0.000000]   node   0: [mem 0x40ff000000-0x40ffc2ffff]
-[    0.000000]   node   0: [mem 0x40ffc9c000-0x40ffe03fff]
-[    0.000000]   node   0: [mem 0x40ffe80000-0x40fffe3fff]
-[    0.000000] Initmem setup node 0 [mem 0x01000000-0x40fffe3fff]
-[    0.000000] Built 1 zonelists in Node order, mobility grouping on.  Total pages: 1565221
-[    0.000000] Policy zone: Normal
-[    0.000000] Kernel command line: BOOT_IMAGE=scsi0:/EFI/gentoo/boot/vmlinuz root=/dev/sda3  ro
-[    0.000000] PID hash table entries: 4096 (order: 1, 32768 bytes)
-[    0.000000] Sorting __ex_table...
-[    0.000000] Memory: 25028864K/25129440K available (8621K kernel code, 528K rwdata, 932K rodata, 656K init, 286K bss, 100576K reserved)
-[    0.000000] SLUB: HWalign=128, Order=0-3, MinObjects=0, CPUs=2, Nodes=8
-[    0.000000] Hierarchical RCU implementation.
-[    0.000000]  RCU restricting CPUs from NR_CPUS=4 to nr_cpu_ids=2.
-[    0.000000] RCU: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=2
-[    0.000000] NR_IRQS:384
-[    0.000000] ACPI: Local APIC address c0000000fee00000
-[    0.000000] GSI 36 (level, low) -> CPU 0 (0x0000) vector 48
-[    0.000000] Console: colour VGA+ 80x25
-[    0.008000] Calibrating delay loop... 2390.01 BogoMIPS (lpj=4780032)
-[    0.016088] pid_max: default: 32768 minimum: 301
-[    0.016225] ACPI: Core revision 20140828
-[    0.020263] ACPI: All ACPI Tables successfully acquired
-[    0.021734] Dentry cache hash table entries: 4194304 (order: 11, 33554432 bytes)
-[    0.050128] Inode-cache hash table entries: 2097152 (order: 10, 16777216 bytes)
-[    0.062884] Mount-cache hash table entries: 65536 (order: 5, 524288 bytes)
-[    0.063092] Mountpoint-cache hash table entries: 65536 (order: 5, 524288 bytes)
-[    0.064677] kernel BUG at kernel/sched/core.c:2702!
-[    0.064811] swapper/0[0]: bugcheck! 0 [1]
-[    0.068000] Modules linked in:
-[    0.068000] 
-[    0.068000] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.18.0-rc1 #13
-[    0.068000] task: a000000100b40000 ti: a000000100b40cb0 task.ti: a000000100b40cb0
-[    0.068000] psr : 00001010084a6010 ifs : 80000000000015ae ip  : [<a0000001008624e0>]    Not tainted (3.18.0-rc1)
-[    0.068000] ip is at __schedule+0x1100/0x1520
-[    0.068000] unat: 0000000000000000 pfs : 00000000000015ae rsc : 0000000000000003
-[    0.068000] rnat: e000000001200880 bsps: a000000100b40000 pr  : 80000000ff509669
-[    0.068000] ldrs: 0000000000000000 ccv : 0000000003dad2c2 fpsr: 0009804c8a70433f
-[    0.068000] csd : 0000000000000000 ssd : 0000000000000000
-[    0.068000] b0  : a0000001008624e0 b6  : a000000100a50350 b7  : a00000010049ff00
-[    0.068000] f6  : 000000000000000000000 f7  : 1003e0044b82fa09b5a53
-[    0.068000] f8  : 1003e0000000000000084 f9  : 1003e00000000007b5ccd
-[    0.068000] f10 : 1003e20c49ba5e353f7cf f11 : 1003e00000000000fca57
-[    0.068000] r1  : a000000100dab340 r2  : a000000100b934d8 r3  : a000000100b934e0
-[    0.068000] r8  : 0000000000000027 r9  : 00000000000004d8 r10 : 000000000000fffe
-[    0.068000] r11 : 00000000000004d6 r12 : a000000100b47e20 r13 : a000000100b40000
-[    0.068000] r14 : a000000100babbc0 r15 : a000000100b934e0 r16 : 000000000000026b
-[    0.068000] r17 : 0000000000007fff r18 : a000000100b83ca8 r19 : 000000000000000f
-[    0.068000] r20 : 000000000000000f r21 : 0000000000000004 r22 : 0000000000000004
-[    0.068000] r23 : 0000000000000000 r24 : a000000100a10588 r25 : 0000000000000000
-[    0.068000] r26 : 0000000000000000 r27 : a000000100b69a28 r28 : a000000100b83b30
-[    0.068000] r29 : 0000000000000005 r30 : c0000000f4050000 r31 : a000000100b83b30
-[    0.068000] 
-[    0.068000] Call Trace:
-[    0.068000]  [<a000000100013090>] show_stack+0x90/0xc0
-[    0.068000]                                 sp=a000000100b47a00 bsp=a000000100b41198
-[    0.068000] Disabling lock debugging due to kernel taint
-[    0.184005] Kernel panic - not syncing: Attempted to kill the idle task!
-
--- 
-Meelis Roos (mroos@linux.ee)
