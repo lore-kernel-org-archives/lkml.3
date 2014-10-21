@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933068AbaJUOca (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 10:32:30 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:59037 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932702AbaJUOc2 (ORCPT
+	id S932898AbaJUOf5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 10:35:57 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:35208 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932702AbaJUOf4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 10:32:28 -0400
-Date: Tue, 21 Oct 2014 16:32:21 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yuyang Du <yuyang.du@intel.com>
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, pjt@google.com,
-        bsegall@google.com, arjan.van.de.ven@intel.com, len.brown@intel.com,
-        rafael.j.wysocki@intel.com, alan.cox@intel.com, mark.gross@intel.com,
-        fengguang.wu@intel.com
-Subject: Re: [RESEND PATCH 2/3 v5] sched: Rewrite per entity runnable load
- average tracking
-Message-ID: <20141021143221.GZ23531@worktop.programming.kicks-ass.net>
-References: <1412907717-2871-1-git-send-email-yuyang.du@intel.com>
- <1412907717-2871-3-git-send-email-yuyang.du@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412907717-2871-3-git-send-email-yuyang.du@intel.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	Tue, 21 Oct 2014 10:35:56 -0400
+From: Dmitry Voytik <voytikd@gmail.com>
+To: Shawn Guo <shawn.guo@freescale.com>
+Cc: Sascha Hauer <kernel@pengutronix.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Dmitry Voytik <voytikd@gmail.com>
+Subject: [PATCH] ARM: imx: refactor mxc_iomux_mode()
+Date: Tue, 21 Oct 2014 18:35:51 +0400
+Message-Id: <1413902151-20255-1-git-send-email-voytikd@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 10, 2014 at 10:21:56AM +0800, Yuyang Du wrote:
-> +static __always_inline u64 decay_load(u64 val, u64 n)
-> +{
-> +	if (likely(val <= UINT_MAX))
-> +		return decay_load32(val, n);
-> +
-> +	return mul_u64_u32_shr(val, decay_load32(1 << 15, n), 15);
-> +}
+Refactor mxc_iomux_mode():
+ - since it always returns 0 make it to return void
+ - remove unnecessary ret variable
+ - declare variables according to the kernel coding style
 
-This still doesn't make any sense, why not put that mul_u64_u32_shr()
-into decay_load() and be done with it?
-
+Signed-off-by: Dmitry Voytik <voytikd@gmail.com>
 ---
- kernel/sched/fair.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ arch/arm/mach-imx/iomux-imx31.c | 8 ++++----
+ arch/arm/mach-imx/iomux-mx3.h   | 2 +-
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index b78280c59b46..67c08d4a3df8 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2231,9 +2231,8 @@ static __always_inline u64 decay_load(u64 val, u64 n)
- 		local_n %= LOAD_AVG_PERIOD;
- 	}
+diff --git a/arch/arm/mach-imx/iomux-imx31.c b/arch/arm/mach-imx/iomux-imx31.c
+index 1657fe6..d6a3075 100644
+--- a/arch/arm/mach-imx/iomux-imx31.c
++++ b/arch/arm/mach-imx/iomux-imx31.c
+@@ -44,9 +44,11 @@ static unsigned long mxc_pin_alloc_map[NB_PORTS * 32 / BITS_PER_LONG];
+ /*
+  * set the mode for a IOMUX pin.
+  */
+-int mxc_iomux_mode(unsigned int pin_mode)
++void mxc_iomux_mode(unsigned int pin_mode)
+ {
+-	u32 field, l, mode, ret = 0;
++	u32 field;
++	u32 l;
++	u32 mode;
+ 	void __iomem *reg;
  
--	val *= runnable_avg_yN_inv[local_n];
--	/* We don't use SRR here since we always want to round down. */
--	return val >> 32;
-+	val = mul_u64_u32_shr(val, runnable_avg_yN_inv[local_n], 32);
-+	return val;
+ 	reg = IOMUXSW_MUX_CTL + (pin_mode & IOMUX_REG_MASK);
+@@ -61,8 +63,6 @@ int mxc_iomux_mode(unsigned int pin_mode)
+ 	__raw_writel(l, reg);
+ 
+ 	spin_unlock(&gpio_mux_lock);
+-
+-	return ret;
  }
  
  /*
+diff --git a/arch/arm/mach-imx/iomux-mx3.h b/arch/arm/mach-imx/iomux-mx3.h
+index f79f78a..0a5adba 100644
+--- a/arch/arm/mach-imx/iomux-mx3.h
++++ b/arch/arm/mach-imx/iomux-mx3.h
+@@ -144,7 +144,7 @@ void mxc_iomux_set_gpr(enum iomux_gp_func, bool en);
+  * It is called by the setup functions and should not be called directly anymore.
+  * It is here visible for backward compatibility
+  */
+-int mxc_iomux_mode(unsigned int pin_mode);
++void mxc_iomux_mode(unsigned int pin_mode);
+ 
+ #define IOMUX_PADNUM_MASK	0x1ff
+ #define IOMUX_GPIONUM_SHIFT	9
+-- 
+1.9.1
+
