@@ -1,149 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755328AbaJULXL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 07:23:11 -0400
-Received: from mga02.intel.com ([134.134.136.20]:25367 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755054AbaJULXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 07:23:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,761,1406617200"; 
-   d="scan'208";a="622502027"
-Date: Tue, 21 Oct 2014 16:15:40 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Ray Jui <rjui@broadcom.com>, Dan Williams <dan.j.williams@intel.com>,
-        Scott Branden <sbranden@broadcom.com>, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dmaengine: pl330: use subsys_initcall
-Message-ID: <20141021104540.GL28745@intel.com>
-References: <rjui@broadcom.com>
- <1413506896-4536-1-git-send-email-rjui@broadcom.com>
- <5440C929.9050906@metafoo.de>
- <20141017073535.GN1638@intel.com>
- <5440FA6B.6040303@metafoo.de>
- <54414153.70804@broadcom.com>
- <5441464D.8040303@metafoo.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5441464D.8040303@metafoo.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755367AbaJULYE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 07:24:04 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:10437 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755290AbaJULYA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 07:24:00 -0400
+X-AuditID: cbfec7f4-b7f6c6d00000120b-1a-5446424eea74
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH v2 1/4] regulator: max77686: Replace hard-coded opmode values
+ with defines
+Date: Tue, 21 Oct 2014 13:23:14 +0200
+Message-id: <1413890597-31037-2-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1413890597-31037-1-git-send-email-k.kozlowski@samsung.com>
+References: <1413890597-31037-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJLMWRmVeSWpSXmKPExsVy+t/xK7p+Tm4hBhf6WCw2zljPajFp3QEm
+	i6kPn7BZXP/ynNVi/pFzrBZHfxdYvH5haNG74CqbxdmmN+wW3650MFlsenyN1eLyrjlsFjPO
+	72OyuH2Z12LtkbvsDvweLc09bB5/n19n8fi76gWzx85Zd9k9Nq3qZPPYvKTeo2/LKkaPz5vk
+	AjiiuGxSUnMyy1KL9O0SuDL2909hLHgiWrFg9iHWBsYfgl2MnBwSAiYSD1svsEPYYhIX7q1n
+	62Lk4hASWMoo8enaQVYIp49J4sXy42wgVWwCxhKbly8Bs0UE9jNJPJ5gAlLELLCaSeLnlVPM
+	XYwcHMICMRJfruSB1LAIqEo0dPQwg9i8Au4Skz5NZYbYJidx8thkVhCbU8BD4s71DrArhIBq
+	Vh+cwzqBkXcBI8MqRtHU0uSC4qT0XEO94sTc4tK8dL3k/NxNjJDg/bKDcfExq0OMAhyMSjy8
+	G5a5hgixJpYVV+YeYpTgYFYS4c0VdgsR4k1JrKxKLcqPLyrNSS0+xMjEwSnVwKjrbVR0bpf4
+	gWtfhUKLJ1y5/bCVU2VTnPAzy5Q3Lko+ms/9Xu5bVimf6BO+92+AbNRBt4B3/9s2Lj2yW/XC
+	FaXzV98dlDI057A4Pe270dfzCbLLFdluViYk+W3b4VT9I9ouXb+Pya7ynmjVd+ar5UVyxtZz
+	ZzwxfvdtyQd+92z2P1yKh7gq9yqxFGckGmoxFxUnAgB5bdLtPAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 17, 2014 at 06:39:41PM +0200, Lars-Peter Clausen wrote:
-> On 10/17/2014 06:18 PM, Ray Jui wrote:
-> >On 10/17/2014 4:15 AM, Lars-Peter Clausen wrote:
-> >>On 10/17/2014 09:35 AM, Vinod Koul wrote:
-> >>>On Fri, Oct 17, 2014 at 09:45:45AM +0200, Lars-Peter Clausen wrote:
-> >>>>On 10/17/2014 02:48 AM, Ray Jui wrote:
-> >>>>>As part of subsystem that many slave drivers depend on, it's more
-> >>>>>appropriate for the pl330 DMA driver to be initialized at
-> >>>>>subsys_initcall than device_initcall
-> >>>>
-> >>>>Well, we do have -EPROBE_DEFER these days to handle these kinds of
-> >>>>dependencies so we no longer have to these kinds of manual init
-> >>>>reordering tricks.
-> >>>How ould that work?
-> >>>
-> >>>Consider for example SPI and dmanegine. SPI driver got probed, then to
-> >>>start
-> >>>a transaction requested a channel... while dmaengine driver is still
-> >>>getting
-> >>>probed/not probed yet. So SPI driver didnt get a channel.
-> >>>
-> >>
-> >>Ideally the SPI driver requests the channel in probe function and if the
-> >>DMA controller is not yet probed returns EPROBE_DEFER. If the SPI driver
-> >>requests the channel in the transfer handler it needs to deal with being
-> >>able to fall back to non DMA transfers anyway so this shouldn't be a
-> >>problem.
-> >So in the case of the spi-pl022 driver. It requests the channel in probe
-> >function. And obviously DMA is not mandatory, so when the channel request
-> >fails the probe won't fail and instead it falls back to PIO. In this case,
-> >can you recommend a different way to solve this problem without having the
-> >DMA driver probed earlier than its slaves?
-> 
-> 
-> dma_request_slave_channel() has the problem that we can't
-> differentiate between no channel provided and channel provided but
-> the dma driver hasn't probed yet. The function will return NULL in
-> both cases. But Stephen Warren added
-> dma_request_slave_channel_reason() a while ago to solve this
-> problem. This function returns a ERR_PTR. If it returns
-> ERR_PTR(-EPROBE_DEFER) it means that a channel has been provided but
-> the DMA driver hasn't probed yet. In this case the SPI driver should
-> return -EPROBE_DEFER to try again later. If the function returns a
-> different error code that means that it was not possible to get the
-> DMA channel and it should fall back to PIO.
-So when should the SPI here check, if dmaengine is available. The client
-doesn't grab channel in its probe, so the client cannot return
--EPROBE_DEFER.
+Add defines for regulator operating modes which should be more readable,
+especially if one does not have Maxim 77686 datasheet.
 
+The patch does not introduce any functional change.
+
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Suggested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+---
+ drivers/regulator/max77686.c | 25 ++++++++++++++++++-------
+ 1 file changed, 18 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
+index ef1af2debbd2..cffe0c69d57d 100644
+--- a/drivers/regulator/max77686.c
++++ b/drivers/regulator/max77686.c
+@@ -45,6 +45,16 @@
+ #define MAX77686_DVS_MINUV	600000
+ #define MAX77686_DVS_UVSTEP	12500
+ 
++/* On/off controlled by PWRREQ */
++#define MAX77686_OPMODE_OFF_PWRREQ	0x1
++/*
++ * For some regulators this means:
++ *  - forcing low power mode.
++ *  - low power mode controlled by PWRREQ.
++ */
++#define MAX77686_OPMODE_LOWPOWER	0x2
++#define MAX77686_OPMODE_NORMAL		0x3
++
+ #define MAX77686_OPMODE_SHIFT	6
+ #define MAX77686_OPMODE_BUCK234_SHIFT	4
+ #define MAX77686_OPMODE_MASK	0x3
+@@ -76,9 +86,10 @@ static int max77686_buck_set_suspend_disable(struct regulator_dev *rdev)
+ 	int ret, id = rdev_get_id(rdev);
+ 
+ 	if (id == MAX77686_BUCK1)
+-		val = 0x1;
++		val = MAX77686_OPMODE_OFF_PWRREQ;
+ 	else
+-		val = 0x1 << MAX77686_OPMODE_BUCK234_SHIFT;
++		val = MAX77686_OPMODE_OFF_PWRREQ
++			<< MAX77686_OPMODE_BUCK234_SHIFT;
+ 
+ 	ret = regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
+ 				 rdev->desc->enable_mask, val);
+@@ -103,10 +114,10 @@ static int max77686_set_suspend_mode(struct regulator_dev *rdev,
+ 
+ 	switch (mode) {
+ 	case REGULATOR_MODE_IDLE:			/* ON in LP Mode */
+-		val = 0x2 << MAX77686_OPMODE_SHIFT;
++		val = MAX77686_OPMODE_LOWPOWER << MAX77686_OPMODE_SHIFT;
+ 		break;
+ 	case REGULATOR_MODE_NORMAL:			/* ON in Normal Mode */
+-		val = 0x3 << MAX77686_OPMODE_SHIFT;
++		val = MAX77686_OPMODE_NORMAL << MAX77686_OPMODE_SHIFT;
+ 		break;
+ 	default:
+ 		pr_warn("%s: regulator_suspend_mode : 0x%x not supported\n",
+@@ -133,13 +144,13 @@ static int max77686_ldo_set_suspend_mode(struct regulator_dev *rdev,
+ 
+ 	switch (mode) {
+ 	case REGULATOR_MODE_STANDBY:			/* switch off */
+-		val = 0x1 << MAX77686_OPMODE_SHIFT;
++		val = MAX77686_OPMODE_OFF_PWRREQ << MAX77686_OPMODE_SHIFT;
+ 		break;
+ 	case REGULATOR_MODE_IDLE:			/* ON in LP Mode */
+-		val = 0x2 << MAX77686_OPMODE_SHIFT;
++		val = MAX77686_OPMODE_LOWPOWER << MAX77686_OPMODE_SHIFT;
+ 		break;
+ 	case REGULATOR_MODE_NORMAL:			/* ON in Normal Mode */
+-		val = 0x3 << MAX77686_OPMODE_SHIFT;
++		val = MAX77686_OPMODE_NORMAL << MAX77686_OPMODE_SHIFT;
+ 		break;
+ 	default:
+ 		pr_warn("%s: regulator_suspend_mode : 0x%x not supported\n",
 -- 
-~Vinod
+1.9.1
 
-> 
-> >
-> >>
-> >>But in any case fiddling around with the init sequences is just a quick
-> >>hack and might makes the problem less likely to appear in some cases,
-> >>but there is no guarantee that it works. And I think the proper solution
-> >>at the moment is to use probe deferral.
-> >I think it makes sense to have the DMA driver, as one of the core components
-> >in various SoCs that a lot of peripheral drivers depend on, to be registered
-> >at the level of subsys_init or somewhere close. We are not changing this
-> >just to get SPI to work. We are changing this because we think DMA should be
-> >ready before a lot of its slaves, which are typically done at device_initcall.
-> 
-> But if the DMA driver for example depends on a clock driver do you
-> put the clock driver at a even earlier init level? The problem with
-> using init levels for solving this problem is that there is only a
-> small amount of init levels available and representing the
-> dependency chains is neither possible with it nor were init level
-> ever intended for solving this. EPROBE_DEFER on the other hand is.
-> 
-> >
-> >I have no problem relying on EPROBE_DEFER for this, provided that it works.
-> >The issue is, like I mentioned above, for a lot of slave devices DMA is not
-> >mandatory, when DMA fails at probe they would fall back to PIO and never use
-> >DMA. Another disadvantage I see with EPROBE_DEFER is delayed boot time.
-> >
-> 
-> Yea, the EPROBE_DEFER implementation is not ideal, but that is a
-> problem that should be solved rather than working around it. I think
-> there are patches somewhere for example that build a device
-> dependency graph from the phandles in the devicetree and than probe
-> devices in the correct order to reduce the number of times probe
-> deferral is necessary.
-> 
-> >>
-> >>Other subsystems have seen patches which moved drivers from using
-> >>subsys_initcall to device_initcall/module_..._driver/ with the reasoning
-> >>that this is no longer necessary because of EPROBE_DEFER. So I don't
-> >>think we should be doing the exact opposite in DMA framework. Also if
-> >>we'd apply this patch it won't take to long until somebody suggest going
-> >>back to module_platform_driver() instead of subsys_initcall.
-> >>
-> >>- Lars
-> >There are currently 12 DMA drivers under drivers/dma registering themselves
-> >at subsys_init. I don't see why pl330 cannot do the same. Is there any
-> >concern that it may not work for some other SoCs when it's done at
-> >subsys_init? So far I cannot think of any. The only dependency of pl330 is
-> >the ARM apb_pclk, required during AMBA bus probe. But that's usually ready
-> >before subsys_init.
-> 
-> Those other drivers should be converted to device_initcall rather
-> than converting the PL330 driver to subsys_init. Using subsys_init
-> for device drivers is a hack which was used to try to solve ordering
-> problems. But it doesn't work that great, especially if you have
-> more than two devices in your dependency chain. The solution that
-> people have come up with to solve this problem in a better way is
-> probe deferral by the means of -EPROBE_DEFER.
-> 
-> - Lars
-> 
-
--- 
