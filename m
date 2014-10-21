@@ -1,212 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932396AbaJUKsS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 06:48:18 -0400
-Received: from relay.parallels.com ([195.214.232.42]:37673 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755084AbaJUKsF (ORCPT
+	id S1755195AbaJUKtf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 06:49:35 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34608 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754577AbaJUKtd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 06:48:05 -0400
-Message-ID: <1413888481.19914.45.camel@tkhai>
-Subject: Re: [PATCH v2 1/3] sched/dl: Implement cancel_dl_timer() to use in
- switched_from_dl()
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: Juri Lelli <juri.lelli@arm.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Kirill Tkhai <tkhai@yandex.ru>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Juri Lelli <juri.lelli@gmail.com>
-Date: Tue, 21 Oct 2014 14:48:01 +0400
-In-Reply-To: <544635CA.7040200@arm.com>
-References: <20140930210412.5258.35299.stgit@localhost>
-		 <20141002093408.GB2849@worktop.programming.kicks-ass.net>
-	 <1412244310.20287.34.camel@tkhai> <544635CA.7040200@arm.com>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
+	Tue, 21 Oct 2014 06:49:33 -0400
+Date: Tue, 21 Oct 2014 12:49:31 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Marek Belisko <marek@goldelico.com>
+Cc: arnd@arndb.de, gregkh@linuxfoundation.org, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        grant.likely@linaro.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, NeilBrown <neilb@suse.de>,
+        "H. Nikolaus Schaller" <hns@goldelico.com>
+Subject: Re: [PATCH 1/2] misc: Add Wi2Wi w2sc0004 gps driver
+Message-ID: <20141021104931.GC23161@amd>
+References: <1413491183-15018-1-git-send-email-marek@goldelico.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.26.172]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413491183-15018-1-git-send-email-marek@goldelico.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-В Вт, 21/10/2014 в 11:30 +0100, Juri Lelli пишет:
-> Hi Kirill,
-> 
-> sorry for the late reply, but I was busy doing other stuff and then
-> travelling.
-> 
-> On 02/10/14 11:05, Kirill Tkhai wrote:
-> > В Чт, 02/10/2014 в 11:34 +0200, Peter Zijlstra пишет:
-> >> On Wed, Oct 01, 2014 at 01:04:22AM +0400, Kirill Tkhai wrote:
-> >>> From: Kirill Tkhai <ktkhai@parallels.com>
-> >>>
-> >>> hrtimer_try_to_cancel() may bring a suprise, its call may fail.
-> >>
-> >> Well, not really a surprise that, its a _try_ operation after all.
-> >>
-> >>> raw_spin_lock(&rq->lock)
-> >>> ...                            dl_task_timer                 raw_spin_lock(&rq->lock)
-> >>> ...                               raw_spin_lock(&rq->lock)   ...
-> >>>    switched_from_dl()             ...                        ...
-> >>>       hrtimer_try_to_cancel()     ...                        ...
-> >>>    switched_to_fair()             ...                        ...
-> >>> ...                               ...                        ...
-> >>> ...                               ...                        ...
-> >>> raw_spin_unlock(&rq->lock)        ...                        (asquired)
-> >>> ...                               ...                        ...
-> >>> ...                               ...                        ...
-> >>> do_exit()                         ...                        ...
-> >>>    schedule()                     ...                        ...
-> >>>       raw_spin_lock(&rq->lock)    ...                        raw_spin_unlock(&rq->lock)
-> >>>       ...                         ...                        ...
-> >>>       raw_spin_unlock(&rq->lock)  ...                        raw_spin_lock(&rq->lock)
-> >>>       ...                         ...                        (asquired)
-> >>>       put_task_struct()           ...                        ...
-> >>>           free_task_struct()      ...                        ...
-> >>>       ...                         ...                        raw_spin_unlock(&rq->lock)
-> >>> ...                               (asquired)                 ...
-> >>> ...                               ...                        ...
-> >>> ...                               Surprise!!!                ...
-> >>>
-> >>> So, let's implement 100% guaranteed way to cancel the timer and let's
-> >>> be sure we are safe even in very unlikely situations.
-> >>>
-> >>> We do not create any problem with rq unlocking, because it already
-> >>> may happed below in pull_dl_task(). No problem with deadline tasks
-> >>> balancing too.
-> >>
-> >> That doesn't sound right. pull_dl_task() is an entirely different
-> >> callchain than switched_from(). Now it might still be fine, but you
-> >> cannot compare it with pull_dl_task.
-> > 
-> > I mean that caller of switched_from_dl() already knows about this situation,
-> > and we do not limit the area of its use.
-> > 
-> 
-> Not sure what you mean with "the caller already knows...". Also, can you
-> detail more about the different callchains?
+Hi!
 
-We have only caller of switched_from_dl(). It's check_class_changed().
-This function doesn't suppose that lock is always locked during its call.
+> --- a/drivers/misc/Kconfig
+> +++ b/drivers/misc/Kconfig
+> @@ -515,6 +515,16 @@ config VEXPRESS_SYSCFG
+>  	  bus. System Configuration interface is one of the possible means
+>  	  of generating transactions on this bus.
+>  
+> +config W2SG0004
+> +	tristate "W2SG0004 on/off control"
 
-What other details you want?
+                           ~~ insert GPS here.
+And make it bool if it can't be a module.
 
-> 
-> Do you have any test for this situation? Do you experienced any crash?
-> As you know, the replenishment timer is of key importance for us, and
-> I'd like to be 100% sure we don't introduce any problems with this
-> change :).
+> +	depends on GPIOLIB
+> +	help
+> +	  Enable on/off control of W2SG0004 GPS using a virtual GPIO.
+> +	  The virtual GPIO can be connected to a DTR line of a serial
+> +	  interface to allow powering up if the /dev/tty$n is opened.
+> +	  It also provides a rfkill gps node to control the LNA power.
+> +	  NOTE: can't currently be compiled as module, so please choose Y.
+> +
 
-No, I haven't written any tests to reproduce namely this situation.
-I found it by code analyzing. The same way we fixed the problem
-with rq change in dl_task_timer():
+> +++ b/drivers/misc/w2sg0004.c
+> @@ -0,0 +1,512 @@
+> +/*
+> + * w2sg0004.c
+> + * Virtual GPIO of controlling the w2sg0004 GPS receiver.
+> + *
+> + * Copyright (C) 2011 Neil Brown <neil@brown.name>
+> + *
+> + * This receiver has an ON/OFF pin which must be toggled to
+> + * turn the device 'on' or 'off'.  A high->low->high toggle
+> + * will switch the device on if it is off, and off if it is on.
+> + * It is not possible to directly detect the state of the device.
+> + * However when it is on it will send characters on a UART line
+> + * regularly.
+> + * On the OMAP3, the UART line can also be programmed as a GPIO
+> + * on which we can receive interrupts.
+> + * So when we want the device to be 'off' we can reprogram
+> + * the line, toggle the ON/OFF pin and hope that it is off.
+> + * However if an interrupt arrives we know that it is really on
+> + * and can toggle again.
+> + *
+> + * To enable receiving on/off requests we create a gpio_chip
+> + * with a single 'output' GPIO.  When it is low, the
+> + * GPS is turned off.  When it is high, it is turned on.
+> + * This can be configured as the DTR GPIO on the UART which
+> + * connects the GPS.  Then whenever the tty is open, the GPS
+> + * will be switched on, and whenever it is closed, the GPS will
+> + * be switched off.
+> + *
+> + * In addition we register as a rfkill client so that we can
+> + * control the LNA power.
+> + *
+> + */
 
-    http://www.spinics.net/lists/stable/msg49080.html
+GPL?
 
-Are you agree the race is here? It's my fix, and if brings a problem
-please clarify it.
+> +/*
+> + * There seems to restrictions on how quickly we can toggle the
+> + * on/off line.  data sheets says "two rtc ticks", whatever that means.
 
-I'm waiting for your reply.
+"seems to"? data -> Data?
 
-Thanks,
-Kirill
+> +enum w2sg_state {
+> +	W2SG_IDLE,	/* is not changing state */
+> +	W2SG_PULSE,	/* activate on/off impulse */
+> +	W2SG_NOPULSE	/* desctivate on/off impulse */
+> +};
 
-> > Does this sound better?
-> > 
-> > [PATCH] sched/dl: Implement cancel_dl_timer() to use in switched_from_dl()
-> >     
-> > Currently used hrtimer_try_to_cancel() is racy:
-> > 
-> > raw_spin_lock(&rq->lock)
-> > ...                            dl_task_timer                 raw_spin_lock(&rq->lock)
-> > ...                               raw_spin_lock(&rq->lock)   ...
-> >    switched_from_dl()             ...                        ...
-> >       hrtimer_try_to_cancel()     ...                        ...
-> >    switched_to_fair()             ...                        ...
-> > ...                               ...                        ...
-> > ...                               ...                        ...
-> > raw_spin_unlock(&rq->lock)        ...                        (asquired)
-> > ...                               ...                        ...
-> > ...                               ...                        ...
-> > do_exit()                         ...                        ...
-> >    schedule()                     ...                        ...
-> >       raw_spin_lock(&rq->lock)    ...                        raw_spin_unlock(&rq->lock)
-> >       ...                         ...                        ...
-> >       raw_spin_unlock(&rq->lock)  ...                        raw_spin_lock(&rq->lock)
-> >       ...                         ...                        (asquired)
-> >       put_task_struct()           ...                        ...
-> >           free_task_struct()      ...                        ...
-> >       ...                         ...                        raw_spin_unlock(&rq->lock)
-> > ...                               (asquired)                 ...
-> > ...                               ...                        ...
-> > ...                               (use after free)           ...
-> > 
-> >     
-> > So, let's implement 100% guaranteed way to cancel the timer and let's
-> > be sure we are safe even in very unlikely situations.
-> > 
-> > rq unlocking does not limit the area of switched_from_dl() use, because
-> > it already was possible in pull_dl_task() below.
-> > 
-> > Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-> > 
-> > diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-> > index abfaf3d..63f8b4a 100644
-> > --- a/kernel/sched/deadline.c
-> > +++ b/kernel/sched/deadline.c
-> > @@ -555,11 +555,6 @@ void init_dl_task_timer(struct sched_dl_entity *dl_se)
-> >  {
-> >  	struct hrtimer *timer = &dl_se->dl_timer;
-> >  
-> > -	if (hrtimer_active(timer)) {
-> > -		hrtimer_try_to_cancel(timer);
-> > -		return;
-> > -	}
-> > -
-> >  	hrtimer_init(timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-> >  	timer->function = dl_task_timer;
-> >  }
-> > @@ -1567,10 +1562,34 @@ void init_sched_dl_class(void)
-> >  
-> >  #endif /* CONFIG_SMP */
-> >  
-> > +/*
-> > + *  Surely cancel task's dl_timer. May drop rq->lock.
-> > + */
-> > +static void cancel_dl_timer(struct rq *rq, struct task_struct *p)
-> > +{
-> > +	struct hrtimer *dl_timer = &p->dl.dl_timer;
-> > +
-> > +	/* Nobody will change task's class if pi_lock is held */
-> > +	lockdep_assert_held(&p->pi_lock);
-> > +
-> > +	if (hrtimer_active(dl_timer)) {
-> > +		int ret = hrtimer_try_to_cancel(dl_timer);
-> > +
-> > +		if (unlikely(ret == -1)) {
-> > +			/*
-> > +			 * Note, p may migrate OR new deadline tasks
-> > +			 * may appear in rq when we are unlocking it.
-> > +			 */
-> > +			raw_spin_unlock(&rq->lock);
-> > +			hrtimer_cancel(dl_timer);
-> > +			raw_spin_lock(&rq->lock);
-> > +		}
-> > +	}
-> > +}
-> > +
-> >  static void switched_from_dl(struct rq *rq, struct task_struct *p)
-> >  {
-> > -	if (hrtimer_active(&p->dl.dl_timer) && !dl_policy(p->policy))
-> > -		hrtimer_try_to_cancel(&p->dl.dl_timer);
-> > +	cancel_dl_timer(rq, p);
-> >  
-> >  	__dl_clear_params(p);
-> >  
-> > 
-> > 
-> > 
-> 
+deactivate.
+
+> +
+> +struct gpio_w2sg {
+> +	struct		rfkill *rf_kill;
+> +	struct		regulator *lna_regulator;
+> +	int		lna_blocked;	/* rfkill block gps active */
+> +	int		lna_is_off;	/* LNA is currently off */
+> +	int		is_on;		/* current state (0/1) */
+> +	unsigned long	last_toggle;
+> +	unsigned long	backoff;	/* time to wait since last_toggle */
+> +	int		on_off_gpio;
+> +	int		rx_irq;
+> +
+> +	struct pinctrl *p;
+> +	struct pinctrl_state *default_state;	/* should be UART mode */
+> +	struct pinctrl_state *monitor_state;	/* monitor RX as GPIO */
+> +	enum w2sg_state	state;
+> +	int		requested;	/* requested state (0/1) */
+> +	int		suspended;
+> +	int		rx_redirected;
+> +	spinlock_t	lock;
+> +#ifdef CONFIG_GPIOLIB
+> +	struct gpio_chip gpio;
+> +	const char	*gpio_name[1];
+> +#endif
+
+Depends on gpiolib, why ifdef?
+
+Array of names?
 
 
+> +	rf_kill = rfkill_alloc("GPS", &pdev->dev, RFKILL_TYPE_GPS,
+> +				&gpio_w2sg0004_rfkill_ops, gw2sg);
+
+Actually, is rfkill interface right one on GPS? GPS is not supposed to
+transmit...
+
+> +	int	gpio_base;	/* (not used by DT) - defines the  gpio.base */
+
+
+Is non-device tree path still usefull?
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
