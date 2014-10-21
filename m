@@ -1,472 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072AbaJUAZr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 20:25:47 -0400
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:40305 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753335AbaJUAZp (ORCPT
+	id S1754093AbaJUAby (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 20:31:54 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:46933 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753386AbaJUAbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 20:25:45 -0400
-Date: Mon, 20 Oct 2014 19:23:32 -0500
-From: Eric Rost <eric.rost@mybabylon.net>
-To: gregkh@linuxfoundation.org, jason@lakedaemon.net, jake@lwn.net,
-        antonysaraev@gmail.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: skein: Loadable Module Support
-Message-ID: <20141021002332.GA12008@localhost>
+	Mon, 20 Oct 2014 20:31:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Date: Tue, 21 Oct 2014 08:31:51 +0800
+Message-ID: <CA+6hz4ouOLgFwHOM6xeXEaUQpm2xOasDowKLPfZWuG3sAssUvA@mail.gmail.com>
+Subject: [PATCH] netfilter: Fix wastful cleanup check for unconfirmed conn in get_next_corpse
+From: Feng Gao <gfree.wind@gmail.com>
+To: Pablo Neira Ayuso <pablo@netfilter.org>, Patrick McHardy <kaber@trash.net>,
+        kadlec@blackhole.kfki.hu, davem@davemloft.net
+Cc: Netfilter Developer Mailing List 
+	<netfilter-devel@vger.kernel.org>,
+        coreteam@netfilter.org, netdev@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=089e01183b602276ec0505e3f54e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds loadable module support for Skein256, Skein512, and Skein1024
-NOTE: skein1024_generic does not load, sending patch for feedback!
-I don't understand why skein256_generic and skein512_generic load no
-problem but skein1024_generic gives ERROR: Invalid argument from
-modprobe.
+--089e01183b602276ec0505e3f54e
+Content-Type: text/plain; charset=UTF-8
 
-Signed-off-by: Eric Rost <eric.rost@mybabylon.net>
----
- drivers/staging/skein/Kconfig             | 12 +++++
- drivers/staging/skein/Makefile            |  6 +++
- drivers/staging/skein/skein.c             | 11 +++-
- drivers/staging/skein/skein.h             |  6 +++
- drivers/staging/skein/skein1024_generic.c | 88 +++++++++++++++++++++++++++++++
- drivers/staging/skein/skein256_generic.c  | 88 +++++++++++++++++++++++++++++++
- drivers/staging/skein/skein512_generic.c  | 88 +++++++++++++++++++++++++++++++
- 7 files changed, 298 insertions(+), 1 deletion(-)
- create mode 100644 drivers/staging/skein/skein1024_generic.c
- create mode 100644 drivers/staging/skein/skein256_generic.c
- create mode 100644 drivers/staging/skein/skein512_generic.c
+Hi all,
 
-diff --git a/drivers/staging/skein/Kconfig b/drivers/staging/skein/Kconfig
-index b9172bf..e260111 100644
---- a/drivers/staging/skein/Kconfig
-+++ b/drivers/staging/skein/Kconfig
-@@ -15,6 +15,18 @@ config CRYPTO_SKEIN
- 	  for more information.  This module depends on the threefish block
- 	  cipher module.
- 
-+config CRYPTO_SKEIN_256
-+	tristate "Skein256 driver"
-+	select CRYPTO_SKEIN
-+
-+config CRYPTO_SKEIN_512
-+	tristate "Skein512 driver"
-+	select CRYPTO_SKEIN
-+
-+config CRYPTO_SKEIN_1024
-+	tristate "Skein1024 driver"
-+	select CRYPTO_SKEIN
-+
- config CRYPTO_THREEFISH
- 	bool "Threefish tweakable block cipher"
- 	depends on (X86 || UML_X86) && 64BIT && CRYPTO
-diff --git a/drivers/staging/skein/Makefile b/drivers/staging/skein/Makefile
-index a14aadd..1be01fe 100644
---- a/drivers/staging/skein/Makefile
-+++ b/drivers/staging/skein/Makefile
-@@ -5,5 +5,11 @@ obj-$(CONFIG_CRYPTO_SKEIN) +=   skein.o \
- 				skein_api.o \
- 				skein_block.o
- 
-+obj-$(CONFIG_CRYPTO_SKEIN_256) += skein256_generic.o
-+
-+obj-$(CONFIG_CRYPTO_SKEIN_512) += skein512_generic.o
-+
-+obj-$(CONFIG_CRYPTO_SKEIN_1024) += skein1024_generic.o
-+
- obj-$(CONFIG_CRYPTO_THREEFISH) += threefish_block.o \
- 				  threefish_api.o
-diff --git a/drivers/staging/skein/skein.c b/drivers/staging/skein/skein.c
-index 8cc8358..2138e22 100644
---- a/drivers/staging/skein/skein.c
-+++ b/drivers/staging/skein/skein.c
-@@ -11,6 +11,7 @@
- #define  SKEIN_PORT_CODE /* instantiate any code in skein_port.h */
- 
- #include <linux/string.h>       /* get the memcpy/memset functions */
-+#include <linux/export.h>
- #include "skein.h" /* get the Skein API definitions   */
- #include "skein_iv.h"    /* get precomputed IVs */
- #include "skein_block.h"
-@@ -73,6 +74,7 @@ int skein_256_init(struct skein_256_ctx *ctx, size_t hash_bit_len)
- 
- 	return SKEIN_SUCCESS;
- }
-+EXPORT_SYMBOL(skein_256_init);
- 
- /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
- /* init the context for a MAC and/or tree hash operation */
-@@ -191,7 +193,7 @@ int skein_256_update(struct skein_256_ctx *ctx, const u8 *msg,
- 
- 	return SKEIN_SUCCESS;
- }
--
-+EXPORT_SYMBOL(skein_256_update);
- /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
- /* finalize the hash computation and output the result */
- int skein_256_final(struct skein_256_ctx *ctx, u8 *hash_val)
-@@ -240,6 +242,7 @@ int skein_256_final(struct skein_256_ctx *ctx, u8 *hash_val)
- 	}
- 	return SKEIN_SUCCESS;
- }
-+EXPORT_SYMBOL(skein_256_final);
- 
- /*****************************************************************/
- /*     512-bit Skein                                             */
-@@ -303,6 +306,7 @@ int skein_512_init(struct skein_512_ctx *ctx, size_t hash_bit_len)
- 
- 	return SKEIN_SUCCESS;
- }
-+EXPORT_SYMBOL(skein_512_init);
- 
- /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
- /* init the context for a MAC and/or tree hash operation */
-@@ -420,6 +424,7 @@ int skein_512_update(struct skein_512_ctx *ctx, const u8 *msg,
- 
- 	return SKEIN_SUCCESS;
- }
-+EXPORT_SYMBOL(skein_512_update);
- 
- /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
- /* finalize the hash computation and output the result */
-@@ -469,6 +474,7 @@ int skein_512_final(struct skein_512_ctx *ctx, u8 *hash_val)
- 	}
- 	return SKEIN_SUCCESS;
- }
-+EXPORT_SYMBOL(skein_512_final);
- 
- /*****************************************************************/
- /*    1024-bit Skein                                             */
-@@ -526,6 +532,7 @@ int skein_1024_init(struct skein_1024_ctx *ctx, size_t hash_bit_len)
- 
- 	return SKEIN_SUCCESS;
- }
-+EXPORT_SYMBOL(skein_1024_init);
- 
- /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
- /* init the context for a MAC and/or tree hash operation */
-@@ -644,6 +651,7 @@ int skein_1024_update(struct skein_1024_ctx *ctx, const u8 *msg,
- 
- 	return SKEIN_SUCCESS;
- }
-+EXPORT_SYMBOL(skein_1024_update);
- 
- /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
- /* finalize the hash computation and output the result */
-@@ -693,6 +701,7 @@ int skein_1024_final(struct skein_1024_ctx *ctx, u8 *hash_val)
- 	}
- 	return SKEIN_SUCCESS;
- }
-+EXPORT_SYMBOL(skein_1024_final);
- 
- /**************** Functions to support MAC/tree hashing ***************/
- /*   (this code is identical for Optimized and Reference versions)    */
-diff --git a/drivers/staging/skein/skein.h b/drivers/staging/skein/skein.h
-index e6669f1..d803458 100644
---- a/drivers/staging/skein/skein.h
-+++ b/drivers/staging/skein/skein.h
-@@ -26,8 +26,14 @@
- **                                0: use assert()      to flag errors
- **                                1: return SKEIN_FAIL to flag errors
- **
-+**
- ***************************************************************************/
- 
-+/*Skein digest sizes for crypto api*/
-+#define SKEIN256_DIGEST_SIZE (256)
-+#define SKEIN512_DIGEST_SIZE (512)
-+#define SKEIN1024_DIGEST_SIZE (1024)
-+
- #ifndef rotl_64
- #define rotl_64(x, N)    (((x) << (N)) | ((x) >> (64-(N))))
- #endif
-diff --git a/drivers/staging/skein/skein1024_generic.c b/drivers/staging/skein/skein1024_generic.c
-new file mode 100644
-index 0000000..4152e61
---- /dev/null
-+++ b/drivers/staging/skein/skein1024_generic.c
-@@ -0,0 +1,88 @@
-+/*
-+ * Cryptographic API.
-+ *
-+ * Skein1024 Hash Algorithm.
-+ *
-+ * Derived from cryptoapi implementation, adapted for in-place
-+ * scatterlist interface.
-+ *
-+ * Copyright (c) Eric Rost <eric.rost@mybabylon.net>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the Free
-+ * Software Foundation; either version 2 of the License, or (at your option)
-+ * any later version.
-+ *
-+ */
-+#include <crypto/internal/hash.h>
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/mm.h>
-+#include <linux/cryptohash.h>
-+#include <linux/types.h>
-+#include "skein.h"
-+#include <asm/byteorder.h>
-+
-+static int skein1024_init(struct shash_desc *desc)
-+{
-+	struct skein_1024_ctx *sctx = shash_desc_ctx(desc);
-+
-+	int ret = skein_1024_init(sctx, SKEIN1024_DIGEST_SIZE);
-+
-+	return ret;
-+}
-+
-+int crypto_skein1024_update(struct shash_desc *desc, const u8 *data,
-+			unsigned int len)
-+{
-+	struct skein_1024_ctx *sctx = shash_desc_ctx(desc);
-+	size_t hbl = (size_t) len;
-+	int ret = skein_1024_update(sctx, data, hbl);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(crypto_skein1024_update);
-+
-+
-+/* Add padding and return the message digest. */
-+static int skein1024_final(struct shash_desc *desc, u8 *out)
-+{
-+	struct skein_1024_ctx *sctx = shash_desc_ctx(desc);
-+	int ret = skein_1024_final(sctx, out);
-+	return ret;
-+}
-+
-+
-+static struct shash_alg alg = {
-+	.digestsize	=	SKEIN1024_DIGEST_SIZE,
-+	.init		=	skein1024_init,
-+	.update		=	crypto_skein1024_update,
-+	.final		=	skein1024_final,
-+	.descsize	=	sizeof(struct skein_1024_ctx),
-+	.statesize	=	sizeof(struct skein_1024_ctx),
-+	.base		=	{
-+		.cra_name		=	"skein1024",
-+		.cra_driver_name	=	"skein1024-generic",
-+		.cra_flags		=	CRYPTO_ALG_TYPE_SHASH,
-+		.cra_blocksize		=	(SKEIN_1024_BLOCK_BYTES * 8),
-+		.cra_module		=	THIS_MODULE,
-+	}
-+};
-+
-+static int __init skein1024_generic_mod_init(void)
-+{
-+	return crypto_register_shash(&alg);
-+}
-+
-+static void __exit skein1024_generic_mod_fini(void)
-+{
-+	crypto_unregister_shash(&alg);
-+}
-+
-+module_init(skein1024_generic_mod_init);
-+module_exit(skein1024_generic_mod_fini);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("Skein1024 Hash Algorithm");
-+
-+MODULE_ALIAS("skein1024");
-diff --git a/drivers/staging/skein/skein256_generic.c b/drivers/staging/skein/skein256_generic.c
-new file mode 100644
-index 0000000..a766fc4
---- /dev/null
-+++ b/drivers/staging/skein/skein256_generic.c
-@@ -0,0 +1,88 @@
-+/*
-+ * Cryptographic API.
-+ *
-+ * Skein256 Hash Algorithm.
-+ *
-+ * Derived from cryptoapi implementation, adapted for in-place
-+ * scatterlist interface.
-+ *
-+ * Copyright (c) Eric Rost <eric.rost@mybabylon.net>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the Free
-+ * Software Foundation; either version 2 of the License, or (at your option)
-+ * any later version.
-+ *
-+ */
-+#include <crypto/internal/hash.h>
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/mm.h>
-+#include <linux/cryptohash.h>
-+#include <linux/types.h>
-+#include "skein.h"
-+#include <asm/byteorder.h>
-+
-+static int skein256_init(struct shash_desc *desc)
-+{
-+	struct skein_256_ctx *sctx = shash_desc_ctx(desc);
-+
-+	int ret = skein_256_init(sctx, SKEIN256_DIGEST_SIZE);
-+
-+	return ret;
-+}
-+
-+int crypto_skein256_update(struct shash_desc *desc, const u8 *data,
-+			unsigned int len)
-+{
-+	struct skein_256_ctx *sctx = shash_desc_ctx(desc);
-+	size_t hbl = (size_t) len;
-+	int ret = skein_256_update(sctx, data, hbl);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(crypto_skein256_update);
-+
-+
-+/* Add padding and return the message digest. */
-+static int skein256_final(struct shash_desc *desc, u8 *out)
-+{
-+	struct skein_256_ctx *sctx = shash_desc_ctx(desc);
-+	int ret = skein_256_final(sctx, out);
-+	return ret;
-+}
-+
-+
-+static struct shash_alg alg = {
-+	.digestsize	=	SKEIN256_DIGEST_SIZE,
-+	.init		=	skein256_init,
-+	.update		=	crypto_skein256_update,
-+	.final		=	skein256_final,
-+	.descsize	=	sizeof(struct skein_256_ctx),
-+	.statesize	=	sizeof(struct skein_256_ctx),
-+	.base		=	{
-+		.cra_name		=	"skein256",
-+		.cra_driver_name	=	"skein256-generic",
-+		.cra_flags		=	CRYPTO_ALG_TYPE_SHASH,
-+		.cra_blocksize		=	(SKEIN_256_BLOCK_BYTES * 8),
-+		.cra_module		=	THIS_MODULE,
-+	}
-+};
-+
-+static int __init skein256_generic_mod_init(void)
-+{
-+	return crypto_register_shash(&alg);
-+}
-+
-+static void __exit skein256_generic_mod_fini(void)
-+{
-+	crypto_unregister_shash(&alg);
-+}
-+
-+module_init(skein256_generic_mod_init);
-+module_exit(skein256_generic_mod_fini);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("Skein256 Hash Algorithm");
-+
-+MODULE_ALIAS("skein256");
-diff --git a/drivers/staging/skein/skein512_generic.c b/drivers/staging/skein/skein512_generic.c
-new file mode 100644
-index 0000000..331ae37
---- /dev/null
-+++ b/drivers/staging/skein/skein512_generic.c
-@@ -0,0 +1,88 @@
-+/*
-+ * Cryptographic API.
-+ *
-+ * Skein512 Hash Algorithm.
-+ *
-+ * Derived from cryptoapi implementation, adapted for in-place
-+ * scatterlist interface.
-+ *
-+ * Copyright (c) Eric Rost <eric.rost@mybabylon.net>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the Free
-+ * Software Foundation; either version 2 of the License, or (at your option)
-+ * any later version.
-+ *
-+ */
-+#include <crypto/internal/hash.h>
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/mm.h>
-+#include <linux/cryptohash.h>
-+#include <linux/types.h>
-+#include "skein.h"
-+#include <asm/byteorder.h>
-+
-+static int skein512_init(struct shash_desc *desc)
-+{
-+	struct skein_512_ctx *sctx = shash_desc_ctx(desc);
-+
-+	int ret = skein_512_init(sctx, SKEIN512_DIGEST_SIZE);
-+
-+	return ret;
-+}
-+
-+int crypto_skein512_update(struct shash_desc *desc, const u8 *data,
-+			unsigned int len)
-+{
-+	struct skein_512_ctx *sctx = shash_desc_ctx(desc);
-+	size_t hbl = (size_t) len;
-+	int ret = skein_512_update(sctx, data, hbl);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(crypto_skein512_update);
-+
-+
-+/* Add padding and return the message digest. */
-+static int skein512_final(struct shash_desc *desc, u8 *out)
-+{
-+	struct skein_512_ctx *sctx = shash_desc_ctx(desc);
-+	int ret = skein_512_final(sctx, out);
-+	return ret;
-+}
-+
-+
-+static struct shash_alg alg = {
-+	.digestsize	=	SKEIN512_DIGEST_SIZE,
-+	.init		=	skein512_init,
-+	.update		=	crypto_skein512_update,
-+	.final		=	skein512_final,
-+	.descsize	=	sizeof(struct skein_512_ctx),
-+	.statesize	=	sizeof(struct skein_512_ctx),
-+	.base		=	{
-+		.cra_name		=	"skein512",
-+		.cra_driver_name	=	"skein512-generic",
-+		.cra_flags		=	CRYPTO_ALG_TYPE_SHASH,
-+		.cra_blocksize		=	(SKEIN_512_BLOCK_BYTES * 8),
-+		.cra_module		=	THIS_MODULE,
-+	}
-+};
-+
-+static int __init skein512_generic_mod_init(void)
-+{
-+	return crypto_register_shash(&alg);
-+}
-+
-+static void __exit skein512_generic_mod_fini(void)
-+{
-+	crypto_unregister_shash(&alg);
-+}
-+
-+module_init(skein512_generic_mod_init);
-+module_exit(skein512_generic_mod_fini);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("Skein512 Hash Algorithm");
-+
-+MODULE_ALIAS("skein512");
--- 
-2.1.1
+I am sorry to send the patch commit again because the last email is
+not plain text and is rejected by some servers.
 
+This is the patch to branch master of kernel.
+
+The function get_next_corpse is only invoked by nf_ct_iterate_cleanup
+in one while loop, and it will check the per cpu unconfirmed conntrack
+list every time.
+
+I think the whole list of unconfirmed conntracks could be accessed by
+one call, so the others are not necessary.
+
+So I move the checks outside the get_next_corpse, and create one new
+function clean_up_unconfirmed_conntracks.
+Let the nf_ct_iterate_cleanup invokes the
+clean_up_unconfirmed_conntracks after the while loop.
+
+These codes have already exist for a long time. Firstly I think maybe
+there is some reason, but I fail to get it.
+
+
+Best Regards
+Feng
+
+--089e01183b602276ec0505e3f54e
+Content-Type: application/octet-stream; 
+	name="0001-netfilter-Fix-wastful-cleanup-check-for-unconfirmed-.patch"
+Content-Disposition: attachment; 
+	filename="0001-netfilter-Fix-wastful-cleanup-check-for-unconfirmed-.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_i1iioim60
+
+RnJvbSA1MmRlNDU3YjNjZmQxZTk0YTUyZGYxYzNkZmNkOWRiZjM1MTFmYTBkIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBmZ2FvIDxnZnJlZS53aW5kQGdtYWlsLmNvbT4KRGF0ZTogTW9u
+LCAyMCBPY3QgMjAxNCAwNzoxODowNSAtMDcwMApTdWJqZWN0OiBbUEFUQ0ggMS8xXSBuZXRmaWx0
+ZXI6IEZpeCB3YXN0ZnVsIGNsZWFudXAgY2hlY2sgZm9yIHVuY29uZmlybWVkIGNvbm4gaW4gZ2V0
+X25leHRfY29ycHNlCgpUaGUgZnVuY3Rpb24gZ2V0X25leHRfY29ycHNlIGlzIHVzZWQgdG8gaXRl
+cmF0ZSB0aGUgY29ubnRyYWNrcy4KSXQgd2lsbCBjaGVjayB0aGUgcGVyIGNwdSB1bmNvbmZpcm1l
+ZCBsaXN0IG9mIGV2ZXJ5IGNwdSB0b28uCk5vdyBpdCBpcyBvbmx5IGludm9rZWQgYnkgbmZfY3Rf
+aXRlcmF0ZV9jbGVhbnVwIGluIG9uZSB3aGlsZSBsb29wLgpBY3R1YWxseSB0aGUgdW5jb25maXJt
+ZWQgbGlzdCBjb3VsZCBiZSBhY2Nlc3NlZCBjb21wbGV0ZWx5IGJ5IG9uZSBjYWxsLCB0aGVuIHRo
+ZSBvdGhlcnMgYXJlIHdhc3RmdWwuCgpTbyBtb3ZlIHRoZSB1bmNvbmZpcm1lZCBsaXN0IGNoZWNr
+IG91dHNpZGUgdGhlIGZ1bmN0aW9uIGdldF9uZXh0X2NvcnBzZSBhbmQgY3JlYXRlIG9uZSBuZXcg
+ZnVuY3Rpb24KTGV0IHRoZSBuZl9jdF9pdGVyYXRlX2NsZWFudXAgaW52b2tlcyB0aGUgbmV3IGZ1
+bmN0aW9uIGNsZWFuX3VwX3VuY29uZmlybWVkX2Nvbm50cmFja3Mgb25jZSBhZnRlciB0aGUgbG9v
+cHMuCgpTaWduZWQtb2ZmLWJ5OiBmZ2FvIDxnZnJlZS53aW5kQGdtYWlsLmNvbT4KLS0tCiBuZXQv
+bmV0ZmlsdGVyL25mX2Nvbm50cmFja19jb3JlLmMgfCAzNiArKysrKysrKysrKysrKysrKysrKysr
+KystLS0tLS0tLS0tLS0KIDEgZmlsZSBjaGFuZ2VkLCAyNCBpbnNlcnRpb25zKCspLCAxMiBkZWxl
+dGlvbnMoLSkKCmRpZmYgLS1naXQgYS9uZXQvbmV0ZmlsdGVyL25mX2Nvbm50cmFja19jb3JlLmMg
+Yi9uZXQvbmV0ZmlsdGVyL25mX2Nvbm50cmFja19jb3JlLmMKaW5kZXggNTAxNmE2OS4uYWNlN2My
+YzIgMTAwNjQ0Ci0tLSBhL25ldC9uZXRmaWx0ZXIvbmZfY29ubnRyYWNrX2NvcmUuYworKysgYi9u
+ZXQvbmV0ZmlsdGVyL25mX2Nvbm50cmFja19jb3JlLmMKQEAgLTEzNDgsNiArMTM0OCwyOCBAQCBz
+dGF0aWMgdm9pZCBuZl9jb25udHJhY2tfYXR0YWNoKHN0cnVjdCBza19idWZmICpuc2tiLCBjb25z
+dCBzdHJ1Y3Qgc2tfYnVmZiAqc2tiKQogCW5mX2Nvbm50cmFja19nZXQobnNrYi0+bmZjdCk7CiB9
+CiAKK3N0YXRpYyB2b2lkIGNsZWFuX3VwX3VuY29uZmlybWVkX2Nvbm50cmFja3Moc3RydWN0IG5l
+dCAqbmV0LAorCQlpbnQgKCppdGVyKShzdHJ1Y3QgbmZfY29ubiAqaSwgdm9pZCAqZGF0YSksCisJ
+CXZvaWQgKmRhdGEpCit7CisJc3RydWN0IG5mX2Nvbm50cmFja190dXBsZV9oYXNoICpoOworCXN0
+cnVjdCBuZl9jb25uICpjdDsKKwlzdHJ1Y3QgaGxpc3RfbnVsbHNfbm9kZSAqbjsKKwlpbnQgY3B1
+OworCisJZm9yX2VhY2hfcG9zc2libGVfY3B1KGNwdSkgeworCQlzdHJ1Y3QgY3RfcGNwdSAqcGNw
+dSA9IHBlcl9jcHVfcHRyKG5ldC0+Y3QucGNwdV9saXN0cywgY3B1KTsKKworCQlzcGluX2xvY2tf
+YmgoJnBjcHUtPmxvY2spOworCQlobGlzdF9udWxsc19mb3JfZWFjaF9lbnRyeShoLCBuLCAmcGNw
+dS0+dW5jb25maXJtZWQsIGhubm9kZSkgeworCQkJY3QgPSBuZl9jdF90dXBsZWhhc2hfdG9fY3Ry
+YWNrKGgpOworCQkJaWYgKGl0ZXIoY3QsIGRhdGEpKQorCQkJCXNldF9iaXQoSVBTX0RZSU5HX0JJ
+VCwgJmN0LT5zdGF0dXMpOworCQl9CisJCXNwaW5fdW5sb2NrX2JoKCZwY3B1LT5sb2NrKTsKKwl9
+Cit9CisKIC8qIEJyaW5nIG91dCB5YSBkZWFkISAqLwogc3RhdGljIHN0cnVjdCBuZl9jb25uICoK
+IGdldF9uZXh0X2NvcnBzZShzdHJ1Y3QgbmV0ICpuZXQsIGludCAoKml0ZXIpKHN0cnVjdCBuZl9j
+b25uICppLCB2b2lkICpkYXRhKSwKQEAgLTEzNTYsNyArMTM3OCw2IEBAIGdldF9uZXh0X2NvcnBz
+ZShzdHJ1Y3QgbmV0ICpuZXQsIGludCAoKml0ZXIpKHN0cnVjdCBuZl9jb25uICppLCB2b2lkICpk
+YXRhKSwKIAlzdHJ1Y3QgbmZfY29ubnRyYWNrX3R1cGxlX2hhc2ggKmg7CiAJc3RydWN0IG5mX2Nv
+bm4gKmN0OwogCXN0cnVjdCBobGlzdF9udWxsc19ub2RlICpuOwotCWludCBjcHU7CiAJc3Bpbmxv
+Y2tfdCAqbG9ja3A7CiAKIAlmb3IgKDsgKmJ1Y2tldCA8IG5ldC0+Y3QuaHRhYmxlX3NpemU7ICgq
+YnVja2V0KSsrKSB7CkBAIC0xMzc2LDE3ICsxMzk3LDYgQEAgZ2V0X25leHRfY29ycHNlKHN0cnVj
+dCBuZXQgKm5ldCwgaW50ICgqaXRlcikoc3RydWN0IG5mX2Nvbm4gKmksIHZvaWQgKmRhdGEpLAog
+CQlsb2NhbF9iaF9lbmFibGUoKTsKIAl9CiAKLQlmb3JfZWFjaF9wb3NzaWJsZV9jcHUoY3B1KSB7
+Ci0JCXN0cnVjdCBjdF9wY3B1ICpwY3B1ID0gcGVyX2NwdV9wdHIobmV0LT5jdC5wY3B1X2xpc3Rz
+LCBjcHUpOwotCi0JCXNwaW5fbG9ja19iaCgmcGNwdS0+bG9jayk7Ci0JCWhsaXN0X251bGxzX2Zv
+cl9lYWNoX2VudHJ5KGgsIG4sICZwY3B1LT51bmNvbmZpcm1lZCwgaG5ub2RlKSB7Ci0JCQljdCA9
+IG5mX2N0X3R1cGxlaGFzaF90b19jdHJhY2soaCk7Ci0JCQlpZiAoaXRlcihjdCwgZGF0YSkpCi0J
+CQkJc2V0X2JpdChJUFNfRFlJTkdfQklULCAmY3QtPnN0YXR1cyk7Ci0JCX0KLQkJc3Bpbl91bmxv
+Y2tfYmgoJnBjcHUtPmxvY2spOwotCX0KIAlyZXR1cm4gTlVMTDsKIGZvdW5kOgogCWF0b21pY19p
+bmMoJmN0LT5jdF9nZW5lcmFsLnVzZSk7CkBAIC0xNDExLDYgKzE0MjEsOCBAQCB2b2lkIG5mX2N0
+X2l0ZXJhdGVfY2xlYW51cChzdHJ1Y3QgbmV0ICpuZXQsCiAKIAkJbmZfY3RfcHV0KGN0KTsKIAl9
+CisKKwljbGVhbl91cF91bmNvbmZpcm1lZF9jb25udHJhY2tzKG5ldCwgaXRlciwgZGF0YSk7CiB9
+CiBFWFBPUlRfU1lNQk9MX0dQTChuZl9jdF9pdGVyYXRlX2NsZWFudXApOwogCi0tIAoxLjkuMQoK
+--089e01183b602276ec0505e3f54e--
