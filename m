@@ -1,100 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843AbaJUKZc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 06:25:32 -0400
-Received: from webmail.celad.com ([84.14.244.162]:41040 "EHLO
-	webmail.celad.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412AbaJUKZb (ORCPT
+	id S1755028AbaJUK1M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 06:27:12 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:51143 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754408AbaJUK1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 06:25:31 -0400
-X-Greylist: delayed 326 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Oct 2014 06:25:30 EDT
-Message-ID: <54463356.400@celad.com>
-Date: Tue, 21 Oct 2014 12:20:06 +0200
-From: Herve Codina <herve.codina@celad.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 21 Oct 2014 06:27:09 -0400
+Date: Tue, 21 Oct 2014 11:27:02 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-api@vger.kernel.org, devicetree@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH v2 2/5] mfd: max77693: Map charger device to its own
+ of_node
+Message-ID: <20141021102702.GH26842@x1>
+References: <1413808489-3524-1-git-send-email-k.kozlowski@samsung.com>
+ <1413808489-3524-3-git-send-email-k.kozlowski@samsung.com>
+ <20141020150630.GB26784@x1>
+ <1413817781.11298.0.camel@AMDC1943>
+ <20141021101705.GF26842@x1>
+ <1413886845.26980.18.camel@AMDC1943>
 MIME-Version: 1.0
-To: Josh Wu <josh.wu@atmel.com>, Vinod Koul <vinod.koul@intel.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        EzequielGarcia <ezequiel.garcia@free-electrons.com>,
-        Mark Brown <broonie@linaro.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        BartlomiejZolnierkiewicz <b.zolnierkie@samsung.com>,
-        Bo Shen <voice.shen@atmel.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Grzeschik <m.grzeschik@pengutronix.de>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        HuangShijie <shijie8@gmail.com>,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: Re: [PATCH 1/2] mtd: atmel_nand: use __iowrite32_copy for 32 bitcopy
-References: <1413821173-18347-1-git-send-email-vinod.koul@intel.com> <54462F6C.1030307@atmel.com>
-In-Reply-To: <54462F6C.1030307@atmel.com>
-Content-Type: text/plain; charset="windows-1252"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <1413886845.26980.18.camel@AMDC1943>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 21 Oct 2014, Krzysztof Kozlowski wrote:
 
-I didn't go deeper in atmel_nand.c code to see other accesses but old
-copy use writel_relaxed which is a macro to __raw_writel((__force u32)
-cpu_to_le32(v),c)
+> On wto, 2014-10-21 at 11:17 +0100, Lee Jones wrote:
+> > On Mon, 20 Oct 2014, Krzysztof Kozlowski wrote:
+> > 
+> > > On pon, 2014-10-20 at 16:06 +0100, Lee Jones wrote:
+> > > > On Mon, 20 Oct 2014, Krzysztof Kozlowski wrote:
+> > > > 
+> > > > > Add a "maxim,max77693-charger" of_compatible to the mfd_cell so the MFD
+> > > > > child device (the charger) will have its own of_node set. This will be
+> > > > > used by the max77693 charger driver in next patches to obtain battery
+> > > > > configuration from DTS.
+> > > > > 
+> > > > > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > > > > ---
+> > > > >  drivers/mfd/max77693.c | 5 ++++-
+> > > > >  1 file changed, 4 insertions(+), 1 deletion(-)
+> > > > > 
+> > > > > diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
+> > > > > index cf008f45968c..2277a11b6629 100644
+> > > > > --- a/drivers/mfd/max77693.c
+> > > > > +++ b/drivers/mfd/max77693.c
+> > > > > @@ -43,7 +43,10 @@
+> > > > >  
+> > > > >  static const struct mfd_cell max77693_devs[] = {
+> > > > >  	{ .name = "max77693-pmic", },
+> > > > > -	{ .name = "max77693-charger", },
+> > > > > +	{
+> > > > > +		.name = "max77693-charger",
+> > > > > +		.of_compatible = "maxim,max77693-charger",
+> > > > > +	},
+> > > > >  	{ .name = "max77693-muic", },
+> > > > >  	{ .name = "max77693-haptic", },
+> > > > >  	{
+> > > > 
+> > > > I'm guessing this can be applied separately?
+> > > 
+> > > Yes. Patch 3/5 also (it adds necessary defines and symbols for
+> > > chargers).
+> > 
+> > I'll take this patch, but I think 3/5 is required by some of the other
+> > patches in the set, no?
+> 
+> Yes, it is required by 4/5 (charger driver).
 
-__iowrite32_copy use directly __raw_writel(*src++, dst++)
+Okay, so it must go in with the others then.
 
-So we skip cpu_to_le32. Is it ok for all system using atmel_nand ?
+I need Acks for that.
 
-Best regards,
-Herve Codina
-
-
-Le 21/10/2014 12:03, Josh Wu a écrit :
-> Hi, Vinod
-> 
-> On 10/21/2014 12:06 AM, Vinod Koul wrote:
->> The driver was also using own method to do 32bit copy, turns out
->> we have a kernel API so use that instead
->>
->> Signed-off-by: Vinod Koul <vinod.koul@intel.com>
-> 
-> Thanks for the patch.
-> Acked-by: Josh Wu <josh.wu@atmel.com>
-> 
-> BTW, is there any similar kernel API that is for the read from io?
-> 
-> Best Regards,
-> Josh Wu
-> 
->> ---
->>   drivers/mtd/nand/atmel_nand.c |   10 +++-------
->>   1 files changed, 3 insertions(+), 7 deletions(-)
->>
->> diff --git a/drivers/mtd/nand/atmel_nand.c b/drivers/mtd/nand/atmel_nand.c
->> index e321c56..b03e80d 100644
->> --- a/drivers/mtd/nand/atmel_nand.c
->> +++ b/drivers/mtd/nand/atmel_nand.c
->> @@ -265,14 +265,10 @@ static void memcpy32_fromio(void *trg, const void __iomem  *src, size_t size)
->>   		*t++ = readl_relaxed(s++);
->>   }
->>   
->> -static void memcpy32_toio(void __iomem *trg, const void *src, int size)
->> +static inline void memcpy32_toio(void __iomem *trg, const void *src, int size)
->>   {
->> -	int i;
->> -	u32 __iomem *t = trg;
->> -	const u32 *s = src;
->> -
->> -	for (i = 0; i < (size >> 2); i++)
->> -		writel_relaxed(*s++, t++);
->> +	/* __iowrite32_copy use 32bit size values so divide by 4 */
->> +	__iowrite32_copy(trg, src, size/4);
->>   }
->>   
->>   /*
-> 
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org â”‚ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
