@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713AbaJUEWe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 00:22:34 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:33725 "EHLO
+	id S1754768AbaJUEWf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 00:22:35 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:33705 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754459AbaJUEOF (ORCPT
+	with ESMTP id S1754442AbaJUEN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 00:14:05 -0400
+	Tue, 21 Oct 2014 00:13:59 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: [PATCH v2 22/47] power/reset: restart-poweroff: Register with kernel poweroff handler
-Date: Mon, 20 Oct 2014 21:12:38 -0700
-Message-Id: <1413864783-3271-23-git-send-email-linux@roeck-us.net>
+        Beniamino Galvani <b.galvani@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
+Subject: [PATCH v2 20/47] mfd: rn5t618: Register poweroff handler with kernel poweroff handler
+Date: Mon, 20 Oct 2014 21:12:36 -0700
+Message-Id: <1413864783-3271-21-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1413864783-3271-1-git-send-email-linux@roeck-us.net>
 References: <1413864783-3271-1-git-send-email-linux@roeck-us.net>
@@ -25,13 +24,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020209.5445DD8C.0136,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020209.5445DD87.00F5,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.000
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 128
+X-CTCH-SenderID-TotalMessages: 116
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -52,88 +51,106 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Register with kernel poweroff handler instead of setting pm_power_off
-directly.  Register as poweroff handler of last resort since the driver
-does not really power off the system but executes a restart.
+directly. Register with low priority to reflect that the original code
+only sets pm_power_off if it was not already set.
 
-Drop remove function since it is no longer needed.
-
-Cc: Sebastian Reichel <sre@kernel.org>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Acked-by: Andrew Lunn <andrew@lunn.ch>
+Cc: Beniamino Galvani <b.galvani@gmail.com>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
-v2:
-- Use define to sepcify poweroff handler priority
-- Use devm_register_power_off_handler
-- Drop remove function since it is no longer needed
+v2: New patch
 
- drivers/power/reset/restart-poweroff.c | 33 +++++++++++++--------------------
- 1 file changed, 13 insertions(+), 20 deletions(-)
+ drivers/mfd/rn5t618.c       | 32 ++++++++++++++++----------------
+ include/linux/mfd/rn5t618.h |  2 ++
+ 2 files changed, 18 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/power/reset/restart-poweroff.c b/drivers/power/reset/restart-poweroff.c
-index edd707e..e8f8e59 100644
---- a/drivers/power/reset/restart-poweroff.c
-+++ b/drivers/power/reset/restart-poweroff.c
-@@ -12,37 +12,31 @@
-  */
- #include <linux/kernel.h>
- #include <linux/init.h>
-+#include <linux/notifier.h>
- #include <linux/platform_device.h>
- #include <linux/of_platform.h>
+diff --git a/drivers/mfd/rn5t618.c b/drivers/mfd/rn5t618.c
+index 6668571..045cd43 100644
+--- a/drivers/mfd/rn5t618.c
++++ b/drivers/mfd/rn5t618.c
+@@ -15,6 +15,8 @@
+ #include <linux/mfd/core.h>
+ #include <linux/mfd/rn5t618.h>
  #include <linux/module.h>
++#include <linux/notifier.h>
 +#include <linux/pm.h>
- #include <linux/reboot.h>
--#include <asm/system_misc.h>
+ #include <linux/regmap.h>
  
--static void restart_poweroff_do_poweroff(void)
-+static int restart_poweroff_do_poweroff(struct notifier_block *this,
-+					unsigned long unused1, void *unused2)
- {
- 	reboot_mode = REBOOT_HARD;
- 	machine_restart(NULL);
--}
+ static const struct mfd_cell rn5t618_cells[] = {
+@@ -47,16 +49,20 @@ static const struct regmap_config rn5t618_regmap_config = {
+ 	.cache_type	= REGCACHE_RBTREE,
+ };
+ 
+-static struct rn5t618 *rn5t618_pm_power_off;
 -
--static int restart_poweroff_probe(struct platform_device *pdev)
--{
--	/* If a pm_power_off function has already been added, leave it alone */
--	if (pm_power_off != NULL) {
--		dev_err(&pdev->dev,
--			"pm_power_off function already registered");
--		return -EBUSY;
--	}
- 
--	pm_power_off = &restart_poweroff_do_poweroff;
--	return 0;
+-static void rn5t618_power_off(void)
++static int rn5t618_power_off(struct notifier_block *this,
++			     unsigned long unused1, void *unused2)
+ {
++	struct rn5t618 *rn5t618 = container_of(this, struct rn5t618,
++					       poweroff_nb);
++
+ 	/* disable automatic repower-on */
+-	regmap_update_bits(rn5t618_pm_power_off->regmap, RN5T618_REPCNT,
++	regmap_update_bits(rn5t618->regmap, RN5T618_REPCNT,
+ 			   RN5T618_REPCNT_REPWRON, 0);
+ 	/* start power-off sequence */
+-	regmap_update_bits(rn5t618_pm_power_off->regmap, RN5T618_SLPCNT,
++	regmap_update_bits(rn5t618->regmap, RN5T618_SLPCNT,
+ 			   RN5T618_SLPCNT_SWPWROFF, RN5T618_SLPCNT_SWPWROFF);
++
 +	return NOTIFY_DONE;
  }
  
--static int restart_poweroff_remove(struct platform_device *pdev)
--{
--	if (pm_power_off == &restart_poweroff_do_poweroff)
--		pm_power_off = NULL;
-+static struct notifier_block restart_power_off_handler = {
-+	.notifier_call = restart_poweroff_do_poweroff,
-+	.priority = POWEROFF_PRIORITY_FALLBACK,
-+};
+ static int rn5t618_i2c_probe(struct i2c_client *i2c,
+@@ -85,23 +91,17 @@ static int rn5t618_i2c_probe(struct i2c_client *i2c,
+ 		return ret;
+ 	}
  
--	return 0;
-+static int restart_poweroff_probe(struct platform_device *pdev)
-+{
-+	return devm_register_power_off_handler(&pdev->dev,
-+					      &restart_power_off_handler);
+-	if (!pm_power_off) {
+-		rn5t618_pm_power_off = priv;
+-		pm_power_off = rn5t618_power_off;
+-	}
++	priv->poweroff_nb.notifier_call = rn5t618_power_off;
++	priv->poweroff_nb.priority = POWEROFF_PRIORITY_LOW;
++	ret = devm_register_power_off_handler(&i2c->dev, &priv->poweroff_nb);
++	if (ret)
++		dev_warn(&i2c->dev, "Failed to register poweroff handler\n");
+ 
+ 	return 0;
  }
  
- static const struct of_device_id of_restart_poweroff_match[] = {
-@@ -52,7 +46,6 @@ static const struct of_device_id of_restart_poweroff_match[] = {
+ static int rn5t618_i2c_remove(struct i2c_client *i2c)
+ {
+-	struct rn5t618 *priv = i2c_get_clientdata(i2c);
+-
+-	if (priv == rn5t618_pm_power_off) {
+-		rn5t618_pm_power_off = NULL;
+-		pm_power_off = NULL;
+-	}
+-
+ 	mfd_remove_devices(&i2c->dev);
+ 	return 0;
+ }
+diff --git a/include/linux/mfd/rn5t618.h b/include/linux/mfd/rn5t618.h
+index c72d534..3b0f0e6 100644
+--- a/include/linux/mfd/rn5t618.h
++++ b/include/linux/mfd/rn5t618.h
+@@ -14,6 +14,7 @@
+ #ifndef __LINUX_MFD_RN5T618_H
+ #define __LINUX_MFD_RN5T618_H
  
- static struct platform_driver restart_poweroff_driver = {
- 	.probe = restart_poweroff_probe,
--	.remove = restart_poweroff_remove,
- 	.driver = {
- 		.name = "poweroff-restart",
- 		.owner = THIS_MODULE,
++#include <linux/notifier.h>
+ #include <linux/regmap.h>
+ 
+ #define RN5T618_LSIVER			0x00
+@@ -223,6 +224,7 @@ enum {
+ 
+ struct rn5t618 {
+ 	struct regmap *regmap;
++	struct notifier_block poweroff_nb;
+ };
+ 
+ #endif /* __LINUX_MFD_RN5T618_H */
 -- 
 1.9.1
 
