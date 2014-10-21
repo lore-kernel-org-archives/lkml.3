@@ -1,141 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932419AbaJUNC0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 09:02:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21912 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755351AbaJUNCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 09:02:25 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, Andy Whitcroft <apw@canonical.com>,
-        Joe Perches <joe@perches.com>
-Subject: [PATCH V3] scripts, checkpatch.pl, provide a better output message for commit id format
-Date: Tue, 21 Oct 2014 09:02:17 -0400
-Message-Id: <1413896537-8045-1-git-send-email-prarit@redhat.com>
+	id S932483AbaJUND1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 09:03:27 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:51775 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932435AbaJUND0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 09:03:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <1413775748-22478-1-git-send-email-zhangwm@marvell.com>
+References: <1413775748-22478-1-git-send-email-zhangwm@marvell.com>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Tue, 21 Oct 2014 09:02:59 -0400
+X-Google-Sender-Auth: VYMuLxFKG8TxCLq6vQhr43hq76Y
+Message-ID: <CALZtONB-qX-qL4BnCxadhKc6v60mNtrv8UxinhEwehtiff6S3g@mail.gmail.com>
+Subject: Re: [PATCH] drivers: base: update cpu offline info when do hotplug
+To: Neil Zhang <zhangwm@marvell.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I tested this using both lower and upper case 'c' with the following commit
-text:
+On Sun, Oct 19, 2014 at 11:29 PM, Neil Zhang <zhangwm@marvell.com> wrote:
+> The current per-cpu offline info won't be updated if it is
+> hotplugged in/out by a kernel governer.
+> Let's update it via cpu notifier.
+>
+> Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+> ---
+>  drivers/base/cpu.c |   25 +++++++++++++++++++++++++
+>  1 file changed, 25 insertions(+)
+>
+> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+> index 006b1bc..9d61824 100644
+> --- a/drivers/base/cpu.c
+> +++ b/drivers/base/cpu.c
+> @@ -418,10 +418,35 @@ static void __init cpu_dev_register_generic(void)
+>  #endif
+>  }
+>
+> +static int device_hotplug_notifier(struct notifier_block *nfb,
+> +                                     unsigned long action, void *hcpu)
+> +{
+> +       unsigned int cpu = (unsigned long)hcpu;
+> +       struct device *dev = get_cpu_device(cpu);
+> +       int ret;
+> +
+> +       switch (action & ~CPU_TASKS_FROZEN) {
+> +       case CPU_ONLINE:
+> +               dev->offline = false;
+> +               ret = NOTIFY_OK;
+> +               break;
+> +       case CPU_DYING:
+> +               dev->offline = true;
 
-Derp, derpy derp.   Derps derpy derpy derp derp derp derp.
-Some other text besides derp.
-Stuff.
+one thing i just thought of here, since dev->offline is getting set
+here, can you remove it being set in drivers/base/core.c at
+device_online() and device_offline() ?  That's probably redundant now
+right?
 
-11 chars, SHOULD FAIL due to size
-commit 1234567890a
 
-12 chars, SHOULD FAIL with missing commit info warning
-commit 1234567890ab
-
-13 chars, SHOULD FAIL with missing commit info warning
-commit 1234567890abc
-
-14 chars, SHOULD FAIL with missing commit info warning
-commit 1234567890abcd
-
-11 chars, SHOULD FAIL due to size
-commit 1234567890a, xxxx
-
-12 chars, SHOULD FAIL with missing commit info warning
-commit 1234567890ab, yyyy
-
-13 chars, SHOULD FAIL with missing commit info warning
-commit 1234567890abc, yyyy
-
-14 chars, SHOULD FAIL with missing commit info warning
-commit 1234567890abcd, yyyy
-
-commit 1234567890f
-("11 chars, separated into two lines SHOULD FAIL")
-
-commit 1234567890af
-("12 chars, separated into two lines")
-
-commit 1234567890abf
-("13 chars, separated into two lines")
-
-commit 1234567890abcf
-("14 chars, separated into two lines")
-
-commit 1234567890f ("11 chars, one line SHOULD FAIL")
-
-commit 1234567890af ("12 chars, one line")
-
-commit 1234567890abf ("13 chars, one line")
-
-commit 1234567890abcf ("14 chars, one line")
-
-P.
-----8<----
-
-I put together a patch with an incorrect format and the following error
-was returned by checkpatch.pl:
-
-ERROR: Please use 12 or more chars for the git commit ID like: 'Commit
-09ec54429c6d ("clocksource: Move cycle_last validation to core code")'
-Commit 09ec54429c6d10f87d1f084de53ae2c1c3a81108, clocksource: Move
-
-As can be seen by the output the commit ID length is accurate, and it is the
-formatting that is generating an error.  The message is confusing and should
-be separated into two warnings, one for the git commit ID length, and the other
-for the format.
-
-Cc: Andy Whitcroft <apw@canonical.com>
-Cc: Joe Perches <joe@perches.com>
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-
-[v2]: Add separate messages for warnings instead of one global format
-warning.
-[v3]: Add check for improperly formatted git ids as well.
----
- scripts/checkpatch.pl |   26 ++++++++++++++++----------
- 1 file changed, 16 insertions(+), 10 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 374abf4..5bdbadd 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2160,21 +2160,27 @@ sub process {
- 			      "Remove Gerrit Change-Id's before submitting upstream.\n" . $herecurr);
- 		}
- 
--# Check for improperly formed commit descriptions
-+# Check for git id commit length and improperly formed commit descriptions
- 		if ($in_commit_log &&
--		    $line =~ /\bcommit\s+[0-9a-f]{5,}/i &&
--		    !($line =~ /\b[Cc]ommit [0-9a-f]{12,40} \("/ ||
--		      ($line =~ /\b[Cc]ommit [0-9a-f]{12,40}\s*$/ &&
--		       defined $rawlines[$linenr] &&
--		       $rawlines[$linenr] =~ /^\s*\("/))) {
--			$line =~ /\b(c)ommit\s+([0-9a-f]{5,})/i;
-+		    $line =~ /\b[Cc]ommit\s+[0-9a-f]{5,}/i &&
-+		    !($line =~ /\b[Cc]ommit [0-9a-f]{12,40}/ )) {
-+			ERROR("GIT_COMMIT_ID_12_CHARS",
-+			      "Please use 12 or more chars for the git commit ID\n" . $herecurr);
-+		} elsif ($in_commit_log &&
-+			 $line =~ /\b[Cc]ommit [0-9a-f]{12,40}/ &&
-+			 !($line =~ /\b[Cc]ommit [0-9a-f]{12,40} \("/ ||
-+			   ($line =~ /\b[Cc]ommit [0-9a-f]{12,40}\s*$/ &&
-+			    defined $rawlines[$linenr] &&
-+			    $rawlines[$linenr] =~ /^\s*\("/))) {
-+			$line =~ /\b(c)ommit\s+([0-9a-f]{12,40})/i;
- 			my $init_char = $1;
- 			my $orig_commit = lc($2);
- 			my $id = '01234567890ab';
- 			my $desc = 'commit description';
--		        ($id, $desc) = git_commit_info($orig_commit, $id, $desc);
--			ERROR("GIT_COMMIT_ID",
--			      "Please use 12 or more chars for the git commit ID like: '${init_char}ommit $id (\"$desc\")'\n" . $herecurr);
-+			($id, $desc) = git_commit_info($orig_commit,
-+						       $id, $desc);
-+			ERROR("GIT_COMMIT_ID_DESCRIPTION_FORMAT",
-+			      "Please format the git commit ID like: '${init_char}ommit $id (\"$desc\")'\n" . $herecurr);
- 		}
- 
- # Check for added, moved or deleted files
--- 
-1.7.9.3
-
+> +               ret = NOTIFY_OK;
+> +               break;
+> +       default:
+> +               ret = NOTIFY_DONE;
+> +               break;
+> +       }
+> +
+> +       return ret;
+> +}
+> +
+>  void __init cpu_dev_init(void)
+>  {
+>         if (subsys_system_register(&cpu_subsys, cpu_root_attr_groups))
+>                 panic("Failed to register CPU subsystem");
+>
+>         cpu_dev_register_generic();
+> +       cpu_notifier(device_hotplug_notifier, 0);
+>  }
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
