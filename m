@@ -1,71 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500AbaJUH1g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 03:27:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43404 "EHLO mx2.suse.de"
+	id S1754545AbaJUH1l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 03:27:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43438 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754470AbaJUH1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 03:27:34 -0400
-Date: Tue, 21 Oct 2014 18:27:25 +1100
-From: NeilBrown <neilb@suse.de>
-To: Ronny Egner <ronnyegner@ronnyegner-consulting.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: What happened with the Patch "New RAID library supporting up to
- six parities"
-Message-ID: <20141021182725.016ec0e1@notabene.brown>
-In-Reply-To: <D06BCADE.40140%ronnyegner@ronnyegner-consulting.de>
-References: <D06BCADE.40140%ronnyegner@ronnyegner-consulting.de>
-X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.23; x86_64-suse-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/FErkfV56yid2c/KMS6NA=_J"; protocol="application/pgp-signature"
+	id S1754503AbaJUH1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 03:27:37 -0400
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "\\\"Rafael J. Wysocki\\\"" <rjw@rjwysocki.net>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>, David Rientjes <rientjes@google.com>,
+        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: [PATCH 4/4] PM: convert do_each_thread to for_each_process_thread
+Date: Tue, 21 Oct 2014 09:27:15 +0200
+Message-Id: <1413876435-11720-5-git-send-email-mhocko@suse.cz>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1413876435-11720-1-git-send-email-mhocko@suse.cz>
+References: <1413876435-11720-1-git-send-email-mhocko@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/FErkfV56yid2c/KMS6NA=_J
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+as per 0c740d0afc3b (introduce for_each_thread() to replace the buggy
+while_each_thread()) get rid of do_each_thread { } while_each_thread()
+construct and replace it by a more error prone for_each_thread.
 
-On Tue, 21 Oct 2014 06:33:47 +0000 Ronny Egner
-<ronnyegner@ronnyegner-consulting.de> wrote:
+This patch doesn't introduce any user visible change.
 
-> Dear All,
->=20
-> i was wondering what happened with the patch posted by Andrea Mazzoleni
-> back in Februrary 2014 (this Thread:
-> http://thread.gmane.org/gmane.linux.kernel/1654735).
->=20
-> Why wash=C2=B4t it added to the code? Something missing/wrong?
->=20
-> In my opinion the posted patch is awesome and would enable a unique
-> feature that no other UNIX-like operating system currently has.
->=20
+Suggested-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ kernel/power/process.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-Could you report your test results please.
+diff --git a/kernel/power/process.c b/kernel/power/process.c
+index a397fa161d11..7fd7b72554fe 100644
+--- a/kernel/power/process.c
++++ b/kernel/power/process.c
+@@ -46,13 +46,13 @@ static int try_to_freeze_tasks(bool user_only)
+ 	while (true) {
+ 		todo = 0;
+ 		read_lock(&tasklist_lock);
+-		do_each_thread(g, p) {
++		for_each_process_thread(g, p) {
+ 			if (p == current || !freeze_task(p))
+ 				continue;
+ 
+ 			if (!freezer_should_skip(p))
+ 				todo++;
+-		} while_each_thread(g, p);
++		}
+ 		read_unlock(&tasklist_lock);
+ 
+ 		if (!user_only) {
+@@ -93,11 +93,11 @@ static int try_to_freeze_tasks(bool user_only)
+ 
+ 		if (!wakeup) {
+ 			read_lock(&tasklist_lock);
+-			do_each_thread(g, p) {
++			for_each_process_thread(g, p) {
+ 				if (p != current && !freezer_should_skip(p)
+ 				    && freezing(p) && !frozen(p))
+ 					sched_show_task(p);
+-			} while_each_thread(g, p);
++			}
+ 			read_unlock(&tasklist_lock);
+ 		}
+ 	} else {
+@@ -219,11 +219,11 @@ void thaw_processes(void)
+ 	thaw_workqueues();
+ 
+ 	read_lock(&tasklist_lock);
+-	do_each_thread(g, p) {
++	for_each_process_thread(g, p) {
+ 		/* No other threads should have PF_SUSPEND_TASK set */
+ 		WARN_ON((p != curr) && (p->flags & PF_SUSPEND_TASK));
+ 		__thaw_task(p);
+-	} while_each_thread(g, p);
++	}
+ 	read_unlock(&tasklist_lock);
+ 
+ 	WARN_ON(!(curr->flags & PF_SUSPEND_TASK));
+@@ -246,10 +246,10 @@ void thaw_kernel_threads(void)
+ 	thaw_workqueues();
+ 
+ 	read_lock(&tasklist_lock);
+-	do_each_thread(g, p) {
++	for_each_process_thread(g, p) {
+ 		if (p->flags & (PF_KTHREAD | PF_WQ_WORKER))
+ 			__thaw_task(p);
+-	} while_each_thread(g, p);
++	}
+ 	read_unlock(&tasklist_lock);
+ 
+ 	schedule();
+-- 
+2.1.1
 
-NeilBrown
-
---Sig_/FErkfV56yid2c/KMS6NA=_J
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBVEYK3Tnsnt1WYoG5AQLvThAAuOyYmflYe4NoG9EsHzSShOiG0h5d2ubI
-SEnvRcSQ18/3+QSmh8KT9/l3CVUpODi8tM3vmqPao+Rd3S/nMKaSQLPTCr72gWBr
-CFPNnqJk+cAGZ/b6sbs+MHtQUmhkPRx6y06G06CDK0OL91MA0kg88pnqe35MTlrI
-aGK73DypoUFx4SKYO/beJjEweXsheALCfj2CU4XTKO0cJGv98LreqM63lIhD1nXB
-ZM0ewuPIzPngL2qFSX9WHW0SE+Xnnb34feOxO/4vUYsyBDnf5/Wkm3slNoI8sjMY
-324Cq7r3mHFYnA4/Hv6kSPnDu6asdpO1cx01dRGa8n7XAHsao5cx61vpC2TQX34+
-O8lg+VNrcpobA1yOK4OzypBCJmhmHWK6tcV2uSwNx8pgnZU03akpsCndjZZO8lBG
-H2RVoR0ZY6k4DAQpzBWkNoFBu6+YTOhX96j+wWJ0bbFNVEif52kGFJXaodvlqu8t
-rl9E4hJnCKihkf8ERq83gf6SruCkhLp0sLplFVUdTuOvM1v20amXIMDQJL9v2jJV
-ckJ8PK/yWO2J/y+w0TpoPTEf0ZXRs1Q0g1mLeruGIvY3iC+VcDiGdnfDe7yAlBmu
-f9uidwo+mB3sgDAm7Fl8iWwMVMJ+BQ7SUoWf0NEQlHeZjEfPcHNZSSGyJsxcW/AO
-ES3QOwOj0Gw=
-=6hwM
------END PGP SIGNATURE-----
-
---Sig_/FErkfV56yid2c/KMS6NA=_J--
