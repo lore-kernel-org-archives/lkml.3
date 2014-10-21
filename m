@@ -1,81 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754064AbaJVB12 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 21:27:28 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:43709 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753077AbaJVB11 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 21:27:27 -0400
-Message-ID: <544707F3.1020505@atmel.com>
-Date: Wed, 22 Oct 2014 09:27:15 +0800
-From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1754104AbaJVB2j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 21:28:39 -0400
+Received: from mga01.intel.com ([192.55.52.88]:61975 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752922AbaJVB2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 21:28:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,764,1406617200"; 
+   d="asc'?scan'208";a="618041189"
+From: "Rustad, Mark D" <mark.d.rustad@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/sysctl: Resolve missing-field-initializers
+ warnings
+Thread-Topic: [PATCH] kernel/sysctl: Resolve missing-field-initializers
+ warnings
+Thread-Index: AQHP56PEt3kx/A+vRUGQ12eDG0yXvpw2mxwrgATPZICAABhmgA==
+Date: Tue, 21 Oct 2014 20:34:32 +0000
+Message-ID: <F4A50114-6182-4448-A9E7-B0D68A6F615A@intel.com>
+References: <1413286868-21870-1-git-send-email-jeffrey.t.kirsher@intel.com>
+ <87a94szydt.fsf@x220.int.ebiederm.org>
+ <20141021120711.0ddb53adb4fdecf241826473@linux-foundation.org>
+In-Reply-To: <20141021120711.0ddb53adb4fdecf241826473@linux-foundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [134.134.176.66]
+Content-Type: multipart/signed;
+	boundary="Apple-Mail=_EAF71888-35FD-4BB3-9E16-7E84958625A5";
+	protocol="application/pgp-signature"; micalg=pgp-sha1
 MIME-Version: 1.0
-To: Peter Rosin <peda@axentia.se>
-CC: "'alsa-devel@alsa-project.org'" <alsa-devel@alsa-project.org>,
-        "Takashi Iwai" <tiwai@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, "Mark Brown" <broonie@kernel.org>
-Subject: Re: [alsa-devel] [PATCH] ASoC: atmel_ssc_dai: Track playback and
- capture CMR dividers separately.
-References: <a541333cf46b4c61b790df927d4b315d@EMAIL.axentia.se> <5445BCBF.5090002@atmel.com> <dc4461593ddb4d539f2db74b69bab98c@EMAIL.axentia.se> <544620C8.4040001@atmel.com> <8559eca320324092be82f7d942606102@EMAIL.axentia.se>
-In-Reply-To: <8559eca320324092be82f7d942606102@EMAIL.axentia.se>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+--Apple-Mail=_EAF71888-35FD-4BB3-9E16-7E84958625A5
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain;
+	charset=us-ascii
 
-On 10/21/2014 09:05 PM, Peter Rosin wrote:
-> I did some further tests, and the following program fails without the patch:
+On Oct 21, 2014, at 12:07 PM, Andrew Morton <akpm@linux-foundation.org> =
+wrote:
 
-With the patch, it is OK?
+> On Sat, 18 Oct 2014 17:39:10 -0700 ebiederm@xmission.com (Eric W. =
+Biederman) wrote:
+>=20
+>> Jeff Kirsher <jeffrey.t.kirsher@intel.com> writes:
+>>=20
+>>> From: Mark Rustad <mark.d.rustad@intel.com>
+>>>=20
+>>> Resolve missing-field-initializers warnings in W=3D2 builds by
+>>> using designated initialization.
+>>=20
+>> ick.  No.
+>>=20
+>> That gcc warning makes no sense.  In this case heeding it makes the =
+code
+>> significantly uglier and significantly more confusing.
+>>=20
+>=20
+> Yeah, it's not pretty.
+>=20
+>>> --- a/kernel/sysctl.c
+>>> +++ b/kernel/sysctl.c
+>>> @@ -257,7 +257,7 @@ static struct ctl_table sysctl_base_table[] =3D =
+{
+>>> 		.mode		=3D 0555,
+>>> 		.child		=3D dev_table,
+>>> 	},
+>>> -	{ }
+>>> +	{ .procname =3D NULL }
+>>> };
+>=20
+> We use { } to mean "all zero" in 12 squillion places.  Do they all =
+warn
+> or is there something special about this site?
 
-> #include <sys/ioctl.h>
-> #include <unistd.h>
-> #include <fcntl.h>
-> #include <sys/soundcard.h>
->
-> int
-> main(void)
-> {
-> 	int fd;
-> 	int format;
-> 	int channels;
->
-> 	if ((fd = open("/dev/dsp", O_WRONLY, 0)) == -1) {
-> 		perror("open");
-> 		return 1;
-> 	}
-> 	format = AFMT_S16_LE;
-> 	if (ioctl(fd, SNDCTL_DSP_SETFMT, &format) == -1) {
-> 		perror("SNDCTL_DSP_SETFMT");
-> 		return 1;
-> 	}
-> 	channels = 2;
-> 	if (ioctl(fd, SNDCTL_DSP_CHANNELS, &channels) == -1) {
-> 		perror("SNDCTL_DSP_CHANNELS");
-> 		return 1;
-> 	}
-> 	return 0;
-> }
->
-> Output:
-> SNDCTL_DSP_CHANNELS: Device or resource busy
+Well, about 6 squillion of them are { }, a GCC extension, and the other =
+6 squillion are { 0 }. Both forms generate the warning. There is nothing =
+special about this site. I just was resolving warnings in order to find =
+some that had some significance. A flood of 125,000 warnings is too =
+awful to look at. I got it down to around 1,500 and did find a few =
+hazards and sent patches to address them, which have been accepted in =
+one form or another.
 
-This return from codec or from atmel_ssc_dai?
+I had sent patches to add diagnostic control macros to allow a warning =
+to be turned off for a range of code. I would have liked to use them to =
+provide something like a ZERO_ENTRY macro that would have looked =
+something like this:
 
-> (I admin to having edited the above code slightly in this mail, so I might have
-> introduced some silly bug, but you get what I mean, just open the device
-> and request some parameters, and boom: -EBUSY)
->
-> Cheers,
-> Peter
->
+#define ZERO_ENTRY DIAG_PUSH DIAG_IGNORE(missing-field-initializers) { 0 =
+} DIAG_POP
 
-Best Regards,
-Bo Shen
+which would have provided a standard way to get a zero entry that would =
+have avoided the warnings. Borislav was quite opposed to the notion of =
+diagnostic control macros. I rather like the notion as long as their use =
+is tightly controlled.
+
+I'm sure that we both feel that there should be a form that the compiler =
+does not generate this warning for as a preferred solution. The =
+designated initialization is at best a 3rd-best solution, though naming =
+the field used to identify the end of the table is not a bad thing =
+either.
+
+I do like enabling lots of additional warnings to find problems in code, =
+but when it results in such a flood of messages it is not a very useful =
+approach, hence my tendency to want to address them somehow, so that =
+meaningful ones can be noticed.
+
+--=20
+Mark Rustad, Networking Division, Intel Corporation
+
+
+--Apple-Mail=_EAF71888-35FD-4BB3-9E16-7E84958625A5
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="signature.asc"
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Message signed with OpenPGP using GPGMail
+
+-----BEGIN PGP SIGNATURE-----
+Comment: GPGTools - http://gpgtools.org
+
+iQIcBAEBAgAGBQJURsNYAAoJEDwO/+eO4+5u1i4P/Rnz1/JXrNQ7Yq2BgFPZzPbV
+w8TmNBsv9EEiBhdd6H7l7GN0bzsrtVCjd+brFkl9GDlLPoCJaKNjqq1VluaiIzXi
+vFqTiV2GDgiDanibbWFpI0OhPUxnkFgBSsrD4dJ08JHWMXJLud5iDsrrdXtGVjI7
+vF4iwHicognd8m5s9Zn7K0C1F0tdkpczLOInxU4LxgYT7u1JO2kz7Ap3zXcfDG0r
+wQnpLP9KvN0luIVkM36ZaTAQU0MMW+7XVxU+zKTiSM4Ox4D5dPBzwARs5EpD+hMN
+7Mx/arD7tc6SskDgABMWNSbSzPDEBjWfl0PW0ylEzEr+yjnSz0QS3FHNmFa5oiq+
+PtZx00xBR7k/tij/YJOkFtbLTKCSM1+iTqUC2S37+KqhZvdTaYpYl2P9NNSGITp+
+mIdIodbchAG4xOuK5iFSN9zQDpNOgb9RPbnA0by64c432W8k8tNHQH5d5x/u2dYZ
+PjueCf80QKwveFnj/VQeyCKIpIDzKVu3sdIyllNeAdtzLobI/JzpGLTRaQoxW1kk
+a7DxVYFTPCEOm2D+8YZz78pR/WMsGqa6LhteERsF50/ZBQR6oOMjOyvy7JptUy0f
+0IScIGTS1dUF8HqwqPPi2TCZ+Xt/14kbmI9xrdnU3PK6ozXQ9YossxqeuXeThVLq
+Eu+XU9dpjmyAXn2923+k
+=NGll
+-----END PGP SIGNATURE-----
+
+--Apple-Mail=_EAF71888-35FD-4BB3-9E16-7E84958625A5--
