@@ -1,142 +1,472 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932128AbaJUAVK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Oct 2014 20:21:10 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:43917 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752673AbaJUAVH (ORCPT
+	id S1754072AbaJUAZr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Oct 2014 20:25:47 -0400
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:40305 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753335AbaJUAZp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Oct 2014 20:21:07 -0400
+	Mon, 20 Oct 2014 20:25:45 -0400
+Date: Mon, 20 Oct 2014 19:23:32 -0500
+From: Eric Rost <eric.rost@mybabylon.net>
+To: gregkh@linuxfoundation.org, jason@lakedaemon.net, jake@lwn.net,
+        antonysaraev@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: skein: Loadable Module Support
+Message-ID: <20141021002332.GA12008@localhost>
 MIME-Version: 1.0
-In-Reply-To: <44072106-c0f3-46b8-b2b5-9b1cbd1b7d88@email.android.com>
-References: <1413235430-22944-1-git-send-email-adityakali@google.com>
- <1413235430-22944-8-git-send-email-adityakali@google.com> <20141016211236.GA4308@mail.hallyn.com>
- <CAGr1F2EH0ynfFihTh1dv=n1faxUh0zS3ggk303bwGnDnW2PUCw@mail.gmail.com>
- <20141016214710.GA4759@mail.hallyn.com> <87iojgmy3o.fsf@x220.int.ebiederm.org>
- <CALCETrUC=yW72d2hDzjESmZAt85x1WcGz4L-DrtY5YXAQxbpMA@mail.gmail.com> <44072106-c0f3-46b8-b2b5-9b1cbd1b7d88@email.android.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 20 Oct 2014 17:20:44 -0700
-Message-ID: <CALCETrXhGnBM_xx=Auz3WRQXkqhGGTWuZN=PU+A9HZ7Ek27FLA@mail.gmail.com>
-Subject: Re: [PATCHv1 7/8] cgroup: cgroup namespace setns support
-To: "Eric W.Biederman" <ebiederm@xmission.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, Aditya Kali <adityakali@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 19, 2014 at 9:55 PM, Eric W.Biederman <ebiederm@xmission.com> wrote:
->
->
-> On October 19, 2014 1:26:29 PM CDT, Andy Lutomirski <luto@amacapital.net> wrote:
->>On Sat, Oct 18, 2014 at 10:23 PM, Eric W. Biederman
->><ebiederm@xmission.com> wrote:
->>> "Serge E. Hallyn" <serge@hallyn.com> writes:
->>>
->>>> Quoting Aditya Kali (adityakali@google.com):
->>>>> On Thu, Oct 16, 2014 at 2:12 PM, Serge E. Hallyn <serge@hallyn.com>
->>wrote:
->>>>> > Quoting Aditya Kali (adityakali@google.com):
->>>>> >> setns on a cgroup namespace is allowed only if
->>>>> >> * task has CAP_SYS_ADMIN in its current user-namespace and
->>>>> >>   over the user-namespace associated with target cgroupns.
->>>>> >> * task's current cgroup is descendent of the target
->>cgroupns-root
->>>>> >>   cgroup.
->>>>> >
->>>>> > What is the point of this?
->>>>> >
->>>>> > If I'm a user logged into
->>>>> > /lxc/c1/user.slice/user-1000.slice/session-c12.scope and I start
->>>>> > a container which is in
->>>>> > /lxc/c1/user.slice/user-1000.slice/session-c12.scope/x1
->>>>> > then I will want to be able to enter the container's cgroup.
->>>>> > The container's cgroup root is under my own (satisfying the
->>>>> > below condition0 but my cgroup is not a descendent of the
->>>>> > container's cgroup.
->>>>> >
->>>>> This condition is there because we don't want to do implicit cgroup
->>>>> changes when a process attaches to another cgroupns. cgroupns tries
->>to
->>>>> preserve the invariant that at any point, your current cgroup is
->>>>> always under the cgroupns-root of your cgroup namespace. But in
->>your
->>>>> example, if we allow a process in "session-c12.scope" container to
->>>>> attach to cgroupns root'ed at "session-c12.scope/x1" container
->>>>> (without implicitly moving its cgroup), then this invariant won't
->>>>> hold.
->>>>
->>>> Oh, I see.  Guess that should be workable.  Thanks.
->>>
->>> Which has me looking at what the rules are for moving through
->>> the cgroup hierarchy.
->>>
->>> As long as we have write access to cgroup.procs and are allowed
->>> to open the file for write, we can move any of our own tasks
->>> into the cgroup.  So the cgroup namespace rules don't seem
->>> to be a problem.
->>>
->>> Andy can you please take a look at the permission checks in
->>> __cgroup_procs_write.
->>
->>The actual requirements for calling that function haven't changed,
->>right?  IOW, what does this have to do with cgroupns?
->
-> Excluding user namespaces the requirements have not changed.
->
-> The immediate correlation is that to enter a cgroupns you must first put your process in one of it's cgroups.
->
-> So I was examining what it would take to enter the cgroup of cgroupns.
->
->> Is the idea
->>that you want a privileged user wrt a cgroupns's userns to be able to
->>use this?  If so:
->>
->>Yes, that current_cred() thing is bogus.  (Actually, this is probably
->>exploitable right now if any cgroup.procs inode anywhere on the system
->>lets non-root write.)  (Can we have some kernel debugging option that
->>makes any use of current_cred() in write(2) warn?)
->>
->>We really need a weaker version of may_ptrace for this kind of stuff.
->>Maybe the existing may_ptrace stuff is okay, actually.  But this is
->>completely missing group checks, cap checks, capabilities wrt the
->>userns, etc.
->>
->>Also, I think that, if this version of the patchset allows non-init
->>userns to unshare cgroupns, then the issue of what permission is
->>needed to lock the cgroup hierarchy like that needs to be addressed,
->>because unshare(CLONE_NEWUSER|CLONE_NEWCGROUP) will effectively pin
->>the calling task with no permission required.  Bolting on a fix later
->>will be a mess.
->
-> I imagine the pinning would be like the userns.
->
-> Ah but there is a potentially serious issue with the pinning.
-> With pinning we can make it impossible for root to move us to a different cgroup.
->
-> I am not certain how serious that is but it bears thinking about.
-> If we don't implement pinning we should be able to implent everything with just filesystem mount options, and no new namespace required.
->
-> Sigh.
->
-> I am too tired tonight to see the end game in this.
+Adds loadable module support for Skein256, Skein512, and Skein1024
+NOTE: skein1024_generic does not load, sending patch for feedback!
+I don't understand why skein256_generic and skein512_generic load no
+problem but skein1024_generic gives ERROR: Invalid argument from
+modprobe.
 
-Possible solution:
+Signed-off-by: Eric Rost <eric.rost@mybabylon.net>
+---
+ drivers/staging/skein/Kconfig             | 12 +++++
+ drivers/staging/skein/Makefile            |  6 +++
+ drivers/staging/skein/skein.c             | 11 +++-
+ drivers/staging/skein/skein.h             |  6 +++
+ drivers/staging/skein/skein1024_generic.c | 88 +++++++++++++++++++++++++++++++
+ drivers/staging/skein/skein256_generic.c  | 88 +++++++++++++++++++++++++++++++
+ drivers/staging/skein/skein512_generic.c  | 88 +++++++++++++++++++++++++++++++
+ 7 files changed, 298 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/staging/skein/skein1024_generic.c
+ create mode 100644 drivers/staging/skein/skein256_generic.c
+ create mode 100644 drivers/staging/skein/skein512_generic.c
 
-Ditch the pinning.  That is, if you're outside a cgroupns (or you have
-a non-ns-confined cgroupfs mounted), then you can move a task in a
-cgroupns outside of its root cgroup.  If you do this, then the task
-thinks its cgroup is something like "../foo" or "../../foo".
+diff --git a/drivers/staging/skein/Kconfig b/drivers/staging/skein/Kconfig
+index b9172bf..e260111 100644
+--- a/drivers/staging/skein/Kconfig
++++ b/drivers/staging/skein/Kconfig
+@@ -15,6 +15,18 @@ config CRYPTO_SKEIN
+ 	  for more information.  This module depends on the threefish block
+ 	  cipher module.
+ 
++config CRYPTO_SKEIN_256
++	tristate "Skein256 driver"
++	select CRYPTO_SKEIN
++
++config CRYPTO_SKEIN_512
++	tristate "Skein512 driver"
++	select CRYPTO_SKEIN
++
++config CRYPTO_SKEIN_1024
++	tristate "Skein1024 driver"
++	select CRYPTO_SKEIN
++
+ config CRYPTO_THREEFISH
+ 	bool "Threefish tweakable block cipher"
+ 	depends on (X86 || UML_X86) && 64BIT && CRYPTO
+diff --git a/drivers/staging/skein/Makefile b/drivers/staging/skein/Makefile
+index a14aadd..1be01fe 100644
+--- a/drivers/staging/skein/Makefile
++++ b/drivers/staging/skein/Makefile
+@@ -5,5 +5,11 @@ obj-$(CONFIG_CRYPTO_SKEIN) +=   skein.o \
+ 				skein_api.o \
+ 				skein_block.o
+ 
++obj-$(CONFIG_CRYPTO_SKEIN_256) += skein256_generic.o
++
++obj-$(CONFIG_CRYPTO_SKEIN_512) += skein512_generic.o
++
++obj-$(CONFIG_CRYPTO_SKEIN_1024) += skein1024_generic.o
++
+ obj-$(CONFIG_CRYPTO_THREEFISH) += threefish_block.o \
+ 				  threefish_api.o
+diff --git a/drivers/staging/skein/skein.c b/drivers/staging/skein/skein.c
+index 8cc8358..2138e22 100644
+--- a/drivers/staging/skein/skein.c
++++ b/drivers/staging/skein/skein.c
+@@ -11,6 +11,7 @@
+ #define  SKEIN_PORT_CODE /* instantiate any code in skein_port.h */
+ 
+ #include <linux/string.h>       /* get the memcpy/memset functions */
++#include <linux/export.h>
+ #include "skein.h" /* get the Skein API definitions   */
+ #include "skein_iv.h"    /* get precomputed IVs */
+ #include "skein_block.h"
+@@ -73,6 +74,7 @@ int skein_256_init(struct skein_256_ctx *ctx, size_t hash_bit_len)
+ 
+ 	return SKEIN_SUCCESS;
+ }
++EXPORT_SYMBOL(skein_256_init);
+ 
+ /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+ /* init the context for a MAC and/or tree hash operation */
+@@ -191,7 +193,7 @@ int skein_256_update(struct skein_256_ctx *ctx, const u8 *msg,
+ 
+ 	return SKEIN_SUCCESS;
+ }
+-
++EXPORT_SYMBOL(skein_256_update);
+ /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+ /* finalize the hash computation and output the result */
+ int skein_256_final(struct skein_256_ctx *ctx, u8 *hash_val)
+@@ -240,6 +242,7 @@ int skein_256_final(struct skein_256_ctx *ctx, u8 *hash_val)
+ 	}
+ 	return SKEIN_SUCCESS;
+ }
++EXPORT_SYMBOL(skein_256_final);
+ 
+ /*****************************************************************/
+ /*     512-bit Skein                                             */
+@@ -303,6 +306,7 @@ int skein_512_init(struct skein_512_ctx *ctx, size_t hash_bit_len)
+ 
+ 	return SKEIN_SUCCESS;
+ }
++EXPORT_SYMBOL(skein_512_init);
+ 
+ /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+ /* init the context for a MAC and/or tree hash operation */
+@@ -420,6 +424,7 @@ int skein_512_update(struct skein_512_ctx *ctx, const u8 *msg,
+ 
+ 	return SKEIN_SUCCESS;
+ }
++EXPORT_SYMBOL(skein_512_update);
+ 
+ /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+ /* finalize the hash computation and output the result */
+@@ -469,6 +474,7 @@ int skein_512_final(struct skein_512_ctx *ctx, u8 *hash_val)
+ 	}
+ 	return SKEIN_SUCCESS;
+ }
++EXPORT_SYMBOL(skein_512_final);
+ 
+ /*****************************************************************/
+ /*    1024-bit Skein                                             */
+@@ -526,6 +532,7 @@ int skein_1024_init(struct skein_1024_ctx *ctx, size_t hash_bit_len)
+ 
+ 	return SKEIN_SUCCESS;
+ }
++EXPORT_SYMBOL(skein_1024_init);
+ 
+ /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+ /* init the context for a MAC and/or tree hash operation */
+@@ -644,6 +651,7 @@ int skein_1024_update(struct skein_1024_ctx *ctx, const u8 *msg,
+ 
+ 	return SKEIN_SUCCESS;
+ }
++EXPORT_SYMBOL(skein_1024_update);
+ 
+ /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+ /* finalize the hash computation and output the result */
+@@ -693,6 +701,7 @@ int skein_1024_final(struct skein_1024_ctx *ctx, u8 *hash_val)
+ 	}
+ 	return SKEIN_SUCCESS;
+ }
++EXPORT_SYMBOL(skein_1024_final);
+ 
+ /**************** Functions to support MAC/tree hashing ***************/
+ /*   (this code is identical for Optimized and Reference versions)    */
+diff --git a/drivers/staging/skein/skein.h b/drivers/staging/skein/skein.h
+index e6669f1..d803458 100644
+--- a/drivers/staging/skein/skein.h
++++ b/drivers/staging/skein/skein.h
+@@ -26,8 +26,14 @@
+ **                                0: use assert()      to flag errors
+ **                                1: return SKEIN_FAIL to flag errors
+ **
++**
+ ***************************************************************************/
+ 
++/*Skein digest sizes for crypto api*/
++#define SKEIN256_DIGEST_SIZE (256)
++#define SKEIN512_DIGEST_SIZE (512)
++#define SKEIN1024_DIGEST_SIZE (1024)
++
+ #ifndef rotl_64
+ #define rotl_64(x, N)    (((x) << (N)) | ((x) >> (64-(N))))
+ #endif
+diff --git a/drivers/staging/skein/skein1024_generic.c b/drivers/staging/skein/skein1024_generic.c
+new file mode 100644
+index 0000000..4152e61
+--- /dev/null
++++ b/drivers/staging/skein/skein1024_generic.c
+@@ -0,0 +1,88 @@
++/*
++ * Cryptographic API.
++ *
++ * Skein1024 Hash Algorithm.
++ *
++ * Derived from cryptoapi implementation, adapted for in-place
++ * scatterlist interface.
++ *
++ * Copyright (c) Eric Rost <eric.rost@mybabylon.net>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 2 of the License, or (at your option)
++ * any later version.
++ *
++ */
++#include <crypto/internal/hash.h>
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/mm.h>
++#include <linux/cryptohash.h>
++#include <linux/types.h>
++#include "skein.h"
++#include <asm/byteorder.h>
++
++static int skein1024_init(struct shash_desc *desc)
++{
++	struct skein_1024_ctx *sctx = shash_desc_ctx(desc);
++
++	int ret = skein_1024_init(sctx, SKEIN1024_DIGEST_SIZE);
++
++	return ret;
++}
++
++int crypto_skein1024_update(struct shash_desc *desc, const u8 *data,
++			unsigned int len)
++{
++	struct skein_1024_ctx *sctx = shash_desc_ctx(desc);
++	size_t hbl = (size_t) len;
++	int ret = skein_1024_update(sctx, data, hbl);
++
++	return ret;
++}
++EXPORT_SYMBOL(crypto_skein1024_update);
++
++
++/* Add padding and return the message digest. */
++static int skein1024_final(struct shash_desc *desc, u8 *out)
++{
++	struct skein_1024_ctx *sctx = shash_desc_ctx(desc);
++	int ret = skein_1024_final(sctx, out);
++	return ret;
++}
++
++
++static struct shash_alg alg = {
++	.digestsize	=	SKEIN1024_DIGEST_SIZE,
++	.init		=	skein1024_init,
++	.update		=	crypto_skein1024_update,
++	.final		=	skein1024_final,
++	.descsize	=	sizeof(struct skein_1024_ctx),
++	.statesize	=	sizeof(struct skein_1024_ctx),
++	.base		=	{
++		.cra_name		=	"skein1024",
++		.cra_driver_name	=	"skein1024-generic",
++		.cra_flags		=	CRYPTO_ALG_TYPE_SHASH,
++		.cra_blocksize		=	(SKEIN_1024_BLOCK_BYTES * 8),
++		.cra_module		=	THIS_MODULE,
++	}
++};
++
++static int __init skein1024_generic_mod_init(void)
++{
++	return crypto_register_shash(&alg);
++}
++
++static void __exit skein1024_generic_mod_fini(void)
++{
++	crypto_unregister_shash(&alg);
++}
++
++module_init(skein1024_generic_mod_init);
++module_exit(skein1024_generic_mod_fini);
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("Skein1024 Hash Algorithm");
++
++MODULE_ALIAS("skein1024");
+diff --git a/drivers/staging/skein/skein256_generic.c b/drivers/staging/skein/skein256_generic.c
+new file mode 100644
+index 0000000..a766fc4
+--- /dev/null
++++ b/drivers/staging/skein/skein256_generic.c
+@@ -0,0 +1,88 @@
++/*
++ * Cryptographic API.
++ *
++ * Skein256 Hash Algorithm.
++ *
++ * Derived from cryptoapi implementation, adapted for in-place
++ * scatterlist interface.
++ *
++ * Copyright (c) Eric Rost <eric.rost@mybabylon.net>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 2 of the License, or (at your option)
++ * any later version.
++ *
++ */
++#include <crypto/internal/hash.h>
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/mm.h>
++#include <linux/cryptohash.h>
++#include <linux/types.h>
++#include "skein.h"
++#include <asm/byteorder.h>
++
++static int skein256_init(struct shash_desc *desc)
++{
++	struct skein_256_ctx *sctx = shash_desc_ctx(desc);
++
++	int ret = skein_256_init(sctx, SKEIN256_DIGEST_SIZE);
++
++	return ret;
++}
++
++int crypto_skein256_update(struct shash_desc *desc, const u8 *data,
++			unsigned int len)
++{
++	struct skein_256_ctx *sctx = shash_desc_ctx(desc);
++	size_t hbl = (size_t) len;
++	int ret = skein_256_update(sctx, data, hbl);
++
++	return ret;
++}
++EXPORT_SYMBOL(crypto_skein256_update);
++
++
++/* Add padding and return the message digest. */
++static int skein256_final(struct shash_desc *desc, u8 *out)
++{
++	struct skein_256_ctx *sctx = shash_desc_ctx(desc);
++	int ret = skein_256_final(sctx, out);
++	return ret;
++}
++
++
++static struct shash_alg alg = {
++	.digestsize	=	SKEIN256_DIGEST_SIZE,
++	.init		=	skein256_init,
++	.update		=	crypto_skein256_update,
++	.final		=	skein256_final,
++	.descsize	=	sizeof(struct skein_256_ctx),
++	.statesize	=	sizeof(struct skein_256_ctx),
++	.base		=	{
++		.cra_name		=	"skein256",
++		.cra_driver_name	=	"skein256-generic",
++		.cra_flags		=	CRYPTO_ALG_TYPE_SHASH,
++		.cra_blocksize		=	(SKEIN_256_BLOCK_BYTES * 8),
++		.cra_module		=	THIS_MODULE,
++	}
++};
++
++static int __init skein256_generic_mod_init(void)
++{
++	return crypto_register_shash(&alg);
++}
++
++static void __exit skein256_generic_mod_fini(void)
++{
++	crypto_unregister_shash(&alg);
++}
++
++module_init(skein256_generic_mod_init);
++module_exit(skein256_generic_mod_fini);
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("Skein256 Hash Algorithm");
++
++MODULE_ALIAS("skein256");
+diff --git a/drivers/staging/skein/skein512_generic.c b/drivers/staging/skein/skein512_generic.c
+new file mode 100644
+index 0000000..331ae37
+--- /dev/null
++++ b/drivers/staging/skein/skein512_generic.c
+@@ -0,0 +1,88 @@
++/*
++ * Cryptographic API.
++ *
++ * Skein512 Hash Algorithm.
++ *
++ * Derived from cryptoapi implementation, adapted for in-place
++ * scatterlist interface.
++ *
++ * Copyright (c) Eric Rost <eric.rost@mybabylon.net>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 2 of the License, or (at your option)
++ * any later version.
++ *
++ */
++#include <crypto/internal/hash.h>
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/mm.h>
++#include <linux/cryptohash.h>
++#include <linux/types.h>
++#include "skein.h"
++#include <asm/byteorder.h>
++
++static int skein512_init(struct shash_desc *desc)
++{
++	struct skein_512_ctx *sctx = shash_desc_ctx(desc);
++
++	int ret = skein_512_init(sctx, SKEIN512_DIGEST_SIZE);
++
++	return ret;
++}
++
++int crypto_skein512_update(struct shash_desc *desc, const u8 *data,
++			unsigned int len)
++{
++	struct skein_512_ctx *sctx = shash_desc_ctx(desc);
++	size_t hbl = (size_t) len;
++	int ret = skein_512_update(sctx, data, hbl);
++
++	return ret;
++}
++EXPORT_SYMBOL(crypto_skein512_update);
++
++
++/* Add padding and return the message digest. */
++static int skein512_final(struct shash_desc *desc, u8 *out)
++{
++	struct skein_512_ctx *sctx = shash_desc_ctx(desc);
++	int ret = skein_512_final(sctx, out);
++	return ret;
++}
++
++
++static struct shash_alg alg = {
++	.digestsize	=	SKEIN512_DIGEST_SIZE,
++	.init		=	skein512_init,
++	.update		=	crypto_skein512_update,
++	.final		=	skein512_final,
++	.descsize	=	sizeof(struct skein_512_ctx),
++	.statesize	=	sizeof(struct skein_512_ctx),
++	.base		=	{
++		.cra_name		=	"skein512",
++		.cra_driver_name	=	"skein512-generic",
++		.cra_flags		=	CRYPTO_ALG_TYPE_SHASH,
++		.cra_blocksize		=	(SKEIN_512_BLOCK_BYTES * 8),
++		.cra_module		=	THIS_MODULE,
++	}
++};
++
++static int __init skein512_generic_mod_init(void)
++{
++	return crypto_register_shash(&alg);
++}
++
++static void __exit skein512_generic_mod_fini(void)
++{
++	crypto_unregister_shash(&alg);
++}
++
++module_init(skein512_generic_mod_init);
++module_exit(skein512_generic_mod_fini);
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("Skein512 Hash Algorithm");
++
++MODULE_ALIAS("skein512");
+-- 
+2.1.1
 
-While we're at it, consider making setns for a cgroupns *not* change
-the caller's cgroup.  Is there any reason it really needs to?
-
-Thoughts?
-
---Andy
