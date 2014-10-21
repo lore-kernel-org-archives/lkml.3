@@ -1,105 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861AbaJUJIp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 05:08:45 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:40947 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754764AbaJUJIQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754785AbaJUJIQ (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 21 Oct 2014 05:08:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <1412591741.19977.527.camel@mtksdaap41>
-References: <1411443545-24951-1-git-send-email-srv_hongzhou.yang@mediatek.com>
-	<1411443545-24951-3-git-send-email-srv_hongzhou.yang@mediatek.com>
-	<CACRpkdYY7e0OQL1YTEASxJw7E0FPAyOrPi0g93A9aRbfss0Vpw@mail.gmail.com>
-	<1412591741.19977.527.camel@mtksdaap41>
-Date: Tue, 21 Oct 2014 11:08:15 +0200
-Message-ID: <CACRpkdZ7XiQHACQ2jhEGeTR6V7dJcX2jR40yPqLgLONnka9zVw@mail.gmail.com>
-Subject: Re: [PATCH v2 2/4] ARM: mediatek: Add Pinctrl/GPIO driver for mt8135.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "Joe.C" <yingjoe.chen@mediatek.com>
-Cc: "Hongzhou.Yang" <srv_hongzhou.yang@mediatek.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>, srv_heupstream@mediatek.com,
-        Sascha Hauer <kernel@pengutronix.de>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Hongzhou Yang <hongzhou.yang@mediatek.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Vladimir Murzin <vladimir.murzin@arm.com>,
-        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        dandan.he@mediatek.com
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:56109 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753518AbaJUJIL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 05:08:11 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/5] Berlin BG2 AHCI and SATA PHY
+Date: Tue, 21 Oct 2014 11:07:52 +0200
+Message-Id: <1413882477-27922-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 6, 2014 at 12:35 PM, Joe.C <yingjoe.chen@mediatek.com> wrote:
-> On Thu, 2014-10-02 at 15:38 +0200, Linus Walleij wrote:
-> (...)
->> > +static struct mt_desc_function *
->> > +mt_pctrl_desc_find_irq_by_name(struct mt_pinctrl *pctl,
->> > +                                        const char *pin_name)
->>
->> Why is it called *find_irq_by_name if it returns a
->> function? Seems more like find_function_from_pin_name
->> really.
->>
->> And I don't know if that is such a good idea.
->
-> In 8135 & 6589, not every gpio pin support interrupt function. For those
-> support interrupt, it will have a EINT function and use a different EINT
-> offset number.
-> In 8127, EINT support is merged into gpio function, but they still use a
-> different EINT offset number.
-(...)
-> This function is used to find EINT function for the pin. Maybe we should
-> name this mt_pctrl_desc_find_irq_function_from_name to make it more
-> clear.
+This patch set is v2 of the catch up with latest Berlin improvements
+provided by Antoine - in particular SATA PHY support and AHCI generic
+for Berlin BG2.
 
-OK such translation is usually the work of the irqdomain. Is there
-some reason why it is not used in this driver then?
+Marvell BSP code for BG2 suggests more differences between the two
+PHY revisions found on BG2 and BG2Q, but the only important one seems
+to be the PHY_BASE used in AHCI vendor-specific registers. I also
+confirmed that power_off does indeed power off the PHY on BG2, too
+(It wasn't very clear in BSP code).
 
->> > +                       for (j = 0; j < PINMUX_MAX_VAL; j++) {
->> > +                               if (func->irqnum != 255)
->>
->> So why does it end at 255? Seems pretty arbitrary.
->
-> If a function support interrupt, we put its interrupt number in irqnum,
-> otherwise it will be 255. Does it make it more clear if we use macro
-> name MT_NO_EINT_SUPPORT?
+Anyway, I have tested this on BG2-based Sony NSZ-GS7 and attached
+SATA HDD is successfully detected and partitions are displayed.
 
-Yes.
+This patch set is now based on v3.18-rc1. As usual a branch based on
+v3.18-rc1 can be found at
 
-> We use a different interrupt number than gpio pin number. I think it
-> more nature to use EINT interrupt number as the hw_number, so I think we
-> can't use gpiochip_irqchip_add and we still need to provide our
-> own .to_irq mapping function.
+git://git.infradead.org/users/hesselba/linux-berlin.git devel/bg2-sata-v2
 
-You should be able to use irqdomain to translate I think.
+Compared to v1, there is only a minor change that removes an unrequired
+status = "disabled" property from BG2 SATA node.
 
-> While it might still be possible to generate group+function array based
-> on datasheet, IMHO the structure will be more complicate and harder to
-> prove the correctness.
->
-> So we choose to use descriptor array + macros in device tree because it
-> is quite simple to generate the pin descriptors and easier to notice if
-> there's error in device tree pin groups description.
+Patches 1-3 should go through Kishon's PHY tree, I pick up DT patches 4
+and 5.
 
-There is a parallel discussion on this, or two maybe.
+Patch 1 prepares phy-berlin-sata to support different PHY_BASE addresses
+by moving the constant to driver private data.
 
-The number of pin control bindings is exploding and I need to
-push back.
+Patches 2 and 3 add a new compatible to driver and DT documentation that
+reflects the differences between BG2Q and BG2 SATA PHY.
 
-Please help out defining generic pin control bindings for this
-use case and we can move forward.
+Patches 4 and 5 finally add DT nodes to both Berlin2 SoC dtsi and Sony
+NSZ-GS7 board DT file. SATA plug on NSZ-GS7 is unpopulated but can be
+very easily equipped with SATA receptable and some 0402 caps. I decided
+to enable SATA by default although not all users may populate it.
 
-Yours,
-Linus Walleij
+Sebastian Hesselbarth (5):
+  phy: berlin-sata: Move PHY_BASE into private data struct
+  phy: berlin-sata: Add support for BG2 SATA PHY
+  phy: berlin-sata: Document BG2 compatible
+  ARM: berlin: Add AHCI and SATA PHY nodes to BG2
+  ARM: berlin: Enable SATA on Sony NSZ-GS7
+
+ .../devicetree/bindings/phy/berlin-sata-phy.txt    |  4 +-
+ arch/arm/boot/dts/berlin2-sony-nsz-gs7.dts         |  7 ++++
+ arch/arm/boot/dts/berlin2.dtsi                     | 39 ++++++++++++++++++
+ drivers/phy/phy-berlin-sata.c                      | 48 +++++++++++++++-------
+ 4 files changed, 83 insertions(+), 15 deletions(-)
+
+---
+Cc: Kishon Vijay Abraham I <kishon@ti.com> 
+Cc: "Antoine Ténart" <antoine.tenart@free-electrons.com>
+Cc: devicetree@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org 
+-- 
+2.1.1
+
