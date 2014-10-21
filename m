@@ -1,79 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933575AbaJUUZM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 16:25:12 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:41362 "EHLO comal.ext.ti.com"
+	id S933126AbaJUU3K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 16:29:10 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49901 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932529AbaJUUZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 16:25:09 -0400
-From: Nishanth Menon <nm@ti.com>
-To: Tony Lindgren <tony@atomide.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, Tero Kristo <t-kristo@ti.com>,
-        Nishanth Menon <nm@ti.com>
-Subject: [PATCH] ARM: OMAP4+: PM: Program CPU logic power state
-Date: Tue, 21 Oct 2014 15:24:36 -0500
-Message-ID: <1413923076-26063-1-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S932529AbaJUU3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 16:29:07 -0400
+Date: Tue, 21 Oct 2014 22:28:40 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+Cc: slaoub@gmail.com, Tony Luck <tony.luck@intel.com>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Fwd: [PATCH] x86, MCE, AMD: save IA32_MCi_STATUS before
+ machine_check_poll() resets it
+Message-ID: <20141021202840.GD4420@pd.tnic>
+References: <1412070991.16556.12.camel@cyc>
+ <20140930100940.GD4639@pd.tnic>
+ <1412138102.21488.20.camel@debian>
+ <20141002131206.GA16452@pd.tnic>
+ <CAOjmkp9qQiTbqU3NUhUDAoQAa8wAPJnE_qXbDuBKrA3ee1_APQ@mail.gmail.com>
+ <5435B206.60402@amd.com>
+ <20141008225750.GH16892@pd.tnic>
+ <20141009165339.GA11360@arav-dinar>
+ <20141009173529.GC17647@pd.tnic>
+ <5436DB72.1090507@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <5436DB72.1090507@amd.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CPU logic power state is never programmed in either the initialization
-or the suspend/resume logic, instead, we depend on mpuss to program this
-properly. However, this leaves CPU logic power state indeterminate and
-most probably in reset configuration (If bootloader or other similar
-software have'nt monkeyed with the register). This can make powerstate=
-RET be either programmed for CSWR (logic=ret) or OSWR(logic = OFF) and
-in OSWR, there can be context loss when the code does not expect it.
+On Thu, Oct 09, 2014 at 02:01:06PM -0500, Aravind Gopalakrishnan wrote:
+> I actually agree with this approach. So no argument:)
 
-To prevent all these confusions, just support clearly ON, INA, CSWR,
-OFF which is the intent of the existing code by explicitly programming
-logic state.
+Ok, thanks, here's a patch.
 
-NOTE: since this is a hot path (using in cpuidle), the exit path just
-programs powerstate (logic state is immaterial when powerstate is ON).
+Btw, I'm pushing the whole queue to a ras-for-3.19 branch at
+https://git.kernel.org/cgit/linux/kernel/git/bp/bp.git if you'd like to
+take a look and see whether we haven't forgotten anything before I send
+it to tip guys.
 
-Without doing this, we end up with lockups when CPUs enter OSWR and
-multiple blocks loose context, when we expect them to hit CSWR.
+Thanks.
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- arch/arm/mach-omap2/omap-mpuss-lowpower.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+From: Borislav Petkov <bp@suse.de>
+Subject: [PATCH] x86, MCE, AMD: Drop software-defined bank in error thresholding
 
-diff --git a/arch/arm/mach-omap2/omap-mpuss-lowpower.c b/arch/arm/mach-omap2/omap-mpuss-lowpower.c
-index 6944ae3..79f49d9 100644
---- a/arch/arm/mach-omap2/omap-mpuss-lowpower.c
-+++ b/arch/arm/mach-omap2/omap-mpuss-lowpower.c
-@@ -227,7 +227,7 @@ static void __init save_l2x0_context(void)
- int omap4_enter_lowpower(unsigned int cpu, unsigned int power_state)
- {
- 	struct omap4_cpu_pm_info *pm_info = &per_cpu(omap4_pm_info, cpu);
--	unsigned int save_state = 0;
-+	unsigned int save_state = 0, cpu_logic_state = PWRDM_POWER_RET;
- 	unsigned int wakeup_cpu;
+Aravind had the good question about why we're assigning a
+software-defined bank when reporting error thresholding errors instead
+of simply using the bank which reports the last error causing the
+overflow.
+
+Digging through git history, it pointed to
+
+95268664390b ("[PATCH] x86_64: mce_amd support for family 0x10 processors")
+
+which added that functionality. The problem with this, however, is that
+tools don't know about software-defined banks and get puzzled. So drop
+that K8_MCE_THRESHOLD_BASE and simply use the hw bank reporting the
+thresholding interrupt.
+
+Save us a couple of MSR reads while at it.
+
+Reported-by: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+Link: https://lkml.kernel.org/r/5435B206.60402@amd.com
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/include/asm/mce.h           | 1 -
+ arch/x86/kernel/cpu/mcheck/mce_amd.c | 5 ++---
+ 2 files changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+index 958b90f761e5..276392f121fb 100644
+--- a/arch/x86/include/asm/mce.h
++++ b/arch/x86/include/asm/mce.h
+@@ -78,7 +78,6 @@
+ /* Software defined banks */
+ #define MCE_EXTENDED_BANK	128
+ #define MCE_THERMAL_BANK	(MCE_EXTENDED_BANK + 0)
+-#define K8_MCE_THRESHOLD_BASE   (MCE_EXTENDED_BANK + 1)
  
- 	if (omap_rev() == OMAP4430_REV_ES1_0)
-@@ -239,6 +239,7 @@ int omap4_enter_lowpower(unsigned int cpu, unsigned int power_state)
- 		save_state = 0;
- 		break;
- 	case PWRDM_POWER_OFF:
-+		cpu_logic_state = PWRDM_POWER_OFF;
- 		save_state = 1;
- 		break;
- 	case PWRDM_POWER_RET:
-@@ -270,6 +271,7 @@ int omap4_enter_lowpower(unsigned int cpu, unsigned int power_state)
+ #define MCE_LOG_LEN 32
+ #define MCE_LOG_SIGNATURE	"MACHINECHECK"
+diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+index 9af7bd74828b..6606523ff1c1 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
++++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+@@ -318,10 +318,9 @@ static void amd_threshold_interrupt(void)
  
- 	cpu_clear_prev_logic_pwrst(cpu);
- 	pwrdm_set_next_pwrst(pm_info->pwrdm, power_state);
-+	pwrdm_set_logic_retst(pm_info->pwrdm, cpu_logic_state);
- 	set_cpu_wakeup_addr(cpu, virt_to_phys(omap_pm_ops.resume));
- 	omap_pm_ops.scu_prepare(cpu, power_state);
- 	l2x0_pwrst_prepare(cpu, save_state);
+ log:
+ 	mce_setup(&m);
+-	rdmsrl(MSR_IA32_MCG_STATUS, m.mcgstatus);
+-	rdmsrl(address, m.misc);
+ 	rdmsrl(MSR_IA32_MCx_STATUS(bank), m.status);
+-	m.bank = K8_MCE_THRESHOLD_BASE + bank * NR_BLOCKS + block;
++	m.misc = ((u64)high << 32) | low;
++	m.bank = bank;
+ 	mce_log(&m);
+ 
+ 	wrmsrl(MSR_IA32_MCx_STATUS(bank), 0);
 -- 
-1.7.9.5
+2.0.0
 
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
