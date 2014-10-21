@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754682AbaJUEXu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 00:23:50 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:33660 "EHLO
+	id S1754749AbaJUEYV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 00:24:21 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:33636 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754389AbaJUENu (ORCPT
+	with ESMTP id S1754338AbaJUENr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 00:13:50 -0400
+	Tue, 21 Oct 2014 00:13:47 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
         Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH v2 16/47] mfd: tps6586x: Register with kernel poweroff handler
-Date: Mon, 20 Oct 2014 21:12:32 -0700
-Message-Id: <1413864783-3271-17-git-send-email-linux@roeck-us.net>
+Subject: [PATCH v2 14/47] mfd: tps80031: Register with kernel poweroff handler
+Date: Mon, 20 Oct 2014 21:12:30 -0700
+Message-Id: <1413864783-3271-15-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1413864783-3271-1-git-send-email-linux@roeck-us.net>
 References: <1413864783-3271-1-git-send-email-linux@roeck-us.net>
@@ -23,13 +23,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020209.5445DD7E.00CC,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020209.5445DD7A.00C1,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.000
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 95
+X-CTCH-SenderID-TotalMessages: 84
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -61,85 +61,93 @@ v2:
 - Use define to specify poweroff handler priority
 - Use dev_warn instead of dev_err
 
- drivers/mfd/tps6586x.c | 31 +++++++++++++++++++++++--------
- 1 file changed, 23 insertions(+), 8 deletions(-)
+ drivers/mfd/tps80031.c       | 30 ++++++++++++++++++------------
+ include/linux/mfd/tps80031.h |  2 ++
+ 2 files changed, 20 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
-index 8e1dbc4..01c2714 100644
---- a/drivers/mfd/tps6586x.c
-+++ b/drivers/mfd/tps6586x.c
-@@ -21,10 +21,12 @@
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/mutex.h>
-+#include <linux/notifier.h>
- #include <linux/slab.h>
- #include <linux/err.h>
- #include <linux/i2c.h>
- #include <linux/platform_device.h>
-+#include <linux/pm.h>
- #include <linux/regmap.h>
- #include <linux/of.h>
- 
-@@ -133,6 +135,8 @@ struct tps6586x {
- 	u32			irq_en;
- 	u8			mask_reg[5];
- 	struct irq_domain	*irq_domain;
-+
-+	struct notifier_block	poweroff_nb;
+diff --git a/drivers/mfd/tps80031.c b/drivers/mfd/tps80031.c
+index ed6c5b0..926c62a 100644
+--- a/drivers/mfd/tps80031.c
++++ b/drivers/mfd/tps80031.c
+@@ -147,7 +147,6 @@ static const struct tps80031_pupd_data tps80031_pupds[] = {
+ 	[TPS80031_CTLI2C_SCL]		= PUPD_DATA(4, 0,	BIT(2)),
+ 	[TPS80031_CTLI2C_SDA]		= PUPD_DATA(4, 0,	BIT(3)),
  };
+-static struct tps80031 *tps80031_power_off_dev;
  
- static inline struct tps6586x *dev_to_tps6586x(struct device *dev)
-@@ -472,13 +476,18 @@ static const struct regmap_config tps6586x_regmap_config = {
- 	.cache_type = REGCACHE_RBTREE,
- };
+ int tps80031_ext_power_req_config(struct device *dev,
+ 		unsigned long ext_ctrl_flag, int preq_bit,
+@@ -209,11 +208,17 @@ int tps80031_ext_power_req_config(struct device *dev,
+ }
+ EXPORT_SYMBOL_GPL(tps80031_ext_power_req_config);
  
--static struct device *tps6586x_dev;
--static void tps6586x_power_off(void)
-+static int tps6586x_power_off(struct notifier_block *this,
+-static void tps80031_power_off(void)
++static int tps80031_power_off(struct notifier_block *this,
 +			      unsigned long unused1, void *unused2)
  {
--	if (tps6586x_clr_bits(tps6586x_dev, TPS6586X_SUPPLYENE, EXITSLREQ_BIT))
--		return;
-+	struct tps6586x *tps6586x = container_of(this, struct tps6586x,
+-	dev_info(tps80031_power_off_dev->dev, "switching off PMU\n");
+-	tps80031_write(tps80031_power_off_dev->dev, TPS80031_SLAVE_ID1,
+-				TPS80031_PHOENIX_DEV_ON, TPS80031_DEVOFF);
++	struct tps80031 *tps80031 = container_of(this, struct tps80031,
 +						 poweroff_nb);
 +
-+	if (tps6586x_clr_bits(tps6586x->dev, TPS6586X_SUPPLYENE, EXITSLREQ_BIT))
-+		return NOTIFY_DONE;
- 
--	tps6586x_set_bits(tps6586x_dev, TPS6586X_SUPPLYENE, SLEEP_MODE_BIT);
-+	tps6586x_set_bits(tps6586x->dev, TPS6586X_SUPPLYENE, SLEEP_MODE_BIT);
++	dev_info(tps80031->dev, "switching off PMU\n");
++	tps80031_write(tps80031->dev, TPS80031_SLAVE_ID1,
++		       TPS80031_PHOENIX_DEV_ON, TPS80031_DEVOFF);
 +
 +	return NOTIFY_DONE;
  }
  
- static void tps6586x_print_version(struct i2c_client *client, int version)
-@@ -575,9 +584,13 @@ static int tps6586x_i2c_probe(struct i2c_client *client,
- 		goto err_add_devs;
+ static void tps80031_pupd_init(struct tps80031 *tps80031,
+@@ -501,9 +506,13 @@ static int tps80031_probe(struct i2c_client *client,
+ 		goto fail_mfd_add;
  	}
  
--	if (pdata->pm_off && !pm_power_off) {
--		tps6586x_dev = &client->dev;
--		pm_power_off = tps6586x_power_off;
-+	if (pdata->pm_off) {
-+		tps6586x->poweroff_nb.notifier_call = tps6586x_power_off;
-+		tps6586x->poweroff_nb.priority = POWEROFF_PRIORITY_LOW;
-+		ret = register_power_off_handler(&tps6586x->poweroff_nb);
+-	if (pdata->use_power_off && !pm_power_off) {
+-		tps80031_power_off_dev = tps80031;
+-		pm_power_off = tps80031_power_off;
++	if (pdata->use_power_off) {
++		tps80031->poweroff_nb.notifier_call = tps80031_power_off;
++		tps80031->poweroff_nb.priority = POWEROFF_PRIORITY_LOW;
++		ret = register_power_off_handler(&tps80031->poweroff_nb);
 +		if (ret)
 +			dev_warn(&client->dev,
-+				 "failed to register poweroff handler\n");
++				 "Failed to register poweroff handler\n");
  	}
- 
  	return 0;
-@@ -594,6 +607,8 @@ static int tps6586x_i2c_remove(struct i2c_client *client)
- {
- 	struct tps6586x *tps6586x = i2c_get_clientdata(client);
  
-+	unregister_power_off_handler(&tps6586x->poweroff_nb);
-+
- 	tps6586x_remove_subdevs(tps6586x);
- 	mfd_remove_devices(tps6586x->dev);
- 	if (client->irq)
+@@ -523,10 +532,7 @@ static int tps80031_remove(struct i2c_client *client)
+ 	struct tps80031 *tps80031 = i2c_get_clientdata(client);
+ 	int i;
+ 
+-	if (tps80031_power_off_dev == tps80031) {
+-		tps80031_power_off_dev = NULL;
+-		pm_power_off = NULL;
+-	}
++	unregister_power_off_handler(&tps80031->poweroff_nb);
+ 
+ 	mfd_remove_devices(tps80031->dev);
+ 
+diff --git a/include/linux/mfd/tps80031.h b/include/linux/mfd/tps80031.h
+index 2c75c9c..49bc006 100644
+--- a/include/linux/mfd/tps80031.h
++++ b/include/linux/mfd/tps80031.h
+@@ -24,6 +24,7 @@
+ #define __LINUX_MFD_TPS80031_H
+ 
+ #include <linux/device.h>
++#include <linux/notifier.h>
+ #include <linux/regmap.h>
+ 
+ /* Pull-ups/Pull-downs */
+@@ -513,6 +514,7 @@ struct tps80031 {
+ 	struct i2c_client	*clients[TPS80031_NUM_SLAVES];
+ 	struct regmap		*regmap[TPS80031_NUM_SLAVES];
+ 	struct regmap_irq_chip_data *irq_data;
++	struct notifier_block	poweroff_nb;
+ };
+ 
+ struct tps80031_pupd_init_data {
 -- 
 1.9.1
 
