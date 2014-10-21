@@ -1,120 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753851AbaJUXhn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 19:37:43 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:53514 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752154AbaJUXhl (ORCPT
+	id S1753456AbaJUX4W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 19:56:22 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49614 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751505AbaJUX4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 19:37:41 -0400
-Date: Wed, 22 Oct 2014 10:37:35 +1100
-From: Gavin Shan <gwshan@linux.vnet.ibm.com>
-To: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        corbet@lwn.net
-Subject: Re: [PATCH] powernv/iommu: disable IOMMU bypass with param
- iommu=nobypass
-Message-ID: <20141021233735.GA5725@shangw>
-Reply-To: Gavin Shan <gwshan@linux.vnet.ibm.com>
-References: <1413917383-18396-1-git-send-email-cascardo@linux.vnet.ibm.com>
+	Tue, 21 Oct 2014 19:56:13 -0400
+X-Original-SENDERIP: 10.186.123.76
+X-Original-MAILFROM: gioh.kim@lge.com
+Message-ID: <5446F28C.2070305@lge.com>
+Date: Wed, 22 Oct 2014 08:55:56 +0900
+From: Gioh Kim <gioh.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413917383-18396-1-git-send-email-cascardo@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102123-0021-0000-0000-000000627C11
+To: PINTU KUMAR <pintu.k@samsung.com>, akpm@linux-foundation.org,
+        hannes@cmpxchg.org, riel@redhat.com, mgorman@suse.de,
+        vdavydov@parallels.com, nasa4836@gmail.com, ddstreet@ieee.org,
+        m.szyprowski@samsung.com, mina86@mina86.com, iamjoonsoo.kim@lge.com,
+        aneesh.kumar@linux.vnet.ibm.com, lauraa@codeaurora.org,
+        rientjes@google.com, vbabka@suse.cz, sasha.levin@oracle.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+CC: cpgs@samsung.com, pintu_agarwal@yahoo.com, vishnu.ps@samsung.com,
+        rohit.kr@samsung.com, ed.savinay@samsung.com,
+        =?EUC-KR?B?J8DMsMfIoyc=?= <gunho.lee@lge.com>
+Subject: Re: [PATCH] mm: cma: split cma-reserved in dmesg log
+References: <1413790391-31686-1-git-send-email-pintu.k@samsung.com> <5445AD12.9080502@lge.com> <00cd01cfed32$1ebfd5b0$5c3f8110$@samsung.com>
+In-Reply-To: <00cd01cfed32$1ebfd5b0$5c3f8110$@samsung.com>
+Content-Type: text/plain; charset=EUC-KR
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 04:49:43PM -0200, Thadeu Lima de Souza Cascardo wrote:
->When IOMMU bypass is enabled, a PCI device can read and write memory
->that was not mapped by the driver without causing an EEH. That might
->cause memory corruption, for example.
->
->When we disable bypass, DMA reads and writes to addresses not mapped by
->the IOMMU will cause an EEH, allowing us to debug such issues.
->
->Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
 
-Reviewed-by: Gavin Shan <gwshan@linux.vnet.ibm.com>
 
-Except minor things as below.
-
->---
-> Documentation/kernel-parameters.txt       |    2 ++
-> arch/powerpc/platforms/powernv/pci-ioda.c |   24 +++++++++++++++++++++++-
-> 2 files changed, 25 insertions(+), 1 deletions(-)
->
->diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
->index 988160a..b03322a 100644
->--- a/Documentation/kernel-parameters.txt
->+++ b/Documentation/kernel-parameters.txt
->@@ -1454,6 +1454,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
-> 		forcesac
-> 		soft
-> 		pt		[x86, IA-64]
->+		nobypass	[PPC/POWERNV]
->+			Disable IOMMU bypass, using IOMMU for PCI devices.
+2014-10-21 오후 10:21, PINTU KUMAR 쓴 글:
+> 
+> Hi,
+> 
+> ----- Original Message -----
+>> From: Gioh Kim <gioh.kim@lge.com>
+>> To: Pintu Kumar <pintu.k@samsung.com>; akpm@linux-foundation.org;
+> hannes@cmpxchg.org; riel@redhat.com; mgorman@suse.de;
+> vdavydov@parallels.com; nasa4836@gmail.com; ddstreet@ieee.org;
+> m.szyprowski@samsung.com; mina86@mina86.com; iamjoonsoo.kim@lge.com; aneesh.
+> kumar@linux.vnet.ibm.com; lauraa@codeaurora.org; rientjes@google.com;
+> vbabka@suse.cz; sasha.levin@oracle.com; linux-kernel@vger.kernel.org; linux-
+> mm@kvack.org
+>> Cc: cpgs@samsung.com; pintu_agarwal@yahoo.com; vishnu.ps@samsung.com;
+> rohit.kr@samsung.com; ed.savinay@samsung.com; 이건호 <gunho.lee@lge.com>
+>> Sent: Tuesday, 21 October 2014 6:17 AM
+>> Subject: Re: [PATCH] mm: cma: split cma-reserved in dmesg log
+>>
+>>
+>>
+>> 2014-10-20 오후 4:33, Pintu Kumar 쓴 글:
+>>> When the system boots up, in the dmesg logs we can see
+>>> the memory statistics along with total reserved as below.
+>>> Memory: 458840k/458840k available, 65448k reserved, 0K highmem
+>>>
+>>> When CMA is enabled, still the total reserved memory remains the same.
+>>> However, the CMA memory is not considered as reserved.
+>>> But, when we see /proc/meminfo, the CMA memory is part of free memory.
+>>> This creates confusion.
+>>> This patch corrects the problem by properly substracting the CMA reserved
+>>> memory from the total reserved memory in dmesg logs.
+>>>
+>>> Below is the dmesg snaphot from an arm based device with 512MB RAM and
+>>> 12MB single CMA region.
+>>>
+>>> Before this change:
+>>> Memory: 458840k/458840k available, 65448k reserved, 0K highmem
+>>>
+>>> After this change:
+>>> Memory: 458840k/458840k available, 53160k reserved, 12288k cma-reserved,
+> 0K
+>> highmem
+>>>
+>>> Signed-off-by: Pintu Kumar <pintu.k@samsung.com>
+>>> Signed-off-by: Vishnu Pratap Singh <vishnu.ps@samsung.com>
+>>> ---
+>>>    include/linux/swap.h | 3 +++
+>>>    mm/cma.c            | 2 ++
+>>>    mm/page_alloc.c      | 8 ++++++++
+>>>    3 files changed, 13 insertions(+)
+>>>
+>>> diff --git a/include/linux/swap.h b/include/linux/swap.h
+>>> index 37a585b..beb84be 100644
+>>> --- a/include/linux/swap.h
+>>> +++ b/include/linux/swap.h
+>>> @@ -295,6 +295,9 @@ static inline void
+> workingset_node_shadows_dec(struct
+>> radix_tree_node *node)
+>>>    /* linux/mm/page_alloc.c */
+>>>    extern unsigned long totalram_pages;
+>>>    extern unsigned long totalreserve_pages;
+>>> +#ifdef CONFIG_CMA
+>>> +extern unsigned long totalcma_pages;
+>>> +#endif
+> 
+> Ok, as per Andrew Morton comment, will remove CONFIG_CMA,
+> But then I need to put it under: include/linux/mm.h
+> In that case, it will solve the problem for CMA and non-CMA case.
+> Because, mm.h is already included in cma.c
+> 
+>>>    extern unsigned long dirty_balance_reserve;
+>>>    extern unsigned long nr_free_buffer_pages(void);
+>>>    extern unsigned long nr_free_pagecache_pages(void);
+>>> diff --git a/mm/cma.c b/mm/cma.c
+>>> index 963bc4a..73fe7be 100644
+>>> --- a/mm/cma.c
+>>> +++ b/mm/cma.c
+>>> @@ -45,6 +45,7 @@ struct cma {
+>>>    static struct cma cma_areas[MAX_CMA_AREAS];
+>>>    static unsigned cma_area_count;
+>>>    static DEFINE_MUTEX(cma_mutex);
+>>> +unsigned long totalcma_pages __read_mostly;
+>>
+>> I think __read_mostly is not good here.
+>> Cma areas often are rare
+>> but we cannot expect how many cma areas exists.
+>>
+> 
+> Firstly, I want to move this to mm/page_alloc.c, so that it can be visible
+> for non-CMA cases.
+> Next, the purpose this variable is not only during init time.
+> Just like totalram_pages, I wanted to retain this variable to use it to
+> populate the CMA info, during /proc/meminfo.
+> Like:
+> CMATotal: (using totalcma_pages)
+> CMAFree:  (using NR_FREE_CMA_PAGES)
+> I will post these changes in the next patch series.
+> Please let me know your comments.
+> 
+>>>    
+>>>    phys_addr_t cma_get_base(struct cma *cma)
+>>>    {
+>>> @@ -288,6 +289,7 @@ int __init cma_declare_contiguous(phys_addr_t base,
+>>>        if (ret)
+>>>            goto err;
+>>>    
+>>> +    totalcma_pages += (size / PAGE_SIZE);
+>>>        pr_info("Reserved %ld MiB at %08lx\n", (unsigned
+>> long)size / SZ_1M,
+>>>            (unsigned long)base);
+>>>        return 0;
+>>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>>> index dd73f9a..c6165ac 100644
+>>> --- a/mm/page_alloc.c
+>>> +++ b/mm/page_alloc.c
+>>> @@ -5521,6 +5521,9 @@ void __init mem_init_print_info(const char *str)
+>>>        pr_info("Memory: %luK/%luK available "
+>>>              "(%luK kernel code, %luK rwdata, %luK rodata, "
+>>>              "%luK init, %luK bss, %luK reserved"
+>>> +#ifdef CONFIG_CMA
+>>> +        ", %luK cma-reserved"
+>>> +#endif
+>>>    #ifdef    CONFIG_HIGHMEM
+>>>              ", %luK highmem"
+>>>    #endif
+>>> @@ -5528,7 +5531,12 @@ void __init mem_init_print_info(const char *str)
+>>>              nr_free_pages() << (PAGE_SHIFT-10), physpages <<
+>> (PAGE_SHIFT-10),
+>>>              codesize >> 10, datasize >> 10, rosize >>
+>> 10,
+>>>              (init_data_size + init_code_size) >> 10, bss_size
+>>>> 10,
+>>> +#ifdef CONFIG_CMA
+>>> +          (physpages - totalram_pages - totalcma_pages) <<
+>> (PAGE_SHIFT-10),
+>>> +          totalcma_pages << (PAGE_SHIFT-10),
+>>> +#else
+>>>              (physpages - totalram_pages) << (PAGE_SHIFT-10),
+>>> +#endif
+>>>    #ifdef    CONFIG_HIGHMEM
+>>>              totalhigh_pages << (PAGE_SHIFT-10),
+>>>    #endif
+>>>
+>>
+>> I basically agree with your point.
+>> But CMA feature is not popular yet, so memory develoers probably doesn't
+>> like this.
+>>
+> 
+> Ok agree. If we move totalcma_pages declaration to page_alloc.c and mm.h,
+> then we can get rid of CONFIG_CMA, to make it neat.
 > 
 > 
-> 	io7=		[HW] IO7 for Marvel based alpha systems
->diff --git a/arch/powerpc/platforms/powernv/pci-ioda.c b/arch/powerpc/platforms/powernv/pci-ioda.c
->index 468a0f2..58a5a27 100644
->--- a/arch/powerpc/platforms/powernv/pci-ioda.c
->+++ b/arch/powerpc/platforms/powernv/pci-ioda.c
->@@ -75,6 +75,27 @@ static void pe_level_printk(const struct pnv_ioda_pe *pe, const char *level,
-> #define pe_info(pe, fmt, ...)					\
-> 	pe_level_printk(pe, KERN_INFO, fmt, ##__VA_ARGS__)
+>> I'm not sure but I think there is a debugfs file for cma.
+>> Can you use it?
+>>
 > 
->+static int __read_mostly disable_bypass;
->+
-
-static bool pnv_iommu_bypass_disabled __read_mostly;
-
->+static int __init iommu_setup(char *str)
->+{
->+	if (!*str)
->+		return -EINVAL;
-
-I guess it would be  "if (!str)" for malformed option.
-
->+	while (*str) {
->+		if (!strncmp(str, "nobypass", 8)) {
->+			disable_bypass = 1;
->+			pr_info("ppc iommu: disabling bypass.\n");
-
-It would be more precise since the option is only visible to PowerNV:
-
-			pr_info("PowerNV: IOMMU bypass window disabled\n");
-
->+		}
->+		str += strcspn(str, ",");
->+		if (*str == ',')
->+			str++;
->+	}
->+
->+	return 0;
->+}
->+
->+early_param("iommu", iommu_setup);
->+
-> /*
->  * stdcix is only supposed to be used in hypervisor real mode as per
->  * the architecture spec
->@@ -1243,7 +1264,8 @@ static void pnv_pci_ioda2_setup_dma_pe(struct pnv_phb *phb,
-> 		pnv_ioda_setup_bus_dma(pe, pe->pbus, true);
+> As of now, I think there is no debugfs for cma.
+> However, we can make one if required.
 > 
-> 	/* Also create a bypass window */
->-	pnv_pci_ioda2_setup_bypass_pe(phb, pe);
->+	if (!disable_bypass)
->+		pnv_pci_ioda2_setup_bypass_pe(phb, pe);
-> 	return;
-> fail:
-> 	if (pe->tce32_seg >= 0)
+>> Or what do you think about making another proc file to show cma area size
+> and
+>> address?
+>> For instance,
+>>
+>> # cat /proc/cmainfo
+>> CMATotal:    400kB
+>> 0x10000000  300kB
+>> 0x20000000  100kB
+>>
+> 
+> I think this is not required.
+> For multiple CMA regions, this can be found under:
+> /sys/kernel/debug/memblock/reserved
 
-Thanks,
-Gavin
+I'm sorry. I didn't know it.
 
+> However, as I said, we can populate this information under: /proc/meminfo
+> I think capturing it at one place will be better. For non-CMA cases, it
+> will be hidden.
+> Thus summary of CMA info can be seen in meminfo, and detailed information
+> can be seen in memblock/reserved.
+
+I agree with you.
+I'm looking forward to your next patch.
+
+> Do, let me know if you have any other idea?
+> 
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org">
+>> email@kvack.org </a>
+>>
+> 
+> 
