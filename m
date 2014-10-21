@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754727AbaJUJvH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 05:51:07 -0400
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:40332 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751023AbaJUJvD (ORCPT
+	id S932200AbaJUJxI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 05:53:08 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:59071 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751332AbaJUJxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 05:51:03 -0400
-X-Originating-IP: 50.43.41.112
-Date: Tue, 21 Oct 2014 02:50:43 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Pieter Smith <pieter@boesman.nl>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Paris <eparis@redhat.com>, Matt Turner <mattst88@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Fabian Frederick <fabf@skynet.be>, Tejun Heo <tj@kernel.org>,
-        ????????? <zhenglong.cai@cs2c.com.cn>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Peter Foley <pefoley2@pefoley.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Oleg Nesterov <oleg@redhat.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Kees Cook <keescook@chromium.org>, linux-fsdevel@vger.kernel.org,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:ABI/API" <linux-api@vger.kernel.org>
-Subject: Re: [PATCH 2/2] fs: Support compiling out sendfile
-Message-ID: <20141021095043.GB18167@thin>
-References: <1413841728-1313-1-git-send-email-pieter@boesman.nl>
- <1413841728-1313-2-git-send-email-pieter@boesman.nl>
- <20141020222421.GE8929@cloud>
- <20141021075154.GB10020@infradead.org>
- <20141021090421.GB17604@thin>
- <20141021091356.GA26330@infradead.org>
+	Tue, 21 Oct 2014 05:53:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141021091356.GA26330@infradead.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <a6b3d86db6f5d19f7130b8dba2703dda68cb14d5.1413842560.git.luto@amacapital.net>
+References: <20141020144448.59e2e067d632c70353296e56@linux-foundation.org>
+	<a6b3d86db6f5d19f7130b8dba2703dda68cb14d5.1413842560.git.luto@amacapital.net>
+Date: Tue, 21 Oct 2014 11:53:04 +0200
+X-Google-Sender-Auth: X9iLRf653rj3GvMSSmkFzIebx6g
+Message-ID: <CAMuHMdWrXaJnfuyxOP-4zQyYJwrho6XvbTcjtwNK4pgoSH9PFw@mail.gmail.com>
+Subject: Re: [PATCH] init: Remove CONFIG_INIT_FALLBACK
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>, Rob Landley <rob@landley.net>,
+        Frank Rowand <frowand.list@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chuck Ebbert <cebbert.lkml@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Shuah Khan <shuah.kh@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 02:13:56AM -0700, Christoph Hellwig wrote:
-> On Tue, Oct 21, 2014 at 02:04:22AM -0700, Josh Triplett wrote:
-> > That's the plan, but since sendfile depends on some of the splice bits,
-> > sendfile needs to be optional as well; SENDFILE_SYSCALL will then select
-> > SPLICE_SYSCALLS.
-> 
-> Just include sendfile with the splice syscalls - we don't really need a
-> config option for every obscure syscall.
+On Tue, Oct 21, 2014 at 12:04 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> CONFIG_INIT_FALLBACK adds config bloat without an obvious use case
+> that makes it worth keeping around.  Delete it.
+>
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> ---
+>
+> Bring on the blame :)
+>
+>  init/Kconfig | 16 ----------------
+>  init/main.c  |  5 -----
+>  2 files changed, 21 deletions(-)
+>
+> diff --git a/init/Kconfig b/init/Kconfig
+> index ebbd5846478e..e84c6423a2e5 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -1299,22 +1299,6 @@ source "usr/Kconfig"
+>
+>  endif
+>
+> -config INIT_FALLBACK
+> -       bool "Fall back to defaults if init= parameter is bad"
+> -       default y
+> -       help
 
-No objection here.  Pieter, since you're planning to remove splice
-anyway, can you just fold the two together under the same Kconfig
-option?  That should simplify the patch series, since you won't need to
-split the two.
+The above is not in mainline, nor in -next?
+Seems it only exists in a patch series you sent yourself?
 
-- Josh Triplett
+Confused...
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
