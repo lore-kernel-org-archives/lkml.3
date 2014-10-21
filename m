@@ -1,53 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755386AbaJUPaD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 11:30:03 -0400
-Received: from mail.us.es ([193.147.175.20]:52599 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752810AbaJUPaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 11:30:00 -0400
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus2 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.98.4/19523. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-103.2/7.5):. 
- Processed in 2.615995 secs); 21 Oct 2014 15:29:56 -0000
-X-Spam-ASN: AS12715 87.216.0.0/16
-X-Envelope-From: pneira@us.es
-Date: Tue, 21 Oct 2014 17:31:28 +0200
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Feng Gao <gfree.wind@gmail.com>
-Cc: Patrick McHardy <kaber@trash.net>, kadlec@blackhole.kfki.hu,
-        davem@davemloft.net,
-        Netfilter Developer Mailing List 
-	<netfilter-devel@vger.kernel.org>,
-        coreteam@netfilter.org, netdev@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] netfilter: xt_hashlimit: Enhance the xt_hashlimit to
- avoid duplicated codes
-Message-ID: <20141021153128.GA3657@salvia>
-References: <CA+6hz4o-2vSEzH+hjYAUfWRVqHQ3QfcCr8q11eoRpCTq2uTYtg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+6hz4o-2vSEzH+hjYAUfWRVqHQ3QfcCr8q11eoRpCTq2uTYtg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755516AbaJUPeB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 11:34:01 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:64128 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752810AbaJUPd7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 11:33:59 -0400
+From: Alban Bedel <alban.bedel@avionic-design.de>
+To: linux-kernel@vger.kernel.org
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Alban Bedel <alban.bedel@avionic-design.de>,
+        Lars-Peter Clausen <lars@metafoo.de>, alsa-devel@alsa-project.org,
+        linux-tegra@vger.kernel.org
+Subject: [PATCH] ASoC: tegra: Read and use the GPIO flags of the headphone detect
+Date: Tue, 21 Oct 2014 17:33:29 +0200
+Message-Id: <1413905609-23268-1-git-send-email-alban.bedel@avionic-design.de>
+X-Mailer: git-send-email 2.1.1
+X-Provags-ID: V02:K0:mETQoF4ULF/3155q88IiKxU4jFVsScLhtxYjf5dDRBT
+ 8MvsS8IbJdeRbNJE3X9oLKq3myXWxVGy92x5oNQLfCntQVoq/F
+ Pta/kVn1au107r8FpdyY8qPpcAGKEOzuRlZt2mMdD6VleYDZjx
+ pAAUIiJ3J4/VR3Ae5FB+LBhJw3oaMap/4Vrilqn58HZMYNgVDF
+ k1YC6B+hJqMehcZOh+jMq7ZLOhXT/l8GD4nNtGx+ClIfuoirlZ
+ 6GDtW5ySkYApDhEl4r0eAApOw7kGxywtQCS0M3ufX/E9CsUN7k
+ di1G3ro0nfq2+kKJKUSydQ7AGNckOie8lc2ckiu96U99fOXmIe
+ lHbyz/KowcfhdzuEpMhgYo67UXC/mHcMY8vyItiYZWBRewQSRh
+ V34yNVko/k/W0G9JVeeWfzNTXNYtR3XJRpVe3w9tD1IA90g3a1
+ K5jQ4
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 11:23:16PM +0800, Feng Gao wrote:
-> Hi all,
-> 
-> Enhance the functions "dsthash_alloc_init" and "hashlimit_mt" in file
-> "xt_hashlimit.c" to avoid two duplicated codes following:
-> 
-> -           dh->expires = now + msecs_to_jiffies(hinfo->cfg.expire);
-> -           rateinfo_recalc(dh, now, hinfo->cfg.mode);
-> 
-> 
-> The whole patch is following
+The headphone detect was hardcoded to low-active, use the flags from
+DT to allow high-active as well.
 
-The patch seems mangled by your MUA.
+Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
+---
+ sound/soc/tegra/tegra_rt5640.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-BTW, you can just Cc netfilter patches to
-netfilter-devel@vger.kernel.org. No need to Cc that many people.
+diff --git a/sound/soc/tegra/tegra_rt5640.c b/sound/soc/tegra/tegra_rt5640.c
+index a689883..4ebe387 100644
+--- a/sound/soc/tegra/tegra_rt5640.c
++++ b/sound/soc/tegra/tegra_rt5640.c
+@@ -44,6 +44,7 @@
+ struct tegra_rt5640 {
+ 	struct tegra_asoc_utils_data util_data;
+ 	int gpio_hp_det;
++	enum of_gpio_flags gpio_hp_det_flags;
+ };
+ 
+ static int tegra_rt5640_asoc_hw_params(struct snd_pcm_substream *substream,
+@@ -119,6 +120,8 @@ static int tegra_rt5640_asoc_init(struct snd_soc_pcm_runtime *rtd)
+ 
+ 	if (gpio_is_valid(machine->gpio_hp_det)) {
+ 		tegra_rt5640_hp_jack_gpio.gpio = machine->gpio_hp_det;
++		tegra_rt5640_hp_jack_gpio.invert =
++			!!(machine->gpio_hp_det_flags & OF_GPIO_ACTIVE_LOW);
+ 		snd_soc_jack_add_gpios(&tegra_rt5640_hp_jack,
+ 						1,
+ 						&tegra_rt5640_hp_jack_gpio);
+@@ -180,7 +183,8 @@ static int tegra_rt5640_probe(struct platform_device *pdev)
+ 	platform_set_drvdata(pdev, card);
+ 	snd_soc_card_set_drvdata(card, machine);
+ 
+-	machine->gpio_hp_det = of_get_named_gpio(np, "nvidia,hp-det-gpios", 0);
++	machine->gpio_hp_det = of_get_named_gpio_flags(
++		np, "nvidia,hp-det-gpios", 0, &machine->gpio_hp_det_flags);
+ 	if (machine->gpio_hp_det == -EPROBE_DEFER)
+ 		return -EPROBE_DEFER;
+ 
+-- 
+2.1.1
 
