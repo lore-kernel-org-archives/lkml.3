@@ -1,227 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354AbaJUJH7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 05:07:59 -0400
-Received: from mail-oi0-f43.google.com ([209.85.218.43]:37046 "EHLO
-	mail-oi0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031AbaJUJH5 (ORCPT
+	id S1754484AbaJUJIL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 05:08:11 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:46962 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751038AbaJUJII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 05:07:57 -0400
-MIME-Version: 1.0
-Date: Tue, 21 Oct 2014 17:07:56 +0800
-Message-ID: <CAJd=RBAF3BS9GvPW+fNB9DNzyHrBZk4qNfU6QKUhNNKTMYkmNQ@mail.gmail.com>
-Subject: Re: [RFC][PATCH 5/6] mm: Provide speculative fault infrastructure
-From: Hillf Danton <dhillf@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, tglx@linutronix.de,
-        akpm@linux-foundation.org, riel@redhat.com, mgorman@suse.de,
-        oleg@redhat.com, mingo@redhat.com, minchan@kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
-        linux-mm@kvack.org
-Cc: "hillf.zj" <hillf.zj@alibaba-inc.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 21 Oct 2014 05:08:08 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 2/5] phy: berlin-sata: Add support for BG2 SATA PHY
+Date: Tue, 21 Oct 2014 11:07:54 +0200
+Message-Id: <1413882477-27922-3-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1413882477-27922-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1413882477-27922-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Peter
+Berlin BG2 also has a SATA PHY compatible with the current driver
+except different PHY_BASE. Add a new compatible to the driver
+reflecting the different PHY_BASE.
 
-> Date:	Mon, 20 Oct 2014 23:56:38 +0200
-> From:	Peter Zijlstra <peterz@infradead.org>
-> To:	torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-> tglx@linutronix.de, akpm@linux-foundation.org, riel@redhat.com,
-> mgorman@suse.de, oleg@redhat.com, mingo@redhat.com, minchan@kernel.org,
-> kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk, la
-> Cc:	linux-kernel@vger.kernel.org, linux-mm@kvack.org, "Peter Zijlstra"
-> <peterz@infradead.org>
-> Subject: [RFC][PATCH 5/6] mm: Provide speculative fault infrastructure
->
-> Provide infrastructure to do a speculative fault (not holding
-> mmap_sem).
->
-> The not holding of mmap_sem means we can race against VMA
-> change/removal and page-table destruction. We use the SRCU VMA freeing
-> to keep the VMA around. We use the VMA seqcount to detect change
-> (including umapping / page-table deletion) and we use gup_fast() style
-> page-table walking to deal with page-table races.
->
-> Once we've obtained the page and are ready to update the PTE, we
-> validate if the state we started the fault with is still valid, if
-> not, we'll fail the fault with VM_FAULT_RETRY, otherwise we update the
-> PTE and we're done.
->
-> Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-> ---
->  include/linux/mm.h |    2
->  mm/memory.c        |  118
-> ++++++++++++++++++++++++++++++++++++++++++++++++++++-
->  2 files changed, 119 insertions(+), 1 deletion(-)
->
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -1162,6 +1162,8 @@ int generic_error_remove_page(struct add
->  int invalidate_inode_page(struct page *page);
->
->  #ifdef CONFIG_MMU
-> +extern int handle_speculative_fault(struct mm_struct *mm,
-> +			unsigned long address, unsigned int flags);
->  extern int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct
-> *vma,
->  			unsigned long address, unsigned int flags);
->  extern int fixup_user_fault(struct task_struct *tsk, struct mm_struct *mm,
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -2004,12 +2004,40 @@ struct fault_env {
->  	pte_t entry;
->  	spinlock_t *ptl;
->  	unsigned int flags;
-> +	unsigned int sequence;
->  };
->
->  static bool pte_map_lock(struct fault_env *fe)
->  {
-> +	bool ret = false;
-> +
-> +	if (!(fe->flags & FAULT_FLAG_SPECULATIVE)) {
-> +		fe->pte = pte_offset_map_lock(fe->mm, fe->pmd, fe->address, &fe->ptl);
-> +		return true;
-> +	}
-> +
-> +	/*
-> +	 * The first vma_is_dead() guarantees the page-tables are still valid,
-> +	 * having IRQs disabled ensures they stay around, hence the second
-> +	 * vma_is_dead() to make sure they are still valid once we've got the
-> +	 * lock. After that a concurrent zap_pte_range() will block on the PTL
-> +	 * and thus we're safe.
-> +	 */
-> +	local_irq_disable();
-> +	if (vma_is_dead(fe->vma, fe->sequence))
-> +		goto out;
-> +
->  	fe->pte = pte_offset_map_lock(fe->mm, fe->pmd, fe->address, &fe->ptl);
-> -	return true;
-> +
-> +	if (vma_is_dead(fe->vma, fe->sequence)) {
-> +		pte_unmap_unlock(fe->pte, fe->ptl);
-> +		goto out;
-> +	}
-> +
-> +	ret = true;
-> +out:
-> +	local_irq_enable();
-> +	return ret;
->  }
->
->  /*
-> @@ -2432,6 +2460,7 @@ static int do_swap_page(struct fault_env
->  	entry = pte_to_swp_entry(fe->entry);
->  	if (unlikely(non_swap_entry(entry))) {
->  		if (is_migration_entry(entry)) {
-> +			/* XXX fe->pmd might be dead */
->  			migration_entry_wait(fe->mm, fe->pmd, fe->address);
->  		} else if (is_hwpoison_entry(entry)) {
->  			ret = VM_FAULT_HWPOISON;
-> @@ -3357,6 +3386,93 @@ static int __handle_mm_fault(struct mm_s
->  	return handle_pte_fault(&fe);
->  }
->
-> +int handle_speculative_fault(struct mm_struct *mm, unsigned long address,
-> unsigned int flags)
-> +{
-> +	struct fault_env fe = {
-> +		.mm = mm,
-> +		.address = address,
-> +		.flags = flags | FAULT_FLAG_SPECULATIVE,
-> +	};
-> +	pgd_t *pgd;
-> +	pud_t *pud;
-> +	pmd_t *pmd;
-> +	pte_t *pte;
-> +	int dead, seq, idx, ret = VM_FAULT_RETRY;
-> +	struct vm_area_struct *vma;
-> +
-> +	idx = srcu_read_lock(&vma_srcu);
-> +	vma = find_vma_srcu(mm, address);
-> +	if (!vma)
-> +		goto unlock;
-> +
-> +	/*
-> +	 * Validate the VMA found by the lockless lookup.
-> +	 */
-> +	dead = RB_EMPTY_NODE(&vma->vm_rb);
-> +	seq = raw_read_seqcount(&vma->vm_sequence); /* rmb <->
-> seqlock,vma_rb_erase() */
-> +	if ((seq & 1) || dead) /* XXX wait for !&1 instead? */
-> +		goto unlock;
-> +
-> +	if (address < vma->vm_start || vma->vm_end <= address)
-> +		goto unlock;
-> +
-> +	/*
-> +	 * We need to re-validate the VMA after checking the bounds, otherwise
-> +	 * we might have a false positive on the bounds.
-> +	 */
-> +	if (read_seqcount_retry(&vma->vm_sequence, seq))
-> +		goto unlock;
-> +
-> +	/*
-> +	 * Do a speculative lookup of the PTE entry.
-> +	 */
-> +	local_irq_disable();
-> +	pgd = pgd_offset(mm, address);
-> +	if (pgd_none(*pgd) || unlikely(pgd_bad(*pgd)))
-> +		goto out_walk;
-> +
-> +	pud = pud_offset(pgd, address);
-> +	if (pud_none(*pud) || unlikely(pud_bad(*pud)))
-> +		goto out_walk;
-> +
-> +	pmd = pmd_offset(pud, address);
-> +	if (pmd_none(*pmd) || unlikely(pmd_bad(*pmd)))
-> +		goto out_walk;
-> +
-> +	/*
-> +	 * The above does not allocate/instantiate page-tables because doing so
-> +	 * would lead to the possibility of instantiating page-tables after
-> +	 * free_pgtables() -- and consequently leaking them.
-> +	 *
-> +	 * The result is that we take at least one !speculative fault per PMD
-> +	 * in order to instantiate it.
-> +	 *
-> +	 * XXX try and fix that.. should be possible somehow.
-> +	 */
-> +
-> +	if (pmd_huge(*pmd)) /* XXX no huge support */
-> +		goto out_walk;
-> +
-> +	fe.vma = vma;
-> +	fe.pmd = pmd;
-> +	fe.sequence = seq;
-> +
-> +	pte = pte_offset_map(pmd, address);
-> +	fe.entry = ACCESS_ONCE(pte); /* XXX gup_get_pte() */
+Acked-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Cc: Kishon Vijay Abraham I <kishon@ti.com> 
+Cc: "Antoine Ténart" <antoine.tenart@free-electrons.com>
+Cc: devicetree@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org 
+---
+ drivers/phy/phy-berlin-sata.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-I wonder if one char, "*", is missing.
+diff --git a/drivers/phy/phy-berlin-sata.c b/drivers/phy/phy-berlin-sata.c
+index 9682b0f66177..71568f5444ac 100644
+--- a/drivers/phy/phy-berlin-sata.c
++++ b/drivers/phy/phy-berlin-sata.c
+@@ -30,6 +30,7 @@
+ #define MBUS_WRITE_REQUEST_SIZE_128	(BIT(2) << 16)
+ #define MBUS_READ_REQUEST_SIZE_128	(BIT(2) << 19)
+ 
++#define BG2_PHY_BASE		0x080
+ #define BG2Q_PHY_BASE		0x200
+ 
+ /* register 0x01 */
+@@ -186,10 +187,15 @@ static u32 phy_berlin_power_down_bits[] = {
+ 	POWER_DOWN_PHY1,
+ };
+ 
++static u32 bg2_sata_phy_base = BG2_PHY_BASE;
+ static u32 bg2q_sata_phy_base = BG2Q_PHY_BASE;
+ 
+ static const struct of_device_id phy_berlin_sata_of_match[] = {
+ 	{
++		.compatible = "marvell,berlin2-sata-phy",
++		.data = &bg2_sata_phy_base,
++	},
++	{
+ 		.compatible = "marvell,berlin2q-sata-phy",
+ 		.data = &bg2q_sata_phy_base,
+ 	},
+-- 
+2.1.1
 
-btw, and more important, still correct for me to
-address you Redhater, Sir?
-
-Hillf
-> +	pte_unmap(pte);
-> +	local_irq_enable();
-> +
-> +	ret = handle_pte_fault(&fe);
-> +
-> +unlock:
-> +	srcu_read_unlock(&vma_srcu, idx);
-> +	return ret;
-> +
-> +out_walk:
-> +	local_irq_enable();
-> +	goto unlock;
-> +}
-> +
->  /*
->   * By the time we get here, we already hold the mm semaphore
->   *
