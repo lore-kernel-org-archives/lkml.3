@@ -1,70 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555AbaJUImN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 04:42:13 -0400
-Received: from mail-bl2on0122.outbound.protection.outlook.com ([65.55.169.122]:36352
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751014AbaJUImH convert rfc822-to-8bit (ORCPT
+	id S1753179AbaJUIn4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 04:43:56 -0400
+Received: from smtp105.iad3a.emailsrvr.com ([173.203.187.105]:43079 "EHLO
+	smtp105.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751672AbaJUInx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 04:42:07 -0400
-From: Yuantian Tang <Yuantian.Tang@freescale.com>
-To: Kumar Gala <galak@kernel.crashing.org>
-CC: "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>
-Subject: RE: [PATCH] cpufreq: qoriq: Make the driver usable on all QorIQ
- platforms
-Thread-Topic: [PATCH] cpufreq: qoriq: Make the driver usable on all QorIQ
- platforms
-Thread-Index: AQHP6bh2NIuvlhOTzUyj6ABxjLiyN5wz7kgAgAZNTAA=
-Date: Tue, 21 Oct 2014 08:25:42 +0000
-Message-ID: <8cf6bdb05e9b4d04994366db335f3a52@DM2PR03MB574.namprd03.prod.outlook.com>
-References: <1413515616-15874-1-git-send-email-B29983@freescale.com>
- <8F5E4DA7-8A64-4614-91E7-BFB28D91C737@kernel.crashing.org>
-In-Reply-To: <8F5E4DA7-8A64-4614-91E7-BFB28D91C737@kernel.crashing.org>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [192.88.158.211]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB574;
-x-forefront-prvs: 0371762FE7
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(51704005)(199003)(189002)(110136001)(80022003)(97736003)(108616004)(46102003)(33646002)(54356999)(76176999)(101416001)(66066001)(50986999)(21056001)(4396001)(122556002)(76482002)(107046002)(74316001)(85306004)(31966008)(99396003)(120916001)(85852003)(92566001)(95666004)(105586002)(76576001)(64706001)(86362001)(20776003)(99286002)(2656002)(87936001)(106356001)(40100003)(106116001)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR03MB574;H:DM2PR03MB574.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 21 Oct 2014 04:43:53 -0400
+X-Sender-Id: abbotti@mev.co.uk
+Message-ID: <54461CC3.2020103@mev.co.uk>
+Date: Tue, 21 Oct 2014 09:43:47 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: Hartley Sweeten <HartleyS@visionengravers.com>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [PATCH] staging: comedi: fix memory leak / bad pointer freeing
+ for chanlist
+References: <1413814240-3094-1-git-send-email-abbotti@mev.co.uk> <DC148C5AA1CEBA4E87973D432B1C2D8825FF1FC4@P3PWEX4MB008.ex4.secureserver.net>
+In-Reply-To: <DC148C5AA1CEBA4E87973D432B1C2D8825FF1FC4@P3PWEX4MB008.ex4.secureserver.net>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > #ifndef CONFIG_SMP
-> > static inline const struct cpumask *cpu_core_mask(int cpu) { @@ -79,6
-> > +75,79 @@ static inline const struct cpumask *cpu_core_mask(int cpu) }
-> > #endif
-> >
-> > +#if defined(CONFIG_PPC_E500MC)
-> 
-> Probably should just be CONFIG_PPC, but do we need this at all.  Can't we just
-> use topology_core_id() on both ARM & PPC?
-> 
-topology_core_id() doesn't work on PPC.
-This function only supports PPC64 and non-thread SOCs.
+On 20/10/14 22:38, Hartley Sweeten wrote:
+> On Monday, October 20, 2014 7:11 AM, Ian Abbott wrote:
+>> As a follow-up to commit 6cab7a37f5c04 ("staging: comedi: (regression)
+>> channel list must be set for COMEDI_CMD ioctl"), Hartley Sweeten pointed
+>> out another couple of bugs stemming from commit 6cab7a37f5c04 ("staging:
+>> comedi: comedi_fops: introduce __comedi_get_user_chanlist()").
+>>
+>> Firstly, `do_cmdtest_ioctl()` never frees the kernel copy of the user
+>> chanlist allocated by `__comedi_get_user_chanlist()`, so that memory is
+>> leaked.  Fix it by freeing the allocated kernel memory pointed to by
+>> `cmd.chanlist` before that pointer is overwritten with its original
+>> pointer to user memory before `cmd` is copied back to user-space.
+>>
+>> Secondly, if `__comedi_get_user_chanlist()` returns an error,
+>> `cmd->chanlist` is left unchanged and in fact will be a pointer to user
+>> memory.  This causes `do_cmd_ioctl()` to `goto cleanup` and call
+>> `do_become_nonbusy()` which would attempt to free the memory pointed to
+>> by the user-space pointer.  Fix it by setting `cmd->chanlist` to NULL at
+>> the start of `__comedi_get_user_chanlist()`.
+>>
+>> Fixes: c6cd0eefb27b ("staging: comedi: comedi_fops: introduce __comedi_get_user_chanlist()")
+>> Reported-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+>> Cc: <stable@vger.kernel.org> # 3.15.y 3.16.y 3.17.y: 6cab7a37f5c04
+>> Cc: <stable@vger.kernel.org> # 3.15.y 3.16.y 3.17.y
+>> ---
+>> Greg, this patch applies to your "staging-linus" branch.
+>> ---
+>>   drivers/staging/comedi/comedi_fops.c | 3 +++
+>>   1 file changed, 3 insertions(+)
+>>
+>> diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
+>> index a9b7fe5..a1788e8 100644
+>> --- a/drivers/staging/comedi/comedi_fops.c
+>> +++ b/drivers/staging/comedi/comedi_fops.c
+>> @@ -1462,6 +1462,7 @@ static int __comedi_get_user_chanlist(struct comedi_device *dev,
+>>   	unsigned int *chanlist;
+>>   	int ret;
+>>
+>> +	cmd->chanlist = NULL;
+>>   	chanlist = memdup_user(user_chanlist,
+>>   			       cmd->chanlist_len * sizeof(unsigned int));
+>>   	if (IS_ERR(chanlist))
+>
+> I don't think this covers all the problems in your second issue above.
+>
+> It does fix the attempt to free the memory pointed to by the user-space pointer
+> if the memdub_user() fails.
+>
+> But in do_cmd_ioctl() we still have an issue if the s->do_cmdtest() fails or
+> the CMDF_BOGUS flag is set. There we restore the users cmd.chanlist
+> pointer to allow copy_to_user() to return the cmd/ But the kernel allocated
+> chanlist is not freed. The goto cleanup will again try to free the user-space
+> pointer.
 
-I can make it work on PPC, but we are used to use get_hard_smp_processor_id() on ppc.
+No, 'async->cmd' is copied (via struct assignment) to local variable 
+'cmd' and it is the local 'cmd.chanlist' pointer that is set to the 
+original user-space pointer and the local 'cmd' that is copied back to 
+user-space.  'async->cmd.chanlist' still points to the kernel copy of 
+the chanlist that gets cleaned up by 'goto cleanup' / 'do_become_nonbusy().
 
-Regards,
-Yuantian
-
-> > +static int get_cpu_physical_id(int cpu) {
-> > +	return get_hard_smp_processor_id(cpu); } #elif defined(CONFIG_ARM)
-> > +static int get_cpu_physical_id(int cpu) {
-> > +	return topology_core_id(cpu);
-> > +}
-> > +#endif
-> > +
-
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
+-=(                          Web: http://www.mev.co.uk/  )=-
