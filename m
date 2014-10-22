@@ -1,80 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754169AbaJVIC0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 04:02:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33917 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751100AbaJVICV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 04:02:21 -0400
-Date: Wed, 22 Oct 2014 10:02:18 +0200
-From: Jan Kara <jack@suse.cz>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: akpm@linux-foundation.org, jack@suse.cz, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, a.ryabinin@samsung.com
-Subject: Re: [PATCH] fs, jbd: use a more generic hash function
-Message-ID: <20141022080218.GA26827@quack.suse.cz>
-References: <1413924235-26276-1-git-send-email-sasha.levin@oracle.com>
+	id S932300AbaJVICv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 04:02:51 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:40888 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932076AbaJVICr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 04:02:47 -0400
+Message-ID: <5447648C.1050405@huawei.com>
+Date: Wed, 22 Oct 2014 16:02:20 +0800
+From: Wang Nan <wangnan0@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413924235-26276-1-git-send-email-sasha.levin@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Namhyung Kim <namhyung@kernel.org>, <acme@kernel.org>
+CC: <a.p.zijlstra@chello.nl>, <paulus@samba.org>, <mingo@redhat.com>,
+        <jolsa@redhat.com>, <adrian.hunter@intel.com>, <Waiman.Long@hp.com>,
+        <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>
+Subject: Re: [PATCH v2] perf tools: makes CPUINFO_PROC to array for different
+ kernel version
+References: <1413963582-7174-1-git-send-email-wangnan0@huawei.com>
+In-Reply-To: <1413963582-7174-1-git-send-email-wangnan0@huawei.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.90]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 21-10-14 16:43:55, Sasha Levin wrote:
-> While the hash function used by the revoke hashtable is good somewhere else,
-> it's not really good here.
+On 2014/10/22 15:39, Wang Nan wrote:
+> euler inclusion
+> target: kernel 3.10
+> category: bugfix
+> DTS: DTS2014101306477
+> Bugzilla: 623
+> directory: upstreamed
+> archive: https://lkml.org/lkml/2014/10/15/611
 > 
-> The default hash shift (8) means that one third of the hashing function
-> gets lost (and is undefined anyways (8 - 12 = negative shift)):
+> ----------------------------------------
 > 
-> 	"(block << (hash_shift - 12))) & (table->hash_size - 1)"
-> 
-> Instead, just use the kernel's generic hash function that gets used everywhere
-> else.
-  Thanks. Merged to my tree.
 
-								Honza
+Sorry, the header is for our internal use only.
+
+Please ignore it and see
+
+https://lkml.org/lkml/2014/10/22/85
+
+Thanks.
+
+> After kernel 3.7 (commit b4b8f770eb10a1bccaf8aa0ec1956e2dd7ed1e0a),
+> /proc/cpuinfo replaces 'Processor' to 'model name'. This patch makes
+> CPUINFO_PROC to an array and provides two choices for ARM, makes it
+> compatible for different kernel version.
 > 
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> ---
->  fs/jbd/revoke.c |    7 ++-----
->  1 file changed, 2 insertions(+), 5 deletions(-)
+> v1 -> v2: minor changes as suggested by Namhyung Kim:
 > 
-> diff --git a/fs/jbd/revoke.c b/fs/jbd/revoke.c
-> index 8898bbd..dcead63 100644
-> --- a/fs/jbd/revoke.c
-> +++ b/fs/jbd/revoke.c
-> @@ -93,6 +93,7 @@
->  #include <linux/bio.h>
->  #endif
->  #include <linux/log2.h>
-> +#include <linux/hash.h>
->  
->  static struct kmem_cache *revoke_record_cache;
->  static struct kmem_cache *revoke_table_cache;
-> @@ -129,15 +130,11 @@ static void flush_descriptor(journal_t *, struct journal_head *, int, int);
->  
->  /* Utility functions to maintain the revoke table */
->  
-> -/* Borrowed from buffer.c: this is a tried and tested block hash function */
->  static inline int hash(journal_t *journal, unsigned int block)
->  {
->  	struct jbd_revoke_table_s *table = journal->j_revoke;
-> -	int hash_shift = table->hash_shift;
->  
-> -	return ((block << (hash_shift - 6)) ^
-> -		(block >> 13) ^
-> -		(block << (hash_shift - 12))) & (table->hash_size - 1);
-> +	return hash_32(block, table->hash_shift);
->  }
->  
->  static int insert_revoke_hash(journal_t *journal, unsigned int blocknr,
-> -- 
-> 1.7.10.4
+>  - Doesn't pass @h and @evlist to __write_cpudesc;
+>  - Coding style fix.
 > 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+
+
