@@ -1,82 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932743AbaJVU5z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 16:57:55 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:62277 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932111AbaJVU5x (ORCPT
+	id S932812AbaJVU6J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 16:58:09 -0400
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:36199 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932111AbaJVU6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 16:57:53 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        David Rientjes <rientjes@google.com>, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH 3/4] OOM, PM: OOM killed task shouldn't escape PM suspend
-Date: Wed, 22 Oct 2014 23:18:20 +0200
-Message-ID: <2145559.zOULAq9xLg@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141022142226.GC30802@dhcp22.suse.cz>
-References: <1413876435-11720-1-git-send-email-mhocko@suse.cz> <3987583.vdsuvlAsHc@vostro.rjw.lan> <20141022142226.GC30802@dhcp22.suse.cz>
+	Wed, 22 Oct 2014 16:58:05 -0400
+X-IronPort-AV: E=Sophos;i="5.04,771,1406617200"; 
+   d="scan'208";a="48916541"
+From: Scott Branden <sbranden@broadcom.com>
+To: Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        <bcm-kernel-feedback-list@broadcom.com>,
+        Mike Turquette <mturquette@linaro.org>, Alex Elder <elder@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "Kumar Gala" <galak@codeaurora.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joe Perches <joe@perches.com>,
+        "Mauro Carvalho Chehab" <m.chehab@samsung.com>,
+        Antti Palosaari <crope@iki.fi>
+CC: JD Zheng <jdzheng@broadcom.com>, Ray Jui <rjui@broadcom.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Scott Branden <sbranden@broadcom.com>
+Subject: [PATCH v7 0/7] Add initial support for Broadcom Cygnus SoC
+Date: Wed, 22 Oct 2014 13:57:47 -0700
+Message-ID: <1414011474-11821-1-git-send-email-sbranden@broadcom.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <Scott Branden <sbranden@broadcom.com>
+References: <Scott Branden <sbranden@broadcom.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, October 22, 2014 04:22:26 PM Michal Hocko wrote:
-> On Wed 22-10-14 16:39:12, Rafael J. Wysocki wrote:
-> > On Tuesday, October 21, 2014 04:29:39 PM Michal Hocko wrote:
-> > > On Tue 21-10-14 16:41:07, Rafael J. Wysocki wrote:
-> > > > On Tuesday, October 21, 2014 04:11:59 PM Michal Hocko wrote:
-> > > [...]
-> > > > > OK, incremental diff on top. I will post the complete patch if you are
-> > > > > happier with this change
-> > > > 
-> > > > Yes, I am.
-> > > ---
-> > > From 9ab46fe539cded8e7b6425b2cd23ba9184002fde Mon Sep 17 00:00:00 2001
-> > > From: Michal Hocko <mhocko@suse.cz>
-> > > Date: Mon, 20 Oct 2014 18:12:32 +0200
-> > > Subject: [PATCH -v2] OOM, PM: OOM killed task shouldn't escape PM suspend
-> > > 
-> > > PM freezer relies on having all tasks frozen by the time devices are
-> > > getting frozen so that no task will touch them while they are getting
-> > > frozen. But OOM killer is allowed to kill an already frozen task in
-> > > order to handle OOM situtation. In order to protect from late wake ups
-> > > OOM killer is disabled after all tasks are frozen. This, however, still
-> > > keeps a window open when a killed task didn't manage to die by the time
-> > > freeze_processes finishes.
-> > > 
-> > > Reduce the race window by checking all tasks after OOM killer has been
-> > > disabled. This is still not race free completely unfortunately because
-> > > oom_killer_disable cannot stop an already ongoing OOM killer so a task
-> > > might still wake up from the fridge and get killed without
-> > > freeze_processes noticing. Full synchronization of OOM and freezer is,
-> > > however, too heavy weight for this highly unlikely case.
-> > > 
-> > > Introduce and check oom_kills counter which gets incremented early when
-> > > the allocator enters __alloc_pages_may_oom path and only check all the
-> > > tasks if the counter changes during the freezing attempt. The counter
-> > > is updated so early to reduce the race window since allocator checked
-> > > oom_killer_disabled which is set by PM-freezing code. A false positive
-> > > will push the PM-freezer into a slow path but that is not a big deal.
-> > > 
-> > > Changes since v1
-> > > - push the re-check loop out of freeze_processes into
-> > >   check_frozen_processes and invert the condition to make the code more
-> > >   readable as per Rafael
-> > 
-> > I've applied that along with the rest of the series, but what about the
-> > following cleanup patch on top of it?
-> 
-> Sure, looks good to me.
+This patchset contains initial support for Broadcom's Cygnus SoC based on our
+iProc architecture. Initial support is minimal and includes just the mach
+platform code, clock driver, and a basic device tree configuration. Peripheral
+drivers will be submitted soon, as will device tree configurations for other
+Cygnus board variants.
 
-I'll apply it then, thanks!
+Changes from v6:
+ - Additional patch added for cleanup of other areas of mach-bcm/Kconfig
+   discovered during Cygnus submission review to:
+   - removed one level of menu for ARCH_BCM_MOBILE in mach-bcm-Kconfig based
+     on feedback from Arnd
+   - added comment sections to Kconfig to identify SoC architecture groupings
+
+Changes from v5:
+ - removed one level of menu used in mach-bcm/Kconfig
+ - changed MAINTAINERS to use N: to support all files associated with iproc
+   and cygnus going forward
+ - updated bcm_cygnus_defconfig to remove some DEBUG options that greatly
+   hamper performance
+
+Changes from v4:
+ - simple clock tree used. reworked clock driver will be submitted later
+ - fixed MAINTAINERS patchset error
+ - removed DEBUG_UART_8250 Kconfig.debug legacy support
+ - made ARCH_BCM_IPROC a silent Kconfig option
+ - removed multi_v7_defconfig as it is not needed at this time, can
+   support in future patchset but does not seem optimal configs for our
+   current usage.
+ 
+Changes from v3:
+ - restart functionality removed.  Will be added in a different patchset
+   in drivers/power
+ - removed NEON init sequence.  Will be moved to bootloader
+ - cleaned up Kconfigs for ARCH_BCM_CYGNUS by removing unnecessary selects
+ - consolidated ARCH_BCM_IPROC with select from ARCH_BCM_CYGNUS and
+   ARCH_BCM5301X
+ - removed bcm911360_entphn binding
+ - added documentation for SoCs currently supported in Cygnus family
+
+Changes from v2:
+ - rebased to 3.17 kernel
+
+Changes from v1:
+ - Address code review comments as per previous responses.
+ - Copyright headers updated to remove Broadcom URL.
+ - mach platform code still contains hard coded addresses. These address are
+   the same for all Cygnus variants. Could you please provide guidance on where
+   they should go if you would still like them changed.  There does not seem to
+   be a reason to change them to device tree as they do not change.
+
+Jonathan Richardson (3):
+  ARM: cygnus: Initial support for Broadcom Cygnus SoC
+  dt-bindings: Document Broadcom Cygnus SoC and clocks
+  ARM: cygnus defconfig : Initial defconfig for Broadcom Cygnus SoC
+
+Scott Branden (4):
+  ARM: dts: Enable Broadcom Cygnus SoC
+  MAINTAINERS: Entry for Cygnus/iproc arm architecture
+  ARM: mach-bcm: Consolidate currently supported IPROC SoCs
+  ARM: mach-bcm: ARCH_BCM_MOBILE: remove one level of menu from Kconfig
+
+ .../devicetree/bindings/arm/bcm/cygnus.txt         |   31 +++
+ .../devicetree/bindings/clock/bcm-cygnus-clock.txt |   34 +++
+ MAINTAINERS                                        |   14 ++
+ arch/arm/boot/dts/Makefile                         |    4 +
+ arch/arm/boot/dts/bcm-cygnus-clock.dtsi            |   73 ++++++
+ arch/arm/boot/dts/bcm-cygnus.dtsi                  |  109 +++++++++
+ arch/arm/boot/dts/bcm911360_entphn.dts             |   22 ++
+ arch/arm/boot/dts/bcm911360k.dts                   |   22 ++
+ arch/arm/boot/dts/bcm958300k.dts                   |   22 ++
+ arch/arm/configs/bcm_cygnus_defconfig              |  237 ++++++++++++++++++++
+ arch/arm/configs/bcm_defconfig                     |    3 +-
+ arch/arm/configs/multi_v7_defconfig                |    3 +-
+ arch/arm/mach-bcm/Kconfig                          |   93 +++++---
+ arch/arm/mach-bcm/Makefile                         |    3 +
+ arch/arm/mach-bcm/bcm_cygnus.c                     |   26 +++
+ 15 files changed, 658 insertions(+), 38 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/bcm/cygnus.txt
+ create mode 100644 Documentation/devicetree/bindings/clock/bcm-cygnus-clock.txt
+ create mode 100644 arch/arm/boot/dts/bcm-cygnus-clock.dtsi
+ create mode 100644 arch/arm/boot/dts/bcm-cygnus.dtsi
+ create mode 100644 arch/arm/boot/dts/bcm911360_entphn.dts
+ create mode 100644 arch/arm/boot/dts/bcm911360k.dts
+ create mode 100644 arch/arm/boot/dts/bcm958300k.dts
+ create mode 100644 arch/arm/configs/bcm_cygnus_defconfig
+ create mode 100644 arch/arm/mach-bcm/bcm_cygnus.c
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.9.5
+
