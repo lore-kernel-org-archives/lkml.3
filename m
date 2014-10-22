@@ -1,99 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932661AbaJVTqP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 15:46:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29875 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932575AbaJVTqL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 15:46:11 -0400
-Date: Wed, 22 Oct 2014 21:42:28 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: peterz@infradead.org, cl@linux.com, tkhai@yandex.ru, ktkhai@parallels.com,
-        linux-kernel@vger.kernel.org, mingo@redhat.com, vdavydov@parallels.com
-Subject: Re: introduce probe_slab_address?
-Message-ID: <20141022194228.GA10995@redhat.com>
-References: <20141022161450.GA27607@redhat.com> <20141022163743.GI21513@worktop.programming.kicks-ass.net> <20141022181412.GA8159@redhat.com> <20141022.145950.1585224138048242923.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141022.145950.1585224138048242923.davem@davemloft.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932666AbaJVTtd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 15:49:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57030 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932071AbaJVTtc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 15:49:32 -0400
+Date: Wed, 22 Oct 2014 12:49:30 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dominik Dingel <dingel@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>, Paolo Bonzini <pbonzini@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Bob Liu <lliubbo@gmail.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Gleb Natapov <gleb@kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Jianyu Zhan <nasa4836@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        kvm@vger.kernel.org, linux390@de.ibm.com, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: Re: [PATCH 2/4] mm: introduce mm_forbids_zeropage function
+Message-Id: <20141022124930.d723008daf5465be0a761b82@linux-foundation.org>
+In-Reply-To: <20141022214552.0c954692@BR9TG4T3.de.ibm.com>
+References: <1413976170-42501-1-git-send-email-dingel@linux.vnet.ibm.com>
+	<1413976170-42501-3-git-send-email-dingel@linux.vnet.ibm.com>
+	<20141022122223.f3bef0f497941fa8e0805dbf@linux-foundation.org>
+	<20141022214552.0c954692@BR9TG4T3.de.ibm.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22, David Miller wrote:
->
-> From: Oleg Nesterov <oleg@redhat.com>
-> Date: Wed, 22 Oct 2014 20:14:12 +0200
->
-> > So perhaps something like this makes sense?
-> >
-> > If some arch has problems with D-cache aliasing (because the freed page
-> > can be already mapped by user-space or vmalloc'ed), it can redefine this
-> > helper.
-> >
-> > Do you think we can use it to access rq->curr? (although let me repeat
-> > that I won't really argue with SLAB_DESTROY_BY_RCU).
->
-> Do we really need this?
+On Wed, 22 Oct 2014 21:45:52 +0200 Dominik Dingel <dingel@linux.vnet.ibm.com> wrote:
 
-Sorry, I was not clear. let me first explain why do we want this helper,
-(although we can avoid it if we make task_struct_cachep SLAB_DESTROY_BY_RCU).
+> > > +#ifndef mm_forbids_zeropage
+> > > +#define mm_forbids_zeropage(X)  (0)
+> > > +#endif
+> > 
+> > Can we document this please?  What it does, why it does it.  We should
+> > also specify precisely which arch header file is responsible for
+> > defining mm_forbids_zeropage.
+> > 
+> 
+> I will add a comment like:
+> 
+> /*
+>  * To prevent common memory management code establishing
+>  * a zero page mapping on a read fault.
+>  * This function should be implemented within <asm/pgtable.h>.
 
-To simplify the discussion, lets ignore the actuall problem we are
-trying to solve. Suppose that we want a trivial function, say,
+s/function should be implemented/macro should be defined/
 
-	int pid_of_curr_task_on_cpu(int cpu)
-	{
-		 struct rq *rq = cpu_rq(cpu);
-		 int pid;
+>  * s390 does this to prevent multiplexing of hardware bits
+>  * related to the physical page in case of virtualization.
+>  */
+> 
+> Okay?
 
-		 rcu_read_lock();
-		 pid = rq->curr->pid;
-		 rcu_read_unlock();
-	}
-
-and we do not really care if it returns the wrong/random result.
-
-The problem is that rcu_read_lock() can not help (unless we add
-SLAB_DESTROY_BY_RCU), rq->curr is not protected by RCU. So rq->curr can
-be freed. Again, we do not care, but CONFIG_DEBUG_PAGEALLOC can ummap
-this page.
-
-So we can use ifdef(CONFIG_DEBUG_PAGEALLOC) but it would be better to
-have a helper to hide this ugliness, and (at least) slub can use it too.
-
-Now the question: is this LOAD is safe in case when this (freed) page
-already has another mapping? This is black magic to me, I do not know.
-And Peter has some concerns.
-
-And, say, copy_from_user_page() on sparc does
-
-	flush_cache_page();
-	memcpy();
-	flush_ptrace_access();
-
-Again, I simply do not know if this is relevant or not, probably this
-is because "illegal alias" was created by kmap() which can use the
-same vaddr to access different pages.
-
-> We fully initialize and read from the area using the same virtual
-> address, there is no possiblity for corruption from SLAB's
-> perspective.
->
-> It's when you store at vaddr X then read at vaddr Y and expect to see
-> what you wrote at X that you have problems.
->
-> That is very much not what is happening here.
->
-> The lifetime is contained to SLAB's usage at one single virtual
-> address.
-
-OK, so iiuc this should be safe.
-
-Thanks!
-
-Oleg.
-
+Looks great, thanks.
