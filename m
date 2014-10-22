@@ -1,68 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933487AbaJVXxU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 19:53:20 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:51909 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754203AbaJVXxR (ORCPT
+	id S933578AbaJVXxx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 19:53:53 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:49873 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754669AbaJVXxt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 19:53:17 -0400
-Message-ID: <5448436B.3020705@codeaurora.org>
-Date: Wed, 22 Oct 2014 16:53:15 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 22 Oct 2014 19:53:49 -0400
+Date: Wed, 22 Oct 2014 17:53:45 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-arch@vger.kernel.org,
+        arnab.basu@freescale.com, Bharat.Bhushan@freescale.com, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
+        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Liviu Dudau <liviu@dudau.co.uk>
+Subject: Re: [PATCH v3 24/27] IA64/MSI: Use MSI chip framework to configure
+ MSI/MSI-X irq
+Message-ID: <20141022235345.GE4795@google.com>
+References: <1413342435-7876-1-git-send-email-wangyijing@huawei.com>
+ <1413342435-7876-25-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Grant Likely <grant.likely@linaro.org>,
-        Stanimir Varbanov <svarbanov@mm-sol.com>,
-        Rob Herring <rob.herring@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        devicetree@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] RFC: add function for localbus address
-References: <20140729234522.E9FF1C40738@trevor.secretlab.ca> <1409672700-21697-1-git-send-email-svarbanov@mm-sol.com> <20140908145204.8ADC2C40AE5@trevor.secretlab.ca> <540E1014.8090102@codeaurora.org> <20140914044610.913E9C4102A@trevor.secretlab.ca> <54483746.9060104@codeaurora.org> <20141022232021.GF27405@n2100.arm.linux.org.uk>
-In-Reply-To: <20141022232021.GF27405@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413342435-7876-25-git-send-email-wangyijing@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2014 04:20 PM, Russell King - ARM Linux wrote:
-> On Wed, Oct 22, 2014 at 04:01:26PM -0700, Stephen Boyd wrote:
->> Where did this end up? When we talked at Connect I think we settled on
->> exploring a driver core specific API like dev_get_localbus_address()
->> that calls of_get_localbus_address() for devices with an of_node and in
->> the future it could call something like acpi_get_localbus_address() when
->> there's an acpi_node. I believe the biggest concern is that we're making
->> an API that is OF or platform bus specific when it doesn't need to be.
->> Making a driver core specific API avoids this problem by making it bus
->> agnostic.
-> Given how little information there is in the original patch as to exactly
-> what problem this is addressing, I could be getting the wrong end of the
-> stick here.
->
-> Is this about trying to have a way to obtain the bus local addresses
-> associated with CPU-view resources?
->
-> If so, how about looking towards PCI, which has had this problem for the
-> last 15+ years, where PCI bus addresses are not necessarily the same as
-> CPU physical addresses?
->
-> There, we don't end up with multiple addresses specified in resources.
-> We instead have a way to translate between resources and bus-local
-> addresses, which IMHO is far nicer and less error-prone than having to
-> specify the same information twice, once with an offset and once without.
->
+On Wed, Oct 15, 2014 at 11:07:12AM +0800, Yijing Wang wrote:
+> Use MSI chip framework instead of arch MSI functions to configure
+> MSI/MSI-X irq. So we can manage MSI/MSI-X irq in a unified framework.
 
-Not really. This is about giving the address of a sub device on a pmic
-to a platform driver for that sub device. There is no CPU view. The
-addresses are offsets in a register space for a PMIC or other MFD that
-lives on i2c/spi or some similar sort of bus. So perhaps 0x20
-corresponds to the start of the register space for an RTC and 0x38
-corresponds to the start of the register space for a regulator.
+This needs slightly more detail.  You're using the MSI chip framework
+"instead of arch MSI functions".  Well, there are still arch-specific
+functions, i.e., arch_ia64_setup_msi_irq() and
+arch_ia64_teardown_msi_irq().
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-a Linux Foundation Collaborative Project
+We used to have arch_setup_msi_irq() which had a weak default
+implementation, and a strong arch-specific implementation here, and you're
+replacing that model with the new "msi-ops" model.  I don't know how you
+want to write that, but it's not that you're getting rid of the
+arch-specific code; you're keeping arch-specific code but structuring it
+differently.
 
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> ---
+>  arch/ia64/include/asm/pci.h |   10 ++++++++++
+>  arch/ia64/kernel/msi_ia64.c |   14 ++++++++++----
+>  arch/ia64/pci/pci.c         |    1 +
+>  3 files changed, 21 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/ia64/include/asm/pci.h b/arch/ia64/include/asm/pci.h
+> index 52af5ed..907dcba 100644
+> --- a/arch/ia64/include/asm/pci.h
+> +++ b/arch/ia64/include/asm/pci.h
+> @@ -94,6 +94,7 @@ struct pci_controller {
+>  	int segment;
+>  	int node;		/* nearest node with memory or NUMA_NO_NODE for global allocation */
+>  
+> +	struct msi_chip *msi_chip;
+>  	void *platform_data;
+>  };
+>  
+> @@ -101,6 +102,15 @@ struct pci_controller {
+>  #define PCI_CONTROLLER(busdev) ((struct pci_controller *) busdev->sysdata)
+>  #define pci_domain_nr(busdev)    (PCI_CONTROLLER(busdev)->segment)
+>  
+> +extern struct msi_chip chip;
+
+Please make this name more descriptive.  "chip" is way too generic for a
+global name.
+
+> +static inline struct msi_chip *pci_msi_chip(struct pci_bus *bus)
+> +{
+> +	struct pci_controller *ctrl = bus->sysdata;
+> +
+> +	return ctrl->msi_chip;
+> +}
+> +
+>  extern struct pci_ops pci_root_ops;
+>  
+>  static inline int pci_proc_domain(struct pci_bus *bus)
+> diff --git a/arch/ia64/kernel/msi_ia64.c b/arch/ia64/kernel/msi_ia64.c
+> index 8c3730c..401fc98 100644
+> --- a/arch/ia64/kernel/msi_ia64.c
+> +++ b/arch/ia64/kernel/msi_ia64.c
+> @@ -112,15 +112,16 @@ static struct irq_chip ia64_msi_chip = {
+>  };
+>  
+>  
+> -int arch_setup_msi_irq(struct pci_dev *pdev, struct msi_desc *desc)
+> +static int arch_ia64_setup_msi_irq(struct msi_chip *chip,
+> +		struct pci_dev *dev, struct msi_desc *desc)
+>  {
+>  	if (platform_setup_msi_irq)
+> -		return platform_setup_msi_irq(pdev, desc);
+> +		return platform_setup_msi_irq(dev, desc);
+>  
+> -	return ia64_setup_msi_irq(pdev, desc);
+> +	return ia64_setup_msi_irq(dev, desc);
+
+Please don't make gratuitous changes ("pdev" -> "dev") at the same time,
+especially since the rest of the file still uses "pdev".
+
+>  }
+>  
+> -void arch_teardown_msi_irq(unsigned int irq)
+> +static void arch_ia64_teardown_msi_irq(struct msi_chip *chip, unsigned int irq)
+>  {
+>  	if (platform_teardown_msi_irq)
+>  		return platform_teardown_msi_irq(irq);
+> @@ -128,6 +129,11 @@ void arch_teardown_msi_irq(unsigned int irq)
+>  	return ia64_teardown_msi_irq(irq);
+>  }
+>  
+> +struct msi_chip chip = {
+> +	.setup_irq = arch_ia64_setup_msi_irq,
+> +	.teardown_irq = arch_ia64_teardown_msi_irq,
+> +};
+> +
+>  #ifdef CONFIG_INTEL_IOMMU
+>  #ifdef CONFIG_SMP
+>  static int dmar_msi_set_affinity(struct irq_data *data,
+> diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
+> index 291a582..299b67d 100644
+> --- a/arch/ia64/pci/pci.c
+> +++ b/arch/ia64/pci/pci.c
+> @@ -437,6 +437,7 @@ struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
+>  
+>  	controller->companion = device;
+>  	controller->node = acpi_get_node(device->handle);
+> +	controller->msi_chip = &chip;
+>  
+>  	info = kzalloc(sizeof(*info), GFP_KERNEL);
+>  	if (!info) {
+> -- 
+> 1.7.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
