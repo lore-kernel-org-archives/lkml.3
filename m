@@ -1,112 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866AbaJVKET (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 06:04:19 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:56616 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754564AbaJVKEQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 06:04:16 -0400
-Date: Wed, 22 Oct 2014 12:04:11 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yuyang Du <yuyang.du@intel.com>
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, pjt@google.com,
-        bsegall@google.com, arjan.van.de.ven@intel.com, len.brown@intel.com,
-        rafael.j.wysocki@intel.com, alan.cox@intel.com, mark.gross@intel.com,
-        fengguang.wu@intel.com
-Subject: Re: [RESEND PATCH 2/3 v5] sched: Rewrite per entity runnable load
- average tracking
-Message-ID: <20141022100411.GC23531@worktop.programming.kicks-ass.net>
-References: <1412907717-2871-1-git-send-email-yuyang.du@intel.com>
- <1412907717-2871-3-git-send-email-yuyang.du@intel.com>
+	id S1754955AbaJVKEb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 06:04:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54091 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754564AbaJVKE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 06:04:28 -0400
+Date: Wed, 22 Oct 2014 10:03:32 +0000
+From: Aaron Tomlin <atomlin@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Rik van Riel <riel@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        Dario Faggioli <raistlin@linux.it>, Andi Kleen <ak@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Jens Axboe <axboe@fb.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH] sysctl: terminate strings also on \r
+Message-ID: <20141022100332.GA3085@atomlin.usersys.redhat.com>
+References: <20141021202137.GA20114@www.outflux.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1412907717-2871-3-git-send-email-yuyang.du@intel.com>
+In-Reply-To: <20141021202137.GA20114@www.outflux.net>
+X-PGP-Key: http://pgp.mit.edu/pks/lookup?search=atomlin%40redhat.com
+X-PGP-Fingerprint: 7906 84EB FA8A 9638 8D1E  6E9B E2DE 9658 19CC 77D6
 User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 10, 2014 at 10:21:56AM +0800, Yuyang Du wrote:
-> +/* Group cfs_rq's load_avg is used for task_h_load and update_cfs_share */
-> +static inline int update_cfs_rq_load_avg(u64 now, struct cfs_rq *cfs_rq)
->  {
-> +	int decayed;
->  
-> +	if (atomic_long_read(&cfs_rq->removed_load_avg)) {
-> +		long r = atomic_long_xchg(&cfs_rq->removed_load_avg, 0);
-> +		cfs_rq->avg.load_avg = max_t(long, cfs_rq->avg.load_avg - r, 0);
-> +		cfs_rq->avg.load_sum =
-> +			max_t(s64, cfs_rq->avg.load_sum - r * LOAD_AVG_MAX, 0);
->  	}
->  
-> +	decayed = __update_load_avg(now, &cfs_rq->avg, cfs_rq->load.weight);
->  
-> +#ifndef CONFIG_64BIT
-> +	smp_wmb();
-> +	cfs_rq->load_last_update_time_copy = cfs_rq->avg.last_update_time;
-> +#endif
->  
-> -static inline u64 cfs_rq_clock_task(struct cfs_rq *cfs_rq);
-> +	return decayed;
-> +}
+On Tue, Oct 21, 2014 at 01:21:37PM -0700, Kees Cook wrote:
+> From: Paul Wise <pabs3@bonedaddy.net>
+> 
+> This partially mitigates a common strategy used by attackers for hiding
+> the full contents of strings in procfs from naive sysadmins who use cat,
+> more or sysctl to inspect the contents of strings in procfs.
+> 
+> References: http://www.jakoblell.com/blog/2014/05/07/hacking-contest-hiding-stuff-from-the-terminal/
+> Signed-off-by: Paul Wise <pabs3@bonedaddy.net>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  kernel/sysctl.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+> index 4aada6d9fe74..c34c9414caac 100644
+> --- a/kernel/sysctl.c
+> +++ b/kernel/sysctl.c
+> @@ -1739,7 +1739,7 @@ static int _proc_do_string(char *data, int maxlen, int write,
+>  		while ((p - buffer) < *lenp && len < maxlen - 1) {
+>  			if (get_user(c, p++))
+>  				return -EFAULT;
+> -			if (c == 0 || c == '\n')
+> +			if (c == 0 || c == '\n' || c == '\r')
+>  				break;
+>  			data[len++] = c;
+>  		}
+> -- 
 
+Acked-by: Aaron Tomlin <atomlin@redhat.com>
 
-> +void remove_entity_load_avg(struct sched_entity *se)
->  {
-> +	struct cfs_rq *cfs_rq = cfs_rq_of(se);
-> +	u64 last_update_time;
-> +
-> +#ifndef CONFIG_64BIT
-> +	u64 last_update_time_copy;
-> +
-> +	do {
-> +		last_update_time_copy = cfs_rq->load_last_update_time_copy;
-> +		smp_rmb();
-> +		last_update_time = cfs_rq->avg.last_update_time;
-> +	} while (last_update_time != last_update_time_copy);
-> +#else
-> +	last_update_time = cfs_rq->avg.last_update_time;
-> +#endif
->  
-> +	__update_load_avg(last_update_time, &se->avg, 0);
-> +	atomic_long_add(se->avg.load_avg, &cfs_rq->removed_load_avg);
->  }
-
-
-> +static void migrate_task_rq_fair(struct task_struct *p, int next_cpu)
->  {
->  	/*
-> +	 * We are supposed to update the task to "current" time, then its up to date
-> +	 * and ready to go to new CPU/cfs_rq. But we have difficulty in getting
-> +	 * what current time is, so simply throw away the out-of-date time. This
-> +	 * will result in the wakee task is less decayed, but giving the wakee more
-> +	 * load sounds not bad.
->  	 */
-> +	remove_entity_load_avg(&p->se);
-> +
-> +	/* Tell new CPU we are migrated */
-> +	p->se.avg.last_update_time = 0;
->  
->  	/* We have migrated, no longer consider this task hot */
-> +	p->se.exec_start = 0;
->  }
-
-
-Because of:
-
-  entity_tick()
-    update_load_avg()
-      update_cfs_rq_load_avg()
-
-we're likely to only lag TICK_NSEC behind, right? And thus the
-truncation we do in migrate_task_rq_fair() is of equal size.
-
-Hmm,. one problem, cgroup cfs_rq can be idle for a long while and not
-get get any ticks at all, so those can lag unbounded. Then again, this
-appears to be a problem in the current code too, hmm..
-
-Anybody?
-
-
+-- 
+Aaron Tomlin
