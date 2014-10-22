@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294AbaJVPrd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 11:47:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39827 "EHLO mx1.redhat.com"
+	id S1755352AbaJVPrl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 11:47:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55923 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755281AbaJVPra (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 11:47:30 -0400
-Date: Wed, 22 Oct 2014 18:50:44 +0300
+	id S1755303AbaJVPre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 11:47:34 -0400
+Date: Wed, 22 Oct 2014 18:51:04 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Cornelia Huck <cornelia.huck@de.ibm.com>,
-        David Hildenbrand <dahi@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Heinz Graalfs <graalfs@linux.vnet.ibm.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        virtualization@lists.linux-foundation.org
-Subject: [PATCH RFC v2 08/16] virtio: allow transports to get avail/used
- addresses
-Message-ID: <1413992894-22976-9-git-send-email-mst@redhat.com>
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org
+Subject: [PATCH RFC v2 13/16] KVM: s390: virtio-ccw revision 1 SET_VQ
+Message-ID: <1413992894-22976-14-git-send-email-mst@redhat.com>
 References: <1413992894-22976-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -30,61 +27,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Cornelia Huck <cornelia.huck@de.ibm.com>
 
-For virtio-1, we can theoretically have a more complex virtqueue
-layout with avail and used buffers not on a contiguous memory area
-with the descriptor table. For now, it's fine for a transport driver
-to stay with the old layout: It needs, however, a way to access
-the locations of the avail/used rings so it can register them with
-the host.
+The CCW_CMD_SET_VQ command has a different format for revision 1+
+devices, allowing to specify a more complex virtqueue layout. For
+now, we stay however with the old layout and simply use the new
+command format for virtio-1 devices.
 
-Reviewed-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
 Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- include/linux/virtio.h       |  3 +++
- drivers/virtio/virtio_ring.c | 16 ++++++++++++++++
- 2 files changed, 19 insertions(+)
+ drivers/s390/kvm/virtio_ccw.c | 54 +++++++++++++++++++++++++++++++++----------
+ 1 file changed, 42 insertions(+), 12 deletions(-)
 
-diff --git a/include/linux/virtio.h b/include/linux/virtio.h
-index 149284e..d6359a5 100644
---- a/include/linux/virtio.h
-+++ b/include/linux/virtio.h
-@@ -75,6 +75,9 @@ unsigned int virtqueue_get_vring_size(struct virtqueue *vq);
+diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
+index 394ddb8..a994078 100644
+--- a/drivers/s390/kvm/virtio_ccw.c
++++ b/drivers/s390/kvm/virtio_ccw.c
+@@ -68,13 +68,22 @@ struct virtio_ccw_device {
+ 	void *airq_info;
+ };
  
- bool virtqueue_is_broken(struct virtqueue *vq);
+-struct vq_info_block {
++struct vq_info_block_legacy {
+ 	__u64 queue;
+ 	__u32 align;
+ 	__u16 index;
+ 	__u16 num;
+ } __packed;
  
-+void *virtqueue_get_avail(struct virtqueue *vq);
-+void *virtqueue_get_used(struct virtqueue *vq);
++struct vq_info_block {
++	__u64 desc;
++	__u32 res0;
++	__u16 index;
++	__u16 num;
++	__u64 avail;
++	__u64 used;
++} __packed;
 +
- /**
-  * virtio_device - representation of a device using virtio
-  * @index: unique position on the virtio bus
-diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-index 9f5dfe3..1db44ba 100644
---- a/drivers/virtio/virtio_ring.c
-+++ b/drivers/virtio/virtio_ring.c
-@@ -829,4 +829,20 @@ void virtio_break_device(struct virtio_device *dev)
- }
- EXPORT_SYMBOL_GPL(virtio_break_device);
+ struct virtio_feature_desc {
+ 	__u32 features;
+ 	__u8 index;
+@@ -100,7 +109,10 @@ struct virtio_ccw_vq_info {
+ 	struct virtqueue *vq;
+ 	int num;
+ 	void *queue;
+-	struct vq_info_block *info_block;
++	union {
++		struct vq_info_block s;
++		struct vq_info_block_legacy l;
++	} *info_block;
+ 	int bit_nr;
+ 	struct list_head node;
+ 	long cookie;
+@@ -411,13 +423,22 @@ static void virtio_ccw_del_vq(struct virtqueue *vq, struct ccw1 *ccw)
+ 	spin_unlock_irqrestore(&vcdev->lock, flags);
  
-+void *virtqueue_get_avail(struct virtqueue *_vq)
-+{
-+	struct vring_virtqueue *vq = to_vvq(_vq);
-+
-+	return vq->vring.avail;
-+}
-+EXPORT_SYMBOL_GPL(virtqueue_get_avail);
-+
-+void *virtqueue_get_used(struct virtqueue *_vq)
-+{
-+	struct vring_virtqueue *vq = to_vvq(_vq);
-+
-+	return vq->vring.used;
-+}
-+EXPORT_SYMBOL_GPL(virtqueue_get_used);
-+
- MODULE_LICENSE("GPL");
+ 	/* Release from host. */
+-	info->info_block->queue = 0;
+-	info->info_block->align = 0;
+-	info->info_block->index = index;
+-	info->info_block->num = 0;
++	if (vcdev->revision == 0) {
++		info->info_block->l.queue = 0;
++		info->info_block->l.align = 0;
++		info->info_block->l.index = index;
++		info->info_block->l.num = 0;
++		ccw->count = sizeof(info->info_block->l);
++	} else {
++		info->info_block->s.desc = 0;
++		info->info_block->s.index = index;
++		info->info_block->s.num = 0;
++		info->info_block->s.avail = 0;
++		info->info_block->s.used = 0;
++		ccw->count = sizeof(info->info_block->s);
++	}
+ 	ccw->cmd_code = CCW_CMD_SET_VQ;
+ 	ccw->flags = 0;
+-	ccw->count = sizeof(*info->info_block);
+ 	ccw->cda = (__u32)(unsigned long)(info->info_block);
+ 	ret = ccw_io_helper(vcdev, ccw,
+ 			    VIRTIO_CCW_DOING_SET_VQ | index);
+@@ -500,13 +521,22 @@ static struct virtqueue *virtio_ccw_setup_vq(struct virtio_device *vdev,
+ 	}
+ 
+ 	/* Register it with the host. */
+-	info->info_block->queue = (__u64)info->queue;
+-	info->info_block->align = KVM_VIRTIO_CCW_RING_ALIGN;
+-	info->info_block->index = i;
+-	info->info_block->num = info->num;
++	if (vcdev->revision == 0) {
++		info->info_block->l.queue = (__u64)info->queue;
++		info->info_block->l.align = KVM_VIRTIO_CCW_RING_ALIGN;
++		info->info_block->l.index = i;
++		info->info_block->l.num = info->num;
++		ccw->count = sizeof(info->info_block->l);
++	} else {
++		info->info_block->s.desc = (__u64)info->queue;
++		info->info_block->s.index = i;
++		info->info_block->s.num = info->num;
++		info->info_block->s.avail = (__u64)virtqueue_get_avail(vq);
++		info->info_block->s.used = (__u64)virtqueue_get_used(vq);
++		ccw->count = sizeof(info->info_block->s);
++	}
+ 	ccw->cmd_code = CCW_CMD_SET_VQ;
+ 	ccw->flags = 0;
+-	ccw->count = sizeof(*info->info_block);
+ 	ccw->cda = (__u32)(unsigned long)(info->info_block);
+ 	err = ccw_io_helper(vcdev, ccw, VIRTIO_CCW_DOING_SET_VQ | i);
+ 	if (err) {
 -- 
 MST
 
