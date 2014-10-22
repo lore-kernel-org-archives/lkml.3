@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754875AbaJVSlJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 14:41:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24502 "EHLO mx1.redhat.com"
+	id S1754943AbaJVSlQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 14:41:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50007 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754698AbaJVSlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 14:41:02 -0400
-Date: Wed, 22 Oct 2014 21:44:34 +0300
+	id S1754698AbaJVSlN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 14:41:13 -0400
+Date: Wed, 22 Oct 2014 21:44:44 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org
-Subject: [PATCH RFC v3 06/16] virtio: make endian-ness depend on virtio 1.0
-Message-ID: <1414003404-505-7-git-send-email-mst@redhat.com>
+        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
+Subject: [PATCH RFC v3 09/16] virtio: set FEATURES_OK
+Message-ID: <1414003404-505-10-git-send-email-mst@redhat.com>
 References: <1414003404-505-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -23,31 +23,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-virtio 1.0 is LE, virtio without 1.0 is native endian.
+set FEATURES_OK as per virtio 1.0 spec
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- include/linux/virtio_config.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/uapi/linux/virtio_config.h |  2 ++
+ drivers/virtio/virtio.c            | 29 ++++++++++++++++++++++-------
+ 2 files changed, 24 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/virtio_config.h b/include/linux/virtio_config.h
-index 7d46280..be0f6dd 100644
---- a/include/linux/virtio_config.h
-+++ b/include/linux/virtio_config.h
-@@ -157,11 +157,11 @@ int virtqueue_set_affinity(struct virtqueue *vq, int cpu)
- #define DEFINE_VIRTIO_XX_TO_CPU(bits) \
- static inline u##bits virtio##bits##_to_cpu(struct virtio_device *vdev, __virtio##bits val) \
- { \
--	return __virtio##bits##_to_cpu(false, val); \
-+	return __virtio##bits##_to_cpu(virtio_has_feature(vdev, VIRTIO_F_VERSION_1), val); \
- } \
- static inline __virtio##bits cpu_to_virtio##bits(struct virtio_device *vdev, u##bits val) \
- { \
--	return __cpu_to_virtio##bits(false, val); \
-+	return __cpu_to_virtio##bits(virtio_has_feature(vdev, VIRTIO_F_VERSION_1), val); \
+diff --git a/include/uapi/linux/virtio_config.h b/include/uapi/linux/virtio_config.h
+index f3fe33a..a6d0cde 100644
+--- a/include/uapi/linux/virtio_config.h
++++ b/include/uapi/linux/virtio_config.h
+@@ -38,6 +38,8 @@
+ #define VIRTIO_CONFIG_S_DRIVER		2
+ /* Driver has used its parts of the config, and is happy */
+ #define VIRTIO_CONFIG_S_DRIVER_OK	4
++/* Driver has finished configuring features */
++#define VIRTIO_CONFIG_S_FEATURES_OK	8
+ /* We've given up on this device. */
+ #define VIRTIO_CONFIG_S_FAILED		0x80
+ 
+diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
+index d213567..a3df817 100644
+--- a/drivers/virtio/virtio.c
++++ b/drivers/virtio/virtio.c
+@@ -160,6 +160,7 @@ static int virtio_dev_probe(struct device *_d)
+ 	struct virtio_device *dev = dev_to_virtio(_d);
+ 	struct virtio_driver *drv = drv_to_virtio(dev->dev.driver);
+ 	u64 device_features;
++	unsigned status;
+ 
+ 	/* We have a driver! */
+ 	add_status(dev, VIRTIO_CONFIG_S_DRIVER);
+@@ -183,18 +184,32 @@ static int virtio_dev_probe(struct device *_d)
+ 
+ 	dev->config->finalize_features(dev);
+ 
++	if (virtio_has_feature(dev, VIRTIO_F_VERSION_1)) {
++		add_status(dev, VIRTIO_CONFIG_S_FEATURES_OK);
++		status = dev->config->get_status(dev);
++		if (!(status & VIRTIO_CONFIG_S_FEATURES_OK)) {
++			printk(KERN_ERR "virtio: device refuses features: %x\n",
++			       status);
++			err = -ENODEV;
++			goto err;
++		}
++	}
++
+ 	err = drv->probe(dev);
+ 	if (err)
+-		add_status(dev, VIRTIO_CONFIG_S_FAILED);
+-	else {
+-		add_status(dev, VIRTIO_CONFIG_S_DRIVER_OK);
+-		if (drv->scan)
+-			drv->scan(dev);
++		goto err;
+ 
+-		virtio_config_enable(dev);
+-	}
++	add_status(dev, VIRTIO_CONFIG_S_DRIVER_OK);
++	if (drv->scan)
++		drv->scan(dev);
++
++	virtio_config_enable(dev);
+ 
++	return 0;
++err:
++	add_status(dev, VIRTIO_CONFIG_S_FAILED);
+ 	return err;
++
  }
  
- DEFINE_VIRTIO_XX_TO_CPU(16)
+ static int virtio_dev_remove(struct device *_d)
 -- 
 MST
 
