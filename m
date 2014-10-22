@@ -1,127 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752751AbaJVN23 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 09:28:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5800 "EHLO mx1.redhat.com"
+	id S1752807AbaJVN2i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 09:28:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18700 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751214AbaJVN21 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 09:28:27 -0400
-Date: Wed, 22 Oct 2014 09:28:02 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: "Alasdair G. Kergon" <agk@redhat.com>, Mike Snitzer <msnitzer@redhat.com>,
-        Jonathan Brassow <jbrassow@redhat.com>,
-        Edward Thornber <thornber@redhat.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>
-cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: [PATCH 7/18] block copy: use a timer to fix a theoretical deadlock
-In-Reply-To: <alpine.LRH.2.02.1410220913280.31351@file01.intranet.prod.int.rdu2.redhat.com>
-Message-ID: <alpine.LRH.2.02.1410220927340.31351@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1410220913280.31351@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1752753AbaJVN2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 09:28:37 -0400
+Date: Wed, 22 Oct 2014 15:27:49 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        ak@linux.intel.com, kan.liang@intel.com, bp@alien8.de,
+        maria.n.dimakopoulou@gmail.com
+Subject: Re: [PATCH v2 11/12] perf/x86: make HT bug workaround conditioned on
+ HT enabled
+Message-ID: <20141022132749.GB15126@krava.brq.redhat.com>
+References: <1412872486-2930-1-git-send-email-eranian@google.com>
+ <1412872486-2930-12-git-send-email-eranian@google.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412872486-2930-12-git-send-email-eranian@google.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The block layer creates two bios for each copy operation. The bios travel
-independently through the storage stack and they are paired at the block
-device.
+On Thu, Oct 09, 2014 at 06:34:45PM +0200, Stephane Eranian wrote:
 
-There is a theoretical problem with this - the block device stack only
-guarantees forward progress for a single bio. When two bios are sent, it
-is possible (though very unlikely) that the first bio exhausts some
-mempool and the second bio waits until there is free space in the mempool
-(and thus it waits until the first bio finishes).
+SNIP
 
-To avoid this deadlock, we introduce a timer. If the two bios are not
-paired at the physical block device within 10 seconds, the copy operation
-is aborted and the bio that waits to be paired is released with an error.
+> + */
+> +static __init int fixup_ht_bug(void)
+> +{
+> +	int cpu = smp_processor_id();
+> +	int w, c;
+> +	/*
+> +	 * problem not present on this CPU model, nothing to do
+> +	 */
+> +	if (!(x86_pmu.flags & PMU_FL_EXCL_ENABLED))
+> +		return 0;
+> +
+> +	w = cpumask_weight(topology_thread_cpumask(cpu));
+> +	if (w > 1) {
+> +		pr_info("CPU erratum BJ122, BV98, HSD29 worked around\n");
+> +		return 0;
+> +	}
+> +
+> +	watchdog_nmi_disable_all();
+> +
+> +	x86_pmu.flags &= ~(PMU_FL_EXCL_CNTRS | PMU_FL_EXCL_ENABLED);
+> +
+> +	x86_pmu.commit_scheduling = NULL;
+> +	x86_pmu.start_scheduling = NULL;
+> +	x86_pmu.stop_scheduling = NULL;
+> +
+> +	watchdog_nmi_enable_all();
 
-Note that there is no guarantee that any XCOPY operation succeed, so
-aborting an operation with an error shouldn't cause any problems - the
-caller is supposed to perform the copy manually if XCOPY fails.
+if you build with CONFIG_LOCKUP_DETECTOR=n it wont link:
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+  LD      init/built-in.o
+arch/x86/built-in.o: In function `fixup_ht_bug':
+/root/linux/arch/x86/kernel/cpu/perf_event_intel.c:3267: undefined reference to `watchdog_nmi_disable_all'
+/root/linux/arch/x86/kernel/cpu/perf_event_intel.c:3275: undefined reference to `watchdog_nmi_enable_all'
 
----
- block/blk-lib.c           |   27 +++++++++++++++++++++++++++
- include/linux/blk_types.h |    2 ++
- 2 files changed, 29 insertions(+)
+I think you need watchdog_nmi_(enable|disable)_all stubs out of kernel/watchdog.c
 
-Index: linux-3.16-rc5/block/blk-lib.c
-===================================================================
---- linux-3.16-rc5.orig/block/blk-lib.c	2014-07-15 15:27:49.000000000 +0200
-+++ linux-3.16-rc5/block/blk-lib.c	2014-07-15 15:27:51.000000000 +0200
-@@ -305,6 +305,30 @@ int blkdev_issue_zeroout(struct block_de
- }
- EXPORT_SYMBOL(blkdev_issue_zeroout);
- 
-+#define BLK_COPY_TIMEOUT	(10 * HZ)
-+
-+static void blk_copy_timeout(unsigned long bc_)
-+{
-+	struct bio_copy *bc = (struct bio_copy *)bc_;
-+	struct bio *bio0 = NULL, *bio1 = NULL;
-+
-+	WARN_ON(!irqs_disabled());
-+
-+	spin_lock(&bc->spinlock);	/* the timer is IRQSAFE */
-+	if (bc->error == 1) {
-+		bc->error = -ETIMEDOUT;
-+		bio0 = bc->pair[0];
-+		bio1 = bc->pair[1];
-+		bc->pair[0] = bc->pair[1] = NULL;
-+	}
-+	spin_unlock(&bc->spinlock);
-+
-+	if (bio0)
-+		bio_endio(bio0, -ETIMEDOUT);
-+	if (bio1)
-+		bio_endio(bio1, -ETIMEDOUT);
-+}
-+
- static void bio_copy_end_io(struct bio *bio, int error)
- {
- 	struct bio_copy *bc = bio->bi_copy;
-@@ -338,6 +362,7 @@ static void bio_copy_end_io(struct bio *
- 			} while (unlikely(atomic64_cmpxchg(bc->first_error,
- 				first_error, bc->offset) != first_error));
- 		}
-+		del_timer_sync(&bc->timer);
- 		kfree(bc);
- 		if (atomic_dec_and_test(&bb->done))
- 			complete(bb->wait);
-@@ -428,6 +453,8 @@ int blkdev_issue_copy(struct block_devic
- 		bc->first_error = &first_error;
- 		bc->offset = offset;
- 		spin_lock_init(&bc->spinlock);
-+		__setup_timer(&bc->timer, blk_copy_timeout, (unsigned long)bc, TIMER_IRQSAFE);
-+		mod_timer(&bc->timer, jiffies + BLK_COPY_TIMEOUT);
- 
- 		read_bio->bi_iter.bi_sector = src_sector;
- 		read_bio->bi_iter.bi_size = chunk << 9;
-Index: linux-3.16-rc5/include/linux/blk_types.h
-===================================================================
---- linux-3.16-rc5.orig/include/linux/blk_types.h	2014-07-15 15:27:49.000000000 +0200
-+++ linux-3.16-rc5/include/linux/blk_types.h	2014-07-15 15:27:51.000000000 +0200
-@@ -6,6 +6,7 @@
- #define __LINUX_BLK_TYPES_H
- 
- #include <linux/types.h>
-+#include <linux/timer.h>
- 
- struct bio_set;
- struct bio;
-@@ -52,6 +53,7 @@ struct bio_copy {
- 	atomic64_t *first_error;
- 	sector_t offset;
- 	spinlock_t spinlock;
-+	struct timer_list timer;
- };
- 
- /*
-
+jirka
