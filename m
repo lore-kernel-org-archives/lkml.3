@@ -1,191 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753889AbaJVRQO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 13:16:14 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:42241 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750930AbaJVRQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 13:16:12 -0400
-Date: Wed, 22 Oct 2014 11:16:03 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, josh.triplett@intel.com,
-        christophe.ricard@gmail.com, jason.gunthorpe@obsidianresearch.com
-Subject: Re: [PATCH v1 2/3] tpm: two-phase chip management functions
-Message-ID: <20141022171603.GC12775@obsidianresearch.com>
-References: <1413995036-22497-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <1413995036-22497-3-git-send-email-jarkko.sakkinen@linux.intel.com>
+	id S1753056AbaJVRSB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 13:18:01 -0400
+Received: from mail-oi0-f49.google.com ([209.85.218.49]:32835 "EHLO
+	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752757AbaJVRR6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 13:17:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413995036-22497-3-git-send-email-jarkko.sakkinen@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+In-Reply-To: <1413964424-7599-2-git-send-email-jinkun.hong@rock-chips.com>
+References: <1413964424-7599-1-git-send-email-jinkun.hong@rock-chips.com>
+	<1413964424-7599-2-git-send-email-jinkun.hong@rock-chips.com>
+Date: Wed, 22 Oct 2014 10:17:57 -0700
+X-Google-Sender-Auth: Fi3NJBSNVFpMkbpSN1u_KnzJXu0
+Message-ID: <CAD=FV=Urn8_F+g0G08MLG3TeJsycpoa5K8+rwGDeG=Pk7dFCqA@mail.gmail.com>
+Subject: Re: [PATCH v6 1/3] power-domain: add power domain drivers for
+ Rockchip platform
+From: Doug Anderson <dianders@chromium.org>
+To: "jinkun.hong" <jinkun.hong@rock-chips.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Heiko Stuebner <heiko@sntech.de>, linux-rockchip@lists.infradead.org,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Jack Dai <jack.dai@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 07:23:55PM +0300, Jarkko Sakkinen wrote:
-> tpm_register_hardware() and tpm_remove_hardware() are called often
-> before initializing the device. This is wrong order since it could
-> be that main TPM driver needs a fully initialized chip to be able to
-> do its job. For example, now it is impossible to move common startup
-> functions such as tpm_do_selftest() to tpm_register_hardware().
- 
-> Added tpm_chip_alloc() and tpm_chip_register() where tpm_chip_alloc()
+Jinkun,
 
-It is called tpmm_chip_alloc() in this version..
-
-> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-
-Reviewed-By: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-
-Looks fine, if you have to spin this again you can incorporate the
-nits.
-
+On Wed, Oct 22, 2014 at 12:53 AM, jinkun.hong
+<jinkun.hong@rock-chips.com> wrote:
+> +#define to_rockchip_pd(_gpd) container_of(_gpd, struct rockchip_domain, base)
 > +
-> +static DECLARE_BITMAP(dev_mask, TPM_NUM_DEVICES);
-
-Not for this patch, but while this area of code is being looked at
-this should probably be an IDR/IDA like other subsytems?
-
-> +		if (try_module_get(pos->dev->driver->owner)) {
-> +			chip = pos;
-> +			break;
-> +		}
-
-Not for this patch, this module stuff should be wiped in favor of chip->ops
-locking.
-
-> +static void tpmm_chip_remove(void *data)
+> +static int rockchip_pmu_set_idle_request(struct rockchip_domain *pd,
+> +                                        bool idle)
 > +{
-> +	struct tpm_chip *chip = (struct tpm_chip *) data;
-> +	dev_dbg(chip->dev, "%s\n", __func__);
+> +       u32 idle_mask = BIT(pd->idle_shift);
+> +       u32 idle_target = idle << (pd->idle_shift);
+> +       u32 ack_mask = BIT(pd->ack_shift);
+> +       u32 ack_target = idle << (pd->ack_shift);
+> +       unsigned int mask = BIT(pd->req_shift);
+> +       unsigned int val;
+> +       unsigned long flags;
 
-This print is silent in the default compile, right?
+warning: unused variable 'flags'
 
-> +	chip->dev_num = find_first_zero_bit(dev_mask, TPM_NUM_DEVICES);
-[..]
-> +	set_bit(chip->dev_num, dev_mask);
 
-Not for this patch but somehow there is no locking for dev_mask
-here. I guess it should use the driver_lock spinlock?
+> +static int rockchip_pmu_set_power_domain(struct rockchip_domain *pd,
+> +                                        bool on)
+> +{
+> +       unsigned long flags;
 
-> +	chip->bios_dir = tpm_bios_log_setup(chip->devname);
+warning: unused variable 'flags'
 
-Not for this patch, but tpm_bios_log_setup can return NULL if
-securityfs setup fails.
 
-> diff --git a/drivers/char/tpm/tpm_atmel.c b/drivers/char/tpm/tpm_atmel.c
-> index 6069d13..8e2576a 100644
-> +++ b/drivers/char/tpm/tpm_atmel.c
-> @@ -138,11 +138,11 @@ static void atml_plat_remove(void)
->  	struct tpm_chip *chip = dev_get_drvdata(&pdev->dev);
->  
->  	if (chip) {
-> +		tpm_chip_unregister(chip);
->  		if (chip->vendor.have_region)
->  			atmel_release_region(chip->vendor.base,
->  					     chip->vendor.region_size);
->  		atmel_put_base_addr(chip->vendor.iobase);
-> -		tpm_remove_hardware(chip->dev);
->  		platform_device_unregister(pdev);
+I haven't done any review of these patches, but I'll say that I did
+pick your patches (along with "PM / clock_ops: Add pm_clk_add_clk()"
+from https://patchwork.kernel.org/patch/5105401/) and I was able to
+boot up my system.  Also, your series plus a patch to set the GPU
+power domain on rk3288 made suspend/resume work better.
 
-Missed this before, the Atmel driver is the same as the TIS driver in
-force mode, ie it isn't going through the driver APIs, but instead
-force creating platform devices. Same comment as for TIS - I'm not
-sure devm works properly like this.
-
-I guess just add the same comment as for TIS?
-
-> diff --git a/drivers/char/tpm/tpm_i2c_infineon.c b/drivers/char/tpm/tpm_i2c_infineon.c
-> index 472af4b..6f00bc3 100644
-> +++ b/drivers/char/tpm/tpm_i2c_infineon.c
-> @@ -581,10 +581,9 @@ static int tpm_tis_i2c_init(struct device *dev)
->  	int rc = 0;
->  	struct tpm_chip *chip;
->  
-> -	chip = tpm_register_hardware(dev, &tpm_tis_i2c);
-> -	if (!chip) {
-> -		dev_err(dev, "could not register hardware\n");
-> -		rc = -ENODEV;
-> +	chip = tpmm_chip_alloc(dev, &tpm_tis_i2c);
-> +	if (IS_ERR(chip)) {
-> +		rc = PTR_ERR(chip);
->  		goto out_err;
-
-Nit: out_err is synonymous with 'return rc;', so all the goto out_err
-in this driver can just return;
-
-> +	rc = tpm_chip_register(chip);
-> +	if (rc)
-> +		return rc;
-> +	return 0;
-
-Nit: could just be return tpm_chip_register(chip);
-
-> @@ -619,10 +619,9 @@ tpm_st33_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
->  		goto end;
->  	}
->  
-> -	chip = tpm_register_hardware(&client->dev, &st_i2c_tpm);
-> -	if (!chip) {
-> -		dev_info(&client->dev, "fail chip\n");
-> -		err = -ENODEV;
-> +	chip = tpmm_chip_alloc(&client->dev, &st_i2c_tpm);
-> +	if (IS_ERR(chip)) {
-> +		err = PTR_ERR(chip);
->  		goto end;
->  	}
-
-Nit: Same comment, 'goto end' can just be 'return rc'
-
-> -	dev_info(chip->dev, "TPM I2C Initialized\n");
-> +	err = tpm_chip_register(chip);
-> +	if (err)
-> +		goto _irq_set;
-> +
-
-Nit: Same comment
-
->  end:
->  	pr_info("TPM I2C initialisation fail\n");
-
-This pr_info should be deleted
-
-> @@ -573,6 +580,8 @@ static void tpm_inf_pnp_remove(struct pnp_dev *dev)
->  	struct tpm_chip *chip = pnp_get_drvdata(dev);
->  
->  	if (chip) {
-
-Nit: This if in the remove callback is an anti-pattern and should be
-globally removed. If remove is being called then probe succeeded,
-there is no way for probe to succed and drvdata to be unset.
-
->  static void tpm_nsc_remove(struct device *dev)
->  {
->  	struct tpm_chip *chip = dev_get_drvdata(dev);
-> -	if ( chip ) {
-> +	if (chip) {
-
-Same comment
-
-> @@ -836,7 +831,7 @@ MODULE_PARM_DESC(hid, "Set additional specific HID for this driver to probe");
->  
->  static struct platform_driver tis_drv = {
->  	.driver = {
-> -		.name = "tpm_tis",
-> +		.name		= "tpm_tis",
->  		.owner		= THIS_MODULE,
->  		.pm		= &tpm_tis_pm,
->  	},
-
-There is no remove method here in this platform_driver, this ties into
-the question if force works or not. The tpm_tis_remove call in the
-cleanup_hardware should be done through the .remove method of this
-driver structure..
-
-Jason
+-Doug
