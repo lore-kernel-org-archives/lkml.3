@@ -1,82 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932417AbaJVHIP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 03:08:15 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:49787 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751138AbaJVHIO (ORCPT
+	id S1753834AbaJVHJV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 03:09:21 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:53651 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769AbaJVHJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 03:08:14 -0400
-Date: Wed, 22 Oct 2014 09:08:10 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Sebastian Reichel <sre@kernel.org>, linux-pm@vger.kernel.org,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: Re: [PATCH 5/8] power: reset: at91-reset: use at91_ramc_shutdown
-Message-ID: <20141022090810.167c470f@free-electrons.com>
-In-Reply-To: <1413928540-27099-6-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1413928540-27099-1-git-send-email-alexandre.belloni@free-electrons.com>
-	<1413928540-27099-6-git-send-email-alexandre.belloni@free-electrons.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Wed, 22 Oct 2014 03:09:20 -0400
+Message-ID: <5447580E.3030603@gmail.com>
+Date: Wed, 22 Oct 2014 15:09:02 +0800
+From: Wanpeng Li <kernellwp@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, mingo@redhat.com,
+        peterz@infradead.org
+CC: riel@redhat.com, tkhai@yandex.ru, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] sched/fair: Care divide error in update_task_scan_period()
+References: <54475703.8000505@jp.fujitsu.com>
+In-Reply-To: <54475703.8000505@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Alexandre Belloni,
+10/22/14, 3:04 PM, Yasuaki Ishimatsu:
+> While offling node by hot removing memory, the following divide error
+> occurs:
+>
+>   divide error: 0000 [#1] SMP
+>   [...]
+>   Call Trace:
+>    [...] handle_mm_fault
+>    [...] ? try_to_wake_up
+>    [...] ? wake_up_state
+>    [...] __do_page_fault
+>    [...] ? do_futex
+>    [...] ? put_prev_entity
+>    [...] ? __switch_to
+>    [...] do_page_fault
+>    [...] page_fault
+>   [...]
+>   RIP  [<ffffffff810a7081>] task_numa_fault
+>    RSP <ffff88084eb2bcb0>
+>
+> The issue occurs as follows:
+>   1. When page fault occurs and page is allocated from node 1,
+>      task_struct->numa_faults_buffer_memory[] of node 1 is
+>      incremented and p->numa_faults_locality[] is also incremented
+>      as follows:
+>
+>      o numa_faults_buffer_memory[]       o numa_faults_locality[]
+>               NR_NUMA_HINT_FAULT_TYPES
+>              |      0     |     1     |
+>      ----------------------------------  ----------------------
+>       node 0 |      0     |     0     |   remote |      0     |
+>       node 1 |      0     |     1     |   locale |      1     |
+>      ----------------------------------  ----------------------
+>
+>   2. node 1 is offlined by hot removing memory.
+>
+>   3. When page fault occurs, fault_types[] is calculated by using
+>      p->numa_faults_buffer_memory[] of all online nodes in
+>      task_numa_placement(). But node 1 was offline by step 2. So
+>      the fault_types[] is calculated by using only
+>      p->numa_faults_buffer_memory[] of node 0. So both of fault_types[]
+>      are set to 0.
+>
+>   4. The values(0) of fault_types[] pass to update_task_scan_period().
+>
+>   5. numa_faults_locality[1] is set to 1. So the following division is
+>      calculated.
+>
+>         static void update_task_scan_period(struct task_struct *p,
+>                                 unsigned long shared, unsigned long private){
+>         ...
+>                 ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared));
+>         }
+>
+>   6. But both of private and shared are set to 0. So divide error
+>      occurs here.
+>
+> The divide error is rare case because the trigger is node offline.
+> This patch always increments denominator for avoiding divide error.
+>
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-On Tue, 21 Oct 2014 23:55:37 +0200, Alexandre Belloni wrote:
+Reviewed-by: Wanpeng Li <wanpeng.li@linux.intel.com>
 
->  /*
->  * unless the SDRAM is cleanly shutdown before we hit the
->  * reset register it can be left driving the data bus and
->  * killing the chance of a subsequent boot from NAND
->  */
-> -static void at91sam9260_restart(enum reboot_mode mode, const char *cmd)
-> +static void at91_restart(enum reboot_mode mode, const char *cmd)
->  {
-> -	asm volatile(
-> -		/* Align to cache lines */
-> -		".balign 32\n\t"
-> -
-> -		/* Disable SDRAM accesses */
-> -		"str	%2, [%0, #" __stringify(AT91_SDRAMC_TR) "]\n\t"
-> -
-> -		/* Power down SDRAM */
-> -		"str	%3, [%0, #" __stringify(AT91_SDRAMC_LPR) "]\n\t"
-> +	if (at91_ramc_shutdown)
-> +		at91_ramc_shutdown();
->  
-> +	asm volatile(
->  		/* Reset CPU */
-> -		"str	%4, [%1, #" __stringify(AT91_RSTC_CR) "]\n\t"
-> +		"str	%1, [%0, #" __stringify(AT91_RSTC_CR) "]\n\t"
->  
->  		"b	.\n\t"
+> ---
+> v2:
+>  - Simply increment a denominator
+>
+>  kernel/sched/fair.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 0b069bf..f3b492d 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -1520,7 +1520,7 @@ static void update_task_scan_period(struct task_struct *p,
+>  		 * scanning faster if shared accesses dominate as it may
+>  		 * simply bounce migrations uselessly
+>  		 */
+> -		ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared));
+> +		ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared + 1));
+>  		diff = (diff * ratio) / NUMA_PERIOD_SLOTS;
+>  	}
+>
 
-Are you sure this is working properly? There was a reason to have the
-SDRAM controller shutdown right before resetting the CPU: the code was
-ensuring that all those assembly instructions fitted in one cache line,
-so that even if the SDRAM controller gets shutdown, the rest of the
-code can properly execute until resetting the CPU. Now, the SDRAM
-controller shutdown code and the code resetting the CPU are in
-completely separate places, which break this assumption.
-
-And also, you forgot to Cc: Maxime Ripard who did the initial work on
-this at91-reset controller.
-
-Thanks,
-
-Thomas
--- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
