@@ -1,87 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601AbaJVXru (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 19:47:50 -0400
-Received: from mout.gmx.net ([212.227.17.22]:52000 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753598AbaJVXrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 19:47:49 -0400
-Message-ID: <54484219.5000708@gmx.de>
-Date: Thu, 23 Oct 2014 01:47:37 +0200
-From: Hartmut Knaack <knaack.h@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:32.0) Gecko/20100101 Firefox/32.0 SeaMonkey/2.29
+	id S933349AbaJVXwE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 19:52:04 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43448 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753097AbaJVXwA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 19:52:00 -0400
+Date: Thu, 23 Oct 2014 00:51:33 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Stanimir Varbanov <svarbanov@mm-sol.com>,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Rob Herring <robherring2@gmail.com>,
+        Rob Herring <rob.herring@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Lee Jones <lee.jones@linaro.org>
+Message-ID: <20141022235133.GJ2344@sirena.org.uk>
+References: <20140729234522.E9FF1C40738@trevor.secretlab.ca>
+ <1409672700-21697-1-git-send-email-svarbanov@mm-sol.com>
+ <20140908145204.8ADC2C40AE5@trevor.secretlab.ca>
+ <540E1014.8090102@codeaurora.org>
+ <20140914044610.913E9C4102A@trevor.secretlab.ca>
+ <54483746.9060104@codeaurora.org>
 MIME-Version: 1.0
-To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
-        Brian Vandre <bvandre@gmail.com>
-CC: gregkh@linuxfoundation.org, jic23@kernel.org,
-        alexandre.belloni@free-electrons.com, linux-iio@vger.kernel.org,
-        marex@denx.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] Staging: iio: adc: fix line over 80 characters
-References: <cover.1413858979.git.bvandre@gmail.com> <cover.1413931615.git.bvandre@gmail.com> <ec4b497827f6c7615f6b5eef5669144f8c68d034.1413931615.git.bvandre@gmail.com> <20141022042115.GA2530@sudip-PC>
-In-Reply-To: <20141022042115.GA2530@sudip-PC>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:80CAnsV5dQHAX78zR5frZ/k0cMHMTR5AxVxIRpjU2T4rgsuBuI5
- nY2Nv3xanbDmu9GrBMHtSJzLaE6SJAcDlPFcqUlCemrXYPrk9YKTXNT6xZKg/8F011cbnOp
- OcgeeDsoLZCxUor0u0NK5zySxWYm5ovdTbFQQjhhieHAuiwQcuVqSiYCrvPDC4tqETY3EbQ
- hxVKlwEPb6X9DcR6MTj/Q==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0ZSpXV6RUUo6PuQK"
+Content-Disposition: inline
+In-Reply-To: <54483746.9060104@codeaurora.org>
+X-Cookie: If you can read this, you're too close.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.174.112.79
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] RFC: add function for localbus address
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sudip Mukherjee schrieb am 22.10.2014 06:21:
-> On Tue, Oct 21, 2014 at 05:56:47PM -0500, Brian Vandre wrote:
->> This fixes the 2 checkpatch.pl warnings:
->> WARNING: line over 80 characters
->>
-> please check your patch with --strict option of checkpatch.pl , and you will get :
-> "Alignment should match open parenthesis" .
-> 
-Good point, but what solution would you propose?
-> thanks
-> sudip
-> 
->> Signed-off-by: Brian Vandre <bvandre@gmail.com>
->> ---
->>  drivers/staging/iio/adc/mxs-lradc.c | 6 ++++--
->>  1 file changed, 4 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/staging/iio/adc/mxs-lradc.c b/drivers/staging/iio/adc/mxs-lradc.c
->> index 32a1926..62449a6 100644
->> --- a/drivers/staging/iio/adc/mxs-lradc.c
->> +++ b/drivers/staging/iio/adc/mxs-lradc.c
->> @@ -455,7 +455,8 @@ static void mxs_lradc_setup_ts_channel(struct mxs_lradc *lradc, unsigned ch)
->>  	 * SoC's delay unit and start the conversion later
->>  	 * and automatically.
->>  	 */
->> -	mxs_lradc_reg_wrt(lradc, LRADC_DELAY_TRIGGER(0) | /* don't trigger ADC */
->> +	mxs_lradc_reg_wrt(lradc,
->> +		LRADC_DELAY_TRIGGER(0) | /* don't trigger ADC */
->>  		LRADC_DELAY_TRIGGER_DELAYS(1 << 3) | /* trigger DELAY unit#3 */
->>  		LRADC_DELAY_KICK |
->>  		LRADC_DELAY_DELAY(lradc->settling_delay),
->> @@ -513,7 +514,8 @@ static void mxs_lradc_setup_ts_pressure(struct mxs_lradc *lradc, unsigned ch1,
->>  	 * SoC's delay unit and start the conversion later
->>  	 * and automatically.
->>  	 */
->> -	mxs_lradc_reg_wrt(lradc, LRADC_DELAY_TRIGGER(0) | /* don't trigger ADC */
->> +	mxs_lradc_reg_wrt(lradc,
->> +		LRADC_DELAY_TRIGGER(0) | /* don't trigger ADC */
->>  		LRADC_DELAY_TRIGGER_DELAYS(1 << 3) | /* trigger DELAY unit#3 */
->>  		LRADC_DELAY_KICK |
->>  		LRADC_DELAY_DELAY(lradc->settling_delay), LRADC_DELAY(2));
->> -- 
->> 1.9.1
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
 
+--0ZSpXV6RUUo6PuQK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Wed, Oct 22, 2014 at 04:01:26PM -0700, Stephen Boyd wrote:
+
+> >> "Currently a bunch of I2C/SPI MFD drivers are using IORESOURCE_IO for
+> >> register address ranges. Since this causes some confusion due to the
+> >> primary use of this resource type for PCI/ISA I/O ports create a new
+> >> resource type IORESOURCE_REG."
+
+> > Sorry, I mistook IORESOURCE_REG or IORESOURCE_IO. You're right, this
+> > isn't an issue.
+
+> > I'm still concerned about the implications of automatically populating
+> > platform_devices with this resource type. I'll talk to Mark about it
+> > face to fact at Connect this week.
+
+Hrm, missed that discussion.
+
+> Where did this end up? When we talked at Connect I think we settled on
+> exploring a driver core specific API like dev_get_localbus_address()
+> that calls of_get_localbus_address() for devices with an of_node and in
+
+...
+
+> That's fine, but I still think we want to have the IORESOURCE_REG
+> resources given that we have drivers in-flight and some already merged
+> that are using the IORESOURCE_REG resource. Furthermore, ACPI is using
+
+Right, IORESOURCE_REG was the original solution to the overlapping use
+of IORESOURCE_IO (rather than having multiple IORESOURCE_IO trees since
+we do special magic for IORESOURCE_IO for legacy reasons which was
+causing issues but the idea of doing it for generic I/O make sense).
+
+> the platform bus for MFDs so it's not like we're going to be using a
+> different bus in the future for these pmic sub-device drivers if we
+> decide to do pmic devices in ACPI (looks like there is at least
+> precedence for that with Intel's i2c pmic). Supporting this on ACPI is
+> going to take the same effort if we plumb it into the resource table or
+> we plumb it into a new driver core API, so the bus agnostic angle isn't
+
+Even if we do these things in ACPI it's not at all clear to me that the
+idea of putting the internals of the device in ACPI would be at all
+tasteful there.  Personally I'm not a big fan of always doing it in DT
+either but it's more tasteful there and definitely does make sense for
+some things.
+
+--0ZSpXV6RUUo6PuQK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUSEMEAAoJECTWi3JdVIfQ4AkH/1IxX/lmLvXnj9kjBoKfxwjS
+/MW+gdxw7t9B6cbfxmG6fISs6OJjR5Lw2ycWqLYYumb8H7N88aTAh63+5T4zRjbp
+DUKXKhxWphLHB75v3i0YOQOIB0z6yQP+G4usmHV+y1P5qKHLsobvhyR/RO7bGMfh
+hKDNq8M+J2fY4JdZJT4Vy5hZkBV3C9ZlcQp8jA/iMxso84G2EacylfuVtLj+LtSM
+0f+299iaCYr4RBQKHhkYEWzGQ79D421xuScjlVL5dxIYgOyFFwIM4jTrOvaPqqdg
+O+bIPEsfDJV3udO10U7+p2iFq0DlE4BeOXQWENv+K3ABCdPhM1eArFu63jgCUpA=
+=pZQQ
+-----END PGP SIGNATURE-----
+
+--0ZSpXV6RUUo6PuQK--
