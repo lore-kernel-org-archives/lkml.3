@@ -1,403 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932437AbaJVBzx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 21:55:53 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34365 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753992AbaJVBzv (ORCPT
+	id S932388AbaJVCBj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 22:01:39 -0400
+Received: from resqmta-ch2-05v.sys.comcast.net ([69.252.207.37]:60132 "EHLO
+	resqmta-ch2-05v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753763AbaJVCBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 21:55:51 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
-Message-ID: <54470E73.4010402@jp.fujitsu.com>
-Date: Wed, 22 Oct 2014 10:54:59 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 21 Oct 2014 22:01:37 -0400
+X-Greylist: delayed 367 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Oct 2014 22:01:37 EDT
+Message-ID: <54470F65.6010703@pobox.com>
+Date: Tue, 21 Oct 2014 18:59:01 -0700
+From: Robert White <rwhite@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Hugh Dickins <hughd@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Vladimir Davydov <vdavydov@parallels.com>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 4/4] mm: memcontrol: remove unnecessary PCG_USED pc->mem_cgroup
- valid flag
-References: <1413818532-11042-1-git-send-email-hannes@cmpxchg.org> <1413818532-11042-5-git-send-email-hannes@cmpxchg.org>
-In-Reply-To: <1413818532-11042-5-git-send-email-hannes@cmpxchg.org>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+To: Qu Wenruo <quwenruo@cn.fujitsu.com>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, clm@fb.com, jbacik@fb.com,
+        linux-btrfs@vger.kernel.org
+Subject: Re: [3.18rc1] btrfs triggering vm bug_on
+References: <20141021215731.GA10296@redhat.com> <5446FF71.7000606@cn.fujitsu.com> <54470E8F.6060409@pobox.com>
+In-Reply-To: <54470E8F.6060409@pobox.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/10/21 0:22), Johannes Weiner wrote:
-> pc->mem_cgroup had to be left intact after uncharge for the final LRU
-> removal, and !PCG_USED indicated whether the page was uncharged.  But
-> since 0a31bc97c80c ("mm: memcontrol: rewrite uncharge API") pages are
-> uncharged after the final LRU removal.  Uncharge can simply clear the
-> pointer and the PCG_USED/PageCgroupUsed sites can test that instead.
-> 
-> Because this is the last page_cgroup flag, this patch reduces the
-> memcg per-page overhead to a single pointer.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Pre-Script :: this is not an 3.18 problem. I traced it out in 3.16.
 
-awesome.
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
-> ---
->   include/linux/page_cgroup.h |  10 -----
->   mm/memcontrol.c             | 107 +++++++++++++++++---------------------------
->   2 files changed, 42 insertions(+), 75 deletions(-)
-> 
-> diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
-> index 97536e685843..1289be6b436c 100644
-> --- a/include/linux/page_cgroup.h
-> +++ b/include/linux/page_cgroup.h
-> @@ -1,11 +1,6 @@
->   #ifndef __LINUX_PAGE_CGROUP_H
->   #define __LINUX_PAGE_CGROUP_H
->   
-> -enum {
-> -	/* flags for mem_cgroup */
-> -	PCG_USED = 0x01,	/* This page is charged to a memcg */
-> -};
-> -
->   struct pglist_data;
->   
->   #ifdef CONFIG_MEMCG
-> @@ -19,7 +14,6 @@ struct mem_cgroup;
->    * then the page cgroup for pfn always exists.
->    */
->   struct page_cgroup {
-> -	unsigned long flags;
->   	struct mem_cgroup *mem_cgroup;
->   };
->   
-> @@ -39,10 +33,6 @@ static inline void page_cgroup_init(void)
->   
->   struct page_cgroup *lookup_page_cgroup(struct page *page);
->   
-> -static inline int PageCgroupUsed(struct page_cgroup *pc)
-> -{
-> -	return !!(pc->flags & PCG_USED);
-> -}
->   #else /* !CONFIG_MEMCG */
->   struct page_cgroup;
->   
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 1d66ac49e702..48d49c6b08d1 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1284,14 +1284,12 @@ struct lruvec *mem_cgroup_page_lruvec(struct page *page, struct zone *zone)
->   
->   	pc = lookup_page_cgroup(page);
->   	memcg = pc->mem_cgroup;
-> -
->   	/*
->   	 * Swapcache readahead pages are added to the LRU - and
-> -	 * possibly migrated - before they are charged.  Ensure
-> -	 * pc->mem_cgroup is sane.
-> +	 * possibly migrated - before they are charged.
->   	 */
-> -	if (!PageLRU(page) && !PageCgroupUsed(pc) && memcg != root_mem_cgroup)
-> -		pc->mem_cgroup = memcg = root_mem_cgroup;
-> +	if (!memcg)
-> +		memcg = root_mem_cgroup;
->   
->   	mz = mem_cgroup_page_zoneinfo(memcg, page);
->   	lruvec = &mz->lruvec;
-> @@ -2141,7 +2139,7 @@ void __mem_cgroup_begin_update_page_stat(struct page *page,
->   	pc = lookup_page_cgroup(page);
->   again:
->   	memcg = pc->mem_cgroup;
-> -	if (unlikely(!memcg || !PageCgroupUsed(pc)))
-> +	if (unlikely(!memcg))
->   		return;
->   	/*
->   	 * If this memory cgroup is not under account moving, we don't
-> @@ -2154,7 +2152,7 @@ again:
->   		return;
->   
->   	move_lock_mem_cgroup(memcg, flags);
-> -	if (memcg != pc->mem_cgroup || !PageCgroupUsed(pc)) {
-> +	if (memcg != pc->mem_cgroup) {
->   		move_unlock_mem_cgroup(memcg, flags);
->   		goto again;
->   	}
-> @@ -2186,7 +2184,7 @@ void mem_cgroup_update_page_stat(struct page *page,
->   
->   	pc = lookup_page_cgroup(page);
->   	memcg = pc->mem_cgroup;
-> -	if (unlikely(!memcg || !PageCgroupUsed(pc)))
-> +	if (unlikely(!memcg))
->   		return;
->   
->   	this_cpu_add(memcg->stat->count[idx], val);
-> @@ -2525,9 +2523,10 @@ struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
->   	VM_BUG_ON_PAGE(!PageLocked(page), page);
->   
->   	pc = lookup_page_cgroup(page);
-> -	if (PageCgroupUsed(pc)) {
-> -		memcg = pc->mem_cgroup;
-> -		if (memcg && !css_tryget_online(&memcg->css))
-> +	memcg = pc->mem_cgroup;
-> +
-> +	if (memcg) {
-> +		if (!css_tryget_online(&memcg->css))
->   			memcg = NULL;
->   	} else if (PageSwapCache(page)) {
->   		ent.val = page_private(page);
-> @@ -2578,7 +2577,7 @@ static void commit_charge(struct page *page, struct mem_cgroup *memcg,
->   	struct page_cgroup *pc = lookup_page_cgroup(page);
->   	int isolated;
->   
-> -	VM_BUG_ON_PAGE(PageCgroupUsed(pc), page);
-> +	VM_BUG_ON_PAGE(pc->mem_cgroup, page);
->   	/*
->   	 * we don't need page_cgroup_lock about tail pages, becase they are not
->   	 * accessed by any other context at this point.
-> @@ -2593,7 +2592,7 @@ static void commit_charge(struct page *page, struct mem_cgroup *memcg,
->   
->   	/*
->   	 * Nobody should be changing or seriously looking at
-> -	 * pc->mem_cgroup and pc->flags at this point:
-> +	 * pc->mem_cgroup at this point:
->   	 *
->   	 * - the page is uncharged
->   	 *
-> @@ -2606,7 +2605,6 @@ static void commit_charge(struct page *page, struct mem_cgroup *memcg,
->   	 *   have the page locked
->   	 */
->   	pc->mem_cgroup = memcg;
-> -	pc->flags = PCG_USED;
->   
->   	if (lrucare)
->   		unlock_page_lru(page, isolated);
-> @@ -3120,37 +3118,22 @@ void __memcg_kmem_commit_charge(struct page *page, struct mem_cgroup *memcg,
->   		memcg_uncharge_kmem(memcg, 1 << order);
->   		return;
->   	}
-> -	/*
-> -	 * The page is freshly allocated and not visible to any
-> -	 * outside callers yet.  Set up pc non-atomically.
-> -	 */
->   	pc = lookup_page_cgroup(page);
->   	pc->mem_cgroup = memcg;
-> -	pc->flags = PCG_USED;
+On 10/21/2014 06:55 PM, Robert White wrote:
+> It _looks_ like a hard out-of-ram event and not necessarily a filesystem
+> implementation problem.
+>
+> One of the systems I work with has zero swap but still allows overcommit
+> in the VM. It would do things like this all the time back in development
+> (and I suspect it still does but the developers got rid of those pesky
+> logs). Not necessarily this exact error, but lots of them with the same
+> "feel".
+>
+> You are actually triggering two bugs, only the second being in btrfs code.
+>
+> The VM_BUG_ON_PAGE() in cleancache_get_page() (mm/cleancache.c) is going
+> off first. This is presumably the ram exhaustion event, which is an
+> outer problem taking place in your system (e.g. the real cause).
+>
+>
+>
+> This floats back to the __do_readpage() which doesn't (and almost
+> cannot) figure out how the page validation failed
+>
+>          if (!PageUptodate(page)) {
+>                  if (cleancache_get_page(page) == 0) {
+>                          BUG_ON(blocksize != PAGE_SIZE);
+>                          unlock_extent(tree, start, end);
+>                          goto out;
+>                  }
+>          }
+>
+>
+>
+> Which (improperly) ends with this suspect bit from the out: in
+> __do_readpage() where the unlock_page() is called unconditionally.
+>
+> out:
+>          if (!nr) {
+>                  if (!PageError(page))
+>                          SetPageUptodate(page);
+>                  unlock_page(page);
+>          }
+>
+> I _think_ the call to unlock_page() _should_ have an if
+> (PageLocked(page)) in front of it.
+>
+> --- extent_io.c   2014-09-19 03:26:21.058266026 -0700
+> +++ extent_io.c 2014-10-21 18:52:45.127713115 -0700
+> @@ -2960,7 +2960,8 @@
+>          if (!nr) {
+>                  if (!PageError(page))
+>                          SetPageUptodate(page);
+> -               unlock_page(page);
+> +               if (PageLocked(page))
+> +                       unlock_page(page);
+>          }
+>          return 0;
 >   }
->   
->   void __memcg_kmem_uncharge_pages(struct page *page, int order)
->   {
-> -	struct mem_cgroup *memcg = NULL;
-> -	struct page_cgroup *pc;
-> -
-> -
-> -	pc = lookup_page_cgroup(page);
-> -	if (!PageCgroupUsed(pc))
-> -		return;
-> -
-> -	memcg = pc->mem_cgroup;
-> -	pc->flags = 0;
-> +	struct page_cgroup *pc = lookup_page_cgroup(page);
-> +	struct mem_cgroup *memcg = pc->mem_cgroup;
->   
-> -	/*
-> -	 * We trust that only if there is a memcg associated with the page, it
-> -	 * is a valid allocation
-> -	 */
->   	if (!memcg)
->   		return;
->   
->   	VM_BUG_ON_PAGE(mem_cgroup_is_root(memcg), page);
-> +
->   	memcg_uncharge_kmem(memcg, 1 << order);
-> +	pc->mem_cgroup = NULL;
->   }
->   #else
->   static inline void memcg_unregister_all_caches(struct mem_cgroup *memcg)
-> @@ -3168,21 +3151,16 @@ static inline void memcg_unregister_all_caches(struct mem_cgroup *memcg)
->    */
->   void mem_cgroup_split_huge_fixup(struct page *head)
->   {
-> -	struct page_cgroup *head_pc = lookup_page_cgroup(head);
-> -	struct page_cgroup *pc;
-> -	struct mem_cgroup *memcg;
-> +	struct page_cgroup *pc = lookup_page_cgroup(head);
->   	int i;
->   
->   	if (mem_cgroup_disabled())
->   		return;
->   
-> -	memcg = head_pc->mem_cgroup;
-> -	for (i = 1; i < HPAGE_PMD_NR; i++) {
-> -		pc = head_pc + i;
-> -		pc->mem_cgroup = memcg;
-> -		pc->flags = head_pc->flags;
-> -	}
-> -	__this_cpu_sub(memcg->stat->count[MEM_CGROUP_STAT_RSS_HUGE],
-> +	for (i = 1; i < HPAGE_PMD_NR; i++)
-> +		pc[i].mem_cgroup = pc[0].mem_cgroup;
-> +
-> +	__this_cpu_sub(pc[0].mem_cgroup->stat->count[MEM_CGROUP_STAT_RSS_HUGE],
->   		       HPAGE_PMD_NR);
->   }
->   #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
-> @@ -3232,7 +3210,7 @@ static int mem_cgroup_move_account(struct page *page,
->   		goto out;
->   
->   	ret = -EINVAL;
-> -	if (!PageCgroupUsed(pc) || pc->mem_cgroup != from)
-> +	if (pc->mem_cgroup != from)
->   		goto out_unlock;
->   
->   	move_lock_mem_cgroup(from, &flags);
-> @@ -3342,7 +3320,7 @@ static struct page_cgroup *lookup_page_cgroup_used(struct page *page)
->   	 * the first time, i.e. during boot or memory hotplug;
->   	 * or when mem_cgroup_disabled().
->   	 */
-> -	if (likely(pc) && PageCgroupUsed(pc))
-> +	if (likely(pc) && pc->mem_cgroup)
->   		return pc;
->   	return NULL;
->   }
-> @@ -3360,10 +3338,8 @@ void mem_cgroup_print_bad_page(struct page *page)
->   	struct page_cgroup *pc;
->   
->   	pc = lookup_page_cgroup_used(page);
-> -	if (pc) {
-> -		pr_alert("pc:%p pc->flags:%lx pc->mem_cgroup:%p\n",
-> -			 pc, pc->flags, pc->mem_cgroup);
-> -	}
-> +	if (pc)
-> +		pr_alert("pc:%p pc->mem_cgroup:%p\n", pc, pc->mem_cgroup);
->   }
->   #endif
->   
-> @@ -5330,7 +5306,7 @@ static enum mc_target_type get_mctgt_type(struct vm_area_struct *vma,
->   		 * mem_cgroup_move_account() checks the pc is valid or
->   		 * not under LRU exclusion.
->   		 */
-> -		if (PageCgroupUsed(pc) && pc->mem_cgroup == mc.from) {
-> +		if (pc->mem_cgroup == mc.from) {
->   			ret = MC_TARGET_PAGE;
->   			if (target)
->   				target->page = page;
-> @@ -5366,7 +5342,7 @@ static enum mc_target_type get_mctgt_type_thp(struct vm_area_struct *vma,
->   	if (!move_anon())
->   		return ret;
->   	pc = lookup_page_cgroup(page);
-> -	if (PageCgroupUsed(pc) && pc->mem_cgroup == mc.from) {
-> +	if (pc->mem_cgroup == mc.from) {
->   		ret = MC_TARGET_PAGE;
->   		if (target) {
->   			get_page(page);
-> @@ -5810,18 +5786,17 @@ void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
->   		return;
->   
->   	pc = lookup_page_cgroup(page);
-> +	memcg = pc->mem_cgroup;
->   
->   	/* Readahead page, never charged */
-> -	if (!PageCgroupUsed(pc))
-> +	if (!memcg)
->   		return;
->   
-> -	memcg = pc->mem_cgroup;
-> -
->   	oldid = swap_cgroup_record(entry, mem_cgroup_id(memcg));
->   	VM_BUG_ON_PAGE(oldid, page);
->   	mem_cgroup_swap_statistics(memcg, true);
->   
-> -	pc->flags = 0;
-> +	pc->mem_cgroup = NULL;
->   
->   	if (!mem_cgroup_is_root(memcg))
->   		page_counter_uncharge(&memcg->memory, 1);
-> @@ -5895,7 +5870,7 @@ int mem_cgroup_try_charge(struct page *page, struct mm_struct *mm,
->   		 * the page lock, which serializes swap cache removal, which
->   		 * in turn serializes uncharging.
->   		 */
-> -		if (PageCgroupUsed(pc))
-> +		if (pc->mem_cgroup)
->   			goto out;
->   	}
->   
-> @@ -6057,13 +6032,13 @@ static void uncharge_list(struct list_head *page_list)
->   		VM_BUG_ON_PAGE(page_count(page), page);
->   
->   		pc = lookup_page_cgroup(page);
-> -		if (!PageCgroupUsed(pc))
-> +		if (!pc->mem_cgroup)
->   			continue;
->   
->   		/*
->   		 * Nobody should be changing or seriously looking at
-> -		 * pc->mem_cgroup and pc->flags at this point, we have
-> -		 * fully exclusive access to the page.
-> +		 * pc->mem_cgroup at this point, we have fully
-> +		 * exclusive access to the page.
->   		 */
->   
->   		if (memcg != pc->mem_cgroup) {
-> @@ -6086,7 +6061,7 @@ static void uncharge_list(struct list_head *page_list)
->   		else
->   			nr_file += nr_pages;
->   
-> -		pc->flags = 0;
-> +		pc->mem_cgroup = NULL;
->   
->   		pgpgout++;
->   	} while (next != page_list);
-> @@ -6112,7 +6087,7 @@ void mem_cgroup_uncharge(struct page *page)
->   
->   	/* Don't touch page->lru of any random page, pre-check: */
->   	pc = lookup_page_cgroup(page);
-> -	if (!PageCgroupUsed(pc))
-> +	if (!pc->mem_cgroup)
->   		return;
->   
->   	INIT_LIST_HEAD(&page->lru);
-> @@ -6148,6 +6123,7 @@ void mem_cgroup_uncharge_list(struct list_head *page_list)
->   void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
->   			bool lrucare)
->   {
-> +	struct mem_cgroup *memcg;
->   	struct page_cgroup *pc;
->   	int isolated;
->   
-> @@ -6164,7 +6140,7 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
->   
->   	/* Page cache replacement: new page already charged? */
->   	pc = lookup_page_cgroup(newpage);
-> -	if (PageCgroupUsed(pc))
-> +	if (pc->mem_cgroup)
->   		return;
->   
->   	/*
-> @@ -6174,18 +6150,19 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
->   	 * reclaim just put back on the LRU but has not released yet.
->   	 */
->   	pc = lookup_page_cgroup(oldpage);
-> -	if (!PageCgroupUsed(pc))
-> +	memcg = pc->mem_cgroup;
-> +	if (!memcg)
->   		return;
->   
->   	if (lrucare)
->   		lock_page_lru(oldpage, &isolated);
->   
-> -	pc->flags = 0;
-> +	pc->mem_cgroup = NULL;
->   
->   	if (lrucare)
->   		unlock_page_lru(oldpage, isolated);
->   
-> -	commit_charge(newpage, pc->mem_cgroup, lrucare);
-> +	commit_charge(newpage, memcg, lrucare);
->   }
->   
->   /*
-> 
-
+>
+> That said, the question of what your system is going to do with the VM
+> memory exhausted is a bigger problem.
+>
+> -- Rob.
+>
+> On 10/21/2014 05:50 PM, Qu Wenruo wrote:
+>> Any reproducer?
+>>
+>> Thanks,
+>> Qu
+>> -------- Original Message --------
+>> Subject: [3.18rc1] btrfs triggering vm bug_on
+>> From: Dave Jones <davej@redhat.com>
+>> To: Linux Kernel <linux-kernel@vger.kernel.org>
+>> Date: 2014年10月22日 05:57
+>>> page:ffffea00088aa1c0 count:4 mapcount:0 mapping:ffff88009901e2d8
+>>> index:0x0
+>>> flags: 0x2ffc0000000806(error|referenced|private)
+>>> page dumped because: VM_BUG_ON_PAGE(!PageLocked(page))
+>>> ------------[ cut here ]------------
+>>> kernel BUG at mm/filemap.c:747!
+>>> invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+>>> Modules linked in: fuse snd_seq_dummy tun binfmt_misc usb_debug bnep
+>>> rfcomm nfnetlink scsi_transport_iscsi hidp af_key llc2 can_bcm can_raw
+>>> nfc caif_socket caif
+>>> af_802154 ieee802154 phonet af_rxrpc bluetooth can pppoe pppox
+>>> ppp_generic slhc irda crc_ccitt rds rose sctp libcrc32c x25 atm netrom
+>>> appletalk ipx p8023 psnap p8022 llc ax25 c
+>>> fg80211 rfkill btrfs xor coretemp hwmon x86_pkg_temp_thermal kvm_intel
+>>> snd_hda_codec_realtek snd_hda_codec_generic snd_hda_codec_hdmi kvm
+>>> snd_hda_intel snd_hda_controller snd_h
+>>> da_codec snd_hwdep crct10dif_pclmul snd_seq crc32c_intel
+>>> ghash_clmulni_intel e1000e snd_seq_device raid6_pq snd_pcm microcode
+>>> snd_timer serio_raw snd pcspkr ptp pps_core shpchp
+>>>   soundcore nfsd auth_rpcgss oid_registry nfs_acl lockd grace sunrpc
+>>> CPU: 3 PID: 6466 Comm: trinity-c402 Not tainted 3.18.0-rc1+ #72
+>>> task: ffff88003ec22f00 ti: ffff88006f3ac000 task.ti: ffff88006f3ac000
+>>> RIP: 0010:[<ffffffffbb1a06df>]  [<ffffffffbb1a06df>]
+>>> unlock_page+0x7f/0x90
+>>> RSP: 0018:ffff88006f3afa08  EFLAGS: 00010292
+>>> RAX: 0000000000000036 RBX: 0000000000001000 RCX: 0000000000000006
+>>> RDX: 0000000000000000 RSI: ffffffffbb843c53 RDI: ffffffffbb0e399e
+>>> RBP: ffff88006f3afa08 R08: 0000000000000001 R09: 0000000000000001
+>>> R10: 0000000000000001 R11: 0000000000000001 R12: 0000000000000c2b
+>>> R13: 0000000000000000 R14: ffffea00088aa1c0 R15: 0000000000000000
+>>> FS:  00007f7e30942740(0000) GS:ffff880244e00000(0000)
+>>> knlGS:0000000000000000
+>>> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>>> CR2: 00007f7e2d8b8000 CR3: 0000000098e56000 CR4: 00000000001407e0
+>>> DR0: 000000000219e000 DR1: 0000000000de8000 DR2: 0000000000000000
+>>> DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
+>>> Stack:
+>>>   ffff88006f3afb28 ffffffffc05adf78 ffffffffc05ae375 ffff88006f3afa70
+>>>   ffffffffbb03d193 ffffffffbb0b25c5 ffffffffc05adb10 0000000000000000
+>>>   00000000211ce98b 0000000000000000 ffff88006f3afbd0 ffff880222a87000
+>>> Call Trace:
+>>>   [<ffffffffc05adf78>] __do_readpage+0x468/0x7a0 [btrfs]
+>>>   [<ffffffffc05ae375>] ? __extent_read_full_page+0xc5/0xe0 [btrfs]
+>>>   [<ffffffffbb03d193>] ? prepare_ftrace_return+0x73/0xe0
+>>>   [<ffffffffbb0b25c5>] ? preempt_count_sub+0x5/0x100
+>>>   [<ffffffffc05adb10>] ?
+>>> extent_write_cache_pages.isra.30.constprop.48+0x440/0x440 [btrfs]
+>>>   [<ffffffffc0590290>] ? btrfs_writepage_end_io_hook+0x360/0x360 [btrfs]
+>>>   [<ffffffffbb0b263b>] ? preempt_count_sub+0x7b/0x100
+>>>   [<ffffffffbb8567ba>] ? ftrace_graph_caller+0x5a/0x85
+>>>   [<ffffffffc05ae375>] __extent_read_full_page+0xc5/0xe0 [btrfs]
+>>>   [<ffffffffc0590290>] ? btrfs_writepage_end_io_hook+0x360/0x360 [btrfs]
+>>>   [<ffffffffbb8567ba>] ? ftrace_graph_caller+0x5a/0x85
+>>>   [<ffffffffc05af426>] extent_read_full_page+0x46/0x80 [btrfs]
+>>>   [<ffffffffc058d265>] btrfs_readpage+0x25/0x30 [btrfs]
+>>>   [<ffffffffc059da78>] prepare_uptodate_page+0x38/0xa0 [btrfs]
+>>>   [<ffffffffc059dbec>] prepare_pages.isra.19+0x10c/0x1a0 [btrfs]
+>>>   [<ffffffffc059ed54>] __btrfs_buffered_write+0x1e4/0x5f0 [btrfs]
+>>>   [<ffffffffbb8567ba>] ? ftrace_graph_caller+0x5a/0x85
+>>>   [<ffffffffc059f52e>] btrfs_file_write_iter+0x3ce/0x550 [btrfs]
+>>>   [<ffffffffbb341060>] ? cap_inode_getsecid+0x20/0x20
+>>>   [<ffffffffbb21aad0>] ? new_sync_read+0xd0/0xd0
+>>>   [<ffffffffbb21ab5e>] new_sync_write+0x8e/0xd0
+>>>   [<ffffffffbb8567ba>] ? ftrace_graph_caller+0x5a/0x85
+>>>   [<ffffffffbb21b53a>] vfs_write+0xba/0x1f0
+>>>   [<ffffffffbb21c048>] SyS_write+0x58/0xd0
+>>>   [<ffffffffbb854689>] tracesys_phase2+0xd4/0xd9
+>>> Code: 48 8d 0c 92 48 8d 0c 4a 48 8b 96 98 00 00 00 48 89 c6 48 8d 3c
+>>> ca 31 d2 e8 df d5 f2 ff 5d c3 48 c7 c6 38 81 c7 bb e8 01 ff 02 00 <0f>
+>>> 0b 66 66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 e8 6b 60 6b
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe
+>>> linux-btrfs" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
