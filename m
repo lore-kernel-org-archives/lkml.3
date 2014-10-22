@@ -1,192 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755242AbaJVQat (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 12:30:49 -0400
-Received: from mail.kmu-office.ch ([178.209.48.102]:43364 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754414AbaJVQ3e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 12:29:34 -0400
-From: Stefan Agner <stefan@agner.ch>
-To: shawn.guo@freescale.com, kernel@pengutronix.de, arnd@arndb.de
-Cc: b35083@freescale.com, bpringlemeir@nbsps.com, mark.rutland@arm.com,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, stefan@agner.ch
-Subject: [PATCH v2 1/4] ARM: dts: vf610: assign oscillator to clock module
-Date: Wed, 22 Oct 2014 18:27:54 +0200
-Message-Id: <1413995277-2844-2-git-send-email-stefan@agner.ch>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1413995277-2844-1-git-send-email-stefan@agner.ch>
-References: <1413995277-2844-1-git-send-email-stefan@agner.ch>
+	id S1755282AbaJVQay (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 12:30:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43806 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754350AbaJVQav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 12:30:51 -0400
+Date: Wed, 22 Oct 2014 18:30:51 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: memcontrol: fix missed end-writeback accounting
+Message-ID: <20141022163051.GH30802@dhcp22.suse.cz>
+References: <1413915550-5651-1-git-send-email-hannes@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413915550-5651-1-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The clock controller module (CCM) has several clock inputs, which
-are connected to external crystal oscillators. To reflect this,
-assign these fixed clocks to the CCM node directly.
+On Tue 21-10-14 14:19:10, Johannes Weiner wrote:
+> 0a31bc97c80c ("mm: memcontrol: rewrite uncharge API") changed page
+> migration to uncharge the old page right away.  The page is locked,
+> unmapped, truncated, and off the LRU.  But it could race with a
+> finishing writeback, which then doesn't get unaccounted properly:
+> 
+> test_clear_page_writeback()              migration
+>   acquire pc->mem_cgroup->move_lock
+>                                            wait_on_page_writeback()
+>   TestClearPageWriteback()
+>                                            mem_cgroup_migrate()
+>                                              clear PCG_USED
+>   if (PageCgroupUsed(pc))
+>     decrease memcg pages under writeback
+>   release pc->mem_cgroup->move_lock
+> 
+> One solution for this would be to simply remove the PageCgroupUsed()
+> check, as RCU protects the memcg anyway.
+> 
+> However, it's more robust to acknowledge that migration is really
+> modifying the charge state of alive pages in this case, and so it
+> should participate in the protocol specifically designed for this.
 
-This especially resolves initialization order dependencies we had
-with the earlier initialization code: When resolving of the fixed
-clocks failed in clk-vf610, the code created fixed clocks with a
-rate of 0.
+It's been a long day so I might be missing something really obvious
+here. But how can move_lock help here when the fast path (no task
+migration is going on) takes only RCU read lock?
 
-Signed-off-by: Stefan Agner <stefan@agner.ch>
----
- .../devicetree/bindings/clock/vf610-clock.txt      | 15 +++++++++++++
- arch/arm/boot/dts/vf610-cosmic.dts                 | 14 ++++++------
- arch/arm/boot/dts/vf610-twr.dts                    | 25 ++++++++++++----------
- arch/arm/boot/dts/vf610.dtsi                       | 25 ++++++++++------------
- 4 files changed, 48 insertions(+), 31 deletions(-)
+> Fixes: 0a31bc97c80c ("mm: memcontrol: rewrite uncharge API")
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: "3.17" <stable@vger.kernel.org>
+> ---
+>  mm/memcontrol.c | 8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 3a203c7ec6c7..b35a44e9cd37 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -6148,6 +6148,7 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
+>  			bool lrucare)
+>  {
+>  	struct page_cgroup *pc;
+> +	unsigned long flags;
+>  	int isolated;
+>  
+>  	VM_BUG_ON_PAGE(!PageLocked(oldpage), oldpage);
+> @@ -6177,7 +6178,14 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
+>  	if (lrucare)
+>  		lock_page_lru(oldpage, &isolated);
+>  
+> +	/*
+> +	 * The page is locked, unmapped, truncated, and off the LRU,
+> +	 * but there might still be references, e.g. from finishing
+> +	 * writeback.  Follow the charge moving protocol here.
+> +	 */
+> +	move_lock_mem_cgroup(pc->mem_cgroup, &flags);
+>  	pc->flags = 0;
+> +	move_unlock_mem_cgroup(pc->mem_cgroup, &flags);
+>  
+>  	if (lrucare)
+>  		unlock_page_lru(oldpage, isolated);
+> -- 
+> 2.1.2
+> 
 
-diff --git a/Documentation/devicetree/bindings/clock/vf610-clock.txt b/Documentation/devicetree/bindings/clock/vf610-clock.txt
-index c80863d..63f9f1a 100644
---- a/Documentation/devicetree/bindings/clock/vf610-clock.txt
-+++ b/Documentation/devicetree/bindings/clock/vf610-clock.txt
-@@ -5,6 +5,19 @@ Required properties:
- - reg: Address and length of the register set
- - #clock-cells: Should be <1>
- 
-+Optional properties:
-+- clocks: list of clock identifiers which are external input clocks to the
-+	given clock controller. Please refer the next section to find
-+	the input clocks for a given controller.
-+- clock-names: list of names of clocks which are exteral input clocks to the
-+	given clock controller.
-+
-+Input clocks for top clock controller:
-+	- sxosc (external crystal oscillator 32KHz, recommended)
-+	- fxosc (external crystal oscillator 24MHz, recommended)
-+	- audio_ext
-+	- enet_ext
-+
- The clock consumer should specify the desired clock by having the clock
- ID in its "clocks" phandle cell. See include/dt-bindings/clock/vf610-clock.h
- for the full list of VF610 clock IDs.
-@@ -15,6 +28,8 @@ clks: ccm@4006b000 {
- 	compatible = "fsl,vf610-ccm";
- 	reg = <0x4006b000 0x1000>;
- 	#clock-cells = <1>;
-+	clocks = <&sxosc>, <&fxosc>;
-+	clock-names = "sxosc", "fxosc";
- };
- 
- uart1: serial@40028000 {
-diff --git a/arch/arm/boot/dts/vf610-cosmic.dts b/arch/arm/boot/dts/vf610-cosmic.dts
-index 3fd1b74..b0ce8b8 100644
---- a/arch/arm/boot/dts/vf610-cosmic.dts
-+++ b/arch/arm/boot/dts/vf610-cosmic.dts
-@@ -23,14 +23,16 @@
- 		reg = <0x80000000 0x10000000>;
- 	};
- 
--	clocks {
--		enet_ext {
--			compatible = "fixed-clock";
--			#clock-cells = <0>;
--			clock-frequency = <50000000>;
--		};
-+	enet_ext: enet_ext {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <50000000>;
- 	};
-+};
- 
-+&clks {
-+	clocks = <&sxosc>, <&fxosc>, <&enet_ext>;
-+	clock-names = "sxosc", "fxosc", "enet_ext";
- };
- 
- &fec1 {
-diff --git a/arch/arm/boot/dts/vf610-twr.dts b/arch/arm/boot/dts/vf610-twr.dts
-index 189b697..7d06d1a 100644
---- a/arch/arm/boot/dts/vf610-twr.dts
-+++ b/arch/arm/boot/dts/vf610-twr.dts
-@@ -22,18 +22,16 @@
- 		reg = <0x80000000 0x8000000>;
- 	};
- 
--	clocks {
--		audio_ext {
--			compatible = "fixed-clock";
--			#clock-cells = <0>;
--			clock-frequency = <24576000>;
--		};
-+	audio_ext: mclk_osc {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <24576000>;
-+	};
- 
--		enet_ext {
--			compatible = "fixed-clock";
--			#clock-cells = <0>;
--			clock-frequency = <50000000>;
--		};
-+	enet_ext: eth_osc {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <50000000>;
- 	};
- 
- 	regulators {
-@@ -95,6 +93,11 @@
- 	status = "okay";
- };
- 
-+&clks {
-+	clocks = <&sxosc>, <&fxosc>, <&enet_ext>, <&audio_ext>;
-+	clock-names = "sxosc", "fxosc", "enet_ext", "audio_ext";
-+};
-+
- &dspi0 {
- 	bus-num = <0>;
- 	pinctrl-names = "default";
-diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
-index 699da48..ed12d9a 100644
---- a/arch/arm/boot/dts/vf610.dtsi
-+++ b/arch/arm/boot/dts/vf610.dtsi
-@@ -44,21 +44,16 @@
- 		};
- 	};
- 
--	clocks {
--		#address-cells = <1>;
--		#size-cells = <0>;
--
--		sxosc {
--			compatible = "fixed-clock";
--			#clock-cells = <0>;
--			clock-frequency = <32768>;
--		};
-+	fxosc: fxosc {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <24000000>;
-+	};
- 
--		fxosc {
--			compatible = "fixed-clock";
--			#clock-cells = <0>;
--			clock-frequency = <24000000>;
--		};
-+	sxosc: sxosc {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <32768>;
- 	};
- 
- 	soc {
-@@ -358,6 +353,8 @@
- 			clks: ccm@4006b000 {
- 				compatible = "fsl,vf610-ccm";
- 				reg = <0x4006b000 0x1000>;
-+				clocks = <&sxosc>, <&fxosc>;
-+				clock-names = "sxosc", "fxosc";
- 				#clock-cells = <1>;
- 			};
- 
 -- 
-2.1.2
-
+Michal Hocko
+SUSE Labs
