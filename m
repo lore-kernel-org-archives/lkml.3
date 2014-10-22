@@ -1,101 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754796AbaJVIcm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 04:32:42 -0400
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:49037 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754565AbaJVIat (ORCPT
+	id S1754814AbaJVIdr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 04:33:47 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:63188 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751100AbaJVIdo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 04:30:49 -0400
-From: Dominik Dingel <dingel@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Bob Liu <lliubbo@gmail.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Gleb Natapov <gleb@kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Jianyu Zhan <nasa4836@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Konstantin Weitz <konstantin.weitz@gmail.com>, kvm@vger.kernel.org,
-        linux390@de.ibm.com, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Dominik Dingel <dingel@linux.vnet.ibm.com>
-Subject: [PATCH 2/4] mm: introduce mm_forbids_zeropage function
-Date: Wed, 22 Oct 2014 10:30:22 +0200
-Message-Id: <1413966624-12447-3-git-send-email-dingel@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.5.5
-In-Reply-To: <1413966624-12447-1-git-send-email-dingel@linux.vnet.ibm.com>
-References: <1413966624-12447-1-git-send-email-dingel@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102208-0021-0000-0000-0000017DB44D
+	Wed, 22 Oct 2014 04:33:44 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Alexandre Courbot <gnurou@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Darren Hart <dvhart@linux.intel.com>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: GPIO bindings guidelines (Was: Re: [PATCH v5 10/12] gpio: Support for unified device properties interface)
+Date: Wed, 22 Oct 2014 10:33:32 +0200
+Message-ID: <4711930.7fsc2oSxcp@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141022081044.GB1484@lahna.fi.intel.com>
+References: <CAAVeFuLW6fucvDxQvY5DDfnhPrgYM+1pi7WoHfBQa_BgYnc_Cw@mail.gmail.com> <4582579.9WMrIMALsy@wuerfel> <20141022081044.GB1484@lahna.fi.intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:ogxXZkeVArwdv5rtcnMgxTbEGeyU1pTN5pPKQtiZlkA
+ +9OUxNwYTmWRozchyUXZVqlAM9fPayYbaqTqMw13VUO8gSCTPf
+ 4pLQDyypotMp1Ke10dbFVrumyMQ0B0uoHWQMfF427vihw9akN2
+ FzajdI+W9CKyv2BpV3320yHKh7BYMMgLZ+kaRH3BW+QZHpbh/u
+ x56HWrRdt2BkQB+Ojm/7mklTgUnAdvG2KtY95BOeRG9w7bPFxO
+ 7jaVmkKzKVV1ca+gN7iJfZya+Z4aufaz2sGTo1Babe2DwIAfsb
+ IFNg5Xets+VE/3TRLCzLdTAnW0WHpzJ4H+l91t4XirYW4/isE+
+ z069PaaupWIdEqrO2pYg=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new function stub to allow architectures to disable for
-an mm_structthe backing of non-present, anonymous pages with
-read-only empty zero pages.
+On Wednesday 22 October 2014 11:10:44 Mika Westerberg wrote:
+> 
+> It expects that GPIOs returned from _CRS are in specific order. Since we
+> can't change these existing ACPI tables, we must support them somehow.
+> 
+> This patch series handles it so that:
+> 
+>   1) If we can't find given property (e.g "reset-gpios" or
+>      "shutdown-gpios") the index above will refer directly to the GPIO
+>      resource returned from _CRS.
+> 
+>   2) If the property is found we ignore index and take it from the
+>      property instead.
+> 
+> This has the drawback that we cannot support this:
+> 
+>         Package () { "reset-gpios", Package () { ^GPIO, 0, 0, 0, ^GPIO, 1, 0, 0}}
+>                                                                  ^^^^^^^^^^^^^^
+> So the second entry in the above is not accessible using
+> gpiod_get_index() and the reason is that we want to support the existing
+> and new ACPI tables where _DSD is not being used.
 
-Signed-off-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
----
- include/linux/mm.h | 4 ++++
- mm/huge_memory.c   | 2 +-
- mm/memory.c        | 2 +-
- 3 files changed, 6 insertions(+), 2 deletions(-)
+So this is not using the DT binding but does thing slightly differently then.
+In this case (supporting two incompatible bindings for DT and ACPI), I think
+the only sensible driver implementation would be to know what we are asking
+for and use different devm_gpiod_get_index statements based on the firmware
+interface.
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index cd33ae2..0a2022e 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -56,6 +56,10 @@ extern int sysctl_legacy_va_layout;
- #define __pa_symbol(x)  __pa(RELOC_HIDE((unsigned long)(x), 0))
- #endif
- 
-+#ifndef mm_forbids_zeropage
-+#define mm_forbids_zeropage(X)  (0)
-+#endif
-+
- extern unsigned long sysctl_user_reserve_kbytes;
- extern unsigned long sysctl_admin_reserve_kbytes;
- 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index de98415..357a381 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -805,7 +805,7 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		return VM_FAULT_OOM;
- 	if (unlikely(khugepaged_enter(vma, vma->vm_flags)))
- 		return VM_FAULT_OOM;
--	if (!(flags & FAULT_FLAG_WRITE) &&
-+	if (!(flags & FAULT_FLAG_WRITE) && !mm_forbids_zeropage(mm) &&
- 			transparent_hugepage_use_zero_page()) {
- 		spinlock_t *ptl;
- 		pgtable_t pgtable;
-diff --git a/mm/memory.c b/mm/memory.c
-index 64f82aa..f275a9d 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2640,7 +2640,7 @@ static int do_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		return VM_FAULT_SIGBUS;
- 
- 	/* Use the zero-page for reads */
--	if (!(flags & FAULT_FLAG_WRITE)) {
-+	if (!(flags & FAULT_FLAG_WRITE) && !mm_forbids_zeropage(mm)) {
- 		entry = pte_mkspecial(pfn_pte(my_zero_pfn(address),
- 						vma->vm_page_prot));
- 		page_table = pte_offset_map_lock(mm, pmd, address, &ptl);
--- 
-1.8.5.5
-
+	Arnd
