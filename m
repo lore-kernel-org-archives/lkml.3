@@ -1,69 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807AbaJVN2i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 09:28:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18700 "EHLO mx1.redhat.com"
+	id S1752862AbaJVN2t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 09:28:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30578 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752753AbaJVN2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 09:28:37 -0400
-Date: Wed, 22 Oct 2014 15:27:49 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        ak@linux.intel.com, kan.liang@intel.com, bp@alien8.de,
-        maria.n.dimakopoulou@gmail.com
-Subject: Re: [PATCH v2 11/12] perf/x86: make HT bug workaround conditioned on
- HT enabled
-Message-ID: <20141022132749.GB15126@krava.brq.redhat.com>
-References: <1412872486-2930-1-git-send-email-eranian@google.com>
- <1412872486-2930-12-git-send-email-eranian@google.com>
+	id S1751192AbaJVN2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 09:28:47 -0400
+Date: Wed, 22 Oct 2014 09:28:27 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: "Alasdair G. Kergon" <agk@redhat.com>, Mike Snitzer <msnitzer@redhat.com>,
+        Jonathan Brassow <jbrassow@redhat.com>,
+        Edward Thornber <thornber@redhat.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>
+cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: [PATCH 8/18] block copy: use merge_bvec_fn for copies
+In-Reply-To: <alpine.LRH.2.02.1410220913280.31351@file01.intranet.prod.int.rdu2.redhat.com>
+Message-ID: <alpine.LRH.2.02.1410220928060.31351@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1410220913280.31351@file01.intranet.prod.int.rdu2.redhat.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412872486-2930-12-git-send-email-eranian@google.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 09, 2014 at 06:34:45PM +0200, Stephane Eranian wrote:
+We use merge_bvec_fn to make sure that copies do not split internal
+boundaries of device mapper devices.
 
-SNIP
+There is no possibility to split a copy bio (splitting would complicate
+the design significantly), so we must use merge_bvec_fn to make sure that
+the bios have appropriate size for the device mapper stack.
 
-> + */
-> +static __init int fixup_ht_bug(void)
-> +{
-> +	int cpu = smp_processor_id();
-> +	int w, c;
-> +	/*
-> +	 * problem not present on this CPU model, nothing to do
-> +	 */
-> +	if (!(x86_pmu.flags & PMU_FL_EXCL_ENABLED))
-> +		return 0;
-> +
-> +	w = cpumask_weight(topology_thread_cpumask(cpu));
-> +	if (w > 1) {
-> +		pr_info("CPU erratum BJ122, BV98, HSD29 worked around\n");
-> +		return 0;
-> +	}
-> +
-> +	watchdog_nmi_disable_all();
-> +
-> +	x86_pmu.flags &= ~(PMU_FL_EXCL_CNTRS | PMU_FL_EXCL_ENABLED);
-> +
-> +	x86_pmu.commit_scheduling = NULL;
-> +	x86_pmu.start_scheduling = NULL;
-> +	x86_pmu.stop_scheduling = NULL;
-> +
-> +	watchdog_nmi_enable_all();
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
 
-if you build with CONFIG_LOCKUP_DETECTOR=n it wont link:
+---
+ block/blk-lib.c |   37 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 37 insertions(+)
 
-  LD      init/built-in.o
-arch/x86/built-in.o: In function `fixup_ht_bug':
-/root/linux/arch/x86/kernel/cpu/perf_event_intel.c:3267: undefined reference to `watchdog_nmi_disable_all'
-/root/linux/arch/x86/kernel/cpu/perf_event_intel.c:3275: undefined reference to `watchdog_nmi_enable_all'
+Index: linux-3.16-rc5/block/blk-lib.c
+===================================================================
+--- linux-3.16-rc5.orig/block/blk-lib.c	2014-07-15 15:27:51.000000000 +0200
++++ linux-3.16-rc5/block/blk-lib.c	2014-07-15 15:27:59.000000000 +0200
+@@ -369,6 +369,31 @@ static void bio_copy_end_io(struct bio *
+ 	}
+ }
+ 
++static unsigned blkdev_copy_merge(struct block_device *bdev,
++				  struct request_queue *q, unsigned long bi_rw,
++				  sector_t sector, unsigned n)
++{
++	if (!q->merge_bvec_fn) {
++		return n;
++	} else {
++		unsigned m;
++		struct bvec_merge_data bvm = {
++			.bi_bdev = bdev,
++			.bi_sector = sector,
++			.bi_size = 0,
++			.bi_rw = bi_rw,
++		};
++		struct bio_vec vec = {
++			.bv_page = NULL,
++			.bv_len = likely(n <= UINT_MAX >> 9) ? n << 9 : UINT_MAX & ~511U,
++			.bv_offset = 0,
++		};
++		m = q->merge_bvec_fn(q, &bvm, &vec);
++		m >>= 9;
++		return min(m, n);
++	}
++}
++
+ /**
+  * blkdev_issue_copy - queue a copy same operation
+  * @src_bdev:	source blockdev
+@@ -424,6 +449,18 @@ int blkdev_issue_copy(struct block_devic
+ 		struct bio_copy *bc;
+ 		unsigned chunk = (unsigned)min(nr_sects, (sector_t)max_copy_sectors);
+ 
++		chunk = blkdev_copy_merge(src_bdev, sq, READ | REQ_COPY, src_sector, chunk);
++		if (!chunk) {
++			ret = -EOPNOTSUPP;
++			break;
++		}
++
++		chunk = blkdev_copy_merge(dst_bdev, dq, WRITE | REQ_COPY, dst_sector, chunk);
++		if (!chunk) {
++			ret = -EOPNOTSUPP;
++			break;
++		}
++
+ 		bc = kmalloc(sizeof(struct bio_copy), gfp_mask);
+ 		if (!bc) {
+ 			ret = -ENOMEM;
 
-I think you need watchdog_nmi_(enable|disable)_all stubs out of kernel/watchdog.c
-
-jirka
