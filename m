@@ -1,87 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753944AbaJVPe7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 11:34:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42912 "EHLO mx2.suse.de"
+	id S1753513AbaJVPhD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 11:37:03 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56458 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752183AbaJVPe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 11:34:57 -0400
-Date: Wed, 22 Oct 2014 17:34:55 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/4] mm: memcontrol: uncharge pages on swapout
-Message-ID: <20141022153455.GD30802@dhcp22.suse.cz>
-References: <1413818532-11042-1-git-send-email-hannes@cmpxchg.org>
- <1413818532-11042-2-git-send-email-hannes@cmpxchg.org>
+	id S1752460AbaJVPhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 11:37:01 -0400
+Message-ID: <5447CF05.4070802@zytor.com>
+Date: Wed, 22 Oct 2014 08:36:37 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413818532-11042-2-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: David Vrabel <david.vrabel@citrix.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>, tglx@linutronix.de,
+        mingo@redhat.com, konrad.wilk@oracle.com
+CC: tianyu.lan@intel.com, xen-devel@lists.xenproject.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH v2] xen/smp: Use die_complete completion when
+ taking CPU down
+References: <1413478046-4987-1-git-send-email-boris.ostrovsky@oracle.com> <5447CE2B.5090101@citrix.com>
+In-Reply-To: <5447CE2B.5090101@citrix.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 20-10-14 11:22:09, Johannes Weiner wrote:
-> mem_cgroup_swapout() is called with exclusive access to the page at
-> the end of the page's lifetime.  Instead of clearing the PCG_MEMSW
-> flag and deferring the uncharge, just do it right away.  This allows
-> follow-up patches to simplify the uncharge code.
+On 10/22/2014 08:32 AM, David Vrabel wrote:
+> On 16/10/14 17:47, Boris Ostrovsky wrote:
+>> Commit 2ed53c0d6cc9 ("x86/smpboot: Speed up suspend/resume by avoiding
+>> 100ms sleep for CPU offline during S3") introduced completions to CPU
+>> offlining process. These completions are not initialized on Xen kernels
+>> causing a panic in play_dead_common().
+>>
+>> Move handling of die_complete into common routines to make them
+>> available to Xen guests.
+>>
+>> (Also, while at it, move these routines as well as die_complete under
+>> ifdef CONFIG_HOTPLUG_CPU)
 > 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-
-OK, it makes sense. With the irq fixup
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  mm/memcontrol.c | 17 +++++++++++++----
->  1 file changed, 13 insertions(+), 4 deletions(-)
+> Reviewed-by: David Vrabel <david.vrabel@citrix.com>
 > 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index bea3fddb3372..7709f17347f3 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -5799,6 +5799,7 @@ static void __init enable_swap_cgroup(void)
->   */
->  void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
->  {
-> +	struct mem_cgroup *memcg;
->  	struct page_cgroup *pc;
->  	unsigned short oldid;
->  
-> @@ -5815,13 +5816,21 @@ void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
->  		return;
->  
->  	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEMSW), page);
-> +	memcg = pc->mem_cgroup;
->  
-> -	oldid = swap_cgroup_record(entry, mem_cgroup_id(pc->mem_cgroup));
-> +	oldid = swap_cgroup_record(entry, mem_cgroup_id(memcg));
->  	VM_BUG_ON_PAGE(oldid, page);
-> +	mem_cgroup_swap_statistics(memcg, true);
->  
-> -	pc->flags &= ~PCG_MEMSW;
-> -	css_get(&pc->mem_cgroup->css);
-> -	mem_cgroup_swap_statistics(pc->mem_cgroup, true);
-> +	pc->flags = 0;
-> +
-> +	if (!mem_cgroup_is_root(memcg))
-> +		page_counter_uncharge(&memcg->memory, 1);
-> +
-> +	local_irq_disable();
-> +	mem_cgroup_charge_statistics(memcg, page, -1);
-> +	memcg_check_events(memcg, page);
-> +	local_irq_enable();
->  }
->  
->  /**
-> -- 
-> 2.1.2
+> I can merge this via the Xen tree if that is preferred.
 > 
 
--- 
-Michal Hocko
-SUSE Labs
+Since it touches non-Xen code I'd rather not.
+
+	-hpa
+
+
