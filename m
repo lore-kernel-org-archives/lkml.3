@@ -1,39 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932329AbaJVBoY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 21:44:24 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:54115 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752810AbaJVBoX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 21:44:23 -0400
-Date: Tue, 21 Oct 2014 21:44:22 -0400 (EDT)
-Message-Id: <20141021.214422.448340967510694149.davem@davemloft.net>
-To: ast@plumgrid.com
-Cc: hannes@stressinduktion.org, dborkman@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net] bpf: fix bug in eBPF verifier
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1413842097-4380-1-git-send-email-ast@plumgrid.com>
-References: <1413842097-4380-1-git-send-email-ast@plumgrid.com>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 21 Oct 2014 18:44:23 -0700 (PDT)
+	id S1754147AbaJVBuO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 21:50:14 -0400
+Received: from mail.kernel.org ([198.145.19.201]:42360 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752986AbaJVBuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 21:50:12 -0400
+Date: Tue, 21 Oct 2014 22:50:07 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCHSET 0/5] perf tools: Speed up dwarf callchain
+ post-unwinding for libunwind (v4)
+Message-ID: <20141022015007.GE4160@kernel.org>
+References: <1412556363-26229-1-git-send-email-namhyung@kernel.org>
+ <20141013181158.GA28191@krava.redhat.com>
+ <20141015192441.GR3198@kernel.org>
+ <20141015200630.GT3198@kernel.org>
+ <87iojcga58.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <87iojcga58.fsf@sejong.aot.lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexei Starovoitov <ast@plumgrid.com>
-Date: Mon, 20 Oct 2014 14:54:57 -0700
-
-> while comparing for verifier state equivalency the comparison
-> was missing a check for uninitialized register.
-> Make sure it does so and add a testcase.
+Em Wed, Oct 22, 2014 at 10:34:27AM +0900, Namhyung Kim escreveu:
+> Hi Arnaldo,
 > 
-> Fixes: f1bca824dabb ("bpf: add search pruning optimization to verifier")
-> Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
-> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+> On Wed, 15 Oct 2014 17:06:30 -0300, Arnaldo Carvalho de Melo wrote:
+> > Next time please run: (I'm fixing this up this time)
+> >
+> > [acme@zoo linux]$ time make -C tools/perf build-test
+> ...
+> > In file included from util/machine.c:14:0:
+> > util/unwind.h: In function ‘unwind__prepare_access’:
+> > util/unwind.h:47:57: error: unused parameter ‘thread’
+> > [-Werror=unused-parameter]
+> >  static inline int unwind__prepare_access(struct thread *thread)
+> >                                                          ^
+> > util/unwind.h: In function ‘unwind__finish_access’:
+> > util/unwind.h:52:57: error: unused parameter ‘thread’
+> > [-Werror=unused-parameter]
+> >  static inline void unwind__finish_access(struct thread *thread) {}
+> >                                                          ^
+> > cc1: all warnings being treated as errors
+> > make[3]: *** [util/machine.o] Error 1
+> > make[3]: *** Waiting for unfinished jobs....
+> > make[2]: *** [all] Error 2
+> >   test: test -x ./perf
+> > make[1]: *** [make_no_libelf] Error 1
+> > make: *** [build-test] Error 2
+> > make: Leaving directory `/home/git/linux/tools/perf'
+> 
+> So it seems you didn't include the patch 3/5 which is the key of this
+> series..  Could you please check it again?
 
-Applied, thanks.
+I'll check it tomorrow.
+
+- Arnaldo
