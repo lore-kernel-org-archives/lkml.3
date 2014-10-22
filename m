@@ -1,235 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814AbaJVAqc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 20:46:32 -0400
-Received: from mail-oi0-f50.google.com ([209.85.218.50]:53628 "EHLO
-	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751023AbaJVAq3 (ORCPT
+	id S1753341AbaJVAvF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 20:51:05 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:49990 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750769AbaJVAvC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 20:46:29 -0400
+	Tue, 21 Oct 2014 20:51:02 -0400
+X-IronPort-AV: E=Sophos;i="5.04,765,1406563200"; 
+   d="scan'208";a="37687353"
+Message-ID: <5446FF71.7000606@cn.fujitsu.com>
+Date: Wed, 22 Oct 2014 08:50:57 +0800
+From: Qu Wenruo <quwenruo@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <CALCETrXEAegFmSs2LnfSJR0tQmqZudnESDER8CoqKxOCBFMwdA@mail.gmail.com>
-References: <1413235430-22944-1-git-send-email-adityakali@google.com>
- <1413235430-22944-8-git-send-email-adityakali@google.com> <20141016211236.GA4308@mail.hallyn.com>
- <CAGr1F2EH0ynfFihTh1dv=n1faxUh0zS3ggk303bwGnDnW2PUCw@mail.gmail.com>
- <20141016214710.GA4759@mail.hallyn.com> <87iojgmy3o.fsf@x220.int.ebiederm.org>
- <CALCETrUC=yW72d2hDzjESmZAt85x1WcGz4L-DrtY5YXAQxbpMA@mail.gmail.com>
- <44072106-c0f3-46b8-b2b5-9b1cbd1b7d88@email.android.com> <CALCETrXhGnBM_xx=Auz3WRQXkqhGGTWuZN=PU+A9HZ7Ek27FLA@mail.gmail.com>
- <87zjcq10ya.fsf@x220.int.ebiederm.org> <CALCETrVkMtsnEh57jFZrdx5vHbz97BdO7OuupT+xVNnWpJjxng@mail.gmail.com>
- <87lhoayo59.fsf@x220.int.ebiederm.org> <CALCETrVFKvtHpTfY3kuE5ZTrwQAzuDmk6dm-mbQffDHAZmq-KQ@mail.gmail.com>
- <CAGr1F2Ee2MCKOwALR2YV7ppDmyHxO6+EsHqSc1+WcwKFPPQB0w@mail.gmail.com>
- <CALCETrWXDMRsexfvmh2CiMW4WX0ZLJ4pJvzHU55PEBk=NmnyZg@mail.gmail.com>
- <CAGr1F2FdQ4VF1_o7mdybZ-WhLLhFxdgkNnzotHOwnhLU8W+YCw@mail.gmail.com> <CALCETrXEAegFmSs2LnfSJR0tQmqZudnESDER8CoqKxOCBFMwdA@mail.gmail.com>
-From: Aditya Kali <adityakali@google.com>
-Date: Tue, 21 Oct 2014 17:46:08 -0700
-Message-ID: <CAGr1F2HYGG9=jwugywD8tUdB+dOjN4z+3BSpqL_m2aaM+3Rz1A@mail.gmail.com>
-Subject: Re: [PATCHv1 7/8] cgroup: cgroup namespace setns support
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        <clm@fb.com>, <jbacik@fb.com>, <linux-btrfs@vger.kernel.org>
+Subject: Re: [3.18rc1] btrfs triggering vm bug_on
+References: <20141021215731.GA10296@redhat.com>
+In-Reply-To: <20141021215731.GA10296@redhat.com>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [10.167.226.33]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 3:42 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Tue, Oct 21, 2014 at 3:33 PM, Aditya Kali <adityakali@google.com> wrote:
->> On Tue, Oct 21, 2014 at 12:02 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>> On Tue, Oct 21, 2014 at 11:49 AM, Aditya Kali <adityakali@google.com> wrote:
->>>> On Mon, Oct 20, 2014 at 10:49 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>>> On Mon, Oct 20, 2014 at 10:42 PM, Eric W. Biederman
->>>>> <ebiederm@xmission.com> wrote:
->>>>>>
->>>>>> I do wonder if we think of this as chcgrouproot if there is a simpler
->>>>>> implementation.
->>>>>
->>>>> Could be.  I'll defer to Aditya for that one.
->>>>>
->>>>
->>>> More than chcgrouproot, its probably closer to pivot_cgroup_root. In
->>>> addition to restricting the process to a cgroup-root, new processes
->>>> entering the container should also be implicitly contained within the
->>>> cgroup-root of that container.
->>>
->>> Why?  Concretely, why should this be in the kernel namespace code
->>> instead of in userspace?
->>>
->>
->> Userspace can do it too. Though then there will be possibility of
->> having processes in the same mount namespace with different
->> cgroup-roots. Deriving contents of /proc/<pid>/cgroup becomes even
->> more complex. Thats another reason why it might not be good idea to
->> tie cgroups with mount namespace.
->>
->>>> Implementing pivot_cgroup_root would
->>>> probably involve overloading mount-namespace to now understand cgroup
->>>> filesystem too. I did attempt combining cgroupns-root with mntns
->>>> earlier (not via a new syscall though), but came to the conclusion
->>>> that its just simpler to have a separate cgroup namespace and get
->>>> clear semantics. One of the issues was that implicitly changing cgroup
->>>> on setns to mntns seemed like a huge undesirable side-effect.
->>>>
->>>> About pinning: I really feel that it should be OK to pin processes
->>>> within cgroupns-root. I think thats one of the most important feature
->>>> of cgroup-namespace since its most common usecase is to containerize
->>>> un-trusted processes - processes that, for their entire lifetime, need
->>>> to remain inside their container.
->>>
->>> So don't let them out.  None of the other namespaces have this kind of
->>> constraint:
->>>
->>>  - If you're in a mntns, you can still use fds from outside.
->>>  - If you're in a netns, you can still use sockets from outside the namespace.
->>>  - If you're in an ipcns, you can still use ipc handles from outside.
->>
->> But none of the namespaces allow you to allocate new fds/sockets/ipc
->> handles in the outside namespace. I think moving a process outside of
->> cgroupns-root is like allocating a resource outside of your namespace.
+Any reproducer?
+
+Thanks,
+Qu
+-------- Original Message --------
+Subject: [3.18rc1] btrfs triggering vm bug_on
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Date: 2014年10月22日 05:57
+> page:ffffea00088aa1c0 count:4 mapcount:0 mapping:ffff88009901e2d8 index:0x0
+> flags: 0x2ffc0000000806(error|referenced|private)
+> page dumped because: VM_BUG_ON_PAGE(!PageLocked(page))
+> ------------[ cut here ]------------
+> kernel BUG at mm/filemap.c:747!
+> invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> Modules linked in: fuse snd_seq_dummy tun binfmt_misc usb_debug bnep rfcomm nfnetlink scsi_transport_iscsi hidp af_key llc2 can_bcm can_raw nfc caif_socket caif
+> af_802154 ieee802154 phonet af_rxrpc bluetooth can pppoe pppox ppp_generic slhc irda crc_ccitt rds rose sctp libcrc32c x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 c
+> fg80211 rfkill btrfs xor coretemp hwmon x86_pkg_temp_thermal kvm_intel snd_hda_codec_realtek snd_hda_codec_generic snd_hda_codec_hdmi kvm snd_hda_intel snd_hda_controller snd_h
+> da_codec snd_hwdep crct10dif_pclmul snd_seq crc32c_intel ghash_clmulni_intel e1000e snd_seq_device raid6_pq snd_pcm microcode snd_timer serio_raw snd pcspkr ptp pps_core shpchp
+>   soundcore nfsd auth_rpcgss oid_registry nfs_acl lockd grace sunrpc
+> CPU: 3 PID: 6466 Comm: trinity-c402 Not tainted 3.18.0-rc1+ #72
+> task: ffff88003ec22f00 ti: ffff88006f3ac000 task.ti: ffff88006f3ac000
+> RIP: 0010:[<ffffffffbb1a06df>]  [<ffffffffbb1a06df>] unlock_page+0x7f/0x90
+> RSP: 0018:ffff88006f3afa08  EFLAGS: 00010292
+> RAX: 0000000000000036 RBX: 0000000000001000 RCX: 0000000000000006
+> RDX: 0000000000000000 RSI: ffffffffbb843c53 RDI: ffffffffbb0e399e
+> RBP: ffff88006f3afa08 R08: 0000000000000001 R09: 0000000000000001
+> R10: 0000000000000001 R11: 0000000000000001 R12: 0000000000000c2b
+> R13: 0000000000000000 R14: ffffea00088aa1c0 R15: 0000000000000000
+> FS:  00007f7e30942740(0000) GS:ffff880244e00000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> CR2: 00007f7e2d8b8000 CR3: 0000000098e56000 CR4: 00000000001407e0
+> DR0: 000000000219e000 DR1: 0000000000de8000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
+> Stack:
+>   ffff88006f3afb28 ffffffffc05adf78 ffffffffc05ae375 ffff88006f3afa70
+>   ffffffffbb03d193 ffffffffbb0b25c5 ffffffffc05adb10 0000000000000000
+>   00000000211ce98b 0000000000000000 ffff88006f3afbd0 ffff880222a87000
+> Call Trace:
+>   [<ffffffffc05adf78>] __do_readpage+0x468/0x7a0 [btrfs]
+>   [<ffffffffc05ae375>] ? __extent_read_full_page+0xc5/0xe0 [btrfs]
+>   [<ffffffffbb03d193>] ? prepare_ftrace_return+0x73/0xe0
+>   [<ffffffffbb0b25c5>] ? preempt_count_sub+0x5/0x100
+>   [<ffffffffc05adb10>] ? extent_write_cache_pages.isra.30.constprop.48+0x440/0x440 [btrfs]
+>   [<ffffffffc0590290>] ? btrfs_writepage_end_io_hook+0x360/0x360 [btrfs]
+>   [<ffffffffbb0b263b>] ? preempt_count_sub+0x7b/0x100
+>   [<ffffffffbb8567ba>] ? ftrace_graph_caller+0x5a/0x85
+>   [<ffffffffc05ae375>] __extent_read_full_page+0xc5/0xe0 [btrfs]
+>   [<ffffffffc0590290>] ? btrfs_writepage_end_io_hook+0x360/0x360 [btrfs]
+>   [<ffffffffbb8567ba>] ? ftrace_graph_caller+0x5a/0x85
+>   [<ffffffffc05af426>] extent_read_full_page+0x46/0x80 [btrfs]
+>   [<ffffffffc058d265>] btrfs_readpage+0x25/0x30 [btrfs]
+>   [<ffffffffc059da78>] prepare_uptodate_page+0x38/0xa0 [btrfs]
+>   [<ffffffffc059dbec>] prepare_pages.isra.19+0x10c/0x1a0 [btrfs]
+>   [<ffffffffc059ed54>] __btrfs_buffered_write+0x1e4/0x5f0 [btrfs]
+>   [<ffffffffbb8567ba>] ? ftrace_graph_caller+0x5a/0x85
+>   [<ffffffffc059f52e>] btrfs_file_write_iter+0x3ce/0x550 [btrfs]
+>   [<ffffffffbb341060>] ? cap_inode_getsecid+0x20/0x20
+>   [<ffffffffbb21aad0>] ? new_sync_read+0xd0/0xd0
+>   [<ffffffffbb21ab5e>] new_sync_write+0x8e/0xd0
+>   [<ffffffffbb8567ba>] ? ftrace_graph_caller+0x5a/0x85
+>   [<ffffffffbb21b53a>] vfs_write+0xba/0x1f0
+>   [<ffffffffbb21c048>] SyS_write+0x58/0xd0
+>   [<ffffffffbb854689>] tracesys_phase2+0xd4/0xd9
+> Code: 48 8d 0c 92 48 8d 0c 4a 48 8b 96 98 00 00 00 48 89 c6 48 8d 3c ca 31 d2 e8 df d5 f2 ff 5d c3 48 c7 c6 38 81 c7 bb e8 01 ff 02 00 <0f> 0b 66 66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 e8 6b 60 6b
 >
-> In a pidns, you can see outside tasks if you have an outside procfs
-> mounted, but, if you don't, then you can't.  Wouldn't cgroupns be just
-> like that?  You wouldn't be able to escape your cgroup as long as you
-> don't have an inappropriate cgroupfs mounted.
->
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-I am not if we should only depend on restricted visibility for this
-though. More details below.
-
->
->>>
->>>> And with explicit permission from
->>>> cgroup subsystem (something like cgroup.may_unshare as you had
->>>> suggested previously), we can make sure that unprivileged processes
->>>> cannot pin themselves. Also, maintaining this invariant (your current
->>>> cgroup is always under your cgroupns-root) keeps the code and the
->>>> semantics simple.
->>>
->>> I actually think it makes the semantics more complex.  The less policy
->>> you stick in the kernel, the easier it is to understand the impact of
->>> that policy.
->>>
->>
->> My inclination is towards keeping things simpler - both in code as
->> well as in configuration. I agree that cgroupns might seem
->> "less-flexible", but in its current form, it encourages consistent
->> container configuration. If you have a process that needs to move
->> around between cgroups belonging to different containers, then that
->> process should probably not be inside any container's cgroup
->> namespace. Allowing that will just make the cgroup namespace
->> pretty-much meaningless.
->
-> The problem with pinning is that preventing it causes problems
-> (specifically, either something potentially complex and incompatible
-> needs to be added or unprivileged processes will be able to pin
-> themselves).
->
-> Unless I'm missing something, a normal cgroupns user doesn't actually
-> need kernel pinning support to effectively constrain its members'
-> cgroups.
->
-
-So there are 2 scenarios to consider:
-
-We have 2 containers with cgroups: /container1 and /container2
-Assume process P is running under cgroupns-root '/container1'
-
-(1) process P wants to 'write' to cgroup.procs outside its
-cgroupns-root (say to /container2/cgroup.procs)
-(2) An admin process running in init_cgroup_ns (or any parent cgroupns
-with cgroupns-root above /container1) wants to write pid of process P
-to /container2/cgroup.procs (which lies outside of P's cgroupns-root)
-
-For (1), I think its ok to reject such a write. This is consistent
-with the restriction in cgroup_file_write added in 'Patch 6' of this
-set. I believe this should be independent of visibility of the cgroup
-hierarchy for P.
-
-For (2), we may allow the write to succeed if we make sure that the
-process doing the write is an admin process (with CAP_SYS_ADMIN in its
-userns AND over P's cgroupns->user_ns).
-If this write succeeds, then:
-(a) process P's /proc/<pid>/cgroup does not show anything when viewed
-by 'self' or any other process in P's cgrgroupns. I would really like
-to avoid showing relative paths or paths outside the cgroupns-root
-(b) if process P does 'mount -t cgroup cgroup <mnt>', it will still be
-only able to mount and see cgroup hierarchy under its cgroupns-root
-(d) if process P tries to write to any cgroup file outside of its
-cgroupns-root (assuming that hierarchy is visible to it for whatever
-reason), it will fail as in (1)
-
-i.e., in summary, you can't escape out of cgroupns-root yourself. You
-will need help from an admin process running under some parent
-cgroupns-root to move you out. Is that workable for your usecase? Most
-of the things above already happen with the current patch-set, so it
-should be easy to enable this.
-
-Though there are still some open issues like:
-* what happens if you move all the processes out of /container1 and
-then 'rmdir /container1'? As it is now, you won't be able to setns()
-to that cgroupns anymore. But the cgroupns will still hang around
-until the processes switch their cgroupns.
-* should we then also allow setns() without first entering the
-cgroupns-root? setns also checks the same conditions as in (a) plus it
-checks that your current cgroup is descendant of target cgroupns-root.
-Alternatively we can special-case setns() to own cgroupns so that it
-doesn't fail.
-* migration for these processes will be tricky, if not impossible. But
-the admin trying to do this probably doesn't care about it or will
-provision for it.
-
->>
->>>>
->>>> If we ditch the pinning requirement and allow the containarized
->>>> process to move outside of its cgroupns-root, we will have to address
->>>> atleast the following:
->>>> * what does its /proc/self/cgroup  (and /proc/<pid>/cgroup in general)
->>>> look like? We might need to just not show anything in
->>>> /proc/<pid>/cgroup in such case (for default hierarchy).
->>>
->>> The process should see the cgroup path relative to its cgroup ns.
->>> Whether this requires a new /proc mount or happens automatically is an
->>> open question.  (I *hate* procfs for reasons like this.)
->>>
->>>> * how should future setns() and unshare() by such process behave?
->>>
->>> Open question.
->>>
->>>> * 'mount -t cgroup cgroup <mnt>' by such a process will yield unexpected result
->>>
->>> You could disallow that and instead require 'mount -t cgroup -o
->>> cgrouproot=. cgroup mnt' where '.' will be resolved at mount time
->>> relative to the caller's cgroupns.
->>>
->>>> * container will not remain migratable
->>>
->>> Why not?
->>>
->>
->> Well, the processes running outside of cgroupns root will be exposed
->> to information outside of the container (i.e., its /proc/self/cgroup
->> will show paths involving other containers and potentially system
->> level information). So unless you even restore them, it will be
->> difficult to restore these processes. The whole point of virtualizing
->> the /proc/self/cgroup view was so that the processes don't see outside
->> cgroups.
->>
->
-> So don't do that?
->
-
-Lot of non-cgroup-manager userspace processes have legitimate reasons
-to read /proc/self/cgroup. One example is to register for OOM
-notifications. Migratability of the container is also very important.
-So "don't do that" is not always an option :)
-
-
-> --Andy
-
--- 
-Aditya
