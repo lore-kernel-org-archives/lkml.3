@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726AbaJVO2W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 10:28:22 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:33652 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752592AbaJVO2T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 10:28:19 -0400
-Message-ID: <5447BEFE.2040806@linaro.org>
-Date: Wed, 22 Oct 2014 16:28:14 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752628AbaJVO3Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 10:29:25 -0400
+Received: from 8bytes.org ([81.169.241.247]:36637 "EHLO theia.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751386AbaJVO3Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 10:29:24 -0400
+Date: Wed, 22 Oct 2014 16:29:22 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: iommu@lists.linux-foundation.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] iommu: Implement a dummy bus_set_iommu()
+Message-ID: <20141022142922.GH10074@8bytes.org>
+References: <1406897113-20099-1-git-send-email-thierry.reding@gmail.com>
+ <1406897113-20099-2-git-send-email-thierry.reding@gmail.com>
+ <20140818165750.GE9809@8bytes.org>
+ <20141015091043.GA13162@ulmo>
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Nicolas Pitre <nico@linaro.org>
-CC: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: lockdep splat in CPU hotplug
-References: <alpine.LNX.2.00.1410211255531.24255@pobox.suse.cz> <alpine.LNX.2.00.1410221125280.22681@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1410221125280.22681@pobox.suse.cz>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141015091043.GA13162@ulmo>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2014 11:53 AM, Jiri Kosina wrote:
-> On Tue, 21 Oct 2014, Jiri Kosina wrote:
->
->> Hi,
->>
->> I am seeing the lockdep report below when resuming from suspend-to-disk
->> with current Linus' tree (c2661b80609).
->>
->> The reason for CCing Ingo and Peter is that I can't make any sense of one
->> of the stacktraces lockdep is providing.
->>
->> Please have a look at the very first stacktrace in the dump, where lockdep
->> is trying to explain where cpu_hotplug.lock#2 has been acquired. It seems
->> to imply that cpuidle_pause() is taking cpu_hotplug.lock, but that's not
->> the case at all.
->>
->> What am I missing?
->
-> Okay, reverting 442bf3aaf55a ("sched: Let the scheduler see CPU idle
-> states") and followup 83a0a96a5f26 ("sched/fair: Leverage the idle state
-> info when choosing the "idlest" cpu") which depends on it makes the splat
-> go away.
+On Wed, Oct 15, 2014 at 11:10:44AM +0200, Thierry Reding wrote:
+> It seems like I never got back to you on this. The reason here is that
+> for Tegra the IOMMU is part of a larger IP block. The IP block is
+> primarily a memory controller with a bunch of configuration knobs for
+> arbitration, prioritization and whatnot. A smaller part of the device
+> does the IOMMU translation. Therefore the IOMMU implementation would
+> be part of a larger driver, and having this dummy would reduce the
+> amount of #ifdefs required.
+> 
+> bus_set_iommu() is also the only function in include/linux/iommu.h that
+> doesn't have a dummy, so it seemed like a natural thing to do.
+> 
+> That said, I can work around this being absent for !IOMMU_API.
 
-Are you able to reproduce it by offlining the cpu and onlining it again ?
+Or you make this "larger driver" just depend on IOMMU_API? Otherwise you
+need the #ifdefs anyway to not carry around the iommu-ops functions in
+the driver without having the iommu core enabled, no?
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+	Joerg
 
