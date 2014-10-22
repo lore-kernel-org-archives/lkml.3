@@ -1,86 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389AbaJVPtE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 11:49:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51837 "EHLO mx1.redhat.com"
+	id S932234AbaJVPtU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 11:49:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43079 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755345AbaJVPrl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 11:47:41 -0400
-Date: Wed, 22 Oct 2014 18:51:12 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
-Subject: [PATCH RFC v2 15/16] virtio_net: fix types for in memory structures
-Message-ID: <1413992894-22976-16-git-send-email-mst@redhat.com>
-References: <1413992894-22976-1-git-send-email-mst@redhat.com>
+	id S1753927AbaJVPtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 11:49:18 -0400
+Date: Wed, 22 Oct 2014 17:49:18 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 3/4] mm: memcontrol: remove unnecessary PCG_MEM memory
+ charge flag
+Message-ID: <20141022154918.GF30802@dhcp22.suse.cz>
+References: <1413818532-11042-1-git-send-email-hannes@cmpxchg.org>
+ <1413818532-11042-4-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1413992894-22976-1-git-send-email-mst@redhat.com>
-X-Mutt-Fcc: =sent
+In-Reply-To: <1413818532-11042-4-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- include/uapi/linux/virtio_net.h | 15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+On Mon 20-10-14 11:22:11, Johannes Weiner wrote:
+> PCG_MEM is a remnant from an earlier version of 0a31bc97c80c ("mm:
+> memcontrol: rewrite uncharge API"), used to tell whether migration
+> cleared a charge while leaving pc->mem_cgroup valid and PCG_USED set.
+> But in the final version, mem_cgroup_migrate() directly uncharges the
+> source page, rendering this distinction unnecessary.  Remove it.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-diff --git a/include/uapi/linux/virtio_net.h b/include/uapi/linux/virtio_net.h
-index 172a7f0..b5f1677 100644
---- a/include/uapi/linux/virtio_net.h
-+++ b/include/uapi/linux/virtio_net.h
-@@ -28,6 +28,7 @@
- #include <linux/types.h>
- #include <linux/virtio_ids.h>
- #include <linux/virtio_config.h>
-+#include <linux/virtio_types.h>
- #include <linux/if_ether.h>
- 
- /* The feature bitmap for virtio net */
-@@ -84,17 +85,17 @@ struct virtio_net_hdr {
- #define VIRTIO_NET_HDR_GSO_TCPV6	4	// GSO frame, IPv6 TCP
- #define VIRTIO_NET_HDR_GSO_ECN		0x80	// TCP has ECN set
- 	__u8 gso_type;
--	__u16 hdr_len;		/* Ethernet + IP + tcp/udp hdrs */
--	__u16 gso_size;		/* Bytes to append to hdr_len per frame */
--	__u16 csum_start;	/* Position to start checksumming from */
--	__u16 csum_offset;	/* Offset after that to place checksum */
-+	__virtio16 hdr_len;		/* Ethernet + IP + tcp/udp hdrs */
-+	__virtio16 gso_size;		/* Bytes to append to hdr_len per frame */
-+	__virtio16 csum_start;	/* Position to start checksumming from */
-+	__virtio16 csum_offset;	/* Offset after that to place checksum */
- };
- 
- /* This is the version of the header to use when the MRG_RXBUF
-  * feature has been negotiated. */
- struct virtio_net_hdr_mrg_rxbuf {
- 	struct virtio_net_hdr hdr;
--	__u16 num_buffers;	/* Number of merged rx buffers */
-+	__virtio16 num_buffers;	/* Number of merged rx buffers */
- };
- 
- /*
-@@ -149,7 +150,7 @@ typedef __u8 virtio_net_ctrl_ack;
-  * VIRTIO_NET_F_CTRL_MAC_ADDR feature is available.
-  */
- struct virtio_net_ctrl_mac {
--	__u32 entries;
-+	__virtio32 entries;
- 	__u8 macs[][ETH_ALEN];
- } __attribute__((packed));
- 
-@@ -193,7 +194,7 @@ struct virtio_net_ctrl_mac {
-  * specified.
-  */
- struct virtio_net_ctrl_mq {
--	__u16 virtqueue_pairs;
-+	__virtio16 virtqueue_pairs;
- };
- 
- #define VIRTIO_NET_CTRL_MQ   4
+Acked-by: Michal Hocko <mhocko@suse.cz>
+
+> ---
+>  include/linux/page_cgroup.h | 1 -
+>  mm/memcontrol.c             | 4 +---
+>  2 files changed, 1 insertion(+), 4 deletions(-)
+> 
+> diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
+> index da62ee2be28b..97536e685843 100644
+> --- a/include/linux/page_cgroup.h
+> +++ b/include/linux/page_cgroup.h
+> @@ -4,7 +4,6 @@
+>  enum {
+>  	/* flags for mem_cgroup */
+>  	PCG_USED = 0x01,	/* This page is charged to a memcg */
+> -	PCG_MEM = 0x02,		/* This page holds a memory charge */
+>  };
+>  
+>  struct pglist_data;
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 9bab35fc3e9e..1d66ac49e702 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2606,7 +2606,7 @@ static void commit_charge(struct page *page, struct mem_cgroup *memcg,
+>  	 *   have the page locked
+>  	 */
+>  	pc->mem_cgroup = memcg;
+> -	pc->flags = PCG_USED | PCG_MEM;
+> +	pc->flags = PCG_USED;
+>  
+>  	if (lrucare)
+>  		unlock_page_lru(page, isolated);
+> @@ -6177,8 +6177,6 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
+>  	if (!PageCgroupUsed(pc))
+>  		return;
+>  
+> -	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM), oldpage);
+> -
+>  	if (lrucare)
+>  		lock_page_lru(oldpage, &isolated);
+>  
+> -- 
+> 2.1.2
+> 
+
 -- 
-MST
-
+Michal Hocko
+SUSE Labs
