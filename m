@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354AbaJVOfu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 10:35:50 -0400
-Received: from filter1.ibarracuda.nl ([83.247.7.10]:49578 "EHLO
-	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753236AbaJVOb3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753244AbaJVOb3 (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 22 Oct 2014 10:31:29 -0400
-X-ASG-Debug-ID: 1413988287-0759e74a717a4e60002-xx1T2L
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:49522 "EHLO
+	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752210AbaJVOb0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 10:31:26 -0400
+X-ASG-Debug-ID: 1413988282-0759e74a717a4e30002-xx1T2L
 X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
 X-Barracuda-AUTH-User: xsenscom
 X-Barracuda-Apparent-Source-IP: 87.249.116.215
@@ -21,18 +21,16 @@ CC: Frans Klaver <frans.klaver@xsens.com>,
         =?UTF-8?q?Ren=C3=A9=20Moll?= <linux@r-moll.nl>,
         Guenter Roeck <linux@roeck-us.net>, <linux-kernel@vger.kernel.org>,
         <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>
-Subject: [PATCH 02/13] power: reset: ltc2952: prefer devm_request_irq over request_irq
-Date: Wed, 22 Oct 2014 16:30:59 +0200
-X-ASG-Orig-Subj: [PATCH 02/13] power: reset: ltc2952: prefer devm_request_irq over request_irq
-Message-ID: <1413988270-28092-3-git-send-email-frans.klaver@xsens.com>
+Subject: [PATCH 00/13] ltc2952 modernization and new functionality
+Date: Wed, 22 Oct 2014 16:30:57 +0200
+X-ASG-Orig-Subj: [PATCH 00/13] ltc2952 modernization and new functionality
+Message-ID: <1413988270-28092-1-git-send-email-frans.klaver@xsens.com>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1413988270-28092-1-git-send-email-frans.klaver@xsens.com>
-References: <1413988270-28092-1-git-send-email-frans.klaver@xsens.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [172.16.11.125]
 X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
-X-Barracuda-Start-Time: 1413988287
+X-Barracuda-Start-Time: 1413988282
 X-Barracuda-Encrypted: AES128-SHA
 X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
 X-Barracuda-BRTS-Status: 1
@@ -46,62 +44,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make use of the fact that we allocated resources can be automatically
-deallocated. This reduces cleanup code and chance of errors. It also
-removes the need for the virq member of the ltc2952_poweroff_data
-struct.
+Hi there,
 
-Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
----
- drivers/power/reset/ltc2952-poweroff.c | 19 ++++++-------------
- 1 file changed, 6 insertions(+), 13 deletions(-)
+Apparently I missed the fact that version 2 [1] of the ltc2952 driver had already
+been queued, so here's a series that implements most of the changes that I
+already did in v3..5 [2] of the driver.
 
-diff --git a/drivers/power/reset/ltc2952-poweroff.c b/drivers/power/reset/ltc2952-poweroff.c
-index 951a90d..2c11316 100644
---- a/drivers/power/reset/ltc2952-poweroff.c
-+++ b/drivers/power/reset/ltc2952-poweroff.c
-@@ -72,8 +72,6 @@ struct ltc2952_poweroff_data {
- 
- 	struct device *dev;
- 
--	unsigned int virq;
--
- 	/**
- 	 * 0: trigger
- 	 * 1: watchdog
-@@ -260,13 +258,11 @@ static int ltc2952_poweroff_init(struct platform_device *pdev)
- 		goto err_io;
- 	}
- 
--	ltc2952_data->virq = virq;
--	ret = request_irq(virq,
--		ltc2952_poweroff_handler,
--		(IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING),
--		"ltc2952-poweroff",
--		ltc2952_data
--	);
-+	ret = devm_request_irq(&pdev->dev, virq,
-+			       ltc2952_poweroff_handler,
-+			       (IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING),
-+			       "ltc2952-poweroff",
-+			       ltc2952_data);
- 
- 	if (ret) {
- 		dev_err(&pdev->dev, "cannot configure an interrupt handler\n");
-@@ -316,12 +312,9 @@ static int ltc2952_poweroff_remove(struct platform_device *pdev)
- 
- 	pm_power_off = NULL;
- 
--	if (ltc2952_data) {
--		free_irq(ltc2952_data->virq, ltc2952_data);
--
-+	if (ltc2952_data)
- 		for (i = 0; i < ARRAY_SIZE(ltc2952_data->gpio); i++)
- 			gpiod_put(ltc2952_data->gpio[i]);
--	}
- 
- 	return 0;
- }
+This series implements devm_* usage, reduction of globals, some cleanup and
+finally makes the input trigger optional.
+
+>From the changes to the previous submissions I did not include renaming kill to
+poweroff.  The name poweroff is already used a lot. Besides that, the control
+is referred to as kill in the ltc2952 datasheet.
+
+Thanks,
+Frans
+
+[1] http://comments.gmane.org/gmane.linux.power-management.general/48312
+[2] https://lkml.org/lkml/2014/10/13/104
+
+Frans Klaver (13):
+  power: reset: ltc2952: prefer devm_kzalloc over kzalloc
+  power: reset: ltc2952: prefer devm_request_irq over request_irq
+  power: reset: ltc2952: unroll gpio_desc array
+  power: reset: ltc2952: prefer devm_gpiod_get over gpiod_get
+  power: reset: ltc2952: reduce dependency on global variables
+  power: reset: ltc2952: remove global variable poweroff_panic
+  power: reset: ltc2952: drop empty suspend/resume functions
+  power: reset: ltc2952: cleanup control flow in poweroff_handler
+  power: reset: ltc2952: remove C++ style function pointers
+  power: reset: ltc2952: disable timers in _remove
+  power: reset: ltc2952: check trigger value before starting timer
+  power: reset: ltc2952: make trigger input optional
+  power: reset: ltc2952: document optional trigger behavior
+
+ .../bindings/power/reset/ltc2952-poweroff.txt      |  13 +-
+ drivers/power/reset/ltc2952-poweroff.c             | 290 +++++++++------------
+ 2 files changed, 129 insertions(+), 174 deletions(-)
+
 -- 
 2.1.0
 
