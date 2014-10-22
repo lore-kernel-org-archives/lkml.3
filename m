@@ -1,62 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932635AbaJVJbL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 05:31:11 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:44657 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751347AbaJVJbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 05:31:08 -0400
-Date: Wed, 22 Oct 2014 11:30:42 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-Cc: Chen Yucong <slaoub@gmail.com>, Tony Luck <tony.luck@intel.com>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Fwd: [PATCH] x86, MCE, AMD: save IA32_MCi_STATUS before
- machine_check_poll() resets it
-Message-ID: <20141022093042.GB2511@pd.tnic>
-References: <CAOjmkp9qQiTbqU3NUhUDAoQAa8wAPJnE_qXbDuBKrA3ee1_APQ@mail.gmail.com>
- <5435B206.60402@amd.com>
- <20141008225750.GH16892@pd.tnic>
- <20141009165339.GA11360@arav-dinar>
- <20141009173529.GC17647@pd.tnic>
- <5436DB72.1090507@amd.com>
- <20141021202840.GD4420@pd.tnic>
- <1413942678.17435.11.camel@debian>
- <20141022081618.GA2511@pd.tnic>
- <1413968014.7070.12.camel@debian>
+	id S932699AbaJVJbg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 05:31:36 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:50401 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932642AbaJVJbe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 05:31:34 -0400
+From: Nix <nix@esperi.org.uk>
+To: Johan Hovold <johan@kernel.org>
+Cc: Paul Martin <pm@debian.org>, Daniel Silverstone <dsilvers@debian.org>,
+        Oliver Neukum <oliver@neukum.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [3.16.1 BISECTED REGRESSION]: Simtec Entropy Key (cdc-acm) broken in 3.16
+References: <878um4tg09.fsf@spindle.srvr.nix>
+	<1409569752.24385.12.camel@linux-fkkt.site>
+	<874mwnosz1.fsf@spindle.srvr.nix> <871tqe2zqt.fsf_-_@spindle.srvr.nix>
+	<20141011195108.GA8275@thinkpad.nowster.org.uk>
+	<87y4smz1l0.fsf@spindle.srvr.nix> <20141012185845.GB2786@localhost>
+	<878uklynq9.fsf@spindle.srvr.nix> <20141014083432.GB7958@localhost>
+Emacs: because you deserve a brk today.
+Date: Wed, 22 Oct 2014 10:31:17 +0100
+In-Reply-To: <20141014083432.GB7958@localhost> (Johan Hovold's message of
+	"Tue, 14 Oct 2014 10:34:32 +0200")
+Message-ID: <871tq04fiy.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1413968014.7070.12.camel@debian>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-DCC-wuwien-Metrics: spindle 1290; Body=6 Fuz1=6 Fuz2=6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Aravind,
+On 14 Oct 2014, Johan Hovold verbalised:
 
-question: what's the story with MC?_MISC[IntP], is that bit still there?
-Because I don't see it in my BKDGs here.
+> On Sun, Oct 12, 2014 at 10:36:30PM +0100, Nix wrote:
+>> I have checked: this code is being executed against a symlink that
+>> points to /dev/ttyACM0, and the tcsetattr() succeeds. (At least, it's
+>> succeeding on the kernel I'm running now, but of course that's 3.16.5
+>> with this commit reverted...)
+>
+> You could verify that by enabling debugging in the cdc-acm driver and
+> making sure that the corresponding control messages are indeed sent on
+> close.
 
-The background of the story is
+I have a debugging dump at
+<http://www.esperi.org.uk/~nix/temporary/cdc-acm.log>; it's fairly
+voluminous because the ekeyd is constantly doing USB reads, but the end
+says
 
-https://lkml.org/lkml/2014/10/7/84
+Oct 22 10:19:13 fold kern debug: : [   88.423970] cdc_acm 2-1:1.0: acm_tty_close
+Oct 22 10:19:13 fold kern debug: : [   88.424012] cdc_acm 2-1:1.0: acm_port_shutdown
+Oct 22 10:19:13 fold kern debug: : [   88.440038] cdc_acm 2-1:1.0: acm_ctrl_msg - rq 0x22, val 0x0, len 0x0, result 0
+Oct 22 10:19:13 fold kern debug: : [   88.440038] cdc_acm 2-1:1.0: acm_ctrl_irq - urb shutting down with status: -2
+Oct 22 10:19:13 fold kern debug: : [   88.440038] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 0, len 0
+Oct 22 10:19:13 fold kern debug: : [   88.440038] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
+Oct 22 10:19:13 fold kern debug: : [   88.447588] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 1, len 0
+Oct 22 10:19:13 fold kern debug: : [   88.447613] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
+Oct 22 10:19:13 fold kern debug: : [   88.448575] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 2, len 0
+Oct 22 10:19:13 fold kern debug: : [   88.448599] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
+Oct 22 10:19:13 fold kern debug: : [   88.449576] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 3, len 0
+Oct 22 10:19:13 fold kern debug: : [   88.449599] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
+Oct 22 10:19:13 fold kern debug: : [   88.450578] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 4, len 0
+Oct 22 10:19:13 fold kern debug: : [   88.450602] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
+Oct 22 10:19:13 fold kern debug: : [   88.451573] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 5, len 0
+Oct 22 10:19:13 fold kern debug: : [   88.451596] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
+Oct 22 10:19:13 fold kern debug: : [   88.452574] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 6, len 0
+Oct 22 10:19:13 fold kern debug: : [   88.452597] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
+Oct 22 10:19:13 fold kern debug: : [   88.453567] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 7, len 0
+Oct 22 10:19:13 fold kern debug: : [   88.453588] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
+Oct 22 10:19:13 fold kern debug: : [   88.454570] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 8, len 0
+Oct 22 10:19:13 fold kern debug: : [   88.454592] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
+Oct 22 10:19:13 fold kern debug: : [   88.462591] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 9, len 0
+Oct 22 10:19:13 fold kern debug: : [   88.462619] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
+Oct 22 10:19:13 fold kern debug: : [   88.463568] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 10, len 0
+Oct 22 10:19:13 fold kern debug: : [   88.463590] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
+Oct 22 10:19:13 fold kern debug: : [   88.464564] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 11, len 0
+Oct 22 10:19:13 fold kern debug: : [   88.464585] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
+Oct 22 10:19:13 fold kern debug: : [   88.465578] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 12, len 0
+Oct 22 10:19:13 fold kern debug: : [   88.465602] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
+Oct 22 10:19:13 fold kern debug: : [   88.466566] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 13, len 0
+Oct 22 10:19:13 fold kern debug: : [   88.466587] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
 
-There's this thing we did at the time
+which looks, hm, a bit suspicious to me.
 
-f227d4306cf3 ("x86, MCE, AMD: Make APIC LVT thresholding interrupt optional")
+> But you haven't seen any fw crashes since you reverted the commit in
+> question?
 
-which, AFAICR, is about some F15h versions having a counter but *not*
-generating a thresholding interrupt. Can you confirm that is still
-the case and we can have a counter but no interrupt gets generated on
-overflow?
+Not a one.
 
-Thanks.
+> Another thing you could try is to add back the 
+>
+> 	acm_set_control(acm, 0);
+>
+> just after the dev_info message in probe.
+
+Tried that (with, obviously, the commit not reverted) -- rebooted, and
+
+BytesRead=0
+BytesWritten=0
+ConnectionNonces=0
+ConnectionPackets=0
+ConnectionRekeys=0
+ConnectionResets=0
+ConnectionTime=46
+EntropyRate=0
+FipsFrameRate=0
+FrameByteLast=0
+FramesOk=0
+FramingErrors=0
+KeyDbsdShannonPerByteL=0
+KeyDbsdShannonPerByteR=0
+KeyEnglishBadness=No failure
+KeyRawBadness=0
+KeyRawShannonPerByteL=0
+KeyRawShannonPerByteR=0
+KeyRawShannonPerByteX=0
+KeyShortBadness=efm_ok
+KeyTemperatureC=-273.15
+KeyTemperatureF=-459.67
+KeyTemperatureK=0
+KeyVoltage=0
+PacketErrors=0
+PacketOK=0
+ReadRate=0
+TotalEntropy=0
+WriteRate=0
+
+So that doesn't help.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+NULL && (void)
