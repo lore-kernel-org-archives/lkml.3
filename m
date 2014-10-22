@@ -1,164 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753377AbaJVDuJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 23:50:09 -0400
-Received: from icp-osb-irony-out2.external.iinet.net.au ([203.59.1.218]:30255
-	"EHLO icp-osb-irony-out2.external.iinet.net.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751707AbaJVDuI (ORCPT
+	id S1751691AbaJVETg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 00:19:36 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:45956 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978AbaJVETe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 23:50:08 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AoUDALwoR1SVhxBY/2dsb2JhbAANT4Q6uSYGmzECgSUBhQABAQQnUQEQCw0BCgkWDwkDAgECAUUGAQwBBQIBAbhJlXEBAQEBAQEBAQIBAQEBAQEBARqGJYoyB4RLAQSlcoRTjUtagksBAQE
-X-IronPort-AV: E=Sophos;i="5.04,766,1406563200"; 
-   d="scan'208";a="267221857"
-Message-ID: <5447296C.5090806@uclinux.org>
-Date: Wed, 22 Oct 2014 13:50:04 +1000
-From: Greg Ungerer <gerg@uclinux.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 22 Oct 2014 00:19:34 -0400
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org
-CC: linux-pm@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
-        Joshua Thompson <funaho@jurai.org>, linux-m68k@vger.kernel.org
-Subject: Re: [PATCH v2 04/47] m68k: Replace mach_power_off with pm_power_off
-References: <1413864783-3271-1-git-send-email-linux@roeck-us.net> <1413864783-3271-5-git-send-email-linux@roeck-us.net>
-In-Reply-To: <1413864783-3271-5-git-send-email-linux@roeck-us.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1413933557-25684-1-git-send-email-zyw@rock-chips.com>
+References: <1413933461-25602-1-git-send-email-zyw@rock-chips.com>
+	<1413933557-25684-1-git-send-email-zyw@rock-chips.com>
+Date: Tue, 21 Oct 2014 21:19:33 -0700
+X-Google-Sender-Auth: dJ5PvrCvT-CnN02Z6UtyyosvZ78
+Message-ID: <CAD=FV=WZtcOcAQDyMDNPFdMz6P9ZSqkUPZ52UgecZbSXU92mzg@mail.gmail.com>
+Subject: Re: [PATCH v4 1/6] pinctrl: rockchip: add suspend/resume functions
+From: Doug Anderson <dianders@chromium.org>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: Heiko Stuebner <heiko@sntech.de>, Mike Turquette <mturquette@linaro.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-rockchip@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
+Chris,
 
-On 21/10/14 14:12, Guenter Roeck wrote:
-> Replace mach_power_off with pm_power_off to simplify the subsequent
-> move of pm_power_off to generic code.
-> 
-> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-> Cc: Greg Ungerer <gerg@uclinux.org>
-> Cc: Joshua Thompson <funaho@jurai.org>
-> Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+On Tue, Oct 21, 2014 at 4:19 PM, Chris Zhong <zyw@rock-chips.com> wrote:
+> From: Chris <zyw@rock-chips.com>
 
-I have no problem with the non-MMU affected parts.
+I think your git is misconfigured.  The above "From" line will make
+the author end up without your last name.  Heiko mentioned this in v4.
 
-Acked-by: Greg Ungerer <gerg@uclinux.org>
-
-Regards
-Greg
-
-
-
-> ---
-> v2:
-> - have_kernel_poweroff -> have_kernel_power_off
-> 
->  arch/m68k/emu/natfeat.c         | 3 ++-
->  arch/m68k/include/asm/machdep.h | 1 -
->  arch/m68k/kernel/process.c      | 5 +++--
->  arch/m68k/kernel/setup_mm.c     | 1 -
->  arch/m68k/kernel/setup_no.c     | 1 -
->  arch/m68k/mac/config.c          | 3 ++-
->  6 files changed, 7 insertions(+), 7 deletions(-)
-> 
-> diff --git a/arch/m68k/emu/natfeat.c b/arch/m68k/emu/natfeat.c
-> index 71b78ec..91e2ae7 100644
-> --- a/arch/m68k/emu/natfeat.c
-> +++ b/arch/m68k/emu/natfeat.c
-> @@ -15,6 +15,7 @@
->  #include <linux/string.h>
->  #include <linux/kernel.h>
->  #include <linux/module.h>
-> +#include <linux/pm.h>
->  #include <linux/io.h>
->  #include <asm/machdep.h>
->  #include <asm/natfeat.h>
-> @@ -90,5 +91,5 @@ void __init nf_init(void)
->  	pr_info("NatFeats found (%s, %lu.%lu)\n", buf, version >> 16,
->  		version & 0xffff);
->  
-> -	mach_power_off = nf_poweroff;
-> +	pm_power_off = nf_poweroff;
+> diff --git a/drivers/pinctrl/pinctrl-rockchip.c b/drivers/pinctrl/pinctrl-rockchip.c
+> index 016f457..c4a988d 100644
+> --- a/drivers/pinctrl/pinctrl-rockchip.c
+> +++ b/drivers/pinctrl/pinctrl-rockchip.c
+> @@ -1770,6 +1770,25 @@ static struct rockchip_pin_ctrl *rockchip_pinctrl_get_soc_data(
+>         return ctrl;
 >  }
-> diff --git a/arch/m68k/include/asm/machdep.h b/arch/m68k/include/asm/machdep.h
-> index 953ca21..f9fac51 100644
-> --- a/arch/m68k/include/asm/machdep.h
-> +++ b/arch/m68k/include/asm/machdep.h
-> @@ -24,7 +24,6 @@ extern int (*mach_set_rtc_pll)(struct rtc_pll_info *);
->  extern int (*mach_set_clock_mmss)(unsigned long);
->  extern void (*mach_reset)( void );
->  extern void (*mach_halt)( void );
-> -extern void (*mach_power_off)( void );
->  extern unsigned long (*mach_hd_init) (unsigned long, unsigned long);
->  extern void (*mach_hd_setup)(char *, int *);
->  extern long mach_max_dma_address;
-> diff --git a/arch/m68k/kernel/process.c b/arch/m68k/kernel/process.c
-> index c55ff71..afe3d6e 100644
-> --- a/arch/m68k/kernel/process.c
-> +++ b/arch/m68k/kernel/process.c
-> @@ -22,6 +22,7 @@
->  #include <linux/unistd.h>
->  #include <linux/ptrace.h>
->  #include <linux/user.h>
-> +#include <linux/pm.h>
->  #include <linux/reboot.h>
->  #include <linux/init_task.h>
->  #include <linux/mqueue.h>
-> @@ -77,8 +78,8 @@ void machine_halt(void)
->  
->  void machine_power_off(void)
->  {
-> -	if (mach_power_off)
-> -		mach_power_off();
-> +	if (pm_power_off)
-> +		pm_power_off();
->  	for (;;);
->  }
->  
-> diff --git a/arch/m68k/kernel/setup_mm.c b/arch/m68k/kernel/setup_mm.c
-> index 5b8ec4d..002fea6 100644
-> --- a/arch/m68k/kernel/setup_mm.c
-> +++ b/arch/m68k/kernel/setup_mm.c
-> @@ -96,7 +96,6 @@ EXPORT_SYMBOL(mach_get_rtc_pll);
->  EXPORT_SYMBOL(mach_set_rtc_pll);
->  void (*mach_reset)( void );
->  void (*mach_halt)( void );
-> -void (*mach_power_off)( void );
->  long mach_max_dma_address = 0x00ffffff; /* default set to the lower 16MB */
->  #ifdef CONFIG_HEARTBEAT
->  void (*mach_heartbeat) (int);
-> diff --git a/arch/m68k/kernel/setup_no.c b/arch/m68k/kernel/setup_no.c
-> index 88c27d9..1520156 100644
-> --- a/arch/m68k/kernel/setup_no.c
-> +++ b/arch/m68k/kernel/setup_no.c
-> @@ -55,7 +55,6 @@ int (*mach_hwclk) (int, struct rtc_time*);
->  /* machine dependent reboot functions */
->  void (*mach_reset)(void);
->  void (*mach_halt)(void);
-> -void (*mach_power_off)(void);
->  
->  #ifdef CONFIG_M68000
->  #if defined(CONFIG_M68328)
-> diff --git a/arch/m68k/mac/config.c b/arch/m68k/mac/config.c
-> index a471eab..677913ff 100644
-> --- a/arch/m68k/mac/config.c
-> +++ b/arch/m68k/mac/config.c
-> @@ -16,6 +16,7 @@
->  #include <linux/tty.h>
->  #include <linux/console.h>
->  #include <linux/interrupt.h>
-> +#include <linux/pm.h>
->  /* keyb */
->  #include <linux/random.h>
->  #include <linux/delay.h>
-> @@ -159,7 +160,7 @@ void __init config_mac(void)
->  	mach_set_clock_mmss = mac_set_clock_mmss;
->  	mach_reset = mac_reset;
->  	mach_halt = mac_poweroff;
-> -	mach_power_off = mac_poweroff;
-> +	pm_power_off = mac_poweroff;
->  	mach_max_dma_address = 0xffffffff;
->  #if defined(CONFIG_INPUT_M68K_BEEP) || defined(CONFIG_INPUT_M68K_BEEP_MODULE)
->  	mach_beep = mac_mksound;
-> 
+>
+> +#ifdef CONFIG_PM_SLEEP
+> +static int rockchip_pinctrl_suspend(struct device *dev)
 
+Why didn't you take Dmitry's suggestion from v3?  I think you can get
+rid of the #ifdef and add the "__maybe_unused" annotation to avoid
+errors when PM_SLEEP isn't defined.
+
+This does work, though, so:
+
+Tested-by: Doug Anderson <dianders@chromium.org>
