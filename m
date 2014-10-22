@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933155AbaJVLeL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 07:34:11 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:25525 "EHLO
+	id S933239AbaJVLeb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 07:34:31 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:25527 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933056AbaJVLeH (ORCPT
+	with ESMTP id S933083AbaJVLeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 07:34:07 -0400
+	Wed, 22 Oct 2014 07:34:08 -0400
 From: Wang Nan <wangnan0@huawei.com>
 To: <tixy@linaro.org>, <masami.hiramatsu.pt@hitachi.com>,
         <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
@@ -16,9 +16,9 @@ To: <tixy@linaro.org>, <masami.hiramatsu.pt@hitachi.com>,
         "David S. Miller" <davem@davemloft.net>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         "Li Zefan" <lizefan@huawei.com>
-Subject: [PATCH v6 4/7] ARM: kprobes: collects stack consumption for store instructions
-Date: Wed, 22 Oct 2014 19:32:02 +0800
-Message-ID: <1413977525-51480-5-git-send-email-wangnan0@huawei.com>
+Subject: [PATCH v6 2/7] ARM: kprobes: seprates load and store actions
+Date: Wed, 22 Oct 2014 19:32:00 +0800
+Message-ID: <1413977525-51480-3-git-send-email-wangnan0@huawei.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1413977525-51480-1-git-send-email-wangnan0@huawei.com>
 References: <1413977525-51480-1-git-send-email-wangnan0@huawei.com>
@@ -30,377 +30,419 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch use previous introduced checker on store instructions,
-record stack consumption informations to arch_probes_insn. With such
-information, kprobe opt can decide how much stack needs to be
-protected.
+This patch seprates actions for load and store. Following patches will
+check store instructions for more informations.
+
+Coverage test complains register test coverage missing after this
+sepration. This patch introduces one testcase for it.
 
 Signed-off-by: Wang Nan <wangnan0@huawei.com>
 ---
- arch/arm/include/asm/probes.h   |  1 +
- arch/arm/kernel/kprobes-arm.c   |  8 ++---
- arch/arm/kernel/kprobes-thumb.c |  8 ++---
- arch/arm/kernel/probes-arm.c    | 19 +++++++++++
- arch/arm/kernel/probes-arm.h    |  7 +++++
- arch/arm/kernel/probes-thumb.c  | 70 +++++++++++++++++++++++++++++++++++++++++
- arch/arm/kernel/probes-thumb.h  |  9 ++++++
- arch/arm/kernel/probes.c        | 64 +++++++++++++++++++++++++++++++++++++
- arch/arm/kernel/probes.h        | 13 ++++++++
- arch/arm/kernel/uprobes-arm.c   |  8 ++---
- 10 files changed, 195 insertions(+), 12 deletions(-)
+ arch/arm/kernel/kprobes-arm.c        |  6 ++-
+ arch/arm/kernel/kprobes-test-arm.c   |  1 +
+ arch/arm/kernel/kprobes-test-thumb.c | 13 ++++++
+ arch/arm/kernel/kprobes-thumb.c      | 18 ++++++---
+ arch/arm/kernel/probes-arm.c         | 11 +++--
+ arch/arm/kernel/probes-arm.h         |  6 ++-
+ arch/arm/kernel/probes-thumb.c       | 78 +++++++++++++++++++++++++++---------
+ arch/arm/kernel/probes-thumb.h       | 18 ++++++---
+ arch/arm/kernel/uprobes-arm.c        |  6 ++-
+ 9 files changed, 116 insertions(+), 41 deletions(-)
 
-diff --git a/arch/arm/include/asm/probes.h b/arch/arm/include/asm/probes.h
-index 806cfe6..ccf9af3 100644
---- a/arch/arm/include/asm/probes.h
-+++ b/arch/arm/include/asm/probes.h
-@@ -38,6 +38,7 @@ struct arch_probes_insn {
- 	probes_check_cc			*insn_check_cc;
- 	probes_insn_singlestep_t	*insn_singlestep;
- 	probes_insn_fn_t		*insn_fn;
-+	int stack_space;
- };
- 
- #endif
 diff --git a/arch/arm/kernel/kprobes-arm.c b/arch/arm/kernel/kprobes-arm.c
-index 1094ff1..bb1bec3 100644
+index 6df9f1f..1094ff1 100644
 --- a/arch/arm/kernel/kprobes-arm.c
 +++ b/arch/arm/kernel/kprobes-arm.c
-@@ -316,11 +316,11 @@ const struct decode_action kprobes_arm_actions[NUM_PROBES_ARM_ACTIONS] = {
+@@ -315,7 +315,8 @@ const struct decode_action kprobes_arm_actions[NUM_PROBES_ARM_ACTIONS] = {
+ 	[PROBES_MUL1] = {.handler = emulate_rdlo12rdhi16rn0rm8_rwflags_nopc},
  	[PROBES_MUL2] = {.handler = emulate_rd16rn12rm0rs8_rwflags_nopc},
  	[PROBES_SWP] = {.handler = emulate_rd12rn16rm0_rwflags_nopc},
- 	[PROBES_LDRD] = {.handler = emulate_ldrdstrd},
--	[PROBES_STRD] = {.handler = emulate_ldrdstrd},
-+	[PROBES_STRD] = {.checker = probes_check_arm_store_extra, .handler = emulate_ldrdstrd},
+-	[PROBES_LDRSTRD] = {.handler = emulate_ldrdstrd},
++	[PROBES_LDRD] = {.handler = emulate_ldrdstrd},
++	[PROBES_STRD] = {.handler = emulate_ldrdstrd},
  	[PROBES_LOAD_EXTRA] = {.handler = emulate_ldr},
  	[PROBES_LOAD] = {.handler = emulate_ldr},
--	[PROBES_STORE_EXTRA] = {.handler = emulate_str},
--	[PROBES_STORE] = {.handler = emulate_str},
-+	[PROBES_STORE_EXTRA] = {.checker = probes_check_arm_store_extra, .handler = emulate_str},
-+	[PROBES_STORE] = {.checker = probes_check_arm_store, .handler = emulate_str},
- 	[PROBES_MOV_IP_SP] = {.handler = simulate_mov_ipsp},
- 	[PROBES_DATA_PROCESSING_REG] = {
- 		.handler = emulate_rd12rn16rm0rs8_rwflags},
-@@ -341,5 +341,5 @@ const struct decode_action kprobes_arm_actions[NUM_PROBES_ARM_ACTIONS] = {
+ 	[PROBES_STORE_EXTRA] = {.handler = emulate_str},
+@@ -339,5 +340,6 @@ const struct decode_action kprobes_arm_actions[NUM_PROBES_ARM_ACTIONS] = {
+ 	[PROBES_MUL_ADD] = {.handler = emulate_rd16rn12rm0rs8_rwflags_nopc},
  	[PROBES_BITFIELD] = {.handler = emulate_rd12rm0_noflags_nopc},
  	[PROBES_BRANCH] = {.handler = simulate_bbl},
- 	[PROBES_LDM] = {.decoder = kprobe_decode_ldmstm},
--	[PROBES_STM] = {.decoder = kprobe_decode_ldmstm},
-+	[PROBES_STM] = {.checker = probes_check_stm, .decoder = kprobe_decode_ldmstm},
+-	[PROBES_LDMSTM] = {.decoder = kprobe_decode_ldmstm}
++	[PROBES_LDM] = {.decoder = kprobe_decode_ldmstm},
++	[PROBES_STM] = {.decoder = kprobe_decode_ldmstm},
  };
+diff --git a/arch/arm/kernel/kprobes-test-arm.c b/arch/arm/kernel/kprobes-test-arm.c
+index cb14242..264c064 100644
+--- a/arch/arm/kernel/kprobes-test-arm.c
++++ b/arch/arm/kernel/kprobes-test-arm.c
+@@ -571,6 +571,7 @@ void kprobe_arm_test_cases(void)
+ 	TEST_RPR(  "strd	r",2, VAL1,", [r",5, 24,"], r",4,48,"")
+ 	TEST_RPR(  "strd	r",10,VAL2,", [r",9, 48,"], -r",7,24,"")
+ 	TEST_UNSUPPORTED(__inst_arm(0xe1afc0fa) "	@ strd r12, [pc, r10]!")
++	TEST_UNSUPPORTED(__inst_arm(0xe1aac0ff) "	@ strd r12, [r10, pc]!")
+ 
+ 	TEST_PR(   "ldrd	r0, [r",0, 48,", -r",2,24,"]")
+ 	TEST_PR(   "ldrmid	r8, [r",13,0, ", r",12,48,"]")
+diff --git a/arch/arm/kernel/kprobes-test-thumb.c b/arch/arm/kernel/kprobes-test-thumb.c
+index 844dd10..ed863c4 100644
+--- a/arch/arm/kernel/kprobes-test-thumb.c
++++ b/arch/arm/kernel/kprobes-test-thumb.c
+@@ -410,6 +410,13 @@ void kprobe_thumb32_test_cases(void)
+ 	TEST_UNSUPPORTED(__inst_thumb32(0xe9d47d00) "	@ ldrd	r7, sp, [r4]")
+ 	TEST_UNSUPPORTED(__inst_thumb32(0xe9d47f00) "	@ ldrd	r7, pc, [r4]")
+ 
++	TEST_UNSUPPORTED(__inst_thumb32(0xe9efec04) "	@ strd	r14, r12, [pc, #16]!")
++	TEST_UNSUPPORTED(__inst_thumb32(0xe8efec04) "	@ strd	r14, r12, [pc], #16")
++	TEST_UNSUPPORTED(__inst_thumb32(0xe9c4d800) "	@ strd	sp, r8, [r4]")
++	TEST_UNSUPPORTED(__inst_thumb32(0xe9c4f800) "	@ strd	pc, r8, [r4]")
++	TEST_UNSUPPORTED(__inst_thumb32(0xe9c47d00) "	@ strd	r7, sp, [r4]")
++	TEST_UNSUPPORTED(__inst_thumb32(0xe9c47f00) "	@ strd	r7, pc, [r4]")
++
+ 	TEST_RRP("strd	r",0, VAL1,", r",1, VAL2,", [r",1, 24,", #-16]")
+ 	TEST_RR( "strd	r",12,VAL2,", r",14,VAL1,", [sp, #16]")
+ 	TEST_RRP("strd	r",1, VAL1,", r",0, VAL2,", [r",7, 24,", #-16]!")
+@@ -832,6 +839,12 @@ CONDITION_INSTRUCTIONS(22,
+ 	TEST("str	sp, [sp]")
+ 	TEST_UNSUPPORTED(__inst_thumb32(0xf8cfe000) "	@ str	r14, [pc]")
+ 	TEST_UNSUPPORTED(__inst_thumb32(0xf8cef000) "	@ str	pc, [r14]")
++	TEST_UNSUPPORTED(__inst_thumb32(0xf841100f) "	@ str	r1, [r1, pc]")
++	TEST_UNSUPPORTED(__inst_thumb32(0xf841100d) "	@ str	r1, [r1, sp]")
++	TEST_UNSUPPORTED(__inst_thumb32(0xf8a1d000) "	@ strh	sp, [r1]")
++	TEST_UNSUPPORTED(__inst_thumb32(0xf821d002) "	@ strh	sp, [r1, r2]")
++	TEST_UNSUPPORTED(__inst_thumb32(0xf822100f) "	@ strh	r1, [r2, pc]")
++	TEST_UNSUPPORTED(__inst_thumb32(0xf822100d) "	@ strh	r1, [r2, sp]")
+ 
+ 	TEST_GROUP("Advanced SIMD element or structure load/store instructions")
+ 
 diff --git a/arch/arm/kernel/kprobes-thumb.c b/arch/arm/kernel/kprobes-thumb.c
-index c6426b6..5da4231 100644
+index 0672457..c6426b6 100644
 --- a/arch/arm/kernel/kprobes-thumb.c
 +++ b/arch/arm/kernel/kprobes-thumb.c
-@@ -615,7 +615,7 @@ const struct decode_action kprobes_t16_actions[NUM_PROBES_T16_ACTIONS] = {
- 	[PROBES_T16_ADD_SP] = {.handler = t16_simulate_add_sp_imm},
- 	[PROBES_T16_CBZ] = {.handler = t16_simulate_cbz},
- 	[PROBES_T16_SIGN_EXTEND] = {.handler = t16_emulate_loregs_rwflags},
--	[PROBES_T16_PUSH] = {.decoder = t16_decode_push},
-+	[PROBES_T16_PUSH] = {.checker = t16_check_push, .decoder = t16_decode_push},
- 	[PROBES_T16_POP] = {.decoder = t16_decode_pop},
- 	[PROBES_T16_SEV] = {.handler = probes_emulate_none},
- 	[PROBES_T16_WFE] = {.handler = probes_simulate_nop},
-@@ -639,9 +639,9 @@ const struct decode_action kprobes_t16_actions[NUM_PROBES_T16_ACTIONS] = {
+@@ -626,17 +626,22 @@ const struct decode_action kprobes_t16_actions[NUM_PROBES_T16_ACTIONS] = {
+ 	[PROBES_T16_LDR_LIT] = {.handler = t16_simulate_ldr_literal},
+ 	[PROBES_T16_BLX] = {.handler = t16_simulate_bxblx},
+ 	[PROBES_T16_HIREGOPS] = {.decoder = t16_decode_hiregs},
+-	[PROBES_T16_LDRHSTRH] = {.handler = t16_emulate_loregs_rwflags},
+-	[PROBES_T16_LDRSTR] = {.handler = t16_simulate_ldrstr_sp_relative},
++	[PROBES_T16_LDRH] = {.handler = t16_emulate_loregs_rwflags},
++	[PROBES_T16_STRH] = {.handler = t16_emulate_loregs_rwflags},
++	[PROBES_T16_LDR] = {.handler = t16_simulate_ldrstr_sp_relative},
++	[PROBES_T16_STR] = {.handler = t16_simulate_ldrstr_sp_relative},
+ 	[PROBES_T16_ADR] = {.handler = t16_simulate_reladr},
+-	[PROBES_T16_LDMSTM] = {.handler = t16_emulate_loregs_rwflags},
++	[PROBES_T16_LDM] = {.handler = t16_emulate_loregs_rwflags},
++	[PROBES_T16_STM] = {.handler = t16_emulate_loregs_rwflags},
+ 	[PROBES_T16_BRANCH_COND] = {.decoder = t16_decode_cond_branch},
+ 	[PROBES_T16_BRANCH] = {.handler = t16_simulate_branch},
+ };
  
  const struct decode_action kprobes_t32_actions[NUM_PROBES_T32_ACTIONS] = {
- 	[PROBES_T32_LDM] = {.decoder = t32_decode_ldmstm},
--	[PROBES_T32_STM] = {.decoder = t32_decode_ldmstm},
-+	[PROBES_T32_STM] = {.checker = probes_check_stm, .decoder = t32_decode_ldmstm},
- 	[PROBES_T32_LDRD] = {.handler = t32_emulate_ldrdstrd},
--	[PROBES_T32_STRD] = {.handler = t32_emulate_ldrdstrd},
-+	[PROBES_T32_STRD] = {.checker = t32_check_strd, .handler = t32_emulate_ldrdstrd},
+-	[PROBES_T32_LDMSTM] = {.decoder = t32_decode_ldmstm},
+-	[PROBES_T32_LDRDSTRD] = {.handler = t32_emulate_ldrdstrd},
++	[PROBES_T32_LDM] = {.decoder = t32_decode_ldmstm},
++	[PROBES_T32_STM] = {.decoder = t32_decode_ldmstm},
++	[PROBES_T32_LDRD] = {.handler = t32_emulate_ldrdstrd},
++	[PROBES_T32_STRD] = {.handler = t32_emulate_ldrdstrd},
  	[PROBES_T32_TABLE_BRANCH] = {.handler = t32_simulate_table_branch},
  	[PROBES_T32_TST] = {.handler = t32_emulate_rd8rn16rm0_rwflags},
  	[PROBES_T32_MOV] = {.handler = t32_emulate_rd8rn16rm0_rwflags},
-@@ -661,7 +661,7 @@ const struct decode_action kprobes_t32_actions[NUM_PROBES_T32_ACTIONS] = {
+@@ -655,7 +660,8 @@ const struct decode_action kprobes_t32_actions[NUM_PROBES_T32_ACTIONS] = {
+ 	[PROBES_T32_BRANCH] = {.handler = t32_simulate_branch},
  	[PROBES_T32_PLDI] = {.handler = probes_simulate_nop},
  	[PROBES_T32_LDR_LIT] = {.handler = t32_simulate_ldr_literal},
- 	[PROBES_T32_LDR] = {.handler = t32_emulate_ldrstr},
--	[PROBES_T32_STR] = {.handler = t32_emulate_ldrstr},
-+	[PROBES_T32_STR] = {.checker = t32_check_str, .handler = t32_emulate_ldrstr},
+-	[PROBES_T32_LDRSTR] = {.handler = t32_emulate_ldrstr},
++	[PROBES_T32_LDR] = {.handler = t32_emulate_ldrstr},
++	[PROBES_T32_STR] = {.handler = t32_emulate_ldrstr},
  	[PROBES_T32_SIGN_EXTEND] = {.handler = t32_emulate_rd8rn16rm0_rwflags},
  	[PROBES_T32_MEDIA] = {.handler = t32_emulate_rd8rn16rm0_rwflags},
  	[PROBES_T32_REVERSE] = {.handler = t32_emulate_rd8rn16_noflags},
 diff --git a/arch/arm/kernel/probes-arm.c b/arch/arm/kernel/probes-arm.c
-index 148153e..90d2f29 100644
+index 3d00aa7..148153e 100644
 --- a/arch/arm/kernel/probes-arm.c
 +++ b/arch/arm/kernel/probes-arm.c
-@@ -109,6 +109,25 @@ void __kprobes simulate_mov_ipsp(probes_opcode_t insn,
- 	regs->uregs[12] = regs->uregs[13];
- }
+@@ -270,13 +270,17 @@ static const union decode_item arm_cccc_000x_____1xx1_table[] = {
+ 	DECODE_REJECT	(0x0e10e0d0, 0x0000e0d0),
  
-+enum probes_insn __kprobes probes_check_arm_store(probes_opcode_t insn,
-+		       struct arch_probes_insn *asi,
-+		       const struct decode_header *h)
-+{
-+	int imm = insn & 0xfff;
-+	check_insn_stack_regs(insn, asi, h, imm);
-+	return INSN_GOOD;
-+}
-+
-+enum probes_insn __kprobes probes_check_arm_store_extra(probes_opcode_t insn,
-+		       struct arch_probes_insn *asi,
-+		       const struct decode_header *h)
-+{
-+	int imm = ((insn & 0xf00) >> 4) + (insn & 0xf);
-+	check_insn_stack_regs(insn, asi, h, imm);
-+	return INSN_GOOD;
-+}
-+
-+
- /*
-  * For the instruction masking and comparisons in all the "space_*"
-  * functions below, Do _not_ rearrange the order of tests unless
+ 	/* LDRD (register)	cccc 000x x0x0 xxxx xxxx xxxx 1101 xxxx */
++	DECODE_EMULATEX	(0x0e5000f0, 0x000000d0, PROBES_LDRD,
++						 REGS(NOPCWB, NOPCX, 0, 0, NOPC)),
+ 	/* STRD (register)	cccc 000x x0x0 xxxx xxxx xxxx 1111 xxxx */
+-	DECODE_EMULATEX	(0x0e5000d0, 0x000000d0, PROBES_LDRSTRD,
++	DECODE_EMULATEX	(0x0e5000f0, 0x000000f0, PROBES_STRD,
+ 						 REGS(NOPCWB, NOPCX, 0, 0, NOPC)),
+ 
+ 	/* LDRD (immediate)	cccc 000x x1x0 xxxx xxxx xxxx 1101 xxxx */
++	DECODE_EMULATEX	(0x0e5000f0, 0x004000d0, PROBES_LDRD,
++						 REGS(NOPCWB, NOPCX, 0, 0, 0)),
+ 	/* STRD (immediate)	cccc 000x x1x0 xxxx xxxx xxxx 1111 xxxx */
+-	DECODE_EMULATEX	(0x0e5000d0, 0x004000d0, PROBES_LDRSTRD,
++	DECODE_EMULATEX	(0x0e5000f0, 0x004000f0, PROBES_STRD,
+ 						 REGS(NOPCWB, NOPCX, 0, 0, 0)),
+ 
+ 	/* STRH (register)	cccc 000x x0x0 xxxx xxxx xxxx 1011 xxxx */
+@@ -601,8 +605,9 @@ static const union decode_item arm_cccc_100x_table[] = {
+ 	/* Block data transfer instructions				*/
+ 
+ 	/* LDM			cccc 100x x0x1 xxxx xxxx xxxx xxxx xxxx */
++	DECODE_CUSTOM	(0x0e500000, 0x08100000, PROBES_LDM),
+ 	/* STM			cccc 100x x0x0 xxxx xxxx xxxx xxxx xxxx */
+-	DECODE_CUSTOM	(0x0e400000, 0x08000000, PROBES_LDMSTM),
++	DECODE_CUSTOM	(0x0e500000, 0x08000000, PROBES_STM),
+ 
+ 	/* STM (user registers)	cccc 100x x1x0 xxxx xxxx xxxx xxxx xxxx */
+ 	/* LDM (user registers)	cccc 100x x1x1 xxxx 0xxx xxxx xxxx xxxx */
 diff --git a/arch/arm/kernel/probes-arm.h b/arch/arm/kernel/probes-arm.h
-index 18ffc9a..d0ad9a4 100644
+index 6ecc25a..18ffc9a 100644
 --- a/arch/arm/kernel/probes-arm.h
 +++ b/arch/arm/kernel/probes-arm.h
-@@ -66,6 +66,13 @@ void __kprobes simulate_mrs(probes_opcode_t opcode,
- void __kprobes simulate_mov_ipsp(probes_opcode_t opcode,
- 	struct arch_probes_insn *asi, struct pt_regs *regs);
+@@ -28,7 +28,8 @@ enum probes_arm_action {
+ 	PROBES_MUL1,
+ 	PROBES_MUL2,
+ 	PROBES_SWP,
+-	PROBES_LDRSTRD,
++	PROBES_LDRD,
++	PROBES_STRD,
+ 	PROBES_LOAD,
+ 	PROBES_STORE,
+ 	PROBES_LOAD_EXTRA,
+@@ -49,7 +50,8 @@ enum probes_arm_action {
+ 	PROBES_MUL_ADD,
+ 	PROBES_BITFIELD,
+ 	PROBES_BRANCH,
+-	PROBES_LDMSTM,
++	PROBES_LDM,
++	PROBES_STM,
+ 	NUM_PROBES_ARM_ACTIONS
+ };
  
-+enum probes_insn __kprobes probes_check_arm_store(probes_opcode_t,
-+	struct arch_probes_insn *,
-+	const struct decode_header *);
-+enum probes_insn __kprobes probes_check_arm_store_extra(probes_opcode_t,
-+	struct arch_probes_insn *,
-+	const struct decode_header *);
-+
- extern const union decode_item probes_decode_arm_table[];
- 
- enum probes_insn arm_probes_decode_insn(probes_opcode_t,
 diff --git a/arch/arm/kernel/probes-thumb.c b/arch/arm/kernel/probes-thumb.c
-index 749d4cd..5d0c936 100644
+index 72aa217..749d4cd 100644
 --- a/arch/arm/kernel/probes-thumb.c
 +++ b/arch/arm/kernel/probes-thumb.c
-@@ -15,6 +15,76 @@
- #include "probes.h"
- #include "probes-thumb.h"
+@@ -37,10 +37,11 @@ static const union decode_item t32_table_1110_100x_x0xx[] = {
+ 	DECODE_REJECT	(0xfe402000, 0xe8002000),
  
-+enum probes_insn __kprobes t32_check_strd(probes_opcode_t insn,
-+		struct arch_probes_insn *asi,
-+		const struct decode_header *h)
-+{
-+	int imm = insn & 0xff;
-+	check_insn_stack_regs(insn, asi, h, imm);
-+	return INSN_GOOD;
-+}
-+
-+/*
-+ * Note: This function doesn't process PROBES_T32_STRD.
-+ */
-+enum probes_insn __kprobes t32_check_str(probes_opcode_t insn,
-+		struct arch_probes_insn *asi,
-+		const struct decode_header *h)
-+{
-+	int rn = -1, rm = -1;
-+	u32 regs = h->type_regs.bits >> DECODE_TYPE_BITS;
-+	int index, add;
-+
-+	/* Rn is used in every cases */
-+	BUG_ON((regs & 0xf0000) == 0);
-+	rn = (insn & 0xf0000) >> 16;
-+	if ((regs & 0xf) != 0)
-+		rm = insn & 0xf;
-+
-+	/*
-+	 * Rn is not SP. Rm can't be sp in any case.
-+	 * So it is not a stack store.
-+	 */
-+	if (rn != 0xd)
-+		return INSN_GOOD;
-+
-+	/*
-+	 * For 'str? rx, [sp, ry]', ry can be negative. In addition,
-+	 * index is true in every cases, so unable to determine stack
-+	 * consumption.
-+	 */
-+	if (rm != -1) {
-+		asi->stack_space = -1;
-+		return INSN_GOOD;
-+	}
-+
-+	/*
-+	 * For 'str? rx, [sp, #+/-<imm>]', if bit 23 is set, index
-+	 * and add are both set. Else, index and add are determined
-+	 * by P bit and U bit (bit 10, 9)
-+	 */
-+	if (insn & 0x800000)
-+		index = add = 1;
-+	else {
-+		index = (insn & (1 << 10));
-+		add = (insn &(1 << 9));
-+	}
-+
-+	if (!index || add)
-+		return INSN_GOOD;
-+
-+	asi->stack_space = insn & 0xff;
-+	return INSN_GOOD;
-+}
-+
-+enum probes_insn __kprobes t16_check_push(probes_opcode_t insn,
-+		struct arch_probes_insn *asi,
-+		const struct decode_header *h)
-+{
-+	unsigned int reglist = insn & 0x1ff;
-+	asi->stack_space = hweight32(reglist) * 4;
-+	return INSN_GOOD;
-+}
+ 	/* STMIA		1110 1000 10x0 xxxx xxxx xxxx xxxx xxxx */
+-	/* LDMIA		1110 1000 10x1 xxxx xxxx xxxx xxxx xxxx */
+ 	/* STMDB		1110 1001 00x0 xxxx xxxx xxxx xxxx xxxx */
++	DECODE_CUSTOM	(0xfe500000, 0xe8000000, PROBES_T32_STM),
++	/* LDMIA		1110 1000 10x1 xxxx xxxx xxxx xxxx xxxx */
+ 	/* LDMDB		1110 1001 00x1 xxxx xxxx xxxx xxxx xxxx */
+-	DECODE_CUSTOM	(0xfe400000, 0xe8000000, PROBES_T32_LDMSTM),
++	DECODE_CUSTOM	(0xfe500000, 0xe8100000, PROBES_T32_LDM),
  
- static const union decode_item t32_table_1110_100x_x0xx[] = {
- 	/* Load/store multiple instructions */
+ 	DECODE_END
+ };
+@@ -49,11 +50,15 @@ static const union decode_item t32_table_1110_100x_x1xx[] = {
+ 	/* Load/store dual, load/store exclusive, table branch */
+ 
+ 	/* STRD (immediate)	1110 1000 x110 xxxx xxxx xxxx xxxx xxxx */
+-	/* LDRD (immediate)	1110 1000 x111 xxxx xxxx xxxx xxxx xxxx */
+-	DECODE_OR	(0xff600000, 0xe8600000),
++	DECODE_OR	(0xff700000, 0xe8600000),
+ 	/* STRD (immediate)	1110 1001 x1x0 xxxx xxxx xxxx xxxx xxxx */
++	DECODE_EMULATEX	(0xff500000, 0xe9400000, PROBES_T32_STRD,
++						 REGS(NOPCWB, NOSPPC, NOSPPC, 0, 0)),
++
++	/* LDRD (immediate)	1110 1000 x111 xxxx xxxx xxxx xxxx xxxx */
++	DECODE_OR	(0xff700000, 0xe8700000),
+ 	/* LDRD (immediate)	1110 1001 x1x1 xxxx xxxx xxxx xxxx xxxx */
+-	DECODE_EMULATEX	(0xff400000, 0xe9400000, PROBES_T32_LDRDSTRD,
++	DECODE_EMULATEX	(0xff500000, 0xe9500000, PROBES_T32_LDRD,
+ 						 REGS(NOPCWB, NOSPPC, NOSPPC, 0, 0)),
+ 
+ 	/* TBB			1110 1000 1101 xxxx xxxx xxxx 0000 xxxx */
+@@ -340,16 +345,29 @@ static const union decode_item t32_table_1111_100x[] = {
+ 						 REGS(PC, ANY, 0, 0, 0)),
+ 
+ 	/* STR (immediate)	1111 1000 0100 xxxx xxxx 1xxx xxxx xxxx */
+-	/* LDR (immediate)	1111 1000 0101 xxxx xxxx 1xxx xxxx xxxx */
+-	DECODE_OR	(0xffe00800, 0xf8400800),
++	DECODE_OR	(0xfff00800, 0xf8400800),
+ 	/* STR (immediate)	1111 1000 1100 xxxx xxxx xxxx xxxx xxxx */
++	/*
++	 * Reject PC for Rt. PC has already rejected by
++	 * 0xff1f0000, 0xf80f0000 and 0xff10f000, 0xf800f000.
++	 * Suppress complain on coverage in test code.
++	 */
++	DECODE_EMULATEX	(0xfff00000, 0xf8c00000, PROBES_T32_STR,
++						 REGS(NOPCX, NOPCX, 0, 0, 0)),
++	/* LDR (immediate)	1111 1000 0101 xxxx xxxx 1xxx xxxx xxxx */
++	DECODE_OR	(0xfff00800, 0xf8500800),
+ 	/* LDR (immediate)	1111 1000 1101 xxxx xxxx xxxx xxxx xxxx */
+-	DECODE_EMULATEX	(0xffe00000, 0xf8c00000, PROBES_T32_LDRSTR,
++	DECODE_EMULATEX	(0xfff00000, 0xf8d00000, PROBES_T32_LDR,
+ 						 REGS(NOPCX, ANY, 0, 0, 0)),
+-
+ 	/* STR (register)	1111 1000 0100 xxxx xxxx 0000 00xx xxxx */
++	/*
++	 * Rt == PC and Rn == PC have already been rejected by
++	 * 0xff1f0000, 0xf80f0000 and 0xff10f000, 0xf800f000
++	 */
++	DECODE_EMULATEX	(0xfff00fc0, 0xf8400000, PROBES_T32_STR,
++						 REGS(NOPCX, NOPCX, 0, 0, NOSPPC)),
+ 	/* LDR (register)	1111 1000 0101 xxxx xxxx 0000 00xx xxxx */
+-	DECODE_EMULATEX	(0xffe00fc0, 0xf8400000, PROBES_T32_LDRSTR,
++	DECODE_EMULATEX	(0xfff00fc0, 0xf8500000, PROBES_T32_LDR,
+ 						 REGS(NOPCX, ANY, 0, 0, NOSPPC)),
+ 
+ 	/* LDRB (literal)	1111 1000 x001 1111 xxxx xxxx xxxx xxxx */
+@@ -361,27 +379,35 @@ static const union decode_item t32_table_1111_100x[] = {
+ 
+ 	/* STRB (immediate)	1111 1000 0000 xxxx xxxx 1xxx xxxx xxxx */
+ 	/* STRH (immediate)	1111 1000 0010 xxxx xxxx 1xxx xxxx xxxx */
++	DECODE_OR	(0xffd00800, 0xf8000800),
++	/* STRB (immediate)	1111 1000 1000 xxxx xxxx xxxx xxxx xxxx */
++	/* STRH (immediate)	1111 1000 1010 xxxx xxxx xxxx xxxx xxxx */
++	DECODE_EMULATEX	(0xffd00000, 0xf8800000, PROBES_T32_STR,
++						 REGS(NOPCX, NOSPPCX, 0, 0, 0)),
++
+ 	/* LDRB (immediate)	1111 1000 0001 xxxx xxxx 1xxx xxxx xxxx */
+ 	/* LDRSB (immediate)	1111 1001 0001 xxxx xxxx 1xxx xxxx xxxx */
+ 	/* LDRH (immediate)	1111 1000 0011 xxxx xxxx 1xxx xxxx xxxx */
+ 	/* LDRSH (immediate)	1111 1001 0011 xxxx xxxx 1xxx xxxx xxxx */
+-	DECODE_OR	(0xfec00800, 0xf8000800),
+-	/* STRB (immediate)	1111 1000 1000 xxxx xxxx xxxx xxxx xxxx */
+-	/* STRH (immediate)	1111 1000 1010 xxxx xxxx xxxx xxxx xxxx */
++	DECODE_OR	(0xfed00800, 0xf8100800),
++
+ 	/* LDRB (immediate)	1111 1000 1001 xxxx xxxx xxxx xxxx xxxx */
+ 	/* LDRSB (immediate)	1111 1001 1001 xxxx xxxx xxxx xxxx xxxx */
+ 	/* LDRH (immediate)	1111 1000 1011 xxxx xxxx xxxx xxxx xxxx */
+ 	/* LDRSH (immediate)	1111 1001 1011 xxxx xxxx xxxx xxxx xxxx */
+-	DECODE_EMULATEX	(0xfec00000, 0xf8800000, PROBES_T32_LDRSTR,
++	DECODE_EMULATEX	(0xfed00000, 0xf8900000, PROBES_T32_LDR,
+ 						 REGS(NOPCX, NOSPPCX, 0, 0, 0)),
+ 
+ 	/* STRB (register)	1111 1000 0000 xxxx xxxx 0000 00xx xxxx */
+ 	/* STRH (register)	1111 1000 0010 xxxx xxxx 0000 00xx xxxx */
++	DECODE_EMULATEX	(0xffd00fc0, 0xf8000000, PROBES_T32_STR,
++						 REGS(NOPCX, NOSPPCX, 0, 0, NOSPPC)),
++
+ 	/* LDRB (register)	1111 1000 0001 xxxx xxxx 0000 00xx xxxx */
+ 	/* LDRSB (register)	1111 1001 0001 xxxx xxxx 0000 00xx xxxx */
+ 	/* LDRH (register)	1111 1000 0011 xxxx xxxx 0000 00xx xxxx */
+ 	/* LDRSH (register)	1111 1001 0011 xxxx xxxx 0000 00xx xxxx */
+-	DECODE_EMULATEX	(0xfe800fc0, 0xf8000000, PROBES_T32_LDRSTR,
++	DECODE_EMULATEX	(0xfed00fc0, 0xf8100000, PROBES_T32_LDR,
+ 						 REGS(NOPCX, NOSPPCX, 0, 0, NOSPPC)),
+ 
+ 	/* Other unallocated instructions...				*/
+@@ -778,23 +804,34 @@ const union decode_item probes_decode_thumb16_table[] = {
+ 
+ 	/* STR (register)		0101 000x xxxx xxxx */
+ 	/* STRH (register)		0101 001x xxxx xxxx */
++	DECODE_EMULATE	(0xfc00, 0x5000, PROBES_T16_STRH),
+ 	/* STRB (register)		0101 010x xxxx xxxx */
++	DECODE_EMULATE	(0xfe00, 0x5400, PROBES_T16_STRH),
+ 	/* LDRSB (register)		0101 011x xxxx xxxx */
++	DECODE_EMULATE	(0xfe00, 0x5600, PROBES_T16_LDRH),
++
+ 	/* LDR (register)		0101 100x xxxx xxxx */
+ 	/* LDRH (register)		0101 101x xxxx xxxx */
+ 	/* LDRB (register)		0101 110x xxxx xxxx */
+ 	/* LDRSH (register)		0101 111x xxxx xxxx */
++	DECODE_EMULATE	(0xf800, 0x5800, PROBES_T16_LDRH),
++
+ 	/* STR (immediate, Thumb)	0110 0xxx xxxx xxxx */
+-	/* LDR (immediate, Thumb)	0110 1xxx xxxx xxxx */
+ 	/* STRB (immediate, Thumb)	0111 0xxx xxxx xxxx */
++	DECODE_EMULATE	(0xe800, 0x6000, PROBES_T16_STRH),
++
++	/* LDR (immediate, Thumb)	0110 1xxx xxxx xxxx */
+ 	/* LDRB (immediate, Thumb)	0111 1xxx xxxx xxxx */
+-	DECODE_EMULATE	(0xc000, 0x4000, PROBES_T16_LDRHSTRH),
++	DECODE_EMULATE	(0xe800, 0x6800, PROBES_T16_LDRH),
++
+ 	/* STRH (immediate, Thumb)	1000 0xxx xxxx xxxx */
++	DECODE_EMULATE	(0xf800, 0x8000, PROBES_T16_STRH),
+ 	/* LDRH (immediate, Thumb)	1000 1xxx xxxx xxxx */
+-	DECODE_EMULATE	(0xf000, 0x8000, PROBES_T16_LDRHSTRH),
++	DECODE_EMULATE	(0xf800, 0x8800, PROBES_T16_LDRH),
+ 	/* STR (immediate, Thumb)	1001 0xxx xxxx xxxx */
++	DECODE_SIMULATE	(0xf800, 0x9000, PROBES_T16_STR),
+ 	/* LDR (immediate, Thumb)	1001 1xxx xxxx xxxx */
+-	DECODE_SIMULATE	(0xf000, 0x9000, PROBES_T16_LDRSTR),
++	DECODE_SIMULATE	(0xf800, 0x9800, PROBES_T16_LDR),
+ 
+ 	/*
+ 	 * Generate PC-/SP-relative address
+@@ -810,8 +847,9 @@ const union decode_item probes_decode_thumb16_table[] = {
+ 	DECODE_TABLE	(0xf000, 0xb000, t16_table_1011),
+ 
+ 	/* STM				1100 0xxx xxxx xxxx */
++	DECODE_EMULATE	(0xf800, 0xc000, PROBES_T16_STM),
+ 	/* LDM				1100 1xxx xxxx xxxx */
+-	DECODE_EMULATE	(0xf000, 0xc000, PROBES_T16_LDMSTM),
++	DECODE_EMULATE	(0xf800, 0xc800, PROBES_T16_LDM),
+ 
+ 	/*
+ 	 * Conditional branch, and Supervisor Call
 diff --git a/arch/arm/kernel/probes-thumb.h b/arch/arm/kernel/probes-thumb.h
-index a9c65c9..f908b12 100644
+index 2658d95..a9c65c9 100644
 --- a/arch/arm/kernel/probes-thumb.h
 +++ b/arch/arm/kernel/probes-thumb.h
-@@ -100,4 +100,13 @@ enum probes_insn __kprobes
- thumb32_probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
- 		bool emulate, const struct decode_action *actions);
- 
-+enum probes_insn __kprobes t32_check_strd(probes_opcode_t insn,
-+		struct arch_probes_insn *asi,
-+		const struct decode_header *h);
-+enum probes_insn __kprobes t32_check_str(probes_opcode_t insn,
-+		struct arch_probes_insn *asi,
-+		const struct decode_header *h);
-+enum probes_insn __kprobes t16_check_push(probes_opcode_t insn,
-+		struct arch_probes_insn *asi,
-+		const struct decode_header *h);
- #endif
-diff --git a/arch/arm/kernel/probes.c b/arch/arm/kernel/probes.c
-index 6164b4d..8428fe8 100644
---- a/arch/arm/kernel/probes.c
-+++ b/arch/arm/kernel/probes.c
-@@ -188,6 +188,25 @@ void __kprobes probes_emulate_none(probes_opcode_t opcode,
- 	asi->insn_fn();
- }
- 
-+/* ARM and Thumb can share this checker */
-+enum probes_insn __kprobes probes_check_stm(probes_opcode_t insn,
-+		       struct arch_probes_insn *asi,
-+		       const struct decode_header *h)
-+{
-+	unsigned int reglist = insn & 0xffff;
-+	int ubit = insn & (1 << 23);
-+	int pbit = insn & (1 << 24);
-+	int rn = (insn >> 16) & 0xf;
-+
-+	/* This is stmi?, doesn't require extra stack */
-+	if (ubit)
-+		return INSN_GOOD;
-+	/* If pbit == ubit (== 0), this is stmda, one dword is saved */
-+	asi->stack_space = (rn == 0xd) ?
-+		(hweight32(reglist) - ((!pbit == !ubit) ? 1 : 0)) * 4 : 0;
-+	return INSN_GOOD;
-+}
-+
- /*
-  * Prepare an instruction slot to receive an instruction for emulating.
-  * This is done by placing a subroutine return after the location where the
-@@ -395,6 +414,8 @@ probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
- 	bool matched = false;
- 	probes_opcode_t origin_insn = insn;
- 
-+	asi->stack_space = 0;
-+
- 	if (emulate)
- 		insn = prepare_emulated_insn(insn, asi, thumb);
- 
-@@ -464,3 +485,46 @@ probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
- 		}
- 	}
- }
-+
-+int __kprobes check_insn_stack_regs(probes_opcode_t insn,
-+		struct arch_probes_insn *asi,
-+		const struct decode_header *h,
-+		int imm)
-+{
-+	u32 regs = h->type_regs.bits >> DECODE_TYPE_BITS;
-+	int rn = -1, rm = -1, index, add;
-+	asi->stack_space = 0;
-+
-+	if (((regs >> 16) & 0xf) != REG_TYPE_NONE)
-+		rn = (insn >> 16) & 0xf;
-+
-+	if ((regs & 0xf) != REG_TYPE_NONE)
-+		rm = insn & 0xf;
-+
-+	if ((rn != 13) && (rm != 13))
-+		return NOT_STACK_STORE;
-+
-+	index = insn & (1 << 24);
-+	add = insn & (1 << 23);
-+
-+	if (!index)
-+		return NOT_STACK_STORE;
-+
-+	/*
-+	 * Even if insn is 'str r0, [sp], +<Rm>', Rm may less than 0.
-+	 * Therefore if both Rn and Rm are registers and !index,
-+	 * We are unable to determine whether it is a stack store.
-+	 */
-+	if ((rn != -1) && (rm != -1)) {
-+		asi->stack_space = -1;
-+		return STACK_REG;
-+	}
-+
-+	/*    'str(d/h) r0, [sp], #+/-<imm>' */
-+	/* or 'str(d/h) r0, [sp, #+<imm>'] */
-+	if (add)
-+		return NOT_STACK_STORE;
-+
-+	asi->stack_space = imm;
-+	return STACK_IMM;
-+}
-diff --git a/arch/arm/kernel/probes.h b/arch/arm/kernel/probes.h
-index c56dd3d..4c0a04a 100644
---- a/arch/arm/kernel/probes.h
-+++ b/arch/arm/kernel/probes.h
-@@ -410,4 +410,17 @@ probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
- 		const union decode_item *table, bool thumb, bool emulate,
- 		const struct decode_action *actions);
- 
-+enum probes_insn __kprobes probes_check_stm(probes_opcode_t,
-+	struct arch_probes_insn *,
-+	const struct decode_header *);
-+
-+enum {
-+	NOT_STACK_STORE,
-+	STACK_REG,
-+	STACK_IMM,
-+};
-+int __kprobes check_insn_stack_regs(probes_opcode_t insn,
-+		struct arch_probes_insn *asi,
-+		const struct decode_header *h,
-+		int imm);
- #endif
+@@ -30,8 +30,10 @@
+ enum probes_t32_action {
+ 	PROBES_T32_EMULATE_NONE,
+ 	PROBES_T32_SIMULATE_NOP,
+-	PROBES_T32_LDMSTM,
+-	PROBES_T32_LDRDSTRD,
++	PROBES_T32_LDM,
++	PROBES_T32_STM,
++	PROBES_T32_LDRD,
++	PROBES_T32_STRD,
+ 	PROBES_T32_TABLE_BRANCH,
+ 	PROBES_T32_TST,
+ 	PROBES_T32_CMP,
+@@ -50,7 +52,8 @@ enum probes_t32_action {
+ 	PROBES_T32_BRANCH,
+ 	PROBES_T32_PLDI,
+ 	PROBES_T32_LDR_LIT,
+-	PROBES_T32_LDRSTR,
++	PROBES_T32_LDR,
++	PROBES_T32_STR,
+ 	PROBES_T32_SIGN_EXTEND,
+ 	PROBES_T32_MEDIA,
+ 	PROBES_T32_REVERSE,
+@@ -75,10 +78,13 @@ enum probes_t16_action {
+ 	PROBES_T16_BLX,
+ 	PROBES_T16_HIREGOPS,
+ 	PROBES_T16_LDR_LIT,
+-	PROBES_T16_LDRHSTRH,
+-	PROBES_T16_LDRSTR,
++	PROBES_T16_LDRH,
++	PROBES_T16_STRH,
++	PROBES_T16_LDR,
++	PROBES_T16_STR,
+ 	PROBES_T16_ADR,
+-	PROBES_T16_LDMSTM,
++	PROBES_T16_LDM,
++	PROBES_T16_STM,
+ 	PROBES_T16_BRANCH_COND,
+ 	PROBES_T16_BRANCH,
+ 	NUM_PROBES_T16_ACTIONS
 diff --git a/arch/arm/kernel/uprobes-arm.c b/arch/arm/kernel/uprobes-arm.c
-index 0a8caa3..1da524d 100644
+index 0c0f299..0a8caa3 100644
 --- a/arch/arm/kernel/uprobes-arm.c
 +++ b/arch/arm/kernel/uprobes-arm.c
-@@ -208,11 +208,11 @@ const struct decode_action uprobes_probes_actions[] = {
+@@ -207,7 +207,8 @@ const struct decode_action uprobes_probes_actions[] = {
+ 	[PROBES_MUL1] = {.handler = probes_simulate_nop},
  	[PROBES_MUL2] = {.handler = probes_simulate_nop},
  	[PROBES_SWP] = {.handler = probes_simulate_nop},
- 	[PROBES_LDRD] = {.decoder = decode_pc_ro},
--	[PROBES_STRD] = {.decoder = decode_pc_ro},
-+	[PROBES_STRD] = {.checker = probes_check_arm_store_extra, .decoder = decode_pc_ro},
+-	[PROBES_LDRSTRD] = {.decoder = decode_pc_ro},
++	[PROBES_LDRD] = {.decoder = decode_pc_ro},
++	[PROBES_STRD] = {.decoder = decode_pc_ro},
  	[PROBES_LOAD_EXTRA] = {.decoder = decode_pc_ro},
  	[PROBES_LOAD] = {.decoder = decode_ldr},
--	[PROBES_STORE_EXTRA] = {.decoder = decode_pc_ro},
--	[PROBES_STORE] = {.decoder = decode_pc_ro},
-+	[PROBES_STORE_EXTRA] = {.checker = probes_check_arm_store_extra, .decoder = decode_pc_ro},
-+	[PROBES_STORE] = {.checker = probes_check_arm_store, .decoder = decode_pc_ro},
- 	[PROBES_MOV_IP_SP] = {.handler = simulate_mov_ipsp},
- 	[PROBES_DATA_PROCESSING_REG] = {
- 		.decoder = decode_rd12rn16rm0rs8_rwflags},
-@@ -232,5 +232,5 @@ const struct decode_action uprobes_probes_actions[] = {
+ 	[PROBES_STORE_EXTRA] = {.decoder = decode_pc_ro},
+@@ -230,5 +231,6 @@ const struct decode_action uprobes_probes_actions[] = {
+ 	[PROBES_MUL_ADD] = {.handler = probes_simulate_nop},
  	[PROBES_BITFIELD] = {.handler = probes_simulate_nop},
  	[PROBES_BRANCH] = {.handler = simulate_bbl},
- 	[PROBES_LDM] = {.decoder = uprobe_decode_ldmstm},
--	[PROBES_STM] = {.decoder = uprobe_decode_ldmstm}
-+	[PROBES_STM] = {.checker = probes_check_stm, .decoder = uprobe_decode_ldmstm}
+-	[PROBES_LDMSTM] = {.decoder = uprobe_decode_ldmstm}
++	[PROBES_LDM] = {.decoder = uprobe_decode_ldmstm},
++	[PROBES_STM] = {.decoder = uprobe_decode_ldmstm}
  };
 -- 
 1.8.4
