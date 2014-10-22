@@ -1,69 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755406AbaJVSox (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 14:44:53 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:59739 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754061AbaJVSov (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 14:44:51 -0400
+	id S1754669AbaJVSlH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 14:41:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24898 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754146AbaJVSlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 14:41:04 -0400
+Date: Wed, 22 Oct 2014 21:44:08 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Anup Patel <anup.patel@linaro.org>,
+        Bjarke Istrup Pedersen <gurligebis@gentoo.org>,
+        Sakari Ailus <sakari.ailus@linux.intel.com>,
+        =?us-ascii?B?PT9VVEYtOD9xP1Bpb3RyPTIwS3I9QzM9QjNsPz0=?= 
+	<piotr.krol@3mdeb.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
+Subject: [PATCH RFC v3 01/16] virtio: memory access APIs
+Message-ID: <1414003404-505-2-git-send-email-mst@redhat.com>
+References: <1414003404-505-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1413978269-17274-2-git-send-email-drysdale@google.com>
-References: <1413978269-17274-1-git-send-email-drysdale@google.com> <1413978269-17274-2-git-send-email-drysdale@google.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 22 Oct 2014 11:44:29 -0700
-Message-ID: <CALCETrWbj=BTDyKqtbSKteANj3J3UFZnrvWv9DMosCoEZaSoeA@mail.gmail.com>
-Subject: Re: [PATCHv5 1/3] syscalls,x86: implement execveat() system call
-To: David Drysdale <drysdale@google.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
-        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414003404-505-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 4:44 AM, David Drysdale <drysdale@google.com> wrote:
-> Add a new system execveat(2) syscall. execveat() is to execve() as
-> openat() is to open(): it takes a file descriptor that refers to a
-> directory, and resolves the filename relative to that.
->
+virtio 1.0 makes all memory structures LE, so
+we need APIs to conditionally do a byteswap on BE
+architectures.
 
->         bprm->file = file;
-> -       bprm->filename = bprm->interp = filename->name;
-> +       if (fd == AT_FDCWD || filename->name[0] == '/') {
-> +               bprm->filename = filename->name;
-> +       } else {
-> +               /*
-> +                * Build a pathname that reflects how we got to the file,
-> +                * either "/dev/fd/<fd>" (for an empty filename) or
-> +                * "/dev/fd/<fd>/<filename>".
-> +                */
-> +               pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
-> +               if (!pathbuf) {
-> +                       retval = -ENOMEM;
-> +                       goto out_unmark;
-> +               }
-> +               bprm->filename = pathbuf;
-> +               if (filename->name[0] == '\0')
-> +                       sprintf(pathbuf, "/dev/fd/%d", fd);
+To make it easier to check code statically,
+add virtio specific types for multi-byte integers
+in memory.
 
-If the fd is O_CLOEXEC, then this will result in a confused child
-process.  Should we fail exec attempts like that for non-static
-programs?  (E.g. set filename to "" or something and fix up the binfmt
-drivers to handle that?)
+Add low level wrappers that do a byteswap conditionally, these will be
+useful e.g. for vhost.  Add high level wrappers that will (in the
+future) query device endian-ness and act accordingly.
 
-> +               else
-> +                       snprintf(pathbuf, PATH_MAX,
-> +                                "/dev/fd/%d/%s", fd, filename->name);
+At the moment, stub them out and assume native endian-ness everywhere.
 
-Does this need to handle the case where the result exceeds PATH_MAX?
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ include/linux/virtio_byteorder.h | 29 ++++++++++++++++++++++++
+ include/linux/virtio_config.h    | 16 +++++++++++++
+ include/uapi/linux/virtio_ring.h | 49 ++++++++++++++++++++--------------------
+ include/uapi/linux/Kbuild        |  1 +
+ 4 files changed, 71 insertions(+), 24 deletions(-)
+ create mode 100644 include/linux/virtio_byteorder.h
 
---Andy
+diff --git a/include/linux/virtio_byteorder.h b/include/linux/virtio_byteorder.h
+new file mode 100644
+index 0000000..7afdd8a
+--- /dev/null
++++ b/include/linux/virtio_byteorder.h
+@@ -0,0 +1,29 @@
++#ifndef _LINUX_VIRTIO_BYTEORDER_H
++#define _LINUX_VIRTIO_BYTEORDER_H
++#include <linux/types.h>
++#include <uapi/linux/virtio_types.h>
++
++/* Memory accessors for handling virtio in modern little endian and in
++ * compatibility big endian format. */
++
++#define __DEFINE_VIRTIO_XX_TO_CPU(bits) \
++static inline u##bits __virtio##bits##_to_cpu(bool little_endian, __virtio##bits val) \
++{ \
++	if (little_endian) \
++		return le##bits##_to_cpu((__force __le##bits)val); \
++	else \
++		return (__force u##bits)val; \
++} \
++static inline __virtio##bits __cpu_to_virtio##bits(bool little_endian, u##bits val) \
++{ \
++	if (little_endian) \
++		return (__force __virtio##bits)cpu_to_le##bits(val); \
++	else \
++		return val; \
++}
++
++__DEFINE_VIRTIO_XX_TO_CPU(16)
++__DEFINE_VIRTIO_XX_TO_CPU(32)
++__DEFINE_VIRTIO_XX_TO_CPU(64)
++
++#endif /* _LINUX_VIRTIO_BYTEORDER */
+diff --git a/include/linux/virtio_config.h b/include/linux/virtio_config.h
+index 7f4ef66..d38d3c2 100644
+--- a/include/linux/virtio_config.h
++++ b/include/linux/virtio_config.h
+@@ -4,6 +4,7 @@
+ #include <linux/err.h>
+ #include <linux/bug.h>
+ #include <linux/virtio.h>
++#include <linux/virtio_byteorder.h>
+ #include <uapi/linux/virtio_config.h>
+ 
+ /**
+@@ -152,6 +153,21 @@ int virtqueue_set_affinity(struct virtqueue *vq, int cpu)
+ 	return 0;
+ }
+ 
++/* Memory accessors */
++#define DEFINE_VIRTIO_XX_TO_CPU(bits) \
++static inline u##bits virtio##bits##_to_cpu(struct virtio_device *vdev, __virtio##bits val) \
++{ \
++	return __virtio##bits##_to_cpu(false, val); \
++} \
++static inline __virtio##bits cpu_to_virtio##bits(struct virtio_device *vdev, u##bits val) \
++{ \
++	return __cpu_to_virtio##bits(false, val); \
++}
++
++DEFINE_VIRTIO_XX_TO_CPU(16)
++DEFINE_VIRTIO_XX_TO_CPU(32)
++DEFINE_VIRTIO_XX_TO_CPU(64)
++
+ /* Config space accessors. */
+ #define virtio_cread(vdev, structname, member, ptr)			\
+ 	do {								\
+diff --git a/include/uapi/linux/virtio_ring.h b/include/uapi/linux/virtio_ring.h
+index a99f9b7..6c00632 100644
+--- a/include/uapi/linux/virtio_ring.h
++++ b/include/uapi/linux/virtio_ring.h
+@@ -32,6 +32,7 @@
+  *
+  * Copyright Rusty Russell IBM Corporation 2007. */
+ #include <linux/types.h>
++#include <linux/virtio_types.h>
+ 
+ /* This marks a buffer as continuing via the next field. */
+ #define VRING_DESC_F_NEXT	1
+@@ -61,32 +62,32 @@
+ /* Virtio ring descriptors: 16 bytes.  These can chain together via "next". */
+ struct vring_desc {
+ 	/* Address (guest-physical). */
+-	__u64 addr;
++	__virtio64 addr;
+ 	/* Length. */
+-	__u32 len;
++	__virtio32 len;
+ 	/* The flags as indicated above. */
+-	__u16 flags;
++	__virtio16 flags;
+ 	/* We chain unused descriptors via this, too */
+-	__u16 next;
++	__virtio16 next;
+ };
+ 
+ struct vring_avail {
+-	__u16 flags;
+-	__u16 idx;
+-	__u16 ring[];
++	__virtio16 flags;
++	__virtio16 idx;
++	__virtio16 ring[];
+ };
+ 
+ /* u32 is used here for ids for padding reasons. */
+ struct vring_used_elem {
+ 	/* Index of start of used descriptor chain. */
+-	__u32 id;
++	__virtio32 id;
+ 	/* Total length of the descriptor chain which was used (written to) */
+-	__u32 len;
++	__virtio32 len;
+ };
+ 
+ struct vring_used {
+-	__u16 flags;
+-	__u16 idx;
++	__virtio16 flags;
++	__virtio16 idx;
+ 	struct vring_used_elem ring[];
+ };
+ 
+@@ -109,25 +110,25 @@ struct vring {
+  *	struct vring_desc desc[num];
+  *
+  *	// A ring of available descriptor heads with free-running index.
+- *	__u16 avail_flags;
+- *	__u16 avail_idx;
+- *	__u16 available[num];
+- *	__u16 used_event_idx;
++ *	__virtio16 avail_flags;
++ *	__virtio16 avail_idx;
++ *	__virtio16 available[num];
++ *	__virtio16 used_event_idx;
+  *
+  *	// Padding to the next align boundary.
+  *	char pad[];
+  *
+  *	// A ring of used descriptor heads with free-running index.
+- *	__u16 used_flags;
+- *	__u16 used_idx;
++ *	__virtio16 used_flags;
++ *	__virtio16 used_idx;
+  *	struct vring_used_elem used[num];
+- *	__u16 avail_event_idx;
++ *	__virtio16 avail_event_idx;
+  * };
+  */
+ /* We publish the used event index at the end of the available ring, and vice
+  * versa. They are at the end for backwards compatibility. */
+ #define vring_used_event(vr) ((vr)->avail->ring[(vr)->num])
+-#define vring_avail_event(vr) (*(__u16 *)&(vr)->used->ring[(vr)->num])
++#define vring_avail_event(vr) (*(__virtio16 *)&(vr)->used->ring[(vr)->num])
+ 
+ static inline void vring_init(struct vring *vr, unsigned int num, void *p,
+ 			      unsigned long align)
+@@ -135,29 +136,29 @@ static inline void vring_init(struct vring *vr, unsigned int num, void *p,
+ 	vr->num = num;
+ 	vr->desc = p;
+ 	vr->avail = p + num*sizeof(struct vring_desc);
+-	vr->used = (void *)(((unsigned long)&vr->avail->ring[num] + sizeof(__u16)
++	vr->used = (void *)(((unsigned long)&vr->avail->ring[num] + sizeof(__virtio16)
+ 		+ align-1) & ~(align - 1));
+ }
+ 
+ static inline unsigned vring_size(unsigned int num, unsigned long align)
+ {
+-	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (3 + num)
++	return ((sizeof(struct vring_desc) * num + sizeof(__virtio16) * (3 + num)
+ 		 + align - 1) & ~(align - 1))
+-		+ sizeof(__u16) * 3 + sizeof(struct vring_used_elem) * num;
++		+ sizeof(__virtio16) * 3 + sizeof(struct vring_used_elem) * num;
+ }
+ 
+ /* The following is used with USED_EVENT_IDX and AVAIL_EVENT_IDX */
+ /* Assuming a given event_idx value from the other size, if
+  * we have just incremented index from old to new_idx,
+  * should we trigger an event? */
+-static inline int vring_need_event(__u16 event_idx, __u16 new_idx, __u16 old)
++static inline int vring_need_event(__virtio16 event_idx, __virtio16 new_idx, __virtio16 old)
+ {
+ 	/* Note: Xen has similar logic for notification hold-off
+ 	 * in include/xen/interface/io/ring.h with req_event and req_prod
+ 	 * corresponding to event_idx + 1 and new_idx respectively.
+ 	 * Note also that req_event and req_prod in Xen start at 1,
+ 	 * event indexes in virtio start at 0. */
+-	return (__u16)(new_idx - event_idx - 1) < (__u16)(new_idx - old);
++	return (__virtio16)(new_idx - event_idx - 1) < (__virtio16)(new_idx - old);
+ }
+ 
+ #endif /* _UAPI_LINUX_VIRTIO_RING_H */
+diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
+index 6cad974..39c161a 100644
+--- a/include/uapi/linux/Kbuild
++++ b/include/uapi/linux/Kbuild
+@@ -419,6 +419,7 @@ header-y += virtio_blk.h
+ header-y += virtio_config.h
+ header-y += virtio_console.h
+ header-y += virtio_ids.h
++header-y += virtio_types.h
+ header-y += virtio_net.h
+ header-y += virtio_pci.h
+ header-y += virtio_ring.h
+-- 
+MST
+
