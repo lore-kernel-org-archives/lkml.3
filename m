@@ -1,94 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033AbaJVOeH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 10:34:07 -0400
-Received: from filter1.ibarracuda.nl ([83.247.7.10]:49712 "EHLO
-	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753498AbaJVObk (ORCPT
+	id S1753794AbaJVOe3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 10:34:29 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:54373 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752577AbaJVOe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 10:31:40 -0400
-X-ASG-Debug-ID: 1413988296-0759e74a717a4f20002-xx1T2L
-X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
-X-Barracuda-AUTH-User: xsenscom
-X-Barracuda-Apparent-Source-IP: 87.249.116.215
-From: Frans Klaver <frans.klaver@xsens.com>
-To: Sebastian Reichel <sre@kernel.org>
-CC: Frans Klaver <frans.klaver@xsens.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        =?UTF-8?q?Ren=C3=A9=20Moll?= <linux@r-moll.nl>,
-        Guenter Roeck <linux@roeck-us.net>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>
-Subject: [PATCH 07/13] power: reset: ltc2952: drop empty suspend/resume functions
-Date: Wed, 22 Oct 2014 16:31:04 +0200
-X-ASG-Orig-Subj: [PATCH 07/13] power: reset: ltc2952: drop empty suspend/resume functions
-Message-ID: <1413988270-28092-8-git-send-email-frans.klaver@xsens.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1413988270-28092-1-git-send-email-frans.klaver@xsens.com>
-References: <1413988270-28092-1-git-send-email-frans.klaver@xsens.com>
+	Wed, 22 Oct 2014 10:34:28 -0400
+Date: Wed, 22 Oct 2014 16:34:18 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com, adrian.hunter@intel.com, acme@infradead.org
+Subject: Re: [PATCH v5 12/20] x86: perf: intel_pt: Intel PT PMU driver
+Message-ID: <20141022143418.GU12706@worktop.programming.kicks-ass.net>
+References: <1413207948-28202-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1413207948-28202-13-git-send-email-alexander.shishkin@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.16.11.125]
-X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
-X-Barracuda-Start-Time: 1413988297
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
-X-Barracuda-BRTS-Status: 1
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.10827
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413207948-28202-13-git-send-email-alexander.shishkin@linux.intel.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Documentation/SubmittingDrivers suggests these be implemented even when
-they do nothing. On the other hand, the platform code calls these
-functions 'legacy'. Suspend and resume operations should go into a
-pm_ops structure, pointed at by the driver's pm field. This approach
-would lead to a lot of boiler plate, while achieving nothing. Drop the
-functions instead.
+On Mon, Oct 13, 2014 at 04:45:40PM +0300, Alexander Shishkin wrote:
+> +static bool pt_event_valid(struct perf_event *event)
+> +{
+> +	u64 config = event->attr.config;
+> +
+> +	/* admin can set any packet generation parameters */
+> +	if (capable(CAP_SYS_ADMIN) && (config & PT_BYPASS_MASK) == config)
+> +		return true;
+> +
+> +	if ((config & PT_CONFIG_MASK) != config)
+> +		return false;
+> +
+> +	return true;
+> +}
 
-Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
----
- drivers/power/reset/ltc2952-poweroff.c | 13 -------------
- 1 file changed, 13 deletions(-)
-
-diff --git a/drivers/power/reset/ltc2952-poweroff.c b/drivers/power/reset/ltc2952-poweroff.c
-index bc8d228..af3cb6e 100644
---- a/drivers/power/reset/ltc2952-poweroff.c
-+++ b/drivers/power/reset/ltc2952-poweroff.c
-@@ -184,17 +184,6 @@ static void ltc2952_poweroff_kill(void)
- 	gpiod_set_value(ltc2952_data->gpio_kill, 1);
- }
- 
--static int ltc2952_poweroff_suspend(struct platform_device *pdev,
--	pm_message_t state)
--{
--	return -ENOSYS;
--}
--
--static int ltc2952_poweroff_resume(struct platform_device *pdev)
--{
--	return -ENOSYS;
--}
--
- static void ltc2952_poweroff_default(struct ltc2952_poweroff *data)
- {
- 	data->wde_interval = ktime_set(0, 300L*1E6L);
-@@ -323,8 +312,6 @@ static struct platform_driver ltc2952_poweroff_driver = {
- 		.owner = THIS_MODULE,
- 		.of_match_table = of_ltc2952_poweroff_match,
- 	},
--	.suspend = ltc2952_poweroff_suspend,
--	.resume = ltc2952_poweroff_resume,
- };
- 
- module_platform_driver(ltc2952_poweroff_driver);
--- 
-2.1.0
-
+This seems to suggest PT is available to !priv users, is this right?
