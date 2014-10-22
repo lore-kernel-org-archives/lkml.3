@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932370AbaJVTeN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 15:34:13 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:60781 "EHLO
+	id S932432AbaJVTej (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 15:34:39 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:60793 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932253AbaJVTeL (ORCPT
+	with ESMTP id S932253AbaJVTei (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 15:34:11 -0400
-Date: Wed, 22 Oct 2014 15:33:39 -0400 (EDT)
-Message-Id: <20141022.153339.553009019191281217.davem@davemloft.net>
-To: christophe.leroy@c-s.fr
-Cc: pantelis.antoniou@gmail.com, vbordug@ru.mvista.com,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        netdev@vger.kernel.org, germain.montoies@c-s.fr
-Subject: Re: [PATCH] net: fs_enet: set back promiscuity mode after restart
+	Wed, 22 Oct 2014 15:34:38 -0400
+Date: Wed, 22 Oct 2014 15:34:36 -0400 (EDT)
+Message-Id: <20141022.153436.93475594748933547.davem@davemloft.net>
+To: geert@linux-m68k.org
+Cc: isubramanian@apm.com, kchudgar@apm.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] drivers: net: xgene: Rewrite loop in
+ xgene_enet_ecc_init()
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20141022070547.83AAB1A5E63@localhost.localdomain>
-References: <20141022070547.83AAB1A5E63@localhost.localdomain>
+In-Reply-To: <1413963581-24019-1-git-send-email-geert@linux-m68k.org>
+References: <1413963581-24019-1-git-send-email-geert@linux-m68k.org>
 X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 22 Oct 2014 12:34:10 -0700 (PDT)
+Content-Type: Text/Plain; charset=iso-8859-7
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 22 Oct 2014 12:34:37 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9MJYj8G010628
 
-From: Christophe Leroy <christophe.leroy@c-s.fr>
-Date: Wed, 22 Oct 2014 09:05:47 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+Date: Wed, 22 Oct 2014 09:39:41 +0200
 
-> After interface restart (eg: after link disconnection/reconnection), the bridge
-> function doesn't work anymore. This is due to the promiscuous mode being cleared
-> by the restart.
+> drivers/net/ethernet/apm/xgene/xgene_enet_sgmac.c: In function ¡xgene_enet_ecc_init¢:
+> drivers/net/ethernet/apm/xgene/xgene_enet_sgmac.c:126: warning: ¡data¢ may be used uninitialized in this function
 > 
-> The mac-fcc already includes code to set the promiscuous mode back during the restart.
-> This patch adds the same handling to mac-fec and mac-scc.
+> Depending on the arbitrary value on the stack, the loop may terminate
+> too early, and cause a bogus -ENODEV failure.
 > 
-> Tested with bridge function on MPC885 with FEC.
-> 
-> Reported-by: Germain Montoies <germain.montoies@c-s.fr>
-> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> ---
+> v2: Rewrite the loop instead of pre-initializing data.
 
-Applied, thanks.
+I hate to be a pest, but like the other patch of your's I think
+a do { } while() works best here because the intent is clearly
+to run the loop at least once, right?
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
