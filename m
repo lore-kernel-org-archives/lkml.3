@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751022AbaJVNcL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 09:32:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31713 "EHLO mx1.redhat.com"
+	id S1752482AbaJVNcf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 09:32:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58705 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751155AbaJVNcJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 09:32:09 -0400
-Date: Wed, 22 Oct 2014 09:31:44 -0400 (EDT)
+	id S1751087AbaJVNcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 09:32:33 -0400
+Date: Wed, 22 Oct 2014 09:32:09 -0400 (EDT)
 From: Mikulas Patocka <mpatocka@redhat.com>
 X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
 To: "Alasdair G. Kergon" <agk@redhat.com>, Mike Snitzer <msnitzer@redhat.com>,
@@ -16,9 +16,9 @@ To: "Alasdair G. Kergon" <agk@redhat.com>, Mike Snitzer <msnitzer@redhat.com>,
         Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>
 cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
         linux-scsi@vger.kernel.org
-Subject: [PATCH 13/18] dm linear: support copy
+Subject: [PATCH 14/18] dm stripe: support copy
 In-Reply-To: <alpine.LRH.2.02.1410220913280.31351@file01.intranet.prod.int.rdu2.redhat.com>
-Message-ID: <alpine.LRH.2.02.1410220930500.31351@file01.intranet.prod.int.rdu2.redhat.com>
+Message-ID: <alpine.LRH.2.02.1410220931460.31351@file01.intranet.prod.int.rdu2.redhat.com>
 References: <alpine.LRH.2.02.1410220913280.31351@file01.intranet.prod.int.rdu2.redhat.com>
 User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
@@ -27,24 +27,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support copy operation in the linear target.
+Support the copy operation for the stripe target.
+
+In stripe_merge, we verify that the underlying device supports copy. If it
+doesn't, we can fail fast without any bio being contructed.
 
 Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
 
 ---
- drivers/md/dm-linear.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/md/dm-stripe.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-Index: linux-3.16-rc4/drivers/md/dm-linear.c
+Index: linux-3.16-rc4/drivers/md/dm-stripe.c
 ===================================================================
---- linux-3.16-rc4.orig/drivers/md/dm-linear.c	2014-07-11 22:20:27.000000000 +0200
-+++ linux-3.16-rc4/drivers/md/dm-linear.c	2014-07-11 22:22:20.000000000 +0200
-@@ -56,6 +56,7 @@ static int linear_ctr(struct dm_target *
- 	ti->num_flush_bios = 1;
- 	ti->num_discard_bios = 1;
- 	ti->num_write_same_bios = 1;
+--- linux-3.16-rc4.orig/drivers/md/dm-stripe.c	2014-07-11 22:20:25.000000000 +0200
++++ linux-3.16-rc4/drivers/md/dm-stripe.c	2014-07-11 22:23:54.000000000 +0200
+@@ -165,6 +165,7 @@ static int stripe_ctr(struct dm_target *
+ 	ti->num_flush_bios = stripes;
+ 	ti->num_discard_bios = stripes;
+ 	ti->num_write_same_bios = stripes;
 +	ti->copy_supported = 1;
- 	ti->private = lc;
- 	return 0;
+ 
+ 	sc->chunk_size = chunk_size;
+ 	if (chunk_size & (chunk_size - 1))
+@@ -416,11 +417,19 @@ static int stripe_merge(struct dm_target
+ 	struct stripe_c *sc = ti->private;
+ 	sector_t bvm_sector = bvm->bi_sector;
+ 	uint32_t stripe;
++	struct block_device *bdev;
+ 	struct request_queue *q;
+ 
+ 	stripe_map_sector(sc, bvm_sector, &stripe, &bvm_sector);
+ 
+-	q = bdev_get_queue(sc->stripe[stripe].dev->bdev);
++	bdev = sc->stripe[stripe].dev->bdev;
++
++	if (unlikely((bvm->bi_rw & REQ_COPY) != 0)) {
++		if (!bdev_copy_offload(bdev))
++			return 0;
++	}
++
++	q = bdev_get_queue(bdev);
+ 	if (!q->merge_bvec_fn)
+ 		return max_size;
  
 
