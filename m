@@ -1,42 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754003AbaJVGI0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 02:08:26 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:29247 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753935AbaJVGIW (ORCPT
+	id S1753561AbaJVGIG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 02:08:06 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:35886 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753161AbaJVGH5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 02:08:22 -0400
-Message-ID: <5447496E.2000403@huawei.com>
-Date: Wed, 22 Oct 2014 14:06:38 +0800
-From: hujianyang <hujianyang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: <dedekind1@gmail.com>
-CC: Tanya Brokhman <tlinder@codeaurora.org>, <linux-arm-msm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        <linux-mtd@lists.infradead.org>, <ezequiel.garcia@free-electrons.com>,
-        Richard Weinberger <richard@nod.at>,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH V5] mtd: ubi: Extend UBI layer debug/messaging capabilities
-References: <1413824221-31235-1-git-send-email-tlinder@codeaurora.org> <1413878186.7906.405.camel@sauron.fi.intel.com>
-In-Reply-To: <1413878186.7906.405.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.68.144]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020207.5447497F.00AA,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: e0cb595b8dec74b0d7e1dab9b0781fb5
+	Wed, 22 Oct 2014 02:07:57 -0400
+From: Mike Turquette <mturquette@linaro.org>
+To: peterz@infradead.org, mingo@kernel.org
+Cc: linux-kernel@vger.kernel.org, preeti@linux.vnet.ibm.com,
+        Morten.Rasmussen@arm.com, kamalesh@linux.vnet.ibm.com, riel@redhat.com,
+        efault@gmx.de, nicolas.pitre@linaro.org,
+        linaro-kernel@lists.linaro.org, daniel.lezcano@linaro.org,
+        dietmar.eggemann@arm.com, pjt@google.com, bsegall@google.com,
+        vincent.guittot@linaro.org, patches@linaro.org,
+        tuukka.tikkanen@linaro.org, amit.kucheria@linaro.org,
+        Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH RFC 3/7] sched: fair: add usage_util_of helper
+Date: Tue, 21 Oct 2014 23:07:27 -0700
+Message-Id: <1413958051-7103-4-git-send-email-mturquette@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1413958051-7103-1-git-send-email-mturquette@linaro.org>
+References: <1413958051-7103-1-git-send-email-mturquette@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It seems useful~!
+Signed-off-by: Mike Turquette <mturquette@linaro.org>
+---
+ kernel/sched/fair.c  | 6 ++++++
+ kernel/sched/sched.h | 1 +
+ 2 files changed, 7 insertions(+)
 
-I'd like to do some test with it~
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 15f5638..0930ad8 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2057,6 +2057,7 @@ static inline void account_numa_dequeue(struct rq *rq, struct task_struct *p)
+ 
+ #ifdef CONFIG_SMP
+ unsigned long capacity_of(int cpu);
++unsigned long usage_util_of(int cpu);
+ #endif /* CONFIG_SMP */
+ 
+ static void
+@@ -4140,6 +4141,11 @@ unsigned long capacity_of(int cpu)
+ 	return cpu_rq(cpu)->cpu_capacity;
+ }
+ 
++unsigned long usage_util_of(int cpu)
++{
++	return cpu_rq(cpu)->cfs.usage_util_avg;
++}
++
+ static unsigned long cpu_avg_load_per_task(int cpu)
+ {
+ 	struct rq *rq = cpu_rq(cpu);
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 9a28d38..c34cbfc 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -310,6 +310,7 @@ struct cfs_bandwidth { };
+ #endif	/* CONFIG_CGROUP_SCHED */
+ 
+ extern unsigned long capacity_of(int cpu);
++extern unsigned long usage_util_of(int cpu);
+ 
+ /* CFS-related fields in a runqueue */
+ struct cfs_rq {
+-- 
+1.8.3.2
 
