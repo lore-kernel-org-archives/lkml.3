@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933095AbaJVLYu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 07:24:50 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:37263 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932785AbaJVLYt (ORCPT
+	id S933059AbaJVL0r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 07:26:47 -0400
+Received: from smtp-vbr9.xs4all.nl ([194.109.24.29]:3324 "EHLO
+	smtp-vbr9.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932685AbaJVL0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 07:24:49 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: wim@iguana.be, thomas.mingarelli@hp.com, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] watchdog: hpwdt: Fix initialization message in hpwdt.c
-Date: Wed, 22 Oct 2014 20:24:35 +0900
-Message-Id: <1413977075-8938-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 2.1.2.451.g98349e5
+	Wed, 22 Oct 2014 07:26:45 -0400
+Message-ID: <5447946B.9020007@xs4all.nl>
+Date: Wed, 22 Oct 2014 13:26:35 +0200
+From: Hans Verkuil <hverkuil@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+MIME-Version: 1.0
+To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        LMML <linux-media@vger.kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>
+Subject: Re: [PATCH 10/15] media: davinci: vpbe: add support for VIDIOC_CREATE_BUFS
+References: <1413146445-7304-1-git-send-email-prabhakar.csengg@gmail.com> <1413146445-7304-11-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1413146445-7304-11-git-send-email-prabhakar.csengg@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-allow_kdump was enabled as default since following commit.
+Hi Prabhakar,
 
-commit a089361cf5f1d6a5295aa5385238bd044998e1e9,
-watchdog: hpwdt: Unregister NMI events on exit.
+This patch series looks good, except for this one.
 
-But the initialization message was not modified.
-So it still shows
+If you add create_bufs support, then you should also update queue_setup.
 
-  HP Watchdog Timer Driver: NMI decoding initialized,
-  allow kernel dump: ON (default = 0/OFF)    <=
+If the fmt argument to queue_setup is non-NULL, then check that the
+fmt.pix.sizeimage field is >= the current format's sizeimage. If not,
+return -EINVAL.
 
-This "default = 0/OFF" message may confuse users.
-Fix it as "default = 1/ON".
+This prevents userspace from creating additional buffers that are smaller than
+the minimum required size.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- drivers/watchdog/hpwdt.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I'm just skipping this patch and queuing all the others for 3.19. Just post an
+updated version for this one and I'll pick it up later.
 
-diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
-index 75d2243..ada3e44 100644
---- a/drivers/watchdog/hpwdt.c
-+++ b/drivers/watchdog/hpwdt.c
-@@ -745,7 +745,7 @@ static int hpwdt_init_nmi_decoding(struct pci_dev *dev)
- 
- 	dev_info(&dev->dev,
- 			"HP Watchdog Timer Driver: NMI decoding initialized"
--			", allow kernel dump: %s (default = 0/OFF)\n",
-+			", allow kernel dump: %s (default = 1/ON)\n",
- 			(allow_kdump == 0) ? "OFF" : "ON");
- 	return 0;
- 
--- 
-2.1.2.451.g98349e5
+Regards,
 
+	Hans
+
+On 10/12/2014 10:40 PM, Lad, Prabhakar wrote:
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> ---
+>   drivers/media/platform/davinci/vpbe_display.c | 1 +
+>   1 file changed, 1 insertion(+)
+>
+> diff --git a/drivers/media/platform/davinci/vpbe_display.c b/drivers/media/platform/davinci/vpbe_display.c
+> index c33b77e..fd8d4f0 100644
+> --- a/drivers/media/platform/davinci/vpbe_display.c
+> +++ b/drivers/media/platform/davinci/vpbe_display.c
+> @@ -1260,6 +1260,7 @@ static const struct v4l2_ioctl_ops vpbe_ioctl_ops = {
+>   	.vidioc_dqbuf		 = vb2_ioctl_dqbuf,
+>   	.vidioc_streamon	 = vb2_ioctl_streamon,
+>   	.vidioc_streamoff	 = vb2_ioctl_streamoff,
+> +	.vidioc_create_bufs	 = vb2_ioctl_create_bufs,
+>
+>   	.vidioc_cropcap		 = vpbe_display_cropcap,
+>   	.vidioc_g_crop		 = vpbe_display_g_crop,
+>
