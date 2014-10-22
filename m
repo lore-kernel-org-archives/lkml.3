@@ -1,42 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933223AbaJVV7Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 17:59:24 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:33701 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932694AbaJVV7X (ORCPT
+	id S933329AbaJVWSy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 18:18:54 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:44217 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932694AbaJVWSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 17:59:23 -0400
-Date: Wed, 22 Oct 2014 17:59:20 -0400 (EDT)
-Message-Id: <20141022.175920.1800807867580631439.davem@davemloft.net>
-To: haiyangz@microsoft.com
-Cc: netdev@vger.kernel.org, kys@microsoft.com, olaf@aepfle.de,
-        jasowang@redhat.com, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org
-Subject: Re: [PATCH net] hyperv: Fix the total_data_buflen in send path
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1414010838-20656-1-git-send-email-haiyangz@microsoft.com>
-References: <1414010838-20656-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 22 Oct 2014 14:59:22 -0700 (PDT)
+	Wed, 22 Oct 2014 18:18:53 -0400
+Date: Wed, 22 Oct 2014 15:18:49 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Santosh Shilimkar <santosh.shilimkar@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Santosh Shilimkar <ssantosh@kernel.org>
+Subject: Re: [PATCH v2 02/47] memory: emif: Use API function to determine
+ poweroff capability
+Message-ID: <20141022221849.GA15671@roeck-us.net>
+References: <1413864783-3271-1-git-send-email-linux@roeck-us.net>
+ <1413864783-3271-3-git-send-email-linux@roeck-us.net>
+ <5447FBF4.8020702@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5447FBF4.8020702@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020208.54482D4C.0107,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 2
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Haiyang Zhang <haiyangz@microsoft.com>
-Date: Wed, 22 Oct 2014 13:47:18 -0700
-
-> total_data_buflen is used by netvsc_send() to decide if a packet can be put
-> into send buffer. It should also include the size of RNDIS message before the
-> Ethernet frame. Otherwise, a messge with total size bigger than send_section_size
-> may be copied into the send buffer, and cause data corruption.
+On Wed, Oct 22, 2014 at 11:48:20AM -0700, Santosh Shilimkar wrote:
 > 
-> [Request to include this patch to the Stable branches]
 > 
-> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+> On 10/20/2014 09:12 PM, Guenter Roeck wrote:
+> >Use have_kernel_power_off() to determine if the kernel is able
+> >to power off the system.
+> >
+> >Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> >Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> >---
+> >v2:
+> >- poweroff -> power_off
+> >
+> Acked-by: Santosh Shilimkar <ssantosh@kernel.org>
+> 
+Thanks!
 
-Applied and queued up for -stable, thanks.
+Guenter
