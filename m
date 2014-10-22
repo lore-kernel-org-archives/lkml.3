@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757AbaJVO6m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 10:58:42 -0400
-Received: from galahad.ideasonboard.com ([185.26.127.97]:42860 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750964AbaJVO6l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 10:58:41 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Geert Uytterhoeven <geert+renesas@glider.be>, linux-sh@vger.kernel.org
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Simon Horman <horms+renesas@verge.net.au>,
-        Magnus Damm <magnus.damm@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] ARM: shmobile: armadillo800eva dts: Enable TMU0
-Date: Wed, 22 Oct 2014 17:58:53 +0300
-Message-ID: <1909016.A6gXeHnn7V@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.14.14-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <1413970709-26607-4-git-send-email-geert+renesas@glider.be>
-References: <1413970709-26607-1-git-send-email-geert+renesas@glider.be> <1413970709-26607-4-git-send-email-geert+renesas@glider.be>
+	id S1752906AbaJVO7J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 10:59:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10322 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751945AbaJVO7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 10:59:08 -0400
+Date: Wed, 22 Oct 2014 16:58:04 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        ak@linux.intel.com, kan.liang@intel.com, bp@alien8.de,
+        maria.n.dimakopoulou@gmail.com
+Subject: Re: [PATCH v2 11/12] perf/x86: make HT bug workaround conditioned on
+ HT enabled
+Message-ID: <20141022145804.GC15126@krava.brq.redhat.com>
+References: <1412872486-2930-1-git-send-email-eranian@google.com>
+ <1412872486-2930-12-git-send-email-eranian@google.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412872486-2930-12-git-send-email-eranian@google.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+On Thu, Oct 09, 2014 at 06:34:45PM +0200, Stephane Eranian wrote:
 
-Thank you for the patch.
+SNIP
 
-On Wednesday 22 October 2014 11:38:29 Geert Uytterhoeven wrote:
-> ch0 will be used for clock events and for periodic clock events,
-> ch1 will be used as clock source.
-> 
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -12,6 +12,7 @@
+>  #include <linux/init.h>
+>  #include <linux/slab.h>
+>  #include <linux/export.h>
+> +#include <linux/watchdog.h>
+>  
+>  #include <asm/cpufeature.h>
+>  #include <asm/hardirq.h>
+> @@ -1811,7 +1812,7 @@ intel_start_scheduling(struct cpu_hw_events *cpuc)
+>  	/*
+>  	 * nothing needed if in group validation mode
+>  	 */
+> -	if (cpuc->is_fake)
+> +	if (cpuc->is_fake || !is_ht_workaround_enabled())
+>  		return;
+>  	/*
+>  	 * no exclusion needed
+> @@ -1849,8 +1850,9 @@ intel_stop_scheduling(struct cpu_hw_events *cpuc)
+>  	/*
+>  	 * nothing needed if in group validation mode
+>  	 */
+> -	if (cpuc->is_fake)
+> +	if (cpuc->is_fake || !is_ht_workaround_enabled())
+>  		return;
 
-Simon has posted the same change as "[PATCH v2 20/30] ARM: shmobile: 
-armadillo800eva-reference: Initialise TMU device using DT". You might want to 
-credit him.
 
-Acked-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Is it possible to change is_ht_workaround_enabled() result within
+intel_start_scheduling and intel_stop_scheduling time frame? like
+following would happen:
 
-> ---
->  arch/arm/boot/dts/r8a7740-armadillo800eva.dts | 4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/r8a7740-armadillo800eva.dts
-> b/arch/arm/boot/dts/r8a7740-armadillo800eva.dts index
-> 2703428557fce9fa..98504e0b06c8e2ca 100644
-> --- a/arch/arm/boot/dts/r8a7740-armadillo800eva.dts
-> +++ b/arch/arm/boot/dts/r8a7740-armadillo800eva.dts
-> @@ -299,3 +299,7 @@
-> 
->  	status = "okay";
->  };
-> +
-> +&tmu0 {
-> +	status = "okay";
-> +};
 
--- 
-Regards,
+  is_ht_workaround_enabled == 1
 
-Laurent Pinchart
+  intel_start_scheduling -> spin_lock(&excl_cntrs->lock);
 
+  # echo 0 > /sys/devices/cpu/ht_bug_workaround
+
+  is_ht_workaround_enabled == 0
+
+  intel_stop_scheduling -> wont call spin_unlock(&excl_cntrs->lock)
+
+
+for some reason I can't get HT enabled on my HSW server, so I cannot try ;-)
+
+jirka
