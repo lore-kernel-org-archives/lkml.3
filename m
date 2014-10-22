@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754512AbaJVCKb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 22:10:31 -0400
+	id S1754366AbaJVCK2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 22:10:28 -0400
 Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:9512 "EHLO
 	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753462AbaJVCKX (ORCPT
+	with ESMTP id S1751048AbaJVCKZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 22:10:23 -0400
+	Tue, 21 Oct 2014 22:10:25 -0400
 X-IronPort-AV: E=Sophos;i="5.04,766,1406617200"; 
-   d="scan'208";a="48677216"
+   d="scan'208";a="48677224"
 From: Scott Branden <sbranden@broadcom.com>
 To: Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
         Russell King <linux@arm.linux.org.uk>,
@@ -27,96 +27,83 @@ To: Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
 CC: JD Zheng <jdzheng@broadcom.com>, Ray Jui <rjui@broadcom.com>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <devicetree@vger.kernel.org>, Scott Branden <sbranden@broadcom.com>
-Subject: [PATCH v6 0/6] Add initial support for Broadcom Cygnus SoC
-Date: Tue, 21 Oct 2014 19:09:46 -0700
-Message-ID: <1413943792-7379-1-git-send-email-sbranden@broadcom.com>
+Subject: [PATCH v6 6/6] ARM: mach-bcm: Consolidate currently supported IPROC SoCs
+Date: Tue, 21 Oct 2014 19:09:52 -0700
+Message-ID: <1413943792-7379-7-git-send-email-sbranden@broadcom.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <Scott Branden <sbranden@broadcom.com>
+In-Reply-To: <1413943792-7379-1-git-send-email-sbranden@broadcom.com>
 References: <Scott Branden <sbranden@broadcom.com>
+ <1413943792-7379-1-git-send-email-sbranden@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset contains initial support for Broadcom's Cygnus SoC based on our
-iProc architecture. Initial support is minimal and includes just the mach
-platform code, clock driver, and a basic device tree configuration. Peripheral
-drivers will be submitted soon, as will device tree configurations for other
-Cygnus board variants.
+Move ARCH_BCM_5301X subarch under ARCH_IPROC architecture.
+Additional IPROC chipsets that share a lot of commonality should be
+added under ARCH_IPROC as well.
 
-Changes from v5:
- - removed one level of menu used in mach-bcm/Kconfig
- - changed MAINTAINERS to use N: to support all files associated with iproc
-   and cygnus going forward
- - updated bcm_cygnus_defconfig to remove some DEBUG options that greatly
-   hamper performance
+Signed-off-by: Scott Branden <sbranden@broadcom.com>
+---
+ arch/arm/mach-bcm/Kconfig |   37 ++++++++++++++++---------------------
+ 1 file changed, 16 insertions(+), 21 deletions(-)
 
-Changes from v4:
- - simple clock tree used. reworked clock driver will be submitted later
- - fixed MAINTAINERS patchset error
- - removed DEBUG_UART_8250 Kconfig.debug legacy support
- - made ARCH_BCM_IPROC a silent Kconfig option
- - removed multi_v7_defconfig as it is not needed at this time, can
-   support in future patchset but does not seem optimal configs for our
-   current usage.
+diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
+index f5e638e..a51f191 100644
+--- a/arch/arm/mach-bcm/Kconfig
++++ b/arch/arm/mach-bcm/Kconfig
+@@ -33,6 +33,22 @@ config ARCH_BCM_CYGNUS
+ 	  BCM11300, BCM11320, BCM11350, BCM11360,
+ 	  BCM58300, BCM58302, BCM58303, BCM58305.
  
-Changes from v3:
- - restart functionality removed.  Will be added in a different patchset
-   in drivers/power
- - removed NEON init sequence.  Will be moved to bootloader
- - cleaned up Kconfigs for ARCH_BCM_CYGNUS by removing unnecessary selects
- - consolidated ARCH_BCM_IPROC with select from ARCH_BCM_CYGNUS and
-   ARCH_BCM5301X
- - removed bcm911360_entphn binding
- - added documentation for SoCs currently supported in Cygnus family
-
-Changes from v2:
- - rebased to 3.17 kernel
-
-Changes from v1:
- - Address code review comments as per previous responses.
- - Copyright headers updated to remove Broadcom URL.
- - mach platform code still contains hard coded addresses. These address are
-   the same for all Cygnus variants. Could you please provide guidance on where
-   they should go if you would still like them changed.  There does not seem to
-   be a reason to change them to device tree as they do not change.
-
-Jonathan Richardson (3):
-  ARM: cygnus: Initial support for Broadcom Cygnus SoC
-  dt-bindings: Document Broadcom Cygnus SoC and clocks
-  ARM: cygnus defconfig : Initial defconfig for Broadcom Cygnus SoC
-
-Scott Branden (3):
-  ARM: dts: Enable Broadcom Cygnus SoC
-  MAINTAINERS: Entry for Cygnus/iproc arm architecture
-  ARM: mach-bcm: Consolidate currently supported IPROC SoCs
-
- .../devicetree/bindings/arm/bcm/cygnus.txt         |   31 +++
- .../devicetree/bindings/clock/bcm-cygnus-clock.txt |   34 +++
- MAINTAINERS                                        |   14 ++
- arch/arm/boot/dts/Makefile                         |    4 +
- arch/arm/boot/dts/bcm-cygnus-clock.dtsi            |   73 ++++++
- arch/arm/boot/dts/bcm-cygnus.dtsi                  |  109 +++++++++
- arch/arm/boot/dts/bcm911360_entphn.dts             |   22 ++
- arch/arm/boot/dts/bcm911360k.dts                   |   22 ++
- arch/arm/boot/dts/bcm958300k.dts                   |   22 ++
- arch/arm/configs/bcm_cygnus_defconfig              |  237 ++++++++++++++++++++
- arch/arm/mach-bcm/Kconfig                          |   65 ++++--
- arch/arm/mach-bcm/Makefile                         |    3 +
- arch/arm/mach-bcm/bcm_cygnus.c                     |   26 +++
- 13 files changed, 641 insertions(+), 21 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/bcm/cygnus.txt
- create mode 100644 Documentation/devicetree/bindings/clock/bcm-cygnus-clock.txt
- create mode 100644 arch/arm/boot/dts/bcm-cygnus-clock.dtsi
- create mode 100644 arch/arm/boot/dts/bcm-cygnus.dtsi
- create mode 100644 arch/arm/boot/dts/bcm911360_entphn.dts
- create mode 100644 arch/arm/boot/dts/bcm911360k.dts
- create mode 100644 arch/arm/boot/dts/bcm958300k.dts
- create mode 100644 arch/arm/configs/bcm_cygnus_defconfig
- create mode 100644 arch/arm/mach-bcm/bcm_cygnus.c
-
++config ARCH_BCM_5301X
++	bool "Broadcom BCM470X / BCM5301X ARM SoC" if ARCH_MULTI_V7
++	select ARCH_BCM_IPROC
++	help
++	  Support for Broadcom BCM470X and BCM5301X SoCs with ARM CPU cores.
++
++	  This is a network SoC line mostly used in home routers and
++	  wifi access points, it's internal name is Northstar.
++	  This inclused the following SoC: BCM53010, BCM53011, BCM53012,
++	  BCM53014, BCM53015, BCM53016, BCM53017, BCM53018, BCM4707,
++	  BCM4708 and BCM4709.
++
++	  Do not confuse this with the BCM4760 which is a totally
++	  different SoC or with the older BCM47XX and BCM53XX based
++	  network SoC using a MIPS CPU, they are supported by arch/mips/bcm47xx
++
+ config ARCH_BCM_MOBILE
+ 	bool "Broadcom Mobile SoC Support" if ARCH_MULTI_V7
+ 	select ARCH_REQUIRE_GPIOLIB
+@@ -106,27 +122,6 @@ config ARCH_BCM2835
+ 	  This enables support for the Broadcom BCM2835 SoC. This SoC is
+ 	  used in the Raspberry Pi and Roku 2 devices.
+ 
+-config ARCH_BCM_5301X
+-	bool "Broadcom BCM470X / BCM5301X ARM SoC" if ARCH_MULTI_V7
+-	select ARM_GIC
+-	select CACHE_L2X0
+-	select HAVE_ARM_SCU if SMP
+-	select HAVE_ARM_TWD if SMP
+-	select ARM_GLOBAL_TIMER
+-	select CLKSRC_ARM_GLOBAL_TIMER_SCHED_CLOCK
+-	help
+-	  Support for Broadcom BCM470X and BCM5301X SoCs with ARM CPU cores.
+-
+-	  This is a network SoC line mostly used in home routers and
+-	  wifi access points, it's internal name is Northstar.
+-	  This inclused the following SoC: BCM53010, BCM53011, BCM53012,
+-	  BCM53014, BCM53015, BCM53016, BCM53017, BCM53018, BCM4707,
+-	  BCM4708 and BCM4709.
+-
+-	  Do not confuse this with the BCM4760 which is a totally
+-	  different SoC or with the older BCM47XX and BCM53XX based
+-	  network SoC using a MIPS CPU, they are supported by arch/mips/bcm47xx
+-
+ config ARCH_BCM_63XX
+ 	bool "Broadcom BCM63xx DSL SoC" if ARCH_MULTI_V7
+ 	depends on MMU
 -- 
 1.7.9.5
 
