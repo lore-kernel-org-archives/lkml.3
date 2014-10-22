@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268AbaJVTNq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 15:13:46 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:64103 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755077AbaJVTN2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755230AbaJVTNo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 15:13:44 -0400
+Received: from mga01.intel.com ([192.55.52.88]:48854 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755079AbaJVTN2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 22 Oct 2014 15:13:28 -0400
-From: Frans Klaver <fransklaver@gmail.com>
-To: Darren Hart <dvhart@infradead.org>
-Cc: Frans Klaver <fransklaver@gmail.com>,
-        Corentin Chary <corentin.chary@gmail.com>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 8/8] eeepc-laptop: don't assume get_acpi succeeds
-Date: Wed, 22 Oct 2014 21:12:43 +0200
-Message-Id: <1414005163-3461-9-git-send-email-fransklaver@gmail.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1414005163-3461-1-git-send-email-fransklaver@gmail.com>
-References: <1414005163-3461-1-git-send-email-fransklaver@gmail.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,770,1406617200"; 
+   d="scan'208";a="618699236"
+From: kan.liang@intel.com
+To: acme@kernel.org
+Cc: linux-kernel@vger.kernel.org, Kan Liang <kan.liang@intel.com>
+Subject: [PATCH 1/1] perf tool: add hists__init for perf diff
+Date: Wed, 22 Oct 2014 15:02:41 -0400
+Message-Id: <1414004561-22096-1-git-send-email-kan.liang@intel.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In eeepc_hotk_thaw, we assume that get_acpi() will effectively return a
-bool. However, it is possible that get_acpi() returns an error instead.
-We should not be writing error values to the ACPI device, even though
-it's quite possible that we couldn't contact the ACPI device in the
-first place.
+From: Kan Liang <kan.liang@intel.com>
 
-Signed-off-by: Frans Klaver <fransklaver@gmail.com>
+perf diff also uses hists/hist_entries, hists__init() should be called
+before creating any evsels.
+
+Signed-off-by: Kan Liang <kan.liang@intel.com>
 ---
- drivers/platform/x86/eeepc-laptop.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ tools/perf/builtin-diff.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
-index 275a239..14f79ef 100644
---- a/drivers/platform/x86/eeepc-laptop.c
-+++ b/drivers/platform/x86/eeepc-laptop.c
-@@ -911,7 +911,7 @@ static int eeepc_hotk_thaw(struct device *device)
- 	struct eeepc_laptop *eeepc = dev_get_drvdata(device);
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index 8c5c11c..25114c9 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -1142,6 +1142,11 @@ static int data_init(int argc, const char **argv)
  
- 	if (eeepc->wlan_rfkill) {
--		bool wlan;
-+		int wlan;
+ int cmd_diff(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
++	int ret = hists__init();
++
++	if (ret < 0)
++		return ret;
++
+ 	perf_config(perf_default_config, NULL);
  
- 		/*
- 		 * Work around bios bug - acpi _PTS turns off the wireless led
-@@ -919,7 +919,8 @@ static int eeepc_hotk_thaw(struct device *device)
- 		 * we should kick it ourselves in case hibernation is aborted.
- 		 */
- 		wlan = get_acpi(eeepc, CM_ASL_WLAN);
--		set_acpi(eeepc, CM_ASL_WLAN, wlan);
-+		if (wlan >= 0)
-+			set_acpi(eeepc, CM_ASL_WLAN, wlan);
- 	}
- 
- 	return 0;
+ 	argc = parse_options(argc, argv, options, diff_usage, 0);
 -- 
-2.1.0
+1.8.3.2
 
