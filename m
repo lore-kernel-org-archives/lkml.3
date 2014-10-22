@@ -1,117 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754259AbaJVHQF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 03:16:05 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:39022 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750920AbaJVHP7 (ORCPT
+	id S932481AbaJVHRT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 03:17:19 -0400
+Received: from relay.parallels.com ([195.214.232.42]:40181 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932301AbaJVHRP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 03:15:59 -0400
-From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
-        Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        Giuseppe Condorelli <giuseppe.condorelli@st.com>
-Subject: [PATCH v4 7/8] phy: miphy28lp: Tune tx impedance across Soc cuts
-Date: Wed, 22 Oct 2014 09:14:26 +0200
-Message-Id: <1413962067-25557-8-git-send-email-gabriel.fernandez@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1413962067-25557-1-git-send-email-gabriel.fernandez@linaro.org>
-References: <1413962067-25557-1-git-send-email-gabriel.fernandez@linaro.org>
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-10-22_03:2014-10-21,2014-10-22,1970-01-01 signatures=0
+	Wed, 22 Oct 2014 03:17:15 -0400
+Message-ID: <1413962231.19914.130.camel@tkhai>
+Subject: [PATCH v4] sched/numa: fix unsafe get_task_struct() in
+ task_numa_assign()
+From: Kirill Tkhai <ktkhai@parallels.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Kirill Tkhai <tkhai@yandex.ru>
+Date: Wed, 22 Oct 2014 11:17:11 +0400
+Organization: Parallels
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.26.172]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch to compensate tx impedance (Sata, PCIe)
-depending on Soc cuts the kernel is built for.
 
-Signed-off-by: Giuseppe Condorelli <giuseppe.condorelli@st.com>
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Unlocked access to dst_rq->curr in task_numa_compare() is racy.
+If curr task is exiting this may be a reason of use-after-free:
+
+task_numa_compare()                    do_exit()
+    ...                                        current->flags |= PF_EXITING;
+    ...                                    release_task()
+    ...                                        ~~delayed_put_task_struct()~~
+    ...                                    schedule()
+    rcu_read_lock()                        ...
+    cur = ACCESS_ONCE(dst_rq->curr)        ...
+        ...                                rq->curr = next;
+        ...                                    context_switch()
+        ...                                        finish_task_switch()
+        ...                                            put_task_struct()
+        ...                                                __put_task_struct()
+        ...                                                    free_task_struct()
+        task_numa_assign()                                     ...
+            get_task_struct()                                  ...
+
+As noted by Oleg:
+
+  <<The lockless get_task_struct(tsk) is only safe if tsk == current
+    and didn't pass exit_notify(), or if this tsk was found on a rcu
+    protected list (say, for_each_process() or find_task_by_vpid()).
+    IOW, it is only safe if release_task() was not called before we
+    take rcu_read_lock(), in this case we can rely on the fact that
+    delayed_put_pid() can not drop the (potentially) last reference
+    until rcu_read_unlock().
+
+    And as Kirill pointed out task_numa_compare()->task_numa_assign()
+    path does get_task_struct(dst_rq->curr) and this is not safe. The
+    task_struct itself can't go away, but rcu_read_lock() can't save
+    us from the final put_task_struct() in finish_task_switch(); this
+    reference goes away without rcu gp>>
+
+The patch provides simple check of PF_EXITING flag. If it's not set,
+this guarantees that call_rcu() of delayed_put_task_struct() callback
+hasn't happened yet, so we can safely do get_task_struct() in
+task_numa_assign().
+
+Locked dst_rq->lock protects from concurrency with the last schedule().
+Reusing or unmapping of cur's memory may happen without it.
+
+Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+Suggested-by: Oleg Nesterov <oleg@redhat.com>
 ---
- Documentation/devicetree/bindings/phy/phy-miphy28lp.txt |  1 +
- drivers/phy/phy-miphy28lp.c                             | 16 ++++++++++++++++
- 2 files changed, 17 insertions(+)
+ kernel/sched/fair.c |   14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt b/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
-index daa8310..17f7eec 100644
---- a/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
-+++ b/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
-@@ -40,6 +40,7 @@ Optional properties (port (child) node):
- - st,px_rx_pol_inv	: to invert polarity of RXn/RXp (respectively negative line and positive
- 			  line).
- - st,scc-on		: enable ssc to reduce effects of EMI (only for sata or PCIe).
-+- st,tx-impedance-comp	: to compensate tx impedance avoiding out of range values.
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 0b069bf..fbc0b82 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1164,9 +1164,19 @@ static void task_numa_compare(struct task_numa_env *env,
+ 	long moveimp = imp;
  
- example:
- 
-diff --git a/drivers/phy/phy-miphy28lp.c b/drivers/phy/phy-miphy28lp.c
-index ca0d9b4..a9128a8 100644
---- a/drivers/phy/phy-miphy28lp.c
-+++ b/drivers/phy/phy-miphy28lp.c
-@@ -204,6 +204,7 @@ struct miphy28lp_phy {
- 	bool osc_rdy;
- 	bool px_rx_pol_inv;
- 	bool ssc;
-+	bool tx_impedance;
- 
- 	struct reset_control *miphy_rst;
- 
-@@ -632,6 +633,12 @@ static void miphy_pcie_tune_ssc(struct miphy28lp_phy *miphy_phy)
- 	}
- }
- 
-+static inline void miphy_tune_tx_impedance(struct miphy28lp_phy *miphy_phy)
-+{
-+	/* Compensate Tx impedance to avoid out of range values */
-+	writeb_relaxed(0x02, miphy_phy->base + MIPHY_COMP_POSTP);
-+}
+ 	rcu_read_lock();
+-	cur = ACCESS_ONCE(dst_rq->curr);
+-	if (cur->pid == 0) /* idle */
 +
- static inline int miphy28lp_configure_sata(struct miphy28lp_phy *miphy_phy)
- {
- 	void __iomem *base = miphy_phy->base;
-@@ -670,6 +677,9 @@ static inline int miphy28lp_configure_sata(struct miphy28lp_phy *miphy_phy)
- 	if (miphy_phy->ssc)
- 		miphy_sata_tune_ssc(miphy_phy);
++	raw_spin_lock_irq(&dst_rq->lock);
++	cur = dst_rq->curr;
++	/*
++	 * No need to move the exiting task, and this ensures that ->curr
++	 * wasn't reaped and thus get_task_struct() in task_numa_assign()
++	 * is safe under RCU read lock.
++	 * Note that rcu_read_lock() itself can't protect from the final
++	 * put_task_struct() after the last schedule().
++	 */
++	if ((cur->flags & PF_EXITING) || is_idle_task(cur))
+ 		cur = NULL;
++	raw_spin_unlock_irq(&dst_rq->lock);
  
-+	if (miphy_phy->tx_impedance)
-+		miphy_tune_tx_impedance(miphy_phy);
-+
- 	return 0;
- }
- 
-@@ -703,6 +713,9 @@ static inline int miphy28lp_configure_pcie(struct miphy28lp_phy *miphy_phy)
- 	if (miphy_phy->ssc)
- 		miphy_pcie_tune_ssc(miphy_phy);
- 
-+	if (miphy_phy->tx_impedance)
-+		miphy_tune_tx_impedance(miphy_phy);
-+
- 	return 0;
- }
- 
-@@ -1151,6 +1164,9 @@ static int miphy28lp_of_probe(struct device_node *np,
- 
- 	miphy_phy->ssc = of_property_read_bool(np, "st,ssc-on");
- 
-+	miphy_phy->tx_impedance =
-+		of_property_read_bool(np, "st,tx-impedance-comp");
-+
- 	of_property_read_u32(np, "st,sata-gen", &miphy_phy->sata_gen);
- 	if (!miphy_phy->sata_gen)
- 		miphy_phy->sata_gen = SATA_GEN1;
--- 
-1.9.1
+ 	/*
+ 	 * "imp" is the fault differential for the source task between the
+
+
 
