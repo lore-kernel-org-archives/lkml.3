@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174AbaJVSFh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 14:05:37 -0400
-Received: from gum.cmpxchg.org ([85.214.110.215]:42651 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752853AbaJVSFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 14:05:35 -0400
-Date: Wed, 22 Oct 2014 14:05:27 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcontrol: fix missed end-writeback accounting
-Message-ID: <20141022180527.GA18998@phnom.home.cmpxchg.org>
-References: <1413915550-5651-1-git-send-email-hannes@cmpxchg.org>
- <20141022163051.GH30802@dhcp22.suse.cz>
+	id S1754336AbaJVSIP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 14:08:15 -0400
+Received: from mail-oi0-f49.google.com ([209.85.218.49]:39018 "EHLO
+	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752906AbaJVSIN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 14:08:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141022163051.GH30802@dhcp22.suse.cz>
+Date: Wed, 22 Oct 2014 16:08:13 -0200
+Message-ID: <CA+gsUGSiXf2gpB8QQOQOmgxFc8mx31V6qeRqow6aXO1195jWEA@mail.gmail.com>
+Subject: Regression: audit: x86: drop arch from __audit_syscall_entry() interface
+From: Paulo Zanoni <przanoni@gmail.com>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-audit@redhat.com,
+        "Signed-off-by: Eric Paris" <eparis@redhat.com>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        Daniel Vetter <daniel@ffwll.ch>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 06:30:51PM +0200, Michal Hocko wrote:
-> On Tue 21-10-14 14:19:10, Johannes Weiner wrote:
-> > 0a31bc97c80c ("mm: memcontrol: rewrite uncharge API") changed page
-> > migration to uncharge the old page right away.  The page is locked,
-> > unmapped, truncated, and off the LRU.  But it could race with a
-> > finishing writeback, which then doesn't get unaccounted properly:
-> > 
-> > test_clear_page_writeback()              migration
-> >   acquire pc->mem_cgroup->move_lock
-> >                                            wait_on_page_writeback()
-> >   TestClearPageWriteback()
-> >                                            mem_cgroup_migrate()
-> >                                              clear PCG_USED
-> >   if (PageCgroupUsed(pc))
-> >     decrease memcg pages under writeback
-> >   release pc->mem_cgroup->move_lock
-> > 
-> > One solution for this would be to simply remove the PageCgroupUsed()
-> > check, as RCU protects the memcg anyway.
-> > 
-> > However, it's more robust to acknowledge that migration is really
-> > modifying the charge state of alive pages in this case, and so it
-> > should participate in the protocol specifically designed for this.
-> 
-> It's been a long day so I might be missing something really obvious
-> here. But how can move_lock help here when the fast path (no task
-> migration is going on) takes only RCU read lock?
+Hi
 
-Argh, I actually noticed this issue while working on the page stat
-simplification and thought I could break out a more isolated fix.  But
-you are right, that won't be enough, and I can't possibly put a RCU
-grace period in mem_cgroup_migration().
+(Cc'ing everybody mentioned in the original patch)
 
-I also just realized that we can't remove the PageCgroupUsed() check
-when updating the page stat, either, because the "fast path" start of
-the transaction does not verify the memcg for us - we can't tell
-whether it's gone stale before or during the transaction.  Grrr.
+I work for Intel, on our Linux Graphics driver - aka i915.ko - and our
+QA team recently reported a regression on:
 
-Andrew, please scratch this patch and the next 4-part series that
-reworks the page stat updates.  I'll send a reduced version of it
-that's marked for 3.17-stable.
+commit b4f0d3755c5e9cc86292d5fd78261903b4f23d4a
+Author: Richard Guy Briggs
+Date:   Tue Mar 4 10:38:06 2014 -0500
+    audit: x86: drop arch from __audit_syscall_entry() interface
 
-Thanks
+According to our QA, their i386 machine doesn't boot anymore. I tried
+to write my own revert for the patch, asked QA to test, and they
+confirmed it "solves" the problem.
+
+Here are the details of QA' s bug report:
+https://bugs.freedesktop.org/show_bug.cgi?id=85277 .
+
+The trees our QA tests are the development trees from i915.ko:
+http://cgit.freedesktop.org/drm-intel?h=drm-intel-fixes .
+
+I tried searching for other bug reports on the same patch, but
+couldn't find any. Forgive me if this bug was already reported.
+
+Feel free to continue this discussion on the bugzilla report if you want.
+
+Thanks,
+Paulo
+
+-- 
+Paulo Zanoni
