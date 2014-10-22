@@ -1,63 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933541AbaJVNDG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 09:03:06 -0400
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:23754 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933439AbaJVNDF (ORCPT
+	id S933439AbaJVNHT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 09:07:19 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54921 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933186AbaJVNHR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 09:03:05 -0400
-Date: Wed, 22 Oct 2014 21:00:12 +0800
-From: Jisheng Zhang <jszhang@marvell.com>
-To: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>
-CC: "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] irqchip: dw-apb-ictl: select GENERIC_IRQ_CHIP
-Message-ID: <20141022210012.6b650067@xhacker>
-In-Reply-To: <1413982524-470-1-git-send-email-jszhang@marvell.com>
-References: <1413982524-470-1-git-send-email-jszhang@marvell.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Wed, 22 Oct 2014 09:07:17 -0400
+From: Punit Agrawal <punit.agrawal@arm.com>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: Zhang Rui <rui.zhang@intel.com>, Linux PM <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] thermal soc changes
+References: <1408711592-8917-1-git-send-email-edubezval@gmail.com>
+	<1409125313.8085.22.camel@rzhang1-toshiba>
+	<20140827132717.GA15875@developer>
+Date: Wed, 22 Oct 2014 14:07:03 +0100
+In-Reply-To: <20140827132717.GA15875@developer> (Eduardo Valentin's message of
+	"Wed, 27 Aug 2014 09:27:19 -0400")
+Message-ID: <9hhiojc1ceg.fsf@arm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-10-22_04:2014-10-22,2014-10-22,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1410220118
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-oops, typo. Should be generic chip functions. Please ignore this patch, I will
-send the v2.
+Hi Rui
 
-sorry
+Eduardo Valentin <edubezval@gmail.com> writes:
 
-On Wed, 22 Oct 2014 05:55:24 -0700
-Jisheng Zhang <jszhang@marvell.com> wrote:
+> Hello Rui,
+>
+> On Wed, Aug 27, 2014 at 03:41:53PM +0800, Zhang Rui wrote:
+>> On Fri, 2014-08-22 at 08:46 -0400, Eduardo Valentin wrote:
+>> > Hello Rui,
+>> > 
+>> > Please pull these changes. Here we have three new features: IMX driver has
+>> > now support to i.mx6sx, the of-thermal now if aware of disabled thermal zones
+>> > in DT, and we shall have tracing support on thermal framework.
+>> > 
+>> > The following changes since commit 47d104ba5879790c7c91c3390b0b08399e168efe:
+>> > 
+>> >   Merge branches 'exynos-fix', 'for-rc', 'int3403-fix', 'misc', 'rcar-thermal' and 'sti-thermal' of .git into next (2014-07-22 10:13:00 +0800)
+>> > 
+>> > are available in the git repository at:
+>> > 
+>> > 
+>> >   https://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git 
+>> > 
+>> 
+>> I suppose you mean
+>> http://git.kernel.org/pub/scm/linux/kernel/git/evalenti/linux-soc-thermal.git next branch. And I've pulled those changes in your next branch.
+>
+> Yes Rui. I made a mistake. 
+>
+> Thanks for pulling.
+>
+>
+>> 
+>> thanks,
+>
+> Cheers,
+>
 
-> The dw-apb-ictl driver uses the clocksource MMIO functions.
-> Thus it needs to select GENERIC_IRQ_CHIP in Kconfig.
-> 
-> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-> ---
->  drivers/irqchip/Kconfig | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
-> index b21f12f..a925da0 100644
-> --- a/drivers/irqchip/Kconfig
-> +++ b/drivers/irqchip/Kconfig
-> @@ -56,6 +56,7 @@ config BRCMSTB_L2_IRQ
->  
->  config DW_APB_ICTL
->  	bool
-> +	select GENERIC_IRQ_CHIP
->  	select IRQ_DOMAIN
->  
->  config IMGPDC_IRQ
+[...]
+
+>> > Punit Agrawal (3):
+>> >       thermal: trace: Trace temperature changes
+>> >       thermal: trace: Trace when a cooling device's state is updated
+>> >       thermal: trace: Trace when temperature is above a trip point
+
+I can't find the thermal trace patches in 3.18-rc1. When should I expect
+to see them in Linus' tree?
+
+Cheers,
+Punit
+
+[...]
 
