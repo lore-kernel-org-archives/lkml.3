@@ -1,84 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933460AbaJVMC2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 08:02:28 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:56752 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933056AbaJVMC0 (ORCPT
+	id S933160AbaJVMJG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 08:09:06 -0400
+Received: from mail-lb0-f201.google.com ([209.85.217.201]:55132 "EHLO
+	mail-lb0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932764AbaJVMJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 08:02:26 -0400
-X-Greylist: delayed 60989 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Oct 2014 08:02:26 EDT
-Message-ID: <54479CB2.5040408@hurleysoftware.com>
-Date: Wed, 22 Oct 2014 08:01:54 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Laura Abbott <lauraa@codeaurora.org>, Hui Zhu <zhuhui@xiaomi.com>,
-        m.szyprowski@samsung.com, akpm@linux-foundation.org, riel@redhat.com,
-        mgorman@suse.de, hughd@google.com, akinobu.mita@gmail.com
-CC: rjw@rjwysocki.net, len.brown@intel.com, pavel@ucw.cz, mina86@mina86.com,
-        aneesh.kumar@linux.vnet.ibm.com, iamjoonsoo.kim@lge.com,
-        hannes@cmpxchg.org, minchan@kernel.org, nasa4836@gmail.com,
-        ddstreet@ieee.org, mingo@kernel.org, rientjes@google.com,
-        peterz@infradead.org, keescook@chromium.org, atomlin@redhat.com,
-        raistlin@linux.it, axboe@fb.com, paulmck@linux.vnet.ibm.com,
-        kirill.shutemov@linux.intel.com, n-horiguchi@ah.jp.nec.com,
-        k.khlebnikov@samsung.com, msalter@redhat.com, deller@gmx.de,
-        tangchen@cn.fujitsu.com, ben@decadent.org.uk, vbabka@suse.cz,
-        sasha.levin@oracle.com, vdavydov@parallels.com, suleiman@google.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 0/4] (CMA_AGGRESSIVE) Make CMA memory be more aggressive
- about allocation
-References: <1413430551-22392-1-git-send-email-zhuhui@xiaomi.com> <543F8812.2020002@codeaurora.org>
-In-Reply-To: <543F8812.2020002@codeaurora.org>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+	Wed, 22 Oct 2014 08:09:05 -0400
+From: David Drysdale <drysdale@google.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Meredydd Luff <meredydd@senatehouse.org>, linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
+        x86@kernel.org, linux-arch@vger.kernel.org, linux-api@vger.kernel.org,
+        David Drysdale <drysdale@google.com>
+Subject: [PATCHv5 man-pages 3/3] execveat.2: initial man page for execveat(2)
+Date: Wed, 22 Oct 2014 12:44:29 +0100
+Message-Id: <1413978269-17274-4-git-send-email-drysdale@google.com>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1413978269-17274-1-git-send-email-drysdale@google.com>
+References: <1413978269-17274-1-git-send-email-drysdale@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2014 04:55 AM, Laura Abbott wrote:
-> On 10/15/2014 8:35 PM, Hui Zhu wrote:
->> In fallbacks of page_alloc.c, MIGRATE_CMA is the fallback of
->> MIGRATE_MOVABLE.
->> MIGRATE_MOVABLE will use MIGRATE_CMA when it doesn't have a page in
->> order that Linux kernel want.
->>
->> If a system that has a lot of user space program is running, for
->> instance, an Android board, most of memory is in MIGRATE_MOVABLE and
->> allocated.  Before function __rmqueue_fallback get memory from
->> MIGRATE_CMA, the oom_killer will kill a task to release memory when
->> kernel want get MIGRATE_UNMOVABLE memory because fallbacks of
->> MIGRATE_UNMOVABLE are MIGRATE_RECLAIMABLE and MIGRATE_MOVABLE.
->> This status is odd.  The MIGRATE_CMA has a lot free memory but Linux
->> kernel kill some tasks to release memory.
->>
->> This patch series adds a new function CMA_AGGRESSIVE to make CMA memory
->> be more aggressive about allocation.
->> If function CMA_AGGRESSIVE is available, when Linux kernel call function
->> __rmqueue try to get pages from MIGRATE_MOVABLE and conditions allow,
->> MIGRATE_CMA will be allocated as MIGRATE_MOVABLE first.  If MIGRATE_CMA
->> doesn't have enough pages for allocation, go back to allocate memory from
->> MIGRATE_MOVABLE.
->> Then the memory of MIGRATE_MOVABLE can be kept for MIGRATE_UNMOVABLE and
->> MIGRATE_RECLAIMABLE which doesn't have fallback MIGRATE_CMA.
->>
-> 
-> It's good to see another proposal to fix CMA utilization. Do you have
-> any data about the success rate of CMA contiguous allocation after
-> this patch series? I played around with a similar approach of using
-> CMA for MIGRATE_MOVABLE allocations and found that although utilization
-> did increase, contiguous allocations failed at a higher rate and were
-> much slower. I see what this series is trying to do with avoiding
-> allocation from CMA pages when a contiguous allocation is progress.
-> My concern is that there would still be problems with contiguous
-> allocation after all the MIGRATE_MOVABLE fallback has happened.
+Signed-off-by: David Drysdale <drysdale@google.com>
+---
+ man2/execveat.2 | 144 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 144 insertions(+)
+ create mode 100644 man2/execveat.2
 
-What impact does this series have on x86 platforms now that CMA is the
-backup allocator for all iommu dma allocations?
+diff --git a/man2/execveat.2 b/man2/execveat.2
+new file mode 100644
+index 000000000000..d19571a3eb9d
+--- /dev/null
++++ b/man2/execveat.2
+@@ -0,0 +1,144 @@
++.\" Copyright (c) 2014 Google, Inc.
++.\"
++.\" %%%LICENSE_START(VERBATIM)
++.\" Permission is granted to make and distribute verbatim copies of this
++.\" manual provided the copyright notice and this permission notice are
++.\" preserved on all copies.
++.\"
++.\" Permission is granted to copy and distribute modified versions of this
++.\" manual under the conditions for verbatim copying, provided that the
++.\" entire resulting derived work is distributed under the terms of a
++.\" permission notice identical to this one.
++.\"
++.\" Since the Linux kernel and libraries are constantly changing, this
++.\" manual page may be incorrect or out-of-date.  The author(s) assume no
++.\" responsibility for errors or omissions, or for damages resulting from
++.\" the use of the information contained herein.  The author(s) may not
++.\" have taken the same level of care in the production of this manual,
++.\" which is licensed free of charge, as they might when working
++.\" professionally.
++.\"
++.\" Formatted or processed versions of this manual, if unaccompanied by
++.\" the source, must acknowledge the copyright and authors of this work.
++.\" %%%LICENSE_END
++.\"
++.TH EXECVEAT 2 2014-04-02 "Linux" "Linux Programmer's Manual"
++.SH NAME
++execveat \- execute program relative to a directory file descriptor
++.SH SYNOPSIS
++.B #include <unistd.h>
++.sp
++.BI "int execve(int " fd ", const char *" pathname ","
++.br
++.BI "           char *const " argv "[],  char *const " envp "[],"
++.br
++.BI "           int " flags);
++.SH DESCRIPTION
++The
++.BR execveat ()
++system call executes the program pointed to by the combination of \fIfd\fP and \fIpathname\fP.
++The
++.BR execveat ()
++system call operates in exactly the same way as
++.BR execve (2),
++except for the differences described in this manual page.
++
++If the pathname given in
++.I pathname
++is relative, then it is interpreted relative to the directory
++referred to by the file descriptor
++.I fd
++(rather than relative to the current working directory of
++the calling process, as is done by
++.BR execve (2)
++for a relative pathname).
++
++If
++.I pathname
++is relative and
++.I fd
++is the special value
++.BR AT_FDCWD ,
++then
++.I pathname
++is interpreted relative to the current working
++directory of the calling process (like
++.BR execve (2)).
++
++If
++.I pathname
++is absolute, then
++.I fd
++is ignored.
++
++If
++.I pathname
++is an empty string and the
++.BR AT_EMPTY_PATH
++flag is specified, then the file descriptor
++.I fd
++specifies the file to be executed.
++
++.I flags
++can either be 0, or include the following flags:
++.TP
++.BR AT_EMPTY_PATH
++If
++.I pathname
++is an empty string, operate on the file referred to by
++.IR fd
++(which may have been obtained using the
++.BR open (2)
++.B O_PATH
++flag).
++.TP
++.B AT_SYMLINK_NOFOLLOW
++If the file identified by
++.I fd
++and a non-NULL
++.I pathname
++is a symbolic link, then the call fails with the error
++.BR EINVAL .
++.SH "RETURN VALUE"
++On success,
++.BR execveat ()
++does not return. On error \-1 is returned, and
++.I errno
++is set appropriately.
++.SH ERRORS
++The same errors that occur for
++.BR execve (2)
++can also occur for
++.BR execveat ().
++The following additional errors can occur for
++.BR execveat ():
++.TP
++.B EBADF
++.I fd
++is not a valid file descriptor.
++.TP
++.B EINVAL
++Invalid flag specified in
++.IR flags .
++.TP
++.B ENOTDIR
++.I pathname
++is relative and
++.I fd
++is a file descriptor referring to a file other than a directory.
++.SH VERSIONS
++.BR execveat ()
++was added to Linux in kernel 3.???.
++.SH NOTES
++In addition to the reasons explained in
++.BR openat (2),
++the
++.BR execveat ()
++system call is also needed to allow
++.BR fexecve (3)
++to be implemented on systems that do not have the
++.I /proc
++filesystem mounted.
++.SH SEE ALSO
++.BR execve (2),
++.BR fexecve (3)
+-- 
+2.1.0.rc2.206.gedb03e5
 
-Regards,
-Peter Hurley
