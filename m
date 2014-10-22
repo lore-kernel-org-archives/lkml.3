@@ -1,80 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933187AbaJVL4V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 07:56:21 -0400
-Received: from mta-out1.inet.fi ([62.71.2.194]:44300 "EHLO jenni1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932729AbaJVL4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 07:56:20 -0400
-Date: Wed, 22 Oct 2014 14:55:40 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Davidlohr Bueso <dave@stgolabs.net>, torvalds@linux-foundation.org,
-        paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
-        akpm@linux-foundation.org, riel@redhat.com, mgorman@suse.de,
-        oleg@redhat.com, mingo@redhat.com, minchan@kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
-        laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC][PATCH 0/6] Another go at speculative page faults
-Message-ID: <20141022115540.GB31486@node.dhcp.inet.fi>
-References: <20141020215633.717315139@infradead.org>
- <1413963289.26628.3.camel@linux-t7sj.site>
- <20141022112925.GH30588@node.dhcp.inet.fi>
- <20141022114558.GC21513@worktop.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141022114558.GC21513@worktop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	id S933393AbaJVL5h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 07:57:37 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:35203 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932729AbaJVL5f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 07:57:35 -0400
+From: Zhou Wang <wangzhou.bry@gmail.com>
+To: Russell King <linux@arm.linux.org.uk>, Rob Herring <robh+dt@kernel.org>,
+        Wei Xu <xuwei5@hisilicon.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, wangzhou1@hisilicon.com,
+        Zhou Wang <wangzhou.bry@gmail.com>
+Subject: [PATCH v1 0/2] ARM: hip04: add GPIO support
+Date: Wed, 22 Oct 2014 19:55:58 +0800
+Message-Id: <1413978960-10717-1-git-send-email-wangzhou.bry@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 01:45:58PM +0200, Peter Zijlstra wrote:
-> On Wed, Oct 22, 2014 at 02:29:25PM +0300, Kirill A. Shutemov wrote:
-> > On Wed, Oct 22, 2014 at 12:34:49AM -0700, Davidlohr Bueso wrote:
-> > > On Mon, 2014-10-20 at 23:56 +0200, Peter Zijlstra wrote:
-> > > > Hi,
-> > > > 
-> > > > I figured I'd give my 2010 speculative fault series another spin:
-> > > > 
-> > > >   https://lkml.org/lkml/2010/1/4/257
-> > > > 
-> > > > Since then I think many of the outstanding issues have changed sufficiently to
-> > > > warrant another go. In particular Al Viro's delayed fput seems to have made it
-> > > > entirely 'normal' to delay fput(). Lai Jiangshan's SRCU rewrite provided us
-> > > > with call_srcu() and my preemptible mmu_gather removed the TLB flushes from
-> > > > under the PTL.
-> > > > 
-> > > > The code needs way more attention but builds a kernel and runs the
-> > > > micro-benchmark so I figured I'd post it before sinking more time into it.
-> > > > 
-> > > > I realize the micro-bench is about as good as it gets for this series and not
-> > > > very realistic otherwise, but I think it does show the potential benefit the
-> > > > approach has.
-> > > > 
-> > > > (patches go against .18-rc1+)
-> > > 
-> > > I think patch 2/6 is borken:
-> > > 
-> > > error: patch failed: mm/memory.c:2025
-> > > error: mm/memory.c: patch does not apply
-> > > 
-> > > and related, as you mention, I would very much welcome having the
-> > > introduction of 'struct faut_env' as a separate cleanup patch. May I
-> > > suggest renaming it to fault_cxt?
-> > 
-> > What about extend start using 'struct vm_fault' earlier by stack?
-> 
-> I'm not sure we should mix the environment for vm_ops::fault, which
-> acquires the page, and the fault path, which deals with changing the
-> PTE. Ideally we should not expose the page-table information to file
-> ops, its a layering violating if nothing else, drivers should not have
-> access to the page tables.
+This series add the support for the GPIOs of Hisilicon Soc hip04. Hip04 uses
+synopsis' GPIO IP, and we use the dwapb GPIO driver here. This series add the
+corresponding dts.
 
-We already have this for ->map_pages() :-P
-I have asked if it's considered layering violation and seems nobody
-cares...
+As the hip04 basic dts has been merged in 3.18 mainline kernel, I just resend
+this patchset for review.
+
+Zhou Wang (2):
+  ARM: hip04: set ARCH_NR_GPIO to 128
+  ARM: dts: hip04: add GPIO pieces
+
+ arch/arm/Kconfig             |    1 +
+ arch/arm/boot/dts/hip04.dtsi |   75 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 76 insertions(+)
 
 -- 
- Kirill A. Shutemov
+1.7.9.5
+
