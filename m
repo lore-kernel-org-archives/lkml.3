@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932874AbaJVUfN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 16:35:13 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:42980 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932812AbaJVUfJ (ORCPT
+	id S932893AbaJVUiQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 16:38:16 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:50011 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932421AbaJVUiN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 16:35:09 -0400
-Date: Wed, 22 Oct 2014 16:35:07 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Masahiro Yamada <yamada.m@jp.panasonic.com>,
-        Peter Foley <pefoley2@pefoley.com>, linux-kbuild@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] kbuild: Fix output of make kernelrelease
-Message-ID: <20141022163507.6e2162d1@gandalf.local.home>
-In-Reply-To: <20141022194408.GA20989@pobox.suse.cz>
-References: <20141022101944.70d637cc@gandalf.local.home>
-	<20141022194408.GA20989@pobox.suse.cz>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	Wed, 22 Oct 2014 16:38:13 -0400
+Date: Wed, 22 Oct 2014 16:38:10 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+cc: rjw@rjwysocki.net, peterz@infradead.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH 2/5] sched: idle: Get the next timer event and pass it
+ the cpuidle framework
+In-Reply-To: <1413822343-1972-2-git-send-email-daniel.lezcano@linaro.org>
+Message-ID: <alpine.LFD.2.11.1410221630120.6969@knanqh.ubzr>
+References: <1413822343-1972-1-git-send-email-daniel.lezcano@linaro.org> <1413822343-1972-2-git-send-email-daniel.lezcano@linaro.org>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Oct 2014 21:44:08 +0200
-Michal Marek <mmarek@suse.cz> wrote:
+On Mon, 20 Oct 2014, Daniel Lezcano wrote:
 
-> Dne 22.10.2014 v 16:19 Steven Rostedt napsal(a):
-> > 
-> > Commit 7ff525712acf "kbuild: fake the "Entering directory ..." message
-> > more simply" changed the output of "make kernelrelease" such that the
-> > kernel release version was not the last line printed. This broke various
-> > tools that would find the kernel release with "make kernelrelease | tail -1".
+> Following the logic of the previous patch, retrieve from the idle task the
+> expected timer sleep duration and pass it to the cpuidle framework.
 > 
-> The cleaner and recommended (see recent make help) way is to use make -s:
+> Take the opportunity to remove the unused headers in the menu.c file.
 > 
-> $ make O=build -s kernelrelease
-> 3.18.0-rc1+
+> This patch does not change the current behavior.
+> 
+> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-Hmm, I see the help index was recently updated to include that.
+One minor nit below.
 
-Does this work with older kernels too? That's very important.
+> @@ -211,6 +212,12 @@ static void cpu_idle_loop(void)
+>  			latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
+>  
+>  			/*
+> +			 * The next timer event in us
+> +			 */
 
--- Steve
+This 3-line comment is redundant. The code is obvious enough on its own.
+
+> +			next_timer_event = ktime_to_us(
+> +				tick_nohz_get_sleep_length());
+
+I'd suggest this form for better readability:
+
+			next_timer_event =
+				ktime_to_us(tick_nohz_get_sleep_length());
+
+Other than that...
+
+Acked-by: Nicolas Pitre <nico@linaro.org>
+
+> +
+> +			/*
+>  			 * In poll mode we reenable interrupts and spin.
+>  			 *
+>  			 * If the latency req is zero, we don't want to
+> @@ -227,7 +234,8 @@ static void cpu_idle_loop(void)
+>  			    tick_check_broadcast_expired())
+>  				cpu_idle_poll();
+>  			else
+> -				cpuidle_idle_call(latency_req);
+> +				cpuidle_idle_call(latency_req,
+> +						  next_timer_event);
+>  
+>  			arch_cpu_idle_exit();
+>  		}
+> -- 
+> 1.9.1
+> 
+> 
