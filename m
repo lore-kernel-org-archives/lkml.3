@@ -1,120 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932497AbaJVHwc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 03:52:32 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:32812 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932383AbaJVHwa (ORCPT
+	id S1754347AbaJVHyf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 03:54:35 -0400
+Received: from mail-pd0-f193.google.com ([209.85.192.193]:53198 "EHLO
+	mail-pd0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753972AbaJVHyc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 03:52:30 -0400
-Message-ID: <5447622B.5000607@huawei.com>
-Date: Wed, 22 Oct 2014 15:52:11 +0800
-From: Wang Nan <wangnan0@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Adrian Hunter <adrian.hunter@intel.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Waiman Long <Waiman.Long@hp.com>,
-        <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH] perf tools: ensure return negitive value when write header
- error
-References: <1413428909-80017-1-git-send-email-wangnan0@huawei.com> <87siigeghv.fsf@sejong.aot.lge.com>
-In-Reply-To: <87siigeghv.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.90]
-X-CFilter-Loop: Reflected
+	Wed, 22 Oct 2014 03:54:32 -0400
+From: "jinkun.hong" <jinkun.hong@rock-chips.com>
+To: linus.walleij@linaro.org, linux-arm-kernel@lists.infradead.org
+Cc: Russell King <linux@arm.linux.org.uk>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
+        linux-doc@vger.kernel.org, dianders@chromium.org,
+        Heiko Stuebner <heiko@sntech.de>, linux-rockchip@lists.infradead.org,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        "jinkun.hong" <jinkun.hong@rock-chips.com>
+Subject: [PATCH v6 0/3] ARM: rk3288 : Add PM Domain support
+Date: Wed, 22 Oct 2014 00:53:41 -0700
+Message-Id: <1413964424-7599-1-git-send-email-jinkun.hong@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/10/22 15:00, Namhyung Kim wrote:
-> On Thu, 16 Oct 2014 11:08:29 +0800, Wang Nan wrote:
->> When 'perf record' write headers, it calls write_xxx in
->> tools/perf/util/header.c, and check return value. It rolls back all
->> working only when return value is negative.
->>
->> This patch ensures write_cpudesc() and write_total_mem() return negative number
->> when error. Without this patch, headers reported by 'perf report' header is
->> error in some platform. Following output is caputured on ARM, which doesn't
->> contain "Processor" field in /proc/cpuinfo. See "cpudesc", "total memory" and
->> "cmdline" field.
->>
->>    bash-4.2# perf record ls
->>    ...
->>    [ perf record: Woken up 1 times to write data ]
->>    [ perf record: Captured and wrote 0.001 MB perf.data (~36 samples) ]
->>    bash-4.2# perf report --stdio --header
->>    Error:
->>    The perf.data file has no samples!
->>    # ========
->>    # captured on: Fri Sep 12 10:09:10 2014
->>    # hostname : arma15el
->>    # os release : 3.17.0+
->>    # perf version : 3.10.53
->>    # arch : armv7l
->>    # nrcpus online : 4
->>    # nrcpus avail : 1
->>    # cpudesc : (null)
->>    # total memory : 0 kB
->>    # cmdline :
->>    # event : name = cycles, type = 0, config = 0x0, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, excl_host = 0, excl_guest = 1, precise_ip = 0
->>    # pmu mappings: not available
->>    # ========
->>    #
->>
->> Signed-off-by: Wang Nan <wangnan0@huawei.com>
-> 
-> I guess the total_memory, cmdline and pmu mappings are somehow affected
-> by the broken cpudesc.  Do they have their own problem on ARM?
-> 
+From: "jinkun.hong" <jinkun.hong@rock-chips.com>
 
-The buggy output is caused by cpudesc's problem. I didn't trigger their own problem on ARM because
-'total memory' and cmdline are always success. I find the error in write_total_mem() by checking
-code by hand.
+Add power domain drivers based on generic power domain for Rockchip platform,
+and support RK3288.
 
-Thanks.
+https://chromium-review.googlesource.com/#/c/220253/9
+This is the GPU driver, add the following information in DT,
+and it can support the PMDOMAIN.
 
-> Anyway I think it's good to check the result properly, so
-> 
-> Acked-by: Namhyung Kim <namhyung@kernel.org>
-> 
-> Thanks,
-> Namhyung
-> 
-> 
->> ---
->>  tools/perf/util/header.c | 7 +++++--
->>  1 file changed, 5 insertions(+), 2 deletions(-)
->>
->> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
->> index ce0de00..39b80ac 100644
->> --- a/tools/perf/util/header.c
->> +++ b/tools/perf/util/header.c
->> @@ -605,8 +605,10 @@ static int write_cpudesc(int fd, struct perf_header *h __maybe_unused,
->>  			break;
->>  	}
->>  
->> -	if (ret)
->> +	if (ret) {
->> +		ret = -1;
->>  		goto done;
->> +	}
->>  
->>  	s = buf;
->>  
->> @@ -950,7 +952,8 @@ static int write_total_mem(int fd, struct perf_header *h __maybe_unused,
->>  		n = sscanf(buf, "%*s %"PRIu64, &mem);
->>  		if (n == 1)
->>  			ret = do_write(fd, &mem, sizeof(mem));
->> -	}
->> +	} else
->> +		ret = -1;
->>  	free(buf);
->>  	fclose(fp);
->>  	return ret;
+gpu: gpu@ffa30000 {
+	compatible = "arm,malit764",
+		     "arm,malit76x",
+		     "arm,malit7xx",
+		     "arm,mali-midgard";
+	reg = <0xffa30000 0x10000>;
+	interrupts = <GIC_SPI 6 IRQ_TYPE_LEVEL_HIGH>,
+		     <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>,
+		     <GIC_SPI 8 IRQ_TYPE_LEVEL_HIGH>;
+	interrupt-names = "JOB", "MMU", "GPU";
+	clocks = <&cru ACLK_GPU>;
+	clock-names = "aclk_gpu";
+	operating-points = <
+		/* KHz uV */
+		100000 800000
+		200000 850000
+		300000 950000
+		400000 1000000
+		600000 1150000
+	>;
+	power-domains = <&gpu_power>;
+	status = "disabled";
+};
 
+Based on:
+- [PATCH v1 1/4] PM / clock_ops: Add pm_clk_add_clk()
+  http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg735599.html
+
+Changes in v6:
+- delete pmu_lock
+- modify dev_lock using mutex
+- pm_clk_resume(pd->dev) change to pm_clk_resume(ed->dev)
+- pm_clk_suspend(pd->dev) change to pm_clk_suspend(ed->dev)
+- add devm_kfree(pd->dev, de) in rockchip_pm_domain_detach_dev
+
+Changes in v5:
+- delete idle_lock
+- add timeout in rockchip_pmu_set_idle_request()
+
+Changes in v4:
+- use list storage dev
+
+Changes in v3:
+- change use pm_clk_resume() and pm_clk_suspend()
+- DT structure has changed
+- Decomposition power-controller, changed to multiple controller
+   (gpu-power-controller, hevc-power-controller)
+
+Changes in v2:
+- remove the "pd->pd.of_node = np"
+- move clocks to "optional"
+- make pd_vio clocks all one entry per line and alphabetize.
+- power: power-controller move back to pinctrl: pinctrl.
+
+jinkun.hong (3):
+  power-domain: add power domain drivers for Rockchip platform
+  dt-bindings: add document of Rockchip power domain
+  ARM: dts: add rk3288 power-domain node
+
+ .../bindings/arm/rockchip/power_domain.txt         |   46 +++
+ arch/arm/boot/dts/rk3288.dtsi                      |   24 ++
+ arch/arm/mach-rockchip/Kconfig                     |    1 +
+ arch/arm/mach-rockchip/Makefile                    |    1 +
+ arch/arm/mach-rockchip/pm_domains.c                |  358 ++++++++++++++++++++
+ 5 files changed, 430 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/rockchip/power_domain.txt
+ create mode 100644 arch/arm/mach-rockchip/pm_domains.c
+
+-- 
+1.7.9.5
 
