@@ -1,278 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933432AbaJVXAp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 19:00:45 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:49327 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933269AbaJVXAl (ORCPT
+	id S933509AbaJVXBb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 19:01:31 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:49654 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932743AbaJVXB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 19:00:41 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Alexandre Courbot <gnurou@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Darren Hart <dvhart@linux.intel.com>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: Re: GPIO bindings guidelines (Was: Re: [PATCH v5 10/12] gpio: Support for unified device properties interface)
-Date: Thu, 23 Oct 2014 01:21:06 +0200
-Message-ID: <13758254.acHP1NJN1b@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141022145651.GH1484@lahna.fi.intel.com>
-References: <CAAVeFuLW6fucvDxQvY5DDfnhPrgYM+1pi7WoHfBQa_BgYnc_Cw@mail.gmail.com> <1971792.8pKYWlGxB9@vostro.rjw.lan> <20141022145651.GH1484@lahna.fi.intel.com>
+	Wed, 22 Oct 2014 19:01:29 -0400
+Message-ID: <54483746.9060104@codeaurora.org>
+Date: Wed, 22 Oct 2014 16:01:26 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Grant Likely <grant.likely@linaro.org>,
+        Stanimir Varbanov <svarbanov@mm-sol.com>
+CC: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Rob Herring <robherring2@gmail.com>,
+        Rob Herring <rob.herring@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@kernel.org>
+Subject: Re: [PATCH] RFC: add function for localbus address
+References: <20140729234522.E9FF1C40738@trevor.secretlab.ca>	<1409672700-21697-1-git-send-email-svarbanov@mm-sol.com>	<20140908145204.8ADC2C40AE5@trevor.secretlab.ca>	<540E1014.8090102@codeaurora.org> <20140914044610.913E9C4102A@trevor.secretlab.ca>
+In-Reply-To: <20140914044610.913E9C4102A@trevor.secretlab.ca>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, October 22, 2014 05:56:51 PM Mika Westerberg wrote:
-> On Wed, Oct 22, 2014 at 04:07:08PM +0200, Rafael J. Wysocki wrote:
-> > Moreover, we need to clarify what situation we're really talking about.
-> > 
-> > For one, drivers using the unified interface only will always use names for
-> > GPIOs, because they have to assume that either a DT or ACPI w/ _DSD is present.
-> > This is the cost of keeping those drivers firmware interface agnostic.
-> > 
-> > So it looks like we're not talking about this case here.
-> 
-> We are talking about the case of rfkill-gpio.c where it definitely wants
-> to use properties for the GPIOs but it cannot be sure if the underlying
-> firmware provides _DSD or not.
-> 
-> > Now, if there's no DT or no _DSD in the ACPI tables for the given device
-> > *and* the driver wants to use its GPIOs anyway, it has to be ACPI-aware to
-> > some extent, because in that case the device ID it has been matched against
-> > tells it what the meaning of the GpioIo resources in the _CRS is.
-> > 
-> > Then, the driver needs to do something like:
-> > 
-> > 	if (!device_property_present(dev, "known_property_that_should_be_present")
-> > 	    && ACPI_COMPANION(dev))
-> > 		acpi_probe_gpios(dev);
-> 
-> Indeed we can use similar pattern to detect if we have _DSD present or
-> not.
-> 
-> > and in the acpi_probe_gpios() routine there may be checks like:
-> > 
-> > 	if (device_has_id(dev, "MARY0001")) {
-> > 		The first pin in the first GpioIo resource in _CRS is "fred" and
-> > 		it is active-low.
-> > 		The third pin in the second GpioIo resource in _CRS is "steve"
-> > 		and it is not active-low.
-> > 	} else if (device_has_id(dev, "JANE0002")) {
-> > 		The first pin in the second GpioIo resource in _CRS is "fred" and
-> > 		it is not active-low.
-> > 		The second pin in the first GpioIo resource in _CRS is "steve"
-> > 		and it is active-low.
-> > 	}
-> > 
-> > and so on.  Of course, there may be drivers knowing that the meaning of the
-> > GpioIo resources in _CRS is the same for all devices handled by them, in which
-> > case they will not need to check device IDs, but the core has now way of
-> > knowing that.  Only the drivers have that information and the core has now
-> > way to figure out what to do for a given specific device.
-> > 
-> > So here's a radical idea: Why don't we introduce something like
-> > 
-> > 	acpi_enumerate_gpio(dev, name, GpioIo_index, pin_index, active_low)
-> > 
-> > such that after calling, say, acpi_enumerate_gpio(dev, "fred", 0, 0, true) the
-> > driver can do something like:
-> > 
-> > 	desc = get_gpiod_by_name(dev, "fred");
-> > 
-> > and it'll all work.  Then, the only part of the driver that really needs to be
-> > ACPI-specific will be the acpi_probe_gpios() function calling acpi_enumerate_gpio()
-> > in accordance with what the device ID is.
-> > 
-> > Thoughts?
-> 
-> I think this is good idea. It solves the rfkill-gpio.c problem with just
-> small amount of ACPI specific code.
+On 09/13/2014 09:46 PM, Grant Likely wrote:
+> On Mon, 08 Sep 2014 13:22:44 -0700, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>>
+>> Where is this described? From the commit text that introduces
+>> IORESOURCE_REG I see:
+>>
+>> "Currently a bunch of I2C/SPI MFD drivers are using IORESOURCE_IO for
+>> register address ranges. Since this causes some confusion due to the
+>> primary use of this resource type for PCI/ISA I/O ports create a new
+>> resource type IORESOURCE_REG."
+> Sorry, I mistook IORESOURCE_REG or IORESOURCE_IO. You're right, this
+> isn't an issue.
+>
+> I'm still concerned about the implications of automatically populating
+> platform_devices with this resource type. I'll talk to Mark about it
+> face to fact at Connect this week.
+>
+>
 
-OK, would the below make sense, then (completely untested, on top of the v6
-of the device properties patchset)?
+Where did this end up? When we talked at Connect I think we settled on
+exploring a driver core specific API like dev_get_localbus_address()
+that calls of_get_localbus_address() for devices with an of_node and in
+the future it could call something like acpi_get_localbus_address() when
+there's an acpi_node. I believe the biggest concern is that we're making
+an API that is OF or platform bus specific when it doesn't need to be.
+Making a driver core specific API avoids this problem by making it bus
+agnostic.
 
-Rafael
+That's fine, but I still think we want to have the IORESOURCE_REG
+resources given that we have drivers in-flight and some already merged
+that are using the IORESOURCE_REG resource. Furthermore, ACPI is using
+the platform bus for MFDs so it's not like we're going to be using a
+different bus in the future for these pmic sub-device drivers if we
+decide to do pmic devices in ACPI (looks like there is at least
+precedence for that with Intel's i2c pmic). Supporting this on ACPI is
+going to take the same effort if we plumb it into the resource table or
+we plumb it into a new driver core API, so the bus agnostic angle isn't
+looking all that convincing. Not to say I'm opposed to some driver core
+specific API (that's similar to the proposed device_property_read_*()
+API) but I don't see any benefit for something that is already "unified"
+between ACPI and OF via the platform bus resources table. If the
+resources table didn't already exist I'd be more inclined to say we
+should use some new driver core API.
 
+So what's the way forward? I see a few options:
 
----
- drivers/acpi/scan.c         |    2 +
- drivers/gpio/gpiolib-acpi.c |   80 ++++++++++++++++++++++++++++++++++++++++++--
- include/acpi/acpi_bus.h     |    1 
- include/linux/acpi.h        |   15 ++++++++
- 4 files changed, 96 insertions(+), 2 deletions(-)
+1) Take this patch after some minor tweaks
+2) Add a driver core API and fixup all drivers to use it
+3) Layer the platform resource stuff on top of a driver core API
 
-Index: linux-pm/include/acpi/acpi_bus.h
-===================================================================
---- linux-pm.orig/include/acpi/acpi_bus.h
-+++ linux-pm/include/acpi/acpi_bus.h
-@@ -355,6 +355,7 @@ struct acpi_device {
- 	struct list_head node;
- 	struct list_head wakeup_list;
- 	struct list_head del_list;
-+	struct list_head driver_gpios;
- 	struct acpi_device_status status;
- 	struct acpi_device_flags flags;
- 	struct acpi_device_pnp pnp;
-Index: linux-pm/include/linux/acpi.h
-===================================================================
---- linux-pm.orig/include/linux/acpi.h
-+++ linux-pm/include/linux/acpi.h
-@@ -672,6 +672,21 @@ do {									\
- #endif
- #endif
- 
-+#if defined(CONFIG_ACPI) && defined(CONFIG_GPIOLIB)
-+int acpi_dev_add_driver_gpio(struct acpi_device *adev, const char *propname,
-+			     int entry_index, int pin_index, bool active_low);
-+void acpi_dev_remove_driver_gpios(struct acpi_device *adev);
-+#else
-+static inline int acpi_dev_add_driver_gpio(struct acpi_device *adev,
-+					   const char *propname,
-+					   int entry_index, int pin_index,
-+					   bool active_low)
-+{
-+	return -ENXIO;
-+}
-+static inline void acpi_dev_remove_driver_gpios(struct acpi_device *adev) {}
-+#endif
-+
- /* Device properties */
- 
- #define MAX_ACPI_REFERENCE_ARGS	8
-Index: linux-pm/drivers/gpio/gpiolib-acpi.c
-===================================================================
---- linux-pm.orig/drivers/gpio/gpiolib-acpi.c
-+++ linux-pm/drivers/gpio/gpiolib-acpi.c
-@@ -47,6 +47,16 @@ struct acpi_gpio_chip {
- 	struct list_head events;
- };
- 
-+struct acpi_gpio_data {
-+	struct list_head item;
-+	char *name;
-+	int entry_index;
-+	int pin_index;
-+	bool active_low;
-+};
-+
-+static DEFINE_MUTEX(driver_gpio_data_lock);
-+
- static int acpi_gpiochip_find(struct gpio_chip *gc, void *data)
- {
- 	if (!gc->dev)
-@@ -287,6 +297,70 @@ void acpi_gpiochip_free_interrupts(struc
- 	}
- }
- 
-+int acpi_dev_add_driver_gpio(struct acpi_device *adev, const char *propname,
-+			     int entry_index, int pin_index, bool active_low)
-+{
-+	struct acpi_gpio_data *gd;
-+
-+	if (!propname)
-+		return -EINVAL;
-+
-+	gd = kzalloc(sizeof(*gd), GFP_KERNEL);
-+	if (!gd)
-+		return -ENOMEM;
-+
-+	gd->name = kstrdup(propname, GFP_KERNEL);
-+	if (!gd->name) {
-+		kfree(gd);
-+		return -ENOMEM;
-+	}
-+	gd->entry_index = entry_index;
-+	gd->pin_index = pin_index;
-+	gd->active_low = active_low;
-+
-+	mutex_lock(&driver_gpio_data_lock);
-+	list_add_tail(&gd->item, &adev->driver_gpios);
-+	mutex_unlock(&driver_gpio_data_lock);
-+
-+	return 0;
-+}
-+
-+void acpi_dev_remove_driver_gpios(struct acpi_device *adev)
-+{
-+	struct acpi_gpio_data *gd, *next;
-+
-+	mutex_lock(&driver_gpio_data_lock);
-+	list_for_each_entry_safe(gd, next, &adev->driver_gpios, item) {
-+		list_del(&gd->item);
-+		kfree(gd->name);
-+		kfree(gd);
-+	}
-+	mutex_unlock(&driver_gpio_data_lock);
-+}
-+
-+static bool acpi_get_driver_gpio_data(struct acpi_device *adev,
-+				      const char *name,
-+				      struct acpi_reference_args *args)
-+{
-+	struct acpi_gpio_data *gd;
-+
-+	mutex_lock(&driver_gpio_data_lock);
-+
-+	list_for_each_entry(gd, &adev->driver_gpios, item)
-+		if (!strcmp(name, gd->name)) {
-+			args->adev = adev;
-+			args->args[0] = gd->entry_index;
-+			args->args[1] = gd->pin_index;
-+			args->args[2] = gd->active_low;
-+			args->nargs = 3;
-+			return true;
-+		}
-+
-+	mutex_unlock(&driver_gpio_data_lock);
-+
-+	return false;
-+}
-+
- struct acpi_gpio_lookup {
- 	struct acpi_gpio_info info;
- 	int index;
-@@ -372,8 +446,10 @@ struct gpio_desc *acpi_get_gpiod_by_inde
- 		memset(&args, 0, sizeof(args));
- 		ret = acpi_dev_get_property_reference(adev, propname, NULL,
- 						      index, &args);
--		if (ret)
--			return ERR_PTR(ret);
-+		if (ret) {
-+			if (!acpi_get_driver_gpio_data(adev, propname, &args))
-+				return ERR_PTR(ret);
-+		}
- 
- 		/*
- 		 * The property was found and resolved so need to
-Index: linux-pm/drivers/acpi/scan.c
-===================================================================
---- linux-pm.orig/drivers/acpi/scan.c
-+++ linux-pm/drivers/acpi/scan.c
-@@ -1284,6 +1284,7 @@ int acpi_device_add(struct acpi_device *
- 	INIT_LIST_HEAD(&device->wakeup_list);
- 	INIT_LIST_HEAD(&device->physical_node_list);
- 	INIT_LIST_HEAD(&device->del_list);
-+	INIT_LIST_HEAD(&device->driver_gpios);
- 	mutex_init(&device->physical_node_lock);
- 
- 	new_bus_id = kzalloc(sizeof(struct acpi_device_bus_id), GFP_KERNEL);
-@@ -2354,6 +2355,7 @@ void acpi_bus_trim(struct acpi_device *a
- 	} else {
- 		device_release_driver(&adev->dev);
- 	}
-+	acpi_dev_remove_driver_gpios(adev);
- 	/*
- 	 * Most likely, the device is going away, so put it into D3cold before
- 	 * that.
+I'd prefer we went with option #1.
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+a Linux Foundation Collaborative Project
 
