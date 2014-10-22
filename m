@@ -1,282 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932114AbaJVSct (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 14:32:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40463 "EHLO mx1.redhat.com"
+	id S1754648AbaJVShW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 14:37:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29710 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754657AbaJVScr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 14:32:47 -0400
-Message-ID: <1414002755.4202.253.camel@ul30vt.home>
-Subject: Re: [PATCH v4] PCI: add kernel parameter to override devid<->driver
- mapping.
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Marcel Apfelbaum <marcel.a@redhat.com>
-Cc: linux-pci@vger.kernel.org, bhelgaas@google.com,
-        linux-kernel@vger.kernel.org, marcel@redhat.com, mst@redhat.com,
-        Stuart Yoder <stuart.yoder@freescale.com>
-Date: Wed, 22 Oct 2014 12:32:35 -0600
-In-Reply-To: <1413813882-27047-1-git-send-email-marcel.a@redhat.com>
-References: <1413813882-27047-1-git-send-email-marcel.a@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752079AbaJVShU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 14:37:20 -0400
+Date: Wed, 22 Oct 2014 21:40:14 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Christopher Covington <cov@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        David Drysdale <drysdale@google.com>,
+        Piotr =?iso-8859-1?Q?Kr=F3l?= <piotr.krol@3mdeb.com>,
+        Bjarke Istrup Pedersen <gurligebis@gentoo.org>,
+        Anup Patel <anup.patel@linaro.org>,
+        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH RFC v2 01/16] virtio: memory access APIs
+Message-ID: <20141022184014.GA10919@redhat.com>
+References: <1413992894-22976-1-git-send-email-mst@redhat.com>
+ <1413992894-22976-2-git-send-email-mst@redhat.com>
+ <5447ED53.2030502@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5447ED53.2030502@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[cc+ stuart]
+On Wed, Oct 22, 2014 at 01:45:55PM -0400, Christopher Covington wrote:
+> Hi Michael,
+> 
+> On 10/22/2014 11:50 AM, Michael S. Tsirkin wrote:
+> > virtio 1.0 makes all memory structures LE, so
+> > we need APIs to conditionally do a byteswap on BE
+> > architectures.
+> > 
+> > To make it easier to check code statically,
+> > add virtio specific types for multi-byte integers
+> > in memory.
+> > 
+> > Add low level wrappers that do a byteswap conditionally, these will be
+> > useful e.g. for vhost.  Add high level wrappers that will (in the
+> > future) query device endian-ness and act accordingly.
+> > 
+> > At the moment, stub them out and assume native endian-ness everywhere.
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> >  include/linux/virtio_config.h    | 16 +++++++++++++
+> >  include/uapi/linux/virtio_ring.h | 49 ++++++++++++++++++++--------------------
+> >  include/uapi/linux/Kbuild        |  1 +
+> >  3 files changed, 42 insertions(+), 24 deletions(-)
+> > 
+> > diff --git a/include/linux/virtio_config.h b/include/linux/virtio_config.h
+> > index 7f4ef66..d38d3c2 100644
+> > --- a/include/linux/virtio_config.h
+> > +++ b/include/linux/virtio_config.h
+> > @@ -4,6 +4,7 @@
+> >  #include <linux/err.h>
+> >  #include <linux/bug.h>
+> >  #include <linux/virtio.h>
+> > +#include <linux/virtio_byteorder.h>
+> 
+> What patch creates this file?
 
-On Mon, 2014-10-20 at 17:04 +0300, Marcel Apfelbaum wrote:
-> Scanning a lot of devices during boot requires a lot of time.
-> On other scenarios there is a need to bind a driver to a specific slot.
+Oops I forgot to git add it.
+Will resend.
+
+> >  #include <uapi/linux/virtio_config.h>
+> >  
+> >  /**
+> > @@ -152,6 +153,21 @@ int virtqueue_set_affinity(struct virtqueue *vq, int cpu)
+> >  	return 0;
+> >  }
+> >  
+> > +/* Memory accessors */
+> > +#define DEFINE_VIRTIO_XX_TO_CPU(bits) \
+> > +static inline u##bits virtio##bits##_to_cpu(struct virtio_device *vdev, __virtio##bits val) \
+> > +{ \
+> > +	return __virtio##bits##_to_cpu(false, val); \
+> > +} \
+> > +static inline __virtio##bits cpu_to_virtio##bits(struct virtio_device *vdev, u##bits val) \
+> > +{ \
+> > +	return __cpu_to_virtio##bits(false, val); \
+> > +}
+> > +
+> > +DEFINE_VIRTIO_XX_TO_CPU(16)
+> > +DEFINE_VIRTIO_XX_TO_CPU(32)
+> > +DEFINE_VIRTIO_XX_TO_CPU(64)
+> > +
+> >  /* Config space accessors. */
+> >  #define virtio_cread(vdev, structname, member, ptr)			\
+> >  	do {								\
+> > diff --git a/include/uapi/linux/virtio_ring.h b/include/uapi/linux/virtio_ring.h
+> > index a99f9b7..6c00632 100644
+> > --- a/include/uapi/linux/virtio_ring.h
+> > +++ b/include/uapi/linux/virtio_ring.h
+> > @@ -32,6 +32,7 @@
+> >   *
+> >   * Copyright Rusty Russell IBM Corporation 2007. */
+> >  #include <linux/types.h>
+> > +#include <linux/virtio_types.h>
+> >  
+> >  /* This marks a buffer as continuing via the next field. */
+> >  #define VRING_DESC_F_NEXT	1
+> > @@ -61,32 +62,32 @@
+> >  /* Virtio ring descriptors: 16 bytes.  These can chain together via "next". */
+> >  struct vring_desc {
+> >  	/* Address (guest-physical). */
+> > -	__u64 addr;
+> > +	__virtio64 addr;
+> >  	/* Length. */
+> > -	__u32 len;
+> > +	__virtio32 len;
+> >  	/* The flags as indicated above. */
+> > -	__u16 flags;
+> > +	__virtio16 flags;
+> >  	/* We chain unused descriptors via this, too */
+> > -	__u16 next;
+> > +	__virtio16 next;
+> >  };
 > 
-> Binding devices to pci-stub driver does not work,
-> as it will not differentiate between devices of the
-> same type. Using some start scripts is error prone.
+> How does __virtio64 differ from __le64?
 > 
-> The solution leverages driver_override functionality introduced by
-> 
-> 	commit: 782a985d7af26db39e86070d28f987cad21313c0
-> 	Author: Alex Williamson <alex.williamson@redhat.com>
-> 	Date:   Tue May 20 08:53:21 2014 -0600
-> 
->     	PCI: Introduce new device binding path using pci_dev.driver_override
-> 
-> In order to bind PCI slots to specific drivers use:
-> 	pci=driver[xxxx:xx:xx.x]=foo,driver[xxxx:xx:xx.x]=bar,...
-> 
-> Signed-off-by: Marcel Apfelbaum <marcel.a@redhat.com>
-> ---
-> v3 -> v4:
->  - Addressed Alex Williamson's comments:
->    - Modified the type of driver_override_entry's fields
->    - Used PCI_DEVFN when appropriated
->    - Removed redundant checks
->    - Replaced BUG_ON with pr_err messages
->    - Simpler command line parsing
->  - Addressed Michael S. Tsirkin comments
->    - removed DRIVER_OVERRIDE_NAME_LENGTH limitation
-> v2 -> v3:
->  - Corrected subject line
-> v1 -> v2:
->  - Addressed Michael S. Tsirkin comments
->    - Removed 32 slots limitation
->    - Better handling of memory allocation failures
->      (preferred BUG_ON over error messages)
->  - Addressed Alex Williamson's comments:
->    - Modified commit message to show parameter usage more clear.
->  - I preferred to re-use parse_args instead of manually using
->    strstr in order to better comply with command line parsing
->    rules.
->  - I didn't use any locking when parsing the command line args
->    (see parse_done usage) assuming that first call will be
->    early in system boot and no race can occur. Please correct
->    me if I am wrong.
-> 
-> Notes:
->  - I have further ideas on top of this patch based on your reviews.
->    I thought of:
->    - Use wildcards to specify entire buses/devices, something like:
->      	driver[0001:02:*.*]=pci-stub
->    - Use comma to separate several devices:
->      	driver[0001:02:03.4,0001:02:04.0,...]=pci-stub
->    - Make domain optional:
->    	driver[00:03.0]=pci-stub
-> 
-> Comments will be appreciated,
 > Thanks,
-> Marcel
->  Documentation/kernel-parameters.txt |   4 ++
->  drivers/pci/bus.c                   | 111 ++++++++++++++++++++++++++++++++++++
->  drivers/pci/pci.c                   |   2 +
->  3 files changed, 117 insertions(+)
+> Chris
 
-The driver_override feature that we're making use of here is also going
-to be supported by platform devices and potentially more bustypes in the
-future, so I'm concerned that making a pci specific kernel parameter is
-too shortsighted.  Instead we could hook on to BUS_NOTIFY_ADD_DEVICE for
-bustypes that support driver_override so we can have a common interface.
-Perhaps:
+__le64 would require cpu_to_le, I wanted to force the use
+of our byte swapping macros.
 
-driver_override=pci,0000:02:00.0=pci-stub;platform,fakename=vfio-platform
-
-Finding delimiters that don't conflict may be challenging.  Also, can we
-assume that bus-name:dev-name is unique for every bustype?  It is for
-pci, platform?
-
-It also seems like there's a question of how long should this override
-last and how does the user disable it?  I think with pci-stub.ids=
-$VENDOR:$DEVICE a user can echo the IDs to the pci-stub/remove_id sysfs
-entry to cancel the effect.  The only option here seems to be a reboot.
-Do we need a /sys/bus/pci/driver_overrides/{add_name,remove_name} for
-this interface?  Thanks,
-
-Alex
-
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index 5ae8608..c1cbb4c 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -2631,6 +2631,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  		pcie_scan_all	Scan all possible PCIe devices.  Otherwise we
->  				only look for one device below a PCIe downstream
->  				port.
-> +		driver		Provide an override to the devid<->driver mapping
-> +				for a specific slot.
-> +				Bind PCI slot 0001:02:03.4 to pci-stub by:
-> +					driver[0001:02:03.4]=pci-stub
->  
->  	pcie_aspm=	[PCIE] Forcibly enable or disable PCIe Active State Power
->  			Management.
-> diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
-> index 73aef51..b49f5cc 100644
-> --- a/drivers/pci/bus.c
-> +++ b/drivers/pci/bus.c
-> @@ -15,6 +15,8 @@
->  #include <linux/proc_fs.h>
->  #include <linux/slab.h>
->  
-> +#include <asm/setup.h>
-> +
->  #include "pci.h"
->  
->  void pci_add_resource_offset(struct list_head *resources, struct resource *res,
-> @@ -230,6 +232,114 @@ EXPORT_SYMBOL(pci_bus_alloc_resource);
->  
->  void __weak pcibios_resource_survey_bus(struct pci_bus *bus) { }
->  
-> +struct driver_override_entry {
-> +	u16 domain;
-> +	u8 bus;
-> +	u8 devfn;
-> +	char *driver_name;
-> +	struct list_head list;
-> +};
-> +
-> +static LIST_HEAD(driver_override_entries);
-> +
-> +static int pci_device_parse_driver_override(char *param, char *val,
-> +					    const char *unused)
-> +{
-> +	unsigned int domain, bus, dev, fn;
-> +	char  *buf;
-> +	struct driver_override_entry *entry;
-> +	int ret;
-> +
-> +	buf = kmalloc(COMMAND_LINE_SIZE, GFP_KERNEL);
-> +	if (!buf)
-> +		goto err_buf;
-> +
-> +	while (val) {
-> +		char *k = strchr(val, ',');
-> +
-> +		if (k)
-> +			*k++ = 0;
-> +
-> +		if (strncmp(val, "driver", 6)) {
-> +			val = k;
-> +			continue;
-> +		}
-> +
-> +		memset(buf, 0, COMMAND_LINE_SIZE);
-> +		ret = sscanf(val + 6, "[%4x:%2x:%2x.%2x]=%s",
-> +			     &domain, &bus, &dev, &fn, buf);
-> +		if (ret != 5) {
-> +			pr_warn("PCI: Invalid command line: %s\n", val);
-> +			val = k;
-> +			continue;
-> +		}
-> +
-> +		entry = kzalloc(sizeof(*entry), GFP_KERNEL);
-> +		if (!entry)
-> +			goto err_entry;
-> +
-> +		INIT_LIST_HEAD(&entry->list);
-> +		entry->domain = domain;
-> +		entry->bus = bus;
-> +		entry->devfn = PCI_DEVFN(dev, fn);
-> +		entry->driver_name = kstrdup(buf, GFP_KERNEL);
-> +		if (!entry->driver_name)
-> +			goto err_driver_name;
-> +
-> +		list_add_tail(&entry->list, &driver_override_entries);
-> +		val = k;
-> +	}
-> +
-> +	kfree(buf);
-> +	return 0;
-> +
-> +err_driver_name:
-> +	kfree(entry);
-> +
-> +err_entry:
-> +	kfree(buf);
-> +
-> +err_buf:
-> +	pr_err("PCI: Out of memory while parsing command line: %s\n", val);
-> +	return -ENOMEM;
-> +}
-> +
-> +static void pci_device_setup_driver_override(struct pci_dev *dev)
-> +{
-> +	static int parse_done;
-> +	struct driver_override_entry *entry;
-> +
-> +	if (!parse_done) {
-> +		char *cmdline = kstrdup(saved_command_line, GFP_KERNEL);
-> +
-> +		if (!cmdline)
-> +			goto err_out_of_mem;
-> +
-> +		parse_args("pci", cmdline, NULL,
-> +			   0, 0, 0, &pci_device_parse_driver_override);
-> +		kfree(cmdline);
-> +		parse_done = 1;
-> +	}
-> +
-> +	list_for_each_entry(entry, &driver_override_entries, list) {
-> +		if (pci_domain_nr(dev->bus) != entry->domain ||
-> +		    dev->bus->number != entry->bus ||
-> +		    dev->devfn != entry->devfn)
-> +			continue;
-> +
-> +		dev->driver_override = kstrdup(entry->driver_name, GFP_KERNEL);
-> +		if (!dev->driver_override)
-> +			goto err_out_of_mem;
-> +
-> +		break;
-> +	}
-> +
-> +	return;
-> +
-> +err_out_of_mem:
-> +	pr_err("PCI: Out of memory while setting up driver override\n");
-> +}
-> +
->  /**
->   * pci_bus_add_device - start driver for a single device
->   * @dev: device to add
-> @@ -245,6 +355,7 @@ void pci_bus_add_device(struct pci_dev *dev)
->  	 * are not assigned yet for some devices.
->  	 */
->  	pci_fixup_device(pci_fixup_final, dev);
-> +	pci_device_setup_driver_override(dev);
->  	pci_create_sysfs_dev_files(dev);
->  	pci_proc_attach_device(dev);
->  
-> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> index 625a4ac..37809d4 100644
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -4508,6 +4508,8 @@ static int __init pci_setup(char *str)
->  				pcie_bus_config = PCIE_BUS_PEER2PEER;
->  			} else if (!strncmp(str, "pcie_scan_all", 13)) {
->  				pci_add_flags(PCI_SCAN_ALL_PCIE_DEVS);
-> +			} else if (!strncmp(str, "driver", 6)) {
-> +				/* lazy evaluation by the pci subsystem */
->  			} else {
->  				printk(KERN_ERR "PCI: Unknown option `%s'\n",
->  						str);
-
-
-
+> -- 
+> Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> a Linux Foundation Collaborative Project
