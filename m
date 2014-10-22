@@ -1,211 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755633AbaJVP42 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 11:56:28 -0400
-Received: from resqmta-po-07v.sys.comcast.net ([96.114.154.166]:43479 "EHLO
-	resqmta-po-07v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755522AbaJVPzd (ORCPT
+	id S932184AbaJVP4s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 11:56:48 -0400
+Received: from resqmta-po-03v.sys.comcast.net ([96.114.154.162]:40622 "EHLO
+	resqmta-po-03v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755144AbaJVPzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 11:55:33 -0400
-Message-Id: <20141022155527.158407162@linux.com>
-Date: Wed, 22 Oct 2014 10:55:20 -0500
+	Wed, 22 Oct 2014 11:55:32 -0400
+Message-Id: <20141022155527.049450988@linux.com>
+Date: Wed, 22 Oct 2014 10:55:19 -0500
 From: Christoph Lameter <cl@linux.com>
 To: akpm@linuxfoundation.org
 Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org,
         Thomas Gleixner <tglx@linutronix.de>
 Cc: linux-mm@kvack.org, penberg@kernel.org, iamjoonsoo@lge.com
-Subject: [RFC 3/4] slub: Drop ->page field from kmem_cache_cpu
+Subject: [RFC 2/4] slub: Use end_token instead of NULL to terminate freelists
 References: <20141022155517.560385718@linux.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=slub_drop_kmem_cache_cpu_page_Field
+Content-Disposition: inline; filename=slub_use_end_token_instead_of_null
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dropping the page field is possible since the page struct address
-of an object or a freelist pointer can now always be calcualted from
-the address. No freelist pointer will be NULL anymore so use
-NULL to signify the condition that the current cpu has no
-percpu slab attached to it.
+Ending a list with NULL means that the termination of a list is the same
+for all slab pages. The pointers of freelists otherwise always are
+pointing to the address space of the page. Make termination of a
+list possible by setting the lowest bit in the freelist address
+and use the start address of a page if no other address is available
+for  list termination.
+
+This will allow us to determine the page struct address from a
+freelist pointer in the future.
 
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/include/linux/slub_def.h
-===================================================================
---- linux.orig/include/linux/slub_def.h
-+++ linux/include/linux/slub_def.h
-@@ -40,7 +40,6 @@ enum stat_item {
- struct kmem_cache_cpu {
- 	void **freelist;	/* Pointer to next available object */
- 	unsigned long tid;	/* Globally unique transaction id */
--	struct page *page;	/* The slab from which we are allocating */
- 	struct page *partial;	/* Partially allocated frozen slabs */
- #ifdef CONFIG_SLUB_STATS
- 	unsigned stat[NR_SLUB_STAT_ITEMS];
 Index: linux/mm/slub.c
 ===================================================================
 --- linux.orig/mm/slub.c
 +++ linux/mm/slub.c
-@@ -1611,7 +1611,6 @@ static void *get_partial_node(struct kme
- 
- 		available += objects;
- 		if (!object) {
--			c->page = page;
- 			stat(s, ALLOC_FROM_PARTIAL);
- 			object = t;
- 		} else {
-@@ -2049,10 +2048,9 @@ static void put_cpu_partial(struct kmem_
- static inline void flush_slab(struct kmem_cache *s, struct kmem_cache_cpu *c)
- {
- 	stat(s, CPUSLAB_FLUSH);
--	deactivate_slab(s, c->page, c->freelist);
-+	deactivate_slab(s, virt_to_head_page(c->freelist), c->freelist);
- 
- 	c->tid = next_tid(c->tid);
--	c->page = NULL;
- 	c->freelist = NULL;
+@@ -132,6 +132,16 @@ static inline bool kmem_cache_has_cpu_pa
+ #endif
  }
  
-@@ -2066,7 +2064,7 @@ static inline void __flush_cpu_slab(stru
- 	struct kmem_cache_cpu *c = per_cpu_ptr(s->cpu_slab, cpu);
++static bool is_end_token(const void *freelist)
++{
++	return ((unsigned long)freelist) & 1;
++}
++
++static void *end_token(const void *address)
++{
++	return (void *)((unsigned long)address | 1);
++}
++
+ /*
+  * Issues still to be resolved:
+  *
+@@ -234,7 +244,7 @@ static inline int check_valid_pointer(st
  
- 	if (likely(c)) {
--		if (c->page)
-+		if (c->freelist)
- 			flush_slab(s, c);
+ 	base = page_address(page);
+ 	if (object < base || object >= base + page->objects * s->size ||
+-		(object - base) % s->size) {
++		((object - base) % s->size && !is_end_token(object))) {
+ 		return 0;
+ 	}
  
- 		unfreeze_partials(s, c);
-@@ -2085,7 +2083,7 @@ static bool has_cpu_slab(int cpu, void *
- 	struct kmem_cache *s = info;
- 	struct kmem_cache_cpu *c = per_cpu_ptr(s->cpu_slab, cpu);
+@@ -451,7 +461,7 @@ static void get_map(struct kmem_cache *s
+ 	void *p;
+ 	void *addr = page_address(page);
  
--	return c->page || c->partial;
-+	return c->freelist || c->partial;
+-	for (p = page->freelist; p; p = get_freepointer(s, p))
++	for (p = page->freelist; !is_end_token(p); p = get_freepointer(s, p))
+ 		set_bit(slab_index(p, s, addr), map);
  }
  
- static void flush_all(struct kmem_cache *s)
-@@ -2186,7 +2184,7 @@ static inline void *new_slab_objects(str
+@@ -829,7 +839,7 @@ static int check_object(struct kmem_cach
+ 		 * of the free objects in this slab. May cause
+ 		 * another error because the object count is now wrong.
+ 		 */
+-		set_freepointer(s, p, NULL);
++		set_freepointer(s, p, end_token(page_address(page)));
+ 		return 0;
+ 	}
+ 	return 1;
+@@ -874,7 +884,7 @@ static int on_freelist(struct kmem_cache
+ 	unsigned long max_objects;
+ 
+ 	fp = page->freelist;
+-	while (fp && nr <= page->objects) {
++	while (!is_end_token(fp) && nr <= page->objects) {
+ 		if (fp == search)
+ 			return 1;
+ 		if (!check_valid_pointer(s, page, fp)) {
+@@ -1033,7 +1043,7 @@ bad:
+ 		 */
+ 		slab_fix(s, "Marking all objects used");
+ 		page->inuse = page->objects;
+-		page->freelist = NULL;
++		page->freelist = end_token(page_address(page));
+ 	}
+ 	return 0;
+ }
+@@ -1401,7 +1411,7 @@ static struct page *new_slab(struct kmem
+ 		if (likely(idx < page->objects))
+ 			set_freepointer(s, p, p + s->size);
+ 		else
+-			set_freepointer(s, p, NULL);
++			set_freepointer(s, p, end_token(start));
+ 	}
+ 
+ 	page->freelist = start;
+@@ -1544,12 +1554,11 @@ static inline void *acquire_slab(struct
+ 	freelist = page->freelist;
+ 	counters = page->counters;
+ 	new.counters = counters;
++	new.freelist = freelist;
+ 	*objects = new.objects - new.inuse;
+ 	if (mode) {
+ 		new.inuse = page->objects;
+-		new.freelist = NULL;
+-	} else {
+-		new.freelist = freelist;
++		new.freelist = end_token(freelist);
+ 	}
+ 
+ 	VM_BUG_ON(new.frozen);
+@@ -1785,7 +1794,7 @@ static void deactivate_slab(struct kmem_
+ 	struct page new;
+ 	struct page old;
+ 
+-	if (page->freelist) {
++	if (!is_end_token(page->freelist)) {
+ 		stat(s, DEACTIVATE_REMOTE_FREES);
+ 		tail = DEACTIVATE_TO_TAIL;
+ 	}
+@@ -1798,7 +1807,8 @@ static void deactivate_slab(struct kmem_
+ 	 * There is no need to take the list->lock because the page
+ 	 * is still frozen.
+ 	 */
+-	while (freelist && (nextfree = get_freepointer(s, freelist))) {
++	if (freelist)
++	    while (!is_end_token(freelist) && (nextfree = get_freepointer(s, freelist))) {
+ 		void *prior;
+ 		unsigned long counters;
+ 
+@@ -1816,7 +1826,8 @@ static void deactivate_slab(struct kmem_
+ 			"drain percpu freelist"));
+ 
+ 		freelist = nextfree;
+-	}
++	} else
++		freelist = end_token(page_address(page));
+ 
+ 	/*
+ 	 * Stage two: Ensure that the page is unfrozen while the
+@@ -1840,7 +1851,7 @@ redo:
+ 
+ 	/* Determine target state of the slab */
+ 	new.counters = old.counters;
+-	if (freelist) {
++	if (!is_end_token(freelist)) {
+ 		new.inuse--;
+ 		set_freepointer(s, freelist, old.freelist);
+ 		new.freelist = freelist;
+@@ -1851,7 +1862,7 @@ redo:
+ 
+ 	if (!new.inuse && n->nr_partial >= s->min_partial)
+ 		m = M_FREE;
+-	else if (new.freelist) {
++	else if (!is_end_token(new.freelist)) {
+ 		m = M_PARTIAL;
+ 		if (!lock) {
+ 			lock = 1;
+@@ -2169,7 +2180,7 @@ static inline void *new_slab_objects(str
+ 
+ 	freelist = get_partial(s, flags, node, c);
+ 
+-	if (freelist)
++	if (freelist && !is_end_token(freelist))
+ 		return freelist;
+ 
  	page = new_slab(s, flags, node);
- 	if (page) {
- 		c = raw_cpu_ptr(s->cpu_slab);
--		if (c->page)
-+		if (c->freelist)
- 			flush_slab(s, c);
- 
- 		/*
-@@ -2197,7 +2195,6 @@ static inline void *new_slab_objects(str
- 		page->freelist = end_token(freelist);
+@@ -2183,7 +2194,7 @@ static inline void *new_slab_objects(str
+ 		 * muck around with it freely without cmpxchg
+ 		 */
+ 		freelist = page->freelist;
+-		page->freelist = NULL;
++		page->freelist = end_token(freelist);
  
  		stat(s, ALLOC_SLAB);
--		c->page = page;
- 		*pc = c;
- 	} else
- 		freelist = NULL;
-@@ -2280,9 +2277,10 @@ static void *__slab_alloc(struct kmem_ca
- 	c = this_cpu_ptr(s->cpu_slab);
- #endif
+ 		c->page = page;
+@@ -2226,11 +2237,11 @@ static inline void *get_freelist(struct
+ 		VM_BUG_ON(!new.frozen);
  
--	page = c->page;
--	if (!page)
-+	if (!c->freelist || is_end_token(c->freelist))
- 		goto new_slab;
-+
-+	page = virt_to_head_page(c->freelist);
- redo:
+ 		new.inuse = page->objects;
+-		new.frozen = freelist != NULL;
++		new.frozen = !is_end_token(freelist);
  
- 	if (unlikely(!node_match(page, node))) {
-@@ -2311,7 +2309,7 @@ redo:
- 	freelist = get_freelist(s, page);
+ 	} while (!__cmpxchg_double_slab(s, page,
+ 		freelist, counters,
+-		NULL, new.counters,
++		end_token(freelist), new.counters,
+ 		"get_freelist"));
  
- 	if (!freelist || is_end_token(freelist)) {
--		c->page = NULL;
-+		c->freelist = NULL;
- 		stat(s, DEACTIVATE_BYPASS);
- 		goto new_slab;
- 	}
-@@ -2324,7 +2322,7 @@ load_freelist:
- 	 * page is pointing to the page from which the objects are obtained.
- 	 * That page must be frozen for per cpu allocations to work.
- 	 */
--	VM_BUG_ON(!c->page->frozen);
-+	VM_BUG_ON(!virt_to_head_page(freelist)->frozen);
- 	c->freelist = get_freepointer(s, freelist);
- 	c->tid = next_tid(c->tid);
- 	local_irq_restore(flags);
-@@ -2332,16 +2330,15 @@ load_freelist:
+ 	return freelist;
+@@ -2282,7 +2293,6 @@ redo:
  
- deactivate:
- 	deactivate_slab(s, page, c->freelist);
--	c->page = NULL;
- 	c->freelist = NULL;
- 
- new_slab:
- 
- 	if (c->partial) {
--		page = c->page = c->partial;
-+		page = c->partial;
- 		c->partial = page->next;
- 		stat(s, CPU_PARTIAL_ALLOC);
--		c->freelist = NULL;
-+		c->freelist = end_token(page_address(page));
- 		goto redo;
+ 		if (unlikely(!node_match(page, searchnode)))
+ 			goto deactivate;
+-		}
  	}
  
-@@ -2353,7 +2350,7 @@ new_slab:
- 		return NULL;
- 	}
+ 	/*
+@@ -2295,12 +2305,12 @@ redo:
  
--	page = c->page;
-+	page = virt_to_head_page(freelist);
- 	if (likely(!kmem_cache_debug(s) && pfmemalloc_match(page, gfpflags)))
+ 	/* must check again c->freelist in case of cpu migration or IRQ */
+ 	freelist = c->freelist;
+-	if (freelist)
++	if (freelist && !is_end_token(freelist))
  		goto load_freelist;
  
-@@ -2363,7 +2360,6 @@ new_slab:
- 		goto new_slab;	/* Slab failed checks. Next slab needed */
+ 	freelist = get_freelist(s, page);
  
- 	deactivate_slab(s, page, get_freepointer(s, freelist));
--	c->page = NULL;
- 	c->freelist = NULL;
- 	local_irq_restore(flags);
- 	return freelist;
-@@ -2384,7 +2380,6 @@ static __always_inline void *slab_alloc_
- {
- 	void **object;
- 	struct kmem_cache_cpu *c;
--	struct page *page;
- 	unsigned long tid;
- 
- 	if (slab_pre_alloc_hook(s, gfpflags))
-@@ -2416,8 +2411,7 @@ redo:
- 	preempt_enable();
+-	if (!freelist) {
++	if (!freelist || is_end_token(freelist)) {
+ 		c->page = NULL;
+ 		stat(s, DEACTIVATE_BYPASS);
+ 		goto new_slab;
+@@ -2407,7 +2418,7 @@ redo:
  
  	object = c->freelist;
--	page = c->page;
--	if (unlikely(!object || is_end_token(object) || !node_match(page, node))) {
-+	if (unlikely(!object || is_end_token(object) || !node_match(virt_to_head_page(object), node))) {
+ 	page = c->page;
+-	if (unlikely(!object || !node_match(page, node))) {
++	if (unlikely(!object || is_end_token(object) || !node_match(page, node))) {
  		object = __slab_alloc(s, gfpflags, node, addr, c);
  		stat(s, ALLOC_SLOWPATH);
  	} else {
-@@ -2665,7 +2659,7 @@ redo:
- 	tid = c->tid;
- 	preempt_enable();
+@@ -2537,9 +2548,9 @@ static void __slab_free(struct kmem_cach
+ 		new.counters = counters;
+ 		was_frozen = new.frozen;
+ 		new.inuse--;
+-		if ((!new.inuse || !prior) && !was_frozen) {
++		if ((!new.inuse || is_end_token(prior)) && !was_frozen) {
  
--	if (likely(page == c->page)) {
-+	if (likely(c->freelist && page == virt_to_head_page(c->freelist))) {
- 		set_freepointer(s, object, c->freelist);
+-			if (kmem_cache_has_cpu_partial(s) && !prior) {
++			if (kmem_cache_has_cpu_partial(s) && is_end_token(prior)) {
  
- 		if (unlikely(!this_cpu_cmpxchg_double(
-@@ -4191,10 +4185,10 @@ static ssize_t show_slab_objects(struct
- 			int node;
- 			struct page *page;
- 
--			page = ACCESS_ONCE(c->page);
--			if (!page)
-+			if (!c->freelist)
- 				continue;
- 
-+			page = virt_to_head_page(c->freelist);
- 			node = page_to_nid(page);
- 			if (flags & SO_TOTAL)
- 				x = page->objects;
+ 				/*
+ 				 * Slab was on no list before and will be
+@@ -2596,7 +2607,7 @@ static void __slab_free(struct kmem_cach
+ 	 * Objects left in the slab. If it was not on the partial list before
+ 	 * then add it.
+ 	 */
+-	if (!kmem_cache_has_cpu_partial(s) && unlikely(!prior)) {
++	if (!kmem_cache_has_cpu_partial(s) && unlikely(is_end_token(prior))) {
+ 		if (kmem_cache_debug(s))
+ 			remove_full(s, n, page);
+ 		add_partial(n, page, DEACTIVATE_TO_TAIL);
 
