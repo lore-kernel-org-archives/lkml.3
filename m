@@ -1,66 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933059AbaJVL0r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 07:26:47 -0400
-Received: from smtp-vbr9.xs4all.nl ([194.109.24.29]:3324 "EHLO
-	smtp-vbr9.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932685AbaJVL0p (ORCPT
+	id S933166AbaJVL1W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 07:27:22 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:31211 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932729AbaJVL1V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 07:26:45 -0400
-Message-ID: <5447946B.9020007@xs4all.nl>
-Date: Wed, 22 Oct 2014 13:26:35 +0200
-From: Hans Verkuil <hverkuil@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Wed, 22 Oct 2014 07:27:21 -0400
+X-IronPort-AV: E=Sophos;i="5.04,768,1406563200"; 
+   d="scan'208";a="37725585"
+Message-ID: <5447938C.5010304@cn.fujitsu.com>
+Date: Wed, 22 Oct 2014 19:22:52 +0800
+From: Chai Wen <chaiw.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
-        LMML <linux-media@vger.kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>
-Subject: Re: [PATCH 10/15] media: davinci: vpbe: add support for VIDIOC_CREATE_BUFS
-References: <1413146445-7304-1-git-send-email-prabhakar.csengg@gmail.com> <1413146445-7304-11-git-send-email-prabhakar.csengg@gmail.com>
-In-Reply-To: <1413146445-7304-11-git-send-email-prabhakar.csengg@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Mark Rutland <mark.rutland@arm.com>
+CC: Will Deacon <Will.Deacon@arm.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "yuichi.kusakabe@jp.fujitsu.com" <yuichi.kusakabe@jp.fujitsu.com>
+Subject: Re: [PATCH 2/2] ARM: perf: armv7: wrap unsupported arch init functions
+ via micro
+References: <1413966107-11881-1-git-send-email-chaiw.fnst@cn.fujitsu.com> <1413966107-11881-2-git-send-email-chaiw.fnst@cn.fujitsu.com> <20141022110128.GE22642@leverpostej>
+In-Reply-To: <20141022110128.GE22642@leverpostej>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.161]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
+On 10/22/2014 07:01 PM, Mark Rutland wrote:
 
-This patch series looks good, except for this one.
+> Hi,
+> 
+> On Wed, Oct 22, 2014 at 09:21:47AM +0100, chai wen wrote:
+>> Signed-off-by: chai wen <chaiw.fnst@cn.fujitsu.com>
+>> ---
+>>  arch/arm/kernel/perf_event_v7.c |   52 +++++++++-----------------------------
+>>  1 files changed, 13 insertions(+), 39 deletions(-)
+> 
+> I'm currently in the process of decoupling perf_event_{xscale,v6,v7}.c,
+> which will result in the removal of these stubs and for the ARMv7,
+> ARMv6, and XScale perf backends.
+> 
+> I haven't yet posted all the patches, but the basic idea is to make the
+> arm_pmu code stateless and turn it into a library used by each of the
+> three backends mentioned above. Each would have their own pmu_probe_info
+> table (introduced in [1]), and would support the platform device IDs
+> introduced in commit 253d8c3d2518ca6f (arm: perf: add more specific
+> platform device IDs). The stubs would no longer be necessary.
+> 
+> [1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/295822.html
 
-If you add create_bufs support, then you should also update queue_setup.
 
-If the fmt argument to queue_setup is non-NULL, then check that the
-fmt.pix.sizeimage field is >= the current format's sizeimage. If not,
-return -EINVAL.
+Hi Mark
 
-This prevents userspace from creating additional buffers that are smaller than
-the minimum required size.
+Got it.
 
-I'm just skipping this patch and queuing all the others for 3.19. Just post an
-updated version for this one and I'll pick it up later.
+Thanks for your information.
+Your patches looks reasonable, I am OK with it.
 
-Regards,
+thanks
+chai wen
 
-	Hans
+> 
+> Thanks,
+> Mark.
+> 
+>>
+>> diff --git a/arch/arm/kernel/perf_event_v7.c b/arch/arm/kernel/perf_event_v7.c
+>> index f66a9b8..6c088e8 100644
+>> --- a/arch/arm/kernel/perf_event_v7.c
+>> +++ b/arch/arm/kernel/perf_event_v7.c
+>> @@ -1459,43 +1459,17 @@ static int krait_pmu_init(struct arm_pmu *cpu_pmu)
+>>  	return 0;
+>>  }
+>>  #else
+>> -static inline int armv7_a8_pmu_init(struct arm_pmu *cpu_pmu)
+>> -{
+>> -	return -ENODEV;
+>> -}
+>> -
+>> -static inline int armv7_a9_pmu_init(struct arm_pmu *cpu_pmu)
+>> -{
+>> -	return -ENODEV;
+>> -}
+>> -
+>> -static inline int armv7_a5_pmu_init(struct arm_pmu *cpu_pmu)
+>> -{
+>> -	return -ENODEV;
+>> -}
+>> -
+>> -static inline int armv7_a15_pmu_init(struct arm_pmu *cpu_pmu)
+>> -{
+>> -	return -ENODEV;
+>> -}
+>> -
+>> -static inline int armv7_a7_pmu_init(struct arm_pmu *cpu_pmu)
+>> -{
+>> -	return -ENODEV;
+>> -}
+>> -
+>> -static inline int armv7_a12_pmu_init(struct arm_pmu *cpu_pmu)
+>> -{
+>> -	return -ENODEV;
+>> -}
+>> -
+>> -static inline int armv7_a17_pmu_init(struct arm_pmu *cpu_pmu)
+>> -{
+>> -	return -ENODEV;
+>> -}
+>> -
+>> -static inline int krait_pmu_init(struct arm_pmu *cpu_pmu)
+>> -{
+>> -	return -ENODEV;
+>> -}
+>> +#define WRAP_UNSUPPORTED_INIT(__FUNC)                           \
+>> +static inline int __FUNC(struct arm_pmu *cpu_pmu)               \
+>> +{                                                               \
+>> +        return -ENODEV;                                         \
+>> +}
+>> +WRAP_UNSUPPORTED_INIT(armv7_a8_pmu_init);
+>> +WRAP_UNSUPPORTED_INIT(armv7_a9_pmu_init);
+>> +WRAP_UNSUPPORTED_INIT(armv7_a5_pmu_init);
+>> +WRAP_UNSUPPORTED_INIT(armv7_a15_pmu_init);
+>> +WRAP_UNSUPPORTED_INIT(armv7_a7_pmu_init);
+>> +WRAP_UNSUPPORTED_INIT(armv7_a12_pmu_init);
+>> +WRAP_UNSUPPORTED_INIT(armv7_a17_pmu_init);
+>> +WRAP_UNSUPPORTED_INIT(krait_pmu_init);
+>>  #endif	/* CONFIG_CPU_V7 */
+>> -- 
+>> 1.7.1
+>>
+>>
+>> _______________________________________________
+>> linux-arm-kernel mailing list
+>> linux-arm-kernel@lists.infradead.org
+>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>>
+> .
+> 
 
-On 10/12/2014 10:40 PM, Lad, Prabhakar wrote:
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> ---
->   drivers/media/platform/davinci/vpbe_display.c | 1 +
->   1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/media/platform/davinci/vpbe_display.c b/drivers/media/platform/davinci/vpbe_display.c
-> index c33b77e..fd8d4f0 100644
-> --- a/drivers/media/platform/davinci/vpbe_display.c
-> +++ b/drivers/media/platform/davinci/vpbe_display.c
-> @@ -1260,6 +1260,7 @@ static const struct v4l2_ioctl_ops vpbe_ioctl_ops = {
->   	.vidioc_dqbuf		 = vb2_ioctl_dqbuf,
->   	.vidioc_streamon	 = vb2_ioctl_streamon,
->   	.vidioc_streamoff	 = vb2_ioctl_streamoff,
-> +	.vidioc_create_bufs	 = vb2_ioctl_create_bufs,
->
->   	.vidioc_cropcap		 = vpbe_display_cropcap,
->   	.vidioc_g_crop		 = vpbe_display_g_crop,
->
+
+
+-- 
+Regards
+
+Chai Wen
