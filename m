@@ -1,85 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751967AbaJVNtP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 09:49:15 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40374 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751483AbaJVNtO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 09:49:14 -0400
-Date: Wed, 22 Oct 2014 14:48:33 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] tty/serial: earlycon: Fix print for implied MMIO case
-Message-ID: <20141022134833.GJ22642@leverpostej>
-References: <1413536471-3454-1-git-send-email-galak@codeaurora.org>
+	id S1751974AbaJVNvd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 09:51:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40503 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751071AbaJVNvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 09:51:31 -0400
+Date: Wed, 22 Oct 2014 15:51:31 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Vladimir Davydov <vdavydov@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memcg: remove mem_cgroup_reclaimable check from soft
+ reclaim
+Message-ID: <20141022135131.GB30802@dhcp22.suse.cz>
+References: <1413897350-32553-1-git-send-email-vdavydov@parallels.com>
+ <20141021182239.GA24899@phnom.home.cmpxchg.org>
+ <20141022112116.GA30802@dhcp22.suse.cz>
+ <20141022124025.GA17161@phnom.home.cmpxchg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1413536471-3454-1-git-send-email-galak@codeaurora.org>
-Thread-Topic: [PATCH] tty/serial: earlycon: Fix print for implied MMIO case
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141022124025.GA17161@phnom.home.cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 17, 2014 at 10:01:11AM +0100, Kumar Gala wrote:
-> For the case in which we just provide an address as an argument to the
-> earlycon console type like:
+On Wed 22-10-14 08:40:25, Johannes Weiner wrote:
+> On Wed, Oct 22, 2014 at 01:21:16PM +0200, Michal Hocko wrote:
+> > On Tue 21-10-14 14:22:39, Johannes Weiner wrote:
+> > [...]
+> > > From 27bd24b00433d9f6c8d60ba2b13dbff158b06c13 Mon Sep 17 00:00:00 2001
+> > > From: Johannes Weiner <hannes@cmpxchg.org>
+> > > Date: Tue, 21 Oct 2014 09:53:54 -0400
+> > > Subject: [patch] mm: memcontrol: do not filter reclaimable nodes in NUMA
+> > >  round-robin
+> > > 
+> > > The round-robin node reclaim currently tries to include only nodes
+> > > that have memory of the memcg in question, which is quite elaborate.
+> > > 
+> > > Just use plain round-robin over the nodes that are allowed by the
+> > > task's cpuset, which are the most likely to contain that memcg's
+> > > memory.  But even if zones without memcg memory are encountered,
+> > > direct reclaim will skip over them without too much hassle.
+> > 
+> > I do not think that using the current's node mask is correct. Different
+> > tasks in the same memcg might be bound to different nodes and then a set
+> > of nodes might be reclaimed much more if a particular task hits limit
+> > more often. It also doesn't make much sense from semantical POV, we are
+> > reclaiming memcg so the mask should be union of all tasks allowed nodes.
 > 
-> earlycon=msm_serial_dm,0xf991e000
+> Unless the cpuset hierarchy is separate from the memcg hierarchy, all
+> tasks in the memcg belong to the same cpuset.  And the whole point of
+> cpusets is that a group of tasks has the same nodemask, no?
 
-Personally it would be nice to see this when using pl011 as an earlyon.
-Currently I get:
+Memory limit and memory placement are orthogonal configurations and they
+might be stacked one on top of other in both directions.
+ 
+> Sure, there are *possible* configurations for which this assumption
+> breaks, like multiple hierarchies, but are they sensible?  Do we care?
 
-  Early serial console at I/O port 0x0 (options '')
+Why wouldn't they be sensible? What is wrong about limiting memory of
+a load which internally uses node placement for its components?
 
-With this patch I get:
-
-  Early serial console at MMIO 0x7ff80000 (options '')
-
-> We would report this as an IO port based mapping and not as MMIO.  Simple
-> fix to use the port->iotype to decide which message to print.
+> > What we do currently is overly complicated though and I agree that there
+> > is no good reason for it.
+> > Let's just s@cpuset_current_mems_allowed@node_online_map@ and round
+> > robin over all nodes. As you said we do not have to optimize for empty
+> > zones.
 > 
-> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+> That was what I first had.  And cpuset_current_mems_allowed defaults
+> to node_online_map, but once the user sets up cpusets in conjunction
+> with memcgs, it seems to be the preferred value.
+> 
+> The other end of this is that if you have 16 nodes and use cpuset to
+> bind the task to node 14 and 15, round-robin iterations of node 1-13
+> will reclaim the group's memory on 14 and only the 15 iteration will
+> actually look at memory from node 15 first.
 
-Acked-by: Mark RUtland <mark.rutland@arm.com>
+mem_cgroup_select_victim_node can check reclaimability of the memcg
+(hierarchy) and skip nodes without pages. Or would that be too
+expensive? We are in the slow path already.
 
-Thanks,
-Mark.
+> It seems using the cpuset bindings, while theoretically independent,
+> would do the right thing for all intents and purposes.
 
-> ---
->  drivers/tty/serial/earlycon.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/tty/serial/earlycon.c b/drivers/tty/serial/earlycon.c
-> index a514ee6..64fe25a 100644
-> --- a/drivers/tty/serial/earlycon.c
-> +++ b/drivers/tty/serial/earlycon.c
-> @@ -98,7 +98,7 @@ static int __init parse_options(struct earlycon_device *device,
->  		strlcpy(device->options, options, length);
->  	}
->  
-> -	if (mmio || mmio32)
-> +	if (port->iotype == UPIO_MEM || port->iotype == UPIO_MEM32)
->  		pr_info("Early serial console at MMIO%s 0x%llx (options '%s')\n",
->  			mmio32 ? "32" : "",
->  			(unsigned long long)port->mapbase,
-> -- 
-> Qualcomm Innovation Center, Inc.
->  The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
->  a Linux Foundation Collaborative Project
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
+Only if cpuset is on top of memcg. Not the other way around as mentioned
+above (possible node over-reclaim).
+-- 
+Michal Hocko
+SUSE Labs
