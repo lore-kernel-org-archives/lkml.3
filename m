@@ -1,202 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933456AbaJVXoT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 19:44:19 -0400
-Received: from galahad.ideasonboard.com ([185.26.127.97]:43238 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932969AbaJVXoS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 19:44:18 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
-Cc: linux-media@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        wsa@the-dreams.de, lars@metafoo.de
-Subject: Re: [PATCH 2/2] adv7604: Add support for i2c_new_secondary_device
-Date: Thu, 23 Oct 2014 02:44:14 +0300
-Message-ID: <3127348.3KALimKvms@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.14.14-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <1413991848-28495-2-git-send-email-jean-michel.hautbois@vodalys.com>
-References: <1413991848-28495-1-git-send-email-jean-michel.hautbois@vodalys.com> <1413991848-28495-2-git-send-email-jean-michel.hautbois@vodalys.com>
+	id S1754601AbaJVXru (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 19:47:50 -0400
+Received: from mout.gmx.net ([212.227.17.22]:52000 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753598AbaJVXrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 19:47:49 -0400
+Message-ID: <54484219.5000708@gmx.de>
+Date: Thu, 23 Oct 2014 01:47:37 +0200
+From: Hartmut Knaack <knaack.h@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:32.0) Gecko/20100101 Firefox/32.0 SeaMonkey/2.29
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
+        Brian Vandre <bvandre@gmail.com>
+CC: gregkh@linuxfoundation.org, jic23@kernel.org,
+        alexandre.belloni@free-electrons.com, linux-iio@vger.kernel.org,
+        marex@denx.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Staging: iio: adc: fix line over 80 characters
+References: <cover.1413858979.git.bvandre@gmail.com> <cover.1413931615.git.bvandre@gmail.com> <ec4b497827f6c7615f6b5eef5669144f8c68d034.1413931615.git.bvandre@gmail.com> <20141022042115.GA2530@sudip-PC>
+In-Reply-To: <20141022042115.GA2530@sudip-PC>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:80CAnsV5dQHAX78zR5frZ/k0cMHMTR5AxVxIRpjU2T4rgsuBuI5
+ nY2Nv3xanbDmu9GrBMHtSJzLaE6SJAcDlPFcqUlCemrXYPrk9YKTXNT6xZKg/8F011cbnOp
+ OcgeeDsoLZCxUor0u0NK5zySxWYm5ovdTbFQQjhhieHAuiwQcuVqSiYCrvPDC4tqETY3EbQ
+ hxVKlwEPb6X9DcR6MTj/Q==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean-Michel,
-
-Thank you for the patch.
-
-On Wednesday 22 October 2014 17:30:48 Jean-Michel Hautbois wrote:
-> The ADV7604 has thirteen 256-byte maps that can be accessed via the main
-> I²C ports. Each map has it own I²C address and acts
-> as a standard slave device on the I²C bus.
+Sudip Mukherjee schrieb am 22.10.2014 06:21:
+> On Tue, Oct 21, 2014 at 05:56:47PM -0500, Brian Vandre wrote:
+>> This fixes the 2 checkpatch.pl warnings:
+>> WARNING: line over 80 characters
+>>
+> please check your patch with --strict option of checkpatch.pl , and you will get :
+> "Alignment should match open parenthesis" .
 > 
-> If nothing is defined, it uses default addresses.
-> The main purpose is using two adv76xx on the same i2c bus.
+Good point, but what solution would you propose?
+> thanks
+> sudip
 > 
-> Signed-off-by: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
-> ---
->  .../devicetree/bindings/media/i2c/adv7604.txt      | 16 +++++-
->  drivers/media/i2c/adv7604.c                        | 59 ++++++++++++-------
->  2 files changed, 53 insertions(+), 22 deletions(-)
+>> Signed-off-by: Brian Vandre <bvandre@gmail.com>
+>> ---
+>>  drivers/staging/iio/adc/mxs-lradc.c | 6 ++++--
+>>  1 file changed, 4 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/staging/iio/adc/mxs-lradc.c b/drivers/staging/iio/adc/mxs-lradc.c
+>> index 32a1926..62449a6 100644
+>> --- a/drivers/staging/iio/adc/mxs-lradc.c
+>> +++ b/drivers/staging/iio/adc/mxs-lradc.c
+>> @@ -455,7 +455,8 @@ static void mxs_lradc_setup_ts_channel(struct mxs_lradc *lradc, unsigned ch)
+>>  	 * SoC's delay unit and start the conversion later
+>>  	 * and automatically.
+>>  	 */
+>> -	mxs_lradc_reg_wrt(lradc, LRADC_DELAY_TRIGGER(0) | /* don't trigger ADC */
+>> +	mxs_lradc_reg_wrt(lradc,
+>> +		LRADC_DELAY_TRIGGER(0) | /* don't trigger ADC */
+>>  		LRADC_DELAY_TRIGGER_DELAYS(1 << 3) | /* trigger DELAY unit#3 */
+>>  		LRADC_DELAY_KICK |
+>>  		LRADC_DELAY_DELAY(lradc->settling_delay),
+>> @@ -513,7 +514,8 @@ static void mxs_lradc_setup_ts_pressure(struct mxs_lradc *lradc, unsigned ch1,
+>>  	 * SoC's delay unit and start the conversion later
+>>  	 * and automatically.
+>>  	 */
+>> -	mxs_lradc_reg_wrt(lradc, LRADC_DELAY_TRIGGER(0) | /* don't trigger ADC */
+>> +	mxs_lradc_reg_wrt(lradc,
+>> +		LRADC_DELAY_TRIGGER(0) | /* don't trigger ADC */
+>>  		LRADC_DELAY_TRIGGER_DELAYS(1 << 3) | /* trigger DELAY unit#3 */
+>>  		LRADC_DELAY_KICK |
+>>  		LRADC_DELAY_DELAY(lradc->settling_delay), LRADC_DELAY(2));
+>> -- 
+>> 1.9.1
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
-> diff --git a/Documentation/devicetree/bindings/media/i2c/adv7604.txt
-> b/Documentation/devicetree/bindings/media/i2c/adv7604.txt index
-> 5c8b3e6..8486b5c 100644
-> --- a/Documentation/devicetree/bindings/media/i2c/adv7604.txt
-> +++ b/Documentation/devicetree/bindings/media/i2c/adv7604.txt
-> @@ -12,7 +12,10 @@ Required Properties:
->      - "adi,adv7611" for the ADV7611
->      - "adi,adv7604" for the ADV7604
-
-Given that I'll have comment on the independent patch that adds support for 
-the adv7604, you should rebase this series to remote that dependency if you 
-want to get it merged now, otherwise it will get delayed.
-
-> 
-> -  - reg: I2C slave address
-> +  - reg: I2C slave addresses
-> +    The ADV7604 has thirteen 256-byte maps that can be accessed via the
-> main
-> +    I²C ports. Each map has it own I²C address and acts
-> +    as a standard slave device on the I²C bus.
-> 
->    - hpd-gpios: References to the GPIOs that control the HDMI hot-plug
->      detection pins, one per HDMI input. The active flag indicates the GPIO
-> @@ -33,6 +36,12 @@ The digital output port node must contain at least one
-> endpoint. Optional Properties:
-> 
->    - reset-gpios: Reference to the GPIO connected to the device's reset pin.
-> +  - reg-names : Names of maps with programmable addresses.
-> +		It can contain any map needing another address than default one.
-> +		Possible maps names are :
-> +ADV7604 : "main", "avlink", "cec", "infoframe", "esdp", "dpp", "afe",
-> "rep",
-> +		"edid", "hdmi", "test", "cp", "vdp"
-
-If you rebase the series in order to avoid depending on the adv7604 DT support 
-patch this line should be moved to "adv7604: Add DT parsing support".
-
-> +ADV7611 : "main", "cec", "infoframe", "afe", "rep", "edid", "hdmi", "cp"
-> 
->  Optional Endpoint Properties:
-> 
-> @@ -51,7 +60,10 @@ Example:
-> 
->  	hdmi_receiver@4c {
->  		compatible = "adi,adv7611";
-> -		reg = <0x4c>;
-> +		/* edid page will be accessible @ 0x66 on i2c bus */
-> +		/* other maps keep their default addresses */
-> +		reg = <0x4c 0x66>;
-> +		reg-names = "main", "edid";
-> 
->  		reset-gpios = <&ioexp 0 GPIO_ACTIVE_LOW>;
->  		hpd-gpios = <&ioexp 2 GPIO_ACTIVE_HIGH>;
-> diff --git a/drivers/media/i2c/adv7604.c b/drivers/media/i2c/adv7604.c
-> index 421035f..e4e30a2 100644
-> --- a/drivers/media/i2c/adv7604.c
-> +++ b/drivers/media/i2c/adv7604.c
-> @@ -326,6 +326,27 @@ static const struct adv7604_video_standards
-> adv7604_prim_mode_hdmi_gr[] = { { },
->  };
-> 
-> +struct adv7604_register {
-> +	const char *name;
-> +	u8 default_addr;
-> +};
-> +
-> +static const struct adv7604_register adv7604_secondary_names[] = {
-> +	[ADV7604_PAGE_IO] = { "main", 0x4c },
-> +	[ADV7604_PAGE_AVLINK] = { "avlink", 0x42 },
-> +	[ADV7604_PAGE_CEC] = { "cec", 0x40 },
-> +	[ADV7604_PAGE_INFOFRAME] = { "infoframe", 0x3e },
-> +	[ADV7604_PAGE_ESDP] = { "esdp", 0x38 },
-> +	[ADV7604_PAGE_DPP] = { "dpp", 0x3c },
-> +	[ADV7604_PAGE_AFE] = { "afe", 0x26 },
-> +	[ADV7604_PAGE_REP] = { "rep", 0x32 },
-> +	[ADV7604_PAGE_EDID] = { "edid", 0x36 },
-> +	[ADV7604_PAGE_HDMI] = { "hdmi", 0x34 },
-> +	[ADV7604_PAGE_TEST] = { "test", 0x30 },
-> +	[ADV7604_PAGE_CP] = { "cp", 0x22 },
-> +	[ADV7604_PAGE_VDP] = { "vdp", 0x24 },
-> +};
-> +
->  /* -----------------------------------------------------------------------
-> */
-> 
->  static inline struct adv7604_state *to_state(struct v4l2_subdev *sd)
-> @@ -2528,13 +2549,26 @@ static void adv7604_unregister_clients(struct
-> adv7604_state *state) }
-> 
->  static struct i2c_client *adv7604_dummy_client(struct v4l2_subdev *sd,
-> -							u8 addr, u8 io_reg)
-> +						unsigned int i)
->  {
->  	struct i2c_client *client = v4l2_get_subdevdata(sd);
-> +	struct adv7604_platform_data *pdata = client->dev.platform_data;
-> +	unsigned int io_reg = 0xf2 + i;
-> +	unsigned int default_addr = io_read(sd, io_reg) >> 1;
-
-The variable isn't used.
-
-> +	struct i2c_client *new_client;
-> +
-> +	if (pdata && pdata->i2c_addresses[i])
-> +		new_client = i2c_new_dummy(client->adapter,
-> +					pdata->i2c_addresses[i]);
-> +	else
-> +		new_client = i2c_new_secondary_device(client,
-> +			adv7604_secondary_names[i].name,
-> +			adv7604_secondary_names[i].default_addr);
-> +
-> +	if (new_client)
-> +		io_write(sd, io_reg, new_client->addr << 1);
-> 
-> -	if (addr)
-> -		io_write(sd, io_reg, addr << 1);
-> -	return i2c_new_dummy(client->adapter, io_read(sd, io_reg) >> 1);
-> +	return new_client;
->  }
-> 
->  static const struct adv7604_reg_seq adv7604_recommended_settings_afe[] = {
-> @@ -2718,20 +2752,6 @@ static int adv7604_parse_dt(struct adv7604_state
-> *state) /* Disable the interrupt for now as no DT-based board uses it. */
-> state->pdata.int1_config = ADV7604_INT1_CONFIG_DISABLED;
-> 
-> -	/* Use the default I2C addresses. */
-> -	state->pdata.i2c_addresses[ADV7604_PAGE_AVLINK] = 0x42;
-> -	state->pdata.i2c_addresses[ADV7604_PAGE_CEC] = 0x40;
-> -	state->pdata.i2c_addresses[ADV7604_PAGE_INFOFRAME] = 0x3e;
-> -	state->pdata.i2c_addresses[ADV7604_PAGE_ESDP] = 0x38;
-> -	state->pdata.i2c_addresses[ADV7604_PAGE_DPP] = 0x3c;
-> -	state->pdata.i2c_addresses[ADV7604_PAGE_AFE] = 0x26;
-> -	state->pdata.i2c_addresses[ADV7604_PAGE_REP] = 0x32;
-> -	state->pdata.i2c_addresses[ADV7604_PAGE_EDID] = 0x36;
-> -	state->pdata.i2c_addresses[ADV7604_PAGE_HDMI] = 0x34;
-> -	state->pdata.i2c_addresses[ADV7604_PAGE_TEST] = 0x30;
-> -	state->pdata.i2c_addresses[ADV7604_PAGE_CP] = 0x22;
-> -	state->pdata.i2c_addresses[ADV7604_PAGE_VDP] = 0x24;
-> -
->  	/* Hardcode the remaining platform data fields. */
->  	state->pdata.disable_pwrdnb = 0;
->  	state->pdata.disable_cable_det_rst = 0;
-> @@ -2892,8 +2912,7 @@ static int adv7604_probe(struct i2c_client *client,
->  			continue;
-> 
->  		state->i2c_clients[i] =
-> -			adv7604_dummy_client(sd, state->pdata.i2c_addresses[i],
-> -					     0xf2 + i);
-> +			adv7604_dummy_client(sd, i);
->  		if (state->i2c_clients[i] == NULL) {
->  			err = -ENOMEM;
->  			v4l2_err(sd, "failed to create i2c client %u\n", i);
-
--- 
-Regards,
-
-Laurent Pinchart
 
