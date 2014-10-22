@@ -1,95 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933256AbaJVLxu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 07:53:50 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:50647 "EHLO arroyo.ext.ti.com"
+	id S933303AbaJVLx4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 07:53:56 -0400
+Received: from mta-out1.inet.fi ([62.71.2.194]:42508 "EHLO jenni1.inet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932723AbaJVLxs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 07:53:48 -0400
-Message-ID: <54479AB8.2010106@ti.com>
-Date: Wed, 22 Oct 2014 17:23:28 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S932723AbaJVLxx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 07:53:53 -0400
+Date: Wed, 22 Oct 2014 14:53:04 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        tglx@linutronix.de, akpm@linux-foundation.org, riel@redhat.com,
+        mgorman@suse.de, oleg@redhat.com, mingo@redhat.com, minchan@kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
+        laijs@cn.fujitsu.com, dave@stgolabs.net, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC][PATCH 3/6] mm: VMA sequence count
+Message-ID: <20141022115304.GA31486@node.dhcp.inet.fi>
+References: <20141020215633.717315139@infradead.org>
+ <20141020222841.361741939@infradead.org>
+ <20141022112657.GG30588@node.dhcp.inet.fi>
+ <20141022113951.GB21513@worktop.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Vivek Gautam <gautam.vivek@samsung.com>, <linux-usb@vger.kernel.org>
-CC: <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <balbi@ti.com>, <kgene.kim@samsung.com>,
-        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>
-Subject: Re: [PATCH v2 2/4] phy: exynos5-usbdrd: Add pipe-clk and utmi-clk
- support
-References: <1412677176-3850-1-git-send-email-gautam.vivek@samsung.com> <1412677176-3850-3-git-send-email-gautam.vivek@samsung.com>
-In-Reply-To: <1412677176-3850-3-git-send-email-gautam.vivek@samsung.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141022113951.GB21513@worktop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tuesday 07 October 2014 03:49 PM, Vivek Gautam wrote:
-> Exynos7 SoC has now separate gate control for 125MHz pipe3 phy
-> clock, as well as 60MHz utmi phy clock.
-> So get the same and control in the phy-exynos5-usbdrd driver.
+On Wed, Oct 22, 2014 at 01:39:51PM +0200, Peter Zijlstra wrote:
+> On Wed, Oct 22, 2014 at 02:26:57PM +0300, Kirill A. Shutemov wrote:
+> > On Mon, Oct 20, 2014 at 11:56:36PM +0200, Peter Zijlstra wrote:
+> > > Wrap the VMA modifications (vma_adjust/unmap_page_range) with sequence
+> > > counts such that we can easily test if a VMA is changed.
+> > > 
+> > > The unmap_page_range() one allows us to make assumptions about
+> > > page-tables; when we find the seqcount hasn't changed we can assume
+> > > page-tables are still valid.
+> > > 
+> > > The flip side is that we cannot distinguish between a vma_adjust() and
+> > > the unmap_page_range() -- where with the former we could have
+> > > re-checked the vma bounds against the address.
+> > 
+> > You only took care about changing size of VMA or unmap. What about other
+> > aspects of VMA. How would you care about race with mprotect(2)?
+> > 
+> > 		CPU0						CPU1
+> >  mprotect()
+> >    mprotect_fixup()
+> >      vma_merge()
+> >        [ maybe update vm_sequence ]
+> >     						[ page fault kicks in ]
+> > 						  do_anonymous_page()
+> > 						    entry = mk_pte(page, fe->vma->vm_page_prot);
+> >      vma_set_page_prot(vma)
+> >        [ update vma->vm_page_prot ]
+> >      change_protection()
+> > 						    pte_map_lock()
+> > 						      [ vm_sequence is ok ]
+> > 						    set_pte_at(entry) // With old vm_page_prot!!!
+> > 
 > 
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> ---
->  .../devicetree/bindings/phy/samsung-phy.txt        |    4 ++++
->  drivers/phy/phy-exynos5-usbdrd.c                   |   22 ++++++++++++++++++++
->  2 files changed, 26 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/phy/samsung-phy.txt b/Documentation/devicetree/bindings/phy/samsung-phy.txt
-> index 15e0f2c..c2bc9dc 100644
-> --- a/Documentation/devicetree/bindings/phy/samsung-phy.txt
-> +++ b/Documentation/devicetree/bindings/phy/samsung-phy.txt
-> @@ -138,6 +138,10 @@ Required properties:
->  	       PHY operations, associated by phy name. It is used to
->  	       determine bit values for clock settings register.
->  	       For Exynos5420 this is given as 'sclk_usbphy30' in CMU.
-> +	- optional clocks: Exynos7 SoC has now following additional
-> +			   gate clocks available:
-> +			   - phy_pipe: for PIPE3 phy
-> +			   - phy_utmi: for UTMI+ phy
->  - samsung,pmu-syscon: phandle for PMU system controller interface, used to
->  		      control pmu registers for power isolation.
->  - #phy-cells : from the generic PHY bindings, must be 1;
-> diff --git a/drivers/phy/phy-exynos5-usbdrd.c b/drivers/phy/phy-exynos5-usbdrd.c
-> index f756aca..013ee84 100644
-> --- a/drivers/phy/phy-exynos5-usbdrd.c
-> +++ b/drivers/phy/phy-exynos5-usbdrd.c
-> @@ -148,6 +148,8 @@ struct exynos5_usbdrd_phy_drvdata {
->   * @dev: pointer to device instance of this platform device
->   * @reg_phy: usb phy controller register memory base
->   * @clk: phy clock for register access
-> + * @pipeclk: clock for pipe3 phy
-> + * @utmiclk: clock for utmi+ phy
->   * @drv_data: pointer to SoC level driver data structure
->   * @phys[]: array for 'EXYNOS5_DRDPHYS_NUM' number of PHY
->   *	    instances each with its 'phy' and 'phy_cfg'.
-> @@ -161,6 +163,8 @@ struct exynos5_usbdrd_phy {
->  	struct device *dev;
->  	void __iomem *reg_phy;
->  	struct clk *clk;
-> +	struct clk *pipeclk;
-> +	struct clk *utmiclk;
->  	const struct exynos5_usbdrd_phy_drvdata *drv_data;
->  	struct phy_usb_instance {
->  		struct phy *phy;
-> @@ -446,6 +450,8 @@ static int exynos5_usbdrd_phy_power_on(struct phy *phy)
->  
->  	dev_dbg(phy_drd->dev, "Request to power_on usbdrd_phy phy\n");
->  
-> +	clk_prepare_enable(phy_drd->utmiclk);
-> +	clk_prepare_enable(phy_drd->pipeclk);
+> This won't happen, this is be serialized by the PTL and the fault
+> validates that the PTE is the 'same' it started out with after acquiring
+> the PTL.
 
-We can have a separate function for powering on/off usb3 phy and usb2 phy
-independently. That way if the USB controller is operating only on high speed
-mode, the pipe clock need not be enabled at all.
+Em, no. In this case change_protection() will not touch the pte, since
+it's pte_none() and the pte_same() check will pass just fine.
 
-I think we should create separate PHYs (phy_create) for usb2 phy and usb3 phy
-here. Please refer how Lee Jones did that for miphy365x modelling each PHY as a
-child node to the PHY provider and doing phy_create for each child node.
-
-Thanks
-Kishon
+-- 
+ Kirill A. Shutemov
