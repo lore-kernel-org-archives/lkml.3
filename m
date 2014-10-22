@@ -1,115 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932AbaJVFod (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 01:44:33 -0400
-Received: from [42.62.48.242] ([42.62.48.242]:37942 "EHLO manager.mioffice.cn"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750831AbaJVFob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 01:44:31 -0400
-From: =?gb2312?B?1uy71A==?= <zhuhui@xiaomi.com>
-To: Pavel Machek <pavel@denx.de>
-CC: "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mina86@mina86.com" <mina86@mina86.com>,
-        "aneesh.kumar@linux.vnet.ibm.com" <aneesh.kumar@linux.vnet.ibm.com>,
-        "iamjoonsoo.kim@lge.com" <iamjoonsoo.kim@lge.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        "riel@redhat.com" <riel@redhat.com>,
-        "mgorman@suse.de" <mgorman@suse.de>,
-        "minchan@kernel.org" <minchan@kernel.org>,
-        "nasa4836@gmail.com" <nasa4836@gmail.com>,
-        "ddstreet@ieee.org" <ddstreet@ieee.org>,
-        "hughd@google.com" <hughd@google.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "rientjes@google.com" <rientjes@google.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "atomlin@redhat.com" <atomlin@redhat.com>,
-        "raistlin@linux.it" <raistlin@linux.it>, "axboe@fb.com" <axboe@fb.com>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "kirill.shutemov@linux.intel.com" <kirill.shutemov@linux.intel.com>,
-        "n-horiguchi@ah.jp.nec.com" <n-horiguchi@ah.jp.nec.com>,
-        "k.khlebnikov@samsung.com" <k.khlebnikov@samsung.com>,
-        "msalter@redhat.com" <msalter@redhat.com>,
-        "deller@gmx.de" <deller@gmx.de>,
-        "tangchen@cn.fujitsu.com" <tangchen@cn.fujitsu.com>,
-        "ben@decadent.org.uk" <ben@decadent.org.uk>,
-        "akinobu.mita@gmail.com" <akinobu.mita@gmail.com>,
-        "lauraa@codeaurora.org" <lauraa@codeaurora.org>,
-        "vbabka@suse.cz" <vbabka@suse.cz>,
-        "sasha.levin@oracle.com" <sasha.levin@oracle.com>,
-        "vdavydov@parallels.com" <vdavydov@parallels.com>,
-        "suleiman@google.com" <suleiman@google.com>,
+	id S1751507AbaJVF71 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 01:59:27 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:45863 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750884AbaJVF7Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 01:59:25 -0400
+Message-ID: <1413957522.7070.5.camel@debian>
+Subject: Re: [PATCH] x86, MCE: support memory error recovery for both UCNA
+ and Deferred error in machine_check_poll
+From: Chen Yucong <slaoub@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Andi Kleen <ak@linux.intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Borislav Petkov <bp@alien8.de>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 1/4] (CMA_AGGRESSIVE) Add CMA_AGGRESSIVE to Kconfig
-Thread-Topic: [PATCH 1/4] (CMA_AGGRESSIVE) Add CMA_AGGRESSIVE to Kconfig
-Thread-Index: AQHP6PJVlMR9bONqakO6B9lMcs478w==
-Date: Wed, 22 Oct 2014 05:44:24 +0000
-Message-ID: <2c27ad87839b42ca85c03c9541550d30@cnbox4.mioffice.cn>
-References: <1413430551-22392-1-git-send-email-zhuhui@xiaomi.com>
- <1413430551-22392-2-git-send-email-zhuhui@xiaomi.com>
- <201410220126.s9M1Qita026502@spam.xiaomi.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [106.37.216.50]
-Content-Type: text/plain; charset="gb2312"
-MIME-Version: 1.0
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Tony Luck <tony.luck@gmail.com>
+Date: Wed, 22 Oct 2014 13:58:42 +0800
+In-Reply-To: <1412921020.3631.7.camel@debian>
+References: <1412921020.3631.7.camel@debian>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9M5ic53004559
 
+On Fri, 2014-10-10 at 14:03 +0800, Chen Yucong wrote:
+> From: Chen Yucong <slaoub@gmail.com>
+> 
+> dram_ce_error() stems from Boris's patch set. Thanks!
+> Link: http://lkml.org/lkml/2014/7/1/545
+> 
+> Uncorrected no action required (UCNA) - is a UCR error that is not
+> signaled via a machine check exception and, instead, is reported to
+> system software as a corrected machine check error. UCNA errors indicate
+> that some data in the system is corrupted, but the data has not been
+> consumed and the processor state is valid and you may continue execution
+> on this processor. UCNA errors require no action from system software
+> to continue execution. Note that UCNA errors are supported by the
+> processor only when IA32_MCG_CAP[24] (MCG_SER_P) is set.
+>                                            -- Intel SDM Volume 3B
+> 
+> Deferred errors are errors that cannot be corrected by hardware, but
+> do not cause an immediate interruption in program flow, loss of data
+> integrity, or corruption of processor state. These errors indicate
+> that data has been corrupted but not consumed. Hardware writes information
+> to the status and address registers in the corresponding bank that
+> identifies the source of the error if deferred errors are enabled for
+> logging. Deferred errors are not reported via machine check exceptions;
+> they can be seen by polling the MCi_STATUS registers.
+>                                             -- ADM64 APM Volume 2
+> 
+> Above two items, both UCNA and Deferred errors belong to detected
+> errors, but they can't be corrected by hardware, and this is very
+> similar to Software Recoverable Action Optional (SRAO) errors.
+> Therefore, we can take some actions that have been used for handling
+> SRAO errors to handle UCNA and Deferred errors.
+> 
+> Signed-off-by: Chen Yucong <slaoub@gmail.com>
+> ---
+>  arch/x86/include/asm/mce.h       |    4 ++++
+>  arch/x86/kernel/cpu/mcheck/mce.c |   39 ++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 43 insertions(+)
+> 
+> diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+> index 958b90f..c9ac7df4 100644
+> --- a/arch/x86/include/asm/mce.h
+> +++ b/arch/x86/include/asm/mce.h
+> @@ -34,6 +34,10 @@
+>  #define MCI_STATUS_S	 (1ULL<<56)  /* Signaled machine check */
+>  #define MCI_STATUS_AR	 (1ULL<<55)  /* Action required */
+>  
+> +/* AMD-specific bits */
+> +#define MCI_STATUS_DEFERRED     (1ULL<<44)  /* declare an uncorrected error */
+> +#define MCI_STATUS_POISON       (1ULL<<43)  /* access poisonous data */
+> +
+>  /*
+>   * Note that the full MCACOD field of IA32_MCi_STATUS MSR is
+>   * bits 15:0.  But bit 12 is the 'F' bit, defined for corrected
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> index 61a9668ce..4030c77 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -575,6 +575,35 @@ static void mce_read_aux(struct mce *m, int i)
+>  	}
+>  }
+>  
+> +static bool dram_ce_error(struct mce *m)
+> +{
+> +	struct cpuinfo_x86 *c = &boot_cpu_data;
+> +
+> +	if (c->x86_vendor == X86_VENDOR_AMD) {
+> +		/* ErrCodeExt[20:16] */
+> +		u8 xec = (m->status >> 16) & 0x1f;
+> +
+> +		if (m->status & MCI_STATUS_DEFERRED)
+> +			return (xec == 0x0 || xec == 0x8);
+> +	} else if (c->x86_vendor == X86_VENDOR_INTEL) {
+> +		/*
+> +		 * SDM Volume 3B - 15.9.2 Compound Error Codes (Table 15-9)
+> +		 *
+> +		 * Bit 7 of the MCACOD field of IA32_MCi_STATUS is used for
+> +		 * indicating a memory error. But we can't just blindly check
+> +		 * bit 7 because if bit 8 is set, then this is a cache error,
+> +		 * and if bit 11 is set, then it is a bus/ interconnect error
+> +		 * - and either way bit 7 just gives more detail on what
+> +		 * cache/bus/interconnect error happened. Note that we can
+> +		 * ignore bit 12, as it's the "filter" bit.
+> +		 */
+> +		if ((m->mcgcap & MCG_SER_P) && (m->status & MCI_STATUS_UC))
+> +			return (m->status & 0xef80) == BIT(7);
+> +	}
+> +
+> +	return false;
+> +}
+> +
+>  DEFINE_PER_CPU(unsigned, mce_poll_count);
+>  
+>  /*
+> @@ -630,6 +659,16 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
+>  
+>  		if (!(flags & MCP_TIMESTAMP))
+>  			m.tsc = 0;
+> +
+> +		/*
+> +		 * In the cases where we don't have a valid address after all,
+> +		 * do not add it into the ring buffer.
+> +		 */
+> +		if (dram_ce_error(&m) && (m.status & MCI_STATUS_ADDRV)) {
+> +			mce_ring_add(m.addr >> PAGE_SHIFT);
+> +			mce_schedule_work();
+> +		}
+> +
+>  		/*
+>  		 * Don't get the IP here because it's unlikely to
+>  		 * have anything to do with the actual error location.
 
+Hi Boris,
 
-On 10/22/14 09:27, Pavel Machek wrote:
-> Hi!
->
->> Add CMA_AGGRESSIVE config that depend on CMA to Linux kernel config.
->> Add CMA_AGGRESSIVE_PHY_MAX, CMA_AGGRESSIVE_FREE_MIN and CMA_AGGRESSIVE_SHRINK
->> that depend on CMA_AGGRESSIVE.
->>
->> If physical memory size (not include CMA memory) in byte less than or equal to
->> CMA_AGGRESSIVE_PHY_MAX, CMA aggressive switch (sysctl vm.cma-aggressive-switch)
->> will be opened.
->
-> Ok...
->
-> Do I understand it correctly that there is some problem with
-> hibernation not working on machines not working on machines with big
-> CMA areas...?
+Do you have any comments on this patch?
 
-No, these patches want to handle this issue that most of CMA memory is 
-not allocated before lowmemorykiller or oom_killer begin to kill tasks.
+thx!
+cyc
 
->
-> But adding 4 config options end-user has no chance to set right can
-> not be the best solution, can it?
->
->> +config CMA_AGGRESSIVE_PHY_MAX
->> +	hex "Physical memory size in Bytes that auto turn on the CMA aggressive switch"
->> +	depends on CMA_AGGRESSIVE
->> +	default 0x40000000
->> +	help
->> +	  If physical memory size (not include CMA memory) in byte less than or
->> +	  equal to this value, CMA aggressive switch will be opened.
->> +	  After the Linux boot, sysctl "vm.cma-aggressive-switch" can control
->> +	  the CMA AGGRESSIVE switch.
->
-> For example... how am I expected to figure right value to place here?
-
-I agree with that.  I will update this config to auto set in next version.
-
-Thanks,
-Hui
-
->
-> 									Pavel
->
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
