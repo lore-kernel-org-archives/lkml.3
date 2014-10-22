@@ -1,65 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755306AbaJVP7t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 11:59:49 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:42827 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752541AbaJVP7q (ORCPT
+	id S1754868AbaJVPpw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 11:45:52 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:54089 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754827AbaJVPpt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 11:59:46 -0400
-Date: Wed, 22 Oct 2014 16:59:21 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Romain Perier <romain.perier@gmail.com>
-Cc: devicetree@vger.kernel.org, lgirdwood@gmail.com,
-        linux-kernel@vger.kernel.org, heiko@sntech.de, grant.likely@linaro.org,
-        robh@kernel.org, mark.rutland@arm.com
-Message-ID: <20141022155921.GA2344@sirena.org.uk>
-References: <1413268273-15151-1-git-send-email-romain.perier@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Do9hQ/bfCb4zBpLo"
-Content-Disposition: inline
-In-Reply-To: <1413268273-15151-1-git-send-email-romain.perier@gmail.com>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.174.112.79
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC v3 PATCH 1/5] of: Add standard property for poweroff
- capability
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Wed, 22 Oct 2014 11:45:49 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
+        lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: [PATCH v3 39/59] dmaengine: sh: Split device_control
+Date: Wed, 22 Oct 2014 17:43:53 +0200
+Message-Id: <1413992653-21963-40-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Split the device_control callback of the Super-H DMA driver to make use of the
+newly introduced callbacks, that will eventually be used to retrieve slave
+capabilities.
 
---Do9hQ/bfCb4zBpLo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+---
+ drivers/dma/sh/shdma-base.c | 72 +++++++++++++++++++++------------------------
+ 1 file changed, 33 insertions(+), 39 deletions(-)
 
-On Tue, Oct 14, 2014 at 06:31:09AM +0000, Romain Perier wrote:
-> Several drivers create their own devicetree property when they register
-> poweroff capabilities. This is for example the case for mfd, regulator
-> or power drivers which define "vendor,system-power-controller" property.
-> This patch adds support for a standard property "poweroff-source"
-> which marks the device as able to shutdown the system.
+diff --git a/drivers/dma/sh/shdma-base.c b/drivers/dma/sh/shdma-base.c
+index 42d497416196..706cb2611e4d 100644
+--- a/drivers/dma/sh/shdma-base.c
++++ b/drivers/dma/sh/shdma-base.c
+@@ -727,57 +727,50 @@ static struct dma_async_tx_descriptor *shdma_prep_dma_cyclic(
+ 	return desc;
+ }
+ 
+-static int shdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-			  unsigned long arg)
++static int shdma_terminate_all(struct dma_chan *chan)
+ {
+ 	struct shdma_chan *schan = to_shdma_chan(chan);
+ 	struct shdma_dev *sdev = to_shdma_dev(chan->device);
+ 	const struct shdma_ops *ops = sdev->ops;
+-	struct dma_slave_config *config;
+ 	unsigned long flags;
+-	int ret;
+ 
+-	switch (cmd) {
+-	case DMA_TERMINATE_ALL:
+-		spin_lock_irqsave(&schan->chan_lock, flags);
+-		ops->halt_channel(schan);
++	spin_lock_irqsave(&schan->chan_lock, flags);
++	ops->halt_channel(schan);
+ 
+-		if (ops->get_partial && !list_empty(&schan->ld_queue)) {
+-			/* Record partial transfer */
+-			struct shdma_desc *desc = list_first_entry(&schan->ld_queue,
+-						struct shdma_desc, node);
+-			desc->partial = ops->get_partial(schan, desc);
+-		}
++	if (ops->get_partial && !list_empty(&schan->ld_queue)) {
++		/* Record partial transfer */
++		struct shdma_desc *desc = list_first_entry(&schan->ld_queue,
++							   struct shdma_desc, node);
++		desc->partial = ops->get_partial(schan, desc);
++	}
+ 
+-		spin_unlock_irqrestore(&schan->chan_lock, flags);
++	spin_unlock_irqrestore(&schan->chan_lock, flags);
+ 
+-		shdma_chan_ld_cleanup(schan, true);
+-		break;
+-	case DMA_SLAVE_CONFIG:
+-		/*
+-		 * So far only .slave_id is used, but the slave drivers are
+-		 * encouraged to also set a transfer direction and an address.
+-		 */
+-		if (!arg)
+-			return -EINVAL;
+-		/*
+-		 * We could lock this, but you shouldn't be configuring the
+-		 * channel, while using it...
+-		 */
+-		config = (struct dma_slave_config *)arg;
+-		ret = shdma_setup_slave(schan, config->slave_id,
+-					config->direction == DMA_DEV_TO_MEM ?
+-					config->src_addr : config->dst_addr);
+-		if (ret < 0)
+-			return ret;
+-		break;
+-	default:
+-		return -ENXIO;
+-	}
++	shdma_chan_ld_cleanup(schan, true);
+ 
+ 	return 0;
+ }
+ 
++static int shdma_config(struct dma_chan *chan,
++			struct dma_slave_config *config)
++{
++	struct shdma_chan *schan = to_shdma_chan(chan);
++
++	/*
++	 * So far only .slave_id is used, but the slave drivers are
++	 * encouraged to also set a transfer direction and an address.
++	 */
++	if (!config)
++		return -EINVAL;
++	/*
++	 * We could lock this, but you shouldn't be configuring the
++	 * channel, while using it...
++	 */
++	return shdma_setup_slave(schan, config->slave_id,
++				 config->direction == DMA_DEV_TO_MEM ?
++				 config->src_addr : config->dst_addr);
++}
++
+ static void shdma_issue_pending(struct dma_chan *chan)
+ {
+ 	struct shdma_chan *schan = to_shdma_chan(chan);
+@@ -1000,7 +993,8 @@ int shdma_init(struct device *dev, struct shdma_dev *sdev,
+ 	/* Compulsory for DMA_SLAVE fields */
+ 	dma_dev->device_prep_slave_sg = shdma_prep_slave_sg;
+ 	dma_dev->device_prep_dma_cyclic = shdma_prep_dma_cyclic;
+-	dma_dev->device_control = shdma_control;
++	dma_dev->device_config = shdma_config;
++	dma_dev->device_terminate_all = shdma_terminate_all;
+ 
+ 	dma_dev->dev = dev;
+ 
+-- 
+2.1.1
 
-Applied everything except the DT update, thanks.
-
---Do9hQ/bfCb4zBpLo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUR9RYAAoJECTWi3JdVIfQHo0H/2H2SwmX3/5xD9ZRF1nfYM5K
-l8R0IES9Ks0yKogjfyC7buNJNCOskrLfB1dqqQFPMwxKw9UsqwFxy/MkK+7iV0EQ
-MWCvC9RZiJDpE1QRJJz5exb3pDJuP/kb70p8Po6dWAPHuW+ooTF6p56DfYrBiGBa
-y/PyCyA7le57z6x1uJojdgjAGyZFosXluyh9PJLLVglzKYzyqexuWIKCgr6ZuI1a
-pUg9L81yclXGBm9fiqZX8zEhe9pxqcxCpwp/6XJ0Fbf/Rqgete7t2Bgifem5Xl+S
-v7yrAfol5/EWz7jlbv1JhKUBog1Il8dzXQSe8NhGaNS4tp+kwkb9tAN8IXW7QMc=
-=rxHD
------END PGP SIGNATURE-----
-
---Do9hQ/bfCb4zBpLo--
