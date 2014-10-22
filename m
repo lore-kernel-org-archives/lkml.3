@@ -1,91 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932142AbaJUX4v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 19:56:51 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:39076 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753515AbaJUX4t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 19:56:49 -0400
-Message-ID: <5446F2C0.10309@codeaurora.org>
-Date: Tue, 21 Oct 2014 16:56:48 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S932211AbaJVABI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 20:01:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6028 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751505AbaJVABG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 20:01:06 -0400
+Date: Tue, 21 Oct 2014 20:00:54 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+cc: David Rientjes <rientjes@google.com>, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH] mm/slab_common: don't check for duplicate cache names
+Message-ID: <alpine.LRH.2.02.1410211958030.19625@file01.intranet.prod.int.rdu2.redhat.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-To: josh@joshtriplett.org, =?windows-1252?Q?Peter_H=FCwe?= <PeterHuewe@gmx.de>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: .exit.text section in vmlinux ?
-References: <201410212319.20340.PeterHuewe@gmx.de> <20141021233518.GA15840@cloud>
-In-Reply-To: <20141021233518.GA15840@cloud>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/21/2014 04:35 PM, josh@joshtriplett.org wrote:
-> On Tue, Oct 21, 2014 at 11:19:01PM +0200, Peter Hüwe wrote:
->> as far as I remember everything marked with __exit or __exit_data will only be 
->> used/called when unloading a module, and gets moved to the .exit.text or 
->> .exit.data sections.
->>
->> Why are these sections present in the vmlinux/vmlinux.bin/bzImage and not 
->> dropped by the linker or at least objdump? 
->> This code will never be called for everything compiled in - in an allyesconfig 
->> build these sections account for ~80kb of code.
->>
->> Is there something I'm missing here, or can we add "--remove-section 
->> .exit.data --remove-section .exit.text" to the OBJCOPYFLAGS for vmlinux?
-> Good catch!  I didn't realize that section even appeared in vmlinux; it
-> should be entirely omitted.
->
-> Removing it via objcopy would work, but seems suboptimal, since that
-> won't let the compiler know the functions are unused (and thus that it
-> can throw away code and data only referenced from __exit, or inline
-> functions into their now-only caller, etc).  So, ideally, when compiling
-> code in the kernel rather than in modules, we should tell the compiler
-> enough to omit functions tagged as __exit.
->
-> (Also, in the course of working on this, I discovered that several
-> files declare functions as "static inline ... __exit", which makes no
-> sense, and which actually forces an out-of-line version to exist even if
-> the function has no body.  For instance, exit_amd_microcode and
-> bcma_host_soc_unregister_driver.)
->
-> The following patch seems to mostly do the right thing, though for some
-> reason some __exit functions remain in the final binary (such as
-> md_exit and mon_exit):
->
-> --->8---
-> From 1646d051a4a4c18b9a6163fceabcafa20628c728 Mon Sep 17 00:00:00 2001
-> From: Josh Triplett <josh@joshtriplett.org>
-> Date: Tue, 21 Oct 2014 16:14:19 -0700
-> Subject: [PATCH] linux/init.h: Always omit __exit code and data for in-kernel
->  compilation
->
-> __exit code and data only exists for module removal; when compiling such
-> code in the kernel, omit the __exit functions to save space.  For x86
-> defconfig this saves about 9k, and significantly more in the compiled
-> binary size.
+The SLUB cache merges caches with the same size and alignment and there
+was long standing bug with this behavior:
+* create the cache named "foo"
+* create the cache named "bar" (which is merged with "foo")
+* delete the cache named "foo" (but it stays allocated because "bar" uses
+  it)
+* create the cache named "foo" again - it fails because the name "foo" is
+  already used
 
-Does it boot? Usually we can't get rid of the exit section because we
-have some table pointing at it somewhere for bug tables, alternatives,
-etc. See this comment in arch/x86/kernel/vmlinux.lds.S for example:
+That bug was fixed in commit 694617474e33b8603fc76e090ed7d09376514b1a by
+not warning on duplicate cache names when the SLUB subsystem is used.
 
-        /*
-         * .exit.text is discard at runtime, not link time, to deal with
-         *  references from .altinstructions and .eh_frame
-         */
-        .exit.text : AT(ADDR(.exit.text) - LOAD_OFFSET) {
-                EXIT_TEXT
-        }
+Recently, cache merging was implemented the with SLAB subsystem too (patch
+12220dea07f1ac6ac717707104773d771c3f3077), therefore we need stop checking
+for duplicate names even for the SLAB subsystem. This patch fixes the bug
+by removing the check.
 
-        .exit.data : AT(ADDR(.exit.data) - LOAD_OFFSET) {
-                EXIT_DATA
-        }
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
 
+---
+ mm/slab_common.c |   10 ----------
+ 1 file changed, 10 deletions(-)
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-a Linux Foundation Collaborative Project
-
+Index: linux-2.6/mm/slab_common.c
+===================================================================
+--- linux-2.6.orig/mm/slab_common.c	2014-10-22 01:07:50.000000000 +0200
++++ linux-2.6/mm/slab_common.c	2014-10-22 01:08:02.000000000 +0200
+@@ -93,16 +93,6 @@ static int kmem_cache_sanity_check(const
+ 			       s->object_size);
+ 			continue;
+ 		}
+-
+-#if !defined(CONFIG_SLUB)
+-		if (!strcmp(s->name, name)) {
+-			pr_err("%s (%s): Cache name already exists.\n",
+-			       __func__, name);
+-			dump_stack();
+-			s = NULL;
+-			return -EINVAL;
+-		}
+-#endif
+ 	}
+ 
+ 	WARN_ON(strchr(name, ' '));	/* It confuses parsers */
