@@ -1,122 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089AbaJVNUx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 09:20:53 -0400
-Received: from gum.cmpxchg.org ([85.214.110.215]:42623 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751062AbaJVNUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 09:20:51 -0400
-Date: Wed, 22 Oct 2014 09:20:38 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/4] mm: memcontrol: uncharge pages on swapout
-Message-ID: <20141022132038.GB17161@phnom.home.cmpxchg.org>
-References: <1413818532-11042-1-git-send-email-hannes@cmpxchg.org>
- <1413818532-11042-2-git-send-email-hannes@cmpxchg.org>
- <20141021125252.GN16496@esperanza>
- <20141021210328.GB29116@phnom.home.cmpxchg.org>
- <20141022083353.GU16496@esperanza>
+	id S1752221AbaJVNVI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 09:21:08 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:44366 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752098AbaJVNVE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 09:21:04 -0400
+Message-ID: <5447AF1F.1060806@gmail.com>
+Date: Wed, 22 Oct 2014 16:20:31 +0300
+From: Giedrius Statkevicius <giedriuswork@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141022083353.GU16496@esperanza>
+To: Darren Hart <dvhart@infradead.org>
+CC: eric.piel@tremplin-utc.net, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] platform: hp_accel: add a i8042 filter to remove
+ accelerometer data
+References: <1413665962-3830-1-git-send-email-giedriuswork@gmail.com> <20141021214508.GF20951@vmdeb7>
+In-Reply-To: <20141021214508.GF20951@vmdeb7>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 12:33:53PM +0400, Vladimir Davydov wrote:
-> On Tue, Oct 21, 2014 at 05:03:28PM -0400, Johannes Weiner wrote:
-> > On Tue, Oct 21, 2014 at 04:52:52PM +0400, Vladimir Davydov wrote:
-> > > On Mon, Oct 20, 2014 at 11:22:09AM -0400, Johannes Weiner wrote:
-> > > > mem_cgroup_swapout() is called with exclusive access to the page at
-> > > > the end of the page's lifetime.  Instead of clearing the PCG_MEMSW
-> > > > flag and deferring the uncharge, just do it right away.  This allows
-> > > > follow-up patches to simplify the uncharge code.
-> > > > 
-> > > > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > > > ---
-> > > >  mm/memcontrol.c | 17 +++++++++++++----
-> > > >  1 file changed, 13 insertions(+), 4 deletions(-)
-> > > > 
-> > > > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > > > index bea3fddb3372..7709f17347f3 100644
-> > > > --- a/mm/memcontrol.c
-> > > > +++ b/mm/memcontrol.c
-> > > > @@ -5799,6 +5799,7 @@ static void __init enable_swap_cgroup(void)
-> > > >   */
-> > > >  void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
-> > > >  {
-> > > > +	struct mem_cgroup *memcg;
-> > > >  	struct page_cgroup *pc;
-> > > >  	unsigned short oldid;
-> > > >  
-> > > > @@ -5815,13 +5816,21 @@ void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
-> > > >  		return;
-> > > >  
-> > > >  	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEMSW), page);
-> > > > +	memcg = pc->mem_cgroup;
-> > > >  
-> > > > -	oldid = swap_cgroup_record(entry, mem_cgroup_id(pc->mem_cgroup));
-> > > > +	oldid = swap_cgroup_record(entry, mem_cgroup_id(memcg));
-> > > >  	VM_BUG_ON_PAGE(oldid, page);
-> > > > +	mem_cgroup_swap_statistics(memcg, true);
-> > > >  
-> > > > -	pc->flags &= ~PCG_MEMSW;
-> > > > -	css_get(&pc->mem_cgroup->css);
-> > > > -	mem_cgroup_swap_statistics(pc->mem_cgroup, true);
-> > > > +	pc->flags = 0;
-> > > > +
-> > > > +	if (!mem_cgroup_is_root(memcg))
-> > > > +		page_counter_uncharge(&memcg->memory, 1);
-> > > 
-> > > AFAIU it removes batched uncharge of swapped out pages, doesn't it? Will
-> > > it affect performance?
-> > 
-> > During swapout and with lockless page counters?  I don't think so.
+
+
+On 2014.10.22 00:45, Darren Hart wrote:
+> On Sat, Oct 18, 2014 at 11:59:22PM +0300, Giedrius Statkevicius wrote:
+>> Hello,
 > 
-> How is this different from page cache out? I mean, we can have a lot of
-> pages in the swap cache that have already been swapped out, and are
-> waiting to be unmapped, uncharged, and freed, just like usual page
-> cache. Why do we use batching for file cache pages then?
-
-The batching is mostly for munmap().  We do it for reclaim because
-it's convenient, but I don't think an extra word per struct page to
-batch one, sometimes a few, locked subtractions per swapped out page
-is a reasonable trade-off.
-
-> > > Besides, it looks asymmetric with respect to the page cache uncharge
-> > > path, where we still defer uncharge to mem_cgroup_uncharge_list(), and I
-> > > personally rather dislike this asymmetry.
-> > 
-> > The asymmetry is inherent in the fact that we mave memory and
-> > memory+swap accounting, and here a memory charge is transferred out to
-> > swap.  Before, the asymmetry was in mem_cgroup_uncharge_list() where
-> > we separate out memory and memsw pages (which the next patch fixes).
+> Hi Giedrius,
 > 
-> I agree that memsw is inherently asymmetric, but IMO it isn't the case
-> for swap *cache* vs page *cache*. We handle them similarly - removing
-> from a mapping, uncharging, freeing. If one wants batching, why
-> shouldn't the other?
-
-It has to be worth it in practical terms.  You can argue symmetry
-between swap cache and page cache, but swapping simply is a much
-colder path than reclaiming page cache.  Our reclaim algorithm avoids
-it like the plague.
-
-> > So nothing changed, the ugliness was just moved around.  I actually
-> > like it better now that it's part of the swap controller, because
-> > that's where the nastiness actually comes from.  This will all go away
-> > when we account swap separately.  Then, swapped pages can keep their
-> > memory charge until mem_cgroup_uncharge() again and the swap charge
-> > will be completely independent from it.  This reshuffling is just
-> > necessary because it allows us to get rid of the per-page flag.
+>> this patch fixes bug #84941 from the kernel bugzilla. Basically, it
+>> seems that the accelerometer sends some signals as button presses
+>> through the keyboard bus. The keys in the report are 0xa5-0xa8 but in
+>> the filter function they are reported as 0x25-0x28. This patch adds a
 > 
-> Do you mean that swap cache uncharge batching will be back soon?
+> Does this mean you were able to test it? On which platform did you test?
+> 
 
-Well, yes, once we switch from memsw to a separate swap couter, it
-comes automatically.  Pages no longer carry two charges, and so the
-uncharging of pages doesn't have to distinguish between swapped out
-pages and other pages anymore.
+Sorry for not being specific enough. I have a HP ProBook 4540s laptop
+with the sensor in it. It's ACPI id is HPQ6000. The reason I made this
+patch is because I've been getting the following problem:
+
+When I move the laptop I noticed that atkbd doesn't recognize some
+keyboard "presses" which I wasn't doing and complains about that. The
+range of the codes is in the patch: 0x25 - 0x28. The purpose of this
+patch is to make hp_accel filter these out from the keyboard data
+stream.
+
+I've been testing this patch out on my system for about 5 days and
+haven't ran into any issues.
+
+>> i8042 filter that removes these scancodes from the keyboard stream in a
+>> similar fashion to how idealpad_sidebar.c does this. I've done a RFC
+>> because I'm not sure if there is more portable way to do this and if
+>> these codes are the same for all machines. So could please someone
+>> respond who uses this driver and tell which invalid keypresses appear
+>> (if they do) in your `dmesg` that are reported by atkbd?
+>>
+>> Also, I'm not sure if there is a publicly available documentation for hp
+>> 3d driveguard (I couldn't find it). That would definetly make it clear
+>> if this patch is correct or not.
+>>
+>> Adding a signed off by line incase you find this patch good and want to
+>> apply it.
+>>
+>> Signed-off-by: Giedrius Statkevičius <giedriuswork@gmail.com>
+> 
+> As it appears this is untested and you are looking for testers, I'm going to
+> wait for a Tested-by from someone with hardware. Please follow-up if that fails
+> to happen.
+
+My questions are these:
+- Does any system with the accelerometer whose ACPI id is HPQ0004 or
+  HPQ6007 run into the same issues?
+- If so, what are the scancodes reported by atkbd?
+- If not, then where can I find some documentation to find about this?
+  HP doesn't seem to have published any.
+
+If other people have the same issue with the same scancodes on 
+accelerometers with different ACPI ids we can go ahead and do what this
+patch does without reacting to what hardware the user has.
+
+And a general question about what other people think of doing this?
+Maybe there is some better way I don't know of.
+
+> 
+> More below...
+> 
+[...]
+>> +static bool hp_accel_i8042_filter(unsigned char data, unsigned char str,
+>> +				  struct serio *port)
+>> +{
+>> +	static bool extended;
+>> +
+>> +	if (str & I8042_STR_AUXDATA)
+>> +		return false;
+>> +
+>> +	if (data == 0xe0) {
+>> +		extended = true;
+>> +		return true;
+> 
+> If you are going to return, why bother setting extended?
+> 
+>> +	}
+>> +
+>> +	if (!extended)
+>> +		return false;
+> 
+> I'm now confused :-)
+> 
+>> +
+>> +	extended = false;
+> 
+> Wait... what?
+> 
+> Please review the use of extended here as well as the possibility
+> of using it uninitialized.
+I'll review it and try to write it to be more concise and clearer. To be
+honest, I have used drivers/input/misc/ideapad_slidebar.c as a model to
+write this function and I didn't like the way it is written. I just
+thought: "Hey, this one driver already was checked by someone and does a
+very similar thing so why reinvent the wheel?"
+
+> 
+>> +	if (likely(data != ACCEL_1) && likely(data != ACCEL_2) &&
+>> +	    likely(data != ACCEL_3) && likely(data != ACCEL_4)) {
+>> +		serio_interrupt(port, 0xe0, 0);
+>> +		return false;
+>> +	}
+>> +
+>> +	return true;
+>> +}
+>> +
+>>  static int lis3lv02d_add(struct acpi_device *device)
+>>  {
+>>  	int ret;
+>> @@ -326,6 +360,11 @@ static int lis3lv02d_add(struct acpi_device *device)
+>>  	if (ret)
+>>  		return ret;
+>>  
+>> +	/* filter to remove accelerometer data from keyboard bus stream */
+>> +	ret = i8042_install_filter(hp_accel_i8042_filter);
+>> +	if (ret)
+>> +		i8042_remove_filter(hp_accel_i8042_filter);
+> 
+> If it failed to install, you don't need to remove it afterward. See
+> the implementation for i8042_install_filter().
+> 
+Thanks for mentioning this. When we discuss the issues mentioned
+previously I'll resend the fixed patch in the canonical and proper form.
+
+Thanks,
+Giedrius
