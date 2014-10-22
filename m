@@ -1,134 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932699AbaJVJbg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 05:31:36 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:50401 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932642AbaJVJbe (ORCPT
+	id S932608AbaJVJdK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 05:33:10 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:43884 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347AbaJVJdI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 05:31:34 -0400
-From: Nix <nix@esperi.org.uk>
-To: Johan Hovold <johan@kernel.org>
-Cc: Paul Martin <pm@debian.org>, Daniel Silverstone <dsilvers@debian.org>,
-        Oliver Neukum <oliver@neukum.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [3.16.1 BISECTED REGRESSION]: Simtec Entropy Key (cdc-acm) broken in 3.16
-References: <878um4tg09.fsf@spindle.srvr.nix>
-	<1409569752.24385.12.camel@linux-fkkt.site>
-	<874mwnosz1.fsf@spindle.srvr.nix> <871tqe2zqt.fsf_-_@spindle.srvr.nix>
-	<20141011195108.GA8275@thinkpad.nowster.org.uk>
-	<87y4smz1l0.fsf@spindle.srvr.nix> <20141012185845.GB2786@localhost>
-	<878uklynq9.fsf@spindle.srvr.nix> <20141014083432.GB7958@localhost>
-Emacs: because you deserve a brk today.
-Date: Wed, 22 Oct 2014 10:31:17 +0100
-In-Reply-To: <20141014083432.GB7958@localhost> (Johan Hovold's message of
-	"Tue, 14 Oct 2014 10:34:32 +0200")
-Message-ID: <871tq04fiy.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.50 (gnu/linux)
+	Wed, 22 Oct 2014 05:33:08 -0400
+Message-ID: <544779D1.4060309@arm.com>
+Date: Wed, 22 Oct 2014 10:33:05 +0100
+From: Juri Lelli <juri.lelli@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-wuwien-Metrics: spindle 1290; Body=6 Fuz1=6 Fuz2=6
+To: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Kirill V Tkhai <tkhai@yandex.ru>, Steven Rostedt <rostedt@goodmis.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] sched/deadline: do not try to push tasks if pinned
+ task switches to dl
+References: <1413938203-224610-1-git-send-email-wanpeng.li@linux.intel.com>
+In-Reply-To: <1413938203-224610-1-git-send-email-wanpeng.li@linux.intel.com>
+X-OriginalArrivalTime: 22 Oct 2014 09:33:04.0824 (UTC) FILETIME=[2E590380:01CFEDDB]
+X-MC-Unique: 114102210330600101
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 Oct 2014, Johan Hovold verbalised:
+On 22/10/14 01:36, Wanpeng Li wrote:
+> As Kirill mentioned(https://lkml.org/lkml/2013/1/29/118):
+> | If rq has already had 2 or more pushable tasks and we try to add a 
+> | pinned task then call of push_rt_task will just waste a time.
+> 
+> Just switched pinned task is not able to be pushed. If the rq has had
+> several dl tasks before they have already been considered as candidates
+> to be pushed (or pulled). This patch implements the same behavior as rt 
+> class which introduced by commit 10447917551e ("sched/rt: Do not try to 
+> push tasks if pinned task switches to RT"). 
+> 
+> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+> ---
+> v2 -> v3:
+>  * cleanup patch description
+>  * align && to p->nr_cpus_allowed
+> v1 -> v2:
+>  * use 12 or more chars for the git commit ID
+> 
+>  kernel/sched/deadline.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+> index abfaf3d..bd5e479 100644
+> --- a/kernel/sched/deadline.c
+> +++ b/kernel/sched/deadline.c
+> @@ -1603,7 +1603,8 @@ static void switched_to_dl(struct rq *rq, struct task_struct *p)
+>  
+>  	if (task_on_rq_queued(p) && rq->curr != p) {
+>  #ifdef CONFIG_SMP
+> -		if (rq->dl.overloaded && push_dl_task(rq) && rq != task_rq(p))
+> +		if (p->nr_cpus_allowed > 1 && rq->dl.overloaded &&
+> +			push_dl_task(rq) && rq != task_rq(p))
+>  			/* Only reschedule if pushing failed */
+>  			check_resched = 0;
+>  #endif /* CONFIG_SMP */
+> 
 
-> On Sun, Oct 12, 2014 at 10:36:30PM +0100, Nix wrote:
->> I have checked: this code is being executed against a symlink that
->> points to /dev/ttyACM0, and the tcsetattr() succeeds. (At least, it's
->> succeeding on the kernel I'm running now, but of course that's 3.16.5
->> with this commit reverted...)
->
-> You could verify that by enabling debugging in the cdc-acm driver and
-> making sure that the corresponding control messages are indeed sent on
-> close.
+Looks good. Thanks!
 
-I have a debugging dump at
-<http://www.esperi.org.uk/~nix/temporary/cdc-acm.log>; it's fairly
-voluminous because the ekeyd is constantly doing USB reads, but the end
-says
+Best,
 
-Oct 22 10:19:13 fold kern debug: : [   88.423970] cdc_acm 2-1:1.0: acm_tty_close
-Oct 22 10:19:13 fold kern debug: : [   88.424012] cdc_acm 2-1:1.0: acm_port_shutdown
-Oct 22 10:19:13 fold kern debug: : [   88.440038] cdc_acm 2-1:1.0: acm_ctrl_msg - rq 0x22, val 0x0, len 0x0, result 0
-Oct 22 10:19:13 fold kern debug: : [   88.440038] cdc_acm 2-1:1.0: acm_ctrl_irq - urb shutting down with status: -2
-Oct 22 10:19:13 fold kern debug: : [   88.440038] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 0, len 0
-Oct 22 10:19:13 fold kern debug: : [   88.440038] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-Oct 22 10:19:13 fold kern debug: : [   88.447588] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 1, len 0
-Oct 22 10:19:13 fold kern debug: : [   88.447613] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-Oct 22 10:19:13 fold kern debug: : [   88.448575] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 2, len 0
-Oct 22 10:19:13 fold kern debug: : [   88.448599] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-Oct 22 10:19:13 fold kern debug: : [   88.449576] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 3, len 0
-Oct 22 10:19:13 fold kern debug: : [   88.449599] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-Oct 22 10:19:13 fold kern debug: : [   88.450578] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 4, len 0
-Oct 22 10:19:13 fold kern debug: : [   88.450602] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-Oct 22 10:19:13 fold kern debug: : [   88.451573] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 5, len 0
-Oct 22 10:19:13 fold kern debug: : [   88.451596] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-Oct 22 10:19:13 fold kern debug: : [   88.452574] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 6, len 0
-Oct 22 10:19:13 fold kern debug: : [   88.452597] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-Oct 22 10:19:13 fold kern debug: : [   88.453567] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 7, len 0
-Oct 22 10:19:13 fold kern debug: : [   88.453588] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-Oct 22 10:19:13 fold kern debug: : [   88.454570] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 8, len 0
-Oct 22 10:19:13 fold kern debug: : [   88.454592] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-Oct 22 10:19:13 fold kern debug: : [   88.462591] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 9, len 0
-Oct 22 10:19:13 fold kern debug: : [   88.462619] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-Oct 22 10:19:13 fold kern debug: : [   88.463568] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 10, len 0
-Oct 22 10:19:13 fold kern debug: : [   88.463590] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-Oct 22 10:19:13 fold kern debug: : [   88.464564] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 11, len 0
-Oct 22 10:19:13 fold kern debug: : [   88.464585] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-Oct 22 10:19:13 fold kern debug: : [   88.465578] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 12, len 0
-Oct 22 10:19:13 fold kern debug: : [   88.465602] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-Oct 22 10:19:13 fold kern debug: : [   88.466566] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 13, len 0
-Oct 22 10:19:13 fold kern debug: : [   88.466587] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
+- Juri
 
-which looks, hm, a bit suspicious to me.
-
-> But you haven't seen any fw crashes since you reverted the commit in
-> question?
-
-Not a one.
-
-> Another thing you could try is to add back the 
->
-> 	acm_set_control(acm, 0);
->
-> just after the dev_info message in probe.
-
-Tried that (with, obviously, the commit not reverted) -- rebooted, and
-
-BytesRead=0
-BytesWritten=0
-ConnectionNonces=0
-ConnectionPackets=0
-ConnectionRekeys=0
-ConnectionResets=0
-ConnectionTime=46
-EntropyRate=0
-FipsFrameRate=0
-FrameByteLast=0
-FramesOk=0
-FramingErrors=0
-KeyDbsdShannonPerByteL=0
-KeyDbsdShannonPerByteR=0
-KeyEnglishBadness=No failure
-KeyRawBadness=0
-KeyRawShannonPerByteL=0
-KeyRawShannonPerByteR=0
-KeyRawShannonPerByteX=0
-KeyShortBadness=efm_ok
-KeyTemperatureC=-273.15
-KeyTemperatureF=-459.67
-KeyTemperatureK=0
-KeyVoltage=0
-PacketErrors=0
-PacketOK=0
-ReadRate=0
-TotalEntropy=0
-WriteRate=0
-
-So that doesn't help.
-
--- 
-NULL && (void)
