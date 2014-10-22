@@ -1,79 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932093AbaJVGyH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 02:54:07 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:37856 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751022AbaJVGyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 02:54:05 -0400
-Message-ID: <5447546A.8070800@ti.com>
-Date: Wed, 22 Oct 2014 09:53:30 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Maarten ter Huurne <maarten@treewalker.org>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Paul Cercueil <paul@crapouillou.net>
-Subject: Re: [PATCH] fbcon: Fix option parsing control flow in fb_console_setup
-References: <1412848110-12734-1-git-send-email-maarten@treewalker.org>
-In-Reply-To: <1412848110-12734-1-git-send-email-maarten@treewalker.org>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="sj0NFaMBx5725hebH183id5JplDNGmxVc"
+	id S1754066AbaJVGyY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 02:54:24 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:19166 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751707AbaJVGyW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 02:54:22 -0400
+X-AuditID: cbfee68d-f79296d000004278-31-5447549cb0d5
+Date: Wed, 22 Oct 2014 06:54:20 +0000 (GMT)
+From: Eunbong Song <eunb.song@samsung.com>
+Subject: Re: Re: [PATCH] mips: add arch_trigger_all_cpu_backtrace() function
+To: John Crispin <blogic@openwrt.org>,
+        "ralf@linux-mips.org" <ralf@linux-mips.org>
+Cc: "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Reply-to: eunb.song@samsung.com
+MIME-version: 1.0
+X-MTR: 20141022064859326@eunb.song
+Msgkey: 20141022064859326@eunb.song
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-MLAttribute: 
+X-RootMTR: 20141022064859326@eunb.song
+X-ParentMTR: 
+X-ArchiveUser: EV
+X-CPGSPASS: N
+X-ConfirmMail: N,general
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <1061520101.169091413960858532.JavaMail.weblogic@epmlwas02b>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDJsWRmVeSWpSXmKPExsVy+t8zLd05Ie4hBqcec1lc3jWHzYHR4/Mm
+	uQDGqAZGm8Si5IzMslSF1Lzk/JTMvHRbpdAQN10LJYWM/OISW6VoIwNjPSNTEz0jE3M9S4NY
+	KyNTJYW8xNxUW6UKXaheJYWi5AKg2tzKYqABOal6UHG94tS8FIes/FKQS/SKE3OLS/PS9ZLz
+	c5UUyhJzSoFGKOknTGXMeLLmPGNBB0/FmQ8P2RsY73B3MXJyCAmoSLT8/84IYksImEgsfNLK
+	BmGLSVy4tx7I5gKqWcYoMePgQ1aYosMbFzFBJOYwSkz6+xmsg0VAVeLzkv9gRWwC2hI/Dlxl
+	BrGFBXwk9kz/CLZBRCBM4urhFWA2s0CNRPffxYwQV8hLTD59mR3E5hUQlDg58wkLxDIliTdn
+	/rFAxJUl1l1fwwQRl5CYNf0C1EG8EjPan0LVy0lM+7qGGcKWljg/awMjzDeLvz+GivNLHLu9
+	A2qOgMTUMwehatQlOqfMhprDJ7Fm4VsoW1Di9LVuZphd97fMhbtha8sTVohfFCWmdD9kh7C1
+	JL782MeG7hdeAQ+J5qbrzKCAkxDo5ZB4dfYy4wRGpVlI6mYhmTULySxkNQsYWVYxiqYWJBcU
+	J6UXGSLH9yZGSDLs3cF4+4D1IUYBDkYlHl4HNvcQIdbEsuLK3EOMycB4msgsJZqcD0y5eSXx
+	hsZmRhamJqbGRuaWZhjCJqYWFiZGOISVxHkVpX4GCwmkJ5akZqemFqQWxReV5qQWH2Jk4uCU
+	amDU26zrLqe9r6LM9bOQ2QntSM3rMgFzH3gxJ8yN3fDToFTsUWLlndoJTrevzK1os5q2cj7H
+	p5+J1l6LHyl5Trc4Y3zzZ5ZawuLnaurn+KeVxp+81MAs96Xx2xO7hrL7qsZ+KurBwVEnT0U8
+	2d+mOydHnuGHhknrA7mEJd5JLqcMr+RyLWv5vl2JpTgj0VCLuag4EQAmrSqDrwMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJKsWRmVeSWpSXmKPExsVy+t/tft05Ie4hBs2n2S0u75rD5sDo8XmT
+	XABjVIZNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBQ
+	JYWyxJxSoFBAYnGxkr6dTVF+aUmqQkZ+cYmtUrSRgbGekamJnpGxgZ6JQayVoYGBkSlQVUJG
+	xpM15xkLOngqznx4yN7AeIe7i5GTQ0hARaLl/3dGEFtCwETi8MZFTBC2mMSFe+vZuhi5gGrm
+	MEpM+vuZDSTBIqAq8XnJf1YQm01AW+LHgavMILawgI/EnukfwQaJCIRJXD28AsxmFqiR6P67
+	mBFimbzE5NOX2UFsXgFBiZMzn7BALFOSeHPmHwtEXFli3fU1UEdISMyafoEVwuaVmNH+FKpe
+	TmLa1zXMELa0xPlZGxhhjl78/TFUnF/i2O0dUHMEJKaeOQhVoy7ROWU21Bw+iTUL30LZghKn
+	r3Uzw+y6v2Uu3A1bW56wQvyiKDGl+yE7hK0l8eXHPjZ0v/AKeEg0N11nnsAoOwtJahaS9llI
+	2pHVLGBkWcUomlqQXFCclF5hqFecmFtcmpeul5yfu4kRnIyeLdzB+OW89SFGAQ5GJR5eBzb3
+	ECHWxLLiytxDjBIczEoivH0WQCHelMTKqtSi/Pii0pzU4kOMpsBYm8gsJZqcD0yUeSXxhsYG
+	xoaGluYGpoZGFkrivHdvJgUJCaQnlqRmp6YWpBbB9DFxcEo1MF4y31m58/E8Dnex9bucxYJO
+	tG6QnfF24afD0aX6TTcPuEfGZjQ1RTFWB35pcdb78G7WJf81RzdlXUhSaBJq2ijWcTRv54rE
+	Sp73DXvcZhsUGub97Gn/vsg25vesY1u/yj/l26eh3675jt8lVviN0uwJT6ZsabO2m9Iycz57
+	g2iDvt+OmyGif5RYijMSDbWYi4oTASQ+6mZcAwAA
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
---sj0NFaMBx5725hebH183id5JplDNGmxVc
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
-
-On 09/10/14 12:48, Maarten ter Huurne wrote:
-> Since strsep is used to tokenize the options string, after each option
-> match the code should use "continue" to get the next token from strsep.=
-
-> This patch applies this pattern consistently.
->=20
-> Previously, for "scrollback:" and "map:" the parse code would return
-> (unconditionally: strsep ensures *options !=3D ','), causing any
-> following option to be ignored, while for "vc:" the parse code would
-> go on to parse further options within the same token, which could lead
-> to invalid input being accepted.
->=20
-> Signed-off-by: Maarten ter Huurne <maarten@treewalker.org>
-> Acked-by: Paul Cercueil <paul@crapouillou.net>
-> ---
->  drivers/video/console/fbcon.c | 19 +++++++++----------
->  1 file changed, 9 insertions(+), 10 deletions(-)
-
-Thanks, queued for 3.18 fixes.
-
- Tomi
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9M6sTZX004861
 
 
+> Hi Eubong,
 
---sj0NFaMBx5725hebH183id5JplDNGmxVc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+> one small question inline ...
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+>> +void arch_trigger_all_cpu_backtrace(bool); +#define
+>> arch_trigger_all_cpu_backtrace arch_trigger_all_cpu_backtrace
 
-iQIcBAEBAgAGBQJUR1RxAAoJEPo9qoy8lh717esQAJvxCPlq+L4JgggEeeU4t948
-yrEVN+5jc9zXboLuYFokfUVpqoE9zl1XuzT6ZKHOpwvf/gGQjL8KGRkAW15MUZAH
-GzkBIT4hVzOBOc4HqQEUbphg0JfS9JksthMaQXNWLs9SJ0Qh7+tgO72UD9PX1AQy
-yrhCQBjK7XCo08IbW3MBDO+RdseXALYy8Qm2z0pr+eAtzKbir2O1qg2PPzeTvAHj
-0MRv80vfgghXjj1zmK+72/64OP2w3+yYEMfdMwKg9uQDo8WU9vwtL+bI6IRP4EIv
-rtgxOsiXLg9GLrIjDU046RNwL9b4kJWQYmuKPY9SLTXUfkxPje/T1tEGekJrV1px
-beTH3ncZhToo6EOFqPS5tF9qecr4DaCqkR3FDjFJEHeqH4KZdpXJV9pt/DdKb/6Q
-G/AHU9jw7D4b2BH1qf8eG2l2kd95Q8k6d4LHd30c2syCrnaBxpPn8Oif+pyy9p1V
-zE0QRC1y6goBrumNJuiPODZ6faR1rtvCa2yFSFNUuarDMYIq9g9Yfa5n5RCuMPs9
-yhFf/DSe9WJDM0KstMxlg9NwhcuwPRdGEpYdoKAzmQvnTqTlpXDVM0wcGyuWfiRT
-lAPKjWbML1sGzQQSzGck30yLVOThjEnIG5E1G8iiBrVHG03KrYAg4afZL27yHWtR
-JdsO7OKQZkhPArVE5EfN
-=P8Y9
------END PGP SIGNATURE-----
+> What is the purpose of this define ? is this maybe a leftover from
+> some regex/cleanups ?
 
---sj0NFaMBx5725hebH183id5JplDNGmxVc--
+Hi John.
+Actually, I just follow the same function of sparc architecture.
+You can find this in arch/sparc/include/asm/irq_64.h as below
+
+void arch_trigger_all_cpu_backtrace(bool);
+#define arch_trigger_all_cpu_backtrace arch_trigger_all_cpu_backtrace
+
+I guess this is used for conditional compile. 
+See below.
+include/linux/nmi.h
+#ifdef arch_trigger_all_cpu_backtrace
+static inline bool trigger_all_cpu_backtrace(void)
+{
+        arch_trigger_all_cpu_backtrace(true);
+
+        return true;
+}
+static inline bool trigger_allbutself_cpu_backtrace(void)
+{
+        arch_trigger_all_cpu_backtrace(false);
+        return true;
+}
+#else
+static inline bool trigger_all_cpu_backtrace(void)
+{
+        return false;
+}
+static inline bool trigger_allbutself_cpu_backtrace(void)
+{
+        return false;
+}
+#endif
+
+Thanks. 
+> John
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
