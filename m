@@ -1,45 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751633AbaJVNoW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 09:44:22 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58230 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987AbaJVNoV (ORCPT
+	id S1751755AbaJVNqq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 09:46:46 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:57723 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750863AbaJVNqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 09:44:21 -0400
-Date: Wed, 22 Oct 2014 15:44:16 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        tglx@linutronix.de, akpm@linux-foundation.org, riel@redhat.com,
-        mgorman@suse.de, oleg@redhat.com, mingo@redhat.com, minchan@kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
-        laijs@cn.fujitsu.com, dave@stgolabs.net, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC][PATCH 3/6] mm: VMA sequence count
-Message-ID: <20141022134416.GA15602@worktop.programming.kicks-ass.net>
-References: <20141020215633.717315139@infradead.org>
- <20141020222841.361741939@infradead.org>
- <20141022112657.GG30588@node.dhcp.inet.fi>
- <20141022113951.GB21513@worktop.programming.kicks-ass.net>
- <20141022115304.GA31486@node.dhcp.inet.fi>
- <20141022121554.GD21513@worktop.programming.kicks-ass.net>
+	Wed, 22 Oct 2014 09:46:43 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Arnd Bergmann <arnd@arndb.de>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Alexandre Courbot <gnurou@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Darren Hart <dvhart@linux.intel.com>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: GPIO bindings guidelines (Was: Re: [PATCH v5 10/12] gpio: Support for unified device properties interface)
+Date: Wed, 22 Oct 2014 16:07:08 +0200
+Message-ID: <1971792.8pKYWlGxB9@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <2466280.tMTA38OpXD@wuerfel>
+References: <CAAVeFuLW6fucvDxQvY5DDfnhPrgYM+1pi7WoHfBQa_BgYnc_Cw@mail.gmail.com> <20141022085140.GF1484@lahna.fi.intel.com> <2466280.tMTA38OpXD@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141022121554.GD21513@worktop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 02:15:54PM +0200, Peter Zijlstra wrote:
-> On Wed, Oct 22, 2014 at 02:53:04PM +0300, Kirill A. Shutemov wrote:
-> > Em, no. In this case change_protection() will not touch the pte, since
-> > it's pte_none() and the pte_same() check will pass just fine.
+On Wednesday, October 22, 2014 11:28:40 AM Arnd Bergmann wrote:
+> On Wednesday 22 October 2014 11:51:40 Mika Westerberg wrote:
+> > On Wed, Oct 22, 2014 at 10:33:32AM +0200, Arnd Bergmann wrote:
+> > > On Wednesday 22 October 2014 11:10:44 Mika Westerberg wrote:
+> > > > 
+> > > > It expects that GPIOs returned from _CRS are in specific order. Since we
+> > > > can't change these existing ACPI tables, we must support them somehow.
+> > > > 
+> > > > This patch series handles it so that:
+> > > > 
+> > > >   1) If we can't find given property (e.g "reset-gpios" or
+> > > >      "shutdown-gpios") the index above will refer directly to the GPIO
+> > > >      resource returned from _CRS.
+> > > > 
+> > > >   2) If the property is found we ignore index and take it from the
+> > > >      property instead.
+> > > > 
+> > > > This has the drawback that we cannot support this:
+> > > > 
+> > > >         Package () { "reset-gpios", Package () { ^GPIO, 0, 0, 0, ^GPIO, 1, 0, 0}}
+> > > >                                                                  ^^^^^^^^^^^^^^
+> > > > So the second entry in the above is not accessible using
+> > > > gpiod_get_index() and the reason is that we want to support the existing
+> > > > and new ACPI tables where _DSD is not being used.
+> > > 
+> > > So this is not using the DT binding but does thing slightly differently then.
+> > > In this case (supporting two incompatible bindings for DT and ACPI), I think
+> > > the only sensible driver implementation would be to know what we are asking
+> > > for and use different devm_gpiod_get_index statements based on the firmware
+> > > interface.
+> > 
+> > Yes something like that is probably needed.
+> > 
+> > Alternatively (I didn't try if this works) we could do it so that
+> > when we see:
+> > 
+> >         gpio = devm_gpiod_get_index(&pdev->dev, "shutdown", 1);
+> > 
+> > we check first for the property ("shutdown-gpios"), and check if it has
+> > more than one entry in the value, like:
+> > 
+> >         Package () { "reset-gpios", Package () { ^GPIO, 0, 0, 0, ^GPIO, 1, 0, 0}}
+> > 
+> > and in that case return the second entry. If we find this instead:
+> > 
+> >         Package () { "reset-gpios", Package () { ^GPIO, 0, 0, 0 }}
+> > 
+> > we just ignore the index.
+> > 
+> > Last if there is no _DSD the index refers directly to the GPIO resource
+> > in _CRS.
+> > 
+> > This would support both _DSD and non-_DSD at the same time but it makes
+> > the implementation more complex.
 > 
-> Oh, that's what you meant. Yes that's a problem, yes vm_page_prot
-> needs wrapping too.
+> I think the main problem with that approach is that it makes the common
+> code more error-prone in case of unintentionally broken device descriptions,
+> because it less often returns an error.
 
-Maybe also vm_policy, is there anything else that can change while a vma
-lives?
+Moreover, we need to clarify what situation we're really talking about.
+
+For one, drivers using the unified interface only will always use names for
+GPIOs, because they have to assume that either a DT or ACPI w/ _DSD is present.
+This is the cost of keeping those drivers firmware interface agnostic.
+
+So it looks like we're not talking about this case here.
+
+Now, if there's no DT or no _DSD in the ACPI tables for the given device
+*and* the driver wants to use its GPIOs anyway, it has to be ACPI-aware to
+some extent, because in that case the device ID it has been matched against
+tells it what the meaning of the GpioIo resources in the _CRS is.
+
+Then, the driver needs to do something like:
+
+	if (!device_property_present(dev, "known_property_that_should_be_present")
+	    && ACPI_COMPANION(dev))
+		acpi_probe_gpios(dev);
+
+and in the acpi_probe_gpios() routine there may be checks like:
+
+	if (device_has_id(dev, "MARY0001")) {
+		The first pin in the first GpioIo resource in _CRS is "fred" and
+		it is active-low.
+		The third pin in the second GpioIo resource in _CRS is "steve"
+		and it is not active-low.
+	} else if (device_has_id(dev, "JANE0002")) {
+		The first pin in the second GpioIo resource in _CRS is "fred" and
+		it is not active-low.
+		The second pin in the first GpioIo resource in _CRS is "steve"
+		and it is active-low.
+	}
+
+and so on.  Of course, there may be drivers knowing that the meaning of the
+GpioIo resources in _CRS is the same for all devices handled by them, in which
+case they will not need to check device IDs, but the core has now way of
+knowing that.  Only the drivers have that information and the core has now
+way to figure out what to do for a given specific device.
+
+So here's a radical idea: Why don't we introduce something like
+
+	acpi_enumerate_gpio(dev, name, GpioIo_index, pin_index, active_low)
+
+such that after calling, say, acpi_enumerate_gpio(dev, "fred", 0, 0, true) the
+driver can do something like:
+
+	desc = get_gpiod_by_name(dev, "fred");
+
+and it'll all work.  Then, the only part of the driver that really needs to be
+ACPI-specific will be the acpi_probe_gpios() function calling acpi_enumerate_gpio()
+in accordance with what the device ID is.
+
+Thoughts?
+
+Rafael
+
