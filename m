@@ -1,44 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462AbaJVDKf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 23:10:35 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:50320 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233AbaJVDKd convert rfc822-to-8bit (ORCPT
+	id S1752330AbaJVDPV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 23:15:21 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:60831 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751048AbaJVDPT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 23:10:33 -0400
+	Tue, 21 Oct 2014 23:15:19 -0400
+Message-ID: <54472144.3090802@martingkelly.com>
+Date: Tue, 21 Oct 2014 20:15:16 -0700
+From: Martin Kelly <martin@martingkelly.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-In-Reply-To: <CAMP5Xgcm-sxd3rf3VA1ZO44bUT1+u_QG1AAdjzK39q0ynfsZGQ@mail.gmail.com>
-References: <20141016124741.GA3832@kroah.com>
-	<20141017092601.GH23154@mwanda>
-	<20141019220547.GC3780@kroah.com>
-	<20141020092049.GJ23154@mwanda>
-	<CAMP5Xgcm-sxd3rf3VA1ZO44bUT1+u_QG1AAdjzK39q0ynfsZGQ@mail.gmail.com>
-Date: Tue, 21 Oct 2014 20:10:32 -0700
-X-Google-Sender-Auth: sfuIvKrvLblWZHUKUh4ePkb1upo
-Message-ID: <CAABpnA8Oe9_8r9hyAQADPwNh4Zn63tUQAUD7f0WSYh1xcdtz6g@mail.gmail.com>
-Subject: Re: [PATCH] staging: android: binder: move to the "real" part of the kernel
-From: Rom Lemarchand <romlem@android.com>
-To: =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Anup Patel <anup.patel@linaro.org>, linux-api@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: linux-kernel@vger.kernel.org, x86@kernel.org, mingo@redhat.com,
+        hpa@zytor.com, akpm@linux-foundation.org, rientjes@google.com,
+        david.vrabel@citrix.com, Martin Kelly <martkell@amazon.com>
+Subject: Re: [PATCH v2] x86, e820: panic on sanitizing invalid memory map
+References: <1413859062-26594-1-git-send-email-martin@martingkelly.com> <alpine.DEB.2.11.1410211043150.5308@nanos> <54465FC2.1030106@martingkelly.com> <alpine.DEB.2.11.1410212141350.5308@nanos>
+In-Reply-To: <alpine.DEB.2.11.1410212141350.5308@nanos>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On the topic of maintainers for binder: both Arve Hjønnevåg
-(arve@android.com) and Riley Andrews (riandrews@android.com) have
-volunteered to be co-maintainers with Greg.
+On 10/21/2014 12:44 PM, Thomas Gleixner wrote:
+> On Tue, 21 Oct 2014, Martin Kelly wrote:
+>> On 10/21/2014 01:56 AM, Thomas Gleixner wrote:
+>> Thomas, do you see any issues with a revision that separates out the
+>> return values (0 for a map with 1 entry, -1 for a map with invalid
+>> entries) and adds checks in the callers, where appropriate?
+> 
+> I think that's a sane approach.
+> 
 
-We would also like to make kernel-team@android.com the maintainer of
-the whole android directory.
+Alright, I will work on a new patch doing that, separating out each call
+site (and relevant error handling) into its own patch.
