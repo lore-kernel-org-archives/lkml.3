@@ -1,109 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946AbaJVHAR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 03:00:17 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:35862 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751023AbaJVHAP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 03:00:15 -0400
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Wang Nan <wangnan0@huawei.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Adrian Hunter <adrian.hunter@intel.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Waiman Long <Waiman.Long@hp.com>,
-        <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH] perf tools: ensure return negitive value when write header error
-References: <1413428909-80017-1-git-send-email-wangnan0@huawei.com>
-Date: Wed, 22 Oct 2014 16:00:12 +0900
-In-Reply-To: <1413428909-80017-1-git-send-email-wangnan0@huawei.com> (Wang
-	Nan's message of "Thu, 16 Oct 2014 11:08:29 +0800")
-Message-ID: <87siigeghv.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S932242AbaJVHDH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 03:03:07 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:45739 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751102AbaJVHDF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 03:03:05 -0400
+Message-ID: <54475688.3090902@ti.com>
+Date: Wed, 22 Oct 2014 10:02:32 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] drivers: video: fbdev: atmel_lcdfb.c: remove unnecessary
+ header
+References: <1413548355-499-1-git-send-email-alexandre.belloni@free-electrons.com> <5444FE2E.6030509@atmel.com>
+In-Reply-To: <5444FE2E.6030509@atmel.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="JfDdJEsOJUsSskD1fKJVInRgdE5n9EOu7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Oct 2014 11:08:29 +0800, Wang Nan wrote:
-> When 'perf record' write headers, it calls write_xxx in
-> tools/perf/util/header.c, and check return value. It rolls back all
-> working only when return value is negative.
+--JfDdJEsOJUsSskD1fKJVInRgdE5n9EOu7
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
+
+On 20/10/14 15:21, Nicolas Ferre wrote:
+> On 17/10/2014 14:19, Alexandre Belloni :
+>> Remove unnecessary mach/cpu.h header to be able to converge to a multi=
+platform
+>> kernel.
+>>
+>> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com=
 >
-> This patch ensures write_cpudesc() and write_total_mem() return negative number
-> when error. Without this patch, headers reported by 'perf report' header is
-> error in some platform. Following output is caputured on ARM, which doesn't
-> contain "Processor" field in /proc/cpuinfo. See "cpudesc", "total memory" and
-> "cmdline" field.
->
->    bash-4.2# perf record ls
->    ...
->    [ perf record: Woken up 1 times to write data ]
->    [ perf record: Captured and wrote 0.001 MB perf.data (~36 samples) ]
->    bash-4.2# perf report --stdio --header
->    Error:
->    The perf.data file has no samples!
->    # ========
->    # captured on: Fri Sep 12 10:09:10 2014
->    # hostname : arma15el
->    # os release : 3.17.0+
->    # perf version : 3.10.53
->    # arch : armv7l
->    # nrcpus online : 4
->    # nrcpus avail : 1
->    # cpudesc : (null)
->    # total memory : 0 kB
->    # cmdline :
->    # event : name = cycles, type = 0, config = 0x0, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, excl_host = 0, excl_guest = 1, precise_ip = 0
->    # pmu mappings: not available
->    # ========
->    #
->
-> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+>=20
+> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>=20
+> Thanks.
+>=20
+> Tomi, can you take it?
 
-I guess the total_memory, cmdline and pmu mappings are somehow affected
-by the broken cpudesc.  Do they have their own problem on ARM?
+Thanks, queued for 3.18 fixes.
 
-Anyway I think it's good to check the result properly, so
-
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-
-Thanks,
-Namhyung
+ Tomi
 
 
-> ---
->  tools/perf/util/header.c | 7 +++++--
->  1 file changed, 5 insertions(+), 2 deletions(-)
->
-> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-> index ce0de00..39b80ac 100644
-> --- a/tools/perf/util/header.c
-> +++ b/tools/perf/util/header.c
-> @@ -605,8 +605,10 @@ static int write_cpudesc(int fd, struct perf_header *h __maybe_unused,
->  			break;
->  	}
->  
-> -	if (ret)
-> +	if (ret) {
-> +		ret = -1;
->  		goto done;
-> +	}
->  
->  	s = buf;
->  
-> @@ -950,7 +952,8 @@ static int write_total_mem(int fd, struct perf_header *h __maybe_unused,
->  		n = sscanf(buf, "%*s %"PRIu64, &mem);
->  		if (n == 1)
->  			ret = do_write(fd, &mem, sizeof(mem));
-> -	}
-> +	} else
-> +		ret = -1;
->  	free(buf);
->  	fclose(fp);
->  	return ret;
+
+
+--JfDdJEsOJUsSskD1fKJVInRgdE5n9EOu7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUR1aIAAoJEPo9qoy8lh71JLkQAIpD2m1Xb7+RUIdVD/eXGN9W
+E9sl/hk9WPGSH+QhqmiImw6qJb8FPk2M+KqNFgFtmFjm7Eus8aJ6xvM3q4kgVC7U
+KEIZsIZ/qFQ7YBCLRc0kLjcvPJK8SCrEGvPpkpxfWOIRKTg6Ii9IlsF20SY79um0
+AMkpToq8GAgQmDg14cuH+hGYexzDvYMkqVBW5YZVmUGy1IoLD7qbkapyxuOPq1vF
+VAHGeMvPwJhmwAQ7PTtpx80aqLfIolRTZxPqZF1h+TC0q6YibdFJHe1fcIRw1gVT
+pytqZCNgwFOGLwhBi1i2hJ7M0hkmwUFkwaU2Geo1WeRei481IFJUHEPfZiTbBhO7
+f9nT1auKMvRj/bJ0q3RoG7wU7JaeEImEs7PxHPV3vBn4HLjRdyH1jHg1acfwI5ad
+u+NpPcEOZzZZWX53E/aocUjJKNxP4UwP95iguiKbTvyKRITOBk82OZTJHwlTe5D4
+ZLTaBK3NARl2XSzRi9sRHzolPW4TVRkT5i3Z3H7PNdXvjoxM/WWosAa91O4G5Llf
+bXuC57YnXYBkVXZ91Lfpi+v9B7Yhn5HP8387a91zxibzh+32iS6ewLAnKnv9FsqS
+XQaV1gSTzDtnq6H1kf1LOMXYXhx1ZgHJkhf2mvIeGfeAdM1rwRB+KPTk9NQSmxXf
+3L5zJhYwdhUfRMqN4eMG
+=k+tx
+-----END PGP SIGNATURE-----
+
+--JfDdJEsOJUsSskD1fKJVInRgdE5n9EOu7--
