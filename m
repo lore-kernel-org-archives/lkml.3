@@ -1,170 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752398AbaJVNbO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 09:31:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45350 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751386AbaJVNbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 09:31:12 -0400
-Date: Wed, 22 Oct 2014 09:30:42 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: "Alasdair G. Kergon" <agk@redhat.com>, Mike Snitzer <msnitzer@redhat.com>,
-        Jonathan Brassow <jbrassow@redhat.com>,
-        Edward Thornber <thornber@redhat.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>
-cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: [PATCH 12/18] dm: implement copy
-In-Reply-To: <alpine.LRH.2.02.1410220913280.31351@file01.intranet.prod.int.rdu2.redhat.com>
-Message-ID: <alpine.LRH.2.02.1410220930110.31351@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1410220913280.31351@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1752473AbaJVNbo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 09:31:44 -0400
+Received: from mailgw02.mediatek.com ([210.61.82.184]:42271 "EHLO
+	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750730AbaJVNbm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 09:31:42 -0400
+X-Listener-Flag: 11101
+Subject: Re: [PATCH v4 8/8] ARM: mediatek: Add config option for mediatek
+ SoCs.
+From: Yingjoe Chen <yingjoe.chen@mediatek.com>
+To: Matthias Brugger <matthias.bgg@gmail.com>
+CC: Rob Herring <robh+dt@kernel.org>, <arm@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        srv_heupstream <srv_heupstream@mediatek.com>,
+        Yingjoe Chen <yingjoe.chen@gmail.com>,
+        Hsien-Chun Yen <hc.yen@mediatek.com>,
+        huang eddie <eddie.huang@mediatek.com>,
+        Nathan Chung <nathan.chung@mediatek.com>,
+        Yuhau Chen <yh.chen@mediatek.com>,
+        Sascha Hauer <kernel@pengutronix.de>
+In-Reply-To: <CABuKBe+Ew6R2Kb90-gDHBQ4HuydfFxJdYmr+v9-KNC-b0K4Tkw@mail.gmail.com>
+References: <1413973797-17619-1-git-send-email-yingjoe.chen@mediatek.com>
+	 <1413973797-17619-9-git-send-email-yingjoe.chen@mediatek.com>
+	 <CABuKBe+Ew6R2Kb90-gDHBQ4HuydfFxJdYmr+v9-KNC-b0K4Tkw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 22 Oct 2014 21:31:36 +0800
+Message-ID: <1413984696.19686.72.camel@mtksdaap41>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements basic copy support for device mapper core.
-Individual targets can enable copy support by setting ti->copy_supported.
 
-Device mapper device advertises copy support if at least one target
-supports copy and for this target, at least one underlying device supports
-copy.
+Hi Matthias,
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+On Wed, 2014-10-22 at 15:18 +0200, Matthias Brugger wrote:
+> 2014-10-22 12:29 GMT+02:00 Joe.C <yingjoe.chen@mediatek.com>:
+> > +
+> > +if ARCH_MEDIATEK
+> > +
+> > +config MACH_MT6589
+> > +       bool "MediaTek MT6589 SoCs support"
+> > +       default ARCH_MEDIATEK
+> > +
+> > +config MACH_MT8127
+> > +       bool "MediaTek MT8127 SoCs support"
+> > +       default ARCH_MEDIATEK
+> > +
+> > +config MACH_MT8135
+> > +       bool "MediaTek MT8135 SoCs support"
+> > +       default ARCH_MEDIATEK
+> > +
+> > +endif
+> 
+> MACH_MTxxxx are not used nowhere, please remove them.
 
----
- drivers/md/dm-table.c         |    9 +++++++++
- drivers/md/dm.c               |   42 +++++++++++++++++++++++++++++++++++++++---
- include/linux/device-mapper.h |    5 +++++
- 3 files changed, 53 insertions(+), 3 deletions(-)
+Yes, they are not used in this series yet.
 
-Index: linux-3.18-rc1/drivers/md/dm.c
-===================================================================
---- linux-3.18-rc1.orig/drivers/md/dm.c	2014-10-21 00:46:30.000000000 +0200
-+++ linux-3.18-rc1/drivers/md/dm.c	2014-10-21 00:49:09.000000000 +0200
-@@ -1559,6 +1559,31 @@ static int __send_write_same(struct clon
- 	return __send_changing_extent_only(ci, get_num_write_same_bios, NULL);
- }
- 
-+static int __send_copy(struct clone_info *ci)
-+{
-+	struct dm_target *ti;
-+	sector_t bound;
-+
-+	ti = dm_table_find_target(ci->map, ci->sector);
-+	if (!dm_target_is_valid(ti))
-+		return -EIO;
-+
-+	if (!ti->copy_supported)
-+		return -EOPNOTSUPP;
-+
-+	bound = max_io_len(ci->sector, ti);
-+
-+	if (unlikely(ci->sector_count > bound))
-+		return -EOPNOTSUPP;
-+
-+	__clone_and_map_simple_bio(ci, ti, 0, NULL, NULL);
-+
-+	ci->sector += ci->sector_count;
-+	ci->sector_count = 0;
-+
-+	return 0;
-+}
-+
- /*
-  * Select the correct strategy for processing a non-flush bio.
-  */
-@@ -1572,6 +1597,8 @@ static int __split_and_process_non_flush
- 		return __send_discard(ci);
- 	else if (unlikely(bio->bi_rw & REQ_WRITE_SAME))
- 		return __send_write_same(ci);
-+	else if (unlikely(bio->bi_rw & REQ_COPY))
-+		return __send_copy(ci);
- 
- 	ti = dm_table_find_target(ci->map, ci->sector);
- 	if (!dm_target_is_valid(ti))
-@@ -1656,6 +1683,11 @@ static int dm_merge_bvec(struct request_
- 	if (!dm_target_is_valid(ti))
- 		goto out;
- 
-+	if (unlikely((bvm->bi_rw & REQ_COPY) != 0)) {
-+		if (!ti->copy_supported)
-+			goto out_ret_max_size;
-+	}
-+
- 	/*
- 	 * Find maximum amount of I/O that won't need splitting
- 	 */
-@@ -1679,17 +1711,21 @@ static int dm_merge_bvec(struct request_
- 	 * entries.  So always set max_size to 0, and the code below allows
- 	 * just one page.
- 	 */
--	else if (queue_max_hw_sectors(q) <= PAGE_SIZE >> 9)
-+	else if (likely(!(bvm->bi_rw & REQ_COPY)) &&
-+		 queue_max_hw_sectors(q) <= PAGE_SIZE >> 9)
- 		max_size = 0;
- 
- out:
--	dm_put_live_table_fast(md);
- 	/*
- 	 * Always allow an entire first page
- 	 */
--	if (max_size <= biovec->bv_len && !(bvm->bi_size >> SECTOR_SHIFT))
-+	if (likely(!(bvm->bi_rw & REQ_COPY)) &&
-+	    max_size <= biovec->bv_len && !(bvm->bi_size >> SECTOR_SHIFT))
- 		max_size = biovec->bv_len;
- 
-+out_ret_max_size:
-+	dm_put_live_table_fast(md);
-+
- 	return max_size;
- }
- 
-Index: linux-3.18-rc1/include/linux/device-mapper.h
-===================================================================
---- linux-3.18-rc1.orig/include/linux/device-mapper.h	2014-10-21 00:42:40.000000000 +0200
-+++ linux-3.18-rc1/include/linux/device-mapper.h	2014-10-21 00:49:09.000000000 +0200
-@@ -251,6 +251,11 @@ struct dm_target {
- 	 * Set if this target does not return zeroes on discarded blocks.
- 	 */
- 	bool discard_zeroes_data_unsupported:1;
-+
-+	/*
-+	 * Set if the target supports XCOPY.
-+	 */
-+	bool copy_supported:1;
- };
- 
- /* Each target can link one of these into the table */
-Index: linux-3.18-rc1/drivers/md/dm-table.c
-===================================================================
---- linux-3.18-rc1.orig/drivers/md/dm-table.c	2014-10-21 00:34:45.000000000 +0200
-+++ linux-3.18-rc1/drivers/md/dm-table.c	2014-10-21 00:49:09.000000000 +0200
-@@ -443,6 +443,11 @@ static int dm_set_device_limits(struct d
- 		       q->limits.alignment_offset,
- 		       (unsigned long long) start << SECTOR_SHIFT);
- 
-+	if (ti->copy_supported)
-+		limits->max_copy_sectors =
-+			min_not_zero(limits->max_copy_sectors,
-+				bdev_get_queue(bdev)->limits.max_copy_sectors);
-+
- 	/*
- 	 * Check if merge fn is supported.
- 	 * If not we'll force DM to use PAGE_SIZE or
-@@ -1264,6 +1269,10 @@ combine_limits:
- 			       dm_device_name(table->md),
- 			       (unsigned long long) ti->begin,
- 			       (unsigned long long) ti->len);
-+
-+		limits->max_copy_sectors =
-+					min_not_zero(limits->max_copy_sectors,
-+					ti_limits.max_copy_sectors);
- 	}
- 
- 	return validate_hardware_logical_block_alignment(table, limits);
+MACH_MT8135 was used in mt8135 pinctrl driver [1] and will be used in
+mt8135 clk driver we are about to send. I don't want to create false
+dependency between these 2 series so I put it here.
+Do you prefer add them when they are first used?
+
+Joe.C
+
+[1]
+http://lists.infradead.org/pipermail/linux-arm-kernel/2014-September/289288.html
+
 
