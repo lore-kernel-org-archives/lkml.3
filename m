@@ -1,92 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703AbaJVNeK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 09:34:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59952 "EHLO mx1.redhat.com"
+	id S1752664AbaJVNeb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 09:34:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40006 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751483AbaJVNeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 09:34:05 -0400
-Date: Wed, 22 Oct 2014 09:33:40 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: "Alasdair G. Kergon" <agk@redhat.com>, Mike Snitzer <msnitzer@redhat.com>,
-        Jonathan Brassow <jbrassow@redhat.com>,
-        Edward Thornber <thornber@redhat.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>
-cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: [PATCH 17/18] dm kcopyd: change mutex to spinlock
-In-Reply-To: <alpine.LRH.2.02.1410220913280.31351@file01.intranet.prod.int.rdu2.redhat.com>
-Message-ID: <alpine.LRH.2.02.1410220933080.31351@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1410220913280.31351@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751582AbaJVNea (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 09:34:30 -0400
+From: Jan Kara <jack@suse.cz>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: hch@lst.de, LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>
+Subject: [PATCH] null_blk: Cleanup error recovery in null_add_dev()
+Date: Wed, 22 Oct 2014 15:34:21 +0200
+Message-Id: <1413984861-8260-1-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-job->lock is only taken for a finite amount of time and the process
-doesn't block while holding it, so change it from mutex to spinlock.
+When creation of queues fails in init_driver_queues(), we free the
+queues. But null_add_dev() doesn't test for this failure and continues
+with the setup leading to strange consequences, likely oops. Fix the
+problem by testing whether init_driver_queues() failed and do proper
+error cleanup.
 
-This change is needed for the next patch that makes it possible to call
-segment_complete from an interrupt. Taking mutexes inside an interrupt is
-not allowed.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-
+Coverity-id: 1148005
+Signed-off-by: Jan Kara <jack@suse.cz>
 ---
- drivers/md/dm-kcopyd.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/block/null_blk.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-Index: linux-3.16-rc5/drivers/md/dm-kcopyd.c
-===================================================================
---- linux-3.16-rc5.orig/drivers/md/dm-kcopyd.c	2014-07-15 19:20:34.000000000 +0200
-+++ linux-3.16-rc5/drivers/md/dm-kcopyd.c	2014-07-15 19:24:20.000000000 +0200
-@@ -21,7 +21,7 @@
- #include <linux/slab.h>
- #include <linux/vmalloc.h>
- #include <linux/workqueue.h>
--#include <linux/mutex.h>
-+#include <linux/spinlock.h>
- #include <linux/delay.h>
- #include <linux/device-mapper.h>
- #include <linux/dm-kcopyd.h>
-@@ -356,7 +356,7 @@ struct kcopyd_job {
- 	 * These fields are only used if the job has been split
- 	 * into more manageable parts.
- 	 */
--	struct mutex lock;
-+	spinlock_t lock;
- 	atomic_t sub_jobs;
- 	sector_t progress;
+diff --git a/drivers/block/null_blk.c b/drivers/block/null_blk.c
+index 2671a3f02f0c..8001e812018b 100644
+--- a/drivers/block/null_blk.c
++++ b/drivers/block/null_blk.c
+@@ -450,14 +450,10 @@ static int init_driver_queues(struct nullb *nullb)
  
-@@ -629,7 +629,7 @@ static void segment_complete(int read_er
- 	struct kcopyd_job *job = sub_job->master_job;
- 	struct dm_kcopyd_client *kc = job->kc;
+ 		ret = setup_commands(nq);
+ 		if (ret)
+-			goto err_queue;
++			return ret;
+ 		nullb->nr_queues++;
+ 	}
+-
+ 	return 0;
+-err_queue:
+-	cleanup_queues(nullb);
+-	return ret;
+ }
  
--	mutex_lock(&job->lock);
-+	spin_lock(&job->lock);
- 
- 	/* update the error */
- 	if (read_err)
-@@ -653,7 +653,7 @@ static void segment_complete(int read_er
- 			job->progress += count;
+ static int null_add_dev(void)
+@@ -507,7 +503,9 @@ static int null_add_dev(void)
+ 			goto out_cleanup_queues;
  		}
+ 		blk_queue_make_request(nullb->q, null_queue_bio);
+-		init_driver_queues(nullb);
++		rv = init_driver_queues(nullb);
++		if (rv)
++			goto out_cleanup_blk_queue;
+ 	} else {
+ 		nullb->q = blk_init_queue_node(null_request_fn, &nullb->lock, home_node);
+ 		if (!nullb->q) {
+@@ -516,7 +514,9 @@ static int null_add_dev(void)
+ 		}
+ 		blk_queue_prep_rq(nullb->q, null_rq_prep_fn);
+ 		blk_queue_softirq_done(nullb->q, null_softirq_done_fn);
+-		init_driver_queues(nullb);
++		rv = init_driver_queues(nullb);
++		if (rv)
++			goto out_cleanup_blk_queue;
  	}
--	mutex_unlock(&job->lock);
-+	spin_unlock(&job->lock);
  
- 	if (count) {
- 		int i;
-@@ -708,7 +708,7 @@ static void submit_job(struct kcopyd_job
- 	if (job->source.count <= SUB_JOB_SIZE)
- 		dispatch_job(job);
- 	else {
--		mutex_init(&job->lock);
-+		spin_lock_init(&job->lock);
- 		job->progress = 0;
- 		split_job(job);
- 	}
+ 	nullb->q->queuedata = nullb;
+-- 
+1.8.1.4
 
