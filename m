@@ -1,121 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932870AbaJVLHA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 07:07:00 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:12007 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932499AbaJVLG6 convert rfc822-to-8bit (ORCPT
+	id S932987AbaJVLIo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 07:08:44 -0400
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:46510 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932824AbaJVLIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 07:06:58 -0400
-X-AuditID: cbfee690-f79ab6d0000046f7-55-54478fcf036d
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
-To: "'Lee Jones'" <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, arnd@arndb.de, b29396@freescale.com,
-        boris.brezillon@free-electrons.com, tomasz.figa@gmail.com,
-        linux@arm.linux.org.uk, vikas.sajjan@samsung.com, naushad@samsung.com,
-        thomas.ab@samsung.com, kgene.kim@samsung.com, Li.Xiubo@freescale.com,
-        geert+renesas@glider.be, swarren@nvidia.com
-References: <1412066127-27063-1-git-send-email-pankaj.dubey@samsung.com>
- <20141007090923.GI25331@lee--X1>
-In-reply-to: <20141007090923.GI25331@lee--X1>
-Subject: RE: [PATCH v7] mfd: syscon: Decouple syscon interface from platform
- devices
-Date: Wed, 22 Oct 2014 16:36:28 +0530
-Message-id: <001901cfede8$5554cc50$fffe64f0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQDZRVlgp8/5Ih7zB/yalgUesapzCwFxu/5wnh226aA=
-Content-language: en-us
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjleLIzCtJLcpLzFFi42JZI2JSo3u+3z3EoOGcnMXfScfYLR7u7Gex
-	OPBiIYvF3NmTGC16F1xls7j/9SijReeFDlaLTY+vsVpc3jWHzWLG+X1MFrcv81p8Ovqf1eLG
-	9BZWi45ljBardv1htLj5bDuTg4BHS3MPm8fvX5MYPZ5susjo8e9wP5PHxLO6Hjtn3WX3uHNt
-	D5vH5iX1Hr3N79g8+rasYvT4vEkugDuKyyYlNSezLLVI3y6BK+NRxyXGglUiFXN+drA2MG4W
-	6GLk4JAQMJHYtYy/i5ETyBSTuHBvPVsXIxeHkMBSRonbra/YIRImEi/azrJDJKYzSuyaeJIJ
-	wvnLKHHk9Gw2kCo2AV2JJ+/nMoPYIgJqEjf3zGICsZkFepkl/r1kBLGFBLIlXv1bCRbnBKq/
-	f2ElWK+wQJjE9dX3WUBsFgFViffP54Bt5hWwlGjqmcQIYQtK/Jh8jwViprrEpHmLmCFsbYkn
-	7y6wQlyqILHj7GtGiBusJJ4297FD1IhLTHrwEOwDCYEzHBLH9q5khlgmIPFt8iEWSFDISmw6
-	wAwxR1Li4IobLBMYJWYhWT0LyepZSFbPQrJiASPLKkbR1ILkguKk9CITveLE3OLSvHS95Pzc
-	TYzAZHL637MJOxjvHbA+xCjAwajEw+vA5h4ixJpYVlyZe4jRFOiiicxSosn5wJSVVxJvaGxm
-	ZGFqYmpsZG5ppiTO+1rqZ7CQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxpz+SXLRXX/mcj06
-	MPOQlaHj2qhfuoJynDODmnfOvjrZ8uKBBenTYvubblmKu+WvsL3YvtuqZUWo0ZXZbRfvcP9r
-	ZFzWXerLfcyQM+W7yEbdkL2lVzyP8v02nPZm14UO5rX/JQ2eWQqua15zcYe3F6ci78PvXkwC
-	Ts4tq28V7NKdes+4yraMX4mlOCPRUIu5qDgRAOdAWoMhAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJKsWRmVeSWpSXmKPExsVy+t9jQd3z/e4hBk9bRS3+TjrGbvFwZz+L
-	xYEXC1ks5s6exGjRu+Aqm8X9r0cZLTovdLBabHp8jdXi8q45bBYzzu9jsrh9mdfi09H/rBY3
-	prewWnQsY7RYtesPo8XNZ9uZHAQ8Wpp72Dx+/5rE6PFk00VGj3+H+5k8Jp7V9dg56y67x51r
-	e9g8Ni+p9+htfsfm0bdlFaPH501yAdxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6
-	hpYW5koKeYm5qbZKLj4Bum6ZOUDvKCmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEy
-	QAMJaxgzHnVcYixYJVIx52cHawPjZoEuRk4OCQETiRdtZ9khbDGJC/fWs3UxcnEICUxnlNg1
-	8SQThPOXUeLI6dlsIFVsAroST97PZQaxRQTUJG7umcUEYjML9DJL/HvJCGILCWRLvPq3EizO
-	CVR//8JKsF5hgTCJ66vvs4DYLAKqEu+fzwHbzCtgKdHUM4kRwhaU+DH5HgvETHWJSfMWMUPY
-	2hJP3l1ghbhUQWLH2deMEDdYSTxt7mOHqBGXmPTgIfsERqFZSEbNQjJqFpJRs5C0LGBkWcUo
-	mlqQXFCclJ5rqFecmFtcmpeul5yfu4kRnKyeSe1gXNlgcYhRgINRiYfXgc09RIg1say4MvcQ
-	owQHs5IIr1I9UIg3JbGyKrUoP76oNCe1+BCjKdCnE5mlRJPzgYk0ryTe0NjE3NTY1NLEwsTM
-	Ukmc90CrdaCQQHpiSWp2ampBahFMHxMHp1QDo/shOcvbR57sbrglJB8QF8JTeukG58KQ9l+s
-	p3hLJNiVvzeuWfaeWWl/+fmQxRdEQ+dNnHZzw3EO+as2rCe0+OYKLtPMWrrP2JxTY8pjX+3g
-	e3ouS/XKPVWmntnhV+KWw2G7/9+zq1uCMyvlpiz8dUq0wtU+aebMzDinzY7Hz7a+PvUrXmWX
-	pxJLcUaioRZzUXEiAA6Iq+hsAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 22 Oct 2014 07:08:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <87ioje2ggq.fsf@x220.int.ebiederm.org>
+References: <1401975635-6162-1-git-send-email-drysdale@google.com>
+ <CALCETrVraoD+r4zxBoGd+BV5P275AXcRV_R00SSr8fjQzRHnUg@mail.gmail.com>
+ <87zjcszz8y.fsf@x220.int.ebiederm.org> <CAHse=S-Xyk7CFn=tAGzo+tuUFt+04aBw+mGQmi=kWAaBJGALBw@mail.gmail.com>
+ <CALCETrXBjLZTWVJfcsE4NA-JP9zSSgn=6ND0=cZ9BTy=CoN7pA@mail.gmail.com> <87ioje2ggq.fsf@x220.int.ebiederm.org>
+From: David Drysdale <drysdale@google.com>
+Date: Wed, 22 Oct 2014 12:08:17 +0100
+Message-ID: <CAHse=S_dpm8Do-H01Bo49a9TdYw+pSDzYomLOrBsYEcdO=Pytw@mail.gmail.com>
+Subject: Re: [PATCHv4 RESEND 0/3] syscalls,x86: Add execveat() system call
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
+        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Lee,
+On Tue, Oct 21, 2014 at 5:29 AM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> Andy Lutomirski <luto@amacapital.net> writes:
+>
+>> On Mon, Oct 20, 2014 at 6:48 AM, David Drysdale <drysdale@google.com> wrote:
+>>> On Sun, Oct 19, 2014 at 1:20 AM, Eric W. Biederman
+>>> <ebiederm@xmission.com> wrote:
+>>>> Andy Lutomirski <luto@amacapital.net> writes:
+>>>>
+>>>>> [Added Eric Biederman, since I think your tree might be a reasonable
+>>>>> route forward for these patches.]
+>>>>>
+>>>>> On Thu, Jun 5, 2014 at 6:40 AM, David Drysdale <drysdale@google.com> wrote:
+>>>>>> Resending, adding cc:linux-api.
+>>>>>>
+>>>>>> Also, it may help to add a little more background -- this patch is
+>>>>>> needed as a (small) part of implementing Capsicum in the Linux kernel.
+>>>>>>
+>>>>>> Capsicum is a security framework that has been present in FreeBSD since
+>>>>>> version 9.0 (Jan 2012), and is based on concepts from object-capability
+>>>>>> security [1].
+>>>>>>
+>>>>>> One of the features of Capsicum is capability mode, which locks down
+>>>>>> access to global namespaces such as the filesystem hierarchy.  In
+>>>>>> capability mode, /proc is thus inaccessible and so fexecve(3) doesn't
+>>>>>> work -- hence the need for a kernel-space
+>>>>>
+>>>>> I just found myself wanting this syscall for another reason: injecting
+>>>>> programs into sandboxes or otherwise heavily locked-down namespaces.
+>>>>>
+>>>>> For example, I want to be able to reliably do something like nsenter
+>>>>> --namespace-flags-here toybox sh.  Toybox's shell is unusual in that
+>>>>> it is more or less fully functional, so this should Just Work (tm),
+>>>>> except that the toybox binary might not exist in the namespace being
+>>>>> entered.  If execveat were available, I could rig nsenter or a similar
+>>>>> tool to open it with O_CLOEXEC, enter the namespace, and then call
+>>>>> execveat.
+>>>>>
+>>>>> Is there any reason that these patches can't be merged more or less as
+>>>>> is for 3.19?
+>>>>
+>>>> Yes.  There is a silliness in how it implements fexecve.  The fexecve
+>>>> case should be use the empty string "" not a NULL pointer to indication
+>>>> that.  That change will then harmonize execveat with the other ...at
+>>>> system calls and simplify the code and remove a special case.  I believe
+>>>> using the empty string "" requires implementing the AT_EMPTY_PATH flag.
+>>>
+>>> Good point -- I'll shift to "" + AT_EMPTY_PATH.
+>>
+>> Pending a better idea, I would also see if the patches can be changed
+>> to return an error if d_path ends up with an "(unreachable)" thing
+>> rather than failing inexplicably later on.
+>
+> For my reference we are talking about
+>
+>> @@ -1489,7 +1524,21 @@ static int do_execve_common(struct filename *filename,
+>>       sched_exec();
+>>
+>>       bprm->file = file;
+>> -     bprm->filename = bprm->interp = filename->name;
+>> +     if (filename && fd == AT_FDCWD) {
+>> +             bprm->filename = filename->name;
+>> +     } else {
+>> +             pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
+>> +             if (!pathbuf) {
+>> +                     retval = -ENOMEM;
+>> +                     goto out_unmark;
+>> +             }
+>> +             bprm->filename = d_path(&file->f_path, pathbuf, PATH_MAX);
+>> +             if (IS_ERR(bprm->filename)) {
+>> +                     retval = PTR_ERR(bprm->filename);
+>> +                     goto out_unmark;
+>> +             }
+>> +     }
+>> +     bprm->interp = bprm->filename;
+>>
+>>       retval = bprm_mm_init(bprm);
+>>       if (retval)
+>
+> The interesting case for fexecve is when we either don't know what files
+> are present or we don't want to depend on which files are present.
+>
+> As Al pointed out d_path really isn't the right solution.  It fails when
+> printing /proc/self/fd/${fd}/${filename->name} would work, and the
+> "(deleted)" or "(unreachable)" strings are wrong.
+>
+> The test for today's cases should be:
+> if ((filename->name[0] == '/') || fd == AT_FDCWD) {
+>         bprm->filename = filename->name;
+> }
+>
+> To handle the case where the file descriptor is relevant.
+(s/relevant/irrelevant)
 
-On Tuesday, October 07, 2014 2:39 PM, Lee Jones wrote,
-> On Tue, 30 Sep 2014, Pankaj Dubey wrote:
-> 
-> > Currently a syscon entity can be only registered directly through a
-> > platform device that binds to a dedicated syscon driver. However in
-> > certain use cases it is desirable to make a device used with another
-> > driver a syscon interface provider.
-> >
-> > For example, certain SoCs (e.g. Exynos) contain system controller
-> > blocks which perform various functions such as power domain control,
-> > CPU power management, low power mode control, but in addition contain
-> > certain IP integration glue, such as various signal masks, coprocessor
-> > power control, etc. In such case, there is a need to have a dedicated
-> > driver for such system controller but also share registers with other
-> > drivers. The latter is where the syscon interface is helpful.
-> >
-> > In case of DT based platforms, this patch decouples syscon object from
-> > syscon platform driver, and allows to create syscon objects first time
-> > when it is required by calling of syscon_regmap_lookup_by APIs and
-> > keep a list of such syscon objects along with syscon provider
-> > device_nodes and regmap handles.
-> >
-> > For non-DT based platforms, this patch keeps syscon platform driver
-> > structure so that syscon can be probed and such non-DT based drivers
-> > can use syscon_regmap_lookup_by_pdev API and access regmap handles.
-> > Once all users of "syscon_regmap_lookup_by_pdev" migrated to DT based,
-> > we can completely remove platform driver of syscon, and keep only
-> > helper functions to get regmap handles.
-> >
-> > Suggested-by: Arnd Bergmann <arnd@arndb.de>
-> > Suggested-by: Tomasz Figa <tomasz.figa@gmail.com>
-> > Tested-by: Vivek Gautam <gautam.vivek@samsung.com>
-> > Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> > Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> > Reviewed-by: Arnd Bergmann <arnd@arndb.de>
-> > Tested-by: Heiko Stuebner <heiko@sntech.de>
-> > Reviewed-by: Heiko Stuebner <heiko@sntech.de>
-> 
-> Applied for v3.19.
+Yep, good spot.
 
-I can't see this in 3.18-rc1, as this patch is one of dependency for many of Exynos PMU related patches,
-will you please queue this patch for 3.18-rc2, so that already ready to be in patches having this patch as
-dependency can be taken in.
+> For the case where the file descriptor is relevant let me suggest
+> setting bprm->filename and bprm->interp to:
+>
+> /dev/fd/${fd}/${filename->name}
 
-Thanks,
-Pankaj Dubey
-> 
-> --
-> Lee Jones
-> Linaro STMicroelectronics Landing Team Lead Linaro.org │ Open source software
-> for ARM SoCs Follow Linaro: Facebook | Twitter | Blog
+I'll send out an updated patchset with this approach, but I have a slight
+reservation. Given that /dev/fd is a symlink to /proc/self/fd, this approach
+means that script invocations will always fail on a /proc-less system,
+where the previous iteration might have worked.
 
+(As it happens, this isn't a restriction that affects the things I'm
+working on, as Capsicum wouldn't allow script invocation anyway.
+However, scenarios without /proc were nominally one of the motivating
+factors for execveat in the first place...)
+
+> It is more a description of what we have done but as a magic string it
+> is descriptive.  Documetation/devices.txt documents that /dev/fd/ should
+> exist, making it an unambiguous path.  Further these days the kernel
+> sets the device naming policy in dev, so I think we are strongly safe in
+> using that path in any event.
+>
+> I think execveat is interesting in the kernel because the motivating
+> cases are the cases where anything except a static executable is
+> uninteresting.
+
+FYI, there is potential in the future for something other than static
+executables -- the FreeBSD Capsicum implementation includes changes
+to the dynamic linker to get its search path as a list of pre-opened dfds
+(in LD_LIBRARY_PATH_FDS) rather than paths.
+
+> Now it has been suggested creating a dupfs or a mini-proc.  I think that
+> sounds like a nice companion, to the concept of a locked down root.
+> But I don't think it removes the need for execveat (because we still
+> have the case where we don't want to care what is mounted, and are happy
+> to use static executables).
+>
+> Eric
+>
