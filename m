@@ -1,144 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104AbaJVB2j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 21:28:39 -0400
-Received: from mga01.intel.com ([192.55.52.88]:61975 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752922AbaJVB2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 21:28:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,764,1406617200"; 
-   d="asc'?scan'208";a="618041189"
-From: "Rustad, Mark D" <mark.d.rustad@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/sysctl: Resolve missing-field-initializers
- warnings
-Thread-Topic: [PATCH] kernel/sysctl: Resolve missing-field-initializers
- warnings
-Thread-Index: AQHP56PEt3kx/A+vRUGQ12eDG0yXvpw2mxwrgATPZICAABhmgA==
-Date: Tue, 21 Oct 2014 20:34:32 +0000
-Message-ID: <F4A50114-6182-4448-A9E7-B0D68A6F615A@intel.com>
-References: <1413286868-21870-1-git-send-email-jeffrey.t.kirsher@intel.com>
- <87a94szydt.fsf@x220.int.ebiederm.org>
- <20141021120711.0ddb53adb4fdecf241826473@linux-foundation.org>
-In-Reply-To: <20141021120711.0ddb53adb4fdecf241826473@linux-foundation.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [134.134.176.66]
-Content-Type: multipart/signed;
-	boundary="Apple-Mail=_EAF71888-35FD-4BB3-9E16-7E84958625A5";
-	protocol="application/pgp-signature"; micalg=pgp-sha1
+	id S932249AbaJVB3B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 21:29:01 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:33342 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754110AbaJVB3A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Oct 2014 21:29:00 -0400
+X-Original-SENDERIP: 10.177.226.38
+X-Original-MAILFROM: karam.lee@lge.com
+Date: Wed, 22 Oct 2014 10:28:57 +0900
+From: "karam.lee" <karam.lee@lge.com>
+To: Jerome Marchand <jmarchan@redhat.com>
+Cc: minchan@kernel.org, ngupta@vflare.org, linux-kernel@vger.kernel.org,
+        matthew.r.wilcox@intel.com, seungho1.park@lge.com
+Subject: Re: [PATCH v3 3/3] zram: implement rw_page operation of zram
+Message-ID: <20141022012857.GA13264@caribbean.org>
+References: <1413876458-19279-1-git-send-email-karam.lee@lge.com>
+ <1413876458-19279-4-git-send-email-karam.lee@lge.com>
+ <54466649.901@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54466649.901@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Apple-Mail=_EAF71888-35FD-4BB3-9E16-7E84958625A5
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain;
-	charset=us-ascii
+On Tue, Oct 21, 2014 at 03:57:29PM +0200, Jerome Marchand wrote:
+> On 10/21/2014 09:27 AM, karam.lee@lge.com wrote:
+> > From: "karam.lee" <karam.lee@lge.com>
+> > 
+> > This patch implements rw_page operation for zram block device.
+> > 
+> > I implemented the feature in zram and tested it.
+> > Test bed was the G2, LG electronic mobile device, whtich has msm8974
+> > processor and 2GB memory.
+> > With a memory allocation test program consuming memory, the system
+> > generates swap.
+> > And operating time of swap_write_page() was measured.
+> > 
+> > --------------------------------------------------
+> > |             |   operating time   | improvement |
+> > |             |  (20 runs average) |             |
+> > --------------------------------------------------
+> > |with patch   |    1061.15 us      |    +2.4%    |
+> > --------------------------------------------------
+> > |without patch|    1087.35 us      |             |
+> > --------------------------------------------------
+> > 
+> > Each test(with paged_io,with BIO) result set shows normal distribution
+> > and has equal variance.
+> > I mean the two values are valid result to compare.
+> > I can say operation with paged I/O(without BIO) is faster 2.4% with
+> > confidence level 95%.
+> > 
+> > Signed-off-by: karam.lee <karam.lee@lge.com>
+> > ---
+> >  drivers/block/zram/zram_drv.c |   38 ++++++++++++++++++++++++++++++++++++++
+> >  1 file changed, 38 insertions(+)
+> > 
+> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> > index 4565fdc..696f0b5 100644
+> > --- a/drivers/block/zram/zram_drv.c
+> > +++ b/drivers/block/zram/zram_drv.c
+> > @@ -810,8 +810,46 @@ static void zram_slot_free_notify(struct block_device *bdev,
+> >  	atomic64_inc(&zram->stats.notify_free);
+> >  }
+> >  
+> > +static int zram_rw_page(struct block_device *bdev, sector_t sector,
+> > +		       struct page *page, int rw)
+> > +{
+> > +	int offset, ret = 1;
+> 
+> Small nitpick, but why do you initialize ret to 1? It doesn't seem to be
+> ever used (nor is 1 a valid return value AFAICT).
+> 
+> It otherwise looks good.
+> 
+> Acked-by: Jerome Marchand <jmarchan@redhat.com>
+> 
 
-On Oct 21, 2014, at 12:07 PM, Andrew Morton <akpm@linux-foundation.org> =
-wrote:
+Thank you for reply. I agree with your opinion.
 
-> On Sat, 18 Oct 2014 17:39:10 -0700 ebiederm@xmission.com (Eric W. =
-Biederman) wrote:
->=20
->> Jeff Kirsher <jeffrey.t.kirsher@intel.com> writes:
->>=20
->>> From: Mark Rustad <mark.d.rustad@intel.com>
->>>=20
->>> Resolve missing-field-initializers warnings in W=3D2 builds by
->>> using designated initialization.
->>=20
->> ick.  No.
->>=20
->> That gcc warning makes no sense.  In this case heeding it makes the =
-code
->> significantly uglier and significantly more confusing.
->>=20
->=20
-> Yeah, it's not pretty.
->=20
->>> --- a/kernel/sysctl.c
->>> +++ b/kernel/sysctl.c
->>> @@ -257,7 +257,7 @@ static struct ctl_table sysctl_base_table[] =3D =
-{
->>> 		.mode		=3D 0555,
->>> 		.child		=3D dev_table,
->>> 	},
->>> -	{ }
->>> +	{ .procname =3D NULL }
->>> };
->=20
-> We use { } to mean "all zero" in 12 squillion places.  Do they all =
-warn
-> or is there something special about this site?
+It was my mistake to initialize ret to 1.
 
-Well, about 6 squillion of them are { }, a GCC extension, and the other =
-6 squillion are { 0 }. Both forms generate the warning. There is nothing =
-special about this site. I just was resolving warnings in order to find =
-some that had some significance. A flood of 125,000 warnings is too =
-awful to look at. I got it down to around 1,500 and did find a few =
-hazards and sent patches to address them, which have been accepted in =
-one form or another.
+I will resend the fixed version.
 
-I had sent patches to add diagnostic control macros to allow a warning =
-to be turned off for a range of code. I would have liked to use them to =
-provide something like a ZERO_ENTRY macro that would have looked =
-something like this:
-
-#define ZERO_ENTRY DIAG_PUSH DIAG_IGNORE(missing-field-initializers) { 0 =
-} DIAG_POP
-
-which would have provided a standard way to get a zero entry that would =
-have avoided the warnings. Borislav was quite opposed to the notion of =
-diagnostic control macros. I rather like the notion as long as their use =
-is tightly controlled.
-
-I'm sure that we both feel that there should be a form that the compiler =
-does not generate this warning for as a preferred solution. The =
-designated initialization is at best a 3rd-best solution, though naming =
-the field used to identify the end of the table is not a bad thing =
-either.
-
-I do like enabling lots of additional warnings to find problems in code, =
-but when it results in such a flood of messages it is not a very useful =
-approach, hence my tendency to want to address them somehow, so that =
-meaningful ones can be noticed.
-
---=20
-Mark Rustad, Networking Division, Intel Corporation
+> > +	u32 index;
+> > +	struct zram *zram;
+> > +	struct bio_vec bv;
+> > +
+> > +	zram = bdev->bd_disk->private_data;
+> > +	if (!valid_io_request(zram, sector, PAGE_SIZE)) {
+> > +		atomic64_inc(&zram->stats.invalid_io);
+> > +		ret = -EINVAL;
+> > +		goto out;
+> > +	}
+> > +
+> > +	down_read(&zram->init_lock);
+> > +	if (unlikely(!init_done(zram))) {
+> > +		ret = -ENOMEM;
+> > +		goto out_unlock;
+> > +	}
+> > +
+> > +	index = sector >> SECTORS_PER_PAGE_SHIFT;
+> > +	offset = sector & (SECTORS_PER_PAGE - 1) << SECTOR_SHIFT;
+> > +
+> > +	bv.bv_page = page;
+> > +	bv.bv_len = PAGE_SIZE;
+> > +	bv.bv_offset = 0;
+> > +
+> > +	ret = zram_bvec_rw(zram, &bv, index, offset, rw);
+> > +
+> > +out_unlock:
+> > +	up_read(&zram->init_lock);
+> > +out:
+> > +	page_endio(page, rw, ret);
+> > +	return ret;
+> > +}
+> > +
+> >  static const struct block_device_operations zram_devops = {
+> >  	.swap_slot_free_notify = zram_slot_free_notify,
+> > +	.rw_page = zram_rw_page,
+> >  	.owner = THIS_MODULE
+> >  };
+> >  
+> > 
+> 
+> 
 
 
---Apple-Mail=_EAF71888-35FD-4BB3-9E16-7E84958625A5
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment; filename="signature.asc"
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Message signed with OpenPGP using GPGMail
-
------BEGIN PGP SIGNATURE-----
-Comment: GPGTools - http://gpgtools.org
-
-iQIcBAEBAgAGBQJURsNYAAoJEDwO/+eO4+5u1i4P/Rnz1/JXrNQ7Yq2BgFPZzPbV
-w8TmNBsv9EEiBhdd6H7l7GN0bzsrtVCjd+brFkl9GDlLPoCJaKNjqq1VluaiIzXi
-vFqTiV2GDgiDanibbWFpI0OhPUxnkFgBSsrD4dJ08JHWMXJLud5iDsrrdXtGVjI7
-vF4iwHicognd8m5s9Zn7K0C1F0tdkpczLOInxU4LxgYT7u1JO2kz7Ap3zXcfDG0r
-wQnpLP9KvN0luIVkM36ZaTAQU0MMW+7XVxU+zKTiSM4Ox4D5dPBzwARs5EpD+hMN
-7Mx/arD7tc6SskDgABMWNSbSzPDEBjWfl0PW0ylEzEr+yjnSz0QS3FHNmFa5oiq+
-PtZx00xBR7k/tij/YJOkFtbLTKCSM1+iTqUC2S37+KqhZvdTaYpYl2P9NNSGITp+
-mIdIodbchAG4xOuK5iFSN9zQDpNOgb9RPbnA0by64c432W8k8tNHQH5d5x/u2dYZ
-PjueCf80QKwveFnj/VQeyCKIpIDzKVu3sdIyllNeAdtzLobI/JzpGLTRaQoxW1kk
-a7DxVYFTPCEOm2D+8YZz78pR/WMsGqa6LhteERsF50/ZBQR6oOMjOyvy7JptUy0f
-0IScIGTS1dUF8HqwqPPi2TCZ+Xt/14kbmI9xrdnU3PK6ozXQ9YossxqeuXeThVLq
-Eu+XU9dpjmyAXn2923+k
-=NGll
------END PGP SIGNATURE-----
-
---Apple-Mail=_EAF71888-35FD-4BB3-9E16-7E84958625A5--
