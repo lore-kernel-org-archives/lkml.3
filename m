@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755227AbaJVPrJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 11:47:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63850 "EHLO mx1.redhat.com"
+	id S1755254AbaJVPrS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 11:47:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48446 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755202AbaJVPrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 11:47:06 -0400
-Date: Wed, 22 Oct 2014 18:50:37 +0300
+	id S1753250AbaJVPrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 11:47:15 -0400
+Date: Wed, 22 Oct 2014 18:50:40 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
+Cc: David Hildenbrand <dahi@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
         virtualization@lists.linux-foundation.org
-Subject: [PATCH RFC v2 06/16] virtio: make endian-ness depend on virtio 1.0
-Message-ID: <1413992894-22976-7-git-send-email-mst@redhat.com>
+Subject: [PATCH RFC v2 07/16] virtio_config: endian conversion for v1.0
+Message-ID: <1413992894-22976-8-git-send-email-mst@redhat.com>
 References: <1413992894-22976-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -23,31 +25,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-virtio 1.0 is LE, virtio without 1.0 is native endian.
+We (ab)use virtio conversion functions for device-specific
+config space accesses.
 
+Reviewed-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- include/linux/virtio_config.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/virtio_config.h | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
 diff --git a/include/linux/virtio_config.h b/include/linux/virtio_config.h
-index 7d46280..be0f6dd 100644
+index be0f6dd..09cd89c 100644
 --- a/include/linux/virtio_config.h
 +++ b/include/linux/virtio_config.h
-@@ -157,11 +157,11 @@ int virtqueue_set_affinity(struct virtqueue *vq, int cpu)
- #define DEFINE_VIRTIO_XX_TO_CPU(bits) \
- static inline u##bits virtio##bits##_to_cpu(struct virtio_device *vdev, __virtio##bits val) \
- { \
--	return __virtio##bits##_to_cpu(false, val); \
-+	return __virtio##bits##_to_cpu(virtio_has_feature(vdev, VIRTIO_F_VERSION_1), val); \
- } \
- static inline __virtio##bits cpu_to_virtio##bits(struct virtio_device *vdev, u##bits val) \
- { \
--	return __cpu_to_virtio##bits(false, val); \
-+	return __cpu_to_virtio##bits(virtio_has_feature(vdev, VIRTIO_F_VERSION_1), val); \
+@@ -255,12 +255,13 @@ static inline u16 virtio_cread16(struct virtio_device *vdev,
+ {
+ 	u16 ret;
+ 	vdev->config->get(vdev, offset, &ret, sizeof(ret));
+-	return ret;
++	return virtio16_to_cpu(vdev, (__force __virtio16)ret);
  }
  
- DEFINE_VIRTIO_XX_TO_CPU(16)
+ static inline void virtio_cwrite16(struct virtio_device *vdev,
+ 				   unsigned int offset, u16 val)
+ {
++	val = (__force u16)cpu_to_virtio16(vdev, val);
+ 	vdev->config->set(vdev, offset, &val, sizeof(val));
+ }
+ 
+@@ -269,12 +270,13 @@ static inline u32 virtio_cread32(struct virtio_device *vdev,
+ {
+ 	u32 ret;
+ 	vdev->config->get(vdev, offset, &ret, sizeof(ret));
+-	return ret;
++	return virtio32_to_cpu(vdev, (__force __virtio32)ret);
+ }
+ 
+ static inline void virtio_cwrite32(struct virtio_device *vdev,
+ 				   unsigned int offset, u32 val)
+ {
++	val = (__force u32)cpu_to_virtio32(vdev, val);
+ 	vdev->config->set(vdev, offset, &val, sizeof(val));
+ }
+ 
+@@ -283,12 +285,13 @@ static inline u64 virtio_cread64(struct virtio_device *vdev,
+ {
+ 	u64 ret;
+ 	vdev->config->get(vdev, offset, &ret, sizeof(ret));
+-	return ret;
++	return virtio64_to_cpu(vdev, (__force __virtio64)ret);
+ }
+ 
+ static inline void virtio_cwrite64(struct virtio_device *vdev,
+ 				   unsigned int offset, u64 val)
+ {
++	val = (__force u64)cpu_to_virtio64(vdev, val);
+ 	vdev->config->set(vdev, offset, &val, sizeof(val));
+ }
+ 
 -- 
 MST
 
