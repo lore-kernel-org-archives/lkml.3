@@ -1,109 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932901AbaJVUOX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 16:14:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47031 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932838AbaJVUOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 16:14:20 -0400
-From: Jan Kara <jack@suse.cz>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: hch@lst.de, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 1/4] blockdev: Don't use i_devices inode field
-Date: Wed, 22 Oct 2014 22:14:10 +0200
-Message-Id: <1414008853-13200-2-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1414008853-13200-1-git-send-email-jack@suse.cz>
-References: <1414008853-13200-1-git-send-email-jack@suse.cz>
+	id S933131AbaJVURD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 16:17:03 -0400
+Received: from galahad.ideasonboard.com ([185.26.127.97]:43073 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342AbaJVUQ7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 16:16:59 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Antoine =?ISO-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
+        lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: Re: [PATCH v2 06/53] dmaengine: Create a generic dma_slave_caps callback
+Date: Wed, 22 Oct 2014 23:16:03 +0300
+Message-ID: <2111765.kYORi97jNj@avalon>
+User-Agent: KMail/4.12.5 (Linux/3.14.14-gentoo; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <20141016162453.GN19438@lukather>
+References: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com> <1496298.0f0GAuhKve@avalon> <20141016162453.GN19438@lukather>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Block devices use i_devices inode field to track all inodes that
-reference a particular block device (through i_bdev field) so that this
-reference can be removed when block device inode is being evicted from
-memory. However we get a reference to the block device (in fact an inode
-holding the block device structure) when setting up i_bdev in
-bd_acquire() and we drop the reference only in bd_forget() when clearing
-i_bdev. Thus inode holding block device structure can be evicted only
-after all inodes referencing it are evicted and the whole excercise with
-i_devices is pointless. Remove the i_devices handling.
+Hi Maxime,
 
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- fs/block_dev.c     | 17 +++--------------
- include/linux/fs.h |  1 -
- 2 files changed, 3 insertions(+), 15 deletions(-)
+On Thursday 16 October 2014 18:24:53 Maxime Ripard wrote:
+> On Thu, Oct 16, 2014 at 07:15:40PM +0300, Laurent Pinchart wrote:
+> > On Thursday 16 October 2014 12:17:05 Maxime Ripard wrote:
+> > > dma_slave_caps is very important to the generic layers that might
+> > > interact with dmaengine, such as ASoC. Unfortunately, it has been added
+> > > as yet another dma_device callback, and most of the existing drivers
+> > > haven't implemented it, reducing its reliability.
+> > > 
+> > > Introduce a generic behaviour and a flag to trigger it. In case this
+> > > flag hasn't been set, fall back to the old mechanism.
+> > > 
+> > > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> > > ---
+> > > 
+> > >  include/linux/dmaengine.h | 25 +++++++++++++++++++++----
+> > >  1 file changed, 21 insertions(+), 4 deletions(-)
+> > > 
+> > > diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+> > > index 4d0294ec3567..85afd71df2e7 100644
+> > > --- a/include/linux/dmaengine.h
+> > > +++ b/include/linux/dmaengine.h
+> > > @@ -643,6 +643,8 @@ struct dma_device {
+> > > 
+> > >  	int dev_id;
+> > >  	struct device *dev;
+> > > 
+> > > +	bool generic_slave_caps;
+> > > +
+> > > 
+> > >  	int (*device_alloc_chan_resources)(struct dma_chan *chan);
+> > >  	void (*device_free_chan_resources)(struct dma_chan *chan);
+> > > 
+> > > @@ -772,17 +774,32 @@ static inline struct dma_async_tx_descriptor
+> > > *dmaengine_prep_interleaved_dma(
+> > > 
+> > >  static inline int dma_get_slave_caps(struct dma_chan *chan, struct
+> > > 
+> > > dma_slave_caps *caps) {
+> > 
+> > This is getting too big for an inline function, it should be moved to
+> > drivers/dma/dmaengine.c.
+> 
+> I agree, but I wanted to do that in another patch set. This one is
+> just getting bigger and bigger, and this is not really the point of
+> this serie.
 
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index cc9d4114cda0..493cd69df9a6 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -458,7 +458,6 @@ static void init_once(void *foo)
- 
- 	memset(bdev, 0, sizeof(*bdev));
- 	mutex_init(&bdev->bd_mutex);
--	INIT_LIST_HEAD(&bdev->bd_inodes);
- 	INIT_LIST_HEAD(&bdev->bd_list);
- #ifdef CONFIG_SYSFS
- 	INIT_LIST_HEAD(&bdev->bd_holder_disks);
-@@ -468,24 +467,14 @@ static void init_once(void *foo)
- 	mutex_init(&bdev->bd_fsfreeze_mutex);
- }
- 
--static inline void __bd_forget(struct inode *inode)
--{
--	list_del_init(&inode->i_devices);
--	inode->i_bdev = NULL;
--	inode->i_mapping = &inode->i_data;
--}
--
- static void bdev_evict_inode(struct inode *inode)
- {
- 	struct block_device *bdev = &BDEV_I(inode)->bdev;
--	struct list_head *p;
-+
- 	truncate_inode_pages_final(&inode->i_data);
- 	invalidate_inode_buffers(inode); /* is it needed here? */
- 	clear_inode(inode);
- 	spin_lock(&bdev_lock);
--	while ( (p = bdev->bd_inodes.next) != &bdev->bd_inodes ) {
--		__bd_forget(list_entry(p, struct inode, i_devices));
--	}
- 	list_del_init(&bdev->bd_list);
- 	spin_unlock(&bdev_lock);
- }
-@@ -645,7 +634,6 @@ static struct block_device *bd_acquire(struct inode *inode)
- 			ihold(bdev->bd_inode);
- 			inode->i_bdev = bdev;
- 			inode->i_mapping = bdev->bd_inode->i_mapping;
--			list_add(&inode->i_devices, &bdev->bd_inodes);
- 		}
- 		spin_unlock(&bdev_lock);
- 	}
-@@ -666,7 +654,8 @@ void bd_forget(struct inode *inode)
- 	spin_lock(&bdev_lock);
- 	if (!sb_is_blkdev_sb(inode->i_sb))
- 		bdev = inode->i_bdev;
--	__bd_forget(inode);
-+	inode->i_bdev = NULL;
-+	inode->i_mapping = &inode->i_data;
- 	spin_unlock(&bdev_lock);
- 
- 	if (bdev)
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index a957d4366c24..d7fd7959a933 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -413,7 +413,6 @@ struct block_device {
- 	struct inode *		bd_inode;	/* will die */
- 	struct super_block *	bd_super;
- 	struct mutex		bd_mutex;	/* open/close mutex */
--	struct list_head	bd_inodes;
- 	void *			bd_claiming;
- 	void *			bd_holder;
- 	int			bd_holders;
+If both get merged in the same kernel version I would be fine with this.
+
+> > > +	struct dma_device *device;
+> > > +
+> > > 
+> > >  	if (!chan || !caps)
+> > >  		return -EINVAL;
+> > > 
+> > > +	device = chan->device;
+> > > +
+> > > 
+> > >  	/* check if the channel supports slave transactions */
+> > > 
+> > > -	if (!test_bit(DMA_SLAVE, chan->device->cap_mask.bits))
+> > > +	if (!test_bit(DMA_SLAVE, device->cap_mask.bits))
+> > > +		return -ENXIO;
+> > > +
+> > > +	if (device->device_slave_caps)
+> > > +		return device->device_slave_caps(chan, caps);
+> > > +
+> > > +	/*
+> > > +	 * Check whether it reports it uses the generic slave
+> > > +	 * capabilities, if not, that means it doesn't support any
+> > > +	 * kind of slave capabilities reporting.
+> > > +	 */
+> > > +	if (device->generic_slave_caps)
+> > >  		return -ENXIO;
+> > 
+> > Couldn't we replace that check with if (device->device_control) and get
+> > rid of the generic_slave_caps field ? Drivers converted to the new API
+> > would then get slave caps support for free.
+> 
+> Not really. Drivers might have converted to the splitted device_control (and
+> actually all of them are), while they don't define the values needed to
+> implement properly the generic slave caps retrieval (and the vast majority
+> of them doesn't).
+
+Indeed, my bad.
+
+How about testing those fields then ? You could consider that the driver wants 
+the generic slave caps implementation if device->directions is set to a non-
+zero value for instance.
+
 -- 
-1.8.1.4
+Regards,
+
+Laurent Pinchart
 
