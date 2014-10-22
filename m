@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755378AbaJVSoj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 14:44:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56041 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753988AbaJVSoh (ORCPT
+	id S1755406AbaJVSox (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 14:44:53 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:59739 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754061AbaJVSov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 14:44:37 -0400
-Date: Wed, 22 Oct 2014 11:44:37 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andrey Ryabinin <a.ryabinin@samsung.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, n-horiguchi@ah.jp.nec.com,
-        aarcange@redhat.com, mgorman@suse.de, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm, hugetlb: correct bit shift in hstate_sizelog
-Message-Id: <20141022114437.72eb61ce3e2348c52ab3d1db@linux-foundation.org>
-In-Reply-To: <544743D6.6040103@samsung.com>
-References: <1413915307-20536-1-git-send-email-sasha.levin@oracle.com>
-	<544743D6.6040103@samsung.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 22 Oct 2014 14:44:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <1413978269-17274-2-git-send-email-drysdale@google.com>
+References: <1413978269-17274-1-git-send-email-drysdale@google.com> <1413978269-17274-2-git-send-email-drysdale@google.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 22 Oct 2014 11:44:29 -0700
+Message-ID: <CALCETrWbj=BTDyKqtbSKteANj3J3UFZnrvWv9DMosCoEZaSoeA@mail.gmail.com>
+Subject: Re: [PATCHv5 1/3] syscalls,x86: implement execveat() system call
+To: David Drysdale <drysdale@google.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
+        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Oct 2014 09:42:46 +0400 Andrey Ryabinin <a.ryabinin@samsung.com> wrote:
+On Wed, Oct 22, 2014 at 4:44 AM, David Drysdale <drysdale@google.com> wrote:
+> Add a new system execveat(2) syscall. execveat() is to execve() as
+> openat() is to open(): it takes a file descriptor that refers to a
+> directory, and resolves the filename relative to that.
+>
 
-> On 10/21/2014 10:15 PM, Sasha Levin wrote:
-> > hstate_sizelog() would shift left an int rather than long, triggering
-> > undefined behaviour and passing an incorrect value when the requested
-> > page size was more than 4GB, thus breaking >4GB pages.
-> 
-> > 
-> > Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> > ---
-> >  include/linux/hugetlb.h |    3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-> > index 65e12a2..57e0dfd 100644
-> > --- a/include/linux/hugetlb.h
-> > +++ b/include/linux/hugetlb.h
-> > @@ -312,7 +312,8 @@ static inline struct hstate *hstate_sizelog(int page_size_log)
-> >  {
-> >  	if (!page_size_log)
-> >  		return &default_hstate;
-> > -	return size_to_hstate(1 << page_size_log);
-> > +
-> > +	return size_to_hstate(1UL << page_size_log);
-> 
-> That still could be undefined on 32-bits. Either use 1ULL or reduce SHM_HUGE_MASK on 32bits.
-> 
+>         bprm->file = file;
+> -       bprm->filename = bprm->interp = filename->name;
+> +       if (fd == AT_FDCWD || filename->name[0] == '/') {
+> +               bprm->filename = filename->name;
+> +       } else {
+> +               /*
+> +                * Build a pathname that reflects how we got to the file,
+> +                * either "/dev/fd/<fd>" (for an empty filename) or
+> +                * "/dev/fd/<fd>/<filename>".
+> +                */
+> +               pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
+> +               if (!pathbuf) {
+> +                       retval = -ENOMEM;
+> +                       goto out_unmark;
+> +               }
+> +               bprm->filename = pathbuf;
+> +               if (filename->name[0] == '\0')
+> +                       sprintf(pathbuf, "/dev/fd/%d", fd);
 
-But
+If the fd is O_CLOEXEC, then this will result in a confused child
+process.  Should we fail exec attempts like that for non-static
+programs?  (E.g. set filename to "" or something and fix up the binfmt
+drivers to handle that?)
 
-struct hstate *size_to_hstate(unsigned long size)
+> +               else
+> +                       snprintf(pathbuf, PATH_MAX,
+> +                                "/dev/fd/%d/%s", fd, filename->name);
 
+Does this need to handle the case where the result exceeds PATH_MAX?
+
+--Andy
