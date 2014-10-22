@@ -1,129 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754082AbaJVPhk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 11:37:40 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:48688 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752278AbaJVPhh (ORCPT
+	id S1754246AbaJVPiA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 11:38:00 -0400
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:37825 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753630AbaJVPhj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 11:37:37 -0400
-Date: Wed, 22 Oct 2014 19:37:25 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Michal Hocko <mhocko@suse.cz>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 1/4] mm: memcontrol: uncharge pages on swapout
-Message-ID: <20141022153725.GY16496@esperanza>
-References: <1413818532-11042-1-git-send-email-hannes@cmpxchg.org>
- <1413818532-11042-2-git-send-email-hannes@cmpxchg.org>
- <20141021125252.GN16496@esperanza>
- <20141021210328.GB29116@phnom.home.cmpxchg.org>
- <20141022083353.GU16496@esperanza>
- <20141022132038.GB17161@phnom.home.cmpxchg.org>
+	Wed, 22 Oct 2014 11:37:39 -0400
+Date: Wed, 22 Oct 2014 16:37:24 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH -next 0/9] pty fixes
+Message-ID: <20141022163724.065ab3b1@alan.etchedpixels.co.uk>
+In-Reply-To: <1413488010-16885-1-git-send-email-peter@hurleysoftware.com>
+References: <1413488010-16885-1-git-send-email-peter@hurleysoftware.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20141022132038.GB17161@phnom.home.cmpxchg.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 09:20:38AM -0400, Johannes Weiner wrote:
-> On Wed, Oct 22, 2014 at 12:33:53PM +0400, Vladimir Davydov wrote:
-> > On Tue, Oct 21, 2014 at 05:03:28PM -0400, Johannes Weiner wrote:
-> > > On Tue, Oct 21, 2014 at 04:52:52PM +0400, Vladimir Davydov wrote:
-> > > > On Mon, Oct 20, 2014 at 11:22:09AM -0400, Johannes Weiner wrote:
-> > > > > mem_cgroup_swapout() is called with exclusive access to the page at
-> > > > > the end of the page's lifetime.  Instead of clearing the PCG_MEMSW
-> > > > > flag and deferring the uncharge, just do it right away.  This allows
-> > > > > follow-up patches to simplify the uncharge code.
-> > > > > 
-> > > > > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > > > > ---
-> > > > >  mm/memcontrol.c | 17 +++++++++++++----
-> > > > >  1 file changed, 13 insertions(+), 4 deletions(-)
-> > > > > 
-> > > > > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > > > > index bea3fddb3372..7709f17347f3 100644
-> > > > > --- a/mm/memcontrol.c
-> > > > > +++ b/mm/memcontrol.c
-> > > > > @@ -5799,6 +5799,7 @@ static void __init enable_swap_cgroup(void)
-> > > > >   */
-> > > > >  void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
-> > > > >  {
-> > > > > +	struct mem_cgroup *memcg;
-> > > > >  	struct page_cgroup *pc;
-> > > > >  	unsigned short oldid;
-> > > > >  
-> > > > > @@ -5815,13 +5816,21 @@ void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
-> > > > >  		return;
-> > > > >  
-> > > > >  	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEMSW), page);
-> > > > > +	memcg = pc->mem_cgroup;
-> > > > >  
-> > > > > -	oldid = swap_cgroup_record(entry, mem_cgroup_id(pc->mem_cgroup));
-> > > > > +	oldid = swap_cgroup_record(entry, mem_cgroup_id(memcg));
-> > > > >  	VM_BUG_ON_PAGE(oldid, page);
-> > > > > +	mem_cgroup_swap_statistics(memcg, true);
-> > > > >  
-> > > > > -	pc->flags &= ~PCG_MEMSW;
-> > > > > -	css_get(&pc->mem_cgroup->css);
-> > > > > -	mem_cgroup_swap_statistics(pc->mem_cgroup, true);
-> > > > > +	pc->flags = 0;
-> > > > > +
-> > > > > +	if (!mem_cgroup_is_root(memcg))
-> > > > > +		page_counter_uncharge(&memcg->memory, 1);
-> > > > 
-> > > > AFAIU it removes batched uncharge of swapped out pages, doesn't it? Will
-> > > > it affect performance?
-> > > 
-> > > During swapout and with lockless page counters?  I don't think so.
-> > 
-> > How is this different from page cache out? I mean, we can have a lot of
-> > pages in the swap cache that have already been swapped out, and are
-> > waiting to be unmapped, uncharged, and freed, just like usual page
-> > cache. Why do we use batching for file cache pages then?
-> 
-> The batching is mostly for munmap().  We do it for reclaim because
-> it's convenient, but I don't think an extra word per struct page to
-> batch one, sometimes a few, locked subtractions per swapped out page
-> is a reasonable trade-off.
-> 
-> > > > Besides, it looks asymmetric with respect to the page cache uncharge
-> > > > path, where we still defer uncharge to mem_cgroup_uncharge_list(), and I
-> > > > personally rather dislike this asymmetry.
-> > > 
-> > > The asymmetry is inherent in the fact that we mave memory and
-> > > memory+swap accounting, and here a memory charge is transferred out to
-> > > swap.  Before, the asymmetry was in mem_cgroup_uncharge_list() where
-> > > we separate out memory and memsw pages (which the next patch fixes).
-> > 
-> > I agree that memsw is inherently asymmetric, but IMO it isn't the case
-> > for swap *cache* vs page *cache*. We handle them similarly - removing
-> > from a mapping, uncharging, freeing. If one wants batching, why
-> > shouldn't the other?
-> 
-> It has to be worth it in practical terms.  You can argue symmetry
-> between swap cache and page cache, but swapping simply is a much
-> colder path than reclaiming page cache.  Our reclaim algorithm avoids
-> it like the plague.
-> 
-> > > So nothing changed, the ugliness was just moved around.  I actually
-> > > like it better now that it's part of the swap controller, because
-> > > that's where the nastiness actually comes from.  This will all go away
-> > > when we account swap separately.  Then, swapped pages can keep their
-> > > memory charge until mem_cgroup_uncharge() again and the swap charge
-> > > will be completely independent from it.  This reshuffling is just
-> > > necessary because it allows us to get rid of the per-page flag.
-> > 
-> > Do you mean that swap cache uncharge batching will be back soon?
-> 
-> Well, yes, once we switch from memsw to a separate swap couter, it
-> comes automatically.  Pages no longer carry two charges, and so the
-> uncharging of pages doesn't have to distinguish between swapped out
-> pages and other pages anymore.
+On Thu, 16 Oct 2014 15:33:21 -0400
+Peter Hurley <peter@hurleysoftware.com> wrote:
 
-With this in mind,
+> Hi Greg,
+> 
+> This series addresses some pecularities of the pty driver, especially
+> set_termios() handling, which is moved into the pty driver proper, and
+> packet mode/ctrl_lock behavior.
+> 
+> Regards,
+> 
+> Peter Hurley (9):
+>   tty: WARN for attempted set_termios() of pty master
+>   tty: Move pty-specific set_termios() handling to pty driver
+>   pty: Use spin_lock_irq() for pty_set_termios()
+>   tty: Use spin_lock_irq() for ctrl_lock when interrupts enabled
+>   pty: Don't claim slave's ctrl_lock for master's packet mode
+>   pty: Fix packet mode setting race
+>   pty: Hold ctrl_lock for packet mode updates
+>   tty: Fix missed wakeup from packet mode status update
+>   n_tty: Only process packet mode data in raw mode
+> 
+>  drivers/tty/n_tty.c     | 39 +++++++++++++++++++------------------
+>  drivers/tty/pty.c       | 51 ++++++++++++++++++++++++++++++++++++-------------
+>  drivers/tty/tty_ioctl.c | 34 ++++-----------------------------
+>  3 files changed, 62 insertions(+), 62 deletions(-)
+> 
 
-Acked-by: Vladimir Davydov <vdavydov@parallels.com>
+Reviewed-by: Alan Cox <alan@linux.intel.com>
