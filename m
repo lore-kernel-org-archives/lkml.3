@@ -1,73 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932790AbaJVVOR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 17:14:17 -0400
-Received: from smtprelay4.synopsys.com ([198.182.44.111]:49675 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932210AbaJVVOP convert rfc822-to-8bit (ORCPT
+	id S932895AbaJVVPd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 17:15:33 -0400
+Received: from mail-yh0-f47.google.com ([209.85.213.47]:62245 "EHLO
+	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932210AbaJVVPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 17:14:15 -0400
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: Greg KH <gregkh@linuxfoundation.org>, Johan Hovold <johan@kernel.org>
-CC: Philip Munksgaard <pmunksgaard@gmail.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] usb: serial: Fix indentation style issue
-Thread-Topic: [PATCH] usb: serial: Fix indentation style issue
-Thread-Index: AQHP5VperSPoUnRx20qW/mBwbC4MupwrZ8CAgBD+UACAAErPgP///VrQ
-Date: Wed, 22 Oct 2014 21:14:14 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844E5026@US01WEMBX2.internal.synopsys.com>
-References: <1413035383-3981-1-git-send-email-pmunksgaard@gmail.com>
- <20141011142049.GA11456@kroah.com> <20141022095112.GJ2113@localhost>
- <20141022141857.GA8639@kroah.com>
-In-Reply-To: <20141022141857.GA8639@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.241]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 22 Oct 2014 17:15:32 -0400
 MIME-Version: 1.0
+In-Reply-To: <20141017171756.GA22238@dtor-ws>
+References: <5440F282.8040306@itdev.co.uk> <20141017171756.GA22238@dtor-ws>
+From: Andrew de los Reyes <andrew-vger@gizmolabs.org>
+Date: Wed, 22 Oct 2014 14:15:10 -0700
+X-Google-Sender-Auth: NqPLsiIDKjh6xE3dBocBd5yIgLM
+Message-ID: <CAG_cf+fop1bYe+82yDyDYX4sTkN4_gCBM=nvVyKwp6C8v6z4gQ@mail.gmail.com>
+Subject: Re: Touch processing on host CPU
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Nick Dyer <nick.dyer@itdev.co.uk>, Greg KH <greg@kroah.com>,
+        Jonathan Cameron <jic23@kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: linux-usb-owner@vger.kernel.org [mailto:linux-usb-owner@vger.kernel.org] On Behalf Of Greg KH
-> Sent: Wednesday, October 22, 2014 7:19 AM
-> 
-> On Wed, Oct 22, 2014 at 11:51:12AM +0200, Johan Hovold wrote:
-> > On Sat, Oct 11, 2014 at 07:20:49AM -0700, Greg Kroah-Hartman wrote:
-> > > On Sat, Oct 11, 2014 at 03:49:43PM +0200, Philip Munksgaard wrote:
-> > > > Fix a style issue
-> > > >
-> > > > Signed-off-by: Philip Munksgaard <pmunksgaard@gmail.com>
-> > > > ---
-> > > >  drivers/usb/serial/option.c | 2 +-
-> > > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > >
-> > > > diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-> > > > index d1a3f60..d88998d 100644
-> > > > --- a/drivers/usb/serial/option.c
-> > > > +++ b/drivers/usb/serial/option.c
-> > > > @@ -1616,7 +1616,7 @@ static const struct usb_device_id option_ids[] = {
-> > > >  	{ USB_DEVICE(TLAYTECH_VENDOR_ID, TLAYTECH_PRODUCT_TEU800) },
-> > > >  	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
-> > > >    	  .driver_info = (kernel_ulong_t)&four_g_w14_blacklist
-> > > > -  	},
-> > > > +	},
-> > >
-> > > Why not fix the same 'space' issue on the line before this at the same
-> > > time?
-> >
-> > And what about the remaining white-space issues in this file? Do we
-> > really want to go down this path?
-> 
-> No, we don't, if you want to have patches be able to apply properly to
-> older kernels, as you point out.
+On Fri, Oct 17, 2014 at 10:17 AM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> Hi Nick,
+>
+> On Fri, Oct 17, 2014 at 11:42:10AM +0100, Nick Dyer wrote:
+>> Hi-
+>>
+>> I'm trying to find out which subsystem maintainer I should be talking to -
+>> apologies if I'm addressing the wrong people.
+>>
+>> There is a model for doing touch processing where the touch controller
+>> becomes a much simpler device which sends out raw acquisitions (over SPI
+>> at up to 1Mbps + protocol overheads). All touch processing is then done in
+>> user space by the host CPU. An example of this is NVIDIA DirectTouch - see:
+>> http://blogs.nvidia.com/blog/2012/02/24/industry-adopts-nvidia-directtouch/
+>>
+>> In the spirit of "upstream first", I'm trying to figure out how to get a
+>> driver accepted. Obviously it's not an input device in the normal sense. Is
+>> it acceptable just to send the raw touch data out via a char device? Is
+>> there another subsystem which is a good match (eg IIO)? Does the protocol
+>> (there is ancillary/control data as well) need to be documented?
+>
+> I'd really think *long* and *hard* about this. Even if you will have the
+> touch process open source you have 2 options: route it back into the
+> kernel through uinput, thus adding latency (which might be OK, need to
+> measure and decide), or go back about 10 years where we had
+> device-specific drivers in XFree86 and re-create them again, and also do
+> the same for Wayland, Chrome, Android, etc.
+>
+> If you will have touch processing in a binary blob, you'll also be going
+> to ages "Works with Ubuntu 12.04 on x86_32!" (and nothing else), or
+> "Android 5.1.2 on Tegra Blah (build 78912KT)" (and nothing else).
 
-git-apply --ignore-whitespace ?
+I think we have some interest on the Chrome OS team. We've often had
+issues on touch devices with centroiding problems like split/merge,
+and have thought it might be nice to have lower level access to be
+able to actually solve these problems, rather than just complain to
+the touch vendor. Historically, however, raw touch heatmaps have not
+been available, making this idea unfeasible. Maybe this is starting to
+change with the push from Nvidia!
 
--- 
-Paul
+I would agree with Dmitry that we would want a consistent unified
+interface that could work with different touch vendors. I am assuming
+that Nick's model is roughly 60-120 frames/sec, where each frame is
+NxMx16bits. Pixels would generally be ~4mm on a side for touch sensors
+today, but they may get significantly smaller if stylus becomes
+popular. Nick, is that roughly what you have in mind? Also, touch
+sensors generally have a baseline image that is subtracted from each
+recorded raw image to form the delta image (ie, raw - baseline =
+delta). Nick, do you envision sending raw or delta up to userspace? I
+would assume delta, b/c I think the touch controller will need to
+compute delta internally to see if there's a touch. It would be quite
+wasteful to invoke the kernel/userspace on an image with no touches.
+That said, there may be some situations (ie, factory validation) where
+getting raw images is preferred.
 
+Also, what about self-cap scan? I know some controllers will do
+self-cap when there's just one finger. I'm guessing the data for such
+a frame would be (N+M)x16bits.
+
+In order to support X, Wayland, Android, etc, I would assume that
+parsed frames would be injected back into the kernel in a format
+similar (identical?) to MT-B. As far as the availability of an
+open-source user-space driver to convert heat-map into MT-B, maybe I'm
+overly optimistic, but I would guess we could start with something
+simple like center-of-mass, and the community will help make it more
+robust.
+
+Sorry I have more questions than suggestions. Hopefully Nick can shed
+more light on what type of interface he would like.
+
+-andrew
+
+>
+> Thanks.
+>
+> --
+> Dmitry
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
