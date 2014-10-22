@@ -1,137 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240AbaJVN7Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 09:59:16 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:62566 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752906AbaJVN6M (ORCPT
+	id S1753294AbaJVN7X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 09:59:23 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:57521 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753161AbaJVN7S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 09:58:12 -0400
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: axboe@kernel.dk, rafael.j.wysocki@intel.com, mingo@kernel.org,
-        peterz@infradead.org, preeti@linux.vnet.ibm.com,
-        Morten.Rasmussen@arm.com, mturquette@linaro.org,
-        tuukka.tikkanen@linaro.org, nicolas.pitre@linaro.org,
-        patches@linaro.org
-Subject: [RFD PATCH 07/10] cpuidle: Add a simple select governor
-Date: Wed, 22 Oct 2014 15:57:50 +0200
-Message-Id: <1413986273-28522-8-git-send-email-daniel.lezcano@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1413986273-28522-1-git-send-email-daniel.lezcano@linaro.org>
-References: <1413986273-28522-1-git-send-email-daniel.lezcano@linaro.org>
+	Wed, 22 Oct 2014 09:59:18 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Felipe Balbi <balbi@ti.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        linux-usb@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [resend PATCH 1/3] ACPI / platform: provide default DMA mask
+Date: Wed, 22 Oct 2014 16:19:45 +0200
+Message-ID: <2473176.cCrEmjuJQD@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <54475DB4.5000005@intel.com>
+References: <1411545639-18741-1-git-send-email-heikki.krogerus@linux.intel.com> <54465C0E.50801@intel.com> <54475DB4.5000005@intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This simple governor takes into account the predictable events: the timer sleep
-duration and the next expected IO sleep duration. By mixing both it deduced
-what idle state fits better. This governor must be extended to a statistical
-approach to predict all the other events.
+On Wednesday, October 22, 2014 10:33:08 AM Adrian Hunter wrote:
+> On 21/10/14 16:13, Adrian Hunter wrote:
+> > On 21/10/14 16:08, Rafael J. Wysocki wrote:
+> >> On Tuesday, October 21, 2014 03:27:45 PM Adrian Hunter wrote:
+> >>> On 24/09/14 16:49, Rafael J. Wysocki wrote:
+> >>>> On Wednesday, September 24, 2014 11:00:37 AM Heikki Krogerus wrote:
+> >>>>> Most devices are configured for 32-bit DMA addresses.
+> >>>>> Setting the mask to 32-bit here removes the need for the
+> >>>>> drivers to do it separately.
+> >>>>>
+> >>>>> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> >>>>> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+> >>>>
+> >>>> ACK
+> >>>
+> >>> Hi
+> >>>
+> >>> I need this for another driver.  Did this patch go anywhere?
+> >>
+> >> It's not in 3.18-rc1 as far as I can say.
+> >>
+> >>> Note Heikki is away at the moment.
+> >>
+> >> That's OK.  I guess I can queue up this one for you.
+> >>
+> >> When do you need this to get into the Linus' tree?
+> > 
+> > My patches are aiming for 3.19
+> 
+> Actually it would be easier for me if Heikki's patch is already in
+> 3.18, but all I need to know is when it will hit?
 
-The main purpose of this governor is to handle the guessed next events in a
-categorized way:
-	1. deterministic events : timers
-	2. guessed events : IOs
-	3. predictable events : keystroke, incoming network packet, ...
+I've applied the Heiki's patch and I'm going to push it for 3.18-rc2.
 
-This governor is aimed to be moved later near the scheduler, so this one
-can inspect/inject more informations and act proactively rather than
-reactively.
-
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
----
- drivers/cpuidle/Kconfig            |  4 +++
- drivers/cpuidle/governors/Makefile |  1 +
- drivers/cpuidle/governors/select.c | 55 ++++++++++++++++++++++++++++++++++++++
- 3 files changed, 60 insertions(+)
- create mode 100644 drivers/cpuidle/governors/select.c
-
-diff --git a/drivers/cpuidle/Kconfig b/drivers/cpuidle/Kconfig
-index 32748c3..11e9781 100644
---- a/drivers/cpuidle/Kconfig
-+++ b/drivers/cpuidle/Kconfig
-@@ -25,6 +25,10 @@ config CPU_IDLE_GOV_MENU
- 	bool "Menu governor (for tickless system)"
- 	default y
- 
-+config CPU_IDLE_GOV_SELECT
-+	bool "Select governor (for tickless system)"
-+	default y
-+
- menu "ARM CPU Idle Drivers"
- depends on ARM
- source "drivers/cpuidle/Kconfig.arm"
-diff --git a/drivers/cpuidle/governors/Makefile b/drivers/cpuidle/governors/Makefile
-index 1b51272..fa45520 100644
---- a/drivers/cpuidle/governors/Makefile
-+++ b/drivers/cpuidle/governors/Makefile
-@@ -4,3 +4,4 @@
- 
- obj-$(CONFIG_CPU_IDLE_GOV_LADDER) += ladder.o
- obj-$(CONFIG_CPU_IDLE_GOV_MENU) += menu.o
-+obj-$(CONFIG_CPU_IDLE_GOV_SELECT) += select.o
-diff --git a/drivers/cpuidle/governors/select.c b/drivers/cpuidle/governors/select.c
-new file mode 100644
-index 0000000..0de7095
---- /dev/null
-+++ b/drivers/cpuidle/governors/select.c
-@@ -0,0 +1,55 @@
-+/*
-+ * select.c - the select governor
-+ *
-+ * Copyright (C) 2014 Daniel Lezcano <daniel.lezcano@linaro.org>
-+ *
-+*/
-+
-+#include <linux/cpuidle.h>
-+
-+static int select(struct cpuidle_driver *drv, struct cpuidle_device *dev,
-+		  struct cpuidle_times *times)
-+{
-+	int i, index = 0, latency_req = times->latency_req;
-+	unsigned int next_event;
-+
-+	/*
-+	 * If the guessed IO next event is zero, that means there is no IO
-+	 * pending, so we ignore it in the equation
-+	 */
-+	next_event = times->next_io_event ? 
-+		min(times->next_io_event, times->next_timer_event) :
-+		times->next_timer_event;
-+
-+	for (i = 0; i < drv->state_count; i++) {
-+
-+		struct cpuidle_state *s = &drv->states[i];
-+		struct cpuidle_state_usage *su = &dev->states_usage[i];
-+
-+		if (s->disabled || su->disable)
-+			continue;
-+		if (s->target_residency > next_event)
-+			continue;
-+		if (s->exit_latency > latency_req)
-+			continue;
-+
-+		index = i;
-+	}
-+
-+	return index;
-+}
-+
-+static struct cpuidle_governor select_governor = {
-+	.name   = "select",
-+	.rating = 10,
-+	.select = select,
-+	.owner  = THIS_MODULE,
-+};
-+
-+static int __init select_init(void)
-+{
-+	return cpuidle_register_governor(&select_governor);
-+}
-+
-+postcore_initcall(select_init);
-+
 -- 
-1.9.1
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
