@@ -1,156 +1,447 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906AbaJVEgW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 00:36:22 -0400
-Received: from ozlabs.org ([103.22.144.67]:38803 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750978AbaJVEgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 00:36:18 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Fabian Frederick <fabf@skynet.be>, vgoyal@redhat.com,
-        isimatu.yasuaki@jp.fujitsu.com, linux-doc@vger.kernel.org,
-        kexec@lists.infradead.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH V2] kernel, add bug_on_warn
-In-Reply-To: <1413910077-9464-1-git-send-email-prarit@redhat.com>
-References: <1413910077-9464-1-git-send-email-prarit@redhat.com>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 22 Oct 2014 14:57:12 +1030
-Message-ID: <87bnp491b3.fsf@rustcorp.com.au>
+	id S1751332AbaJVEl3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 00:41:29 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:54883 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748AbaJVEl1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 00:41:27 -0400
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Hemant Kumar <hemant@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
+        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
+        masami.hiramatsu.pt@hitachi.com, aravinda@linux.vnet.ibm.com,
+        penberg@iki.fi
+Subject: Re: [PATCH v3 2/5] perf/sdt: Add SDT events into a cache
+References: <20141010104402.15506.73285.stgit@hemant-fedora>
+	<20141010105758.15506.20442.stgit@hemant-fedora>
+Date: Wed, 22 Oct 2014 13:41:25 +0900
+In-Reply-To: <20141010105758.15506.20442.stgit@hemant-fedora> (Hemant Kumar's
+	message of "Fri, 10 Oct 2014 16:28:24 +0530")
+Message-ID: <8761fcg1hm.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prarit Bhargava <prarit@redhat.com> writes:
-> There have been several times where I have had to rebuild a kernel to
-> cause a panic when hitting a WARN() in the code in order to get a crash
-> dump from a system.  Sometimes this is easy to do, other times (such as
-> in the case of a remote admin) it is not trivial to send new images to the
-> user.
+On Fri, 10 Oct 2014 16:28:24 +0530, Hemant Kumar wrote:
+> This patch adds a new sub-command to perf : sdt-cache.
+> sdt-cache command can be used to add SDT events.
+> When user invokes "perf sdt-cache add <file-name>", a hash table/list is
+> created named as file_hash list. A typical entry in a file_hash table looks
+> like:
 >
-> A much easier method would be a switch to change the WARN() over to a
-> BUG().  This makes debugging easier in that I can now test the actual
-> image the WARN() was seen on and I do not have to engage in remote
-> debugging.
+>                 file hash      file_sdt_ent     file_sdt_ent
+>                 |---------|   ---------------   -------------
+>                 | hlist ==|===|=>file_list =|===|=>file_list=|==..
+>     key = 644 =>|         |   | sbuild_id   |   | sbuild_id  |
+>                 |---------|   | name        |   | name       |
+>                 |         |   | sdt_list    |   | sdt_list   |
+>     key = 645 =>| hlist   |   |   ||        |   |    ||      |
+>                 |---------|   ---------------   --------------
+>                     ||            ||                 || Connected to SDT notes
+>                           ---------------
+>                           |  note_list  |
+>                           |  name       |sdt_note
+>                           |  provider   |
+>                           -----||--------
+>                   connected to other SDT notes
 >
-> This patch adds a bug_on_warn kernel parameter, which calls BUG() in the
-> warn_slowpath_common() path.  The function will still print out the
-> location of the warning.
+> Each entry of the file_hash table is an hlist which connects to file_list
+> in file_sdt_ent. file_sdt_ent is allocated per file whenever a file is
+> mapped to file_hash list. File name serves as the key to this hash table.
+> If a file is added to this hash list, a file_sdt_ent is allocated and a
+> list of SDT events in that file is created and assigned to sdt_list of
+> file_sdt_ent.
 >
-> An example of the bug_on_warn output:
+> Example usage :
+> # ./perf sdt-cache --add /home/user_app
 >
-> The first line below is from the WARN_ON() to output the WARN_ON()'s location.
-> After that the new BUG() call is displayed.
+>     4 events added for /home/user_app
 >
->  WARNING: CPU: 27 PID: 3204 at
-> /home/rhel7/redhat/debug/dummy-module/dummy-module.c:25 init_dummy+0x28/0x30
-> [dummy_module]()
->  bug_on_warn set, calling BUG()...
->  ------------[ cut here ]------------
->  kernel BUG at kernel/panic.c:434!
->  invalid opcode: 0000 [#1] SMP
->  Modules linked in: dummy_module(OE+) sg nfsv3 rpcsec_gss_krb5 nfsv4
-> dns_resolver nfs fscache cfg80211 rfkill x86_pkg_temp_thermal intel_powerclamp
-> coretemp kvm_intel kvm crct10dif_pclmul crc32_pclmul crc32c_intel
-> ghash_clmulni_intel igb iTCO_wdt aesni_intel iTCO_vendor_support lrw gf128mul
-> sb_edac ptp edac_core glue_helper lpc_ich ioatdma pcspkr ablk_helper pps_core
-> i2c_i801 mfd_core cryptd dca shpchp ipmi_si wmi ipmi_msghandler acpi_cpufreq
-> nfsd auth_rpcgss nfs_acl lockd grace sunrpc xfs libcrc32c sr_mod cdrom sd_mod
-> mgag200 syscopyarea sysfillrect sysimgblt i2c_algo_bit drm_kms_helper isci ttm
-> drm libsas ahci libahci scsi_transport_sas libata i2c_core dm_mirror
-> dm_region_hash dm_log dm_mod
->  CPU: 27 PID: 3204 Comm: insmod Tainted: G           OE  3.17.0+ #19
->  Hardware name: Intel Corporation S2600CP/S2600CP, BIOS
-> RMLSDP.86I.00.29.D696.1311111329 11/11/2013
->  task: ffff880034e75160 ti: ffff8807fc5ac000 task.ti: ffff8807fc5ac000
->  RIP: 0010:[<ffffffff81076b81>]  [<ffffffff81076b81>] warn_slowpath_common+0xc1/0xd0
->  RSP: 0018:ffff8807fc5afc68  EFLAGS: 00010246
->  RAX: 0000000000000021 RBX: ffff8807fc5afcb0 RCX: 0000000000000000
->  RDX: 0000000000000000 RSI: ffff88081efee5f8 RDI: ffff88081efee5f8
->  RBP: ffff8807fc5afc98 R08: 0000000000000096 R09: 0000000000000000
->  R10: 0000000000000711 R11: ffff8807fc5af93e R12: ffffffffa0424070
->  R13: 0000000000000019 R14: ffffffffa0423068 R15: 0000000000000009
->  FS:  00007f2d4b034740(0000) GS:ffff88081efe0000(0000) knlGS:0000000000000000
->  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->  CR2: 00007f2d4a99f3c0 CR3: 00000007fd88b000 CR4: 00000000001407e0
->  Stack:
->   ffff8807fc5afcb8 ffffffff8199f020 ffff88080e396160 0000000000000000
->   ffffffffa0423040 ffffffffa0425000 ffff8807fc5afd08 ffffffff81076be5
->   0000000000000008 ffffffffa0424053 ffff880700000018 ffff8807fc5afd18
->  Call Trace:
->   [<ffffffffa0423040>] ? dummy_greetings+0x40/0x40 [dummy_module]
->   [<ffffffff81076be5>] warn_slowpath_fmt+0x55/0x70
->   [<ffffffffa0423068>] init_dummy+0x28/0x30 [dummy_module]
->   [<ffffffff81002144>] do_one_initcall+0xd4/0x210
->   [<ffffffff811b52c2>] ? __vunmap+0xc2/0x110
->   [<ffffffff810f8889>] load_module+0x16a9/0x1b30
->   [<ffffffff810f3d30>] ? store_uevent+0x70/0x70
->   [<ffffffff810f49b9>] ? copy_module_from_fd.isra.44+0x129/0x180
->   [<ffffffff810f8ec6>] SyS_finit_module+0xa6/0xd0
->   [<ffffffff8166ce29>] system_call_fastpath+0x12/0x17
->  Code: c4 08 5b 41 5c 41 5d 41 5e 41 5f 5d c3 48 c7 c7 20 42 8a 81 31 c0 e8 fc
-> 80 5e 00 eb 80 48 c7 c7 78 42 8a 81 31 c0 e8 ec 80 5e 00 <0f> 0b 66 66 66 66 2e
-> 0f 1f 84 00 00 00 00 00 0f 1f 44 00 00 55
->  RIP  [<ffffffff81076b81>] warn_slowpath_common+0xc1/0xd0
->   RSP <ffff8807fc5afc68>
->  ---[ end trace 428218934a12088b ]---
+> # ./perf sdt-cache --add /lib64/libc.so.6
 >
-> Successfully tested by me.
+>     8 events added for /usr/lib64/libc-2.16.so
 >
-> Cc: Jonathan Corbet <corbet@lwn.net>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: Andi Kleen <ak@linux.intel.com>
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Fabian Frederick <fabf@skynet.be>
-> Cc: vgoyal@redhat.com
-> Cc: isimatu.yasuaki@jp.fujitsu.com
-> Cc: linux-doc@vger.kernel.org
-> Cc: kexec@lists.infradead.org
-> Cc: linux-api@vger.kernel.org
-> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
->
-> [v2]: add /proc/sys/kernel/bug_on_warn, additional documentation, modify
->       !slowpath cases
-> ---
->  Documentation/kdump/kdump.txt       |    7 +++++++
->  Documentation/kernel-parameters.txt |    3 +++
->  Documentation/sysctl/kernel.txt     |   12 ++++++++++++
->  include/asm-generic/bug.h           |   12 ++++++++++--
->  include/linux/kernel.h              |    1 +
->  include/uapi/linux/sysctl.h         |    1 +
->  kernel/panic.c                      |   21 ++++++++++++++++++++-
->  kernel/sysctl.c                     |    7 +++++++
->  kernel/sysctl_binary.c              |    1 +
->  9 files changed, 62 insertions(+), 3 deletions(-)
->
-> diff --git a/Documentation/kdump/kdump.txt b/Documentation/kdump/kdump.txt
-> index 6c0b9f2..a04ed72 100644
-> --- a/Documentation/kdump/kdump.txt
-> +++ b/Documentation/kdump/kdump.txt
-> @@ -471,6 +471,13 @@ format. Crash is available on Dave Anderson's site at the following URL:
->  
->     http://people.redhat.com/~anderson/
->  
-> +Trigger Kdump on WARN()
-> +=======================
+> Signed-off-by: Hemant Kumar <hemant@linux.vnet.ibm.com>
+
+[SNIP]
+> +static int file_hash_list__remove(struct hash_table *file_hash,
+> +				   const char *target)
+> +{
+> +	struct file_sdt_ent *fse;
+> +	struct hlist_head *ent_head;
+> +	struct list_head *sdt_head;
+> +	struct hlist_node *tmp1;
+> +	char *res_path;
+> +	int key, nr_del = 0;
 > +
-> +The kernel parameter, bug_on_warn, calls BUG() in all WARN() paths.  This
-> +will cause a kdump to occur at the BUG() call.  In cases where a user
-> +wants to specify this during runtime, /proc/sys/kernel/bug_on_warn can be
-> +set to 1 to achieve the same behaviour.
+> +	res_path = realpath(target, NULL);
+> +	if (!res_path)
+> +		return -ENOMEM;
+> +
+> +	key = get_hash_key(target);
+> +	ent_head = &file_hash->ent[key];
+> +
+> +	/* Got the file hash entry */
+> +	hlist_for_each_entry_safe(fse, tmp1, ent_head, file_list) {
+> +		sdt_head = &fse->sdt_list;
+> +		if (strcmp(res_path, fse->name))
+> +			continue;
+> +
+> +		/* Got the file list entry, now start removing */
+> +		nr_del = cleanup_sdt_note_list(sdt_head);
+> +		hlist_del(&fse->file_list);
+> +		list_del(&fse->sdt_list);
 
-What about during early boot?
+It seems you don't need to call list_del() here.  And what about just
+calling cleanup_sdt_note_list(&fse->sdt_list) instead?
 
-I'd recommend you use core_param().  Less code, and can be set on
-commandline.
 
-Cheers,
-Rusty.
+> +		free(fse);
+> +	}
+> +	free(res_path);
+> +	return nr_del;
+> +}
+
+[SNIP]
+> +static int sdt_note__read(char *data, struct list_head *sdt_list)
+> +{
+> +	struct sdt_note *sn;
+> +	char *tmp, *ptr, delim[2];
+> +	int ret = -EBADF, val;
+> +
+> +	/* Initialize the delimiter with DELIM */
+> +	delim[0] = DELIM;
+
+What about delim[1] then?
+
+
+> +	sn = malloc(sizeof(*sn));
+> +	if (!sn) {
+> +		ret = -ENOMEM;
+> +		goto out;
+> +	}
+> +	INIT_LIST_HEAD(&sn->note_list);
+> +
+> +	/* Provider name */
+> +	ptr = strtok_r(data, delim, &tmp);
+> +	if (!ptr)
+> +		goto out;
+> +	sn->provider = strdup(ptr);
+> +	if (!sn->provider) {
+> +		ret = -ENOMEM;
+> +		goto out;
+> +	}
+> +	/* Marker name */
+> +	ptr = strtok_r(NULL, delim, &tmp);
+> +	if (!ptr)
+> +		goto out;
+> +	sn->name = strdup(ptr);
+> +	if (!sn->name) {
+> +		ret = -ENOMEM;
+> +		goto out;
+> +	}
+> +	/* Location */
+> +	ptr = strtok_r(NULL, delim, &tmp);
+> +	if (!ptr)
+> +		goto out;
+> +	val = sscanf(ptr, "%lx", &sn->addr.a64[0]);
+> +	if (val == EOF)
+> +		goto out;
+> +	/* Sempahore */
+> +	ptr = strtok_r(NULL, delim, &tmp);
+> +	if (!ptr)
+> +		goto out;
+> +	val = sscanf(ptr, "%lx", &sn->addr.a64[2]);
+> +	if (val == EOF)
+> +		goto out;
+> +	/* Add to the SDT list */
+> +	list_add(&sn->note_list, sdt_list);
+> +	ret = 0;
+> +out:
+> +	return ret;
+> +}
+> +
+> +/**
+> + * file_hash_list__populate: Fill up the file hash table
+> + * @file_hash: empty file hash table
+> + * @cache: FILE * to read from
+> + *
+> + * Parse @cache for file_name and its SDT events.
+> + * The format of the cache is :
+> + *
+> + * file_name:build_id\n
+> + * provider:marker:location:semaphore\n
+
+You seem forgot to add a file delimiter before new file.
+
+      :\n
+> + * file_name:build_id\n
+> + * ...
+
+Anyway IMHO it's bit uncomfortable.  How about changing the format same
+as it dumps?  A line starts with '%' is a sdt description, otherwise
+file info:
+
+file_name1:build_id\n
+%provide:marker1:location:semaphore\n
+%provide:marker2:location:semaphore\n
+%...
+file_name2:build_id\n
+%...
+
+And we can deal with it by usual fgets/getline and strtok.
+
+Oh, it's just a suggestion..
+
+
+> + *
+> + * Parse according to the above format. Find out the file_name and build_id
+> + * first and then use sdt_note__read() to parse the SDT note info.
+> + * Find out the hash key from the file_name and use that to add this new
+> + * entry to file hash.
+> + */
+> +static int file_hash_list__populate(struct hash_table *file_hash, FILE *cache)
+> +{
+> +	struct file_sdt_ent *fse;
+> +	int key, val, ret = -EBADF;
+> +	char data[2 * PATH_MAX], *ptr, *tmp;
+> +
+> +	for (val = fscanf(cache, "%s", data); val != EOF;
+> +	     val = fscanf(cache, "%s", data)) {
+> +		fse = malloc(sizeof(*fse));
+> +		if (!fse) {
+> +			ret = -ENOMEM;
+> +			break;
+> +		}
+> +		INIT_LIST_HEAD(&fse->sdt_list);
+> +		INIT_HLIST_NODE(&fse->file_list);
+> +
+> +		/* First line is file name and build id */
+> +		ptr = strtok_r(data, ":", &tmp);
+> +		if (!ptr)
+> +			break;
+> +		strcpy(fse->name, ptr);
+> +		ptr = strtok_r(NULL, ":", &tmp);
+> +		if (!ptr)
+> +			break;
+> +		strcpy(fse->sbuild_id, ptr);
+> +
+> +		/* Now, try to get the SDT notes for that file */
+> +		while ((fscanf(cache, "%s", data)) != EOF) {
+> +			if (!strcmp(data, ":"))
+> +				break;
+> +			ret = sdt_note__read(data, &fse->sdt_list);
+> +			if (ret < 0)
+> +				goto out;
+> +		}
+> +		key = get_hash_key(fse->name);
+> +		hlist_add_head(&fse->file_list, &file_hash->ent[key]);
+> +		ret = 0;
+> +	}
+> +out:
+> +	return ret;
+> +}
+> +
+> +/**
+> + * file_hash_list__init: Initializes the file hash list
+> + * @file_hash: empty file_hash
+> + *
+> + * Initializes the ent's of file_hash and opens the cache file.
+
+What is the ent's?
+
+> + * To look for the cache file, look into the directory in HOME env variable.
+> + */
+> +static int file_hash_list__init(struct hash_table *file_hash)
+> +{
+> +	FILE *cache;
+> +	int i, ret = 0;
+> +	char sdt_cache_path[MAXPATHLEN], *val;
+
+s/MAXPATHLEN/PATH_MAX/ ?
+
+> +
+> +	for (i = 0; i < SDT_HASH_SIZE; i++)
+> +		INIT_HLIST_HEAD(&file_hash->ent[i]);
+> +
+> +	val = getenv("HOME");
+> +	if (val)
+> +		snprintf(sdt_cache_path, MAXPATHLEN-1, "%s/%s/%s",
+> +			 val, SDT_CACHE_DIR, SDT_FILE_CACHE);
+
+Then you can use scnprintf(sdt_cache_path, sizeof(sdt_cache_path), ...).
+
+
+> +	else {
+> +		pr_err("Error: Couldn't get user's home directory\n");
+> +		ret = -1;
+> +		goto out;
+> +	}
+> +
+> +	cache = fopen(sdt_cache_path, "r");
+> +	if (cache == NULL)
+> +		goto out;
+> +
+> +	/* Populate the hash list */
+> +	ret = file_hash_list__populate(file_hash, cache);
+> +	fclose(cache);
+> +out:
+> +	return ret;
+> +}
+> +
+> +/**
+> + * file_hash_list__cleanup: Frees up all the space taken by file_hash list
+> + * @file_hash: file_hash table
+> + */
+> +static void file_hash_list__cleanup(struct hash_table *file_hash)
+> +{
+> +	struct file_sdt_ent *file_pos;
+> +	struct list_head *sdt_head;
+> +	struct hlist_head *ent_head;
+> +	struct hlist_node *tmp;
+> +	int i;
+> +
+> +	/* Go through all the entries */
+> +	for (i = 0; i < SDT_HASH_SIZE; i++) {
+> +		ent_head = &file_hash->ent[i];
+> +
+> +		hlist_for_each_entry_safe(file_pos, tmp, ent_head, file_list) {
+> +			sdt_head = &file_pos->sdt_list;
+> +
+> +			/* Cleanup the corresponding SDT notes' list */
+> +			cleanup_sdt_note_list(sdt_head);
+> +			hlist_del(&file_pos->file_list);
+> +			list_del(&file_pos->sdt_list);
+
+Ditto.  Don't call list_del() but call cleanup_sdt_note_list directly.
+
+
+> +			free(file_pos);
+> +		}
+> +	}
+> +}
+> +
+> +
+> +/**
+> + * add_to_hash_list: add an entry to file_hash_list
+> + * @file_hash: file hash table
+> + * @target: file name
+> + *
+> + * Finds out the build_id of @target, checks if @target is already present
+> + * in file hash list. If not present, delete any stale entries with this
+> + * file name (i.e., entries matching this file name but having older
+> + * build ids). And then, adds the file entry to file hash list and also
+> + * updates the SDT events in the event hash list.
+> + */
+> +static int add_to_hash_list(struct hash_table *file_hash, const char *target)
+> +{
+> +	struct file_info *file;
+> +	int ret = -EBADF;
+> +	u8 build_id[BUILD_ID_SIZE];
+> +
+> +	LIST_HEAD(sdt_notes);
+> +
+> +	file = malloc(sizeof(*file));
+> +	if (!file)
+> +		return -ENOMEM;
+> +
+> +	file->name = realpath(target, NULL);
+> +	if (!file->name) {
+> +		pr_err("%s: Bad file name\n", target);
+> +		goto out;
+> +	}
+> +
+> +	symbol__elf_init();
+
+No need to call symbol__elf_init() here since we already called it in
+cmd_sdt_cache().
+
+
+> +	if (filename__read_build_id(file->name, &build_id,
+> +				    sizeof(build_id)) < 0) {
+> +		pr_err("Couldn't read build-id in %s\n", file->name);
+> +		sdt_err(ret, file->name);
+> +		goto out;
+> +	}
+> +	build_id__sprintf(build_id, sizeof(build_id), file->sbuild_id);
+> +
+> +	/* File entry already exists ?*/
+> +	if (file_hash_list__entry_exists(file_hash, file)) {
+> +		pr_err("Error: SDT events for %s already exist\n",
+> +		       file->name);
+> +		ret = 0;
+> +		goto out;
+> +	}
+> +
+> +	/*
+> +	 * This should remove any stale entries (if any) from the file hash.
+> +	 * Stale entries will have the same file name but different build ids.
+> +	 */
+> +	ret = file_hash_list__remove(file_hash, file->name);
+> +	if (ret < 0)
+> +		goto out;
+> +	ret = get_sdt_note_list(&sdt_notes, file->name);
+> +	if (ret < 0)
+> +		sdt_err(ret, target);
+> +	/* Add the entry to file hash list */
+> +	ret = file_hash_list__add(file_hash, &sdt_notes, file);
+> +out:
+> +	free(file->name);
+> +	free(file);
+> +	return ret;
+> +}
+
+[SNIP]
+> +static int flush_hash_list_to_cache(struct hash_table *file_hash)
+> +{
+> +	FILE *cache;
+> +	int ret;
+> +	struct stat buf;
+> +	char sdt_cache_path[MAXPATHLEN], sdt_dir[MAXPATHLEN], *val;
+> +
+> +	val = getenv("HOME");
+> +	if (val) {
+> +		snprintf(sdt_dir, MAXPATHLEN-1, "%s/%s", val, SDT_CACHE_DIR);
+> +		snprintf(sdt_cache_path, MAXPATHLEN-1, "%s/%s",
+> +			 sdt_dir, SDT_FILE_CACHE);
+
+Ditto.  s/MAXPATHLEN/PATH_MAX/g and use scnprintf().
+
+Thanks,
+Namhyung
+
+
+> +	} else {
+> +		pr_err("Error: Couldn't get the user's home directory\n");
+> +		ret = -1;
+> +		goto out_err;
+> +	}
+> +	ret = stat(sdt_dir, &buf);
+> +	if (ret) {
+> +		ret = mkdir(sdt_dir, buf.st_mode);
+> +		if (ret) {
+> +			pr_err("Error: Couldn't create %s\n", sdt_dir);
+> +			goto out_err;
+> +		}
+> +	}
+> +
+> +	cache = fopen(sdt_cache_path, "w");
+> +	if (!cache) {
+> +		pr_err("Error in creating %s file\n", sdt_cache_path);
+> +		ret = -errno;
+> +		goto out_err;
+> +	}
+> +
+> +	file_hash_list__flush(file_hash, cache);
+> +	fclose(cache);
+> +out_err:
+> +	return ret;
+> +}
