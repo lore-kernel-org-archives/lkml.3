@@ -1,76 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932735AbaJVK0L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 06:26:11 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:64394 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932098AbaJVK0J (ORCPT
+	id S932797AbaJVK0l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 06:26:41 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:52864 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932098AbaJVK0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 06:26:09 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Wed, 22 Oct 2014 12:23:05 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Johan Hovold <johan@kernel.org>, Alessandro Zummo <a.zummo@towertech.it>,
-        Tony Lindgren <tony@atomide.com>,
-        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lokesh Vutla <lokeshvutla@ti.com>, Guenter Roeck <linux@roeck-us.net>,
-        Colin Foe-Parker <colin.foeparker@logicpd.com>, nsekhar@ti.com,
-        t-kristo@ti.com, j-keerthy@ti.com, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/12] rtc: omap: fixes and power-off feature
-Message-ID: <20141022102305.GM2113@localhost>
-References: <1412881594-25678-1-git-send-email-johan@kernel.org>
- <20141015165452.GB15770@saruman>
- <20141015170628.GA13824@localhost>
- <20141015170832.GD15770@saruman>
+	Wed, 22 Oct 2014 06:26:39 -0400
+Message-ID: <54478657.5000207@linux.vnet.ibm.com>
+Date: Wed, 22 Oct 2014 15:56:31 +0530
+From: Hemant Kumar <hemant@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141015170832.GD15770@saruman>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Namhyung Kim <namhyung@kernel.org>
+CC: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
+        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
+        masami.hiramatsu.pt@hitachi.com, aravinda@linux.vnet.ibm.com,
+        penberg@iki.fi
+Subject: Re: [PATCH v3 1/5] perf/sdt: ELF support for SDT
+References: <20141010104402.15506.73285.stgit@hemant-fedora> <20141010105727.15506.99362.stgit@hemant-fedora> <87a94og74b.fsf@sejong.aot.lge.com>
+In-Reply-To: <87a94og74b.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102210-0013-0000-0000-000001D374B2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 12:08:32PM -0500, Felipe Balbi wrote:
-> On Wed, Oct 15, 2014 at 07:06:28PM +0200, Johan Hovold wrote:
-> > On Wed, Oct 15, 2014 at 11:55:02AM -0500, Felipe Balbi wrote:
 
-> > > BTW, how do you test this series ?
-> > 
-> > Set a 30 second wakealarm using the sysfs attribute of the rtc class
-> > device and power off the BBB:
-> > 
-> > 	echo +30 >wakealarm; poweroff
-> 
-> sweet!!!! It worked just fine :-)
+On 10/22/2014 08:09 AM, Namhyung Kim wrote:
+> Hi Hemant,
+>
+> On Fri, 10 Oct 2014 16:27:53 +0530, Hemant Kumar wrote:
+>> This patch serves the initial support to identify and list SDT events in binaries.
+>> When programs containing SDT markers are compiled, gcc with the help of assembler
+>> directives identifies them and places them in the section ".note.stapsdt". To find
+>> these markers from the binaries, one needs to traverse through this section and
+>> parse the relevant details like the name, type and location of the marker. Also,
+>> the original location could be skewed due to the effect of prelinking. If that is
+>> the case, the locations need to be adjusted.
+>>
+>> The functions in this patch open a given ELF, find out the SDT section, parse the
+>> relevant details, adjust the location (if necessary) and populate them in a list.
+>>
+>> Signed-off-by: Hemant Kumar <hemant@linux.vnet.ibm.com>
+> Acked-by: Namhyung Kim <namhyung@kernel.org>
+>
+> Just a nitpick below..
+>
+>
+>> +static int construct_sdt_notes_list(Elf *elf, struct list_head *sdt_notes)
+>> +{
+>> +	GElf_Ehdr ehdr;
+>> +	Elf_Scn *scn = NULL;
+>> +	Elf_Data *data;
+>> +	GElf_Shdr shdr;
+>> +	size_t shstrndx, next;
+>> +	GElf_Nhdr nhdr;
+>> +	size_t name_off, desc_off, offset;
+>> +	int ret = 0;
+>> +
+>> +	if (gelf_getehdr(elf, &ehdr) == NULL) {
+>> +		ret = -EBADF;
+>> +		goto out_ret;
+>> +	}
+>> +	if (elf_getshdrstrndx(elf, &shstrndx) != 0) {
+>> +		ret = -EBADF;
+>> +		goto out_ret;
+>> +	}
+>> +
+>> +	/* Look for the required section */
+>> +	scn = elf_section_by_name(elf, &ehdr, &shdr, SDT_NOTE_SCN, NULL);
+>> +	if (!scn) {
+>> +		ret = -ENOENT;
+>> +		goto out_ret;
+>> +	}
+>> +
+>> +	if (!(shdr.sh_type == SHT_NOTE) || (shdr.sh_flags & SHF_ALLOC)) {
+> I think the below is more readable:
 
-:)
+Yes.
 
-> Too bad there's yet another DRM bug:
-> 
-> [  271.150158] Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000000
-> [  271.150158] 
-> [  271.159725] CPU: 0 PID: 1 Comm: systemd-shutdow Not tainted 3.17.0-08392-g7fe2269-dirty #326
-> [  271.168567] [<c00175a4>] (unwind_backtrace) from [<c00132f0>] (show_stack+0x20/0x24)
-> [  271.176668] [<c00132f0>] (show_stack) from [<c06573a4>] (dump_stack+0x8c/0xa4)
-> [  271.184215] [<c06573a4>] (dump_stack) from [<c0654f10>] (panic+0xa0/0x220)
-> [  271.191405] [<c0654f10>] (panic) from [<c0049e54>] (do_exit+0x974/0x9d0)
-> [  271.198410] [<c0049e54>] (do_exit) from [<c0067694>] (SyS_reboot+0x14c/0x1e8)
-> [  271.205870] [<c0067694>] (SyS_reboot) from [<c000f080>] (ret_fast_syscall+0x0/0x48)
-> [  271.214023] drm_kms_helper: panic occurred, switching back to text console
-> [  271.221312] ---[ end Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000000
-> 
-> In any case, board still powered up after 30 seconds(-ish). So this gets
-> a:
-> 
-> Tested-by: Felipe Balbi <balbi@ti.com>
+>
+> 	if ((shdr.sh_type != SHT_NOTE) || (shdr.sh_flags & SHF_ALLOC)) {
 
-Thanks for testing. I didn't include your Tested-by in v2 due to the
-invasiveness of the new device-abstraction patch. Still works fine on BBB
-here though.
+Will change to this.
 
-Johan
+>
+> Other than that, looks good to me!
+>
+> Thanks,
+> Namhyung
+>
+>
+>> +		ret = -ENOENT;
+>> +		goto out_ret;
+>> +	}
+>> +
+>> +	data = elf_getdata(scn, NULL);
+>> +
+>> +	/* Get the SDT notes */
+>> +	for (offset = 0; (next = gelf_getnote(data, offset, &nhdr, &name_off,
+>> +					      &desc_off)) > 0; offset = next) {
+>> +		if (nhdr.n_namesz == sizeof(SDT_NOTE_NAME) &&
+>> +		    !memcmp(data->d_buf + name_off, SDT_NOTE_NAME,
+>> +			    sizeof(SDT_NOTE_NAME))) {
+>> +			ret = populate_sdt_note(&elf, ((data->d_buf) + desc_off),
+>> +						nhdr.n_descsz, nhdr.n_type,
+>> +						sdt_notes);
+>> +			if (ret < 0)
+>> +				goto out_ret;
+>> +		}
+>> +	}
+>> +	if (list_empty(sdt_notes))
+>> +		ret = -ENOENT;
+>> +
+>> +out_ret:
+>> +	return ret;
+>> +}
+
+-- 
+Thanks,
+Hemant Kumar
+
