@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862AbaJVIql (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 04:46:41 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:30170 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754480AbaJVIpv (ORCPT
+	id S1754789AbaJVIqj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 04:46:39 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:9713 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754564AbaJVIpx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 04:45:51 -0400
-X-AuditID: cbfec7f4-b7f6c6d00000120b-1a-54476ebd1b8e
+	Wed, 22 Oct 2014 04:45:53 -0400
+X-AuditID: cbfec7f5-b7f956d000005ed7-70-54476ebeefec
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: MyungJoo Ham <myungjoo.ham@samsung.com>,
         Chanwoo Choi <cw00.choi@samsung.com>,
@@ -17,93 +17,90 @@ Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH RESEND 2/3] extcon: max77693: Request only specific interrupts
-Date: Wed, 22 Oct 2014 10:45:39 +0200
-Message-id: <1413967540-27626-2-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH RESEND 3/3] extcon: max77693: Fix extcon UART on Trats2 board
+Date: Wed, 22 Oct 2014 10:45:40 +0200
+Message-id: <1413967540-27626-3-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1413967540-27626-1-git-send-email-k.kozlowski@samsung.com>
 References: <1413967540-27626-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBJMWRmVeSWpSXmKPExsVy+t/xq7p789xDDC7eEbHYOGM9q8X1L89Z
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBJMWRmVeSWpSXmKPExsVy+t/xq7r78txDDH6fU7DYOGM9q8X1L89Z
 	LV6/MLQ42/SG3eL+16OMFpd3zWGzWHvkLrvF7cYVbBanu1kdOD3uXNvD5jHvZKBH35ZVjB6f
-	N8kFsERx2aSk5mSWpRbp2yVwZWxfUlmwQaxi0b7/zA2MD4S6GDk5JARMJBo7brJD2GISF+6t
-	Z+ti5OIQEljKKPFi4hwmCKePSeLK8S5WkCo2AWOJzcuXgFWJCOxmlPi2dxFYFbPAUUaJ6b1v
-	mUCqhAX8JDYd+sUIYrMIqErceH+VDcTmFXCX2HJyBdQ+OYmTxyaDTeUU8JBYeOwYUD0H0Dp3
-	iYNzRScw8i5gZFjFKJpamlxQnJSea6hXnJhbXJqXrpecn7uJERJaX3YwLj5mdYhRgINRiYd3
-	Bod7iBBrYllxZe4hRgkOZiUR3nvpQCHelMTKqtSi/Pii0pzU4kOMTBycUg2MMRty2r8LTpuq
-	7MIV3GIplfRXTHfhtvBHkwIusQdO+9V6/O7P78W5qf3hf3SVq02itrisub5jrqxFqryrweNF
-	h9zmC+lezpunxNIp5ikWmbAzsFQx8G1W5wGb/rrZLkXTy+v2WGyyafeMEMhj3np0hqdvw5ru
-	+D/l2z7Kn5pw//qPmfWrq1iUWIozEg21mIuKEwF+nukICwIAAA==
+	N8kFsERx2aSk5mSWpRbp2yVwZRzfsoWxYI5oxau+mgbGb4JdjJwcEgImEo8372GHsMUkLtxb
+	z9bFyMUhJLCUUWL1iVssEE4fk8SLn8eZQarYBIwlNi9fAlYlIrCbUeLb3kVMIA6zwFFGiem9
+	b5lAqoQFfCVu7ZzOCmKzCKhKPPl1jBHE5hVwl2j7OIcJYp+cxMljk8FqOAU8JBYeA6nhAFrn
+	LnFwrugERt4FjAyrGEVTS5MLipPSc430ihNzi0vz0vWS83M3MUJC6+sOxqXHrA4xCnAwKvHw
+	OrC5hwixJpYVV+YeYpTgYFYS4b2XDhTiTUmsrEotyo8vKs1JLT7EyMTBKdXAOPOpxvel/yIt
+	NvzQfa10JmfRc9aLwscldQ4tOr67QTvwU+zhA1OuFumtLruxqWz+M69tlmbLet8cO1keIb/G
+	6iRrYrdVZAR33w+TwMp50zP5KmY62VYJ71md4vJ1BtfxW+yqEi+qZ8Z5Scxt0HnypV064rxX
+	Qxqj/OqgdfXtpdv+xsrVRgTeUWIpzkg01GIuKk4EAPlj6cILAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver was requesting all MUIC interrupts but then was masking most
-of them manually at end of probe (with default_init_data). Since
-default_init_data cannot be passed through DTS (no bindings for driver),
-this was a conflicting behavior. First get everything, then mask what we
-don't want.
+When JIG was set to "boot on" mode, the UART connection did not work
+because it was assigned to Dock-Car cable (path: audio), not JIG-UART-ON
+cable.
 
-This could change after adding DTS bindings for requesting specific
-MUIC interrupts. Until then driver should request only these MUIC
-interrupts which he is really interested in.
+This was introduced in 39bf369e4ed3 ("extcon: max77693: Add support dock
+device and buttons") while adding dock features.
 
-The commit does not introduce any functional change when the driver is
-used with DTS (no platform data). However this changes the behavior with
-platform data supplied. In such case the driver will request only 3
-interrupts (ADC, ADC1K, ChgTyp). Platform data could still unmask other
-interrupts but they won't be handled by the driver.
+Assign the JIG-UART-ON back to UART path.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- drivers/extcon/extcon-max77693.c | 26 --------------------------
- 1 file changed, 26 deletions(-)
+ drivers/extcon/extcon-max77693.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
-index 863d088c9bdd..9d21e75a7032 100644
+index 9d21e75a7032..beaa8cd71c3b 100644
 --- a/drivers/extcon/extcon-max77693.c
 +++ b/drivers/extcon/extcon-max77693.c
-@@ -44,19 +44,6 @@ static struct max77693_reg_data default_init_data[] = {
- 		.addr = MAX77693_MUIC_REG_STATUS2,
- 		.data = STATUS2_CHGDETRUN_MASK,
- 	}, {
--		/* INTMASK1 - Unmask [3]ADC1KM,[0]ADCM */
--		.addr = MAX77693_MUIC_REG_INTMASK1,
--		.data = INTMASK1_ADC1K_MASK
--			| INTMASK1_ADC_MASK,
--	}, {
--		/* INTMASK2 - Unmask [0]ChgTypM */
--		.addr = MAX77693_MUIC_REG_INTMASK2,
--		.data = INTMASK2_CHGTYP_MASK,
--	}, {
--		/* INTMASK3 - Mask all of interrupts */
--		.addr = MAX77693_MUIC_REG_INTMASK3,
--		.data = 0x0,
--	}, {
- 		/* CDETCTRL2 */
- 		.addr = MAX77693_MUIC_REG_CDETCTRL2,
- 		.data = CDETCTRL2_VIDRMEN_MASK
-@@ -135,21 +122,8 @@ struct max77693_muic_irq {
- 
- static struct max77693_muic_irq muic_irqs[] = {
- 	{ MAX77693_MUIC_IRQ_INT1_ADC,		"muic-ADC" },
--	{ MAX77693_MUIC_IRQ_INT1_ADC_LOW,	"muic-ADCLOW" },
--	{ MAX77693_MUIC_IRQ_INT1_ADC_ERR,	"muic-ADCError" },
- 	{ MAX77693_MUIC_IRQ_INT1_ADC1K,		"muic-ADC1K" },
- 	{ MAX77693_MUIC_IRQ_INT2_CHGTYP,	"muic-CHGTYP" },
--	{ MAX77693_MUIC_IRQ_INT2_CHGDETREUN,	"muic-CHGDETREUN" },
--	{ MAX77693_MUIC_IRQ_INT2_DCDTMR,	"muic-DCDTMR" },
--	{ MAX77693_MUIC_IRQ_INT2_DXOVP,		"muic-DXOVP" },
--	{ MAX77693_MUIC_IRQ_INT2_VBVOLT,	"muic-VBVOLT" },
--	{ MAX77693_MUIC_IRQ_INT2_VIDRM,		"muic-VIDRM" },
--	{ MAX77693_MUIC_IRQ_INT3_EOC,		"muic-EOC" },
--	{ MAX77693_MUIC_IRQ_INT3_CGMBC,		"muic-CGMBC" },
--	{ MAX77693_MUIC_IRQ_INT3_OVP,		"muic-OVP" },
--	{ MAX77693_MUIC_IRQ_INT3_MBCCHG_ERR,	"muic-MBCCHG_ERR" },
--	{ MAX77693_MUIC_IRQ_INT3_CHG_ENABLED,	"muic-CHG_ENABLED" },
--	{ MAX77693_MUIC_IRQ_INT3_BAT_DET,	"muic-BAT_DET" },
- };
- 
- /* Define supported accessory type */
+@@ -206,7 +206,7 @@ static const char *max77693_extcon_cable[] = {
+ 	[EXTCON_CABLE_JIG_USB_ON]		= "JIG-USB-ON",
+ 	[EXTCON_CABLE_JIG_USB_OFF]		= "JIG-USB-OFF",
+ 	[EXTCON_CABLE_JIG_UART_OFF]		= "JIG-UART-OFF",
+-	[EXTCON_CABLE_JIG_UART_ON]		= "Dock-Car",
++	[EXTCON_CABLE_JIG_UART_ON]		= "JIG-UART-ON",
+ 	[EXTCON_CABLE_DOCK_SMART]		= "Dock-Smart",
+ 	[EXTCON_CABLE_DOCK_DESK]		= "Dock-Desk",
+ 	[EXTCON_CABLE_DOCK_AUDIO]		= "Dock-Audio",
+@@ -506,9 +506,6 @@ static int max77693_muic_dock_handler(struct max77693_muic_info *info,
+ 		extcon_set_cable_state(info->edev, "Dock-Smart", attached);
+ 		extcon_set_cable_state(info->edev, "MHL", attached);
+ 		goto out;
+-	case MAX77693_MUIC_ADC_FACTORY_MODE_UART_ON:	/* Dock-Car */
+-		strcpy(dock_name, "Dock-Car");
+-		break;
+ 	case MAX77693_MUIC_ADC_AUDIO_MODE_REMOTE:	/* Dock-Desk */
+ 		strcpy(dock_name, "Dock-Desk");
+ 		break;
+@@ -643,6 +640,11 @@ static int max77693_muic_jig_handler(struct max77693_muic_info *info,
+ 		strcpy(cable_name, "JIG-UART-OFF");
+ 		path = CONTROL1_SW_UART;
+ 		break;
++	case MAX77693_MUIC_ADC_FACTORY_MODE_UART_ON:	/* ADC_JIG_UART_ON */
++		/* PATH:AP_UART */
++		strcpy(cable_name, "JIG-UART-ON");
++		path = CONTROL1_SW_UART;
++		break;
+ 	default:
+ 		dev_err(info->dev, "failed to detect %s jig cable\n",
+ 			attached ? "attached" : "detached");
+@@ -682,13 +684,13 @@ static int max77693_muic_adc_handler(struct max77693_muic_info *info)
+ 	case MAX77693_MUIC_ADC_FACTORY_MODE_USB_OFF:
+ 	case MAX77693_MUIC_ADC_FACTORY_MODE_USB_ON:
+ 	case MAX77693_MUIC_ADC_FACTORY_MODE_UART_OFF:
++	case MAX77693_MUIC_ADC_FACTORY_MODE_UART_ON:
+ 		/* JIG */
+ 		ret = max77693_muic_jig_handler(info, cable_type, attached);
+ 		if (ret < 0)
+ 			return ret;
+ 		break;
+ 	case MAX77693_MUIC_ADC_RESERVED_ACC_3:		/* Dock-Smart */
+-	case MAX77693_MUIC_ADC_FACTORY_MODE_UART_ON:	/* Dock-Car */
+ 	case MAX77693_MUIC_ADC_AUDIO_MODE_REMOTE:	/* Dock-Desk */
+ 	case MAX77693_MUIC_ADC_AV_CABLE_NOLOAD:		/* Dock-Audio */
+ 		/*
 -- 
 1.9.1
 
