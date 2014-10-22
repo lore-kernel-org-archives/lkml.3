@@ -1,83 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932728AbaJVU04 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 16:26:56 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:56566 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932336AbaJVU0z (ORCPT
+	id S932787AbaJVU1N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 16:27:13 -0400
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:63545 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932336AbaJVU1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 16:26:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141022131308.361a72ba7c6fbf1bd778445a@linux-foundation.org>
-References: <1413915307-20536-1-git-send-email-sasha.levin@oracle.com>
-	<544743D6.6040103@samsung.com>
-	<20141022114437.72eb61ce3e2348c52ab3d1db@linux-foundation.org>
-	<5447FC6E.2000207@oracle.com>
-	<20141022131308.361a72ba7c6fbf1bd778445a@linux-foundation.org>
-Date: Thu, 23 Oct 2014 00:26:53 +0400
-Message-ID: <CAPAsAGw2cTF39KbnNb0Ug21KRmnkJrXobYYGPiVhzTCg=BCh0w@mail.gmail.com>
-Subject: Re: [PATCH] mm, hugetlb: correct bit shift in hstate_sizelog
-From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, aarcange@redhat.com,
-        Mel Gorman <mgorman@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 22 Oct 2014 16:27:11 -0400
+Message-ID: <1414009627.17121.15.camel@x220>
+Subject: Re: [PATCHv5 7/7] usb: dwc2: Update Kconfig to support dual-role
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Dinh Nguyen <dinguyen@opensource.altera.com>
+Cc: paulz@synopsys.com, balbi@ti.com, dinh.linux@gmail.com,
+        linux-kernel@vger.kernel.org, swarren@wwwdotorg.org,
+        b.zolnierkie@samsung.com, matthijs@stdin.nl, r.baldyga@samsung.com,
+        jg1.han@samsung.com, sachin.kamat@linaro.org, ben-linux@fluff.org,
+        dianders@chromium.org, kever.yang@rock-chips.com,
+        linux-usb@vger.kernel.org
+Date: Wed, 22 Oct 2014 22:27:07 +0200
+In-Reply-To: <5446C668.3020609@opensource.altera.com>
+References: <1413831126-24193-1-git-send-email-dinguyen@opensource.altera.com>
+		 <1413831126-24193-8-git-send-email-dinguyen@opensource.altera.com>
+	 <1413834151.2010.19.camel@x41> <5446C668.3020609@opensource.altera.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 22 Oct 2014 20:27:08.0314 (UTC) FILETIME=[8D4A5FA0:01CFEE36]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-10-23 0:13 GMT+04:00 Andrew Morton <akpm@linux-foundation.org>:
-> On Wed, 22 Oct 2014 14:50:22 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
->
->> On 10/22/2014 02:44 PM, Andrew Morton wrote:
->> > On Wed, 22 Oct 2014 09:42:46 +0400 Andrey Ryabinin <a.ryabinin@samsung.com> wrote:
->> >
->> >> > On 10/21/2014 10:15 PM, Sasha Levin wrote:
->> >>> > > hstate_sizelog() would shift left an int rather than long, triggering
->> >>> > > undefined behaviour and passing an incorrect value when the requested
->> >>> > > page size was more than 4GB, thus breaking >4GB pages.
->> >> >
->> >>> > >
->> >>> > > Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
->> >>> > > ---
->> >>> > >  include/linux/hugetlb.h |    3 ++-
->> >>> > >  1 file changed, 2 insertions(+), 1 deletion(-)
->> >>> > >
->> >>> > > diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
->> >>> > > index 65e12a2..57e0dfd 100644
->> >>> > > --- a/include/linux/hugetlb.h
->> >>> > > +++ b/include/linux/hugetlb.h
->> >>> > > @@ -312,7 +312,8 @@ static inline struct hstate *hstate_sizelog(int page_size_log)
->> >>> > >  {
->> >>> > >       if (!page_size_log)
->> >>> > >               return &default_hstate;
->> >>> > > -     return size_to_hstate(1 << page_size_log);
->> >>> > > +
->> >>> > > +     return size_to_hstate(1UL << page_size_log);
->> >> >
->> >> > That still could be undefined on 32-bits. Either use 1ULL or reduce SHM_HUGE_MASK on 32bits.
->> >> >
->> > But
->> >
->> > struct hstate *size_to_hstate(unsigned long size)
->>
->> True, but "(1 << page_size_log)" produces an integer rather than long because "1"
->> is an int and not long.
->
-> My point is that there's no point in using 1ULL because
-> size_to_hstate() will truncate it anyway.
->
+On Tue, 2014-10-21 at 15:47 -0500, Dinh Nguyen wrote:
+> On 10/20/2014 02:42 PM, Paul Bolle wrote:
+> > (Side note: drivers/usb/dwc2/Kconfig is sourced (in drivers/usb/Kconfig)
+> > even if USB is _not_ set. But USB_DCW2 still depends on USB. Why is
+> > that?)
+> 
+> Because USB is for Host-Side support. DWC2 driver should only get built
+> for when USB is enabled. I think you're getting USB and USB_SUPPORT
+> mixed up.
 
-There is a point to use 1ULL
-On 32-bit with size >= 32
-(1UL << size) - undefined, so size_to_hstate() will truncate it to
-undefined as well. E.g. It definitely won't be zero on x86.
-While (1ULL << size) - is defined and size_to_hstate() will truncate it to zero.
+No, I don't think I did. Because in drivers/usb/Kconfig we see  
+    if USB
+
+    [...]
+
+    endif
+
+    [...]
+
+    source "drivers/usb/dwc2/Kconfig"
+
+    [...]
+
+> In addition, thanks to your comment, I realized that DWC2 should also be
+> available to build when USB_GADGET is enabled. A patch has been sent:
+> 
+> http://marc.info/?l=linux-usb&m=141392377124818&w=2
+
+I haven't checked, but doesn't this mean USB_DWC2 could just depend on
+USB_SUPPORT?
 
 
--- 
-Best regards,
-Andrey Ryabinin
+Paul Bolle
+
