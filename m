@@ -1,81 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933613AbaJVXx7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 19:53:59 -0400
-Received: from galahad.ideasonboard.com ([185.26.127.97]:43246 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933580AbaJVXxz (ORCPT
+	id S1754676AbaJVX4U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 19:56:20 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:52965 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753275AbaJVX4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 19:53:55 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, wsa@the-dreams.de, lars@metafoo.de
-Subject: Re: [PATCH] adv7604: Add DT parsing support
-Date: Thu, 23 Oct 2014 02:53:50 +0300
-Message-ID: <1645583.LAOF2HV7Iq@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.14.14-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <1413992061-28678-1-git-send-email-jean-michel.hautbois@vodalys.com>
-References: <1413992061-28678-1-git-send-email-jean-michel.hautbois@vodalys.com>
+	Wed, 22 Oct 2014 19:56:18 -0400
+Date: Wed, 22 Oct 2014 16:56:14 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: w.danford@electronics-software.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: source file /drivers/base/platform.c
+Message-ID: <20141022235614.GF1193@ld-irv-0074>
+References: <20141022160955.802aba6dbaeed9f5026600c863362da9.2d1b0160c3.wbe@email22.secureserver.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141022160955.802aba6dbaeed9f5026600c863362da9.2d1b0160c3.wbe@email22.secureserver.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean-Michel,
-
-Thank you for the patch.
-
-On Wednesday 22 October 2014 17:34:21 Jean-Michel Hautbois wrote:
-> This patch adds support for DT parsing of ADV7604 as well as ADV7611.
-> It needs to be improved in order to get ports parsing too.
-
-Let's improve it then :-) The DT bindings as proposed by this patch are 
-incomplete, that's just asking for trouble.
-
-How would you model the adv7604 ports ?
-
-> Signed-off-by: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
-> ---
->  Documentation/devicetree/bindings/media/i2c/adv7604.txt | 1 +
->  drivers/media/i2c/adv7604.c                             | 1 +
->  2 files changed, 2 insertions(+)
+On Wed, Oct 22, 2014 at 04:09:55PM -0700, w.danford@electronics-software.com wrote:
+> /**
+>  * platform_get_resource - get a resource for a device
+>  * @dev: platform device
+>  * @type: resource type
+>  * @num: resource index
+>  */
+> struct resource *platform_get_resource(struct platform_device *dev,
+> 				       unsigned int type, unsigned int num)
+[...]
+> As a result I now suggest a more specific definition is desirable.
+> The definition of the 'num' is the offset index for the specific
+> resource 'type' to be searched for ignoring all others not of this
+> 'type'. ... still convoluted.  By example, first resource of 'type'
+> is num=0, second resource of 'type' is num=1 even though say they
+> may be [1] and [3] in the complete resource array of resource structs.
 > 
-> diff --git a/Documentation/devicetree/bindings/media/i2c/adv7604.txt
-> b/Documentation/devicetree/bindings/media/i2c/adv7604.txt index
-> c27cede..5c8b3e6 100644
-> --- a/Documentation/devicetree/bindings/media/i2c/adv7604.txt
-> +++ b/Documentation/devicetree/bindings/media/i2c/adv7604.txt
-> @@ -10,6 +10,7 @@ Required Properties:
+> Note my example has type IORESOURCE_MEM as members [0] and [2] in the
+> arrya.  So to look for [2] it is the second, num = 1, of type
+> IORESOURCE_MEM.
 > 
->    - compatible: Must contain one of the following
->      - "adi,adv7611" for the ADV7611
-> +    - "adi,adv7604" for the ADV7604
+> In conclusion this is a documentation issue!
 
-Please switch the two lines to keep them alphabetically sorted.
-> 
->    - reg: I2C slave address
-> 
-> diff --git a/drivers/media/i2c/adv7604.c b/drivers/media/i2c/adv7604.c
-> index 47795ff..421035f 100644
-> --- a/drivers/media/i2c/adv7604.c
-> +++ b/drivers/media/i2c/adv7604.c
-> @@ -2677,6 +2677,7 @@ MODULE_DEVICE_TABLE(i2c, adv7604_i2c_id);
-> 
->  static struct of_device_id adv7604_of_id[] __maybe_unused = {
->  	{ .compatible = "adi,adv7611", .data = &adv7604_chip_info[ADV7611] },
-> +	{ .compatible = "adi,adv7604", .data = &adv7604_chip_info[ADV7604] },
+You spent a lot of words to get to this point! Yes, the problem is with
+the assumptions you were making, not with the implementation of
+platform_get_resource().
 
-Same comment here.
+AIUI, your latest interpretation is correct. The indexing of resources
+is on a per-resource-type basis. So you're requesting the Nth resource
+of type M when type=M and num=N.
 
->  	{ }
->  };
->  MODULE_DEVICE_TABLE(of, adv7604_of_id);
+Feel free to send a proper patch to improve the comments above
+platform_get_resource(), if you think that will help the next person to
+come across this API.
 
--- 
-Regards,
-
-Laurent Pinchart
-
+Brian
