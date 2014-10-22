@@ -1,196 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753714AbaJVRKR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 13:10:17 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:36068 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031AbaJVRKP (ORCPT
+	id S1753970AbaJVRLu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 13:11:50 -0400
+Received: from mail-bn1on0115.outbound.protection.outlook.com ([157.56.110.115]:50123
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753631AbaJVRLs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 13:10:15 -0400
-Date: Wed, 22 Oct 2014 10:10:05 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Steven Honeyman <stevenhoneyman@gmail.com>
-Subject: Re: [PATCH] i8k: Ignore temperature sensors which report invalid
- values
-Message-ID: <20141022171005.GA30530@roeck-us.net>
-References: <1413730014-30945-1-git-send-email-pali.rohar@gmail.com>
- <201410221429.06699@pali>
- <20141022161947.GA31045@roeck-us.net>
- <201410221835.53526@pali>
+	Wed, 22 Oct 2014 13:11:48 -0400
+X-Greylist: delayed 933 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Oct 2014 13:11:47 EDT
+From: KY Srinivasan <kys@microsoft.com>
+To: Vitaly Kuznetsov <vkuznets@redhat.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] tools: hv: introduce -n/--no-daemon option
+Thread-Topic: [PATCH] tools: hv: introduce -n/--no-daemon option
+Thread-Index: AQHP7hJHU31NkSJHnECxRR5x3GsLjZw8VTbw
+Date: Wed, 22 Oct 2014 16:55:59 +0000
+Message-ID: <9c8f6d2d85664e68a9a97a94e34c5393@BY2PR0301MB0711.namprd03.prod.outlook.com>
+References: <1413994031-25957-1-git-send-email-vkuznets@redhat.com>
+In-Reply-To: <1413994031-25957-1-git-send-email-vkuznets@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [2001:4898:80e8:ed31::3]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0710;UriScan:;
+x-forefront-prvs: 037291602B
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(13464003)(189002)(199003)(51704005)(377454003)(76576001)(87936001)(97736003)(2501002)(106356001)(77096002)(2656002)(108616004)(40100003)(101416001)(64706001)(106116001)(20776003)(4396001)(1511001)(99396003)(120916001)(107046002)(76482002)(19580395003)(21056001)(95666004)(99286002)(19580405001)(2421001)(85306004)(85852003)(86362001)(31966008)(92566001)(2561002)(80022003)(46102003)(50986999)(105586002)(33646002)(86612001)(76176999)(74316001)(122556002)(54356999)(3826002)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0710;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201410221835.53526@pali>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020209.5447E4F7.006E,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 4
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0597;
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 06:35:53PM +0200, Pali Rohár wrote:
-> On Wednesday 22 October 2014 18:19:47 Guenter Roeck wrote:
-> > On Wed, Oct 22, 2014 at 02:29:06PM +0200, Pali Rohár wrote:
-> > > On Tuesday 21 October 2014 06:27:23 Guenter Roeck wrote:
-> > > > On 10/20/2014 09:46 AM, Pali Rohár wrote:
-> > > > > Ok, I will describe my problem. Guenter, maybe you can
-> > > > > find another solution/fix for it.
-> > > > > 
-> > > > > Calling i8k_get_temp(3) on my laptop without
-> > > > > I8K_TEMPERATURE_BUG always returns value 193 (which is
-> > > > > above I8K_MAX_TEMP).
-> > > > > 
-> > > > > When I8K_TEMPERATURE_BUG is enabled (by default) then
-> > > > > i8k_get_temp(3) returns value from prev[3] and store new
-> > > > > value I8K_TEMPERATURE_BUG to prev[3]. Value in prev[3]
-> > > > > is initialized to 0.
-> > > > > 
-> > > > > What I want to achieve is: when i8k_get_temp() for
-> > > > > particular sensor id always returns invalid value (>
-> > > > > I8K_MAX_TEMP) then we should totally ignore sensor with
-> > > > > that id and do not export it via hwmon.
-> > > > > 
-> > > > > My solution is: initialize prev[id] to I8K_MAX_TEMP, so
-> > > > > on invalid data first call to i8k_get_temp(id) returns
-> > > > > I8K_MAX_TEMP. Then in i8k_init_hwmon check if value is
-> > > > > < I8K_MAX_TEMP and if not ignore sensor id.
-> > > > > 
-> > > > > Guenter, it is clear now? Are you ok that we should
-> > > > > ignore sensor if always report value above
-> > > > > I8K_MAX_TEMP? If you do not like my solution/patch for
-> > > > > it, can you specify how other can it be fixed?
-> > > > 
-> > > > I still don't see the point in initializing prev[].
-> > > 
-> > > Now prev[] is initialized to 0. It means that first call
-> > > i8k_get_temp() (with sensor id which return value >
-> > > I8K_MAX_TEMP) returns 0. Second and other calls returns
-> > > I8K_MAX_TEMP.
-> > > 
-> > > So point is to return same value for first and other calls.
-> > 
-> > Yes, I realized that after I sent my previous mail.
-> > 
-> > > > Yes, I am ok with ignoring sensor values if the reported
-> > > > temperature is above I8K_MAX_TEMP. I am just not sure if
-> > > > we should check against I8K_MAX_TEMP or against, say,
-> > > > 192. Reason is that we do know that the sensor can
-> > > > erroneously return 0x99 on some systems once in a while.
-> > > > We would not want to ignore those sensors just because
-> > > > they happen to report 0x99 during initialization.
-> > > > 
-> > > > So maybe make it
-> > > > 
-> > > > 	if (err >= 0 && err < 192)
-> > > > 
-> > > > and add a note before the first if(), explaining that
-> > > > higher values suggest that there is no sensor attached.
-> > > > 
-> > > > Thanks,
-> > > > Guenter
-> > > 
-> > > Right, now we need to decide which magic constant to use...
-> > > 
-> > > And now I found another problem :-)
-> > > 
-> > > On my laptop i8k_get_temp(3) not always return value 193. It
-> > > is only when AMD graphics card is turned off. When card is
-> > > on i8k_get_temp(3) returns same value as temperature hwmon
-> > > part from radeon DRM driver.
-> > 
-> > Can you turn the GPU on or off during runtime ?
-> > That would make it really tricky to handle the situation.
-> > 
-> 
-> Yes. New laptops with Nvidia Optimus or AMD PowerXpress or Enduro 
-> technology are designed to automatically turn off secondary GPU 
-> when is not in use. And nouveau/radeon drivers together with 
-> vga_switcheroo implements this dynamic power on/off.
-> 
-> > > So it looks like that on my laptop i8k sensor with id 3
-> > > reports GPU temperature.
-> > > 
-> > > When card is turned off radeon driver reports -EINVAL for
-> > > temperature hwmon sysnode.
-> > > 
-> > > So now I think i8k could not ignore sensor totally as it can
-> > > be mapped to some HW which can be dynamically turned on/off
-> > > (like my graphics card).
-> > > 
-> > > So what do you think about reporting -EINVAL instead
-> > > I8K_MAX_TEMP when dell SMM returns value above
-> > > I8K_MAX_TEMP?
-> > 
-> > -EINVAL is supposed to mean "Invalid Argument", so it really
-> > has ia different semantics. We could use -ENXIO, "No such
-> > device or address", which seems more appropriate.
-> > 
-> 
-> I prefer to use -EINVAL because other driver (radeon) is using it 
-> and userspace "sensors" programs handle EINVAL and show "N/A" in 
-> output instead reporting some error about reading value. If 
-> nothing else consistency (with other drivers) is my argument.
-> 
-Ok, if sensors implements it that way then let's do it.
 
-> > Overall, I think the entire error handling is broken and
-> > should be replaced. One option would be to explicitly check
-> > for 0x99 and, if detected, go to sleep for, say, 100ms and
-> > try again. If it still fails, and for all other bad values,
-> > return -ENXIO. Then the calling code can either return the
-> > error to user space in the show function, or not install the
-> > sensor in the probe function.
-> > 
-> > Does that make sense ?
-> > 
-> 
-> Yes, replacing error handling with retry call (after some sleep) 
-> is better then current code (which returns previous value or 
-> returns I8K_MAX_TEMP).
-> 
-> But your solution not install the sensor if probe fails on bad 
-> value does not solve problem that i8k.ko is loading at time when 
-> GPU card is turned off.
-> 
-Yes, the dynamics in that situation makes it a bit difficult to
-handle the situation.
 
-> I think current check for installing sensor (err < 0) is enough 
-> and when invalid value (> I8K_MAX_TEMP) is returned just do not 
-> show this value for userspace in hwmon sysnode.
+> -----Original Message-----
+> From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
+> Sent: Wednesday, October 22, 2014 9:07 AM
+> To: KY Srinivasan; Haiyang Zhang; devel@linuxdriverproject.org
+> Cc: linux-kernel@vger.kernel.org
+> Subject: [PATCH] tools: hv: introduce -n/--no-daemon option
 > 
-Ok with me, and agreed.
+> All tools/hv daemons do mandatory daemon() on startup. However, no
+> pidfile is created, this make it difficult for an init system to track such
+> daemons.
+> Modern linux distros use systemd as their init system. It can handle the
+> daemonizing by itself, however, it requires a daemon to stay in foreground
+> for that. Some distros already carry distro-specific patch for hv tools which
+> switches off daemon().
+> 
+> Introduce -n/--no-daemon option for all 3 daemons in hv/tools. Parse
+> options with getopt() to make this part easily expandable.
+> 
+> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+You may want to include Greg KH in the "to" list.
+Signed-off-by:  K. Y. Srinivasan <kys@microsoft.com>
 
-Thanks,
-Guenter
+
+> ---
+>  tools/hv/hv_fcopy_daemon.c | 33 +++++++++++++++++++++++++++++++-
+> -
+>  tools/hv/hv_kvp_daemon.c   | 34
+> ++++++++++++++++++++++++++++++++--
+>  tools/hv/hv_vss_daemon.c   | 33 +++++++++++++++++++++++++++++++--
+>  3 files changed, 94 insertions(+), 6 deletions(-)
+> 
+> diff --git a/tools/hv/hv_fcopy_daemon.c b/tools/hv/hv_fcopy_daemon.c
+> index 8f96b3e..f437d73 100644
+> --- a/tools/hv/hv_fcopy_daemon.c
+> +++ b/tools/hv/hv_fcopy_daemon.c
+> @@ -33,6 +33,7 @@
+>  #include <sys/stat.h>
+>  #include <fcntl.h>
+>  #include <dirent.h>
+> +#include <getopt.h>
+> 
+>  static int target_fd;
+>  static char target_fname[W_MAX_PATH];
+> @@ -126,15 +127,43 @@ static int hv_copy_cancel(void)
+> 
+>  }
+> 
+> -int main(void)
+> +void print_usage(char *argv[])
+> +{
+> +	fprintf(stderr, "Usage: %s [options]\n"
+> +		"Options are:\n"
+> +		"  -n, --no-daemon        stay in foreground, don't
+> daemonize\n"
+> +		"  -h, --help             print this help\n", argv[0]);
+> +}
+> +
+> +int main(int argc, char *argv[])
+>  {
+>  	int fd, fcopy_fd, len;
+>  	int error;
+> +	int daemonize = 1, long_index = 0, opt;
+>  	int version = FCOPY_CURRENT_VERSION;
+>  	char *buffer[4096 * 2];
+>  	struct hv_fcopy_hdr *in_msg;
+> 
+> -	if (daemon(1, 0)) {
+> +	static struct option long_options[] = {
+> +		{"help",	no_argument,	   0,  'h' },
+> +		{"no-daemon",	no_argument,	   0,  'n' },
+> +		{0,		0,		   0,  0   }
+> +	};
+> +
+> +	while ((opt = getopt_long(argc, argv, "hn", long_options,
+> +				  &long_index)) != -1) {
+> +		switch (opt) {
+> +		case 'n':
+> +			daemonize = 0;
+> +			break;
+> +		case 'h':
+> +		default:
+> +			print_usage(argv);
+> +			exit(EXIT_FAILURE);
+> +		}
+> +	}
+> +
+> +	if (daemonize && daemon(1, 0)) {
+>  		syslog(LOG_ERR, "daemon() failed; error: %s",
+> strerror(errno));
+>  		exit(EXIT_FAILURE);
+>  	}
+> diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c index
+> 4088b81..22b0764 100644
+> --- a/tools/hv/hv_kvp_daemon.c
+> +++ b/tools/hv/hv_kvp_daemon.c
+> @@ -43,6 +43,7 @@
+>  #include <fcntl.h>
+>  #include <dirent.h>
+>  #include <net/if.h>
+> +#include <getopt.h>
+> 
+>  /*
+>   * KVP protocol: The user mode component first registers with the @@ -
+> 1417,7 +1418,15 @@ netlink_send(int fd, struct cn_msg *msg)
+>  	return sendmsg(fd, &message, 0);
+>  }
+> 
+> -int main(void)
+> +void print_usage(char *argv[])
+> +{
+> +	fprintf(stderr, "Usage: %s [options]\n"
+> +		"Options are:\n"
+> +		"  -n, --no-daemon        stay in foreground, don't
+> daemonize\n"
+> +		"  -h, --help             print this help\n", argv[0]);
+> +}
+> +
+> +int main(int argc, char *argv[])
+>  {
+>  	int fd, len, nl_group;
+>  	int error;
+> @@ -1435,9 +1444,30 @@ int main(void)
+>  	struct hv_kvp_ipaddr_value *kvp_ip_val;
+>  	char *kvp_recv_buffer;
+>  	size_t kvp_recv_buffer_len;
+> +	int daemonize = 1, long_index = 0, opt;
+> +
+> +	static struct option long_options[] = {
+> +		{"help",	no_argument,	   0,  'h' },
+> +		{"no-daemon",	no_argument,	   0,  'n' },
+> +		{0,		0,		   0,  0   }
+> +	};
+> +
+> +	while ((opt = getopt_long(argc, argv, "hn", long_options,
+> +				  &long_index)) != -1) {
+> +		switch (opt) {
+> +		case 'n':
+> +			daemonize = 0;
+> +			break;
+> +		case 'h':
+> +		default:
+> +			print_usage(argv);
+> +			exit(EXIT_FAILURE);
+> +		}
+> +	}
+> 
+> -	if (daemon(1, 0))
+> +	if (daemonize && daemon(1, 0))
+>  		return 1;
+> +
+>  	openlog("KVP", 0, LOG_USER);
+>  	syslog(LOG_INFO, "KVP starting; pid is:%d", getpid());
+> 
+> diff --git a/tools/hv/hv_vss_daemon.c b/tools/hv/hv_vss_daemon.c index
+> 6a213b8..9ae2b6e 100644
+> --- a/tools/hv/hv_vss_daemon.c
+> +++ b/tools/hv/hv_vss_daemon.c
+> @@ -36,6 +36,7 @@
+>  #include <linux/hyperv.h>
+>  #include <linux/netlink.h>
+>  #include <syslog.h>
+> +#include <getopt.h>
+> 
+>  static struct sockaddr_nl addr;
+> 
+> @@ -131,7 +132,15 @@ static int netlink_send(int fd, struct cn_msg *msg)
+>  	return sendmsg(fd, &message, 0);
+>  }
+> 
+> -int main(void)
+> +void print_usage(char *argv[])
+> +{
+> +	fprintf(stderr, "Usage: %s [options]\n"
+> +		"Options are:\n"
+> +		"  -n, --no-daemon        stay in foreground, don't
+> daemonize\n"
+> +		"  -h, --help             print this help\n", argv[0]);
+> +}
+> +
+> +int main(int argc, char *argv[])
+>  {
+>  	int fd, len, nl_group;
+>  	int error;
+> @@ -143,8 +152,28 @@ int main(void)
+>  	struct hv_vss_msg *vss_msg;
+>  	char *vss_recv_buffer;
+>  	size_t vss_recv_buffer_len;
+> +	int daemonize = 1, long_index = 0, opt;
+> +
+> +	static struct option long_options[] = {
+> +		{"help",	no_argument,	   0,  'h' },
+> +		{"no-daemon",	no_argument,	   0,  'n' },
+> +		{0,		0,		   0,  0   }
+> +	};
+> +
+> +	while ((opt = getopt_long(argc, argv, "hn", long_options,
+> +				  &long_index)) != -1) {
+> +		switch (opt) {
+> +		case 'n':
+> +			daemonize = 0;
+> +			break;
+> +		case 'h':
+> +		default:
+> +			print_usage(argv);
+> +			exit(EXIT_FAILURE);
+> +		}
+> +	}
+> 
+> -	if (daemon(1, 0))
+> +	if (daemonize && daemon(1, 0))
+>  		return 1;
+> 
+>  	openlog("Hyper-V VSS", 0, LOG_USER);
+> --
+> 1.9.3
+
