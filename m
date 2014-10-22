@@ -1,164 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933578AbaJVXxx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 19:53:53 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:49873 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754669AbaJVXxt (ORCPT
+	id S933613AbaJVXx7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 19:53:59 -0400
+Received: from galahad.ideasonboard.com ([185.26.127.97]:43246 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933580AbaJVXxz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 19:53:49 -0400
-Date: Wed, 22 Oct 2014 17:53:45 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, linux-arch@vger.kernel.org,
-        arnab.basu@freescale.com, Bharat.Bhushan@freescale.com, x86@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
-        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Liviu Dudau <liviu@dudau.co.uk>
-Subject: Re: [PATCH v3 24/27] IA64/MSI: Use MSI chip framework to configure
- MSI/MSI-X irq
-Message-ID: <20141022235345.GE4795@google.com>
-References: <1413342435-7876-1-git-send-email-wangyijing@huawei.com>
- <1413342435-7876-25-git-send-email-wangyijing@huawei.com>
+	Wed, 22 Oct 2014 19:53:55 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, wsa@the-dreams.de, lars@metafoo.de
+Subject: Re: [PATCH] adv7604: Add DT parsing support
+Date: Thu, 23 Oct 2014 02:53:50 +0300
+Message-ID: <1645583.LAOF2HV7Iq@avalon>
+User-Agent: KMail/4.12.5 (Linux/3.14.14-gentoo; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <1413992061-28678-1-git-send-email-jean-michel.hautbois@vodalys.com>
+References: <1413992061-28678-1-git-send-email-jean-michel.hautbois@vodalys.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413342435-7876-25-git-send-email-wangyijing@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 11:07:12AM +0800, Yijing Wang wrote:
-> Use MSI chip framework instead of arch MSI functions to configure
-> MSI/MSI-X irq. So we can manage MSI/MSI-X irq in a unified framework.
+Hi Jean-Michel,
 
-This needs slightly more detail.  You're using the MSI chip framework
-"instead of arch MSI functions".  Well, there are still arch-specific
-functions, i.e., arch_ia64_setup_msi_irq() and
-arch_ia64_teardown_msi_irq().
+Thank you for the patch.
 
-We used to have arch_setup_msi_irq() which had a weak default
-implementation, and a strong arch-specific implementation here, and you're
-replacing that model with the new "msi-ops" model.  I don't know how you
-want to write that, but it's not that you're getting rid of the
-arch-specific code; you're keeping arch-specific code but structuring it
-differently.
+On Wednesday 22 October 2014 17:34:21 Jean-Michel Hautbois wrote:
+> This patch adds support for DT parsing of ADV7604 as well as ADV7611.
+> It needs to be improved in order to get ports parsing too.
 
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Let's improve it then :-) The DT bindings as proposed by this patch are 
+incomplete, that's just asking for trouble.
+
+How would you model the adv7604 ports ?
+
+> Signed-off-by: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
 > ---
->  arch/ia64/include/asm/pci.h |   10 ++++++++++
->  arch/ia64/kernel/msi_ia64.c |   14 ++++++++++----
->  arch/ia64/pci/pci.c         |    1 +
->  3 files changed, 21 insertions(+), 4 deletions(-)
+>  Documentation/devicetree/bindings/media/i2c/adv7604.txt | 1 +
+>  drivers/media/i2c/adv7604.c                             | 1 +
+>  2 files changed, 2 insertions(+)
 > 
-> diff --git a/arch/ia64/include/asm/pci.h b/arch/ia64/include/asm/pci.h
-> index 52af5ed..907dcba 100644
-> --- a/arch/ia64/include/asm/pci.h
-> +++ b/arch/ia64/include/asm/pci.h
-> @@ -94,6 +94,7 @@ struct pci_controller {
->  	int segment;
->  	int node;		/* nearest node with memory or NUMA_NO_NODE for global allocation */
->  
-> +	struct msi_chip *msi_chip;
->  	void *platform_data;
->  };
->  
-> @@ -101,6 +102,15 @@ struct pci_controller {
->  #define PCI_CONTROLLER(busdev) ((struct pci_controller *) busdev->sysdata)
->  #define pci_domain_nr(busdev)    (PCI_CONTROLLER(busdev)->segment)
->  
-> +extern struct msi_chip chip;
-
-Please make this name more descriptive.  "chip" is way too generic for a
-global name.
-
-> +static inline struct msi_chip *pci_msi_chip(struct pci_bus *bus)
-> +{
-> +	struct pci_controller *ctrl = bus->sysdata;
-> +
-> +	return ctrl->msi_chip;
-> +}
-> +
->  extern struct pci_ops pci_root_ops;
->  
->  static inline int pci_proc_domain(struct pci_bus *bus)
-> diff --git a/arch/ia64/kernel/msi_ia64.c b/arch/ia64/kernel/msi_ia64.c
-> index 8c3730c..401fc98 100644
-> --- a/arch/ia64/kernel/msi_ia64.c
-> +++ b/arch/ia64/kernel/msi_ia64.c
-> @@ -112,15 +112,16 @@ static struct irq_chip ia64_msi_chip = {
->  };
->  
->  
-> -int arch_setup_msi_irq(struct pci_dev *pdev, struct msi_desc *desc)
-> +static int arch_ia64_setup_msi_irq(struct msi_chip *chip,
-> +		struct pci_dev *dev, struct msi_desc *desc)
->  {
->  	if (platform_setup_msi_irq)
-> -		return platform_setup_msi_irq(pdev, desc);
-> +		return platform_setup_msi_irq(dev, desc);
->  
-> -	return ia64_setup_msi_irq(pdev, desc);
-> +	return ia64_setup_msi_irq(dev, desc);
-
-Please don't make gratuitous changes ("pdev" -> "dev") at the same time,
-especially since the rest of the file still uses "pdev".
-
->  }
->  
-> -void arch_teardown_msi_irq(unsigned int irq)
-> +static void arch_ia64_teardown_msi_irq(struct msi_chip *chip, unsigned int irq)
->  {
->  	if (platform_teardown_msi_irq)
->  		return platform_teardown_msi_irq(irq);
-> @@ -128,6 +129,11 @@ void arch_teardown_msi_irq(unsigned int irq)
->  	return ia64_teardown_msi_irq(irq);
->  }
->  
-> +struct msi_chip chip = {
-> +	.setup_irq = arch_ia64_setup_msi_irq,
-> +	.teardown_irq = arch_ia64_teardown_msi_irq,
-> +};
-> +
->  #ifdef CONFIG_INTEL_IOMMU
->  #ifdef CONFIG_SMP
->  static int dmar_msi_set_affinity(struct irq_data *data,
-> diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
-> index 291a582..299b67d 100644
-> --- a/arch/ia64/pci/pci.c
-> +++ b/arch/ia64/pci/pci.c
-> @@ -437,6 +437,7 @@ struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
->  
->  	controller->companion = device;
->  	controller->node = acpi_get_node(device->handle);
-> +	controller->msi_chip = &chip;
->  
->  	info = kzalloc(sizeof(*info), GFP_KERNEL);
->  	if (!info) {
-> -- 
-> 1.7.1
+> diff --git a/Documentation/devicetree/bindings/media/i2c/adv7604.txt
+> b/Documentation/devicetree/bindings/media/i2c/adv7604.txt index
+> c27cede..5c8b3e6 100644
+> --- a/Documentation/devicetree/bindings/media/i2c/adv7604.txt
+> +++ b/Documentation/devicetree/bindings/media/i2c/adv7604.txt
+> @@ -10,6 +10,7 @@ Required Properties:
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>    - compatible: Must contain one of the following
+>      - "adi,adv7611" for the ADV7611
+> +    - "adi,adv7604" for the ADV7604
+
+Please switch the two lines to keep them alphabetically sorted.
+> 
+>    - reg: I2C slave address
+> 
+> diff --git a/drivers/media/i2c/adv7604.c b/drivers/media/i2c/adv7604.c
+> index 47795ff..421035f 100644
+> --- a/drivers/media/i2c/adv7604.c
+> +++ b/drivers/media/i2c/adv7604.c
+> @@ -2677,6 +2677,7 @@ MODULE_DEVICE_TABLE(i2c, adv7604_i2c_id);
+> 
+>  static struct of_device_id adv7604_of_id[] __maybe_unused = {
+>  	{ .compatible = "adi,adv7611", .data = &adv7604_chip_info[ADV7611] },
+> +	{ .compatible = "adi,adv7604", .data = &adv7604_chip_info[ADV7604] },
+
+Same comment here.
+
+>  	{ }
+>  };
+>  MODULE_DEVICE_TABLE(of, adv7604_of_id);
+
+-- 
+Regards,
+
+Laurent Pinchart
+
