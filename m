@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932459AbaJVTUz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 15:20:55 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:39977 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342AbaJVTUy (ORCPT
+	id S1754625AbaJVTW0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 15:22:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56760 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753927AbaJVTWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 15:20:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141022191643.GU15532@madcap2.tricolour.ca>
-References: <CA+gsUGSiXf2gpB8QQOQOmgxFc8mx31V6qeRqow6aXO1195jWEA@mail.gmail.com>
- <1414002190.30946.95.camel@localhost> <5447FF10.3060506@amacapital.net> <20141022191643.GU15532@madcap2.tricolour.ca>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 22 Oct 2014 12:20:31 -0700
-Message-ID: <CALCETrV2PNBS09qs5P06bzsBGmDZP-LiToQCbfTXLOHJ1uJ39Q@mail.gmail.com>
-Subject: Re: Regression: audit: x86: drop arch from __audit_syscall_entry() interface
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: Eric Paris <eparis@redhat.com>, Paulo Zanoni <przanoni@gmail.com>,
-        linux-audit@redhat.com,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 22 Oct 2014 15:22:24 -0400
+Date: Wed, 22 Oct 2014 12:22:23 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dominik Dingel <dingel@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>, Paolo Bonzini <pbonzini@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Bob Liu <lliubbo@gmail.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Gleb Natapov <gleb@kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Jianyu Zhan <nasa4836@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        kvm@vger.kernel.org, linux390@de.ibm.com, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: Re: [PATCH 2/4] mm: introduce mm_forbids_zeropage function
+Message-Id: <20141022122223.f3bef0f497941fa8e0805dbf@linux-foundation.org>
+In-Reply-To: <1413976170-42501-3-git-send-email-dingel@linux.vnet.ibm.com>
+References: <1413976170-42501-1-git-send-email-dingel@linux.vnet.ibm.com>
+	<1413976170-42501-3-git-send-email-dingel@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 12:16 PM, Richard Guy Briggs <rgb@redhat.com> wrote:
-> On 14/10/22, Andy Lutomirski wrote:
->> On 10/22/2014 11:23 AM, Eric Paris wrote:
->> > That's really serious.  Looking now.
->> >
->> > On Wed, 2014-10-22 at 16:08 -0200, Paulo Zanoni wrote:
->> >> Hi
->> >>
->> >> (Cc'ing everybody mentioned in the original patch)
->> >>
->> >> I work for Intel, on our Linux Graphics driver - aka i915.ko - and our
->> >> QA team recently reported a regression on:
->> >>
->> >> commit b4f0d3755c5e9cc86292d5fd78261903b4f23d4a
->> >> Author: Richard Guy Briggs
->> >> Date:   Tue Mar 4 10:38:06 2014 -0500
->> >>     audit: x86: drop arch from __audit_syscall_entry() interface
->> >>
->> >> According to our QA, their i386 machine doesn't boot anymore. I tried
->> >> to write my own revert for the patch, asked QA to test, and they
->> >> confirmed it "solves" the problem.
->> >>
->> >> Here are the details of QA' s bug report:
->> >> https://bugs.freedesktop.org/show_bug.cgi?id=85277 .
->> >>
->> >> The trees our QA tests are the development trees from i915.ko:
->> >> http://cgit.freedesktop.org/drm-intel?h=drm-intel-fixes .
->> >>
->> >> I tried searching for other bug reports on the same patch, but
->> >> couldn't find any. Forgive me if this bug was already reported.
->> >>
->> >> Feel free to continue this discussion on the bugzilla report if you want.
->>
->> This piece:
->>
->>       movl %esi,4(%esp)               /* 5th arg: 4th syscall arg */
->>       movl %edx,(%esp)                /* 4th arg: 3rd syscall arg */
->>
->> looks like it's overwriting syscall arguments.
->>
->> This is clearly fixable, but an even better fix would be to drop the asm
->> entirely and switch to two-phase tracing.  Want to do it?  I can test
->> the seccomp bits if you switch over the asm :)
->
-> Like what you did for x86_64.  That sounds worth investigating.
->
-> I'll have a look at the asm, but I'm being distracted by a gunman loose
-> 2km from me and my wife and kids under lockdown in two different
-> locations on the other side of the shooting site.  Had to cancel lunch
-> today with two work colleagues 1/2km away from that site.  ...not been a
-> productive day.
->
+On Wed, 22 Oct 2014 13:09:28 +0200 Dominik Dingel <dingel@linux.vnet.ibm.com> wrote:
 
-That's putting it mildly.  Stay safe.
+> Add a new function stub to allow architectures to disable for
+> an mm_structthe backing of non-present, anonymous pages with
+> read-only empty zero pages.
+> 
+> ...
+>
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -56,6 +56,10 @@ extern int sysctl_legacy_va_layout;
+>  #define __pa_symbol(x)  __pa(RELOC_HIDE((unsigned long)(x), 0))
+>  #endif
+>  
+> +#ifndef mm_forbids_zeropage
+> +#define mm_forbids_zeropage(X)  (0)
+> +#endif
 
---Andy
+Can we document this please?  What it does, why it does it.  We should
+also specify precisely which arch header file is responsible for
+defining mm_forbids_zeropage.
+
+
