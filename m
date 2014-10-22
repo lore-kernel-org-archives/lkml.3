@@ -1,65 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753294AbaJVN7X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 09:59:23 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:57521 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753161AbaJVN7S (ORCPT
+	id S1752342AbaJVN7n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 09:59:43 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:42614 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750964AbaJVN7k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 09:59:18 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        linux-usb@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [resend PATCH 1/3] ACPI / platform: provide default DMA mask
-Date: Wed, 22 Oct 2014 16:19:45 +0200
-Message-ID: <2473176.cCrEmjuJQD@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <54475DB4.5000005@intel.com>
-References: <1411545639-18741-1-git-send-email-heikki.krogerus@linux.intel.com> <54465C0E.50801@intel.com> <54475DB4.5000005@intel.com>
+	Wed, 22 Oct 2014 09:59:40 -0400
+Message-ID: <5447B84B.3040707@kernel.dk>
+Date: Wed, 22 Oct 2014 07:59:39 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Jan Kara <jack@suse.cz>
+CC: hch@lst.de, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] null_blk: Cleanup error recovery in null_add_dev()
+References: <1413984861-8260-1-git-send-email-jack@suse.cz>
+In-Reply-To: <1413984861-8260-1-git-send-email-jack@suse.cz>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, October 22, 2014 10:33:08 AM Adrian Hunter wrote:
-> On 21/10/14 16:13, Adrian Hunter wrote:
-> > On 21/10/14 16:08, Rafael J. Wysocki wrote:
-> >> On Tuesday, October 21, 2014 03:27:45 PM Adrian Hunter wrote:
-> >>> On 24/09/14 16:49, Rafael J. Wysocki wrote:
-> >>>> On Wednesday, September 24, 2014 11:00:37 AM Heikki Krogerus wrote:
-> >>>>> Most devices are configured for 32-bit DMA addresses.
-> >>>>> Setting the mask to 32-bit here removes the need for the
-> >>>>> drivers to do it separately.
-> >>>>>
-> >>>>> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> >>>>> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-> >>>>
-> >>>> ACK
-> >>>
-> >>> Hi
-> >>>
-> >>> I need this for another driver.  Did this patch go anywhere?
-> >>
-> >> It's not in 3.18-rc1 as far as I can say.
-> >>
-> >>> Note Heikki is away at the moment.
-> >>
-> >> That's OK.  I guess I can queue up this one for you.
-> >>
-> >> When do you need this to get into the Linus' tree?
-> > 
-> > My patches are aiming for 3.19
-> 
-> Actually it would be easier for me if Heikki's patch is already in
-> 3.18, but all I need to know is when it will hit?
+On 10/22/2014 07:34 AM, Jan Kara wrote:
+> When creation of queues fails in init_driver_queues(), we free the
+> queues. But null_add_dev() doesn't test for this failure and continues
+> with the setup leading to strange consequences, likely oops. Fix the
+> problem by testing whether init_driver_queues() failed and do proper
+> error cleanup.
 
-I've applied the Heiki's patch and I'm going to push it for 3.18-rc2.
+Thanks Jan, applied.
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Jens Axboe
+
