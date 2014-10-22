@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932719AbaJVUCW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 16:02:22 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60382 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932242AbaJVUCV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 16:02:21 -0400
-Date: Wed, 22 Oct 2014 22:02:19 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Joe Mario <jmario@redhat.com>
-Cc: Don Zickus <dzickus@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        eranian@google.com, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, jolsa@redhat.com, rfowles@redhat.com
-Subject: Re: perf:  Translating mmap2 ids into socket info?
-Message-ID: <20141022200219.GM21513@worktop.programming.kicks-ass.net>
-References: <20141022162026.GG135937@redhat.com>
- <20141022164510.GJ21513@worktop.programming.kicks-ass.net>
- <5447F2DF.3000506@redhat.com>
+	id S932464AbaJVUHk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 16:07:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52713 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932323AbaJVUHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 16:07:39 -0400
+Message-ID: <54480E58.5060600@redhat.com>
+Date: Wed, 22 Oct 2014 16:06:48 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5447F2DF.3000506@redhat.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+To: Mike Turquette <mturquette@linaro.org>, peterz@infradead.org,
+        mingo@kernel.org
+CC: linux-kernel@vger.kernel.org, preeti@linux.vnet.ibm.com,
+        Morten.Rasmussen@arm.com, kamalesh@linux.vnet.ibm.com, efault@gmx.de,
+        nicolas.pitre@linaro.org, linaro-kernel@lists.linaro.org,
+        daniel.lezcano@linaro.org, dietmar.eggemann@arm.com, pjt@google.com,
+        bsegall@google.com, vincent.guittot@linaro.org, patches@linaro.org,
+        tuukka.tikkanen@linaro.org, amit.kucheria@linaro.org
+Subject: Re: [PATCH RFC 5/7] sched: cfs: cpu frequency scaling arch functions
+References: <1413958051-7103-1-git-send-email-mturquette@linaro.org> <1413958051-7103-6-git-send-email-mturquette@linaro.org>
+In-Reply-To: <1413958051-7103-6-git-send-email-mturquette@linaro.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 02:09:35PM -0400, Joe Mario wrote:
-> >Yes, kernel memory is directly addresses, you basically have a static
-> >address->node mapping, it never changes.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+On 10/22/2014 02:07 AM, Mike Turquette wrote:
+> arch_eval_cpu_freq and arch_scale_cpu_freq are added to allow the 
+> scheduler to evaluate if cpu frequency should change and to invoke
+> that change from a safe context.
 > 
-> For kernel addresses, is there a reason not to have it available in perf,
-> especially when that knowledge is important to understanding a numa-related slowdown?
-
-Dunno why that isn't exposed in sysfs.
-
-> In our case, when we booted with one configuration, AIM ran fine.  When we
-> booted another way, AIM's performance dropped 50%.  It was all due to the dentry
-> lock being located on a different (now remote) numa node.
+> They are weakly defined arch functions that do nothing by default.
+> A CPUfreq governor could use these functions to implement a
+> frequency scaling policy based on updates to per-task statistics or
+> updates to per-cpu utilization.
 > 
-> We used your dmesg approach to track down the home node in an attempt to understand
-> what was different between the two boots.  But the problem would have been obvious
-> if perf simply listed the home node info.
+> As discussed at Linux Plumbers Conference 2014, the goal will be
+> to focus on a single cpu frequency scaling policy that works for
+> everyone. That may mean that the weak arch functions definitions
+> can be removed entirely and a single policy implements that logic
+> for all architectures.
 
-Or if you'd used more counters that track the node interconnect traffic
-;-) There are a few simple ones that count local/remote type things
-(offcore), but using the uncore counters you can track way more.
+On virtual machines, we probably want to use both frequency and
+steal time to calculate the factor.
+
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBAgAGBQJUSA5XAAoJEM553pKExN6DeRYH/jeXImjO2/WZFp82Yv6ukMxI
+r8/kzrLMA+NS1XXCWYIcOiBqReEabkZZmypt21Tdnpkvi4GbZPpG0PEApSvOfqWE
+w71J87cpMGV/e4uLcBDcvgHJX8RBQLO/ZqDcMm+zcSoeJ3G3NMK2YlZp3Uf8xqcB
+tE2VGW7o2yEqNJL1fqYb++3upQmc10vIFqxVIJfP+TqZRyaVP+5kBqOMDTWb5qCV
+qZjBKe1jDX5sLLGfY0ddAeuUH1iEJBIUMCcr027ezcqRp4YoqIrHRInHmNxEs5Az
+9PN8N0yGgqhvkcCfXG7He+tQBHECOnjyQlrM/2K8Cw11RziwDkC/yYIp3DPgjxc=
+=f/8V
+-----END PGP SIGNATURE-----
