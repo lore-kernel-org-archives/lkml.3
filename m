@@ -1,103 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752877AbaJVIM0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 04:12:26 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:48599 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814AbaJVIMW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 04:12:22 -0400
-Message-ID: <54476640.5050603@atmel.com>
-Date: Wed, 22 Oct 2014 16:09:36 +0800
-From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752291AbaJVIQQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 04:16:16 -0400
+Received: from mga01.intel.com ([192.55.52.88]:32196 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750813AbaJVIQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 04:16:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,767,1406617200"; 
+   d="scan'208";a="609183706"
+Date: Wed, 22 Oct 2014 08:13:16 +0800
+From: Yuyang Du <yuyang.du@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, pjt@google.com,
+        bsegall@google.com, arjan.van.de.ven@intel.com, len.brown@intel.com,
+        rafael.j.wysocki@intel.com, alan.cox@intel.com, mark.gross@intel.com,
+        fengguang.wu@intel.com
+Subject: Re: [RESEND PATCH 2/3 v5] sched: Rewrite per entity runnable load
+ average tracking
+Message-ID: <20141022001316.GC2577@intel.com>
+References: <1412907717-2871-1-git-send-email-yuyang.du@intel.com>
+ <1412907717-2871-3-git-send-email-yuyang.du@intel.com>
+ <20141021145652.GB23531@worktop.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Peter Rosin <peda@axentia.se>
-CC: "'alsa-devel@alsa-project.org'" <alsa-devel@alsa-project.org>,
-        "Takashi Iwai" <tiwai@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, "Mark Brown" <broonie@kernel.org>
-Subject: Re: [alsa-devel] [PATCH] ASoC: atmel_ssc_dai: Track playback and
- capture CMR dividers separately.
-References: <a541333cf46b4c61b790df927d4b315d@EMAIL.axentia.se> <5445BCBF.5090002@atmel.com> <dc4461593ddb4d539f2db74b69bab98c@EMAIL.axentia.se> <544620C8.4040001@atmel.com> <8559eca320324092be82f7d942606102@EMAIL.axentia.se> <544707F3.1020505@atmel.com> <c61abc1ef0f341c2be04e3d7b07d97de@EMAIL.axentia.se>
-In-Reply-To: <c61abc1ef0f341c2be04e3d7b07d97de@EMAIL.axentia.se>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141021145652.GB23531@worktop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On Tue, Oct 21, 2014 at 04:56:52PM +0200, Peter Zijlstra wrote:
+> On Fri, Oct 10, 2014 at 10:21:56AM +0800, Yuyang Du wrote:
+> >  static inline long calc_tg_weight(struct task_group *tg, struct cfs_rq *cfs_rq)
+> >  {
+> > -	long tg_weight;
+> > -
+> > -	/*
+> > -	 * Use this CPU's actual weight instead of the last load_contribution
+> > -	 * to gain a more accurate current total weight. See
+> > -	 * update_cfs_rq_load_contribution().
+> > -	 */
+> > -	tg_weight = atomic_long_read(&tg->load_avg);
+> > -	tg_weight -= cfs_rq->tg_load_contrib;
+> > -	tg_weight += cfs_rq->load.weight;
+> > -
+> > -	return tg_weight;
+> > +	return atomic_long_read(&tg->load_avg);
+> 
+> Since you're now also delaying updating load_avg, why not retain this
+> slightly better approximation?
 
-On 10/22/2014 12:47 PM, Peter Rosin wrote:
-> Hi!
->
->> Hi Peter,
->>
->> On 10/21/2014 09:05 PM, Peter Rosin wrote:
->>> I did some further tests, and the following program fails without the patch:
->>
->> With the patch, it is OK?
->
-> Yes.
->
->>> #include <sys/ioctl.h>
->>> #include <unistd.h>
->>> #include <fcntl.h>
->>> #include <sys/soundcard.h>
->>>
->>> int
->>> main(void)
->>> {
->>> 	int fd;
->>> 	int format;
->>> 	int channels;
->>>
->>> 	if ((fd = open("/dev/dsp", O_WRONLY, 0)) == -1) {
->>> 		perror("open");
->>> 		return 1;
->>> 	}
->>> 	format = AFMT_S16_LE;
->>> 	if (ioctl(fd, SNDCTL_DSP_SETFMT, &format) == -1) {
->>> 		perror("SNDCTL_DSP_SETFMT");
->>> 		return 1;
->>> 	}
->>> 	channels = 2;
->>> 	if (ioctl(fd, SNDCTL_DSP_CHANNELS, &channels) == -1) {
->>> 		perror("SNDCTL_DSP_CHANNELS");
->>> 		return 1;
->>> 	}
->>> 	return 0;
->>> }
->>>
->>> Output:
->>> SNDCTL_DSP_CHANNELS: Device or resource busy
->>
->> This return from codec or from atmel_ssc_dai?
->
-> This -EBUSY definitely comes from atmel_ssc_set_dai_sysclk, when my
-> card-driver tries to set ATMEL_SSC_CMR_DIV. With the patch, it works.
-> (the codec is spdif-transmitter, since the i2c interface of the actual tfa9879
-> codec is not directly reachable from the linux cpu, but that has nothing to
-> do with this issue).
+Oh, yeah, I know load_avg is delayed, but I don't know why this is slightly better
+approximation, in which "Use this CPU's actual weight instead of the last
+load_contribution".
 
-I try to reproduce it (using the code your pasted directly) on atmel 
-sama5d3xek with wm8904 code, don't meet this error.
+In addition to that, if we use this approximation, should we worry that
+the child cfs and group's added weight is toward likely to be underrated? No?
 
-I also go through the OSS code, I still don't find this is related with 
-atmel_ssc_set_dai_sysclk.
+or we do this instead:
 
-So, am I missing something or something else?
+	tg_weight = atomic_long_read(&tg->load_avg);
+	tg_weight -= cfs_rq->tg_load_contrib;
+	tg_weight += cfs_rq->load_avg;
+                         ~~~~~~~~
 
->>> (I admin to having edited the above code slightly in this mail, so I
-> s/admin/admit/
->>> might have introduced some silly bug, but you get what I mean, just
->>> open the device and request some parameters, and boom: -EBUSY)
->
-> Cheers,
-> Peter
->
-
-Best Regards,
-Bo Shen
+Thanks,
+Yuyang
