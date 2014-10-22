@@ -1,143 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753987AbaJVGkA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 02:40:00 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:10429 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831AbaJVGj7 (ORCPT
+	id S932203AbaJVGk5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 02:40:57 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:55398 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932076AbaJVGkz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 02:39:59 -0400
-X-AuditID: cbfee691-f79b86d000004a5a-94-5447513d577b
-Date: Wed, 22 Oct 2014 06:39:57 +0000 (GMT)
-From: Eunbong Song <eunb.song@samsung.com>
-Subject: [PATCH] mips: add arch_trigger_all_cpu_backtrace() function
-To: ralf@linux-mips.org
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Reply-to: eunb.song@samsung.com
-MIME-version: 1.0
-X-MTR: 20141022063518502@eunb.song
-Msgkey: 20141022063518502@eunb.song
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-MLAttribute: 
-X-RootMTR: 20141022063518502@eunb.song
-X-ParentMTR: 
-X-ArchiveUser: EV
-X-CPGSPASS: N
-X-ConfirmMail: N,general
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <1669712409.167661413959996217.JavaMail.weblogic@epmlwas02b>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNJsWRmVeSWpSXmKPExsVy+t8zTV3bQPcQg7VPxC0u75rD5sDo8XmT
-	XABjVAOjTWJRckZmWapCal5yfkpmXrqtUmiIm66FkkJGfnGJrVK0kYGxnpGpiZ6RibmepUGs
-	lZGpkkJeYm6qrVKFLlSvkkJRcgFQbW5lMdCAnFQ9qLhecWpeikNWfinIJXrFibnFpXnpesn5
-	uUoKZYk5pUAjlPQTpjJmND06w1KwSrTi659+9gbGByJdjJwcQgIqEi3/vzOC2BICJhIvnp+B
-	ssUkLtxbz9bFyAVUs4xR4uKqVewwRRsmn2WHSMxhlJi3ohUswSKgKrHhywcmEJtNQFvix4Gr
-	zCC2sICLxOv23WBxEQEZiaWfroBtYBZwl3j76TgzxBXyEpNPXwabwysgKHFy5hOWLkYOoGVK
-	ErO3sEKElSUW7/wAdZyExKzpF1ghbF6JGe1PWSBsOYlpX9cwQ9jSEudnbYB7ZvH3x1Bxfolj
-	t3cwQdgCElPPHISqUZe41PQWyuaTWLPwLdRMQYnT17qZYXbd3zKXCeaGrS1PWCFeUZSY0v2Q
-	HcLWkvjyYx8bqldAbA+J4+tmM4PCTUJgIofEt0WP2ScwKs1CUjcLyaxZSGYhq1nAyLKKUTS1
-	ILmgOCm9yBQ5ujcxQlLhxB2M9w9YH2IU4GBU4uF1YHMPEWJNLCuuzD3EmAyMponMUqLJ+cCE
-	m1cSb2hsZmRhamJqbGRuaYYhbGJqYWFihENYSZxXR/pnsJBAemJJanZqakFqUXxRaU5q8SFG
-	Jg5OqQZG16+KgtnrltYxHzhWaW5bfrbc5s6taAXe2Q8WiJguNf0xJeVP5x4FjU8LDUOkZK8s
-	U59iv9+ihN3YIn5a95/sxap/jlyV/RT407m1ZcHjvebyfrIiyp8fnJW2aFW7dWH9sa8CzZwX
-	Czhfqq/pTLVedbF0frtNxZv3nR8/Xnog5p/G2XeiN3+3EktxRqKhFnNRcSIAsr03+64DAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBKsWRmVeSWpSXmKPExsVy+t/tPl3bQPcQgzm7hC0u75rD5sDo8XmT
-	XABjVIZNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBQ
-	JYWyxJxSoFBAYnGxkr6dTVF+aUmqQkZ+cYmtUrSRgbGekamJnpGxgZ6JQayVoYGBkSlQVUJG
-	RtOjMywFq0Qrvv7pZ29gfCDSxcjJISSgItHy/zsjiC0hYCKxYfJZdghbTOLCvfVsXYxcQDVz
-	GCXmrWgFS7AIqEps+PKBCcRmE9CW+HHgKjOILSzgIvG6fTdYXERARmLppytgQ5kF3CXefjrO
-	DLFMXmLy6ctgc3gFBCVOznzC0sXIAbRMSWL2FlaIsLLE4p0foO6RkJg1/QIrhM0rMaP9KQuE
-	LScx7esaZghbWuL8rA2MMDcv/v4YKs4vcez2DiYIW0Bi6pmDUDXqEpea3kLZfBJrFr6Fmiko
-	cfpaNzPMrvtb5jLB3LC15QkrxCuKElO6H7JD2FoSX37sY0P1CojtIXF83WzmCYyys5CkZiFp
-	n4WkHVnNAkaWVYyiqQXJBcVJ6RWGesWJucWleel6yfm5mxjBqejZwh2MX85bH2IU4GBU4uF1
-	YHMPEWJNLCuuzD3EKMHBrCTC22cBFOJNSaysSi3Kjy8qzUktPsRoCoy0icxSosn5wDSZVxJv
-	aGxgbGhoaW5gamhkoSTOe/dmUpCQQHpiSWp2ampBahFMHxMHp1QDo+X7kLDgkKr3IsqZLumJ
-	nqVnp1y91f1SjP/rComGXbWKu5Nez7xmrlejLmC889NOPqbDe6+UG09dqOOhXPzi/AHpLykC
-	asfELf+c+n5T6krSXYNtJ5cassm/8Vp2bvtutUVBhUlbbJv4+5S3xpawnDxSsOvH0UPi2fsU
-	o93suzofcsxQ3PtwhxJLcUaioRZzUXEiALXDlFhbAwAA
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	Wed, 22 Oct 2014 02:40:55 -0400
+Date: Wed, 22 Oct 2014 10:40:44 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] memcg: remove mem_cgroup_reclaimable check from soft
+ reclaim
+Message-ID: <20141022064044.GQ16496@esperanza>
+References: <1413897350-32553-1-git-send-email-vdavydov@parallels.com>
+ <20141021182239.GA24899@phnom.home.cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20141021182239.GA24899@phnom.home.cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9M6e8Qp004769
 
+On Tue, Oct 21, 2014 at 02:22:39PM -0400, Johannes Weiner wrote:
+> On Tue, Oct 21, 2014 at 05:15:50PM +0400, Vladimir Davydov wrote:
+> > mem_cgroup_reclaimable() checks whether a cgroup has reclaimable pages
+> > on *any* NUMA node. However, the only place where it's called is
+> > mem_cgroup_soft_reclaim(), which tries to reclaim memory from a
+> > *specific* zone. So the way how it's used is incorrect - it will return
+> > true even if the cgroup doesn't have pages on the zone we're scanning.
+> > 
+> > I think we can get rid of this check completely, because
+> > mem_cgroup_shrink_node_zone(), which is called by
+> > mem_cgroup_soft_reclaim() if mem_cgroup_reclaimable() returns true, is
+> > equivalent to shrink_lruvec(), which exits almost immediately if the
+> > lruvec passed to it is empty. So there's no need to optimize anything
+> > here. Besides, we don't have such a check in the general scan path
+> > (shrink_zone) either.
+> > 
+> > Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> 
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+> 
+> How about this on top?
+> 
+> ---
+> 
+> From 27bd24b00433d9f6c8d60ba2b13dbff158b06c13 Mon Sep 17 00:00:00 2001
+> From: Johannes Weiner <hannes@cmpxchg.org>
+> Date: Tue, 21 Oct 2014 09:53:54 -0400
+> Subject: [patch] mm: memcontrol: do not filter reclaimable nodes in NUMA
+>  round-robin
+> 
+> The round-robin node reclaim currently tries to include only nodes
+> that have memory of the memcg in question, which is quite elaborate.
+> 
+> Just use plain round-robin over the nodes that are allowed by the
+> task's cpuset, which are the most likely to contain that memcg's
+> memory.  But even if zones without memcg memory are encountered,
+> direct reclaim will skip over them without too much hassle.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-Currently, arch_trigger_all_cpu_backtrace() is defined in only x86 and sparc which has nmi interrupt.
-But in case of softlockup not a hardlockup, it could be possible to dump backtrace of all cpus. and this could be helpful for debugging.
+Totally agree.
 
-for example, if system has 2 cpus.
+Acked-by: Vladimir Davydov <vdavydov@parallels.com>
 
-	CPU 0				CPU 1
- acquire read_lock()
-
-				try to do write_lock()
-
- ,,,
- missing read_unlock()
-
-In this case, softlockup will occur becasuse CPU 0 does not call read_unlock().
-And dump_stack() print only backtrace for "CPU 0". If CPU1's backtrace is printed it's very helpful.
-
-This patch adds arch_trigger_all_cpu_backtrace() for mips architecture.
-
-Maybe someone make better patch than this. I just suggest the idea.
----
- arch/mips/include/asm/irq.h |    3 +++
- arch/mips/kernel/process.c  |   18 ++++++++++++++++++
- 2 files changed, 21 insertions(+), 0 deletions(-)
-
-diff --git a/arch/mips/include/asm/irq.h b/arch/mips/include/asm/irq.h
-index 39f07ae..5a4e1bb 100644
---- a/arch/mips/include/asm/irq.h
-+++ b/arch/mips/include/asm/irq.h
-@@ -48,4 +48,7 @@ extern int cp0_compare_irq;
- extern int cp0_compare_irq_shift;
- extern int cp0_perfcount_irq;
- 
-+void arch_trigger_all_cpu_backtrace(bool);
-+#define arch_trigger_all_cpu_backtrace arch_trigger_all_cpu_backtrace
-+
- #endif /* _ASM_IRQ_H */
-diff --git a/arch/mips/kernel/process.c b/arch/mips/kernel/process.c
-index 636b074..9f51d3d 100644
---- a/arch/mips/kernel/process.c
-+++ b/arch/mips/kernel/process.c
-@@ -42,6 +42,7 @@
- #include <asm/isadep.h>
- #include <asm/inst.h>
- #include <asm/stacktrace.h>
-+#include <asm/irq_regs.h>
- 
- #ifdef CONFIG_HOTPLUG_CPU
- void arch_cpu_idle_dead(void)
-@@ -532,3 +533,20 @@ unsigned long arch_align_stack(unsigned long sp)
- 
- 	return sp & ALMASK;
- }
-+
-+static void arch_dump_stack(void *info)
-+{
-+	struct pt_regs *regs;  
-+	
-+	regs = get_irq_regs();
-+
-+	if(regs)
-+		show_regs(regs);
-+
-+	dump_stack();
-+}
-+
-+void arch_trigger_all_cpu_backtrace(bool include_self)
-+{
-+	smp_call_function(arch_dump_stack, NULL, 1);
-+}
--- 
-1.7.0.1
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> ---
+>  mm/memcontrol.c | 97 +++------------------------------------------------------
+>  1 file changed, 5 insertions(+), 92 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index d353d9e1fdca..293db8234179 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -54,6 +54,7 @@
+>  #include <linux/page_cgroup.h>
+>  #include <linux/cpu.h>
+>  #include <linux/oom.h>
+> +#include <linux/cpuset.h>
+>  #include <linux/lockdep.h>
+>  #include <linux/file.h>
+>  #include "internal.h"
+> @@ -129,12 +130,10 @@ static const char * const mem_cgroup_lru_names[] = {
+>  enum mem_cgroup_events_target {
+>  	MEM_CGROUP_TARGET_THRESH,
+>  	MEM_CGROUP_TARGET_SOFTLIMIT,
+> -	MEM_CGROUP_TARGET_NUMAINFO,
+>  	MEM_CGROUP_NTARGETS,
+>  };
+>  #define THRESHOLDS_EVENTS_TARGET 128
+>  #define SOFTLIMIT_EVENTS_TARGET 1024
+> -#define NUMAINFO_EVENTS_TARGET	1024
+>  
+>  struct mem_cgroup_stat_cpu {
+>  	long count[MEM_CGROUP_STAT_NSTATS];
+> @@ -352,11 +351,6 @@ struct mem_cgroup {
+>  #endif
+>  
+>  	int last_scanned_node;
+> -#if MAX_NUMNODES > 1
+> -	nodemask_t	scan_nodes;
+> -	atomic_t	numainfo_events;
+> -	atomic_t	numainfo_updating;
+> -#endif
+>  
+>  	/* List of events which userspace want to receive */
+>  	struct list_head event_list;
+> @@ -965,9 +959,6 @@ static bool mem_cgroup_event_ratelimit(struct mem_cgroup *memcg,
+>  		case MEM_CGROUP_TARGET_SOFTLIMIT:
+>  			next = val + SOFTLIMIT_EVENTS_TARGET;
+>  			break;
+> -		case MEM_CGROUP_TARGET_NUMAINFO:
+> -			next = val + NUMAINFO_EVENTS_TARGET;
+> -			break;
+>  		default:
+>  			break;
+>  		}
+> @@ -986,22 +977,10 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
+>  	/* threshold event is triggered in finer grain than soft limit */
+>  	if (unlikely(mem_cgroup_event_ratelimit(memcg,
+>  						MEM_CGROUP_TARGET_THRESH))) {
+> -		bool do_softlimit;
+> -		bool do_numainfo __maybe_unused;
+> -
+> -		do_softlimit = mem_cgroup_event_ratelimit(memcg,
+> -						MEM_CGROUP_TARGET_SOFTLIMIT);
+> -#if MAX_NUMNODES > 1
+> -		do_numainfo = mem_cgroup_event_ratelimit(memcg,
+> -						MEM_CGROUP_TARGET_NUMAINFO);
+> -#endif
+>  		mem_cgroup_threshold(memcg);
+> -		if (unlikely(do_softlimit))
+> +		if (mem_cgroup_event_ratelimit(memcg,
+> +					       MEM_CGROUP_TARGET_SOFTLIMIT))
+>  			mem_cgroup_update_tree(memcg, page);
+> -#if MAX_NUMNODES > 1
+> -		if (unlikely(do_numainfo))
+> -			atomic_inc(&memcg->numainfo_events);
+> -#endif
+>  	}
+>  }
+>  
+> @@ -1708,61 +1687,7 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
+>  			 NULL, "Memory cgroup out of memory");
+>  }
+>  
+> -/**
+> - * test_mem_cgroup_node_reclaimable
+> - * @memcg: the target memcg
+> - * @nid: the node ID to be checked.
+> - * @noswap : specify true here if the user wants flle only information.
+> - *
+> - * This function returns whether the specified memcg contains any
+> - * reclaimable pages on a node. Returns true if there are any reclaimable
+> - * pages in the node.
+> - */
+> -static bool test_mem_cgroup_node_reclaimable(struct mem_cgroup *memcg,
+> -		int nid, bool noswap)
+> -{
+> -	if (mem_cgroup_node_nr_lru_pages(memcg, nid, LRU_ALL_FILE))
+> -		return true;
+> -	if (noswap || !total_swap_pages)
+> -		return false;
+> -	if (mem_cgroup_node_nr_lru_pages(memcg, nid, LRU_ALL_ANON))
+> -		return true;
+> -	return false;
+> -
+> -}
+>  #if MAX_NUMNODES > 1
+> -
+> -/*
+> - * Always updating the nodemask is not very good - even if we have an empty
+> - * list or the wrong list here, we can start from some node and traverse all
+> - * nodes based on the zonelist. So update the list loosely once per 10 secs.
+> - *
+> - */
+> -static void mem_cgroup_may_update_nodemask(struct mem_cgroup *memcg)
+> -{
+> -	int nid;
+> -	/*
+> -	 * numainfo_events > 0 means there was at least NUMAINFO_EVENTS_TARGET
+> -	 * pagein/pageout changes since the last update.
+> -	 */
+> -	if (!atomic_read(&memcg->numainfo_events))
+> -		return;
+> -	if (atomic_inc_return(&memcg->numainfo_updating) > 1)
+> -		return;
+> -
+> -	/* make a nodemask where this memcg uses memory from */
+> -	memcg->scan_nodes = node_states[N_MEMORY];
+> -
+> -	for_each_node_mask(nid, node_states[N_MEMORY]) {
+> -
+> -		if (!test_mem_cgroup_node_reclaimable(memcg, nid, false))
+> -			node_clear(nid, memcg->scan_nodes);
+> -	}
+> -
+> -	atomic_set(&memcg->numainfo_events, 0);
+> -	atomic_set(&memcg->numainfo_updating, 0);
+> -}
+> -
+>  /*
+>   * Selecting a node where we start reclaim from. Because what we need is just
+>   * reducing usage counter, start from anywhere is O,K. Considering
+> @@ -1779,21 +1704,9 @@ int mem_cgroup_select_victim_node(struct mem_cgroup *memcg)
+>  {
+>  	int node;
+>  
+> -	mem_cgroup_may_update_nodemask(memcg);
+> -	node = memcg->last_scanned_node;
+> -
+> -	node = next_node(node, memcg->scan_nodes);
+> +	node = next_node(memcg->last_scanned_node, cpuset_current_mems_allowed);
+>  	if (node == MAX_NUMNODES)
+> -		node = first_node(memcg->scan_nodes);
+> -	/*
+> -	 * We call this when we hit limit, not when pages are added to LRU.
+> -	 * No LRU may hold pages because all pages are UNEVICTABLE or
+> -	 * memcg is too small and all pages are not on LRU. In that case,
+> -	 * we use curret node.
+> -	 */
+> -	if (unlikely(node == MAX_NUMNODES))
+> -		node = numa_node_id();
+> -
+> +		node = first_node(cpuset_current_mems_allowed);
+>  	memcg->last_scanned_node = node;
+>  	return node;
+>  }
+> -- 
+> 2.1.2
