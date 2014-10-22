@@ -1,112 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933204AbaJVMMG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 08:12:06 -0400
-Received: from mail-wg0-f73.google.com ([74.125.82.73]:47384 "EHLO
-	mail-wg0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932865AbaJVMME (ORCPT
+	id S933277AbaJVMM2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 08:12:28 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:60646 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932865AbaJVMM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 08:12:04 -0400
-X-Greylist: delayed 1642 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Oct 2014 08:12:03 EDT
-From: David Drysdale <drysdale@google.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>, linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
-        x86@kernel.org, linux-arch@vger.kernel.org, linux-api@vger.kernel.org,
-        David Drysdale <drysdale@google.com>
-Subject: [PATCHv5 0/3] syscalls,x86: Add execveat() system call
-Date: Wed, 22 Oct 2014 12:44:26 +0100
-Message-Id: <1413978269-17274-1-git-send-email-drysdale@google.com>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+	Wed, 22 Oct 2014 08:12:26 -0400
+Date: Wed, 22 Oct 2014 13:12:19 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Pankaj Dubey <pankaj.dubey@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, arnd@arndb.de, b29396@freescale.com,
+        boris.brezillon@free-electrons.com, tomasz.figa@gmail.com,
+        linux@arm.linux.org.uk, vikas.sajjan@samsung.com, naushad@samsung.com,
+        thomas.ab@samsung.com, kgene.kim@samsung.com, Li.Xiubo@freescale.com,
+        geert+renesas@glider.be, swarren@nvidia.com
+Subject: Re: [PATCH v7] mfd: syscon: Decouple syscon interface from platform
+ devices
+Message-ID: <20141022121219.GM4939@x1>
+References: <1412066127-27063-1-git-send-email-pankaj.dubey@samsung.com>
+ <20141007090923.GI25331@lee--X1>
+ <001901cfede8$5554cc50$fffe64f0$@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <001901cfede8$5554cc50$fffe64f0$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set adds execveat(2) for x86, and is derived from Meredydd
-Luff's patch from Sept 2012 (https://lkml.org/lkml/2012/9/11/528).
+On Wed, 22 Oct 2014, Pankaj Dubey wrote:
 
-The primary aim of adding an execveat syscall is to allow an
-implementation of fexecve(3) that does not rely on the /proc
-filesystem.  The current glibc version of fexecve(3) is implemented
-via /proc, which causes problems in sandboxed or otherwise restricted
-environments.
+> Hello Lee,
+> 
+> On Tuesday, October 07, 2014 2:39 PM, Lee Jones wrote,
+> > On Tue, 30 Sep 2014, Pankaj Dubey wrote:
+> > 
+> > > Currently a syscon entity can be only registered directly through a
+> > > platform device that binds to a dedicated syscon driver. However in
+> > > certain use cases it is desirable to make a device used with another
+> > > driver a syscon interface provider.
+> > >
+> > > For example, certain SoCs (e.g. Exynos) contain system controller
+> > > blocks which perform various functions such as power domain control,
+> > > CPU power management, low power mode control, but in addition contain
+> > > certain IP integration glue, such as various signal masks, coprocessor
+> > > power control, etc. In such case, there is a need to have a dedicated
+> > > driver for such system controller but also share registers with other
+> > > drivers. The latter is where the syscon interface is helpful.
+> > >
+> > > In case of DT based platforms, this patch decouples syscon object from
+> > > syscon platform driver, and allows to create syscon objects first time
+> > > when it is required by calling of syscon_regmap_lookup_by APIs and
+> > > keep a list of such syscon objects along with syscon provider
+> > > device_nodes and regmap handles.
+> > >
+> > > For non-DT based platforms, this patch keeps syscon platform driver
+> > > structure so that syscon can be probed and such non-DT based drivers
+> > > can use syscon_regmap_lookup_by_pdev API and access regmap handles.
+> > > Once all users of "syscon_regmap_lookup_by_pdev" migrated to DT based,
+> > > we can completely remove platform driver of syscon, and keep only
+> > > helper functions to get regmap handles.
+> > >
+> > > Suggested-by: Arnd Bergmann <arnd@arndb.de>
+> > > Suggested-by: Tomasz Figa <tomasz.figa@gmail.com>
+> > > Tested-by: Vivek Gautam <gautam.vivek@samsung.com>
+> > > Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> > > Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> > > Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+> > > Tested-by: Heiko Stuebner <heiko@sntech.de>
+> > > Reviewed-by: Heiko Stuebner <heiko@sntech.de>
+> > 
+> > Applied for v3.19.
+> 
+> I can't see this in 3.18-rc1, as this patch is one of dependency for many of Exynos PMU related patches,
+> will you please queue this patch for 3.18-rc2, so that already ready to be in patches having this patch as
+> dependency can be taken in.
 
-Given the desire for a /proc-free fexecve() implementation, HPA
-suggested (https://lkml.org/lkml/2006/7/11/556) that an execveat(2)
-syscall would be an appropriate generalization.
+As my message implies, this isn't going to make it into v3.18 but it
+is queued for v3.19.  It was sent far too late in the cycle (rc7 of 7)
+to make it into the v3.18 merge-window.
 
-Also, having a new syscall means that it can take a flags argument
-without back-compatibility concerns.  The current implementation just
-defines the AT_EMPTY_PATH and AT_SYMLINK_NOFOLLOW flags, but other
-flags could be added in future -- for example, flags for new namespaces
-(as suggested at https://lkml.org/lkml/2006/7/11/474).
-
-Related history:
- - https://lkml.org/lkml/2006/12/27/123 is an example of someone
-   realizing that fexecve() is likely to fail in a chroot environment.
- - http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=514043 covered
-   documenting the /proc requirement of fexecve(3) in its manpage, to
-   "prevent other people from wasting their time".
- - https://bugzilla.kernel.org/show_bug.cgi?id=74481 documented that
-   it's not possible to fexecve() a file descriptor for a script with
-   close-on-exec set (which is possible with the implementation here).
- - https://bugzilla.redhat.com/show_bug.cgi?id=241609 described a
-   problem where a process that did setuid() could not fexecve()
-   because it no longer had access to /proc/self/fd; this has since
-   been fixed.
-
-
-Changes since v4, suggested by Eric W. Biederman:
- - Use empty filename with AT_EMPTY_PATH flag rather than NULL
-   pathname to request fexecve-like behaviour.
- - Build pathname as "/dev/fd/<fd>/<filename>" (or "/dev/fd/<fd>")
-   rather than using d_path().
- - Patch against v3.17 (bfe01a5ba249)
-
-Changes since Meredydd's v3 patch:
- - Added a selftest.
- - Added a man page.
- - Left open_exec() signature untouched to reduce patch impact
-   elsewhere (as suggested by Al Viro).
- - Filled in bprm->filename with d_path() into a buffer, to avoid use
-   of potentially-ephemeral dentry->d_name.
- - Patch against v3.14 (455c6fdbd21916).
-
-
-David Drysdale (2):
-  syscalls,x86: implement execveat() system call
-  syscalls,x86: add selftest for execveat(2)
-
- arch/x86/ia32/audit.c                   |   1 +
- arch/x86/ia32/ia32entry.S               |   1 +
- arch/x86/kernel/audit_64.c              |   1 +
- arch/x86/kernel/entry_64.S              |  28 +++
- arch/x86/syscalls/syscall_32.tbl        |   1 +
- arch/x86/syscalls/syscall_64.tbl        |   2 +
- arch/x86/um/sys_call_table_64.c         |   1 +
- fs/exec.c                               | 130 ++++++++++++--
- fs/namei.c                              |   2 +-
- include/linux/compat.h                  |   3 +
- include/linux/fs.h                      |   1 +
- include/linux/sched.h                   |   4 +
- include/linux/syscalls.h                |   4 +
- include/uapi/asm-generic/unistd.h       |   4 +-
- kernel/sys_ni.c                         |   3 +
- lib/audit.c                             |   3 +
- tools/testing/selftests/Makefile        |   1 +
- tools/testing/selftests/exec/.gitignore |   6 +
- tools/testing/selftests/exec/Makefile   |  22 +++
- tools/testing/selftests/exec/execveat.c | 295 ++++++++++++++++++++++++++++++++
- 20 files changed, 497 insertions(+), 16 deletions(-)
- create mode 100644 tools/testing/selftests/exec/.gitignore
- create mode 100644 tools/testing/selftests/exec/Makefile
- create mode 100644 tools/testing/selftests/exec/execveat.c
+In the meantime, please give this patch through testing whilst it's in
+-next, to help mitigate any issues when it's applied into v3.19.
 
 -- 
-2.1.0.rc2.206.gedb03e5
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
