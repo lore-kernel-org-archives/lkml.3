@@ -1,82 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755721AbaJVQCw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 12:02:52 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:54102 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754701AbaJVPpj (ORCPT
+	id S1755747AbaJVQCy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 12:02:54 -0400
+Received: from mail2.tiolive.com ([94.23.229.207]:48420 "EHLO
+	mail2.tiolive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754711AbaJVQCv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 11:45:39 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
-        lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH v3 29/59] dmaengine: moxart: Split device_control
-Date: Wed, 22 Oct 2014 17:43:43 +0200
-Message-Id: <1413992653-21963-30-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com>
+	Wed, 22 Oct 2014 12:02:51 -0400
+X-Greylist: delayed 482 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Oct 2014 12:02:50 EDT
+Date: Wed, 22 Oct 2014 19:54:46 +0400
+From: Kirill Smelkov <kirr@nexedi.com>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: Ken Chen <kenchen@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH,RESEND] hugetlbfs: document that sticky mounts are allowed
+Message-ID: <20141022155446.GA20240@teco.navytux.spb.ru>
+References: <1409836833-4320-1-git-send-email-kirr@nexedi.com>
+ <CABQzsv_9K0WrddMW60DkUbsv2B5BwLNFCES2TNvfVNaG-ym6YA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABQzsv_9K0WrddMW60DkUbsv2B5BwLNFCES2TNvfVNaG-ym6YA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the Moxart DMA driver to make use of the
-newly introduced callbacks, that will eventually be used to retrieve slave
-capabilities.
+ (resending to new documentation maintainer, as the original patch
+  seemingly got lost)
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Jonathan,
+
+Please apply the below patch documenting that hugetlbfs can be sticky-mounted.
+
+Thanks beforehand,
+Kirill
+
+On Thu, Sep 04, 2014 at 10:14:31AM -0700, Ken Chen wrote:
+> On Thu, Sep 4, 2014 at 6:20 AM, Kirill Smelkov <kirr@nexedi.com> wrote:
+> > Commit 75897d60 (hugetlb: allow sticky directory mount option) added
+> > support for mounting hugetlbfs with sticky option set, like /tmp is
+> > usually mounted, but forgot to document that.
+> >
+> > Cc: Ken Chen <kenchen@google.com>
+> > Signed-off-by: Kirill Smelkov <kirr@nexedi.com>
+> > ---
+> >  Documentation/vm/hugetlbpage.txt | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> > diff --git a/Documentation/vm/hugetlbpage.txt b/Documentation/vm/hugetlbpage.txt
+> > index bdd4bb9..b64e0af 100644
+> > --- a/Documentation/vm/hugetlbpage.txt
+> > +++ b/Documentation/vm/hugetlbpage.txt
+> > @@ -274,7 +274,7 @@ This command mounts a (pseudo) filesystem of type hugetlbfs on the directory
+> >  /mnt/huge.  Any files created on /mnt/huge uses huge pages.  The uid and gid
+> >  options sets the owner and group of the root of the file system.  By default
+> >  the uid and gid of the current process are taken.  The mode option sets the
+> > -mode of root of file system to value & 0777.  This value is given in octal.
+> > +mode of root of file system to value & 01777.  This value is given in octal.
+> >  By default the value 0755 is picked. The size option sets the maximum value of
+> >  memory (huge pages) allowed for that filesystem (/mnt/huge). The size is
+> >  rounded down to HPAGE_SIZE.  The option nr_inodes sets the maximum number of
+> 
+> Acked-by: Ken Chen <kenchen@google.com>
+
+---- 8< ----
+From: Kirill Smelkov <kirr@nexedi.com>
+Date: Thu, 4 Sep 2014 17:13:00 +0400
+Subject: [PATCH] hugetlbfs: document that sticky mounts are allowed
+
+Commit 75897d60 (hugetlb: allow sticky directory mount option) added
+support for mounting hugetlbfs with sticky option set, like /tmp is
+usually mounted, but forgot to document that.
+
+Cc: Ken Chen <kenchen@google.com>
+Signed-off-by: Kirill Smelkov <kirr@nexedi.com>
+Acked-by: Ken Chen <kenchen@google.com>
 ---
- drivers/dma/moxart-dma.c | 25 ++-----------------------
- 1 file changed, 2 insertions(+), 23 deletions(-)
+ Documentation/vm/hugetlbpage.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/dma/moxart-dma.c b/drivers/dma/moxart-dma.c
-index 3258e484e4f6..35e1a3ab5fb8 100644
---- a/drivers/dma/moxart-dma.c
-+++ b/drivers/dma/moxart-dma.c
-@@ -263,28 +263,6 @@ static int moxart_slave_config(struct dma_chan *chan,
- 	return 0;
- }
- 
--static int moxart_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--			  unsigned long arg)
--{
--	int ret = 0;
--
--	switch (cmd) {
--	case DMA_PAUSE:
--	case DMA_RESUME:
--		return -EINVAL;
--	case DMA_TERMINATE_ALL:
--		moxart_terminate_all(chan);
--		break;
--	case DMA_SLAVE_CONFIG:
--		ret = moxart_slave_config(chan, (struct dma_slave_config *)arg);
--		break;
--	default:
--		ret = -ENOSYS;
--	}
--
--	return ret;
--}
--
- static struct dma_async_tx_descriptor *moxart_prep_slave_sg(
- 	struct dma_chan *chan, struct scatterlist *sgl,
- 	unsigned int sg_len, enum dma_transfer_direction dir,
-@@ -531,7 +509,8 @@ static void moxart_dma_init(struct dma_device *dma, struct device *dev)
- 	dma->device_free_chan_resources		= moxart_free_chan_resources;
- 	dma->device_issue_pending		= moxart_issue_pending;
- 	dma->device_tx_status			= moxart_tx_status;
--	dma->device_control			= moxart_control;
-+	dma->device_config			= moxart_slave_config;
-+	dma->device_terminate_all		= moxart_terminate_all;
- 	dma->dev				= dev;
- 
- 	INIT_LIST_HEAD(&dma->channels);
+diff --git a/Documentation/vm/hugetlbpage.txt b/Documentation/vm/hugetlbpage.txt
+index bdd4bb9..b64e0af 100644
+--- a/Documentation/vm/hugetlbpage.txt
++++ b/Documentation/vm/hugetlbpage.txt
+@@ -274,7 +274,7 @@ This command mounts a (pseudo) filesystem of type hugetlbfs on the directory
+ /mnt/huge.  Any files created on /mnt/huge uses huge pages.  The uid and gid
+ options sets the owner and group of the root of the file system.  By default
+ the uid and gid of the current process are taken.  The mode option sets the
+-mode of root of file system to value & 0777.  This value is given in octal.
++mode of root of file system to value & 01777.  This value is given in octal.
+ By default the value 0755 is picked. The size option sets the maximum value of
+ memory (huge pages) allowed for that filesystem (/mnt/huge). The size is
+ rounded down to HPAGE_SIZE.  The option nr_inodes sets the maximum number of
 -- 
-2.1.1
-
+2.1.0.61.g11be0d6
