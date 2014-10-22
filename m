@@ -1,53 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438AbaJVN0R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 09:26:17 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58120 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752349AbaJVN0N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 09:26:13 -0400
-Date: Wed, 22 Oct 2014 15:26:08 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com, adrian.hunter@intel.com, acme@infradead.org,
-        mathieu.poirier@linaro.org
-Subject: Re: [PATCH v5 06/20] perf: Add AUX record
-Message-ID: <20141022132608.GM12706@worktop.programming.kicks-ass.net>
-References: <1413207948-28202-1-git-send-email-alexander.shishkin@linux.intel.com>
- <1413207948-28202-7-git-send-email-alexander.shishkin@linux.intel.com>
+	id S1752530AbaJVN0c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 09:26:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33027 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752454AbaJVN03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 09:26:29 -0400
+Date: Wed, 22 Oct 2014 09:26:04 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: "Alasdair G. Kergon" <agk@redhat.com>, Mike Snitzer <msnitzer@redhat.com>,
+        Jonathan Brassow <jbrassow@redhat.com>,
+        Edward Thornber <thornber@redhat.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>
+cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: [PATCH 3/18] blk-lib: fix error reporting
+In-Reply-To: <alpine.LRH.2.02.1410220913280.31351@file01.intranet.prod.int.rdu2.redhat.com>
+Message-ID: <alpine.LRH.2.02.1410220925440.31351@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1410220913280.31351@file01.intranet.prod.int.rdu2.redhat.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413207948-28202-7-git-send-email-alexander.shishkin@linux.intel.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 13, 2014 at 04:45:34PM +0300, Alexander Shishkin wrote:
-> +	/*
-> +	 * Records that new data landed in the AUX buffer part.
-> +	 *
-> +	 * struct {
-> +	 * 	struct perf_event_header	header;
-> +	 *
-> +	 * 	u64				aux_offset;
-> +	 * 	u64				aux_size;
-> +	 *	u64				flags;
-> +	 * 	struct sample_id		sample_id;
-> +	 * };
-> +	 */
-> +	PERF_RECORD_AUX				= 11,
+The function bio_batch_end_io ignores -EOPNOTSUPP. It doesn't matter for
+discard (the device isn't required to discard anything, so missing the
+error code and reporting success shouldn't cause any trouble). However,
+for WRITE SAME command, missing the error code is obviously wrong. It may
+fool the user into thinking that the data were written while in fact they
+weren't.
 
-Given the discussion with the ARM people the last time, do we want to
-add the possibility of a variable data field in this event? Its easy to
-add now, harder to do later (although not impossible).
+Note that in device mapper, devices may be dynamically reconfigured, so a
+device that supports WRITE SAME may stop supporting it at any time and
+return -EOPNOTSUPP. Ignoring -EOPNOTSUPP is wrong.
 
-Also added Mathieu Poirier on CC, he asked to be included in your next
-postings.
+This patch changes bio_batch->flags to an error field and stores the last
+error there - so that the error is reported accurately and it isn't
+ignored.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Cc: stable@vger.kernel.org
+
+---
+ block/blk-lib.c |   25 ++++++++++++-------------
+ 1 file changed, 12 insertions(+), 13 deletions(-)
+
+Index: linux-3.16-rc3/block/blk-lib.c
+===================================================================
+--- linux-3.16-rc3.orig/block/blk-lib.c	2014-07-03 18:17:21.000000000 +0200
++++ linux-3.16-rc3/block/blk-lib.c	2014-07-03 18:36:52.000000000 +0200
+@@ -11,7 +11,7 @@
+ 
+ struct bio_batch {
+ 	atomic_t		done;
+-	unsigned long		flags;
++	int			error;
+ 	struct completion	*wait;
+ };
+ 
+@@ -19,8 +19,8 @@ static void bio_batch_end_io(struct bio 
+ {
+ 	struct bio_batch *bb = bio->bi_private;
+ 
+-	if (err && (err != -EOPNOTSUPP))
+-		clear_bit(BIO_UPTODATE, &bb->flags);
++	if (unlikely(err))
++		ACCESS_ONCE(bb->error) = err;
+ 	if (atomic_dec_and_test(&bb->done))
+ 		complete(bb->wait);
+ 	bio_put(bio);
+@@ -78,7 +78,7 @@ int blkdev_issue_discard(struct block_de
+ 	}
+ 
+ 	atomic_set(&bb.done, 1);
+-	bb.flags = 1 << BIO_UPTODATE;
++	bb.error = 0;
+ 	bb.wait = &wait;
+ 
+ 	blk_start_plug(&plug);
+@@ -134,8 +134,8 @@ int blkdev_issue_discard(struct block_de
+ 	if (!atomic_dec_and_test(&bb.done))
+ 		wait_for_completion_io(&wait);
+ 
+-	if (!test_bit(BIO_UPTODATE, &bb.flags))
+-		ret = -EIO;
++	if (likely(!ret))
++		ret = bb.error;
+ 
+ 	return ret;
+ }
+@@ -172,7 +172,7 @@ int blkdev_issue_write_same(struct block
+ 		return -EOPNOTSUPP;
+ 
+ 	atomic_set(&bb.done, 1);
+-	bb.flags = 1 << BIO_UPTODATE;
++	bb.error = 0;
+ 	bb.wait = &wait;
+ 
+ 	while (nr_sects) {
+@@ -208,8 +208,8 @@ int blkdev_issue_write_same(struct block
+ 	if (!atomic_dec_and_test(&bb.done))
+ 		wait_for_completion_io(&wait);
+ 
+-	if (!test_bit(BIO_UPTODATE, &bb.flags))
+-		ret = -ENOTSUPP;
++	if (likely(!ret))
++		ret = bb.error;
+ 
+ 	return ret;
+ }
+@@ -236,7 +236,7 @@ static int __blkdev_issue_zeroout(struct
+ 	DECLARE_COMPLETION_ONSTACK(wait);
+ 
+ 	atomic_set(&bb.done, 1);
+-	bb.flags = 1 << BIO_UPTODATE;
++	bb.error = 0;
+ 	bb.wait = &wait;
+ 
+ 	ret = 0;
+@@ -270,9 +270,8 @@ static int __blkdev_issue_zeroout(struct
+ 	if (!atomic_dec_and_test(&bb.done))
+ 		wait_for_completion_io(&wait);
+ 
+-	if (!test_bit(BIO_UPTODATE, &bb.flags))
+-		/* One of bios in the batch was completed with error.*/
+-		ret = -EIO;
++	if (likely(!ret))
++		ret = bb.error;
+ 
+ 	return ret;
+ }
+
