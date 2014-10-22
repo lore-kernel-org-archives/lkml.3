@@ -1,74 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740AbaJVTBl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 15:01:41 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:64586 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753816AbaJVTBk (ORCPT
+	id S1754851AbaJVTBw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 15:01:52 -0400
+Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:48820 "EHLO
+	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753816AbaJVTBt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 15:01:40 -0400
-Message-ID: <5447FF10.3060506@amacapital.net>
-Date: Wed, 22 Oct 2014 12:01:36 -0700
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: Eric Paris <eparis@redhat.com>, Paulo Zanoni <przanoni@gmail.com>
-CC: linux-audit@redhat.com, Richard Guy Briggs <rgb@redhat.com>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        x86@kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Regression: audit: x86: drop arch from __audit_syscall_entry()
- interface
-References: <CA+gsUGSiXf2gpB8QQOQOmgxFc8mx31V6qeRqow6aXO1195jWEA@mail.gmail.com> <1414002190.30946.95.camel@localhost>
-In-Reply-To: <1414002190.30946.95.camel@localhost>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Wed, 22 Oct 2014 15:01:49 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AukNALz+R1RR86AM/2dsb2JhbABcgw6BLLh3BQFzmj6BDxcBfYRfI4EaN4hEAbcojwyGJYoyHYQ1BZ1djGiJQoFHAYIyOy+CSwEBAQ
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, "David S. Miller" <davem@davemloft.net>,
+        linux-x25@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH 1/1 net-next] lapb: move EXPORT_SYMBOL after functions.
+Date: Wed, 22 Oct 2014 21:01:41 +0200
+Message-Id: <1414004501-7715-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2014 11:23 AM, Eric Paris wrote:
-> That's really serious.  Looking now.
-> 
-> On Wed, 2014-10-22 at 16:08 -0200, Paulo Zanoni wrote:
->> Hi
->>
->> (Cc'ing everybody mentioned in the original patch)
->>
->> I work for Intel, on our Linux Graphics driver - aka i915.ko - and our
->> QA team recently reported a regression on:
->>
->> commit b4f0d3755c5e9cc86292d5fd78261903b4f23d4a
->> Author: Richard Guy Briggs
->> Date:   Tue Mar 4 10:38:06 2014 -0500
->>     audit: x86: drop arch from __audit_syscall_entry() interface
->>
->> According to our QA, their i386 machine doesn't boot anymore. I tried
->> to write my own revert for the patch, asked QA to test, and they
->> confirmed it "solves" the problem.
->>
->> Here are the details of QA' s bug report:
->> https://bugs.freedesktop.org/show_bug.cgi?id=85277 .
->>
->> The trees our QA tests are the development trees from i915.ko:
->> http://cgit.freedesktop.org/drm-intel?h=drm-intel-fixes .
->>
->> I tried searching for other bug reports on the same patch, but
->> couldn't find any. Forgive me if this bug was already reported.
->>
->> Feel free to continue this discussion on the bugzilla report if you want.
+See Documentation/CodingStyle Chapter 6
 
-This piece:
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ net/lapb/lapb_iface.c | 17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
-	movl %esi,4(%esp)		/* 5th arg: 4th syscall arg */
-	movl %edx,(%esp)		/* 4th arg: 3rd syscall arg */
+diff --git a/net/lapb/lapb_iface.c b/net/lapb/lapb_iface.c
+index 3cdaa04..fc60d9d 100644
+--- a/net/lapb/lapb_iface.c
++++ b/net/lapb/lapb_iface.c
+@@ -73,6 +73,7 @@ static void __lapb_remove_cb(struct lapb_cb *lapb)
+ 		lapb_put(lapb);
+ 	}
+ }
++EXPORT_SYMBOL(lapb_register);
+ 
+ /*
+  *	Add a socket to the bound sockets list.
+@@ -195,6 +196,7 @@ out:
+ 	write_unlock_bh(&lapb_list_lock);
+ 	return rc;
+ }
++EXPORT_SYMBOL(lapb_unregister);
+ 
+ int lapb_getparms(struct net_device *dev, struct lapb_parms_struct *parms)
+ {
+@@ -227,6 +229,7 @@ int lapb_getparms(struct net_device *dev, struct lapb_parms_struct *parms)
+ out:
+ 	return rc;
+ }
++EXPORT_SYMBOL(lapb_getparms);
+ 
+ int lapb_setparms(struct net_device *dev, struct lapb_parms_struct *parms)
+ {
+@@ -262,6 +265,7 @@ out_put:
+ out:
+ 	return rc;
+ }
++EXPORT_SYMBOL(lapb_setparms);
+ 
+ int lapb_connect_request(struct net_device *dev)
+ {
+@@ -290,6 +294,7 @@ out_put:
+ out:
+ 	return rc;
+ }
++EXPORT_SYMBOL(lapb_connect_request);
+ 
+ int lapb_disconnect_request(struct net_device *dev)
+ {
+@@ -334,6 +339,7 @@ out_put:
+ out:
+ 	return rc;
+ }
++EXPORT_SYMBOL(lapb_disconnect_request);
+ 
+ int lapb_data_request(struct net_device *dev, struct sk_buff *skb)
+ {
+@@ -355,6 +361,7 @@ out_put:
+ out:
+ 	return rc;
+ }
++EXPORT_SYMBOL(lapb_data_request);
+ 
+ int lapb_data_received(struct net_device *dev, struct sk_buff *skb)
+ {
+@@ -369,6 +376,7 @@ int lapb_data_received(struct net_device *dev, struct sk_buff *skb)
+ 
+ 	return rc;
+ }
++EXPORT_SYMBOL(lapb_data_received);
+ 
+ void lapb_connect_confirmation(struct lapb_cb *lapb, int reason)
+ {
+@@ -415,15 +423,6 @@ int lapb_data_transmit(struct lapb_cb *lapb, struct sk_buff *skb)
+ 	return used;
+ }
+ 
+-EXPORT_SYMBOL(lapb_register);
+-EXPORT_SYMBOL(lapb_unregister);
+-EXPORT_SYMBOL(lapb_getparms);
+-EXPORT_SYMBOL(lapb_setparms);
+-EXPORT_SYMBOL(lapb_connect_request);
+-EXPORT_SYMBOL(lapb_disconnect_request);
+-EXPORT_SYMBOL(lapb_data_request);
+-EXPORT_SYMBOL(lapb_data_received);
+-
+ static int __init lapb_init(void)
+ {
+ 	return 0;
+-- 
+1.9.1
 
-looks like it's overwriting syscall arguments.
-
-This is clearly fixable, but an even better fix would be to drop the asm
-entirely and switch to two-phase tracing.  Want to do it?  I can test
-the seccomp bits if you switch over the asm :)
-
---Andy
