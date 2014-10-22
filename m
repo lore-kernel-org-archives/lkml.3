@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933179AbaJVLLH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 07:11:07 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:48170 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932682AbaJVLLC (ORCPT
+	id S933237AbaJVLLk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 07:11:40 -0400
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:49494 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932999AbaJVLJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 07:11:02 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Wed, 22 Oct 2014 13:07:58 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Johan Hovold <johan@kernel.org>, Felipe Balbi <balbi@ti.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lokesh Vutla <lokeshvutla@ti.com>, Guenter Roeck <linux@roeck-us.net>,
-        nsekhar@ti.com, t-kristo@ti.com, j-keerthy@ti.com,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/12] rtc: omap: fixes and power-off feature
-Message-ID: <20141022110758.GO2113@localhost>
-References: <1412881594-25678-1-git-send-email-johan@kernel.org>
- <20141010175409.GL31348@saruman>
- <20141011093819.GA18988@localhost>
- <20141011190817.GA20644@atomide.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141011190817.GA20644@atomide.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Wed, 22 Oct 2014 07:09:39 -0400
+From: Dominik Dingel <dingel@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Bob Liu <lliubbo@gmail.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Gleb Natapov <gleb@kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Jianyu Zhan <nasa4836@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        kvm@vger.kernel.org, linux390@de.ibm.com, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Dominik Dingel <dingel@linux.vnet.ibm.com>
+Subject: [PATCH v3 0/4] mm: new function to forbid zeropage mappings for a process
+Date: Wed, 22 Oct 2014 13:09:26 +0200
+Message-Id: <1413976170-42501-1-git-send-email-dingel@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.5.5
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102211-0025-0000-0000-00000202975A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 11, 2014 at 12:08:18PM -0700, Tony Lindgren wrote:
-> * Johan Hovold <johan@kernel.org> [141011 02:42]:
-> > On Fri, Oct 10, 2014 at 12:54:22PM -0500, Felipe Balbi wrote:
-> > > 
-> > > is this power-off feature "RTC-only mode" ?
-> > 
-> > Yes, I believe so, at least as long as RTC power is maintained. The
-> > pmic_power_en pin can otherwise still be used to power off. 
-> > 
-> > On the BeagleBone the PMIC can be configured to enter OFF or SLEEP mode
-> > on power off, where the latter (and default) mode keeps the RTC power
-> > supply enabled.
-> > 
-> > Thanks for the fast review, Felipe.
-> 
-> Great :) I assume adding the regulator support to this driver should
-> also help in the 35xx case?
+s390 has the special notion of storage keys which are some sort of page flags
+associated with physical pages and live outside of direct addressable memory.
+These storage keys can be queried and changed with a special set of instructions.
+The mentioned instructions behave quite nicely under virtualization, if there is: 
+- an invalid pte, then the instructions will work on memory in the host page table
+- a valid pte, then the instructions will work with the real storage key
 
-If I remember correctly both OMAP and Sitara 35xx have no on-chip RTC so
-they won't be using this driver.
+Thanks to Martin with his software reference and dirty bit tracking,
+the kernel does not issue any storage key instructions as now a 
+software based approach will be taken, on the other hand distributions 
+in the wild are currently using them.
 
-> That is assuming that RTC power can be configured as a Linux
-> regulator on 35xx.
+However, for virtualized guests we still have a problem with guest pages 
+mapped to zero pages and the kernel same page merging.  
+With each one multiple guest pages will point to the same physical page
+and share the same storage key.
 
-Johan
+Let's fix this by introducing a new function which s390 will define to
+forbid new zero page mappings.  If the guest issues a storage key related 
+instruction we flag the mm_struct, drop existing zero page mappings
+and unmerge the guest memory.
+
+v2 -> v3:
+ - Clearing up patch description Patch 3/4
+ - removing unnecessary flag in mmu_context (Paolo)
+
+v1 -> v2: 
+ - Following Dave and Paolo suggestion removing the vma flag
+
+Dominik Dingel (4):
+  s390/mm: recfactor global pgste updates
+  mm: introduce mm_forbids_zeropage function
+  s390/mm: prevent and break zero page mappings in case of storage keys
+  s390/mm: disable KSM for storage key enabled pages
+
+ arch/s390/include/asm/pgalloc.h |   2 -
+ arch/s390/include/asm/pgtable.h |   8 +-
+ arch/s390/kvm/kvm-s390.c        |   2 +-
+ arch/s390/kvm/priv.c            |  17 ++--
+ arch/s390/mm/pgtable.c          | 180 ++++++++++++++++++----------------------
+ include/linux/mm.h              |   4 +
+ mm/huge_memory.c                |   2 +-
+ mm/memory.c                     |   2 +-
+ 8 files changed, 106 insertions(+), 111 deletions(-)
+
+-- 
+1.8.5.5
+
