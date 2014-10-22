@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715AbaJVTK3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 15:10:29 -0400
-Received: from mail-oi0-f44.google.com ([209.85.218.44]:51547 "EHLO
-	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754529AbaJVTK1 (ORCPT
+	id S1754963AbaJVTNX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 15:13:23 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:41300 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342AbaJVTNV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 15:10:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141022164454.GI15370@e104818-lin.cambridge.arm.com>
-References: <1413993983-17310-1-git-send-email-mathieu.poirier@linaro.org>
-	<20141022164454.GI15370@e104818-lin.cambridge.arm.com>
-Date: Wed, 22 Oct 2014 21:10:27 +0200
-Message-ID: <CANLsYkx08dw=YYBoRJ47QC+iL578HxPoMFcRDw6aKsvyqaqtkw@mail.gmail.com>
-Subject: Re: [PATCH] ARM: supplementing IO accessors with 64 bit capability
-From: Mathieu Poirier <mathieu.poirier@linaro.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "stefano.stabellini@eu.citrix.com" <stefano.stabellini@eu.citrix.com>,
-        "ezequiel.garcia@free-electrons.com" 
-	<ezequiel.garcia@free-electrons.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        "thomas.petazzoni@free-electrons.com" 
-	<thomas.petazzoni@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 22 Oct 2014 15:13:21 -0400
+From: Frans Klaver <fransklaver@gmail.com>
+To: Darren Hart <dvhart@infradead.org>
+Cc: Frans Klaver <fransklaver@gmail.com>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/8] More eeepc-laptop cleanup
+Date: Wed, 22 Oct 2014 21:12:35 +0200
+Message-Id: <1414005163-3461-1-git-send-email-fransklaver@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 October 2014 18:44, Catalin Marinas <catalin.marinas@arm.com> wrote:
-> On Wed, Oct 22, 2014 at 05:06:23PM +0100, mathieu.poirier@linaro.org wrote:
->> +#if __LINUX_ARM_ARCH__ >= 5
->
-> My old ARMv5 book does not list LDRD/STRD. It looks like they only come
-> with ARMv5TE. Are there any processors prior to this supported by the
-> kernel?
->
->> +static inline void __raw_writeq(u64 val, volatile void __iomem *addr)
->> +{
->> +     asm volatile("strd %1, %0"
->> +                  : "+Qo" (*(volatile u64 __force *)addr)
->> +                  : "r" (val));
->> +}
->> +
->> +static inline u64 __raw_readq(const volatile void __iomem *addr)
->> +{
->> +     u64 val;
->> +     asm volatile("ldrd %1, %0"
->> +                  : "+Qo" (*(volatile u64 __force *)addr),
->> +                    "=r" (val));
->> +     return val;
->> +}
->> +#endif
->
-> I'm curious why you need these. Do you have a device that needs a 64-bit
-> single access or you are trying to read two consecutive registers?
+Hi,
 
-The fundamental data size of Coresight STM32 for ARMv7 is
-implementation defined and can be 32 or 64bit.  As such stimulus ports
-can support transaction sizes of up to 64 bit.
+This is another round of cleanups in eeepc-laptop. It's mostly shuffling around
+stuff, no big things. It's been running on my eeepc for two or three weeks now
+without any apparent problems. Comments appreciated.
 
-Mathieu
+Thanks,
+Frans
 
->
-> --
-> Catalin
+Frans Klaver (8):
+  eeepc-laptop: flatten control flow
+  eeepc-laptop: don't break user visible strings
+  eeepc-laptop: define rfkill notifier nodes only once
+  eeepc-laptop: pull out eeepc_destroy_rfkill
+  eeepc-laptop: clean up control flow in eeepc_acpi_notify
+  eeepc-laptop: replace magic numbers with defines
+  eeepc-laptop: document fan_pwm conversions
+  eeepc-laptop: don't assume get_acpi succeeds
+
+ drivers/platform/x86/eeepc-laptop.c | 244 +++++++++++++++++++-----------------
+ 1 file changed, 127 insertions(+), 117 deletions(-)
+
+-- 
+2.1.0
+
