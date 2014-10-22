@@ -1,106 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932484AbaJVIDJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 04:03:09 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:45948 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754196AbaJVIDC (ORCPT
+	id S932692AbaJVIDf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 04:03:35 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:48434 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754011AbaJVIDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 04:03:02 -0400
-Message-ID: <544764B1.9020303@gmail.com>
-Date: Wed, 22 Oct 2014 10:02:57 +0200
-From: =?UTF-8?B?UGhpbGlwcGUgUsOpdG9ybmF6?= <philippe.retornaz@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 22 Oct 2014 04:03:08 -0400
+Date: Wed, 22 Oct 2014 10:03:02 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Peter Foley <pefoley2@pefoley.com>
+Cc: David Daney <ddaney.cavm@gmail.com>, David Miller <davem@davemloft.net>,
+        markos.chandras@imgtec.com, linux-mips@linux-mips.org, corbet@lwn.net,
+        netdev@vger.kernel.org,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Documentation: ptp: Fix build failure on MIPS cross
+ builds
+Message-ID: <20141022080302.GA4037@localhost.localdomain>
+References: <1413794538-28465-1-git-send-email-markos.chandras@imgtec.com>
+ <20141021110724.GA16479@netboy>
+ <20141021.123544.9516812519754063.davem@davemloft.net>
+ <544690CB.4030307@gmail.com>
+ <20141021182757.GA3960@localhost.localdomain>
+ <CAOFdcFNYHgupvMChb4NedMsUMAOmE8k0D_F5eRjL-8H8ft=eRw@mail.gmail.com>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org
-CC: linux-pm@vger.kernel.org, Alan Cox <gnomes@lxorguk.ukuu.org.uk>,
-        Alexander Graf <agraf@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Heiko Stuebner <heiko@sntech.de>, Lee Jones <lee.jones@linaro.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Romain Perier <romain.perier@gmail.com>
-Subject: Re: [PATCH v2 01/47] kernel: Add support for poweroff handler call
- chain
-References: <1413864783-3271-1-git-send-email-linux@roeck-us.net> <1413864783-3271-2-git-send-email-linux@roeck-us.net> <54460140.50805@gmail.com> <54465FBA.8070007@roeck-us.net>
-In-Reply-To: <54465FBA.8070007@roeck-us.net>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOFdcFNYHgupvMChb4NedMsUMAOmE8k0D_F5eRjL-8H8ft=eRw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 21/10/2014 15:29, Guenter Roeck a écrit :
-> On 10/20/2014 11:46 PM, Philippe Rétornaz wrote:
->> Hello
->>
->> [...]
->>> - Use raw notifiers protected by spinlocks instead of atomic notifiers
->> [...]
->>
->>> +/**
->>> + *    do_kernel_power_off - Execute kernel poweroff handler call chain
->>> + *
->>> + *    Calls functions registered with register_power_off_handler.
->>> + *
->>> + *    Expected to be called from machine_power_off as last step of
->>> + *    the poweroff sequence.
->>> + *
->>> + *    Powers off the system immediately if a poweroff handler function
->>> + *    has been registered. Otherwise does nothing.
->>> + */
->>> +void do_kernel_power_off(void)
->>> +{
->>> +    spin_lock(&power_off_handler_lock);
->>> +    raw_notifier_call_chain(&power_off_handler_list, 0, NULL);
->>> +    spin_unlock(&power_off_handler_lock);
->>> +}
->>
->> I don't get it. You are still in atomic context inside the poweroff
->> callback
->> since you lock it with a spinlock.
-[...]
->>
->> Why not using the blocking_notifier_* family ?
->> It will lock with a read-write semaphore under which you can sleep.
->>
->> For instance, twl4030_power_off will sleep, since it is doing I2C access.
->> So you cannot call it in atomic context.
->>
->
-> Learning something new all the time. I assumed that spin_lock (unlike
-> spin_lock_irqsafe) would not run in atomic context.
->
-> I did not want to use a sleeping lock because I am not sure if that
-> works for all architectures; some disable (local) interrupts before
-> calling the function (eg arm and arm64), and I don't want to change
-> that semantics.
+On Tue, Oct 21, 2014 at 06:04:51PM -0400, Peter Foley wrote:
+> The intention of these changes was to generate more compiliation
+> coverage for code in Documentation/
 
-You're right and it even disable all others CPUs (if any).
-I don't understand why it needs to disable local interrupts since the
-code path to pm_power_off is simply doing:
+Sounds good.
 
-syscall -> migrate to reboot cpu -> disable local interrupt -> disable 
-others cpu -> pm_power_off().
+> The underlying issue is that this doesn't work for cross-compiling
+> because kbuild doesn't have cross-compile support for userspace code.
 
-I don't understand why we cannot re-enable interrupts right before 
-pm_power_off().
-And it looks like that all pm_power_off callbacks which can sleep are 
-broken.
-I still wonder how i2c communication can works without local interrupts 
-... it looks
-like somebody is re-enabling them (or the code was never run)
+Well, my testptp does cross compile just fine. All it needs is the glibc
+library bundled with the tool chain and the kernel headers.
 
-> I have another idea how to get there without changing the lock situation
-> while executing the call chain - just set a flag indicating that it is
-> running and execute it without lock. Would that work ?
+> I submitted a patch to disable building Documentation when
+> cross-compiling, as the consensus in the thread that resulted in that
+> patch (https://lkml.org/lkml/2014/10/8/510) was that implementing
+> targetprogs in kbuild was not currently worth it.
 
-I don't think inventing a new locking mechanism is a good solution.
-We need first to know for sure if we can sleep or not in pm_power_off.
-If yes then we need to re-enable local interrupts and we can use a mutex.
-If not then the atomic notifier is fine and a lots of drivers are wrong.
+So this patch did not make it in, right?
+
+Otherwise people wouldn't be disabling cross compilation ad hoc, like
+in the patch that started this thread.
+
+> I can try to take a crack at adding targetprogs support, but I'm
+> rather busy right now, so it may take a little while.
+
+No rush, please do.
+
+In the mean time, I would like to restore the testptp.mk that *does*
+cross compile, so that people may use the test program if they
+want. In fact I use this all the time, and so I am a bit annoyed that
+something working was deleted and replaced with something broken.
 
 Thanks,
-
-Philippe
+Richard
