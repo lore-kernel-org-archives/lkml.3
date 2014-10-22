@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932227AbaJVGJZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 02:09:25 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:60303 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750920AbaJVGIC (ORCPT
+	id S1751178AbaJVGIB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 02:08:01 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:37157 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013AbaJVGHw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 02:08:02 -0400
+	Wed, 22 Oct 2014 02:07:52 -0400
 From: Mike Turquette <mturquette@linaro.org>
 To: peterz@infradead.org, mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, preeti@linux.vnet.ibm.com,
@@ -16,10 +16,11 @@ Cc: linux-kernel@vger.kernel.org, preeti@linux.vnet.ibm.com,
         dietmar.eggemann@arm.com, pjt@google.com, bsegall@google.com,
         vincent.guittot@linaro.org, patches@linaro.org,
         tuukka.tikkanen@linaro.org, amit.kucheria@linaro.org,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
         Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH RFC 5/7] sched: cfs: cpu frequency scaling arch functions
-Date: Tue, 21 Oct 2014 23:07:29 -0700
-Message-Id: <1413958051-7103-6-git-send-email-mturquette@linaro.org>
+Subject: [PATCH RFC 1/7] sched: Make energy awareness a sched feature
+Date: Tue, 21 Oct 2014 23:07:25 -0700
+Message-Id: <1413958051-7103-2-git-send-email-mturquette@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1413958051-7103-1-git-send-email-mturquette@linaro.org>
 References: <1413958051-7103-1-git-send-email-mturquette@linaro.org>
@@ -27,56 +28,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-arch_eval_cpu_freq and arch_scale_cpu_freq are added to allow the
-scheduler to evaluate if cpu frequency should change and to invoke that
-change from a safe context.
+From: Morten Rasmussen <morten.rasmussen@arm.com>
 
-They are weakly defined arch functions that do nothing by default. A
-CPUfreq governor could use these functions to implement a frequency
-scaling policy based on updates to per-task statistics or updates to
-per-cpu utilization.
+This patch introduces the ENERGY_AWARE sched feature, which is
+implemented using jump labels when SCHED_DEBUG is defined. It is
+statically set false when SCHED_DEBUG is not defined. Hence this doesn't
+allow energy awareness to be enabled without SCHED_DEBUG. This
+sched_feature knob will be replaced later with a more appropriate
+control knob when things have matured a bit.
 
-As discussed at Linux Plumbers Conference 2014, the goal will be to
-focus on a single cpu frequency scaling policy that works for everyone.
-That may mean that the weak arch functions definitions can be removed
-entirely and a single policy implements that logic for all
-architectures.
-
-Not-signed-off-by: Mike Turquette <mturquette@linaro.org>
+Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
+Signed-off-by: Mike Turquette <mturquette@linaro.org>
+[mturquette@linaro.org: moved energy_aware above enqueue_task_fair]
 ---
- kernel/sched/fair.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ kernel/sched/fair.c     | 5 +++++
+ kernel/sched/features.h | 6 ++++++
+ 2 files changed, 11 insertions(+)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 0930ad8..1af6f6d 100644
+index 6738160..90b36cc 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -2265,6 +2265,8 @@ static u32 __compute_runnable_contrib(u64 n)
+@@ -3978,6 +3978,11 @@ static inline void hrtick_update(struct rq *rq)
  }
+ #endif
  
- unsigned long arch_scale_load_capacity(int cpu);
-+void arch_eval_cpu_freq(struct cpumask *cpus);
-+void arch_scale_cpu_freq(void);
- 
++static inline bool energy_aware(void)
++{
++	return sched_feat(ENERGY_AWARE);
++}
++
  /*
-  * We can represent the historical contribution to runnable average as the
-@@ -5805,6 +5807,16 @@ unsigned long __weak arch_scale_load_capacity(int cpu)
- 	return default_scale_load_capacity(cpu);
- }
- 
-+void __weak arch_eval_cpu_freq(struct cpumask *cpus)
-+{
-+	return;
-+}
+  * The enqueue_task method is called before nr_running is
+  * increased. Here we update the fair scheduling stats and
+diff --git a/kernel/sched/features.h b/kernel/sched/features.h
+index 90284d1..199ee3a 100644
+--- a/kernel/sched/features.h
++++ b/kernel/sched/features.h
+@@ -83,3 +83,9 @@ SCHED_FEAT(NUMA_FAVOUR_HIGHER, true)
+  */
+ SCHED_FEAT(NUMA_RESIST_LOWER, false)
+ #endif
 +
-+void __weak arch_scale_cpu_freq(void)
-+{
-+	return;
-+}
-+
- static unsigned long scale_rt_capacity(int cpu)
- {
- 	struct rq *rq = cpu_rq(cpu);
++/*
++ * Energy aware scheduling. Use platform energy model to guide scheduling
++ * decisions optimizing for energy efficiency.
++ */
++SCHED_FEAT(ENERGY_AWARE, false)
 -- 
 1.8.3.2
 
