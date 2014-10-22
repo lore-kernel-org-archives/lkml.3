@@ -1,106 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751885AbaJVFd0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 01:33:26 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35877 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750952AbaJVFdZ (ORCPT
+	id S1752801AbaJVFfB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 01:35:01 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:62926 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750832AbaJVFfA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 01:33:25 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <5447416C.5080106@jp.fujitsu.com>
-Date: Wed, 22 Oct 2014 14:32:28 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 22 Oct 2014 01:35:00 -0400
+Date: Tue, 21 Oct 2014 22:34:53 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Michal Sojka <sojkam1@fel.cvut.cz>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Update help of CONFIG_MTD_OF_PARTS
+Message-ID: <20141022053453.GA16128@brian-ubuntu>
+References: <1412946377-18933-1-git-send-email-sojkam1@fel.cvut.cz>
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <zhenzhang.zhang@huawei.com>,
-        <wangnan0@huawei.com>, <tangchen@cn.fujitsu.com>,
-        <dave.hansen@intel.com>, <rientjes@google.com>
-Subject: Re: [PATCH] memory-hotplug: Clear pgdat which is allocated by bootmem
- in try_offline_node()
-References: <5444DE75.6010206@jp.fujitsu.com> <1413910581.12798.25.camel@misato.fc.hp.com>
-In-Reply-To: <1413910581.12798.25.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412946377-18933-1-git-send-email-sojkam1@fel.cvut.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/10/22 1:56), Toshi Kani wrote:
-> On Mon, 2014-10-20 at 19:05 +0900, Yasuaki Ishimatsu wrote:
->   :
->> When hot removing memory, pgdat is set to 0 in try_offline_node().
->> But if the pgdat is allocated by bootmem allocator, the clearing
->> step is skipped. And when hot adding the same memory, the uninitialized
->> pgdat is reused. But free_area_init_node() chacks wether pgdat is set
->
+On Fri, Oct 10, 2014 at 03:06:17PM +0200, Michal Sojka wrote:
+> The help text of CONFIG_MTD_OF_PARTS refers to additional documentation
+> in booting-without-of.txt but this documentation was moved to another
+> file in commit efcc2da3fd148c9acb7d7cf1d9800e0649f950fc (Stefan Roese:
+> Factor MTD physmap bindings out of booting-without-of). This updates the
+> help text to point to the right place.
+> 
+> Signed-off-by: Michal Sojka <sojkam1@fel.cvut.cz>
+> ---
+>  drivers/mtd/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/mtd/Kconfig b/drivers/mtd/Kconfig
+> index 94b8210..fa8371a 100644
+> --- a/drivers/mtd/Kconfig
+> +++ b/drivers/mtd/Kconfig
+> @@ -133,7 +133,7 @@ config MTD_OF_PARTS
+>  	help
+>  	  This provides a partition parsing function which derives
+>  	  the partition map from the children of the flash node,
+> -	  as described in Documentation/devicetree/booting-without-of.txt.
+> +	  as described in Documentation/devicetree/bindings/mtd/mtd-physmap.txt.
 
-> s/chacks/checks
+Did you read this file before sending the patch? I'm pretty sure you're
+looking for this file instead:
 
-I'll update it.
+  Documentation/devicetree/bindings/mtd/partition.txt
 
->
->
->> to zero. As a result, free_area_init_node() hits WARN_ON().
->>
->> This patch clears pgdat which is allocated by bootmem allocator
->> in try_offline_node().
->>
->> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->> CC: Zhang Zhen <zhenzhang.zhang@huawei.com>
->> CC: Wang Nan <wangnan0@huawei.com>
->> CC: Tang Chen <tangchen@cn.fujitsu.com>
->> CC: Toshi Kani <toshi.kani@hp.com>
->> CC: Dave Hansen <dave.hansen@intel.com>
->> CC: David Rientjes <rientjes@google.com>
->>
->> ---
->>   mm/memory_hotplug.c | 3 ++-
->>   1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
->> index 29d8693..7649f7c 100644
->> --- a/mm/memory_hotplug.c
->> +++ b/mm/memory_hotplug.c
->> @@ -1943,7 +1943,7 @@ void try_offline_node(int nid)
->>
->>   	if (!PageSlab(pgdat_page) && !PageCompound(pgdat_page))
->>   		/* node data is allocated from boot memory */
->> -		return;
->> +		goto out;
->
+>  
+>  config MTD_AR7_PARTS
+>  	tristate "TI AR7 partitioning support"
 
-> Do we still need this if-statement?  That is, do we have to skip the
-> for-loop below even though it checks with is_vmalloc_addr()?
-
-You are right. The if-statement is not necessary. So the issue can be
-fixed by just removing the if-statement.
-
-I'll post updated patch soon.
-
-Thanks,
-Yasuaki Ishimatsu
-
->
-> Thanks,
-> -Toshi
->
->
->>   	/* free waittable in each zone */
->>   	for (i = 0; i < MAX_NR_ZONES; i++) {
->> @@ -1957,6 +1957,7 @@ void try_offline_node(int nid)
->>   			vfree(zone->wait_table);
->>   	}
->>
->> +out:
->>   	/*
->>   	 * Since there is no way to guarentee the address of pgdat/zone is not
->>   	 * on stack of any kernel threads or used by other kernel objects
->
->
-
-
+Brian
