@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753857AbaJVOcV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 10:32:21 -0400
-Received: from filter1.ibarracuda.nl ([83.247.7.10]:49891 "EHLO
+	id S1753906AbaJVOcn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 10:32:43 -0400
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:49865 "EHLO
 	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753679AbaJVObv (ORCPT
+	with ESMTP id S1753673AbaJVObu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 10:31:51 -0400
-X-ASG-Debug-ID: 1413988309-0759e74a717a5050002-xx1T2L
+	Wed, 22 Oct 2014 10:31:50 -0400
+X-ASG-Debug-ID: 1413988306-0759e74a717a5000002-xx1T2L
 X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
 X-Barracuda-AUTH-User: xsenscom
 X-Barracuda-Apparent-Source-IP: 87.249.116.215
@@ -21,10 +21,10 @@ CC: Frans Klaver <frans.klaver@xsens.com>,
         =?UTF-8?q?Ren=C3=A9=20Moll?= <linux@r-moll.nl>,
         Guenter Roeck <linux@roeck-us.net>, <linux-kernel@vger.kernel.org>,
         <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>
-Subject: [PATCH 13/13] power: reset: ltc2952: document optional trigger behavior
-Date: Wed, 22 Oct 2014 16:31:10 +0200
-X-ASG-Orig-Subj: [PATCH 13/13] power: reset: ltc2952: document optional trigger behavior
-Message-ID: <1413988270-28092-14-git-send-email-frans.klaver@xsens.com>
+Subject: [PATCH 12/13] power: reset: ltc2952: make trigger input optional
+Date: Wed, 22 Oct 2014 16:31:09 +0200
+X-ASG-Orig-Subj: [PATCH 12/13] power: reset: ltc2952: make trigger input optional
+Message-ID: <1413988270-28092-13-git-send-email-frans.klaver@xsens.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1413988270-28092-1-git-send-email-frans.klaver@xsens.com>
 References: <1413988270-28092-1-git-send-email-frans.klaver@xsens.com>
@@ -32,7 +32,7 @@ MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [172.16.11.125]
 X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
-X-Barracuda-Start-Time: 1413988309
+X-Barracuda-Start-Time: 1413988306
 X-Barracuda-Encrypted: AES128-SHA
 X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
 X-Barracuda-BRTS-Status: 1
@@ -46,50 +46,155 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the fact that the trigger signal is now optional, and describe
-the behavior when this is used.
+Currently the ltc2952 supports only one button sequence to initiate
+powerdown. This is not always desirable, as even prolonged button
+presses can happen in use.
 
-While at it, fix a typo, and paraphrase a sentence to be less platform
-specific.
+Allow ltc2952 users to pick their own power down sequence, by making the
+trigger input optional. Since this still means that the ltc2952 may
+power down the platform if the power button is pressed for about 5
+seconds, we still need to make sure to start the watchdog toggle to
+prolong the system power for as long as we need it.
+
+This will still allow the system to control power using the kill signal.
 
 Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
 ---
- .../devicetree/bindings/power/reset/ltc2952-poweroff.txt    | 13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/power/reset/ltc2952-poweroff.c | 87 +++++++++++++++++++++-------------
+ 1 file changed, 55 insertions(+), 32 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/power/reset/ltc2952-poweroff.txt b/Documentation/devicetree/bindings/power/reset/ltc2952-poweroff.txt
-index 0c94c63..cd2d7f5 100644
---- a/Documentation/devicetree/bindings/power/reset/ltc2952-poweroff.txt
-+++ b/Documentation/devicetree/bindings/power/reset/ltc2952-poweroff.txt
-@@ -1,20 +1,23 @@
- Binding for the LTC2952 PowerPath controller
+diff --git a/drivers/power/reset/ltc2952-poweroff.c b/drivers/power/reset/ltc2952-poweroff.c
+index fda2735..72e3d7f 100644
+--- a/drivers/power/reset/ltc2952-poweroff.c
++++ b/drivers/power/reset/ltc2952-poweroff.c
+@@ -32,7 +32,9 @@
+  * - trigger (input)
+  *     A level change indicates the shut-down trigger. If it's state reverts
+  *     within the time-out defined by trigger_delay, the shut down is not
+- *     executed.
++ *     executed. If no pin is assigned to this input, the driver will start the
++ *     watchdog toggle immediately. The chip will only power off the system if
++ *     it is requested to do so through the kill line.
+  *
+  * - watchdog (output)
+  *     Once a shut down is triggered, the driver will toggle this signal,
+@@ -116,15 +118,10 @@ static enum hrtimer_restart ltc2952_poweroff_timer_wde(struct hrtimer *timer)
+ 	return HRTIMER_RESTART;
+ }
  
- This chip is used to externally trigger a system shut down. Once the trigger has
--been sent, the chips' watchdog has to be reset to gracefully shut down.
--If the Linux systems decides to shut down it powers off the platform via the
--kill signal.
-+been sent, the chip's watchdog has to be reset to gracefully shut down.
-+A full powerdown can be triggered via the kill signal.
+-static enum hrtimer_restart
+-ltc2952_poweroff_timer_trigger(struct hrtimer *timer)
++static void ltc2952_poweroff_start_wde(struct ltc2952_poweroff *data)
+ {
+-	struct ltc2952_poweroff *data = to_ltc2952(timer, timer_trigger);
+-	int ret = hrtimer_start(&data->timer_wde,
+-				data->wde_interval, HRTIMER_MODE_REL);
+-
+-	if (ret) {
+-		dev_err(data->dev, "unable to start the timer\n");
++	if (hrtimer_start(&data->timer_wde, data->wde_interval,
++			  HRTIMER_MODE_REL)) {
+ 		/*
+ 		 * The device will not toggle the watchdog reset,
+ 		 * thus shut down is only safe if the PowerPath controller
+@@ -133,10 +130,17 @@ ltc2952_poweroff_timer_trigger(struct hrtimer *timer)
+ 		 *
+ 		 * Only sending a warning as the system will power-off anyway
+ 		 */
++		dev_err(data->dev, "unable to start the timer\n");
+ 	}
++}
  
- Required properties:
+-	dev_info(data->dev, "executing shutdown\n");
++static enum hrtimer_restart
++ltc2952_poweroff_timer_trigger(struct hrtimer *timer)
++{
++	struct ltc2952_poweroff *data = to_ltc2952(timer, timer_trigger);
  
- - compatible:		Must contain: "lltc,ltc2952"
--- trigger-gpios:	phandle + gpio-specifier for the GPIO connected to the
--			chip's trigger line
- - watchdog-gpios:	phandle + gpio-specifier for the GPIO connected to the
- 			chip's watchdog line
- - kill-gpios:		phandle + gpio-specifier for the GPIO connected to the
- 			chip's kill line
++	ltc2952_poweroff_start_wde(data);
++	dev_info(data->dev, "executing shutdown\n");
+ 	orderly_poweroff(true);
  
-+Optional properties:
-+- trigger-gpios:	phandle + gpio-specifier for the GPIO connected to the
-+			chip's trigger line. If this property is not set, the
-+			trigger function is ignored and the chip is kept alive
-+			until an explicit kill signal is received
-+
- Example:
+ 	return HRTIMER_NORESTART;
+@@ -190,7 +194,7 @@ static void ltc2952_poweroff_default(struct ltc2952_poweroff *data)
  
- ltc2952 {
+ static int ltc2952_poweroff_init(struct platform_device *pdev)
+ {
+-	int ret, virq;
++	int ret;
+ 	struct ltc2952_poweroff *data = platform_get_drvdata(pdev);
+ 
+ 	ltc2952_poweroff_default(data);
+@@ -210,29 +214,48 @@ static int ltc2952_poweroff_init(struct platform_device *pdev)
+ 		return ret;
+ 	}
+ 
+-	data->gpio_trigger = devm_gpiod_get(&pdev->dev, "trigger",
+-					    GPIOD_IN);
+-	if (IS_ERR(ltc2952_data->gpio_trigger)) {
+-		ret = PTR_ERR(ltc2952_data->gpio_trigger);
+-		dev_err(&pdev->dev, "unable to claim gpio \"trigger\"\n");
+-		return ret;
+-	}
+-
+-	virq = gpiod_to_irq(data->gpio_trigger);
+-	if (virq < 0) {
+-		dev_err(&pdev->dev, "cannot map GPIO as interrupt");
+-		return ret;
++	data->gpio_trigger = devm_gpiod_get(&pdev->dev, "trigger", GPIOD_IN);
++	if (IS_ERR(data->gpio_trigger)) {
++		/*
++		 * It's not a problem if the trigger gpio isn't available, but
++		 * it is worth a warning if its use was defined in the device
++		 * tree.
++		 */
++		if (PTR_ERR(data->gpio_trigger) != -ENOENT)
++			dev_err(&pdev->dev,
++				"unable to claim gpio \"trigger\"\n");
++		data->gpio_trigger = NULL;
+ 	}
+ 
+-	ret = devm_request_irq(&pdev->dev, virq,
+-			       ltc2952_poweroff_handler,
+-			       (IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING),
+-			       "ltc2952-poweroff",
+-			       data);
+-
+-	if (ret) {
+-		dev_err(&pdev->dev, "cannot configure an interrupt handler\n");
+-		return ret;
++	if (devm_request_irq(&pdev->dev, gpiod_to_irq(data->gpio_trigger),
++			     ltc2952_poweroff_handler,
++			     (IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING),
++			     "ltc2952-poweroff",
++			     data)) {
++		/*
++		 * Some things may have happened:
++		 * - No trigger input was defined
++		 * - Claiming the GPIO failed
++		 * - We could not map to an IRQ
++		 * - We couldn't register an interrupt handler
++		 *
++		 * None of these really are problems, but all of them
++		 * disqualify the push button from controlling the power.
++		 *
++		 * It is therefore important to note that if the ltc2952
++		 * detects a button press for long enough, it will still start
++		 * its own powerdown window and cut the power on us if we don't
++		 * start the watchdog trigger.
++		 */
++		if (data->gpio_trigger) {
++			dev_warn(&pdev->dev,
++				 "unable to configure the trigger interrupt\n");
++			devm_gpiod_put(&pdev->dev, data->gpio_trigger);
++			data->gpio_trigger = NULL;
++		}
++		dev_info(&pdev->dev,
++			 "power down trigger input will not be used\n");
++		ltc2952_poweroff_start_wde(data);
+ 	}
+ 
+ 	return 0;
 -- 
 2.1.0
 
