@@ -1,243 +1,278 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933199AbaJVW7S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 18:59:18 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:39818 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932812AbaJVW7Q (ORCPT
+	id S933432AbaJVXAp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 19:00:45 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:49327 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933269AbaJVXAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 18:59:16 -0400
-Date: Wed, 22 Oct 2014 16:59:13 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH] PCI/MSI: Remove pci_enable_msix()
-Message-ID: <20141022225913.GA4795@google.com>
-References: <1412955343-27239-1-git-send-email-agordeev@redhat.com>
+	Wed, 22 Oct 2014 19:00:41 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Alexandre Courbot <gnurou@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Darren Hart <dvhart@linux.intel.com>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: GPIO bindings guidelines (Was: Re: [PATCH v5 10/12] gpio: Support for unified device properties interface)
+Date: Thu, 23 Oct 2014 01:21:06 +0200
+Message-ID: <13758254.acHP1NJN1b@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141022145651.GH1484@lahna.fi.intel.com>
+References: <CAAVeFuLW6fucvDxQvY5DDfnhPrgYM+1pi7WoHfBQa_BgYnc_Cw@mail.gmail.com> <1971792.8pKYWlGxB9@vostro.rjw.lan> <20141022145651.GH1484@lahna.fi.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412955343-27239-1-git-send-email-agordeev@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 10, 2014 at 05:35:43PM +0200, Alexander Gordeev wrote:
-> There are no users of pci_enable_msix() function left. Obsolete
-> it in favor of pci_enable_msix_range() and pci_enable_msix_exact()
-> functions.
+On Wednesday, October 22, 2014 05:56:51 PM Mika Westerberg wrote:
+> On Wed, Oct 22, 2014 at 04:07:08PM +0200, Rafael J. Wysocki wrote:
+> > Moreover, we need to clarify what situation we're really talking about.
+> > 
+> > For one, drivers using the unified interface only will always use names for
+> > GPIOs, because they have to assume that either a DT or ACPI w/ _DSD is present.
+> > This is the cost of keeping those drivers firmware interface agnostic.
+> > 
+> > So it looks like we're not talking about this case here.
 > 
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> Cc: linux-pci@vger.kernel.org
+> We are talking about the case of rfkill-gpio.c where it definitely wants
+> to use properties for the GPIOs but it cannot be sure if the underlying
+> firmware provides _DSD or not.
+> 
+> > Now, if there's no DT or no _DSD in the ACPI tables for the given device
+> > *and* the driver wants to use its GPIOs anyway, it has to be ACPI-aware to
+> > some extent, because in that case the device ID it has been matched against
+> > tells it what the meaning of the GpioIo resources in the _CRS is.
+> > 
+> > Then, the driver needs to do something like:
+> > 
+> > 	if (!device_property_present(dev, "known_property_that_should_be_present")
+> > 	    && ACPI_COMPANION(dev))
+> > 		acpi_probe_gpios(dev);
+> 
+> Indeed we can use similar pattern to detect if we have _DSD present or
+> not.
+> 
+> > and in the acpi_probe_gpios() routine there may be checks like:
+> > 
+> > 	if (device_has_id(dev, "MARY0001")) {
+> > 		The first pin in the first GpioIo resource in _CRS is "fred" and
+> > 		it is active-low.
+> > 		The third pin in the second GpioIo resource in _CRS is "steve"
+> > 		and it is not active-low.
+> > 	} else if (device_has_id(dev, "JANE0002")) {
+> > 		The first pin in the second GpioIo resource in _CRS is "fred" and
+> > 		it is not active-low.
+> > 		The second pin in the first GpioIo resource in _CRS is "steve"
+> > 		and it is active-low.
+> > 	}
+> > 
+> > and so on.  Of course, there may be drivers knowing that the meaning of the
+> > GpioIo resources in _CRS is the same for all devices handled by them, in which
+> > case they will not need to check device IDs, but the core has now way of
+> > knowing that.  Only the drivers have that information and the core has now
+> > way to figure out what to do for a given specific device.
+> > 
+> > So here's a radical idea: Why don't we introduce something like
+> > 
+> > 	acpi_enumerate_gpio(dev, name, GpioIo_index, pin_index, active_low)
+> > 
+> > such that after calling, say, acpi_enumerate_gpio(dev, "fred", 0, 0, true) the
+> > driver can do something like:
+> > 
+> > 	desc = get_gpiod_by_name(dev, "fred");
+> > 
+> > and it'll all work.  Then, the only part of the driver that really needs to be
+> > ACPI-specific will be the acpi_probe_gpios() function calling acpi_enumerate_gpio()
+> > in accordance with what the device ID is.
+> > 
+> > Thoughts?
+> 
+> I think this is good idea. It solves the rfkill-gpio.c problem with just
+> small amount of ACPI specific code.
 
-Applied to pci/msi for v3.19, thanks!
+OK, would the below make sense, then (completely untested, on top of the v6
+of the device properties patchset)?
 
-> ---
->  Documentation/PCI/PCIEBUS-HOWTO.txt | 15 +++---
->  Documentation/PCI/pci.txt           | 14 +++---
->  drivers/pci/msi.c                   | 91 +++++++++++++++----------------------
->  include/linux/pci.h                 |  4 --
->  4 files changed, 51 insertions(+), 73 deletions(-)
-> 
-> diff --git a/Documentation/PCI/PCIEBUS-HOWTO.txt b/Documentation/PCI/PCIEBUS-HOWTO.txt
-> index 6bd5f37..873a84a 100644
-> --- a/Documentation/PCI/PCIEBUS-HOWTO.txt
-> +++ b/Documentation/PCI/PCIEBUS-HOWTO.txt
-> @@ -190,13 +190,14 @@ in the field interrupt_mode of struct pcie_device.
->  6.2 MSI-X Vector Resources
->  
->  Similar to the MSI a device driver for an MSI-X capable device can
-> -call pci_enable_msix to request MSI-X interrupts. All service drivers
-> -are not permitted to switch interrupt mode on its device. The PCI
-> -Express Port Bus driver is responsible for determining the interrupt
-> -mode and this should be transparent to service drivers. Any attempt
-> -by service driver to call pci_enable_msix/pci_disable_msix may
-> -result unpredictable behavior. Service drivers should use
-> -(struct pcie_device*)dev->irq and call request_irq/free_irq.
-> +call pci_enable_msix_range to request MSI-X interrupts. All service
-> +drivers are not permitted to switch interrupt mode on its device.
-> +The PCI Express Port Bus driver is responsible for determining the
-> +interrupt mode and this should be transparent to service drivers.
-> +Any attempt by service driver to call pci_enable_msix_range or
-> +pci_disable_msix may result unpredictable behavior. Service drivers
-> +should use (struct pcie_device*)dev->irq and call request_irq or
-> +free_irq.
->  
->  6.3 PCI Memory/IO Mapped Regions
->  
-> diff --git a/Documentation/PCI/pci.txt b/Documentation/PCI/pci.txt
-> index 9518006..eb57f0a 100644
-> --- a/Documentation/PCI/pci.txt
-> +++ b/Documentation/PCI/pci.txt
-> @@ -383,18 +383,18 @@ The fundamental difference between MSI and MSI-X is how multiple
->  "vectors" get allocated. MSI requires contiguous blocks of vectors
->  while MSI-X can allocate several individual ones.
->  
-> -MSI capability can be enabled by calling pci_enable_msi() or
-> -pci_enable_msix() before calling request_irq(). This causes
-> +MSI capability can be enabled by calling pci_enable_msi_range() or
-> +pci_enable_msix_range() before calling request_irq(). This causes
->  the PCI support to program CPU vector data into the PCI device
->  capability registers.
->  
->  If your PCI device supports both, try to enable MSI-X first.
->  Only one can be enabled at a time.  Many architectures, chip-sets,
-> -or BIOSes do NOT support MSI or MSI-X and the call to pci_enable_msi/msix
-> -will fail. This is important to note since many drivers have
-> -two (or more) interrupt handlers: one for MSI/MSI-X and another for IRQs.
-> -They choose which handler to register with request_irq() based on the
-> -return value from pci_enable_msi/msix().
-> +or BIOSes do NOT support MSI or MSI-X and the call to pci_enable_msi_range()
-> +or pci_enable_msix_range() will fail. This is important to note since many
-> +drivers have two (or more) interrupt handlers: one for MSI/MSI-X and another
-> +for IRQs. They choose which handler to register with request_irq() based on
-> +the return value from pci_enable_msi_range() or pci_enable_msix_range().
->  
->  There are (at least) two really good reasons for using MSI:
->  1) MSI is an exclusive interrupt vector by definition.
-> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-> index 2f7c92c..0df0ce1 100644
-> --- a/drivers/pci/msi.c
-> +++ b/drivers/pci/msi.c
-> @@ -903,58 +903,6 @@ int pci_msix_vec_count(struct pci_dev *dev)
->  }
->  EXPORT_SYMBOL(pci_msix_vec_count);
->  
-> -/**
-> - * pci_enable_msix - configure device's MSI-X capability structure
-> - * @dev: pointer to the pci_dev data structure of MSI-X device function
-> - * @entries: pointer to an array of MSI-X entries
-> - * @nvec: number of MSI-X irqs requested for allocation by device driver
-> - *
-> - * Setup the MSI-X capability structure of device function with the number
-> - * of requested irqs upon its software driver call to request for
-> - * MSI-X mode enabled on its hardware device function. A return of zero
-> - * indicates the successful configuration of MSI-X capability structure
-> - * with new allocated MSI-X irqs. A return of < 0 indicates a failure.
-> - * Or a return of > 0 indicates that driver request is exceeding the number
-> - * of irqs or MSI-X vectors available. Driver should use the returned value to
-> - * re-send its request.
-> - **/
-> -int pci_enable_msix(struct pci_dev *dev, struct msix_entry *entries, int nvec)
-> -{
-> -	int nr_entries;
-> -	int i, j;
-> -
-> -	if (!pci_msi_supported(dev, nvec))
-> -		return -EINVAL;
-> -
-> -	if (!entries)
-> -		return -EINVAL;
-> -
-> -	nr_entries = pci_msix_vec_count(dev);
-> -	if (nr_entries < 0)
-> -		return nr_entries;
-> -	if (nvec > nr_entries)
-> -		return nr_entries;
-> -
-> -	/* Check for any invalid entries */
-> -	for (i = 0; i < nvec; i++) {
-> -		if (entries[i].entry >= nr_entries)
-> -			return -EINVAL;		/* invalid entry */
-> -		for (j = i + 1; j < nvec; j++) {
-> -			if (entries[i].entry == entries[j].entry)
-> -				return -EINVAL;	/* duplicate entry */
-> -		}
-> -	}
-> -	WARN_ON(!!dev->msix_enabled);
-> -
-> -	/* Check whether driver already requested for MSI irq */
-> -	if (dev->msi_enabled) {
-> -		dev_info(&dev->dev, "can't enable MSI-X (MSI IRQ already assigned)\n");
-> -		return -EINVAL;
-> -	}
-> -	return msix_capability_init(dev, entries, nvec);
-> -}
-> -EXPORT_SYMBOL(pci_enable_msix);
-> -
->  void pci_msix_shutdown(struct pci_dev *dev)
->  {
->  	struct msi_desc *entry;
-> @@ -1088,16 +1036,49 @@ EXPORT_SYMBOL(pci_enable_msi_range);
->   * with new allocated MSI-X interrupts.
->   **/
->  int pci_enable_msix_range(struct pci_dev *dev, struct msix_entry *entries,
-> -			       int minvec, int maxvec)
-> +			  int minvec, int maxvec)
->  {
-> -	int nvec = maxvec;
-> +	int i, j;
-> +	int nvec;
->  	int rc;
->  
-> +	if (!pci_msi_supported(dev, minvec))
-> +		return -EINVAL;
-> +
-> +	WARN_ON(!!dev->msix_enabled);
-> +
-> +	/* Check whether driver already requested MSI irqs */
-> +	if (dev->msi_enabled) {
-> +		dev_info(&dev->dev,
-> +			 "can't enable MSI-X (MSI already enabled)\n");
-> +		return -EINVAL;
-> +	}
-> +
->  	if (maxvec < minvec)
->  		return -ERANGE;
-> +	else if (!entries)
-> +		return -EINVAL;
-> +
-> +	nvec = pci_msix_vec_count(dev);
-> +	if (nvec < 0)
-> +		return nvec;
-> +	else if (nvec < minvec)
-> +		return -EINVAL;
-> +	else if (nvec > maxvec)
-> +		nvec = maxvec;
-> +
-> +	/* Check for any invalid entries */
-> +	for (i = 0; i < nvec; i++) {
-> +		if (entries[i].entry >= nvec)
-> +			return -EINVAL;		/* invalid entry */
-> +		for (j = i + 1; j < nvec; j++) {
-> +			if (entries[i].entry == entries[j].entry)
-> +				return -EINVAL;	/* duplicate entry */
-> +		}
-> +	}
->  
->  	do {
-> -		rc = pci_enable_msix(dev, entries, nvec);
-> +		rc = msix_capability_init(dev, entries, nvec);
->  		if (rc < 0) {
->  			return rc;
->  		} else if (rc > 0) {
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index 5be8db4..ad9b5d4 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -1197,7 +1197,6 @@ int pci_msi_vec_count(struct pci_dev *dev);
->  void pci_msi_shutdown(struct pci_dev *dev);
->  void pci_disable_msi(struct pci_dev *dev);
->  int pci_msix_vec_count(struct pci_dev *dev);
-> -int pci_enable_msix(struct pci_dev *dev, struct msix_entry *entries, int nvec);
->  void pci_msix_shutdown(struct pci_dev *dev);
->  void pci_disable_msix(struct pci_dev *dev);
->  void pci_restore_msi_state(struct pci_dev *dev);
-> @@ -1225,9 +1224,6 @@ static inline int pci_msi_vec_count(struct pci_dev *dev) { return -ENOSYS; }
->  static inline void pci_msi_shutdown(struct pci_dev *dev) { }
->  static inline void pci_disable_msi(struct pci_dev *dev) { }
->  static inline int pci_msix_vec_count(struct pci_dev *dev) { return -ENOSYS; }
-> -static inline int pci_enable_msix(struct pci_dev *dev,
-> -				  struct msix_entry *entries, int nvec)
-> -{ return -ENOSYS; }
->  static inline void pci_msix_shutdown(struct pci_dev *dev) { }
->  static inline void pci_disable_msix(struct pci_dev *dev) { }
->  static inline void pci_restore_msi_state(struct pci_dev *dev) { }
-> -- 
-> 1.8.3.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Rafael
+
+
+---
+ drivers/acpi/scan.c         |    2 +
+ drivers/gpio/gpiolib-acpi.c |   80 ++++++++++++++++++++++++++++++++++++++++++--
+ include/acpi/acpi_bus.h     |    1 
+ include/linux/acpi.h        |   15 ++++++++
+ 4 files changed, 96 insertions(+), 2 deletions(-)
+
+Index: linux-pm/include/acpi/acpi_bus.h
+===================================================================
+--- linux-pm.orig/include/acpi/acpi_bus.h
++++ linux-pm/include/acpi/acpi_bus.h
+@@ -355,6 +355,7 @@ struct acpi_device {
+ 	struct list_head node;
+ 	struct list_head wakeup_list;
+ 	struct list_head del_list;
++	struct list_head driver_gpios;
+ 	struct acpi_device_status status;
+ 	struct acpi_device_flags flags;
+ 	struct acpi_device_pnp pnp;
+Index: linux-pm/include/linux/acpi.h
+===================================================================
+--- linux-pm.orig/include/linux/acpi.h
++++ linux-pm/include/linux/acpi.h
+@@ -672,6 +672,21 @@ do {									\
+ #endif
+ #endif
+ 
++#if defined(CONFIG_ACPI) && defined(CONFIG_GPIOLIB)
++int acpi_dev_add_driver_gpio(struct acpi_device *adev, const char *propname,
++			     int entry_index, int pin_index, bool active_low);
++void acpi_dev_remove_driver_gpios(struct acpi_device *adev);
++#else
++static inline int acpi_dev_add_driver_gpio(struct acpi_device *adev,
++					   const char *propname,
++					   int entry_index, int pin_index,
++					   bool active_low)
++{
++	return -ENXIO;
++}
++static inline void acpi_dev_remove_driver_gpios(struct acpi_device *adev) {}
++#endif
++
+ /* Device properties */
+ 
+ #define MAX_ACPI_REFERENCE_ARGS	8
+Index: linux-pm/drivers/gpio/gpiolib-acpi.c
+===================================================================
+--- linux-pm.orig/drivers/gpio/gpiolib-acpi.c
++++ linux-pm/drivers/gpio/gpiolib-acpi.c
+@@ -47,6 +47,16 @@ struct acpi_gpio_chip {
+ 	struct list_head events;
+ };
+ 
++struct acpi_gpio_data {
++	struct list_head item;
++	char *name;
++	int entry_index;
++	int pin_index;
++	bool active_low;
++};
++
++static DEFINE_MUTEX(driver_gpio_data_lock);
++
+ static int acpi_gpiochip_find(struct gpio_chip *gc, void *data)
+ {
+ 	if (!gc->dev)
+@@ -287,6 +297,70 @@ void acpi_gpiochip_free_interrupts(struc
+ 	}
+ }
+ 
++int acpi_dev_add_driver_gpio(struct acpi_device *adev, const char *propname,
++			     int entry_index, int pin_index, bool active_low)
++{
++	struct acpi_gpio_data *gd;
++
++	if (!propname)
++		return -EINVAL;
++
++	gd = kzalloc(sizeof(*gd), GFP_KERNEL);
++	if (!gd)
++		return -ENOMEM;
++
++	gd->name = kstrdup(propname, GFP_KERNEL);
++	if (!gd->name) {
++		kfree(gd);
++		return -ENOMEM;
++	}
++	gd->entry_index = entry_index;
++	gd->pin_index = pin_index;
++	gd->active_low = active_low;
++
++	mutex_lock(&driver_gpio_data_lock);
++	list_add_tail(&gd->item, &adev->driver_gpios);
++	mutex_unlock(&driver_gpio_data_lock);
++
++	return 0;
++}
++
++void acpi_dev_remove_driver_gpios(struct acpi_device *adev)
++{
++	struct acpi_gpio_data *gd, *next;
++
++	mutex_lock(&driver_gpio_data_lock);
++	list_for_each_entry_safe(gd, next, &adev->driver_gpios, item) {
++		list_del(&gd->item);
++		kfree(gd->name);
++		kfree(gd);
++	}
++	mutex_unlock(&driver_gpio_data_lock);
++}
++
++static bool acpi_get_driver_gpio_data(struct acpi_device *adev,
++				      const char *name,
++				      struct acpi_reference_args *args)
++{
++	struct acpi_gpio_data *gd;
++
++	mutex_lock(&driver_gpio_data_lock);
++
++	list_for_each_entry(gd, &adev->driver_gpios, item)
++		if (!strcmp(name, gd->name)) {
++			args->adev = adev;
++			args->args[0] = gd->entry_index;
++			args->args[1] = gd->pin_index;
++			args->args[2] = gd->active_low;
++			args->nargs = 3;
++			return true;
++		}
++
++	mutex_unlock(&driver_gpio_data_lock);
++
++	return false;
++}
++
+ struct acpi_gpio_lookup {
+ 	struct acpi_gpio_info info;
+ 	int index;
+@@ -372,8 +446,10 @@ struct gpio_desc *acpi_get_gpiod_by_inde
+ 		memset(&args, 0, sizeof(args));
+ 		ret = acpi_dev_get_property_reference(adev, propname, NULL,
+ 						      index, &args);
+-		if (ret)
+-			return ERR_PTR(ret);
++		if (ret) {
++			if (!acpi_get_driver_gpio_data(adev, propname, &args))
++				return ERR_PTR(ret);
++		}
+ 
+ 		/*
+ 		 * The property was found and resolved so need to
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -1284,6 +1284,7 @@ int acpi_device_add(struct acpi_device *
+ 	INIT_LIST_HEAD(&device->wakeup_list);
+ 	INIT_LIST_HEAD(&device->physical_node_list);
+ 	INIT_LIST_HEAD(&device->del_list);
++	INIT_LIST_HEAD(&device->driver_gpios);
+ 	mutex_init(&device->physical_node_lock);
+ 
+ 	new_bus_id = kzalloc(sizeof(struct acpi_device_bus_id), GFP_KERNEL);
+@@ -2354,6 +2355,7 @@ void acpi_bus_trim(struct acpi_device *a
+ 	} else {
+ 		device_release_driver(&adev->dev);
+ 	}
++	acpi_dev_remove_driver_gpios(adev);
+ 	/*
+ 	 * Most likely, the device is going away, so put it into D3cold before
+ 	 * that.
+
