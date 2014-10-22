@@ -1,134 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932249AbaJVB3B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 21:29:01 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:33342 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754110AbaJVB3A (ORCPT
+	id S1753844AbaJVBcW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 21:32:22 -0400
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:46070 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751120AbaJVBcV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 21:29:00 -0400
-X-Original-SENDERIP: 10.177.226.38
-X-Original-MAILFROM: karam.lee@lge.com
-Date: Wed, 22 Oct 2014 10:28:57 +0900
-From: "karam.lee" <karam.lee@lge.com>
-To: Jerome Marchand <jmarchan@redhat.com>
-Cc: minchan@kernel.org, ngupta@vflare.org, linux-kernel@vger.kernel.org,
-        matthew.r.wilcox@intel.com, seungho1.park@lge.com
-Subject: Re: [PATCH v3 3/3] zram: implement rw_page operation of zram
-Message-ID: <20141022012857.GA13264@caribbean.org>
-References: <1413876458-19279-1-git-send-email-karam.lee@lge.com>
- <1413876458-19279-4-git-send-email-karam.lee@lge.com>
- <54466649.901@redhat.com>
+	Tue, 21 Oct 2014 21:32:21 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: Dan Streetman <ddstreet@ieee.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Tue, 21 Oct 2014 18:32:14 -0700
+Subject: RE: [PATCH] drivers: base: update cpu offline info when do hotplug
+Thread-Topic: [PATCH] drivers: base: update cpu offline info when do hotplug
+Thread-Index: Ac/tL2X6syb3st2tRYiUcvvzdBTiTQAaE6aw
+Message-ID: <9034CBD80F070943B59700D7F8149ED9024EB81E00@SC-VEXCH4.marvell.com>
+References: <1413775748-22478-1-git-send-email-zhangwm@marvell.com>
+ <CALZtONB-qX-qL4BnCxadhKc6v60mNtrv8UxinhEwehtiff6S3g@mail.gmail.com>
+In-Reply-To: <CALZtONB-qX-qL4BnCxadhKc6v60mNtrv8UxinhEwehtiff6S3g@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54466649.901@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-10-22_01:2014-10-21,2014-10-21,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1410220014
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9M1WR9n003675
 
-On Tue, Oct 21, 2014 at 03:57:29PM +0200, Jerome Marchand wrote:
-> On 10/21/2014 09:27 AM, karam.lee@lge.com wrote:
-> > From: "karam.lee" <karam.lee@lge.com>
-> > 
-> > This patch implements rw_page operation for zram block device.
-> > 
-> > I implemented the feature in zram and tested it.
-> > Test bed was the G2, LG electronic mobile device, whtich has msm8974
-> > processor and 2GB memory.
-> > With a memory allocation test program consuming memory, the system
-> > generates swap.
-> > And operating time of swap_write_page() was measured.
-> > 
-> > --------------------------------------------------
-> > |             |   operating time   | improvement |
-> > |             |  (20 runs average) |             |
-> > --------------------------------------------------
-> > |with patch   |    1061.15 us      |    +2.4%    |
-> > --------------------------------------------------
-> > |without patch|    1087.35 us      |             |
-> > --------------------------------------------------
-> > 
-> > Each test(with paged_io,with BIO) result set shows normal distribution
-> > and has equal variance.
-> > I mean the two values are valid result to compare.
-> > I can say operation with paged I/O(without BIO) is faster 2.4% with
-> > confidence level 95%.
-> > 
-> > Signed-off-by: karam.lee <karam.lee@lge.com>
+Dan,
+
+> -----Original Message-----
+> From: ddstreet@gmail.com [mailto:ddstreet@gmail.com] On Behalf Of Dan
+> Streetman
+> Sent: 2014å¹´10æœˆ21æ—¥ 21:03
+> To: Neil Zhang
+> Cc: linux-kernel; Greg Kroah-Hartman
+> Subject: Re: [PATCH] drivers: base: update cpu offline info when do hotplug
+> 
+> On Sun, Oct 19, 2014 at 11:29 PM, Neil Zhang <zhangwm@marvell.com> wrote:
+> > The current per-cpu offline info won't be updated if it is hotplugged
+> > in/out by a kernel governer.
+> > Let's update it via cpu notifier.
+> >
+> > Signed-off-by: Neil Zhang <zhangwm@marvell.com>
 > > ---
-> >  drivers/block/zram/zram_drv.c |   38 ++++++++++++++++++++++++++++++++++++++
-> >  1 file changed, 38 insertions(+)
-> > 
-> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> > index 4565fdc..696f0b5 100644
-> > --- a/drivers/block/zram/zram_drv.c
-> > +++ b/drivers/block/zram/zram_drv.c
-> > @@ -810,8 +810,46 @@ static void zram_slot_free_notify(struct block_device *bdev,
-> >  	atomic64_inc(&zram->stats.notify_free);
-> >  }
-> >  
-> > +static int zram_rw_page(struct block_device *bdev, sector_t sector,
-> > +		       struct page *page, int rw)
-> > +{
-> > +	int offset, ret = 1;
+> >  drivers/base/cpu.c |   25 +++++++++++++++++++++++++
+> >  1 file changed, 25 insertions(+)
+> >
+> > diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c index
+> > 006b1bc..9d61824 100644
+> > --- a/drivers/base/cpu.c
+> > +++ b/drivers/base/cpu.c
+> > @@ -418,10 +418,35 @@ static void __init
+> > cpu_dev_register_generic(void)  #endif  }
+> >
+> > +static int device_hotplug_notifier(struct notifier_block *nfb,
+> > +                                     unsigned long action, void
+> > +*hcpu) {
+> > +       unsigned int cpu = (unsigned long)hcpu;
+> > +       struct device *dev = get_cpu_device(cpu);
+> > +       int ret;
+> > +
+> > +       switch (action & ~CPU_TASKS_FROZEN) {
+> > +       case CPU_ONLINE:
+> > +               dev->offline = false;
+> > +               ret = NOTIFY_OK;
+> > +               break;
+> > +       case CPU_DYING:
+> > +               dev->offline = true;
 > 
-> Small nitpick, but why do you initialize ret to 1? It doesn't seem to be
-> ever used (nor is 1 a valid return value AFAICT).
+> one thing i just thought of here, since dev->offline is getting set here, can
+> you remove it being set in drivers/base/core.c at
+> device_online() and device_offline() ?  That's probably redundant now right?
+
+Yes, I ever thought about it.
+But I'm not sure whether some other devices (such as memory) will use it later too.
+So I still kept it there since seems won't cause any problem.
+
 > 
-> It otherwise looks good.
 > 
-> Acked-by: Jerome Marchand <jmarchan@redhat.com>
-> 
-
-Thank you for reply. I agree with your opinion.
-
-It was my mistake to initialize ret to 1.
-
-I will resend the fixed version.
-
-> > +	u32 index;
-> > +	struct zram *zram;
-> > +	struct bio_vec bv;
+> > +               ret = NOTIFY_OK;
+> > +               break;
+> > +       default:
+> > +               ret = NOTIFY_DONE;
+> > +               break;
+> > +       }
 > > +
-> > +	zram = bdev->bd_disk->private_data;
-> > +	if (!valid_io_request(zram, sector, PAGE_SIZE)) {
-> > +		atomic64_inc(&zram->stats.invalid_io);
-> > +		ret = -EINVAL;
-> > +		goto out;
-> > +	}
-> > +
-> > +	down_read(&zram->init_lock);
-> > +	if (unlikely(!init_done(zram))) {
-> > +		ret = -ENOMEM;
-> > +		goto out_unlock;
-> > +	}
-> > +
-> > +	index = sector >> SECTORS_PER_PAGE_SHIFT;
-> > +	offset = sector & (SECTORS_PER_PAGE - 1) << SECTOR_SHIFT;
-> > +
-> > +	bv.bv_page = page;
-> > +	bv.bv_len = PAGE_SIZE;
-> > +	bv.bv_offset = 0;
-> > +
-> > +	ret = zram_bvec_rw(zram, &bv, index, offset, rw);
-> > +
-> > +out_unlock:
-> > +	up_read(&zram->init_lock);
-> > +out:
-> > +	page_endio(page, rw, ret);
-> > +	return ret;
+> > +       return ret;
 > > +}
 > > +
-> >  static const struct block_device_operations zram_devops = {
-> >  	.swap_slot_free_notify = zram_slot_free_notify,
-> > +	.rw_page = zram_rw_page,
-> >  	.owner = THIS_MODULE
-> >  };
-> >  
-> > 
-> 
-> 
+> >  void __init cpu_dev_init(void)
+> >  {
+> >         if (subsys_system_register(&cpu_subsys, cpu_root_attr_groups))
+> >                 panic("Failed to register CPU subsystem");
+> >
+> >         cpu_dev_register_generic();
+> > +       cpu_notifier(device_hotplug_notifier, 0);
+> >  }
+> > --
+> > 1.7.9.5
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe
+> > linux-kernel" in the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
 
-
+Best Regards,
+Neil Zhang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
