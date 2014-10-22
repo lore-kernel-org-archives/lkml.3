@@ -1,169 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932987AbaJVLIo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 07:08:44 -0400
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:46510 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932824AbaJVLIj (ORCPT
+	id S933112AbaJVLJq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 07:09:46 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:59507 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932990AbaJVLJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 07:08:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <87ioje2ggq.fsf@x220.int.ebiederm.org>
-References: <1401975635-6162-1-git-send-email-drysdale@google.com>
- <CALCETrVraoD+r4zxBoGd+BV5P275AXcRV_R00SSr8fjQzRHnUg@mail.gmail.com>
- <87zjcszz8y.fsf@x220.int.ebiederm.org> <CAHse=S-Xyk7CFn=tAGzo+tuUFt+04aBw+mGQmi=kWAaBJGALBw@mail.gmail.com>
- <CALCETrXBjLZTWVJfcsE4NA-JP9zSSgn=6ND0=cZ9BTy=CoN7pA@mail.gmail.com> <87ioje2ggq.fsf@x220.int.ebiederm.org>
-From: David Drysdale <drysdale@google.com>
-Date: Wed, 22 Oct 2014 12:08:17 +0100
-Message-ID: <CAHse=S_dpm8Do-H01Bo49a9TdYw+pSDzYomLOrBsYEcdO=Pytw@mail.gmail.com>
-Subject: Re: [PATCHv4 RESEND 0/3] syscalls,x86: Add execveat() system call
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
-        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 22 Oct 2014 07:09:39 -0400
+From: Dominik Dingel <dingel@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Bob Liu <lliubbo@gmail.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Gleb Natapov <gleb@kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Jianyu Zhan <nasa4836@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        kvm@vger.kernel.org, linux390@de.ibm.com, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Dominik Dingel <dingel@linux.vnet.ibm.com>
+Subject: [PATCH 1/4] s390/mm: recfactor global pgste updates
+Date: Wed, 22 Oct 2014 13:09:27 +0200
+Message-Id: <1413976170-42501-2-git-send-email-dingel@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.5.5
+In-Reply-To: <1413976170-42501-1-git-send-email-dingel@linux.vnet.ibm.com>
+References: <1413976170-42501-1-git-send-email-dingel@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102211-0029-0000-0000-0000014CFFA7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 5:29 AM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> Andy Lutomirski <luto@amacapital.net> writes:
->
->> On Mon, Oct 20, 2014 at 6:48 AM, David Drysdale <drysdale@google.com> wrote:
->>> On Sun, Oct 19, 2014 at 1:20 AM, Eric W. Biederman
->>> <ebiederm@xmission.com> wrote:
->>>> Andy Lutomirski <luto@amacapital.net> writes:
->>>>
->>>>> [Added Eric Biederman, since I think your tree might be a reasonable
->>>>> route forward for these patches.]
->>>>>
->>>>> On Thu, Jun 5, 2014 at 6:40 AM, David Drysdale <drysdale@google.com> wrote:
->>>>>> Resending, adding cc:linux-api.
->>>>>>
->>>>>> Also, it may help to add a little more background -- this patch is
->>>>>> needed as a (small) part of implementing Capsicum in the Linux kernel.
->>>>>>
->>>>>> Capsicum is a security framework that has been present in FreeBSD since
->>>>>> version 9.0 (Jan 2012), and is based on concepts from object-capability
->>>>>> security [1].
->>>>>>
->>>>>> One of the features of Capsicum is capability mode, which locks down
->>>>>> access to global namespaces such as the filesystem hierarchy.  In
->>>>>> capability mode, /proc is thus inaccessible and so fexecve(3) doesn't
->>>>>> work -- hence the need for a kernel-space
->>>>>
->>>>> I just found myself wanting this syscall for another reason: injecting
->>>>> programs into sandboxes or otherwise heavily locked-down namespaces.
->>>>>
->>>>> For example, I want to be able to reliably do something like nsenter
->>>>> --namespace-flags-here toybox sh.  Toybox's shell is unusual in that
->>>>> it is more or less fully functional, so this should Just Work (tm),
->>>>> except that the toybox binary might not exist in the namespace being
->>>>> entered.  If execveat were available, I could rig nsenter or a similar
->>>>> tool to open it with O_CLOEXEC, enter the namespace, and then call
->>>>> execveat.
->>>>>
->>>>> Is there any reason that these patches can't be merged more or less as
->>>>> is for 3.19?
->>>>
->>>> Yes.  There is a silliness in how it implements fexecve.  The fexecve
->>>> case should be use the empty string "" not a NULL pointer to indication
->>>> that.  That change will then harmonize execveat with the other ...at
->>>> system calls and simplify the code and remove a special case.  I believe
->>>> using the empty string "" requires implementing the AT_EMPTY_PATH flag.
->>>
->>> Good point -- I'll shift to "" + AT_EMPTY_PATH.
->>
->> Pending a better idea, I would also see if the patches can be changed
->> to return an error if d_path ends up with an "(unreachable)" thing
->> rather than failing inexplicably later on.
->
-> For my reference we are talking about
->
->> @@ -1489,7 +1524,21 @@ static int do_execve_common(struct filename *filename,
->>       sched_exec();
->>
->>       bprm->file = file;
->> -     bprm->filename = bprm->interp = filename->name;
->> +     if (filename && fd == AT_FDCWD) {
->> +             bprm->filename = filename->name;
->> +     } else {
->> +             pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
->> +             if (!pathbuf) {
->> +                     retval = -ENOMEM;
->> +                     goto out_unmark;
->> +             }
->> +             bprm->filename = d_path(&file->f_path, pathbuf, PATH_MAX);
->> +             if (IS_ERR(bprm->filename)) {
->> +                     retval = PTR_ERR(bprm->filename);
->> +                     goto out_unmark;
->> +             }
->> +     }
->> +     bprm->interp = bprm->filename;
->>
->>       retval = bprm_mm_init(bprm);
->>       if (retval)
->
-> The interesting case for fexecve is when we either don't know what files
-> are present or we don't want to depend on which files are present.
->
-> As Al pointed out d_path really isn't the right solution.  It fails when
-> printing /proc/self/fd/${fd}/${filename->name} would work, and the
-> "(deleted)" or "(unreachable)" strings are wrong.
->
-> The test for today's cases should be:
-> if ((filename->name[0] == '/') || fd == AT_FDCWD) {
->         bprm->filename = filename->name;
-> }
->
-> To handle the case where the file descriptor is relevant.
-(s/relevant/irrelevant)
+Replace the s390 specific page table walker for the pgste updates
+with a call to the common code walk_page_range function.
+There are now two pte modification functions, one for the reset
+of the CMMA state and another one for the initialization of the
+storage keys.
 
-Yep, good spot.
+Signed-off-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
+---
+ arch/s390/include/asm/pgalloc.h |   2 -
+ arch/s390/include/asm/pgtable.h |   1 +
+ arch/s390/kvm/kvm-s390.c        |   2 +-
+ arch/s390/mm/pgtable.c          | 153 ++++++++++++++--------------------------
+ 4 files changed, 56 insertions(+), 102 deletions(-)
 
-> For the case where the file descriptor is relevant let me suggest
-> setting bprm->filename and bprm->interp to:
->
-> /dev/fd/${fd}/${filename->name}
+diff --git a/arch/s390/include/asm/pgalloc.h b/arch/s390/include/asm/pgalloc.h
+index 9e18a61..120e126 100644
+--- a/arch/s390/include/asm/pgalloc.h
++++ b/arch/s390/include/asm/pgalloc.h
+@@ -22,8 +22,6 @@ unsigned long *page_table_alloc(struct mm_struct *, unsigned long);
+ void page_table_free(struct mm_struct *, unsigned long *);
+ void page_table_free_rcu(struct mmu_gather *, unsigned long *);
+ 
+-void page_table_reset_pgste(struct mm_struct *, unsigned long, unsigned long,
+-			    bool init_skey);
+ int set_guest_storage_key(struct mm_struct *mm, unsigned long addr,
+ 			  unsigned long key, bool nq);
+ 
+diff --git a/arch/s390/include/asm/pgtable.h b/arch/s390/include/asm/pgtable.h
+index 5efb2fe..1e991f6a 100644
+--- a/arch/s390/include/asm/pgtable.h
++++ b/arch/s390/include/asm/pgtable.h
+@@ -1750,6 +1750,7 @@ extern int vmem_add_mapping(unsigned long start, unsigned long size);
+ extern int vmem_remove_mapping(unsigned long start, unsigned long size);
+ extern int s390_enable_sie(void);
+ extern void s390_enable_skey(void);
++extern void s390_reset_cmma(struct mm_struct *mm);
+ 
+ /*
+  * No page table caches to initialise
+diff --git a/arch/s390/kvm/kvm-s390.c b/arch/s390/kvm/kvm-s390.c
+index 81b0e11..7a33c11 100644
+--- a/arch/s390/kvm/kvm-s390.c
++++ b/arch/s390/kvm/kvm-s390.c
+@@ -281,7 +281,7 @@ static int kvm_s390_mem_control(struct kvm *kvm, struct kvm_device_attr *attr)
+ 	case KVM_S390_VM_MEM_CLR_CMMA:
+ 		mutex_lock(&kvm->lock);
+ 		idx = srcu_read_lock(&kvm->srcu);
+-		page_table_reset_pgste(kvm->arch.gmap->mm, 0, TASK_SIZE, false);
++		s390_reset_cmma(kvm->arch.gmap->mm);
+ 		srcu_read_unlock(&kvm->srcu, idx);
+ 		mutex_unlock(&kvm->lock);
+ 		ret = 0;
+diff --git a/arch/s390/mm/pgtable.c b/arch/s390/mm/pgtable.c
+index 5404a62..ab55ba8 100644
+--- a/arch/s390/mm/pgtable.c
++++ b/arch/s390/mm/pgtable.c
+@@ -885,99 +885,6 @@ static inline void page_table_free_pgste(unsigned long *table)
+ 	__free_page(page);
+ }
+ 
+-static inline unsigned long page_table_reset_pte(struct mm_struct *mm, pmd_t *pmd,
+-			unsigned long addr, unsigned long end, bool init_skey)
+-{
+-	pte_t *start_pte, *pte;
+-	spinlock_t *ptl;
+-	pgste_t pgste;
+-
+-	start_pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
+-	pte = start_pte;
+-	do {
+-		pgste = pgste_get_lock(pte);
+-		pgste_val(pgste) &= ~_PGSTE_GPS_USAGE_MASK;
+-		if (init_skey) {
+-			unsigned long address;
+-
+-			pgste_val(pgste) &= ~(PGSTE_ACC_BITS | PGSTE_FP_BIT |
+-					      PGSTE_GR_BIT | PGSTE_GC_BIT);
+-
+-			/* skip invalid and not writable pages */
+-			if (pte_val(*pte) & _PAGE_INVALID ||
+-			    !(pte_val(*pte) & _PAGE_WRITE)) {
+-				pgste_set_unlock(pte, pgste);
+-				continue;
+-			}
+-
+-			address = pte_val(*pte) & PAGE_MASK;
+-			page_set_storage_key(address, PAGE_DEFAULT_KEY, 1);
+-		}
+-		pgste_set_unlock(pte, pgste);
+-	} while (pte++, addr += PAGE_SIZE, addr != end);
+-	pte_unmap_unlock(start_pte, ptl);
+-
+-	return addr;
+-}
+-
+-static inline unsigned long page_table_reset_pmd(struct mm_struct *mm, pud_t *pud,
+-			unsigned long addr, unsigned long end, bool init_skey)
+-{
+-	unsigned long next;
+-	pmd_t *pmd;
+-
+-	pmd = pmd_offset(pud, addr);
+-	do {
+-		next = pmd_addr_end(addr, end);
+-		if (pmd_none_or_clear_bad(pmd))
+-			continue;
+-		next = page_table_reset_pte(mm, pmd, addr, next, init_skey);
+-	} while (pmd++, addr = next, addr != end);
+-
+-	return addr;
+-}
+-
+-static inline unsigned long page_table_reset_pud(struct mm_struct *mm, pgd_t *pgd,
+-			unsigned long addr, unsigned long end, bool init_skey)
+-{
+-	unsigned long next;
+-	pud_t *pud;
+-
+-	pud = pud_offset(pgd, addr);
+-	do {
+-		next = pud_addr_end(addr, end);
+-		if (pud_none_or_clear_bad(pud))
+-			continue;
+-		next = page_table_reset_pmd(mm, pud, addr, next, init_skey);
+-	} while (pud++, addr = next, addr != end);
+-
+-	return addr;
+-}
+-
+-void page_table_reset_pgste(struct mm_struct *mm, unsigned long start,
+-			    unsigned long end, bool init_skey)
+-{
+-	unsigned long addr, next;
+-	pgd_t *pgd;
+-
+-	down_write(&mm->mmap_sem);
+-	if (init_skey && mm_use_skey(mm))
+-		goto out_up;
+-	addr = start;
+-	pgd = pgd_offset(mm, addr);
+-	do {
+-		next = pgd_addr_end(addr, end);
+-		if (pgd_none_or_clear_bad(pgd))
+-			continue;
+-		next = page_table_reset_pud(mm, pgd, addr, next, init_skey);
+-	} while (pgd++, addr = next, addr != end);
+-	if (init_skey)
+-		current->mm->context.use_skey = 1;
+-out_up:
+-	up_write(&mm->mmap_sem);
+-}
+-EXPORT_SYMBOL(page_table_reset_pgste);
+-
+ int set_guest_storage_key(struct mm_struct *mm, unsigned long addr,
+ 			  unsigned long key, bool nq)
+ {
+@@ -1044,11 +951,6 @@ static inline unsigned long *page_table_alloc_pgste(struct mm_struct *mm,
+ 	return NULL;
+ }
+ 
+-void page_table_reset_pgste(struct mm_struct *mm, unsigned long start,
+-			    unsigned long end, bool init_skey)
+-{
+-}
+-
+ static inline void page_table_free_pgste(unsigned long *table)
+ {
+ }
+@@ -1400,13 +1302,66 @@ EXPORT_SYMBOL_GPL(s390_enable_sie);
+  * Enable storage key handling from now on and initialize the storage
+  * keys with the default key.
+  */
++static int __s390_enable_skey(pte_t *pte, unsigned long addr,
++			      unsigned long next, struct mm_walk *walk)
++{
++	unsigned long ptev;
++	pgste_t pgste;
++
++	pgste = pgste_get_lock(pte);
++	/* Clear storage key */
++	pgste_val(pgste) &= ~(PGSTE_ACC_BITS | PGSTE_FP_BIT |
++			      PGSTE_GR_BIT | PGSTE_GC_BIT);
++	ptev = pte_val(*pte);
++	if (!(ptev & _PAGE_INVALID) && (ptev & _PAGE_WRITE))
++		page_set_storage_key(ptev & PAGE_MASK, PAGE_DEFAULT_KEY, 1);
++	pgste_set_unlock(pte, pgste);
++	return 0;
++}
++
+ void s390_enable_skey(void)
+ {
+-	page_table_reset_pgste(current->mm, 0, TASK_SIZE, true);
++	struct mm_walk walk = { .pte_entry = __s390_enable_skey };
++	struct mm_struct *mm = current->mm;
++
++	down_write(&mm->mmap_sem);
++	if (mm_use_skey(mm))
++		goto out_up;
++	walk.mm = mm;
++	walk_page_range(0, TASK_SIZE, &walk);
++	mm->context.use_skey = 1;
++
++out_up:
++	up_write(&mm->mmap_sem);
+ }
+ EXPORT_SYMBOL_GPL(s390_enable_skey);
+ 
+ /*
++ * Reset CMMA state, make all pages stable again.
++ */
++static int __s390_reset_cmma(pte_t *pte, unsigned long addr,
++			     unsigned long next, struct mm_walk *walk)
++{
++	pgste_t pgste;
++
++	pgste = pgste_get_lock(pte);
++	pgste_val(pgste) &= ~_PGSTE_GPS_USAGE_MASK;
++	pgste_set_unlock(pte, pgste);
++	return 0;
++}
++
++void s390_reset_cmma(struct mm_struct *mm)
++{
++	struct mm_walk walk = { .pte_entry = __s390_reset_cmma };
++
++	down_write(&mm->mmap_sem);
++	walk.mm = mm;
++	walk_page_range(0, TASK_SIZE, &walk);
++	up_write(&mm->mmap_sem);
++}
++EXPORT_SYMBOL_GPL(s390_reset_cmma);
++
++/*
+  * Test and reset if a guest page is dirty
+  */
+ bool gmap_test_and_clear_dirty(unsigned long address, struct gmap *gmap)
+-- 
+1.8.5.5
 
-I'll send out an updated patchset with this approach, but I have a slight
-reservation. Given that /dev/fd is a symlink to /proc/self/fd, this approach
-means that script invocations will always fail on a /proc-less system,
-where the previous iteration might have worked.
-
-(As it happens, this isn't a restriction that affects the things I'm
-working on, as Capsicum wouldn't allow script invocation anyway.
-However, scenarios without /proc were nominally one of the motivating
-factors for execveat in the first place...)
-
-> It is more a description of what we have done but as a magic string it
-> is descriptive.  Documetation/devices.txt documents that /dev/fd/ should
-> exist, making it an unambiguous path.  Further these days the kernel
-> sets the device naming policy in dev, so I think we are strongly safe in
-> using that path in any event.
->
-> I think execveat is interesting in the kernel because the motivating
-> cases are the cases where anything except a static executable is
-> uninteresting.
-
-FYI, there is potential in the future for something other than static
-executables -- the FreeBSD Capsicum implementation includes changes
-to the dynamic linker to get its search path as a list of pre-opened dfds
-(in LD_LIBRARY_PATH_FDS) rather than paths.
-
-> Now it has been suggested creating a dupfs or a mini-proc.  I think that
-> sounds like a nice companion, to the concept of a locked down root.
-> But I don't think it removes the need for execveat (because we still
-> have the case where we don't want to care what is mounted, and are happy
-> to use static executables).
->
-> Eric
->
