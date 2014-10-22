@@ -1,147 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751737AbaJVNWE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 09:22:04 -0400
-Received: from 8bytes.org ([81.169.241.247]:35881 "EHLO theia.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751360AbaJVNWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 09:22:01 -0400
-Date: Wed, 22 Oct 2014 15:21:58 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        "Hoemann, Jerry" <jerry.hoemann@hp.com>,
-        Takao Indoh <indou.takao@jp.fujitsu.com>, Baoquan He <bhe@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
-        doug.hatch@hp.com,
-        "ishii.hironobu@jp.fujitsu.com" <ishii.hironobu@jp.fujitsu.com>,
-        zhenhua@hp.com, Zhen-Hua <zhen-hual@hp.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Vaden, Tom L (HP Server OS Architecture)" <tom.vaden@hp.com>
-Subject: Re: [PATCH 0/8] iommu/vt-d: Fix crash dump failure caused by legacy
- DMA/IO
-Message-ID: <20141022132158.GD10074@8bytes.org>
-References: <1398386198-19304-1-git-send-email-bill.sumner@hp.com>
- <1398854973.12733.23.camel@i7.infradead.org>
- <20140702133258.GN26537@8bytes.org>
- <CAErSpo69VmK5zD-ztNVHCA=KrK8zucqubY17z0K3rcpe6ReNUA@mail.gmail.com>
+	id S1751580AbaJVNXn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 09:23:43 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:37062 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827AbaJVNXl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 09:23:41 -0400
+Message-ID: <5447AFB2.4010701@roeck-us.net>
+Date: Wed, 22 Oct 2014 06:22:58 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo69VmK5zD-ztNVHCA=KrK8zucqubY17z0K3rcpe6ReNUA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: =?UTF-8?B?UGhpbGlwcGUgUsOpdG9ybmF6?= <philippe.retornaz@gmail.com>,
+        linux-kernel@vger.kernel.org
+CC: linux-pm@vger.kernel.org, Alan Cox <gnomes@lxorguk.ukuu.org.uk>,
+        Alexander Graf <agraf@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Heiko Stuebner <heiko@sntech.de>, Lee Jones <lee.jones@linaro.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Romain Perier <romain.perier@gmail.com>
+Subject: Re: [PATCH v2 01/47] kernel: Add support for poweroff handler call
+ chain
+References: <1413864783-3271-1-git-send-email-linux@roeck-us.net> <1413864783-3271-2-git-send-email-linux@roeck-us.net> <54460140.50805@gmail.com> <54465FBA.8070007@roeck-us.net> <544764B1.9020303@gmail.com>
+In-Reply-To: <544764B1.9020303@gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020205.5447AFDD.0064,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 12
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn,
+On 10/22/2014 01:02 AM, Philippe Rétornaz wrote:
+> Le 21/10/2014 15:29, Guenter Roeck a écrit :
+>> On 10/20/2014 11:46 PM, Philippe Rétornaz wrote:
+>>> Hello
+>>>
+>>> [...]
+>>>> - Use raw notifiers protected by spinlocks instead of atomic notifiers
+>>> [...]
+>>>
+>>>> +/**
+>>>> + *    do_kernel_power_off - Execute kernel poweroff handler call chain
+>>>> + *
+>>>> + *    Calls functions registered with register_power_off_handler.
+>>>> + *
+>>>> + *    Expected to be called from machine_power_off as last step of
+>>>> + *    the poweroff sequence.
+>>>> + *
+>>>> + *    Powers off the system immediately if a poweroff handler function
+>>>> + *    has been registered. Otherwise does nothing.
+>>>> + */
+>>>> +void do_kernel_power_off(void)
+>>>> +{
+>>>> +    spin_lock(&power_off_handler_lock);
+>>>> +    raw_notifier_call_chain(&power_off_handler_list, 0, NULL);
+>>>> +    spin_unlock(&power_off_handler_lock);
+>>>> +}
+>>>
+>>> I don't get it. You are still in atomic context inside the poweroff
+>>> callback
+>>> since you lock it with a spinlock.
+> [...]
+>>>
+>>> Why not using the blocking_notifier_* family ?
+>>> It will lock with a read-write semaphore under which you can sleep.
+>>>
+>>> For instance, twl4030_power_off will sleep, since it is doing I2C access.
+>>> So you cannot call it in atomic context.
+>>>
+>>
+>> Learning something new all the time. I assumed that spin_lock (unlike
+>> spin_lock_irqsafe) would not run in atomic context.
+>>
+>> I did not want to use a sleeping lock because I am not sure if that
+>> works for all architectures; some disable (local) interrupts before
+>> calling the function (eg arm and arm64), and I don't want to change
+>> that semantics.
+>
+> You're right and it even disable all others CPUs (if any).
+> I don't understand why it needs to disable local interrupts since the
+> code path to pm_power_off is simply doing:
+>
+> syscall -> migrate to reboot cpu -> disable local interrupt -> disable others cpu -> pm_power_off().
+>
+> I don't understand why we cannot re-enable interrupts right before pm_power_off().
+> And it looks like that all pm_power_off callbacks which can sleep are broken.
+> I still wonder how i2c communication can works without local interrupts ... it looks
+> like somebody is re-enabling them (or the code was never run)
+>
+Good question. Or the code was never run under arm, or the drivers have a polling
+fallback if interrupts are disabled.
 
-On Tue, Oct 21, 2014 at 08:16:46PM -0600, Bjorn Helgaas wrote:
-> I was looking at Zhen-Hua's recent patches, trying to figure out if I
-> need to do anything with them.  Resetting devices in the old kernel
-> seems like a non-starter.  Resetting devices in the new kernel, ...,
-> well, maybe.  It seems ugly, and it seems like the sort of problem
-> that IOMMUs are designed to solve.
+>> I have another idea how to get there without changing the lock situation
+>> while executing the call chain - just set a flag indicating that it is
+>> running and execute it without lock. Would that work ?
+>
+> I don't think inventing a new locking mechanism is a good solution.
+> We need first to know for sure if we can sleep or not in pm_power_off.
+> If yes then we need to re-enable local interrupts and we can use a mutex.
+> If not then the atomic notifier is fine and a lots of drivers are wrong.
+>
 
-Actually resetting the devices in the kdump kernel would be one of the
-better solutions for this problem. When we have a generic way to stop
-all in-flight DMA from the PCI endpoints we could safely disable and
-then re-enable the IOMMU.
+I had another look into the kernel, checking all the callers of machine_power_off().
+In some cases, the function is called directly from interrupt handlers, meaning
+there is no guarantee that interrupts are enabled to start with when it is called.
+So there is more to fix if the semantics of pm_power_off requires interrupts
+to be enabled.
 
-> On Wed, Jul 2, 2014 at 7:32 AM, Joerg Roedel <joro@8bytes.org> wrote:
-> > That is a solution to prevent the in-flight DMA failures. But what
-> > happens when there is some in-flight DMA to a disk to write some inodes
-> > or a new superblock. Then this scratch address-space may cause
-> > filesystem corruption at worst.
-> 
-> This in-flight DMA is from a device programmed by the old kernel, and
-> it would be reading data from the old kernel's buffers.  I think
-> you're suggesting that we might want that DMA read to complete so the
-> device can update filesystem metadata?
+My current solution is to use a spinlock with disabled interrupts during
+poweroff handler registration and unregistration, and no lock at all while
+executing the call chain. That is not perfect, but it retains the current
+situation and thus guarantees that existing code works as before. This
+disconnects the sleep vs. no sleep problem from the current patch series,
+and we can solve that problem separately.
 
-Well, it is not about updating filesystem metadata. In the kdump kernel
-we have these options:
-
-	1) Disable the IOMMU. Problem here is, that DMA is now
-	   untranslated, so that any in-flight DMA might read or write
-	   from a random location in memory, corrupting the kdump or
-	   even the new kexec kernel memory. So this is a non-starter.
-
-	2) Re-program the IOMMU to block all DMA. This is safer as it
-	   does not corrupt any data in memory. But some devices react
-	   very poorly on a master abort from the IOMMU, so bad that the
-	   driver in the kdump kernel fails to initialize that device.
-	   In this case taking dump itself might fail (and often does,
-	   according to reports)
-
-	3) To prevent master aborts like in option (2), David suggested
-	   to map the whole DMA address space to a scratch page. This
-	   also prevents system memory corruption and the master aborts.
-	   But the problem is, that in-flight DMA will now read all
-	   zeros. This can corrupt disk and network data, at worst it
-	   nulls out the superblocks of your filesystem and you lose all
-	   data. So this is not an option too.
-
-What we currently do in the VT-d driver is a mixture of (1) and (2). The
-VT-d driver disables the IOMMU hardware (opening a race window for
-memory data corruption), re-initializes it to reject any ongoing DMA
-(which causes master aborts for in-flight DMA) and re-enables the IOMMU
-hardware.
-
-But this strategy fails in heavy IO environments quite often and we look
-into ways to solve the problem, or at least improve the current
-situation as good as we can.
-
-I talked to David about this at LPC and we came up with basically this
-procedure:
-
-	1. If the VT-d driver finds the IOMMU enabled, it reuses its
-	   root-context table. This way the IOMMU must not be disabled
-	   and re-enabled, eliminating the race we have now.
-	   Other data structures like the context-entries are copied
-	   over from the old kernel.  We basically keep all mappings
-	   from the old kernel, allowing any in-flight DMA to succeed.
-	   No memory or disk data corruption.
-	   The issue here is, that we modify data from the old kernel
-	   which is about to be dumped. But there are ways to work
-	   around that.
-
-	2. When a device driver issues the first dma_map command for a
-	   device, we assign a new and empty page-table, thus removing
-	   all mappings from the old kernel for the device.
-	   Rationale is, that at this point the device driver should
-	   have reset the device to a point where all in-flight DMA is
-	   canceled.
-
-This approach goes into the same direction as Bill Sumners patch-set,
-which Li took over. But it goes not as far as keeping the old mappings
-while the kdump kernel is still working with the devices (which might
-introduce new issues and corner cases).
-
-> > So with this in mind I would prefer initially taking over the
-> > page-tables from the old kernel before the device drivers re-initialize
-> > the devices.
-> 
-> This makes the dump kernel more dependent on data from the old kernel,
-> which we obviously want to avoid when possible.
-
-Sure, but this is not really possible here (unless we have a generic and
-reliable way to reset all PCI endpoint devices and cancel all in-flight
-DMA before we disable the IOMMU in the kdump kernel).
-Otherwise we always risk data corruption somewhere, in system memory or
-on disk.
-
-> I didn't find the previous discussion where pointing every virtual bus
-> address at the same physical scratch page was proposed.  Why was that
-> better than programming the IOMMU to reject every DMA?
-
-As I said, the problem is that this causes master aborts which some
-devices can't recover from, so that the device driver in the kdump
-kernel fails to initialize the device.
-
-
-	Joerg
+Thanks,
+Guenter
 
