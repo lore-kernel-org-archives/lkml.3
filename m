@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751572AbaJVNRr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 09:17:47 -0400
-Received: from mailgw02.mediatek.com ([210.61.82.184]:40160 "EHLO
-	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750716AbaJVNRp (ORCPT
+	id S1751700AbaJVNRw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 09:17:52 -0400
+Received: from mailgw01.mediatek.com ([210.61.82.183]:34752 "EHLO
+	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751582AbaJVNRt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 09:17:45 -0400
-X-Greylist: delayed 313 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Oct 2014 09:17:44 EDT
+	Wed, 22 Oct 2014 09:17:49 -0400
 X-Listener-Flag: 11101
 From: Eddie Huang <eddie.huang@mediatek.com>
 To: Rob Herring <robh+dt@kernel.org>,
@@ -23,10 +22,12 @@ CC: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
         <linux-serial@vger.kernel.org>, <yh.chen@mediatek.com>,
         <hc.yen@mediatek.com>, <nathan.chung@mediatek.com>,
         <srv_heupstream@mediatek.com>, Sascha Hauer <kernel@pengutronix.de>
-Subject: [PATCH 0/3] tty: serial: Add mediatek MT8127 and MT8135 UART support 
-Date: Wed, 22 Oct 2014 21:12:06 +0800
-Message-ID: <1413983529-21887-1-git-send-email-eddie.huang@mediatek.com>
+Subject: [PATCH 1/3] tty: serial: Fix mediatek UART driver setting baudrate issue
+Date: Wed, 22 Oct 2014 21:12:07 +0800
+Message-ID: <1413983529-21887-2-git-send-email-eddie.huang@mediatek.com>
 X-Mailer: git-send-email 1.8.1.1.dirty
+In-Reply-To: <1413983529-21887-1-git-send-email-eddie.huang@mediatek.com>
+References: <1413983529-21887-1-git-send-email-eddie.huang@mediatek.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-MTK: N
@@ -34,21 +35,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch base on 3.18-rc1, which include mediatek MT65XX SOC
-UART driver developed by Matthias Brugger, and
-Joe.C's Mediatek MT8127 & MT8135 basic SOC support patch[1].
+In mtk8250_set_termios function, calculating quot value can not be zero,
+otherwise, using DIV_ROUND_CLOSEST(port->uartclk, quot * baud) will fail due to
+divisor is zero.
 
-This patch fix one 8250_mtk.c bug that divisor maybe zero, and add device tree support.
-Test ok on MT8127 and MT8135 tablet platform.
+Signed-off-by: Eddie Huang <eddie.huang@mediatek.com>
+---
+ drivers/tty/serial/8250/8250_mtk.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Eddie Huang (3):
-  tty: serial: Fix mediatek UART driver setting baudrate issue
-  ARM: mediatek: add UART dts for mt8127 and mt8135
-  DTS: serial: Add bindings document for the Mediatek UARTs
-
- .../devicetree/bindings/serial/mtk-uart.txt        |  2 ++
- arch/arm/boot/dts/mt8127.dtsi                      | 34 ++++++++++++++++++++
- arch/arm/boot/dts/mt8135.dtsi                      | 36 ++++++++++++++++++++++
- drivers/tty/serial/8250/8250_mtk.c                 |  4 +--
- 4 files changed, 74 insertions(+), 2 deletions(-)
+diff --git a/drivers/tty/serial/8250/8250_mtk.c b/drivers/tty/serial/8250/8250_mtk.c
+index 8f37d57..6f93123 100644
+--- a/drivers/tty/serial/8250/8250_mtk.c
++++ b/drivers/tty/serial/8250/8250_mtk.c
+@@ -74,14 +74,14 @@ mtk8250_set_termios(struct uart_port *port, struct ktermios *termios,
+ 		/* Set to next lower baudrate supported */
+ 		if ((baud == 500000) || (baud == 576000))
+ 			baud = 460800;
+-		quot = DIV_ROUND_CLOSEST(port->uartclk, 4 * baud);
++		quot = DIV_ROUND_UP(port->uartclk, 4 * baud);
+ 	} else {
+ 		serial_port_out(port, UART_MTK_HIGHS, 0x3);
+ 
+ 		/* Set to highest baudrate supported */
+ 		if (baud >= 1152000)
+ 			baud = 921600;
+-		quot = DIV_ROUND_CLOSEST(port->uartclk, 256 * baud);
++		quot = DIV_ROUND_UP(port->uartclk, 256 * baud);
+ 	}
+ 
+ 	/*
+-- 
+1.8.1.1.dirty
 
