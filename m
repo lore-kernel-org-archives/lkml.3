@@ -1,84 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753221AbaJVQmT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 12:42:19 -0400
-Received: from mail-oi0-f48.google.com ([209.85.218.48]:43381 "EHLO
-	mail-oi0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751902AbaJVQmR (ORCPT
+	id S1753552AbaJVQpI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 12:45:08 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:28028 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750930AbaJVQpF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 12:42:17 -0400
+	Wed, 22 Oct 2014 12:45:05 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/go2WisEh8PyIAzeYdGp4y
+Date: Wed, 22 Oct 2014 09:43:26 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Johan Hovold <johan@kernel.org>
+Cc: Felipe Balbi <balbi@ti.com>, Alessandro Zummo <a.zummo@towertech.it>,
+        =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lokesh Vutla <lokeshvutla@ti.com>, Guenter Roeck <linux@roeck-us.net>,
+        nsekhar@ti.com, t-kristo@ti.com, j-keerthy@ti.com,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/12] rtc: omap: fixes and power-off feature
+Message-ID: <20141022164326.GJ2542@atomide.com>
+References: <1412881594-25678-1-git-send-email-johan@kernel.org>
+ <20141010175409.GL31348@saruman>
+ <20141011093819.GA18988@localhost>
+ <20141011190817.GA20644@atomide.com>
+ <20141022110758.GO2113@localhost>
+ <20141022152956.GI2542@atomide.com>
+ <20141022162104.GB2381@localhost>
 MIME-Version: 1.0
-In-Reply-To: <20141022145804.GC15126@krava.brq.redhat.com>
-References: <1412872486-2930-1-git-send-email-eranian@google.com>
-	<1412872486-2930-12-git-send-email-eranian@google.com>
-	<20141022145804.GC15126@krava.brq.redhat.com>
-Date: Wed, 22 Oct 2014 18:42:16 +0200
-Message-ID: <CABPqkBSNMtBqSnTcos4jBYRZ+9+rQ533v8QdgqzNoztzYVdzLQ@mail.gmail.com>
-Subject: Re: [PATCH v2 11/12] perf/x86: make HT bug workaround conditioned on
- HT enabled
-From: Stephane Eranian <eranian@google.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "Liang, Kan" <kan.liang@intel.com>, Borislav Petkov <bp@alien8.de>,
-        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141022162104.GB2381@localhost>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 4:58 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> On Thu, Oct 09, 2014 at 06:34:45PM +0200, Stephane Eranian wrote:
->
-> SNIP
->
->> --- a/arch/x86/kernel/cpu/perf_event_intel.c
->> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
->> @@ -12,6 +12,7 @@
->>  #include <linux/init.h>
->>  #include <linux/slab.h>
->>  #include <linux/export.h>
->> +#include <linux/watchdog.h>
->>
->>  #include <asm/cpufeature.h>
->>  #include <asm/hardirq.h>
->> @@ -1811,7 +1812,7 @@ intel_start_scheduling(struct cpu_hw_events *cpuc)
->>       /*
->>        * nothing needed if in group validation mode
->>        */
->> -     if (cpuc->is_fake)
->> +     if (cpuc->is_fake || !is_ht_workaround_enabled())
->>               return;
->>       /*
->>        * no exclusion needed
->> @@ -1849,8 +1850,9 @@ intel_stop_scheduling(struct cpu_hw_events *cpuc)
->>       /*
->>        * nothing needed if in group validation mode
->>        */
->> -     if (cpuc->is_fake)
->> +     if (cpuc->is_fake || !is_ht_workaround_enabled())
->>               return;
->
->
-> Is it possible to change is_ht_workaround_enabled() result within
-> intel_start_scheduling and intel_stop_scheduling time frame? like
-> following would happen:
->
->
->   is_ht_workaround_enabled == 1
->
->   intel_start_scheduling -> spin_lock(&excl_cntrs->lock);
->
->   # echo 0 > /sys/devices/cpu/ht_bug_workaround
->
->   is_ht_workaround_enabled == 0
->
->   intel_stop_scheduling -> wont call spin_unlock(&excl_cntrs->lock)
->
->
-> for some reason I can't get HT enabled on my HSW server, so I cannot try ;-)
->
-Yes, that would be possible!
-I can fix this by grabbing the lock in the sysctl handler.
-Thanks.
+* Johan Hovold <johan@kernel.org> [141022 09:25]:
+> On Wed, Oct 22, 2014 at 08:29:56AM -0700, Tony Lindgren wrote:
+> > * Johan Hovold <johan@kernel.org> [141022 04:12]:
+> > > On Sat, Oct 11, 2014 at 12:08:18PM -0700, Tony Lindgren wrote:
+> > > > * Johan Hovold <johan@kernel.org> [141011 02:42]:
+> > > > > On Fri, Oct 10, 2014 at 12:54:22PM -0500, Felipe Balbi wrote:
+> > > > > > 
+> > > > > > is this power-off feature "RTC-only mode" ?
+> > > > > 
+> > > > > Yes, I believe so, at least as long as RTC power is maintained. The
+> > > > > pmic_power_en pin can otherwise still be used to power off. 
+> > > > > 
+> > > > > On the BeagleBone the PMIC can be configured to enter OFF or SLEEP mode
+> > > > > on power off, where the latter (and default) mode keeps the RTC power
+> > > > > supply enabled.
+> > > > > 
+> > > > > Thanks for the fast review, Felipe.
+> > > > 
+> > > > Great :) I assume adding the regulator support to this driver should
+> > > > also help in the 35xx case?
+> > > 
+> > > If I remember correctly both OMAP and Sitara 35xx have no on-chip RTC so
+> > > they won't be using this driver.
+> > 
+> > Sorry I made a typo.. I meanto to ask if adding the regulator
+> > helps in your 335x case (not 35xx case)?
+> 
+> Ah, sorry, that's what I first read before I noticed you wrote "35xx"
+> twice. :)
+
+Yes sorry my nerves are doing things on their own for some stuff
+it seems like :)
+ 
+> Yes, RTC power can be configured as a regulator on am33xx (e.g. provided
+> by LDO1 of the PMIC on BBB). I guess you would still need to configure
+> it as always-on to be able to use the RTC-only mode, though.
+
+OK great.
+
+Tony
