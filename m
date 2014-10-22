@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932607AbaJVT5H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 15:57:07 -0400
+	id S932734AbaJVT5u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 15:57:50 -0400
 Received: from mail-by2on0061.outbound.protection.outlook.com ([207.46.100.61]:31031
 	"EHLO na01-by2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932553AbaJVT5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 15:57:01 -0400
+	id S1754296AbaJVT45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 15:56:57 -0400
 From: <atull@opensource.altera.com>
 To: <gregkh@linuxfoundation.org>, <jgunthorpe@obsidianresearch.com>,
         <hpa@zytor.com>, <monstr@monstr.eu>, <michal.simek@xilinx.com>,
@@ -23,9 +23,9 @@ CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
         <linus.walleij@linaro.org>, <delicious.quinoa@gmail.com>,
         <dinguyen@opensource.altera.com>, <yvanderv@opensource.altera.com>,
         Alan Tull <atull@opensource.altera.com>
-Subject: [PATCH v2 3/3] fpga manager: bus driver
-Date: Wed, 22 Oct 2014 14:50:05 -0500
-Message-ID: <1414007405-32186-4-git-send-email-atull@opensource.altera.com>
+Subject: [PATCH v2 1/3] fpga manager: add sysfs interface document
+Date: Wed, 22 Oct 2014 14:50:03 -0500
+Message-ID: <1414007405-32186-2-git-send-email-atull@opensource.altera.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1414007405-32186-1-git-send-email-atull@opensource.altera.com>
 References: <1414007405-32186-1-git-send-email-atull@opensource.altera.com>
@@ -39,7 +39,7 @@ X-Microsoft-Antispam: UriScan:;
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB307;
 X-Exchange-Antispam-Report-Test: UriScan:;
 X-Forefront-PRVS: 037291602B
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(22564002)(62966002)(31966008)(50986999)(76176999)(106356001)(48376002)(15202345003)(77096002)(76482002)(99396003)(120916001)(50466002)(77156001)(97736003)(81156004)(107046002)(229853001)(105586002)(95666004)(19580395003)(122386002)(85306004)(19580405001)(15975445006)(46102003)(80022003)(102836001)(87286001)(69596002)(93916002)(575784001)(101416001)(40100003)(86362001)(104166001)(88136002)(89996001)(33646002)(66066001)(21056001)(47776003)(53416004)(20776003)(42186005)(50226001)(87976001)(4396001)(92566001)(85852003)(92726001)(64706001)(86152002)(2201001)(2004002)(2101003);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB307;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(50944004)(199003)(189002)(62966002)(31966008)(50986999)(76176999)(106356001)(48376002)(77096002)(76482002)(99396003)(120916001)(50466002)(77156001)(97736003)(81156004)(107046002)(229853001)(105586002)(95666004)(19580395003)(122386002)(85306004)(19580405001)(46102003)(80022003)(102836001)(87286001)(69596002)(93916002)(101416001)(40100003)(86362001)(104166001)(88136002)(89996001)(33646002)(66066001)(21056001)(47776003)(53416004)(20776003)(42186005)(50226001)(87976001)(4396001)(92566001)(85852003)(92726001)(64706001)(86152002)(2201001)(2101003);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB307;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
 X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -47,289 +47,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Tull <atull@opensource.altera.com>
 
-Support programming the fpga from device tree overlays.
-
-This patch adds one exported function to the core
-(fpga-mgr.c): of_fpga_mgr_dev_lookup
-  Get pointer to fpga manager struct given a phandle.
-
-This code is dependent on Pantelis Antoniou's current work
-on Device Tree overlays, a method of dynamically altering
-the kernel's live Device Tree.  The rest of the patchset was
-tested with recent for-next, but this 'bus driver' patch was
-tested with Pantelis's and Grant Likely's stuff that is in git
-(his git repo https://github.com/pantoniou/linux-beagle-track-mainline
- v3.17-rc2-115-gbc778b8 == dt-ng/bbb) plus some dtc fixups
-for compiling overlays.
-
-Here's a simple example. Start with:
-  * the altera-gpio driver built in to the kernel but not in the
-    device tree.
-  * raw fpga image at /lib/firmware/soc_system.rbf
-  * Load appropriate device tree overlay in configfs by doing
-    $ mkdir /config/device-tree/overlays/1
-    $ echo socfpga_overlay.dtbo > /config/device-tree/overlays/1/path
-  * This results in the FPGA getting programmed and the altera
-    gpio driver getting probed.
-  * To remove/clear FPGA image by putting the FPGA in reset,
-    remove device tree overlay by doing:
-    $ rmdir /config/device-tree/overlays/1
-
-Device tree overlay looks like this:
-/dts-v1/;
-/plugin/;
-/ {
-	fragment@0 {
-		target-path="/soc";
-		__overlay__ {
-			#address-cells = <1>;
-	                #size-cells = <1>;
-
-			bridge@0xff200000 {
-				compatible = "fpga-mgr-bus", "simple-bus";
-				reg = <0xff200000 0x200000>;
-				clocks = <0x2 0x2>;
-				clock-names = "h2f_lw_axi_clock", "f2h_sdram0_clock";
-				#address-cells = <0x2>;
-				#size-cells = <0x1>;
-				ranges = <0x1 0x10040 0xff210040 0x20>;
-
-				fpgamgr = <&hps_0_fpgamgr>;
-				fpga-firmware = "soc_system.rbf";
-
-				gpio@0x100010040 {
-					compatible = "altr,pio-14.0", "altr,pio-1.0";
-					reg = <0x1 0x10040 0x20>;
-					clocks = <0x2>;
-					altr,gpio-bank-width = <0x4>;
-					resetvalue = <0x0>;
-					#gpio-cells = <0x2>;
-					gpio-controller;
-					linux,phandle = <0x2d>;
-				};
-			};
-		};
-	};
-};
+Add documentation for new fpga manager sysfs interface.
 
 Signed-off-by: Alan Tull <atull@opensource.altera.com>
-
-v2: simplify of_fpga_mgr_dev_lookup to return NULL on failure
-    move suspend/resume to fpga-mgr.c core
-    support 'rmdir' to remove overlay
 ---
- drivers/fpga/Kconfig     |    7 +++
- drivers/fpga/Makefile    |    1 +
- drivers/fpga/bus.c       |  124 ++++++++++++++++++++++++++++++++++++++++++++++
- drivers/fpga/fpga-mgr.c  |   23 +++++++++
- include/linux/fpga-mgr.h |    2 +
- 5 files changed, 157 insertions(+)
- create mode 100644 drivers/fpga/bus.c
+ Documentation/ABI/testing/sysfs-class-fpga-manager |   38 ++++++++++++++++++++
+ 1 file changed, 38 insertions(+)
+ create mode 100644 Documentation/ABI/testing/sysfs-class-fpga-manager
 
-diff --git a/drivers/fpga/Kconfig b/drivers/fpga/Kconfig
-index e775b17..2bd6c83 100644
---- a/drivers/fpga/Kconfig
-+++ b/drivers/fpga/Kconfig
-@@ -18,4 +18,11 @@ config FPGA_MGR_SYSFS
- 	help
- 	  FPGA Manager SysFS interface.
- 
-+config FPGA_MGR_BUS
-+	bool "FPGA Manager Bus"
-+	depends on FPGA
-+	help
-+	  FPGA Manager Bus interface.  Allows loading FPGA images
-+	  from Device Tree or from other drivers.
-+
- endmenu
-diff --git a/drivers/fpga/Makefile b/drivers/fpga/Makefile
-index c8a676f..e39911f 100644
---- a/drivers/fpga/Makefile
-+++ b/drivers/fpga/Makefile
-@@ -6,5 +6,6 @@ fpga-mgr-core-y += fpga-mgr.o
- 
- # Core FPGA Manager Framework
- obj-$(CONFIG_FPGA)			+= fpga-mgr-core.o
-+obj-$(CONFIG_FPGA_MGR_BUS)		+= bus.o
- 
- # FPGA Manager Drivers
-diff --git a/drivers/fpga/bus.c b/drivers/fpga/bus.c
+diff --git a/Documentation/ABI/testing/sysfs-class-fpga-manager b/Documentation/ABI/testing/sysfs-class-fpga-manager
 new file mode 100644
-index 0000000..999346e
+index 0000000..eb600f2
 --- /dev/null
-+++ b/drivers/fpga/bus.c
-@@ -0,0 +1,124 @@
-+/*
-+ * FPGA Manager Bus Driver
-+ *
-+ *  Copyright (C) 2013-2014 Altera Corporation
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#include <linux/completion.h>
-+#include <linux/fs.h>
-+#include <linux/fpga-mgr.h>
-+#include <linux/io.h>
-+#include <linux/irq.h>
-+#include <linux/kernel.h>
-+#include <linux/list.h>
-+#include <linux/mm.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_device.h>
-+#include <linux/of_platform.h>
-+#include <linux/pm.h>
-+#include <linux/slab.h>
-+#include <linux/string.h>
-+#include <linux/types.h>
++++ b/Documentation/ABI/testing/sysfs-class-fpga-manager
+@@ -0,0 +1,38 @@
++What:		/sys/class/fpga_manager/<fpga>/name
++Date:		October 2014
++KernelVersion:	3.18
++Contact:	Alan Tull <atull@opensource.altera.com>
++Description:	Name of low level driver.
 +
-+struct fpga_mgr_bus_priv {
-+	struct device *dev;
-+	struct device_node *np;
-+	struct fpga_manager *mgr;
-+	const char *path;
-+};
++What:		/sys/class/fpga_manager/<fpga>/firmware
++Date:		October 2014
++KernelVersion:	3.18
++Contact:	Alan Tull <atull@opensource.altera.com>
++Description:	Name of the FPGA image file to load using firmware class.
 +
-+static int fpga_mgr_bus_probe(struct platform_device *pdev)
-+{
-+	struct device_node *np = pdev->dev.of_node;
-+	struct device *dev = &pdev->dev;
-+	struct fpga_mgr_bus_priv *priv;
-+	const char *path;
-+	struct fpga_manager *mgr;
-+	int ret = 0;
++What:		/sys/class/fpga_manager/<fpga>/reset
++Date:		October 2014
++KernelVersion:	3.18
++Contact:	Alan Tull <atull@opensource.altera.com>
++Description:	Write 1 to reset the FPGA
 +
-+	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
-+	if (!priv)
-+		return -ENOMEM;
-+
-+	/* Find the FPGA Manager to associate with */
-+	mgr = of_fpga_mgr_dev_lookup(np, "fpgamgr");
-+	if (!mgr) {
-+		dev_err(mgr->dev, "%s could not find fpga mgr\n", __func__);
-+		return -ENODEV;
-+	}
-+
-+	/* Find the FPGA image on the firmware path */
-+	of_property_read_string(np, "fpga-firmware", &path);
-+
-+	ret = fpga_mgr_firmware_write(mgr, path);
-+	if (ret != 0) {
-+		dev_err(mgr->dev, "%s fpga mgr write failure\n", __func__);
-+		return -EIO;
-+	}
-+
-+	priv->dev = dev;
-+	priv->np = np;
-+	priv->mgr = mgr;
-+	priv->path = path;
-+	platform_set_drvdata(pdev, priv);
-+
-+	return 0;
-+}
-+
-+/* Called when the Device Tree overlay is removed */
-+static int fpga_mgr_bus_remove(struct platform_device *pdev)
-+{
-+	struct fpga_mgr_bus_priv *priv = platform_get_drvdata(pdev);
-+	struct fpga_manager *mgr = priv->mgr;
-+
-+	return fpga_mgr_reset(mgr);
-+}
-+
-+#ifdef CONFIG_OF
-+static const struct of_device_id fpga_mgr_bus_of_match[] = {
-+	{ .compatible = "fpga-mgr-bus", },
-+	{},
-+};
-+
-+MODULE_DEVICE_TABLE(of, fpga_mgr_bus_of_match);
-+#endif
-+
-+static struct platform_driver fpga_mgr_bus_driver = {
-+	.probe = fpga_mgr_bus_probe,
-+	.remove = fpga_mgr_bus_remove,
-+	.driver = {
-+		.name	= "fpga_manager_bus",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(fpga_mgr_bus_of_match),
-+	},
-+};
-+
-+static int __init fpga_mgr_bus_init(void)
-+{
-+	return platform_driver_register(&fpga_mgr_bus_driver);
-+}
-+
-+static void __exit fpga_mgr_bus_exit(void)
-+{
-+	platform_driver_unregister(&fpga_mgr_bus_driver);
-+}
-+
-+module_init(fpga_mgr_bus_init);
-+module_exit(fpga_mgr_bus_exit);
-+
-+MODULE_AUTHOR("Alan Tull <atull@opensource.altera.com>");
-+MODULE_DESCRIPTION("Altera FPGA Manager Bus");
-+MODULE_LICENSE("GPL v2");
-diff --git a/drivers/fpga/fpga-mgr.c b/drivers/fpga/fpga-mgr.c
-index 0c7236a..fed13a6 100644
---- a/drivers/fpga/fpga-mgr.c
-+++ b/drivers/fpga/fpga-mgr.c
-@@ -350,6 +350,29 @@ const struct attribute_group *fpga_mgr_groups[] = {
- #define fpga_mgr_groups NULL
- #endif /* CONFIG_FPGA_MGR_SYSFS */
- 
-+/* Find the fpga manager that is pointed to by a phandle */
-+struct fpga_manager *of_fpga_mgr_dev_lookup(struct device_node *node,
-+					    const char *mgr_property)
-+{
-+	struct fpga_manager *mgr;
-+	struct device_node *mgr_node;
-+
-+	mgr_node = of_parse_phandle(node, mgr_property, 0);
-+	if (!mgr_node)
-+		return NULL;
-+
-+	list_for_each_entry(mgr, &fpga_manager_list, list)
-+		if (mgr_node == mgr->np) {
-+			of_node_put(mgr_node);
-+			return mgr;
-+		}
-+
-+	of_node_put(mgr_node);
-+
-+	return NULL;
-+}
-+EXPORT_SYMBOL_GPL(of_fpga_mgr_dev_lookup);
-+
- static int fpga_mgr_suspend(struct device *dev)
- {
- 	struct fpga_manager *mgr = dev_get_drvdata(dev);
-diff --git a/include/linux/fpga-mgr.h b/include/linux/fpga-mgr.h
-index 97c7e0b..abf2699 100644
---- a/include/linux/fpga-mgr.h
-+++ b/include/linux/fpga-mgr.h
-@@ -110,6 +110,8 @@ int fpga_mgr_register(struct platform_device *pdev,
- 		      struct fpga_manager_ops *mops,
- 		      const char *name, void *priv);
- void fpga_mgr_remove(struct platform_device *pdev);
-+struct fpga_manager *of_fpga_mgr_dev_lookup(struct device_node *node,
-+					    const char *mgr_property);
- 
- #endif /* CONFIG_FPGA */
- #endif /*_LINUX_FPGA_MGR_H */
++What:		/sys/class/fpga_manager/<fpga>/state
++Date:		October 2014
++KernelVersion:	3.18
++Contact:	Alan Tull <atull@opensource.altera.com>
++Description:	Read state of fpga framework state machine as a string.
++		Valid states may vary by manufacturer; superset is:
++		* unknown		= can't determine state
++		* power_off		= FPGA power is off
++		* power_up		= FPGA reports power is up
++		* reset			= FPGA held in reset state
++		* firmware_request	= firmware class request in progress
++		* firmware_request_err	= firmware request failed
++		* write_init		= FPGA being prepared for programming
++		* write_init_err	= Error while preparing FPGA for
++					  programming
++		* write			= FPGA ready to receive image data
++		* write_err		= Error while programming
++		* write_complete	= Doing post programming steps
++		* write_complete_err	= Error while doing post programming
++		* operating		= FPGA is programmed and operating
 -- 
 1.7.9.5
 
