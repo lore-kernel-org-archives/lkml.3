@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755383AbaJVQB2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 12:01:28 -0400
+	id S1754789AbaJVPpo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 11:45:44 -0400
 Received: from down.free-electrons.com ([37.187.137.238]:54095 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754734AbaJVPpq (ORCPT
+	with ESMTP id S1754734AbaJVPpl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 11:45:46 -0400
+	Wed, 22 Oct 2014 11:45:41 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -15,9 +15,9 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
         Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH v3 35/59] dmaengine: pl330: Split device_control
-Date: Wed, 22 Oct 2014 17:43:49 +0200
-Message-Id: <1413992653-21963-36-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v3 31/59] dmaengine: mpc512x: Split device_control
+Date: Wed, 22 Oct 2014 17:43:45 +0200
+Message-Id: <1413992653-21963-32-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -25,169 +25,158 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the AMBA PL330 DMA driver to make use
-of the newly introduced callbacks, that will eventually be used to retrieve
+Split the device_control callback of the Freescale MPC512x DMA driver to make
+use of the newly introduced callbacks, that will eventually be used to retrieve
 slave capabilities.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/dma/pl330.c | 108 ++++++++++++++++++++++++++--------------------------
- 1 file changed, 53 insertions(+), 55 deletions(-)
+ drivers/dma/mpc512x_dma.c | 111 +++++++++++++++++++++-------------------------
+ 1 file changed, 51 insertions(+), 60 deletions(-)
 
-diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-index b563bfa6cc4d..bd0e47eefa34 100644
---- a/drivers/dma/pl330.c
-+++ b/drivers/dma/pl330.c
-@@ -2062,72 +2062,69 @@ static int pl330_alloc_chan_resources(struct dma_chan *chan)
- 	return 1;
+diff --git a/drivers/dma/mpc512x_dma.c b/drivers/dma/mpc512x_dma.c
+index 881db2bcb48b..15f2b56359e6 100644
+--- a/drivers/dma/mpc512x_dma.c
++++ b/drivers/dma/mpc512x_dma.c
+@@ -800,79 +800,69 @@ err_prep:
+ 	return NULL;
  }
  
--static int pl330_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd, unsigned long arg)
-+static int pl330_config(struct dma_chan *chan,
-+			struct dma_slave_config *slave_config)
-+{
-+	struct dma_pl330_chan *pch = to_pchan(chan);
-+
-+	if (slave_config->direction == DMA_MEM_TO_DEV) {
-+		if (slave_config->dst_addr)
-+			pch->fifo_addr = slave_config->dst_addr;
-+		if (slave_config->dst_addr_width)
-+			pch->burst_sz = __ffs(slave_config->dst_addr_width);
-+		if (slave_config->dst_maxburst)
-+			pch->burst_len = slave_config->dst_maxburst;
-+	} else if (slave_config->direction == DMA_DEV_TO_MEM) {
-+		if (slave_config->src_addr)
-+			pch->fifo_addr = slave_config->src_addr;
-+		if (slave_config->src_addr_width)
-+			pch->burst_sz = __ffs(slave_config->src_addr_width);
-+		if (slave_config->src_maxburst)
-+			pch->burst_len = slave_config->src_maxburst;
-+	}
-+
-+	return 0;
-+}
-+
-+static int pl330_terminate_all(struct dma_chan *chan)
+-static int mpc_dma_device_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-							unsigned long arg)
++static int mpc_dma_device_config(struct dma_chan *chan,
++				 struct dma_slave_config *cfg)
  {
- 	struct dma_pl330_chan *pch = to_pchan(chan);
- 	struct dma_pl330_desc *desc;
+-	struct mpc_dma_chan *mchan;
+-	struct mpc_dma *mdma;
+-	struct dma_slave_config *cfg;
++	struct mpc_dma_chan *mchan = dma_chan_to_mpc_dma_chan(chan);
  	unsigned long flags;
- 	struct pl330_dmac *pl330 = pch->dmac;
--	struct dma_slave_config *slave_config;
- 	LIST_HEAD(list);
  
+-	mchan = dma_chan_to_mpc_dma_chan(chan);
 -	switch (cmd) {
 -	case DMA_TERMINATE_ALL:
--		spin_lock_irqsave(&pch->lock, flags);
+-		/* Disable channel requests */
+-		mdma = dma_chan_to_mpc_dma(chan);
 -
--		spin_lock(&pl330->lock);
--		_stop(pch->thread);
--		spin_unlock(&pl330->lock);
-+	spin_lock_irqsave(&pch->lock, flags);
+-		spin_lock_irqsave(&mchan->lock, flags);
+-
+-		out_8(&mdma->regs->dmacerq, chan->chan_id);
+-		list_splice_tail_init(&mchan->prepared, &mchan->free);
+-		list_splice_tail_init(&mchan->queued, &mchan->free);
+-		list_splice_tail_init(&mchan->active, &mchan->free);
+-
+-		spin_unlock_irqrestore(&mchan->lock, flags);
++	/*
++	 * Software constraints:
++	 *  - only transfers between a peripheral device and
++	 *     memory are supported;
++	 *  - only peripheral devices with 4-byte FIFO access register
++	 *     are supported;
++	 *  - minimal transfer chunk is 4 bytes and consequently
++	 *     source and destination addresses must be 4-byte aligned
++	 *     and transfer size must be aligned on (4 * maxburst)
++	 *     boundary;
++	 *  - during the transfer RAM address is being incremented by
++	 *     the size of minimal transfer chunk;
++	 *  - peripheral port's address is constant during the transfer.
++	 */
  
--		pch->thread->req[0].desc = NULL;
--		pch->thread->req[1].desc = NULL;
--		pch->thread->req_running = -1;
-+	spin_lock(&pl330->lock);
-+	_stop(pch->thread);
-+	spin_unlock(&pl330->lock);
- 
--		/* Mark all desc done */
--		list_for_each_entry(desc, &pch->submitted_list, node) {
--			desc->status = FREE;
--			dma_cookie_complete(&desc->txd);
--		}
-+	pch->thread->req[0].desc = NULL;
-+	pch->thread->req[1].desc = NULL;
-+	pch->thread->req_running = -1;
- 
--		list_for_each_entry(desc, &pch->work_list , node) {
--			desc->status = FREE;
--			dma_cookie_complete(&desc->txd);
--		}
-+	/* Mark all desc done */
-+	list_for_each_entry(desc, &pch->submitted_list, node) {
-+		desc->status = FREE;
-+		dma_cookie_complete(&desc->txd);
+-		return 0;
++	if (cfg->src_addr_width != DMA_SLAVE_BUSWIDTH_4_BYTES ||
++	    cfg->dst_addr_width != DMA_SLAVE_BUSWIDTH_4_BYTES ||
++	    !IS_ALIGNED(cfg->src_addr, 4) ||
++	    !IS_ALIGNED(cfg->dst_addr, 4)) {
++		return -EINVAL;
 +	}
  
--		list_for_each_entry(desc, &pch->completed_list , node) {
--			desc->status = FREE;
--			dma_cookie_complete(&desc->txd);
--		}
-+	list_for_each_entry(desc, &pch->work_list , node) {
-+		desc->status = FREE;
-+		dma_cookie_complete(&desc->txd);
-+	}
- 
--		list_splice_tail_init(&pch->submitted_list, &pl330->desc_pool);
--		list_splice_tail_init(&pch->work_list, &pl330->desc_pool);
--		list_splice_tail_init(&pch->completed_list, &pl330->desc_pool);
--		spin_unlock_irqrestore(&pch->lock, flags);
--		break;
 -	case DMA_SLAVE_CONFIG:
--		slave_config = (struct dma_slave_config *)arg;
--
--		if (slave_config->direction == DMA_MEM_TO_DEV) {
--			if (slave_config->dst_addr)
--				pch->fifo_addr = slave_config->dst_addr;
--			if (slave_config->dst_addr_width)
--				pch->burst_sz = __ffs(slave_config->dst_addr_width);
--			if (slave_config->dst_maxburst)
--				pch->burst_len = slave_config->dst_maxburst;
--		} else if (slave_config->direction == DMA_DEV_TO_MEM) {
--			if (slave_config->src_addr)
--				pch->fifo_addr = slave_config->src_addr;
--			if (slave_config->src_addr_width)
--				pch->burst_sz = __ffs(slave_config->src_addr_width);
--			if (slave_config->src_maxburst)
--				pch->burst_len = slave_config->src_maxburst;
--		}
--		break;
--	default:
--		dev_err(pch->dmac->ddma.dev, "Not supported command.\n");
--		return -ENXIO;
-+	list_for_each_entry(desc, &pch->completed_list , node) {
-+		desc->status = FREE;
-+		dma_cookie_complete(&desc->txd);
- 	}
+-		/*
+-		 * Software constraints:
+-		 *  - only transfers between a peripheral device and
+-		 *     memory are supported;
+-		 *  - only peripheral devices with 4-byte FIFO access register
+-		 *     are supported;
+-		 *  - minimal transfer chunk is 4 bytes and consequently
+-		 *     source and destination addresses must be 4-byte aligned
+-		 *     and transfer size must be aligned on (4 * maxburst)
+-		 *     boundary;
+-		 *  - during the transfer RAM address is being incremented by
+-		 *     the size of minimal transfer chunk;
+-		 *  - peripheral port's address is constant during the transfer.
+-		 */
++	spin_lock_irqsave(&mchan->lock, flags);
  
-+	list_splice_tail_init(&pch->submitted_list, &pl330->desc_pool);
-+	list_splice_tail_init(&pch->work_list, &pl330->desc_pool);
-+	list_splice_tail_init(&pch->completed_list, &pl330->desc_pool);
-+	spin_unlock_irqrestore(&pch->lock, flags);
-+
- 	return 0;
+-		cfg = (void *)arg;
++	mchan->src_per_paddr = cfg->src_addr;
++	mchan->src_tcd_nunits = cfg->src_maxburst;
++	mchan->dst_per_paddr = cfg->dst_addr;
++	mchan->dst_tcd_nunits = cfg->dst_maxburst;
+ 
+-		if (cfg->src_addr_width != DMA_SLAVE_BUSWIDTH_4_BYTES ||
+-		    cfg->dst_addr_width != DMA_SLAVE_BUSWIDTH_4_BYTES ||
+-		    !IS_ALIGNED(cfg->src_addr, 4) ||
+-		    !IS_ALIGNED(cfg->dst_addr, 4)) {
+-			return -EINVAL;
+-		}
++	/* Apply defaults */
++	if (mchan->src_tcd_nunits == 0)
++		mchan->src_tcd_nunits = 1;
++	if (mchan->dst_tcd_nunits == 0)
++		mchan->dst_tcd_nunits = 1;
+ 
+-		spin_lock_irqsave(&mchan->lock, flags);
++	spin_unlock_irqrestore(&mchan->lock, flags);
+ 
+-		mchan->src_per_paddr = cfg->src_addr;
+-		mchan->src_tcd_nunits = cfg->src_maxburst;
+-		mchan->dst_per_paddr = cfg->dst_addr;
+-		mchan->dst_tcd_nunits = cfg->dst_maxburst;
++	return 0;
++}
+ 
+-		/* Apply defaults */
+-		if (mchan->src_tcd_nunits == 0)
+-			mchan->src_tcd_nunits = 1;
+-		if (mchan->dst_tcd_nunits == 0)
+-			mchan->dst_tcd_nunits = 1;
++static int mpc_dma_device_terminate_all(struct dma_chan *chan)
++{
++	struct mpc_dma_chan *mchan = dma_chan_to_mpc_dma_chan(chan);
++	struct mpc_dma *mdma = dma_chan_to_mpc_dma(chan);
++	unsigned long flags;
+ 
+-		spin_unlock_irqrestore(&mchan->lock, flags);
++	/* Disable channel requests */
++	spin_lock_irqsave(&mchan->lock, flags);
+ 
+-		return 0;
++	out_8(&mdma->regs->dmacerq, chan->chan_id);
++	list_splice_tail_init(&mchan->prepared, &mchan->free);
++	list_splice_tail_init(&mchan->queued, &mchan->free);
++	list_splice_tail_init(&mchan->active, &mchan->free);
+ 
+-	default:
+-		/* Unknown command */
+-		break;
+-	}
++	spin_unlock_irqrestore(&mchan->lock, flags);
+ 
+-	return -ENXIO;
++	return 0;
  }
  
-@@ -2701,7 +2698,8 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
- 	pd->device_prep_dma_cyclic = pl330_prep_dma_cyclic;
- 	pd->device_tx_status = pl330_tx_status;
- 	pd->device_prep_slave_sg = pl330_prep_slave_sg;
--	pd->device_control = pl330_control;
-+	pd->device_config = pl330_config;
-+	pd->device_terminate_all = pl330_terminate_all;
- 	pd->device_issue_pending = pl330_issue_pending;
- 	pd->device_slave_caps = pl330_dma_device_slave_caps;
+ static int mpc_dma_probe(struct platform_device *op)
+@@ -966,7 +956,8 @@ static int mpc_dma_probe(struct platform_device *op)
+ 	dma->device_tx_status = mpc_dma_tx_status;
+ 	dma->device_prep_dma_memcpy = mpc_dma_prep_memcpy;
+ 	dma->device_prep_slave_sg = mpc_dma_prep_slave_sg;
+-	dma->device_control = mpc_dma_device_control;
++	dma->device_config = mpc_dma_device_config;
++	dma->device_terminate_all = mpc_dma_device_terminate_all;
  
-@@ -2749,7 +2747,7 @@ probe_err3:
- 
- 		/* Flush the channel */
- 		if (pch->thread) {
--			pl330_control(&pch->chan, DMA_TERMINATE_ALL, 0);
-+			pl330_terminate_all(&pch->chan);
- 			pl330_free_chan_resources(&pch->chan);
- 		}
- 	}
-@@ -2778,7 +2776,7 @@ static int pl330_remove(struct amba_device *adev)
- 
- 		/* Flush the channel */
- 		if (pch->thread) {
--			pl330_control(&pch->chan, DMA_TERMINATE_ALL, 0);
-+			pl330_terminate_all(&pch->chan);
- 			pl330_free_chan_resources(&pch->chan);
- 		}
- 	}
+ 	INIT_LIST_HEAD(&dma->channels);
+ 	dma_cap_set(DMA_MEMCPY, dma->cap_mask);
 -- 
 2.1.1
 
