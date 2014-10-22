@@ -1,81 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932268AbaJVHE5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 03:04:57 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:47328 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862AbaJVHEf (ORCPT
+	id S1754129AbaJVHFj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 03:05:39 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52519 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751023AbaJVHFg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 03:04:35 -0400
-X-Original-SENDERIP: 10.177.226.38
-X-Original-MAILFROM: karam.lee@lge.com
-From: karam.lee@lge.com
-To: minchan@kernel.org, ngupta@vflare.org, linux-kernel@vger.kernel.org
-Cc: matthew.r.wilcox@intel.com, jmarchan@redhat.com, seungho1.park@lge.com,
-        "karam.lee" <karam.lee@lge.com>
-Subject: [PATCH v4 2/3] zram: change parameter from vaild_io_request()
-Date: Wed, 22 Oct 2014 16:04:13 +0900
-Message-Id: <1413961454-13479-3-git-send-email-karam.lee@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1413961454-13479-1-git-send-email-karam.lee@lge.com>
-References: <1413961454-13479-1-git-send-email-karam.lee@lge.com>
+	Wed, 22 Oct 2014 03:05:36 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <54475703.8000505@jp.fujitsu.com>
+Date: Wed, 22 Oct 2014 16:04:35 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: <mingo@redhat.com>, <peterz@infradead.org>
+CC: <kernellwp@gmail.com>, <riel@redhat.com>, <tkhai@yandex.ru>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3] sched/fair: Care divide error in update_task_scan_period()
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "karam.lee" <karam.lee@lge.com>
+While offling node by hot removing memory, the following divide error
+occurs:
 
-This patch changes parameter of valid_io_request for common usage.
-The purpose of valid_io_request() is to determine if bio request is
-valid or not.
-This patch use  I/O start address and size instead of a BIO parameter
-for common usage.
+  divide error: 0000 [#1] SMP
+  [...]
+  Call Trace:
+   [...] handle_mm_fault
+   [...] ? try_to_wake_up
+   [...] ? wake_up_state
+   [...] __do_page_fault
+   [...] ? do_futex
+   [...] ? put_prev_entity
+   [...] ? __switch_to
+   [...] do_page_fault
+   [...] page_fault
+  [...]
+  RIP  [<ffffffff810a7081>] task_numa_fault
+   RSP <ffff88084eb2bcb0>
 
-Signed-off-by: karam.lee <karam.lee@lge.com>
+The issue occurs as follows:
+  1. When page fault occurs and page is allocated from node 1,
+     task_struct->numa_faults_buffer_memory[] of node 1 is
+     incremented and p->numa_faults_locality[] is also incremented
+     as follows:
+
+     o numa_faults_buffer_memory[]       o numa_faults_locality[]
+              NR_NUMA_HINT_FAULT_TYPES
+             |      0     |     1     |
+     ----------------------------------  ----------------------
+      node 0 |      0     |     0     |   remote |      0     |
+      node 1 |      0     |     1     |   locale |      1     |
+     ----------------------------------  ----------------------
+
+  2. node 1 is offlined by hot removing memory.
+
+  3. When page fault occurs, fault_types[] is calculated by using
+     p->numa_faults_buffer_memory[] of all online nodes in
+     task_numa_placement(). But node 1 was offline by step 2. So
+     the fault_types[] is calculated by using only
+     p->numa_faults_buffer_memory[] of node 0. So both of fault_types[]
+     are set to 0.
+
+  4. The values(0) of fault_types[] pass to update_task_scan_period().
+
+  5. numa_faults_locality[1] is set to 1. So the following division is
+     calculated.
+
+        static void update_task_scan_period(struct task_struct *p,
+                                unsigned long shared, unsigned long private){
+        ...
+                ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared));
+        }
+
+  6. But both of private and shared are set to 0. So divide error
+     occurs here.
+
+The divide error is rare case because the trigger is node offline.
+This patch always increments denominator for avoiding divide error.
+
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 ---
- drivers/block/zram/zram_drv.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+v2:
+ - Simply increment a denominator
 
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index 54da18a..4565fdc 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -206,19 +206,18 @@ static inline int is_partial_io(struct bio_vec *bvec)
- /*
-  * Check if request is within bounds and aligned on zram logical blocks.
-  */
--static inline int valid_io_request(struct zram *zram, struct bio *bio)
-+static inline int valid_io_request(struct zram *zram,
-+		sector_t start, unsigned int size)
- {
--	u64 start, end, bound;
-+	u64 end, bound;
- 
- 	/* unaligned request */
--	if (unlikely(bio->bi_iter.bi_sector &
--		     (ZRAM_SECTOR_PER_LOGICAL_BLOCK - 1)))
-+	if (unlikely(start & (ZRAM_SECTOR_PER_LOGICAL_BLOCK - 1)))
- 		return 0;
--	if (unlikely(bio->bi_iter.bi_size & (ZRAM_LOGICAL_BLOCK_SIZE - 1)))
-+	if (unlikely(size & (ZRAM_LOGICAL_BLOCK_SIZE - 1)))
- 		return 0;
- 
--	start = bio->bi_iter.bi_sector;
--	end = start + (bio->bi_iter.bi_size >> SECTOR_SHIFT);
-+	end = start + (size >> SECTOR_SHIFT);
- 	bound = zram->disksize >> SECTOR_SHIFT;
- 	/* out of range range */
- 	if (unlikely(start >= bound || end > bound || start > end))
-@@ -780,7 +779,8 @@ static void zram_make_request(struct request_queue *queue, struct bio *bio)
- 	if (unlikely(!init_done(zram)))
- 		goto error;
- 
--	if (!valid_io_request(zram, bio)) {
-+	if (!valid_io_request(zram, bio->bi_iter.bi_sector,
-+					bio->bi_iter.bi_size)) {
- 		atomic64_inc(&zram->stats.invalid_io);
- 		goto error;
+ kernel/sched/fair.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 0b069bf..f3b492d 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1520,7 +1520,7 @@ static void update_task_scan_period(struct task_struct *p,
+ 		 * scanning faster if shared accesses dominate as it may
+ 		 * simply bounce migrations uselessly
+ 		 */
+-		ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared));
++		ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared + 1));
+ 		diff = (diff * ratio) / NUMA_PERIOD_SLOTS;
  	}
+
 -- 
-1.7.9.5
+1.8.3.1
+
 
