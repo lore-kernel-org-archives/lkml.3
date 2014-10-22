@@ -1,89 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372AbaJVOBD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 10:01:03 -0400
-Received: from mga01.intel.com ([192.55.52.88]:19786 "EHLO mga01.intel.com"
+	id S1753508AbaJVOBP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 10:01:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30730 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753308AbaJVOA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 10:00:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,769,1406617200"; 
-   d="scan'208";a="618527077"
-Message-ID: <1413986270.2396.34.camel@linux.intel.com>
-Subject: Re: [PATCH 2/2] perf tools: substitute yet another strtoull()
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Date: Wed, 22 Oct 2014 16:57:50 +0300
-In-Reply-To: <1404474229-15272-2-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1404474229-15272-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1404474229-15272-2-git-send-email-andriy.shevchenko@linux.intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.6-1 
-Mime-Version: 1.0
+	id S1753088AbaJVOBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 10:01:07 -0400
+Message-ID: <5447B859.4040001@redhat.com>
+Date: Wed, 22 Oct 2014 15:59:53 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Dominik Dingel <dingel@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Bob Liu <lliubbo@gmail.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Gleb Natapov <gleb@kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Jianyu Zhan <nasa4836@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        kvm@vger.kernel.org, linux390@de.ibm.com, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: Re: [PATCH 2/4] mm: introduce mm_forbids_zeropage function
+References: <1413976170-42501-1-git-send-email-dingel@linux.vnet.ibm.com> <1413976170-42501-3-git-send-email-dingel@linux.vnet.ibm.com>
+In-Reply-To: <1413976170-42501-3-git-send-email-dingel@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-07-04 at 14:43 +0300, Andy Shevchenko wrote:
-> Instead of home grown function let's use what library provides us.
+Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
+
+On 10/22/2014 01:09 PM, Dominik Dingel wrote:
+> Add a new function stub to allow architectures to disable for
+> an mm_structthe backing of non-present, anonymous pages with
+> read-only empty zero pages.
 > 
-
-Any comments on this? Should I resend it?
-
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Signed-off-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
 > ---
->  tools/perf/util/util.c | 24 ++----------------------
->  1 file changed, 2 insertions(+), 22 deletions(-)
+>  include/linux/mm.h | 4 ++++
+>  mm/huge_memory.c   | 2 +-
+>  mm/memory.c        | 2 +-
+>  3 files changed, 6 insertions(+), 2 deletions(-)
 > 
-> diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-> index e4132ae..861e16e 100644
-> --- a/tools/perf/util/util.c
-> +++ b/tools/perf/util/util.c
-> @@ -206,35 +206,15 @@ size_t hex_width(u64 v)
->  	return n;
->  }
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index cd33ae2..0a2022e 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -56,6 +56,10 @@ extern int sysctl_legacy_va_layout;
+>  #define __pa_symbol(x)  __pa(RELOC_HIDE((unsigned long)(x), 0))
+>  #endif
 >  
-> -static int hex(char ch)
-> -{
-> -	if ((ch >= '0') && (ch <= '9'))
-> -		return ch - '0';
-> -	if ((ch >= 'a') && (ch <= 'f'))
-> -		return ch - 'a' + 10;
-> -	if ((ch >= 'A') && (ch <= 'F'))
-> -		return ch - 'A' + 10;
-> -	return -1;
-> -}
-> -
->  /*
->   * While we find nice hex chars, build a long_val.
->   * Return number of chars processed.
->   */
->  int hex2u64(const char *ptr, u64 *long_val)
->  {
-> -	const char *p = ptr;
-> -	*long_val = 0;
-> -
-> -	while (*p) {
-> -		const int hex_val = hex(*p);
-> +	char *p;
+> +#ifndef mm_forbids_zeropage
+> +#define mm_forbids_zeropage(X)  (0)
+> +#endif
+> +
+>  extern unsigned long sysctl_user_reserve_kbytes;
+>  extern unsigned long sysctl_admin_reserve_kbytes;
 >  
-> -		if (hex_val < 0)
-> -			break;
-> -
-> -		*long_val = (*long_val << 4) | hex_val;
-> -		p++;
-> -	}
-> +	*long_val = strtoull(ptr, &p, 16);
+> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> index de98415..357a381 100644
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -805,7 +805,7 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  		return VM_FAULT_OOM;
+>  	if (unlikely(khugepaged_enter(vma, vma->vm_flags)))
+>  		return VM_FAULT_OOM;
+> -	if (!(flags & FAULT_FLAG_WRITE) &&
+> +	if (!(flags & FAULT_FLAG_WRITE) && !mm_forbids_zeropage(mm) &&
+>  			transparent_hugepage_use_zero_page()) {
+>  		spinlock_t *ptl;
+>  		pgtable_t pgtable;
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 64f82aa..f275a9d 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -2640,7 +2640,7 @@ static int do_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  		return VM_FAULT_SIGBUS;
 >  
->  	return p - ptr;
->  }
-
-
--- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
-
+>  	/* Use the zero-page for reads */
+> -	if (!(flags & FAULT_FLAG_WRITE)) {
+> +	if (!(flags & FAULT_FLAG_WRITE) && !mm_forbids_zeropage(mm)) {
+>  		entry = pte_mkspecial(pfn_pte(my_zero_pfn(address),
+>  						vma->vm_page_prot));
+>  		page_table = pte_offset_map_lock(mm, pmd, address, &ptl);
+> 
