@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932245AbaJVHQI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 03:16:08 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:39032 "EHLO
+	id S932360AbaJVHQM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 03:16:12 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:34035 "EHLO
 	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754175AbaJVHQF (ORCPT
+	by vger.kernel.org with ESMTP id S932254AbaJVHQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 03:16:05 -0400
+	Wed, 22 Oct 2014 03:16:09 -0400
 From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
 To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
@@ -21,10 +21,12 @@ To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
 Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
         Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Subject: [PATCH v4 4/8] ARM: DT: STi: STiH407: Add DT node for MiPHY28lp
-Date: Wed, 22 Oct 2014 09:14:23 +0200
-Message-Id: <1413962067-25557-5-git-send-email-gabriel.fernandez@linaro.org>
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
+        alexandre torgue <alexandre.torgue@st.com>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Subject: [PATCH v4 1/8] phy: miphy28lp: Add Device Tree bindings for the MiPHY28lp
+Date: Wed, 22 Oct 2014 09:14:20 +0200
+Message-Id: <1413962067-25557-2-git-send-email-gabriel.fernandez@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1413962067-25557-1-git-send-email-gabriel.fernandez@linaro.org>
 References: <1413962067-25557-1-git-send-email-gabriel.fernandez@linaro.org>
@@ -34,46 +36,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MiPHY28lp is a Generic PHY which can serve various SATA, PCIe or
-USB3 devices. The two first ports can be use for either; both SATA, both
-PCIe or one of each in any configuration.
-The Third port is only for USB3.
+The MiPHY28lp is a Generic PHY which can serve various SATA or PCIe
+or USB3 devices.
 
+Signed-off-by: alexandre torgue <alexandre.torgue@st.com>
+Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
 Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
 ---
- arch/arm/boot/dts/stih407-b2120.dts | 11 +++++++
- arch/arm/boot/dts/stih407.dtsi      | 65 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 76 insertions(+)
+ .../devicetree/bindings/phy/phy-miphy28lp.txt      | 126 +++++++++++++++++++++
+ 1 file changed, 126 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
 
-diff --git a/arch/arm/boot/dts/stih407-b2120.dts b/arch/arm/boot/dts/stih407-b2120.dts
-index fe69f92..d0837fb 100644
---- a/arch/arm/boot/dts/stih407-b2120.dts
-+++ b/arch/arm/boot/dts/stih407-b2120.dts
-@@ -74,5 +74,16 @@
- 			st,i2c-min-scl-pulse-width-us = <0>;
- 			st,i2c-min-sda-pulse-width-us = <5>;
- 		};
+diff --git a/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt b/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
+new file mode 100644
+index 0000000..f7cfc5f
+--- /dev/null
++++ b/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
+@@ -0,0 +1,126 @@
++STMicroelectronics STi MIPHY28LP PHY binding
++============================================
 +
-+		miphy28lp_phy: miphy28lp@9b22000 {
++This binding describes a miphy device that is used to control PHY hardware
++for SATA, PCIe or USB3.
 +
-+			phy_port0: port@9b22000 {
-+				st,osc-rdy;
-+			};
++Required properties (controller (parent) node):
++- compatible	: Should be "st,miphy28lp-phy".
++- st,syscfg	: Should be a phandle of the system configuration register group
++		  which contain the SATA, PCIe or USB3 mode setting bits.
 +
-+			phy_port1: port@9b2a000 {
-+				st,osc-force-ext;
-+			};
-+		};
- 	};
- };
-diff --git a/arch/arm/boot/dts/stih407.dtsi b/arch/arm/boot/dts/stih407.dtsi
-index 4f9024f..b8cc9a3 100644
---- a/arch/arm/boot/dts/stih407.dtsi
-+++ b/arch/arm/boot/dts/stih407.dtsi
-@@ -259,5 +259,70 @@
- 
- 			status = "disabled";
- 		};
++Required nodes	:  A sub-node is required for each channel the controller
++		   provides. Address range information including the usual
++		   'reg' and 'reg-names' properties are used inside these
++		   nodes to describe the controller's topology. These nodes
++		   are translated by the driver's .xlate() function.
++
++Required properties (port (child) node):
++- #phy-cells	: Should be 1 (See second example)
++		  Cell after port phandle is device type from:
++			- MIPHY_TYPE_SATA
++			- MIPHY_TYPE_PCI
++			- MIPHY_TYPE_USB3
++- reg		: Address and length of the register set for the device.
++- reg-names	: The names of the register addresses corresponding to the registers
++		  filled in "reg". Is can also contain the offset of the system configuration
++		  registers used as glue-logic to setup the device for SATA/PCIe or USB3
++		  devices.
++- resets	: phandle to the parent reset controller.
++- reset-names	: Associated name must be "miphy-sw-rst".
++
++Optional properties (port (child) node):
++- st,osc-rdy		: to check the MIPHY0_OSC_RDY status in the glue-logic. This
++			  is not available in all the MiPHY. For example, for STiH407, only the
++			  MiPHY0 has this bit.
++- st,osc-force-ext	: to select the external oscillator. This can change from
++			  different MiPHY inside the same SoC.
++- st,sata_gen		: to select which SATA_SPDMODE has to be set in the SATA system config
++			  register.
++- st,px_rx_pol_inv	: to invert polarity of RXn/RXp (respectively negative line and positive
++			  line).
++
++example:
 +
 +		miphy28lp_phy: miphy28lp@9b22000 {
 +			compatible = "st,miphy28lp-phy";
@@ -98,7 +120,7 @@ index 4f9024f..b8cc9a3 100644
 +					    "pcie-glue",
 +					    "sata-glue";
 +				#phy-cells = <1>;
-+
++				st,osc-rdy;
 +				reset-names = "miphy-sw-rst";
 +				resets = <&softreset STIH407_MIPHY0_SOFTRESET>;
 +			};
@@ -119,7 +141,7 @@ index 4f9024f..b8cc9a3 100644
 +					    "pcie-glue",
 +					    "sata-glue";
 +				#phy-cells = <1>;
-+
++				st,osc-force-ext;
 +				reset-names = "miphy-sw-rst";
 +				resets = <&softreset STIH407_MIPHY1_SOFTRESET>;
 +			};
@@ -134,13 +156,29 @@ index 4f9024f..b8cc9a3 100644
 +				    "miphy-ctrl-glue",
 +				    "miphy-status-glue";
 +				#phy-cells = <1>;
-+
 +				reset-names = "miphy-sw-rst";
 +				resets = <&softreset STIH407_MIPHY2_SOFTRESET>;
 +			};
 +		};
- 	};
- };
++
++
++Specifying phy control of devices
++=================================
++
++Device nodes should specify the configuration required in their "phys"
++property, containing a phandle to the miphy device node and an index
++specifying which configuration to use, as described in phy-bindings.txt.
++
++example:
++		sata0: sata@9b20000  {
++			...
++			phys		= <&phy_port0 MIPHY_TYPE_SATA>;
++			...
++		};
++
++Macro definitions for the supported miphy configuration can be found in:
++
++include/dt-bindings/phy/phy-miphy28lp.h
 -- 
 1.9.1
 
