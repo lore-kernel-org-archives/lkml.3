@@ -1,106 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646AbaJVO5V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 10:57:21 -0400
-Received: from mga01.intel.com ([192.55.52.88]:49141 "EHLO mga01.intel.com"
+	id S1752721AbaJVO5m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 10:57:42 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:35806 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752292AbaJVO5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 10:57:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,769,1406617200"; 
-   d="scan'208";a="618557557"
-Date: Wed, 22 Oct 2014 17:56:51 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Arnd Bergmann <arnd@arndb.de>, Alexandre Courbot <gnurou@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Darren Hart <dvhart@linux.intel.com>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: Re: GPIO bindings guidelines (Was: Re: [PATCH v5 10/12] gpio:
- Support for unified device properties interface)
-Message-ID: <20141022145651.GH1484@lahna.fi.intel.com>
-References: <CAAVeFuLW6fucvDxQvY5DDfnhPrgYM+1pi7WoHfBQa_BgYnc_Cw@mail.gmail.com>
- <20141022085140.GF1484@lahna.fi.intel.com>
- <2466280.tMTA38OpXD@wuerfel>
- <1971792.8pKYWlGxB9@vostro.rjw.lan>
+	id S1751889AbaJVO5k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 10:57:40 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Kever Yang <kever.yang@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Cc: dianders@chromium.org, sonnyrao@chromium.org, addy.ke@rock-chips.com,
+        cf@rock-chips.com, xjq@rock-chips.com, hj@rock-chips.com,
+        huangtao@rock-chips.com, linux-rockchip@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Olof Johansson <olof@lixom.net>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Marc Carino <marc.ceeeee@gmail.com>,
+        Rohit Vaswani <rvaswani@codeaurora.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v5 2/6] ARM: rockchip: add option to access the pmu via a phandle in smp_operations
+Date: Wed, 22 Oct 2014 17:00:29 +0200
+Message-ID: <31425128.N5J4K0nt32@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <1413393785-26783-3-git-send-email-kever.yang@rock-chips.com>
+References: <1413393785-26783-1-git-send-email-kever.yang@rock-chips.com> <1413393785-26783-3-git-send-email-kever.yang@rock-chips.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1971792.8pKYWlGxB9@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 04:07:08PM +0200, Rafael J. Wysocki wrote:
-> Moreover, we need to clarify what situation we're really talking about.
-> 
-> For one, drivers using the unified interface only will always use names for
-> GPIOs, because they have to assume that either a DT or ACPI w/ _DSD is present.
-> This is the cost of keeping those drivers firmware interface agnostic.
-> 
-> So it looks like we're not talking about this case here.
+Hi Kever,
 
-We are talking about the case of rfkill-gpio.c where it definitely wants
-to use properties for the GPIOs but it cannot be sure if the underlying
-firmware provides _DSD or not.
+Am Mittwoch, 15. Oktober 2014, 10:23:01 schrieb Kever Yang:
+> From: Heiko Stuebner <heiko@sntech.de>
+> 
+> Makes it possible to define a rockchip,pmu phandle in the cpus node directly
+> referencing the pmu syscon instead of searching for specific compatible.
+> 
+> The old way of finding the pmu stays of course available.
+> 
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
 
-> Now, if there's no DT or no _DSD in the ACPI tables for the given device
-> *and* the driver wants to use its GPIOs anyway, it has to be ACPI-aware to
-> some extent, because in that case the device ID it has been matched against
-> tells it what the meaning of the GpioIo resources in the _CRS is.
-> 
-> Then, the driver needs to do something like:
-> 
-> 	if (!device_property_present(dev, "known_property_that_should_be_present")
-> 	    && ACPI_COMPANION(dev))
-> 		acpi_probe_gpios(dev);
+I've tested the series again on all our supported platforms - no regressions.
 
-Indeed we can use similar pattern to detect if we have _DSD present or
-not.
+The series itself also looks nice and ready to go to me, but I think we'll 
+need to give the devicetree maintainers some more days, if they want to 
+complain about our new rockchip,pmu property.
 
-> and in the acpi_probe_gpios() routine there may be checks like:
-> 
-> 	if (device_has_id(dev, "MARY0001")) {
-> 		The first pin in the first GpioIo resource in _CRS is "fred" and
-> 		it is active-low.
-> 		The third pin in the second GpioIo resource in _CRS is "steve"
-> 		and it is not active-low.
-> 	} else if (device_has_id(dev, "JANE0002")) {
-> 		The first pin in the second GpioIo resource in _CRS is "fred" and
-> 		it is not active-low.
-> 		The second pin in the first GpioIo resource in _CRS is "steve"
-> 		and it is active-low.
-> 	}
-> 
-> and so on.  Of course, there may be drivers knowing that the meaning of the
-> GpioIo resources in _CRS is the same for all devices handled by them, in which
-> case they will not need to check device IDs, but the core has now way of
-> knowing that.  Only the drivers have that information and the core has now
-> way to figure out what to do for a given specific device.
-> 
-> So here's a radical idea: Why don't we introduce something like
-> 
-> 	acpi_enumerate_gpio(dev, name, GpioIo_index, pin_index, active_low)
-> 
-> such that after calling, say, acpi_enumerate_gpio(dev, "fred", 0, 0, true) the
-> driver can do something like:
-> 
-> 	desc = get_gpiod_by_name(dev, "fred");
-> 
-> and it'll all work.  Then, the only part of the driver that really needs to be
-> ACPI-specific will be the acpi_probe_gpios() function calling acpi_enumerate_gpio()
-> in accordance with what the device ID is.
-> 
-> Thoughts?
 
-I think this is good idea. It solves the rfkill-gpio.c problem with just
-small amount of ACPI specific code.
+Heiko
+
+
+> ---
+> 
+> Changes in v5: None
+> Changes in v4:
+> - add rockchip,pmu property into cpus.txt
+> 
+> Changes in v3:
+> - add this patch
+> 
+> Changes in v2: None
+> 
+>  Documentation/devicetree/bindings/arm/cpus.txt |  9 +++++++++
+>  arch/arm/mach-rockchip/platsmp.c               | 13 +++++++++++++
+>  2 files changed, 22 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/cpus.txt
+> b/Documentation/devicetree/bindings/arm/cpus.txt index fc44634..b2aacbe
+> 100644
+> --- a/Documentation/devicetree/bindings/arm/cpus.txt
+> +++ b/Documentation/devicetree/bindings/arm/cpus.txt
+> @@ -227,6 +227,15 @@ nodes to be present and contain the properties
+> described below. # List of phandles to idle state nodes supported
+>  			  by this cpu [3].
+> 
+> +	- rockchip,pmu
+> +		Usage: optional for systems that have an "enable-method"
+> +		       property value of "rockchip,rk3066-smp"
+> +		       While optional, it is the preferred way to get access to
+> +		       the cpu-core power-domains.
+> +		Value type: <phandle>
+> +		Definition: Specifies the syscon node controlling the cpu core
+> +			    power domains.
+> +
+>  Example 1 (dual-cluster big.LITTLE system 32-bit):
+> 
+>  	cpus {
+> diff --git a/arch/arm/mach-rockchip/platsmp.c
+> b/arch/arm/mach-rockchip/platsmp.c index 4c36fbf..57b53b3 100644
+> --- a/arch/arm/mach-rockchip/platsmp.c
+> +++ b/arch/arm/mach-rockchip/platsmp.c
+> @@ -155,6 +155,19 @@ static int __init rockchip_smp_prepare_pmu(void)
+>  	struct device_node *node;
+>  	void __iomem *pmu_base;
+> 
+> +	/*
+> +	 * This function is only called via smp_ops->smp_prepare_cpu().
+> +	 * That only happens if a "/cpus" device tree node exists
+> +	 * and has an "enable-method" property that selects the SMP
+> +	 * operations defined herein.
+> +	 */
+> +	node = of_find_node_by_path("/cpus");
+> +
+> +	pmu = syscon_regmap_lookup_by_phandle(node, "rockchip,pmu");
+> +	of_node_put(node);
+> +	if (!IS_ERR(pmu))
+> +		return 0;
+> +
+>  	pmu = syscon_regmap_lookup_by_compatible("rockchip,rk3066-pmu");
+>  	if (!IS_ERR(pmu))
+>  		return 0;
