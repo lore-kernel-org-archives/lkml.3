@@ -1,80 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932417AbaJVTQB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 15:16:01 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:32093 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932370AbaJVTP7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 15:15:59 -0400
-Message-ID: <1414004531.12798.27.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v2] memory-hotplug: Clear pgdat which is allocated by
- bootmem in try_offline_node()
-From: Toshi Kani <toshi.kani@hp.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, zhenzhang.zhang@huawei.com,
-        wangnan0@huawei.com, tangchen@cn.fujitsu.com, dave.hansen@intel.com,
-        rientjes@google.com
-Date: Wed, 22 Oct 2014 13:02:11 -0600
-In-Reply-To: <54476215.3010006@jp.fujitsu.com>
-References: <54476215.3010006@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932446AbaJVTRL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 15:17:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13993 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932242AbaJVTRK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 15:17:10 -0400
+Date: Wed, 22 Oct 2014 15:16:43 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Eric Paris <eparis@redhat.com>, Paulo Zanoni <przanoni@gmail.com>,
+        linux-audit@redhat.com,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        x86@kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Regression: audit: x86: drop arch from __audit_syscall_entry()
+ interface
+Message-ID: <20141022191643.GU15532@madcap2.tricolour.ca>
+References: <CA+gsUGSiXf2gpB8QQOQOmgxFc8mx31V6qeRqow6aXO1195jWEA@mail.gmail.com>
+ <1414002190.30946.95.camel@localhost>
+ <5447FF10.3060506@amacapital.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5447FF10.3060506@amacapital.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-10-22 at 16:51 +0900, Yasuaki Ishimatsu wrote:
-> When hot adding the same memory after hot removing a memory,
-> the following messages are shown:
+On 14/10/22, Andy Lutomirski wrote:
+> On 10/22/2014 11:23 AM, Eric Paris wrote:
+> > That's really serious.  Looking now.
+> > 
+> > On Wed, 2014-10-22 at 16:08 -0200, Paulo Zanoni wrote:
+> >> Hi
+> >>
+> >> (Cc'ing everybody mentioned in the original patch)
+> >>
+> >> I work for Intel, on our Linux Graphics driver - aka i915.ko - and our
+> >> QA team recently reported a regression on:
+> >>
+> >> commit b4f0d3755c5e9cc86292d5fd78261903b4f23d4a
+> >> Author: Richard Guy Briggs
+> >> Date:   Tue Mar 4 10:38:06 2014 -0500
+> >>     audit: x86: drop arch from __audit_syscall_entry() interface
+> >>
+> >> According to our QA, their i386 machine doesn't boot anymore. I tried
+> >> to write my own revert for the patch, asked QA to test, and they
+> >> confirmed it "solves" the problem.
+> >>
+> >> Here are the details of QA' s bug report:
+> >> https://bugs.freedesktop.org/show_bug.cgi?id=85277 .
+> >>
+> >> The trees our QA tests are the development trees from i915.ko:
+> >> http://cgit.freedesktop.org/drm-intel?h=drm-intel-fixes .
+> >>
+> >> I tried searching for other bug reports on the same patch, but
+> >> couldn't find any. Forgive me if this bug was already reported.
+> >>
+> >> Feel free to continue this discussion on the bugzilla report if you want.
 > 
-> WARNING: CPU: 20 PID: 6 at mm/page_alloc.c:4968 free_area_init_node+0x3fe/0x426()
-> ...
-> Call Trace:
->  [<...>] dump_stack+0x46/0x58
->  [<...>] warn_slowpath_common+0x81/0xa0
->  [<...>] warn_slowpath_null+0x1a/0x20
->  [<...>] free_area_init_node+0x3fe/0x426
->  [<...>] ? up+0x32/0x50
->  [<...>] hotadd_new_pgdat+0x90/0x110
->  [<...>] add_memory+0xd4/0x200
->  [<...>] acpi_memory_device_add+0x1aa/0x289
->  [<...>] acpi_bus_attach+0xfd/0x204
->  [<...>] ? device_register+0x1e/0x30
->  [<...>] acpi_bus_attach+0x178/0x204
->  [<...>] acpi_bus_scan+0x6a/0x90
->  [<...>] ? acpi_bus_get_status+0x2d/0x5f
->  [<...>] acpi_device_hotplug+0xe8/0x418
->  [<...>] acpi_hotplug_work_fn+0x1f/0x2b
->  [<...>] process_one_work+0x14e/0x3f0
->  [<...>] worker_thread+0x11b/0x510
->  [<...>] ? rescuer_thread+0x350/0x350
->  [<...>] kthread+0xe1/0x100
->  [<...>] ? kthread_create_on_node+0x1b0/0x1b0
->  [<...>] ret_from_fork+0x7c/0xb0
->  [<...>] ? kthread_create_on_node+0x1b0/0x1b0
+> This piece:
 > 
-> The detaled explanation is as follows:
+> 	movl %esi,4(%esp)		/* 5th arg: 4th syscall arg */
+> 	movl %edx,(%esp)		/* 4th arg: 3rd syscall arg */
 > 
-> When hot removing memory, pgdat is set to 0 in try_offline_node().
-> But if the pgdat is allocated by bootmem allocator, the clearing
-> step is skipped. And when hot adding the same memory, the uninitialized
-> pgdat is reused. But free_area_init_node() checks wether pgdat is set
-> to zero. As a result, free_area_init_node() hits WARN_ON().
+> looks like it's overwriting syscall arguments.
 > 
-> This patch clears pgdat which is allocated by bootmem allocator
-> in try_offline_node().
-> 
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> This is clearly fixable, but an even better fix would be to drop the asm
+> entirely and switch to two-phase tracing.  Want to do it?  I can test
+> the seccomp bits if you switch over the asm :)
 
-Thanks for the update. It looks good.
+Like what you did for x86_64.  That sounds worth investigating.
 
-Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+I'll have a look at the asm, but I'm being distracted by a gunman loose
+2km from me and my wife and kids under lockdown in two different
+locations on the other side of the shooting site.  Had to cancel lunch
+today with two work colleagues 1/2km away from that site.  ...not been a
+productive day.
 
--Toshi
+> --Andy
 
+- RGB
 
-
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
