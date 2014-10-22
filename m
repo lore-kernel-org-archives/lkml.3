@@ -1,45 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484AbaJVPEo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 11:04:44 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:16054 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751572AbaJVPEm (ORCPT
+	id S1752576AbaJVPHa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 11:07:30 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:45791 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751889AbaJVPH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 11:04:42 -0400
-Date: Wed, 22 Oct 2014 11:04:34 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ftracetest: add kprobes on ftrace testcase
-Message-ID: <20141022110434.0c47eb0a@gandalf.local.home>
-In-Reply-To: <54464D18.5070807@hitachi.com>
-References: <1413802323-5297-1-git-send-email-heiko.carstens@de.ibm.com>
-	<1413802323-5297-2-git-send-email-heiko.carstens@de.ibm.com>
-	<54462581.4050505@hitachi.com>
-	<20141021115928.GB4161@osiris>
-	<54464D18.5070807@hitachi.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	Wed, 22 Oct 2014 11:07:28 -0400
+Date: Wed, 22 Oct 2014 17:07:15 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com, adrian.hunter@intel.com, acme@infradead.org,
+        mathieu.poirier@linaro.org
+Subject: Re: [PATCH v5 06/20] perf: Add AUX record
+Message-ID: <20141022150715.GF21513@worktop.programming.kicks-ass.net>
+References: <1413207948-28202-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1413207948-28202-7-git-send-email-alexander.shishkin@linux.intel.com>
+ <20141022132608.GM12706@worktop.programming.kicks-ass.net>
+ <87fvegdw7e.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87fvegdw7e.fsf@ashishki-desk.ger.corp.intel.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Oct 2014 21:10:00 +0900
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+On Wed, Oct 22, 2014 at 05:18:29PM +0300, Alexander Shishkin wrote:
+> Peter Zijlstra <peterz@infradead.org> writes:
+> 
+> > On Mon, Oct 13, 2014 at 04:45:34PM +0300, Alexander Shishkin wrote:
+> >> +	/*
+> >> +	 * Records that new data landed in the AUX buffer part.
+> >> +	 *
+> >> +	 * struct {
+> >> +	 * 	struct perf_event_header	header;
+> >> +	 *
+> >> +	 * 	u64				aux_offset;
+> >> +	 * 	u64				aux_size;
+> >> +	 *	u64				flags;
+> >> +	 * 	struct sample_id		sample_id;
+> >> +	 * };
+> >> +	 */
+> >> +	PERF_RECORD_AUX				= 11,
+> >
+> > Given the discussion with the ARM people the last time, do we want to
+> > add the possibility of a variable data field in this event? Its easy to
+> > add now, harder to do later (although not impossible).
+> 
+> Iirc, what they want is to save a once-per-session chunk of data, which
+> would be better synthesized by perf record than sent from a pmu driver?
+> 
+> We do something like that with PT right now, perf record looks at pmu's
+> sysfs attributes and stores them in some synthesized record.
 
-
-> Steven, could you pick this series to your tree?
-> I think it is better to manage ftracetest testcases in one tree.
-
-I can pick these up. Is it OK if it goes into the 3.19 queue? Or is
-there some urgent need to get them into 3.18? As they are ftracetests,
-it's not that big of a deal to get them in early, as it is highly
-unlikely to break the kernel itself.
-
--- Steve
+Right, I just got to that. So I wasn't entirely sure if perf_event_open
+time conditions where sufficient for them, if they are then yes that
+could work.
