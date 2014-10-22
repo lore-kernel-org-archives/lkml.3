@@ -1,78 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752993AbaJVQwl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 12:52:41 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:63364 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031AbaJVQwk (ORCPT
+	id S1753424AbaJVQyN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 12:54:13 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:57526 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751071AbaJVQyJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 12:52:40 -0400
+	Wed, 22 Oct 2014 12:54:09 -0400
+Message-ID: <5447E12F.2030905@gmail.com>
+Date: Wed, 22 Oct 2014 09:54:07 -0700
+From: Alexander Duyck <alexander.duyck@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-In-Reply-To: <loom.20141021T140216-28@post.gmane.org>
-References: <1413881397.30379.7.camel@hadess.net> <loom.20141021T140216-28@post.gmane.org>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Wed, 22 Oct 2014 12:52:16 -0400
-X-Google-Sender-Auth: TI7QHhWh9osD3Th2jlZSTaaIApM
-Message-ID: <CALZtONDXpbxiR30tzJRsyWqvcE6ucHZ0FOjHAcOTZohZO-L58w@mail.gmail.com>
-Subject: Re: A desktop environment[1] kernel wishlist
-To: Sergey <sergey@elementaryos.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Seth Jennings <sjennings@variantweb.net>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Takao Indoh <indou.takao@jp.fujitsu.com>
+CC: "Li, Zhen-Hua" <zhen-hual@hp.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linda.knippers@hp.com, jerry.hoemann@hp.com, lisa.mitchell@hp.com,
+        rwright@hp.com, Joerg Roedel <joro@8bytes.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Tom Vaden <tom.vaden@hp.com>, David Woodhouse <dwmw2@infradead.org>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>
+Subject: Re: [PATCH 1/1] pci: fix dmar fault for kdump kernel
+References: <1412925191-27970-1-git-send-email-zhen-hual@hp.com> <543CEE32.50109@hp.com> <543E2CD5.60708@jp.fujitsu.com> <CAErSpo4isVMeBipp3TngVtZ2CmeQva-6RSHgS8O4C9M+p1ua=Q@mail.gmail.com>
+In-Reply-To: <CAErSpo4isVMeBipp3TngVtZ2CmeQva-6RSHgS8O4C9M+p1ua=Q@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 9:11 AM, Sergey <sergey@elementaryos.org> wrote:
-> Hey everyone,
+On 10/21/2014 07:47 PM, Bjorn Helgaas wrote:
+> [+cc Joerg, Eric, Tom, David, iommu list]
 >
-> I'm glad we're having some discussion on this, because we have almost
-> exactly the same kernel wishlist internally for elementary OS / Pantheon DE.
+> On Wed, Oct 15, 2014 at 2:14 AM, Takao Indoh <indou.takao@jp.fujitsu.com> wrote:
+>> (2014/10/14 18:34), Li, ZhenHua wrote:
+>>> I tested on the latest stable version 3.17, it works well.
+>>>
+>>> On 10/10/2014 03:13 PM, Li, Zhen-Hua wrote:
+>>>> On a HP system with Intel vt-d supported and many PCI devices on it,
+>>>> when kernel crashed and the kdump kernel boots with intel_iommu=on,
+>>>> there may be some unexpected DMA requests on this adapter, which will
+>>>> cause DMA Remapping faults like:
+>>>>      dmar: DRHD: handling fault status reg 102
+>>>>      dmar: DMAR:[DMA Read] Request device [41:00.0] fault addr fff81000
+>>>>      DMAR:[fault reason 01] Present bit in root entry is clear
+>>>>
+>>>> This bug may happen on *any* PCI device.
+>>>> Analysis for this bug:
+>>>>
+>>>> The present bit is set in this function:
+>>>>
+>>>> static struct context_entry * device_to_context_entry(
+>>>>                  struct intel_iommu *iommu, u8 bus, u8 devfn)
+>>>> {
+>>>>      ......
+>>>>                  set_root_present(root);
+>>>>      ......
+>>>> }
+>>>>
+>>>> Calling tree:
+>>>>      device driver
+>>>>          intel_alloc_coherent
+>>>>              __intel_map_single
+>>>>                  domain_context_mapping
+>>>>                      domain_context_mapping_one
+>>>>                          device_to_context_entry
+>>>>
+>>>> This means, the present bit in root entry will not be set until the device
+>>>> driver is loaded.
+>>>>
+>>>> But in the kdump kernel, hardware devices are not aware that control has
+>>>> transferred to the second kernel, and those drivers must initialize again.
+>>>> Consequently there may be unexpected DMA requests from devices activity
+>>>> initiated in the first kernel leading to the DMA Remapping errors in the
+>>>> second kernel.
+>>>>
+>>>> To fix this DMAR fault, we need to reset the bus that this device on. Reset
+>>>> the device itself does not work.
+> You have not explained why the DMAR faults are a problem.  The fault
+> is just an indication that the IOMMU prevented a DMA from completing.
+> If the DMA is an artifact of the crashed kernel, we probably don't
+> *want* it to complete, so taking a DMAR fault seems like exactly the
+> right thing.
 >
-> I believe I can further elaborate on the VFS monitoring part. We need a file
-> monitoring facility that's scalable (unlike inotify) and can provide a
-> decent level of detail (unlike fanotify). In particular, we need to be able
-> to detect file/directory creation, renaming and removal events, as well as
-> close_write event. And, in an ideal world, all of that without requiring
-> root permissions.
->
-> This can be almost accomplished by combining output of fanotify with that of
-> a custom LSM module that just reports events to userspace (e.g. rlocate uses
-> such a thing). There are two problems with this: first, it's a hideous hack,
-> and second, it doesn't detect deletions.
->
-> This is a big deal because without it we're stuck with always presenting the
-> user with the filesystem. If you've seen library-based music players like
-> Rhythmbox or Banshee, you know that they group and sort all your music by
-> artist and album, but not by directory and file name, and that you can
-> efficiently search all that metadata. We're trying to get the same thing
-> into more applications, but the absence of VFS features described above is
-> blocking us. Even after moving all the database management to a single
-> daemon that does all the monitoring and very rarely has to rescan anything,
-> the system either slows to a crawl (inotify) or the database gets out of
-> date quickly (fanotify+LSM).
-> In case I didn't make myself clear, a more detailed writeup on the design
-> can be found here: http://tiny.cc/tearing-up-files
->
-> Regarding the other items, AFAIK the kernel implements mechanism, not
-> policy, so instead of "zswap selectively enabled by default" we just want
-> "stable reliable zswap".
+> If the problem is that we're being flooded with messages, it's easy
+> enough to just tone down the printks.
 
-Can you elaborate on what your problems with zswap are?  What are you
-seeing when it's unstable or unreliable?
+As I recall what we have seen in the past with the network controllers
+is that they get stuck in a state where they can no longer perform any
+DMA due to the fact that some of the transactions have returned errors
+from the IOMMU being reset.  The only way out is to perform a PCIe reset
+on the part after the IOMMU has been enabled which doesn't occur
+automatically unless AER or EEH is enabled in the system.
 
-> We had to give up on zram previously (in pre-3.10
-> days) because of kernel regressions leading to panics when zram was enabled.
-> And we don't have the "Power management" part on our list because we haven't
-> really delved in that yet. But our lists are identical in all the other
-> areas, so that's not "just GNOME".
->
-> PS: I'm not subscribed to LKML either, so please CC me.
->
-> Cheers!
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+One thought would be to take a look at the IOMMU reset code.  Is there
+any way to go through and make sure that all of the PCI devices that
+make use of the IOMMU have the bus mastering disabled prior to the IOMMU
+being reset?  For example could we suspend all of the parts in order to
+force them to hold off any transactions, and then resume them after the
+IOMMU has been reset?  If we could do at least that much that would
+prevent the errors and should allow for a graceful reset.
+
+Thanks,
+
+Alex
+
+
