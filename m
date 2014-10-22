@@ -1,109 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752801AbaJVP27 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 11:28:59 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:62040 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752197AbaJVP25 (ORCPT
+	id S1753587AbaJVP3b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 11:29:31 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:53672 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753212AbaJVP33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 11:28:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAMuHMdVsqsSHxirzoWspGz7y+2qBk42p-VUBNkys3_rr6Th_9Q@mail.gmail.com>
-References: <1413809764-21995-1-git-send-email-grygorii.strashko@ti.com>
-	<1413809764-21995-3-git-send-email-grygorii.strashko@ti.com>
-	<5446A065.9050308@gmail.com>
-	<544793B5.6080601@ti.com>
-	<CAPDyKFo97D3XbwDQrDzHw+qr4b24Fsq9EwDbdOMhy_L-RoYsLw@mail.gmail.com>
-	<CAMuHMdVsqsSHxirzoWspGz7y+2qBk42p-VUBNkys3_rr6Th_9Q@mail.gmail.com>
-Date: Wed, 22 Oct 2014 17:28:36 +0200
-Message-ID: <CAPDyKFp6T1a1XXHdxiubP2RaS26uSqkUS3rbBgsNV_y+dSFfvw@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] ARM: keystone: pm: switch to use generic pm domains
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Grygorii Strashko <grygorii.strashko@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@gmail.com>, ssantosh@kernel.org,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kevin Hilman <khilman@linaro.org>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 22 Oct 2014 11:29:29 -0400
+From: Robert Bragg <robert@sixbynine.org>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Rob Clark <robdclark@gmail.com>,
+        Samuel Pitoiset <samuel.pitoiset@gmail.com>,
+        Ben Skeggs <bskeggs@redhat.com>, Robert Bragg <robert@sixbynine.org>
+Subject: [RFC PATCH 0/3] Expose gpu counters via perf pmu driver
+Date: Wed, 22 Oct 2014 16:28:48 +0100
+Message-Id: <1413991731-20628-1-git-send-email-robert@sixbynine.org>
+X-Mailer: git-send-email 2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 October 2014 17:09, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> Hi Ulf,
->
-> On Wed, Oct 22, 2014 at 5:01 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
->>>>> +void keystone_pm_domain_attach_dev(struct device *dev)
->>>>>   {
->>>>> +    struct clk *clk;
->>>>>       int ret;
->>>>> +    int i = 0;
->>>>>
->>>>>       dev_dbg(dev, "%s\n", __func__);
->>>>>
->>>>> -    ret = pm_generic_runtime_suspend(dev);
->>>>> -    if (ret)
->>>>> -        return ret;
->>>>> -
->>>>> -    ret = pm_clk_suspend(dev);
->>>>> +    ret = pm_clk_create(dev);
->>>>>       if (ret) {
->>>>> -        pm_generic_runtime_resume(dev);
->>>>> -        return ret;
->>>>> +        dev_err(dev, "pm_clk_create failed %d\n", ret);
->>>>> +        return;
->>>>> +    };
->>>>> +
->>>>> +    while ((clk = of_clk_get(dev->of_node, i++)) && !IS_ERR(clk)) {
->>>>> +        ret = pm_clk_add_clk(dev, clk);
->>>>> +        if (ret) {
->>>>> +            dev_err(dev, "pm_clk_add_clk failed %d\n", ret);
->>>>> +            goto clk_err;
->>>>> +        };
->>>>>       }
->>>>>
->>>>> -    return 0;
->>>>> +    if (!IS_ENABLED(CONFIG_PM_RUNTIME)) {
->>>> Can we not okkup two seperate callbacks instead of above check ?
->>>> I don't like this CONFIG check here. Its slightly better version of
->>>> ifdef in middle of the code.
->>>
->>> I've found more-less similar comment on patch
->>> "Re: [PATCH v3 1/3] power-domain: add power domain drivers for Rockchip platform"
->>> https://lkml.org/lkml/2014/10/17/257
->>>
->>> So, Would you like me to create patch which will enable clocks in pm_clk_add/_clk()
->>> in case !IS_ENABLED(CONFIG_PM_RUNTIME)
->>
->> I am wondering whether we actually should/could do this, no matter of
->> CONFIG_PM_RUNTIME.
->>
->> Typically, for configurations that uses CONFIG_PM_RUNTIME, the PM
->> clocks through pm_clk_suspend(), will be gated once the device becomes
->> runtime PM suspended. Right?
->
-> Doing it unconditionally means we'll have lots of unneeded clocks running
-> for a short while.
->
-> Are you trying to repeat power-up-all-PM-domains-during-boot for
-> clocks, too? ;-)
+Although I haven't seen any precedent for drivers using perf pmus to
+expose device metrics, I've been experimenting with exposing some of the
+performance counters of Intel Gen graphics hardware recently and looking
+to see if it makes sense to build on the perf infrastructure for our use
+cases.
 
-This is related, but there are a difference. :-)
+I've got a basic pmu driver working to expose our Observation
+Architecture counters, and it seems like a fairly good fit. The main
+caveat is that to allow the permission model we would like I needed to
+make some changes in events/core which I'd really appreciate some
+feedback on...
 
-As long as the pm_clk_add() is being invoked from the ->attach_dev()
-callback, we are in the probe path. Certainly we would like to have
-clocks enabled while probing, don't you think?
+In this case we're using the driver to support some performance
+monitoring extensions in Mesa (AMD_performance_monitor +
+INTEL_performance_query) and we don't want to require OpenGL clients to
+run as root to be able to monitor a gpu context they own.
 
-If we wouldn't enable the clocks for CONFIG_PM_RUNTIME, when will
-those be enabled?
+Our desired permission model seems consistent with perf's current model
+whereby you would need privileges if you want to profile across all gpu
+contexts but not need special permissions to profile your own context.
 
-Kind regards
-Uffe
+The awkward part is that it doesn't make sense for us to have userspace
+open a perf event with a specific pid as the way to avoid needing root
+permissions because a side effect of doing this is that the events will
+be dynamically added/deleted so as to only monitor while that process is
+scheduled and that's not really meaningful when we're monitoring the
+gpu.
+
+Conceptually I suppose we want to be able to open an event that's not
+associated with any cpu or process, but to keep things simple and fit
+with perf's current design, the pmu I have a.t.m expects an event to be
+opened for a specific cpu and unspecified process.
+
+To then subvert the cpu centric permission checks, I added a
+PERF_PMU_CAP_IS_DEVICE capability that a pmu driver can use to tell
+events/core that a pmu doesn't collect any cpu metrics and it can
+therefore skip its usual checks and assume the driver will implement its
+own checks as appropriate.
+
+In addition I also explicitly black list numerous attributes and
+PERF_SAMPLE_ flags that I don't think make sense for a device pmu. This
+could be handled in the pmu driver but it seemed better to do in
+events/core, avoiding duplication in case we later have multiple device
+pmus.
+
+I'd be interested to hear whether is sounds reasonable to others for us
+to expose gpu device metrics via a perf pmu and whether adding the
+PERF_PMU_CAP_IS_DEVICE flag as in my following patch could be
+acceptable.
+
+Patches:
+
+[RFC PATCH 1/3] perf: export perf_event_overflow
+[RFC PATCH 2/3] perf: Add PERF_PMU_CAP_IS_DEVICE flag
+  The main change to core/events I'd really appreciate feedback on.
+
+[RFC PATCH 3/3] i915: Expose PMU for Observation Architecture
+  My current pmu driver, provided for context (work in progress). Early,
+  high-level, feedback would be appreciated, though I think it could be
+  good to focus on the core/events change first. I also plan to send
+  this to the intel-gfx list for review.
+
+  Essentially, this pmu allows us to configure the gpu to periodically
+  write snapshots of performance counters (up to 64 32bit counters per
+  snapshot) into a circular buffer. It then uses a 200Hz hrtimer to
+  forward those snapshots to userspace as perf samples, with the counter
+  snapshots written by the gpu attached as 'raw' data.
+
+If anyone is interested in more details about Haswell's gpu performance
+counters, the PRM can be found here:
+
+  https://01.org/linuxgraphics/sites/default/files/documentation/
+  observability_performance_counters_haswell.pdf
+
+To see how I'm currently using this from userspace, I have a couple of
+intel-gpu-tools utilities; intel_oacounter_top_pmu + intel_gpu_trace_pmu:
+
+  https://github.com/rib/intel-gpu-tools/commits/wip/rib/intel-i915-oa-pmu
+
+And the current code I have to use this in Mesa is here:
+
+  https://github.com/rib/mesa/commits/wip/rib/i915_oa_perf
+
+Regards,
+- Robert
+
+ drivers/gpu/drm/i915/Makefile       |   1 +
+ drivers/gpu/drm/i915/i915_dma.c     |   2 +
+ drivers/gpu/drm/i915/i915_drv.h     |  33 ++
+ drivers/gpu/drm/i915/i915_oa_perf.c | 675 ++++++++++++++++++++++++++++++++++++
+ drivers/gpu/drm/i915/i915_reg.h     |  87 +++++
+ include/linux/perf_event.h          |   1 +
+ include/uapi/drm/i915_drm.h         |  21 ++
+ kernel/events/core.c                |  40 ++-
+ 8 files changed, 854 insertions(+), 6 deletions(-)
+ create mode 100644 drivers/gpu/drm/i915/i915_oa_perf.c
+
+-- 
+2.1.2
+
