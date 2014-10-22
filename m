@@ -1,100 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750986AbaJVFVT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 01:21:19 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:60851 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750813AbaJVFVR (ORCPT
+	id S1751885AbaJVFd0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 01:33:26 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35877 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750952AbaJVFdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 01:21:17 -0400
-Message-ID: <54473E8C.20303@ti.com>
-Date: Wed, 22 Oct 2014 10:50:12 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Wed, 22 Oct 2014 01:33:25 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <5447416C.5080106@jp.fujitsu.com>
+Date: Wed, 22 Oct 2014 14:32:28 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-CC: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kernel@stlinux.com" <kernel@stlinux.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        alexandre torgue <alexandre.torgue@st.com>
-Subject: Re: [PATCH v3 2/8] phy: miphy28lp: Add MiPHY28lp header file for
- DT x Driver defines
-References: <1411721657-9924-1-git-send-email-gabriel.fernandez@linaro.org>	<1411721657-9924-3-git-send-email-gabriel.fernandez@linaro.org>	<544637A3.8010002@ti.com> <CAG374jCq1b14N_k3_j4WY-yGcXm7ChFQat5mUqgs6ZQ=UP397g@mail.gmail.com>
-In-Reply-To: <CAG374jCq1b14N_k3_j4WY-yGcXm7ChFQat5mUqgs6ZQ=UP397g@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"
+To: Toshi Kani <toshi.kani@hp.com>
+CC: <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <zhenzhang.zhang@huawei.com>,
+        <wangnan0@huawei.com>, <tangchen@cn.fujitsu.com>,
+        <dave.hansen@intel.com>, <rientjes@google.com>
+Subject: Re: [PATCH] memory-hotplug: Clear pgdat which is allocated by bootmem
+ in try_offline_node()
+References: <5444DE75.6010206@jp.fujitsu.com> <1413910581.12798.25.camel@misato.fc.hp.com>
+In-Reply-To: <1413910581.12798.25.camel@misato.fc.hp.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2014/10/22 1:56), Toshi Kani wrote:
+> On Mon, 2014-10-20 at 19:05 +0900, Yasuaki Ishimatsu wrote:
+>   :
+>> When hot removing memory, pgdat is set to 0 in try_offline_node().
+>> But if the pgdat is allocated by bootmem allocator, the clearing
+>> step is skipped. And when hot adding the same memory, the uninitialized
+>> pgdat is reused. But free_area_init_node() chacks wether pgdat is set
+>
 
+> s/chacks/checks
 
-On Tuesday 21 October 2014 09:19 PM, Gabriel Fernandez wrote:
-> Hi Kishon,
-> 
-> To be sure, if i rename MIPHY_TYPE_SATA into PHY_TYPE_SATA, i have to
-> rename the filename also ?
-> 
-> include/dt-bindings/phy/phy-miphy.h into include/dt-bindings/phy/phy.h
-> 
-> am I right?
+I'll update it.
 
-That's right..
-
-Cheers
-Kishon
-> 
-> Best Regards
-> 
-> Gabriel
-> 
-> On 21 October 2014 12:38, Kishon Vijay Abraham I <kishon@ti.com> wrote:
->> Hi Gabriel,
+>
+>
+>> to zero. As a result, free_area_init_node() hits WARN_ON().
 >>
->> On Friday 26 September 2014 02:24 PM, Gabriel FERNANDEZ wrote:
->>> This provides the shared header file which will be reference from both
->>> the MiPHY28lp driver and its associated Device Tree node(s).
->>>
->>> Signed-off-by: alexandre torgue <alexandre.torgue@st.com>
->>> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
->>> ---
->>>  include/dt-bindings/phy/phy-miphy.h | 12 ++++++++++++
->>>  1 file changed, 12 insertions(+)
->>>  create mode 100644 include/dt-bindings/phy/phy-miphy.h
->>>
->>> diff --git a/include/dt-bindings/phy/phy-miphy.h b/include/dt-bindings/phy/phy-miphy.h
->>> new file mode 100644
->>> index 0000000..9bc49b9
->>> --- /dev/null
->>> +++ b/include/dt-bindings/phy/phy-miphy.h
->>> @@ -0,0 +1,12 @@
->>> +/*
->>> + * This header provides constants for the phy framework
->>> + * based on the STMicroelectronics miphxxxx.
->>> + */
->>> +#ifndef _DT_BINDINGS_PHY_MIPHY
->>> +#define _DT_BINDINGS_PHY_MIPHY
->>> +
->>> +#define MIPHY_TYPE_SATA              1
->>> +#define MIPHY_TYPE_PCIE              2
->>> +#define MIPHY_TYPE_USB               3
+>> This patch clears pgdat which is allocated by bootmem allocator
+>> in try_offline_node().
 >>
->> Since these PHY types are common across SoCs, we can have something like
->> PHY_TYPE_SATA, PHY_TYPE_PCIE so that each SoCs don't have to create a separate
->> header file.
+>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>> CC: Zhang Zhen <zhenzhang.zhang@huawei.com>
+>> CC: Wang Nan <wangnan0@huawei.com>
+>> CC: Tang Chen <tangchen@cn.fujitsu.com>
+>> CC: Toshi Kani <toshi.kani@hp.com>
+>> CC: Dave Hansen <dave.hansen@intel.com>
+>> CC: David Rientjes <rientjes@google.com>
 >>
->> Cheers
->> Kishon
+>> ---
+>>   mm/memory_hotplug.c | 3 ++-
+>>   1 file changed, 2 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+>> index 29d8693..7649f7c 100644
+>> --- a/mm/memory_hotplug.c
+>> +++ b/mm/memory_hotplug.c
+>> @@ -1943,7 +1943,7 @@ void try_offline_node(int nid)
+>>
+>>   	if (!PageSlab(pgdat_page) && !PageCompound(pgdat_page))
+>>   		/* node data is allocated from boot memory */
+>> -		return;
+>> +		goto out;
+>
+
+> Do we still need this if-statement?  That is, do we have to skip the
+> for-loop below even though it checks with is_vmalloc_addr()?
+
+You are right. The if-statement is not necessary. So the issue can be
+fixed by just removing the if-statement.
+
+I'll post updated patch soon.
+
+Thanks,
+Yasuaki Ishimatsu
+
+>
+> Thanks,
+> -Toshi
+>
+>
+>>   	/* free waittable in each zone */
+>>   	for (i = 0; i < MAX_NR_ZONES; i++) {
+>> @@ -1957,6 +1957,7 @@ void try_offline_node(int nid)
+>>   			vfree(zone->wait_table);
+>>   	}
+>>
+>> +out:
+>>   	/*
+>>   	 * Since there is no way to guarentee the address of pgdat/zone is not
+>>   	 * on stack of any kernel threads or used by other kernel objects
+>
+>
+
+
