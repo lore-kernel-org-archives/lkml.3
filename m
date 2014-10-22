@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745AbaJVPpl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 11:45:41 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:54074 "EHLO
+	id S1755652AbaJVQCJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 12:02:09 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:54089 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754596AbaJVPpe (ORCPT
+	with ESMTP id S1754596AbaJVPpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 11:45:34 -0400
+	Wed, 22 Oct 2014 11:45:42 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -15,9 +15,9 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
         Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH v3 16/59] dmaengine: cppi41: Split device_control
-Date: Wed, 22 Oct 2014 17:43:30 +0200
-Message-Id: <1413992653-21963-17-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v3 32/59] dmaengine: mxs: Split device_control
+Date: Wed, 22 Oct 2014 17:43:46 +0200
+Message-Id: <1413992653-21963-33-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -25,70 +25,159 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the TI CPPI41 DMA driver to make use
+Split the device_control callback of the Freescale MXS DMA driver to make use
 of the newly introduced callbacks, that will eventually be used to retrieve
 slave capabilities.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/dma/cppi41.c | 30 +-----------------------------
- 1 file changed, 1 insertion(+), 29 deletions(-)
+ drivers/dma/mxs-dma.c | 59 ++++++++++++++++++++-------------------------------
+ 1 file changed, 23 insertions(+), 36 deletions(-)
 
-diff --git a/drivers/dma/cppi41.c b/drivers/dma/cppi41.c
-index a58eec3b2cad..0f41b5b497db 100644
---- a/drivers/dma/cppi41.c
-+++ b/drivers/dma/cppi41.c
-@@ -524,12 +524,6 @@ static struct dma_async_tx_descriptor *cppi41_dma_prep_slave_sg(
- 	return &c->txd;
+diff --git a/drivers/dma/mxs-dma.c b/drivers/dma/mxs-dma.c
+index 5ea61201dbf0..834041e5a769 100644
+--- a/drivers/dma/mxs-dma.c
++++ b/drivers/dma/mxs-dma.c
+@@ -202,8 +202,9 @@ static struct mxs_dma_chan *to_mxs_dma_chan(struct dma_chan *chan)
+ 	return container_of(chan, struct mxs_dma_chan, chan);
  }
  
--static int cpp41_cfg_chan(struct cppi41_channel *c,
--		struct dma_slave_config *cfg)
--{
--	return 0;
--}
--
- static void cppi41_compute_td_desc(struct cppi41_desc *d)
+-static void mxs_dma_reset_chan(struct mxs_dma_chan *mxs_chan)
++static void mxs_dma_reset_chan(struct dma_chan *chan)
  {
- 	d->pd0 = DESC_TYPE_TEARD << DESC_TYPE;
-@@ -642,28 +636,6 @@ static int cppi41_stop_chan(struct dma_chan *chan)
- 	return 0;
++	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
+ 	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
+ 	int chan_id = mxs_chan->chan.chan_id;
+ 
+@@ -250,8 +251,9 @@ static void mxs_dma_reset_chan(struct mxs_dma_chan *mxs_chan)
+ 	mxs_chan->status = DMA_COMPLETE;
  }
  
--static int cppi41_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--	unsigned long arg)
--{
--	struct cppi41_channel *c = to_cpp41_chan(chan);
--	int ret;
+-static void mxs_dma_enable_chan(struct mxs_dma_chan *mxs_chan)
++static void mxs_dma_enable_chan(struct dma_chan *chan)
+ {
++	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
+ 	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
+ 	int chan_id = mxs_chan->chan.chan_id;
+ 
+@@ -272,13 +274,16 @@ static void mxs_dma_enable_chan(struct mxs_dma_chan *mxs_chan)
+ 	mxs_chan->reset = false;
+ }
+ 
+-static void mxs_dma_disable_chan(struct mxs_dma_chan *mxs_chan)
++static void mxs_dma_disable_chan(struct dma_chan *chan)
+ {
++	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
++
+ 	mxs_chan->status = DMA_COMPLETE;
+ }
+ 
+-static void mxs_dma_pause_chan(struct mxs_dma_chan *mxs_chan)
++static void mxs_dma_pause_chan(struct dma_chan *chan)
+ {
++	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
+ 	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
+ 	int chan_id = mxs_chan->chan.chan_id;
+ 
+@@ -293,8 +298,9 @@ static void mxs_dma_pause_chan(struct mxs_dma_chan *mxs_chan)
+ 	mxs_chan->status = DMA_PAUSED;
+ }
+ 
+-static void mxs_dma_resume_chan(struct mxs_dma_chan *mxs_chan)
++static void mxs_dma_resume_chan(struct dma_chan *chan)
+ {
++	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
+ 	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
+ 	int chan_id = mxs_chan->chan.chan_id;
+ 
+@@ -383,7 +389,7 @@ static irqreturn_t mxs_dma_int_handler(int irq, void *dev_id)
+ 			"%s: error in channel %d\n", __func__,
+ 			chan);
+ 		mxs_chan->status = DMA_ERROR;
+-		mxs_dma_reset_chan(mxs_chan);
++		mxs_dma_reset_chan(mxs_chan->chan);
+ 	} else if (mxs_chan->status != DMA_COMPLETE) {
+ 		if (mxs_chan->flags & MXS_DMA_SG_LOOP) {
+ 			mxs_chan->status = DMA_IN_PROGRESS;
+@@ -432,7 +438,7 @@ static int mxs_dma_alloc_chan_resources(struct dma_chan *chan)
+ 	if (ret)
+ 		goto err_clk;
+ 
+-	mxs_dma_reset_chan(mxs_chan);
++	mxs_dma_reset_chan(chan);
+ 
+ 	dma_async_tx_descriptor_init(&mxs_chan->desc, chan);
+ 	mxs_chan->desc.tx_submit = mxs_dma_tx_submit;
+@@ -456,7 +462,7 @@ static void mxs_dma_free_chan_resources(struct dma_chan *chan)
+ 	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
+ 	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
+ 
+-	mxs_dma_disable_chan(mxs_chan);
++	mxs_dma_disable_chan(chan);
+ 
+ 	free_irq(mxs_chan->chan_irq, mxs_dma);
+ 
+@@ -651,28 +657,14 @@ err_out:
+ 	return NULL;
+ }
+ 
+-static int mxs_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-		unsigned long arg)
++static int mxs_dma_terminate_all(struct dma_chan *chan)
+ {
+ 	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
+-	int ret = 0;
 -
 -	switch (cmd) {
--	case DMA_SLAVE_CONFIG:
--		ret = cpp41_cfg_chan(c, (struct dma_slave_config *) arg);
--		break;
--
 -	case DMA_TERMINATE_ALL:
--		ret = cppi41_stop_chan(chan);
+-		mxs_dma_reset_chan(mxs_chan);
+-		mxs_dma_disable_chan(mxs_chan);
 -		break;
--
+-	case DMA_PAUSE:
+-		mxs_dma_pause_chan(mxs_chan);
+-		break;
+-	case DMA_RESUME:
+-		mxs_dma_resume_chan(mxs_chan);
+-		break;
 -	default:
--		ret = -ENXIO;
--		break;
+-		ret = -ENOSYS;
 -	}
+ 
 -	return ret;
++	mxs_dma_reset_chan(chan);
++	mxs_dma_disable_chan(chan);
++
++	return 0;
+ }
+ 
+ static enum dma_status mxs_dma_tx_status(struct dma_chan *chan,
+@@ -701,13 +693,6 @@ static enum dma_status mxs_dma_tx_status(struct dma_chan *chan,
+ 	return mxs_chan->status;
+ }
+ 
+-static void mxs_dma_issue_pending(struct dma_chan *chan)
+-{
+-	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
+-
+-	mxs_dma_enable_chan(mxs_chan);
 -}
 -
- static void cleanup_chans(struct cppi41_dd *cdd)
+ static int __init mxs_dma_init(struct mxs_dma_engine *mxs_dma)
  {
- 	while (!list_empty(&cdd->ddev.channels)) {
-@@ -948,7 +920,7 @@ static int cppi41_dma_probe(struct platform_device *pdev)
- 	cdd->ddev.device_tx_status = cppi41_dma_tx_status;
- 	cdd->ddev.device_issue_pending = cppi41_dma_issue_pending;
- 	cdd->ddev.device_prep_slave_sg = cppi41_dma_prep_slave_sg;
--	cdd->ddev.device_control = cppi41_dma_control;
-+	cdd->ddev.device_terminate_all = cppi41_stop_chan;
- 	cdd->ddev.dev = dev;
- 	INIT_LIST_HEAD(&cdd->ddev.channels);
- 	cpp41_dma_info.dma_cap = cdd->ddev.cap_mask;
+ 	int ret;
+@@ -860,8 +845,10 @@ static int __init mxs_dma_probe(struct platform_device *pdev)
+ 	mxs_dma->dma_device.device_tx_status = mxs_dma_tx_status;
+ 	mxs_dma->dma_device.device_prep_slave_sg = mxs_dma_prep_slave_sg;
+ 	mxs_dma->dma_device.device_prep_dma_cyclic = mxs_dma_prep_dma_cyclic;
+-	mxs_dma->dma_device.device_control = mxs_dma_control;
+-	mxs_dma->dma_device.device_issue_pending = mxs_dma_issue_pending;
++	mxs_dma->dma_device.device_pause = mxs_dma_pause_chan;
++	mxs_dma->dma_device.device_resume = mxs_dma_resume_chan;
++	mxs_dma->dma_device.device_terminate_all = mxs_dma_terminate_all;
++	mxs_dma->dma_device.device_issue_pending = mxs_dma_enable_chan;
+ 
+ 	ret = dma_async_device_register(&mxs_dma->dma_device);
+ 	if (ret) {
 -- 
 2.1.1
 
