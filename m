@@ -1,86 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753944AbaJVOcr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 10:32:47 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58569 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753673AbaJVOco (ORCPT
+	id S1754002AbaJVOd1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 10:33:27 -0400
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:49762 "EHLO
+	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753565AbaJVObo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 10:32:44 -0400
-Date: Wed, 22 Oct 2014 16:32:41 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com, adrian.hunter@intel.com, acme@infradead.org
-Subject: Re: [PATCH v5 12/20] x86: perf: intel_pt: Intel PT PMU driver
-Message-ID: <20141022143241.GT12706@worktop.programming.kicks-ass.net>
-References: <1413207948-28202-1-git-send-email-alexander.shishkin@linux.intel.com>
- <1413207948-28202-13-git-send-email-alexander.shishkin@linux.intel.com>
+	Wed, 22 Oct 2014 10:31:44 -0400
+X-ASG-Debug-ID: 1413988300-0759e74a717a4f50002-xx1T2L
+X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
+X-Barracuda-AUTH-User: xsenscom
+X-Barracuda-Apparent-Source-IP: 87.249.116.215
+From: Frans Klaver <frans.klaver@xsens.com>
+To: Sebastian Reichel <sre@kernel.org>
+CC: Frans Klaver <frans.klaver@xsens.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        =?UTF-8?q?Ren=C3=A9=20Moll?= <linux@r-moll.nl>,
+        Guenter Roeck <linux@roeck-us.net>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>
+Subject: [PATCH 09/13] power: reset: ltc2952: fix C++ style function pointers
+Date: Wed, 22 Oct 2014 16:31:06 +0200
+X-ASG-Orig-Subj: [PATCH 09/13] power: reset: ltc2952: fix C++ style function pointers
+Message-ID: <1413988270-28092-10-git-send-email-frans.klaver@xsens.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1413988270-28092-1-git-send-email-frans.klaver@xsens.com>
+References: <1413988270-28092-1-git-send-email-frans.klaver@xsens.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413207948-28202-13-git-send-email-alexander.shishkin@linux.intel.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Type: text/plain
+X-Originating-IP: [172.16.11.125]
+X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
+X-Barracuda-Start-Time: 1413988301
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.50
+X-Barracuda-Spam-Status: No, SCORE=0.50 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=BSF_RULE_7582B
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.10827
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.50 BSF_RULE_7582B         Custom Rule 7582B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 13, 2014 at 04:45:40PM +0300, Alexander Shishkin wrote:
-> +
-> +enum cpuid_regs {
-> +	CR_EAX = 0,
-> +	CR_ECX,
-> +	CR_EDX,
-> +	CR_EBX
-> +};
-> +
-> +/*
-> + * Capabilities of Intel PT hardware, such as number of address bits or
-> + * supported output schemes, are cached and exported to userspace as "caps"
-> + * attribute group of pt pmu device
-> + * (/sys/bus/event_source/devices/intel_pt/caps/) so that userspace can store
-> + * relevant bits together with intel_pt traces.
-> + */
-> +#define PT_CAP(_n, _l, _r, _m)						\
-> +	[PT_CAP_ ## _n] = { .name = __stringify(_n), .leaf = _l,	\
-> +			    .reg = _r, .mask = _m }
-> +
-> +static struct pt_cap_desc {
-> +	const char	*name;
-> +	u32		leaf;
-> +	u8		reg;
-> +	u32		mask;
-> +} pt_caps[] = {
-> +	PT_CAP(max_subleaf,		0, CR_EAX, 0xffffffff),
-> +	PT_CAP(cr3_filtering,		0, CR_EBX, BIT(0)),
-> +	PT_CAP(topa_output,		0, CR_ECX, BIT(0)),
-> +	PT_CAP(topa_multiple_entries,	0, CR_ECX, BIT(1)),
-> +	PT_CAP(payloads_lip,		0, CR_ECX, BIT(31)),
-> +};
-> +
-> +static u32 pt_cap_get(enum pt_capabilities cap)
-> +{
-> +	struct pt_cap_desc *cd = &pt_caps[cap];
-> +	u32 c = pt_pmu.caps[cd->leaf * 4 + cd->reg];
-> +	unsigned int shift = __ffs(cd->mask);
-> +
-> +	return (c & cd->mask) >> shift;
-> +}
+The function pointers for the timers and pm_power_off are assigned with
+C++ style
+	foo = &func;
 
-> +	if (test_cpu_cap(&boot_cpu_data, X86_FEATURE_INTEL_PT)) {
-> +		for (i = 0; i < PT_CPUID_LEAVES; i++)
-> +			cpuid_count(20, i,
-> +				    &pt_pmu.caps[CR_EAX + i * 4],
-> +				    &pt_pmu.caps[CR_EBX + i * 4],
-> +				    &pt_pmu.caps[CR_ECX + i * 4],
-> +				    &pt_pmu.caps[CR_EDX + i * 4]);
-> +	} else
-> +		return -ENODEV;
+Let's change it instead to the more C style
+	foo = func;
 
-I would really rather you use bitfield unions for cpuid stuff, have a
-look at union cpuid10_e[abd]x as used in
-perf_event_intel.c:intel_pmu_init().
+Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
+---
+ drivers/power/reset/ltc2952-poweroff.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/power/reset/ltc2952-poweroff.c b/drivers/power/reset/ltc2952-poweroff.c
+index 70d8e3a..8ab1da6 100644
+--- a/drivers/power/reset/ltc2952-poweroff.c
++++ b/drivers/power/reset/ltc2952-poweroff.c
+@@ -182,10 +182,10 @@ static void ltc2952_poweroff_default(struct ltc2952_poweroff *data)
+ 	data->trigger_delay = ktime_set(2, 500L*1E6L);
+ 
+ 	hrtimer_init(&data->timer_trigger, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+-	data->timer_trigger.function = &ltc2952_poweroff_timer_trigger;
++	data->timer_trigger.function = ltc2952_poweroff_timer_trigger;
+ 
+ 	hrtimer_init(&data->timer_wde, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+-	data->timer_wde.function = &ltc2952_poweroff_timer_wde;
++	data->timer_wde.function = ltc2952_poweroff_timer_wde;
+ }
+ 
+ static int ltc2952_poweroff_init(struct platform_device *pdev)
+@@ -270,7 +270,7 @@ static int ltc2952_poweroff_probe(struct platform_device *pdev)
+ 
+ 	/* TODO: remove ltc2952_data */
+ 	ltc2952_data = data;
+-	pm_power_off = &ltc2952_poweroff_kill;
++	pm_power_off = ltc2952_poweroff_kill;
+ 
+ 	data->panic_notifier.notifier_call = ltc2952_poweroff_notify_panic;
+ 	atomic_notifier_chain_register(&panic_notifier_list,
+-- 
+2.1.0
+
