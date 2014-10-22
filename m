@@ -1,69 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164AbaJVGzC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 02:55:02 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:51385 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754098AbaJVGzA (ORCPT
+	id S1750964AbaJVG42 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 02:56:28 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:25601 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105AbaJVG41 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 02:55:00 -0400
-Message-ID: <544754BD.3010309@hitachi.com>
-Date: Wed, 22 Oct 2014 15:54:53 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 22 Oct 2014 02:56:27 -0400
+Date: Wed, 22 Oct 2014 08:56:25 +0200
+From: Ludovic Desroches <ludovic.desroches@atmel.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Sebastian Reichel <sre@kernel.org>, <linux-pm@vger.kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-kernel@vger.kernel.org>, David Woodhouse <dwmw2@infradead.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 8/8] MAINTAINERS: add at91 power and memory entries
+Message-ID: <20141022065625.GK7443@ldesroches-Latitude-E6320>
+Mail-Followup-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+	Nicolas Ferre <nicolas.ferre@atmel.com>,
+	Sebastian Reichel <sre@kernel.org>, linux-pm@vger.kernel.org,
+	Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+	Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+	linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+	linux-arm-kernel@lists.infradead.org
+References: <1413928540-27099-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <1413928540-27099-9-git-send-email-alexandre.belloni@free-electrons.com>
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        linux-kernel@vger.kernel.org, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Seth Jennings <sjenning@redhat.com>
-Subject: Re: [PATCH] kprobes: add kprobe_is_function_probed()
-References: <alpine.LNX.2.00.1410211744550.24255@pobox.suse.cz> <544716CA.2020605@hitachi.com> <alpine.LNX.2.00.1410220800040.22681@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1410220800040.22681@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1413928540-27099-9-git-send-email-alexandre.belloni@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/10/22 15:02), Jiri Kosina wrote:
-> On Wed, 22 Oct 2014, Masami Hiramatsu wrote:
+On Tue, Oct 21, 2014 at 11:55:40PM +0200, Alexandre Belloni wrote:
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> ---
+>  MAINTAINERS | 19 +++++++++++++++++++
+>  1 file changed, 19 insertions(+)
 > 
->>> Add a function that allows external users (such as live patching 
->>> mechanisms) to check whether a given function (identified by symbol name) 
->>> has a kprobe installed in it.
->>
->> Actually, we've already exported the list of kprobes with probe points
->> (symbols) via debugfs. Please check /sys/kernel/debug/kprobes/list :)
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index a20df9bf8ab0..e325c81ee2fa 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -871,6 +871,25 @@ M:	Boris Brezillon <boris.brezillon@free-electrons.com>
+>  S:	Maintained
+>  F:	drivers/clk/at91
+>  
+> +ARM/ATMEL AT91 Poweroff driver
+> +M:	Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> +L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+> +S:	Maintained
+> +F:	drivers/power/reset/at91-poweroff.c
+> +
+> +ARM/ATMEL AT91 Reset driver
+> +M:	Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> +L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+> +S:	Maintained
+> +F:	drivers/power/reset/at91-reset.c
+> +
+> +ARM/ATMEL AT91 SDRAM Controlller driver
+
+Controller
+
+> +M:	Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> +L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+> +S:	Maintained
+> +F:	drivers/memory/atmel-sdramc.c
+> +F:	include/soc/atmel/memory.h
+> +
+>  ARM/CALXEDA HIGHBANK ARCHITECTURE
+>  M:	Rob Herring <robh@kernel.org>
+>  L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+> -- 
+> 1.9.1
 > 
-> Yes, I know, and kprobe_is_function_probed() is performing very similar 
-> thing that show_kprobe_addr() is doing.
-> But we'd like to be able to check this from within a kernel module (the 
-> patch module) and issue WARN().
 > 
-> Otherwise we'll need to have a machinery in userspace before insmod which 
-> will look up the functions in the module and compare them to the 
-> debufs-provided interface.
-> 
-> Also, I don't think we want to be dependent on debugfs being mounted and 
-> discoverable, etc ...
-
-OK, and even if so, since there is no user of this function, at this point
-we can not merge this. I'd like to wait until live patching.
-
-BTW, if your tool is in kernel, you can use get_kprobe(addr) to check
-there is kprobes on a given address. And of course you can use kallsyms
-to get the address range of given function. Moreover, as Josh pointed,
-there are several same name functions in kernel. I think this kind of
-function should better provide address-base interface.
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
