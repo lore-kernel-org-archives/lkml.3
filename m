@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753671AbaJVEV2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 00:21:28 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:51735 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750813AbaJVEV0 (ORCPT
+	id S1752760AbaJVEdW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 00:33:22 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:48668 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751100AbaJVEdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 00:21:26 -0400
-Date: Wed, 22 Oct 2014 09:51:15 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Brian Vandre <bvandre@gmail.com>
-Cc: gregkh@linuxfoundation.org, jic23@kernel.org,
-        alexandre.belloni@free-electrons.com, linux-iio@vger.kernel.org,
-        marex@denx.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] Staging: iio: adc: fix line over 80 characters
-Message-ID: <20141022042115.GA2530@sudip-PC>
-References: <cover.1413858979.git.bvandre@gmail.com>
- <cover.1413931615.git.bvandre@gmail.com>
- <ec4b497827f6c7615f6b5eef5669144f8c68d034.1413931615.git.bvandre@gmail.com>
+	Wed, 22 Oct 2014 00:33:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ec4b497827f6c7615f6b5eef5669144f8c68d034.1413931615.git.bvandre@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1413933588-25721-1-git-send-email-zyw@rock-chips.com>
+References: <1413933461-25602-1-git-send-email-zyw@rock-chips.com>
+	<1413933588-25721-1-git-send-email-zyw@rock-chips.com>
+Date: Tue, 21 Oct 2014 21:33:19 -0700
+X-Google-Sender-Auth: hXbQO6qctOnuoUAaerkIDjx2_bA
+Message-ID: <CAD=FV=W05jEfViCGyz76myP2k7-WFrXwB+o3pzCwCj5kob2TVg@mail.gmail.com>
+Subject: Re: [PATCH v4 2/6] pinctrl: rockchip: save and restore gpio6_c6
+ pinmux in suspend/resume
+From: Doug Anderson <dianders@chromium.org>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: Heiko Stuebner <heiko@sntech.de>, Mike Turquette <mturquette@linaro.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-rockchip@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 05:56:47PM -0500, Brian Vandre wrote:
-> This fixes the 2 checkpatch.pl warnings:
-> WARNING: line over 80 characters
-> 
-please check your patch with --strict option of checkpatch.pl , and you will get :
-"Alignment should match open parenthesis" .
+Chris,
 
-thanks
-sudip
+On Tue, Oct 21, 2014 at 4:19 PM, Chris Zhong <zyw@rock-chips.com> wrote:
 
-> Signed-off-by: Brian Vandre <bvandre@gmail.com>
-> ---
->  drivers/staging/iio/adc/mxs-lradc.c | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/staging/iio/adc/mxs-lradc.c b/drivers/staging/iio/adc/mxs-lradc.c
-> index 32a1926..62449a6 100644
-> --- a/drivers/staging/iio/adc/mxs-lradc.c
-> +++ b/drivers/staging/iio/adc/mxs-lradc.c
-> @@ -455,7 +455,8 @@ static void mxs_lradc_setup_ts_channel(struct mxs_lradc *lradc, unsigned ch)
->  	 * SoC's delay unit and start the conversion later
->  	 * and automatically.
->  	 */
-> -	mxs_lradc_reg_wrt(lradc, LRADC_DELAY_TRIGGER(0) | /* don't trigger ADC */
-> +	mxs_lradc_reg_wrt(lradc,
-> +		LRADC_DELAY_TRIGGER(0) | /* don't trigger ADC */
->  		LRADC_DELAY_TRIGGER_DELAYS(1 << 3) | /* trigger DELAY unit#3 */
->  		LRADC_DELAY_KICK |
->  		LRADC_DELAY_DELAY(lradc->settling_delay),
-> @@ -513,7 +514,8 @@ static void mxs_lradc_setup_ts_pressure(struct mxs_lradc *lradc, unsigned ch1,
->  	 * SoC's delay unit and start the conversion later
->  	 * and automatically.
->  	 */
-> -	mxs_lradc_reg_wrt(lradc, LRADC_DELAY_TRIGGER(0) | /* don't trigger ADC */
-> +	mxs_lradc_reg_wrt(lradc,
-> +		LRADC_DELAY_TRIGGER(0) | /* don't trigger ADC */
->  		LRADC_DELAY_TRIGGER_DELAYS(1 << 3) | /* trigger DELAY unit#3 */
->  		LRADC_DELAY_KICK |
->  		LRADC_DELAY_DELAY(lradc->settling_delay), LRADC_DELAY(2));
-> -- 
-> 1.9.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> +static u32 rk3288_grf_gpio6c_iomux;
+
+Somehow my instinct says that this should be in the "info" structure,
+but I can't say exactly why (since by definition there can be only one
+gpio6_c6).  ...no need to change this in my opinion.
+
+
+>  static int rockchip_pinctrl_suspend(struct device *dev)
+>  {
+>         struct rockchip_pinctrl *info = dev_get_drvdata(dev);
+> +       int ret = pinctrl_force_sleep(info->pctl_dev);
+> +
+> +       if (ret)
+> +               return ret;
+> +
+> +       /*
+> +        * RK3288 GPIO6_C6 mux would be modified by Maskrom when resume, so save
+> +        * the setting here, and restore it at resume.
+> +        */
+> +       if (info->ctrl->type == RK3288) {
+> +               ret = regmap_read(info->regmap_base, RK3288_GRF_GPIO6C_IOMUX,
+> +                                 &rk3288_grf_gpio6c_iomux);
+> +               if (ret)
+> +                       return ret;
+
+I seriously doubt it matters, but as a nit it seems like you should
+call pinctrl_force_default() in the error case (to undo
+pinctrl_force_sleep).
+
+
+Everything is just nits and this works for me, so:
+
+Tested-by: Doug Anderson <dianders@chromium.org>
+Reviewed-by: Doug Anderson <dianders@chromium.org>
