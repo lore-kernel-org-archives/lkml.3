@@ -1,196 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752158AbaJVNyS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 09:54:18 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:63832 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752057AbaJVNyQ (ORCPT
+	id S1752232AbaJVNyd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 09:54:33 -0400
+Received: from [65.55.169.109] ([65.55.169.109]:57997 "EHLO
+	na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751694AbaJVNyb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 09:54:16 -0400
+	Wed, 22 Oct 2014 09:54:31 -0400
+From: Thomas Shao <huishao@microsoft.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Mike Surcouf <mps.surcouf.lkml@gmail.com>
+CC: Richard Cochran <richardcochran@gmail.com>,
+        Jeff Epler <jepler@unpythonic.net>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        KY Srinivasan <kys@microsoft.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Richard Cochran <rcochran@linutronix.de>
+Subject: RE: [PATCH v2 1/2] timekeeping: add EXPORT_SYMBOL_GPL for
+ do_adjtimex()
+Thread-Topic: [PATCH v2 1/2] timekeeping: add EXPORT_SYMBOL_GPL for
+ do_adjtimex()
+Thread-Index: AQHP6EpL5oa00nhAzECMXNpwI49m+pw5VpSAgAADkACAAIUwkIAAF66AgABISwCAABt+4IABo8CAgAAcEICAAA+vgA==
+Date: Wed, 22 Oct 2014 13:51:12 +0000
+Message-ID: <CD2CABCB2C0A0D4682C5F8AD840141540D6BE1@HKXPRD3002MB006.064d.mgd.msft.net>
+References: <1413362372-16236-1-git-send-email-huishao@microsoft.com>
+ <alpine.DEB.2.11.1410202027220.5308@nanos>
+ <alpine.DEB.2.11.1410202034150.5308@nanos>
+ <CD2CABCB2C0A0D4682C5F8AD840141540D27B9@HKXPRD3002MB006.064d.mgd.msft.net>
+ <20141021040212.GA6278@unpythonic.net> <20141021082058.GB6808@netboy>
+ <CD2CABCB2C0A0D4682C5F8AD840141540D33BC@HKXPRD3002MB006.064d.mgd.msft.net>
+ <CAL7Bo8EUcmUXhpJvrz_G-Svs+GwSF9CQec5oWWQSYBqWiJYH2w@mail.gmail.com>
+ <alpine.DEB.2.11.1410221441370.5308@nanos>
+In-Reply-To: <alpine.DEB.2.11.1410221441370.5308@nanos>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [180.154.232.47]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-Originating-IP: [2a01:e35:2434:4600:389c:cfae:9fd8:91b0]
-In-Reply-To: <54468BDA.6050606@linaro.org>
-References: <1413205825-6370-1-git-send-email-a.motakis@virtualopensystems.com>
- <1413205825-6370-3-git-send-email-a.motakis@virtualopensystems.com>
- <1413908269.4202.135.camel@ul30vt.home> <54468BDA.6050606@linaro.org>
-From: Antonios Motakis <a.motakis@virtualopensystems.com>
-Date: Wed, 22 Oct 2014 15:53:55 +0200
-Message-ID: <CAG8rG2yjWDPuorXAdhQvVAcJb7eiPFYwTivHV2qo0rBdfn3sSA@mail.gmail.com>
-Subject: Re: [PATCH v8 02/18] vfio: platform: probe to devices on the platform bus
-To: Eric Auger <eric.auger@linaro.org>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        kvm-arm <kvmarm@lists.cs.columbia.edu>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Will Deacon <will.deacon@arm.com>,
-        VirtualOpenSystems Technical Team <tech@virtualopensystems.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Kim Phillips <kim.phillips@freescale.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:VFIO DRIVER <kvm@vger.kernel.org>, open list:ABI/API" 
-	<linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(438002)(199003)(13464003)(51704005)(189002)(377454003)(164054003)(24454002)(85852003)(86612001)(86146001)(2656002)(46406003)(87936001)(86362001)(84676001)(92566001)(55846006)(92726001)(50986999)(76176999)(54356999)(23726002)(19580395003)(69596002)(81156004)(50466002)(106116001)(106466001)(26826002)(16796002)(93886004)(107046002)(97756001)(85306004)(97736003)(15202345003)(31966008)(77096002)(99396003)(68736004)(4396001)(44976005)(33656002)(15975445006)(6806004)(19580405001)(95666004)(80022003)(47776003)(64706001)(21056001)(76482002)(20776003)(66066001)(46102003)(120916001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN3PR0301MB1204;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1204;
+X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+X-Forefront-PRVS: 037291602B
+Authentication-Results: spf=pass (sender IP is 131.107.125.37)
+ smtp.mailfrom=huishao@microsoft.com; 
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB0849;
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 6:37 PM, Eric Auger <eric.auger@linaro.org> wrote:
-> On 10/21/2014 06:17 PM, Alex Williamson wrote:
->> On Mon, 2014-10-13 at 15:10 +0200, Antonios Motakis wrote:
->>> Driver to bind to Linux platform devices, and callbacks to discover their
->>> resources to be used by the main VFIO PLATFORM code.
->>>
->>> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
->>> ---
->>>  drivers/vfio/platform/vfio_platform.c | 107 ++++++++++++++++++++++++++++++++++
->>>  include/uapi/linux/vfio.h             |   1 +
->>>  2 files changed, 108 insertions(+)
->>>  create mode 100644 drivers/vfio/platform/vfio_platform.c
->>>
->>> diff --git a/drivers/vfio/platform/vfio_platform.c b/drivers/vfio/platform/vfio_platform.c
->>> new file mode 100644
->>> index 0000000..baeb7da
->>> --- /dev/null
->>> +++ b/drivers/vfio/platform/vfio_platform.c
->>> @@ -0,0 +1,107 @@
->>> +/*
->>> + * Copyright (C) 2013 - Virtual Open Systems
->>> + * Author: Antonios Motakis <a.motakis@virtualopensystems.com>
->>> + *
->>> + * This program is free software; you can redistribute it and/or modify
->>> + * it under the terms of the GNU General Public License, version 2, as
->>> + * published by the Free Software Foundation.
->>> + *
->>> + * This program is distributed in the hope that it will be useful,
->>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->>> + * GNU General Public License for more details.
->>> + */
->>> +
->>> +#include <linux/device.h>
->>> +#include <linux/eventfd.h>
->>> +#include <linux/interrupt.h>
->>> +#include <linux/iommu.h>
->>> +#include <linux/module.h>
->>> +#include <linux/mutex.h>
->>> +#include <linux/notifier.h>
->>> +#include <linux/pm_runtime.h>
->>> +#include <linux/slab.h>
->>> +#include <linux/types.h>
->>> +#include <linux/uaccess.h>
->>> +#include <linux/vfio.h>
->>> +#include <linux/io.h>
->>> +#include <linux/platform_device.h>
->>> +#include <linux/irq.h>
->>> +
->>> +#include "vfio_platform_private.h"
->>> +
->>> +#define DRIVER_VERSION  "0.8"
->>> +#define DRIVER_AUTHOR   "Antonios Motakis <a.motakis@virtualopensystems.com>"
->>> +#define DRIVER_DESC     "VFIO for platform devices - User Level meta-driver"
->>> +
->>> +/* probing devices from the linux platform bus */
->>> +
->>> +static struct resource *get_platform_resource(struct vfio_platform_device *vdev,
->>> +                                            int num)
->>> +{
->>> +    struct platform_device *dev = (struct platform_device *) vdev->opaque;
->>> +    int i;
->>> +
->>> +    for (i = 0; i < dev->num_resources; i++) {
->>> +            struct resource *r = &dev->resource[i];
->>> +
->>> +            if (resource_type(r) & (IORESOURCE_MEM|IORESOURCE_IO)) {
->>> +                    num--;
->>> +
->>> +                    if (!num)
->>> +                            return r;
->>
->> Has this been tested?  What happens when we call this with num = 0?
-> Yep. I confirm I enter that case with my xgmac where the IORESOURCE_MEM
-> is the 1st resource. I Just ended to the same cause ;-)
 
-Right, num-- should be after the check, or we miss one region.
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> owner@vger.kernel.org] On Behalf Of Thomas Gleixner
+> Sent: Wednesday, October 22, 2014 8:42 PM
+> To: Mike Surcouf
+> Cc: Thomas Shao; Richard Cochran; Jeff Epler; gregkh@linuxfoundation.org;
+> LKML; devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> jasowang@redhat.com; KY Srinivasan; John Stultz; Richard Cochran
+> Subject: Re: [PATCH v2 1/2] timekeeping: add EXPORT_SYMBOL_GPL for
+> do_adjtimex()
+> 
+> On Wed, 22 Oct 2014, Mike Surcouf wrote:
+> 
+> > I get that NTP can be installed locally.  This is how I regulate time
+> > on my guests.  I agree the admin argument probably doesn't stand up.
+> >
+> > The problem is hyperv_clocksource (pluggable time source used by
+> > hyperv guests) is systematically fast in my environment. by around
+> > -250 PPM.
+> > I get away with NTP (just).
+> > However others have had to use tickadj to get hyperv_clocksource close
+> > enough for NTP to work i.e. inside +/-500 PPM. (This IS outside normal
+> > admin tasks)
+> >
+> > So if we are going to use NTP as the solution for hyperv guests (which
+> > is a valid one) the systematic drift of hyperv_clocksource in
+> > different environments will need to be addressed.  Maybe this patch
+> > could be modified to tune the tick count on boot before NTP starts and
+> > then leave it alone so NTP can take over.
+> 
+> How about fixing hyperv_clocksource in the first place?
+> 
 
->
-> Best Regards
->
-> Eric
->>
->>> +            }
->>> +    }
->>> +    return NULL;
->>> +}
->>> +
->>> +static int get_platform_irq(struct vfio_platform_device *vdev, int i)
->>> +{
->>> +    struct platform_device *pdev = (struct platform_device *) vdev->opaque;
->>> +
->>> +    return platform_get_irq(pdev, i);
->>> +}
->>> +
->>> +
->>> +static int vfio_platform_probe(struct platform_device *pdev)
->>> +{
->>> +    struct vfio_platform_device *vdev;
->>> +    int ret;
->>> +
->>> +    vdev = kzalloc(sizeof(*vdev), GFP_KERNEL);
->>> +    if (!vdev)
->>> +            return -ENOMEM;
->>> +
->>> +    vdev->opaque = (void *) pdev;
->>> +    vdev->name = pdev->name;
->>> +    vdev->flags = VFIO_DEVICE_FLAGS_PLATFORM;
->>> +    vdev->get_resource = get_platform_resource;
->>> +    vdev->get_irq = get_platform_irq;
->>> +
->>> +    ret = vfio_platform_probe_common(vdev, &pdev->dev);
->>> +    if (ret)
->>> +            kfree(vdev);
->>> +
->>> +    return ret;
->>> +}
->>> +
->>> +static int vfio_platform_remove(struct platform_device *pdev)
->>> +{
->>> +    return vfio_platform_remove_common(&pdev->dev);
->>> +}
->>> +
->>> +static struct platform_driver vfio_platform_driver = {
->>> +    .probe          = vfio_platform_probe,
->>> +    .remove         = vfio_platform_remove,
->>> +    .driver = {
->>> +            .name   = "vfio-platform",
->>> +            .owner  = THIS_MODULE,
->>> +    },
->>> +};
->>> +
->>> +module_platform_driver(vfio_platform_driver);
->>> +
->>> +MODULE_VERSION(DRIVER_VERSION);
->>> +MODULE_LICENSE("GPL v2");
->>> +MODULE_AUTHOR(DRIVER_AUTHOR);
->>> +MODULE_DESCRIPTION(DRIVER_DESC);
->>> diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
->>> index 111b5e8..aca6d3e 100644
->>> --- a/include/uapi/linux/vfio.h
->>> +++ b/include/uapi/linux/vfio.h
->>> @@ -158,6 +158,7 @@ struct vfio_device_info {
->>>      __u32   flags;
->>>  #define VFIO_DEVICE_FLAGS_RESET     (1 << 0)        /* Device supports reset */
->>>  #define VFIO_DEVICE_FLAGS_PCI       (1 << 1)        /* vfio-pci device */
->>> +#define VFIO_DEVICE_FLAGS_PLATFORM (1 << 2) /* vfio-platform device */
->>>      __u32   num_regions;    /* Max region index + 1 */
->>>      __u32   num_irqs;       /* Max IRQ index + 1 */
->>>  };
->>
->>
->>
->
+I've tested the hyperv_clocksource in my environment using upstream kernel. There is some minor time drift (around 1.5 second one day), it should not be that big, and break ntp. 
 
+Mike, can you share me your kernel version and which Linux distro do you use? 
 
-
--- 
-Antonios Motakis
-Virtual Open Systems
+> Thanks,
+> 
+> 	tglx
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in the
+> body of a message to majordomo@vger.kernel.org More majordomo info at
+> http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
