@@ -1,86 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932650AbaJVVEd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 17:04:33 -0400
-Received: from mail-oi0-f48.google.com ([209.85.218.48]:44372 "EHLO
-	mail-oi0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932270AbaJVVEb (ORCPT
+	id S932863AbaJVVFS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 17:05:18 -0400
+Received: from galahad.ideasonboard.com ([185.26.127.97]:43143 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932270AbaJVVFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 17:04:31 -0400
+	Wed, 22 Oct 2014 17:05:16 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Antoine =?ISO-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
+        lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: Re: [PATCH v3 05/59] dmaengine: Make channel allocation callbacks optional
+Date: Thu, 23 Oct 2014 00:05:13 +0300
+Message-ID: <17062495.59UaxHxT3Y@avalon>
+User-Agent: KMail/4.12.5 (Linux/3.14.14-gentoo; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <1413992653-21963-6-git-send-email-maxime.ripard@free-electrons.com>
+References: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com> <1413992653-21963-6-git-send-email-maxime.ripard@free-electrons.com>
 MIME-Version: 1.0
-In-Reply-To: <20141022091239.GG12706@worktop.programming.kicks-ass.net>
-References: <1412872486-2930-1-git-send-email-eranian@google.com>
-	<20141021112501.GY23531@worktop.programming.kicks-ass.net>
-	<CABPqkBTDz56a9Hoy04W6VmTG_FTOE72037D0tmnh+ntw+VW0ZQ@mail.gmail.com>
-	<20141021130320.GE12706@worktop.programming.kicks-ass.net>
-	<CABPqkBQuf_W1X_VbVzLhKbv6AZwKE3YyHGpT=cRFNBEak5wz_Q@mail.gmail.com>
-	<20141022091239.GG12706@worktop.programming.kicks-ass.net>
-Date: Wed, 22 Oct 2014 23:04:31 +0200
-Message-ID: <CABPqkBQSSsSFMfq=Wb7pZZD_gjCvqh4mTt88FL3Eq-fgduEriQ@mail.gmail.com>
-Subject: Re: [PATCH v2 0/12] perf/x86: implement HT leak workaround for SNB/IVB/HSW
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, "Liang, Kan" <kan.liang@intel.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 11:12 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, Oct 21, 2014 at 03:08:32PM +0200, Stephane Eranian wrote:
->> On Tue, Oct 21, 2014 at 3:03 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->> > On Tue, Oct 21, 2014 at 02:28:06PM +0200, Stephane Eranian wrote:
->> >> Peter,
->> >>
->> >> On Tue, Oct 21, 2014 at 1:25 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->> >> >
->> >> >
->> >> > lkml.kernel.org/r/CABPqkBRbst4sgpgE5O_VXt-CSC0VD=aP2KWA0e3Uy64tw7df3A@mail.gmail.com
->> >> >
->> >> > I missed that 3 lines if they were in here.
->> >> >
->> >> I did not put them in there because there is another problem.
->> >> If you partition the generic counters 2 and 2, then some CPUs will not
->> >> be able to measure some events.
->> >> Unfortunately, there is no way to partition the 4 counters such that
->> >> all the events can be measured by
->> >> each CPU. Some events or precise sampling requires counter 2 for
->> >> instance (like prec_dist).
->> >> That's why I did not put this fix in.
->> >
->> > Ah, I wasn't thinking about a hard partition, just a limit on the number
->> > of exclusive counters any one CPU can claim such as to not starve. Or is
->> > that what you were talking about? I feel not being able to starve
->> > another CPU is more important than a better utilization bound for
->> > counter scheduling.
->>
->> So you're saying, just limit number of used counters to 2 regardless
->> of which one they are.
->
-> used as in marked exclusive and forced empty on the other side.
->
->> So sometimes, this will avoid the problem aforementioned and sometimes
->> not. We can try that.
->
-> How will this sometimes not avoid the starvation issue?
+Hi Maxime,
 
-Here is a simple case:
-Limiting each HT to only 2 counters, can be any, 2 out of 4 possible.
+Thank you for the patch.
 
-HT0: you measure a MEM* in ctr2, it is started first, and it keeps running
-HT1: you measure PREC_DIST with PEBS (it requires ctr2)
+On Wednesday 22 October 2014 17:43:19 Maxime Ripard wrote:
+> Nowadays, some drivers don't have anything in there channel allocation
+> callbacks anymore.
+> 
+> Remove the BUG_ON if those callbacks aren't implemented, in order to allow
+> drivers to not implement them.
+> 
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-HT0 is measuring a corrupting event on ctr2, this prevents ctr2 on HT1
-from being used.
-HT1 is starved, it cannot measure PREC_DIST
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-Yes you have a quota of 2 out of 4 counters.
+> ---
+>  drivers/dma/dmaengine.c | 18 +++++++++++-------
+>  1 file changed, 11 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
+> index 72f10e2f5c32..9b2cd74b8f2e 100644
+> --- a/drivers/dma/dmaengine.c
+> +++ b/drivers/dma/dmaengine.c
+> @@ -235,9 +235,11 @@ static int dma_chan_get(struct dma_chan *chan)
+>  		return -ENODEV;
+> 
+>  	/* allocate upon first client reference */
+> -	ret = chan->device->device_alloc_chan_resources(chan);
+> -	if (ret < 0)
+> -		goto err_out;
+> +	if (chan->device->device_alloc_chan_resources) {
+> +		ret = chan->device->device_alloc_chan_resources(chan);
+> +		if (ret < 0)
+> +			goto err_out;
+> +	}
+> 
+>  	if (!dma_has_cap(DMA_PRIVATE, chan->device->cap_mask))
+>  		balance_ref_count(chan);
+> @@ -259,11 +261,15 @@ err_out:
+>   */
+>  static void dma_chan_put(struct dma_chan *chan)
+>  {
+> +	/* This channel is not in use, bail out */
+>  	if (!chan->client_count)
+> -		return; /* this channel failed alloc_chan_resources */
+> +		return;
+> +
+>  	chan->client_count--;
+>  	module_put(dma_chan_to_owner(chan));
+> -	if (chan->client_count == 0)
+> +
+> +	/* This channel is not in use anymore, free it */
+> +	if (!chan->client_count && chan->device->device_free_chan_resources)
+>  		chan->device->device_free_chan_resources(chan);
+>  }
+> 
+> @@ -819,8 +825,6 @@ int dma_async_device_register(struct dma_device *device)
+> BUG_ON(dma_has_cap(DMA_INTERLEAVE, device->cap_mask) &&
+>  		!device->device_prep_interleaved_dma);
+> 
+> -	BUG_ON(!device->device_alloc_chan_resources);
+> -	BUG_ON(!device->device_free_chan_resources);
+>  	BUG_ON(!device->device_tx_status);
+>  	BUG_ON(!device->device_issue_pending);
+>  	BUG_ON(!device->dev);
 
-The quota dynamic or static can help mitigate the starvation. The only
-way to eliminate
-it is to force multiplexing even though you are using fewer counters
-than actually avail.
+-- 
+Regards,
+
+Laurent Pinchart
+
