@@ -1,70 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932457AbaJVHfk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 03:35:40 -0400
-Received: from nasmtp01.atmel.com ([192.199.1.245]:53892 "EHLO
-	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932380AbaJVHfh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 03:35:37 -0400
-Message-ID: <54475E41.3030205@atmel.com>
-Date: Wed, 22 Oct 2014 15:35:29 +0800
-From: Josh Wu <josh.wu@atmel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754318AbaJVHg0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 03:36:26 -0400
+Received: from mail-bn1on0079.outbound.protection.outlook.com ([157.56.110.79]:26640
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751100AbaJVHgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 03:36:25 -0400
+Date: Wed, 22 Oct 2014 09:36:15 +0200
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>, Herve Codina <herve.codina@celad.com>
-CC: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "David Woodhouse" <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        EzequielGarcia <ezequiel.garcia@free-electrons.com>,
-        Mark Brown <broonie@linaro.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        BartlomiejZolnierkiewicz <b.zolnierkie@samsung.com>,
-        Bo Shen <voice.shen@atmel.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Grzeschik <m.grzeschik@pengutronix.de>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        HuangShijie <shijie8@gmail.com>,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: Re: [PATCH 1/2] mtd: atmel_nand: use __iowrite32_copy for 32 bitcopy
-References: <1413821173-18347-1-git-send-email-vinod.koul@intel.com> <54462F6C.1030307@atmel.com> <54463356.400@celad.com> <20141021103540.GJ28745@intel.com>
-In-Reply-To: <20141021103540.GJ28745@intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+To: Joe Perches <joe@perches.com>, Michal Simek <michal.simek@xilinx.com>
+CC: Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] MAINTAINERS: Update Zynq maintainer record
+References: <1413927103-31358-1-git-send-email-soren.brinkmann@xilinx.com>
+	 <ba5ded105f25449a8ccd35f3109ff2de@BL2FFO11FD019.protection.gbl>
+ <1413960882.18654.2.camel@perches.com>
+In-Reply-To: <1413960882.18654.2.camel@perches.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21042.001
+X-TM-AS-User-Approved-Sender: Yes
+Message-ID: <7f1a322b4d7b481ea8b316736fe6b24a@BL2FFO11FD025.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(24454002)(164054003)(199003)(377454003)(479174003)(377424004)(189002)(51704005)(19580395003)(102836001)(106466001)(31966008)(64126003)(107046002)(19580405001)(44976005)(4396001)(95666004)(6806004)(86362001)(16601075003)(64706001)(47776003)(20776003)(15975445006)(85852003)(83506001)(92566001)(87936001)(76176999)(54356999)(50986999)(15202345003)(21056001)(65806001)(65956001)(23746002)(587094004)(99396003)(76482002)(50466002)(46102003)(80022003)(74316001)(104016003)(85306004)(120916001)(108616004)(65826006)(107986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2FFO11HUB043;H:xir-pvapsmtpgw01;FPR:;PTR:unknown-62-221-5-235.ipspace.xilinx.com;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB043;
+X-Forefront-PRVS: 037291602B
+Authentication-Results: spf=pass (sender IP is 62.221.5.235)
+ smtp.mailfrom=michal.simek@xilinx.com; 
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 10/21/2014 6:35 PM, Vinod Koul wrote:
-> On Tue, Oct 21, 2014 at 12:20:06PM +0200, Herve Codina wrote:
->> Hi,
-> Please don't top post
->> I didn't go deeper in atmel_nand.c code to see other accesses but old
->> copy use writel_relaxed which is a macro to __raw_writel((__force u32)
->> cpu_to_le32(v),c)
+On 10/22/2014 08:54 AM, Joe Perches wrote:
+> On Wed, 2014-10-22 at 08:29 +0200, Michal Simek wrote:
+>> On 10/21/2014 11:31 PM, Soren Brinkmann wrote:
+>>>  - add myself as reviewer for Zynq
+>>>  - add entry to cover Zynq clock drivers
+>>>  - add entry to cover Xilinx DMA drivers
+>>>
+>>> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+>>> ---
+>>>  MAINTAINERS | 3 +++
+>>>  1 file changed, 3 insertions(+)
+>>>
+>>> diff --git a/MAINTAINERS b/MAINTAINERS
+>>> index a20df9bf8ab0..07eecdddbe8b 100644
+>>> --- a/MAINTAINERS
+>>> +++ b/MAINTAINERS
+>>> @@ -1543,6 +1543,7 @@ F:	arch/arm/mach-pxa/include/mach/z2.h
+>>>  
+>>>  ARM/ZYNQ ARCHITECTURE
+>>>  M:	Michal Simek <michal.simek@xilinx.com>
+>>> +R:	Sören Brinkmann <soren.brinkmann@xilinx.com>
 >>
->> __iowrite32_copy use directly __raw_writel(*src++, dst++)
+>> this is fine.
 >>
->> So we skip cpu_to_le32. Is it ok for all system using atmel_nand ?
-> Also would be a good question if we need barriers as __iowrite32_copy()
-> doesn't guarantee any ordering.
->
+>>>  L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+>>>  W:	http://wiki.xilinx.com
+>>>  T:	git git://git.xilinx.com/linux-xlnx.git
+>>> @@ -1552,7 +1553,9 @@ F:	drivers/cpuidle/cpuidle-zynq.c
+>>>  F:	drivers/block/xsysace.c
+>>>  N:	zynq
+>>>  N:	xilinx
+>>> +F:	drivers/clk/zynq/
+>>
+>> this is handled by N: zynq
+>>
+>>>  F:	drivers/clocksource/cadence_ttc_timer.c
+>>> +F:	drivers/dma/xilinx/
+>>
+>> ditto.
+> 
+> F: specific paths are better than N: file names
+> because get_maintainers doesn't add the patches
+> submitters for N: entries.
 
-Just diving the code, I found the atmel-nand code use this function to 
-transfer write these buffer to NFC sram.
-And the NFC sram is not io space.
-Also there should has no issue in barriers as it is in a SRAM.
+I expect that you are referring to this description
 
-So I think right way is use memcpy function to replace the 
-ioread32/iowrite32. Since we use them for SRAM transfer not IO.
-I'll prepare a new patch which do above replace.
+        N: Files and directories with regex patterns.
+           N:   [^a-z]tegra     all files whose path contains the word tegra
+           One pattern per line.  Multiple N: lines acceptable.
+           scripts/get_maintainer.pl has different behavior for files that
+           match F: pattern and matches of N: patterns.  By default,
+           get_maintainer will not look at git log history when an F: pattern
+           match occurs.  When an N: match occurs, git log history is used
+           to also notify the people that have git commit signatures.
 
-Best Regards,
-Josh Wu
+The purpose of this patch was that Soren is aware about changes
+around xilinx drivers not to sign dma drivers to me + CC him.
+
+Also this fragment informing me that something is happening around these drivers
+and also driver submitter is informed that's why using git log history is
+at least for me preferred way.
+
+Thanks,
+Michal
