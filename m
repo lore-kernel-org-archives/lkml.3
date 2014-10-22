@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754905AbaJVPpz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 11:45:55 -0400
+	id S932594AbaJVP7Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 11:59:25 -0400
 Received: from down.free-electrons.com ([37.187.137.238]:54095 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754775AbaJVPpt (ORCPT
+	with ESMTP id S1754871AbaJVPpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 11:45:49 -0400
+	Wed, 22 Oct 2014 11:45:54 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -14,10 +14,14 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH v3 38/59] dmaengine: sa11x0: Split device_control
-Date: Wed, 22 Oct 2014 17:43:52 +0200
-Message-Id: <1413992653-21963-39-git-send-email-maxime.ripard@free-electrons.com>
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org
+Subject: [PATCH v3 43/59] dmaengine: tegra20: Split device_control
+Date: Wed, 22 Oct 2014 17:43:57 +0200
+Message-Id: <1413992653-21963-44-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -25,218 +29,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the SA-11x0 DMA driver to make use of the
-newly introduced callbacks, that will eventually be used to retrieve slave
-capabilities.
+Split the device_control callback of the NVidia Tegra20 APB DMA driver to make
+use of the newly introduced callbacks, that will eventually be used to retrieve
+slave capabilities.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/dma/sa11x0-dma.c | 158 +++++++++++++++++++++++++----------------------
- 1 file changed, 84 insertions(+), 74 deletions(-)
+ drivers/dma/tegra20-apb-dma.c | 22 ++--------------------
+ 1 file changed, 2 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/dma/sa11x0-dma.c b/drivers/dma/sa11x0-dma.c
-index 4b0ef043729a..432342459ab5 100644
---- a/drivers/dma/sa11x0-dma.c
-+++ b/drivers/dma/sa11x0-dma.c
-@@ -669,8 +669,10 @@ static struct dma_async_tx_descriptor *sa11x0_dma_prep_dma_cyclic(
- 	return vchan_tx_prep(&c->vc, &txd->vd, DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
+index 16efa603ff65..dea6b78080aa 100644
+--- a/drivers/dma/tegra20-apb-dma.c
++++ b/drivers/dma/tegra20-apb-dma.c
+@@ -827,25 +827,6 @@ static enum dma_status tegra_dma_tx_status(struct dma_chan *dc,
+ 	return ret;
  }
  
--static int sa11x0_dma_slave_config(struct sa11x0_dma_chan *c, struct dma_slave_config *cfg)
-+static int sa11x0_dma_slave_config(struct dma_chan *chan,
-+				   struct dma_slave_config *cfg)
- {
-+	struct sa11x0_dma_chan *c = to_sa11x0_dma_chan(chan);
- 	u32 ddar = c->ddar & ((0xf << 4) | DDAR_RW);
- 	dma_addr_t addr;
- 	enum dma_slave_buswidth width;
-@@ -704,8 +706,7 @@ static int sa11x0_dma_slave_config(struct sa11x0_dma_chan *c, struct dma_slave_c
- 	return 0;
- }
- 
--static int sa11x0_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--	unsigned long arg)
-+static int sa11x0_dma_pause(struct dma_chan *chan)
- {
- 	struct sa11x0_dma_chan *c = to_sa11x0_dma_chan(chan);
- 	struct sa11x0_dma_dev *d = to_sa11x0_dma(chan->device);
-@@ -714,89 +715,95 @@ static int sa11x0_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
- 	unsigned long flags;
- 	int ret;
- 
+-static int tegra_dma_device_control(struct dma_chan *dc, enum dma_ctrl_cmd cmd,
+-			unsigned long arg)
+-{
 -	switch (cmd) {
 -	case DMA_SLAVE_CONFIG:
--		return sa11x0_dma_slave_config(c, (struct dma_slave_config *)arg);
+-		return tegra_dma_slave_config(dc,
+-				(struct dma_slave_config *)arg);
 -
 -	case DMA_TERMINATE_ALL:
--		dev_dbg(d->slave.dev, "vchan %p: terminate all\n", &c->vc);
--		/* Clear the tx descriptor lists */
--		spin_lock_irqsave(&c->vc.lock, flags);
--		vchan_get_all_descriptors(&c->vc, &head);
-+	dev_dbg(d->slave.dev, "vchan %p: pause\n", &c->vc);
-+	spin_lock_irqsave(&c->vc.lock, flags);
-+	if (c->status == DMA_IN_PROGRESS) {
-+		c->status = DMA_PAUSED;
- 
- 		p = c->phy;
- 		if (p) {
--			dev_dbg(d->slave.dev, "pchan %u: terminating\n", p->num);
--			/* vchan is assigned to a pchan - stop the channel */
--			writel(DCSR_RUN | DCSR_IE |
--				DCSR_STRTA | DCSR_DONEA |
--				DCSR_STRTB | DCSR_DONEB,
--				p->base + DMA_DCSR_C);
+-		tegra_dma_terminate_all(dc);
+-		return 0;
 -
--			if (p->txd_load) {
--				if (p->txd_load != p->txd_done)
--					list_add_tail(&p->txd_load->vd.node, &head);
--				p->txd_load = NULL;
--			}
--			if (p->txd_done) {
--				list_add_tail(&p->txd_done->vd.node, &head);
--				p->txd_done = NULL;
--			}
--			c->phy = NULL;
-+			writel(DCSR_RUN | DCSR_IE, p->base + DMA_DCSR_C);
-+		} else {
- 			spin_lock(&d->lock);
--			p->vchan = NULL;
-+			list_del_init(&c->node);
- 			spin_unlock(&d->lock);
--			tasklet_schedule(&d->task);
- 		}
--		spin_unlock_irqrestore(&c->vc.lock, flags);
--		vchan_dma_desc_free_list(&c->vc, &head);
--		ret = 0;
--		break;
-+	}
-+	spin_unlock_irqrestore(&c->vc.lock, flags);
- 
--	case DMA_PAUSE:
--		dev_dbg(d->slave.dev, "vchan %p: pause\n", &c->vc);
--		spin_lock_irqsave(&c->vc.lock, flags);
--		if (c->status == DMA_IN_PROGRESS) {
--			c->status = DMA_PAUSED;
-+	return 0;
-+}
- 
--			p = c->phy;
--			if (p) {
--				writel(DCSR_RUN | DCSR_IE, p->base + DMA_DCSR_C);
--			} else {
--				spin_lock(&d->lock);
--				list_del_init(&c->node);
--				spin_unlock(&d->lock);
--			}
--		}
--		spin_unlock_irqrestore(&c->vc.lock, flags);
--		ret = 0;
--		break;
-+static int sa11x0_dma_resume(struct dma_chan *chan)
-+{
-+	struct sa11x0_dma_chan *c = to_sa11x0_dma_chan(chan);
-+	struct sa11x0_dma_dev *d = to_sa11x0_dma(chan->device);
-+	struct sa11x0_dma_phy *p;
-+	LIST_HEAD(head);
-+	unsigned long flags;
-+	int ret;
- 
--	case DMA_RESUME:
--		dev_dbg(d->slave.dev, "vchan %p: resume\n", &c->vc);
--		spin_lock_irqsave(&c->vc.lock, flags);
--		if (c->status == DMA_PAUSED) {
--			c->status = DMA_IN_PROGRESS;
--
--			p = c->phy;
--			if (p) {
--				writel(DCSR_RUN | DCSR_IE, p->base + DMA_DCSR_S);
--			} else if (!list_empty(&c->vc.desc_issued)) {
--				spin_lock(&d->lock);
--				list_add_tail(&c->node, &d->chan_pending);
--				spin_unlock(&d->lock);
--			}
-+	dev_dbg(d->slave.dev, "vchan %p: resume\n", &c->vc);
-+	spin_lock_irqsave(&c->vc.lock, flags);
-+	if (c->status == DMA_PAUSED) {
-+		c->status = DMA_IN_PROGRESS;
-+
-+		p = c->phy;
-+		if (p) {
-+			writel(DCSR_RUN | DCSR_IE, p->base + DMA_DCSR_S);
-+		} else if (!list_empty(&c->vc.desc_issued)) {
-+			spin_lock(&d->lock);
-+			list_add_tail(&c->node, &d->chan_pending);
-+			spin_unlock(&d->lock);
- 		}
--		spin_unlock_irqrestore(&c->vc.lock, flags);
--		ret = 0;
--		break;
-+	}
-+	spin_unlock_irqrestore(&c->vc.lock, flags);
- 
 -	default:
--		ret = -ENXIO;
 -		break;
-+	return 0;
-+}
-+
-+static int sa11x0_dma_terminate_all(struct dma_chan *chan)
-+{
-+	struct sa11x0_dma_chan *c = to_sa11x0_dma_chan(chan);
-+	struct sa11x0_dma_dev *d = to_sa11x0_dma(chan->device);
-+	struct sa11x0_dma_phy *p;
-+	LIST_HEAD(head);
-+	unsigned long flags;
-+	int ret;
-+
-+	dev_dbg(d->slave.dev, "vchan %p: terminate all\n", &c->vc);
-+	/* Clear the tx descriptor lists */
-+	spin_lock_irqsave(&c->vc.lock, flags);
-+	vchan_get_all_descriptors(&c->vc, &head);
-+
-+	p = c->phy;
-+	if (p) {
-+		dev_dbg(d->slave.dev, "pchan %u: terminating\n", p->num);
-+		/* vchan is assigned to a pchan - stop the channel */
-+		writel(DCSR_RUN | DCSR_IE |
-+		       DCSR_STRTA | DCSR_DONEA |
-+		       DCSR_STRTB | DCSR_DONEB,
-+		       p->base + DMA_DCSR_C);
-+
-+		if (p->txd_load) {
-+			if (p->txd_load != p->txd_done)
-+				list_add_tail(&p->txd_load->vd.node, &head);
-+			p->txd_load = NULL;
-+		}
-+		if (p->txd_done) {
-+			list_add_tail(&p->txd_done->vd.node, &head);
-+			p->txd_done = NULL;
-+		}
-+		c->phy = NULL;
-+		spin_lock(&d->lock);
-+		p->vchan = NULL;
-+		spin_unlock(&d->lock);
-+		tasklet_schedule(&d->task);
- 	}
-+	spin_unlock_irqrestore(&c->vc.lock, flags);
-+	vchan_dma_desc_free_list(&c->vc, &head);
- 
--	return ret;
-+	return 0;
- }
- 
- struct sa11x0_dma_channel_desc {
-@@ -834,7 +841,10 @@ static int sa11x0_dma_init_dmadev(struct dma_device *dmadev,
- 	dmadev->dev = dev;
- 	dmadev->device_alloc_chan_resources = sa11x0_dma_alloc_chan_resources;
- 	dmadev->device_free_chan_resources = sa11x0_dma_free_chan_resources;
--	dmadev->device_control = sa11x0_dma_control;
-+	dmadev->device_config = sa11x0_dma_slave_config;
-+	dmadev->device_pause = sa11x0_dma_pause;
-+	dmadev->device_resume = sa11x0_dma_resume;
-+	dmadev->device_terminate_all = sa11x0_dma_terminate_all;
- 	dmadev->device_tx_status = sa11x0_dma_tx_status;
- 	dmadev->device_issue_pending = sa11x0_dma_issue_pending;
+-	}
+-
+-	return -ENXIO;
+-}
+-
+ static inline int get_bus_width(struct tegra_dma_channel *tdc,
+ 		enum dma_slave_buswidth slave_bw)
+ {
+@@ -1443,7 +1424,8 @@ static int tegra_dma_probe(struct platform_device *pdev)
+ 					tegra_dma_free_chan_resources;
+ 	tdma->dma_dev.device_prep_slave_sg = tegra_dma_prep_slave_sg;
+ 	tdma->dma_dev.device_prep_dma_cyclic = tegra_dma_prep_dma_cyclic;
+-	tdma->dma_dev.device_control = tegra_dma_device_control;
++	tdma->dma_dev.device_config = tegra_dma_slave_config;
++	tdma->dma_dev.device_terminate_all = tegra_dma_terminate_all;
+ 	tdma->dma_dev.device_tx_status = tegra_dma_tx_status;
+ 	tdma->dma_dev.device_issue_pending = tegra_dma_issue_pending;
  
 -- 
 2.1.1
