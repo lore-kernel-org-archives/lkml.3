@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754224AbaJVQe3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 12:34:29 -0400
-Received: from mout.gmx.net ([212.227.15.15]:57184 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753351AbaJVQe1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 12:34:27 -0400
+	id S932150AbaJVQej (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 12:34:39 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:45585 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754361AbaJVQeg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 12:34:36 -0400
 MIME-Version: 1.0
-Message-ID: <trinity-cda2c5de-5cfe-4522-ac24-466d34965655-1413995642086@3capp-gmx-bs09>
-From: "Peter Huewe" <PeterHuewe@gmx.de>
-To: "Jarkko Sakkinen" <jarkko.sakkinen@linux.intel.com>
-Cc: "Ashley Lai" <ashley@ashleylai.com>,
-        "Marcel Selhorst" <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, josh.triplett@intel.com,
-        christophe.ricard@gmail.com, jason.gunthorpe@obsidianresearch.com,
-        "Jarkko Sakkinen" <jarkko.sakkinen@linux.intel.com>
-Subject: Aw: [PATCH v1 0/3] tpm: prepare for TPM2
+In-Reply-To: <alpine.DEB.2.02.1410220945360.31528@ayla.of.borg>
+References: <1413912653-3269-1-git-send-email-geert@linux-m68k.org>
+	<CAADnVQ+5J+BM3onCUxzX+eL-gDqiJ04vDG4iD+3zbqngcmoqzQ@mail.gmail.com>
+	<alpine.DEB.2.02.1410220945360.31528@ayla.of.borg>
+Date: Wed, 22 Oct 2014 09:34:32 -0700
+Message-ID: <CAADnVQLRMscjzgG3Y4ZTrehPS7xL1rOaGkfQRornKivD-6mfng@mail.gmail.com>
+Subject: Re: [PATCH] m68k: Wire up bpf
+From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-m68k@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Date: Wed, 22 Oct 2014 18:34:02 +0200
-Importance: normal
-Sensitivity: Normal
-In-Reply-To: <1413995036-22497-1-git-send-email-jarkko.sakkinen@linux.intel.com>
-References: <1413995036-22497-1-git-send-email-jarkko.sakkinen@linux.intel.com>
-X-UI-Message-Type: mail
-X-Priority: 3
-X-Provags-ID: V03:K0:KO7ivp+5mrt2cqS/kDhMll9ArAvuMWmZqpCpvyPInHv
- v3keHcQBVfXa9sUsLRBxxan0BfIjlgxmy6wvK9558GP5pk+o90
- 512jO6GcJTGqUlo9I9x/DvT/QXI8kFYmK6TVo1egaDP2b2/z4J
- gqrgnA8//yBQnR+SL9Tp1LZbHv8OT/CvvdRFsqgeuT6G0//jMZ
- IYWDrsn0B7znGRzUT2+xo9DOo9bxZSF98+jh2OOd4o7ZXWpSZw
- 35RKSGpL4kpXgG0wx7RCW5beZJMWz56T1cvsuWJfwX8bocdpBi GfjH3E=
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jarkko,
+On Wed, Oct 22, 2014 at 12:48 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+>         Hi Alexei,
+>
+> On Tue, 21 Oct 2014, Alexei Starovoitov wrote:
+>> On Tue, Oct 21, 2014 at 10:30 AM, Geert Uytterhoeven
+>> <geert@linux-m68k.org> wrote:
+>> > Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>> > ---
+>> >  arch/m68k/include/asm/unistd.h      | 2 +-
+>> >  arch/m68k/include/uapi/asm/unistd.h | 1 +
+>> >  arch/m68k/kernel/syscalltable.S     | 1 +
+>> >  3 files changed, 3 insertions(+), 1 deletion(-)
+>>
+>> did the tests pass in samples/bpf/test_verifier ?
+>
+> Thanks for reminding me about the existence of the tests ;-)
+>
+> Yes, they passed.
 
-> Jarkko Sakkinen (3):
-> tpm: merge duplicate transmit_cmd() functions
-> tpm: two-phase chip management functions
-> tpm: fix multiple race conditions in tpm_ppi.c
+Great, then:
+Acked-by: Alexei Starovoitov <ast@plumgrid.com>
 
-the patchset introduces a sparse error:
-  CHECK   /home/phuewe/linux-2.6-host/drivers/char/tpm/tpm_tis.c
-/home/phuewe/linux-2.6-host/drivers/char/tpm/tpm_tis.c:783:39: warning: Using plain integer as NULL pointer
-/home/phuewe/linux-2.6-host/drivers/char/tpm/tpm_tis.c:868:39: warning: Using plain integer as NULL pointer
+> Note that gcc 4.1.2 doesn't like C99-initialization of anonymous
+> struct and union members, so I had to use the patch below:
+>
+> diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
+> index d18316f9e9c488b0..6ec5060a6ece8f23 100644
+> --- a/include/uapi/linux/bpf.h
+> +++ b/include/uapi/linux/bpf.h
+> @@ -123,7 +123,7 @@ union bpf_attr {
+>                 __u32   key_size;       /* size of key in bytes */
+>                 __u32   value_size;     /* size of value in bytes */
+>                 __u32   max_entries;    /* max number of entries in a map */
+> -       };
+> +       } create;
 
-apart from that I'll review it this evening.
-
-Thanks,
-Peter
+I've tested this stuff with 4.2 and up, since that's the oldest we
+have in kernel.org cross-compilers repo.
+4.1 was a first release with brand new C front-end which had
+all sorts of gotchas and just like 4.0 was a massive release too.
+Nowadays I wouldn't touch anything below 4.4
