@@ -1,107 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754529AbaJVIo7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 04:44:59 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:45782 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750938AbaJVIox (ORCPT
+	id S1754697AbaJVIp5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 04:45:57 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:9713 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752154AbaJVIpu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 04:44:53 -0400
-X-Original-SENDERIP: 10.177.226.38
-X-Original-MAILFROM: karam.lee@lge.com
-From: karam.lee@lge.com
-To: minchan@kernel.org, ngupta@vflare.org, linux-kernel@vger.kernel.org
-Cc: matthew.r.wilcox@intel.com, jmarchan@redhat.com, seungho1.park@lge.com,
-        "karam.lee" <karam.lee@lge.com>
-Subject: [PATCH v5 1/3] zram: remove bio parameter from zram_bvec_rw().
-Date: Wed, 22 Oct 2014 17:44:47 +0900
-Message-Id: <1413967490-20218-2-git-send-email-karam.lee@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1413967490-20218-1-git-send-email-karam.lee@lge.com>
-References: <1413967490-20218-1-git-send-email-karam.lee@lge.com>
+	Wed, 22 Oct 2014 04:45:50 -0400
+X-AuditID: cbfec7f5-b7f956d000005ed7-5d-54476ebc1491
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH RESEND 1/3] extcon: max77693: Remove left-over code after
+ switching to regmap irq chip
+Date: Wed, 22 Oct 2014 10:45:38 +0200
+Message-id: <1413967540-27626-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEJMWRmVeSWpSXmKPExsVy+t/xq7p78txDDM4+47PYOGM9q8X1L89Z
+	LV6/MLQ42/SG3eL+16OMFpd3zWGzWHvkLrvF7cYVbBanu1kdOD3uXNvD5jHvZKBH35ZVjB6f
+	N8kFsERx2aSk5mSWpRbp2yVwZez9f5O54JRwxanLm9gaGGcLdDFyckgImEhs/ziVDcIWk7hw
+	bz2QzcUhJLCUUeLOrp+sEE4fk0TTueXMIFVsAsYSm5cvAasSEdjNKPFt7yImEIdZ4CijxPTe
+	t0wgVcICGRLTJp5mAbFZBFQl9p24DRbnFXCXWPtlNxPEPjmJk8cms05g5F7AyLCKUTS1NLmg
+	OCk910ivODG3uDQvXS85P3cTIyRcvu5gXHrM6hCjAAejEg+vA5t7iBBrYllxZe4hRgkOZiUR
+	3nvpQCHelMTKqtSi/Pii0pzU4kOMTBycUg2Mq5fr+E64sOeFaN32CdrK11r1l783tpDTjkrc
+	vOvWTg72/WUMxRP2ROx8Ms3n6lwef21nmcvvg9orVVbtfNtm+W0Zl7Zi4aRHUh0N/iwGH56t
+	LH3kvG5x6OfVHkos5oGHPrz78+Oo2bGNHnmrb39IYOf78Pd19jIT5W1ca448/tv1Y1/9eoYJ
+	DUosxRmJhlrMRcWJANEGXPn1AQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "karam.lee" <karam.lee@lge.com>
+Before switching to regmap irq chip the extcon driver parsed some
+initialization data (from platform data or defaults hard coded in the
+driver) and adjusted interrupt masks to the init data (code was located
+in max77693-irq.c).
 
-This patch removes an unnecessary parameter(bio)
-from zram_bvec_rw() and zram_bvec_read().
-zram_bvec_read() doesn't use a bio parameter, so remove it.
-zram_bvec_rw() calls a read/write operation not using bio, so a rw parameter
-replaces a bio parameter.
+However commit 342d669c1ee4 ("mfd: max77693: Handle IRQs using regmap")
+removed the max77693-irq.c and replaced whole interrupt handling with
+regmap irq chip. Thus the part responsible for using adjusted interrupt
+masks disappeared.
 
-Signed-off-by: karam.lee <karam.lee@lge.com>
+Remove left-over code as this is now useless and it is doing nothing.
+
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- drivers/block/zram/zram_drv.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/extcon/extcon-max77693.c     | 21 +--------------------
+ include/linux/mfd/max77693-private.h |  3 ---
+ 2 files changed, 1 insertion(+), 23 deletions(-)
 
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index 48eccb3..54da18a 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -368,7 +368,7 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
- }
- 
- static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
--			  u32 index, int offset, struct bio *bio)
-+			  u32 index, int offset)
- {
- 	int ret;
- 	struct page *page;
-@@ -535,14 +535,13 @@ out:
- }
- 
- static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
--			int offset, struct bio *bio)
-+			int offset, int rw)
- {
- 	int ret;
--	int rw = bio_data_dir(bio);
- 
- 	if (rw == READ) {
- 		atomic64_inc(&zram->stats.num_reads);
--		ret = zram_bvec_read(zram, bvec, index, offset, bio);
-+		ret = zram_bvec_read(zram, bvec, index, offset);
- 	} else {
- 		atomic64_inc(&zram->stats.num_writes);
- 		ret = zram_bvec_write(zram, bvec, index, offset);
-@@ -718,7 +717,7 @@ out:
- 
- static void __zram_make_request(struct zram *zram, struct bio *bio)
- {
--	int offset;
-+	int offset, rw;
- 	u32 index;
- 	struct bio_vec bvec;
- 	struct bvec_iter iter;
-@@ -733,6 +732,7 @@ static void __zram_make_request(struct zram *zram, struct bio *bio)
- 		return;
+diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
+index 490e27475bac..863d088c9bdd 100644
+--- a/drivers/extcon/extcon-max77693.c
++++ b/drivers/extcon/extcon-max77693.c
+@@ -1201,28 +1201,9 @@ static int max77693_muic_probe(struct platform_device *pdev)
  	}
  
-+	rw = bio_data_dir(bio);
- 	bio_for_each_segment(bvec, bio, iter) {
- 		int max_transfer_size = PAGE_SIZE - offset;
+ 	for (i = 0; i < num_init_data; i++) {
+-		enum max77693_irq_source irq_src
+-				= MAX77693_IRQ_GROUP_NR;
+-
+ 		regmap_write(info->max77693->regmap_muic,
+ 				init_data[i].addr,
+ 				init_data[i].data);
+-
+-		switch (init_data[i].addr) {
+-		case MAX77693_MUIC_REG_INTMASK1:
+-			irq_src = MUIC_INT1;
+-			break;
+-		case MAX77693_MUIC_REG_INTMASK2:
+-			irq_src = MUIC_INT2;
+-			break;
+-		case MAX77693_MUIC_REG_INTMASK3:
+-			irq_src = MUIC_INT3;
+-			break;
+-		}
+-
+-		if (irq_src < MAX77693_IRQ_GROUP_NR)
+-			info->max77693->irq_masks_cur[irq_src]
+-				= init_data[i].data;
+ 	}
  
-@@ -747,15 +747,15 @@ static void __zram_make_request(struct zram *zram, struct bio *bio)
- 			bv.bv_len = max_transfer_size;
- 			bv.bv_offset = bvec.bv_offset;
+ 	if (pdata && pdata->muic_data) {
+@@ -1259,7 +1240,7 @@ static int max77693_muic_probe(struct platform_device *pdev)
+ 	}
  
--			if (zram_bvec_rw(zram, &bv, index, offset, bio) < 0)
-+			if (zram_bvec_rw(zram, &bv, index, offset, rw) < 0)
- 				goto out;
+ 	/* Set initial path for UART */
+-	 max77693_muic_set_path(info, info->path_uart, true);
++	max77693_muic_set_path(info, info->path_uart, true);
  
- 			bv.bv_len = bvec.bv_len - max_transfer_size;
- 			bv.bv_offset += max_transfer_size;
--			if (zram_bvec_rw(zram, &bv, index + 1, 0, bio) < 0)
-+			if (zram_bvec_rw(zram, &bv, index + 1, 0, rw) < 0)
- 				goto out;
- 		} else
--			if (zram_bvec_rw(zram, &bvec, index, offset, bio) < 0)
-+			if (zram_bvec_rw(zram, &bvec, index, offset, rw) < 0)
- 				goto out;
+ 	/* Check revision number of MUIC device*/
+ 	ret = regmap_read(info->max77693->regmap_muic,
+diff --git a/include/linux/mfd/max77693-private.h b/include/linux/mfd/max77693-private.h
+index 08dae01258b9..bad716a659d3 100644
+--- a/include/linux/mfd/max77693-private.h
++++ b/include/linux/mfd/max77693-private.h
+@@ -439,9 +439,6 @@ struct max77693_dev {
  
- 		update_position(&index, &offset, &bvec);
+ 	int irq;
+ 	int irq_gpio;
+-	struct mutex irqlock;
+-	int irq_masks_cur[MAX77693_IRQ_GROUP_NR];
+-	int irq_masks_cache[MAX77693_IRQ_GROUP_NR];
+ };
+ 
+ enum max77693_types {
 -- 
-1.7.9.5
+1.9.1
 
