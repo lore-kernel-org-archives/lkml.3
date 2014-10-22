@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932578AbaJVUAt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 16:00:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57115 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932242AbaJVUAr (ORCPT
+	id S932719AbaJVUCW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 16:02:22 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60382 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932242AbaJVUCV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 16:00:47 -0400
-Date: Wed, 22 Oct 2014 13:00:46 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Pintu Kumar <pintu.k@samsung.com>
-Cc: riel@redhat.com, aquini@redhat.com, paul.gortmaker@windriver.com,
-        jmarchan@redhat.com, lcapitulino@redhat.com,
-        kirill.shutemov@linux.intel.com, m.szyprowski@samsung.com,
-        aneesh.kumar@linux.vnet.ibm.com, iamjoonsoo.kim@lge.com,
-        mina86@mina86.com, lauraa@codeaurora.org, gioh.kim@lge.com,
-        mgorman@suse.de, rientjes@google.com, hannes@cmpxchg.org,
-        vbabka@suse.cz, sasha.levin@oracle.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, pintu_agarwal@yahoo.com, cpgs@samsung.com,
-        vishnu.ps@samsung.com, rohit.kr@samsung.com, ed.savinay@samsung.com
-Subject: Re: [PATCH v2 2/2] fs: proc: Include cma info in proc/meminfo
-Message-Id: <20141022130046.f4c7bb9cfc5805d2bef188a4@linux-foundation.org>
-In-Reply-To: <1413986796-19732-2-git-send-email-pintu.k@samsung.com>
-References: <1413790391-31686-1-git-send-email-pintu.k@samsung.com>
-	<1413986796-19732-1-git-send-email-pintu.k@samsung.com>
-	<1413986796-19732-2-git-send-email-pintu.k@samsung.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 22 Oct 2014 16:02:21 -0400
+Date: Wed, 22 Oct 2014 22:02:19 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Joe Mario <jmario@redhat.com>
+Cc: Don Zickus <dzickus@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        eranian@google.com, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, jolsa@redhat.com, rfowles@redhat.com
+Subject: Re: perf:  Translating mmap2 ids into socket info?
+Message-ID: <20141022200219.GM21513@worktop.programming.kicks-ass.net>
+References: <20141022162026.GG135937@redhat.com>
+ <20141022164510.GJ21513@worktop.programming.kicks-ass.net>
+ <5447F2DF.3000506@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5447F2DF.3000506@redhat.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Oct 2014 19:36:35 +0530 Pintu Kumar <pintu.k@samsung.com> wrote:
+On Wed, Oct 22, 2014 at 02:09:35PM -0400, Joe Mario wrote:
+> >Yes, kernel memory is directly addresses, you basically have a static
+> >address->node mapping, it never changes.
+> 
+> For kernel addresses, is there a reason not to have it available in perf,
+> especially when that knowledge is important to understanding a numa-related slowdown?
 
-> This patch include CMA info (CMATotal, CMAFree) in /proc/meminfo.
-> Currently, in a CMA enabled system, if somebody wants to know the
-> total CMA size declared, there is no way to tell, other than the dmesg
-> or /var/log/messages logs.
-> With this patch we are showing the CMA info as part of meminfo, so that
-> it can be determined at any point of time.
-> This will be populated only when CMA is enabled.
+Dunno why that isn't exposed in sysfs.
 
-Fair enough.
+> In our case, when we booted with one configuration, AIM ran fine.  When we
+> booted another way, AIM's performance dropped 50%.  It was all due to the dentry
+> lock being located on a different (now remote) numa node.
+> 
+> We used your dmesg approach to track down the home node in an attempt to understand
+> what was different between the two boots.  But the problem would have been obvious
+> if perf simply listed the home node info.
 
-We should be pretty careful about what we put in meminfo - it's the
-top-level, most-important procfs file and I expect that quite a lot of
-userspace reads it with some frequency.  We don't want to clutter it
-up.  /proc/vmstat is a suitable place for the less important info which
-is more kernel developer oriented.
-
-But CMATotal and CMAFree do pass the "should be in meminfo" test, IMO.
+Or if you'd used more counters that track the node interconnect traffic
+;-) There are a few simple ones that count local/remote type things
+(offcore), but using the uncore counters you can track way more.
