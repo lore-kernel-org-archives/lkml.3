@@ -1,262 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754285AbaJVROG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 13:14:06 -0400
-Received: from james.kirk.hungrycats.org ([174.142.39.145]:37656 "EHLO
-	james.kirk.hungrycats.org" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753944AbaJVROE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 13:14:04 -0400
-X-Greylist: delayed 569 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Oct 2014 13:14:04 EDT
-Date: Wed, 22 Oct 2014 13:04:33 -0400
-From: Zygo Blaxell <zblaxell@furryterror.org>
-To: Bastien Nocera <hadess@hadess.net>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: A desktop environment[1] kernel wishlist
-Message-ID: <20141022170433.GA10186@hungrycats.org>
-References: <1413881397.30379.7.camel@hadess.net>
- <CANcMJZA=7FNNCrMpz-mC4FaJMKi8hEhqGtO_bv7iJdWVC_GpWA@mail.gmail.com>
- <1413911644.30379.12.camel@hadess.net>
- <CALAqxLURBHdrprCZzUiXdO6M7sjbwawxyDQpoG1-HWRGBvaMjg@mail.gmail.com>
- <1413914978.30379.14.camel@hadess.net>
+	id S1753889AbaJVRQO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 13:16:14 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:42241 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750930AbaJVRQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 13:16:12 -0400
+Date: Wed, 22 Oct 2014 11:16:03 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, josh.triplett@intel.com,
+        christophe.ricard@gmail.com, jason.gunthorpe@obsidianresearch.com
+Subject: Re: [PATCH v1 2/3] tpm: two-phase chip management functions
+Message-ID: <20141022171603.GC12775@obsidianresearch.com>
+References: <1413995036-22497-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <1413995036-22497-3-git-send-email-jarkko.sakkinen@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uAKRQypu60I7Lcqm"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1413914978.30379.14.camel@hadess.net>
+In-Reply-To: <1413995036-22497-3-git-send-email-jarkko.sakkinen@linux.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 22, 2014 at 07:23:55PM +0300, Jarkko Sakkinen wrote:
+> tpm_register_hardware() and tpm_remove_hardware() are called often
+> before initializing the device. This is wrong order since it could
+> be that main TPM driver needs a fully initialized chip to be able to
+> do its job. For example, now it is impossible to move common startup
+> functions such as tpm_do_selftest() to tpm_register_hardware().
+ 
+> Added tpm_chip_alloc() and tpm_chip_register() where tpm_chip_alloc()
 
---uAKRQypu60I7Lcqm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It is called tpmm_chip_alloc() in this version..
 
-On Tue, Oct 21, 2014 at 08:09:38PM +0200, Bastien Nocera wrote:
-> On Tue, 2014-10-21 at 11:00 -0700, John Stultz wrote:
-> > On Tue, Oct 21, 2014 at 10:14 AM, Bastien Nocera <hadess@hadess.net> wr=
-ote:
-> > >> As for: 'Export of "wake reason" when the system wakes up (rtc alarm,
-> > >> lid open, etc.) and wakealarm (/sys/class/rtc/foo/wakealarm)
-> > >> documentation'
-> > >>
-> > >> Can you expand more on the rational for the need here? Is this for UI
-> > >> for power debugging, or something else?
-> > >
-> > > No, it would be used for automating backups, or implementing
-> > > suspend->hibernation transitions. For example, right before the machi=
-ne
-> > > suspends, I would schedule it to wake up in a hour. If I get woken up=
- by
-> > > the rtc alarm (and not by the user through a lid open), I might:
-> > > - check that I'm plugged into the AC, it's night, and in the vicinity=
- of
-> > > the server that handles my backups and so backup the system.
-> > > - check whether the battery is low, and hibernate the machine (if it
-> > > supports it, obviously).
-> > >
-> > > We cannot do that if we can't make out whether the wake-up came from a
-> > > user action, or the alarm we set.
-> >=20
-> > I suspect wakeup type reporting is maybe not the best way to go about
-> > this, since there may be a number of causes for wakeups and they can
-> > arrive closely together in different orders, which can result in
-> > races.
-> >=20
-> > For instance, if the machine suspends, and sets an alarm to be woken
-> > up at midnight to do a backup, if the user resumes their laptop at
-> > 11:59:59, should the backup still proceed at midnight?
->=20
-> No. And I would expect that we would get a wake up type of "power
-> button" or "lid open" in this case.
+> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 
-I have been using something like this for the last 7 years or so.
-The relevant inputs are:
+Reviewed-By: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 
-	1. is the user present (is there recent input on HID devices,
-	keyboard/mouse, but ignore devices like light sensors, 3D
-	accelerometers, and ACPI virtual keys)?
+Looks fine, if you have to spin this again you can incorporate the
+nits.
 
-	2. which network connection(s) are available to reach the
-	backup server?
+> +
+> +static DECLARE_BITMAP(dev_mask, TPM_NUM_DEVICES);
 
-	3. how much power is available (if on battery, how much run
-	time left?)
+Not for this patch, but while this area of code is being looked at
+this should probably be an IDR/IDA like other subsytems?
 
-	4. what is the policy (do backups happen at a specific time
-	of day, or whenever they can?)
+> +		if (try_module_get(pos->dev->driver->owner)) {
+> +			chip = pos;
+> +			break;
+> +		}
 
-	5. was a backup completed successfully in the last N hours?
+Not for this patch, this module stuff should be wiped in favor of chip->ops
+locking.
 
-Note the absence of any information about the cause of recent
-suspend/resume activity, or any input from suspend/resume at all.
+> +static void tpmm_chip_remove(void *data)
+> +{
+> +	struct tpm_chip *chip = (struct tpm_chip *) data;
+> +	dev_dbg(chip->dev, "%s\n", __func__);
 
-Most of the inputs are used for table lookup with a bit of logic for
-dependent configuration parameters.  e.g. from input #2, if the network
-connection is not home or office, use a different threshold for the
-amount of battery power required by input #3, assuming that when I'm in
-those specific places I am never more than 5 minutes away from AC power.
+This print is silent in the default compile, right?
 
-In my setup a daemon evaluates all the input conditions whenever
-any of them change, and if the result is "machine should sleep" then
-it simulates #4 over time, sets an alarm for the next time "machine
-should not sleep" is asserted, and goes to sleep.  If the next wakeup
-event is less than 60 seconds in the future, we might miss the wakeup
-alarm, so we just stay on.  The daemon controls the backup process (and
-dozens of other power-state-dependent processes) with freezer cgroups.
-The backup process knows nothing about power management or scheduling
-(nor should it), it is simply running, frozen, or not running according
-to the current conditions and the table.
+> +	chip->dev_num = find_first_zero_bit(dev_mask, TPM_NUM_DEVICES);
+[..]
+> +	set_bit(chip->dev_num, dev_mask);
 
-All five inputs are relevant.  I don't want backups while I'm using the
-machine as a desktop because of the latency impact on disk and network;
-however, when I stop to get a coffee, the backups can proceed until I
-get back.  If the only network available incurs per-bit usage charges
-or it is a shared busy network with no excess capacity, there will be
-no backups regardless of the other conditions.  If the machine has less
-than six hours of battery power and no AC feed, there are no backups.
+Not for this patch but somehow there is no locking for dev_mask
+here. I guess it should use the driver_lock spinlock?
 
-The best part is that in this scheme the backups can be scheduled
-opportunistically, i.e.  whenever the machine is awake and required
-resources are abundant or underutilized, so by the time midnight rolls
-around there are rarely any outstanding backups left to do, and the
-machine just sleeps straight through the night.
+> +	chip->bios_dir = tpm_bios_log_setup(chip->devname);
 
-The same schema gets used for other processes like web browsers, but
-with different values (e.g. the web browser runs only when there is
-a network connection and one of AC power or recent user input, and is
-frozen at other times so that the battery isn't wasted rotating banner
-ads that nobody is looking at).
+Not for this patch, but tpm_bios_log_setup can return NULL if
+securityfs setup fails.
 
-> >   What happens
-> > if the user starts to use their machine at 12:00:01?
->=20
-> I would expect the backup to stop and be tried again later.
+> diff --git a/drivers/char/tpm/tpm_atmel.c b/drivers/char/tpm/tpm_atmel.c
+> index 6069d13..8e2576a 100644
+> +++ b/drivers/char/tpm/tpm_atmel.c
+> @@ -138,11 +138,11 @@ static void atml_plat_remove(void)
+>  	struct tpm_chip *chip = dev_get_drvdata(&pdev->dev);
+>  
+>  	if (chip) {
+> +		tpm_chip_unregister(chip);
+>  		if (chip->vendor.have_region)
+>  			atmel_release_region(chip->vendor.base,
+>  					     chip->vendor.region_size);
+>  		atmel_put_base_addr(chip->vendor.iobase);
+> -		tpm_remove_hardware(chip->dev);
+>  		platform_device_unregister(pdev);
 
-Suspend/resume has nothing to do with this.  Backups should treat
-suspend state like a routine transient network failure.  If I suspend
-my laptop because I'm moving from one meeting room to another, the TCP
-connections used by the backups should survive and backups will continue
-as soon as the machine wakes up.  If the machine is suspended too long,
-the backup TCP connections will fail, and the backup process will retry
-if it's still in-window and stop if it's not.
+Missed this before, the Atmel driver is the same as the TIS driver in
+force mode, ie it isn't going through the driver APIs, but instead
+force creating platform devices. Same comment as for TIS - I'm not
+sure devm works properly like this.
 
-> > Thus you probably want to have a "user present" status,
->=20
-> We can do any sort of thing once the laptop is awake. But right now
-> there's no way to know whether the resume is due to a user action or
-> not.
+I guess just add the same comment as for TIS?
 
-This can be a useful thing to have, especially if it can be in the
-form of a timestamped log of input events that occurred while userspace
-was sleeping, and if it's not available any other way (e.g. by reading
-the current state of wakeup button or lid sensor).
+> diff --git a/drivers/char/tpm/tpm_i2c_infineon.c b/drivers/char/tpm/tpm_i2c_infineon.c
+> index 472af4b..6f00bc3 100644
+> +++ b/drivers/char/tpm/tpm_i2c_infineon.c
+> @@ -581,10 +581,9 @@ static int tpm_tis_i2c_init(struct device *dev)
+>  	int rc = 0;
+>  	struct tpm_chip *chip;
+>  
+> -	chip = tpm_register_hardware(dev, &tpm_tis_i2c);
+> -	if (!chip) {
+> -		dev_err(dev, "could not register hardware\n");
+> -		rc = -ENODEV;
+> +	chip = tpmm_chip_alloc(dev, &tpm_tis_i2c);
+> +	if (IS_ERR(chip)) {
+> +		rc = PTR_ERR(chip);
+>  		goto out_err;
 
-That said, I wouldn't advise building anything in userspace on top of
-it, or at least not without combining that input with the other inputs.
-The specific use cases you mentioned are much better served by ordinary
-sensor inputs and userspace state tracking available after the kernel
-is running.  The "wake reason" could be another of those inputs.
+Nit: out_err is synonymous with 'return rc;', so all the goto out_err
+in this driver can just return;
 
-> >  then use the
-> > timerfd() ALARM clockids to set any wakeups you'd like, and when they
-> > trigger (if the system was suspended or not), decide to do your backup
-> > based the conditionals you had above, using the user-present status in
-> > a similar way to how you use AC status.
-> >=20
-> > I'd suggest looking into some of the details on how Android does its
-> > wakelock logic, as well as the timerfd ALARM clockids, since I think
-> > this would provide what you need.
->=20
-> It doesn't. There's still a whole class of hardware that isn't always on
-> as mobile SoCs are, and wakelocks aren't going to help if the kernel
-> isn't running and we don't know why it started running again.
+> +	rc = tpm_chip_register(chip);
+> +	if (rc)
+> +		return rc;
+> +	return 0;
 
-Funny, that never stopped me from implementing these use cases on such
-hardware.  I didn't even need wakelocks, although I might have implemented
-a functional equivalent in userspace.
+Nit: could just be return tpm_chip_register(chip);
 
-> > My bigger concern here with your use case though, is that you might be
-> > able to use ALARM timers more commonly, but that for much existing
-> > hardware, corner cases like programmatic resuming of a laptop while
-> > its packed in a bag somewhere might have thermal risks.
->=20
-> I'm pretty sure that Windows has done this for years before we did. If
-> the laptop cannot suspend reliably, then the user would disable it. We
-> cannot keep designing around broken software.
+> @@ -619,10 +619,9 @@ tpm_st33_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
+>  		goto end;
+>  	}
+>  
+> -	chip = tpm_register_hardware(&client->dev, &st_i2c_tpm);
+> -	if (!chip) {
+> -		dev_info(&client->dev, "fail chip\n");
+> -		err = -ENODEV;
+> +	chip = tpmm_chip_alloc(&client->dev, &st_i2c_tpm);
+> +	if (IS_ERR(chip)) {
+> +		err = PTR_ERR(chip);
+>  		goto end;
+>  	}
 
-> >   For mobile
-> > devices this is an expected design point, but for off-the-shelf
-> > laptops with big fans and exhaust vents, I'm not sure how safe this
-> > would be, so you may need to constrain this functionality somehow (or
-> > look to see if a enforced low-power resume is possible).
->=20
-> I think that we won't know whether it's a problem until the point that
-> somebody actually implements it.
+Nit: Same comment, 'goto end' can just be 'return rc'
 
-I have implemented this starting about 9 years ago with a variety of
-off-the-shelf laptops, netbooks, DIY Beagleboard-based hardware, etc.
-There are two cases:  devices that will run happily inside a laptop
-bag, and devices that won't.  The first case is trivial and requires no
-further discussion.  The second case requires reliable implementation
-of one simple policy:
+> -	dev_info(chip->dev, "TPM I2C Initialized\n");
+> +	err = tpm_chip_register(chip);
+> +	if (err)
+> +		goto _irq_set;
+> +
 
-If the machine wakes up with no AC and the lid closed, assume the machine
-is in a laptop bag and go straight back to sleep again.  There is usually
-just enough time to do this--and nothing else--before a dangerous amount
-of heat builds up (assuming you're waking from S3 suspend or similar...if
-you're waking from suspend-to-disk then you've already cooked the laptop
-before userspace is running).
+Nit: Same comment
 
-If the kernel crashes and fails to suspend or power off, the laptop _will_
-be damaged (at the very least there will be a permanent reduction of
-battery capacity), but that's true of OSX and Windows too.  If there is
-a choice between crashing and powering off, power off by default (an
-option to power off on kernel panic would be particularly useful).
+>  end:
+>  	pr_info("TPM I2C initialisation fail\n");
 
-Note that there is never a "why are we awake?" input here.  If you really
-get to the bottom of this, the only relevant input is "is it safe to
-run now, or do I need to suspend immediately?" and you need to monitor
-and respond to that input all the time, not just when waking up.  I don't
-have a reliable "am I on fire yet?" input on random laptop hardware, so
-I must I infer from the closed lid and battery power that some exception
-to normal or safe use cases may be in progress.
+This pr_info should be deleted
 
-I've had machines packed in laptop bags that ended up being handled so
-roughly by airport people that the power/wakeup buttons on the keyboard
-were pressed *through* the display panel.  The machines woke up in a
-laptop bag, drained the battery, and generated enough heat to make the
-case too hot to touch.  Technically, these machines were woken by user
-action, but that doesn't mean they were in a safe operating environment.
-The following day I implemented the "immediately go back to sleep
-when the lid is closed and not on AC" policy and never looked back.
-(of course this assumes reliable lid and AC sensor inputs...)
+> @@ -573,6 +580,8 @@ static void tpm_inf_pnp_remove(struct pnp_dev *dev)
+>  	struct tpm_chip *chip = pnp_get_drvdata(dev);
+>  
+>  	if (chip) {
 
-One note for the kernel PM people here:  if userspace tells the kernel to
-suspend, it means suspend.  Immediately.  Right Fscking Now.  Not "wait
-20 seconds for some random process stuck in iowait with a network file
-server or broken USB device, and then resume again with only kernel
-log messages to distinguish between that failure case and a user who
-just closed the lid and then changed their mind."  From the kernel,
-don't call sync(), and suspend any buffer flushing already in progress.
-Dirty buffers will still be in RAM on resume, and can be flushed when
-the disks come back up.
+Nit: This if in the remove callback is an anti-pattern and should be
+globally removed. If remove is being called then probe succeeded,
+there is no way for probe to succed and drvdata to be unset.
 
+>  static void tpm_nsc_remove(struct device *dev)
+>  {
+>  	struct tpm_chip *chip = dev_get_drvdata(dev);
+> -	if ( chip ) {
+> +	if (chip) {
 
---uAKRQypu60I7Lcqm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Same comment
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> @@ -836,7 +831,7 @@ MODULE_PARM_DESC(hid, "Set additional specific HID for this driver to probe");
+>  
+>  static struct platform_driver tis_drv = {
+>  	.driver = {
+> -		.name = "tpm_tis",
+> +		.name		= "tpm_tis",
+>  		.owner		= THIS_MODULE,
+>  		.pm		= &tpm_tis_pm,
+>  	},
 
-iEYEARECAAYFAlRH46EACgkQgfmLGlazG5yAMQCgxPwf6ds8V4FG0q0t+89PBRA2
-KawAoJH7gatdk+oSYBW20Q0rm1j2XBnR
-=tCP3
------END PGP SIGNATURE-----
+There is no remove method here in this platform_driver, this ties into
+the question if force works or not. The tpm_tis_remove call in the
+cleanup_hardware should be done through the .remove method of this
+driver structure..
 
---uAKRQypu60I7Lcqm--
+Jason
