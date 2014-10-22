@@ -1,54 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932519AbaJVHkp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 03:40:45 -0400
-Received: from mga03.intel.com ([134.134.136.65]:10235 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751296AbaJVHko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 03:40:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,767,1406617200"; 
-   d="scan'208";a="623021693"
-Date: Wed, 22 Oct 2014 07:39:33 +0800
-From: Yuyang Du <yuyang.du@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, pjt@google.com,
-        bsegall@google.com, arjan.van.de.ven@intel.com, len.brown@intel.com,
-        rafael.j.wysocki@intel.com, alan.cox@intel.com, mark.gross@intel.com,
-        fengguang.wu@intel.com
-Subject: Re: [RESEND PATCH 2/3 v5] sched: Rewrite per entity runnable load
- average tracking
-Message-ID: <20141021233933.GB2577@intel.com>
-References: <1412907717-2871-1-git-send-email-yuyang.du@intel.com>
- <1412907717-2871-3-git-send-email-yuyang.du@intel.com>
- <20141021145435.GA23531@worktop.programming.kicks-ass.net>
+	id S932553AbaJVHlh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 03:41:37 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:24702 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751296AbaJVHlg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 03:41:36 -0400
+From: Wang Nan <wangnan0@huawei.com>
+To: Namhyung Kim <namhyung@kernel.org>, <acme@kernel.org>
+CC: <a.p.zijlstra@chello.nl>, <paulus@samba.org>, <mingo@redhat.com>,
+        <jolsa@redhat.com>, <adrian.hunter@intel.com>, <Waiman.Long@hp.com>,
+        <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>
+Subject: [PATCH v2] perf tools: makes CPUINFO_PROC to array for different kernel version
+Date: Wed, 22 Oct 2014 15:39:42 +0800
+Message-ID: <1413963582-7174-1-git-send-email-wangnan0@huawei.com>
+X-Mailer: git-send-email 1.8.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141021145435.GA23531@worktop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020201.54475FA8.003B,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 025d17fcc5e2e10ecbe38ae41bb0bffe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 04:54:35PM +0200, Peter Zijlstra wrote:
-> 
-> In the thread here: lkml.kernel.org/r/1409094682.29189.23.camel@j-VirtualBox
-> there are concerns about the error bounds of such constructs. We can
-> basically 'leak' nr_cpus * threshold, which is potentially a very large
-> number.
-> 
-> Do we want to introduce the force updated to combat this?
+euler inclusion
+target: kernel 3.10
+category: bugfix
+DTS: DTS2014101306477
+Bugzilla: 623
+directory: upstreamed
+archive: https://lkml.org/lkml/2014/10/15/611
 
-So introduce a force update here like:
+----------------------------------------
 
-+static inline void update_tg_load_avg(struct cfs_rq *cfs_rq, int force)
-...
-+	if (force || abs(delta) > cfs_rq->tg_load_avg_contrib / 64) {
+After kernel 3.7 (commit b4b8f770eb10a1bccaf8aa0ec1956e2dd7ed1e0a),
+/proc/cpuinfo replaces 'Processor' to 'model name'. This patch makes
+CPUINFO_PROC to an array and provides two choices for ARM, makes it
+compatible for different kernel version.
 
-That is good. In general, I have been lacking a theory about what threshold
-should be concerning overhead vs. accuracy. But I think adding a force here
-provides us an option to better comply with the theory if we have it.
+v1 -> v2: minor changes as suggested by Namhyung Kim:
 
-Thanks,
-Yuyang
+ - Doesn't pass @h and @evlist to __write_cpudesc;
+ - Coding style fix.
+
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/perf.h        | 24 ++++++++++++------------
+ tools/perf/util/header.c | 27 +++++++++++++++++++++------
+ 2 files changed, 33 insertions(+), 18 deletions(-)
+
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 32bd102..1a23392 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -6,7 +6,7 @@
+ #if defined(__i386__)
+ #define rmb()		asm volatile("lock; addl $0,0(%%esp)" ::: "memory")
+ #define cpu_relax()	asm volatile("rep; nop" ::: "memory");
+-#define CPUINFO_PROC	"model name"
++#define CPUINFO_PROC	{"model name"}
+ #ifndef __NR_perf_event_open
+ # define __NR_perf_event_open 336
+ #endif
+@@ -15,7 +15,7 @@
+ #if defined(__x86_64__)
+ #define rmb()		asm volatile("lfence" ::: "memory")
+ #define cpu_relax()	asm volatile("rep; nop" ::: "memory");
+-#define CPUINFO_PROC	"model name"
++#define CPUINFO_PROC	{"model name"}
+ #ifndef __NR_perf_event_open
+ # define __NR_perf_event_open 298
+ #endif
+@@ -25,7 +25,7 @@
+ #include "../../arch/powerpc/include/uapi/asm/unistd.h"
+ #define rmb()		asm volatile ("sync" ::: "memory")
+ #define cpu_relax()	asm volatile ("" ::: "memory");
+-#define CPUINFO_PROC	"cpu"
++#define CPUINFO_PROC	{"cpu"}
+ #endif
+ 
+ #ifdef __s390__
+@@ -40,31 +40,31 @@
+ # define rmb()		asm volatile("" ::: "memory")
+ #endif
+ #define cpu_relax()	asm volatile("" ::: "memory")
+-#define CPUINFO_PROC	"cpu type"
++#define CPUINFO_PROC	{"cpu type"}
+ #endif
+ 
+ #ifdef __hppa__
+ #define rmb()		asm volatile("" ::: "memory")
+ #define cpu_relax()	asm volatile("" ::: "memory");
+-#define CPUINFO_PROC	"cpu"
++#define CPUINFO_PROC	{"cpu"}
+ #endif
+ 
+ #ifdef __sparc__
+ #define rmb()		asm volatile("":::"memory")
+ #define cpu_relax()	asm volatile("":::"memory")
+-#define CPUINFO_PROC	"cpu"
++#define CPUINFO_PROC	{"cpu"}
+ #endif
+ 
+ #ifdef __alpha__
+ #define rmb()		asm volatile("mb" ::: "memory")
+ #define cpu_relax()	asm volatile("" ::: "memory")
+-#define CPUINFO_PROC	"cpu model"
++#define CPUINFO_PROC	{"cpu model"}
+ #endif
+ 
+ #ifdef __ia64__
+ #define rmb()		asm volatile ("mf" ::: "memory")
+ #define cpu_relax()	asm volatile ("hint @pause" ::: "memory")
+-#define CPUINFO_PROC	"model name"
++#define CPUINFO_PROC	{"model name"}
+ #endif
+ 
+ #ifdef __arm__
+@@ -74,7 +74,7 @@
+  */
+ #define rmb()		((void(*)(void))0xffff0fa0)()
+ #define cpu_relax()	asm volatile("":::"memory")
+-#define CPUINFO_PROC	"Processor"
++#define CPUINFO_PROC	{"model name", "Processor"}
+ #endif
+ 
+ #ifdef __aarch64__
+@@ -91,19 +91,19 @@
+ 				: /* no input */			\
+ 				: "memory")
+ #define cpu_relax()	asm volatile("" ::: "memory")
+-#define CPUINFO_PROC	"cpu model"
++#define CPUINFO_PROC	{"cpu model"}
+ #endif
+ 
+ #ifdef __arc__
+ #define rmb()		asm volatile("" ::: "memory")
+ #define cpu_relax()	rmb()
+-#define CPUINFO_PROC	"Processor"
++#define CPUINFO_PROC	{"Processor"}
+ #endif
+ 
+ #ifdef __metag__
+ #define rmb()		asm volatile("" ::: "memory")
+ #define cpu_relax()	asm volatile("" ::: "memory")
+-#define CPUINFO_PROC	"CPU"
++#define CPUINFO_PROC	{"CPU"}
+ #endif
+ 
+ #include <time.h>
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index b59350f..d48f571 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -550,16 +550,12 @@ static int write_version(int fd, struct perf_header *h __maybe_unused,
+ 	return do_write_string(fd, perf_version_string);
+ }
+ 
+-static int write_cpudesc(int fd, struct perf_header *h __maybe_unused,
+-		       struct perf_evlist *evlist __maybe_unused)
++static int __write_cpudesc(int fd, const char *cpuinfo_proc)
+ {
+-#ifndef CPUINFO_PROC
+-#define CPUINFO_PROC NULL
+-#endif
+ 	FILE *file;
+ 	char *buf = NULL;
+ 	char *s, *p;
+-	const char *search = CPUINFO_PROC;
++	const char *search = cpuinfo_proc;
+ 	size_t len = 0;
+ 	int ret = -1;
+ 
+@@ -611,6 +607,25 @@ done:
+ 	return ret;
+ }
+ 
++static int write_cpudesc(int fd, struct perf_header *h __maybe_unused,
++		       struct perf_evlist *evlist __maybe_unused)
++{
++#ifndef CPUINFO_PROC
++#define CPUINFO_PROC {"model name", }
++#endif
++	const char *cpuinfo_procs[] = CPUINFO_PROC;
++	unsigned int i;
++
++	for (i = 0; i < ARRAY_SIZE(cpuinfo_procs); i++) {
++		int ret;
++		ret = __write_cpudesc(fd, cpuinfo_procs[i]);
++		if (ret >= 0)
++			return ret;
++	}
++	return -1;
++}
++
++
+ static int write_nrcpus(int fd, struct perf_header *h __maybe_unused,
+ 			struct perf_evlist *evlist __maybe_unused)
+ {
+-- 
+1.8.4
+
