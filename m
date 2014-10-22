@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055AbaJVBgF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 21:36:05 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:45600 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751091AbaJVBgE (ORCPT
+	id S1754183AbaJVBgM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 21:36:12 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:54034 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751091AbaJVBgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 21:36:04 -0400
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCHv2 0/7] perf tools: Fix branch report segfaults
-References: <1413468427-31049-1-git-send-email-jolsa@kernel.org>
-Date: Wed, 22 Oct 2014 10:36:00 +0900
-In-Reply-To: <1413468427-31049-1-git-send-email-jolsa@kernel.org> (Jiri Olsa's
-	message of "Thu, 16 Oct 2014 16:07:00 +0200")
-Message-ID: <87egu0ga2n.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 21 Oct 2014 21:36:08 -0400
+Date: Tue, 21 Oct 2014 21:36:04 -0400 (EDT)
+Message-Id: <20141021.213604.498626106621926349.davem@davemloft.net>
+To: tgraf@suug.ch
+Cc: davem@davemloft.ne, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        eric.dumazet@gmail.com
+Subject: Re: [PATCH] netlink: Re-add locking to netlink_lookup() and seq
+ walker
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <14101d52c64e0d52176ca0d4b8888f8cf20ab9b0.1413921873.git.tgraf@suug.ch>
+References: <14101d52c64e0d52176ca0d4b8888f8cf20ab9b0.1413921873.git.tgraf@suug.ch>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 21 Oct 2014 18:36:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+From: Thomas Graf <tgraf@suug.ch>
+Date: Tue, 21 Oct 2014 22:05:38 +0200
 
-On Thu, 16 Oct 2014 16:07:00 +0200, Jiri Olsa wrote:
-> hi,
-> adding some branch_info checks to prevent segfaults
-> on data without branch info.
->
-> v2: using cmp_null as suggested by Namhyung
+> The synchronize_rcu() in netlink_release() introduces unacceptable
+> latency. Reintroduce minimal lookup so we can drop the
+> synchronize_rcu() until socket destruction has been RCUfied.
+> 
+> Cc: David S. Miller <davem@davemloft.net>
+> Cc: Eric Dumazet <eric.dumazet@gmail.com>
+> Reported-by: Steinar H. Gunderson <sgunderson@bigfoot.com>
+> Reported-and-tested-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+> Signed-off-by: Thomas Graf <tgraf@suug.ch>
 
-For the series,
+Applied and queued up for -stable.
 
-Acked-by: Namhyung Kim <namhyung@kernel.org>
+Please use an appropriate "Fixes: " tag in the future, this is
+especially important for an issue as serious as this one.
 
-Thanks,
-Namhyung
-
-
->
-> available at:
->   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
->   perf/abort_fix_2
->
-> Cc: Andi Kleen <ak@linux.intel.com>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-> ---
->  tools/perf/util/sort.c | 102 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++---------------------
->  1 file changed, 76 insertions(+), 26 deletions(-)
+Thanks.
