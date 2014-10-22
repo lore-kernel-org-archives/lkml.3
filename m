@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932965AbaJVVid (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 17:38:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17850 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932359AbaJVVic (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 17:38:32 -0400
-Message-ID: <1414013897.30946.102.camel@localhost>
-Subject: Re: Regression: audit: x86: drop arch from __audit_syscall_entry()
- interface
-From: Eric Paris <eparis@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Paulo Zanoni <przanoni@gmail.com>, Richard Guy Briggs <rgb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-audit@redhat.com,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        Daniel Vetter <daniel@ffwll.ch>
-Date: Wed, 22 Oct 2014 17:38:17 -0400
-In-Reply-To: <alpine.DEB.2.11.1410222323500.5308@nanos>
-References: <CA+gsUGSiXf2gpB8QQOQOmgxFc8mx31V6qeRqow6aXO1195jWEA@mail.gmail.com>
-	 <1414002190.30946.95.camel@localhost>
-	 <alpine.DEB.2.11.1410222323500.5308@nanos>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933162AbaJVVlj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 17:41:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58332 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932698AbaJVVli (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 17:41:38 -0400
+Date: Thu, 23 Oct 2014 05:40:26 +0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+Cc: Johan Hovold <johan@kernel.org>, Philip Munksgaard <pmunksgaard@gmail.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: serial: Fix indentation style issue
+Message-ID: <20141022214026.GA2994@kroah.com>
+References: <1413035383-3981-1-git-send-email-pmunksgaard@gmail.com>
+ <20141011142049.GA11456@kroah.com>
+ <20141022095112.GJ2113@localhost>
+ <20141022141857.GA8639@kroah.com>
+ <A2CA0424C0A6F04399FB9E1CD98E0304844E5026@US01WEMBX2.internal.synopsys.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E0304844E5026@US01WEMBX2.internal.synopsys.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-10-22 at 23:36 +0200, Thomas Gleixner wrote:
-> On Wed, 22 Oct 2014, Eric Paris wrote:
+On Wed, Oct 22, 2014 at 09:14:14PM +0000, Paul Zimmerman wrote:
+> > From: linux-usb-owner@vger.kernel.org [mailto:linux-usb-owner@vger.kernel.org] On Behalf Of Greg KH
+> > Sent: Wednesday, October 22, 2014 7:19 AM
+> > 
+> > On Wed, Oct 22, 2014 at 11:51:12AM +0200, Johan Hovold wrote:
+> > > On Sat, Oct 11, 2014 at 07:20:49AM -0700, Greg Kroah-Hartman wrote:
+> > > > On Sat, Oct 11, 2014 at 03:49:43PM +0200, Philip Munksgaard wrote:
+> > > > > Fix a style issue
+> > > > >
+> > > > > Signed-off-by: Philip Munksgaard <pmunksgaard@gmail.com>
+> > > > > ---
+> > > > >  drivers/usb/serial/option.c | 2 +-
+> > > > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > > >
+> > > > > diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+> > > > > index d1a3f60..d88998d 100644
+> > > > > --- a/drivers/usb/serial/option.c
+> > > > > +++ b/drivers/usb/serial/option.c
+> > > > > @@ -1616,7 +1616,7 @@ static const struct usb_device_id option_ids[] = {
+> > > > >  	{ USB_DEVICE(TLAYTECH_VENDOR_ID, TLAYTECH_PRODUCT_TEU800) },
+> > > > >  	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
+> > > > >    	  .driver_info = (kernel_ulong_t)&four_g_w14_blacklist
+> > > > > -  	},
+> > > > > +	},
+> > > >
+> > > > Why not fix the same 'space' issue on the line before this at the same
+> > > > time?
+> > >
+> > > And what about the remaining white-space issues in this file? Do we
+> > > really want to go down this path?
+> > 
+> > No, we don't, if you want to have patches be able to apply properly to
+> > older kernels, as you point out.
 > 
-> > That's really serious.  Looking now.
-> 
-> Indeed its serious. And it's even more serious as this masterpiece of
-> assembly wreckage was pulled in via your tree w/o having an acked-by
-> one of the x86 maintainers.
-> 
-> > On Wed, 2014-10-22 at 16:08 -0200, Paulo Zanoni wrote:
-> > > commit b4f0d3755c5e9cc86292d5fd78261903b4f23d4a
-> > > Author: Richard Guy Briggs
-> > > Date:   Tue Mar 4 10:38:06 2014 -0500
-> > >     audit: x86: drop arch from __audit_syscall_entry() interface
-> > > 
-> > > According to our QA, their i386 machine doesn't boot anymore. I tried
-> > > to write my own revert for the patch, asked QA to test, and they
-> > > confirmed it "solves" the problem.
-> 
-> diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-> index 0d0c9d4ab6d5..f9e3fabc8716 100644
-> --- a/arch/x86/kernel/entry_32.S
-> +++ b/arch/x86/kernel/entry_32.S
-> @@ -449,12 +449,11 @@ sysenter_audit:
->  	jnz syscall_trace_entry
->  	addl $4,%esp
->  	CFI_ADJUST_CFA_OFFSET -4
-> -	/* %esi already in 8(%esp)	   6th arg: 4th syscall arg */
-> -	/* %edx already in 4(%esp)	   5th arg: 3rd syscall arg */
-> -	/* %ecx already in 0(%esp)	   4th arg: 2nd syscall arg */
-> -	movl %ebx,%ecx			/* 3rd arg: 1st syscall arg */
-> -	movl %eax,%edx			/* 2nd arg: syscall number */
-> -	movl $AUDIT_ARCH_I386,%eax	/* 1st arg: audit arch */
-> +	movl %esi,4(%esp)		/* 5th arg: 4th syscall arg */
-> +	movl %edx,(%esp)		/* 4th arg: 3rd syscall arg */
-> 
-> Bilndly overwriting the stack which holds the syscall arguments is
-> really a brilliant way to ensure security.
+> git-apply --ignore-whitespace ?
 
-It was sent, numerous times, to the x86 list for reviews, and lived in
--next for 2 complete devel cycles without a complaint.  I'm trying to
-get an i386 system to test a fix.  But yes, it's total crap.
+Doesn't work with my code-flow for handling stable patches, sorry.
 
--Eric
-
-
+greg k-h
