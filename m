@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754955AbaJVKEb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 06:04:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54091 "EHLO mx1.redhat.com"
+	id S932520AbaJVKGU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 06:06:20 -0400
+Received: from mga02.intel.com ([134.134.136.20]:38873 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754564AbaJVKE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 06:04:28 -0400
-Date: Wed, 22 Oct 2014 10:03:32 +0000
-From: Aaron Tomlin <atomlin@redhat.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Rik van Riel <riel@redhat.com>,
-        David Rientjes <rientjes@google.com>,
-        Dario Faggioli <raistlin@linux.it>, Andi Kleen <ak@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jens Axboe <axboe@fb.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH] sysctl: terminate strings also on \r
-Message-ID: <20141022100332.GA3085@atomlin.usersys.redhat.com>
-References: <20141021202137.GA20114@www.outflux.net>
+	id S1754929AbaJVKGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 06:06:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,768,1406617200"; 
+   d="scan'208";a="593652727"
+Date: Wed, 22 Oct 2014 13:05:33 +0300
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [tpmdd-devel] [PATCH] tpm: fix multiple race conditions in
+ tpm_ppi.c
+Message-ID: <20141022100533.GA31487@intel.com>
+References: <1413879761-25392-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <20141021165551.GA28382@obsidianresearch.com>
+ <20141021204251.GA5438@intel.com>
+ <20141021210215.GA31755@obsidianresearch.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141021202137.GA20114@www.outflux.net>
-X-PGP-Key: http://pgp.mit.edu/pks/lookup?search=atomlin%40redhat.com
-X-PGP-Fingerprint: 7906 84EB FA8A 9638 8D1E  6E9B E2DE 9658 19CC 77D6
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <20141021210215.GA31755@obsidianresearch.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 01:21:37PM -0700, Kees Cook wrote:
-> From: Paul Wise <pabs3@bonedaddy.net>
+On Tue, Oct 21, 2014 at 03:02:15PM -0600, Jason Gunthorpe wrote:
+> On Tue, Oct 21, 2014 at 11:42:51PM +0300, Jarkko Sakkinen wrote:
 > 
-> This partially mitigates a common strategy used by attackers for hiding
-> the full contents of strings in procfs from naive sysadmins who use cat,
-> more or sysctl to inspect the contents of strings in procfs.
+> > > Personally, I'd sequence this commit right after your 'tpm: two-phase
+> > > chip management functions' commit because it makes it much saner (no
+> > > half step toward the new functions). I assume this is a theoretical
+> > > problem? Or do you have a two TPM system?
+> > 
+> > This has realized in Intel NUCs where there is PTT and dTPM module. Even
+> > when PTT is selected there is still ACPI device for dTPM so three is a
+> > race condition and PPI is unusable. I think that it's not good that code is
+> > not robust enough to deal with this.
 > 
-> References: http://www.jakoblell.com/blog/2014/05/07/hacking-contest-hiding-stuff-from-the-terminal/
-> Signed-off-by: Paul Wise <pabs3@bonedaddy.net>
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
->  kernel/sysctl.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> Oh OK, you should probably explain in the commit log that this is a
+> bug fix that impacts real hardware, that qualifies it for the -stable
+> tree.
 > 
-> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> index 4aada6d9fe74..c34c9414caac 100644
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -1739,7 +1739,7 @@ static int _proc_do_string(char *data, int maxlen, int write,
->  		while ((p - buffer) < *lenp && len < maxlen - 1) {
->  			if (get_user(c, p++))
->  				return -EFAULT;
-> -			if (c == 0 || c == '\n')
-> +			if (c == 0 || c == '\n' || c == '\r')
->  				break;
->  			data[len++] = c;
->  		}
-> -- 
+> Assuming two-phase commit is nearly ready to go, I'd still sequence
+> this fix after two-phase for mainline and then use this patch as-is
+> for the 3.17 -stable backport of the mainline commit.
 
-Acked-by: Aaron Tomlin <atomlin@redhat.com>
+OK, makes sense. I'll try to get this done tonight.
 
--- 
-Aaron Tomlin
+> > Even if you forget the race condition it feels waste to lookup a handle
+> > that is already known.
+> 
+> There is no doubt that this new arrangement is much better than what
+> was there before!
+> 
+> Thanks,
+> Jason
+
+/Jarkko
