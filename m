@@ -1,135 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754375AbaJVRqB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 13:46:01 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:55996 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754113AbaJVRp7 (ORCPT
+	id S1754454AbaJVRrl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 13:47:41 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:44279 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751031AbaJVRrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 13:45:59 -0400
-Message-ID: <5447ED53.2030502@codeaurora.org>
-Date: Wed, 22 Oct 2014 13:45:55 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 22 Oct 2014 13:47:39 -0400
+Date: Wed, 22 Oct 2014 10:46:59 -0700
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Anton Blanchard <anton@au1.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf/powerpc: Cache the DWARF debug info
+Message-ID: <20141022174659.GA5119@us.ibm.com>
+References: <20141021185610.GA18366@us.ibm.com>
+ <20141021190839.GA4160@kernel.org>
+ <20141022000958.GB2228@us.ibm.com>
+ <20141022081730.GB9860@krava.brq.redhat.com>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        David Drysdale <drysdale@google.com>,
-        =?ISO-8859-1?Q?Piotr_Kr=F3l?= <piotr.krol@3mdeb.com>,
-        Bjarke Istrup Pedersen <gurligebis@gentoo.org>,
-        Anup Patel <anup.patel@linaro.org>,
-        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH RFC v2 01/16] virtio: memory access APIs
-References: <1413992894-22976-1-git-send-email-mst@redhat.com> <1413992894-22976-2-git-send-email-mst@redhat.com>
-In-Reply-To: <1413992894-22976-2-git-send-email-mst@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141022081730.GB9860@krava.brq.redhat.com>
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102217-0033-0000-0000-0000026BCF26
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
+Jiri Olsa [jolsa@redhat.com] wrote:
+| > +			goto out;
+| > +		}
+| > +		dso->dwfl = dwfl;
+| 
+| so by this we get powerpc arch code sharing dw handle via dso object,
+| but we have lot of generic code too ;-)
 
-On 10/22/2014 11:50 AM, Michael S. Tsirkin wrote:
-> virtio 1.0 makes all memory structures LE, so
-> we need APIs to conditionally do a byteswap on BE
-> architectures.
-> 
-> To make it easier to check code statically,
-> add virtio specific types for multi-byte integers
-> in memory.
-> 
-> Add low level wrappers that do a byteswap conditionally, these will be
-> useful e.g. for vhost.  Add high level wrappers that will (in the
-> future) query device endian-ness and act accordingly.
-> 
-> At the moment, stub them out and assume native endian-ness everywhere.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  include/linux/virtio_config.h    | 16 +++++++++++++
->  include/uapi/linux/virtio_ring.h | 49 ++++++++++++++++++++--------------------
->  include/uapi/linux/Kbuild        |  1 +
->  3 files changed, 42 insertions(+), 24 deletions(-)
-> 
-> diff --git a/include/linux/virtio_config.h b/include/linux/virtio_config.h
-> index 7f4ef66..d38d3c2 100644
-> --- a/include/linux/virtio_config.h
-> +++ b/include/linux/virtio_config.h
-> @@ -4,6 +4,7 @@
->  #include <linux/err.h>
->  #include <linux/bug.h>
->  #include <linux/virtio.h>
-> +#include <linux/virtio_byteorder.h>
+Well, this applies to powerpc...
 
-What patch creates this file?
+| 
+| could you make this happen for unwind__get_entries.. probably
+| both sharing same generic code I guess
 
->  #include <uapi/linux/virtio_config.h>
->  
->  /**
-> @@ -152,6 +153,21 @@ int virtqueue_set_affinity(struct virtqueue *vq, int cpu)
->  	return 0;
->  }
->  
-> +/* Memory accessors */
-> +#define DEFINE_VIRTIO_XX_TO_CPU(bits) \
-> +static inline u##bits virtio##bits##_to_cpu(struct virtio_device *vdev, __virtio##bits val) \
-> +{ \
-> +	return __virtio##bits##_to_cpu(false, val); \
-> +} \
-> +static inline __virtio##bits cpu_to_virtio##bits(struct virtio_device *vdev, u##bits val) \
-> +{ \
-> +	return __cpu_to_virtio##bits(false, val); \
-> +}
-> +
-> +DEFINE_VIRTIO_XX_TO_CPU(16)
-> +DEFINE_VIRTIO_XX_TO_CPU(32)
-> +DEFINE_VIRTIO_XX_TO_CPU(64)
-> +
->  /* Config space accessors. */
->  #define virtio_cread(vdev, structname, member, ptr)			\
->  	do {								\
-> diff --git a/include/uapi/linux/virtio_ring.h b/include/uapi/linux/virtio_ring.h
-> index a99f9b7..6c00632 100644
-> --- a/include/uapi/linux/virtio_ring.h
-> +++ b/include/uapi/linux/virtio_ring.h
-> @@ -32,6 +32,7 @@
->   *
->   * Copyright Rusty Russell IBM Corporation 2007. */
->  #include <linux/types.h>
-> +#include <linux/virtio_types.h>
->  
->  /* This marks a buffer as continuing via the next field. */
->  #define VRING_DESC_F_NEXT	1
-> @@ -61,32 +62,32 @@
->  /* Virtio ring descriptors: 16 bytes.  These can chain together via "next". */
->  struct vring_desc {
->  	/* Address (guest-physical). */
-> -	__u64 addr;
-> +	__virtio64 addr;
->  	/* Length. */
-> -	__u32 len;
-> +	__virtio32 len;
->  	/* The flags as indicated above. */
-> -	__u16 flags;
-> +	__virtio16 flags;
->  	/* We chain unused descriptors via this, too */
-> -	__u16 next;
-> +	__virtio16 next;
->  };
+and unwind_get_entries() applies only to x86 and arm right ? ;-)
+Or at least thats what the config/Makefile says.
 
-How does __virtio64 differ from __le64?
+I can take a look at unwind_get_entries(), but can you please merge
+this fix for now, since the current performance is bad?
 
-Thanks,
-Chris
+| 
+| thanks,
+| jirka
 
--- 
-Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-a Linux Foundation Collaborative Project
