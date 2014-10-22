@@ -1,150 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751507AbaJVF71 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 01:59:27 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:45863 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884AbaJVF7Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 01:59:25 -0400
-Message-ID: <1413957522.7070.5.camel@debian>
-Subject: Re: [PATCH] x86, MCE: support memory error recovery for both UCNA
- and Deferred error in machine_check_poll
-From: Chen Yucong <slaoub@gmail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Andi Kleen <ak@linux.intel.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Borislav Petkov <bp@alien8.de>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Tony Luck <tony.luck@gmail.com>
-Date: Wed, 22 Oct 2014 13:58:42 +0800
-In-Reply-To: <1412921020.3631.7.camel@debian>
-References: <1412921020.3631.7.camel@debian>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752238AbaJVGC1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 02:02:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60445 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750813AbaJVGC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 02:02:26 -0400
+Date: Wed, 22 Oct 2014 08:02:23 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+cc: Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        linux-kernel@vger.kernel.org, Josh Poimboeuf <jpoimboe@redhat.com>,
+        Seth Jennings <sjenning@redhat.com>
+Subject: Re: [PATCH] kprobes: add kprobe_is_function_probed()
+In-Reply-To: <544716CA.2020605@hitachi.com>
+Message-ID: <alpine.LNX.2.00.1410220800040.22681@pobox.suse.cz>
+References: <alpine.LNX.2.00.1410211744550.24255@pobox.suse.cz> <544716CA.2020605@hitachi.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-10-10 at 14:03 +0800, Chen Yucong wrote:
-> From: Chen Yucong <slaoub@gmail.com>
-> 
-> dram_ce_error() stems from Boris's patch set. Thanks!
-> Link: http://lkml.org/lkml/2014/7/1/545
-> 
-> Uncorrected no action required (UCNA) - is a UCR error that is not
-> signaled via a machine check exception and, instead, is reported to
-> system software as a corrected machine check error. UCNA errors indicate
-> that some data in the system is corrupted, but the data has not been
-> consumed and the processor state is valid and you may continue execution
-> on this processor. UCNA errors require no action from system software
-> to continue execution. Note that UCNA errors are supported by the
-> processor only when IA32_MCG_CAP[24] (MCG_SER_P) is set.
->                                            -- Intel SDM Volume 3B
-> 
-> Deferred errors are errors that cannot be corrected by hardware, but
-> do not cause an immediate interruption in program flow, loss of data
-> integrity, or corruption of processor state. These errors indicate
-> that data has been corrupted but not consumed. Hardware writes information
-> to the status and address registers in the corresponding bank that
-> identifies the source of the error if deferred errors are enabled for
-> logging. Deferred errors are not reported via machine check exceptions;
-> they can be seen by polling the MCi_STATUS registers.
->                                             -- ADM64 APM Volume 2
-> 
-> Above two items, both UCNA and Deferred errors belong to detected
-> errors, but they can't be corrected by hardware, and this is very
-> similar to Software Recoverable Action Optional (SRAO) errors.
-> Therefore, we can take some actions that have been used for handling
-> SRAO errors to handle UCNA and Deferred errors.
-> 
-> Signed-off-by: Chen Yucong <slaoub@gmail.com>
-> ---
->  arch/x86/include/asm/mce.h       |    4 ++++
->  arch/x86/kernel/cpu/mcheck/mce.c |   39 ++++++++++++++++++++++++++++++++++++++
->  2 files changed, 43 insertions(+)
-> 
-> diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-> index 958b90f..c9ac7df4 100644
-> --- a/arch/x86/include/asm/mce.h
-> +++ b/arch/x86/include/asm/mce.h
-> @@ -34,6 +34,10 @@
->  #define MCI_STATUS_S	 (1ULL<<56)  /* Signaled machine check */
->  #define MCI_STATUS_AR	 (1ULL<<55)  /* Action required */
->  
-> +/* AMD-specific bits */
-> +#define MCI_STATUS_DEFERRED     (1ULL<<44)  /* declare an uncorrected error */
-> +#define MCI_STATUS_POISON       (1ULL<<43)  /* access poisonous data */
-> +
->  /*
->   * Note that the full MCACOD field of IA32_MCi_STATUS MSR is
->   * bits 15:0.  But bit 12 is the 'F' bit, defined for corrected
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index 61a9668ce..4030c77 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -575,6 +575,35 @@ static void mce_read_aux(struct mce *m, int i)
->  	}
->  }
->  
-> +static bool dram_ce_error(struct mce *m)
-> +{
-> +	struct cpuinfo_x86 *c = &boot_cpu_data;
-> +
-> +	if (c->x86_vendor == X86_VENDOR_AMD) {
-> +		/* ErrCodeExt[20:16] */
-> +		u8 xec = (m->status >> 16) & 0x1f;
-> +
-> +		if (m->status & MCI_STATUS_DEFERRED)
-> +			return (xec == 0x0 || xec == 0x8);
-> +	} else if (c->x86_vendor == X86_VENDOR_INTEL) {
-> +		/*
-> +		 * SDM Volume 3B - 15.9.2 Compound Error Codes (Table 15-9)
-> +		 *
-> +		 * Bit 7 of the MCACOD field of IA32_MCi_STATUS is used for
-> +		 * indicating a memory error. But we can't just blindly check
-> +		 * bit 7 because if bit 8 is set, then this is a cache error,
-> +		 * and if bit 11 is set, then it is a bus/ interconnect error
-> +		 * - and either way bit 7 just gives more detail on what
-> +		 * cache/bus/interconnect error happened. Note that we can
-> +		 * ignore bit 12, as it's the "filter" bit.
-> +		 */
-> +		if ((m->mcgcap & MCG_SER_P) && (m->status & MCI_STATUS_UC))
-> +			return (m->status & 0xef80) == BIT(7);
-> +	}
-> +
-> +	return false;
-> +}
-> +
->  DEFINE_PER_CPU(unsigned, mce_poll_count);
->  
->  /*
-> @@ -630,6 +659,16 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
->  
->  		if (!(flags & MCP_TIMESTAMP))
->  			m.tsc = 0;
-> +
-> +		/*
-> +		 * In the cases where we don't have a valid address after all,
-> +		 * do not add it into the ring buffer.
-> +		 */
-> +		if (dram_ce_error(&m) && (m.status & MCI_STATUS_ADDRV)) {
-> +			mce_ring_add(m.addr >> PAGE_SHIFT);
-> +			mce_schedule_work();
-> +		}
-> +
->  		/*
->  		 * Don't get the IP here because it's unlikely to
->  		 * have anything to do with the actual error location.
+On Wed, 22 Oct 2014, Masami Hiramatsu wrote:
 
-Hi Boris,
+> > Add a function that allows external users (such as live patching 
+> > mechanisms) to check whether a given function (identified by symbol name) 
+> > has a kprobe installed in it.
+> 
+> Actually, we've already exported the list of kprobes with probe points
+> (symbols) via debugfs. Please check /sys/kernel/debug/kprobes/list :)
 
-Do you have any comments on this patch?
+Yes, I know, and kprobe_is_function_probed() is performing very similar 
+thing that show_kprobe_addr() is doing.
+But we'd like to be able to check this from within a kernel module (the 
+patch module) and issue WARN().
 
-thx!
-cyc
+Otherwise we'll need to have a machinery in userspace before insmod which 
+will look up the functions in the module and compare them to the 
+debufs-provided interface.
 
+Also, I don't think we want to be dependent on debugfs being mounted and 
+discoverable, etc ...
+
+Thanks Masami,
+
+-- 
+Jiri Kosina
+SUSE Labs
