@@ -1,200 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906AbaJVOcn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 10:32:43 -0400
-Received: from filter1.ibarracuda.nl ([83.247.7.10]:49865 "EHLO
-	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753673AbaJVObu (ORCPT
+	id S1753944AbaJVOcr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 10:32:47 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58569 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753673AbaJVOco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 10:31:50 -0400
-X-ASG-Debug-ID: 1413988306-0759e74a717a5000002-xx1T2L
-X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
-X-Barracuda-AUTH-User: xsenscom
-X-Barracuda-Apparent-Source-IP: 87.249.116.215
-From: Frans Klaver <frans.klaver@xsens.com>
-To: Sebastian Reichel <sre@kernel.org>
-CC: Frans Klaver <frans.klaver@xsens.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        =?UTF-8?q?Ren=C3=A9=20Moll?= <linux@r-moll.nl>,
-        Guenter Roeck <linux@roeck-us.net>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>
-Subject: [PATCH 12/13] power: reset: ltc2952: make trigger input optional
-Date: Wed, 22 Oct 2014 16:31:09 +0200
-X-ASG-Orig-Subj: [PATCH 12/13] power: reset: ltc2952: make trigger input optional
-Message-ID: <1413988270-28092-13-git-send-email-frans.klaver@xsens.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1413988270-28092-1-git-send-email-frans.klaver@xsens.com>
-References: <1413988270-28092-1-git-send-email-frans.klaver@xsens.com>
+	Wed, 22 Oct 2014 10:32:44 -0400
+Date: Wed, 22 Oct 2014 16:32:41 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com, adrian.hunter@intel.com, acme@infradead.org
+Subject: Re: [PATCH v5 12/20] x86: perf: intel_pt: Intel PT PMU driver
+Message-ID: <20141022143241.GT12706@worktop.programming.kicks-ass.net>
+References: <1413207948-28202-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1413207948-28202-13-git-send-email-alexander.shishkin@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.16.11.125]
-X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
-X-Barracuda-Start-Time: 1413988306
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
-X-Barracuda-BRTS-Status: 1
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.10827
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413207948-28202-13-git-send-email-alexander.shishkin@linux.intel.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the ltc2952 supports only one button sequence to initiate
-powerdown. This is not always desirable, as even prolonged button
-presses can happen in use.
+On Mon, Oct 13, 2014 at 04:45:40PM +0300, Alexander Shishkin wrote:
+> +
+> +enum cpuid_regs {
+> +	CR_EAX = 0,
+> +	CR_ECX,
+> +	CR_EDX,
+> +	CR_EBX
+> +};
+> +
+> +/*
+> + * Capabilities of Intel PT hardware, such as number of address bits or
+> + * supported output schemes, are cached and exported to userspace as "caps"
+> + * attribute group of pt pmu device
+> + * (/sys/bus/event_source/devices/intel_pt/caps/) so that userspace can store
+> + * relevant bits together with intel_pt traces.
+> + */
+> +#define PT_CAP(_n, _l, _r, _m)						\
+> +	[PT_CAP_ ## _n] = { .name = __stringify(_n), .leaf = _l,	\
+> +			    .reg = _r, .mask = _m }
+> +
+> +static struct pt_cap_desc {
+> +	const char	*name;
+> +	u32		leaf;
+> +	u8		reg;
+> +	u32		mask;
+> +} pt_caps[] = {
+> +	PT_CAP(max_subleaf,		0, CR_EAX, 0xffffffff),
+> +	PT_CAP(cr3_filtering,		0, CR_EBX, BIT(0)),
+> +	PT_CAP(topa_output,		0, CR_ECX, BIT(0)),
+> +	PT_CAP(topa_multiple_entries,	0, CR_ECX, BIT(1)),
+> +	PT_CAP(payloads_lip,		0, CR_ECX, BIT(31)),
+> +};
+> +
+> +static u32 pt_cap_get(enum pt_capabilities cap)
+> +{
+> +	struct pt_cap_desc *cd = &pt_caps[cap];
+> +	u32 c = pt_pmu.caps[cd->leaf * 4 + cd->reg];
+> +	unsigned int shift = __ffs(cd->mask);
+> +
+> +	return (c & cd->mask) >> shift;
+> +}
 
-Allow ltc2952 users to pick their own power down sequence, by making the
-trigger input optional. Since this still means that the ltc2952 may
-power down the platform if the power button is pressed for about 5
-seconds, we still need to make sure to start the watchdog toggle to
-prolong the system power for as long as we need it.
+> +	if (test_cpu_cap(&boot_cpu_data, X86_FEATURE_INTEL_PT)) {
+> +		for (i = 0; i < PT_CPUID_LEAVES; i++)
+> +			cpuid_count(20, i,
+> +				    &pt_pmu.caps[CR_EAX + i * 4],
+> +				    &pt_pmu.caps[CR_EBX + i * 4],
+> +				    &pt_pmu.caps[CR_ECX + i * 4],
+> +				    &pt_pmu.caps[CR_EDX + i * 4]);
+> +	} else
+> +		return -ENODEV;
 
-This will still allow the system to control power using the kill signal.
-
-Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
----
- drivers/power/reset/ltc2952-poweroff.c | 87 +++++++++++++++++++++-------------
- 1 file changed, 55 insertions(+), 32 deletions(-)
-
-diff --git a/drivers/power/reset/ltc2952-poweroff.c b/drivers/power/reset/ltc2952-poweroff.c
-index fda2735..72e3d7f 100644
---- a/drivers/power/reset/ltc2952-poweroff.c
-+++ b/drivers/power/reset/ltc2952-poweroff.c
-@@ -32,7 +32,9 @@
-  * - trigger (input)
-  *     A level change indicates the shut-down trigger. If it's state reverts
-  *     within the time-out defined by trigger_delay, the shut down is not
-- *     executed.
-+ *     executed. If no pin is assigned to this input, the driver will start the
-+ *     watchdog toggle immediately. The chip will only power off the system if
-+ *     it is requested to do so through the kill line.
-  *
-  * - watchdog (output)
-  *     Once a shut down is triggered, the driver will toggle this signal,
-@@ -116,15 +118,10 @@ static enum hrtimer_restart ltc2952_poweroff_timer_wde(struct hrtimer *timer)
- 	return HRTIMER_RESTART;
- }
- 
--static enum hrtimer_restart
--ltc2952_poweroff_timer_trigger(struct hrtimer *timer)
-+static void ltc2952_poweroff_start_wde(struct ltc2952_poweroff *data)
- {
--	struct ltc2952_poweroff *data = to_ltc2952(timer, timer_trigger);
--	int ret = hrtimer_start(&data->timer_wde,
--				data->wde_interval, HRTIMER_MODE_REL);
--
--	if (ret) {
--		dev_err(data->dev, "unable to start the timer\n");
-+	if (hrtimer_start(&data->timer_wde, data->wde_interval,
-+			  HRTIMER_MODE_REL)) {
- 		/*
- 		 * The device will not toggle the watchdog reset,
- 		 * thus shut down is only safe if the PowerPath controller
-@@ -133,10 +130,17 @@ ltc2952_poweroff_timer_trigger(struct hrtimer *timer)
- 		 *
- 		 * Only sending a warning as the system will power-off anyway
- 		 */
-+		dev_err(data->dev, "unable to start the timer\n");
- 	}
-+}
- 
--	dev_info(data->dev, "executing shutdown\n");
-+static enum hrtimer_restart
-+ltc2952_poweroff_timer_trigger(struct hrtimer *timer)
-+{
-+	struct ltc2952_poweroff *data = to_ltc2952(timer, timer_trigger);
- 
-+	ltc2952_poweroff_start_wde(data);
-+	dev_info(data->dev, "executing shutdown\n");
- 	orderly_poweroff(true);
- 
- 	return HRTIMER_NORESTART;
-@@ -190,7 +194,7 @@ static void ltc2952_poweroff_default(struct ltc2952_poweroff *data)
- 
- static int ltc2952_poweroff_init(struct platform_device *pdev)
- {
--	int ret, virq;
-+	int ret;
- 	struct ltc2952_poweroff *data = platform_get_drvdata(pdev);
- 
- 	ltc2952_poweroff_default(data);
-@@ -210,29 +214,48 @@ static int ltc2952_poweroff_init(struct platform_device *pdev)
- 		return ret;
- 	}
- 
--	data->gpio_trigger = devm_gpiod_get(&pdev->dev, "trigger",
--					    GPIOD_IN);
--	if (IS_ERR(ltc2952_data->gpio_trigger)) {
--		ret = PTR_ERR(ltc2952_data->gpio_trigger);
--		dev_err(&pdev->dev, "unable to claim gpio \"trigger\"\n");
--		return ret;
--	}
--
--	virq = gpiod_to_irq(data->gpio_trigger);
--	if (virq < 0) {
--		dev_err(&pdev->dev, "cannot map GPIO as interrupt");
--		return ret;
-+	data->gpio_trigger = devm_gpiod_get(&pdev->dev, "trigger", GPIOD_IN);
-+	if (IS_ERR(data->gpio_trigger)) {
-+		/*
-+		 * It's not a problem if the trigger gpio isn't available, but
-+		 * it is worth a warning if its use was defined in the device
-+		 * tree.
-+		 */
-+		if (PTR_ERR(data->gpio_trigger) != -ENOENT)
-+			dev_err(&pdev->dev,
-+				"unable to claim gpio \"trigger\"\n");
-+		data->gpio_trigger = NULL;
- 	}
- 
--	ret = devm_request_irq(&pdev->dev, virq,
--			       ltc2952_poweroff_handler,
--			       (IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING),
--			       "ltc2952-poweroff",
--			       data);
--
--	if (ret) {
--		dev_err(&pdev->dev, "cannot configure an interrupt handler\n");
--		return ret;
-+	if (devm_request_irq(&pdev->dev, gpiod_to_irq(data->gpio_trigger),
-+			     ltc2952_poweroff_handler,
-+			     (IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING),
-+			     "ltc2952-poweroff",
-+			     data)) {
-+		/*
-+		 * Some things may have happened:
-+		 * - No trigger input was defined
-+		 * - Claiming the GPIO failed
-+		 * - We could not map to an IRQ
-+		 * - We couldn't register an interrupt handler
-+		 *
-+		 * None of these really are problems, but all of them
-+		 * disqualify the push button from controlling the power.
-+		 *
-+		 * It is therefore important to note that if the ltc2952
-+		 * detects a button press for long enough, it will still start
-+		 * its own powerdown window and cut the power on us if we don't
-+		 * start the watchdog trigger.
-+		 */
-+		if (data->gpio_trigger) {
-+			dev_warn(&pdev->dev,
-+				 "unable to configure the trigger interrupt\n");
-+			devm_gpiod_put(&pdev->dev, data->gpio_trigger);
-+			data->gpio_trigger = NULL;
-+		}
-+		dev_info(&pdev->dev,
-+			 "power down trigger input will not be used\n");
-+		ltc2952_poweroff_start_wde(data);
- 	}
- 
- 	return 0;
--- 
-2.1.0
-
+I would really rather you use bitfield unions for cpuid stuff, have a
+look at union cpuid10_e[abd]x as used in
+perf_event_intel.c:intel_pmu_init().
