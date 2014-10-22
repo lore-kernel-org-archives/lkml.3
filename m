@@ -1,111 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834AbaJVHJV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 03:09:21 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:53651 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769AbaJVHJU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 03:09:20 -0400
-Message-ID: <5447580E.3030603@gmail.com>
-Date: Wed, 22 Oct 2014 15:09:02 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753935AbaJVHMN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 03:12:13 -0400
+Received: from arrakis.dune.hu ([78.24.191.176]:58198 "EHLO arrakis.dune.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750813AbaJVHML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 03:12:11 -0400
+Message-ID: <544758AB.3060100@openwrt.org>
+Date: Wed, 22 Oct 2014 09:11:39 +0200
+From: John Crispin <blogic@openwrt.org>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, mingo@redhat.com,
-        peterz@infradead.org
-CC: riel@redhat.com, tkhai@yandex.ru, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] sched/fair: Care divide error in update_task_scan_period()
-References: <54475703.8000505@jp.fujitsu.com>
-In-Reply-To: <54475703.8000505@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: eunb.song@samsung.com, "ralf@linux-mips.org" <ralf@linux-mips.org>
+CC: "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mips: add arch_trigger_all_cpu_backtrace() function
+References: <1061520101.169091413960858532.JavaMail.weblogic@epmlwas02b>
+In-Reply-To: <1061520101.169091413960858532.JavaMail.weblogic@epmlwas02b>
+Content-Type: text/plain; charset=EUC-KR
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-10/22/14, 3:04 PM, Yasuaki Ishimatsu:
-> While offling node by hot removing memory, the following divide error
-> occurs:
->
->   divide error: 0000 [#1] SMP
->   [...]
->   Call Trace:
->    [...] handle_mm_fault
->    [...] ? try_to_wake_up
->    [...] ? wake_up_state
->    [...] __do_page_fault
->    [...] ? do_futex
->    [...] ? put_prev_entity
->    [...] ? __switch_to
->    [...] do_page_fault
->    [...] page_fault
->   [...]
->   RIP  [<ffffffff810a7081>] task_numa_fault
->    RSP <ffff88084eb2bcb0>
->
-> The issue occurs as follows:
->   1. When page fault occurs and page is allocated from node 1,
->      task_struct->numa_faults_buffer_memory[] of node 1 is
->      incremented and p->numa_faults_locality[] is also incremented
->      as follows:
->
->      o numa_faults_buffer_memory[]       o numa_faults_locality[]
->               NR_NUMA_HINT_FAULT_TYPES
->              |      0     |     1     |
->      ----------------------------------  ----------------------
->       node 0 |      0     |     0     |   remote |      0     |
->       node 1 |      0     |     1     |   locale |      1     |
->      ----------------------------------  ----------------------
->
->   2. node 1 is offlined by hot removing memory.
->
->   3. When page fault occurs, fault_types[] is calculated by using
->      p->numa_faults_buffer_memory[] of all online nodes in
->      task_numa_placement(). But node 1 was offline by step 2. So
->      the fault_types[] is calculated by using only
->      p->numa_faults_buffer_memory[] of node 0. So both of fault_types[]
->      are set to 0.
->
->   4. The values(0) of fault_types[] pass to update_task_scan_period().
->
->   5. numa_faults_locality[1] is set to 1. So the following division is
->      calculated.
->
->         static void update_task_scan_period(struct task_struct *p,
->                                 unsigned long shared, unsigned long private){
->         ...
->                 ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared));
->         }
->
->   6. But both of private and shared are set to 0. So divide error
->      occurs here.
->
-> The divide error is rare case because the trigger is node offline.
-> This patch always increments denominator for avoiding divide error.
->
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-Reviewed-by: Wanpeng Li <wanpeng.li@linux.intel.com>
 
-> ---
-> v2:
->  - Simply increment a denominator
->
->  kernel/sched/fair.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 0b069bf..f3b492d 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1520,7 +1520,7 @@ static void update_task_scan_period(struct task_struct *p,
->  		 * scanning faster if shared accesses dominate as it may
->  		 * simply bounce migrations uselessly
->  		 */
-> -		ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared));
-> +		ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared + 1));
->  		diff = (diff * ratio) / NUMA_PERIOD_SLOTS;
->  	}
->
+On 22/10/2014 08:54, Eunbong Song wrote:
+> 
+>> Hi Eubong,
+> 
+>> one small question inline ...
+> 
+>>> +void arch_trigger_all_cpu_backtrace(bool); +#define
+>>> arch_trigger_all_cpu_backtrace arch_trigger_all_cpu_backtrace
+> 
+>> What is the purpose of this define ? is this maybe a leftover from
+>> some regex/cleanups ?
+> 
+> Hi John.
+> Actually, I just follow the same function of sparc architecture.
+> You can find this in arch/sparc/include/asm/irq_64.h as below
+> 
+> void arch_trigger_all_cpu_backtrace(bool);
+> #define arch_trigger_all_cpu_backtrace arch_trigger_all_cpu_backtrace
+> 
+> I guess this is used for conditional compile. 
+> See below.
+> include/linux/nmi.h
+> #ifdef arch_trigger_all_cpu_backtrace
+> static inline bool trigger_all_cpu_backtrace(void)
+> {
+>         arch_trigger_all_cpu_backtrace(true);
+> 
+>         return true;
+> }
+> static inline bool trigger_allbutself_cpu_backtrace(void)
+> {
+>         arch_trigger_all_cpu_backtrace(false);
+>         return true;
+> }
+> #else
+> static inline bool trigger_all_cpu_backtrace(void)
+> {
+>         return false;
+> }
+> static inline bool trigger_allbutself_cpu_backtrace(void)
+> {
+>         return false;
+> }
+> #endif
+> 
+> Thanks. 
+>> John
+> 
 
+i don't see how this is required for conditional compiles. the code
+define a->a which is bogus i think.
+
+	John
