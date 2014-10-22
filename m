@@ -1,70 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932761AbaJVUNK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 16:13:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57253 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932234AbaJVUNI (ORCPT
+	id S932794AbaJVUOD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 16:14:03 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:38301 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932328AbaJVUOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 16:13:08 -0400
-Date: Wed, 22 Oct 2014 13:13:08 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Andrey Ryabinin <a.ryabinin@samsung.com>, n-horiguchi@ah.jp.nec.com,
-        aarcange@redhat.com, mgorman@suse.de, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm, hugetlb: correct bit shift in hstate_sizelog
-Message-Id: <20141022131308.361a72ba7c6fbf1bd778445a@linux-foundation.org>
-In-Reply-To: <5447FC6E.2000207@oracle.com>
-References: <1413915307-20536-1-git-send-email-sasha.levin@oracle.com>
-	<544743D6.6040103@samsung.com>
-	<20141022114437.72eb61ce3e2348c52ab3d1db@linux-foundation.org>
-	<5447FC6E.2000207@oracle.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 22 Oct 2014 16:14:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <87wq7sgfah.fsf@x220.int.ebiederm.org>
+References: <1413978269-17274-1-git-send-email-drysdale@google.com>
+ <1413978269-17274-4-git-send-email-drysdale@google.com> <87wq7sgfah.fsf@x220.int.ebiederm.org>
+From: David Drysdale <drysdale@google.com>
+Date: Wed, 22 Oct 2014 21:13:39 +0100
+Message-ID: <CAHse=S951SJsyEf7KX38Q1OfaRUwcZ_f9NMkB8nPfQ1CSZzfuQ@mail.gmail.com>
+Subject: Re: [PATCHv5 man-pages 3/3] execveat.2: initial man page for execveat(2)
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
+        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Oct 2014 14:50:22 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
+On Wed, Oct 22, 2014 at 6:55 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> David Drysdale <drysdale@google.com> writes:
+>> +.TH EXECVEAT 2 2014-04-02 "Linux" "Linux Programmer's Manual"
+>> +.SH NAME
+>> +execveat \- execute program relative to a directory file descriptor
+>> +.SH SYNOPSIS
+>> +.B #include <unistd.h>
+>> +.sp
+>> +.BI "int execve(int " fd ", const char *" pathname ","
+>             ^^^^^^ That needs to be execveat
 
-> On 10/22/2014 02:44 PM, Andrew Morton wrote:
-> > On Wed, 22 Oct 2014 09:42:46 +0400 Andrey Ryabinin <a.ryabinin@samsung.com> wrote:
-> > 
-> >> > On 10/21/2014 10:15 PM, Sasha Levin wrote:
-> >>> > > hstate_sizelog() would shift left an int rather than long, triggering
-> >>> > > undefined behaviour and passing an incorrect value when the requested
-> >>> > > page size was more than 4GB, thus breaking >4GB pages.
-> >> > 
-> >>> > > 
-> >>> > > Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> >>> > > ---
-> >>> > >  include/linux/hugetlb.h |    3 ++-
-> >>> > >  1 file changed, 2 insertions(+), 1 deletion(-)
-> >>> > > 
-> >>> > > diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-> >>> > > index 65e12a2..57e0dfd 100644
-> >>> > > --- a/include/linux/hugetlb.h
-> >>> > > +++ b/include/linux/hugetlb.h
-> >>> > > @@ -312,7 +312,8 @@ static inline struct hstate *hstate_sizelog(int page_size_log)
-> >>> > >  {
-> >>> > >  	if (!page_size_log)
-> >>> > >  		return &default_hstate;
-> >>> > > -	return size_to_hstate(1 << page_size_log);
-> >>> > > +
-> >>> > > +	return size_to_hstate(1UL << page_size_log);
-> >> > 
-> >> > That still could be undefined on 32-bits. Either use 1ULL or reduce SHM_HUGE_MASK on 32bits.
-> >> > 
-> > But
-> > 
-> > struct hstate *size_to_hstate(unsigned long size)
-> 
-> True, but "(1 << page_size_log)" produces an integer rather than long because "1"
-> is an int and not long.
-
-My point is that there's no point in using 1ULL because
-size_to_hstate() will truncate it anyway.
-
+Ah yes, so it does -- thanks for spotting.
