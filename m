@@ -1,562 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589AbaJVSIg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 14:08:36 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:57960 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754402AbaJVSIc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 14:08:32 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: David Drysdale <drysdale@google.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
-        x86@kernel.org, linux-arch@vger.kernel.org, linux-api@vger.kernel.org
-References: <1413978269-17274-1-git-send-email-drysdale@google.com>
-	<1413978269-17274-2-git-send-email-drysdale@google.com>
-Date: Wed, 22 Oct 2014 13:07:42 -0500
-In-Reply-To: <1413978269-17274-2-git-send-email-drysdale@google.com> (David
-	Drysdale's message of "Wed, 22 Oct 2014 12:44:27 +0100")
-Message-ID: <87k33sgeq9.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1754388AbaJVSK1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 14:10:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45915 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752473AbaJVSK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 14:10:26 -0400
+Message-ID: <5447F2DF.3000506@redhat.com>
+Date: Wed, 22 Oct 2014 14:09:35 -0400
+From: Joe Mario <jmario@redhat.com>
+Reply-To: jmario@redhat.com
+Organization: Red Hat
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/ChiMaERJ/ALDPi5hs8SoZm+0X48+gl3M=
-X-SA-Exim-Connect-IP: 68.113.178.29
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 TVD_RCVD_IP Message was received from an IP address
-	*  0.7 XMSubLong Long Subject
-	*  1.2 LotsOfNums_01 BODY: Lots of long strings of numbers
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.5000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.4 FVGT_m_MULTI_ODD Contains multiple odd letter combinations
-	*  0.0 T_TooManySym_03 6+ unique symbols in subject
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ***;David Drysdale <drysdale@google.com>
-X-Spam-Relay-Country: 
-X-Spam-Timing: total 1578 ms - load_scoreonly_sql: 0.04 (0.0%),
-	signal_user_changed: 10 (0.6%), b_tie_ro: 7 (0.4%), parse: 1.31 (0.1%),
-	extract_message_metadata: 19 (1.2%), get_uri_detail_list: 9 (0.6%),
-	tests_pri_-1000: 4.9 (0.3%), tests_pri_-950: 1.27 (0.1%), tests_pri_-900:
-	1.09 (0.1%), tests_pri_-400: 57 (3.6%), check_bayes: 56 (3.5%), b_tokenize:
-	24 (1.5%), b_tok_get_all: 22 (1.4%), b_comp_prob: 3.2 (0.2%),
-	b_tok_touch_all: 4.2 (0.3%), b_finish: 0.70 (0.0%), tests_pri_0: 1473 (93.3%),
-	 tests_pri_500: 6 (0.4%), rewrite_mail: 0.00 (0.0%)
-Subject: Re: [PATCHv5 1/3] syscalls,x86: implement execveat() system call
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: Peter Zijlstra <peterz@infradead.org>, Don Zickus <dzickus@redhat.com>
+CC: LKML <linux-kernel@vger.kernel.org>, eranian@google.com,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, jolsa@redhat.com, rfowles@redhat.com
+Subject: Re: perf:  Translating mmap2 ids into socket info?
+References: <20141022162026.GG135937@redhat.com> <20141022164510.GJ21513@worktop.programming.kicks-ass.net>
+In-Reply-To: <20141022164510.GJ21513@worktop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Drysdale <drysdale@google.com> writes:
+On 10/22/2014 12:45 PM, Peter Zijlstra wrote:
+> On Wed, Oct 22, 2014 at 12:20:26PM -0400, Don Zickus wrote:
+>> Hi,
+>>
+>> A question/request came up during our cache to cache analysis.  We were
+>> wondering if give an unique mmap2 id (major, minor, inode, inode
+>> generation), if it was possible to determine a cpu socket id that memory
+>> was attached to at the time of the captured perf event?
+>
+> No, see below. Also socket is the wrong information, both AMD and Intel
+> have chips with two nodes in one socket :-)
+>
+>> We ran into a scenario awhile back where a dcache struct was allocated on
+>> say node2 and then subsequently free'd.  The memory was thought to be
+>> re-allocated on node0 for another dcache entry.  It turned out the memory
+>> was still attached to node2 and was causing slowdowns.
+>
+> Yes, kernel memory is directly addresses, you basically have a static
+> address->node mapping, it never changes.
 
-> Add a new system execveat(2) syscall. execveat() is to execve() as
-> openat() is to open(): it takes a file descriptor that refers to a
-> directory, and resolves the filename relative to that.
->
-> In addition, if the filename is empty and AT_EMPTY_PATH is specified,
-> execveat() executes the file to which the file descriptor refers. This
-> replicates the functionality of fexecve(), which is a system call in
-> other UNIXen, but in Linux glibc it depends on opening
-> "/proc/self/fd/<fd>" (and so relies on /proc being mounted).
->
-> The filename fed to the executed program as argv[0] (or the name of the
-> script fed to a script interpreter) will be of the form "/dev/fd/<fd>"
-> (for an empty filename) or "/dev/fd/<fd>/<filename>", effectively
-> reflecting how the executable was found.  This does however mean that
-> execution of a script in a /proc-less environment won't work.
->
-> Only x86-64, i386 and x32 ABIs are supported in this patch.
->
-> Based on patches by Meredydd Luff <meredydd@senatehouse.org>
->
-> Signed-off-by: David Drysdale <drysdale@google.com>
-> ---
->  arch/x86/ia32/audit.c             |   1 +
->  arch/x86/ia32/ia32entry.S         |   1 +
->  arch/x86/kernel/audit_64.c        |   1 +
->  arch/x86/kernel/entry_64.S        |  28 ++++++++
->  arch/x86/syscalls/syscall_32.tbl  |   1 +
->  arch/x86/syscalls/syscall_64.tbl  |   2 +
->  arch/x86/um/sys_call_table_64.c   |   1 +
->  fs/exec.c                         | 130 ++++++++++++++++++++++++++++++++++----
->  fs/namei.c                        |   2 +-
->  include/linux/compat.h            |   3 +
->  include/linux/fs.h                |   1 +
->  include/linux/sched.h             |   4 ++
->  include/linux/syscalls.h          |   4 ++
->  include/uapi/asm-generic/unistd.h |   4 +-
->  kernel/sys_ni.c                   |   3 +
->  lib/audit.c                       |   3 +
->  16 files changed, 173 insertions(+), 16 deletions(-)
->
-> diff --git a/arch/x86/ia32/audit.c b/arch/x86/ia32/audit.c
-> index 5d7b381da692..2eccc8932ae6 100644
-> --- a/arch/x86/ia32/audit.c
-> +++ b/arch/x86/ia32/audit.c
-> @@ -35,6 +35,7 @@ int ia32_classify_syscall(unsigned syscall)
->  	case __NR_socketcall:
->  		return 4;
->  	case __NR_execve:
-> +	case __NR_execveat:
->  		return 5;
->  	default:
->  		return 1;
-> diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-> index 4299eb05023c..2516c09743e0 100644
-> --- a/arch/x86/ia32/ia32entry.S
-> +++ b/arch/x86/ia32/ia32entry.S
-> @@ -464,6 +464,7 @@ GLOBAL(\label)
->  	PTREGSCALL stub32_rt_sigreturn, sys32_rt_sigreturn
->  	PTREGSCALL stub32_sigreturn, sys32_sigreturn
->  	PTREGSCALL stub32_execve, compat_sys_execve
-> +	PTREGSCALL stub32_execveat, compat_sys_execveat
->  	PTREGSCALL stub32_fork, sys_fork
->  	PTREGSCALL stub32_vfork, sys_vfork
->  
-> diff --git a/arch/x86/kernel/audit_64.c b/arch/x86/kernel/audit_64.c
-> index 06d3e5a14d9d..f3672508b249 100644
-> --- a/arch/x86/kernel/audit_64.c
-> +++ b/arch/x86/kernel/audit_64.c
-> @@ -50,6 +50,7 @@ int audit_classify_syscall(int abi, unsigned syscall)
->  	case __NR_openat:
->  		return 3;
->  	case __NR_execve:
-> +	case __NR_execveat:
->  		return 5;
->  	default:
->  		return 0;
-> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-> index 2fac1343a90b..00c4526e6ffe 100644
-> --- a/arch/x86/kernel/entry_64.S
-> +++ b/arch/x86/kernel/entry_64.S
-> @@ -665,6 +665,20 @@ ENTRY(stub_execve)
->  	CFI_ENDPROC
->  END(stub_execve)
->  
-> +ENTRY(stub_execveat)
-> +	CFI_STARTPROC
-> +	addq $8, %rsp
-> +	PARTIAL_FRAME 0
-> +	SAVE_REST
-> +	FIXUP_TOP_OF_STACK %r11
-> +	call sys_execveat
-> +	RESTORE_TOP_OF_STACK %r11
-> +	movq %rax,RAX(%rsp)
-> +	RESTORE_REST
-> +	jmp int_ret_from_sys_call
-> +	CFI_ENDPROC
-> +END(stub_execveat)
-> +
->  /*
->   * sigreturn is special because it needs to restore all registers on return.
->   * This cannot be done with SYSRET, so use the IRET return path instead.
-> @@ -710,6 +724,20 @@ ENTRY(stub_x32_execve)
->  	CFI_ENDPROC
->  END(stub_x32_execve)
->  
-> +ENTRY(stub_x32_execveat)
-> +	CFI_STARTPROC
-> +	addq $8, %rsp
-> +	PARTIAL_FRAME 0
-> +	SAVE_REST
-> +	FIXUP_TOP_OF_STACK %r11
-> +	call compat_sys_execveat
-> +	RESTORE_TOP_OF_STACK %r11
-> +	movq %rax,RAX(%rsp)
-> +	RESTORE_REST
-> +	jmp int_ret_from_sys_call
-> +	CFI_ENDPROC
-> +END(stub_x32_execveat)
-> +
->  #endif
->  
->  /*
-> diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
-> index 028b78168d85..2633e3195455 100644
-> --- a/arch/x86/syscalls/syscall_32.tbl
-> +++ b/arch/x86/syscalls/syscall_32.tbl
-> @@ -363,3 +363,4 @@
->  354	i386	seccomp			sys_seccomp
->  355	i386	getrandom		sys_getrandom
->  356	i386	memfd_create		sys_memfd_create
-> +357	i386	execveat		sys_execveat			stub32_execveat
-> diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-> index 35dd922727b9..1af5badd159c 100644
-> --- a/arch/x86/syscalls/syscall_64.tbl
-> +++ b/arch/x86/syscalls/syscall_64.tbl
-> @@ -327,6 +327,7 @@
->  318	common	getrandom		sys_getrandom
->  319	common	memfd_create		sys_memfd_create
->  320	common	kexec_file_load		sys_kexec_file_load
-> +321	64	execveat		stub_execveat
->  
->  #
->  # x32-specific system call numbers start at 512 to avoid cache impact
-> @@ -365,3 +366,4 @@
->  542	x32	getsockopt		compat_sys_getsockopt
->  543	x32	io_setup		compat_sys_io_setup
->  544	x32	io_submit		compat_sys_io_submit
-> +545	x32	execveat		stub_x32_execveat
-> diff --git a/arch/x86/um/sys_call_table_64.c b/arch/x86/um/sys_call_table_64.c
-> index f2f0723070ca..20c3649d0691 100644
-> --- a/arch/x86/um/sys_call_table_64.c
-> +++ b/arch/x86/um/sys_call_table_64.c
-> @@ -31,6 +31,7 @@
->  #define stub_fork sys_fork
->  #define stub_vfork sys_vfork
->  #define stub_execve sys_execve
-> +#define stub_execveat sys_execveat
->  #define stub_rt_sigreturn sys_rt_sigreturn
->  
->  #define __SYSCALL_COMMON(nr, sym, compat) __SYSCALL_64(nr, sym, compat)
-> diff --git a/fs/exec.c b/fs/exec.c
-> index a2b42a98c743..92a6e14f096a 100644
-> --- a/fs/exec.c
-> +++ b/fs/exec.c
-> @@ -747,7 +747,7 @@ EXPORT_SYMBOL(setup_arg_pages);
->  
->  #endif /* CONFIG_MMU */
->  
-> -static struct file *do_open_exec(struct filename *name)
-> +static struct file *do_open_execat(int fd, struct filename *name, int flags)
->  {
->  	struct file *file;
->  	int err;
-> @@ -757,10 +757,34 @@ static struct file *do_open_exec(struct filename *name)
->  		.intent = LOOKUP_OPEN,
->  		.lookup_flags = LOOKUP_FOLLOW,
->  	};
-> +	static const struct open_flags open_exec_nofollow_flags = {
-> +		.open_flag = O_LARGEFILE | O_RDONLY | __FMODE_EXEC,
-> +		.acc_mode = MAY_EXEC | MAY_OPEN,
-> +		.intent = LOOKUP_OPEN,
-> +		.lookup_flags = 0,
-> +	};
->  
-> -	file = do_filp_open(AT_FDCWD, name, &open_exec_flags);
-> -	if (IS_ERR(file))
-> -		goto out;
-> +	if ((flags & ~(AT_SYMLINK_NOFOLLOW | AT_EMPTY_PATH)) != 0)
-> +		return ERR_PTR(-EINVAL);
-> +
-> +	if (name->name[0] != '\0') {
+For kernel addresses, is there a reason not to have it available in perf,
+especially when that knowledge is important to understanding a numa-related slowdown?
 
-Is it really necessary to special case AT_EMPTY_PATH here.  I would
-have thought the existing logic in namei.c would have been fine
-assuning we passed LOOKUP_EMPTY.
+In our case, when we booted with one configuration, AIM ran fine.  When we
+booted another way, AIM's performance dropped 50%.  It was all due to the dentry
+lock being located on a different (now remote) numa node.
 
-> +		const struct open_flags *oflags = ((flags & AT_SYMLINK_NOFOLLOW)
-> +						   ? &open_exec_nofollow_flags
-> +						   : &open_exec_flags);
-> +
-> +		file = do_filp_open(fd, name, oflags);
-> +		if (IS_ERR(file))
-> +			goto out;
-> +	} else {
-> +		file = fget(fd);
-> +		if (!file)
-> +			return ERR_PTR(-EBADF);
-> +
-> +		err = inode_permission(file->f_path.dentry->d_inode,
-> +				open_exec_flags.acc_mode);
-> +		if (err)
-> +			goto exit;
-> +	}
+We used your dmesg approach to track down the home node in an attempt to understand
+what was different between the two boots.  But the problem would have been obvious
+if perf simply listed the home node info.
+
 >
->  	err = -EACCES;
->  	if (!S_ISREG(file_inode(file)->i_mode))
-> @@ -769,12 +793,13 @@ static struct file *do_open_exec(struct filename *name)
->  	if (file->f_path.mnt->mnt_flags & MNT_NOEXEC)
->  		goto exit;
->  
-> -	fsnotify_open(file);
-> -
->  	err = deny_write_access(file);
->  	if (err)
->  		goto exit;
->  
-> +	if (name->name[0] != '\0')
-> +		fsnotify_open(file);
-> +
->  out:
->  	return file;
->  
-> @@ -786,7 +811,7 @@ exit:
->  struct file *open_exec(const char *name)
->  {
->  	struct filename tmp = { .name = name };
-> -	return do_open_exec(&tmp);
-> +	return do_open_execat(AT_FDCWD, &tmp, 0);
->  }
->  EXPORT_SYMBOL(open_exec);
->  
-> @@ -1422,10 +1447,12 @@ static int exec_binprm(struct linux_binprm *bprm)
->  /*
->   * sys_execve() executes a new program.
->   */
-> -static int do_execve_common(struct filename *filename,
-> -				struct user_arg_ptr argv,
-> -				struct user_arg_ptr envp)
-> +static int do_execveat_common(int fd, struct filename *filename,
-> +			      struct user_arg_ptr argv,
-> +			      struct user_arg_ptr envp,
-> +			      int flags)
->  {
-> +	char *pathbuf = NULL;
->  	struct linux_binprm *bprm;
->  	struct file *file;
->  	struct files_struct *displaced;
-> @@ -1466,7 +1493,7 @@ static int do_execve_common(struct filename *filename,
->  	check_unsafe_exec(bprm);
->  	current->in_execve = 1;
->  
-> -	file = do_open_exec(filename);
-> +	file = do_open_execat(fd, filename, flags);
->  	retval = PTR_ERR(file);
->  	if (IS_ERR(file))
->  		goto out_unmark;
-> @@ -1474,7 +1501,27 @@ static int do_execve_common(struct filename *filename,
->  	sched_exec();
->  
->  	bprm->file = file;
-> -	bprm->filename = bprm->interp = filename->name;
-> +	if (fd == AT_FDCWD || filename->name[0] == '/') {
-> +		bprm->filename = filename->name;
-> +	} else {
-> +		/*
-> +		 * Build a pathname that reflects how we got to the file,
-> +		 * either "/dev/fd/<fd>" (for an empty filename) or
-> +		 * "/dev/fd/<fd>/<filename>".
-> +		 */
-> +		pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
-> +		if (!pathbuf) {
-> +			retval = -ENOMEM;
-> +			goto out_unmark;
-> +		}
-> +		bprm->filename = pathbuf;
-> +		if (filename->name[0] == '\0')
-> +			sprintf(pathbuf, "/dev/fd/%d", fd);
-> +		else
-> +			snprintf(pathbuf, PATH_MAX,
-> +				 "/dev/fd/%d/%s", fd, filename->name);
-> +	}
-> +	bprm->interp = bprm->filename;
->  
->  	retval = bprm_mm_init(bprm);
->  	if (retval)
-> @@ -1532,6 +1579,7 @@ out_unmark:
->  
->  out_free:
->  	free_bprm(bprm);
-> +	kfree(pathbuf);
->  
->  out_files:
->  	if (displaced)
-> @@ -1547,7 +1595,18 @@ int do_execve(struct filename *filename,
->  {
->  	struct user_arg_ptr argv = { .ptr.native = __argv };
->  	struct user_arg_ptr envp = { .ptr.native = __envp };
-> -	return do_execve_common(filename, argv, envp);
-> +	return do_execveat_common(AT_FDCWD, filename, argv, envp, 0);
-> +}
-> +
-> +int do_execveat(int fd, struct filename *filename,
-> +		const char __user *const __user *__argv,
-> +		const char __user *const __user *__envp,
-> +		int flags)
-> +{
-> +	struct user_arg_ptr argv = { .ptr.native = __argv };
-> +	struct user_arg_ptr envp = { .ptr.native = __envp };
-> +
-> +	return do_execveat_common(fd, filename, argv, envp, flags);
->  }
->  
->  #ifdef CONFIG_COMPAT
-> @@ -1563,7 +1622,23 @@ static int compat_do_execve(struct filename *filename,
->  		.is_compat = true,
->  		.ptr.compat = __envp,
->  	};
-> -	return do_execve_common(filename, argv, envp);
-> +	return do_execveat_common(AT_FDCWD, filename, argv, envp, 0);
-> +}
-> +
-> +static int compat_do_execveat(int fd, struct filename *filename,
-> +			      const compat_uptr_t __user *__argv,
-> +			      const compat_uptr_t __user *__envp,
-> +			      int flags)
-> +{
-> +	struct user_arg_ptr argv = {
-> +		.is_compat = true,
-> +		.ptr.compat = __argv,
-> +	};
-> +	struct user_arg_ptr envp = {
-> +		.is_compat = true,
-> +		.ptr.compat = __envp,
-> +	};
-> +	return do_execveat_common(fd, filename, argv, envp, flags);
->  }
->  #endif
->  
-> @@ -1603,6 +1678,20 @@ SYSCALL_DEFINE3(execve,
->  {
->  	return do_execve(getname(filename), argv, envp);
->  }
-> +
-> +SYSCALL_DEFINE5(execveat,
-> +		int, fd, const char __user *, filename,
-> +		const char __user *const __user *, argv,
-> +		const char __user *const __user *, envp,
-> +		int, flags)
-> +{
-> +	int lookup_flags = (flags & AT_EMPTY_PATH) ? LOOKUP_EMPTY : 0;
-> +
-> +	return do_execveat(fd,
-> +			   getname_flags(filename, lookup_flags, NULL),
-> +			   argv, envp, flags);
-> +}
-> +
->  #ifdef CONFIG_COMPAT
->  COMPAT_SYSCALL_DEFINE3(execve, const char __user *, filename,
->  	const compat_uptr_t __user *, argv,
-> @@ -1610,4 +1699,17 @@ COMPAT_SYSCALL_DEFINE3(execve, const char __user *, filename,
->  {
->  	return compat_do_execve(getname(filename), argv, envp);
->  }
-> +
-> +COMPAT_SYSCALL_DEFINE5(execveat, int, fd,
-> +		       const char __user *, filename,
-> +		       const compat_uptr_t __user *, argv,
-> +		       const compat_uptr_t __user *, envp,
-> +		       int,  flags)
-> +{
-> +	int lookup_flags = (flags & AT_EMPTY_PATH) ? LOOKUP_EMPTY : 0;
-> +
-> +	return compat_do_execveat(fd,
-> +				  getname_flags(filename, lookup_flags, NULL),
-> +				  argv, envp, flags);
-> +}
->  #endif
-> diff --git a/fs/namei.c b/fs/namei.c
-> index a7b05bf82d31..553c84d3e0cc 100644
-> --- a/fs/namei.c
-> +++ b/fs/namei.c
-> @@ -130,7 +130,7 @@ void final_putname(struct filename *name)
->  
->  #define EMBEDDED_NAME_MAX	(PATH_MAX - sizeof(struct filename))
->  
-> -static struct filename *
-> +struct filename *
->  getname_flags(const char __user *filename, int flags, int *empty)
->  {
->  	struct filename *result, *err;
-> diff --git a/include/linux/compat.h b/include/linux/compat.h
-> index e6494261eaff..7450ca2ac1fc 100644
-> --- a/include/linux/compat.h
-> +++ b/include/linux/compat.h
-> @@ -357,6 +357,9 @@ asmlinkage long compat_sys_lseek(unsigned int, compat_off_t, unsigned int);
->  
->  asmlinkage long compat_sys_execve(const char __user *filename, const compat_uptr_t __user *argv,
->  		     const compat_uptr_t __user *envp);
-> +asmlinkage long compat_sys_execveat(int dfd, const char __user *filename,
-> +		     const compat_uptr_t __user *argv,
-> +		     const compat_uptr_t __user *envp, int flags);
->  
->  asmlinkage long compat_sys_select(int n, compat_ulong_t __user *inp,
->  		compat_ulong_t __user *outp, compat_ulong_t __user *exp,
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 94187721ad41..e9818574d738 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -2060,6 +2060,7 @@ extern struct file *file_open_root(struct dentry *, struct vfsmount *,
->  extern struct file * dentry_open(const struct path *, int, const struct cred *);
->  extern int filp_close(struct file *, fl_owner_t id);
->  
-> +extern struct filename *getname_flags(const char __user *, int, int *);
->  extern struct filename *getname(const char __user *);
->  extern struct filename *getname_kernel(const char *);
->  
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index b867a4dab38a..33e056da7d33 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -2430,6 +2430,10 @@ extern void do_group_exit(int);
->  extern int do_execve(struct filename *,
->  		     const char __user * const __user *,
->  		     const char __user * const __user *);
-> +extern int do_execveat(int, struct filename *,
-> +		       const char __user * const __user *,
-> +		       const char __user * const __user *,
-> +		       int);
->  extern long do_fork(unsigned long, unsigned long, unsigned long, int __user *, int __user *);
->  struct task_struct *fork_idle(int);
->  extern pid_t kernel_thread(int (*fn)(void *), void *arg, unsigned long flags);
-> diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-> index 0f86d85a9ce4..df5422294deb 100644
-> --- a/include/linux/syscalls.h
-> +++ b/include/linux/syscalls.h
-> @@ -876,4 +876,8 @@ asmlinkage long sys_seccomp(unsigned int op, unsigned int flags,
->  asmlinkage long sys_getrandom(char __user *buf, size_t count,
->  			      unsigned int flags);
->  
-> +asmlinkage long sys_execveat(int dfd, const char __user *filename,
-> +			const char __user *const __user *argv,
-> +			const char __user *const __user *envp, int flags);
-> +
->  #endif
-> diff --git a/include/uapi/asm-generic/unistd.h b/include/uapi/asm-generic/unistd.h
-> index 11d11bc5c78f..feef07d29663 100644
-> --- a/include/uapi/asm-generic/unistd.h
-> +++ b/include/uapi/asm-generic/unistd.h
-> @@ -705,9 +705,11 @@ __SYSCALL(__NR_seccomp, sys_seccomp)
->  __SYSCALL(__NR_getrandom, sys_getrandom)
->  #define __NR_memfd_create 279
->  __SYSCALL(__NR_memfd_create, sys_memfd_create)
-> +#define __NR_execveat 280
-> +__SC_COMP(__NR_execveat, sys_execveat, compat_sys_execveat)
->  
->  #undef __NR_syscalls
-> -#define __NR_syscalls 280
-> +#define __NR_syscalls 281
->  
->  /*
->   * All syscalls below here should go away really,
-> diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
-> index 391d4ddb6f4b..efb06058ad3e 100644
-> --- a/kernel/sys_ni.c
-> +++ b/kernel/sys_ni.c
-> @@ -218,3 +218,6 @@ cond_syscall(sys_kcmp);
->  
->  /* operate on Secure Computing state */
->  cond_syscall(sys_seccomp);
-> +
-> +/* execveat */
-> +cond_syscall(sys_execveat);
-> diff --git a/lib/audit.c b/lib/audit.c
-> index 1d726a22565b..b8fb5ee81e26 100644
-> --- a/lib/audit.c
-> +++ b/lib/audit.c
-> @@ -54,6 +54,9 @@ int audit_classify_syscall(int abi, unsigned syscall)
->  	case __NR_socketcall:
->  		return 4;
->  #endif
-> +#ifdef __NR_execveat
-> +	case __NR_execveat:
-> +#endif
->  	case __NR_execve:
->  		return 5;
->  	default:
+> For instance, on my ivb-ep I can find the following in my dmesg:
+>
+> [    0.000000] NUMA: Initialized distance table, cnt=2
+> [    0.000000] NUMA: Node 0 [mem 0x00000000-0xbfffffff] + [mem 0x100000000-0x43fffffff] -> [mem 0x00000000-0x43fffffff]
+> [    0.000000] NODE_DATA(0) allocated [mem 0x43fffc000-0x43fffffff]
+> [    0.000000] NODE_DATA(1) allocated [mem 0x83fff9000-0x83fffcfff]
+> [    0.000000]  [ffffea0000000000-ffffea000edfffff] PMD -> [ffff88042fe00000-ffff88043ddfffff] on node 0
+> [    0.000000]  [ffffea000ee00000-ffffea001cdfffff] PMD -> [ffff88082f600000-ffff88083d5fffff] on node 1
+> [    0.000000] Zone ranges:
+> [    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
+> [    0.000000]   DMA32    [mem 0x01000000-0xffffffff]
+> [    0.000000]   Normal   [mem 0x100000000-0x83fffffff]
+> [    0.000000] Movable zone start for each node
+> [    0.000000] Early memory node ranges
+> [    0.000000]   node   0: [mem 0x00001000-0x0008dfff]
+> [    0.000000]   node   0: [mem 0x00100000-0xbad28fff]
+> [    0.000000]   node   0: [mem 0xbaf90000-0xbafc4fff]
+> [    0.000000]   node   0: [mem 0xbafda000-0xbb3d3fff]
+> [    0.000000]   node   0: [mem 0xbdfac000-0xbdffffff]
+> [    0.000000]   node   0: [mem 0x100000000-0x43fffffff]
+> [    0.000000]   node   1: [mem 0x440000000-0x83fffffff]
+> [    0.000000] Initmem setup node 0 [mem 0x00001000-0x43fffffff]
+> [    0.000000] On node 0 totalpages: 4174137
+> [    0.000000]   DMA zone: 56 pages used for memmap
+> [    0.000000]   DMA zone: 21 pages reserved
+> [    0.000000]   DMA zone: 3981 pages, LIFO batch:0
+> [    0.000000]   DMA32 zone: 10422 pages used for memmap
+> [    0.000000]   DMA32 zone: 762284 pages, LIFO batch:31
+> [    0.000000]   Normal zone: 46592 pages used for memmap
+> [    0.000000]   Normal zone: 3407872 pages, LIFO batch:31
+> [    0.000000] Initmem setup node 1 [mem 0x440000000-0x83fffffff]
+> [    0.000000] On node 1 totalpages: 4194304
+> [    0.000000]   Normal zone: 57344 pages used for memmap
+> [    0.000000]   Normal zone: 4194304 pages, LIFO batch:31
+>
+>> Our cache-to-cache tool noticed the slowdown but we couldn't understand
+>> why because we had falsely assumed the memory was allocated on the local
+>> node but instead it was on the remote node.
+>
+> But in general, you can never say for user memory, since that has the
+> process page table mapping in between, the user virtual address is
+> unrelated to backing (and can change frequently and without
+> notification).
+>
+> Therefore the mmap(2) information is useless for this, it only concerns
+> user memory.
+>
+
