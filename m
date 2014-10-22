@@ -1,91 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755058AbaJVQZF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 12:25:05 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:54394 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754943AbaJVQY5 (ORCPT
+	id S1754570AbaJVQ3f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 12:29:35 -0400
+Received: from mail.kmu-office.ch ([178.209.48.102]:43345 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752648AbaJVQ3d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 12:24:57 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18DfBv4COEF4Gh2goiBxZDMvyKbugeUyhk=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 9D5A1605772
-Date: Wed, 22 Oct 2014 12:24:49 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Eric Rost <eric.rost@mybabylon.net>
-Cc: gregkh@linuxfoundation.org, jake@lwn.net, antonysaraev@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] staging: skein: Loadable Module Support
-Message-ID: <20141022162449.GZ17447@titan.lakedaemon.net>
-References: <20141021144427.GA31929@localhost>
- <20141022151028.GY17447@titan.lakedaemon.net>
- <1413993266.11638.1.camel@mybabylon.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413993266.11638.1.camel@mybabylon.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 22 Oct 2014 12:29:33 -0400
+From: Stefan Agner <stefan@agner.ch>
+To: shawn.guo@freescale.com, kernel@pengutronix.de, arnd@arndb.de
+Cc: b35083@freescale.com, bpringlemeir@nbsps.com, mark.rutland@arm.com,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, stefan@agner.ch
+Subject: [PATCH v2 0/4] ARM: vf610: restructure device trees
+Date: Wed, 22 Oct 2014 18:27:53 +0200
+Message-Id: <1413995277-2844-1-git-send-email-stefan@agner.ch>
+X-Mailer: git-send-email 2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 10:54:26AM -0500, Eric Rost wrote:
-> On Wed, 2014-10-22 at 11:10 -0400, Jason Cooper wrote:
-> > At some point, Eric Rost wrote:
-...
-> > > diff --git a/drivers/staging/skein/Makefile b/drivers/staging/skein/Makefile
-> > > index a14aadd..1be01fe 100644
-> > > --- a/drivers/staging/skein/Makefile
-> > > +++ b/drivers/staging/skein/Makefile
-> > > @@ -5,5 +5,11 @@ obj-$(CONFIG_CRYPTO_SKEIN) +=   skein.o \
-> > >  				skein_api.o \
-> > >  				skein_block.o
-> > >  
-> > > +obj-$(CONFIG_CRYPTO_SKEIN_256) += skein256_generic.o
-> > > +
-> > > +obj-$(CONFIG_CRYPTO_SKEIN_512) += skein512_generic.o
-> > > +
-> > > +obj-$(CONFIG_CRYPTO_SKEIN_1024) += skein1024_generic.o
-> > > +
-> > 
-> > This isn't really doing what we want.  You'll have loadable modules, but
-> > the actual code will still be built into the kernel.
-> > 
-> > >  obj-$(CONFIG_CRYPTO_THREEFISH) += threefish_block.o \
-> > >  				  threefish_api.o
-> > > diff --git a/drivers/staging/skein/skein.c b/drivers/staging/skein/skein.c
-> > > index 8cc8358..2138e22 100644
-> > > --- a/drivers/staging/skein/skein.c
-> > > +++ b/drivers/staging/skein/skein.c
-> > > @@ -11,6 +11,7 @@
-> > >  #define  SKEIN_PORT_CODE /* instantiate any code in skein_port.h */
-> > >  
-> > >  #include <linux/string.h>       /* get the memcpy/memset functions */
-> > > +#include <linux/export.h>
-> > >  #include "skein.h" /* get the Skein API definitions   */
-> > >  #include "skein_iv.h"    /* get precomputed IVs */
-> > >  #include "skein_block.h"
-> > > @@ -73,6 +74,7 @@ int skein_256_init(struct skein_256_ctx *ctx, size_t hash_bit_len)
-> > >  
-> > >  	return SKEIN_SUCCESS;
-> > >  }
-> > > +EXPORT_SYMBOL(skein_256_init);
-> > 
-> > Once the above is corrected, these shouldn't be necessary.
-> > 
-> Will give it a whirl, I was having problems with undefined symbols at
-> linking even when I was building it as one module, but it may have been
-> something else
+This patchset is v2 of "ARM: dts: vf500/vf610: support VF500 SoC",
+and grew by some patches. It now also solves some issues uncovered
+by the "ARM: vf610m4: Add Vybrid Cortex-M4 support" patchset.  The
+next Cortex-M4 patchset will then base on this patchset.
 
-Try just changing CRYPTO_SKEIN to a tri-state, and adding your
-skein_generic.o to the obj-$(CONFIG_CRYPTO_SKEIN) list.
+I could again not use the -M/-B parameter to generate smaller and
+better readable patches. Those patches ended up not apply-able.
 
-You'll probably have to collapse CRYPTO_THREEFISH into CRYPTO_SKEIN for
-now.  Let's get the crypto API registration proper first, them we can
-focus on the loadable module bit.
+Changes in v2:
+- Assign fixed input clocks to clock controller module to ensure correct
+  initialization order
+- Get rid of "clocks"-node and move fixed clocks to the root level
+- Move peripherals to vfxxx.dtsi to allow share the nodes for Cortex-A5
+  and Cortex-M4 SoC device trees.
+  
+Stefan Agner (4):
+  ARM: dts: vf610: assign oscillator to clock module
+  ARM: imx: clk-vf610: get input clocks from assigned clocks
+  ARM: dts: vf610: create generic base device trees
+  ARM: dts: vf500-colibri: add Colibri VF50 support
 
-thx,
+ .../devicetree/bindings/clock/vf610-clock.txt      |  15 +
+ arch/arm/boot/dts/Makefile                         |   1 +
+ arch/arm/boot/dts/vf-colibri-eval-v3.dtsi          |  54 +++
+ arch/arm/boot/dts/vf-colibri.dtsi                  | 142 ++++++
+ arch/arm/boot/dts/vf500-colibri-eval-v3.dts        |  17 +
+ arch/arm/boot/dts/vf500-colibri.dtsi               |  20 +
+ arch/arm/boot/dts/vf500.dtsi                       | 171 +++++++
+ arch/arm/boot/dts/vf610-colibri-eval-v3.dts        |  47 +-
+ arch/arm/boot/dts/vf610-colibri.dtsi               | 137 +-----
+ arch/arm/boot/dts/vf610-cosmic.dts                 |  14 +-
+ arch/arm/boot/dts/vf610-twr.dts                    |  37 +-
+ arch/arm/boot/dts/vf610.dtsi                       | 507 +--------------------
+ arch/arm/boot/dts/vfxxx.dtsi                       | 436 ++++++++++++++++++
+ arch/arm/mach-imx/clk-vf610.c                      |  20 +-
+ 14 files changed, 920 insertions(+), 698 deletions(-)
+ create mode 100644 arch/arm/boot/dts/vf-colibri-eval-v3.dtsi
+ create mode 100644 arch/arm/boot/dts/vf-colibri.dtsi
+ create mode 100644 arch/arm/boot/dts/vf500-colibri-eval-v3.dts
+ create mode 100644 arch/arm/boot/dts/vf500-colibri.dtsi
+ create mode 100644 arch/arm/boot/dts/vf500.dtsi
+ create mode 100644 arch/arm/boot/dts/vfxxx.dtsi
 
-Jason.
+-- 
+2.1.2
+
