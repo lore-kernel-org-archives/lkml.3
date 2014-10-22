@@ -1,44 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932553AbaJVHlh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 03:41:37 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:24702 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751296AbaJVHlg (ORCPT
+	id S932594AbaJVHmK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 03:42:10 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:5868 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752039AbaJVHmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 03:41:36 -0400
+	Wed, 22 Oct 2014 03:42:08 -0400
 From: Wang Nan <wangnan0@huawei.com>
 To: Namhyung Kim <namhyung@kernel.org>, <acme@kernel.org>
 CC: <a.p.zijlstra@chello.nl>, <paulus@samba.org>, <mingo@redhat.com>,
         <jolsa@redhat.com>, <adrian.hunter@intel.com>, <Waiman.Long@hp.com>,
         <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>
-Subject: [PATCH v2] perf tools: makes CPUINFO_PROC to array for different kernel version
-Date: Wed, 22 Oct 2014 15:39:42 +0800
-Message-ID: <1413963582-7174-1-git-send-email-wangnan0@huawei.com>
+Subject: [PATCH v2 RESEND] perf tools: makes CPUINFO_PROC to array for different kernel version
+Date: Wed, 22 Oct 2014 15:40:14 +0800
+Message-ID: <1413963614-7251-1-git-send-email-wangnan0@huawei.com>
 X-Mailer: git-send-email 1.8.4
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.107.197.247]
 X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020201.54475FA8.003B,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 025d17fcc5e2e10ecbe38ae41bb0bffe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-euler inclusion
-target: kernel 3.10
-category: bugfix
-DTS: DTS2014101306477
-Bugzilla: 623
-directory: upstreamed
-archive: https://lkml.org/lkml/2014/10/15/611
-
-----------------------------------------
 
 After kernel 3.7 (commit b4b8f770eb10a1bccaf8aa0ec1956e2dd7ed1e0a),
 /proc/cpuinfo replaces 'Processor' to 'model name'. This patch makes
