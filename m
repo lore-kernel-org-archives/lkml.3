@@ -1,46 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932794AbaJVUOD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 16:14:03 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:38301 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932328AbaJVUOA (ORCPT
+	id S932856AbaJVUOT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 16:14:19 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:57795 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932440AbaJVUOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 16:14:00 -0400
+	Wed, 22 Oct 2014 16:14:15 -0400
+Date: Wed, 22 Oct 2014 13:14:09 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: ssantosh@kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        khilman@linaro.org, Geert Uytterhoeven <geert+renesas@glider.be>,
+        linux-pm@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        grant.likely@secretlab.ca, ulf.hansson@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] PM / clock_ops: Add pm_clk_add_clk()
+Message-ID: <20141022201409.GB4250@dtor-ws>
+References: <1413809764-21995-1-git-send-email-grygorii.strashko@ti.com>
+ <1413809764-21995-2-git-send-email-grygorii.strashko@ti.com>
+ <20141022173856.GB28104@dtor-ws>
+ <5447FF51.5000401@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <87wq7sgfah.fsf@x220.int.ebiederm.org>
-References: <1413978269-17274-1-git-send-email-drysdale@google.com>
- <1413978269-17274-4-git-send-email-drysdale@google.com> <87wq7sgfah.fsf@x220.int.ebiederm.org>
-From: David Drysdale <drysdale@google.com>
-Date: Wed, 22 Oct 2014 21:13:39 +0100
-Message-ID: <CAHse=S951SJsyEf7KX38Q1OfaRUwcZ_f9NMkB8nPfQ1CSZzfuQ@mail.gmail.com>
-Subject: Re: [PATCHv5 man-pages 3/3] execveat.2: initial man page for execveat(2)
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
-        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5447FF51.5000401@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 6:55 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> David Drysdale <drysdale@google.com> writes:
->> +.TH EXECVEAT 2 2014-04-02 "Linux" "Linux Programmer's Manual"
->> +.SH NAME
->> +execveat \- execute program relative to a directory file descriptor
->> +.SH SYNOPSIS
->> +.B #include <unistd.h>
->> +.sp
->> +.BI "int execve(int " fd ", const char *" pathname ","
->             ^^^^^^ That needs to be execveat
+On Wed, Oct 22, 2014 at 10:02:41PM +0300, Grygorii Strashko wrote:
+> On 10/22/2014 08:38 PM, Dmitry Torokhov wrote:
+> >On Mon, Oct 20, 2014 at 03:56:02PM +0300, Grygorii Strashko wrote:
+> >>From: Geert Uytterhoeven <geert+renesas@glider.be>
+> >>
+> >>The existing pm_clk_add() allows to pass a clock by con_id. However,
+> >>when referring to a specific clock from DT, no con_id is available.
+> >>
+> >>Add pm_clk_add_clk(), which allows to specify the struct clk * directly.
+> >>
+> >>Reviewed-by: Kevin Hilman <khilman@linaro.org>
+> >>Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+> >>Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> >>---
+> >>
+> >>  Pay attantion pls, that there is another series of patches
+> >>  which have been posted already and which depends from this patch
+> >>    "[PATCH v4 0/3] ARM: rk3288 : Add PM Domain support"
+> >>    https://lkml.org/lkml/2014/10/20/105
+> >>
+> >>  drivers/base/power/clock_ops.c | 41 +++++++++++++++++++++++++++++++----------
+> >>  include/linux/pm_clock.h       |  8 ++++++++
+> >>  2 files changed, 39 insertions(+), 10 deletions(-)
+> >>
+> >>diff --git a/drivers/base/power/clock_ops.c b/drivers/base/power/clock_ops.c
+> >>index 7836930..f14b767 100644
+> >>--- a/drivers/base/power/clock_ops.c
+> >>+++ b/drivers/base/power/clock_ops.c
+> >>@@ -53,7 +53,8 @@ static inline int __pm_clk_enable(struct device *dev, struct clk *clk)
+> >>   */
+> >>  static void pm_clk_acquire(struct device *dev, struct pm_clock_entry *ce)
+> >>  {
+> >>-	ce->clk = clk_get(dev, ce->con_id);
+> >>+	if (!ce->clk)
+> >>+		ce->clk = clk_get(dev, ce->con_id);
+> >>  	if (IS_ERR(ce->clk)) {
+> >>  		ce->status = PCE_STATUS_ERROR;
+> >>  	} else {
+> >>@@ -63,15 +64,8 @@ static void pm_clk_acquire(struct device *dev, struct pm_clock_entry *ce)
+> >>  	}
+> >>  }
+> >>
+> >>-/**
+> >>- * pm_clk_add - Start using a device clock for power management.
+> >>- * @dev: Device whose clock is going to be used for power management.
+> >>- * @con_id: Connection ID of the clock.
+> >>- *
+> >>- * Add the clock represented by @con_id to the list of clocks used for
+> >>- * the power management of @dev.
+> >>- */
+> >>-int pm_clk_add(struct device *dev, const char *con_id)
+> >>+static int __pm_clk_add(struct device *dev, const char *con_id,
+> >>+			struct clk *clk)
+> >>  {
+> >>  	struct pm_subsys_data *psd = dev_to_psd(dev);
+> >>  	struct pm_clock_entry *ce;
+> >>@@ -93,6 +87,8 @@ int pm_clk_add(struct device *dev, const char *con_id)
+> >>  			kfree(ce);
+> >>  			return -ENOMEM;
+> >>  		}
+> >>+	} else {
+> >>+		ce->clk = clk;
+> >>  	}
+> >>
+> >>  	pm_clk_acquire(dev, ce);
+> >>@@ -104,6 +100,31 @@ int pm_clk_add(struct device *dev, const char *con_id)
+> >>  }
+> >>
+> >>  /**
+> >>+ * pm_clk_add - Start using a device clock for power management.
+> >>+ * @dev: Device whose clock is going to be used for power management.
+> >>+ * @con_id: Connection ID of the clock.
+> >>+ *
+> >>+ * Add the clock represented by @con_id to the list of clocks used for
+> >>+ * the power management of @dev.
+> >>+ */
+> >>+int pm_clk_add(struct device *dev, const char *con_id)
+> >>+{
+> >>+	return __pm_clk_add(dev, con_id, NULL);
+> >
+> >Bikeshedding: why do we need __pm_clk_add() and not simply have
+> >"canonical" pm_clk_add_clk() and then do:
+> >
+> >int pm_clk_add(struct device *dev, const char *con_id)
+> >{
+> >	struct clk *clk;
+> >
+> >	clk = clk_get(dev, con_id);
+> >	...
+> >	return pm_clk_add_clk(dev, clk);
+> >}
+> 
+> Hm. I did fast look at code and:
+> 1) agree - there is a lot of thing which can be optimized ;)
+> 2) in my strong opinion, this patch is the fastest and simplest
+> way to introduce new API (take a look on pm_clock_entry->con_id
+> management code) and It is exactly what we need as of now.
 
-Ah yes, so it does -- thanks for spotting.
+Yeah, I guess. We are lucky we do not crash when we are tryign to print
+NULL strings (see pm_clk_acquire).
+
+BTW, what is the point of doing pm_clk_add(dev, NULL)? We add clock
+entry with status PCE_STATUS_ERROR and then have to handle it
+everywhere? Can we just return -EINVAL if someone triies to pass NULL
+ass con_id?
+
+Thanks.
+
+-- 
+Dmitry
