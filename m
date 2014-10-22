@@ -1,85 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753707AbaJVOBy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 10:01:54 -0400
-Received: from forward-corp1m.cmail.yandex.net ([5.255.216.100]:56423 "EHLO
-	forward-corp1m.yandex.ru" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753647AbaJVOBu (ORCPT
+	id S1753785AbaJVOCY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 10:02:24 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:39288 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753752AbaJVOCU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 10:01:50 -0400
-X-Greylist: delayed 653 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Oct 2014 10:01:50 EDT
-X-Yandex-Uniq: db81894d-dcf4-45b4-80d5-0a02a43536f7
-Authentication-Results: smtpcorp1m.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-From: Roman Gushchin <klamm@yandex-team.ru>
-To: jeffrey.t.kirsher@intel.com, jesse.brandeburg@intel.com,
-        bruce.w.allan@intel.com, carolyn.wyborny@intel.com,
-        donald.c.skidmore@intel.com, gregory.v.rose@intel.com,
-        peter.p.waskiewicz.jr@intel.com, alexander.h.duyck@intel.com,
-        john.ronciak@intel.com, tushar.n.dave@intel.com, davem@davemloft.net,
-        sassmann@kpanic.de, gregkh@linuxfoundation.org,
-        e1000-devel@lists.sourceforge.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Roman Gushchin <klamm@yandex-team.ru>
-Subject: [PATCH] igb: don't reuse pages with pfmemalloc flag
-Date: Wed, 22 Oct 2014 17:50:19 +0400
-Message-Id: <1413985819-9553-1-git-send-email-klamm@yandex-team.ru>
-X-Mailer: git-send-email 1.9.3
+	Wed, 22 Oct 2014 10:02:20 -0400
+Date: Wed, 22 Oct 2014 16:02:07 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com, adrian.hunter@intel.com, acme@infradead.org
+Subject: Re: [PATCH v5 07/20] perf: Add api for pmus to write to AUX area
+Message-ID: <20141022140207.GN12706@worktop.programming.kicks-ass.net>
+References: <1413207948-28202-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1413207948-28202-8-git-send-email-alexander.shishkin@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413207948-28202-8-git-send-email-alexander.shishkin@linux.intel.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Incoming packet is dropped silently by sk_filter(), if the skb was
-allocated from pfmemalloc reserves and the corresponding socket is
-not marked with the SOCK_MEMALLOC flag.
+On Mon, Oct 13, 2014 at 04:45:35PM +0300, Alexander Shishkin wrote:
+> +	/*
+> +	 * Nesting is not supported for AUX area, make sure nested
+> +	 * writers are caught early
+> +	 */
+> +	if (WARN_ON_ONCE(local_xchg(&rb->aux_nest, 1)))
+> +		goto err_put;
 
-Igb driver allocates pages for DMA with __skb_alloc_page(), which
-calls alloc_pages_node() with the __GFP_MEMALLOC flag. So, in case
-of OOM condition, igb can get pages with pfmemalloc flag set.
-
-If an incoming packet hits the pfmemalloc page and is large enough
-(small packets are copying into the memory, allocated with
-netdev_alloc_skb_ip_align(), so they are not affected), it will be
-dropped.
-
-This behavior is ok under high memory pressure, but the problem is
-that the igb driver reuses these mapped pages. So, packets are still
-dropping even if all memory issues are gone and there is a plenty
-of free memory.
-
-In my case, some TCP sessions hang on a small percentage (< 0.1%)
-of machines days after OOMs.
-
-Fix this by avoiding reuse of such pages.
-
-Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
----
- drivers/net/ethernet/intel/igb/igb_main.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
-index 0d4c897..6586392 100644
---- a/drivers/net/ethernet/intel/igb/igb_main.c
-+++ b/drivers/net/ethernet/intel/igb/igb_main.c
-@@ -6178,6 +6178,9 @@ static bool igb_can_reuse_rx_page(struct igb_rx_buffer *rx_buffer,
- 	if (unlikely(page_to_nid(page) != numa_node_id()))
- 		return false;
- 
-+	if (unlikely(page->pfmemalloc))
-+		return false;
-+
- #if (PAGE_SIZE < 8192)
- 	/* if we are only owner of page we can reuse it */
- 	if (unlikely(page_count(page) != 1))
-@@ -6245,7 +6248,8 @@ static bool igb_add_rx_frag(struct igb_ring *rx_ring,
- 		memcpy(__skb_put(skb, size), va, ALIGN(size, sizeof(long)));
- 
- 		/* we can reuse buffer as-is, just make sure it is local */
--		if (likely(page_to_nid(page) == numa_node_id()))
-+		if (likely((page_to_nid(page) == numa_node_id()) &&
-+			   !page->pfmemalloc))
- 			return true;
- 
- 		/* this page cannot be reused so discard it */
--- 
-1.9.3
-
+Note that printk() from NMI is prone to making your machine die, not
+that I have a better option though.
