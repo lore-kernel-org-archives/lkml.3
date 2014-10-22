@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932288AbaJVIQr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 04:16:47 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:52933 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932076AbaJVIQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 04:16:44 -0400
-Date: Wed, 22 Oct 2014 10:16:18 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Chen Yucong <slaoub@gmail.com>
-Cc: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
-        Tony Luck <tony.luck@intel.com>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Fwd: [PATCH] x86, MCE, AMD: save IA32_MCi_STATUS before
- machine_check_poll() resets it
-Message-ID: <20141022081618.GA2511@pd.tnic>
-References: <1412138102.21488.20.camel@debian>
- <20141002131206.GA16452@pd.tnic>
- <CAOjmkp9qQiTbqU3NUhUDAoQAa8wAPJnE_qXbDuBKrA3ee1_APQ@mail.gmail.com>
- <5435B206.60402@amd.com>
- <20141008225750.GH16892@pd.tnic>
- <20141009165339.GA11360@arav-dinar>
- <20141009173529.GC17647@pd.tnic>
- <5436DB72.1090507@amd.com>
- <20141021202840.GD4420@pd.tnic>
- <1413942678.17435.11.camel@debian>
+	id S932440AbaJVIQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 04:16:59 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:52875 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932076AbaJVIQy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 04:16:54 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Wed, 22 Oct 2014 10:13:49 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Nathaniel Ting <nathaniel.ting@silabs.com>
+Cc: johan@kernel.org, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB: serial: cp210x: Add Silicon Labs 358x VID and PID.
+Message-ID: <20141022081349.GD2113@localhost>
+References: <1412352080-4711-1-git-send-email-nathaniel.ting@silabs.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1413942678.17435.11.camel@debian>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1412352080-4711-1-git-send-email-nathaniel.ting@silabs.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 09:51:18AM +0800, Chen Yucong wrote:
-> Can you check the following link? The link contains my reply about
-> "x86, MCE, AMD: Move invariant code out from loop body". The reply was
-> sent to you on October 7, but until now, there aren't any comments
-> from you!
+On Fri, Oct 03, 2014 at 12:01:20PM -0400, Nathaniel Ting wrote:
+> From: Nathaniel Ting <nathaniel.ting@silabs.com>
+> 
+> Enable Silicon Labs Ember VID chips to enumerate with the cp210x usb serial
+> driver. EM358x devices operating with the Ember Z-Net 5.1.2 stack may now
+> connect to host PCs over a USB serial link.
+> 
+> Signed-off-by: Nathaniel Ting <nathaniel.ting@silabs.com>
 
-https://git.kernel.org/cgit/linux/kernel/git/bp/bp.git/commit/?h=ras-for-3.19&id=69b957583580bf40624553c64d802fefb54199cb
+Applied, thanks.
 
--- 
-Regards/Gruss,
-    Boris.
+Johan
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+> ---
+>  drivers/usb/serial/cp210x.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
+> index e4bb622..ab1eb9b 100644
+> --- a/drivers/usb/serial/cp210x.c
+> +++ b/drivers/usb/serial/cp210x.c
+> @@ -154,6 +154,7 @@ static const struct usb_device_id id_table[] = {
+>  	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
+>  	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
+>  	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
+> +	{ USB_DEVICE(0x1BA4, 0x0002) }, /* Silicon Labs 358x factory default */
+>  	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
+>  	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
+>  	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
