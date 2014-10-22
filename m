@@ -1,63 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397AbaJVOUd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 10:20:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48832 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037AbaJVOUH (ORCPT
+	id S1753330AbaJVOUb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 10:20:31 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:36748 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751885AbaJVOU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 10:20:07 -0400
-Date: Wed, 22 Oct 2014 22:18:57 +0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Johan Hovold <johan@kernel.org>
-Cc: Philip Munksgaard <pmunksgaard@gmail.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: serial: Fix indentation style issue
-Message-ID: <20141022141857.GA8639@kroah.com>
-References: <1413035383-3981-1-git-send-email-pmunksgaard@gmail.com>
- <20141011142049.GA11456@kroah.com>
- <20141022095112.GJ2113@localhost>
+	Wed, 22 Oct 2014 10:20:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141022095112.GJ2113@localhost>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CD2CABCB2C0A0D4682C5F8AD840141540D6BE1@HKXPRD3002MB006.064d.mgd.msft.net>
+References: <1413362372-16236-1-git-send-email-huishao@microsoft.com>
+	<alpine.DEB.2.11.1410202027220.5308@nanos>
+	<alpine.DEB.2.11.1410202034150.5308@nanos>
+	<CD2CABCB2C0A0D4682C5F8AD840141540D27B9@HKXPRD3002MB006.064d.mgd.msft.net>
+	<20141021040212.GA6278@unpythonic.net>
+	<20141021082058.GB6808@netboy>
+	<CD2CABCB2C0A0D4682C5F8AD840141540D33BC@HKXPRD3002MB006.064d.mgd.msft.net>
+	<CAL7Bo8EUcmUXhpJvrz_G-Svs+GwSF9CQec5oWWQSYBqWiJYH2w@mail.gmail.com>
+	<alpine.DEB.2.11.1410221441370.5308@nanos>
+	<CD2CABCB2C0A0D4682C5F8AD840141540D6BE1@HKXPRD3002MB006.064d.mgd.msft.net>
+Date: Wed, 22 Oct 2014 15:20:25 +0100
+Message-ID: <CAL7Bo8GzE+qdz0Y2HkjpZwPSrGxs-KpzW6qaDoXkfntmSNuQ2g@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] timekeeping: add EXPORT_SYMBOL_GPL for do_adjtimex()
+From: Mike Surcouf <mps.surcouf.lkml@gmail.com>
+To: Thomas Shao <huishao@microsoft.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Jeff Epler <jepler@unpythonic.net>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        KY Srinivasan <kys@microsoft.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Richard Cochran <rcochran@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 11:51:12AM +0200, Johan Hovold wrote:
-> On Sat, Oct 11, 2014 at 07:20:49AM -0700, Greg Kroah-Hartman wrote:
-> > On Sat, Oct 11, 2014 at 03:49:43PM +0200, Philip Munksgaard wrote:
-> > > Fix a style issue
-> > > 
-> > > Signed-off-by: Philip Munksgaard <pmunksgaard@gmail.com>
-> > > ---
-> > >  drivers/usb/serial/option.c | 2 +-
-> > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > 
-> > > diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-> > > index d1a3f60..d88998d 100644
-> > > --- a/drivers/usb/serial/option.c
-> > > +++ b/drivers/usb/serial/option.c
-> > > @@ -1616,7 +1616,7 @@ static const struct usb_device_id option_ids[] = {
-> > >  	{ USB_DEVICE(TLAYTECH_VENDOR_ID, TLAYTECH_PRODUCT_TEU800) },
-> > >  	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
-> > >    	  .driver_info = (kernel_ulong_t)&four_g_w14_blacklist
-> > > -  	},
-> > > +	},
-> > 
-> > Why not fix the same 'space' issue on the line before this at the same
-> > time?
-> 
-> And what about the remaining white-space issues in this file? Do we
-> really want to go down this path?
+> Mike, can you share me your kernel version and which Linux distro do you use?
 
-No, we don't, if you want to have patches be able to apply properly to
-older kernels, as you point out.
+2.6.32-504.el6.x86_64 AKA RHEL 6.6
+Happened on centos 7 and 6.5 too.
+#cat /var/lib/ntp/drift
+-248.869
+About 20 secs a day (constant)
 
-Just don't add new whitespace issues please, that's all.
+Its not a new problem I had this in other distros and other kernels.
+I would say its environmental but not just my environment.
 
-thanks,
+Confirmed with Olaf on SUSEvariants back in  2012 but never came to anything
 
-greg k-h
+see enc email
+
+---------------------------------------------
+> > KY, can your team have a look at this?
+>
+> Vijay, have we done time stability test in the recent past. We should
+> look at replicating this issue on Distros of interest. Olaf, on sles11
+> sp2, were you running NTP and how much was the drift.
+
+sles11sp2: uptime 23:45 hours, its 38 seconds ahead
+
+12.2: uptime 1 day, 5:17 hours, its 47 seconds ahead
+
+ntpd is not running in both guests.
+
+> Also, what was the host in this test.
+
+The host is an uptodate w2k8 r2.
+
+Olaf
+-----------------------------------------------
+
+Thanks
+
+Mike
