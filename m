@@ -1,67 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752289AbaJVN0G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 09:26:06 -0400
-Received: from mga03.intel.com ([134.134.136.65]:15537 "EHLO mga03.intel.com"
+	id S1752375AbaJVN0N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 09:26:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12482 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751862AbaJVN0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 09:26:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,769,1406617200"; 
-   d="scan'208";a="593752265"
-From: Jani Nikula <jani.nikula@intel.com>
-To: Joe Perches <joe@perches.com>
-Cc: Andy Whitcroft <apw@canonical.com>, Kees Cook <keescook@chromium.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: regression: checkpatch.pl fails when called via symlink
-In-Reply-To: <1413980418.18654.8.camel@perches.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <874muwv0ym.fsf@intel.com> <1413980418.18654.8.camel@perches.com>
-User-Agent: Notmuch/0.18.1+133~g83c61fa (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 22 Oct 2014 16:25:28 +0300
-Message-ID: <87ppdktewn.fsf@intel.com>
+	id S1752144AbaJVN0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 09:26:10 -0400
+Date: Wed, 22 Oct 2014 09:25:39 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: "Alasdair G. Kergon" <agk@redhat.com>, Mike Snitzer <msnitzer@redhat.com>,
+        Jonathan Brassow <jbrassow@redhat.com>,
+        Edward Thornber <thornber@redhat.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>
+cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: [PATCH 2/18] dm: introduce dm_ask_for_duplicate_bios
+In-Reply-To: <alpine.LRH.2.02.1410220913280.31351@file01.intranet.prod.int.rdu2.redhat.com>
+Message-ID: <alpine.LRH.2.02.1410220925120.31351@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1410220913280.31351@file01.intranet.prod.int.rdu2.redhat.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Oct 2014, Joe Perches <joe@perches.com> wrote:
-> On Wed, 2014-10-22 at 13:43 +0300, Jani Nikula wrote:
->> Since commit 66b47b4a9dad00e45c049d79966de9a3a1f4d337
->> Author: Kees Cook <keescook@chromium.org>
->> Date:   Mon Oct 13 15:51:57 2014 -0700
->> 
->>     checkpatch: look for common misspellings
->> 
->> checkpatch.pl dies with
->> 
->> checkpatch.pl: Can't open /path/to/spelling.txt for reading: No such file or directory
->> 
->> if it's called through a symlink in /path/to/checkpatch.pl pointing at
->> the actual script.
->> 
->> Please fail graciously, and just ignore spelling if you can't find
->> spelling.txt. Or better yet, follow the links if you can.
->
-> I agree it should fail better, but I'm also curious.
-> Why you want to use a symlink?
+This function can be used if the target needs to receive another duplicate
+of the current bio.
 
-Simply because I think having $HOME/bin in $PATH and a symlink there is
-better than the alternatives.
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
 
-I don't want to add scripts to $PATH because there's so much cruft. I
-don't want to copy checkpatch.pl (and now spelling.txt) because I
-generally want it to stay up-to-date. I don't want to use an alias
-because some maintainer scripts would break. I don't want to use a full
-path because it's tedious, and potentially different on different
-machines.
+---
+ drivers/md/dm.c               |   24 +++++++++++++++++++-----
+ include/linux/device-mapper.h |    2 ++
+ 2 files changed, 21 insertions(+), 5 deletions(-)
 
-Reference: http://xkcd.com/1172/
+Index: linux-3.18-rc1/drivers/md/dm.c
+===================================================================
+--- linux-3.18-rc1.orig/drivers/md/dm.c	2014-10-21 00:42:31.000000000 +0200
++++ linux-3.18-rc1/drivers/md/dm.c	2014-10-21 00:44:13.000000000 +0200
+@@ -1284,9 +1284,9 @@ EXPORT_SYMBOL_GPL(dm_set_target_max_io_l
+  *	 to make it empty)
+  * The target requires that region 3 is to be sent in the next bio.
+  *
+- * If the target wants to receive multiple copies of the bio (via num_*bios, etc),
+- * the partially processed part (the sum of regions 1+2) must be the same for all
+- * copies of the bio.
++ * If the target wants to receive multiple copies of the bio with num_*_bios or
++ * dm_ask_for_duplicate_bio, the partially processed part (the sum of regions
++ * 1+2) must be the same for all copies of the bio.
+  */
+ void dm_accept_partial_bio(struct bio *bio, unsigned n_sectors)
+ {
+@@ -1300,6 +1300,17 @@ void dm_accept_partial_bio(struct bio *b
+ }
+ EXPORT_SYMBOL_GPL(dm_accept_partial_bio);
+ 
++/*
++ * The target driver can call this function only from the map routine. The
++ * target driver requests that the dm sends more duplicates of the current bio.
++ */
++void dm_ask_for_duplicate_bios(struct bio *bio, unsigned n_duplicates)
++{
++	struct dm_target_io *tio = container_of(bio, struct dm_target_io, clone);
++	(*tio->num_bios) += n_duplicates;
++}
++EXPORT_SYMBOL_GPL(dm_ask_for_duplicate_bios);
++
+ static void __map_bio(struct dm_target_io *tio)
+ {
+ 	int r;
+@@ -1390,12 +1401,14 @@ static struct dm_target_io *alloc_tio(st
+ 
+ static void __clone_and_map_simple_bio(struct clone_info *ci,
+ 				       struct dm_target *ti,
+-				       unsigned target_bio_nr, unsigned *len)
++				       unsigned target_bio_nr, unsigned *len,
++				       unsigned *num_bios)
+ {
+ 	struct dm_target_io *tio = alloc_tio(ci, ti, target_bio_nr);
+ 	struct bio *clone = &tio->clone;
+ 
+ 	tio->len_ptr = len;
++	tio->num_bios = num_bios;
+ 
+ 	__bio_clone_fast(clone, ci->bio);
+ 	if (len)
+@@ -1410,7 +1423,7 @@ static void __send_duplicate_bios(struct
+ 	unsigned target_bio_nr;
+ 
+ 	for (target_bio_nr = 0; target_bio_nr < num_bios; target_bio_nr++)
+-		__clone_and_map_simple_bio(ci, ti, target_bio_nr, len);
++		__clone_and_map_simple_bio(ci, ti, target_bio_nr, len, &num_bios);
+ }
+ 
+ static int __send_empty_flush(struct clone_info *ci)
+@@ -1436,6 +1449,7 @@ static void __clone_and_map_data_bio(str
+ 	for (target_bio_nr = 0; target_bio_nr < num_target_bios; target_bio_nr++) {
+ 		tio = alloc_tio(ci, ti, target_bio_nr);
+ 		tio->len_ptr = len;
++		tio->num_bios = &num_target_bios;
+ 		clone_bio(tio, bio, sector, *len);
+ 		__map_bio(tio);
+ 	}
+Index: linux-3.18-rc1/include/linux/device-mapper.h
+===================================================================
+--- linux-3.18-rc1.orig/include/linux/device-mapper.h	2014-10-21 00:42:31.000000000 +0200
++++ linux-3.18-rc1/include/linux/device-mapper.h	2014-10-21 00:42:40.000000000 +0200
+@@ -271,6 +271,7 @@ struct dm_target_io {
+ 	struct dm_target *ti;
+ 	unsigned target_bio_nr;
+ 	unsigned *len_ptr;
++	unsigned *num_bios;
+ 	struct bio clone;
+ };
+ 
+@@ -382,6 +383,7 @@ struct gendisk *dm_disk(struct mapped_de
+ int dm_suspended(struct dm_target *ti);
+ int dm_noflush_suspending(struct dm_target *ti);
+ void dm_accept_partial_bio(struct bio *bio, unsigned n_sectors);
++void dm_ask_for_duplicate_bios(struct bio *bio, unsigned n_duplicates);
+ union map_info *dm_get_rq_mapinfo(struct request *rq);
+ 
+ struct queue_limits *dm_get_queue_limits(struct mapped_device *md);
 
-
-BR,
-Jani.
-
--- 
-Jani Nikula, Intel Open Source Technology Center
