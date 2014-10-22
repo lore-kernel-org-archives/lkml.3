@@ -1,80 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176AbaJVPvJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 11:51:09 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:33542 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753552AbaJVPvF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 11:51:05 -0400
-Date: Wed, 22 Oct 2014 16:50:58 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: PERIER Romain <romain.perier@gmail.com>
-Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>, robh+dt@kernel.org,
-        "pawel.moll" <pawel.moll@arm.com>, mark.rutland@arm.com,
-        ijc+devicetree <ijc+devicetree@hellion.org.uk>,
-        galak <galak@codeaurora.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        swarren <swarren@wwwdotorg.org>,
-        "thierry.reding" <thierry.reding@gmail.com>, gnurou <gnurou@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>
-Subject: Re: [PATCH v1 1/5] mfd: tps65910: Convert ti,system-power-controller
- DT property to poweroff-source
-Message-ID: <20141022155058.GN4939@x1>
-References: <1413991587-11110-1-git-send-email-romain.perier@gmail.com>
- <CABgxDoKus_D=ooCz3TqyXP9CTJUgbZVxQSsw4ZgBx1oYaTefbw@mail.gmail.com>
+	id S932301AbaJVPvt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 11:51:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14909 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753351AbaJVPrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 11:47:17 -0400
+Date: Wed, 22 Oct 2014 18:50:48 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
+Subject: [PATCH RFC v2 09/16] virtio: set FEATURES_OK
+Message-ID: <1413992894-22976-10-git-send-email-mst@redhat.com>
+References: <1413992894-22976-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CABgxDoKus_D=ooCz3TqyXP9CTJUgbZVxQSsw4ZgBx1oYaTefbw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1413992894-22976-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Oct 2014, PERIER Romain wrote:
+set FEATURES_OK as per virtio 1.0 spec
 
-> This is related to the following subject "[RFC v3 PATCH 1/5] of: Add
-> standard property for poweroff capability" and depends on the
-> corresponding patch.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ include/uapi/linux/virtio_config.h |  2 ++
+ drivers/virtio/virtio.c            | 29 ++++++++++++++++++++++-------
+ 2 files changed, 24 insertions(+), 7 deletions(-)
 
-Then it should be sent in the same patch-set.
-
-There's nothing I can do with this patch as is.
-
-> 2014-10-22 17:26 GMT+02:00 Romain Perier <romain.perier@gmail.com>:
-> > No longer use custom property to define poweroff capability, use the standard
-> > DT property instead.
-> >
-> > Signed-off-by: Romain Perier <romain.perier@gmail.com>
-> > ---
-> >  drivers/mfd/tps65910.c | 3 +--
-> >  1 file changed, 1 insertion(+), 2 deletions(-)
-> >
-> > diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-> > index 7612d89..b8dca8a 100644
-> > --- a/drivers/mfd/tps65910.c
-> > +++ b/drivers/mfd/tps65910.c
-> > @@ -423,8 +423,7 @@ static struct tps65910_board *tps65910_parse_dt(struct i2c_client *client,
-> >
-> >         board_info->irq = client->irq;
-> >         board_info->irq_base = -1;
-> > -       board_info->pm_off = of_property_read_bool(np,
-> > -                       "ti,system-power-controller");
-> > +       board_info->pm_off = of_system_has_poweroff_source(np);
-> >
-> >         return board_info;
-> >  }
-> >
-
+diff --git a/include/uapi/linux/virtio_config.h b/include/uapi/linux/virtio_config.h
+index f3fe33a..a6d0cde 100644
+--- a/include/uapi/linux/virtio_config.h
++++ b/include/uapi/linux/virtio_config.h
+@@ -38,6 +38,8 @@
+ #define VIRTIO_CONFIG_S_DRIVER		2
+ /* Driver has used its parts of the config, and is happy */
+ #define VIRTIO_CONFIG_S_DRIVER_OK	4
++/* Driver has finished configuring features */
++#define VIRTIO_CONFIG_S_FEATURES_OK	8
+ /* We've given up on this device. */
+ #define VIRTIO_CONFIG_S_FAILED		0x80
+ 
+diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
+index d213567..a3df817 100644
+--- a/drivers/virtio/virtio.c
++++ b/drivers/virtio/virtio.c
+@@ -160,6 +160,7 @@ static int virtio_dev_probe(struct device *_d)
+ 	struct virtio_device *dev = dev_to_virtio(_d);
+ 	struct virtio_driver *drv = drv_to_virtio(dev->dev.driver);
+ 	u64 device_features;
++	unsigned status;
+ 
+ 	/* We have a driver! */
+ 	add_status(dev, VIRTIO_CONFIG_S_DRIVER);
+@@ -183,18 +184,32 @@ static int virtio_dev_probe(struct device *_d)
+ 
+ 	dev->config->finalize_features(dev);
+ 
++	if (virtio_has_feature(dev, VIRTIO_F_VERSION_1)) {
++		add_status(dev, VIRTIO_CONFIG_S_FEATURES_OK);
++		status = dev->config->get_status(dev);
++		if (!(status & VIRTIO_CONFIG_S_FEATURES_OK)) {
++			printk(KERN_ERR "virtio: device refuses features: %x\n",
++			       status);
++			err = -ENODEV;
++			goto err;
++		}
++	}
++
+ 	err = drv->probe(dev);
+ 	if (err)
+-		add_status(dev, VIRTIO_CONFIG_S_FAILED);
+-	else {
+-		add_status(dev, VIRTIO_CONFIG_S_DRIVER_OK);
+-		if (drv->scan)
+-			drv->scan(dev);
++		goto err;
+ 
+-		virtio_config_enable(dev);
+-	}
++	add_status(dev, VIRTIO_CONFIG_S_DRIVER_OK);
++	if (drv->scan)
++		drv->scan(dev);
++
++	virtio_config_enable(dev);
+ 
++	return 0;
++err:
++	add_status(dev, VIRTIO_CONFIG_S_FAILED);
+ 	return err;
++
+ }
+ 
+ static int virtio_dev_remove(struct device *_d)
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+MST
+
