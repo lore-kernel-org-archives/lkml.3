@@ -1,150 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932397AbaJVCLv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 22:11:51 -0400
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:10359 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753995AbaJVCKK (ORCPT
+	id S1751690AbaJVCRK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 22:17:10 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:39376 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750731AbaJVCRI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 22:10:10 -0400
-X-IronPort-AV: E=Sophos;i="5.04,766,1406617200"; 
-   d="scan'208";a="49061268"
-From: Scott Branden <sbranden@broadcom.com>
-To: Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        <bcm-kernel-feedback-list@broadcom.com>,
-        Mike Turquette <mturquette@linaro.org>, Alex Elder <elder@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "Kumar Gala" <galak@codeaurora.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joe Perches <joe@perches.com>,
-        "Mauro Carvalho Chehab" <m.chehab@samsung.com>,
-        Antti Palosaari <crope@iki.fi>
-CC: JD Zheng <jdzheng@broadcom.com>, Ray Jui <rjui@broadcom.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>,
-        Jonathan Richardson <jonathar@broadcom.com>,
-        Scott Branden <sbranden@broadcom.com>
-Subject: [PATCH v6 1/6] ARM: cygnus: Initial support for Broadcom Cygnus SoC
-Date: Tue, 21 Oct 2014 19:09:47 -0700
-Message-ID: <1413943792-7379-2-git-send-email-sbranden@broadcom.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1413943792-7379-1-git-send-email-sbranden@broadcom.com>
-References: <Scott Branden <sbranden@broadcom.com>
- <1413943792-7379-1-git-send-email-sbranden@broadcom.com>
+	Tue, 21 Oct 2014 22:17:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140702133258.GN26537@8bytes.org>
+References: <1398386198-19304-1-git-send-email-bill.sumner@hp.com>
+ <1398854973.12733.23.camel@i7.infradead.org> <20140702133258.GN26537@8bytes.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 21 Oct 2014 20:16:46 -0600
+Message-ID: <CAErSpo69VmK5zD-ztNVHCA=KrK8zucqubY17z0K3rcpe6ReNUA@mail.gmail.com>
+Subject: Re: [PATCH 0/8] iommu/vt-d: Fix crash dump failure caused by legacy DMA/IO
+To: Joerg Roedel <joro@8bytes.org>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        "Hoemann, Jerry" <jerry.hoemann@hp.com>,
+        Takao Indoh <indou.takao@jp.fujitsu.com>, Baoquan He <bhe@redhat.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
+        doug.hatch@hp.com,
+        "ishii.hironobu@jp.fujitsu.com" <ishii.hironobu@jp.fujitsu.com>,
+        zhenhua@hp.com, Zhen-Hua <zhen-hual@hp.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Vaden, Tom L (HP Server OS Architecture)" <tom.vaden@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jonathan Richardson <jonathar@broadcom.com>
+[-cc Bill, +cc Zhen-Hua, Eric, Tom, Jerry]
 
-Adds initial support for the Cygnus SoC based on Broadcom’s iProc series.
-Move ARCH_BCM_5301x under the ARCH_BCM_IPROC architecture.
+Hi Joerg,
 
-Reviewed-by: Ray Jui <rjui@broadcom.com>
-Reviewed-by: Desmond Liu <desmondl@broadcom.com>
-Reviewed-by: JD (Jiandong) Zheng <jdzheng@broadcom.com>
-Tested-by: Jonathan Richardson <jonathar@broadcom.com>
-Signed-off-by: Scott Branden <sbranden@broadcom.com>
----
- arch/arm/mach-bcm/Kconfig      |   28 ++++++++++++++++++++++++++++
- arch/arm/mach-bcm/Makefile     |    3 +++
- arch/arm/mach-bcm/bcm_cygnus.c |   26 ++++++++++++++++++++++++++
- 3 files changed, 57 insertions(+)
- create mode 100644 arch/arm/mach-bcm/bcm_cygnus.c
+I was looking at Zhen-Hua's recent patches, trying to figure out if I
+need to do anything with them.  Resetting devices in the old kernel
+seems like a non-starter.  Resetting devices in the new kernel, ...,
+well, maybe.  It seems ugly, and it seems like the sort of problem
+that IOMMUs are designed to solve.  Anyway, I found this old
+discussion that I didn't quite understand:
 
-diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
-index 2abad74..f5e638e 100644
---- a/arch/arm/mach-bcm/Kconfig
-+++ b/arch/arm/mach-bcm/Kconfig
-@@ -5,6 +5,34 @@ menuconfig ARCH_BCM
- 
- if ARCH_BCM
- 
-+config ARCH_BCM_IPROC
-+	bool
-+	select ARM_GIC
-+	select CACHE_L2X0
-+	select HAVE_ARM_SCU if SMP
-+	select HAVE_ARM_TWD if SMP
-+	select ARM_GLOBAL_TIMER
-+
-+	select CLKSRC_MMIO
-+	select ARCH_REQUIRE_GPIOLIB
-+	select ARM_AMBA
-+	select PINCTRL
-+	help
-+	  This enables support for systems based on Broadcom IPROC architected SoCs.
-+	  The IPROC complex contains one or more ARM CPUs along with common
-+	  core periperals. Application specific SoCs are created by adding a
-+	  uArchitecture containing peripherals outside of the IPROC complex.
-+	  Currently supported SoCs are Cygnus.
-+
-+config ARCH_BCM_CYGNUS
-+	bool "Broadcom Cygnus Support" if ARCH_MULTI_V7
-+	select ARCH_BCM_IPROC
-+	help
-+	  Enable support for the Cygnus family,
-+	  which includes the following variants:
-+	  BCM11300, BCM11320, BCM11350, BCM11360,
-+	  BCM58300, BCM58302, BCM58303, BCM58305.
-+
- config ARCH_BCM_MOBILE
- 	bool "Broadcom Mobile SoC Support" if ARCH_MULTI_V7
- 	select ARCH_REQUIRE_GPIOLIB
-diff --git a/arch/arm/mach-bcm/Makefile b/arch/arm/mach-bcm/Makefile
-index 300ae4b..34d45ba 100644
---- a/arch/arm/mach-bcm/Makefile
-+++ b/arch/arm/mach-bcm/Makefile
-@@ -10,6 +10,9 @@
- # of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- # GNU General Public License for more details.
- 
-+# Cygnus
-+obj-$(CONFIG_ARCH_BCM_CYGNUS) +=  bcm_cygnus.o
-+
- # BCM281XX
- obj-$(CONFIG_ARCH_BCM_281XX)	+= board_bcm281xx.o
- 
-diff --git a/arch/arm/mach-bcm/bcm_cygnus.c b/arch/arm/mach-bcm/bcm_cygnus.c
-new file mode 100644
-index 0000000..41b4933
---- /dev/null
-+++ b/arch/arm/mach-bcm/bcm_cygnus.c
-@@ -0,0 +1,26 @@
-+/*
-+ * Copyright 2014 Broadcom Corporation.  All rights reserved.
-+ *
-+ * Unless you and Broadcom execute a separate written software license
-+ * agreement governing use of this software, this software is licensed to you
-+ * under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <asm/mach/arch.h>
-+
-+static const char const *bcm_cygnus_dt_compat[] = {
-+	"brcm,cygnus",
-+	NULL,
-+};
-+
-+DT_MACHINE_START(BCM_CYGNUS_DT, "Broadcom Cygnus SoC")
-+	.l2c_aux_val	= 0,
-+	.l2c_aux_mask	= ~0,
-+	.dt_compat = bcm_cygnus_dt_compat,
-+MACHINE_END
--- 
-1.7.9.5
+On Wed, Jul 2, 2014 at 7:32 AM, Joerg Roedel <joro@8bytes.org> wrote:
+> On Wed, Apr 30, 2014 at 11:49:33AM +0100, David Woodhouse wrote:
 
+>> After the last round of this patchset, we discussed a potential
+>> improvement where you point every virtual bus address at the *same*
+>> physical scratch page.
+>
+> That is a solution to prevent the in-flight DMA failures. But what
+> happens when there is some in-flight DMA to a disk to write some inodes
+> or a new superblock. Then this scratch address-space may cause
+> filesystem corruption at worst.
+
+This in-flight DMA is from a device programmed by the old kernel, and
+it would be reading data from the old kernel's buffers.  I think
+you're suggesting that we might want that DMA read to complete so the
+device can update filesystem metadata?
+
+I don't really understand that argument.  Don't we usually want to
+stop any data from escaping the machine after a crash, on the theory
+that the old kernel is crashing because something is catastrophically
+wrong and we may have already corrupted things in memory?  If so,
+allowing this old DMA to complete is just as likely to make things
+worse as to make them better.
+
+Without kdump, we likely would reboot through the BIOS and the device
+would get reset and the DMA would never happen at all.  So if we made
+the dump kernel program the IOMMU to prevent the DMA, that seems like
+a similar situation.
+
+> So with this in mind I would prefer initially taking over the
+> page-tables from the old kernel before the device drivers re-initialize
+> the devices.
+
+This makes the dump kernel more dependent on data from the old kernel,
+which we obviously want to avoid when possible.
+
+I didn't find the previous discussion where pointing every virtual bus
+address at the same physical scratch page was proposed.  Why was that
+better than programming the IOMMU to reject every DMA?
+
+Bjorn
