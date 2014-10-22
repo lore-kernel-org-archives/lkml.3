@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933275AbaJVVZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 17:25:27 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:40126 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933158AbaJVVY6 (ORCPT
+	id S933099AbaJVVYz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 17:24:55 -0400
+Received: from mail-oi0-f45.google.com ([209.85.218.45]:48149 "EHLO
+	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932352AbaJVVYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 17:24:58 -0400
+	Wed, 22 Oct 2014 17:24:52 -0400
 From: Seth Forshee <seth.forshee@canonical.com>
 To: Miklos Szeredi <miklos@szeredi.hu>
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
@@ -16,46 +16,51 @@ Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org,
         Seth Forshee <seth.forshee@canonical.com>
-Subject: [PATCH v5 4/4] fuse: Allow user namespace mounts
-Date: Wed, 22 Oct 2014 16:24:20 -0500
-Message-Id: <1414013060-137148-5-git-send-email-seth.forshee@canonical.com>
+Subject: [PATCH v5 0/4] fuse: Add support for mounts from pid/user namespaces
+Date: Wed, 22 Oct 2014 16:24:16 -0500
+Message-Id: <1414013060-137148-1-git-send-email-seth.forshee@canonical.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1414013060-137148-1-git-send-email-seth.forshee@canonical.com>
-References: <1414013060-137148-1-git-send-email-seth.forshee@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Serge H. Hallyn <serge.hallyn@ubuntu.com>
-Cc: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
----
- fs/fuse/inode.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Here's another update to the patches to enable userns mounts in fuse.
+The changes this time around center on xattrs and allow_other. I'm
+considering the following patch to be a prerequisite for this series:
 
-diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
-index b88b5a780228..7d0e73e36e7b 100644
---- a/fs/fuse/inode.c
-+++ b/fs/fuse/inode.c
-@@ -1201,7 +1201,7 @@ static void fuse_kill_sb_anon(struct super_block *sb)
- static struct file_system_type fuse_fs_type = {
- 	.owner		= THIS_MODULE,
- 	.name		= "fuse",
--	.fs_flags	= FS_HAS_SUBTYPE,
-+	.fs_flags	= FS_HAS_SUBTYPE | FS_USERNS_MOUNT,
- 	.mount		= fuse_mount,
- 	.kill_sb	= fuse_kill_sb_anon,
- };
-@@ -1233,7 +1233,7 @@ static struct file_system_type fuseblk_fs_type = {
- 	.name		= "fuseblk",
- 	.mount		= fuse_mount_blk,
- 	.kill_sb	= fuse_kill_sb_blk,
--	.fs_flags	= FS_REQUIRES_DEV | FS_HAS_SUBTYPE,
-+	.fs_flags	= FS_REQUIRES_DEV | FS_HAS_SUBTYPE | FS_USERNS_MOUNT,
- };
- MODULE_ALIAS_FS("fuseblk");
- 
--- 
-1.9.1
+http://lkml.kernel.org/g/252a4d87d99fc2b5fe4411c838f65b312c4e13cd.1413330857.git.luto@amacapital.net
+
+With this patch I'm dropping the xattr restrictions from the v4 patches.
+This leaves the situation with xattrs unchanged in init_user_ns. A fuse
+userns mount could still supply xattrs which the user would normally be
+unable to set, but since the mount will be inaccessible outside of that
+userns or its descendants those xattrs will never be seen by the host.
+
+I'm also in agreement with Andy that some decision regarding this patch
+should be made before merging the fuse userns support as well:
+
+http://lkml.kernel.org/g/2686c32f00b14148379e8cfee9c028c794d4aa1a.1407974494.git.luto@amacapital.net
+
+Changes since v4:
+ - Drop patch to restrict xattrs
+ - Update allow_other to restrict based on userns of current rather than
+   uid/gid
+
+Thanks,
+Seth
+
+
+Seth Forshee (4):
+  fuse: Add support for pid namespaces
+  fuse: Support fuse filesystems outside of init_user_ns
+  fuse: Restrict allow_other to the superblock's namespace or a
+    descendant
+  fuse: Allow user namespace mounts
+
+ fs/fuse/dev.c    | 13 ++++----
+ fs/fuse/dir.c    | 91 +++++++++++++++++++++++++++++++++++++-------------------
+ fs/fuse/file.c   | 38 ++++++++++++++++-------
+ fs/fuse/fuse_i.h | 16 +++++++---
+ fs/fuse/inode.c  | 81 ++++++++++++++++++++++++++++++++++++++-----------
+ 5 files changed, 171 insertions(+), 68 deletions(-)
 
