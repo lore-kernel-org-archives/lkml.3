@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939AbaJVPp4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 11:45:56 -0400
+	id S932569AbaJVP67 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 11:58:59 -0400
 Received: from down.free-electrons.com ([37.187.137.238]:54159 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754827AbaJVPpx (ORCPT
+	with ESMTP id S1754887AbaJVPpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 11:45:53 -0400
+	Wed, 22 Oct 2014 11:45:55 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -14,11 +14,11 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH v3 42/59] dmaengine: d40: Split device_control
-Date: Wed, 22 Oct 2014 17:43:56 +0200
-Message-Id: <1413992653-21963-43-git-send-email-maxime.ripard@free-electrons.com>
+        Dan Williams <dan.j.williams@intel.com>,
+        Michal Simek <michal.simek@xilinx.com>
+Subject: [PATCH v3 44/59] dmaengine: xilinx: Split device_control
+Date: Wed, 22 Oct 2014 17:43:58 +0200
+Message-Id: <1413992653-21963-45-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -26,128 +26,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the ST-Ericsson DMA 40 driver to make use
-of the newly introduced callbacks, that will eventually be used to retrieve
-slave capabilities.
+Split the device_control callback of the Xilinx VDMA driver to make use of the
+newly introduced callbacks, that will eventually be used to retrieve slave
+capabilities.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 ---
- drivers/dma/ste_dma40.c | 60 +++++++++++++++++++++++--------------------------
- 1 file changed, 28 insertions(+), 32 deletions(-)
+ drivers/dma/xilinx/xilinx_vdma.c | 29 ++++++-----------------------
+ 1 file changed, 6 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index 5fe59335e247..b781c988b592 100644
---- a/drivers/dma/ste_dma40.c
-+++ b/drivers/dma/ste_dma40.c
-@@ -1429,11 +1429,17 @@ static bool d40_tx_is_linked(struct d40_chan *d40c)
- 	return is_link;
- }
- 
--static int d40_pause(struct d40_chan *d40c)
-+static int d40_pause(struct dma_chan *chan)
+diff --git a/drivers/dma/xilinx/xilinx_vdma.c b/drivers/dma/xilinx/xilinx_vdma.c
+index a6e64767186e..1df06b45c798 100644
+--- a/drivers/dma/xilinx/xilinx_vdma.c
++++ b/drivers/dma/xilinx/xilinx_vdma.c
+@@ -996,13 +996,17 @@ error:
+  * xilinx_vdma_terminate_all - Halt the channel and free descriptors
+  * @chan: Driver specific VDMA Channel pointer
+  */
+-static void xilinx_vdma_terminate_all(struct xilinx_vdma_chan *chan)
++static int xilinx_vdma_terminate_all(struct dma_chan *dchan)
  {
-+	struct d40_chan *d40c = container_of(chan, struct d40_chan, chan);
- 	int res = 0;
- 	unsigned long flags;
- 
-+	if (d40c->phy_chan == NULL) {
-+		chan_err(d40c, "Channel is not allocated!\n");
-+		return -EINVAL;
-+	}
++	struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
 +
- 	if (!d40c->busy)
- 		return 0;
+ 	/* Halt the DMA engine */
+ 	xilinx_vdma_halt(chan);
  
-@@ -1448,11 +1454,17 @@ static int d40_pause(struct d40_chan *d40c)
- 	return res;
+ 	/* Remove and free all of the descriptors in the lists */
+ 	xilinx_vdma_free_descriptors(chan);
++
++	return 0;
  }
  
--static int d40_resume(struct d40_chan *d40c)
-+static int d40_resume(struct dma_chan *chan)
- {
-+	struct d40_chan *d40c = container_of(chan, struct d40_chan, chan);
- 	int res = 0;
- 	unsigned long flags;
- 
-+	if (d40c->phy_chan == NULL) {
-+		chan_err(d40c, "Channel is not allocated!\n");
-+		return -EINVAL;
-+	}
-+
- 	if (!d40c->busy)
- 		return 0;
- 
-@@ -2610,6 +2622,11 @@ static void d40_terminate_all(struct dma_chan *chan)
- 	struct d40_chan *d40c = container_of(chan, struct d40_chan, chan);
- 	int ret;
- 
-+	if (d40c->phy_chan == NULL) {
-+		chan_err(d40c, "Channel is not allocated!\n");
-+		return -EINVAL;
-+	}
-+
- 	spin_lock_irqsave(&d40c->lock, flags);
- 
- 	pm_runtime_get_sync(d40c->base->dev);
-@@ -2673,6 +2690,11 @@ static int d40_set_runtime_config(struct dma_chan *chan,
- 	u32 src_maxburst, dst_maxburst;
- 	int ret;
- 
-+	if (d40c->phy_chan == NULL) {
-+		chan_err(d40c, "Channel is not allocated!\n");
-+		return -EINVAL;
-+	}
-+
- 	src_addr_width = config->src_addr_width;
- 	src_maxburst = config->src_maxburst;
- 	dst_addr_width = config->dst_addr_width;
-@@ -2781,35 +2803,6 @@ static int d40_set_runtime_config(struct dma_chan *chan,
- 	return 0;
+ /**
+@@ -1070,27 +1074,6 @@ int xilinx_vdma_channel_set_config(struct dma_chan *dchan,
  }
+ EXPORT_SYMBOL(xilinx_vdma_channel_set_config);
  
--static int d40_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--		       unsigned long arg)
+-/**
+- * xilinx_vdma_device_control - Configure DMA channel of the device
+- * @dchan: DMA Channel pointer
+- * @cmd: DMA control command
+- * @arg: Channel configuration
+- *
+- * Return: '0' on success and failure value on error
+- */
+-static int xilinx_vdma_device_control(struct dma_chan *dchan,
+-				      enum dma_ctrl_cmd cmd, unsigned long arg)
 -{
--	struct d40_chan *d40c = container_of(chan, struct d40_chan, chan);
+-	struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
 -
--	if (d40c->phy_chan == NULL) {
--		chan_err(d40c, "Channel is not allocated!\n");
--		return -EINVAL;
--	}
+-	if (cmd != DMA_TERMINATE_ALL)
+-		return -ENXIO;
 -
--	switch (cmd) {
--	case DMA_TERMINATE_ALL:
--		d40_terminate_all(chan);
--		return 0;
--	case DMA_PAUSE:
--		return d40_pause(d40c);
--	case DMA_RESUME:
--		return d40_resume(d40c);
--	case DMA_SLAVE_CONFIG:
--		return d40_set_runtime_config(chan,
--			(struct dma_slave_config *) arg);
--	default:
--		break;
--	}
+-	xilinx_vdma_terminate_all(chan);
 -
--	/* Other commands are unimplemented */
--	return -ENXIO;
+-	return 0;
 -}
 -
- /* Initialization functions */
- 
- static void __init d40_chan_init(struct d40_base *base, struct dma_device *dma,
-@@ -2870,7 +2863,10 @@ static void d40_ops_init(struct d40_base *base, struct dma_device *dev)
- 	dev->device_free_chan_resources = d40_free_chan_resources;
- 	dev->device_issue_pending = d40_issue_pending;
- 	dev->device_tx_status = d40_tx_status;
--	dev->device_control = d40_control;
-+	dev->device_config = d40_set_runtime_config;
-+	dev->device_pause = d40_pause;
-+	dev->device_resume = d40_resume;
-+	dev->device_terminate_all = d40_terminate_all;
- 	dev->dev = base->dev;
- }
+ /* -----------------------------------------------------------------------------
+  * Probe and remove
+  */
+@@ -1295,7 +1278,7 @@ static int xilinx_vdma_probe(struct platform_device *pdev)
+ 				xilinx_vdma_free_chan_resources;
+ 	xdev->common.device_prep_interleaved_dma =
+ 				xilinx_vdma_dma_prep_interleaved;
+-	xdev->common.device_control = xilinx_vdma_device_control;
++	xdev->common.device_terminate_all = xilinx_vdma_terminate_all;
+ 	xdev->common.device_tx_status = xilinx_vdma_tx_status;
+ 	xdev->common.device_issue_pending = xilinx_vdma_issue_pending;
  
 -- 
 2.1.1
