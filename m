@@ -1,138 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631AbaJVJQV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 05:16:21 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:32271 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753454AbaJVJQT (ORCPT
+	id S1754412AbaJVJX2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 05:23:28 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:61897 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753961AbaJVJX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 05:16:19 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f4-b7f6c6d00000120b-c3-544775e01012
-Content-transfer-encoding: 8BIT
-Message-id: <1413969375.32084.3.camel@AMDC1943>
-Subject: Re: [PATCH RESEND 2/3] extcon: max77693: Request only specific
- interrupts
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Date: Wed, 22 Oct 2014 11:16:15 +0200
-In-reply-to: <5447730E.80500@samsung.com>
-References: <1413967540-27626-1-git-send-email-k.kozlowski@samsung.com>
- <1413967540-27626-2-git-send-email-k.kozlowski@samsung.com>
- <5447730E.80500@samsung.com>
-X-Mailer: Evolution 3.10.4-0ubuntu2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNLMWRmVeSWpSXmKPExsVy+t/xq7oPSt1DDCbuN7bYOGM9q8X1L89Z
-	Lc42vWG3uP/1KKPF5V1z2CzWHrnLbnG7cQWbxeluVgcOjzvX9rB5zDsZ6NG3ZRWjx+dNcgEs
-	UVw2Kak5mWWpRfp2CVwZ91euYit4JFexaP1L9gbGDxJdjJwcEgImEmtenmGBsMUkLtxbz9bF
-	yMUhJLCUUeJn2y5WkASvgKDEj8n3gIo4OJgF5CWOXMoGCTMLqEtMmreIGaL+M6NE/6ynbBD1
-	+hLn389mB7GFBUIkuts/gsXZBIwlNi9fAmaLCGhIzPx7hRGkmVlgOZPEw1fzmEESLAKqErtP
-	zmYEsTkFNCXWL1rIBLFhCaPE143XGUGukBBQlmjsd5vAKDALyX2zEO6bheS+BYzMqxhFU0uT
-	C4qT0nMN9YoTc4tL89L1kvNzNzFCAvzLDsbFx6wOMQpwMCrx8M7gcA8RYk0sK67MPcQowcGs
-	JMJ7Lx0oxJuSWFmVWpQfX1Sak1p8iJGJg1OqgTFMfvIdkY8hkwo/3/zlFLNS8tuU0mLOO9sc
-	7c70zj3wb3soV91W80sxc52vLtwe9Tn9nqFEZo7ABfY70xSP20R8uhg1Sev/lwcT3tpdP9C0
-	1FXz5iv3e9nrHPqu5F+36cm5qFKtyZF2/tLFs56LLLyCJ/XFxJ42Vupnf72i/YTRjc2n+lb8
-	3WipxFKckWioxVxUnAgATsL/RU4CAAA=
+	Wed, 22 Oct 2014 05:23:26 -0400
+Message-ID: <54477775.7070401@atmel.com>
+Date: Wed, 22 Oct 2014 17:23:01 +0800
+From: Bo Shen <voice.shen@atmel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Peter Rosin <peda@axentia.se>
+CC: "'alsa-devel@alsa-project.org'" <alsa-devel@alsa-project.org>,
+        "Takashi Iwai" <tiwai@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, "Mark Brown" <broonie@kernel.org>
+Subject: Re: [alsa-devel] [PATCH] ASoC: atmel_ssc_dai: Track playback and
+ capture CMR dividers separately.
+References: <a541333cf46b4c61b790df927d4b315d@EMAIL.axentia.se> <5445BCBF.5090002@atmel.com> <dc4461593ddb4d539f2db74b69bab98c@EMAIL.axentia.se> <544620C8.4040001@atmel.com> <8559eca320324092be82f7d942606102@EMAIL.axentia.se> <544707F3.1020505@atmel.com> <c61abc1ef0f341c2be04e3d7b07d97de@EMAIL.axentia.se> <54476640.5050603@atmel.com> <05f8e371e0ac40949bfc01b8d86d3c6e@EMAIL.axentia.se>
+In-Reply-To: <05f8e371e0ac40949bfc01b8d86d3c6e@EMAIL.axentia.se>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On śro, 2014-10-22 at 18:04 +0900, Chanwoo Choi wrote:
-> Hi Krzysztof,
-> 
-> The extcon-max77693.c was tested by all cables (mhl, hdmi, usb, usb-host, dock for audio play, dock for mhl).
-> with default_init_data register setting. If you deletes legacy default_init_data[] register setting,
-> extcon-max77693.c can not guarantee the operation of upper cables.
-> 
-> So, I want to maintain 'default_init_data' register setting value.
+Hi Peter,
 
-I understand. Is this driver used anywhere without DTS? Because the
-difference will be only in non-DTS board.
+On 10/22/2014 04:33 PM, Peter Rosin wrote:
+> The sama5d3xek/wm9804 combo, as implemented in the kernel, has the
+> ssc dai in slave mode, and therefore don't need to fiddle with any
+> ssc dai dividers (atmel_9804.c :atmel_asoc_wm9804_hw_params() only
+> sets things in the wm9804 codec dai driver and leaves the ssc dai to itself).
+>
+> Instead, try the above code on your code with the ssc dai in master mode
+> that you pointed at previously.
 
-With DTS the driver receives the same interrupts (before/after patch).
+Yes, I try the ssc working as master mode.
 
-However I do not insist on this patch. It is merely a cleanup.
+> https://github.com/Android4SAM/linux-at91/commit/33db8ebd3e75632c482dda271340f4d2adcfd320
+>
+> If that happens to not hit -EBUSY (which it might not, since the wm9804 codec
+> will only allow stereo, so the SNDCTL_DSP_CHANNELS ioctl might not need
+> to make any change for any ssc divider) add code to also set a non-default
+> sample rate, e.g.:
+>
+> speed = 22050;
+> if (ioctl(fd, SNDCTL_DSP_SPEED, &speed) == -1) {
+> 	perror("SNDCTL_DSP_SPEED");
+> 	return 1;
+> }
 
-Best regards,
-Krzysztof
+with this piece of code, I reproduce your issue.
 
-> 
-> Thanks,
-> Chanwoo Choi
-> 
-> On 10/22/2014 05:45 PM, Krzysztof Kozlowski wrote:
-> > The driver was requesting all MUIC interrupts but then was masking most
-> > of them manually at end of probe (with default_init_data). Since
-> > default_init_data cannot be passed through DTS (no bindings for driver),
-> > this was a conflicting behavior. First get everything, then mask what we
-> > don't want.
-> > 
-> > This could change after adding DTS bindings for requesting specific
-> > MUIC interrupts. Until then driver should request only these MUIC
-> > interrupts which he is really interested in.
-> > 
-> > The commit does not introduce any functional change when the driver is
-> > used with DTS (no platform data). However this changes the behavior with
-> > platform data supplied. In such case the driver will request only 3
-> > interrupts (ADC, ADC1K, ChgTyp). Platform data could still unmask other
-> > interrupts but they won't be handled by the driver.
-> > 
-> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > ---
-> >  drivers/extcon/extcon-max77693.c | 26 --------------------------
-> >  1 file changed, 26 deletions(-)
-> > 
-> > diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
-> > index 863d088c9bdd..9d21e75a7032 100644
-> > --- a/drivers/extcon/extcon-max77693.c
-> > +++ b/drivers/extcon/extcon-max77693.c
-> > @@ -44,19 +44,6 @@ static struct max77693_reg_data default_init_data[] = {
-> >  		.addr = MAX77693_MUIC_REG_STATUS2,
-> >  		.data = STATUS2_CHGDETRUN_MASK,
-> >  	}, {
-> > -		/* INTMASK1 - Unmask [3]ADC1KM,[0]ADCM */
-> > -		.addr = MAX77693_MUIC_REG_INTMASK1,
-> > -		.data = INTMASK1_ADC1K_MASK
-> > -			| INTMASK1_ADC_MASK,
-> > -	}, {
-> > -		/* INTMASK2 - Unmask [0]ChgTypM */
-> > -		.addr = MAX77693_MUIC_REG_INTMASK2,
-> > -		.data = INTMASK2_CHGTYP_MASK,
-> > -	}, {
-> > -		/* INTMASK3 - Mask all of interrupts */
-> > -		.addr = MAX77693_MUIC_REG_INTMASK3,
-> > -		.data = 0x0,
-> > -	}, {
-> >  		/* CDETCTRL2 */
-> >  		.addr = MAX77693_MUIC_REG_CDETCTRL2,
-> >  		.data = CDETCTRL2_VIDRMEN_MASK
-> > @@ -135,21 +122,8 @@ struct max77693_muic_irq {
-> >  
-> >  static struct max77693_muic_irq muic_irqs[] = {
-> >  	{ MAX77693_MUIC_IRQ_INT1_ADC,		"muic-ADC" },
-> > -	{ MAX77693_MUIC_IRQ_INT1_ADC_LOW,	"muic-ADCLOW" },
-> > -	{ MAX77693_MUIC_IRQ_INT1_ADC_ERR,	"muic-ADCError" },
-> >  	{ MAX77693_MUIC_IRQ_INT1_ADC1K,		"muic-ADC1K" },
-> >  	{ MAX77693_MUIC_IRQ_INT2_CHGTYP,	"muic-CHGTYP" },
-> > -	{ MAX77693_MUIC_IRQ_INT2_CHGDETREUN,	"muic-CHGDETREUN" },
-> > -	{ MAX77693_MUIC_IRQ_INT2_DCDTMR,	"muic-DCDTMR" },
-> > -	{ MAX77693_MUIC_IRQ_INT2_DXOVP,		"muic-DXOVP" },
-> > -	{ MAX77693_MUIC_IRQ_INT2_VBVOLT,	"muic-VBVOLT" },
-> > -	{ MAX77693_MUIC_IRQ_INT2_VIDRM,		"muic-VIDRM" },
-> > -	{ MAX77693_MUIC_IRQ_INT3_EOC,		"muic-EOC" },
-> > -	{ MAX77693_MUIC_IRQ_INT3_CGMBC,		"muic-CGMBC" },
-> > -	{ MAX77693_MUIC_IRQ_INT3_OVP,		"muic-OVP" },
-> > -	{ MAX77693_MUIC_IRQ_INT3_MBCCHG_ERR,	"muic-MBCCHG_ERR" },
-> > -	{ MAX77693_MUIC_IRQ_INT3_CHG_ENABLED,	"muic-CHG_ENABLED" },
-> > -	{ MAX77693_MUIC_IRQ_INT3_BAT_DET,	"muic-BAT_DET" },
-> >  };
-> >  
-> >  /* Define supported accessory type */
-> > 
+Now, I know the reason of this issue, work in oss mode, it will set the 
+default clock to 8KHz, and then if change to other sample rate, for 
+example 48KHz, the div is different, then it reports -EBUSY.
 
+So, I think we won't change the ATMEL_SSC_CMR_DIV to ATMEL_SSC_TCMR_DIV 
+and ATMEL_SSC_RCMR_DIV, as it will affect other users. We just deal with 
+this situation in ATMEL_SSC_CMR_DIV block, check the direction, if the 
+same direction change the div, then accept the change, otherwise, return 
+-EBUSY.
+
+>
+> Cheers,
+> Peter
+
+Best Regards,
+Bo Shen
