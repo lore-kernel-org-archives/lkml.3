@@ -1,195 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932594AbaJVHmK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 03:42:10 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:5868 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752039AbaJVHmI (ORCPT
+	id S932600AbaJVHnm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 03:43:42 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:38322 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751102AbaJVHnk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 03:42:08 -0400
-From: Wang Nan <wangnan0@huawei.com>
-To: Namhyung Kim <namhyung@kernel.org>, <acme@kernel.org>
-CC: <a.p.zijlstra@chello.nl>, <paulus@samba.org>, <mingo@redhat.com>,
-        <jolsa@redhat.com>, <adrian.hunter@intel.com>, <Waiman.Long@hp.com>,
-        <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>
-Subject: [PATCH v2 RESEND] perf tools: makes CPUINFO_PROC to array for different kernel version
-Date: Wed, 22 Oct 2014 15:40:14 +0800
-Message-ID: <1413963614-7251-1-git-send-email-wangnan0@huawei.com>
-X-Mailer: git-send-email 1.8.4
+	Wed, 22 Oct 2014 03:43:40 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <54475FC4.6080309@jp.fujitsu.com>
+Date: Wed, 22 Oct 2014 16:41:56 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
+To: Wanpeng Li <kernellwp@gmail.com>
+CC: <mingo@redhat.com>, <peterz@infradead.org>, <riel@redhat.com>,
+        <tkhai@yandex.ru>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] sched/fair: Care divide error in update_task_scan_period()
+References: <54475703.8000505@jp.fujitsu.com> <5447580E.3030603@gmail.com>
+In-Reply-To: <5447580E.3030603@gmail.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After kernel 3.7 (commit b4b8f770eb10a1bccaf8aa0ec1956e2dd7ed1e0a),
-/proc/cpuinfo replaces 'Processor' to 'model name'. This patch makes
-CPUINFO_PROC to an array and provides two choices for ARM, makes it
-compatible for different kernel version.
+(2014/10/22 16:09), Wanpeng Li wrote:
+> 10/22/14, 3:04 PM, Yasuaki Ishimatsu:
+>> While offling node by hot removing memory, the following divide error
+>> occurs:
+>>
+>>    divide error: 0000 [#1] SMP
+>>    [...]
+>>    Call Trace:
+>>     [...] handle_mm_fault
+>>     [...] ? try_to_wake_up
+>>     [...] ? wake_up_state
+>>     [...] __do_page_fault
+>>     [...] ? do_futex
+>>     [...] ? put_prev_entity
+>>     [...] ? __switch_to
+>>     [...] do_page_fault
+>>     [...] page_fault
+>>    [...]
+>>    RIP  [<ffffffff810a7081>] task_numa_fault
+>>     RSP <ffff88084eb2bcb0>
+>>
+>> The issue occurs as follows:
+>>    1. When page fault occurs and page is allocated from node 1,
+>>       task_struct->numa_faults_buffer_memory[] of node 1 is
+>>       incremented and p->numa_faults_locality[] is also incremented
+>>       as follows:
+>>
+>>       o numa_faults_buffer_memory[]       o numa_faults_locality[]
+>>                NR_NUMA_HINT_FAULT_TYPES
+>>               |      0     |     1     |
+>>       ----------------------------------  ----------------------
+>>        node 0 |      0     |     0     |   remote |      0     |
+>>        node 1 |      0     |     1     |   locale |      1     |
+>>       ----------------------------------  ----------------------
+>>
+>>    2. node 1 is offlined by hot removing memory.
+>>
+>>    3. When page fault occurs, fault_types[] is calculated by using
+>>       p->numa_faults_buffer_memory[] of all online nodes in
+>>       task_numa_placement(). But node 1 was offline by step 2. So
+>>       the fault_types[] is calculated by using only
+>>       p->numa_faults_buffer_memory[] of node 0. So both of fault_types[]
+>>       are set to 0.
+>>
+>>    4. The values(0) of fault_types[] pass to update_task_scan_period().
+>>
+>>    5. numa_faults_locality[1] is set to 1. So the following division is
+>>       calculated.
+>>
+>>          static void update_task_scan_period(struct task_struct *p,
+>>                                  unsigned long shared, unsigned long private){
+>>          ...
+>>                  ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared));
+>>          }
+>>
+>>    6. But both of private and shared are set to 0. So divide error
+>>       occurs here.
+>>
+>> The divide error is rare case because the trigger is node offline.
+>> This patch always increments denominator for avoiding divide error.
+>>
+>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> 
+> Reviewed-by: Wanpeng Li <wanpeng.li@linux.intel.com>
 
-v1 -> v2: minor changes as suggested by Namhyung Kim:
+Thank you for your review.
 
- - Doesn't pass @h and @evlist to __write_cpudesc;
- - Coding style fix.
+Thanks,
+Yasuaki Ishimatsu
 
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/perf.h        | 24 ++++++++++++------------
- tools/perf/util/header.c | 27 +++++++++++++++++++++------
- 2 files changed, 33 insertions(+), 18 deletions(-)
+> 
+>> ---
+>> v2:
+>>   - Simply increment a denominator
+>>
+>>   kernel/sched/fair.c | 2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index 0b069bf..f3b492d 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -1520,7 +1520,7 @@ static void update_task_scan_period(struct task_struct *p,
+>>   		 * scanning faster if shared accesses dominate as it may
+>>   		 * simply bounce migrations uselessly
+>>   		 */
+>> -		ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared));
+>> +		ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared + 1));
+>>   		diff = (diff * ratio) / NUMA_PERIOD_SLOTS;
+>>   	}
+>>
+> 
 
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 32bd102..1a23392 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -6,7 +6,7 @@
- #if defined(__i386__)
- #define rmb()		asm volatile("lock; addl $0,0(%%esp)" ::: "memory")
- #define cpu_relax()	asm volatile("rep; nop" ::: "memory");
--#define CPUINFO_PROC	"model name"
-+#define CPUINFO_PROC	{"model name"}
- #ifndef __NR_perf_event_open
- # define __NR_perf_event_open 336
- #endif
-@@ -15,7 +15,7 @@
- #if defined(__x86_64__)
- #define rmb()		asm volatile("lfence" ::: "memory")
- #define cpu_relax()	asm volatile("rep; nop" ::: "memory");
--#define CPUINFO_PROC	"model name"
-+#define CPUINFO_PROC	{"model name"}
- #ifndef __NR_perf_event_open
- # define __NR_perf_event_open 298
- #endif
-@@ -25,7 +25,7 @@
- #include "../../arch/powerpc/include/uapi/asm/unistd.h"
- #define rmb()		asm volatile ("sync" ::: "memory")
- #define cpu_relax()	asm volatile ("" ::: "memory");
--#define CPUINFO_PROC	"cpu"
-+#define CPUINFO_PROC	{"cpu"}
- #endif
- 
- #ifdef __s390__
-@@ -40,31 +40,31 @@
- # define rmb()		asm volatile("" ::: "memory")
- #endif
- #define cpu_relax()	asm volatile("" ::: "memory")
--#define CPUINFO_PROC	"cpu type"
-+#define CPUINFO_PROC	{"cpu type"}
- #endif
- 
- #ifdef __hppa__
- #define rmb()		asm volatile("" ::: "memory")
- #define cpu_relax()	asm volatile("" ::: "memory");
--#define CPUINFO_PROC	"cpu"
-+#define CPUINFO_PROC	{"cpu"}
- #endif
- 
- #ifdef __sparc__
- #define rmb()		asm volatile("":::"memory")
- #define cpu_relax()	asm volatile("":::"memory")
--#define CPUINFO_PROC	"cpu"
-+#define CPUINFO_PROC	{"cpu"}
- #endif
- 
- #ifdef __alpha__
- #define rmb()		asm volatile("mb" ::: "memory")
- #define cpu_relax()	asm volatile("" ::: "memory")
--#define CPUINFO_PROC	"cpu model"
-+#define CPUINFO_PROC	{"cpu model"}
- #endif
- 
- #ifdef __ia64__
- #define rmb()		asm volatile ("mf" ::: "memory")
- #define cpu_relax()	asm volatile ("hint @pause" ::: "memory")
--#define CPUINFO_PROC	"model name"
-+#define CPUINFO_PROC	{"model name"}
- #endif
- 
- #ifdef __arm__
-@@ -74,7 +74,7 @@
-  */
- #define rmb()		((void(*)(void))0xffff0fa0)()
- #define cpu_relax()	asm volatile("":::"memory")
--#define CPUINFO_PROC	"Processor"
-+#define CPUINFO_PROC	{"model name", "Processor"}
- #endif
- 
- #ifdef __aarch64__
-@@ -91,19 +91,19 @@
- 				: /* no input */			\
- 				: "memory")
- #define cpu_relax()	asm volatile("" ::: "memory")
--#define CPUINFO_PROC	"cpu model"
-+#define CPUINFO_PROC	{"cpu model"}
- #endif
- 
- #ifdef __arc__
- #define rmb()		asm volatile("" ::: "memory")
- #define cpu_relax()	rmb()
--#define CPUINFO_PROC	"Processor"
-+#define CPUINFO_PROC	{"Processor"}
- #endif
- 
- #ifdef __metag__
- #define rmb()		asm volatile("" ::: "memory")
- #define cpu_relax()	asm volatile("" ::: "memory")
--#define CPUINFO_PROC	"CPU"
-+#define CPUINFO_PROC	{"CPU"}
- #endif
- 
- #include <time.h>
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index b59350f..d48f571 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -550,16 +550,12 @@ static int write_version(int fd, struct perf_header *h __maybe_unused,
- 	return do_write_string(fd, perf_version_string);
- }
- 
--static int write_cpudesc(int fd, struct perf_header *h __maybe_unused,
--		       struct perf_evlist *evlist __maybe_unused)
-+static int __write_cpudesc(int fd, const char *cpuinfo_proc)
- {
--#ifndef CPUINFO_PROC
--#define CPUINFO_PROC NULL
--#endif
- 	FILE *file;
- 	char *buf = NULL;
- 	char *s, *p;
--	const char *search = CPUINFO_PROC;
-+	const char *search = cpuinfo_proc;
- 	size_t len = 0;
- 	int ret = -1;
- 
-@@ -611,6 +607,25 @@ done:
- 	return ret;
- }
- 
-+static int write_cpudesc(int fd, struct perf_header *h __maybe_unused,
-+		       struct perf_evlist *evlist __maybe_unused)
-+{
-+#ifndef CPUINFO_PROC
-+#define CPUINFO_PROC {"model name", }
-+#endif
-+	const char *cpuinfo_procs[] = CPUINFO_PROC;
-+	unsigned int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(cpuinfo_procs); i++) {
-+		int ret;
-+		ret = __write_cpudesc(fd, cpuinfo_procs[i]);
-+		if (ret >= 0)
-+			return ret;
-+	}
-+	return -1;
-+}
-+
-+
- static int write_nrcpus(int fd, struct perf_header *h __maybe_unused,
- 			struct perf_evlist *evlist __maybe_unused)
- {
--- 
-1.8.4
 
