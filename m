@@ -1,82 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932571AbaJVTpx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 15:45:53 -0400
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:61718 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932219AbaJVTpv (ORCPT
+	id S932619AbaJVTqK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 15:46:10 -0400
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:49086 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932575AbaJVTqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 15:45:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <544804F1.7090606@linux.intel.com>
-References: <cover.1413246370.git.shuahkh@osg.samsung.com>
-	<cf1059cc2606f20d921e5691e3d59945a19a7871.1413246372.git.shuahkh@osg.samsung.com>
-	<543FB374.8020604@metafoo.de>
-	<543FC3CD.8050805@osg.samsung.com>
-	<s5h38aow1ub.wl-tiwai@suse.de>
-	<543FD1EC.5010206@osg.samsung.com>
-	<s5hy4sgumjo.wl-tiwai@suse.de>
-	<543FD892.6010209@osg.samsung.com>
-	<s5htx34ul3w.wl-tiwai@suse.de>
-	<54467EFB.7050800@xs4all.nl>
-	<s5hbnp5z9uy.wl-tiwai@suse.de>
-	<CAGoCfixD-zv1MMHUXLnjGV5KVB-DGdp2ZqZ0hUTR14UvLh-Gvw@mail.gmail.com>
-	<544804F1.7090606@linux.intel.com>
-Date: Wed, 22 Oct 2014 15:45:42 -0400
-Message-ID: <CAGoCfiyQVY6Ss2qcp3aQijq3cP3BAM8X4yaCXRtx63dNNm-QKA@mail.gmail.com>
-Subject: Re: [alsa-devel] [PATCH v2 5/6] sound/usb: pcm changes to use media
- token api
-From: Devin Heitmueller <dheitmueller@kernellabs.com>
-To: Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>
-Cc: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "ramakrmu@cisco.com" <ramakrmu@cisco.com>,
-        Shuah Khan <shuahkh@osg.samsung.com>,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Sander Eikelenboom <linux@eikelenboom.it>,
-        Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        Antti Palosaari <crope@iki.fi>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "sakari.ailus@linux.intel.com" <sakari.ailus@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        "olebowle@gmx.com" <olebowle@gmx.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 22 Oct 2014 15:46:06 -0400
+Date: Wed, 22 Oct 2014 21:45:52 +0200
+From: Dominik Dingel <dingel@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>, Paolo Bonzini <pbonzini@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Bob Liu <lliubbo@gmail.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Gleb Natapov <gleb@kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Jianyu Zhan <nasa4836@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        kvm@vger.kernel.org, linux390@de.ibm.com, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: Re: [PATCH 2/4] mm: introduce mm_forbids_zeropage function
+Message-ID: <20141022214552.0c954692@BR9TG4T3.de.ibm.com>
+In-Reply-To: <20141022122223.f3bef0f497941fa8e0805dbf@linux-foundation.org>
+References: <1413976170-42501-1-git-send-email-dingel@linux.vnet.ibm.com>
+	<1413976170-42501-3-git-send-email-dingel@linux.vnet.ibm.com>
+	<20141022122223.f3bef0f497941fa8e0805dbf@linux-foundation.org>
+Organization: IBM
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102219-0041-0000-0000-000001C82E9D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> this seems like a feature, not a bug. PulseAudio starts streaming before
-> clients push any data and likewise keeps sources active even after for some
-> time after clients stop recording. Closing VLC in your example doesn't
-> immediately close the ALSA device. look for module-suspend-on-idle in your
-> default.pa config file.
+On Wed, 22 Oct 2014 12:22:23 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-The ALSA userland emulation in PulseAudio is supposed to faithfully emulate
-the behavior of the ALSA kernel ABI... except when it doesn't, then it's not
-a bug but rather a feature.  :-)
+> On Wed, 22 Oct 2014 13:09:28 +0200 Dominik Dingel <dingel@linux.vnet.ibm.com> wrote:
+> 
+> > Add a new function stub to allow architectures to disable for
+> > an mm_structthe backing of non-present, anonymous pages with
+> > read-only empty zero pages.
+> > 
+> > ...
+> >
+> > --- a/include/linux/mm.h
+> > +++ b/include/linux/mm.h
+> > @@ -56,6 +56,10 @@ extern int sysctl_legacy_va_layout;
+> >  #define __pa_symbol(x)  __pa(RELOC_HIDE((unsigned long)(x), 0))
+> >  #endif
+> >  
+> > +#ifndef mm_forbids_zeropage
+> > +#define mm_forbids_zeropage(X)  (0)
+> > +#endif
+> 
+> Can we document this please?  What it does, why it does it.  We should
+> also specify precisely which arch header file is responsible for
+> defining mm_forbids_zeropage.
+> 
 
-> I also agree that the open/close of the alsa device is the only way to
-> control exclusion.
+I will add a comment like:
 
-I was also a proponent that we should have fairly coarse locking done
-at open/close for the various device nodes (ALSA/V4L/DVB).  The challenge here
-is that we have a large installed based of existing applications that
-rely on kernel
-behavior that isn't formally specified in any specification.  Hence
-we're forced to try
-to come up with a solution that minimizes the risk of ABI breakage.
+/*
+ * To prevent common memory management code establishing
+ * a zero page mapping on a read fault.
+ * This function should be implemented within <asm/pgtable.h>.
+ * s390 does this to prevent multiplexing of hardware bits
+ * related to the physical page in case of virtualization.
+ */
 
-If we were doing this from scratch then we could lay down some hard/fast rules
-about things apps aren't supposed to do and how apps are supposed to respond
-to those exception cases.  Unfortunately we don't have that luxury here.
+Okay?
 
-Devin
 
--- 
-Devin J. Heitmueller - Kernel Labs
-http://www.kernellabs.com
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+
