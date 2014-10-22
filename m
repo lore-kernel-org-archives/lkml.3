@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754331AbaJVQti (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 12:49:38 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:40799 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752302AbaJVQtg (ORCPT
+	id S1752993AbaJVQwl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 12:52:41 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:63364 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751031AbaJVQwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 12:49:36 -0400
+	Wed, 22 Oct 2014 12:52:40 -0400
 MIME-Version: 1.0
-In-Reply-To: <20141022155914.GB25939@e102568-lin.cambridge.arm.com>
-References: <1411937610-22125-1-git-send-email-suravee.suthikulpanit@amd.com>
- <2430078.s4snyh5OoF@wuerfel> <20141001084626.GZ841@e106497-lin.cambridge.arm.com>
- <3256560.C0cZnIlnAv@wuerfel> <20141022155914.GB25939@e102568-lin.cambridge.arm.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 22 Oct 2014 10:49:14 -0600
-Message-ID: <CAErSpo4DPU6_TO9atpzDbu-X9iddrnBk3QQV4_BcpUCFL4JUdw@mail.gmail.com>
-Subject: Re: [RFC 2/4] PCI: generic: Add support for ARM64 and MSI(x)
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
+In-Reply-To: <loom.20141021T140216-28@post.gmane.org>
+References: <1413881397.30379.7.camel@hadess.net> <loom.20141021T140216-28@post.gmane.org>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Wed, 22 Oct 2014 12:52:16 -0400
+X-Google-Sender-Auth: TI7QHhWh9osD3Th2jlZSTaaIApM
+Message-ID: <CALZtONDXpbxiR30tzJRsyWqvcE6ucHZ0FOjHAcOTZohZO-L58w@mail.gmail.com>
+Subject: Re: A desktop environment[1] kernel wishlist
+To: Sergey <sergey@elementaryos.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Seth Jennings <sjennings@variantweb.net>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 9:59 AM, Lorenzo Pieralisi
-<lorenzo.pieralisi@arm.com> wrote:
+On Tue, Oct 21, 2014 at 9:11 AM, Sergey <sergey@elementaryos.org> wrote:
+> Hey everyone,
+>
+> I'm glad we're having some discussion on this, because we have almost
+> exactly the same kernel wishlist internally for elementary OS / Pantheon DE.
+>
+> I believe I can further elaborate on the VFS monitoring part. We need a file
+> monitoring facility that's scalable (unlike inotify) and can provide a
+> decent level of detail (unlike fanotify). In particular, we need to be able
+> to detect file/directory creation, renaming and removal events, as well as
+> close_write event. And, in an ideal world, all of that without requiring
+> root permissions.
+>
+> This can be almost accomplished by combining output of fanotify with that of
+> a custom LSM module that just reports events to userspace (e.g. rlocate uses
+> such a thing). There are two problems with this: first, it's a hideous hack,
+> and second, it doesn't detect deletions.
+>
+> This is a big deal because without it we're stuck with always presenting the
+> user with the filesystem. If you've seen library-based music players like
+> Rhythmbox or Banshee, you know that they group and sort all your music by
+> artist and album, but not by directory and file name, and that you can
+> efficiently search all that metadata. We're trying to get the same thing
+> into more applications, but the absence of VFS features described above is
+> blocking us. Even after moving all the database management to a single
+> daemon that does all the monitoring and very rarely has to rescan anything,
+> the system either slows to a crawl (inotify) or the database gets out of
+> date quickly (fanotify+LSM).
+> In case I didn't make myself clear, a more detailed writeup on the design
+> can be found here: http://tiny.cc/tearing-up-files
+>
+> Regarding the other items, AFAIK the kernel implements mechanism, not
+> policy, so instead of "zswap selectively enabled by default" we just want
+> "stable reliable zswap".
 
-> ... I wonder what's the
-> best course of action. Putting together all the bits and pieces required
-> to remove PCI bios dependency from this patch can take a while, I wonder
-> whether we should aim for merging this driver (rebased on top of my port to the
-> new parse ranges API) with the ARM/ARM64 ifdeffery and clean it up later
-> or aim for the whole thing at once, I am just worried it can take us a while.
+Can you elaborate on what your problems with zswap are?  What are you
+seeing when it's unstable or unreliable?
 
-I haven't looked at your patches, but "the whole thing at once" is
-never *my* goal.  A gradual cleanup is just fine with me.
-
-Bjorn
+> We had to give up on zram previously (in pre-3.10
+> days) because of kernel regressions leading to panics when zram was enabled.
+> And we don't have the "Power management" part on our list because we haven't
+> really delved in that yet. But our lists are identical in all the other
+> areas, so that's not "just GNOME".
+>
+> PS: I'm not subscribed to LKML either, so please CC me.
+>
+> Cheers!
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
