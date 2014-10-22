@@ -1,157 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933016AbaJVLRB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 07:17:01 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:39973 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932474AbaJVLQ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 07:16:58 -0400
-X-AuditID: cbfec7f5-b7f956d000005ed7-ba-544792273dbd
-Message-id: <54479225.9030507@samsung.com>
-Date: Wed, 22 Oct 2014 15:16:53 +0400
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.2.0
-MIME-version: 1.0
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, Michal Marek <mmarek@suse.cz>,
-        Sasha Levin <sasha.levin@oracle.com>, x86@kernel.org,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>
-Subject: Re: [RFC PATCH] UBSan: run-time undefined behavior sanity checker
-References: <1413802499-17928-1-git-send-email-a.ryabinin@samsung.com>
- <1413802499-17928-2-git-send-email-a.ryabinin@samsung.com>
- <871tq077dt.fsf@rasmusvillemoes.dk>
-In-reply-to: <871tq077dt.fsf@rasmusvillemoes.dk>
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42I5/e/4ZV31Se4hBttvSFl8/dLBYjFn/Ro2
-	iwkP29gtpm0Ut1jZ+YDV4s+uHUwWl3fNYbN4PGsem8WlAwuYLFr2XWCyON57gMli8ZHbzBab
-	N01ltmjt+clu8WPDY1YHfo+WzeUeO2fdZfdYsKnUY/MKLY9NqzrZPN6dO8fucWLGbxaPpjNH
-	mT0+Pr3F4nGhK9vj/b6rbB5nFhxh9/i8Sc7jRMsX1gC+KC6blNSczLLUIn27BK6Mro+z2Avu
-	iFZMvv2ItYFxl2AXIyeHhICJxMqHE1kgbDGJC/fWs3UxcnEICSxllPi/6QCU08wkMfvxbHaQ
-	Kl4BLYm2xQcYuxg5OFgEVCUevi8CCbMJ6En8m7WdDcQWFYiQuLJmDiNEuaDEj8n3wBaICOhL
-	nLi7mhVkJrPAR2aJ84umMYEkhAW8JF7/aGWEWLaSUaJ3VhtYN6eAgcTdLyfYQJYxC6hLTJmS
-	CxJmFpCX2LzmLfMERoFZSHbMQqiahaRqASPzKkbR1NLkguKk9FwjveLE3OLSvHS95PzcTYyQ
-	KPy6g3HpMatDjAIcjEo8vA5s7iFCrIllxZW5hxglOJiVRHiV6oFCvCmJlVWpRfnxRaU5qcWH
-	GJk4OKUaGH0uzDrbfGeW61alpDZJy6M+T9um/he/++ztVPMd/2auL5AwZ1kf4LxubunKH5l2
-	ncfUGeYcW+HzTHKixCq5iJob8qxTW1YI7u5eOMVazWn7wRCHS+8rZ9/UCFSZ9yZz8S+B15/9
-	2tteLdL+scflvMT9ix7n4ipnTn4vseu5tm+kW8q/2e9rRa4osRRnJBpqMRcVJwIAZav70KAC	AAA=
+	id S932990AbaJVLVS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 07:21:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37149 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932590AbaJVLVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 07:21:17 -0400
+Date: Wed, 22 Oct 2014 13:21:16 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Vladimir Davydov <vdavydov@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memcg: remove mem_cgroup_reclaimable check from soft
+ reclaim
+Message-ID: <20141022112116.GA30802@dhcp22.suse.cz>
+References: <1413897350-32553-1-git-send-email-vdavydov@parallels.com>
+ <20141021182239.GA24899@phnom.home.cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141021182239.GA24899@phnom.home.cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2014 01:58 PM, Rasmus Villemoes wrote:
-> On Mon, Oct 20 2014, Andrey Ryabinin <a.ryabinin@samsung.com> wrote:
+On Tue 21-10-14 14:22:39, Johannes Weiner wrote:
+[...]
+> From 27bd24b00433d9f6c8d60ba2b13dbff158b06c13 Mon Sep 17 00:00:00 2001
+> From: Johannes Weiner <hannes@cmpxchg.org>
+> Date: Tue, 21 Oct 2014 09:53:54 -0400
+> Subject: [patch] mm: memcontrol: do not filter reclaimable nodes in NUMA
+>  round-robin
 > 
->> UBSan uses compile-time instrumentation to catch undefined behavior (UB).
->> Compiler inserts code that perform certain kinds of
->> checks before operations that could cause UB.
->> If check fails (i.e. UB detected) __ubsan_handle_* function called.
->> to print error message.
->>
->> So the most of the work is done by compiler.
->> This patch just implements ubsan handlers printing errors.
->>
->> GCC supports this since 4.9, however upcoming GCC 5.0 has
->> more checkers implemented.
+> The round-robin node reclaim currently tries to include only nodes
+> that have memory of the memcg in question, which is quite elaborate.
 > 
-> [...]
+> Just use plain round-robin over the nodes that are allowed by the
+> task's cpuset, which are the most likely to contain that memcg's
+> memory.  But even if zones without memcg memory are encountered,
+> direct reclaim will skip over them without too much hassle.
+
+I do not think that using the current's node mask is correct. Different
+tasks in the same memcg might be bound to different nodes and then a set
+of nodes might be reclaimed much more if a particular task hits limit
+more often. It also doesn't make much sense from semantical POV, we are
+reclaiming memcg so the mask should be union of all tasks allowed nodes.
+
+What we do currently is overly complicated though and I agree that there
+is no good reason for it.
+Let's just s@cpuset_current_mems_allowed@node_online_map@ and round
+robin over all nodes. As you said we do not have to optimize for empty
+zones.
+
+Anyway I very much welcome all these simplifications (my todo list is
+shrinking ;). Thanks!
+
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> ---
+>  mm/memcontrol.c | 97 +++------------------------------------------------------
+>  1 file changed, 5 insertions(+), 92 deletions(-)
 > 
->> +
->> +#define REPORTED_BIT 31
->> +#define COLUMN_MASK (~(1U << REPORTED_BIT))
->> +
->> +static bool is_disabled(struct source_location *location)
->> +{
->> +	return test_and_set_bit(REPORTED_BIT,
->> +				(unsigned long *)&location->column);
->> +}
-> 
-> [...]
-> 
->> +struct source_location {
->> +	const char *file_name;
->> +	u32 line;
->> +	u32 column;
->> +};
-> 
-> 
-> AFAICT, this introduces UB and/or memory corruption on big-endian
-> systems with BITS_PER_LONG==64. (Also, on both LE and BE 64 bit systems,
-> there's the issue of the alignment of location->column, which is likely
-> to be 4-but-not-8 byte aligned).
-> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index d353d9e1fdca..293db8234179 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -54,6 +54,7 @@
+>  #include <linux/page_cgroup.h>
+>  #include <linux/cpu.h>
+>  #include <linux/oom.h>
+> +#include <linux/cpuset.h>
+>  #include <linux/lockdep.h>
+>  #include <linux/file.h>
+>  #include "internal.h"
+> @@ -129,12 +130,10 @@ static const char * const mem_cgroup_lru_names[] = {
+>  enum mem_cgroup_events_target {
+>  	MEM_CGROUP_TARGET_THRESH,
+>  	MEM_CGROUP_TARGET_SOFTLIMIT,
+> -	MEM_CGROUP_TARGET_NUMAINFO,
+>  	MEM_CGROUP_NTARGETS,
+>  };
+>  #define THRESHOLDS_EVENTS_TARGET 128
+>  #define SOFTLIMIT_EVENTS_TARGET 1024
+> -#define NUMAINFO_EVENTS_TARGET	1024
+>  
+>  struct mem_cgroup_stat_cpu {
+>  	long count[MEM_CGROUP_STAT_NSTATS];
+> @@ -352,11 +351,6 @@ struct mem_cgroup {
+>  #endif
+>  
+>  	int last_scanned_node;
+> -#if MAX_NUMNODES > 1
+> -	nodemask_t	scan_nodes;
+> -	atomic_t	numainfo_events;
+> -	atomic_t	numainfo_updating;
+> -#endif
+>  
+>  	/* List of events which userspace want to receive */
+>  	struct list_head event_list;
+> @@ -965,9 +959,6 @@ static bool mem_cgroup_event_ratelimit(struct mem_cgroup *memcg,
+>  		case MEM_CGROUP_TARGET_SOFTLIMIT:
+>  			next = val + SOFTLIMIT_EVENTS_TARGET;
+>  			break;
+> -		case MEM_CGROUP_TARGET_NUMAINFO:
+> -			next = val + NUMAINFO_EVENTS_TARGET;
+> -			break;
+>  		default:
+>  			break;
+>  		}
+> @@ -986,22 +977,10 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
+>  	/* threshold event is triggered in finer grain than soft limit */
+>  	if (unlikely(mem_cgroup_event_ratelimit(memcg,
+>  						MEM_CGROUP_TARGET_THRESH))) {
+> -		bool do_softlimit;
+> -		bool do_numainfo __maybe_unused;
+> -
+> -		do_softlimit = mem_cgroup_event_ratelimit(memcg,
+> -						MEM_CGROUP_TARGET_SOFTLIMIT);
+> -#if MAX_NUMNODES > 1
+> -		do_numainfo = mem_cgroup_event_ratelimit(memcg,
+> -						MEM_CGROUP_TARGET_NUMAINFO);
+> -#endif
+>  		mem_cgroup_threshold(memcg);
+> -		if (unlikely(do_softlimit))
+> +		if (mem_cgroup_event_ratelimit(memcg,
+> +					       MEM_CGROUP_TARGET_SOFTLIMIT))
+>  			mem_cgroup_update_tree(memcg, page);
+> -#if MAX_NUMNODES > 1
+> -		if (unlikely(do_numainfo))
+> -			atomic_inc(&memcg->numainfo_events);
+> -#endif
+>  	}
+>  }
+>  
+> @@ -1708,61 +1687,7 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
+>  			 NULL, "Memory cgroup out of memory");
+>  }
+>  
+> -/**
+> - * test_mem_cgroup_node_reclaimable
+> - * @memcg: the target memcg
+> - * @nid: the node ID to be checked.
+> - * @noswap : specify true here if the user wants flle only information.
+> - *
+> - * This function returns whether the specified memcg contains any
+> - * reclaimable pages on a node. Returns true if there are any reclaimable
+> - * pages in the node.
+> - */
+> -static bool test_mem_cgroup_node_reclaimable(struct mem_cgroup *memcg,
+> -		int nid, bool noswap)
+> -{
+> -	if (mem_cgroup_node_nr_lru_pages(memcg, nid, LRU_ALL_FILE))
+> -		return true;
+> -	if (noswap || !total_swap_pages)
+> -		return false;
+> -	if (mem_cgroup_node_nr_lru_pages(memcg, nid, LRU_ALL_ANON))
+> -		return true;
+> -	return false;
+> -
+> -}
+>  #if MAX_NUMNODES > 1
+> -
+> -/*
+> - * Always updating the nodemask is not very good - even if we have an empty
+> - * list or the wrong list here, we can start from some node and traverse all
+> - * nodes based on the zonelist. So update the list loosely once per 10 secs.
+> - *
+> - */
+> -static void mem_cgroup_may_update_nodemask(struct mem_cgroup *memcg)
+> -{
+> -	int nid;
+> -	/*
+> -	 * numainfo_events > 0 means there was at least NUMAINFO_EVENTS_TARGET
+> -	 * pagein/pageout changes since the last update.
+> -	 */
+> -	if (!atomic_read(&memcg->numainfo_events))
+> -		return;
+> -	if (atomic_inc_return(&memcg->numainfo_updating) > 1)
+> -		return;
+> -
+> -	/* make a nodemask where this memcg uses memory from */
+> -	memcg->scan_nodes = node_states[N_MEMORY];
+> -
+> -	for_each_node_mask(nid, node_states[N_MEMORY]) {
+> -
+> -		if (!test_mem_cgroup_node_reclaimable(memcg, nid, false))
+> -			node_clear(nid, memcg->scan_nodes);
+> -	}
+> -
+> -	atomic_set(&memcg->numainfo_events, 0);
+> -	atomic_set(&memcg->numainfo_updating, 0);
+> -}
+> -
+>  /*
+>   * Selecting a node where we start reclaim from. Because what we need is just
+>   * reducing usage counter, start from anywhere is O,K. Considering
+> @@ -1779,21 +1704,9 @@ int mem_cgroup_select_victim_node(struct mem_cgroup *memcg)
+>  {
+>  	int node;
+>  
+> -	mem_cgroup_may_update_nodemask(memcg);
+> -	node = memcg->last_scanned_node;
+> -
+> -	node = next_node(node, memcg->scan_nodes);
+> +	node = next_node(memcg->last_scanned_node, cpuset_current_mems_allowed);
+>  	if (node == MAX_NUMNODES)
+> -		node = first_node(memcg->scan_nodes);
+> -	/*
+> -	 * We call this when we hit limit, not when pages are added to LRU.
+> -	 * No LRU may hold pages because all pages are UNEVICTABLE or
+> -	 * memcg is too small and all pages are not on LRU. In that case,
+> -	 * we use curret node.
+> -	 */
+> -	if (unlikely(node == MAX_NUMNODES))
+> -		node = numa_node_id();
+> -
+> +		node = first_node(cpuset_current_mems_allowed);
+>  	memcg->last_scanned_node = node;
+>  	return node;
+>  }
+> -- 
+> 2.1.2
 
-You are right. This should fix it:
-
-diff --git a/lib/ubsan.c b/lib/ubsan.c
-index 7788f47..cfdf017 100644
---- a/lib/ubsan.c
-+++ b/lib/ubsan.c
-@@ -53,18 +53,24 @@ static bool handler_enabled(unsigned int handler)
- }
-
- #define REPORTED_BIT 31
--#define COLUMN_MASK (~(1U << REPORTED_BIT))
-+
-+#if (BITS_PER_LONG == 64) && defined(__BIG_ENDIAN)
-+#define COLUMN_MASK (~(1U << REPORTED_BIT)
-+#define LINE_MASK   (~0U)
-+#else
-+#define COLUMN_MASK (~0U)
-+#define LINE_MASK   (~(1U << REPORTED_BIT))
-+#endif
-
- static bool is_disabled(struct source_location *location)
- {
--	return test_and_set_bit(REPORTED_BIT,
--				(unsigned long *)&location->column);
-+	return test_and_set_bit(REPORTED_BIT, &location->reported);
- }
-
- static void print_source_location(const char *prefix, struct source_location *loc)
- {
- 	pr_err("%s %s:%d:%d\n", prefix, loc->file_name,
--		loc->line, loc->column & COLUMN_MASK);
-+		loc->line & LINE_MASK, loc->column & COLUMN_MASK);
- }
-
- static bool type_is_int(struct type_descriptor *type)
-diff --git a/lib/ubsan.h b/lib/ubsan.h
-index e2d8634..8965591 100644
---- a/lib/ubsan.h
-+++ b/lib/ubsan.h
-@@ -15,8 +15,13 @@ struct type_descriptor {
-
- struct source_location {
- 	const char *file_name;
--	u32 line;
--	u32 column;
-+	union {
-+		unsigned long reported;
-+		struct {
-+			u32 line;
-+			u32 column;
-+		};
-+	};
- };
-
- struct overflow_data {
-
-
-> Is the layout of struct source_location dictated by gcc? 
-> 
-
-Yes.
-
-> Rasmus
-> 
-
+-- 
+Michal Hocko
+SUSE Labs
